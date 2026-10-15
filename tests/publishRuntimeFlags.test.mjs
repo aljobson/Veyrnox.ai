@@ -58,28 +58,17 @@ test('malformed, incomplete and unknown grouped Publish controls fail closed', (
     assert.equal(publishRuntimeFeatureEnabled('UNKNOWN', grouped('true', 'true')), false);
 });
 
-test('remote environments enable plans while native video destinations remain off', () => {
+test('production keeps advanced Publish controls closed while staging opens the acceptance suite', () => {
     const config = parseJsonc(readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8'));
+    const advanced = ['PUBLISH_INBOX_ENABLED', 'PUBLISH_SMARTLINKS_ENABLED', 'PUBLISH_CONTENT_PRESETS_ENABLED',
+        'PUBLISH_QUEUES_ENABLED', 'PUBLISH_APPROVALS_ENABLED', 'PUBLISH_TEAMS_ENABLED',
+        'PUBLISH_CONTENT_VARIANTS_ENABLED', 'PUBLISH_REPORTS_ENABLED', 'PUBLISH_CUSTOMER_API_ENABLED',
+        'PUBLISH_CUSTOMER_WEBHOOKS_ENABLED', 'PUBLISH_SCHEDULED_REPORTS_ENABLED',
+        'PUBLISH_INBOX_WORKFLOWS_ENABLED', 'PUBLISH_ADS_ENABLED', 'PUBLISH_COMMERCE_ENABLED',
+        'PUBLISH_RSS_AUTOLISTS_ENABLED', 'PUBLISH_REPORT_EXPORTS_ENABLED', 'PUBLISH_REPORT_DELIVERY_ENABLED'];
     for (const vars of [config.vars, config.env.staging.vars]) {
         assert.equal(publishRuntimeFeatureEnabled('PUBLISH_PLANS_ENABLED', vars), true);
         assert.equal(publishRuntimeFeatureEnabled('PUBLISH_VIDEO_DESTINATIONS_ENABLED', vars), false);
-        assert.equal(publishRuntimeFeatureEnabled('PUBLISH_INBOX_ENABLED', vars), false);
-        assert.equal(publishRuntimeFeatureEnabled('PUBLISH_SMARTLINKS_ENABLED', vars), false);
-        assert.equal(publishRuntimeFeatureEnabled('PUBLISH_CONTENT_PRESETS_ENABLED', vars), false);
-        assert.equal(publishRuntimeFeatureEnabled('PUBLISH_QUEUES_ENABLED', vars), false);
-        assert.equal(publishRuntimeFeatureEnabled('PUBLISH_APPROVALS_ENABLED', vars), false);
-        assert.equal(publishRuntimeFeatureEnabled('PUBLISH_TEAMS_ENABLED', vars), false);
-        assert.equal(publishRuntimeFeatureEnabled('PUBLISH_CONTENT_VARIANTS_ENABLED', vars), false);
-        assert.equal(publishRuntimeFeatureEnabled('PUBLISH_REPORTS_ENABLED', vars), false);
-        assert.equal(publishRuntimeFeatureEnabled('PUBLISH_CUSTOMER_API_ENABLED', vars), false);
-        assert.equal(publishRuntimeFeatureEnabled('PUBLISH_CUSTOMER_WEBHOOKS_ENABLED', vars), false);
-        assert.equal(publishRuntimeFeatureEnabled('PUBLISH_SCHEDULED_REPORTS_ENABLED', vars), false);
-        assert.equal(publishRuntimeFeatureEnabled('PUBLISH_INBOX_WORKFLOWS_ENABLED', vars), false);
-        assert.equal(publishRuntimeFeatureEnabled('PUBLISH_ADS_ENABLED', vars), false);
-        assert.equal(publishRuntimeFeatureEnabled('PUBLISH_COMMERCE_ENABLED', vars), false);
-        assert.equal(publishRuntimeFeatureEnabled('PUBLISH_RSS_AUTOLISTS_ENABLED', vars), false);
-        assert.equal(publishRuntimeFeatureEnabled('PUBLISH_REPORT_EXPORTS_ENABLED', vars), false);
-        assert.equal(publishRuntimeFeatureEnabled('PUBLISH_REPORT_DELIVERY_ENABLED', vars), false);
         assert.equal(freeSocialAccountLimit(vars), 1);
         assert.equal(socialAccountLimitForTier('free', vars), 1);
         assert.equal(socialAccountLimitForTier('publish', vars), 5);
@@ -101,5 +90,9 @@ test('remote environments enable plans while native video destinations remain of
         assert.equal(Object.hasOwn(vars, 'PUBLISH_RSS_AUTOLISTS_ENABLED'), false);
         assert.equal(Object.hasOwn(vars, 'PUBLISH_REPORT_EXPORTS_ENABLED'), false);
         assert.equal(Object.hasOwn(vars, 'PUBLISH_REPORT_DELIVERY_ENABLED'), false);
+    }
+    for (const name of advanced) {
+        assert.equal(publishRuntimeFeatureEnabled(name, config.vars), false);
+        assert.equal(publishRuntimeFeatureEnabled(name, config.env.staging.vars), true);
     }
 });
