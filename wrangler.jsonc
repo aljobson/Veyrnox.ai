@@ -60,6 +60,9 @@
     // ADR-0067: Chat is open here, but the screen is still behind the per-browser preview switch
     // (localStorage.veyrnox_chat). Needs OPENROUTER_CHAT_API_KEY on the Worker: production will not use the shared key.
     "CHAT_ENABLED": "true",
+    // Vey's grounded in-product helper reuses the separately capped Chat key.
+    // Its default model lives in lib/helpAssistant.js so it does not consume
+    // another Worker text binding; production is already at that binding limit.
     // ADR-0067 amendment 11: POST /api/v1/chat/sends/close, which lets the chat screen settle a warning about a message that
     // was stopped before its reply started. On in production since 2026-10-09: migration 0242 was applied there the same day
     // (apply-migrations, approved by the owner), and the owner asked for it on that day, without the 24-hour wait. Set it back
@@ -387,6 +390,9 @@
   //                               OpenRouter video submit + webhook signature (ADR-0020)
   //   OPENROUTER_CHAT_API_KEY      OpenRouter key for Chat only, with its own spend cap (ADR-0067). Required in
   //                               production; staging falls back to OPENROUTER_API_KEY
+  //   OPENROUTER_HELP_API_KEY      Optional separately capped key for Vey product help, once binding capacity is
+  //                               available. When absent, Vey uses OPENROUTER_CHAT_API_KEY; it never uses the shared
+  //                               production generation key.
   //   TYPESAFE_API_KEY            Jev classifier for provider submit refusals (lib/jev.js, ADR-0066)
   //   STRIPE_SECRET_KEY           Checkout Session create + session re-fetch (packages/adapters/stripe.js);
   //                               sk_test_… until the live account clears review (ADR-0031). Its prefix

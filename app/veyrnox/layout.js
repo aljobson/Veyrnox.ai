@@ -5,6 +5,7 @@ import { AccountBoundary } from './_components/AccountBoundary';
 import { PublishFlagProvider } from './_components/PublishFlag';
 import { EditorFlagProvider } from './_components/EditorFlag';
 import { ProjectsFlagProvider } from './_components/ProjectsFlag';
+import MascotAssistant from './_components/MascotAssistant';
 import { publishEnabled, publishShellAvailable } from '../../lib/social/publishFeature.js';
 
 // Self-hosted variable fonts (OFL, app/fonts); see app/layout.js.
@@ -35,6 +36,7 @@ export default function VeyrnoxLayout({ children }) {
             <AccountBoundary>
               {children}
               <JobWatcher />
+              <MascotAssistant />
             </AccountBoundary>
           </ProjectsFlagProvider>
         </EditorFlagProvider>

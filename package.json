@@ -13,6 +13,9 @@
   },
   "scripts": {
     "prepare:video-enhance": "node scripts/prepare-video-enhance.mjs",
+    "sync:vey-knowledge": "node scripts/sync-vey-knowledge.mjs",
+    "check:vey-knowledge": "node scripts/sync-vey-knowledge.mjs --check",
+    "predev": "npm run sync:vey-knowledge",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -29,7 +32,7 @@
     "typecheck": "tsc -p packages/security/tsconfig.json",
     "test:integration": "node scripts/test-tenant-foundation.mjs",
     "test:security": "node scripts/check-security.mjs",
-    "prebuild": "npm run prepare:video-enhance && node scripts/prepare-local-speech.mjs && node scripts/prepare-editor-vision.mjs",
+    "prebuild": "npm run prepare:video-enhance && node scripts/prepare-local-speech.mjs && node scripts/prepare-editor-vision.mjs && npm run sync:vey-knowledge",
     "verify:video-enhance": "node scripts/verify-video-enhance.mjs"
   },
   "dependencies": {
