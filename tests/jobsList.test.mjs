@@ -61,7 +61,24 @@ test('the Library reads the account list and keeps localStorage as a cache', () 
     const page = readFileSync(new URL('../app/veyrnox/app/library/page.js', import.meta.url), 'utf8');
     assert.match(page, /gatewayFetch\(`\/jobs\?limit=\$\{PAGE \* 2\}`\)/);
     assert.match(page, /setListLive\(false\)/, 'an unreachable list is admitted, not silently shown as empty');
-    assert.match(page, /before: nextCursor\.before, before_id: nextCursor\.before_id/);
+    const pager = readFileSync(new URL('../app/veyrnox/_lib/useOlderLibraryJobs.js', import.meta.url), 'utf8');
+    assert.match(page, /useOlderLibraryJobs/);
+    assert.match(pager, /gatewayFetch\(jobsPagePath\(nextCursor, pageSize \* 2\)\)/);
+});
+
+test('database microsecond UTC cursors survive query transport without truncation or invalid_cursor', async () => {
+    const timestamp = '2026-10-10T19:47:41.625562+00:00';
+    stub([{ ...row(1), created_at: timestamp }]);
+    const first = await (await get('?limit=1')).json();
+    assert.deepEqual(first.next, { before: '2026-10-10T19:47:41.625562Z', before_id: JOB(1) });
+    for (const before of [first.next.before, timestamp, timestamp.replace('+', ' ')]) {
+        stub([]);
+        const query = new URLSearchParams({ before, before_id: JOB(1) });
+        assert.equal((await get(`?${query}`)).status, 200);
+        assert.equal(seen.p_before_created_at, '2026-10-10T19:47:41.625562Z');
+        assert.equal(seen.p_before_id, JOB(1));
+        assert.equal(seen.p_auth_id, 'auth-user-1');
+    }
 });
 
 test('exposes authoritative expiry and tolerates a pre-migration RPC', async () => {
