@@ -85,6 +85,9 @@ test('human starters cover intentionally different body silhouettes and wearable
     assert.equal(byId['tall-order'].picks.proportions, 'Natural');
     assert.equal(byId['bubble-barry'].picks.body_type, 'Fat');
     assert.equal(byId['max-rep'].picks.body_type, 'Hyper-Muscular');
+    const maxPrompt = buildCharacterPrompt('Full-body studio introduction', byId['max-rep'].picks);
+    assert.match(maxPrompt, /two head-heights above the scalp in three oversized stacked S-shaped waves/);
+    assert.match(maxPrompt, /blue fitted T-shirt, acid-green tight jeans, white trainers/);
     assert.equal(byId['shelf-life'].picks.body_type, 'Pear');
     for (const id of ['duchess-volume', 'major-minor', 'bughead-brenda', 'pam-bouffant']) {
         assert.match(buildCharacterPrompt('', byId[id].picks), /original adult character, not a real person/);
