@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { firstVisible } from '../../../lib/mascotDom';
 import { HELP_TARGETS } from '../../../lib/productHelp';
-import { pointerPlacement } from '../../../lib/veyPointer';
+import { mobileGuideScroll, pointerPlacement } from '../../../lib/veyPointer';
 
 const LEAF = {
   'create.models': ['button[aria-pressed="true"]'],
@@ -51,6 +51,10 @@ export default function useVeyPointer({ reduceMotion, moveMascot, setFacing, act
   useEffect(() => {
     if (!target) return;
     let frame;
+    const main = document.querySelector('main');
+    const previousPadding = main?.style.paddingBottom || '';
+    const basePadding = main ? parseFloat(getComputedStyle(main).paddingBottom) || 0 : 0;
+    let appliedPadding;
     const measure = () => {
       const element = controlFor(target.id, target.options);
       if (!element) { setGeometry(null); return; }
@@ -58,6 +62,13 @@ export default function useVeyPointer({ reduceMotion, moveMascot, setFacing, act
       if (r.bottom < 72 || r.top > innerHeight || r.right < 0 || r.left > innerWidth) { setGeometry(null); return; }
       const rect = { left: r.left, top: r.top, right: r.right, bottom: r.bottom, width: r.width, height: r.height };
       const obstacle = document.querySelector('[aria-label="Vey task walkthrough"]')?.getBoundingClientRect();
+      if (main) {
+        const padding = obstacle && innerWidth < 640 ? `${Math.max(basePadding, obstacle.height + 24)}px` : previousPadding;
+        if (main.style.paddingBottom !== padding) main.style.paddingBottom = padding;
+        appliedPadding = padding;
+      }
+      const scroll = mobileGuideScroll(rect, obstacle, { width: innerWidth });
+      if (scroll > 0) window.scrollBy({ top: scroll, behavior: 'instant' });
       const next = { ...pointerPlacement(rect, { width: innerWidth, height: innerHeight }, obstacle), rect };
       const signature = JSON.stringify(next);
       if (signature === last.current) return;
@@ -66,7 +77,6 @@ export default function useVeyPointer({ reduceMotion, moveMascot, setFacing, act
     };
     const schedule = () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(measure); };
     const observer = new ResizeObserver(schedule);
-    const main = document.querySelector('main');
     if (main) observer.observe(main);
     const guide = document.querySelector('[aria-label="Vey task walkthrough"]');
     if (guide) observer.observe(guide);
@@ -81,6 +91,7 @@ export default function useVeyPointer({ reduceMotion, moveMascot, setFacing, act
       cancelAnimationFrame(frame); observer.disconnect(); mutation.disconnect();
       window.removeEventListener('scroll', schedule, true); window.removeEventListener('resize', schedule);
       window.visualViewport?.removeEventListener('resize', schedule);
+      if (main && main.style.paddingBottom === appliedPadding) main.style.paddingBottom = previousPadding;
     };
   }, [target, moveMascot, setFacing]);
   return { activeTarget: target?.id, highlight: geometry?.rect, hand: geometry?.hand, point: geometry?.point, locate, clear };

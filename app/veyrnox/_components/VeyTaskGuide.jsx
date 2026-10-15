@@ -9,7 +9,7 @@ import { journeyStep, PREPARE_VIDEO } from '../../../lib/veyJourney';
 import { REVEAL_SAVED_ODDLING } from '../../../lib/savedOddlingHelp';
 
 const EMPTY = { task: null, view: {} };
-const pill = 'rounded-full border border-vx-border px-3 py-2 text-xs font-semibold hover:border-vx-accent disabled:opacity-40';
+const pill = 'min-h-11 rounded-full border border-vx-border px-3 py-2 text-xs font-semibold hover:border-vx-accent focus-visible:outline-2 focus-visible:outline-vx-accent disabled:opacity-40 sm:min-h-0';
 
 export default function VeyTaskGuide({ visible, pathname, onPoint, onStop, onActiveChange, onAsk }) {
   const { task, view } = useSyncExternalStore(subscribeJourney, getJourney, () => EMPTY);
@@ -19,6 +19,7 @@ export default function VeyTaskGuide({ visible, pathname, onPoint, onStop, onAct
   const [recovered, setRecovered] = useState(null);
   const [recoveryError, setRecoveryError] = useState('');
   const [side, setSide] = useState('right');
+  const [detailsKey, setDetailsKey] = useState(null);
   const router = useRouter();
   useEffect(() => { initialiseJourney(); return onSessionChange(() => { initialiseJourney(); setChoosing(false); setChatting(false); setRecovered(null); }); }, []);
   useEffect(() => { onActiveChange((!!task || choosing) && !chatting); }, [task, choosing, chatting, onActiveChange]);
@@ -43,6 +44,7 @@ export default function VeyTaskGuide({ visible, pathname, onPoint, onStop, onAct
   // The workspace's fresh state wins over a previous recovery read.
   if (liveJob && ['succeeded', 'failed'].includes(liveJob.state)) effectiveView.jobs = view.jobs;
   const step = journeyStep(task, effectiveView);
+  const detailsOpen = !!task && detailsKey === step?.key;
   useEffect(() => {
     if (visible && !chatting && step?.target && !['recover', 'waiting'].includes(step.key)) onPoint(step.target, { modelKind: step.key === 'model' ? task.phase : undefined });
     else if (!visible || chatting || ['recover', 'waiting'].includes(step?.key)) onStop();
@@ -61,9 +63,12 @@ export default function VeyTaskGuide({ visible, pathname, onPoint, onStop, onAct
     if (pathname !== '/app/create') { router.push('/app/create'); return; }
     window.dispatchEvent(new Event(PREPARE_VIDEO));
   };
-  return <section aria-label="Vey task walkthrough" data-step={step?.key || 'choose'} className={`fixed ${side === 'right' ? 'right-3' : 'left-3'} bottom-4 z-[62] max-h-[calc(50dvh)] w-[min(330px,calc(100vw-24px))] overflow-y-auto rounded-2xl border border-vx-accent/40 bg-vx-panel p-4 shadow-2xl`}>
-    <div className="flex items-center justify-between gap-2"><p className="text-xs font-bold text-vx-accent">{task ? `Vey · ${task.phase === 'image' ? 'Image' : 'Video'} task` : 'Choose your starting point'}</p>
-      <button type="button" className="text-xs text-vx-fg-muted" onClick={() => setSide(side === 'right' ? 'left' : 'right')}>Move guide</button></div>
+  const secondary = detailsOpen ? '' : 'hidden sm:block';
+  return <section aria-label="Vey task walkthrough" data-step={step?.key || 'choose'} data-expanded={detailsOpen} className={`fixed ${side === 'right' ? 'right-2 sm:right-3' : 'left-2 sm:left-3'} bottom-[max(8px,env(safe-area-inset-bottom))] sm:bottom-4 z-[62] ${task && !detailsOpen ? 'max-h-[35dvh]' : 'max-h-[50dvh]'} sm:max-h-[50dvh] w-[min(330px,calc(100vw-16px))] sm:w-[min(330px,calc(100vw-24px))] overflow-y-auto rounded-2xl border border-vx-accent/40 bg-vx-panel p-3 sm:p-4 shadow-2xl`}>
+    <div className="flex items-center justify-between gap-2"><div><p className="text-[10px] font-bold text-vx-accent sm:text-xs">{task ? `Vey · ${task.phase === 'image' ? 'Image' : 'Video'} task` : 'Choose your starting point'}</p>
+      {task && <h3 className="mt-1 text-sm font-bold sm:mt-2 sm:text-base">{step.title}</h3>}</div>
+      {task && <button type="button" aria-expanded={detailsOpen} aria-controls="vey-guide-secondary" className={`${pill} shrink-0 sm:hidden`} onClick={() => setDetailsKey(detailsOpen ? null : step.key)}>{detailsOpen ? 'Less' : 'More'}</button>}
+      <button type="button" className={`${task ? 'hidden sm:block' : ''} text-xs text-vx-fg-muted`} onClick={() => setSide(side === 'right' ? 'left' : 'right')}>Move guide</button></div>
     {choosing && !task ? <>
       <p className="my-3 text-sm text-vx-fg-body">Saved passports stay on this browser. Choose the exact version, or continue with an image already in your Library.</p>
       {library.length === 0 && <p className="text-sm text-vx-fg-muted">No saved passports on this browser. Save one in Oddling Studio first.</p>}
@@ -73,20 +78,24 @@ export default function VeyTaskGuide({ visible, pathname, onPoint, onStop, onAct
       <button type="button" className={pill} onClick={() => { beginJourney(); setChoosing(false); router.push('/app/create'); }}>Start with an existing image</button>
       <button type="button" className={pill} onClick={() => { setChoosing(false); onStop(); }}>Cancel</button>
     </> : <>
-      <h3 className="mt-2 text-base font-bold">{step.title}</h3>
-      <p role="status" className="mt-2 text-sm leading-6 text-vx-fg-body">{step.message}</p>
-      {jobId && <p className="mt-2 break-all font-vx-mono text-[10px] text-vx-fg-muted">Tracked job: {jobId}{task.phase === 'image' ? ' · first image if generating a batch' : ''}</p>}
+      <p role="status" className={`mt-1 text-xs leading-[18px] text-vx-fg-body sm:mt-2 sm:text-sm sm:leading-6 ${detailsOpen ? '' : 'line-clamp-2 sm:line-clamp-none'}`}>{step.message}</p>
       {(recoveryError || view.prepareError) && <p role="alert" className="mt-2 text-sm text-vx-danger">{recoveryError || view.prepareError}</p>}
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="mt-2 flex flex-wrap gap-2 sm:mt-3">
         <button type="button" className={pill} onClick={() => onPoint(step.target, { modelKind: step.key === 'model' ? task.phase : undefined })}>Show this step</button>
         {step.review && <button type="button" className={pill} onClick={() => updateJourney({ reviewed: { ...task.reviewed, [step.key]: step.stamp } })}>Reviewed · next</button>}
         {step.adopt && <button type="button" className={pill} onClick={() => updateJourney({ imageId: view.sourceId, reviewed: {} })}>Use this selected Library image</button>}
         {step.prepare && <button type="button" disabled={view.preparing} className={pill} onClick={prepare}>{view.preparing ? 'Preparing…' : 'Prepare video from this image'}</button>}
         {step.retry && <button type="button" className={pill} onClick={() => updateJourney({ [task.phase === 'video' ? 'videoJob' : 'imageJob']: null, reviewed: {} })}>Review a new attempt</button>}
-        <button type="button" className={pill} onClick={() => { setChatting(true); onAsk('What is the next step in my current task?'); }}>Ask about this step</button>
-        <button type="button" className={pill} onClick={() => { updateJourney(null); setChoosing(false); setChatting(false); publishJourneyView({ handedOff: false }); onStop(); }}>End walkthrough</button>
       </div>
-      <p className="mt-3 text-[11px] text-vx-fg-muted">You confirm rights and press Generate. Closing Vey pauses the guide, not a submitted job.</p>
+      <div id="vey-guide-secondary" className={secondary}>
+        {jobId && <p className="mt-2 break-all font-vx-mono text-[10px] text-vx-fg-muted">Tracked job: {jobId}{task.phase === 'image' ? ' · first image if generating a batch' : ''}</p>}
+        <div className="mt-2 flex flex-wrap gap-2">
+          <button type="button" className={`${pill} sm:hidden`} onClick={() => setSide(side === 'right' ? 'left' : 'right')}>Move guide</button>
+          <button type="button" className={pill} onClick={() => { setChatting(true); onAsk('What is the next step in my current task?'); }}>Ask about this step</button>
+          <button type="button" className={pill} onClick={() => { updateJourney(null); setDetailsKey(null); setChoosing(false); setChatting(false); publishJourneyView({ handedOff: false }); onStop(); }}>End walkthrough</button>
+        </div>
+        <p className="mt-3 text-[11px] text-vx-fg-muted">You confirm rights and press Generate. Closing Vey pauses the guide, not a submitted job.</p>
+      </div>
     </>}
   </section>;
 }
