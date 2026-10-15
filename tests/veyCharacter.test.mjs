@@ -24,3 +24,9 @@ test('Vey visibly points and taps before activating an approved target', async (
     assert.match(pointer, /options\.activate && HELP_TARGETS\[id\]\.canActivate/);
     assert.ok(source.indexOf("setActionPhase('tapping')") < source.indexOf('element.isConnected) element.click()'));
 });
+
+test('guide cleanup does not cancel ordinary cross-page help when no task is active', async () => {
+    const source = await readFile(new URL('app/veyrnox/_components/VeyTaskGuide.jsx', root), 'utf8');
+    assert.match(source, /else if \(!visible \|\| chatting \|\| \['recover', 'waiting'\]\.includes\(step\?\.key\)\) onStop\(\)/);
+    assert.doesNotMatch(source, /else onStop\(\)/);
+});

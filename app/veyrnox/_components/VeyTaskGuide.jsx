@@ -45,7 +45,7 @@ export default function VeyTaskGuide({ visible, pathname, onPoint, onStop, onAct
   const step = journeyStep(task, effectiveView);
   useEffect(() => {
     if (visible && !chatting && step?.target && !['recover', 'waiting'].includes(step.key)) onPoint(step.target, { modelKind: step.key === 'model' ? task.phase : undefined });
-    else onStop();
+    else if (!visible || chatting || ['recover', 'waiting'].includes(step?.key)) onStop();
   }, [visible, chatting, step?.key, step?.target, task?.phase, onPoint, onStop]);
   useEffect(() => {
     if (!visible || step?.key !== 'load' || pathname !== '/app/oddlings') return;
