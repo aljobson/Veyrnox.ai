@@ -26,6 +26,8 @@ import {EDITOR_VISION_PATH,editorVisionWorkerPolicy} from './app/veyrnox/_lib/ed
 import { readToken, validateClaims, verifyES256 } from './lib/supabaseJwt.js';
 import { isPublishApiPath, publishShellAvailable, publishAllowed } from './lib/social/publishFeature.js';
 import { isUnknownStaticPage } from './lib/unknownStaticPage.js';
+const POSTHOG_INGEST_PATH = '/ingest';
+const POSTHOG_INGEST_ORIGIN = 'https://eu.i.posthog.com';
 
 export const config = {
     matcher: ['/api/v1/:path*', '/((?!api(?:/|$)|_next(?:/|$)).*)'],
@@ -47,6 +49,16 @@ const IDENTITY_HEADERS = [
 ];
 
 export async function middleware(req) {
+    // Same-origin analytics proxy: the browser CSP never needs a PostHog
+    // origin. With no configured project key, do not expose a free relay.
+    const pathname = req.nextUrl?.pathname ?? new URL(req.url).pathname;
+    if (pathname === POSTHOG_INGEST_PATH || pathname.startsWith(`${POSTHOG_INGEST_PATH}/`)) {
+        if (!process.env.NEXT_PUBLIC_POSTHOG_KEY?.startsWith('phc_')) {
+            return new NextResponse(null, { status: 404, headers: { 'cache-control': 'no-store' } });
+        }
+        return rewritePostHogRequest(req);
+    }
+
     // Identity headers are ours to set. Give every one an explicit value on
     // every branch, so no handler can ever read a client-supplied one.
     // Deleting is not enough: OpenNext forwards the headers set here on top of
@@ -60,7 +72,6 @@ export async function middleware(req) {
     // demand an API Bearer token for HTML. The renderer consumes this request
     // policy to nonce framework/flight scripts; the response must match it.
     // NextRequest carries nextUrl; a plain Request (tests) only has url.
-    const pathname = req.nextUrl?.pathname ?? new URL(req.url).pathname;
     // Only this immutable local inference Worker can compile its pinned WASM.
     // HTML and every other script keep the existing nonce policy.
     if(pathname===LOCAL_SPEECH_WORKER_URL||pathname===`${EDITOR_VISION_PATH}/worker.mjs`){
@@ -130,6 +141,30 @@ export async function middleware(req) {
     const response = NextResponse.next({ request: { headers } });
     for (const [name, value] of Object.entries(responseHeaders(requestId))) response.headers.set(name, value);
     return response;
+}
+
+function rewritePostHogRequest(req) {
+    const sourceUrl = req.nextUrl ?? new URL(req.url);
+    const pathname = sourceUrl.pathname.slice(POSTHOG_INGEST_PATH.length) || '/';
+    const target = new URL(pathname, POSTHOG_INGEST_ORIGIN);
+    if (target.origin !== POSTHOG_INGEST_ORIGIN) {
+        return new NextResponse('Invalid analytics path', { status: 400 });
+    }
+    target.search = sourceUrl.search;
+
+    // The SDK payload carries its public project token and event data. Site
+    // cookies, Supabase bearer tokens and the visitor's forwarding/IP headers
+    // are not part of that contract and must not cross the proxy boundary.
+    const blockedHeaders = new Set([
+        'authorization', 'cookie', 'cf-connecting-ip', 'true-client-ip',
+        'x-forwarded-for', 'forwarded', 'x-real-ip', 'x-nonce',
+        'content-security-policy',
+    ]);
+    const headers = new Headers();
+    for (const [name, value] of req.headers.entries()) {
+        if (!blockedHeaders.has(name) && !name.startsWith('x-veyrnox-')) headers.append(name, value);
+    }
+    return NextResponse.rewrite(target, { request: { headers } });
 }
 
 // Responses the middleware returns itself never pass through next.config.mjs

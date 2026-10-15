@@ -9,7 +9,7 @@ export const metadata = {
 
 export default function Privacy() {
     return (
-        <LegalPage title="Privacy Policy" updated="13 October 2026">
+        <LegalPage title="Privacy Policy" updated="14 October 2026">
             <p>{ENTITY.name} (&ldquo;we&rdquo;) is the data controller for personal data processed through Veyrnox.ai. Registered office: {ENTITY.office}. Contact: <a href={`mailto:${ENTITY.privacyEmail}`}>{ENTITY.privacyEmail}</a>.</p>
 
             <h2>What we collect</h2>
@@ -18,6 +18,8 @@ export default function Privacy() {
                 <li><strong>Usage data</strong> — the prompts, chat messages and reference files or images you submit, the generations and chat replies you request, credit balance and ledger history, and job status.</li>
                 <li><strong>Publish data</strong> — connected social account details, media you upload, captions, schedules and posting analytics needed to publish to the accounts you select.</li>
                 <li><strong>Technical data</strong> — IP address, browser and device information, and request logs needed to keep the service secure.</li>
+                <li><strong>Optional product analytics</strong> — if you consent, page paths, button and form interactions, web performance measurements and technical error details. We do not send URL query strings, prompts, chat text, form values, uploaded or generated media, passwords or payment details.</li>
+                <li><strong>Optional session replay</strong> — if you separately consent, a privacy-masked reconstruction of up to 20% of eligible browser sessions. All text and inputs are masked; images, video, audio, canvas and iframes are blocked; console output, request or response bodies and headers are not recorded; and replay is disabled on sign-in, account, admin and payment pages.</li>
                 <li><strong>Payment data</strong> — credit packs are sold through Stripe Managed Payments, under which Stripe, Inc. is the Merchant of Record and seller of record, and charges and remits any VAT or sales tax. Stripe collects your payment details, billing address and any tax information as its own controller, under its own privacy policy. We receive the payment reference, amount, currency, country and email so we can add the credits to your account. We never see or store full card numbers.</li>
             </ul>
 
@@ -27,10 +29,11 @@ export default function Privacy() {
                 <li>To keep an accurate credit ledger and prevent abuse (legitimate interests).</li>
                 <li>To meet legal obligations, including tax and content-provenance requirements.</li>
                 <li>To send service messages. We do not send marketing email without consent.</li>
+                <li>With your consent, to understand product use, measure performance and diagnose errors and broken interactions.</li>
             </ul>
 
             <h2>Where your data lives</h2>
-            <p>We run on Supabase for the database and authentication, and on Cloudflare for edge hosting and object storage. Account data, credit ledger, generation metadata and your chat conversations sit in our Supabase database, which is hosted in the European Union (Frankfurt, Germany). Generated media is stored in the European Union, in Cloudflare R2 with an EU jurisdictional restriction. Your prompts, chat messages and reference files or images are transmitted to the third-party model provider that runs the model you selected, through our model gateway, for the sole purpose of producing your output. For chat we ask the gateway to use only providers that do not store your content or use it to train models. If you switch on Web search, your question is also sent to a web search provider. When Web search runs through our own search, that provider is Exa (exa.ai): it receives your question as the search query, and the text of the pages it finds is sent, through our model gateway, to the model provider along with your question so the answer can cite sources.</p>
+            <p>We run on Supabase for the database and authentication, and on Cloudflare for edge hosting and object storage. Account data, credit ledger, generation metadata and your chat conversations sit in our Supabase database, which is hosted in the European Union (Frankfurt, Germany). Generated media is stored in the European Union, in Cloudflare R2 with an EU jurisdictional restriction. If you consent to optional analytics, analytics, masked replay and error events are processed in PostHog Cloud EU. Your prompts, chat messages and reference files or images are transmitted to the third-party model provider that runs the model you selected, through our model gateway, for the sole purpose of producing your output. For chat we ask the gateway to use only providers that do not store your content or use it to train models. If you switch on Web search, your question is also sent to a web search provider. When Web search runs through our own search, that provider is Exa (exa.ai): it receives your question as the search query, and the text of the pages it finds is sent, through our model gateway, to the model provider along with your question so the answer can cite sources.</p>
             <p>Some of the companies that process your personal data are outside the United Kingdom and the EEA: our edge hosting, the model providers, and Stripe, Inc. (United States), which is the Merchant of Record for credit pack purchases. Where your personal data is processed outside the United Kingdom or the EEA, we rely on the UK International Data Transfer Agreement or the EU Standard Contractual Clauses with the company concerned. If we move the database to another region we will update this page before the move takes effect.</p>
 
             <h2 id="youtube">YouTube data in Veyrnox Publish</h2>
@@ -61,16 +64,17 @@ export default function Privacy() {
                 <li>Images you upload to a chat are kept in our storage only long enough to answer, and are deleted within 24 hours. An image you pick from your Library for a chat stays in your Library, and is sent to the model provider to answer. If you choose a video, your browser takes a few still frames from it and those are attached as images; the video itself is not uploaded.</li>
                 <li>Ledger records are kept for as long as your account exists plus the period required by tax law. A chat reply&rsquo;s entry in your credit history records which model, which options and the Credits charged; it never contains the text of your messages.</li>
                 <li>Request logs are kept for a short security window and then discarded.</li>
+                <li>Optional product analytics and error events are kept for up to 12 months. Optional session replays are kept for up to 30 days. Withdrawing consent stops new collection; you can also ask us to delete existing events linked to your account.</li>
             </ul>
 
             <h2>Sharing</h2>
-            <p>We share data only with the companies needed to run the service: authentication and database hosting, edge hosting and storage, AI model providers and the model gateway that routes requests to them, web search providers when you switch on Web search (Exa, when it runs through our own search), Resend for the emails we send about your account, and Stripe, Inc. for credit pack purchases. Stripe, Inc. acts as its own controller for the purchase it makes as Merchant of Record. When you schedule a Publish post, we send its media and caption to the social networks you select. Uploading a file alone does not send it to a social network. We do not sell personal data.</p>
+            <p>We share data only with the companies needed to run the service: authentication and database hosting, edge hosting and storage, PostHog for optional consented analytics and diagnostics, AI model providers and the model gateway that routes requests to them, web search providers when you switch on Web search (Exa, when it runs through our own search), Resend for the emails we send about your account, and Stripe, Inc. for credit pack purchases. Stripe, Inc. acts as its own controller for the purchase it makes as Merchant of Record. When you schedule a Publish post, we send its media and caption to the social networks you select. Uploading a file alone does not send it to a social network. We do not sell personal data.</p>
 
             <h2>Your rights</h2>
             <p>You can access, correct, export or delete your data, and object to or restrict certain processing. See <a href="/legal/gdpr">GDPR &amp; Data Rights</a> for how. You may also complain to the UK Information Commissioner&rsquo;s Office or your local supervisory authority.</p>
 
             <h2>Cookies</h2>
-            <p>We use only the cookies and local storage strictly necessary to keep you signed in and the service working. No third-party advertising trackers. If you open a friend&rsquo;s referral link, we keep that link&rsquo;s code in your browser&rsquo;s local storage for up to three days so it can be linked to your account when you sign up, then remove it.</p>
+            <p>We use cookies and local storage that are strictly necessary to remember your sign-in, preferences and privacy choice and to keep the service working. If you open a friend&rsquo;s referral link, we keep that link&rsquo;s code in your browser&rsquo;s local storage for up to three days so it can be linked to your account when you sign up, then remove it. PostHog analytics storage is off by default and starts only if you choose Analytics only or Analytics &amp; replay. You can change or withdraw that choice at any time with the Privacy choices button. We do not use advertising trackers.</p>
 
             <h2>Referrals</h2>
             <p>If you join through someone&rsquo;s referral link, we record which account referred yours. That person can see how many friends joined through their link and is never told who you are. If you buy a Credit Pack, they may earn Credits as described in the Terms; the reward is reversed if that purchase is refunded or disputed.</p>
