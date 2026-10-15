@@ -40,9 +40,19 @@ export function MobileMenu({ items, className = '', buttonLabel = 'Menu', navLab
           href={it.href}
           onClick={() => setOpen(false)}
           aria-current={it.href === activeHref ? 'page' : undefined}
-          className={`block rounded-xl px-3 py-3 text-[15px] font-bold hover:bg-vx-panel hover:text-vx-fg ${it.href === activeHref ? 'bg-vx-panel text-vx-fg' : 'text-vx-fg-body'}`}
+          className={`flex items-center justify-between gap-3 rounded-xl border px-3 py-3 text-[15px] font-bold transition-colors ${
+            it.href === activeHref
+              ? it.featured ? 'border-vx-accent bg-vx-accent text-vx-accent-ink' : 'border-transparent bg-vx-panel text-vx-fg'
+              : it.featured
+                ? 'border-vx-accent/50 bg-vx-accent/10 text-vx-accent hover:bg-vx-accent/20'
+                : 'border-transparent text-vx-fg-body hover:bg-vx-panel hover:text-vx-fg'
+          }`}
         >
-          {it.label}
+          <span className="inline-flex items-center gap-2">
+            {it.featured && <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-current" />}
+            {it.label}
+          </span>
+          {it.featured && <span className="font-vx-mono text-[9px] tracking-[0.12em] opacity-75">CHARACTERS</span>}
         </Item>
       </li>
     );

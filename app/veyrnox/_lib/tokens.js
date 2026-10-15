@@ -137,6 +137,7 @@ export const SUPPORT_EMAIL = 'legal@veyrnox.com';
 // page; from any other page it opens the home page at that section.
 export const NAV_CATEGORIES = [
   { href: '/#explore',   label: 'Explore' },
+  { href: '/app/oddlings', label: 'Oddlings', featured: true },
   { href: '/#models',    label: 'Models' },
   { href: '/presets',   label: 'Templates' },
   { href: '/tools',     label: 'Tools' },
@@ -149,6 +150,7 @@ export const NAV_CATEGORIES = [
 
 // Every public route, with the blurb search and the 404 page reuse.
 export const SITE_PAGES = [
+  { href: '/app/oddlings', label: 'Oddlings', description: 'Create funny, repeatable AI characters with distinctive bodies, outfits, hair and movement.' },
   { href: '/social-cinema', label: 'Social Cinema', description: 'Episodic stories, community voting and upcoming series.' },
   { href: '/',                  label: 'Home',               description: 'Credit-metered AI image, video and audio generation.' },
   { href: '/pricing',           label: 'Pricing',            description: 'Every model, every credit price, one balance.' },

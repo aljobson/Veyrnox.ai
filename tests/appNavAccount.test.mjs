@@ -128,15 +128,24 @@ test('amber means credits and nothing else', () => {
 
 test('the whole nav still fits a phone', () => {
     // Measured: side by side the two figures need 459px of nav and a 360px
-    // phone gives 328. Stacked, with the mark yielding to them below sm,
-    // it is 348. Signed out nothing stacks and the mark stays.
+    // phone gives 328. The mark yields below sm so the menu, Oddlings
+    // shortcut and stacked account block remain within that width.
     assert.match(signedIn, /flex flex-col gap-px/, 'the two figures stack');
-    assert.match(appNav, /\$\{account \? 'hidden sm:flex' : 'flex'\}/,
-        'the mark yields to the account block below sm, and only then');
+    assert.match(appNav, /className="hidden items-center gap-2\.5 shrink-0 sm:flex"/,
+        'the mark yields below sm so the menu, Oddlings shortcut and account controls fit');
     assert.match(appNav, /className="hidden lg:flex [^"]*gap-0\.5 sm:gap-1 text-\[12px\] sm:text-sm font-semibold"/,
         'the tab strip is for desktop; phones use the Studio menu');
     assert.match(appNav, /<nav[^>]*min-w-0 overflow-x-auto/,
         'desktop tabs can scroll without pushing account controls away');
+});
+
+test('Oddlings stays one press away on phone and is prominent on desktop', () => {
+    assert.match(appNav, /href="\/app\/oddlings"[\s\S]*aria-current=\{active === 'oddlings'/,
+        'the phone bar has a direct Oddlings link outside the menu');
+    assert.match(appNav, /\{ key: 'oddlings', href: '\/app\/oddlings', label: 'Oddlings', featured: true \}/,
+        'the desktop tab and phone menu share the featured destination');
+    assert.ok(appNav.indexOf("key: 'oddlings'") < appNav.indexOf("key: 'create'"),
+        'Oddlings appears before Create in the studio destination list');
 });
 
 // One asset is not "1 assets". Run the component's own two lines rather
