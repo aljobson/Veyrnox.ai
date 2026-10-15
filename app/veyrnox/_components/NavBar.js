@@ -44,8 +44,8 @@ export function MarketingNav({ hideAnnouncementOnMobile = false }) {
       {/* Same 1300px column as the page body, so the logo sits on its edge. */}
       <div className="h-full max-w-[1300px] mx-auto px-4 sm:px-6 flex items-center gap-1 sm:gap-3 xl:gap-6">
       <Link href="/" aria-label="Veyrnox.ai home" className="flex items-center shrink-0">
-        <Logo className="min-[360px]:hidden" />
-        <Logo wordmark className="hidden min-[360px]:inline-flex" />
+        <Logo className="sm:hidden" />
+        <Logo wordmark className="hidden sm:inline-flex" />
       </Link>
       {/* Keep the five primary destinations visible at ordinary desktop
           widths. The adjacent menu carries the complete list without ever
@@ -75,6 +75,20 @@ export function MarketingNav({ hideAnnouncementOnMobile = false }) {
           );
         })}
       </nav>
+      {/* Oddlings is a public destination, not an account feature. Keep it
+          directly visible whenever the full desktop nav is collapsed. */}
+      <Link
+        href="/app/oddlings"
+        aria-current={path.startsWith('/app/oddlings') ? 'page' : undefined}
+        className={`inline-flex h-10 shrink-0 items-center gap-2 rounded-full border px-3 text-[13px] font-extrabold xl:hidden ${
+          path.startsWith('/app/oddlings')
+            ? 'border-vx-accent bg-vx-accent text-vx-accent-ink'
+            : 'border-vx-accent/50 bg-vx-accent/10 text-vx-accent hover:bg-vx-accent/20'
+        }`}
+      >
+        <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-current" />
+        Oddlings
+      </Link>
       <div className="flex flex-1 xl:flex-none items-center justify-end gap-1 sm:gap-2 shrink-0">
         <SiteSearch className="hidden sm:inline-flex" />
         <ThemeToggle className="hidden xl:inline-flex" />

@@ -40,8 +40,10 @@ test('there is one public nav, in one order', () => {
     assert.match(marketing, /<nav aria-label="Primary" className="hidden xl:flex /);
     assert.equal((marketing.match(/<nav aria-label="Primary"/g) || []).length, 1,
         'the header never renders two competing primary navigation rows');
-    assert.doesNotMatch(marketing, /href="\/app\/oddlings"[\s\S]*min-\[1700px\]:hidden[\s\S]*>\s*Oddlings\s*<\/Link>/,
-        'the compact header does not add a duplicate Oddlings pill beside the nav controls');
+    assert.match(marketing, /href="\/app\/oddlings"[\s\S]*aria-current=\{path\.startsWith\('\/app\/oddlings'\)[\s\S]*xl:hidden[\s\S]*>\s*<span[^>]*>[\s\S]*Oddlings\s*<\/Link>/,
+        'Oddlings stays directly visible in the public header when the desktop links collapse');
+    assert.match(marketing, /<Logo className="sm:hidden" \/>[\s\S]*<Logo wordmark className="hidden sm:inline-flex" \/>/,
+        'the phone uses the compact mark so the public Oddlings link and account controls fit');
     // A home-page section is a plain link: the browser glides to it on the home page.
     assert.match(marketing, /const Item = section \? 'a' : Link;/);
     assert.match(read('app/veyrnox/_components/MobileMenu.js'), /const Item = it\.href\.includes\('#'\) \? 'a' : Link;/);
