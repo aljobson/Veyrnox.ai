@@ -6,7 +6,6 @@ import { Main } from '../../../_components/Main';
 import { getSession, onSessionChange } from '../../../../lib/authClient';
 import { NETWORKS, listSocialAccounts } from '../../../../lib/socialConnectClient';
 import { getSocialAnalytics } from '../../../../lib/socialAnalyticsClient';
-import { getPublishPlan } from '../../../../lib/publishPlanClient';
 import { analyticsCsv, contentTypePerformance, hashtagPerformance, metricChange, postAnalyticsCsv, postInteractions, previousRange, rangeForDays, summarize, summarizePortfolio, topContent, totalPostMetric, totalViews } from '../../../../../lib/social/analyticsSummary.js';
 import { analyticsCapabilities, hasAnalytics } from '../../../../../lib/social/analyticsCapabilities.js';
 import { FollowersChart } from './FollowersChart';
@@ -98,10 +97,7 @@ function DashboardView({ report }) {
         setAccounts(nextAccounts);
         const supported = nextAccounts.filter((item) => hasAnalytics(item.network));
         setChosenId(supported.some((item)=>item.id===report.account) ? report.account : supported.length > 1 ? 'all' : supported[0]?.id || nextAccounts[0]?.id || '');
-        if (res.plansEnabled === true) {
-          try { const plan = await getPublishPlan(); if (active) setPlanTier(plan.entitlement?.tier || 'free'); }
-          catch { if (active) setPlanTier('free'); }
-        } else if (active) setPlanTier('legacy');
+        setPlanTier(res.plansEnabled === true ? (res.planTier || 'free') : 'legacy');
       })
       .catch(() => { if (active) setLoadError('Could not load your connected accounts. Check your connection and try again.'); });
     return () => { active = false; };
