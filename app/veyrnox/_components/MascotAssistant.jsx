@@ -361,12 +361,12 @@ export default function MascotAssistant() {
             setOpen((value) => !value);
             captureProductEvent('helper_toggle', { open: !open, route: pathname });
           }}
-          className="pointer-events-auto group relative block h-[116px] w-[112px] rounded-[34px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-accent"
+          className="pointer-events-auto group relative block rounded-[17px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-accent"
           animate={activeTarget || reduceMotion ? { y: 0 } : travelling
             ? { y: [0, -5, 0] }
             : { y: [0, -3, 0] }}
           transition={{ duration: travelling ? 0.52 : 2.8, repeat: Infinity, ease: 'easeInOut' }}
-          style={{ scaleX: facing }}
+          style={{ width: CHARACTER.width, height: CHARACTER.height, scaleX: facing }}
         >
           <span className="absolute inset-x-4 bottom-2 h-5 rounded-full bg-black/35 blur-md" aria-hidden="true" />
           <span className="relative block h-full w-full transition-[filter] group-hover:brightness-110">
