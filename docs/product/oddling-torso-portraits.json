@@ -1,0 +1,30 @@
+{
+  "generatedAt": "2026-10-15",
+  "workflow": "Built-in image generation; four original standalone full-body portraits converted to 1024x1536 WebP without cropping.",
+  "portraits": [
+    {
+      "id": "pip-parcel",
+      "size": "Small",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone full-body Oddlings gallery portrait, vertical 2:3 at 1024x1536. Photorealistic surreal editorial character photography, realistic skin and tailored fabric texture, premium cinematic studio lighting on a plain charcoal seamless background. One clearly adult original fictional human, confidently and respectfully portrayed; standing front-facing in a neutral pose, entire hairstyle and both shoes visible with padding. No props obscuring chest/waist. No text, labels, logos, watermark, collage or panels. Character's torso proportions are the defining visual and must read clearly, not merely clothing volume. Pip Parcel, an original fictional adult woman aged about 40, warm brown skin, dark cropped bob, confident calm face. Deliberately compact small torso: short and narrow chest-to-hip body segment, a high waist, long adult legs and normal adult head. Fitted burnt-orange zip jacket tucked into tailored charcoal trousers, cream boots. Arms relaxed away from the torso so its short compact silhouette is obvious.",
+      "asset": "public/oddlings/portraits/pip-parcel.webp"
+    },
+    {
+      "id": "mira-measure",
+      "size": "Medium",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone full-body Oddlings gallery portrait, vertical 2:3 at 1024x1536. Photorealistic surreal editorial character photography, realistic skin and tailored fabric texture, premium cinematic studio lighting on a plain charcoal seamless background. One clearly adult original fictional human, confidently and respectfully portrayed; standing front-facing in a neutral pose, entire hairstyle and both shoes visible with padding. No props obscuring chest/waist. No text, labels, logos, watermark, collage or panels. Character's torso proportions are the defining visual and must read clearly, not merely clothing volume. Mira Measure, an original fictional adult woman aged about 45, fair skin, silver cropped sculptural hair, calm curious expression. Medium-sized torso with balanced natural adult shoulder-to-waist width and chest-to-hip length, neither compressed nor elongated. Fitted cobalt-blue high-neck top tucked into tailored graphite trousers and silver shoes. Arms relaxed slightly away from the torso so its balanced silhouette is obvious. Fully clothed head to toe in modest opaque tailored workwear, no exposed chest or abdomen, fashion character design only.",
+      "asset": "public/oddlings/portraits/mira-measure.webp"
+    },
+    {
+      "id": "arlo-archive",
+      "size": "Large",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone full-body Oddlings gallery portrait, vertical 2:3 at 1024x1536. Photorealistic surreal editorial character photography, realistic skin and tailored fabric texture, premium cinematic studio lighting on a plain charcoal seamless background. One clearly adult original fictional human, confidently and respectfully portrayed; standing front-facing in a neutral pose, entire hairstyle and both shoes visible with padding. No props obscuring chest/waist. No text, labels, logos, watermark, collage or panels. Character's torso proportions are the defining visual and must read clearly, not merely clothing volume. Arlo Archive, an original fictional adult man aged about 50, deep brown skin, short sculpted black hair, neat moustache, warm composed expression. Deliberately large torso: visibly broad and elongated chest-to-hip segment, substantial long upper body compared with normal-sized adult head and comparatively shorter legs. Fitted forest-green structured waistcoat over cream shirt, tailored charcoal trousers and brown shoes. Arms slightly away from torso to show its broad long shape.",
+      "asset": "public/oddlings/portraits/arlo-archive.webp"
+    },
+    {
+      "id": "orla-overture",
+      "size": "Extra Large",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone full-body Oddlings gallery portrait, vertical 2:3 at 1024x1536. Photorealistic surreal editorial character photography, realistic skin and tailored fabric texture, premium cinematic studio lighting on a plain charcoal seamless background. One clearly adult original fictional human, confidently and respectfully portrayed; standing front-facing in a neutral pose, entire hairstyle and both shoes visible with padding. No props obscuring chest/waist. No text, labels, logos, watermark, collage or panels. Character's torso proportions are the defining visual and must read clearly, not merely clothing volume. Orla Overture, an original fictional adult woman aged about 55, light olive skin, auburn sculpted waves, calm theatrical expression. Deliberately exaggerated EXTRA-LARGE torso: dominant very broad and very long chest-to-hip upper body, much larger relative to normal-sized adult head and short legs, stylized editorial character proportions, not a normal-sized torso hidden by an oversized coat. Fitted plum tailored jumpsuit with clearly defined waist seam, subtle silver piping and black ankle boots. Arms held slightly away from torso, hands not obscuring it. Fully clothed head to toe in modest opaque tailored workwear, no exposed chest or abdomen, fashion character design only.",
+      "asset": "public/oddlings/portraits/orla-overture.webp"
+    }
+  ]
+}
