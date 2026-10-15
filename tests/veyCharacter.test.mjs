@@ -1,0 +1,25 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+
+const root = new URL('../', import.meta.url);
+
+test('Vey is articulated into independently animated body parts', async () => {
+    const source = await readFile(new URL('app/veyrnox/_components/VeyCharacter.jsx', root), 'utf8');
+    for (const part of ['head', 'left-arm', 'left-hand', 'right-arm', 'right-hand', 'left-leg', 'right-leg', 'eyes']) {
+        assert.match(source, new RegExp(`data-part="${part}"`), `missing articulated ${part}`);
+    }
+    for (const pose of ['idle', 'listening', 'walking', 'thinking', 'guiding', 'tapping']) {
+        assert.match(source, new RegExp(`['"]${pose}['"]`), `missing ${pose} pose`);
+    }
+    assert.match(source, /reducedMotion/);
+});
+
+test('Vey visibly points and taps before activating an approved target', async () => {
+    const source = await readFile(new URL('app/veyrnox/_components/MascotAssistant.jsx', root), 'utf8');
+    assert.match(source, /setActionPhase\('tapping'\)/);
+    assert.match(source, /data-testid="assistant-tap"/);
+    assert.match(source, /element\.isConnected\) element\.click\(\)/);
+    assert.match(source, /definition\.canActivate/);
+    assert.ok(source.indexOf("setActionPhase('tapping')") < source.indexOf('element.isConnected) element.click()'));
+});

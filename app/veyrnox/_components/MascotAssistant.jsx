@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -13,6 +12,7 @@ import {
   helpStartersForPath,
   normaliseHelpPlan,
 } from '../../../lib/productHelp.js';
+import VeyCharacter from './VeyCharacter';
 
 const HOME = { x: 18, y: 0 };
 const CHARACTER = { width: 112, height: 116 };
@@ -54,6 +54,8 @@ export default function MascotAssistant() {
   const inputRef = useRef(null);
   const targetRef = useRef(null);
   const timerRef = useRef(0);
+  const travelTimerRef = useRef(0);
+  const actionTimerRef = useRef(0);
   const messageIdRef = useRef(0);
   const transcriptRef = useRef(null);
   const [open, setOpen] = useState(false);
@@ -69,6 +71,8 @@ export default function MascotAssistant() {
   const [position, setPosition] = useState(HOME);
   const [facing, setFacing] = useState(1);
   const [pendingTarget, setPendingTarget] = useState(null);
+  const [travelling, setTravelling] = useState(false);
+  const [actionPhase, setActionPhase] = useState('none');
 
   const homePosition = useCallback(() => ({
     x: 18,
@@ -94,6 +98,14 @@ export default function MascotAssistant() {
     setHighlight(null);
   }, []);
 
+  const moveMascot = useCallback((nextPosition) => {
+    window.clearTimeout(travelTimerRef.current);
+    setTravelling(!reduceMotion);
+    setPosition(nextPosition);
+    if (reduceMotion) return;
+    travelTimerRef.current = window.setTimeout(() => setTravelling(false), 760);
+  }, [reduceMotion]);
+
   const measureTarget = useCallback((element, id) => {
     if (!element?.isConnected) return false;
     const rect = element.getBoundingClientRect();
@@ -105,11 +117,25 @@ export default function MascotAssistant() {
     const y = Math.max(72, Math.min(window.innerHeight - CHARACTER.height - 8, rect.top + rect.height / 2 - CHARACTER.height / 2));
     targetRef.current = element;
     setFacing(roomLeft ? 1 : -1);
-    setPosition({ x, y });
+    moveMascot({ x, y });
     setHighlight({ left: rect.left, top: rect.top, width: rect.width, height: rect.height });
     setActiveTarget(id);
     return true;
-  }, []);
+  }, [moveMascot]);
+
+  const activateTarget = useCallback((element, id) => {
+    window.clearTimeout(actionTimerRef.current);
+    const travelDelay = reduceMotion ? 0 : 760;
+    const tapDelay = reduceMotion ? 0 : 420;
+    actionTimerRef.current = window.setTimeout(() => {
+      setActionPhase('tapping');
+      captureProductEvent('helper_target_tap', { target: id, route: pathname });
+      actionTimerRef.current = window.setTimeout(() => {
+        if (element.isConnected) element.click();
+        actionTimerRef.current = window.setTimeout(() => setActionPhase('none'), reduceMotion ? 0 : 360);
+      }, tapDelay);
+    }, travelDelay);
+  }, [pathname, reduceMotion]);
 
   const locateTarget = useCallback((id, options = {}) => {
     const definition = HELP_TARGETS[id];
@@ -121,10 +147,10 @@ export default function MascotAssistant() {
     timerRef.current = window.setTimeout(() => {
       if (!measureTarget(element, id)) return;
       if (options.focus && element instanceof HTMLElement) element.focus({ preventScroll: true });
-      if (options.activate && definition.canActivate && element instanceof HTMLElement) element.click();
+      if (options.activate && definition.canActivate && element instanceof HTMLElement) activateTarget(element, id);
     }, reduceMotion ? 0 : 420);
     return true;
-  }, [measureTarget, reduceMotion]);
+  }, [activateTarget, measureTarget, reduceMotion]);
 
   const showTarget = useCallback((id, options = {}) => {
     const definition = HELP_TARGETS[id];
@@ -165,6 +191,8 @@ export default function MascotAssistant() {
       window.removeEventListener('resize', update);
       window.removeEventListener('scroll', update);
       window.clearTimeout(timerRef.current);
+      window.clearTimeout(travelTimerRef.current);
+      window.clearTimeout(actionTimerRef.current);
     };
   }, [activeTarget, homePosition, measureTarget, open, perchPosition]);
 
@@ -261,7 +289,17 @@ export default function MascotAssistant() {
   const action = resolveHelpAction(plan);
   const targetLabel = plan?.target ? HELP_TARGETS[plan.target]?.label : null;
   const showButton = action || (plan?.target && activeTarget !== plan.target);
-  const mood = busy ? 'thinking' : activeTarget ? 'guiding' : open ? 'listening' : 'idle';
+  const mood = actionPhase === 'tapping'
+    ? 'tapping'
+    : travelling
+      ? 'walking'
+      : busy
+        ? 'thinking'
+        : activeTarget
+          ? 'guiding'
+          : open
+            ? 'listening'
+            : 'idle';
 
   const resetConversation = useCallback(() => {
     setMessages([]);
@@ -270,9 +308,9 @@ export default function MascotAssistant() {
     setAnswerSource(null);
     setFeedback(null);
     clearTarget();
-    setPosition(homePosition());
+    moveMascot(homePosition());
     captureProductEvent('helper_reset', { route: pathname });
-  }, [clearTarget, homePosition, pathname]);
+  }, [clearTarget, homePosition, moveMascot, pathname]);
 
   const rateAnswer = useCallback((helpful) => {
     setFeedback(helpful ? 'helpful' : 'not_helpful');
@@ -298,6 +336,22 @@ export default function MascotAssistant() {
         )}
       </AnimatePresence>
 
+      <AnimatePresence>
+        {actionPhase === 'tapping' && highlight && (
+          <motion.div
+            key={`tap-${activeTarget}`}
+            data-testid="assistant-tap"
+            aria-hidden="true"
+            className="pointer-events-none fixed z-[59] h-8 w-8 rounded-full border-2 border-vx-accent bg-vx-accent/15"
+            style={{ left: highlight.left + highlight.width / 2 - 16, top: highlight.top + highlight.height / 2 - 16 }}
+            initial={reduceMotion ? false : { opacity: 0.95, scale: 0.35 }}
+            animate={reduceMotion ? { opacity: 0.9, scale: 1 } : { opacity: [0.95, 0], scale: [0.35, 2.1] }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.52, repeat: reduceMotion ? 0 : Infinity, ease: 'easeOut' }}
+          />
+        )}
+      </AnimatePresence>
+
       <motion.div
         data-testid="assistant-mascot"
         data-targeting={activeTarget || undefined}
@@ -316,21 +370,16 @@ export default function MascotAssistant() {
             captureProductEvent('helper_toggle', { open: !open, route: pathname });
           }}
           className="group relative block h-[116px] w-[112px] rounded-[34px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-accent"
-          animate={reduceMotion ? undefined : busy
-            ? { rotate: [-2, 2, -2], y: [0, -5, 0] }
-            : { y: [0, -7, 0], rotate: [0, 1.5, 0, -1.5, 0] }}
-          transition={{ duration: busy ? 0.7 : 3.6, repeat: Infinity, ease: 'easeInOut' }}
+          animate={reduceMotion ? undefined : travelling
+            ? { y: [0, -5, 0] }
+            : { y: [0, -3, 0] }}
+          transition={{ duration: travelling ? 0.52 : 2.8, repeat: Infinity, ease: 'easeInOut' }}
           style={{ scaleX: facing }}
         >
           <span className="absolute inset-x-4 bottom-2 h-5 rounded-full bg-black/35 blur-md" aria-hidden="true" />
-          <Image
-            src="/assistant/veyrnox-helper.png"
-            alt=""
-            width={384}
-            height={399}
-            loading="eager"
-            className="relative h-full w-full object-contain drop-shadow-[0_12px_22px_rgb(0_0_0/0.34)] transition-[filter] group-hover:brightness-110"
-          />
+          <span className="relative block h-full w-full transition-[filter] group-hover:brightness-110">
+            <VeyCharacter pose={mood} reducedMotion={reduceMotion} />
+          </span>
           {!open && !activeTarget && !busy && (
             <span className="absolute -right-2 top-0 rounded-full border border-vx-border bg-vx-panel px-2.5 py-1 font-vx-mono text-[10px] font-bold tracking-[0.08em] text-vx-accent shadow-lg" style={{ transform: `scaleX(${facing})` }}>
               ASK VEY
@@ -338,7 +387,7 @@ export default function MascotAssistant() {
           )}
           {(busy || activeTarget) && (
             <span className="absolute -right-3 top-0 rounded-full border border-vx-accent/40 bg-vx-panel px-2.5 py-1 font-vx-mono text-[9px] font-bold tracking-[0.08em] text-vx-accent shadow-lg" style={{ transform: `scaleX(${facing})` }}>
-              {busy ? 'THINKING' : 'GUIDING'}
+              {actionPhase === 'tapping' ? 'TAPPING' : travelling ? 'MOVING' : busy ? 'THINKING' : 'POINTING'}
             </span>
           )}
         </motion.button>
@@ -403,7 +452,7 @@ export default function MascotAssistant() {
                 </button>
               )}
               {activeTarget && (
-                <button type="button" onClick={() => { clearTarget(); setPosition(homePosition()); }}
+                <button type="button" onClick={() => { clearTarget(); moveMascot(homePosition()); }}
                   className="ml-2 mt-3 rounded-full border border-vx-border px-4 py-2 text-sm font-semibold text-vx-fg-muted hover:text-vx-fg">
                   Park Vey
                 </button>

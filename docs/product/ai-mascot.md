@@ -2,6 +2,12 @@
 
 Vey is the animated helper mounted once in the Veyrnox product layout, so it is available in the studio and on public Models, Templates, Tools, Pricing, MCP and Social Cinema routes. It answers how-to questions, moves beside a product-owned target, highlights it, and can navigate, focus a writing field or activate a specifically reviewed safe control.
 
+## Character animation
+
+Vey is a code-native articulated character rather than a single moving image. Its head, eyes, arms, hands, legs and feet animate independently across six product states: idle, listening, walking, thinking, pointing and tapping. Vey turns toward the selected control and respects the user's reduced-motion preference.
+
+When Vey directs someone to a control, it walks beside the target, points with its hand and keeps a pulsing outline around the control. For a reviewed reversible control, Vey shows a tap ripple and hand-tap animation before activating it. The user must first choose Vey's suggested action; Vey never clicks arbitrary page content.
+
 ## Knowledge model
 
 Vey combines two product-owned knowledge layers:
@@ -31,6 +37,8 @@ Coverage includes Explore/Templates/Models/Tools, image/video/audio generation, 
 `lib/productHelp.js` owns the only selectors and actions Vey may use. The model can return an allowlisted target id; it can never return CSS or arbitrary JavaScript. `show_target` may navigate, scroll and highlight. `focus_target` is further restricted to reviewed writing fields.
 
 `activate_target` can click only targets explicitly carrying `canActivate: true` in that registry. It is intended for reversible interface controls such as opening Chat settings or an Oddling History tab. Any other target is downgraded to highlighting.
+
+The visible activation sequence is walk, point, tap, then click. The click is delayed until the movement and tap animation have played, and it is cancelled if the target has left the page.
 
 Vey never generates or sends content, spends Credits, buys a pack, accepts terms, confirms rights, publishes, approves, connects accounts, changes security, deletes, suspends or performs moderation decisions.
 
