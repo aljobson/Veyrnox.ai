@@ -13,11 +13,13 @@ import {
 import { writeStudioDraft } from '../_lib/landingDraft';
 import {
   ODDLING_MOTIONS,
+  ODDLING_PRESET_SOURCES,
   ODDLING_SCENES,
   ODDLING_STUDIO_SECTIONS,
   buildOddlingStudioPrompt,
   gallerySource,
   groupById,
+  oddlingsForSource,
   randomizeOddlingStyle,
   readOddlingLibrary,
   saveOddlingToLibrary,
@@ -137,12 +139,7 @@ export default function OddlingStudio() {
     if (reference?.url) URL.revokeObjectURL(reference.url);
   }, [reference]);
 
-  const gallery = useMemo(() => {
-    if (source === 'body') return ODDLING_ARCHETYPES.filter((item) => ['duchess-volume', 'major-minor', 'bughead-brenda', 'pam-bouffant'].includes(item.id));
-    if (source === 'fashion') return ODDLING_ARCHETYPES.filter((item) => item.kind === 'human' && !['duchess-volume', 'major-minor', 'bughead-brenda', 'pam-bouffant'].includes(item.id));
-    if (source === 'beings') return ODDLING_ARCHETYPES.filter((item) => item.kind === 'creature');
-    return ODDLING_ARCHETYPES;
-  }, [source]);
+  const gallery = useMemo(() => oddlingsForSource(source), [source]);
 
   const promptPreview = buildOddlingStudioPrompt({ picks, mode, motionId, scene, referenceNote });
   const selectedTraits = CHARACTER_GROUPS.filter((group) => picks[group.id]).length;
@@ -327,9 +324,9 @@ export default function OddlingStudio() {
           <div className="mx-auto max-w-6xl">
             <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
               <div>
-                <span className="font-vx-mono text-[10px] font-bold tracking-[0.16em] text-vx-accent">ORIGINAL CAST · NOT REAL PEOPLE</span>
+                <span className="font-vx-mono text-[10px] font-bold tracking-[0.16em] text-vx-accent">24 HUMAN ORIGINALS · 4 OTHER BEINGS</span>
                 <h2 className="vx-display mt-2 text-5xl sm:text-6xl">Your weird human, your recurring hit.</h2>
-                <p className="mt-3 max-w-2xl text-vx-fg-body">Start from a cast member, inspect the character sheet, then remake every trait. The premise is reusable across portraits and motion.</p>
+                <p className="mt-3 max-w-2xl text-vx-fg-body">Start with body chaos, impossible silhouettes, fashion disasters, sculptural hair or weird modern basics. Inspect the character sheet, then remake every trait for portraits and motion.</p>
               </div>
               <div className="flex rounded-xl border border-vx-border bg-vx-panel p-1" role="tablist" aria-label="Workspace view">
                 <button type="button" role="tab" aria-selected={workspace === 'explore'} onClick={() => setWorkspace('explore')} className={`rounded-lg px-4 py-2 text-sm font-bold ${workspace === 'explore' ? 'bg-vx-base text-vx-fg' : 'text-vx-fg-muted'}`}>Explore</button>
@@ -340,10 +337,9 @@ export default function OddlingStudio() {
             {workspace === 'explore' ? (
               <>
                 <div className="mt-8 flex flex-wrap gap-2" role="tablist" aria-label="Preset source">
-                  {[
-                    ['body', 'Body chaos'], ['fashion', 'Style creatures'], ['beings', 'Other beings'], ['all', 'All originals'],
-                  ].map(([id, label]) => <button key={id} type="button" role="tab" aria-selected={source === id} onClick={() => setSource(id)} className={chip(source === id)}>{label}</button>)}
+                  {ODDLING_PRESET_SOURCES.map(({ id, label }) => <button key={id} type="button" role="tab" aria-selected={source === id} onClick={() => setSource(id)} className={chip(source === id)}>{label}</button>)}
                 </div>
+                <p className="mt-3 font-vx-mono text-[9px] font-bold tracking-[0.12em] text-vx-fg-faint">{gallery.length} ORIGINAL CHARACTER{gallery.length === 1 ? '' : 'S'}</p>
                 <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
                   {gallery.map((oddling) => <GalleryCard key={oddling.id} oddling={oddling} onSheet={setSheet} onRecreate={loadOddling} />)}
                 </div>
