@@ -38,7 +38,7 @@ test('motion never zooms beyond the full portrait and leaves the source untouche
   assert.match(studio, /<CharacterPortrait oddling=\{oddling\} \/>/);
 });
 
-test('all originals have their own bounded head, eye and chest calibration', () => {
+test('all originals have bounded head, eye, chest, arm and lower-body calibration', () => {
   assert.deepEqual(Object.keys(ODDLING_PUPPET_RIGS).sort(), ODDLING_ARCHETYPES.map(({ id }) => id).sort());
   assert.equal(puppetRig('__proto__'), null);
   assert.equal(puppetRig('../../somewhere'), null);
@@ -50,20 +50,31 @@ test('all originals have their own bounded head, eye and chest calibration', () 
     assert.equal(rig.eyes.length, 2);
     rig.eyes.forEach(([, , rx, ry]) => assert.ok(rx > 0 && ry > 0, id));
     assert.ok(rig.chest[2] > 0 && rig.chest[3] > 0, id);
+    assert.equal(rig.arms.length, 2, id);
+    rig.arms.forEach(([x, y, rx, ry]) => {
+      assert.ok(x > 0 && x < 1024 && y > 0 && y < 1536, id);
+      assert.ok(rx > 0 && ry > 0, id);
+    });
+    assert.ok(rig.lower[0] > 0 && rig.lower[0] < 1024 && rig.lower[1] > 0 && rig.lower[1] < 1536, id);
+    assert.ok(rig.lower[2] > 0 && rig.lower[3] > 0, id);
     assert.ok(rig.tilt > 0 && rig.tilt <= 0.012, id);
     assert.equal(typeof rig.shutter, 'boolean');
   }
 });
 
-test('every rig actually blinks, breathes and moves its head, with bounded independent timing', () => {
+test('every rig blinks, breathes, moves its head, sways its arms and takes in-place steps', () => {
   for (const id of Object.keys(ODDLING_PUPPET_RIGS)) {
-    assert.deepEqual(puppetPose(0, id), { blink: 0, breath: 0, angle: 0, nod: 0 });
+    assert.deepEqual(puppetPose(0, id), {
+      blink: 0, breath: 0, angle: 0, nod: 0,
+      armSwing: 0, weightShift: 0, step: 0, torsoSway: 0,
+    });
     const poses = Array.from({ length: 1200 }, (_, index) => puppetPose(index / 120, id));
-    for (const feature of ['blink', 'breath', 'angle', 'nod']) {
+    for (const feature of ['blink', 'breath', 'angle', 'nod', 'armSwing', 'weightShift', 'step', 'torsoSway']) {
       assert.ok(poses.some((pose) => Math.abs(pose[feature]) > (feature === 'blink' ? 0.97 : 0.001)), `${id}: ${feature}`);
     }
-    assert.ok(poses.every(({ blink, breath, angle, nod }) => blink >= 0 && blink <= 1 && Math.abs(breath) <= 0.018
-      && Math.abs(angle) <= puppetRig(id).tilt && Math.abs(nod) <= 2.2));
+    assert.ok(poses.every(({ blink, breath, angle, nod, armSwing, weightShift, step, torsoSway }) => blink >= 0 && blink <= 1
+      && Math.abs(breath) <= 0.018 && Math.abs(angle) <= puppetRig(id).tilt && Math.abs(nod) <= 2.2
+      && [armSwing, weightShift, step, torsoSway].every((value) => Math.abs(value) <= 1)));
     assert.deepEqual(puppetPose(NaN, id), puppetPose(0, id));
   }
 });
@@ -91,4 +102,6 @@ test('stationary plate retains every pixel outside the head matte and never edit
     }
   }
   assert.match(PUPPET_FRAGMENT_SHADER, /max\(0\.0, 1\.0 - dot\(localChest, localChest\)\)/);
+  assert.match(PUPPET_FRAGMENT_SHADER, /armWeight0/);
+  assert.match(PUPPET_FRAGMENT_SHADER, /lowerWeight/);
 });

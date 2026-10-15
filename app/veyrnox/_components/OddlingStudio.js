@@ -387,7 +387,7 @@ export default function OddlingStudio() {
                   <p className="font-vx-mono text-[9px] font-bold tracking-[0.12em] text-vx-fg-faint">{gallery.length} ORIGINAL CHARACTER{gallery.length === 1 ? '' : 'S'}</p>
                   <button type="button" aria-pressed={previewsPlaying} onClick={() => setPreviewsPlaying((current) => !current)} className={chip(previewsPlaying)}>{previewsPlaying ? 'Pause previews' : 'Play previews'}</button>
                 </div>
-                <p className="mt-2 text-xs text-vx-fg-muted">Free puppet previews · blinks, breathing and head movement with still backgrounds · no generation or credits. Covered eyes use stylized shutters. Reduced-motion settings respected. For generated action videos, use Animate this character (paid).</p>
+                <p className="mt-2 text-xs text-vx-fg-muted">Free puppet previews · blinks, breathing, head movement, arm sway and in-place steps with still backgrounds · no generation or credits. Covered eyes use stylized shutters. Reduced-motion settings respected. For generated action videos, use Animate this character (paid).</p>
                 <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
                   {gallery.map((oddling) => <GalleryCard key={oddling.id} oddling={oddling} onSheet={setSheet} onRecreate={loadOddling} onAnimate={animateOddling} previewsPlaying={previewsPlaying && motionAllowed} />)}
                 </div>
