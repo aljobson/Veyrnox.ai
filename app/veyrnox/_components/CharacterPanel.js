@@ -180,7 +180,7 @@ export function CharacterPanel({ enabled, onToggle, picks, onChange }) {
                 <button onClick={mutateOne} className={pill(false)}>Remix one</button>
                 <button onClick={() => { onChange({}); setNotice('Clean passport.'); }} className={pill(false)}>Reset</button>
               </div>
-              <p className="mt-2 text-[10px] leading-relaxed text-vx-fg-faint">Remix one changes a styling trait. Choose body shape, hand size and foot size yourself in Body.</p>
+              <p className="mt-2 text-[10px] leading-relaxed text-vx-fg-faint">Remix one changes a styling trait. Choose body shape and arm, leg, hand and foot sizes yourself in Body.</p>
               <div className="mt-3 grid grid-cols-2 gap-2">
                 {CHARACTER_GROUPS.filter((group) => group.tab === tab).map((group) => (
                   <label key={group.id} className="flex flex-col gap-1">
