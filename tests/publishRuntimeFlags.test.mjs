@@ -2,11 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { publishRuntimeFeatureEnabled } from '../lib/social/runtimeFlags.js';
-import { freeSocialAccountLimit, socialAccountLimitForTier } from '../lib/social/accountAllowance.js';
+import { freeSocialAccountLimit, socialAccountLimitForTier, socialConnectionWriter } from '../lib/social/accountAllowance.js';
 import { parseJsonc } from '../scripts/check-migration-ledger.mjs';
 
-const grouped = (plans = 'false', videoDestinations = 'false', inbox = 'false', smartlinks = 'false', contentPresets = 'false', queues = 'false', approvals = 'false', teams = 'false', variants = 'false', reports = 'false', customerApi = 'false', customerWebhooks = 'false', scheduledReports = 'false', inboxWorkflows = 'false', ads = 'false', commerce = 'false', rssAutolists = 'false', reportExports = 'false', reportDelivery = 'false') => ({
-    PUBLISH_RUNTIME_FLAGS: JSON.stringify({ plans, videoDestinations, inbox, smartlinks, contentPresets, queues, approvals, teams, variants, reports, customerApi, customerWebhooks, scheduledReports, inboxWorkflows, ads, commerce, rssAutolists, reportExports, reportDelivery }),
+const grouped = (plans = 'false', videoDestinations = 'false', inbox = 'false', smartlinks = 'false', contentPresets = 'false', queues = 'false', approvals = 'false', teams = 'false', variants = 'false', reports = 'false', customerApi = 'false', customerWebhooks = 'false', scheduledReports = 'false', inboxWorkflows = 'false', ads = 'false', commerce = 'false', rssAutolists = 'false', reportExports = 'false', reportDelivery = 'false', multiAccount = 'false') => ({
+    PUBLISH_RUNTIME_FLAGS: JSON.stringify({ plans, videoDestinations, inbox, smartlinks, contentPresets, queues, approvals, teams, variants, reports, customerApi, customerWebhooks, scheduledReports, inboxWorkflows, ads, commerce, rssAutolists, reportExports, reportDelivery, multiAccount }),
 });
 
 test('grouped Publish controls resolve independently and retain legacy rollback overrides', () => {
@@ -83,6 +83,8 @@ test('remote environments enable plans while native video destinations remain of
         assert.equal(freeSocialAccountLimit(vars), 1);
         assert.equal(socialAccountLimitForTier('free', vars), 1);
         assert.equal(socialAccountLimitForTier('publish', vars), 5);
+        assert.equal(socialConnectionWriter(vars), 'record_social_multi_account_connection');
+        assert.equal(Object.hasOwn(vars, 'PUBLISH_MULTI_ACCOUNT_ENABLED'), false);
         assert.equal(Object.hasOwn(vars, 'PUBLISH_PLANS_ENABLED'), false);
         assert.equal(Object.hasOwn(vars, 'PUBLISH_VIDEO_DESTINATIONS_ENABLED'), false);
         assert.equal(Object.hasOwn(vars, 'PUBLISH_INBOX_ENABLED'), false);
