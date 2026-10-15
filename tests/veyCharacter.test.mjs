@@ -17,9 +17,10 @@ test('Vey is articulated into independently animated body parts', async () => {
 
 test('Vey visibly points and taps before activating an approved target', async () => {
     const source = await readFile(new URL('app/veyrnox/_components/MascotAssistant.jsx', root), 'utf8');
+    const pointer = await readFile(new URL('app/veyrnox/_lib/useVeyPointer.js', root), 'utf8');
     assert.match(source, /setActionPhase\('tapping'\)/);
     assert.match(source, /data-testid="assistant-tap"/);
     assert.match(source, /element\.isConnected\) element\.click\(\)/);
-    assert.match(source, /definition\.canActivate/);
+    assert.match(pointer, /options\.activate && HELP_TARGETS\[id\]\.canActivate/);
     assert.ok(source.indexOf("setActionPhase('tapping')") < source.indexOf('element.isConnected) element.click()'));
 });

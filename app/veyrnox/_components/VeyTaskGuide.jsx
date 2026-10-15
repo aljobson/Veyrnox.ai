@@ -44,8 +44,9 @@ export default function VeyTaskGuide({ visible, pathname, onPoint, onStop, onAct
   if (liveJob && ['succeeded', 'failed'].includes(liveJob.state)) effectiveView.jobs = view.jobs;
   const step = journeyStep(task, effectiveView);
   useEffect(() => {
-    if (visible && !chatting && step?.target && !['recover', 'waiting'].includes(step.key)) onPoint(step.target, { align: 'start' });
-  }, [visible, chatting, step?.key, step?.target, onPoint]);
+    if (visible && !chatting && step?.target && !['recover', 'waiting'].includes(step.key)) onPoint(step.target, { modelKind: step.key === 'model' ? task.phase : undefined });
+    else onStop();
+  }, [visible, chatting, step?.key, step?.target, task?.phase, onPoint, onStop]);
   useEffect(() => {
     if (!visible || step?.key !== 'load' || pathname !== '/app/oddlings') return;
     const reveal = () => window.dispatchEvent(new CustomEvent(REVEAL_SAVED_ODDLING, { detail: { id: task.passportId } }));
@@ -77,7 +78,7 @@ export default function VeyTaskGuide({ visible, pathname, onPoint, onStop, onAct
       {jobId && <p className="mt-2 break-all font-vx-mono text-[10px] text-vx-fg-muted">Tracked job: {jobId}{task.phase === 'image' ? ' · first image if generating a batch' : ''}</p>}
       {(recoveryError || view.prepareError) && <p role="alert" className="mt-2 text-sm text-vx-danger">{recoveryError || view.prepareError}</p>}
       <div className="mt-3 flex flex-wrap gap-2">
-        <button type="button" className={pill} onClick={() => onPoint(step.target, { align: 'start' })}>Show this step</button>
+        <button type="button" className={pill} onClick={() => onPoint(step.target, { modelKind: step.key === 'model' ? task.phase : undefined })}>Show this step</button>
         {step.review && <button type="button" className={pill} onClick={() => updateJourney({ reviewed: { ...task.reviewed, [step.key]: step.stamp } })}>Reviewed · next</button>}
         {step.adopt && <button type="button" className={pill} onClick={() => updateJourney({ imageId: view.sourceId, reviewed: {} })}>Use this selected Library image</button>}
         {step.prepare && <button type="button" disabled={view.preparing} className={pill} onClick={prepare}>{view.preparing ? 'Preparing…' : 'Prepare video from this image'}</button>}

@@ -46,6 +46,8 @@ The compact guide docks below the pointed control and can move to either side of
 
 `lib/productHelp.js` owns the only selectors and actions Vey may use. The model can return an allowlisted target id; it can never return CSS or arbitrary JavaScript. `show_target` may navigate, scroll and highlight. `focus_target` is further restricted to reviewed writing fields.
 
+Pointing resolves a section marker to its actual control: the selected duration/count pill, the source Library button, the rights checkbox, or the prompt field. A model-selection step points at an eligible model button, not the MODEL heading. `useVeyPointer` measures the control after scrolling and follows scroll, resize and layout changes. `lib/veyPointer.js` positions the body and maps the target into the mirrored SVG; Vey’s articulated hand lands inside the control. Body bobbing is paused while pointing, and the decorative hand cannot intercept clicks. Closing the guide removes its pointer. A pointed checkbox remains unchecked and a pointed Generate button is never activated.
+
 `activate_target` can click only targets explicitly carrying `canActivate: true` in that registry. It is intended for reversible interface controls such as opening Chat settings or an Oddling History tab. Any other target is downgraded to highlighting.
 
 The visible activation sequence is walk, point, tap, then click. The click is delayed until the movement and tap animation have played, and it is cancelled if the target has left the page.
