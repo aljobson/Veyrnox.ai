@@ -27,6 +27,8 @@ function fromApi(models) {
     aspects: m.capabilities?.inputs?.aspect_ratio?.values || null,
     // Customer-facing facts about the one output tier this catalog price buys.
     presentation: m.capabilities?.presentation || {},
+    resolutions: m.capabilities?.inputs?.output_resolution?.values || [],
+    audioOptions: m.capabilities?.inputs?.audio_enabled?.values || [],
     // Auto Short (ADR-0029): takes a topic instead of a prompt.
     takesTopic: !!m.capabilities?.inputs?.topic,
     // Clip Editor: edits Library files, so it is started from the Library, never Create.

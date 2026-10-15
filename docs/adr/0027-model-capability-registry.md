@@ -66,3 +66,25 @@ wrong field name.
   through the new path; its reactivation is a separate migration.
 - Price is unchanged: `model_catalog.credits_5s` is still normative, and the
   record only decides which requests that price covers.
+
+## 2026-10-15: Selectable video outputs within the priced ceiling
+
+Chat exposes Seedance 2.0 Fast's `output_resolution` (480p or 720p) and
+`audio_enabled` (boolean). The public catalog declares these choices; the
+adapter explicitly sends them as `resolution` and `generate_audio`.
+Omitted choices preserve the existing 720p/audio-on request. Model defaults
+are distinct from fixed fields, so an explicit `false` survives shaping.
+
+The existing catalog price covers 720p with audio. Both choices use that
+same flat price, stated beside the controls. No discount is promised for
+480p or audio off. Duration pricing, free allowance, debit and refund paths
+are unchanged. 1080p and 4K remain refused. Output choices on a model that
+does not declare them are rejected before source inspection or debit,
+rather than silently dropped. Switching models clears choices that cannot
+be expressed by the new model.
+
+Verified against OpenRouter's public video model discovery endpoint on
+2026-10-15: Seedance 2.0 Fast advertises 480p/720p, `generate_audio`, and equal
+video-token rates with/without audio. See
+[model discovery](https://openrouter.ai/api/v1/videos/models) and
+[request parameters](https://openrouter.ai/docs/guides/overview/multimodal/video-generation).

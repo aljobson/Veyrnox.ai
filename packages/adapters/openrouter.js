@@ -61,15 +61,19 @@ export function buildRequest(modelSlug, inputs) {
     const seconds = inputs.duration_seconds || 5;
     const duration = spec.durations[seconds];
     if (!duration) return { ok: false, error: 'duration_not_supported' };
+    const resolution = inputs.output_resolution ?? spec.resolution;
+    if (!['480p', '720p'].includes(resolution)) return { ok: false, error: 'inputs_invalid:output_resolution' };
+    const audio = inputs.audio_enabled ?? true;
+    if (typeof audio !== 'boolean') return { ok: false, error: 'inputs_invalid:audio_enabled' };
 
     const body = {
         model: modelSlug,
         prompt,
         duration,
-        resolution: spec.resolution,
+        resolution,
         aspect_ratio: aspect,
         // Always explicit: the docs disagree on the default.
-        generate_audio: true,
+        generate_audio: audio,
     };
     if (Number.isInteger(inputs.seed)) body.seed = inputs.seed;
     if (inputs.image_url) {

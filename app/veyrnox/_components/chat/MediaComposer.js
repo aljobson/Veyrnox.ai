@@ -30,6 +30,7 @@ function OutputFact({ children, title }) {
 export function MediaComposer({ kind, media, prompt, onPrompt }) {
   const {
     availableModels, model, selectModel, duration, setDuration, aspect, setAspect, count, setCount,
+    resolution, setResolution, audio, setAudio,
     voice, setVoice, sources, pickSource, libraryFor, setLibraryFor, consent, setConsent,
     balance, cost, freeLeft, error, jobs, generating, sending, missingSource, missingConsent, missingVoice,
     generate, catalogLive,
@@ -73,10 +74,27 @@ export function MediaComposer({ kind, media, prompt, onPrompt }) {
               {[1, 2, 3, 4].map((item) => <option key={item} value={item}>{item}</option>)}
             </SelectControl>
           )}
-          {model && model.kind !== 'audio' && <OutputFact title="Resolution is fixed to the tier included in this model's displayed price.">{resolutionLabel(model)} fixed</OutputFact>}
-          {model?.kind === 'video' && <OutputFact title="Native video audio is fixed by the selected model and its displayed price.">{videoAudioLabel(model)}</OutputFact>}
+          {model?.resolutions?.length > 1 ? (
+            <SelectControl label={resolutionLabel(model, resolution)} ariaLabel="Output resolution" value={resolution} onChange={setResolution} disabled={busy}>
+              {model.resolutions.map((item) => <option key={item} value={item}>{item}</option>)}
+            </SelectControl>
+          ) : model && model.kind !== 'audio' && <OutputFact title="This model offers one resolution at its displayed price.">{resolutionLabel(model)} fixed</OutputFact>}
+          {model?.kind === 'video' && (model.audioOptions?.length > 1 ? (
+            <button type="button" role="switch" aria-label="Generate video audio" aria-checked={audio} disabled={busy}
+              onClick={() => setAudio(!audio)} className={`${control} aria-checked:border-vx-accent aria-checked:text-vx-accent`}>
+              <span className={`h-2 w-2 rounded-full ${audio ? 'bg-vx-accent' : 'bg-vx-fg-faint'}`} aria-hidden="true" />{videoAudioLabel(model, audio)}
+            </button>
+          ) : <OutputFact title="Audio cannot be changed on this model at its displayed price.">{videoAudioLabel(model)}</OutputFact>)}
           {model?.kind === 'audio' && actualLength && <OutputFact>{actualLength} output</OutputFact>}
         </div>
+
+        {model?.kind === 'video' && (model.resolutions?.length || model.audioOptions?.length) > 0 && (
+          <p className="px-4 py-2 text-xs text-vx-fg-muted">These output choices are included at the same price.</p>
+        )}
+        {model?.kind === 'video' && !model.audioOptions?.length && availableModels.some((item) => !item.gated && item.audioOptions?.length > 1 && item.resolutions?.length > 1) && (
+          <button type="button" disabled={busy} onClick={() => selectModel(availableModels.find((item) => !item.gated && item.audioOptions?.length > 1 && item.resolutions?.length > 1).id)}
+            className="px-4 py-2 text-left text-xs text-vx-accent underline disabled:opacity-50">Choose a model with resolution and audio controls</button>
+        )}
 
         {model && Object.keys(model.media || {}).length > 0 && (
           <div className="border-b border-vx-border px-3 pb-3">
@@ -115,7 +133,7 @@ export function MediaComposer({ kind, media, prompt, onPrompt }) {
       <div className="border-t border-vx-border px-3 py-2 text-xs text-vx-fg-muted">
         {!catalogLive ? 'Live model pricing is unavailable, so generation is paused.'
           : !model ? `No ${kind} model is currently available.`
-            : <><span className="font-vx-mono text-vx-money vx-num">{freeLeft > 0 && cost === 0 ? 'Free' : credits(cost)}</span> · {actualLength ? `${actualLength} · ` : ''}{aspect ? `${aspect} · ` : ''}{model.kind === 'audio' ? 'Audio output' : resolutionLabel(model)}{model.kind === 'video' ? ` · ${videoAudioLabel(model)}` : ''}. Failed jobs return their Credits; finished media is saved to Library{resultReady ? ' and shown above' : ''}.</>}
+            : <><span className="font-vx-mono text-vx-money vx-num">{freeLeft > 0 && cost === 0 ? 'Free' : credits(cost)}</span> · {actualLength ? `${actualLength} · ` : ''}{aspect ? `${aspect} · ` : ''}{model.kind === 'audio' ? 'Audio output' : resolutionLabel(model, resolution)}{model.kind === 'video' ? ` · ${videoAudioLabel(model, audio)}` : ''}. Failed jobs return their Credits; finished media is saved to Library{resultReady ? ' and shown above' : ''}.</>}
       </div>
 
       {error && <p role="alert" className="border-t border-vx-danger/30 bg-vx-danger/[0.06] px-3 py-2 text-sm text-vx-danger">{errorCopy}{error.note ? ` ${error.note}` : ''}</p>}

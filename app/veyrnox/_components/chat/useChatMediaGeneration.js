@@ -12,6 +12,7 @@ import {
   chatMediaModels,
   firstOpenMediaModel,
   mediaGenerationCount,
+  mediaOutputSettings,
   supportedAspect,
   supportedDuration,
 } from '../../_lib/chatMedia';
@@ -27,6 +28,8 @@ export function useChatMediaGeneration({ kind, models, catalogLive }) {
   const [durationWanted, setDuration] = useState(5);
   const [aspectWanted, setAspect] = useState('16:9');
   const [countWanted, setCount] = useState(1);
+  const [resolutionWanted, setResolution] = useState(null);
+  const [audioWanted, setAudio] = useState(null);
   const [voice, setVoice] = useState('');
   const [sources, setSources] = useState({});
   const [libraryFor, setLibraryFor] = useState(null);
@@ -43,6 +46,7 @@ export function useChatMediaGeneration({ kind, models, catalogLive }) {
   const duration = supportedDuration(model, durationWanted);
   const aspect = supportedAspect(model, aspectWanted);
   const count = mediaGenerationCount(model, countWanted);
+  const outputSettings = mediaOutputSettings(model, resolutionWanted, audioWanted);
   const unitCost = model ? model.credits * (model.kind === COMPOSER_KINDS.VIDEO ? Math.ceil(duration / 5) : 1) : 0;
   const freeLeft = freeLeftFor(freeMap, model?.id);
   const cost = freeLeft > 0 ? freeCost(unitCost, count, freeLeft) : unitCost * count;
@@ -96,6 +100,8 @@ export function useChatMediaGeneration({ kind, models, catalogLive }) {
     clearSources();
     setError(null);
     setVoice('');
+    setResolution(null);
+    setAudio(null);
   }, [kind, clearSources]);
 
   function pickSource(slot, file, asset = null) {
@@ -137,6 +143,7 @@ export function useChatMediaGeneration({ kind, models, catalogLive }) {
       aspect_ratio: aspect || undefined,
       duration_seconds: model.kind === COMPOSER_KINDS.VIDEO ? duration : undefined,
       ...settingsInputs(model, { seed: '', negative: '', voice }),
+      ...outputSettings,
     };
     Object.keys(inputs).forEach((key) => inputs[key] === undefined && delete inputs[key]);
 
@@ -201,6 +208,10 @@ export function useChatMediaGeneration({ kind, models, catalogLive }) {
     setAspect,
     count,
     setCount,
+    resolution: outputSettings.output_resolution,
+    setResolution,
+    audio: outputSettings.audio_enabled,
+    setAudio,
     voice,
     setVoice,
     sources,
