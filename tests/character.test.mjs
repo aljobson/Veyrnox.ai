@@ -81,6 +81,8 @@ test('human starters cover intentionally different body silhouettes and wearable
     assert.equal(byId['colonel-crumb'].picks.body_type, 'Very Skinny');
     assert.equal(byId['baron-boucle'].picks.body_type, 'Fat');
     assert.equal(byId['tall-order'].picks.body_type, 'Very Skinny');
+    assert.equal(byId['tall-order'].picks.height, 'Tall');
+    assert.equal(byId['tall-order'].picks.proportions, 'Natural');
     assert.equal(byId['bubble-barry'].picks.body_type, 'Fat');
     assert.equal(byId['max-rep'].picks.body_type, 'Hyper-Muscular');
     assert.equal(byId['shelf-life'].picks.body_type, 'Pear');
