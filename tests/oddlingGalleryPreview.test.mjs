@@ -38,7 +38,7 @@ test('motion never zooms beyond the full portrait and leaves the source untouche
   assert.match(studio, /<CharacterPortrait oddling=\{oddling\} \/>/);
 });
 
-test('all 28 originals have their own bounded head, eye and chest calibration', () => {
+test('all originals have their own bounded head, eye and chest calibration', () => {
   assert.deepEqual(Object.keys(ODDLING_PUPPET_RIGS).sort(), ODDLING_ARCHETYPES.map(({ id }) => id).sort());
   assert.equal(puppetRig('__proto__'), null);
   assert.equal(puppetRig('../../somewhere'), null);
