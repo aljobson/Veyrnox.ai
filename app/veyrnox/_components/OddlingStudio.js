@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useCatalog } from '../_lib/useCatalog';
 import { REVEAL_SAVED_ODDLING } from '../../../lib/savedOddlingHelp.js';
+import { journeyHandoff, publishJourneyView } from '../_lib/veyJourneyStore';
 import { OddlingGalleryPreview, useGalleryMotionAllowed } from './OddlingGalleryPreview';
 import {
   CHARACTER_GROUPS,
@@ -147,6 +148,7 @@ export default function OddlingStudio() {
   const [notice, setNotice] = useState('');
   const [highlightedPassportId, setHighlightedPassportId] = useState(null);
   const [loadedPassportId, setLoadedPassportId] = useState(null);
+  useEffect(() => { publishJourneyView({ route: '/app/oddlings', loadedId: loadedPassportId }); }, [loadedPassportId]);
 
   useEffect(() => {
     const reveal = (event) => {
@@ -235,6 +237,7 @@ export default function OddlingStudio() {
     if (result.ok) setLibrary(result.items);
     const written = writeStudioDraft(window.sessionStorage, { prompt, model, aspect: '9:16', ...(mode === 'motion' ? { durationSeconds: 5 } : {}) });
     if (!written) { setNotice('The Create draft could not be handed off. Copy the prompt preview and paste it into Create.'); return; }
+    if (mode !== 'motion') journeyHandoff(loadedPassportId);
     router.push(`/app/create?model=${encodeURIComponent(model)}&oddling=1&passport=1${mode === 'motion' ? `&oddlingPhoto=${encodeURIComponent(portraitId)}&motion=${encodeURIComponent(motionId)}` : ''}`);
   }
 
