@@ -1,8 +1,9 @@
 import { PostHogProvider } from '@posthog/next';
 import PostHogManager from './PostHogManager.jsx';
-import { POSTHOG_CONSENT_KEY } from '../app/lib/analyticsPrivacy.js';
+import { normaliseReplaySampleRate, POSTHOG_CONSENT_KEY } from '../app/lib/analyticsPrivacy.js';
 
 const key = process.env.NEXT_PUBLIC_POSTHOG_KEY?.trim();
+const replaySampleRate = normaliseReplaySampleRate(process.env.NEXT_PUBLIC_POSTHOG_REPLAY_SAMPLE_RATE);
 export const analyticsEnabled = Boolean(key?.startsWith('phc_'));
 
 export default function AnalyticsProvider({ children }) {
@@ -42,7 +43,7 @@ export default function AnalyticsProvider({ children }) {
           captureCanvas: { recordCanvas: false },
           captureJsonLd: false,
           strictMinimumDuration: true,
-          sampleRate: 0.2,
+          sampleRate: replaySampleRate,
         },
         capture_performance: false,
         enable_recording_console_log: false,

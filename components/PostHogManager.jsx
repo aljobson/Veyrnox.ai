@@ -8,12 +8,14 @@ import { getSession, onSessionChange } from '../app/lib/authClient.js';
 import { ANALYTICS_ERROR, ANALYTICS_EVENT } from '../app/lib/analyticsClient.js';
 import {
   ANALYTICS_PREFERENCE_KEY,
+  normaliseReplaySampleRate,
   readAnalyticsPreference,
   replayAllowedOnPath,
   sanitisePostHogEvent,
   writeAnalyticsPreference,
 } from '../app/lib/analyticsPrivacy.js';
 
+const forceConsentedReplay = normaliseReplaySampleRate(process.env.NEXT_PUBLIC_POSTHOG_REPLAY_SAMPLE_RATE) === 1;
 const signedInAccount = () => getSession()?.user?.id || null;
 const signedOutAccount = () => null;
 
@@ -96,7 +98,8 @@ export default function PostHogManager() {
 
   useEffect(() => {
     const shouldRecord = Boolean(preference?.analytics && preference?.replay && replayAllowedOnPath(pathname));
-    if (shouldRecord) posthog.startSessionRecording();
+    if (shouldRecord && forceConsentedReplay) posthog.startSessionRecording({ sampling: true });
+    else if (shouldRecord) posthog.startSessionRecording();
     else posthog.stopSessionRecording();
   }, [pathname, posthog, preference?.analytics, preference?.replay]);
 
