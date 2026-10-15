@@ -38,6 +38,18 @@ export function changeCharacterPick(picks, key, value) {
 }
 
 export const CHARACTER_SIZE_GROUPS = [
+  { id: 'arm_size', tab: 'Body', label: 'Arm Size', options: [
+    ['Small', 'small arms relative to the body'],
+    ['Medium', 'medium-sized arms relative to the body'],
+    ['Large', 'large arms relative to the body'],
+    ['Extra Large', 'extra-large arms relative to the body, arms fully visible in the frame'],
+  ] },
+  { id: 'leg_size', tab: 'Body', label: 'Leg Size', options: [
+    ['Small', 'small legs relative to the body'],
+    ['Medium', 'medium-sized legs relative to the body'],
+    ['Large', 'large legs relative to the body'],
+    ['Extra Large', 'extra-large legs relative to the body, legs fully visible in the frame'],
+  ] },
   { id: 'head_size', tab: 'Face', label: 'Head Size', options: [
     ['Small', 'small head relative to the body'],
     ['Medium', 'medium-sized head relative to the body'],

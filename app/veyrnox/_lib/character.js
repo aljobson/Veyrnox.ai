@@ -594,7 +594,15 @@ export function characterTraits(picks) {
   const parts = [];
   for (const g of CHARACTER_GROUPS) {
     const hit = g.options.find(([label]) => label === (picks || {})[g.id]);
-    if (hit) parts.push(hit[1]);
+    if (!hit) continue;
+    const limb = g.id === 'arm_size' ? 'arm' : g.id === 'leg_size' ? 'leg' : null;
+    if (limb) {
+      const sides = ['left', 'right'].filter((side) => picks?.[`${side}_${limb}`] !== 'None');
+      if (!sides.length) continue;
+      parts.push(sides.length === 1 ? hit[1].replaceAll(`${limb}s`, `${sides[0]} ${limb}`) : hit[1]);
+    } else {
+      parts.push(hit[1]);
+    }
   }
   return parts;
 }
