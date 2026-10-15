@@ -37,13 +37,13 @@ export const ODDLING_SCENES = [
 ];
 
 const ODDLING_GALLERY_SHEETS = [
-  { image: '/oddlings/oddling-body-chaos.webp', ids: ['duchess-volume', 'major-minor', 'bughead-brenda', 'pam-bouffant'] },
-  { image: '/oddlings/oddling-humans.webp', ids: ['vera-static', 'mister-monday', 'bloom-service', 'coupon-saint'] },
-  { image: '/oddlings/oddling-silhouette-parade.webp', ids: ['olive-orbit', 'brick-picnic', 'madame-scissors', 'pocket-atlas'] },
-  { image: '/oddlings/oddling-fashion-disasters.webp', ids: ['noodle-duke', 'taffy-tessa', 'tuesday-triangle', 'colonel-crumb'] },
-  { image: '/oddlings/oddling-hair-parade.webp', ids: ['disco-anvil', 'cloudette-forecast', 'ziggy-receipt', 'baron-boucle'] },
-  { image: '/oddlings/oddling-denim-basics.webp', ids: ['tall-order', 'bubble-barry', 'max-rep', 'shelf-life'] },
-  { image: '/oddlings/oddling-cast.webp', ids: ['auntie-antenna', 'brine-minister', 'mossbyte', 'receipt-wraith'] },
+  { image: '/oddlings/oddling-body-chaos.webp', aspectRatio: '1 / 2', ids: ['duchess-volume', 'major-minor', 'bughead-brenda', 'pam-bouffant'] },
+  { image: '/oddlings/oddling-humans.webp', aspectRatio: '1 / 2', ids: ['vera-static', 'mister-monday', 'bloom-service', 'coupon-saint'] },
+  { image: '/oddlings/oddling-silhouette-parade.webp', aspectRatio: '1 / 2', ids: ['olive-orbit', 'brick-picnic', 'madame-scissors', 'pocket-atlas'] },
+  { image: '/oddlings/oddling-fashion-disasters.webp', aspectRatio: '1 / 2', ids: ['noodle-duke', 'taffy-tessa', 'tuesday-triangle', 'colonel-crumb'] },
+  { image: '/oddlings/oddling-hair-parade.webp', aspectRatio: '1 / 2', ids: ['disco-anvil', 'cloudette-forecast', 'ziggy-receipt', 'baron-boucle'] },
+  { image: '/oddlings/oddling-denim-basics.webp', aspectRatio: '3 / 8', ids: ['tall-order', 'bubble-barry', 'max-rep', 'shelf-life'] },
+  { image: '/oddlings/oddling-cast.webp', aspectRatio: '1 / 2', ids: ['auntie-antenna', 'brine-minister', 'mossbyte', 'receipt-wraith'] },
 ];
 
 export const ODDLING_PRESET_SOURCES = [
@@ -139,9 +139,9 @@ export function saveOddlingToLibrary(storage, picks, motionId = '', now = Date.n
 export function gallerySource(oddling) {
   for (const sheet of ODDLING_GALLERY_SHEETS) {
     const panel = sheet.ids.indexOf(oddling?.id);
-    if (panel >= 0) return { image: sheet.image, panel };
+    if (panel >= 0) return { image: sheet.image, panel, aspectRatio: sheet.aspectRatio };
   }
-  return { image: '/oddlings/oddling-cast.webp', panel: 0 };
+  return { image: '/oddlings/oddling-cast.webp', panel: 0, aspectRatio: '1 / 2' };
 }
 
 export function oddlingsForSource(sourceId) {

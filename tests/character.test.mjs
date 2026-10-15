@@ -1,10 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import {
     buildCharacterPrompt,
     characterTraits,
     oddlingIdentity,
     readOddlingDraft,
+    readOddlingPassport,
     sanitizeOddlingPicks,
     writeOddlingDraft,
     CHARACTER_BASE,
@@ -119,4 +121,22 @@ test('Oddling passports save only bounded known fields and survive blocked stora
     assert.deepEqual(sanitizeOddlingPicks(null), {});
     assert.equal(writeOddlingDraft({ setItem() { throw new Error('denied'); } }, picks), false);
     assert.equal(readOddlingDraft({ getItem() { throw new Error('denied'); } }), null);
+});
+
+test('a passport handoff only loads a saved Oddling for an explicit Create launch', () => {
+    const map = new Map();
+    const storage = { getItem: (key) => map.get(key) ?? null, setItem: (key, value) => map.set(key, value) };
+    writeOddlingDraft(storage, { character_type: 'Human', oddling_name: 'Tall Order', body_type: 'Very Skinny' }, 4321);
+    assert.equal(readOddlingPassport(storage, '?model=flux-2-pro'), null);
+    assert.deepEqual(readOddlingPassport(storage, '?model=flux-2-pro&passport=1'), {
+        savedAt: 4321,
+        picks: { character_type: 'Human', body_type: 'Very Skinny', oddling_name: 'Tall Order' },
+    });
+    assert.equal(readOddlingPassport(storage, '?passport=0'), null);
+});
+
+test('Create activates the character controls when an Oddling passport is handed off', async () => {
+    const panel = await readFile(new URL('../app/veyrnox/_components/CharacterPanel.js', import.meta.url), 'utf8');
+    assert.match(panel, /if \(passport\) \{[\s\S]*onChange\(passport\.picks\);[\s\S]*onToggle\(true\);/);
+    assert.match(panel, /passport loaded and active\. Current model pricing is shown below\./);
 });
