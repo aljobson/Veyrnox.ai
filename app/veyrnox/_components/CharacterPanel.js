@@ -2,6 +2,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { characterOptionLabel, changeCharacterPick } from '../_lib/characterOptions';
 import {
   CHARACTER_TABS,
   CHARACTER_GROUPS,
@@ -50,9 +51,7 @@ export function CharacterPanel({ enabled, onToggle, picks, onChange }) {
   }, [onChange, onToggle]);
 
   function setPick(key, value) {
-    const next = { ...picks };
-    if (value) next[key] = value; else delete next[key];
-    onChange(next);
+    onChange(changeCharacterPick(picks, key, value));
     setNotice('');
   }
 
@@ -62,7 +61,7 @@ export function CharacterPanel({ enabled, onToggle, picks, onChange }) {
     const options = group.options.filter(([label]) => label !== picks[group.id]);
     setPick(group.id, options[Math.floor(Math.random() * options.length)][0]);
     setTab(group.tab);
-    setNotice(`Mutated ${group.label.toLowerCase()}. Everything else stayed locked.`);
+    setNotice(`Restyled ${group.label.toLowerCase()}. Everything else stayed locked.`);
   }
 
   function save() {
@@ -75,7 +74,7 @@ export function CharacterPanel({ enabled, onToggle, picks, onChange }) {
     }
   }
 
-  const chosen = CHARACTER_GROUPS.flatMap((group) => picks[group.id] ? [picks[group.id]] : []);
+  const chosen = CHARACTER_GROUPS.flatMap((group) => picks[group.id] ? [characterOptionLabel(group.id, picks[group.id])] : []);
   const named = picks.oddling_name || 'Untitled Oddling';
   const starters = ODDLING_ARCHETYPES.filter((oddling) => oddling.kind === starterKind);
   const isHuman = starterKind === 'human';
@@ -89,7 +88,7 @@ export function CharacterPanel({ enabled, onToggle, picks, onChange }) {
             <span className="rounded-full bg-vx-fg/[0.06] px-2 py-0.5 font-vx-mono text-[8px] tracking-[0.12em] text-vx-fg-muted">FICTIONAL</span>
           </div>
           <h2 className="mt-1 text-lg font-extrabold">Make a creator nobody has met</h2>
-          <p className="mt-1 max-w-[38ch] text-xs leading-relaxed text-vx-fg-muted">Go big: fat, muscular, bug-headed, enormous-haired—or another kind of being. Then lock the joke, look and recurring show.</p>
+          <p className="mt-1 max-w-[38ch] text-xs leading-relaxed text-vx-fg-muted">Explore body shapes, sculptural hair, imaginative costumes and fantasy characters. Build a distinctive personality, visual style and recurring show.</p>
           <Link href="/app/oddlings" className="mt-2 inline-block font-vx-mono text-[9px] font-bold tracking-[0.1em] text-vx-accent hover:underline">OPEN FULL STUDIO →</Link>
         </div>
         <button id="vx-character-switch" aria-labelledby="vx-character-title vx-character-switch" onClick={() => onToggle(!enabled)} aria-pressed={enabled} className={pill(enabled)}>
@@ -104,11 +103,11 @@ export function CharacterPanel({ enabled, onToggle, picks, onChange }) {
               src={isHuman ? '/oddlings/oddling-body-chaos.webp' : '/oddlings/oddling-cast.webp'}
               width={1600}
               height={800}
-              alt={isHuman ? 'Four funny human creators with a fat quilted silhouette, huge muscles, a wearable bug-head mask and enormous cloud-shaped hair' : 'Four original fictional creature creators: a moth oracle, octopus diplomat, botanical machine and spectral accountant'}
+              alt={isHuman ? 'Four fictional human characters with quilted couture, a muscular build, a beetle fashion helmet and cloud-shaped hair' : 'Four original fictional fantasy characters: a moth oracle, octopus diplomat, botanical machine and spectral accountant'}
               className="aspect-[2/1] w-full object-cover"
             />
             <figcaption className="absolute inset-x-2 bottom-2 rounded-lg bg-black/70 px-2.5 py-1.5 font-vx-mono text-[8px] tracking-[0.1em] text-white/80 backdrop-blur-sm">
-              {isHuman ? 'BODY CHAOS CAST STUDY' : 'OTHER BEINGS CAST STUDY'} · AI-CREATED FICTIONAL CHARACTERS
+              {isHuman ? 'HUMAN CHARACTER STUDY' : 'FANTASY CHARACTER STUDY'} · AI-CREATED FICTIONAL CHARACTERS
             </figcaption>
           </figure>
 
@@ -177,10 +176,10 @@ export function CharacterPanel({ enabled, onToggle, picks, onChange }) {
                   <button key={item} onClick={() => setTab(item)} aria-pressed={tab === item} className={pill(tab === item)}>{item}</button>
                 ))}
                 <span className="flex-1" />
-                <button onClick={mutateOne} className={pill(false)}>Mutate one</button>
+                <button onClick={mutateOne} className={pill(false)}>Remix one</button>
                 <button onClick={() => { onChange({}); setNotice('Clean passport.'); }} className={pill(false)}>Reset</button>
               </div>
-              <p className="mt-2 text-[10px] leading-relaxed text-vx-fg-faint">Mutate one changes a styling trait. Body shape and size stay deliberate—pick them yourself in Body rather than turning real differences into random punchlines.</p>
+              <p className="mt-2 text-[10px] leading-relaxed text-vx-fg-faint">Remix one changes a styling trait. Choose body shape, hand size and foot size yourself in Body.</p>
               <div className="mt-3 grid grid-cols-2 gap-2">
                 {CHARACTER_GROUPS.filter((group) => group.tab === tab).map((group) => (
                   <label key={group.id} className="flex flex-col gap-1">
@@ -189,12 +188,12 @@ export function CharacterPanel({ enabled, onToggle, picks, onChange }) {
                       value={picks[group.id] || ''}
                       onChange={(event) => {
                         setPick(group.id, event.target.value);
-                        setNotice(`${group.label}: ${event.target.value || 'Any'}.`);
+                        setNotice(`${group.label}: ${characterOptionLabel(group.id, event.target.value) || 'Any'}.`);
                       }}
                       className="w-full rounded-xl border border-vx-field bg-vx-base px-3 py-2 text-xs text-vx-fg focus:border-vx-accent focus:outline-hidden"
                     >
                       <option value="">Any</option>
-                      {group.options.map(([label]) => <option key={label} value={label}>{label}</option>)}
+                      {group.options.map(([label]) => <option key={label} value={label}>{characterOptionLabel(group.id, label)}</option>)}
                     </select>
                   </label>
                 ))}
