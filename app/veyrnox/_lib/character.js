@@ -207,7 +207,7 @@ export const ODDLING_ARCHETYPES = [
     name: 'Max Rep',
     hook: 'A hyper-muscular fit checker reviewing sleeves under extreme conditions.',
     accent: 'THE STRETCH TEST',
-    picks: { character_type: 'Human', gender: 'Female', ethnicity_origin_base: 'Mixed', age: '30s', skin_tone: 'Warm Brown', body_type: 'Hyper-Muscular', height: 'Tall', proportions: 'Wide Shoulders', hair: 'Sculpted Waves', hair_color: 'Black', wardrobe_style: 'Modern Basics', rendering_style: 'Hyper-Realistic', oddling_name: 'Max Rep', oddling_obsession: 'sleeve tension, stretch denim, and clothes that remain calm around unreasonable muscles', oddling_voice: 'Chaotic expert', oddling_show: 'Five-second verdicts', oddling_rule: 'hyper-muscular woman with enormous shoulders and arms, tiny waist and head, electric-blue fitted T-shirt, acid-green tight jeans, white trainers' },
+    picks: { character_type: 'Human', gender: 'Female', ethnicity_origin_base: 'Mixed', age: '30s', skin_tone: 'Warm Brown', body_type: 'Hyper-Muscular', height: 'Tall', proportions: 'Wide Shoulders', hair: 'Sculptural Wave Tower', hair_color: 'Black', wardrobe_style: 'Modern Basics', rendering_style: 'Hyper-Realistic', oddling_name: 'Max Rep', oddling_obsession: 'sleeve tension, stretch denim, and clothes that remain calm around unreasonable muscles', oddling_voice: 'Chaotic expert', oddling_show: 'Five-second verdicts', oddling_rule: 'hyper-muscular woman, towering black S-wave hair sculpture, blue fitted T-shirt, acid-green tight jeans, white trainers' },
   },
   {
     id: 'shelf-life',
@@ -496,6 +496,7 @@ export const CHARACTER_GROUPS = [
       ['Short Hair', 'short hair'],
       ['Sharp Bob', 'razor-sharp geometric bob haircut'],
       ['Sculpted Waves', 'carefully sculpted vintage waves'],
+      ['Sculptural Wave Tower', 'towering glossy black hair sculpture rising two head-heights above the scalp in three oversized stacked S-shaped waves, with a giant curled crest; the entire tall hair sculpture visible in frame'],
       ['Monumental Hair', 'monumental cloud-shaped hair at least three times wider than the shoulders'],
       ['Cube Cut', 'impossibly precise cube-shaped haircut with sharp right-angle edges'],
       ['Sphere Cut', 'perfectly spherical globe-shaped haircut surrounding the head'],
