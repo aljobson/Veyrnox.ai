@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { runSocialReportScheduleSweep } from '../lib/social/reportSchedule.js';
+import { reportResendConfig } from '../packages/adapters/resend.js';
 
 const cfg = { supabaseUrl: 'https://db.test', serviceRoleKey: 'service' };
 const enabled = { PUBLISH_SCHEDULED_REPORTS_ENABLED: 'true', PUBLISH_REPORT_DELIVERY_ENABLED: 'true', RESEND_API_KEY: 're_test', REPORT_EMAIL_FROM: 'Veyrnox <reports@veyrnox.ai>' };
@@ -12,10 +13,16 @@ test('scheduled delivery is closed until both rollout flags are open', async () 
   assert.deepEqual(result, { ok: true, skipped: 'disabled' }); assert.equal(calls, 0);
 });
 
-test('scheduled delivery refuses to claim work without its dedicated sender', async () => {
+test('scheduled delivery refuses to claim work without its email provider key', async () => {
   let calls = 0;
   const result = await runSocialReportScheduleSweep({ env: { PUBLISH_SCHEDULED_REPORTS_ENABLED: 'true', PUBLISH_REPORT_DELIVERY_ENABLED: 'true' }, cfg, rpcCall: async () => { calls += 1; } });
   assert.deepEqual(result, { ok: false, skipped: 'email_not_configured' }); assert.equal(calls, 0);
+});
+
+test('report delivery uses the verified Veyrnox sender unless explicitly overridden', () => {
+  assert.deepEqual(reportResendConfig({ RESEND_API_KEY: 're_test' }), {
+    apiKey: 're_test', from: 'Veyrnox Reports <support@veyrnox.ai>', replyTo: 'support@veyrnox.ai',
+  });
 });
 
 test('scheduled report sweep builds one attachment and sends it to every recipient', async () => {

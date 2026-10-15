@@ -58,7 +58,7 @@ test('malformed, incomplete and unknown grouped Publish controls fail closed', (
     assert.equal(publishRuntimeFeatureEnabled('UNKNOWN', grouped('true', 'true')), false);
 });
 
-test('production keeps advanced Publish controls closed while staging opens the acceptance suite', () => {
+test('production and staging expose the paid Publish suite while native video stays closed', () => {
     const config = parseJsonc(readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8'));
     const advanced = ['PUBLISH_INBOX_ENABLED', 'PUBLISH_SMARTLINKS_ENABLED', 'PUBLISH_CONTENT_PRESETS_ENABLED',
         'PUBLISH_QUEUES_ENABLED', 'PUBLISH_APPROVALS_ENABLED', 'PUBLISH_TEAMS_ENABLED',
@@ -92,7 +92,9 @@ test('production keeps advanced Publish controls closed while staging opens the 
         assert.equal(Object.hasOwn(vars, 'PUBLISH_REPORT_DELIVERY_ENABLED'), false);
     }
     for (const name of advanced) {
-        assert.equal(publishRuntimeFeatureEnabled(name, config.vars), false);
+        assert.equal(publishRuntimeFeatureEnabled(name, config.vars), true);
         assert.equal(publishRuntimeFeatureEnabled(name, config.env.staging.vars), true);
     }
+    assert.equal(config.env.staging.vars.REPORT_EMAIL_FROM, 'Veyrnox Reports <support@veyrnox.ai>');
+    assert.equal(config.env.staging.vars.REPORT_EMAIL_REPLY_TO, 'support@veyrnox.ai');
 });

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { verifyApprovalToken } from '../../../../../lib/social/approvalToken.js';
+import { approvalSigningSecret, verifyApprovalToken } from '../../../../../lib/social/approvalToken.js';
 import { createMediaProxyToken } from '../../../../../lib/social/mediaProxyToken.js';
 import { socialApprovalsEnabled } from '../../../../../lib/social/publishFeature.js';
 import { envConfig, rpc, SupabaseError } from '../../../../../packages/db/supabase-client.js';
@@ -7,7 +7,7 @@ import { envConfig, rpc, SupabaseError } from '../../../../../packages/db/supaba
 async function context(params) {
     if (!socialApprovalsEnabled()) return { error: NextResponse.json({ error: 'not_found' }, { status: 404 }) };
     const { token } = await params;
-    const reviewerId = await verifyApprovalToken(token, process.env.SOCIAL_APPROVAL_LINK_SECRET);
+    const reviewerId = await verifyApprovalToken(token, approvalSigningSecret());
     const cfg = envConfig();
     if (!reviewerId) return { error: NextResponse.json({ error: 'invalid_or_expired_link' }, { status: 404 }) };
     if (!cfg.supabaseUrl || !cfg.serviceRoleKey) return { error: NextResponse.json({ error: 'not_configured' }, { status: 503 }) };

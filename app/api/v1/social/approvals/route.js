@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { accountReadLimit } from '../../../../../lib/accountReadLimit.js';
 import { socialPostWriteLimit } from '../../../../../lib/socialPostWriteLimit.js';
-import { createApprovalToken } from '../../../../../lib/social/approvalToken.js';
+import { approvalSigningSecret, createApprovalToken } from '../../../../../lib/social/approvalToken.js';
 import { publishPlansEnabled, socialApprovalsEnabled, socialContentVariantsEnabled } from '../../../../../lib/social/publishFeature.js';
 import { readPublishEntitlement } from '../../../../../lib/social/publishPlanApi.js';
 import { parsePostVariants } from '../../../../../lib/social/postVariants.js';
@@ -19,10 +19,11 @@ function setup(req) {
     if (!isUuid(authId)) return { error: NextResponse.json({ error: 'not_authenticated' }, { status: 401 }) };
     if (!socialApprovalsEnabled()) return { error: NextResponse.json({ error: 'approvals_not_open' }, { status: 404 }) };
     const cfg = envConfig();
-    if (!cfg.supabaseUrl || !cfg.serviceRoleKey || !process.env.SOCIAL_APPROVAL_LINK_SECRET) {
+    const signingSecret = approvalSigningSecret();
+    if (!cfg.supabaseUrl || !cfg.serviceRoleKey || !signingSecret) {
         return { error: NextResponse.json({ error: 'approvals_not_configured' }, { status: 503 }) };
     }
-    return { authId, cfg };
+    return { authId, cfg, signingSecret };
 }
 
 function statusFor(code) {
@@ -33,15 +34,15 @@ function statusFor(code) {
     return 502;
 }
 
-async function linksFor(reviewers, origin) {
+async function linksFor(reviewers, origin, signingSecret) {
     return Promise.all((reviewers || []).map(async (reviewer) => ({
         email: reviewer.email,
-        url: `${origin}/social/review/${encodeURIComponent(await createApprovalToken({ reviewerId: reviewer.id }, process.env.SOCIAL_APPROVAL_LINK_SECRET))}`,
+        url: `${origin}/social/review/${encodeURIComponent(await createApprovalToken({ reviewerId: reviewer.id }, signingSecret))}`,
     })));
 }
 
 export async function GET(req) {
-    const { authId, cfg, error } = setup(req);
+    const { authId, cfg, signingSecret, error } = setup(req);
     if (error) return error;
     const limited = await accountReadLimit(authId, cfg, { brand_id: null, requests: [] });
     if (limited) return limited;
@@ -60,7 +61,7 @@ export async function GET(req) {
             ...request,
             reviewers: await Promise.all((request.reviewers || []).map(async (reviewer) => ({
                 ...reviewer,
-                url: `${origin}/social/review/${encodeURIComponent(await createApprovalToken({ reviewerId: reviewer.id }, process.env.SOCIAL_APPROVAL_LINK_SECRET))}`,
+                url: `${origin}/social/review/${encodeURIComponent(await createApprovalToken({ reviewerId: reviewer.id }, signingSecret))}`,
             }))),
         })));
         return NextResponse.json({ brand_id: brand.brandId, requests }, { headers: { 'Cache-Control': 'no-store' } });
@@ -71,7 +72,7 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-    const { authId, cfg, error } = setup(req);
+    const { authId, cfg, signingSecret, error } = setup(req);
     if (error) return error;
     let body;
     try { body = await req.json(); } catch { return NextResponse.json({ error: 'invalid_body' }, { status: 400 }); }
@@ -129,7 +130,7 @@ export async function POST(req) {
         }, cfg);
         if (!result?.ok) return NextResponse.json({ error: result?.code || 'internal' }, { status: statusFor(result?.code) });
         return NextResponse.json({ request_id: result.request_id, post_id: result.post_id, idempotent: result.idempotent,
-            review_links: await linksFor(result.reviewers, new URL(req.url).origin) }, { status: 201, headers: { 'Cache-Control': 'no-store' } });
+            review_links: await linksFor(result.reviewers, new URL(req.url).origin, signingSecret) }, { status: 201, headers: { 'Cache-Control': 'no-store' } });
     } catch (err) {
         console.error('[api/v1/social/approvals:POST] failed:', err instanceof SupabaseError ? err.status : 0);
         return NextResponse.json({ error: 'internal' }, { status: 502 });

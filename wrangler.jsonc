@@ -190,7 +190,10 @@
     // Publish Plan enforces five paid accounts; Free keeps one account.
     // Grouped to stay within Cloudflare's 128 text-binding limit. Migration 0293
     // and the Stripe checkout are live; qualify native video separately.
-  "PUBLISH_RUNTIME_FLAGS": "{\"multiAccount\":\"true\",\"plans\":\"true\",\"videoDestinations\":\"false\",\"inbox\":\"false\",\"smartlinks\":\"false\",\"contentPresets\":\"false\",\"queues\":\"false\",\"approvals\":\"false\",\"teams\":\"false\",\"variants\":\"false\",\"reportExports\":\"false\",\"reportDelivery\":\"false\"}",
+    // Migrations through 0323 are applied before this rollout. Paid Publish
+    // accounts receive the management suite; native video stays separately
+    // gated until each provider's production review is complete.
+    "PUBLISH_RUNTIME_FLAGS": "{\"multiAccount\":\"true\",\"plans\":\"true\",\"videoDestinations\":\"false\",\"inbox\":\"true\",\"inboxWorkflows\":\"true\",\"smartlinks\":\"true\",\"contentPresets\":\"true\",\"queues\":\"true\",\"approvals\":\"true\",\"teams\":\"true\",\"variants\":\"true\",\"reports\":\"true\",\"scheduledReports\":\"true\",\"reportExports\":\"true\",\"reportDelivery\":\"true\",\"customerApi\":\"true\",\"customerWebhooks\":\"true\",\"ads\":\"true\",\"commerce\":\"true\",\"rssAutolists\":\"true\"}",
     // Preserve the private pilot secret and default YouTube uploads to Private.
     "PUBLISH_YOUTUBE_VISIBILITY_ENABLED": "true",
 
