@@ -141,7 +141,7 @@ export default function OddlingStudio() {
   const [referenceNote, setReferenceNote] = useState('');
   const [openSection, setOpenSection] = useState('build');
   const [workspace, setWorkspace] = useState('explore');
-  const [source, setSource] = useState('body');
+  const [source, setSource] = useState('torsos');
   const [library, setLibrary] = useState([]);
   const [sheet, setSheet] = useState(null);
   const [notice, setNotice] = useState('');
@@ -365,7 +365,7 @@ export default function OddlingStudio() {
           <div className="mx-auto max-w-6xl">
             <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
               <div>
-                <span className="font-vx-mono text-[10px] font-bold tracking-[0.16em] text-vx-accent">24 HUMAN ORIGINALS · 4 OTHER BEINGS</span>
+                <span className="font-vx-mono text-[10px] font-bold tracking-[0.16em] text-vx-accent">{ODDLING_ARCHETYPES.filter((item) => item.kind === 'human').length} HUMAN ORIGINALS · {ODDLING_ARCHETYPES.filter((item) => item.kind === 'creature').length} OTHER BEINGS</span>
                 <h2 className="vx-display mt-2 text-5xl sm:text-6xl">Your original character, your recurring hit.</h2>
                 <p className="mt-3 max-w-2xl text-vx-fg-body">Explore expressive silhouettes, statement fashion, sculptural hair and contemporary basics. Choose head, body and individual feature sizes independently, then refine your character for portraits and motion.</p>
               </div>

@@ -36,10 +36,22 @@ export function changeCharacterPick(picks, key, value) {
   if (key === 'head_shape' && ['Tiny Head', 'Oversized Head'].includes(value)) delete next.head_size;
   if (key === 'neck_size' && value && ['Long Neck', 'No Visible Neck'].includes(next.proportions)) delete next.proportions;
   if (key === 'proportions' && ['Long Neck', 'No Visible Neck'].includes(value)) delete next.neck_size;
+  if (key === 'torso_size' && value) {
+    if (['Tiny Torso', 'Long Torso'].includes(next.proportions)) delete next.proportions;
+    if (['Long Torso', 'Long Legs'].includes(next.body_type)) delete next.body_type;
+  }
+  if ((key === 'proportions' && ['Tiny Torso', 'Long Torso'].includes(value))
+    || (key === 'body_type' && ['Long Torso', 'Long Legs'].includes(value))) delete next.torso_size;
   return next;
 }
 
 export const CHARACTER_SIZE_GROUPS = [
+  { id: 'torso_size', tab: 'Body', label: 'Torso Size', options: [
+    ['Small', 'small torso relative to the head and limbs, compact chest-to-hip proportions'],
+    ['Medium', 'medium-sized torso relative to the head and limbs, balanced chest-to-hip proportions'],
+    ['Large', 'large torso relative to the head and limbs, broad extended chest-to-hip proportions'],
+    ['Extra Large', 'extra-large torso relative to the head and limbs, dominant broad elongated chest-to-hip silhouette'],
+  ] },
   { id: 'neck_size', tab: 'Body', label: 'Neck Size', options: [
     ['Small', 'small neck relative to the body'],
     ['Medium', 'medium-sized neck relative to the body'],

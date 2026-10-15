@@ -8,7 +8,7 @@ import {
 export const ODDLING_STUDIO_SECTIONS = [
   { id: 'signal', label: 'Character signal', hint: 'Human-first, with other beings optional', groupIds: ['character_type'] },
   { id: 'identity', label: 'Identity', hint: 'Adult age, gender, heritage and skin tone', groupIds: ['gender', 'ethnicity_origin_base', 'age', 'skin_tone'] },
-  { id: 'build', label: 'Build & proportions', hint: 'Body, height, arm, leg, hand and foot sizes', groupIds: ['body_type', 'height', 'proportions', 'arm_size', 'leg_size', 'hand_size', 'foot_size'] },
+  { id: 'build', label: 'Build & proportions', hint: 'Torso, body, height and limb sizes', groupIds: ['body_type', 'height', 'proportions', 'torso_size', 'arm_size', 'leg_size', 'hand_size', 'foot_size'] },
   { id: 'hair', label: 'Hair sculpture', hint: 'Geometry, scale and color', groupIds: ['hair', 'hair_color'] },
   { id: 'head', label: 'Head & eyes', hint: 'Head size and shape, neck size and styling, eye shape and color', groupIds: ['head_shape', 'head_size', 'neck_size', 'neck', 'eye_shape', 'eye_color'] },
   { id: 'features', label: 'Face details', hint: 'Eye, mouth, ear and nose sizes, makeup and expressive details', groupIds: ['eyes_type', 'eyes_details', 'eye_size', 'mouth', 'mouth_size', 'ears', 'ear_size', 'nose_size', 'horns', 'skin_conditions', 'face_features', 'facial_hair'] },
@@ -53,6 +53,7 @@ export const ODDLING_PRESET_SOURCES = [
   { id: 'hair', label: 'Hair sculptures', ids: ODDLING_GALLERY_SHEETS[4].ids },
   { id: 'denim', label: 'Tee + tight jeans', ids: ODDLING_GALLERY_SHEETS[5].ids },
   { id: 'oddities', label: 'Surreal characters', ids: ODDLING_GALLERY_SHEETS[1].ids },
+  { id: 'torsos', label: 'Torso sizes · New', ids: ['pip-parcel', 'mira-measure', 'arlo-archive', 'orla-overture'] },
   { id: 'humans', label: 'All human characters', kind: 'human' },
   { id: 'beings', label: 'Other beings', kind: 'creature' },
 ];
