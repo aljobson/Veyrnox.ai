@@ -10,7 +10,8 @@ const RANGES = new Set([7, 30, 90, 365]);
 const COLOR = /^#[0-9a-f]{6}$/i;
 const CADENCES = new Set(['manual', 'weekly', 'monthly']);
 const FORMATS = new Set(['pdf', 'pptx']);
-const EMAIL = /^[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+$/;
+// Bound every repeated group so validation remains constant-cost for request data.
+const EMAIL = /^[^\s<>@]{1,64}@[^\s<>@]{1,185}\.[^\s<>@]{1,63}$/;
 
 function setup(req) {
   const authId = req.headers.get('x-veyrnox-auth-id');
@@ -69,8 +70,8 @@ export async function PUT(req) {
     || (deliveryCadence !== 'manual' && (!Number.isInteger(deliveryHourUtc) || deliveryHourUtc < 0 || deliveryHourUtc > 23))
     || (deliveryCadence === 'weekly' && (!Number.isInteger(deliveryWeekday) || deliveryWeekday < 1 || deliveryWeekday > 7))
     || (deliveryCadence === 'monthly' && (!Number.isInteger(deliveryDay) || deliveryDay < 1 || deliveryDay > 28))
-    || deliveryRecipients.length > 10 || deliveryRecipients.some((value) => !EMAIL.test(value) || value.length > 254)
-    || (deliveryCadence !== 'manual' && !deliveryRecipients.length) || (deliveryReplyTo && (!EMAIL.test(deliveryReplyTo) || deliveryReplyTo.length > 254))
+    || deliveryRecipients.length > 10 || deliveryRecipients.some((value) => value.length > 254 || !EMAIL.test(value))
+    || (deliveryCadence !== 'manual' && !deliveryRecipients.length) || (deliveryReplyTo && (deliveryReplyTo.length > 254 || !EMAIL.test(deliveryReplyTo)))
     || deliveryMessage.length > 1000 || !FORMATS.has(deliveryFormat)) return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
   const limited = await socialPostWriteLimit(authId, cfg); if (limited) return limited;
   const brand = await resolveBrand(authId, cfg, 'api/v1/social/reports:PUT', { request: req, allowedRoles: ['owner', 'manager', 'editor', 'analyst'] }); if (brand.error) return brand.error;

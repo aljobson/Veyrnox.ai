@@ -16,6 +16,11 @@ test('ASS follows its declared field order, preserves commas and strips override
     assert.deepEqual(parsed.cues, [{ text: 'Hello, world\nSecond', start: 0, len: 45 }]);
     assert.deepEqual(parseCaptions('[00:01.00]One\n[00:02.50]Two', 'lrc').cues, [{ text: 'One', start: 30, len: 45 }, { text: 'Two', start: 75, len: 90 }]);
 });
+test('caption cleanup removes malformed and nested HTML delimiters completely', () => {
+    const parsed = parseCaptions('1\n00:00:00,000 --> 00:00:01,000\n<<script>alert(1)</script><b>safe</b>');
+    assert.equal(parsed.cues[0].text, 'alert(1)safe');
+    assert.doesNotMatch(parsed.cues[0].text, /[<>]/);
+});
 test('malformed times, inverted intervals, oversized files and out-of-range captions fail before insertion', () => {
     for (const source of ['1\n00:00:02,000 --> 00:00:01,000\nWrong', '1\n00:99:00,000 --> 00:99:01,000\nBad', '1\n00:10:00,000 --> 00:10:01,000\nToo late', 'x'.repeat(262145)]) assert.ok(parseCaptions(source).error);
 });

@@ -47,6 +47,15 @@ test('owner creates a normalized invitation and receives its signed link', async
     assert.equal(calls.at(-1).name, 'invite_social_team_member'); assert.equal(calls.at(-1).args.p_email, 'person@example.com');
 });
 
+test('team invitations bound email validation before database work', async () => {
+    stub();
+    const response = await ownerRoute.POST(request('https://veyrnox.ai/api/v1/social/team', 'POST', {
+        brandId: brand, email: `${'a'.repeat(250)}@example.com`, role: 'editor',
+    }));
+    assert.equal(response.status, 400);
+    assert.equal(calls.length, 0);
+});
+
 test('signed public link exposes only its safe invitation projection and accepts through the authenticated route', async () => {
     stub(); const token = await createTeamInviteToken({ inviteId: invite }, process.env.SOCIAL_TEAM_INVITE_SECRET); const params = Promise.resolve({ token });
     const preview = await publicRoute.GET(request(`https://veyrnox.ai/api/social/team/${token}`), { params });
