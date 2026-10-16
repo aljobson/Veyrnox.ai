@@ -27,9 +27,9 @@ At the reference rate every current LAUNCH row clears 58–70% gross margin.
 
 1. Update the xlsx (out of tree, out of repo)
 2. Edit `CATALOG` in `index.ts` — set `provider_cost_usd`, `retail_usd`; call `usdToCredits` for the credit price
-3. Update `packages/db/schema/0002_model_catalog_seed.sql` to match (until Slice 4 adds a `scripts/seed-catalog.mjs`)
+3. Change the live `model_catalog` row with a numbered migration in `packages/db/schema/supabase/` (the DB, not this file, prices real jobs). `UPDATE`s from 0111 onward must assert their row count (`scripts/check-catalog-update-guards.mjs`). `0002_model_catalog_seed.sql` only seeds a local test database.
 4. `npm install --no-save tsx && npx tsx --test packages/catalog/margin-validator.test.ts` — must pass
-5. Commit both files in the same change; CI enforces the floor
+5. Commit the file and the migration in the same change; the `ledger-tests` workflow runs the margin test
 
 ## Deferred models
 

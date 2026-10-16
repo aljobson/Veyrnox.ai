@@ -1,10 +1,10 @@
 # UI/UX Brief — Veyrnox.ai
 
-**Status:** Current · 2026-10-08 (audited against `main` at `42150476`; Publish rows amended against `bee1ea4f`; first
+**Status:** Current · 2026-10-08. Flag and route statements amended 2026-10-16 against `main` at `3f46a609`; the rest of this document was not re-audited that day. (audited against `main` at `42150476`; Publish rows amended against `bee1ea4f`; first
 written 2026-10-02 at `2da81dc`, after the receipt redesign #404 and the slip
 tilt #406; colour rules revised by #482 and #478)
 **Source of truth:** the code. Tokens in `app/globals.css` and
-`app/veyrnox/veyrnox.css`, Tailwind mapping in `tailwind.config.js`, fonts in
+`app/veyrnox/veyrnox.css`, Tailwind 4 mapping in `app/globals.css` (`@import "tailwindcss"`; there is no `tailwind.config.js`), fonts in
 `app/layout.js` + `app/veyrnox/layout.js`, components in
 `app/veyrnox/_components/`, page sections in `app/veyrnox/_sections/`.
 This brief records the language so new work extends it instead of starting a
@@ -213,7 +213,7 @@ Print disables all motion and shadow.
 | `/app/library` | display h1; sentence-case inverted filter pills (type, favourites); grid or list; 1/2/3-column cards; FREE label on a free job; dashed empty state → "Open the studio"; fixed selection bar; `EditSheet` |
 | `/app/credits` | "Your balance" as a paper slip (72 px amber figure, free-credit and expiry leaders); billing explainer ("Credit Packs are one-off purchases. Nothing renews."); `UsageMeters`; `TopUpPacks`; `CreditStatement` (referral rewards labelled); `TopUpHistory`; recent generations table |
 | `/app/account` | 900 px column of bordered sections: 2FA, passkeys, password, devices, Refer a friend, data export/delete |
-| `/app/publish` *(dark in production)* | 900 px: connected accounts and an eleven-network connect panel with logos (buttons read Connect, Setup required or Testing not enabled), drafts to review, composer (Library asset or device upload, Post now or schedule), scheduled and published; `/calendar` 1100 px month/week/list with drag-to-reschedule confirmation; `/analytics` 900 px follower chart, per-network tables and posting-time insights |
+| `/app/publish` *(on in production)* | 900 px: connected accounts and an eleven-network connect panel with logos (buttons read Connect, Setup required or Testing not enabled), drafts to review, composer (Library asset or device upload, Post now or schedule), scheduled and published; `/calendar` 1100 px month/week/list with drag-to-reschedule confirmation; `/analytics` 900 px follower chart, per-network tables and posting-time insights |
 | `/app/video-agent` *(off)* | brief form, plan + price + Approve, step progress, result in the Library |
 | Cinema (`/social-cinema`, `/title/[id]`, `/watch/[id]`, `/pass`, `/creator`) | 1000–1100 px; mono accent kicker, large black h1, `Button`, aria-live notices; player page |
 | `/app/admin/*` | danger chip "ADMIN · OPS"; metric tiles; scrolling mono tables |

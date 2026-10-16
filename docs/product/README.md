@@ -11,7 +11,7 @@ The app-wide set. Feature sets extend these (e.g.
 | 4 | [UI-UX.md](UI-UX.md) | look and feel, colour tokens, type, layout, components, motion, screens, copy, accessibility |
 | 5 | [SCHEMA.md](SCHEMA.md) | auth flow, every table and relationship, key RPCs, cron, migration rules |
 | 6 | [IMPLEMENTATION-PLAN.md](IMPLEMENTATION-PLAN.md) | the build order from here, by track, with exit checks |
-| — | [ISSUES.md](ISSUES.md) | defects and drift found in the 2026-10-02 audit |
+| — | [ISSUES.md](ISSUES.md) | defects and drift found in the 2026-10-02 audit, refreshed 2026-10-08 and 2026-10-16 |
 
 Diagrams (Archify — open the `.html`; edit the `.json` and re-run
 `archify deliver`):
@@ -29,7 +29,8 @@ Diagrams (Archify — open the `.html`; edit the `.json` and re-run
 `CONTEXT.md` (vocabulary) → the SQL migrations (for schema) → these
 documents → feature sets.
 
-These describe the product as of 2026-10-08 (main 96380e7f). When a PR changes what they say
-is true, it updates them in the same change.
+PRD, TRD, SCHEMA and ISSUES were re-audited on 2026-10-16 against `main` at `3f46a609`
+(APP-FLOW, UI-UX and IMPLEMENTATION-PLAN: flag and route statements only; see each
+Status line). When a PR changes what they say is true, it updates them in the same change.
 
 - [HANDOVER-2026-10-03.md](HANDOVER-2026-10-03.md): project recap and handover to the next agent, as of 2026-10-03.

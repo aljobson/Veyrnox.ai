@@ -69,7 +69,7 @@ this table only calls out what's *specific* to Publish on top of that baseline.
 | A04 Insecure Design | The SSRF-avoidance decision in §2.8 is exactly this: a design choice that removes a risk class rather than a filter that mitigates it after the fact |
 | A05 Security Misconfiguration | CSP explicitly designed to require **no change** (§2.10) — every platform call is server-side |
 | A06 Vulnerable and Outdated Components | Adapters are hand-written `fetch` clients, not vendor SDKs, specifically to avoid an unaudited dependency landing on the SSR bundle (§2.1, §2.10) — this also minimizes the transitive-dependency surface this risk category targets |
-| A07 Identification and Authentication Failures | **Partly built** (§2.7): PKCE forwarded by X and Google Business Profile only (the other providers' adapters do not forward it); exact `PUBLIC_HOST` redirect; stateless HMAC `state` with ten-minute expiry, not single-use; TikTok rotation atomic, and since 0228 Pinterest, Threads, Bluesky, Twitch and Business Profile rotation compares both old ciphertexts; destination selections (Facebook, Pinterest, Business Profile) are encrypted, user- and network-bound, ten-minute and single-use; Bluesky uses a dedicated app password that is never stored; **reuse detection not built** |
+| A07 Identification and Authentication Failures | **Partly built** (§2.7): PKCE forwarded by X and Google Business Profile only (the other providers' adapters do not forward it); exact `PUBLIC_HOST` redirect; HMAC `state` with ten-minute expiry, consumed once (0326, `social_oauth_states` keeps a SHA-256 digest); TikTok rotation atomic, and since 0228 Pinterest, Threads, Bluesky, Twitch and Business Profile rotation compares both old ciphertexts; destination selections (Facebook, Pinterest, Business Profile) are encrypted, user- and network-bound, ten-minute and single-use; Bluesky uses a dedicated app password that is never stored; **reuse detection not built** |
 | A08 Software and Data Integrity Failures | **Built.** `create_social_post` idempotent on `(brand_id, idempotency_key)`; claim key stops a worker that lost its claim overwriting a result (0168, `CLAIM_LOST`); append-only audit log with a truncate guard. Platform calls are not idempotent for the original five (§2.6); for Facebook, Threads, Pinterest, Bluesky and Business Profile a committed pre-submission marker stops a second public submission and surfaces `provider_result_unknown_reconcile_before_retry` |
 | A09 Security Logging and Monitoring Failures | **Partly built.** `social_account_actions` (append-only) records connect, reconnect, disconnect, draft approve/discard and reschedule. Analytics failures live on `social_analytics_sync.last_error` (not the audit log); publish and token-refresh failures live on the target's `last_error`; the sweep logs claim, report and heartbeat failures with `console.error`, and `publish_sweep` feeds the worker heartbeat (0157). The analytics sweep has no heartbeat. There are no user notifications |
 | A10 Server-Side Request Forgery | Same as API7 above (§2.8) — listed twice deliberately since OWASP itself lists it in both the general Top 10 and the API Top 10 |
@@ -136,7 +136,7 @@ most directly applicable national-authority reference, on top of the internation
 ### OAuth-specific NCSC guidance
 
 The connect flow (§2.7) follows part of the shape NCSC's own OAuth guidance and RFC 9700 converge on:
-exact-match redirect URIs, user- and network-bound signed state (expiring, but not single-use), minimal
+exact-match redirect URIs, user- and network-bound signed state (expiring and, since 0326, single-use), minimal
 requested scope, and encrypted-at-rest token storage with no client-side exposure. PKCE is used where
 the provider supports it (X only), so "PKCE on every code exchange" is not met.
 
@@ -170,7 +170,7 @@ Naming these directly rather than implying full coverage. Status as of 2026-10-0
    and Threads now renew), no account is ever marked `expired` or `error`, and there is no notification when a post fails.
 7. **No token-encryption key rotation path** and no documented runbook (new).
 8. **Disconnect does not revoke the grant at the platform** (new); it clears the stored tokens only.
-9. **OAuth state is not single-use** and reuse detection for rotated refresh tokens is not built (new,
+9. ~~OAuth state is not single-use~~ (closed by 0326, 2026-10); reuse detection for rotated refresh tokens is still not built (new,
    §2.7).
 10. **Production secrets** for the provider apps (now ten OAuth apps plus Bluesky's password flow; the
     tester handover says staging holds YouTube and the shared secrets only) and the three social secrets: whether they are

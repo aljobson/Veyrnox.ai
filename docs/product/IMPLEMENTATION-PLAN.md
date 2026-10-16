@@ -1,6 +1,6 @@
 # Implementation Plan — Veyrnox.ai
 
-**Status:** Current · 2026-10-10 (A8, D1 and S19 rollout update at `09957c52`) · prior audit 2026-10-08 (audited against `main` at `42150476`; Publish rows amended against `bee1ea4f`; first
+**Status:** Current · 2026-10-10. Two Publish flag statements amended 2026-10-16 at `3f46a609`; the plan's step statuses were not re-audited. (A8, D1 and S19 rollout update at `09957c52`) · prior audit 2026-10-08 (audited against `main` at `42150476`; Publish rows amended against `bee1ea4f`; first
 written 2026-10-02 at `2da81dc`)
 **Replaces:** [docs/PHASE-1.md](../PHASE-1.md) as the build sequence (it
 still names Clerk, Neon, Inngest and LemonSqueezy). Feature sets keep their
@@ -44,7 +44,7 @@ extending a layer depends on everything above it.
 | 0.12 | Composites: Auto Short, Clip Editor (flag-gated), Clip Editor captions (**live**, 0225) | ADR-0029, `docs/editor/` |
 | 0.13 | Tenant foundation: orgs, workspaces, projects, document history, media quarantine (**staging**) | 0135–0141, ADR-0051/0055/0056 |
 | 0.14 | Social Cinema: profiles → uploads → publication → paywall (**staging**) | 0132–0150, ADR-0048–0059 |
-| 0.15 | Veyrnox Publish: 11 networks (5 original; Facebook, Threads, Pinterest, Bluesky, Twitch, Business Profile added 2026-10-08 for testers, not live-tested), scheduling, async engine, drafts, analytics, calendar, device uploads (**built, dark in production**) | 0154–0161, 0182, 0188–0192, 0223, 0228, ADR-0061 |
+| 0.15 | Veyrnox Publish: 11 networks (5 original; Facebook, Threads, Pinterest, Bluesky, Twitch, Business Profile added 2026-10-08 for testers, not live-tested), scheduling, async engine, drafts, analytics, calendar, device uploads (**built; on in production `wrangler.jsonc` for four released networks**) | 0154–0161, 0182, 0188–0192, 0223, 0228, ADR-0061 |
 | 0.16 | Receipt redesign of public and money screens | #404, #406 |
 | 0.17 | DB hardening: claim guards, unique ledger backstops, default-privilege revoke, FK indexes, TRUNCATE guards | 0167–0178 (S1–S16) |
 | 0.18 | Subscription Credit ledger bucket and reconcile (applied) | 0183–0185, ADR-0064 |
@@ -59,7 +59,7 @@ extending a layer depends on everything above it.
 |---|---|---|---|
 | ~~A1~~ | **Done.** Pack purchase fixed (ISSUES S1): 0167 applied; `/api/credit-packs` lists all four packs | — | a real purchase of each pack is still part of A4 |
 | ~~A2~~ | **Done in code** (0180, #424); only two comments name LemonSqueezy. Residual: delete the two Worker secrets (ISSUES I1, unverified) | A1 | `ls app/api/webhook` has no `lemonsqueezy` |
-| ~~A3~~ | **Done.** Publish gated (`PUBLISH_ENABLED="false"`) and Free capped (0169) | — | `/api/v1/social/*` answers 503 `publish_not_open` |
+| ~~A3~~ | **Done.** Publish gated (`PUBLISH_ENABLED`; now `"true"` in production, 2026-10-16) and Free capped (0169, 0298) | — | `/api/v1/social/*` answers 503 `publish_not_open` |
 | A4 | Stripe live evidence (#101, open): real purchase + refund, dispute/freeze drills, lost-webhook drill | A1 | `docs/operations/credit-pack-launch-acceptance.md` filled in |
 | A5 | Ops checklist (#204, open): email quota or bounded plan, HIBP on, prod admin AAL2 journey, recovery-health alert delivery, DMCA agent | — | every #204 box ticked |
 | A6 | Playwright smoke exists (`e2e/`, daily `e2e.yml`; sign-up runs); generate and buy wait for a staging test account in `E2E_EMAIL`/`E2E_PASSWORD` (ISSUES I5) | A1 | green in CI against staging with the account set |

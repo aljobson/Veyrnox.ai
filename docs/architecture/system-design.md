@@ -10,7 +10,7 @@ The approach adapts Donne Martin's [System Design Primer](https://github.com/don
 
 | Boundary | Repository evidence | Design consequence |
 | --- | --- | --- |
-| Web and API | [`worker.js`](../../worker.js), [`middleware.js`](../../middleware.js), [`wrangler.jsonc`](../../wrangler.jsonc) | Keep Next.js/OpenNext and the verified bearer-token gate. Worker cron currently runs every five minutes. |
+| Web and API | [`worker.js`](../../worker.js), [`middleware.js`](../../middleware.js), [`wrangler.jsonc`](../../wrangler.jsonc) | Keep Next.js/OpenNext and the verified bearer-token gate. Worker cron runs every five minutes, plus a one-minute trigger that currently drives only the content scan. |
 | Money | [`CLAUDE.md`](../../CLAUDE.md), [`0183_subscription_credit_bucket.sql`](../../packages/db/schema/supabase/0183_subscription_credit_bucket.sql) | Keep append-only entries, per-account transactional locks, bucket-aware debits/refunds, freezes, and reconciliation. |
 | Generation | [`generations/route.js`](../../app/api/v1/generations/route.js), [`registry.js`](../../packages/provider-sdk/registry.js) | Validation and pricing precede debit; provider submission currently follows debit in the request. |
 | Completion | [`providerCompletion.js`](../../lib/providerCompletion.js), [`fal/route.js`](../../app/api/webhook/fal/route.js) | Success and stored output are distinct states. Callback replay and missing provider correlation need explicit recovery. |
@@ -21,7 +21,7 @@ The approach adapts Donne Martin's [System Design Primer](https://github.com/don
 | Video agent | [ADR 0074](../adr/0074-openmontage-video-agent.md), [`montage/SPEC.md`](../montage/SPEC.md) | Keep isolated bounded compute and the existing paid-job lifecycle; runner rollout is a separate gate. |
 | Operations | [`TRD.md`](../product/TRD.md), [`recoveryHealth.js`](../../lib/recoveryHealth.js) | Keep recovery heartbeats, nightly reconciliation, protected migrations, and health-checked deployment. |
 
-The default production configuration enables Chat and disables tenant projects, Publish, Cinema, subscriptions, and the video agent. Named staging settings differ. A feature can exist in source while its production user path remains closed; activation must follow the existing acceptance plan.
+The default production configuration (`wrangler.jsonc`, as of 16 October 2026) enables Chat, tenant projects, Publish, Cinema publication and viewing, and the video agent, and disables subscriptions, project media uploads and the fal durable dispatch flags. Named staging settings differ. A feature can exist in source while its production user path remains closed; activation must follow the existing acceptance plan.
 
 ## Requirements and invariants
 

@@ -77,8 +77,10 @@ message about it gets no detail: "This account is under review."
 
 ## What is not here
 
-- Automatic scanning of prompts, uploads or outputs. The providers run their
-  own classifiers and the violations queue handles what is reported. A hash
+- Automatic escalation. The providers run their own classifiers, and the
+  generated-image scanner (migration 0289, `CONTENT_SCAN_ENABLED`, off in
+  production) only places holds for human review (see Scanner holds below).
+  It covers generated images only. A hash
   match on uploads (PhotoDNA or an IWF hash list) needs an agreement with the
   IWF and is a separate decision.
 - A hotline. Users report through **Report** on a Library card or

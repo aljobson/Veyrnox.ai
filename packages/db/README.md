@@ -1,18 +1,26 @@
 # @veyrnox/db
 
 Datastore access for the Veyrnox gateway: ledger, jobs, catalog, R2 URLs.
+Production is Supabase Postgres (ADR-0006); the Worker reaches it through
+PostgREST and RPCs via `supabase-client.js` (and `tenant-client.js` for
+tenant project routes, ADR-0051).
 
 ## Schema
 
-`schema/0001_initial.sql` — Postgres migration for:
+`schema/0001_initial.sql` and `schema/0002_model_catalog_seed.sql` build a
+local/test database. Everything after that lives in `schema/supabase/`
+(`NNNN_<name>.sql`, Supabase-only: RLS, `auth.*` triggers, RPCs). See
+`schema/supabase/README.md` for numbering and apply rules.
 
-- `users` (Clerk-shadow via `clerk_id` unique)
+`0001_initial.sql` creates:
+
+- `users` (shadow row per Supabase identity, `auth_id` unique)
 - `credit_balances` (materialised `SUM(delta)`, `CHECK (balance >= 0)`)
 - `ledger_entries` (append-only, enforced by trigger)
 - `jobs` (with `job_state` enum: PRICED → DEBITED → SUBMITTED → SUCCEEDED / FAILOVER / FAILED / REFUNDED / STORED)
 - `model_catalog`, `assets`, `webhook_events`
 
-**No outbox table.** Inngest's durable event log replaces the hand-rolled outbox+relay per target-architecture §25.7.
+**No outbox table.** The provider webhook plus `webhook_events` dedupe replaced it.
 
 ## Run migrations
 
@@ -23,13 +31,21 @@ DATABASE_URL=postgres://veyrnox:veyrnox_dev@localhost:54329/veyrnox \
 
 For local development, `docker compose up -d postgres` spins up a matching Postgres 16 on port 54329.
 
-For Neon, use the pooled connection string from the Neon console.
+Production migrations are not run with this script: the `apply-migrations`
+workflow applies `schema/supabase/` on `main` after the owner approves
+(`scripts/apply-migrations.mjs`, ADR-0023).
 
 ## Runtime API
 
-The `Ledger` class in `ledger.ts` is the sole writer to `ledger_entries`. Every mutation goes through `debit()`, `refund()`, or `grant()` — never a raw INSERT — so the append-only invariant and the `balance = SUM(delta)` invariant both hold.
+Production writes to the ledger go only through the RPCs (`ledger_debit`,
+`ledger_refund`, `ledger_grant`, `signup_grant`, `credit_top_up`, and the
+others listed in `CLAUDE.md`), never a raw INSERT.
 
-The class is driver-agnostic: it takes any `PgLikePool` (see `types.ts`). Tests wire `pg.Pool` against local Postgres; production wires `@neondatabase/serverless`'s `Pool` against Neon.
+The `Ledger` class in `ledger.ts` is the legacy gateway-v1 writer and is a
+**test harness only**: it predates Free Credits and writes no `free_delta`.
+Nothing under `app/` or `lib/` may import it (`tests/ledgerNotWired.test.mjs`).
+It survives so `ledger.acceptance.test.ts` can prove the schema's constraints
+and triggers against a real Postgres via any `PgLikePool` (see `types.ts`).
 
 
 ## Test dependencies

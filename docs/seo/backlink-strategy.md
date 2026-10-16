@@ -37,8 +37,10 @@ better than head terms, because the searcher is already comparing cost.
    item on this list. It is the page people link to when arguing about cost in a
    Discord or a subreddit, and it is the page an LLM cites when asked what a
    model costs. It also happens to be content we already hold in the database.
-   Currently `/pricing` is one page listing everything, which cannot rank for
-   forty different queries.
+   Shipped as `/models/<id>` (`app/veyrnox/models/[id]/page.js`, rendered
+   per request from the live catalog and listed in `app/sitemap.js`) beside the
+   `/models` index and `/tools`; `/pricing` stays one page listing everything.
+   The per-model route is `/models/<id>`, not `/pricing/<model-slug>`.
 2. **Submit to the AI tool directories.** Free listings, `dofollow` on several,
    and they are how this category actually gets discovered: Futurepedia,
    There's An AI For That, AI Tool Hunt, Toolify, Insidr, AI Scout, Foundr AI.

@@ -105,7 +105,7 @@ No catalog migration until that exists.
   ignored.
 - **Exit gate:** tests pass; an authenticated browser can PUT a file to R2 and
   no other user's prefix is reachable.
-- **Status 2026-10-08: done** (`app/api/v1/uploads/route.js`). Also now: audio types, `insufficient_credits` for a zero balance, the ADR-0035 rate limit, a 10-upload cap, kebab-case error codes. ADR-0044 (reserved byte budget) is Proposed and its flag is off in production.
+- **Status 2026-10-08: done** (`app/api/v1/uploads/route.js`). Also now: audio types, `insufficient_credits` for a zero balance, the ADR-0035 rate limit, a 10-upload cap, kebab-case error codes. ADR-0044 (reserved byte budget): its flag `UPLOAD_INTEGRITY_ENABLED` is on in production as of 2026-10-16.
 
 ## Slice 3 — Server-side content verification
 

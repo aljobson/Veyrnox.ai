@@ -38,12 +38,14 @@ credential rotation rule and the 72-hour ICO clock. Incident notes live under
 
 | Piece | Where |
 |---|---|
-| Record | `account_actions`, append-only (trigger `account_actions_no_update`), actions `warning`, `takedown`, `freeze`, `unfreeze`, `dispute_resolved`; `job_id` column links a strike to the exact generation; `actor` is the admin's email; `reason` is required. Migration 0146. |
-| Write path | `record_content_violation(p_auth_id, p_user_id, p_job_id, p_tier, p_reason)` RPC. Checks `users.is_admin` itself. A takedown deletes the job's `assets` rows and queues their R2 keys for the reaper, so the content stops being served in the same transaction. The third takedown calls `freeze_account` with reason `content:third_takedown`. |
+| Record | `account_actions`, append-only (trigger `account_actions_no_update`), actions `warning`, `takedown`, `freeze`, `unfreeze`, `dispute_resolved`, `csam_escalation`; `job_id` column links a strike to the exact generation; `actor` is the admin's email; `reason` is required. Migration 0146. |
+| Write path | `record_content_violation(p_auth_id, p_user_id, p_job_id, p_tier, p_reason)` RPC. Checks `users.is_admin` itself. A takedown deletes the job's `assets` rows and queues their R2 keys for the reaper, so the content stops being served in the same transaction. The third takedown calls `freeze_account` with reason `content:third_takedown`. The first standing takedown pauses generating for 3 days and the second for 7 (`users.hold_until`, migration 0274). The `csam_escalation` tier (`record_csam_escalation`, migration 0275) keeps the files on an evidence hold instead of deleting them, Freezes the account and sends no notice. Calls carry an idempotency key (migration 0253). |
 | Read path | `list_content_violations(p_auth_id, p_user_id, p_limit)` RPC, newest first, with the user's email and the job's model. |
 | Operator surface | `/app/admin/violations` (`app/veyrnox/app/admin/violations/page.js`): look a user up by email, user id or job id, see standing and the last 25 generations, record a warning or a per-job takedown with a required reason and a freeze notice on the third strike, and read the record. It drives `GET /api/v1/admin/users/lookup` (`admin_lookup_user`, migration 0148) and `POST` and `GET /api/v1/admin/violations` (`app/api/v1/admin/violations/route.js`), all behind middleware identity, the `ADMIN_REQUIRE_AAL2` second-factor flag and each RPC's own admin check. |
 | Traceability | Every job row keeps `inputs`, `provider`, `provider_job_id`, `model_id` and timestamps; every asset keeps its R2 key and SHA-256 (`job_stored`); every provider callback is in `webhook_events`. A strike therefore points at the prompt, the provider task and the bytes. |
-| Way back | `unfreeze_account(p_user_id, p_operator, p_reason)`, also logged. |
+| Way back | `unfreeze_account(p_user_id, p_operator, p_reason)`, also logged.
+| Appeals | A user appeals a warning, a takedown or a content Freeze at `/app/account/appeals`; the queue is `/app/admin/appeals` (`app/api/v1/admin/appeals/route.js`, migrations 0272 and 0273, ADR-0083). Upholding takes the strike out of the count, recomputes the hold and lifts a content Freeze. |
+| Notice | `lib/violationEmail.js` sends the user a warning, takedown or freeze email, and the appeal decision, through Resend when `RESEND_API_KEY` and `VIOLATION_EMAIL_FROM` are set. The admin's reason and the content are never in it. |
 
 Tiers and their meaning are in the runbook's "Tiered violation handling" table.
 
@@ -66,8 +68,6 @@ Article 50 direction).
 
 ## Open items
 
-- An email to the user on a warning or takedown. The record exists; the notice is not
-  automated yet.
 - BytePlus's written answers on the US exclusion and on our platform status
   (ADR-0058 "Before activating any row", items 2 and 3).
 

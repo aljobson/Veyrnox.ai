@@ -1,6 +1,6 @@
 # Video Agent (OpenMontage runner) — spec
 
-Implements [ADR-0074](../adr/0074-openmontage-video-agent.md). Status: **Proposed**. Modelled on
+Implements [ADR-0074](../adr/0074-openmontage-video-agent.md). Status: **Accepted and live** (ADR-0074 accepted 2026-10-07; in `wrangler.jsonc` as of 2026-10-16 `AGENT_VIDEO_ENABLED` and `MONTAGE_LIVENESS_ENABLED` are `"true"` in production and staging, the `video-agent` catalog row is active since 0234, and the page stays out of the navigation behind `localStorage.veyrnox_video_agent`). The sections below keep their dated build and test logs. Modelled on
 [Auto Short](../auto-short/SPEC.md): same money path, same webhook and sweep pattern, one new external service.
 
 ## 1. What it is
@@ -324,7 +324,7 @@ Three paths that section 9 left unproven were exercised on staging on main's cod
   with no job and no debit.
 - **Reload mid-run.** A full reload brought the RUNNING panel back with an empty brief box (#647).
 
-**Lost-run check (built, flag off).** Fifty minutes is too long to hold credits for a run that died in its second minute. With
+**Lost-run check (built; `MONTAGE_LIVENESS_ENABLED` is `"true"` in production since 2026-10-10).** Fifty minutes is too long to hold credits for a run that died in its second minute. With
 `MONTAGE_LIVENESS_ENABLED="true"` the sweep asks the runner's signed `POST /runs` which of the young runs it still has, and fails a
 run as `run_lost` when the runner answers `unknown` (the machine restarted: runs live in memory) or `ended` (its thread finished and
 no result reached us). Refund in about five minutes. Rules:
@@ -352,7 +352,7 @@ which has `/runs`). The owner restarted the runner machine during a real run:
 Two earlier attempts lost the race, because the run finished before a hand-typed restart landed. What worked: the owner started
 `sleep 45; for i in 1 2 3 4 5 6; do fly machine restart <id> -a <app>; sleep 30; done`, and Approve was clicked inside the 45 seconds.
 
-Still "false" in production and in `wrangler.jsonc` for both environments. Not tried: a runner that answers `ended`, and two machines
+As of 2026-10-09 still "false" in production; on in `wrangler.jsonc` for both environments by 2026-10-16. Not tried: a runner that answers `ended`, and two machines
 (where the check must stay off).
 
 ## 12. Measured runs (2026-10-09, production gate G3)

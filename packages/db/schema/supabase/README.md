@@ -2,7 +2,7 @@
 
 Files here run **only against Supabase Postgres**, not against local Postgres.
 
-`scripts/migrate.mjs` reads `packages/db/schema/*.sql` non-recursively — it does not descend into subdirectories. To apply Supabase-only migrations, use `scripts/migrate.mjs --dir=packages/db/schema/supabase` (Slice 4 will add the flag).
+`scripts/migrate.mjs` reads `packages/db/schema/*.sql` non-recursively — it does not descend into subdirectories. Production applies them with `scripts/apply-migrations.mjs` (the `apply-migrations` workflow, ADR-0023); `scripts/replay-migrations.mjs` replays them for tests. `migrate.mjs` has no `--dir` flag.
 
 ## Why separate
 

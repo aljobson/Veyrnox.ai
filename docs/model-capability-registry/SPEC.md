@@ -1,10 +1,10 @@
 # Model capability registry — spec
 
-- **Status**: Implemented. Accepted as [ADR-0027](../adr/0027-model-capability-registry.md) on 2026-09-22; the registry is `lib/modelCapabilities.js`. (This header read "Draft for owner review" until 2026-10-03.)
-- **Related**: `lib/modelCapabilities.js` ([ADR-0027](../adr/0027-model-capability-registry.md); replaced `lib/providerDuration.js`), `app/api/v1/generations/route.js`,
+- **Status**: Implemented. Accepted as [ADR-0027](../adr/0027-model-capability-registry.md) on 2026-09-22; the registry is `REGISTRY` in `lib/modelCapabilities.js`, extended by `lib/additionalModelCapabilities.js`. (This header read "Draft for owner review" until 2026-10-03.)
+- **Related**: `lib/modelCapabilities.js` and `lib/additionalModelCapabilities.js` ([ADR-0027](../adr/0027-model-capability-registry.md); replaced `lib/providerDuration.js`, which no longer exists), `app/api/v1/generations/route.js`,
   `app/api/catalog/route.js`, `app/veyrnox/app/create/page.js`,
   [ADR-0020](../adr/0020-kie-and-openrouter-providers.md)
-- **Source of the design**: `packages/studio/src/modelCapabilities.js`,
+- **Source of the design** (the `packages/studio` copy went with ADR-0015): `packages/studio/src/modelCapabilities.js`,
   `videoModelParameters.js`, `imageSizing.js` and the `inputs` schema of
   `models.js` in Anil-matcha/Open-Generative-AI (MIT, © 2026 Open Generative AI
   Contributors). We port the helper logic and the schema shape, not the
@@ -12,7 +12,7 @@
 
 ## 1. Problem
 
-What a model accepts, and what one priced unit buys, is spread over five places:
+What a model accepts, and what one priced unit buys, was spread over five places (this table is the problem as it stood before ADR-0027):
 
 | Knowledge | Where it lives today |
 |---|---|
@@ -51,7 +51,7 @@ costs*.
 
 ## 3. Record shape
 
-Code, not database: `lib/modelCapabilities/registry.js`, keyed by
+Code, not database: `REGISTRY` in `lib/modelCapabilities.js` (the spec planned a `lib/modelCapabilities/registry.js` directory; it was built as one module), keyed by
 `provider_endpoint`. A registry change is a reviewed PR with tests; a catalog
 row can only go `active` if its endpoint has a record (see §6).
 
@@ -130,7 +130,7 @@ sell one priced tier per row).
 - `priceFor` becomes `credits_5s × units`, where units is 1 for `output`, or
   `seconds / seconds[0]` for `clip` (must divide exactly; otherwise refuse).
 
-### Payload (`lib/providerDuration.js` → `lib/modelCapabilities/shape.js`)
+### Payload (`lib/providerDuration.js` → `shapePayload` in `lib/modelCapabilities.js`)
 
 `shapeForProvider` keeps only declared keys, applies `rename`, maps
 `duration_seconds` through `lengthField`, puts media URLs in their fields,

@@ -20,8 +20,12 @@ Generation:
 - `fal.js` — fal.ai queue submit + Ed25519 webhook verification, bound to
   our own fal tenant id (`tests/falWebhook.test.mjs`,
   `tests/falWebhookSignature.test.mjs`)
-- `kie.js` — kie.ai submit + HMAC webhook verification
-- `openrouter.js` — OpenRouter submit + webhook verification
+- `kie.js` — kie.ai submit + HMAC webhook verification (fails closed
+  without a key)
+- `openrouter.js` — OpenRouter video submit + webhook verification
+- `openrouterChat.js` — OpenRouter streaming chat (ADR-0067); typed errors
+- `exa.js` — capped web search for chat (ADR-0067 amendment 8): fixed text
+  length, at most three results
 - `grsai.js` — GrsAI submit; no signed callback, results are polled
 - `byteplus.js` — BytePlus ModelArk submit; its callback is unsigned, so it
   is never registered and results are polled (`lib/byteplusSweep.js`)
@@ -32,10 +36,14 @@ Storage, billing and email:
   (`tests/r2Copy.test.mjs`); `r2Copy.js` copies provider output into R2
 - `stripe.js` — Checkout sessions and HMAC-SHA256 webhook verification
   (ADR-0031)
+- `stripeCreditSubscriptions.js`, `stripePublishPlan.js` — Checkout for
+  credit subscriptions and Publish Plans
 - `resend.js` — transactional email over Resend's HTTP API
 
-Social publishing (`social/`, ADR-0061): `instagram.js`, `linkedin.js`,
-`tiktok.js`, `twitter.js`, `youtube.js`.
+Social publishing (`social/`, ADR-0061): `instagram.js`, `facebook.js`,
+`linkedin.js`, `tiktok.js`, `twitter.js`, `youtube.js`, `threads.js`,
+`pinterest.js`, `bluesky.js`, `twitch.js`, `gmb.js`, plus shared
+`common.js`, `videoPublishing.js` and `inbox.js`.
 
 Replicate failover and DeepSeek moderation adapters were unshipped
 TypeScript stubs and were removed 2026-09-11; see ADR-0009 for the fal

@@ -238,9 +238,25 @@ acceptance records in this folder.
 | Calendar (month, week, list) with confirmed reschedule | Built (0192, `PUBLISH_CALENDAR_ENABLED`). Drag opens a confirmation form; a Reschedule button gives a keyboard and touch path. |
 | Analytics dashboard | Built for Instagram, YouTube and TikTok (0188, 0190). X and LinkedIn analytics are not built. Twitch: the sweep collects the latest 20 videos with their own view counts (only while the extended switch and `PUBLISH_ANALYTICS_ENABLED` are on; no channel follower or subscriber totals), and the dashboard shows them as a Videos tile, a Views tile and a views-only table (#642, merged 2026-10-08; not yet seen against a real Twitch account). Facebook, Threads, Pinterest, Bluesky and Business Profile analytics are not built. |
 | Best time to post and posting frequency | Built as a weekly cached aggregate (0191) shown on the analytics page. It is not offered inside the composer. |
-| Approval workflow with reviewers, competitors, SmartLinks, hashtag tracker, inbox, flows, ads, reports | Not built. |
-| Publish Plan | Built behind `PUBLISH_RUNTIME_FLAGS.plans` (0293, 0298): $15/month for up to five accounts, scheduling, 366-day analytics history and best-time recommendations. Free includes one account and Post now. |
+| Approval workflow with reviewers, competitors, SmartLinks, hashtag tracker, inbox, flows, ads, reports | Not built on 2026-10-08. Since then built, except competitors and the hashtag tracker: see the 2026-10-16 update below. |
+| Publish Plan | Built (0293, 0298); `PUBLISH_RUNTIME_FLAGS.plans` is `"true"` in production as of 2026-10-16: $15/month for up to five accounts, scheduling, 366-day analytics history and best-time recommendations. Free includes one account and Post now. |
 | Publish switches for the new networks | `PUBLISH_EXTENDED_NETWORKS_ENABLED`: `"false"` in production, `"true"` on staging (PR #638, 2026-10-08). It gates new connections and new post creation only; targets already queued can finish. `PUBLISH_ENABLED` must also be true. |
+
+**Update 2026-10-16 (migrations through 0326, `wrangler.jsonc`).** Publish is open in production (`PUBLISH_ENABLED` `"true"`) for `PUBLISH_RELEASED_NETWORKS` = `youtube,linkedin,twitter,tiktok`; the extended networks, device uploads and native video destinations are off there. Built since the table above, and enabled in production through `PUBLISH_RUNTIME_FLAGS`:
+
+| Capability | Migration / route |
+|---|---|
+| Multi-reviewer approvals with an emailed review link | 0304; `/api/v1/social/approvals`, public `/api/social/approvals/{token}` |
+| Team roles (manager, editor, reviewer, analyst, viewer), brand access, team publishing and actions | 0305 to 0308; `/api/v1/social/team`, `/brands`, `/access` |
+| SmartLinks (link-in-bio) with click counts | 0300, 0324; `/api/v1/social/smartlink`, public `/s/{slug}` |
+| Unified inbox, replies, reply suggestions, workflows, contacts and CSV import, inbox analytics | 0299, 0309, 0316, 0318 to 0320; `/api/v1/social/inbox`, `/contacts`, `/workflows`; Meta webhook `/api/webhook/social/meta` |
+| Content library, presets, queues, post variants, cancel/restore | 0301 to 0303, 0310, 0311; `/api/v1/social/presets`, `/queues` |
+| Reports: templates, schedules, exports, email delivery | 0312, 0317, 0323; `/api/v1/social/reports` |
+| Customer API (keys, webhooks, logs) | 0313 to 0315; `/api/publish/v1/*`, `/api/v1/social/developer/*` |
+| Ads campaigns and commerce products | 0321; `/api/v1/social/ads`, `/commerce/products` |
+| RSS autolists | 0322, 0325; `/api/v1/social/autolists` |
+
+Still not built: competitor tracking, the hashtag tracker, AI caption suggestions, and a Looker Studio-style connector (the customer API is the nearest equivalent). Pages live under `/app/publish/` (`activity`, `ads`, `analytics`, `autolists`, `calendar`, `commerce`, `contacts`, `developer`, `inbox`, `plan`, `queues`, `reports`, `smartlink`, `team`, `workflows`).
 
 **What each of the eleven networks publishes** (from the adapters, `lib/social/networks.js` and `lib/socialPublishSweep.js`). The first five are the original adapters; the last six are tester-stage and have **not** been exercised against real provider accounts:
 

@@ -54,7 +54,7 @@ Consequences:
 `uploads/{auth_id}/{uuid}.{ext}` and pins the `Content-Type`. It is also used by
 the Publish device uploads and project assets routes. Bounded by ADR-0035 (rate
 limit, flag on in production) and by a 10-unconsumed-upload cap; the ADR-0044
-byte budget is Proposed and `UPLOAD_INTEGRITY_ENABLED` is `false` in production.
+byte budget (ADR-0044) is on: `UPLOAD_INTEGRITY_ENABLED` is `"true"` in production as of 2026-10-16.
 
 ## 3. Decision: fal reads the upload through a presigned GET
 
