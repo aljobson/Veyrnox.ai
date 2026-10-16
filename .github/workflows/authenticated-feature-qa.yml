@@ -1,0 +1,69 @@
+name: authenticated feature QA
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: authenticated-feature-qa-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  isolated-feature-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install application dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Install pinned isolated browser QA tools
+        run: |
+          npm install --no-save --no-audit --no-fund @playwright/test@1.63.0
+          npx playwright install --with-deps chromium
+      - name: Build owned local application
+        run: npm run build -- --webpack
+      - name: Exercise all isolated authenticated features
+        env:
+          QA_FIXTURE_BASE_URL: http://127.0.0.1:3100
+          QA_FIXTURE_OUTPUT_DIR: test-results/authenticated-feature/browser
+          QA_FIXTURE_REPORT: test-results/authenticated-feature/report.json
+          PUBLISH_ENABLED: 'true'
+          PUBLISH_CALENDAR_ENABLED: 'true'
+          TENANT_PROJECTS_ENABLED: 'true'
+          EDITOR_SHARED_TOOLS_ENABLED: 'true'
+          EDITOR_TIMELINE_ENABLED: 'true'
+          EDITOR_MULTITRACK_ENABLED: 'true'
+        run: |
+          set -euo pipefail
+          mkdir -p test-results/authenticated-feature
+          node node_modules/next/dist/bin/next start --hostname 127.0.0.1 --port 3100 > test-results/authenticated-feature/server.log 2>&1 &
+          QA_SERVER_PID=$!
+          trap 'kill "$QA_SERVER_PID" 2>/dev/null || true; wait "$QA_SERVER_PID" 2>/dev/null || true' EXIT
+          QA_READY_DEADLINE=$((SECONDS + 60))
+          until curl --fail --silent --show-error --max-time 2 http://127.0.0.1:3100/app > /dev/null; do
+            if ! kill -0 "$QA_SERVER_PID" 2>/dev/null || (( SECONDS >= QA_READY_DEADLINE )); then
+              echo '::error::Owned loopback QA server did not become ready within 60 seconds'
+              exit 1
+            fi
+            sleep 1
+          done
+          npx playwright test -c e2e/authenticated-fixtures.config.mjs --workers=1 --retries=0
+      - name: Retain isolated feature QA evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: authenticated-feature-qa
+          path: test-results/authenticated-feature/
+          retention-days: 7

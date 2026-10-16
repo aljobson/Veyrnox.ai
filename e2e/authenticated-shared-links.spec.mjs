@@ -49,10 +49,15 @@ test('Saved Editor review loads a valid revision and recovers comment reads with
   ]);
 });
 
-test('Saved Editor review rejects an invalid revision instead of counting a 404 as an interior', async ({ page }) => {
+test('Saved Editor review rejects an invalid revision instead of counting a not-found shell as an interior', async ({ page }) => {
   const fixture = await installProductFixtures(page);
   const response = await fixture.open(`/app/editor/review?project=${PROJECT}&revision=0`);
-  expect(response.status()).toBe(404);
+  // Next preserves HTTP 200 once streaming starts; rejection must be proved
+  // by the actual not-found UI and noindex, not the transport status alone.
+  expect([200, 404]).toContain(response.status());
+  await expect(page.getByRole('heading', { level: 1, name: 'This page isn’t here.', exact: true })).toBeVisible();
+  await expect(page.locator('meta[name="robots"][content*="noindex"]')).not.toHaveCount(0);
+  await expect(page.getByRole('region', { name: 'Project review', exact: true })).toHaveCount(0);
   await expect(page.getByRole('img', { name: 'Saved edit preview', exact: true })).toHaveCount(0);
   expect(fixture.requests.some(r => r.path.startsWith('/api/v1/projects/'))).toBe(false);
 });
