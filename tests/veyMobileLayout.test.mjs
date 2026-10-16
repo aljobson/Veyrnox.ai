@@ -30,6 +30,18 @@ test('question panel docks Vey above its left edge, clear of the right-hand Resu
   assert.deepEqual(mobileDockPosition({width:320,height:568},rect(8,340,304,220)),{x:20,y:274});
   assert.deepEqual(mobileDockPosition({width:390,height:844},null),{x:8,y:774});
 });
+test('a visible walkthrough above chat keeps its mascot lane and clears both panels', () => {
+  for (const [width,height,chatHeight] of [[390,844,280],[320,568,220]]) {
+    const viewport={width,height};
+    const chat=rect(8,height-8-chatHeight,Math.min(330,width-16),chatHeight);
+    const guide=rect(8,chat.top-8-136,Math.min(330,width-80),136);
+    const dock=mobileDockPosition(viewport,guide,true);
+    assert.ok(guide.bottom<chat.top);
+    assert.ok(dock.x>=guide.right+8);
+    assert.ok(dock.y+VEY_SIZE.height<chat.top);
+    assert.ok(mobileClearance(32,viewport,guide)>chatHeight+136);
+  }
+});
 test('an avoided body still points with the actual mirrored fingertip', () => {
   const p={x:300,y:200},point={x:54,y:340};
   for (const facing of [-1,1]) {
