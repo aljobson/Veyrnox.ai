@@ -111,6 +111,11 @@
       "id": "vey-mobile-guide-compact",
       "decision": "Below 640px, Vey uses a compact step card with two-line guidance and primary actions. More reveals secondary controls and full guidance; desktop remains expanded. Keep highlighted controls above the panel and preserve touch-sized actions.",
       "source": "User request: make the mobile guidance panel smaller so it does not cover controls or the image."
+    },
+    {
+      "id": "oddling-doll-lab-price-forward",
+      "decision": "Oddling Studio starts with a token-based dress-up doll for fast body, hair and outfit selection, followed by the full detailed trait controls. Its sticky aqua action shows the live catalog cost prominently, reserves amber for credit information, and warns signed-in users when their balance is low without charging before Create confirmation.",
+      "source": "User selected a visual doll-mockup workflow and a large bright generation action with visible cost and low-credit prompting."
     }
   ],
   "evidence": [

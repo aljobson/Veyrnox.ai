@@ -16,6 +16,32 @@ export const ODDLING_STUDIO_SECTIONS = [
   { id: 'style', label: 'Style world', hint: 'Wardrobe, accessories, prop and finish', groupIds: ['wardrobe_style', 'accessories', 'distinctive_features', 'rendering_style'] },
 ];
 
+export const ODDLING_DOLL_FACETS = [
+  {
+    id: 'body_type', label: 'Body', options: [
+      ['Very Skinny', 'Needle'], ['Pear', 'Pear'], ['Fat', 'Bubble'], ['Hyper-Muscular', 'Power'],
+    ],
+  },
+  {
+    id: 'hair', label: 'Hair', options: [
+      ['Short Hair', 'Short'], ['Sphere Cut', 'Sphere'], ['Sculptural Wave Tower', 'Tower'], ['Shelf Cut', 'Shelf'],
+    ],
+  },
+  {
+    id: 'wardrobe_style', label: 'Outfit', options: [
+      ['Modern Basics', 'Tee + jeans'], ['Office Surrealist', 'Office'], ['Soft Sculpture', 'Puffer'], ['Tiny Formalwear', 'Tiny formal'],
+    ],
+  },
+];
+
+export function oddlingCreditState(balance, cost) {
+  if (!Number.isFinite(balance) || !Number.isFinite(cost) || cost <= 0) return null;
+  return {
+    low: balance <= cost * 2,
+    insufficient: balance < cost,
+  };
+}
+
 export const ODDLING_MOTIONS = [
   { id: 'deadpan-turn', name: 'Deadpan turn', phrase: 'slowly turns to camera, waits one beat, then delivers a perfectly deadpan look' },
   { id: 'tiny-reveal', name: 'Tiny object reveal', phrase: 'ceremoniously reveals one comically tiny object to the camera' },

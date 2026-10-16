@@ -6,6 +6,7 @@ import sharp from 'sharp';
 import { CHARACTER_GROUPS, ODDLING_ARCHETYPES } from '../app/veyrnox/_lib/character.js';
 import {
     ODDLING_MOTIONS,
+    ODDLING_DOLL_FACETS,
     ODDLING_PRESET_SOURCES,
     ODDLING_STUDIO_SECTIONS,
     buildOddlingStudioPrompt,
@@ -14,6 +15,7 @@ import {
     animationModel,
     buildOddlingAnimationPrompt,
     oddlingsForSource,
+    oddlingCreditState,
     randomizeOddlingStyle,
     readOddlingLibrary,
     saveOddlingToLibrary,
@@ -26,6 +28,24 @@ test('every full-studio section resolves to real character groups', () => {
         assert.ok(section.groupIds.length > 0);
         for (const id of section.groupIds) assert.ok(ids.has(id), `${section.id} references missing ${id}`);
     }
+});
+test('doll lab quick picks are valid canonical body, hair and wardrobe traits', () => {
+    assert.deepEqual(ODDLING_DOLL_FACETS.map(({ id }) => id), ['body_type', 'hair', 'wardrobe_style']);
+    for (const facet of ODDLING_DOLL_FACETS) {
+        const valid = new Set(CHARACTER_GROUPS.find(({ id }) => id === facet.id).options.map(([value]) => value));
+        assert.equal(facet.options.length, 4);
+        for (const [value, label] of facet.options) {
+            assert.ok(valid.has(value), `${value} must remain a valid ${facet.id} choice`);
+            assert.ok(label);
+        }
+    }
+});
+test('low-credit prompt distinguishes a warning from an unaffordable generation', () => {
+    assert.deepEqual(oddlingCreditState(4, 2), { low: true, insufficient: false });
+    assert.deepEqual(oddlingCreditState(1, 2), { low: true, insufficient: true });
+    assert.deepEqual(oddlingCreditState(20, 2), { low: false, insufficient: false });
+    assert.equal(oddlingCreditState(null, 2), null);
+    assert.equal(oddlingCreditState(20, null), null);
 });
 test('Build & proportions exposes independent arm and leg sizes in portrait and motion prompts', () => {
     const section = ODDLING_STUDIO_SECTIONS.find((item) => item.id === 'build');
