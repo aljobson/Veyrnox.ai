@@ -239,6 +239,7 @@ export default function OddlingStudio() {
   const [loadedPassportId, setLoadedPassportId] = useState(null);
   const [session, setSession] = useState(null);
   const [balance, setBalance] = useState(null);
+  const [handingOff, setHandingOff] = useState(false);
   useEffect(() => { publishJourneyView({ route: '/app/oddlings', loadedId: loadedPassportId }); }, [loadedPassportId]);
 
   useEffect(() => {
@@ -357,10 +358,15 @@ export default function OddlingStudio() {
     writeOddlingDraft(window.localStorage, picks);
     const result = saveOddlingToLibrary(window.localStorage, picks, motionId);
     if (result.ok) setLibrary(result.items);
-    const written = writeStudioDraft(window.sessionStorage, { prompt, model, aspect: '9:16', ...(mode === 'motion' ? { durationSeconds: 5 } : {}) });
+    const written = writeStudioDraft(window.sessionStorage, {
+      prompt, model, aspect: '9:16', oddlingPicks: picks,
+      ...(mode === 'motion' ? { durationSeconds: 5 } : {}),
+    });
     if (!written) { setNotice('The Create draft could not be handed off. Copy the prompt preview and paste it into Create.'); return; }
     if (mode !== 'motion') journeyHandoff(loadedPassportId);
-    router.push(`/app/create?model=${encodeURIComponent(model)}&oddling=1&passport=1${mode === 'motion' ? `&oddlingPhoto=${encodeURIComponent(portraitId)}&motion=${encodeURIComponent(motionId)}` : ''}`);
+    setHandingOff(true);
+    const destination = `/app/create?model=${encodeURIComponent(model)}&oddling=1&passport=1${mode === 'motion' ? `&oddlingPhoto=${encodeURIComponent(portraitId)}&motion=${encodeURIComponent(motionId)}` : ''}`;
+    router.push(destination);
   }
 
   return (
@@ -494,8 +500,8 @@ export default function OddlingStudio() {
                   <Link href="/app/credits" className="shrink-0 rounded-full bg-vx-money px-3 py-2 text-[11px] font-extrabold text-vx-money-ink hover:brightness-110">Get credits</Link>
                 </div>
               )}
-              <Button type="button" size="lg" cost={generationCost} disabled={generationCost == null} data-assistant-target="oddlings.continue" onClick={continueToCreate} className="w-full justify-between rounded-xl py-5 text-lg shadow-[0_0_28px_rgb(var(--vx-accent)/0.16)]">
-                {generationCost == null ? 'Checking live price…' : mode === 'motion' ? 'Animate character' : 'Generate portrait'}
+              <Button type="button" size="lg" cost={generationCost} disabled={generationCost == null || handingOff} aria-busy={handingOff} data-assistant-target="oddlings.continue" onClick={continueToCreate} className="w-full justify-between rounded-xl py-5 text-lg shadow-[0_0_28px_rgb(var(--vx-accent)/0.16)]">
+                {handingOff ? 'Opening Create…' : generationCost == null ? 'Checking live price…' : mode === 'motion' ? 'Animate character' : 'Generate portrait'}
               </Button>
               <div className="mt-2 flex items-center justify-between gap-3 font-vx-mono text-[9px]">
                 <span className="text-vx-fg-faint">OPENS CREATE · NO CHARGE UNTIL CONFIRMED</span>

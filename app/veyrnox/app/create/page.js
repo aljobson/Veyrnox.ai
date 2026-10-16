@@ -25,7 +25,7 @@ import { templateStartId } from '../../../../lib/templateStart';
 import { DEFAULT_CINEMA, buildCinemaPrompt } from '../../_lib/cinema';
 import { CameraPanel } from '../../_components/CameraPanel';
 import { CharacterPanel } from '../../_components/CharacterPanel';
-import { buildCharacterPrompt } from '../../_lib/character';
+import { buildCharacterPrompt, sanitizeOddlingPicks } from '../../_lib/character';
 import { DrawOnImage } from '../../_components/DrawOnImage';
 import { SourcePickers } from '../../_components/SourcePickers';
 import { LibraryPicker } from '../../_components/LibraryPicker';
@@ -90,6 +90,7 @@ export default function CreateStudio() {
   const [voice, setVoice] = useState(''); // the voice in words, for a speech model that takes one
   const [characterOn, setCharacterOn] = useState(false);
   const [character, setCharacter] = useState({});
+  const [oddlingTransfer, setOddlingTransfer] = useState(null);
   const [count, setCount] = useState(1);
 
   const [balance, setBalance] = useState(null);
@@ -124,6 +125,14 @@ export default function CreateStudio() {
     if (draft?.aspect) setAspect(draft.aspect);
     if (draft?.durationSeconds) setDuration(`${draft.durationSeconds}s`);
     if (draft?.negativePrompt) setNegative(draft.negativePrompt);
+    if (params.get('passport') === '1' && storedDraft?.oddlingPicks) {
+      const imported = sanitizeOddlingPicks(storedDraft.oddlingPicks);
+      if (Object.keys(imported).length) {
+        setCharacter(imported);
+        setCharacterOn(true);
+        setOddlingTransfer(imported);
+      }
+    }
     const controller = new AbortController();
     if (portrait) {
       setAnimationPortrait(portrait);
@@ -452,6 +461,20 @@ export default function CreateStudio() {
             className="scroll-mt-24 mt-3 w-full bg-vx-panel border border-vx-field rounded-lg p-3.5 text-sm text-vx-fg placeholder:text-vx-fg-faint resize-none focus:outline-hidden focus:border-vx-accent"
             placeholder={promptPlaceholder(model)}
           />
+          {oddlingTransfer && model?.kind === 'image' && (
+            <section role="status" data-assistant-target="create.oddling-handoff" className="mt-3 flex flex-col gap-3 rounded-xl border border-vx-accent/40 bg-vx-accent/[0.07] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="font-vx-mono text-[9px] font-bold tracking-[0.14em] text-vx-accent">ODDLING LOADED</div>
+                <div className="mt-1 text-sm font-extrabold text-vx-fg">{oddlingTransfer.oddling_name || 'Your edited character'} is linked to this generation</div>
+                <p className="mt-1 text-xs text-vx-fg-muted">
+                  {[oddlingTransfer.body_type, oddlingTransfer.wardrobe_style, oddlingTransfer.hair].filter(Boolean).join(' · ')}
+                </p>
+              </div>
+              <button type="button" onClick={() => document.querySelector('[data-assistant-target="create.character"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="shrink-0 rounded-full border border-vx-accent/50 px-3 py-2 text-xs font-extrabold text-vx-accent hover:bg-vx-accent/10">
+                Review character
+              </button>
+            </section>
+          )}
           {activeTemplate?.inspired && (
             <p className="mt-2 text-sm text-vx-fg-body">
               {activeTemplate.needs}. This prompt creates a similar scene using your image.
@@ -638,7 +661,7 @@ export default function CreateStudio() {
           )}
 
           {model?.kind === 'image' && (
-            <div className="scroll-mt-24" data-assistant-target="create.character"><CharacterPanel enabled={characterOn} onToggle={setCharacterOn} picks={character} onChange={setCharacter} /></div>
+            <div className="scroll-mt-24" data-assistant-target="create.character"><CharacterPanel enabled={characterOn} onToggle={setCharacterOn} picks={character} onChange={setCharacter} handoffPicks={oddlingTransfer} /></div>
           )}
 
           {!isShort && (
