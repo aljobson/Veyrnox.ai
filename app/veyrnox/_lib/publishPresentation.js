@@ -31,6 +31,14 @@ export function activityLabel(action) {
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
+export function activityLoadError(error, older = false) {
+  if (error?.status === 402) return {
+    message: 'The Publish Plan is required to view brand activity.', planHref: '/app/publish/plan',
+  };
+  if (error?.status === 403) return { message: 'Your role cannot view the brand activity log.', planHref: null };
+  return { message: older ? 'Could not load older activity. Try again.' : 'Could not load brand activity. Try again.', planHref: null };
+}
+
 export function reportDeliverySummary(template) {
   if (!['weekly', 'monthly'].includes(template.delivery_cadence)) return 'Run and download this report manually.';
   const count = template.delivery_recipients?.length || 0;
