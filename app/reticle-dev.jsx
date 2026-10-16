@@ -4,6 +4,7 @@ import { journeyStore } from './veyrnox/_lib/veyJourneyStore';
 
 function readVeyLayout() {
   const guide = document.querySelector('[aria-label="Vey task walkthrough"]')?.getBoundingClientRect();
+  const question = document.querySelector('[role="dialog"][aria-labelledby="vx-helper-title"]')?.getBoundingClientRect();
   const mascot = document.querySelector('[data-testid="assistant-mascot"]')?.getBoundingClientRect();
   const overlaps = (a, b) => !!a && !!b && a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
   const controls = [...document.querySelectorAll('main button, main input, main textarea, main select, main summary, main img')]
@@ -15,6 +16,11 @@ function readVeyLayout() {
   const siteActions = document.querySelector('[data-site-actions]')?.getBoundingClientRect();
   return {
     guideOpen: !!guide,
+    guideVisible: !!guide?.width && guide.top >= 72 && guide.bottom <= innerHeight,
+    questionVisible: !!question?.width && question.top >= 72 && question.bottom <= innerHeight,
+    panelsClear: !!guide?.width && !!question?.width && !overlaps(guide, question),
+    mascotClearPanels: !overlaps(mascot, guide) && !overlaps(mascot, question),
+    guideStep: document.querySelector('[aria-label="Vey task walkthrough"]')?.dataset.step,
     docked: document.querySelector('[data-testid="assistant-mascot"]')?.getAttribute('data-mobile-docked') === 'true',
     mascotX: mascot ? Math.round(mascot.left) : null,
     mascotY: mascot ? Math.round(mascot.top) : null,
