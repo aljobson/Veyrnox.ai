@@ -39,6 +39,7 @@ test('every page template and every sitemap page renders within accessibility an
       page.on('pageerror', onError);
       try {
         const res = await page.goto(entry.pathname, { waitUntil: 'load' });
+        if (entry.pathname === '/m') await page.waitForURL(new URL('/m/create', baseURL).href, { waitUntil: 'load' });
         const status = res?.status() || 0;
         const gated = entry.access === 'admin-gate' && (new URL(page.url()).hostname !== new URL(baseURL).hostname || [401, 403].includes(status));
         const metrics = await page.evaluate(() => {
