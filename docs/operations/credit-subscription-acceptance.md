@@ -27,7 +27,7 @@ Customer Portal are not offered by these endpoints.
   `VIOLATION_EMAIL_FROM`. A missing/failed alert keeps refused invoice
   deliveries unprocessed and answers 503 so Stripe retries.
 - Confirm refund/default policy and approve tax and consent copy. The
-  consent identifier `credit-subscription-2026-10-16` is a version marker,
+  consent identifier `credit-subscription-2026-10-17` is a version marker,
   not Finance/Legal's approval of customer-facing wording.
 - Confirm Stripe's written acceptance before launch. Provide an E2E test
   account before browser acceptance of the later UI slice.

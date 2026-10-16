@@ -130,7 +130,7 @@ test('the public plan projection ignores identity headers and never consumes an 
   assert.equal(JSON.stringify(data).includes('private'), false);
 
   const invalid = passHandler({ action: 'plans', authed: false, rpcCall: async () => [
-    { id: 'pass-monthly', billing_interval: 'month', price_usd_cents: 998, intro_price_usd_cents: null },
+    { id: 'pass-monthly', billing_interval: 'month', price_usd_cents: 99, intro_price_usd_cents: null },
   ] });
   assert.equal((await invalid(new Request('https://test.invalid/api/cinema-pass-plans'))).status, 503);
   assert.throws(() => passHandler({ action: 'read', authed: false }), /Only plan discovery is public/);

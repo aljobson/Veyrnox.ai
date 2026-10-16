@@ -1,0 +1,18 @@
+{
+  "intents": {
+    "flow:publish-weekly-plan-option": {
+      "declaredAt": 1792194773367,
+      "id": "flow:publish-weekly-plan-option",
+      "state": "declared",
+      "statement": "A publisher can select Veyrnox Publish weekly billing, review the exact $4.99 weekly automatic-renewal disclosure, see that cancellation is available, and enable checkout only after consent.",
+      "status": "proposed",
+      "subject": "publish-weekly-plan-option",
+      "surface": {
+        "flow": "publish-weekly-plan-option"
+      },
+      "updatedAt": 1792194773381
+    }
+  },
+  "subject": "publish-weekly-plan-option",
+  "version": 1
+}

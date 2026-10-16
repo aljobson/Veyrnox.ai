@@ -28,11 +28,12 @@ test('subscription launches have versioned consent, complete legal disclosures a
   const terms = read('app/legal/terms/page.js');
   const refunds = read('app/legal/refund/page.js');
 
-  assert.match(subscriptions, /credit-subscription-2026-10-16/);
+  assert.match(subscriptions, /credit-subscription-2026-10-17/);
   assert.match(passApi, /cinema-pass-2026-10-16/);
-  assert.match(terms, /Monthly Credit Subscriptions/);
+  assert.match(terms, /Credit Subscriptions/);
   assert.match(terms, /Subscription Credits[\s\S]{0,300}do not roll over/);
-  assert.match(terms, /Cinema Pass[\s\S]{0,500}renews automatically each month/);
+  assert.match(terms, /Cinema Pass[\s\S]{0,500}renews automatically each week or month/);
+  assert.match(terms, /Veyrnox Publish Plan[\s\S]{0,500}weekly or monthly/);
   assert.match(refunds, /Within 14 days of the initial subscription payment/);
   assert.match(refunds, /refund the unused share of that paid period/);
   assert.match(refunds, /How to cancel/);

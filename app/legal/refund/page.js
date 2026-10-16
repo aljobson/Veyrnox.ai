@@ -10,7 +10,7 @@ export const metadata = {
 export default function Refund() {
     return (
         <LegalPage title="Refund Policy" updated="16 October 2026">
-            <p>This page explains refunds for generations, Credit Packs, Monthly Credit Subscriptions and Cinema Pass.</p>
+            <p>This page explains refunds for generations, Credit Packs, Credit Subscriptions, the Veyrnox Publish Plan and Cinema Pass.</p>
 
             <h2>Failed generations — automatic</h2>
             <p>Every generation shows its credit cost before you confirm. Credits are debited on submission. If the model provider rejects the job or fails to return a result, the full debit is refunded to your balance automatically, usually within seconds. You do not need to contact us. The refund appears as a separate entry in your ledger.</p>
@@ -28,12 +28,18 @@ export default function Refund() {
                 <li>If you joined through someone&rsquo;s referral link, refunding your first credit pack also reverses the referral reward that purchase earned for them. It does not change your refund.</li>
             </ul>
 
-            <h2>Monthly Credit Subscriptions</h2>
+            <h2>Credit Subscriptions</h2>
             <ul>
                 <li>You can stop renewal at any time from <a href="/app/credits#credit-subscriptions">Credits &amp; billing</a>. Your current Subscription Credits remain available only until the paid cycle ends; they do not roll over.</li>
                 <li>Within 14 days of the initial subscription payment, you can request immediate cancellation and a full refund if none of that cycle&rsquo;s Subscription Credits has been used. The cycle&rsquo;s Credits are removed before the refund is sent to the original payment method.</li>
                 <li>If any Subscription Credits have been used, or the initial 14-day period has ended, the immediate refund option is unavailable. You can still stop the next renewal.</li>
                 <li>A pending or refused refund is not described as complete. The billing screen lets you retry a recoverable request or contact support when operator review is required.</li>
+            </ul>
+
+            <h2>Veyrnox Publish Plan</h2>
+            <ul>
+                <li>You can stop weekly or monthly renewal from the Publish Plan page or its Stripe billing portal. The Plan continues until the current paid period ends.</li>
+                <li>For a refund request, contact support with your account email and the payment reference. Your statutory rights are not affected.</li>
             </ul>
 
             <h2>Cinema Pass</h2>
