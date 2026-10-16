@@ -32,7 +32,17 @@ jobs:
           QA_BASE_URL: https://veyrnox-ai-staging.al-jobson.workers.dev
           QA_REPORT_DIR: page-coverage-report/anonymous
         run: npx playwright test -c e2e/page-coverage.config.mjs --output test-results/page-qa-anonymous
+      - name: Retain anonymous page coverage
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: page-qa-anonymous
+          path: |
+            page-coverage-report/anonymous/
+            test-results/page-qa-anonymous/
+          retention-days: 7
       - name: Prepare authenticated staging session
+        id: auth_session
         if: always()
         env:
           E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
@@ -41,17 +51,18 @@ jobs:
           mkdir -p .scratch
           node e2e/create-qa-state.mjs
       - name: Sweep every page on authenticated desktop
-        if: always()
+        if: always() && steps.auth_session.outcome == 'success'
         env:
           QA_BASE_URL: https://veyrnox-ai-staging.al-jobson.workers.dev
           QA_STORAGE_STATE: .scratch/qa-session.json
           QA_REPORT_DIR: page-coverage-report/authenticated
         run: npx playwright test -c e2e/page-coverage.config.mjs --project desktop-authenticated --output test-results/page-qa-authenticated
-      - if: always()
+      - name: Retain authenticated page coverage
+        if: always() && steps.auth_session.outcome == 'success'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
-          name: page-qa-report
+          name: page-qa-authenticated
           path: |
-            page-coverage-report/
-            test-results/
+            page-coverage-report/authenticated/
+            test-results/page-qa-authenticated/
           retention-days: 7
