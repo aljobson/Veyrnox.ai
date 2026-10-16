@@ -31,7 +31,9 @@ export default function useVeyMobileLayout({ open, pathname, position, highlight
         restore(); main = current; original = main?.style.paddingBottom || '';
         base = main ? parseFloat(getComputedStyle(main).paddingBottom) || 0 : 0;
       }
-      const nextPanel = open ? document.querySelector(PANEL) : document.querySelector('[aria-label="Browser storage notice"]');
+      const editorDock = document.querySelector('[aria-label="Mobile editor sections"]');
+      const nextPanel = open ? document.querySelector(PANEL) : document.querySelector('[aria-label="Browser storage notice"]')
+        || (editorDock?.getBoundingClientRect().height > 0 ? editorDock : null);
       if (panel !== nextPanel) { resize.disconnect(); panel = nextPanel; if (panel) resize.observe(panel); }
       const viewport = { width: innerWidth, height: innerHeight };
       const dock = panel?.getBoundingClientRect();

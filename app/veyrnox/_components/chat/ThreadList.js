@@ -1,5 +1,5 @@
 'use client';
-import { useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import { ALL_CHATS, UNFILED, folderLabel, visibleThreads } from '../../_lib/chatFolders';
 
 const field = 'rounded-lg border bg-vx-base px-3 py-2 text-sm text-vx-fg';
@@ -8,6 +8,8 @@ const field = 'rounded-lg border bg-vx-base px-3 py-2 text-sm text-vx-fg';
 // narrow the list; deleting a folder keeps its chats. `folders` is null when folders are not available, and then none of
 // the folder controls show.
 export function ThreadList({ threads, folders = null, folder = ALL_CHATS, onFolder, onNewFolder, onRenameFolder, onDeleteFolder, onMove, activeId, onOpen, onNew, onPatch, onDelete }) {
+  const searchId = useId();
+  const folderId = useId();
   const [query, setQuery] = useState('');
   const [renaming, setRenaming] = useState(null);
   const [draft, setDraft] = useState('');
@@ -30,14 +32,14 @@ export function ThreadList({ threads, folders = null, folder = ALL_CHATS, onFold
   return (
     <nav aria-label="Chats" className="flex h-full flex-col gap-2 p-3">
       <button type="button" onClick={onNew} className="rounded-full border border-vx-border px-4 py-2 text-left text-sm font-semibold hover:border-vx-accent">New chat</button>
-      <label className="sr-only" htmlFor="chat-search">Search chats</label>
-      <input id="chat-search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search chats"
+      <label className="sr-only" htmlFor={searchId}>Search chats</label>
+      <input id={searchId} value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search chats"
         className={`${field} border-vx-border placeholder:text-vx-fg-faint`} />
 
       {folders && (
         <div className="space-y-1">
-          <label className="sr-only" htmlFor="chat-folder">Folder</label>
-          <select id="chat-folder" value={current ? folder : folder === UNFILED ? UNFILED : ALL_CHATS} onChange={(e) => choose(e.target.value)}
+          <label className="sr-only" htmlFor={folderId}>Folder</label>
+          <select id={folderId} value={current ? folder : folder === UNFILED ? UNFILED : ALL_CHATS} onChange={(e) => choose(e.target.value)}
             className={`w-full ${field} border-vx-border`}>
             <option value={ALL_CHATS}>{folderLabel(ALL_CHATS, folders, threads.length)}</option>
             <option value={UNFILED}>{folderLabel(UNFILED, folders, unfiled)}</option>

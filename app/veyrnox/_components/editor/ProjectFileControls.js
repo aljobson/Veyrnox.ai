@@ -52,7 +52,7 @@ export function ProjectFileControls({ tl, onLoadTimeline, disabled = false, open
     </>;
     if (compact) return <details className="group relative shrink-0">
         <summary className="cursor-pointer list-none whitespace-nowrap rounded-lg border border-vx-border bg-vx-base/60 px-3 py-2 text-xs font-semibold transition-colors hover:border-vx-accent [&::-webkit-details-marker]:hidden"><span className="sm:hidden">Files</span><span className="hidden sm:inline">Project files</span></summary>
-        <section aria-label="Local project files" className="absolute right-0 top-full z-50 mt-2 w-[min(24rem,calc(100vw-2rem))] space-y-2 rounded-xl border border-vx-border bg-vx-panel p-3 shadow-2xl">{controls}</section>
+        <section aria-label="Local project files" className="fixed inset-x-4 top-auto z-50 mt-2 max-h-[calc(100dvh-8rem)] w-auto space-y-2 overflow-y-auto rounded-xl border border-vx-border bg-vx-panel p-3 shadow-2xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:w-[min(24rem,calc(100vw-2rem))]">{controls}</section>
     </details>;
     return <section aria-label="Local project files" className="space-y-2">{controls}</section>;
 }

@@ -11,12 +11,13 @@
  */
 
 import Link from 'next/link';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppNav } from '../../_components/NavBar';
 import { Main } from '../../_components/Main';
 import { Chip } from '../../_components/Chip';
 import { gatewayFetch, GatewayError } from '../../_lib/gateway';
 import { MfaPanel } from '../../_components/MfaPanel';
+import { adminMetricsState, ADMIN_METRICS_COPY } from '../../_lib/adminMetricsState';
 
 const nf = new Intl.NumberFormat('en-US');
 
@@ -28,21 +29,29 @@ function pct(part, whole) {
 export default function Admin() {
   const [metrics, setMetrics] = useState(null);
   const [state, setState] = useState('loading');
+  const requestSequence = useRef(0);
 
   const load = useCallback(async () => {
+    const sequence = ++requestSequence.current;
     setState('loading');
+    setMetrics(null);
     try {
       const m = await gatewayFetch('/admin/metrics');
+      if (sequence !== requestSequence.current) return;
       setMetrics(m);
       setState('ready');
     } catch (err) {
-      if (err instanceof GatewayError && err.status === 403) setState('forbidden');
-      else if (err instanceof GatewayError && err.status === 401) setState('unauthenticated');
-      else setState('error');
+      if (sequence !== requestSequence.current) return;
+      setState(err instanceof GatewayError ? adminMetricsState(err) : 'error');
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    let active = true;
+    const requests = requestSequence;
+    Promise.resolve().then(() => { if (active) load(); });
+    return () => { active = false; requests.current++; };
+  }, [load]);
 
   return (
     <div className="min-h-dvh">
@@ -53,19 +62,17 @@ export default function Admin() {
         <h1 className="text-[36px] font-black tracking-[-0.02em]">Last 24 hours</h1>
 
         {state !== 'ready' && (
-          <p className="mt-5 text-[15px] text-vx-fg-body max-w-[540px]">
-            {state === 'loading' && 'Loading…'}
-            {state === 'forbidden' && 'This account is not an administrator.'}
-            {state === 'unauthenticated' && 'Sign in with an administrator account to view operations metrics.'}
-            {state === 'error' && 'Metrics are unavailable right now.'}
-          </p>
+          <div className="mt-5 max-w-[540px]">
+            <p role="status" className="text-[15px] text-vx-fg-body">{ADMIN_METRICS_COPY[state]}</p>
+            <button type="button" onClick={load} disabled={state === 'loading'} className="mt-3 text-sm underline disabled:opacity-50">Retry metrics</button>
+          </div>
         )}
 
         {/* Always shown, including to a non-admin: enrolling a factor is
             something any signed-in account should be able to do, and the
             panel reveals nothing about whether this one is an admin. */}
         <div className="mt-6 max-w-[540px]">
-          <MfaPanel />
+          <MfaPanel onVerified={load} />
         </div>
 
         {state === 'ready' && (

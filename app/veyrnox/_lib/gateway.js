@@ -5,7 +5,7 @@
 // typed GatewayError otherwise so callers can branch on .code.
 
 import { getFreshAccessToken, getSession, clearSession } from '../../lib/authClient.js';
-import { getSelectedSocialBrand, setSelectedSocialBrand } from '../../lib/socialBrandSelection.js';
+import { getSelectedSocialBrand, setSelectedSocialBrand, assertSocialBrandSnapshot } from '../../lib/socialBrandSelection.js';
 import { captureOperationalError } from '../../lib/analyticsClient.js';
 import { normaliseGatewayPath } from '../../lib/analyticsPrivacy.js';
 import { apiErrorDetails } from '../../lib/apiErrorDetails.js';
@@ -41,8 +41,11 @@ export class GatewayError extends Error {
  * @param {string} path       leading slash, e.g. '/balance', '/jobs/123'
  * @param {RequestInit} [init]
  */
-export async function gatewayFetch(path, init = {}, brandRetried = false) {
+export async function gatewayFetch(path, init = {}, brandRetried = false, brandSnapshot) {
+  const assertCurrentBrand = () => { if (brandSnapshot !== undefined) assertSocialBrandSnapshot(brandSnapshot); };
+  assertCurrentBrand();
   const token = await getFreshAccessToken();
+  assertCurrentBrand();
   if (!token) {
     dispatchAuthRequired();
     throw new GatewayError('not authenticated', { status: 401, code: 'no_token' });
@@ -60,7 +63,7 @@ export async function gatewayFetch(path, init = {}, brandRetried = false) {
     ...(init.headers || {}),
     Authorization: `Bearer ${token}`,
   };
-  const selectedBrand = getSelectedSocialBrand();
+  const selectedBrand = brandSnapshot === undefined ? getSelectedSocialBrand() : brandSnapshot.brandId;
   if (selectedBrand) headers['x-publish-brand-id'] = selectedBrand;
   if (init.body && typeof init.body === 'string' && !headers['content-type']) {
     headers['content-type'] = 'application/json';
@@ -77,6 +80,7 @@ export async function gatewayFetch(path, init = {}, brandRetried = false) {
   }
 
   assertCurrentAccount();
+  assertCurrentBrand();
   if (res.status === 401) {
     // The gateway rejected our token: drop it so a revoked session cannot linger.
     if (getSession()?.access_token === token) {
@@ -93,10 +97,11 @@ export async function gatewayFetch(path, init = {}, brandRetried = false) {
   let body = null;
   try { body = await res.json(); } catch { /* no body */ }
   assertCurrentAccount();
+  assertCurrentBrand();
   if (!res.ok) {
     // A removed team membership must not strand read pages on a stale brand.
     // Retry only reads, once, under the current/default authorized brand.
-    if (!brandRetried && path.startsWith('/social/') && selectedBrand && res.status === 404 && body?.error === 'brand_not_found'
+    if (brandSnapshot === undefined && !brandRetried && path.startsWith('/social/') && selectedBrand && res.status === 404 && body?.error === 'brand_not_found'
         && String(init.method || 'GET').toUpperCase() === 'GET') {
       if (getSelectedSocialBrand() === selectedBrand) setSelectedSocialBrand('');
       const recovered = await gatewayFetch(path, init, true);

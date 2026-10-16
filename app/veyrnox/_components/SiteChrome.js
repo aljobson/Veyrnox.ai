@@ -62,7 +62,7 @@ export default function SiteChrome({ analyticsEnabled = false }) {
       <ReferralBridge />
       <FloatingActions />
       {noticeOpen && (
-        <div data-print="hide" className="fixed inset-x-0 bottom-0 z-50">
+        <div data-print="hide" className="fixed inset-x-0 bottom-0 z-[70]">
           <StorageNotice onDismiss={ackNotice} />
         </div>
       )}

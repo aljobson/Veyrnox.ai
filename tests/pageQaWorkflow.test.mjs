@@ -111,10 +111,69 @@ test('missing authentication fails explicitly without running or overwriting ano
   assert.match(stateSetup, /if \(!HAS_ACCOUNT\) throw new Error\('Page QA requires confirmed staging E2E_EMAIL and E2E_PASSWORD'\)/);
   assert.match(workflow, /id: auth_session/);
   assert.match(workflow, /if: always\(\) && steps\.auth_session\.outcome == 'success'/);
-  assert.match(workflow, /--project desktop-authenticated --output test-results\/page-qa-authenticated/);
+  assert.match(workflow, /--project desktop-authenticated --project mobile-authenticated --output test-results\/page-qa-authenticated/);
   assert.match(workflow, /QA_REPORT_DIR: page-coverage-report\/authenticated/);
   assert.match(workflow, /name: page-qa-authenticated/);
   assert.doesNotMatch(workflow, /path:.*\.scratch\/qa-session/);
+});
+
+function qaConfig(env) {
+  return runInNewContext(config.replace(/import .*?from '@playwright\/test';/, '').replace('export default ', 'const result = ') + '\nresult', {
+    URL, process: { env }, devices: { 'Desktop Chrome': {}, 'iPhone 13': {} },
+    defineConfig: value => value,
+  });
+}
+test('authenticated page projects include desktop and mobile without weakening anonymous projects', () => {
+  const names = qaConfig({ QA_STORAGE_STATE: '/private/synthetic-state.json' }).projects.map(project => project.name);
+  assert.deepEqual([...names], ['desktop-anonymous', 'mobile-anonymous', 'desktop-authenticated', 'mobile-authenticated']);
+});
+for (const origin of ['https://veyrnox.ai', 'https://ADMIN.VEYRNox.ai.', 'https://%76eyrnox.ai', 'https://veyrnox。ai']) {
+  test(`production cannot consume authenticated storage even with anonymous opt-in ${origin}`, () => {
+    assert.throws(() => qaConfig({ QA_BASE_URL: origin, QA_ALLOW_PRODUCTION: '1', QA_STORAGE_STATE: '/private/state.json' }), /authenticated.*production/);
+  });
+}
+function authFunction(name) {
+  const match = sweep.match(new RegExp(`(?:async )?function ${name}\\([^]*?\\n\\}`));
+  assert.ok(match, `${name} must be testable against the actual harness source`);
+  return match[0];
+}
+function authPage({ status = 200, controls = true, menu = true, signIn = false } = {}) {
+  const visited = [];
+  const response = { url: () => 'https://staging.example.invalid/api/v1/account', request: () => ({ method: () => 'GET' }), status: () => status };
+  return { visited, waitForResponse: async predicate => { assert.equal(predicate(response), true); return response; },
+    goto: async pathname => visited.push(pathname),
+    getByRole: (role, options) => ({ role, options, visible: role === 'heading' ? controls : typeof options.name !== 'string' ? menu : signIn }),
+  };
+}
+test('authenticated checks require protected GET200, private controls, account menu and no sign-in shell', async () => {
+  const check = runInNewContext(`(${authFunction('assertAuthenticatedPage')})`, { URL, expect: locator => ({
+    toBeVisible: async () => assert.equal(locator.visible, true),
+    toHaveCount: async count => assert.equal(locator.visible ? 1 : 0, count),
+  }) });
+  const valid = authPage();
+  await check(valid, 'https://staging.example.invalid');
+  assert.deepEqual(valid.visited, ['/app/account']);
+  for (const options of [{ status: 401 }, { status: 403 }, { status: 502 }, { controls: false }, { menu: false }, { signIn: true }]) await assert.rejects(check(authPage(options), 'https://staging.example.invalid'));
+  await assert.rejects(check({ ...authPage(), waitForResponse: async () => { throw new Error('account response never arrived'); } }, 'https://staging.example.invalid'), /never arrived/);
+});
+test('session loss monitoring belongs to context and catches replacement-page account or session401', () => {
+  let listener;
+  let removed = false;
+  const context = { on: (event, callback) => { assert.equal(event, 'response'); listener = callback; }, off: (event, callback) => { assert.equal(callback, listener); removed = true; } };
+  const monitor = runInNewContext(`(${authFunction('watchAuthentication')})`, { URL })(context, 'https://staging.example.invalid');
+  for (const [origin, pathname, status] of [['https://other.invalid', '/api/v1/account', 401], ['https://staging.example.invalid', '/api/v1/jobs', 401], ['https://staging.example.invalid', '/api/auth/session', 200]]) {
+    listener({ url: () => `${origin}${pathname}`, status: () => status });
+    assert.doesNotThrow(() => monitor.assert());
+  }
+  listener({ url: () => 'https://staging.example.invalid/api/v1/account', status: () => 401 });
+  assert.throws(() => monitor.assert(), /Authenticated session was lost/);
+  monitor.stop();
+  assert.equal(removed, true);
+});
+test('private state is checked before and after sweep and monitoring cleanup/evidence are unconditional', () => {
+  assert.match(sweep, /testInfo\.project\.name\.endsWith\('-authenticated'\)/);
+  assert.equal((sweep.match(/await assertAuthenticatedPage\(page, baseURL\)/g) || []).length, 2);
+  assert.match(sweep, /finally \{[\s\S]*authenticationMonitor\?\.stop\(\)/);
 });
 
 test('manual production QA is opt-in and cannot cancel the staging nightly run', () => {

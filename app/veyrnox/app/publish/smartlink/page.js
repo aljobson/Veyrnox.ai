@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { AppNav } from '../../../_components/NavBar';
 import { Main } from '../../../_components/Main';
 import { getSession, onSessionChange } from '../../../../lib/authClient';
-import { listSocialAccounts } from '../../../../lib/socialConnectClient';
-import { getSocialSmartLink, saveSocialSmartLink } from '../../../../lib/socialSmartLinkClient';
+import { getSocialSmartLink, getSocialSmartLinkAccounts, saveSocialSmartLink } from '../../../../lib/socialSmartLinkClient';
+import { onSocialBrandChange, getSocialBrandRevision, getSocialBrandSnapshot, assertSocialBrandSnapshot } from '../../../../lib/socialBrandSelection';
 import BrandSwitcher from '../BrandSwitcher';
 
 const account=()=>getSession()?.user?.id||''; const none=()=>'';
@@ -20,13 +20,29 @@ export default function SmartLinkEditor(){const auth=useSyncExternalStore(onSess
   {auth?<Editor/>:<button type="button" className={button} onClick={()=>window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>Sign in</button>}
   </Main></>}
 
-function Editor(){const [form,setForm]=useState(empty);const [totals,setTotals]=useState({views:0,clicks:0});const [loading,setLoading]=useState(true);const [busy,setBusy]=useState(false);const [message,setMessage]=useState('');const [upgrade,setUpgrade]=useState(false);const [brandRole,setBrandRole]=useState('owner');
-  const canWrite=['owner','manager','editor'].includes(brandRole);
-  useEffect(()=>{Promise.all([getSocialSmartLink(),listSocialAccounts()]).then(([data,accounts])=>{if(data.smartlink)setForm({slug:data.smartlink.slug,title:data.smartlink.title,bio:data.smartlink.bio||'',avatarUrl:data.smartlink.avatar_url||'',theme:data.smartlink.theme,published:data.smartlink.published,items:data.items.map(i=>({id:i.id,label:i.label,url:i.url,enabled:i.enabled,clicks:i.clicks||0}))});setTotals(data.totals||{views:0,clicks:0});setBrandRole(accounts.brandRole||'owner');}).catch((e)=>{if(e?.status===402||e?.body?.error==='plan_required')setUpgrade(true);else setMessage('Could not load your SmartLink. Try again.');}).finally(()=>setLoading(false));},[]);
-  if(loading)return <p className="text-sm text-vx-fg-muted">Loading your SmartLink…</p>;
+function Editor(){const [form,setForm]=useState(empty);const [totals,setTotals]=useState({views:0,clicks:0});const [loading,setLoading]=useState(true);const [busy,setBusy]=useState(false);const [message,setMessage]=useState('');const [upgrade,setUpgrade]=useState(false);const [brandRole,setBrandRole]=useState(null);const [loaded,setLoaded]=useState(null);const [attempt,setAttempt]=useState(0);
+  const brandRevision=useSyncExternalStore(onSocialBrandChange,getSocialBrandRevision,()=>0);
+  let current=false;try{if(loaded){assertSocialBrandSnapshot(loaded);current=true;}}catch{/* The working brand changed; hide stale fields before the next effect. */}
+  const canWrite=current&&['owner','manager','editor'].includes(brandRole);
+  useEffect(()=>{
+    let active=true;const snapshot=getSocialBrandSnapshot();
+    Promise.resolve().then(()=>{
+      if(!active)return null;
+      setLoading(true);setLoaded(null);setBrandRole(null);setUpgrade(false);setMessage('');setBusy(false);
+      return Promise.all([getSocialSmartLink(snapshot),getSocialSmartLinkAccounts(snapshot)]);
+    }).then(result=>{
+      if(!result)return;const [data,accounts]=result;
+      if(!active)return;assertSocialBrandSnapshot(snapshot);
+      setForm(data.smartlink?{slug:data.smartlink.slug,title:data.smartlink.title,bio:data.smartlink.bio||'',avatarUrl:data.smartlink.avatar_url||'',theme:data.smartlink.theme,published:data.smartlink.published,items:data.items.map(i=>({id:i.id,label:i.label,url:i.url,enabled:i.enabled,clicks:i.clicks||0}))}:empty);
+      setTotals(data.totals||{views:0,clicks:0});setBrandRole(accounts.brandRole||null);setLoaded(snapshot);
+    }).catch(e=>{if(!active)return;if(e?.status===402||e?.body?.error==='plan_required')setUpgrade(true);else setMessage('Could not load your SmartLink. Try again.');}).finally(()=>{if(active)setLoading(false);});
+    return()=>{active=false;};
+  },[brandRevision,attempt]);
+  if(loading||(!current&&!message&&!upgrade))return <p className="text-sm text-vx-fg-muted">Loading your SmartLink…</p>;
   if(upgrade)return <section className="rounded-2xl border border-vx-accent/40 p-6"><h2 className="text-xl font-black">SmartLinks are in the Publish Plan</h2><p className="mt-2 text-sm text-vx-fg-body">Create a branded link page and measure visits and clicks.</p><Link href="/app/publish/plan" className="mt-4 inline-block rounded-full bg-vx-accent px-5 py-2.5 text-sm font-bold text-black">View Publish Plan</Link></section>;
+  if(!current)return <section className="space-y-3 rounded-2xl border border-vx-border p-5"><p role="status">{message}</p><button type="button" className={button} onClick={()=>setAttempt(value=>value+1)}>Try again</button></section>;
   const change=(key,value)=>setForm((v)=>({...v,[key]:value}));const changeItem=(index,key,value)=>change('items',form.items.map((item,i)=>i===index?{...item,[key]:value}:item));
-  async function save(event){event.preventDefault();setBusy(true);setMessage('');try{await saveSocialSmartLink(form);const saved=await getSocialSmartLink();setForm(v=>({...v,items:saved.items.map(i=>({id:i.id,label:i.label,url:i.url,enabled:i.enabled,clicks:i.clicks||0}))}));setTotals(saved.totals);setMessage('SmartLink saved.');}catch(e){setMessage(e?.status===409?'That address is already taken.':'Could not save your SmartLink. Check every URL and try again.');}finally{setBusy(false)}}
+  async function save(event){event.preventDefault();if(!canWrite||busy)return;setBusy(true);setMessage('');try{assertSocialBrandSnapshot(loaded);await saveSocialSmartLink(form,loaded);const saved=await getSocialSmartLink(loaded);assertSocialBrandSnapshot(loaded);setForm(v=>({...v,items:saved.items.map(i=>({id:i.id,label:i.label,url:i.url,enabled:i.enabled,clicks:i.clicks||0}))}));setTotals(saved.totals);setMessage('SmartLink saved.');}catch(e){try{assertSocialBrandSnapshot(loaded);}catch{return;}setMessage(e?.status===409?'That address is already taken.':'Could not save your SmartLink. Check every URL and try again.');}finally{try{assertSocialBrandSnapshot(loaded);setBusy(false);}catch{/* Never apply an old save result to a new brand. */}}}
   return <form onSubmit={save} className="grid gap-6 lg:grid-cols-[1fr_340px]">
     <fieldset disabled={!canWrite||busy} className="contents"><div className="space-y-5">{!canWrite&&<p className="rounded-xl bg-vx-panel p-3 text-sm text-vx-fg-muted">Your team role can view this SmartLink but cannot change it.</p>}<section className="grid gap-4 rounded-2xl border border-vx-border p-5 sm:grid-cols-2">
       <label className="grid gap-1 text-sm font-bold">Page address<span className="flex items-center"><span className="rounded-l-xl border border-r-0 border-vx-border bg-vx-panel px-3 py-2 text-xs text-vx-fg-muted">veyrnox.ai/s/</span><input required pattern="[a-z0-9][a-z0-9-]{1,46}[a-z0-9]" maxLength={48} className={`${control} min-w-0 flex-1 rounded-l-none`} value={form.slug} onChange={e=>change('slug',e.target.value.toLowerCase().replace(/[^a-z0-9-]/g,''))}/></span></label>

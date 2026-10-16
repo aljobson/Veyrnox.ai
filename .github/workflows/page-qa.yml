@@ -64,13 +64,13 @@ jobs:
         run: |
           mkdir -p .scratch
           node e2e/create-qa-state.mjs
-      - name: Sweep every page on authenticated desktop
+      - name: Sweep every page on authenticated desktop and mobile
         if: always() && steps.auth_session.outcome == 'success'
         env:
           QA_BASE_URL: https://veyrnox-ai-staging.al-jobson.workers.dev
           QA_STORAGE_STATE: .scratch/qa-session.json
           QA_REPORT_DIR: page-coverage-report/authenticated
-        run: npx playwright test -c e2e/page-coverage.config.mjs --project desktop-authenticated --output test-results/page-qa-authenticated
+        run: npx playwright test -c e2e/page-coverage.config.mjs --project desktop-authenticated --project mobile-authenticated --output test-results/page-qa-authenticated
       - name: Retain authenticated page coverage
         if: always() && steps.auth_session.outcome == 'success'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9

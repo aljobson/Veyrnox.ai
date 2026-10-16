@@ -21,10 +21,14 @@ E2E_EMAIL=… E2E_PASSWORD=… npx playwright test -c e2e/playwright.config.mjs
 
 Without `E2E_EMAIL` / `E2E_PASSWORD`, generate and buy are skipped. They must
 name a **confirmed account on the staging Supabase project**; staging has no
-CAPTCHA on sign-in, so the tests sign in through Auth's password grant and put
-the session in `localStorage` the way `app/lib/authClient.js` does.
+CAPTCHA on sign-in, so the tests sign in through Auth's password grant and
+establish the app session through its session bridge. Refresh tokens remain
+in the HttpOnly session cookie; browser localStorage contains token-free
+account metadata, not access or refresh tokens.
 `E2E_BASE_URL` points the run at another staging-backed origin (a branch
-preview).
+preview). It must be an HTTP(S) origin only: no credentials, path, query or
+fragment. Production and all of its subdomains are refused after URL hostname
+normalization, before authentication configuration is read.
 
 `.github/workflows/e2e.yml` runs this daily and on demand, with the account in
 the `E2E_EMAIL` and `E2E_PASSWORD` repository secrets.

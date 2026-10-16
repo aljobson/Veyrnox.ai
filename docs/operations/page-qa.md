@@ -2,7 +2,7 @@
 
 `npm run sync:vey-knowledge` inventories every `app/**/page.*` file, including legal pages, callbacks, public token pages, admin and design-system routes. Canonical URLs strip the internal `/veyrnox` prefix. `tests/productKnowledgeSync.test.mjs` fails if any source page is missing or duplicated.
 
-The read-only browser sweep combines that inventory with every concrete URL in the live sitemap. Its JSON artifact records each template, URL, status, access boundary, viewport overflow, document size, DOM size and timing. Desktop and mobile anonymous projects always run. Supply `QA_STORAGE_STATE` to add the authenticated project using a browser-exported state file; keep that file outside Git because it contains credentials.
+The read-only browser sweep combines that inventory with every concrete URL in the live sitemap. Its JSON artifact records each template, URL, status, access boundary, viewport overflow, document size, DOM size and timing. Desktop and mobile anonymous projects always run. Supply `QA_STORAGE_STATE` to add both authenticated desktop and mobile projects using the staging session setup; keep that file outside Git because it contains credentials. Authenticated storage is always refused for production and its subdomains, even with the anonymous production opt-in.
 
 ```sh
 npm install --no-save --no-audit --no-fund @playwright/test@1.63.0 @axe-core/playwright@4.10.2
@@ -24,7 +24,30 @@ and scheduled runs remain staging, including the existing authenticated checks.
 
 For authenticated checks add `QA_STORAGE_STATE=/absolute/private/path/session.json`. The harness blocks all non-read browser requests except same-origin `POST /api/auth/session` with `action: refresh`, which hydrates an existing HttpOnly cookie. The sweep never clicks Generate, Buy, Publish, Delete or Connect. Supply `QA_PAGE_FIXTURES` as a JSON object mapping a route template to a deterministic fixture URL, for example `{"/app/projects/[id]":"/app/projects/test-project-id"}`. Unavailable dynamic fixtures use an explicit `negative-path` result; this proves controlled rejection only. Admin routes can prove the Cloudflare Access boundary without claiming admin feature coverage. Real approval/invitation/OAuth success, third-party publishing and provider generation require separate authorized workflow tests and fixtures. Traces and screenshots are disabled to avoid putting session headers or account content in artifacts; the report contains metrics and accessibility selectors.
 
+Authenticated projects must prove a same-origin protected `GET /api/v1/account` returns 200 and the private “Set a new password” controls and account menu are visible, with no Sign in button, both before and after the sweep. Merely loading an account shell is not authentication evidence. Context-level account/session 401 monitoring survives replacement pages and fails the run on session loss. Checks use normal locator waits for late hydration; they do not inspect tokens or response bodies. Reports retain the before/after verification flags even on failure, not account identity or session data.
+
 Budgets are 5 seconds cold TTFB, 800 KiB uncompressed HTML, fewer than 3,000 DOM nodes, at most 2 pixels document overflow, and no critical/serious WCAG A/AA axe violations in the first-party document. Third-party player frames are outside this accessibility check. `/app` and `/presets` initially show 12 cards, capped at 20 total image nodes; Show more must reveal the next 12 without losing filter access. One worker runs at a time; accessibility scans have a 20-second deadline. Failures and partial JSON are saved after each page so a stalled page does not hide the remaining results. HTML reports and JSON attachments are retained on CI/nightly runs.
+
+## Isolated authenticated feature journeys
+
+`e2e/authenticated-fixtures.config.mjs` runs the `authenticated-*.spec.mjs` journeys on desktop and mobile against a local production build. This is separate from the real staging-session sweep. It refuses non-loopback origins and captured authentication state. The shared fixture intercepts authentication, product APIs, payments, publishing, media and Stream requests; unknown requests abort **and fail** the test. Only known first-party HTML/static reads reach the local server, without following redirects.
+
+With the pinned browser tooling above installed, build normally and start one local server with the following process-only flags (never change production rollout flags to test interiors):
+
+```sh
+npm run build -- --webpack
+PUBLISH_ENABLED=true PUBLISH_CALENDAR_ENABLED=true TENANT_PROJECTS_ENABLED=true EDITOR_SHARED_TOOLS_ENABLED=true EDITOR_TIMELINE_ENABLED=true EDITOR_MULTITRACK_ENABLED=true npm run start -- --hostname 127.0.0.1 --port 3100
+```
+
+In a separate terminal, set fresh artifact destinations outside the checkout and run:
+
+```sh
+QA_FIXTURE_BASE_URL=http://127.0.0.1:3100 QA_FIXTURE_OUTPUT_DIR=/absolute/private/artifacts QA_FIXTURE_REPORT=/absolute/private/report.json npx playwright test -c e2e/authenticated-fixtures.config.mjs
+```
+
+The journeys cover media configuration and submission uncertainty, audio/music/speech validation, Film Studio, chat folders, projects, browser editor recovery/import/export settings, publishing interiors and synthetic post/schedule/approval, Activity pagination, SmartLink load/brand safety, account/admin recovery and Cinema/OAuth controls. `/m` remains a design prototype, not proof of real account data. The local Enhance uploader is development-only; the production build is expected to retain that gate.
+
+These results prove UI behavior against explicit synthetic contracts, **not** real authentication, provider output quality, paid playback, delivered social posts, security enrollment or exhaustive privileged mutations. Record actual live account/plan/feature-gate checks separately. Never turn a real gate, missing dynamic fixture, failed load, or blank authenticated shell into an interior pass. Keep failed diagnostic reports and final acceptance reports distinct; do not add retries, skip assertions or weaken safety checks to obtain a pass.
 
 ## Public HTML caching
 
