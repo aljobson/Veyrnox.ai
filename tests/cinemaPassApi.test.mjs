@@ -112,6 +112,30 @@ test('plans and the own Pass are read-only, and the projection never carries a S
   assert.equal((await (await none.handle(get(''))).json()).pass, null);
 });
 
+test('the public plan projection ignores identity headers and never consumes an account quota', async () => {
+  const calls = [];
+  const handle = passHandler({ action: 'plans', authed: false, rpcCall: async (name, args) => {
+    calls.push({ name, args });
+    return name === 'list_cinema_pass_plans'
+      ? [{ id: 'pass-monthly', billing_interval: 'month', price_usd_cents: 999, intro_price_usd_cents: null, stripe_price_id: 'price_private' }]
+      : { error: 'unexpected_rpc' };
+  } });
+  const response = await handle(new Request('https://test.invalid/api/cinema-pass-plans', {
+    headers: { 'x-veyrnox-auth-id': 'not-an-identity', 'x-veyrnox-auth-email': 'private@example.test' },
+  }));
+  assert.equal(response.status, 200);
+  const data = await response.json();
+  assert.deepEqual(data.plans, [{ id: 'pass-monthly', billing_interval: 'month', price_usd_cents: 999, intro_price_usd_cents: null }]);
+  assert.deepEqual(calls.map((call) => call.name), ['list_cinema_pass_plans']);
+  assert.equal(JSON.stringify(data).includes('private'), false);
+
+  const invalid = passHandler({ action: 'plans', authed: false, rpcCall: async () => [
+    { id: 'pass-monthly', billing_interval: 'month', price_usd_cents: 998, intro_price_usd_cents: null },
+  ] });
+  assert.equal((await invalid(new Request('https://test.invalid/api/cinema-pass-plans'))).status, 503);
+  assert.throws(() => passHandler({ action: 'read', authed: false }), /Only plan discovery is public/);
+});
+
 test('closing new Pass sales preserves reads, cancellation, recovery and billing management', async () => {
   process.env.CINEMA_SUBSCRIPTIONS_ENABLED = 'false';
   try {

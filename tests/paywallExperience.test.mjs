@@ -20,3 +20,33 @@ test('account exposes billing management and Cinema cancellation uses an accessi
   assert.match(pass, /<ConfirmDialog/);
   assert.doesNotMatch(pass, /window\.confirm/);
 });
+
+test('subscription launches have versioned consent, complete legal disclosures and staging-only sales', () => {
+  const config = read('wrangler.jsonc');
+  const subscriptions = read('lib/subscriptions/api.js');
+  const passApi = read('lib/cinema/passApi.js');
+  const terms = read('app/legal/terms/page.js');
+  const refunds = read('app/legal/refund/page.js');
+
+  assert.match(subscriptions, /credit-subscription-2026-10-16/);
+  assert.match(passApi, /cinema-pass-2026-10-16/);
+  assert.match(terms, /Monthly Credit Subscriptions/);
+  assert.match(terms, /Subscription Credits[\s\S]{0,300}do not roll over/);
+  assert.match(terms, /Cinema Pass[\s\S]{0,500}renews automatically each month/);
+  assert.match(refunds, /Within 14 days of the initial subscription payment/);
+  assert.match(refunds, /refund the unused share of that paid period/);
+  assert.match(refunds, /How to cancel/);
+
+  assert.match(config, /"SUBSCRIPTIONS_ENABLED": "false"[\s\S]*"SUBSCRIPTIONS_ENABLED": "true"/);
+  assert.match(config, /"CINEMA_SUBSCRIPTIONS_ENABLED": "false"[\s\S]*"CINEMA_SUBSCRIPTIONS_ENABLED": "true"/);
+  assert.match(config, /"SUBSCRIPTION_ALERT_EMAIL": "support@veyrnox\.com"/);
+});
+
+test('Cinema Pass staging availability comes from a public no-store plan projection', () => {
+  const route = read('app/api/cinema-pass-plans/route.js');
+  const panel = read('app/veyrnox/social-cinema/pass/PassPanel.js');
+  assert.match(route, /passHandler\(\{ action: 'plans', authed: false \}\)/);
+  assert.match(route, /dynamic = 'force-dynamic'/);
+  assert.match(panel, /fetch\('\/api\/cinema-pass-plans', \{ cache: 'no-store'/);
+  assert.match(panel, /effectiveSalesOpen = preview \|\| salesOpen === true/);
+});
