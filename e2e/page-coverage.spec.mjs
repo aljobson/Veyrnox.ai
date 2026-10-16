@@ -4,7 +4,18 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { buildPageManifest, sitemapPaths } from './page-manifest.mjs';
 
+async function handlePrivacyChoices(page) {
+  const privacyChoices = page.getByRole('region', { name: 'Privacy choices' });
+  // Consent hydrates after the document loads; handle it at actionability time,
+  // within the original action timeout, using the normal essential-only choice.
+  await page.addLocatorHandler(privacyChoices, async () => {
+    await privacyChoices.getByRole('button', { name: 'Decline', exact: true }).click();
+    await expect(privacyChoices).toBeHidden();
+  });
+}
+
 test('every page template and every sitemap page renders within accessibility and performance budgets', async ({ page, context, request, baseURL }, testInfo) => {
+  await handlePrivacyChoices(page);
   const blockedWrites = [];
   await context.route('**/*', async (route) => {
     const req = route.request();
@@ -67,11 +78,6 @@ test('every page template and every sitemap page renders within accessibility an
         expect(metrics.ttfbMs, `cold navigation TTFB budget: ${label}`).toBeLessThan(5000);
         if (entry.pathname === '/app' || entry.pathname === '/presets') {
           expect(metrics.images, 'first gallery page is bounded').toBeLessThanOrEqual(20);
-          const privacyChoices = page.getByRole('region', { name: 'Privacy choices' });
-          if (await privacyChoices.isVisible()) {
-            await privacyChoices.getByRole('button', { name: 'Decline', exact: true }).click();
-            await expect(privacyChoices).toBeHidden();
-          }
           const before = await page.locator('#preset-gallery-results > a').count();
           await page.getByRole('button', { name: 'Show more templates' }).click();
           await expect(page.locator('#preset-gallery-results > a')).toHaveCount(before + 12);
@@ -89,6 +95,7 @@ test('every page template and every sitemap page renders within accessibility an
             // A stalled renderer must not prevent the remaining pages from being tested.
             await page.close({ runBeforeUnload: false });
             page = await context.newPage();
+            await handlePrivacyChoices(page);
           }
           throw error;
         } finally { clearTimeout(timer); }
