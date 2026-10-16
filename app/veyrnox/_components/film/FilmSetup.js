@@ -1,11 +1,14 @@
 'use client';
 import { STUDIO_FOLDERS } from '../../_lib/filmStudio';
 import { FilmField, FilmSelect } from './FilmFields';
+import { normalizeFilmStack } from '../../_lib/authenticatedMedia';
 
 export function FilmSetup({ film, update, models }) {
-  const stack = (key, value) => update({ ...film, stack: { ...film.stack, [key]: value } });
+  const stack = (key, value) => update({ ...film, stack: normalizeFilmStack(film.stack, key, value, models) });
   const access = [['Studio','Veyrnox Studio'], ['External','External app or workflow']];
   const selectedVideo = models.find(model => model.id === film.stack.video);
+  const frameFormats = film.stack.videoAccess === 'Studio' && selectedVideo?.aspects?.length
+    ? selectedVideo.aspects : ['16:9','9:16','1:1'];
   const clipLengths = film.stack.videoAccess === 'Studio'
     ? (selectedVideo?.durations || [10]).filter(seconds => seconds >= 10 && seconds <= 15)
     : Array.from({length:6},(_,i)=>i+10);
@@ -18,7 +21,7 @@ export function FilmSetup({ film, update, models }) {
       ]}/> : <FilmField label={`${kind === 'image' ? 'Image' : 'Video'} model`} value={film.stack[kind]} onChange={v=>stack(kind,v)} hint="Record its name. Keep credentials in your existing tool."/>}
     </section>)}
     <div className="grid gap-4 sm:grid-cols-2"><FilmSelect label="Clip length" value={film.stack.seconds} onChange={v=>stack('seconds',v)} options={(clipLengths.length ? clipLengths : [10]).map(seconds=>[String(seconds),`${seconds} seconds`])}/>
-      <FilmSelect label="Frame format" value={film.stack.aspect} onChange={v=>stack('aspect',v)} options={['16:9','9:16','1:1'].map(a=>[a,a])}/></div>
+      <FilmSelect label="Frame format" value={film.stack.aspect} onChange={v=>stack('aspect',v)} options={frameFormats.map(a=>[a,a])}/></div>
     <p className="text-sm text-vx-fg-muted">Lock assets first. Keep one passport per asset and state variant. Change one prompt line per attempt. Version and log every result.</p>
   </div>;
 }

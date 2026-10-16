@@ -1,7 +1,22 @@
 // Staging by default. Production is refused: these tests sign in, and a
 // mistake there costs real money and real users' data.
-export const BASE_URL = (process.env.E2E_BASE_URL || 'https://veyrnox-ai-staging.al-jobson.workers.dev').replace(/\/$/, '');
-if (/^https:\/\/(www\.)?veyrnox\.ai$/.test(BASE_URL)) throw new Error('e2e: refusing to run against production');
+function stagingOrigin(value) {
+  let url;
+  try { url = new URL(value); } catch { throw new Error('e2e: refusing invalid target origin'); }
+  // Validate the original spelling too: URL parsing normalizes dot paths,
+  // whitespace and backslashes, which must never silently change the target.
+  if (/[\u0000-\u0020\u007f]/.test(value) || !/^https?:\/\/[^/?#\\\s]+\/?$/i.test(value) ||
+      !['https:', 'http:'].includes(url.protocol) || url.username || url.password ||
+      url.pathname !== '/' || url.search || url.hash) {
+    throw new Error('e2e: refusing non-origin target');
+  }
+  const hostname = url.hostname.toLowerCase().replace(/\.+$/, '');
+  if (hostname === 'veyrnox.ai' || hostname.endsWith('.veyrnox.ai')) {
+    throw new Error('e2e: refusing to run against production');
+  }
+  return url.origin;
+}
+export const BASE_URL = stagingOrigin(process.env.E2E_BASE_URL || 'https://veyrnox-ai-staging.al-jobson.workers.dev');
 
 // Staging's public Supabase values (wrangler.jsonc env.staging.vars).
 export const SUPABASE_URL = process.env.E2E_SUPABASE_URL || 'https://yrqzwqywxfesmbvhzjgj.supabase.co';

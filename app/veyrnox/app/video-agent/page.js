@@ -10,6 +10,7 @@ import { pushJobHistory, readJobHistory, jobsToWatch } from '../../_lib/jobHisto
 import { pickResumable } from '../../_lib/videoAgentResume';
 import { useStudioJobs } from '../../_lib/useStudioJobs';
 import { jobStateUi } from '../../_lib/studioStates';
+import { videoAgentBalanceState } from '../../_lib/authenticatedMedia';
 
 // Video agent (ADR-0074): brief -> plan and price -> Approve -> one priced job.
 // Open to every signed-in user since rollout step 9; the server flag AGENT_VIDEO_ENABLED is the switch.
@@ -22,6 +23,7 @@ const errorFor = (e) => (e instanceof GatewayError ? { code: e.code, retryAfter:
 
 export default function VideoAgent() {
   const [balance, setBalance] = useState(null);
+  const [balanceLoading, setBalanceLoading] = useState(true);
   const [brief, setBrief] = useState('');
   const [aspect, setAspect] = useState('9:16');
   const [plan, setPlan] = useState(null); // { plan_id, idempotency_key, plan, credits, expires_at, brief, aspect }
@@ -32,7 +34,10 @@ export default function VideoAgent() {
   const job = jobs[0];
 
   const refreshBalance = useCallback(async () => {
-    try { setBalance((await gatewayFetch('/balance')).balance); } catch { /* the header shows a dash */ }
+    setBalanceLoading(true);
+    try { setBalance((await gatewayFetch('/balance', { signal: AbortSignal.timeout(15000) })).balance); }
+    catch { setBalance(null); }
+    finally { setBalanceLoading(false); }
   }, []);
   useEffect(() => {
     refreshBalance();
@@ -51,7 +56,8 @@ export default function VideoAgent() {
 
   const briefOk = brief.trim().length >= MIN_BRIEF && brief.trim().length <= MAX_BRIEF;
   const expired = plan && Date.now() / 1000 > plan.expires_at;
-  const cannotAfford = plan && balance != null && plan.credits > balance;
+  const balanceState = plan ? videoAgentBalanceState(balanceLoading ? null : balance, plan.credits) : 'unavailable';
+  const cannotAfford = plan && balanceState !== 'ready';
 
   async function onPlan() {
     if (inFlight.current || !briefOk) return;
@@ -141,7 +147,11 @@ export default function VideoAgent() {
               >Approve and make it · {plan.credits} cr</button>
             </div>
             {expired && <p className="mt-2 text-xs text-vx-danger">{ERROR_COPY.plan_expired}</p>}
-            {cannotAfford && <div className="mt-3 rounded-xl border border-vx-money/40 bg-vx-money/[0.06] p-3 text-sm">
+            {balanceState === 'unavailable' && <div className="mt-3 text-sm text-vx-fg-muted">
+              <p role="status">{balanceLoading ? 'Checking your balance…' : 'Your balance is unavailable. Retry to confirm it before approving.'}</p>
+              <button type="button" disabled={balanceLoading || busy} onClick={refreshBalance} className="mt-2 text-vx-accent underline disabled:opacity-40">Retry balance</button>
+            </div>}
+            {balanceState === 'insufficient' && <div className="mt-3 rounded-xl border border-vx-money/40 bg-vx-money/[0.06] p-3 text-sm">
               <p className="text-vx-fg">You need {plan.credits - balance} more Credits to approve this plan.</p>
               <Link href="/app/credits" className="mt-2 inline-block font-bold text-vx-accent underline underline-offset-4">Compare monthly plans and packs</Link>
             </div>}

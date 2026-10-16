@@ -14,6 +14,33 @@ async function handlePrivacyChoices(page) {
   });
 }
 
+async function assertAuthenticatedPage(page, baseURL) {
+  const origin = new URL(baseURL).origin;
+  const accountRead = page.waitForResponse(response => {
+    const url = new URL(response.url());
+    return url.origin === origin && url.pathname === '/api/v1/account' && response.request().method() === 'GET';
+  }, { timeout: 10_000 });
+  const [response] = await Promise.all([accountRead, page.goto('/app/account', { waitUntil: 'load' })]);
+  if (response.status() !== 200) throw new Error('Authenticated account read did not return 200');
+  await expect(page.getByRole('heading', { name: 'Set a new password', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Account: / })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Sign in', exact: true })).toHaveCount(0);
+}
+
+function watchAuthentication(context, baseURL) {
+  const origin = new URL(baseURL).origin;
+  let lost = false;
+  const onResponse = response => {
+    const url = new URL(response.url());
+    if (url.origin === origin && ['/api/v1/account', '/api/auth/session'].includes(url.pathname) && response.status() === 401) lost = true;
+  };
+  context.on('response', onResponse);
+  return {
+    assert() { if (lost) throw new Error('Authenticated session was lost during page sweep'); },
+    stop() { context.off('response', onResponse); },
+  };
+}
+
 test('every page template and every sitemap page renders within accessibility and performance budgets', async ({ page, context, request, baseURL }, testInfo) => {
   await handlePrivacyChoices(page);
   const blockedWrites = [];
@@ -36,10 +63,19 @@ test('every page template and every sitemap page renders within accessibility an
   const fixtures = JSON.parse(process.env.QA_PAGE_FIXTURES || '{}');
   const manifest = buildPageManifest(sitemapPaths(await response.text(), baseURL), fixtures);
   const results = [];
+  const authenticated = testInfo.project.name.endsWith('-authenticated');
+  const authentication = { required: authenticated, before: false, after: false };
+  const authenticationMonitor = authenticated ? watchAuthentication(context, baseURL) : null;
   const outputPath = testInfo.outputPath('page-coverage.json');
   await mkdir(path.dirname(outputPath), { recursive: true });
   const writeReport = () => writeFile(outputPath, JSON.stringify({ project: testInfo.project.name,
-    manifestTemplates: new Set(manifest.map(({ template }) => template)).size, results, blockedWrites }, null, 2));
+    manifestTemplates: new Set(manifest.map(({ template }) => template)).size, authentication, results, blockedWrites }, null, 2));
+  try {
+  if (authenticated) {
+    await assertAuthenticatedPage(page, baseURL);
+    authenticationMonitor.assert();
+    authentication.before = true;
+  }
   for (const entry of manifest) {
     const label = entry.sensitive ? entry.template : entry.pathname;
     const result = { ...entry, pathname: label };
@@ -111,6 +147,15 @@ test('every page template and every sitemap page renders within accessibility an
     });
     await writeReport();
   }
-  await testInfo.attach('page-coverage.json', { path: outputPath, contentType: 'application/json' });
+  if (authenticated) {
+    await assertAuthenticatedPage(page, baseURL);
+    authenticationMonitor.assert();
+    authentication.after = true;
+  }
   expect(results.filter(({ failure }) => failure), 'see page-coverage.json for every failing page').toEqual([]);
+  } finally {
+    authenticationMonitor?.stop();
+    await writeReport();
+    await testInfo.attach('page-coverage.json', { path: outputPath, contentType: 'application/json' });
+  }
 });
