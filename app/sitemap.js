@@ -1,5 +1,5 @@
 import { SITE_URL } from './seo';
-import { listModels } from './veyrnox/_lib/modelPages';
+import { listModelsForDetails } from './veyrnox/_lib/modelPages';
 import { PRESETS } from './veyrnox/_lib/templates';
 import { GUIDES } from './veyrnox/_lib/guides';
 import { editorialSeries } from './veyrnox/social-cinema/editorialSeries';
@@ -47,7 +47,7 @@ export default async function sitemap() {
 // The catalog being unreachable must not take the sitemap down with it.
 async function modelPages(page) {
   try {
-    return (await listModels()).map((m) => page(`/models/${encodeURIComponent(m.id)}`, 'weekly', 0.6, m.updatedAt));
+    return (await listModelsForDetails()).map((m) => page(`/models/${encodeURIComponent(m.id)}`, 'weekly', 0.6, m.updatedAt));
   } catch (err) {
     console.error('[sitemap] catalog unavailable; model pages omitted:', err && err.message);
     return [];
