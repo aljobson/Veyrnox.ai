@@ -20,3 +20,38 @@ test('sitemap maps canonical production URLs onto staging paths and rejects othe
   assert.deepEqual(sitemapPaths('<loc>https://veyrnox.ai/about</loc>', 'http://localhost:3100'), ['/about']);
   assert.throws(() => sitemapPaths('<loc>https://evil.test/about</loc>', 'http://localhost:3100'));
 });
+
+const reviewRoute = '/app/editor/review';
+const project = 'abcdef00-0000-4000-8000-000000000020';
+const reviewEntry = (fixtures = {}, sitemap = []) => buildPageManifest(sitemap, fixtures).find(entry => entry.template === reviewRoute);
+
+test('bare Editor Review is negative-path even when the sitemap lists it, without changing route inventory', () => {
+  for (const sitemap of [[], [reviewRoute]]) {
+    const manifest = buildPageManifest(sitemap);
+    assert.equal(reviewEntry({}, sitemap).mode, 'negative-path');
+    assert.equal(manifest.length, PAGE_TEMPLATES.length);
+    assert.equal(new Set(manifest.map(entry => entry.template)).size, PAGE_TEMPLATES.length);
+  }
+});
+
+for (const query of ['', `?project=${project}`, '?revision=1', '?project=missing&revision=1',
+  `?project=${project}&revision=0`, `?project=${project}&revision=-1`, `?project=${project}&revision=01`,
+  `?project=${project}&revision=1.5`, `?project=${project}&revision=1000000000`, `?project=${project}&revision=1%20`,
+  `?project=${project}&revision=1&revision=2`, `?project=${project}&project=${project}&revision=1`,
+]) {
+  test(`Editor Review fixture cannot claim an interior for missing or invalid query ${query}`, () => {
+    const entry = reviewEntry({ [reviewRoute]: `${reviewRoute}${query}` });
+    assert.equal(entry.mode, 'negative-path');
+    assert.equal(entry.access, 'account');
+    assert.equal(entry.sensitive, true);
+  });
+}
+
+test('only an explicit valid saved-version fixture can classify Editor Review as render', () => {
+  for (const query of [`?project=${project}&revision=1`, `?revision=999999999&project=${project.toUpperCase()}`, `?project=${project}&revision=%31&view=preview`]) {
+    const entry = reviewEntry({ [reviewRoute]: `${reviewRoute}${query}` });
+    assert.equal(entry.mode, 'render');
+    assert.equal(entry.pathname, `${reviewRoute}${query}`);
+    assert.equal(entry.sensitive, true);
+  }
+});
