@@ -6,7 +6,7 @@ Built from a fork of [Open-Generative-AI](https://github.com/Anil-matcha/Open-Ge
 
 ## Status
 
-Pre-launch. Core generation, the credit ledger, Stripe Credit Packs and the admin and recovery tooling are built. Public sign-up and Credit Pack launch are tracked in the launch checklist ([#204](https://github.com/aljobson/Veyrnox.ai/issues/204), [#101](https://github.com/aljobson/Veyrnox.ai/issues/101)). Subscriptions (built, `SUBSCRIPTIONS_ENABLED` off), Cinema and Veyrnox Publish are in progress or gated. See [`ROADMAP.md`](ROADMAP.md) for what is next and [`CHANGELOG.md`](CHANGELOG.md) for what has shipped.
+The core is live in production: generation, the credit ledger, Stripe Credit Packs, Veyrnox Publish (four released networks and a paid Publish Plan), Cinema creator, publishing and free viewing, the video agent, and the admin and recovery tooling. Public launch is still pending the Stripe live drills and the ops checklist ([#204](https://github.com/aljobson/Veyrnox.ai/issues/204), [#101](https://github.com/aljobson/Veyrnox.ai/issues/101)). Subscriptions are built with `SUBSCRIPTIONS_ENABLED` off; Cinema paid unlocks and the Pass are off. See [`ROADMAP.md`](ROADMAP.md) for what is next and [`CHANGELOG.md`](CHANGELOG.md) for what has shipped.
 
 ## Main features
 

@@ -32,6 +32,16 @@ scheduling allowance from the 10 October amendment remains free. The paid plan
 unlocks full analytics history and best-time recommendations; v1 remains monthly
 only. The historical $19 account-based offer and $4 account add-on remain retired.
 
+## Owner amendment — 14 October 2026
+
+The owner changed the free allowance: Free includes **one** active account per user
+across owned brands, plus Post now. The $15/month Publish Plan unlocks up to **five**
+accounts, scheduling, 366-day analytics history and best-time recommendations. This
+supersedes the "five free accounts" in the 10 and 13 October amendments. The code
+matches (`FREE_SOCIAL_ACCOUNT_LIMIT = 1`, `PUBLISH_SOCIAL_ACCOUNT_LIMIT = 5` in
+`lib/social/accountAllowance.js`; the limit in migration 0298). Recorded here on
+2026-10-16 to remove the conflict between this ADR and the code.
+
 ## Context
 
 ADR-0062 decided Publish is billed as an independent recurring "Publish Plan," never touching
