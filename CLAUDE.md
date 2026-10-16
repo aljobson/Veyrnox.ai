@@ -373,8 +373,9 @@ developer surface is `/api/v1/developer/*` and requires a verified OAuth
   `wrangler rollback <version-id>`, or rerun the workflow on an older commit.
 - Feature flag new user paths until the DB migration has landed and the
   reconciliation job has run for 24h clean. Flags are server vars in
-  `wrangler.jsonc` (`*_ENABLED`, `"false"` in production, e.g. `CINEMA_*`,
-  `TENANT_PROJECTS_ENABLED`, `PUBLISH_ENABLED`). Cinema also needs the per-browser preview switch
+  `wrangler.jsonc` (`*_ENABLED`; a new one ships `"false"`, e.g. `CINEMA_*`,
+  `SUBSCRIPTIONS_ENABLED`; `TENANT_PROJECTS_ENABLED` and `PUBLISH_ENABLED` are now
+  `"true"` in production). Cinema also needs the per-browser preview switch
   `localStorage.veyrnox_social_cinema`. Projects navigation and cloud saving
   share the request-time `TENANT_PROJECTS_ENABLED` server flag; project media
   uploads have the additional `PROJECT_MEDIA_UPLOADS_ENABLED` gate.
