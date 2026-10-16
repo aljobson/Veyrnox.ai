@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import ts from 'typescript';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 
 const require = createRequire(import.meta.url);
 function load(path, stubs = {}) {
@@ -28,6 +30,50 @@ test('the inline editor launcher retains the same accessible toggle state and fo
   }
   assert.equal(toggles, 2);
   assert.equal(EditorHelperLauncher({ host: null, open: false }), null);
+});
+
+test('the editor advertises its portal host only after its own hydration and cancels unmounted readiness', () => {
+  let ready = false, effect;
+  const tasks = [];
+  const fakeReact = {
+    useState: initial => [ready || initial, next => { ready = next; }],
+    useEffect: callback => { effect = callback; },
+  };
+  const { EditorHelperHost } = load('app/veyrnox/_components/editor/EditorHelperLauncher.js', { react: fakeReact });
+  assert.equal(typeof EditorHelperHost, 'function');
+  const previous = globalThis.queueMicrotask;
+  globalThis.queueMicrotask = task => { tasks.push(task); };
+  try {
+    const initial = EditorHelperHost();
+    assert.equal(initial.props['data-vey-editor-helper'], undefined);
+    assert.equal(initial.props.children, false, 'SSR and first hydration must have no advertised portal target');
+    const cleanup = effect();
+    assert.equal(ready, false, 'readiness waits for the editor commit');
+    tasks.shift()();
+    const hydrated = EditorHelperHost();
+    assert.equal(hydrated.props.children.type, 'div');
+    assert.equal(hydrated.props.children.props['data-vey-editor-helper'], true);
+    cleanup();
+    ready = false;
+    EditorHelperHost();
+    const cancelled = effect();
+    cancelled(); tasks.shift()();
+    assert.equal(ready, false, 'a removed editor must not advertise a stale host');
+  } finally { globalThis.queueMicrotask = previous; }
+});
+
+test('the workspace uses the hydration-owned host instead of advertising an SSR portal target', () => {
+  const source = readFileSync(new URL('../app/veyrnox/_components/editor/MultitrackWorkspace.js', import.meta.url), 'utf8');
+  assert.match(source, /import \{ EditorHelperHost \} from '\.\/EditorHelperLauncher';/);
+  assert.match(source, /<EditorHelperHost\s*\/>/);
+  assert.doesNotMatch(source, /<div data-vey-editor-helper/);
+});
+
+test('real React server rendering leaves the editor slot undiscoverable by the shared portal', () => {
+  const { EditorHelperHost } = load('app/veyrnox/_components/editor/EditorHelperLauncher.js');
+  const html = renderToStaticMarkup(createElement(EditorHelperHost));
+  assert.equal(html, '<div class="ml-auto shrink-0 sm:ml-0"></div>');
+  assert.doesNotMatch(html, /data-vey-editor-helper/);
 });
 
 function hostHarness(pathname) {

@@ -41,6 +41,13 @@ function watchAuthentication(context, baseURL) {
   };
 }
 
+function browserErrorDetails(errors, entry) {
+  return errors.map(message => entry.sensitive
+    ? message.replaceAll(entry.pathname, entry.template)
+      .replaceAll(entry.pathname.split(/[?#]/, 1)[0], entry.template)
+    : message);
+}
+
 test('every page template and every sitemap page renders within accessibility and performance budgets', async ({ page, context, request, baseURL }, testInfo) => {
   await handlePrivacyChoices(page);
   const blockedWrites = [];
@@ -82,7 +89,7 @@ test('every page template and every sitemap page renders within accessibility an
     results.push(result);
     await test.step(`${label} [${entry.mode}; ${entry.access}]`, async () => {
       const errors = [];
-      const onError = (error) => errors.push(error.message);
+      const onError = (error) => errors.push(error.stack || error.message);
       page.on('pageerror', onError);
       try {
         const res = await page.goto(entry.pathname, { waitUntil: 'load' });
@@ -140,7 +147,10 @@ test('every page template and every sitemap page renders within accessibility an
         result.accessibility = serious.map(({ id, nodes }) => ({ id, targets: nodes.map(({ target }) => target) }));
         expect(result.accessibility, `serious accessibility violations: ${label}`).toEqual([]);
         expect(errors.length, `uncaught browser errors: ${label}`).toBe(0);
-      } finally { page.off('pageerror', onError); }
+      } finally {
+        result.browserErrors = browserErrorDetails(errors, entry);
+        page.off('pageerror', onError);
+      }
     }).catch((error) => {
       result.failure = entry.sensitive ? error.message.replaceAll(entry.pathname, label) : error.message;
       // Continue the sweep to report every page, then fail once with the complete artifact.
