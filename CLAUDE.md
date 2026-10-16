@@ -110,6 +110,11 @@ If a build starts failing after a dependency change, bisect these three first.
 
 ## API gateway (`/api/v1/*`)
 
+Public routes outside the gate include `/api/developer/openapi`; it publishes
+the read-only OpenAPI contract and never reads identity headers. The protected
+developer surface is `/api/v1/developer/*` and requires a verified OAuth
+`client_id` claim as well as the normal user identity.
+
 - Middleware `middleware.js` gates every `/api/v1/*` path. Reject unauthenticated
   requests with 401. It verifies the Supabase JWT with **ES256 + JWKS via Web
   Crypto**. Never re-introduce HS256 shared-secret verification.
