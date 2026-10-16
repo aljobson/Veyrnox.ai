@@ -16,6 +16,7 @@ import { editUnits, clipCaptionsEnabled, clipSlowEnabled } from '../../../../lib
 import { compositeRefundGate } from '../../../../lib/compositeRefunds.js';
 import { resolveEdit, defaultDeps as editDeps } from '../../../../lib/clipEditSources.js';
 import { checkPlan, checkCapacity } from '../../../../lib/montageGate.js';
+import { providerSpendBody, providerSpendError, providerSpendLimit } from '../../../../lib/providerSpend.js';
 
 // The AUP statement version a consent tick attests to. Bump when the wording
 // at /legal/aup or on the create page changes; users re-attest under the new
@@ -394,6 +395,10 @@ export async function POST(req) {
             p_window_seconds: RATE_WINDOW_SECONDS,
         }, cfg);
     } catch (err) {
+        const spend = providerSpendError(err);
+        if (spend) return NextResponse.json(providerSpendBody(spend), {
+            status: spend.status, headers: { 'retry-after': String(spend.retryAfter) },
+        });
         console.error('[generations] ledger_debit failed:', err);
         return NextResponse.json({ error: 'debit_failed' }, { status: 502 });
     }
@@ -410,6 +415,10 @@ export async function POST(req) {
             status: 503, headers: { 'retry-after': String(retryAfter) },
         });
     }
+    const spendLimit = providerSpendLimit(debit);
+    if (spendLimit) return NextResponse.json(providerSpendBody(spendLimit), {
+        status: spendLimit.status, headers: { 'retry-after': String(spendLimit.retryAfter) },
+    });
     if (!debit || debit.ok === false) {
         const status = debit && debit.code === 'INSUFFICIENT_BALANCE' ? 402
             : debit && (debit.code === 'ACCOUNT_FROZEN' || debit.code === 'ACCOUNT_ON_HOLD') ? 403 : 400;
