@@ -166,6 +166,19 @@ jobs:
             })();
           "
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/replay-migrations.mjs
+          # Legacy accounting fixtures move hundreds of synthetic Credits
+          # through uncatalogued test models. Lift only this disposable DB's
+          # policy; provider-spend-limits.acceptance.test.ts installs and
+          # verifies strict limits independently below.
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node -e "
+            const pg = require('pg');
+            (async () => {
+              const c = new pg.Client({ connectionString: process.env.DATABASE_URL });
+              await c.connect();
+              await c.query('UPDATE public.provider_spend_policy SET max_job_microusd=100000000, user_hour_microusd=1000000000000, user_day_microusd=1000000000000, global_hour_microusd=1000000000000, global_day_microusd=1000000000000 WHERE singleton');
+              await c.end();
+            })();
+          "
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-free-allowance-starting-values.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-pass-event-ordering.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-reconciliation-allowance-referrals.mjs
@@ -241,6 +254,18 @@ jobs:
 
       - name: Apply migrations
         run: node scripts/migrate.mjs
+
+      - name: Lift spend caps for legacy accounting fixtures
+        run: |
+          node -e "
+            const pg = require('pg');
+            (async () => {
+              const c = new pg.Client({ connectionString: process.env.DATABASE_URL });
+              await c.connect();
+              await c.query('UPDATE public.provider_spend_policy SET max_job_microusd=100000000, user_hour_microusd=1000000000000, user_day_microusd=1000000000000, global_hour_microusd=1000000000000, global_day_microusd=1000000000000 WHERE singleton');
+              await c.end();
+            })();
+          "
 
       # One file at a time: free-credits applies supabase/0035 to this
       # database, which must not land mid-way through another file's run.
