@@ -109,10 +109,6 @@
     // the external approval record are complete. Existing-customer reads,
     // cancellation and paid-checkout recovery remain available while off.
     "SUBSCRIPTIONS_ENABLED": "false",
-    // Public, monitored Operator mailbox. The sender defaults to the verified
-    // VIOLATION_EMAIL_FROM. Keeping this non-secret value in source prevents a
-    // refused invoice from becoming unprocessable after a clean deployment.
-    "SUBSCRIPTION_ALERT_EMAIL": "support@veyrnox.com",
     // Cinema first activation. Paid access and monetisation remain closed.
     // Merge only after the documented production cutover gates pass.
     "CINEMA_ENABLED": "true",
