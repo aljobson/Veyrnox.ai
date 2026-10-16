@@ -113,7 +113,7 @@ test('the create page asks for the voice when the catalog says the model takes o
     const page = read('../app/veyrnox/app/create/page.js');
     assert.match(read('../app/veyrnox/_lib/useCatalog.js'), /takesVoice: !!m\.capabilities\?\.inputs\?\.voice_description/);
     assert.match(page, /\{model\?\.takesVoice && <VoiceDescription value=\{voice\} onChange=\{setVoice\} \/>\}/);
-    assert.match(page, /\.\.\.settingsInputs\(model, \{ seed, negative, voice \}\)/);
+    assert.match(page, /\.\.\.settingsInputs\(model, \{ seed, negative, voice, duration: audioDuration \}\)/);
     // Generate stays off until the voice is described, as it does for a missing upload.
     assert.match(page, /const missingVoice = voiceIsMissing\(model, voice\);/);
     assert.match(page, /disabled=\{[^\n]*\|\| missingVoice[^\n]*\}/);

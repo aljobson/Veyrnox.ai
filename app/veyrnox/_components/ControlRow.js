@@ -1,7 +1,7 @@
 'use client';
 
 // A labelled row of single-choice pills (duration, aspect) in the studio.
-export function ControlRow({ label, options, value, onChange, assistantTarget }) {
+export function ControlRow({ label, options, value, onChange, assistantTarget, formatOption = (option) => option }) {
   return (
     <div data-assistant-target={assistantTarget} className="scroll-mt-24 rounded-2xl border border-vx-border bg-vx-panel p-5">
       <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted mb-3">{label}</div>
@@ -18,7 +18,7 @@ export function ControlRow({ label, options, value, onChange, assistantTarget })
                 : 'border-vx-border text-vx-fg-muted hover:text-vx-fg'
             }`}
           >
-            {o}
+            {formatOption(o)}
           </button>
         ))}
       </div>

@@ -10,6 +10,7 @@ import { NETWORKS } from '../../../lib/socialConnectClient.js';
 import { createSocialApproval, createSocialPost, listSocialPosts, newIdempotencyKey } from '../../../lib/socialPostsClient.js';
 import { deleteSocialPreset, listSocialPresets, saveSocialPreset } from '../../../lib/socialPresetsClient.js';
 import { confirmSocialQueueSlot, listSocialQueues, reserveSocialQueueSlot } from '../../../lib/socialQueuesClient.js';
+import { futureLocalSchedule, localInput, minimumFutureLocalInput } from '../../../../lib/social/calendar.js';
 
 const button = 'rounded-full border border-vx-border px-4 py-2 text-sm font-bold disabled:opacity-50';
 const primaryButton = 'rounded-full bg-vx-accent text-black px-4 py-2 text-sm font-bold disabled:opacity-50';
@@ -25,11 +26,7 @@ function captionLength(network, value) {
 }
 
 function defaultScheduleValue() {
-    // Local time an hour out, trimmed to what <input type="datetime-local"> accepts.
-    const d = new Date(Date.now() + 60 * 60 * 1000);
-    d.setSeconds(0, 0);
-    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-    return d.toISOString().slice(0, 16);
+    return localInput(Date.now() + 60 * 60 * 1000);
 }
 
 function ContentPresets({ accounts, caption, selectedAccountIds, onApply }) {
@@ -297,8 +294,8 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
         const useQueue = mode === 'queue';
         const useApproval = mode === 'review';
         if (useQueue && !queueId) { setError('Choose a posting queue.'); return; }
-        const schedule = new Date(scheduledAt);
-        if (!publishNow && !useQueue && (!Number.isFinite(schedule.getTime()) || schedule.getTime() <= Date.now())) {
+        const schedule = futureLocalSchedule(scheduledAt);
+        if (!publishNow && !useQueue && !schedule) {
             setError('Choose a future date and time to schedule your post.'); return;
         }
         const reviewers = reviewerEmails.split(/[\n,;]/).map((email) => email.trim().toLowerCase()).filter(Boolean);
@@ -309,7 +306,7 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
         try {
             const reservation = useQueue ? await reserveSocialQueueSlot(queueId, idempotencyKey.current) : null;
             const payload = {
-                ...(publishNow ? { publishNow: true } : { scheduledAt: useQueue ? reservation.scheduled_at : schedule.toISOString() }),
+                ...(publishNow ? { publishNow: true } : { scheduledAt: useQueue ? reservation.scheduled_at : schedule }),
                 globalText: caption,
                 ...(variantsEnabled ? { networkText: Object.fromEntries(Object.entries(networkText).filter(([network, text]) => selectedNetworks.includes(network) && text.trim())) } : {}),
                 ...(hasYoutube && youtubeVisibilityEnabled ? { youtubeVisibility } : {}),
@@ -336,6 +333,7 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
                 ? 'Too many posts scheduled at once. Wait a moment and try again.'
                 : ['unsupported_media_type', 'publishing_not_supported'].includes(err.body?.error) ? 'That destination does not support this media type.'
                 : err.body?.error === 'caption_too_long' ? 'The caption is too long for a selected platform.'
+                : err.body?.error === 'invalid_schedule' ? 'Choose a future date and time to schedule your post.'
                 : err.body?.error === 'no_queue_slot' ? 'That queue has no open slot in the next eight weeks.'
                 : err.body?.error === 'queue_disabled' ? 'That queue is paused. Choose another queue.'
                 : 'Could not submit that post. Check your connection and try again.');
@@ -463,7 +461,8 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
 
             {scheduleEnabled ? <div>
                 <label htmlFor="publish-schedule" className="text-sm font-bold mb-2 block">Schedule for</label>
-                <input id="publish-schedule" type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} className="rounded-lg border border-vx-border bg-transparent px-3 py-2 text-sm" />
+                <input id="publish-schedule" type="datetime-local" min={minimumFutureLocalInput()} value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} className="rounded-lg border border-vx-border bg-transparent px-3 py-2 text-sm" />
+                <p className="mt-1 text-xs text-vx-fg-muted">Choose a future date and time in your local timezone.</p>
             </div> : <p className="rounded-xl border border-vx-accent/40 bg-vx-accent/[0.06] p-3 text-sm text-vx-fg-body">
                 Post now is included with Free. <Link href="/app/publish/plan" className="font-bold text-vx-accent underline">Upgrade to schedule posts</Link>.
             </p>}
@@ -498,7 +497,7 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
                 {scheduleEnabled && <button type="submit" value="schedule" disabled={submitting || loadingMedia || uploading || !activeAccounts.length} className={button}>
                     {submitting === 'schedule' ? 'Scheduling…' : 'Schedule post'}
                 </button>}
-                {queuesEnabled && <button type="submit" value="queue" disabled={submitting || loadingMedia || uploading || !activeAccounts.length || !queueId} className={button}>
+                {queuesEnabled && <button type="submit" value="queue" formNoValidate disabled={submitting || loadingMedia || uploading || !activeAccounts.length || !queueId} className={button}>
                     {submitting === 'queue' ? 'Adding…' : 'Add to queue'}
                 </button>}
                 {approvalsEnabled && <button type="submit" value="review" disabled={submitting || loadingMedia || uploading || !activeAccounts.length} className={button}>

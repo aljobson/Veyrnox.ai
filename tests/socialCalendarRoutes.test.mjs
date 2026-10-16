@@ -8,7 +8,7 @@ const {PATCH:updatePost}=await import('../app/api/v1/social/posts/[id]/route.js'
 Object.assign(process.env,{SUPABASE_URL:'https://db.test',SUPABASE_SERVICE_ROLE_KEY:'fixture',ACCOUNT_READ_RATE_LIMIT_ENABLED:'true',PUBLISH_CALENDAR_ENABLED:'true'});
 const auth='11111111-1111-4111-8111-111111111111',id='22222222-2222-4222-8222-222222222222';
 const valid='?from=2026-10-01T00:00:00Z&to=2026-11-01T00:00:00Z';
-const body={expectedAt:'2026-10-04T10:00:00Z',scheduledAt:'2026-10-05T10:00:00Z'};
+const body={expectedAt:'2026-10-04T10:00:00Z',scheduledAt:new Date(Date.now()+86400000).toISOString()};
 const updatedAt='2026-10-03T10:00:00Z';
 const restoreAt=new Date(Date.now()+86400000).toISOString();
 const req=(query='',data,identity=auth)=>new Request('https://veyrnox.test/api/v1/social/calendar'+query,{headers:{'x-veyrnox-auth-id':identity},...(data?{method:'PATCH',body:JSON.stringify(data)}:{})});
@@ -28,6 +28,7 @@ test('bounded calendar query validates filters and paired cursor then returns un
 test('reschedule validates identity and body then passes compare-and-set timestamps',async()=>{
     stub();assert.equal((await reschedule(req('',body,''),ctx)).status,401);
     assert.equal((await reschedule(req('',{...body,expectedAt:'invalid'}),ctx)).status,400);assert.equal(calls.length,0);
+    assert.equal((await reschedule(req('',{...body,scheduledAt:new Date(Date.now()-60_000).toISOString()}),ctx)).status,400);assert.equal(calls.length,0);
     const res=await reschedule(req('',body),ctx);assert.equal(res.status,200);
     assert.deepEqual(calls.at(-1),{name:'reschedule_social_post',args:{p_auth_id:auth,p_post_id:id,p_expected_at:body.expectedAt,p_scheduled_at:body.scheduledAt}});
 });

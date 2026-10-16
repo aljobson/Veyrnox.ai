@@ -6,7 +6,7 @@ import { useStudioJobs } from '../../_lib/useStudioJobs';
 import { useFreeAllowance } from '../../_lib/useFreeAllowance';
 import { freeCost, freeLeftFor } from '../../_lib/freeAllowance';
 import { batchNote, inputsForIndex, sendInOrder, submitErrorCode } from '../../_lib/imageBatch';
-import { settingsInputs, voiceIsMissing } from '../../_lib/generationSettings';
+import { audioDurationConfig, audioDurationIsInvalid, settingsInputs, voiceIsMissing } from '../../_lib/generationSettings';
 import {
   COMPOSER_KINDS,
   chatMediaModels,
@@ -26,6 +26,7 @@ export function useChatMediaGeneration({ kind, models, catalogLive }) {
   const freeMap = useFreeAllowance();
   const [modelIds, setModelIds] = useState({});
   const [durationWanted, setDuration] = useState(5);
+  const [audioDurations, setAudioDurations] = useState({});
   const [aspectWanted, setAspect] = useState('16:9');
   const [countWanted, setCount] = useState(1);
   const [resolutionWanted, setResolution] = useState(null);
@@ -44,6 +45,11 @@ export function useChatMediaGeneration({ kind, models, catalogLive }) {
   const availableModels = useMemo(() => chatMediaModels(models, kind), [models, kind]);
   const model = availableModels.find((item) => item.id === modelIds[kind]) || firstOpenMediaModel(models, kind);
   const duration = supportedDuration(model, durationWanted);
+  const audioDurationControl = audioDurationConfig(model);
+  const audioDuration = audioDurationControl
+    ? audioDurations[model.id] ?? String(audioDurationControl.defaultValue)
+    : '';
+  const invalidAudioDuration = audioDurationIsInvalid(model, audioDuration);
   const aspect = supportedAspect(model, aspectWanted);
   const count = mediaGenerationCount(model, countWanted);
   const outputSettings = mediaOutputSettings(model, resolutionWanted, audioWanted);
@@ -57,6 +63,11 @@ export function useChatMediaGeneration({ kind, models, catalogLive }) {
   const missingVoice = voiceIsMissing(model, voice);
   const onUnreachable = useCallback(() => setError({ code: 'poll_unreachable' }), []);
   const { jobs, generating, startJobs, addJob, clearJobs: clearStudioJobs } = useStudioJobs({ onUnreachable });
+
+  function setAudioDuration(value) {
+    if (!model?.id) return;
+    setAudioDurations((previous) => ({ ...previous, [model.id]: value }));
+  }
 
   const clearJobs = useCallback(() => {
     clearStudioJobs();
@@ -134,7 +145,7 @@ export function useChatMediaGeneration({ kind, models, catalogLive }) {
   async function generate(prompt) {
     const cleanPrompt = String(prompt || '').trim();
     if (inFlight.current || sending || generating || !catalogLive || !model || model.gated || !cleanPrompt || balance == null
-      || cost > balance || missingSource || missingConsent || missingVoice) return false;
+      || cost > balance || missingSource || missingConsent || missingVoice || invalidAudioDuration) return false;
     inFlight.current = true;
     setSending(true);
     setError(null);
@@ -142,7 +153,7 @@ export function useChatMediaGeneration({ kind, models, catalogLive }) {
       prompt: cleanPrompt,
       aspect_ratio: aspect || undefined,
       duration_seconds: model.kind === COMPOSER_KINDS.VIDEO ? duration : undefined,
-      ...settingsInputs(model, { seed: '', negative: '', voice }),
+      ...settingsInputs(model, { seed: '', negative: '', voice, duration: audioDuration }),
       ...outputSettings,
     };
     Object.keys(inputs).forEach((key) => inputs[key] === undefined && delete inputs[key]);
@@ -204,6 +215,10 @@ export function useChatMediaGeneration({ kind, models, catalogLive }) {
     selectModel,
     duration,
     setDuration,
+    audioDuration,
+    setAudioDuration,
+    audioDurationControl,
+    invalidAudioDuration,
     aspect,
     setAspect,
     count,

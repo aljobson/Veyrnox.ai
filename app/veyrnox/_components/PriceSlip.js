@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { writeStudioDraft } from '../_lib/landingDraft';
 import { AFFORDABLE_START_MODEL_ID, distinctShelfNames } from '../_lib/tokens';
 import { affordableStarterModel } from '../_lib/starterModels';
+import { outputDurationLabel } from '../_lib/chatMedia';
 
 // The landing hero's working form: pick a model and a length, and the slip
 // prints what the button will charge. Pressing Generate opens the studio on
@@ -55,7 +56,7 @@ export function PriceSlip({ models }) {
   if (!model) return null;
   const isVideo = model.kind === 'video';
   const cost = model.credits * (isVideo && seconds === 10 ? 2 : 1);
-  const unit = isVideo ? `${seconds} s clip` : model.kind === 'audio' ? 'one clip' : 'one image';
+  const unit = isVideo ? `${outputDurationLabel(model, seconds)} clip` : model.kind === 'audio' ? 'one clip' : 'one image';
   const inChips = chips.some((c) => c.id === model.id);
 
   function onSubmit(e) {
@@ -142,7 +143,7 @@ export function PriceSlip({ models }) {
                   onClick={() => setSeconds(s)}
                   className="vx-press rounded-full px-3.5 py-1 text-[13px] font-semibold text-vx-fg-body pointer-coarse:min-h-9 pointer-coarse:px-4 aria-pressed:bg-vx-fg aria-pressed:text-vx-base"
                 >
-                  {s} s
+                  {outputDurationLabel(model, s)}
                 </button>
               ))}
             </div>

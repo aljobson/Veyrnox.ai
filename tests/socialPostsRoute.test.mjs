@@ -141,6 +141,22 @@ test('POST: rejects malformed bodies before consuming any rate-limit budget or R
     assert.deepEqual(calls, []);
 });
 
+test('POST: rejects an already-past schedule through the idempotency-aware database contract', async () => {
+    stub({ create_social_post: { ok: false, code: 'INVALID_SCHEDULE' } });
+    const res = await POST(postRequest({ ...validBody(), scheduledAt: new Date(Date.now() - 10 * 60_000).toISOString() }));
+    assert.equal(res.status, 400);
+    assert.deepEqual(await res.json(), { error: 'INVALID_SCHEDULE' });
+    assert.equal(calls.some((call) => call.name === 'create_social_post'), true);
+});
+
+test('POST: a past exact replay can still recover the original idempotent result', async () => {
+    stub({ create_social_post: { ok: true, idempotent: true, post_id: postId, target_count: 1 } });
+    const res = await POST(postRequest({ ...validBody(), scheduledAt: new Date(Date.now() - 60_000).toISOString() }));
+    assert.equal(res.status, 201);
+    assert.equal((await res.json()).idempotent, true);
+    assert.equal(calls.some((call) => call.name === 'create_social_post'), true);
+});
+
 test('POST: missing or malformed identity never reaches the database', async () => {
     stub();
     for (const identity of ['', 'bad']) {
@@ -242,7 +258,7 @@ test('POST: an editor reads owner-scoped account data but creates as the acting 
 });
 
 test('POST: Post now uses server time and ignores a missing or invalid device schedule', async () => {
-    for (const scheduledAt of [undefined, 'not-a-date', '2099-01-01T00:00:00Z']) {
+    for (const scheduledAt of [undefined, 'not-a-date', new Date(Date.now() - 60_000).toISOString(), '2099-01-01T00:00:00Z']) {
         stub();
         const start = Date.now();
         const res = await POST(postRequest({ ...validBody(), publishNow: true, scheduledAt }));

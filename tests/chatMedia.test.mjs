@@ -63,4 +63,7 @@ test('the composer describes the priced output without inventing selectable tier
   assert.equal(videoAudioLabel(video), 'Audio off');
   assert.equal(videoAudioLabel({ presentation: { audioIncluded: true } }), 'Audio on');
   assert.equal(videoAudioLabel({}), 'Audio model default');
+  assert.equal(outputDurationLabel({ kind: 'video', durations: [5], capabilities: {
+    presentation: { fixedDurationLabel: '8s' },
+  } }, 5), '8s', 'server catalog rows keep presentation nested under capabilities');
 });
