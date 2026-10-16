@@ -13,7 +13,7 @@ export async function PATCH(req,{params}) {
     const {id}=await params;
     if(!UUID_RE.test(id||''))return NextResponse.json({error:'invalid_post_id'},{status:400});
     let body;try{body=await req.json();}catch{return NextResponse.json({error:'invalid_body'},{status:400});}
-    if(!instant(body?.scheduledAt)||!instant(body?.expectedAt))return NextResponse.json({error:'invalid_schedule'},{status:400});
+    if(!instant(body?.scheduledAt)||Date.parse(body.scheduledAt)<=Date.now()||!instant(body?.expectedAt))return NextResponse.json({error:'invalid_schedule'},{status:400});
     const cfg=envConfig();
     if(!cfg.supabaseUrl||!cfg.serviceRoleKey)return NextResponse.json({error:'supabase_not_configured'},{status:503});
     const brand=await resolveBrand(authId,cfg,'api/v1/social/posts/[id]/schedule:PATCH',{request:req,allowedRoles:['owner','manager','editor']});

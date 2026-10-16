@@ -46,7 +46,7 @@ export function mediaGenerationCredits(model, duration, count) {
 }
 
 export function outputDurationLabel(model, selectedDuration) {
-  const presentation = model?.presentation || {};
+  const presentation = model?.presentation || model?.capabilities?.presentation || {};
   const mapped = presentation.durationByOption?.[String(selectedDuration)];
   if (mapped !== undefined && mapped !== null && String(mapped).trim()) return `${String(mapped).replace(/s$/i, '')}s`;
   if (presentation.fixedDurationLabel) return presentation.fixedDurationLabel;
