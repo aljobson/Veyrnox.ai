@@ -54,6 +54,8 @@ The compact guide docks below the pointed control and can move to either side of
 
 Pointing resolves a section marker to its actual control: the selected duration/count pill, the source Library button, the rights checkbox, or the prompt field. A model-selection step points at an eligible model button, not the MODEL heading. `useVeyPointer` measures the control after scrolling and follows scroll, resize and layout changes. `lib/veyPointer.js` positions the body and maps the target into the mirrored SVG; Vey’s articulated hand lands inside the control. Body bobbing is paused while pointing, and the decorative hand cannot intercept clicks. Closing the guide removes its pointer. A pointed checkbox remains unchecked and a pointed Generate button is never activated.
 
+Below 640px, the open walkthrough reserves its own measured page clearance even when its pointed control is off-screen. Expansion, chat handoffs, scrolling and reopening update that space independently of pointer movement. The mascot also avoids visible form controls, source images and the helper panel. A dragged location remains a preference when clear; mobile layout may move Vey away from a newly overlapping control while retaining precise fingertip geometry. Desktop placement is unchanged.
+
 `activate_target` can click only targets explicitly carrying `canActivate: true` in that registry. It is intended for reversible interface controls such as opening Chat settings or an Oddling History tab. Any other target is downgraded to highlighting.
 
 The visible activation sequence is walk, point, tap, then click. The click is delayed until the movement and tap animation have played, and it is cancelled if the target has left the page.
