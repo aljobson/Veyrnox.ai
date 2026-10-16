@@ -66,6 +66,18 @@ async function withFlag(value, run) {
 }
 const renderIndex = () => renderToStaticMarkup(indexPage.default());
 const renderDetail = async (id) => renderToStaticMarkup(await detailPage.default({ params: Promise.resolve({ id }) }));
+const unescapeHtml = (text) => text.replaceAll('&quot;', '"').replaceAll('&#x27;', "'").replaceAll('&lt;', '<').replaceAll('&gt;', '>').replaceAll('&amp;', '&');
+// WCAG 2.5.3 (Label in Name): a control's accessible name must contain the text it shows,
+// so a voice-control user who says what they see gets the control.
+function labelInNameFailures(html) {
+    const failures = [];
+    for (const match of html.matchAll(/<(a|button)\b([^>]*)>([\s\S]*?)<\/\1>/g)) {
+        const label = /\saria-label="([^"]*)"/.exec(match[2]);
+        const visible = unescapeHtml(match[3].replace(/<[^>]*>/g, '')).trim().toLowerCase();
+        if (label && visible && !unescapeHtml(label[1]).toLowerCase().includes(visible)) failures.push(`${unescapeHtml(label[1])} / ${visible}`);
+    }
+    return failures;
+}
 const escapeHtml = (text) => text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#x27;');
 
 test('while the flag is off every route is not-found, with a noindex head', async () => {
@@ -96,7 +108,8 @@ test('with the flag on the gallery lists every character with portrait, hook, ki
     }
     assert.match(html, /Humans/);
     assert.match(html, /Other beings/);
-    assert.match(html, />Copy link to this gallery</);
+    assert.match(html, />Share link to this gallery</);
+    assert.doesNotMatch(html, />Copy link/, 'the control may open a share sheet, so it is not called Copy');
     assert.equal((html.match(/loading="eager"/g) || []).length, 4, 'only the first row loads at once');
     assert.doesNotMatch(html, /<canvas|<script/i, 'no puppet canvases and no inline script');
     assert.doesNotMatch(html, /ai[ -]influencer|influencer/i);
@@ -115,7 +128,8 @@ test('with the flag on each character page renders its own content and the studi
         const studio = html.match(/<a [^>]*href="(\/app\/oddlings\?oddling=[^"]+)"[^>]*>(Recreate|Animate this character)<\/a>/g) || [];
         assert.equal(studio.length, 2, `${oddling.id} has Recreate and Animate`);
         for (const link of studio) assert.ok(link.includes(`href="/app/oddlings?oddling=${encodeURIComponent(oddling.id)}"`));
-        assert.match(html, /<button type="button"[^>]*>Copy link<\/button>/);
+        assert.match(html, /<button type="button"[^>]*>Share link<\/button>/);
+        assert.doesNotMatch(html, />Copy link/, 'the control may open a share sheet, so it is not called Copy');
         assert.match(html, /role="status"/);
         assert.ok(html.includes('href="/oddlings"'), 'back to the gallery');
         assert.ok(html.includes(oddling.premise.voice) && html.includes(oddling.premise.show));
@@ -135,12 +149,25 @@ test('an id outside the cast is not-found even with the flag on', () => withFlag
     }
 }));
 
-test('static params cover exactly the cast and unknown ids are refused by the router', () => {
-    assert.deepEqual(detailPage.generateStaticParams(), cast.map((o) => ({ id: o.id })));
-    assert.equal(detailPage.dynamicParams, false);
+test('the pages render per request and carry no static-params exports that force-dynamic would ignore', () => {
+    // force-dynamic makes generateStaticParams and dynamicParams = false inert: an id outside the
+    // cast reaches the page and renders the not-found body (a streamed, noindex page, like /models/<id>).
+    // Exporting them implied a router-level 404 that never happens, so they must not come back.
+    assert.equal(detailPage.generateStaticParams, undefined);
+    assert.equal(detailPage.dynamicParams, undefined);
     assert.equal(detailPage.dynamic, 'force-dynamic');
     assert.equal(indexPage.dynamic, 'force-dynamic');
 });
+
+test('every labelled link names what it shows (Label in Name)', () => withFlag('true', async () => {
+    assert.deepEqual(labelInNameFailures(renderIndex()), []);
+    for (const oddling of cast) assert.deepEqual(labelInNameFailures(await renderDetail(oddling.id)), [], oddling.id);
+    // The checker itself: it must catch the mismatch it exists for.
+    assert.deepEqual(labelInNameFailures('<a href="/x" aria-label="Animate Duchess Volume">Animate this character</a>'),
+        ['Animate Duchess Volume / animate this character']);
+    assert.deepEqual(labelInNameFailures('<a href="/x" aria-label="Animate Duchess Volume">Animate</a>'), []);
+    assert.deepEqual(labelInNameFailures('<a href="/x">Animate this character</a>'), []);
+}));
 
 test('page metadata keeps the site name and type and carries the character portrait', () => withFlag('true', async () => {
     const index = indexPage.generateMetadata();

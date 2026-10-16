@@ -4,12 +4,14 @@ import { useEffect, useRef, useState } from 'react';
 
 const RESET_AFTER_MS = 2500;
 
-// Share or copy the link to a gallery page. The address is built in the browser
-// from the origin it is open on, so staging shares staging links, and from a
-// path the server chose, never from anything the visitor typed. Every browser
-// API is optional: where sharing and the clipboard are both missing, the
-// message says to copy the address bar.
-export function ShareLinkButton({ path, title, label = 'Copy link', className = '' }) {
+// Share the link to a gallery page: the browser's share sheet where it has
+// one, a copy to the clipboard where it does not. The label says "Share", not
+// "Copy", because the share sheet copies nothing. The address is built in the
+// browser from the origin it is open on, so staging shares staging links, and
+// from a path the server chose, never from anything the visitor typed. Every
+// browser API is optional: where sharing and the clipboard are both missing,
+// the message says to copy the address bar.
+export function ShareLinkButton({ path, title, label = 'Share link', className = '' }) {
   const [message, setMessage] = useState('');
   const timer = useRef(null);
 

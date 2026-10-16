@@ -5,7 +5,6 @@ import { Main } from '../../_components/Main';
 import { OPEN_GRAPH_BASE } from '../../../seo';
 import {
   ODDLINGS_PATH,
-  listPublicOddlings,
   neighbouringOddlings,
   oddlingMetadata,
   oddlingsPublicEnabled,
@@ -14,13 +13,11 @@ import {
 import { ShareLinkButton } from '../ShareLinkButton';
 
 // The flag is a Worker var, so it is read on every request. Closed (the
-// default in production) every character answers not-found.
+// default in production) every character answers not-found. An id outside the
+// cast does the same: notFound() below, a streamed not-found page marked noindex
+// like /models/<id>. generateStaticParams and dynamicParams = false are not
+// exported because force-dynamic makes them inert (tests/oddlingsPublicRender.test.mjs).
 export const dynamic = 'force-dynamic';
-
-export function generateStaticParams() {
-  return listPublicOddlings().map((o) => ({ id: o.id }));
-}
-export const dynamicParams = false;
 
 const PRIMARY_BUTTON = 'vx-press inline-flex items-center rounded-full bg-vx-accent px-6 py-3.5 font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover';
 const QUIET_BUTTON = 'vx-press inline-flex items-center rounded-full border border-vx-border px-6 py-3.5 font-extrabold text-vx-fg-body hover:border-vx-fg/30 hover:text-vx-fg';
@@ -70,8 +67,9 @@ export default async function OddlingPage({ params }) {
               {oddling.name} is an original, fictional adult character from the Oddlings cast, not a real person.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Link href={oddling.studioHref} aria-label={`Recreate ${oddling.name}`} className={PRIMARY_BUTTON}>Recreate</Link>
-              <Link href={oddling.studioHref} aria-label={`Animate ${oddling.name}`} className={QUIET_BUTTON}>Animate this character</Link>
+              {/* The heading names the character, so the visible text is the whole accessible name (WCAG 2.5.3). */}
+              <Link href={oddling.studioHref} className={PRIMARY_BUTTON}>Recreate</Link>
+              <Link href={oddling.studioHref} className={QUIET_BUTTON}>Animate this character</Link>
               <ShareLinkButton
                 path={oddling.path}
                 title={`${oddling.name}, an original Oddling`}

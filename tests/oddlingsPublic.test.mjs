@@ -16,10 +16,17 @@ import {
     publicOddlingById,
 } from '../app/veyrnox/_lib/oddlingsPublic.js';
 import { NAV_CATEGORIES, SECONDARY_NAV_CATEGORIES, SITE_PAGES, navHref } from '../app/veyrnox/_lib/tokens.js';
+import { AUTO_PRODUCT_INVENTORY } from '../lib/generatedProductInventory.js';
+import {
+    automaticProductKnowledgeContext,
+    productKnowledgeContext,
+    publicProductInventory,
+    searchAutomaticProductKnowledge,
+} from '../lib/productKnowledge.js';
 
 // The public, signed-out Oddlings gallery: /oddlings and /oddlings/<id>.
 // It shows the first-party cast only (no moderation needed), sits behind a
-// server flag that ships "false" in production, and links into the studio.
+// server flag that production leaves out (absent is closed), and links into the studio.
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const ids = ODDLING_ARCHETYPES.map((a) => a.id);
@@ -35,10 +42,13 @@ test('only the exact string "true" opens the gallery', () => {
     assert.equal(oddlingsPublicEnabled(null), false);
 });
 
-test('the flag ships "false" in production and "true" in staging', () => {
+test('production leaves the flag out (absence is off) and staging names it "true"', () => {
+    // Production is at the Worker text-binding limit (tests/workerBindingBudget.test.mjs). The code needs the
+    // exact string "true", so an absent var is closed, the same as the fal rollout controls and VEY_ACCOUNT_ENABLED.
     const config = parseJsonc(read('wrangler.jsonc'));
-    assert.equal(config.vars.ODDLINGS_PUBLIC_ENABLED, 'false');
+    assert.equal(Object.hasOwn(config.vars, 'ODDLINGS_PUBLIC_ENABLED'), false);
     assert.equal(config.env.staging.vars.ODDLINGS_PUBLIC_ENABLED, 'true');
+    assert.equal(oddlingsPublicEnabled({}), false, 'a missing var is closed');
 });
 
 test('the public roster is exactly the first-party cast', () => {
@@ -152,8 +162,8 @@ test('the pages read the flag per request, validate the id and import no client-
             `${name} pulls in no studio or puppet code`);
         assert.doesNotMatch(source, /dangerouslySetInnerHTML/);
     }
-    assert.match(detail, /export function generateStaticParams\(\) \{\s*return listPublicOddlings\(\)\.map\(\(o\) => \(\{ id: o\.id \}\)\);\s*\}/);
-    assert.match(detail, /export const dynamicParams = false;/);
+    // force-dynamic makes these two inert, and they imply a router-level 404 that does not happen.
+    assert.doesNotMatch(detail, /export (?:async )?(?:function generateStaticParams|const dynamicParams)/);
     assert.match(detail, /publicOddlingById\(id\)/);
     assert.match(detail, /\{ \.\.\.OPEN_GRAPH_BASE, \.\.\.meta\.openGraph \}/, 'the site name and type come from the shared base');
     assert.match(index, /\{ \.\.\.OPEN_GRAPH_BASE, \.\.\.meta\.openGraph \}/);
@@ -183,6 +193,9 @@ test('the share control copies a same-origin link and fails soft', () => {
     assert.match(source, /^'use client';/);
     assert.match(source, /window\.location\.origin/);
     assert.match(source, /navigator\.share/);
+    // It offers the share sheet where one exists, so it is not labelled Copy.
+    assert.match(source, /label = 'Share link'/);
+    assert.doesNotMatch(source, /Copy link/);
     assert.match(source, /navigator\.clipboard/);
     assert.match(source, /role="status"/);
     assert.match(source, /try \{/);
@@ -243,4 +256,52 @@ test('/oddlings is rewritten to the route, leaves portrait files alone and /veyr
     assert.match(config, /\{ source: '\/veyrnox\/oddlings', destination: '\/oddlings', permanent: true \}/);
     assert.match(config, /\{ source: '\/veyrnox\/oddlings\/:id', destination: '\/oddlings\/:id', permanent: true \}/);
     assert.doesNotMatch(config, /source: '\/oddlings\/:path\*'/, 'portraits are served from public/, not rewritten');
+});
+
+// Vey is given the discovered pages as grounding. A page that answers not-found
+// must not be named to a visitor, so the gallery's two routes are left out
+// while the flag is closed and come back when it opens.
+const GALLERY_ROUTE = /^\/oddlings(?:\/|$)/;
+const GALLERY_QUESTION = 'Meet the Oddlings: browse free, then recreate one as your own or animate it in the studio';
+
+test('the generated inventory holds the gallery routes, and the closed gate hides them from Vey', () => {
+    const generated = AUTO_PRODUCT_INVENTORY.filter((entry) => GALLERY_ROUTE.test(entry.route)).map((entry) => entry.route).sort();
+    assert.deepEqual(generated, ['/oddlings', '/oddlings/[id]'], 'the sync still records both gallery routes');
+    for (const env of [{}, { ODDLINGS_PUBLIC_ENABLED: 'false' }, { ODDLINGS_PUBLIC_ENABLED: 'TRUE' }, undefined]) {
+        const visible = publicProductInventory(env);
+        assert.ok(!visible.some((entry) => GALLERY_ROUTE.test(entry.route)), JSON.stringify(env));
+        assert.equal(visible.length, AUTO_PRODUCT_INVENTORY.length - 2, 'only the gallery routes are removed');
+        assert.ok(visible.some((entry) => entry.route === '/app/oddlings'), 'the signed-in studio stays known');
+    }
+    const open = publicProductInventory({ ODDLINGS_PUBLIC_ENABLED: 'true' });
+    assert.equal(open.length, AUTO_PRODUCT_INVENTORY.length);
+    assert.ok(open.some((entry) => entry.route === '/oddlings') && open.some((entry) => entry.route === '/oddlings/[id]'));
+});
+
+test('Vey does not name /oddlings while the gallery is closed, and does once it is open', () => {
+    const closed = searchAutomaticProductKnowledge(GALLERY_QUESTION, '/oddlings', { routes: 60 }, {});
+    assert.ok(closed.routes.length > 0, 'the search still finds other pages');
+    assert.ok(!closed.routes.some((entry) => GALLERY_ROUTE.test(entry.route)));
+    const open = searchAutomaticProductKnowledge(GALLERY_QUESTION, '/oddlings', { routes: 60 }, { ODDLINGS_PUBLIC_ENABLED: 'true' });
+    assert.deepEqual(open.routes.map((entry) => entry.route).filter((route) => GALLERY_ROUTE.test(route)).sort(), ['/oddlings', '/oddlings/[id]']);
+
+    const routeLine = /ROUTE: \/oddlings(?:\/|\n|$)/;
+    assert.doesNotMatch(automaticProductKnowledgeContext(GALLERY_QUESTION, '/oddlings', {}), routeLine);
+    assert.doesNotMatch(productKnowledgeContext(GALLERY_QUESTION, '/oddlings', [], {}), routeLine);
+    assert.match(automaticProductKnowledgeContext(GALLERY_QUESTION, '/oddlings', { ODDLINGS_PUBLIC_ENABLED: 'true' }), routeLine);
+    // A page where the closed flag does not matter is unchanged: the studio is still described.
+    assert.match(productKnowledgeContext('How do I build a reusable Oddling character?', '/app/oddlings', [], {}), /Oddling Studio/);
+});
+
+test('with no env passed, Vey reads the Worker env and fails closed when it is absent', () => {
+    const previous = process.env.ODDLINGS_PUBLIC_ENABLED;
+    try {
+        delete process.env.ODDLINGS_PUBLIC_ENABLED;
+        assert.ok(!publicProductInventory().some((entry) => GALLERY_ROUTE.test(entry.route)));
+        process.env.ODDLINGS_PUBLIC_ENABLED = 'true';
+        assert.ok(publicProductInventory().some((entry) => entry.route === '/oddlings'));
+    } finally {
+        if (previous === undefined) delete process.env.ODDLINGS_PUBLIC_ENABLED;
+        else process.env.ODDLINGS_PUBLIC_ENABLED = previous;
+    }
 });

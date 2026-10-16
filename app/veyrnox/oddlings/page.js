@@ -46,7 +46,7 @@ export default function OddlingsGallery() {
           <ShareLinkButton
             path={ODDLINGS_PATH}
             title="Meet the Oddlings"
-            label="Copy link to this gallery"
+            label="Share link to this gallery"
             className="font-bold text-vx-fg-body underline underline-offset-4 hover:text-vx-fg"
           />
         </div>
