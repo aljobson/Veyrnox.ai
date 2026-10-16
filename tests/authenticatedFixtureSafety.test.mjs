@@ -53,7 +53,7 @@ async function installedRouting(controls = {}) {
 
 function safetyTeardown(harness, use = async () => {}, audits = []) {
   const source = read('e2e/fixtures/authenticated-product.mjs');
-  const match = source.match(/syntheticSafety: \[(async \(\{ page \}, use\) => \{[^]*?)\n  \}, \{ auto: true \}\]/);
+  const match = source.match(/syntheticSafety: \[(async \(\{ page \}, runTest\) => \{[^]*?)\n  \}, \{ auto: true \}\]/);
   assert.ok(match, 'exercise the actual auto-fixture teardown, not a parallel cleanup implementation');
   const installed = new WeakMap([[harness.page, harness.fixture]]);
   const expect = (actual, message) => ({ toEqual(expected) { audits.push(message); assert.deepEqual(actual, expected, message); } });
