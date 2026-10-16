@@ -10,7 +10,7 @@ Customer Portal are not offered by these endpoints.
 
 ## Staging activation record — 16 October 2026
 
-- Staging Worker version `bb79ad1f-c6eb-4cf9-b5cf-c98826ad790e` exposes the
+- Staging Worker version `f845e6d5-e2b2-4453-84b0-73da96268e03` exposes the
   three monthly plans through the public projection and has
   `SUBSCRIPTIONS_ENABLED=true`. Production remains false.
 - Apply corrected 0186/0187 through the owner-approved migration workflow;
@@ -20,7 +20,9 @@ Customer Portal are not offered by these endpoints.
   `STRIPE_WEBHOOK_SECRET`, `RESEND_API_KEY`, `SUBSCRIPTION_ALERT_EMAIL` and
   `SUBSCRIPTION_ALERT_FROM`. Values were not printed or copied.
 - `PUBLIC_HOST` remains the staging Worker host.
-- `SUBSCRIPTION_ALERT_EMAIL` is configured with the Operator recipient.
+- `SUBSCRIPTION_ALERT_EMAIL` is an optional dedicated Operator recipient; when
+  absent, alerts use the existing `VIOLATION_EMAIL_REPLY_TO` mailbox so the
+  production Worker stays within Cloudflare's 128 text-binding limit.
   `SUBSCRIPTION_ALERT_FROM` may override the existing verified
   `VIOLATION_EMAIL_FROM`. A missing/failed alert keeps refused invoice
   deliveries unprocessed and answers 503 so Stripe retries.
