@@ -4,6 +4,7 @@ import { createHmac } from 'node:crypto';
 import { register } from 'node:module';
 register('data:text/javascript,' + encodeURIComponent(`export async function resolve(s,c,next) { return next(s === 'next/server' ? 'next/server.js' : s,c); }`));
 const { POST } = await import('../app/api/webhook/stripe/route.js');
+const { subscriptionAlert } = await import('../lib/subscriptions/webhook.js');
 const ID = '0b6f3c1e-8d2a-4f5b-9c7e-1a2b3c4d5e6f';
 const SECRET = 'whsec_credit_subscription_test';
 const NOW = Math.floor(Date.now() / 1000);
@@ -54,6 +55,25 @@ function stub({ bound = binding, subscription = sub(), invoice = inv(), grant = 
   return calls;
 }
 const processed = (calls) => calls.some((c) => c.method === 'PATCH' && c.url.includes('webhook_events'));
+
+test('operator alerts use the existing reply-to mailbox when no dedicated recipient is bound', async () => {
+  const previousFetch = globalThis.fetch;
+  let payload;
+  globalThis.fetch = async (_url, init) => {
+    payload = JSON.parse(init.body);
+    return Response.json({ id: 'mail1' });
+  };
+  try {
+    assert.equal(await subscriptionAlert({ eventId: 'evt_fallback', subscriptionId: 'sub_fallback', invoiceId: null, code: 'REVIEW' }, {
+      RESEND_API_KEY: 'resend_test',
+      VIOLATION_EMAIL_FROM: 'alerts@example.invalid',
+      VIOLATION_EMAIL_REPLY_TO: 'operator@example.invalid',
+    }), true);
+    assert.deepEqual(payload.to, ['operator@example.invalid']);
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
 
 test('failed renewal reads current Stripe state, records past_due, and never calls the grant RPC', async () => {
   const current = { ...sub(), status: 'past_due' };

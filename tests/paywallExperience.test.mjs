@@ -39,7 +39,8 @@ test('subscription launches have versioned consent, complete legal disclosures a
 
   assert.match(config, /"SUBSCRIPTIONS_ENABLED": "false"[\s\S]*"SUBSCRIPTIONS_ENABLED": "true"/);
   assert.match(config, /"CINEMA_SUBSCRIPTIONS_ENABLED": "false"[\s\S]*"CINEMA_SUBSCRIPTIONS_ENABLED": "true"/);
-  assert.match(config, /"SUBSCRIPTION_ALERT_EMAIL": "support@veyrnox\.com"/);
+  assert.match(config, /"VIOLATION_EMAIL_REPLY_TO": "support@veyrnox\.com"/);
+  assert.doesNotMatch(config, /"SUBSCRIPTION_ALERT_EMAIL"/);
 });
 
 test('Cinema Pass staging availability comes from a public no-store plan projection', () => {

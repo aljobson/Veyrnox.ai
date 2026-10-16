@@ -20,7 +20,9 @@ Customer Portal are not offered by these endpoints.
   `STRIPE_WEBHOOK_SECRET`, `RESEND_API_KEY`, `SUBSCRIPTION_ALERT_EMAIL` and
   `SUBSCRIPTION_ALERT_FROM`. Values were not printed or copied.
 - `PUBLIC_HOST` remains the staging Worker host.
-- `SUBSCRIPTION_ALERT_EMAIL` is configured with the Operator recipient.
+- `SUBSCRIPTION_ALERT_EMAIL` is an optional dedicated Operator recipient; when
+  absent, alerts use the existing `VIOLATION_EMAIL_REPLY_TO` mailbox so the
+  production Worker stays within Cloudflare's 128 text-binding limit.
   `SUBSCRIPTION_ALERT_FROM` may override the existing verified
   `VIOLATION_EMAIL_FROM`. A missing/failed alert keeps refused invoice
   deliveries unprocessed and answers 503 so Stripe retries.
