@@ -10,8 +10,8 @@ const ci = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url),
 const ledgerTests = readFileSync(new URL('../.github/workflows/ledger-tests.yml', import.meta.url), 'utf8');
 
 test('every 401 from the middleware is logged, with a reason and no credential', () => {
-    // All three refusal paths go through one logging helper.
-    assert.equal((middleware.match(/return reject\(req, /g) || []).length, 3);
+    // All four refusal paths go through one logging helper.
+    assert.equal((middleware.match(/return reject\(req, /g) || []).length, 4);
     assert.match(middleware, /console\.error\('\[auth\] rejected', new URL\(req\.url\)\.pathname, 'reason:', reason\)/);
     // The 503 path is logged too, and is still not a 401.
     assert.match(middleware, /console\.error\('\[auth\] JWKS unavailable; answering 503'\)/);

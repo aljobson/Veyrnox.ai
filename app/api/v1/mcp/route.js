@@ -18,6 +18,12 @@ function serve(request) {
     if (!request.headers.get('x-veyrnox-auth-id')) {
         return Response.json({ error: 'not_authenticated' }, { status: 401 });
     }
+    // Defense in depth: middleware admits only access tokens carrying
+    // Supabase's signed OAuth client_id claim and owns this header. A normal
+    // browser session must never be able to invoke the assistant surface.
+    if (!request.headers.get('x-veyrnox-auth-client-id')) {
+        return Response.json({ error: 'oauth_client_required' }, { status: 403 });
+    }
     return handler.fetch(request);
 }
 
