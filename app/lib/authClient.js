@@ -12,18 +12,16 @@
  * bundle time. Anon key is safe to ship — never mirror
  * SUPABASE_SERVICE_ROLE_KEY or SUPABASE_JWT_SECRET into NEXT_PUBLIC_*.
  *
- * Session stored in localStorage. gatewayClient sends the access
- * token as Authorization: Bearer on every /api/v1/* call;
- * middleware.js reads Bearer first. Access tokens live ~1h; gatewayFetch
- * calls getFreshAccessToken(), which swaps the refresh token for a new
- * pair shortly before expiry so a working session never dies mid-task.
+ * Access tokens live in tab memory; refresh credentials live only in the
+ * same-origin Secure HttpOnly cookie. localStorage holds display metadata,
+ * never new access/refresh tokens. Product APIs remain Bearer-only.
  */
 
 /**
  * @typedef {object} VeyrnoxSession
  * @property {string} access_token   raw Supabase JWT (ES256, forwarded as
  *                                   `Authorization: Bearer` on /api/v1/*)
- * @property {string|null} refresh_token
+ * @property {null} refresh_token  never retained in live browser sessions
  * @property {number} expires_at     unix seconds
  * @property {any|null} user         Supabase user record (may be null)
  */
@@ -32,13 +30,34 @@ import { clearJobHistory } from "../veyrnox/_lib/jobHistory.js";
 import { clearChatLocal } from "../veyrnox/_lib/chatLocal.js";
 import { clearFilmLocal } from "../veyrnox/_lib/filmStudioStorage.js";
 import { keepOAuthVerifier, keepMagicVerifier, takeVerifier } from "./pkceVerifier.js";
+import { browserSessionRequest } from './browserSessionClient.js';
 
 const STORAGE_KEY = "veyrnox_supabase_session";
+const SIGNED_OUT_KEY = 'veyrnox_session_signed_out';
 // Refresh when this close to expiry (seconds). Matches the 5s server skew
 // with room for a slow round trip.
 const REFRESH_AHEAD_SEC = 60;
 const listeners = new Set();
 let refreshInFlight = null;
+let memorySession = null;
+let sessionEpoch = 0;
+let storageListenerInstalled = false;
+const ADOPTED_SESSION = Symbol('adopted-browser-session');
+function assertSessionEpoch(epoch) {
+    if (sessionEpoch !== epoch) throw Object.assign(new Error('Your session changed. Please try again.'), { status: 409, code: 'account_changed' });
+}
+async function persistTokenResponse(data, epoch) {
+    if (!data?.access_token || !data?.refresh_token) return data;
+    assertSessionEpoch(epoch);
+    return browserSessionRequest({ action: 'establish', refresh_token: data.refresh_token }, {
+        beforeRequest: () => assertSessionEpoch(epoch),
+        onResponse: persisted => {
+            assertSessionEpoch(epoch);
+            setSession(normalise(persisted));
+            return { ...persisted, [ADOPTED_SESSION]: true };
+        },
+    });
+}
 
 function cfg() {
     return {
@@ -53,28 +72,30 @@ function ensureCfg() {
 }
 
 /**
- * Read the persisted session from localStorage. Returns null if the session
- * is missing, malformed, or has expired past the 5-second skew window.
+ * Read the live memory session. A previous-release localStorage session is
+ * accepted only until the next hydration migrates it. Expired tokens are null.
  * @returns {VeyrnoxSession|null}
  */
 export function getSession() {
     const s = readStored();
-    if (!s) return null;
+    if (!s?.access_token) return null;
     if (s.expires_at * 1000 < Date.now() - 5000) return null;
     return s;
 }
-// Stored session regardless of expiry — refresh needs the refresh_token
-// of an already-expired access token.
+// Display metadata survives expiry; legacy credentials are migration input only.
 function readStored() {
-    if (typeof localStorage === "undefined") return null;
+    if (typeof localStorage === "undefined") return memorySession;
     try {
         const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return null;
+        if (!raw) return memorySession;
         const s = JSON.parse(raw);
-        if (!s?.access_token || !s.expires_at) return null;
-        return s;
+        if (!s?.expires_at) return memorySession;
+        // Tokens written by the previous release are read once for migration.
+        // Successful establishment replaces this record with metadata only.
+        if (s.access_token) return s;
+        return memorySession || (s.cookie_session ? s : null);
     } catch {
-        return null;
+        return memorySession;
     }
 }
 /**
@@ -109,48 +130,57 @@ export function getAccessToken() {
     return getSession()?.access_token || null;
 }
 /**
- * Access token that is good for at least REFRESH_AHEAD_SEC more seconds,
- * refreshing via the Supabase refresh grant when needed. Concurrent callers
- * share one in-flight refresh. Resolves null (and clears the session) when
- * there is nothing to refresh with or the refresh is rejected.
+ * Access token good for REFRESH_AHEAD_SEC more seconds, restored/refreshed
+ * through the HttpOnly-cookie BFF. Concurrent callers share one operation.
+ * Definitive rejection clears metadata; transient failures preserve it.
  * @returns {Promise<string|null>}
  */
 export async function getFreshAccessToken() {
+    // HttpOnly cookies cannot be deleted by JS during a network outage. Keep
+    // the user's logout intent across reloads and retry deletion, never restore.
+    try {
+        if (typeof localStorage !== 'undefined' && localStorage.getItem(SIGNED_OUT_KEY) === '1') {
+            await browserSessionRequest({ action: 'clear' }, { beforeRequest: () => {
+                if (localStorage.getItem(SIGNED_OUT_KEY) !== '1') throw Object.assign(new Error('session changed'), { code: 'account_changed' });
+            } }).catch(() => {});
+            return null;
+        }
+    } catch { /* blocked storage: memory state and server revocation still apply */ }
     const s = readStored();
-    if (!s) return null;
     const now = Math.floor(Date.now() / 1000);
-    if (s.expires_at - now > REFRESH_AHEAD_SEC) return s.access_token;
-    if (!s.refresh_token) {
-        const token = getAccessToken();
-        if (!token) setSession(null);
-        return token;
-    }
+    if (s?.access_token && !s.refresh_token && s.expires_at - now > REFRESH_AHEAD_SEC) return s.access_token;
     if (!refreshInFlight) {
-        const startedWith = s.refresh_token;
-        refreshInFlight = post("/auth/v1/token?grant_type=refresh_token", { refresh_token: startedWith })
+        const epoch = sessionEpoch;
+        const pending = browserSessionRequest(s?.refresh_token
+            ? { action: 'establish', refresh_token: s.refresh_token } : { action: 'refresh' }, {
+            beforeRequest: () => assertSessionEpoch(epoch),
+            onResponse: data => {
+                assertSessionEpoch(epoch);
+                setSession(normalise(data), { broadcast: false });
+                return data;
+            },
+        })
             .then((data) => {
                 // Signed out or switched account while this was in flight:
                 // do not resurrect the old session from a stale response.
-                const current = readStored();
-                if (!current || current.refresh_token !== startedWith) return null;
-                const next = normalise(data);
-                setSession(next);
-                return next.access_token;
+                return getSession()?.access_token === data.access_token ? data.access_token : null;
             })
             .catch((err) => {
+                if (sessionEpoch !== epoch) return null;
                 // Only a definitive rejection (invalid_grant: revoked, reused,
                 // or unknown refresh token) ends the session. A 429 from the
                 // token endpoint, network errors and 5xx are Supabase's
                 // problem; keep whatever access token is still valid.
                 const status = err && err.status;
                 const code = err && err.code;
-                if ((status === 400 || status === 401) && (code === "invalid_grant" || code === "refresh_token_not_found")) {
-                    if (readStored()?.refresh_token === startedWith) setSession(null);
+                if ((status === 400 || status === 401) && (code === "invalid_grant" || code === "no_session")) {
+                    if (sessionEpoch === epoch && s) setSession(null);
                     return null;
                 }
                 return getAccessToken();
             })
-            .finally(() => { refreshInFlight = null; });
+            .finally(() => { if (refreshInFlight === pending) refreshInFlight = null; });
+        refreshInFlight = pending;
     }
     return refreshInFlight;
 }
@@ -159,28 +189,38 @@ export async function getFreshAccessToken() {
 let storagePersisted = true;
 export function sessionIsPersisted() { return storagePersisted; }
 
-function setSession(s) {
-    if (typeof localStorage === "undefined") return;
+function setSession(s, { broadcast = true } = {}) {
+    const previous = readStored();
     // Session ended or a different user: nothing the last one left in this
     // browser (job history, unsent chat text, starred replies) is kept.
     if (!s || readStored()?.user?.id !== s.user?.id) {
         clearJobHistory();
-        clearChatLocal(localStorage);
-        clearFilmLocal(localStorage);
+        if (typeof localStorage !== 'undefined') {
+            clearChatLocal(localStorage);
+            clearFilmLocal(localStorage);
+        }
     }
+    memorySession = s ? { ...s, refresh_token: null, cookie_session: true } : null;
+    sessionEpoch += 1;
+    refreshInFlight = null;
     // Safari private browsing and blocked site data throw on setItem, not on
     // access. The read path was already guarded; this was not, so the throw
     // propagated out of signInWithPassword and surfaced a raw DOMException.
     // A session we cannot persist is still a usable session for this tab, so
     // notify listeners either way and let the caller decide what to say.
     try {
-        if (s) localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
-        else localStorage.removeItem(STORAGE_KEY);
+        if (typeof localStorage !== 'undefined') {
+            if (s) localStorage.removeItem(SIGNED_OUT_KEY);
+            else localStorage.setItem(SIGNED_OUT_KEY, '1');
+            if (s && (broadcast || previous?.refresh_token || !previous)) localStorage.setItem(STORAGE_KEY, JSON.stringify({ cookie_session: true,
+                expires_at: s.expires_at, user: s.user, revision: crypto.randomUUID() }));
+            else if (!s) localStorage.removeItem(STORAGE_KEY);
+        }
     } catch (err) {
-        console.error("[auth] could not persist the session to localStorage:", err && err.name);
+        console.error("[auth] could not persist session metadata:", err && err.name);
         storagePersisted = false;
     }
-    for (const cb of listeners) cb(s);
+    for (const cb of listeners) cb(memorySession);
 }
 
 /**
@@ -191,14 +231,25 @@ function setSession(s) {
  */
 export function onSessionChange(cb) {
     listeners.add(cb);
-    const onStorage = (event) => {
-        if (event.key === STORAGE_KEY || event.key === null) cb(getSession());
-    };
-    if (typeof window !== "undefined") window.addEventListener('storage', onStorage);
+    if (typeof window !== "undefined" && !storageListenerInstalled) {
+        window.addEventListener('storage', onStorage);
+        storageListenerInstalled = true;
+    }
     return () => {
         listeners.delete(cb);
-        if (typeof window !== "undefined") window.removeEventListener('storage', onStorage);
+        if (typeof window !== "undefined" && listeners.size === 0 && storageListenerInstalled) {
+            window.removeEventListener('storage', onStorage);
+            storageListenerInstalled = false;
+        }
     };
+}
+function onStorage(event) {
+    if (event.key !== STORAGE_KEY && event.key !== null) return;
+    memorySession = null;
+    sessionEpoch += 1;
+    refreshInFlight = null;
+    for (const listener of listeners) listener(getStoredSession());
+    if (event.newValue) getFreshAccessToken().catch(() => null);
 }
 
 /**
@@ -209,6 +260,7 @@ async function authed(path, { method = "POST", body } = {}) {
     const { url, anonKey } = ensureCfg();
     const token = await getFreshAccessToken();
     if (!token) throw Object.assign(new Error("not signed in"), { status: 401 });
+    const epoch = sessionEpoch;
     const res = await fetch(new URL(path, url), {
         method,
         headers: {
@@ -225,10 +277,11 @@ async function authed(path, { method = "POST", body } = {}) {
         e.code = data?.error || data?.code;
         throw e;
     }
-    return data;
+    return persistTokenResponse(data, epoch);
 }
 
 async function post(path, body) {
+    const epoch = sessionEpoch;
     const { url, anonKey } = ensureCfg();
     const res = await fetch(new URL(path, url), {
         method: "POST",
@@ -242,7 +295,7 @@ async function post(path, body) {
         e.code = data?.error || data?.code;
         throw e;
     }
-    return data;
+    return persistTokenResponse(data, epoch);
 }
 
 function normalise(data) {
@@ -264,9 +317,7 @@ function normalise(data) {
  */
 export async function signInWithPassword(email, password, captchaToken) {
     const data = await post("/auth/v1/token?grant_type=password", withCaptcha({ email, password }, captchaToken));
-    const s = normalise(data);
-    setSession(s);
-    return s;
+    return adoptSession(data);
 }
 /**
  * Create a new account. If Supabase requires email confirmation the returned
@@ -279,8 +330,7 @@ export async function signInWithPassword(email, password, captchaToken) {
 export async function signUp(email, password, captchaToken) {
     const data = await post("/auth/v1/signup", withCaptcha({ email, password }, captchaToken));
     if (data?.access_token) {
-        const s = normalise(data);
-        setSession(s);
+        const s = adoptSession(data);
         return { session: s, needsConfirmation: false };
     }
     return { session: null, needsConfirmation: true };
@@ -373,9 +423,7 @@ export async function completeOAuthFromCode() {
     if (!verifier) return null;
     if (getSession()) return getSession();
     const data = await post("/auth/v1/token?grant_type=pkce", { auth_code: code, code_verifier: verifier });
-    const s = normalise(data);
-    setSession(s);
-    return s;
+    return adoptSession(data);
 }
 /**
  * Finish a flow that returned tokens in the URL fragment (`#access_token=…`):
@@ -397,6 +445,7 @@ export async function completeFromFragment() {
     try { window.history.replaceState(null, "", clean.toString()); } catch { /* nothing to clear from */ }
     const live = getSession();
     if (live) return live;
+    const epoch = sessionEpoch;
     const expiresIn = Number(hash.get("expires_in"));
     const expiresAt = Number(hash.get("expires_at"));
     const s = normalise({
@@ -412,12 +461,12 @@ export async function completeFromFragment() {
         const res = await fetch(new URL("/auth/v1/user", url), { headers: { apikey: anonKey, Authorization: `Bearer ${accessToken}` } });
         if (res.ok) s.user = await res.json();
     } catch { /* user stays null */ }
-    setSession(s);
-    return s;
+    return adoptSession(await persistTokenResponse(s, epoch));
 }
-/** Drop the local session without a server round-trip (gateway said 401). */
+/** Drop local state immediately and expire the HttpOnly credential. */
 export function clearSession() {
     setSession(null);
+    if (typeof window !== 'undefined') void browserSessionRequest({ action: 'clear' }).catch(() => {});
 }
 
 /**
@@ -433,6 +482,7 @@ export async function signOut() {
     let token = null;
     try { token = await getFreshAccessToken(); } catch { /* still sign out here */ }
     setSession(null);
+    await browserSessionRequest({ action: 'clear' }).catch(() => {});
     if (!token) return;
     const { url, anonKey } = ensureCfg();
     await fetch(new URL("/auth/v1/logout?scope=local", url), {
@@ -543,7 +593,7 @@ export async function verifyFactor(factorId, code) {
     const data = await authed(`/auth/v1/factors/${encodeURIComponent(factorId)}/verify`, {
         body: { challenge_id: challenge.id, code },
     });
-    if (data?.access_token) setSession(normalise(data));
+    if (data?.access_token) adoptSession(data);
     return getAal();
 }
 
@@ -568,7 +618,13 @@ export { post as gotruePost, authed as gotrueAuthed, b64url, withCaptcha };
  * @returns {VeyrnoxSession}
  */
 export function adoptSession(data) {
+    if (data?.[ADOPTED_SESSION]) {
+        if (memorySession?.access_token !== data.access_token) {
+            throw Object.assign(new Error('Your session changed. Please try again.'), { status: 409, code: 'account_changed' });
+        }
+        return memorySession;
+    }
     const s = normalise(data);
     setSession(s);
-    return s;
+    return memorySession;
 }

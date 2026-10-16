@@ -3,23 +3,21 @@ import { notFound } from 'next/navigation';
 import { MarketingNav } from '../../_components/NavBar';
 import { Main } from '../../_components/Main';
 import { PremiumTag } from '../../_components/PremiumTag';
-import { LIST_GROUPS } from '../../_sections/showcase';
 import { findModel, modelFacts } from '../../_lib/modelPages';
+import { creditLabel, modelPriceUnit } from '../../_lib/modelPricing';
 import { OPEN_GRAPH_BASE } from '../../../seo';
 
 // Per request, like /models: an inactive or delisted model 404s within the
 // 5-minute catalog cache instead of living on in a prerendered page.
 export const dynamic = 'force-dynamic';
 
-const unitFor = (kind) => (LIST_GROUPS.find((g) => g.kind === kind) || {}).unit || '';
-
 export async function generateMetadata({ params }) {
   const { id } = await params;
   const model = await findModel(id);
   if (!model) return { title: 'Model not found', robots: { index: false } };
-  const description = `${model.title} on Veyrnox: ${model.credits} credits ${unitFor(model.kind)} Failed generations refund in full.`;
+  const description = `${model.title} on Veyrnox: ${creditLabel(model.credits)} ${modelPriceUnit(model)} Failed generations refund in full.`;
   return {
-    title: `${model.title} — ${model.credits} credits`,
+    title: `${model.title} — ${creditLabel(model.credits)}`,
     description,
     alternates: { canonical: `/models/${model.id}` },
     openGraph: { ...OPEN_GRAPH_BASE, title: `${model.title} — Veyrnox.ai`, description, url: `/models/${model.id}` },
@@ -42,8 +40,8 @@ export default async function ModelPage({ params }) {
         <Link href="/models" className="text-[14px] text-vx-fg-muted hover:text-vx-fg underline-offset-4 hover:underline">All models</Link>
         <h1 className="mt-4 vx-display vx-title-detail">{model.title}</h1>
         <p className="mt-6 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <span className="font-vx-mono vx-num text-[40px] font-bold text-vx-money">{model.credits} credits</span>
-          <span className="text-lg text-vx-fg-muted">{unitFor(model.kind)}</span>
+          <span className="font-vx-mono vx-num text-[40px] font-bold text-vx-money">{creditLabel(model.credits)}</span>
+          <span className="text-lg text-vx-fg-muted">{modelPriceUnit(model)}</span>
           {model.gated && <PremiumTag />}
         </p>
         {/* The price rides the button, as it does everywhere else, and the

@@ -12,6 +12,7 @@ export const TOOL_TASKS = [
   { key: 'animate', label: 'Photo to video', blurb: 'Turn a still image into a moving clip.', ids: ['kling-3.0-i2v', 'kling-3.0-i2v-kie'] },
   { key: 'avatar', label: 'Talking avatar', blurb: 'Make a photo speak a voice clip.', ids: ['kling-avatar-v2'] },
   { key: 'lipsync', label: 'Lip sync', blurb: 'Match a video\'s lips to new speech.', ids: ['latentsync'] },
+  { key: 'audio-separation', label: 'Separate vocals and instruments', blurb: 'Split your own audio into six separate tracks.', ids: ['demucs-stems'] },
   { key: 'video-sound', label: 'Add sound to a video', blurb: 'Generate sound that fits a short clip.', ids: ['mmaudio-v2-video'] },
   { key: 'video-upscale', label: 'Upscale video', blurb: 'Make a short clip larger and sharper.', ids: ['topaz-upscale-video'] },
 ];

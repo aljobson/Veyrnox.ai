@@ -8,8 +8,11 @@ import { PremiumTag } from '../_components/PremiumTag';
 import { CopyButton } from '../_components/CopyButton';
 import { MODELS as MODELS_FALLBACK, SITE_UPDATED, isShelfModel, kindOf } from '../_lib/tokens';
 import { creditValueRange, formatUsdRange } from '../_lib/creditValue';
+import { modelPriceUnit } from '../_lib/modelPricing';
 
 const FALLBACK_MODELS = MODELS_FALLBACK.map((model) => ({
+  ...model,
+  isSpeech: !!model.speech,
   id: model.id,
   name: model.name,
   modality: model.kind,
@@ -179,7 +182,7 @@ export default function Pricing() {
           </p>
         </div>
         <p className="mt-4 text-vx-fg-body max-w-[60ch] leading-[1.6]">
-          Video is priced per 5 s clip; where a model offers 10 s, it costs double. Premium models need an account in good standing.
+          Each price covers the output length shown for that model. Where a model offers both 5 s and 10 s, the 10 s option costs double. Premium models need an account in good standing.
         </p>
         {packState.status === 'success' && packState.packs.length > 0 && (
           <p className="mt-2 text-[13px] text-vx-fg-muted">
@@ -208,6 +211,7 @@ export default function Pricing() {
                       <th scope="row" className="py-3 pr-3 text-left font-normal">
                         <span className="text-[15px] font-bold">{m.name}</span>
                         {m.gated && <PremiumTag className="ml-2" />}
+                        <span className="block mt-1 text-[12px] text-vx-fg-muted">{modelPriceUnit(m)}</span>
                         <span className="block sm:hidden mt-1"><CopyButton value={m.id} label={m.id} copiedLabel="Model id copied" /></span>
                       </th>
                       {/* The model id is what goes in an API call: the one

@@ -49,6 +49,24 @@ test('model pages list only shelf models, as the landing shelf does', () => {
     assert.deepEqual(shelfModels(rows).map((m) => m.id), ['shelf']);
 });
 
+test('active selectable audio transforms have details while private and gated editor models stay hidden', async () => {
+    const previous = process.env.EDITOR_AUDIO_STEMS_ENABLED;
+    const options = { cfg, selectRows: async () => [row('demucs-stems', 'fal-ai/demucs', { modality: 'audio-to-audio' }), row('hidden', hiddenEndpoint)] };
+    try {
+        process.env.EDITOR_AUDIO_STEMS_ENABLED = 'true';
+        const model = await findModel('demucs-stems', options);
+        assert.equal(model?.id, 'demucs-stems');
+        assert.equal(model?.kind, 'audio');
+        assert.ok(modelFacts(model).some((fact) => fact.label === 'Output stems' && fact.value.includes('vocals')));
+        assert.equal(await findModel('hidden', options), null);
+        process.env.EDITOR_AUDIO_STEMS_ENABLED = 'false';
+        assert.equal(await findModel('demucs-stems', options), null);
+    } finally {
+        if (previous === undefined) delete process.env.EDITOR_AUDIO_STEMS_ENABLED;
+        else process.env.EDITOR_AUDIO_STEMS_ENABLED = previous;
+    }
+});
+
 test('ids outside the catalog slug shape never reach the catalog', async () => {
     for (const bad of ['', 'UPPER', '../etc', 'a b', 'x'.repeat(65), '-lead', undefined]) {
         assert.equal(MODEL_ID_RE.test(bad ?? ''), false);

@@ -26,13 +26,16 @@ function Plan() {
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
+    setLoading(true);
     try { setData(await getPublishPlan()); }
     catch (error) {
       setNotice(error?.code === 'publish_plans_not_open' || error?.status === 503
         ? 'Publish plans are not open yet.' : 'Could not load your plan. Try again.');
     }
+    finally { setLoading(false); }
   }, []);
 
   useEffect(() => {
@@ -50,8 +53,8 @@ function Plan() {
     } else if (query.get('checkout') === 'cancelled') {
       window.history.replaceState(null, '', window.location.pathname);
       queueMicrotask(() => setNotice('Checkout cancelled. Nothing was charged.'));
-      load();
-    } else load();
+      void Promise.resolve().then(load);
+    } else void Promise.resolve().then(load);
   }, [load]);
 
   async function start(planId) {
@@ -88,6 +91,11 @@ function Plan() {
   const subscription = entitlement?.subscription;
   const paid = entitlement?.tier === 'publish';
   const plan = data?.plans?.[0];
+
+  if (!data) return <div role="status" aria-live="polite" className="rounded-2xl border border-vx-border p-6">
+    <p className="text-sm text-vx-fg-muted">{loading ? 'Loading your Publish plan…' : notice}</p>
+    {!loading && <button type="button" className={`${button} mt-4`} onClick={load}>Try again</button>}
+  </div>;
 
   return <div className="space-y-6">
     {notice && <p role="status" aria-live="polite" className="rounded-xl border border-vx-border p-4 text-sm text-vx-fg-body">{notice}</p>}

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { MediaTile } from '../_components/MediaTile';
 import { PremiumTag } from '../_components/PremiumTag';
 import { SHOWCASE_CLIPS, MODEL_SHOWCASE_KEYS } from '../_lib/showcase';
+import { modelPriceUnit } from '../_lib/modelPricing';
 import {
   WALL_PRESETS,
   LANDING_TEMPLATE_LIMIT,
@@ -57,7 +58,7 @@ export function PresetWall({ catalog }) {
 /* ─── A representative sample of the live price list ─── */
 
 export const LIST_GROUPS = [
-  { kind: 'video', label: 'Video', unit: 'per 5 s clip.' },
+  { kind: 'video', label: 'Video', unit: 'per clip; length shown below.' },
   { kind: 'image', label: 'Image', unit: 'per image.' },
   { kind: 'audio', label: 'Audio', unit: 'per clip.' },
 ];
@@ -106,7 +107,10 @@ export function ModelShelf({ catalog }) {
                       href={`/app/create?model=${encodeURIComponent(m.id)}`}
                       className="group flex items-baseline gap-2 py-2 text-vx-fg-body hover:text-vx-fg"
                     >
-                      <span className="min-w-0 truncate group-hover:underline underline-offset-4">{g.nameOf(m)}</span>
+                      <span className="min-w-0">
+                        <span className="block truncate group-hover:underline underline-offset-4">{g.nameOf(m)}</span>
+                        <span className="block text-[11px] text-vx-fg-muted">{modelPriceUnit(m)}</span>
+                      </span>
                       {m.gated && <PremiumTag className="shrink-0" />}
                       <span aria-hidden className="vx-leader flex-1" />
                       <span className="shrink-0 font-bold text-vx-money">{m.credits} cr</span>

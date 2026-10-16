@@ -1,0 +1,57 @@
+name: page QA
+
+on:
+  schedule:
+    - cron: '17 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: page-qa
+  cancel-in-progress: true
+
+jobs:
+  all-pages:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '22'
+      - name: Install browser QA tools
+        run: |
+          npm install --no-save --no-audit --no-fund @playwright/test@1.63.0 @axe-core/playwright@4.10.2
+          npx playwright install --with-deps chromium
+      - name: Verify route inventory
+        run: npm run check:vey-knowledge
+      - name: Sweep every page on anonymous desktop and mobile
+        env:
+          QA_BASE_URL: https://veyrnox-ai-staging.al-jobson.workers.dev
+          QA_REPORT_DIR: page-coverage-report/anonymous
+        run: npx playwright test -c e2e/page-coverage.config.mjs --output test-results/page-qa-anonymous
+      - name: Prepare authenticated staging session
+        if: always()
+        env:
+          E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
+          E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+        run: |
+          mkdir -p .scratch
+          node e2e/create-qa-state.mjs
+      - name: Sweep every page on authenticated desktop
+        if: always()
+        env:
+          QA_BASE_URL: https://veyrnox-ai-staging.al-jobson.workers.dev
+          QA_STORAGE_STATE: .scratch/qa-session.json
+          QA_REPORT_DIR: page-coverage-report/authenticated
+        run: npx playwright test -c e2e/page-coverage.config.mjs --project desktop-authenticated --output test-results/page-qa-authenticated
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: page-qa-report
+          path: |
+            page-coverage-report/
+            test-results/
+          retention-days: 7

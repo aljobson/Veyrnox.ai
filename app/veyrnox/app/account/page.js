@@ -8,10 +8,10 @@ import { PasskeyPanel } from '../../_components/PasskeyPanel';
 import { ReferralPanel } from '../../_components/ReferralPanel';
 import { OAuthGrantsPanel } from '../../_components/OAuthGrantsPanel';
 import { ConfirmDialog } from '../../_components/ConfirmDialog';
-import { getSession, onSessionChange } from '../../../lib/authClient';
+import { getStoredUserId, onSessionChange } from '../../../lib/authClient';
 import { requestPasswordCode, changePassword, revokeSessions } from '../../../lib/accountSecurity';
 
-const currentAccount = () => getSession()?.user?.id || '';
+const currentAccount = () => getStoredUserId() || '';
 const noAccount = () => '';
 const button = 'rounded-full border border-vx-border px-4 py-2 text-sm font-bold disabled:opacity-50';
 

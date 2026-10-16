@@ -169,10 +169,14 @@ developer surface is `/api/v1/developer/*` and requires a verified OAuth
 - Return typed errors: `{error: "kebab_case_code", ...}`. Don't leak stack
   traces, DB messages, or upstream vendor payloads.
 - No CORS wildcards on `/api/v1/*` — same-origin only.
-- **Routes outside the gate, on purpose.** `/api/v1/*` is the only surface
-  that carries a user. The middleware does not run on other `/api/*` paths, so
+- **Routes outside the gate, on purpose.** `/api/v1/*` is the product surface
+  carrying middleware-verified identity. Middleware does not run on other `/api/*` paths, so
   an inbound `x-veyrnox-auth-*` header is NOT stripped there: a route outside
   `/api/v1` must never read one. Each has its own protection:
+  - `/api/auth/session` — POST-only refresh-cookie BFF, protected by exact
+    Origin, JSON/custom-header CSRF checks, Strict HttpOnly cookie and Auth
+    refresh-grant validation. It never trusts forwarded user headers and never
+    accepts or returns service-role credentials. See ADR-0102.
   - `/api/catalog`, `/api/credit-packs`, `/api/cinema/titles[/:id]`, `/api/cinema/posters/:id`,
     `/api/popular-templates` — anonymous, read-only, cached public data
     (prices, packs, published titles, ranked template ids). Nothing per-user.
@@ -201,13 +205,18 @@ developer surface is `/api/v1/developer/*` and requires a verified OAuth
   added and removed on `/app/account`.
 - Anon key + Supabase URL live in `wrangler.jsonc` `vars` (public). Service-role
   key is a `wrangler secret` — never `NEXT_PUBLIC_*`, never in the client bundle.
-- Client session in `localStorage['veyrnox_supabase_session']`. Never send
-  refresh tokens in URL parameters. OAuth callback parses the URL fragment
+- Browser access tokens live in tab memory. Refresh credentials live in the
+  Secure HttpOnly SameSite=Strict `__Host-veyrnox_refresh` cookie; localStorage
+  holds display metadata only. `/api/auth/session` establishes/refreshes/clears
+  that cookie with exact-origin, JSON and custom-header CSRF checks. Ordinary
+  product/developer/MCP APIs remain Bearer-only. Existing token records migrate
+  once via the BFF and are replaced with token-free metadata after success.
+  Never send refresh tokens in URL parameters. OAuth callback parses the URL fragment
   (`#access_token=...`) in `app/auth/callback/page.js` and clears it.
 - Password minimum 8 chars enforced client-side; Supabase enforces its own
   server-side rules — don't bypass. No password logs, no password telemetry.
-- Sign-out revokes the Supabase session (`POST /auth/v1/logout`) AND clears
-  `localStorage`. Both, always.
+- Sign-out revokes the Supabase session (`POST /auth/v1/logout`), expires the
+  HttpOnly refresh cookie and clears local session metadata and private caches.
 - OAuth `redirect_to` MUST be an origin we control. Never accept a return URL
   from user input; construct it from `window.location.origin`.
 - The `auth.users -> public.users + credit_balances` triggers (migrations
@@ -254,7 +263,9 @@ developer surface is `/api/v1/developer/*` and requires a verified OAuth
 - No `dangerouslySetInnerHTML` with unsanitized input. If you must, sanitize
   with a library on the SSR path (jsdom + DOMPurify) — never trust the client.
 - Never build a URL from user input without `encodeURIComponent`.
-- CSRF: same-site cookies aren't in play (we're Bearer-only), but any state-
+- CSRF: ordinary APIs accept Bearer credentials only. The session-cookie BFF
+  accepts POST JSON with exact Origin and `X-Session-Request: 1`, emits no CORS
+  permission, and rejects cross-site and sibling-site Fetch Metadata. State-
   changing GET is forbidden. Mutations are POST/PUT/PATCH/DELETE only.
 
 ## Provider webhooks (fal.ai, Stripe, etc.)

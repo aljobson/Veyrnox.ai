@@ -15,6 +15,7 @@ import { IMAGE_COUNTS, takesImageCount, imageCount, totalCost, inputsForIndex, b
 import { useCatalog } from '../../_lib/useCatalog';
 import { useFreeAllowance } from '../../_lib/useFreeAllowance';
 import { freeCost, freeLeftFor } from '../../_lib/freeAllowance';
+import { creditLabel, generationCostLabel } from '../../_lib/modelPricing';
 import { takeStudioDraft } from '../../_lib/landingDraft';
 import { oddlingPortrait, buildOddlingAnimationPrompt } from '../../_lib/oddlingStudio';
 import { templateById } from '../../_lib/templates';
@@ -459,10 +460,10 @@ export default function CreateStudio() {
           {!isShort && (
             <p className="mt-2 text-xs text-vx-fg-muted">
               Want prompt feedback? Studio skills cost 1 Credit a reply:{' '}
-              <Link href="/app/chat?skill=prompt-writer" className="text-vx-accent hover:underline">Prompt writer</Link>,{' '}
-              <Link href="/app/chat?skill=fix-my-prompt" className="text-vx-accent hover:underline">Fix my prompt</Link>,{' '}
+              <Link href="/app/chat?skill=prompt-writer" className="text-vx-accent underline underline-offset-2">Prompt writer</Link>,{' '}
+              <Link href="/app/chat?skill=fix-my-prompt" className="text-vx-accent underline underline-offset-2">Fix my prompt</Link>,{' '}
               or browse{' '}
-              <Link href="/app/chat" className="text-vx-accent hover:underline">all skills</Link>.
+              <Link href="/app/chat" className="text-vx-accent underline underline-offset-2">all skills</Link>.
             </p>
           )}
 
@@ -587,7 +588,7 @@ export default function CreateStudio() {
                       {m.gated && (
                         <span className="font-vx-mono text-[10px] tracking-[0.1em] text-vx-money shrink-0">◆ PREMIUM</span>
                       )}
-                      <span className="font-vx-mono text-[10px] tracking-[0.1em] text-vx-fg-faint uppercase shrink-0">{m.kind}</span>
+                      <span className="font-vx-mono text-[10px] tracking-[0.1em] text-vx-fg-body uppercase shrink-0">{m.kind}</span>
                     </span>
                     {freeLeftFor(freeMap, m.id) > 0
                       ? <span className="font-vx-mono text-[12px] font-bold text-vx-accent shrink-0">FREE · {freeLeftFor(freeMap, m.id)} left</span>
@@ -652,7 +653,7 @@ export default function CreateStudio() {
                 balance {balance == null ? '—' : balance.toLocaleString('en-US')} cr
               </span>
             </div>
-            <div className="mt-1 font-vx-mono text-[36px] font-bold text-vx-money vx-num">−{cost} cr</div>
+            <div className="mt-1 font-vx-mono text-[36px] font-bold text-vx-money vx-num">{generationCostLabel(cost)}</div>
             {freeLeft > 0 && (
               <div role="status" className="mt-1 font-vx-mono text-[11px] tracking-[0.08em] text-vx-accent">
                 {n > freeLeft ? `FREE · ${freeLeft} OF ${n} · ${freeLeft} LEFT TODAY` : `FREE · ${freeLeft} LEFT TODAY`}
@@ -663,10 +664,10 @@ export default function CreateStudio() {
               onClick={generating ? cancel : onSubmit}
               className="scroll-mt-24 mt-4 w-full flex items-center justify-between bg-vx-accent text-vx-accent-ink rounded-full px-6 py-3.5 font-extrabold hover:bg-vx-accent-hover disabled:opacity-40 disabled:cursor-not-allowed"
               disabled={sending || (!generating && (catalogStatus !== 'live' || !model || model.gated || animationMismatch || missingPrompt || missingVoice || invalidAudioDuration || balance == null || cost > balance || missingSource || missingConsent))}
-              aria-label={sending || generating || model?.gated ? undefined : `Generate ${n > 1 ? `${n} images ` : ''}for ${cost} credits`}
+              aria-label={sending || generating || model?.gated ? undefined : `Generate ${n > 1 ? `${n} images ` : ''}${cost === 0 ? 'for free' : `for ${creditLabel(cost)}`}`}
             >
               <span>{sending ? 'Sending…' : generating ? 'New generation' : model?.gated ? 'Premium — gated' : n > 1 ? `Generate ${n}` : 'Generate'}</span>
-              <span className="font-vx-mono text-sm">−{cost} cr</span>
+              <span className="font-vx-mono text-sm">{generationCostLabel(cost)}</span>
             </ParticleButton>
             <div className="mt-2 font-vx-mono text-[9.5px] tracking-[0.1em] text-vx-fg-faint text-center">
               {model?.gated ? '◆ PREMIUM MODEL · NOT OPEN YET' : 'REFUND ON FAILURE · ALWAYS'}

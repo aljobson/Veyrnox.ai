@@ -23,6 +23,7 @@ const CODE_RE = /^[0-9]{6}$/;
 
 export function MfaPanel({ requireFresh = false, onVerified } = {}) {
   const [factors, setFactors] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState(null); // { factorId, secret, uri }
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
@@ -32,6 +33,7 @@ export function MfaPanel({ requireFresh = false, onVerified } = {}) {
   const [wasVerified, setWasVerified] = useState(false);
 
   const refresh = useCallback(async () => {
+    setLoading(true);
     try {
       setFactors(await listFactors());
       setError(null);
@@ -39,6 +41,8 @@ export function MfaPanel({ requireFresh = false, onVerified } = {}) {
     } catch {
       setFactors(null);
       setError('Could not read your authenticator settings. Try again.');
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -68,7 +72,7 @@ export function MfaPanel({ requireFresh = false, onVerified } = {}) {
     <div className="rounded-2xl border border-vx-border p-5">
       <h2 className="text-[15px] font-bold">Two-factor authentication</h2>
       <p className="mt-1 text-[13px] text-vx-fg-body">
-        {verified.length > 0
+        {loading ? 'Loading authenticator settings…' : verified.length > 0
           ? 'Your authenticator is enabled.'
           : factors === null ? 'Authenticator status is unavailable.' : 'Add an authenticator to help protect your account.'}
       </p>

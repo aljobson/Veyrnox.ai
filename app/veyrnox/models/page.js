@@ -4,6 +4,7 @@ import { Main } from '../_components/Main';
 import { PremiumTag } from '../_components/PremiumTag';
 import { LIST_GROUPS } from '../_sections/showcase';
 import { listModels } from '../_lib/modelPages';
+import { modelPriceUnit } from '../_lib/modelPricing';
 import { OPEN_GRAPH_BASE } from '../../seo';
 
 // Rendered per request: the catalog needs the service-role key, which only
@@ -42,7 +43,10 @@ export default async function ModelsIndex() {
                 {g.rows.map((m) => (
                   <li key={m.id}>
                     <Link href={`/models/${encodeURIComponent(m.id)}`} className="group flex items-baseline gap-2 py-2 text-vx-fg-body hover:text-vx-fg">
-                      <span className="min-w-0 truncate group-hover:underline underline-offset-4">{m.title}</span>
+                      <span className="min-w-0">
+                        <span className="block truncate group-hover:underline underline-offset-4">{m.title}</span>
+                        <span className="block text-[11px] text-vx-fg-muted">{modelPriceUnit(m)}</span>
+                      </span>
                       {m.gated && <PremiumTag className="shrink-0" />}
                       <span aria-hidden className="vx-leader flex-1" />
                       <span className="shrink-0 font-bold text-vx-money">{m.credits} cr</span>

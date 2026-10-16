@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { MarketingNav } from '../_components/NavBar';
 import { Main } from '../_components/Main';
-import { listModels } from '../_lib/modelPages';
+import { listModelsForDetails } from '../_lib/modelPages';
 import { toolGroups, toolNeeds } from '../_lib/tools';
 import { OPEN_GRAPH_BASE } from '../../seo';
 
@@ -21,7 +21,7 @@ export default async function Tools() {
   // The catalog being unreachable must leave a page, not a 500.
   let groups = [];
   try {
-    groups = toolGroups(await listModels());
+    groups = toolGroups(await listModelsForDetails());
   } catch (err) {
     console.error('[tools] catalog unavailable:', err && err.message);
   }
@@ -32,7 +32,7 @@ export default async function Tools() {
       <Main className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-14 sm:pt-20 pb-28">
         <h1 className="vx-display vx-title-index max-w-[12ch]">Bring your own file.</h1>
         <p className="mt-6 mb-12 text-lg sm:text-xl text-vx-fg-body max-w-[46ch] leading-[1.5] text-pretty">
-          Tools that start from an image or video you already have. The price is on each one, and nothing is charged until you generate.
+          Tools that start from an image, video or audio you already have. The price is on each one, and nothing is charged until you generate.
         </p>
         {groups.length === 0 && (
           <p className="text-vx-fg-body">The tool list is unavailable right now. <Link href="/app/create" className="font-bold underline underline-offset-4">Open the studio</Link> to see every model.</p>

@@ -13,7 +13,7 @@ globalThis.localStorage = {
     setItem: (k, v) => store.set(k, String(v)),
     removeItem: (k) => store.delete(k),
 };
-const { getSession, getStoredSession, completeFromFragment } = await import('../app/lib/authClient.js');
+const { getSession, getStoredSession, completeFromFragment, clearSession } = await import('../app/lib/authClient.js');
 
 const KEY = 'veyrnox_supabase_session';
 const now = () => Math.floor(Date.now() / 1000);
@@ -50,21 +50,29 @@ test('completeFromFragment: tokens in the fragment become the session, the user 
     const replaced = fakeWindow('https://veyrnox.test/auth/callback#access_token=' + jwt({ email: 'new@b.test' }) + '&refresh_token=r9&expires_in=3600&token_type=bearer&type=signup');
     const fetched = [];
     globalThis.fetch = async (url, init) => {
+        if (String(url) === '/api/auth/session') return Response.json({ access_token: 'memory-token', expires_in: 3600,
+            user: { id: 'u9', email: 'new@b.test' } });
         fetched.push({ url: String(url), auth: init?.headers?.Authorization });
         return Response.json({ id: 'u9', email: 'new@b.test' });
     };
     const s = await completeFromFragment();
-    assert.equal(s.refresh_token, 'r9');
+    assert.equal(s.refresh_token, null);
     assert.ok(s.expires_at >= now() + 3590 && s.expires_at <= now() + 3600, 'expiry from expires_in');
     assert.deepEqual(s.user, { id: 'u9', email: 'new@b.test' });
     assert.equal(fetched.length, 1);
     assert.match(fetched[0].url, /\/auth\/v1\/user$/);
-    assert.equal(fetched[0].auth, `Bearer ${s.access_token}`);
+    assert.match(fetched[0].auth, /^Bearer h\./);
     assert.deepEqual(replaced, ['https://veyrnox.test/auth/callback'], 'the fragment is gone from the address bar');
-    assert.equal(JSON.parse(store.get(KEY)).refresh_token, 'r9', 'persisted like any sign-in');
+    assert.equal('refresh_token' in JSON.parse(store.get(KEY)), false, 'refresh credential is HttpOnly');
+    assert.equal('access_token' in JSON.parse(store.get(KEY)), false, 'access token only lives in memory');
 });
 
 test('completeFromFragment: nothing to take, a live session, or a user lookup that fails', async () => {
+    globalThis.fetch = async () => Response.json({});
+    clearSession();
+    await new Promise(resolve => setImmediate(resolve));
+    clearSession();
+    await new Promise(resolve => setImmediate(resolve));
     store.clear();
     let replaced = fakeWindow('https://veyrnox.test/auth/callback?code=abc');
     assert.equal(await completeFromFragment(), null, 'no fragment tokens: not this flow');
@@ -80,11 +88,14 @@ test('completeFromFragment: nothing to take, a live session, or a user lookup th
     // The user lookup failing leaves user null; the tokens are still adopted.
     store.clear();
     fakeWindow('https://veyrnox.test/auth/callback#access_token=' + jwt({ email: 'x@b.test' }) + '&refresh_token=r3&expires_at=' + (now() + 1200));
-    globalThis.fetch = async () => { throw new Error('offline'); };
+    globalThis.fetch = async (url) => {
+        if (String(url) === '/api/auth/session') return Response.json({ access_token: 'memory-token', expires_at: now() + 1200 });
+        throw new Error('offline');
+    };
     const s = await completeFromFragment();
     assert.equal(s.user, null);
     assert.equal(s.expires_at, now() + 1200, 'expires_at wins when given');
-    assert.equal(s.refresh_token, 'r3');
+    assert.equal(s.refresh_token, null);
 });
 
 test('the callback page takes the fragment path before it looks for a code', () => {
