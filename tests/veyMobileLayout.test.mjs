@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mobileClearance, overlapArea, safeMobilePosition } from '../lib/veyMobileLayout.js';
+import { mobileClearance, mobileDockPosition } from '../lib/veyMobileLayout.js';
 import { handForPoint, VEY_SIZE } from '../lib/veyPointer.js';
 const rect = (left, top, width, height) => ({left, top, right:left+width, bottom:top+height});
 
@@ -11,21 +11,24 @@ test('mobile dock clearance includes the mascot and remains independent of the p
   assert.equal(mobileClearance(32,v,null),32);
   assert.equal(mobileClearance(32,{width:640,height:844},rect(8,674,330,162)),32);
 });
-test('automatic and manual preferences avoid duration, camera, cost, image and dock obstacles', () => {
+test('mobile walkthrough reserves a separate mascot lane and never uses scrolled page geometry', () => {
   for (const width of [320,390,430]) {
     const v = {width,height:844};
-    const obstacles = [rect(16,120,width-32,130),rect(32,300,52,44),rect(width-85,410,44,44),rect(16,500,width-32,140),rect(8,674,width-16,162)];
-    for(const desired of [{x:40,y:300},{x:width-85,y:410},{x:32,y:550},{x:100,y:700}]) {
-      const p = safeMobilePosition(desired,v,obstacles);
-      assert.ok(obstacles.every(r=>overlapArea(p,r)===0),JSON.stringify({width,p}));
-      assert.ok(p.x>=8&&p.x+VEY_SIZE.width<=width-8);
-      assert.ok(p.y>=72&&p.y+VEY_SIZE.height<=836);
+    const guide=rect(8,650,Math.min(330,width-80),186);
+    const dock=mobileDockPosition(v,guide,true);
+    assert.ok(dock.x>=guide.right+8);
+    assert.ok(dock.x+VEY_SIZE.width<=width-8);
+    assert.ok(dock.y>=guide.top&&dock.y+VEY_SIZE.height<=guide.bottom);
+    for(let scroll=0;scroll<4000;scroll+=40) {
+      // Moving controls cannot enter the docking algorithm or change its result.
+      assert.deepEqual(mobileDockPosition(v,guide,true),dock);
     }
   }
 });
-test('safe manual choices remain stable; desktop placement is unchanged', () => {
-  assert.deepEqual(safeMobilePosition({x:300,y:200},{width:390,height:844},[rect(32,210,52,44)]),{x:300,y:200});
-  assert.deepEqual(safeMobilePosition({x:100,y:200},{width:1280,height:900},[rect(32,180,600,150)]),{x:100,y:200});
+test('question panel docks Vey above its left edge, clear of the right-hand Resume button', () => {
+  assert.deepEqual(mobileDockPosition({width:390,height:844},rect(8,556,330,280)),{x:20,y:490});
+  assert.deepEqual(mobileDockPosition({width:320,height:568},rect(8,340,304,220)),{x:20,y:274});
+  assert.deepEqual(mobileDockPosition({width:390,height:844},null),{x:8,y:774});
 });
 test('an avoided body still points with the actual mirrored fingertip', () => {
   const p={x:300,y:200},point={x:54,y:340};
@@ -34,4 +37,18 @@ test('an avoided body still points with the actual mirrored fingertip', () => {
     assert.ok(Math.abs(p.x+(facing===1?inset+h.x*scale:56-inset-h.x*scale)-point.x)<0.001);
     assert.ok(Math.abs(p.y+h.y*scale-point.y)<0.001);
   }
+});
+
+test('mobile movement is explicit and the layout never searches page obstacles on scroll', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const root = new URL('../', import.meta.url);
+  const layout = await readFile(new URL('app/veyrnox/_lib/useVeyMobileLayout.js',root),'utf8');
+  const assistant = await readFile(new URL('app/veyrnox/_components/MascotAssistant.jsx',root),'utf8');
+  const guide = await readFile(new URL('app/veyrnox/_components/VeyTaskGuide.jsx',root),'utf8');
+  assert.doesNotMatch(layout,/addEventListener\('scroll'|safeMobilePosition|querySelectorAll/);
+  assert.match(layout,/cue\.current\.position = pointerPlacement/);
+  assert.match(layout,/cue\.current = null; refresh\.current\?\.\(\); \}, 2600/);
+  assert.match(assistant,/window\.innerWidth < 640 && !options\.explicit/);
+  assert.match(guide,/explicit: true, modelKind/);
+  assert.match(layout,/root\.style\.scrollPaddingBottom = appliedScrollPadding/);
 });

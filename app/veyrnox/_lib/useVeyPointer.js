@@ -42,7 +42,7 @@ export default function useVeyPointer({ reduceMotion, moveMascot, setFacing, act
     last.current = '';
     setGeometry(null);
     setTarget({ id, options });
-    element.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center', inline: 'nearest' });
+    element.scrollIntoView({ behavior: reduceMotion || innerWidth < 640 ? 'auto' : 'smooth', block: 'center', inline: 'nearest' });
     if (options.focus && element instanceof HTMLElement) element.focus({ preventScroll: true });
     if (options.activate && HELP_TARGETS[id].canActivate) activateTarget(element, id);
     return true;
@@ -51,6 +51,7 @@ export default function useVeyPointer({ reduceMotion, moveMascot, setFacing, act
   useEffect(() => {
     if (!target) return;
     let frame;
+    let clearedGuide = false;
     const main = document.querySelector('main');
     const measure = () => {
       const element = controlFor(target.id, target.options);
@@ -59,13 +60,14 @@ export default function useVeyPointer({ reduceMotion, moveMascot, setFacing, act
       if (r.bottom < 72 || r.top > innerHeight || r.right < 0 || r.left > innerWidth) { setGeometry(null); return; }
       const rect = { left: r.left, top: r.top, right: r.right, bottom: r.bottom, width: r.width, height: r.height };
       const obstacle = document.querySelector('[aria-label="Vey task walkthrough"]')?.getBoundingClientRect();
-      const scroll = mobileGuideScroll(rect, obstacle, { width: innerWidth });
+      const scroll = clearedGuide ? 0 : mobileGuideScroll(rect, obstacle, { width: innerWidth });
+      clearedGuide = true;
       if (scroll > 0) window.scrollBy({ top: scroll, behavior: 'instant' });
       const next = { ...pointerPlacement(rect, { width: innerWidth, height: innerHeight }, obstacle, manualPosition), rect };
       const signature = JSON.stringify(next);
       if (signature === last.current) return;
       last.current = signature;
-      setGeometry(next); setFacing(next.facing); moveMascot(next.position, !!manualPosition);
+      setGeometry(next); setFacing(next.facing); moveMascot(next.position, !!manualPosition || innerWidth < 640);
     };
     const schedule = () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(measure); };
     const observer = new ResizeObserver(schedule);
