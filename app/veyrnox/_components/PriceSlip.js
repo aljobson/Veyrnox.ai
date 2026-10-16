@@ -3,7 +3,8 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { writeStudioDraft } from '../_lib/landingDraft';
-import { distinctShelfNames } from '../_lib/tokens';
+import { AFFORDABLE_START_MODEL_ID, distinctShelfNames } from '../_lib/tokens';
+import { affordableStarterModel } from '../_lib/starterModels';
 
 // The landing hero's working form: pick a model and a length, and the slip
 // prints what the button will charge. Pressing Generate opens the studio on
@@ -16,7 +17,8 @@ import { distinctShelfNames } from '../_lib/tokens';
 
 // Shown as one-tap chips when the live catalog has them. Everything else is
 // one select away.
-const FEATURED = ['wan-2.5-kie', 'kling-2.6-pro-kie', 'seedance-2.0-fast', 'nano-banana-pro-grsai', 'flux-2-pro'];
+const FEATURED = ['wan-2.5-kie', 'kling-2.6-pro-kie', 'seedance-2.0-fast', 'flux-2-pro'];
+const SIGNUP_CREDITS = 10;
 
 // The gateway refuses longer prompts (app/api/v1/generations/route.js).
 const PROMPT_MAX = 2000;
@@ -26,14 +28,21 @@ const KIND_LABEL = { video: 'Video', image: 'Image', audio: 'Audio' };
 export function PriceSlip({ models }) {
   const router = useRouter();
   const open = useMemo(() => models.filter((m) => !m.gated), [models]);
-  const chips = useMemo(
-    () => FEATURED.map((id) => open.find((m) => m.id === id)).filter(Boolean),
+  const starter = useMemo(
+    () => affordableStarterModel(open, AFFORDABLE_START_MODEL_ID, SIGNUP_CREDITS),
     [open],
+  );
+  const chips = useMemo(
+    () => [starter?.id, ...FEATURED]
+      .filter((id, index, ids) => id && ids.indexOf(id) === index)
+      .map((id) => open.find((m) => m.id === id))
+      .filter(Boolean),
+    [open, starter],
   );
   // One naming function for the chips, the select and the slip line, so the
   // picker never prints the same name for two models.
   const nameOf = useMemo(() => distinctShelfNames(models), [models]);
-  const [modelId, setModelId] = useState((chips[0] || open[0] || models[0])?.id);
+  const [modelId, setModelId] = useState(starter?.id || open[0]?.id || models[0]?.id);
   const [wanted, setSeconds] = useState(5);
   const [prompt, setPrompt] = useState('');
 

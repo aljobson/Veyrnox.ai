@@ -8,7 +8,7 @@ import ToasterMount from '../components/ToasterMount';
 import AuthGate from '../components/AuthGate.jsx';
 import AnalyticsProvider, { analyticsEnabled } from '../components/AnalyticsProvider.jsx';
 import SiteChrome from './veyrnox/_components/SiteChrome';
-import { OG_IMAGE, ORG_LD, JsonLd } from './seo';
+import { OG_IMAGE, OPEN_GRAPH_BASE, ORG_LD, JsonLd } from './seo';
 
 // Self-hosted (OFL, app/fonts): next/font/google fetched these from Google at
 // build time, and a failed fetch failed production deploys (2026-09-22).
@@ -35,12 +35,10 @@ export const metadata = {
   applicationName: 'Veyrnox.ai',
   alternates: { canonical: '/' },
   openGraph: {
-    type: 'website',
-    siteName: 'Veyrnox.ai',
+    ...OPEN_GRAPH_BASE,
     title: TITLE,
     description: DESCRIPTION,
     url: '/',
-    images: [OG_IMAGE],
   },
   // summary_large_image, not summary: with a 1200x630 card the small variant
   // crops it to a square thumbnail.

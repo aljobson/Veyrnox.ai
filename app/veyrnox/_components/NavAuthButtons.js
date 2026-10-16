@@ -78,7 +78,7 @@ export function NavAuthButtons({ account: given }) {
   // until the first client snapshot instead of briefly telling a signed-in
   // person to log in or sign up.
   if (given === undefined && !hydrated) {
-    return <span aria-hidden="true" className="h-10 w-24 animate-pulse rounded-full bg-vx-panel" />;
+    return <span aria-hidden="true" className="h-11 w-24 animate-pulse rounded-full bg-vx-panel" />;
   }
 
   function openAuth(mode) {
@@ -109,7 +109,7 @@ export function NavAuthButtons({ account: given }) {
           aria-expanded={menuOpen}
           aria-controls="vx-account-menu"
           aria-label={`Account: ${account.name}`}
-          className="flex items-center gap-2 rounded-full pl-1 pr-1 sm:pr-3 py-1 text-sm font-semibold text-vx-fg-body hover:text-vx-fg hover:bg-vx-fg/[0.05]"
+          className="flex items-center min-h-11 gap-2 rounded-full pl-1 pr-1 sm:pr-3 py-1 text-sm font-semibold text-vx-fg-body hover:text-vx-fg hover:bg-vx-fg/[0.05]"
         >
           <span aria-hidden="true" className="flex h-8 w-8 items-center justify-center rounded-full bg-vx-accent text-vx-accent-ink font-extrabold">
             {account.initial}
@@ -133,7 +133,7 @@ export function NavAuthButtons({ account: given }) {
                 key={l.href}
                 href={l.href}
                 onClick={() => setMenuOpen(false)}
-                className="block rounded-lg px-3 py-2 text-sm text-vx-fg-body hover:bg-vx-fg/[0.05] hover:text-vx-fg"
+                className="flex min-h-11 items-center rounded-lg px-3 py-2 text-sm text-vx-fg-body hover:bg-vx-fg/[0.05] hover:text-vx-fg"
               >
                 {l.label}
               </Link>
@@ -143,7 +143,7 @@ export function NavAuthButtons({ account: given }) {
               // Focus goes to the account button first: this one unmounts with the
               // list, and the dialog returns focus to whatever held it on opening.
               onClick={() => { triggerRef.current?.focus(); setMenuOpen(false); setConfirming(true); }}
-              className="block w-full text-left rounded-lg px-3 py-2 text-sm text-vx-fg-body hover:bg-vx-fg/[0.05] hover:text-vx-fg"
+              className="block min-h-11 w-full text-left rounded-lg px-3 py-2 text-sm text-vx-fg-body hover:bg-vx-fg/[0.05] hover:text-vx-fg"
             >
               Sign out
             </button>
@@ -170,14 +170,14 @@ export function NavAuthButtons({ account: given }) {
       <button
         type="button"
         onClick={() => openAuth('sign_in')}
-        className="text-vx-fg-body text-sm font-semibold px-2 sm:px-3 py-2 hover:text-vx-fg"
+        className="inline-flex min-h-11 items-center text-vx-fg-body text-sm font-semibold px-2 sm:px-3 py-2 hover:text-vx-fg"
       >
         Log in
       </button>
       <button
         type="button"
         onClick={() => openAuth('sign_up')}
-        className="rounded-full bg-vx-accent text-vx-accent-ink text-sm font-bold px-4 sm:px-5 py-2.5 hover:bg-vx-accent-hover"
+        className="inline-flex min-h-11 items-center rounded-full bg-vx-accent text-vx-accent-ink text-sm font-bold px-4 sm:px-5 py-2.5 hover:bg-vx-accent-hover"
       >
         Sign up
       </button>

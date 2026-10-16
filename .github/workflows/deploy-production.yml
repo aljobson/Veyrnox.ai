@@ -59,6 +59,9 @@ jobs:
     needs: ci-green
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      actions: read
+      contents: read
     # CLOUDFLARE_API_TOKEN lives in this environment, which only main may use.
     # A repository secret would reach any workflow a pushed branch adds.
     environment: production
@@ -109,6 +112,46 @@ jobs:
         if: env.HAS_TOKEN == 'true' && steps.tip.outputs.stale != 'true'
         run: npm ci --legacy-peer-deps --no-audit --no-fund && npm run build:worker
 
+      # OpenNext's preview-URL skew protection would bypass the Access policy
+      # on veyrnox.ai (ADR-0078). Keep a bounded 20-release history in the same
+      # private production deployment instead. Together with the current build,
+      # the deployed set contains at most 21 releases; current files always win.
+      - name: Retain previous Next static assets
+        if: env.HAS_TOKEN == 'true' && steps.tip.outputs.stale != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          previous_runs=$(gh run list --workflow deploy-production.yml --branch main --status success --limit 20 --json databaseId --jq '.[].databaseId')
+          if [ -z "$previous_runs" ]; then
+            echo "::notice::No earlier successful production run; static retention starts with this deploy."
+            exit 0
+          fi
+          for previous_run in $previous_runs; do
+            artifact_count=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$previous_run/artifacts" \
+              --jq '[.artifacts[] | select(.name == "production-next-static" and .expired == false)] | length')
+            if [ "$artifact_count" = "0" ]; then
+              echo "::notice::Run $previous_run has no retained static artifact; skipping it."
+              continue
+            fi
+            gh run download "$previous_run" --name production-next-static --dir "previous-next-static/$previous_run"
+            node scripts/retain-next-static.mjs "previous-next-static/$previous_run" .open-next/assets/_next/static
+          done
+
+      # Each run stores only its own files. The bounded download loop above
+      # selects the history, so old files cannot be copied forward forever.
+      - name: Save this build's Next static assets
+        if: env.HAS_TOKEN == 'true' && steps.tip.outputs.stale != 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: production-next-static
+          path: .next/static
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Record currently referenced production assets
+        if: env.HAS_TOKEN == 'true' && steps.tip.outputs.stale != 'true'
+        run: node scripts/check-site-health.mjs --capture-assets previous-build-assets.json
+
       # The rollback target. The whole deployment is kept, so a gradual
       # split is restored as it was, not collapsed onto one version.
       # One failed read here deployed nothing on 2026-10-09 (a 504 after 55 s,
@@ -152,7 +195,7 @@ jobs:
       - name: Smoke test the live site
         id: smoke
         if: env.HAS_TOKEN == 'true' && steps.tip.outputs.stale != 'true'
-        run: sleep 20 && node scripts/check-site-health.mjs
+        run: sleep 20 && node scripts/check-site-health.mjs --asset-manifest previous-build-assets.json
 
       # Rolls back the Worker only. Applied migrations stay applied, which is
       # why migrations must keep working with the previous release.

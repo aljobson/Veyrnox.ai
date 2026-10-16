@@ -16,13 +16,15 @@ export const dynamic = 'force-dynamic';
 // page we ask not to be indexed is a contradiction Search Console reports as
 // an error.
 export default async function sitemap() {
-  const page = (path, changeFrequency, priority) => ({
+  const page = (path, changeFrequency, priority, lastModified) => ({
     url: `${SITE_URL}${path}`,
     changeFrequency,
     priority,
+    ...(lastModified ? { lastModified } : {}),
   });
   return [
     page('', 'weekly', 1.0),
+    page('/about', 'yearly', 0.4),
     page('/pricing', 'monthly', 0.9),
     page('/presets', 'weekly', 0.7),
     ...PRESETS.map((t) => page(`/presets/${t.id}`, 'monthly', 0.5)),
@@ -45,7 +47,7 @@ export default async function sitemap() {
 // The catalog being unreachable must not take the sitemap down with it.
 async function modelPages(page) {
   try {
-    return (await listModels()).map((m) => page(`/models/${encodeURIComponent(m.id)}`, 'weekly', 0.6));
+    return (await listModels()).map((m) => page(`/models/${encodeURIComponent(m.id)}`, 'weekly', 0.6, m.updatedAt));
   } catch (err) {
     console.error('[sitemap] catalog unavailable; model pages omitted:', err && err.message);
     return [];

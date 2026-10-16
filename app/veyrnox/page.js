@@ -39,7 +39,9 @@ async function loadCatalog() {
     if (rows.length === 0) throw new Error('empty');
     // Only what the picker in app/create will sell to everyone reaches the
     // shelf: the Clip Editor is a Library tool, and Auto Short is still gated.
-    // Normalise to the shape our page expects: { id, name, credits, kind, tag?, premium?, gated? }
+    // Normalise to the shape our page expects. Preserve capability signals
+    // used by the starter selector so upload-only models are never presented
+    // as a prompt-first option when live prices reorder the catalog.
     return rows.filter((m) => isShelfModel(m.capabilities)).map((m) => ({
       // Lengths the gateway sells, as GET /api/catalog derives them, so the
       // hero slip never offers a 10 s price the studio would refuse.
@@ -52,6 +54,10 @@ async function loadCatalog() {
       // fine-grained value below for display.
       kind: kindOf(m.modality),
       modality: m.modality,
+      media: m.capabilities?.media || {},
+      takesPrompt: !!m.capabilities?.inputs?.prompt,
+      takesPlan: !!m.capabilities?.inputs?.plan_id,
+      takesTopic: !!m.capabilities?.inputs?.topic,
       premium: m.gated,
       gated: m.gated,
       tag: m.gated ? 'PREMIUM' : undefined,
@@ -67,9 +73,9 @@ export default async function VeyrnoxLanding() {
     <div className="min-h-dvh">
       <MarketingNav hideAnnouncementOnMobile />
       <Main>
+      <Hero models={catalog} />
       <BreakthroughVideo />
       <LandingFilm />
-      <Hero models={catalog} />
       <FeaturedHeroCards catalog={catalog} />
       <PresetWall catalog={catalog} />
       <ModelShelf catalog={catalog} />
@@ -95,7 +101,7 @@ export default async function VeyrnoxLanding() {
       <FAQBlock />
       <ClosingCTA />
       </Main>
-      <FooterForest catalog={catalog} />
+      <FooterForest />
       <JsonLd data={FAQ_LD} />
       <SectionJump />
     </div>

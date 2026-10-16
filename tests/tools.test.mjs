@@ -44,3 +44,10 @@ test('/tools is routed, in the sitemap and survives a catalog outage', () => {
     assert.match(page, /catch \(err\)/);
     assert.match(page, /The tool list is unavailable right now/);
 });
+
+test('/tools has a visible route loading state while its catalog is fetched', () => {
+    const loading = readFileSync(new URL('../app/veyrnox/tools/loading.js', import.meta.url), 'utf8');
+    assert.match(loading, /aria-busy="true"/);
+    assert.match(loading, /Loading tools/);
+    assert.match(loading, /Getting current models and credit prices/);
+});

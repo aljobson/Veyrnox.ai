@@ -2,13 +2,14 @@ import Link from 'next/link';
 import { MarketingNav } from '../_components/NavBar';
 import { Main } from '../_components/Main';
 import { GUIDES } from '../_lib/guides';
+import { OPEN_GRAPH_BASE } from '../../seo';
 
 const DESCRIPTION = 'Short guides to generating, templates, working on your own files, the Library and credits on Veyrnox.';
 export const metadata = {
   title: 'Guides',
   description: DESCRIPTION,
   alternates: { canonical: '/guides' },
-  openGraph: { title: 'Guides — Veyrnox.ai', description: DESCRIPTION, url: '/guides' },
+  openGraph: { ...OPEN_GRAPH_BASE, title: 'Guides — Veyrnox.ai', description: DESCRIPTION, url: '/guides' },
 };
 
 export default function Guides() {

@@ -29,6 +29,9 @@ import { isUnknownStaticPage } from './lib/unknownStaticPage.js';
 const POSTHOG_INGEST_PATH = '/ingest';
 const POSTHOG_INGEST_ORIGIN = 'https://eu.i.posthog.com';
 const CANONICAL_HOST = 'veyrnox.ai';
+const PUBLIC_METADATA_PATHS = new Set(['/robots.txt', '/sitemap.xml']);
+const PUBLIC_METADATA_CACHE = 'public, max-age=0, s-maxage=21600, stale-while-revalidate=86400';
+const NON_HTML_CSP = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'";
 
 export const config = {
     matcher: ['/api/v1/:path*', '/((?!api(?:/|$)|_next(?:/|$)).*)'],
@@ -88,6 +91,20 @@ export async function middleware(req) {
     const requestId = crypto.randomUUID();
     headers.set('x-request-id', requestId);
     for (const h of IDENTITY_HEADERS) headers.set(h, '');
+
+    // These machine-readable documents are public and contain no HTML or
+    // executable script, so they do not need a per-request renderer nonce.
+    // Cache only the exact routes: every page and authenticated surface keeps
+    // the private/no-store policy below. Explicitly blank hostile inbound
+    // renderer headers because OpenNext does not reliably apply deletions.
+    if (PUBLIC_METADATA_PATHS.has(pathname)) {
+        headers.set('x-nonce', '');
+        headers.set('content-security-policy', '');
+        const response = NextResponse.next({ request: { headers } });
+        response.headers.set('Content-Security-Policy', NON_HTML_CSP);
+        response.headers.set('Cache-Control', PUBLIC_METADATA_CACHE);
+        return response;
+    }
 
     // Page navigation authenticates through the existing client flow. Never
     // demand an API Bearer token for HTML. The renderer consumes this request

@@ -4,6 +4,7 @@ import { Main } from '../_components/Main';
 import { PremiumTag } from '../_components/PremiumTag';
 import { LIST_GROUPS } from '../_sections/showcase';
 import { listModels } from '../_lib/modelPages';
+import { OPEN_GRAPH_BASE } from '../../seo';
 
 // Rendered per request: the catalog needs the service-role key, which only
 // the Worker has, and the rows are cached for 5 minutes in lib/publicCatalog.
@@ -13,7 +14,7 @@ export const metadata = {
   title: 'Models',
   description: 'Every AI image, video and audio model on Veyrnox, with its exact credit price, read live from the catalog.',
   alternates: { canonical: '/models' },
-  openGraph: { title: 'Models — Veyrnox.ai', description: 'Every AI image, video and audio model on Veyrnox, with its exact credit price, read live from the catalog.', url: '/models' },
+  openGraph: { ...OPEN_GRAPH_BASE, title: 'Models — Veyrnox.ai', description: 'Every AI image, video and audio model on Veyrnox, with its exact credit price, read live from the catalog.', url: '/models' },
 };
 
 export default async function ModelsIndex() {

@@ -11,16 +11,16 @@ export function Hero({ models }) {
     <section className="relative px-4 sm:px-6 max-w-[1300px] mx-auto pt-12 sm:pt-16 lg:pt-20 pb-16 lg:pb-24">
       <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-12 lg:gap-16 items-start">
         <div className="lg:pt-10">
-          <h2 className="vx-display vx-title-index">
+          <h1 className="vx-display vx-title-index">
             The price is on the button.
-          </h2>
+          </h1>
           <p className="mt-6 text-lg sm:text-xl text-vx-fg-body max-w-[40ch] leading-[1.5] text-pretty">
             Image, video and audio models on one credit balance. Failed jobs refund on their own.
           </p>
           <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-4">
             <Link
-              href="/app/create"
-              className="vx-press rounded-full bg-vx-fg text-vx-base px-7 py-3.5 text-[15px] font-extrabold hover:bg-vx-fg/85"
+              href="/app/create?model=nano-banana-kie"
+              className="vx-press inline-flex min-h-11 items-center rounded-full bg-vx-fg text-vx-base px-7 py-3.5 text-[15px] font-extrabold hover:bg-vx-fg/85"
             >
               Start creating
             </Link>
@@ -42,13 +42,15 @@ const modelOf = (href) => new URL(href, 'https://x').searchParams.get('model');
 export function FeaturedHeroCards({ catalog }) {
   const rowOf = (id) => catalog.find((m) => m.id === id);
   return (
-    <section id="explore" className="px-4 sm:px-6 max-w-[1300px] mx-auto">
+    <section id="explore" aria-labelledby="featured-title" className="px-4 sm:px-6 max-w-[1300px] mx-auto">
+      <h2 id="featured-title" className="sr-only">Featured ways to create</h2>
+      <p id="featured-scroll-hint" className="sr-only">Scroll horizontally to browse featured creation options.</p>
       {/* Below sm the five tiles are one swipe row, not a stack. It runs to
           the screen edge so the next tile shows there is more; the vertical
           padding keeps the rise and the focus ring inside the scroller,
           which clips both axes. Tiles keep their clip's own shape, so they
           are top-aligned, as in the grid from sm up. */}
-      <div className="-mx-4 -my-2 flex snap-x snap-mandatory items-start gap-x-3 gap-y-6 overflow-x-auto scroll-pl-4 px-4 py-2 sm:mx-0 sm:my-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:py-0 lg:grid-cols-5">
+      <div role="region" aria-labelledby="featured-title" aria-describedby="featured-scroll-hint" className="-mx-4 -my-2 flex snap-x snap-mandatory items-start gap-x-3 gap-y-6 overflow-x-auto scroll-pl-4 px-4 py-2 sm:mx-0 sm:my-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:py-0 lg:grid-cols-5">
         {FEATURE_CARDS.map((f, i) => {
           const row = rowOf(modelOf(f.href));
           const clip = SHOWCASE_CLIPS[f.key];
@@ -57,6 +59,7 @@ export function FeaturedHeroCards({ catalog }) {
               key={f.key}
               href={f.href}
               clip={clip && { ...clip, objectFit: 'contain' }}
+              imageSizes="(max-width: 639px) 72vw, (max-width: 1023px) 50vw, 20vw"
               ariaLabel={`Open ${f.title}`}
               className="vx-rise block w-[72%] shrink-0 snap-start text-left sm:w-auto"
               style={{ '--vx-i': i }}
