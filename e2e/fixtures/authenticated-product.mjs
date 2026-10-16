@@ -89,7 +89,11 @@ export async function installProductFixtures(page, options = {}) {
     }
     if (url.pathname.startsWith('/api/')) {
       fixture.requests.push(entry);
-      if (url.pathname === '/api/auth/session') return state.user ? json({ access_token: 'SYNTHETIC-NONSECRET-NOT-A-REAL-TOKEN', expires_in: 3600, user: state.user }) : json({ error: 'not_authenticated' }, 401);
+      if (url.pathname === '/api/auth/session') {
+        if (method === 'POST' && body?.action === 'refresh') return state.user ? json({ access_token: 'SYNTHETIC-NONSECRET-NOT-A-REAL-TOKEN', expires_in: 3600, user: state.user }) : json({ error: 'not_authenticated' }, 401);
+        fixture.unhandled.push({ method, path: url.pathname });
+        return route.abort('blockedbyclient');
+      }
       if (method === 'GET') {
         if (url.pathname === '/api/catalog') return json({ models: options.models || SYNTHETIC_MODELS });
         if (url.pathname === '/api/v1/account') return state.user ? json({ email: state.user.email, credits: state.balance, balance: state.balance, assets: 0 }) : json({ error: 'not_authenticated' }, 401);

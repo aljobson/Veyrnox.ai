@@ -5,6 +5,9 @@ async function openReal(fixture, path) {
   const response = await fixture.open(path);
   expect(response.status(), `Actual first-party document ${path}`).toBe(200);
 }
+// Cookie-session hydration is a synthetic POST refresh, not a product write.
+const productWrites = fixture => fixture.requests.filter(r => !['GET', 'HEAD', 'OPTIONS'].includes(r.method)
+  && !(r.path === '/api/auth/session' && r.method === 'POST' && r.body?.action === 'refresh'));
 
 for (const [suffix, heading, endpoint, loaded] of ADMIN_PAGES) {
   test(`Admin interior ${suffix || '/'} renders explicit authorized data`, async ({ page }) => {
@@ -50,7 +53,7 @@ for (const [suffix, heading, endpoint, loaded] of ADMIN_PAGES) {
     }
     await expect(page.getByText(/not an administrator|administrator permission is required|Cinema administrator account is required|does not have Cinema .*permission/i)).toBeVisible();
     await expect(page.getByRole('heading', { name: 'By model', exact: true })).toHaveCount(0);
-    expect(fixture.requests.filter(r => r.method !== 'GET' && r.method !== 'OPTIONS')).toEqual([]);
+    expect(productWrites(fixture)).toEqual([]);
   });
 }
 
@@ -99,7 +102,7 @@ test('Account security renders private controls, validates password and cancels 
   await expect(page.getByRole('dialog')).toBeVisible();
   await page.getByRole('dialog').getByRole('button', { name: 'Cancel', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  expect(fixture.requests.filter(r => r.method === 'POST' || r.method === 'DELETE')).toEqual([]);
+  expect(productWrites(fixture)).toEqual([]);
 });
 
 test('Account authenticator read failure recovers without enrollment', async ({ page }) => {
@@ -155,13 +158,13 @@ test('Cinema creator saves isolated private draft without upload or publication'
   const fixture = await installAccessFixtures(page, { preview: true });
   await openReal(fixture, '/social-cinema/creator');
   await page.getByRole('button', { name: 'New project', exact: true }).click();
-  await page.getByLabel('Type', { exact: true }).selectOption('FILM');
-  await page.getByLabel('Title', { exact: true }).fill('Synthetic private film');
-  await page.getByLabel('Synopsis', { exact: true }).fill('No provider, real upload or public destination.');
+  await page.getByRole('combobox', { name: 'Type', exact: true }).selectOption('FILM');
+  await page.getByRole('textbox', { name: 'Title', exact: true }).fill('Synthetic private film');
+  await page.getByRole('textbox', { name: 'Synopsis', exact: true }).fill('No provider, real upload or public destination.');
   await page.getByRole('button', { name: 'Save private draft', exact: true }).click();
   await expect(page.getByText('Draft saved privately.', { exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Synthetic private film', exact: true })).toBeVisible();
-  expect(fixture.requests.filter(r => r.method === 'POST').map(r => r.path)).toEqual(['/api/v1/cinema/content']);
+  expect(productWrites(fixture).map(r => r.path)).toEqual(['/api/v1/cinema/content']);
 });
 
 test('Cinema Pass closed sales do not expose checkout', async ({ page }) => {
@@ -233,7 +236,7 @@ for (const action of ['approve', 'deny']) test(`OAuth ${action} decision remains
   await openReal(fixture, '/oauth/consent?authorization_id=synthetic-request');
   await expect(page.getByRole('heading', { name: 'Connect Synthetic read-only assistant?' })).toBeVisible();
   await page.getByRole('button', { name: action === 'approve' ? 'Approve connection' : 'Deny', exact: true }).click();
-  await expect(page.getByRole('alert')).toContainText(`Synthetic ${action} decision unavailable`);
+  await expect(page.getByRole('alert').filter({ hasText: `Synthetic ${action} decision unavailable` })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Approve connection' })).toBeEnabled();
   expect(fixture.requests.find(r => r.path.endsWith('/synthetic-request/consent')).body).toEqual({ action });
 });

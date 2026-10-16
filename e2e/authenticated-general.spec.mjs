@@ -7,7 +7,7 @@ async function fixtureFor(page, options = {}) {
     if (url.origin !== origin) return false;
     if (await options.routes?.(args)) return true;
     if (method !== 'GET') return false;
-    if (url.pathname === '/_next/image' && /^\/(?:oddlings|showcase)\/[a-zA-Z0-9_.-]+\.(?:webp|png|jpe?g)$/.test(url.searchParams.get('url') || '')) {
+    if (url.pathname === '/_next/image' && /^\/(?:oddlings\/(?:portraits\/)?|showcase\/)[a-zA-Z0-9_.-]+\.(?:webp|png|jpe?g)$/.test(url.searchParams.get('url') || '')) {
       await route.fulfill({ status: 200, contentType: 'image/png', body: png }); return true;
     }
     if (url.pathname === '/api/popular-templates') return json({ templates: [] });
@@ -23,7 +23,7 @@ async function fixtureFor(page, options = {}) {
     return false;
   } });
 }
-const writes = fixture => fixture.requests.filter(row => !['GET', 'HEAD', 'OPTIONS'].includes(row.method) && row.path !== '/api/auth/session');
+const writes = fixture => fixture.requests.filter(row => !['GET', 'HEAD', 'OPTIONS'].includes(row.method) && !(row.method === 'POST' && row.path === '/api/auth/session' && row.body?.action === 'refresh'));
 async function open(fixture, page, path, heading) {
   const response = await fixture.open(path);
   expect(response.status(), 'Actual first-party document must render').toBe(200);
@@ -52,10 +52,10 @@ test('Credits pack selection never accepts consent or starts checkout and closed
   const consent = packs.getByRole('checkbox');
   const buy = packs.getByRole('button', { name: 'Buy credits', exact: true });
   await expect(consent).not.toBeChecked(); await expect(buy).toBeDisabled();
-  await packs.getByRole('radio', { name: /100 credits —/ }).check();
+  await packs.getByText('100 credits — $10 + applicable tax', { exact: true }).click();
   await expect(packs.getByRole('radio', { name: /100 credits —/ })).toBeChecked();
   await expect(consent).not.toBeChecked(); await expect(buy).toBeDisabled();
-  await packs.getByRole('radio', { name: /1,200 credits —/ }).check();
+  await packs.getByText('1,200 credits — $100 + applicable tax', { exact: true }).click();
   await expect(packs.getByRole('radio', { name: /1,200 credits —/ })).toBeChecked();
   await expect(consent).not.toBeChecked(); await expect(buy).toBeDisabled();
   await expect(page.getByText(/Monthly subscriptions aren't open right now/)).toBeVisible();
@@ -81,7 +81,7 @@ test('Enhance production-build gate does not expose development-only upload or e
   const fixture = await fixtureFor(page);
   await open(fixture, page, '/app/enhance', 'Video Enhance');
   await expect(page.getByRole('heading', { name: 'Preview unavailable', exact: true })).toBeVisible();
-  await expect(page.getByText('Video Enhance is available only in an enabled local development preview.', { exact: true })).toBeVisible();
+  await expect(page.getByRole('main').getByText('Video Enhance is available only in an enabled local development preview.', { exact: true })).toBeVisible();
   await expect(page.getByLabel('Choose video', { exact: true })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Export video', exact: true })).toHaveCount(0);
   expect(writes(fixture)).toEqual([]);
@@ -90,7 +90,7 @@ test('Enhance production-build gate does not expose development-only upload or e
 test('Oddling local reference validation refuses text files without generation or upload', async ({ page }) => {
   const fixture = await fixtureFor(page);
   await open(fixture, page, '/app/oddlings', 'Design the whole character.');
-  await page.getByLabel('Upload photo', { exact: true }).setInputFiles({ name: 'synthetic-invalid.txt', mimeType: 'text/plain', buffer: Buffer.from('Synthetic QA only') });
+  await page.getByRole('main').getByLabel('Upload photo', { exact: true }).setInputFiles({ name: 'synthetic-invalid.txt', mimeType: 'text/plain', buffer: Buffer.from('Synthetic QA only') });
   await expect(page.getByText('Choose a JPEG, PNG, WebP or AVIF image.', { exact: true })).toBeVisible();
   await expect(page.getByRole('img', { name: /^Local reference/ })).toHaveCount(0);
   expect(writes(fixture)).toEqual([]);
@@ -99,18 +99,18 @@ test('Oddling local reference validation refuses text files without generation o
 test('Oddling passport save/load and styling remix preserve the local character identity without Generate', async ({ page }) => {
   const fixture = await fixtureFor(page);
   await open(fixture, page, '/app/oddlings', 'Design the whole character.');
-  await page.getByLabel('NAME', { exact: true }).fill('Synthetic QA character');
-  await page.getByLabel('NEVER DRIFT · VISUAL CANON', { exact: true }).fill('Synthetic canon stays locked.');
+  await page.getByRole('textbox', { name: 'NAME', exact: true }).fill('Synthetic QA character');
+  await page.getByRole('textbox', { name: 'NEVER DRIFT · VISUAL CANON', exact: true }).fill('Synthetic canon stays locked.');
   await page.getByRole('button', { name: 'Randomize styling', exact: true }).click();
-  await expect(page.getByLabel('NAME', { exact: true })).toHaveValue('Synthetic QA character');
-  await expect(page.getByLabel('NEVER DRIFT · VISUAL CANON', { exact: true })).toHaveValue('Synthetic canon stays locked.');
+  await expect(page.getByRole('textbox', { name: 'NAME', exact: true })).toHaveValue('Synthetic QA character');
+  await expect(page.getByRole('textbox', { name: 'NEVER DRIFT · VISUAL CANON', exact: true })).toHaveValue('Synthetic canon stays locked.');
   await page.getByRole('button', { name: 'Save passport', exact: true }).click();
   await expect(page.getByText('Passport saved to History on this browser.', { exact: true })).toBeVisible();
   await page.getByRole('tab', { name: 'History · 1', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Synthetic QA character', exact: true })).toBeVisible();
-  await page.getByLabel('NAME', { exact: true }).fill('Unsaved temporary name');
+  await page.getByRole('textbox', { name: 'NAME', exact: true }).fill('Unsaved temporary name');
   await page.getByRole('button', { name: 'Load and edit', exact: true }).click();
-  await expect(page.getByLabel('NAME', { exact: true })).toHaveValue('Synthetic QA character');
+  await expect(page.getByRole('textbox', { name: 'NAME', exact: true })).toHaveValue('Synthetic QA character');
   expect(writes(fixture)).toEqual([]);
 });
 
@@ -149,7 +149,7 @@ test('Library server rows filter by real catalog type and local favourites witho
   await open(fixture, page, '/app/library', 'Everything you’ve made');
   await expect(page.getByText('Synthetic failed image', { exact: true })).toBeVisible();
   await expect(page.getByText('Synthetic failed audio', { exact: true })).toBeVisible();
-  await expect(page.getByText('FAILED · REFUND PENDING', { exact: true })).toHaveCount(2);
+  await expect(page.getByRole('main').getByText(/FAILED · REFUND PENDING$/)).toHaveCount(2);
   const types = page.getByRole('group', { name: 'Filter by type', exact: true });
   await types.getByRole('button', { name: 'Images', exact: true }).click();
   await expect(page.getByText('Synthetic failed audio', { exact: true })).toHaveCount(0);
@@ -165,16 +165,20 @@ test('Library server rows filter by real catalog type and local favourites witho
 });
 
 for (const [path, label] of [['/m', 'Create'], ['/m/create', 'Create'], ['/m/job', 'Job running'], ['/m/credits', 'CURRENT BALANCE'], ['/m/explore', 'CACHED FREE'], ['/m/library', 'FAILS REFUND']]) {
-  test(`Mobile design prototype ${path} is clearly sample data, not authenticated account feature coverage`, async ({ page }) => {
+  test(`Mobile design prototype ${path} is clearly sample data, not authenticated account feature coverage`, async ({ page }, testInfo) => {
     const fixture = await fixtureFor(page);
     const response = await fixture.open(path); expect(response.status()).toBe(200);
     if (path === '/m') await page.waitForURL('**/m/create');
+    const geometry = await page.evaluate(() => ({ layoutWidth: innerWidth, overflow: Math.max(0, document.documentElement.scrollWidth - innerWidth), scale: visualViewport?.scale || 1 }));
+    expect(geometry.layoutWidth, 'Fixed phone bezel must not expand the mobile layout viewport').toBe(testInfo.project.use.viewport.width);
+    expect(geometry.overflow, 'Prototype remains within the actual viewport').toBeLessThanOrEqual(2);
+    expect(geometry.scale, 'Prototype must not auto-scale the browser and misalign touch targets').toBeGreaterThanOrEqual(0.99);
     await expect(page.getByRole('note')).toContainText('DESIGN PROTOTYPE · SAMPLE DATA, NOT YOUR ACCOUNT');
     await expect(page.getByRole('note').getByRole('link', { name: 'OPEN THE APP', exact: true })).toHaveAttribute('href', '/app');
-    await expect(page.locator('main')).toContainText(label);
+    await expect(page.getByRole('main')).toContainText(label);
     if (path === '/m/create') {
-      await page.getByLabel('Prompt', { exact: true }).fill('Synthetic editable prototype draft');
-      await expect(page.getByLabel('Prompt', { exact: true })).toHaveValue('Synthetic editable prototype draft');
+      await page.getByRole('textbox', { name: 'Prompt', exact: true }).fill('Synthetic editable prototype draft');
+      await expect(page.getByRole('textbox', { name: 'Prompt', exact: true })).toHaveValue('Synthetic editable prototype draft');
       await expect(page.getByRole('link', { name: /Generate/ })).toHaveAttribute('href', '/m/job');
     }
     expect(writes(fixture)).toEqual([]);

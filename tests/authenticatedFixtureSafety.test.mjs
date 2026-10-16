@@ -29,9 +29,9 @@ async function installedRouting() {
   const context = { on() {}, addInitScript: async () => {}, route: async (_, callback) => { handler = callback; } };
   const page = { on() {}, addLocatorHandler: async () => {}, getByRole: () => ({}), context: () => context };
   const fixture = await install(page, { origin: 'http://localhost:3100' });
-  const request = async (url, method = 'GET', status = 200) => {
+  const request = async (url, method = 'GET', status = 200, body = null) => {
     let disposition;
-    await handler({ request: () => ({ url: () => url, method: () => method, postDataJSON: () => null, headers: () => ({}) }), abort: async () => { disposition = 'abort'; }, continue: async () => { disposition = 'continue'; }, fetch: async options => { assert.equal(options.maxRedirects, 0); assert.equal(options.maxRetries, 0); return { status: () => status }; }, fulfill: async response => { fulfilled = response; disposition = 'fulfill'; } });
+    await handler({ request: () => ({ url: () => url, method: () => method, postDataJSON: () => body, headers: () => ({}) }), abort: async () => { disposition = 'abort'; }, continue: async () => { disposition = 'continue'; }, fetch: async options => { assert.equal(options.maxRedirects, 0); assert.equal(options.maxRetries, 0); return { status: () => status }; }, fulfill: async response => { fulfilled = response; disposition = 'fulfill'; } });
     return disposition;
   };
   return { fixture, request, response: () => fulfilled };
@@ -77,4 +77,17 @@ test('built local public auth settings are synthetic while all other auth calls 
   assert.equal(await request('http://127.0.0.1:54321/auth/v1/user'), 'abort');
   assert.equal(await request('https://auth.invalid/auth/v1/settings'), 'abort');
   assert.equal(fixture.unhandled.length, 3);
+});
+
+test('the default session fixture permits only POST refresh and fails unexpected authentication mutations', async () => {
+  const { fixture, request, response } = await installedRouting();
+  const url = 'http://localhost:3100/api/auth/session';
+  assert.equal(await request(url, 'POST', 200, { action: 'refresh' }), 'fulfill');
+  for (const [method, body] of [['GET', null], ['POST', null], ['POST', { action: 'clear' }], ['POST', { action: 'establish' }], ['PUT', { action: 'refresh' }]]) {
+    assert.equal(await request(url, method, 200, body), 'abort');
+  }
+  assert.equal(fixture.unhandled.length, 5);
+  fixture.state.user = null;
+  assert.equal(await request(url, 'POST', 200, { action: 'refresh' }), 'fulfill');
+  assert.equal(response().status, 401);
 });

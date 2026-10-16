@@ -2,6 +2,8 @@ import { test, expect, installProductFixtures, SYNTHETIC_USER, SECOND_SYNTHETIC_
 import { emptySequence, addSequenceText } from '../app/veyrnox/_lib/editorSequence.mjs';
 
 const emptyProjectDocument = project_id => ({ schema_version: 1, project_id, brief: '', canvas: { aspect_ratio: '16:9', frame_rate: 30 } });
+const productWrites = fixture => fixture.requests.filter(row => !['GET', 'HEAD', 'OPTIONS'].includes(row.method)
+  && !(row.path === '/api/auth/session' && row.method === 'POST' && row.body?.action === 'refresh'));
 
 async function projectFixture(page, initial = {}) {
   const state = { projects: [{ id: PROJECT, workspace_id: WORKSPACE, name: 'Synthetic project', version: 1, created_at: '2026-01-01T00:00:00Z' }], document: emptyProjectDocument(PROJECT), revision: 0, versions: [], ...initial };
@@ -109,7 +111,7 @@ test('Editor adds text, edits words and exposes local export settings without a 
   await page.getByRole('button', { name: 'Add text', exact: true }).click(); if (await sections.isVisible()) await sections.getByRole('button', { name: 'Adjust', exact: true }).click();
   await page.getByLabel('Words', { exact: true }).fill('Synthetic editable title'); await page.getByLabel('Words', { exact: true }).press('Tab'); await expect(page.getByRole('button', { name: 'Undo', exact: true })).toBeEnabled();
   await page.getByRole('button', { name: 'Export', exact: true }).click(); await expect(page.getByLabel('Export format', { exact: true })).toHaveValue('mp4'); await page.getByLabel('Export format', { exact: true }).selectOption('mov'); await expect(page.getByRole('button', { name: 'Export MOV', exact: true })).toBeVisible();
-  expect(fixture.requests.filter(row => row.method !== 'GET' && row.path !== '/api/auth/session')).toEqual([]);
+  expect(productWrites(fixture)).toEqual([]);
 });
 
 test('Editor device draft is recovered after reload and sign-out removes the private edit', async ({ page }) => {
@@ -138,7 +140,7 @@ test('Editor Library refuses a failed read then imports a synthetic source after
   await page.getByRole('region', { name: 'My Library', exact: true }).getByRole('button', { name: 'image: Synthetic Library image · Generated', exact: true }).click();
   await expect(page.getByTestId(`media-j-${job}`)).toContainText('Loaded');
   await expect(page.getByRole('button', { name: 'Undo', exact: true })).toBeEnabled();
-  expect(fixture.requests.filter(row => row.method !== 'GET' && row.path !== '/api/auth/session')).toEqual([]);
+  expect(productWrites(fixture)).toEqual([]);
 });
 
 test('Editor microphone denial is recoverable without ever acquiring a real device', async ({ page }) => {
@@ -153,5 +155,5 @@ test('Editor microphone denial is recoverable without ever acquiring a real devi
   await expect(page.getByRole('alert').filter({ hasText: 'Microphone access was blocked' })).toBeVisible(); await expect(recorder.getByRole('button', { name: 'Start recording', exact: true })).toBeEnabled();
   await recorder.getByRole('button', { name: 'Start recording', exact: true }).click(); await expect.poll(() => page.evaluate(() => window.syntheticMicrophoneAttempts)).toBe(2);
   await expect(recorder.getByRole('status')).toHaveText('Ready');
-  expect(fixture.requests.filter(row => row.method !== 'GET' && row.path !== '/api/auth/session')).toEqual([]);
+  expect(productWrites(fixture)).toEqual([]);
 });

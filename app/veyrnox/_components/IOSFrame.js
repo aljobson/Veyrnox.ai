@@ -5,7 +5,7 @@ export function IOSFrame({ children }) {
     <div className="mx-auto" style={{ width: 430, maxWidth: '100%' }}>
       <div
         className="relative mx-auto rounded-[54px] border border-[#2a2a2f] bg-[#0A0A0B] shadow-2xl overflow-hidden"
-        style={{ width: 430, height: 900 }}
+        style={{ width: '100%', height: 900 }}
       >
         {/* Dynamic Island */}
         <div className="absolute top-3 left-1/2 -translate-x-1/2 h-8 w-32 rounded-full bg-black z-30 flex items-center justify-between px-4">

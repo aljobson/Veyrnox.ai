@@ -10,7 +10,7 @@ export const ADMIN_PAGES = [
   ['/reports', 'Content reports', '/admin/reports', 'No open reports.'],
   ['/webhooks', 'Inbound webhooks', '/admin/webhooks', 'By source'],
   ['/cinema', 'Cinema creator applications', '/admin/cinema/creators', 'No pending applications.'],
-  ['/cinema/submissions', 'Cinema publication queue', '/admin/cinema/submissions', 'Suspend a published title'],
+  ['/cinema/submissions', 'Cinema publication queue', '/admin/cinema/submissions', 'Nothing is waiting for review.'],
   ['/cinema/comments', 'Cinema comment moderation', '/admin/cinema/comments', 'No comments awaiting approval.'],
   ['/cinema/voting', 'Cinema voting', '/admin/cinema/voting', 'No competitions yet.'],
   ['/cinema/story-polls', 'Cinema story polls', '/admin/cinema/story-polls', 'No story polls yet.'],
@@ -69,7 +69,9 @@ export async function installAccessFixtures(page, options = {}) {
     if ((path === `/cinema/titles/${TITLE_ID}` || url.pathname === `/api/cinema/titles/${TITLE_ID}`) && method === 'GET') return json({ title: { id: TITLE_ID, title: 'Synthetic isolated film', content_type: 'FILM', synopsis: 'An entirely synthetic title.', language: 'en', ai_disclosures: [], categories: [], duration_seconds: 60, access: scenario.titleLocked ? 'locked' : 'free', credits: 2, creator: { display_name: 'Synthetic creator' } } });
     if (path === '/cinema/entitlement' && method === 'GET') return json({ consent_version: 'synthetic-unlock-consent' });
     if (path === '/cinema/unlocks' && method === 'POST') return json({ error: 'insufficient_credits' }, 402);
-    if (['/cinema/retention', '/cinema/voting', '/cinema/comments'].includes(path) && method === 'GET') return json({ error: `${path.split('/').at(-1)}_not_open` }, 503);
+    const cinemaGate = { '/cinema/retention': 'retention_not_open', '/cinema/voting': 'voting_not_open', '/cinema/comments': 'comments_not_open', '/cinema/story-polls': 'story_polls_not_open' };
+    const publicCinemaPath = url.pathname.startsWith('/api/cinema/') ? url.pathname.slice(4) : path;
+    if (url.origin === origin && Object.hasOwn(cinemaGate, publicCinemaPath) && method === 'GET') return json({ error: cinemaGate[publicCinemaPath] }, 503);
     if (url.pathname === '/api/cinema/discovery' && method === 'GET') return json({ mode: url.searchParams.get('mode'), titles: [], categories: [{ slug: 'science-fiction', label: 'Science fiction' }], next: null });
     if (url.pathname === '/api/cinema/winners' && method === 'GET') return json({ error: 'rankings_not_open' }, 503);
     if ((url.pathname.startsWith('/api/cinema/posters/') || url.pathname === '/_next/image' || url.origin === 'https://i.ytimg.com') && method === 'GET') { await route.fulfill({ status: 200, contentType: 'image/png', body: PNG }); return true; }
