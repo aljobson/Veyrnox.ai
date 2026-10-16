@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 import { useState, useSyncExternalStore } from 'react';
 import { AppNav } from '../../_components/NavBar';
 import { Main } from '../../_components/Main';
@@ -37,6 +38,11 @@ function AccountControls() {
     finally { setBusy(false); }
   }
   return <div className="space-y-6">
+    <section className="rounded-2xl border border-vx-border p-5">
+      <h2 className="font-bold mb-2">Billing &amp; subscriptions</h2>
+      <p className="text-sm text-vx-fg-muted mb-4">See your balance, buy one-off Credits, manage a monthly Credit Subscription, or stop renewal online.</p>
+      <Link href="/app/credits#credit-subscriptions" className={button}>Manage billing</Link>
+    </section>
     <MfaPanel />
     <PasskeyPanel />
     <ReferralPanel />

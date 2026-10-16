@@ -1,5 +1,6 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { AppNav } from '../../_components/NavBar';
 import { Main } from '../../_components/Main';
 import { JobAssetPreview } from '../../_components/JobAssetPreview';
@@ -140,7 +141,10 @@ export default function VideoAgent() {
               >Approve and make it · {plan.credits} cr</button>
             </div>
             {expired && <p className="mt-2 text-xs text-vx-danger">{ERROR_COPY.plan_expired}</p>}
-            {cannotAfford && <p className="mt-2 text-xs text-vx-danger">{ERROR_COPY.insufficient_balance}</p>}
+            {cannotAfford && <div className="mt-3 rounded-xl border border-vx-money/40 bg-vx-money/[0.06] p-3 text-sm">
+              <p className="text-vx-fg">You need {plan.credits - balance} more Credits to approve this plan.</p>
+              <Link href="/app/credits" className="mt-2 inline-block font-bold text-vx-accent underline underline-offset-4">Compare monthly plans and packs</Link>
+            </div>}
             <p className="mt-2 text-xs text-vx-fg-muted">If the video can&apos;t be made, the credits come back automatically.</p>
           </div>
         )}

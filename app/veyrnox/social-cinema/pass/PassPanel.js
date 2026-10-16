@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { Button } from '../../_components/Button';
+import { ConfirmDialog } from '../../_components/ConfirmDialog';
 import { getSession, onSessionChange } from '../../../lib/authClient';
 import { gatewayFetch, makeIdempotencyKey } from '../../_lib/gateway';
 import { useCinemaPreview } from '../preview';
@@ -22,31 +23,41 @@ export function PassPanel() {
     <header className="max-w-2xl">
       <p className="mb-4 font-vx-mono text-xs tracking-widest text-vx-accent">SOCIAL CINEMA · CINEMA PASS</p>
       <h1 className="vx-display vx-title-detail">Every story, one Pass.</h1>
-      <p className="mt-6 text-lg leading-relaxed text-vx-fg-body">A Cinema Pass unlocks every published episode and film while it is active. It adds no credits; your credits stay yours for the Studio.</p>
+      <p className="mt-6 text-lg leading-relaxed text-vx-fg-body">A Cinema Pass unlocks every published episode and film while it is active, up to 1,500 delivered minutes each calendar month. It adds no credits; your credits stay yours for the Studio.</p>
       <p className="mt-3 text-sm text-vx-fg-muted"><Link href="/social-cinema" className="underline">Back to Social Cinema</Link></p>
     </header>
-    {!preview ? <p className="mt-10 text-vx-fg-muted">Cinema Pass is not open yet.</p>
+    {!account && !preview ? <p className="mt-10 text-vx-fg-muted">Cinema Pass is not open yet.</p>
       : !account ? <div className="mt-10"><p className="mb-4 text-vx-fg-body">Use your Veyrnox.ai account to continue.</p><Button onClick={() => window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>Sign in</Button></div>
-        : <Pass key={account} />}
+        : <Pass key={account} salesOpen={preview} />}
   </div></div>;
 }
 
-function Pass() {
+function Pass({ salesOpen }) {
   const [plans, setPlans] = useState(null);
   const [consentVersion, setConsentVersion] = useState(null);
   const [pass, setPass] = useState(null);
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
 
   const load = useCallback(async () => {
-    try {
-      const [p, own] = await Promise.all([gatewayFetch('/cinema/pass/plans'), gatewayFetch('/cinema/pass')]);
-      setPlans(p.plans); setConsentVersion(p.consent_version); setPass(own.pass);
-    } catch (err) {
-      setNotice(err?.code === 'pass_not_open' || err?.status === 503 ? 'Cinema Pass is not open yet.' : 'Could not load your Pass right now.');
+    const [own, catalog] = await Promise.allSettled([
+      gatewayFetch('/cinema/pass'),
+      salesOpen ? gatewayFetch('/cinema/pass/plans') : Promise.resolve(null),
+    ]);
+    if (own.status === 'fulfilled') {
+      setPass(own.value.pass);
+      if (!own.value.pass && !salesOpen) setNotice('Cinema Pass is not open yet.');
     }
-  }, []);
+    else setNotice('Could not load your Pass right now.');
+    if (catalog.status === 'fulfilled' && catalog.value) {
+      setPlans(catalog.value.plans);
+      setConsentVersion(catalog.value.consent_version);
+    } else if (salesOpen) {
+      setNotice('Cinema Pass checkout is unavailable right now. Existing Pass management is unaffected.');
+    }
+  }, [salesOpen]);
 
   // Back from checkout: record the session so a lost webhook cannot lose the Pass.
   useEffect(() => {
@@ -76,8 +87,7 @@ function Pass() {
     } finally { setBusy(false); }
   };
   const cancel = async () => {
-    const coolingOff = pass?.within_cooling_off;
-    if (!window.confirm(coolingOff ? 'Cancel now? Your Pass ends today and the unused share of this period is refunded.' : 'Stop renewing? Your Pass stays active until the end of the paid period.')) return;
+    setConfirmingCancel(false);
     setBusy(true); setNotice('');
     try {
       const r = await gatewayFetch('/cinema/pass/cancel', { method: 'POST', body: '{}' });
@@ -100,7 +110,7 @@ function Pass() {
       {pass.within_cooling_off && !pass.cancel_at_period_end && <p className="mt-2 text-sm text-vx-fg-muted">Cancel before {when(pass.cooling_off_until)} for a pro-rata refund.</p>}
       <div className="mt-4 flex flex-wrap gap-3">
         <Button variant="secondary" disabled={busy} onClick={portal}>Manage billing ↗</Button>
-        {!pass.cancel_at_period_end && <Button variant="secondary" disabled={busy} onClick={cancel}>Cancel Pass</Button>}
+        {!pass.cancel_at_period_end && <Button variant="secondary" disabled={busy} onClick={() => setConfirmingCancel(true)}>Cancel Pass</Button>}
       </div>
     </section>}
     {!live && plans && <section aria-labelledby="plans">
@@ -119,5 +129,15 @@ function Pass() {
         </li>)}
       </ul>
     </section>}
+    {confirmingCancel && <ConfirmDialog
+      title={pass?.within_cooling_off ? 'End your Cinema Pass now?' : 'Cancel Cinema Pass renewal?'}
+      body={pass?.within_cooling_off
+        ? 'Your Pass ends today. The unused share of this paid period will be refunded to your original payment method.'
+        : `You will not be charged again. Your Pass continues until ${when(pass?.current_period_end)}.`}
+      confirmLabel={pass?.within_cooling_off ? 'End Pass and refund' : 'Cancel renewal'}
+      tone="danger"
+      onCancel={() => setConfirmingCancel(false)}
+      onConfirm={cancel}
+    />}
   </div>;
 }

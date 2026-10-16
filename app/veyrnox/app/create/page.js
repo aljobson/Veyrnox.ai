@@ -583,6 +583,13 @@ export default function CreateStudio() {
             <div className="mt-2 font-vx-mono text-[9.5px] tracking-[0.1em] text-vx-fg-faint text-center">
               {model?.gated ? '◆ PREMIUM MODEL · NOT OPEN YET' : 'REFUND ON FAILURE · ALWAYS'}
             </div>
+            {balance != null && cost > balance && !model?.gated && (
+              <div className="mt-4 rounded-xl border border-vx-money/40 bg-vx-money/[0.06] p-4 text-sm text-vx-fg-body">
+                <p className="font-bold text-vx-fg">You need {cost - balance} more Credits.</p>
+                <p className="mt-1 text-xs text-vx-fg-muted">Compare a monthly plan with a one-off pack before leaving the Studio.</p>
+                <Link href="/app/credits" className="mt-3 inline-block font-bold text-vx-accent underline underline-offset-4">Add Credits</Link>
+              </div>
+            )}
           </div>
         </aside>
       </Main>
