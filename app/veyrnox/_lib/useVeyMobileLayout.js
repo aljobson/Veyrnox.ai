@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { handForPoint, pointerPlacement } from '../../../lib/veyPointer';
-import { mobileClearance, mobileDockPosition } from '../../../lib/veyMobileLayout';
+import { dockClearance, mobileDockPosition } from '../../../lib/veyMobileLayout';
 
 const PANEL = '[aria-label="Vey task walkthrough"], [role="dialog"][aria-labelledby="vx-helper-title"]';
 
@@ -32,24 +32,27 @@ export default function useVeyMobileLayout({ open, pathname, position, highlight
         base = main ? parseFloat(getComputedStyle(main).paddingBottom) || 0 : 0;
       }
       const editorDock = document.querySelector('[aria-label="Mobile editor sections"]');
-      const nextPanel = open ? document.querySelector(PANEL) : document.querySelector('[aria-label="Browser storage notice"]')
+      const chat = document.querySelector('[role="dialog"][aria-labelledby="vx-helper-title"]');
+      const guide = document.querySelector('[aria-label="Vey task walkthrough"]');
+      const nextPanel = open ? (guide?.getBoundingClientRect().width > 0 ? guide : chat) : document.querySelector('[aria-label="Browser storage notice"]')
         || (editorDock?.getBoundingClientRect().height > 0 ? editorDock : null);
       if (panel !== nextPanel) { resize.disconnect(); panel = nextPanel; if (panel) resize.observe(panel); }
       const viewport = { width: innerWidth, height: innerHeight };
       const dock = panel?.getBoundingClientRect();
-      const clearance = mobileClearance(base || 0, viewport, dock);
-      applied = open && dock && viewport.width < 640 ? `${clearance}px` : original;
+      const reservesSpace = open && dock && (viewport.width < 640 || !!chat);
+      const clearance = dockClearance(base || 0, viewport, dock);
+      applied = reservesSpace ? `${clearance}px` : original;
       if (main && main.style.paddingBottom !== applied) main.style.paddingBottom = applied;
-      appliedScrollPadding = open && dock && viewport.width < 640 ? `${clearance}px` : originalScrollPadding;
+      appliedScrollPadding = reservesSpace ? `${clearance}px` : originalScrollPadding;
       if (root.style.scrollPaddingBottom !== appliedScrollPadding) root.style.scrollPaddingBottom = appliedScrollPadding;
-      if (viewport.width >= 640) { setLayout(null); return; }
+      if (viewport.width >= 640 && (!chat || activeTarget)) { setLayout(null); return; }
       const pointing = open && dock && cue.current?.target === activeTarget && highlight && highlight.bottom > 72 && highlight.top < viewport.height;
       if (!pointing && cue.current?.position) cue.current = null;
       // One deliberate Show action gets one destination, not a moving search
       // for gaps. Its short pointing gesture then returns to the stable dock.
       if (pointing && !cue.current.position) cue.current.position = pointerPlacement(highlight, viewport, dock).position;
       const fixed = pointing && cue.current.position;
-      const safe = fixed || mobileDockPosition(viewport, dock, panel?.matches('[aria-label="Vey task walkthrough"]'));
+      const safe = fixed || mobileDockPosition(viewport, dock, open && panel?.matches(PANEL));
       const next = { position: safe, docked: !fixed, hand: fixed ? handForPoint(safe, facing, pointerPlacement(highlight, viewport, null, safe).point) : undefined };
       setLayout(previous => JSON.stringify(previous) === JSON.stringify(next) ? previous : next);
     };
