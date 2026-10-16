@@ -6,7 +6,7 @@
 // (Terms: no minors, no deepfakes). Client-side only: it changes the prompt,
 // never the model or the price.
 
-import { CHARACTER_SIZE_GROUPS } from './characterOptions.js';
+import { CHARACTER_SIZE_GROUPS, extendCharacterGroups } from './characterOptions.js';
 
 export const CHARACTER_TABS = ['Face', 'Body', 'Style'];
 
@@ -286,7 +286,9 @@ export const ODDLING_ARCHETYPES = [
 ];
 
 // { id, tab, label, options: [label, prompt phrase][] }
-export const CHARACTER_GROUPS = [
+// The original groups. characterOptions.js adds the everyday vocabulary (more
+// hair, looks, face shapes, animal types, Exaggeration) in CHARACTER_GROUPS below.
+const CORE_CHARACTER_GROUPS = [
   { id: 'character_type', tab: 'Face', label: 'Character Type', options: [
       ['Human', 'human features'],
       ['Elf', 'elf with pointed ears'],
@@ -615,6 +617,8 @@ export const CHARACTER_GROUPS = [
       ['2D Illustration', '2D flat illustration style'],
   ] },
 ];
+
+export const CHARACTER_GROUPS = extendCharacterGroups(CORE_CHARACTER_GROUPS);
 
 export const CHARACTER_BASE = 'Portrait of an original adult character, not a real person, cinematic lighting, sharp detail';
 
