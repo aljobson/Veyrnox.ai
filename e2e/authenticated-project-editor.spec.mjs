@@ -77,11 +77,14 @@ async function editor(page, options = {}) {
   const fixture = await installProductFixtures(page, options); const response = await fixture.open('/app/editor');
   expect(response.status(), 'The owned local server must enable the editor rollout for these fixtures').toBe(200);
   await expect(page.getByRole('region', { name: 'Multitrack editing workspace', exact: true })).toBeVisible();
-  if (page.viewportSize().width < 640) await expect.poll(async () => {
-    const nav = await page.getByRole('navigation', { name: 'Mobile editor sections', exact: true }).boundingBox();
-    const mascot = await page.getByTestId('assistant-mascot').boundingBox();
-    return Boolean(nav && mascot && mascot.y + mascot.height < nav.y);
-  }, { message: 'The visible assistant must leave the mobile editor controls reachable' }).toBe(true);
+  const header = page.getByRole('region', { name: 'Multitrack editing workspace', exact: true }).locator('header[aria-label="Editor header"]');
+  await expect(header.getByTestId('assistant-editor-launcher')).toBeVisible();
+  await expect(page.getByTestId('assistant-mascot')).toHaveCount(0);
+  await expect.poll(async () => {
+    const reserved = await header.boundingBox(), launcher = await header.getByTestId('assistant-editor-launcher').boundingBox();
+    return Boolean(reserved && launcher && launcher.x >= reserved.x && launcher.y >= reserved.y
+      && launcher.x + launcher.width <= reserved.x + reserved.width + 1 && launcher.y + launcher.height <= reserved.y + reserved.height + 1);
+  }, { message: 'The ordinary helper launcher must occupy reserved Editor header space' }).toBe(true);
   const recover = page.getByRole('button', { name: 'Discard', exact: true }); if (await recover.isVisible()) await recover.click();
   return fixture;
 }
@@ -107,7 +110,13 @@ test('Editor local project file refuses invalid JSON then opens a valid reversib
 });
 
 test('Editor adds text, edits words and exposes local export settings without a cloud render', async ({ page }) => {
-  const fixture = await editor(page); const sections = page.getByRole('navigation', { name: 'Mobile editor sections' }); if (await sections.isVisible()) await sections.getByRole('button', { name: 'Media', exact: true }).click();
+  const fixture = await editor(page);
+  const helper = page.getByTestId('assistant-editor-launcher'); await helper.click();
+  await expect(page.getByRole('dialog', { name: 'Ask Vey', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Close helper', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Ask Vey', exact: true })).toHaveCount(0);
+  await expect(helper).toBeFocused(); await expect(helper).toHaveAttribute('aria-expanded', 'false');
+  const sections = page.getByRole('navigation', { name: 'Mobile editor sections' }); if (await sections.isVisible()) await sections.getByRole('button', { name: 'Media', exact: true }).click();
   await page.getByRole('button', { name: 'Add text', exact: true }).click(); if (await sections.isVisible()) await sections.getByRole('button', { name: 'Adjust', exact: true }).click();
   await page.getByLabel('Words', { exact: true }).fill('Synthetic editable title'); await page.getByLabel('Words', { exact: true }).press('Tab'); await expect(page.getByRole('button', { name: 'Undo', exact: true })).toBeEnabled();
   await page.getByRole('button', { name: 'Export', exact: true }).click(); await expect(page.getByLabel('Export format', { exact: true })).toHaveValue('mp4'); await page.getByLabel('Export format', { exact: true }).selectOption('mov'); await expect(page.getByRole('button', { name: 'Export MOV', exact: true })).toBeVisible();

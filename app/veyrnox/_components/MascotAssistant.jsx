@@ -23,6 +23,8 @@ import { getJourney } from '../_lib/veyJourneyStore';
 import useVeyPointer from '../_lib/useVeyPointer';
 import useVeyDrag from '../_lib/useVeyDrag';
 import useVeyMobileLayout from '../_lib/useVeyMobileLayout';
+import useEditorHelperHost from '../_lib/useEditorHelperHost';
+import { EditorHelperLauncher } from './editor/EditorHelperLauncher';
 import { clampVeyPosition, VEY_SIZE as CHARACTER } from '../../../lib/veyPointer';
 
 const HOME = { x: 18, y: 0 };
@@ -118,6 +120,7 @@ export default function MascotAssistant() {
     onMove: (next) => { window.clearTimeout(travelTimerRef.current); setTravelling(false); setManualPosition(next); setPosition(next); } });
   const { activeTarget, highlight, hand, point, locate: locateTarget, clear: clearPointer } = useVeyPointer({ reduceMotion, moveMascot, setFacing, activateTarget, clearAction, manualPosition });
   const mobileLayout = useVeyMobileLayout({ open, pathname, position, highlight, hand, facing, pointRequest: mobilePointRequest, activeTarget });
+  const editorHelperHost = useEditorHelperHost(pathname);
   const clearTarget = useCallback(() => {
     window.clearTimeout(timerRef.current);
     clearAction(); clearPointer(); setPendingTarget(null);
@@ -321,6 +324,11 @@ export default function MascotAssistant() {
     captureProductEvent('helper_feedback', { route: pathname, helpful, source: answerSource || 'unknown' });
   }, [answerSource, pathname]);
 
+  const toggleHelper = () => {
+    setOpen(value => !value);
+    captureProductEvent('helper_toggle', { open: !open, route: pathname });
+  };
+
   return (
     <>
       <VeyTaskGuide visible={open} pathname={pathname} onPoint={showTarget} onStop={clearTarget} onActiveChange={setJourneyActive} onAsk={ask} manualPosition={!!manualPosition} onResetPosition={resetPosition} />
@@ -357,7 +365,7 @@ export default function MascotAssistant() {
         )}
       </AnimatePresence>
 
-      <motion.div
+      {editorHelperHost ? <EditorHelperLauncher host={editorHelperHost} open={open} launcherRef={launcherRef} onToggle={toggleHelper} /> : <motion.div
         data-testid="assistant-mascot"
         data-targeting={activeTarget || undefined}
         data-mood={mood}
@@ -375,10 +383,7 @@ export default function MascotAssistant() {
           aria-expanded={open}
           aria-describedby="vey-position-help"
           {...drag.handlers}
-          onClick={() => {
-            setOpen((value) => !value);
-            captureProductEvent('helper_toggle', { open: !open, route: pathname });
-          }}
+          onClick={toggleHelper}
           className="pointer-events-auto touch-none select-none cursor-grab active:cursor-grabbing group relative block rounded-[17px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-accent"
           animate={mobileLayout.docked || activeTarget || manualPosition || reduceMotion ? { y: 0 } : travelling
             ? { y: [0, -5, 0] }
@@ -392,7 +397,7 @@ export default function MascotAssistant() {
             <VeyCharacter pose={mood} reducedMotion={reduceMotion} hand={mobileLayout.hand} />
           </span>
         </motion.button>
-      </motion.div>
+      </motion.div>}
 
       <AnimatePresence>
         {open && !journeyActive && (

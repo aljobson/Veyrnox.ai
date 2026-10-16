@@ -139,10 +139,12 @@ test('Content appeal validates statement and transitions synthetic decision once
 test('Content report validates free-text subject and acknowledges intercepted report', async ({ page }) => {
   const fixture = await installAccessFixtures(page);
   await openReal(fixture, '/app/account/report?job=invalid-id');
-  await page.getByLabel('Something else', { exact: true }).check();
-  await expect(page.getByRole('button', { name: 'Send report' })).toBeDisabled();
-  await page.getByRole('textbox').fill('Entirely synthetic QA report; no real content or people.');
-  await page.getByRole('button', { name: 'Send report' }).click();
+  await expect(page.getByRole('button', { name: 'Account: synthetic-feature-qa', exact: true })).toBeVisible();
+  const form = page.getByRole('form', { name: 'Report content', exact: true });
+  await form.getByRole('radio', { name: 'Something else', exact: true }).check();
+  await expect(form.getByRole('button', { name: 'Send report', exact: true })).toBeDisabled();
+  await form.getByRole('textbox', { name: 'Anything we should know (what and where)', exact: true }).fill('Entirely synthetic QA report; no real content or people.');
+  await form.getByRole('button', { name: 'Send report', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Thank you' })).toBeVisible();
   expect(fixture.requests.find(r => r.path === '/api/v1/reports' && r.method === 'POST').body.subject_kind).toBe('other');
 });
