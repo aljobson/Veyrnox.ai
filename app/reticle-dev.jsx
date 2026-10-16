@@ -15,6 +15,11 @@ function readVeyLayout() {
   const siteActions = document.querySelector('[data-site-actions]')?.getBoundingClientRect();
   return {
     guideOpen: !!guide,
+    docked: document.querySelector('[data-testid="assistant-mascot"]')?.getAttribute('data-mobile-docked') === 'true',
+    mascotX: mascot ? Math.round(mascot.left) : null,
+    mascotY: mascot ? Math.round(mascot.top) : null,
+    scrollPadding: parseFloat(getComputedStyle(document.documentElement).scrollPaddingBottom) || 0,
+    scrollY: Math.round(window.scrollY),
     mainPadding: parseFloat(document.querySelector('main')?.style.paddingBottom) || 0,
     costOverlaps: overlaps(mascot, cost),
     mascotOverlaps: controls.filter((rect) => overlaps(mascot, rect)).length,
