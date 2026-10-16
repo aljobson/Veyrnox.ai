@@ -15,7 +15,7 @@ export function useCreateJourney({ model, models, catalogLive, prompt, character
   useEffect(() => {
     publishJourneyView({ route: '/app/create', kind: model?.kind, imageRequired: !!model?.media?.image?.required,
       promptReady: !!prompt?.trim(), promptStamp, settingsStamp, costStamp, characterOn,
-      sourceId: sources.image?.assetId || null, missingSource, missingConsent, cost, balance,
+      sourceId: sources.image?.assetId || null, sourceAttached: !!sources.image, missingSource, missingConsent, cost, balance,
       canGenerate: !!model && !model.gated && !animationMismatch && !missingSource && !missingConsent && !missingPrompt && !missingVoice && balance != null && cost <= balance && !generating && !sending,
       jobs: JSON.parse(jobStamp), error: error?.code || null });
   }, [model, prompt, promptStamp, settingsStamp, costStamp, characterOn, sources, missingSource, missingConsent, missingPrompt, missingVoice, animationMismatch, cost, balance, generating, sending, jobStamp, error]);

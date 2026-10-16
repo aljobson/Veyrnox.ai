@@ -9,7 +9,8 @@ import { gatewayFetch } from '../_lib/gateway';
 import VeyConversation from './VeyConversation';
 import { firstVisible } from '../../../lib/mascotDom.js';
 import { readOddlingLibrary } from '../_lib/oddlingStudio';
-import { publicHelpHistory, REVEAL_SAVED_ODDLING, savedOddlingHelp } from '../../../lib/savedOddlingHelp.js';
+import { publicHelpHistory, REVEAL_SAVED_ODDLING } from '../../../lib/savedOddlingHelp.js';
+import { browserHelpPlan } from '../../../lib/browserHelp.js';
 import {
   HELP_ACTIONS,
   HELP_TARGETS,
@@ -19,7 +20,6 @@ import {
 import VeyCharacter from './VeyCharacter';
 import VeyTaskGuide from './VeyTaskGuide';
 import { getJourney } from '../_lib/veyJourneyStore';
-import { journeyStep } from '../../../lib/veyJourney';
 import useVeyPointer from '../_lib/useVeyPointer';
 import useVeyDrag from '../_lib/useVeyDrag';
 import { clampVeyPosition, VEY_SIZE as CHARACTER } from '../../../lib/veyPointer';
@@ -201,9 +201,8 @@ export default function MascotAssistant() {
     if (!asked || busy) return;
     const history = publicHelpHistory(messages);
     const currentTask = getJourney();
-    const nextStep = currentTask.task && /\b(next|progress|task|walkthrough|what now|where am i)\b/i.test(asked) ? journeyStep(currentTask.task, { ...currentTask.view, route: pathname }) : null;
-    const local = nextStep ? { message: `${nextStep.title}. ${nextStep.message}`, target: nextStep.target, action: 'show_target', source: 'local', localOnly: true } : savedOddlingHelp(asked, window.localStorage, {
-      selectedId, previousId: savedSubjectRef.current, pathname,
+    const local = browserHelpPlan(asked, window.localStorage, {
+      ...currentTask, selectedId, previousId: savedSubjectRef.current, pathname,
       loadedId: document.querySelector('[data-assistant-loaded-passport]')?.getAttribute('data-assistant-loaded-passport'),
     });
     savedSubjectRef.current = local?.selectedSavedId || null;
