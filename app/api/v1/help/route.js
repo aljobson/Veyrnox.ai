@@ -1,7 +1,8 @@
 import { rpc, envConfig } from '../../../../packages/db/supabase-client.js';
-import { createHelpPlan, helpNeedsCatalog } from '../../../../lib/helpAssistant.js';
+import { createHelpPlan, helpApiKey, helpNeedsCatalog } from '../../../../lib/helpAssistant.js';
 import { parseHelpRequest } from '../../../../lib/productHelp.js';
 import { readPublicCatalog } from '../../../../lib/publicCatalog.js';
+import { providerSpendLimit } from '../../../../lib/providerSpend.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const reply = (body, status = 200, headers = {}) => Response.json(body, {
@@ -38,7 +39,25 @@ export async function POST(req) {
         try { catalog = await readPublicCatalog({ cfg }); }
         catch (error) { console.error('[help] catalog unavailable:', error?.message); }
     }
-    const plan = await createHelpPlan({ ...parsed, catalog });
+    // Help stays useful from the reviewed local guide when its small-model
+    // supplier allowance is closed. Never call upstream without a durable
+    // reservation, even though this feature is free to the account.
+    let allowAi = false;
+    if (helpApiKey(process.env)) {
+        try {
+            const admitted = await rpc('provider_spend_admit_custom_auth', {
+                p_auth_id: authId,
+                p_effect_key: `help:${crypto.randomUUID()}`,
+                p_provider: 'openrouter-help',
+                p_purpose: 'product-help',
+                p_cost_microusd: 10000,
+            }, cfg);
+            allowAi = admitted?.ok === true && !providerSpendLimit(admitted);
+        } catch (error) {
+            console.error('[help] supplier spend admission failed:', error?.message);
+        }
+    }
+    const plan = await createHelpPlan({ ...parsed, catalog, allowAi });
     return reply({ plan });
 }
 

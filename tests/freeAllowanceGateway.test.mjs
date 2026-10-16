@@ -17,8 +17,8 @@ const JOB = '22222222-2222-4222-8222-222222222222';
 const TASK = 'task_free_allowance';
 const baseModel = { id: 'flux-2-pro-1k-kie', provider: 'kie', provider_endpoint: 'market:flux-2/pro-text-to-image', modality: 'text-to-image', credits_5s: 2, active: true, gated_flag: false };
 
-/** `rpcs` maps an RPC name to its answer; `kieFails` makes the provider refuse the job. */
-function network({ model = baseModel, rpcs = {}, kieFails = false } = {}) {
+/** `rpcs` maps an RPC name to its answer; `rpcErrors` maps one to a PostgREST error response. */
+function network({ model = baseModel, rpcs = {}, rpcErrors = {}, kieFails = false } = {}) {
     const calls = [];
     const real = globalThis.fetch;
     globalThis.fetch = async (url, init = {}) => {
@@ -27,6 +27,7 @@ function network({ model = baseModel, rpcs = {}, kieFails = false } = {}) {
         calls.push({ url: u.href, search: u.search, body });
         if (u.pathname.includes('/rpc/')) {
             const name = u.pathname.split('/rpc/')[1];
+            if (name in rpcErrors) return Response.json(rpcErrors[name], { status: 400 });
             if (name in rpcs) return Response.json(typeof rpcs[name] === 'function' ? rpcs[name](body) : rpcs[name]);
             if (name === 'ledger_debit') return Response.json({ ok: true, job_id: JOB, idempotent: false, balance_after: 100 });
             if (name === 'read_user_credits') return Response.json({ balance: 42 });
@@ -161,6 +162,25 @@ test('paid and free admission pauses return retryable 503 before any provider ca
             assert.equal(rpc(net,name).length,1);
             if(useFree) assert.equal(rpc(net,'ledger_debit').length,0);
             assert.equal(net.calls.filter(c=>new URL(c.url).hostname==='api.kie.ai').length,0);
+        } finally { net.restore(); }
+    });
+});
+
+test('supplier spend-limit trigger stops paid and free jobs before any provider call', async () => {
+    for (const useFree of [false, true]) await withFlag(useFree ? 'true' : undefined, async () => {
+        const name = useFree ? 'submit_free_job' : 'ledger_debit';
+        const net = network({
+            model: offered,
+            rpcErrors: { [name]: { code: 'P0001', message: 'PROVIDER_SPEND_LIMIT:user_hour:91' } },
+        });
+        try {
+            const res = await quietly(post);
+            assert.equal(res.status, 429);
+            assert.equal(res.headers.get('retry-after'), '91');
+            assert.deepEqual(await res.json(), { error: 'supplier_spend_limit', retry_after_seconds: 91 });
+            assert.equal(rpc(net, name).length, 1);
+            if (useFree) assert.equal(rpc(net, 'ledger_debit').length, 0);
+            assert.equal(net.calls.filter(c => new URL(c.url).hostname === 'api.kie.ai').length, 0);
         } finally { net.restore(); }
     });
 });
