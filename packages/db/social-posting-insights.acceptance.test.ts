@@ -1,4 +1,4 @@
-import { isFullSocialReplay } from './social-acceptance-bootstrap.js';
+import { isFullSocialReplay } from './test-support/social-acceptance-bootstrap.js';
 import { before, after, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
