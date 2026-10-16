@@ -161,12 +161,15 @@ jobs:
               const c = new pg.Client({ connectionString: process.env.DATABASE_URL });
               await c.connect();
               await c.query('DROP DATABASE IF EXISTS rebuild_check');
+              await c.query('DROP DATABASE IF EXISTS supplier_spend_check');
               await c.query('CREATE DATABASE rebuild_check');
+              await c.query('CREATE DATABASE supplier_spend_check');
               await c.end();
             })();
           "
+          DATABASE_URL="${DATABASE_URL%/*}/supplier_spend_check" node scripts/replay-migrations.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/supplier_spend_check" npx tsx --test packages/db/provider-spend-limits.acceptance.test.ts
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/replay-migrations.mjs
-          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" npx tsx --test packages/db/provider-spend-limits.acceptance.test.ts
           # These legacy fixtures exercise accounting with deliberately huge
           # synthetic jobs, not supplier dispatch. Keep their disposable DB
           # isolated from the new guard; the strict trigger suite runs below.
