@@ -15,7 +15,8 @@ import { IMAGE_COUNTS, takesImageCount, imageCount, totalCost, inputsForIndex, b
 import { useCatalog } from '../../_lib/useCatalog';
 import { useFreeAllowance } from '../../_lib/useFreeAllowance';
 import { freeCost, freeLeftFor } from '../../_lib/freeAllowance';
-import { creditLabel, generationCostLabel } from '../../_lib/modelPricing';
+import { creditLabel, generationCostLabel, sourceDurationLimit } from '../../_lib/modelPricing';
+import { SourceDurationCard } from '../../_components/SourceDurationCard';
 import { takeStudioDraft } from '../../_lib/landingDraft';
 import { oddlingPortrait, buildOddlingAnimationPrompt } from '../../_lib/oddlingStudio';
 import { templateById } from '../../_lib/templates';
@@ -170,6 +171,7 @@ export default function CreateStudio() {
     : '';
   const invalidAudioDuration = audioDurationIsInvalid(model, audioDuration);
   const fixedDurationLabel = model?.presentation?.fixedDurationLabel;
+  const sourceDurationMax = sourceDurationLimit(model);
   const media = model?.media || {};
   const animationMismatch = !!animationPortrait && (model?.kind !== 'video' || !media.image?.required);
   const missingSource = Object.entries(media).some(([slot, spec]) => spec.required && !sources[slot]);
@@ -599,10 +601,11 @@ export default function CreateStudio() {
             </div>
           </div>
 
-          {model?.kind === 'video' && !fixedDurationLabel && (
+          {model?.kind === 'video' && !fixedDurationLabel && !sourceDurationMax && (
             <ControlRow assistantTarget="create.duration" label="DURATION" options={durations} value={duration} onChange={setDuration}
               formatOption={(option) => outputDurationLabel(model, Number(option.replace('s', '')))} />
           )}
+          {(model?.kind === 'video' || model?.kind === 'audio') && sourceDurationMax && <SourceDurationCard model={model} />}
           {(model?.kind === 'video' || model?.kind === 'audio') && fixedDurationLabel && (
             <div data-assistant-target="create.duration" className="scroll-mt-24 rounded-2xl border border-vx-border bg-vx-panel p-5">
               <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">FIXED OUTPUT</div>

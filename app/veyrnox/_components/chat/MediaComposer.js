@@ -1,6 +1,7 @@
 'use client';
 import { ERROR_COPY } from '../../_lib/createErrors';
 import { outputDurationLabel, resolutionLabel, videoAudioLabel } from '../../_lib/chatMedia';
+import { sourceDurationLimit } from '../../_lib/modelPricing';
 import { SourcePickers } from '../SourcePickers';
 import { LibraryPicker } from '../LibraryPicker';
 
@@ -45,7 +46,9 @@ export function MediaComposer({ kind, media, prompt, onPrompt }) {
     && !missingVoice && !invalidAudioDuration && balance != null && cost <= balance;
   const resultReady = jobs.some((job) => job.state === 'succeeded');
   const errorCopy = error ? (ERROR_COPY[error.code] || 'This generation could not start. Nothing was charged.') : '';
-  const actualLength = model?.kind === 'video' ? outputDurationLabel(model, duration) : model?.presentation?.fixedDurationLabel;
+  const sourceDurationMax = sourceDurationLimit(model);
+  const actualLength = sourceDurationMax ? `Source up to ${sourceDurationMax}s`
+    : model?.kind === 'video' ? outputDurationLabel(model, duration) : model?.presentation?.fixedDurationLabel;
   const placeholder = model?.isSpeech ? 'Type the words you want spoken…'
     : kind === 'audio' ? 'Describe the sound, music, or speech…'
       : kind === 'image' ? 'Describe the image you want to create…' : 'Describe the shot you want to create…';
@@ -60,11 +63,12 @@ export function MediaComposer({ kind, media, prompt, onPrompt }) {
             </SelectControl>
           ) : <OutputFact>No {kind} models</OutputFact>}
 
-          {model?.kind === 'video' && (
+          {model?.kind === 'video' && !sourceDurationMax && (
             <SelectControl label={actualLength} ariaLabel="Video duration" value={String(duration)} onChange={(value) => setDuration(Number(value))} disabled={busy || durations.length < 2}>
               {durations.map((seconds) => <option key={seconds} value={seconds}>{outputDurationLabel(model, seconds)}</option>)}
             </SelectControl>
           )}
+          {sourceDurationMax && <OutputFact title="Follows your uploaded source at the displayed price">{actualLength}</OutputFact>}
           {model?.kind === 'audio' && audioDurationControl && (
             <label className={`${control} ${invalidAudioDuration ? 'border-vx-danger' : ''}`} title={`${audioDurationControl.min}–${audioDurationControl.max} seconds`}>
               <input aria-label="Audio duration in seconds" type="number" inputMode="numeric" step="1"
@@ -95,7 +99,7 @@ export function MediaComposer({ kind, media, prompt, onPrompt }) {
               <span className={`h-2 w-2 rounded-full ${audio ? 'bg-vx-accent' : 'bg-vx-fg-faint'}`} aria-hidden="true" />{videoAudioLabel(model, audio)}
             </button>
           ) : <OutputFact title="Audio cannot be changed on this model at its displayed price.">{videoAudioLabel(model)}</OutputFact>)}
-          {model?.kind === 'audio' && actualLength && <OutputFact>{actualLength} output</OutputFact>}
+          {model?.kind === 'audio' && actualLength && !sourceDurationMax && <OutputFact>{actualLength} output</OutputFact>}
         </div>
 
         {model?.kind === 'video' && (model.resolutions?.length || model.audioOptions?.length) > 0 && (

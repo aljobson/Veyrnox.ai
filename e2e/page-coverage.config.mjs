@@ -8,7 +8,7 @@ export default defineConfig({
   testDir: '.', testMatch: 'page-coverage.spec.mjs', timeout: 15 * 60_000,
   forbidOnly: Boolean(process.env.CI), retries: 0, workers: 1,
   reporter: [['list'], ['html', { open: 'never', outputFolder: process.env.QA_REPORT_DIR || 'page-coverage-report' }]],
-  use: { baseURL, trace: 'off', screenshot: 'off', navigationTimeout: 30_000 },
+  use: { baseURL, trace: 'off', screenshot: 'off', navigationTimeout: 30_000, actionTimeout: 10_000, reducedMotion: 'reduce' },
   projects: [
     { name: 'desktop-anonymous', use: { ...devices['Desktop Chrome'] } },
     { name: 'mobile-anonymous', use: { ...devices['iPhone 13'], defaultBrowserType: 'chromium' } },
