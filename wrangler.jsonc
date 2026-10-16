@@ -197,7 +197,7 @@
     // Preserve the private pilot secret and default YouTube uploads to Private.
     "PUBLISH_YOUTUBE_VISIBILITY_ENABLED": "true",
 
-    "PUBLISH_RELEASED_NETWORKS": "youtube,linkedin,twitter",
+    "PUBLISH_RELEASED_NETWORKS": "youtube,linkedin,twitter,tiktok",
     // Public Meta app identifier. Keeping this out of Worker secrets leaves
     // the final production binding slot available for INSTAGRAM_CLIENT_SECRET.
     "INSTAGRAM_CLIENT_ID": "2428989684301953",
