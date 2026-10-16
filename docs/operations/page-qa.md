@@ -11,6 +11,17 @@ QA_BASE_URL=http://127.0.0.1:3100 npx playwright test -c e2e/page-coverage.confi
 QA_BASE_URL=https://veyrnox.ai QA_ALLOW_PRODUCTION=1 npx playwright test -c e2e/page-coverage.config.mjs
 ```
 
+The **page QA** Actions workflow also offers a manual `production` target for
+checks on a clean CI runner. Dispatch it on `main` only after that exact revision
+is deployed, supplying its full 40-character SHA as `expected_production_sha`.
+The production job runs only the two anonymous projects, never prepares an
+authenticated session or loads the staging E2E secrets, and blocks every non-read
+browser request, including session refresh. Bounded read-only checks verify the
+same deployed SHA before and after the sweep; a changed release or failed page
+is a failure, not a waived result. Reports and release proofs are retained even
+on failure. Its concurrency group is separate from staging. The default target
+and scheduled runs remain staging, including the existing authenticated checks.
+
 For authenticated checks add `QA_STORAGE_STATE=/absolute/private/path/session.json`. The harness blocks all non-read browser requests except same-origin `POST /api/auth/session` with `action: refresh`, which hydrates an existing HttpOnly cookie. The sweep never clicks Generate, Buy, Publish, Delete or Connect. Supply `QA_PAGE_FIXTURES` as a JSON object mapping a route template to a deterministic fixture URL, for example `{"/app/projects/[id]":"/app/projects/test-project-id"}`. Unavailable dynamic fixtures use an explicit `negative-path` result; this proves controlled rejection only. Admin routes can prove the Cloudflare Access boundary without claiming admin feature coverage. Real approval/invitation/OAuth success, third-party publishing and provider generation require separate authorized workflow tests and fixtures. Traces and screenshots are disabled to avoid putting session headers or account content in artifacts; the report contains metrics and accessibility selectors.
 
 Budgets are 5 seconds cold TTFB, 800 KiB uncompressed HTML, fewer than 3,000 DOM nodes, at most 2 pixels document overflow, and no critical/serious WCAG A/AA axe violations in the first-party document. Third-party player frames are outside this accessibility check. `/app` and `/presets` initially show 12 cards, capped at 20 total image nodes; Show more must reveal the next 12 without losing filter access. One worker runs at a time; accessibility scans have a 20-second deadline. Failures and partial JSON are saved after each page so a stalled page does not hide the remaining results. HTML reports and JSON attachments are retained on CI/nightly runs.
