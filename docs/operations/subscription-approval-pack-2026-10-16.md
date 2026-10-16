@@ -26,6 +26,32 @@ Obtain written, account-specific confirmation covering all of the following:
 Record the Stripe ticket or email, approver, date, account ID and conditions.
 Public documentation or a successful sandbox charge is not written approval.
 
+### Recorded approval — 16 October 2026
+
+Stripe support agent Che reviewed production account
+`acct_1UF6Lv1lXjzff0PS` against the two offers and integration details above in
+support ticket `sco_VS2D3N0VNhPwkd`. The request named the inline recurring
+prices for Starter ($19/270 credits), Plus ($59/1,200), Ultra ($129/3,000) and
+Cinema Pass ($9.99/1,500 minutes), credit expiry/no rollover/no transfer/no
+cash-out, creator-submitted video with no creator payments or Connect flows,
+Managed Payments, Checkout `mode=subscription`, Customer Portal and the public
+policy URLs.
+
+Che confirmed in the authenticated support chat that:
+
+- the account is active, compliant and verified, with no pending requirements;
+- MCC 5734 (Computer Software Stores) is allowed for the intended business
+  structure;
+- Veyrnox is not on Stripe's restricted list and may start creating
+  subscriptions; and
+- the account currently has no reserve, payout or dispute-monitoring issues.
+
+Stripe stated that routine reviews still apply and that it will contact Veyrnox
+if the account's status changes. Stripe also committed to email the chat
+transcript to the account email. This record clears the Stripe-approval item;
+it does not clear Finance and Legal approval or the remaining staging
+acceptance evidence below.
+
 ## Finance and Legal approval
 
 Record written approval for:
