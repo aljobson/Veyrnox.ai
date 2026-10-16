@@ -1,6 +1,7 @@
 'use client';
+import { generationSlotKind, generationMimeTypes } from '../../../../lib/generationSourceSlots.mjs';
 import { ERROR_COPY } from '../../_lib/createErrors';
-import { outputDurationLabel, resolutionLabel, videoAudioLabel } from '../../_lib/chatMedia';
+import { mediaPromptIsMissing, outputDurationLabel, resolutionLabel, videoAudioLabel } from '../../_lib/chatMedia';
 import { sourceDurationLimit } from '../../_lib/modelPricing';
 import { SourcePickers } from '../SourcePickers';
 import { LibraryPicker } from '../LibraryPicker';
@@ -41,7 +42,7 @@ export function MediaComposer({ kind, media, prompt, onPrompt }) {
   const durations = model?.durations?.length ? model.durations : [5];
   const aspects = model?.aspects || [];
   const hasSource = Object.values(sources).some(Boolean);
-  const missingPrompt = !prompt.trim();
+  const missingPrompt = mediaPromptIsMissing(model, prompt);
   const canGenerate = catalogLive && model && !model.gated && !busy && !missingPrompt && !missingSource && !missingConsent
     && !missingVoice && !invalidAudioDuration && balance != null && cost <= balance;
   const resultReady = jobs.some((job) => job.state === 'succeeded');
@@ -152,7 +153,8 @@ export function MediaComposer({ kind, media, prompt, onPrompt }) {
 
       {error && <p role="alert" className="border-t border-vx-danger/30 bg-vx-danger/[0.06] px-3 py-2 text-sm text-vx-danger">{errorCopy}{error.note ? ` ${error.note}` : ''}</p>}
       {libraryFor && (
-        <LibraryPicker onClose={() => setLibraryFor(null)} onPick={(item) => { pickSource(libraryFor, null, item); setLibraryFor(null); }} />
+        <LibraryPicker kind={generationSlotKind(libraryFor)} mimeTypes={generationMimeTypes(generationSlotKind(libraryFor))}
+          onClose={() => setLibraryFor(null)} onPick={(item) => { pickSource(libraryFor, null, item); setLibraryFor(null); }} />
       )}
     </>
   );

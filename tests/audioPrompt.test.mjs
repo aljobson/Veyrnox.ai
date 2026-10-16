@@ -43,6 +43,16 @@ const autoShort = { id: 'auto-short', kind: 'video', isSpeech: false, takesTopic
 const speech = { id: 'inworld-tts', kind: 'audio', isSpeech: true };
 const dialogue = { id: 'elevenlabs-dialogue', kind: 'audio', isSpeech: true };
 
+test('source-only audio does not require text, while all eight prompt-driven audio families still do', () => {
+    const demucs = { id: 'demucs-stems', kind: 'audio', takesPrompt: false };
+    for (const prompt of ['', '  ', null]) assert.equal(promptIsMissing(demucs, prompt), false);
+    for (const model of [...sounds, speech, dialogue, { ...speech, id: 'elevenlabs-tts' }, { ...speech, id: 'minimax-speech-02-hd' }]) {
+        assert.equal(promptIsMissing({ ...model, takesPrompt: true }, ''), true, model.id);
+        assert.equal(promptIsMissing({ ...model, takesPrompt: true }, 'A deliberate description'), false, model.id);
+    }
+    assert.equal(promptIsMissing(autoShort, ''), true, 'topic requirement remains');
+});
+
 test('a music or sound-effect model starts with an empty box; pictures and clips keep the starter', () => {
     assert.equal(sounds.length, 8);
     for (const model of sounds) assert.equal(promptText(null, model), '', model.id);

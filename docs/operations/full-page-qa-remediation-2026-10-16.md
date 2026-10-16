@@ -52,12 +52,19 @@ project. Production application follows ADR-0023's protected workflow on main.
   to an ignored staging env file, and provisioned on the staging Worker.
   A non-billable API check and fresh successful scanner heartbeat passed.
   Existing staging dependencies remain present; no production key was copied.
-- Provider monitoring needs `FAL_BILLING_KEY`, `KIE_BALANCE_API_KEY`, and
-  `OPENROUTER_MANAGEMENT_KEY`. These credentials were absent. The monitor uses
-  read-only requests, but KIE credentials can spend and OpenRouter management
-  credentials have administrative privileges. Use the least-privilege setup in
-  [the provider runbook](provider-balances.md); a code deployment cannot recover
-  an unsaved provider key.
+- Provider monitoring credentials are now configured as repository Actions
+  secrets. The owner copied each new key directly into the secure terminal
+  prompt; values were not retained in this report. The dedicated fal key has
+  only `billing:usage:read` and a 90-day expiry. The dedicated KIE key permits
+  only Z-Image, with saved hourly, daily and lifetime caps of one credit each;
+  zero means unlimited and was deliberately not used. The OpenRouter management
+  key has a 90-day expiry and administrative privileges, not read-only scope.
+  Both expiring keys are due for rotation before 14 January 2027. All three
+  actual balance reads passed after owner top-ups in
+  [provider monitoring run 38938791829](https://github.com/aljobson/Veyrnox.ai/actions/runs/38938791829).
+  Hourly monitoring remains enabled; no threshold was lowered to obtain a pass.
+  See [the provider runbook](provider-balances.md). No provider key was added to
+  the application Worker.
 - The authenticated nightly staging sweep requires staging `E2E_EMAIL` and
   `E2E_PASSWORD` secrets. Anonymous results are retained independently, and
   missing authentication is reported explicitly rather than counted as a pass.
@@ -138,3 +145,46 @@ Cloudflare runtime verification also passed. This candidate passes 3,918 tests,
 the production build, type checking, scoped lint and 548-module boundary checks.
 No SQL, billing or authorization behavior changes. The follow-up PR records the
 actual deployed pagination interaction and subsequent live page checks.
+
+## Extended non-billable feature QA
+
+The owner requested a final feature-wide pass after provider monitoring became
+healthy. The owner explicitly selected **non-billable generation tests**. No
+isolated social delivery destination was designated, so this pass must not be
+described as real provider generation or outbound social delivery acceptance.
+
+The authenticated production test account was signed in through the normal
+browser flow, including Turnstile, without resetting its password or changing
+entitlements. Its observed baseline was 966 credits and seven Library assets.
+The active Publish Plan and its actual Activity history loaded successfully;
+the account has one recorded Activity event, so this does not prove multi-page
+production history. The separate disposable database suite exercises 123 tied
+events, keyset precision, source collisions and brand isolation.
+
+Confirmed follow-up defects and their regression coverage:
+
+- Full or selectively blocked browser storage could retain a readable legacy
+  session after logout. Independent best-effort operations now remove the old
+  record before writing the small logout marker; in-tab memory remains
+  authoritative when persistence fails. Cross-tab logout and recovered storage
+  have dedicated regressions. Fully denied storage combined with an offline
+  network cannot preserve new logout intent across a complete reload; this
+  physical persistence limitation is not reported as solved.
+- Chat source-only models required irrelevant text, and Demucs also inherited
+  that restriction in Create. Prompt guards now follow the model contract while
+  text-generative audio, speech and topic requirements remain enforced.
+- Studio and Chat discarded source-slot roles. Both now send explicit owned
+  Library/upload assignments. Declared optional end frames are visible, and
+  image/audio/video Library pickers use the corresponding MIME filters. Consent,
+  source limits, ownership, quotes and per-request idempotency remain unchanged.
+- Edited Oddling traits could conflict with an inherited preset's immutable
+  visual instructions. Exact inherited preset canon is reconciled only for
+  edited visual categories, retaining identity and unrelated details; custom
+  user-authored canon is left untouched.
+
+Browser feature tests use fully intercepted synthetic auth, generation, upload,
+polling and asset routes, with unmatched writes blocked. Playback and download
+checks prove the UI handles fixture media, not actual provider completion,
+generated-media quality or measured provider output duration. No public social
+posts, connected-account changes, purchases, security enrolments or destructive
+account actions are part of this pass.

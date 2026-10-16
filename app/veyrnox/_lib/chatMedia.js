@@ -26,6 +26,25 @@ export function firstOpenMediaModel(models, kind) {
     || open[0] || available[0] || null;
 }
 
+export function mediaPromptIsMissing(model, prompt) {
+  return model?.takesPrompt !== false && !String(prompt || '').trim();
+}
+
+/** Preserve model-declared roles when mixing uploaded files and owned Library assets. */
+export async function mediaGenerationSources(model, sources, uploadSource) {
+  let references = { source_keys: [], source_assets: [] };
+  for (const slot of Object.keys(model?.media || {})) {
+    const source = sources?.[slot];
+    if (source?.assetId) {
+      references = { ...references, source_assets: [...references.source_assets, { asset_id: source.assetId, slot }] };
+    } else if (source?.file) {
+      const key = await uploadSource(source.file);
+      references = { ...references, source_keys: [...references.source_keys, { key, slot }] };
+    }
+  }
+  return references;
+}
+
 export function supportedDuration(model, wanted) {
   const durations = Array.isArray(model?.durations) && model.durations.length ? model.durations : [5];
   return durations.includes(wanted) ? wanted : durations[0];
