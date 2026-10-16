@@ -20,8 +20,8 @@ function listPublic(directory = new URL('../../public/', import.meta.url), prefi
 listPublic();
 
 export const test = base.extend({
-  syntheticSafety: [async ({ page }, use) => {
-    try { await use(); }
+  syntheticSafety: [async ({ page }, runTest) => {
+    try { await runTest(); }
     finally {
       const fixture = installed.get(page);
       if (fixture) {

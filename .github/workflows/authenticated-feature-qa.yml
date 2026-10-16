@@ -32,6 +32,8 @@ jobs:
         run: |
           npm install --no-save --no-audit --no-fund @playwright/test@1.63.0
           npx playwright install --with-deps chromium
+      - name: Lint isolated browser fixtures
+        run: npx eslint e2e/fixtures/authenticated-product.mjs tests/authenticatedFixtureSafety.test.mjs tests/authenticatedFeatureQaWorkflow.test.mjs --max-warnings=0
       - name: Build owned local application
         run: npm run build -- --webpack
       - name: Exercise all isolated authenticated features
