@@ -2,23 +2,30 @@
 
 This slice adds monthly checkout, read/plans, checkout return recovery,
 explicit period-end or cooling-off cancellation, and the Stripe webhook.
-`SUBSCRIPTIONS_ENABLED` is **false** in production and staging. No public
-pricing or account UI changes are included. Upgrades, downgrades, resume,
-annual billing and the Customer Portal are not offered by these endpoints.
+`SUBSCRIPTIONS_ENABLED` is **true in staging for sandbox acceptance** and
+**false in production**. Public Pricing and Credits & billing expose the
+staging offer, explicit consent, checkout-return recovery and owned
+cancellation controls. Upgrades, downgrades, resume, annual billing and the
+Customer Portal are not offered by these endpoints.
 
-## Prerequisites before enabling staging
+## Staging activation record — 16 October 2026
 
+- Staging Worker version `bb79ad1f-c6eb-4cf9-b5cf-c98826ad790e` exposes the
+  three monthly plans through the public projection and has
+  `SUBSCRIPTIONS_ENABLED=true`. Production remains false.
 - Apply corrected 0186/0187 through the owner-approved migration workflow;
   merge and apply 0189 only after its independent reviews and CI pass.
 - Reconcile all five counts and check the migration ledger.
-- Set staging `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `PUBLIC_HOST`
-  and the Resend secret. Never paste values into a PR or chat.
-- Configure `SUBSCRIPTION_ALERT_EMAIL` with the Operator recipient.
+- Staging has named bindings for `STRIPE_SECRET_KEY`,
+  `STRIPE_WEBHOOK_SECRET`, `RESEND_API_KEY`, `SUBSCRIPTION_ALERT_EMAIL` and
+  `SUBSCRIPTION_ALERT_FROM`. Values were not printed or copied.
+- `PUBLIC_HOST` remains the staging Worker host.
+- `SUBSCRIPTION_ALERT_EMAIL` is configured with the Operator recipient.
   `SUBSCRIPTION_ALERT_FROM` may override the existing verified
   `VIOLATION_EMAIL_FROM`. A missing/failed alert keeps refused invoice
   deliveries unprocessed and answers 503 so Stripe retries.
 - Confirm refund/default policy and approve tax and consent copy. The
-  consent identifier `credit-subscription-2026-10-03` is a version marker,
+  consent identifier `credit-subscription-2026-10-16` is a version marker,
   not Finance/Legal's approval of customer-facing wording.
 - Confirm Stripe's written acceptance before launch. Provide an E2E test
   account before browser acceptance of the later UI slice.
@@ -169,8 +176,15 @@ return recovery, refund-before-first-invoice ordering, disputes and the
 remaining checklist above still require acceptance evidence.
 
 
-## UI increment prepared 10 October 2026 (ADR-0082)
+## UI increment prepared 10 October 2026 (ADR-0082), staged 16 October 2026
 
-Public Pricing and Credits & billing now implement the gated offer, explicit recurring-price consent, checkout return recovery and owned cancellation controls. `SUBSCRIPTIONS_ENABLED=false` still blocks offers/new sales. Owned authenticated reads, cancellation and paid-checkout recovery stay available when sales are off; webhooks are unchanged. `/api/credit-subscription-plans` is an anonymous, read-only, no-store projection that ignores inbound identity headers.
+Public Pricing and Credits & billing implement the gated offer, explicit recurring-price consent, checkout return recovery and owned cancellation controls. `SUBSCRIPTIONS_ENABLED=true` opens sandbox sales in staging only; production remains false. Owned authenticated reads, cancellation and paid-checkout recovery stay available when sales are off; webhooks are unchanged. `/api/credit-subscription-plans` is an anonymous, read-only, no-store projection that ignores inbound identity headers.
 
-Local unit/API and synthetic Reticle evidence does not close the real Stripe acceptance items above. Customer wording in ADR-0082 and matching Terms still need Finance/Legal approval. Real test-account purchase, return, renewal, both cancellation modes, pending/refused refund, dispute, alert and account-switch acceptance remain launch requirements.
+The Terms and Refund Policy now describe renewal, cancellation, cooling-off,
+expiry/no rollover and self-service cancellation consistently with the UI.
+That implementation is not Finance/Legal approval. Local unit/API and
+synthetic browser evidence does not close the real Stripe acceptance items
+above. Real test-account purchase, return, renewal, both cancellation modes,
+pending/refused refund, dispute, alert and account-switch acceptance remain
+production launch requirements. See
+[the approval pack](subscription-approval-pack-2026-10-16.md).

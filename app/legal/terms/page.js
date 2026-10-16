@@ -9,7 +9,7 @@ export const metadata = {
 
 export default function Terms() {
     return (
-        <LegalPage title="Terms of Service" updated="13 October 2026">
+        <LegalPage title="Terms of Service" updated="16 October 2026">
             <p>These terms govern your use of Veyrnox.ai, operated by {ENTITY.name}, a company registered in {ENTITY.jurisdiction} (company no. {ENTITY.companyNo}), registered office {ENTITY.office}. By creating an account or generating content you agree to them.</p>
 
             <h2>1. The service</h2>
@@ -35,6 +35,15 @@ export default function Terms() {
                 <li>Before you buy, you must tick a box confirming: &ldquo;I want my credits added to my account straight away. I understand that once I use any of these credits to generate, I lose my right to cancel this purchase.&rdquo; See our <a href="/legal/refund">Refund Policy</a>.</li>
             </ul>
 
+            <h2>3A. Monthly Credit Subscriptions</h2>
+            <ul>
+                <li>A Monthly Credit Subscription supplies the number of Subscription Credits and charges the monthly USD price displayed when you subscribe, plus any tax shown at checkout. It renews automatically each month until you cancel.</li>
+                <li>Subscription Credits are added only after each monthly payment is confirmed. They are used before Free Credits and Credit Pack credits, expire at the end of that paid cycle, and do not roll over. Cancelling renewal does not extend their expiry.</li>
+                <li>You can stop renewal at any time from <a href="/app/credits#credit-subscriptions">Credits &amp; billing</a>. You will not be charged for another cycle, and the current paid cycle continues until its displayed end date.</li>
+                <li>For the initial paid cycle, you may request a full cooling-off refund within 14 days only while none of that cycle&rsquo;s Subscription Credits has been used. If any of those Credits has been used, you can still stop the next renewal. The server checks eligibility and the refund status is not complete until it is confirmed.</li>
+                <li>Before checkout you must expressly accept the recurring monthly price, the number of Credits supplied after each confirmed payment, and the no-rollover expiry. The final price including tax is shown before payment.</li>
+            </ul>
+
             <h2>4. Your inputs and outputs</h2>
             <ul>
                 <li>You keep whatever rights you hold in the prompts and reference files you upload. You grant us a licence to process them solely to run the service.</li>
@@ -55,6 +64,15 @@ export default function Terms() {
             <h2>7A. Social Cinema publication</h2>
             <p>Approved creators must follow the <a href="/legal/cinema-content">Cinema Content Policy</a>, choose an accurate Veyrnox audience label, declare relevant content warnings, and submit only files they reasonably believe are safe. Veyrnox labels are guidance and are not official BBFC classifications. Submission does not guarantee publication.</p>
             <p>We may automatically inspect metadata, images, sampled video frames, speech or captions and file-safety signals; quarantine a submission; require human review; or reject, restrict, suspend or remove a title. A required safety check must pass before publication. Creators may appeal a decision using the contact route in the Cinema Content Policy.</p>
+
+            <h2>7B. Cinema Pass</h2>
+            <ul>
+                <li>A Cinema Pass supplies access to published Social Cinema films and episodes while the Pass is active, subject to the delivered-minute limit displayed before purchase. It adds no Credits.</li>
+                <li>The Pass charges the recurring USD price displayed when you subscribe, plus any tax shown at checkout, and renews automatically each month until you cancel.</li>
+                <li>You can cancel from the Cinema Pass page or use its Stripe billing portal. Outside the initial cooling-off period, cancellation stops the next renewal and access continues until the displayed paid-period end.</li>
+                <li>If you cancel within 14 days of the first charge, the Pass ends immediately and the unused share of the current paid period is refunded to the original payment method. The page shows when this option is available and the refund is not complete until confirmed.</li>
+                <li>Before checkout you must expressly ask us to start the Pass immediately and acknowledge its automatic renewal and cooling-off treatment.</li>
+            </ul>
 
             <h2>8. Liability</h2>
             <p>Nothing in these terms limits liability that cannot be limited by law. Otherwise, our total liability to you in any 12-month period is limited to the amount you paid us in that period. We are not liable for indirect or consequential loss.</p>

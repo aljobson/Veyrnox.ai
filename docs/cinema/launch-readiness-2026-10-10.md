@@ -7,6 +7,15 @@ Production `CINEMA_UNLOCKS_ENABLED` and `CINEMA_SUBSCRIPTIONS_ENABLED` remain fa
 Free-title playback now has its own bounded production path through
 `CINEMA_FREE_CEILING_ENABLED`.
 
+On 16 October 2026, staging Worker version
+`bb79ad1f-c6eb-4cf9-b5cf-c98826ad790e` enabled
+`CINEMA_SUBSCRIPTIONS_ENABLED` for sandbox acceptance only. Its anonymous,
+no-store plan projection advertises the sole $9.99 monthly plan and the signed-
+out Pass page leads to sign-in. Production remains false. The Pass checkout
+consent, Terms and Refund Policy use the `cinema-pass-2026-10-16` wording
+version; implementation does not substitute for Finance/Legal or Stripe
+approval.
+
 ## Free-playback activation — 13 October 2026
 
 - The 24-hour post-0245 reconciliation window completed. Immediately before
@@ -90,6 +99,9 @@ Free-title playback now has its own bounded production path through
    cancellation/refund behavior and clean reconciliation with an authorized test.
 5. Re-read deployed flags and bindings, then capture the signed-in production
    viewer result. A failed/outage/unknown verification is not a launch pass.
+
+The exact evidence required to close the external gates is recorded in
+[the subscription approval pack](../operations/subscription-approval-pack-2026-10-16.md).
 
 Rollback free play-token requests by setting `CINEMA_FREE_CEILING_ENABLED=false`
 and deploying. Paid switches stay false. Keep signing secrets and the Stripe

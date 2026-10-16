@@ -105,10 +105,14 @@
     "CLIP_EDIT_CAPTIONS_ENABLED": "true",
     // docs/editor/SPEED.md: the Clip Editor's slow-motion step. Off until 0237 is applied and fal's billed cost is read (the price is a placeholder).
     "CLIP_EDIT_SLOW_ENABLED": "false",
-    // ADR-0064: checkout and account routes stay closed until staging acceptance.
+    // ADR-0064: production checkout stays closed until staging acceptance and
+    // the external approval record are complete. Existing-customer reads,
+    // cancellation and paid-checkout recovery remain available while off.
     "SUBSCRIPTIONS_ENABLED": "false",
-    // Before activation: SUBSCRIPTION_ALERT_EMAIL must name the Operator;
-    // SUBSCRIPTION_ALERT_FROM defaults to the existing VIOLATION_EMAIL_FROM.
+    // Public, monitored Operator mailbox. The sender defaults to the verified
+    // VIOLATION_EMAIL_FROM. Keeping this non-secret value in source prevents a
+    // refused invoice from becoming unprocessable after a clean deployment.
+    "SUBSCRIPTION_ALERT_EMAIL": "support@veyrnox.com",
     // Cinema first activation. Paid access and monetisation remain closed.
     // Merge only after the documented production cutover gates pass.
     "CINEMA_ENABLED": "true",
@@ -293,7 +297,10 @@
         "UPLOAD_INTEGRITY_ENABLED": "true",
         "FAL_DURABLE_DISPATCH_ENABLED": "false",
         "FAL_DISPATCH_QUEUE_ENABLED": "false",
-        "SUBSCRIPTIONS_ENABLED": "false",
+        // Test-mode subscription acceptance is open on staging only. The
+        // staging Worker has Stripe, Resend and Operator-alert secret bindings;
+        // production remains false above until the external gates are signed.
+        "SUBSCRIPTIONS_ENABLED": "true",
         "VOTING_ENABLED": "false",
         "CINEMA_AUDIENCE_ENABLED": "false",
         "CINEMA_RANKINGS_ENABLED": "false",
@@ -368,6 +375,9 @@
         // staging title and viewers can load and play entitled Stream media.
         // Production keeps all three switches false.
         "CINEMA_UNLOCKS_ENABLED": "true",
+        // Test-mode Cinema Pass acceptance is open on staging only. Existing
+        // production Pass management remains reachable while new sales are off.
+        "CINEMA_SUBSCRIPTIONS_ENABLED": "true",
         "CINEMA_PUBLISHING_ENABLED": "true",
         "CINEMA_VIEWING_ENABLED": "true",
         // Monthly ceiling on free viewing minutes (ADR-0057). Migration 0245
