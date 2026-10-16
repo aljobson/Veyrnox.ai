@@ -7,6 +7,7 @@ import { readOddlingLibrary } from '../_lib/oddlingStudio';
 import { beginJourney, getJourney, initialiseJourney, publishJourneyView, subscribeJourney, updateJourney } from '../_lib/veyJourneyStore';
 import { journeyStep, PREPARE_VIDEO } from '../../../lib/veyJourney';
 import { REVEAL_SAVED_ODDLING } from '../../../lib/savedOddlingHelp';
+import { VEY_CHAT_STYLE } from '../../../lib/veyChatLayout';
 
 const EMPTY = { task: null, view: {} };
 const pill = 'min-h-11 rounded-full border border-vx-border px-3 py-2 text-xs font-semibold hover:border-vx-accent focus-visible:outline-2 focus-visible:outline-vx-accent disabled:opacity-40 sm:min-h-0';
@@ -65,7 +66,7 @@ export default function VeyTaskGuide({ visible, pathname, onPoint, onStop, onAct
   const secondary = detailsOpen ? '' : 'hidden sm:block';
   return <>
     {task && chatting && <button type="button" className="hidden sm:block fixed bottom-4 right-4 z-[62] rounded-full border border-vx-accent bg-vx-panel px-4 py-3 text-xs font-bold text-vx-accent shadow-xl" onClick={() => setChatting(false)}>Resume {task.phase} walkthrough</button>}
-    <section aria-label="Vey task walkthrough" data-step={step?.key || 'choose'} data-expanded={detailsOpen} data-question-open={chatting} className={`fixed left-2 ${side === 'right' ? 'sm:left-auto sm:right-3' : 'sm:left-3'} ${chatting ? 'bottom-[calc(clamp(220px,34dvh,280px)+max(8px,env(safe-area-inset-bottom))+8px)] max-h-[24dvh] sm:hidden' : `bottom-[max(8px,env(safe-area-inset-bottom))] sm:bottom-4 ${task && !detailsOpen ? 'max-h-[35dvh]' : 'max-h-[50dvh]'} sm:max-h-[50dvh]`} z-[62] w-[min(330px,calc(100vw-80px))] sm:w-[min(330px,calc(100vw-24px))] overflow-y-auto rounded-2xl border border-vx-accent/40 bg-vx-panel p-3 sm:p-4 shadow-2xl`}>
+    <section aria-label="Vey task walkthrough" style={VEY_CHAT_STYLE} data-step={step?.key || 'choose'} data-expanded={detailsOpen} data-question-open={chatting} className={`fixed left-2 ${side === 'right' ? 'sm:left-auto sm:right-3' : 'sm:left-3'} ${chatting ? 'bottom-[calc(var(--vey-chat-height)+max(8px,env(safe-area-inset-bottom))+8px)] max-h-[24dvh] sm:hidden' : `bottom-[max(8px,env(safe-area-inset-bottom))] sm:bottom-4 ${task && !detailsOpen ? 'max-h-[35dvh]' : 'max-h-[50dvh]'} sm:max-h-[50dvh]`} z-[62] w-[min(330px,calc(100vw-80px))] sm:w-[min(330px,calc(100vw-24px))] overflow-y-auto rounded-2xl border border-vx-accent/40 bg-vx-panel p-3 sm:p-4 shadow-2xl`}>
     <div className="flex items-center justify-between gap-2"><div><p className="text-[10px] font-bold text-vx-accent sm:text-xs">{task ? `Vey · ${task.phase === 'image' ? 'Image' : 'Video'} task` : 'Choose your starting point'}</p>
       {task && <h3 className="mt-1 text-sm font-bold sm:mt-2 sm:text-base">{step.title}</h3>}</div>
       {task && chatting && <button type="button" aria-label="Back to walkthrough" className={`${pill} shrink-0`} onClick={() => setChatting(false)}>Back</button>}

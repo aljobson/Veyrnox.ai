@@ -88,6 +88,11 @@
   },
   "decisions": [
     {
+      "id": "vey-compact-bottom-question-dock",
+      "decision": "Use a 280px maximum width, 164–200px fixed-height bottom question dock with 11–12px text, single-line composer and collapsed examples. Reserve separate mascot and page clearance; retain the mobile guide above chat.",
+      "source": "User screenshot showed an oversized desktop chat with Vey overlapping the input. User requested smaller text and a smaller chat in empty bottom space."
+    },
+    {
       "id": "vey-mobile-visible-guide-with-chat",
       "decision": "On mobile retain the current walkthrough above the compact question panel, with a separate right-side mascot lane and Back to walkthrough control. Preserve task state and measured page clearance while chatting.",
       "source": "User requested the Max Rep walkthrough remain visible while asking questions, with Vey docked and no Credits spent."
