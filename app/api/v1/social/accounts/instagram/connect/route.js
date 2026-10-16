@@ -22,7 +22,7 @@ import { NextResponse } from 'next/server';
 import { networkReleased } from '../../../../../../../lib/social/networks.js';
 import { envConfig } from '../../../../../../../packages/db/supabase-client.js';
 import { instagramConfig, buildAuthorizeUrl } from '../../../../../../../packages/adapters/social/instagram.js';
-import { createOAuthState } from '../../../../../../../lib/social/oauthState.js';
+import { issueOAuthState } from '../../../../../../../lib/social/oauthStateStore.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 // Per-network path (app/social/connect/callback/[network]/page.js), not a
@@ -67,7 +67,12 @@ export async function POST(req) {
     }
     const redirectUri = new URL(CALLBACK_PATH, base).toString();
 
-    const state = await createOAuthState({ authId, network: 'instagram' }, stateSecret);
+    let state;
+    try {
+        state = await issueOAuthState({ authId, network: 'instagram' }, stateSecret, cfg);
+    } catch {
+        return NextResponse.json({ error: 'oauth_state_unavailable' }, { status: 503 });
+    }
     let authorizeUrl;
     try {
         authorizeUrl = buildAuthorizeUrl(igCfg, { redirectUri, state });

@@ -28,7 +28,7 @@ import { tiktokAvailable, tiktokReviewAllowed } from '../../../../../../../lib/s
 import { tiktokConnectionConfig, wrapTiktokToken } from '../../../../../../../lib/social/tiktokReviewTokens.js';
 import { rpc, envConfig, SupabaseError } from '../../../../../../../packages/db/supabase-client.js';
 import { exchangeCodeForToken, fetchConnectedAccount } from '../../../../../../../packages/adapters/social/tiktok.js';
-import { verifyOAuthState } from '../../../../../../../lib/social/oauthState.js';
+import { consumeOAuthState } from '../../../../../../../lib/social/oauthStateStore.js';
 import { tokenCryptoConfig, encryptToken } from '../../../../../../../lib/social/tokenCrypto.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -64,7 +64,12 @@ export async function POST(req) {
         || typeof codeVerifier !== 'string' || !/^[A-Za-z0-9_-]{43,128}$/.test(codeVerifier)) {
         return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
     }
-    const stateOk = await verifyOAuthState(state, { authId, network: 'tiktok' }, stateSecret);
+    let stateOk;
+    try {
+        stateOk = await consumeOAuthState(state, { authId, network: 'tiktok' }, stateSecret, cfg);
+    } catch {
+        return NextResponse.json({ error: 'oauth_state_unavailable' }, { status: 503 });
+    }
     if (!stateOk) {
         return NextResponse.json({ error: 'invalid_state' }, { status: 400 });
     }

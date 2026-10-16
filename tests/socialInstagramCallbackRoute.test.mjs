@@ -43,6 +43,7 @@ function stub({ rpcOverrides = {} } = {}) {
         // db.test — Supabase PostgREST RPC calls
         const name = u.pathname.split('/').pop();
         const result = rpcOverrides[name] ?? ({
+            consume_social_oauth_state: { ok: true },
             get_or_create_default_social_brand: { ok: true, idempotent: true, brand_id: brandId, label: 'My Brand', timezone: 'UTC' },
             record_social_account_connection: { ok: true, account_id: accountId, idempotent: false },
         })[name];
@@ -85,7 +86,7 @@ test('completes the full connect flow: token exchange, direct account resolution
     assert.equal(body.account.network, 'instagram');
     assert.equal(body.account.display_name, '@creator');
     assert.equal(calls.filter((c) => c.includes('instagram.com')).length, 3, 'short-lived exchange + long-lived exchange + /me — no Pages lookup');
-    assert.equal(calls.filter((c) => c.includes('db.test')).length, 2, 'brand lookup + record connection');
+    assert.equal(calls.filter((c) => c.includes('db.test')).length, 3, 'state consumption + brand lookup + record connection');
 });
 
 test('an RPC failure never leaks upstream detail, and the token is never in the response', async () => {

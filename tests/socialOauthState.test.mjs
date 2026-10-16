@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createOAuthState, verifyOAuthState } from '../lib/social/oauthState.js';
+import { createOAuthState, oauthStateDigest, verifyOAuthState } from '../lib/social/oauthState.js';
+import { consumeOAuthState, issueOAuthState } from '../lib/social/oauthStateStore.js';
 
 const secret = 'test-only-secret-value';
 const authId = '11111111-1111-4111-8111-111111111111';
@@ -8,6 +9,41 @@ const authId = '11111111-1111-4111-8111-111111111111';
 test('round-trips and verifies against the same caller/network', async () => {
     const token = await createOAuthState({ authId, network: 'instagram' }, secret);
     assert.equal(await verifyOAuthState(token, { authId, network: 'instagram' }, secret), true);
+});
+
+test('each connect attempt has a distinct nonce and digest', async () => {
+    const first = await createOAuthState({ authId, network: 'instagram' }, secret);
+    const second = await createOAuthState({ authId, network: 'instagram' }, secret);
+    assert.notEqual(first, second);
+    assert.match(await oauthStateDigest(first), /^[0-9a-f]{64}$/);
+    assert.notEqual(await oauthStateDigest(first), await oauthStateDigest(second));
+});
+
+test('the server-side record is consumed once before provider exchange', async () => {
+    const cfg = { supabaseUrl: 'https://db.test', serviceRoleKey: 'test-only' };
+    let storedHash = '';
+    let consumed = false;
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = async (url, init) => {
+        const name = new URL(url).pathname.split('/').pop();
+        const body = JSON.parse(init.body);
+        if (name === 'prepare_social_oauth_state') {
+            storedHash = body.p_state_hash;
+            return Response.json({ ok: true });
+        }
+        assert.equal(name, 'consume_social_oauth_state');
+        assert.equal(body.p_state_hash, storedHash);
+        if (consumed) return Response.json(null);
+        consumed = true;
+        return Response.json({ ok: true });
+    };
+    try {
+        const token = await issueOAuthState({ authId, network: 'instagram' }, secret, cfg);
+        assert.equal(await consumeOAuthState(token, { authId, network: 'instagram' }, secret, cfg), true);
+        assert.equal(await consumeOAuthState(token, { authId, network: 'instagram' }, secret, cfg), false);
+    } finally {
+        globalThis.fetch = realFetch;
+    }
 });
 
 test('rejects a token issued to a different auth id (forged/replayed state)', async () => {
