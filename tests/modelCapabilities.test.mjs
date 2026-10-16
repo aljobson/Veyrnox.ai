@@ -151,6 +151,17 @@ test('undeclared keys are dropped by the gateway, and refused if they reach the 
     assert.deepEqual(checkInputs(nanoKie, { prompt: 'p', duration_seconds: 10 }), { ok: false, error: 'duration_not_supported' });
 });
 
+test('declared inputs never write attacker-controlled property names', () => {
+    const record = capabilityFor('fal-ai/minimax/hailuo-02/standard/text-to-video');
+    const supplied = Object.create(null);
+    supplied.prompt = 'safe';
+    supplied.__proto__ = { polluted: true };
+    supplied.constructor = 'poison';
+    const declared = declaredInputs(record, supplied);
+    assert.deepEqual(declared, { prompt: 'safe' });
+    assert.equal({}.polluted, undefined);
+});
+
 test('the public view carries no provider field names or editable pins', () => {
     for (const [ep, record] of Object.entries(REGISTRY)) {
         const view = JSON.stringify(publicCapabilities(record));
