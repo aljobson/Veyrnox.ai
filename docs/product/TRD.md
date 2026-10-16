@@ -1,5 +1,7 @@
 # TRD — Veyrnox.ai technical requirements
 
+> **Flag values:** every flag state in this document is as of 2026-10-16. `wrangler.jsonc` is the source of truth (top-level `vars` is production, `env.staging` is staging); where this document and that file disagree, the file is right.
+
 **Status:** Current · 2026-10-16 (audited against `main` at `3f46a609`; first written 2026-10-02 at `2da81dc`; re-audited 2026-10-08 at `42150476`). The 2026-10-16 pass re-checked §1, §2, §4, §6, §9, §10 and §11 against `package.json`, `wrangler.jsonc`, `worker.js`, `lib/`, `packages/`, `.github/workflows/` and the file counts; §3, §5, §7 and §8 are unchanged from 2026-10-08 except where a line below says otherwise.
 **Precedence:** [CLAUDE.md](../../CLAUDE.md) and [docs/adr/](../adr/README.md)
 win over this document. This is the blueprint an agent reads before making a
