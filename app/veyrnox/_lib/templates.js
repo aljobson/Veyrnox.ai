@@ -11,8 +11,9 @@
 // CARTOONS, MOVIES, FANTASY and REALISTIC are the Trends categories (ADR-0072); each has at least one template, or its filter would show an empty page.
 import { SOURCE_TEMPLATES } from './sourceTemplates.js';
 import { SOURCE_TEMPLATE_EXPANSION_4 } from './sourceTemplateExpansion4.js';
+import { SOURCE_TEMPLATE_EXPANSION_5 } from './sourceTemplateExpansion5.js';
 
-const CATEGORY_ORDER = ['YOUR PHOTO', 'CINEMATIC', 'ANIME', 'CARTOONS', 'MOVIES', 'FANTASY', 'REALISTIC', 'FASHION', 'PRODUCTS', 'VFX', 'UGC', 'ADS'];
+const CATEGORY_ORDER = ['YOUR PHOTO', 'KIDS BIRTHDAY', 'CINEMATIC', 'ANIME', 'CARTOONS', 'MOVIES', 'FANTASY', 'REALISTIC', 'FASHION', 'PRODUCTS', 'VFX', 'UGC', 'ADS'];
 
 export const LEGACY_PRESETS = [
   { id: 'cctv-night', name: 'CCTV NIGHT', model: 'Wan 2.5', credits: 19, category: 'CINEMATIC', aspect: '16:9',
@@ -118,6 +119,7 @@ const GALLERY_CLIP_KEYS = [
   'laundromat-monster',
   'curtain-reveal',
   ...SOURCE_TEMPLATE_EXPANSION_4.map((template) => template.clipKey),
+  ...SOURCE_TEMPLATE_EXPANSION_5.map((template) => template.clipKey),
 ];
 const WALL_CLIP_KEYS = [
   'wall-product-hero-360',
