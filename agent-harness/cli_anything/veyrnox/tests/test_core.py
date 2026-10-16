@@ -75,6 +75,14 @@ class AuthTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             auth._store_tokens({}, {"refresh_token": "nope"})
 
+    def test_discovery_requests_identify_the_cli(self):
+        response = mock.MagicMock()
+        response.__enter__.return_value.read.return_value = b'{"ok":true}'
+        response.__exit__.return_value = False
+        with mock.patch("urllib.request.urlopen", return_value=response) as opened:
+            self.assertEqual(auth._json_request("https://example.test"), {"ok": True})
+        self.assertRegex(opened.call_args.args[0].get_header("User-agent"), r"^Veyrnox-CLI/1\.0\.0")
+
 
 class ClientTests(unittest.TestCase):
     def test_parse_typed_values(self):
@@ -97,6 +105,7 @@ class ClientTests(unittest.TestCase):
             self.assertEqual(Client(saved).request("GET", "/models"), {"ok": True})
         refresh.assert_called_once()
         self.assertEqual(opened.call_args.args[0].get_header("Authorization"), "Bearer new")
+        self.assertRegex(opened.call_args.args[0].get_header("User-agent"), r"^Veyrnox-CLI/1\.0\.0")
 
     def test_download_rejects_empty_bytes(self):
         api = Client({"api_url": "https://example.test", "access_token": "a", "expires_at": int(time.time()) + 3600})
@@ -104,8 +113,9 @@ class ClientTests(unittest.TestCase):
         response = mock.MagicMock()
         response.__enter__.return_value.read.return_value = b""
         response.__exit__.return_value = False
-        with mock.patch("urllib.request.urlopen", return_value=response), self.assertRaisesRegex(RuntimeError, "empty"):
+        with mock.patch("urllib.request.urlopen", return_value=response) as opened, self.assertRaisesRegex(RuntimeError, "empty"):
             api.download("job", "/tmp/unused-veyrnox-test")
+        self.assertRegex(opened.call_args.args[0].get_header("User-agent"), r"^Veyrnox-CLI/1\.0\.0")
 
 
 if __name__ == "__main__":

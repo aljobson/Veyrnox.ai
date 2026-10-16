@@ -24,7 +24,8 @@ class ContractHandler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def _record(self, body=None):
-        type(self).requests.append((self.command, self.path, self.headers.get("Authorization"), body))
+        type(self).requests.append((self.command, self.path, self.headers.get("Authorization"), body,
+            self.headers.get("User-Agent")))
 
     def do_GET(self):
         self._record()
@@ -109,6 +110,7 @@ class InstalledCliTests(unittest.TestCase):
 
     def test_03_models(self):
         self.assertEqual(self.json_cli("models", "list")["models"][0]["id"], "image-test")
+        self.assertRegex(ContractHandler.requests[-1][4], r"^Veyrnox-CLI/1\.0\.0")
 
     def test_04_balance(self):
         self.assertEqual(self.json_cli("balance")["balance"], 20)

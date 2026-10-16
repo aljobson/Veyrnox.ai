@@ -9,6 +9,7 @@ import urllib.request
 import webbrowser
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
+from . import USER_AGENT
 from . import config
 
 
@@ -20,7 +21,7 @@ def pkce_pair():
 
 def _json_request(url, *, method="GET", body=None, headers=None):
     payload = None if body is None else json.dumps(body).encode()
-    merged = {"Accept": "application/json", **(headers or {})}
+    merged = {"Accept": "application/json", "User-Agent": USER_AGENT, **(headers or {})}
     if payload is not None:
         merged["Content-Type"] = "application/json"
     request = urllib.request.Request(url, data=payload, headers=merged, method=method)
@@ -115,7 +116,8 @@ def login(open_browser=True):
 
 def _form_request(url, body):
     request = urllib.request.Request(url, data=urllib.parse.urlencode(body).encode(),
-        headers={"Accept": "application/json", "Content-Type": "application/x-www-form-urlencoded"}, method="POST")
+        headers={"Accept": "application/json", "Content-Type": "application/x-www-form-urlencoded",
+            "User-Agent": USER_AGENT}, method="POST")
     with urllib.request.urlopen(request, timeout=30) as response:
         return json.loads(response.read())
 
