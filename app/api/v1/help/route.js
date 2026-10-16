@@ -1,6 +1,7 @@
 import { rpc, envConfig } from '../../../../packages/db/supabase-client.js';
 import { createHelpPlan, helpApiKey, helpNeedsCatalog } from '../../../../lib/helpAssistant.js';
-import { parseHelpRequest } from '../../../../lib/productHelp.js';
+import { normaliseHelpPlan, parseHelpRequest } from '../../../../lib/productHelp.js';
+import { accountAnswerPlan, accountUnavailablePrefix, helpNeedsAccount, readAccountSnapshot, veyAccountEnabled } from '../../../../lib/veyAccount.js';
 import { readPublicCatalog } from '../../../../lib/publicCatalog.js';
 import { providerSpendLimit } from '../../../../lib/providerSpend.js';
 
@@ -34,6 +35,19 @@ export async function POST(req) {
         return reply({ error: 'temporarily_unavailable' }, 503);
     }
 
+    // ADR-0103: a charge or balance question reads this caller's own rows, here on the server, and is answered
+    // from a template. The model gets no tool, no id and none of this data.
+    let accountReadFailed = false;
+    if (veyAccountEnabled(process.env) && helpNeedsAccount(parsed.question)) {
+        try {
+            const snapshot = await readAccountSnapshot(authId, cfg);
+            return reply({ plan: { ...accountAnswerPlan(snapshot), source: 'account' } });
+        } catch {
+            console.error('[help] account read failed');
+            accountReadFailed = true;
+        }
+    }
+
     let catalog = [];
     if (helpNeedsCatalog(parsed.question)) {
         try { catalog = await readPublicCatalog({ cfg }); }
@@ -43,7 +57,7 @@ export async function POST(req) {
     // supplier allowance is closed. Never call upstream without a durable
     // reservation, even though this feature is free to the account.
     let allowAi = false;
-    if (helpApiKey(process.env)) {
+    if (!accountReadFailed && helpApiKey(process.env)) {
         try {
             const admitted = await rpc('provider_spend_admit_custom_auth', {
                 p_auth_id: authId,
@@ -58,6 +72,7 @@ export async function POST(req) {
         }
     }
     const plan = await createHelpPlan({ ...parsed, catalog, allowAi });
+    if (accountReadFailed) return reply({ plan: normaliseHelpPlan({ ...plan, message: accountUnavailablePrefix() + plan.message }) });
     return reply({ plan });
 }
 

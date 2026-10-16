@@ -1,6 +1,6 @@
 # ADR-0103 — Vey explains the signed-in user's own recent charges, read-only
 
-- **Status**: **Proposed 2026-10-16.** The owner accepts it by merging. Nothing is built; it ships off (`VEY_ACCOUNT_ENABLED` is `"false"`).
+- **Status**: **Accepted 2026-10-16; built 2026-10-16**, behind `VEY_ACCOUNT_ENABLED` (off everywhere until the owner flips it on staging, then production).
 - **Date**: 2026-10-16
 - **Related**: [ADR-0067](0067-chat-replies-are-jobs.md) (the ledger and job rows a charge comes from), [ADR-0073](0073-studio-skills.md) (assistants prepare, never run), [ADR-0013](0013-credit-expiry-policy.md) (Free Credit expiry), `CLAUDE.md` ("Money & billing", "API gateway": identity comes only from the middleware headers, typed errors, no leaked DB messages)
 
@@ -18,7 +18,7 @@ The risks are the ones in the money spine: a model that is told it can see accou
 4. **Read-only is enforced, not promised.** The plan schema (`message`, `target`, `action`) gains no field that mutates anything, and no account RPC used here is a writer. Vey still cannot grant, refund, unfreeze or buy; a request to do so gets the existing "I cannot" answer and the support address. A test asserts the account context never contains a `reason` and that no `ledger_*`, `credit_*` or `unfreeze_*` function is called from the help path.
 5. **Same gates as other account reads.** The route already spends one `consume_account_read_request` per call (rate limited, 429 with `Retry-After`). The ledger and balance reads add no new limit class. Reads are `Cache-Control: no-store`. Rows are never logged; a failed read logs one line with no data.
 6. **Failure says so.** If the read fails or the account has no rows, Vey says it could not read the account and falls back to the reviewed articles and the support address. It never invents a charge.
-7. **Flag.** `VEY_ACCOUNT_ENABLED` in `wrangler.jsonc` vars ships `"false"`; off, the route behaves exactly as today. Staging first, then the owner's explicit yes for production.
+7. **Flag.** `VEY_ACCOUNT_ENABLED`; off, the route behaves exactly as today. Staging first, then the owner's explicit yes for production. *As built:* the code needs the exact value `"true"`, so production leaves the var out (it has no spare Worker text binding; absence is off, as with the fal rollout controls) and `env.staging.vars` names it `"false"`. A test pins both.
 8. **Intent gate.** A small pattern (`charged`, `charge`, `balance`, `why was`, `where did my credits go`, `refund` for a named job) decides whether to read at all, so ordinary how-to questions never touch the ledger.
 
 ## Not in this ADR
@@ -43,3 +43,7 @@ The risks are the ones in the money spine: a model that is told it can see accou
 - Model: with the flag on, a charge question makes zero provider calls.
 - Failure: a failed read produces the "could not read your account" answer and the support address.
 - Flag off: identical behaviour and no ledger read.
+
+## As built
+
+`lib/veyAccount.js` (intent gate, read, template), `lib/ledgerKind.js` (the `kind()` mapping, now shared with `/api/v1/ledger`), and a branch in `app/api/v1/help/route.js` after the account-read rate limit. A failed read logs one constant line and answers from the reviewed articles with "I could not read your account just now". Tests: `tests/veyAccount.test.mjs`.
