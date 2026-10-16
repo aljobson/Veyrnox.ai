@@ -3,6 +3,7 @@ import { saveDeviceLibrary, loadDeviceLibrary } from '../../_lib/deviceLibrary.m
 import { librarySourceFromId } from '../../_lib/editorLibraryCollection.mjs';
 import { CommandIcon } from './CommandIcon';
 import { EditorToolRail } from './EditorToolRail';
+import { EditorHelperHost } from './EditorHelperLauncher';
 import { OriginalAudioPanel } from './OriginalAudioPanel';
 import { restoreOriginalAudio } from '../../_lib/editorOriginalAudio.mjs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -260,7 +261,7 @@ export function MultitrackWorkspace({ onCredits }) {
                 <span className="text-[11px] font-black uppercase tracking-[0.16em] text-vx-fg-body">Cut</span>
             </div>
             <ProjectBar compact onContext={setProjectContext} tl={tl} blobs={blobs} onLoadTimeline={load} onRelinked={relinked} />
-            <div data-vey-editor-helper className="ml-auto shrink-0 sm:ml-0" />
+            <EditorHelperHost />
             {draftStatus&&draftStatus!=='Recovery available'&&<span role="status" className="hidden shrink-0 text-[10px] text-vx-fg-muted xl:inline">{draftStatus}</span>}
             <div className="flex w-full shrink-0 items-center justify-end gap-1.5 border-t border-vx-border pt-2 sm:ml-auto sm:w-auto sm:gap-2 sm:border-t-0 sm:pt-0">
                 <ProjectFileControls compact tl={tl} onLoadTimeline={loadProjectFile} disabled={disabled} openDisabled={!!projectContext?.id} name={projectContext?.id ? 'veyrnox-cloud-project' : 'veyrnox-studio-project'} />

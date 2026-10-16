@@ -137,6 +137,26 @@ function authFunction(name) {
   assert.ok(match, `${name} must be testable against the actual harness source`);
   return match[0];
 }
+
+test('page QA retains uncaught error details and redacts sensitive fixture paths', () => {
+  const details = runInNewContext(`(${authFunction('browserErrorDetails')})`, { URL });
+  const errors = ['Editor hydration failed\n    at https://veyrnox.ai/_next/static/editor.js:1:20'];
+  assert.deepEqual([...details(errors, { sensitive: false })], errors);
+  const privatePath = '/app/projects/private-project-id?revision=4';
+  const redacted = details([`Could not render ${privatePath}\n at ${privatePath}`], {
+    sensitive: true, pathname: privatePath, template: '/app/projects/[id]',
+  });
+  assert.deepEqual([...redacted], ['Could not render /app/projects/[id]\n at /app/projects/[id]']);
+  assert.deepEqual([...details([
+    'Review failed at /social/review/synthetic-token?qa=1\n at https://staging.invalid/social/review/synthetic-token:1:20',
+  ], { sensitive: true, pathname: '/social/review/synthetic-token?qa=1', template: '/social/review/[token]' })], [
+    'Review failed at /social/review/[token]\n at https://staging.invalid/social/review/[token]:1:20',
+  ]);
+  assert.deepEqual([...details([], { sensitive: false })], []);
+  assert.match(sweep, /errors\.push\(error\.stack \|\| error\.message\)/);
+  assert.match(sweep, /finally \{\s+result\.browserErrors = browserErrorDetails\(errors, entry\);\s+page\.off\('pageerror', onError\)/);
+});
+
 function authPage({ status = 200, controls = true, menu = true, signIn = false } = {}) {
   const visited = [];
   const response = { url: () => 'https://staging.example.invalid/api/v1/account', request: () => ({ method: () => 'GET' }), status: () => status };
