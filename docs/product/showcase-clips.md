@@ -1,6 +1,6 @@
 # Landing showcase clips
 
-Every landing feature card, every tile in the 24-template wall, all 98
+Every landing feature card, every tile in the 24-template wall, all 110
 public preset cards and the three model-category cards have viral previews. The owner requested footage and prompts from [SYNTX Trends](https://syntx.ai/trends),
 [Higgsfield](https://higgsfield.ai/) and [CapCut](https://www.capcut.com/my-edit?start_tab=video) on 14 October 2026. This replaces the
 previous requirement to use only clips generated on Veyrnox.
@@ -22,8 +22,8 @@ Audio cards in `/#models`. `WALL_SHOWCASE_KEYS` selects 24 dedicated
 homepage previews with their own recipes. The shared
 `PresetCard` also brings the gallery previews to the studio Explore gallery.
 
-All 130 public tile placements use different footage: five feature cards,
-24 homepage template cards, three model-category cards and 98 gallery
+All 142 public tile placements use different footage: five feature cards,
+24 homepage template cards, three model-category cards and 110 gallery
 cards. Product Hero 360 appears in the gallery while Miniature Crew has its own
 landing template, prompt, video and poster, preserving distinct content across
 surfaces as requested by the owner.
@@ -37,6 +37,18 @@ excerpt. No audio is retained.
 | --- | --- | --- | --- |
 | `product-hero-360` | Product Hero 360 | [CapCut inspiration](https://www.capcut.com/my-edit?start_tab=video&inspirationKey=7640056113873964309) | 0 s |
 | `wall-product-hero-360` | Miniature Crew | [CapCut inspiration](https://www.capcut.com/my-edit?start_tab=video&inspirationKey=7675206348950244628) | 0 s |
+| `birthday-rocket-launch` | Birthday Rocket | [Pexels](https://www.pexels.com/video/space-shuttle-taking-off-854253/) | 0 s |
+| `candle-wish-world` | Candle Wish World | [Mixkit](https://mixkit.co/free-stock-video/cake-with-burning-candles-in-the-dark-5109/) | 0 s |
+| `giant-age-adventure` | Giant Age Adventure | [Mixkit](https://mixkit.co/free-stock-video/birthday-party-table-with-balloons-falling-5101/) | 0 s |
+| `dinosaur-birthday-parade` | Dino Party Parade | [Pexels](https://www.pexels.com/video/a-child-playing-with-toy-dinosaurs-8502991/) | 0 s |
+| `underwater-birthday-kingdom` | Underwater Birthday Kingdom | [Mixkit](https://mixkit.co/free-stock-video/school-of-fish-swimming-4291/) | 0 s |
+| `toybox-comes-alive` | Toybox Party | [Mixkit](https://mixkit.co/free-stock-video/father-and-son-with-a-didactic-toy-4553/) | 0 s |
+| `monster-disco-party` | Monster Disco | [Mixkit](https://mixkit.co/free-stock-video/couple-on-the-dance-floor-having-fun-344/) | 0 s |
+| `mini-cake-chef` | Mini Cake Chef | [Mixkit](https://mixkit.co/free-stock-video/a-chef-covering-dough-with-flour-1669/) | 0 s |
+| `birthday-news-report` | Birthday News Flash | [Mixkit](https://mixkit.co/free-stock-video/microphone-viewed-closely-2850/) | 0 s |
+| `party-invitation-trailer` | Party Invitation Trailer | [Mixkit](https://mixkit.co/free-stock-video/birthday-cake-on-a-table-with-candies-and-balloons-5111/) | 0 s |
+| `growing-up-timeline` | Growing Up Timeline | [Mixkit](https://mixkit.co/free-stock-video/children-playing-with-a-dancing-fountain-3469/) | 0 s |
+| `birthday-highlight-reel` | Birthday Highlight Reel | [Mixkit](https://mixkit.co/free-stock-video/taking-a-picture-of-a-birthday-table-with-a-smartphone-5106/) | 0 s |
 | `wan-2.5-kie` | High flip | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/001156a7-cfdb-4e16-8f13-68c246ddc06c.mp4) | 4 s |
 | `nano-banana-kie` | Medieval Runway Look | [SYNTX](https://r2.syntx.ai/ERP/media-library/trends/variants/Uz4mSaF5whThHf4UxXBl86UBGyelRKtdkn3PMtj5.webm) | 8 s |
 | `kling-26` | World morphing | [Higgsfield](https://cdn.higgsfield.ai/viral_hub/950efc04-6ae6-4b31-bfa5-83c87244014c.mp4) | 2 s |
@@ -166,7 +178,15 @@ Every public placement remains backed by a different source clip.
 The 50-template expansion adds 40 transformation and visual-style recipes plus
 10 cinematic and trend-driven recipes to the gallery. Each one has its own
 neutral public name, adapted ten-second prompt, source-native preview crop and
-local poster. The same SHA-256 uniqueness checks cover all 130 placements.
+local poster. The same SHA-256 uniqueness checks cover all 142 placements.
+
+The kids-birthday expansion adds 12 gallery templates in a dedicated
+`KIDS BIRTHDAY` category. The prompts are original Veyrnox adaptations of the
+party formats identified during the source-platform review. Every preview is a
+separate commercially reusable, watermark-free HD source; the inspected
+source-platform previews were rejected because they contained baked-in
+platform marks. Each card opens a ten-second direct recipe and can also carry
+that edited prompt into Film Studio for a 30–120-second multi-shot project.
 
 ## Playback and budgets
 

@@ -4,6 +4,7 @@
 //
 // Local files keep playback within the existing same-origin media policy.
 import { SHOWCASE_CLIP_EXPANSION_4 } from './sourceTemplateExpansion4.js';
+import { SHOWCASE_CLIP_EXPANSION_5 } from './sourceTemplateExpansion5.js';
 
 export const SHOWCASE_CLIPS = {
   'product-hero-360': {
@@ -436,6 +437,7 @@ export const SHOWCASE_CLIPS = {
     poster: '/showcase/viral-event-character-swap.jpg', title: 'Event Character Swap',
   },
   ...SHOWCASE_CLIP_EXPANSION_4,
+  ...SHOWCASE_CLIP_EXPANSION_5,
 };
 
 // Give each public placement its own clip, including templates also on /presets.
