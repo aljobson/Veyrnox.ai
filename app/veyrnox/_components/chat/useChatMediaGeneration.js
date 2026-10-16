@@ -12,7 +12,9 @@ import {
   chatMediaModels,
   firstOpenMediaModel,
   mediaGenerationCount,
+  mediaGenerationSources,
   mediaOutputSettings,
+  mediaPromptIsMissing,
   supportedAspect,
   supportedDuration,
 } from '../../_lib/chatMedia';
@@ -144,13 +146,13 @@ export function useChatMediaGeneration({ kind, models, catalogLive }) {
 
   async function generate(prompt) {
     const cleanPrompt = String(prompt || '').trim();
-    if (inFlight.current || sending || generating || !catalogLive || !model || model.gated || !cleanPrompt || balance == null
+    if (inFlight.current || sending || generating || !catalogLive || !model || model.gated || mediaPromptIsMissing(model, cleanPrompt) || balance == null
       || cost > balance || missingSource || missingConsent || missingVoice || invalidAudioDuration) return false;
     inFlight.current = true;
     setSending(true);
     setError(null);
     const inputs = {
-      prompt: cleanPrompt,
+      ...(model.takesPrompt !== false ? { prompt: cleanPrompt } : {}),
       aspect_ratio: aspect || undefined,
       duration_seconds: model.kind === COMPOSER_KINDS.VIDEO ? duration : undefined,
       ...settingsInputs(model, { seed: '', negative: '', voice, duration: audioDuration }),
@@ -159,12 +161,7 @@ export function useChatMediaGeneration({ kind, models, catalogLive }) {
     Object.keys(inputs).forEach((key) => inputs[key] === undefined && delete inputs[key]);
 
     try {
-      const sourceKeys = [];
-      const sourceAssets = [];
-      for (const slot of Object.keys(media)) {
-        if (sources[slot]?.assetId) sourceAssets.push(sources[slot].assetId);
-        else if (sources[slot]?.file) sourceKeys.push(await uploadSource(sources[slot].file));
-      }
+      const { source_keys: sourceKeys, source_assets: sourceAssets } = await mediaGenerationSources(model, sources, uploadSource);
       const anySource = sourceKeys.length + sourceAssets.length > 0;
       const { started, error: failure } = await sendInOrder(count, async (index) => {
         const submitted = await gatewayFetch('/generations', {

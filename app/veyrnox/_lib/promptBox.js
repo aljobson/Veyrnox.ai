@@ -21,13 +21,13 @@ export function promptText(typed, model) {
 }
 
 /**
- * True when an audio model or an Auto Short has nothing in the box, so
+ * True when a prompt-driven audio model or an Auto Short has nothing in the box, so
  * Generate can wait for it. The gateway refuses that request
  * (`inputs_invalid:prompt`, `inputs_invalid:topic`); picture and clip
  * models are left to it, as before.
  */
 export function promptIsMissing(model, prompt) {
-  return usesOwnWords(model) && !String(prompt || '').trim();
+  return (model?.takesTopic || (model?.takesPrompt !== false && usesOwnWords(model))) && !String(prompt || '').trim();
 }
 
 export function promptPlaceholder(model) {

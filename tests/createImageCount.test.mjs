@@ -29,8 +29,8 @@ test('the total drives the price, the balance guard and the button', () => {
 
 test('each source is uploaded once, before any request, and reused by all', () => {
     assert.ok(submit.length > 0 && sendOne.length > 0, 'submit and its sendInOrder found');
-    assert.equal((submit.match(/uploadSource\(/g) || []).length, 1, 'one upload call site');
-    assert.ok(submit.indexOf('uploadSource(') < submit.indexOf('await sendInOrder('), 'uploads come first');
+    assert.equal((submit.match(/mediaGenerationSources\(model, sources, uploadSource\)/g) || []).length, 1, 'shared source upload runs once');
+    assert.ok(submit.indexOf('mediaGenerationSources(') < submit.indexOf('await sendInOrder('), 'uploads come first');
     assert.equal(sendOne.includes('uploadSource('), false, 'no upload inside the per-request callback');
     assert.match(sendOne, /source_keys: source_keys\.length \? source_keys : undefined,/);
     assert.match(sendOne, /source_assets: source_assets\.length \? source_assets : undefined,/);

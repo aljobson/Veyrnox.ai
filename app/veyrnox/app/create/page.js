@@ -41,7 +41,8 @@ import { ParticleButton } from '@/components/ParticleButton';
 import { jobStateUi, SLOW_MODEL_WAIT } from '../../_lib/studioStates';
 import { useCreateJourney } from '../../_lib/useCreateJourney';
 import { getJourney, trackJourneyJob } from '../../_lib/veyJourneyStore';
-import { outputDurationLabel } from '../../_lib/chatMedia';
+import { outputDurationLabel, mediaGenerationSources } from '../../_lib/chatMedia';
+import { generationSlotKind, generationMimeTypes } from '../../../../lib/generationSourceSlots.mjs';
 // Auto Short stays hidden until launch unless this browser opts in
 // (CLAUDE.md "Delivery": new user paths behind localStorage.veyrnox_*).
 const AUTO_SHORT_FLAG = 'veyrnox_auto_short';
@@ -331,12 +332,7 @@ export default function CreateStudio() {
     try {
       // Only the slots this model takes; a leftover upload from another model stays local.
       // Each file is uploaded once and its key reused by every request.
-      const source_keys = [];
-      const source_assets = [];
-      for (const slot of Object.keys(media)) {
-        if (sources[slot]?.assetId) source_assets.push(sources[slot].assetId);
-        else if (sources[slot]) source_keys.push(await uploadSource(sources[slot].file));
-      }
+      const { source_keys, source_assets } = await mediaGenerationSources(model, sources, uploadSource);
       const anySource = source_keys.length + source_assets.length > 0;
       const { started, error: failure } = await sendInOrder(n, async (i) => {
         const submitted = await gatewayFetch('/generations', {
@@ -498,7 +494,8 @@ export default function CreateStudio() {
               onDraw={model?.kind === 'image' ? () => setDrawing(true) : null} onLibrary={setLibraryFor} />
           </div>
           {libraryFor && (
-            <LibraryPicker onClose={() => setLibraryFor(null)}
+            <LibraryPicker kind={generationSlotKind(libraryFor)} mimeTypes={generationMimeTypes(generationSlotKind(libraryFor))}
+              onClose={() => setLibraryFor(null)}
               onPick={(item) => { pickSource(libraryFor, null, item); setLibraryFor(null); }} />
           )}
 

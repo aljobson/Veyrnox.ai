@@ -1,12 +1,14 @@
 'use client';
+import { generationSlotKind, generationMimeTypes } from '../../../lib/generationSourceSlots.mjs';
 
 // One upload field per media slot the model declares in the catalog
 // (capabilities.media): a start image, a video to lip-sync, the speech.
 // Types match /api/v1/uploads (lib/uploadSource.js); caps come from the slot.
 const SLOTS = {
-  image: { label: 'START IMAGE', accept: 'image/png,image/jpeg,image/webp', hint: 'PNG, JPEG or WebP, up to 20 MB', add: 'Add image' },
-  video: { label: 'VIDEO', accept: 'video/mp4', hint: 'MP4 with a visible face, up to 100 MB', add: 'Add video' },
-  audio: { label: 'SPEECH', accept: 'audio/mpeg,audio/wav', hint: 'MP3 or WAV, up to 20 MB', add: 'Add audio' },
+  image: { label: 'START IMAGE', hint: 'PNG, JPEG or WebP, up to 20 MB', add: 'Add image' },
+  endImage: { label: 'END IMAGE', hint: 'PNG, JPEG or WebP, up to 20 MB', add: 'Add end image' },
+  video: { label: 'VIDEO', hint: 'MP4, up to 100 MB', add: 'Add video' },
+  audio: { label: 'AUDIO', hint: 'MP3 or WAV, up to 20 MB', add: 'Add audio' },
 };
 
 const pill = 'font-vx-mono text-[11px] font-bold rounded-full px-3.5 py-1.5 border border-vx-border text-vx-fg-muted hover:text-vx-fg shrink-0';
@@ -17,17 +19,18 @@ const pill = 'font-vx-mono text-[11px] font-bold rounded-full px-3.5 py-1.5 bord
  * @param {Record<string,{file:File, previewUrl:string}>} props.sources
  * @param {(slot:string, file:File|null) => void} props.onPick
  * @param {(() => void)|null} props.onDraw  shown for the image slot when set
- * @param {((slot:string) => void)|null} props.onLibrary  "From library", image slot only
+ * @param {((slot:string) => void)|null} props.onLibrary  "From library" for each known media slot
  */
 export function SourcePickers({ media, sources, onPick, onDraw, onLibrary }) {
   return Object.entries(media).filter(([slot]) => SLOTS[slot]).map(([slot, spec]) => {
     const ui = SLOTS[slot];
+    const kind = generationSlotKind(slot);
     const picked = sources[slot];
     const limits = [spec.maxSeconds && `up to ${spec.maxSeconds}s`, spec.maxPixels && `up to ${spec.maxPixels / 1e6} MP`].filter(Boolean);
     return (
       <div key={slot} className="mt-3 flex items-center gap-3 rounded-lg border border-vx-border bg-vx-panel p-3">
-        {picked && slot === 'image' ? (
-          <img src={picked.previewUrl} alt="Start image" className="w-16 h-16 rounded-sm object-cover bg-black shrink-0" />
+        {picked && kind === 'image' ? (
+          <img src={picked.previewUrl} alt={slot === 'endImage' ? 'End image' : 'Start image'} className="w-16 h-16 rounded-sm object-cover bg-black shrink-0" />
         ) : (
           <div className="w-16 h-16 rounded-sm border border-dashed border-vx-border shrink-0 flex items-center justify-center text-vx-fg-faint" aria-hidden="true">
             {picked ? '✓' : ''}
@@ -35,7 +38,7 @@ export function SourcePickers({ media, sources, onPick, onDraw, onLibrary }) {
         )}
         <div className="min-w-0 flex-1">
           <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">
-            {ui.label}{spec.required ? ' · REQUIRED' : ' · OPTIONAL'}
+            {spec.label || ui.label}{spec.required ? ' · REQUIRED' : ' · OPTIONAL'}
           </div>
           <div className="text-xs text-vx-fg-body truncate mt-1">
             {picked ? (picked.file ? picked.file.name : `From library: ${picked.label}`) : [ui.hint, ...limits].join(', ')}
@@ -45,12 +48,12 @@ export function SourcePickers({ media, sources, onPick, onDraw, onLibrary }) {
         {picked?.file && slot === 'image' && onDraw && (
           <button onClick={onDraw} className={pill}>Draw</button>
         )}
-        {slot === 'image' && onLibrary && (
+        {onLibrary && (
           <button data-assistant-control="create.upload" type="button" onClick={() => onLibrary(slot)} className={pill}>From library</button>
         )}
         <label className={`${pill} cursor-pointer has-focus-visible:outline-solid has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-vx-accent`}>
           {picked ? 'Replace' : ui.add}
-          <input type="file" accept={ui.accept} className="sr-only"
+          <input type="file" accept={generationMimeTypes(kind).join(',')} className="sr-only"
             onChange={(e) => { const f = e.target.files && e.target.files[0]; e.target.value = ''; onPick(slot, f || null); }} />
         </label>
         {picked && (

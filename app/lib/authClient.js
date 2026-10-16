@@ -40,6 +40,9 @@ const REFRESH_AHEAD_SEC = 60;
 const listeners = new Set();
 let refreshInFlight = null;
 let memorySession = null;
+// A failed storage write must not let a readable stale record override a
+// completed local sign-in/logout. A later cross-tab session event resets this.
+let storageFallback = false;
 let sessionEpoch = 0;
 let storageListenerInstalled = false;
 const ADOPTED_SESSION = Symbol('adopted-browser-session');
@@ -84,8 +87,10 @@ export function getSession() {
 }
 // Display metadata survives expiry; legacy credentials are migration input only.
 function readStored() {
+    if (storageFallback) return memorySession;
     if (typeof localStorage === "undefined") return memorySession;
     try {
+        if (localStorage.getItem(SIGNED_OUT_KEY) === '1') return null;
         const raw = localStorage.getItem(STORAGE_KEY);
         if (!raw) return memorySession;
         const s = JSON.parse(raw);
@@ -139,9 +144,11 @@ export async function getFreshAccessToken() {
     // HttpOnly cookies cannot be deleted by JS during a network outage. Keep
     // the user's logout intent across reloads and retry deletion, never restore.
     try {
-        if (typeof localStorage !== 'undefined' && localStorage.getItem(SIGNED_OUT_KEY) === '1') {
+        if (logoutPending()) {
+            const epoch = sessionEpoch;
             await browserSessionRequest({ action: 'clear' }, { beforeRequest: () => {
-                if (localStorage.getItem(SIGNED_OUT_KEY) !== '1') throw Object.assign(new Error('session changed'), { code: 'account_changed' });
+                assertSessionEpoch(epoch);
+                if (!logoutPending()) throw Object.assign(new Error('session changed'), { code: 'account_changed' });
             } }).catch(() => {});
             return null;
         }
@@ -189,6 +196,22 @@ export async function getFreshAccessToken() {
 let storagePersisted = true;
 export function sessionIsPersisted() { return storagePersisted; }
 
+function logoutPending() {
+    if (storageFallback) return !memorySession;
+    return typeof localStorage !== 'undefined' && localStorage.getItem(SIGNED_OUT_KEY) === '1';
+}
+
+function persistMetadata(operation) {
+    try {
+        operation();
+        return true;
+    } catch (err) {
+        console.error("[auth] could not persist session metadata:", err && err.name);
+        storagePersisted = false;
+        return false;
+    }
+}
+
 function setSession(s, { broadcast = true } = {}) {
     const previous = readStored();
     // Session ended or a different user: nothing the last one left in this
@@ -203,23 +226,25 @@ function setSession(s, { broadcast = true } = {}) {
     memorySession = s ? { ...s, refresh_token: null, cookie_session: true } : null;
     sessionEpoch += 1;
     refreshInFlight = null;
-    // Safari private browsing and blocked site data throw on setItem, not on
-    // access. The read path was already guarded; this was not, so the throw
-    // propagated out of signInWithPassword and surfaced a raw DOMException.
-    // A session we cannot persist is still a usable session for this tab, so
-    // notify listeners either way and let the caller decide what to say.
-    try {
-        if (typeof localStorage !== 'undefined') {
-            if (s) localStorage.removeItem(SIGNED_OUT_KEY);
-            else localStorage.setItem(SIGNED_OUT_KEY, '1');
-            if (s && (broadcast || previous?.refresh_token || !previous)) localStorage.setItem(STORAGE_KEY, JSON.stringify({ cookie_session: true,
-                expires_at: s.expires_at, user: s.user, revision: crypto.randomUUID() }));
-            else if (!s) localStorage.removeItem(STORAGE_KEY);
+    // Quota/blocked storage can permit reads or removals while refusing writes.
+    // Attempt each operation independently; memory remains authoritative if
+    // either fails, including logout when the legacy record cannot be removed.
+    let persisted = true;
+    if (typeof localStorage !== 'undefined') {
+        if (s) {
+            persisted = persistMetadata(() => localStorage.removeItem(SIGNED_OUT_KEY));
+            if (broadcast || previous?.refresh_token || !previous || storageFallback) {
+                persisted = persistMetadata(() => localStorage.setItem(STORAGE_KEY, JSON.stringify({ cookie_session: true,
+                    expires_at: s.expires_at, user: s.user, revision: crypto.randomUUID() }))) && persisted;
+            }
+        } else {
+            // Removing the larger legacy record first can free enough quota for
+            // the tiny marker that prevents offline logout revival on reload.
+            persisted = persistMetadata(() => localStorage.removeItem(STORAGE_KEY));
+            persisted = persistMetadata(() => localStorage.setItem(SIGNED_OUT_KEY, '1')) && persisted;
         }
-    } catch (err) {
-        console.error("[auth] could not persist session metadata:", err && err.name);
-        storagePersisted = false;
     }
+    storageFallback = !persisted;
     for (const cb of listeners) cb(memorySession);
 }
 
@@ -244,12 +269,13 @@ export function onSessionChange(cb) {
     };
 }
 function onStorage(event) {
-    if (event.key !== STORAGE_KEY && event.key !== null) return;
+    if (event.key !== STORAGE_KEY && event.key !== null && !(event.key === SIGNED_OUT_KEY && event.newValue === '1')) return;
     memorySession = null;
+    storageFallback = false;
     sessionEpoch += 1;
     refreshInFlight = null;
     for (const listener of listeners) listener(getStoredSession());
-    if (event.newValue) getFreshAccessToken().catch(() => null);
+    if (event.key === STORAGE_KEY && event.newValue) getFreshAccessToken().catch(() => null);
 }
 
 /**

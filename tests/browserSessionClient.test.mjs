@@ -170,3 +170,115 @@ test('blocked metadata storage cannot prevent in-memory sign-in or sign-out', as
         assert.equal(auth.getSession(), null);
     } finally { globalThis.localStorage = original; }
 });
+
+test('full but readable storage cannot skip removing retained legacy credentials on logout', async () => {
+    store.clear();
+    store.set(KEY, JSON.stringify({ ...fresh('legacy'), refresh_token: 'synthetic-refresh', expires_at: Date.now() / 1000 + 3600 }));
+    const auth = await load('quota-retained-legacy');
+    const original = globalThis.localStorage;
+    const removed = [];
+    globalThis.localStorage = { ...original,
+        setItem: () => { throw new DOMException('synthetic quota', 'QuotaExceededError'); },
+        removeItem: key => { removed.push(key); store.delete(key); } };
+    try {
+        assert.equal(auth.getStoredUserId(), 'legacy');
+        auth.clearSession();
+        assert.ok(removed.includes(KEY), 'session removal is independent of the logout marker write');
+        assert.equal(store.has(KEY), false);
+        assert.equal(auth.getSession(), null);
+        assert.equal(auth.getStoredUserId(), null);
+    } finally { globalThis.localStorage = original; }
+});
+
+test('denied logout persistence cannot revive readable legacy credentials or the server cookie in this tab', async () => {
+    store.clear();
+    const legacy = JSON.stringify({ ...fresh('legacy'), refresh_token: 'synthetic-refresh', expires_at: Date.now() / 1000 + 3600 });
+    store.set(KEY, legacy);
+    const auth = await load('denied-retained-legacy');
+    const original = globalThis.localStorage;
+    const actions = [];
+    globalThis.localStorage = { ...original,
+        setItem: () => { throw new DOMException('synthetic quota', 'QuotaExceededError'); },
+        removeItem: () => { throw new DOMException('synthetic denial', 'SecurityError'); } };
+    globalThis.fetch = async (_url, init) => {
+        actions.push(JSON.parse(init.body).action);
+        throw new TypeError('synthetic offline');
+    };
+    try {
+        auth.clearSession();
+        assert.equal(store.get(KEY), legacy, 'the fixture retains readable credentials when deletion is denied');
+        assert.equal(auth.getSession(), null);
+        assert.equal(auth.getStoredUserId(), null);
+        assert.equal(await auth.getFreshAccessToken(), null);
+        assert.deepEqual(actions, ['clear'], 'logout retries deletion, never cookie restoration or legacy migration');
+        auth.adoptSession(fresh('new-account'));
+        assert.equal(auth.getStoredUserId(), 'new-account', 'an explicit sign-in supersedes inaccessible old storage');
+        assert.equal(await auth.getFreshAccessToken(), 'new-account-access');
+    } finally { globalThis.localStorage = original; }
+});
+
+test('a persisted logout marker invalidates another tab even if legacy removal was denied', async () => {
+    store.clear();
+    const callbacks = new Set();
+    globalThis.window = { addEventListener: (_name, cb) => callbacks.add(cb),
+        removeEventListener: (_name, cb) => callbacks.delete(cb) };
+    const auth = await load('cross-tab-retained-legacy');
+    auth.adoptSession(fresh('alice'));
+    const unsubscribe = auth.onSessionChange(() => {});
+    store.set(KEY, JSON.stringify({ ...fresh('alice'), refresh_token: 'synthetic-refresh', expires_at: Date.now() / 1000 + 3600 }));
+    store.set('veyrnox_session_signed_out', '1');
+    globalThis.fetch = () => assert.fail('a logout marker must not restore credentials');
+    try {
+        for (const cb of callbacks) cb({ key: 'veyrnox_session_signed_out', newValue: '1' });
+        assert.equal(auth.getSession(), null);
+        assert.equal(auth.getStoredUserId(), null);
+        const reloaded = await load('reload-retained-legacy-marker');
+        assert.equal(reloaded.getSession(), null);
+        assert.equal(reloaded.getStoredUserId(), null);
+    } finally { unsubscribe(); delete globalThis.window; }
+});
+
+test('refresh repairs stale legacy storage after persistence recovers from a failed sign-in write', async () => {
+    store.clear();
+    store.set(KEY, JSON.stringify({ ...fresh('legacy'), refresh_token: 'synthetic-refresh', expires_at: Date.now() / 1000 + 3600 }));
+    const auth = await load('recovered-storage');
+    const original = globalThis.localStorage;
+    globalThis.localStorage = { ...original,
+        setItem: () => { throw new DOMException('synthetic quota', 'QuotaExceededError'); } };
+    try {
+        auth.adoptSession({ ...fresh('new-account'), expires_at: 1 });
+    } finally { globalThis.localStorage = original; }
+    const actions = [];
+    globalThis.fetch = async (_url, init) => {
+        actions.push(JSON.parse(init.body).action);
+        return Response.json(fresh('new-account'));
+    };
+    assert.equal(await auth.getFreshAccessToken(), 'new-account-access');
+    assert.deepEqual(actions, ['refresh']);
+    assert.equal(auth.getStoredUserId(), 'new-account');
+    assert.equal('access_token' in JSON.parse(store.get(KEY)), false);
+    assert.equal(JSON.parse(store.get(KEY)).user.id, 'new-account');
+});
+
+test('logout frees session storage before writing its offline reload marker', async () => {
+    store.clear();
+    store.set(KEY, JSON.stringify({ ...fresh('legacy'), refresh_token: 'synthetic-refresh', expires_at: Date.now() / 1000 + 3600 }));
+    const auth = await load('quota-freed-by-removal');
+    const original = globalThis.localStorage;
+    globalThis.localStorage = { ...original, setItem: (key, value) => {
+        if (store.has(KEY)) throw new DOMException('synthetic full storage', 'QuotaExceededError');
+        store.set(key, value);
+    } };
+    try {
+        auth.clearSession();
+        assert.equal(store.get('veyrnox_session_signed_out'), '1', 'deleting legacy credentials makes room for the small logout marker');
+        const reloaded = await load('after-quota-freed');
+        const actions = [];
+        globalThis.fetch = async (_url, init) => {
+            actions.push(JSON.parse(init.body).action);
+            throw new TypeError('synthetic offline');
+        };
+        assert.equal(await reloaded.getFreshAccessToken(), null);
+        assert.deepEqual(actions, ['clear']);
+    } finally { globalThis.localStorage = original; }
+});

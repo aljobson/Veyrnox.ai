@@ -647,12 +647,30 @@ function optionPhrase(options, value) {
   return options.find(([label]) => label === value)?.[1] || '';
 }
 
+// Reconcile inherited preset descriptions only. Free-form user canon remains
+// theirs. Whole-word categories prevent e.g. Pear from removing pearl details.
+// Body keywords exclude shoulders, so a hair-width comparison stays intact.
+const CANON_CATEGORIES = [
+  { keys: ['hair', 'hair_color'], words: /\b(?:hair|haircut|afro|pompadour|halo|canopy|quiff|braids|antennae)\b/i },
+  { keys: ['wardrobe_style'], words: /\b(?:couture|coat|raincoat|waistcoat|jacket|dress|suit|tracksuit|trousers|jeans|shirt|t-shirt|tailoring|sportswear|robe|gown|cape|boots|trainers|sneakers|jumpsuit|sash|turtleneck|coverall|gloves|tie|pinstripe|sleeves|train)\b/i },
+  { keys: ['body_type', 'height', 'proportions', 'torso_size', 'arm_size', 'leg_size', 'hand_size', 'foot_size'], words: /\b(?:body|bodybuilder|build|silhouette|torso|hips|limbs|legs|arms|hands|feet|neck|slim|slender|thin|muscular|curvy|pear|barrel|compact|seven-foot|long-limbed|full-bodied|athletic|sturdy|proportions|posture)\b/i },
+];
+
+function inheritedVisualCanon(picks) {
+  const rule = oneLine(picks?.oddling_rule, 160);
+  const original = rule && ODDLING_ARCHETYPES.find((item) => oneLine(item.picks.oddling_rule, 160) === rule)?.picks;
+  if (!original) return rule;
+  const changed = CANON_CATEGORIES.filter(({ keys }) => keys.some((key) => (picks?.[key] || '') !== (original[key] || '')));
+  return rule.split(',').map((clause) => clause.trim())
+    .filter((clause) => !changed.some(({ words }) => words.test(clause))).join(', ');
+}
+
 /** The creator premise stays separate from visual traits so an Oddling can host many scenes. */
 export function oddlingIdentity(picks) {
   const parts = [];
   const name = oneLine(picks?.oddling_name, 40);
   const obsession = oneLine(picks?.oddling_obsession, 140);
-  const rule = oneLine(picks?.oddling_rule, 160);
+  const rule = inheritedVisualCanon(picks);
   const voice = optionPhrase(ODDLING_TONES, picks?.oddling_voice);
   const show = optionPhrase(ODDLING_SHOWS, picks?.oddling_show);
   if (name) parts.push(`fictional creator named ${name}`);
