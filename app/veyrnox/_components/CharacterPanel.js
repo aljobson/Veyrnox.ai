@@ -29,7 +29,7 @@ function readableTime(timestamp) {
 
 // Oddlings are fictional creators with a repeatable visual canon and show format.
 // This still only composes the prompt; Create owns pricing, consent and generation.
-export function CharacterPanel({ enabled, onToggle, picks, onChange }) {
+export function CharacterPanel({ enabled, onToggle, picks, onChange, handoffPicks = null }) {
   const [tab, setTab] = useState(CHARACTER_TABS[0]);
   const [saved, setSaved] = useState(null);
   const [notice, setNotice] = useState('');
@@ -39,7 +39,9 @@ export function CharacterPanel({ enabled, onToggle, picks, onChange }) {
     const timer = window.setTimeout(() => {
       const draft = readOddlingDraft(window.localStorage);
       setSaved(draft);
-      const passport = readOddlingPassport(window.localStorage, window.location.search);
+      const passport = handoffPicks && Object.keys(handoffPicks).length
+        ? { picks: handoffPicks }
+        : readOddlingPassport(window.localStorage, window.location.search);
       if (passport) {
         onChange(passport.picks);
         onToggle(true);
@@ -48,7 +50,7 @@ export function CharacterPanel({ enabled, onToggle, picks, onChange }) {
       }
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [onChange, onToggle]);
+  }, [onChange, onToggle, handoffPicks]);
 
   function setPick(key, value) {
     onChange(changeCharacterPick(picks, key, value));

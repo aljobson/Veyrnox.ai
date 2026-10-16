@@ -55,3 +55,19 @@ test('a Film Studio draft carries its clip length without changing older drafts'
     writeStudioDraft(s,{prompt:'a room',model:'wan',durationSeconds:500},NOW);
     assert.deepEqual(takeStudioDraft(s,'wan',NOW),{prompt:'a room',aspect:null});
 });
+
+test('an Oddling handoff carries a one-time character snapshot that Create can sanitize', async () => {
+    const { takeStudioDraft, writeStudioDraft } = await import('../app/veyrnox/_lib/landingDraft.js');
+    const { sanitizeOddlingPicks } = await import('../app/veyrnox/_lib/character.js');
+    const map = new Map();
+    const s = { getItem: (k) => map.get(k) ?? null, setItem: (k, v) => map.set(k, v), removeItem: (k) => map.delete(k) };
+    assert.equal(writeStudioDraft(s, {
+        prompt: 'full-body studio portrait', model: 'flux-2-pro',
+        oddlingPicks: { oddling_name: 'Pip Parcel', body_type: 'Very Skinny', hair: 'Cube Cut', wardrobe_style: 'Utility Pop', unknown: 'drop me' },
+    }, NOW), true);
+    const handedOff = takeStudioDraft(s, 'flux-2-pro', NOW);
+    assert.deepEqual({ ...handedOff, oddlingPicks: sanitizeOddlingPicks(handedOff.oddlingPicks) }, {
+        prompt: 'full-body studio portrait', aspect: null,
+        oddlingPicks: { oddling_name: 'Pip Parcel', body_type: 'Very Skinny', hair: 'Cube Cut', wardrobe_style: 'Utility Pop' },
+    });
+});
