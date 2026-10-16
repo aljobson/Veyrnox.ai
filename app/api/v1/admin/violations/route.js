@@ -40,6 +40,7 @@ const MAX_BODY_BYTES = 4 * 1024;
 // answers a replay with the first result, so a lost response and a resubmit
 // record one strike, not two (0253, audit P-07).
 const IDEMPOTENCY_RE = /^[A-Za-z0-9._-]{8,128}$/;
+const safeLogValue = (value) => String(value ?? '').replace(/[\r\n\u2028\u2029]/g, ' ').slice(0, 256);
 
 const requireAal2 = () => process.env.ADMIN_REQUIRE_AAL2 === 'true';
 
@@ -132,7 +133,7 @@ export async function POST(req) {
     }
     if (tier === 'csam_escalation') {
         // Never a notice for this tier: the procedure says the person is not told.
-        console.error('[api/v1/admin/violations] csam escalation recorded for', userId, 'job', jobId, 'preserved', result.preserved, 'frozen', result.frozen);
+        console.error('[api/v1/admin/violations] csam escalation recorded for', safeLogValue(userId), 'job', safeLogValue(jobId), 'preserved', result.preserved, 'frozen', result.frozen);
         return NextResponse.json({
             action_id: result.action_id, tier: result.tier, assets_removed: result.assets_removed, preserved: result.preserved,
             takedowns: null, frozen: result.frozen, hold_until: null, email: 'skipped', replayed: result.replayed === true,
@@ -146,7 +147,7 @@ export async function POST(req) {
             takedowns: result.takedowns, frozen: result.frozen, hold_until: result.hold_until || null, email: 'skipped', replayed: true,
         }, { status: 200, headers: { 'Cache-Control': 'no-store' } });
     }
-    console.error('[api/v1/admin/violations] recorded', tier, 'for', userId, 'job', jobId, 'takedowns', result.takedowns, 'frozen', result.frozen);
+    console.error('[api/v1/admin/violations] recorded', safeLogValue(tier), 'for', safeLogValue(userId), 'job', safeLogValue(jobId), 'takedowns', result.takedowns, 'frozen', result.frozen);
     const email = await notifyViolation({
         cfg: g.cfg, userId, actionId: result.action_id, tier, takedowns: result.takedowns, frozen: result.frozen,
         holdUntil: result.hold_until || null,
