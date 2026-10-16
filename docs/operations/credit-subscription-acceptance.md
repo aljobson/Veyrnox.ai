@@ -10,7 +10,7 @@ Customer Portal are not offered by these endpoints.
 
 ## Staging activation record — 16 October 2026
 
-- Staging Worker version `bb79ad1f-c6eb-4cf9-b5cf-c98826ad790e` exposes the
+- Staging Worker version `f845e6d5-e2b2-4453-84b0-73da96268e03` exposes the
   three monthly plans through the public projection and has
   `SUBSCRIPTIONS_ENABLED=true`. Production remains false.
 - Apply corrected 0186/0187 through the owner-approved migration workflow;
