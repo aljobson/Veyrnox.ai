@@ -29,7 +29,7 @@ test('queries only unfinished GrsAI jobs whose catalog endpoint matches', async 
         await sweepGrsai(args);
         const catalog = urls[0].searchParams;
         assert.equal(catalog.get('provider'), 'eq.grsai');
-        assert.equal(catalog.get('id'), 'in.(nano-banana-pro-grsai,nano-banana-pro-edit-grsai)');
+        assert.equal(catalog.get('id'), 'in.(nano-banana-kie,nano-banana-pro-grsai,nano-banana-pro-edit-grsai)');
         assert.equal(catalog.get('active'), null);
         const q = urls[1].searchParams;
         assert.equal(q.get('provider'), 'eq.grsai');
@@ -144,5 +144,16 @@ test('edit recovery accepts only exact endpoint pairs, including inactive routes
     }, [
         { id: 'nano-banana-pro-grsai', provider_endpoint: 'grsai:unknown' },
         { id: 'nano-banana-pro-edit-grsai', provider_endpoint: 'grsai:nano-banana-pro-edit', active: false },
+    ]);
+});
+
+test('basic recovery accepts the legacy public ID only with the GrsAI Lite endpoint', async () => {
+    await withRows([job('basic')], async (urls) => {
+        const out = await sweepGrsai({ ...args, read: async () => ({ ok: true, state: 'pending' }) });
+        assert.equal(out.pending, 1);
+        assert.equal(urls[1].searchParams.get('model_id'), 'in.(nano-banana-kie)');
+    }, [
+        { id: 'nano-banana-kie', provider_endpoint: 'grsai:nano-banana-2-lite', active: true },
+        { id: 'nano-banana-pro-grsai', provider_endpoint: 'grsai:unknown' },
     ]);
 });

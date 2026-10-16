@@ -114,13 +114,13 @@ test('explicit refusal still records the error and refunds once', async (t) => {
     assert.equal(rpc(calls, 'job_submit_rejected')[0].body.p_error_code, 'provider_submit_failed');
 });
 
-test('flag off retains the legacy transport failure and refund', async (t) => {
+test('flag off cannot disable ambiguous-submit billing protection', async (t) => {
     flag(t, 'false');
     const calls = network(t, { answer: () => { throw new Error('reset'); } });
     const response = await post();
-    assert.equal(response.status, 502);
-    assert.deepEqual(await response.json(), { error: 'provider_submit_failed' });
-    assert.equal(rpc(calls, 'ledger_refund').length, 1);
+    assert.equal(response.status, 503);
+    assert.deepEqual(await response.json(), { error: 'outcome_unknown', job_id: JOB });
+    assert.equal(rpc(calls, 'ledger_refund').length, 0);
 });
 
 test('annotation outage still reports uncertainty without moving credits', async (t) => {

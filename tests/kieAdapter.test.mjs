@@ -131,6 +131,7 @@ test('an out-of-funds refusal is typed provider_payment_required; every other re
     // credits to perform the operation", as a code inside an HTTP 200.
     const inBody = await submitAgainst(200, { code: 402, msg: 'Insufficient credits', data: null });
     assert.equal(inBody.result.ok, false);
+    assert.equal(inBody.result.outcome, 'rejected');
     assert.equal(inBody.result.errorCode, 'provider_payment_required');
     assert.match(inBody.result.error, /^kie 200\/402: /);
     assert.equal(inBody.calls[0].url, 'https://api.kie.ai/api/v1/jobs/createTask');
@@ -141,10 +142,23 @@ test('an out-of-funds refusal is typed provider_payment_required; every other re
     for (const [status, body] of [[200, { code: 500, msg: 'rejected' }], [200, { code: 422, msg: 'bad prompt' }], [401, { code: 401, msg: 'no' }], [429, { code: 429 }], [500, null]]) {
         const r = await submitAgainst(status, body);
         assert.equal(r.result.ok, false, `${status}`);
+        assert.equal(r.result.outcome, status >= 500 ? 'unknown' : 'rejected', `${status}`);
         assert.equal('errorCode' in r.result, false, `${status} ${JSON.stringify(body)}`);
     }
     const accepted = await submitAgainst(200, { code: 200, data: { taskId: 'task-1' } });
     assert.deepEqual(accepted.result, { ok: true, providerJobId: 'task-1' });
+    assert.equal(accepted.calls[0].init.redirect, 'manual');
+});
+
+test('transport loss and malformed success remain unknown and are never retried', async (t) => {
+    const job = { job_id: 'job-1', provider_endpoint: 'market:google/nano-banana', inputs: { prompt: 'a cat' } };
+    const fetch = t.mock.method(globalThis, 'fetch', async () => { throw new Error('connection reset'); });
+    assert.equal((await submitTask(job, { apiKey: 'kie-test', callbackUrl: 'https://veyrnox.test/api/webhook/kie' })).outcome, 'unknown');
+    assert.equal(fetch.mock.callCount(), 1);
+    fetch.mock.restore();
+    const missing = await submitAgainst(200, { code: 200, data: {} });
+    assert.equal(missing.result.outcome, 'unknown');
+    assert.equal(missing.calls.length, 1);
 });
 
 test('finds the task id wherever kie puts it', () => {

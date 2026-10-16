@@ -4,10 +4,12 @@ import { randomUUID } from 'node:crypto';
 import pg from 'pg';
 
 const MODEL = 'supplier-spend-test';
+const GRSAI_MODEL = 'supplier-spend-grsai-test';
 
 describe('supplier spend limits (0327)', { skip: !process.env.DATABASE_URL }, () => {
     let pool: pg.Pool;
     let originalPolicy: Record<string, unknown>;
+    let originalGrsaiPolicy: Record<string, unknown>;
     const one = async (sql: string, args: unknown[] = []) => (await pool.query(sql, args)).rows[0];
 
     async function user(credits = 20) {
@@ -31,21 +33,27 @@ describe('supplier spend limits (0327)', { skip: !process.env.DATABASE_URL }, ()
             p.global_hour_microusd, p.global_day_microusd]);
     }
 
-    const admit = async (userId: string, key: string) => (await one(
-        `SELECT public.provider_spend_admit_model($1,$2,$3,'{}'::jsonb,1) AS r`, [userId, key, MODEL])).r;
+    const admit = async (userId: string, key: string, model = MODEL) => (await one(
+        `SELECT public.provider_spend_admit_model($1,$2,$3,'{}'::jsonb,1) AS r`, [userId, key, model])).r;
 
     before(async () => {
         pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 12 });
         originalPolicy = await one('SELECT * FROM public.provider_spend_policy WHERE singleton');
+        originalGrsaiPolicy = await one(`SELECT * FROM public.provider_spend_provider_policy WHERE provider='grsai'`);
         await pool.query(`INSERT INTO public.model_catalog
             (id,name,provider,provider_endpoint,modality,credits_5s,provider_cost_per_unit,cost_unit,billing_seconds,gated_flag,active)
-            VALUES($1,'Supplier spend test','fal','fal-ai/spend-test','text-to-image',1,1.0000,'per_generation',NULL,false,false)
-            ON CONFLICT(id) DO UPDATE SET provider_cost_per_unit=1.0000,credits_5s=1`, [MODEL]);
+            VALUES
+            ($1,'Supplier spend test','fal','fal-ai/spend-test','text-to-image',1,1.0000,'per_generation',NULL,false,false),
+            ($2,'GrsAI spend test','grsai','grsai:nano-banana-pro','text-to-image',1,1.0000,'per_generation',NULL,false,false)
+            ON CONFLICT(id) DO UPDATE SET provider_cost_per_unit=1.0000,credits_5s=1`, [MODEL, GRSAI_MODEL]);
     });
 
     beforeEach(async () => {
-        await pool.query('DELETE FROM public.provider_spend_reservations WHERE model_id=$1 OR purpose=$2', [MODEL, 'supplier-test']);
+        await pool.query('DELETE FROM public.provider_spend_reservations WHERE model_id IN ($1,$2) OR purpose=$3', [MODEL, GRSAI_MODEL, 'supplier-test']);
         await policy();
+        await pool.query(`UPDATE public.provider_spend_provider_policy
+            SET admission_open=true,hour_microusd=10000000,day_microusd=20000000,updated_at=now()
+            WHERE provider='grsai'`);
     });
 
     after(async () => {
@@ -60,6 +68,12 @@ describe('supplier spend limits (0327)', { skip: !process.env.DATABASE_URL }, ()
                 originalPolicy.updated_at,
             ]);
             await pool.query('UPDATE public.model_catalog SET active=false WHERE id=$1', [MODEL]);
+            await pool.query(`UPDATE public.provider_spend_provider_policy
+                SET admission_open=$1,hour_microusd=$2,day_microusd=$3,updated_at=$4 WHERE provider='grsai'`, [
+                originalGrsaiPolicy.admission_open, originalGrsaiPolicy.hour_microusd,
+                originalGrsaiPolicy.day_microusd, originalGrsaiPolicy.updated_at,
+            ]);
+            await pool.query('UPDATE public.model_catalog SET active=false WHERE id=$1', [GRSAI_MODEL]);
         } finally { await pool.end(); }
     });
 
@@ -99,6 +113,45 @@ describe('supplier spend limits (0327)', { skip: !process.env.DATABASE_URL }, ()
         assert.equal(results.filter((r) => r.scope === 'global_hour').length, 6);
     });
 
+    it('enforces a strict provider-wide ceiling independently of the global budget', async () => {
+        await pool.query(`UPDATE public.provider_spend_provider_policy
+            SET hour_microusd=2000000,day_microusd=2000000 WHERE provider='grsai'`);
+        const users = await Promise.all(Array.from({ length: 3 }, () => user()));
+        const results = await Promise.all(users.map((u) => admit(u, `spend.${randomUUID()}`, GRSAI_MODEL)));
+        assert.equal(results.filter((r) => r.ok).length, 2);
+        assert.equal(results.filter((r) => r.scope === 'provider_hour').length, 1);
+    });
+
+    it('holds an ambiguous GrsAI debit out of the generic sweep until service reconciliation', async () => {
+        const u = await user(10);
+        const key = `spend.${randomUUID()}`;
+        const debit = (await one(`SELECT public.ledger_debit($1,$2,1,'debit:generation',$3,'{}'::jsonb) r`,
+            [u, key, GRSAI_MODEL])).r;
+        await one(`SELECT public.job_submit_rejected($1,'provider_outcome_unknown') r`, [debit.job_id]);
+        await pool.query(`UPDATE public.jobs SET updated_at=now()-interval '1 hour' WHERE id=$1`, [debit.job_id]);
+        await one(`SELECT public.sweep_stuck_jobs(0,120,200,60) r`);
+        assert.deepEqual(await one('SELECT state,error_code FROM public.jobs WHERE id=$1', [debit.job_id]),
+            { state: 'DEBITED', error_code: 'provider_outcome_unknown' });
+        const resolved = (await one(`SELECT public.reconcile_provider_submit_unknown($1,'REJECTED',NULL) r`, [debit.job_id])).r;
+        assert.equal(resolved.ok, true);
+        assert.equal((await one('SELECT state FROM public.jobs WHERE id=$1', [debit.job_id])).state, 'REFUNDED');
+        assert.equal((await one('SELECT balance FROM public.credit_balances WHERE user_id=$1', [u])).balance, 10);
+    });
+
+    it('projects a supplier-confirmed ambiguous acceptance without refunding it', async () => {
+        const u = await user(10);
+        const key = `spend.${randomUUID()}`;
+        const debit = (await one(`SELECT public.ledger_debit($1,$2,1,'debit:generation',$3,'{}'::jsonb) r`,
+            [u, key, GRSAI_MODEL])).r;
+        await one(`SELECT public.job_submit_rejected($1,'provider_outcome_unknown') r`, [debit.job_id]);
+        const resolved = (await one(`SELECT public.reconcile_provider_submit_unknown($1,'ACCEPTED','confirmed-task') r`, [debit.job_id])).r;
+        assert.equal(resolved.ok, true);
+        assert.deepEqual(await one('SELECT state,provider,provider_job_id,error_code FROM public.jobs WHERE id=$1', [debit.job_id]), {
+            state: 'SUBMITTED', provider: 'grsai', provider_job_id: 'confirmed-task', error_code: null,
+        });
+        assert.equal((await one('SELECT balance FROM public.credit_balances WHERE user_id=$1', [u])).balance, 9);
+    });
+
     it('rolls back the debit when admission is closed', async () => {
         await policy({ admission_open: false });
         const u = await user(10);
@@ -121,7 +174,7 @@ describe('supplier spend limits (0327)', { skip: !process.env.DATABASE_URL }, ()
     });
 
     it('private counters and policy are not exposed to browser roles', async () => {
-        for (const table of ['provider_spend_policy', 'provider_spend_reservations']) {
+        for (const table of ['provider_spend_policy', 'provider_spend_provider_policy', 'provider_spend_reservations']) {
             const grants = await pool.query(`SELECT grantee FROM information_schema.role_table_grants
                 WHERE table_schema='public' AND table_name=$1 AND grantee IN ('anon','authenticated','service_role','PUBLIC')`, [table]);
             assert.deepEqual(grants.rows, []);
@@ -131,6 +184,7 @@ describe('supplier spend limits (0327)', { skip: !process.env.DATABASE_URL }, ()
         for (const sig of [
             'provider_spend_admit_model(uuid,text,text,jsonb,integer)',
             'provider_spend_admit_custom_auth(text,text,text,text,bigint)',
+            'reconcile_provider_submit_unknown(uuid,text,text)',
         ]) {
             const grants = await one(`SELECT has_function_privilege('anon','public.${sig}','EXECUTE') anon,
                 has_function_privilege('authenticated','public.${sig}','EXECUTE') auth,

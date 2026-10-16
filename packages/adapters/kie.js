@@ -26,6 +26,7 @@
  */
 
 import { buildKieDialogue } from '../../lib/kieDialogue.js';
+import { readBoundedBody } from '../../lib/boundedBody.js';
 
 export const KIE_API_BASE = 'https://api.kie.ai';
 const SIGNATURE_WINDOW_SECONDS = 300;
@@ -232,18 +233,19 @@ export function buildRequest(target, inputs) {
  * `error` is for the server log. `errorCode` is set only for the one refusal
  * kie types for us (402, the kie balance is empty); every other refusal is
  * left to the classifier (ADR-0066).
- * @returns {Promise<{ok:true, providerJobId:string}|{ok:false, error:string, errorCode?:string, clientError?:string}>}
+ * @returns {Promise<{ok:true, providerJobId:string}|{ok:false, outcome:'rejected'|'unknown', error:string, errorCode?:string, clientError?:string}>}
  */
 export async function submitTask(job, cfg) {
-    if (!/^[A-Za-z0-9._-]{1,128}$/.test(String(job.job_id || ''))) return { ok: false, error: 'invalid job_id' };
+    if (!/^[A-Za-z0-9._-]{1,128}$/.test(String(job.job_id || ''))) return { ok: false, outcome: 'rejected', error: 'invalid job_id' };
     const target = parseEndpoint(job.provider_endpoint);
-    if (!target) return { ok: false, error: 'invalid provider_endpoint' };
+    if (!target) return { ok: false, outcome: 'rejected', error: 'invalid provider_endpoint' };
     const req = buildRequest(target, job.inputs || {});
-    if (!req.ok) return { ok: false, error: req.error, clientError: req.error };
+    if (!req.ok) return { ok: false, outcome: 'rejected', error: req.error, clientError: req.error };
+    if (!cfg?.apiKey) return { ok: false, outcome: 'rejected', error: 'provider_not_configured' };
 
     let callback;
-    try { callback = new URL(cfg.callbackUrl); } catch { return { ok: false, error: 'invalid callbackUrl' }; }
-    if (callback.protocol !== 'https:') return { ok: false, error: 'callbackUrl must be https' };
+    try { callback = new URL(cfg.callbackUrl); } catch { return { ok: false, outcome: 'rejected', error: 'invalid callbackUrl' }; }
+    if (callback.protocol !== 'https:') return { ok: false, outcome: 'rejected', error: 'callbackUrl must be https' };
 
     const path = target.kind === 'veo' ? '/api/v1/veo/generate' : '/api/v1/jobs/createTask';
     const body = { ...req.body, callBackUrl: callback.toString() };
@@ -255,14 +257,23 @@ export async function submitTask(job, cfg) {
         try {
             res = await fetch(`${KIE_API_BASE}${path}`, {
                 method: 'POST',
+                redirect: 'manual',
                 signal: controller.signal,
                 headers: { Authorization: `Bearer ${cfg.apiKey}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify(body),
             });
         } catch (err) {
-            return { ok: false, error: `transport: ${err && err.message}` };
+            return { ok: false, outcome: 'unknown', error: `transport: ${err && err.message}` };
         }
-        const data = await res.json().catch(() => null);
+        let data = null;
+        try {
+            const bytes = await readBoundedBody(res.body, 128 * 1024, controller.signal);
+            data = JSON.parse(new TextDecoder().decode(bytes));
+        } catch {
+            // A valid non-2xx status remains authoritative without a body.
+            // A 2xx response with no bounded JSON receipt is ambiguous.
+            if (res.ok) return { ok: false, outcome: 'unknown', error: 'kie returned an invalid response' };
+        }
         // kie reports errors both as HTTP status and as a `code` field in a 200.
         const code = data && typeof data.code === 'number' ? data.code : res.status;
         if (!res.ok || code !== 200) {
@@ -273,12 +284,13 @@ export async function submitTask(job, cfg) {
             // jobs.error_code says the kie balance is empty; the refund is
             // the same (lib/submitRejection.js). Every other code stays a log
             // string for the classifier (ADR-0066).
-            if (code === 402 || res.status === 402) return { ok: false, error, errorCode: 'provider_payment_required' };
-            return { ok: false, error };
+            const outcome = res.status === 408 || res.status >= 500 ? 'unknown' : 'rejected';
+            if (code === 402 || res.status === 402) return { ok: false, outcome: 'rejected', error, errorCode: 'provider_payment_required' };
+            return { ok: false, outcome, error };
         }
         const taskId = data && data.data && data.data.taskId;
         if (typeof taskId !== 'string' || !/^[A-Za-z0-9._-]{1,128}$/.test(taskId)) {
-            return { ok: false, error: 'kie did not return a taskId' };
+            return { ok: false, outcome: 'unknown', error: 'kie did not return a taskId' };
         }
         return { ok: true, providerJobId: taskId };
     } finally {
