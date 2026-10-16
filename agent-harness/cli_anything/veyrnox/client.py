@@ -5,6 +5,7 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
+from . import USER_AGENT
 from . import auth, config
 
 
@@ -34,7 +35,8 @@ class Client:
         if self.saved.get("expires_at", 0) <= int(time.time()) + 30 and self.saved.get("refresh_token"):
             self.saved = auth.refresh(self.saved)
         data = None if body is None else json.dumps(body).encode()
-        headers = {"Accept": "application/json", "Authorization": f'Bearer {self.saved["access_token"]}'}
+        headers = {"Accept": "application/json", "Authorization": f'Bearer {self.saved["access_token"]}',
+            "User-Agent": USER_AGENT}
         if data is not None:
             headers["Content-Type"] = "application/json"
         request = urllib.request.Request(f"{self.base}{path}", data=data, headers=headers, method=method)
@@ -54,7 +56,8 @@ class Client:
     def download(self, job_id, output):
         asset = self.request("GET", f"/generations/{job_id}/asset?download=1")
         target = Path(output)
-        with urllib.request.urlopen(asset["url"], timeout=120) as response:
+        request = urllib.request.Request(asset["url"], headers={"User-Agent": USER_AGENT})
+        with urllib.request.urlopen(request, timeout=120) as response:
             data = response.read()
         if not data:
             raise RuntimeError("Downloaded asset was empty")

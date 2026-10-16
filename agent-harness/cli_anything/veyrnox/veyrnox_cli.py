@@ -7,7 +7,7 @@ import urllib.request
 
 import click
 
-from . import __version__, auth, config
+from . import USER_AGENT, __version__, auth, config
 from .client import ApiError, Client, parse_value
 from .utils.repl_skin import ReplSkin
 
@@ -127,7 +127,10 @@ def openapi(ctx):
     """Print the public OpenAPI 3.1 document."""
     try:
         base = (ctx.obj.get("api_url") or config.load()["api_url"]).split("/api/v1/developer")[0]
-        with urllib.request.urlopen(f"{base}/api/developer/openapi", timeout=30) as response:
+        request = urllib.request.Request(f"{base}/api/developer/openapi", headers={
+            "Accept": "application/json", "User-Agent": USER_AGENT,
+        })
+        with urllib.request.urlopen(request, timeout=30) as response:
             emit(ctx, json.loads(response.read()))
     except Exception as exc:
         fail(exc)
