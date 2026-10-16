@@ -1,3 +1,4 @@
+import { isFullSocialReplay } from './social-acceptance-bootstrap.js';
 import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -10,6 +11,7 @@ describe('extended social connections (0228)', { skip: !process.env.DATABASE_URL
     const one = async (sql: string, args: unknown[] = []) => (await pool.query(sql, args)).rows[0];
     before(async () => {
         pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 8 });
+        if (await isFullSocialReplay(pool)) return;
         // The full suite already applies the scheduling prerequisites. Do
         // not replay an old RETURNS TABLE signature over its later version.
         const existing = await one("SELECT to_regclass('public.social_post_targets') AS table_name");

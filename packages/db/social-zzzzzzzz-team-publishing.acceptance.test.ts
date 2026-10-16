@@ -1,3 +1,4 @@
+import { isFullSocialReplay } from './social-acceptance-bootstrap.js';
 import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -6,11 +7,14 @@ import pg from 'pg';
 
 describe('actor-aware team publishing (0308)', { skip: !process.env.DATABASE_URL }, () => {
   let pool: pg.Pool;
+  let fullReplay = false;
   const one = async (sql: string, args: unknown[] = []) => (await pool.query(sql, args)).rows[0];
   const value = async (sql: string, args: unknown[] = []) => (await one(sql, args)).value;
 
   before(async () => {
     pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 4 });
+    fullReplay = await isFullSocialReplay(pool);
+    if (fullReplay) return;
     for (const file of ['0305_social_team_roles.sql', '0306_social_brand_access.sql', '0307_social_team_actions.sql', '0308_social_team_publishing.sql', '0311_social_post_cancel_restore.sql', '0312_social_report_templates.sql', '0313_social_customer_api.sql', '0314_social_customer_webhooks.sql', '0315_social_customer_api_logs.sql', '0317_social_scheduled_reports.sql']) {
       const migration = await readFile(new URL(`./schema/supabase/${file}`, import.meta.url), 'utf8');
       await pool.query(migration); await pool.query(migration);
@@ -162,6 +166,12 @@ describe('actor-aware team publishing (0308)', { skip: !process.env.DATABASE_URL
     assert.equal((await value(`SELECT public.save_social_report_template($1,$2,NULL,'Free report',NULL,30,false,true,NULL,'#112233') value`, [freeOwner.auth, freeBrand])).code, 'PLAN_REQUIRED');
     const scheduled = await value(`SELECT public.save_social_report_template_v2($1,$2,$3,'Quarterly client report',$4,90,false,false,NULL,'#112233','weekly',9,1,NULL) value`, [analyst.auth, brand, saved.template_id, account]);
     assert.equal(scheduled.ok, true); assert.ok(scheduled.next_delivery_at);
+    // Current delivery claims require a recipient and export format. This
+    // stores synthetic local configuration only; no email worker is invoked.
+    if (fullReplay) assert.equal((await value(`SELECT public.save_social_report_template_v3(
+      $1,$2,$3,'Quarterly client report',$4,90,false,false,NULL,'#112233','weekly',9,1,NULL,
+      ARRAY['client@example.com'],NULL,'Local fixture report','pdf') value`,
+    [analyst.auth, brand, saved.template_id, account])).ok, true);
     await pool.query('UPDATE public.social_report_templates SET next_delivery_at=now()-interval \'1 minute\' WHERE id=$1', [saved.template_id]);
     const claimed = await value('SELECT public.claim_social_report_deliveries(10) value');
     assert.equal(claimed.reports.length, 1); assert.equal(claimed.reports[0].id, saved.template_id);
@@ -170,7 +180,7 @@ describe('actor-aware team publishing (0308)', { skip: !process.env.DATABASE_URL
     assert.equal(ready.delivery_cadence, 'weekly'); assert.equal(ready.last_delivery_status, 'ready'); assert.ok(ready.next_delivery_at);
     assert.equal((await value('SELECT public.delete_social_report_template($1,$2,$3) value', [analyst.auth, brand, saved.template_id])).ok, true);
     assert.equal((await value('SELECT public.list_social_report_templates($1,$2) value', [viewer.auth, brand])).templates.length, 0);
-    assert.equal(await value(`SELECT count(*)::int value FROM public.social_account_actions WHERE brand_id=$1 AND actor_id=$2 AND action IN ('save_report_template','delete_report_template')`, [brand, analyst.id]), 4);
+    assert.equal(await value(`SELECT count(*)::int value FROM public.social_account_actions WHERE brand_id=$1 AND actor_id=$2 AND action IN ('save_report_template','delete_report_template')`, [brand, analyst.id]), fullReplay ? 5 : 4);
   });
 
   it('issues scoped hash-only customer API keys and invalidates lost access', async () => {

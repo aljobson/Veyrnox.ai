@@ -1,3 +1,4 @@
+import { isFullSocialReplay } from './social-acceptance-bootstrap.js';
 import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -10,6 +11,7 @@ describe('social content reuse (0301)', { skip: !process.env.DATABASE_URL }, () 
   const value = async (sql: string, args: unknown[] = []) => (await one(sql, args)).value;
   before(async () => {
     pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+    if (await isFullSocialReplay(pool)) return;
     // Acceptance CI starts from packages/db/schema and runs files by name, so
     // the scheduler acceptance suite has not installed create_social_post yet.
     // Apply this feature's Supabase dependencies explicitly and prove replay.

@@ -188,3 +188,27 @@ checks prove the UI handles fixture media, not actual provider completion,
 generated-media quality or measured provider output duration. No public social
 posts, connected-account changes, purchases, security enrolments or destructive
 account actions are part of this pass.
+
+### Publishing upload concurrency follow-up
+
+Fresh full-chain SQL testing reproduced a real scheduling/removal race: the
+actor-aware writer introduced in migration 0308 had lost the user-row lock
+shared with upload removal. In the deterministic removal-first test, both
+operations succeeded and a scheduled post referenced a deleting upload.
+
+Migration 0332 restores the shared actor lock and locks the bounded set of owned
+uploads in stable UUID order before validation/insertion. Authorization,
+idempotency, result contracts, service-only execution and the empty search path
+remain unchanged. Both lock orders, concurrent same-key requests, reversed
+multi-upload order, malformed input and foreign-upload denial have regressions.
+
+The local verification used a new disposable database: all 312 migrations
+replayed, and all 27 Publish suites passed (146 tests, zero failures or skips).
+The separate historical CI-bootstrap check passed 44/44 tests; applying 0332
+twice also succeeded. The provider-spend guard remained enabled. Historical
+test setup now avoids downgrading current functions during a full replay;
+existing Free-plan limits and assertions remain in place.
+
+This evidence is local, not live provider delivery. Production migration 0332
+must still be merged and applied by the owner-approved `apply-migrations`
+workflow under ADR-0023 before the database fix can be described as live.

@@ -1,3 +1,4 @@
+import { isFullSocialReplay } from './social-acceptance-bootstrap.js';
 import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -8,7 +9,7 @@ describe('report exports and delivery (0323)', { skip: !process.env.DATABASE_URL
   let pool: pg.Pool;
   const one = async (sql: string, args: unknown[] = []) => (await pool.query(sql, args)).rows[0];
   const value = async (sql: string, args: unknown[] = []) => (await one(sql, args)).value;
-  before(async () => { pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 4 }); const migration = await readFile(new URL('./schema/supabase/0323_social_report_exports_delivery.sql', import.meta.url), 'utf8'); await pool.query(migration); await pool.query(migration); });
+  before(async () => { pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 4 });if (await isFullSocialReplay(pool)) return; const migration = await readFile(new URL('./schema/supabase/0323_social_report_exports_delivery.sql', import.meta.url), 'utf8'); await pool.query(migration); await pool.query(migration); });
   after(async () => { if (pool) await pool.end(); });
   async function user() { const auth = randomUUID(), email = `report-${randomUUID()}@test.veyrnox.ai`; await pool.query('INSERT INTO auth.users(id,email) VALUES($1,$2)', [auth, email]); const id = await value('SELECT public.provision_user($1,$2) value', [auth, email]); return { auth, id }; }
 

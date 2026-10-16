@@ -1,3 +1,4 @@
+import { isFullSocialReplay } from './social-acceptance-bootstrap.js';
 import {after,before,describe,it} from 'node:test';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
@@ -7,7 +8,7 @@ import pg from 'pg';
 describe('Publish production QA regressions (0324–0325)',{skip:!process.env.DATABASE_URL},()=>{
  let pool:pg.Pool;
  const value=async(sql:string,args:unknown[]=[]) => (await pool.query(sql,args)).rows[0].value;
- before(async()=>{pool=new pg.Pool({connectionString:process.env.DATABASE_URL,max:4});for(const file of ['0324_social_smartlink_history.sql','0325_social_autolist_claim.sql']){const sql=await readFile(new URL(`./schema/supabase/${file}`,import.meta.url),'utf8');await pool.query(sql);await pool.query(sql);}});
+ before(async()=>{pool=new pg.Pool({connectionString:process.env.DATABASE_URL,max:4});if (await isFullSocialReplay(pool)) return;for(const file of ['0324_social_smartlink_history.sql','0325_social_autolist_claim.sql']){const sql=await readFile(new URL(`./schema/supabase/${file}`,import.meta.url),'utf8');await pool.query(sql);await pool.query(sql);}});
  after(async()=>{await pool?.end();});
  async function fixture(){const auth=randomUUID(),email=`qa-${auth}@test.veyrnox.ai`;await pool.query('INSERT INTO auth.users(id,email) VALUES($1,$2)',[auth,email]);const user=await value('SELECT public.provision_user($1,$2) value',[auth,email]);const brand=(await value('SELECT public.get_or_create_default_social_brand($1) value',[auth])).brand_id;await pool.query(`INSERT INTO public.social_publish_subscriptions(user_id,plan_id,idempotency_key,price_usd_cents,consent_version,status,current_period_end) VALUES($1,'publish',$2,1500,'publish-plan-2026-10-13','active',now()+interval '30 days')`,[user,randomUUID()]);return {auth,user,brand,slug:`qa-${randomUUID()}`};}
  type F=Awaited<ReturnType<typeof fixture>>;

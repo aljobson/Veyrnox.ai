@@ -1,3 +1,4 @@
+import { isFullSocialReplay } from './social-acceptance-bootstrap.js';
 import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -6,11 +7,14 @@ import pg from 'pg';
 
 describe('actor-aware social team actions (0307)', { skip: !process.env.DATABASE_URL }, () => {
   let pool: pg.Pool;
+  let fullReplay = false;
   const one = async (sql: string, args: unknown[] = []) => (await pool.query(sql, args)).rows[0];
   const value = async (sql: string, args: unknown[] = []) => (await one(sql, args)).value;
 
   before(async () => {
     pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 4 });
+    fullReplay = await isFullSocialReplay(pool);
+    if (fullReplay) return;
     for (const file of ['0305_social_team_roles.sql', '0306_social_brand_access.sql', '0307_social_team_actions.sql']) {
       const migration = await readFile(new URL(`./schema/supabase/${file}`, import.meta.url), 'utf8');
       await pool.query(migration); await pool.query(migration);
@@ -37,8 +41,15 @@ describe('actor-aware social team actions (0307)', { skip: !process.env.DATABASE
     const thread = await value(`INSERT INTO public.social_inbox_threads(brand_id,account_id,provider_thread_id,kind,can_reply,latest_message_at)
       VALUES($1,$2,$3,'comment',true,now()) RETURNING id value`, [brand, account, `thread-${randomUUID()}`]);
 
-    assert.equal((await value('SELECT public.update_social_inbox_thread($1,$2,$3) value', [editor.auth, thread, 'resolve'])).ok, true);
-    const reply = await value('SELECT public.create_social_inbox_reply($1,$2,$3,$4) value', [editor.auth, thread, 'Thanks!', `reply:${randomUUID()}`]);
+    assert.equal((await value(fullReplay
+      ? 'SELECT public.update_social_inbox_thread(p_auth_id=>$1,p_brand_id=>$2,p_thread_id=>$3,p_action=>$4) value'
+      : 'SELECT public.update_social_inbox_thread(p_auth_id=>$1,p_thread_id=>$2,p_action=>$3) value',
+    fullReplay ? [editor.auth, brand, thread, 'resolve'] : [editor.auth, thread, 'resolve'])).ok, true);
+    const replyKey = `reply:${randomUUID()}`;
+    const reply = await value(fullReplay
+      ? 'SELECT public.create_social_inbox_reply(p_auth_id=>$1,p_brand_id=>$2,p_thread_id=>$3,p_body=>$4,p_idempotency_key=>$5) value'
+      : 'SELECT public.create_social_inbox_reply(p_auth_id=>$1,p_thread_id=>$2,p_body=>$3,p_idempotency_key=>$4) value',
+    fullReplay ? [editor.auth, brand, thread, 'Thanks!', replyKey] : [editor.auth, thread, 'Thanks!', replyKey]);
     assert.equal(reply.ok, true); assert.equal(reply.idempotent, false);
     const queue = await value(`SELECT public.save_social_publish_queue($1,$2,NULL,'Editorial','UTC',$3,$4,true) value`,
       [editor.auth, brand, [account], JSON.stringify([{ weekday: 2, minute: 600 }])]);
@@ -49,7 +60,10 @@ describe('actor-aware social team actions (0307)', { skip: !process.env.DATABASE
     assert.equal((await value(`SELECT count(*)::int value FROM public.social_inbox_actions WHERE brand_id=$1 AND actor_id=$2`, [brand, editor.id])), 2);
     assert.equal((await value(`SELECT count(*)::int value FROM public.social_account_actions WHERE brand_id=$1 AND actor_id=$2 AND action IN ('save_publish_queue','save_smartlink')`, [brand, editor.id])), 2);
 
-    assert.equal((await value('SELECT public.update_social_inbox_thread($1,$2,$3) value', [analyst.auth, thread, 'reopen'])).code, 'FORBIDDEN');
+    assert.equal((await value(fullReplay
+      ? 'SELECT public.update_social_inbox_thread(p_auth_id=>$1,p_brand_id=>$2,p_thread_id=>$3,p_action=>$4) value'
+      : 'SELECT public.update_social_inbox_thread(p_auth_id=>$1,p_thread_id=>$2,p_action=>$3) value',
+    fullReplay ? [analyst.auth, brand, thread, 'reopen'] : [analyst.auth, thread, 'reopen'])).code, 'FORBIDDEN');
     assert.equal((await value(`SELECT public.save_social_smartlink($1,$2,'blocked','Blocked',NULL,NULL,'midnight',false,'[]'::jsonb) value`, [analyst.auth, brand])).code, 'FORBIDDEN');
   });
 
@@ -65,7 +79,10 @@ describe('actor-aware social team actions (0307)', { skip: !process.env.DATABASE
   });
 
   it('keeps delegated functions service-only with locked search paths', async () => {
-    for (const signature of ['update_social_inbox_thread(text,uuid,text)', 'create_social_inbox_reply(text,uuid,text,text)',
+    const inboxSignatures = fullReplay
+      ? ['update_social_inbox_thread(text,uuid,uuid,text)', 'create_social_inbox_reply(text,uuid,uuid,text,text)']
+      : ['update_social_inbox_thread(text,uuid,text)', 'create_social_inbox_reply(text,uuid,text,text)'];
+    for (const signature of [...inboxSignatures,
       'save_social_publish_queue(text,uuid,uuid,text,text,uuid[],jsonb,boolean)', 'delete_social_publish_queue(text,uuid,uuid)',
       'save_social_smartlink(text,uuid,text,text,text,text,text,boolean,jsonb)', 'list_social_publish_activity(text,uuid,integer)']) {
       for (const role of ['anon', 'authenticated']) assert.equal((await one("SELECT has_function_privilege($1,$2,'EXECUTE') allowed", [role, `public.${signature}`])).allowed, false);

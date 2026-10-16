@@ -1,3 +1,4 @@
+import { isFullSocialReplay } from './social-acceptance-bootstrap.js';
 import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -9,6 +10,7 @@ describe('TikTok atomic token rotation (0190)', { skip: !process.env.DATABASE_UR
     const one = async (sql: string, args: unknown[] = []) => (await pool.query(sql, args)).rows[0];
     before(async () => {
         pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 8 });
+        if (await isFullSocialReplay(pool)) return;
         const sql = await readFile(new URL('./schema/supabase/0190_tiktok_token_rotation.sql', import.meta.url), 'utf8');
         await pool.query(sql); await pool.query(sql);
     });

@@ -1,3 +1,4 @@
+import { isFullSocialReplay } from './social-acceptance-bootstrap.js';
 import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -6,11 +7,14 @@ import pg from 'pg';
 
 describe('social inbox (0299)', { skip: !process.env.DATABASE_URL }, () => {
   let pool: pg.Pool;
+  let fullReplay = false;
   const one = async (sql: string, args: unknown[] = []) => (await pool.query(sql, args)).rows[0];
   const value = async (sql: string, args: unknown[] = []) => (await one(sql, args)).value;
 
   before(async () => {
     pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 8 });
+    fullReplay = await isFullSocialReplay(pool);
+    if (fullReplay) return;
     await pool.query(`DO $$ DECLARE r TEXT; BEGIN FOREACH r IN ARRAY ARRAY['anon','authenticated','service_role'] LOOP
       IF NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname=r) THEN EXECUTE format('CREATE ROLE %I NOLOGIN',r); END IF;
     END LOOP; END $$`);
@@ -44,46 +48,64 @@ describe('social inbox (0299)', { skip: !process.env.DATABASE_URL }, () => {
     ['instagram', f.external, 'comment-1', 'comment', 'comment-1', 'inbound', 'A customer question', JSON.stringify([]), 'visitor-1', 'Visitor', null,
       'Instagram comment', 'https://www.instagram.com/p/example/', true, new Date().toISOString()].map((item, index) => overrides[String(index)] ?? item),
   );
+  type Fixture = Awaited<ReturnType<typeof fixture>>;
+  const listInbox = (f: Fixture, state: string) => value(fullReplay
+    ? `SELECT public.list_social_inbox(p_auth_id=>$1,p_brand_id=>$2,p_account_id=>NULL,
+        p_state=>$3,p_kind=>NULL,p_search=>NULL,p_assignee=>NULL,p_priority=>NULL,p_tag=>NULL) AS value`
+    : `SELECT public.list_social_inbox(p_auth_id=>$1,p_brand_id=>$2,p_account_id=>NULL,
+        p_state=>$3,p_kind=>NULL,p_search=>NULL) AS value`, [f.auth, f.brandId, state]);
+  const thread = (f: Fixture, id: string) => value(fullReplay
+    ? 'SELECT public.get_social_inbox_thread(p_auth_id=>$1,p_brand_id=>$2,p_thread_id=>$3) AS value'
+    : 'SELECT public.get_social_inbox_thread(p_auth_id=>$1,p_thread_id=>$2) AS value',
+  fullReplay ? [f.auth, f.brandId, id] : [f.auth, id]);
+  const updateThread = (f: Fixture, id: string, action: string) => value(fullReplay
+    ? 'SELECT public.update_social_inbox_thread(p_auth_id=>$1,p_brand_id=>$2,p_thread_id=>$3,p_action=>$4) AS value'
+    : 'SELECT public.update_social_inbox_thread(p_auth_id=>$1,p_thread_id=>$2,p_action=>$3) AS value',
+  fullReplay ? [f.auth, f.brandId, id, action] : [f.auth, id, action]);
+  const reply = (f: Fixture, id: string, body: string, key: string) => value(fullReplay
+    ? 'SELECT public.create_social_inbox_reply(p_auth_id=>$1,p_brand_id=>$2,p_thread_id=>$3,p_body=>$4,p_idempotency_key=>$5) AS value'
+    : 'SELECT public.create_social_inbox_reply(p_auth_id=>$1,p_thread_id=>$2,p_body=>$3,p_idempotency_key=>$4) AS value',
+  fullReplay ? [f.auth, f.brandId, id, body, key] : [f.auth, id, body, key]);
 
   it('deduplicates provider events and exposes unified conversation summaries only to a paid owner', async () => {
     const owner = await fixture();
     const first = await ingest(owner); const duplicate = await ingest(owner);
     assert.equal(first.ok, true, JSON.stringify(first));
     assert.deepEqual([first.idempotent, duplicate.idempotent], [false, true]);
-    const listed = await value('SELECT public.list_social_inbox($1,$2,NULL,$3,NULL,NULL) AS value', [owner.auth, owner.brandId, 'unresolved']);
+    const listed = await listInbox(owner, 'unresolved');
     assert.deepEqual(listed.counts, { all: 1, unread: 1, unresolved: 1, resolved: 0 });
     assert.equal(listed.threads.length, 1);
     assert.deepEqual([listed.threads[0].network, listed.threads[0].kind, listed.threads[0].preview, listed.threads[0].can_reply],
       ['instagram', 'comment', 'A customer question', true]);
 
     const free = await fixture({ paid: false });
-    assert.deepEqual(await value('SELECT public.list_social_inbox($1,$2,NULL,$3,NULL,NULL) AS value', [free.auth, free.brandId, 'all']),
+    assert.deepEqual(await listInbox(free, 'all'),
       { ok: false, code: 'PLAN_REQUIRED' });
-    assert.deepEqual(await value('SELECT public.get_social_inbox_thread($1,$2) AS value', [free.auth, first.thread_id]),
+    assert.deepEqual(await thread(free, first.thread_id),
       { ok: false, code: 'PLAN_REQUIRED' });
   });
 
   it('marks read and resolved, and queues an idempotent supported reply for provider delivery', async () => {
     const owner = await fixture(); const event = await ingest(owner);
-    assert.deepEqual(await value('SELECT public.update_social_inbox_thread($1,$2,$3) AS value', [owner.auth, event.thread_id, 'read']), { ok: true });
-    assert.equal((await value('SELECT public.get_social_inbox_thread($1,$2) AS value', [owner.auth, event.thread_id])).thread.unread_count, 0);
-    assert.deepEqual(await value('SELECT public.update_social_inbox_thread($1,$2,$3) AS value', [owner.auth, event.thread_id, 'resolve']), { ok: true });
+    assert.deepEqual(await updateThread(owner, event.thread_id, 'read'), { ok: true });
+    assert.equal((await thread(owner, event.thread_id)).thread.unread_count, 0);
+    assert.deepEqual(await updateThread(owner, event.thread_id, 'resolve'), { ok: true });
     const key = `reply-${randomUUID()}`;
-    const created = await value('SELECT public.create_social_inbox_reply($1,$2,$3,$4) AS value', [owner.auth, event.thread_id, 'Thanks for your message.', key]);
+    const created = await reply(owner, event.thread_id, 'Thanks for your message.', key);
     assert.deepEqual([created.ok, created.idempotent, created.network, created.provider_thread_id], [true, false, 'instagram', 'comment-1']);
     assert.equal(created.access_token_enc, Buffer.from('encrypted-token').toString('hex'));
-    const repeated = await value('SELECT public.create_social_inbox_reply($1,$2,$3,$4) AS value', [owner.auth, event.thread_id, 'Different body is ignored', key]);
+    const repeated = await reply(owner, event.thread_id, 'Different body is ignored', key);
     assert.deepEqual([repeated.idempotent, repeated.message_id], [true, created.message_id]);
     assert.deepEqual(await value('SELECT public.finish_social_inbox_reply($1,true,$2,NULL) AS value', [created.message_id, 'provider-reply-1']), { ok: true });
-    const detail = await value('SELECT public.get_social_inbox_thread($1,$2) AS value', [owner.auth, event.thread_id]);
+    const detail = await thread(owner, event.thread_id);
     assert.deepEqual(detail.messages.map((message: { direction: string; delivery_status: string }) => [message.direction, message.delivery_status]),
       [['inbound', 'received'], ['outbound', 'sent']]);
   });
 
   it('never enables replies without the exact provider permission and keeps browser roles closed', async () => {
     const owner = await fixture({ scopes: [] }); const event = await ingest(owner);
-    assert.equal((await value('SELECT public.get_social_inbox_thread($1,$2) AS value', [owner.auth, event.thread_id])).thread.can_reply, false);
-    assert.deepEqual(await value('SELECT public.create_social_inbox_reply($1,$2,$3,$4) AS value', [owner.auth, event.thread_id, 'Hello', `reply-${randomUUID()}`]),
+    assert.equal((await thread(owner, event.thread_id)).thread.can_reply, false);
+    assert.deepEqual(await reply(owner, event.thread_id, 'Hello', `reply-${randomUUID()}`),
       { ok: false, code: 'REPLY_UNAVAILABLE' });
     for (const table of ['social_inbox_threads', 'social_inbox_messages', 'social_inbox_actions']) {
       for (const role of ['anon', 'authenticated']) {

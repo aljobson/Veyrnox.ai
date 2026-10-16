@@ -1,3 +1,4 @@
+import { isFullSocialReplay } from './social-acceptance-bootstrap.js';
 import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -17,12 +18,15 @@ import pg from 'pg';
 // instead.
 describe('social publish scheduling (0156, 0160, 0161, 0168)', { skip: !process.env.DATABASE_URL }, () => {
     let pool: pg.Pool;
+    let fullReplay = false;
     const users: string[] = [];
     const one = async (sql: string, args: unknown[] = []) => (await pool.query(sql, args)).rows[0];
     const all = async (sql: string, args: unknown[] = []) => (await pool.query(sql, args)).rows;
 
     before(async () => {
         pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 12 });
+        fullReplay = await isFullSocialReplay(pool);
+        if (fullReplay) return;
         await pool.query(`DO $$ DECLARE r TEXT; BEGIN
             FOREACH r IN ARRAY ARRAY['anon', 'authenticated', 'service_role'] LOOP
                 IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = r) THEN
@@ -42,6 +46,10 @@ describe('social publish scheduling (0156, 0160, 0161, 0168)', { skip: !process.
     after(async () => {
         if (!pool) return;
         try {
+            // Current fixtures include retained jobs and subscription audit
+            // references. Keep them in this disposable database, never delete
+            // accounting/history rows merely to satisfy legacy cleanup.
+            if (fullReplay) return;
             await pool.query(`DELETE FROM public.social_brands b WHERE b.owner_user_id = ANY($1::uuid[])
                 AND NOT EXISTS (SELECT 1 FROM public.social_account_actions a WHERE a.brand_id = b.id)`, [users]);
             // Ledger entries are append-only (CLAUDE.md) — a user with any
@@ -50,6 +58,7 @@ describe('social publish scheduling (0156, 0160, 0161, 0168)', { skip: !process.
             // referencing it.
             const deletable = (await pool.query(`SELECT id, auth_id FROM public.users u WHERE u.id = ANY($1::uuid[])
                 AND NOT EXISTS (SELECT 1 FROM public.social_brands b WHERE b.owner_user_id = u.id)
+                AND NOT EXISTS (SELECT 1 FROM public.jobs j WHERE j.user_id = u.id)
                 AND NOT EXISTS (SELECT 1 FROM public.ledger_entries le WHERE le.user_id = u.id)`, [users])).rows;
             await pool.query('DELETE FROM public.users WHERE id = ANY($1::uuid[])', [deletable.map((r) => r.id)]);
             await pool.query('DELETE FROM auth.users WHERE id = ANY($1::uuid[])', [deletable.map((r) => r.auth_id)]);
@@ -61,6 +70,10 @@ describe('social publish scheduling (0156, 0160, 0161, 0168)', { skip: !process.
         await pool.query('INSERT INTO auth.users(id, email) VALUES ($1, $2)', [auth, `${auth}@test.veyrnox.ai`]);
         const { id } = await one('SELECT public.provision_user($1, $2) AS id', [auth, `${auth}@test.veyrnox.ai`]);
         users.push(id);
+        if (fullReplay) await pool.query(`INSERT INTO public.social_publish_subscriptions
+            (user_id,plan_id,idempotency_key,price_usd_cents,consent_version,status,current_period_end)
+            VALUES($1,'publish',$2,1500,'publish-plan-2026-10-13','active',now()+interval '30 days')`,
+        [id, `schedule-fixture-${randomUUID()}`]);
         return { id, auth };
     }
     const getOrCreateBrand = async (auth: string) =>
@@ -76,8 +89,12 @@ describe('social publish scheduling (0156, 0160, 0161, 0168)', { skip: !process.
     // {media_type, job_id} shape (0160) — no raw source_url exists on this
     // path any more (that was the bug 0160 fixed).
     async function jobWithAsset(userId: string, { mimeType = 'image/jpeg', sizeBytes = 1000 } = {}) {
-        await pool.query(`SELECT public.ledger_grant($1, $2, $3)`, [userId, 100, 'grant:test_fixture']);
-        const debit = await one(
+        // Publish consumes an existing asset, not a fresh provider request.
+        // Terminal fixtures must not accumulate synthetic supplier reservations.
+        if (!fullReplay) await pool.query(`SELECT public.ledger_grant($1, $2, $3)`, [userId, 100, 'grant:test_fixture']);
+        const debit = fullReplay ? await one(`INSERT INTO public.jobs(user_id,idempotency_key,model_id,credits,state,inputs)
+            VALUES($1,$2,'seedance-2.0-fast',4,'STORED','{}'::jsonb)
+            RETURNING jsonb_build_object('ok',true,'job_id',id) AS r`, [userId, randomUUID()]) : await one(
             `SELECT public.ledger_debit($1, $2, 4, 'debit:generation', 'seedance-2.0-fast', '{}'::jsonb) AS r`,
             [userId, randomUUID()],
         );

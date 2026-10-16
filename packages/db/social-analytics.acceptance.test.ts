@@ -1,3 +1,4 @@
+import { isFullSocialReplay } from './social-acceptance-bootstrap.js';
 import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -17,6 +18,7 @@ describe('social analytics (0188)', { skip: !process.env.DATABASE_URL }, () => {
 
     before(async () => {
         pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 12 });
+        if (await isFullSocialReplay(pool)) return;
         await pool.query(`DO $$ DECLARE r TEXT; BEGIN
             FOREACH r IN ARRAY ARRAY['anon', 'authenticated', 'service_role'] LOOP
                 IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = r) THEN

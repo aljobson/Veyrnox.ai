@@ -1,3 +1,4 @@
+import { isFullSocialReplay } from './social-acceptance-bootstrap.js';
 import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -9,7 +10,7 @@ describe('social approvals (0304)', { skip: !process.env.DATABASE_URL }, () => {
   const one=async(sql:string,args:unknown[]=[]) => (await pool.query(sql,args)).rows[0];
   const value=async(sql:string,args:unknown[]=[]) => (await one(sql,args)).value;
   before(async()=>{
-    pool=new pg.Pool({connectionString:process.env.DATABASE_URL,max:4});
+    pool=new pg.Pool({connectionString:process.env.DATABASE_URL,max:4});if (await isFullSocialReplay(pool)) return;
     const migration=await readFile(new URL('./schema/supabase/0304_social_approvals.sql',import.meta.url),'utf8');
     await pool.query(migration); await pool.query(migration);
   });

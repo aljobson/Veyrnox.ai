@@ -1,3 +1,4 @@
+import { isFullSocialReplay } from './social-acceptance-bootstrap.js';
 import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -11,6 +12,7 @@ describe('per-platform post copy (0310)', { skip: !process.env.DATABASE_URL }, (
 
   before(async () => {
     pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 4 });
+    if (await isFullSocialReplay(pool)) return;
     for (const file of ['0301_social_content_library.sql','0302_social_content_presets.sql','0303_social_publish_queues.sql','0304_social_approvals.sql','0305_social_team_roles.sql','0306_social_brand_access.sql','0307_social_team_actions.sql','0308_social_team_publishing.sql','0309_social_inbox_workflow.sql','0310_social_post_variants.sql']) {
       const migration = await readFile(new URL(`./schema/supabase/${file}`, import.meta.url), 'utf8');
       await pool.query(migration); await pool.query(migration);
