@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { register } from 'node:module';
+import { encodeActivityCursor } from '../lib/social/activityCursor.js';
 
 register('data:text/javascript,' + encodeURIComponent(`export async function resolve(s,c,next){return next(s==='next/server'?'next/server.js':s,c)}`));
 
@@ -53,12 +54,30 @@ test('activity passes a validated cursor and bounded limit to the brand-scoped r
   const response = await activityRoute.GET(request(`/social/activity?limit=20&cursor=${encodeURIComponent(JSON.stringify(cursor))}`));
   assert.equal(response.status, 200);
   assert.deepEqual(calls.at(-1).args, { p_auth_id: auth, p_brand_id: brand, p_limit: 20, p_before_created_at: cursor.created_at, p_before_id: account, p_before_source: 'publish' });
-  for (const value of ['not-json', JSON.stringify({ ...cursor, source: 'secret' }), JSON.stringify({ ...cursor, created_at: 'yesterday' })]) {
+  for (const value of ['not-json', 'x'.repeat(257), 'e30', JSON.stringify({ ...cursor, source: 'secret' }), JSON.stringify({ ...cursor, created_at: 'yesterday' })]) {
     stub('manager');
     const invalid = await activityRoute.GET(request(`/social/activity?cursor=${encodeURIComponent(value)}`));
     assert.equal(invalid.status, 400);
     assert.equal(calls.some((call) => call.name === 'list_social_publish_activity_page'), false);
   }
+});
+
+test('activity accepts opaque cursors without rounding database timestamp precision', async () => {
+  stub('manager');
+  const cursor = { created_at: '2026-10-16T12:34:56.123456+00:00', id: account, source: 'inbox' };
+  const response = await activityRoute.GET(request(`/social/activity?cursor=${encodeActivityCursor(cursor)}`));
+  assert.equal(response.status, 200);
+  assert.equal(calls.at(-1).args.p_before_created_at, cursor.created_at);
+  assert.equal(calls.at(-1).args.p_before_id, cursor.id);
+  assert.equal(calls.at(-1).args.p_before_source, cursor.source);
+});
+
+test('activity accepts legacy JSON cursors after the adapter decodes their positive offset twice', async () => {
+  stub('manager');
+  const cursor = { created_at: '2026-10-16T12:34:56.123456 00:00', id: account, source: 'inbox' };
+  const response = await activityRoute.GET(request(`/social/activity?cursor=${encodeURIComponent(JSON.stringify(cursor))}`));
+  assert.equal(response.status, 200);
+  assert.equal(calls.at(-1).args.p_before_created_at, '2026-10-16T12:34:56.123456+00:00');
 });
 
 test('activity migration rollout fallback explicitly discloses a bounded legacy history', async () => {
