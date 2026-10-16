@@ -2,6 +2,7 @@ import { SITE_URL } from './seo';
 import { listModelsForDetails } from './veyrnox/_lib/modelPages';
 import { PRESETS } from './veyrnox/_lib/templates';
 import { GUIDES } from './veyrnox/_lib/guides';
+import { oddlingSitemapPaths, oddlingsPublicEnabled } from './veyrnox/_lib/oddlingsPublic';
 import { editorialSeries } from './veyrnox/social-cinema/editorialSeries';
 
 // Rendered per request so /models/<id> entries follow the live catalog.
@@ -32,6 +33,7 @@ export default async function sitemap() {
     page('/tools', 'weekly', 0.7),
     page('/guides', 'monthly', 0.6),
     ...GUIDES.map((g) => page(`/guides/${g.id}`, 'monthly', 0.5)),
+    ...oddlingPages(page),
     page('/social-cinema', 'weekly', 0.7),
     ...editorialSeries.map((series) => page(`/social-cinema/series/${series.slug}`, 'weekly', 0.6)),
     page('/legal/terms', 'yearly', 0.3),
@@ -42,6 +44,15 @@ export default async function sitemap() {
     page('/legal/cinema-content', 'yearly', 0.3),
     ...(await modelPages(page)),
   ];
+}
+
+// The public Oddlings gallery is behind ODDLINGS_PUBLIC_ENABLED. Closed, its
+// routes answer not-found, so listing them would send a crawler to errors.
+// The index comes first in the list, then one page per character.
+function oddlingPages(page) {
+  if (!oddlingsPublicEnabled()) return [];
+  const [index, ...characters] = oddlingSitemapPaths();
+  return [page(index, 'weekly', 0.7), ...characters.map((path) => page(path, 'monthly', 0.5))];
 }
 
 // The catalog being unreachable must not take the sitemap down with it.

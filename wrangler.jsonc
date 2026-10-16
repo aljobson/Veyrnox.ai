@@ -114,6 +114,9 @@
     "CLIP_EDIT_CAPTIONS_ENABLED": "true",
     // docs/editor/SPEED.md: the Clip Editor's slow-motion step. Off until 0237 is applied and fal's billed cost is read (the price is a placeholder).
     "CLIP_EDIT_SLOW_ENABLED": "false",
+    // The public Oddlings gallery at /oddlings and /oddlings/<id> (signed out, indexable, the first-party cast only). Off here until the
+    // owner flips it: while off the routes answer not-found, the sitemap omits them and the nav links the studio instead. Staging is "true".
+    "ODDLINGS_PUBLIC_ENABLED": "false",
     // ADR-0064: production checkout stays closed until staging acceptance and
     // the external approval record are complete. Existing-customer reads,
     // cancellation and paid-checkout recovery remain available while off.
@@ -321,6 +324,8 @@
         "CINEMA_CREATOR_ANALYTICS_ENABLED": "false",
         "COMMENTS_ENABLED": "false",
         "STORY_POLLS_ENABLED": "false",
+        // Public Oddlings gallery (see the production value above); open on staging for testing.
+        "ODDLINGS_PUBLIC_ENABLED": "true",
         // ADR-0067: Chat is open on staging for testing only. No text model is
         // active until the owner activates one; production stays "false".
         "CHAT_ENABLED": "true",
