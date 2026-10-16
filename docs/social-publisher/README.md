@@ -2,7 +2,7 @@
 
 **Feature:** Native multi-platform social scheduling and publishing ("Veyrnox Publish")
 **Version:** 0.2 (reconciled with the code)
-**As of:** 2026-10-08, repo `main` at commit `bee1ea4f` (includes PR #637 and #638). Every doc in this pack was checked against the
+**As of:** 2026-10-08, repo `main` at commit `bee1ea4f` (includes PR #637 and #638); the built-state paragraph below was refreshed on 2026-10-16. The numbered docs were checked against the
 code, migrations through 0228, `wrangler.jsonc`, ADR-0061/0062/0063 and the 2026-10-03 to 2026-10-07
 handover and acceptance records. Where the pack still describes a design the code does not (yet) do, the
 doc says so under a "Built state" or "not built" note instead of silently keeping the old text.
@@ -12,15 +12,19 @@ doc says so under a "Built state" or "not built" note instead of silently keepin
 mechanism (independent "Publish Plan," never the credit ledger). Both approved by the
 product owner. Implementation may now proceed under these ADRs' designs; open items are
 tracked in each ADR's "Open questions".
-**Built state (2026-10-08):** the schedule-and-publish engine, composer, device uploads, draft review,
-calendar with safe rescheduling, and analytics for Instagram, YouTube and TikTok are built. Production
-keeps `PUBLISH_ENABLED` off, so none of it is open to users there; staging has every Publish flag on
-except the two provider-consent switches. The $15/month Publish Plan is built behind
-`PUBLISH_RUNTIME_FLAGS.plans` (default off) and waits for migration 0293 plus Stripe acceptance. Eleven networks
-have native adapters: Instagram, X, LinkedIn, TikTok and YouTube (the original five), plus Facebook, Threads,
-Pinterest, Bluesky, Twitch and Google Business Profile built for testers on 2026-10-08 (migration 0228) behind
-`PUBLISH_EXTENDED_NETWORKS_ENABLED` (off in production, on in staging). Only YouTube has been run against a
-real account; the six new networks have contract tests and no provider approval. See the "Built state" notes in 01 and 02.
+**Built state (2026-10-16, migrations through 0326, `wrangler.jsonc`):** the schedule-and-publish engine, composer,
+draft review, calendar with safe rescheduling and analytics are built, and **Publish is open in production**
+(`PUBLISH_ENABLED` is `"true"`) for the released networks only: `PUBLISH_RELEASED_NETWORKS` is
+`youtube,linkedin,twitter,tiktok`. Eleven networks have native adapters (Instagram, X, LinkedIn, TikTok, YouTube,
+plus Facebook, Threads, Pinterest, Bluesky, Twitch and Google Business Profile from migration 0228); the six extra
+ones stay behind `PUBLISH_EXTENDED_NETWORKS_ENABLED` (off in production, on in staging) and Instagram needs its
+provider review. Device uploads (`PUBLISH_UPLOADS_ENABLED`) and native video destinations
+(`PUBLISH_RUNTIME_FLAGS.videoDestinations`) are off in production. Free keeps one connected account and Post now;
+the $15/month Publish Plan (0293, 0298; Stripe live) allows five accounts, scheduling, 366-day analytics and best-time
+recommendations. The grouped `PUBLISH_RUNTIME_FLAGS` binding also turns on, in production, the management suite built
+in migrations 0299 to 0326: unified inbox and inbox workflows, SmartLinks, content library and presets, queues,
+approval links, teams and brand access, post variants, reports (scheduled, exported, delivered), the customer API and
+webhooks, ads, commerce and RSS autolists. See the "Built state" notes in 01 and 02.
 **Audience:** Product, engineering, design
 
 ## Purpose
@@ -89,11 +93,16 @@ should look*.
 8. [Publish device uploads, 2026-10-06](DEVICE-UPLOADS-2026-10-06.md) — the upload-from-device
    library (migration 0223), limits, activation steps and the staging acceptance.
 9. [Staging acceptance, 2026-10-07](ACCEPTANCE-2026-10-07.md) — the real YouTube publication, real
-   video analytics and the live calendar checks. This is the latest verified state.
+   video analytics and the live calendar checks.
 
 10. [All-network tester handover, 2026-10-08](INTEGRATIONS-TESTING-2026-10-08.md) — native
    connections for eleven networks, supported publish actions, administrator credentials,
    feature switch, migration 0228 and live tester acceptance steps.
+
+11. Later dated records: [production rollout](PRODUCTION-ROLLOUT.md) and
+   [readiness](PRODUCTION-READINESS-2026-10-09.md), [LinkedIn](LINKEDIN-PRODUCTION-2026-10-10.md) and
+   [TikTok](TIKTOK-PRODUCTION-2026-10-10.md) production notes, [QA repairs, 2026-10-15](QA-FIXES-2026-10-15.md)
+   (migrations 0324 to 0326), and the [Metricool/Zernio study](METRICOOL-ZERNIO-REVERSE-ENGINEERING-2026-10-13.md).
 
 ## Non-goals for this pack
 
@@ -117,9 +126,9 @@ should look*.
    review before production posting scopes are granted — this can take weeks and should start in
    parallel with engineering, not after. Per-network status as of 2026-10-08 is in
    [06-oauth-review-runbook.md §6.0](06-oauth-review-runbook.md#60-review-status-by-network-2026-10-08).
-3. **Publish billing rollout** — built but default-off: migration 0293 and the Stripe lifecycle must
-   pass staging payment acceptance before `PUBLISH_RUNTIME_FLAGS.plans` is enabled. Five connected accounts
-   Post now on one connected account remains free; $15/month unlocks up to five accounts, scheduling, analytics and best-time recommendations.
+3. **Publish billing** — built and on in production (`PUBLISH_RUNTIME_FLAGS.plans` is `"true"`; migrations 0293 and 0298
+   are applied, consent version `publish-plan-2026-10-13`). Post now on one connected account remains free; $15/month
+   unlocks up to five accounts, scheduling, analytics and best-time recommendations.
 4. **Does Veyrnox already have a Metricool account for its own brand?** Yes — `getBrandSettings`
    shows a connected brand (`Veyrnox`, blogId `6457974`) with Instagram/X/LinkedIn/TikTok/YouTube
    linked. That account belongs to the separate sibling Veyrnox business's socials, not Veyrnox.ai's (hard wall in `CLAUDE.md`);

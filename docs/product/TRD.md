@@ -1,6 +1,6 @@
 # TRD — Veyrnox.ai technical requirements
 
-**Status:** Current · 2026-10-08 (audited against `main` at `42150476`; first written 2026-10-02 at `2da81dc`; Publish statements amended against `bee1ea4f`, PR #637/#638, migration 0228)
+**Status:** Current · 2026-10-16 (audited against `main` at `3f46a609`; first written 2026-10-02 at `2da81dc`; re-audited 2026-10-08 at `42150476`). The 2026-10-16 pass re-checked §1, §2, §4, §6, §9, §10 and §11 against `package.json`, `wrangler.jsonc`, `worker.js`, `lib/`, `packages/`, `.github/workflows/` and the file counts; §3, §5, §7 and §8 are unchanged from 2026-10-08 except where a line below says otherwise.
 **Precedence:** [CLAUDE.md](../../CLAUDE.md) and [docs/adr/](../adr/README.md)
 win over this document. This is the blueprint an agent reads before making a
 technical choice: what the stack *is*, what is allowed, and what is banned.
@@ -25,10 +25,10 @@ Browser ──Bearer JWT──► Worker (middleware.js → Next route) ──RP
                            │  ├─ tus ─► Cloudflare Stream (Cinema)
                            │  ├─ OAuth + publish ─► IG / X / TikTok / LinkedIn / YouTube
                            │  │                    + Facebook / Threads / Pinterest / Bluesky /
-                           │  │                      Twitch / Business Profile (tester-stage)
+                           │  │                      Twitch / Business Profile (extended, off in prod)
                            │  ├─ email ─► Resend (violation notices, subscription alerts)
-                           │  └─ plan / run ─► montage runner ─signed callback─► Worker (video agent, off)
-                           └─ cron */5: sweeps, polls, recovery, publish queue
+                           │  └─ plan / run ─► montage runner ─signed callback─► Worker (video agent)
+                           └─ cron */5 and every minute: sweeps, polls, recovery, publish queue
 ```
 
 ## 2. Stack
@@ -37,14 +37,14 @@ Browser ──Bearer JWT──► Worker (middleware.js → Next route) ──RP
 |---|---|---|
 | framework | Next.js App Router | 16.3.x (`package.json`); auth gate stays `middleware.js`, not `proxy.js` (OpenNext Cloudflare) |
 | UI | React | 19.3 |
-| styling | Tailwind CSS + CSS custom properties | 3.4 (v4 tracked in #476); tokens in `app/globals.css`, `app/veyrnox/veyrnox.css` |
+| styling | Tailwind CSS + CSS custom properties | 4.3 (`@import "tailwindcss"` in `app/globals.css`, `@tailwindcss/postcss`); tokens in `app/globals.css`, `app/veyrnox/veyrnox.css` |
 | fonts | `next/font/local`, self-hosted | Archivo, JetBrains Mono, Inter (`app/fonts/`) |
-| adapter | `@opennextjs/cloudflare` | 1.20; `open-next.config.ts` defaults |
+| adapter | `@opennextjs/cloudflare` | ^1.20.8; `open-next.config.ts` defaults |
 | runtime | Cloudflare Workers, `nodejs_compat`, `enable_request_signal` (a disconnect reaches `request.signal`, ADR-0067 amendment 10) | `wrangler.jsonc`, compat date 2026-09-01 |
-| Worker entry | `worker.js` wraps `.open-next/worker.js` | `fetch`: admin edge rate limit → body-size limit → OpenNext; `scheduled`: sweeps |
+| Worker entry | `worker.js` wraps `.open-next/worker.js` | `fetch`: canonical HTTPS redirect → `/_next/data` and `/cdn-cgi` refusal → admin and Turnstile-report edge rate limits → body-size limit → OpenNext (internal headers dropped, technology headers stripped); `scheduled`: sweeps |
 | language | JavaScript; TypeScript in `packages/db`, `packages/catalog`, typecheck of `packages/security` | TS 6.0.3 |
 | Node | 22 | `engines` `>=22` and `.nvmrc` (ISSUES I6) |
-| runtime deps | `next`, `react`, `react-dom`, `react-hot-toast`, `qrcode.react`, `motion`, `animejs`, `clsx`, `tailwind-merge`, `@number-flow/react`, `d3-array`, `d3-shape`, `@visx/*` (charts) | UI only; no vendor, auth or database SDK. `sharp` is a dev dependency |
+| runtime deps | `next`, `react`, `react-dom`, `react-hot-toast`, `qrcode.react`, `motion`, `animejs`, `clsx`, `tailwind-merge`, `@number-flow/react`, `d3-array`, `d3-shape`, `@visx/*` (charts), `zod`, `mediabunny` and `@mediapipe/tasks-vision` (browser editor), `@modelcontextprotocol/server` (MCP connector), `@posthog/next` and `@posthog/nextjs-config` (ADR-0099) | UI and protocol libraries only; no vendor, auth or database SDK. Dev: `@reticlehq/*`, `sharp`, `wrangler`, TypeScript 6.0.3 |
 
 The whole site is `export const dynamic = 'force-dynamic'` (`app/layout.js`)
 because every HTML response carries a per-request CSP nonce (ADR-0060).
@@ -53,9 +53,9 @@ because every HTML response carries a per-request CSP nonce (ADR-0060).
 
 | package | role |
 |---|---|
-| `packages/adapters` | provider adapters, plain `fetch` + Web Crypto: `fal`, `kie`, `openrouter`, `grsai`, `byteplus`, `stripe`, `openrouterChat` (chat replies), `exa` (capped Web search), `resend` (email), `stripeCreditSubscriptions`, `r2` (SigV4), `r2Copy` (SSRF-safe copy with host allowlist), `social/*`; `lemonsqueezy` was removed (0180, #424) |
-| `packages/provider-sdk` | server-only `PROVIDERS` registry used by `POST /api/v1/generations` (includes the `montage` runner, off) |
-| `packages/db` | `supabase-client.js` (service-role RPC), `tenant-client.js` (user JWT, RLS applies), ledger types, 57 acceptance tests, all migrations |
+| `packages/adapters` | provider adapters, plain `fetch` + Web Crypto: `fal`, `kie`, `openrouter`, `grsai`, `byteplus`, `stripe`, `openrouterChat` (chat replies), `exa` (capped Web search), `resend` (email), `stripeCreditSubscriptions`, `stripePublishPlan`, `r2` (SigV4), `r2Copy` (SSRF-safe copy with host allowlist), `social/*` (instagram, linkedin, tiktok, twitter, youtube, facebook, threads, pinterest, bluesky, twitch, gmb, inbox, videoPublishing); `lemonsqueezy` was removed (0180, #424) |
+| `packages/provider-sdk` | server-only `PROVIDERS` registry (`registry.js`) used by `POST /api/v1/generations` (includes the `montage` runner) |
+| `packages/db` | `supabase-client.js` (service-role RPC), `tenant-client.js` (user JWT, RLS applies), ledger types, 75 acceptance tests, all migrations |
 | `packages/catalog` | CI-only margin-floor validator; runtime prices come from `model_catalog` |
 | `packages/security` | config/environment validation, typed `ApiError`, bounded body reader, logging |
 
@@ -76,13 +76,14 @@ because every HTML response carries a per-request CSP nonce (ADR-0060).
 
 | `APP_ENV` | Worker | Supabase ref | region | notes |
 |---|---|---|---|---|
-| production | `veyrnox-ai` | `xdxdzmsztyzbnzeforxx` | eu-central-1 | Chat, free allowance, Personas, referrals and Clip Editor captions **on**; every Cinema flag, `TENANT_PROJECTS_ENABLED`, `PUBLISH_ENABLED`, `SUBSCRIPTIONS_ENABLED` and `AGENT_VIDEO_ENABLED` **off** |
-| staging | `veyrnox-ai-staging` | `yrqzwqywxfesmbvhzjgj` | us-east-2 | tenant projects, most Cinema flags, Publish (analytics, insights, calendar, device uploads), Chat and captions **on** in `wrangler.jsonc`; free allowance, Personas, referrals, subscriptions and the video agent `"false"` there (deploys keep dashboard vars, so the live values may differ — unverified). Now has provider and R2 credentials for chat, images, captions and uploads; no Stripe test keys (ISSUES P6) |
+| production | `veyrnox-ai` | `xdxdzmsztyzbnzeforxx` | eu-central-1 | Chat, free allowance, Personas, referrals, Clip Editor captions, tenant projects, the video agent, the browser editor, Film Library masters, Publish (four released networks, analytics, plans and the advanced surfaces) and Cinema creator, publishing, viewing and free-ceiling switches **on**; `SUBSCRIPTIONS_ENABLED`, `CINEMA_UNLOCKS_ENABLED`, `CINEMA_SUBSCRIPTIONS_ENABLED`, voting, comments, story polls, rankings, `CONTENT_SCAN_ENABLED`, `CLIP_EDIT_SLOW_ENABLED`, `PUBLISH_UPLOADS_ENABLED`, `PUBLISH_EXTENDED_NETWORKS_ENABLED`, `PROJECT_MEDIA_UPLOADS_ENABLED`, `ADMIN_CREDIT_GRANTS_ENABLED` and the fal dispatch switches **off** |
+| staging | `veyrnox-ai-staging` | `yrqzwqywxfesmbvhzjgj` | us-east-2 | tenant projects and project media uploads, Cinema including unlocks, Publish (all networks, device uploads, analytics), Chat, captions, slow motion, content scans and the fal dispatch schema **on** in `wrangler.jsonc`; free allowance, Personas, referrals and subscriptions `"false"` there (deploys keep dashboard vars, so the live values may differ — unverified). Has a Queues producer binding `FAL_DISPATCH_QUEUE` (`veyrnox-fal-dispatch-staging`); no Stripe test keys (ISSUES P6) |
 | development | `next dev` | local Supabase `127.0.0.1:54321` | — | — |
 
-Bindings: `ASSETS`, `ADMIN_EDGE_RATE_LIMITER` (60/min, ADR-0039), cron
-`*/5 * * * *`. **No** R2 binding, KV, D1, Durable Objects, Queues or Email
-binding — R2 is reached over SigV4, Stream over its REST API, email through
+Bindings: `ASSETS`, `ADMIN_EDGE_RATE_LIMITER` (60/min, ADR-0039),
+`TURNSTILE_REPORT_RATE_LIMITER` (10/min, ADR-0026), crons `*/5 * * * *` and
+`* * * * *`. **No** R2 binding, KV, D1, Durable Objects or Email binding, and no
+Queues binding in production (staging has the one producer above) — R2 is reached over SigV4, Stream over its REST API, email through
 Supabase Auth's SMTP (Cloudflare Email Sending).
 
 Configuration: public values in `wrangler.jsonc` `vars`; credentials via
@@ -107,16 +108,23 @@ commit:
 
 | on (`"true"`) | off (`"false"`) |
 |---|---|
-| `CHAT_ENABLED`, `FREE_ALLOWANCE_ENABLED`, `PERSONAS_ENABLED`, `REFERRALS_ENABLED`, `CLIP_EDIT_CAPTIONS_ENABLED`, `PUBLISH_CALENDAR_ENABLED` (moot while Publish is shut), `RECOVERY_HEALTH_ENABLED`, `ADMIN_REQUIRE_AAL2`, the six `*_RATE_LIMIT_ENABLED` | `PUBLISH_ENABLED`, `PUBLISH_EXTENDED_NETWORKS_ENABLED` (on in staging), `PUBLISH_ANALYTICS_ENABLED`, `PUBLISH_POSTING_INSIGHTS_ENABLED`, `PUBLISH_UPLOADS_ENABLED`, `INSTAGRAM_INSIGHTS_SCOPE_ENABLED`, `TIKTOK_ANALYTICS_SCOPE_ENABLED`, `SUBSCRIPTIONS_ENABLED`, `AGENT_VIDEO_ENABLED`, `TENANT_PROJECTS_ENABLED`, `UPLOAD_INTEGRITY_ENABLED`, every `CINEMA_*` / creator / voting / comments / PPV / premieres / recommendations flag |
+| `CHAT_ENABLED`, `CHAT_SEND_CLOSE_ENABLED`, `FREE_ALLOWANCE_ENABLED`, `PERSONAS_ENABLED`, `REFERRALS_ENABLED`, `CLIP_EDIT_CAPTIONS_ENABLED`, `TENANT_PROJECTS_ENABLED`, `AGENT_VIDEO_ENABLED`, `MONTAGE_LIVENESS_ENABLED`, `EDITOR_TIMELINE_ENABLED`, `EDITOR_MULTITRACK_ENABLED`, `EDITOR_SHARED_TOOLS_ENABLED`, `EDITOR_RUNTIME_FLAGS` (all four keys), `FILM_LIBRARY_MASTERS_ENABLED`, `FILM_LIBRARY_SAVE_ENABLED`, `PUBLISH_ENABLED`, `PUBLISH_ANALYTICS_ENABLED`, `PUBLISH_POSTING_INSIGHTS_ENABLED`, `PUBLISH_CALENDAR_ENABLED`, `PUBLISH_YOUTUBE_VISIBILITY_ENABLED`, `PUBLISH_RUNTIME_FLAGS` (every key but `videoDestinations`), `CINEMA_ENABLED`, `CREATOR_APPLICATIONS_ENABLED`, `CREATOR_CONTENT_ENABLED`, `SOCIAL_CINEMA_PROFILES_ENABLED`, `CREATOR_UPLOADS_ENABLED`, `CINEMA_UPLOAD_RECOVERY_ENABLED`, `CINEMA_UPLOAD_REMOVAL_ENABLED`, `CINEMA_PUBLISHING_ENABLED`, `CINEMA_VIEWING_ENABLED`, `CINEMA_FREE_CEILING_ENABLED`, `UPLOAD_INTEGRITY_ENABLED`, `RECOVERY_HEALTH_ENABLED`, `ADMIN_REQUIRE_AAL2`, the six `*_RATE_LIMIT_ENABLED` | `SUBSCRIPTIONS_ENABLED`, `PROJECT_MEDIA_UPLOADS_ENABLED`, `CLIP_EDIT_SLOW_ENABLED`, `CONTENT_SCAN_ENABLED`, `SOCIAL_HOLD_CHECKS_ENABLED`, `ADMIN_CREDIT_GRANTS_ENABLED`, `WEBHOOK_DELIVERY_LOG_ENABLED`, `FAL_SUBMIT_OUTCOME_ENABLED`, `FAL_DISPATCH_SCHEMA_ENABLED`, `FAL_DURABLE_DISPATCH_ENABLED`, `FAL_DISPATCH_QUEUE_ENABLED`, `PUBLISH_UPLOADS_ENABLED`, `PUBLISH_EXTENDED_NETWORKS_ENABLED` (on in staging), `PUBLISH_SCOPE_FLAGS` (all four keys), `CINEMA_PROXY_UPLOADS_ENABLED`, `CREATOR_MONETISATION_ENABLED`, `CINEMA_UNLOCKS_ENABLED`, `CINEMA_SUBSCRIPTIONS_ENABLED`, `VOTING_ENABLED`, `CINEMA_AUDIENCE_ENABLED`, `CINEMA_RANKINGS_ENABLED`, `CINEMA_RETENTION_ENABLED`, `CINEMA_CREATOR_ANALYTICS_ENABLED`, `COMMENTS_ENABLED`, `STORY_POLLS_ENABLED`, `PPV_ENABLED`, `PREMIERES_ENABLED`, `AI_RECOMMENDATIONS_ENABLED` |
+
+`PUBLISH_RELEASED_NETWORKS` is `"youtube,linkedin,twitter,tiktok"` in
+production and `"*"` on staging (`lib/social/networks.js`); the extended
+networks also need `PUBLISH_EXTENDED_NETWORKS_ENABLED`. Grouped switches share
+one binding to stay under Cloudflare's 128 text-binding limit
+(`PUBLISH_RUNTIME_FLAGS`, `EDITOR_RUNTIME_FLAGS`, `PUBLISH_SCOPE_FLAGS`); an
+individual variable of the old name still overrides its key.
 
 `JEV_SUBMIT_ERRORS_MODE` is `off`. `CHAT_RESEARCH_ENABLED` (Deep research) is
 read by `lib/chat.js` but not declared in `wrangler.jsonc`, so it is off by
 being unset (ISSUES D10). While `PUBLISH_ENABLED` is not `"true"`,
 `middleware.js` answers `/api/v1/social/*` with 503 `publish_not_open`; the
 cron publish sweep is not gated. Client-only previews use `localStorage.veyrnox_*`:
-`veyrnox_editor`, `veyrnox_editor_captions`, `veyrnox_auto_short`,
-`veyrnox_projects`, `veyrnox_social_cinema`. Chat and the video agent have no
-preview switch any more.
+`veyrnox_editor` (Library edit cart), `veyrnox_editor_captions`,
+`veyrnox_auto_short`, `veyrnox_social_cinema`. Chat, the video agent and
+projects have no preview switch any more.
 
 ## 5. Data access
 
@@ -146,15 +154,17 @@ preview switch any more.
 | Exa | `adapters/exa.js` | the capped Web search for chat (0220); the price depends on the cap, so a capped row offers Web search only while the key is set | Bearer | synchronous |
 | GrsAI | `adapters/grsai.js` | Nano Banana Pro / edit | Bearer | **poll only** (`lib/grsaiSweep.js`) |
 | BytePlus ModelArk | `adapters/byteplus.js` | Seedance (rows staged inactive, ADR-0058) | Bearer | **poll only** (`lib/byteplusSweep.js`) |
-| Stripe | `adapters/stripe.js`, `stripeCreditSubscriptions.js`, `stripePublishPlan.js` | Credit Packs; Cinema Pass; Credit Subscriptions; $15/month Publish Plan (built, `PUBLISH_RUNTIME_FLAGS.plans` off pending migration and acceptance) | Bearer | `Stripe-Signature` HMAC with timestamp tolerance; each product signs its server-owned binding in metadata |
+| Stripe | `adapters/stripe.js`, `stripeCreditSubscriptions.js`, `stripePublishPlan.js` | Credit Packs; Cinema Pass; Credit Subscriptions; $15/month Publish Plan (`PUBLISH_RUNTIME_FLAGS.plans` is `"true"` in production `wrangler.jsonc`; whether 0293 is applied there is unverified) | Bearer | `Stripe-Signature` HMAC with timestamp tolerance; each product signs its server-owned binding in metadata |
 | Cloudflare R2 | `adapters/r2.js`, `r2Copy.js` | all media | SigV4 | presigned GET/PUT ≤ 15 min |
 | Cloudflare Stream | `lib/cinema/stream.js` | Cinema upload (tus) and signed playback | Bearer + signing JWK | webhook HMAC (`webhook-signature`) |
 | Cloudflare Access | `lib/accessJwt.js` | admin routes | — | Worker re-verifies the Access JWT |
 | Turnstile | `components/Turnstile.jsx` | CAPTCHA on auth | — | verified by Supabase Auth |
 | Instagram, LinkedIn, X, TikTok, YouTube, Facebook, Threads, Pinterest, Bluesky, Twitch, Google Business Profile | `adapters/social/*` (the last six: `facebook`, `threads`, `pinterest`, `bluesky`, `twitch`, `gmb`, shared `common.js`; PR #637) | Veyrnox Publish | OAuth2 (PKCE forwarded by X and Business Profile); Bluesky uses a dedicated app password, never stored; tokens AES-GCM encrypted at rest; HMAC-signed state; Facebook, Pinterest and Business Profile destinations chosen from an encrypted, single-use, ten-minute server-side selection (0228) | no inbound webhooks; cron publishes. Pinterest, Business Profile, Twitch, Bluesky and Threads tokens are renewed by the sweeps (atomic rotation, 0228); a durable pre-submission marker stops duplicate public posts (`provider_result_unknown_reconcile_before_retry`) |
+| fal.ai durable dispatch (ADR-0076/0077/0079) | `lib/falDispatch*.js`, `fal_dispatch` table | atomic admission plus one irreversible fal submission; staging Queue consumer; every switch (`FAL_DURABLE_DISPATCH_ENABLED`, `FAL_DISPATCH_QUEUE_ENABLED`, `FAL_DISPATCH_SCHEMA_ENABLED`) off in production | — | cron `fal_dispatch` task when the schema switch is on |
+| Remote MCP connector (ADR-0100) | `app/api/v1/mcp`, `lib/veyrnoxMcp.js`, `@modelcontextprotocol/server` | `/api/v1/mcp` for OAuth clients; middleware admits only Supabase access tokens carrying an OAuth `client_id`, a browser session gets 403 `oauth_client_required` | Supabase OAuth 2.1 | activation checks in `docs/operations/mcp.md`; unverified |
 | typesafe.ai (Jev) | `lib/jev.js` | classify untyped provider refusals (ADR-0066) | API key | ships `off` |
-| Resend | `adapters/resend.js`, `lib/violationEmail.js` | violation notices from `support@veyrnox.ai`; subscription Operator alerts | Bearer | none |
-| Montage runner | `lib/montage*.js`, `app/api/webhook/montage` | the video agent: plan, run, signed callback (ADR-0074); the Worker never runs ffmpeg | HMAC-signed request | HMAC over timestamp + raw body, ±300 s, `webhook_events` dedupe; off |
+| Resend | `adapters/resend.js`, `lib/violationEmail.js` | violation notices from `support@veyrnox.ai`; subscription Operator alerts; scheduled Publish report delivery (`REPORT_EMAIL_FROM`) | Bearer | none |
+| Montage runner | `lib/montage*.js`, `app/api/webhook/montage` | the video agent: plan, run, signed callback (ADR-0074); the Worker never runs ffmpeg; runner on Fly (`MONTAGE_RUNNER_BASE`) | HMAC-signed request | HMAC over timestamp + raw body, ±300 s, `webhook_events` dedupe; live (`AGENT_VIDEO_ENABLED`) |
 
 The provider is an internal routing detail; it is never shown to the user.
 A model row is `active` only after its live endpoint returned real output.
@@ -201,29 +211,41 @@ A model row is `active` only after its live endpoint returned real output.
   `X-Frame-Options: DENY`, `nosniff`, strict-origin referrer, camera/mic/geo
   disabled.
 - Admin: Cloudflare Access in front of `/app/admin*`, `/api/v1/admin/*`,
-  `/api/admin/*`; `aal2` required when `ADMIN_REQUIRE_AAL2` is true.
+  `/api/admin/*`; `aal2` required when `ADMIN_REQUIRE_AAL2` is true. Every
+  `/api/v1/admin/*` route also verifies the Access assertion in code
+  (`lib/accessJwt.js`, ADR-0078), because the Access rule is an edge rule on one
+  hostname; `worker.js` answers `/_next/data/*` and `/cdn-cgi/*` with 404 and
+  drops framework and `x-veyrnox-auth-*` headers from inbound requests.
 - Logging: `console.error` on every auth reject, webhook signature failure
   and ledger invariant violation; Workers observability is on.
 
 ## 9. Background work
 
-`worker.js#scheduled` (every 5 min, each task isolated with
-`Promise.allSettled` and recorded by `observeRecovery`): project asset
-cleanup, Cinema upload recovery and removal, Stripe top-up backfill, upload
-and reservation sweeps, Auto Short step sweep, video-agent (montage) sweep
-(inert until the runner is configured), asset reap, GrsAI and BytePlus polls,
-Veyrnox Publish queue, the Publish analytics sweep (only when
-`PUBLISH_ANALYTICS_ENABLED`; also fetches Twitch video statistics when the extended
-switch is on), and weekly brand drafts (still the original five networks).
+`worker.js#scheduled` runs on two triggers. Every minute (`* * * * *`) only the
+generated-image content-scan drain runs, and only when `CONTENT_SCAN_ENABLED`
+is `"true"`. Every 5 minutes, each task isolated with `Promise.allSettled` and
+most recorded by `observeRecovery`: fal dispatch (when
+`FAL_DISPATCH_SCHEMA_ENABLED`), project asset cleanup, Cinema upload recovery
+and removal, Stripe top-up backfill, upload and reservation sweeps, Auto
+Short step sweep, video-agent (montage) sweep, asset reap, GrsAI and BytePlus
+polls, the Veyrnox Publish queue, the Publish analytics sweep (only when
+`PUBLISH_ANALYTICS_ENABLED`; also fetches Twitch video statistics when the
+extended switch is on), customer webhook delivery, scheduled report delivery
+and RSS autolists (each when its `PUBLISH_RUNTIME_FLAGS` key is on), and weekly
+brand drafts (still the original five networks).
 
 `pg_cron` in Postgres: asset expiry (15 min), stuck-job sweep (10 min), Free
 Credit expiry (hourly :41), Subscription Credit expiry (hourly :07, 0184),
-referral sweep (hourly :23, 0218), reconciliation snapshot (15 min), recovery
+referral sweep (hourly :23, 0218), Film master and editor render expiry
+(15 min each, 0279, 0285), reconciliation snapshot (15 min), recovery
 health (15 min), and the nightly `veyrnox-reconcile-balances` (03:17), which
 raises on any row from seven checks: balances, Free Credits, top-ups, failed
 refunds, Subscription Credits, free allowance, referrals.
 
-There is no queue product yet; Cloudflare Queues/Workflows are a later step
+There is no queue product in production. Staging has one Cloudflare Queue
+(`veyrnox-fal-dispatch-staging`) for the fal dispatch consumer; workflows
+`fal-dispatch-staging`, `fal-queue-health-staging` and `fal-queue-watch-staging`
+deploy and watch it. Other queues/Workflows are a later step
 (see [IMPLEMENTATION-PLAN.md](IMPLEMENTATION-PLAN.md)).
 
 ## 10. CI/CD
@@ -237,12 +259,16 @@ There is no queue product yet; Cloudflare Queues/Workflows are a later step
 | `migration-ledger.yml` | PR, push, hourly | live applied migrations vs repo |
 | `apply-migrations.yml` | push main | plan, then owner-approved apply to production (ADR-0023) |
 | `deploy-production.yml` | push main | waits for green `ci`, checks the commit is still tip, `build:worker` + deploy, then `scripts/check-site-health.mjs`; on failure restores the previous deployment and opens a `deploy-failure` issue (a deploy refused for red `ci` opens one too) |
-| `reconcile-watch.yml`, `recovery-health.yml`, `signup-gate.yml`, `auth-providers.yml` | hourly | open an issue on drift (reconcile-watch reads the five-count snapshot only; ISSUES S20) |
+| `reconcile-watch.yml` (every 15 min), `recovery-health.yml` (twice an hour), `signup-gate.yml`, `auth-providers.yml` (hourly) | scheduled | open an issue on drift (reconcile-watch reads the seven-count snapshot since 0264; ISSUES S20) |
 | `site-health.yml` | every 15 min | live health check; opens one issue per episode |
 | `e2e.yml` | daily, manual | Playwright smoke against staging (sign-up, generate, buy; the last two skip without a staging test account) |
 | `dependabot-automerge.yml` | PR | auto-merges patch and minor updates once checks pass |
 | `fal-catalog-watch.yml` | weekly | fal endpoint/price drift |
 | `top-up-backfill.yml` | manual | break-glass backfill |
+| `codeql.yml` | PR, push main, weekly | CodeQL static analysis |
+| `provider-balances.yml` | hourly | opens a `provider-balance` issue when a prepaid provider balance is at or under its floor (off until its secrets are set) |
+| `runner-health.yml` | 4 times a day | asks the video-agent runner's `/health`; opens a `runner-health` issue when it does not answer |
+| `fal-dispatch-staging.yml`, `fal-queue-health-staging.yml` (manual), `fal-queue-watch-staging.yml` (every 10 min) | deploy and watch the isolated staging fal Queue consumer |
 
 Cloudflare Workers Builds uploads preview versions for every branch; only
 `deploy-production.yml` promotes. Rollback: `wrangler rollback <version>` or
@@ -252,9 +278,9 @@ rerun the workflow on an older commit.
 
 | layer | tool | where |
 |---|---|---|
-| unit | `node --test` | `tests/*.test.mjs` (240 files) |
-| ledger / DB acceptance | `tsx --test` against real Postgres | `packages/db/*.acceptance.test.ts` (57) |
-| integration | scripts against a disposable local DB | `scripts/test-*.mjs` (35) |
+| unit | `node --test` | `tests/**/*.test.{js,mjs}` (499 `tests/*.test.mjs` files) |
+| ledger / DB acceptance | `tsx --test` against real Postgres | `packages/db/*.acceptance.test.ts` (75) |
+| integration | scripts against a disposable local DB | `scripts/test-*.mjs` (70) |
 | live provider checks | manual scripts | `scripts/verify-*-endpoints.mjs` |
 | E2E | Playwright smoke against staging, installed ad hoc (not in `package.json`) | `e2e/`; partly fixed — see ISSUES I5 |
 

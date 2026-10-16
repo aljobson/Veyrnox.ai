@@ -13,7 +13,7 @@ Browser (Next.js UI, Bearer token in localStorage)
    │  fetch /api/v1/*
    ▼
 Cloudflare Worker  (worker.js + OpenNext)
-   │  body-size caps · admin edge rate limit · cron every 5 min
+   │  body-size caps · admin edge rate limit · crons every 1 and 5 min
    ▼
 middleware.js  ── verifies Supabase JWT (ES256 + JWKS, Web Crypto)
    │            ── sets x-veyrnox-auth-* headers, overwriting any inbound copy
@@ -21,7 +21,7 @@ middleware.js  ── verifies Supabase JWT (ES256 + JWKS, Web Crypto)
 Route handlers  app/api/v1/*   (service-role access to Postgres)
    │
    ├─► Supabase Postgres (EU)   ledger, jobs, catalog, RLS, RPCs
-   ├─► Providers                fal · kie · GrsAI · OpenRouter · BytePlus
+   ├─► Providers                fal · kie · GrsAI · OpenRouter · BytePlus (+ Exa search)
    ├─► Cloudflare R2 (EU)       private media, presigned URLs ≤ 15 min
    └─► Stripe                   Checkout in, signed webhooks back
 
@@ -32,8 +32,8 @@ The browser never talks to Postgres. Only the Worker holds the service-role key,
 
 ## Request path
 
-1. **Edge.** `worker.js` caps request bodies, rate-limits admin paths before OpenNext sees them, and runs the scheduled recovery tasks.
-2. **Auth gate.** `middleware.js` rejects any `/api/v1/*` request without a valid Supabase JWT (signature, issuer, audience `authenticated`, expiry with 5 s skew, `sub`). Identity then travels only in server-set `x-veyrnox-auth-id`, `-email` and `-role` headers. Routes trust those headers and never trust a user id in a body.
+1. **Edge.** `worker.js` caps request bodies, rate-limits admin paths before OpenNext sees them, and runs the scheduled recovery tasks (crons every minute and every 5 minutes).
+2. **Auth gate.** `middleware.js` rejects any `/api/v1/*` request without a valid Supabase JWT (signature, issuer, audience `authenticated`, expiry with 5 s skew, `sub`). Identity then travels only in server-set `x-veyrnox-auth-id`, `-email`, `-role`, `-aal` and `-mfa-at` headers (the last two carry the second-factor level and when it was proved). Routes trust those headers and never trust a user id in a body.
 3. **Route handler.** Validates input at the boundary, applies a Postgres-backed rate limit, then calls RPCs. Errors are typed `{error: "kebab_case_code"}` and never leak provider payloads or DB messages.
 4. **Unauthenticated endpoints** (the Stripe, fal, kie, OpenRouter and Cloudflare Stream webhooks) authenticate by cryptographic signature instead. BytePlus and GrsAI have no signed callback, so their jobs are polled by a sweep and never register a webhook.
 
@@ -71,7 +71,7 @@ Pricing lives in the database (`model_catalog.credits_5s`) and is normative; the
 
 ## Billing
 
-Credit Pack Top-ups use Stripe Checkout with prices set inline from the catalog and Stripe as Merchant of Record ([ADR-0031](docs/adr/0031-stripe-replaces-lemonsqueezy.md)). Webhooks are verified by signature and deduped by `webhook_events`. If a webhook never lands, a return-URL backfill and a cron sweep credit the Top-up from a re-fetched Stripe session ([ADR-0033](docs/adr/0033-stripe-top-up-recovery.md)). Refunds claw credits back pro rata; chargebacks and refund-after-spend freeze the account. Subscriptions are accepted but not built ([ADR-0064](docs/adr/0064-core-subscriptions.md)).
+Credit Pack Top-ups use Stripe Checkout with prices set inline from the catalog and Stripe as Merchant of Record ([ADR-0031](docs/adr/0031-stripe-replaces-lemonsqueezy.md)). Webhooks are verified by signature and deduped by `webhook_events`. If a webhook never lands, a return-URL backfill and a cron sweep credit the Top-up from a re-fetched Stripe session ([ADR-0033](docs/adr/0033-stripe-top-up-recovery.md)). Refunds claw credits back pro rata; chargebacks and refund-after-spend freeze the account. Credit Subscriptions are built (checkout, return, cancel and webhook under `/api/v1/subscriptions`, `lib/subscriptions`) but gated behind `SUBSCRIPTIONS_ENABLED`, which is off ([ADR-0064](docs/adr/0064-core-subscriptions.md), [ADR-0082](docs/adr/0082-credit-subscription-ui.md)).
 
 ## Storage
 
@@ -89,6 +89,9 @@ Project documents follow Organisation → Workspace → Project, with membership
 | Auto Short / Clip Edit | `lib/autoShort*.js`, `lib/clipEdit*.js` | Composite jobs on `job_steps` |
 | Social Cinema | `lib/cinema`, `app/api/v1/cinema`, `creators` | Gated by rollout flags; Cloudflare Stream for video |
 | Veyrnox Publish | `lib/social`, `packages/adapters/social`, `app/api/v1/social` | OAuth tokens encrypted at rest; async publish engine and sweeps |
+| Editor | `app/veyrnox/app/editor`, `lib/editor*` | Browser-local timeline (ADR-0080); private Library renders and local inference behind `EDITOR_*` flags |
+| LLM Chat | `lib/chat*.js`, `app/api/v1/chat` | One reply is one priced job (ADR-0067) |
+| Remote MCP connector | `lib/veyrnoxMcp.js`, `app/api/v1/mcp` | OAuth-authenticated generation, job, asset and balance tools (ADR-0100) |
 | Admin and operations | `app/api/v1/admin`, `docs/operations` | Admin metrics require Cloudflare Access and, when enabled, `aal2` |
 
 ## Security boundaries

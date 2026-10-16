@@ -49,15 +49,16 @@ Slices 1-4 landed in #187 and the upload spine is in the codebase:
   `consent: true` (`consent_required` otherwise; recorded by migrations 0096
   and 0146), uploads are rate limited (ADR-0035, flag on in production) and
   swept at 24 hours, or within minutes once the job finishes. ADR-0044
-  (reserved, bounded uploads) is still *Proposed* and
-  `UPLOAD_INTEGRITY_ENABLED` is `false` in production.
+  (reserved, bounded uploads) is still *Proposed* as a document, but migration
+  0129 is applied and `UPLOAD_INTEGRITY_ENABLED` is `"true"` in production
+  (`wrangler.jsonc`, 2026-10-16).
 
 Slice 0 is partly done: five of eight endpoints submitted real jobs, but fal
 returns no cost per call, so `provider_cost_per_unit` still has to be read off
 the dashboard. `scripts/.slice0-results.json` is not in the repository
 checkout, so the cost reading is **unverified**.
 
-**None of A1-A8 exists in the catalog.** No migration through 0227 mentions a
+**None of A1-A8 exists in the catalog.** No migration through 0326 mentions a
 Track A endpoint, so Slice 5 has not started and nothing is active. Slice 6
 (Studio Transform mode with `ModeToggle`, `UploadZone`, `BeforeAfter`) and
 Slice 7 are not built; no such component exists in `app/`. What shipped

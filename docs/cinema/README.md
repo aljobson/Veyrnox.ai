@@ -12,6 +12,7 @@ Read [REPO-ASSESSMENT.md](REPO-ASSESSMENT.md) first for the repository-specific 
 - Shared default-off server rollout controls in `lib/cinema/features.js`.
 - Initial content, lifecycle, monetisation and AI disclosure domain vocabulary in `lib/cinema/domain.js`.
 - Existing migration framework, typed API errors, forced RLS and tests are reused rather than replaced.
+- Later increments below: uploads, publication, viewer paywall, community votes/comments/story polls, discovery, weighted rankings, private collections, creator audience insights and the quarantine/moderation gate.
 
 ## Feature controls
 
@@ -30,24 +31,31 @@ Read [REPO-ASSESSMENT.md](REPO-ASSESSMENT.md) first for the repository-specific 
 | CINEMA_VIEWING_ENABLED | Master |
 | CREATOR_MONETISATION_ENABLED | Master + profiles + subscriptions |
 | VOTING_ENABLED | Master + profiles |
+| CINEMA_AUDIENCE_ENABLED | Master + profiles + viewing |
+| CINEMA_RANKINGS_ENABLED | Master + profiles + viewing + voting |
+| CINEMA_RETENTION_ENABLED | Master + profiles + viewing |
+| CINEMA_CREATOR_ANALYTICS_ENABLED | Master + profiles + content + viewing + audience |
 | COMMENTS_ENABLED | Master + profiles |
+| STORY_POLLS_ENABLED | Master + profiles |
 | PPV_ENABLED | Master + profiles + subscriptions + monetisation |
 | PREMIERES_ENABLED | Master + profiles + uploads |
 | AI_RECOMMENDATIONS_ENABLED | Master |
 
-Profile, creator-application and private-content endpoints consume their respective controls. Reserved controls do not mean their features are implemented. Every future route must check its applicable server control before side effects, then independently verify identity, role, account status and ownership. Feature flags grant no privileges.
+(`lib/cinema/features.js` is the source of this table.) Three more switches sit outside it and are read by the upload code: `CINEMA_PROXY_UPLOADS_ENABLED` (browser device uploads), `CINEMA_UPLOAD_RECOVERY_ENABLED` and `CINEMA_UPLOAD_REMOVAL_ENABLED`.
 
-All production flags remain false. Profile preview additionally requires `localStorage.veyrnox_social_cinema = 'true'`. Complete the migration/reconciliation gate and signed-in preview checks recorded in `../product/social-cinema-handoff.md` before enabling enrollment.
+Profile, creator-application, private-content and every later endpoint consume their respective controls. A control that is on does not mean the whole feature is finished; check the increment below. Every route must check its applicable server control before side effects, then independently verify identity, role, account status and ownership. Feature flags grant no privileges.
+
+Production state in `wrangler.jsonc` (2026-10-16): on are the master, profiles, creator applications, creator content, creator uploads, upload recovery and removal, publishing, viewing and the free-viewing ceiling. Off are device uploads (`CINEMA_PROXY_UPLOADS_ENABLED`, until a quarantine path covers them), paid Unlocks, the Cinema Pass, creator monetisation, voting, audience capture, rankings, retention, creator analytics, comments, story polls, pay-per-view, premieres and recommendations. Staging differs only in `CINEMA_UNLOCKS_ENABLED`, which is on. Profile preview additionally requires `localStorage.veyrnox_social_cinema = 'true'` for pages that are still preview-gated.
 
 ## Remaining
 
-Versioned rights declarations and content submission; Stream uploads and playback; service-backed catalogue; watch history/watchlist; social/competitions; subscriptions and entitlements; creator cash ledger and Connect; moderation; queue-based analytics; complete security and end-to-end launch verification. No real films, subscription prices, revenue or payouts are fabricated by the foundation.
+Creator cash ledger and Connect payouts; pay-per-view and premieres; personalised recommendations; the dedicated child-safety provider and activation of content moderation; device and cloud-drive imports through quarantine (`cloud-import-plan.md`: adapters only); live acceptance of the community, ranking and analytics features, which are built but off. No real films, subscription prices, revenue or payouts are fabricated by the foundation.
 
-Provider credentials, separate preview resources, rights/age/territory policy and approved commercial settings are needed before the corresponding live features can be activated. See the assessment's explicit risks and decisions.
+Provider credentials, rights/age/territory policy and approved commercial settings are needed before the corresponding live features can be activated. See the assessment's explicit risks and decisions.
 
 ## Mandatory security overlay
 
-The [security engineering brief](https://chatgpt.com/s/t_6ab644e42ac88191aaa6ea4cf6403e27) applies to every feature PR. The assessment pack in `docs/cinema/security/` (PR #327) must land before further feature implementation. Close applicable release gaps with implementation and evidence; the final launch review does not replace security work throughout delivery. No ASVS compliance is claimed.
+The [security engineering brief](https://chatgpt.com/s/t_6ab644e42ac88191aaa6ea4cf6403e27) applies to every feature PR. The assessment pack is in `docs/cinema/security/`. Close applicable release gaps with implementation and evidence; the final launch review does not replace security work throughout delivery. No ASVS compliance is claimed.
 
 ## Creator application increment
 
@@ -71,7 +79,7 @@ ADR-0057 and migration 0142 add Free Episodes and Episode Unlock, modelled on Re
 
 ## Cinema Pass increment (Phase 2)
 
-ADR-0057 and migration 0143 add the Cinema Pass: recurring Stripe subscriptions at $14.99 weekly ($11.99 first week, once per account, decided by `start_cinema_pass`), $49.99 monthly and $199.99 yearly, priced from `cinema_pass_plans` and sold through Checkout in subscription mode with inline recurring `price_data` and a deterministic once-only Coupon for the intro. A Pass grants viewing only: `cinema_entitlement` now answers `pass` for a live Pass whose period end is in the future, and no Pass path writes a ledger row. `/api/v1/cinema/pass` (read/start), `/pass/plans`, `/pass/return` (records the session and applies the subscription Stripe already shows, so a lost webhook cannot lose a paid Pass), `/pass/cancel` (within 14 days: cancel now and refund the unused share pro rata; after: stop renewing at the period end) and `/pass/portal` sit behind `CINEMA_SUBSCRIPTIONS_ENABLED`. The Stripe webhook handles `customer.subscription.*`, `invoice.paid` and `invoice.payment_failed` by re-reading the subscription; a `charge.refunded` on a subscription invoice ends the Pass, and a `charge.dispute.created` whose charge is on an invoice ends it and Freezes the account. `/social-cinema/pass` is the page, visible only with the `veyrnox_social_cinema` preview flag. Phase 3 (Pass plays and the 3,000-minute ceiling) is not built.
+ADR-0057 and migration 0143 add the Cinema Pass: recurring Stripe subscriptions, as first built at $14.99 weekly ($11.99 first week, once per account, decided by `start_cinema_pass`), $49.99 monthly and $199.99 yearly (replaced by 0244, below), priced from `cinema_pass_plans` and sold through Checkout in subscription mode with inline recurring `price_data` and a deterministic once-only Coupon for the intro. A Pass grants viewing only: `cinema_entitlement` now answers `pass` for a live Pass whose period end is in the future, and no Pass path writes a ledger row. `/api/v1/cinema/pass` (read/start), `/pass/plans`, `/pass/return` (records the session and applies the subscription Stripe already shows, so a lost webhook cannot lose a paid Pass), `/pass/cancel` (within 14 days: cancel now and refund the unused share pro rata; after: stop renewing at the period end) and `/pass/portal` sit behind `CINEMA_SUBSCRIPTIONS_ENABLED` (off in production). The Stripe webhook handles `customer.subscription.*`, `invoice.paid` and `invoice.payment_failed` by re-reading the subscription; a `charge.refunded` on a subscription invoice ends the Pass, and a `charge.dispute.created` whose charge is on an invoice ends it and Freezes the account. `/social-cinema/pass` is the page, visible only with the `veyrnox_social_cinema` preview flag. Phase 3 (Pass plays and the 3,000-minute ceiling) is not built.
 
 ## Pass Plays increment (Phase 3)
 
@@ -85,7 +93,7 @@ ADR-0057 and migration 0245 add Free Plays and a monthly ceiling on free viewing
 
 ## Publication increment (ADR-0059)
 
-Migration 0147 adds submissions, reviews and moderation actions. A creator submits a title from the workspace with the Rights Declaration (`rights-2026-09-26`) once every episode's video is ready; `/app/admin/cinema/submissions` is the queue, behind the same fresh-MFA and Cloudflare Access gate as creator applications, with approve, reject-with-note and suspend. Withdrawal and suspension of a published title reverse its Unlocks in the same transaction. `/api/cinema/titles` and `/api/cinema/titles/{id}` are the anonymous, cached public reads; `/api/v1/cinema/titles/{id}` is the signed-in variant with per-episode access. `/social-cinema` shows the catalogue, `/social-cinema/title/{id}` the seasons and episodes with Free, Unlock and Pass, and `/social-cinema/watch/{id}` the Stream player with token renewal and heartbeats. Switches: `CINEMA_PUBLISHING_ENABLED`, `CINEMA_VIEWING_ENABLED`, both off. `frame-src` now admits `https://*.cloudflarestream.com`.
+Migration 0147 adds submissions, reviews and moderation actions. A creator submits a title from the workspace with the Rights Declaration (`rights-2026-09-26`) once every episode's video is ready; `/app/admin/cinema/submissions` is the queue, behind the same fresh-MFA and Cloudflare Access gate as creator applications, with approve, reject-with-note and suspend. Withdrawal and suspension of a published title reverse its Unlocks in the same transaction. `/api/cinema/titles` and `/api/cinema/titles/{id}` are the anonymous, cached public reads; `/api/v1/cinema/titles/{id}` is the signed-in variant with per-episode access. `/social-cinema` shows the catalogue, `/social-cinema/title/{id}` the seasons and episodes with Free, Unlock and Pass, and `/social-cinema/watch/{id}` the Stream player with token renewal and heartbeats. Switches: `CINEMA_PUBLISHING_ENABLED`, `CINEMA_VIEWING_ENABLED`, both on in production. `frame-src` now admits `https://*.cloudflarestream.com`.
 
 Categories (0149, ADR-0059 addendum): `cinema_categories` holds the fixed genre list; a title carries one or two, required before submission; `GET /api/cinema/titles?category=<slug>` filters the catalogue and every list response carries `categories` for the tabs on `/social-cinema`.
 
@@ -98,3 +106,15 @@ receipts are append-only; retries recover the original result without moving
 credits twice or issuing another refund. Existing feature switches remain off.
 See [Operator actions and recovery](operator-actions.md) for request shapes and
 handling pending, failed or interrupted refunds.
+
+## Community, discovery and insight increments
+
+All of these are built, tested against real Postgres and **off** in production (see the state above). Each has an ADR with its limits; this list only names the pieces.
+
+- **Competition votes and comments** (ADR-0081, migrations 0266 to 0268; `VOTING_ENABLED`, `COMMENTS_ENABLED`): free ballots in administrator-run competitions (at most 31 days), plain-text comments that stay pending until a moderator approves them, reports. Routes `/api/v1/cinema/votes`, `/voting`, `/comments`; anonymous reads `/api/cinema/voting`, `/api/cinema/comments`; moderator pages under `/app/admin/cinema/voting` and `/comments`.
+- **Story polls** (ADR-0084, 0270; `STORY_POLLS_ENABLED`): a moderator-curated question on a published episode, two to six answers, one immutable answer per viewer. `/api/v1/cinema/story-polls`, `/story-choices`, anonymous `/api/cinema/story-polls`, moderator page `/app/admin/cinema/story-polls`.
+- **Discovery and sharing** (ADR-0085, 0277): the anonymous `/api/cinema/discovery` read behind the Series and Vote tabs of `/social-cinema`, and canonical share links.
+- **Audience signals and weighted weekly rankings** (ADR-0087, 0281 and 0282; `CINEMA_AUDIENCE_ENABLED`, `CINEMA_RANKINGS_ENABLED`): conservative watch-range reporting at `/api/v1/cinema/audience`, the `weighted-v1` model (votes 40%, completion 25%, qualified audience 15%, sharing 10%, engagement 10%), moderator-approved snapshots at `/app/admin/cinema/rankings` and the public `/api/cinema/winners`. No cash prizes.
+- **Private saved titles and follows** (ADR-0089, 0283; `CINEMA_RETENTION_ENABLED`): `/api/v1/cinema/retention`.
+- **Creator audience insights** (ADR-0090, 0284; `CINEMA_CREATOR_ANALYTICS_ENABLED`): `/api/v1/cinema/creator-analytics`, aggregate metrics for the last 28 completed UTC days, withheld below five qualified viewers.
+- **Safety gate** (migrations 0294, 0295, 0297; `MODERATION-AND-MALWARE-GATE.md`, `services/cinema-scanner`): a publication lock bound to the file SHA-256, a ClamAV quarantine for Library videos, and a Claude-assisted content classifier that is installed off (`upload_content_required = false`, `CINEMA_CONTENT_MODERATOR_ENABLED=false`).

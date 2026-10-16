@@ -20,7 +20,7 @@ selling price, provider cost must be at most $0.01796 per charged credit:
 | FLUX.2 Pro (live fal) | $0.0300 | 2 credits | 56.9% |
 | Hailuo 02, 6s (live kie) | $0.1500 | 9 credits | 53.0% |
 | Nano Banana Pro (live GrsAI) | $0.0271 | 2 credits | 60.3% |
-| Sana v1.5 4.8B (activation pending) | $0.0100 | 1 credit | 68.5% |
+| Sana v1.5 4.8B (active, migration 0126) | $0.0100 | 1 credit | 68.5% |
 
 The revised migration keeps Nano Banana and FLUX at their existing 2 credits,
 reduces Hailuo from 10 to 9 rather than 6, and retains all other model charges.
@@ -42,12 +42,12 @@ pin resolution and inspect actual charges before activation.
 | Sana v1.5 1.6B | $0.0075 | 74.3% | https://fal.ai/models/fal-ai/sana/v1.5/1.6b |
 | Sana Sprint | $0.0025 | 86.0% | https://fal.ai/models/fal-ai/sana/sprint |
 
-Sana v1.5 4.8B is now integrated and staged inactive as an additional option
-in migration 0122. The others remain candidates. None is claimed to be a
+Sana v1.5 4.8B was integrated and staged inactive as an additional option
+in migration 0122 and is active since migration 0126. The others remain candidates. None is claimed to be a
 quality-equivalent FLUX replacement. Compare product shots, faces, text, hands and prompt adherence
 before selection. GrsAI Nano Banana Pro is live after migration 0124 and a successful production
 generation. Sana passed isolated signed-callback/storage/debit validation and a
-synthetic submit-refund check; 0126 proposes activation. The fal dashboard confirmed
+synthetic submit-refund check; 0126 activated it. The fal dashboard confirmed
 $0.01 aggregate billing for the earlier single Sana image. See ADR-0037 for the
 evidence and remaining payment-fee assumptions.
 

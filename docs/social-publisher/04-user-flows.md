@@ -3,7 +3,7 @@
 > **As of 2026-10-08 (repo `main` at `bee1ea4f`).** Each flow below says what is built. §4.6 (reviewer
 > approval), §4.9 (SmartLink) and §4.10 (multi-brand) are **design only (not built)** and are kept as the
 > plan. Items marked *unverified* could not be confirmed from the code or the acceptance records.
-> Publish is closed in production (`PUBLISH_ENABLED` is `"false"`); every flow here runs on staging.
+> Publish was closed in production on 2026-10-08; as of 2026-10-16 `PUBLISH_ENABLED` is `"true"` there for the released networks (YouTube, LinkedIn, X, TikTok), and the flows marked "not built" below for approvals, SmartLinks and multi-brand are now built (updates under §4.6, §4.9 and §4.10).
 > The six networks added by PR #637 (Facebook, Threads, Pinterest, Bluesky, Twitch, Google Business
 > Profile) also need `PUBLISH_EXTENDED_NETWORKS_ENABLED` (`"false"` in production, `"true"` on staging) and
 > have not been run against real provider accounts.
@@ -154,8 +154,7 @@ Caption suggestions grounded in the generation prompt are **not built**.
 
 ## 4.6 Approval workflow (Phase 2)
 
-> **Design only (not built).** Single-owner draft review exists (below); the multi-reviewer approval
-> workflow does not.
+> **Update 2026-10-16.** The multi-reviewer approval workflow is built (migration 0304, `PUBLISH_RUNTIME_FLAGS.approvals`, `/api/v1/social/approvals`; external reviewers act from an emailed `/api/social/approvals/{token}` link). The text below describes the original design and the single-owner draft review (0182).
 
 **Built, single-owner draft review (0182).** Once a week the owner's own brand accounts get a batch of
 draft posts built from the previous seven days of their generations (captions are catalog data, never
@@ -238,7 +237,7 @@ expired.
    and the last good numbers stay visible; the posting-insights panel fails independently of the rest.
 5. There is no per-post detail panel, competitor overlay or export/report.
 
-## 4.9 SmartLink (link-in-bio) setup (Phase 2) — design only (not built)
+## 4.9 SmartLink (link-in-bio) setup (Phase 2) — built 2026-10-16 (0300, 0324; `/app/publish/smartlink`, public `/s/{slug}`; flow text below is the original design)
 
 **Trigger:** User opens the SmartLinks section and creates their first link-in-bio page.
 
@@ -254,10 +253,12 @@ expired.
    natural place a creator drops their "link in bio" reference when the actual link can't go in an
    Instagram/TikTok caption).
 
-## 4.10 Multi-brand switching (agency persona) — design only (not built)
+## 4.10 Multi-brand switching (agency persona) — partly built
 
-There is one default brand per user (`get_or_create_default_social_brand`), no brand switcher and no
-collaborator model; every Publish action is owner-only.
+Original state: one default brand per user (`get_or_create_default_social_brand`), no switcher, owner-only.
+Since 2026-10-16 (migrations 0305 to 0308, `PUBLISH_RUNTIME_FLAGS.teams`): team members hold a role (manager, editor,
+reviewer, analyst, viewer) on a brand, `/api/v1/social/brands` lists the brands a caller can reach, and a request selects one
+with the `x-publish-brand-id` header. Whether the top-bar switcher described below matches the UI is *unverified*.
 
 **Trigger:** User with more than one `social_brands` row clicks the brand switcher in the top bar.
 

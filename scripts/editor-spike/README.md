@@ -1,7 +1,7 @@
 # Editor slice 0 spike (ADR-0080)
 
 Measures whether Mediabunny 1.60.0 can compose a multi-clip timeline in the browser. **Not shipped, not imported by the app, no new
-dependency.** Results: [docs/editor/SLICE-0-RESULTS-2026-10-10.md](../../docs/editor/SLICE-0-RESULTS-2026-10-10.md).
+dependency** (`mediabunny` is pinned at 1.60.0 in the root `package.json` for the shipped editor). Results: [docs/editor/SLICE-0-RESULTS-2026-10-10.md](../../docs/editor/SLICE-0-RESULTS-2026-10-10.md).
 
 ## Run it
 
@@ -33,4 +33,5 @@ PLAYWRIGHT_CORE=/tmp/spike/node_modules/playwright-core \
 - `spike.mjs`: the engine code that runs in the page (decode, composite, mix, encode, cancel).
 - `scenarios.mjs`: the timelines. They are test data, **not** the production timeline schema.
 - `run.mjs`: static server, Chrome driver, memory sampler, and the ffprobe/ffmpeg checks.
+- `slice1.mjs` + `slice1.html`: the slice 1 export check. Unlike the files above, it drives the **real** editor modules (`app/veyrnox/_lib/editorTimeline.mjs`, `editorMedia.mjs`, `editorExport.mjs`, `editorRender.mjs`, `editorPreview.mjs`, `videoEnhance.mjs`) in desktop Chrome and verifies the MP4 with ffprobe and ffmpeg: `PLAYWRIGHT_CORE=<dir> node scripts/editor-spike/slice1.mjs <media dir> <out dir>`.
 - `make-fixtures.sh`: synthetic clips only (no real people or third-party media).

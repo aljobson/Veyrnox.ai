@@ -1,7 +1,7 @@
 # App Flow — Veyrnox.ai
 
 **Status:** Current · 2026-10-08 (audited against `main` at `42150476`; section 7 amended against `bee1ea4f`; first
-written 2026-10-02 at `2da81dc`)
+written 2026-10-02 at `2da81dc`). Flag and route statements amended 2026-10-16 against `main` at `3f46a609`; the rest of this document was not re-audited that day.
 **Reads with:** [PRD.md](PRD.md), [UI-UX.md](UI-UX.md). Feature flows (e.g.
 [face-filters/APP-FLOW.md](../face-filters/APP-FLOW.md)) extend this one.
 **Diagrams:** [auth-flow](diagrams/auth-flow.html) ·
@@ -16,10 +16,10 @@ written 2026-10-02 at `2da81dc`)
 | 2. Join | signing up, confirming email | `AuthGate` modal, confirmation email, `/auth/callback` |
 | 3. Create | spending Credits | `/app/create`, `/app/library`, `/app/chat` |
 | 4. Pay | topping up | `/app/credits` → Stripe → back |
-| 5. Distribute | scheduling posts — **dark in production** | `/app/publish` |
+| 5. Distribute | scheduling posts — **on in production** (`PUBLISH_ENABLED`; four networks released) | `/app/publish` |
 | 6. Manage | security, data, referrals | `/app/account` |
-| (7. Watch / publish series) | Cinema viewer or creator — **off in production** | `/social-cinema/*` |
-| (8. Video agent) | brief → plan → approve — **off, no price live** | `/app/video-agent` |
+| (7. Watch / publish series) | Cinema viewer or creator — creator onboarding, publishing, viewing and the free ceiling **on in production**; paid unlocks and the Pass **off** | `/social-cinema/*` |
+| (8. Video agent) | brief → plan → approve — **on in production**, 165 Credits | `/app/video-agent` |
 
 ## 2. Route map
 
@@ -44,12 +44,16 @@ is client-side; the API is the authority.
 | `/app/library` | past generations, 90-day retention | signed in | Clip Editor: `veyrnox_editor=1`; captions: `veyrnox_editor_captions=1` |
 | `/app/credits` | balance, packs, usage meters, statement, top-up history | buy needs sign-in | — |
 | `/app/account` | 2FA, passkeys, password, sessions, referral panel, data requests | signed in | — |
-| `/app/publish`, `/app/publish/calendar`, `/app/publish/analytics`, `/app/publish/plan` | Veyrnox Publish and its plan/billing surface | signed in | `PUBLISH_ENABLED` (**off in prod**; 503 `publish_not_open`); five accounts and basic scheduling are free when multi-account is enabled. `PUBLISH_RUNTIME_FLAGS.plans` (default off) adds the $15/month Publish Plan for full analytics history and best-time recommendations; analytics, insights and device uploads keep their own flags. Facebook, Threads, Pinterest, Bluesky, Twitch and Business Profile also need `PUBLISH_EXTENDED_NETWORKS_ENABLED` |
+| `/app/publish`, `/app/publish/calendar`, `/app/publish/analytics`, `/app/publish/plan` | Veyrnox Publish and its plan/billing surface | signed in | `PUBLISH_ENABLED` (**on in prod**; 503 `publish_not_open` when off); five accounts and basic scheduling are free when multi-account is enabled. `PUBLISH_RUNTIME_FLAGS.plans` (default off) adds the $15/month Publish Plan for full analytics history and best-time recommendations; analytics, insights and device uploads keep their own flags. Facebook, Threads, Pinterest, Bluesky, Twitch and Business Profile also need `PUBLISH_EXTENDED_NETWORKS_ENABLED` |
 | `/app/video-agent` | video agent brief → plan → approve | signed in | `AGENT_VIDEO_ENABLED` (on in production since 2026-10-09); its own tab in the studio nav, no browser switch |
-| `/app/projects`, `/app/projects/[id]` | workspaces, project document editor | signed in | `veyrnox_projects=1` + `TENANT_PROJECTS_ENABLED` |
-| `/app/admin`, `/app/admin/violations` | ops metrics, content violations | admin + aal2 | Cloudflare Access |
-| `/app/admin/cinema`, `…/submissions` | creator and publication review | Cinema admin + fresh MFA | Access + Cinema flags |
-| `/social-cinema` (+ `/creator`, `/pass`, `/title/[id]`, `/watch/[id]`) | Cinema | mixed | `CINEMA_*` (off in prod) + `veyrnox_social_cinema=1` (or `true`) |
+| `/app/projects`, `/app/projects/[id]` | workspaces, project document editor | signed in | `TENANT_PROJECTS_ENABLED` (on in prod; the browser switch is gone) |
+| `/app/editor`, `/app/editor/review` | browser timeline editor and frame-comment review (ADR-0080, 0088) | signed in | `EDITOR_TIMELINE_ENABLED` and the `EDITOR_*` switches (on in prod) |
+| `/app/film-studio`, `/app/enhance`, `/app/oddlings` | Film Studio workspace, video enhance, Oddlings | signed in | — |
+| `/mcp`, `/oauth/consent`, `/api/v1/mcp` | remote MCP connector page, OAuth consent, endpoint (ADR-0100) | public / OAuth client | activation checks in `docs/operations/mcp.md` |
+| `/app/account/appeals`, `/app/account/report` | contest a warning or takedown; report content | signed in | — |
+| `/app/admin`, `/app/admin/{violations,users,appeals,reports,webhooks}` | ops metrics, content violations, account ledger, appeals, user reports, webhook log | admin + aal2 | Cloudflare Access |
+| `/app/admin/cinema`, `…/{submissions,voting,comments,story-polls,rankings}` | creator, publication, voting, comment, story-poll and ranking review | Cinema admin + fresh MFA | Access + Cinema flags |
+| `/social-cinema` (+ `/creator`, `/pass`, `/title/[id]`, `/watch/[id]`) | Cinema | mixed | `CINEMA_*` (creator, publishing, viewing and free-ceiling on in prod; unlocks, Pass, voting, comments, polls, rankings off) + `veyrnox_social_cinema=1` (or `true`) for the preview screen |
 | `/legal/{terms,privacy,gdpr,refund,aup}` | legal | public | — |
 | `/auth/callback` | OAuth PKCE exchange → `/` | — | — |
 | `/social/connect/callback/[network]` | Publish OAuth landing; for Facebook, Pinterest and Business Profile it also hosts the Page / board / location chooser | signed in | — |
@@ -223,7 +227,7 @@ pending reward; the hourly sweep releases 10% of those Credits to the referrer
 statement; reversed as `reverse:referral` if the Pack is refunded or
 disputed afterwards).
 
-## 7. Distribute — Veyrnox Publish *(dark in production)*
+## 7. Distribute — Veyrnox Publish *(on in production)*
 
 1. `/app/publish` → **Connect** one of eleven networks (the button reads
    Setup required or Testing not enabled where the deployment is not ready) →
@@ -261,17 +265,17 @@ TOTP enrol / verify / remove · add and remove passkeys · change password by
 emailed code · sign out other devices or everywhere · **Refer a friend**
 (link, copy, count) · data export or deletion by email request.
 
-## 9. Cinema (built, off in production)
+## 9. Cinema (creator, publishing and free viewing on in production; paid off)
 
 Creator: profile → apply → admin approves → draft series/episodes → upload
 to Stream (tus) → submit → admin review → published in the catalogue.
 Viewer: title page → entitlement (free / unlocked / pass / locked) → unlock
 for 6 Credits or buy a Cinema Pass (Stripe subscription) → player with
-heartbeat; Pass plays count toward a 3,000-minute monthly ceiling (1,500
-once 0244 is applied).
+heartbeat; Pass plays count toward a 1,500-minute monthly ceiling (0244; the
+CHANGELOG records it applied), and free titles toward a 300-minute monthly ceiling (0245).
 Every Cinema API returns 503 `*_not_open` while its flag is off.
 
-## 9a. Video agent (built, off)
+## 9a. Video agent (on in production)
 
 Brief (topic or reference URL, aspect) → `POST /api/v1/montage/plan` returns a
 plan, the catalog price and a signed 30-minute ticket (no debit) → **Approve**

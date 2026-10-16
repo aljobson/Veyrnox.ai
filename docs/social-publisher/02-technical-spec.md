@@ -5,6 +5,13 @@
 > **Design only (not built)**. Each section was checked against migrations 0154 to 0228, the code
 > under `app/api/v1/social/`, `lib/`, `packages/adapters/social/`, `worker.js`, `wrangler.jsonc` and
 > ADR-0061 with its amendments (including the 2026-10-08 all-network amendment) and the [tester handover](INTEGRATIONS-TESTING-2026-10-08.md). Items that could not be confirmed are marked *unverified*.
+>
+> **Update 2026-10-16 (migrations 0229 to 0326).** Later migrations built what several "not built" notes below say is missing:
+> the Publish Plan (0293, 0298), unified inbox (0299, 0309, 0316, 0318 to 0320; Meta webhook at `/api/webhook/social/meta`), SmartLinks
+> (0300, 0324; public `/s/{slug}`), content library and presets (0301, 0302), queues (0303), multi-reviewer approvals (0304; public
+> `/api/social/approvals/{token}`), team roles and brand access (0305 to 0308), post variants (0310), post cancel/restore (0311), reports
+> (0312, 0317, 0323), the customer API and webhooks (0313 to 0315; `/api/publish/v1/*`), ads and commerce (0321), RSS autolists (0322, 0325)
+> and single-use OAuth state (0326). The notes marked "(superseded 2026-10-16)" below point at them. Competitor tracking and the hashtag tracker are still not built.
 
 This spec follows the constraints already in force for this repo (`CLAUDE.md`): Cloudflare Workers
 Builds, Supabase Postgres with RLS, RPC-only money-adjacent writes, no `jose` / no
@@ -234,19 +241,21 @@ plan for Phase 2 and 3.
 -- Competitor benchmarking.
 social_competitors (id, brand_id, network, handle, display_name, added_by, created_at)
 
--- Link-in-bio microsite.
+-- Link-in-bio microsite. (Superseded 2026-10-16: built in 0300 as social_smartlinks, social_smartlink_items and
+-- social_smartlink_daily_counts, with click history kept by 0324; there is no per-click smart_link_clicks table.)
 smart_links (id, brand_id, slug unique, title, theme jsonb, created_at)
 smart_link_blocks (id, smart_link_id, block_type check ('button','image'), position, label,
                    destination_url, style jsonb, unique (smart_link_id, position))
 smart_link_clicks (id, block_id, clicked_at, referrer)   -- append-only; daily rollups for the dashboard
 
--- Multi-reviewer approval workflow.
+-- Multi-reviewer approval workflow. (Superseded 2026-10-16: built in 0304 as social_approval_requests,
+-- social_approval_reviewers and social_approval_events.)
 social_approval_requests (id, post_id, requested_by, approval_system check ('any','all','optional'),
                           status check ('pending','approved','rejected'), created_at, resolved_at)
 social_approval_reviewers (id, request_id, email, is_internal, decision, decided_at, comment,
                            unique (request_id, email))
 
--- Entitlement (ADR-0062/0063): social_publish_plans, social_publish_subscriptions. Not built.
+-- Entitlement (ADR-0062/0063): social_publish_plans, social_publish_subscriptions. Built in 0293 (superseded 2026-10-16).
 ```
 
 ## 2.3 API surface (`/api/v1/social/*`)
@@ -279,9 +288,11 @@ at the boundary, resolve the caller's default brand (`resolveBrand`) and call a 
 | `POST /api/v1/social/plan/cancel`, `POST /api/v1/social/plan/portal` | Cancel at period end or open Stripe Customer Portal using the server-owned customer/subscription binding. |
 | `GET /media/social/:token` | **Outside the gate, on purpose.** Public, short-lived HMAC token naming one R2 object. TikTok's `PULL_FROM_URL` fetch hits it; listed in `CLAUDE.md` and `tests/routesOutsideGate.test.mjs`. |
 
-Not built from the original design: `PATCH /posts/:id` (edit), `DELETE /posts/:id` (cancel),
-`POST /posts/:id/send-for-review`, `POST /approvals/:id/decide`, SmartLink CRUD and `GET /s/:slug`.
-Posts are created complete; to change one the user reschedules it, and there is no user-facing cancel.
+Not built from the original design: editing a post's content (`PATCH /posts/:id` only accepts `{ action: 'cancel' | 'restore', expectedUpdatedAt }`, 0311) and competitor tracking.
+Superseded 2026-10-16: cancelling and restoring an unstarted scheduled post exists (that `PATCH`, behind `PUBLISH_CALENDAR_ENABLED`, paid plan, roles owner/manager/editor);
+approvals live at `/api/v1/social/approvals` with reviewers acting from `/api/social/approvals/{token}`; SmartLinks are `GET/PUT /api/v1/social/smartlink` with the public page at `/s/{slug}`.
+Posts are otherwise created complete; to change one the user reschedules it.
+Routes added after 0228, all under `/api/v1/social/` and gated by `PUBLISH_RUNTIME_FLAGS`: `access`, `brands`, `team` (+ `accept`), `activity`, `inbox` (+ `[threadId]`, `reply`, `suggestions`, `analytics`), `contacts`, `workflows`, `presets`, `queues` (+ `reserve`), `autolists`, `ads`, `commerce/products`, `reports` (+ `[id]/export`) and `developer/{keys,webhooks,logs}`. Customer-facing API: `/api/publish/v1/accounts` and `/posts`.
 
 ## 2.4 Per-network publishing rules
 
@@ -496,11 +507,11 @@ What the connect flow does today, and where it falls short of the original list:
 - **Exact-match `redirect_uri`.** Built from `PUBLIC_HOST` (must be https) plus a per-network path,
   `/social/connect/callback/{network}`; never from request input. No query string, because several
   providers ignore it.
-- **`state` is a stateless signed token, not a single-use value.** `lib/social/oauthState.js` signs
+- **`state` is a signed, single-use token (0326).** `lib/social/oauthState.js` signs
   `{ authId, network, expiry }` with HMAC-SHA256 under `SOCIAL_OAUTH_STATE_SECRET`, ten-minute expiry,
-  constant-time compare. It binds the attempt to the signed-in user and network and cannot be forged,
-  but the server stores nothing, so a state could in principle be replayed within its ten minutes. The
-  provider's one-time authorization code is what actually stops reuse.
+  constant-time compare, and `lib/social/oauthStateStore.js` stores only its SHA-256 digest
+  (`social_oauth_states`) and consumes it atomically (`consume_social_oauth_state`) before the provider code is
+  exchanged. Before 0326 the token was stateless and could in principle be replayed within its ten minutes.
 - **Refresh-token rotation, where the platform supports it.** TikTok rotation is implemented
   atomically (`rotate_tiktok_account_tokens`: both ciphertexts must still match and the account must be
   active, so a disconnect, reconnect or competing refresh wins). 0228 adds the same compare-both-old-
@@ -563,8 +574,9 @@ and every RPC re-derives ownership from `p_auth_id` before touching a row, exact
 - **Property-level:** the POST body is read key by key (`scheduledAt`/`publishNow`, `globalText`,
   `idempotencyKey`, `accountIds`, `media`); nothing is spread into an insert, so a body cannot set a
   status, a brand or a target field. The reschedule RPC takes only the two timestamps.
-- **Function-level:** there are no roles. A brand has exactly one owner and every Publish action is
-  owner-only. The collaborator, reviewer and multi-brand model in the original design is not built.
+- **Function-level:** (superseded 2026-10-16) a brand has one owner and, since 0305 to 0308, team members with roles
+  `manager`, `editor`, `reviewer`, `analyst` or `viewer`; routes pass the roles they allow to `resolveBrand`
+  (for example post cancel/restore allows owner, manager, editor). Billing endpoints stay personal and owner-only.
 - **Audit:** state changes the user cares about (connect, reconnect, disconnect, draft approval and
   discard, reschedule) are appended to `social_account_actions`.
 
@@ -581,9 +593,9 @@ and every RPC re-derives ownership from `p_auth_id` before touching a row, exact
 | Secrets via `wrangler secret put` | `INSTAGRAM_CLIENT_ID/SECRET` (fallback `META_APP_ID/SECRET`), `META_APP_ID/SECRET`, `X_CLIENT_ID/SECRET`, `LINKEDIN_CLIENT_ID/SECRET`, `TIKTOK_CLIENT_KEY/SECRET`, `YOUTUBE_CLIENT_ID/SECRET`, and since 0228 `FACEBOOK_CLIENT_ID/SECRET` (falls back to `META_APP_ID/SECRET`), `THREADS_CLIENT_ID/SECRET`, `PINTEREST_CLIENT_ID/SECRET`, `TWITCH_CLIENT_ID/SECRET`, `GMB_CLIENT_ID/SECRET` (Bluesky needs none), plus `SOCIAL_OAUTH_STATE_SECRET`, `SOCIAL_TOKEN_ENCRYPTION_KEY`, `SOCIAL_MEDIA_PROXY_SECRET` are Worker secrets, never in `wrangler.jsonc`. Which are provisioned per environment is *unverified* from the repo: `wrangler.jsonc` comments may lag the live configuration; the acceptance records show a working YouTube client on staging, and each provider still needs its own live acceptance evidence |
 | CSP `connect-src` is locked to `'self'` + Supabase + R2 | Unchanged. Platform API calls are server-side. Device uploads PUT to the R2 S3 endpoint, which `connect-src` already allows (ADR-0028) |
 | No CORS wildcards on `/api/v1/*` | Unchanged. The R2 bucket's own CORS must allow the exact origin for PUT, Content-Type and If-None-Match (checked on staging 2026-10-06) |
-| Webhook signature verification | No platform webhook is registered. Platform state is polled (TikTok publish id, YouTube processing), never trusted from a callback |
+| Webhook signature verification | Publishing state is polled (TikTok publish id, YouTube processing), never trusted from a callback. The one inbound platform webhook is Meta's inbox feed at `/api/webhook/social/meta` (`lib/social/metaInboxWebhook.js`); outbound customer webhooks are signed (`lib/social/customerWebhook.js`) |
 | OAuth `redirect_to` built from `PUBLIC_HOST` only | Per-network callback path built from `PUBLIC_HOST`; see §2.7 |
-| Append-only audit log | `social_account_actions` (trigger plus truncate guard). `smart_link_clicks` is not built |
+| Append-only audit log | `social_account_actions` (trigger plus truncate guard). SmartLink clicks are stored as daily counts (`social_smartlink_daily_counts`), not per-click rows |
 | Rate limiting at the entry point | `consume_social_post_write_request`: 20 write requests per user per 60 s on posts, drafts and uploads; `accountReadLimit` on reads. The connect routes are not separately limited (*unverified*) |
 | Routes outside `/api/v1` need an entry in `tests/routesOutsideGate.test.mjs` | `/media/social/:token` |
 

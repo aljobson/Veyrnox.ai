@@ -4,7 +4,14 @@ The `/app/projects` screen uses the existing tenant APIs to list workspaces and 
 
 ## Release boundary
 
-The screen and navigation entry require `localStorage.veyrnox_projects = '1'`, following the new-path delivery gate in CLAUDE.md. This browser flag is not authorization: API JWT verification, RLS, role checks and `TENANT_PROJECTS_ENABLED` remain authoritative. Staging APIs are enabled by PR #334; production stays disabled. No migration is needed for this interface.
+The screen and navigation entry follow the request-time `TENANT_PROJECTS_ENABLED`
+server flag (read in `app/veyrnox/layout.js` and `app/veyrnox/app/projects/layout.js`).
+The browser flag `localStorage.veyrnox_projects` that once gated the screen is gone.
+The flag is not authorization either: API JWT verification, RLS and role checks remain
+authoritative. `TENANT_PROJECTS_ENABLED` is `"true"` in `wrangler.jsonc` for production
+and staging (PR #889 activated production); device-media uploads stay behind
+`PROJECT_MEDIA_UPLOADS_ENABLED` (`"false"` in production, `"true"` in staging).
+No migration is needed for this interface.
 
 Creation retains its idempotency key for retries of the same payload while the dialog is open. Rename/delete submit the displayed version. A 409 preserves the draft and requires an explicit reload of the current project before the user can submit again. Lists discard late responses after workspace changes or unmount; the existing account boundary remounts private UI on account changes.
 

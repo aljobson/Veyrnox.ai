@@ -52,6 +52,27 @@ and only then close the tracking issue. No automatic closure hides unresolved
 work. Actual backup/restore readiness, provider account settings, edge rules,
 and key-rotation ownership remain separate operational checks.
 
+## Tasks and counts in the snapshot
+
+`unhealthy_tasks` can name `top_up_backfill`, `upload_sweep` and `asset_reap`
+always, and `grsai`, `byteplus`, `auto_short`, `video_agent`, `publish_sweep`,
+`fal_dispatch` and `content_scan` only while their work exists (an active
+catalog row, a due scheduled post, a `DEBITED` job with a dispatch row, an armed
+scan monitor). The snapshot refreshes every fifteen minutes (pg_cron
+`veyrnox-recovery-health`). The Worker runs the tasks from the five-minute cron;
+`content_scan` also runs from the one-minute cron, and only when
+`CONTENT_SCAN_ENABLED` is `true`.
+
+Counts that open the issue when above zero: `reap_exhausted`, `reap_overdue`,
+`stale_jobs`, `stale_top_up_returns`, `unreviewed_flagged_orders`,
+`unreviewed_order_collisions`, the five `cinema_*` counts below,
+`fal_dispatch_unknown` and `fal_dispatch_overdue` (dispatch started but unresolved
+for over two minutes, or ready for over ten), and `content_scan_overdue`,
+`content_scan_backlogged` and `content_scan_exhausted` (migration 0289: no
+successful scan run for twenty minutes, work queued over thirty minutes, or more
+than twenty provider-unavailable scans in a day). A `content_scan` finding is
+usually the scanner credential or `SOCIAL_HOLD_CHECKS_ENABLED` being off.
+
 ## Cinema uploads (0138 / ADR-0053)
 
 After migration 0138 and isolated Stream checks, enable

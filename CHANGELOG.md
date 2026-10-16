@@ -4,6 +4,19 @@ Notable changes to Veyrnox.ai, newest first, grouped by date merged to `main`. N
 
 Changes that touch the money spine, the ledger or the catalog are marked **[money]**.
 
+## Unreleased (2026-10-11 to 2026-10-16)
+
+Summarised from the merge log (`git log --first-parent main`); one line per theme, numbers are pull requests.
+
+- Editor: detailed local editing workflows, CapCut-style catalogs, conflict-safe collaboration, creator editing parity, lyric-to-caption alignment, exact-byte MP4 export in Safari, private Library renders and the Credit Pack upgrade flow (#906, #912, #915, #916, #934, #952, #956; ADR-0086 to ADR-0097).
+- Social Cinema: bounded free playback, curated free long-form series using official embeds, posters from ready videos, a fail-closed safety gate, exact-byte malware quarantine with a private Fly scanner, and Claude-based moderation (#918, #925, #929, #939 to #945, #948 to #950, #954, #959, #964; ADR-0098).
+- Veyrnox Publish: a $15 Publish Plan for advanced analytics, five connected accounts, X, LinkedIn and TikTok inbox uploads released in production, Instagram and Facebook OAuth fixes, and the full management suite (#917, #936, #941, #942, #946, #1002, #1058; ADR-0093).
+- Remote MCP connector with OAuth (#1008, #1062; ADR-0100) and consent-first PostHog observability (#1003; ADR-0099).
+- Oddlings influencer studio and the Vey product guide (#1009, #1013 and following).
+- Chat: media generation modes and video resolution and audio controls (#1016, #1022).
+- **[money]** Stripe payment boundaries hardened (#931); paywalls improved and subscription cancellation preserved (#1063).
+- Security: social OAuth state consumed once (0326, #1064), audited production boundaries, CodeQL runtime findings and tainted log fields (#1065, #1067, #1068, #1069).
+
 ## Unreleased (2026-10-05)
 
 - Social Cinema free playback now has its own production path: signed-in viewers can stream reviewed free titles under the existing 300-minute monthly ceiling while credit Unlocks, Cinema Pass subscriptions and creator monetisation remain closed.

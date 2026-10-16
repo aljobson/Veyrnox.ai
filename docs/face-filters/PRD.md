@@ -174,7 +174,7 @@ photo of the same person. That asymmetry is why the launch set stops at A6.
    *Answered in code, with a twist:* free of credits, rate limited (ADR-0035),
    capped at 10 unconsumed uploads, 20 MB per image and 100 MB per video, and
    refused to an account with a zero balance (`insufficient_credits`). The
-   reserved byte budget (ADR-0044) is Proposed and off in production.
+   reserved byte budget (ADR-0044) is on in production (`UPLOAD_INTEGRITY_ENABLED`, 2026-10-16).
 3. Track B: is Veyrnox willing to publish a probabilistic "this is fake" verdict
    about a named person's media? Detectors run 70–85% in the wild and worse on
    re-compressed social uploads. This is an ownership decision, not engineering.

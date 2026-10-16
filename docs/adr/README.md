@@ -152,3 +152,29 @@ Flagged for later or standalone treatment:
 | [ADR-0080 — Browser timeline editor](0080-browser-timeline-editor.md) | **Proposed 2026-10-10** | CapCut-style editing in two layers: a free, browser-local timeline (Mediabunny/WebCodecs, desktop Chromium, saved as a project document) plus priced `job_steps` for AI. Uploads through ADR-0056, off in production until moderation. Slice 0 is a spike that can end the plan. | Backlog M05 |
 
 | [ADR-0084 — Cinema episode story polls](0084-cinema-story-polls.md) | Built under the 2026-10-10 owner instruction; ships off | Moderator-curated episode questions, one immutable free answer per account, qualified aggregates and audited held-choice review. | Exact migrations, clean observation window and real-account/Access acceptance |
+
+### Added to the index on 2026-10-16
+
+These existed without an index row. Status is as written in each file. Four numbers are used by two files (0085, 0089, 0090) or have amendment files; each file has its own row.
+
+| ADR | Status | Summary | Blocks |
+|-----|--------|---------|--------|
+| [ADR-0020 amendment 1 — GrsAI output delivery recovery](0020-amendment-1-grsai-output-recovery.md) | Accepted 2026-10-10 (owner-requested production fix) | Four GrsAI edits stayed SUCCEEDED with no asset after the R2 copy refused a source host; recovery of the missing output. | — |
+| [ADR-0067 amendment 14 — A replay, and a reply cut short with no `done`](0067-amendment-14-replay-and-cut-reply.md) | Proposed 2026-10-10 (accepted by merging) | Both endings are looked for by their job instead of ending as "sent"; browser only. | — |
+| [ADR-0067 amendment 15 — Our ceiling is a Stop; caps hold in tokens](0067-amendment-15-ceiling-stops-tokens.md) | Proposed 2026-10-10 (accepted by merging) | Our ceiling counts as a Stop, stops before text are counted, caps are held in tokens; read-only function in migration 0258; no price change. | — |
+| [ADR-0068 — Chat image attachments](0068-chat-image-attachments.md) | **Accepted 2026-10-05** | Transient, owner-keyed image attachments in chat, priced as an option, built on the ADR-0028 upload path with repository defaults. | — |
+| [ADR-0074 — OpenMontage as an isolated video-agent service](0074-openmontage-video-agent.md) | **Accepted 2026-10-07** | Slices 1-3 and 5 built behind `AGENT_VIDEO_ENABLED="false"`; slice 4 (real gateway, measured ceilings) next. | — |
+| [ADR-0085 — Public Cinema discovery and sharing](0085-cinema-discovery-and-sharing.md) | Implemented; rollout requires migration 0277 | Series and Vote lists, canonical share links; watch signals, scoring and winners remain separate. | Viewing and voting acceptance gates |
+| [ADR-0085 — Save verified Film Studio masters in the account Library](0085-film-library-masters.md) | As written in the file (no status line) | `film_library_masters`: derived masters with source and own digest, 100 per account, 25 MiB each, 90-day retention; no jobs or ledger rows. | — |
+| [ADR-0086 — Manual credit grant safeguards](0086-admin-credit-grant-guards.md) | Implemented; manual grants remain off | Guards on admin credit grants pending real administrator acceptance and an owner enablement decision. | Owner enablement |
+| [ADR-0087 — Cinema weighted weekly rankings](0087-cinema-weighted-weekly-rankings.md) | Implemented behind disabled flags | Weighted weekly ranking model; live acceptance pending. | Live acceptance |
+| [ADR-0088 — Editor controls and permission-aware shared tools](0088-editor-controls-and-shared-tools.md) | Implemented for staging verification | Remaining CapCut-style feature areas; production activation gated. | Production activation |
+| [ADR-0089 — Private Cinema saved titles and follows](0089-cinema-private-collections.md) | Accepted implementation; activation pending | Private saved titles and follows. | Activation |
+| [ADR-0089 — Private editor renders and explicit Publish handoff](0089-editor-private-library-delivery.md) | As written in the file (no status line) | Owner-scoped `editor_library_renders` (migration 0285), inspected before stored; `EDITOR_LIBRARY_EXPORTS_ENABLED` false in production. | Migration 0285 applied and 24 hours clean |
+| [ADR-0090 — Private creator audience insights](0090-cinema-creator-audience-insights.md) | Accepted implementation; activation pending | Private audience insights for Cinema creators. | Activation |
+| [ADR-0090 — Editor processing, captions and local assets](0090-editor-processing-and-local-assets.md) | Implemented; hosted qualification and production activation pending | Editor processing, captions and local assets. | Hosted qualification |
+| [ADR-0091 — Isolated local automatic captions](0091-isolated-local-speech-recognition.md) | Implementation and verification in progress | Gated by request-time `EDITOR_LOCAL_INFERENCE_ENABLED`; production off. | — |
+| [ADR-0092 — Isolated local person segmentation and motion processing](0092-editor-isolated-person-vision-runtime.md) | Implemented and qualified locally | Person tools gated by `EDITOR_LOCAL_INFERENCE_ENABLED`; motion tools need no model; production off. | — |
+| [ADR-0093 — Native editor video destinations](0093-native-editor-video-destinations.md) | As written in the file (no status line) | Instagram Reels, Facebook Pages and TikTok inbox video transport behind `PUBLISH_VIDEO_DESTINATIONS_ENABLED`, false in production and staging. | Provider app approvals |
+| [ADR-0094 — Explicit Library source slots for editor generation](0094-explicit-generation-source-slots.md) | Implemented; hosted qualification separate | No catalog activation, price change or production SQL. | — |
+| [ADR-0095 — Bounded vocal/instrument separation](0095-editor-audio-stems.md) | Preparation; production flag disabled | `fal-ai/demucs` six stems behind `EDITOR_AUDIO_STEMS_ENABLED`; migration 0291. | Owner enablement |

@@ -4,6 +4,8 @@ This service claims private Cinema Library videos from migration `0295`, downloa
 
 `clamd` has no authentication or transport security. Keep port 3310 on the private container network and never publish it. The production image must pin the ClamAV image by digest before deployment. FreshClam must remain enabled so signatures update.
 
+The same worker also runs submission content moderation (migration `0297`, `moderate.mjs`): it samples up to 12 frames with `ffmpeg`, asks Claude (`CINEMA_CONTENT_MODEL`, default `claude-haiku-5-5`) for a JSON-schema verdict, and records an immutable, SHA-256-bound classification. It is off: `CINEMA_CONTENT_MODERATOR_ENABLED=false` in `fly.cinema-scanner.toml` and `upload_content_required=false` in the database. Turn both on together, and only after `ANTHROPIC_API_KEY` is set as a Fly secret and the child-safety provider is connected. See `docs/cinema/MODERATION-AND-MALWARE-GATE.md`.
+
 Required scanner secrets are `SUPABASE_SERVICE_ROLE_KEY`, `R2_ACCESS_KEY_ID`,
 `R2_SECRET_ACCESS_KEY`, and `CINEMA_STREAM_API_TOKEN`. The non-secret production
 coordinates are checked into `fly.cinema-scanner.toml`. Set
@@ -29,7 +31,7 @@ ClamAV image and the unprivileged Node worker because path scanning requires
 both processes to see the exact same `/quarantine` file. The app publishes no
 service. Fly checks the private worker health port and ClamAV TCP port.
 
-The first deploy deliberately leaves `CINEMA_QUARANTINE_SCANNER_ENABLED=false`.
+The first deploy deliberately left `CINEMA_QUARANTINE_SCANNER_ENABLED=false`; `fly.cinema-scanner.toml` now sets it to `true`.
 Set the four secrets below on the Fly app, verify `/healthz`, then change the
 flag to `true` and deploy again:
 

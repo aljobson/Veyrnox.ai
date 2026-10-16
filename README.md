@@ -6,7 +6,7 @@ Built from a fork of [Open-Generative-AI](https://github.com/Anil-matcha/Open-Ge
 
 ## Status
 
-Pre-launch. Core generation, the credit ledger, Stripe Credit Packs and the admin and recovery tooling are built. Public sign-up and Credit Pack launch are tracked in the launch checklist ([#204](https://github.com/aljobson/Veyrnox.ai/issues/204), [#101](https://github.com/aljobson/Veyrnox.ai/issues/101)). Subscriptions, Cinema and Veyrnox Publish are in progress or gated. See [`ROADMAP.md`](ROADMAP.md) for what is next and [`CHANGELOG.md`](CHANGELOG.md) for what has shipped.
+Pre-launch. Core generation, the credit ledger, Stripe Credit Packs and the admin and recovery tooling are built. Public sign-up and Credit Pack launch are tracked in the launch checklist ([#204](https://github.com/aljobson/Veyrnox.ai/issues/204), [#101](https://github.com/aljobson/Veyrnox.ai/issues/101)). Subscriptions (built, `SUBSCRIPTIONS_ENABLED` off), Cinema and Veyrnox Publish are in progress or gated. See [`ROADMAP.md`](ROADMAP.md) for what is next and [`CHANGELOG.md`](CHANGELOG.md) for what has shipped.
 
 ## Main features
 
@@ -15,6 +15,9 @@ Pre-launch. Core generation, the credit ledger, Stripe Credit Packs and the admi
 - **Library and background jobs**: jobs keep running when you leave the page; results are stored privately and delivered by short-lived signed links.
 - **Auto Short**: topic in, finished short video out, sold as one priced job that orchestrates several provider calls.
 - **Clip Editor**: trim, merge and add audio to generated clips.
+- **Editor**: a browser-local timeline editor (ADR-0080) with private Library renders, behind the `EDITOR_*` flags.
+- **LLM Chat**: threads where each reply is one priced job (ADR-0067).
+- **Remote MCP connector**: generation, job, asset and balance capabilities over OAuth (ADR-0100).
 - **Projects and workspaces**: tenant-aware project documents with autosave and history, plus quarantined media uploads.
 - **Social Cinema** (gated): episodic video catalogue with creator onboarding, review, publication and a viewer paywall.
 - **Veyrnox Publish** (in progress): connect Instagram, TikTok, YouTube, LinkedIn and X, then schedule and publish.
@@ -24,12 +27,13 @@ Pre-launch. Core generation, the credit ledger, Stripe Credit Packs and the admi
 
 | Layer | Choice |
 |---|---|
-| App | Next.js 15, React 19, Tailwind CSS (JavaScript, with TypeScript for `packages/`) |
+| App | Next.js 16, React 19, Tailwind CSS 4 (JavaScript, with TypeScript for `packages/`) |
 | Runtime | Cloudflare Workers via OpenNext (`worker.js` adds body limits, admin rate limiting and cron recovery) |
 | Database and auth | Supabase Postgres and Auth (EU, Frankfurt), RLS forced on user-facing tables |
 | Object storage | Cloudflare R2, EU jurisdiction, signed with SigV4 through Web Crypto |
 | Providers | fal.ai, kie.ai, GrsAI, OpenRouter, BytePlus ModelArk (adapters in `packages/adapters`) |
 | Payments | Stripe Checkout, with Stripe as Merchant of Record |
+| Analytics | PostHog Cloud EU, consent-first (ADR-0099) |
 | CI and deploy | GitHub Actions: protected, serialized production deploy and a migrations workflow behind owner approval |
 
 ## Getting started
@@ -66,7 +70,10 @@ lib/                 Gateway logic: capability registry, rate limits, sweeps, Au
 packages/adapters/   Provider, Stripe and R2 adapters
 packages/catalog/    Model catalog definitions
 packages/db/         Postgres schema/migrations (schema/supabase/) and acceptance tests
+packages/provider-sdk/  Provider registry
 packages/security/   Security helpers
+services/            Cinema malware scanner (Fly)
+workers/             fal dispatch Worker and staging fixtures
 middleware.js        JWT verification for /api/v1/*
 worker.js            Worker entry: limits, cron recovery, retention
 tests/               Unit tests
