@@ -7,7 +7,8 @@ import { socialPostWriteLimit } from '../../../../../lib/socialPostWriteLimit.js
 import { envConfig, rpc, SupabaseError } from '../../../../../packages/db/supabase-client.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Bound every repeated group so validation remains constant-cost for request data.
+const EMAIL_RE = /^[^\s<>@]{1,64}@[^\s<>@]{1,185}\.[^\s<>@]{1,63}$/;
 const ROLES = new Set(['manager', 'editor', 'reviewer', 'analyst', 'viewer']);
 
 function setup(req) {
@@ -60,7 +61,7 @@ export async function POST(req) {
     const { authId, cfg, signingSecret, error } = setup(req); if (error) return error;
     let body; try { body = await req.json(); } catch { return NextResponse.json({ error: 'invalid_body' }, { status: 400 }); }
     const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : '';
-    if (!EMAIL_RE.test(email) || email.length > 254 || !ROLES.has(body?.role) || body?.brandId != null && !UUID_RE.test(body.brandId)) return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
+    if (email.length > 254 || !EMAIL_RE.test(email) || !ROLES.has(body?.role) || body?.brandId != null && !UUID_RE.test(body.brandId)) return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
     const limited = await socialPostWriteLimit(authId, cfg); if (limited) return limited;
     try {
         const resolved = await brandIdFor(req, authId, cfg, 'api/v1/social/team:POST', body.brandId);

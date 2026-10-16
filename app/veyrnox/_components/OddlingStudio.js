@@ -218,7 +218,7 @@ export default function OddlingStudio() {
   function uploadReference(event) {
     const file = event.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) { setNotice('Choose an image file.'); return; }
+    if (!['image/jpeg', 'image/png', 'image/webp', 'image/avif'].includes(file.type)) { setNotice('Choose a JPEG, PNG, WebP or AVIF image.'); return; }
     if (file.size > 2 * 1024 * 1024) { setNotice('Keep the local reference under 2 MB.'); return; }
     setReference({ name: file.name, url: URL.createObjectURL(file) });
     setNotice('Reference added locally. Describe what to borrow so it carries into the prompt.');
