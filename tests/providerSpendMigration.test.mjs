@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 
 const guard = await readFile(new URL('../packages/db/schema/supabase/0329_provider_spend_and_submit_guards.sql', import.meta.url), 'utf8');
 const swap = await readFile(new URL('../packages/db/schema/supabase/0330_nano_banana_to_grsai.sql', import.meta.url), 'utf8');
+const rollback = await readFile(new URL('../packages/db/schema/supabase/0331_restore_nano_banana_kie_after_grsai_outage.sql', import.meta.url), 'utf8');
 
 test('GrsAI has a strict provider budget below the shared supplier ceiling', () => {
     assert.match(guard, /VALUES \('grsai', true, 1000000, 5000000\)/);
@@ -31,4 +32,14 @@ test('Nano Banana keeps its public price while moving only the wholesale route',
     assert.match(swap, /provider_endpoint = 'grsai:nano-banana-2-lite'/);
     assert.match(swap, /provider_cost_per_unit = 0\.0067/);
     assert.match(swap, /credits_5s = 2/);
+});
+
+test('the live GrsAI outage rollback restores KIE without changing the public product', () => {
+    assert.match(rollback, /id = 'nano-banana-kie'/);
+    assert.match(rollback, /provider = 'kie'/);
+    assert.match(rollback, /provider_endpoint = 'market:google\/nano-banana'/);
+    assert.match(rollback, /provider_cost_per_unit = 0\.0200/);
+    assert.match(rollback, /credits_5s = 2/);
+    assert.match(rollback, /provider = 'grsai'/);
+    assert.match(rollback, /provider_endpoint = 'grsai:nano-banana-2-lite'/);
 });
