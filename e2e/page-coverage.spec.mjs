@@ -66,6 +66,11 @@ test('every page template and every sitemap page renders within accessibility an
         expect(metrics.ttfbMs, `cold navigation TTFB budget: ${label}`).toBeLessThan(5000);
         if (entry.pathname === '/app' || entry.pathname === '/presets') {
           expect(metrics.images, 'first gallery page is bounded').toBeLessThanOrEqual(20);
+          const privacyChoices = page.getByRole('region', { name: 'Privacy choices' });
+          if (await privacyChoices.isVisible()) {
+            await privacyChoices.getByRole('button', { name: 'Decline', exact: true }).click();
+            await expect(privacyChoices).toBeHidden();
+          }
           const before = await page.locator('#preset-gallery-results > a').count();
           await page.getByRole('button', { name: 'Show more templates' }).click();
           await expect(page.locator('#preset-gallery-results > a')).toHaveCount(before + 12);

@@ -4,6 +4,8 @@ import { readFileSync } from 'node:fs';
 
 const workflow = readFileSync(new URL('../.github/workflows/page-qa.yml', import.meta.url), 'utf8');
 const stateSetup = readFileSync(new URL('../e2e/create-qa-state.mjs', import.meta.url), 'utf8');
+const config = readFileSync(new URL('../e2e/page-coverage.config.mjs', import.meta.url), 'utf8');
+const sweep = readFileSync(new URL('../e2e/page-coverage.spec.mjs', import.meta.url), 'utf8');
 
 test('anonymous coverage and its artifact are independent of authenticated credentials', () => {
   const anonymousRun = workflow.indexOf('name: Sweep every page on anonymous desktop and mobile');
@@ -15,6 +17,13 @@ test('anonymous coverage and its artifact are independent of authenticated crede
   assert.match(anonymousSteps, /if: always\(\)/);
   assert.match(anonymousSteps, /page-coverage-report\/anonymous/);
   assert.match(anonymousSteps, /test-results\/page-qa-anonymous/);
+});
+
+test('page sweep bounds browser actions and stabilizes animation-dependent accessibility snapshots', () => {
+  assert.match(config, /actionTimeout: 10_000/);
+  assert.match(config, /reducedMotion: 'reduce'/);
+  assert.match(sweep, /getByRole\('region', \{ name: 'Privacy choices' \}\)/);
+  assert.match(sweep, /getByRole\('button', \{ name: 'Decline', exact: true \}\)\.click\(\)/);
 });
 
 test('missing authentication fails explicitly without running or overwriting anonymous coverage', () => {

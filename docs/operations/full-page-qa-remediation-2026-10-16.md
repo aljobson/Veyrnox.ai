@@ -13,6 +13,7 @@ for successful provider generation, purchases, or outbound social delivery.
 | Transform-first Chat defaults | Open prompt-generative models are preferred; transformations remain selectable |
 | Free and singular credit copy | Free generations say Free; credit and model nouns agree with the count |
 | Demucs details unavailable | Active, ungated stem separation has a detail page and Tools entry |
+| Source-driven transforms still show a five-second selector | Create, Chat and landing quotes describe uploaded-source duration and caps; internal billing units are unchanged |
 | Paid Publish plan flashes Free | Neutral loading and explicit retry replace the false entitlement state |
 | Inbox mobile overflow | Chart scrolling is contained within the viewport |
 | Queues and RSS show premature owner controls | Sign-in, account identity, loading and explicit write roles gate editable surfaces |
@@ -52,6 +53,12 @@ project. Production application follows ADR-0023's protected workflow on main.
 - Provider monitoring needs `FAL_BILLING_KEY`, `KIE_BALANCE_API_KEY`, and
   `OPENROUTER_MANAGEMENT_KEY`. These read-only billing credentials were absent.
   A code deployment cannot create or recover these provider credentials.
+- The authenticated nightly staging sweep requires staging `E2E_EMAIL` and
+  `E2E_PASSWORD` secrets. Anonymous results are retained independently, and
+  missing authentication is reported explicitly rather than counted as a pass.
+- Production migration 0328 requires owner approval in the protected
+  [apply-migrations run](https://github.com/aljobson/Veyrnox.ai/actions/runs/38909212682).
+  Until then, Activity explicitly identifies its limited history.
 
 ## Acceptance boundaries
 
@@ -79,4 +86,33 @@ preview, and parameterized editor review remain intentional product boundaries.
 - Independent media, Publish, edge and session security reviews: no remaining
   critical, high or medium findings after the reported fixes.
 
-Deployment and complete production page-sweep results are appended after rollout.
+## Production acceptance baseline
+
+The [main remediation deployment](https://github.com/aljobson/Veyrnox.ai/actions/runs/38909213010)
+and [sitemap follow-up deployment](https://github.com/aljobson/Veyrnox.ai/actions/runs/38910182209)
+succeeded, including live smoke tests and preservation of existing secret bindings.
+The live `479f5be2` release was verified before and after a complete 5.4-minute sweep:
+
+- Desktop: 233/233 URLs passed. Mobile: 233/233 URLs passed.
+- All 81 templates and 170 sitemap URLs were covered, including Demucs.
+- Per viewport: 214 render/layout/performance/accessibility checks, 12 protected
+  administrator gates, and seven controlled missing-fixture paths.
+- No document overflow, uncaught exceptions, or serious/critical accessibility
+  findings. Accessibility snapshots use reduced motion, with bounded actions.
+- Maximum navigation TTFB: 1.37 seconds desktop, 1.23 seconds mobile.
+- Gallery first render: 13 images and 108,641 HTML bytes; progressive loading works.
+- Signed-in checks covered 30 Studio/Publish/account surfaces on desktop and
+  mobile, including restored balance/assets after reload, neutral MFA loading,
+  correct paid plan, and contained mobile inbox chart scrolling.
+- Six unauthenticated auth-boundary probes returned the expected 405/403/401
+  responses without exposing credentials or setting cookies.
+- All 32 eligible model details and 21 hydrated audio/video configurations were
+  inspected without spending credits. Invalid audio durations are rejected.
+
+Those hydrated checks identified the source-duration follow-up recorded above.
+Its release candidate passes 3,910 tests (zero failures, one existing skip),
+the production build, type checking and client boundaries (547 modules).
+The final follow-up PR records its own deployment and repeated live sweep.
+No purchases, real generations, outbound posts, security enrolments or destructive
+actions are implied by these read-only page results. Administrator interiors and
+valid-token shared workflows still require suitable access/fixtures.

@@ -10,6 +10,7 @@ function fromFallback() {
   return MODELS.map((m) => ({
     id: m.id, name: m.name, kind: m.kind, credits: m.credits, gated: !!m.gated || !!m.premium,
     durations: m.durations || FALLBACK_DURATIONS,
+    media: m.media || {},
     presentation: m.presentation || {},
     durationInput: m.durationInput || null,
     isSpeech: !!m.speech,
