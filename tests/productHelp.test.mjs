@@ -7,10 +7,11 @@ import {
     normaliseHelpPlan,
     parseHelpRequest,
 } from '../lib/productHelp.js';
-import { fallbackHelpPlan } from '../lib/productHelpFallback.js';
+import { fallbackHelpPlan, unknownAnswerPlan } from '../lib/productHelpFallback.js';
 import { createHelpPlan, DEFAULT_HELP_MODEL, helpApiKey, helpNeedsCatalog, liveCatalogContext } from '../lib/helpAssistant.js';
 import {
     PRODUCT_KNOWLEDGE,
+    SUPPORT_EMAIL,
     productKnowledgeContext,
     searchAutomaticProductKnowledge,
     searchProductKnowledge,
@@ -163,3 +164,63 @@ test('provider failure falls back to reviewed guidance', async () => {
     assert.equal(result.target, 'library.download');
 });
 
+
+test('money and account questions reach their own reviewed article', () => {
+    const cases = [
+        ['Can I get a refund for my pack?', '/app/credits', 'credit-refunds'],
+        ['Why was I charged twice?', '/app/credits', 'credit-refunds'],
+        ['Do my credits expire?', '/app/credits', 'credit-expiry'],
+        ['Do the free sign up credits run out?', '/app/credits', 'credit-expiry'],
+        ['How much is the 300 credit pack?', '/app/credits', 'credit-packs'],
+        ['My payment failed', '/app/credits', 'credit-packs'],
+        ['Can I pay with PayPal?', '/app/credits', 'credit-packs'],
+        ['Is my account frozen?', '/app/account', 'account-frozen'],
+        ['How do I appeal a content removal?', '/app/account', 'account-frozen'],
+    ];
+    for (const [question, path, id] of cases) {
+        assert.equal(searchProductKnowledge(question, path, 1)[0].id, id, question);
+    }
+    // The generic cost article and buy-credits article keep their own questions.
+    assert.equal(searchProductKnowledge('How much does a video cost?', '/app/create', 1)[0].id, 'generation-cost-safety');
+    assert.equal(searchProductKnowledge('How do I buy credits?', '/app/credits', 1)[0].id, 'credits');
+});
+
+test('money articles never quote a price, send billing problems to support and promise no account access', () => {
+    for (const id of ['credit-packs', 'credit-refunds', 'credit-expiry', 'account-frozen']) {
+        const entry = PRODUCT_KNOWLEDGE.find((item) => item.id === id);
+        const text = [entry.summary, ...entry.steps, ...entry.facts].join(' ');
+        assert.doesNotMatch(text, /[$£€]\s?\d/, `${id} quotes a price`);
+        assert.match(text, /cannot|never|do not/i, `${id} does not state its limits`);
+    }
+    const packs = PRODUCT_KNOWLEDGE.find((item) => item.id === 'credit-packs');
+    assert.ok(packs.steps.join(' ').includes(SUPPORT_EMAIL));
+    assert.equal(packs.target, 'credits.packs');
+});
+
+test('a question with no reviewed knowledge is refused with the support address, not answered from the nearest article', () => {
+    for (const question of ['What is the weather in Paris?', 'Who won the football last night?', 'Write me a poem about cheese']) {
+        const plan = fallbackHelpPlan(question, '/app/create');
+        assert.match(plan.message, /will not guess/);
+        assert.ok(plan.message.includes(SUPPORT_EMAIL));
+        assert.equal(plan.target, null);
+        assert.equal(plan.action, 'none');
+    }
+    assert.deepEqual(unknownAnswerPlan(), fallbackHelpPlan('What is the weather in Paris?', '/app'));
+    // Real product questions and short follow-ups are still answered.
+    assert.doesNotMatch(fallbackHelpPlan('How do I make an image?', '/app').message, /will not guess/);
+    const history = [{ role: 'user', content: 'How do refunds work?' }];
+    assert.doesNotMatch(fallbackHelpPlan('and for quokkas?', '/app/credits', history).message, /will not guess/);
+    assert.match(fallbackHelpPlan('and for quokkas?', '/app/credits', []).message, /will not guess/);
+});
+
+test('an ungrounded question never reaches the model', async () => {
+    let calls = 0;
+    const fetchImpl = async () => { calls += 1; return new Response('{}'); };
+    const env = { OPENROUTER_HELP_API_KEY: 'key' };
+    const refused = await createHelpPlan({ question: 'What is the weather in Paris?', pathname: '/app', env, fetchImpl });
+    assert.equal(refused.source, 'guide');
+    assert.match(refused.message, /will not guess/);
+    assert.equal(calls, 0);
+    await createHelpPlan({ question: 'How do refunds work?', pathname: '/app/credits', env, fetchImpl });
+    assert.equal(calls, 1);
+});
