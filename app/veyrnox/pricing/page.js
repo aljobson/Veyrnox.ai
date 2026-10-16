@@ -88,12 +88,12 @@ export default function Pricing() {
         </p>
         <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-4">
           <Link
-            href="/app?auth=sign_up"
+            href="/app/create"
             className="vx-press rounded-full bg-vx-fg text-vx-base px-7 py-3.5 text-[15px] font-extrabold hover:bg-vx-fg/85"
           >
-            Create an account
+            Open Studio
           </Link>
-          <p className="text-[15px] text-vx-fg-muted">10 free credits on sign-up. No card needed.</p>
+          <p className="text-[15px] text-vx-fg-muted">New accounts include 10 free credits. No card needed.</p>
         </div>
       </section>
 

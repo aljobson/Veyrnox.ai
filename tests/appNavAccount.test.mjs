@@ -145,17 +145,17 @@ test('amber means credits and nothing else', () => {
     assert.match(signedIn, /text-vx-fg-body vx-num">\{assetFmt\}/, 'the asset count is body text');
 });
 
-test('the whole nav still fits a phone', () => {
-    // Measured: side by side the two figures need 459px of nav and a 360px
-    // phone gives 328. The mark yields below sm so the menu and stacked
-    // account block remain within that width.
+test('the whole nav still fits without a hidden horizontal rail', () => {
+    // Primary destinations remain visible; specialist tools live in the
+    // explicit More menu until a 2xl viewport can hold them all.
     assert.match(signedIn, /flex flex-col gap-px/, 'the two figures stack');
     assert.match(appNav, /\$\{account \? 'hidden sm:flex' : 'flex'\}/,
         'the mark yields to signed-in account controls below sm, and only then');
-    assert.match(appNav, /className="hidden lg:flex [^"]*gap-0\.5 sm:gap-1 text-\[12px\] sm:text-sm font-semibold"/,
-        'the tab strip is for desktop; phones use the Studio menu');
-    assert.match(appNav, /<nav[^>]*min-w-0 overflow-x-auto/,
-        'desktop tabs can scroll without pushing account controls away');
+    assert.match(appNav, /primaryKeys = new Set\(\['explore', 'create', 'library'\]\)/,
+        'the three core destinations remain first-class');
+    assert.match(appNav, /2xl:hidden/, 'secondary destinations collapse into More');
+    assert.doesNotMatch(appNav, /<nav[^>]*overflow-x-auto/,
+        'the nav no longer hides destinations in a horizontal scroller');
 });
 
 test('Oddlings is prominent without crowding the phone bar', () => {
@@ -163,9 +163,15 @@ test('Oddlings is prominent without crowding the phone bar', () => {
         'the desktop tab and phone menu share the featured destination');
     assert.ok(appNav.indexOf("key: 'oddlings'") < appNav.indexOf("key: 'create'"),
         'Oddlings appears before Create in the studio destination list');
-    const compactBar = appNav.slice(appNav.indexOf('<MobileMenu'), appNav.indexOf('<nav ref={tabs}'));
+    const compactBar = appNav.slice(appNav.indexOf('<MobileMenu'), appNav.indexOf('<nav aria-label="Studio"'));
     assert.doesNotMatch(compactBar, /href="\/app\/oddlings"/,
         'the compact bar does not duplicate the highlighted Oddlings menu item');
+});
+
+test('marketing auth controls reserve their space until the client session is readable', () => {
+    assert.match(authSrc, /useSyncExternalStore\(onSessionChange, clientReady, serverPending\)/);
+    assert.match(authSrc, /given === undefined && !hydrated/);
+    assert.match(authSrc, /aria-hidden="true"[^>]*animate-pulse/);
 });
 
 // One asset is not "1 assets". Run the component's own two lines rather

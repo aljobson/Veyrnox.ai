@@ -138,13 +138,13 @@ export function ClosingCTA() {
   return (
     <section className="px-4 sm:px-6 pt-28 sm:pt-36 max-w-[1300px] mx-auto">
       <h2 className="vx-display vx-title-index max-w-[11ch]">
-        Your first 10 credits are on us.
+        Make something today.
       </h2>
       <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-4">
-        <Link href="/app?auth=sign_up" className="vx-press rounded-full bg-vx-accent text-vx-accent-ink px-8 py-4 text-base font-extrabold hover:bg-vx-accent-hover">
-          Claim 10 credits
+        <Link href="/app/create" className="vx-press rounded-full bg-vx-accent text-vx-accent-ink px-8 py-4 text-base font-extrabold hover:bg-vx-accent-hover">
+          Open Studio
         </Link>
-        <p className="text-vx-fg-muted text-[15px]">No card needed. Spend them on any open model.</p>
+        <p className="text-vx-fg-muted text-[15px]">New accounts begin with 10 free credits. No card needed.</p>
       </div>
     </section>
   );

@@ -2,6 +2,50 @@
 import { useEffect } from 'react';
 import { journeyStore } from './veyrnox/_lib/veyJourneyStore';
 
+function readVeyLayout() {
+  const guide = document.querySelector('[aria-label="Vey task walkthrough"]')?.getBoundingClientRect();
+  const mascot = document.querySelector('[data-testid="assistant-mascot"]')?.getBoundingClientRect();
+  const overlaps = (a, b) => !!a && !!b && a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+  const controls = [...document.querySelectorAll('main button, main input, main textarea, main select, main summary, main img')]
+    .map((el) => el.getBoundingClientRect()).filter((rect) => rect.width > 0 && rect.height > 0 && rect.top >= 72 && rect.bottom <= innerHeight);
+  const interactiveControls = [...document.querySelectorAll('main a, main button, main input, main textarea, main select, main summary')]
+    .map((el) => el.getBoundingClientRect()).filter((rect) => rect.width > 0 && rect.height > 0 && rect.top >= 72 && rect.bottom <= innerHeight);
+  const generate = document.querySelector('[data-assistant-target="create.generate"]')?.getBoundingClientRect();
+  const cost = document.querySelector('[data-assistant-target="create.cost"]')?.parentElement?.getBoundingClientRect();
+  const siteActions = document.querySelector('[data-site-actions]')?.getBoundingClientRect();
+  return {
+    guideOpen: !!guide,
+    mainPadding: parseFloat(document.querySelector('main')?.style.paddingBottom) || 0,
+    costOverlaps: overlaps(mascot, cost),
+    mascotOverlaps: controls.filter((rect) => overlaps(mascot, rect)).length,
+    generateClear: !!guide && !!generate && generate.top >= 72 && generate.bottom < guide.top,
+    sourceAttached: !!document.querySelector('img[alt="Start image"]'),
+    storageNoticeOpen: !!document.querySelector('[aria-label="Browser storage notice"]'),
+    siteActionsOverlap: interactiveControls.filter((rect) => overlaps(siteActions, rect)).length,
+  };
+}
+
+function subscribeVeyLayout(notify) {
+  let frame = 0;
+  const schedule = () => {
+    if (frame) return;
+    frame = requestAnimationFrame(() => {
+      frame = 0;
+      notify();
+    });
+  };
+  const observer = new MutationObserver(schedule);
+  observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+  window.addEventListener('resize', schedule, { passive: true });
+  window.addEventListener('scroll', schedule, { passive: true });
+  return () => {
+    observer.disconnect();
+    window.removeEventListener('resize', schedule);
+    window.removeEventListener('scroll', schedule);
+    if (frame) cancelAnimationFrame(frame);
+  };
+}
+
 /** Dev-only: connect Reticle + install the React adapter, after hydration. */
 export function ReticleDev() {
   useEffect(() => {
@@ -31,20 +75,7 @@ export function ReticleDev() {
         // store form wires `subscribe` too, so every mutation emits a diff; the getter form is
         // read-only.
         registerStore('veyTask', journeyStore);
-        registerStore('veyLayout', () => {
-          const guide = document.querySelector('[aria-label="Vey task walkthrough"]')?.getBoundingClientRect();
-          const mascot = document.querySelector('[data-testid="assistant-mascot"]')?.getBoundingClientRect();
-          const overlaps = (a, b) => !!a && !!b && a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
-          const controls = [...document.querySelectorAll('main button, main input, main textarea, main select, main summary, main img')]
-            .map(el => el.getBoundingClientRect()).filter(r => r.width > 0 && r.height > 0 && r.top >= 72 && r.bottom <= innerHeight);
-          const generate = document.querySelector('[data-assistant-target="create.generate"]')?.getBoundingClientRect();
-          const cost = document.querySelector('[data-assistant-target="create.cost"]')?.parentElement?.getBoundingClientRect();
-          return { guideOpen: !!guide, mainPadding: parseFloat(document.querySelector('main')?.style.paddingBottom) || 0,
-            costOverlaps: overlaps(mascot, cost),
-            mascotOverlaps: controls.filter(r => overlaps(mascot, r)).length,
-            generateClear: !!guide && !!generate && generate.top >= 72 && generate.bottom < guide.top,
-            sourceAttached: !!document.querySelector('img[alt="Start image"]') };
-        });
+        registerStore('veyLayout', readVeyLayout, subscribeVeyLayout);
         registerCapabilities({
           testids: ['editor-import'],
           signals: [], // names you pass to reticle.signal()

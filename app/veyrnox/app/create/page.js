@@ -506,32 +506,55 @@ export default function CreateStudio() {
                 </button>
               ))}
             </div>
-            <div data-assistant-target="create.models" data-selected-kind={model?.kind} role="group" aria-label="Model" className="scroll-mt-24 flex flex-col gap-1.5">
-              {visibleModels.map((m) => (
-                <button
-                  key={m.id}
-                  data-model-kind={m.kind}
-                  data-requires-image={m.media?.image?.required ? 'true' : undefined}
-                  onClick={() => setModelId(m.id)}
-                  aria-pressed={modelId === m.id}
-                  className={`flex items-center justify-between rounded-lg px-3 py-2.5 border ${
-                    modelId === m.id
-                      ? 'border-vx-accent bg-vx-accent/[0.07]'
-                      : 'border-transparent hover:bg-vx-fg/[0.04]'
-                  }`}
+            <div data-assistant-target="create.models" data-selected-kind={model?.kind} className="scroll-mt-24">
+              <div className="lg:hidden">
+                <label htmlFor="studio-model" className="sr-only">Generation model</label>
+                <select
+                  id="studio-model"
+                  value={modelId}
+                  onChange={(event) => setModelId(event.target.value)}
+                  className="min-h-11 w-full rounded-xl border border-vx-field bg-vx-base px-3 py-2.5 text-sm font-bold text-vx-fg focus:border-vx-accent focus:outline-hidden"
                 >
-                  <span className="flex items-center gap-2 min-w-0">
-                    <span className="text-sm font-bold truncate">{m.name}</span>
-                    {m.gated && (
-                      <span className="font-vx-mono text-[10px] tracking-[0.1em] text-vx-money shrink-0">◆ PREMIUM</span>
-                    )}
-                    <span className="font-vx-mono text-[10px] tracking-[0.1em] text-vx-fg-faint uppercase shrink-0">{m.kind}</span>
-                  </span>
-                  {freeLeftFor(freeMap, m.id) > 0
-                    ? <span className="font-vx-mono text-[12px] font-bold text-vx-accent shrink-0">FREE · {freeLeftFor(freeMap, m.id)} left</span>
-                    : <span className="font-vx-mono text-[12px] font-bold text-vx-money vx-num shrink-0">{m.credits} cr</span>}
-                </button>
-              ))}
+                  {visibleModels.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name} · {item.gated ? 'Preview' : freeLeftFor(freeMap, item.id) > 0 ? 'Free today' : `${item.credits} ${item.credits === 1 ? 'credit' : 'credits'}`}
+                    </option>
+                  ))}
+                </select>
+                {model && (
+                  <p className="mt-2 flex items-center justify-between gap-3 text-xs text-vx-fg-muted">
+                    <span className="truncate">{model.name} · {model.kind}</span>
+                    <span className="shrink-0 font-vx-mono font-bold text-vx-money">{model.credits} cr</span>
+                  </p>
+                )}
+              </div>
+              <div role="group" aria-label="Model" className="hidden flex-col gap-1.5 lg:flex">
+                {visibleModels.map((m) => (
+                  <button
+                    key={m.id}
+                    data-model-kind={m.kind}
+                    data-requires-image={m.media?.image?.required ? 'true' : undefined}
+                    onClick={() => setModelId(m.id)}
+                    aria-pressed={modelId === m.id}
+                    className={`flex items-center justify-between rounded-lg px-3 py-2.5 border ${
+                      modelId === m.id
+                        ? 'border-vx-accent bg-vx-accent/[0.07]'
+                        : 'border-transparent hover:bg-vx-fg/[0.04]'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2 min-w-0">
+                      <span className="text-sm font-bold truncate">{m.name}</span>
+                      {m.gated && (
+                        <span className="font-vx-mono text-[10px] tracking-[0.1em] text-vx-money shrink-0">◆ PREMIUM</span>
+                      )}
+                      <span className="font-vx-mono text-[10px] tracking-[0.1em] text-vx-fg-faint uppercase shrink-0">{m.kind}</span>
+                    </span>
+                    {freeLeftFor(freeMap, m.id) > 0
+                      ? <span className="font-vx-mono text-[12px] font-bold text-vx-accent shrink-0">FREE · {freeLeftFor(freeMap, m.id)} left</span>
+                      : <span className="font-vx-mono text-[12px] font-bold text-vx-money vx-num shrink-0">{m.credits} cr</span>}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -557,7 +580,7 @@ export default function CreateStudio() {
             <div className="scroll-mt-24" data-assistant-target="create.camera"><CameraPanel enabled={cinemaOn} onToggle={setCinemaOn} settings={cinema} onChange={setCinema} /></div>
           )}
 
-          <div className="mt-2 rounded-2xl border border-vx-border bg-vx-panel p-5">
+          <div className="sticky bottom-3 z-30 mt-2 rounded-2xl border border-vx-border bg-vx-panel p-5 shadow-2xl lg:static lg:shadow-none">
             <div data-assistant-target="create.cost" className="scroll-mt-24 flex items-baseline justify-between">
               <span className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">TOTAL COST</span>
               <span className="font-vx-mono text-[12px] text-vx-fg-muted vx-num">

@@ -22,6 +22,7 @@ export function PresetWall({ catalog }) {
             <MediaTile
               key={preset.id}
               href={templateHref(preset)}
+              ariaLabel={`Open ${presetTitle(preset.name)} template · ${presetCredits(preset, catalog)} credits`}
               clip={clip && { ...clip, objectFit: 'contain' }}
               className="block text-left w-full"
               mediaClassName="rounded-2xl"

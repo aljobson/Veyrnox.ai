@@ -314,13 +314,15 @@ function AccountAnalytics({ account, range, comparisonRange, includeContent }) {
   if (neverSynced && currentData.evolution.length === 0) {
     return <p className="rounded-2xl border border-vx-border p-5 text-sm text-vx-fg-body">
       {currentData.sync?.failing
-        ? 'We could not read this account’s numbers. Reconnecting it in Veyrnox Publish usually fixes this.'
+        ? <>We could not read this account&rsquo;s numbers.{' '}
+          <Link href="/app/publish" className="font-bold text-vx-accent underline underline-offset-4">Reconnect it in Veyrnox Publish</Link> to refresh its permissions.</>
         : 'No numbers yet. The first ones arrive within a few hours of connecting an account.'}
     </p>;
   }
 
   const failing = currentData.sync?.failing && <p role="status" className="text-sm text-vx-fg-muted">
-    The latest update for this account failed, so these numbers may be out of date. Reconnecting it in Veyrnox Publish usually fixes this.
+    The latest update for this account failed, so these numbers may be out of date.{' '}
+    <Link href="/app/publish" className="font-bold text-vx-accent underline underline-offset-4">Reconnect it in Veyrnox Publish</Link> to refresh its permissions.
   </p>;
   const updated = currentData.sync?.last_ok_at && <p className="text-xs text-vx-fg-muted">
     Updated {new Date(currentData.sync.last_ok_at).toLocaleString()}. Numbers refresh every few hours.
