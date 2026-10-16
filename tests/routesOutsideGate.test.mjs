@@ -14,6 +14,7 @@ const OUTSIDE = {
     'app/api/catalog/route.js': 'public read',
     'app/api/credit-packs/route.js': 'public read',
     'app/api/credit-subscription-plans/route.js': 'public read',
+    'app/api/cinema-pass-plans/route.js': 'public read',
     'app/api/cinema/voting/route.js': 'public read',
     'app/api/cinema/discovery/route.js': 'public read',
     'app/api/cinema/posters/[id]/route.js': 'public read',
@@ -92,7 +93,7 @@ test('the anonymous report is rate limited in the Worker and handled in one plac
 
 test('CLAUDE.md names the public routes', () => {
     const rules = readFileSync(join(ROOT, 'CLAUDE.md'), 'utf8');
-    for (const path of ['/api/catalog', '/api/credit-packs', '/api/cinema/titles', '/api/cinema/posters/:id', '/api/cinema/voting', '/api/cinema/discovery', '/api/cinema/winners', '/api/cinema/comments', '/api/cinema/story-polls', '/api/credit-subscription-plans', '/api/webhook/*', '/api/admin/*', '/media/social/:token', '/api/social/approvals/:token', '/api/social/team/:token', '/api/publish/v1/*', '/api/turnstile-failure']) {
+    for (const path of ['/api/catalog', '/api/credit-packs', '/api/cinema/titles', '/api/cinema/posters/:id', '/api/cinema/voting', '/api/cinema/discovery', '/api/cinema/winners', '/api/cinema/comments', '/api/cinema/story-polls', '/api/credit-subscription-plans', '/api/cinema-pass-plans', '/api/webhook/*', '/api/admin/*', '/media/social/:token', '/api/social/approvals/:token', '/api/social/team/:token', '/api/publish/v1/*', '/api/turnstile-failure']) {
         assert.ok(rules.includes(path), `CLAUDE.md does not mention ${path}`);
     }
 });
