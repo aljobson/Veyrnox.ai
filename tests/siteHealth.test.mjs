@@ -77,7 +77,26 @@ test('static assets must be successful, non-HTML and immutably cached', () => {
     assert.deepEqual(assessAssetResponse(path, healthyAsset), []);
     assert.match(assessAssetResponse(path, { ...healthyAsset, status: 404 }).join(), /status 404/);
     assert.match(assessAssetResponse(path, { ...healthyAsset, contentType: 'text\/html' }).join(), /returned HTML/);
+    assert.match(assessAssetResponse(path, { ...healthyAsset, contentType: 'Text/HTML; charset=utf-8' }).join(), /returned HTML/);
+    assert.match(assessAssetResponse(path, { ...healthyAsset, contentType: 'application/json' }).join(), /expected JavaScript/);
+    assert.deepEqual(assessAssetResponse('/_next/static/css/a.css', {
+        ...healthyAsset,
+        contentType: 'text/css; charset=utf-8',
+    }), []);
     assert.match(assessAssetResponse(path, { ...healthyAsset, cacheControl: 'max-age=0' }).join(), /immutable one-year cache/);
+    assert.deepEqual(
+        assessAssetResponse(path, { ...healthyAsset, cacheControl: 'max-age=0' }, { requireImmutable: false }),
+        [],
+        'rollback validation checks availability without requiring a policy the old release may predate',
+    );
+    assert.match(
+        assessAssetResponse(path, { ...healthyAsset, status: 404 }, { requireImmutable: false }).join(),
+        /status 404/,
+    );
+    assert.match(
+        assessAssetResponse(path, { ...healthyAsset, contentType: 'text\/html' }, { requireImmutable: false }).join(),
+        /returned HTML/,
+    );
 });
 
 test('the smoke test validates freshly referenced and pre-deploy static assets', async () => {

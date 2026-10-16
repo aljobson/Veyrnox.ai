@@ -57,11 +57,27 @@ export function assessResponse(check, { status, contentType = '', body = '' }) {
     return problems.map(p => `${check.path}: ${p}`);
 }
 
-export function assessAssetResponse(path, { status, contentType = '', cacheControl = '' }) {
+export function assessAssetResponse(path, { status, contentType = '', cacheControl = '' }, { requireImmutable = true } = {}) {
     const problems = [];
+    const mediaType = contentType.split(';', 1)[0].trim().toLowerCase();
+    const pathname = new URL(path, DEFAULT_BASE_URL).pathname.toLowerCase();
     if (status !== 200) problems.push(`status ${status}, expected 200`);
-    if (contentType.includes('text/html')) problems.push('returned HTML instead of a static asset');
-    if (!/\bmax-age=31536000\b/i.test(cacheControl) || !/\bimmutable\b/i.test(cacheControl)) {
+    if (mediaType === 'text/html' || mediaType === 'application/xhtml+xml') {
+        problems.push('returned HTML instead of a static asset');
+    } else if (/\.(?:js|mjs)$/.test(pathname)
+        && !['application/javascript', 'text/javascript', 'application/x-javascript'].includes(mediaType)) {
+        problems.push(`content-type ${contentType || 'missing'}, expected JavaScript`);
+    } else if (pathname.endsWith('.css') && mediaType !== 'text/css') {
+        problems.push(`content-type ${contentType || 'missing'}, expected text/css`);
+    } else if (pathname.endsWith('.wasm') && mediaType !== 'application/wasm') {
+        problems.push(`content-type ${contentType || 'missing'}, expected application/wasm`);
+    } else if (/\.(?:gif|ico|jpe?g|png|svg|webp|avif)$/.test(pathname) && !mediaType.startsWith('image/')) {
+        problems.push(`content-type ${contentType || 'missing'}, expected image media`);
+    } else if (/\.(?:eot|otf|ttf|woff2?)$/.test(pathname)
+        && !(mediaType.startsWith('font/') || ['application/font-woff', 'application/vnd.ms-fontobject', 'application/octet-stream'].includes(mediaType))) {
+        problems.push(`content-type ${contentType || 'missing'}, expected font media`);
+    }
+    if (requireImmutable && (!/\bmax-age=31536000\b/i.test(cacheControl) || !/\bimmutable\b/i.test(cacheControl))) {
         problems.push(`cache-control ${cacheControl || 'missing'}, expected immutable one-year cache`);
     }
     return problems.map((problem) => `${path}: ${problem}`);
@@ -96,6 +112,7 @@ export async function checkSite(baseUrl, {
     fetchAsset = probeAsset,
     requiredAssets = [],
     verifyAssets = true,
+    requireImmutableAssets = true,
 } = {}) {
     const priorAssets = validateStaticAssetPaths(requiredAssets);
     let last = { problems: [], unreachable: 0, requests: CHECKS.length, assets: priorAssets };
@@ -118,7 +135,11 @@ export async function checkSite(baseUrl, {
         if (verifyAssets) {
             for (const path of assets) {
                 try {
-                    problems.push(...assessAssetResponse(path, await fetchAsset(baseUrl, path)));
+                    problems.push(...assessAssetResponse(
+                        path,
+                        await fetchAsset(baseUrl, path),
+                        { requireImmutable: requireImmutableAssets },
+                    ));
                 } catch (error) {
                     unreachable++;
                     problems.push(`${path}: unreachable (${error.name})`);
@@ -153,9 +174,10 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
         const arguments_ = process.argv.slice(2);
         const capturePath = optionValue(arguments_, '--capture-assets');
         const manifestPath = optionValue(arguments_, '--asset-manifest');
+        const requireImmutableAssets = !arguments_.includes('--allow-nonimmutable-assets');
         if (capturePath && manifestPath) throw new Error('Capture and manifest modes cannot be combined.');
         const requiredAssets = manifestPath ? await readAssetManifest(manifestPath) : [];
-        const result = await checkSite(baseUrl, { requiredAssets, verifyAssets: !capturePath });
+        const result = await checkSite(baseUrl, { requiredAssets, verifyAssets: !capturePath, requireImmutableAssets });
         if (result.problems.length === 0) {
             if (capturePath) {
                 await writeFile(capturePath, `${JSON.stringify({ version: 1, assets: result.assets }, null, 2)}\n`);
