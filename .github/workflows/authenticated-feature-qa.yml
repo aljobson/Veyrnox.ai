@@ -37,8 +37,8 @@ jobs:
       - name: Exercise all isolated authenticated features
         env:
           QA_FIXTURE_BASE_URL: http://127.0.0.1:3100
-          QA_FIXTURE_OUTPUT_DIR: test-results/authenticated-feature/browser
-          QA_FIXTURE_REPORT: test-results/authenticated-feature/report.json
+          QA_FIXTURE_OUTPUT_DIR: ${{ github.workspace }}/test-results/authenticated-feature/browser
+          QA_FIXTURE_REPORT: ${{ github.workspace }}/test-results/authenticated-feature/report.json
           PUBLISH_ENABLED: 'true'
           PUBLISH_CALENDAR_ENABLED: 'true'
           TENANT_PROJECTS_ENABLED: 'true'
@@ -65,5 +65,5 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: authenticated-feature-qa
-          path: test-results/authenticated-feature/
+          path: ${{ github.workspace }}/test-results/authenticated-feature/
           retention-days: 7

@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
+import { isAbsolute, resolve } from 'node:path';
 
 const location = new URL('../.github/workflows/authenticated-feature-qa.yml', import.meta.url);
 const workflow = existsSync(location) ? readFileSync(location, 'utf8') : '';
@@ -72,10 +73,26 @@ test('the entire unchanged fixture matrix runs once with one worker, no retries 
   assert.match(config, /actionTimeout: 10_000, navigationTimeout: 30_000/);
 });
 test('synthetic reports, retained failure traces and server log survive failed acceptance', () => {
-  assert.match(workflow, /QA_FIXTURE_OUTPUT_DIR: test-results\/authenticated-feature\/browser/);
-  assert.match(workflow, /QA_FIXTURE_REPORT: test-results\/authenticated-feature\/report\.json/);
+  assert.match(workflow, /QA_FIXTURE_OUTPUT_DIR: \$\{\{ github\.workspace \}\}\/test-results\/authenticated-feature\/browser/);
+  assert.match(workflow, /QA_FIXTURE_REPORT: \$\{\{ github\.workspace \}\}\/test-results\/authenticated-feature\/report\.json/);
   assert.match(runtimeScript(), /> test-results\/authenticated-feature\/server\.log 2>&1 &/);
   assert.match(workflow, /name: Retain isolated feature QA evidence\n        if: always\(\)/);
-  assert.match(workflow, /path: test-results\/authenticated-feature\//);
+  assert.match(workflow, /path: \$\{\{ github\.workspace \}\}\/test-results\/authenticated-feature\//);
   assert.match(workflow, /retention-days: 7/);
+});
+
+test('config-relative Playwright paths cannot move browser traces or JSON outside the upload root', () => {
+  const workspace = '/home/runner/work/Veyrnox.ai/Veyrnox.ai';
+  const artifact = resolve(workspace, 'test-results/authenticated-feature');
+  for (const [key, suffix] of [['QA_FIXTURE_OUTPUT_DIR', 'browser'], ['QA_FIXTURE_REPORT', 'report.json']]) {
+    const raw = workflow.match(new RegExp(`^          ${key}: (.+)$`, 'm'))?.[1];
+    assert.ok(raw, `${key} must be explicit`);
+    const configured = raw.replace('${{ github.workspace }}', workspace);
+    assert.ok(isAbsolute(configured), `${key} must not depend on config-directory resolution`);
+    for (const base of [workspace, resolve(workspace, 'e2e')]) {
+      assert.equal(resolve(base, configured), resolve(artifact, suffix));
+    }
+  }
+  assert.match(config, /outputDir: process\.env\.QA_FIXTURE_OUTPUT_DIR/);
+  assert.match(config, /outputFile: process\.env\.QA_FIXTURE_REPORT/);
 });

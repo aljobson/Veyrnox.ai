@@ -21,11 +21,16 @@ listPublic();
 
 export const test = base.extend({
   syntheticSafety: [async ({ page }, use) => {
-    await use();
-    const fixture = installed.get(page);
-    if (fixture) {
-      expect(fixture.unhandled, 'Every product/auth API must have an explicit synthetic response').toEqual([]);
-      expect(fixture.errors, 'No browser runtime errors').toEqual([]);
+    try { await use(); }
+    finally {
+      const fixture = installed.get(page);
+      if (fixture) {
+        try { await fixture.finish(); }
+        finally {
+          expect(fixture.unhandled, 'Every product/auth API must have an explicit synthetic response').toEqual([]);
+          expect(fixture.errors, 'No browser runtime errors').toEqual([]);
+        }
+      }
     }
   }, { auto: true }],
 });
@@ -48,6 +53,8 @@ export async function installProductFixtures(page, options = {}) {
   if (target.protocol !== 'http:' || !['localhost', '127.0.0.1', '[::1]'].includes(target.hostname) || target.username || target.password) throw new Error('Synthetic product fixture requires loopback HTTP');
   const state = { balance: 1000, user: options.user === undefined ? { ...SYNTHETIC_USER } : options.user, ...options.state };
   const fixture = { state, requests: [], unhandled: [], blocked: [], errors: [] };
+  const context = page.context();
+  const pendingRoutes = new Set(), pendingPreparations = new Set();
   const preparedPages = new WeakSet();
   const preparePage = async currentPage => {
     if (preparedPages.has(currentPage)) return;
@@ -61,10 +68,15 @@ export async function installProductFixtures(page, options = {}) {
     });
   };
   await preparePage(page);
-  page.context().on('page', currentPage => { preparePage(currentPage).catch(error => fixture.errors.push(error.message)); });
+  const onPage = currentPage => {
+    const preparation = preparePage(currentPage).catch(error => { fixture.errors.push(error.message); });
+    pendingPreparations.add(preparation);
+    void preparation.finally(() => pendingPreparations.delete(preparation));
+  };
+  context.on('page', onPage);
   const metadata = user => user ? { cookie_session: true, expires_at: Math.floor(Date.now() / 1000) + 3600, user, revision: 'synthetic-only' } : null;
   await page.context().addInitScript(({ key, value }) => { if (value && !localStorage.getItem(key) && localStorage.getItem('veyrnox_session_signed_out') !== '1') localStorage.setItem(key, JSON.stringify(value)); }, { key: SESSION_KEY, value: metadata(state.user) });
-  await page.context().route('**/*', async route => {
+  const handleRoute = async route => {
     const request = route.request(), url = new URL(request.url()), method = request.method();
     let body = null;
     try { body = request.postDataJSON(); } catch { /* Binary fixture bodies are never treated as JSON. */ }
@@ -124,7 +136,36 @@ export async function installProductFixtures(page, options = {}) {
       return route.abort('blockedbyclient');
     }
     return route.fulfill({ response });
+  };
+  await context.route('**/*', route => {
+    // Register synchronously, before any await in this callback. The test's
+    // last assertion can otherwise race a still-running fetch/fulfill pair.
+    const pending = handleRoute(route);
+    pendingRoutes.add(pending);
+    return pending.catch(error => { fixture.errors.push(error.message); throw error; })
+      .finally(() => pendingRoutes.delete(pending));
   });
+  const drain = async () => {
+    // Route failures are recorded AND rethrown above; settled here means we
+    // finish observing all tasks before the final audit, not ignore errors.
+    while (pendingRoutes.size || pendingPreparations.size) {
+      await Promise.allSettled([...pendingRoutes, ...pendingPreparations]);
+    }
+  };
+  fixture.finish = async () => {
+    // BrowserContext.close() disposes its APIRequestContext before closing
+    // pages. Keep response UIDs and our fail-closed guard alive until every
+    // owned page is gone and every pending fetch/fulfill has completed.
+    do {
+      while (context.pages().length) {
+        await Promise.all(context.pages().map(currentPage => currentPage.close({ runBeforeUnload: false })));
+      }
+      await drain();
+    } while (context.pages().length);
+    await context.unrouteAll({ behavior: 'wait' });
+    await drain();
+    context.off('page', onPage);
+  };
   fixture.open = async path => {
     const response = await page.goto(`${target.origin}${path}`, { waitUntil: 'load' });
     return response;
