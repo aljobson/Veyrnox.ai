@@ -38,7 +38,9 @@ export function ReticleDev() {
           const controls = [...document.querySelectorAll('main button, main input, main textarea, main select, main summary, main img')]
             .map(el => el.getBoundingClientRect()).filter(r => r.width > 0 && r.height > 0 && r.top >= 72 && r.bottom <= innerHeight);
           const generate = document.querySelector('[data-assistant-target="create.generate"]')?.getBoundingClientRect();
+          const cost = document.querySelector('[data-assistant-target="create.cost"]')?.parentElement?.getBoundingClientRect();
           return { guideOpen: !!guide, mainPadding: parseFloat(document.querySelector('main')?.style.paddingBottom) || 0,
+            costOverlaps: overlaps(mascot, cost),
             mascotOverlaps: controls.filter(r => overlaps(mascot, r)).length,
             generateClear: !!guide && !!generate && generate.top >= 72 && generate.bottom < guide.top,
             sourceAttached: !!document.querySelector('img[alt="Start image"]') };

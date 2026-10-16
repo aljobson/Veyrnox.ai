@@ -33,6 +33,8 @@ export default function useVeyMobileLayout({ open, pathname, position, highlight
       const obstacles = [...document.querySelectorAll(CONTROLS)].map(el => el.getBoundingClientRect())
         .filter(r => r.width > 0 && r.height > 0 && r.bottom > 72 && r.top < viewport.height);
       if (dock) obstacles.push(dock);
+      const cost = document.querySelector('[data-assistant-target="create.cost"]')?.parentElement?.getBoundingClientRect();
+      if (cost?.width && cost.bottom > 72 && cost.top < viewport.height) obstacles.push(cost);
       // Also avoid fixed product controls outside main, but not Vey's own launcher.
       for (const el of document.querySelectorAll('button, a, input')) {
         if (el.closest('main, [data-testid="assistant-mascot"]') || panel?.contains(el)) continue;
