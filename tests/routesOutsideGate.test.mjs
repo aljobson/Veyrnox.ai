@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 // "Routes outside the gate"). A new one fails this test until it is added on
 // purpose.
 const OUTSIDE = {
+    'app/api/auth/session/route.js': 'same-origin CSRF + HttpOnly refresh credential',
     'app/.well-known/oauth-protected-resource/api/v1/mcp/route.js': 'public OAuth metadata',
     'app/.well-known/oauth-protected-resource/api/v1/developer/route.js': 'public OAuth metadata',
     'app/api/catalog/route.js': 'public read',
@@ -76,6 +77,17 @@ test('customer Publish routes authenticate a scoped API key', () => {
     for (const file of found.filter((f) => OUTSIDE[f] === 'publish API key')) {
         assert.match(readFileSync(join(ROOT, file), 'utf8'), /authenticateSocialCustomerApiRequest\(/, file);
     }
+});
+
+test('the session BFF is POST-only and owns its exact-origin cookie protection', () => {
+    const src = readFileSync(join(ROOT, 'app/api/auth/session/route.js'), 'utf8');
+    assert.match(src, /export async function POST\(req\)/);
+    assert.equal(src.match(/^export /gm).length, 1);
+    assert.match(src, /createBrowserSessionHandler/);
+    const helper = readFileSync(join(ROOT, 'lib/browserSession.js'), 'utf8');
+    assert.match(helper, /req\.headers\.get\('origin'\) !== new URL\(req\.url\)\.origin/);
+    assert.match(helper, /x-session-request/);
+    assert.match(helper, /HttpOnly; Secure; SameSite=Strict/);
 });
 
 // An anonymous write: the Worker limits it per connecting IP before the app,

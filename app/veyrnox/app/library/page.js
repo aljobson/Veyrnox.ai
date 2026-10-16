@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { AppNav } from '../../_components/NavBar';
 import { Main } from '../../_components/Main';
+import { LibraryAccessState } from '../../_components/LibraryAccessState';
 import { LibraryClip } from '../../_components/LibraryClip';
 import { Chip } from '../../_components/Chip';
 import { gatewayFetch, GatewayError, notifyBalanceChanged } from '../../_lib/gateway';
@@ -55,6 +56,7 @@ const never = () => () => {};
 const editorFlag = () => { try { return window.localStorage.getItem(EDITOR_FLAG) === '1'; } catch { return false; } };
 const savedView = () => readView(window.localStorage);
 const off = () => false;
+const on = () => true;
 const gridView = () => 'grid';
 const isVideo = (r) => !!r.asset_url && !!r.mime_type?.startsWith('video/');
 const isAudio = (r) => !!r.asset_url && !!r.mime_type?.startsWith('audio/');
@@ -89,6 +91,7 @@ export default function Library() {
   const [editing, setEditing] = useState(false);
 
   const actor=useSyncExternalStore(onSessionChange,getStoredUserId,()=>null);
+  const sessionLoaded = useSyncExternalStore(never, on, off);
 
     const loadBalance = useCallback(async () => {
     if(!getStoredUserId())return;
@@ -253,6 +256,9 @@ export default function Library() {
     setSelected([]);
     setEditing(false);
   }
+
+  if (!sessionLoaded) return <LibraryAccessState loading />;
+  if (!actor) return <LibraryAccessState />;
 
   return (
     <div className="min-h-dvh">

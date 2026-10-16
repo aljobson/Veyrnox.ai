@@ -6,6 +6,7 @@ import { writeStudioDraft } from '../_lib/landingDraft';
 import { AFFORDABLE_START_MODEL_ID, distinctShelfNames } from '../_lib/tokens';
 import { affordableStarterModel } from '../_lib/starterModels';
 import { outputDurationLabel } from '../_lib/chatMedia';
+import { creditLabel } from '../_lib/modelPricing';
 
 // The landing hero's working form: pick a model and a length, and the slip
 // prints what the button will charge. Pressing Generate opens the studio on
@@ -153,7 +154,7 @@ export function PriceSlip({ models }) {
         <div className="vx-perf mt-6" aria-hidden />
 
         {/* One short announcement per change, not the whole slip re-read. */}
-        <p className="sr-only" aria-live="polite">{`${nameOf(model)}, ${unit}: ${cost} credits.`}</p>
+        <p className="sr-only" aria-live="polite">{`${nameOf(model)}, ${unit}: ${creditLabel(cost)}.`}</p>
         <dl className="mt-4 space-y-1.5 font-vx-mono text-[13px] vx-num">
           <SlipLine label={`${nameOf(model)}, ${unit}`} value={`${cost} cr`} tick={`${model.id}-${seconds}`} />
           <SlipLine label="If it fails" value={`${cost} cr back`} muted tick={`${model.id}-${seconds}-r`} />

@@ -3,6 +3,6 @@
 // so both stay top-level landmarks. tabIndex -1 lets the skip link and the
 // back-to-top button land focus here without making the region a Tab stop.
 // tests/uiLandmarksAndTheme.test.mjs holds every page to exactly one.
-export function Main({ className, children }) {
-  return <main id="main" tabIndex={-1} className={className}>{children}</main>;
+export function Main({ className, style, children }) {
+  return <main id="main" tabIndex={-1} className={className} style={style}>{children}</main>;
 }

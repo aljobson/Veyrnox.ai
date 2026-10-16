@@ -16,7 +16,7 @@ register('data:text/javascript,' + encodeURIComponent(`
 `));
 const worker = (await import('../worker.js')).default;
 const BUILD = 'aBcD1234-build';
-const allow = { ADMIN_EDGE_RATE_LIMITER: { limit: async () => ({ success: true }) } };
+const allow = { ADMIN_EDGE_RATE_LIMITER: { limit: async () => ({ success: true }) }, API_EDGE_RATE_LIMITER: { limit: async () => ({ success: true }) } };
 const neverLimited = { ADMIN_EDGE_RATE_LIMITER: { limit: async () => assert.fail('the rate limiter was consulted') } };
 
 test('a data-file path is answered 404 before the rate limiter and the app', async () => {

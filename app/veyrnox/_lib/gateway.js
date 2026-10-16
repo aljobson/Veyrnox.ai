@@ -8,6 +8,7 @@ import { getFreshAccessToken, getSession, clearSession } from '../../lib/authCli
 import { getSelectedSocialBrand, setSelectedSocialBrand } from '../../lib/socialBrandSelection.js';
 import { captureOperationalError } from '../../lib/analyticsClient.js';
 import { normaliseGatewayPath } from '../../lib/analyticsPrivacy.js';
+import { apiErrorDetails } from '../../lib/apiErrorDetails.js';
 
 // A Frozen account (Chargeback, #97): generating and buying are refused.
 export const ACCOUNT_PAUSED_COPY =
@@ -109,9 +110,10 @@ export async function gatewayFetch(path, init = {}, brandRetried = false) {
         status: res.status,
       });
     }
-    throw new GatewayError(body?.error || `HTTP ${res.status}`, {
+    const failure = apiErrorDetails(body, res.status);
+    throw new GatewayError(failure.message, {
       status: res.status,
-      code: body?.error || 'gateway_error',
+      code: failure.code,
       body,
     });
   }
@@ -131,7 +133,8 @@ export async function gatewayDownload(path) {
   if (res.status === 401) { clearSession(); dispatchAuthRequired(); throw new GatewayError('unauthenticated', { status: 401, code: 'unauthenticated' }); }
   if (!res.ok) {
     let body = null; try { body = await res.json(); } catch { /* binary failures are not expected */ }
-    throw new GatewayError(body?.error || `HTTP ${res.status}`, { status: res.status, code: body?.error || 'gateway_error', body });
+    const failure = apiErrorDetails(body, res.status);
+    throw new GatewayError(failure.message, { status: res.status, code: failure.code, body });
   }
   return { blob: await res.blob(), filename: contentDispositionFilename(res.headers.get('content-disposition')) || 'veyrnox-report' };
 }

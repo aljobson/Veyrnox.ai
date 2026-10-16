@@ -225,8 +225,11 @@ function rewritePostHogRequest(req) {
     ]);
     const headers = new Headers();
     for (const [name, value] of req.headers.entries()) {
-        if (!blockedHeaders.has(name) && !name.startsWith('x-veyrnox-')) headers.append(name, value);
+        // OpenNext overlays middleware's SET values onto inbound headers, even
+        // for external rewrites. Omission/deletion would retain credentials.
+        headers.set(name, blockedHeaders.has(name) || name.startsWith('x-veyrnox-') ? '' : value);
     }
+    for (const name of blockedHeaders) headers.set(name, '');
     return NextResponse.rewrite(target, { request: { headers } });
 }
 

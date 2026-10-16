@@ -23,6 +23,7 @@ const { signUp, signInWithPassword, sendMagicLink } = await import('../app/lib/a
 function capture() {
     const calls = [];
     globalThis.fetch = async (url, init) => {
+        if (String(url) === '/api/auth/session') return Response.json({ access_token: 'a', expires_in: 3600 });
         calls.push({ path: new URL(String(url)).pathname + new URL(String(url)).search, body: JSON.parse(init.body) });
         return new Response(JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_in: 3600 }), { status: 200 });
     };

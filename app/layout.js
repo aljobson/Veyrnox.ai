@@ -6,6 +6,7 @@ import './globals.css';
 import localFont from "next/font/local";
 import ToasterMount from '../components/ToasterMount';
 import AuthGate from '../components/AuthGate.jsx';
+import SessionHydration from '../components/SessionHydration.jsx';
 import AnalyticsProvider, { analyticsEnabled } from '../components/AnalyticsProvider.jsx';
 import SiteChrome from './veyrnox/_components/SiteChrome';
 import { OG_IMAGE, OPEN_GRAPH_BASE, ORG_LD, JsonLd } from './seo';
@@ -66,6 +67,7 @@ export default function RootLayout({ children }) {
           <SiteChrome analyticsEnabled={analyticsEnabled} />
           <ToasterMount />
           <AuthGate />
+          <SessionHydration />
           <JsonLd data={ORG_LD} />
         </AnalyticsProvider>
       </body>

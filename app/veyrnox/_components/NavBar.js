@@ -8,7 +8,7 @@ import { MobileMenu } from './MobileMenu';
 import { SiteSearch } from './SiteSearch';
 import { ThemeToggle } from './ThemeToggle';
 import { gatewayFetch, GatewayError } from '../_lib/gateway';
-import { getSession, onSessionChange } from '../../lib/authClient';
+import { getStoredSession, onSessionChange } from '../../lib/authClient';
 import { accountLabel } from '../_lib/account';
 import { useProjectsEnabled } from './ProjectsFlag';
 import { useVideoEnhancePreview } from '../_lib/useVideoEnhancePreview';
@@ -110,14 +110,13 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
     ...items,
     ...APP_BROWSE_CATEGORIES.filter((browse) => !items.some((item) => item.href === browse.href)),
   ];
-  // Who is signed in. The session in localStorage is the gate — it needs no
-  // network, so public app pages never make an authenticated request merely
-  // to draw their nav. It also already holds the display name: Google puts
+  // Stored identity is display metadata, not authorization. It needs no
+  // network to draw the nav while the HttpOnly session restores. Google puts
   // one in user_metadata, and public.users has no such column. The endpoint
   // only supplies the email, for the sessions that carry none.
   const [session, setSession] = useState(null);
   useEffect(() => {
-    setSession(getSession());
+    setSession(getStoredSession());
     return onSessionChange(setSession);
   }, []);
   // One server read for all three figures: who you are, the balance and

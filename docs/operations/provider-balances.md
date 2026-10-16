@@ -66,8 +66,9 @@ gives notice before the provider refuses.
 
 ## Turning it on (owner)
 
-Nothing runs until step 4. Each key is an Actions secret only; none goes on the
-Worker.
+The watch runs by default. Missing credentials produce an unreadable incident
+instead of silently skipping coverage. Each key is an Actions secret only;
+none goes on the Worker.
 
 1. **fal:** on fal.ai, create a key on the `BILLING` preset (or `READONLY`; it
    must carry `billing:usage:read` and should not carry
@@ -85,7 +86,7 @@ Worker.
    dispatch `provider-balances` once from Actions. A green run with three `ok`
    lines means the watch is live; any `UNREADABLE` line names the key to fix.
 
-To stop the watch, set the variable to anything but `true`. To rotate a key,
+To pause the watch deliberately, set the variable to `false`. To rotate a key,
 replace the secret; the next run proves it.
 
 ## Triage

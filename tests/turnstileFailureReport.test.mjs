@@ -145,7 +145,7 @@ test('the route is a POST handler that logs with console.error', async () => {
 
 // ---- worker.js: the rate limit, before the app ----
 
-const binding = (limit) => ({ TURNSTILE_REPORT_RATE_LIMITER: { limit } });
+const binding = (limit) => ({ TURNSTILE_REPORT_RATE_LIMITER: { limit }, API_EDGE_RATE_LIMITER: { limit: async () => ({ success: true }) } });
 const KEY = 'veyrnox-ai:turnstile-failure:v1:192.0.2.1';
 const SPELLINGS = [TURNSTILE_FAILURE_PATH, `${TURNSTILE_FAILURE_PATH}/`, `${TURNSTILE_FAILURE_PATH}?x=1`, '/API/Turnstile-Failure',
     '/api/turnstile%2Dfailure', '/%61pi/turnstile-failure', '/api%2Fturnstile-failure', '/api//turnstile-failure',

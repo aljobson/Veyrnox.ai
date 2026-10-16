@@ -21,7 +21,9 @@ export function chatMediaModels(models, kind) {
 
 export function firstOpenMediaModel(models, kind) {
   const available = chatMediaModels(models, kind);
-  return available.find((model) => !model.gated) || available[0] || null;
+  const open = available.filter((model) => !model.gated);
+  return open.find((model) => model.takesPrompt !== false && !Object.values(model.media || {}).some((slot) => slot.required))
+    || open[0] || available[0] || null;
 }
 
 export function supportedDuration(model, wanted) {

@@ -23,6 +23,7 @@ import { drainContentScans } from './lib/contentScan.js';
 import { observeRecovery } from './lib/recoveryHealth.js';
 import { limitRequestBody } from './lib/requestBodyLimit.js';
 import { adminEdgeRateLimit } from './lib/adminEdgeRateLimit.js';
+import { apiEdgeRateLimit } from './lib/apiEdgeRateLimit.js';
 import { turnstileReportRateLimit } from './lib/turnstileFailureReport.js';
 import { refuseNextData } from './lib/nextDataGuard.js';
 import { refuseCdnCgi } from './lib/cdnCgiGuard.js';
@@ -60,7 +61,8 @@ export default {
         if (redirect) return redirect;
         const refused = refuseNextData(request) || refuseCdnCgi(request);
         if (refused) return refused;
-        const limited = await adminEdgeRateLimit(request, env) || await turnstileReportRateLimit(request, env);
+        const limited = await adminEdgeRateLimit(request, env) || await turnstileReportRateLimit(request, env)
+            || await apiEdgeRateLimit(request, env);
         if (limited) return limited;
         const bounded = await limitRequestBody(request);
         const response = bounded.response || await handler.fetch(dropInternalHeaders(bounded.request), env, ctx);

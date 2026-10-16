@@ -12,11 +12,12 @@ globalThis.localStorage = {
     removeItem: (k) => store.delete(k),
 };
 
-const { getFreshAccessToken, getSession, getMfaFreshUntil } = await import('../app/lib/authClient.js');
+const { getFreshAccessToken, getSession, getMfaFreshUntil, adoptSession, clearSession } = await import('../app/lib/authClient.js');
 const KEY = 'veyrnox_supabase_session';
 const now = () => Math.floor(Date.now() / 1000);
 
 function seed(over = {}) {
+    store.delete('veyrnox_session_signed_out');
     store.set(KEY, JSON.stringify({ access_token: 'old', refresh_token: 'r1', expires_at: now() + 3600, user: null, ...over }));
 }
 function stubRefresh(handler) {
@@ -47,20 +48,24 @@ test('MFA display survives refresh but expires from the TOTP event, not token is
 });
 
 test('fresh token returned without a network call', async () => {
-    seed();
+    adoptSession({ access_token: 'old', expires_in: 3600 });
     const calls = stubRefresh(() => { throw new Error('should not fetch'); });
     assert.equal(await getFreshAccessToken(), 'old');
     assert.equal(calls.length, 0);
 });
 
-test('near-expiry token is refreshed and persisted', async () => {
+test('legacy token migrates through the same-origin BFF and persistence contains no credentials', async () => {
     seed({ expires_at: now() + 30 });
     const calls = stubRefresh(() => okJson({ access_token: 'new', refresh_token: 'r2', expires_in: 3600 }));
     assert.equal(await getFreshAccessToken(), 'new');
     assert.equal(calls.length, 1);
-    assert.match(calls[0].url, /grant_type=refresh_token$/);
-    assert.deepEqual(calls[0].body, { refresh_token: 'r1' });
-    assert.equal(getSession().refresh_token, 'r2');
+    assert.equal(calls[0].url, '/api/auth/session');
+    assert.deepEqual(calls[0].body, { action: 'establish', refresh_token: 'r1' });
+    assert.equal(getSession().refresh_token, null);
+    const persisted = JSON.parse(store.get(KEY));
+    assert.equal(persisted.cookie_session, true);
+    assert.equal('access_token' in persisted, false);
+    assert.equal('refresh_token' in persisted, false);
 });
 
 test('already-expired token still refreshes (getSession alone would say null)', async () => {
@@ -106,7 +111,7 @@ test('sign-out during an in-flight refresh does not resurrect the session', asyn
     stubRefresh(() => new Promise((r) => { release = () => r(okJson({ access_token: 'new', refresh_token: 'r2', expires_in: 3600 })); }));
     const pending = getFreshAccessToken();
     await new Promise((r) => setTimeout(r, 0));
-    store.delete(KEY); // user signed out meanwhile
+    clearSession(); // user signed out meanwhile; cookie clear queues after refresh
     release();
     assert.equal(await pending, null);
     assert.equal(store.has(KEY), false);

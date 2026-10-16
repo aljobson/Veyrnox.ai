@@ -18,10 +18,22 @@
   // Keep Worker logs (console.error on provider rejects, webhook signature
   // failures) in the dashboard instead of needing a live `wrangler tail`.
   "observability": { "enabled": true },
+  // General API screening: 1200/minute per IP (/64 for IPv6) leaves room for
+  // concurrent job polling; session authentication has a separate 60/minute
+  // quota. Provider callbacks use a separate general bucket so client traffic
+  // cannot consume their quota. User/operation limits remain authoritative.
   // ADR-0039: approximate per-IP/per-location screening before admin routes.
   // ADR-0026 amendment 2: the same screening, in a namespace of its own, before
   // POST /api/turnstile-failure (the sign-in dialog's report of a failed check).
   "ratelimits": [{
+    "name": "AUTH_EDGE_RATE_LIMITER",
+    "namespace_id": "2026101603",
+    "simple": { "limit": 60, "period": 60 }
+  }, {
+    "name": "API_EDGE_RATE_LIMITER",
+    "namespace_id": "2026101601",
+    "simple": { "limit": 1200, "period": 60 }
+  }, {
     "name": "ADMIN_EDGE_RATE_LIMITER",
     "namespace_id": "2026092401",
     "simple": { "limit": 60, "period": 60 }
@@ -246,6 +258,14 @@
       // Recovery and removal of Cinema uploads run from the cron; the other
       // scheduled tasks skip on staging because their secrets are not set.
       "ratelimits": [{
+        "name": "AUTH_EDGE_RATE_LIMITER",
+        "namespace_id": "2026101604",
+        "simple": { "limit": 60, "period": 60 }
+      }, {
+        "name": "API_EDGE_RATE_LIMITER",
+        "namespace_id": "2026101602",
+        "simple": { "limit": 1200, "period": 60 }
+      }, {
         "name": "ADMIN_EDGE_RATE_LIMITER",
         "namespace_id": "2026092601",
         "simple": { "limit": 60, "period": 60 }
