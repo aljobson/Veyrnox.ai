@@ -1,50 +1,44 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import { getStoredSession, onSessionChange } from '../../lib/authClient';
 import { useCatalog } from '../_lib/useCatalog';
 import { gatewayFetch } from '../_lib/gateway';
 import { REVEAL_SAVED_ODDLING } from '../../../lib/savedOddlingHelp.js';
 import { journeyHandoff, publishJourneyView } from '../_lib/veyJourneyStore';
-import { OddlingGalleryPreview, useGalleryMotionAllowed } from './OddlingGalleryPreview';
 import { Button } from './Button';
+import { OddlingExplore, useOddlingExplore } from './OddlingExplore';
+import { OddlingMotionPanel } from './OddlingMotionPanel';
+import { OddlingSheet } from './OddlingSheet';
+import { OddlingTraitSections } from './OddlingTraitSections';
+import { chip, field } from './oddlingStyles';
 import {
   CHARACTER_GROUPS,
   ODDLING_ARCHETYPES,
   ODDLING_SHOWS,
   ODDLING_TONES,
-  oddlingIdentity,
   writeOddlingDraft,
 } from '../_lib/character';
 import { writeStudioDraft } from '../_lib/landingDraft';
-import { characterOptionLabel, changeCharacterPick } from '../_lib/characterOptions';
+import { changeCharacterPick } from '../_lib/characterOptions';
+import { parseOddlingDeepLink } from '../_lib/oddlingExplore';
 import {
   ODDLING_MOTIONS,
   ODDLING_DOLL_FACETS,
-  ODDLING_PRESET_SOURCES,
   ODDLING_SCENES,
-  ODDLING_STUDIO_SECTIONS,
   buildOddlingStudioPrompt,
   buildOddlingAnimationPrompt,
   animationModel,
   oddlingPortrait,
-  gallerySource,
-  groupById,
-  oddlingsForSource,
   oddlingCreditState,
+  randomizeOddlingAll,
   randomizeOddlingStyle,
   readOddlingLibrary,
   saveOddlingToLibrary,
+  toggleOpenSection,
 } from '../_lib/oddlingStudio';
-
-const chip = (on) => `rounded-full border px-3 py-1.5 font-vx-mono text-[10px] font-bold transition-colors ${
-  on ? 'border-vx-accent bg-vx-accent/[0.09] text-vx-accent' : 'border-vx-border bg-vx-base text-vx-fg-muted hover:border-vx-fg/30 hover:text-vx-fg'
-}`;
-
-const field = 'w-full rounded-xl border border-vx-field bg-vx-base px-3 py-2.5 text-sm text-vx-fg placeholder:text-vx-fg-faint focus:border-vx-accent focus:outline-hidden';
 
 const DOLL_DEFAULTS = {
   body_type: 'Pear',
@@ -128,96 +122,9 @@ function DollLab({ picks, facet, onFacet, onPick }) {
   );
 }
 
-function CharacterPortrait({ oddling, className = '' }) {
-  const source = gallerySource(oddling);
-  return source ? <Image src={source.image} alt={`${oddling.name} individual portrait`} width={1024} height={1536} sizes="(max-width: 640px) 100vw, 350px" className={`h-full w-full object-contain ${className}`} /> : null;
-}
-
-function TraitGroup({ group, value, onChange }) {
-  return (
-    <fieldset className="space-y-2">
-      <legend className="font-vx-mono text-[9px] font-bold uppercase tracking-[0.12em] text-vx-fg-muted">{group.label}</legend>
-      <div className="flex flex-wrap gap-1.5">
-        <button type="button" onClick={() => onChange(group.id, '')} aria-pressed={!value} className={chip(!value)}>Any</button>
-        {group.options.map(([label]) => (
-          <button key={label} type="button" onClick={() => onChange(group.id, label)} aria-pressed={value === label} className={chip(value === label)}>
-            {characterOptionLabel(group.id, label)}
-          </button>
-        ))}
-      </div>
-    </fieldset>
-  );
-}
-function CharacterSheet({ oddling, onClose, onRecreate, onAnimate }) {
-  if (!oddling) return null;
-  const picks = oddling.picks;
-  const traits = CHARACTER_GROUPS.flatMap((group) => picks[group.id] ? [`${group.label}: ${characterOptionLabel(group.id, picks[group.id])}`] : []);
-  const identity = oddlingIdentity(picks);
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <section role="dialog" aria-modal="true" aria-labelledby="character-sheet-title" className="max-h-[90dvh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-vx-border bg-vx-panel shadow-2xl">
-        <div className="grid md:grid-cols-[.8fr_1.2fr] md:items-start">
-          <div className="flex items-start justify-center bg-vx-base p-3 sm:p-4">
-            <div className="w-full max-w-72"><CharacterPortrait oddling={oddling} /></div>
-          </div>
-          <div className="p-6 sm:p-8">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <span className="font-vx-mono text-[9px] font-bold tracking-[0.15em] text-vx-accent">CHARACTER SHEET</span>
-                <h2 id="character-sheet-title" className="vx-display mt-2 text-4xl">{oddling.name}</h2>
-                <p className="mt-2 text-sm leading-relaxed text-vx-fg-body">{oddling.hook}</p>
-              </div>
-              <button type="button" onClick={onClose} aria-label="Close character sheet" className={chip(false)}>Close</button>
-            </div>
-            <div className="mt-6 space-y-4">
-              <div>
-                <span className="font-vx-mono text-[9px] font-bold tracking-[0.12em] text-vx-fg-muted">CREATOR PREMISE</span>
-                <ul className="mt-2 space-y-1.5 text-sm text-vx-fg-body">
-                  {identity.map((line) => <li key={line}>— {line}</li>)}
-                </ul>
-              </div>
-              <div>
-                <span className="font-vx-mono text-[9px] font-bold tracking-[0.12em] text-vx-fg-muted">VISIBLE CANON</span>
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {traits.map((line) => <span key={line} className="rounded-full bg-vx-fg/[0.06] px-2.5 py-1 text-[11px] text-vx-fg-muted">{line}</span>)}
-                </div>
-              </div>
-            </div>
-            <button type="button" onClick={() => onRecreate(oddling)} className="mt-7 w-full rounded-xl bg-vx-accent px-4 py-3 text-sm font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover">
-              Recreate as my own →
-            </button>
-            <button type="button" onClick={() => onAnimate(oddling)} className={`${chip(true)} mt-3 w-full`}>Animate this character</button>
-          </div>
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function GalleryCard({ oddling, onSheet, onRecreate, onAnimate, previewsPlaying }) {
-  return (
-    <article className="group overflow-hidden rounded-2xl border border-vx-border bg-vx-panel">
-      <OddlingGalleryPreview id={oddling.id} playing={previewsPlaying}>
-        <CharacterPortrait oddling={oddling} />
-      </OddlingGalleryPreview>
-      <div className="p-4">
-        <span className="font-vx-mono text-[8px] font-bold tracking-[0.14em] text-vx-accent">{oddling.accent}</span>
-        <h3 className="mt-1 text-lg font-extrabold">{oddling.name}</h3>
-        <p className="mt-1 min-h-10 text-xs leading-relaxed text-vx-fg-muted">{oddling.hook}</p>
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          <button type="button" onClick={() => onSheet(oddling)} className={chip(false)}>Character sheet</button>
-          <button type="button" onClick={() => onRecreate(oddling)} className={chip(true)}>Recreate</button>
-        </div>
-        <button type="button" onClick={() => onAnimate(oddling)} className={`${chip(true)} mt-2 w-full`}>Animate this character</button>
-      </div>
-    </article>
-  );
-}
-
 export default function OddlingStudio() {
   const router = useRouter();
-  const [previewsPlaying, setPreviewsPlaying] = useState(true);
-  const motionAllowed = useGalleryMotionAllowed();
+  const explore = useOddlingExplore();
   const { models, live: catalogLive } = useCatalog();
   const videoModel = animationModel(models);
   const [portraitId, setPortraitId] = useState(ODDLING_ARCHETYPES[0].id);
@@ -229,9 +136,8 @@ export default function OddlingStudio() {
   const [scene, setScene] = useState(ODDLING_SCENES[0]);
   const [reference, setReference] = useState(null);
   const [referenceNote, setReferenceNote] = useState('');
-  const [openSection, setOpenSection] = useState('build');
+  const [openSections, setOpenSections] = useState(['build']);
   const [workspace, setWorkspace] = useState('explore');
-  const [source, setSource] = useState('torsos');
   const [library, setLibrary] = useState([]);
   const [sheet, setSheet] = useState(null);
   const [notice, setNotice] = useState('');
@@ -281,11 +187,24 @@ export default function OddlingStudio() {
     return () => window.clearTimeout(timer);
   }, []);
 
+  // /app/oddlings?oddling=<cast id> loads that character and opens its sheet.
+  // Only a built-in id counts, the address bar is left alone, and the page
+  // shows the character's own name, never the parameter.
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const linked = parseOddlingDeepLink(window.location.search);
+      if (!linked) return;
+      setPicks({ ...linked.picks });
+      setPortraitId(linked.id);
+      setNotice(`${linked.name} loaded. Every detail is editable.`);
+      setSheet(linked);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
   useEffect(() => () => {
     if (reference?.url) URL.revokeObjectURL(reference.url);
   }, [reference]);
-
-  const gallery = useMemo(() => oddlingsForSource(source), [source]);
 
   const promptPreview = mode === 'motion'
     ? buildOddlingAnimationPrompt(portraitId, motionId)
@@ -309,7 +228,9 @@ export default function OddlingStudio() {
     setPortraitId(oddling.id || '');
     setSheet(null);
     setNotice(`${oddling.name} loaded. Every detail is editable.`);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // The sheet's dialog hands focus back to its card as it closes, which scrolls
+    // the card into view; scroll to the builder after that has happened.
+    window.setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 0);
   }
 
   function animateOddling(oddling) {
@@ -321,6 +242,11 @@ export default function OddlingStudio() {
   function randomize() {
     setPicks((current) => randomizeOddlingStyle(current));
     setNotice('Styling remixed. Body, identity and creator premise stayed locked.');
+  }
+
+  function surprise() {
+    setPicks((current) => randomizeOddlingAll(current));
+    setNotice('Every trait rolled. Your name, premise, voice, show and canon stayed yours.');
   }
 
   function save() {
@@ -435,43 +361,15 @@ export default function OddlingStudio() {
             </label>
 
             {mode === 'motion' && (
-              <section className="mt-5 rounded-2xl border border-vx-accent/30 bg-vx-accent/[0.04] p-4">
-                {portrait && <><Image src={portrait.image} alt={`${portrait.name} animation start frame`} width={1024} height={1536} className="mx-auto mb-3 h-56 w-full object-contain" /><p className="mb-3 text-xs text-vx-fg-body">Animating {portrait.name}&apos;s photo. To change the outfit or body, generate a new portrait first.</p></>}
-                <p className="mb-3 text-xs text-vx-accent">{catalogLive && videoModel ? `${videoModel.name} · 5 seconds · ${videoModel.credits} credits` : 'Loading live animation pricing…'}</p>
-                <span className="font-vx-mono text-[9px] font-bold tracking-[0.12em] text-vx-accent">MOTION PRESET</span>
-                <div className="mt-3 grid grid-cols-2 gap-2">
-                  {ODDLING_MOTIONS.map((motion) => (
-                    <button key={motion.id} type="button" onClick={() => setMotionId(motion.id)} aria-pressed={motionId === motion.id} className={`${chip(motionId === motion.id)} text-left`}>{motion.name}</button>
-                  ))}
-                </div>
-              </section>
+              <OddlingMotionPanel portrait={portrait} motionId={motionId} onMotion={setMotionId}
+                priceLine={catalogLive && videoModel ? `${videoModel.name} · 5 seconds · ${videoModel.credits} credits` : 'Loading live animation pricing…'} />
             )}
 
             <div className="mt-5">
               <span className="font-vx-mono text-[9px] font-bold tracking-[0.12em] text-vx-fg-muted">DETAILED TRAITS</span>
               <p className="mt-1 text-xs text-vx-fg-faint">Fine-tune every part after choosing your doll.</p>
             </div>
-            <div className="mt-3 divide-y divide-vx-border overflow-hidden rounded-2xl border border-vx-border">
-              {ODDLING_STUDIO_SECTIONS.map((section) => {
-                const open = openSection === section.id;
-                return (
-                  <section key={section.id}>
-                    <button type="button" onClick={() => setOpenSection(open ? '' : section.id)} aria-expanded={open} className="flex w-full items-center justify-between gap-4 bg-vx-base px-4 py-3.5 text-left">
-                      <span>
-                        <span className="block text-sm font-extrabold">{section.label}</span>
-                        <span className="mt-0.5 block text-[11px] text-vx-fg-faint">{section.hint}</span>
-                      </span>
-                      <span aria-hidden="true" className="text-vx-accent">{open ? '−' : '+'}</span>
-                    </button>
-                    {open && (
-                      <div className="space-y-5 bg-vx-panel p-4">
-                        {section.groupIds.map(groupById).filter(Boolean).map((group) => <TraitGroup key={group.id} group={group} value={picks[group.id] || ''} onChange={setPick} />)}
-                      </div>
-                    )}
-                  </section>
-                );
-              })}
-            </div>
+            <OddlingTraitSections picks={picks} openSections={openSections} onToggle={(id) => setOpenSections((current) => toggleOpenSection(current, id))} onPick={setPick} />
 
             <label className="mt-5 block">
               <span className="mb-1 block font-vx-mono text-[9px] font-bold tracking-[0.1em] text-vx-fg-muted">{mode === 'motion' ? 'PORTRAIT SCENE · NOT USED FOR PHOTO ANIMATION' : 'FIRST SCENE'}</span>
@@ -500,9 +398,14 @@ export default function OddlingStudio() {
                   <Link href="/app/credits" className="shrink-0 rounded-full bg-vx-money px-3 py-2 text-[11px] font-extrabold text-vx-money-ink hover:brightness-110">Get credits</Link>
                 </div>
               )}
-              <Button type="button" size="lg" cost={generationCost} disabled={generationCost == null || handingOff} aria-busy={handingOff} data-assistant-target="oddlings.continue" onClick={continueToCreate} className="w-full justify-between rounded-xl py-5 text-lg shadow-[0_0_28px_rgb(var(--vx-accent)/0.16)]">
-                {handingOff ? 'Opening Create…' : generationCost == null ? 'Checking live price…' : mode === 'motion' ? 'Animate character' : 'Generate portrait'}
-              </Button>
+              <div className="flex items-stretch gap-2">
+                {mode === 'portrait' && (
+                  <button type="button" onClick={surprise} className="w-[76px] shrink-0 rounded-xl border border-vx-border bg-vx-base px-2 text-center text-[11px] font-extrabold leading-tight text-vx-fg transition-colors hover:border-vx-accent">Surprise me</button>
+                )}
+                <Button type="button" size="lg" cost={generationCost} disabled={generationCost == null || handingOff} aria-busy={handingOff} data-assistant-target="oddlings.continue" onClick={continueToCreate} className="min-w-0 flex-1 justify-between rounded-xl py-5 text-lg shadow-[0_0_28px_rgb(var(--vx-accent)/0.16)]">
+                  {handingOff ? 'Opening Create…' : generationCost == null ? 'Checking live price…' : mode === 'motion' ? 'Animate character' : 'Generate portrait'}
+                </Button>
+              </div>
               <div className="mt-2 flex items-center justify-between gap-3 font-vx-mono text-[9px]">
                 <span className="text-vx-fg-faint">OPENS CREATE · NO CHARGE UNTIL CONFIRMED</span>
                 {generationCost != null && <span className="font-bold text-vx-money">LIVE PRICE · {generationCost} CR</span>}
@@ -527,19 +430,7 @@ export default function OddlingStudio() {
             </div>
 
             {workspace === 'explore' ? (
-              <>
-                <div className="mt-8 flex flex-wrap gap-2" role="tablist" aria-label="Preset source">
-                  {ODDLING_PRESET_SOURCES.map(({ id, label }) => <button key={id} type="button" role="tab" aria-selected={source === id} onClick={() => setSource(id)} className={chip(source === id)}>{label}</button>)}
-                </div>
-                <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-                  <p className="font-vx-mono text-[9px] font-bold tracking-[0.12em] text-vx-fg-faint">{gallery.length} ORIGINAL CHARACTER{gallery.length === 1 ? '' : 'S'}</p>
-                  <button type="button" aria-pressed={previewsPlaying} onClick={() => setPreviewsPlaying((current) => !current)} className={chip(previewsPlaying)}>{previewsPlaying ? 'Pause dancing' : 'Play dancing'}</button>
-                </div>
-                <p className="mt-2 text-xs text-vx-fg-muted">Free dancing puppet previews · blinking, breathing, head bobs, shoulder pumps, arm swings, hip shifts and alternating steps with still backgrounds · no generation or credits. Covered eyes use stylized shutters. Reduced-motion settings respected. For generated action videos, use Animate this character (paid).</p>
-                <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-                  {gallery.map((oddling) => <GalleryCard key={oddling.id} oddling={oddling} onSheet={setSheet} onRecreate={loadOddling} onAnimate={animateOddling} previewsPlaying={previewsPlaying && motionAllowed} />)}
-                </div>
-              </>
+              <OddlingExplore explore={explore} onSheet={setSheet} onRecreate={loadOddling} onAnimate={animateOddling} />
             ) : library.length ? (
               <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {library.map((item) => (
@@ -566,7 +457,7 @@ export default function OddlingStudio() {
           </div>
         </section>
       </div>
-      <CharacterSheet oddling={sheet} onClose={() => setSheet(null)} onRecreate={loadOddling} onAnimate={animateOddling} />
+      {sheet && <OddlingSheet oddling={sheet} onClose={() => setSheet(null)} onRecreate={loadOddling} onAnimate={animateOddling} />}
     </>
   );
 }

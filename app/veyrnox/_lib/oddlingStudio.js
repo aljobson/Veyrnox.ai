@@ -4,6 +4,7 @@ import {
   buildCharacterPrompt,
   sanitizeOddlingPicks,
 } from './character.js';
+import { changeCharacterPick } from './characterOptions.js';
 
 export const ODDLING_STUDIO_SECTIONS = [
   { id: 'signal', label: 'Character signal', hint: 'Human-first, with other beings optional', groupIds: ['character_type'] },
@@ -73,6 +74,7 @@ const ODDLING_GALLERY_SHEETS = [
 ];
 
 export const ODDLING_PRESET_SOURCES = [
+  { id: 'all', label: 'All characters', all: true },
   { id: 'body', label: 'Character collection', ids: ODDLING_GALLERY_SHEETS[0].ids },
   { id: 'silhouettes', label: 'Distinctive silhouettes', ids: ODDLING_GALLERY_SHEETS[2].ids },
   { id: 'fashion', label: 'Statement fashion', ids: ODDLING_GALLERY_SHEETS[3].ids },
@@ -192,6 +194,41 @@ export function buildOddlingAnimationPrompt(id, motionId) {
 
 export function oddlingsForSource(sourceId) {
   const source = ODDLING_PRESET_SOURCES.find((item) => item.id === sourceId) || ODDLING_PRESET_SOURCES[0];
+  if (source.all) return [...ODDLING_ARCHETYPES];
   if (source.ids) return source.ids.map((id) => ODDLING_ARCHETYPES.find((item) => item.id === id)).filter(Boolean);
   return ODDLING_ARCHETYPES.filter((item) => item.kind === source.kind);
+}
+
+// Surprise me: every trait group is rolled, not only the styling groups that
+// Randomize styling touches.
+// The creator's own words (name, premise, voice, show, canon) are not traits and
+// stay. Picks go in one at a time through changeCharacterPick, so a roll that
+// would contradict an earlier one (a tiny head with a head size) resolves the
+// way a hand edit does, and the sanitizer is the adult-safe gate on the way out.
+// 'None' limbs are left out of a roll: a surprise should not delete an arm.
+const HUMAN_FIRST_ODDS = 0.5;
+
+export function randomizeOddlingAll(picks, random = Math.random) {
+  const roll = (length) => Math.min(length - 1, Math.floor(Math.max(0, random()) * length));
+  const words = Object.fromEntries(Object.entries(sanitizeOddlingPicks(picks)).filter(([key]) => !groupById(key)));
+  let next = {};
+  for (const group of CHARACTER_GROUPS) {
+    const options = group.options.filter(([value]) => value !== 'None');
+    if (!options.length) continue;
+    const human = group.id === 'character_type' && random() < HUMAN_FIRST_ODDS;
+    next = changeCharacterPick(next, group.id, human ? 'Human' : options[roll(options.length)][0]);
+  }
+  return sanitizeOddlingPicks({ ...words, ...next });
+}
+
+/** How many of a builder section's groups have a choice, for its header. */
+export function sectionProgress(section, picks) {
+  const groups = (section?.groupIds || []).map(groupById).filter(Boolean);
+  return { picked: groups.filter((group) => picks?.[group.id]).length, total: groups.length };
+}
+
+/** Sections open independently of each other. */
+export function toggleOpenSection(open, id) {
+  const current = Array.isArray(open) ? open : [];
+  return current.includes(id) ? current.filter((item) => item !== id) : [...current, id];
 }
