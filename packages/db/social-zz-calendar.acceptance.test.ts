@@ -1,3 +1,4 @@
+import { isFullSocialReplay } from './test-support/social-acceptance-bootstrap.js';
 import {before,after,describe,it} from 'node:test';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
@@ -6,10 +7,13 @@ import pg from 'pg';
 
 describe('Publish calendar and safe rescheduling (0192)',{skip:!process.env.DATABASE_URL},()=>{
     let pool:pg.Pool;
+    let fullReplay=false;
     const one=async(sql:string,args:unknown[]=[]) => (await pool.query(sql,args)).rows[0];
     const future=(days=2)=>new Date(Date.now()+days*86400000).toISOString();
     before(async()=>{
         pool=new pg.Pool({connectionString:process.env.DATABASE_URL,max:12});
+        fullReplay=await isFullSocialReplay(pool);
+        if(fullReplay)return;
         const apply=async(name:string)=>pool.query(await readFile(new URL(`./schema/supabase/${name}`,import.meta.url),'utf8'));
         if(!(await one("SELECT to_regclass('public.social_posts') t")).t){
             for(const name of ['0154_social_publish_foundation.sql','0156_social_publish_scheduling.sql','0160_social_publish_composer.sql',
@@ -63,11 +67,11 @@ describe('Publish calendar and safe rescheduling (0192)',{skip:!process.env.DATA
         const t=await one('SELECT next_attempt_at,attempts,claimed_at FROM public.social_post_targets WHERE id=$1',[p.target]);
         assert.equal((await one('SELECT count(*)::int n FROM public.social_post_targets WHERE post_id=$1 AND next_attempt_at=$2',[p.id,at])).n,2);
         assert.equal(t.next_attempt_at.toISOString(),at);assert.equal(t.attempts,0);assert.equal(t.claimed_at,null);
-        assert.equal((await one("SELECT count(*)::int n FROM public.social_account_actions WHERE action='post_rescheduled' AND target_id=$1",[p.id])).n,1);
+        assert.equal((await one('SELECT count(*)::int n FROM public.social_account_actions WHERE action=$1 AND target_id=$2',[fullReplay?'rescheduled_post':'post_rescheduled',p.id])).n,1);
     });
     it('refuses foreign, started, retried, partially delivered and terminal posts',async()=>{
         const a=await fixture(),b=await fixture();const foreign=await post(a);
-        assert.equal((await move(b,foreign)).code,'POST_NOT_FOUND');
+        assert.equal((await move(b,foreign)).code,fullReplay?'BRAND_NOT_FOUND':'POST_NOT_FOUND');
         assert.equal((await move(a,foreign,'infinity')).code,'INVALID_SCHEDULE');
         assert.equal((await move(a,foreign,new Date().toISOString())).code,'INVALID_SCHEDULE');
         for(const state of ['publishing','submitted','published','delivered','failed']){

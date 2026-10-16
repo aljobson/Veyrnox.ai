@@ -1,3 +1,4 @@
+import { isFullSocialReplay } from './test-support/social-acceptance-bootstrap.js';
 import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -10,6 +11,7 @@ describe('social team roles (0305)', { skip: !process.env.DATABASE_URL }, () => 
     const value = async (sql: string, args: unknown[] = []) => (await one(sql, args)).value;
     before(async () => {
         pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 4 });
+        if (await isFullSocialReplay(pool)) return;
         const migration = await readFile(new URL('./schema/supabase/0305_social_team_roles.sql', import.meta.url), 'utf8');
         await pool.query(migration); await pool.query(migration);
     });

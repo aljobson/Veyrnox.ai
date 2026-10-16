@@ -1,3 +1,4 @@
+import { isFullSocialReplay } from './test-support/social-acceptance-bootstrap.js';
 import { before, after, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -12,6 +13,7 @@ describe('stored posting insights (0191)', { skip: !process.env.DATABASE_URL }, 
     const read = async (auth: string, id: string) => (await one('SELECT public.get_social_posting_insights($1,$2) r', [auth, id])).r;
     before(async () => {
         pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 12 });
+        if (await isFullSocialReplay(pool)) return;
         for (const name of ['0154_social_publish_foundation.sql', '0169_social_publish_free_account_cap.sql',
             '0175_social_actions_actor_restrict.sql', '0188_social_analytics.sql',
             '0191_social_posting_insights.sql', '0191_social_posting_insights.sql']) {

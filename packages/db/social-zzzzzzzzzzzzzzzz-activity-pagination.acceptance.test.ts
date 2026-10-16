@@ -1,3 +1,4 @@
+import { isFullSocialReplay } from './test-support/social-acceptance-bootstrap.js';
 import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -11,6 +12,7 @@ describe('complete brand activity pagination (0328)', { skip: !process.env.DATAB
 
   before(async () => {
     pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 2 });
+    if (await isFullSocialReplay(pool)) return;
     const migration = await readFile(new URL('./schema/supabase/0328_social_activity_pagination.sql', import.meta.url), 'utf8');
     await pool.query(migration); await pool.query(migration);
   });

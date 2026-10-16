@@ -1,3 +1,4 @@
+import { isFullSocialReplay } from './test-support/social-acceptance-bootstrap.js';
 import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -11,6 +12,7 @@ describe('team inbox workflow, analytics and contacts (0309, 0316, 0318, 0319, 0
 
   before(async () => {
     pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 4 });
+    if (await isFullSocialReplay(pool)) return;
     for (const file of ['0071_signup_grant_on_email_confirmation.sql', '0154_social_publish_foundation.sql',
       '0293_social_publish_plans.sql', '0299_social_inbox.sql', '0305_social_team_roles.sql',
       '0306_social_brand_access.sql', '0307_social_team_actions.sql', '0308_social_team_publishing.sql',

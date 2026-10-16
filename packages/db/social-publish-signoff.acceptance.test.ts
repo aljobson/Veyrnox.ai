@@ -1,3 +1,4 @@
+import { isFullSocialReplay } from './test-support/social-acceptance-bootstrap.js';
 import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -16,12 +17,15 @@ import pg from 'pg';
 // return type.
 describe('social post drafts (0182)', { skip: !process.env.DATABASE_URL }, () => {
     let pool: pg.Pool;
+    let fullReplay = false;
     const users: string[] = [];
     const one = async (sql: string, args: unknown[] = []) => (await pool.query(sql, args)).rows[0];
     const all = async (sql: string, args: unknown[] = []) => (await pool.query(sql, args)).rows;
 
     before(async () => {
         pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 8 });
+        fullReplay = await isFullSocialReplay(pool);
+        if (fullReplay) return;
         await pool.query(`DO $$ DECLARE r TEXT; BEGIN
             FOREACH r IN ARRAY ARRAY['anon', 'authenticated', 'service_role'] LOOP
                 IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = r) THEN
@@ -54,19 +58,30 @@ describe('social post drafts (0182)', { skip: !process.env.DATABASE_URL }, () =>
         await pool.query('INSERT INTO auth.users(id, email) VALUES ($1, $2)', [auth, `${auth}@test.veyrnox.ai`]);
         const { id } = await one('SELECT public.provision_user($1, $2) AS id', [auth, `${auth}@test.veyrnox.ai`]);
         users.push(id);
+        if (fullReplay) await pool.query(`INSERT INTO public.social_publish_subscriptions
+            (user_id,plan_id,idempotency_key,price_usd_cents,consent_version,status,current_period_end)
+            VALUES($1,'publish',$2,1500,'publish-plan-2026-10-13','active',now()+interval '30 days')`,
+        [id, `draft-fixture-${randomUUID()}`]);
         return { id, auth };
     }
     const brandOf = async (auth: string) =>
         (await one('SELECT public.get_or_create_default_social_brand($1) AS r', [auth])).r.brand_id as string;
-    const connect = async (auth: string, brandId: string, network = 'instagram') =>
-        (await one(
-            `SELECT public.record_social_account_connection($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) AS r`,
+    const connect = async (auth: string, brandId: string, network = 'instagram') => {
+        const connected = (await one(
+            `SELECT public.${fullReplay ? 'record_social_multi_account_connection' : 'record_social_account_connection'}($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) AS r`,
             [auth, brandId, network, `ext-${randomUUID()}`, '@brand', null, ['scope'],
                 Buffer.from('cipher-a'), Buffer.from('cipher-b'), new Date(Date.now() + 3600_000).toISOString()],
-        )).r.account_id as string;
+        )).r;
+        assert.equal(connected.ok, true, JSON.stringify(connected));
+        return connected.account_id as string;
+    };
     async function media(userId: string) {
-        await pool.query(`SELECT public.ledger_grant($1, $2, $3)`, [userId, 100, 'grant:test_fixture']);
-        const debit = await one(
+        // The publishing fixture is already stored; no supplier submission or
+        // provider-budget reservation is part of this test's behavior.
+        if (!fullReplay) await pool.query(`SELECT public.ledger_grant($1, $2, $3)`, [userId, 100, 'grant:test_fixture']);
+        const debit = fullReplay ? await one(`INSERT INTO public.jobs(user_id,idempotency_key,model_id,credits,state,inputs)
+            VALUES($1,$2,'seedance-2.0-fast',4,'STORED','{}'::jsonb)
+            RETURNING jsonb_build_object('ok',true,'job_id',id) AS r`, [userId, randomUUID()]) : await one(
             `SELECT public.ledger_debit($1, $2, 4, 'debit:generation', 'seedance-2.0-fast', '{}'::jsonb) AS r`,
             [userId, randomUUID()],
         );
@@ -178,7 +193,7 @@ describe('social post drafts (0182)', { skip: !process.env.DATABASE_URL }, () =>
         const d = await draft(o, batch);
         assert.equal((await approve(stranger, o.brandId, batch)).code, 'BRAND_NOT_FOUND');
         assert.equal((await discard(stranger, o.brandId, batch)).code, 'BRAND_NOT_FOUND');
-        assert.equal((await approve({ auth: 'not-a-uuid' }, o.brandId, batch)).code, 'BRAND_NOT_FOUND');
+        assert.equal((await approve({ auth: 'not-a-uuid' }, o.brandId, batch)).code, fullReplay ? 'USER_NOT_FOUND' : 'BRAND_NOT_FOUND');
         assert.equal((await approve(o, o.brandId, null)).code, 'INVALID_BATCH');
         assert.equal((await post(d.post_id)).status, 'draft');
     });
@@ -207,6 +222,7 @@ describe('social post drafts (0182)', { skip: !process.env.DATABASE_URL }, () =>
         const youtube = await connect(o.auth, o.brandId, 'youtube');
         const batch = randomUUID();
         const a = await draft(o, batch, { accounts: [o.accountId, youtube] });
+        assert.equal(a.ok, true, JSON.stringify(a));
         const b = await draft(o, batch);
         await discard(o, o.brandId, batch, b.post_id);
         const listed = (await one('SELECT public.list_social_post_drafts($1, $2) AS r', [o.auth, o.brandId])).r;
