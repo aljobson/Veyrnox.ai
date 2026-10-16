@@ -41,6 +41,11 @@ const IDENTITY_HEADERS = [
     'x-veyrnox-auth-id',
     'x-veyrnox-auth-email',
     'x-veyrnox-auth-role',
+    // Present only for Supabase OAuth-server access tokens. The middleware
+    // uses the signed client_id claim to keep third-party clients inside the
+    // deliberately small MCP surface instead of treating them as a browser
+    // session with authority over every /api/v1 route.
+    'x-veyrnox-auth-client-id',
     // Supabase's authenticator assurance level: 'aal1' password/OAuth only,
     // 'aal2' a second factor was satisfied this session. Forwarded so a
     // handler can demand aal2 without re-parsing the token.
@@ -126,6 +131,16 @@ export async function middleware(req) {
     const claimError = validateClaims(claims, supabaseUrl);
     if (claimError) return reject(req, claimError, requestId);
 
+    const oauthClientId = verifiedOAuthClientId(claims);
+    if (oauthClientId === false) return reject(req, 'malformed', requestId);
+    const isMcp = pathname === '/api/v1/mcp';
+    if (oauthClientId && !isMcp) {
+        return jsonError(403, { error: 'oauth_route_forbidden', requestId });
+    }
+    if (isMcp && !oauthClientId) {
+        return jsonError(403, { error: 'oauth_client_required', requestId }, mcpChallenge(req, 'insufficient_scope'));
+    }
+
     if (isPublishApiPath(pathname) && !publishAllowed(claims.sub)) {
         return jsonError(503, { error: 'publish_not_open', requestId });
     }
@@ -134,6 +149,7 @@ export async function middleware(req) {
     headers.set('x-veyrnox-auth-id', claims.sub);
     if (claims.email) headers.set('x-veyrnox-auth-email', String(claims.email));
     if (claims.role) headers.set('x-veyrnox-auth-role', String(claims.role));
+    if (oauthClientId) headers.set('x-veyrnox-auth-client-id', oauthClientId);
     headers.set('x-veyrnox-auth-aal', claims.aal === 'aal2' ? 'aal2' : 'aal1');
 
     const mfaAt = recentMfaTimestamp(claims);
@@ -141,6 +157,16 @@ export async function middleware(req) {
     const response = NextResponse.next({ request: { headers } });
     for (const [name, value] of Object.entries(responseHeaders(requestId))) response.headers.set(name, value);
     return response;
+}
+
+function verifiedOAuthClientId(claims) {
+    if (claims.client_id === undefined || claims.client_id === null) return null;
+    if (typeof claims.client_id !== 'string') return false;
+    const value = claims.client_id.trim();
+    // Supabase currently issues UUID client IDs. Keep the accepted alphabet a
+    // little broader for registered clients, but never forward control bytes,
+    // whitespace or an unbounded signed claim into an HTTP header.
+    return /^[A-Za-z0-9._~-]{1,255}$/.test(value) ? value : false;
 }
 
 function rewritePostHogRequest(req) {
@@ -192,8 +218,11 @@ function mcpChallenge(req, reason) {
     if (pathname !== '/api/v1/mcp') return {};
     const origin = (process.env.PUBLIC_HOST || 'https://veyrnox.ai').replace(/\/$/, '');
     const metadata = `${origin}/.well-known/oauth-protected-resource/api/v1/mcp`;
+    const error = reason === 'missing' ? ''
+        : reason === 'insufficient_scope' ? ', error="insufficient_scope"'
+            : ', error="invalid_token"';
     return {
-        'www-authenticate': `Bearer resource_metadata="${metadata}"${reason === 'missing' ? '' : ', error="invalid_token"'}`,
+        'www-authenticate': `Bearer resource_metadata="${metadata}"${error}`,
     };
 }
 

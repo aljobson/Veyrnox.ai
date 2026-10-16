@@ -72,6 +72,7 @@ const FORGED = {
     'x-veyrnox-auth-id': '99999999-9999-4999-8999-999999999999',
     'x-veyrnox-auth-email': 'forged@example.test',
     'x-veyrnox-auth-role': 'service_role',
+    'x-veyrnox-auth-client-id': 'forged-client',
     'x-veyrnox-auth-aal': 'aal2',
     'x-veyrnox-auth-mfa-at': String(now()),
     'x-veyrnox-organisation-id': 'forged-org',
@@ -105,7 +106,7 @@ test('verified claims are forwarded as they are', async () => {
     const got = await forwarded('/api/v1/account', {
         authorization: `Bearer ${await token({ email: 'real@example.test', role: 'authenticated', aal: 'aal2', amr: [{ method: 'totp', timestamp: at }] })}`, ...FORGED,
     });
-    assert.deepEqual(IDENTITY_HEADERS.map((h) => got.get(h)), [SUB, 'real@example.test', 'authenticated', 'aal2', String(at)]);
+    assert.deepEqual(IDENTITY_HEADERS.map((h) => got.get(h)), [SUB, 'real@example.test', 'authenticated', '', 'aal2', String(at)]);
 });
 
 test('pages carry no identity at all, whatever the client sent', async () => {
@@ -118,11 +119,55 @@ test('pages carry no identity at all, whatever the client sent', async () => {
 });
 
 test('every identity header is set on both branches, so none is left to the client', async () => {
-    assert.deepEqual(IDENTITY_HEADERS, ['x-veyrnox-auth-id', 'x-veyrnox-auth-email', 'x-veyrnox-auth-role', 'x-veyrnox-auth-aal', 'x-veyrnox-auth-mfa-at']);
+    assert.deepEqual(IDENTITY_HEADERS, ['x-veyrnox-auth-id', 'x-veyrnox-auth-email', 'x-veyrnox-auth-role', 'x-veyrnox-auth-client-id', 'x-veyrnox-auth-aal', 'x-veyrnox-auth-mfa-at']);
     const page = await middleware(new Request('http://localhost:3000/pricing'));
     const api = await middleware(new Request('http://localhost:3000/api/v1/balance', { headers: { authorization: `Bearer ${await token({})}` } }));
     for (const response of [page, api]) {
         for (const h of IDENTITY_HEADERS) assert.notEqual(response.headers.get(`x-middleware-request-${h}`), null, h);
+    }
+});
+
+test('OAuth client tokens are confined to MCP across read, write and delete API families', async () => {
+    const oauth = `Bearer ${await token({ client_id: '9a8b7c6d-5e4f-3a2b-1c0d-9e8f7a6b5c4d' })}`;
+    for (const [method, path] of [
+        ['GET', '/api/v1/balance'],
+        ['POST', '/api/v1/projects'],
+        ['DELETE', '/api/v1/projects/11111111-1111-4111-8111-111111111111'],
+        ['POST', '/api/v1/generations'],
+    ]) {
+        const response = await middleware(new Request(`http://localhost:3000${path}`, {
+            method,
+            headers: { authorization: oauth },
+        }));
+        assert.equal(response.status, 403, `${method} ${path}`);
+        assert.equal((await response.json()).error, 'oauth_route_forbidden', `${method} ${path}`);
+    }
+});
+
+test('only an OAuth client token reaches MCP and its client identity cannot be forged', async () => {
+    const clientId = '9a8b7c6d-5e4f-3a2b-1c0d-9e8f7a6b5c4d';
+    const got = await forwarded('/api/v1/mcp', {
+        authorization: `Bearer ${await token({ client_id: clientId })}`,
+        'x-veyrnox-auth-client-id': 'forged-client',
+    });
+    assert.equal(got.get('x-veyrnox-auth-id'), SUB);
+    assert.equal(got.get('x-veyrnox-auth-client-id'), clientId);
+
+    const browser = await middleware(new Request('http://localhost:3000/api/v1/mcp', {
+        headers: { authorization: `Bearer ${await token({})}` },
+    }));
+    assert.equal(browser.status, 403);
+    assert.equal((await browser.json()).error, 'oauth_client_required');
+    assert.match(browser.headers.get('www-authenticate'), /error="insufficient_scope"/);
+});
+
+test('malformed OAuth client claims fail closed', async () => {
+    for (const client_id of ['', 'client with spaces', 'x\nforged', 123, 'x'.repeat(256)]) {
+        const response = await middleware(new Request('http://localhost:3000/api/v1/mcp', {
+            headers: { authorization: `Bearer ${await token({ client_id })}` },
+        }));
+        assert.equal(response.status, 401);
+        assert.equal((await response.json()).reason, 'malformed');
     }
 });
 

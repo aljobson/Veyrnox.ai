@@ -72,6 +72,7 @@ test('the HTTP endpoint completes an MCP initialize handshake', async () => {
       'content-type': 'application/json',
       accept: 'application/json, text/event-stream',
       'x-veyrnox-auth-id': '33333333-3333-4333-8333-333333333333',
+      'x-veyrnox-auth-client-id': '9a8b7c6d-5e4f-3a2b-1c0d-9e8f7a6b5c4d',
     },
     body: JSON.stringify({
       jsonrpc: '2.0',
