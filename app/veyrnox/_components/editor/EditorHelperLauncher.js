@@ -1,5 +1,17 @@
 'use client';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+
+/** Do not let the shared helper mutate this boundary's SSR markup before it hydrates. */
+export function EditorHelperHost() {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    let active = true;
+    queueMicrotask(() => { if (active) setReady(true); });
+    return () => { active = false; };
+  }, []);
+  return <div className="ml-auto shrink-0 sm:ml-0">{ready && <div data-vey-editor-helper />}</div>;
+}
 
 /** Same helper state and focus target; only its editor placement is different. */
 export function EditorHelperLauncher({ host, open, launcherRef, onToggle }) {
