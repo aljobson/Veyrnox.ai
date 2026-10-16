@@ -16,6 +16,7 @@ import { editUnits, clipCaptionsEnabled, clipSlowEnabled } from '../../../../lib
 import { compositeRefundGate } from '../../../../lib/compositeRefunds.js';
 import { resolveEdit, defaultDeps as editDeps } from '../../../../lib/clipEditSources.js';
 import { checkPlan, checkCapacity } from '../../../../lib/montageGate.js';
+import { providerSpendBody, providerSpendError, providerSpendLimit } from '../../../../lib/providerSpend.js';
 
 // The AUP statement version a consent tick attests to. Bump when the wording
 // at /legal/aup or on the create page changes; users re-attest under the new
@@ -54,6 +55,10 @@ const ALLOWED_INPUTS = {
     captions: { kind: 'edit' },
     aspect_ratio: { kind: 'enum', values: ['16:9', '9:16', '1:1', '4:3', '3:4', '4:5', '21:9'] },
     duration_seconds: { kind: 'enum', values: [5, 10] },
+    // ACE-Step v1 supports longer audio, but its one-Credit catalog unit is
+    // costed at a maximum of 60 seconds. The model capability narrows this
+    // outer bound to the one endpoint that declares the control.
+    duration: { kind: 'int', min: 5, max: 60 },
     output_resolution: { kind: 'enum', values: ['480p', '720p'] },
     audio_enabled: { kind: 'bool' },
     seed: { kind: 'int', min: 0, max: 2147483647 },
@@ -394,6 +399,10 @@ export async function POST(req) {
             p_window_seconds: RATE_WINDOW_SECONDS,
         }, cfg);
     } catch (err) {
+        const spend = providerSpendError(err);
+        if (spend) return NextResponse.json(providerSpendBody(spend), {
+            status: spend.status, headers: { 'retry-after': String(spend.retryAfter) },
+        });
         console.error('[generations] ledger_debit failed:', err);
         return NextResponse.json({ error: 'debit_failed' }, { status: 502 });
     }
@@ -410,6 +419,10 @@ export async function POST(req) {
             status: 503, headers: { 'retry-after': String(retryAfter) },
         });
     }
+    const spendLimit = providerSpendLimit(debit);
+    if (spendLimit) return NextResponse.json(providerSpendBody(spendLimit), {
+        status: spendLimit.status, headers: { 'retry-after': String(spendLimit.retryAfter) },
+    });
     if (!debit || debit.ok === false) {
         const status = debit && debit.code === 'INSUFFICIENT_BALANCE' ? 402
             : debit && (debit.code === 'ACCOUNT_FROZEN' || debit.code === 'ACCOUNT_ON_HOLD') ? 403 : 400;
@@ -450,9 +463,11 @@ export async function POST(req) {
         return NextResponse.json({ job_id: jobId, idempotent: true, balance_after: balanceAfter });
     }
 
-    // ADR-0075: keep the staged behavior scoped to fal. Other provider and
-    // composite-job contracts retain their existing refund semantics.
-    const guardedSubmit = modelRow.provider === 'fal' && process.env.FAL_SUBMIT_OUTCOME_ENABLED === 'true';
+    // These paid providers are always guarded: an ambiguous response may
+    // already have spent supplier credits, so it must never trigger an
+    // automatic refund. fal's durable outbox normally owns this boundary;
+    // this also protects the legacy path while rollout flags change.
+    const guardedSubmit = ['fal', 'kie', 'grsai', 'openrouter'].includes(modelRow.provider);
 
     // 4. Submit to the provider.
     const submitResult = await provider.submit(

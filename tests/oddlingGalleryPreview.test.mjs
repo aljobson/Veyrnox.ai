@@ -19,6 +19,11 @@ test('gallery loops are presentation-only and never submit or upload a generatio
   assert.doesNotMatch(renderer, /fetch\s*\(|gatewayFetch|\/generations|\/uploads/);
 });
 
+test('local reference preview rejects active image formats', () => {
+  assert.match(studio, /\['image\/jpeg', 'image\/png', 'image\/webp', 'image\/avif'\]\.includes\(file\.type\)/);
+  assert.doesNotMatch(studio, /file\.type\.startsWith\('image\/'\)/);
+});
+
 test('loops pause off-screen, in hidden tabs, on user request and for reduced motion', () => {
   assert.match(preview, /IntersectionObserver/);
   assert.match(preview, /observer\.disconnect\(\)/);

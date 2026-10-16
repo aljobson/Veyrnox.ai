@@ -92,7 +92,7 @@ Configuration: public values in `wrangler.jsonc` `vars`; credentials via
 `OPENROUTER_API_KEY`, `OPENROUTER_WEBHOOK_SECRET`, `OPENROUTER_CHAT_API_KEY`
 (chat only, own spend cap, required in production), `EXA_API_KEY`,
 `GRSAI_API_KEY`, `BYTEPLUS_API_KEY`, `R2_*`, `STRIPE_SECRET_KEY`,
-`STRIPE_WEBHOOK_SECRET`, `RESEND_API_KEY`, `SUBSCRIPTION_ALERT_EMAIL`,
+`STRIPE_WEBHOOK_SECRET`, `RESEND_API_KEY`, optional `SUBSCRIPTION_ALERT_EMAIL`,
 `CINEMA_STREAM_*` (6), social OAuth client ids/secrets (Meta, X, LinkedIn,
 TikTok, YouTube and, since 0228, `FACEBOOK_*` (falls back to `META_*`),
 `THREADS_*`, `PINTEREST_*`, `TWITCH_*`, `GMB_*`; Bluesky needs none),

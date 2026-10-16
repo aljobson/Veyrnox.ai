@@ -2,7 +2,16 @@ import Link from 'next/link';
 import { MediaTile } from '../_components/MediaTile';
 import { PremiumTag } from '../_components/PremiumTag';
 import { SHOWCASE_CLIPS, MODEL_SHOWCASE_KEYS } from '../_lib/showcase';
-import { WALL_PRESETS, templateHref, presetCredits, presetTitle, distinctShelfNames } from '../_lib/tokens';
+import { modelPriceUnit } from '../_lib/modelPricing';
+import {
+  WALL_PRESETS,
+  LANDING_TEMPLATE_LIMIT,
+  LANDING_MODEL_LIMIT,
+  templateHref,
+  presetCredits,
+  presetTitle,
+  distinctShelfNames,
+} from '../_lib/tokens';
 
 /* ─── Preset wall: the real presets ─── */
 
@@ -16,7 +25,7 @@ export function PresetWall({ catalog }) {
         </Link>
       </div>
       <div className="columns-1 sm:columns-2 lg:columns-4 gap-3 [&>a]:mb-6 [&>a]:break-inside-avoid">
-        {WALL_PRESETS.map((preset) => {
+        {WALL_PRESETS.slice(0, LANDING_TEMPLATE_LIMIT).map((preset) => {
           const clip = SHOWCASE_CLIPS[preset.clipKey];
           return (
             <MediaTile
@@ -24,6 +33,7 @@ export function PresetWall({ catalog }) {
               href={templateHref(preset)}
               ariaLabel={`Open ${presetTitle(preset.name)} template · ${presetCredits(preset, catalog)} credits`}
               clip={clip && { ...clip, objectFit: 'contain' }}
+              imageSizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 25vw"
               className="block text-left w-full"
               mediaClassName="rounded-2xl"
               mediaStyle={{ background: preset.bg, aspectRatio: clip?.aspectRatio || '4 / 5' }}
@@ -45,10 +55,10 @@ export function PresetWall({ catalog }) {
   );
 }
 
-/* ─── The price list: every live catalog row, itemised ─── */
+/* ─── A representative sample of the live price list ─── */
 
 export const LIST_GROUPS = [
-  { kind: 'video', label: 'Video', unit: 'per 5 s clip.' },
+  { kind: 'video', label: 'Video', unit: 'per clip; length shown below.' },
   { kind: 'image', label: 'Image', unit: 'per image.' },
   { kind: 'audio', label: 'Audio', unit: 'per clip.' },
 ];
@@ -65,17 +75,21 @@ export function ModelShelf({ catalog }) {
     <section id="models" className="px-4 sm:px-6 pt-28 sm:pt-36 max-w-[1300px] mx-auto">
       <h2 className="vx-display text-[40px] sm:text-[56px]">The price list.</h2>
       <p className="mt-4 text-lg text-vx-fg-body max-w-[48ch] leading-[1.5]">
-        All {total} models, at the credits the button will show. Read live from the catalog.
+        A representative shortlist from {total} models, at the credits the button will show. Read live from the catalog.
       </p>
       <div id="shelf" className="mt-12 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-12 gap-y-12">
         {groups.map((g) => {
           const clip = SHOWCASE_CLIPS[MODEL_SHOWCASE_KEYS[g.kind]];
+          const representativeRows = [...g.rows]
+            .sort((a, b) => Number(Boolean(a.gated)) - Number(Boolean(b.gated)) || a.credits - b.credits)
+            .slice(0, LANDING_MODEL_LIMIT);
           return (
             <div key={g.kind}>
               <MediaTile
                 href="/models"
                 ariaLabel={`Explore ${g.label.toLowerCase()} models`}
                 clip={clip && { ...clip, objectFit: 'contain' }}
+                imageSizes="(max-width: 767px) 100vw, (max-width: 1279px) 50vw, 33vw"
                 className="block mb-4"
                 mediaClassName="rounded-2xl"
                 mediaStyle={{ aspectRatio: clip?.aspectRatio || '4 / 5' }}
@@ -87,13 +101,16 @@ export function ModelShelf({ catalog }) {
                 }
               />
               <ul className="mt-2 font-vx-mono text-[14px] vx-num">
-                {g.rows.map((m) => (
+                {representativeRows.map((m) => (
                   <li key={m.id}>
                     <Link
                       href={`/app/create?model=${encodeURIComponent(m.id)}`}
                       className="group flex items-baseline gap-2 py-2 text-vx-fg-body hover:text-vx-fg"
                     >
-                      <span className="min-w-0 truncate group-hover:underline underline-offset-4">{g.nameOf(m)}</span>
+                      <span className="min-w-0">
+                        <span className="block truncate group-hover:underline underline-offset-4">{g.nameOf(m)}</span>
+                        <span className="block text-[11px] text-vx-fg-muted">{modelPriceUnit(m)}</span>
+                      </span>
                       {m.gated && <PremiumTag className="shrink-0" />}
                       <span aria-hidden className="vx-leader flex-1" />
                       <span className="shrink-0 font-bold text-vx-money">{m.credits} cr</span>

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { register } from 'node:module';
+import { encodeActivityCursor } from '../lib/social/activityCursor.js';
 
 register('data:text/javascript,' + encodeURIComponent(`export async function resolve(s,c,next){return next(s==='next/server'?'next/server.js':s,c)}`));
 
@@ -30,7 +31,7 @@ function stub(role = 'editor', overrides = {}) {
     const defaults = {
       consume_account_read_request: { ok: true }, consume_social_post_write_request: { ok: true },
       get_social_brand_access: { ok: true, brand_id: brand, label: 'Studio', role, owner_auth_id: ownerAuth, paid: true },
-      list_social_publish_activity: { ok: true, actor_role: role, events: [{ id: account, source: 'publish', action: 'save_smartlink', actor_email: 'manager@test.veyrnox.ai', detail: {}, created_at: '2026-10-14T12:00:00Z' }] },
+      list_social_publish_activity_page: { ok: true, actor_role: role, events: [{ id: account, source: 'publish', action: 'save_smartlink', actor_email: 'manager@test.veyrnox.ai', detail: {}, created_at: '2026-10-14T12:00:00Z' }], next_cursor: null },
       save_social_publish_queue: { ok: true, queue_id: account }, save_social_smartlink: { ok: true, smartlink_id: account },
     };
     return Response.json(overrides[name] ?? defaults[name]);
@@ -43,8 +44,78 @@ test('manager can read the selected brand activity without receiving owner ident
   assert.equal(response.status, 200); const body = await response.json();
   assert.equal(body.events[0].actor_email, 'manager@test.veyrnox.ai');
   assert.equal(JSON.stringify(body).includes(ownerAuth), false);
-  assert.deepEqual(calls.map((call) => call.name), ['consume_account_read_request', 'get_social_brand_access', 'list_social_publish_activity']);
+  assert.deepEqual(calls.map((call) => call.name), ['consume_account_read_request', 'get_social_brand_access', 'list_social_publish_activity_page']);
   assert.equal(calls.at(-1).args.p_auth_id, auth);
+});
+
+test('activity passes a validated cursor and bounded limit to the brand-scoped reader', async () => {
+  stub('manager');
+  const cursor = { created_at: '2026-10-14T12:00:00Z', id: account, source: 'publish' };
+  const response = await activityRoute.GET(request(`/social/activity?limit=20&cursor=${encodeURIComponent(JSON.stringify(cursor))}`));
+  assert.equal(response.status, 200);
+  assert.deepEqual(calls.at(-1).args, { p_auth_id: auth, p_brand_id: brand, p_limit: 20, p_before_created_at: cursor.created_at, p_before_id: account, p_before_source: 'publish' });
+  for (const value of ['not-json', 'x'.repeat(257), 'e30', JSON.stringify({ ...cursor, source: 'secret' }), JSON.stringify({ ...cursor, created_at: 'yesterday' })]) {
+    stub('manager');
+    const invalid = await activityRoute.GET(request(`/social/activity?cursor=${encodeURIComponent(value)}`));
+    assert.equal(invalid.status, 400);
+    assert.equal(calls.some((call) => call.name === 'list_social_publish_activity_page'), false);
+  }
+});
+
+test('activity accepts opaque cursors without rounding database timestamp precision', async () => {
+  stub('manager');
+  const cursor = { created_at: '2026-10-16T12:34:56.123456+00:00', id: account, source: 'inbox' };
+  const response = await activityRoute.GET(request(`/social/activity?cursor=${encodeActivityCursor(cursor)}`));
+  assert.equal(response.status, 200);
+  assert.equal(calls.at(-1).args.p_before_created_at, cursor.created_at);
+  assert.equal(calls.at(-1).args.p_before_id, cursor.id);
+  assert.equal(calls.at(-1).args.p_before_source, cursor.source);
+});
+
+test('activity accepts legacy JSON cursors after the adapter decodes their positive offset twice', async () => {
+  stub('manager');
+  const cursor = { created_at: '2026-10-16T12:34:56.123456 00:00', id: account, source: 'inbox' };
+  const response = await activityRoute.GET(request(`/social/activity?cursor=${encodeURIComponent(JSON.stringify(cursor))}`));
+  assert.equal(response.status, 200);
+  assert.equal(calls.at(-1).args.p_before_created_at, '2026-10-16T12:34:56.123456+00:00');
+});
+
+test('activity migration rollout fallback explicitly discloses a bounded legacy history', async () => {
+  stub('manager');
+  const normalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init) => {
+    const name = new URL(url).pathname.split('/').pop();
+    if (name === 'list_social_publish_activity_page') return Response.json({ code: 'PGRST202' }, { status: 404 });
+    if (name === 'list_social_publish_activity') return Response.json({ ok: true, actor_role: 'manager', events: [] });
+    return normalFetch(url, init);
+  };
+  const response = await activityRoute.GET(request('/social/activity'));
+  const body = await response.json();
+  assert.equal(response.status, 200);
+  assert.equal(body.history_limited, true);
+  assert.match(body.notice, /latest 50/);
+  assert.equal(body.next_cursor, null);
+  const cursor = { created_at: '2026-10-14T12:00:00Z', id: account, source: 'publish' };
+  const older = await activityRoute.GET(request(`/social/activity?cursor=${encodeURIComponent(JSON.stringify(cursor))}`));
+  assert.equal(older.status, 503);
+  assert.equal((await older.json()).error, 'activity_history_upgrading');
+});
+
+test('activity backend failures do not silently downgrade to incomplete history', async () => {
+  stub('manager');
+  const normalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init) => new URL(url).pathname.endsWith('/list_social_publish_activity_page')
+    ? Response.json({ code: 'XX000' }, { status: 500 }) : normalFetch(url, init);
+  const response = await activityRoute.GET(request('/social/activity'));
+  assert.equal(response.status, 502);
+  assert.equal(calls.some((call) => call.name === 'list_social_publish_activity'), false);
+});
+
+test('activity refuses read-only roles before querying brand history', async () => {
+  stub('viewer');
+  const response = await activityRoute.GET(request('/social/activity'));
+  assert.equal(response.status, 403);
+  assert.equal(calls.some((call) => call.name === 'list_social_publish_activity_page'), false);
 });
 
 test('editor saves queue and SmartLink as the acting teammate', async () => {

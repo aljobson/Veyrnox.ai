@@ -18,6 +18,7 @@ function fakes({ replies = {}, model = MODEL, stream } = {}) {
     const calls = [];
     const base = {
         check_generation_rate_limit: { ok: true },
+        provider_spend_admit_model: { ok: true, idempotent: false, estimated_cost_microusd: 25000 },
         chat_turn_context: { ok: true, user_id: 'user-1', model_id: 'chat-fast', system_prompt: 'Be brief.', history: [{ role: 'user', content: 'earlier' }, { role: 'assistant', content: 'earlier reply' }] },
         ledger_debit: { ok: true, job_id: JOB, balance_after: 8 },
         job_submitted: { ok: true },
@@ -660,6 +661,23 @@ test('capped web search: the search runs before the debit, with the key and the 
     assert.ok(order(f).indexOf('search') < order(f).indexOf('ledger_debit'), 'search first, then money');
     assert.equal(f.searches[0].apiKey, 'exa-test');
     assert.equal(f.searches[0].query, 'What is the latest Node release?');
+    assert.ok(order(f).indexOf('provider_spend_admit_model') < order(f).indexOf('search'), 'supplier budget is reserved before the paid search');
+});
+
+test('capped web search: supplier spend refusal stops before the search and debit', async () => {
+    const f = cappedFakes();
+    f.deps.rpc = async (name, args) => {
+        f.calls.push([name, args]);
+        if (name === 'provider_spend_admit_model') return { ok: false, code: 'PROVIDER_SPEND_LIMIT', scope: 'user_hour', retry_after_seconds: 91 };
+        const base = { check_generation_rate_limit: { ok: true }, chat_turn_context: { ok: true, user_id: 'user-1', model_id: 'chat-fast', system_prompt: '', history: [] }, chat_stops_before_text: 0, read_user_credits: { balance: 10 } };
+        return base[name];
+    };
+    const res = await run(f, { body: webBody(), env: EXA_ENV });
+    assert.equal(res.status, 429);
+    assert.equal(res.headers.get('retry-after'), '91');
+    assert.deepEqual(await res.json(), { error: 'supplier_spend_limit', retry_after_seconds: 91 });
+    assert.equal(f.searches.length, 0);
+    assert.equal(called(f, 'ledger_debit').length, 0);
 });
 
 test('capped web search: the model gets the results as quoted data and the plugin is not used', async () => {

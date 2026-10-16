@@ -18,10 +18,22 @@
   // Keep Worker logs (console.error on provider rejects, webhook signature
   // failures) in the dashboard instead of needing a live `wrangler tail`.
   "observability": { "enabled": true },
+  // General API screening: 1200/minute per IP (/64 for IPv6) leaves room for
+  // concurrent job polling; session authentication has a separate 60/minute
+  // quota. Provider callbacks use a separate general bucket so client traffic
+  // cannot consume their quota. User/operation limits remain authoritative.
   // ADR-0039: approximate per-IP/per-location screening before admin routes.
   // ADR-0026 amendment 2: the same screening, in a namespace of its own, before
   // POST /api/turnstile-failure (the sign-in dialog's report of a failed check).
   "ratelimits": [{
+    "name": "AUTH_EDGE_RATE_LIMITER",
+    "namespace_id": "2026101603",
+    "simple": { "limit": 60, "period": 60 }
+  }, {
+    "name": "API_EDGE_RATE_LIMITER",
+    "namespace_id": "2026101601",
+    "simple": { "limit": 1200, "period": 60 }
+  }, {
     "name": "ADMIN_EDGE_RATE_LIMITER",
     "namespace_id": "2026092401",
     "simple": { "limit": 60, "period": 60 }
@@ -51,12 +63,9 @@
     "TENANT_PROJECTS_ENABLED": "true",
     // Cloud documents do not enable device-media uploads (ADR-0056 / roadmap D1).
     "PROJECT_MEDIA_UPLOADS_ENABLED": "false",
-    // ADR-0075: stage uncertain fal submission handling before activation.
-    "FAL_SUBMIT_OUTCOME_ENABLED": "false",
-    // ADR-0076: keep recovery on when rolling back durable admission.
-    "FAL_DISPATCH_SCHEMA_ENABLED": "false",
-    "FAL_DURABLE_DISPATCH_ENABLED": "false",
-    "FAL_DISPATCH_QUEUE_ENABLED": "false",
+    // The four fal rollout controls are intentionally omitted in production.
+    // Their code paths require the exact value "true", so absence is fail-closed
+    // and leaves Cloudflare text-binding headroom. Staging names them below.
     // ADR-0067: Chat is open here, but the screen is still behind the per-browser preview switch
     // (localStorage.veyrnox_chat). Needs OPENROUTER_CHAT_API_KEY on the Worker: production will not use the shared key.
     "CHAT_ENABLED": "true",
@@ -105,10 +114,10 @@
     "CLIP_EDIT_CAPTIONS_ENABLED": "true",
     // docs/editor/SPEED.md: the Clip Editor's slow-motion step. Off until 0237 is applied and fal's billed cost is read (the price is a placeholder).
     "CLIP_EDIT_SLOW_ENABLED": "false",
-    // ADR-0064: checkout and account routes stay closed until staging acceptance.
+    // ADR-0064: production checkout stays closed until staging acceptance and
+    // the external approval record are complete. Existing-customer reads,
+    // cancellation and paid-checkout recovery remain available while off.
     "SUBSCRIPTIONS_ENABLED": "false",
-    // Before activation: SUBSCRIPTION_ALERT_EMAIL must name the Operator;
-    // SUBSCRIPTION_ALERT_FROM defaults to the existing VIOLATION_EMAIL_FROM.
     // Cinema first activation. Paid access and monetisation remain closed.
     // Merge only after the documented production cutover gates pass.
     "CINEMA_ENABLED": "true",
@@ -249,6 +258,14 @@
       // Recovery and removal of Cinema uploads run from the cron; the other
       // scheduled tasks skip on staging because their secrets are not set.
       "ratelimits": [{
+        "name": "AUTH_EDGE_RATE_LIMITER",
+        "namespace_id": "2026101604",
+        "simple": { "limit": 60, "period": 60 }
+      }, {
+        "name": "API_EDGE_RATE_LIMITER",
+        "namespace_id": "2026101602",
+        "simple": { "limit": 1200, "period": 60 }
+      }, {
         "name": "ADMIN_EDGE_RATE_LIMITER",
         "namespace_id": "2026092601",
         "simple": { "limit": 60, "period": 60 }
@@ -293,7 +310,10 @@
         "UPLOAD_INTEGRITY_ENABLED": "true",
         "FAL_DURABLE_DISPATCH_ENABLED": "false",
         "FAL_DISPATCH_QUEUE_ENABLED": "false",
-        "SUBSCRIPTIONS_ENABLED": "false",
+        // Test-mode subscription acceptance is open on staging only. The
+        // staging Worker has Stripe, Resend and Operator-alert secret bindings;
+        // production remains false above until the external gates are signed.
+        "SUBSCRIPTIONS_ENABLED": "true",
         "VOTING_ENABLED": "false",
         "CINEMA_AUDIENCE_ENABLED": "false",
         "CINEMA_RANKINGS_ENABLED": "false",
@@ -368,6 +388,9 @@
         // staging title and viewers can load and play entitled Stream media.
         // Production keeps all three switches false.
         "CINEMA_UNLOCKS_ENABLED": "true",
+        // Test-mode Cinema Pass acceptance is open on staging only. Existing
+        // production Pass management remains reachable while new sales are off.
+        "CINEMA_SUBSCRIPTIONS_ENABLED": "true",
         "CINEMA_PUBLISHING_ENABLED": "true",
         "CINEMA_VIEWING_ENABLED": "true",
         // Monthly ceiling on free viewing minutes (ADR-0057). Migration 0245

@@ -66,7 +66,7 @@ export function MobileMenu({ items, className = '', buttonLabel = 'Menu', button
         aria-expanded={open}
         aria-controls="vx-mobile-menu"
         aria-label={buttonLabel}
-        className={`inline-flex h-10 items-center justify-center rounded-full border border-vx-border text-vx-fg-body hover:border-vx-accent hover:text-vx-fg ${buttonText ? 'gap-2 px-3' : 'w-10'}`}
+        className={`inline-flex h-11 items-center justify-center rounded-full border border-vx-border text-vx-fg-body hover:border-vx-accent hover:text-vx-fg ${buttonText ? 'gap-2 px-3' : 'w-11'}`}
       >
         <Icon name={open ? 'close' : 'menu'} size={18} />
         {buttonText && <span className="text-[13px] font-bold">{buttonText}</span>}

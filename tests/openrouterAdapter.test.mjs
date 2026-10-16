@@ -67,6 +67,7 @@ test('submit sends the documented POST /api/v1/videos request for seedance-2.0-f
         const { url, init } = net.seen[0];
         assert.equal(url, 'https://openrouter.ai/api/v1/videos');
         assert.equal(init.method, 'POST');
+        assert.equal(init.redirect, 'manual');
         assert.deepEqual(init.headers, { Authorization: 'Bearer sk-or-test', 'Content-Type': 'application/json' });
         // Every field is in the createVideos schema; values are in the model's
         // supported_durations / supported_resolutions / supported_aspect_ratios.
@@ -112,6 +113,7 @@ test('submit rejections carry a typed errorCode and no vendor payload', async ()
         try {
             const r = await submitVideo(JOB, CFG);
             assert.equal(r.ok, false);
+            assert.equal(r.outcome, status >= 500 ? 'unknown' : 'rejected');
             assert.equal(r.errorCode, code, `status ${status}`);
             assert.match(r.errorCode, /^[a-z0-9_]{1,64}$/);
         } finally { net.restore(); }
@@ -120,13 +122,25 @@ test('submit rejections carry a typed errorCode and no vendor payload', async ()
 
 test('submit transport, timeout and malformed replies map to typed codes', async () => {
     let net = fakeFetch(() => { throw new TypeError('network down'); });
-    try { assert.equal((await submitVideo(JOB, CFG)).errorCode, 'provider_unreachable'); } finally { net.restore(); }
+    try {
+        const result = await submitVideo(JOB, CFG);
+        assert.equal(result.errorCode, 'provider_unreachable');
+        assert.equal(result.outcome, 'unknown');
+    } finally { net.restore(); }
 
     net = fakeFetch(() => { throw new DOMException('aborted', 'AbortError'); });
-    try { assert.equal((await submitVideo(JOB, CFG)).errorCode, 'provider_timeout'); } finally { net.restore(); }
+    try {
+        const result = await submitVideo(JOB, CFG);
+        assert.equal(result.errorCode, 'provider_timeout');
+        assert.equal(result.outcome, 'unknown');
+    } finally { net.restore(); }
 
     net = fakeFetch(Response.json({ status: 'pending' }, { status: 202 }));
-    try { assert.equal((await submitVideo(JOB, CFG)).errorCode, 'provider_bad_response'); } finally { net.restore(); }
+    try {
+        const result = await submitVideo(JOB, CFG);
+        assert.equal(result.errorCode, 'provider_bad_response');
+        assert.equal(result.outcome, 'unknown');
+    } finally { net.restore(); }
 
     net = fakeFetch(new Response('<html>', { status: 202 }));
     try { assert.equal((await submitVideo(JOB, CFG)).errorCode, 'provider_bad_response'); } finally { net.restore(); }

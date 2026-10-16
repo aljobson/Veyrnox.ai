@@ -63,6 +63,16 @@ test('an unauthenticated MCP request advertises its OAuth resource metadata', as
   }
 });
 
+test('the MCP handler refuses a browser identity without an OAuth client', async () => {
+  const { POST } = await import('../app/api/v1/mcp/route.js');
+  const response = await POST(new Request('https://veyrnox.test/api/v1/mcp', {
+    method: 'POST', headers: { 'x-veyrnox-auth-id': '33333333-3333-4333-8333-333333333333' },
+  }));
+  assert.equal(response.status, 403);
+  assert.equal((await response.json()).error, 'oauth_client_required');
+  assert.match(response.headers.get('www-authenticate'), /error="insufficient_scope"/);
+});
+
 test('the HTTP endpoint completes an MCP initialize handshake', async () => {
   const { POST } = await import('../app/api/v1/mcp/route.js');
   const request = new Request('https://veyrnox.test/api/v1/mcp', {

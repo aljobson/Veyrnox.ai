@@ -1,7 +1,7 @@
 'use client';
 import { useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { getSession } from '../../lib/authClient';
+import { getStoredUserId } from '../../lib/authClient';
 import { gatewayFetch, notifyBalanceChanged } from '../_lib/gateway';
 import { readJobHistory, jobsToWatch, markJobSettled } from '../_lib/jobHistory';
 
@@ -15,7 +15,7 @@ export function JobWatcher() {
   useEffect(() => {
     let stopped = false;
     async function tick() {
-      if (stopped || document.hidden || !getSession()) return;
+      if (stopped || document.hidden || !getStoredUserId()) return;
       for (const job of jobsToWatch(readJobHistory())) {
         let next;
         try { next = await gatewayFetch(`/jobs/${job.job_id}`); } catch { continue; }

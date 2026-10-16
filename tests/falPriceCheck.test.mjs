@@ -205,7 +205,7 @@ test('each listed rate comes to the cost of one generation', () => {
 // costs. This fails until the quantity here follows it.
 test('each quantity is the pin or cap the capability record sends', () => {
     assert.equal(UNIT_RATES['demucs-stems'].quantity, REGISTRY['fal-ai/demucs'].media.audio.maxSeconds);
-    assert.equal(UNIT_RATES['ace-step'].quantity, REGISTRY['fal-ai/ace-step'].fixed.duration);
+    assert.equal(UNIT_RATES['ace-step'].quantity, REGISTRY['fal-ai/ace-step'].inputs.duration.max);
     const v15 = REGISTRY['fal-ai/ace-step-1.5'].fixed;
     assert.equal(UNIT_RATES['ace-step-1.5'].quantity, v15.duration * v15.num_outputs);
     assert.equal(UNIT_RATES['ace-step-1.5'].multiplier, v15.thinking ? 2 : 1);

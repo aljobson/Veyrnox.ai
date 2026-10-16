@@ -18,7 +18,7 @@ register('data:text/javascript,' + encodeURIComponent(`
   }
 `));
 const worker = (await import('../worker.js')).default;
-const allow = { ADMIN_EDGE_RATE_LIMITER: { limit: async () => ({ success: true }) } };
+const allow = { ADMIN_EDGE_RATE_LIMITER: { limit: async () => ({ success: true }) }, API_EDGE_RATE_LIMITER: { limit: async () => ({ success: true }) } };
 const ORIGIN = 'https://veyrnox.test';
 const logged = (...kinds) => `[internal-headers] dropped from an outside request: ${kinds.join(', ')}`;
 const FORGED_ID = '99999999-9999-4999-8999-999999999999';

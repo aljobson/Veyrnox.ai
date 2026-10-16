@@ -103,6 +103,17 @@ test('saves a validated weekly report schedule', async () => {
   assert.equal(invalid.status, 400); assert.equal(calls.length, 0);
 });
 
+test('scheduled report email validation is bounded before database work', async () => {
+  stub();
+  const response = await PUT(request('PUT', {
+    name: 'Weekly', rangeDays: 7, comparePrevious: true, includeContent: true, accentColor: '#38bdf8',
+    deliveryCadence: 'weekly', deliveryHourUtc: 9, deliveryWeekday: 1,
+    deliveryRecipients: [`${'a'.repeat(250)}@example.com`], deliveryFormat: 'pdf',
+  }));
+  assert.equal(response.status, 400);
+  assert.equal(calls.length, 0);
+});
+
 test('maps report conflicts and provider failures without leaking details', async () => {
   stub({ save_social_report_template_v3: { ok: false, code: 'REPORT_NAME_TAKEN' } });
   const conflict = await PUT(request('PUT', { name: 'Monthly', rangeDays: 30, comparePrevious: false, includeContent: true, accentColor: '#38bdf8' }));

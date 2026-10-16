@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { calendarWindow,dateKey,shiftCalendar,localInput,localSchedule,droppedSchedule,instant } from '../lib/social/calendar.js';
+import { calendarWindow,dateKey,shiftCalendar,localInput,localSchedule,droppedSchedule,instant,minimumFutureLocalInput,futureLocalSchedule } from '../lib/social/calendar.js';
 import { calendarEnabled } from '../lib/social/publishFeature.js';
 
 test('month grid covers six Monday-first weeks and week follows the selected day',()=>{
@@ -21,6 +21,16 @@ test('local scheduling rejects date rollover, malformed dates and spring DST gap
         assert.equal(dateKey('2026-03-09T01:00:00Z'),'2026-03-08');
         assert.equal(localInput('2026-10-04T15:30:00Z'),'2026-10-04T11:30');
         assert.equal(droppedSchedule({scheduled_at:'2026-10-04T15:30:00Z'},'2026-10-07'),'2026-10-07T11:30');
+    }finally {if(old===undefined)delete process.env.TZ;else process.env.TZ=old;}
+});
+test('composer scheduling exposes a future minimum and rejects stale values at submit time',()=>{
+    const old=process.env.TZ;process.env.TZ='UTC';
+    try {
+        const now=Date.parse('2026-10-16T14:05:30.000Z');
+        assert.equal(minimumFutureLocalInput(now),'2026-10-16T14:06');
+        assert.equal(futureLocalSchedule('2026-10-16T14:05',now),null);
+        assert.equal(futureLocalSchedule('2026-10-16T14:06',now),'2026-10-16T14:06:00.000Z');
+        assert.equal(futureLocalSchedule('not-a-date',now),null);
     }finally {if(old===undefined)delete process.env.TZ;else process.env.TZ=old;}
 });
 test('instant validation requires a timezone and rejects impossible calendar dates',()=>{

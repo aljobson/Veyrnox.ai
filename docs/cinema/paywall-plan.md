@@ -1,6 +1,6 @@
 # Social Cinema paywall — implementation plan
 
-Companion to [ADR-0057](../adr/0057-cinema-viewer-paywall.md). Phases 1 to 3 are built (PR #344, per ADR-0057) and off in production: `CINEMA_SUBSCRIPTIONS_ENABLED` and `CINEMA_UNLOCKS_ENABLED` are `false`. (This line read "Nothing here is built" until 2026-10-03.) Each phase is one PR, lands behind a switch that ships off, and is applied to production only through the `apply-migrations` workflow (ADR-0023). Numbers below are the ADR's; change them there, not here.
+Companion to [ADR-0057](../adr/0057-cinema-viewer-paywall.md). Phases 1 to 3 are built (PR #344, per ADR-0057). `CINEMA_SUBSCRIPTIONS_ENABLED` and `CINEMA_UNLOCKS_ENABLED` are on in staging for sandbox acceptance and off in production. (This line read "Nothing here is built" until 2026-10-03.) Each phase is one PR, lands behind a switch that ships off, and is applied to production only through the `apply-migrations` workflow (ADR-0023). Numbers below are the ADR's; change them there, not here.
 
 ## Activation preconditions (owner and legal)
 
@@ -10,7 +10,7 @@ On 2026-10-10 the owner instructed: "just build it I will deal with Stripe". Eng
 |---|---|---|---|
 | P1 | Publication slice: **done, ADR-0059, migration 0147** (review queue, public reads, catalogue, title and player pages). | Eng | Nothing is viewable, so nothing is sellable. |
 | P2 | Owner handles written Stripe acceptance of recurring viewer plans over user-uploaded video under Managed Payments, and confirmation that Managed Payments supports Checkout `mode=subscription` and the Customer Portal. | Owner | Required for paid activation; engineering build and verification are authorized. |
-| P3 | Cooling-off and Supply Consent wording for Unlocks and Passes; creator terms stating no revenue share yet. | Legal | Distance-selling rules in UK/EU. |
+| P3 | Cooling-off, renewal and cancellation wording for Passes is implemented in the checkout UI, Terms and Refund Policy; creator terms state no revenue share yet. Finance/Legal approval remains open. | Legal | Distance-selling rules in UK/EU. |
 | P4 | Stream credentials and webhook live (ADR-0052 gates), delivery rate verified against the invoice. | Owner | Pass margin depends on it. |
 | P5 | `ledger_debit` inserts a `jobs` row (0059), so an Unlock cannot reuse it. 0142 adds a sibling `ledger_unlock` RPC in the same family: Free-first, Frozen check, `free_delta` bookkeeping, idempotent on `(user_id, content_id)`, joining the RPC-only writer set in `CLAUDE.md`. | Eng | No raw INSERT into `ledger_entries`; reconciliation must stay at zero rows. |
 | P6 | A monthly ceiling on free viewing minutes per account, built and switched on. **Complete.** `CINEMA_FREE_CEILING_ENABLED` independently opens free-title playback with the confirmed 300-minute monthly value while paid Unlocks stay closed. Migration 0245 was applied to production and staging on 2026-10-10; staging acceptance passed, the post-migration reconciliation window completed, and all seven live reconciliation counts were zero immediately before the 2026-10-13 activation. Evidence is recorded in [the launch readiness report](launch-readiness-2026-10-10.md). | Eng, Owner | The free path cannot mint a token for paid, unlocked or Pass access. |

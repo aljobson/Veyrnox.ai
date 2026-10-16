@@ -105,19 +105,21 @@ const stepAt = (name) => {
 
 test('the check runs after the smoke test and its rollback, and cannot fail the deploy job', () => {
     const deploy = stepAt('Deploy');
-    const smoke = stepAt('Smoke test the live site');
+    const smoke = stepAt('Smoke test the live site with retained assets');
+    const firstSmoke = stepAt('Smoke test the first retention-enabled deploy');
     const rollback = stepAt('Roll back to the recorded deployment');
     const check = stepAt('Is the Worker still off workers.dev?');
     assert.match(deploy.text, /\n        id: deploy\n/);
-    assert.ok(deploy.at < smoke.at && smoke.at < rollback.at && rollback.at < check.at, 'step order');
+    assert.ok(deploy.at < smoke.at && smoke.at < firstSmoke.at && firstSmoke.at < rollback.at && rollback.at < check.at, 'step order');
     // It reads back what this run's deploy set, whether or not the smoke test passed.
     assert.match(check.text, /\n        if: \$\{\{ !cancelled\(\) && steps\.deploy\.outcome == 'success' \}\}\n/);
     assert.match(check.text, /\n        continue-on-error: true\n/);
     assert.match(check.text, /\n        run: node scripts\/check-workers-dev\.mjs\n/);
     assert.match(check.text, /CLOUDFLARE_API_TOKEN: \$\{\{ secrets\.CLOUDFLARE_API_TOKEN \}\}/);
     // Smoke failures and lost secrets both trigger rollback; route checks remain separate.
-    assert.match(smoke.text, /\n        id: smoke\n        if: env\.HAS_TOKEN == 'true' && steps\.tip\.outputs\.stale != 'true'\n        run: sleep 20 && node scripts\/check-site-health\.mjs\n/);
-    assert.match(rollback.text, /\n        if: failure\(\) && \(steps\.smoke\.outcome == 'failure' \|\| steps\.secret_check\.outcome == 'failure'\)\n/);
+    assert.match(smoke.text, /\n        id: smoke_retained\n[\s\S]*--asset-manifest previous-build-assets\.json\n/);
+    assert.match(firstSmoke.text, /\n        id: smoke_first\n[\s\S]*run: sleep 20 && node scripts\/check-site-health\.mjs\n/);
+    assert.match(rollback.text, /steps\.smoke_retained\.outcome == 'failure' \|\| steps\.smoke_first\.outcome == 'failure' \|\| steps\.secret_check\.outcome == 'failure'/);
     const secrets = stepAt('Verify live secret bindings survived');
     const baseline = stepAt('Record live secret binding names');
     assert.ok(baseline.at < deploy.at && deploy.at < secrets.at && secrets.at < smoke.at);

@@ -9,9 +9,8 @@ globalThis.localStorage = {
     setItem: (k, v) => localStore.set(k, String(v)),
     removeItem: (k) => localStore.delete(k),
 };
-localStore.set('veyrnox_supabase_session', JSON.stringify({
-    access_token: 'live-token', refresh_token: 'r1', expires_at: Math.floor(Date.now() / 1000) + 3600, user: { id: 'user-1' },
-}));
+const { adoptSession } = await import('../app/lib/authClient.js');
+adoptSession({ access_token: 'live-token', expires_in: 3600, user: { id: 'user-1' } });
 
 const sessionStore = new Map();
 globalThis.sessionStorage = {

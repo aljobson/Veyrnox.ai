@@ -36,6 +36,7 @@ const sha256 = async (text) => Buffer.from(await crypto.subtle.digest('SHA-256',
 async function requestLink() {
     let challenge;
     globalThis.fetch = async (url, init) => {
+        if (String(url) === '/api/auth/session') return Response.json({});
         assert.equal(new URL(url).pathname, '/auth/v1/otp');
         challenge = JSON.parse(init.body).code_challenge;
         return Response.json({});
@@ -47,6 +48,7 @@ async function requestLink() {
 function stubExchange() {
     const calls = [];
     globalThis.fetch = async (url, init) => {
+        if (String(url) === '/api/auth/session') return Response.json({ access_token: 'token', expires_in: 3600, user: { id: 'user-1' } });
         const u = new URL(url);
         assert.equal(u.pathname, '/auth/v1/token');
         assert.equal(u.searchParams.get('grant_type'), 'pkce');
@@ -55,9 +57,14 @@ function stubExchange() {
     };
     return calls;
 }
-const noRequest = () => { globalThis.fetch = () => assert.fail('nothing should have been sent'); };
+const noRequest = () => { globalThis.fetch = (url) => String(url) === '/api/auth/session'
+    ? Response.json({}) : assert.fail('nothing should have been sent'); };
 
-test.afterEach(() => { clearSession(); localStorage.removeItem(MAGIC_KEY); });
+test.afterEach(async () => {
+    globalThis.fetch = async () => Response.json({});
+    clearSession(); localStorage.removeItem(MAGIC_KEY);
+    await new Promise(resolve => setImmediate(resolve));
+});
 
 test('a magic link opened in a new tab signs in with the verifier this browser kept', async () => {
     openTab('https://veyrnox.test/');

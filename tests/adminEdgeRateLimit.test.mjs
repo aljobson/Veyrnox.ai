@@ -17,7 +17,7 @@ const request = (path, headers = {}, method = 'POST') => new Request(`https://ve
     method, headers: { 'cf-connecting-ip': '192.0.2.1', ...headers },
     ...(method === 'POST' ? { body: 'do not read this body' } : {}),
 });
-const binding = (limit) => ({ ADMIN_EDGE_RATE_LIMITER: { limit } });
+const binding = (limit) => ({ ADMIN_EDGE_RATE_LIMITER: { limit }, API_EDGE_RATE_LIMITER: { limit: async () => ({ success: true }) } });
 
 test('every admin namespace and normalized variant is screened before app work', async () => {
     const paths = ['/api/admin', '/api/admin/', '/api/admin/reap-assets', '/api/admin/top-up-backfill',

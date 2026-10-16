@@ -4,6 +4,8 @@ import { Main } from '../_components/Main';
 import { PremiumTag } from '../_components/PremiumTag';
 import { LIST_GROUPS } from '../_sections/showcase';
 import { listModels } from '../_lib/modelPages';
+import { modelPriceUnit } from '../_lib/modelPricing';
+import { OPEN_GRAPH_BASE } from '../../seo';
 
 // Rendered per request: the catalog needs the service-role key, which only
 // the Worker has, and the rows are cached for 5 minutes in lib/publicCatalog.
@@ -13,7 +15,7 @@ export const metadata = {
   title: 'Models',
   description: 'Every AI image, video and audio model on Veyrnox, with its exact credit price, read live from the catalog.',
   alternates: { canonical: '/models' },
-  openGraph: { title: 'Models — Veyrnox.ai', description: 'Every AI image, video and audio model on Veyrnox, with its exact credit price, read live from the catalog.', url: '/models' },
+  openGraph: { ...OPEN_GRAPH_BASE, title: 'Models — Veyrnox.ai', description: 'Every AI image, video and audio model on Veyrnox, with its exact credit price, read live from the catalog.', url: '/models' },
 };
 
 export default async function ModelsIndex() {
@@ -41,7 +43,10 @@ export default async function ModelsIndex() {
                 {g.rows.map((m) => (
                   <li key={m.id}>
                     <Link href={`/models/${encodeURIComponent(m.id)}`} className="group flex items-baseline gap-2 py-2 text-vx-fg-body hover:text-vx-fg">
-                      <span className="min-w-0 truncate group-hover:underline underline-offset-4">{m.title}</span>
+                      <span className="min-w-0">
+                        <span className="block truncate group-hover:underline underline-offset-4">{m.title}</span>
+                        <span className="block text-[11px] text-vx-fg-muted">{modelPriceUnit(m)}</span>
+                      </span>
                       {m.gated && <PremiumTag className="shrink-0" />}
                       <span aria-hidden className="vx-leader flex-1" />
                       <span className="shrink-0 font-bold text-vx-money">{m.credits} cr</span>

@@ -131,3 +131,26 @@ staging database and retains counts-only evidence; this recovery-health workflow
 defaults to production. The protected manual queue diagnostic remains separate.
 Cloudflare metrics and scheduled database samples cannot establish uninterrupted
 health or independently satisfy the production rollout gates.
+
+## Content scanner prerequisites
+
+An enabled scanner requires a separately approved `OPENAI_API_KEY` on that
+Worker, alongside its existing Supabase service-role and R2 credentials.
+`npx wrangler secret list --env staging` reports names only and can prove the
+binding is present. An Actions secret or a production Worker binding does not
+provision the staging Worker. Reuse only a key approved for staging; provision
+it with `npx wrangler secret put OPENAI_API_KEY --env staging` through its
+interactive input, never a shell argument, committed file or public log.
+
+The 2026-10-16 QA investigation found the staging scan flag enabled and this
+binding absent. Queue backlog and all seven reconciliation counts were zero;
+the `content_scan` heartbeat failure was a real configuration incident. After
+provisioning the approved key, wait for a one-minute scanner tick and the next
+database snapshot, then rerun `fal-queue-watch-staging`. Require both a fresh
+successful scanner heartbeat and a green snapshot before resolving the issue.
+The key's presence alone does not prove provider permission or connectivity.
+
+Keep monitoring armed while fixing an enabled scanner. Disabling its flag or
+disarming its database monitor to obtain a green status would hide the missing
+dependency. If scanning is deliberately retired, follow the administrator's
+audited disarm action in ADR-0083 after recording that product decision.

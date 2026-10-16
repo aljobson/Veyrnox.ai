@@ -88,6 +88,16 @@
   },
   "decisions": [
     {
+      "id": "vey-mobile-visible-guide-with-chat",
+      "decision": "On mobile retain the current walkthrough above the compact question panel, with a separate right-side mascot lane and Back to walkthrough control. Preserve task state and measured page clearance while chatting.",
+      "source": "User requested the Max Rep walkthrough remain visible while asking questions, with Vey docked and no Credits spent."
+    },
+    {
+      "id": "vey-stable-mobile-dock",
+      "decision": "Below 640px keep Vey in a reserved lane beside the walkthrough, or above the left of chat. Scrolling never chooses a new body position. Only an explicit Show action makes a brief fixed-destination pointing gesture before returning to dock. Desktop manual placement remains available.",
+      "source": "User requested a calm mobile dock because avoidance-based repositioning jumped around during scrolling."
+    },
+    {
       "id": "vey-mobile-chat-compact",
       "decision": "The mobile question panel uses 34dvh, bounded to 220–280px so the fixed composer fits on short screens; conversation scrolls internally. The Resume walkthrough action sits above, not over, the composer. Keep desktop chat sizing unchanged.",
       "source": "User request: the question guide takes up the whole screen and needs to be much smaller."

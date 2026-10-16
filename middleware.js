@@ -29,6 +29,9 @@ import { isUnknownStaticPage } from './lib/unknownStaticPage.js';
 const POSTHOG_INGEST_PATH = '/ingest';
 const POSTHOG_INGEST_ORIGIN = 'https://eu.i.posthog.com';
 const CANONICAL_HOST = 'veyrnox.ai';
+const PUBLIC_METADATA_PATHS = new Set(['/robots.txt', '/sitemap.xml']);
+const PUBLIC_METADATA_CACHE = 'public, max-age=0, s-maxage=21600, stale-while-revalidate=86400';
+const NON_HTML_CSP = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'";
 
 export const config = {
     matcher: ['/api/v1/:path*', '/((?!api(?:/|$)|_next(?:/|$)).*)'],
@@ -89,6 +92,20 @@ export async function middleware(req) {
     headers.set('x-request-id', requestId);
     for (const h of IDENTITY_HEADERS) headers.set(h, '');
 
+    // These machine-readable documents are public and contain no HTML or
+    // executable script, so they do not need a per-request renderer nonce.
+    // Cache only the exact routes: every page and authenticated surface keeps
+    // the private/no-store policy below. Explicitly blank hostile inbound
+    // renderer headers because OpenNext does not reliably apply deletions.
+    if (PUBLIC_METADATA_PATHS.has(pathname)) {
+        headers.set('x-nonce', '');
+        headers.set('content-security-policy', '');
+        const response = NextResponse.next({ request: { headers } });
+        response.headers.set('Content-Security-Policy', NON_HTML_CSP);
+        response.headers.set('Cache-Control', PUBLIC_METADATA_CACHE);
+        return response;
+    }
+
     // Page navigation authenticates through the existing client flow. Never
     // demand an API Bearer token for HTML. The renderer consumes this request
     // policy to nonce framework/flight scripts; the response must match it.
@@ -115,6 +132,15 @@ export async function middleware(req) {
         response.headers.set('Content-Security-Policy', policy);
         response.headers.set('Cache-Control', 'private, no-store, max-age=0');
         return response;
+    }
+
+    const isMcp = pathname === '/api/v1/mcp';
+    const isDeveloperApi = pathname === '/api/v1/developer' || pathname.startsWith('/api/v1/developer/');
+    // The developer API is a Bearer-token resource with wildcard CORS. Let a
+    // browser discover its allowed headers without presenting credentials;
+    // the route answers the preflight and no application handler runs.
+    if (isDeveloperApi && req.method === 'OPTIONS') {
+        return NextResponse.next({ request: { headers } });
     }
 
     // No configured rollout: refuse before auth work. A pilot requires JWT verification below.
@@ -149,14 +175,9 @@ export async function middleware(req) {
 
     const oauthClientId = verifiedOAuthClientId(claims);
     if (oauthClientId === false) return reject(req, 'malformed', requestId);
-    const isMcp = pathname === '/api/v1/mcp';
-    if (oauthClientId && !isMcp) {
+    if (oauthClientId && !isMcp && !isDeveloperApi) {
         return jsonError(403, { error: 'oauth_route_forbidden', requestId });
     }
-    if (isMcp && !oauthClientId) {
-        return jsonError(403, { error: 'oauth_client_required', requestId }, mcpChallenge(req, 'insufficient_scope'));
-    }
-
     if (isPublishApiPath(pathname) && !publishAllowed(claims.sub)) {
         return jsonError(503, { error: 'publish_not_open', requestId });
     }
@@ -204,8 +225,11 @@ function rewritePostHogRequest(req) {
     ]);
     const headers = new Headers();
     for (const [name, value] of req.headers.entries()) {
-        if (!blockedHeaders.has(name) && !name.startsWith('x-veyrnox-')) headers.append(name, value);
+        // OpenNext overlays middleware's SET values onto inbound headers, even
+        // for external rewrites. Omission/deletion would retain credentials.
+        headers.set(name, blockedHeaders.has(name) || name.startsWith('x-veyrnox-') ? '' : value);
     }
+    for (const name of blockedHeaders) headers.set(name, '');
     return NextResponse.rewrite(target, { request: { headers } });
 }
 
@@ -229,16 +253,22 @@ function jsonError(status, body, extraHeaders = {}) {
     });
 }
 
-function mcpChallenge(req, reason) {
+function oauthChallenge(req, reason) {
     const pathname = new URL(req.url).pathname;
-    if (pathname !== '/api/v1/mcp') return {};
+    const resource = pathname === '/api/v1/mcp' ? '/api/v1/mcp'
+        : pathname === '/api/v1/developer' || pathname.startsWith('/api/v1/developer/') ? '/api/v1/developer' : null;
+    if (!resource) return {};
     const origin = (process.env.PUBLIC_HOST || 'https://veyrnox.ai').replace(/\/$/, '');
-    const metadata = `${origin}/.well-known/oauth-protected-resource/api/v1/mcp`;
+    const metadata = `${origin}/.well-known/oauth-protected-resource${resource}`;
     const error = reason === 'missing' ? ''
         : reason === 'insufficient_scope' ? ', error="insufficient_scope"'
             : ', error="invalid_token"';
     return {
         'www-authenticate': `Bearer resource_metadata="${metadata}"${error}`,
+        ...(resource === '/api/v1/developer' ? {
+            'access-control-allow-origin': '*',
+            'access-control-expose-headers': 'Retry-After, WWW-Authenticate, X-Request-Id',
+        } : {}),
     };
 }
 
@@ -252,5 +282,5 @@ function mcpChallenge(req, reason) {
  */
 function reject(req, reason, requestId) {
     console.error('[auth] rejected', new URL(req.url).pathname, 'reason:', reason);
-    return jsonError(401, { error: 'unauthorized', reason, requestId }, mcpChallenge(req, reason));
+    return jsonError(401, { error: 'unauthorized', reason, requestId }, oauthChallenge(req, reason));
 }

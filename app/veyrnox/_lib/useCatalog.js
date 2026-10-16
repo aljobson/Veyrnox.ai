@@ -10,6 +10,9 @@ function fromFallback() {
   return MODELS.map((m) => ({
     id: m.id, name: m.name, kind: m.kind, credits: m.credits, gated: !!m.gated || !!m.premium,
     durations: m.durations || FALLBACK_DURATIONS,
+    media: m.media || {},
+    presentation: m.presentation || {},
+    durationInput: m.durationInput || null,
     isSpeech: !!m.speech,
   }));
 }
@@ -27,6 +30,7 @@ function fromApi(models) {
     aspects: m.capabilities?.inputs?.aspect_ratio?.values || null,
     // Customer-facing facts about the one output tier this catalog price buys.
     presentation: m.capabilities?.presentation || {},
+    durationInput: m.capabilities?.inputs?.duration || null,
     resolutions: m.capabilities?.inputs?.output_resolution?.values || [],
     audioOptions: m.capabilities?.inputs?.audio_enabled?.values || [],
     // Auto Short (ADR-0029): takes a topic instead of a prompt.

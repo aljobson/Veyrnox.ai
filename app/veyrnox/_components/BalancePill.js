@@ -1,4 +1,4 @@
-// Balance pill — amber credit counter, tabular numerals. Optional ± tick animation.
+// Balance pill — amber credit counter, tabular numerals. Optional ± change badge.
 export function BalancePill({ balance, tick, tickTone = 'money' }) {
   const fmt = new Intl.NumberFormat('en-US').format(balance);
   return (
@@ -10,7 +10,6 @@ export function BalancePill({ balance, tick, tickTone = 'money' }) {
           className={`absolute -top-3 right-2 font-vx-mono text-[11px] font-bold ${
             tickTone === 'danger' ? 'text-vx-danger' : 'text-vx-money'
           }`}
-          style={{ animation: 'vxTickUp 1.8s ease-out' }}
         >
           {tick}
         </span>

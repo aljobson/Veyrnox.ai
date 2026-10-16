@@ -21,6 +21,17 @@ test('public rows never carry provider routing or cost, and unknown endpoints ar
     } finally { console.error = errors; }
 });
 
+test('public rows expose only validated catalog update timestamps', () => {
+    const [dated, invalid, missing] = toPublicModels([
+        row('dated', shelfEndpoint, { updated_at: '2026-10-15T11:12:13+00:00' }),
+        row('invalid', shelfEndpoint, { updated_at: 'not-a-date' }),
+        row('missing', shelfEndpoint),
+    ]);
+    assert.equal(dated.updatedAt, '2026-10-15T11:12:13.000Z');
+    assert.equal('updatedAt' in invalid, false);
+    assert.equal('updatedAt' in missing, false);
+});
+
 test('the catalog read refuses to run without the service-role config', async () => {
     await assert.rejects(readPublicCatalog({ cfg: {}, selectRows: () => assert.fail('unexpected read') }), /not_configured/);
 });
@@ -29,13 +40,31 @@ test('the catalog read selects only the safe columns of active rows', async () =
     let query;
     await readPublicCatalog({ cfg, selectRows: async (table, q) => { query = { table, ...q }; return []; } });
     assert.equal(query.table, 'model_catalog');
-    assert.equal(query.columns, 'id,name,modality,credits_5s,gated_flag,provider_endpoint');
+    assert.equal(query.columns, 'id,name,modality,credits_5s,gated_flag,provider_endpoint,updated_at');
     assert.match(query.filter, /^active=eq\.true&/);
 });
 
 test('model pages list only shelf models, as the landing shelf does', () => {
     const rows = toPublicModels([row('shelf', shelfEndpoint), row('hidden', hiddenEndpoint)]);
     assert.deepEqual(shelfModels(rows).map((m) => m.id), ['shelf']);
+});
+
+test('active selectable audio transforms have details while private and gated editor models stay hidden', async () => {
+    const previous = process.env.EDITOR_AUDIO_STEMS_ENABLED;
+    const options = { cfg, selectRows: async () => [row('demucs-stems', 'fal-ai/demucs', { modality: 'audio-to-audio' }), row('hidden', hiddenEndpoint)] };
+    try {
+        process.env.EDITOR_AUDIO_STEMS_ENABLED = 'true';
+        const model = await findModel('demucs-stems', options);
+        assert.equal(model?.id, 'demucs-stems');
+        assert.equal(model?.kind, 'audio');
+        assert.ok(modelFacts(model).some((fact) => fact.label === 'Output stems' && fact.value.includes('vocals')));
+        assert.equal(await findModel('hidden', options), null);
+        process.env.EDITOR_AUDIO_STEMS_ENABLED = 'false';
+        assert.equal(await findModel('demucs-stems', options), null);
+    } finally {
+        if (previous === undefined) delete process.env.EDITOR_AUDIO_STEMS_ENABLED;
+        else process.env.EDITOR_AUDIO_STEMS_ENABLED = previous;
+    }
 });
 
 test('ids outside the catalog slug shape never reach the catalog', async () => {

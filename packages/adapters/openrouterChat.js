@@ -47,6 +47,7 @@ export async function* streamChat({ apiKey, model, messages, maxTokens, reasonin
     try {
         res = await fetchImpl(CHAT_COMPLETIONS_URL, {
             method: 'POST',
+            redirect: 'manual',
             signal,
             headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
             // Reasoning comes back in separate delta fields and is never read here: only `content` is yielded.
@@ -126,6 +127,7 @@ export async function completeChat({ apiKey, model, messages, maxTokens, reasoni
     try {
         res = await fetchImpl(CHAT_COMPLETIONS_URL, {
             method: 'POST',
+            redirect: 'manual',
             signal,
             headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({

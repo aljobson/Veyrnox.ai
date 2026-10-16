@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
-import { NAV_CATEGORIES } from '../app/veyrnox/_lib/tokens.js';
+import { NAV_CATEGORIES, PRIMARY_NAV_CATEGORIES, SECONDARY_NAV_CATEGORIES } from '../app/veyrnox/_lib/tokens.js';
 
 // The public pages read as one site: one nav, two page-title sizes, one left
 // edge. Each of these had drifted (two navs in two orders, eight title sizes,
@@ -14,12 +14,12 @@ const read = (p) => readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
 const SOURCES = execFileSync('git', ['ls-files', '-co', '--exclude-standard', 'app', 'components'], { encoding: 'utf8' })
     .split('\n').filter((f) => /\.(js|jsx|css)$/.test(f)).map((f) => [f, read(f)]);
 
-// The home page is not in either list: its title sits in the video panel and
-// keeps its own size (veyrnox.css says why). Its hero line is checked below.
+// The home page is not in either list: its visible value proposition is
+// checked below and keeps the larger index size.
 const INDEX_PAGES = [
     'app/veyrnox/pricing/page.js', 'app/veyrnox/models/page.js',
     'app/veyrnox/presets/page.js', 'app/veyrnox/tools/page.js', 'app/veyrnox/guides/page.js',
-    'app/veyrnox/mcp/page.js', 'app/not-found.js',
+    'app/veyrnox/mcp/page.js', 'app/veyrnox/developers/page.js', 'app/not-found.js',
 ];
 const DETAIL_PAGES = [
     'app/veyrnox/models/[id]/page.js', 'app/veyrnox/presets/[id]/page.js', 'app/veyrnox/guides/[id]/page.js',
@@ -31,28 +31,28 @@ test('there is one public nav, in one order', () => {
     for (const [f, src] of SOURCES) assert.doesNotMatch(src, /\bWideNav\b/, `${f} still has a second nav`);
     const nav = read('app/veyrnox/_components/NavBar.js');
     const marketing = nav.slice(nav.indexOf('export function MarketingNav'), nav.indexOf('export function AppNav'));
-    assert.match(marketing, /COMPACT_NAV_CATEGORIES\.map\(/, 'the stable desktop links on the bar');
-    assert.match(marketing, /items=\{MOBILE_NAV_CATEGORIES\}[\s\S]*buttonLabel="More navigation"/, 'the compact menu exposes the complete mobile-first order');
-    assert.match(nav, /const MOBILE_NAV_CATEGORIES = \[\s*\.\.\.NAV_CATEGORIES\.filter\(\(item\) => item\.href === '\/app\/oddlings'\),[\s\S]*\.\.\.NAV_CATEGORIES\.filter\(\(item\) => item\.href === '\/#faq'\),\s*\];/, 'the phone menu leads with Oddlings and ends with FAQ');
+    assert.match(marketing, /PRIMARY_NAV_CATEGORIES\.map\(/, 'the stable desktop links are task-based');
+    assert.match(marketing, /items=\{NAV_CATEGORIES\}[\s\S]*buttonLabel="More navigation"/, 'More exposes the complete public navigation');
     assert.doesNotMatch(marketing, /includeStudio/, 'the phone menu must not put app links ahead of the public nav');
     // A compact real nav is visible on laptops and wide screens. The menu
     // keeps the rest reachable without a second row colliding with controls.
     assert.match(marketing, /<nav aria-label="Primary" className="hidden xl:flex /);
     assert.equal((marketing.match(/<nav aria-label="Primary"/g) || []).length, 1,
         'the header never renders two competing primary navigation rows');
-    assert.match(marketing, /href="\/app\/oddlings"[\s\S]*aria-current=\{path\.startsWith\('\/app\/oddlings'\)[\s\S]*xl:hidden[\s\S]*>\s*<span[^>]*>[\s\S]*Oddlings\s*<\/Link>/,
-        'Oddlings stays directly visible in the public header when the desktop links collapse');
+    assert.doesNotMatch(marketing, />\s*Oddlings\s*<\/Link>/,
+        'secondary destinations belong under More when the desktop links collapse');
     assert.match(marketing, /<Logo className="sm:hidden" \/>[\s\S]*<Logo wordmark className="hidden sm:inline-flex" \/>/,
         'the phone uses the compact mark so the public Oddlings link and account controls fit');
     // A home-page section is a plain link: the browser glides to it on the home page.
     assert.match(marketing, /const Item = section \? 'a' : Link;/);
     assert.match(read('app/veyrnox/_components/MobileMenu.js'), /const Item = it\.href\.includes\('#'\) \? 'a' : Link;/);
-    assert.deepEqual(NAV_CATEGORIES.map((c) => c.label),
-        ['Explore', 'Oddlings', 'Models', 'Templates', 'Tools', 'Guides', 'MCP', 'LLM Chat', 'Pricing', 'FAQ', 'Social Cinema']);
-    assert.equal(NAV_CATEGORIES.find((item) => item.href === '/app/oddlings')?.featured, true,
-        'Oddlings is a primary public destination, not an unstyled utility link');
+    assert.deepEqual(PRIMARY_NAV_CATEGORIES.map((c) => c.label),
+        ['Create', 'Edit', 'Make a film', 'Publish', 'Pricing']);
+    assert.deepEqual(NAV_CATEGORIES, [...PRIMARY_NAV_CATEGORIES, ...SECONDARY_NAV_CATEGORIES]);
+    assert.ok(SECONDARY_NAV_CATEGORIES.some((item) => item.href === '/app/oddlings'),
+        'Oddlings remains reachable under More');
     // The home page's sections stay one press away from every page.
-    for (const href of ['/#explore', '/#models', '/#faq']) assert.ok(NAV_CATEGORIES.some((c) => c.href === href), href);
+    for (const href of ['/#explore', '/models', '/#faq']) assert.ok(NAV_CATEGORIES.some((c) => c.href === href), href);
     assert.equal(NAV_CATEGORIES.at(-1).href, '/social-cinema', 'a page that says it is not open yet does not lead');
     for (const id of ['explore', 'models', 'faq']) {
         const found = ['hero', 'showcase', 'footer'].some((s) => read(`app/veyrnox/_sections/${s}.js`).includes(`id="${id}"`));
@@ -83,9 +83,9 @@ test('a page title is one of two sizes', () => {
             }
         }
     }
-    // On the home page the hero line and the closing line share the index
-    // size, and nothing is set larger.
-    assert.match(read('app/veyrnox/_sections/hero.js'), /<h[12] className="vx-display vx-title-index">\s*The price is on the button\./);
+    // On the home page the visible hero H1 and the closing line share the
+    // index size, and nothing is set larger.
+    assert.match(read('app/veyrnox/_sections/hero.js'), /<h1 className="vx-display vx-title-index">\s*The price is on the button\.\s*<\/h1>/);
     const closing = read('app/veyrnox/_sections/footer.js');
     assert.match(closing.slice(closing.indexOf('export function ClosingCTA')), /<h2 className="vx-display vx-title-index /);
     for (const s of ['hero', 'film', 'showcase', 'footer']) {

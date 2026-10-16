@@ -9,9 +9,8 @@ name: provider-balances
 # each provider's read-only endpoint (scripts/check-provider-balances.mjs),
 # and opens one issue per episode. Runbook: docs/operations/provider-balances.md.
 #
-# Off until the repository variable PROVIDER_BALANCE_WATCH_ENABLED is 'true',
-# because every run needs all three keys below and a monitor that cannot read
-# a balance files an issue (could not check is never a pass).
+# Enabled by default. Only an explicit 'false' pauses the watch; an absent
+# switch or missing credential must produce a visible failure, never a skip.
 #
 # Secrets (Actions only, never on the Worker):
 #   FAL_BILLING_KEY            a fal key on the BILLING or READONLY preset
@@ -37,7 +36,7 @@ jobs:
   check:
     # Only main: a workflow_dispatch on another branch would run that
     # branch's copy of the script with this job's secrets.
-    if: vars.PROVIDER_BALANCE_WATCH_ENABLED == 'true' && github.ref == 'refs/heads/main'
+    if: vars.PROVIDER_BALANCE_WATCH_ENABLED != 'false' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:

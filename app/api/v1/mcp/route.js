@@ -3,6 +3,9 @@ import { createVeyrnoxMcpServer } from '../../../../lib/veyrnoxMcp.js';
 
 export const dynamic = 'force-dynamic';
 
+const PUBLIC_ORIGIN = (process.env.PUBLIC_HOST || 'https://veyrnox.ai').replace(/\/$/, '');
+const OAUTH_CHALLENGE = `Bearer resource_metadata="${PUBLIC_ORIGIN}/.well-known/oauth-protected-resource/api/v1/mcp", error="insufficient_scope"`;
+
 const handler = createMcpHandler(
     ({ requestInfo }) => createVeyrnoxMcpServer(requestInfo),
     {
@@ -22,7 +25,10 @@ function serve(request) {
     // Supabase's signed OAuth client_id claim and owns this header. A normal
     // browser session must never be able to invoke the assistant surface.
     if (!request.headers.get('x-veyrnox-auth-client-id')) {
-        return Response.json({ error: 'oauth_client_required' }, { status: 403 });
+        return Response.json({ error: 'oauth_client_required' }, {
+            status: 403,
+            headers: { 'www-authenticate': OAUTH_CHALLENGE, 'cache-control': 'no-store' },
+        });
     }
     return handler.fetch(request);
 }

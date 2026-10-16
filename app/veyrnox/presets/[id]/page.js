@@ -7,6 +7,7 @@ import { FilmPlayer } from '../../_components/FilmPlayer';
 import { ClipBadge } from '../../_components/ClipBadge';
 import { SHOWCASE_CLIPS } from '../../_lib/showcase';
 import { ALL_TEMPLATES, templateById, presetTitle, modelIdForName } from '../../_lib/tokens';
+import { OPEN_GRAPH_BASE } from '../../../seo';
 
 // Templates are static data, so each page is built once; the price is read
 // from the live catalog in the browser (UseTemplate), never from here.
@@ -25,7 +26,7 @@ export async function generateMetadata({ params }) {
     title: `${title} template`,
     description,
     alternates: { canonical: `/presets/${t.id}` },
-    openGraph: { title: `${title} — Veyrnox.ai`, description, url: `/presets/${t.id}` },
+    openGraph: { ...OPEN_GRAPH_BASE, title: `${title} — Veyrnox.ai`, description, url: `/presets/${t.id}` },
   };
 }
 

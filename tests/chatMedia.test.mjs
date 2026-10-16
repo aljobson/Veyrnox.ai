@@ -31,6 +31,17 @@ test('chat media modes only list direct generation models and prefer an open one
   assert.equal(firstOpenMediaModel(models, COMPOSER_KINDS.AUDIO), null);
 });
 
+test('new media modes prefer prompt generation over required uploads while retaining transformations', () => {
+  for (const kind of ['image', 'audio', 'video']) {
+    const upload = { id: `${kind}-upload`, kind, media: { image: { required: true } }, takesPrompt: true };
+    const prompt = { id: `${kind}-prompt`, kind, media: {}, takesPrompt: true };
+    assert.equal(firstOpenMediaModel([upload, prompt], kind), prompt);
+    assert.deepEqual(chatMediaModels([upload, prompt], kind), [upload, prompt]);
+    assert.equal(firstOpenMediaModel([upload, { ...prompt, gated: true }], kind), upload);
+    assert.equal(firstOpenMediaModel([{ ...prompt, gated: true }], kind).id, prompt.id);
+  }
+});
+
 test('output choices retain false and reset unsupported values when the model changes', () => {
   const model = { kind: 'video', credits: 28, resolutions: ['480p', '720p'], audioOptions: [true, false],
     presentation: { resolutionLabel: '720p', audioIncluded: true } };
@@ -63,4 +74,7 @@ test('the composer describes the priced output without inventing selectable tier
   assert.equal(videoAudioLabel(video), 'Audio off');
   assert.equal(videoAudioLabel({ presentation: { audioIncluded: true } }), 'Audio on');
   assert.equal(videoAudioLabel({}), 'Audio model default');
+  assert.equal(outputDurationLabel({ kind: 'video', durations: [5], capabilities: {
+    presentation: { fixedDurationLabel: '8s' },
+  } }, 5), '8s', 'server catalog rows keep presentation nested under capabilities');
 });

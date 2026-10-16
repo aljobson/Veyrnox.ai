@@ -13,6 +13,11 @@ import {EDITOR_VISION_PATH,editorVisionWorkerPolicy} from './app/veyrnox/_lib/ed
 // keep a static restrictive policy without allowing inline scripts.
 const isDev = process.env.NODE_ENV === 'development';
 const CSP = contentSecurityPolicy(undefined, isDev, identityConfig.appEnv);
+// GitHub supplies a full commit SHA to production builds. Reject every other
+// value so deployment identifiers remain URL-safe and deterministic.
+const deploymentId = /^[a-fA-F0-9]{40}$/.test(process.env.GITHUB_SHA || '')
+  ? process.env.GITHUB_SHA
+  : undefined;
 
 const securityHeaders = [
   { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
@@ -23,6 +28,7 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
+  deploymentId,
   poweredByHeader: false,
   images: {
     remotePatterns: [{ protocol: 'https', hostname: 'i.ytimg.com', pathname: '/vi/**' }],
@@ -85,7 +91,9 @@ const nextConfig = {
       { source: '/veyrnox/social-cinema/creator', destination: '/social-cinema/creator', permanent: true },
       { source: '/veyrnox/social-cinema/:path*', destination: '/social-cinema/:path*', permanent: true },
       { source: '/veyrnox/pricing', destination: '/pricing', permanent: true },
+      { source: '/veyrnox/about', destination: '/about', permanent: true },
       { source: '/veyrnox/mcp', destination: '/mcp', permanent: true },
+      { source: '/veyrnox/developers', destination: '/developers', permanent: true },
       { source: '/veyrnox/oauth/consent', destination: '/oauth/consent', permanent: true },
       { source: '/veyrnox/presets', destination: '/presets', permanent: true },
       { source: '/veyrnox/presets/:id', destination: '/presets/:id', permanent: true },
@@ -113,7 +121,9 @@ const nextConfig = {
         { source: '/social-cinema/title/:id', destination: '/veyrnox/social-cinema/title/:id' },
         { source: '/social-cinema/watch/:id', destination: '/veyrnox/social-cinema/watch/:id' },
         { source: '/pricing', destination: '/veyrnox/pricing' },
+        { source: '/about', destination: '/veyrnox/about' },
         { source: '/mcp', destination: '/veyrnox/mcp' },
+        { source: '/developers', destination: '/veyrnox/developers' },
         { source: '/oauth/consent', destination: '/veyrnox/oauth/consent' },
         { source: '/presets', destination: '/veyrnox/presets' },
         { source: '/presets/:id', destination: '/veyrnox/presets/:id' },

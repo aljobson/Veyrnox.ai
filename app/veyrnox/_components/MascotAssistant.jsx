@@ -74,6 +74,7 @@ export default function MascotAssistant() {
   const [travelling, setTravelling] = useState(false);
   const [actionPhase, setActionPhase] = useState('none');
   const [journeyActive, setJourneyActive] = useState(false);
+  const [mobilePointRequest, setMobilePointRequest] = useState(null);
 
   const homePosition = useCallback(() => ({
     x: 18,
@@ -116,7 +117,7 @@ export default function MascotAssistant() {
   const drag = useVeyDrag({ onStart: clearAction, onReset: resetPosition,
     onMove: (next) => { window.clearTimeout(travelTimerRef.current); setTravelling(false); setManualPosition(next); setPosition(next); } });
   const { activeTarget, highlight, hand, point, locate: locateTarget, clear: clearPointer } = useVeyPointer({ reduceMotion, moveMascot, setFacing, activateTarget, clearAction, manualPosition });
-  const mobileLayout = useVeyMobileLayout({ open, pathname, position, highlight, hand, facing });
+  const mobileLayout = useVeyMobileLayout({ open, pathname, position, highlight, hand, facing, pointRequest: mobilePointRequest, activeTarget });
   const clearTarget = useCallback(() => {
     window.clearTimeout(timerRef.current);
     clearAction(); clearPointer(); setPendingTarget(null);
@@ -130,6 +131,7 @@ export default function MascotAssistant() {
   }, [activeTarget, homePosition, open, perchPosition, manualPosition]);
 
   const showTarget = useCallback((id, options = {}) => {
+    if (window.innerWidth < 640 && !options.explicit) return;
     const definition = HELP_TARGETS[id];
     if (!definition) return;
     captureProductEvent('helper_show_target', { target: id, route: pathname });
@@ -138,6 +140,7 @@ export default function MascotAssistant() {
       router.push(definition.route);
       return;
     }
+    if (window.innerWidth < 640) setMobilePointRequest({ id, nonce: Date.now() });
     locateTarget(id, options);
   }, [locateTarget, pathname, router]);
 
@@ -148,7 +151,11 @@ export default function MascotAssistant() {
     if (!definition || !pathname.startsWith(definition.route)) return;
     let attempt = 0;
     const find = () => {
-      if (locateTarget(id, { focus, activate }) || attempt++ >= 12) return;
+      if (locateTarget(id, { focus, activate })) {
+        if (window.innerWidth < 640) setMobilePointRequest({ id, nonce: Date.now() });
+        return;
+      }
+      if (attempt++ >= 12) return;
       timerRef.current = window.setTimeout(find, 120);
     };
     timerRef.current = window.setTimeout(() => {
@@ -263,7 +270,7 @@ export default function MascotAssistant() {
     }
     const action = resolveHelpAction(plan);
     if (!action) {
-      if (plan?.target) showTarget(plan.target);
+      if (plan?.target) showTarget(plan.target, { explicit: true });
       return;
     }
     captureProductEvent('helper_action', { action: plan.action, route: pathname });
@@ -277,7 +284,7 @@ export default function MascotAssistant() {
       return;
     }
     if (action.target) {
-      showTarget(action.target, { focus: action.focus || plan.action === 'focus_prompt', activate: action.activate });
+      showTarget(action.target, { explicit: true, focus: action.focus || plan.action === 'focus_prompt', activate: action.activate });
     }
   }, [ask, pathname, plan, router, showTarget]);
 
@@ -355,10 +362,11 @@ export default function MascotAssistant() {
         data-targeting={activeTarget || undefined}
         data-mood={mood}
         data-position-mode={manualPosition ? 'manual' : 'auto'}
+        data-mobile-docked={mobileLayout.docked || undefined}
         data-dragging={drag.dragging}
         className="pointer-events-none fixed left-0 top-0 z-[61]"
         animate={{ x: mobileLayout.position.x, y: mobileLayout.position.y }}
-        transition={reduceMotion || manualPosition ? { duration: 0 } : { type: 'spring', stiffness: 115, damping: 18, mass: 0.8 }}
+        transition={reduceMotion || manualPosition || mobileLayout.docked ? { duration: 0 } : { type: 'spring', stiffness: 115, damping: 18, mass: 0.8 }}
       >
         <motion.button
           ref={launcherRef}
@@ -372,7 +380,7 @@ export default function MascotAssistant() {
             captureProductEvent('helper_toggle', { open: !open, route: pathname });
           }}
           className="pointer-events-auto touch-none select-none cursor-grab active:cursor-grabbing group relative block rounded-[17px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-accent"
-          animate={activeTarget || manualPosition || reduceMotion ? { y: 0 } : travelling
+          animate={mobileLayout.docked || activeTarget || manualPosition || reduceMotion ? { y: 0 } : travelling
             ? { y: [0, -5, 0] }
             : { y: [0, -3, 0] }}
           transition={{ duration: travelling ? 0.52 : 2.8, repeat: Infinity, ease: 'easeInOut' }}

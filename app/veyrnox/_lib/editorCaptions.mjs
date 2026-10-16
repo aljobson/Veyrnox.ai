@@ -4,7 +4,19 @@ import { sourceFrame, shiftedSpeedKeys } from './editorSpeed.mjs';
 import { sliceMaskKeyframes } from './editorMask.mjs';
 import { addSequenceText, updateSequenceClip, trackFor } from './editorSequence.mjs';
 const MAX_BYTES = 262144;
-const clean = text => text.replace(/<[^>]*>/g, '').replace(/\{[^}]*\}/g, '').replace(/\\[Nn]/g, '\n').replace(/\\h/g, ' ').trim();
+// Caption text is plain text. A linear scan removes complete, nested and
+// unterminated angle-bracket sections without relying on a tag-shaped regex.
+function stripAngleSections(text) {
+    const output = [];
+    let inside = false;
+    for (const character of text) {
+        if (character === '<') { inside = true; continue; }
+        if (character === '>') { inside = false; continue; }
+        if (!inside) output.push(character);
+    }
+    return output.join('');
+}
+const clean = text => stripAngleSections(text).replace(/\{[^}]*\}/g, '').replace(/\\[Nn]/g, '\n').replace(/\\h/g, ' ').trim();
 function seconds(value) {
     const match = /^(?:(\d{1,2}):)?(\d{1,2}):(\d{2})[.,](\d{1,3})$/.exec(value.trim());
     if (!match || Number(match[2]) >= 60 || Number(match[3]) >= 60) return NaN;

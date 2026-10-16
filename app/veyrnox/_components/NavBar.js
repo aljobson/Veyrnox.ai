@@ -8,42 +8,22 @@ import { MobileMenu } from './MobileMenu';
 import { SiteSearch } from './SiteSearch';
 import { ThemeToggle } from './ThemeToggle';
 import { gatewayFetch, GatewayError } from '../_lib/gateway';
-import { getSession, onSessionChange } from '../../lib/authClient';
+import { getStoredSession, onSessionChange } from '../../lib/authClient';
 import { accountLabel } from '../_lib/account';
 import { useProjectsEnabled } from './ProjectsFlag';
 import { useVideoEnhancePreview } from '../_lib/useVideoEnhancePreview';
 import { useEditorEnabled } from './EditorFlag';
-import { NAV_CATEGORIES } from '../_lib/tokens';
+import { NAV_CATEGORIES, PRIMARY_NAV_CATEGORIES } from '../_lib/tokens';
 import { AnnouncementBar } from './AnnouncementBar';
-
-const MOBILE_NAV_CATEGORIES = [
-  ...NAV_CATEGORIES.filter((item) => item.href === '/app/oddlings'),
-  ...NAV_CATEGORIES.filter((item) => item.href === '/social-cinema'),
-  ...NAV_CATEGORIES.filter((item) => item.href !== '/app/oddlings' && item.href !== '/social-cinema' && item.href !== '/#faq'),
-  ...NAV_CATEGORIES.filter((item) => item.href === '/#faq'),
-];
-
-const COMPACT_NAV_CATEGORIES = NAV_CATEGORIES.filter((item) => [
-  '/app/oddlings',
-  '/#explore',
-  '/#models',
-  '/presets',
-  '/tools',
-  '/guides',
-  '/pricing',
-].includes(item.href));
 
 // Studio pages keep the making tools in the tab strip. This complementary
 // list makes the rest of the public site reachable from that same header,
 // without pretending private account areas are public destinations.
-const APP_BROWSE_CATEGORIES = NAV_CATEGORIES.filter((item) => ![
-  '/app/oddlings',
-  '/app/chat',
-].includes(item.href));
+const APP_BROWSE_CATEGORIES = NAV_CATEGORIES.filter((item) => !item.href.startsWith('/app/'));
 
 // The public site's nav: every marketing page, the home page included. One
-// destination list, with a compact menu order that leads with Oddlings and
-// leaves FAQ at the bottom. Desktop keeps its established order.
+// destination list. The bar exposes creation jobs; More carries the full
+// route directory without forcing secondary product names into the header.
 export function MarketingNav({ hideAnnouncementOnMobile = false }) {
   // Rewrites serve /veyrnox/* at /*, so the browser path has no prefix.
   const path = usePathname().replace(/^\/veyrnox/, '') || '/';
@@ -61,9 +41,10 @@ export function MarketingNav({ hideAnnouncementOnMobile = false }) {
           widths. The adjacent menu carries the complete list without ever
           forcing the logo or account controls out of the bar. */}
       <nav aria-label="Primary" className="hidden xl:flex flex-1 min-w-0 items-center gap-0.5 text-[12px] font-semibold">
-        {COMPACT_NAV_CATEGORIES.map((it) => {
+        {PRIMARY_NAV_CATEGORIES.map((it) => {
           const section = it.href.includes('#');
-          const active = !section && path.startsWith(it.href);
+          const destination = it.href.split(/[?#]/)[0];
+          const active = !section && path.startsWith(destination);
           const featured = it.featured === true;
           const Item = section ? 'a' : Link;
           return (
@@ -85,26 +66,12 @@ export function MarketingNav({ hideAnnouncementOnMobile = false }) {
           );
         })}
       </nav>
-      {/* Oddlings is a public destination, not an account feature. Keep it
-          directly visible whenever the full desktop nav is collapsed. */}
-      <Link
-        href="/app/oddlings"
-        aria-current={path.startsWith('/app/oddlings') ? 'page' : undefined}
-        className={`inline-flex h-10 shrink-0 items-center gap-2 rounded-full border px-3 text-[13px] font-extrabold xl:hidden ${
-          path.startsWith('/app/oddlings')
-            ? 'border-vx-accent bg-vx-accent text-vx-accent-ink'
-            : 'border-vx-accent/50 bg-vx-accent/10 text-vx-accent hover:bg-vx-accent/20'
-        }`}
-      >
-        <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-current" />
-        Oddlings
-      </Link>
       <div className="flex flex-1 xl:flex-none items-center justify-end gap-1 sm:gap-2 shrink-0">
         <SiteSearch className="hidden sm:inline-flex" />
         <ThemeToggle className="hidden xl:inline-flex" />
         <NavAuthButtons />
         <MobileMenu
-          items={MOBILE_NAV_CATEGORIES}
+          items={NAV_CATEGORIES}
           buttonLabel="More navigation"
         />
       </div>
@@ -143,14 +110,13 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
     ...items,
     ...APP_BROWSE_CATEGORIES.filter((browse) => !items.some((item) => item.href === browse.href)),
   ];
-  // Who is signed in. The session in localStorage is the gate — it needs no
-  // network, so public app pages never make an authenticated request merely
-  // to draw their nav. It also already holds the display name: Google puts
+  // Stored identity is display metadata, not authorization. It needs no
+  // network to draw the nav while the HttpOnly session restores. Google puts
   // one in user_metadata, and public.users has no such column. The endpoint
   // only supplies the email, for the sessions that carry none.
   const [session, setSession] = useState(null);
   useEffect(() => {
-    setSession(getSession());
+    setSession(getStoredSession());
     return onSessionChange(setSession);
   }, []);
   // One server read for all three figures: who you are, the balance and

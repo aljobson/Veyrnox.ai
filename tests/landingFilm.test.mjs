@@ -69,6 +69,14 @@ test('the landing page mounts the film and gives it a text summary', () => {
     assert.doesNotMatch(section.match(/const FILM_SUMMARY =[\s\S]*?;/)[0], /\d+ (credits|cr)\b/);
 });
 
+test('the value proposition is first and the mobile film CTA clears privacy choices', () => {
+    const page = read('../app/veyrnox/page.js');
+    assert.ok(page.indexOf('<Hero models={catalog} />') < page.indexOf('<BreakthroughVideo />'));
+    const section = read('../app/veyrnox/_sections/film.js');
+    assert.doesNotMatch(section, /<h1\b/, 'the film must not steal the page heading');
+    assert.match(section, /bottom-0 flex justify-end/, 'the CTA sits opposite the bottom-left privacy control');
+});
+
 test('the player has a pause control and never preloads the file', () => {
     const player = read('../app/veyrnox/_components/FilmPlayer.js');
     assert.match(player, /preload="none"/);

@@ -12,7 +12,6 @@ const DOCUMENT_SOURCES = Object.freeze([
   'docs/social-publisher/04-user-flows.md',
   'docs/operations/mcp.md',
 ]);
-const EXCLUDED_ROUTES = Object.freeze(['/design-system']);
 
 function unique(values, limit = 32) {
   return [...new Set(values.map((value) => normalText(value)).filter(Boolean))].slice(0, limit);
@@ -53,8 +52,10 @@ async function walk(directory) {
 }
 
 function routeFromPage(root, file) {
-  const productRoot = path.join(root, 'app/veyrnox');
-  const relative = path.relative(productRoot, file).replaceAll(path.sep, '/');
+  const appRoot = path.join(root, 'app');
+  const relative = path.relative(appRoot, file).replaceAll(path.sep, '/')
+    .replace(/^veyrnox\//, '')
+    .split('/').filter((segment) => !/^\(.+\)$/.test(segment) && !segment.startsWith('@')).join('/');
   const routePath = relative
     .replace(/^page\.(?:js|jsx|mjs|tsx)$/, '')
     .replace(/\/page\.(?:js|jsx|mjs|tsx)$/, '');
@@ -192,11 +193,10 @@ function extractDocumentKnowledge(relativeFile, markdown) {
 }
 
 export async function buildVeyKnowledgeArtifact(root) {
-  const productRoot = path.join(root, 'app/veyrnox');
+  const productRoot = path.join(root, 'app');
   const sourceCache = new Map();
   const pages = (await walk(productRoot))
     .filter((file) => PAGE_FILE.test(file.replaceAll(path.sep, '/')))
-    .filter((file) => !EXCLUDED_ROUTES.includes(routeFromPage(root, file)))
     .sort();
   const routes = [];
   for (const page of pages) {

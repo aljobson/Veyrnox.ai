@@ -56,7 +56,6 @@ export default function VeyTaskGuide({ visible, pathname, onPoint, onStop, onAct
     return () => clearTimeout(timer);
   }, [visible, step?.key, pathname, task?.passportId, onPoint]);
   if (!visible) return null;
-  if (task && chatting) return <button type="button" className="fixed bottom-[calc(clamp(220px,34dvh,280px)+max(8px,env(safe-area-inset-bottom))+8px)] right-2 sm:bottom-4 sm:right-4 z-[62] rounded-full border border-vx-accent bg-vx-panel px-4 py-3 text-xs font-bold text-vx-accent shadow-xl" onClick={() => setChatting(false)}>Resume {task.phase} walkthrough</button>;
   if (!task && !choosing) return <button type="button" onClick={() => { setLibrary(readOddlingLibrary(localStorage)); setChatting(false); setChoosing(true); }}
     className="fixed right-4 top-24 z-[62] rounded-xl border border-vx-accent/40 bg-vx-panel px-4 py-3 text-sm font-bold text-vx-accent shadow-xl">Saved Oddling → image → video</button>;
   const prepare = () => {
@@ -64,10 +63,13 @@ export default function VeyTaskGuide({ visible, pathname, onPoint, onStop, onAct
     window.dispatchEvent(new Event(PREPARE_VIDEO));
   };
   const secondary = detailsOpen ? '' : 'hidden sm:block';
-  return <section aria-label="Vey task walkthrough" data-step={step?.key || 'choose'} data-expanded={detailsOpen} className={`fixed ${side === 'right' ? 'right-2 sm:right-3' : 'left-2 sm:left-3'} bottom-[max(8px,env(safe-area-inset-bottom))] sm:bottom-4 z-[62] ${task && !detailsOpen ? 'max-h-[35dvh]' : 'max-h-[50dvh]'} sm:max-h-[50dvh] w-[min(330px,calc(100vw-16px))] sm:w-[min(330px,calc(100vw-24px))] overflow-y-auto rounded-2xl border border-vx-accent/40 bg-vx-panel p-3 sm:p-4 shadow-2xl`}>
+  return <>
+    {task && chatting && <button type="button" className="hidden sm:block fixed bottom-4 right-4 z-[62] rounded-full border border-vx-accent bg-vx-panel px-4 py-3 text-xs font-bold text-vx-accent shadow-xl" onClick={() => setChatting(false)}>Resume {task.phase} walkthrough</button>}
+    <section aria-label="Vey task walkthrough" data-step={step?.key || 'choose'} data-expanded={detailsOpen} data-question-open={chatting} className={`fixed left-2 ${side === 'right' ? 'sm:left-auto sm:right-3' : 'sm:left-3'} ${chatting ? 'bottom-[calc(clamp(220px,34dvh,280px)+max(8px,env(safe-area-inset-bottom))+8px)] max-h-[24dvh] sm:hidden' : `bottom-[max(8px,env(safe-area-inset-bottom))] sm:bottom-4 ${task && !detailsOpen ? 'max-h-[35dvh]' : 'max-h-[50dvh]'} sm:max-h-[50dvh]`} z-[62] w-[min(330px,calc(100vw-80px))] sm:w-[min(330px,calc(100vw-24px))] overflow-y-auto rounded-2xl border border-vx-accent/40 bg-vx-panel p-3 sm:p-4 shadow-2xl`}>
     <div className="flex items-center justify-between gap-2"><div><p className="text-[10px] font-bold text-vx-accent sm:text-xs">{task ? `Vey · ${task.phase === 'image' ? 'Image' : 'Video'} task` : 'Choose your starting point'}</p>
       {task && <h3 className="mt-1 text-sm font-bold sm:mt-2 sm:text-base">{step.title}</h3>}</div>
-      {task && <button type="button" aria-expanded={detailsOpen} aria-controls="vey-guide-secondary" className={`${pill} shrink-0 sm:hidden`} onClick={() => setDetailsKey(detailsOpen ? null : step.key)}>{detailsOpen ? 'Less' : 'More'}</button>}
+      {task && chatting && <button type="button" aria-label="Back to walkthrough" className={`${pill} shrink-0`} onClick={() => setChatting(false)}>Back</button>}
+      {task && !chatting && <button type="button" aria-expanded={detailsOpen} aria-controls="vey-guide-secondary" className={`${pill} shrink-0 sm:hidden`} onClick={() => setDetailsKey(detailsOpen ? null : step.key)}>{detailsOpen ? 'Less' : 'More'}</button>}
       <button type="button" className={`${task ? 'hidden sm:block' : ''} text-xs text-vx-fg-muted`} onClick={() => setSide(side === 'right' ? 'left' : 'right')}>Move guide</button></div>
     {choosing && !task ? <>
       <p className="my-3 text-sm text-vx-fg-body">Saved passports stay on this browser. Choose the exact version, or continue with an image already in your Library.</p>
@@ -78,16 +80,16 @@ export default function VeyTaskGuide({ visible, pathname, onPoint, onStop, onAct
       <button type="button" className={pill} onClick={() => { beginJourney(); setChoosing(false); router.push('/app/create'); }}>Start with an existing image</button>
       <button type="button" className={pill} onClick={() => { setChoosing(false); onStop(); }}>Cancel</button>
     </> : <>
-      <p role="status" className={`mt-1 text-xs leading-[18px] text-vx-fg-body sm:mt-2 sm:text-sm sm:leading-6 ${detailsOpen ? '' : 'line-clamp-2 sm:line-clamp-none'}`}>{step.message}</p>
+      <p role="status" className={`mt-1 text-xs leading-[18px] text-vx-fg-body sm:mt-2 sm:text-sm sm:leading-6 ${detailsOpen && !chatting ? '' : 'line-clamp-2 sm:line-clamp-none'}`}>{step.message}</p>
       {(recoveryError || view.prepareError) && <p role="alert" className="mt-2 text-sm text-vx-danger">{recoveryError || view.prepareError}</p>}
-      <div className="mt-2 flex flex-wrap gap-2 sm:mt-3">
-        <button type="button" className={pill} onClick={() => onPoint(step.target, { modelKind: step.key === 'model' ? task.phase : undefined })}>Show this step</button>
+      {!chatting && <div className="mt-2 flex flex-wrap gap-2 sm:mt-3">
+        <button type="button" className={pill} onClick={() => onPoint(step.target, { explicit: true, modelKind: step.key === 'model' ? task.phase : undefined })}>Show this step</button>
         {step.review && <button type="button" className={pill} onClick={() => updateJourney({ reviewed: { ...task.reviewed, [step.key]: step.stamp } })}>Reviewed · next</button>}
         {step.adopt && <button type="button" className={pill} onClick={() => updateJourney({ imageId: view.sourceId, reviewed: {} })}>Use this selected Library image</button>}
         {step.prepare && <button type="button" disabled={view.preparing} className={pill} onClick={prepare}>{view.preparing ? 'Preparing…' : 'Prepare video from this image'}</button>}
         {step.retry && <button type="button" className={pill} onClick={() => updateJourney({ [task.phase === 'video' ? 'videoJob' : 'imageJob']: null, reviewed: {} })}>Review a new attempt</button>}
-      </div>
-      <div id="vey-guide-secondary" className={secondary}>
+      </div>}
+      <div id="vey-guide-secondary" className={chatting ? 'hidden' : secondary}>
         {jobId && <p className="mt-2 break-all font-vx-mono text-[10px] text-vx-fg-muted">Tracked job: {jobId}{task.phase === 'image' ? ' · first image if generating a batch' : ''}</p>}
         <div className="mt-2 flex flex-wrap gap-2">
           {manualPosition && <button type="button" className={pill} onClick={onResetPosition}>Reset Vey position</button>}
@@ -96,8 +98,8 @@ export default function VeyTaskGuide({ visible, pathname, onPoint, onStop, onAct
           <button type="button" className={pill} onClick={() => { updateJourney(null); setDetailsKey(null); setChoosing(false); setChatting(false); publishJourneyView({ handedOff: false }); onStop(); }}>End walkthrough</button>
         </div>
         <p className="mt-3 text-[11px] text-vx-fg-muted">You confirm rights and press Generate. Closing Vey pauses the guide, not a submitted job.</p>
-        <p className="mt-2 text-[11px] text-vx-fg-muted">Drag Vey to move it anywhere on screen. Your placement stays until you reset it or reload.</p>
+        <p className="mt-2 text-[11px] text-vx-fg-muted">On mobile, Vey stays docked while you scroll. Show this step briefly points, then returns to dock. On desktop, drag Vey to position it.</p>
       </div>
     </>}
-  </section>;
+  </section></>;
 }

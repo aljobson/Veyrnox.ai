@@ -16,8 +16,7 @@
  * Response (200): { authorizeUrl } — the client navigates the browser
  * here directly (window.location.assign), same as signInWithOAuth.
  *
- * No cookies (this app is Bearer/localStorage-only, CLAUDE.md "Identity
- * & sessions") — CSRF binding instead comes from a signed `state` token
+ * This route accepts Bearer credentials only; CSRF binding comes from signed `state`
  * (lib/social/oauthState.js) carrying the caller's own auth id, verified
  * on the way back in the callback route.
  */

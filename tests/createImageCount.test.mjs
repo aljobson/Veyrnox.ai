@@ -23,8 +23,8 @@ test('the total drives the price, the balance guard and the button', () => {
     assert.match(page, /const cost = freeLeft > 0 \? freeCost\(unitCost, n, freeLeft\) : totalCost\(unitCost, n\);/);
     assert.match(submit, /cost > balance\) return;/);
     assert.match(page, /balance == null \|\| cost > balance \|\| missingSource/);
-    assert.match(page, />−\{cost\} cr<\/div>/);
-    assert.match(page, /for \$\{cost\} credits/);
+    assert.match(page, />\{generationCostLabel\(cost\)\}<\/div>/);
+    assert.match(page, /cost === 0 \? 'for free' : `for \$\{creditLabel\(cost\)\}`/);
 });
 
 test('each source is uploaded once, before any request, and reused by all', () => {

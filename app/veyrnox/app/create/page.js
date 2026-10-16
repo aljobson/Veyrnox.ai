@@ -15,6 +15,8 @@ import { IMAGE_COUNTS, takesImageCount, imageCount, totalCost, inputsForIndex, b
 import { useCatalog } from '../../_lib/useCatalog';
 import { useFreeAllowance } from '../../_lib/useFreeAllowance';
 import { freeCost, freeLeftFor } from '../../_lib/freeAllowance';
+import { creditLabel, generationCostLabel, sourceDurationLimit } from '../../_lib/modelPricing';
+import { SourceDurationCard } from '../../_components/SourceDurationCard';
 import { takeStudioDraft } from '../../_lib/landingDraft';
 import { oddlingPortrait, buildOddlingAnimationPrompt } from '../../_lib/oddlingStudio';
 import { templateById } from '../../_lib/templates';
@@ -30,14 +32,16 @@ import { LibraryPicker } from '../../_components/LibraryPicker';
 import { GenerationSettings } from '../../_components/GenerationSettings';
 import { VoiceDescription } from '../../_components/VoiceDescription';
 import { ControlRow } from '../../_components/ControlRow';
+import { CreateGoalPicker } from '../../_components/CreateGoalPicker';
 import { TIERS, TIER_LABEL, filterByTier } from '../../_lib/modelTiers';
-import { settingsInputs, voiceIsMissing } from '../../_lib/generationSettings';
+import { modelsForGoal, starterModel } from '../../_lib/starterModels';
+import { audioDurationConfig, audioDurationIsInvalid, settingsInputs, voiceIsMissing } from '../../_lib/generationSettings';
 import { promptText, promptIsMissing, promptPlaceholder } from '../../_lib/promptBox';
 import { ParticleButton } from '@/components/ParticleButton';
 import { jobStateUi, SLOW_MODEL_WAIT } from '../../_lib/studioStates';
 import { useCreateJourney } from '../../_lib/useCreateJourney';
 import { getJourney, trackJourneyJob } from '../../_lib/veyJourneyStore';
-const DEFAULT_MODEL = 'wan-2.5-kie';
+import { outputDurationLabel } from '../../_lib/chatMedia';
 // Auto Short stays hidden until launch unless this browser opts in
 // (CLAUDE.md "Delivery": new user paths behind localStorage.veyrnox_*).
 const AUTO_SHORT_FLAG = 'veyrnox_auto_short';
@@ -60,10 +64,12 @@ export default function CreateStudio() {
   const freeMap = useFreeAllowance(); // ADR-0069: free jobs left today per model; empty while the feature is off
   const autoShortOn = useSyncExternalStore(never, autoShortFlag, off);
   const models = catalogModels.filter((m) => !m.isEdit && !m.takesPlan && (autoShortOn || !m.takesTopic));
-  const [modelId, setModelId] = useState(DEFAULT_MODEL);
+  const [modelId, setModelId] = useState(() => starterModel(catalogModels, 'image')?.id || '');
+  const [goal, setGoal] = useState('image');
   const [presetParam, setPresetParam] = useState(null);
   const [tier, setTier] = useState(null);
   const [duration, setDuration] = useState('5s');
+  const [audioDurations, setAudioDurations] = useState({});
   const [aspect, setAspect] = useState('16:9');
   const [typed, setPrompt] = useState(null); // null until the user types or a draft is restored
   // Start image for models whose catalog capabilities declare an image slot.
@@ -103,7 +109,10 @@ export default function CreateStudio() {
     const params = new URLSearchParams(window.location.search);
     const preset = templateById(params.get('preset'));
     const wanted = params.get('model') || (preset && modelIdForName(preset.model));
-    if (wanted) setModelId(wanted);
+    if (wanted) {
+      setModelId(wanted);
+      setGoal('all');
+    }
     setPresetParam(params.get('preset')); // a template's id, from its studio link; sent only while its own model is selected
     if (params.get('duration') === '10s') setDuration('10s');
     let storedDraft = null;
@@ -135,25 +144,34 @@ export default function CreateStudio() {
   }, []);
 
   // If the selected id isn't in the (live or fallback) catalog, fall back to
-  // the first open model so cost never silently reads 0. Wait for the live
-  // catalog first: the tokens.js fallback it starts from lacks newer models,
+  // the goal's cheapest prompt-only model so cost never silently reads 0.
+  // Wait for the live catalog first: the tokens.js fallback lacks newer models,
   // and resetting against it threw away any ?model= it didn't list.
   useEffect(() => {
     if (catalogLoading || !models.length) return;
     if (models.some((m) => m.id === modelId)) return;
-    const first = models.find((m) => !m.gated) || models[0];
+    const first = starterModel(models, goal) || starterModel(models, 'all') || models[0];
     setModelId(first.id);
-  }, [models, modelId, catalogLoading]);
+  }, [models, modelId, catalogLoading, goal]);
 
   const model = models.find((m) => m.id === modelId) || null;
+  const catalogStatus = catalogLoading ? 'loading' : catalogLive ? 'live' : 'unavailable';
   const activeTemplate = templateStartId(presetParam, modelId) ? templateById(presetParam) : null;
   const prompt = promptText(typed, model); // a starter shot until then, on picture and clip models only (see promptBox)
   // The picked model stays listed even when the tier filter would hide it.
-  const listed = filterByTier(models, tier);
+  const goalModels = modelsForGoal(models, goal);
+  const listed = filterByTier(goalModels, tier);
   const visibleModels = model && !listed.includes(model) ? [model, ...listed] : listed;
   // Lengths the gateway will actually sell for this model, from the catalog.
   // Rendering anything else offers a price the server then refuses.
   const durations = (model && model.durations && model.durations.length ? model.durations : [5]).map((s) => `${s}s`);
+  const audioDurationControl = audioDurationConfig(model);
+  const audioDuration = audioDurationControl
+    ? audioDurations[model.id] ?? String(audioDurationControl.defaultValue)
+    : '';
+  const invalidAudioDuration = audioDurationIsInvalid(model, audioDuration);
+  const fixedDurationLabel = model?.presentation?.fixedDurationLabel;
+  const sourceDurationMax = sourceDurationLimit(model);
   const media = model?.media || {};
   const animationMismatch = !!animationPortrait && (model?.kind !== 'video' || !media.image?.required);
   const missingSource = Object.entries(media).some(([slot, spec]) => spec.required && !sources[slot]);
@@ -195,6 +213,11 @@ export default function CreateStudio() {
     const available = durationKey.split(',');
     if (!available.includes(duration)) setDuration(available[0]);
   }, [catalogLoading, model, durationKey, duration]);
+
+  function setAudioDuration(value) {
+    if (!model?.id) return;
+    setAudioDurations((previous) => ({ ...previous, [model.id]: value }));
+  }
 
   function pickSource(slot, file, asset = null) {
     setConsent(false);
@@ -273,6 +296,7 @@ export default function CreateStudio() {
   // ever retried under a new key.
   async function onSubmit() {
     if (inFlight.current || sending || generating || !model || balance == null || cost > balance) return;
+    if (catalogStatus !== 'live') return;
     inFlight.current = true;
     if (model.gated) { inFlight.current = false; setError({ code: 'model_gated' }); return; }
     if (animationMismatch) { inFlight.current = false; setError({ code: 'source_required' }); return; }
@@ -280,6 +304,7 @@ export default function CreateStudio() {
     if (missingConsent) { inFlight.current = false; setError({ code: 'consent_required' }); return; }
     if (missingPrompt) { inFlight.current = false; setError({ code: 'inputs_invalid:prompt' }); return; }
     if (missingVoice) { inFlight.current = false; setError({ code: 'inputs_invalid:voice_description' }); return; }
+    if (invalidAudioDuration) { inFlight.current = false; setError({ code: 'inputs_invalid:duration' }); return; }
     setError(null);
     setSending(true);
     const submittedTask = getJourney().task;
@@ -289,7 +314,7 @@ export default function CreateStudio() {
       prompt: finalPrompt(),
       aspect_ratio: aspectOptions.length ? aspect : undefined,
       duration_seconds: model.kind === 'video' ? Number(duration.replace('s', '')) : undefined,
-      ...settingsInputs(model, { seed, negative, voice }),
+      ...settingsInputs(model, { seed, negative, voice, duration: audioDuration }),
     };
     // strip undefined so server sees a clean object
     Object.keys(inputs).forEach((k) => inputs[k] === undefined && delete inputs[k]);
@@ -348,6 +373,14 @@ export default function CreateStudio() {
   function cancel() {
     clearJobs();
     setError(null);
+  }
+
+  function pickGoal(nextGoal) {
+    const next = starterModel(models, nextGoal);
+    setGoal(nextGoal);
+    setTier(null);
+    setPresetParam(null);
+    setModelId(next?.id || '');
   }
 
   return (
@@ -428,11 +461,11 @@ export default function CreateStudio() {
 
           {!isShort && (
             <p className="mt-2 text-xs text-vx-fg-muted">
-              Need help? Ask a Studio skill (1 Credit a reply):{' '}
-              <Link href="/app/chat?skill=prompt-writer" className="text-vx-accent hover:underline">Prompt writer</Link>,{' '}
-              <Link href="/app/chat?skill=fix-my-prompt" className="text-vx-accent hover:underline">Fix my prompt</Link>,{' '}
-              <Link href="/app/chat?skill=model-picker" className="text-vx-accent hover:underline">Model picker</Link> or{' '}
-              <Link href="/app/chat" className="text-vx-accent hover:underline">all skills</Link>.
+              Want prompt feedback? Studio skills cost 1 Credit a reply:{' '}
+              <Link href="/app/chat?skill=prompt-writer" className="text-vx-accent underline underline-offset-2">Prompt writer</Link>,{' '}
+              <Link href="/app/chat?skill=fix-my-prompt" className="text-vx-accent underline underline-offset-2">Fix my prompt</Link>,{' '}
+              or browse{' '}
+              <Link href="/app/chat" className="text-vx-accent underline underline-offset-2">all skills</Link>.
             </p>
           )}
 
@@ -481,17 +514,27 @@ export default function CreateStudio() {
 
         {/* ============ CONTROLS ============ */}
         <aside className="flex flex-col gap-5">
+          <CreateGoalPicker goal={goal} onChange={pickGoal} />
           <div className="rounded-2xl border border-vx-border bg-vx-panel p-5">
             <div className="flex items-baseline justify-between mb-3">
               <span className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">MODEL</span>
-              {catalogLive ? (
+              {catalogStatus === 'live' ? (
                 <span className="inline-flex items-center gap-1 font-vx-mono text-[9px] tracking-[0.12em] text-vx-accent">
-                  <span aria-hidden="true">●</span> LIVE
+                  <span aria-hidden="true">●</span> LIVE PRICES
                 </span>
+              ) : catalogStatus === 'loading' ? (
+                <span className="font-vx-mono text-[9px] tracking-[0.12em] text-vx-fg-muted">CHECKING PRICES</span>
               ) : (
-                <span className="font-vx-mono text-[9px] tracking-[0.12em] text-vx-fg-faint">CACHED</span>
+                <span className="font-vx-mono text-[9px] tracking-[0.12em] text-vx-danger">PRICES UNAVAILABLE</span>
               )}
             </div>
+            {catalogStatus !== 'live' && (
+              <p role="status" className={`mb-3 rounded-lg border px-3 py-2 text-xs ${catalogStatus === 'loading' ? 'border-vx-border text-vx-fg-muted' : 'border-vx-danger/40 bg-vx-danger/[0.07] text-vx-danger'}`}>
+                {catalogStatus === 'loading'
+                  ? 'Checking live prices… Generation unlocks when the current catalog arrives.'
+                  : 'Live prices are unavailable. You can browse models, but generation is paused so a cached quote can never be charged.'}
+              </p>
+            )}
             <div className="flex gap-1.5 mb-3" role="group" aria-label="Price tier">
               {TIERS.map((t) => (
                 <button
@@ -547,7 +590,7 @@ export default function CreateStudio() {
                       {m.gated && (
                         <span className="font-vx-mono text-[10px] tracking-[0.1em] text-vx-money shrink-0">◆ PREMIUM</span>
                       )}
-                      <span className="font-vx-mono text-[10px] tracking-[0.1em] text-vx-fg-faint uppercase shrink-0">{m.kind}</span>
+                      <span className="font-vx-mono text-[10px] tracking-[0.1em] text-vx-fg-body uppercase shrink-0">{m.kind}</span>
                     </span>
                     {freeLeftFor(freeMap, m.id) > 0
                       ? <span className="font-vx-mono text-[12px] font-bold text-vx-accent shrink-0">FREE · {freeLeftFor(freeMap, m.id)} left</span>
@@ -558,8 +601,34 @@ export default function CreateStudio() {
             </div>
           </div>
 
-          {model?.kind === 'video' && (
-            <ControlRow assistantTarget="create.duration" label="DURATION" options={durations} value={duration} onChange={setDuration} />
+          {model?.kind === 'video' && !fixedDurationLabel && !sourceDurationMax && (
+            <ControlRow assistantTarget="create.duration" label="DURATION" options={durations} value={duration} onChange={setDuration}
+              formatOption={(option) => outputDurationLabel(model, Number(option.replace('s', '')))} />
+          )}
+          {(model?.kind === 'video' || model?.kind === 'audio') && sourceDurationMax && <SourceDurationCard model={model} />}
+          {(model?.kind === 'video' || model?.kind === 'audio') && fixedDurationLabel && (
+            <div data-assistant-target="create.duration" className="scroll-mt-24 rounded-2xl border border-vx-border bg-vx-panel p-5">
+              <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">FIXED OUTPUT</div>
+              <div className="mt-3 font-vx-mono text-lg font-bold text-vx-fg">{fixedDurationLabel}</div>
+              <p className="mt-1 text-xs text-vx-fg-muted">This model produces one fixed output length at the displayed price.</p>
+            </div>
+          )}
+          {model?.kind === 'audio' && audioDurationControl && (
+            <div data-assistant-target="create.duration" className="scroll-mt-24 rounded-2xl border border-vx-border bg-vx-panel p-5">
+              <label htmlFor="audio-duration" className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">DURATION</label>
+              <div className="mt-3 flex items-center gap-3">
+                <input id="audio-duration" aria-label="Audio duration in seconds" type="number" inputMode="numeric" step="1"
+                  min={audioDurationControl.min} max={audioDurationControl.max} value={audioDuration}
+                  aria-invalid={invalidAudioDuration} onChange={(event) => setAudioDuration(event.target.value)}
+                  className="w-28 rounded-lg border border-vx-field bg-vx-base px-3 py-2 font-vx-mono text-sm text-vx-fg" />
+                <span className="text-sm text-vx-fg-muted">seconds</span>
+              </div>
+              <p className={`mt-2 text-xs ${invalidAudioDuration ? 'text-vx-danger' : 'text-vx-fg-muted'}`}>
+                {invalidAudioDuration
+                  ? `Use a whole number from ${audioDurationControl.min} to ${audioDurationControl.max}.`
+                  : `${audioDurationControl.min}–${audioDurationControl.max} seconds · defaults to ${audioDurationControl.defaultValue}.`}
+              </p>
+            </div>
           )}
           {aspectOptions.length > 0 && (
             <ControlRow assistantTarget="create.aspect" label="ASPECT" options={aspectOptions} value={aspect} onChange={setAspect} />
@@ -587,7 +656,7 @@ export default function CreateStudio() {
                 balance {balance == null ? '—' : balance.toLocaleString('en-US')} cr
               </span>
             </div>
-            <div className="mt-1 font-vx-mono text-[36px] font-bold text-vx-money vx-num">−{cost} cr</div>
+            <div className="mt-1 font-vx-mono text-[36px] font-bold text-vx-money vx-num">{generationCostLabel(cost)}</div>
             {freeLeft > 0 && (
               <div role="status" className="mt-1 font-vx-mono text-[11px] tracking-[0.08em] text-vx-accent">
                 {n > freeLeft ? `FREE · ${freeLeft} OF ${n} · ${freeLeft} LEFT TODAY` : `FREE · ${freeLeft} LEFT TODAY`}
@@ -597,15 +666,18 @@ export default function CreateStudio() {
               data-assistant-target="create.generate"
               onClick={generating ? cancel : onSubmit}
               className="scroll-mt-24 mt-4 w-full flex items-center justify-between bg-vx-accent text-vx-accent-ink rounded-full px-6 py-3.5 font-extrabold hover:bg-vx-accent-hover disabled:opacity-40 disabled:cursor-not-allowed"
-              disabled={sending || (!generating && (!model || model.gated || animationMismatch || missingPrompt || missingVoice || balance == null || cost > balance || missingSource || missingConsent))}
-              aria-label={sending || generating || model?.gated ? undefined : `Generate ${n > 1 ? `${n} images ` : ''}for ${cost} credits`}
+              disabled={sending || (!generating && (catalogStatus !== 'live' || !model || model.gated || animationMismatch || missingPrompt || missingVoice || invalidAudioDuration || balance == null || cost > balance || missingSource || missingConsent))}
+              aria-label={sending || generating || model?.gated ? undefined : `Generate ${n > 1 ? `${n} images ` : ''}${cost === 0 ? 'for free' : `for ${creditLabel(cost)}`}`}
             >
               <span>{sending ? 'Sending…' : generating ? 'New generation' : model?.gated ? 'Premium — gated' : n > 1 ? `Generate ${n}` : 'Generate'}</span>
-              <span className="font-vx-mono text-sm">−{cost} cr</span>
+              <span className="font-vx-mono text-sm">{generationCostLabel(cost)}</span>
             </ParticleButton>
             <div className="mt-2 font-vx-mono text-[9.5px] tracking-[0.1em] text-vx-fg-faint text-center">
               {model?.gated ? '◆ PREMIUM MODEL · NOT OPEN YET' : 'REFUND ON FAILURE · ALWAYS'}
             </div>
+            <p className="mt-3 text-center text-[11px] leading-relaxed text-vx-fg-muted">
+              Commercial use depends on the selected model and provider terms. Check the <Link href="/legal/terms" className="text-vx-accent underline underline-offset-2">Terms</Link> before publishing.
+            </p>
             {balance != null && cost > balance && !model?.gated && (
               <div className="mt-4 rounded-xl border border-vx-money/40 bg-vx-money/[0.06] p-4 text-sm text-vx-fg-body">
                 <p className="font-bold text-vx-fg">You need {cost - balance} more Credits.</p>

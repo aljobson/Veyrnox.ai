@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { register } from 'node:module';
+import { REGISTRY } from '../lib/modelCapabilities.js';
 
 // app/seo.js also holds a JSX component, which plain Node cannot load, so the
 // sitemap is given the one constant it takes from there.
@@ -59,4 +60,32 @@ test('the signed-in app, the short links, the gateway and the auth callback stay
 test('robots.txt still announces the sitemap', () => {
     // scripts/check-site-health.mjs fails a deploy without the Sitemap line.
     assert.equal(sitemapUrl, `${SITE_URL}/sitemap.xml`);
+});
+
+test('sitemap lists eligible transform detail pages while excluding gated and private editor models', async () => {
+    const originalFetch = globalThis.fetch;
+    const names = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'EDITOR_AUDIO_STEMS_ENABLED'];
+    const previous = Object.fromEntries(names.map((name) => [name, process.env[name]]));
+    const privateEndpoint = Object.keys(REGISTRY).find((endpoint) => REGISTRY[endpoint].inputs.clips);
+    const row = (id, endpoint, gated_flag = false) => ({ id, name: id, modality: 'audio-to-audio', provider_endpoint: endpoint, credits_5s: 6, gated_flag });
+    try {
+        Object.assign(process.env, { SUPABASE_URL: 'https://sitemap.test', SUPABASE_SERVICE_ROLE_KEY: 'test', EDITOR_AUDIO_STEMS_ENABLED: 'true' });
+        globalThis.fetch = async (url) => {
+            assert.equal(new URL(url).searchParams.get('active'), 'eq.true');
+            return Response.json([row('demucs-stems', 'fal-ai/demucs'), row('gated-stems', 'fal-ai/demucs', true), row('private-editor', privateEndpoint)]);
+        };
+        const entries = await sitemap();
+        const urls = entries.map((entry) => entry.url);
+        assert.ok(urls.includes(`${SITE_URL}/models/demucs-stems`));
+        assert.ok(!urls.includes(`${SITE_URL}/models/gated-stems`));
+        assert.ok(!urls.includes(`${SITE_URL}/models/private-editor`));
+        process.env.EDITOR_AUDIO_STEMS_ENABLED = 'false';
+        assert.ok(!(await sitemap()).some((entry) => entry.url === `${SITE_URL}/models/demucs-stems`));
+    } finally {
+        globalThis.fetch = originalFetch;
+        for (const name of names) {
+            if (previous[name] === undefined) delete process.env[name];
+            else process.env[name] = previous[name];
+        }
+    }
 });

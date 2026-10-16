@@ -92,6 +92,7 @@ test('refresh rejection after an account switch cannot invalidate the new accoun
   let release;
   globalThis.fetch = () => new Promise(resolve => { release = resolve; });
   const pending = getFreshAccessToken();
+  await new Promise(resolve => setImmediate(resolve));
   adoptSession(session('bob'));
   pushJobHistory({ job_id: 'bob-job' });
   release(Response.json({ error: 'invalid_grant' }, { status: 400 }));

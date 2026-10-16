@@ -16,7 +16,7 @@ register('data:text/javascript,' + encodeURIComponent(`
   }
 `));
 const worker = (await import('../worker.js')).default;
-const allow = { ADMIN_EDGE_RATE_LIMITER: { limit: async () => ({ success: true }) } };
+const allow = { ADMIN_EDGE_RATE_LIMITER: { limit: async () => ({ success: true }) }, API_EDGE_RATE_LIMITER: { limit: async () => ({ success: true }) } };
 const consulted = { limit: async () => assert.fail('the rate limiter was consulted') };
 const neverLimited = { ADMIN_EDGE_RATE_LIMITER: consulted, TURNSTILE_REPORT_RATE_LIMITER: consulted };
 

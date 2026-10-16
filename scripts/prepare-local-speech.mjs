@@ -8,10 +8,23 @@ import { root, inventory, verifyBytes, verifyAssets, manifestText, workerText } 
 const target = new URL(`public/editor-speech/${inventory.version}/`, root);
 const archives = new Map();
 const temporary = await mkdtemp(join(tmpdir(), 'veyrnox-local-speech-'));
+const DOWNLOAD_ATTEMPTS = 4;
+const pause = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
 async function download(spec) {
-    const response = await fetch(spec.source, { signal: AbortSignal.timeout(60000) });
-    if (!response.ok) throw new Error(`Local speech download failed (${response.status}): ${spec.source}`);
-    const bytes = Buffer.from(await response.arrayBuffer()); verifyBytes(bytes, spec); return bytes;
+    let lastError;
+    for (let attempt = 1; attempt <= DOWNLOAD_ATTEMPTS; attempt++) {
+        try {
+            const response = await fetch(spec.source, { signal: AbortSignal.timeout(60000) });
+            if (!response.ok) throw new Error(`Local speech download failed (${response.status}): ${spec.source}`);
+            const bytes = Buffer.from(await response.arrayBuffer());
+            verifyBytes(bytes, spec);
+            return bytes;
+        } catch (error) {
+            lastError = error;
+            if (attempt < DOWNLOAD_ATTEMPTS) await pause(500 * (2 ** (attempt - 1)));
+        }
+    }
+    throw lastError;
 }
 async function cached(file) {
     const body = await readFile(new URL(file.path, target)).catch(error => { if (error.code !== 'ENOENT') throw error; return null; });

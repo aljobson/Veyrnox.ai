@@ -127,7 +127,7 @@ test('every identity header is set on both branches, so none is left to the clie
     }
 });
 
-test('OAuth client tokens are confined to MCP across read, write and delete API families', async () => {
+test('OAuth client tokens are confined to MCP and the developer API', async () => {
     const oauth = `Bearer ${await token({ client_id: '9a8b7c6d-5e4f-3a2b-1c0d-9e8f7a6b5c4d' })}`;
     for (const [method, path] of [
         ['GET', '/api/v1/balance'],
@@ -142,9 +142,19 @@ test('OAuth client tokens are confined to MCP across read, write and delete API 
         assert.equal(response.status, 403, `${method} ${path}`);
         assert.equal((await response.json()).error, 'oauth_route_forbidden', `${method} ${path}`);
     }
+
+    for (const [method, path] of [
+        ['GET', '/api/v1/developer'],
+        ['GET', '/api/v1/developer/models'],
+        ['POST', '/api/v1/developer/generations'],
+    ]) {
+        const got = await forwarded(path, { authorization: oauth });
+        assert.equal(got.get('x-veyrnox-auth-id'), SUB, `${method} ${path}`);
+        assert.equal(got.get('x-veyrnox-auth-client-id'), '9a8b7c6d-5e4f-3a2b-1c0d-9e8f7a6b5c4d');
+    }
 });
 
-test('only an OAuth client token reaches MCP and its client identity cannot be forged', async () => {
+test('only a verified OAuth client identity is forwarded to MCP', async () => {
     const clientId = '9a8b7c6d-5e4f-3a2b-1c0d-9e8f7a6b5c4d';
     const got = await forwarded('/api/v1/mcp', {
         authorization: `Bearer ${await token({ client_id: clientId })}`,
@@ -153,12 +163,26 @@ test('only an OAuth client token reaches MCP and its client identity cannot be f
     assert.equal(got.get('x-veyrnox-auth-id'), SUB);
     assert.equal(got.get('x-veyrnox-auth-client-id'), clientId);
 
-    const browser = await middleware(new Request('http://localhost:3000/api/v1/mcp', {
+    const browser = await forwarded('/api/v1/mcp', { authorization: `Bearer ${await token({})}` });
+    assert.equal(browser.get('x-veyrnox-auth-id'), SUB);
+    assert.equal(browser.get('x-veyrnox-auth-client-id'), '');
+});
+
+test('developer API challenges point to its own protected-resource metadata', async () => {
+    const missing = await middleware(new Request('http://localhost:3000/api/v1/developer/models'));
+    assert.equal(missing.status, 401);
+    assert.match(missing.headers.get('www-authenticate'), /oauth-protected-resource\/api\/v1\/developer/);
+
+    const browser = await middleware(new Request('http://localhost:3000/api/v1/developer/models', {
         headers: { authorization: `Bearer ${await token({})}` },
     }));
-    assert.equal(browser.status, 403);
-    assert.equal((await browser.json()).error, 'oauth_client_required');
-    assert.match(browser.headers.get('www-authenticate'), /error="insufficient_scope"/);
+    const got = openNextForwarded(new Request('http://localhost:3000/api/v1/developer/models'), browser);
+    assert.equal(browser.status, 200);
+    assert.equal(got.get('x-veyrnox-auth-id'), SUB);
+    assert.equal(got.get('x-veyrnox-auth-client-id'), '');
+
+    const preflight = await middleware(new Request('http://localhost:3000/api/v1/developer/generations', { method: 'OPTIONS' }));
+    assert.ok(preflight.headers.get('x-middleware-next'));
 });
 
 test('malformed OAuth client claims fail closed', async () => {

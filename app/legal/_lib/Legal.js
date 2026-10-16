@@ -2,16 +2,9 @@ import Link from 'next/link';
 import VeyrnoxLayout from '../../veyrnox/layout';
 import { Logo } from '../../veyrnox/_components/Logo';
 import { Main } from '../../veyrnox/_components/Main';
+import { ENTITY } from './entity';
 
-export const ENTITY = {
-    name: 'Veyrnox Ltd',
-    trading: 'Veyrnox.ai',
-    companyNo: '17299951',
-    jurisdiction: 'England & Wales',
-    office: 'Suite RA01, 195-197 Wood Street, London, England, E17 3NU',
-    email: 'legal@veyrnox.com',
-    privacyEmail: 'privacy@veyrnox.com',
-};
+export { ENTITY } from './entity';
 
 // Legal pages live outside app/veyrnox, so they borrow its layout for the
 // brand type and tokens. A reading page: one 68ch column, nothing competing.

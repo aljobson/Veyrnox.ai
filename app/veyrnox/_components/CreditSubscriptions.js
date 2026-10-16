@@ -51,6 +51,20 @@ async function publicPlans() {
   if (!r.ok) throw Object.assign(Error('plans unavailable'), { code: b.error });
   return b;
 }
+async function publicOfferState() {
+  try {
+    const catalog = await publicPlans();
+    return catalog?.plans?.length
+      ? { phase: 'open', catalog }
+      : { phase: 'unavailable', catalog: null };
+  } catch (error) {
+    return {
+      phase:
+        error.code === 'subscriptions_not_open' ? 'closed' : 'unavailable',
+      catalog: null,
+    };
+  }
+}
 function Plans({ plans, selected, onSelect, publicOnly = false }) {
   return (
     <ul className="mt-6 grid gap-4 sm:grid-cols-3">
@@ -88,19 +102,26 @@ function Plans({ plans, selected, onSelect, publicOnly = false }) {
   );
 }
 export function CreditSubscriptionOffer() {
-  const [catalog, setCatalog] = useState(null);
+  const [offerState, setOfferState] = useState({
+    phase: 'loading',
+    catalog: null,
+  });
+  const mounted = useRef(false);
+  async function load() {
+    setOfferState({ phase: 'loading', catalog: null });
+    const nextState = await publicOfferState();
+    if (mounted.current) setOfferState(nextState);
+  }
   useEffect(() => {
-    let stopped = false;
-    publicPlans()
-      .then((r) => {
-        if (!stopped) setCatalog(r);
-      })
-      .catch(() => {});
+    mounted.current = true;
+    publicOfferState().then((nextState) => {
+      if (mounted.current) setOfferState(nextState);
+    });
     return () => {
-      stopped = true;
+      mounted.current = false;
     };
   }, []);
-  if (!catalog?.plans?.length) return null;
+  const catalog = offerState.catalog;
   return (
     <section
       className="mx-auto max-w-[1300px] px-4 pt-24 sm:px-6"
@@ -112,22 +133,40 @@ export function CreditSubscriptionOffer() {
       >
         Credits every month.
       </h2>
-      <p className="mt-4">
-        Optional monthly subscriptions renew automatically until cancelled.
-        Manage renewal in Credits &amp; billing. Prices are in USD; tax and the
-        final total are shown before payment.
-      </p>
-      <Plans plans={catalog.plans} publicOnly />
-      <button
-        className="mt-5 text-sm underline"
-        onClick={() =>
-          publicPlans()
-            .then(setCatalog)
-            .catch(() => setCatalog(null))
-        }
-      >
-        Refresh prices
-      </button>
+      {offerState.phase === 'loading' && (
+        <p role="status" aria-live="polite" className="mt-4">
+          Loading monthly subscription prices…
+        </p>
+      )}
+      {offerState.phase === 'closed' && (
+        <p role="status" className="mt-4">
+          Monthly subscriptions aren&apos;t open right now. One-off Credit Packs can be purchased separately when available and do not renew.{' '}
+          <Link href="/app/credits#credit-packs" className="underline">
+            Buy a Credit Pack
+          </Link>
+        </p>
+      )}
+      {offerState.phase === 'unavailable' && (
+        <p role="alert" className="mt-4">
+          Monthly subscription prices are temporarily unavailable.{' '}
+          <button className="underline" onClick={load}>
+            Refresh monthly prices
+          </button>
+        </p>
+      )}
+      {offerState.phase === 'open' && catalog?.plans?.length > 0 && (
+        <>
+          <p className="mt-4">
+            Optional monthly subscriptions renew automatically until cancelled.
+            Manage renewal in Credits &amp; billing. Prices are in USD; tax and
+            the final total are shown before payment.
+          </p>
+          <Plans plans={catalog.plans} publicOnly />
+          <button className="mt-5 text-sm underline" onClick={load}>
+            Refresh monthly prices
+          </button>
+        </>
+      )}
     </section>
   );
 }
@@ -323,7 +362,6 @@ function Billing({ account, recovery, setRecovery }) {
       setBusy(false);
     }
   }
-  if (loaded && closed && !sub && !recovery) return null;
   const current =
       sub && ['pending', 'active', 'past_due', 'flagged'].includes(sub.status),
     plan = catalog?.plans.find((p) => p.id === selected);
@@ -339,6 +377,14 @@ function Billing({ account, recovery, setRecovery }) {
       {!loaded && (
         <p role="status" className="mt-4">
           Loading subscription…
+        </p>
+      )}
+      {loaded && closed && !sub && !recovery && (
+        <p role="status" className="mt-4">
+          Monthly subscriptions aren&apos;t open right now. One-off Credit Packs can be purchased separately when available and do not renew.{' '}
+          <Link href="#credit-packs" className="underline">
+            Choose a Credit Pack
+          </Link>
         </p>
       )}
       {error && (

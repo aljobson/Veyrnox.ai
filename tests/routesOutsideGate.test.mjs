@@ -10,10 +10,14 @@ import { fileURLToPath } from 'node:url';
 // "Routes outside the gate"). A new one fails this test until it is added on
 // purpose.
 const OUTSIDE = {
+    'app/api/auth/session/route.js': 'same-origin CSRF + HttpOnly refresh credential',
     'app/.well-known/oauth-protected-resource/api/v1/mcp/route.js': 'public OAuth metadata',
+    'app/.well-known/oauth-protected-resource/api/v1/developer/route.js': 'public OAuth metadata',
     'app/api/catalog/route.js': 'public read',
+    'app/api/developer/openapi/route.js': 'public read',
     'app/api/credit-packs/route.js': 'public read',
     'app/api/credit-subscription-plans/route.js': 'public read',
+    'app/api/cinema-pass-plans/route.js': 'public read',
     'app/api/cinema/voting/route.js': 'public read',
     'app/api/cinema/discovery/route.js': 'public read',
     'app/api/cinema/posters/[id]/route.js': 'public read',
@@ -75,6 +79,17 @@ test('customer Publish routes authenticate a scoped API key', () => {
     }
 });
 
+test('the session BFF is POST-only and owns its exact-origin cookie protection', () => {
+    const src = readFileSync(join(ROOT, 'app/api/auth/session/route.js'), 'utf8');
+    assert.match(src, /export async function POST\(req\)/);
+    assert.equal(src.match(/^export /gm).length, 1);
+    assert.match(src, /createBrowserSessionHandler/);
+    const helper = readFileSync(join(ROOT, 'lib/browserSession.js'), 'utf8');
+    assert.match(helper, /req\.headers\.get\('origin'\) !== new URL\(req\.url\)\.origin/);
+    assert.match(helper, /x-session-request/);
+    assert.match(helper, /HttpOnly; Secure; SameSite=Strict/);
+});
+
 // An anonymous write: the Worker limits it per connecting IP before the app,
 // and the handler takes one Turnstile error code or one fixed word and
 // nothing else (ADR-0026 amendments 2 and 5, tests/turnstileFailureReport.test.mjs).
@@ -92,7 +107,7 @@ test('the anonymous report is rate limited in the Worker and handled in one plac
 
 test('CLAUDE.md names the public routes', () => {
     const rules = readFileSync(join(ROOT, 'CLAUDE.md'), 'utf8');
-    for (const path of ['/api/catalog', '/api/credit-packs', '/api/cinema/titles', '/api/cinema/posters/:id', '/api/cinema/voting', '/api/cinema/discovery', '/api/cinema/winners', '/api/cinema/comments', '/api/cinema/story-polls', '/api/credit-subscription-plans', '/api/webhook/*', '/api/admin/*', '/media/social/:token', '/api/social/approvals/:token', '/api/social/team/:token', '/api/publish/v1/*', '/api/turnstile-failure']) {
+    for (const path of ['/api/catalog', '/api/developer/openapi', '/api/credit-packs', '/api/cinema/titles', '/api/cinema/posters/:id', '/api/cinema/voting', '/api/cinema/discovery', '/api/cinema/winners', '/api/cinema/comments', '/api/cinema/story-polls', '/api/credit-subscription-plans', '/api/cinema-pass-plans', '/api/webhook/*', '/api/admin/*', '/media/social/:token', '/api/social/approvals/:token', '/api/social/team/:token', '/api/publish/v1/*', '/api/turnstile-failure']) {
         assert.ok(rules.includes(path), `CLAUDE.md does not mention ${path}`);
     }
 });
