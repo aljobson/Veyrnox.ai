@@ -9,7 +9,10 @@ through 0227; 0228 applied afterwards): **which of 0229–0326 are applied to
 production is not visible from the repo and was not re-read** (unverified;
 the migration README says production had reached 0254 by 2026-10-10, and
 S20 records 0264 applied).
-Highest migration 0326, next free 0327 (no open PR adds a migration file).
+Highest migration 0331, next free 0332 (checked 2026-10-16 after merging `main`).
+The table list and the count of 163 were taken through 0326: 0327 and 0329 each
+add tables that are not yet listed, and 0330/0331 only move Nano Banana between
+providers.
 **Authority:** the SQL. When this file and a migration disagree, the
 migration wins and this file is wrong.
 **Diagrams:** [diagrams/schema-map.html](diagrams/schema-map.html) (tables by
@@ -316,8 +319,7 @@ RSS autolists, customer webhooks, scheduled reports) runs from the Worker cron.
 
 - `packages/db/schema/supabase/NNNN_snake_case.sql`, idempotent, applied to
   production only by `apply-migrations.yml` after owner approval (ADR-0023).
-- Next free number on `main`: **0327** — check open PRs first (`gh pr list`;
-  none of the open PRs on 2026-10-16 adds a migration). Take the number after the highest *open PR*, not just after
+- Next free number on `main`: **0332** — check open PRs first (`gh pr list`). Take the number after the highest *open PR*, not just after
   `main`: 0195, 0204, 0209, 0224, 0246, 0247 and 0249–0252 were each renumbered or replaced before merge (git history names them; no file was ever applied under them; 0246 and 0247 are named in the CHANGELOG as renumbered).
   Gaps: 0039, 0040, 0061, 0069, 0076, 0118, 0119, 0151, 0158, 0179, 0195, 0204,
   0209, 0224, 0246, 0247, 0249, 0250, 0251, 0252 (20; 0163/0164 carry their applied names 0151/0158). The README gap
