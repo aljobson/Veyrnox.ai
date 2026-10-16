@@ -455,6 +455,19 @@ export function respondToOAuthAuthorization(authorizationId, action) {
     });
 }
 
+/** List the OAuth applications this user has authorized. */
+export function listOAuthGrants() {
+    return authed('/auth/v1/user/oauth/grants', { method: 'GET' });
+}
+
+/** Revoke one client grant and every session/refresh token issued for it. */
+export function revokeOAuthGrant(clientId) {
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clientId || '')) {
+        throw new Error('invalid OAuth client id');
+    }
+    return authed(`/auth/v1/user/oauth/grants?client_id=${encodeURIComponent(clientId)}`, { method: 'DELETE' });
+}
+
 // ─── MFA (TOTP) ─────────────────────────────────────────────────────────────
 //
 // Supabase issues an aal1 token for password/OAuth and an aal2 token only

@@ -26,7 +26,7 @@ import { socialConnectionWriter } from '../../../../../../../lib/social/accountA
 import { networkReleased } from '../../../../../../../lib/social/networks.js';
 import { rpc, envConfig, SupabaseError } from '../../../../../../../packages/db/supabase-client.js';
 import { linkedinConfig, exchangeCodeForToken, fetchConnectedAccount, LINKEDIN_SCOPES } from '../../../../../../../packages/adapters/social/linkedin.js';
-import { verifyOAuthState } from '../../../../../../../lib/social/oauthState.js';
+import { consumeOAuthState } from '../../../../../../../lib/social/oauthStateStore.js';
 import { tokenCryptoConfig, encryptToken } from '../../../../../../../lib/social/tokenCrypto.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -62,7 +62,12 @@ export async function POST(req) {
         || typeof codeVerifier !== 'string' || !/^[A-Za-z0-9_-]{43,128}$/.test(codeVerifier)) {
         return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
     }
-    const stateOk = await verifyOAuthState(state, { authId, network: 'linkedin' }, stateSecret);
+    let stateOk;
+    try {
+        stateOk = await consumeOAuthState(state, { authId, network: 'linkedin' }, stateSecret, cfg);
+    } catch {
+        return NextResponse.json({ error: 'oauth_state_unavailable' }, { status: 503 });
+    }
     if (!stateOk) {
         return NextResponse.json({ error: 'invalid_state' }, { status: 400 });
     }

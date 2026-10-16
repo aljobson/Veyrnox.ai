@@ -4,7 +4,7 @@ import { CopyButton } from '../_components/CopyButton';
 import { Main } from '../_components/Main';
 
 const ENDPOINT = 'https://veyrnox.ai/api/v1/mcp';
-const DESCRIPTION = 'Connect an MCP-compatible assistant to Veyrnox.ai to create images, video and audio with your models, credits and Library.';
+const DESCRIPTION = 'Connect an MCP-compatible assistant to inspect Veyrnox.ai models, credit estimates, generation history and Library assets.';
 
 export const metadata = {
   title: 'MCP connector',
@@ -16,7 +16,6 @@ export const metadata = {
 const tools = [
   ['list_models', 'Find current models, controls and unit prices.'],
   ['estimate_generation', 'Calculate the maximum credit charge before anything runs.'],
-  ['generate_media', 'Create one image, video or audio result after cost confirmation.'],
   ['get_generation', 'Check progress and receive the finished asset link.'],
   ['list_generations', 'Browse recent work from the Veyrnox Library.'],
   ['get_balance', 'Read paid and free credit balances.'],
@@ -34,7 +33,7 @@ export default function McpPage() {
               Make media from your assistant.
             </h1>
             <p className="mt-7 text-lg sm:text-xl text-vx-fg-body max-w-[50ch] leading-[1.55] text-pretty">
-              Give an MCP-compatible assistant access to Veyrnox models, exact credit estimates, generation jobs and your finished Library assets.
+              Give an MCP-compatible assistant read-only access to Veyrnox models, exact credit estimates, generation jobs and your finished Library assets.
             </p>
             <div className="mt-9 flex flex-wrap gap-3">
               <Link href="/app/credits" className="vx-press rounded-full bg-vx-accent text-vx-accent-ink px-6 py-3 text-sm font-extrabold hover:bg-vx-accent-hover">
@@ -57,7 +56,7 @@ export default function McpPage() {
               {[
                 ['01', 'Add a custom MCP connector', 'Paste the remote endpoint into your assistant’s MCP or connector settings.'],
                 ['02', 'Sign in to Veyrnox', 'Your assistant opens Veyrnox OAuth. Sign in and review the requested connection.'],
-                ['03', 'Ask for a generation', 'The assistant checks the live price and asks you to confirm before it can spend credits.'],
+                ['03', 'Explore your Veyrnox work', 'Ask about models, costs, recent generations or finished assets. Start anything new in the Veyrnox app.'],
               ].map(([number, title, body]) => (
                 <li key={number} className="grid grid-cols-[36px_1fr] gap-3">
                   <span className="font-vx-mono text-[12px] font-bold text-vx-accent pt-1">{number}</span>
@@ -74,8 +73,8 @@ export default function McpPage() {
         <section className="mt-24 sm:mt-32" aria-labelledby="tools-heading">
           <div className="max-w-[720px]">
             <p className="font-vx-mono text-[12px] font-bold tracking-[0.18em] uppercase text-vx-accent">What it can do</p>
-            <h2 id="tools-heading" className="vx-display mt-4 text-[40px] sm:text-[58px]">One connector. Six focused tools.</h2>
-            <p className="mt-4 text-vx-fg-body leading-[1.65]">The connector reuses Veyrnox’s existing account, billing, moderation, ownership checks and automatic failure refunds.</p>
+            <h2 id="tools-heading" className="vx-display mt-4 text-[40px] sm:text-[58px]">One connector. Five read-only tools.</h2>
+            <p className="mt-4 text-vx-fg-body leading-[1.65]">The connector can inspect your Veyrnox account, but it cannot start a generation, change account data or spend credits.</p>
           </div>
           <ul className="mt-10 grid md:grid-cols-2 lg:grid-cols-3 border-t border-vx-border">
             {tools.map(([name, body]) => (
@@ -89,13 +88,13 @@ export default function McpPage() {
 
         <section className="mt-24 rounded-[32px] border border-vx-border p-7 sm:p-10 lg:p-14 grid lg:grid-cols-2 gap-10" aria-labelledby="spend-heading">
           <div>
-            <p className="font-vx-mono text-[12px] font-bold tracking-[0.18em] uppercase text-vx-accent">Spend guard</p>
-            <h2 id="spend-heading" className="vx-display mt-4 text-[40px] sm:text-[56px]">The price comes first.</h2>
+            <p className="font-vx-mono text-[12px] font-bold tracking-[0.18em] uppercase text-vx-accent">Read-only by design</p>
+            <h2 id="spend-heading" className="vx-display mt-4 text-[40px] sm:text-[56px]">Your assistant cannot charge you.</h2>
           </div>
           <div className="space-y-4 text-vx-fg-body leading-[1.65]">
-            <p>The assistant must estimate a generation, show its maximum credit charge, and send that exact amount back with the generation request.</p>
-            <p>If the live price changes, Veyrnox rejects the request without treating the old confirmation as permission to spend more.</p>
-            <p className="text-sm text-vx-fg-muted">Free allowance can reduce the actual charge. Failed provider submissions follow the same refund path as generations started in the Veyrnox studio.</p>
+            <p>The assistant can calculate a live maximum price and help you choose a model, but only the signed-in Veyrnox app can start a generation.</p>
+            <p>OAuth tokens are confined to this connector endpoint and cannot be reused against the rest of the Veyrnox API.</p>
+            <p className="text-sm text-vx-fg-muted">You can review and revoke every assistant connection from Account &amp; security.</p>
           </div>
         </section>
       </Main>

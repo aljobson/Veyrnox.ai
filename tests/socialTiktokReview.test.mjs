@@ -87,6 +87,10 @@ test('direct review connect and callback deny unlisted identities before any ext
 }));
 
 test('review authorize URL uses the sandbox client and production callback with minimal scopes', async () => configured(async () => {
+    globalThis.fetch = async (url) => {
+        assert.ok(new URL(url).pathname.endsWith('/prepare_social_oauth_state'));
+        return Response.json({ ok: true });
+    };
     const res = await connect(request('connect', auth, { codeChallenge: 'a'.repeat(43) }));
     assert.equal(res.status, 200);
     const url = new URL((await res.json()).authorizeUrl);
@@ -99,6 +103,7 @@ test('review callback exchanges only with sandbox credentials and stores marked 
     let recorded;
     globalThis.fetch = async (url, init) => {
         const name = new URL(url).pathname;
+        if (name.endsWith('/consume_social_oauth_state')) return Response.json({ ok: true });
         if (name === '/v2/oauth/token/') {
             const form = new URLSearchParams(init.body);
             assert.equal(form.get('client_key'), 'sandboxclientkey');

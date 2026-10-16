@@ -29,6 +29,10 @@ test('missing identity, disabled switches, malformed PKCE and invalid state fail
 });
 
 test('Google Business Profile authorization includes S256 and the fixed registered redirect', async () => {
+    globalThis.fetch = async (url) => {
+        assert.ok(new URL(url).pathname.endsWith('/prepare_social_oauth_state'));
+        return Response.json({ ok: true });
+    };
     const res = await startExtendedConnect(request({ codeChallenge: 'a'.repeat(43) }), 'gmb');
     const url = new URL((await res.json()).authorizeUrl);
     assert.equal(url.searchParams.get('code_challenge_method'), 'S256');
@@ -40,6 +44,7 @@ test('Facebook OAuth stores candidate tokens encrypted and returns only labels a
     let encrypted;
     globalThis.fetch = async (url, init) => {
         const path = new URL(url).pathname;
+        if (path.endsWith('/consume_social_oauth_state')) return Response.json({ ok: true });
         if (path.endsWith('/oauth/access_token')) return Response.json({ access_token: 'user-secret', expires_in: 3600 });
         if (path.endsWith('/me/accounts')) return Response.json({ data: [{ id: '123', name: 'Test Page', access_token: 'page-secret', tasks: ['CREATE_CONTENT'] }] });
         assert.ok(path.endsWith('/prepare_social_connection_selection'));
@@ -59,7 +64,9 @@ test('Facebook OAuth stores candidate tokens encrypted and returns only labels a
 
 test('Facebook OAuth logs the failing server-side stage without exposing provider details', async () => {
     const state = await createOAuthState({ authId: auth, network: 'facebook' }, process.env.SOCIAL_OAUTH_STATE_SECRET);
-    globalThis.fetch = async () => Response.json({ error: { message: 'secret-provider-payload' } }, { status: 400 });
+    globalThis.fetch = async (url) => new URL(url).pathname.endsWith('/consume_social_oauth_state')
+        ? Response.json({ ok: true })
+        : Response.json({ error: { message: 'secret-provider-payload' } }, { status: 400 });
     const calls = [];
     const originalError = console.error;
     console.error = (...args) => calls.push(args);

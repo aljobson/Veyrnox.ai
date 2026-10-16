@@ -19,12 +19,11 @@ test('MCP estimates image/audio once and video in five-second units', () => {
   assert.equal(estimatedCredits({ modality: 'text-to-video', credits: 6, durations: [5, 10] }, 15), null);
 });
 
-test('the public MCP surface stays deliberately small and marks the spend tool', () => {
+test('the public MCP surface is deliberately small and cannot spend credits', () => {
   const source = readFileSync(new URL('../lib/veyrnoxMcp.js', import.meta.url), 'utf8');
   const names = [...source.matchAll(/registerTool\('([^']+)'/g)].map((match) => match[1]);
-  assert.deepEqual(names, ['list_models', 'estimate_generation', 'generate_media', 'get_generation', 'list_generations', 'get_balance']);
-  assert.match(source, /generate_media[\s\S]*confirmed_credits[\s\S]*idempotency_key/);
-  assert.match(source, /credit_confirmation_mismatch/);
+  assert.deepEqual(names, ['list_models', 'estimate_generation', 'get_generation', 'list_generations', 'get_balance']);
+  assert.doesNotMatch(source, /createGeneration|generate_media|confirmed_credits/);
 });
 
 test('protected-resource metadata points the MCP client at Supabase OAuth', async () => {

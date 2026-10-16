@@ -6,6 +6,7 @@ import { Main } from '../../_components/Main';
 import { MfaPanel } from '../../_components/MfaPanel';
 import { PasskeyPanel } from '../../_components/PasskeyPanel';
 import { ReferralPanel } from '../../_components/ReferralPanel';
+import { OAuthGrantsPanel } from '../../_components/OAuthGrantsPanel';
 import { ConfirmDialog } from '../../_components/ConfirmDialog';
 import { getSession, onSessionChange } from '../../../lib/authClient';
 import { requestPasswordCode, changePassword, revokeSessions } from '../../../lib/accountSecurity';
@@ -45,6 +46,7 @@ function AccountControls() {
     </section>
     <MfaPanel />
     <PasskeyPanel />
+    <OAuthGrantsPanel />
     <ReferralPanel />
     <section className="rounded-2xl border border-vx-border p-5">
       <h2 className="font-bold mb-2">Set a new password</h2>

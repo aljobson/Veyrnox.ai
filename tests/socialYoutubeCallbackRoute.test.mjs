@@ -40,6 +40,7 @@ function stub({ noChannel = false, rpcOverrides = {} } = {}) {
         // db.test — Supabase PostgREST RPC calls
         const name = u.pathname.split('/').pop();
         const result = rpcOverrides[name] ?? ({
+            consume_social_oauth_state: { ok: true },
             get_or_create_default_social_brand: { ok: true, idempotent: true, brand_id: brandId, label: 'My Brand', timezone: 'UTC' },
             record_social_account_connection: { ok: true, account_id: accountId, idempotent: false },
         })[name];
@@ -82,7 +83,7 @@ test('completes the full connect flow: token exchange, channel resolution, encry
     assert.equal(body.account.network, 'youtube');
     assert.equal(body.account.display_name, 'Creator Channel');
     assert.equal(calls.filter((c) => c.includes('googleapis.com')).length, 2, 'one token exchange + one channels.list call');
-    assert.equal(calls.filter((c) => c.includes('db.test')).length, 2, 'brand lookup + record connection');
+    assert.equal(calls.filter((c) => c.includes('db.test')).length, 3, 'state consumption + brand lookup + record connection');
 });
 
 test('no YouTube channel on the connected Google account is reported as an expected conflict, not a crash', async () => {

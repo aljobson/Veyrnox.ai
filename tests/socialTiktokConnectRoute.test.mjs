@@ -19,6 +19,10 @@ const request = (body, headers = {}) => new Request('https://veyrnox.test/api/v1
     method: 'POST', headers: { 'x-veyrnox-auth-id': auth, 'content-type': 'application/json', ...headers },
     body: JSON.stringify(body),
 });
+const allowStateStore = () => { globalThis.fetch = async (url) => {
+    assert.ok(new URL(url).pathname.endsWith('/prepare_social_oauth_state'));
+    return Response.json({ ok: true });
+}; };
 
 test('missing or malformed identity is rejected before anything else', async () => {
     setConfigured();
@@ -54,6 +58,7 @@ test('a missing or malformed code challenge is rejected', async () => {
 
 test('returns a TikTok authorize URL bound to our https per-network callback and a fresh signed state', async () => {
     setConfigured();
+    allowStateStore();
     const res = await POST(request({ codeChallenge: challenge }));
     assert.equal(res.status, 200);
     assert.equal(res.headers.get('cache-control'), 'no-store');
@@ -69,6 +74,7 @@ test('returns a TikTok authorize URL bound to our https per-network callback and
 
 test('analytics switch adds the two approved analytics scopes to consent', async () => {
     setConfigured();
+    allowStateStore();
     process.env.TIKTOK_ANALYTICS_SCOPE_ENABLED = 'true';
     try {
         const res = await POST(request({ codeChallenge: challenge }));
