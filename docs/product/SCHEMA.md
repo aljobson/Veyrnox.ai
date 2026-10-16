@@ -1,18 +1,17 @@
 # Backend Schema — Veyrnox.ai
 
-**Status:** Current · 2026-10-16 (re-audited against `main` at `3f46a609`; first
+**Status:** Current · 2026-10-16 (re-audited against `main` at `324116ef`; first
 written 2026-10-08 at `42150476`) — reconstructed by replaying
-`packages/db/schema/0001_initial.sql` and `supabase/0003…0326` in order
-(163 tables: 158 in `public`, 5 in `private`; 85 at 0228, 78 added since).
+`packages/db/schema/0001_initial.sql` and `supabase/0003…0331` in order
+(166 tables: 161 in `public`, 5 in `private`; 85 at 0228, 81 added since).
 The production migration ledger was last read on 2026-10-08 (every file
 through 0227; 0228 applied afterwards): **which of 0229–0326 are applied to
 production is not visible from the repo and was not re-read** (unverified;
 the migration README says production had reached 0254 by 2026-10-10, and
 S20 records 0264 applied).
-Highest migration 0331, next free 0332 (checked 2026-10-16 after merging `main`).
-The table list and the count of 163 were taken through 0326: 0327 and 0329 each
-add tables that are not yet listed, and 0330/0331 only move Nano Banana between
-providers.
+Highest migration 0331, next free 0332 (checked 2026-10-16 on `main`). 0327 and
+0329 add the three provider spend tables (§3.4); 0330 and 0331 only move Nano
+Banana between providers.
 **Authority:** the SQL. When this file and a migration disagree, the
 migration wins and this file is wrong.
 **Diagrams:** [diagrams/schema-map.html](diagrams/schema-map.html) (tables by
@@ -23,9 +22,9 @@ API call) · [diagrams/job-lifecycle.html](diagrams/job-lifecycle.html)
 
 ## 1. Rules every table follows
 
-- **RLS enabled and forced on all 163 tables** (158 in `public`, 5 in
+- **RLS enabled and forced on all 166 tables** (161 in `public`, 5 in
   `private`; the count is `CREATE TABLE` minus `DROP TABLE` across every
-  migration — 68 at 0166, 85 at 0228). The Worker uses the service role (bypasses RLS);
+  migration — 68 at 0166, 85 at 0228, 163 at 0326). The Worker uses the service role (bypasses RLS);
   RLS is the second line. The newer feature tables (chat, referrals, free
   allowance, subscriptions, analytics, device uploads, fal dispatch, Publish
   inbox, teams, API keys and webhooks, content scans) have no client policies
@@ -176,6 +175,21 @@ Ops: `reconciliation_snapshot` (singleton; seven counts), `worker_task_health`
 `private.reconciliation_observations` (0290; append-only history of the seven
 counts). `reconciliation_snapshot` carries seven counts since 0264
 (`free_allowance_drift`, `referral_drift` added; ISSUES S20).
+
+Provider spend limits *(0327, 0329)*, three tables, RLS forced, reached only
+through definer functions:
+
+| table | columns | keys and rules |
+|---|---|---|
+| `provider_spend_policy` *(0327)* | singleton bool, admission_open, max_job_microusd (1 to 100,000,000), user_hour / user_day / global_hour / global_day _microusd | one row (seeded: $5 per job, $15 per user hour, $50 per user day, $50 global hour, $250 global day); each cap at least the one before |
+| `provider_spend_provider_policy` *(0329)* | provider text, admission_open, hour_microusd, day_microusd | PK provider; seeded for grsai, fal, kie, openrouter, openrouter-chat, openrouter-help |
+| `provider_spend_reservations` *(0327)* | id, user_id → users (RESTRICT), effect_key, model_id, provider, purpose, estimated_cost_microusd > 0, admitted_at | U (user_id, effect_key): a replay admits once; indexes on admitted_at, (user_id, admitted_at), (provider, admitted_at) |
+
+`provider_spend_admit_model` and `provider_spend_admit_custom_auth` admit a job
+before the debit (a trigger, `enforce_provider_spend_on_job`, backs this).
+`reconcile_provider_submit_unknown` (0329) resolves a job whose submit
+acknowledgement was lost, and `sweep_stuck_jobs` no longer refunds such a job
+while the supplier may have billed it.
 
 ### 3.5 Tenants and projects *(0135–0141, 0163, 0254, 0255, 0269, 0280, 0286, 0296; `TENANT_PROJECTS_ENABLED` on in production and staging; project media uploads on in staging only)*
 

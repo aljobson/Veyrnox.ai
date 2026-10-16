@@ -1,9 +1,11 @@
 # PRD — Veyrnox.ai
 
+> **Flag values:** every flag state in this document is as of 2026-10-16. `wrangler.jsonc` is the source of truth (top-level `vars` is production, `env.staging` is staging); where this document and that file disagree, the file is right.
+
 **Status:** Current · 2026-10-16 (audited against `main` at `3f46a609`; first
 written 2026-10-02 at `2da81dc`; re-audited 2026-10-08 at `42150476`). The
 2026-10-16 pass re-checked §1, §3.2, §3.3, §3.7, §4 and §5 against
-`wrangler.jsonc`, `app/`, `lib/`, the migrations through 0326 (0327 to 0331 not yet audited) and the ADRs
+`wrangler.jsonc`, `app/`, `lib/`, the migrations through 0331 and the ADRs
 through 0100; §3.1, §3.4, §3.5, §3.6, §6 and §7 keep their 2026-10-08
 wording except where a line below says otherwise
 **Scope:** the whole product. Feature-level specs live beside it

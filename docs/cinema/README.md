@@ -1,5 +1,7 @@
 # Veyrnox Cinema implementation
 
+> **Flag values:** every flag state in this document is as of 2026-10-16. `wrangler.jsonc` is the source of truth (top-level `vars` is production, `env.staging` is staging); where this document and that file disagree, the file is right.
+
 Source: [Technical Implementation Specification v1.0, September 2026](https://chatgpt.com/s/t_6ab643224f9881919a05694d64a5a7dc).
 Read [REPO-ASSESSMENT.md](REPO-ASSESSMENT.md) first for the repository-specific architecture and PR sequence. The original Social Cinema 01–09 documents remain in `../social-cinema`.
 

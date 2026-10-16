@@ -1,5 +1,7 @@
 # 2. Technical Specification — Veyrnox Publish
 
+> **Flag values:** every flag state in this document is as of 2026-10-16. `wrangler.jsonc` is the source of truth (top-level `vars` is production, `env.staging` is staging); where this document and that file disagree, the file is right.
+
 > **As of 2026-10-08 (repo `main` at `bee1ea4f`, includes PR #637 and #638).** This spec began as a pre-implementation design. It
 > now describes what is built, and keeps the original design only where it is still the plan, marked
 > **Design only (not built)**. Each section was checked against migrations 0154 to 0228, the code

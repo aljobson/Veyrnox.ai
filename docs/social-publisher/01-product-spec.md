@@ -1,5 +1,7 @@
 # 1. Product Specification — Veyrnox Publish
 
+> **Flag values:** every flag state in this document is as of 2026-10-16. `wrangler.jsonc` is the source of truth (top-level `vars` is production, `env.staging` is staging); where this document and that file disagree, the file is right.
+
 > Current owner direction (14 October 2026): Free includes one connected social
 > account and Post now. The $15/month Publish Plan unlocks up to five connected
 > accounts, scheduling, analytics and the available advanced publishing tools.

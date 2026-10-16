@@ -1,5 +1,7 @@
 # Implementation Plan — Veyrnox.ai
 
+> **Flag values:** every flag state in this document is as of 2026-10-16. `wrangler.jsonc` is the source of truth (top-level `vars` is production, `env.staging` is staging); where this document and that file disagree, the file is right.
+
 **Status:** Current · 2026-10-10. Two Publish flag statements amended 2026-10-16 at `3f46a609`; the plan's step statuses were not re-audited. (A8, D1 and S19 rollout update at `09957c52`) · prior audit 2026-10-08 (audited against `main` at `42150476`; Publish rows amended against `bee1ea4f`; first
 written 2026-10-02 at `2da81dc`)
 **Replaces:** [docs/PHASE-1.md](../PHASE-1.md) as the build sequence (it

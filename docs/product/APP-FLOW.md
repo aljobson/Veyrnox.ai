@@ -1,5 +1,7 @@
 # App Flow — Veyrnox.ai
 
+> **Flag values:** every flag state in this document is as of 2026-10-16. `wrangler.jsonc` is the source of truth (top-level `vars` is production, `env.staging` is staging); where this document and that file disagree, the file is right.
+
 **Status:** Current · 2026-10-08 (audited against `main` at `42150476`; section 7 amended against `bee1ea4f`; first
 written 2026-10-02 at `2da81dc`). Flag and route statements amended 2026-10-16 against `main` at `3f46a609`; the rest of this document was not re-audited that day.
 **Reads with:** [PRD.md](PRD.md), [UI-UX.md](UI-UX.md). Feature flows (e.g.
