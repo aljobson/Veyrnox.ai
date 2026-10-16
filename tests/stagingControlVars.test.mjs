@@ -43,3 +43,8 @@ test('the admin second-factor gate is on in staging as well as production', () =
     assert.equal(production.ADMIN_REQUIRE_AAL2, 'true');
     assert.equal(staging.ADMIN_REQUIRE_AAL2, 'true');
 });
+
+test('strict upload integrity is active in staging and production', () => {
+    assert.equal(production.UPLOAD_INTEGRITY_ENABLED, 'true');
+    assert.equal(staging.UPLOAD_INTEGRITY_ENABLED, 'true');
+});
