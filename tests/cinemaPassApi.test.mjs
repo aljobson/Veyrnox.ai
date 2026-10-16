@@ -112,6 +112,34 @@ test('plans and the own Pass are read-only, and the projection never carries a S
   assert.equal((await (await none.handle(get(''))).json()).pass, null);
 });
 
+test('closing new Pass sales preserves reads, cancellation, recovery and billing management', async () => {
+  process.env.CINEMA_SUBSCRIPTIONS_ENABLED = 'false';
+  try {
+    const own = setup('read', { rpc: { read_own_cinema_pass: { ok: true, pass: livePass() } } });
+    assert.equal((await own.handle(get(''))).status, 200);
+
+    const cancel = setup('cancel', { rpc: {
+      read_own_cinema_pass: { ok: true, pass: livePass({ started_at: new Date(NOW - 20 * DAY).toISOString() }) },
+      mark_cinema_pass_cancelled: { ok: true },
+    } });
+    assert.equal((await cancel.handle(post('/cancel', {}))).status, 200);
+
+    const portal = setup('portal', { rpc: { read_own_cinema_pass: { ok: true, pass: livePass() } } });
+    assert.equal((await portal.handle(post('/portal', {}))).status, 200);
+
+    const recovery = setup('return', { rpc: {
+      record_cinema_pass_session: { ok: true, pass_id: PASS, status: 'pending' },
+      apply_cinema_pass_event: { ok: true, status: 'active', idempotent: false },
+    }, stripe: { fetchSession: async () => ({ ok: true, session: { object: 'checkout.session', mode: 'subscription', client_reference_id: PASS, livemode: false, subscription: 'sub_1', metadata: { cinema_pass_id: PASS, cinema_pass_sig: 'good' } } }) } });
+    assert.equal((await recovery.handle(post('/return', { pass_id: PASS, session_id: 'cs_test_1' }))).status, 200);
+
+    assert.equal((await setup('plans').handle(get('/plans'))).status, 503);
+    assert.equal((await setup('start').handle(post('', startBody))).status, 503);
+  } finally {
+    process.env.CINEMA_SUBSCRIPTIONS_ENABLED = 'true';
+  }
+});
+
 test('return records the session, then applies the subscription Stripe already shows for it', async () => {
   const ready = setup('return', {
     rpc: { record_cinema_pass_session: { ok: true, pass_id: PASS, status: 'pending' }, apply_cinema_pass_event: { ok: true, status: 'active', idempotent: false } },

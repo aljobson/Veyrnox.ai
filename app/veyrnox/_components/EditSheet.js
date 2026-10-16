@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useAssetUrl } from '../_lib/useAssetUrl';
 import { Modal } from './Modal';
 import { AssetLoadStatus } from './AssetLoadStatus';
@@ -182,6 +183,7 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted }) {
           {!slowTooLong && slowNoAudio && <span className="text-vx-danger">{ERRORS.slow_needs_audio}</span>}
           {noop && <span className="text-vx-fg-muted">{ERRORS.nothing_to_do}</span>}
           {error && <span className="text-vx-danger">{ERRORS[error] || 'That didn’t work. Your credits were not taken; try again.'}</span>}
+          {error === 'insufficient_balance' && <Link href="/app/credits" className="ml-2 font-bold text-vx-accent underline underline-offset-4" onClick={onClose}>Add Credits</Link>}
         </div>
 
         <div className="mt-3 flex items-center justify-between gap-3">
