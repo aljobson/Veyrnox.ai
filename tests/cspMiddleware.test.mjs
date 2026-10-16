@@ -27,6 +27,37 @@ test('HTML receives fresh matching CSP/renderer nonces and cannot trust inbound 
     assert.equal(new Set(seen).size, 8);
 });
 
+test('public metadata is CDN-cacheable without HTML nonce semantics', async () => {
+    for (const path of ['/robots.txt', '/sitemap.xml?source=test']) {
+        const response = await middleware(new NextRequest(`https://example.test${path}`, { headers: {
+            'x-nonce': 'forged', 'Content-Security-Policy': "script-src 'unsafe-inline'", 'x-veyrnox-auth-id': 'victim',
+        }}));
+
+        assert.equal(response.status, 200);
+        assert.equal(
+            response.headers.get('cache-control'),
+            'public, max-age=0, s-maxage=21600, stale-while-revalidate=86400',
+        );
+        assert.equal(
+            response.headers.get('content-security-policy'),
+            "default-src 'none'; frame-ancestors 'none'; base-uri 'none'",
+        );
+        // Explicitly blank rather than delete so OpenNext cannot reintroduce
+        // forged inbound values while forwarding the request.
+        assert.equal(response.headers.get('x-middleware-request-x-nonce'), '');
+        assert.equal(response.headers.get('x-middleware-request-content-security-policy'), '');
+        assert.equal(response.headers.get('x-middleware-request-x-veyrnox-auth-id'), '');
+    }
+});
+
+test('metadata lookalikes remain private HTML responses', async () => {
+    for (const path of ['/robots.txt/preview', '/sitemap.xml.bak']) {
+        const response = await middleware(new NextRequest(`https://example.test${path}`));
+        assert.match(response.headers.get('cache-control'), /private, no-store/);
+        assert.match(response.headers.get('content-security-policy'), /'nonce-[A-Za-z0-9+/]{22}=='/);
+    }
+});
+
 test('production HTTP and www requests redirect to the canonical HTTPS apex', async () => {
     const insecure = await middleware(new NextRequest('http://veyrnox.ai/pricing'));
     assert.equal(insecure.status, 308);

@@ -7,61 +7,73 @@ import { CreditSubscriptionOffer } from '../_components/CreditSubscriptions';
 import { PremiumTag } from '../_components/PremiumTag';
 import { CopyButton } from '../_components/CopyButton';
 import { MODELS as MODELS_FALLBACK, SITE_UPDATED, isShelfModel, kindOf } from '../_lib/tokens';
+import { creditValueRange, formatUsdRange } from '../_lib/creditValue';
 
-// Live catalog fetch — public, unauthenticated. Falls back to tokens.js
-// MODELS if the endpoint is unreachable so the page never renders blank.
+const FALLBACK_MODELS = MODELS_FALLBACK.map((model) => ({
+  id: model.id,
+  name: model.name,
+  modality: model.kind,
+  credits: model.credits,
+  gated: !!model.premium,
+}));
+
+// Live catalog fetch — public, unauthenticated. The bundled list keeps the
+// table useful while loading and if the endpoint is unavailable; status keeps
+// those two states honest for visitors.
 function useLiveCatalog() {
-  const [catalog, setCatalog] = useState(null);
+  const [catalogState, setCatalogState] = useState({
+    models: FALLBACK_MODELS,
+    status: 'loading',
+  });
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/catalog', { cache: 'no-store' });
+        const res = await fetch('/api/catalog');
         if (!res.ok) throw new Error(String(res.status));
         const data = await res.json();
         // Price only what a visitor can actually buy from the picker: the Clip
         // Editor is a Library tool and Auto Short is still flag-gated.
         const sellable = Array.isArray(data?.models) ? data.models.filter((m) => isShelfModel(m.capabilities)) : [];
-        if (!cancelled && sellable.length) {
-          setCatalog(sellable);
-        } else if (!cancelled) {
-          throw new Error('empty');
-        }
+        if (!sellable.length) throw new Error('empty');
+        if (!cancelled) setCatalogState({ models: sellable, status: 'live' });
       } catch {
-        if (!cancelled) setCatalog(null);
+        if (!cancelled) {
+          setCatalogState({
+            models: FALLBACK_MODELS,
+            status: 'unavailable',
+          });
+        }
       }
     })();
     return () => { cancelled = true; };
   }, []);
-  // Normalise fallback to same shape.
-  if (catalog) return { models: catalog, live: true };
-  return {
-    models: MODELS_FALLBACK.map((m) => ({
-      id: m.id, name: m.name, modality: m.kind, credits: m.credits, gated: !!m.premium,
-    })),
-    live: false,
-  };
+  return catalogState;
 }
 
 // Prices and credits come from public.credit_packs via /api/credit-packs;
-// nothing is priced here. Null while loading or unavailable.
+// nothing is priced here. The endpoint sets a short, bounded shared cache.
 function useCreditPacks() {
-  const [packs, setPacks] = useState(null);
+  const [packState, setPackState] = useState({
+    packs: [],
+    status: 'loading',
+  });
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/credit-packs', { cache: 'no-store' });
+        const res = await fetch('/api/credit-packs');
         if (!res.ok) throw new Error(String(res.status));
         const data = await res.json();
-        if (!cancelled && Array.isArray(data?.packs) && data.packs.length) setPacks(data.packs);
+        if (!Array.isArray(data?.packs)) throw new Error('invalid');
+        if (!cancelled) setPackState({ packs: data.packs, status: 'success' });
       } catch {
-        // No pack section if the catalog is unavailable.
+        if (!cancelled) setPackState({ packs: [], status: 'unavailable' });
       }
     })();
     return () => { cancelled = true; };
   }, []);
-  return packs;
+  return packState;
 }
 
 // "$10", not "$10.00": the approved wording (#99 item 1).
@@ -69,8 +81,9 @@ const usd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD',
 const num = new Intl.NumberFormat('en-US');
 
 export default function Pricing() {
-  const { models: liveModels, live } = useLiveCatalog();
-  const packs = useCreditPacks();
+  const catalogState = useLiveCatalog();
+  const liveModels = catalogState.models;
+  const packState = useCreditPacks();
   const groups = ['video', 'image', 'audio']
     .map((kind) => ({ kind, rows: liveModels.filter((m) => kindOf(m.modality) === kind) }))
     .filter((g) => g.rows.length);
@@ -97,12 +110,32 @@ export default function Pricing() {
         </div>
       </section>
 
-      {packs && (
-        <section className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-24 sm:pt-32" aria-labelledby="credit-packs-heading">
-          <h2 id="credit-packs-heading" className="vx-display text-[40px] sm:text-[56px]">Top up when you need to.</h2>
-          <p className="mt-4 text-vx-fg-body max-w-[52ch] leading-[1.6]">One-off credit packs. Purchased credits never expire.</p>
+      <section
+        id="credit-packs"
+        className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-24 sm:pt-32"
+        aria-labelledby="credit-packs-heading"
+      >
+        <h2 id="credit-packs-heading" className="vx-display text-[40px] sm:text-[56px]">Top up when you need to.</h2>
+        <p className="mt-4 text-vx-fg-body max-w-[52ch] leading-[1.6]">One-off credit packs. Purchased credits never expire.</p>
+        {packState.status === 'loading' && (
+          <p role="status" aria-live="polite" className="mt-8 text-vx-fg-muted">
+            Loading Credit Packs…
+          </p>
+        )}
+        {packState.status === 'unavailable' && (
+          <p role="alert" className="mt-8 text-vx-fg-muted">
+            Credit Packs are temporarily unavailable. Reload this page to try again.
+          </p>
+        )}
+        {packState.status === 'success' && packState.packs.length === 0 && (
+          <p role="status" className="mt-8 text-vx-fg-muted">
+            No Credit Packs are available right now.
+          </p>
+        )}
+        {packState.status === 'success' && packState.packs.length > 0 && (
+          <>
           <ul className="mt-10 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
-            {packs.map((p) => (
+            {packState.packs.map((p) => (
               <li key={p.id} className="vx-paper-shadow">
                 {/* h-full: the slips share a row, and a line that wraps on one
                     (the longest price line does at four across) must not leave
@@ -129,20 +162,30 @@ export default function Pricing() {
           >
             Buy credits
           </Link>
-        </section>
-      )}
+          </>
+        )}
+      </section>
 
       <CreditSubscriptionOffer />
       <section className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-24 sm:pt-32 pb-8">
         <div className="flex items-end justify-between flex-wrap gap-4">
           <h2 className="vx-display text-[40px] sm:text-[56px]">Every model, priced.</h2>
-          <p className="text-[14px] text-vx-fg-muted">
-            {live ? 'Read live from the gateway.' : 'Showing the cached list; the live catalog did not answer.'}
+          <p role="status" aria-live="polite" className="text-[14px] text-vx-fg-muted">
+            {catalogState.status === 'loading'
+              ? 'Loading live prices… Showing the bundled reference list meanwhile.'
+              : catalogState.status === 'live'
+                ? 'Read live from the gateway.'
+                : 'Live prices are unavailable. Showing the bundled reference list; confirm the price in Studio before generating.'}
           </p>
         </div>
         <p className="mt-4 text-vx-fg-body max-w-[60ch] leading-[1.6]">
           Video is priced per 5 s clip; where a model offers 10 s, it costs double. Premium models need an account in good standing.
         </p>
+        {packState.status === 'success' && packState.packs.length > 0 && (
+          <p className="mt-2 text-[13px] text-vx-fg-muted">
+            Approximate pack values. Based on current pack rates before tax; Studio shows the final credit charge before generation.
+          </p>
+        )}
 
         <div className="mt-12 space-y-14">
           {groups.map((g) => (
@@ -156,6 +199,7 @@ export default function Pricing() {
                     <th scope="col">Model</th>
                     <th scope="col">Model id</th>
                     <th scope="col">Credits</th>
+                    <th scope="col">Approx. pack value</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -173,6 +217,9 @@ export default function Pricing() {
                       </td>
                       <td className="py-3 text-right font-vx-mono text-[16px] font-bold text-vx-money vx-num whitespace-nowrap">
                         {m.credits} cr
+                      </td>
+                      <td className="py-3 pl-2 sm:pl-4 text-right font-vx-mono text-[12px] sm:text-[14px] text-vx-fg-muted vx-num whitespace-nowrap">
+                        <PackValue credits={m.credits} packState={packState} />
                       </td>
                     </tr>
                   ))}
@@ -205,5 +252,10 @@ export default function Pricing() {
       </Main>
     </div>
   );
+}
+
+function PackValue({ credits, packState }) {
+  if (packState.status !== 'success') return '—';
+  return formatUsdRange(creditValueRange(credits, packState.packs)) || '—';
 }
 

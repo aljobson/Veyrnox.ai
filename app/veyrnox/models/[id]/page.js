@@ -5,6 +5,7 @@ import { Main } from '../../_components/Main';
 import { PremiumTag } from '../../_components/PremiumTag';
 import { LIST_GROUPS } from '../../_sections/showcase';
 import { findModel, modelFacts } from '../../_lib/modelPages';
+import { OPEN_GRAPH_BASE } from '../../../seo';
 
 // Per request, like /models: an inactive or delisted model 404s within the
 // 5-minute catalog cache instead of living on in a prerendered page.
@@ -21,7 +22,7 @@ export async function generateMetadata({ params }) {
     title: `${model.title} — ${model.credits} credits`,
     description,
     alternates: { canonical: `/models/${model.id}` },
-    openGraph: { title: `${model.title} — Veyrnox.ai`, description, url: `/models/${model.id}` },
+    openGraph: { ...OPEN_GRAPH_BASE, title: `${model.title} — Veyrnox.ai`, description, url: `/models/${model.id}` },
   };
 }
 

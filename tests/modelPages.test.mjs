@@ -21,6 +21,17 @@ test('public rows never carry provider routing or cost, and unknown endpoints ar
     } finally { console.error = errors; }
 });
 
+test('public rows expose only validated catalog update timestamps', () => {
+    const [dated, invalid, missing] = toPublicModels([
+        row('dated', shelfEndpoint, { updated_at: '2026-10-15T11:12:13+00:00' }),
+        row('invalid', shelfEndpoint, { updated_at: 'not-a-date' }),
+        row('missing', shelfEndpoint),
+    ]);
+    assert.equal(dated.updatedAt, '2026-10-15T11:12:13.000Z');
+    assert.equal('updatedAt' in invalid, false);
+    assert.equal('updatedAt' in missing, false);
+});
+
 test('the catalog read refuses to run without the service-role config', async () => {
     await assert.rejects(readPublicCatalog({ cfg: {}, selectRows: () => assert.fail('unexpected read') }), /not_configured/);
 });
@@ -29,7 +40,7 @@ test('the catalog read selects only the safe columns of active rows', async () =
     let query;
     await readPublicCatalog({ cfg, selectRows: async (table, q) => { query = { table, ...q }; return []; } });
     assert.equal(query.table, 'model_catalog');
-    assert.equal(query.columns, 'id,name,modality,credits_5s,gated_flag,provider_endpoint');
+    assert.equal(query.columns, 'id,name,modality,credits_5s,gated_flag,provider_endpoint,updated_at');
     assert.match(query.filter, /^active=eq\.true&/);
 });
 

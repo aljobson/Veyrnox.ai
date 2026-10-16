@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { MarketingNav } from '../../_components/NavBar';
 import { Main } from '../../_components/Main';
 import { GUIDES, guideById } from '../../_lib/guides';
+import { OPEN_GRAPH_BASE } from '../../../seo';
 
 export function generateStaticParams() {
   return GUIDES.map((g) => ({ id: g.id }));
@@ -17,7 +18,7 @@ export async function generateMetadata({ params }) {
     title: g.title,
     description: g.summary,
     alternates: { canonical: `/guides/${g.id}` },
-    openGraph: { title: `${g.title} — Veyrnox.ai`, description: g.summary, url: `/guides/${g.id}` },
+    openGraph: { ...OPEN_GRAPH_BASE, title: `${g.title} — Veyrnox.ai`, description: g.summary, url: `/guides/${g.id}` },
   };
 }
 

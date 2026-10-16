@@ -129,26 +129,32 @@ export const RESOLUTIONS = ['1K', '2K', '4K'];
 // button both read it, so there is one address to change.
 export const SUPPORT_EMAIL = 'legal@veyrnox.com';
 
-// The primary nav on every public page (MarketingNav), the home page included.
-// What works today comes first, in the order a new visitor needs it: what it
-// makes, on which models, the ready-made starts, their own files, chat. Then
-// the price and the questions. Social Cinema is last: its page says it is not
-// open yet. The logo is the Home link. A `/#…` entry is a section of the home
-// page; from any other page it opens the home page at that section.
-export const NAV_CATEGORIES = [
+// The public bar answers the visitor's first question: what job can I do?
+// Deeper product and reference destinations remain together under More.
+// The logo is the Home link. A `/#…` entry is a section of the home page;
+// from any other page it opens the home page at that section.
+export const PRIMARY_NAV_CATEGORIES = [
+  { href: '/app/create?model=nano-banana-kie', label: 'Create' },
+  { href: '/tools', label: 'Edit' },
+  { href: '/app/film-studio', label: 'Make a film' },
+  { href: '/#publish', label: 'Publish' },
+  { href: '/pricing', label: 'Pricing' },
+];
+
+export const SECONDARY_NAV_CATEGORIES = [
   { href: '/#explore',   label: 'Explore' },
   { href: '/app/oddlings', label: 'Oddlings', featured: true },
-  { href: '/#models',    label: 'Models' },
+  { href: '/models',     label: 'Models' },
   { href: '/presets',   label: 'Templates' },
-  { href: '/tools',     label: 'Tools' },
   { href: '/guides',    label: 'Guides' },
   { href: '/mcp',       label: 'MCP' },
   { href: '/developers', label: 'Developers' },
   { href: '/app/chat',  label: 'LLM Chat' },
-  { href: '/pricing',   label: 'Pricing' },
   { href: '/#faq',       label: 'FAQ' },
   { href: '/social-cinema', label: 'Social Cinema' },
 ];
+
+export const NAV_CATEGORIES = [...PRIMARY_NAV_CATEGORIES, ...SECONDARY_NAV_CATEGORIES];
 
 // Every public route, with the blurb search and the 404 page reuse.
 export const SITE_PAGES = [
@@ -165,6 +171,7 @@ export const SITE_PAGES = [
   { href: '/app/create',        label: 'Create',             description: 'The studio: pick a model, see the cost, generate.' },
   { href: '/app/library',       label: 'Library',            description: 'Every generation you have run, successes and refunds.' },
   { href: '/app/credits',       label: 'Credits & billing',  description: 'Your balance, free-credit expiry and recent ledger rows.' },
+  { href: '/about',             label: 'About',              description: 'Verified company and contact information for Veyrnox Ltd.' },
   { href: '/legal/terms',       label: 'Terms of Service',   description: 'The contract between you and Veyrnox Ltd.' },
   { href: '/legal/privacy',     label: 'Privacy Policy',     description: 'What we process, why, and for how long.' },
   { href: '/legal/gdpr',        label: 'GDPR & Data Rights', description: 'Access, export and deletion requests.' },
@@ -177,20 +184,27 @@ export const SITE_PAGES = [
 // Real active-catalog rows only. No Cinema Studio, no MCP·CLI (those live in
 // a separate product, not here).
 export const FEATURE_CARDS = [
+  { key: 'nano-banana-kie',
+    kicker: 'NANO BANANA',
+    title: 'Photoreal stills, two credits a frame.',
+    body: 'Photoreal images for product shots and stills, at 2 credits each.',
+    cta: 'Open Nano Banana',
+    href: '/app/create?model=nano-banana-kie',
+    bg: 'linear-gradient(160deg,#2b1a0a 0%,#7a4a1e 60%,#f0b060 100%)' },
+  { key: 'ace-step',
+    kicker: 'ACE STEP',
+    title: 'Music and voice, priced up front.',
+    body: 'Audio generation on the same credit balance. 1 credit per clip. See it before you spend.',
+    cta: 'Open ACE Step',
+    href: '/app/create?model=ace-step',
+    bg: 'linear-gradient(135deg,#08120b 0%,#0e3a1e 55%,#2ea258 100%)' },
   { key: 'wan-2.5-kie',
     kicker: 'WAN 2.5',
-    title: 'The default. Fast, cinematic.',
+    title: 'Cinematic video, priced up front.',
     body: '5 seconds of 720p motion for 19 credits. The workhorse, priced on the button before you press it.',
     cta: 'Open Wan 2.5',
     href: '/app/create?model=wan-2.5-kie',
     bg: 'linear-gradient(135deg,#0a1a2c 0%,#144a7a 55%,#3ec1e8 100%)' },
-  { key: 'nano-banana-kie',
-    kicker: 'NANO BANANA',
-    title: 'Photoreal stills, two credits a frame.',
-    body: 'Photoreal images for product shots and stills, at two credits each.',
-    cta: 'Open Nano Banana',
-    href: '/app/create?model=nano-banana-kie',
-    bg: 'linear-gradient(160deg,#2b1a0a 0%,#7a4a1e 60%,#f0b060 100%)' },
   { key: 'kling-26',
     kicker: 'KLING 2.6 PRO',
     title: 'Cinematic video, cost visible.',
@@ -205,14 +219,13 @@ export const FEATURE_CARDS = [
     cta: 'Browse presets',
     href: '/presets',
     bg: 'linear-gradient(135deg,#0e0620 0%,#3a0e6a 55%,#8b46e4 100%)' },
-  { key: 'ace-step',
-    kicker: 'ACE STEP',
-    title: 'Music and voice, priced up front.',
-    body: 'Audio generation on the same credit balance. 1 credit per clip. See it before you spend.',
-    cta: 'Open ACE Step',
-    href: '/app/create?model=ace-step',
-    bg: 'linear-gradient(135deg,#08120b 0%,#0e3a1e 55%,#2ea258 100%)' },
 ];
+
+// The home page is a concise sampler; exhaustive catalogs live on their
+// dedicated routes and remain linked beside each sample.
+export const LANDING_TEMPLATE_LIMIT = 8;
+export const LANDING_MODEL_LIMIT = 4;
+export const AFFORDABLE_START_MODEL_ID = 'nano-banana-kie';
 
 
 // FAQ — 10 Qs. Hedged where legal/policy is still in flight.
@@ -229,7 +242,7 @@ export const FAQ = [
   { q: 'What happens if a generation fails?',
     a: 'Automatic refund, ledger-backed. Provider safety rejects, provider timeouts and model errors all refund. Failed rows still show in your Library so you can retry.' },
   { q: 'Can I use the output commercially?',
-    a: "Outputs are yours to use commercially, subject to each model provider's licence.",
+    a: 'Commercial use varies by model and provider; check the current provider terms before publishing or selling an output.',
     link: { label: 'See our Terms of Service', href: '/legal/terms' } },
   { q: 'How do I exercise my data rights?',
     a: 'Access, export and deletion requests go through the Data Rights page.',
@@ -248,12 +261,12 @@ export const FAQ = [
 
 
 
-// The footer's short columns. The models are not listed here: the footer
-// reads them from the live catalog and sets them as their own band.
+// The footer stays a short route directory. The exhaustive model catalog has
+// its own page instead of being repeated under every public page.
 export const MORE_FEATURES = [
   { group: 'Product',   items: [
     { label: 'Explore', href: '/#explore' },
-    { label: 'Models',  href: '/#shelf' },
+    { label: 'Models',  href: '/models' },
     { label: 'Pricing', href: '/pricing' },
     { label: 'Templates', href: '/presets' },
     { label: 'Tools', href: '/tools' },
@@ -272,6 +285,7 @@ export const MORE_FEATURES = [
   // Items are either a plain string (a label, rendered muted so it does not
   // read as a link) or { label, href } (real route).
   { group: 'Company',   items: [
+    { label: 'About',              href: '/about' },
     { label: 'Terms',              href: '/legal/terms' },
     { label: 'Privacy',            href: '/legal/privacy' },
     { label: 'GDPR & Data Rights', href: '/legal/gdpr' },
@@ -294,7 +308,7 @@ export function footerStamp() {
 // Stamped on the pages that make claims about prices and policy, so a
 // visitor can tell how fresh what they are reading is. Bump it when the
 // marketing copy or the pricing story changes.
-export const SITE_UPDATED = '2026-09-22';
+export const SITE_UPDATED = '2026-10-16';
 
 
 // Shelf cards print the modality underneath the name, so the parenthetical in

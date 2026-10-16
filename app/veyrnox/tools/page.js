@@ -3,6 +3,7 @@ import { MarketingNav } from '../_components/NavBar';
 import { Main } from '../_components/Main';
 import { listModels } from '../_lib/modelPages';
 import { toolGroups, toolNeeds } from '../_lib/tools';
+import { OPEN_GRAPH_BASE } from '../../seo';
 
 // Per request, like /models: the catalog needs the Worker's service-role key
 // and is cached for 5 minutes in lib/publicCatalog.
@@ -13,7 +14,7 @@ export const metadata = {
   title: 'Tools',
   description: DESCRIPTION,
   alternates: { canonical: '/tools' },
-  openGraph: { title: 'Tools — Veyrnox.ai', description: DESCRIPTION, url: '/tools' },
+  openGraph: { ...OPEN_GRAPH_BASE, title: 'Tools — Veyrnox.ai', description: DESCRIPTION, url: '/tools' },
 };
 
 export default async function Tools() {

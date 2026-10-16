@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { MarketingNav } from '../_components/NavBar';
 import { CopyButton } from '../_components/CopyButton';
 import { Main } from '../_components/Main';
+import { OPEN_GRAPH_BASE } from '../../seo';
 
 const ENDPOINT = 'https://veyrnox.ai/api/v1/mcp';
 const DESCRIPTION = 'Connect an MCP-compatible assistant to inspect Veyrnox.ai models, credit estimates, generation history and Library assets.';
@@ -10,7 +11,7 @@ export const metadata = {
   title: 'MCP connector',
   description: DESCRIPTION,
   alternates: { canonical: '/mcp' },
-  openGraph: { title: 'MCP connector — Veyrnox.ai', description: DESCRIPTION, url: '/mcp' },
+  openGraph: { ...OPEN_GRAPH_BASE, title: 'MCP connector — Veyrnox.ai', description: DESCRIPTION, url: '/mcp' },
 };
 
 const tools = [

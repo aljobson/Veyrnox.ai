@@ -75,7 +75,7 @@ export function ThemeToggle({ className = '' }) {
       data-print="hide"
       aria-label={goingLight ? 'Switch to light theme' : 'Switch to dark theme'}
       title={goingLight ? 'Light theme' : 'Dark theme'}
-      className={cn('inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-vx-border text-vx-fg-muted transition-colors hover:border-vx-accent hover:text-vx-fg', className)}
+      className={cn('inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-vx-border text-vx-fg-muted transition-colors hover:border-vx-accent hover:text-vx-fg', className)}
     >
       <Icon name={goingLight ? 'sun' : 'moon'} size={15} />
     </button>

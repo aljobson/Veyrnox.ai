@@ -57,7 +57,7 @@ export function SiteSearch({ className = '' }) {
         onClick={() => setOpen(true)}
         data-print="hide"
         aria-label="Search Veyrnox"
-        className={cn('inline-flex h-10 items-center gap-2 rounded-full border border-vx-border px-3 text-[13px] font-semibold text-vx-fg-muted transition-colors hover:border-vx-accent hover:text-vx-fg', className)}
+        className={cn('inline-flex h-11 items-center gap-2 rounded-full border border-vx-border px-3 text-[13px] font-semibold text-vx-fg-muted transition-colors hover:border-vx-accent hover:text-vx-fg', className)}
       >
         <Icon name="search" size={14} />
         <span className="hidden md:inline">Search</span>
@@ -167,7 +167,7 @@ function SearchOverlay({ onClose }) {
             type="button"
             onClick={onClose}
             aria-label="Close search"
-            className="-mr-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-vx-fg-muted hover:text-vx-fg"
+            className="-mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-vx-fg-muted hover:text-vx-fg"
           >
             <Icon name="close" />
           </button>

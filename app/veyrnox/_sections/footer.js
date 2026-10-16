@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Logo } from '../_components/Logo';
+import { ENTITY } from '../../legal/_lib/entity';
 import {
   FAQ,
   MORE_FEATURES,
@@ -141,7 +142,7 @@ export function ClosingCTA() {
         Make something today.
       </h2>
       <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-4">
-        <Link href="/app/create" className="vx-press rounded-full bg-vx-accent text-vx-accent-ink px-8 py-4 text-base font-extrabold hover:bg-vx-accent-hover">
+        <Link href="/app/create?model=nano-banana-kie" className="vx-press inline-flex min-h-11 items-center rounded-full bg-vx-accent text-vx-accent-ink px-8 py-4 text-base font-extrabold hover:bg-vx-accent-hover">
           Open Studio
         </Link>
         <p className="text-vx-fg-muted text-[15px]">New accounts begin with 10 free credits. No card needed.</p>
@@ -152,16 +153,7 @@ export function ClosingCTA() {
 
 /* ─── Footer forest ─── */
 
-export function FooterForest({ catalog }) {
-  // Every model is a real catalog id and opens the studio on that model.
-  // They run as their own band under the short columns: as a fifth column
-  // the list was four times the height of its neighbours, and on a phone it
-  // left half the width empty for a thousand pixels.
-  const nameOf = distinctShelfNames(catalog);
-  const models = catalog.map((m) => ({
-    label: nameOf(m) + (m.premium ? ' ◆' : ''),
-    href: `/app/create?model=${encodeURIComponent(m.id)}`,
-  }));
+export function FooterForest() {
   return (
     <footer className="mt-28 sm:mt-36 border-t border-vx-border">
       <div className="max-w-[1300px] mx-auto px-4 sm:px-6 py-10 sm:py-14">
@@ -193,18 +185,6 @@ export function FooterForest({ catalog }) {
             </div>
           ))}
         </div>
-        {models.length > 0 && (
-          <div className="mt-10 border-t border-vx-border pt-8">
-            <h3 className="text-[13px] font-bold text-vx-fg mb-1.5">Models</h3>
-            <ul className="columns-2 sm:columns-3 lg:columns-5 gap-x-8 sm:gap-x-10">
-              {models.map((it) => (
-                <li key={it.href} className="break-inside-avoid">
-                  <FooterLink href={it.href}>{it.label}</FooterLink>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
       </div>
       <div className="border-t border-vx-border">
         <div className="max-w-[1300px] mx-auto px-4 sm:px-6 py-4 text-xs text-vx-fg-muted flex flex-col md:flex-row items-start md:items-center justify-between gap-1 md:gap-3">
@@ -212,6 +192,8 @@ export function FooterForest({ catalog }) {
             {/* Called at render, not at module load: a constant froze the
                 year to whenever the Worker bundle happened to boot. */}
             <span>{footerStamp()}</span>
+            <span aria-hidden="true">·</span>
+            <span>Company no. {ENTITY.companyNo} · {ENTITY.jurisdiction}</span>
             <span aria-hidden="true">·</span>
             <span>
               Last updated <time dateTime={SITE_UPDATED}>{formatUpdated(SITE_UPDATED)}</time>

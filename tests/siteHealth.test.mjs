@@ -1,6 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CHECKS, assessResponse, checkSite } from '../scripts/check-site-health.mjs';
+import {
+    CHECKS,
+    assessAssetResponse,
+    assessResponse,
+    checkSite,
+    extractStaticAssetPaths,
+} from '../scripts/check-site-health.mjs';
 
 const healthy = check => ({
     status: check.status,
@@ -54,4 +60,43 @@ test('network errors count as unreachable', async () => {
     });
     assert.equal(result.unreachable, CHECKS.length);
     assert.match(result.problems[0], /unreachable \(TimeoutError\)/);
+});
+
+test('static asset references are decoded, deduplicated and kept exact', () => {
+    const html = '<link href="/_next/static/css/a.css?dpl=abc&amp;x=1"><script src="/_next/static/chunks/a.js"></script>'
+        + '<script src="/_next/static/chunks/a.js"></script><img src="/_next/image?url=x">';
+    assert.deepEqual(extractStaticAssetPaths(html), [
+        '/_next/static/css/a.css?dpl=abc&x=1',
+        '/_next/static/chunks/a.js',
+    ]);
+});
+
+test('static assets must be successful, non-HTML and immutably cached', () => {
+    const path = '/_next/static/chunks/a.js';
+    const healthyAsset = { status: 200, contentType: 'application/javascript', cacheControl: 'public,max-age=31536000,immutable' };
+    assert.deepEqual(assessAssetResponse(path, healthyAsset), []);
+    assert.match(assessAssetResponse(path, { ...healthyAsset, status: 404 }).join(), /status 404/);
+    assert.match(assessAssetResponse(path, { ...healthyAsset, contentType: 'text\/html' }).join(), /returned HTML/);
+    assert.match(assessAssetResponse(path, { ...healthyAsset, cacheControl: 'max-age=0' }).join(), /immutable one-year cache/);
+});
+
+test('the smoke test validates freshly referenced and pre-deploy static assets', async () => {
+    const fresh = '/_next/static/chunks/fresh.js?dpl=new';
+    const prior = '/_next/static/chunks/prior.js?dpl=old';
+    const fetchedAssets = [];
+    const result = await checkSite('https://example.test', {
+        attempts: 1,
+        requiredAssets: [prior],
+        fetchOne: async (_base, check) => ({
+            ...healthy(check),
+            body: check.html ? `${healthy(check).body}<script src="${fresh}"></script>` : healthy(check).body,
+        }),
+        fetchAsset: async (_base, path) => {
+            fetchedAssets.push(path);
+            return { status: 200, contentType: 'application/javascript', cacheControl: 'public, max-age=31536000, immutable' };
+        },
+    });
+    assert.deepEqual(result.problems, []);
+    assert.deepEqual(result.assets, [prior, fresh]);
+    assert.deepEqual(fetchedAssets, [prior, fresh]);
 });
