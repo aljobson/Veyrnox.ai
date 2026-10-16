@@ -11,7 +11,7 @@ test('every page template and every sitemap page renders within accessibility an
     const url = new URL(req.url());
     const sameOrigin = url.origin === new URL(baseURL).origin;
     let refresh = false;
-    if (sameOrigin && url.pathname === '/api/auth/session' && req.method() === 'POST') {
+    if (process.env.QA_ANONYMOUS_READ_ONLY !== '1' && sameOrigin && url.pathname === '/api/auth/session' && req.method() === 'POST') {
       try { refresh = req.postDataJSON()?.action === 'refresh'; } catch { /* malformed requests remain blocked */ }
     }
     if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method()) && !refresh) {

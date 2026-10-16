@@ -4,16 +4,29 @@ on:
   schedule:
     - cron: '17 5 * * *'
   workflow_dispatch:
+    inputs:
+      target:
+        description: Environment to test without feature writes
+        type: choice
+        default: staging
+        options:
+          - staging
+          - production
+      expected_production_sha:
+        description: Exact deployed main SHA required for production
+        type: string
+        required: false
 
 permissions:
   contents: read
 
 concurrency:
-  group: page-qa
+  group: page-qa-${{ inputs.target || 'staging' }}
   cancel-in-progress: true
 
 jobs:
   all-pages:
+    if: github.event_name != 'workflow_dispatch' || inputs.target != 'production'
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
@@ -41,6 +54,7 @@ jobs:
             page-coverage-report/anonymous/
             test-results/page-qa-anonymous/
           retention-days: 7
+
       - name: Prepare authenticated staging session
         id: auth_session
         if: always()
@@ -65,4 +79,50 @@ jobs:
           path: |
             page-coverage-report/authenticated/
             test-results/page-qa-authenticated/
+          retention-days: 7
+
+  production-anonymous:
+    if: github.event_name == 'workflow_dispatch' && inputs.target == 'production'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      QA_BASE_URL: https://veyrnox.ai
+      QA_ALLOW_PRODUCTION: '1'
+      QA_ANONYMOUS_READ_ONLY: '1'
+      QA_EXPECTED_SHA: ${{ inputs.expected_production_sha }}
+      QA_REPORT_DIR: page-coverage-report/production
+    steps:
+      - name: Restrict production QA to the expected main dispatch
+        run: |
+          if [[ "$GITHUB_REF" != 'refs/heads/main' || ! "$QA_EXPECTED_SHA" =~ ^[a-f0-9]{40}$ || "$QA_EXPECTED_SHA" != "$GITHUB_SHA" ]]; then
+            echo '::error::Production QA requires main and the exact expected dispatch SHA'
+            exit 1
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '22'
+      - name: Install browser QA tools
+        run: |
+          npm install --no-save --no-audit --no-fund @playwright/test@1.63.0 @axe-core/playwright@4.10.2
+          npx playwright install --with-deps chromium
+      - name: Verify route inventory
+        run: npm run check:vey-knowledge
+      - name: Verify production release before sweep
+        id: release_before
+        run: node e2e/verify-live-release.mjs before
+      - name: Sweep production pages on anonymous desktop and mobile
+        run: npx playwright test -c e2e/page-coverage.config.mjs --project desktop-anonymous --project mobile-anonymous --output test-results/page-qa-production
+      - name: Verify production release after sweep
+        if: always() && steps.release_before.outcome == 'success'
+        run: node e2e/verify-live-release.mjs after
+      - name: Retain production page coverage
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: page-qa-production
+          path: |
+            page-coverage-report/production/
+            test-results/page-qa-production/
+            page-qa-release/
           retention-days: 7

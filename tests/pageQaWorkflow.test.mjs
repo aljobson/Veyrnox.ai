@@ -1,6 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { runInNewContext } from 'node:vm';
 
 const workflow = readFileSync(new URL('../.github/workflows/page-qa.yml', import.meta.url), 'utf8');
 const stateSetup = readFileSync(new URL('../e2e/create-qa-state.mjs', import.meta.url), 'utf8');
@@ -40,4 +46,172 @@ test('missing authentication fails explicitly without running or overwriting ano
   assert.match(workflow, /QA_REPORT_DIR: page-coverage-report\/authenticated/);
   assert.match(workflow, /name: page-qa-authenticated/);
   assert.doesNotMatch(workflow, /path:.*\.scratch\/qa-session/);
+});
+
+test('manual production QA is opt-in and cannot cancel the staging nightly run', () => {
+  assert.match(workflow, /target:\s*\n\s+description:.*\n\s+type: choice\n\s+default: staging\n\s+options:\n\s+- staging\n\s+- production/);
+  assert.match(workflow, /expected_production_sha:/);
+  assert.match(workflow, /group: page-qa-\$\{\{ inputs.target \|\| 'staging' \}\}/);
+  assert.match(workflow, /all-pages:\n\s+if:.*github.event_name != 'workflow_dispatch'.*inputs.target != 'production'/);
+  assert.match(workflow, /production-anonymous:\n\s+if:.*github.event_name == 'workflow_dispatch'.*inputs.target == 'production'/);
+});
+
+test('production has no staging session or secret steps and keeps both anonymous projects and release guards', () => {
+  const production = workflow.slice(workflow.indexOf('  production-anonymous:'));
+  assert.ok(production.startsWith('  production-anonymous:'));
+  assert.doesNotMatch(production, /secrets\.|E2E_EMAIL|E2E_PASSWORD|QA_STORAGE_STATE|create-qa-state|desktop-authenticated/);
+  assert.match(production, /QA_BASE_URL: https:\/\/veyrnox.ai/);
+  assert.match(production, /QA_ALLOW_PRODUCTION: '1'/);
+  assert.match(production, /QA_EXPECTED_SHA: \$\{\{ inputs.expected_production_sha \}\}/);
+  assert.match(production, /--project desktop-anonymous --project mobile-anonymous/);
+  const before = production.indexOf('node e2e/verify-live-release.mjs before');
+  const sweep = production.indexOf('npx playwright test');
+  const after = production.indexOf('node e2e/verify-live-release.mjs after');
+  assert.ok(before >= 0 && before < sweep && sweep < after);
+  assert.match(production, /if: always\(\) && steps.release_before.outcome == 'success'/);
+  assert.match(production, /name: Retain production page coverage\n\s+if: always\(\)/);
+  assert.match(production, /page-qa-release\//);
+  assert.doesNotMatch(production, /permissions:|environment:/);
+});
+
+test('production explicitly disables the session refresh write exception without changing staging', async () => {
+  const production = workflow.slice(workflow.indexOf('  production-anonymous:'));
+  assert.match(production, /QA_ANONYMOUS_READ_ONLY: '1'/);
+  assert.match(sweep, /process\.env\.QA_ANONYMOUS_READ_ONLY !== '1'/);
+  const routeSource = sweep.match(/await context\.route\('\*\*\/\*', (async \(route\) => \{[\s\S]*?)\n  \}\);/);
+  assert.ok(routeSource, 'route guard must remain independently testable');
+  for (const readOnly of [undefined, '1']) {
+    const handler = runInNewContext(`(${routeSource[1]}\n})`, { URL, baseURL: 'https://veyrnox.ai', blockedWrites: [], process: { env: { QA_ANONYMOUS_READ_ONLY: readOnly } } });
+    const classify = async (method, pathname, action = 'refresh', origin = 'https://veyrnox.ai') => handler({
+      request: () => ({ url: () => `${origin}${pathname}`, method: () => method, postDataJSON: () => ({ action }) }),
+      abort: () => 'blocked', continue: () => 'allowed',
+    });
+    for (const method of ['GET', 'HEAD', 'OPTIONS']) assert.equal(await classify(method, '/api/v1/jobs'), 'allowed');
+    assert.equal(await classify('POST', '/api/auth/session'), readOnly === '1' ? 'blocked' : 'allowed');
+    for (const method of ['POST', 'PATCH', 'DELETE']) assert.equal(await classify(method, '/api/v1/jobs'), 'blocked');
+    assert.equal(await classify('POST', '/api/auth/session', 'establish'), 'blocked');
+    assert.equal(await classify('POST', '/api/auth/session', 'refresh', 'https://example.invalid'), 'blocked');
+  }
+});
+
+const releaseHelper = () => import('../e2e/verify-live-release.mjs');
+const sha = 'a'.repeat(40);
+const otherSha = 'b'.repeat(40);
+const target = { eventName: 'workflow_dispatch', ref: 'refs/heads/main', workflowSha: sha, expectedSha: sha };
+const response = (html = `<script src="/_next/static/a.js?dpl=${sha}"></script>`, overrides = {}) => ({
+  status: 200, redirected: false, url: 'https://veyrnox.ai/app?qa_release=1', headers: new Headers({ 'content-type': 'text/html; charset=utf-8' }),
+  text: async () => html, body: new ReadableStream({ start(controller) { controller.enqueue(new TextEncoder().encode(html)); controller.close(); } }), ...overrides,
+});
+
+test('production target requires manual main dispatch and an exact valid dispatch SHA before network access', async () => {
+  const { assertProductionTarget, verifyProductionRelease } = await releaseHelper();
+  assert.doesNotThrow(() => assertProductionTarget(target));
+  for (const invalid of [{ eventName: 'schedule' }, { ref: 'refs/heads/feature' }, { expectedSha: '' },
+    { expectedSha: '$(echo unsafe)' }, { expectedSha: 'A'.repeat(40) }, { workflowSha: otherSha }]) {
+    assert.throws(() => assertProductionTarget({ ...target, ...invalid }));
+    await assert.rejects(verifyProductionRelease({ ...target, ...invalid }, () => { assert.fail('invalid target must not fetch'); }));
+  }
+});
+
+test('release proof uses only the fixed origin, disables redirects and bounds network time', async () => {
+  const { verifyProductionRelease } = await releaseHelper();
+  const proof = await verifyProductionRelease(target, async (url, options) => {
+    const parsed = new URL(url);
+    assert.equal(parsed.origin, 'https://veyrnox.ai');
+    assert.equal(parsed.pathname, '/app');
+    assert.equal(options.redirect, 'error');
+    assert.equal(options.cache, 'no-store');
+    assert.ok(options.signal instanceof AbortSignal);
+    assert.equal(options.signal.aborted, false);
+    assert.equal(options.headers, undefined);
+    assert.equal(options.body, undefined);
+    return response(`<script src="/_next/static/a?dpl=${sha}"></script><link href="/_next/static/b?dpl=${sha}">`);
+  });
+  assert.equal(proof.status, 200);
+  assert.equal(proof.expectedSha, sha);
+  assert.deepEqual(proof.releases, [sha]);
+  assert.equal(proof.pathname, '/app');
+  assert.equal(proof.url, undefined, 'proof must not retain query strings');
+});
+
+test('release checks reject missing, mixed, different and unsuccessful releases', async () => {
+  const { verifyProductionRelease } = await releaseHelper();
+  for (const candidate of [response('no release'), response(`dpl=${otherSha}`), response(`dpl=${sha} dpl=${otherSha}`),
+    response(undefined, { status: 503 }), response(undefined, { redirected: true }),
+    response(undefined, { url: 'https://example.invalid/app' }), response(undefined, { url: 'https://veyrnox.ai/other' })]) {
+    await assert.rejects(verifyProductionRelease(target, async () => candidate));
+  }
+});
+
+test('release markers are exact URL query values on quoted same-origin Next assets, never prefixes or prose', async () => {
+  const { verifyProductionRelease } = await releaseHelper();
+  for (const value of [`${sha}-suffix`, `${sha}%2Dsuffix`, `${sha}a`, `${sha}&amp;dpl=${otherSha}`]) {
+    await assert.rejects(verifyProductionRelease(target, async () => response(`<script src="/_next/static/a.js?dpl=${value}"></script>`)));
+  }
+  for (const html of [`dpl=${sha}`, `<script src="https://example.invalid/_next/static/a.js?dpl=${sha}"></script>`, `<a href="/unrelated?dpl=${sha}">link</a>`, `<script data-src="/_next/static/a.js?dpl=${sha}"></script>`]) {
+    await assert.rejects(verifyProductionRelease(target, async () => response(html)));
+  }
+  const proof = await verifyProductionRelease(target, async () => response(`<link href="/_next/static/a.css?other=1&amp;dpl=${sha}">`));
+  assert.deepEqual(proof.releases, [sha]);
+});
+
+test('release HTML type and streamed byte ceiling fail closed before oversized bodies are accepted', async () => {
+  const { verifyProductionRelease } = await releaseHelper();
+  await assert.rejects(verifyProductionRelease(target, async () => response(undefined, { headers: new Headers({ 'content-type': 'application/json' }) })), /HTML/);
+  await assert.rejects(verifyProductionRelease(target, async () => response(undefined, { headers: new Headers() })), /HTML/);
+  const oversized = `<script src="/_next/static/a.js?dpl=${sha}"></script>${'x'.repeat(1024 * 1024)}`;
+  await assert.rejects(verifyProductionRelease(target, async () => response(oversized)), /byte ceiling/);
+  const partial = new ReadableStream({ start(controller) { controller.enqueue(new Uint8Array(600 * 1024)); controller.enqueue(new Uint8Array(600 * 1024)); } });
+  await assert.rejects(verifyProductionRelease(target, async () => response(undefined, { body: partial })), /byte ceiling/);
+});
+
+test('the overall deadline includes a stalled body, not just response headers', async () => {
+  const { verifyProductionRelease } = await releaseHelper();
+  const body = new ReadableStream({ pull() { return new Promise(() => {}); } });
+  await assert.rejects(verifyProductionRelease(target, async () => response(undefined, { body }), { timeoutMs: 5 }), /body read failed/);
+});
+
+test('the request deadline also bounds an unresponsive transport and cannot be raised above 30 seconds', async () => {
+  const { verifyProductionRelease } = await releaseHelper();
+  await assert.rejects(verifyProductionRelease(target, () => new Promise(() => {}), { timeoutMs: 5 }), /request failed/);
+  for (const timeoutMs of [0, 30_001, NaN]) await assert.rejects(verifyProductionRelease(target, async () => response(), { timeoutMs }), /deadline/);
+  await assert.rejects(verifyProductionRelease(target, async () => response(undefined, { url: '' })), /destination/);
+  await assert.rejects(verifyProductionRelease(target, async () => response(undefined, { body: null })), /body read failed/);
+});
+
+test('network, timeout and body failures are sanitized rather than leaking raw request details', async () => {
+  const { verifyProductionRelease } = await releaseHelper();
+  for (const error of [new Error('private detail'), new DOMException('private detail', 'TimeoutError')]) {
+    await assert.rejects(verifyProductionRelease(target, async () => { throw error; }), { message: 'Production release request failed' });
+  }
+  await assert.rejects(verifyProductionRelease(target, async () => response(undefined, {
+    text: async () => { throw new Error('private detail'); }, body: new ReadableStream({ start(controller) { controller.error(new Error('private detail')); } }),
+  })),
+    { message: 'Production release body read failed' });
+});
+
+test('release runner records successful before and after proofs, plus failure evidence before throwing', async () => {
+  const { runProductionReleaseCheck } = await releaseHelper();
+  const env = { GITHUB_EVENT_NAME: target.eventName, GITHUB_REF: target.ref, GITHUB_SHA: sha, QA_EXPECTED_SHA: sha };
+  const written = [];
+  const saveEvidence = async (phase, evidence) => written.push({ phase, evidence });
+  for (const phase of ['before', 'after']) await runProductionReleaseCheck(phase, { env, fetchImpl: async () => response(), saveEvidence });
+  await assert.rejects(runProductionReleaseCheck('after', { env, fetchImpl: async () => response(`dpl=${otherSha}`), saveEvidence }));
+  assert.deepEqual(written.map(item => item.phase), ['before', 'after', 'after']);
+  assert.equal(written[0].evidence.expectedSha, sha);
+  assert.match(written[2].evidence.error, /release does not match/);
+  await assert.rejects(runProductionReleaseCheck('unknown', { env, saveEvidence }), /phase/);
+  await assert.rejects(runProductionReleaseCheck('before', { env, fetchImpl: async () => response(), saveEvidence: async () => { throw new Error('disk failure'); } }), /disk failure/);
+});
+
+test('release CLI fails closed and preserves a JSON proof without a valid production dispatch', async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), 'veyrnox-release-guard-test-'));
+  try {
+    assert.throws(() => execFileSync(process.execPath, [fileURLToPath(new URL('../e2e/verify-live-release.mjs', import.meta.url)), 'before'], {
+      cwd: directory, env: { ...process.env, GITHUB_EVENT_NAME: 'schedule', GITHUB_REF: 'refs/heads/main', GITHUB_SHA: sha, QA_EXPECTED_SHA: sha }, stdio: 'pipe',
+    }));
+    const proof = JSON.parse(await readFile(path.join(directory, 'page-qa-release/before.json'), 'utf8'));
+    assert.match(proof.error, /manual main dispatch/);
+    assert.equal(proof.phase, 'before');
+  } finally { await rm(directory, { recursive: true, force: true }); }
 });
