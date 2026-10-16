@@ -19,7 +19,7 @@ const SOURCES = execFileSync('git', ['ls-files', '-co', '--exclude-standard', 'a
 const INDEX_PAGES = [
     'app/veyrnox/pricing/page.js', 'app/veyrnox/models/page.js',
     'app/veyrnox/presets/page.js', 'app/veyrnox/tools/page.js', 'app/veyrnox/guides/page.js',
-    'app/veyrnox/mcp/page.js', 'app/not-found.js',
+    'app/veyrnox/mcp/page.js', 'app/veyrnox/developers/page.js', 'app/not-found.js',
 ];
 const DETAIL_PAGES = [
     'app/veyrnox/models/[id]/page.js', 'app/veyrnox/presets/[id]/page.js', 'app/veyrnox/guides/[id]/page.js',
@@ -48,7 +48,7 @@ test('there is one public nav, in one order', () => {
     assert.match(marketing, /const Item = section \? 'a' : Link;/);
     assert.match(read('app/veyrnox/_components/MobileMenu.js'), /const Item = it\.href\.includes\('#'\) \? 'a' : Link;/);
     assert.deepEqual(NAV_CATEGORIES.map((c) => c.label),
-        ['Explore', 'Oddlings', 'Models', 'Templates', 'Tools', 'Guides', 'MCP', 'LLM Chat', 'Pricing', 'FAQ', 'Social Cinema']);
+        ['Explore', 'Oddlings', 'Models', 'Templates', 'Tools', 'Guides', 'MCP', 'Developers', 'LLM Chat', 'Pricing', 'FAQ', 'Social Cinema']);
     assert.equal(NAV_CATEGORIES.find((item) => item.href === '/app/oddlings')?.featured, true,
         'Oddlings is a primary public destination, not an unstyled utility link');
     // The home page's sections stay one press away from every page.

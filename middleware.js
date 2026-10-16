@@ -117,6 +117,15 @@ export async function middleware(req) {
         return response;
     }
 
+    const isMcp = pathname === '/api/v1/mcp';
+    const isDeveloperApi = pathname === '/api/v1/developer' || pathname.startsWith('/api/v1/developer/');
+    // The developer API is a Bearer-token resource with wildcard CORS. Let a
+    // browser discover its allowed headers without presenting credentials;
+    // the route answers the preflight and no application handler runs.
+    if (isDeveloperApi && req.method === 'OPTIONS') {
+        return NextResponse.next({ request: { headers } });
+    }
+
     // No configured rollout: refuse before auth work. A pilot requires JWT verification below.
     if (isPublishApiPath(pathname) && !publishShellAvailable()) {
         return jsonError(503, { error: 'publish_not_open', requestId });
@@ -149,14 +158,9 @@ export async function middleware(req) {
 
     const oauthClientId = verifiedOAuthClientId(claims);
     if (oauthClientId === false) return reject(req, 'malformed', requestId);
-    const isMcp = pathname === '/api/v1/mcp';
-    if (oauthClientId && !isMcp) {
+    if (oauthClientId && !isMcp && !isDeveloperApi) {
         return jsonError(403, { error: 'oauth_route_forbidden', requestId });
     }
-    if (isMcp && !oauthClientId) {
-        return jsonError(403, { error: 'oauth_client_required', requestId }, mcpChallenge(req, 'insufficient_scope'));
-    }
-
     if (isPublishApiPath(pathname) && !publishAllowed(claims.sub)) {
         return jsonError(503, { error: 'publish_not_open', requestId });
     }
@@ -229,16 +233,22 @@ function jsonError(status, body, extraHeaders = {}) {
     });
 }
 
-function mcpChallenge(req, reason) {
+function oauthChallenge(req, reason) {
     const pathname = new URL(req.url).pathname;
-    if (pathname !== '/api/v1/mcp') return {};
+    const resource = pathname === '/api/v1/mcp' ? '/api/v1/mcp'
+        : pathname === '/api/v1/developer' || pathname.startsWith('/api/v1/developer/') ? '/api/v1/developer' : null;
+    if (!resource) return {};
     const origin = (process.env.PUBLIC_HOST || 'https://veyrnox.ai').replace(/\/$/, '');
-    const metadata = `${origin}/.well-known/oauth-protected-resource/api/v1/mcp`;
+    const metadata = `${origin}/.well-known/oauth-protected-resource${resource}`;
     const error = reason === 'missing' ? ''
         : reason === 'insufficient_scope' ? ', error="insufficient_scope"'
             : ', error="invalid_token"';
     return {
         'www-authenticate': `Bearer resource_metadata="${metadata}"${error}`,
+        ...(resource === '/api/v1/developer' ? {
+            'access-control-allow-origin': '*',
+            'access-control-expose-headers': 'Retry-After, WWW-Authenticate, X-Request-Id',
+        } : {}),
     };
 }
 
@@ -252,5 +262,5 @@ function mcpChallenge(req, reason) {
  */
 function reject(req, reason, requestId) {
     console.error('[auth] rejected', new URL(req.url).pathname, 'reason:', reason);
-    return jsonError(401, { error: 'unauthorized', reason, requestId }, mcpChallenge(req, reason));
+    return jsonError(401, { error: 'unauthorized', reason, requestId }, oauthChallenge(req, reason));
 }
