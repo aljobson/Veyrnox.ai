@@ -32,6 +32,75 @@ test('page sweep bounds browser actions and stabilizes animation-dependent acces
   assert.match(sweep, /getByRole\('button', \{ name: 'Decline', exact: true \}\)\.click\(\)/);
 });
 
+function privacyHandlerSource() {
+  const match = sweep.match(/async function handlePrivacyChoices\(page\) \{[\s\S]*?\n\}/);
+  assert.ok(match, 'privacy overlay handling must be installed before navigation, not probed only once');
+  return match[0];
+}
+
+test('late privacy hydration is handled through the genuine Decline UI, not bypassed or consented', async () => {
+  const source = privacyHandlerSource();
+  assert.doesNotMatch(source, /localStorage|storageState|evaluate|force:|waitForTimeout|timeout:|noWaitAfter|Allow analytics|Analytics only/);
+  let visible = false;
+  let handler;
+  const clicks = [];
+  const privacy = { getByRole: (role, options) => {
+    assert.equal(role, 'button');
+    assert.deepEqual({ ...options }, { name: 'Decline', exact: true });
+    return { click: async (...arguments_) => { assert.equal(visible, true); assert.deepEqual(arguments_, []); clicks.push('Decline'); visible = false; } };
+  } };
+  const page = { getByRole: (role, options) => {
+    assert.equal(role, 'region');
+    assert.deepEqual({ ...options }, { name: 'Privacy choices' });
+    return privacy;
+  }, addLocatorHandler: async (locator, callback, ...options) => {
+    assert.equal(locator, privacy); assert.deepEqual(options, []); handler = callback;
+  } };
+  const install = runInNewContext(`(${source})`, { expect: locator => ({ toBeHidden: async () => { assert.equal(locator, privacy); assert.equal(visible, false); } }) });
+  await install(page);
+  assert.equal(typeof handler, 'function');
+  assert.deepEqual(clicks, [], 'an absent banner must not cause a click or storage write');
+  visible = true; // Hydration occurs after setup: the handler remains registered.
+  await handler(privacy);
+  assert.deepEqual(clicks, ['Decline']);
+  assert.equal(visible, false, 'the normal gallery action can now proceed without forcing it');
+});
+
+test('a broken Decline control stays a failure rather than being retried or hidden by the harness', async () => {
+  let handler;
+  let clicks = 0;
+  const privacy = { getByRole: () => ({ click: async () => { clicks++; throw new Error('Decline control failed'); } }) };
+  const install = runInNewContext(`(${privacyHandlerSource()})`, { expect: () => assert.fail('failed Decline cannot assert successful dismissal') });
+  await install({ getByRole: () => privacy, addLocatorHandler: async (_, callback) => { handler = callback; } });
+  await assert.rejects(handler(privacy), /Decline control failed/);
+  assert.equal(clicks, 1);
+});
+
+test('replacement pages receive their own privacy locator and callback, never a stale page closure', async () => {
+  const callbacks = [];
+  const selected = [];
+  const install = runInNewContext(`(${privacyHandlerSource()})`, { expect: locator => ({ toBeHidden: async () => selected.push(`hidden:${locator.id}`) }) });
+  for (const id of ['original', 'replacement']) {
+    const locator = { id, getByRole: () => ({ click: async () => selected.push(`decline:${id}`) }) };
+    await install({ getByRole: () => locator, addLocatorHandler: async (_, callback) => callbacks.push(callback) });
+  }
+  await callbacks[1]();
+  await callbacks[0]();
+  assert.deepEqual(selected, ['decline:replacement', 'hidden:replacement', 'decline:original', 'hidden:original']);
+});
+
+test('privacy handler is installed before navigation and on replacement pages without weakening gallery checks', () => {
+  assert.match(sweep, /await handlePrivacyChoices\(page\);/);
+  assert.ok(sweep.indexOf('await handlePrivacyChoices(page);') < sweep.indexOf('await page.goto'));
+  assert.match(sweep, /page = await context.newPage\(\);\s+await handlePrivacyChoices\(page\);/);
+  assert.doesNotMatch(sweep, /if \(await privacyChoices\.isVisible\(\)\)/);
+  assert.match(sweep, /getByRole\('button', \{ name: 'Show more templates' \}\)\.click\(\)/);
+  assert.match(sweep, /toHaveCount\(before \+ 12\)/);
+  assert.match(config, /actionTimeout: 10_000/);
+  assert.match(config, /navigationTimeout: 30_000/);
+  assert.match(config, /retries: 0/);
+});
+
 test('page sweep waits for the mobile root streamed redirect before inspecting its document', () => {
   assert.match(sweep, /if \(entry\.pathname === '\/m'\) await page\.waitForURL\(new URL\('\/m\/create', baseURL\)\.href, \{ waitUntil: 'load' \}\)/);
   const navigation = sweep.indexOf("if (entry.pathname === '/m')");
