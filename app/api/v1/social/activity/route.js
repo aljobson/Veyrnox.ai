@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { accountReadLimit } from '../../../../../lib/accountReadLimit.js';
 import { socialTeamsEnabled } from '../../../../../lib/social/publishFeature.js';
 import { resolveBrand } from '../../../../../lib/social/resolveBrand.js';
+import { decodeActivityCursor } from '../../../../../lib/social/activityCursor.js';
 import { envConfig, rpc, SupabaseError } from '../../../../../packages/db/supabase-client.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -19,14 +20,8 @@ export async function GET(req) {
   if (!Number.isInteger(rawLimit) || rawLimit < 1 || rawLimit > 100) return NextResponse.json({ error: 'invalid_limit' }, { status: 400, headers });
   let cursor = null;
   if (params.has('cursor')) {
-    try {
-      const value = params.get('cursor');
-      if (value.length > 256) throw new Error('invalid cursor');
-      cursor = JSON.parse(value);
-      if (!UUID.test(cursor?.id || '') || !['publish', 'team', 'inbox', 'approval'].includes(cursor?.source)
-        || typeof cursor?.created_at !== 'string' || !/^\d{4}-\d{2}-\d{2}T/.test(cursor.created_at)
-        || !Number.isFinite(Date.parse(cursor.created_at))) throw new Error('invalid cursor');
-    } catch { return NextResponse.json({ error: 'invalid_cursor' }, { status: 400, headers }); }
+    try { cursor = decodeActivityCursor(params.get('cursor')); }
+    catch { return NextResponse.json({ error: 'invalid_cursor' }, { status: 400, headers }); }
   }
   const brand = await resolveBrand(authId, cfg, 'api/v1/social/activity:GET', { request: req, allowedRoles: ['owner', 'manager'] });
   if (brand.error) return brand.error;

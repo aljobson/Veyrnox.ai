@@ -18,6 +18,7 @@ for successful provider generation, purchases, or outbound social delivery.
 | Inbox mobile overflow | Chart scrolling is contained within the viewport |
 | Queues and RSS show premature owner controls | Sign-in, account identity, loading and explicit write roles gate editable surfaces |
 | Activity silently truncates history | Compound keyset pagination plus readable action labels; explicit limited-history notice until migration 0328 is present |
+| Activity cursor loses its positive UTC offset in the Worker adapter | URL-safe opaque transport preserves microseconds; narrowly validated legacy JSON cursors remain supported |
 | Manual reports imply automatic delivery | Delivery copy follows report cadence |
 | MFA displays a false initial failure | Loading, loaded and failed states are distinct |
 | Signed-out Library appears empty | Account loading and sign-in requirement are explicit |
@@ -47,18 +48,23 @@ project. Production application follows ADR-0023's protected workflow on main.
 
 ## External prerequisites
 
-- The existing staging OpenAI key was not present in the staging Worker,
-  Actions metadata or approved local env-file locations. The owner selected
-  reuse; its storage location is still required. No production key was copied.
+- A new owner-approved OpenAI key was created through secure setup, saved only
+  to an ignored staging env file, and provisioned on the staging Worker.
+  A non-billable API check and fresh successful scanner heartbeat passed.
+  Existing staging dependencies remain present; no production key was copied.
 - Provider monitoring needs `FAL_BILLING_KEY`, `KIE_BALANCE_API_KEY`, and
-  `OPENROUTER_MANAGEMENT_KEY`. These read-only billing credentials were absent.
-  A code deployment cannot create or recover these provider credentials.
+  `OPENROUTER_MANAGEMENT_KEY`. These credentials were absent. The monitor uses
+  read-only requests, but KIE credentials can spend and OpenRouter management
+  credentials have administrative privileges. Use the least-privilege setup in
+  [the provider runbook](provider-balances.md); a code deployment cannot recover
+  an unsaved provider key.
 - The authenticated nightly staging sweep requires staging `E2E_EMAIL` and
   `E2E_PASSWORD` secrets. Anonymous results are retained independently, and
   missing authentication is reported explicitly rather than counted as a pass.
-- Production migration 0328 requires owner approval in the protected
-  [apply-migrations run](https://github.com/aljobson/Veyrnox.ai/actions/runs/38909212682).
-  Until then, Activity explicitly identifies its limited history.
+- Production migration 0328 completed after explicit owner approval through the
+  protected [apply-migrations run](https://github.com/aljobson/Veyrnox.ai/actions/runs/38909212682).
+  The production ACL readback confirms service-role-only execution and an empty
+  search path. The legacy limited-history notice is no longer shown.
 
 ## Acceptance boundaries
 
@@ -116,3 +122,19 @@ The final follow-up PR records its own deployment and repeated live sweep.
 No purchases, real generations, outbound posts, security enrolments or destructive
 actions are implied by these read-only page results. Administrator interiors and
 valid-token shared workflows still require suitable access/fixtures.
+
+## Activity transport follow-up
+
+The first post-migration production pagination interaction exposed an adapter
+transport defect: OpenNext reconstructs a decoded query without escaping its
+values. A timestamp's `+00:00` became ` 00:00`, so the route rejected the next
+cursor with HTTP 400. SQL pagination and timestamp precision were correct.
+
+The shared client/API helper now uses bounded, validated base64url cursors and
+preserves the database's six-digit timestamp precision. Existing JSON clients
+are supported with a narrowly validated positive-offset repair. Regression tests
+execute the installed adapter's actual reconstruction function; standalone
+Cloudflare runtime verification also passed. This candidate passes 3,918 tests,
+the production build, type checking, scoped lint and 548-module boundary checks.
+No SQL, billing or authorization behavior changes. The follow-up PR records the
+actual deployed pagination interaction and subsequent live page checks.
