@@ -80,7 +80,7 @@ function hostHarness(pathname) {
   let state = null, effect, observer, connected = true, host = { nodeType: 1 }, frameId = 0;
   const frames = new Map();
   const fakeReact = { useState: initial => [initial, next => { state = typeof next === 'function' ? next(state) : next; }], useEffect: callback => { effect = callback; } };
-  const { default: useEditorHelperHost } = load('app/veyrnox/_lib/useEditorHelperHost.js', { react: fakeReact });
+  const { default: readEditorHost } = load('app/veyrnox/_lib/useEditorHelperHost.js', { react: fakeReact });
   const mocks = {
     document: { body: {}, querySelector: selector => { assert.equal(selector, '[data-vey-editor-helper]'); return host; } },
     MutationObserver: class { constructor(callback) { observer = callback; } observe(_, options) { assert.deepEqual(options, { childList: true, subtree: true }); } disconnect() { connected = false; } },
@@ -88,7 +88,7 @@ function hostHarness(pathname) {
   };
   const previous = Object.fromEntries(Object.keys(mocks).map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]));
   for (const [key, value] of Object.entries(mocks)) Object.defineProperty(globalThis, key, { configurable: true, writable: true, value });
-  const initial = useEditorHelperHost(pathname), cleanup = effect();
+  const initial = readEditorHost(pathname), cleanup = effect();
   const flush = () => { const pending = [...frames.values()]; frames.clear(); for (const callback of pending) callback(); };
   return {
     initial, flush, read: () => state, host: () => host, replace: next => { host = next; observer(); }, pending: () => frames.size,

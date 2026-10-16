@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mobileClearance, mobileDockPosition } from '../lib/veyMobileLayout.js';
+import { dockClearance, mobileClearance, mobileDockPosition } from '../lib/veyMobileLayout.js';
+import { VEY_CHAT_STYLE } from '../lib/veyChatLayout.js';
 import { handForPoint, VEY_SIZE } from '../lib/veyPointer.js';
 const rect = (left, top, width, height) => ({left, top, right:left+width, bottom:top+height});
 
@@ -10,6 +11,16 @@ test('mobile dock clearance includes the mascot and remains independent of the p
   assert.equal(mobileClearance(32,v,rect(8,480,330,356)),446);
   assert.equal(mobileClearance(32,v,null),32);
   assert.equal(mobileClearance(32,{width:640,height:844},rect(8,674,330,162)),32);
+});
+test('compact chat uses one shared bounded height and reserves desktop bottom space too', () => {
+  assert.equal(VEY_CHAT_STYLE['--vey-chat-height'],'clamp(164px,24dvh,200px)');
+  assert.equal(dockClearance(32,{width:1440,height:900},rect(8,692,280,200)),290);
+  assert.equal(dockClearance(32,{width:1440,height:900},null),32);
+  const guide=rect(8,560,280,124),chat=rect(8,692,280,200),v={width:1440,height:900};
+  const dock=mobileDockPosition(v,chat,true);
+  assert.ok(dock.x>=chat.right+8);
+  assert.ok(dock.y+VEY_SIZE.height<=chat.bottom);
+  assert.ok(guide.bottom<chat.top);
 });
 test('mobile walkthrough reserves a separate mascot lane and never uses scrolled page geometry', () => {
   for (const width of [320,390,430]) {
@@ -63,4 +74,10 @@ test('mobile movement is explicit and the layout never searches page obstacles o
   assert.match(assistant,/window\.innerWidth < 640 && !options\.explicit/);
   assert.match(guide,/explicit: true, modelKind/);
   assert.match(layout,/root\.style\.scrollPaddingBottom = appliedScrollPadding/);
+  assert.match(assistant,/style=\{VEY_CHAT_STYLE\}/);
+  assert.match(guide,/style=\{VEY_CHAT_STYLE\}/);
+  assert.match(guide,/var\(--vey-chat-height\)/);
+  assert.match(assistant,/w-\[min\(280px,calc\(100vw-80px\)\)\]/);
+  assert.doesNotMatch(assistant,/sm:h-auto|sm:w-\[min\(410px/);
+  assert.match(assistant,/rows=\{1\}/);
 });

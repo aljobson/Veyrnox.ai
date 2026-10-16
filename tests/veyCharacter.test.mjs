@@ -1,16 +1,21 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { VEY_CHAT_STYLE } from '../lib/veyChatLayout.js';
 
 const root = new URL('../', import.meta.url);
 
 test('mobile questions stay in a short panel with a fixed composer and a scrolling transcript', async () => {
     const source = await readFile(new URL('app/veyrnox/_components/MascotAssistant.jsx', root), 'utf8');
     const guide = await readFile(new URL('app/veyrnox/_components/VeyTaskGuide.jsx', root), 'utf8');
-    assert.match(source, /h-\[clamp\(220px,34dvh,280px\)\]/);
+    assert.equal(VEY_CHAT_STYLE['--vey-chat-height'], 'clamp(164px,24dvh,200px)');
+    assert.match(source, /style=\{VEY_CHAT_STYLE\}/);
+    assert.match(source, /h-\[var\(--vey-chat-height\)\]/);
+    assert.match(source, /w-\[min\(280px,calc\(100vw-80px\)\)\]/);
     assert.match(source, /min-h-0 flex-1 overflow-y-auto/);
     assert.match(source, /<form className="mt-auto shrink-0/);
-    assert.match(guide, /bottom-\[calc\(clamp\(220px,34dvh,280px\)/);
+    assert.match(guide, /style=\{VEY_CHAT_STYLE\}/);
+    assert.match(guide, /bottom-\[calc\(var\(--vey-chat-height\)/);
 });
 
 test('Vey has no floating text badges but retains accessible launcher and movement instructions', async () => {
