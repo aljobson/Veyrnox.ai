@@ -49,10 +49,17 @@ function CalendarControls({today}) {
         if(planTier!=='publish')return;
         const id=++requestId.current;
         let active=true;
+        const timeout=window.setTimeout(()=>{
+            if(active&&id===requestId.current){
+                setResult({posts:[],next:null,key:queryKey});
+                setLoadError('The calendar is taking too long to load. Check your connection and try again.');
+            }
+        },8000);
         listSocialCalendar({from:range.from,to:range.to,status,network}).then(data=>{
+            window.clearTimeout(timeout);
             if(active&&id===requestId.current){setResult({...data,key:queryKey});setLoadError('');}
-        }).catch(()=>{if(active&&id===requestId.current){setResult({posts:[],next:null,key:queryKey});setLoadError('Could not load your calendar. Try again.');}});
-        return()=>{active=false;};
+        }).catch(()=>{window.clearTimeout(timeout);if(active&&id===requestId.current){setResult({posts:[],next:null,key:queryKey});setLoadError('Could not load your calendar. Try again.');}});
+        return()=>{active=false;window.clearTimeout(timeout);};
     },[queryKey,range.from,range.to,status,network,planTier]);
     if(planTier===null)return <p className="text-sm text-vx-fg-muted">Loading your plan…</p>;
     if(planTier!=='publish')return <section className="rounded-2xl border border-vx-accent/40 bg-vx-accent/[0.06] p-6"><p className="text-xs font-bold uppercase tracking-widest text-vx-accent">Publish Plan</p><h2 className="mt-2 text-2xl font-black">Unlock scheduling</h2><p className="mt-3 text-sm text-vx-fg-body">The calendar, scheduled posts and rescheduling are included with the Publish Plan.</p><Link href="/app/publish/plan" className="mt-5 inline-block rounded-full bg-vx-accent px-5 py-2.5 text-sm font-bold text-black">View Publish Plan</Link></section>;

@@ -17,11 +17,11 @@ let activeTouchStop = null;
 //   - reduced motion, data-saver, or a slow connection on touch: never.
 //     Reduced motion is watched, so switching it on mid-visit pauses playback
 //     instead of waiting for a reload.
-export function useClipPlayback(rootRef, videoRef) {
+export function useClipPlayback(rootRef, videoRef, enabled = true) {
   useEffect(() => {
     const root = rootRef.current;
     const video = videoRef.current;
-    if (!root || !video) return undefined;
+    if (!enabled || !root || !video) return undefined;
 
     const connection = navigator.connection;
     const reducedQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -87,5 +87,5 @@ export function useClipPlayback(rootRef, videoRef) {
       root.removeEventListener('focusout', release);
       stop();
     };
-  }, [rootRef, videoRef]);
+  }, [rootRef, videoRef, enabled]);
 }

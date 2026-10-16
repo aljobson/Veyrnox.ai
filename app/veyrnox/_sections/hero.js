@@ -19,10 +19,10 @@ export function Hero({ models }) {
           </p>
           <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-4">
             <Link
-              href="/app?auth=sign_up"
+              href="/app/create"
               className="vx-press rounded-full bg-vx-fg text-vx-base px-7 py-3.5 text-[15px] font-extrabold hover:bg-vx-fg/85"
             >
-              Claim 10 credits
+              Start creating
             </Link>
             <Link href="/pricing" className="text-[15px] font-bold text-vx-fg-body underline decoration-vx-border decoration-2 underline-offset-[6px] hover:text-vx-fg hover:decoration-vx-accent">
               See every price
@@ -57,6 +57,7 @@ export function FeaturedHeroCards({ catalog }) {
               key={f.key}
               href={f.href}
               clip={clip && { ...clip, objectFit: 'contain' }}
+              ariaLabel={`Open ${f.title}`}
               className="vx-rise block w-[72%] shrink-0 snap-start text-left sm:w-auto"
               style={{ '--vx-i': i }}
               mediaClassName="rounded-2xl"

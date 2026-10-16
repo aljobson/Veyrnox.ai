@@ -27,6 +27,22 @@ test('HTML receives fresh matching CSP/renderer nonces and cannot trust inbound 
     assert.equal(new Set(seen).size, 8);
 });
 
+test('production HTTP and www requests redirect to the canonical HTTPS apex', async () => {
+    const insecure = await middleware(new NextRequest('http://veyrnox.ai/pricing'));
+    assert.equal(insecure.status, 308);
+    assert.equal(insecure.headers.get('location'), 'https://veyrnox.ai/pricing');
+
+    const forwarded = await middleware(new NextRequest('https://veyrnox.ai/guides?from=http', {
+        headers: { 'x-forwarded-proto': 'http' },
+    }));
+    assert.equal(forwarded.status, 308);
+    assert.equal(forwarded.headers.get('location'), 'https://veyrnox.ai/guides?from=http');
+
+    const www = await middleware(new NextRequest('https://www.veyrnox.ai/models'));
+    assert.equal(www.status, 308);
+    assert.equal(www.headers.get('location'), 'https://veyrnox.ai/models');
+});
+
 test('API requests still require a verified token, even with forged identity/nonce', async () => {
     const before = process.env.SUPABASE_URL;
     process.env.SUPABASE_URL = 'https://example.supabase.co';

@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import { SUPPORT_EMAIL } from '../_lib/tokens';
 import { clearAttribution } from '../_lib/utm';
 import { applyStoredTheme } from './ThemeToggle';
@@ -38,8 +37,6 @@ export default function SiteChrome({ analyticsEnabled = false }) {
   // this older notice only while PostHog is not configured, so visitors never
   // receive two overlapping or contradictory privacy notices.
   const noticeOpen = !analyticsEnabled && unread && !acked;
-  // The chat composer sits at the bottom edge, so the buttons ride above it there.
-  const onChat = (usePathname() || '').startsWith('/app/chat');
 
   // Retire unused campaign storage, including records left by older clients.
   useEffect(() => {
@@ -63,14 +60,12 @@ export default function SiteChrome({ analyticsEnabled = false }) {
     <>
       <ScrollProgress />
       <ReferralBridge />
-      {/* One bottom stack: the buttons sit on top of the notice whatever
-          height it wraps to. A fixed offset stopped clearing it on a phone
-          once the notice grew a sentence, and the Contact button slid half
-          under it. The stack itself takes no clicks; its children do. */}
-      <div data-print="hide" className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex flex-col items-end">
-        <FloatingActions raised={onChat && !noticeOpen} tucked={noticeOpen} />
-        {noticeOpen && <StorageNotice onDismiss={ackNotice} />}
-      </div>
+      <FloatingActions />
+      {noticeOpen && (
+        <div data-print="hide" className="fixed inset-x-0 bottom-0 z-50">
+          <StorageNotice onDismiss={ackNotice} />
+        </div>
+      )}
     </>
   );
 }
@@ -123,12 +118,8 @@ function ScrollProgress() {
   );
 }
 
-/* ─── Back to top + contact, bottom-right ───
-   `raised` lifts them clear of the chat composer. `tucked` drops Back to
-   top on a phone while the storage notice is up, which already takes a
-   fifth of the screen there. Contact stays: on most pages it is the only
-   contact link. */
-function FloatingActions({ raised = false, tucked = false }) {
+/* ─── Back to top + contact, upper-right utility rail ─── */
+function FloatingActions() {
   const [showTop, setShowTop] = useState(false);
 
   useEffect(() => {
@@ -148,9 +139,9 @@ function FloatingActions({ raised = false, tucked = false }) {
 
   return (
     <div
-      className={`mr-4 flex flex-col items-end gap-2 sm:mr-6 ${
-        raised ? 'mb-36 sm:mb-24' : 'mb-4 sm:mb-6'
-      }`}
+      data-print="hide"
+      data-site-actions
+      className="fixed right-2 top-[9.75rem] z-50 flex flex-col items-center gap-2"
     >
       {/* `invisible` as well as transparent: a see-through button still
           took a Tab stop at the top of every page. */}
@@ -158,7 +149,7 @@ function FloatingActions({ raised = false, tucked = false }) {
         type="button"
         onClick={toTop}
         aria-label="Back to top"
-        className={`${tucked ? 'hidden sm:inline-flex' : 'inline-flex'} h-11 w-11 items-center justify-center rounded-full border border-vx-border bg-vx-panel text-vx-fg-body shadow-lg transition-[opacity,visibility] duration-200 hover:border-vx-accent hover:text-vx-fg ${
+        className={`inline-flex h-11 w-11 items-center justify-center rounded-full border border-vx-border bg-vx-panel text-vx-fg-body shadow-lg transition-[opacity,visibility] duration-200 hover:border-vx-accent hover:text-vx-fg ${
           showTop ? 'pointer-events-auto visible opacity-100' : 'invisible opacity-0'
         }`}
       >
@@ -166,11 +157,11 @@ function FloatingActions({ raised = false, tucked = false }) {
       </button>
       <a
         href={`mailto:${SUPPORT_EMAIL}`}
-        className="pointer-events-auto inline-flex h-11 items-center gap-2 rounded-full bg-vx-accent px-4 text-sm font-extrabold text-vx-accent-ink shadow-lg hover:bg-vx-accent-hover"
+        aria-label="Contact support by email"
+        title="Contact support"
+        className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-vx-accent text-sm font-extrabold text-vx-accent-ink shadow-lg hover:bg-vx-accent-hover"
       >
         <Icon name="mail" />
-        <span className="hidden sm:inline">Contact</span>
-        <span className="sr-only sm:hidden">Contact support by email</span>
       </a>
     </div>
   );

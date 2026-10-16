@@ -24,6 +24,8 @@ export default function Explore() {
               width={1600}
               height={800}
               alt="Four fictional human Oddling creators with distinctive silhouettes and costumes"
+              loading="eager"
+              sizes="(max-width: 1023px) 100vw, 55vw"
               className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
             />
             <div className="absolute inset-0 bg-linear-to-t from-black/65 via-transparent to-transparent" />

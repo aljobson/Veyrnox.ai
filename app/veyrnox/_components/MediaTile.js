@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ClipBadge } from './ClipBadge';
@@ -26,16 +26,32 @@ export function MediaTile({ href, clip, mediaClassName = '', mediaStyle, classNa
   const videoRef = useRef(null);
   const [failed, setFailed] = useState(false);
   const [playing, setPlaying] = useState(false);
+  const [nearViewport, setNearViewport] = useState(false);
+  const clipVideo = clip?.video;
 
-  useClipPlayback(rootRef, videoRef);
+  // Posters are cheap and useful immediately. Video elements and their
+  // playback observers are only mounted shortly before a tile can be seen,
+  // keeping the long landing page from creating dozens of media players.
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root || !clipVideo) return undefined;
+    const observer = new IntersectionObserver(
+      ([entry]) => setNearViewport(entry.isIntersecting),
+      { rootMargin: '600px 0px' },
+    );
+    observer.observe(root);
+    return () => observer.disconnect();
+  }, [clipVideo]);
 
-  const showVideo = clip && !failed;
+  useClipPlayback(rootRef, videoRef, nearViewport);
+
+  const showVideo = clip && nearViewport && !failed;
   const mediaFit = uncroppedOnMobile ? 'object-contain lg:object-cover' : 'object-cover';
 
   return (
     <Link ref={rootRef} href={href} aria-label={ariaLabel} onClick={onClick} className={`group vx-tile ${className}`} style={style}>
       <div className={`relative overflow-hidden ${mediaClassName}`} style={mediaStyle}>
-        {failed && clip?.poster && (
+        {clip?.poster && (
           <Image src={clip.poster} alt="" fill unoptimized className={mediaFit} style={{ objectPosition: clip.objectPosition, objectFit: clip.objectFit }} />
         )}
         {showVideo && (
@@ -61,7 +77,7 @@ export function MediaTile({ href, clip, mediaClassName = '', mediaStyle, classNa
         {children}
         {clip && <ClipBadge clip={clip} />}
       </div>
-      {footer}
+      {footer && <Fragment key="footer">{footer}</Fragment>}
     </Link>
   );
 }

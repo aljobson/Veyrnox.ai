@@ -28,6 +28,7 @@ import { isPublishApiPath, publishShellAvailable, publishAllowed } from './lib/s
 import { isUnknownStaticPage } from './lib/unknownStaticPage.js';
 const POSTHOG_INGEST_PATH = '/ingest';
 const POSTHOG_INGEST_ORIGIN = 'https://eu.i.posthog.com';
+const CANONICAL_HOST = 'veyrnox.ai';
 
 export const config = {
     matcher: ['/api/v1/:path*', '/((?!api(?:/|$)|_next(?:/|$)).*)'],
@@ -54,9 +55,24 @@ const IDENTITY_HEADERS = [
 ];
 
 export async function middleware(req) {
+    const requestUrl = new URL(req.url);
+    const forwardedHost = req.headers.get('x-forwarded-host')?.split(',')[0]?.trim().toLowerCase();
+    const host = (forwardedHost || req.headers.get('host')?.toLowerCase() || requestUrl.host.toLowerCase()).replace(/:\d+$/, '');
+    const forwardedProto = req.headers.get('x-forwarded-proto')?.split(',')[0]?.trim().toLowerCase();
+    const protocol = forwardedProto || requestUrl.protocol.replace(':', '');
+
+    // Canonicalise the first insecure request as well as the www alias before
+    // any application response, rewrite or analytics proxy is produced.
+    if ((host === CANONICAL_HOST && protocol === 'http') || host === `www.${CANONICAL_HOST}`) {
+        requestUrl.protocol = 'https:';
+        requestUrl.host = CANONICAL_HOST;
+        requestUrl.port = '';
+        return NextResponse.redirect(requestUrl, 308);
+    }
+
     // Same-origin analytics proxy: the browser CSP never needs a PostHog
     // origin. With no configured project key, do not expose a free relay.
-    const pathname = req.nextUrl?.pathname ?? new URL(req.url).pathname;
+    const pathname = req.nextUrl?.pathname ?? requestUrl.pathname;
     if (pathname === POSTHOG_INGEST_PATH || pathname.startsWith(`${POSTHOG_INGEST_PATH}/`)) {
         if (!process.env.NEXT_PUBLIC_POSTHOG_KEY?.startsWith('phc_')) {
             return new NextResponse(null, { status: 404, headers: { 'cache-control': 'no-store' } });

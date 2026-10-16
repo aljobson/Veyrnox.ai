@@ -16,10 +16,8 @@ export const dynamic = 'force-dynamic';
 // page we ask not to be indexed is a contradiction Search Console reports as
 // an error.
 export default async function sitemap() {
-  const now = new Date();
   const page = (path, changeFrequency, priority) => ({
     url: `${SITE_URL}${path}`,
-    lastModified: now,
     changeFrequency,
     priority,
   });

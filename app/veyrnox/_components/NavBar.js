@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Logo } from './Logo';
 import { NavAuthButtons } from './NavAuthButtons';
 import { MobileMenu } from './MobileMenu';
@@ -123,20 +123,6 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
   const projectsEnabled = useProjectsEnabled();
   const enhanceEnabled = useVideoEnhancePreview();
   const editorEnabled = useEditorEnabled();
-  const tabs = useRef(null);
-  // Keeps the current desktop tab on screen when the strip overflows. The
-  // strip is moved by hand: scrollIntoView() also moves where the next Tab
-  // starts from, so on every studio page the first Tab went past "Skip to
-  // content" and the tabs before this one.
-  useEffect(() => {
-    const strip = tabs.current;
-    const current = strip?.querySelector('[aria-current="page"]');
-    if (!current) return;
-    const edge = strip.getBoundingClientRect();
-    const tab = current.getBoundingClientRect();
-    if (tab.left < edge.left) strip.scrollLeft -= edge.left - tab.left;
-    else if (tab.right > edge.right) strip.scrollLeft += tab.right - edge.right;
-  }, [active, projectsEnabled, enhanceEnabled, editorEnabled]);
   const items = [
     { key: 'explore', href: '/app',         label: 'Explore' },
     { key: 'oddlings', href: '/app/oddlings', label: 'Oddlings', featured: true },
@@ -150,6 +136,9 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
     ...(projectsEnabled ? [{ key: 'projects', href: '/app/projects', label: 'Projects' }] : []),
     ...(enhanceEnabled ? [{ key: 'enhance', href: '/app/enhance', label: 'Enhance' }] : []),
   ];
+  const primaryKeys = new Set(['explore', 'create', 'library']);
+  const primaryItems = items.filter((item) => primaryKeys.has(item.key));
+  const moreItems = items.filter((item) => !primaryKeys.has(item.key));
   const menuItems = [
     ...items,
     ...APP_BROWSE_CATEGORIES.filter((browse) => !items.some((item) => item.href === browse.href)),
@@ -212,8 +201,8 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
         navLabel="Studio"
         className="lg:hidden"
       />
-      <nav ref={tabs} aria-label="Studio" className="hidden lg:flex min-w-0 overflow-x-auto gap-0.5 sm:gap-1 text-[12px] sm:text-sm font-semibold">
-        {items.map((it) => {
+      <nav aria-label="Studio" className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 text-[12px] font-semibold sm:gap-1 sm:text-sm lg:flex">
+        {primaryItems.map((it) => {
           const current = active === it.key;
           return (
             <Link
@@ -233,6 +222,50 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
             </Link>
           );
         })}
+        <details className="group relative 2xl:hidden">
+          <summary className={`cursor-pointer list-none rounded-full px-2 py-2 hover:bg-vx-panel hover:text-vx-fg sm:px-3 ${
+            moreItems.some((item) => item.key === active) ? 'bg-vx-panel text-vx-fg' : 'text-vx-fg-muted'
+          }`}>
+            More <span aria-hidden="true">▾</span>
+          </summary>
+          <div className="absolute left-1/2 top-[calc(100%+0.5rem)] z-50 min-w-48 -translate-x-1/2 rounded-2xl border border-vx-border bg-vx-panel p-2 shadow-2xl">
+            {moreItems.map((it) => (
+              <Link
+                key={it.key}
+                href={it.href}
+                aria-current={active === it.key ? 'page' : undefined}
+                className={`flex items-center gap-2 rounded-xl px-3 py-2.5 ${
+                  active === it.key ? 'bg-vx-base text-vx-fg' : 'text-vx-fg-muted hover:bg-vx-base hover:text-vx-fg'
+                }`}
+              >
+                {it.featured && <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-vx-accent" />}
+                {it.label}
+              </Link>
+            ))}
+          </div>
+        </details>
+        <div className="hidden items-center gap-1 2xl:flex">
+          {moreItems.map((it) => {
+            const current = active === it.key;
+            return (
+              <Link
+                key={it.key}
+                href={it.href}
+                aria-current={current ? 'page' : undefined}
+                className={`inline-flex shrink-0 items-center gap-2 rounded-full px-4 py-2 transition-colors ${
+                  current
+                    ? it.featured ? 'bg-vx-accent text-vx-accent-ink' : 'bg-vx-panel text-vx-fg'
+                    : it.featured
+                      ? 'border border-vx-accent/50 bg-vx-accent/10 text-vx-accent hover:bg-vx-accent/20'
+                      : 'text-vx-fg-muted hover:text-vx-fg'
+                }`}
+              >
+                {it.featured && <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-current" />}
+                {it.label}
+              </Link>
+            );
+          })}
+        </div>
       </nav>
       <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
         <MobileMenu

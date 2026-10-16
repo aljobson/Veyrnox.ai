@@ -26,12 +26,15 @@ const ACCOUNT_LINKS = [
 // the next page would sign straight back in (audit 2026-10-09, A-03).
 const storedAccount = () => JSON.stringify(accountLabel(getStoredSession()));
 const noAccount = () => 'null';
+const clientReady = () => true;
+const serverPending = () => false;
 
 // `account` is optional: pass one (AppNav does, so the email can come from
 // /api/v1/account when the stored session carries none). The marketing nav
 // passes nothing and reads the session on its own.
 export function NavAuthButtons({ account: given }) {
   const stored = useSyncExternalStore(onSessionChange, storedAccount, noAccount);
+  const hydrated = useSyncExternalStore(onSessionChange, clientReady, serverPending);
   const sessionAccount = useMemo(() => JSON.parse(stored), [stored]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -70,6 +73,13 @@ export function NavAuthButtons({ account: given }) {
       window.removeEventListener('pointerdown', onDown);
     };
   }, [menuOpen]);
+
+  // Marketing pages cannot read localStorage during SSR. Hold the same space
+  // until the first client snapshot instead of briefly telling a signed-in
+  // person to log in or sign up.
+  if (given === undefined && !hydrated) {
+    return <span aria-hidden="true" className="h-10 w-24 animate-pulse rounded-full bg-vx-panel" />;
+  }
 
   function openAuth(mode) {
     if (typeof window === 'undefined') return;
