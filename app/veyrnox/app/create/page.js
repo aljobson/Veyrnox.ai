@@ -33,12 +33,13 @@ import { ControlRow } from '../../_components/ControlRow';
 import { CreateGoalPicker } from '../../_components/CreateGoalPicker';
 import { TIERS, TIER_LABEL, filterByTier } from '../../_lib/modelTiers';
 import { modelsForGoal, starterModel } from '../../_lib/starterModels';
-import { settingsInputs, voiceIsMissing } from '../../_lib/generationSettings';
+import { audioDurationConfig, audioDurationIsInvalid, settingsInputs, voiceIsMissing } from '../../_lib/generationSettings';
 import { promptText, promptIsMissing, promptPlaceholder } from '../../_lib/promptBox';
 import { ParticleButton } from '@/components/ParticleButton';
 import { jobStateUi, SLOW_MODEL_WAIT } from '../../_lib/studioStates';
 import { useCreateJourney } from '../../_lib/useCreateJourney';
 import { getJourney, trackJourneyJob } from '../../_lib/veyJourneyStore';
+import { outputDurationLabel } from '../../_lib/chatMedia';
 // Auto Short stays hidden until launch unless this browser opts in
 // (CLAUDE.md "Delivery": new user paths behind localStorage.veyrnox_*).
 const AUTO_SHORT_FLAG = 'veyrnox_auto_short';
@@ -66,6 +67,7 @@ export default function CreateStudio() {
   const [presetParam, setPresetParam] = useState(null);
   const [tier, setTier] = useState(null);
   const [duration, setDuration] = useState('5s');
+  const [audioDurations, setAudioDurations] = useState({});
   const [aspect, setAspect] = useState('16:9');
   const [typed, setPrompt] = useState(null); // null until the user types or a draft is restored
   // Start image for models whose catalog capabilities declare an image slot.
@@ -161,6 +163,12 @@ export default function CreateStudio() {
   // Lengths the gateway will actually sell for this model, from the catalog.
   // Rendering anything else offers a price the server then refuses.
   const durations = (model && model.durations && model.durations.length ? model.durations : [5]).map((s) => `${s}s`);
+  const audioDurationControl = audioDurationConfig(model);
+  const audioDuration = audioDurationControl
+    ? audioDurations[model.id] ?? String(audioDurationControl.defaultValue)
+    : '';
+  const invalidAudioDuration = audioDurationIsInvalid(model, audioDuration);
+  const fixedDurationLabel = model?.presentation?.fixedDurationLabel;
   const media = model?.media || {};
   const animationMismatch = !!animationPortrait && (model?.kind !== 'video' || !media.image?.required);
   const missingSource = Object.entries(media).some(([slot, spec]) => spec.required && !sources[slot]);
@@ -202,6 +210,11 @@ export default function CreateStudio() {
     const available = durationKey.split(',');
     if (!available.includes(duration)) setDuration(available[0]);
   }, [catalogLoading, model, durationKey, duration]);
+
+  function setAudioDuration(value) {
+    if (!model?.id) return;
+    setAudioDurations((previous) => ({ ...previous, [model.id]: value }));
+  }
 
   function pickSource(slot, file, asset = null) {
     setConsent(false);
@@ -288,6 +301,7 @@ export default function CreateStudio() {
     if (missingConsent) { inFlight.current = false; setError({ code: 'consent_required' }); return; }
     if (missingPrompt) { inFlight.current = false; setError({ code: 'inputs_invalid:prompt' }); return; }
     if (missingVoice) { inFlight.current = false; setError({ code: 'inputs_invalid:voice_description' }); return; }
+    if (invalidAudioDuration) { inFlight.current = false; setError({ code: 'inputs_invalid:duration' }); return; }
     setError(null);
     setSending(true);
     const submittedTask = getJourney().task;
@@ -297,7 +311,7 @@ export default function CreateStudio() {
       prompt: finalPrompt(),
       aspect_ratio: aspectOptions.length ? aspect : undefined,
       duration_seconds: model.kind === 'video' ? Number(duration.replace('s', '')) : undefined,
-      ...settingsInputs(model, { seed, negative, voice }),
+      ...settingsInputs(model, { seed, negative, voice, duration: audioDuration }),
     };
     // strip undefined so server sees a clean object
     Object.keys(inputs).forEach((k) => inputs[k] === undefined && delete inputs[k]);
@@ -584,8 +598,33 @@ export default function CreateStudio() {
             </div>
           </div>
 
-          {model?.kind === 'video' && (
-            <ControlRow assistantTarget="create.duration" label="DURATION" options={durations} value={duration} onChange={setDuration} />
+          {model?.kind === 'video' && !fixedDurationLabel && (
+            <ControlRow assistantTarget="create.duration" label="DURATION" options={durations} value={duration} onChange={setDuration}
+              formatOption={(option) => outputDurationLabel(model, Number(option.replace('s', '')))} />
+          )}
+          {(model?.kind === 'video' || model?.kind === 'audio') && fixedDurationLabel && (
+            <div data-assistant-target="create.duration" className="scroll-mt-24 rounded-2xl border border-vx-border bg-vx-panel p-5">
+              <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">FIXED OUTPUT</div>
+              <div className="mt-3 font-vx-mono text-lg font-bold text-vx-fg">{fixedDurationLabel}</div>
+              <p className="mt-1 text-xs text-vx-fg-muted">This model produces one fixed output length at the displayed price.</p>
+            </div>
+          )}
+          {model?.kind === 'audio' && audioDurationControl && (
+            <div data-assistant-target="create.duration" className="scroll-mt-24 rounded-2xl border border-vx-border bg-vx-panel p-5">
+              <label htmlFor="audio-duration" className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">DURATION</label>
+              <div className="mt-3 flex items-center gap-3">
+                <input id="audio-duration" aria-label="Audio duration in seconds" type="number" inputMode="numeric" step="1"
+                  min={audioDurationControl.min} max={audioDurationControl.max} value={audioDuration}
+                  aria-invalid={invalidAudioDuration} onChange={(event) => setAudioDuration(event.target.value)}
+                  className="w-28 rounded-lg border border-vx-field bg-vx-base px-3 py-2 font-vx-mono text-sm text-vx-fg" />
+                <span className="text-sm text-vx-fg-muted">seconds</span>
+              </div>
+              <p className={`mt-2 text-xs ${invalidAudioDuration ? 'text-vx-danger' : 'text-vx-fg-muted'}`}>
+                {invalidAudioDuration
+                  ? `Use a whole number from ${audioDurationControl.min} to ${audioDurationControl.max}.`
+                  : `${audioDurationControl.min}–${audioDurationControl.max} seconds · defaults to ${audioDurationControl.defaultValue}.`}
+              </p>
+            </div>
           )}
           {aspectOptions.length > 0 && (
             <ControlRow assistantTarget="create.aspect" label="ASPECT" options={aspectOptions} value={aspect} onChange={setAspect} />
@@ -623,7 +662,7 @@ export default function CreateStudio() {
               data-assistant-target="create.generate"
               onClick={generating ? cancel : onSubmit}
               className="scroll-mt-24 mt-4 w-full flex items-center justify-between bg-vx-accent text-vx-accent-ink rounded-full px-6 py-3.5 font-extrabold hover:bg-vx-accent-hover disabled:opacity-40 disabled:cursor-not-allowed"
-              disabled={sending || (!generating && (catalogStatus !== 'live' || !model || model.gated || animationMismatch || missingPrompt || missingVoice || balance == null || cost > balance || missingSource || missingConsent))}
+              disabled={sending || (!generating && (catalogStatus !== 'live' || !model || model.gated || animationMismatch || missingPrompt || missingVoice || invalidAudioDuration || balance == null || cost > balance || missingSource || missingConsent))}
               aria-label={sending || generating || model?.gated ? undefined : `Generate ${n > 1 ? `${n} images ` : ''}for ${cost} credits`}
             >
               <span>{sending ? 'Sending…' : generating ? 'New generation' : model?.gated ? 'Premium — gated' : n > 1 ? `Generate ${n}` : 'Generate'}</span>

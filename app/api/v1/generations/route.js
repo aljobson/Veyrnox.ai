@@ -55,6 +55,10 @@ const ALLOWED_INPUTS = {
     captions: { kind: 'edit' },
     aspect_ratio: { kind: 'enum', values: ['16:9', '9:16', '1:1', '4:3', '3:4', '4:5', '21:9'] },
     duration_seconds: { kind: 'enum', values: [5, 10] },
+    // ACE-Step v1 supports longer audio, but its one-Credit catalog unit is
+    // costed at a maximum of 60 seconds. The model capability narrows this
+    // outer bound to the one endpoint that declares the control.
+    duration: { kind: 'int', min: 5, max: 60 },
     output_resolution: { kind: 'enum', values: ['480p', '720p'] },
     audio_enabled: { kind: 'bool' },
     seed: { kind: 'int', min: 0, max: 2147483647 },

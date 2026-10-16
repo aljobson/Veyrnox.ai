@@ -15,7 +15,7 @@
 // provider_cost_per_unit (and credits_5s if the floor moves) by migration.
 export const UNIT_RATES = {
     'demucs-stems': { rate: 0.0007, per: 's', quantity: 120 },
-    // "$0.0002 per second of generated audio"; duration is pinned at 60.
+    // "$0.0002 per second of generated audio"; the selectable duration is capped at 60.
     'ace-step': { rate: 0.0002, per: 's', quantity: 60 },
     // "$0.0003 per output second. Thinking-enabled requests run at 2x";
     // pinned at 60s with thinking on and one output.

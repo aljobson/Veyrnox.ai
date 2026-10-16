@@ -40,7 +40,7 @@ const CATALOG = [
 // Endpoints the pre-registry snapshot does not cover: corrected on purpose
 // (Kling 3.0), or added after the old builder was deleted.
 const CORRECTED = new Set(['fal-ai/sana/v1.5/4.8b', 'fal-ai/kling-video/v3/pro/image-to-video', 'fal-ai/nano-banana-pro', 'fal-ai/nano-banana-pro/edit',
-    'fal-ai/elevenlabs/tts/turbo-v2.5', 'fal-ai/minimax/speech-2.6-hd', 'fal-ai/mmaudio-v2/text-to-audio', 'fal-ai/bria/background/remove',
+    'fal-ai/ace-step', 'fal-ai/elevenlabs/tts/turbo-v2.5', 'fal-ai/minimax/speech-2.6-hd', 'fal-ai/mmaudio-v2/text-to-audio', 'fal-ai/bria/background/remove',
     'fal-ai/topaz/upscale/image', 'fal-ai/bria/expand', 'fal-ai/latentsync', 'fal-ai/kling-video/ai-avatar/v2/standard',
     'fal-ai/mmaudio-v2', 'fal-ai/topaz/upscale/video',
     'fal-ai/elevenlabs/text-to-dialogue/eleven-v3', 'fal-ai/qwen-3-tts/voice-design/1.7b', 'fal-ai/demucs']);
@@ -73,8 +73,9 @@ test('every catalog endpoint has a record, and unknown endpoints have none', () 
 
 test('fal payloads are identical to the pre-registry builder for every captured case', () => {
     const falEndpoints = Object.entries(REGISTRY).filter(([ep, r]) => r.provider === 'fal' && !CORRECTED.has(ep)).map(([ep]) => ep);
-    assert.deepEqual(Object.keys(SNAPSHOT).sort(), falEndpoints.sort(), 'snapshot covers every fal row');
-    for (const [ep, cases] of Object.entries(SNAPSHOT)) {
+    const unchangedSnapshots = Object.entries(SNAPSHOT).filter(([ep]) => !CORRECTED.has(ep));
+    assert.deepEqual(unchangedSnapshots.map(([ep]) => ep).sort(), falEndpoints.sort(), 'snapshot covers every unchanged fal row');
+    for (const [ep, cases] of unchangedSnapshots) {
         const record = capabilityFor(ep);
         for (const { inputs, payload } of cases) {
             assert.deepEqual(checkInputs(record, inputs), { ok: true }, `${ep} ${JSON.stringify(inputs)}`);
@@ -173,7 +174,7 @@ test('the public view carries no provider field names or editable pins', () => {
     }
     assert.deepEqual(publicCapabilities(capabilityFor('fal-ai/veo3.1/fast')), {
         kind: 'video', lengths: [5],
-        inputs: { prompt: { type: 'string', max: 2000 }, negative_prompt: { type: 'string', max: 2000 }, seed: { type: 'int', max: 2147483647 },
+        inputs: { prompt: { type: 'string', max: 2000 }, negative_prompt: { type: 'string', max: 2000 }, seed: { type: 'int', min: 0, max: 2147483647 },
             aspect_ratio: { type: 'enum', values: ['16:9', '9:16'] } },
         media: {},
         presentation: { resolutionLabel: '720p', audioIncluded: true, fixedDurationLabel: '4s' },
@@ -187,7 +188,8 @@ test('the public output presentation describes the priced tier without exposing 
     assert.deepEqual(publicCapabilities(capabilityFor('market:kling-2.6/text-to-video')).presentation, {
         audioIncluded: false, durationByOption: { 5: '5', 10: '10' },
     });
-    assert.deepEqual(publicCapabilities(capabilityFor('fal-ai/ace-step')).presentation, { fixedDurationLabel: '60s' });
+    assert.deepEqual(publicCapabilities(capabilityFor('fal-ai/ace-step')).inputs.duration,
+        { type: 'int', min: 5, max: 60, default: 60 });
 });
 
 test('the tokens.js fallback offers the lengths the live catalog does', () => {
@@ -198,7 +200,7 @@ test('the tokens.js fallback offers the lengths the live catalog does', () => {
         'kling-2.6-pro-kie': 'market:kling-2.6/text-to-video',
         'kling-3.0-i2v': 'fal-ai/kling-video/v3/pro/image-to-video',
         'hailuo-02-kie': 'market:hailuo/02-text-to-video-standard',
-        'veo-3.1-kie': 'veo:veo3', 'veo-3.1-fast-kie': 'veo:veo3_fast',
+        'veo-3.1-kie': 'veo:veo3', 'veo-3.1-fast-kie': 'veo:veo3_fast', 'veo-3.1-lite-kie': 'veo:veo3_lite',
         'nano-banana-kie': 'market:google/nano-banana', 'flux-2-pro': 'fal-ai/flux-2-pro',
         'seedream-4': 'fal-ai/bytedance/seedream/v4/text-to-image', 'ace-step': 'fal-ai/ace-step',
     };

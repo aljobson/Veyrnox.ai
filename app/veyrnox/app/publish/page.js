@@ -48,7 +48,7 @@ export default function Publish() {
 
 function PublishControls({ initialJobId, initialUploadId }) {
   const [accounts, setAccounts] = useState(null);
-  const [accountLimit, setAccountLimit] = useState(1);
+  const [accountLimit, setAccountLimit] = useState(null);
   const [youtubeVisibilityEnabled, setYoutubeVisibilityEnabled] = useState(false);
   const [uploadsEnabled, setUploadsEnabled] = useState(false);
   const [plansEnabled, setPlansEnabled] = useState(false);
@@ -81,7 +81,6 @@ function PublishControls({ initialJobId, initialUploadId }) {
     setLoadError('');
     try {
       const res = await listSocialAccounts();
-      setAccounts(res.accounts || []);
       setAccountLimit(res.accountLimit === 5 ? 5 : 1);
       setUploadsEnabled(res.uploadsEnabled === true);
       setYoutubeVisibilityEnabled(res.youtubeVisibilityEnabled === true);
@@ -102,6 +101,9 @@ function PublishControls({ initialJobId, initialUploadId }) {
       setBrandRole(res.brandRole || 'owner');
       setPlanTier(res.planTier === 'publish' ? 'publish' : 'free');
       setNetworks(res.networks || []);
+      // Accounts are the render gate. Commit them after their entitlement data
+      // so capacity and feature copy can never be built from placeholder state.
+      setAccounts(res.accounts || []);
     } catch (err) {
       setLoadError(err.body?.error === 'publish_not_open' ? 'Publish is not available for this account yet.'
         : 'Could not load your connected accounts. Check your connection and try again.');
@@ -135,7 +137,17 @@ function PublishControls({ initialJobId, initialUploadId }) {
     }
   }
 
-  const active = (accounts || []).filter((a) => a.status === 'active');
+  if (accounts === null) return <div className="space-y-6">
+    <section className="rounded-2xl border border-vx-border p-5" aria-labelledby="connected-accounts-heading">
+      <h2 id="connected-accounts-heading" className="font-bold">Connected accounts</h2>
+      {loadError ? <>
+        <p role="alert" className="mt-3 text-sm text-vx-danger">{loadError}</p>
+        <button type="button" className={`${button} mt-4`} onClick={load}>Try again</button>
+      </> : <p role="status" className="mt-3 text-sm text-vx-fg-muted">Loading connected accounts and plan…</p>}
+    </section>
+  </div>;
+
+  const active = accounts.filter((a) => a.status === 'active');
   const byNetwork = new Map(active.map((a) => [a.network, a]));
   const atLimit = active.length >= accountLimit;
   const paid = !plansEnabled || planTier === 'publish';

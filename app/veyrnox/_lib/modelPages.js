@@ -3,6 +3,7 @@
 // price or describes a model in words the catalog does not hold.
 import { readPublicCatalog } from '../../../lib/publicCatalog.js';
 import { isShelfModel, kindOf, distinctShelfNames } from './tokens.js';
+import { outputDurationLabel } from './chatMedia.js';
 
 // Catalog ids are lowercase slugs such as `wan-2.5-kie`.
 export const MODEL_ID_RE = /^[a-z0-9][a-z0-9.-]{0,63}$/;
@@ -36,7 +37,7 @@ export function modelFacts(model) {
   const inputs = caps.inputs || {};
   const facts = [{ label: 'Mode', value: String(model.modality || '').replace(/-/g, ' ') }];
   if (model.kind === 'video' && Array.isArray(model.durations) && model.durations.length > 0) {
-    facts.push({ label: 'Clip lengths', value: model.durations.map((s) => `${s} s`).join(', ') });
+    facts.push({ label: 'Clip lengths', value: model.durations.map((s) => outputDurationLabel(model, s).replace(/s$/i, ' s')).join(', ') });
   }
   if (inputs.prompt) facts.push({ label: 'Prompt', value: 'Text prompt' });
   for (const [slot, spec] of Object.entries(caps.media || {})) {

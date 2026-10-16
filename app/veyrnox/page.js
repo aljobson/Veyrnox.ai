@@ -54,6 +54,7 @@ async function loadCatalog() {
       // fine-grained value below for display.
       kind: kindOf(m.modality),
       modality: m.modality,
+      presentation: m.capabilities?.presentation || {},
       media: m.capabilities?.media || {},
       takesPrompt: !!m.capabilities?.inputs?.prompt,
       takesPlan: !!m.capabilities?.inputs?.plan_id,

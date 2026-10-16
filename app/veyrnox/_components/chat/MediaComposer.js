@@ -30,6 +30,7 @@ function OutputFact({ children, title }) {
 export function MediaComposer({ kind, media, prompt, onPrompt }) {
   const {
     availableModels, model, selectModel, duration, setDuration, aspect, setAspect, count, setCount,
+    audioDuration, setAudioDuration, audioDurationControl, invalidAudioDuration,
     resolution, setResolution, audio, setAudio,
     voice, setVoice, sources, pickSource, libraryFor, setLibraryFor, consent, setConsent,
     balance, cost, freeLeft, error, jobs, generating, sending, missingSource, missingConsent, missingVoice,
@@ -41,7 +42,7 @@ export function MediaComposer({ kind, media, prompt, onPrompt }) {
   const hasSource = Object.values(sources).some(Boolean);
   const missingPrompt = !prompt.trim();
   const canGenerate = catalogLive && model && !model.gated && !busy && !missingPrompt && !missingSource && !missingConsent
-    && !missingVoice && balance != null && cost <= balance;
+    && !missingVoice && !invalidAudioDuration && balance != null && cost <= balance;
   const resultReady = jobs.some((job) => job.state === 'succeeded');
   const errorCopy = error ? (ERROR_COPY[error.code] || 'This generation could not start. Nothing was charged.') : '';
   const actualLength = model?.kind === 'video' ? outputDurationLabel(model, duration) : model?.presentation?.fixedDurationLabel;
@@ -60,9 +61,18 @@ export function MediaComposer({ kind, media, prompt, onPrompt }) {
           ) : <OutputFact>No {kind} models</OutputFact>}
 
           {model?.kind === 'video' && (
-            <SelectControl label={`${duration}s`} ariaLabel="Video duration" value={String(duration)} onChange={(value) => setDuration(Number(value))} disabled={busy || durations.length < 2}>
-              {durations.map((seconds) => <option key={seconds} value={seconds}>{seconds}s</option>)}
+            <SelectControl label={actualLength} ariaLabel="Video duration" value={String(duration)} onChange={(value) => setDuration(Number(value))} disabled={busy || durations.length < 2}>
+              {durations.map((seconds) => <option key={seconds} value={seconds}>{outputDurationLabel(model, seconds)}</option>)}
             </SelectControl>
+          )}
+          {model?.kind === 'audio' && audioDurationControl && (
+            <label className={`${control} ${invalidAudioDuration ? 'border-vx-danger' : ''}`} title={`${audioDurationControl.min}–${audioDurationControl.max} seconds`}>
+              <input aria-label="Audio duration in seconds" type="number" inputMode="numeric" step="1"
+                min={audioDurationControl.min} max={audioDurationControl.max} value={audioDuration}
+                aria-invalid={invalidAudioDuration} onChange={(event) => setAudioDuration(event.target.value)}
+                className="w-8 bg-transparent text-right font-vx-mono text-vx-fg outline-hidden" />
+              <span>seconds</span>
+            </label>
           )}
           {aspects.length > 0 && (
             <SelectControl label={aspect} ariaLabel="Aspect ratio" value={aspect || aspects[0]} onChange={setAspect} disabled={busy}>

@@ -11,9 +11,11 @@ const sql = read('../packages/db/schema/supabase/0236_ace_step_cost_matches_pin.
 const FAL_USD_PER_SECOND = 0.0002;
 const REFERENCE_USD_PER_CREDIT = 0.033;
 
-test('the recorded cost is the published rate times the pinned track length', () => {
-  const seconds = CAPABILITIES['fal-ai/ace-step'].fixed.duration;
-  assert.equal(seconds, 60, 'a different pin needs a different recorded cost');
+test('the recorded cost is the published rate times the maximum selectable track length', () => {
+  const capability = CAPABILITIES['fal-ai/ace-step'];
+  const seconds = capability.inputs.duration.max;
+  assert.equal(capability.defaults.duration, seconds, 'the default must remain the maximum-priced unit');
+  assert.equal(seconds, 60, 'a different cap needs a different recorded cost');
   assert.equal((FAL_USD_PER_SECOND * seconds).toFixed(4), '0.0120');
   assert.match(sql, /SET provider_cost_per_unit = 0\.0120, updated_at = now\(\)\n/);
 });
