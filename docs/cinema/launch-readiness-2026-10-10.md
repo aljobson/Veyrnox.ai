@@ -8,7 +8,7 @@ Free-title playback now has its own bounded production path through
 `CINEMA_FREE_CEILING_ENABLED`.
 
 On 16 October 2026, staging Worker version
-`bb79ad1f-c6eb-4cf9-b5cf-c98826ad790e` enabled
+`f845e6d5-e2b2-4453-84b0-73da96268e03` enabled
 `CINEMA_SUBSCRIPTIONS_ENABLED` for sandbox acceptance only. Its anonymous,
 no-store plan projection advertises the sole $9.99 monthly plan and the signed-
 out Pass page leads to sign-in. Production remains false. The Pass checkout
