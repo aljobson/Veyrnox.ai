@@ -31,10 +31,22 @@ export function ReticleDev() {
         // store form wires `subscribe` too, so every mutation emits a diff; the getter form is
         // read-only.
         registerStore('veyTask', journeyStore);
+        registerStore('veyLayout', () => {
+          const guide = document.querySelector('[aria-label="Vey task walkthrough"]')?.getBoundingClientRect();
+          const mascot = document.querySelector('[data-testid="assistant-mascot"]')?.getBoundingClientRect();
+          const overlaps = (a, b) => !!a && !!b && a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+          const controls = [...document.querySelectorAll('main button, main input, main textarea, main select, main summary, main img')]
+            .map(el => el.getBoundingClientRect()).filter(r => r.width > 0 && r.height > 0 && r.top >= 72 && r.bottom <= innerHeight);
+          const generate = document.querySelector('[data-assistant-target="create.generate"]')?.getBoundingClientRect();
+          return { guideOpen: !!guide, mainPadding: parseFloat(document.querySelector('main')?.style.paddingBottom) || 0,
+            mascotOverlaps: controls.filter(r => overlaps(mascot, r)).length,
+            generateClear: !!guide && !!generate && generate.top >= 72 && generate.bottom < guide.top,
+            sourceAttached: !!document.querySelector('img[alt="Start image"]') };
+        });
         registerCapabilities({
           testids: ['editor-import'],
           signals: [], // names you pass to reticle.signal()
-          stores: ['veyTask'],
+          stores: ['veyTask', 'veyLayout'],
         });
       },
     );

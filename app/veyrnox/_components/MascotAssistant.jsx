@@ -22,6 +22,7 @@ import VeyTaskGuide from './VeyTaskGuide';
 import { getJourney } from '../_lib/veyJourneyStore';
 import useVeyPointer from '../_lib/useVeyPointer';
 import useVeyDrag from '../_lib/useVeyDrag';
+import useVeyMobileLayout from '../_lib/useVeyMobileLayout';
 import { clampVeyPosition, VEY_SIZE as CHARACTER } from '../../../lib/veyPointer';
 
 const HOME = { x: 18, y: 0 };
@@ -115,6 +116,7 @@ export default function MascotAssistant() {
   const drag = useVeyDrag({ onStart: clearAction, onReset: resetPosition,
     onMove: (next) => { window.clearTimeout(travelTimerRef.current); setTravelling(false); setManualPosition(next); setPosition(next); } });
   const { activeTarget, highlight, hand, point, locate: locateTarget, clear: clearPointer } = useVeyPointer({ reduceMotion, moveMascot, setFacing, activateTarget, clearAction, manualPosition });
+  const mobileLayout = useVeyMobileLayout({ open, pathname, position, highlight, hand, facing });
   const clearTarget = useCallback(() => {
     window.clearTimeout(timerRef.current);
     clearAction(); clearPointer(); setPendingTarget(null);
@@ -355,7 +357,7 @@ export default function MascotAssistant() {
         data-position-mode={manualPosition ? 'manual' : 'auto'}
         data-dragging={drag.dragging}
         className="pointer-events-none fixed left-0 top-0 z-[61]"
-        animate={{ x: position.x, y: position.y }}
+        animate={{ x: mobileLayout.position.x, y: mobileLayout.position.y }}
         transition={reduceMotion || manualPosition ? { duration: 0 } : { type: 'spring', stiffness: 115, damping: 18, mass: 0.8 }}
       >
         <motion.button
@@ -379,7 +381,7 @@ export default function MascotAssistant() {
           <span id="vey-position-help" className="sr-only">Drag Vey to position it. With Vey focused, use Alt and arrow keys to move, or Escape to return to automatic positioning.</span>
           <span className="absolute inset-x-4 bottom-2 h-5 rounded-full bg-black/35 blur-md" aria-hidden="true" />
           <span className="relative block h-full w-full transition-[filter] group-hover:brightness-110">
-            <VeyCharacter pose={mood} reducedMotion={reduceMotion} hand={hand} />
+            <VeyCharacter pose={mood} reducedMotion={reduceMotion} hand={mobileLayout.hand} />
           </span>
         </motion.button>
       </motion.div>
