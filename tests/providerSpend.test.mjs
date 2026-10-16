@@ -11,6 +11,7 @@ test('maps per-account spend limits to a retryable 429 without exposing amounts'
 
 test('maps platform and closed circuit breakers to 503', () => {
     assert.equal(providerSpendLimit({ code: 'PROVIDER_SPEND_LIMIT', scope: 'global_hour', retry_after_seconds: 5 }).status, 503);
+    assert.equal(providerSpendLimit({ code: 'PROVIDER_SPEND_LIMIT', scope: 'provider_day', retry_after_seconds: 5 }).status, 503);
     assert.equal(providerSpendLimit({ code: 'PROVIDER_SPEND_UNAVAILABLE', scope: 'closed' }).status, 503);
 });
 

@@ -9,6 +9,7 @@ test('valid acceptance returns the handle without another submission', async (t)
     const fetch = t.mock.method(globalThis, 'fetch', async () => Response.json({ request_id: 'request-1' }));
     assert.deepEqual(await submitJob(job, cfg), { ok: true, outcome: 'accepted', providerJobId: 'request-1', statusUrl: undefined });
     assert.equal(fetch.mock.callCount(), 1);
+    assert.equal(fetch.mock.calls[0].arguments[1].redirect, 'manual');
 });
 
 test('explicit client refusals are rejected; timeouts and server errors are uncertain', async (t) => {

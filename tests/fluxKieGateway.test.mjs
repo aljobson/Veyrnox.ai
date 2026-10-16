@@ -19,8 +19,8 @@ const model = { id: 'flux-2-pro-1k-kie', provider: 'kie', provider_endpoint: 'ma
 const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jZQAAAABJRU5ErkJggg==', 'base64');
 
 // Real route handlers/adapters, isolated fake network; no external credentials or spend.
-function network({ active = true, submitFails = false, outcome = 'success', copyFails = false } = {}) {
-    const calls = []; let processed = false; let inserted = false;
+function network({ active = true, submitFails = false, submitUnknown = false, submitted = { ok: true }, outcome = 'success', copyFails = false } = {}) {
+    const calls = []; let processed = false; let inserted = false; let debited = false;
     const job = { id: JOB, user_id: AUTH, state: 'DEBITED', credits: 0, provider_endpoint: model.provider_endpoint };
     const real = globalThis.fetch;
     globalThis.fetch = async (url, init = {}) => {
@@ -29,8 +29,15 @@ function network({ active = true, submitFails = false, outcome = 'success', copy
         calls.push({ url: u.href, method: init.method, body });
         if (u.pathname.includes('/rpc/')) {
             const name = u.pathname.split('/rpc/')[1];
-            if (name === 'ledger_debit') { job.credits = body.p_credits; return Response.json({ ok: true, job_id: JOB, idempotent: false, balance_after: 100 }); }
-            if (name === 'job_submitted') job.state = 'SUBMITTED';
+            if (name === 'ledger_debit') {
+                const replay = debited; debited = true; job.credits = body.p_credits;
+                return Response.json({ ok: true, job_id: JOB, idempotent: replay, balance_after: 100 });
+            }
+            if (name === 'job_submitted') {
+                if (submitted instanceof Error) throw submitted;
+                if (submitted.ok) job.state = 'SUBMITTED';
+                return Response.json(submitted);
+            }
             if (name === 'job_succeeded') job.state = 'SUCCEEDED';
             if (name === 'job_stored') job.state = 'STORED';
             if (name === 'ledger_refund') job.state = 'REFUNDED';
@@ -45,7 +52,10 @@ function network({ active = true, submitFails = false, outcome = 'success', copy
             return Response.json([{ processed_at: processed ? 'done' : null }]);
         }
         if (u.hostname === 'api.kie.ai') {
-            if (u.pathname.endsWith('/createTask')) return Response.json(submitFails ? { code: 500, msg: 'rejected' } : { code: 200, data: { taskId: TASK } });
+            if (u.pathname.endsWith('/createTask')) {
+                if (submitUnknown) throw new Error('connection reset');
+                return Response.json(submitFails ? { code: 422, msg: 'rejected' } : { code: 200, data: { taskId: TASK } });
+            }
             if (u.pathname.endsWith('/recordInfo')) return Response.json({ code: 200, data: { state: outcome, failCode: '500', resultJson: JSON.stringify({ resultUrls: ['https://tempfile.aiquickdraw.com/test.jpg'] }) } });
         }
         if (u.hostname.endsWith('.r2.cloudflarestorage.com')) {
@@ -99,6 +109,21 @@ test('Flux rejected submission refunds its two-credit debit', async () => {
         assert.equal(net.job.state, 'REFUNDED');
         assert.equal(rpcCalls(net, 'ledger_refund')[0].body.p_credits, 2);
     } finally { net.restore(); }
+});
+
+test('ambiguous KIE submit and accepted-handle persistence failure never refund or resubmit', async () => {
+    for (const options of [{ submitUnknown: true }, { submitted: new Error('database unavailable') }]) {
+        const net = network(options);
+        try {
+            const response = await post();
+            assert.equal(response.status, 503);
+            assert.deepEqual(await response.json(), { error: 'outcome_unknown', job_id: JOB });
+            assert.equal(rpcCalls(net, 'ledger_refund').length, 0);
+            assert.equal(rpcCalls(net, 'job_submit_rejected')[0].body.p_error_code, 'provider_outcome_unknown');
+            assert.equal((await post()).status, 200);
+            assert.equal(net.calls.filter(c => c.url.endsWith('/createTask')).length, 1);
+        } finally { net.restore(); }
+    }
 });
 
 test('Flux authenticated failure refunds once despite forged success and callback replay', async () => {

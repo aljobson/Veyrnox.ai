@@ -21,7 +21,7 @@ const r2cfg = { accountId: 'test', accessKeyId: 'test-access', secretAccessKey: 
 const sweep = () => sweepGrsai({ cfg, r2cfg, apiKey: 'test-grsai' });
 
 // Real gateway, adapter, sweep, completion and R2 signing; simulated network.
-function network({ active = true, submitFails = false, outcome = 'succeeded', copyFails = false } = {}) {
+function network({ active = true, submitFails = false, submitUnknown = false, submitted = { ok: true }, outcome = 'succeeded', copyFails = false } = {}) {
     const calls = []; let processed = false, inserted = false, debited = false;
     const job = { id: JOB, user_id: AUTH, state: 'DEBITED', credits: 2, provider_job_id: 'edit-task', created_at: new Date().toISOString() };
     const real = globalThis.fetch;
@@ -32,7 +32,11 @@ function network({ active = true, submitFails = false, outcome = 'succeeded', co
         if (u.pathname.includes('/rpc/')) {
             const name = u.pathname.split('/rpc/')[1];
             if (name === 'ledger_debit') { const replay = debited; debited = true; return Response.json({ ok: true, job_id: JOB, idempotent: replay, balance_after: 98 }); }
-            if (name === 'job_submitted') job.state = 'SUBMITTED';
+            if (name === 'job_submitted') {
+                if (submitted instanceof Error) throw submitted;
+                if (submitted.ok) job.state = 'SUBMITTED';
+                return Response.json(submitted);
+            }
             if (name === 'job_succeeded') job.state = 'SUCCEEDED';
             if (name === 'job_stored') job.state = 'STORED';
             if (name === 'job_failed') job.state = 'FAILED';
@@ -48,7 +52,10 @@ function network({ active = true, submitFails = false, outcome = 'succeeded', co
             return Response.json([{ processed_at: processed ? 'done' : null }]);
         }
         if (u.hostname === 'grsaiapi.com') {
-            if (u.pathname.endsWith('/nano-banana')) return Response.json(submitFails ? { code: -1 } : { code: 0, data: { id: 'edit-task' } });
+            if (u.pathname.endsWith('/nano-banana')) {
+                if (submitUnknown) throw new Error('connection reset');
+                return Response.json(submitFails ? { code: -1 } : { code: 0, data: { id: 'edit-task' } });
+            }
             if (u.pathname.endsWith('/result')) return Response.json({ code: 0, data: { id: 'edit-task', status: outcome, failure_reason: 'input_moderation', results: [{ url: 'https://file6.aitohumanize.com/edit.png' }] } });
         }
         if (u.hostname.endsWith('.r2.cloudflarestorage.com')) {
@@ -135,6 +142,21 @@ test('rejected submission and polled provider failure each refund the original t
             assert.equal(net.job.state, 'REFUNDED');
             assert.equal(rpcCalls(net, 'ledger_refund').length, 1);
             assert.equal(rpcCalls(net, 'ledger_refund')[0].body.p_credits, 2);
+            assert.equal(submits(net).length, 1);
+        } finally { net.restore(); }
+    }
+});
+
+test('ambiguous GrsAI submit and accepted-handle persistence failure never refund or resubmit', async () => {
+    for (const options of [{ submitUnknown: true }, { submitted: new Error('database unavailable') }]) {
+        const net = network(options);
+        try {
+            const response = await post();
+            assert.equal(response.status, 503);
+            assert.deepEqual(await response.json(), { error: 'outcome_unknown', job_id: JOB });
+            assert.equal(rpcCalls(net, 'ledger_refund').length, 0);
+            assert.equal(rpcCalls(net, 'job_submit_rejected')[0].body.p_error_code, 'provider_outcome_unknown');
+            assert.equal((await post()).status, 200);
             assert.equal(submits(net).length, 1);
         } finally { net.restore(); }
     }

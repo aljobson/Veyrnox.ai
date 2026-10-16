@@ -88,6 +88,7 @@ export async function submitJob(job, cfg, fetchImpl = fetch) {
         try {
             res = await fetchImpl(postUrl.toString(), {
                 method: 'POST',
+                redirect: 'manual',
                 signal: controller.signal,
                 headers: {
                     Authorization: `Key ${cfg.falKey}`,

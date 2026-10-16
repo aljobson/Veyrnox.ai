@@ -1,4 +1,4 @@
-/** GrsAI: fixed global API, one verified Nano Banana Pro 2K image per submit.
+/** GrsAI: fixed global API, one pinned Nano Banana image per submit.
  * No webhook: only authenticated result polling can complete a task. Never
  * retry a submit automatically: an ambiguous timeout may already have billed.
  */
@@ -6,12 +6,13 @@ import { capabilityFor, checkInputs, shapePayload } from '../../lib/modelCapabil
 
 export const ENDPOINT = 'grsai:nano-banana-pro';
 export const EDIT_ENDPOINT = 'grsai:nano-banana-pro-edit';
+export const BASIC_ENDPOINT = 'grsai:nano-banana-2-lite';
 const BASE = 'https://grsaiapi.com';
 const ID_RE = /^[A-Za-z0-9._-]{1,128}$/;
 const MAX_RESPONSE_BYTES = 64 * 1024;
 
 export function buildRequest(endpoint, inputs) {
-    if (endpoint !== ENDPOINT && endpoint !== EDIT_ENDPOINT) return { ok: false, error: 'provider_unsupported' };
+    if (![ENDPOINT, EDIT_ENDPOINT, BASIC_ENDPOINT].includes(endpoint)) return { ok: false, error: 'provider_unsupported' };
     if (endpoint === EDIT_ENDPOINT && typeof inputs?.image_url !== 'string') {
         return { ok: false, error: 'inputs_invalid:image_url' };
     }
@@ -53,18 +54,19 @@ async function request(path, body, { apiKey, timeoutMs = 15000 }) {
             body: JSON.stringify(body),
         });
         if (!res.ok) {
+            const outcome = res.status === 408 || res.status >= 500 ? 'unknown' : 'rejected';
             await res.body?.cancel();
             return { ok: false, error: res.status === 401 || res.status === 403 ? 'provider_auth_failed'
-                : res.status === 429 ? 'provider_rate_limited' : 'provider_unavailable' };
+                : res.status === 429 ? 'provider_rate_limited' : 'provider_unavailable', outcome };
         }
         const payload = await readJson(res);
         if (payload?.code !== 0 || !payload.data || typeof payload.data !== 'object') {
-            return { ok: false, error: 'provider_request_rejected' };
+            return { ok: false, error: 'provider_request_rejected', outcome: 'rejected' };
         }
         return { ok: true, data: payload.data };
     } catch {
         // Neither prompts, keys, URLs nor vendor messages enter logs/errors.
-        return { ok: false, error: controller.signal.aborted ? 'provider_timeout' : 'provider_response_invalid' };
+        return { ok: false, error: controller.signal.aborted ? 'provider_timeout' : 'provider_response_invalid', outcome: 'unknown' };
     } finally { clearTimeout(timer); }
 }
 
@@ -74,7 +76,7 @@ export async function submitTask(job, cfg) {
     const r = await request('/v1/draw/nano-banana', built.body, cfg);
     if (!r.ok) return { ...r, errorCode: r.error };
     if (typeof r.data.id !== 'string' || !ID_RE.test(r.data.id)) {
-        return { ok: false, error: 'provider_response_invalid', errorCode: 'provider_response_invalid' };
+        return { ok: false, error: 'provider_response_invalid', errorCode: 'provider_response_invalid', outcome: 'unknown' };
     }
     return { ok: true, providerJobId: r.data.id };
 }

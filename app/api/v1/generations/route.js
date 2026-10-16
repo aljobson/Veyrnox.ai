@@ -463,9 +463,11 @@ export async function POST(req) {
         return NextResponse.json({ job_id: jobId, idempotent: true, balance_after: balanceAfter });
     }
 
-    // ADR-0075: keep the staged behavior scoped to fal. Other provider and
-    // composite-job contracts retain their existing refund semantics.
-    const guardedSubmit = modelRow.provider === 'fal' && process.env.FAL_SUBMIT_OUTCOME_ENABLED === 'true';
+    // These paid providers are always guarded: an ambiguous response may
+    // already have spent supplier credits, so it must never trigger an
+    // automatic refund. fal's durable outbox normally owns this boundary;
+    // this also protects the legacy path while rollout flags change.
+    const guardedSubmit = ['fal', 'kie', 'grsai', 'openrouter'].includes(modelRow.provider);
 
     // 4. Submit to the provider.
     const submitResult = await provider.submit(

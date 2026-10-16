@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildRequest, submitTask, fetchTask, ENDPOINT, EDIT_ENDPOINT } from '../packages/adapters/grsai.js';
+import { buildRequest, submitTask, fetchTask, ENDPOINT, EDIT_ENDPOINT, BASIC_ENDPOINT } from '../packages/adapters/grsai.js';
 import { capabilityFor, declaredInputs } from '../lib/modelCapabilities.js';
 
 const cfg = { apiKey: 'test-key' };
@@ -25,6 +25,15 @@ test('GrsAI pins the verified 2K, single image polling request', () => {
         assert.equal(buildRequest(ENDPOINT, inputs).ok, false);
     }
     assert.equal(buildRequest('https://evil.test', job.inputs).ok, false);
+});
+
+test('GrsAI basic route pins Nano Banana 2 Lite to one 1K image', () => {
+    assert.deepEqual(buildRequest(BASIC_ENDPOINT, { prompt: 'A blue teapot', aspect_ratio: '16:9' }), { ok: true, body: {
+        prompt: 'A blue teapot', aspectRatio: '16:9', model: 'nano-banana-2-lite',
+        imageSize: '1K', webHook: '-1', shutProgress: true,
+    } });
+    assert.equal(buildRequest(BASIC_ENDPOINT, { prompt: 'p', imageSize: '2K' }).ok, false);
+    assert.equal(buildRequest(BASIC_ENDPOINT, { prompt: 'p', aspect_ratio: 'auto' }).ok, false);
 });
 
 test('submit uses only the fixed host and never follows redirects', async () => {
@@ -75,10 +84,24 @@ test('failed/ambiguous submits are not retried and never expose vendor payloads'
 test('timeout, missing key and invalid task IDs fail safely', async () => {
     await fakeFetch(async (_url, init) => new Promise((_resolve, reject) => {
         init.signal.addEventListener('abort', () => reject(new Error('timeout')), { once: true });
-    }), async () => assert.equal((await submitTask(job, { ...cfg, timeoutMs: 5 })).errorCode, 'provider_timeout'));
+    }), async () => assert.deepEqual(await submitTask(job, { ...cfg, timeoutMs: 5 }), {
+        ok: false, error: 'provider_timeout', errorCode: 'provider_timeout', outcome: 'unknown',
+    }));
     await fakeFetch(async () => { throw new Error('must not fetch'); }, async () => {
         assert.equal((await submitTask(job, {})).error, 'provider_not_configured');
         assert.equal((await fetchTask('id&evil', cfg)).error, 'task_id_invalid');
+    });
+});
+
+test('submit distinguishes authoritative rejection from ambiguous acceptance', async () => {
+    await fakeFetch(async () => Response.json({ code: -1 }), async () => {
+        assert.equal((await submitTask(job, cfg)).outcome, 'rejected');
+    });
+    await fakeFetch(async () => response({ id: '../invalid-handle' }), async () => {
+        assert.equal((await submitTask(job, cfg)).outcome, 'unknown');
+    });
+    await fakeFetch(async () => new Response(null, { status: 503 }), async () => {
+        assert.equal((await submitTask(job, cfg)).outcome, 'unknown');
     });
 });
 
