@@ -19,7 +19,7 @@ test('weekly plans are defined for Credits, Cinema Pass and Veyrnox Publish', ()
 });
 
 test('Veyrnox Publish offers an annual plan at exactly 30% off monthly', () => {
-  const annual = read('packages/db/schema/supabase/0337_annual_social_publish_plan.sql');
+  const annual = read('packages/db/schema/supabase/0338_annual_social_publish_plan.sql');
   const publish = read('app/veyrnox/app/publish/plan/PublishPlanPanel.js');
 
   assert.match(annual, /'publish-annual', 'Publish Plan', 'year', 12600/);

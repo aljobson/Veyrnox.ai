@@ -47,7 +47,7 @@ matches (`FREE_SOCIAL_ACCOUNT_LIMIT = 1`, `PUBLISH_SOCIAL_ACCOUNT_LIMIT = 5` in
 The owner approved annual billing at **$126/year**, exactly **30% off** twelve
 $15 monthly payments ($180). Weekly remains $4.99 and monthly remains $15.
 Annual renewal, cancellation at period end and Stripe billing-portal management
-use the same Publish Plan lifecycle as the other intervals (migration 0337).
+use the same Publish Plan lifecycle as the other intervals (migration 0338).
 
 ## Context
 
