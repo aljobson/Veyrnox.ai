@@ -20,6 +20,8 @@ import { rpc, envConfig } from '../../../../../../packages/db/supabase-client.js
 import { presignGetUrl, isConfigured as r2IsConfigured, envConfig as r2EnvConfig } from '../../../../../../packages/adapters/r2.js';
 import { isAudioStem } from '../../../../../../lib/audioStems.mjs';
 import { assetDownloadName } from '../../../../../../lib/assetDownloadName.js';
+import { readProjectAssetRange } from '../../../../../../lib/projectAssetRange.js';
+import { PROVIDER_SNIFF_BYTES, sniffProviderOutputType } from '../../../../../../lib/providerOutputType.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 // CLAUDE.md R2 rule: "Presigned URL TTL <=15 min. Longer TTLs need an ADR."
@@ -82,20 +84,35 @@ export async function GET(req, { params }) {
         return NextResponse.json({ error: asset?.code === 'HELD' ? 'held' : 'not_found' }, { status: 404, headers: { 'Cache-Control': 'no-store' } });
     }
 
-    let signed;
+    let signed, mimeType = asset.mime_type;
     try {
+        // Legacy provider ID3 tags were classified as MP3 even when followed by
+        // FLAC. Correct only an explicit owned download, never previews or storage.
+        // The URL/key comes solely from the gated RPC above, not caller input.
+        if (wanted.length && mimeType === 'audio/mpeg') {
+            if (!Number.isSafeInteger(asset.size_bytes) || asset.size_bytes < 1) throw new Error('invalid asset size');
+            const source = await presignGetUrl(asset.r2_key, DEFAULT_EXPIRES_SEC, r2cfg);
+            const bytes = await readProjectAssetRange(source.url, 0,
+                Math.min(asset.size_bytes, PROVIDER_SNIFF_BYTES) - 1, asset.size_bytes, req.signal);
+            const detected = sniffProviderOutputType(bytes);
+            if (detected !== 'audio/mpeg' && detected !== 'audio/flac') throw new Error('unrecognized audio');
+            mimeType = detected;
+        }
         signed = await presignGetUrl(asset.r2_key, DEFAULT_EXPIRES_SEC, r2cfg,
-            wanted.length ? { downloadFilename: assetDownloadName(id, asset.mime_type).replace(/(?=\.[^.]+$)/, stem.length ? '-'+stem[0] : '') } : undefined);
-    } catch (err) {
-        console.error('[jobs/asset] presign failed:', err);
-        return NextResponse.json({ error: 'internal' }, { status: 502 });
+            wanted.length ? {
+                downloadFilename: assetDownloadName(id, mimeType).replace(/(?=\.[^.]+$)/, stem.length ? '-'+stem[0] : ''),
+                ...(mimeType !== asset.mime_type ? { responseContentType: 'audio/flac' } : {}),
+            } : undefined);
+    } catch {
+        console.error('[jobs/asset] could not prepare asset link');
+        return NextResponse.json({ error: 'internal' }, { status: 502, headers: { 'Cache-Control': 'no-store' } });
     }
 
     // The body carries a presigned URL that is valid for anyone holding it,
     // so no cache anywhere may keep it after the response is delivered.
     return NextResponse.json({
         url: signed.url,
-        mime_type: asset.mime_type,
+        mime_type: mimeType,
         size_bytes: asset.size_bytes,
         expires_in: signed.expires,
         asset_expires_at: asset.asset_expires_at ?? null,

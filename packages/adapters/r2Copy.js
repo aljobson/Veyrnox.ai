@@ -6,7 +6,7 @@
  */
 
 import { putObject, sha256Hex } from './r2.js';
-import { sniffType } from '../../lib/uploadSource.js';
+import { sniffProviderOutputType } from '../../lib/providerOutputType.js';
 
 // Hosts each provider serves generated assets from. Anything else is refused
 // by copyUrlToR2 — the URL arrives in a provider payload, never trusted
@@ -137,7 +137,7 @@ export async function copyUrlToR2(sourceUrl, r2Key, cfg, { timeoutMs = 30000, ma
             // One of the media types we actually serve, or nothing: an unknown
             // format is stored as a download rather than as something a
             // browser will render.
-            contentType = sniffType(bytes) || 'application/octet-stream';
+            contentType = sniffProviderOutputType(bytes) || 'application/octet-stream';
         }
         // Hash the provider's bytes before they are stored, so the digest
         // describes what the user receives (ADR-0025 option E). The delivery

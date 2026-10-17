@@ -289,7 +289,7 @@ test('Bria expand gets a canvas of the chosen ratio that holds the source, under
 test('lip sync caps each source at the length its price covers, before the debit', () => {
     const latent = capabilityFor('fal-ai/latentsync');
     const avatar = capabilityFor('fal-ai/kling-video/ai-avatar/v2/standard');
-    const src = (seconds) => ({ dimensions: null, seconds });
+    const src = (seconds) => ({ dimensions: null, seconds, videoSeconds: seconds });
     assert.deepEqual(checkSource(latent, { video_url: src(40), audio_url: src(39.5) }), { ok: true });
     assert.deepEqual(checkSource(latent, { video_url: src(40.1), audio_url: src(5) }), { ok: false, error: 'source_too_long' });
     assert.deepEqual(checkSource(avatar, { image_url: src(null), audio_url: src(10) }), { ok: true }, 'an image has no length cap');

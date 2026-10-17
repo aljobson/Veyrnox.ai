@@ -57,3 +57,11 @@ test('bundled upload limits remain visible before the live catalog arrives', () 
   const fallback = source.slice(source.indexOf('function fromFallback()'), source.indexOf('function fromApi('));
   assert.match(fallback, /media: m\.media \|\| \{\}/);
 });
+
+test('LatentSync explains the conservative speech coverage requirement, not automatic looping', () => {
+  const SourceDurationCard = sourceCard();
+  const html = renderToStaticMarkup(SourceDurationCard({ model: { id: 'latentsync', capabilities: publicCapabilities(capabilityFor('fal-ai/latentsync')) } }));
+  assert.match(html, /Speech must not be longer than the video/);
+  assert.match(html, /before charging/);
+  assert.doesNotMatch(html, /automatically loop|output follows the audio/i);
+});

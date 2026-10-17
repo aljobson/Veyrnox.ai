@@ -100,7 +100,7 @@ test('MP4 frame size from the first tkhd that has one (an audio track has none)'
     const moov = box('moov', Buffer.concat([box('mvhd', mvhd), box('trak', tkhd(0, 0)), box('trak', tkhd(720, 1280))]));
     const file = Buffer.concat([box('ftyp', Buffer.from('isom0000')), moov]);
     const readRange = async (s, e) => new Uint8Array(file.subarray(s, e + 1));
-    assert.deepEqual(await mp4Info(readRange, file.length), { seconds: 5, width: 720, height: 1280 });
+    assert.deepEqual(await mp4Info(readRange, file.length), { seconds: 5, width: 720, height: 1280, videoSeconds: null });
 });
 
 // A track as a decoder sees it: header length in movie ticks, media timescale, and a time-to-sample table.
@@ -117,7 +117,7 @@ const mp4 = (...top) => { const file = Buffer.concat([box('ftyp', Buffer.from('i
 test('MP4: headers that understate the file lose to the sample table a decoder plays from', async () => {
     // Movie and track headers both say 1 s. The table holds 950 frames of 40 ms: 38 s.
     const liar = box('moov', Buffer.concat([mvhdOf(1000, 1000), trak({ headerTicks: 1000, samples: [[950, 40]], width: 640, height: 360 })]));
-    assert.deepEqual(await mp4(liar), { seconds: 38, width: 640, height: 360 });
+    assert.deepEqual(await mp4(liar), { seconds: 38, width: 640, height: 360, videoSeconds: null });
 });
 
 test('MP4: the longest of the movie header, a track header and a sample table is the length', async () => {
