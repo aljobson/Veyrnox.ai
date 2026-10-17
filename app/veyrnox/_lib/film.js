@@ -13,7 +13,7 @@ export const LANDING_FILM = {
   height: 720,
   // The hash of scripts/landing-film the MP4 was rendered from (render.mjs
   // prints it). The test fails when the source has moved on without a render.
-  renderedFrom: '37e3a2940363ef2a',
+  renderedFrom: 'c8913418893af8bb',
 };
 
 // Owner-approved two-hit robot video with the Veyrnox.ai logo and creative
