@@ -72,6 +72,6 @@ test('languages are off unless the var is exactly "true"', () => {
   assert.equal(localesEnabled({ LOCALES_ENABLED: 'false' }), false);
   assert.equal(localesEnabled({ LOCALES_ENABLED: 'true' }), true);
   const config = JSON.parse(readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8').replace(/^\s*\/\/.*$/gm, '').replace(/,(\s*[}\]])/g, '$1'));
-  assert.equal(config.vars.LOCALES_ENABLED, undefined, 'production omits it');
+  assert.equal(config.vars.LOCALES_ENABLED, 'true');
   assert.equal(config.env.staging.vars.LOCALES_ENABLED, 'true');
 });

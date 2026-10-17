@@ -169,7 +169,10 @@
     "COMMENTS_ENABLED": "false",
     "STORY_POLLS_ENABLED": "false",
     "PPV_ENABLED": "false",
-    "PREMIERES_ENABLED": "false",
+    // ADR-0106: public-site languages (/es, /fr, ...). On in production at the owner's request ("all languages in PROD", 2026-10-17).
+    // Production is at the text-binding cap, so this replaced the unused PREMIERES_ENABLED "false" (absent is off).
+    // Rollback: set "false" or remove it and deploy; prefixed paths then answer not-found and the page reads English.
+    "LOCALES_ENABLED": "true",
     // AI_RECOMMENDATIONS_ENABLED is omitted in production to keep Worker text-binding headroom (tests/workerBindingBudget.test.mjs): only the
     // exact value "true" enables it (lib/cinema/features.js), so absence is off. Staging keeps it explicit below if set.
     // Enable only after migration 0129, bucket CORS and real browser/R2 checks (ADR-0044). 0129 is applied. On

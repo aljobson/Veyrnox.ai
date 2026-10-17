@@ -1,6 +1,6 @@
 # ADR-0106 — Public-site languages
 
-**Status:** Proposed 2026-10-17; built behind `LOCALES_ENABLED` (on in staging, absent in production).
+**Status:** Accepted 2026-10-17; `LOCALES_ENABLED` on in staging and production at the owner's request, before native review of the translations.
 
 ## Decision
 
@@ -25,4 +25,4 @@ The nine catalogs were machine translated. Each should be read by a native speak
 
 ## Rollout
 
-Staging first (`LOCALES_ENABLED` is `"true"` there). Production: add the var and deploy. Rollback: remove it; the prefixed paths then answer not-found and the page reads English.
+Both environments name `LOCALES_ENABLED` `"true"`. Production was at the var cap, so it replaced the unused `PREMIERES_ENABLED` `"false"`. Rollback: set it `"false"` and deploy; the prefixed paths then answer not-found and the page reads English.
