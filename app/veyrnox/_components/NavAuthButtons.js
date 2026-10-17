@@ -9,6 +9,7 @@ import { usePublishEnabled } from './PublishFlag';
 import { useEditorEnabled } from './EditorFlag';
 import { useProjectsEnabled } from './ProjectsFlag';
 import { STUDIO_LINKS } from '../_lib/studioNavigation';
+import { useI18n } from '../../../components/I18nProvider';
 
 const ACCOUNT_LINKS = [
   { href: '/social-cinema', label: 'Social Cinema' },
@@ -39,6 +40,7 @@ export function NavAuthButtons({ account: given }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const { t } = useI18n();
   const wrapRef = useRef(null);
   const triggerRef = useRef(null);
   const publishOpen = usePublishEnabled();
@@ -172,14 +174,14 @@ export function NavAuthButtons({ account: given }) {
         onClick={() => openAuth('sign_in')}
         className="inline-flex min-h-11 items-center text-vx-fg-body text-sm font-semibold px-2 sm:px-3 py-2 hover:text-vx-fg"
       >
-        Log in
+        {t('ui.logIn')}
       </button>
       <button
         type="button"
         onClick={() => openAuth('sign_up')}
         className="inline-flex min-h-11 items-center rounded-full bg-vx-accent text-vx-accent-ink text-sm font-bold px-4 sm:px-5 py-2.5 hover:bg-vx-accent-hover"
       >
-        Sign up
+        {t('ui.signUp')}
       </button>
     </>
   );

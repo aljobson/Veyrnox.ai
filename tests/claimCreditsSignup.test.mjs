@@ -9,11 +9,12 @@ import { MODELS } from '../app/veyrnox/_lib/tokens.js';
 for (const file of ['hero.js', 'footer.js']) {
     test(`${file}: the primary CTA opens Studio without claiming the viewer is signed out`, () => {
         const src = readFileSync(new URL(`../app/veyrnox/_sections/${file}`, import.meta.url), 'utf8');
-        const label = file === 'hero.js' ? 'Start creating' : 'Open Studio';
+        const label = file === 'hero.js' ? "t('home.hero.start')" : "t('home.cta.open')";
         const i = src.indexOf(label);
         assert.ok(i > 0, 'CTA not found');
         const tag = src.slice(src.lastIndexOf('<Link', i), i);
-        const href = tag.match(/href="([^"]+)"/)?.[1];
+        // The footer CTA's address goes through localizedHref(locale, '...').
+        const href = tag.match(/href="([^"]+)"/)?.[1] || tag.match(/href=\{localizedHref\(locale, '([^']+)'\)\}/)?.[1];
         assert.ok(href, 'CTA has no href');
         const modelId = new URL(href, 'https://veyrnox.ai').searchParams.get('model');
         const model = MODELS.find((row) => row.id === modelId);

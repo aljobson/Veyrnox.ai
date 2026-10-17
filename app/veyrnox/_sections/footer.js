@@ -1,10 +1,12 @@
 import Link from 'next/link';
 import { Logo } from '../_components/Logo';
 import { ENTITY } from '../../legal/_lib/entity';
+import { translator } from '../../../lib/i18n/translate.mjs';
+import { rich } from '../../../lib/i18n/rich';
+import { localizedHref, localeInfo } from '../../../lib/i18n/locales.mjs';
 import {
   FAQ,
   MORE_FEATURES,
-  FOOTER_TAGLINE,
   footerStamp,
   SITE_UPDATED,
   SUPPORT_EMAIL,
@@ -17,13 +19,13 @@ import {
 // shelf above contradicts. Labelled as an example on the slip itself.
 const SIGNUP_CREDITS = 10;
 
-function exampleLines(catalog) {
+function exampleLines(catalog, t) {
   const images = catalog
     .filter((m) => m.kind === 'image' && !m.gated)
     .sort((a, b) => a.credits - b.credits);
   const audio = catalog.find((m) => m.kind === 'audio' && !m.gated);
   const nameOf = distinctShelfNames(catalog);
-  const lines = [{ label: 'Sign-up credit', delta: SIGNUP_CREDITS }];
+  const lines = [{ label: t('home.ledger.signup'), delta: SIGNUP_CREDITS }];
   let balance = SIGNUP_CREDITS;
   // A line the running balance cannot cover is left out: the example never
   // prints a charge the account could not have paid.
@@ -34,7 +36,7 @@ function exampleLines(catalog) {
   };
   charge(images[0]);
   if (images[1]) {
-    charge(images[1], [{ label: `${nameOf(images[1])} failed, refund`, delta: images[1].credits, refund: true }]);
+    charge(images[1], [{ label: t('home.ledger.failed', { name: nameOf(images[1]) }), delta: images[1].credits, refund: true }]);
   }
   charge(audio);
   return lines;
@@ -42,8 +44,9 @@ function exampleLines(catalog) {
 
 const fmt = (n) => (n > 0 ? `+${n}` : `\u2212${Math.abs(n)}`);
 
-export function LedgerExample({ catalog }) {
-  const lines = exampleLines(catalog);
+export function LedgerExample({ catalog, locale = 'en' }) {
+  const t = translator(locale);
+  const lines = exampleLines(catalog, t);
   const balance = lines.reduce((n, l) => n + l.delta, 0);
   return (
     <section className="px-4 sm:px-6 pt-28 sm:pt-36 max-w-[1300px] mx-auto">
@@ -52,8 +55,8 @@ export function LedgerExample({ catalog }) {
           <div className="vx-paper-shadow">
             <div className="vx-paper px-6 sm:px-8 pt-9 pb-10">
               <div className="flex items-baseline justify-between text-[13px] font-bold">
-                <span>Credit statement</span>
-                <span className="font-normal text-vx-fg-muted">Example</span>
+                <span>{t('home.ledger.statement')}</span>
+                <span className="font-normal text-vx-fg-muted">{t('home.ledger.example')}</span>
               </div>
               <div className="vx-perf mt-4" aria-hidden />
               <dl className="mt-4 space-y-2 font-vx-mono text-[13.5px] vx-num">
@@ -67,26 +70,26 @@ export function LedgerExample({ catalog }) {
               </dl>
               <div className="vx-perf mt-5" aria-hidden />
               <div className="mt-4 flex items-baseline justify-between font-vx-mono text-[15px] font-bold vx-num">
-                <span>Balance</span>
+                <span>{t('home.ledger.balance')}</span>
                 <span className="text-vx-money">{balance} cr</span>
               </div>
             </div>
           </div>
         </div>
         <div className="order-1 lg:order-2">
-          <h2 className="vx-display text-[40px] sm:text-[56px] max-w-[12ch]">Every credit leaves a line.</h2>
+          <h2 className="vx-display text-[40px] sm:text-[56px] max-w-[12ch]">{t('home.ledger.title')}</h2>
           <ul className="mt-10 space-y-7 max-w-[46ch]">
             <li>
-              <p className="text-lg font-bold">Charged when you press Generate.</p>
-              <p className="mt-1 text-vx-fg-body leading-[1.6]">At the price printed on the button, and never more after the fact.</p>
+              <p className="text-lg font-bold">{t('home.ledger.a.head')}</p>
+              <p className="mt-1 text-vx-fg-body leading-[1.6]">{t('home.ledger.a.body')}</p>
             </li>
             <li>
-              <p className="text-lg font-bold">A failed job pays itself back.</p>
-              <p className="mt-1 text-vx-fg-body leading-[1.6]">Safety rejects, timeouts and model errors each come back as their own line. You don&rsquo;t have to ask.</p>
+              <p className="text-lg font-bold">{t('home.ledger.b.head')}</p>
+              <p className="mt-1 text-vx-fg-body leading-[1.6]">{t('home.ledger.b.body')}</p>
             </li>
             <li>
-              <p className="text-lg font-bold">Lines are never edited.</p>
-              <p className="mt-1 text-vx-fg-body leading-[1.6]">Your balance is the sum of them, and the full history is in your account.</p>
+              <p className="text-lg font-bold">{t('home.ledger.c.head')}</p>
+              <p className="mt-1 text-vx-fg-body leading-[1.6]">{t('home.ledger.c.body')}</p>
             </li>
           </ul>
         </div>
@@ -97,16 +100,17 @@ export function LedgerExample({ catalog }) {
 
 /* ─── FAQ ─── */
 
-export function FAQBlock() {
+export function FAQBlock({ locale = 'en' }) {
+  const t = translator(locale);
   return (
     <section id="faq" className="px-4 sm:px-6 pt-28 sm:pt-36 max-w-[1300px] mx-auto">
       <div className="grid grid-cols-1 lg:grid-cols-[0.8fr_1fr] gap-8 lg:gap-20">
-        <h2 className="vx-display text-[40px] sm:text-[56px] lg:sticky lg:top-24 self-start">Questions.</h2>
+        <h2 className="vx-display text-[40px] sm:text-[56px] lg:sticky lg:top-24 self-start">{t('home.faq.title')}</h2>
         <div className="border-t-2 border-vx-fg">
-          {FAQ.map((row) => (
+          {FAQ.map((row, i) => (
             <details key={row.q} className="vx-details group border-b border-vx-border">
               <summary className="cursor-pointer list-none flex items-center justify-between gap-6 py-5">
-                <span className="text-[17px] font-bold">{row.q}</span>
+                <span className="text-[17px] font-bold">{t(`home.faq.${i}.q`)}</span>
                 <span
                   aria-hidden="true"
                   className="shrink-0 text-2xl leading-none text-vx-fg-muted transition-transform duration-200 group-open:rotate-45 group-hover:text-vx-fg"
@@ -115,12 +119,12 @@ export function FAQBlock() {
                 </span>
               </summary>
               <p className="pb-6 -mt-1 text-[15px] text-vx-fg-body leading-[1.65] max-w-[62ch]">
-                {row.a}
+                {t(`home.faq.${i}.a`)}
                 {row.link && (
                   <>
                     {' '}
-                    <Link href={row.link.href} className="font-bold text-vx-fg underline underline-offset-4 hover:text-vx-accent">
-                      {row.link.label}
+                    <Link href={localizedHref(locale, row.link.href)} className="font-bold text-vx-fg underline underline-offset-4 hover:text-vx-accent">
+                      {t(`home.faq.${i}.link`)}
                     </Link>
                   </>
                 )}
@@ -135,17 +139,18 @@ export function FAQBlock() {
 
 /* ─── Closing CTA ─── */
 
-export function ClosingCTA() {
+export function ClosingCTA({ locale = 'en' }) {
+  const t = translator(locale);
   return (
     <section className="px-4 sm:px-6 pt-28 sm:pt-36 max-w-[1300px] mx-auto">
       <h2 className="vx-display vx-title-index max-w-[11ch]">
-        Make something today.
+        {t('home.cta.title')}
       </h2>
       <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-4">
-        <Link href="/app/create?model=nano-banana-kie" className="vx-press inline-flex min-h-11 items-center rounded-full bg-vx-accent text-vx-accent-ink px-8 py-4 text-base font-extrabold hover:bg-vx-accent-hover">
-          Open Studio
+        <Link href={localizedHref(locale, '/app/create?model=nano-banana-kie')} className="vx-press inline-flex min-h-11 items-center rounded-full bg-vx-accent text-vx-accent-ink px-8 py-4 text-base font-extrabold hover:bg-vx-accent-hover">
+          {t('home.cta.open')}
         </Link>
-        <p className="text-vx-fg-muted text-[15px]">New accounts begin with 10 free credits. No card needed.</p>
+        <p className="text-vx-fg-muted text-[15px]">{t('home.cta.note')}</p>
       </div>
     </section>
   );
@@ -153,7 +158,9 @@ export function ClosingCTA() {
 
 /* ─── Footer forest ─── */
 
-export function FooterForest() {
+export function FooterForest({ locale = 'en' }) {
+  const t = translator(locale);
+  const info = localeInfo(locale);
   return (
     <footer className="mt-28 sm:mt-36 border-t border-vx-border">
       <div className="max-w-[1300px] mx-auto px-4 sm:px-6 py-10 sm:py-14">
@@ -161,10 +168,10 @@ export function FooterForest() {
           <div className="col-span-2 sm:col-span-3 lg:col-span-1">
             {/* The wordmark is the conventional way back to the top of a
                 site; it used to be inert down here. */}
-            <Link href="/" aria-label="Veyrnox.ai home" className="inline-flex">
+            <Link href={localizedHref(locale, '/')} aria-label={t('ui.home')} className="inline-flex">
               <Logo size={28} wordmark />
             </Link>
-            <p className="mt-4 text-sm text-vx-fg-body max-w-[320px] leading-[1.6]">{FOOTER_TAGLINE}</p>
+            <p className="mt-4 text-sm text-vx-fg-body max-w-[320px] leading-[1.6]">{t('footer.tagline')}</p>
             <a
               href={`mailto:${SUPPORT_EMAIL}`}
               className="mt-4 inline-block text-[13px] text-vx-accent underline underline-offset-4 hover:text-vx-accent-hover"
@@ -174,11 +181,11 @@ export function FooterForest() {
           </div>
           {MORE_FEATURES.map((col) => (
             <div key={col.group}>
-              <h3 className="text-[13px] font-bold text-vx-fg mb-1.5">{col.group}</h3>
+              <h3 className="text-[13px] font-bold text-vx-fg mb-1.5">{t.label(col.group)}</h3>
               <ul>
                 {col.items.map((it) => (
                   <li key={it.label}>
-                    <FooterLink href={it.href}>{it.label}</FooterLink>
+                    <FooterLink href={localizedHref(locale, it.href)}>{t.label(it.label)}</FooterLink>
                   </li>
                 ))}
               </ul>
@@ -193,20 +200,20 @@ export function FooterForest() {
                 year to whenever the Worker bundle happened to boot. */}
             <span>{footerStamp()}</span>
             <span aria-hidden="true">·</span>
-            <span>Company no. {ENTITY.companyNo} · {ENTITY.jurisdiction}</span>
+            <span>{t('footer.company', { no: ENTITY.companyNo, jurisdiction: ENTITY.jurisdiction })}</span>
             <span aria-hidden="true">·</span>
             <span>
-              Last updated <time dateTime={SITE_UPDATED}>{formatUpdated(SITE_UPDATED)}</time>
+              {rich(t('footer.updated'), { date: <time dateTime={SITE_UPDATED}>{formatUpdated(SITE_UPDATED, info.hreflang)}</time> })}
             </span>
           </div>
           {/* py-2 on each link, taken back out of the bar's own padding: the
               row reads the same and a thumb gets 32px instead of 16. */}
           <div className="flex flex-wrap gap-x-4">
-            <Link href="/legal/terms" className="py-2 transition-colors hover:text-vx-fg">Terms</Link>
-            <Link href="/legal/privacy" className="py-2 transition-colors hover:text-vx-fg">Privacy</Link>
-            <Link href="/legal/aup" className="py-2 transition-colors hover:text-vx-fg">Acceptable Use</Link>
-            <Link href="/legal/cinema-content" className="py-2 transition-colors hover:text-vx-fg">Cinema Content</Link>
-            <Link href="/design-system" className="py-2 transition-colors hover:text-vx-fg">Design</Link>
+            <Link href="/legal/terms" className="py-2 transition-colors hover:text-vx-fg">{t.label('Terms')}</Link>
+            <Link href="/legal/privacy" className="py-2 transition-colors hover:text-vx-fg">{t.label('Privacy')}</Link>
+            <Link href="/legal/aup" className="py-2 transition-colors hover:text-vx-fg">{t.label('Acceptable Use')}</Link>
+            <Link href="/legal/cinema-content" className="py-2 transition-colors hover:text-vx-fg">{t.label('Cinema Content')}</Link>
+            <Link href="/design-system" className="py-2 transition-colors hover:text-vx-fg">{t.label('Design')}</Link>
           </div>
         </div>
       </div>
@@ -228,8 +235,8 @@ export function FooterLink({ href, children }) {
   return <Link href={href} className={cls}>{children}</Link>;
 }
 
-export function formatUpdated(iso) {
-  return new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-GB', {
+export function formatUpdated(iso, tag = 'en-GB') {
+  return new Date(`${iso}T00:00:00Z`).toLocaleDateString(tag === 'en' ? 'en-GB' : tag, {
     day: 'numeric',
     month: 'long',
     year: 'numeric',

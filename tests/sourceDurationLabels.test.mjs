@@ -11,6 +11,7 @@ import * as chatMedia from '../app/veyrnox/_lib/chatMedia.js';
 import * as tokens from '../app/veyrnox/_lib/tokens.js';
 import * as starters from '../app/veyrnox/_lib/starterModels.js';
 import * as sourceSlots from '../lib/generationSourceSlots.mjs';
+import { translator } from '../lib/i18n/translate.mjs';
 
 const require = createRequire(import.meta.url);
 function component(path, name) {
@@ -24,6 +25,7 @@ function component(path, name) {
     '../../_lib/modelPricing': pricing, '../_lib/modelPricing': pricing,
     '../../_lib/createErrors': { ERROR_COPY: {} }, '../SourcePickers': { SourcePickers: () => null },
     '../LibraryPicker': { LibraryPicker: ({ kind, mimeTypes }) => createElement('span', { 'data-library-kind': kind, 'data-library-mimes': mimeTypes.join(',') }) }, 'next/navigation': { useRouter: () => ({ push() {} }) },
+    '../../../components/I18nProvider': { useI18n: () => ({ locale: 'en', t: translator('en'), href: (p) => p }) },
     '../_lib/landingDraft': { writeStudioDraft() {} }, '../_lib/tokens': tokens, '../_lib/starterModels': starters,
   };
   new Function('require', 'module', 'exports', code)((id) => imports[id] || require(id), output, output.exports);

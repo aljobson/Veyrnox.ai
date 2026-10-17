@@ -3,6 +3,7 @@
 // announcement shows again to people who closed the last one. Set to null
 // for no bar.
 export const ANNOUNCEMENT = {
+  // Translated under announce.* in lib/i18n/messages: change the words there too.
   id: '2026-10-tools',
   message: 'New: tools for your own images and video, and ready-made templates.',
   cta: 'See the tools',

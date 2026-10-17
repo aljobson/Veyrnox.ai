@@ -4,6 +4,7 @@ import { cn } from '../../../lib/utils';
 
 import { useCallback, useEffect, useSyncExternalStore } from 'react';
 import { Icon } from './Icon';
+import { useI18n } from '../../../components/I18nProvider';
 
 // Dark is the default and the brand; light is opt-in and remembered per
 // browser. The palette itself is 15 CSS variables in app/globals.css, so
@@ -52,6 +53,7 @@ export function applyStoredTheme() {
 
 export function ThemeToggle({ className = '' }) {
   const theme = useSyncExternalStore(subscribe, currentTheme, serverTheme);
+  const { t } = useI18n();
 
   useEffect(() => {
     applyStoredTheme();
@@ -73,8 +75,8 @@ export function ThemeToggle({ className = '' }) {
       type="button"
       onClick={toggle}
       data-print="hide"
-      aria-label={goingLight ? 'Switch to light theme' : 'Switch to dark theme'}
-      title={goingLight ? 'Light theme' : 'Dark theme'}
+      aria-label={goingLight ? t('ui.themeToLight') : t('ui.themeToDark')}
+      title={goingLight ? t('ui.themeLight') : t('ui.themeDark')}
       className={cn('inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-vx-border text-vx-fg-muted transition-colors hover:border-vx-accent hover:text-vx-fg', className)}
     >
       <Icon name={goingLight ? 'sun' : 'moon'} size={15} />
