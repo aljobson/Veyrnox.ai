@@ -6,12 +6,14 @@ import { ThemeToggle } from './ThemeToggle';
 import { Icon } from './Icon';
 import { useOddlingsPublic } from './OddlingsPublicFlag';
 import { navHref } from '../_lib/tokens';
+import { useI18n } from '../../../components/I18nProvider';
 
 // A visible menu keeps every destination reachable on a narrow screen.
 export function MobileMenu({ items, className = '', buttonLabel = 'Menu', buttonText = '', navLabel = 'Site', activeHref }) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef(null);
   const oddlingsPublic = useOddlingsPublic();
+  const { t, href: localHref } = useI18n();
 
   // A phone menu that survives a route change covers the page you just
   // opened; close it whenever it opens a link, and on Escape.
@@ -38,7 +40,7 @@ export function MobileMenu({ items, className = '', buttonLabel = 'Menu', button
     // Home-page sections use a plain link, as on the marketing bar.
     const Item = it.href.includes('#') ? 'a' : Link;
     // A public page that is still behind its flag links to the studio instead.
-    const href = navHref(it, oddlingsPublic);
+    const href = localHref(navHref(it, oddlingsPublic));
     return (
       <li key={it.href}>
         <Item
@@ -55,7 +57,7 @@ export function MobileMenu({ items, className = '', buttonLabel = 'Menu', button
         >
           <span className="inline-flex items-center gap-2">
             {it.featured && <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-current" />}
-            {it.label}
+            {t.label(it.label)}
           </span>
         </Item>
       </li>
@@ -96,7 +98,7 @@ export function MobileMenu({ items, className = '', buttonLabel = 'Menu', button
           >
             <ul className="grid gap-1 sm:grid-cols-2 lg:grid-cols-3">{renderLinks(items)}</ul>
             <div className="mt-2 flex items-center justify-between border-t border-vx-border pt-3">
-              <span className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-faint">THEME</span>
+              <span className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-faint">{t('ui.theme')}</span>
               <ThemeToggle />
             </div>
           </nav>

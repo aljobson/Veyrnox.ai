@@ -9,6 +9,10 @@ import AuthGate from '../components/AuthGate.jsx';
 import SessionHydration from '../components/SessionHydration.jsx';
 import AnalyticsProvider, { analyticsEnabled } from '../components/AnalyticsProvider.jsx';
 import SiteChrome from './veyrnox/_components/SiteChrome';
+import { I18nProvider } from '../components/I18nProvider';
+import { getLocale } from '../lib/i18n/server';
+import { localeInfo } from '../lib/i18n/locales.mjs';
+import { translator } from '../lib/i18n/translate.mjs';
 import { OG_IMAGE, OPEN_GRAPH_BASE, ORG_LD, JsonLd } from './seo';
 
 // Self-hosted (OFL, app/fonts): next/font/google fetched these from Google at
@@ -52,14 +56,18 @@ export const viewport = {
   colorScheme: 'dark light',
 };
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  const locale = await getLocale();
+  const info = localeInfo(locale);
+  const t = translator(locale);
   return (
-    <html lang="en" data-scroll-behavior="smooth" className={inter.variable}>
+    <html lang={info.hreflang} dir={info.dir} data-scroll-behavior="smooth" className={inter.variable}>
       <body>
+        <I18nProvider locale={locale}>
         <AnalyticsProvider>
           {process.env.NODE_ENV === 'development' ? <ReticleDev /> : null}
           <a href="#main" className="vx-skip rounded-full bg-vx-accent px-4 py-2 text-sm font-extrabold text-vx-accent-ink">
-            Skip to content
+            {t('ui.skip')}
           </a>
           {/* #main is the page's own Main (app/veyrnox/_components/Main.js): it
               starts after the nav, so this link skips it. */}
@@ -70,6 +78,7 @@ export default function RootLayout({ children }) {
           <SessionHydration />
           <JsonLd data={ORG_LD} />
         </AnalyticsProvider>
+        </I18nProvider>
       </body>
     </html>
   );

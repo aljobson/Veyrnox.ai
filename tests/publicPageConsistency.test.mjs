@@ -32,12 +32,12 @@ test('there is one public nav, in one order', () => {
     const nav = read('app/veyrnox/_components/NavBar.js');
     const marketing = nav.slice(nav.indexOf('export function MarketingNav'), nav.indexOf('export function AppNav'));
     assert.match(marketing, /PRIMARY_NAV_CATEGORIES\.map\(/, 'the stable desktop links are task-based');
-    assert.match(marketing, /items=\{NAV_CATEGORIES\}[\s\S]*buttonLabel="More navigation"/, 'More exposes the complete public navigation');
+    assert.match(marketing, /items=\{NAV_CATEGORIES\}[\s\S]*buttonLabel=\{t\('ui\.moreNav'\)\}/, 'More exposes the complete public navigation');
     assert.doesNotMatch(marketing, /includeStudio/, 'the phone menu must not put app links ahead of the public nav');
     // A compact real nav is visible on laptops and wide screens. The menu
     // keeps the rest reachable without a second row colliding with controls.
-    assert.match(marketing, /<nav aria-label="Primary" className="hidden xl:flex /);
-    assert.equal((marketing.match(/<nav aria-label="Primary"/g) || []).length, 1,
+    assert.match(marketing, /<nav aria-label=\{t\('ui\.primary'\)\} className="hidden xl:flex /);
+    assert.equal((marketing.match(/<nav aria-label=\{t\('ui\.primary'\)\}/g) || []).length, 1,
         'the header never renders two competing primary navigation rows');
     assert.doesNotMatch(marketing, />\s*Oddlings\s*<\/Link>/,
         'secondary destinations belong under More when the desktop links collapse');
@@ -86,7 +86,7 @@ test('a page title is one of two sizes', () => {
     }
     // On the home page the visible hero H1 and the closing line share the
     // index size, and nothing is set larger.
-    assert.match(read('app/veyrnox/_sections/hero.js'), /<h1 className="vx-display vx-title-index vx-title-glow">\s*Reach for the Stars\s*<\/h1>/);
+    assert.match(read('app/veyrnox/_sections/hero.js'), /<h1 className="vx-display vx-title-index vx-title-glow">\s*\{t\('home\.hero\.title'\)\}\s*<\/h1>/);
     const closing = read('app/veyrnox/_sections/footer.js');
     assert.match(closing.slice(closing.indexOf('export function ClosingCTA')), /<h2 className="vx-display vx-title-index /);
     for (const s of ['hero', 'film', 'showcase', 'footer']) {

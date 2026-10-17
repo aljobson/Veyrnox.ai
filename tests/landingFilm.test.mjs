@@ -64,9 +64,9 @@ test('the film shows no gated model, since the price list it prints is the open 
 test('the landing page mounts the film and gives it a text summary', () => {
     assert.match(read('../app/veyrnox/page.js'), /<LandingFilm \/>/);
     const section = read('../app/veyrnox/_sections/film.js');
-    assert.match(section, /<p className="sr-only">\{FILM_SUMMARY\}<\/p>/);
+    assert.match(section, /<p className="sr-only">\{t\('home\.film\.summary'\)\}<\/p>/);
     // A price in the summary would go stale the same way the frames can.
-    assert.doesNotMatch(section.match(/const FILM_SUMMARY =[\s\S]*?;/)[0], /\d+ (credits|cr)\b/);
+    assert.doesNotMatch(read('../lib/i18n/messages/en.mjs').match(/'home\.film\.summary': '[^\n]*'/)[0], /\d+ (credits|cr)\b/);
 });
 
 test('the value proposition is first and the mobile film CTA clears privacy choices', () => {

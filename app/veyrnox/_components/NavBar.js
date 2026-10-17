@@ -16,6 +16,7 @@ import { useEditorEnabled } from './EditorFlag';
 import { NAV_CATEGORIES, PRIMARY_NAV_CATEGORIES } from '../_lib/tokens';
 import { AnnouncementBar } from './AnnouncementBar';
 import { PaywallPrompt } from './PaywallPrompt';
+import { useI18n } from '../../../components/I18nProvider';
 
 // Studio pages keep the making tools in the tab strip. This complementary
 // list makes the rest of the public site reachable from that same header,
@@ -29,20 +30,21 @@ const APP_BROWSE_CATEGORIES = NAV_CATEGORIES.filter((item) => !item.href.startsW
 export function MarketingNav({ hideAnnouncementOnMobile = false }) {
   // Rewrites serve /veyrnox/* at /*, so the browser path has no prefix.
   const path = usePathname().replace(/^\/veyrnox/, '') || '/';
+  const { t, href } = useI18n();
   return (
     <>
     <div className={hideAnnouncementOnMobile ? 'hidden sm:block' : undefined}><AnnouncementBar /></div>
     <header data-print="hide" className="sticky top-0 z-40 h-16 border-b border-vx-border bg-vx-base/88 backdrop-blur-sm">
       {/* Same 1300px column as the page body, so the logo sits on its edge. */}
       <div className="h-full max-w-[1300px] mx-auto px-4 sm:px-6 flex items-center gap-1 sm:gap-3 xl:gap-6">
-      <Link href="/" aria-label="Veyrnox.ai home" className="flex items-center shrink-0">
+      <Link href={href('/')} aria-label={t('ui.home')} className="flex items-center shrink-0">
         <Logo className="sm:hidden" />
         <Logo wordmark className="hidden sm:inline-flex" />
       </Link>
       {/* Keep the five primary destinations visible at ordinary desktop
           widths. The adjacent menu carries the complete list without ever
           forcing the logo or account controls out of the bar. */}
-      <nav aria-label="Primary" className="hidden xl:flex flex-1 min-w-0 items-center gap-0.5 text-[12px] font-semibold">
+      <nav aria-label={t('ui.primary')} className="hidden xl:flex flex-1 min-w-0 items-center gap-0.5 text-[12px] font-semibold">
         {PRIMARY_NAV_CATEGORIES.map((it) => {
           const section = it.href.includes('#');
           const destination = it.href.split(/[?#]/)[0];
@@ -52,7 +54,7 @@ export function MarketingNav({ hideAnnouncementOnMobile = false }) {
           return (
             <Item
               key={it.href}
-              href={it.href}
+              href={href(it.href)}
               aria-current={active ? 'page' : undefined}
               className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-2 transition-colors ${
                 active
@@ -63,7 +65,7 @@ export function MarketingNav({ hideAnnouncementOnMobile = false }) {
               }`}
             >
               {featured && <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-current" />}
-              {it.label}
+              {t.label(it.label)}
             </Item>
           );
         })}
@@ -74,7 +76,7 @@ export function MarketingNav({ hideAnnouncementOnMobile = false }) {
         <NavAuthButtons />
         <MobileMenu
           items={NAV_CATEGORIES}
-          buttonLabel="More navigation"
+          buttonLabel={t('ui.moreNav')}
         />
       </div>
       </div>
