@@ -41,6 +41,9 @@ test('parses purchases and refunds and ignores everything else', () => {
     });
     assert.equal(parseStoreEvent(purchase({ type: 'CANCELLATION', store: 'APP_STORE', cancel_reason: 'CUSTOMER_SUPPORT' })).kind, 'refund');
     assert.equal(parseStoreEvent(purchase({ environment: 'SANDBOX' })).sandbox, true);
+    // The Test Store is sandbox by construction, even if an event claims production.
+    const test = parseStoreEvent(purchase({ store: 'TEST_STORE', environment: 'PRODUCTION' }));
+    assert.deepEqual([test.kind, test.channel, test.sandbox], ['purchase', 'ios', true]);
     for (const bad of [{ type: 'INITIAL_PURCHASE' }, { store: 'STRIPE' }, { transaction_id: '' }, { id: 'x' }, { product_id: 'bad id!' }]) {
         assert.equal(parseStoreEvent(purchase(bad)).kind, 'ignore', JSON.stringify(bad));
     }
