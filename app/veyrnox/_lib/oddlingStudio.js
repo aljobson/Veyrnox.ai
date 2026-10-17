@@ -112,9 +112,11 @@ export function randomizeOddlingStyle(picks, random = Math.random) {
   return next;
 }
 
-export function buildOddlingStudioPrompt({ picks, mode = 'portrait', motionId = '', scene = '', referenceNote = '' }) {
+// Everything in the studio prompt except the character head. Create adds the
+// head itself from the handed-over picks, so this is what the handoff carries.
+export function buildOddlingDirection({ mode = 'portrait', motionId = '', scene = '', referenceNote = '' }) {
   const motion = ODDLING_MOTIONS.find((item) => item.id === motionId);
-  const direction = [
+  return [
     mode === 'motion'
       ? 'vertical short-form creator video, full body visible at the opening, consistent identity throughout the shot'
       : 'full-body editorial creator portrait, complete silhouette visible, character-sheet clarity',
@@ -122,7 +124,10 @@ export function buildOddlingStudioPrompt({ picks, mode = 'portrait', motionId = 
     String(referenceNote || '').trim() ? `visual reference direction: ${String(referenceNote).trim()}` : '',
     String(scene || '').trim(),
   ].filter(Boolean).join(', ');
-  return buildCharacterPrompt(direction, picks);
+}
+
+export function buildOddlingStudioPrompt({ picks, mode = 'portrait', motionId = '', scene = '', referenceNote = '' }) {
+  return buildCharacterPrompt(buildOddlingDirection({ mode, motionId, scene, referenceNote }), picks);
 }
 
 function cleanLibraryItem(item) {

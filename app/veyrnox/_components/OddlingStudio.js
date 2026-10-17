@@ -29,6 +29,7 @@ import {
   ODDLING_DOLL_FACETS,
   ODDLING_SCENES,
   buildOddlingStudioPrompt,
+  buildOddlingDirection,
   buildOddlingAnimationPrompt,
   animationModel,
   oddlingPortrait,
@@ -283,7 +284,7 @@ export default function OddlingStudio() {
     const model = mode === 'motion' ? videoModel.id : 'flux-2-pro';
     const prompt = mode === 'motion'
       ? buildOddlingAnimationPrompt(portraitId, motionId)
-      : [referenceNote.trim() ? `Visual reference direction: ${referenceNote.trim()}.` : '', scene].filter(Boolean).join(' ');
+      : buildOddlingDirection({ mode, motionId, scene, referenceNote });
     writeOddlingDraft(window.localStorage, picks);
     const result = saveOddlingToLibrary(window.localStorage, picks, motionId);
     if (result.ok) setLibrary(result.items);
