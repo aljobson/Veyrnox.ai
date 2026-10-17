@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { emptyTimeline, addText, totalFrames, validateTimeline, addAudioClip, setVolume } from '../app/veyrnox/_lib/editorTimeline.mjs';
-import { importMedia, insertMedia, duplicateSelection, detachAudio, splitSelection, trimEdge, removeMedia } from '../app/veyrnox/_lib/editorCommands.mjs';
+import { importMedia, insertMedia, duplicateSelection, detachAudio, splitSelection, splitAtFrames, trimEdge, removeMedia } from '../app/veyrnox/_lib/editorCommands.mjs';
 import { createHistory, commitHistory, undoHistory, redoHistory, retainedMedia } from '../app/veyrnox/_lib/editorHistory.mjs';
 import { localMediaId } from '../app/veyrnox/_lib/editorMedia.mjs';
 const video = (id = 'l-source', frames = 300) => ({ id, kind: 'video', frames, name: 'source.mp4', hasAudio: true, width: 1280, height: 720 });
@@ -73,4 +73,38 @@ test('undo/redo restores files and clips, a new edit clears redo, and retention 
     h = commitHistory(h, ok(removeMedia(h.now, 'l-source')));
     for (let n = 0; n < 55; n++) h = commitHistory(h, { ...h.now, seq: h.now.seq + 1 });
     assert.equal(h.past.length, 50); assert.ok(!retainedMedia(h).has('l-source'));
+});
+
+test('splitAtFrames cuts one clip at several frames in any order as a single undoable edit', () => {
+    const base = ok(importMedia(emptyTimeline(), video('l-source', 300)));
+    const selection = { track: 'video', id: base.video[0].id };
+    const cut = ok(splitAtFrames(base, selection, [200, 60, 120]));
+    assert.deepEqual(cut.video.map(c => c.len), [60, 60, 80, 100]);
+    assert.deepEqual(cut.video.map(c => c.in), [0, 60, 120, 200]);
+    assert.equal(cut.video[0].id, base.video[0].id, 'the first part keeps the original id');
+    assert.equal(totalFrames(cut), totalFrames(base), 'no frame is gained or lost');
+    const history = commitHistory(createHistory(base), cut);
+    assert.deepEqual(undoHistory(history).now, base, 'one Undo restores the clip');
+    assert.deepEqual(splitAtFrames(base, selection, [60, 60, 120]).video.length, 3, 'a repeated frame counts once');
+});
+test('splitAtFrames offsets cuts inside a trimmed clip and handles audio clips', () => {
+    let tl = ok(importMedia(emptyTimeline(), video('l-source', 300)));
+    tl = ok(trimEdge(tl, 'video', tl.video[0].id, 'in', 30));
+    const cut = ok(splitAtFrames(tl, { track: 'video', id: tl.video[0].id }, [90]));
+    assert.deepEqual(cut.video.map(c => [c.in, c.len]), [[30, 90], [120, 180]]);
+    const withAudio = ok(addAudioClip(importMedia(emptyTimeline(), video('l-source', 300)), 'l-source', { start: 0, in: 0, len: 200 }));
+    const audioCut = ok(splitAtFrames(withAudio, { track: 'audio', id: withAudio.audio[0].id }, [50, 150]));
+    assert.deepEqual(audioCut.audio.map(c => [c.start, c.len]), [[0, 50], [50, 100], [150, 50]]);
+});
+test('splitAtFrames refuses the whole batch for a bad frame, a text clip, an empty list or too many clips', () => {
+    const base = ok(importMedia(emptyTimeline(), video('l-source', 300)));
+    const selection = { track: 'video', id: base.video[0].id };
+    assert.match(splitAtFrames(base, selection, [100, 300]).error, /frame 300 is outside/);
+    assert.match(splitAtFrames(base, selection, [0]).error, /outside/);
+    assert.match(splitAtFrames(base, selection, [1.5]).error, /whole frames/);
+    assert.match(splitAtFrames(base, selection, []).error, /no cuts/);
+    assert.match(splitAtFrames(base, { track: 'text', id: 't1' }, [10]).error, /video or audio/);
+    assert.match(splitAtFrames(base, { track: 'video', id: 'missing' }, [10]).error, /Select a clip/);
+    assert.match(splitAtFrames(base, selection, Array.from({ length: 10 }, (_, i) => 20 + i * 20)).error, /up to 10 video clips/);
+    assert.equal(base.video.length, 1, 'the input timeline is never changed');
 });
