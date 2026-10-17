@@ -24,6 +24,7 @@ import { runBackfill } from '../../../../lib/topUpBackfill.js';
 import { tokenMatches, bearerToken } from '../../../../lib/tokenMatches.js';
 import { retryAfterSeconds, recordFailure } from '../../../../lib/adminThrottle.js';
 import { requireAccess } from '../../../../lib/accessJwt.js';
+import { dbErrorSummary } from '../../../../lib/dbErrorSummary.js';
 
 const LOG = '[top-up-backfill]';
 const THROTTLE_BUCKET = 'top-up-backfill';
@@ -66,7 +67,7 @@ export async function POST(req) {
     try {
         rows = await rpc('next_top_up_backfill_batch', { p_limit: BATCH }, cfg);
     } catch (err) {
-        console.error(LOG, 'batch read failed:', err && err.status);
+        console.error(LOG, 'batch read failed:', dbErrorSummary(err));
         return NextResponse.json({ error: 'internal' }, { status: 502 });
     }
     if (!Array.isArray(rows)) {
