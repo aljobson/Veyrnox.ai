@@ -14,8 +14,13 @@ function readVeyLayout() {
   const generate = document.querySelector('[data-assistant-target="create.generate"]')?.getBoundingClientRect();
   const cost = document.querySelector('[data-assistant-target="create.cost"]')?.parentElement?.getBoundingClientRect();
   const siteActions = document.querySelector('[data-site-actions]')?.getBoundingClientRect();
+  const main = document.querySelector('main')?.getBoundingClientRect();
   return {
     guideOpen: !!guide,
+    guideHeight: guide ? Math.round(guide.height) : null,
+    workspaceDocked: document.documentElement.dataset.veyMobileWorkspace === 'true',
+    workspaceClear: !!main && !!guide && main.bottom <= guide.top - 7,
+    workspaceScroll: Math.round(document.querySelector('main')?.scrollTop || 0),
     guideVisible: !!guide?.width && guide.top >= 72 && guide.bottom <= innerHeight,
     questionVisible: !!question?.width && question.top >= 72 && question.bottom <= innerHeight,
     questionWidth: question ? Math.round(question.width) : null,
