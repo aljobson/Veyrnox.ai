@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { DEFAULT_VEY_PLACEMENT, VEY_PLACEMENT_KEY, readVeyPlacement, writeVeyPlacement } from '../lib/veyPlacement.js';
+import { DEFAULT_VEY_PLACEMENT, VEY_PLACEMENT_STORAGE, readVeyPlacement, writeVeyPlacement } from '../lib/veyPlacement.js';
 import { clampVeyPosition } from '../lib/veyPointer.js';
 
 const memory = () => {
@@ -29,7 +29,7 @@ test('saved positions are clamped safely when returning to a smaller screen', ()
 test('malformed, incompatible and blocked storage never break the helper', () => {
   const storage = memory();
   for (const value of ['oops', 'null', '{"version":2}', '{"version":1,"side":"middle","position":{"x":"5","y":4}}']) {
-    storage.setItem(VEY_PLACEMENT_KEY, value);
+    storage.setItem(VEY_PLACEMENT_STORAGE, value);
     assert.deepEqual(readVeyPlacement(storage), DEFAULT_VEY_PLACEMENT);
   }
   const blocked = { getItem() { throw Error('blocked'); }, setItem() { throw Error('quota'); } };
@@ -39,5 +39,5 @@ test('malformed, incompatible and blocked storage never break the helper', () =>
 test('placement storage excludes images, rights, questions and task state', () => {
   const storage = memory();
   writeVeyPlacement(storage, { side: 'right', position: { x: 10, y: 90, secret: 'no' }, consent: true, source: 'no', task: 'no', question: 'no' });
-  assert.deepEqual(JSON.parse(storage.getItem(VEY_PLACEMENT_KEY)), { version: 1, side: 'right', position: { x: 10, y: 90 } });
+  assert.deepEqual(JSON.parse(storage.getItem(VEY_PLACEMENT_STORAGE)), { version: 1, side: 'right', position: { x: 10, y: 90 } });
 });
