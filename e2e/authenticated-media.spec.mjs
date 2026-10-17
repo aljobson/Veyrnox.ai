@@ -78,6 +78,34 @@ test('Video Agent expired plan cannot dispatch and editing the brief discards it
   await expect(page.getByRole('button', { name: /Approve and make it/ })).toHaveCount(0);
 });
 
+test('Video Agent returning focus refreshes the balance without submitting and blocks a now-unaffordable plan', async ({ page }) => {
+  let balance = 800, hold = false, reads = 0, release;
+  const pending = new Promise(resolve => { release = resolve; });
+  const fixture = await installProductFixtures(page, { routes: async ({ url, method, json }) => {
+    if (url.pathname === '/api/v1/balance' && method === 'GET') { reads++; if (hold) await pending; return json({ balance }); }
+    if (url.pathname === '/api/v1/montage/plan' && method === 'POST') return json({ plan_id: 'synthetic-focus-plan', idempotency_key: 'synthetic-focus-plan-key', credits: 165, expires_at: Math.floor(Date.now() / 1000) + 600, plan: { summary: 'Synthetic focus balance test', seconds: 10 } });
+    return false;
+  } });
+  try {
+    await fixture.open('/app/video-agent');
+    await page.getByLabel('BRIEF', { exact: true }).fill('Synthetic focus balance brief');
+    await page.getByRole('button', { name: 'Make a plan', exact: true }).click();
+    const approve = page.getByRole('button', { name: /Approve and make it/ });
+    await expect(approve).toBeEnabled();
+    const before = reads;
+    hold = true;
+    await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+    await expect.poll(() => reads).toBeGreaterThan(before);
+    await expect(approve).toBeDisabled();
+    await expect(page.getByRole('status').filter({ hasText: 'Checking your balance…' })).toBeVisible();
+    balance = 100; hold = false; release();
+    await expect(page.getByText('165 cr · balance 100 cr', { exact: true })).toBeVisible();
+    await expect(page.getByText('You need 65 more Credits to approve this plan.', { exact: true })).toBeVisible();
+    await expect(approve).toBeDisabled();
+    expect(fixture.requests.filter(row => row.path === '/api/v1/generations')).toEqual([]);
+  } finally { release(); }
+});
+
 test('Create multi-image batch preserves per-job idempotency and stops after an uncertain second submission', async ({ page }) => {
   let count = 0;
   const fixture = await installProductFixtures(page, { routes: ({ url, method, json }) => {

@@ -30,19 +30,32 @@ export default function VideoAgent() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const inFlight = useRef(false);
+  const balanceRequest = useRef(0);
   const { jobs, startJobs, generating } = useStudioJobs({ onUnreachable: () => setError({ code: 'poll_unreachable' }) });
   const job = jobs[0];
 
   const refreshBalance = useCallback(async () => {
+    const request = ++balanceRequest.current;
     setBalanceLoading(true);
-    try { setBalance((await gatewayFetch('/balance', { signal: AbortSignal.timeout(15000) })).balance); }
-    catch { setBalance(null); }
-    finally { setBalanceLoading(false); }
+    try {
+      const next = await gatewayFetch('/balance', { signal: AbortSignal.timeout(15000) });
+      if (request === balanceRequest.current) setBalance(next.balance);
+    }
+    catch { if (request === balanceRequest.current) setBalance(null); }
+    finally { if (request === balanceRequest.current) setBalanceLoading(false); }
   }, []);
   useEffect(() => {
     refreshBalance();
+    const onVisible = () => { if (document.visibilityState === 'visible') refreshBalance(); };
     window.addEventListener('veyrnox:balance-changed', refreshBalance);
-    return () => window.removeEventListener('veyrnox:balance-changed', refreshBalance);
+    window.addEventListener('focus', refreshBalance);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      balanceRequest.current += 1;
+      window.removeEventListener('veyrnox:balance-changed', refreshBalance);
+      window.removeEventListener('focus', refreshBalance);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [refreshBalance]);
 
   // After a reload, pick the run in flight back up: the job history in this browser knows it was started.

@@ -98,7 +98,7 @@ test('Video Agent offers a read-only balance retry and never enables paid approv
   assert.doesNotMatch(approval(agent(200)), /\sdisabled=/);
   assert.match(approval(agent(164)), /\sdisabled=/);
   const source = read('app/veyrnox/app/video-agent/page.js');
-  assert.match(source, /catch\s*\{\s*setBalance\(null\)/);
+  assert.match(source, /catch\s*\{\s*if \(request === balanceRequest\.current\) setBalance\(null\)/);
   assert.match(source, /onClick=\{refreshBalance\}/);
 });
 
