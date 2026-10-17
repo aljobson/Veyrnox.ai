@@ -57,6 +57,25 @@ export function splitSelection(tl, selection, frame) {
     return addText(next, { ...item, start: frame, len: item.len - offset });
 }
 
+/**
+ * Splits one video or audio clip at several timeline frames as ONE edit (scene detection, ADR-0105). The cuts are applied last to first, so
+ * the original clip id keeps the first part and every earlier frame still falls inside it. All or nothing: any bad frame or a project
+ * that would exceed its clip limit returns an error and the timeline is unchanged.
+ */
+export function splitAtFrames(tl, selection, frames) {
+    const { track, id } = selection || {};
+    if (track !== 'video' && track !== 'audio') return { error: 'Select a video or audio clip first.' };
+    if (!Array.isArray(frames) || !frames.length) return { error: 'There are no cuts to add.' };
+    if (!frames.every(Number.isInteger)) return { error: 'Cut positions must be whole frames.' };
+    const ordered = [...new Set(frames)].sort((a, b) => b - a);
+    let next = tl;
+    for (const frame of ordered) {
+        next = splitClip(next, track, id, frame);
+        if (next.error) return next.error.startsWith('Move the playhead') ? { error: `A cut at frame ${frame} is outside the clip.` } : next;
+    }
+    return next;
+}
+
 /** Dragging the first edge removes or reveals source frames; the main video lane ripples. */
 export function trimEdge(tl, track, id, edge, delta) {
     const item = tl[track]?.find(x => x.id === id);
