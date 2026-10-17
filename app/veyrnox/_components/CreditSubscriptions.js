@@ -20,9 +20,13 @@ const usd = new Intl.NumberFormat('en-US', {
 });
 const names = {
   'starter-monthly': 'Starter',
+  'starter-weekly': 'Starter',
   'plus-monthly': 'Plus',
+  'plus-weekly': 'Plus',
   'ultra-monthly': 'Ultra',
+  'ultra-weekly': 'Ultra',
 };
+const intervalName = (value) => (value === 'week' ? 'week' : 'month');
 const identity = () => getSession()?.user?.id || '',
   noIdentity = () => '';
 const message = (code) =>
@@ -67,15 +71,18 @@ async function publicOfferState() {
 }
 function Plans({ plans, selected, onSelect, publicOnly = false }) {
   return (
-    <ul className="mt-6 grid gap-4 sm:grid-cols-3">
+    <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {plans.map((p) => (
         <li key={p.id} className="rounded-xl border border-vx-border p-5">
           <h3 className="text-xl font-bold">{names[p.id] || p.id}</h3>
+          <p className="mt-1 text-xs font-bold uppercase tracking-widest text-vx-accent">
+            {intervalName(p.billing_interval)}ly
+          </p>
           <p className="mt-3 font-vx-mono text-2xl">
-            {usd.format(p.price_usd_cents / 100)} / month
+            {usd.format(p.price_usd_cents / 100)} / {intervalName(p.billing_interval)}
           </p>
           <p className="mt-2">
-            {p.credits.toLocaleString()} Credits each paid month
+            {p.credits.toLocaleString()} Credits each paid {intervalName(p.billing_interval)}
           </p>
           <p className="mt-2 text-sm text-vx-fg-muted">
             Plus applicable tax. Cycle Credits expire and do not roll over.
@@ -125,22 +132,22 @@ export function CreditSubscriptionOffer() {
   return (
     <section
       className="mx-auto max-w-[1300px] px-4 pt-24 sm:px-6"
-      aria-labelledby="monthly-credit-offer"
+      aria-labelledby="credit-subscription-offer"
     >
       <h2
-        id="monthly-credit-offer"
+        id="credit-subscription-offer"
         className="vx-display text-[40px] sm:text-[56px]"
       >
-        Credits every month.
+        Credits every week or month.
       </h2>
       {offerState.phase === 'loading' && (
         <p role="status" aria-live="polite" className="mt-4">
-          Loading monthly subscription prices…
+          Loading subscription prices…
         </p>
       )}
       {offerState.phase === 'closed' && (
         <p role="status" className="mt-4">
-          Monthly subscriptions aren&apos;t open right now. One-off Credit Packs can be purchased separately when available and do not renew.{' '}
+          Credit subscriptions aren&apos;t open right now. One-off Credit Packs can be purchased separately when available and do not renew.{' '}
           <Link href="/app/credits#credit-packs" className="underline">
             Buy a Credit Pack
           </Link>
@@ -148,22 +155,22 @@ export function CreditSubscriptionOffer() {
       )}
       {offerState.phase === 'unavailable' && (
         <p role="alert" className="mt-4">
-          Monthly subscription prices are temporarily unavailable.{' '}
+          Subscription prices are temporarily unavailable.{' '}
           <button className="underline" onClick={load}>
-            Refresh monthly prices
+            Refresh prices
           </button>
         </p>
       )}
       {offerState.phase === 'open' && catalog?.plans?.length > 0 && (
         <>
           <p className="mt-4">
-            Optional monthly subscriptions renew automatically until cancelled.
+            Optional weekly and monthly subscriptions renew automatically until cancelled.
             Manage renewal in Credits &amp; billing. Prices are in USD; tax and
             the final total are shown before payment.
           </p>
           <Plans plans={catalog.plans} publicOnly />
           <button className="mt-5 text-sm underline" onClick={load}>
-            Refresh monthly prices
+            Refresh prices
           </button>
         </>
       )}
@@ -364,7 +371,9 @@ function Billing({ account, recovery, setRecovery }) {
   }
   const current =
       sub && ['pending', 'active', 'past_due', 'flagged'].includes(sub.status),
-    plan = catalog?.plans.find((p) => p.id === selected);
+    plan = catalog?.plans.find((p) => p.id === selected),
+    activePlan = catalog?.plans?.find((candidate) => candidate.id === sub?.plan_id),
+    activeInterval = activePlan?.billing_interval || (sub?.plan_id?.endsWith('-weekly') ? 'week' : 'month');
   return (
     <section
       id="credit-subscriptions"
@@ -372,7 +381,7 @@ function Billing({ account, recovery, setRecovery }) {
       aria-labelledby="credit-subscriptions-heading"
     >
       <h2 id="credit-subscriptions-heading" className="text-3xl font-black">
-        Monthly Credit Subscription
+        Credit Subscriptions
       </h2>
       {!loaded && (
         <p role="status" className="mt-4">
@@ -381,7 +390,7 @@ function Billing({ account, recovery, setRecovery }) {
       )}
       {loaded && closed && !sub && !recovery && (
         <p role="status" className="mt-4">
-          Monthly subscriptions aren&apos;t open right now. One-off Credit Packs can be purchased separately when available and do not renew.{' '}
+          Credit subscriptions aren&apos;t open right now. One-off Credit Packs can be purchased separately when available and do not renew.{' '}
           <Link href="#credit-packs" className="underline">
             Choose a Credit Pack
           </Link>
@@ -430,7 +439,7 @@ function Billing({ account, recovery, setRecovery }) {
           <h3 className="font-bold">{names[sub.plan_id] || sub.plan_id}</h3>
           <p className="mt-2">Status: {sub.status}</p>
           <p className="mt-2">
-            {usd.format(sub.price_usd_cents / 100)} / month · {sub.credits}{' '}
+            {usd.format(sub.price_usd_cents / 100)} / {activeInterval} · {sub.credits}{' '}
             Credits per paid cycle
           </p>
           {sub.current_period_end && (
@@ -513,7 +522,7 @@ function Billing({ account, recovery, setRecovery }) {
       {!current && !closed && catalog?.plans?.length > 0 && (
         <>
           <p className="mt-4">
-            Choose an optional monthly subscription. It renews automatically
+            Choose an optional weekly or monthly subscription. It renews automatically
             until cancelled. Credits expire at each cycle end and do not roll
             over. Tax and the final total are shown at checkout.
           </p>
@@ -546,8 +555,8 @@ function Billing({ account, recovery, setRecovery }) {
                   <span>
                     I agree to {names[plan.id] || plan.id} at{' '}
                     {usd.format(plan.price_usd_cents / 100)} plus applicable tax
-                    every month until I cancel. I receive {plan.credits} Credits
-                    after each confirmed monthly payment; unused cycle Credits
+                    every {intervalName(plan.billing_interval)} until I cancel. I receive {plan.credits} Credits
+                    after each confirmed {intervalName(plan.billing_interval)}ly payment; unused cycle Credits
                     expire without rollover.
                   </span>
                 </label>

@@ -7,6 +7,18 @@
       "subject": "drive-signed-out-users-can-dismiss-and-r"
     },
     {
+      "id": "flow:drive-weekly-subscription-options",
+      "statement": "weekly-subscription-options",
+      "status": "proposed",
+      "subject": "drive-weekly-subscription-options"
+    },
+    {
+      "id": "flow:publish-annual-plan-option",
+      "statement": "A publisher can choose Veyrnox Publish annual billing at $126 per ye…",
+      "status": "proposed",
+      "subject": "publish-annual-plan-option"
+    },
+    {
       "id": "flow:publish-analytics-portfolio-x",
       "statement": "A signed-in publisher can compare supported social accounts together, s…",
       "status": "proposed",
@@ -17,6 +29,12 @@
       "statement": "A free-plan publisher sees the truthful 12-month analytics history enti…",
       "status": "proposed",
       "subject": "publish-plan-analytics-history"
+    },
+    {
+      "id": "flow:publish-weekly-plan-option",
+      "statement": "A publisher can select Veyrnox Publish weekly billing, review the exact…",
+      "status": "proposed",
+      "subject": "publish-weekly-plan-option"
     },
     {
       "id": "inline:publish-analytics-x-194b806a",
@@ -51,6 +69,12 @@
     {
       "id": "publish-plan-price",
       "statement": "The Veyrnox Publish Plan is offered at $15 per month while five connect…",
+      "status": "proposed",
+      "subject": "unsorted"
+    },
+    {
+      "id": "weekly-subscription-options",
+      "statement": "Credit Subscriptions, Cinema Pass, and Veyrnox Publish each offer a cle…",
       "status": "proposed",
       "subject": "unsorted"
     }

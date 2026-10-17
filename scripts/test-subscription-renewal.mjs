@@ -22,7 +22,7 @@ const end = (days) => new Date(Date.now() + days * 86400000).toISOString();
 try {
   await c.query('BEGIN');
   const plans = await rpc('public.list_credit_subscription_plans()');
-  assert.equal(plans.length, 3);
+  assert.equal(plans.length, 6);
   for (const plan of plans) {
     await c.query('SAVEPOINT tier');
     const auth = randomUUID();

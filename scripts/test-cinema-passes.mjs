@@ -1,6 +1,6 @@
 // Disposable local Postgres only. No production credentials or fixtures.
 // Exercises migration 0143 (ADR-0057 Phase 2): Cinema Pass lifecycle,
-// entitlement, intro once per account, one live Pass, refund/dispute endings,
+// entitlement, current plan pricing, one live Pass, refund/dispute endings,
 // and that no Pass path ever touches the ledger.
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -39,8 +39,9 @@ try {
   const repricing = await readFile(new URL('../packages/db/schema/supabase/0244_cinema_pass_monthly_only_999_ceiling_1500.sql', import.meta.url), 'utf8');
   await c.query(repricing); await c.query(repricing);
   const offered = async () => (await value('SELECT public.list_cinema_pass_plans() AS value')).map((p) => [p.id, p.billing_interval, p.price_usd_cents, p.intro_price_usd_cents]);
-  const everyPlan = [['pass-monthly', 'month', 999, null], ['pass-weekly', 'week', 1499, 1199], ['pass-yearly', 'year', 19999, null]];
-  assert.deepEqual(await offered(), [everyPlan[0]]);
+  const monthlyPlan = ['pass-monthly', 'month', 999, null];
+  const everyPlan = [['pass-weekly', 'week', 299, null], monthlyPlan, ['pass-yearly', 'year', 19999, null]];
+  assert.deepEqual(await offered(), [monthlyPlan]);
   // A withdrawn plan keeps its row, because Passes reference it, and cannot be started.
   assert.deepEqual((await q('SELECT id, active FROM public.cinema_pass_plans ORDER BY id')).map((r) => [r.id, r.active]),
     [['pass-monthly', true], ['pass-weekly', false], ['pass-yearly', false]]);
@@ -65,10 +66,10 @@ try {
   const ledgerBefore = await ledgerRows(), balancesBefore = await balances();
   const alice = await person(), bob = await person(), carol = await person();
 
-  // Start: pending row, intro decided by the database, idempotent on the key.
+  // Start: pending row, price decided by the database, idempotent on the key.
   const key = randomUUID();
   const a1 = await start(alice, 'pass-weekly', key);
-  assert.deepEqual([a1.ok, a1.status, a1.billing_interval, a1.price_usd_cents, a1.intro_price_usd_cents, a1.idempotent], [true, 'pending', 'week', 1499, 1199, false]);
+  assert.deepEqual([a1.ok, a1.status, a1.billing_interval, a1.price_usd_cents, a1.intro_price_usd_cents, a1.idempotent], [true, 'pending', 'week', 299, null, false]);
   const replay = await start(alice, 'pass-weekly', key);
   assert.deepEqual([replay.idempotent, replay.pass_id], [true, a1.pass_id]);
   assert.equal((await start(alice, 'pass-monthly', key)).code, 'IDEMPOTENCY_KEY_REUSED');
@@ -133,15 +134,15 @@ try {
   assert.deepEqual([b3.stale, b3.flagged], [true, true], 'a flagged Pass is terminal and keeps reporting flagged');
   assert.equal((await apply('evt_b2', 'sub_b2', null, 'active')).flagged, true, 'so does a replayed event');
 
-  // The intro is once per account: burned by a paid Pass, not by an abandoned checkout.
+  // The current weekly plan has no intro price, whether a previous Pass paid or checkout was abandoned.
   await end('sub_b1', 'evt_b1_refund', 'refunded');
   assert.deepEqual(await entitlement(bob, locked), { access: 'locked', credits: 6 });
   const bobAgain = await start(bob, 'pass-weekly');
-  assert.equal(bobAgain.intro_price_usd_cents, null, 'intro already used');
+  assert.equal(bobAgain.intro_price_usd_cents, null, 'weekly has no intro');
   const carolAbandoned = await start(carol, 'pass-weekly');
-  assert.equal(carolAbandoned.intro_price_usd_cents, 1199);
+  assert.equal(carolAbandoned.intro_price_usd_cents, null);
   const carolAgain = await start(carol, 'pass-weekly');
-  assert.equal(carolAgain.intro_price_usd_cents, 1199, 'an unpaid checkout keeps the intro');
+  assert.equal(carolAgain.intro_price_usd_cents, null, 'an unpaid checkout does not invent an intro');
 
   // Endings: refund ends; dispute ends and Freezes; both idempotent on the event; an ended Pass keeps its first reason.
   assert.deepEqual(await end('sub_b1', 'evt_b1_refund', 'refunded'), { ok: true, idempotent: true });
@@ -210,6 +211,6 @@ try {
   await q('ROLLBACK');
   // Leave the catalogue as 0244 leaves it for the scripts that share this database.
   await q("UPDATE public.cinema_pass_plans SET active = false WHERE id IN ('pass-weekly', 'pass-yearly')");
-  assert.deepEqual(await offered(), [everyPlan[0]]);
-  console.log('Cinema pass checks passed: plans and withdrawn plans, start/replay, binding, ordering, entitlement precedence, one live pass, intro once, refund/dispute endings, cancellation marks, rate limit, ledger untouched and grants.');
+  assert.deepEqual(await offered(), [monthlyPlan]);
+  console.log('Cinema pass checks passed: plans and withdrawn plans, start/replay, binding, ordering, entitlement precedence, one live pass, current no-intro pricing, refund/dispute endings, cancellation marks, rate limit, ledger untouched and grants.');
 } finally { await c.end(); }

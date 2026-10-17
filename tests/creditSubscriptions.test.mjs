@@ -8,7 +8,7 @@ const AUTH = '1b6f3c1e-8d2a-4f5b-9c7e-1a2b3c4d5e6f';
 const NOW = Math.floor(Date.now() / 1000);
 const SECRET = 'whsec_credit_subscription_test';
 const cfg = { apiKey: 'sk_test_x', signingSecret: SECRET, publicHost: 'https://veyrnox.test', idempotencyKey: 'checkout_test' };
-const binding = { id: ID, plan_id: 'starter-monthly', stripe_subscription_id: 'sub_1', stripe_customer_id: 'cus_1', price_usd_cents: 1900, credits: 270 };
+const binding = { id: ID, plan_id: 'starter-monthly', billing_interval: 'month', stripe_subscription_id: 'sub_1', stripe_customer_id: 'cus_1', price_usd_cents: 1900, credits: 270 };
 const invoice = () => ({ id: 'in_1', object: 'invoice', subscription: 'sub_1', customer: 'cus_1', livemode: false, status: 'paid', currency: 'usd',
   billing_reason: 'subscription_create', amount_paid: 1900, discounts: [], lines: { has_more: false, data: [{ subscription: 'sub_1', quantity: 1,
     amount: 1900, currency: 'usd', proration: false, period: { start: NOW - 60, end: NOW - 60 + 30 * 86400 },
@@ -36,6 +36,25 @@ test('credit checkout signs a separate billing kind into both objects, uses data
   assert.ok(![...fields.keys()].some((k) => /trial|discount/.test(k)));
   const invalid = await createCreditSubscriptionCheckout({ subscriptionId: ID, planId: 'starter-monthly', interval: 'year', priceUsdCents: 1900, credits: 270 }, cfg);
   assert.equal(invalid.ok, false);
+});
+
+test('weekly Credit checkout and invoice validation use a seven-day paid cycle', async () => {
+  let fields;
+  const result = await createCreditSubscriptionCheckout({ subscriptionId: ID, planId: 'starter-weekly', interval: 'week', priceUsdCents: 499, credits: 60 }, {
+    ...cfg, fetch: async (_url, req) => { fields = new URLSearchParams(req.body); return Response.json({ object: 'checkout.session', id: 'cs_weekly', url: 'https://checkout.stripe.com/c/pay/weekly' }); },
+  });
+  assert.equal(result.ok, true);
+  assert.equal(fields.get('line_items[0][price_data][recurring][interval]'), 'week');
+  assert.match(fields.get('line_items[0][price_data][product_data][name]'), /60 Credits per week/);
+
+  const weekly = invoice();
+  weekly.amount_paid = 499;
+  Object.assign(weekly.lines.data[0], { amount: 499, period: { start: NOW - 60, end: NOW - 60 + 7 * 86400 } });
+  Object.assign(weekly.lines.data[0].price, { unit_amount: 499, recurring: { interval: 'week', interval_count: 1 } });
+  const weeklyBinding = { ...binding, plan_id: 'starter-weekly', billing_interval: 'week', price_usd_cents: 499, credits: 60 };
+  assert.equal(creditInvoice(weekly, weeklyBinding, false).ok, true);
+  weekly.lines.data[0].period.end += 21 * 86400;
+  assert.equal(creditInvoice(weekly, weeklyBinding, false).ok, false);
 });
 
 test('paid invoice validation refuses mismatched customers, prices, modes, currency, proration, annual periods and incomplete line lists', () => {
