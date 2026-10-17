@@ -43,7 +43,7 @@ export const BRAND_FILM = {
     video: '/film/brand-intro-portrait.mp4',
     poster: '/film/brand-intro-portrait.jpg',
     width: 512,
-    height: 896,
+    height: 396,
   },
 };
 
