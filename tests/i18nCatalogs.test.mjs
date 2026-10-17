@@ -47,7 +47,7 @@ test('only translated pages take the prefix', () => {
   assert.equal(localizedHref('es', '/'), '/es');
   assert.equal(localizedHref('es', '/#faq'), '/es#faq');
   assert.equal(localizedHref('es', '/pricing'), '/es/pricing');
-  assert.equal(localizedHref('es', '/presets'), '/presets');
+  assert.equal(localizedHref('es', '/oddlings'), '/oddlings');
   assert.ok(LOCALIZED_PATHS.has('/pricing'));
   assert.equal(localizedHref('es', 'mailto:legal@veyrnox.com'), 'mailto:legal@veyrnox.com');
   assert.equal(localizedHref('en', '/'), '/');
@@ -92,9 +92,9 @@ test('the picker keeps a translated page and falls back to home for the rest', (
   assert.equal(switchLanguageHref('fr', '/es'), '/fr');
   assert.equal(switchLanguageHref('en', '/ja'), '/');
   assert.equal(switchLanguageHref('de', '/pricing'), '/de/pricing', 'pricing is translated');
-  assert.equal(switchLanguageHref('de', '/presets'), '/de', 'no German templates page yet: home');
+  assert.equal(switchLanguageHref('de', '/oddlings'), '/de', 'no German Oddlings page yet: home');
   assert.equal(switchLanguageHref('en', '/es/pricing'), '/pricing');
-  assert.equal(switchLanguageHref('en', '/presets'), '/presets', 'English on an English page stays put');
+  assert.equal(switchLanguageHref('en', '/oddlings'), '/oddlings', 'English on an English page stays put');
 });
 
 test('every tool group on /tools has translated words, and every MCP tool a description', () => {
@@ -125,5 +125,6 @@ test('guide pages take a prefix, the bare prefix path does not', () => {
   assert.equal(isLocalizedPath('/guides/'), true);
   assert.equal(localizedHref('fr', '/guides/credits'), '/fr/guides/credits');
   assert.equal(switchLanguageHref('de', '/fr/guides/library'), '/de/guides/library');
-  assert.equal(isLocalizedPath('/presets/abc'), false);
+  assert.equal(isLocalizedPath('/presets/abc'), false, 'template detail pages are not translated yet');
+  assert.equal(isLocalizedPath('/presets'), true);
 });
