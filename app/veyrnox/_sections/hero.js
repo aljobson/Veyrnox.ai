@@ -19,7 +19,7 @@ export function Hero({ models }) {
       <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-12 lg:gap-16 items-start">
         <div className="lg:pt-10">
           <h1 className="vx-display vx-title-index">
-            The price is on the button.
+            Reach for the stars. The price is on the button.
           </h1>
           <p className="mt-6 text-lg sm:text-xl text-vx-fg-body max-w-[40ch] leading-[1.5] text-pretty">
             Image, video and audio models on one credit balance. Failed jobs refund on their own.
