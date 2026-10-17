@@ -50,7 +50,9 @@ export async function verifyWebhookSignature(rawBody, header, secret, nowSeconds
     return false;
 }
 
-const STORES = { APP_STORE: 'ios', PLAY_STORE: 'android' };
+// TEST_STORE is RevenueCat's fake store for development: it maps to the iOS packs and is always sandbox,
+// so production (which ignores sandbox events) can never credit it.
+const STORES = { APP_STORE: 'ios', PLAY_STORE: 'android', TEST_STORE: 'ios' };
 
 /**
  * Reduces a verified webhook body to what we act on.
@@ -66,7 +68,8 @@ export function parseStoreEvent(body) {
 
     const eventId = typeof event.id === 'string' ? event.id : '';
     if (!EVENT_ID_RE.test(eventId)) return { kind: 'ignore', reason: 'event_id' };
-    const channel = STORES[String(event.store || '').toUpperCase()];
+    const store = String(event.store || '').toUpperCase();
+    const channel = STORES[store];
     if (!channel) return { kind: 'ignore', reason: 'store' };
     const transactionId = typeof event.transaction_id === 'string' ? event.transaction_id : '';
     if (!transactionId || transactionId.length > TRANSACTION_MAX) return { kind: 'ignore', reason: 'transaction' };
@@ -79,6 +82,6 @@ export function parseStoreEvent(body) {
     return {
         kind: type === 'NON_RENEWING_PURCHASE' ? 'purchase' : 'refund',
         eventId, channel, productId, transactionId, customerIds,
-        sandbox: String(event.environment || '').toUpperCase() !== 'PRODUCTION',
+        sandbox: store === 'TEST_STORE' || String(event.environment || '').toUpperCase() !== 'PRODUCTION',
     };
 }

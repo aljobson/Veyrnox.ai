@@ -383,7 +383,7 @@
         // Veyrnox Publish is open on staging for testing (see production).
         "PUBLISH_ENABLED": "true",
         // ADR-0108; vars are not inherited. Sandbox purchases are accepted here only.
-        "STORE_BILLING_ENABLED": "false",
+        "STORE_BILLING_ENABLED": "true",
         "STORE_BILLING_ALLOW_SANDBOX": "true",
         // Publish migrations through 0323 are installed in staging. These
         // management surfaces are enabled here for acceptance before any
