@@ -67,13 +67,26 @@ async function withFlag(value, run) {
 const renderIndex = () => renderToStaticMarkup(indexPage.default());
 const renderDetail = async (id) => renderToStaticMarkup(await detailPage.default({ params: Promise.resolve({ id }) }));
 const unescapeHtml = (text) => text.replaceAll('&quot;', '"').replaceAll('&#x27;', "'").replaceAll('&lt;', '<').replaceAll('&gt;', '>').replaceAll('&amp;', '&');
+// Text between tags, read character by character. A regex tag-stripper is the pattern
+// CodeQL flags (js/incomplete-multi-character-sanitization), and this is a test helper
+// reading our own server-rendered markup, so a plain scanner is the clearer tool.
+function visibleText(html) {
+    let text = '';
+    let inTag = false;
+    for (const char of html) {
+        if (char === '<') inTag = true;
+        else if (char === '>' && inTag) inTag = false;
+        else if (!inTag) text += char;
+    }
+    return text;
+}
 // WCAG 2.5.3 (Label in Name): a control's accessible name must contain the text it shows,
 // so a voice-control user who says what they see gets the control.
 function labelInNameFailures(html) {
     const failures = [];
     for (const match of html.matchAll(/<(a|button)\b([^>]*)>([\s\S]*?)<\/\1>/g)) {
         const label = /\saria-label="([^"]*)"/.exec(match[2]);
-        const visible = unescapeHtml(match[3].replace(/<[^>]*>/g, '')).trim().toLowerCase();
+        const visible = unescapeHtml(visibleText(match[3])).trim().toLowerCase();
         if (label && visible && !unescapeHtml(label[1]).toLowerCase().includes(visible)) failures.push(`${unescapeHtml(label[1])} / ${visible}`);
     }
     return failures;
