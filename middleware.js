@@ -26,7 +26,7 @@ import {EDITOR_VISION_PATH,editorVisionWorkerPolicy} from './app/veyrnox/_lib/ed
 import { readToken, validateClaims, verifyES256 } from './lib/supabaseJwt.js';
 import { isPublishApiPath, publishShellAvailable, publishAllowed } from './lib/social/publishFeature.js';
 import { isUnknownStaticPage } from './lib/unknownStaticPage.js';
-import { LOCALIZED_PATHS, localesEnabled, localizedPathKey, splitLocalePath } from './lib/i18n/locales.mjs';
+import { isLocalizedPath, localesEnabled, localizedPathKey, splitLocalePath } from './lib/i18n/locales.mjs';
 import { LOCALE_HEADER, PATH_HEADER } from './lib/i18n/headerNames.mjs';
 import { recordSecurityEvent } from './lib/securityEvents.js';
 const POSTHOG_INGEST_PATH = '/ingest';
@@ -137,7 +137,7 @@ export async function middleware(req, event) {
         if (localesEnabled()) {
             const split = splitLocalePath(pathname);
             if (split.locale) {
-                if (!LOCALIZED_PATHS.has(localizedPathKey(split.rest))) {
+                if (!isLocalizedPath(split.rest)) {
                     const target = new URL(split.rest + requestUrl.search, req.url);
                     return NextResponse.redirect(target, { status: 307, headers: { 'cache-control': 'private, no-store, max-age=0' } });
                 }
