@@ -2,6 +2,7 @@
 // Detection itself is the shipped pure module, so what is measured here is what a later UI slice would run.
 import { Input, BlobSource, ALL_FORMATS, CanvasSink } from './mediabunny.mjs';
 import { frameSignature, detectScenes, signatureDistance } from './lib/editorSceneDetect.mjs';
+import { detectClipScenes } from './lib/editorSceneRun.mjs';
 
 const WIDTH = 128, HEIGHT = 72;
 const heapMB = () => (performance.memory ? performance.memory.usedJSHeapSize / 1048576 : null);
@@ -29,10 +30,17 @@ window.analyse = async function analyse(name, maxSeconds) {
     }
     const wallMs = performance.now() - t0;
     window.__samples = samples;
+    window.__blob = blob;
     return {
         name, duration, frames: samples.length, width: track.displayWidth, height: track.displayHeight, codec: track.codec,
         wallMs, signatureMs: decodeSignatureMs, heapPeakMB: heapPeak, heapBeforeMB: heapBefore,
     };
+};
+
+// The shipped helper (what the editor will call) on the same clip; its cuts must equal the harness detection above.
+window.shipped = async (frames) => {
+    const r = await detectClipScenes(window.__blob, { in: 0, len: frames });
+    return r.cuts.map((c) => `${c.time.toFixed(2)}${c.kind === 'gradual' ? 'g' : ''}`);
 };
 
 window.detect = (options, stride = 1) => {

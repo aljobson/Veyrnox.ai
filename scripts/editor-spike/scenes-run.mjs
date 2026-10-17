@@ -23,11 +23,11 @@ const files = {
     '/scenes.html': [path.join(here, 'scenes.html'), 'text/html'],
     '/scenes.mjs': [path.join(here, 'scenes.mjs'), 'text/javascript'],
     '/mediabunny.mjs': [path.join(root, 'node_modules/mediabunny/dist/bundles/mediabunny.min.mjs'), 'text/javascript'],
-    '/lib/editorSceneDetect.mjs': [path.join(root, 'app/veyrnox/_lib/editorSceneDetect.mjs'), 'text/javascript'],
 };
 const server = http.createServer((req, res) => {
     const url = new URL(req.url, 'http://x');
     let [file, type] = files[url.pathname] || [];
+    if (!file && /^\/lib\/[A-Za-z0-9]+\.mjs$/.test(url.pathname)) { file = path.join(root, 'app/veyrnox/_lib', path.basename(url.pathname)); type = 'text/javascript'; }
     if (!file && url.pathname.startsWith('/media/')) { file = path.join(mediaDir, path.basename(url.pathname)); type = 'application/octet-stream'; }
     if (!file || !existsSync(file)) { res.writeHead(404).end(); return; }
     res.writeHead(200, { 'content-type': type });
@@ -74,6 +74,10 @@ for (const [name, info] of Object.entries(truth)) {
             };
         }
     }
+    // The shipped helper must agree with the harness (default settings, every frame).
+    const shipped = await page.evaluate((n) => window.shipped(n), Math.min(Math.round(decoded.duration * 30), MAX_SECONDS * 30));
+    row.shippedMatches = JSON.stringify(shipped) === JSON.stringify(row.runs['default/every1'].found);
+    if (!row.shippedMatches) console.log('   SHIPPED HELPER DISAGREES', shipped);
     results.push(row);
     console.log(`${name}: ${decoded.frames} frames ${decoded.width}x${decoded.height} ${decoded.codec}, ${row.msPerVideoSecond} ms per video second, rss peak ${row.peakRssMB} MB`);
     for (const [k, v] of Object.entries(row.runs)) console.log(`   ${k.padEnd(18)} P ${v.precision.toFixed(2)} R ${v.recall.toFixed(2)}  found [${v.found.join(' ')}]`);
