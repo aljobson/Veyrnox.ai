@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { FilmPlayer } from '../_components/FilmPlayer';
+import { Logo } from '../_components/Logo';
 import { BREAKTHROUGH_FILM, LANDING_FILM } from '../_lib/film';
 
 export function BreakthroughVideo() {
@@ -13,7 +14,7 @@ export function BreakthroughVideo() {
         </div>
       </FilmPlayer>
       <div className="mx-auto max-w-[1300px] px-4 sm:px-6 pt-6 hidden sm:flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-        <p className="max-w-[48ch] text-base sm:text-lg text-vx-fg-body leading-relaxed">Turn your ideas into images, video and audio with Veyrnox.ai.</p>
+        <Logo size={44} wordmark className="[&>span]:text-[34px]" />
         <Link href="/app/create?model=nano-banana-kie" className="vx-press inline-flex min-h-11 shrink-0 items-center justify-center rounded-full bg-vx-fg px-6 py-3 text-[15px] font-extrabold text-vx-base hover:bg-vx-fg/85">Start creating</Link>
       </div>
     </section>
