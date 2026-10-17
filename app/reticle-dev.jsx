@@ -17,6 +17,9 @@ function readVeyLayout() {
   const main = document.querySelector('main')?.getBoundingClientRect();
   return {
     guideOpen: !!guide,
+    panelSide: document.querySelector('[data-panel-side]')?.dataset.panelSide,
+    mascotPositionMode: document.querySelector('[data-testid="assistant-mascot"]')?.dataset.positionMode,
+    moveHintVisible: document.querySelector('[data-testid="assistant-mascot"]')?.textContent.includes('Move me') || false,
     guideHeight: guide ? Math.round(guide.height) : null,
     workspaceDocked: document.documentElement.dataset.veyMobileWorkspace === 'true',
     workspaceClear: !!main && !!guide && main.bottom <= guide.top - 7,

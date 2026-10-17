@@ -1,16 +1,16 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { handForPoint, pointerPlacement } from '../../../lib/veyPointer';
+import { clampVeyPosition, handForPoint, pointerPlacement } from '../../../lib/veyPointer';
 import { dockClearance, mobileDockPosition } from '../../../lib/veyMobileLayout';
 
 const PANEL = '[aria-label="Vey task walkthrough"], [role="dialog"][aria-labelledby="vx-helper-title"]';
 
-export default function useVeyMobileLayout({ open, pathname, position, highlight, hand, facing, pointRequest, activeTarget }) {
+export default function useVeyMobileLayout({ open, pathname, position, manualPosition, panelSide, highlight, hand, facing, pointRequest, activeTarget }) {
   const [layout, setLayout] = useState(null);
-  const latest = useRef({ highlight, facing, activeTarget });
+  const latest = useRef({ highlight, facing, activeTarget, manualPosition, panelSide });
   const refresh = useRef(null);
   const cue = useRef(null);
-  useEffect(() => { latest.current = { highlight, facing, activeTarget }; refresh.current?.(); }, [highlight, facing, activeTarget]);
+  useEffect(() => { latest.current = { highlight, facing, activeTarget, manualPosition, panelSide }; refresh.current?.(); }, [highlight, facing, activeTarget, manualPosition, panelSide]);
   useEffect(() => {
     cue.current = pointRequest ? { target: pointRequest.id, position: null } : null;
     refresh.current?.();
@@ -39,7 +39,7 @@ export default function useVeyMobileLayout({ open, pathname, position, highlight
     };
     const resize = new ResizeObserver(() => schedule());
     const measure = () => {
-      const { highlight, facing, activeTarget } = latest.current;
+      const { highlight, facing, activeTarget, manualPosition, panelSide } = latest.current;
       const current = document.querySelector('main');
       if (main !== current) {
         restore(); main = current; original = main?.style.paddingBottom || '';
@@ -81,8 +81,8 @@ export default function useVeyMobileLayout({ open, pathname, position, highlight
       // for gaps. Its short pointing gesture then returns to the stable dock.
       if (pointing && !cue.current.position) cue.current.position = pointerPlacement(highlight, viewport, dock).position;
       const fixed = pointing && cue.current.position;
-      const safe = fixed || mobileDockPosition(viewport, dock, open && panel?.matches(PANEL));
-      const next = { position: safe, docked: !fixed, hand: fixed ? handForPoint(safe, facing, pointerPlacement(highlight, viewport, null, safe).point) : undefined };
+      const safe = fixed || (manualPosition ? clampVeyPosition(manualPosition, viewport) : mobileDockPosition(viewport, dock, open && panel?.matches(PANEL), panelSide));
+      const next = { position: safe, docked: !fixed && !manualPosition, hand: fixed ? handForPoint(safe, facing, pointerPlacement(highlight, viewport, null, safe).point) : undefined };
       setLayout(previous => JSON.stringify(previous) === JSON.stringify(next) ? previous : next);
     };
     const schedule = () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(measure); };

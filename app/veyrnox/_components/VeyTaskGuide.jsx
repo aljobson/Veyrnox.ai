@@ -8,18 +8,18 @@ import { beginJourney, getJourney, initialiseJourney, publishJourneyView, subscr
 import { journeyStep, PREPARE_VIDEO } from '../../../lib/veyJourney';
 import { REVEAL_SAVED_ODDLING } from '../../../lib/savedOddlingHelp';
 import { VEY_CHAT_STYLE } from '../../../lib/veyChatLayout';
+import VeyPanelSideButton from './VeyPanelSideButton';
 
 const EMPTY = { task: null, view: {} };
 const pill = 'min-h-11 rounded-full border border-vx-border px-3 py-2 text-xs font-semibold hover:border-vx-accent focus-visible:outline-2 focus-visible:outline-vx-accent disabled:opacity-40 sm:min-h-0';
 
-export default function VeyTaskGuide({ visible, pathname, onPoint, onStop, onActiveChange, onAsk, manualPosition, onResetPosition }) {
+export default function VeyTaskGuide({ visible, pathname, onPoint, onStop, onActiveChange, onAsk, manualPosition, onResetPosition, panelSide, onMovePanels }) {
   const { task, view } = useSyncExternalStore(subscribeJourney, getJourney, () => EMPTY);
   const [choosing, setChoosing] = useState(false);
   const [chatting, setChatting] = useState(false);
   const [library, setLibrary] = useState([]);
   const [recovered, setRecovered] = useState(null);
   const [recoveryError, setRecoveryError] = useState('');
-  const [side, setSide] = useState('right');
   const [detailsKey, setDetailsKey] = useState(null);
   const router = useRouter();
   useEffect(() => { initialiseJourney(); return onSessionChange(() => { initialiseJourney(); setChoosing(false); setChatting(false); setRecovered(null); }); }, []);
@@ -66,12 +66,12 @@ export default function VeyTaskGuide({ visible, pathname, onPoint, onStop, onAct
   const secondary = detailsOpen ? '' : 'hidden sm:block';
   return <>
     {task && chatting && <button type="button" className="hidden sm:block fixed bottom-4 right-4 z-[62] rounded-full border border-vx-accent bg-vx-panel px-4 py-3 text-xs font-bold text-vx-accent shadow-xl" onClick={() => setChatting(false)}>Resume {task.phase} walkthrough</button>}
-    <section aria-label="Vey task walkthrough" style={VEY_CHAT_STYLE} data-step={step?.key || 'choose'} data-expanded={detailsOpen} data-question-open={chatting} className={`fixed left-2 ${side === 'right' ? 'sm:left-auto sm:right-3' : 'sm:left-3'} ${chatting ? 'bottom-[calc(var(--vey-chat-height)+max(8px,env(safe-area-inset-bottom))+8px)] max-h-[76px] sm:hidden' : `bottom-[max(8px,env(safe-area-inset-bottom))] sm:bottom-4 ${task && !detailsOpen ? 'max-h-[144px]' : 'max-h-[40dvh]'} sm:max-h-[50dvh]`} z-[62] w-[min(280px,calc(100vw-80px))] sm:w-[min(330px,calc(100vw-24px))] overflow-y-auto rounded-xl border border-vx-accent/40 bg-vx-panel px-2 py-1.5 sm:p-4 shadow-2xl`}>
+    <section aria-label="Vey task walkthrough" style={VEY_CHAT_STYLE} data-panel-side={panelSide} data-step={step?.key || 'choose'} data-expanded={detailsOpen} data-question-open={chatting} className={`fixed ${panelSide === 'right' ? 'right-2 sm:right-3' : 'left-2 sm:left-3'} ${chatting ? 'bottom-[calc(var(--vey-chat-height)+max(8px,env(safe-area-inset-bottom))+8px)] max-h-[76px] sm:hidden' : `bottom-[max(8px,env(safe-area-inset-bottom))] sm:bottom-4 ${task && !detailsOpen ? 'max-h-[144px]' : 'max-h-[40dvh]'} sm:max-h-[50dvh]`} z-[62] w-[min(280px,calc(100vw-80px))] sm:w-[min(330px,calc(100vw-24px))] overflow-y-auto rounded-xl border border-vx-accent/40 bg-vx-panel px-2 py-1.5 sm:p-4 shadow-2xl`}>
     <div className="flex items-center justify-between gap-1"><div><p className={`${task ? 'sr-only sm:not-sr-only' : ''} text-[10px] font-bold text-vx-accent sm:text-xs`}>{task ? `Vey · ${task.phase === 'image' ? 'Image' : 'Video'} task` : 'Choose your starting point'}</p>
       {task && <h3 className="text-[11px] leading-[14px] font-bold sm:mt-2 sm:text-base">{step.title}</h3>}</div>
       {task && chatting && <button type="button" aria-label="Back to walkthrough" className={`${pill} shrink-0`} onClick={() => setChatting(false)}>Back</button>}
       {task && !chatting && <button type="button" aria-expanded={detailsOpen} aria-controls="vey-guide-secondary" className={`${pill} shrink-0 sm:hidden`} onClick={() => setDetailsKey(detailsOpen ? null : step.key)}>{detailsOpen ? 'Less' : 'More'}</button>}
-      <button type="button" className={`${task ? 'hidden sm:block' : ''} text-xs text-vx-fg-muted`} onClick={() => setSide(side === 'right' ? 'left' : 'right')}>Move guide</button></div>
+      <VeyPanelSideButton side={panelSide} onMove={onMovePanels} /></div>
     {choosing && !task ? <>
       <p className="my-3 text-sm text-vx-fg-body">Saved passports stay on this browser. Choose the exact version, or continue with an image already in your Library.</p>
       {library.length === 0 && <p className="text-sm text-vx-fg-muted">No saved passports on this browser. Save one in Oddling Studio first.</p>}
@@ -94,12 +94,11 @@ export default function VeyTaskGuide({ visible, pathname, onPoint, onStop, onAct
         {jobId && <p className="mt-2 break-all font-vx-mono text-[10px] text-vx-fg-muted">Tracked job: {jobId}{task.phase === 'image' ? ' · first image if generating a batch' : ''}</p>}
         <div className="mt-2 flex flex-wrap gap-2">
           {manualPosition && <button type="button" className={pill} onClick={onResetPosition}>Reset Vey position</button>}
-          <button type="button" className={`${pill} sm:hidden`} onClick={() => setSide(side === 'right' ? 'left' : 'right')}>Move guide</button>
           <button type="button" className={pill} onClick={() => { setChatting(true); onAsk('What is the next step in my current task?'); }}>Ask about this step</button>
           <button type="button" className={pill} onClick={() => { updateJourney(null); setDetailsKey(null); setChoosing(false); setChatting(false); publishJourneyView({ handedOff: false }); onStop(); }}>End walkthrough</button>
         </div>
         <p className="mt-3 text-[11px] text-vx-fg-muted">You confirm rights and press Generate. Closing Vey pauses the guide, not a submitted job.</p>
-        <p className="mt-2 text-[11px] text-vx-fg-muted">On mobile, Vey stays docked while you scroll. Show this step briefly points, then returns to dock. On desktop, drag Vey to position it.</p>
+        <p className="mt-2 text-[11px] text-vx-fg-muted">Drag Vey to move it. Use ↔ to move both panels left or right. Dock Vey or reset its position to return to automatic docking. Show this step briefly points, then returns.</p>
       </div>
     </>}
   </section></>;

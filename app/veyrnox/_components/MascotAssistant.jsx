@@ -20,6 +20,7 @@ import {
 } from '../../../lib/productHelp.js';
 import VeyCharacter from './VeyCharacter';
 import VeyTaskGuide from './VeyTaskGuide';
+import VeyPanelSideButton from './VeyPanelSideButton';
 import { getJourney } from '../_lib/veyJourneyStore';
 import useVeyPointer from '../_lib/useVeyPointer';
 import useVeyDrag from '../_lib/useVeyDrag';
@@ -70,6 +71,8 @@ export default function MascotAssistant() {
   const [feedback, setFeedback] = useState(null);
   const [position, setPosition] = useState(HOME);
   const [manualPosition, setManualPosition] = useState(null);
+  const [panelSide, setPanelSide] = useState('left');
+  const movePanels = () => setPanelSide(side => side === 'left' ? 'right' : 'left');
   const [facing, setFacing] = useState(1);
   const [pendingTarget, setPendingTarget] = useState(null);
   const [pendingSavedId, setPendingSavedId] = useState(null);
@@ -120,7 +123,7 @@ export default function MascotAssistant() {
   const drag = useVeyDrag({ onStart: clearAction, onReset: resetPosition,
     onMove: (next) => { window.clearTimeout(travelTimerRef.current); setTravelling(false); setManualPosition(next); setPosition(next); } });
   const { activeTarget, highlight, hand, point, locate: locateTarget, clear: clearPointer } = useVeyPointer({ reduceMotion, moveMascot, setFacing, activateTarget, clearAction, manualPosition });
-  const mobileLayout = useVeyMobileLayout({ open, pathname, position, highlight, hand, facing, pointRequest: mobilePointRequest, activeTarget });
+  const mobileLayout = useVeyMobileLayout({ open, pathname, position, manualPosition, panelSide, highlight, hand, facing, pointRequest: mobilePointRequest, activeTarget });
   const editorHelperHost = useEditorHelperHost(pathname);
   const clearTarget = useCallback(() => {
     window.clearTimeout(timerRef.current);
@@ -332,7 +335,7 @@ export default function MascotAssistant() {
 
   return (
     <>
-      <VeyTaskGuide visible={open} pathname={pathname} onPoint={showTarget} onStop={clearTarget} onActiveChange={setJourneyActive} onAsk={ask} manualPosition={!!manualPosition} onResetPosition={resetPosition} />
+      <VeyTaskGuide visible={open} pathname={pathname} onPoint={showTarget} onStop={clearTarget} onActiveChange={setJourneyActive} onAsk={ask} manualPosition={!!manualPosition} onResetPosition={resetPosition} panelSide={panelSide} onMovePanels={movePanels} />
       <AnimatePresence>
         {highlight && (
           <motion.div
@@ -377,6 +380,7 @@ export default function MascotAssistant() {
         animate={{ x: mobileLayout.position.x, y: mobileLayout.position.y }}
         transition={reduceMotion || manualPosition || mobileLayout.docked ? { duration: 0 } : { type: 'spring', stiffness: 115, damping: 18, mass: 0.8 }}
       >
+        <span aria-hidden="true" className="absolute bottom-full left-1/2 mb-1 -translate-x-1/2 whitespace-nowrap rounded-full border border-vx-border bg-vx-panel/95 px-1.5 py-0.5 text-[9px] leading-3 text-vx-fg-muted">Move me</span>
         <motion.button
           ref={launcherRef}
           type="button"
@@ -411,13 +415,17 @@ export default function MascotAssistant() {
             exit={{ opacity: 0, y: 12, scale: 0.98 }}
             transition={{ duration: 0.2 }}
             style={VEY_CHAT_STYLE}
-            className="fixed bottom-[max(8px,env(safe-area-inset-bottom))] left-2 z-[60] flex h-[var(--vey-chat-height)] max-h-[calc(100dvh-80px)] w-[min(280px,calc(100vw-80px))] flex-col overflow-hidden rounded-xl border border-vx-border bg-vx-panel/95 shadow-xl backdrop-blur-xl"
+            data-panel-side={panelSide}
+            className={`fixed bottom-[max(8px,env(safe-area-inset-bottom))] ${panelSide === 'left' ? 'left-2' : 'right-2'} z-[60] flex h-[var(--vey-chat-height)] max-h-[calc(100dvh-80px)] w-[min(280px,calc(100vw-80px))] flex-col overflow-hidden rounded-xl border border-vx-border bg-vx-panel/95 shadow-xl backdrop-blur-xl`}
           >
             <header className="flex shrink-0 items-center justify-between gap-2 border-b border-vx-border px-2 py-0.5">
               <div>
                 <h2 id="vx-helper-title" className="text-xs font-bold">Ask Vey</h2>
               </div>
               <div className="flex items-center gap-2">
+                <VeyPanelSideButton side={panelSide} onMove={movePanels} />
+                {manualPosition && <button type="button" onClick={resetPosition} aria-label="Dock Vey" title="Dock Vey"
+                  className="min-h-8 rounded-full px-1 text-[10px] text-vx-fg-muted">Dock</button>}
                 {messages.length > 0 && (
                   <button type="button" onClick={resetConversation} aria-label="Start a new Vey conversation"
                     className="min-h-8 rounded-full px-2 text-[10px] font-semibold text-vx-fg-muted hover:text-vx-fg">New</button>
