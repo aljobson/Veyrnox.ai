@@ -102,6 +102,8 @@ const nextConfig = {
       { source: '/veyrnox/guides/:id', destination: '/guides/:id', permanent: true },
       { source: '/veyrnox/models', destination: '/models', permanent: true },
       { source: '/veyrnox/models/:id', destination: '/models/:id', permanent: true },
+      { source: '/veyrnox/oddlings', destination: '/oddlings', permanent: true },
+      { source: '/veyrnox/oddlings/:id', destination: '/oddlings/:id', permanent: true },
       { source: '/veyrnox/design-system', destination: '/design-system', permanent: true },
       { source: '/veyrnox/app', destination: '/app', permanent: true },
       { source: '/veyrnox/app/:path*', destination: '/app/:path*', permanent: true },
@@ -132,6 +134,11 @@ const nextConfig = {
         { source: '/guides/:id', destination: '/veyrnox/guides/:id' },
         { source: '/models', destination: '/veyrnox/models' },
         { source: '/models/:id', destination: '/veyrnox/models/:id' },
+        { source: '/oddlings', destination: '/veyrnox/oddlings' },
+        // An id never contains a dot, so the sheet images in public/oddlings
+        // (oddling-cast.webp and the rest) are not captured here, and the
+        // portraits two segments down are not a page at all.
+        { source: '/oddlings/:id([a-z0-9-]+)', destination: '/veyrnox/oddlings/:id' },
         { source: '/design-system', destination: '/veyrnox/design-system' },
         { source: '/app', destination: '/veyrnox/app' },
         { source: '/app/:path*', destination: '/veyrnox/app/:path*' },

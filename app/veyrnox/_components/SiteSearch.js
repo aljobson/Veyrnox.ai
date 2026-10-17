@@ -4,23 +4,24 @@ import { cn } from '../../../lib/utils';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FAQ, PRESETS, MODELS as MODELS_FALLBACK, SITE_PAGES, isShelfModel, presetCredits, presetTitle, templateHref } from '../_lib/tokens';
+import { FAQ, PRESETS, MODELS as MODELS_FALLBACK, SITE_PAGES, isShelfModel, navHref, presetCredits, presetTitle, templateHref } from '../_lib/tokens';
 import { searchIndex, MIN_QUERY } from '../_lib/searchIndex';
 import { Icon } from './Icon';
 import { Modal } from './Modal';
+import { useOddlingsPublic } from './OddlingsPublicFlag';
 
 // Site-wide search. Everything this site contains is either a route, a
 // catalog row, a preset or an FAQ answer, and all four fit in memory — so
 // this is a client-side index, not a search service. Models come from the
 // live catalog on first open and fall back to tokens.js.
 
-function staticIndex(models) {
+function staticIndex(models, oddlingsPublic) {
   return [
     ...SITE_PAGES.map((p) => ({
       group: 'Pages',
       title: p.label,
       detail: p.description,
-      href: p.href,
+      href: navHref(p, oddlingsPublic),
     })),
     ...PRESETS.map((p) => ({
       group: 'Templates',
@@ -86,6 +87,7 @@ function SearchHotkey({ onOpen }) {
 
 function SearchOverlay({ onClose }) {
   const router = useRouter();
+  const oddlingsPublic = useOddlingsPublic();
   const [query, setQuery] = useState('');
   const [cursor, setCursor] = useState(0);
   const [models, setModels] = useState(null);
@@ -108,8 +110,8 @@ function SearchOverlay({ onClose }) {
   }, []);
 
   const index = useMemo(
-    () => [...staticIndex(models || MODELS_FALLBACK), ...modelsToIndex(models || MODELS_FALLBACK)],
-    [models],
+    () => [...staticIndex(models || MODELS_FALLBACK, oddlingsPublic), ...modelsToIndex(models || MODELS_FALLBACK)],
+    [models, oddlingsPublic],
   );
   const results = useMemo(() => searchIndex(index, query), [index, query]);
 

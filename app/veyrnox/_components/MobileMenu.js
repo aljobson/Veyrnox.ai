@@ -4,11 +4,14 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ThemeToggle } from './ThemeToggle';
 import { Icon } from './Icon';
+import { useOddlingsPublic } from './OddlingsPublicFlag';
+import { navHref } from '../_lib/tokens';
 
 // A visible menu keeps every destination reachable on a narrow screen.
 export function MobileMenu({ items, className = '', buttonLabel = 'Menu', buttonText = '', navLabel = 'Site', activeHref }) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef(null);
+  const oddlingsPublic = useOddlingsPublic();
 
   // A phone menu that survives a route change covers the page you just
   // opened; close it whenever it opens a link, and on Escape.
@@ -34,14 +37,16 @@ export function MobileMenu({ items, className = '', buttonLabel = 'Menu', button
   const renderLinks = (list) => list.map((it) => {
     // Home-page sections use a plain link, as on the marketing bar.
     const Item = it.href.includes('#') ? 'a' : Link;
+    // A public page that is still behind its flag links to the studio instead.
+    const href = navHref(it, oddlingsPublic);
     return (
       <li key={it.href}>
         <Item
-          href={it.href}
+          href={href}
           onClick={() => setOpen(false)}
-          aria-current={it.href === activeHref ? 'page' : undefined}
+          aria-current={href === activeHref ? 'page' : undefined}
           className={`flex items-center gap-2 rounded-xl border px-3 py-3 text-[15px] font-bold transition-colors ${
-            it.href === activeHref
+            href === activeHref
               ? it.featured ? 'border-vx-accent bg-vx-accent text-vx-accent-ink' : 'border-transparent bg-vx-panel text-vx-fg'
               : it.featured
                 ? 'border-vx-accent/50 bg-vx-accent/10 text-vx-accent hover:bg-vx-accent/20'

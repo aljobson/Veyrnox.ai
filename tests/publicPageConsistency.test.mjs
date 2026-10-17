@@ -49,7 +49,8 @@ test('there is one public nav, in one order', () => {
     assert.deepEqual(PRIMARY_NAV_CATEGORIES.map((c) => c.label),
         ['Create', 'Edit', 'Make a film', 'Publish', 'Pricing']);
     assert.deepEqual(NAV_CATEGORIES, [...PRIMARY_NAV_CATEGORIES, ...SECONDARY_NAV_CATEGORIES]);
-    assert.ok(SECONDARY_NAV_CATEGORIES.some((item) => item.href === '/app/oddlings'),
+    // The public gallery once ODDLINGS_PUBLIC_ENABLED is on; the studio until then (navHref).
+    assert.ok(SECONDARY_NAV_CATEGORIES.some((item) => item.href === '/oddlings' && item.studioHref === '/app/oddlings'),
         'Oddlings remains reachable under More');
     // The home page's sections stay one press away from every page.
     for (const href of ['/#explore', '/models', '/#faq']) assert.ok(NAV_CATEGORIES.some((c) => c.href === href), href);
