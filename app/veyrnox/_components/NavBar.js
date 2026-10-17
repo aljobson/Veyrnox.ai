@@ -18,8 +18,9 @@ import { AnnouncementBar } from './AnnouncementBar';
 
 // Studio pages keep the making tools in the tab strip. This complementary
 // list makes the rest of the public site reachable from that same header,
-// without pretending private account areas are public destinations.
-const APP_BROWSE_CATEGORIES = NAV_CATEGORIES.filter((item) => !item.href.startsWith('/app/'));
+// without pretending private account areas are public destinations. An entry
+// with a studioHref is the public front of a studio tab the strip already has.
+const APP_BROWSE_CATEGORIES = NAV_CATEGORIES.filter((item) => !item.href.startsWith('/app/') && !item.studioHref);
 
 // The public site's nav: every marketing page, the home page included. One
 // destination list. The bar exposes creation jobs; More carries the full
