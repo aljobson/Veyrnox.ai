@@ -51,7 +51,7 @@
   function headline(x, y) {
     const box = place(el(world, 'div', 'display center'), x, y);
     box.style.fontSize = '132px';
-    return ['The price is', 'on the button.'].flatMap((line) => riseWords(el(box, 'div'), line));
+    return ['Reach for', 'the stars.'].flatMap((line) => riseWords(el(box, 'div'), line));
   }
 
   /** The Generate button's face: a label and the price that rolls. */
