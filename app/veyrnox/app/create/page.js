@@ -401,9 +401,9 @@ export default function CreateStudio() {
     <div className="min-h-dvh">
       <AppNav balance={balance} active="create" />
 
-      <Main className="max-w-[1500px] mx-auto px-4 sm:px-8 pt-6 pb-16 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-6">
+      <Main className="max-w-[1500px] mx-auto px-4 sm:px-8 pt-6 pb-16 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] lg:grid-rows-[auto_auto_1fr] gap-6">
         {/* ============ CANVAS ============ */}
-        <div>
+        <div className="lg:col-start-1 lg:row-start-1">
           <div className="flex items-center justify-between mb-3">
             <div>
               <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">STUDIO · UNTITLED</div>
@@ -487,16 +487,6 @@ export default function CreateStudio() {
           )}
           {model?.takesVoice && <VoiceDescription value={voice} onChange={setVoice} />}
 
-          {!isShort && (
-            <p className="mt-2 text-xs text-vx-fg-muted">
-              Want prompt feedback? Studio skills cost 1 Credit a reply:{' '}
-              <Link href="/app/chat?skill=prompt-writer" className="text-vx-accent underline underline-offset-2">Prompt writer</Link>,{' '}
-              <Link href="/app/chat?skill=fix-my-prompt" className="text-vx-accent underline underline-offset-2">Fix my prompt</Link>,{' '}
-              or browse{' '}
-              <Link href="/app/chat" className="text-vx-accent underline underline-offset-2">all skills</Link>.
-            </p>
-          )}
-
           {animationPortrait && <div role="status" className="mt-4 rounded-xl border border-vx-accent/30 bg-vx-panel p-4 text-sm text-vx-fg-body">{portraitStatus}{animationMismatch && <p className="mt-2 text-vx-danger">Choose an image-to-video model with a required start frame to animate this photo.</p>}</div>}
           <div className="scroll-mt-24" data-assistant-target={Object.keys(media).length ? 'create.upload' : undefined}>
             <SourcePickers media={media} sources={sources} onPick={pickSource}
@@ -516,6 +506,59 @@ export default function CreateStudio() {
             <DrawOnImage file={sources.image.file} onDone={applyDrawing} onCancel={() => setDrawing(false)} />
           )}
 
+        </div>
+
+        {/* ============ GENERATE ============ */}
+        {/* Sits straight under the prompt and its inputs on desktop; on a phone it
+            drops to the end of the page and stays pinned to the screen. */}
+        <div data-create-cost-card className="order-last sticky bottom-3 z-30 rounded-2xl border border-vx-border bg-vx-panel p-5 shadow-2xl lg:order-none lg:col-start-1 lg:row-start-2 lg:self-start lg:static lg:shadow-none">
+          <div data-assistant-target="create.cost" className="scroll-mt-24 flex items-baseline justify-between">
+            <span className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">TOTAL COST</span>
+            <span className="font-vx-mono text-[12px] text-vx-fg-muted vx-num">
+              balance {balance == null ? '—' : balance.toLocaleString('en-US')} cr
+            </span>
+          </div>
+          <div className="mt-1 font-vx-mono text-[36px] font-bold text-vx-money vx-num">{generationCostLabel(cost)}</div>
+          {freeLeft > 0 && (
+            <div role="status" className="mt-1 font-vx-mono text-[11px] tracking-[0.08em] text-vx-accent">
+              {n > freeLeft ? `FREE · ${freeLeft} OF ${n} · ${freeLeft} LEFT TODAY` : `FREE · ${freeLeft} LEFT TODAY`}
+            </div>
+          )}
+          <ParticleButton
+            data-assistant-target="create.generate"
+            onClick={hasJobs ? cancel : onSubmit}
+            className="scroll-mt-24 mt-4 w-full flex items-center justify-between bg-vx-accent text-vx-accent-ink rounded-full px-6 py-3.5 font-extrabold hover:bg-vx-accent-hover disabled:opacity-40 disabled:cursor-not-allowed"
+            disabled={sending || (!hasJobs && (catalogStatus !== 'live' || !model || model.gated || animationMismatch || missingPrompt || missingVoice || invalidAudioDuration || balance == null || cost > balance || missingSource || missingConsent))}
+            aria-label={sending ? undefined : hasJobs ? 'New generation — no charge' : model?.gated ? undefined : `Generate ${n > 1 ? `${n} images ` : ''}${cost === 0 ? 'for free' : `for ${creditLabel(cost)}`}`}
+          >
+            <span>{sending ? 'Sending…' : hasJobs ? 'New generation' : model?.gated ? 'Premium — gated' : n > 1 ? `Generate ${n}` : 'Generate'}</span>
+            <span className="font-vx-mono text-sm">{hasJobs ? 'No charge' : generationCostLabel(cost)}</span>
+          </ParticleButton>
+          <div className="mt-2 font-vx-mono text-[9.5px] tracking-[0.1em] text-vx-fg-faint text-center">
+            {model?.gated ? '◆ PREMIUM MODEL · NOT OPEN YET' : 'REFUND ON FAILURE · ALWAYS'}
+          </div>
+          <p className="mt-3 text-center text-[11px] leading-relaxed text-vx-fg-muted">
+            Commercial use depends on the selected model and provider terms. Check the <Link href="/legal/terms" className="text-vx-accent underline underline-offset-2">Terms</Link> before publishing.
+          </p>
+          {balance != null && cost > balance && !model?.gated && (
+            <div className="mt-4 rounded-xl border border-vx-money/40 bg-vx-money/[0.06] p-4 text-sm text-vx-fg-body">
+              <p className="font-bold text-vx-fg">You need {cost - balance} more Credits.</p>
+              <p className="mt-1 text-xs text-vx-fg-muted">Compare a monthly plan with a one-off pack before leaving the Studio.</p>
+              <Link href="/app/credits" className="mt-3 inline-block font-bold text-vx-accent underline underline-offset-4">Add Credits</Link>
+            </div>
+          )}
+        </div>
+
+        <div className="lg:col-start-1 lg:row-start-3">
+          {!isShort && (
+            <p className="mt-2 text-xs text-vx-fg-muted">
+              Want prompt feedback? Studio skills cost 1 Credit a reply:{' '}
+              <Link href="/app/chat?skill=prompt-writer" className="text-vx-accent underline underline-offset-2">Prompt writer</Link>,{' '}
+              <Link href="/app/chat?skill=fix-my-prompt" className="text-vx-accent underline underline-offset-2">Fix my prompt</Link>,{' '}
+              or browse{' '}
+              <Link href="/app/chat" className="text-vx-accent underline underline-offset-2">all skills</Link>.
+            </p>
+          )}
           {error && (
             <div role="alert" className="mt-3 rounded-lg border border-vx-danger/40 bg-vx-danger/[0.07] px-4 py-3 text-sm text-vx-danger flex items-start gap-2">
               <span aria-hidden="true">✕</span>
@@ -529,7 +572,7 @@ export default function CreateStudio() {
         </div>
 
         {/* ============ CONTROLS ============ */}
-        <aside className="flex flex-col gap-5">
+        <aside className="flex flex-col gap-5 lg:col-start-2 lg:row-start-1 lg:row-span-3">
           <CreateGoalPicker goal={goal} onChange={pickGoal} />
           <div className="rounded-2xl border border-vx-border bg-vx-panel p-5">
             <div className="flex items-baseline justify-between mb-3">
@@ -664,44 +707,6 @@ export default function CreateStudio() {
           {takesCamera && (
             <div className="scroll-mt-24" data-assistant-target="create.camera"><CameraPanel enabled={cinemaOn} onToggle={setCinemaOn} settings={cinema} onChange={setCinema} /></div>
           )}
-
-          <div data-create-cost-card className="sticky bottom-3 z-30 mt-2 rounded-2xl border border-vx-border bg-vx-panel p-5 shadow-2xl lg:static lg:shadow-none">
-            <div data-assistant-target="create.cost" className="scroll-mt-24 flex items-baseline justify-between">
-              <span className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">TOTAL COST</span>
-              <span className="font-vx-mono text-[12px] text-vx-fg-muted vx-num">
-                balance {balance == null ? '—' : balance.toLocaleString('en-US')} cr
-              </span>
-            </div>
-            <div className="mt-1 font-vx-mono text-[36px] font-bold text-vx-money vx-num">{generationCostLabel(cost)}</div>
-            {freeLeft > 0 && (
-              <div role="status" className="mt-1 font-vx-mono text-[11px] tracking-[0.08em] text-vx-accent">
-                {n > freeLeft ? `FREE · ${freeLeft} OF ${n} · ${freeLeft} LEFT TODAY` : `FREE · ${freeLeft} LEFT TODAY`}
-              </div>
-            )}
-            <ParticleButton
-              data-assistant-target="create.generate"
-              onClick={hasJobs ? cancel : onSubmit}
-              className="scroll-mt-24 mt-4 w-full flex items-center justify-between bg-vx-accent text-vx-accent-ink rounded-full px-6 py-3.5 font-extrabold hover:bg-vx-accent-hover disabled:opacity-40 disabled:cursor-not-allowed"
-              disabled={sending || (!hasJobs && (catalogStatus !== 'live' || !model || model.gated || animationMismatch || missingPrompt || missingVoice || invalidAudioDuration || balance == null || cost > balance || missingSource || missingConsent))}
-              aria-label={sending ? undefined : hasJobs ? 'New generation — no charge' : model?.gated ? undefined : `Generate ${n > 1 ? `${n} images ` : ''}${cost === 0 ? 'for free' : `for ${creditLabel(cost)}`}`}
-            >
-              <span>{sending ? 'Sending…' : hasJobs ? 'New generation' : model?.gated ? 'Premium — gated' : n > 1 ? `Generate ${n}` : 'Generate'}</span>
-              <span className="font-vx-mono text-sm">{hasJobs ? 'No charge' : generationCostLabel(cost)}</span>
-            </ParticleButton>
-            <div className="mt-2 font-vx-mono text-[9.5px] tracking-[0.1em] text-vx-fg-faint text-center">
-              {model?.gated ? '◆ PREMIUM MODEL · NOT OPEN YET' : 'REFUND ON FAILURE · ALWAYS'}
-            </div>
-            <p className="mt-3 text-center text-[11px] leading-relaxed text-vx-fg-muted">
-              Commercial use depends on the selected model and provider terms. Check the <Link href="/legal/terms" className="text-vx-accent underline underline-offset-2">Terms</Link> before publishing.
-            </p>
-            {balance != null && cost > balance && !model?.gated && (
-              <div className="mt-4 rounded-xl border border-vx-money/40 bg-vx-money/[0.06] p-4 text-sm text-vx-fg-body">
-                <p className="font-bold text-vx-fg">You need {cost - balance} more Credits.</p>
-                <p className="mt-1 text-xs text-vx-fg-muted">Compare a monthly plan with a one-off pack before leaving the Studio.</p>
-                <Link href="/app/credits" className="mt-3 inline-block font-bold text-vx-accent underline underline-offset-4">Add Credits</Link>
-              </div>
-            )}
-          </div>
         </aside>
       </Main>
     </div>
