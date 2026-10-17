@@ -1,0 +1,59 @@
+# Scene detection, slice A results (ADR-0105)
+
+**Verdict: confirmed for hard cuts, not yet for dissolves.** Hard cuts were found with no misses and no false cuts on every clip, including three clips that were held out of tuning. Dissolves and fades are found on the tuning clips but gave a false "gradual" suggestion on the held-out dissolve clip, so slice B must show them as *possible* cuts for review, never apply them silently.
+
+## Method
+
+`app/veyrnox/_lib/editorSceneDetect.mjs` (pure, no media API): each frame is shrunk to 128 x 72, turned into a 32-bin luma histogram plus a per-8x8-block edge count, and compared with the next distinct frame. A cut is a distance that beats a threshold taken from its own neighbourhood (median + 6 x MAD over 2 s, never below 0.12) and is the local maximum. Then:
+
+- repeated frames (24 fps footage played at 30) are collapsed first, otherwise every second distance is zero and the threshold breaks;
+- a change that is undone within 6 frames, or whose far side matches the frames just before it, is a **flash**, not a cut;
+- cuts closer than 0.5 s keep the stronger one;
+- a slower pass compares the frame 0.3 s before with the frame 0.3 s after (smallest of four endpoint pairs, so a flash cannot fake it) to find **dissolves**, unless a hard cut already explains the change.
+
+Frames come from Mediabunny 1.60.0 `CanvasSink` read sequentially in desktop Chrome. Nothing is shipped: no UI, no flag, no server code (`EDITOR_SCENES_ENABLED` arrives with slice B).
+
+## Test clips
+
+`scripts/editor-spike/make-scene-fixtures.sh` builds nine 720p 30 fps clips from our own committed showcase and film videos, so every cut time is exact. Sources are single shots (ffmpeg's scene score under 0.07, an independent check). Nine clips, 41 hand-known cuts, 3.5 min of video.
+
+| Clip | What it tests | Cuts | Hard-only P / R | Default P / R |
+|---|---|---|---|---|
+| hard-4s | 5 shots, 4 s each | 4 | 1.00 / 1.00 | 1.00 / 1.00 |
+| hard-2s | 8 shots, 2 s each | 7 | 1.00 / 1.00 | 1.00 / 1.00 |
+| dissolve | 0.6 s crossfades | 3 | 1.00 / 0.67 | 1.00 / 1.00 |
+| flash | 3-frame white flashes inside shots | 2 | 1.00 / 1.00 | 1.00 / 1.00 |
+| screen | flat UI-style segment | 2 | 1.00 / 0.50 | 1.00 / 1.00 |
+| single-shot | no cut, fast camera motion | 0 | 1.00 / 1.00 | 1.00 / 1.00 |
+| heldout-3s | unseen sources | 4 | 1.00 / 1.00 | 1.00 / 1.00 |
+| heldout-1s5 | unseen sources, 1.5 s shots | 7 | 1.00 / 1.00 | 1.00 / 1.00 |
+| heldout-dissolve | unseen sources, 0.8 s crossfades | 2 | 1.00 / 0.00 | **0.50** / 1.00 |
+
+Matching tolerance 0.25 s (0.5 s for dissolves, whose "cut" is the middle of the fade).
+
+## Cost (desktop Chrome on an Apple-silicon Mac, 1280 x 720 H.264)
+
+- **Time:** 29 to 53 ms per second of video, decode and signature included (a 30 s clip takes about 1 to 1.6 s). The detector itself takes 2 to 13 ms per clip.
+- **Memory:** browser resident memory rose from 962 MB idle to 1,024 MB peak (about 60 MB); the page's JS heap peaked at 14 to 34 MB.
+- Looking at every third frame is faster to analyse but **breaks flash handling** (a flash can be sampled as a cut), and decoding dominates anyway, so analyse every frame.
+
+## Weak spots (ADR-0092) and what is not proven
+
+- **Fades and dissolves:** found on four of five clips with one extra suggestion at most, but the held-out dissolve clip produced two false "gradual" suggestions inside shots with strong motion (4.40 s and 5.47 s). Do not tune on it; treat gradual results as lower confidence.
+- **Flashes:** handled when they last 3 frames or fewer (tested at 3). Longer flashes, strobes and lightning are untested.
+- **Screen recordings:** only a synthetic one (tiles and a bar). A real screen recording with scrolling text is untested.
+- **Not measured:** 1080p and 4K sources (the starting bound is 720p / 30 s, ADR-0090), HEVC and WebM decode paths, mobile Chrome, Safari, and low-power devices. Audio is not used.
+- The test clips are AI-generated showcase videos edited together. They are real encoded footage but not camera footage.
+
+## Decision for slice B
+
+Proceed with hard cuts as the default suggestion list. Show gradual results as "possible dissolve" with a lower prominence and never include them in "accept all". Keep the 30 s / 720p bound; refuse longer input with a clear message.
+
+## Re-run
+
+```bash
+mkdir -p /tmp/spike && (cd /tmp/spike && npm init -y >/dev/null && npm i playwright-core)
+./scripts/editor-spike/make-scene-fixtures.sh /tmp/spike/scenes
+PLAYWRIGHT_CORE=/tmp/spike/node_modules/playwright-core \
+  node scripts/editor-spike/scenes-run.mjs /tmp/spike/scenes /tmp/spike/scenes-out.json
+```
