@@ -196,3 +196,11 @@ test('handoff validator is bounded, rejects ambiguity and preserves supported em
   for (const value of [USER, JOB, EMAIL, 'Qa+case@example.invalid', ' A@example.invalid ']) assert.equal(adminUserHandoff(new URLSearchParams({ user: value })), value.trim());
   for (const value of ['<x>@example.invalid', 'a@example.invalid\u007f', 'a\u0000@example.invalid', `${'a'.repeat(65)}@example.invalid`, `a@${'b'.repeat(191)}`, 'javascript:alert(1)', '00000000-0000-0000-0000-000000000000']) assert.equal(adminUserHandoff(new URLSearchParams({ user: value })), '');
 });
+
+test('violations account standing and jobs have unique sibling reconciliation keys', async () => {
+  const page = harness('violations', `user=${USER}`);
+  await page.find().props.onSubmit({ preventDefault() {} });
+  const children = nodes(page.render()).filter(node => ['UserCard', 'Jobs'].includes(node.type?.name));
+  assert.equal(children.length, 2);
+  assert.equal(new Set(children.map(node => node.key)).size, 2, 'same-user standing and jobs must not share a sibling key');
+});

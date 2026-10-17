@@ -38,7 +38,7 @@ test('editing a script discards its approval and ignores a late obsolete plan re
 test('unsupported exact narration fails without a paid approval and native mode remains available', async ({ page }) => {
   const fixture = await installNarrationFixtures(page, { supported: false }); await fixture.open('/app/video-agent');
   await draft(page); await page.getByRole('button', { name: 'Make a plan', exact: true }).click();
-  await expect(page.getByRole('alert')).toContainText('Exact narration is unavailable');
+  await expect(page.getByRole('alert').filter({ hasText: /^Exact narration is unavailable/ })).toHaveText('Exact narration is unavailable right now. Nothing was charged. Keep your words and try planning again later.');
   await expect(page.getByRole('button', { name: /Approve and make it/ })).toHaveCount(0);
   await page.getByLabel('Exact narration (optional)', { exact: true }).fill('');
   await page.getByRole('button', { name: 'Make a plan', exact: true }).click();

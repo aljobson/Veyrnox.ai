@@ -193,7 +193,10 @@ test('Admin Cinema publication safety disables approval while rejection stays fi
   } });
   await open(fixture, '/cinema/submissions');
   const item = page.getByRole('article').filter({ has: page.getByRole('heading', { name: 'Synthetic publication submission', exact: true }) });
-  await expect(item.getByRole('option', { name: 'Approve and publish', exact: true })).toBeDisabled();
+  // Playwright's disabled matcher follows this option's enclosing label to
+  // the enabled select. Assert the actual native option gate, not its parent.
+  await expect(item.getByRole('option', { name: 'Approve and publish', exact: true })).toHaveJSProperty('disabled', true);
+  await expect(item.getByRole('status')).toHaveText('Approval is locked until all three checks pass. You can still reject the submission.');
   await item.getByRole('combobox', { name: 'Decision', exact: true }).selectOption('rejected');
   await item.getByLabel('Internal review reason', { exact: true }).fill(reason);
   await item.getByRole('button', { name: 'Save decision', exact: true }).click();
@@ -288,7 +291,7 @@ for (const [action, decision, itemText, submit] of [
   await open(fixture, '/cinema/comments');
   const item = page.getByRole('article').filter({ has: page.getByText(itemText, { exact: true }) });
   if (decision && decision !== 'removed') await item.getByRole('combobox', { name: 'Decision', exact: true }).selectOption(decision);
-  const form = item.locator('form').filter({ has: item.getByRole('button', { name: submit, exact: true }) });
+  const form = item.locator('form').filter({ has: page.getByRole('button', { name: submit, exact: true }) });
   await form.getByLabel('Internal audit reason', { exact: true }).fill(reason);
   await form.getByRole('button', { name: submit, exact: true }).click();
   await expect(form.getByRole('alert')).toContainText(/authenticator/i); expect(adminWrites(fixture)).toHaveLength(1);
@@ -399,7 +402,7 @@ test('Admin otherwise-safe publication approval preserves the backend self-revie
   } });
   await open(fixture, '/cinema/submissions');
   const item = page.getByRole('article');
-  await expect(item.getByRole('option', { name: 'Approve and publish', exact: true })).toBeEnabled();
+  await expect(item.getByRole('option', { name: 'Approve and publish', exact: true })).toHaveJSProperty('disabled', false);
   await item.getByRole('combobox', { name: 'Decision', exact: true }).selectOption('approved');
   await item.getByLabel('Internal review reason', { exact: true }).fill(reason);
   await item.getByRole('button', { name: 'Save decision', exact: true }).click();

@@ -135,8 +135,8 @@ function Violations({ initialQuery }) {
       </form>
       {error && <p role="alert" className="mt-4 text-vx-danger">{error}</p>}
 
-      {lookup && <UserCard key={lookup.user.id} user={lookup.user} onDone={() => refresh(lookup.user.id, lookup.contextVersion)} />}
-      {lookup && <Jobs key={lookup.user.id} jobs={lookup.jobs} user={lookup.user} onDone={() => refresh(lookup.user.id, lookup.contextVersion)} />}
+      {lookup && <UserCard key={`${lookup.user.id}-standing`} user={lookup.user} onDone={() => refresh(lookup.user.id, lookup.contextVersion)} />}
+      {lookup && <Jobs key={`${lookup.user.id}-jobs`} jobs={lookup.jobs} user={lookup.user} onDone={() => refresh(lookup.user.id, lookup.contextVersion)} />}
 
       <Record rows={record} loaded={recordLoaded} scoped={!!lookup} />
     </div>

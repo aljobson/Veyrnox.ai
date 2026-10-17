@@ -64,6 +64,31 @@ test('Isolated delayed grant completion cannot revive a cleared ledger or start 
   } finally { release(); }
 });
 
+test('Violations scoped record rerender preserves exactly one account card and Clear removes it', async ({ page }) => {
+  let release, started = false;
+  const gate = new Promise(resolve => { release = resolve; });
+  const fixture = await installAdminFixtures(page, { routes: async args => {
+    if (args.method !== 'GET' || args.url.pathname !== '/api/v1/admin/violations' || args.url.searchParams.get('user_id') !== SYNTHETIC_USER.id) return false;
+    started = true; await gate;
+    return args.json({ violations: [] });
+  } });
+  try {
+    await fixture.open(`/app/admin/violations?user=${SYNTHETIC_USER.id}`);
+    await form(page).getByRole('button', { name: 'Find', exact: true }).click();
+    await expect.poll(() => started).toBe(true);
+    const account = page.getByRole('heading', { name: SYNTHETIC_USER.email, exact: true });
+    await expect(account).toHaveCount(1);
+    release();
+    await expect(form(page).getByRole('button', { name: 'Find', exact: true })).toBeEnabled();
+    await expect(account).toHaveCount(1);
+    await expect(account).toBeVisible();
+    await form(page).getByRole('button', { name: 'Clear', exact: true }).click();
+    await expect(account).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Record a warning', exact: true })).toHaveCount(0);
+    expect(writes(fixture)).toEqual([]);
+  } finally { release(); }
+});
+
 for (const kind of ['users', 'violations']) {
   test(`${kind} malformed and duplicate handoffs stay empty with no implicit lookup or write`, async ({ page }) => {
     const fixture = await installAdminFixtures(page);
@@ -81,6 +106,7 @@ for (const kind of ['users', 'violations']) {
     await expect(form(page).getByRole('textbox')).toHaveValue(SYNTHETIC_USER.email);
     expect(lookupReads(fixture)).toEqual([]);
     await form(page).getByRole('button', { name: 'Find', exact: true }).click();
+    await expect(page.getByRole('heading', { name: SYNTHETIC_USER.email, exact: true })).toHaveCount(1);
     await expect(page.getByRole('heading', { name: SYNTHETIC_USER.email, exact: true })).toBeVisible();
     if (kind === 'violations') await expect(page.getByRole('form', { name: 'Record a takedown', exact: true })).toHaveCount(0);
     await form(page).getByRole('button', { name: 'Clear', exact: true }).click();
@@ -94,6 +120,7 @@ for (const kind of ['users', 'violations']) {
     const fixture = await installAdminFixtures(page);
     await fixture.open(`/app/admin/${kind}?user=${SYNTHETIC_USER.id}`);
     await form(page).getByRole('button', { name: 'Find', exact: true }).click();
+    await expect(page.getByRole('heading', { name: SYNTHETIC_USER.email, exact: true })).toHaveCount(1);
     await expect(page.getByRole('heading', { name: SYNTHETIC_USER.email, exact: true })).toBeVisible();
     await fixture.switchUser(SECOND_SYNTHETIC_USER);
     await expect(page.getByRole('heading', { name: SYNTHETIC_USER.email, exact: true })).toHaveCount(0);
