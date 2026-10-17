@@ -63,7 +63,7 @@ function Security() {
       <p className="my-5 text-vx-fg-body max-w-[640px]">
         Rules read the signals we already keep (webhook refusals, account freezes, refused sign-ins, admin access refusals)
         every five minutes and raise one alert per rule, source and hour. Tags are MITRE ATT&amp;CK techniques. Refused sign-ins and
-        admin refusals are recorded when <code className="font-vx-mono text-xs">SECURITY_EVENTS_ENABLED</code> is true.
+        admin refusals are recorded while the <code className="font-vx-mono text-xs">SECURITY_EVENTS_HASH_KEY</code> secret is set.
       </p>
       <MfaPanel />
       {data && <Summary counts={data.open_by_severity} />}
