@@ -1,0 +1,42 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Editor scenes export check</title>
+<body>Scenes to export check (ADR-0105 slice B). Driven by scenes-export.mjs.
+<script type="importmap">{ "imports": { "mediabunny": "/mediabunny.mjs" } }</script>
+<script type="module">
+  import * as SEQ from '/lib/editorSequence.mjs';
+  import * as MD from '/lib/editorMedia.mjs';
+  import * as EX from '/lib/editorExport.mjs';
+  import * as RUN from '/lib/editorSceneRun.mjs';
+  const blobs = new Map();
+  window.sx = {
+    ready: true,
+    // Load a fixture, put it on the sequence, detect scenes, add every ticked cut, export, and upload the MP4.
+    async run(file, outName) {
+      const blob = await (await fetch(`/media/${file}`)).blob();
+      const probe = await MD.probeMedia(blob);
+      const problem = MD.checkProbe(probe);
+      if (problem) return { error: problem };
+      const media = MD.mediaFromProbe('l-test', file, probe);
+      blobs.set(media.id, blob);
+      const must = r => { if (r.error) throw new Error(r.error); return r; };
+      let tl = must(SEQ.addSequenceMedia(SEQ.emptySequence(), media));
+      tl = must(SEQ.addSequenceClip(tl, 'video', media.id, { len: media.frames }));
+      const item = tl.video[0];
+      const blocker = RUN.checkSequenceClipForScenes(media, item);
+      if (blocker) return { error: blocker };
+      const t0 = performance.now();
+      const detected = must(await RUN.detectClipScenes(blob, item));
+      const detectMs = Math.round(performance.now() - t0);
+      const rows = RUN.sceneRows(item, detected.cuts);
+      const frames = RUN.tickedFrames(rows);
+      const split = must(SEQ.splitSequenceAtFrames(tl, 'video', item.id, frames));
+      const bad = SEQ.validateSequence ? SEQ.validateSequence(split) : null;
+      const t1 = performance.now();
+      const out = await EX.exportTimeline(split, blobs, {});
+      const exportMs = Math.round(performance.now() - t1);
+      const up = await fetch(`/out/${outName}`, { method: 'POST', body: out });
+      return { detectMs, exportMs, frames, pieces: split.video.map(c => [c.start, c.len, c.in]), total: SEQ.sequenceEnd(split), bad, type: out.type, bytes: out.size, up: up.ok };
+    },
+  };
+</script>
