@@ -24,6 +24,7 @@ import VeyPanelSideButton from './VeyPanelSideButton';
 import { getJourney } from '../_lib/veyJourneyStore';
 import useVeyPointer from '../_lib/useVeyPointer';
 import useVeyDrag from '../_lib/useVeyDrag';
+import useVeyPlacement from '../_lib/useVeyPlacement';
 import useVeyMobileLayout from '../_lib/useVeyMobileLayout';
 import useEditorHelperHost from '../_lib/useEditorHelperHost';
 import { EditorHelperLauncher } from './editor/EditorHelperLauncher';
@@ -70,9 +71,7 @@ export default function MascotAssistant() {
   const [answerSource, setAnswerSource] = useState(null);
   const [feedback, setFeedback] = useState(null);
   const [position, setPosition] = useState(HOME);
-  const [manualPosition, setManualPosition] = useState(null);
-  const [panelSide, setPanelSide] = useState('left');
-  const movePanels = () => setPanelSide(side => side === 'left' ? 'right' : 'left');
+  const { manualPosition, panelSide, setManualPosition, movePanels, resetPosition } = useVeyPlacement();
   const [facing, setFacing] = useState(1);
   const [pendingTarget, setPendingTarget] = useState(null);
   const [pendingSavedId, setPendingSavedId] = useState(null);
@@ -119,7 +118,6 @@ export default function MascotAssistant() {
     }, travelDelay);
   }, [pathname, reduceMotion]);
 
-  const resetPosition = useCallback(() => setManualPosition(null), []);
   const drag = useVeyDrag({ onStart: clearAction, onReset: resetPosition,
     onMove: (next) => { window.clearTimeout(travelTimerRef.current); setTravelling(false); setManualPosition(next); setPosition(next); } });
   const { activeTarget, highlight, hand, point, locate: locateTarget, clear: clearPointer } = useVeyPointer({ reduceMotion, moveMascot, setFacing, activateTarget, clearAction, manualPosition });
