@@ -8,7 +8,7 @@ import type { Balance } from '../../lib/api';
 import { colors } from '../../theme';
 
 export default function Home() {
-    const { api, signOut } = useAuth();
+    const { api } = useAuth();
     const { status: billing } = useBilling();
     const [balance, setBalance] = useState<Balance | null>(null);
     const [failed, setFailed] = useState(false);
@@ -73,9 +73,11 @@ export default function Home() {
             </Link>
                 </>
             ) : null}
-            <Pressable accessibilityRole="button" style={styles.signOut} onPress={() => void signOut()}>
-                <Text style={styles.signOutText}>Sign out</Text>
-            </Pressable>
+            <Link href="/account" asChild>
+                <Pressable accessibilityRole="button" style={styles.signOut}>
+                    <Text style={styles.signOutText}>Account</Text>
+                </Pressable>
+            </Link>
         </View>
     );
 }

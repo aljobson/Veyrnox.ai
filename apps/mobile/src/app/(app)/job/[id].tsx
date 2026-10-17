@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import * as WebBrowser from 'expo-web-browser';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Link, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
@@ -53,6 +53,13 @@ export default function JobScreen() {
                     <Text style={state === 'failed' ? styles.error : styles.status}>{LABEL[state]}</Text>
                 </View>
             )}
+            {asset ? (
+                <Link href={{ pathname: '/report', params: { kind: 'job', id } }} asChild>
+                    <Pressable accessibilityRole="button" style={styles.report}>
+                        <Text style={styles.reportText}>Report this creation</Text>
+                    </Pressable>
+                </Link>
+            ) : null}
         </View>
     );
 }
@@ -65,4 +72,6 @@ const styles = StyleSheet.create({
     image: { flex: 1, width: '100%' },
     button: { backgroundColor: colors.accent, borderRadius: 12, paddingVertical: 16, alignItems: 'center' },
     buttonText: { color: colors.accentInk, fontWeight: '700', fontSize: 16 },
+    report: { paddingVertical: 14, alignItems: 'center' },
+    reportText: { color: colors.muted },
 });
