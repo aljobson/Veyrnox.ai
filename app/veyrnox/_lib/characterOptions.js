@@ -16,6 +16,14 @@ const LABELS = {
   right_arm: { Normal: 'Biological', 'Cute Prosthetic': 'Decorated prosthetic', None: 'Not present' },
   left_leg: { Normal: 'Biological', 'Cute Prosthetic': 'Decorated prosthetic', None: 'Not present' },
   right_leg: { Normal: 'Biological', 'Cute Prosthetic': 'Decorated prosthetic', None: 'Not present' },
+  // Display only. The Create summary pills show a value with no group name next
+  // to it, so values that would read the same in two groups say what they are.
+  exaggeration: { Natural: 'No exaggeration', Bold: 'Bold exaggeration', Extreme: 'Extreme exaggeration' },
+  brows: { Thick: 'Thick brows', Thin: 'Thin brows', Arched: 'Arched brows', Straight: 'Straight brows', Bushy: 'Bushy brows', Bleached: 'Bleached brows' },
+  nose_shape: { Straight: 'Straight nose', Button: 'Button nose', Aquiline: 'Aquiline nose', Snub: 'Snub nose', Wide: 'Wide nose', Narrow: 'Narrow nose', 'Round Tip': 'Round-tip nose' },
+  lips: { Full: 'Full lips', Thin: 'Thin lips', 'Cupid Bow': 'Cupid bow lips', Glossy: 'Glossy lips', 'Matte Dark': 'Matte dark lips' },
+  skin_tone: { Light: 'Light skin tone' },
+  eye_shape: { Hooded: 'Hooded eyes', Uneven: 'Uneven eyes' },
 };
 
 export function characterOptionLabel(groupId, value) {
@@ -23,18 +31,62 @@ export function characterOptionLabel(groupId, value) {
   return labels && Object.hasOwn(labels, value) ? labels[value] : value;
 }
 
-// An explicit choice on one side removes the pick on the other that it would
-// contradict. A side without `values` matches any pick in its group.
+// Two picks that cannot both be true. The first side is the everyday, explicit
+// choice and the second is the surreal or legacy pick it would contradict. A
+// side without `values` matches any pick in its group. Every `values` list is
+// pinned against the group's options in tests/characterConflicts.test.mjs.
+const BROWS = { key: 'brows', values: ['Thick', 'Thin', 'Arched', 'Straight', 'Bushy', 'Bleached'] };
+const BROW_DETAILS = { key: 'face_features', values: ['Tiny Brows', 'One Brow'] };
+const CHROME_BROWS = { key: 'accessories', values: ['Chrome Brows'] };
+const EYEWEAR = { key: 'everyday_accessories', values: ['Glasses', 'Round Glasses', 'Sunglasses'] };
+const SURREAL_EYEWEAR = { key: 'accessories', values: ['Tiny Sunglasses', 'Tiny Monocle'] };
+const BAG = { key: 'everyday_accessories', values: ['Everyday Bag', 'Tote Bag'] };
+const SURREAL_HANDBAG = { key: 'accessories', values: ['Tiny Handbag', 'Impossible Handbag'] };
+const HANDBAG_PROP = { key: 'distinctive_features', values: ['Impossible Handbag'] };
+const HEADWEAR = { key: 'headwear', values: ['Baseball Cap', 'Beanie', 'Wide-Brim Hat', 'Bucket Hat', 'Headphones'] };
+const HEAD_MASK = { key: 'accessories', values: ['Bug Head Mask'] };
+
 const EXCLUSIVE_PAIRS = [
-  [{ key: 'brows' }, { key: 'face_features', values: ['Tiny Brows', 'One Brow'] }],
-  [
-    { key: 'everyday_accessories', values: ['Glasses', 'Round Glasses', 'Sunglasses'] },
-    { key: 'accessories', values: ['Tiny Sunglasses', 'Tiny Monocle'] },
-  ],
+  [BROWS, BROW_DETAILS],
+  [BROWS, CHROME_BROWS],
+  [EYEWEAR, SURREAL_EYEWEAR],
+  [EYEWEAR, HEAD_MASK],
+  [BAG, SURREAL_HANDBAG],
+  [BAG, HANDBAG_PROP],
+  [HEADWEAR, HEAD_MASK],
 ];
+
+// The same conflicts seen from a cast preset's visual canon: a pick that is
+// swapped out must also take its description out of the canon (character.js).
+const CONFLICT_TOPICS = {
+  brows: [BROWS, BROW_DETAILS, CHROME_BROWS],
+  eyewear: [EYEWEAR, SURREAL_EYEWEAR],
+  bags: [BAG, SURREAL_HANDBAG, HANDBAG_PROP],
+  head_covering: [HEADWEAR, HEAD_MASK],
+};
 
 function sideMatches(side, key, value) {
   return side.key === key && Boolean(value) && (!side.values || side.values.includes(value));
+}
+
+/** The picks that belong to one conflict topic, as a comparable string ('' when none). */
+export function conflictTopicPicks(topic, picks) {
+  return CONFLICT_TOPICS[topic].map((side) => (sideMatches(side, side.key, picks?.[side.key]) ? picks[side.key] : '')).join('|');
+}
+
+/**
+ * The picks with every contradiction settled in favour of the explicit everyday
+ * choice. changeCharacterPick keeps hand edits free of these pairs, but picks that
+ * reach a prompt another way (Remix styling, an old saved passport) can still
+ * hold both, so every prompt and every sanitised passport goes through this.
+ * Pure; the input is never changed.
+ */
+export function resolveExclusivePicks(picks) {
+  const next = { ...picks };
+  for (const [keep, drop] of EXCLUSIVE_PAIRS) {
+    if (sideMatches(keep, keep.key, picks?.[keep.key]) && sideMatches(drop, drop.key, next[drop.key])) delete next[drop.key];
+  }
+  return next;
 }
 
 export function changeCharacterPick(picks, key, value) {
@@ -134,16 +186,23 @@ export const CHARACTER_SIZE_GROUPS = [
 
 // Everyday vocabulary added on top of the original builder. Every option stays
 // an original, fictional adult: animal types are "anthropomorphic adult", nothing
-// names a real person, brand or franchise, and Exaggeration styles proportions
-// and styling only. New picks are additive, so saved passports keep working.
+// names a real person, brand or franchise, and Exaggeration styles silhouette,
+// hair, clothing and accessories only. New picks are additive, so saved passports
+// keep working.
+
+// Exaggeration reaches the prompt next to the heritage, skin tone and face-shape
+// picks, so its wording names what it may scale and states what it never touches.
+// It must not be reworded to "the chosen features" or to a caricature.
+export const EXAGGERATION_SCOPE = 'silhouette, hair volume, clothing and accessory scale only';
+export const EXAGGERATION_GUARD = 'skin tone and ethnic or facial heritage traits are never exaggerated';
 
 // New groups. `after` is the group each one is placed behind (tab order and
 // prompt order); it is placement metadata and is not kept on the finished group.
 export const CHARACTER_NEW_GROUPS = [
   { id: 'exaggeration', tab: 'Face', label: 'Exaggeration', after: 'character_type', options: [
     ['Natural', 'natural, believable feature proportions'],
-    ['Bold', 'bold stylised exaggeration of the chosen features and silhouette'],
-    ['Extreme', 'extreme caricature-scale exaggeration of the chosen features and silhouette'],
+    ['Bold', `bold stylised exaggeration of ${EXAGGERATION_SCOPE}; ${EXAGGERATION_GUARD}`],
+    ['Extreme', `extreme stylised exaggeration of ${EXAGGERATION_SCOPE}; ${EXAGGERATION_GUARD}`],
   ] },
   { id: 'brows', tab: 'Face', label: 'Eyebrows', after: 'head_shape', options: [
     ['Thick', 'thick strong eyebrows'],

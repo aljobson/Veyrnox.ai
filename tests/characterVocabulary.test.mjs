@@ -14,7 +14,8 @@ import {
 import {
     CHARACTER_NEW_GROUPS,
     CHARACTER_OPTION_ADDITIONS,
-    changeCharacterPick,
+    EXAGGERATION_GUARD,
+    EXAGGERATION_SCOPE,
     characterOptionLabel,
     extendCharacterGroups,
 } from '../app/veyrnox/_lib/characterOptions.js';
@@ -90,10 +91,15 @@ test('Exaggeration offers Natural, Bold and Extreme as a modifier that follows t
     const phrases = group('exaggeration').options.map(([, text]) => text);
     assert.equal(new Set(phrases).size, 3);
     assert.match(phrases[0], /natural/);
-    assert.match(phrases[1], /bold .*exaggeration/);
-    assert.match(phrases[2], /extreme .*exaggeration/);
-    // Exaggeration styles proportions and styling only; it never names or implies heritage or skin.
-    for (const text of phrases) assert.doesNotMatch(text, /heritage|ethnic|race|racial|skin|origin|nationality/i, text);
+    assert.equal(phrases[1], `bold stylised exaggeration of ${EXAGGERATION_SCOPE}; ${EXAGGERATION_GUARD}`);
+    assert.equal(phrases[2], `extreme stylised exaggeration of ${EXAGGERATION_SCOPE}; ${EXAGGERATION_GUARD}`);
+    // The scope names what may be scaled, and that list never reaches the face, skin or heritage.
+    assert.equal(EXAGGERATION_SCOPE, 'silhouette, hair volume, clothing and accessory scale only');
+    assert.doesNotMatch(EXAGGERATION_SCOPE, /face|facial|feature|skin|heritage|ethnic|race|racial|origin|nose|lip|eye|jaw|chin|cheek/i);
+    assert.match(EXAGGERATION_GUARD, /^skin tone and ethnic or facial heritage traits are never exaggerated$/);
+    // The old wording scaled "the chosen features", which includes every heritage and face pick beside it.
+    for (const text of phrases) assert.doesNotMatch(text, /caricature|chosen features|selected features|\bfeatures\b/i, text);
+    assert.doesNotMatch(phrases[0], /exaggerat/i, 'Natural asks for no exaggeration');
     assert.deepEqual(characterTraits({ gender: 'Female', exaggeration: 'Extreme', character_type: 'Cat' }),
         [phrase('character_type', 'Cat'), phrases[2], 'female']);
     assert.ok(buildCharacterPrompt('', { exaggeration: 'Bold' }).includes(phrases[1]));
@@ -224,10 +230,12 @@ test('new vocabulary stays adult, original and short enough to leave room for th
     for (const [id, label, text] of added) {
         assert.doesNotMatch(`${label} ${text}`, names, `${id}/${label} must not name a brand or franchise`);
         assert.doesNotMatch(`${label} ${text}`, realPeople, `${id}/${label} must not point at a real person`);
-        assert.ok(text.length <= 90, `${id}/${label} phrase is ${text.length} characters`);
+        // Bold and Extreme carry their scope and guard clause, so they get a longer allowance than the rest.
+        const cap = id === 'exaggeration' ? 170 : 90;
+        assert.ok(text.length <= cap, `${id}/${label} phrase is ${text.length} characters`);
         assert.equal(text, text.trim());
     }
-    assert.ok(Math.max(...added.map(([, , text]) => text.length)) <= 90);
+    assert.ok(Math.max(...added.filter(([id]) => id !== 'exaggeration').map(([, , text]) => text.length)) <= 90);
     assert.match(CHARACTER_BASE, /original adult character, not a real person/);
 });
 
@@ -264,28 +272,44 @@ test('picks made with every new option survive sanitising, passport saving and H
     }), {});
 });
 
-test('new options display as stored, because none of them needs a softened label', () => {
-    for (const [id, label] of added) assert.equal(characterOptionLabel(id, label), label, `${id}/${label}`);
-    assert.equal(characterOptionLabel('proportions', 'Natural'), 'Balanced proportions');
-    assert.equal(characterOptionLabel('exaggeration', 'Natural'), 'Natural');
-    assert.equal(characterOptionLabel('nose_shape', 'Straight'), 'Straight');
-});
+// Display wording only: the stored keys never change, so saved passports are untouched.
+const NEW_LABELS = {
+    exaggeration: { Natural: 'No exaggeration', Bold: 'Bold exaggeration', Extreme: 'Extreme exaggeration' },
+    brows: { Thick: 'Thick brows', Thin: 'Thin brows', Arched: 'Arched brows', Straight: 'Straight brows', Bushy: 'Bushy brows', Bleached: 'Bleached brows' },
+    nose_shape: { Straight: 'Straight nose', Button: 'Button nose', Aquiline: 'Aquiline nose', Snub: 'Snub nose', Wide: 'Wide nose', Narrow: 'Narrow nose', 'Round Tip': 'Round-tip nose' },
+    lips: { Full: 'Full lips', Thin: 'Thin lips', 'Cupid Bow': 'Cupid bow lips', Glossy: 'Glossy lips', 'Matte Dark': 'Matte dark lips' },
+    skin_tone: { Light: 'Light skin tone' },
+    eye_shape: { Hooded: 'Hooded eyes', Uneven: 'Uneven eyes' },
+};
 
-test('an explicit brow or everyday eyewear choice replaces the surreal version it would contradict', () => {
-    assert.deepEqual(changeCharacterPick({ face_features: 'Tiny Brows', cheeks: 'Dimples' }, 'brows', 'Thick'), { cheeks: 'Dimples', brows: 'Thick' });
-    assert.deepEqual(changeCharacterPick({ face_features: 'One Brow' }, 'brows', 'Arched'), { brows: 'Arched' });
-    assert.deepEqual(changeCharacterPick({ brows: 'Thick', cheeks: 'Dimples' }, 'face_features', 'One Brow'), { cheeks: 'Dimples', face_features: 'One Brow' });
-    assert.deepEqual(changeCharacterPick({ brows: 'Thick' }, 'face_features', 'Huge Lashes'), { brows: 'Thick', face_features: 'Huge Lashes' });
-    assert.deepEqual(changeCharacterPick({ face_features: 'Huge Lashes' }, 'brows', 'Thick'), { face_features: 'Huge Lashes', brows: 'Thick' });
-    assert.deepEqual(changeCharacterPick({ accessories: 'Tiny Sunglasses', headwear: 'Beanie' }, 'everyday_accessories', 'Glasses'),
-        { headwear: 'Beanie', everyday_accessories: 'Glasses' });
-    assert.deepEqual(changeCharacterPick({ accessories: 'Tiny Monocle' }, 'everyday_accessories', 'Sunglasses'), { everyday_accessories: 'Sunglasses' });
-    assert.deepEqual(changeCharacterPick({ everyday_accessories: 'Round Glasses' }, 'accessories', 'Tiny Monocle'), { accessories: 'Tiny Monocle' });
-    assert.deepEqual(changeCharacterPick({ accessories: 'Tiny Sunglasses' }, 'everyday_accessories', 'Everyday Bag'),
-        { accessories: 'Tiny Sunglasses', everyday_accessories: 'Everyday Bag' });
-    assert.deepEqual(changeCharacterPick({ everyday_accessories: 'Jewellery' }, 'accessories', 'Tiny Sunglasses'),
-        { everyday_accessories: 'Jewellery', accessories: 'Tiny Sunglasses' });
-    assert.deepEqual(changeCharacterPick({ brows: 'Thick', face_features: 'One Brow' }, 'brows', ''), { face_features: 'One Brow' });
+test('new options that read the same in two groups say what they are, and everything else displays as stored', () => {
+    for (const [id, map] of Object.entries(NEW_LABELS)) {
+        for (const [label, shown] of Object.entries(map)) {
+            assert.ok(labels(id).includes(label), `${id}/${label} is a real option`);
+            assert.equal(characterOptionLabel(id, label), shown, `${id}/${label}`);
+        }
+    }
+    for (const [id, label] of added) {
+        if (NEW_LABELS[id]?.[label]) continue;
+        assert.equal(characterOptionLabel(id, label), label, `${id}/${label} needs no softening`);
+    }
+    assert.equal(characterOptionLabel('proportions', 'Natural'), 'Balanced proportions');
+    // Without the group name next to it (the Create summary pills), no two groups' values read the same any more.
+    const shown = new Map();
+    for (const [id, label] of added) {
+        if (!['exaggeration', 'brows', 'nose_shape', 'lips'].includes(id)) continue;
+        const text = characterOptionLabel(id, label);
+        assert.ok(!shown.has(text), `"${text}" is shown for both ${shown.get(text)} and ${id}`);
+        shown.set(text, id);
+    }
+    // Labels are display only: the stored value still sanitises and prompts as before.
+    assert.deepEqual(sanitizeOddlingPicks({ nose_shape: 'Straight', brows: 'Thick' }), { nose_shape: 'Straight', brows: 'Thick' });
+    assert.equal(sanitizeOddlingPicks({ nose_shape: 'Straight nose' }).nose_shape, undefined);
+    // Choosing from a menu cannot make two options in one group read the same.
+    for (const item of CHARACTER_GROUPS) {
+        const shownInGroup = item.options.map(([label]) => characterOptionLabel(item.id, label));
+        assert.equal(new Set(shownInGroup).size, shownInGroup.length, `${item.id} displays unique labels`);
+    }
 });
 
 test('styling randomization only ever lands on supported options, including the new styles', () => {

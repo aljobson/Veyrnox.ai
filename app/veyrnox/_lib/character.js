@@ -6,7 +6,7 @@
 // (Terms: no minors, no deepfakes). Client-side only: it changes the prompt,
 // never the model or the price.
 
-import { CHARACTER_SIZE_GROUPS, extendCharacterGroups } from './characterOptions.js';
+import { CHARACTER_SIZE_GROUPS, conflictTopicPicks, extendCharacterGroups, resolveExclusivePicks } from './characterOptions.js';
 
 export const CHARACTER_TABS = ['Face', 'Body', 'Style'];
 
@@ -625,11 +625,17 @@ export const CHARACTER_BASE = 'Portrait of an original adult character, not a re
 // The gateway refuses a prompt over 2000 characters (lib/modelCapabilities.js).
 const PROMPT_MAX = 2000;
 
-/** The phrases for the chosen options ({ groupId: optionLabel }); unknown picks add nothing. */
-export function characterTraits(picks) {
+/**
+ * The phrases for the chosen options ({ groupId: optionLabel }); unknown picks add
+ * nothing. Picks that contradict each other (a surreal pick against the everyday
+ * one that replaces it) are settled first, so Remix styling cannot reach the
+ * prompt with both.
+ */
+export function characterTraits(rawPicks) {
+  const picks = resolveExclusivePicks(rawPicks);
   const parts = [];
   for (const g of CHARACTER_GROUPS) {
-    const hit = g.options.find(([label]) => label === (picks || {})[g.id]);
+    const hit = g.options.find(([label]) => label === picks[g.id]);
     if (!hit) continue;
     const limb = g.id === 'arm_size' ? 'arm' : g.id === 'leg_size' ? 'leg' : null;
     if (limb) {
@@ -654,17 +660,30 @@ function optionPhrase(options, value) {
 // Reconcile inherited preset descriptions only. Free-form user canon remains
 // theirs. Whole-word categories prevent e.g. Pear from removing pearl details.
 // Body keywords exclude shoulders, so a hair-width comparison stays intact.
+// A category is changed when the picks it watches differ from the preset's own.
+// `keys` watches whole groups; `topic` watches only the picks that conflict over
+// one thing (glasses, bags, a head covering), so adding an unrelated accessory
+// leaves the preset's own glasses in its canon.
 const CANON_CATEGORIES = [
+  { topic: 'brows', words: /\b(?:eyebrows|brows|brow)\b/i },
+  { topic: 'eyewear', words: /\b(?:glasses|sunglasses|monocle)\b/i },
+  { topic: 'bags', words: /\b(?:handbag|bag|tote)\b/i },
+  { topic: 'head_covering', words: /\b(?:helmet|mask|hat|cap|beanie|headphones)\b/i },
   { keys: ['hair', 'hair_color'], words: /\b(?:hair|haircut|afro|pompadour|halo|canopy|quiff|braids|antennae)\b/i },
   { keys: ['wardrobe_style'], words: /\b(?:couture|coat|raincoat|waistcoat|jacket|dress|suit|tracksuit|trousers|jeans|shirt|t-shirt|tailoring|sportswear|robe|gown|cape|boots|trainers|sneakers|jumpsuit|sash|turtleneck|coverall|gloves|tie|pinstripe|sleeves|train)\b/i },
   { keys: ['body_type', 'height', 'proportions', 'torso_size', 'arm_size', 'leg_size', 'hand_size', 'foot_size'], words: /\b(?:body|bodybuilder|build|silhouette|torso|hips|limbs|legs|arms|hands|feet|neck|slim|slender|thin|muscular|curvy|pear|barrel|compact|seven-foot|long-limbed|full-bodied|athletic|sturdy|proportions|posture)\b/i },
 ];
 
-function inheritedVisualCanon(picks) {
-  const rule = oneLine(picks?.oddling_rule, 160);
+const canonChanged = ({ keys, topic }, now, original) => (topic
+  ? conflictTopicPicks(topic, now) !== conflictTopicPicks(topic, original)
+  : keys.some((key) => (now?.[key] || '') !== (original[key] || '')));
+
+function inheritedVisualCanon(rawPicks) {
+  const picks = resolveExclusivePicks(rawPicks);
+  const rule = oneLine(picks.oddling_rule, 160);
   const original = rule && ODDLING_ARCHETYPES.find((item) => oneLine(item.picks.oddling_rule, 160) === rule)?.picks;
   if (!original) return rule;
-  const changed = CANON_CATEGORIES.filter(({ keys }) => keys.some((key) => (picks?.[key] || '') !== (original[key] || '')));
+  const changed = CANON_CATEGORIES.filter((category) => canonChanged(category, picks, original));
   return rule.split(',').map((clause) => clause.trim())
     .filter((clause) => !changed.some(({ words }) => words.test(clause))).join(', ');
 }
@@ -712,7 +731,7 @@ export function sanitizeOddlingPicks(value) {
   }
   if (ODDLING_TONES.some(([label]) => label === value.oddling_voice)) clean.oddling_voice = value.oddling_voice;
   if (ODDLING_SHOWS.some(([label]) => label === value.oddling_show)) clean.oddling_show = value.oddling_show;
-  return clean;
+  return resolveExclusivePicks(clean);
 }
 
 export function writeOddlingDraft(storage, picks, now = Date.now()) {
