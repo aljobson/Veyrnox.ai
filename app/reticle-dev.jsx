@@ -40,6 +40,8 @@ function readVeyLayout() {
     mascotOverlaps: controls.filter((rect) => overlaps(mascot, rect)).length,
     generateClear: !!guide && !!generate && generate.top >= 72 && generate.bottom < guide.top,
     sourceAttached: !!document.querySelector('img[alt="Start image"]'),
+    rightsConfirmed: document.querySelector('[data-testid="create-source-rights-status"]')?.dataset.confirmed === 'true',
+    costCardStatic: document.querySelector('[data-create-cost-card]') ? getComputedStyle(document.querySelector('[data-create-cost-card]')).position === 'static' : false,
     storageNoticeOpen: !!document.querySelector('[aria-label="Browser storage notice"]'),
     siteActionsOverlap: interactiveControls.filter((rect) => overlaps(siteActions, rect)).length,
   };

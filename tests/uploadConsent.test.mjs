@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
 const route = read('../app/api/v1/generations/route.js');
 const page = read('../app/veyrnox/app/create/page.js');
+const confirmation = read('../app/veyrnox/_components/SourceRightsConfirmation.jsx');
 const errors = read('../app/veyrnox/_lib/createErrors.js');
 const aup = read('../app/legal/aup/page.js');
 const legalNav = read('../app/legal/_lib/Legal.js');
@@ -34,8 +35,16 @@ test('the create page blocks Generate until the box is ticked, and sends it', ()
     // Sent whenever any source is attached: an upload or a Library image.
     assert.match(page, /const anySource = source_keys\.length \+ source_assets\.length > 0;/);
     assert.match(page, /consent: anySource \? true : undefined,/);
-    assert.match(page, /I own this file, or I have the permission of everyone identifiable in it/);
-    assert.match(page, /href="\/legal\/aup"/);
+    assert.match(page, /<SourceRightsConfirmation confirmed=\{consent\} onChange=\{setConsent\}/);
+    assert.match(confirmation, /I own this file, or I have the permission of everyone identifiable in it/);
+    assert.match(confirmation, /href="\/legal\/aup"/);
+    assert.match(confirmation, /checked=\{confirmed\}/);
+    assert.match(confirmation, /onChange\(event\.target\.checked\)/);
+    assert.match(confirmation, /h-11 w-11/);
+    assert.match(confirmation, /role="status".*data-confirmed=\{confirmed\}/);
+    assert.match(page, /data-create-cost-card/);
+    const css = read('../app/veyrnox/veyrnox.css');
+    assert.match(css, /html\[data-vey-mobile-workspace="true"\] \[data-create-cost-card\]\s*\{\s*position: static;/);
 });
 
 test('the Acceptable Use Policy is published and linked', () => {
