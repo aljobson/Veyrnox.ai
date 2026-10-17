@@ -31,3 +31,12 @@ The `/api/v1/*` surface is Bearer-only and already carries everything the core l
 ## Verification
 
 M0: typecheck and 13 unit tests (API client retry and session loss, token grants, PKCE helpers). Sign-in against a real Supabase project needs the prerequisites above and is not claimed until done.
+
+## M4: release plumbing (2026-10-17)
+
+- `apps/mobile/eas.json`: `development` (dev client, simulator), `preview` (internal distribution, staging, store billing on) and `production` (auto-incremented remote version, production). Public settings only; keys and the Sentry DSN come from EAS environment variables.
+- `.github/workflows/mobile-ci.yml` typechecks, tests and bundles iOS and Android on any change under `apps/mobile/**`. The mobile app is outside the root install, so no other workflow or the Worker build is affected.
+- Crash reporting: `@sentry/react-native`, started only in release builds with a DSN. Reports carry no user, no request bodies or headers and no URL query or fragment (an OAuth return URL holds a one-time code); `src/lib/scrub.ts` is unit-tested. The privacy policy and the App Store privacy label and Play data-safety form must say crash data is collected.
+- `ITSAppUsesNonExemptEncryption` is `false` (the app uses only the system's HTTPS); the owner confirms that declaration.
+
+**Owner steps before a build exists:** an Expo account and `npx eas-cli init` in `apps/mobile` (writes the project id into `app.json`); Apple Developer team and an App Store Connect API key for `eas submit`; a Google Play service account; a Sentry project with its DSN as `EXPO_PUBLIC_SENTRY_DSN` and an auth token as `SENTRY_AUTH_TOKEN` (EAS secrets); the RevenueCat public SDK keys as `EXPO_PUBLIC_REVENUECAT_IOS_KEY` and `_ANDROID_KEY`.

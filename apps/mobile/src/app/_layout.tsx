@@ -2,8 +2,11 @@ import { Slot } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { AuthProvider } from '../auth/AuthProvider';
 import { BillingProvider } from '../billing/BillingProvider';
+import { initCrashReporting, withCrashReporting } from '../lib/crash';
 
-export default function RootLayout() {
+initCrashReporting();
+
+function RootLayout() {
     return (
         <AuthProvider>
             <BillingProvider>
@@ -13,3 +16,5 @@ export default function RootLayout() {
         </AuthProvider>
     );
 }
+
+export default withCrashReporting(RootLayout);

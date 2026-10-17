@@ -1,0 +1,56 @@
+name: mobile-ci
+
+# Typecheck, test and bundle apps/mobile (ADR-0106, roadmap M4). The mobile app has its own package.json
+# and node_modules: the root install, the Cloudflare Worker build and the other workflows never see it,
+# and this one runs only when the app (or this file) changes.
+
+on:
+  pull_request:
+    paths:
+      - "apps/mobile/**"
+      - ".github/workflows/mobile-ci.yml"
+  push:
+    branches: [main]
+    paths:
+      - "apps/mobile/**"
+      - ".github/workflows/mobile-ci.yml"
+
+permissions: {}
+
+concurrency:
+  group: mobile-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mobile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+
+      - name: Install
+        run: npm ci --no-audit --no-fund
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Unit tests
+        run: npx jest --ci
+
+      # Catches a bundling error (a missing module, a bad import) that tsc and jest cannot see.
+      - name: Bundle iOS and Android
+        env:
+          CI: "1"
+        run: |
+          npx expo export --platform ios --output-dir "$RUNNER_TEMP/export-ios"
+          npx expo export --platform android --output-dir "$RUNNER_TEMP/export-android"
