@@ -5,7 +5,9 @@
  * same ledger path as a web top-up; a refund claws it back through
  * apply_top_up_refund; and a store pack can never be started through the
  * Stripe checkout function. The migration is applied twice to prove it is
- * idempotent. Expects a database built by scripts/replay-migrations.mjs.
+ * idempotent. Like the other top-up suites it applies its own migration chain
+ * on the base schema (CI builds that with scripts/migrate.mjs); it also passes
+ * on a fully replayed database.
  *
  * Skipped unless DATABASE_URL is set.
  */
@@ -16,14 +18,35 @@ import { readFile } from "node:fs/promises";
 import pg from "pg";
 
 const DATABASE_URL = process.env.DATABASE_URL;
-const MIGRATION = new URL("./schema/supabase/0344_store_purchases.sql", import.meta.url);
+const MIGRATIONS = [
+    "0037_free_credit_expiry.sql",
+    "0038_free_credit_sweep_fixes.sql",
+    "0041_credit_packs_and_top_ups.sql",
+    "0054_credit_top_up.sql",
+    "0058_top_up_refund_clawback.sql",
+    "0059_chargeback_freeze.sql",
+    "0060_top_up_backfill.sql",
+    "0066_freeze_since_purchase.sql",
+    "0097_stripe_money_path_ids.sql",
+    "0167_stripe_packs_without_variant.sql",
+    "0174_flagged_orders_append_only.sql",
+    "0344_store_purchases.sql",
+].map((f) => new URL(`./schema/supabase/${f}`, import.meta.url));
 
 describe("Store purchases (0344)", { skip: !DATABASE_URL && "DATABASE_URL not set" }, () => {
     let pool: pg.Pool;
 
     before(async () => {
         pool = new pg.Pool({ connectionString: DATABASE_URL, max: 8 });
-        for (const _round of [1, 2]) await pool.query(await readFile(MIGRATION, "utf8"));
+        await pool.query(`DO $$ DECLARE r TEXT; BEGIN
+            FOREACH r IN ARRAY ARRAY['anon', 'authenticated', 'service_role'] LOOP
+                IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = r) THEN
+                    EXECUTE format('CREATE ROLE %I NOLOGIN', r);
+                END IF;
+            END LOOP; END $$`);
+        for (const _round of [1, 2]) { // migrations must be idempotent
+            for (const m of MIGRATIONS) await pool.query(await readFile(m, "utf8"));
+        }
     });
     after(async () => { if (pool) await pool.end(); });
 
@@ -194,8 +217,13 @@ describe("Store purchases (0344)", { skip: !DATABASE_URL && "DATABASE_URL not se
     });
 
     it("keeps the books balanced", async () => {
-        assert.equal(Number((await one(`SELECT count(*) AS n FROM public.reconcile_balances()`)).n), 0);
-        assert.equal(Number((await one(`SELECT count(*) AS n FROM public.reconcile_top_ups()`)).n), 0);
+        // The invariant itself (CLAUDE.md): balance = SUM(ledger deltas) for every account.
+        assert.equal(Number((await one(`SELECT count(*) AS n FROM public.credit_balances b
+            WHERE b.balance <> COALESCE((SELECT sum(l.delta) FROM public.ledger_entries l WHERE l.user_id = b.user_id), 0)`)).n), 0);
+        // reconcile_top_ups (0065) is outside this chain on the base schema.
+        if ((await one(`SELECT to_regprocedure('public.reconcile_top_ups()') AS f`)).f) {
+            assert.equal(Number((await one(`SELECT count(*) AS n FROM public.reconcile_top_ups()`)).n), 0);
+        }
     });
 
     it("is callable by the service role only", async () => {
