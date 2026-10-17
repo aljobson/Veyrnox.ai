@@ -66,9 +66,9 @@ export default function VeyTaskGuide({ visible, pathname, onPoint, onStop, onAct
   const secondary = detailsOpen ? '' : 'hidden sm:block';
   return <>
     {task && chatting && <button type="button" className="hidden sm:block fixed bottom-4 right-4 z-[62] rounded-full border border-vx-accent bg-vx-panel px-4 py-3 text-xs font-bold text-vx-accent shadow-xl" onClick={() => setChatting(false)}>Resume {task.phase} walkthrough</button>}
-    <section aria-label="Vey task walkthrough" style={VEY_CHAT_STYLE} data-step={step?.key || 'choose'} data-expanded={detailsOpen} data-question-open={chatting} className={`fixed left-2 ${side === 'right' ? 'sm:left-auto sm:right-3' : 'sm:left-3'} ${chatting ? 'bottom-[calc(var(--vey-chat-height)+max(8px,env(safe-area-inset-bottom))+8px)] max-h-[24dvh] sm:hidden' : `bottom-[max(8px,env(safe-area-inset-bottom))] sm:bottom-4 ${task && !detailsOpen ? 'max-h-[35dvh]' : 'max-h-[50dvh]'} sm:max-h-[50dvh]`} z-[62] w-[min(330px,calc(100vw-80px))] sm:w-[min(330px,calc(100vw-24px))] overflow-y-auto rounded-2xl border border-vx-accent/40 bg-vx-panel p-3 sm:p-4 shadow-2xl`}>
-    <div className="flex items-center justify-between gap-2"><div><p className="text-[10px] font-bold text-vx-accent sm:text-xs">{task ? `Vey · ${task.phase === 'image' ? 'Image' : 'Video'} task` : 'Choose your starting point'}</p>
-      {task && <h3 className="mt-1 text-sm font-bold sm:mt-2 sm:text-base">{step.title}</h3>}</div>
+    <section aria-label="Vey task walkthrough" style={VEY_CHAT_STYLE} data-step={step?.key || 'choose'} data-expanded={detailsOpen} data-question-open={chatting} className={`fixed left-2 ${side === 'right' ? 'sm:left-auto sm:right-3' : 'sm:left-3'} ${chatting ? 'bottom-[calc(var(--vey-chat-height)+max(8px,env(safe-area-inset-bottom))+8px)] max-h-[76px] sm:hidden' : `bottom-[max(8px,env(safe-area-inset-bottom))] sm:bottom-4 ${task && !detailsOpen ? 'max-h-[144px]' : 'max-h-[40dvh]'} sm:max-h-[50dvh]`} z-[62] w-[min(280px,calc(100vw-80px))] sm:w-[min(330px,calc(100vw-24px))] overflow-y-auto rounded-xl border border-vx-accent/40 bg-vx-panel px-2 py-1.5 sm:p-4 shadow-2xl`}>
+    <div className="flex items-center justify-between gap-1"><div><p className={`${task ? 'sr-only sm:not-sr-only' : ''} text-[10px] font-bold text-vx-accent sm:text-xs`}>{task ? `Vey · ${task.phase === 'image' ? 'Image' : 'Video'} task` : 'Choose your starting point'}</p>
+      {task && <h3 className="text-[11px] leading-[14px] font-bold sm:mt-2 sm:text-base">{step.title}</h3>}</div>
       {task && chatting && <button type="button" aria-label="Back to walkthrough" className={`${pill} shrink-0`} onClick={() => setChatting(false)}>Back</button>}
       {task && !chatting && <button type="button" aria-expanded={detailsOpen} aria-controls="vey-guide-secondary" className={`${pill} shrink-0 sm:hidden`} onClick={() => setDetailsKey(detailsOpen ? null : step.key)}>{detailsOpen ? 'Less' : 'More'}</button>}
       <button type="button" className={`${task ? 'hidden sm:block' : ''} text-xs text-vx-fg-muted`} onClick={() => setSide(side === 'right' ? 'left' : 'right')}>Move guide</button></div>
@@ -81,7 +81,7 @@ export default function VeyTaskGuide({ visible, pathname, onPoint, onStop, onAct
       <button type="button" className={pill} onClick={() => { beginJourney(); setChoosing(false); router.push('/app/create'); }}>Start with an existing image</button>
       <button type="button" className={pill} onClick={() => { setChoosing(false); onStop(); }}>Cancel</button>
     </> : <>
-      <p role="status" className={`mt-1 text-xs leading-[18px] text-vx-fg-body sm:mt-2 sm:text-sm sm:leading-6 ${detailsOpen && !chatting ? '' : 'line-clamp-2 sm:line-clamp-none'}`}>{step.message}</p>
+      <p role="status" className={`text-[10px] leading-[14px] text-vx-fg-body sm:mt-2 sm:text-sm sm:leading-6 ${detailsOpen && !chatting ? '' : chatting ? 'line-clamp-1 sm:line-clamp-none' : 'line-clamp-2 sm:line-clamp-none'}`}>{step.message}</p>
       {(recoveryError || view.prepareError) && <p role="alert" className="mt-2 text-sm text-vx-danger">{recoveryError || view.prepareError}</p>}
       {!chatting && <div className="mt-2 flex flex-wrap gap-2 sm:mt-3">
         <button type="button" className={pill} onClick={() => onPoint(step.target, { explicit: true, modelKind: step.key === 'model' ? task.phase : undefined })}>Show this step</button>
