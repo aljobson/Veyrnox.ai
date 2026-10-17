@@ -28,6 +28,30 @@ export function cutsToTimelineFrames(clip, clipStart, cuts) {
     return [...frames].sort((a, b) => a - b);
 }
 
+/**
+ * The multitrack clip must show its source at normal speed for source time to map straight onto the timeline. Returns a message or null.
+ * Bounds are checked on the clip's own length, so a trimmed long source can be analysed.
+ */
+export function checkSequenceClipForScenes(media, item) {
+    if (!item) return 'Select a video clip on the timeline first.';
+    if (item.reverse || item.speedCurve || item.freezeFrame !== undefined || (item.rate ?? 1) !== 1) return 'Reset speed, reverse and freeze on this clip before detecting scenes.';
+    return checkSceneBounds(media, item);
+}
+
+/** One row per detected cut: its timeline frame, its source time, and whether it starts ticked (hard cuts only). Cuts that split nothing are dropped. */
+export function sceneRows(item, cuts) {
+    const rows = [];
+    for (const cut of cuts) {
+        const [frame] = cutsToTimelineFrames(item, item.start, [cut]);
+        if (frame === undefined || rows.some(r => r.frame === frame)) continue;
+        rows.push({ frame, time: cut.time, kind: cut.kind === 'hard' ? 'hard' : 'possible', ticked: cut.kind === 'hard' });
+    }
+    return rows.sort((a, b) => a.frame - b.frame);
+}
+
+/** Frames of the rows the user left ticked. "Add all" is the hard cuts only; a possible dissolve is added only if the user ticks it. */
+export const tickedFrames = rows => rows.filter(r => r.ticked).map(r => r.frame);
+
 /** Hard cuts are suggested ticked; dissolves are only "possible" and are never part of Add all. */
 export function partitionCuts(cuts) {
     return { hard: cuts.filter(c => c.kind === 'hard'), possible: cuts.filter(c => c.kind !== 'hard') };

@@ -53,3 +53,25 @@ test('the scenes flag is off unless the grouped value says true, and closed in t
     assert.equal(editorFeatureEnabled('EDITOR_SCENES_ENABLED', config.vars), false);
     assert.equal(editorFeatureEnabled('EDITOR_SCENES_ENABLED', config.env.staging.vars), false);
 });
+
+import { checkSequenceClipForScenes, sceneRows, tickedFrames } from '../app/veyrnox/_lib/editorSceneRun.mjs';
+
+test('a multitrack clip must run its source at normal speed before scenes are detected', () => {
+    const item = { id: 'v1', in: 0, start: 0, len: 300 };
+    assert.equal(checkSequenceClipForScenes(media(), item), null);
+    for (const over of [{ rate: 2 }, { reverse: true }, { speedCurve: [{ frame: 0, rate: 1 }] }, { freezeFrame: 4 }]) {
+        assert.match(checkSequenceClipForScenes(media(), { ...item, ...over }), /Reset speed/);
+    }
+    assert.equal(checkSequenceClipForScenes(media(), { ...item, rate: 1 }), null);
+    assert.match(checkSequenceClipForScenes(media(), null), /Select a video clip/);
+    assert.match(checkSequenceClipForScenes(media({ width: 1920, height: 1080 }), item), /720p/);
+});
+
+test('rows place each cut on the timeline, tick hard cuts only, and add all means the ticked ones', () => {
+    const item = { id: 'v1', in: 60, start: 90, len: 300 };
+    const rows = sceneRows(item, [{ time: 4, kind: 'hard' }, { time: 8.5, kind: 'gradual' }, { time: 2, kind: 'hard' }, { time: 4.01, kind: 'hard' }, { time: 40, kind: 'hard' }]);
+    assert.deepEqual(rows.map(r => [r.frame, r.kind, r.ticked]), [[150, 'hard', true], [285, 'possible', false]]);
+    assert.deepEqual(tickedFrames(rows), [150]);
+    assert.deepEqual(tickedFrames(rows.map(r => ({ ...r, ticked: true }))), [150, 285]);
+    assert.deepEqual(sceneRows(item, []), []);
+});

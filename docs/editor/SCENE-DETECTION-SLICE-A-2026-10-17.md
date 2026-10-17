@@ -57,3 +57,9 @@ mkdir -p /tmp/spike && (cd /tmp/spike && npm init -y >/dev/null && npm i playwri
 PLAYWRIGHT_CORE=/tmp/spike/node_modules/playwright-core \
   node scripts/editor-spike/scenes-run.mjs /tmp/spike/scenes /tmp/spike/scenes-out.json
 ```
+
+## Slice B panel check (2026-10-17, local, flag on)
+
+Real editor in the Browser pane (`next dev --webpack`, `EDITOR_RUNTIME_FLAGS={"scenes":"true"}`): imported the 20 s `hard-4s.mp4` clip, selected it, Scenes found 4 cuts at 0:04, 0:08, 0:12 and 0:16 with 4 preview marks on the ruler, "Add 4 cuts" took the clip from 1 piece to 5 in one edit, and one Undo restored it. The "Scenes" tool appears only with the flag on. Not yet done: the decoded-export check, a Reticle journey, phone-sized layout, and any clip that is not H.264 MP4.
+
+Production uses the multitrack workspace and its sequence model, so the panel is built there (`splitSequenceAtFrames`); the older single-lane editor is not given the panel.

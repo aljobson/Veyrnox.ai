@@ -80,6 +80,21 @@ export function splitSequenceClip(tl, kind, id, frame) {
          };
     return checked({ ...tl, seq, [kind]: tl[kind].flatMap(c => c.id === id ? [first, second] : [c]) });
 }
+/**
+ * Splits one clip of the multitrack sequence at several timeline frames as one edit (ADR-0105 scene detection). Cuts are applied last to
+ * first, so the original id keeps the first part. All or nothing: a locked track, a frame outside the clip or a project that would pass
+ * its limits returns an error and the input is unchanged.
+ */
+export function splitSequenceAtFrames(tl, kind, id, frames) {
+    if (!Array.isArray(frames) || !frames.length) return error('There are no cuts to add.');
+    if (!frames.every(Number.isInteger)) return error('Cut positions must be whole frames.');
+    let next = tl;
+    for (const frame of [...new Set(frames)].sort((a, b) => b - a)) {
+        next = splitSequenceClip(next, kind, id, frame);
+        if (next.error) return next.error.startsWith('Move the playhead') ? error(`A cut at frame ${frame} is outside the clip.`) : next;
+    }
+    return next;
+}
 export function addSequenceText(tl, options = {}) {
     const lane = tl.tracks.find(t => t.id === options.trackId && t.kind === 'text') || tl.tracks.find(t => t.kind === 'text' && !t.locked);
     if (!lane || lane.locked) return error('Add an unlocked text track first.');

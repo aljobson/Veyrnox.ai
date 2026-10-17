@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { emptySequence, addSequenceMedia, addSequenceClip, addSequenceTrack, addSequenceText, updateSequenceClip, updateSequenceTrack, splitSequenceClip, removeSequenceClip, duplicateSequence, moveSequence, trimSequence, upgradeSequence, sequenceEnd } from '../app/veyrnox/_lib/editorSequence.mjs';
+import { emptySequence, addSequenceMedia, addSequenceClip, addSequenceTrack, addSequenceText, updateSequenceClip, updateSequenceTrack, splitSequenceClip, splitSequenceAtFrames, removeSequenceClip, duplicateSequence, moveSequence, trimSequence, upgradeSequence, sequenceEnd } from '../app/veyrnox/_lib/editorSequence.mjs';
 import { validateSequence } from '../app/veyrnox/_lib/editorSequenceValidation.mjs';
 import { emptyTimeline, addMedia, addVideoClip } from '../app/veyrnox/_lib/editorTimeline.mjs';
 import { sequenceLayers } from '../app/veyrnox/_lib/editorSequenceRender.mjs';
@@ -55,4 +55,20 @@ test('overlapping caption layers render in their track order after a reorder', (
     const index = tl.tracks.findIndex(t => t.id === lane), tracks = [...tl.tracks];
     [tracks[index], tracks[index - 1]] = [tracks[index - 1], tracks[index]];
     assert.deepEqual(sequenceLayers({ ...tl, tracks }, 30).texts.map(t => t.text), ['Second', 'First']);
+});
+test('splitSequenceAtFrames cuts a clip at several frames as one edit, last to first, and is all or nothing', () => {
+    const tl = ok(addSequenceClip(ok(addSequenceMedia(emptySequence(), media)), 'video', media.id, { len: 240 }));
+    const cut = ok(splitSequenceAtFrames(tl, 'video', 'v1', [180, 60, 120, 60]));
+    assert.deepEqual(cut.video.map(c => [c.start, c.len, c.in]), [[0, 60, 0], [60, 60, 60], [120, 60, 120], [180, 60, 180]]);
+    assert.equal(cut.video[0].id, 'v1', 'the first part keeps the original id');
+    assert.equal(sequenceEnd(cut), sequenceEnd(tl));
+    const snapshot = JSON.stringify(tl);
+    for (const [frames, pattern] of [[[100, 240], /frame 240 is outside/], [[0], /outside/], [[10.5], /whole frames/], [[], /no cuts/]]) {
+        assert.match(splitSequenceAtFrames(tl, 'video', 'v1', frames).error, pattern);
+    }
+    const locked = ok(updateSequenceTrack(tl, 'video-0', { locked: true }));
+    assert.ok(splitSequenceAtFrames(locked, 'video', 'v1', [60]).error);
+    assert.equal(JSON.stringify(tl), snapshot, 'the input is never changed');
+    const trimmed = ok(updateSequenceClip(tl, 'video', 'v1', { in: 30, len: 120 }));
+    assert.deepEqual(ok(splitSequenceAtFrames(trimmed, 'video', 'v1', [50])).video.map(c => [c.start, c.in, c.len]), [[0, 30, 50], [50, 80, 70]]);
 });
