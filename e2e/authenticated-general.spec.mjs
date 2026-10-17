@@ -45,7 +45,7 @@ test('Dashboard authenticated balance, template pagination and filters remain re
   expect(writes(fixture)).toEqual([]);
 });
 
-test('Credits pack selection never accepts consent or starts checkout and closed subscriptions stay closed', async ({ page }) => {
+test('Credits pack selection never accepts consent or starts checkout and closed Credit subscriptions stay closed', async ({ page }) => {
   const fixture = await fixtureFor(page);
   await open(fixture, page, '/app/credits', 'Your balance');
   const packs = page.getByRole('group', { name: 'Choose a credit pack', exact: true });
@@ -58,7 +58,7 @@ test('Credits pack selection never accepts consent or starts checkout and closed
   await packs.getByText('1,200 credits — $100 + applicable tax', { exact: true }).click();
   await expect(packs.getByRole('radio', { name: /1,200 credits —/ })).toBeChecked();
   await expect(consent).not.toBeChecked(); await expect(buy).toBeDisabled();
-  await expect(page.getByText(/Monthly subscriptions aren't open right now/)).toBeVisible();
+  await expect(page.getByText(/Credit subscriptions aren't open right now/)).toBeVisible();
   await expect(page.getByText('No credit movements yet.', { exact: true })).toBeVisible();
   await expect(page.getByText('No Top-ups yet.', { exact: true })).toBeVisible();
   expect(writes(fixture)).toEqual([]);
