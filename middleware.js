@@ -26,6 +26,7 @@ import {EDITOR_VISION_PATH,editorVisionWorkerPolicy} from './app/veyrnox/_lib/ed
 import { readToken, validateClaims, verifyES256 } from './lib/supabaseJwt.js';
 import { isPublishApiPath, publishShellAvailable, publishAllowed } from './lib/social/publishFeature.js';
 import { isUnknownStaticPage } from './lib/unknownStaticPage.js';
+import { recordSecurityEvent } from './lib/securityEvents.js';
 const POSTHOG_INGEST_PATH = '/ingest';
 const POSTHOG_INGEST_ORIGIN = 'https://eu.i.posthog.com';
 const CANONICAL_HOST = 'veyrnox.ai';
@@ -57,7 +58,7 @@ const IDENTITY_HEADERS = [
     'x-veyrnox-auth-mfa-at',
 ];
 
-export async function middleware(req) {
+export async function middleware(req, event) {
     const requestUrl = new URL(req.url);
     const forwardedHost = req.headers.get('x-forwarded-host')?.split(',')[0]?.trim().toLowerCase();
     const host = (forwardedHost || req.headers.get('host')?.toLowerCase() || requestUrl.host.toLowerCase()).replace(/:\d+$/, '');
@@ -154,7 +155,7 @@ export async function middleware(req) {
     }
 
     const token = readToken(req);
-    if (!token) return reject(req, 'missing', requestId);
+    if (!token) return reject(req, 'missing', requestId, event);
 
     let claims;
     try {
@@ -167,14 +168,14 @@ export async function middleware(req) {
             console.error('[auth] JWKS unavailable; answering 503');
             return jsonError(503, { error: 'auth_unavailable', requestId });
         }
-        return reject(req, reason, requestId);
+        return reject(req, reason, requestId, event);
     }
 
     const claimError = validateClaims(claims, supabaseUrl);
-    if (claimError) return reject(req, claimError, requestId);
+    if (claimError) return reject(req, claimError, requestId, event);
 
     const oauthClientId = verifiedOAuthClientId(claims);
-    if (oauthClientId === false) return reject(req, 'malformed', requestId);
+    if (oauthClientId === false) return reject(req, 'malformed', requestId, event);
     if (oauthClientId && !isMcp && !isDeveloperApi) {
         return jsonError(403, { error: 'oauth_route_forbidden', requestId });
     }
@@ -280,7 +281,10 @@ function oauthChallenge(req, reason) {
  * #9 line says this file does (audit 2026-09-23). The reason is one of our
  * own short codes; no token, header or claim value is ever logged.
  */
-function reject(req, reason, requestId) {
+function reject(req, reason, requestId, event) {
     console.error('[auth] rejected', new URL(req.url).pathname, 'reason:', reason);
+    // ADR-0104: the same refusal as a security event, off the response path.
+    const recorded = recordSecurityEvent({ category: 'auth', action: 'request.reject', outcome: 'failure', req, status: 401, reason });
+    if (event && typeof event.waitUntil === 'function') event.waitUntil(recorded);
     return jsonError(401, { error: 'unauthorized', reason, requestId }, oauthChallenge(req, reason));
 }

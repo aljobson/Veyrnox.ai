@@ -145,6 +145,11 @@
     // our answer (0276, ADR-0083), read at /app/admin/webhooks. Off until the
     // migration is applied; the handlers' answers do not depend on it.
     "WEBHOOK_DELIVERY_LOG_ENABLED": "false",
+    // SECURITY_EVENTS_ENABLED: refused sign-ins and admin access refusals
+    // written to security_events (0336, ADR-0104), read at
+    // /app/admin/security. Off until the migration is applied.
+    // SECURITY_EVENTS_HASH_KEY (a wrangler secret) keys the source hash.
+    "SECURITY_EVENTS_ENABLED": "false",
     "CINEMA_PUBLISHING_ENABLED": "true",
     "CINEMA_VIEWING_ENABLED": "true",
     "VOTING_ENABLED": "false",
@@ -401,7 +406,8 @@
         // functions exist here. Production has it on too, behind a closed
         // unlocks switch.
         "CINEMA_FREE_CEILING_ENABLED": "true",
-        "WEBHOOK_DELIVERY_LOG_ENABLED": "true"
+        "WEBHOOK_DELIVERY_LOG_ENABLED": "true",
+        "SECURITY_EVENTS_ENABLED": "false"
       }
     }
   },
