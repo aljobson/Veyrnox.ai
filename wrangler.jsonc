@@ -118,10 +118,9 @@
     "CLIP_EDIT_CAPTIONS_ENABLED": "true",
     // docs/editor/SPEED.md: the Clip Editor's slow-motion step. Off until 0237 is applied and fal's billed cost is read (the price is a placeholder).
     "CLIP_EDIT_SLOW_ENABLED": "false",
-    // ODDLINGS_PUBLIC_ENABLED (the public Oddlings gallery at /oddlings and /oddlings/<id>) is intentionally omitted in production. The code
-    // needs the exact value "true", so absence is off (the routes answer not-found, the sitemap omits them, the nav and Vey keep to the studio)
-    // and production keeps its Worker text-binding headroom (tests/workerBindingBudget.test.mjs caps vars at 77, and 76 are set). Opening it
-    // means adding "true" here, which takes the last slot under that cap. Staging names it "true" below.
+    // The public Oddlings gallery at /oddlings and /oddlings/<id> (ADR-0103 follow-up, PR 1114). On in production on 2026-10-17 at the owner's
+    // request ("I want it LIVE"). Rollback: set "false" (or remove the line) and deploy; the routes then answer not-found and the sitemap omits them.
+    "ODDLINGS_PUBLIC_ENABLED": "true",
     // ADR-0064: production checkout stays closed until staging acceptance and
     // the external approval record are complete. Existing-customer reads,
     // cancellation and paid-checkout recovery remain available while off.
@@ -164,7 +163,8 @@
     "STORY_POLLS_ENABLED": "false",
     "PPV_ENABLED": "false",
     "PREMIERES_ENABLED": "false",
-    "AI_RECOMMENDATIONS_ENABLED": "false",
+    // AI_RECOMMENDATIONS_ENABLED is omitted in production to keep Worker text-binding headroom (tests/workerBindingBudget.test.mjs): only the
+    // exact value "true" enables it (lib/cinema/features.js), so absence is off. Staging keeps it explicit below if set.
     // Enable only after migration 0129, bucket CORS and real browser/R2 checks (ADR-0044). 0129 is applied. On
     // Production R2 CORS was rechecked 2026-10-16: exact origin, PUT,
     // Content-Type and If-None-Match are allowed. Presigned uploads therefore
