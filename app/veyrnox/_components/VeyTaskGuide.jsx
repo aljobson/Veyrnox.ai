@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
-import { onSessionChange } from '../../lib/authClient';
+import { getStoredUserId, onSessionChange } from '../../lib/authClient';
 import { gatewayFetch } from '../_lib/gateway';
 import { readOddlingLibrary } from '../_lib/oddlingStudio';
 import { beginJourney, getJourney, initialiseJourney, publishJourneyView, subscribeJourney, updateJourney } from '../_lib/veyJourneyStore';
@@ -13,16 +13,23 @@ import VeyPanelSideButton from './VeyPanelSideButton';
 const EMPTY = { task: null, view: {} };
 const pill = 'min-h-11 rounded-full border border-vx-border px-3 py-2 text-xs font-semibold hover:border-vx-accent focus-visible:outline-2 focus-visible:outline-vx-accent disabled:opacity-40 sm:min-h-0';
 
-export default function VeyTaskGuide({ visible, pathname, onPoint, onStop, onActiveChange, onAsk, manualPosition, onResetPosition, panelSide, onMovePanels }) {
+export default function VeyTaskGuide({ visible, pathname, onPoint, onStop, onActiveChange, onAsk, manualPosition, onResetPosition, panelSide, onMovePanels, chatting, setChatting }) {
   const { task, view } = useSyncExternalStore(subscribeJourney, getJourney, () => EMPTY);
   const [choosing, setChoosing] = useState(false);
-  const [chatting, setChatting] = useState(false);
   const [library, setLibrary] = useState([]);
   const [recovered, setRecovered] = useState(null);
   const [recoveryError, setRecoveryError] = useState('');
   const [detailsKey, setDetailsKey] = useState(null);
   const router = useRouter();
-  useEffect(() => { initialiseJourney(); return onSessionChange(() => { initialiseJourney(); setChoosing(false); setChatting(false); setRecovered(null); }); }, []);
+  useEffect(() => {
+    let owner = getStoredUserId();
+    initialiseJourney();
+    return onSessionChange(() => {
+      initialiseJourney();
+      const nextOwner = getStoredUserId();
+      if (owner !== nextOwner) { owner = nextOwner; setChoosing(false); setRecovered(null); }
+    });
+  }, []);
   useEffect(() => { onActiveChange((!!task || choosing) && !chatting); }, [task, choosing, chatting, onActiveChange]);
   const jobId = task?.phase === 'video' ? task.videoJob : task?.imageJob;
   const liveJob = view.jobs?.find((job) => job.job_id === jobId);

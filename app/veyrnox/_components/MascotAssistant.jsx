@@ -25,6 +25,7 @@ import { getJourney } from '../_lib/veyJourneyStore';
 import useVeyPointer from '../_lib/useVeyPointer';
 import useVeyDrag from '../_lib/useVeyDrag';
 import useVeyPlacement from '../_lib/useVeyPlacement';
+import useVeyWorkspaceSession from '../_lib/useVeyWorkspaceSession';
 import useVeyMobileLayout from '../_lib/useVeyMobileLayout';
 import useEditorHelperHost from '../_lib/useEditorHelperHost';
 import { EditorHelperLauncher } from './editor/EditorHelperLauncher';
@@ -62,7 +63,7 @@ export default function MascotAssistant() {
   const actionTimerRef = useRef(0);
   const messageIdRef = useRef(0);
   const transcriptRef = useRef(null);
-  const [open, setOpen] = useState(false);
+  const { open, setOpen, chatting, setChatting } = useVeyWorkspaceSession();
   const [busy, setBusy] = useState(false);
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState(WELCOME);
@@ -186,7 +187,7 @@ export default function MascotAssistant() {
     };
     window.addEventListener('keydown', escape);
     return () => window.removeEventListener('keydown', escape);
-  }, [open]);
+  }, [open, setOpen]);
 
   useEffect(() => {
     transcriptRef.current?.scrollTo({ top: transcriptRef.current.scrollHeight, behavior: reduceMotion ? 'auto' : 'smooth' });
@@ -333,7 +334,7 @@ export default function MascotAssistant() {
 
   return (
     <>
-      <VeyTaskGuide visible={open} pathname={pathname} onPoint={showTarget} onStop={clearTarget} onActiveChange={setJourneyActive} onAsk={ask} manualPosition={!!manualPosition} onResetPosition={resetPosition} panelSide={panelSide} onMovePanels={movePanels} />
+      <VeyTaskGuide visible={open} pathname={pathname} onPoint={showTarget} onStop={clearTarget} onActiveChange={setJourneyActive} onAsk={ask} manualPosition={!!manualPosition} onResetPosition={resetPosition} panelSide={panelSide} onMovePanels={movePanels} chatting={chatting} setChatting={setChatting} />
       <AnimatePresence>
         {highlight && (
           <motion.div
