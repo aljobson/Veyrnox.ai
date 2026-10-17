@@ -13,6 +13,8 @@ import {
     refreshSession,
     revokeSession,
     signInWithIdToken,
+    signInWithPassword,
+    signUpWithPassword,
     type OAuthProvider,
     type Session,
 } from '../lib/auth/supabaseAuth';
@@ -30,6 +32,9 @@ interface AuthContextValue {
     readonly appleNativeAvailable: boolean;
     signInWithApple(): Promise<void>;
     signInWithOAuth(provider: OAuthProvider): Promise<void>;
+    signInWithEmail(email: string, password: string, captchaToken: string): Promise<void>;
+    // Resolves true when signed in, false when the user must confirm their email first.
+    signUpWithEmail(email: string, password: string, captchaToken: string): Promise<boolean>;
     signOut(): Promise<void>;
 }
 
@@ -147,6 +152,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         [adopt],
     );
 
+    const signInWithEmail = useCallback(
+        async (email: string, password: string, captchaToken: string) => {
+            await adopt(await signInWithPassword(email, password, captchaToken));
+        },
+        [adopt],
+    );
+
+    const signUpWithEmail = useCallback(
+        async (email: string, password: string, captchaToken: string) => {
+            const session = await signUpWithPassword(email, password, captchaToken);
+            if (!session) return false;
+            await adopt(session);
+            return true;
+        },
+        [adopt],
+    );
+
     const signOut = useCallback(async () => {
         const token = sessionRef.current?.accessToken;
         await drop();
@@ -154,8 +176,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, [drop]);
 
     const value = useMemo<AuthContextValue>(
-        () => ({ status, api, appleNativeAvailable, signInWithApple, signInWithOAuth, signOut }),
-        [status, api, appleNativeAvailable, signInWithApple, signInWithOAuth, signOut],
+        () => ({ status, api, appleNativeAvailable, signInWithApple, signInWithOAuth, signInWithEmail, signUpWithEmail, signOut }),
+        [status, api, appleNativeAvailable, signInWithApple, signInWithOAuth, signInWithEmail, signUpWithEmail, signOut],
     );
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
