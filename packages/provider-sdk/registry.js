@@ -73,7 +73,7 @@ const PROVIDERS = {
         submit: async (job, record, _key, publicHost) => {
             if (record.agent) {
                 const deps = montageDeps({ cfg: envConfig(), r2cfg: r2EnvConfig(), ...montageConfig() });
-                const r = await startMontage({ jobId: job.job_id, brief: job.inputs.brief, planId: job.inputs.plan_id, aspect: job.inputs.aspect_ratio || '9:16' }, deps);
+                const r = await startMontage({ jobId: job.job_id, brief: job.inputs.brief, planId: job.inputs.plan_id, aspect: job.inputs.aspect_ratio || '9:16', narrationText: job.inputs.narration_text }, deps);
                 return r.ok ? { ok: true, providerJobId: montageRef(job.job_id) } : { ok: false, error: r.error, errorCode: r.error };
             }
             const deps = runtimeDeps({ cfg: envConfig(), r2cfg: r2EnvConfig(), publicHost, ...runtimeKeys() });

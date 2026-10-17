@@ -21,20 +21,22 @@ test('the video agent page is open to every signed-in user and has its own tab (
 
 test('Approve sends exactly the planned brief, ticket and aspect, under the key the plan named', () => {
     assert.match(page, /idempotency_key: plan\.idempotency_key/);
-    assert.match(page, /const inputs = \{ brief: plan\.brief, plan_id: plan\.plan_id, aspect_ratio: plan\.aspect \};/);
+    assert.match(page, /const inputs = \{ brief: plan\.brief, plan_id: plan\.plan_id, aspect_ratio: plan\.aspect, \.\.\.\(plan\.narrationText \? \{ narration_text: plan\.narrationText \} : \{\}\) \};/);
     assert.match(page, /model_id: MODEL_ID/);
     // No fresh key is ever minted for an approval: that would buy a second run.
     assert.doesNotMatch(page, /makeIdempotencyKey/);
 });
 
 test('editing the brief or aspect drops the plan, so a stale plan can never be approved', () => {
-    assert.match(page, /setBrief\(e\.target\.value\); setPlan\(null\);/);
-    assert.match(page, /setAspect\(a\); setPlan\(null\);/);
+    assert.match(page, /editDraft\(setBrief, e\.target\.value\)/);
+    assert.match(page, /editDraft\(setAspect, a\)/);
+    assert.match(page, /editDraft\(setNarrationText, e\.target\.value\)/);
+    assert.match(page, /setValue\(value\); setPlan\(null\);/);
 });
 
 test('Approve is disabled when the plan has expired or the balance cannot cover it', () => {
-    assert.match(page, /disabled=\{busy \|\| expired \|\| cannotAfford\}/);
-    assert.match(page, /if \(inFlight\.current \|\| !plan \|\| expired \|\| cannotAfford\) return;/);
+    assert.match(page, /disabled=\{busy \|\| expired \|\| cannotAfford \|\| stalePlan \|\| !narration\.ok\}/);
+    assert.match(page, /if \(inFlight\.current \|\| !plan \|\| expired \|\| cannotAfford \|\| stalePlan \|\| !narration\.ok \|\| plan\.draftVersion !== draftVersion\.current\) return;/);
 });
 
 test('every code the plan route, the gateway and the runner can raise has its own copy', () => {

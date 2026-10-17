@@ -11,6 +11,7 @@ import { pickResumable } from '../../_lib/videoAgentResume';
 import { useStudioJobs } from '../../_lib/useStudioJobs';
 import { jobStateUi } from '../../_lib/studioStates';
 import { videoAgentBalanceState } from '../../_lib/authenticatedMedia';
+import { normaliseNarration, MAX_NARRATION_LENGTH } from '../../../../lib/montageNarration.js';
 
 // Video agent (ADR-0074): brief -> plan and price -> Approve -> one priced job.
 // Open to every signed-in user since rollout step 9; the server flag AGENT_VIDEO_ENABLED is the switch.
@@ -29,8 +30,12 @@ export default function VideoAgent() {
   const [plan, setPlan] = useState(null); // { plan_id, idempotency_key, plan, credits, expires_at, brief, aspect }
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  const [narrationText, setNarrationText] = useState('');
+  const [approving, setApproving] = useState(false);
   const inFlight = useRef(false);
   const balanceRequest = useRef(0);
+  const draftVersion = useRef(0);
+  const mounted = useRef(true);
   const { jobs, startJobs, generating } = useStudioJobs({ onUnreachable: () => setError({ code: 'poll_unreachable' }) });
   const job = jobs[0];
 
@@ -57,6 +62,10 @@ export default function VideoAgent() {
       document.removeEventListener('visibilitychange', onVisible);
     };
   }, [refreshBalance]);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; draftVersion.current += 1; };
+  }, []);
 
   // After a reload, pick the run in flight back up: the job history in this browser knows it was started.
   const resumed = useRef(false);
@@ -68,31 +77,41 @@ export default function VideoAgent() {
   }, [startJobs]);
 
   const briefOk = brief.trim().length >= MIN_BRIEF && brief.trim().length <= MAX_BRIEF;
+  const narration = normaliseNarration(narrationText);
   const expired = plan && Date.now() / 1000 > plan.expires_at;
   const balanceState = plan ? videoAgentBalanceState(balanceLoading ? null : balance, plan.credits) : 'unavailable';
   const cannotAfford = plan && balanceState !== 'ready';
+  const stalePlan = plan && (plan.brief !== brief.trim() || plan.aspect !== aspect || (plan.narrationText || '') !== narration.text);
+
+  function editDraft(setValue, value) {
+    draftVersion.current += 1;
+    setValue(value); setPlan(null); setError(null);
+  }
 
   async function onPlan() {
-    if (inFlight.current || !briefOk) return;
+    if (inFlight.current || !briefOk || !narration.ok) return;
     inFlight.current = true;
+    const requestVersion = ++draftVersion.current;
     setBusy(true); setError(null); setPlan(null);
     try {
-      const body = { brief: brief.trim(), aspect_ratio: aspect };
+      const body = { brief: brief.trim(), aspect_ratio: aspect, ...(narration.text ? { narration_text: narration.text } : {}) };
       const p = await gatewayFetch('/montage/plan', { method: 'POST', body: JSON.stringify(body) });
-      setPlan({ ...p, brief: body.brief, aspect: body.aspect_ratio });
+      if (!mounted.current || requestVersion !== draftVersion.current) return;
+      if (narration.text && (p.narration_text !== narration.text || p.plan?.narration_supported !== true)) throw new GatewayError('Narration is unavailable', { code: 'narration_unavailable' });
+      setPlan({ ...p, brief: body.brief, aspect: body.aspect_ratio, narrationText: narration.text, draftVersion: requestVersion });
     } catch (e) {
-      setError(errorFor(e));
-    } finally { inFlight.current = false; setBusy(false); }
+      if (mounted.current && requestVersion === draftVersion.current) setError(errorFor(e));
+    } finally { inFlight.current = false; if (mounted.current) setBusy(false); }
   }
 
   // Approve sends exactly what was planned, under the key the plan names, so a
   // double click or a retry is a replay of one job, never a second run.
   async function onApprove() {
-    if (inFlight.current || !plan || expired || cannotAfford) return;
+    if (inFlight.current || !plan || expired || cannotAfford || stalePlan || !narration.ok || plan.draftVersion !== draftVersion.current) return;
     inFlight.current = true;
-    setBusy(true); setError(null);
+    setBusy(true); setApproving(true); setError(null);
     try {
-      const inputs = { brief: plan.brief, plan_id: plan.plan_id, aspect_ratio: plan.aspect };
+      const inputs = { brief: plan.brief, plan_id: plan.plan_id, aspect_ratio: plan.aspect, ...(plan.narrationText ? { narration_text: plan.narrationText } : {}) };
       const sent = await gatewayFetch('/generations', {
         method: 'POST',
         body: JSON.stringify({ model_id: MODEL_ID, idempotency_key: plan.idempotency_key, inputs }),
@@ -104,7 +123,7 @@ export default function VideoAgent() {
       setPlan(null);
     } catch (e) {
       setError(errorFor(e));
-    } finally { inFlight.current = false; setBusy(false); }
+    } finally { inFlight.current = false; setBusy(false); setApproving(false); }
   }
 
   return (
@@ -119,21 +138,28 @@ export default function VideoAgent() {
         <div className="rounded-2xl border border-vx-border bg-vx-panel p-5">
           <label htmlFor="brief" className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">BRIEF</label>
           <textarea
-            id="brief" rows={4} maxLength={MAX_BRIEF} value={brief} disabled={busy || generating}
-            onChange={(e) => { setBrief(e.target.value); setPlan(null); }}
+            id="brief" rows={4} maxLength={MAX_BRIEF} value={brief} disabled={approving || generating}
+            onChange={(e) => editDraft(setBrief, e.target.value)}
             placeholder="What should the video be about, and what should it feel like?"
             className="mt-2 w-full rounded-lg border border-vx-border bg-vx-bg p-3 text-sm"
           />
+          <label htmlFor="narration-text" className="mt-4 block text-sm font-bold">Exact narration (optional)</label>
+          <textarea id="narration-text" rows={3} maxLength={MAX_NARRATION_LENGTH} value={narrationText}
+            disabled={approving || generating} onChange={e => editDraft(setNarrationText, e.target.value)}
+            aria-describedby="narration-help" className="mt-2 w-full rounded-lg border border-vx-border bg-vx-bg p-3 text-sm"
+            placeholder="Type only the words to speak, up to 300 characters." />
+          <p id="narration-help" className="mt-2 text-xs text-vx-fg-muted">Brief-only audio is generated and may not repeat quoted words exactly. This field sends your words separately to a speech model; pronunciation can still vary. One approval, the same displayed price.</p>
+          {!narration.ok && <p role="alert" className="mt-2 text-xs text-vx-danger">Use up to 300 characters without line breaks or control characters.</p>}
           <div className="mt-3 flex items-center gap-1.5" role="group" aria-label="Aspect ratio">
             {ASPECTS.map((a) => (
               <button
-                key={a} type="button" aria-pressed={aspect === a} disabled={busy || generating}
-                onClick={() => { setAspect(a); setPlan(null); }}
+                key={a} type="button" aria-pressed={aspect === a} disabled={approving || generating}
+                onClick={() => editDraft(setAspect, a)}
                 className={`rounded-lg border px-3 py-1.5 font-vx-mono text-[11px] ${aspect === a ? 'border-vx-accent text-vx-accent' : 'border-vx-border text-vx-fg-muted'}`}
               >{a}</button>
             ))}
             <button
-              type="button" onClick={onPlan} disabled={!briefOk || busy || generating}
+              type="button" onClick={onPlan} disabled={!briefOk || !narration.ok || busy || generating}
               className="ml-auto rounded-lg bg-vx-accent px-4 py-2 text-sm font-bold text-black disabled:opacity-40"
             >{busy && !plan ? 'Planning…' : plan ? 'Re-plan' : 'Make a plan'}</button>
           </div>
@@ -152,10 +178,15 @@ export default function VideoAgent() {
             <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">PLAN</div>
             <p className="mt-2 text-sm text-vx-fg-body whitespace-pre-line">{plan.plan.summary || 'The agent will plan, produce and edit your video.'}</p>
             {plan.plan.seconds && <p className="mt-1 text-xs text-vx-fg-muted">About {plan.plan.seconds} seconds · {plan.aspect}</p>}
+            {plan.narrationText && <section aria-label="Approved exact narration" className="mt-3 rounded-lg border border-vx-border p-3">
+              <h2 className="text-sm font-bold">Exact narration to be spoken</h2>
+              <p className="mt-2 whitespace-pre-wrap break-words text-sm">{plan.narrationText}</p>
+              <p className="mt-2 text-xs text-vx-fg-muted">Review every word before approving. Editing this text requires a new plan.</p>
+            </section>}
             <div className="mt-4 flex items-center justify-between">
               <span className="font-vx-mono text-[12px] text-vx-money vx-num">{plan.credits} cr · balance {balance ?? '—'} cr</span>
               <button
-                type="button" onClick={onApprove} disabled={busy || expired || cannotAfford}
+                type="button" onClick={onApprove} disabled={busy || expired || cannotAfford || stalePlan || !narration.ok}
                 className="rounded-lg bg-vx-accent px-4 py-2 text-sm font-bold text-black disabled:opacity-40"
               >Approve and make it · {plan.credits} cr</button>
             </div>
