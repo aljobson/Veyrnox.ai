@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Modal } from './Modal';
 import { Button } from './Button';
-import { Logo } from './Logo';
 import { TopUpPacks } from './TopUpPacks';
 import { getStoredUserId, onSessionChange } from '../../lib/authClient';
 import { paywallReason } from '../_lib/paywallPrompt.mjs';
@@ -60,9 +59,7 @@ export function PaywallPrompt({ credits, createdAt }) {
   return (
     <Modal onCancel={() => setReason(null)} aria-labelledby="paywall-title" className="items-center justify-center p-4">
       <div className="max-h-full w-full max-w-[640px] overflow-y-auto rounded-2xl border border-vx-border bg-vx-panel p-6">
-        <Logo size={28} wordmark className="text-[18px]" />
-        <p className="mt-1 text-[13px] text-vx-fg-muted">Turn your ideas into images, video and audio with Veyrnox.ai.</p>
-        <h2 id="paywall-title" className="vx-display mt-6 text-[28px]">{title}</h2>
+        <h2 id="paywall-title" className="vx-display text-[28px]">{title}</h2>
         <p className="mt-2 text-vx-fg-body">{body}</p>
         <TopUpPacks signedIn />
         <div className="mt-5">
