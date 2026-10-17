@@ -23,6 +23,7 @@ function harness(initialJobs, selected = audio) {
   const stubs = {
     react,
     '../../_lib/useCatalog': { useCatalog: () => ({ models: [image, audio, slow], live: true, loading: false }) },
+    '../../_lib/useCreateDraftRecovery': { __esModule: true, default: () => ({ restoring: false, blocked: false, failed: false, saved: false, status: '', retry() {}, sourceEdited() {} }) },
     '../../_lib/useFreeAllowance': { useFreeAllowance: () => ({}) },
     '../../_lib/useStudioJobs': { useStudioJobs: () => ({ jobs, generating: jobs.some(job => ['queued', 'running'].includes(job.state)), clearJobs: () => { cleared++; jobs = []; } }) },
     '../../_lib/tokens': { ASPECT_RATIOS: ['16:9', '9:16'] },

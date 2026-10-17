@@ -12,5 +12,5 @@ test('?model= fallback waits for the live catalog', () => {
     const start = page.indexOf("isn't in the (live or fallback) catalog");
     const effect = page.slice(start, page.indexOf('}, [', start));
     assert.ok(start > 0, 'fallback effect not found');
-    assert.match(effect, /if \(catalogLoading \|\| !models\.length\) return;/);
+    assert.match(effect, /if \(draftRecovery.restoring \|\| catalogLoading \|\| !catalogLive \|\| !models\.length\) return;/);
 });
