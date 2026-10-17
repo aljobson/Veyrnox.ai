@@ -46,6 +46,8 @@ After 0198 every row also has `chat_images_extra_credits` (1 to 6).
 ## 3. Deploy
 
 ```bash
+# From a checkout of main (it has the script): refuse a bundle not built for staging (see docs/operations/staging-deploy.md)
+npm run verify:baked-env -- staging ~/Documents/GitHub/Veyrnox.ai/.claude/worktrees/replica-skill-install-6d58ee/.open-next
 cd ~/Documents/GitHub/Veyrnox.ai/.claude/worktrees/replica-skill-install-6d58ee && npx wrangler deploy --env staging
 ```
 
