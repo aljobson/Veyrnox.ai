@@ -37,6 +37,18 @@ export const TRANSITIONS = Object.freeze([
     { id: 'slide-up', name: 'Slide up', category: 'Move' },
     { id: 'slide-down', name: 'Slide down', category: 'Move' },
     { id: 'zoom', name: 'Zoom', category: 'Move' },
+    { id: 'iris-open', name: 'Iris open', category: 'Shape' },
+    { id: 'iris-close', name: 'Iris close', category: 'Shape' },
+    { id: 'clock-wipe', name: 'Clock wipe', category: 'Shape' },
+    { id: 'barn-doors', name: 'Barn doors', category: 'Shape' },
+    { id: 'blinds', name: 'Blinds', category: 'Shape' },
+    { id: 'pixel-dissolve', name: 'Pixel dissolve', category: 'Shape' },
+    { id: 'push', name: 'Push', category: 'Move' },
+    { id: 'spin', name: 'Spin in', category: 'Move' },
+    { id: 'whip-pan', name: 'Whip pan', category: 'Move' },
+    { id: 'cross-zoom', name: 'Cross zoom', category: 'Move' },
+    { id: 'glitch', name: 'Glitch', category: 'Style' },
+    { id: 'light-leak', name: 'Light leak', category: 'Style' },
 ]);
 
 // `slide` remains readable for projects saved before directional slides were introduced.

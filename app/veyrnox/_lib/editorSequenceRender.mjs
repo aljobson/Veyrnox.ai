@@ -8,6 +8,7 @@ import { colourPicture, neutralColour } from './editorColour.mjs';
 import { maskedPicture } from './editorMask.mjs';
 import { trackFor, sourceFrame, sequenceTransition } from './editorSequence.mjs';
 import { TEXT_DEFAULTS } from './editorSequenceValidation.mjs';
+import { transitionParams, clipPictureShape, paintLightLeak } from './editorTransitionGeometry.mjs';
 export function sequenceLayers(tl, frame) {
     const active = c => frame >= c.start && frame < c.start + c.len && !trackFor(tl, c)?.hidden;
     const order = (a, b) => tl.tracks.findIndex(t => t.id === a.clip.trackId) - tl.tracks.findIndex(t => t.id === b.clip.trackId);
@@ -31,6 +32,8 @@ export function sequenceLayers(tl, frame) {
             if (type === 'zoom') visual.zoom = 0.8 + p * 0.2;
             if (type === 'blur') visual.transitionBlur = (1-p)*18;
             if (type === 'flash') visual.flash = Math.sin(p*Math.PI);
+            const extra = transitionParams(type, p, visual.offset);
+            if (extra) { Object.assign(visual, extra.incoming); Object.assign(under, extra.outgoing); }
             visuals.splice(visuals.indexOf(visual), 0, under);
         }
     }
@@ -68,16 +71,19 @@ export function paintSequence(g, W, H, layers, pictures) {
         const c = v.clip;
         const t = evaluatedTransform(c, v.offset), reveal=evaluatedReveal(c,v.offset), parameters=evaluatedParameters(c,v.offset),f=parameters.filter;
         if(revealActive(reveal)){g.save();clipReveal(g,reveal,0,0,W,H);}
+        if(v.shape!==undefined){g.save();clipPictureShape(g,0,0,W,H,v.shape);}
         paintBackground(g,W,H,c,pic,pictures.backgrounds?.[i],t.opacity*(v.alpha??1),v.wipe);
+        if(v.shape!==undefined)g.restore();
         if(revealActive(reveal))g.restore();
         const crop = c.crop || { x: 0, y: 0, width: 1, height: 1 };
         const sw = pic.width * crop.width, sh = pic.height * crop.height;
         const factor = (c.fit === 'cover' ? Math.max : Math.min)(W / sw, H / sh);
         const w = sw * factor, h = sh * factor;
-        g.save(); g.translate(W * (t.x + (v.slideX || 0)), H * (t.y + (v.slideY || 0))); g.rotate(t.rotation * Math.PI / 180); g.scale(t.scale * (v.zoom || 1) * (t.flipX ? -1 : 1), t.scale * (v.zoom || 1) * (t.flipY ? -1 : 1));
+        g.save(); g.translate(W * (t.x + (v.slideX || 0)), H * (t.y + (v.slideY || 0))); g.rotate((t.rotation + (v.spin || 0)) * Math.PI / 180); g.scale(t.scale * (v.zoom || 1) * (t.flipX ? -1 : 1), t.scale * (v.zoom || 1) * (t.flipY ? -1 : 1));
         g.globalAlpha = t.opacity * (v.alpha ?? 1); g.globalCompositeOperation = c.blend || 'source-over';
         g.filter = `brightness(${f.brightness}) contrast(${f.contrast}) saturate(${f.saturate}) hue-rotate(${f.hue}deg) blur(${f.blur+(v.transitionBlur||0)}px)`;
         if (v.wipe !== undefined) clipPictureWipe(g,-w/2,-h/2,w,h,v.wipe);
+        if (v.shape !== undefined) clipPictureShape(g,-w/2,-h/2,w,h,v.shape);
         clipReveal(g,reveal,-w/2,-h/2,w,h);
         const effect = c.effect;
         const processed=smartPictureActive(c.smartPicture)?smartPicture(pic,crop,c.smartPicture,w,h):pic;
@@ -94,6 +100,7 @@ export function paintSequence(g, W, H, layers, pictures) {
         } else g.drawImage(adjustedColour, adjustedColour.width * colourCrop.x, adjustedColour.height * colourCrop.y, adjustedColour.width * colourCrop.width, adjustedColour.height * colourCrop.height, -w / 2, -h / 2, w, h);
         g.restore();
         if(v.flash){g.save();g.globalCompositeOperation='screen';g.globalAlpha=v.flash*.75;g.fillStyle='#ffffff';g.fillRect(0,0,W,H);g.restore();}
+        if(v.leak){paintLightLeak(g,W,H,v.leak);}
     });
     for (const item of layers.texts) paintStyledText(g, W, H, item);
     g.restore();
