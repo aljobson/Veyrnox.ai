@@ -1,0 +1,40 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Editor clip finder check</title>
+<body>Clip finder check (ADR-0105 slice C). Driven by clipper-run.mjs.
+<script type="importmap">{ "imports": { "mediabunny": "/mediabunny.mjs" } }</script>
+<script type="module">
+  import * as SEQ from '/lib/editorSequence.mjs';
+  import * as MD from '/lib/editorMedia.mjs';
+  import * as RUN from '/lib/editorClipRun.mjs';
+  import { insertClipSegments } from '/lib/editorClipFinder.mjs';
+  const blobs = new Map();
+  window.cf = {
+    ready: true,
+    // captions: [{ text, start, len }] in timeline frames, added as caption text so they count as speech.
+    async run(file, captions = [], options) {
+      const blob = await (await fetch(`/media/${file}`)).blob();
+      const probe = await MD.probeMedia(blob);
+      const problem = MD.checkProbe(probe);
+      if (problem) return { error: problem };
+      const media = MD.mediaFromProbe('l-test', file, probe);
+      blobs.set(media.id, blob);
+      const must = r => { if (r.error) throw new Error(r.error); return r; };
+      let tl = must(SEQ.addSequenceMedia(SEQ.emptySequence(), media));
+      tl = must(SEQ.addSequenceClip(tl, 'video', media.id, { len: media.frames }));
+      for (const c of captions) tl = must(SEQ.addSequenceText(tl, { ...c, caption: true }));
+      const item = tl.video[0];
+      const blocker = RUN.checkClipForFinder(media, item);
+      if (blocker) return { error: blocker };
+      const t0 = performance.now();
+      const loud = await RUN.measureClipLoudness(blob, item);
+      const loudMs = Math.round(performance.now() - t0);
+      const t1 = performance.now();
+      const found = await RUN.findClips(blob, tl, item, { options });
+      const totalMs = Math.round(performance.now() - t1);
+      if (found.error) return { error: found.error };
+      const added = insertClipSegments(tl, media.id, found.picks.slice(0, 2));
+      return { loud, loudMs, totalMs, picks: found.picks, cutCount: found.cutCount, hadAudio: found.hadAudio, insertedOk: !added.error, insertedClips: added.error ? added.error : added.video.length - 1, duration: media.frames / 30, heap: performance.memory ? performance.memory.usedJSHeapSize / 1048576 : null };
+    },
+  };
+</script>

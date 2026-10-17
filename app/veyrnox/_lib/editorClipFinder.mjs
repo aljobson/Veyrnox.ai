@@ -25,6 +25,29 @@ export function energyWindows(samples, sampleRate, windowSeconds = 0.5) {
     return { windowSeconds, values: out };
 }
 
+/**
+ * Loudness built up buffer by buffer, so a long clip never has to be held as one array. Windows start at `from` (source seconds) and run to `to`.
+ * add() takes the timestamp of a decoded buffer and its channels; result() gives the same shape as energyWindows().
+ */
+export function createEnergyAccumulator(windowSeconds, from, to) {
+    const count = Math.max(1, Math.ceil((to - from) / windowSeconds)), sums = new Float64Array(count), counts = new Float64Array(count);
+    return {
+        add(timestamp, sampleRate, channels) {
+            if (!channels.length) return;
+            const n = channels[0].length;
+            for (let i = 0; i < n; i++) {
+                const k = Math.floor((timestamp + i / sampleRate - from) / windowSeconds);
+                if (k < 0 || k >= count) continue;
+                let mono = 0;
+                for (const channel of channels) mono += channel[i];
+                mono /= channels.length;
+                sums[k] += mono * mono; counts[k]++;
+            }
+        },
+        result() { return { windowSeconds, values: Array.from(sums, (sum, k) => (counts[k] ? Math.sqrt(sum / counts[k]) : 0)) }; },
+    };
+}
+
 const percentile = (values, p) => {
     if (!values.length) return 0;
     const sorted = [...values].sort((a, b) => a - b);

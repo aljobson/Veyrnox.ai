@@ -88,3 +88,22 @@ test('chosen clips go on after everything already on the timeline, in source ord
     assert.match(insertClipSegments(tl, 'l-src', [{ start: 5, end: 5 }]).error, /no length/);
     assert.ok(insertClipSegments(tl, 'l-missing', [{ start: 1, end: 4 }]).error);
 });
+
+import { createEnergyAccumulator } from '../app/veyrnox/_lib/editorClipFinder.mjs';
+test('the energy accumulator gives the same loudness as measuring the whole signal, however the buffers are cut up', () => {
+    const rate = 100, signal = Array.from({ length: 600 }, (_, i) => (i < 300 ? 0.2 : 0.8) * Math.sin(i / 3));
+    const whole = energyWindows(signal, rate, 1).values;
+    const acc = createEnergyAccumulator(1, 0, 6);
+    for (let at = 0; at < signal.length; at += 70) acc.add(at / rate, rate, [signal.slice(at, at + 70)]);
+    acc.result().values.forEach((v, i) => assert.ok(Math.abs(v - whole[i]) < 1e-9, `window ${i}`));
+    assert.equal(acc.result().windowSeconds, 1);
+});
+test('the accumulator averages channels, starts at the clip\'s own start and ignores sound outside its range', () => {
+    const acc = createEnergyAccumulator(1, 10, 12);
+    acc.add(8, 4, [new Array(8).fill(1)]);                       // 8 s to 10 s: before the range
+    acc.add(10, 4, [new Array(4).fill(0.6), new Array(4).fill(0.2)]); // mean 0.4 for the first window
+    acc.add(11, 4, [new Array(4).fill(0)]);
+    acc.add(12, 4, [new Array(4).fill(1)]);                       // after the range
+    assert.deepEqual(acc.result().values.map(v => Number(v.toFixed(3))), [0.4, 0]);
+    assert.deepEqual(createEnergyAccumulator(1, 0, 3).result().values, [0, 0, 0], 'no sound is silence, not NaN');
+});
