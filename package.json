@@ -33,6 +33,7 @@
     "test:integration": "node scripts/test-tenant-foundation.mjs",
     "test:security": "node scripts/check-security.mjs",
     "prebuild": "npm run prepare:video-enhance && node scripts/prepare-local-speech.mjs && node scripts/prepare-editor-vision.mjs && npm run sync:vey-knowledge",
+    "verify:baked-env": "node scripts/verify-baked-environment.mjs",
     "verify:video-enhance": "node scripts/verify-video-enhance.mjs"
   },
   "dependencies": {
