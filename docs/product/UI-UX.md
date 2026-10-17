@@ -204,7 +204,7 @@ Print disables all motion and shadow.
 
 | screen | layout |
 |---|---|
-| `/` landing | nav → hero (display h1 "Reach for the stars." + ink-pill "Claim 10 credits" + "See every price" link; PriceSlip printing on the right) → 5 featured tiles → preset bento wall → `ModelShelf` price list with leaders → `LedgerExample` statement on paper → FAQ → closing CTA → footer |
+| `/` landing | nav → hero (display h1 "Reach for the Stars" with an aqua glow + ink-pill "Claim 10 credits" + "See every price" link; PriceSlip printing on the right) → 5 featured tiles → preset bento wall → `ModelShelf` price list with leaders → `LedgerExample` statement on paper → FAQ → closing CTA → footer |
 | `/pricing` | display h1; Credit Packs as paper slips (amber mono credits, perforation, "N credits — $X + applicable tax"); per-kind model price tables with copyable ids |
 | `/presets` Templates, `/app` Explore | display h1 + `PresetGallery` (3 / 4 columns) with category filter (Cartoons, Movies, Fantasy, Realistic …) and a Popular sort once something ranks; `/presets/[id]` is one template's page with a Studio hand-off |
 | `/tools`, `/models`, `/guides` | display h1 ("Bring your own file.", "Every model. Exact prices."); tool/model groups with the price on each; guides in a 900 px column |
