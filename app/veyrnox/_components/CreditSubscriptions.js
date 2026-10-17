@@ -1,5 +1,7 @@
 'use client';
 import Link from 'next/link';
+import { useI18n } from '../../../components/I18nProvider';
+import { rich } from '../../../lib/i18n/rich';
 import {
   useCallback,
   useEffect,
@@ -109,6 +111,7 @@ function Plans({ plans, selected, onSelect, publicOnly = false }) {
   );
 }
 export function CreditSubscriptionOffer() {
+  const { t } = useI18n();
   const [offerState, setOfferState] = useState({
     phase: 'loading',
     catalog: null,
@@ -138,27 +141,33 @@ export function CreditSubscriptionOffer() {
         id="credit-subscription-offer"
         className="vx-display text-[40px] sm:text-[56px]"
       >
-        Credits every week or month.
+        {t('pricing.subs.title')}
       </h2>
       {offerState.phase === 'loading' && (
         <p role="status" aria-live="polite" className="mt-4">
-          Loading subscription prices…
+          {t('pricing.subs.loading')}
         </p>
       )}
       {offerState.phase === 'closed' && (
         <p role="status" className="mt-4">
-          Credit subscriptions aren&apos;t open right now. One-off Credit Packs can be purchased separately when available and do not renew.{' '}
-          <Link href="/app/credits#credit-packs" className="underline">
-            Buy a Credit Pack
-          </Link>
+          {rich(t('pricing.subs.closed'), {
+            pack: (
+              <Link href="/app/credits#credit-packs" className="underline">
+                {t('pricing.subs.buyPack')}
+              </Link>
+            ),
+          })}
         </p>
       )}
       {offerState.phase === 'unavailable' && (
         <p role="alert" className="mt-4">
-          Subscription prices are temporarily unavailable.{' '}
-          <button className="underline" onClick={load}>
-            Refresh prices
-          </button>
+          {rich(t('pricing.subs.unavailable'), {
+            refresh: (
+              <button className="underline" onClick={load}>
+                {t('pricing.subs.refresh')}
+              </button>
+            ),
+          })}
         </p>
       )}
       {offerState.phase === 'open' && catalog?.plans?.length > 0 && (

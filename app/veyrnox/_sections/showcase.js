@@ -122,7 +122,7 @@ export async function ModelShelf({ catalog }) {
                     >
                       <span className="min-w-0">
                         <span className="block truncate group-hover:underline underline-offset-4">{g.nameOf(m)}</span>
-                        <span className="block text-[11px] text-vx-fg-muted">{modelPriceUnit(m)}</span>
+                        <span className="block text-[11px] text-vx-fg-muted">{modelPriceUnit(m, t)}</span>
                       </span>
                       {m.gated && <PremiumTag className="shrink-0" />}
                       <span aria-hidden className="vx-leader flex-1" />

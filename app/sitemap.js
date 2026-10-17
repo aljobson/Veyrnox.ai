@@ -1,4 +1,5 @@
 import { SITE_URL } from './seo';
+import { LOCALES, LOCALIZED_PATHS, languageAlternates, localesEnabled } from '../lib/i18n/locales.mjs';
 import { listModelsForDetails } from './veyrnox/_lib/modelPages';
 import { PRESETS } from './veyrnox/_lib/templates';
 import { GUIDES } from './veyrnox/_lib/guides';
@@ -17,11 +18,17 @@ export const dynamic = 'force-dynamic';
 // page we ask not to be indexed is a contradiction Search Console reports as
 // an error.
 export default async function sitemap() {
+  // A page with translations lists each language as an alternate (ADR-0107),
+  // and only while languages are on.
+  const languages = localesEnabled() ? LOCALES : [];
   const page = (path, changeFrequency, priority, lastModified) => ({
     url: `${SITE_URL}${path}`,
     changeFrequency,
     priority,
     ...(lastModified ? { lastModified } : {}),
+    ...(languages.length && LOCALIZED_PATHS.has(path || '/')
+      ? { alternates: { languages: Object.fromEntries(Object.entries(languageAlternates(path || '/')).filter(([k]) => k !== 'x-default').map(([k, v]) => [k, `${SITE_URL}${v === '/' ? '' : v}`])) } }
+      : {}),
   });
   return [
     page('', 'weekly', 1.0),

@@ -29,7 +29,8 @@ test('Veyrnox Publish offers an annual plan at exactly 30% off monthly', () => {
 });
 
 test('all three paywalls disclose and render weekly billing', () => {
-  const credits = read('app/veyrnox/_components/CreditSubscriptions.js');
+  // The offer's words are in the English catalog (ADR-0107).
+  const credits = read('app/veyrnox/_components/CreditSubscriptions.js') + read('lib/i18n/messages/en.mjs');
   const cinema = read('app/veyrnox/social-cinema/pass/PassPanel.js');
   const publish = read('app/veyrnox/app/publish/plan/PublishPlanPanel.js');
 

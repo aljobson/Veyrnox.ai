@@ -2,7 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-const pricing = readFileSync(new URL('../app/veyrnox/pricing/page.js', import.meta.url), 'utf8');
+// The page's words live in the English catalog (ADR-0107): the page source plus
+// that catalog is everything a visitor can read here.
+const pricing = readFileSync(new URL('../app/veyrnox/pricing/page.js', import.meta.url), 'utf8')
+  + readFileSync(new URL('../lib/i18n/messages/en.mjs', import.meta.url), 'utf8');
 
 test('the pricing catalog distinguishes loading from an unavailable live catalog', () => {
   assert.match(pricing, /status: 'loading'/);

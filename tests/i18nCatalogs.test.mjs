@@ -44,7 +44,9 @@ test('only translated pages take the prefix', () => {
   assert.ok(LOCALIZED_PATHS.has('/'));
   assert.equal(localizedHref('es', '/'), '/es');
   assert.equal(localizedHref('es', '/#faq'), '/es#faq');
-  assert.equal(localizedHref('es', '/pricing'), '/pricing');
+  assert.equal(localizedHref('es', '/pricing'), '/es/pricing');
+  assert.equal(localizedHref('es', '/models'), '/models');
+  assert.ok(LOCALIZED_PATHS.has('/pricing'));
   assert.equal(localizedHref('es', 'mailto:legal@veyrnox.com'), 'mailto:legal@veyrnox.com');
   assert.equal(localizedHref('en', '/'), '/');
   assert.equal(localizedHref('zz', '/'), '/');
@@ -87,6 +89,8 @@ test('the picker keeps a translated page and falls back to home for the rest', (
   assert.equal(switchLanguageHref('fr', '/'), '/fr');
   assert.equal(switchLanguageHref('fr', '/es'), '/fr');
   assert.equal(switchLanguageHref('en', '/ja'), '/');
-  assert.equal(switchLanguageHref('de', '/pricing'), '/de', 'no German pricing page yet: home');
-  assert.equal(switchLanguageHref('en', '/pricing'), '/pricing', 'English on an English page stays put');
+  assert.equal(switchLanguageHref('de', '/pricing'), '/de/pricing', 'pricing is translated');
+  assert.equal(switchLanguageHref('de', '/models'), '/de', 'no German models page yet: home');
+  assert.equal(switchLanguageHref('en', '/es/pricing'), '/pricing');
+  assert.equal(switchLanguageHref('en', '/models'), '/models', 'English on an English page stays put');
 });

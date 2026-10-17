@@ -2,7 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-const source = readFileSync(new URL('../app/veyrnox/_components/CreditSubscriptions.js', import.meta.url), 'utf8');
+// The offer's words are in the English catalog (ADR-0107).
+const source = readFileSync(new URL('../app/veyrnox/_components/CreditSubscriptions.js', import.meta.url), 'utf8')
+  + readFileSync(new URL('../lib/i18n/messages/en.mjs', import.meta.url), 'utf8')
+    .split('\n').filter((line) => line.includes('pricing.subs.')).join('\n');
 
 test('closed subscription sales are explained on public Pricing and account billing', () => {
   assert.match(source, /Credit subscriptions aren(?:&apos;|’)t open right now/);
