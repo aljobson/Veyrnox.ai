@@ -59,6 +59,7 @@ CREATE TABLE IF NOT EXISTS public.social_publish_store_products (
     plan_id          TEXT NOT NULL REFERENCES public.social_publish_plans(id) ON DELETE RESTRICT,
     PRIMARY KEY (channel, store_product_id)
 );
+CREATE INDEX IF NOT EXISTS social_publish_store_products_plan ON public.social_publish_store_products (plan_id);
 ALTER TABLE public.social_publish_store_products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.social_publish_store_products FORCE  ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE public.social_publish_store_products FROM PUBLIC, anon, authenticated;
