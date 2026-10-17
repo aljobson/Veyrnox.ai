@@ -10,6 +10,7 @@ import {
     ODDLING_PRESET_SOURCES,
     ODDLING_STUDIO_SECTIONS,
     buildOddlingStudioPrompt,
+    buildOddlingDirection,
     gallerySource,
     oddlingPortrait,
     animationModel,
@@ -318,4 +319,14 @@ test('animation only resolves known portrait ids and image-to-video models', () 
     assert.match(prompt, /exact single character in the start image/);
     assert.match(prompt, /one simple repeatable dance move/);
     assert.match(prompt, /Preserve the face, body shape and size, outfit colors and fit/);
+});
+
+test('the handoff direction plus the character head equals the previewed prompt, even with no scene', () => {
+    const picks = { character_type: 'Human', oddling_name: 'Mossy' };
+    const args = { mode: 'portrait', scene: '', referenceNote: 'moody neon' };
+    const direction = buildOddlingDirection(args);
+    assert.ok(direction.length > 0, 'direction is never empty, so Create keeps the draft and the picks');
+    assert.match(direction, /full-body editorial creator portrait/);
+    assert.match(direction, /visual reference direction: moody neon/);
+    assert.ok(buildOddlingStudioPrompt({ ...args, picks }).endsWith(direction));
 });
