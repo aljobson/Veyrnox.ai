@@ -4,12 +4,13 @@ import { PresetCard } from './PresetCard';
 import { PRESETS, PRESET_CATEGORIES, templatesIn } from '../_lib/tokens';
 import { useCatalog } from '../_lib/useCatalog';
 import { usePopularTemplates } from '../_lib/usePopularTemplates';
+import { useI18n } from '../../../components/I18nProvider';
 
-const CATEGORY_LABEL = { ALL: 'All', NEW: 'New', POPULAR: 'Popular', 'YOUR PHOTO': 'Your photo', CINEMATIC: 'Cinematic', ANIME: 'Anime', CARTOONS: 'Cartoons', MOVIES: 'Movies', FANTASY: 'Fantasy', REALISTIC: 'Realistic', FASHION: 'Fashion', PRODUCTS: 'Products', VFX: 'VFX', UGC: 'UGC', ADS: 'Ads' };
 
 // The preset filter and grid, shared by the public /presets page and the
 // studio's Explore tab so the two never drift apart.
 export function PresetGallery({ size = 'lg', columns = 'lg:columns-3' }) {
+  const { t } = useI18n();
   const [cat, setCat] = useState('ALL');
   const [visibleCount, setVisibleCount] = useState(12);
   const { models } = useCatalog();
@@ -24,7 +25,7 @@ export function PresetGallery({ size = 'lg', columns = 'lg:columns-3' }) {
       {/* One scrolling row below sm (thirteen chips wrapped to four rows on a
           phone); it wraps again from sm. The vertical padding keeps a chip's
           focus ring inside the scroller. */}
-      <div className="-mx-4 -my-1.5 flex gap-2 overflow-x-auto px-4 py-1.5 sm:mx-0 sm:my-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:py-0" role="group" aria-label="Filter templates">
+      <div className="-mx-4 -my-1.5 flex gap-2 overflow-x-auto px-4 py-1.5 sm:mx-0 sm:my-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:py-0" role="group" aria-label={t('presets.filter')}>
         {categories.map((c) => (
           <button
             key={c}
@@ -33,12 +34,15 @@ export function PresetGallery({ size = 'lg', columns = 'lg:columns-3' }) {
             aria-pressed={cat === c}
             className="vx-press shrink-0 whitespace-nowrap rounded-full border px-4 py-2 text-[14px] font-semibold border-vx-border text-vx-fg-body hover:border-vx-fg-muted aria-pressed:border-vx-fg aria-pressed:bg-vx-fg aria-pressed:text-vx-base"
           >
-            {CATEGORY_LABEL[c] || c}
+            {t.messages[`presets.cat.${c}`] ?? c}
           </button>
         ))}
       </div>
       <p className="mt-8 mb-6 text-[14px] text-vx-fg-muted" aria-live="polite">
-        {list.length} {list.length === 1 ? 'template' : 'templates'} on {modelCount} {modelCount === 1 ? 'model' : 'models'}
+        {t('presets.count', {
+          templates: t(list.length === 1 ? 'presets.templates.one' : 'presets.templates.other', { n: list.length }),
+          models: t(modelCount === 1 ? 'presets.models.one' : 'presets.models.other', { n: modelCount }),
+        })}
       </p>
       <div id="preset-gallery-results" className={`columns-1 sm:columns-2 ${columns} gap-6 [&>a]:mb-10 [&>a]:break-inside-avoid`}>
         {list.slice(0, visibleCount).map((p) => (
@@ -46,8 +50,8 @@ export function PresetGallery({ size = 'lg', columns = 'lg:columns-3' }) {
         ))}
       </div>
       {visibleCount < list.length && <div className="mt-4 text-center">
-        <p className="mb-3 text-sm text-vx-fg-muted" aria-live="polite">Showing {Math.min(visibleCount, list.length)} of {list.length} templates</p>
-        <button type="button" aria-controls="preset-gallery-results" onClick={() => setVisibleCount((count) => count + 12)} className="rounded-full border border-vx-border px-6 py-3 font-semibold hover:border-vx-accent">Show more templates</button>
+        <p className="mb-3 text-sm text-vx-fg-muted" aria-live="polite">{t('presets.showing', { shown: Math.min(visibleCount, list.length), total: list.length })}</p>
+        <button type="button" aria-controls="preset-gallery-results" onClick={() => setVisibleCount((count) => count + 12)} className="rounded-full border border-vx-border px-6 py-3 font-semibold hover:border-vx-accent">{t('presets.more')}</button>
       </div>}
     </>
   );
