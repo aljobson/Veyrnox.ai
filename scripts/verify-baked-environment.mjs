@@ -8,7 +8,7 @@
 // and then calls the local-development address from the Worker, which Cloudflare refuses (error 1003). On 2026-10-17 that left staging's
 // top_up_backfill red for 21 hours (#908). Run this between `npm run build:worker` and `wrangler deploy`. Exit 0 = matches, 1 = does not
 // match or cannot be verified (it fails closed), 2 = bad usage.
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { AI_ENVIRONMENTS } from '../packages/security/environments.js';
@@ -49,13 +49,19 @@ export function checkBakedEnvironment(target, { assets, server, middleware }) {
 }
 
 const TEXT = /\.(?:m?js|json|html|txt)$/;
+const MAX_FILE_BYTES = 25 * 1024 * 1024;
+// Each file is opened once: the directory listing says what is a directory, the file is read in one call, and its size is judged from what
+// was read, so nothing can change between a check and the read (CodeQL js/file-system-race).
 function walk(dir, out = []) {
-    if (!existsSync(dir)) return out;
-    for (const name of readdirSync(dir)) {
-        const full = path.join(dir, name);
-        const st = statSync(full);
-        if (st.isDirectory()) walk(full, out);
-        else if (TEXT.test(name) && st.size < 25 * 1024 * 1024) out.push({ path: full, text: readFileSync(full, 'utf8') });
+    let entries;
+    try { entries = readdirSync(dir, { withFileTypes: true }); } catch (err) { if (err.code === 'ENOENT') return out; throw err; }
+    for (const entry of entries) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) walk(full, out);
+        else if (entry.isFile() && TEXT.test(entry.name)) {
+            const text = readFileSync(full, 'utf8');
+            if (text.length < MAX_FILE_BYTES) out.push({ path: full, text });
+        }
     }
     return out;
 }
@@ -71,9 +77,12 @@ export function readBundle(dir) {
 if (process.argv[1] && import.meta.url === new URL(`file://${path.resolve(process.argv[1])}`).href) {
     const [target, dir = '.open-next'] = process.argv.slice(2);
     if (!target || !AI_ENVIRONMENTS[target]) { console.error('usage: node scripts/verify-baked-environment.mjs <staging|production> [.open-next]'); process.exit(2); }
-    if (!existsSync(dir)) { console.error(`no build output at ${dir}: run npm run build:worker first`); process.exit(2); }
     const bundle = readBundle(dir);
-    if (!bundle.assets.length || !bundle.server.length) { console.error(`${dir} looks incomplete (${bundle.assets.length} client files, ${bundle.server.length} server files)`); process.exit(1); }
+    if (!bundle.assets.length || !bundle.server.length) {
+        // Only now, to pick the message and exit code: 2 = nothing there at all, 1 = there but empty or incomplete.
+        if (!existsSync(dir)) { console.error(`no build output at ${dir}: run npm run build:worker first`); process.exit(2); }
+        console.error(`${dir} looks incomplete (${bundle.assets.length} client files, ${bundle.server.length} server files)`); process.exit(1);
+    }
     const result = checkBakedEnvironment(target, bundle);
     for (const c of result.checks) console.log(`${c.ok ? 'PASS' : 'FAIL'}  ${c.name}${c.detail ? `  (${c.detail})` : ''}`);
     if (!result.ok) {
