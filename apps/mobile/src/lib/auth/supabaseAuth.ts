@@ -55,6 +55,26 @@ async function tokenRequest(grantType: string, payload: Record<string, unknown>,
     return toSession(await authPost(`/auth/v1/token?grant_type=${encodeURIComponent(grantType)}`, payload), now);
 }
 
+// ADR-0026: Turnstile is enforced on the email paths; Supabase verifies the token server-side.
+function withCaptcha(payload: Record<string, unknown>, captchaToken: string): Record<string, unknown> {
+    return { ...payload, gotrue_meta_security: { captcha_token: captchaToken } };
+}
+
+export function signInWithPassword(email: string, password: string, captchaToken: string): Promise<Session> {
+    return tokenRequest('password', withCaptcha({ email, password }, captchaToken));
+}
+
+// With email confirmation on (production), sign-up returns no session: the user confirms by email first.
+export async function signUpWithPassword(
+    email: string,
+    password: string,
+    captchaToken: string,
+    now = Date.now(),
+): Promise<Session | null> {
+    const body = await authPost('/auth/v1/signup', withCaptcha({ email, password }, captchaToken));
+    return body.access_token ? toSession(body, now) : null;
+}
+
 export function authorizeUrl(provider: OAuthProvider, challenge: string, redirectTo: string): string {
     const params = new URLSearchParams({
         provider,
