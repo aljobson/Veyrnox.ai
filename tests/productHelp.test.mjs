@@ -268,3 +268,14 @@ test('Vey knows the MCP connector, the CLI and the developer API', () => {
 test('the refusal names the MCP connector and CLI as things Vey can help with', () => {
     assert.match(unknownAnswerPlan().message, /MCP connector, the CLI/);
 });
+
+test('Vey knows the video editor and keeps neighbouring workflows apart', () => {
+    for (const [question, path] of [['How do I use the video editor?', '/app'], ['Is there a timeline?', '/app'], ['How do I export an MP4 from the editor?', '/app/editor']]) {
+        assert.equal(searchProductKnowledge(question, path, 1)[0].id, 'video-editor', question);
+    }
+    assert.equal(searchProductKnowledge('How do I enhance a video?', '/app/enhance', 1)[0].id, 'video-enhance');
+    assert.equal(searchProductKnowledge('How do I create a video?', '/app/create', 1)[0].id, 'create-video');
+    const editor = PRODUCT_KNOWLEDGE.find((item) => item.id === 'video-editor');
+    assert.match(editor.summary, /no Credits/);
+    assert.ok(fallbackHelpPlan('How do I use the video editor?', '/app').message.length <= 700);
+});
