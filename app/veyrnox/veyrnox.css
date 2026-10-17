@@ -218,6 +218,31 @@
   .vx-title-index { font-size: 92px; }
 }
 
+/* Hero headline: white letters with an aqua glow and two twinkling stars,
+   dark theme only (a glow on the light page is a smudge). The stars are
+   drawn with gradients on a pseudo-element and fade in place: opacity only,
+   and still under reduced motion. */
+.vx-title-glow {
+  position: relative;
+  color: #fff;
+  text-shadow: 0 0 6px rgb(62 230 196 / 0.95), 0 0 22px rgb(62 230 196 / 0.55), 0 0 60px rgb(62 230 196 / 0.3);
+}
+.vx-title-glow::after {
+  content: '';
+  pointer-events: none;
+  position: absolute;
+  inset: -12% -4% -8% 0;
+  background:
+    radial-gradient(circle at 92% 58%, #fff 0 1.5px, rgb(62 230 196 / 0.7) 3px, transparent 14px),
+    radial-gradient(circle at 88% 92%, #fff 0 1.5px, rgb(62 230 196 / 0.7) 3px, transparent 12px),
+    radial-gradient(ellipse at 45% 60%, rgb(62 230 196 / 0.16), transparent 62%);
+  animation: vx-twinkle 3.2s ease-in-out infinite alternate;
+}
+@keyframes vx-twinkle { from { opacity: 0.55; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .vx-title-glow::after { animation: none; } }
+:root[data-theme='light'] .vx-title-glow { color: inherit; text-shadow: none; }
+:root[data-theme='light'] .vx-title-glow::after { display: none; }
+
 }
 
 /* The mobile helper already has its own reserved dock. A second sticky card
