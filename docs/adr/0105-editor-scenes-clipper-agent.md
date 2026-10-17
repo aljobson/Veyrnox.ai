@@ -49,7 +49,7 @@ Each agent reply is one priced job through the existing debit, refund and idempo
 
 | # | Slice | Done when |
 |---|---|---|
-| A | Scene detection spike, no UI | Measured on at least 5 real clips: precision and recall against hand-marked cuts, time per second of video, peak memory. Confirms or kills the method |
+| A | Scene detection spike, no UI (**measured 2026-10-17**: hard cuts confirmed, dissolves need review, see `docs/editor/SCENE-DETECTION-SLICE-A-2026-10-17.md`) | Measured on at least 5 real clips: precision and recall against hand-marked cuts, time per second of video, peak memory. Confirms or kills the method |
 | B | Scenes UI | Detect, preview markers, accept all or some as one undoable split batch; Reticle journey and decoded export check; over-bound input refused with a clear message |
 | C | Clip finder stage 1 | Ranking tests on fixtures; chosen clips insert; no network call |
 | D | Agent dry run with a stub model | Allowlist, validators, diff view, apply-as-one-undo; injection suite passes; invalid plans refused unchanged |
