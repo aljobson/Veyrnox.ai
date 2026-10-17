@@ -23,6 +23,10 @@ Wazuh (GPLv2), Graylog Open (SSPL), Security Onion (Elastic License 2.0), Matano
 7. **Admin surface.** `GET`/`POST /api/v1/admin/security` behind the four existing gates (`adminGate`) and each RPC's own `is_admin` check (42501); page at `/app/admin/security`, linked from `/app/admin`. Responses are `no-store`.
 8. **No automatic action.** An alert never freezes, bans or emails. The operator uses the existing freeze flow.
 
+## Amendment 1 (2026-10-17, migration 0342)
+
+Two things showed on production the day it went live. One refusal produced two alerts, because the key used the hour of the run while a rule looks back over its whole window: the key now uses the hour of the newest event in the group. And an administrator opening a page before unlocking the authenticator raised a high alert: those refusals (`admin.mfa_required`) now feed their own low-severity rule, SEC-007, and SEC-003 reads only `admin.access_refused`. Alerts already raised are left as history.
+
 ## Not in this ADR
 
 - An external SIEM. If wanted later, Cloudflare Logpush and Supabase log drains can feed one read-only; the in-app alerts stay the system of record.
