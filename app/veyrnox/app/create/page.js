@@ -165,6 +165,12 @@ export default function CreateStudio() {
   }, [models, modelId, catalogLoading, goal]);
 
   const model = models.find((m) => m.id === modelId) || null;
+  // The controls describe the next draft, not the already submitted job.
+  // Keep the result attached to its own model even while the user browses.
+  const resultModel = job ? catalogModels.find((m) => m.id === job.model_id) : null;
+  const resultModelName = job?.model_name || resultModel?.name || job?.model_id || 'Generation';
+  // Completion must not turn an imminent reset click into a charged submission.
+  const hasJobs = jobs.length > 0;
   const catalogStatus = catalogLoading ? 'loading' : catalogLive ? 'live' : 'unavailable';
   const activeTemplate = templateStartId(presetParam, modelId) ? templateById(presetParam) : null;
   const prompt = promptText(typed, model); // a starter shot until then, on picture and clip models only (see promptBox)
@@ -191,6 +197,7 @@ export default function CreateStudio() {
   const missingPrompt = promptIsMissing(model, prompt);
   // Camera text suits pictures and clips; audio and speech would read it aloud.
   const isShort = !!model?.takesTopic;
+  const resultAspect = jobs[0]?.aspect_ratio || (hasJobs ? '16:9' : isShort ? '9:16' : aspect);
   const takesCamera = !isShort && (model?.kind === 'image' || model?.kind === 'video');
   // The model's own aspect list when the catalog has one; every video takes the default set.
   const aspectOptions = isShort ? []
@@ -318,6 +325,7 @@ export default function CreateStudio() {
     setError(null);
     setSending(true);
     const submittedTask = getJourney().task;
+    const submittedPresentation = { model_name: model.name, aspect_ratio: isShort ? '9:16' : aspect };
     const keys = Array.from({ length: n }, () => makeIdempotencyKey());
     // An Auto Short takes only its topic; the pipeline picks the format.
     const inputs = isShort ? { topic: prompt.trim() } : {
@@ -348,7 +356,7 @@ export default function CreateStudio() {
         // A job that took a free allowance (ADR-0069) cost nothing; the server says so.
         const jobCredits = submitted.free_allowance === true ? 0 : unitCost;
         // The first accepted job replaces the previous click's jobs.
-        (i === 0 ? startJobs : addJob)({ job_id: submitted.job_id, state: 'queued', credits: jobCredits, model_id: modelId });
+        (i === 0 ? startJobs : addJob)({ job_id: submitted.job_id, state: 'queued', credits: jobCredits, model_id: modelId, ...submittedPresentation });
         if (i === 0) trackJourneyJob(submitted.job_id, model.kind, submittedTask);
         pushJobHistory({
           job_id: submitted.job_id,
@@ -404,10 +412,10 @@ export default function CreateStudio() {
           </div>
 
           <div data-assistant-target="create.result" className="scroll-mt-24">
-          {jobs.length > 1 ? <StudioJobGrid jobs={jobs} aspect={aspect} /> : (
+          {jobs.length > 1 ? <StudioJobGrid jobs={jobs} aspect={resultAspect} /> : (
             <div
               className={`relative rounded-2xl border border-vx-border bg-vx-panel overflow-hidden ${generating ? 'vx-shimmer' : ''}`}
-              style={{ aspectRatio: (isShort ? '9:16' : aspect).replace(':', '/') }}
+              style={{ aspectRatio: resultAspect.replace(':', '/') }}
             >
               {job?.asset_url ? (
                 <JobAssetPreview job={job} />
@@ -416,11 +424,11 @@ export default function CreateStudio() {
                   {generating ? (
                     <div className="text-center">
                       <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-accent">
-                        <span aria-hidden="true">●</span> {jobStateUi(job).label} · {model.name.toUpperCase()}
+                        <span aria-hidden="true">●</span> {jobStateUi(job).label} · {resultModelName.toUpperCase()}
                       </div>
                       <div className="mt-2 font-vx-mono text-[42px] font-bold vx-num">…</div>
-                      {SLOW_MODEL_WAIT[model.id] && (
-                        <div className="text-xs text-vx-fg-body mt-2">{SLOW_MODEL_WAIT[model.id]}</div>
+                      {SLOW_MODEL_WAIT[job?.model_id] && (
+                        <div className="text-xs text-vx-fg-body mt-2">{SLOW_MODEL_WAIT[job.model_id]}</div>
                       )}
                       <div className="text-xs text-vx-fg-muted mt-2">Keeps running if you leave or start another — we&apos;ll tell you when it&apos;s ready. Refund on failure, always.</div>
                     </div>
@@ -684,13 +692,13 @@ export default function CreateStudio() {
             )}
             <ParticleButton
               data-assistant-target="create.generate"
-              onClick={generating ? cancel : onSubmit}
+              onClick={hasJobs ? cancel : onSubmit}
               className="scroll-mt-24 mt-4 w-full flex items-center justify-between bg-vx-accent text-vx-accent-ink rounded-full px-6 py-3.5 font-extrabold hover:bg-vx-accent-hover disabled:opacity-40 disabled:cursor-not-allowed"
-              disabled={sending || (!generating && (catalogStatus !== 'live' || !model || model.gated || animationMismatch || missingPrompt || missingVoice || invalidAudioDuration || balance == null || cost > balance || missingSource || missingConsent))}
-              aria-label={sending || generating || model?.gated ? undefined : `Generate ${n > 1 ? `${n} images ` : ''}${cost === 0 ? 'for free' : `for ${creditLabel(cost)}`}`}
+              disabled={sending || (!hasJobs && (catalogStatus !== 'live' || !model || model.gated || animationMismatch || missingPrompt || missingVoice || invalidAudioDuration || balance == null || cost > balance || missingSource || missingConsent))}
+              aria-label={sending ? undefined : hasJobs ? 'New generation — no charge' : model?.gated ? undefined : `Generate ${n > 1 ? `${n} images ` : ''}${cost === 0 ? 'for free' : `for ${creditLabel(cost)}`}`}
             >
-              <span>{sending ? 'Sending…' : generating ? 'New generation' : model?.gated ? 'Premium — gated' : n > 1 ? `Generate ${n}` : 'Generate'}</span>
-              <span className="font-vx-mono text-sm">{generationCostLabel(cost)}</span>
+              <span>{sending ? 'Sending…' : hasJobs ? 'New generation' : model?.gated ? 'Premium — gated' : n > 1 ? `Generate ${n}` : 'Generate'}</span>
+              <span className="font-vx-mono text-sm">{hasJobs ? 'No charge' : generationCostLabel(cost)}</span>
             </ParticleButton>
             <div className="mt-2 font-vx-mono text-[9.5px] tracking-[0.1em] text-vx-fg-faint text-center">
               {model?.gated ? '◆ PREMIUM MODEL · NOT OPEN YET' : 'REFUND ON FAILURE · ALWAYS'}

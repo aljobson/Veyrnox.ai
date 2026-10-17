@@ -75,7 +75,7 @@ test('catalog quote state is tri-state and stale prices cannot submit', () => {
   const submit = page.slice(page.indexOf('async function onSubmit()'), page.indexOf('function cancel()'));
   assert.match(page, /const catalogStatus = catalogLoading \? 'loading' : catalogLive \? 'live' : 'unavailable';/);
   assert.match(submit, /catalogStatus !== 'live'/);
-  assert.match(page, /disabled=\{sending \|\| \(!generating && \(catalogStatus !== 'live' \|\|/);
+  assert.match(page, /disabled=\{sending \|\| \(!hasJobs && \(catalogStatus !== 'live' \|\|/);
   assert.match(page, /Live prices are unavailable[\s\S]*generation is paused/);
 });
 
