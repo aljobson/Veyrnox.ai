@@ -41,6 +41,21 @@ export default function Home() {
             ) : (
                 <ActivityIndicator color={colors.accent} />
             )}
+            <Link href="/create" asChild>
+                <Pressable accessibilityRole="button" style={styles.primary}>
+                    <Text style={styles.primaryText}>Create</Text>
+                </Pressable>
+            </Link>
+            <Link href="/library" asChild>
+                <Pressable accessibilityRole="button" style={styles.secondary}>
+                    <Text style={styles.secondaryText}>Library</Text>
+                </Pressable>
+            </Link>
+            <Link href="/chat" asChild>
+                <Pressable accessibilityRole="button" style={styles.secondary}>
+                    <Text style={styles.secondaryText}>Chat with Vey</Text>
+                </Pressable>
+            </Link>
             <Pressable accessibilityRole="button" style={styles.signOut} onPress={() => void signOut()}>
                 <Text style={styles.signOutText}>Sign out</Text>
             </Pressable>
@@ -51,11 +66,13 @@ export default function Home() {
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background, padding: 24, gap: 8 },
     label: { color: colors.muted, fontSize: 14 },
-    value: { color: colors.text, fontSize: 48, fontWeight: '700' },
+    value: { color: colors.money, fontSize: 48, fontWeight: '700' },
     muted: { color: colors.muted },
     error: { color: colors.danger },
     primary: { marginTop: 24, backgroundColor: colors.accent, borderRadius: 12, paddingVertical: 16, alignItems: 'center' },
-    primaryText: { color: colors.text, fontSize: 16, fontWeight: '600' },
+    primaryText: { color: colors.accentInk, fontSize: 16, fontWeight: '700' },
+    secondary: { marginTop: 12, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, paddingVertical: 16, alignItems: 'center' },
+    secondaryText: { color: colors.text, fontSize: 16, fontWeight: '600' },
     signOut: { marginTop: 'auto', paddingVertical: 14, alignItems: 'center' },
     signOutText: { color: colors.muted },
 });

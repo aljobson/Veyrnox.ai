@@ -1,7 +1,7 @@
 import { config } from './config';
 
 export class ApiError extends Error {
-    constructor(readonly status: number, readonly code: string) {
+    constructor(readonly status: number, readonly code: string, readonly body: Record<string, unknown> = {}) {
         super(`api_${code}`);
         this.name = 'ApiError';
     }
@@ -65,7 +65,7 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
     async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
         const res = await authed(path, init, fetch);
         const body = (await res.json().catch(() => ({}))) as { error?: string };
-        if (!res.ok) throw new ApiError(res.status, typeof body.error === 'string' ? body.error : 'unknown');
+        if (!res.ok) throw new ApiError(res.status, typeof body.error === 'string' ? body.error : 'unknown', body);
         return body as T;
     }
 

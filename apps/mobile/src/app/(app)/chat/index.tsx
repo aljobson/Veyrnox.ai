@@ -66,7 +66,7 @@ export default function Threads() {
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background, padding: 16, gap: 12 },
     newButton: { backgroundColor: colors.accent, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
-    newText: { color: colors.text, fontWeight: '600', fontSize: 16 },
+    newText: { color: colors.accentInk, fontWeight: '600', fontSize: 16 },
     row: { paddingVertical: 14, borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth, gap: 2 },
     rowTitle: { color: colors.text, fontSize: 16 },
     muted: { color: colors.muted },

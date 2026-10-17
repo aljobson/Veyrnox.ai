@@ -112,7 +112,7 @@ export default function EmailAuth() {
                 {!captcha && !captchaError ? <Text style={styles.message}>Checking this device…</Text> : null}
                 {captchaError ? <Text style={styles.error}>The security check could not load. Check your connection and try again.</Text> : null}
                 <Pressable accessibilityRole="button" disabled={!ready} style={[styles.submit, !ready && styles.off]} onPress={submit}>
-                    {busy ? <ActivityIndicator color={colors.text} /> : <Text style={styles.submitText}>{mode === 'signIn' ? 'Sign in' : 'Create account'}</Text>}
+                    {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.submitText}>{mode === 'signIn' ? 'Sign in' : 'Create account'}</Text>}
                 </Pressable>
                 {message ? <Text style={styles.message}>{message}</Text> : null}
                 <View style={styles.switchRow}>
@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
     input: { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 14, fontSize: 16 },
     submit: { backgroundColor: colors.accent, borderRadius: 12, paddingVertical: 16, alignItems: 'center' },
     off: { opacity: 0.4 },
-    submitText: { color: colors.text, fontWeight: '600', fontSize: 16 },
+    submitText: { color: colors.accentInk, fontWeight: '600', fontSize: 16 },
     heading: { color: colors.text, fontSize: 28, fontWeight: '700' },
     message: { color: colors.muted },
     error: { color: colors.danger },

@@ -1,9 +1,14 @@
+// The Veyrnox.ai dark palette: the --vx-* tokens in app/globals.css, as hex.
 export const colors = {
-    background: '#0b0b10',
-    surface: '#16161f',
-    border: '#2a2a38',
-    text: '#f4f4f8',
-    muted: '#9a9ab0',
-    accent: '#7c5cff',
-    danger: '#ff6b6b',
+    background: '#0a0a0b',
+    surface: '#141416',
+    border: '#26262a',
+    borderStrong: '#3e3e44',
+    text: '#f2f2f3',
+    body: '#c9c9cf',
+    muted: '#9a9aa3',
+    accent: '#3ee6c4',
+    accentInk: '#06231f',
+    money: '#e4a93c',
+    danger: '#ff5c47',
 } as const;
