@@ -2,18 +2,22 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { access, readdir, readFile } from 'node:fs/promises';
 import { ODDLING_ARCHETYPES } from '../app/veyrnox/_lib/character.js';
+import { AUTO_PRODUCT_INVENTORY } from '../lib/generatedProductInventory.js';
 import { ODDLING_PRESET_SOURCES, oddlingsForSource } from '../app/veyrnox/_lib/oddlingStudio.js';
 import {
     ODDLING_EXPLORE_DEFAULT_SOURCE,
     ODDLING_EXPLORE_TABS,
     ODDLING_HERO_IDS,
     ODDLING_KIND_FILTERS,
+    cardButtonLabel,
     exploreCharacters,
     exploreKindCounts,
+    heroButtonLabel,
     heroCharacters,
     parseOddlingDeepLink,
     reconcileKindFilter,
     toggleKindFilter,
+    withoutDeepLink,
 } from '../app/veyrnox/_lib/oddlingExplore.js';
 
 const component = (file) => readFile(new URL(`../app/veyrnox/_components/${file}`, import.meta.url), 'utf8');
@@ -118,11 +122,35 @@ test('the character sheet renders through the shared Modal instead of a hand-rol
 test('the whole gallery card opens the sheet through a real button and keeps Recreate and Animate', async () => {
     const explore = await component('OddlingExplore.js');
     const card = explore.slice(explore.indexOf('function GalleryCard'), explore.indexOf('export function OddlingExplore('));
-    assert.match(card, /<button type="button" onClick=\{\(\) => onSheet\(oddling\)\} aria-label=\{`Open \$\{oddling\.name\} character sheet`\}[^>]*absolute inset-0/);
+    assert.match(card, /<button type="button" onClick=\{\(\) => onSheet\(oddling\)\} aria-label=\{cardButtonLabel\(oddling\.name\)\}[^>]*absolute inset-0/);
     assert.match(card, /onClick=\{\(\) => onRecreate\(oddling\)\}[\s\S]*Recreate/);
     assert.match(card, /onClick=\{\(\) => onAnimate\(oddling\)\}[\s\S]*Animate this character/);
     assert.doesNotMatch(card, /<article[^>]*onClick/, 'no click handler on an element that holds other buttons');
     assert.match(card, /relative z-20/, 'the action buttons sit above the stretched button');
+});
+
+test('the card button keeps its keyboard focus ring inside the clipped card', async () => {
+    const explore = await component('OddlingExplore.js');
+    const card = explore.slice(explore.indexOf('function GalleryCard'), explore.indexOf('export function OddlingExplore('));
+    const article = card.match(/<article className="([^"]*)"/)[1];
+    const button = card.match(/<button type="button" onClick=\{\(\) => onSheet\(oddling\)\}[^>]*className="([^"]*)"/)[1];
+    assert.match(article, /overflow-hidden/, 'the card clips its preview, which is why the ring must sit inside it');
+    assert.match(button, /focus-visible:outline/, 'a visible ring on keyboard focus');
+    assert.match(button, /focus-visible:-outline-offset-\d|focus-visible:outline-offset-\[-\d+px\]/, 'a negative offset draws the ring inside the card');
+    assert.doesNotMatch(button, /focus-visible:outline-offset-(?!\[-)\d/, 'a positive offset would be drawn outside the clip and vanish');
+});
+
+test('the strip button and the card button for the same character have different accessible names', async () => {
+    for (const oddling of heroCharacters()) {
+        const hero = heroButtonLabel(oddling.name);
+        const card = cardButtonLabel(oddling.name);
+        assert.notEqual(hero, card, oddling.id);
+        assert.ok(hero.includes(oddling.name) && card.includes(oddling.name), 'both still name the character');
+    }
+    const explore = await component('OddlingExplore.js');
+    const hero = explore.slice(explore.indexOf('function OddlingHeroStrip'), explore.indexOf('function GalleryCard'));
+    assert.match(hero, /aria-label=\{heroButtonLabel\(oddling\.name\)\}/);
+    assert.doesNotMatch(hero, /aria-label=\{`Open /, 'the strip no longer shares the card wording');
 });
 
 test('Explore wires the All default, filter chips, hero strip and motion preference', async () => {
@@ -155,18 +183,34 @@ test('builder wiring: Surprise me beside Generate, picked/total headers, many op
     assert.match(sections, /aria-expanded=\{open\}/);
     assert.match(motion, /\{motion\.phrase\}/);
     assert.match(motion, /aria-describedby=/);
-    assert.match(motion, /truncate/);
+    assert.doesNotMatch(motion, /truncate|line-clamp|text-ellipsis|whitespace-nowrap/, 'a caption wraps so a keyboard or touch user can read the whole phrase');
+    assert.match(motion, /break-words/);
 });
 
-test('deep link loads the character into the builder and opens its sheet without touching the URL', async () => {
+test('deep link loads the character once, then takes the parameter out of the address', async () => {
     const studio = await component('OddlingStudio.js');
     assert.match(studio, /parseOddlingDeepLink\(window\.location\.search\)/);
     const effect = studio.slice(studio.indexOf('parseOddlingDeepLink(window'), studio.indexOf('}, []);', studio.indexOf('parseOddlingDeepLink(window')));
     assert.match(effect, /setPicks\(\{ \.\.\.linked\.picks \}\)/);
     assert.match(effect, /setPortraitId\(linked\.id\)/);
     assert.match(effect, /setSheet\(linked\)/);
-    assert.doesNotMatch(effect, /history\.|replaceState|pushState|router\./, 'read-only: the address bar is left alone');
+    assert.match(effect, /window\.history\.replaceState\(window\.history\.state, '', withoutDeepLink\(window\.location\)\)/, 'consumed once, so a remount or Back does not reopen it');
+    assert.ok(effect.indexOf('setSheet(linked)') < effect.indexOf('replaceState'), 'the address is cleaned only after the link was applied');
+    assert.doesNotMatch(effect, /pushState|router\./, 'no new history entry, no navigation');
     assert.doesNotMatch(studio, /dangerouslySetInnerHTML|location\.search\s*\)\s*\.get|URLSearchParams\(window/);
+});
+
+test('withoutDeepLink drops only the oddling parameter and keeps the rest of the address', () => {
+    assert.equal(withoutDeepLink({ pathname: '/app/oddlings', search: '?oddling=mossbyte', hash: '' }), '/app/oddlings');
+    assert.equal(withoutDeepLink({ pathname: '/app/oddlings', search: '?utm_source=mail&oddling=mossbyte&ref=a%20b', hash: '#cast' }), '/app/oddlings?utm_source=mail&ref=a+b#cast');
+    assert.equal(withoutDeepLink({ pathname: '/app/oddlings', search: '?oddling=mossbyte&oddling=shelf-life', hash: '' }), '/app/oddlings', 'every copy goes');
+    assert.equal(withoutDeepLink({ pathname: '/app/oddlings', search: '', hash: '#x' }), '/app/oddlings#x');
+    assert.equal(withoutDeepLink({ pathname: '/app/oddlings', search: '?Oddling=keep', hash: '' }), '/app/oddlings?Oddling=keep', 'parameter names are case-sensitive, like the parser');
+    assert.equal(withoutDeepLink({ pathname: '//evil.example/x', search: '?oddling=mossbyte' }), '/evil.example/x', 'never a protocol-relative address');
+    for (const bad of [undefined, null, {}, 'oddlings']) assert.equal(withoutDeepLink(bad), '/');
+    // What is left must not parse as a deep link, so the same address cannot reopen the sheet.
+    const cleaned = withoutDeepLink({ pathname: '/app/oddlings', search: '?oddling=mossbyte', hash: '' });
+    assert.equal(parseOddlingDeepLink(new URL(cleaned, 'https://example.test').search), null);
 });
 
 test('the Oddling Studio is split so no file passes the size ceiling', async () => {
@@ -174,4 +218,13 @@ test('the Oddling Studio is split so no file passes the size ceiling', async () 
         const lines = (await component(file)).split('\n').length;
         assert.ok(lines < 500, `${file} is ${lines} lines`);
     }
+});
+
+test('Vey can still quote that Explore previews are free: the sentence is within the scanner\'s description budget', async () => {
+    // The scanner keeps the first eight <p> descriptions of a route's modules, in module order.
+    // The studio file comes before the Explore files, so the sentence lives in the studio header too.
+    const studio = await component('OddlingStudio.js');
+    assert.match(studio, /<p [^>]*>[^<]*Dancing puppet previews in Explore are free: no generation or credits\./);
+    const route = AUTO_PRODUCT_INVENTORY.find(({ id }) => id === 'route:/app/oddlings');
+    assert.ok(route.descriptions.some((line) => /no generation or credits/.test(line)), 'the generated knowledge keeps it');
 });

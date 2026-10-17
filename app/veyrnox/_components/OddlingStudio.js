@@ -23,7 +23,7 @@ import {
 } from '../_lib/character';
 import { writeStudioDraft } from '../_lib/landingDraft';
 import { changeCharacterPick } from '../_lib/characterOptions';
-import { parseOddlingDeepLink } from '../_lib/oddlingExplore';
+import { parseOddlingDeepLink, withoutDeepLink } from '../_lib/oddlingExplore';
 import {
   ODDLING_MOTIONS,
   ODDLING_DOLL_FACETS,
@@ -188,8 +188,10 @@ export default function OddlingStudio() {
   }, []);
 
   // /app/oddlings?oddling=<cast id> loads that character and opens its sheet.
-  // Only a built-in id counts, the address bar is left alone, and the page
-  // shows the character's own name, never the parameter.
+  // Only a built-in id counts, and the page shows the character's own name,
+  // never the parameter. The link is applied once: the parameter is then taken
+  // out of the address (same entry, no navigation), so a remount, a reload or
+  // Back from Create does not open the sheet over the builder again.
   useEffect(() => {
     const timer = window.setTimeout(() => {
       const linked = parseOddlingDeepLink(window.location.search);
@@ -198,6 +200,7 @@ export default function OddlingStudio() {
       setPortraitId(linked.id);
       setNotice(`${linked.name} loaded. Every detail is editable.`);
       setSheet(linked);
+      try { window.history.replaceState(window.history.state, '', withoutDeepLink(window.location)); } catch { /* the sheet is open; the address keeps the parameter */ }
     }, 0);
     return () => window.clearTimeout(timer);
   }, []);
@@ -246,7 +249,7 @@ export default function OddlingStudio() {
 
   function surprise() {
     setPicks((current) => randomizeOddlingAll(current));
-    setNotice('Every trait rolled. Your name, premise, voice, show and canon stayed yours.');
+    setNotice('New look rolled. Skin features and limbs were left as they were; your name, premise, voice, show and canon stayed yours.');
   }
 
   function save() {
@@ -421,7 +424,7 @@ export default function OddlingStudio() {
               <div>
                 <span className="font-vx-mono text-[10px] font-bold tracking-[0.16em] text-vx-accent">{ODDLING_ARCHETYPES.filter((item) => item.kind === 'human').length} HUMAN ORIGINALS · {ODDLING_ARCHETYPES.filter((item) => item.kind === 'creature').length} OTHER BEINGS</span>
                 <h2 className="vx-display mt-2 text-5xl sm:text-6xl">Your original character, your recurring hit.</h2>
-                <p className="mt-3 max-w-2xl text-vx-fg-body">Explore expressive silhouettes, statement fashion, sculptural hair and contemporary basics. Choose head, body and individual feature sizes independently, then refine your character for portraits and motion.</p>
+                <p className="mt-3 max-w-2xl text-vx-fg-body">Explore expressive silhouettes, statement fashion, sculptural hair and contemporary basics. Choose head, body and individual feature sizes independently, then refine your character for portraits and motion. Dancing puppet previews in Explore are free: no generation or credits.</p>
               </div>
               <div className="flex rounded-xl border border-vx-border bg-vx-panel p-1" role="tablist" aria-label="Workspace view">
                 <button type="button" role="tab" aria-selected={workspace === 'explore'} onClick={() => setWorkspace('explore')} className={`rounded-lg px-4 py-2 text-sm font-bold ${workspace === 'explore' ? 'bg-vx-base text-vx-fg' : 'text-vx-fg-muted'}`}>Explore</button>

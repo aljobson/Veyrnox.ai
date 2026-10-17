@@ -127,7 +127,16 @@ test('randomize styling preserves deliberate body and identity choices', () => {
 // A deterministic stand-in for Math.random that walks the unit interval.
 const sequence = (seed) => { let state = seed; return () => (state = (state * 9301 + 49297) % 233280) / 233280; };
 
-test('Surprise me rolls every trait group, keeps the creator words and stays adult-safe', () => {
+// Surprise me is about looks and style. These are the groups and options that read as
+// medical or injury, which a roll must never land on (a person picks them on purpose).
+const LEFT_ALONE_GROUPS = ['skin_conditions', 'left_arm', 'right_arm', 'left_leg', 'right_leg'];
+const AVOIDED_OPTIONS = { eyes_details: ['Blind Eye', 'Scarred Eye'], eye_color: ['Blind / Empty'], accessories: ['Scarification'] };
+const EXTRA_GROUPS = ['eyes_type', 'eyes_details', 'mouth', 'ears', 'horns', 'facial_hair', 'face_skin_material', 'face_surface_pattern'];
+// Groups every roll sets. Size and shape groups are left out: a roll that would clash with an
+// earlier one drops it, the way a hand edit does (see the clash test below).
+const ALWAYS_ROLLED = ['character_type', 'gender', 'ethnicity_origin_base', 'age', 'skin_tone', 'eye_color', 'eye_shape', 'face_features', 'height', 'neck', 'hair', 'hair_color', 'wardrobe_style', 'accessories', 'distinctive_features', 'rendering_style'];
+
+test('Surprise me rolls the appearance and style groups, keeps the creator words and stays adult-safe', () => {
     const picks = { character_type: 'Alien', oddling_name: 'Long Division', oddling_obsession: 'door frames', oddling_voice: 'Dry oracle', oddling_show: 'Tiny field reports', oddling_rule: 'always holds a ruler', body_type: 'Fat' };
     for (const seed of [1, 7, 42, 1234, 99999]) {
         const rolled = randomizeOddlingAll(picks, sequence(seed));
@@ -137,14 +146,51 @@ test('Surprise me rolls every trait group, keeps the creator words and stays adu
         assert.equal(rolled.oddling_voice, 'Dry oracle');
         assert.equal(rolled.oddling_show, 'Tiny field reports');
         assert.equal(rolled.oddling_rule, 'always holds a ruler');
-        const groups = CHARACTER_GROUPS.filter((group) => rolled[group.id]);
-        assert.ok(groups.length >= CHARACTER_GROUPS.length - 6, `${groups.length} of ${CHARACTER_GROUPS.length} groups rolled`);
+        for (const id of ALWAYS_ROLLED) assert.ok(rolled[id], `seed ${seed}: ${id} rolled`);
         assert.ok(['20s', '30s', '40s', '50s', '60s', '70+'].includes(rolled.age));
-        for (const limb of ['left_arm', 'right_arm', 'left_leg', 'right_leg']) assert.notEqual(rolled[limb], 'None');
     }
     const changed = randomizeOddlingAll(picks, sequence(5));
     assert.notEqual(changed.body_type, undefined);
     assert.ok(Object.keys(changed).length > Object.keys(randomizeOddlingStyle(picks, sequence(5))).length, 'wider than Randomize styling');
+});
+
+test('Surprise me never rolls a medical or injury-flavoured group or option', () => {
+    for (const id of [...LEFT_ALONE_GROUPS, ...Object.keys(AVOIDED_OPTIONS), ...EXTRA_GROUPS]) assert.ok(CHARACTER_GROUPS.some((group) => group.id === id), `${id} is still a real group`);
+    const seen = new Map();
+    for (let seed = 1; seed <= 600; seed++) {
+        const rolled = randomizeOddlingAll({}, sequence(seed));
+        for (const id of LEFT_ALONE_GROUPS) assert.equal(rolled[id], undefined, `seed ${seed}: ${id} stays on Any`);
+        for (const [id, value] of Object.entries(rolled)) seen.set(id, (seen.get(id) || new Set()).add(value));
+    }
+    for (const [id, avoided] of Object.entries(AVOIDED_OPTIONS)) {
+        for (const value of avoided) assert.ok(!seen.get(id)?.has(value), `${id}: ${value} is never rolled`);
+        assert.ok(seen.get(id)?.size > 0, `${id} itself is still rolled`);
+    }
+    for (const value of ['Heterochromia', 'Glowing Eye']) assert.ok(seen.get('eyes_details').has(value), `${value} stays on the table`);
+    for (const value of ['Tattoos', 'Piercings']) assert.ok(seen.get('accessories').has(value), `${value} stays on the table`);
+});
+
+test('Surprise me leaves a deliberate medical or limb pick as the person set it', () => {
+    const picks = { skin_conditions: 'Vitiligo', left_arm: 'Cute Prosthetic', right_leg: 'None', eyes_details: 'Blind Eye', hair: 'Bald' };
+    for (const seed of [3, 30, 300]) {
+        const rolled = randomizeOddlingAll(picks, sequence(seed));
+        assert.equal(rolled.skin_conditions, 'Vitiligo');
+        assert.equal(rolled.left_arm, 'Cute Prosthetic');
+        assert.equal(rolled.right_leg, 'None');
+        assert.notEqual(rolled.eyes_details, 'Blind Eye', 'a rolled group is re-rolled and never lands on an avoided option');
+    }
+});
+
+test('Surprise me weights toward appearance and style: extras come up now and then, not every time', () => {
+    const rolls = [...Array(600)].map((_, index) => randomizeOddlingAll({}, sequence(index + 1)));
+    for (const id of EXTRA_GROUPS) {
+        const share = rolls.filter((rolled) => rolled[id]).length / rolls.length;
+        assert.ok(share > 0.15 && share < 0.55, `${id} is set on ${Math.round(share * 100)}% of rolls`);
+    }
+    for (const id of ALWAYS_ROLLED) assert.ok(rolls.every((rolled) => rolled[id]), `${id} is part of every roll`);
+    const average = rolls.reduce((sum, rolled) => sum + CHARACTER_GROUPS.filter((group) => rolled[group.id]).length, 0) / rolls.length;
+    assert.ok(average < CHARACTER_GROUPS.length - LEFT_ALONE_GROUPS.length - 4, `${average.toFixed(1)} of ${CHARACTER_GROUPS.length} groups set on average`);
+    assert.ok(average > CHARACTER_GROUPS.length / 2, 'still a full character');
 });
 
 test('Surprise me can reach every option of a group and leans human-first', () => {

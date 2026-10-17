@@ -4,8 +4,8 @@ import Image from 'next/image';
 import { chip } from './oddlingStyles';
 import { ODDLING_MOTIONS } from '../_lib/oddlingStudio';
 
-// One column, so each preset's phrase has room to read as a single line under
-// its name; the full phrase is also the caption's title and the chip's description.
+// One column. Each preset's phrase sits under its name and wraps, so the whole
+// phrase can be read without hovering; it is also the chip's description.
 export function OddlingMotionPanel({ portrait, priceLine, motionId, onMotion }) {
   return (
     <section className="mt-5 rounded-2xl border border-vx-accent/30 bg-vx-accent/[0.04] p-4">
@@ -16,7 +16,7 @@ export function OddlingMotionPanel({ portrait, priceLine, motionId, onMotion }) 
         {ODDLING_MOTIONS.map((motion) => (
           <div key={motion.id} className="min-w-0">
             <button type="button" onClick={() => onMotion(motion.id)} aria-pressed={motionId === motion.id} aria-describedby={`motion-phrase-${motion.id}`} className={`${chip(motionId === motion.id)} w-full text-left`}>{motion.name}</button>
-            <p id={`motion-phrase-${motion.id}`} title={motion.phrase} className="mt-1 truncate px-1 text-[10px] leading-snug text-vx-fg-faint">{motion.phrase}</p>
+            <p id={`motion-phrase-${motion.id}`} className="mt-1 break-words px-1 text-[10px] leading-snug text-vx-fg-faint">{motion.phrase}</p>
           </div>
         ))}
       </div>

@@ -46,8 +46,8 @@ export function reconcileKindFilter(sourceId, kind) {
 }
 
 /**
- * A read-only deep link: /app/oddlings?oddling=<archetype id>. Only an id from
- * the built-in cast counts; anything else (another route's flag, a path, markup)
+ * A deep link: /app/oddlings?oddling=<archetype id>. Only an id from the
+ * built-in cast counts; anything else (another route's flag, a path, markup)
  * is ignored, and callers show the character's own name, never the parameter.
  */
 export function parseOddlingDeepLink(search = '') {
@@ -56,6 +56,28 @@ export function parseOddlingDeepLink(search = '') {
   if (typeof value !== 'string' || !value || value.length > DEEP_LINK_MAX) return null;
   return ODDLING_ARCHETYPES.find((item) => item.id === value) || null;
 }
+
+/**
+ * The same address without the deep-link parameter, for history.replaceState
+ * once the link has been applied, so a remount or Back does not apply it again.
+ * Other parameters and the fragment stay; the result is always a same-origin path.
+ */
+export function withoutDeepLink(location) {
+  const { pathname, search, hash } = location && typeof location === 'object' ? location : {};
+  const path = typeof pathname === 'string' && pathname.startsWith('/') ? pathname.replace(/^\/+/, '/') : '/';
+  let rest = '';
+  try {
+    const params = new URLSearchParams(String(search || ''));
+    params.delete(DEEP_LINK_PARAM);
+    rest = params.toString();
+  } catch { rest = ''; }
+  return `${path}${rest ? `?${rest}` : ''}${typeof hash === 'string' ? hash : ''}`;
+}
+
+// The strip repeats five characters the grid also holds, so a screen reader
+// must be able to tell the two buttons for one character apart.
+export const heroButtonLabel = (name) => `Featured: ${name}, open character sheet`;
+export const cardButtonLabel = (name) => `Open ${name} character sheet`;
 
 export function heroCharacters() {
   return ODDLING_HERO_IDS.map((id) => ODDLING_ARCHETYPES.find((item) => item.id === id)).filter(Boolean);

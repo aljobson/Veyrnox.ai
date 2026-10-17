@@ -199,26 +199,44 @@ export function oddlingsForSource(sourceId) {
   return ODDLING_ARCHETYPES.filter((item) => item.kind === source.kind);
 }
 
-// Surprise me: every trait group is rolled, not only the styling groups that
-// Randomize styling touches.
+// Surprise me: a whole new look, not only the styling groups that Randomize
+// styling touches. It leans on appearance and style:
+// - Medical or injury-flavoured choices (skin conditions, prosthetic or missing
+//   limbs) are never rolled. They stay exactly as the person set them, and a
+//   roll that lands on Any leaves them on Any; Detailed traits is where they are
+//   picked on purpose. Individual options that read as injury (a blind or scarred
+//   eye, scarification) are skipped inside groups that are otherwise rolled.
+// - The anatomy extras (horns, teeth, ears, skin material and the like) join a
+//   roll one time in three, so a surprise is a character, not a pile of everything.
 // The creator's own words (name, premise, voice, show, canon) are not traits and
 // stay. Picks go in one at a time through changeCharacterPick, so a roll that
 // would contradict an earlier one (a tiny head with a head size) resolves the
 // way a hand edit does, and the sanitizer is the adult-safe gate on the way out.
-// 'None' limbs are left out of a roll: a surprise should not delete an arm.
 const HUMAN_FIRST_ODDS = 0.5;
+const EXTRA_GROUP_ODDS = 1 / 3;
+const SURPRISE_LEFT_ALONE_GROUPS = new Set(['skin_conditions', 'left_arm', 'right_arm', 'left_leg', 'right_leg']);
+const SURPRISE_AVOIDED_OPTIONS = {
+  eyes_details: new Set(['Blind Eye', 'Scarred Eye']),
+  eye_color: new Set(['Blind / Empty']),
+  accessories: new Set(['Scarification']),
+};
+const SURPRISE_EXTRA_GROUPS = new Set(['eyes_type', 'eyes_details', 'mouth', 'ears', 'horns', 'facial_hair', 'face_skin_material', 'face_surface_pattern']);
 
 export function randomizeOddlingAll(picks, random = Math.random) {
   const roll = (length) => Math.min(length - 1, Math.floor(Math.max(0, random()) * length));
-  const words = Object.fromEntries(Object.entries(sanitizeOddlingPicks(picks)).filter(([key]) => !groupById(key)));
+  const current = sanitizeOddlingPicks(picks);
+  const kept = Object.fromEntries(Object.entries(current).filter(([key]) => !groupById(key) || SURPRISE_LEFT_ALONE_GROUPS.has(key)));
   let next = {};
   for (const group of CHARACTER_GROUPS) {
-    const options = group.options.filter(([value]) => value !== 'None');
+    if (SURPRISE_LEFT_ALONE_GROUPS.has(group.id)) continue;
+    if (SURPRISE_EXTRA_GROUPS.has(group.id) && random() >= EXTRA_GROUP_ODDS) continue;
+    const avoided = SURPRISE_AVOIDED_OPTIONS[group.id];
+    const options = group.options.filter(([value]) => value !== 'None' && !avoided?.has(value));
     if (!options.length) continue;
     const human = group.id === 'character_type' && random() < HUMAN_FIRST_ODDS;
     next = changeCharacterPick(next, group.id, human ? 'Human' : options[roll(options.length)][0]);
   }
-  return sanitizeOddlingPicks({ ...words, ...next });
+  return sanitizeOddlingPicks({ ...kept, ...next });
 }
 
 /** How many of a builder section's groups have a choice, for its header. */

@@ -7,7 +7,9 @@ import { CharacterPortrait } from './OddlingPortrait';
 import { chip } from './oddlingStyles';
 import {
   ODDLING_EXPLORE_DEFAULT_SOURCE,
+  cardButtonLabel,
   exploreCharacters,
+  heroButtonLabel,
   heroCharacters,
   reconcileKindFilter,
   toggleKindFilter,
@@ -37,7 +39,7 @@ function OddlingHeroStrip({ onSheet }) {
       <ul className="mt-3 grid max-w-3xl grid-cols-3 gap-2 sm:grid-cols-5">
         {heroCharacters().map((oddling, index) => (
           <li key={oddling.id} className={index > 2 ? 'hidden sm:block' : undefined}>
-            <button type="button" onClick={() => onSheet(oddling)} aria-label={`Open ${oddling.name} character sheet`} className="group block w-full overflow-hidden rounded-xl border border-vx-border bg-vx-panel text-left motion-safe:transition-[border-color,translate] motion-safe:duration-200 hover:border-vx-accent motion-safe:hover:-translate-y-0.5 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-accent">
+            <button type="button" onClick={() => onSheet(oddling)} aria-label={heroButtonLabel(oddling.name)} className="group block w-full overflow-hidden rounded-xl border border-vx-border bg-vx-panel text-left motion-safe:transition-[border-color,translate] motion-safe:duration-200 hover:border-vx-accent motion-safe:hover:-translate-y-0.5 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-accent">
               <span className="block aspect-[2/3] bg-vx-base"><CharacterPortrait oddling={oddling} sizes="(max-width: 640px) 30vw, 140px" /></span>
               <span className="block truncate px-2 py-1.5 font-vx-mono text-[9px] font-bold text-vx-fg-muted group-hover:text-vx-fg">{oddling.name}</span>
             </button>
@@ -50,6 +52,8 @@ function OddlingHeroStrip({ onSheet }) {
 
 // The card holds other buttons, so it cannot itself be one. A button stretched
 // over the whole card opens the sheet; Recreate and Animate sit above it.
+// The card clips its preview (overflow-hidden), and an outline drawn outside the
+// button's box would be clipped with it, so the focus ring is drawn inside.
 function GalleryCard({ oddling, onSheet, onRecreate, onAnimate, previewsPlaying }) {
   return (
     <article className="group relative overflow-hidden rounded-2xl border border-vx-border bg-vx-panel transition-colors hover:border-vx-accent/50">
@@ -60,7 +64,7 @@ function GalleryCard({ oddling, onSheet, onRecreate, onAnimate, previewsPlaying 
         <span className="font-vx-mono text-[8px] font-bold tracking-[0.14em] text-vx-accent">{oddling.accent}</span>
         <h3 className="mt-1 text-lg font-extrabold">{oddling.name}</h3>
         <p className="mt-1 min-h-10 text-xs leading-relaxed text-vx-fg-muted">{oddling.hook}</p>
-        <button type="button" onClick={() => onSheet(oddling)} aria-label={`Open ${oddling.name} character sheet`} className="absolute inset-0 z-10 rounded-2xl focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-accent" />
+        <button type="button" onClick={() => onSheet(oddling)} aria-label={cardButtonLabel(oddling.name)} className="absolute inset-0 z-10 rounded-2xl focus-visible:outline-solid focus-visible:outline-3 focus-visible:-outline-offset-3 focus-visible:outline-vx-accent" />
         <div className="relative z-20 mt-4">
           <button type="button" onClick={() => onRecreate(oddling)} className={`${chip(true)} w-full`}>Recreate</button>
           <button type="button" onClick={() => onAnimate(oddling)} className={`${chip(true)} mt-2 w-full`}>Animate this character</button>
