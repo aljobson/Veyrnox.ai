@@ -1,6 +1,6 @@
 # ADR-0104 — Security alerts in the admin dashboard
 
-- **Status**: **Accepted 2026-10-17; built 2026-10-17**, behind `SECURITY_EVENTS_ENABLED` (off until migration 0336 is applied, then staging, then production on the owner's word).
+- **Status**: **Accepted 2026-10-17; built 2026-10-17**, migration 0336 applied on production 2026-10-17. Recording is on when the `SECURITY_EVENTS_HASH_KEY` secret is set or `SECURITY_EVENTS_ENABLED` is `"true"`; `"false"` forces it off. Production has no spare text binding, so it uses the secret as its switch; staging names the var `"true"`.
 - **Date**: 2026-10-17
 - **Related**: [ADR-0083](0083-admin-operations-surface.md) (admin gates, webhook deliveries), [ADR-0078](0078-admin-checks-in-code.md) (identity headers, Access in code), `CLAUDE.md` ("Security Logging & Monitoring Failures", "API gateway")
 
