@@ -110,6 +110,7 @@ test('the browser-storage notice remains above the full-screen editor so its ack
   const { default: SiteChrome } = load('app/veyrnox/_components/SiteChrome.js', {
     react: fakeReact, 'next/link': 'a', '../_lib/tokens': { SUPPORT_EMAIL: 'synthetic@example.invalid' },
     '../_lib/utm': {}, './ThemeToggle': {}, './ReferralBridge': () => null, './Icon': { Icon: 'span' },
+    '../../../components/I18nProvider': { useI18n: () => ({ locale: 'en', t: Object.assign((key) => key, { messages: {}, label: (label) => label }), href: (path) => path }) },
   });
   const notice = SiteChrome({}).props.children.find(child => React.isValidElement(child) && child.props.className?.includes('bottom-0'));
   assert.ok(notice, 'The unread notice is rendered');

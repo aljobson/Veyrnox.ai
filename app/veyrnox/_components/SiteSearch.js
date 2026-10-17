@@ -16,11 +16,11 @@ import { useI18n } from '../../../components/I18nProvider';
 // this is a client-side index, not a search service. Models come from the
 // live catalog on first open and fall back to tokens.js.
 
-function staticIndex(models, oddlingsPublic) {
+function staticIndex(models, oddlingsPublic, t) {
   return [
     ...SITE_PAGES.map((p) => ({
       group: 'Pages',
-      title: p.label,
+      title: t.label(p.label),
       detail: p.description,
       href: navHref(p, oddlingsPublic),
     })),
@@ -30,10 +30,10 @@ function staticIndex(models, oddlingsPublic) {
       detail: `${p.category} · ${p.model} · ${presetCredits(p, models)} cr`,
       href: templateHref(p),
     })),
-    ...FAQ.map((f) => ({
+    ...FAQ.map((f, i) => ({
       group: 'FAQ',
-      title: f.q,
-      detail: f.a,
+      title: t(`home.faq.${i}.q`),
+      detail: t(`home.faq.${i}.a`),
       href: '/#faq',
     })),
   ];
@@ -89,6 +89,7 @@ function SearchHotkey({ onOpen }) {
 
 function SearchOverlay({ onClose }) {
   const router = useRouter();
+  const { t } = useI18n();
   const oddlingsPublic = useOddlingsPublic();
   const [query, setQuery] = useState('');
   const [cursor, setCursor] = useState(0);
@@ -112,8 +113,8 @@ function SearchOverlay({ onClose }) {
   }, []);
 
   const index = useMemo(
-    () => [...staticIndex(models || MODELS_FALLBACK, oddlingsPublic), ...modelsToIndex(models || MODELS_FALLBACK)],
-    [models, oddlingsPublic],
+    () => [...staticIndex(models || MODELS_FALLBACK, oddlingsPublic, t), ...modelsToIndex(models || MODELS_FALLBACK)],
+    [models, oddlingsPublic, t],
   );
   const results = useMemo(() => searchIndex(index, query), [index, query]);
 
@@ -142,7 +143,7 @@ function SearchOverlay({ onClose }) {
     // page lit behind the panel. The top layer also brings focus containment
     // and hands focus back to whatever opened it.
     <Modal
-      aria-label="Search Veyrnox"
+      aria-label={t('ui.searchAria')}
       data-print="hide"
       onCancel={onClose}
       initialFocusRef={inputRef}
@@ -163,28 +164,28 @@ function SearchOverlay({ onClose }) {
             value={query}
             onChange={(e) => { setQuery(e.target.value); setCursor(0); }}
             onKeyDown={onKeyDown}
-            placeholder="Search models, presets, pages, FAQ…"
-            aria-label="Search query"
+            placeholder={t('search.placeholder')}
+            aria-label={t('search.queryAria')}
             className="w-full bg-transparent py-4 text-[15px] text-vx-fg outline-hidden placeholder:text-vx-fg-faint"
           />
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close search"
+            aria-label={t('search.close')}
             className="-mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-vx-fg-muted hover:text-vx-fg"
           >
             <Icon name="close" />
           </button>
         </div>
 
-        <div id="vx-search-results" className="max-h-[52vh] overflow-y-auto" role="listbox" aria-label="Search results">
+        <div id="vx-search-results" className="max-h-[52vh] overflow-y-auto" role="listbox" aria-label={t('search.results')}>
           {results.length === 0 ? (
             <p className="px-5 py-6 text-[13px] text-vx-fg-muted">
               {query.trim() === ''
-                ? 'Type to search the catalog, presets, pages and FAQ.'
+                ? t('search.hint')
                 : short
-                  ? `Keep typing — ${MIN_QUERY} characters minimum.`
-                  : `Nothing matches “${query.trim()}”.`}
+                  ? t('search.keepTyping', { n: MIN_QUERY })
+                  : t('search.none', { q: query.trim() })}
             </p>
           ) : (
             results.map((item, i) => (
@@ -204,7 +205,7 @@ function SearchOverlay({ onClose }) {
                 }`}
               >
                 <span className="mt-0.5 w-[62px] shrink-0 font-vx-mono text-[9px] uppercase tracking-[0.12em] text-vx-fg-muted">
-                  {item.group}
+                  {t.messages[`search.group.${item.group}`] ?? item.group}
                 </span>
                 <span className="min-w-0">
                   <span className="block truncate text-[14px] font-bold text-vx-fg">{item.title}</span>
@@ -218,8 +219,8 @@ function SearchOverlay({ onClose }) {
         </div>
 
         <div className="flex items-center justify-between border-t border-vx-border px-5 py-2.5 font-vx-mono text-[9.5px] tracking-[0.12em] text-vx-fg-faint">
-          <span>↑↓ MOVE · ↵ OPEN · ESC CLOSE</span>
-          <span aria-live="polite" aria-atomic="true">{results.length} RESULT{results.length === 1 ? '' : 'S'}</span>
+          <span>{t('search.keys')}</span>
+          <span aria-live="polite" aria-atomic="true">{t(results.length === 1 ? 'search.count.one' : 'search.count.other', { n: results.length })}</span>
         </div>
       </div>
     </Modal>
