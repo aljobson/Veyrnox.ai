@@ -4,6 +4,8 @@
 // here. A catalog model with a required upload and no task listed still
 // shows, under "More tools", so a new row is never hidden.
 
+import { translator } from '../../../lib/i18n/translate.mjs';
+
 export const TOOL_TASKS = [
   { key: 'upscale', label: 'Upscale', blurb: 'Make an image larger and sharper.', ids: ['topaz-upscale'] },
   { key: 'background', label: 'Remove background', blurb: 'Cut the subject out of a photo.', ids: ['bria-bg-remove'] },
@@ -19,17 +21,21 @@ export const TOOL_TASKS = [
 const OTHER = { key: 'other', label: 'More tools', blurb: 'Other models that start from your own file.' };
 
 const SLOT_LABEL = { image: 'an image', video: 'a video', audio: 'audio' };
+const ENGLISH = translator('en');
 
 /** True for a model that cannot run without an upload. */
 export function isTool(model) {
   return Object.values(model?.capabilities?.media || {}).some((spec) => spec && spec.required);
 }
 
-/** "an image and audio": the uploads a tool requires, in words. */
-export function toolNeeds(model) {
+/**
+ * "an image and audio": the uploads a tool requires, in words. `t` is a
+ * translator (lib/i18n/translate.mjs); with none the words are English.
+ */
+export function toolNeeds(model, t = ENGLISH) {
   const slots = Object.entries(model?.capabilities?.media || {}).filter(([, spec]) => spec && spec.required)
-    .map(([slot]) => SLOT_LABEL[slot] || slot);
-  return slots.join(' and ');
+    .map(([slot]) => (SLOT_LABEL[slot] ? t(`tools.slot.${slot}`) : slot));
+  return slots.reduce((joined, slot) => (joined ? t('tools.and', { a: joined, b: slot }) : slot), '');
 }
 
 /**

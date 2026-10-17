@@ -69,7 +69,7 @@ export const LIST_GROUPS = [
 
 // The catalog keys for a group's label and unit (the English above is what
 // /models prints; the landing page reads these).
-const GROUP_KEYS = {
+export const GROUP_KEYS = {
   video: { label: 'home.models.video', unit: 'home.models.unitVideo' },
   image: { label: 'home.models.image', unit: 'home.models.unitImage' },
   audio: { label: 'home.models.audio', unit: 'home.models.unitAudio' },

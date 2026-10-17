@@ -42,7 +42,9 @@ test('/tools is routed, in the sitemap and survives a catalog outage', () => {
     assert.match(readFileSync(new URL('../app/sitemap.js', import.meta.url), 'utf8'), /page\('\/tools'/);
     const page = readFileSync(new URL('../app/veyrnox/tools/page.js', import.meta.url), 'utf8');
     assert.match(page, /catch \(err\)/);
-    assert.match(page, /The tool list is unavailable right now/);
+    // The sentence lives in the English catalog (ADR-0107).
+    assert.match(page, /tools\.empty/);
+    assert.match(readFileSync(new URL('../lib/i18n/messages/en.mjs', import.meta.url), 'utf8'), /The tool list is unavailable right now/);
 });
 
 test('/tools has a visible route loading state while its catalog is fetched', () => {
