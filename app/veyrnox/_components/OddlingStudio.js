@@ -9,6 +9,7 @@ import { gatewayFetch } from '../_lib/gateway';
 import { REVEAL_SAVED_ODDLING } from '../../../lib/savedOddlingHelp.js';
 import { journeyHandoff, publishJourneyView } from '../_lib/veyJourneyStore';
 import { Button } from './Button';
+import { OddlingCatalog } from './OddlingCatalog';
 import { OddlingExplore, useOddlingExplore } from './OddlingExplore';
 import { OddlingMotionPanel } from './OddlingMotionPanel';
 import { OddlingSheet } from './OddlingSheet';
@@ -26,7 +27,6 @@ import { changeCharacterPick } from '../_lib/characterOptions';
 import { parseOddlingDeepLink, withoutDeepLink } from '../_lib/oddlingExplore';
 import {
   ODDLING_MOTIONS,
-  ODDLING_DOLL_FACETS,
   ODDLING_SCENES,
   buildOddlingStudioPrompt,
   buildOddlingDirection,
@@ -41,88 +41,6 @@ import {
   toggleOpenSection,
 } from '../_lib/oddlingStudio';
 
-const DOLL_DEFAULTS = {
-  body_type: 'Pear',
-  hair: 'Sculptural Wave Tower',
-  wardrobe_style: 'Modern Basics',
-};
-
-function DollHair({ hair }) {
-  if (hair === 'Sphere Cut') return <circle cx="60" cy="27" r="23" className="fill-vx-accent" />;
-  if (hair === 'Sculptural Wave Tower') return <path d="M43 35C39 22 47 17 45 8c10 7 12-7 21-4 8 3 3 12 12 15 8 3 4 14-2 20z" className="fill-vx-accent" />;
-  if (hair === 'Shelf Cut') return <path d="M29 16h62v20H74v7H46v-7H29z" className="fill-vx-accent" />;
-  return <path d="M42 25c3-19 34-19 37 0l-6 8H47z" className="fill-vx-accent" />;
-}
-
-function OddlingDoll({ picks, compact = false }) {
-  const body = picks.body_type || DOLL_DEFAULTS.body_type;
-  const hair = picks.hair || DOLL_DEFAULTS.hair;
-  const outfit = picks.wardrobe_style || DOLL_DEFAULTS.wardrobe_style;
-  const shapes = {
-    'Very Skinny': { torso: 'M49 58Q60 51 71 58L68 111H52z', leftArm: 'M49 61L38 108l7 2 11-43z', rightArm: 'M71 61l11 47-7 2-11-43z', legW: 7, leftLeg: 52, rightLeg: 63 },
-    Pear: { torso: 'M43 58Q60 49 77 58L87 111H33z', leftArm: 'M44 61l-14 45 8 3 15-39z', rightArm: 'M76 61l14 45-8 3-15-39z', legW: 10, leftLeg: 44, rightLeg: 66 },
-    Fat: { torso: 'M35 59Q60 45 85 59Q101 83 87 113H33Q19 83 35 59z', leftArm: 'M37 62q-14 17-14 43l10 2 13-36z', rightArm: 'M83 62q14 17 14 43l-10 2-13-36z', legW: 11, leftLeg: 42, rightLeg: 67 },
-    'Hyper-Muscular': { torso: 'M34 58Q47 46 60 56Q73 46 86 58L74 112H46z', leftArm: 'M36 59q-13 3-14 19l8 31 11-3-2-32 14-9z', rightArm: 'M84 59q13 3 14 19l-8 31-11-3 2-32-14-9z', legW: 13, leftLeg: 39, rightLeg: 68 },
-  };
-  const shape = shapes[body] || shapes.Pear;
-  const shirt = outfit === 'Office Surrealist' ? 'fill-vx-fg-muted' : outfit === 'Soft Sculpture' ? 'fill-vx-money' : 'fill-vx-accent';
-  const bottoms = outfit === 'Modern Basics' ? 'fill-vx-fg-muted' : 'fill-vx-fg';
-  return (
-    <svg viewBox="0 0 120 160" aria-hidden="true" className={compact ? 'h-24 w-full' : 'h-48 w-full'}>
-      <ellipse cx="60" cy="151" rx="34" ry="4" className="fill-vx-fg opacity-10" />
-      <DollHair hair={hair} />
-      <circle cx="60" cy="35" r="17" className="fill-vx-fg" />
-      <circle cx="54" cy="34" r="1.7" className="fill-vx-base" /><circle cx="66" cy="34" r="1.7" className="fill-vx-base" />
-      <path d="M56 42q4 4 8 0" fill="none" stroke="rgb(var(--vx-base))" strokeWidth="1.5" strokeLinecap="round" />
-      <path d={shape.leftArm} className="fill-vx-fg" /><path d={shape.rightArm} className="fill-vx-fg" />
-      <path d={shape.torso} className={shirt} />
-      {outfit === 'Soft Sculpture' && <ellipse cx="60" cy="83" rx="43" ry="33" className="fill-vx-money opacity-90" />}
-      {outfit === 'Office Surrealist' && <><path d="M42 59l18 26 18-26-7-5-11 12-11-12z" className="fill-vx-panel" /><path d="M60 66l5 9-5 17-5-17z" className="fill-vx-money" /></>}
-      {outfit === 'Tiny Formalwear' && <><path d="M45 58h30l-5 27H50z" className="fill-vx-fg-muted" /><path d="M53 61l7 7 7-7v12H53z" className="fill-vx-money" /><circle cx="60" cy="77" r="2" className="fill-vx-base" /></>}
-      {outfit === 'Modern Basics' && <path d="M37 96h46l-5 22H42z" className={bottoms} />}
-      <rect x={shape.leftLeg} y="108" width={shape.legW} height="38" rx={shape.legW / 2} className={bottoms} />
-      <rect x={shape.rightLeg} y="108" width={shape.legW} height="38" rx={shape.legW / 2} className={bottoms} />
-      <rect x={shape.leftLeg - 3} y="142" width={shape.legW + 7} height="7" rx="3" className="fill-vx-fg-muted" />
-      <rect x={shape.rightLeg - 1} y="142" width={shape.legW + 7} height="7" rx="3" className="fill-vx-fg-muted" />
-    </svg>
-  );
-}
-
-function DollLab({ picks, facet, onFacet, onPick }) {
-  const active = ODDLING_DOLL_FACETS.find((item) => item.id === facet) || ODDLING_DOLL_FACETS[0];
-  return (
-    <section data-assistant-target="oddlings.doll-lab" className="mt-5 overflow-hidden rounded-2xl border border-vx-border bg-vx-base">
-      <div className="grid grid-cols-[132px_1fr] items-center gap-2 border-b border-vx-border px-3 py-3">
-        <div className="rounded-xl border border-vx-border bg-vx-panel px-2 pt-1"><OddlingDoll picks={picks} /></div>
-        <div className="min-w-0">
-          <span className="font-vx-mono text-[9px] font-bold tracking-[0.14em] text-vx-accent">ODDLING DOLL LAB</span>
-          <h2 className="mt-1 text-xl font-extrabold">Build the silhouette first.</h2>
-          <p className="mt-1 text-xs leading-relaxed text-vx-fg-muted">Swap the body, hair and outfit like a dress-up doll. Every choice updates the real generation prompt.</p>
-          <dl className="mt-3 space-y-1 font-vx-mono text-[9px] text-vx-fg-faint">
-            <div className="flex gap-2"><dt>BODY</dt><dd className="truncate text-vx-fg">{picks.body_type || 'Any'}</dd></div>
-            <div className="flex gap-2"><dt>HAIR</dt><dd className="truncate text-vx-fg">{picks.hair || 'Any'}</dd></div>
-            <div className="flex gap-2"><dt>OUTFIT</dt><dd className="truncate text-vx-fg">{picks.wardrobe_style || 'Any'}</dd></div>
-          </dl>
-        </div>
-      </div>
-      <div className="grid grid-cols-3 gap-1 p-2" role="tablist" aria-label="Doll feature">
-        {ODDLING_DOLL_FACETS.map((item) => <button key={item.id} type="button" role="tab" aria-selected={facet === item.id} onClick={() => onFacet(item.id)} className={`rounded-lg px-2 py-2 text-xs font-extrabold ${facet === item.id ? 'bg-vx-panel text-vx-fg' : 'text-vx-fg-muted hover:text-vx-fg'}`}>{item.label}</button>)}
-      </div>
-      <div className="grid grid-cols-4 gap-2 border-t border-vx-border p-3">
-        {active.options.map(([value, label]) => {
-          const optionPicks = { ...picks, [active.id]: value };
-          const selected = picks[active.id] === value;
-          return <button key={value} type="button" aria-pressed={selected} onClick={() => onPick(active.id, value)} className={`min-w-0 overflow-hidden rounded-xl border bg-vx-panel text-center transition-colors ${selected ? 'border-vx-accent ring-2 ring-vx-accent/20' : 'border-vx-border hover:border-vx-fg/30'}`}>
-            <OddlingDoll picks={optionPicks} compact />
-            <span className={`block truncate border-t px-1 py-2 text-[10px] font-bold ${selected ? 'border-vx-accent/30 text-vx-accent' : 'border-vx-border text-vx-fg-muted'}`}>{label}</span>
-          </button>;
-        })}
-      </div>
-      <p className="px-3 pb-3 text-[10px] leading-relaxed text-vx-fg-faint">Quick picks are a starting point. Use Detailed traits below for every shape, size, texture and accessory.</p>
-    </section>
-  );
-}
-
 export default function OddlingStudio() {
   const router = useRouter();
   const explore = useOddlingExplore();
@@ -132,7 +50,6 @@ export default function OddlingStudio() {
   const portrait = oddlingPortrait(portraitId);
   const [mode, setMode] = useState('portrait');
   const [picks, setPicks] = useState({ ...ODDLING_ARCHETYPES[0].picks });
-  const [dollFacet, setDollFacet] = useState('body_type');
   const [motionId, setMotionId] = useState(ODDLING_MOTIONS[0].id);
   const [scene, setScene] = useState(ODDLING_SCENES[0]);
   const [reference, setReference] = useState(null);
@@ -223,6 +140,13 @@ export default function OddlingStudio() {
 
   function setPick(key, value) {
     setPicks((current) => changeCharacterPick(current, key, value));
+    setNotice('');
+  }
+
+  // Clears the look (every character choice) and keeps the name, voice and show the person typed.
+  function clearLook() {
+    const ids = new Set(CHARACTER_GROUPS.map((group) => group.id));
+    setPicks((current) => Object.fromEntries(Object.entries(current).filter(([key]) => !ids.has(key))));
     setNotice('');
   }
 
@@ -318,7 +242,7 @@ export default function OddlingStudio() {
               <button type="button" role="tab" aria-selected={mode === 'motion'} onClick={() => setMode('motion')} className={`rounded-lg px-3 py-2.5 text-sm font-bold ${mode === 'motion' ? 'bg-vx-panel text-vx-fg shadow-sm' : 'text-vx-fg-muted'}`}>Motion</button>
             </div>
 
-            {mode === 'portrait' && <DollLab picks={picks} facet={dollFacet} onFacet={setDollFacet} onPick={setPick} />}
+            {mode === 'portrait' && <OddlingCatalog picks={picks} onPick={setPick} onClear={clearLook} />}
 
             <div data-assistant-target="oddlings.reference" className="mt-5 rounded-2xl border border-vx-border bg-vx-base p-4">
               <div className="flex items-center justify-between gap-3">
