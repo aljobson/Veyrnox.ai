@@ -165,6 +165,11 @@ f96c65a3bd3825b5516fcc0d9035accdf7211be4:tests/socialPublishSweep.test.mjs:gener
 f96c65a3bd3825b5516fcc0d9035accdf7211be4:tests/socialPublishSweep.test.mjs:generic-api-key:286
 fbd890da781e87312a377293a3e229b31d0395ad:tests/chat.test.mjs:generic-api-key:24
 fd087777e79b8a1e33774074af9d1f32e18fff05:tests/veyrnoxMcp.test.mjs:generic-api-key:75
+# Public Supabase publishable keys in the mobile app config (same values as wrangler.jsonc).
+5e48c7504d02ec0e53de3e6b06eebe72be5f3e2a:apps/mobile/src/lib/config.ts:generic-api-key:15
+5e48c7504d02ec0e53de3e6b06eebe72be5f3e2a:apps/mobile/src/lib/config.ts:generic-api-key:20
+# Synthetic idempotency-key fixture in the mobile chat test.
+4bc5a6c41851f32591ac25ddb4b8ccfd55edfed1:apps/mobile/__tests__/chat.test.ts:generic-api-key:51
 # apps/mobile (another branch): Supabase publishable keys, public by design, and a fake idempotency key in a test
 4bc5a6c41851f32591ac25ddb4b8ccfd55edfed1:apps/mobile/__tests__/chat.test.ts:generic-api-key:51
 5e48c7504d02ec0e53de3e6b06eebe72be5f3e2a:apps/mobile/src/lib/config.ts:generic-api-key:15
