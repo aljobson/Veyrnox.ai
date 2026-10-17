@@ -1,4 +1,5 @@
 import * as AppleAuthentication from 'expo-apple-authentication';
+import { fetch as expoFetch } from 'expo/fetch';
 import * as WebBrowser from 'expo-web-browser';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Platform } from 'react-native';
@@ -92,7 +93,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     const api = useMemo(
-        () => createApiClient({ baseUrl: API_BASE, getAccessToken, onSessionLost: () => void drop() }),
+        () => createApiClient({
+                baseUrl: API_BASE,
+                getAccessToken,
+                onSessionLost: () => void drop(),
+                streamFetch: expoFetch as unknown as typeof fetch,
+            }),
         [getAccessToken, drop],
     );
 

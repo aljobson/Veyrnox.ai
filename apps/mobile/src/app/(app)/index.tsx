@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Stack } from 'expo-router';
+import { Link, Stack } from 'expo-router';
 import { useAuth } from '../../auth/AuthProvider';
 import type { Balance } from '../../lib/api';
 import { colors } from '../../theme';
@@ -54,6 +54,8 @@ const styles = StyleSheet.create({
     value: { color: colors.text, fontSize: 48, fontWeight: '700' },
     muted: { color: colors.muted },
     error: { color: colors.danger },
+    primary: { marginTop: 24, backgroundColor: colors.accent, borderRadius: 12, paddingVertical: 16, alignItems: 'center' },
+    primaryText: { color: colors.text, fontSize: 16, fontWeight: '600' },
     signOut: { marginTop: 'auto', paddingVertical: 14, alignItems: 'center' },
     signOutText: { color: colors.muted },
 });
