@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import pg from 'pg';
 
-describe('social Publish Plan entitlement (0293, 0298, 0335)', { skip: !process.env.DATABASE_URL }, () => {
+describe('social Publish Plan entitlement (0293, 0298, 0335, 0336)', { skip: !process.env.DATABASE_URL }, () => {
   let pool: pg.Pool;
   const one = async (sql: string, args: unknown[] = []) => (await pool.query(sql, args)).rows[0];
   const value = async (sql: string, args: unknown[] = []) => (await one(sql, args)).value;
@@ -26,6 +26,9 @@ describe('social Publish Plan entitlement (0293, 0298, 0335)', { skip: !process.
     const weeklyMigration = await readFile(new URL('./schema/supabase/0335_weekly_social_publish_plan.sql', import.meta.url), 'utf8');
     await pool.query(weeklyMigration);
     await pool.query(weeklyMigration);
+    const annualMigration = await readFile(new URL('./schema/supabase/0336_annual_social_publish_plan.sql', import.meta.url), 'utf8');
+    await pool.query(annualMigration);
+    await pool.query(annualMigration);
   });
 
   after(async () => { if (pool) await pool.end(); });
@@ -47,11 +50,12 @@ describe('social Publish Plan entitlement (0293, 0298, 0335)', { skip: !process.
       new Date(Date.now() + 31 * 86400000).toISOString(), false, at],
   );
 
-  it('offers the approved weekly and monthly advanced plans and defaults to Free', async () => {
+  it('offers the approved weekly, monthly and annual advanced plans and defaults to Free', async () => {
     const plans = await value('SELECT public.list_social_publish_plans() AS value');
     assert.deepEqual(plans, [
       { id: 'publish-weekly', name: 'Publish Plan', billing_interval: 'week', price_usd_cents: 499, analytics_days: 366, best_time_enabled: true },
       { id: 'publish', name: 'Publish Plan', billing_interval: 'month', price_usd_cents: 1500, analytics_days: 366, best_time_enabled: true },
+      { id: 'publish-annual', name: 'Publish Plan', billing_interval: 'year', price_usd_cents: 12600, analytics_days: 366, best_time_enabled: true },
     ]);
     const auth = await user();
     const own = await entitlement(auth);
