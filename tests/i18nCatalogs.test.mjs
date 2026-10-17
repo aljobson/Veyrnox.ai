@@ -3,10 +3,11 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { checkCatalog } from '../lib/i18n/check.mjs';
 import { TOOL_TASKS } from '../app/veyrnox/_lib/tools.js';
+import { GUIDES } from '../app/veyrnox/_lib/guides.js';
 import en from '../lib/i18n/messages/en.mjs';
 import { CATALOGS, messagesFor, translator, richParts } from '../lib/i18n/translate.mjs';
 import {
-  LOCALES, LOCALIZED_PATHS, localesEnabled, splitLocalePath, localizedHref, languageAlternates, localeInfo, switchLanguageHref,
+  LOCALES, LOCALIZED_PATHS, localesEnabled, splitLocalePath, isLocalizedPath, localizedHref, languageAlternates, localeInfo, switchLanguageHref,
 } from '../lib/i18n/locales.mjs';
 
 test('every language has a catalog that matches English key for key', () => {
@@ -46,7 +47,7 @@ test('only translated pages take the prefix', () => {
   assert.equal(localizedHref('es', '/'), '/es');
   assert.equal(localizedHref('es', '/#faq'), '/es#faq');
   assert.equal(localizedHref('es', '/pricing'), '/es/pricing');
-  assert.equal(localizedHref('es', '/guides'), '/guides');
+  assert.equal(localizedHref('es', '/presets'), '/presets');
   assert.ok(LOCALIZED_PATHS.has('/pricing'));
   assert.equal(localizedHref('es', 'mailto:legal@veyrnox.com'), 'mailto:legal@veyrnox.com');
   assert.equal(localizedHref('en', '/'), '/');
@@ -91,9 +92,9 @@ test('the picker keeps a translated page and falls back to home for the rest', (
   assert.equal(switchLanguageHref('fr', '/es'), '/fr');
   assert.equal(switchLanguageHref('en', '/ja'), '/');
   assert.equal(switchLanguageHref('de', '/pricing'), '/de/pricing', 'pricing is translated');
-  assert.equal(switchLanguageHref('de', '/guides'), '/de', 'no German guides page yet: home');
+  assert.equal(switchLanguageHref('de', '/presets'), '/de', 'no German templates page yet: home');
   assert.equal(switchLanguageHref('en', '/es/pricing'), '/pricing');
-  assert.equal(switchLanguageHref('en', '/guides'), '/guides', 'English on an English page stays put');
+  assert.equal(switchLanguageHref('en', '/presets'), '/presets', 'English on an English page stays put');
 });
 
 test('every tool group on /tools has translated words, and every MCP tool a description', () => {
@@ -104,4 +105,25 @@ test('every tool group on /tools has translated words, and every MCP tool a desc
   for (const name of ['list_models', 'estimate_generation', 'get_generation', 'list_generations', 'get_balance']) {
     assert.ok(en[`mcp.tool.${name}`], name);
   }
+});
+
+test('every guide, step and link has catalog words in English, and the English matches the data', () => {
+  for (const g of GUIDES) {
+    assert.equal(en[`guide.${g.id}.title`], g.title);
+    assert.equal(en[`guide.${g.id}.summary`], g.summary);
+    g.steps.forEach((step, i) => {
+      assert.equal(en[`guide.${g.id}.s${i + 1}.title`], step.title, `${g.id} step ${i + 1}`);
+      assert.equal(en[`guide.${g.id}.s${i + 1}.body`], step.body, `${g.id} step ${i + 1} body`);
+    });
+    g.links.forEach((link, i) => assert.equal(en[`guide.${g.id}.l${i + 1}`], link.label, `${g.id} link ${i + 1}`));
+  }
+});
+
+test('guide pages take a prefix, the bare prefix path does not', () => {
+  assert.equal(isLocalizedPath('/guides/credits'), true);
+  assert.equal(isLocalizedPath('/guides'), true);
+  assert.equal(isLocalizedPath('/guides/'), true);
+  assert.equal(localizedHref('fr', '/guides/credits'), '/fr/guides/credits');
+  assert.equal(switchLanguageHref('de', '/fr/guides/library'), '/de/guides/library');
+  assert.equal(isLocalizedPath('/presets/abc'), false);
 });

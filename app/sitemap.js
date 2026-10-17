@@ -1,5 +1,5 @@
 import { SITE_URL } from './seo';
-import { LOCALES, LOCALIZED_PATHS, languageAlternates, localesEnabled } from '../lib/i18n/locales.mjs';
+import { LOCALES, isLocalizedPath, languageAlternates, localesEnabled } from '../lib/i18n/locales.mjs';
 import { listModelsForDetails } from './veyrnox/_lib/modelPages';
 import { PRESETS } from './veyrnox/_lib/templates';
 import { GUIDES } from './veyrnox/_lib/guides';
@@ -26,7 +26,7 @@ export default async function sitemap() {
     changeFrequency,
     priority,
     ...(lastModified ? { lastModified } : {}),
-    ...(languages.length && LOCALIZED_PATHS.has(path || '/')
+    ...(languages.length && isLocalizedPath(path || '/')
       ? { alternates: { languages: Object.fromEntries(Object.entries(languageAlternates(path || '/')).filter(([k]) => k !== 'x-default').map(([k, v]) => [k, `${SITE_URL}${v === '/' ? '' : v}`])) } }
       : {}),
   });
