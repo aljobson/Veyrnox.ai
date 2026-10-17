@@ -4,6 +4,7 @@
 # Each fingerprint is tied to one existing commit/path/rule/line; new findings fail.
 # Public localStorage preference name "veyrnox.vey.placement.v1", not an API credential.
 f44961885d2b5297e8d92406ccf9821265844226:lib/veyPlacement.js:generic-api-key:1
+1da6dd9576daa3c7fb2807b10cc382469d8af8ae:lib/veyPlacement.js:generic-api-key:1
 0032381964baf980aaa9a7003470e210acd2b10f:tests/cinemaPassApi.test.mjs:generic-api-key:11
 0032381964baf980aaa9a7003470e210acd2b10f:tests/stripePass.test.mjs:generic-api-key:9
 0032381964baf980aaa9a7003470e210acd2b10f:tests/stripePassWebhook.test.mjs:generic-api-key:10
