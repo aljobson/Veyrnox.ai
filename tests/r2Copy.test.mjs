@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { copyUrlToR2 } from '../packages/adapters/r2Copy.js';
+import { createHash } from 'node:crypto';
+import { flacHeader, taggedAudio } from './fixtures/providerAudio.mjs';
 
 const cfg = { accountId: 'acc', accessKeyId: 'k', secretAccessKey: 's', bucket: 'b' };
 
@@ -129,4 +131,23 @@ test('an MP4-only copy still refuses anything that is not an MP4', async () => {
     } finally {
         globalThis.fetch = realFetch;
     }
+});
+
+test('provider ID3-prefixed FLAC keeps exact bytes and digest, but is stored as FLAC', async () => {
+    const realFetch = globalThis.fetch;
+    const bytes = taggedAudio(flacHeader());
+    let put;
+    globalThis.fetch = async (url, init = {}) => {
+        if (String(url).includes('fal.media')) return new Response(bytes, { headers: { 'content-type': 'audio/mpeg' } });
+        put = init;
+        return new Response(null, { status: 200 });
+    };
+    try {
+        const result = await copyUrlToR2('https://v3.fal.media/music.mp3', 'private/music.mp3', cfg);
+        assert.equal(result.ok, true);
+        assert.equal(result.mimeType, 'audio/flac');
+        assert.equal(put.headers['content-type'], 'audio/flac');
+        assert.deepEqual(new Uint8Array(put.body), bytes);
+        assert.equal(result.sha256, createHash('sha256').update(bytes).digest('hex'));
+    } finally { globalThis.fetch = realFetch; }
 });
