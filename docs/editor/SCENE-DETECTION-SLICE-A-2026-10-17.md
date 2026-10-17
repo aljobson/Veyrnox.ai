@@ -86,3 +86,7 @@ Still not covered: a Reticle journey, phone layout, non-H.264 sources and a real
 - **Insert works:** the top two picks become two new clips after the timeline, as one edit.
 - **Cost:** about 2.5 s for a 30 s clip (scene search plus loudness); the loudness decode alone is about 0.1 s.
 - **Not shown:** that these picks are *good* clips. The weights (loudness 0.3, speech 0.3, edges 0.15, continuity 0.1, length 0.15) are a starting guess; judging them needs real footage and a person's eye. A clip with no audio track in the browser path, a clip with real speech, music or a noisy room, and clips of other lengths are untested. The second loud shot (gain 0.45) is ranked second but is not labelled "Loud", because the label needs 0.7 of the clip's 95th-percentile loudness.
+
+## Slice C panel check (2026-10-17, local, flags on)
+
+Real editor (`next dev --webpack`, `EDITOR_RUNTIME_FLAGS={"scenes":"true","clipper":"true"}`): imported the 30 s six-shot clip with set loudness, selected it, **Clips > Find clips** listed 10 to 15 s first ("Loud, lively audio"), then 20 to 25 s, with 5 ruler marks; "Add 3 clips to the timeline" appended three 5 s clips after the timeline in source order as one edit, and one Undo removed them. The sound in that clip is synthetic, as above. Not driven: the flag-off rail, the no-audio message in the browser, a phone-sized layout, a Reticle journey.

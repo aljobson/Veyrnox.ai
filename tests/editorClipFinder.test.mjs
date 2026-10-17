@@ -107,3 +107,14 @@ test('the accumulator averages channels, starts at the clip\'s own start and ign
     assert.deepEqual(acc.result().values.map(v => Number(v.toFixed(3))), [0.4, 0]);
     assert.deepEqual(createEnergyAccumulator(1, 0, 3).result().values, [0, 0, 0], 'no sound is silence, not NaN');
 });
+
+import { pickRows, tickedPicks } from '../app/veyrnox/_lib/editorClipRun.mjs';
+test('pick rows place each pick on the timeline, tick the best three and drop picks outside the clip', () => {
+    const item = { in: 60, start: 90, len: 600 };
+    const picks = [{ start: 10, end: 15, reasons: ['a'] }, { start: 20, end: 25, reasons: ['b'] }, { start: 5, end: 9, reasons: ['c'] }, { start: 1, end: 4, reasons: ['d'] }, { start: 1, end: 30, reasons: ['too long'] }];
+    const rows = pickRows(item, picks);
+    assert.deepEqual(rows.map(r => [r.frame, r.seconds, r.ticked]), [[330, 5, true], [180, 4, true]], 'the clip shows source 2 s to 22 s: the 20 to 25 s pick runs past its end, the 1 to 4 s pick starts before it, and 1 to 30 s is both');
+    assert.deepEqual(tickedPicks(rows), [{ start: 10, end: 15 }, { start: 5, end: 9 }]);
+    assert.deepEqual(tickedPicks(rows.map(r => ({ ...r, ticked: false }))), []);
+    assert.deepEqual(pickRows(item, []), []);
+});
