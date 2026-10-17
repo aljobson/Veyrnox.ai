@@ -395,12 +395,16 @@ function decodeXmlText(s) {
  * header is part of the signature, so the name cannot be changed afterwards.
  * Returns { url } or throws for config errors.
  */
-export async function presignGetUrl(key, expiresSeconds, cfg, { downloadFilename } = {}) {
+export async function presignGetUrl(key, expiresSeconds, cfg, { downloadFilename, responseContentType } = {}) {
     if (!isConfigured(cfg)) {
         throw new Error('R2 not configured');
     }
     if (downloadFilename !== undefined && !/^[A-Za-z0-9._-]{1,80}$/.test(downloadFilename)) {
         throw new Error('invalid download file name');
+    }
+    // Only the verified legacy provider-FLAC correction may override object MIME.
+    if (responseContentType !== undefined && responseContentType !== 'audio/flac') {
+        throw new Error('invalid response content type');
     }
     const expires = Math.max(60, Math.min(900, expiresSeconds | 0));
     const amzDate = iso8601BasicNow();
@@ -417,6 +421,7 @@ export async function presignGetUrl(key, expiresSeconds, cfg, { downloadFilename
         'X-Amz-SignedHeaders': 'host',
     };
     if (downloadFilename) params['response-content-disposition'] = `attachment; filename="${downloadFilename}"`;
+    if (responseContentType) params['response-content-type'] = responseContentType;
     // SigV4: sorted by code point (capitals first) and RFC 3986 encoded. URLSearchParams writes a space as "+".
     const canonicalQuery = Object.keys(params).sort().map((k) => `${rfc3986(k)}=${rfc3986(params[k])}`).join('&');
 

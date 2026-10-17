@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { register } from 'node:module';
+import { lipSyncMp4 } from './fixtures/lipSyncMp4.mjs';
 register('data:text/javascript,' + encodeURIComponent(`export async function resolve(s,c,next) { return next(s === 'next/server' ? 'next/server.js' : s,c); }`));
 Object.assign(process.env, {
     SUPABASE_URL: 'https://db.test', SUPABASE_SERVICE_ROLE_KEY: 'test-service', FAL_KEY: 'test-fal',
@@ -13,6 +14,8 @@ const AUTH = '11111111-1111-4111-8111-111111111111', JOB = '22222222-2222-4222-8
 const START = '33333333-3333-4333-8333-333333333333', END = '44444444-4444-4444-8444-444444444444';
 const VIDEO = '55555555-5555-4555-8555-555555555555', AUDIO = '66666666-6666-4666-8666-666666666666';
 const FOREIGN = '77777777-7777-4777-8777-777777777777', UPLOAD = `uploads/${AUTH}/88888888-8888-4888-8888-888888888888.png`;
+const VIDEO_UPLOAD = `uploads/${AUTH}/88888888-8888-4888-8888-888888888888.mp4`;
+const AUDIO_UPLOAD = `uploads/${AUTH}/88888888-8888-4888-8888-888888888888.wav`;
 const kling = { id: 'kling-3.0-i2v', provider: 'fal', provider_endpoint: 'fal-ai/kling-video/v3/pro/image-to-video', modality: 'image-to-video', credits_5s: 12, active: true, gated_flag: false };
 const latent = { ...kling, id: 'latentsync', provider_endpoint: 'fal-ai/latentsync', modality: 'video-to-video' };
 const avatar = { ...kling,id: 'kling-avatar-v2',provider_endpoint: 'fal-ai/kling-video/ai-avatar/v2/standard' };
@@ -28,6 +31,7 @@ const ref = (asset_id,slot) => ({ asset_id,slot });
 function network({ model = kling, overrides = {}, replay = false, rate = { ok: true } } = {}) {
     const assets = Object.fromEntries([[START,'png',png,'image/png'],[END,'png',png,'image/png'],[VIDEO,'mp4',mp4,'video/mp4'],[AUDIO,'wav',wav(),'audio/wav']].map(([id,extension,bytes,mime_type]) => [id,{ ok: true, state: 'STORED', r2_key: `jobs/${id}/output.${extension}`, mime_type, bytes, ...overrides[id] }]));
     const objects = new Map(Object.values(assets).map(asset => [`/test/${asset.r2_key}`,asset])); objects.set(`/test/${UPLOAD}`,{ bytes: png, mime_type: 'image/png' });
+    objects.set(`/test/${VIDEO_UPLOAD}`,assets[VIDEO]); objects.set(`/test/${AUDIO_UPLOAD}`,assets[AUDIO]);
     const calls = [], real = globalThis.fetch;
     globalThis.fetch = async (url,init = {}) => {
         const u = new URL(String(url)), body = typeof init.body === 'string' ? JSON.parse(init.body) : undefined;
@@ -119,6 +123,27 @@ test('declared video/audio slots inspect real containers and measured lengths wi
     await rejected({ source_assets: [VIDEO] },'source_type_unsupported');
     await rejected({ model_id: latent.id,source_assets: [ref(VIDEO,'video'),ref(AUDIO,'audio')],inputs: {} },'source_too_long',{ model: latent,overrides: { [AUDIO]: { bytes: wav(41) } } });
     await rejected({ model_id: latent.id,source_assets: [ref(VIDEO,'video'),ref(AUDIO,'audio')],inputs: {} },'source_length_unknown',{ model: latent,overrides: { [AUDIO]: { bytes: wav().subarray(0,20) } } });
+});
+test('LatentSync rejects the real QA duration mismatch before any debit or provider dispatch, including longer embedded soundtrack headers',async () => {
+    for (const video of [lipSyncMp4(),lipSyncMp4({ movie: 12,audio: 15 })]) {
+        const calls = await rejected({ model_id: latent.id,source_assets: [ref(VIDEO,'video'),ref(AUDIO,'audio')],inputs: {} },'lipsync_audio_exceeds_video',{
+            model: latent,overrides: { [VIDEO]: { bytes: video },[AUDIO]: { bytes: wav(8.542) } },
+        });
+        assert.ok(calls.some(call => call.host.endsWith('.r2.cloudflarestorage.com')));
+    }
+    for (const options of [{ duplicateVideo: true },{ handler: 'meta' }]) await rejected({ model_id: latent.id,source_assets: [ref(VIDEO,'video'),ref(AUDIO,'audio')],inputs: {} },'lipsync_video_length_unknown',{ model: latent,overrides: { [VIDEO]: { bytes: lipSyncMp4(options) } } });
+    await rejected({ model_id: latent.id,source_assets: [],source_keys: [{ key: VIDEO_UPLOAD,slot: 'video' },{ key: AUDIO_UPLOAD,slot: 'audio' }],inputs: {} },'lipsync_audio_exceeds_video',{ model: latent,overrides: { [VIDEO]: { bytes: lipSyncMp4() },[AUDIO]: { bytes: wav(8.542) } } });
+    await rejected({ model_id: latent.id,source_assets: [ref(VIDEO,'video'),ref(AUDIO,'audio')],inputs: {} },'lipsync_video_length_unknown',{ model: latent,overrides: { [VIDEO]: { bytes: lipSyncMp4().subarray(0,16) } } });
+});
+test('equal or shorter lip-sync speech keeps the approved provider payload and exact catalog price',async () => {
+    for (const seconds of [7.2,5]) {
+        const net = network({ model: latent,overrides: { [VIDEO]: { bytes: lipSyncMp4() },[AUDIO]: { bytes: wav(seconds) } } });
+        try {
+            assert.equal((await post({ model_id: latent.id,source_assets: [ref(VIDEO,'video'),ref(AUDIO,'audio')],inputs: {} })).status,200);
+            assert.deepEqual(Object.keys(submits(net)[0].body).sort(),['audio_url','video_url']);
+            assert.equal(rpcCalls(net,'ledger_debit')[0].body.p_credits,latent.credits_5s);
+        } finally { net.restore(); }
+    }
 });
 test('invalid or undeclared slots are refused before storage inspection, debit or dispatch',async () => {
     for (const [extra,error] of [
