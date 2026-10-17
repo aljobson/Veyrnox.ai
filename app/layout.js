@@ -11,7 +11,7 @@ import AnalyticsProvider, { analyticsEnabled } from '../components/AnalyticsProv
 import SiteChrome from './veyrnox/_components/SiteChrome';
 import { I18nProvider } from '../components/I18nProvider';
 import { getLocale } from '../lib/i18n/server';
-import { localeInfo } from '../lib/i18n/locales.mjs';
+import { localeInfo, localesEnabled } from '../lib/i18n/locales.mjs';
 import { translator } from '../lib/i18n/translate.mjs';
 import { OG_IMAGE, OPEN_GRAPH_BASE, ORG_LD, JsonLd } from './seo';
 
@@ -63,7 +63,7 @@ export default async function RootLayout({ children }) {
   return (
     <html lang={info.hreflang} dir={info.dir} data-scroll-behavior="smooth" className={inter.variable}>
       <body>
-        <I18nProvider locale={locale}>
+        <I18nProvider locale={locale} enabled={localesEnabled()}>
         <AnalyticsProvider>
           {process.env.NODE_ENV === 'development' ? <ReticleDev /> : null}
           <a href="#main" className="vx-skip rounded-full bg-vx-accent px-4 py-2 text-sm font-extrabold text-vx-accent-ink">

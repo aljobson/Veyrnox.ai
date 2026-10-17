@@ -16,6 +16,7 @@ import { useEditorEnabled } from './EditorFlag';
 import { NAV_CATEGORIES, PRIMARY_NAV_CATEGORIES } from '../_lib/tokens';
 import { AnnouncementBar } from './AnnouncementBar';
 import { PaywallPrompt } from './PaywallPrompt';
+import { LanguageMenu } from './LanguageMenu';
 import { useI18n } from '../../../components/I18nProvider';
 
 // Studio pages keep the making tools in the tab strip. This complementary
@@ -72,6 +73,7 @@ export function MarketingNav({ hideAnnouncementOnMobile = false }) {
       </nav>
       <div className="flex flex-1 xl:flex-none items-center justify-end gap-1 sm:gap-2 shrink-0">
         <SiteSearch className="hidden sm:inline-flex" />
+        <LanguageMenu />
         <ThemeToggle className="hidden xl:inline-flex" />
         <NavAuthButtons />
         <MobileMenu
