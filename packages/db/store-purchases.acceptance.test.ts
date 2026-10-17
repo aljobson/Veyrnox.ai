@@ -35,6 +35,7 @@ const MIGRATIONS = [
 
 describe("Store purchases (0344)", { skip: !DATABASE_URL && "DATABASE_URL not set" }, () => {
     let pool: pg.Pool;
+    const mine: string[] = []; // accounts this suite made; the database is shared with other suites
 
     before(async () => {
         pool = new pg.Pool({ connectionString: DATABASE_URL, max: 8 });
@@ -56,6 +57,7 @@ describe("Store purchases (0344)", { skip: !DATABASE_URL && "DATABASE_URL not se
         const authId = randomUUID(); // auth.users ids are UUIDs; the tenant trigger casts them
         const userId = (await one(`SELECT public.signup_grant($1, $2) AS id`, [authId, `${randomUUID()}@test.veyrnox.ai`])).id as string;
         const customer = (await one(`SELECT public.get_or_create_store_customer($1) AS r`, [authId])).r;
+        mine.push(userId);
         return { authId, userId, customerId: customer.rc_customer_id as string };
     };
 
@@ -217,12 +219,13 @@ describe("Store purchases (0344)", { skip: !DATABASE_URL && "DATABASE_URL not se
     });
 
     it("keeps the books balanced", async () => {
-        // The invariant itself (CLAUDE.md): balance = SUM(ledger deltas) for every account.
+        // The invariant itself (CLAUDE.md): balance = SUM(ledger deltas), for the accounts this suite touched.
         assert.equal(Number((await one(`SELECT count(*) AS n FROM public.credit_balances b
-            WHERE b.balance <> COALESCE((SELECT sum(l.delta) FROM public.ledger_entries l WHERE l.user_id = b.user_id), 0)`)).n), 0);
+            WHERE b.user_id = ANY($1::uuid[])
+              AND b.balance <> COALESCE((SELECT sum(l.delta) FROM public.ledger_entries l WHERE l.user_id = b.user_id), 0)`, [mine])).n), 0);
         // reconcile_top_ups (0065) is outside this chain on the base schema.
         if ((await one(`SELECT to_regprocedure('public.reconcile_top_ups()') AS f`)).f) {
-            assert.equal(Number((await one(`SELECT count(*) AS n FROM public.reconcile_top_ups()`)).n), 0);
+            assert.equal(Number((await one(`SELECT count(*) AS n FROM public.reconcile_top_ups() r WHERE r.user_id = ANY($1::uuid[])`, [mine])).n), 0);
         }
     });
 
