@@ -5,7 +5,7 @@ import { checkCatalog } from '../lib/i18n/check.mjs';
 import en from '../lib/i18n/messages/en.mjs';
 import { CATALOGS, messagesFor, translator, richParts } from '../lib/i18n/translate.mjs';
 import {
-  LOCALES, LOCALIZED_PATHS, localesEnabled, splitLocalePath, localizedHref, languageAlternates, localeInfo,
+  LOCALES, LOCALIZED_PATHS, localesEnabled, splitLocalePath, localizedHref, languageAlternates, localeInfo, switchLanguageHref,
 } from '../lib/i18n/locales.mjs';
 
 test('every language has a catalog that matches English key for key', () => {
@@ -74,4 +74,19 @@ test('languages are off unless the var is exactly "true"', () => {
   const config = JSON.parse(readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8').replace(/^\s*\/\/.*$/gm, '').replace(/,(\s*[}\]])/g, '$1'));
   assert.equal(config.vars.LOCALES_ENABLED, 'true');
   assert.equal(config.env.staging.vars.LOCALES_ENABLED, 'true');
+});
+
+test('every language has a flag and a name for the picker', () => {
+  for (const l of LOCALES) {
+    assert.match(l.flag, /^\p{Regional_Indicator}{2}$/u, l.code);
+    assert.ok(l.name.length > 0, l.code);
+  }
+});
+
+test('the picker keeps a translated page and falls back to home for the rest', () => {
+  assert.equal(switchLanguageHref('fr', '/'), '/fr');
+  assert.equal(switchLanguageHref('fr', '/es'), '/fr');
+  assert.equal(switchLanguageHref('en', '/ja'), '/');
+  assert.equal(switchLanguageHref('de', '/pricing'), '/de', 'no German pricing page yet: home');
+  assert.equal(switchLanguageHref('en', '/pricing'), '/pricing', 'English on an English page stays put');
 });

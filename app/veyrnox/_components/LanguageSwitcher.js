@@ -22,7 +22,7 @@ export function LanguageSwitcher({ locale, path = '/' }) {
               aria-current={l.code === locale ? 'true' : undefined}
               className={`inline-block py-1.5 hover:text-vx-fg ${l.code === locale ? 'font-bold text-vx-fg' : 'text-vx-fg-body underline underline-offset-4'}`}
             >
-              {l.name}
+              <span aria-hidden="true">{l.flag}</span> {l.name}
             </a>
           </li>
         ))}
