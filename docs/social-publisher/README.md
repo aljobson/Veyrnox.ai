@@ -22,7 +22,7 @@ plus Facebook, Threads, Pinterest, Bluesky, Twitch and Google Business Profile f
 ones stay behind `PUBLISH_EXTENDED_NETWORKS_ENABLED` (off in production, on in staging) and Instagram needs its
 provider review. Device uploads (`PUBLISH_UPLOADS_ENABLED`) and native video destinations
 (`PUBLISH_RUNTIME_FLAGS.videoDestinations`) are off in production. Free keeps one connected account and Post now;
-the $4.99/week, $15/month or $126/year Publish Plan (0293, 0298, 0335, 0337; new interval migrations pending deployment) allows five accounts, scheduling, 366-day analytics and best-time
+the $4.99/week, $15/month or $126/year Publish Plan (0293, 0298, 0335, 0338; new interval migrations pending deployment) allows five accounts, scheduling, 366-day analytics and best-time
 recommendations. The grouped `PUBLISH_RUNTIME_FLAGS` binding also turns on, in production, the management suite built
 in migrations 0299 to 0326: unified inbox and inbox workflows, SmartLinks, content library and presets, queues,
 approval links, teams and brand access, post variants, reports (scheduled, exported, delivered), the customer API and

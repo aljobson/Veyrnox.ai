@@ -289,7 +289,7 @@ asset or device upload to chosen accounts; weekly brand drafts need batch
 approval; a post that was submitted to a provider is never sent twice (0260,
 0287); a scheduled post can be cancelled and restored before the sweep claims
 it (0311). Paid surfaces (inbox, team roles, API, reports, 366-day analytics)
-follow a live Publish Plan ($4.99/week, $15/month or $126/year, 0293/0335/0337, `PUBLISH_RUNTIME_FLAGS.plans`).
+follow a live Publish Plan ($4.99/week, $15/month or $126/year, 0293/0335/0338, `PUBLISH_RUNTIME_FLAGS.plans`).
 `PUBLISH_UPLOADS_ENABLED` is `"false"` in production, so device uploads are
 staging only. Only YouTube is recorded as live-tested end to end (staging,
 2026-10-07); the rest is unverified against real accounts.
@@ -314,7 +314,7 @@ staging only. Only YouTube is recorded as live-tested end to end (staging,
 
 | feature | decision | blocker |
 |---|---|---|
-| **Publish Plan** ($4.99/week, $15/month or $126/year for 366-day analytics history, best-time recommendations, the inbox, team roles and the other advanced Publish surfaces; annual is 30% off twelve monthly payments) | ADR-0062/0063 amendments plus weekly option 0335 and annual option 0337 | **built, not decided-only**: 0293/0335/0337 with Checkout, Portal and webhook lifecycle, gated in the routes by the live plan; `PUBLISH_RUNTIME_FLAGS.plans` is `"true"` in production `wrangler.jsonc`; interval migrations and payment acceptance are pending |
+| **Publish Plan** ($4.99/week, $15/month or $126/year for 366-day analytics history, best-time recommendations, the inbox, team roles and the other advanced Publish surfaces; annual is 30% off twelve monthly payments) | ADR-0062/0063 amendments plus weekly option 0335 and annual option 0338 | **built, not decided-only**: 0293/0335/0338 with Checkout, Portal and webhook lifecycle, gated in the routes by the live plan; `PUBLISH_RUNTIME_FLAGS.plans` is `"true"` in production `wrangler.jsonc`; interval migrations and payment acceptance are pending |
 | **Subscription plan changes** (upgrade now, downgrade at period end, monthly-to-annual undecided); the pricing UI itself is built (§4) | ADR-0064 owner decisions 2026-10-03 | webhook acceptance on staging; the reviewed plan-change design (#508) needs a new migration |
 | Face Filters Transform (Slices 5–9) | upload spine shipped | fal cost data + CSAM hash matching |
 | Chat media tool calls (a model starting a priced job, with a confirm step) | ADR-0072 deferred v2 | own ADR; skills only prepare a draft today |
