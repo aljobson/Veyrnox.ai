@@ -45,6 +45,9 @@ REVOKE ALL ON FUNCTION public.security_events_no_update() FROM PUBLIC, anon, aut
 DROP TRIGGER IF EXISTS security_events_no_update ON public.security_events;
 CREATE TRIGGER security_events_no_update BEFORE UPDATE ON public.security_events
     FOR EACH ROW EXECUTE FUNCTION public.security_events_no_update();
+DROP TRIGGER IF EXISTS security_events_no_truncate ON public.security_events;
+CREATE TRIGGER security_events_no_truncate BEFORE TRUNCATE ON public.security_events
+    FOR EACH STATEMENT EXECUTE FUNCTION public.security_events_no_update();
 
 CREATE TABLE IF NOT EXISTS public.security_rules (
     rule_id         TEXT        PRIMARY KEY CHECK (rule_id ~ '^SEC-[0-9]{3}$'),
@@ -115,6 +118,9 @@ REVOKE ALL ON FUNCTION public.security_alert_actions_append_only() FROM PUBLIC, 
 DROP TRIGGER IF EXISTS security_alert_actions_append_only ON public.security_alert_actions;
 CREATE TRIGGER security_alert_actions_append_only BEFORE UPDATE OR DELETE ON public.security_alert_actions
     FOR EACH ROW EXECUTE FUNCTION public.security_alert_actions_append_only();
+DROP TRIGGER IF EXISTS security_alert_actions_no_truncate ON public.security_alert_actions;
+CREATE TRIGGER security_alert_actions_no_truncate BEFORE TRUNCATE ON public.security_alert_actions
+    FOR EACH STATEMENT EXECUTE FUNCTION public.security_alert_actions_append_only();
 
 -- ── writer, called from the Worker ───────────────────────────────────────
 CREATE OR REPLACE FUNCTION public.record_security_event(

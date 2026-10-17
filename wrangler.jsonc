@@ -154,9 +154,10 @@
     "WEBHOOK_DELIVERY_LOG_ENABLED": "false",
     // SECURITY_EVENTS_ENABLED: refused sign-ins and admin access refusals
     // written to security_events (0336, ADR-0104), read at
-    // /app/admin/security. Off until the migration is applied.
-    // SECURITY_EVENTS_HASH_KEY (a wrangler secret) keys the source hash.
-    "SECURITY_EVENTS_ENABLED": "false",
+    // /app/admin/security. Off until the migration is applied: production
+    // leaves the var out (absence is off; it has no spare text binding) and
+    // staging names it. SECURITY_EVENTS_HASH_KEY (a wrangler secret) keys the
+    // source hash.
     "CINEMA_PUBLISHING_ENABLED": "true",
     "CINEMA_VIEWING_ENABLED": "true",
     "VOTING_ENABLED": "false",
