@@ -47,7 +47,7 @@ test('cron retains authentication and rejects missing Stripe configuration befor
     finally { process.env.STRIPE_WEBHOOK_SECRET = secret; }
 });
 
-test('a failed batch read answers 502 and logs why: status, database error code and message, with no credential', async () => {
+test('a failed batch read answers 502 and logs why: status, target host, database error code and message, with no credential', async () => {
     globalThis.fetch = async () => Response.json({ code: '42501', message: 'permission denied for table top_ups' }, { status: 403 });
     const logged = [], original = console.error;
     console.error = (...args) => logged.push(args.join(' '));
@@ -56,6 +56,6 @@ test('a failed batch read answers 502 and logs why: status, database error code 
     assert.equal(res.status, 502);
     assert.deepEqual(await res.json(), { error: 'internal' });
     const line = logged.find((l) => l.includes('batch read failed'));
-    assert.match(line, /status=403 code=42501 message=permission denied for table top_ups/);
+    assert.match(line, /status=403 host=db\.test code=42501 message=permission denied for table top_ups/);
     assert.ok(!line.includes('test-only') && !line.includes('cron-test-only'), 'no key or token in the log');
 });

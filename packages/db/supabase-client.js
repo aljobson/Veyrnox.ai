@@ -28,11 +28,14 @@ import { fetchWithTimeout } from '../../lib/fetchWithTimeout.js';
 
 /** Custom error carrying the PostgREST status + body for debugging. */
 export class SupabaseError extends Error {
-    constructor(message, { status, body }) {
+    constructor(message, { status, body, host, ray }) {
         super(message);
         this.name = 'SupabaseError';
         this.status = status;
         this.body = body;
+        // Where the call went and Cloudflare's request id, when a response came back: for telling a gateway block from a database refusal.
+        if (host) this.host = host;
+        if (ray) this.ray = ray;
     }
 }
 
@@ -75,7 +78,7 @@ export async function rpc(name, args, options) {
     }
 
     if (!res.ok) {
-        throw new SupabaseError(`rpc(${name}) failed: ${res.status}`, { status: res.status, body: payload });
+        throw new SupabaseError(`rpc(${name}) failed: ${res.status}`, { status: res.status, body: payload, host: new URL(supabaseUrl).host, ray: res.headers.get('cf-ray') || undefined });
     }
     return payload;
 }
