@@ -8,7 +8,9 @@ async function draft(page, script = SCRIPT) {
 }
 test('exact narration is fully previewed and one approval carries the same script at 165 credits', async ({ page }) => {
   const fixture = await installNarrationFixtures(page); await fixture.open('/app/video-agent');
-  await expect(page.getByText(/Brief-only audio is generated/)).toBeVisible();
+  const help = page.getByText(/Brief-only audio is generated/);
+  await expect(help).toHaveCount(1);
+  await expect(help).toBeVisible();
   await draft(page); await page.getByRole('button', { name: 'Make a plan', exact: true }).click();
   await expect(page.getByRole('region', { name: 'Approved exact narration', exact: true })).toContainText(SCRIPT);
   const approve = page.getByRole('button', { name: 'Approve and make it · 165 cr', exact: true });

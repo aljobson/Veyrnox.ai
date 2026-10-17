@@ -280,8 +280,8 @@ for (const [tier, trigger, formName, submitName] of [
 for (const [action, decision, itemText, submit] of [
   ['review_comment', 'approved', 'Synthetic held comment', 'Save comment decision'],
   ['review_comment', 'rejected', 'Synthetic held comment', 'Save comment decision'],
-  ['review_comment', 'removed', 'Synthetic report explanation', 'Remove comment'],
-  ['resolve_report', null, 'Synthetic report explanation', 'Resolve report'],
+  ['review_comment', 'removed', 'Report: Synthetic report explanation', 'Remove comment'],
+  ['resolve_report', null, 'Report: Synthetic report explanation', 'Resolve report'],
 ]) test(`Admin comment ${action}/${decision || 'resolve'} stays isolated and survives typed refusal`, async ({ page }) => {
   const fixture = await installAdminFixtures(page, { routes: args => {
     if (!endpoint(args, '/cinema/comments')) return false;
@@ -290,8 +290,10 @@ for (const [action, decision, itemText, submit] of [
   } });
   await open(fixture, '/cinema/comments');
   const item = page.getByRole('article').filter({ has: page.getByText(itemText, { exact: true }) });
+  await expect(item).toHaveCount(1);
   if (decision && decision !== 'removed') await item.getByRole('combobox', { name: 'Decision', exact: true }).selectOption(decision);
   const form = item.locator('form').filter({ has: page.getByRole('button', { name: submit, exact: true }) });
+  await expect(form).toHaveCount(1);
   await form.getByLabel('Internal audit reason', { exact: true }).fill(reason);
   await form.getByRole('button', { name: submit, exact: true }).click();
   await expect(form.getByRole('alert')).toContainText(/authenticator/i); expect(adminWrites(fixture)).toHaveLength(1);
