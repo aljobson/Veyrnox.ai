@@ -182,7 +182,7 @@ test('the module makes no network call and imports nothing that can', () => {
 
 import { editorFeatureEnabled } from '../lib/editorRuntimeFlags.mjs';
 import { parseJsonc } from '../scripts/check-migration-ledger.mjs';
-test('the agent flag is off unless the grouped value says true, independent of scenes and the clipper, and closed in the shipped config', () => {
+test('the agent flag is off unless the grouped value says true, independent of scenes and the clipper, and on in the shipped config', () => {
     const only = key => ({ EDITOR_RUNTIME_FLAGS: JSON.stringify({ [key]: 'true' }) });
     assert.equal(editorFeatureEnabled('EDITOR_AGENT_ENABLED', only('agent')), true);
     assert.equal(editorFeatureEnabled('EDITOR_AGENT_ENABLED', only('scenes')), false);
@@ -190,6 +190,6 @@ test('the agent flag is off unless the grouped value says true, independent of s
     assert.equal(editorFeatureEnabled('EDITOR_SCENES_ENABLED', only('agent')), false);
     assert.equal(editorFeatureEnabled('EDITOR_AGENT_ENABLED', { ...only('agent'), EDITOR_AGENT_ENABLED: 'false' }), false);
     const config = parseJsonc(readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8'));
-    assert.equal(editorFeatureEnabled('EDITOR_AGENT_ENABLED', config.vars), false);
-    assert.equal(editorFeatureEnabled('EDITOR_AGENT_ENABLED', config.env.staging.vars), false);
+    assert.equal(editorFeatureEnabled('EDITOR_AGENT_ENABLED', config.vars), true, 'owner switched agent on in production on 2026-10-17');
+    assert.equal(editorFeatureEnabled('EDITOR_AGENT_ENABLED', config.env.staging.vars), true, 'staging matches production');
 });

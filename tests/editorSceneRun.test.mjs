@@ -42,7 +42,7 @@ test('hard cuts and possible dissolves are separated, and anything that is not h
     assert.deepEqual(possible.map(c => c.time), [2, 4]);
 });
 
-test('the scenes flag is off unless the grouped value says true, and closed in the shipped config', () => {
+test('the scenes flag is off unless the grouped value says true, and on in the shipped config', () => {
     const on = { EDITOR_RUNTIME_FLAGS: JSON.stringify({ scenes: 'true' }) };
     assert.equal(editorFeatureEnabled('EDITOR_SCENES_ENABLED', on), true);
     assert.equal(editorFeatureEnabled('EDITOR_SCENES_ENABLED', { EDITOR_RUNTIME_FLAGS: JSON.stringify({ scenes: 'false' }) }), false);
@@ -50,8 +50,8 @@ test('the scenes flag is off unless the grouped value says true, and closed in t
     assert.equal(editorFeatureEnabled('EDITOR_SCENES_ENABLED', { ...on, EDITOR_SCENES_ENABLED: 'false' }), false, 'a legacy false still rolls it back');
     assert.equal(editorFeatureEnabled('EDITOR_SCENES_ENABLED', {}), false);
     const config = parseJsonc(readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8'));
-    assert.equal(editorFeatureEnabled('EDITOR_SCENES_ENABLED', config.vars), false);
-    assert.equal(editorFeatureEnabled('EDITOR_SCENES_ENABLED', config.env.staging.vars), false);
+    assert.equal(editorFeatureEnabled('EDITOR_SCENES_ENABLED', config.vars), true, 'owner switched scenes on in production on 2026-10-17');
+    assert.equal(editorFeatureEnabled('EDITOR_SCENES_ENABLED', config.env.staging.vars), true, 'staging matches production');
 });
 
 import { checkSequenceClipForScenes, sceneRows, tickedFrames } from '../app/veyrnox/_lib/editorSceneRun.mjs';
@@ -76,13 +76,13 @@ test('rows place each cut on the timeline, tick hard cuts only, and add all mean
     assert.deepEqual(sceneRows(item, []), []);
 });
 
-test('the clipper flag is off unless the grouped value says true, independent of scenes, and closed in the shipped config', () => {
+test('the clipper flag is off unless the grouped value says true, independent of scenes, and on in the shipped config', () => {
     const only = key => ({ EDITOR_RUNTIME_FLAGS: JSON.stringify({ [key]: 'true' }) });
     assert.equal(editorFeatureEnabled('EDITOR_CLIPPER_ENABLED', only('clipper')), true);
     assert.equal(editorFeatureEnabled('EDITOR_SCENES_ENABLED', only('clipper')), false);
     assert.equal(editorFeatureEnabled('EDITOR_CLIPPER_ENABLED', only('scenes')), false);
     assert.equal(editorFeatureEnabled('EDITOR_CLIPPER_ENABLED', { ...only('clipper'), EDITOR_CLIPPER_ENABLED: 'false' }), false);
     const config = parseJsonc(readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8'));
-    assert.equal(editorFeatureEnabled('EDITOR_CLIPPER_ENABLED', config.vars), false);
-    assert.equal(editorFeatureEnabled('EDITOR_CLIPPER_ENABLED', config.env.staging.vars), false);
+    assert.equal(editorFeatureEnabled('EDITOR_CLIPPER_ENABLED', config.vars), true, 'owner switched clipper on in production on 2026-10-17');
+    assert.equal(editorFeatureEnabled('EDITOR_CLIPPER_ENABLED', config.env.staging.vars), true, 'staging matches production');
 });
