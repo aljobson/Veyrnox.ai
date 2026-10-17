@@ -25,6 +25,7 @@ import { FilterPanel } from './FilterPanel';
 import { TranscriptPanel } from './TranscriptPanel';
 import { ScenesPanel } from './ScenesPanel';
 import { ClipFinderPanel } from './ClipFinderPanel';
+import { AgentPanel } from './AgentPanel';
 import { AnimationCatalogPanel } from './AnimationCatalogPanel';
 import { TextStyleCatalog } from './TextStyleCatalog';
 import { getStoredUserId,onSessionChange } from '../../../lib/authClient';
@@ -70,7 +71,7 @@ const EDITOR_PALETTE={
     '--vx-money':'228 169 60','--vx-money-ink':'35 23 3','--vx-danger':'255 92 71','--vx-danger-ink':'40 6 2','--vx-warn':'139 167 255'
 };
 export function MultitrackWorkspace({ onCredits }) {
-    const {organization,localInference,scenes,clipper}=useEditorCompletionFlags(),[scenePreview,setScenePreview]=useState([]),fontRegistry=useRef(null);
+    const {organization,localInference,scenes,clipper,agent}=useEditorCompletionFlags(),[scenePreview,setScenePreview]=useState([]),fontRegistry=useRef(null);
     const sharedTools=useEditorSharedEnabled(),[projectContext,setProjectContext]=useState(null);
     const [fitScreen,setFitScreen]=useState(true);
     const [layout,setLayout]=useState({...WORKSPACE_LAYOUT});
@@ -300,7 +301,7 @@ export function MultitrackWorkspace({ onCredits }) {
         {notice && <p role="alert" className="mx-3 mt-2 rounded-lg border border-vx-border bg-vx-panel p-3 text-sm">{notice}</p>}
         <div className={`${mobileStage==='timeline'?'hidden lg:grid':'grid'} min-h-0 gap-px bg-vx-border lg:grid-cols-[var(--workspace-columns)] ${fitScreen?"flex-1 [container-type:size] [--panel-max-height:100%]":""}`} style={{ '--workspace-columns':workspaceColumns(layout,binWidth) }}>
             <aside aria-label="Project media" hidden={layout.mediaDock==='hidden'} style={{order:layout.mediaDock==='right'?3:1,maxHeight:fitScreen?`var(--panel-max-height, ${layout.previewHeight+5}vh)`:`${layout.previewHeight+5}vh`}} className={`${mobileStage==='media'?'flex':'hidden'} flex-col gap-3 overflow-hidden bg-vx-panel p-2 md:flex-row lg:flex`}>
-                <EditorToolRail panel={panel} onPanel={setPanel} disabled={disabled} sharedTools={sharedTools} scenes={scenes} clipper={clipper}/><div className="min-w-0 flex-1 space-y-3 overflow-y-auto py-1 pr-1">
+                <EditorToolRail panel={panel} onPanel={setPanel} disabled={disabled} sharedTools={sharedTools} scenes={scenes} clipper={clipper} agent={agent}/><div className="min-w-0 flex-1 space-y-3 overflow-y-auto py-1 pr-1">
                 {panel === 'Media' && <><AdvancedMediaBin tl={tl} blobs={blobs} loaded={loaded} disabled={disabled} selectedClip={item&&selected?.track!=='text'?{kind:selected.track,item}:null} apply={apply} onFiles={files} onIngest={ingest} onAdd={add} onReplace={mediaId=>apply(t=>replaceSequenceClipMedia(t,selected.track,item.id,mediaId))} onRemove={id => apply(t => removeSequenceMedia(t, id))} onRelink={relink} onDetails={(id,patch)=>apply(t=>updateMediaDetails(t,id,patch))} proxies={proxies} onProxy={createProxy} onRemoveProxy={removeProxy} onError={setNotice} />
                 {proxyJob && <div role="status" className="space-y-2 text-xs">Preparing preview proxy<progress aria-label="Preview proxy progress" max={1} value={proxyJob.progress} className="w-full" /><Button size="sm" onClick={()=>abort.current?.abort()}>Cancel preview proxy</Button></div>}
                 <label className="block text-xs">Panel width<input aria-label="Media panel width" type="range" min={180} max={360} value={binWidth} onChange={e => setBinWidth(Number(e.target.value))} className="w-full accent-vx-accent" /></label>
@@ -317,6 +318,7 @@ export function MultitrackWorkspace({ onCredits }) {
                 {panel==='Brand kit' && sharedTools && <BrandKitPanel onIngest={ingest} project={projectContext} item={selected?.track==='text'?item:null} frame={frame} disabled={disabled} apply={apply} onSelect={selectClip} />}
                 {panel==='Review' && sharedTools && <ReviewPanel key={projectContext?.id} project={projectContext} frame={frame} disabled={disabled} onSeek={seek} />}
                 {panel === 'Captions' && <CaptionPanel tl={tl} blobs={blobs} disabled={disabled} frame={frame} apply={apply} onSelect={selectClip} onSeek={seek} onError={setNotice} onBusy={setBusy} />}
+                {agent && panel === 'Assistant' && <AgentPanel tl={tl} disabled={disabled} apply={apply} onError={setNotice} />}
                 {clipper && panel === 'Clips' && <ClipFinderPanel tl={tl} blobs={blobs} disabled={disabled} selected={selected} apply={apply} onSeek={seek} onError={setNotice} onBusy={setBusy} onPreview={setScenePreview} />}
                 {scenes && panel === 'Scenes' && <ScenesPanel tl={tl} blobs={blobs} disabled={disabled} selected={selected} apply={apply} onSeek={seek} onError={setNotice} onBusy={setBusy} onPreview={setScenePreview} />}
                 {panel === 'Transcript' && <TranscriptPanel tl={tl} blobs={blobs} disabled={disabled} frame={frame} apply={apply} onSelect={selectClip} onSeek={seek} onError={setNotice} onBusy={setBusy} />}
