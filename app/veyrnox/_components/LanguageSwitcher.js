@@ -1,4 +1,4 @@
-import { LOCALES, LOCALIZED_PATHS, languageAlternates, localizedPathKey } from '../../../lib/i18n/locales.mjs';
+import { LOCALES, isLocalizedPath, languageAlternates, localizedPathKey } from '../../../lib/i18n/locales.mjs';
 import { translator } from '../../../lib/i18n/translate.mjs';
 
 // Plain links, one per language of the page being read, so it works without
@@ -6,7 +6,7 @@ import { translator } from '../../../lib/i18n/translate.mjs';
 // a page with no translation shows no switcher.
 export function LanguageSwitcher({ locale, path = '/' }) {
   const key = localizedPathKey(path);
-  if (!LOCALIZED_PATHS.has(key)) return null;
+  if (!isLocalizedPath(key)) return null;
   const t = translator(locale);
   const alternates = languageAlternates(key);
   return (
