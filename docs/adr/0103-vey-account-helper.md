@@ -1,6 +1,6 @@
 # ADR-0103 — Vey explains the signed-in user's own recent charges, read-only
 
-- **Status**: **Accepted 2026-10-16; built 2026-10-16**, behind `VEY_ACCOUNT_ENABLED` (off everywhere until the owner flips it on staging, then production).
+- **Status**: **Accepted 2026-10-16; built 2026-10-16**, behind `VEY_ACCOUNT_ENABLED`; on in staging 2026-10-16 and in production 2026-10-17 on the owner's word.
 - **Date**: 2026-10-16
 - **Related**: [ADR-0067](0067-chat-replies-are-jobs.md) (the ledger and job rows a charge comes from), [ADR-0073](0073-studio-skills.md) (assistants prepare, never run), [ADR-0013](0013-credit-expiry-policy.md) (Free Credit expiry), `CLAUDE.md` ("Money & billing", "API gateway": identity comes only from the middleware headers, typed errors, no leaked DB messages)
 
@@ -18,7 +18,7 @@ The risks are the ones in the money spine: a model that is told it can see accou
 4. **Read-only is enforced, not promised.** The plan schema (`message`, `target`, `action`) gains no field that mutates anything, and no account RPC used here is a writer. Vey still cannot grant, refund, unfreeze or buy; a request to do so gets the existing "I cannot" answer and the support address. A test asserts the account context never contains a `reason` and that no `ledger_*`, `credit_*` or `unfreeze_*` function is called from the help path.
 5. **Same gates as other account reads.** The route already spends one `consume_account_read_request` per call (rate limited, 429 with `Retry-After`). The ledger and balance reads add no new limit class. Reads are `Cache-Control: no-store`. Rows are never logged; a failed read logs one line with no data.
 6. **Failure says so.** If the read fails or the account has no rows, Vey says it could not read the account and falls back to the reviewed articles and the support address. It never invents a charge.
-7. **Flag.** `VEY_ACCOUNT_ENABLED`; off, the route behaves exactly as today. Staging first, then the owner's explicit yes for production. *As built:* the code needs the exact value `"true"`, so production leaves the var out (it has no spare Worker text binding; absence is off, as with the fal rollout controls) and `env.staging.vars` names it `"false"`. A test pins both.
+7. **Flag.** `VEY_ACCOUNT_ENABLED`; off, the route behaves exactly as today. Staging first, then the owner's explicit yes for production. *As built:* the code needs the exact value `"true"`, so absence is off. It shipped off (production left the var out, staging named it `"false"`), then staging went `"true"` on 2026-10-16 and production on 2026-10-17; it uses one Worker text binding (125 of 128). A test pins the exact value in both blocks.
 8. **Intent gate.** A small pattern (`charged`, `charge`, `balance`, `why was`, `where did my credits go`, `refund` for a named job) decides whether to read at all, so ordinary how-to questions never touch the ledger.
 
 ## Not in this ADR
