@@ -24,3 +24,10 @@ test('credentials, control characters and long text are masked or cut before log
     assert.ok(dbErrorSummary({ status: 500, body: { message: 'x'.repeat(5000) } }).length < 260);
     assert.ok(dbErrorSummary({ status: 500, body: 'y'.repeat(5000) }).length < 200);
 });
+
+test('the host and Cloudflare request id are shown when present, and only the host, never a path or key', () => {
+    assert.equal(dbErrorSummary({ status: 403, body: 'error code: 1003', host: 'abc.supabase.co', ray: '9a1b2c3d4e5f-LHR' }), 'status=403 host=abc.supabase.co ray=9a1b2c3d4e5f-LHR text=error code: 1003');
+    assert.ok(!dbErrorSummary({ status: 403, host: 'abc.supabase.co/rest/v1/rpc/x?apikey=secret' }).includes('host='), 'a host that is not just a host is dropped');
+    assert.ok(!dbErrorSummary({ status: 403, host: 'user:pass@abc.supabase.co' }).includes('host='));
+    assert.equal(dbErrorSummary({ status: 500, host: 42, ray: 7 }), 'status=500 body=none');
+});
