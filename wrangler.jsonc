@@ -324,7 +324,6 @@
         "UPLOAD_REQUEST_RATE_LIMIT_ENABLED": "true",
         "ASSET_LINK_RATE_LIMIT_ENABLED": "true",
         "ADMIN_REQUIRE_AAL2": "true",
-        "ADMIN_CREDIT_GRANTS_ENABLED": "false",
         // ADR-0044 (vars are not inherited). On for the activation proof: 0129 is applied here and the staging bucket's
         // CORS allows PUT with Content-Type and If-None-Match from this origin (preflight checked 2026-10-09).
         // Production CORS is ready as of 2026-10-10; the real browser/R2 activation proof is still required.
@@ -353,7 +352,6 @@
         // (checked against the file: both function bodies match), on the owner's word.
         "CHAT_SEND_CLOSE_ENABLED": "true",
         // ADR-0069 (vars are not inherited). Flip to "true" on staging only after 0205 and 0206 are applied there.
-        "FREE_ALLOWANCE_ENABLED": "false",
         // ADR-0080: browser editing is open; project saving keeps its separate gate.
         "EDITOR_TIMELINE_ENABLED": "true",
         "EDITOR_MULTITRACK_ENABLED": "true",
@@ -364,7 +362,6 @@
         "EDITOR_AUDIO_STEMS_ENABLED": "true",
         "EDITOR_RUNTIME_FLAGS": "{\"scenes\":\"true\",\"clipper\":\"true\",\"agent\":\"true\"}",
         // ADR-0072 (vars are not inherited). Flip to "true" on staging only after 0216 is applied there.
-        "PERSONAS_ENABLED": "false",
         // ADR-0103: Vey answers charge and balance questions from the caller's own ledger rows. On in staging since 2026-10-16 and in production
         // since 2026-10-17 (vars are not inherited).
         "VEY_ACCOUNT_ENABLED": "true",
@@ -373,7 +370,6 @@
         // Recovery still needs its isolated runner even when new video admission is paused.
         "MONTAGE_RUNNER_BASE": "https://veyrnox-montage-runner-staging.fly.dev",
         "MONTAGE_LIVENESS_ENABLED": "true",
-        "REFERRALS_ENABLED": "false",
         // Vars are not inherited. 0225 is applied on staging (2026-10-08); on for testing, production stays "false".
         "CLIP_EDIT_CAPTIONS_ENABLED": "true",
         // Vars are not inherited. 0237 is applied on staging (2026-10-09); on for testing the placeholder price, production stays "false".
@@ -383,6 +379,10 @@
         // Veyrnox Publish is open on staging for testing (see production).
         "PUBLISH_ENABLED": "true",
         // ADR-0108; vars are not inherited. Sandbox purchases are accepted here only.
+        // Staging is at the 128 text-binding limit (vars + secrets). Flags that are "false" are simply
+        // left out: every one of them reads `=== 'true'`, so unset is off. Removed 2026-10-17 to make room
+        // for the store-billing vars and REVENUECAT_WEBHOOK_SECRET: ADMIN_CREDIT_GRANTS_ENABLED,
+        // FREE_ALLOWANCE_ENABLED, PERSONAS_ENABLED, REFERRALS_ENABLED, PUBLISH_YOUTUBE_VISIBILITY_ENABLED.
         "STORE_BILLING_ENABLED": "true",
         "STORE_BILLING_ALLOW_SANDBOX": "true",
         // Publish migrations through 0323 are installed in staging. These
@@ -392,7 +392,6 @@
         "REPORT_EMAIL_FROM": "Veyrnox Reports <support@veyrnox.ai>",
         "REPORT_EMAIL_REPLY_TO": "support@veyrnox.ai",
         "PUBLISH_TESTER_AUTH_IDS": "",
-        "PUBLISH_YOUTUBE_VISIBILITY_ENABLED": "false",
         "PUBLISH_RELEASED_NETWORKS": "*",
         // Publish schema through 0192 provisioned on staging 2026-10-04.
         "PUBLISH_ANALYTICS_ENABLED": "true",
