@@ -22,7 +22,21 @@ export default function useVeyMobileLayout({ open, pathname, position, highlight
     const root = document.documentElement;
     const originalScrollPadding = root.style.scrollPaddingBottom;
     let appliedScrollPadding;
-    const restore = () => { if (main && main.style.paddingBottom === applied) main.style.paddingBottom = original; };
+    let workspace = null;
+    const restoreWorkspace = () => {
+      if (!workspace) return;
+      const { element, styles, overflow } = workspace;
+      const scroll = element.scrollTop;
+      for (const [key, value] of Object.entries(styles)) element.style[key] = value;
+      root.style.overflow = overflow;
+      delete root.dataset.veyMobileWorkspace;
+      workspace = null;
+      window.scrollTo({ top: scroll, behavior: 'instant' });
+    };
+    const restore = () => {
+      restoreWorkspace();
+      if (main && main.style.paddingBottom === applied) main.style.paddingBottom = original;
+    };
     const resize = new ResizeObserver(() => schedule());
     const measure = () => {
       const { highlight, facing, activeTarget } = latest.current;
@@ -40,8 +54,23 @@ export default function useVeyMobileLayout({ open, pathname, position, highlight
       const viewport = { width: innerWidth, height: innerHeight };
       const dock = panel?.getBoundingClientRect();
       const reservesSpace = open && dock && (viewport.width < 640 || !!chat);
+      // Padding alone lets controls scroll underneath a fixed helper. Give the
+      // mobile page its own bounded scrolling area above the complete dock.
+      if (reservesSpace && viewport.width < 640 && main) {
+        if (!workspace) {
+          const styles = Object.fromEntries(['position', 'top', 'bottom', 'left', 'right', 'overflowY', 'overflowX', 'marginTop', 'marginBottom', 'scrollPaddingBottom'].map(key => [key, main.style[key]]));
+          workspace = { element: main, styles, overflow: root.style.overflow };
+          const scroll = window.scrollY;
+          Object.assign(main.style, { position: 'fixed', top: '64px', left: '0px', right: '0px', overflowY: 'auto', overflowX: 'hidden', marginTop: '0px', marginBottom: '0px', scrollPaddingBottom: '16px' });
+          root.style.overflow = 'hidden';
+          root.dataset.veyMobileWorkspace = 'true';
+          main.scrollTop = scroll;
+          window.scrollTo({ top: 0, behavior: 'instant' });
+        }
+        main.style.bottom = `${Math.max(8, viewport.height - dock.top + 8)}px`;
+      } else restoreWorkspace();
       const clearance = dockClearance(base || 0, viewport, dock);
-      applied = reservesSpace ? `${clearance}px` : original;
+      applied = workspace ? '24px' : reservesSpace ? `${clearance}px` : original;
       if (main && main.style.paddingBottom !== applied) main.style.paddingBottom = applied;
       appliedScrollPadding = reservesSpace ? `${clearance}px` : originalScrollPadding;
       if (root.style.scrollPaddingBottom !== appliedScrollPadding) root.style.scrollPaddingBottom = appliedScrollPadding;

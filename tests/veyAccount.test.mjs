@@ -57,9 +57,9 @@ test('the flag needs the exact value "true"; absence is off', () => {
     assert.equal(veyAccountEnabled(undefined), false);
 });
 
-test('the flag is on in staging and absent from production, so absence stays fail-closed', () => {
+test('the flag is set to the exact value "true" in both the production and the staging block', () => {
     const config = parseJsonc(readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8'));
-    assert.equal(config.vars.VEY_ACCOUNT_ENABLED, undefined);
+    assert.equal(config.vars.VEY_ACCOUNT_ENABLED, 'true');
     assert.equal(config.env.staging.vars.VEY_ACCOUNT_ENABLED, 'true');
 });
 
