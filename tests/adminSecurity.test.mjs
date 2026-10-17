@@ -4,7 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { register } from 'node:module';
-import { recordSecurityEvent, sourceKey } from '../lib/securityEvents.js';
+import { recordSecurityEvent, securityEventsEnabled, sourceKey } from '../lib/securityEvents.js';
 
 register('data:text/javascript,' + encodeURIComponent(
     `export async function resolve(s, c, next) { return next(s === 'next/server' ? 'next/server.js' : s, c); }`,
@@ -116,4 +116,12 @@ test('without a hash key the source is left out; with one the same address maps 
     const env = { SECURITY_EVENTS_HASH_KEY: 'k-test' };
     assert.equal(await sourceKey(req, env), await sourceKey(req, env));
     assert.notEqual(await sourceKey(req, env), await sourceKey(req, { SECURITY_EVENTS_HASH_KEY: 'other' }));
+});
+
+test('recording is on with the hash key or the flag, and "false" always wins', () => {
+    assert.equal(securityEventsEnabled({}), false);
+    assert.equal(securityEventsEnabled({ SECURITY_EVENTS_HASH_KEY: 'k' }), true);
+    assert.equal(securityEventsEnabled({ SECURITY_EVENTS_ENABLED: 'true' }), true);
+    assert.equal(securityEventsEnabled({ SECURITY_EVENTS_ENABLED: 'false', SECURITY_EVENTS_HASH_KEY: 'k' }), false);
+    assert.equal(securityEventsEnabled({ SECURITY_EVENTS_ENABLED: 'yes' }), false);
 });
