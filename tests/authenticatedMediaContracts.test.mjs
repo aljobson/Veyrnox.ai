@@ -10,6 +10,7 @@ import { capabilityFor, publicCapabilities, lengthsFor } from '../lib/modelCapab
 import * as contracts from '../app/veyrnox/_lib/authenticatedMedia.js';
 import * as mobileLayout from '../lib/veyMobileLayout.js';
 import * as pointer from '../lib/veyPointer.js';
+import * as narration from '../lib/montageNarration.js';
 
 const require = createRequire(import.meta.url);
 const read = path => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
@@ -80,12 +81,14 @@ test('Video Agent balance state fails closed for absent, malformed or negative b
 
 function agent(balance, loading = false) {
   const nullStates = [balance, { plan_id: 'synthetic-plan', idempotency_key: 'synthetic-key', plan: { summary: 'A shot' }, credits: 165, expires_at: Date.now() / 1000 + 600, brief: 'A lighthouse', aspect: '9:16' }, null];
-  const fakeReact = { ...React, useState: initial => [initial === null ? nullStates.shift() : initial === true ? loading : initial === '' ? 'A lighthouse' : initial, () => {}], useEffect() {}, useCallback: fn => fn, useRef: value => ({ current: value }) };
+  let stateIndex = 0;
+  const fakeReact = { ...React, useState: initial => [stateIndex++ === 2 ? 'A lighthouse' : initial === null ? nullStates.shift() : initial === true ? loading : initial, () => {}], useEffect() {}, useCallback: fn => fn, useRef: value => ({ current: value }) };
   const { default: Page } = load('app/veyrnox/app/video-agent/page.js', {
     react: fakeReact, 'next/link': 'a', '../../_components/NavBar': { AppNav: () => null }, '../../_components/Main': { Main: 'main' },
     '../../_components/JobAssetPreview': { JobAssetPreview: () => null }, '../../_lib/gateway': { GatewayError: Error },
     '../../_lib/createErrors': { ERROR_COPY: {}, failedJobCopy() {} }, '../../_lib/jobHistory': {}, '../../_lib/videoAgentResume': {},
     '../../_lib/useStudioJobs': { useStudioJobs: () => ({ jobs: [], generating: false }) }, '../../_lib/studioStates': {},
+    '../../../../lib/montageNarration.js': narration,
   });
   return renderToStaticMarkup(React.createElement(Page));
 }
