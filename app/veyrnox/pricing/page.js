@@ -9,6 +9,9 @@ import { CopyButton } from '../_components/CopyButton';
 import { MODELS as MODELS_FALLBACK, SITE_UPDATED, isShelfModel, kindOf } from '../_lib/tokens';
 import { creditValueRange, formatUsdRange } from '../_lib/creditValue';
 import { modelPriceUnit } from '../_lib/modelPricing';
+import { rich } from '../../../lib/i18n/rich';
+import { useI18n } from '../../../components/I18nProvider';
+import { localeInfo } from '../../../lib/i18n/locales.mjs';
 
 const FALLBACK_MODELS = MODELS_FALLBACK.map((model) => ({
   ...model,
@@ -84,6 +87,7 @@ const usd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD',
 const num = new Intl.NumberFormat('en-US');
 
 export default function Pricing() {
+  const { locale, t } = useI18n();
   const catalogState = useLiveCatalog();
   const liveModels = catalogState.models;
   const packState = useCreditPacks();
@@ -97,19 +101,19 @@ export default function Pricing() {
       <Main>
       <section className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-14 sm:pt-20">
         <h1 className="vx-display vx-title-index max-w-[12ch]">
-          One balance. Every model.
+          {t('pricing.title')}
         </h1>
         <p className="mt-6 text-lg sm:text-xl text-vx-fg-body max-w-[46ch] leading-[1.5] text-pretty">
-          Credits buy generations. Each model shows its price on the button before you spend, and failed jobs refund automatically.
+          {t('pricing.lead')}
         </p>
         <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-4">
           <Link
             href="/app/create"
             className="vx-press rounded-full bg-vx-fg text-vx-base px-7 py-3.5 text-[15px] font-extrabold hover:bg-vx-fg/85"
           >
-            Open Studio
+            {t('home.cta.open')}
           </Link>
-          <p className="text-[15px] text-vx-fg-muted">New accounts include 10 free credits. No card needed.</p>
+          <p className="text-[15px] text-vx-fg-muted">{t('pricing.free')}</p>
         </div>
       </section>
 
@@ -118,21 +122,21 @@ export default function Pricing() {
         className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-24 sm:pt-32"
         aria-labelledby="credit-packs-heading"
       >
-        <h2 id="credit-packs-heading" className="vx-display text-[40px] sm:text-[56px]">Top up when you need to.</h2>
-        <p className="mt-4 text-vx-fg-body max-w-[52ch] leading-[1.6]">One-off credit packs. Purchased credits never expire.</p>
+        <h2 id="credit-packs-heading" className="vx-display text-[40px] sm:text-[56px]">{t('pricing.packs.title')}</h2>
+        <p className="mt-4 text-vx-fg-body max-w-[52ch] leading-[1.6]">{t('pricing.packs.lead')}</p>
         {packState.status === 'loading' && (
           <p role="status" aria-live="polite" className="mt-8 text-vx-fg-muted">
-            Loading Credit Packs…
+            {t('pricing.packs.loading')}
           </p>
         )}
         {packState.status === 'unavailable' && (
           <p role="alert" className="mt-8 text-vx-fg-muted">
-            Credit Packs are temporarily unavailable. Reload this page to try again.
+            {t('pricing.packs.unavailable')}
           </p>
         )}
         {packState.status === 'success' && packState.packs.length === 0 && (
           <p role="status" className="mt-8 text-vx-fg-muted">
-            No Credit Packs are available right now.
+            {t('pricing.packs.none')}
           </p>
         )}
         {packState.status === 'success' && packState.packs.length > 0 && (
@@ -148,22 +152,20 @@ export default function Pricing() {
                   <div className="vx-perf mt-6" aria-hidden />
                   {/* #99 item 1, approved v1: keep verbatim. */}
                   <div className="mt-4 text-[15px] text-vx-fg-body">
-                    {num.format(p.credits)} credits — {usd.format(p.price_usd_cents / 100)} + applicable tax
+                    {t('pricing.packs.line', { credits: num.format(p.credits), price: usd.format(p.price_usd_cents / 100) })}
                   </div>
                 </div>
               </li>
             ))}
           </ul>
           <p className="mt-8 text-[13px] text-vx-fg-muted max-w-[640px] leading-[1.6]">
-            Prices are in USD and exclude tax. Stripe, Inc. is the Merchant of Record for credit pack
-            purchases and charges and remits any VAT or sales tax for your location; your total including
-            tax is shown at checkout before you pay.
+            {t('pricing.packs.tax')}
           </p>
           <Link
             href="/app/credits"
             className="vx-press inline-block mt-6 rounded-full bg-vx-accent text-vx-accent-ink px-7 py-3.5 text-[15px] font-extrabold hover:bg-vx-accent-hover"
           >
-            Buy credits
+            {t('pricing.packs.buy')}
           </Link>
           </>
         )}
@@ -172,37 +174,37 @@ export default function Pricing() {
       <CreditSubscriptionOffer />
       <section className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-24 sm:pt-32 pb-8">
         <div className="flex items-end justify-between flex-wrap gap-4">
-          <h2 className="vx-display text-[40px] sm:text-[56px]">Every model, priced.</h2>
+          <h2 className="vx-display text-[40px] sm:text-[56px]">{t('pricing.models.title')}</h2>
           <p role="status" aria-live="polite" className="text-[14px] text-vx-fg-muted">
             {catalogState.status === 'loading'
-              ? 'Loading live prices… Showing the bundled reference list meanwhile.'
+              ? t('pricing.models.loading')
               : catalogState.status === 'live'
-                ? 'Read live from the gateway.'
-                : 'Live prices are unavailable. Showing the bundled reference list; confirm the price in Studio before generating.'}
+                ? t('pricing.models.live')
+                : t('pricing.models.unavailable')}
           </p>
         </div>
         <p className="mt-4 text-vx-fg-body max-w-[60ch] leading-[1.6]">
-          Each price covers the output length shown for that model. Where a model offers both 5 s and 10 s, the 10 s option costs double. Premium models need an account in good standing.
+          {t('pricing.models.note')}
         </p>
         {packState.status === 'success' && packState.packs.length > 0 && (
           <p className="mt-2 text-[13px] text-vx-fg-muted">
-            Approximate pack values. Based on current pack rates before tax; Studio shows the final credit charge before generation.
+            {t('pricing.models.approx')}
           </p>
         )}
 
         <div className="mt-12 space-y-14">
           {groups.map((g) => (
             <div key={g.kind}>
-              <h3 id={`price-${g.kind}`} className="text-xl font-black border-b-2 border-vx-fg pb-2 capitalize">{g.kind}</h3>
+              <h3 id={`price-${g.kind}`} className="text-xl font-black border-b-2 border-vx-fg pb-2">{t(`home.models.${g.kind}`)}</h3>
               {/* Real table semantics so a screen reader can tell which
                   number is which column. */}
               <table aria-labelledby={`price-${g.kind}`} className="w-full border-collapse">
                 <thead className="sr-only">
                   <tr>
-                    <th scope="col">Model</th>
-                    <th scope="col">Model id</th>
-                    <th scope="col">Credits</th>
-                    <th scope="col">Approx. pack value</th>
+                    <th scope="col">{t('pricing.col.model')}</th>
+                    <th scope="col">{t('pricing.col.id')}</th>
+                    <th scope="col">{t('pricing.col.credits')}</th>
+                    <th scope="col">{t('pricing.col.pack')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -211,13 +213,13 @@ export default function Pricing() {
                       <th scope="row" className="py-3 pr-3 text-left font-normal">
                         <span className="text-[15px] font-bold">{m.name}</span>
                         {m.gated && <PremiumTag className="ml-2" />}
-                        <span className="block mt-1 text-[12px] text-vx-fg-muted">{modelPriceUnit(m)}</span>
-                        <span className="block sm:hidden mt-1"><CopyButton value={m.id} label={m.id} copiedLabel="Model id copied" /></span>
+                        <span className="block mt-1 text-[12px] text-vx-fg-muted">{modelPriceUnit(m, t)}</span>
+                        <span className="block sm:hidden mt-1"><CopyButton value={m.id} label={m.id} copiedLabel={t('pricing.copied')} /></span>
                       </th>
                       {/* The model id is what goes in an API call: the one
                           string on this page somebody retypes by hand. */}
                       <td className="hidden sm:table-cell py-3 pr-3 text-left">
-                        <CopyButton value={m.id} label={m.id} copiedLabel="Model id copied" />
+                        <CopyButton value={m.id} label={m.id} copiedLabel={t('pricing.copied')} />
                       </td>
                       <td className="py-3 text-right font-vx-mono text-[16px] font-bold text-vx-money vx-num whitespace-nowrap">
                         {m.credits} cr
@@ -233,24 +235,26 @@ export default function Pricing() {
           ))}
         </div>
         <p className="mt-8 text-[13px] text-vx-fg-muted">
-          Pricing copy last reviewed{' '}
-          <time dateTime={SITE_UPDATED}>
-            {new Date(`${SITE_UPDATED}T00:00:00Z`).toLocaleDateString('en-GB', {
-              day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC',
-            })}
-          </time>
-          .
+          {rich(t('pricing.reviewed'), {
+            date: (
+              <time dateTime={SITE_UPDATED}>
+                {new Date(`${SITE_UPDATED}T00:00:00Z`).toLocaleDateString(locale === 'en' ? 'en-GB' : localeInfo(locale).hreflang, {
+                  day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC',
+                })}
+              </time>
+            ),
+          })}
         </p>
       </section>
 
       <section className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-24 sm:pt-32 pb-28">
-        <h2 className="vx-display text-[40px] sm:text-[56px] max-w-[14ch]">Want to see it first?</h2>
-        <p className="mt-4 text-vx-fg-body">Browse the presets. No card, no account.</p>
+        <h2 className="vx-display text-[40px] sm:text-[56px] max-w-[14ch]">{t('pricing.see.title')}</h2>
+        <p className="mt-4 text-vx-fg-body">{t('pricing.see.lead')}</p>
         <Link
           href="/presets"
           className="vx-press inline-block mt-8 rounded-full bg-vx-accent text-vx-accent-ink px-7 py-3.5 text-[15px] font-extrabold hover:bg-vx-accent-hover"
         >
-          Browse presets
+          {t('pricing.see.cta')}
         </Link>
       </section>
       </Main>

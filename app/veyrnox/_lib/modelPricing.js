@@ -1,5 +1,8 @@
 import { outputDurationLabel } from './chatMedia.js';
 import { kindOf } from './tokens.js';
+import { translator } from '../../../lib/i18n/translate.mjs';
+
+const ENGLISH = translator('en');
 
 export const creditLabel = (credits) => `${credits} ${credits === 1 ? 'credit' : 'credits'}`;
 export const generationCostLabel = (credits) => credits === 0 ? 'Free' : `−${credits} cr`;
@@ -23,30 +26,32 @@ export function audioDurationLabel(model) {
 }
 
 /** The base catalog credit price buys this output; internal billing units never masquerade as clip lengths. */
-export function modelPriceUnit(model) {
+// `t` is a translator (lib/i18n/translate.mjs); with none the unit reads in English.
+export function modelPriceUnit(model, t = ENGLISH) {
   const kind = model?.kind || kindOf(model?.modality);
-  if (kind === 'image') return 'per image.';
+  if (kind === 'image') return t('unit.image');
   if (kind === 'video') {
     const sourceLimit = sourceDurationLimit(model);
-    if (sourceLimit) return `per generation (source up to ${sourceLimit} s).`;
+    if (sourceLimit) return t('unit.videoSource', { n: sourceLimit });
     const durations = model?.durations?.length ? model.durations : [5];
     const base = outputDurationLabel({ ...model, kind }, durations[0]).replace(/s$/i, ' s');
-    const longer = durations.includes(10) && durations[0] === 5 ? '; 10 s costs double' : '';
-    return `per ${base} clip${longer}.`;
+    const doubles = durations.includes(10) && durations[0] === 5;
+    return t(doubles ? 'unit.videoClipDouble' : 'unit.videoClip', { base });
   }
   const stems = model?.outputStems || model?.capabilities?.outputStems;
   const sourceLimit = sourceDurationLimit(model);
-  if (Array.isArray(stems) && sourceLimit) return `per separation (source up to ${sourceLimit} s).`;
+  if (Array.isArray(stems) && sourceLimit) return t('unit.separation', { n: sourceLimit });
   const control = model?.durationInput || model?.capabilities?.inputs?.duration;
   if (Number.isFinite(control?.min) && Number.isFinite(control?.max)) {
-    const defaultLabel = Number.isFinite(control.default) ? ` (${control.default} s default)` : '';
-    return `per ${control.min}–${control.max} s track${defaultLabel}.`;
+    return Number.isFinite(control.default)
+      ? t('unit.trackDefault', { min: control.min, max: control.max, d: control.default })
+      : t('unit.track', { min: control.min, max: control.max });
   }
   const duration = audioDurationLabel(model);
-  if (duration) return `per ${duration} clip.`;
+  if (duration) return t('unit.clipDuration', { duration });
   if (model?.isSpeech || model?.capabilities?.kind === 'speech') {
     const max = model?.promptMax || model?.capabilities?.inputs?.prompt?.max;
-    return Number.isFinite(max) ? `per generation (up to ${max} characters).` : 'per speech generation.';
+    return Number.isFinite(max) ? t('unit.speechMax', { n: max }) : t('unit.speech');
   }
-  return 'per clip.';
+  return t('unit.clip');
 }

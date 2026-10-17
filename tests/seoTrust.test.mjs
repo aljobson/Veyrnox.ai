@@ -42,7 +42,7 @@ test('route-level Open Graph metadata keeps the shared brand card', () => {
 
   for (const file of files) {
     const source = read(file);
-    assert.match(source, /import \{ OPEN_GRAPH_BASE \} from /, `${file} imports the shared base`);
+    assert.match(source, /import \{ (?:OG_IMAGE, )?OPEN_GRAPH_BASE \} from /, `${file} imports the shared base`);
     assert.match(source, /openGraph: \{ \.\.\.OPEN_GRAPH_BASE, /, `${file} retains the shared card`);
   }
 });
