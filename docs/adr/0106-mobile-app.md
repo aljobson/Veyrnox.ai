@@ -17,9 +17,9 @@ The `/api/v1/*` surface is Bearer-only and already carries everything the core l
    - Google, and Apple on Android: system browser session with PKCE (`/auth/v1/authorize`, then `grant_type=pkce`).
    - Refresh token in Keychain / Keystore (`expo-secure-store`); access token in memory only; refresh is single-flight because Supabase rotates refresh tokens. The browser cookie BFF (ADR-0102) is not used; it is for browsers.
    - `redirect_to` is the constant `ai.veyrnox.app://auth/callback`, never user input. The scheme is the bundle id, not `veyrnox://`: the sibling Veyrnox wallet app claims `veyrnox://`, so a redirect on that scheme could be taken by the wrong app (hard wall). This is the one non-web origin we control and amends CLAUDE.md's "origin we control" rule for the app scheme only.
-3. **Email and password is not in M0.** Turnstile is enforced on those paths (ADR-0026) and a native client cannot produce a token. M1 adds it through a Turnstile web view; until then email-only accounts use the web.
+3. **No email sign-in on mobile.** Supabase enforces Turnstile on every email path (ADR-0026) and the owner does not want a Cloudflare check in mobile onboarding, so the app offers Apple and Google only. We do not loosen the Supabase CAPTCHA setting: it is what keeps the signup grant from being farmed. Email-only accounts keep using the web.
 4. **Billing is deliberately out of M0.** Apple and Google require their own in-app purchase for digital credits, so Stripe checkout cannot be used in the app. Credits bought on the web still show in the app. M2 designs store billing (RevenueCat is connected to this workspace) as its own ADR, including how store purchases reach `credit_top_up` and the refund and dispute paths.
-5. **Slices.** M0: sign-in, balance. M1: chat with Vey, email sign-in. M2: generation, job status, library. M3: billing. M4+: editor, Cinema, Publish, projects, account. Nothing ships to the stores before M2.
+5. **Slices.** M0: sign-in (Apple, Google), balance. M1: chat with Vey. M2: generation, job status, library. M3: billing. M4+: editor, Cinema, Publish, projects, account. Nothing ships to the stores before M2.
 
 ## Owner prerequisites (not visible from the repo)
 

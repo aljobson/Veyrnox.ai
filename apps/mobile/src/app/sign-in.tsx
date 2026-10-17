@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Link, Redirect, useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { useAuth } from '../auth/AuthProvider';
 import { colors } from '../theme';
 
@@ -45,11 +45,6 @@ export default function SignIn() {
             >
                 <Text style={styles.buttonText}>Continue with Google</Text>
             </Pressable>
-            <Link href="/email" asChild>
-                <Pressable accessibilityRole="button" disabled={busy} style={styles.button}>
-                    <Text style={styles.buttonText}>Continue with email</Text>
-                </Pressable>
-            </Link>
             {busy ? <ActivityIndicator color={colors.accent} style={styles.spinner} /> : null}
             {error ? <Text style={styles.error}>{error}</Text> : null}
         </View>
