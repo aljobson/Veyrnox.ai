@@ -33,14 +33,14 @@ REVOKE ALL ON TABLE public.blocked_email_domains FROM PUBLIC, anon, authenticate
 
 INSERT INTO public.blocked_email_domains (domain) VALUES
     ('10minutemail.com'), ('10minutemail.net'), ('20minutemail.com'),
-    ('anonbox.net'), ('burnermail.io'), ('discard.email'), ('dispostable.com'),
+    ('anonbox.net'), ('discard.email'), ('dispostable.com'),
     ('dropmail.me'), ('emailondeck.com'), ('fakeinbox.com'), ('getnada.com'),
     ('grr.la'), ('guerrillamail.biz'), ('guerrillamail.com'), ('guerrillamail.de'),
     ('guerrillamail.net'), ('guerrillamail.org'), ('guerrillamailblock.com'),
     ('harakirimail.com'), ('jetable.org'), ('maildrop.cc'), ('mailcatch.com'),
     ('mailforspam.com'), ('mailinator.com'), ('mailnesia.com'), ('mintemail.com'),
     ('moakt.com'), ('mohmal.com'), ('mytemp.email'), ('nada.email'),
-    ('pokemail.net'), ('sharklasers.com'), ('spam4.me'), ('spamgourmet.com'),
+    ('pokemail.net'), ('sharklasers.com'), ('spam4.me'),
     ('temp-mail.io'), ('temp-mail.org'), ('tempail.com'), ('tempinbox.com'),
     ('tempmail.com'), ('tempmail.net'), ('tempr.email'), ('throwawaymail.com'),
     ('tmpmail.net'), ('tmpmail.org'), ('trashmail.com'), ('trashmail.de'),
