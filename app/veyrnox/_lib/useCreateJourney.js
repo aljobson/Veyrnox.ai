@@ -13,12 +13,12 @@ export function useCreateJourney({ model, models, catalogLive, prompt, character
   const costStamp = journeyStamp([promptStamp, settingsStamp, cost, balance, Object.entries(sources).map(([slot, item]) => [slot, item.assetId || item.previewUrl]), missingConsent]);
   const jobStamp = JSON.stringify(jobs.map(({ job_id, state }) => ({ job_id, state })));
   useEffect(() => {
-    publishJourneyView({ route: '/app/create', kind: model?.kind, imageRequired: !!model?.media?.image?.required,
+    publishJourneyView({ route: '/app/create', kind: model?.kind, modelId: model?.id, duration, aspect, imageRequired: !!model?.media?.image?.required,
       promptReady: !!prompt?.trim(), promptStamp, settingsStamp, costStamp, characterOn,
       sourceId: sources.image?.assetId || null, sourceAttached: !!sources.image, missingSource, missingConsent, cost, balance,
       canGenerate: !!model && !model.gated && !animationMismatch && !missingSource && !missingConsent && !missingPrompt && !missingVoice && balance != null && cost <= balance && !generating && !sending,
       jobs: JSON.parse(jobStamp), error: error?.code || null });
-  }, [model, prompt, promptStamp, settingsStamp, costStamp, characterOn, sources, missingSource, missingConsent, missingPrompt, missingVoice, animationMismatch, cost, balance, generating, sending, jobStamp, error]);
+  }, [model, duration, aspect, prompt, promptStamp, settingsStamp, costStamp, characterOn, sources, missingSource, missingConsent, missingPrompt, missingVoice, animationMismatch, cost, balance, generating, sending, jobStamp, error]);
   useEffect(() => {
     let busy = false;
     let cancelled = false;
