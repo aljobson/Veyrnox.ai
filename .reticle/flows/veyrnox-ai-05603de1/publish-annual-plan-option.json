@@ -1,0 +1,99 @@
+{
+  "version": 2,
+  "name": "publish-annual-plan-option",
+  "intent": "A publisher can choose Veyrnox Publish annual billing at $126 per year, see the exact 30% saving and monthly equivalent, review the automatic-renewal disclosure, and enable checkout only after consent.",
+  "intentId": "flow:publish-annual-plan-option",
+  "projectId": "veyrnox-ai-05603de1",
+  "startPath": "/app/publish/plan",
+  "requires": [
+    {
+      "kind": "route",
+      "pathname": "/app/publish/plan"
+    }
+  ],
+  "ensures": [
+    {
+      "kind": "route",
+      "pathname": "/app/publish/plan"
+    }
+  ],
+  "author": {
+    "agent": "codex",
+    "person": "al.jobson@21stclick.co.uk"
+  },
+  "createdAt": 1792215701000,
+  "steps": [
+    {
+      "tool": "reticle_act",
+      "anchor": {
+        "kind": "role",
+        "role": "button",
+        "name": "Choose yearly"
+      },
+      "source": {
+        "file": "app/veyrnox/app/publish/plan/PublishPlanPanel.js",
+        "line": 151
+      },
+      "action": "click",
+      "args": {},
+      "expect": {
+        "kind": "allOf",
+        "predicates": [
+          {
+            "kind": "text",
+            "contains": "Start my Publish Plan at $126.00 plus tax every year. I understand it renews automatically until I cancel."
+          },
+          {
+            "kind": "text",
+            "contains": "Save 30%"
+          },
+          {
+            "kind": "text",
+            "contains": "$10.50 per month equivalent"
+          },
+          {
+            "kind": "element",
+            "query": {
+              "role": "button",
+              "name": "Selected"
+            },
+            "state": "enabled"
+          }
+        ]
+      },
+      "page": "/app/publish/plan"
+    },
+    {
+      "tool": "reticle_act",
+      "anchor": {
+        "kind": "role",
+        "role": "checkbox",
+        "name": "Start my Publish Plan at $126.00 plus tax every year. I understand it renews automatically until I cancel."
+      },
+      "source": {
+        "file": "app/veyrnox/app/publish/plan/PublishPlanPanel.js",
+        "line": 159
+      },
+      "action": "check",
+      "args": {},
+      "expect": {
+        "kind": "allOf",
+        "predicates": [
+          {
+            "kind": "element",
+            "query": {
+              "role": "button",
+              "name": "Upgrade with Stripe"
+            },
+            "state": "enabled"
+          },
+          {
+            "kind": "text",
+            "contains": "Cancel any time."
+          }
+        ]
+      },
+      "page": "/app/publish/plan"
+    }
+  ]
+}

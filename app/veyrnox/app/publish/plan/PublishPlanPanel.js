@@ -10,7 +10,7 @@ const noAccount = () => '';
 const money = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
 const date = (value) => value ? new Date(value).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
 const button = 'rounded-full border border-vx-border px-5 py-2.5 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-50';
-const intervalName = (value) => value === 'week' ? 'week' : 'month';
+const intervalName = (value) => ({ week: 'week', month: 'month', year: 'year' }[value] || 'month');
 
 export default function PublishPlanPanel() {
   const account = useSyncExternalStore(onSessionChange, currentAccount, noAccount);
@@ -93,7 +93,8 @@ function Plan() {
   const paid = entitlement?.tier === 'publish';
   const selectedPlan = data?.plans?.find((plan) => plan.id === selectedPlanId);
   const currentPlan = data?.plans?.find((plan) => plan.id === subscription?.plan_id);
-  const currentInterval = currentPlan?.billing_interval || (subscription?.plan_id === 'publish-weekly' ? 'week' : 'month');
+  const currentInterval = currentPlan?.billing_interval
+    || ({ 'publish-weekly': 'week', 'publish-annual': 'year' }[subscription?.plan_id] || 'month');
 
   if (!data) return <div role="status" aria-live="polite" className="rounded-2xl border border-vx-border p-6">
     <p className="text-sm text-vx-fg-muted">{loading ? 'Loading your Publish plan…' : notice}</p>
@@ -139,10 +140,14 @@ function Plan() {
         <li>✓ Unified and per-account social inbox</li>
         <li>✓ Comment replies where the platform grants access</li>
       </ul>
-      <ul className="mt-6 grid gap-4 sm:grid-cols-2">
+      <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {data.plans.map((plan) => <li key={plan.id} className="rounded-xl border border-vx-border bg-vx-base/60 p-5">
-          <p className="text-xs font-bold uppercase tracking-widest text-vx-accent">{intervalName(plan.billing_interval)}ly</p>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs font-bold uppercase tracking-widest text-vx-accent">{intervalName(plan.billing_interval)}ly</p>
+            {plan.billing_interval === 'year' && <span className="rounded-full bg-vx-accent px-2.5 py-1 text-[0.65rem] font-black uppercase tracking-wide text-black">Save 30%</span>}
+          </div>
           <p className="mt-3 text-3xl font-black">{money.format(plan.price_usd_cents / 100)}<span className="text-base font-normal text-vx-fg-muted"> / {intervalName(plan.billing_interval)}</span></p>
+          {plan.billing_interval === 'year' && <p className="mt-2 text-xs text-vx-fg-muted">{money.format(plan.price_usd_cents / 1200)} per month equivalent</p>}
           <button type="button" aria-pressed={selectedPlanId === plan.id} className={`${button} mt-4`} onClick={() => { setSelectedPlanId(plan.id); setAgreed(false); }}>
             {selectedPlanId === plan.id ? 'Selected' : `Choose ${intervalName(plan.billing_interval)}ly`}
           </button>

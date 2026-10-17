@@ -46,7 +46,7 @@ export default function Terms() {
 
             <h2>3B. Veyrnox Publish Plan</h2>
             <ul>
-                <li>The Veyrnox Publish Plan supplies the advanced publishing, analytics and account features shown on the plan page. It charges the weekly or monthly USD price selected before checkout, plus any tax shown at checkout, and renews automatically at that interval until you cancel.</li>
+                <li>The Veyrnox Publish Plan supplies the advanced publishing, analytics and account features shown on the plan page. It charges the weekly, monthly or annual USD price selected before checkout, plus any tax shown at checkout, and renews automatically at that interval until you cancel.</li>
                 <li>You can stop renewal from the Publish Plan page or its Stripe billing portal. You will not be charged for another cycle, and paid features continue until the displayed paid-period end.</li>
                 <li>Before checkout you must expressly accept the recurring price and interval. The final price including tax is shown before payment.</li>
             </ul>

@@ -54,6 +54,22 @@ test('Publish checkout supports the server-owned $4.99 weekly plan', async () =>
   assert.equal(fields.get('line_items[0][price_data][recurring][interval]'), 'week');
 });
 
+test('Publish checkout supports the server-owned $126 annual plan', async () => {
+  let fields;
+  const result = await createPublishPlanCheckout({
+    subscriptionId: id, planId: 'publish-annual', interval: 'year', priceUsdCents: 12600,
+  }, {
+    fetch: async (_url, init) => {
+      fields = new URLSearchParams(init.body);
+      return Response.json({ object: 'checkout.session', id: 'cs_test_publish_annual', url: 'https://checkout.stripe.com/c/pay/publish-annual' });
+    },
+    apiKey: 'sk_test_x', publicHost: 'https://veyrnox.ai', signingSecret: secret,
+  });
+  assert.equal(result.ok, true);
+  assert.equal(fields.get('line_items[0][price_data][unit_amount]'), '12600');
+  assert.equal(fields.get('line_items[0][price_data][recurring][interval]'), 'year');
+});
+
 test('Publish checkout rejects client-chosen prices, bad hosts and non-Stripe return URLs', async () => {
   const base = { subscriptionId: id, planId: 'publish', interval: 'month', priceUsdCents: 1500 };
   const cfg = { fetch: async () => Response.json({ object: 'checkout.session', id: 'cs_1', url: 'https://evil.example/pay' }), apiKey: 'sk_test_x', publicHost: 'https://veyrnox.ai', signingSecret: secret };

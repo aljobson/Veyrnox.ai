@@ -13,6 +13,12 @@
       "subject": "drive-weekly-subscription-options"
     },
     {
+      "id": "flow:publish-annual-plan-option",
+      "statement": "A publisher can choose Veyrnox Publish annual billing at $126 per ye…",
+      "status": "proposed",
+      "subject": "publish-annual-plan-option"
+    },
+    {
       "id": "flow:publish-analytics-portfolio-x",
       "statement": "A signed-in publisher can compare supported social accounts together, s…",
       "status": "proposed",

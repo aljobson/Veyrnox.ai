@@ -156,7 +156,7 @@ projects have no preview switch any more.
 | Exa | `adapters/exa.js` | the capped Web search for chat (0220); the price depends on the cap, so a capped row offers Web search only while the key is set | Bearer | synchronous |
 | GrsAI | `adapters/grsai.js` | Nano Banana Pro / edit | Bearer | **poll only** (`lib/grsaiSweep.js`) |
 | BytePlus ModelArk | `adapters/byteplus.js` | Seedance (rows staged inactive, ADR-0058) | Bearer | **poll only** (`lib/byteplusSweep.js`) |
-| Stripe | `adapters/stripe.js`, `stripeCreditSubscriptions.js`, `stripePublishPlan.js` | Credit Packs; weekly/monthly Cinema Pass; weekly/monthly Credit Subscriptions; $4.99/week or $15/month Publish Plan (`PUBLISH_RUNTIME_FLAGS.plans` is `"true"` in production `wrangler.jsonc`; weekly migrations 0333–0335 are not live until applied) | Bearer | `Stripe-Signature` HMAC with timestamp tolerance; each product signs its server-owned binding in metadata |
+| Stripe | `adapters/stripe.js`, `stripeCreditSubscriptions.js`, `stripePublishPlan.js` | Credit Packs; weekly/monthly Cinema Pass; weekly/monthly Credit Subscriptions; $4.99/week, $15/month or $126/year Publish Plan (`PUBLISH_RUNTIME_FLAGS.plans` is `"true"` in production `wrangler.jsonc`; interval migrations 0333–0336 are not live until applied) | Bearer | `Stripe-Signature` HMAC with timestamp tolerance; each product signs its server-owned binding in metadata |
 | Cloudflare R2 | `adapters/r2.js`, `r2Copy.js` | all media | SigV4 | presigned GET/PUT ≤ 15 min |
 | Cloudflare Stream | `lib/cinema/stream.js` | Cinema upload (tus) and signed playback | Bearer + signing JWK | webhook HMAC (`webhook-signature`) |
 | Cloudflare Access | `lib/accessJwt.js` | admin routes | — | Worker re-verifies the Access JWT |

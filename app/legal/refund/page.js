@@ -38,7 +38,7 @@ export default function Refund() {
 
             <h2>Veyrnox Publish Plan</h2>
             <ul>
-                <li>You can stop weekly or monthly renewal from the Publish Plan page or its Stripe billing portal. The Plan continues until the current paid period ends.</li>
+                <li>You can stop weekly, monthly or annual renewal from the Publish Plan page or its Stripe billing portal. The Plan continues until the current paid period ends.</li>
                 <li>For a refund request, contact support with your account email and the payment reference. Your statutory rights are not affected.</li>
             </ul>
 

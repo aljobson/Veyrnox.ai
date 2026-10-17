@@ -33,7 +33,7 @@ test('subscription launches have versioned consent, complete legal disclosures a
   assert.match(terms, /Credit Subscriptions/);
   assert.match(terms, /Subscription Credits[\s\S]{0,300}do not roll over/);
   assert.match(terms, /Cinema Pass[\s\S]{0,500}renews automatically each week or month/);
-  assert.match(terms, /Veyrnox Publish Plan[\s\S]{0,500}weekly or monthly/);
+  assert.match(terms, /Veyrnox Publish Plan[\s\S]{0,500}weekly, monthly or annual/);
   assert.match(refunds, /Within 14 days of the initial subscription payment/);
   assert.match(refunds, /refund the unused share of that paid period/);
   assert.match(refunds, /How to cancel/);

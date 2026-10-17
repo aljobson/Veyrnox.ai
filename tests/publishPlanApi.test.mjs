@@ -31,18 +31,19 @@ function setup(action, rpcValues = {}, stripeValues = {}) {
   return { handler, calls };
 }
 
-test('read returns only public entitlement fields and both billing intervals', async () => {
+test('read returns only public entitlement fields and every billing interval', async () => {
   const s = setup('read', {
     list_social_publish_plans: [
       { id: 'publish-weekly', name: 'Publish Plan', billing_interval: 'week', price_usd_cents: 499, analytics_days: 366, best_time_enabled: true, internal: 'x' },
       { id: 'publish', name: 'Publish Plan', billing_interval: 'month', price_usd_cents: 1500, analytics_days: 366, best_time_enabled: true },
+      { id: 'publish-annual', name: 'Publish Plan', billing_interval: 'year', price_usd_cents: 12600, analytics_days: 366, best_time_enabled: true },
     ],
     read_social_publish_entitlement: entitlement(),
   });
   const response = await s.handler(request());
   assert.equal(response.status, 200);
   const body = await response.json();
-  assert.deepEqual(body.plans.map((plan) => [plan.billing_interval, plan.price_usd_cents]), [['week', 499], ['month', 1500]]);
+  assert.deepEqual(body.plans.map((plan) => [plan.billing_interval, plan.price_usd_cents]), [['week', 499], ['month', 1500], ['year', 12600]]);
   assert.equal(body.plans[0].internal, undefined);
   assert.equal(body.entitlement.account_limit, 1);
   assert.equal(body.entitlement.analytics_days, 0);
@@ -76,6 +77,19 @@ test('start passes the weekly Publish interval from the database snapshot', asyn
   assert.equal(response.status, 200);
   const checkout = s.calls.find((call) => call.name === 'checkout');
   assert.deepEqual([checkout.args.interval, checkout.args.priceUsdCents], ['week', 499]);
+});
+
+test('start passes the annual Publish interval and 30%-off price from the database snapshot', async () => {
+  const s = setup('start', {
+    start_social_publish_subscription: { ok: true, status: 'pending', subscription_id: subscriptionId, plan_id: 'publish-annual', billing_interval: 'year', price_usd_cents: 12600 },
+  });
+  const response = await s.handler(request('', {
+    plan_id: 'publish-annual', idempotency_key: 'publish-annual-key', consent: true,
+    consent_version: PUBLISH_PLAN_CONSENT_VERSION,
+  }));
+  assert.equal(response.status, 200);
+  const checkout = s.calls.find((call) => call.name === 'checkout');
+  assert.deepEqual([checkout.args.interval, checkout.args.priceUsdCents], ['year', 12600]);
 });
 
 test('identity, feature flag and consent gates run before billing', async () => {

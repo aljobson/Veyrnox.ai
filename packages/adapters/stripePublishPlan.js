@@ -44,7 +44,7 @@ async function request(path, cfg, fields, idempotencyKey) {
 
 export async function createPublishPlanCheckout(input, cfg) {
   if (!UUID.test(input.subscriptionId || '') || !/^[a-z0-9-]{1,32}$/.test(input.planId || '')
-      || !['week', 'month'].includes(input.interval) || !Number.isSafeInteger(input.priceUsdCents)
+      || !['week', 'month', 'year'].includes(input.interval) || !Number.isSafeInteger(input.priceUsdCents)
       || input.priceUsdCents < 100 || input.priceUsdCents > 9999999 || !cfg.signingSecret) {
     return { ok: false, error: 'invalid_checkout' };
   }
