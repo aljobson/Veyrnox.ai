@@ -240,3 +240,31 @@ test('an ungrounded question never reaches the model', async () => {
     await createHelpPlan({ question: 'How do refunds work?', pathname: '/app/credits', env, fetchImpl });
     assert.equal(calls, 1);
 });
+
+test('Vey knows the MCP connector, the CLI and the developer API', () => {
+    const cases = [
+        ['What is the MCP connector?', '/app', 'mcp'],
+        ['How do I connect Claude to Veyrnox?', '/app', 'mcp'],
+        ['Do you have a CLI?', '/app', 'developers-cli-api'],
+        ['How do I use the command line?', '/app', 'developers-cli-api'],
+        ['Is there an API for developers?', '/app', 'developers-cli-api'],
+        ['How do I get an API key?', '/app', 'developers-cli-api'],
+    ];
+    for (const [question, path, id] of cases) {
+        assert.equal(searchProductKnowledge(question, path, 1)[0].id, id, question);
+        assert.doesNotMatch(fallbackHelpPlan(question, path).message, /will not guess/, question);
+    }
+    const cli = PRODUCT_KNOWLEDGE.find((item) => item.id === 'developers-cli-api');
+    const text = [cli.summary, ...cli.steps, ...cli.facts].join(' ');
+    assert.match(text, /veyrnox auth login/);
+    assert.match(text, /confirmed_credits/);
+    assert.match(text, /separate from the MCP connector/);
+    assert.doesNotMatch(text, /[$£€]\s?\d/);
+    assert.ok(fallbackHelpPlan('Do you have a CLI?', '/app').message.length <= 700);
+    assert.equal(parseHelpRequest({ question: 'How do I install it?', pathname: '/developers' }).pathname, '/developers');
+    assert.ok(helpStartersForPath('/developers').some((q) => /CLI/.test(q)));
+});
+
+test('the refusal names the MCP connector and CLI as things Vey can help with', () => {
+    assert.match(unknownAnswerPlan().message, /MCP connector, the CLI/);
+});
