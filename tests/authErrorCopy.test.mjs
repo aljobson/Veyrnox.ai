@@ -33,3 +33,10 @@ test('the existing mappings still win for their own messages', () => {
     assert.match(human('Password should be at least 8 characters.'), /at least 8/);
     assert.match(human('captcha protection: request disallowed (invalid-input-response)'), /security check/);
 });
+
+test('a sign-up refused by the disposable-email trigger says what to do', () => {
+    // GoTrue's wording when a trigger on auth.users raises (migration 0343).
+    const copy = human('Database error saving new user');
+    assert.ok(copy, 'the trigger refusal fell through to the generic fallback');
+    assert.match(copy, /permanent/);
+});

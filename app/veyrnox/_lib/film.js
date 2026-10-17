@@ -42,8 +42,8 @@ export const BRAND_FILM = {
   mobile: {
     video: '/film/brand-intro-portrait.mp4',
     poster: '/film/brand-intro-portrait.jpg',
-    width: 540,
-    height: 576,
+    width: 720,
+    height: 540,
   },
 };
 
