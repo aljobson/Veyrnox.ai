@@ -2,7 +2,7 @@
  * GET /api/v1/account — who the caller is, what they can spend and how
  * much they have actually made.
  *
- * Response (200): { email, credits, assets }
+ * Response (200): { email, credits, assets, created_at, ... }
  *   email   — the verified identity, or null if the token carried none.
  *             No display name: public.users has no such column, and the
  *             browser already holds the one Google gave us, in the
@@ -38,7 +38,7 @@ export async function GET(req) {
     }
 
     const limited = await accountReadLimit(authId, cfg, {
-        email: authEmail || null, credits: 0, assets: null, rights_attested_at: null, rights_attestation_version: null,
+        email: authEmail || null, credits: 0, assets: null, created_at: null, rights_attested_at: null, rights_attestation_version: null,
     });
     if (limited) return limited;
 
@@ -47,7 +47,7 @@ export async function GET(req) {
     try {
         [credits, rows] = await Promise.all([
             rpc('read_user_credits', { p_auth_id: authId }, cfg),
-            select('users', { columns: 'id,email,rights_attested_at,rights_attestation_version', filter: `auth_id=eq.${authId}`, limit: 1 }, cfg),
+            select('users', { columns: 'id,email,created_at,rights_attested_at,rights_attestation_version', filter: `auth_id=eq.${authId}`, limit: 1 }, cfg),
         ]);
     } catch (err) {
         const status = err instanceof SupabaseError ? err.status : 0;
@@ -84,6 +84,8 @@ export async function GET(req) {
         email: authEmail || (user && user.email) || null,
         credits: Number(credits && credits.balance) || 0,
         assets,
+        // Account age drives the first-visit paywall (never a gate on anything).
+        created_at: (user && user.created_at) || null,
         // When, and under which AUP version, this user first attested to the
         // rights in an upload (ADR-0058 decision 7). Null until the first one.
         rights_attested_at: (user && user.rights_attested_at) || null,

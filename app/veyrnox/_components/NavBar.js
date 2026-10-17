@@ -15,6 +15,7 @@ import { useVideoEnhancePreview } from '../_lib/useVideoEnhancePreview';
 import { useEditorEnabled } from './EditorFlag';
 import { NAV_CATEGORIES, PRIMARY_NAV_CATEGORIES } from '../_lib/tokens';
 import { AnnouncementBar } from './AnnouncementBar';
+import { PaywallPrompt } from './PaywallPrompt';
 
 // Studio pages keep the making tools in the tab strip. This complementary
 // list makes the rest of the public site reachable from that same header,
@@ -151,6 +152,7 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
   const assetWord = assets === 1 ? 'asset' : 'assets';
   return (
     <header data-print="hide" className="sticky top-0 z-40 flex items-center justify-between gap-2 px-4 sm:px-8 h-16 border-b border-vx-border bg-vx-base/88 backdrop-blur-sm">
+      {summary && <PaywallPrompt credits={summary.credits} createdAt={summary.created_at} />}
       <Link
         href="/app"
         aria-label="Veyrnox studio — explore"
