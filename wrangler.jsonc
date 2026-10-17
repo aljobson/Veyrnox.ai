@@ -215,6 +215,9 @@
     // YouTube, LinkedIn and X public release; Google data-access review remains pending.
     // Previously queued targets continue even when public Publish is disabled.
     "PUBLISH_ENABLED": "true",
+    // ADR-0108 STORE_BILLING_ENABLED is deliberately NOT set here: production vars are at the
+    // 77 cap (tests/workerBindingBudget.test.mjs) and an unset flag is off. Turning it on needs
+    // migration 0344 applied, the REVENUECAT_WEBHOOK_SECRET secret, and one var swapped out.
     // Publish Plan enforces five paid accounts; Free keeps one account.
     // Grouped to stay within Cloudflare's 128 text-binding limit. Migration 0293
     // and the Stripe checkout are live; qualify native video separately.
@@ -378,6 +381,9 @@
         "JEV_SUBMIT_ERRORS_MODE": "off",
         // Veyrnox Publish is open on staging for testing (see production).
         "PUBLISH_ENABLED": "true",
+        // ADR-0108; vars are not inherited. Sandbox purchases are accepted here only.
+        "STORE_BILLING_ENABLED": "false",
+        "STORE_BILLING_ALLOW_SANDBOX": "true",
         // Publish migrations through 0323 are installed in staging. These
         // management surfaces are enabled here for acceptance before any
         // production rollout; native video destinations remain separately gated.
