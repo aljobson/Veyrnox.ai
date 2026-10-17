@@ -31,6 +31,7 @@ function Reviews() {
   useEffect(() => { load(); return () => { generation.current++; }; }, [load]);
   return <div className="mx-auto max-w-3xl px-4 py-10 pb-32 sm:px-8">
     <Link href="/app/admin" className="text-sm underline">Back to operations</Link>
+    <Link href="/app/admin/cinema/submissions" className="ml-4 text-sm underline">Publication queue</Link>
     <Link href="/app/admin/cinema/voting" className="ml-4 text-sm underline">Voting operations</Link> <Link href="/app/admin/cinema/comments" className="ml-4 text-sm underline">Comment moderation</Link>
     <Link href="/app/admin/cinema/story-polls" className="ml-4 text-sm underline">Story poll operations</Link>
     <Link href="/app/admin/cinema/rankings" className="ml-4 text-sm underline">Weekly rankings</Link>

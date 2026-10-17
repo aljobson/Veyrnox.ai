@@ -170,3 +170,26 @@ runner machine only, because the runner keeps its runs in memory per machine. De
 2026-10-10: the lost-run check is on in production (owner: "turn on the lost-run check"), after the first real video there. One
 runner machine; the flag goes back to "false" before a second is added.
 
+## Amendment 2026-10-17: explicit, dedicated narration
+
+Native video-model audio is not a verbatim speech guarantee. An optional Exact narration field therefore accepts up to
+300 UTF-16 code units of literal text, bound into the approved plan. Editing the draft invalidates that approval. The
+existing no-script path remains unchanged; a runner without the explicit narration capability cannot accept a scripted run.
+
+For scripted runs, reserve $0.02 for one dedicated Inworld TTS request inside the existing $2.50 ceiling; the visual phase
+is limited to $2.48. The customer quote remains 165 credits. There is no automatic paid retry or silent native-audio fallback.
+Both brief and script pass through the existing refusal boundary before speech is requested. The controller then replaces
+native audio with the trusted speech track, extending the last video frame if necessary rather than truncating the sentence.
+
+The narration helper has a separate unprivileged identity from the arbitrary-code agent, shares only the existing isolated
+network/proxy boundary, and receives no planner or callback secrets. Root-controlled phase state binds the exact script hash:
+the visual phase cannot buy TTS; the narration phase allows one exact-body TTS attempt and closes all other paid routes.
+Private immutable media snapshots and local-only, forced-format decoding protect the trusted mux from agent-owned paths.
+OpenMontage remains unmodified, and existing provider credentials are reused without exposing their values.
+
+Provider schema and pricing references: [Inworld TTS API](https://fal.ai/models/fal-ai/inworld-tts/api) and
+[model page](https://fal.ai/models/fal-ai/inworld-tts). The reserve is conservative for the bounded script, not an increase
+in the run ceiling. Synthetic tests establish text binding, isolation, metering and mux behavior; a real output and human
+listening are still required for pronunciation acceptance. Release and acceptance status belong in the QA evidence, not
+an assertion that this amendment alone certifies production.
+

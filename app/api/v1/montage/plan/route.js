@@ -12,6 +12,7 @@ import { NextResponse } from 'next/server';
 import { rpc, select, envConfig } from '../../../../../packages/db/supabase-client.js';
 import { callRunner, runtimeConfig } from '../../../../../lib/montageRuntime.js';
 import { BRIEF_RE, ASPECTS, mintPlanToken, planIdempotencyKey, publicPlan } from '../../../../../lib/montagePlan.js';
+import { normaliseNarration } from '../../../../../lib/montageNarration.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const CATALOG_ID = 'video-agent';
@@ -34,6 +35,8 @@ export async function POST(req) {
     const aspect = (body && body.aspect_ratio) || '9:16';
     if (typeof brief !== 'string' || !BRIEF_RE.test(brief)) return NextResponse.json({ error: 'inputs_invalid:brief' }, { status: 400 });
     if (!ASPECTS.includes(aspect)) return NextResponse.json({ error: 'inputs_invalid:aspect_ratio' }, { status: 400 });
+    const narration = normaliseNarration(body?.narration_text);
+    if (!narration.ok) return NextResponse.json({ error: narration.error }, { status: 400 });
 
     // Planning can cost us a model call, so it shares the generation attempt limit (0113).
     try {
@@ -63,10 +66,11 @@ export async function POST(req) {
         return NextResponse.json({ error: 'catalog_lookup_failed' }, { status: 502 });
     }
 
-    const planned = await callRunner('/plan', { brief, aspect_ratio: aspect }, { base: rt.runnerBase, secret: rt.runnerSecret });
+    const planned = await callRunner('/plan', { brief, aspect_ratio: aspect, ...(narration.text ? { narration_text: narration.text } : {}) }, { base: rt.runnerBase, secret: rt.runnerSecret });
     if (!planned.ok) return NextResponse.json({ error: 'plan_unavailable' }, { status: 502 });
+    if (narration.text && planned.data?.narration_supported !== true) return NextResponse.json({ error: 'narration_unavailable' }, { status: 503 });
 
-    const { token, nonce, expiresAt } = await mintPlanToken({ secret, authId, brief, aspect, credits });
+    const { token, nonce, expiresAt } = await mintPlanToken({ secret, authId, brief, aspect, credits, narrationText: narration.text });
     return NextResponse.json({
         plan_id: token,
         idempotency_key: planIdempotencyKey(nonce),
@@ -74,5 +78,6 @@ export async function POST(req) {
         credits,
         aspect_ratio: aspect,
         expires_at: expiresAt,
+        ...(narration.text ? { narration_text: narration.text } : {}),
     });
 }

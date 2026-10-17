@@ -8,8 +8,9 @@
  * lost response and a resubmit move the balance once.
  */
 
-import { useCallback, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { AppNav } from '../../../_components/NavBar';
 import { Main } from '../../../_components/Main';
 import { AccountBoundary } from '../../../_components/AccountBoundary';
@@ -17,6 +18,7 @@ import { MfaPanel } from '../../../_components/MfaPanel';
 import { Button } from '../../../_components/Button';
 import { Chip } from '../../../_components/Chip';
 import { gatewayFetch } from '../../../_lib/gateway';
+import { adminUserHandoff } from '../../../_lib/adminUserHandoff';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const nf = new Intl.NumberFormat('en-US');
@@ -24,19 +26,36 @@ const when = (iso) => (iso ? new Date(iso).toISOString().replace('T', ' ').slice
 const signed = (n) => (n > 0 ? `+${nf.format(n)}` : nf.format(n));
 
 export default function Page() {
-  return <><AppNav /><Main><AccountBoundary><Account /></AccountBoundary></Main></>;
+  return <><AppNav /><Main><AccountBoundary><Suspense fallback={null}><AccountHandoff /></Suspense></AccountBoundary></Main></>;
 }
 
-function Account() {
-  const [query, setQuery] = useState('');
+function AccountHandoff() {
+  const handoff = adminUserHandoff(useSearchParams());
+  return <Account key={handoff} initialQuery={handoff} />;
+}
+
+function Account({ initialQuery }) {
+  const [query, setQuery] = useState(initialQuery);
   const [lookup, setLookup] = useState(null);   // { user, jobs }
   const [ledger, setLedger] = useState(null);   // { balance, entries, actions }
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const generation = useRef(0);
+  const activeLookup = useRef(null);
 
-  const loadLedger = useCallback(async (userId) => {
-    const version = ++generation.current;
+  const invalidate = useCallback(() => {
+    generation.current++;
+    activeLookup.current = null;
+  }, []);
+
+  const reset = useCallback((value) => {
+    invalidate();
+    setQuery(value); setLookup(null); setLedger(null); setError(''); setBusy(false);
+  }, [invalidate]);
+
+  useEffect(() => invalidate, [invalidate]);
+
+  const loadLedger = useCallback(async (userId, version = ++generation.current) => {
     const data = await gatewayFetch(`/admin/users/ledger?user_id=${encodeURIComponent(userId)}&limit=200`);
     if (version === generation.current) setLedger(data);
   }, []);
@@ -45,6 +64,8 @@ function Account() {
     event?.preventDefault();
     const q = query.trim();
     if (!q) return;
+    const version = ++generation.current;
+    activeLookup.current = null;
     setBusy(true); setError(''); setLookup(null); setLedger(null);
     const key = UUID_RE.test(q) ? 'user_id' : 'email';
     try {
@@ -52,21 +73,26 @@ function Account() {
       try {
         data = await gatewayFetch(`/admin/users/lookup?${key}=${encodeURIComponent(q)}`);
       } catch (e) {
+        if (version !== generation.current) return;
         if (key === 'user_id' && e.code === 'user_not_found') data = await gatewayFetch(`/admin/users/lookup?job_id=${encodeURIComponent(q)}`);
         else throw e;
       }
-      setLookup(data);
-      await loadLedger(data.user.id);
+      if (version !== generation.current) return;
+      activeLookup.current = { userId: data.user.id, version };
+      setLookup({ ...data, contextVersion: version });
+      await loadLedger(data.user.id, version);
     } catch (e) {
-      setError(message(e.code));
+      if (version === generation.current) setError(message(e.code));
     } finally {
-      setBusy(false);
+      if (version === generation.current) setBusy(false);
     }
   }
 
-  async function refresh() {
-    if (!lookup) return;
-    try { await loadLedger(lookup.user.id); } catch (e) { setError(message(e.code)); }
+  async function refresh(userId, contextVersion) {
+    // A completed action may outlive its form. It cannot reopen another selection.
+    if (activeLookup.current?.userId !== userId || activeLookup.current?.version !== contextVersion) return;
+    const version = ++generation.current;
+    try { await loadLedger(userId, version); } catch (e) { if (version === generation.current) setError(message(e.code)); }
   }
 
   return (
@@ -84,18 +110,18 @@ function Account() {
       <form onSubmit={find} className="mt-6 flex flex-wrap items-end gap-3" aria-label="Find a user">
         <label className="grow min-w-[260px]">
           <span className="block font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">EMAIL, USER ID OR JOB ID</span>
-          <input value={query} onChange={(e) => setQuery(e.target.value)} autoComplete="off" spellCheck={false}
+          <input value={query} onChange={(e) => reset(e.target.value)} autoComplete="off" spellCheck={false}
             className="mt-1 w-full rounded-lg border border-vx-border bg-vx-panel p-3 text-sm font-vx-mono focus:outline-hidden focus:border-vx-accent" />
         </label>
         <Button type="submit" disabled={busy || !query.trim()}>{busy ? 'Looking…' : 'Find'}</Button>
-        {lookup && <Button type="button" variant="ghost" onClick={() => { setLookup(null); setLedger(null); setQuery(''); }}>Clear</Button>}
+        {(lookup || query) && <Button type="button" variant="ghost" onClick={() => reset('')}>Clear</Button>}
       </form>
       {error && <p role="alert" className="mt-4 text-vx-danger">{error}</p>}
 
       {lookup && <Standing user={lookup.user} balance={ledger?.balance} />}
       {lookup && <div className="grid gap-4 md:grid-cols-2">
-        <GrantForm key={`${lookup.user.id}-grant`} userId={lookup.user.id} onDone={refresh} />
-        <GrantForm key={`${lookup.user.id}-clawback`} userId={lookup.user.id} onDone={refresh} clawback pack={ledger?.balance ? ledger.balance.balance - (ledger.balance.free_balance ?? 0) - ledger.balance.subscription_balance : null} />
+        <GrantForm key={`${lookup.user.id}-grant`} userId={lookup.user.id} onDone={() => refresh(lookup.user.id, lookup.contextVersion)} />
+        <GrantForm key={`${lookup.user.id}-clawback`} userId={lookup.user.id} onDone={() => refresh(lookup.user.id, lookup.contextVersion)} clawback pack={ledger?.balance ? ledger.balance.balance - (ledger.balance.free_balance ?? 0) - ledger.balance.subscription_balance : null} />
       </div>}
       {ledger && <Entries rows={ledger.entries} />}
       {ledger && <Actions rows={ledger.actions} />}
