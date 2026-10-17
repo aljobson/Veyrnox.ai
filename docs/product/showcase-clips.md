@@ -273,15 +273,15 @@ through a three-second final hold. It floats above the finger without
 covering the face or hands. The official Veyrnox.ai mark and wordmark remain
 at the top left throughout. The exports are silent, eight-second H.264 files.
 
-`BREAKTHROUGH_FILM.mobile` is the one take shown on every screen
-(`/film/robot-creative-portrait-v3.mp4` and its JPG poster, 720 × 1,440: the
-portrait animation scaled to 720 × 1,280 with 80px of matching dark
-background above and below). Below 640px the player fills the stage below the
-phone's navigation, preserving both hands on other phone shapes too. From
-640px up it sits centred, no wider than 42.5% of the viewport height, so the
-whole frame fits on screen. The landscape `robot-creative-v5` files stay in
-`public/film/` but are no longer shown (11 Oct owner approval kept; 17 Oct
-the owner preferred the portrait take everywhere).
+`BREAKTHROUGH_FILM` serves `/film/robot-creative-v5.mp4` with its matching
+JPG poster. The player spans the full viewport width immediately below the
+navigation, with no outer padding, border or rounded frame. Desktop displays
+the complete 1,280 × 720 landscape frame without cropping. Below 640px, it
+selects `/film/robot-creative-portrait-v3.mp4` and its matching JPG poster.
+The portrait animation is scaled to 720 × 1,280 with 80px of matching dark
+background above and below, producing a 720 × 1,440 export. The complete
+portrait frame is contained in the full-screen stage below the phone's
+navigation, preserving both hands on other phone shapes too.
 
 The mobile question is baked into the video, with no duplicate bottom
 caption or large gradient obscuring the robot. “Start creating” remains a
