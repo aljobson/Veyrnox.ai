@@ -168,3 +168,5 @@ fd087777e79b8a1e33774074af9d1f32e18fff05:tests/veyrnoxMcp.test.mjs:generic-api-k
 # Public Supabase publishable keys in the mobile app config (same values as wrangler.jsonc).
 5e48c7504d02ec0e53de3e6b06eebe72be5f3e2a:apps/mobile/src/lib/config.ts:generic-api-key:15
 5e48c7504d02ec0e53de3e6b06eebe72be5f3e2a:apps/mobile/src/lib/config.ts:generic-api-key:20
+# Synthetic idempotency-key fixture in the mobile chat test.
+4bc5a6c41851f32591ac25ddb4b8ccfd55edfed1:apps/mobile/__tests__/chat.test.ts:generic-api-key:51
