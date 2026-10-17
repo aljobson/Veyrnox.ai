@@ -3,10 +3,13 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 const source = await readFile(new URL('../app/veyrnox/_components/OddlingStudio.js', import.meta.url), 'utf8');
+const catalog = await readFile(new URL('../app/veyrnox/_components/OddlingCatalog.js', import.meta.url), 'utf8');
 
-test('Oddling Studio presents a visual doll workflow and a price-forward action', () => {
-  assert.match(source, /ODDLING DOLL LAB/);
-  assert.match(source, /Every choice updates the real generation prompt/);
+test('Oddling Studio presents a Sims-style catalog and a price-forward action', () => {
+  assert.match(source, /<OddlingCatalog picks=\{picks\} onPick=\{setPick\}/);
+  assert.match(catalog, /ODDLING CATALOG/);
+  assert.match(catalog, /Every choice updates the real generation prompt/);
+  assert.match(catalog, /The final picture is made by AI from these choices/);
   assert.match(source, /Generate portrait/);
   assert.match(source, /Animate character/);
   assert.match(source, /LIVE PRICE/);
@@ -33,4 +36,11 @@ test('balance lookup is gated by a stored session and warns before Create', () =
   assert.match(source, /Not enough credits/);
   assert.match(source, /href="\/app\/credits"/);
   assert.doesNotMatch(source, /gatewayFetch\('\/generations'/);
+});
+
+test('the catalog cannot widen a phone-sized page: the builder column and the catalog allow themselves to shrink', () => {
+  assert.match(source, /<aside data-assistant-target="oddlings\.builder"[^>]*className="min-w-0 /);
+  assert.match(catalog, /grid-cols-\[148px_minmax\(0,1fr\)\]/);
+  assert.match(catalog, /aria-label="Oddling catalog" className="mt-5 min-w-0 max-w-full overflow-hidden/);
+  assert.match(catalog, /role="tablist" aria-label="Catalog category" className="flex min-w-0 max-w-full[^"]*overflow-x-auto/);
 });
