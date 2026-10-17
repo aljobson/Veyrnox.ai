@@ -41,6 +41,16 @@ test('question panel docks Vey above its left edge, clear of the right-hand Resu
   assert.deepEqual(mobileDockPosition({width:320,height:568},rect(8,340,304,220)),{x:20,y:274});
   assert.deepEqual(mobileDockPosition({width:390,height:844},null),{x:8,y:774});
 });
+test('right-aligned panels reserve a mascot lane on their left at mobile widths', () => {
+  for (const width of [320, 390, 430]) {
+    const panelWidth = Math.min(280, width - 80);
+    const guide = rect(width - 8 - panelWidth, 556, panelWidth, 72);
+    const dock = mobileDockPosition({ width, height: 844 }, guide, true, 'right');
+    assert.ok(dock.x >= 8);
+    assert.ok(dock.x + VEY_SIZE.width <= guide.left - 8);
+    assert.equal(dock.y, guide.top + 8);
+  }
+});
 test('a visible walkthrough above chat keeps its mascot lane and clears both panels', () => {
   for (const [width,height,chatHeight] of [[390,844,280],[320,568,220]]) {
     const viewport={width,height};
@@ -86,4 +96,11 @@ test('mobile movement is explicit and the layout never searches page obstacles o
   assert.match(layout,/viewport\.height - dock\.top \+ 8/);
   assert.match(layout,/overflowY: 'auto'/);
   assert.match(layout,/else restoreWorkspace\(\)/);
+  assert.match(assistant,/>Move me<\/span>/);
+  assert.match(assistant,/manualPosition, panelSide, highlight/);
+  assert.match(layout,/manualPosition \? clampVeyPosition\(manualPosition, viewport\)/);
+  assert.match(assistant,/aria-label="Dock Vey"/);
+  assert.match(assistant,/data-panel-side=\{panelSide\}/);
+  assert.match(guide,/data-panel-side=\{panelSide\}/);
+  assert.doesNotMatch(guide,/setSide/);
 });
