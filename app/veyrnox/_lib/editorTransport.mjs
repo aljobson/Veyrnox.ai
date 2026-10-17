@@ -31,3 +31,16 @@ export function stepTimelineZoom(current, direction) {
     const delta = direction > 0 ? 0.25 : -0.25;
     return clamp(Math.round((current + delta) * 4) / 4, MIN_TIMELINE_ZOOM, MAX_TIMELINE_ZOOM);
 }
+
+/**
+ * New zoom after clips were added, or null to leave the zoom alone. Only an added clip that no longer fits the
+ * visible timeline triggers it, and it only ever zooms out, so a manual zoom is kept for every other edit.
+ */
+export function autoFitZoom({ prevClips, nextClips, total, ppf, viewport }) {
+    if (nextClips <= prevClips || !(total > 0)) return null;
+    const width = Number(viewport) > 0 ? Number(viewport) : 800;
+    const fitted = fitTimelineZoom(total, width);
+    const available = Math.max(160, width - 24);
+    const overflows = (Math.max(0, total) + 150) * ppf > available;
+    return overflows && fitted < ppf ? fitted : null;
+}
