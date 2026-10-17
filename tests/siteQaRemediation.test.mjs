@@ -18,7 +18,7 @@ test('the Explore hero image is eagerly responsive', () => {
 
 test('Publish failures lead to recovery and calendar loading has a ceiling', () => {
   const analytics = read('app/veyrnox/app/publish/analytics/page.js');
-  assert.match(analytics, /href="\/app\/publish"[\s\S]*Reconnect it in Veyrnox Publish/);
+  assert.match(analytics, /href="\/app\/publish"[\s\S]*Reconnect it in Veyrnox.ai Publish/);
   const calendar = read('app/veyrnox/app/publish/calendar/page.js');
   assert.match(calendar, /window\.setTimeout\([\s\S]*calendar is taking too long to load[\s\S]*,8000\)/);
   assert.match(calendar, /return\(\)=>\{active=false;window\.clearTimeout\(timeout\);\}/);

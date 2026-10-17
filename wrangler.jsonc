@@ -355,7 +355,7 @@
         "CLIP_EDIT_SLOW_ENABLED": "true",
         // ADR-0066; vars are not inherited, so staging names it too.
         "JEV_SUBMIT_ERRORS_MODE": "off",
-        // Veyrnox Publish is open on staging for testing (see production).
+        // Veyrnox.ai Publish is open on staging for testing (see production).
         "PUBLISH_ENABLED": "true",
         // ADR-0108; vars are not inherited. Sandbox purchases are accepted here only.
         // Staging is at the 128 text-binding limit (vars + secrets). Flags that are "false" are simply

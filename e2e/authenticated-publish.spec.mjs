@@ -5,7 +5,7 @@ import { decodeActivityCursor } from '../lib/social/activityCursor.js';
 // Each route must return real built HTML AND finish an authenticated API read;
 // a heading on an anonymous, loading, upgrade or error shell is not a pass.
 const interiors = [
-  ['', 'Veyrnox Publish', '/accounts', /Create a post/],
+  ['', 'Veyrnox.ai Publish', '/accounts', /Create a post/],
   ['/activity', 'Activity', '/activity', /No brand activity has been recorded yet/],
   ['/ads', 'Ads', '/ads', /New campaign draft/],
   ['/analytics', 'Analytics', '/accounts', /No accounts connected yet/],

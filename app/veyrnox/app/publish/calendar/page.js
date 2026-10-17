@@ -26,7 +26,7 @@ export default function Calendar() {
     const account=useSyncExternalStore(onSessionChange,currentAccount,noAccount);
     const date=useSyncExternalStore(noSubscription,today,noAccount);
     return <><AppNav/><Main className="max-w-[1100px] mx-auto px-4 sm:px-8 py-10">
-        <Link href="/app/publish" className="text-sm text-vx-accent underline">Veyrnox Publish</Link>
+        <Link href="/app/publish" className="text-sm text-vx-accent underline">Veyrnox.ai Publish</Link>
         <h1 className="text-3xl font-black mt-3 mb-2">Publishing calendar</h1>
         <p className="text-sm text-vx-fg-muted mb-4">Scheduled and completed posts. Cancel an untouched post safely, then restore it when you are ready.</p>
         {account && <BrandSwitcher />}

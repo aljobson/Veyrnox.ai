@@ -1,4 +1,4 @@
-# 5. Security Baseline — Veyrnox Publish
+# 5. Security Baseline — Veyrnox.ai Publish
 
 > **As of 2026-10-08 (repo `main` at `bee1ea4f`).** This baseline was written before implementation. It
 > has been reconciled with the code (migrations 0154 to 0228, `app/api/v1/social/`, `lib/social/`,
@@ -8,14 +8,14 @@
 > networks added by PR #637 are described from the code and automated tests only; none was run against a
 > real provider account (see [the tester handover](INTEGRATIONS-TESTING-2026-10-08.md)).
 
-**Purpose:** map Veyrnox Publish's design (specified in [02-technical-spec.md](02-technical-spec.md))
+**Purpose:** map Veyrnox.ai Publish's design (specified in [02-technical-spec.md](02-technical-spec.md))
 against the named external security frameworks — OWASP, NIST, ISO/IEC 27001, and the UK NCSC — so
 engineering review can check specific, named controls rather than a vague "we thought about
 security." This is the audit-facing companion to §2.7–§2.11 of the technical spec.
 
 ## How to read this document
 
-- Every row states a **concrete Veyrnox Publish decision** and points at the exact section
+- Every row states a **concrete Veyrnox.ai Publish decision** and points at the exact section
   of the technical spec that specifies it. A framework reference with no matching design decision
   is a gap, not a citation — none should appear below without one.
 - **Honesty on sourcing:** the control *recommendations* below (PKCE, exact-match redirect URIs,
@@ -43,7 +43,7 @@ Publish is overwhelmingly an API surface (§2.3 of the technical spec) integrati
 APIs, so this list is the single most relevant framework here — more specific to this feature's
 actual risk than the general OWASP Top 10 below.
 
-| # | Risk | Veyrnox Publish control | Spec reference |
+| # | Risk | Veyrnox.ai Publish control | Spec reference |
 |---|---|---|---|
 | API1 | Broken Object Level Authorization | **Built.** Every id-scoped RPC joins to `social_brands.owner_user_id = <caller>` using `p_auth_id`, independent of RLS (no browser role has any table grant); a foreign id returns the same `*_NOT_FOUND` as a missing one, mapped to 404 | §2.9 |
 | API2 | Broken Authentication | Reuses the existing repo-wide JWT gate (ES256 + JWKS via Web Crypto, §2.3) — no new authentication mechanism invented for this feature | §2.3, §2.9 |

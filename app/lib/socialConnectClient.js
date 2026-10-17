@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Client-side driver for Veyrnox Publish's connect flow (ADR-0061). Every
+ * Client-side driver for Veyrnox.ai Publish's connect flow (ADR-0061). Every
  * live network shares the same shape: POST /social/accounts/:network/connect
  * for an authorize URL, redirect, then POST /social/accounts/:network/
  * callback from app/social/connect/callback/[network]/page.js to finish it.

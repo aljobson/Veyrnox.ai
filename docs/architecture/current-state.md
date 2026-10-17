@@ -11,7 +11,7 @@
 > - **Framework** is Next.js 16, not 15.
 > - **CSP** is nonce-based with no inline scripts (ADR-0060, live).
 > - **Providers** now include BytePlus, which is polled, not a webhook.
-> - **Veyrnox Publish** (`lib/social`, `app/api/v1/social`) did not exist at
+> - **Veyrnox.ai Publish** (`lib/social`, `app/api/v1/social`) did not exist at
 >   this baseline; it is built and off in production.
 > - **Cinema** publication, viewing and the paywall are built behind flags.
 >

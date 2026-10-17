@@ -1,4 +1,4 @@
-# 2. Technical Specification — Veyrnox Publish
+# 2. Technical Specification — Veyrnox.ai Publish
 
 > **Flag values:** every flag state in this document is as of 2026-10-16. `wrangler.jsonc` is the source of truth (top-level `vars` is production, `env.staging` is staging); where this document and that file disagree, the file is right.
 
@@ -537,7 +537,7 @@ What the connect flow does today, and where it falls short of the original list:
 ## 2.8 Media ingestion boundary (SSRF avoidance by design)
 
 Unlike Metricool's own API — whose `media` field accepts arbitrary public URLs (including
-Google Drive/Dropbox links) that their server fetches on the caller's behalf — **Veyrnox Publish
+Google Drive/Dropbox links) that their server fetches on the caller's behalf — **Veyrnox.ai Publish
 does not accept externally-supplied media URLs at all.** The API accepts only `jobId` or `uploadId`.
 Every attached asset is either:
 

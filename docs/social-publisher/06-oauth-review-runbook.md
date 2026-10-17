@@ -161,7 +161,7 @@ requests only the fields/endpoints covered by that grant. No grant means no anal
 network request. Apply `0190_tiktok_token_rotation.sql` before collecting TikTok analytics;
 it persists both rotated tokens atomically without overwriting a newer connection.
 
-Suggested review justification: "Veyrnox Publish lets creators view analytics for their
+Suggested review justification: "Veyrnox.ai Publish lets creators view analytics for their
 own connected TikTok account and public videos alongside their publishing schedule.
 user.info.stats provides audience and account totals; video.list provides public video
 views, likes, comments and shares. These figures appear only in the creator's signed-in

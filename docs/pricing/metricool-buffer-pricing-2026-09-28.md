@@ -1,6 +1,6 @@
 # Metricool and Buffer pricing — 28 September 2026
 
-Question asked: what should Veyrnox Publish's own pricing look like? Answered by reading both
+Question asked: what should Veyrnox.ai Publish's own pricing look like? Answered by reading both
 companies' **public** `/pricing` pages directly (no login required — this is marketing content),
 so the numbers below are confirmed live figures, not estimates. Feeds
 [ADR-0063](../adr/0063-veyrnox-publish-plan-pricing.md).
@@ -56,7 +56,7 @@ than an invented number.
 
 - **Neither company's tier count.** Both ship a 3–4 tier ladder priced against a much larger
   feature set (approval workflows, competitor tracking, Looker Studio connectors, white-label)
-  than Veyrnox Publish's v1 scope (ADR-0061) includes. Matching tier count now would price
+  than Veyrnox.ai Publish's v1 scope (ADR-0061) includes. Matching tier count now would price
   features that don't exist yet.
 - **Metricool's hard 20-post/month free cap.** ADR-0063 recommends a more generous free tier
   (unlimited posts, fair-use bounded, capped by connected-account count instead) specifically to

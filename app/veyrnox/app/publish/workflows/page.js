@@ -19,7 +19,7 @@ const label = (network) => NETWORKS.find((item) => item.key === network)?.label 
 export default function InboxWorkflowsPage() {
   const account = useSyncExternalStore(onSessionChange, currentAccount, noAccount);
   return <><AppNav /><Main className="mx-auto max-w-[980px] px-4 py-10 sm:px-8">
-    <nav aria-label="Publish" className="mb-2 flex flex-wrap gap-4 text-sm"><Link href="/app/publish" className="text-vx-accent underline">Veyrnox Publish</Link><Link href="/app/publish/inbox" className="text-vx-accent underline">Inbox</Link></nav>
+    <nav aria-label="Publish" className="mb-2 flex flex-wrap gap-4 text-sm"><Link href="/app/publish" className="text-vx-accent underline">Veyrnox.ai Publish</Link><Link href="/app/publish/inbox" className="text-vx-accent underline">Inbox</Link></nav>
     <h1 className="text-3xl font-black">Inbox workflows</h1>
     <p className="mt-2 mb-4 text-sm text-vx-fg-muted">Match incoming messages, comments or reviews and prepare a reply for your team. Nothing is sent until a person reviews and sends it.</p>
     {account && <BrandSwitcher />}{account ? <WorkflowManager key={account} /> : <p className="text-sm text-vx-fg-muted">Sign in to manage workflows.</p>}

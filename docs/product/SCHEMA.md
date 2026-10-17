@@ -235,7 +235,7 @@ browser JWT may call.
 | `cinema_malware_scans`, `cinema_malware_scan_events` *(0295)* | per-upload scan queue (queued \| scanning \| passed \| flagged \| unavailable, lease) and append-only verdicts | a Library video stays in private R2 until a scanner passes the exact bytes |
 | `cinema_moderation_config`, `cinema_upload_content_checks`, `cinema_submission_moderation_jobs` *(0297)* | singleton `upload_content_required` (installed off); append-only per-upload content verdicts; per-submission moderation queue | `set_cinema_content_moderation_required` |
 
-### 3.7 Veyrnox Publish *(0154–0161, 0168–0169, 0181–0182, 0188–0192, 0223, 0228, 0241, 0260, 0265, 0287, 0293, 0298–0326; `PUBLISH_ENABLED` on in production with four released networks)*
+### 3.7 Veyrnox.ai Publish *(0154–0161, 0168–0169, 0181–0182, 0188–0192, 0223, 0228, 0241, 0260, 0265, 0287, 0293, 0298–0326; `PUBLISH_ENABLED` on in production with four released networks)*
 
 | table | columns | keys and rules |
 |---|---|---|

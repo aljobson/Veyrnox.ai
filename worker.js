@@ -9,7 +9,7 @@ import { runFalDispatch } from './lib/falDispatch.js';
  *   - the upload sweep (lib/uploadSweep.js), which deletes abandoned user
  *     sources from R2, and the uploads of jobs that have finished. Held to its own window rather than the asset default,
  *     because an upload is a third party's content (ADR-0025 section 8.1).
- *   - the Veyrnox Publish sweep (lib/socialPublishSweep.js), which claims
+ *   - the Veyrnox.ai Publish sweep (lib/socialPublishSweep.js), which claims
  *     due social_post_targets and dispatches them to network adapters
  *     (ADR-0061 section 2.6)
  *

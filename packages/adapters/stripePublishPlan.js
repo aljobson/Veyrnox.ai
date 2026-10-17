@@ -69,7 +69,7 @@ export async function createPublishPlanCheckout(input, cfg) {
     'line_items[0][price_data][unit_amount]': input.priceUsdCents,
     'line_items[0][price_data][recurring][interval]': input.interval,
     'line_items[0][price_data][recurring][interval_count]': 1,
-    'line_items[0][price_data][product_data][name]': 'Veyrnox Publish Plan',
+    'line_items[0][price_data][product_data][name]': 'Veyrnox.ai Publish Plan',
     'line_items[0][price_data][product_data][description]': 'Full social analytics and best-time recommendations',
     'line_items[0][price_data][product_data][tax_code]': TAX_CODE,
     'managed_payments[enabled]': 'true',

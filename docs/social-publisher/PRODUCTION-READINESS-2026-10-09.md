@@ -22,7 +22,7 @@ Enable Publish and basic analytics on production, with YouTube as the sole relea
 
 ## Google production setup
 
-Project `veyrnox-publish-production` (41641120885), separate from staging. YouTube Data API v3 enabled. Web client callback is `https://veyrnox.ai/social/connect/callback/youtube`. Scopes match the adapter: `youtube.readonly`, `youtube.upload`. Branding uses Veyrnox Publish, support@veyrnox.com and production homepage/privacy/terms URLs.
+Project `veyrnox-publish-production` (41641120885), separate from staging. YouTube Data API v3 enabled. Web client callback is `https://veyrnox.ai/social/connect/callback/youtube`. Scopes match the adapter: `youtube.readonly`, `youtube.upload`. Branding uses Veyrnox.ai Publish, support@veyrnox.com and production homepage/privacy/terms URLs.
 
 Production Cloud Console quotas checked under support@veyrnox.com on 9 October: video uploads 100/day and 100/minute; queries 10,000/day. All displayed usage was zero. No quota increase was requested. These are provider limits, not a guarantee of application throughput or verification approval.
 
@@ -31,7 +31,7 @@ Google OAuth audience is External / In production; this is not verification appr
 ## Blocking gates
 
 1. Retry branding verification after the propagation interval; obtain branding approval/publication, then complete sensitive-scope verification. The demonstration recording and its accessible URL are not yet prepared. Scope justification draft exists locally, but no verification submission has been completed.
-   Public disclosures are complete: PR #757 squash-merged as `1a75ff5fc737320e565d1f24c31ea070de00d67a`. Production deployment run `37978982569` passed, including live smoke checks. Chrome verified the public homepage's Veyrnox Publish section and the linked YouTube privacy section on 9 October at approximately 19:22 UTC. The policy explains consent, channel/statistics data, encrypted tokens, selected-video transfer, disconnect and retention, and Limited Use. These disclosures do not constitute Google approval.
+   Public disclosures are complete: PR #757 squash-merged as `1a75ff5fc737320e565d1f24c31ea070de00d67a`. Production deployment run `37978982569` passed, including live smoke checks. Chrome verified the public homepage's Veyrnox.ai Publish section and the linked YouTube privacy section on 9 October at approximately 19:22 UTC. The policy explains consent, channel/statistics data, encrypted tokens, selected-video transfer, disconnect and retention, and Limited Use. These disclosures do not constitute Google approval.
 2. Confirm project quota and any applicable YouTube approval conditions. The current [videos.insert documentation](https://developers.google.com/youtube/v3/docs/videos/insert), checked 9 October, states unverified API-project uploads are not automatically restricted to private mode. Do not treat the older private-upload assumption as current policy or infer project approval from staging results.
 3. Source-media delivery, byte-range reads, live cron registration and the Publish sweep heartbeat are verified. End-to-end provider delivery remains part of post-activation acceptance below.
 4. Review/approve this concrete activation PR after CI/build checks pass and the preceding gates are resolved. Squash-merge and use deploy-production.yml, with its smoke checks and rollback.

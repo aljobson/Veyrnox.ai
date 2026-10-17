@@ -193,11 +193,11 @@ must be followed by real-account acceptance before broader activation.
 ## Google setup update — 2026-10-09
 
 The dedicated Google project is `veyrnox-ai-publish` (number `79068620878`).
-Its OAuth app, **Veyrnox Publish**, remains External and in **Testing**.
+Its OAuth app, **Veyrnox.ai Publish**, remains External and in **Testing**.
 Google's Verification Center confirms that OAuth verification is not required
 in Testing. This is separate from Business Profile API access approval.
 
-- The existing **Veyrnox Publish — staging** client remains for YouTube.
+- The existing **Veyrnox.ai Publish — staging** client remains for YouTube.
 - A separate **Veyrnox Business Profile — staging** web client was created on
   2026-10-08 with callback
   `https://veyrnox-ai-staging.al-jobson.workers.dev/social/connect/callback/gmb`.
@@ -256,7 +256,7 @@ YouTube connection was disconnected with permission to free the test account
 slot. Earlier instructions to preserve that connection describe an older state.
 The public YouTube acceptance video remains; do not republish it.
 
-LinkedIn staging app **Veyrnox Publish — staging** (266600565) was created with
+LinkedIn staging app **Veyrnox.ai Publish — staging** (266600565) was created with
 the owner-confirmed Veyrnox Page, privacy URL, logo and staging callback.
 Share on LinkedIn and Sign In with LinkedIn using OpenID Connect were both
 provisioned. Company verification failed because the signed-in account is not

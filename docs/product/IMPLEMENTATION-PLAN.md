@@ -46,7 +46,7 @@ extending a layer depends on everything above it.
 | 0.12 | Composites: Auto Short, Clip Editor (flag-gated), Clip Editor captions (**live**, 0225) | ADR-0029, `docs/editor/` |
 | 0.13 | Tenant foundation: orgs, workspaces, projects, document history, media quarantine (**staging**) | 0135–0141, ADR-0051/0055/0056 |
 | 0.14 | Social Cinema: profiles → uploads → publication → paywall (**staging**) | 0132–0150, ADR-0048–0059 |
-| 0.15 | Veyrnox Publish: 11 networks (5 original; Facebook, Threads, Pinterest, Bluesky, Twitch, Business Profile added 2026-10-08 for testers, not live-tested), scheduling, async engine, drafts, analytics, calendar, device uploads (**built; on in production `wrangler.jsonc` for four released networks**) | 0154–0161, 0182, 0188–0192, 0223, 0228, ADR-0061 |
+| 0.15 | Veyrnox.ai Publish: 11 networks (5 original; Facebook, Threads, Pinterest, Bluesky, Twitch, Business Profile added 2026-10-08 for testers, not live-tested), scheduling, async engine, drafts, analytics, calendar, device uploads (**built; on in production `wrangler.jsonc` for four released networks**) | 0154–0161, 0182, 0188–0192, 0223, 0228, ADR-0061 |
 | 0.16 | Receipt redesign of public and money screens | #404, #406 |
 | 0.17 | DB hardening: claim guards, unique ledger backstops, default-privilege revoke, FK indexes, TRUNCATE guards | 0167–0178 (S1–S16) |
 | 0.18 | Subscription Credit ledger bucket and reconcile (applied) | 0183–0185, ADR-0064 |

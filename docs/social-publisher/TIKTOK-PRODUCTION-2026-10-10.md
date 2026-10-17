@@ -5,8 +5,8 @@ limited to YouTube and LinkedIn. Existing production TikTok credentials have
 not been replaced with the new app credentials.
 
 - Organization: Veyrnox, `7694952684033672200`.
-- App: Veyrnox Publish — production, `7694954887725778951`, Production Draft.
-- Sandbox: Veyrnox Publish verification, `7694959047916800007`.
+- App: Veyrnox.ai Publish — production, `7694954887725778951`, Production Draft.
+- Sandbox: Veyrnox.ai Publish verification, `7694959047916800007`.
 - Production domain `veyrnox.ai` verified using an additional Cloudflare TXT
   record; the previous TikTok verification record was preserved.
 - Sandbox uses the staging website and
