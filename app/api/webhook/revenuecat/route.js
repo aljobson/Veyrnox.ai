@@ -4,8 +4,8 @@
  *   1. Off until STORE_BILLING_ENABLED is "true": 404, nothing read.
  *   2. Verify X-RevenueCat-Webhook-Signature (HMAC-SHA256 over "<t>.<raw body>",
  *      5 minute tolerance) before the body is parsed. Invalid -> 401.
- *   3. Only NON_RENEWING_PURCHASE and CANCELLATION (a refund) are acted on; every
- *      other type -> 200 ignored. Sandbox purchases are ignored unless
+ *   3. NON_RENEWING_PURCHASE and CANCELLATION (a credit pack refund) credit and claw back packs; Publish Plan
+ *      subscription events (ADR-0109) move the account's subscription row; every other type -> 200 ignored. Sandbox purchases are ignored unless
  *      STORE_BILLING_ALLOW_SANDBOX is "true" (staging), so production can never
  *      credit a free test purchase.
  *   4. Dedupe in webhook_events(source 'billing:revenuecat') on the event id.
@@ -29,6 +29,7 @@ import { storeBillingEnabled, storeSandboxAllowed } from '../../../../lib/storeB
 const SOURCE = 'billing:revenuecat';
 const LOG = '[revenuecat-webhook]';
 // Verdicts that will never change on retry: record them and answer 200.
+const FINAL_SUBSCRIPTION = new Set(['CUSTOMER_NOT_FOUND', 'PLAN_NOT_FOUND', 'SUBSCRIPTION_NOT_FOUND', 'SUBSCRIPTION_OWNED_BY_OTHER', 'INVALID_EVENT']);
 const FINAL_PURCHASE = new Set(['CUSTOMER_NOT_FOUND', 'PACK_NOT_FOUND', 'ORDER_ALREADY_USED', 'BAD_CHANNEL', 'INVALID_TRANSACTION_ID', 'INVALID_PRODUCT']);
 
 async function handler(req) {
@@ -70,6 +71,7 @@ async function handler(req) {
     try {
         const seen = await dedup(cfg, SOURCE, parsed.eventId, { type: parsed.kind });
         if (seen === 'duplicate') return NextResponse.json({ ok: true, duplicate: true });
+        if (parsed.kind === 'subscription') return await applySubscription(cfg, parsed);
         return parsed.kind === 'purchase' ? await creditPurchase(cfg, parsed) : await applyRefund(cfg, parsed);
     } catch (err) {
         console.error(LOG, 'processing failed:', err && (err.status ?? err.message));
@@ -99,6 +101,36 @@ async function creditPurchase(cfg, p) {
         return NextResponse.json({ ok: true, warn: code.toLowerCase() });
     }
     console.error(LOG, 'credit_store_purchase gave no usable verdict:', p.eventId, code);
+    return NextResponse.json({ error: 'internal' }, { status: 500 });
+}
+
+async function applySubscription(cfg, p) {
+    let last = null;
+    for (const customerId of p.customerIds) {
+        const res = await rpc('apply_store_publish_event', {
+            p_rc_customer_id: customerId, p_channel: p.channel, p_store_product_id: p.productId,
+            p_original_transaction_id: p.originalTransactionId, p_event_id: p.eventId, p_action: p.action, p_type: p.type,
+            p_period_end: p.periodEnd, p_occurred_at: p.occurredAt,
+        }, cfg);
+        if (res && res.ok === true) {
+            await markProcessed(cfg, SOURCE, p.eventId);
+            if (res.flagged) {
+                // Paid in the store while another plan was live: not entitled, needs an operator refund.
+                console.error(LOG, 'subscription flagged, needs refund:', p.eventId, p.channel, p.productId);
+                return NextResponse.json({ ok: true, warn: 'flagged' });
+            }
+            return NextResponse.json({ ok: true, ...(res.idempotent ? { duplicate: true } : {}) });
+        }
+        last = res;
+        if (!res || res.code !== 'CUSTOMER_NOT_FOUND') break;
+    }
+    const code = last && last.code;
+    if (code && FINAL_SUBSCRIPTION.has(code)) {
+        console.error(LOG, 'subscription event not applied:', code, p.eventId, p.channel, p.productId, p.action);
+        await markProcessed(cfg, SOURCE, p.eventId);
+        return NextResponse.json({ ok: true, warn: code.toLowerCase() });
+    }
+    console.error(LOG, 'apply_store_publish_event gave no usable verdict:', p.eventId, code);
     return NextResponse.json({ error: 'internal' }, { status: 500 });
 }
 
