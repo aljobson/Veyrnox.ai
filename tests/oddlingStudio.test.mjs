@@ -259,28 +259,30 @@ test('every character has its own standalone portrait instead of a sprite panel'
         assert.equal(metadata.width, 1024);
         assert.equal(metadata.height, 1536);
     }
-    assert.equal(images.size, 32);
-    assert.equal(hashes.size, 32, 'no character reuses another character image');
+    assert.equal(images.size, 72);
+    assert.equal(hashes.size, 72, 'no character reuses another character image');
 });
 
 test('human preset collections are complete, distinct, and human-first', () => {
     assert.deepEqual(ODDLING_PRESET_SOURCES.map((source) => source.id), [
-        'all', 'body', 'silhouettes', 'fashion', 'hair', 'denim', 'oddities', 'torsos', 'humans', 'beings',
+        'all', 'body', 'silhouettes', 'fashion', 'hair', 'denim', 'oddities', 'torsos',
+        'head-sizes', 'neck-sizes', 'arm-sizes', 'leg-sizes', 'hand-sizes', 'foot-sizes',
+        'eye-sizes', 'mouth-sizes', 'ear-sizes', 'nose-sizes', 'humans', 'beings',
     ]);
     for (const source of ODDLING_PRESET_SOURCES.slice(1, 7)) {
         const oddlings = oddlingsForSource(source.id);
         assert.equal(oddlings.length, 4, `${source.id} should contain one four-character art sheet`);
         assert.ok(oddlings.every((oddling) => oddling.kind === 'human'));
     }
-    assert.equal(oddlingsForSource('humans').length, 28);
+    assert.equal(oddlingsForSource('humans').length, 68);
     assert.equal(oddlingsForSource('beings').length, 4);
 });
 
 test('the All source lists every original character once and is where an unknown source lands', () => {
     const everyone = oddlingsForSource('all');
     assert.deepEqual(everyone.map(({ id }) => id), ODDLING_ARCHETYPES.map(({ id }) => id));
-    assert.equal(everyone.length, 32);
-    assert.equal(new Set(everyone.map(({ id }) => id)).size, 32);
+    assert.equal(everyone.length, 72);
+    assert.equal(new Set(everyone.map(({ id }) => id)).size, 72);
     assert.notEqual(everyone, ODDLING_ARCHETYPES, 'callers get a copy they can sort without touching the cast');
     assert.deepEqual(oddlingsForSource('unknown').map(({ id }) => id), everyone.map(({ id }) => id));
     for (const source of ODDLING_PRESET_SOURCES) {

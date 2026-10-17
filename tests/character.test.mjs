@@ -53,9 +53,9 @@ test('Oddlings add a bounded creator identity and recurring show to the visual p
 });
 
 test('Oddling starters lead with weird humans and retain an optional creature cast', () => {
-    assert.equal(ODDLING_ARCHETYPES.length, 32);
+    assert.equal(ODDLING_ARCHETYPES.length, 72);
     assert.equal(ODDLING_ARCHETYPES[0].kind, 'human');
-    assert.equal(ODDLING_ARCHETYPES.filter((oddling) => oddling.kind === 'human').length, 28);
+    assert.equal(ODDLING_ARCHETYPES.filter((oddling) => oddling.kind === 'human').length, 68);
     assert.equal(ODDLING_ARCHETYPES.filter((oddling) => oddling.kind === 'creature').length, 4);
     for (const oddling of ODDLING_ARCHETYPES) {
         assert.equal(oddling.picks.oddling_name, oddling.name);

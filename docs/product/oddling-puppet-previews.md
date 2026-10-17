@@ -1,6 +1,6 @@
 # Free Oddling puppet previews
 
-All 32 original Oddlings, including the four Torso sizes characters, have individually calibrated browser-side puppet rigs in the gallery. They blink, breathe, make small head tilts/nods, sway their arms and take subtle alternating in-place steps without moving the whole photograph. These are stylized 2D portrait puppets, not generated videos or a 3D reconstruction.
+All 72 original Oddlings, including four Torso sizes characters and forty examples across the other ten feature-size collections, have individually calibrated browser-side puppet rigs in the gallery. They blink, breathe, make small head tilts/nods, sway their arms and take subtle alternating in-place steps without moving the whole photograph. These are stylized 2D portrait puppets, not generated videos or a 3D reconstruction.
 
 - The existing standalone portrait is the only image input. Source portrait files are not changed.
 - A head cutout moves over a stationary clean plate reconstructed from the portrait's studio-background row samples. Pixels outside the local head/chest effects remain fixed, including the floor and feet.
@@ -14,6 +14,6 @@ All 32 original Oddlings, including the four Torso sizes characters, have indivi
 
 ## Implementation and verification
 
-`oddlingPuppetRigs.js` holds separate head polygons, neck pivots, eye ellipses, chest ellipses and bounded arm/lower-body zones for all 32 images. `oddlingPuppetRenderer.js` builds the stationary plate and cutout locally and renders the small deformations in WebGL. Only visible cards allocate renderers.
+`oddlingPuppetRigs.js` and `oddlingFeatureRigs.js` hold separate head polygons, neck pivots, eye ellipses, chest ellipses and bounded arm/lower-body zones for all 72 images. `oddlingPuppetRenderer.js` builds the stationary plate and cutout locally and renders the small deformations in WebGL. Only visible cards allocate renderers.
 
 Tests cover complete rig coverage, bounded poses, real blink/breath/head/arm/step cycles, stationary pixels outside the head matte, immutable sources, no generation endpoints and cleanup/pause/reduced-motion guards. Browser verification must also inspect rendered pixels and motion frames, not just the presence of a canvas or an animation-state label.

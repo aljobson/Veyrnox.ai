@@ -26,7 +26,9 @@ test('Explore opens on All, with the themed collections kept as tabs and Human /
     assert.equal(ODDLING_EXPLORE_DEFAULT_SOURCE, 'all');
     assert.equal(oddlingsForSource(ODDLING_EXPLORE_DEFAULT_SOURCE).length, ODDLING_ARCHETYPES.length);
     assert.equal(ODDLING_EXPLORE_TABS[0].id, 'all');
-    assert.deepEqual(ODDLING_EXPLORE_TABS.map(({ id }) => id), ['all', 'body', 'silhouettes', 'fashion', 'hair', 'denim', 'oddities', 'torsos']);
+    assert.deepEqual(ODDLING_EXPLORE_TABS.map(({ id }) => id), ['all', 'body', 'silhouettes', 'fashion', 'hair', 'denim', 'oddities', 'torsos',
+        'head-sizes', 'neck-sizes', 'arm-sizes', 'leg-sizes', 'hand-sizes', 'foot-sizes',
+        'eye-sizes', 'mouth-sizes', 'ear-sizes', 'nose-sizes']);
     assert.ok(ODDLING_EXPLORE_TABS.every((tab) => !tab.kind), 'kind sources became filter chips');
     assert.deepEqual(ODDLING_KIND_FILTERS.map(({ id }) => id), ['human', 'creature']);
     assert.deepEqual(ODDLING_KIND_FILTERS.map(({ label }) => label), ['Human', 'Other beings']);

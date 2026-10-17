@@ -1,3 +1,5 @@
+import { ODDLING_FEATURE_RIGS } from './oddlingFeatureRigs.js';
+
 // Hand-calibrated against the standalone 1024×1536 portraits, never group sheets.
 // Coordinates are image pixels: head outline, neck pivot, two eye ellipses,
 // and an interior chest ellipse. Shutters preserve opaque lenses/compound eyes.
@@ -22,6 +24,9 @@ const rig = (head, pivot, eyes, chest, shutter = false, tilt = 0.012) => ({
 });
 
 export const ODDLING_PUPPET_RIGS = {
+  ...Object.fromEntries(Object.entries(ODDLING_FEATURE_RIGS).map(([id, data]) => [
+    id, { ...data, ...motionZones(data.chest) },
+  ])),
   'pip-parcel': rig([[287,87],[347,62],[435,68],[512,61],[604,71],[674,100],[687,234],[655,286],[578,298],[562,320],[548,346],[483,348],[463,318],[428,298],[350,290],[291,248]], [514,335], [[481,190,12,6],[535,190,12,6]], [510,445,155,100], false, 0.009),
   'mira-measure': rig([[321,46],[384,24],[472,31],[558,46],[638,83],[691,139],[705,226],[692,312],[649,373],[581,397],[557,419],[542,430],[493,432],[463,418],[438,395],[380,373],[339,312],[316,226]], [510,410], [[463,267,12,6],[514,265,12,6]], [511,548,142,105], false, 0.009),
   'arlo-archive': rig([[408,103],[424,61],[470,43],[521,48],[563,78],[576,130],[568,180],[554,218],[536,234],[495,239],[461,224],[438,201],[417,161]], [509,230], [[471,145,11,5],[521,143,11,5]], [513,430,178,143], false, 0.009),

@@ -5,6 +5,7 @@ import {
   sanitizeOddlingPicks,
 } from './character.js';
 import { changeCharacterPick } from './characterOptions.js';
+import { ODDLING_FEATURE_SOURCES } from './oddlingFeatureCharacters.js';
 
 export const ODDLING_STUDIO_SECTIONS = [
   { id: 'signal', label: 'Character signal', hint: 'Human-first, with other beings optional', groupIds: ['character_type'] },
@@ -82,6 +83,7 @@ export const ODDLING_PRESET_SOURCES = [
   { id: 'denim', label: 'Tee + tight jeans', ids: ODDLING_GALLERY_SHEETS[5].ids },
   { id: 'oddities', label: 'Surreal characters', ids: ODDLING_GALLERY_SHEETS[1].ids },
   { id: 'torsos', label: 'Torso sizes · New', ids: ['pip-parcel', 'mira-measure', 'arlo-archive', 'orla-overture'] },
+  ...ODDLING_FEATURE_SOURCES,
   { id: 'humans', label: 'All human characters', kind: 'human' },
   { id: 'beings', label: 'Other beings', kind: 'creature' },
 ];

@@ -1,0 +1,326 @@
+{
+  "generatedAt": "2026-10-15",
+  "workflow": "Built-in image generation; forty original standalone portraits. Final assets converted to 1024x1536 WebP without cropping.",
+  "portraits": [
+    {
+      "id": "nia-north",
+      "name": "Nia North",
+      "feature": "head_size",
+      "size": "Small",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone Oddlings character gallery portrait, vertical 2:3, 1024x1536. Plain charcoal studio backdrop, photorealistic surreal editorial character photography, premium soft cinematic lighting, realistic skin and tailored fabric texture. Subject: Nia North, one fictional adult woman aged 40, warm brown skin, short dark cropped hair, tailored burnt-orange work shirt and graphite trousers. Defining feature: compact adult head about half typical scale relative to shoulders. This is the Small head example in a size-comparison collection; make the feature visibly read at this scale, not merely hide normal proportions with clothing. Other anatomy balanced and adult. Composition: entire body including whole head, hands and both shoes visible, with padding; camera at chest height. Relaxed confident standing pose, arms slightly away from torso, hands visible, face unobscured, short hair leaves both ears exposed. Fully clothed in modest opaque workwear and low shoes, open collar so neck is visible. Respectful original fictional adult design, not a real person, no caricature of an ethnicity or medical condition. No text, labels, logos, watermark, props, collage or panels.",
+      "asset": "public/oddlings/portraits/nia-north.webp"
+    },
+    {
+      "id": "otis-orbit",
+      "name": "Otis Orbit",
+      "feature": "head_size",
+      "size": "Medium",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone Oddlings character gallery portrait, vertical 2:3, 1024x1536. Plain charcoal studio backdrop, photorealistic surreal editorial character photography, premium soft cinematic lighting, realistic skin and tailored fabric texture. Subject: Otis Orbit, one fictional adult man aged 45, olive skin, short silver hair, tailored cobalt-blue work shirt and charcoal trousers. Defining feature: balanced adult head with typical proportions. This is the Medium head example in a size-comparison collection; make the feature visibly read at this scale, not merely hide normal proportions with clothing. Other anatomy balanced and adult. Composition: entire body including whole head, hands and both shoes visible, with padding; camera at chest height. Relaxed confident standing pose, arms slightly away from torso, hands visible, face unobscured, short hair leaves both ears exposed. Fully clothed in modest opaque workwear and low shoes, open collar so neck is visible. Respectful original fictional adult design, not a real person, no caricature of an ethnicity or medical condition. No text, labels, logos, watermark, props, collage or panels.",
+      "asset": "public/oddlings/portraits/otis-orbit.webp"
+    },
+    {
+      "id": "lena-ledger",
+      "name": "Lena Ledger",
+      "feature": "head_size",
+      "size": "Large",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone Oddlings character gallery portrait, vertical 2:3, 1024x1536. Plain charcoal studio backdrop, photorealistic surreal editorial character photography, premium soft cinematic lighting, realistic skin and tailored fabric texture. Subject: Lena Ledger, one fictional adult woman aged 50, fair skin, short copper hair, tailored forest-green work shirt and charcoal trousers. Defining feature: noticeably oversized adult head, 1.5 times typical scale relative to shoulders. This is the Large head example in a size-comparison collection; make the feature visibly read at this scale, not merely hide normal proportions with clothing. Other anatomy balanced and adult. Composition: entire body including whole head, hands and both shoes visible, with padding; camera at chest height. Relaxed confident standing pose, arms slightly away from torso, hands visible, face unobscured, short hair leaves both ears exposed. Fully clothed in modest opaque workwear and low shoes, open collar so neck is visible. Respectful original fictional adult design, not a real person, no caricature of an ethnicity or medical condition. No text, labels, logos, watermark, props, collage or panels.",
+      "asset": "public/oddlings/portraits/lena-ledger.webp"
+    },
+    {
+      "id": "felix-folio",
+      "name": "Felix Folio",
+      "feature": "head_size",
+      "size": "Extra Large",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone Oddlings character gallery portrait, vertical 2:3, 1024x1536. Plain charcoal studio backdrop, photorealistic surreal editorial character photography, premium soft cinematic lighting, realistic skin and tailored fabric texture. Subject: Felix Folio, one fictional adult man aged 55, deep brown skin, close-cropped dark hair, tailored plum work shirt and graphite trousers. Defining feature: dramatically oversized adult head, twice typical scale relative to shoulders. This is the Extra Large head example in a size-comparison collection; make the feature visibly read at this scale, not merely hide normal proportions with clothing. Other anatomy balanced and adult. Composition: entire body including whole head, hands and both shoes visible, with padding; camera at chest height. Relaxed confident standing pose, arms slightly away from torso, hands visible, face unobscured, short hair leaves both ears exposed. Fully clothed in modest opaque workwear and low shoes, open collar so neck is visible. Respectful original fictional adult design, not a real person, no caricature of an ethnicity or medical condition. No text, labels, logos, watermark, props, collage or panels.",
+      "asset": "public/oddlings/portraits/felix-folio.webp"
+    },
+    {
+      "id": "ada-atlas",
+      "name": "Ada Atlas",
+      "feature": "neck_size",
+      "size": "Small",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone Oddlings character gallery portrait, vertical 2:3, 1024x1536. Plain charcoal studio backdrop, photorealistic surreal editorial character photography, premium soft cinematic lighting, realistic skin and tailored fabric texture. Subject: Ada Atlas, one fictional adult woman aged 40, warm brown skin, short dark cropped hair, tailored burnt-orange work shirt and graphite trousers. Defining feature: short compact neck, head resting close to shoulders. This is the Small neck example in a size-comparison collection; make the feature visibly read at this scale, not merely hide normal proportions with clothing. Other anatomy balanced and adult. Composition: entire body including whole head, hands and both shoes visible, with padding; camera at chest height. Relaxed confident standing pose, arms slightly away from torso, hands visible, face unobscured, short hair leaves both ears exposed. Fully clothed in modest opaque workwear and low shoes, open collar so neck is visible. Respectful original fictional adult design, not a real person, no caricature of an ethnicity or medical condition. No text, labels, logos, watermark, props, collage or panels.",
+      "asset": "public/oddlings/portraits/ada-atlas.webp"
+    },
+    {
+      "id": "rowan-radio",
+      "name": "Rowan Radio",
+      "feature": "neck_size",
+      "size": "Medium",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone Oddlings character gallery portrait, vertical 2:3, 1024x1536. Plain charcoal studio backdrop, photorealistic surreal editorial character photography, premium soft cinematic lighting, realistic skin and tailored fabric texture. Subject: Rowan Radio, one fictional adult man aged 45, olive skin, short silver hair, tailored cobalt-blue work shirt and charcoal trousers. Defining feature: balanced medium-length neck. This is the Medium neck example in a size-comparison collection; make the feature visibly read at this scale, not merely hide normal proportions with clothing. Other anatomy balanced and adult. Composition: entire body including whole head, hands and both shoes visible, with padding; camera at chest height. Relaxed confident standing pose, arms slightly away from torso, hands visible, face unobscured, short hair leaves both ears exposed. Fully clothed in modest opaque workwear and low shoes, open collar so neck is visible. Respectful original fictional adult design, not a real person, no caricature of an ethnicity or medical condition. No text, labels, logos, watermark, props, collage or panels.",
+      "asset": "public/oddlings/portraits/rowan-radio.webp"
+    },
+    {
+      "id": "cleo-chronicle",
+      "name": "Cleo Chronicle",
+      "feature": "neck_size",
+      "size": "Large",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone Oddlings character gallery portrait, vertical 2:3, 1024x1536. Plain charcoal studio backdrop, photorealistic surreal editorial character photography, premium soft cinematic lighting, realistic skin and tailored fabric texture. Subject: Cleo Chronicle, one fictional adult woman aged 50, fair skin, short copper hair, tailored forest-green work shirt and charcoal trousers. Defining feature: visibly long neck with open neckline. This is the Large neck example in a size-comparison collection; make the feature visibly read at this scale, not merely hide normal proportions with clothing. Other anatomy balanced and adult. Composition: entire body including whole head, hands and both shoes visible, with padding; camera at chest height. Relaxed confident standing pose, arms slightly away from torso, hands visible, face unobscured, short hair leaves both ears exposed. Fully clothed in modest opaque workwear and low shoes, open collar so neck is visible. Respectful original fictional adult design, not a real person, no caricature of an ethnicity or medical condition. No text, labels, logos, watermark, props, collage or panels.",
+      "asset": "public/oddlings/portraits/cleo-chronicle.webp"
+    },
+    {
+      "id": "hugo-horizon",
+      "name": "Hugo Horizon",
+      "feature": "neck_size",
+      "size": "Extra Large",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone Oddlings character gallery portrait, vertical 2:3, 1024x1536. Plain charcoal studio backdrop, photorealistic surreal editorial character photography, premium soft cinematic lighting, realistic skin and tailored fabric texture. Subject: Hugo Horizon, one fictional adult man aged 55, deep brown skin, close-cropped dark hair, tailored plum work shirt and graphite trousers. Defining feature: dramatically elongated long broad neck, fully visible from chin to shoulders. This is the Extra Large neck example in a size-comparison collection; make the feature visibly read at this scale, not merely hide normal proportions with clothing. Other anatomy balanced and adult. Composition: entire body including whole head, hands and both shoes visible, with padding; camera at chest height. Relaxed confident standing pose, arms slightly away from torso, hands visible, face unobscured, short hair leaves both ears exposed. Fully clothed in modest opaque workwear and low shoes, open collar so neck is visible. Respectful original fictional adult design, not a real person, no caricature of an ethnicity or medical condition. No text, labels, logos, watermark, props, collage or panels.",
+      "asset": "public/oddlings/portraits/hugo-horizon.webp"
+    },
+    {
+      "id": "tessa-tempo",
+      "name": "Tessa Tempo",
+      "feature": "arm_size",
+      "size": "Small",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone Oddlings character gallery portrait, vertical 2:3, 1024x1536. Plain charcoal studio backdrop, photorealistic surreal editorial character photography, premium soft cinematic lighting, realistic skin and tailored fabric texture. Subject: Tessa Tempo, one fictional adult woman aged 40, warm brown skin, short dark cropped hair, tailored burnt-orange work shirt and graphite trousers. Defining feature: short slender arms with hands at waist level. This is the Small arms example in a size-comparison collection; make the feature visibly read at this scale, not merely hide normal proportions with clothing. Other anatomy balanced and adult. Composition: entire body including whole head, hands and both shoes visible, with padding; camera at chest height. Relaxed confident standing pose, arms slightly away from torso, hands visible, face unobscured, short hair leaves both ears exposed. Fully clothed in modest opaque workwear and low shoes, open collar so neck is visible. Respectful original fictional adult design, not a real person, no caricature of an ethnicity or medical condition. No text, labels, logos, watermark, props, collage or panels.",
+      "asset": "public/oddlings/portraits/tessa-tempo.webp"
+    },
+    {
+      "id": "milo-mosaic",
+      "name": "Milo Mosaic",
+      "feature": "arm_size",
+      "size": "Medium",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone Oddlings character gallery portrait, vertical 2:3, 1024x1536. Plain charcoal studio backdrop, photorealistic surreal editorial character photography, premium soft cinematic lighting, realistic skin and tailored fabric texture. Subject: Milo Mosaic, one fictional adult man aged 45, olive skin, short silver hair, tailored cobalt-blue work shirt and charcoal trousers. Defining feature: balanced adult arms ending at upper thigh. This is the Medium arms example in a size-comparison collection; make the feature visibly read at this scale, not merely hide normal proportions with clothing. Other anatomy balanced and adult. Composition: entire body including whole head, hands and both shoes visible, with padding; camera at chest height. Relaxed confident standing pose, arms slightly away from torso, hands visible, face unobscured, short hair leaves both ears exposed. Fully clothed in modest opaque workwear and low shoes, open collar so neck is visible. Respectful original fictional adult design, not a real person, no caricature of an ethnicity or medical condition. No text, labels, logos, watermark, props, collage or panels.",
+      "asset": "public/oddlings/portraits/milo-mosaic.webp"
+    },
+    {
+      "id": "vera-vinyl",
+      "name": "Vera Vinyl",
+      "feature": "arm_size",
+      "size": "Large",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone Oddlings character gallery portrait, vertical 2:3, 1024x1536. Plain charcoal studio backdrop, photorealistic surreal editorial character photography, premium soft cinematic lighting, realistic skin and tailored fabric texture. Subject: Vera Vinyl, one fictional adult woman aged 50, fair skin, short copper hair, tailored forest-green work shirt and charcoal trousers. Defining feature: long broad arms reaching mid-thigh. This is the Large arms example in a size-comparison collection; make the feature visibly read at this scale, not merely hide normal proportions with clothing. Other anatomy balanced and adult. Composition: entire body including whole head, hands and both shoes visible, with padding; camera at chest height. Relaxed confident standing pose, arms slightly away from torso, hands visible, face unobscured, short hair leaves both ears exposed. Fully clothed in modest opaque workwear and low shoes, open collar so neck is visible. Respectful original fictional adult design, not a real person, no caricature of an ethnicity or medical condition. No text, labels, logos, watermark, props, collage or panels.",
+      "asset": "public/oddlings/portraits/vera-vinyl.webp"
+    },
+    {
+      "id": "jude-juniper",
+      "name": "Jude Juniper",
+      "feature": "arm_size",
+      "size": "Extra Large",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone Oddlings character gallery portrait, vertical 2:3, 1024x1536. Plain charcoal studio backdrop, photorealistic surreal editorial character photography, premium soft cinematic lighting, realistic skin and tailored fabric texture. Subject: Jude Juniper, one fictional adult man aged 55, deep brown skin, close-cropped dark hair, tailored plum work shirt and graphite trousers. Defining feature: dramatically long substantial arms reaching knees. This is the Extra Large arms example in a size-comparison collection; make the feature visibly read at this scale, not merely hide normal proportions with clothing. Other anatomy balanced and adult. Composition: entire body including whole head, hands and both shoes visible, with padding; camera at chest height. Relaxed confident standing pose, arms slightly away from torso, hands visible, face unobscured, short hair leaves both ears exposed. Fully clothed in modest opaque workwear and low shoes, open collar so neck is visible. Respectful original fictional adult design, not a real person, no caricature of an ethnicity or medical condition. No text, labels, logos, watermark, props, collage or panels.",
+      "asset": "public/oddlings/portraits/jude-juniper.webp"
+    },
+    {
+      "id": "iris-index",
+      "name": "Iris Index",
+      "feature": "leg_size",
+      "size": "Small",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone Oddlings character gallery portrait, vertical 2:3, 1024x1536. Plain charcoal studio backdrop, photorealistic surreal editorial character photography, premium soft cinematic lighting, realistic skin and tailored fabric texture. Subject: Iris Index, one fictional adult woman aged 40, warm brown skin, short dark cropped hair, tailored burnt-orange work shirt and graphite trousers. Defining feature: short compact adult legs relative to torso. This is the Small legs example in a size-comparison collection; make the feature visibly read at this scale, not merely hide normal proportions with clothing. Other anatomy balanced and adult. Composition: entire body including whole head, hands and both shoes visible, with padding; camera at chest height. Relaxed confident standing pose, arms slightly away from torso, hands visible, face unobscured, short hair leaves both ears exposed. Fully clothed in modest opaque workwear and low shoes, open collar so neck is visible. Respectful original fictional adult design, not a real person, no caricature of an ethnicity or medical condition. No text, labels, logos, watermark, props, collage or panels.",
+      "asset": "public/oddlings/portraits/iris-index.webp"
+    },
+    {
+      "id": "noah-note",
+      "name": "Noah Note",
+      "feature": "leg_size",
+      "size": "Medium",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone Oddlings character gallery portrait, vertical 2:3, 1024x1536. Plain charcoal studio backdrop, photorealistic surreal editorial character photography, premium soft cinematic lighting, realistic skin and tailored fabric texture. Subject: Noah Note, one fictional adult man aged 45, olive skin, short silver hair, tailored cobalt-blue work shirt and charcoal trousers. Defining feature: balanced medium-length adult legs. This is the Medium legs example in a size-comparison collection; make the feature visibly read at this scale, not merely hide normal proportions with clothing. Other anatomy balanced and adult. Composition: entire body including whole head, hands and both shoes visible, with padding; camera at chest height. Relaxed confident standing pose, arms slightly away from torso, hands visible, face unobscured, short hair leaves both ears exposed. Fully clothed in modest opaque workwear and low shoes, open collar so neck is visible. Respectful original fictional adult design, not a real person, no caricature of an ethnicity or medical condition. No text, labels, logos, watermark, props, collage or panels.",
+      "asset": "public/oddlings/portraits/noah-note.webp"
+    },
+    {
+      "id": "rhea-relay",
+      "name": "Rhea Relay",
+      "feature": "leg_size",
+      "size": "Large",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone Oddlings character gallery portrait, vertical 2:3, 1024x1536. Plain charcoal studio backdrop, photorealistic surreal editorial character photography, premium soft cinematic lighting, realistic skin and tailored fabric texture. Subject: Rhea Relay, one fictional adult woman aged 50, fair skin, short copper hair, tailored forest-green work shirt and charcoal trousers. Defining feature: visibly long broad legs relative to torso. This is the Large legs example in a size-comparison collection; make the feature visibly read at this scale, not merely hide normal proportions with clothing. Other anatomy balanced and adult. Composition: entire body including whole head, hands and both shoes visible, with padding; camera at chest height. Relaxed confident standing pose, arms slightly away from torso, hands visible, face unobscured, short hair leaves both ears exposed. Fully clothed in modest opaque workwear and low shoes, open collar so neck is visible. Respectful original fictional adult design, not a real person, no caricature of an ethnicity or medical condition. No text, labels, logos, watermark, props, collage or panels.",
+      "asset": "public/oddlings/portraits/rhea-relay.webp"
+    },
+    {
+      "id": "leon-lantern",
+      "name": "Leon Lantern",
+      "feature": "leg_size",
+      "size": "Extra Large",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone Oddlings character gallery portrait, vertical 2:3, 1024x1536. Plain charcoal studio backdrop, photorealistic surreal editorial character photography, premium soft cinematic lighting, realistic skin and tailored fabric texture. Subject: Leon Lantern, one fictional adult man aged 55, deep brown skin, close-cropped dark hair, tailored plum work shirt and graphite trousers. Defining feature: dramatically long substantial legs, dominating the full-body silhouette. This is the Extra Large legs example in a size-comparison collection; make the feature visibly read at this scale, not merely hide normal proportions with clothing. Other anatomy balanced and adult. Composition: entire body including whole head, hands and both shoes visible, with padding; camera at chest height. Relaxed confident standing pose, arms slightly away from torso, hands visible, face unobscured, short hair leaves both ears exposed. Fully clothed in modest opaque workwear and low shoes, open collar so neck is visible. Respectful original fictional adult design, not a real person, no caricature of an ethnicity or medical condition. No text, labels, logos, watermark, props, collage or panels.",
+      "asset": "public/oddlings/portraits/leon-lantern.webp"
+    },
+    {
+      "id": "alma-almanac",
+      "name": "Alma Almanac",
+      "feature": "hand_size",
+      "size": "Small",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone Oddlings character gallery portrait, vertical 2:3, 1024x1536. Plain charcoal studio backdrop, photorealistic surreal editorial character photography, premium soft cinematic lighting, realistic skin and tailored fabric texture. Subject: Alma Almanac, one fictional adult woman aged 40, warm brown skin, short dark cropped hair, tailored burnt-orange work shirt and graphite trousers. Defining feature: small compact hands and fingers. This is the Small hands example in a size-comparison collection; make the feature visibly read at this scale, not merely hide normal proportions with clothing. Other anatomy balanced and adult. Composition: entire body including whole head, hands and both shoes visible, with padding; camera at chest height. Relaxed confident standing pose, arms slightly away from torso, hands visible, face unobscured, short hair leaves both ears exposed. Fully clothed in modest opaque workwear and low shoes, open collar so neck is visible. Respectful original fictional adult design, not a real person, no caricature of an ethnicity or medical condition. No text, labels, logos, watermark, props, collage or panels.",
+      "asset": "public/oddlings/portraits/alma-almanac.webp"
+    },
+    {
+      "id": "owen-outline",
+      "name": "Owen Outline",
+      "feature": "hand_size",
+      "size": "Medium",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone Oddlings character gallery portrait, vertical 2:3, 1024x1536. Plain charcoal studio backdrop, photorealistic surreal editorial character photography, premium soft cinematic lighting, realistic skin and tailored fabric texture. Subject: Owen Outline, one fictional adult man aged 45, olive skin, short silver hair, tailored cobalt-blue work shirt and charcoal trousers. Defining feature: medium balanced adult hands. This is the Medium hands example in a size-comparison collection; make the feature visibly read at this scale, not merely hide normal proportions with clothing. Other anatomy balanced and adult. Composition: entire body including whole head, hands and both shoes visible, with padding; camera at chest height. Relaxed confident standing pose, arms slightly away from torso, hands visible, face unobscured, short hair leaves both ears exposed. Fully clothed in modest opaque workwear and low shoes, open collar so neck is visible. Respectful original fictional adult design, not a real person, no caricature of an ethnicity or medical condition. No text, labels, logos, watermark, props, collage or panels.",
+      "asset": "public/oddlings/portraits/owen-outline.webp"
+    },
+    {
+      "id": "dara-dispatch",
+      "name": "Dara Dispatch",
+      "feature": "hand_size",
+      "size": "Large",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone Oddlings character gallery portrait, vertical 2:3, 1024x1536. Plain charcoal studio backdrop, photorealistic surreal editorial character photography, premium soft cinematic lighting, realistic skin and tailored fabric texture. Subject: Dara Dispatch, one fictional adult woman aged 50, fair skin, short copper hair, tailored forest-green work shirt and charcoal trousers. Defining feature: large broad hands with long fingers. This is the Large hands example in a size-comparison collection; make the feature visibly read at this scale, not merely hide normal proportions with clothing. Other anatomy balanced and adult. Composition: entire body including whole head, hands and both shoes visible, with padding; camera at chest height. Relaxed confident standing pose, arms slightly away from torso, hands visible, face unobscured, short hair leaves both ears exposed. Fully clothed in modest opaque workwear and low shoes, open collar so neck is visible. Respectful original fictional adult design, not a real person, no caricature of an ethnicity or medical condition. No text, labels, logos, watermark, props, collage or panels.",
+      "asset": "public/oddlings/portraits/dara-dispatch.webp"
+    },
+    {
+      "id": "bruno-blueprint",
+      "name": "Bruno Blueprint",
+      "feature": "hand_size",
+      "size": "Extra Large",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone Oddlings character gallery portrait, vertical 2:3, 1024x1536. Plain charcoal studio backdrop, photorealistic surreal editorial character photography, premium soft cinematic lighting, realistic skin and tailored fabric texture. Subject: Bruno Blueprint, one fictional adult man aged 55, deep brown skin, close-cropped dark hair, tailored plum work shirt and graphite trousers. Defining feature: extra-large hands at least twice typical scale, broad palms and long fingers. This is the Extra Large hands example in a size-comparison collection; make the feature visibly read at this scale, not merely hide normal proportions with clothing. Other anatomy balanced and adult. Composition: entire body including whole head, hands and both shoes visible, with padding; camera at chest height. Relaxed confident standing pose, arms slightly away from torso, hands visible, face unobscured, short hair leaves both ears exposed. Fully clothed in modest opaque workwear and low shoes, open collar so neck is visible. Respectful original fictional adult design, not a real person, no caricature of an ethnicity or medical condition. No text, labels, logos, watermark, props, collage or panels.",
+      "asset": "public/oddlings/portraits/bruno-blueprint.webp"
+    },
+    {
+      "id": "esme-echo",
+      "name": "Esme Echo",
+      "feature": "foot_size",
+      "size": "Small",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone Oddlings character gallery portrait, vertical 2:3, 1024x1536. Plain charcoal studio backdrop, photorealistic surreal editorial character photography, premium soft cinematic lighting, realistic skin and tailored fabric texture. Subject: Esme Echo, one fictional adult woman aged 40, warm brown skin, short dark cropped hair, tailored burnt-orange work shirt and graphite trousers. Defining feature: small compact feet in fitted low shoes. This is the Small feet example in a size-comparison collection; make the feature visibly read at this scale, not merely hide normal proportions with clothing. Other anatomy balanced and adult. Composition: entire body including whole head, hands and both shoes visible, with padding; camera at chest height. Relaxed confident standing pose, arms slightly away from torso, hands visible, face unobscured, short hair leaves both ears exposed. Fully clothed in modest opaque workwear and low shoes, open collar so neck is visible. Respectful original fictional adult design, not a real person, no caricature of an ethnicity or medical condition. No text, labels, logos, watermark, props, collage or panels.",
+      "asset": "public/oddlings/portraits/esme-echo.webp"
+    },
+    {
+      "id": "amir-avenue",
+      "name": "Amir Avenue",
+      "feature": "foot_size",
+      "size": "Medium",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone Oddlings character gallery portrait, vertical 2:3, 1024x1536. Plain charcoal studio backdrop, photorealistic surreal editorial character photography, premium soft cinematic lighting, realistic skin and tailored fabric texture. Subject: Amir Avenue, one fictional adult man aged 45, olive skin, short silver hair, tailored cobalt-blue work shirt and charcoal trousers. Defining feature: medium balanced adult feet in fitted low shoes. This is the Medium feet example in a size-comparison collection; make the feature visibly read at this scale, not merely hide normal proportions with clothing. Other anatomy balanced and adult. Composition: entire body including whole head, hands and both shoes visible, with padding; camera at chest height. Relaxed confident standing pose, arms slightly away from torso, hands visible, face unobscured, short hair leaves both ears exposed. Fully clothed in modest opaque workwear and low shoes, open collar so neck is visible. Respectful original fictional adult design, not a real person, no caricature of an ethnicity or medical condition. No text, labels, logos, watermark, props, collage or panels.",
+      "asset": "public/oddlings/portraits/amir-avenue.webp"
+    },
+    {
+      "id": "suki-station",
+      "name": "Suki Station",
+      "feature": "foot_size",
+      "size": "Large",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone Oddlings character gallery portrait, vertical 2:3, 1024x1536. Plain charcoal studio backdrop, photorealistic surreal editorial character photography, premium soft cinematic lighting, realistic skin and tailored fabric texture. Subject: Suki Station, one fictional adult woman aged 50, fair skin, short copper hair, tailored forest-green work shirt and charcoal trousers. Defining feature: large wide long feet in fitted low shoes. This is the Large feet example in a size-comparison collection; make the feature visibly read at this scale, not merely hide normal proportions with clothing. Other anatomy balanced and adult. Composition: entire body including whole head, hands and both shoes visible, with padding; camera at chest height. Relaxed confident standing pose, arms slightly away from torso, hands visible, face unobscured, short hair leaves both ears exposed. Fully clothed in modest opaque workwear and low shoes, open collar so neck is visible. Respectful original fictional adult design, not a real person, no caricature of an ethnicity or medical condition. No text, labels, logos, watermark, props, collage or panels.",
+      "asset": "public/oddlings/portraits/suki-station.webp"
+    },
+    {
+      "id": "bram-beacon",
+      "name": "Bram Beacon",
+      "feature": "foot_size",
+      "size": "Extra Large",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone Oddlings character gallery portrait, vertical 2:3, 1024x1536. Plain charcoal studio backdrop, photorealistic surreal editorial character photography, premium soft cinematic lighting, realistic skin and tailored fabric texture. Subject: Bram Beacon, one fictional adult man aged 55, deep brown skin, close-cropped dark hair, tailored plum work shirt and graphite trousers. Defining feature: extra-large feet at least twice typical length and width, fitted low shoes, clear in three-quarter view. This is the Extra Large feet example in a size-comparison collection; make the feature visibly read at this scale, not merely hide normal proportions with clothing. Other anatomy balanced and adult. Composition: entire body including whole head, hands and both shoes visible, with padding; camera at chest height. Relaxed confident standing pose, arms slightly away from torso, hands visible, face unobscured, short hair leaves both ears exposed. Fully clothed in modest opaque workwear and low shoes, open collar so neck is visible. Respectful original fictional adult design, not a real person, no caricature of an ethnicity or medical condition. No text, labels, logos, watermark, props, collage or panels.",
+      "asset": "public/oddlings/portraits/bram-beacon.webp"
+    },
+    {
+      "id": "mina-margin",
+      "name": "Mina Margin",
+      "feature": "eye_size",
+      "size": "Small",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone Oddlings character gallery portrait, vertical 2:3, 1024x1536. Plain charcoal studio backdrop, photorealistic surreal editorial character photography, premium soft cinematic lighting, realistic skin and tailored fabric texture. Subject: Mina Margin, one fictional adult woman aged 40, warm brown skin, short dark cropped hair, tailored burnt-orange work shirt and graphite trousers. Defining feature: small narrow eyes, clearly visible without glasses. This is the Small eyes example in a size-comparison collection; make the feature visibly read at this scale, not merely hide normal proportions with clothing. Other anatomy balanced and adult. Composition: head-and-shoulders portrait with full head visible, head large enough that facial feature scale reads clearly. Relaxed confident standing pose, arms slightly away from torso, hands visible, face unobscured, short hair leaves both ears exposed. Fully clothed in modest opaque workwear and low shoes, open collar so neck is visible. Respectful original fictional adult design, not a real person, no caricature of an ethnicity or medical condition. No text, labels, logos, watermark, props, collage or panels.",
+      "asset": "public/oddlings/portraits/mina-margin.webp"
+    },
+    {
+      "id": "elias-edition",
+      "name": "Elias Edition",
+      "feature": "eye_size",
+      "size": "Medium",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone Oddlings character gallery portrait, vertical 2:3, 1024x1536. Plain charcoal studio backdrop, photorealistic surreal editorial character photography, premium soft cinematic lighting, realistic skin and tailored fabric texture. Subject: Elias Edition, one fictional adult man aged 45, olive skin, short silver hair, tailored cobalt-blue work shirt and charcoal trousers. Defining feature: medium balanced adult eyes, without glasses. This is the Medium eyes example in a size-comparison collection; make the feature visibly read at this scale, not merely hide normal proportions with clothing. Other anatomy balanced and adult. Composition: head-and-shoulders portrait with full head visible, head large enough that facial feature scale reads clearly. Relaxed confident standing pose, arms slightly away from torso, hands visible, face unobscured, short hair leaves both ears exposed. Fully clothed in modest opaque workwear and low shoes, open collar so neck is visible. Respectful original fictional adult design, not a real person, no caricature of an ethnicity or medical condition. No text, labels, logos, watermark, props, collage or panels.",
+      "asset": "public/oddlings/portraits/elias-edition.webp"
+    },
+    {
+      "id": "zara-zenith",
+      "name": "Zara Zenith",
+      "feature": "eye_size",
+      "size": "Large",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone Oddlings character gallery portrait, vertical 2:3, 1024x1536. Plain charcoal studio backdrop, photorealistic surreal editorial character photography, premium soft cinematic lighting, realistic skin and tailored fabric texture. Subject: Zara Zenith, one fictional adult woman aged 50, fair skin, short copper hair, tailored forest-green work shirt and charcoal trousers. Defining feature: large wide expressive eyes, without glasses. This is the Large eyes example in a size-comparison collection; make the feature visibly read at this scale, not merely hide normal proportions with clothing. Other anatomy balanced and adult. Composition: head-and-shoulders portrait with full head visible, head large enough that facial feature scale reads clearly. Relaxed confident standing pose, arms slightly away from torso, hands visible, face unobscured, short hair leaves both ears exposed. Fully clothed in modest opaque workwear and low shoes, open collar so neck is visible. Respectful original fictional adult design, not a real person, no caricature of an ethnicity or medical condition. No text, labels, logos, watermark, props, collage or panels.",
+      "asset": "public/oddlings/portraits/zara-zenith.webp"
+    },
+    {
+      "id": "theo-telescope",
+      "name": "Theo Telescope",
+      "feature": "eye_size",
+      "size": "Extra Large",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone Oddlings character gallery portrait, vertical 2:3, 1024x1536. Plain charcoal studio backdrop, photorealistic surreal editorial character photography, premium soft cinematic lighting, realistic skin and tailored fabric texture. Subject: Theo Telescope, one fictional adult woman aged 55, fair skin, short silver cropped hair, tailored plum work shirt and graphite trousers. Defining feature: extra-large wide eyes twice typical scale, stylized editorial proportions, no glasses. This is the Extra Large eyes example in a size-comparison collection; make the feature visibly read at this scale, not merely hide normal proportions with clothing. Other anatomy balanced and adult. Composition: head-and-shoulders portrait with full head visible, head large enough that facial feature scale reads clearly. Relaxed confident standing pose, arms slightly away from torso, hands visible, face unobscured, short hair leaves both ears exposed. Fully clothed in modest opaque workwear and low shoes, open collar so neck is visible. Respectful original fictional adult design, not a real person, no caricature of an ethnicity or medical condition. No text, labels, logos, watermark, props, collage or panels.",
+      "asset": "public/oddlings/portraits/theo-telescope.webp"
+    },
+    {
+      "id": "faye-frame",
+      "name": "Faye Frame",
+      "feature": "mouth_size",
+      "size": "Small",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone Oddlings character gallery portrait, vertical 2:3, 1024x1536. Plain charcoal studio backdrop, photorealistic surreal editorial character photography, premium soft cinematic lighting, realistic skin and tailored fabric texture. Subject: Faye Frame, one fictional adult woman aged 40, warm brown skin, short dark cropped hair, tailored burnt-orange work shirt and graphite trousers. Defining feature: small narrow closed mouth. This is the Small mouth example in a size-comparison collection; make the feature visibly read at this scale, not merely hide normal proportions with clothing. Other anatomy balanced and adult. Composition: head-and-shoulders portrait with full head visible, head large enough that facial feature scale reads clearly. Relaxed confident standing pose, arms slightly away from torso, hands visible, face unobscured, short hair leaves both ears exposed. Fully clothed in modest opaque workwear and low shoes, open collar so neck is visible. Respectful original fictional adult design, not a real person, no caricature of an ethnicity or medical condition. No text, labels, logos, watermark, props, collage or panels.",
+      "asset": "public/oddlings/portraits/faye-frame.webp"
+    },
+    {
+      "id": "remy-review",
+      "name": "Remy Review",
+      "feature": "mouth_size",
+      "size": "Medium",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone Oddlings character gallery portrait, vertical 2:3, 1024x1536. Plain charcoal studio backdrop, photorealistic surreal editorial character photography, premium soft cinematic lighting, realistic skin and tailored fabric texture. Subject: Remy Review, one fictional adult man aged 45, olive skin, short silver hair, tailored cobalt-blue work shirt and charcoal trousers. Defining feature: medium balanced closed mouth. This is the Medium mouth example in a size-comparison collection; make the feature visibly read at this scale, not merely hide normal proportions with clothing. Other anatomy balanced and adult. Composition: head-and-shoulders portrait with full head visible, head large enough that facial feature scale reads clearly. Relaxed confident standing pose, arms slightly away from torso, hands visible, face unobscured, short hair leaves both ears exposed. Fully clothed in modest opaque workwear and low shoes, open collar so neck is visible. Respectful original fictional adult design, not a real person, no caricature of an ethnicity or medical condition. No text, labels, logos, watermark, props, collage or panels.",
+      "asset": "public/oddlings/portraits/remy-review.webp"
+    },
+    {
+      "id": "luca-lilt",
+      "name": "Luca Lilt",
+      "feature": "mouth_size",
+      "size": "Large",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone Oddlings character gallery portrait, vertical 2:3, 1024x1536. Plain charcoal studio backdrop, photorealistic surreal editorial character photography, premium soft cinematic lighting, realistic skin and tailored fabric texture. Subject: Luca Lilt, one fictional adult woman aged 50, fair skin, short copper hair, tailored forest-green work shirt and charcoal trousers. Defining feature: large wide closed mouth. This is the Large mouth example in a size-comparison collection; make the feature visibly read at this scale, not merely hide normal proportions with clothing. Other anatomy balanced and adult. Composition: head-and-shoulders portrait with full head visible, head large enough that facial feature scale reads clearly. Relaxed confident standing pose, arms slightly away from torso, hands visible, face unobscured, short hair leaves both ears exposed. Fully clothed in modest opaque workwear and low shoes, open collar so neck is visible. Respectful original fictional adult design, not a real person, no caricature of an ethnicity or medical condition. No text, labels, logos, watermark, props, collage or panels.",
+      "asset": "public/oddlings/portraits/luca-lilt.webp"
+    },
+    {
+      "id": "cora-chorus",
+      "name": "Cora Chorus",
+      "feature": "mouth_size",
+      "size": "Extra Large",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone Oddlings character gallery portrait, vertical 2:3, 1024x1536. Plain charcoal studio backdrop, photorealistic surreal editorial character photography, premium soft cinematic lighting, realistic skin and tailored fabric texture. Subject: Cora Chorus, one fictional adult woman aged 45, olive skin, short dark cropped hair, tailored plum work shirt and graphite trousers. Defining feature: extra-large very wide closed mouth, much wider than typical, respectful stylized expression. This is the Extra Large mouth example in a size-comparison collection; make the feature visibly read at this scale, not merely hide normal proportions with clothing. Other anatomy balanced and adult. Composition: head-and-shoulders portrait with full head visible, head large enough that facial feature scale reads clearly. Relaxed confident standing pose, arms slightly away from torso, hands visible, face unobscured, short hair leaves both ears exposed. Fully clothed in modest opaque workwear and low shoes, open collar so neck is visible. Respectful original fictional adult design, not a real person, no caricature of an ethnicity or medical condition. No text, labels, logos, watermark, props, collage or panels.",
+      "asset": "public/oddlings/portraits/cora-chorus.webp"
+    },
+    {
+      "id": "etta-etude",
+      "name": "Etta Etude",
+      "feature": "ear_size",
+      "size": "Small",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone Oddlings character gallery portrait, vertical 2:3, 1024x1536. Plain charcoal studio backdrop, photorealistic surreal editorial character photography, premium soft cinematic lighting, realistic skin and tailored fabric texture. Subject: Etta Etude, one fictional adult woman aged 40, warm brown skin, short dark cropped hair, tailored burnt-orange work shirt and graphite trousers. Defining feature: small compact ears, fully uncovered. This is the Small ears example in a size-comparison collection; make the feature visibly read at this scale, not merely hide normal proportions with clothing. Other anatomy balanced and adult. Composition: head-and-shoulders portrait with full head visible, head large enough that facial feature scale reads clearly. Relaxed confident standing pose, arms slightly away from torso, hands visible, face unobscured, short hair leaves both ears exposed. Fully clothed in modest opaque workwear and low shoes, open collar so neck is visible. Respectful original fictional adult design, not a real person, no caricature of an ethnicity or medical condition. No text, labels, logos, watermark, props, collage or panels.",
+      "asset": "public/oddlings/portraits/etta-etude.webp"
+    },
+    {
+      "id": "tariq-tune",
+      "name": "Tariq Tune",
+      "feature": "ear_size",
+      "size": "Medium",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone Oddlings character gallery portrait, vertical 2:3, 1024x1536. Plain charcoal studio backdrop, photorealistic surreal editorial character photography, premium soft cinematic lighting, realistic skin and tailored fabric texture. Subject: Tariq Tune, one fictional adult man aged 45, olive skin, short silver hair, tailored cobalt-blue work shirt and charcoal trousers. Defining feature: medium balanced adult ears, fully uncovered. This is the Medium ears example in a size-comparison collection; make the feature visibly read at this scale, not merely hide normal proportions with clothing. Other anatomy balanced and adult. Composition: head-and-shoulders portrait with full head visible, head large enough that facial feature scale reads clearly. Relaxed confident standing pose, arms slightly away from torso, hands visible, face unobscured, short hair leaves both ears exposed. Fully clothed in modest opaque workwear and low shoes, open collar so neck is visible. Respectful original fictional adult design, not a real person, no caricature of an ethnicity or medical condition. No text, labels, logos, watermark, props, collage or panels.",
+      "asset": "public/oddlings/portraits/tariq-tune.webp"
+    },
+    {
+      "id": "lyra-listen",
+      "name": "Lyra Listen",
+      "feature": "ear_size",
+      "size": "Large",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone Oddlings character gallery portrait, vertical 2:3, 1024x1536. Plain charcoal studio backdrop, photorealistic surreal editorial character photography, premium soft cinematic lighting, realistic skin and tailored fabric texture. Subject: Lyra Listen, one fictional adult woman aged 50, fair skin, short copper hair, tailored forest-green work shirt and charcoal trousers. Defining feature: large prominent ears, fully uncovered. This is the Large ears example in a size-comparison collection; make the feature visibly read at this scale, not merely hide normal proportions with clothing. Other anatomy balanced and adult. Composition: head-and-shoulders portrait with full head visible, head large enough that facial feature scale reads clearly. Relaxed confident standing pose, arms slightly away from torso, hands visible, face unobscured, short hair leaves both ears exposed. Fully clothed in modest opaque workwear and low shoes, open collar so neck is visible. Respectful original fictional adult design, not a real person, no caricature of an ethnicity or medical condition. No text, labels, logos, watermark, props, collage or panels.",
+      "asset": "public/oddlings/portraits/lyra-listen.webp"
+    },
+    {
+      "id": "enzo-encore",
+      "name": "Enzo Encore",
+      "feature": "ear_size",
+      "size": "Extra Large",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone Oddlings character gallery portrait, vertical 2:3, 1024x1536. Plain charcoal studio backdrop, photorealistic surreal editorial character photography, premium soft cinematic lighting, realistic skin and tailored fabric texture. Subject: Enzo Encore, one fictional adult man aged 40, warm brown skin, short copper cropped hair, tailored plum work shirt and graphite trousers. Defining feature: extra-large prominent ears twice typical size, extending outward, fully uncovered. This is the Extra Large ears example in a size-comparison collection; make the feature visibly read at this scale, not merely hide normal proportions with clothing. Other anatomy balanced and adult. Composition: head-and-shoulders portrait with full head visible, head large enough that facial feature scale reads clearly. Relaxed confident standing pose, arms slightly away from torso, hands visible, face unobscured, short hair leaves both ears exposed. Fully clothed in modest opaque workwear and low shoes, open collar so neck is visible. Respectful original fictional adult design, not a real person, no caricature of an ethnicity or medical condition. No text, labels, logos, watermark, props, collage or panels.",
+      "asset": "public/oddlings/portraits/enzo-encore.webp"
+    },
+    {
+      "id": "nell-narrative",
+      "name": "Nell Narrative",
+      "feature": "nose_size",
+      "size": "Small",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone Oddlings character gallery portrait, vertical 2:3, 1024x1536. Plain charcoal studio backdrop, photorealistic surreal editorial character photography, premium soft cinematic lighting, realistic skin and tailored fabric texture. Subject: Nell Narrative, one fictional adult woman aged 40, warm brown skin, short dark cropped hair, tailored burnt-orange work shirt and graphite trousers. Defining feature: small compact nose. This is the Small nose example in a size-comparison collection; make the feature visibly read at this scale, not merely hide normal proportions with clothing. Other anatomy balanced and adult. Composition: head-and-shoulders portrait with full head visible, head large enough that facial feature scale reads clearly. Relaxed confident standing pose, arms slightly away from torso, hands visible, face unobscured, short hair leaves both ears exposed. Fully clothed in modest opaque workwear and low shoes, open collar so neck is visible. Respectful original fictional adult design, not a real person, no caricature of an ethnicity or medical condition. No text, labels, logos, watermark, props, collage or panels.",
+      "asset": "public/oddlings/portraits/nell-narrative.webp"
+    },
+    {
+      "id": "arun-almanac",
+      "name": "Arun Almanac",
+      "feature": "nose_size",
+      "size": "Medium",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone Oddlings character gallery portrait, vertical 2:3, 1024x1536. Plain charcoal studio backdrop, photorealistic surreal editorial character photography, premium soft cinematic lighting, realistic skin and tailored fabric texture. Subject: Arun Almanac, one fictional adult man aged 45, olive skin, short silver hair, tailored cobalt-blue work shirt and charcoal trousers. Defining feature: medium balanced adult nose. This is the Medium nose example in a size-comparison collection; make the feature visibly read at this scale, not merely hide normal proportions with clothing. Other anatomy balanced and adult. Composition: head-and-shoulders portrait with full head visible, head large enough that facial feature scale reads clearly. Relaxed confident standing pose, arms slightly away from torso, hands visible, face unobscured, short hair leaves both ears exposed. Fully clothed in modest opaque workwear and low shoes, open collar so neck is visible. Respectful original fictional adult design, not a real person, no caricature of an ethnicity or medical condition. No text, labels, logos, watermark, props, collage or panels.",
+      "asset": "public/oddlings/portraits/arun-almanac.webp"
+    },
+    {
+      "id": "rosa-riddle",
+      "name": "Rosa Riddle",
+      "feature": "nose_size",
+      "size": "Large",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone Oddlings character gallery portrait, vertical 2:3, 1024x1536. Plain charcoal studio backdrop, photorealistic surreal editorial character photography, premium soft cinematic lighting, realistic skin and tailored fabric texture. Subject: Rosa Riddle, one fictional adult woman aged 50, fair skin, short copper hair, tailored forest-green work shirt and charcoal trousers. Defining feature: large prominent broad projecting nose. This is the Large nose example in a size-comparison collection; make the feature visibly read at this scale, not merely hide normal proportions with clothing. Other anatomy balanced and adult. Composition: head-and-shoulders portrait with full head visible, head large enough that facial feature scale reads clearly. Relaxed confident standing pose, arms slightly away from torso, hands visible, face unobscured, short hair leaves both ears exposed. Fully clothed in modest opaque workwear and low shoes, open collar so neck is visible. Respectful original fictional adult design, not a real person, no caricature of an ethnicity or medical condition. No text, labels, logos, watermark, props, collage or panels.",
+      "asset": "public/oddlings/portraits/rosa-riddle.webp"
+    },
+    {
+      "id": "gus-gazette",
+      "name": "Gus Gazette",
+      "feature": "nose_size",
+      "size": "Extra Large",
+      "prompt": "Use case: stylized-concept. Asset type: single standalone Oddlings character gallery portrait, vertical 2:3, 1024x1536. Plain charcoal studio backdrop, photorealistic surreal editorial character photography, premium soft cinematic lighting, realistic skin and tailored fabric texture. Subject: Gus Gazette, one fictional adult man aged 55, fair skin, short silver cropped hair, tailored plum work shirt and graphite trousers. Defining feature: extra-large broad projecting nose twice typical size, clear three-quarter face view. This is the Extra Large nose example in a size-comparison collection; make the feature visibly read at this scale, not merely hide normal proportions with clothing. Other anatomy balanced and adult. Composition: head-and-shoulders portrait with full head visible, head large enough that facial feature scale reads clearly. Relaxed confident standing pose, arms slightly away from torso, hands visible, face unobscured, short hair leaves both ears exposed. Fully clothed in modest opaque workwear and low shoes, open collar so neck is visible. Respectful original fictional adult design, not a real person, no caricature of an ethnicity or medical condition. No text, labels, logos, watermark, props, collage or panels.",
+      "asset": "public/oddlings/portraits/gus-gazette.webp"
+    }
+  ]
+}
