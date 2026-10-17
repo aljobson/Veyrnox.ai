@@ -1,10 +1,12 @@
 import * as WebBrowser from 'expo-web-browser';
 import { Stack } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useAuth } from '../../auth/AuthProvider';
 import { useBilling } from '../../billing/BillingProvider';
 import { API_BASE } from '../../lib/api';
 import { renewalTerms, toDisplayPackages, type Interval } from '../../lib/billing';
+import { fetchPublishTier, paywallState, type PublishTier } from '../../lib/publishPlan';
 import { colors } from '../../theme';
 
 const BENEFITS = ['Up to five connected accounts', 'Schedule posts ahead', '366 days of analytics', 'Best-time recommendations'];
@@ -12,10 +14,26 @@ const LABEL: Record<Interval, string> = { week: 'Weekly', month: 'Monthly', year
 const store = Platform.OS === 'ios' ? 'ios' : 'android';
 
 export default function Publish() {
+    const { api } = useAuth();
     const { status, offerings, canPurchase, publishActive, debug, purchase, restore } = useBilling();
+    const [tier, setTier] = useState<PublishTier | null>(null);
+    const [tierChecked, setTierChecked] = useState(false);
     const [selected, setSelected] = useState<string | null>(null);
     const [busy, setBusy] = useState(false);
     const [message, setMessage] = useState<string | null>(null);
+
+    useEffect(() => {
+        let cancelled = false;
+        fetchPublishTier(api).then((t) => {
+            if (cancelled) return;
+            setTier(t);
+            setTierChecked(true);
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, [api]);
+    const gate = paywallState(tierChecked, tier);
 
     const plans = toDisplayPackages(offerings?.all.publish?.availablePackages ?? []).filter((p) => p.interval !== null);
     const chosen = plans.find((p) => p.id === (selected ?? plans.find((x) => x.interval === 'year')?.id)) ?? null;
@@ -54,12 +72,14 @@ export default function Publish() {
             {BENEFITS.map((b) => (
                 <Text key={b} style={styles.benefit}>✓  {b}</Text>
             ))}
-            {status === 'loading' ? (
+            {gate === 'checking' || status === 'loading' ? (
                 <ActivityIndicator color={colors.accent} />
+            ) : gate === 'active' || publishActive ? (
+                <Text style={styles.ok}>Your Publish Plan is active.{publishActive ? ` Manage it in your ${store === 'ios' ? 'Apple ID' : 'Google Play'} subscription settings.` : ''}</Text>
+            ) : gate === 'unknown' ? (
+                <Text style={styles.muted}>We could not check your plan right now. Try again in a moment.</Text>
             ) : status !== 'ready' || plans.length === 0 ? (
                 <Text style={styles.muted}>The Publish Plan is not available right now.{__DEV__ ? ` [${status}${debug ? `: ${debug}` : ''}; offerings: ${Object.keys(offerings?.all ?? {}).join(',') || 'none'}]` : ''}</Text>
-            ) : publishActive ? (
-                <Text style={styles.ok}>Your Publish Plan is active. Manage it in your {store === 'ios' ? 'Apple ID' : 'Google Play'} subscription settings.</Text>
             ) : (
                 <>
                     <View style={styles.plans}>
