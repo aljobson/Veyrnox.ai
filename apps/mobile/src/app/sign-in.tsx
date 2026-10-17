@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Link, Redirect, useRouter } from 'expo-router';
 import { useAuth } from '../auth/AuthProvider';
+import { Logo } from '../components/Logo';
+import { DEV_MOCK } from '../lib/config';
 import { colors } from '../theme';
 
 export default function SignIn() {
-    const { appleNativeAvailable, signInWithApple, signInWithOAuth, status } = useAuth();
+    const { appleNativeAvailable, signInWithApple, signInWithOAuth, signInWithEmail, status } = useAuth();
     const router = useRouter();
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -27,7 +29,7 @@ export default function SignIn() {
 
     return (
         <View style={styles.screen}>
-            <Text style={styles.title}>Veyrnox.ai</Text>
+            <Logo size={44} />
             <Text style={styles.subtitle}>Sign in to create with your credits.</Text>
             <Pressable
                 accessibilityRole="button"
@@ -50,6 +52,11 @@ export default function SignIn() {
                     <Text style={styles.buttonText}>Continue with email</Text>
                 </Pressable>
             </Link>
+            {DEV_MOCK ? (
+                <Pressable accessibilityRole="button" disabled={busy} style={styles.button} onPress={() => run(() => signInWithEmail('demo@veyrnox.ai', 'demo-password', 'mock'))}>
+                    <Text style={styles.buttonText}>Preview with demo data</Text>
+                </Pressable>
+            ) : null}
             {busy ? <ActivityIndicator color={colors.accent} style={styles.spinner} /> : null}
             {error ? <Text style={styles.error}>{error}</Text> : null}
         </View>

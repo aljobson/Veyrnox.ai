@@ -26,7 +26,12 @@ export function resolveAppEnv(value: string | undefined): AppEnv {
 }
 
 export const APP_ENV: AppEnv = resolveAppEnv(process.env.EXPO_PUBLIC_APP_ENV);
-export const config: EnvConfig = ENVIRONMENTS[APP_ENV];
+// Development only: point the app at dev/mock-server.mjs to preview every signed-in screen without an account.
+const DEV_API = __DEV__ ? process.env.EXPO_PUBLIC_DEV_API_BASE : undefined;
+export const DEV_MOCK = Boolean(DEV_API);
+export const config: EnvConfig = DEV_API
+    ? { ...ENVIRONMENTS[APP_ENV], apiBase: DEV_API, supabaseUrl: DEV_API }
+    : ENVIRONMENTS[APP_ENV];
 
 // Registered as the app scheme in app.json. Supabase must list this exact URL
 // as an allowed redirect (ADR-0106, owner prerequisite).

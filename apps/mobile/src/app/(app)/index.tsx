@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import { Link, Stack } from 'expo-router';
 import { useAuth } from '../../auth/AuthProvider';
 import { useBilling } from '../../billing/BillingProvider';
+import { Logo } from '../../components/Logo';
 import type { Balance } from '../../lib/api';
 import { colors } from '../../theme';
 
@@ -27,7 +28,7 @@ export default function Home() {
 
     return (
         <View style={styles.screen}>
-            <Stack.Screen options={{ title: 'Veyrnox.ai' }} />
+            <Stack.Screen options={{ headerTitle: () => <Logo size={24} /> }} />
             <Text style={styles.label}>Credits</Text>
             {balance ? (
                 <>
