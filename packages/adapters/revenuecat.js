@@ -54,17 +54,30 @@ export async function verifyWebhookSignature(rawBody, header, secret, nowSeconds
 // so production (which ignores sandbox events) can never credit it.
 const STORES = { APP_STORE: 'ios', PLAY_STORE: 'android', TEST_STORE: 'ios' };
 
+const CREDITS_PREFIX = 'ai.veyrnox.credits.';
+const PUBLISH_PREFIX = 'ai.veyrnox.publish.';
+// Subscription events that (re)open or extend a plan. Source: RevenueCat docs, event types (checked 2026-10-17).
+const SUBSCRIPTION_ACTIONS = {
+    INITIAL_PURCHASE: 'activate', RENEWAL: 'activate', PRODUCT_CHANGE: 'activate', UNCANCELLATION: 'activate',
+    BILLING_ISSUE: 'past_due', EXPIRATION: 'expire',
+};
+
+const finiteMs = (v) => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : null);
+
 /**
  * Reduces a verified webhook body to what we act on.
  * @returns {{kind:'ignore', reason:string}
  *   |{kind:'purchase'|'refund', eventId:string, channel:'ios'|'android', productId:string,
- *     transactionId:string, customerIds:string[], sandbox:boolean}}
+ *     transactionId:string, customerIds:string[], sandbox:boolean}
+ *   |{kind:'subscription', eventId:string, type:string, action:'activate'|'cancel_at_period_end'|'past_due'|'expire'|'refund',
+ *     channel:'ios'|'android', productId:string, originalTransactionId:string, periodEnd:string|null,
+ *     occurredAt:string, customerIds:string[], sandbox:boolean}}
  */
 export function parseStoreEvent(body) {
     const event = body && typeof body === 'object' ? body.event : null;
     if (!event || typeof event !== 'object') return { kind: 'ignore', reason: 'no_event' };
     const type = event.type;
-    if (type !== 'NON_RENEWING_PURCHASE' && type !== 'CANCELLATION') return { kind: 'ignore', reason: 'type' };
+    if (type !== 'NON_RENEWING_PURCHASE' && type !== 'CANCELLATION' && !(type in SUBSCRIPTION_ACTIONS)) return { kind: 'ignore', reason: 'type' };
 
     const eventId = typeof event.id === 'string' ? event.id : '';
     if (!EVENT_ID_RE.test(eventId)) return { kind: 'ignore', reason: 'event_id' };
@@ -73,15 +86,35 @@ export function parseStoreEvent(body) {
     if (!channel) return { kind: 'ignore', reason: 'store' };
     const transactionId = typeof event.transaction_id === 'string' ? event.transaction_id : '';
     if (!transactionId || transactionId.length > TRANSACTION_MAX) return { kind: 'ignore', reason: 'transaction' };
-    const productId = typeof event.product_id === 'string' ? event.product_id : '';
+    // A plan change names the new product in new_product_id; every other event carries it in product_id.
+    const productId = typeof event.new_product_id === 'string' && type === 'PRODUCT_CHANGE' ? event.new_product_id
+        : typeof event.product_id === 'string' ? event.product_id : '';
     if (!PRODUCT_RE.test(productId)) return { kind: 'ignore', reason: 'product' };
 
     const customerIds = [event.app_user_id, event.original_app_user_id]
         .filter((v, i, a) => typeof v === 'string' && UUID_RE.test(v) && a.indexOf(v) === i)
         .map((v) => v.toLowerCase());
+    const sandbox = store === 'TEST_STORE' || String(event.environment || '').toUpperCase() !== 'PRODUCTION';
+
+    // A cancellation of a credit pack is a refund; of a Publish plan it is either a refund or "will not renew".
+    const isPublish = productId.startsWith(PUBLISH_PREFIX);
+    if (type === 'NON_RENEWING_PURCHASE' || (type === 'CANCELLATION' && !isPublish)) {
+        if (type === 'NON_RENEWING_PURCHASE' && !productId.startsWith(CREDITS_PREFIX)) return { kind: 'ignore', reason: 'product' };
+        return { kind: type === 'NON_RENEWING_PURCHASE' ? 'purchase' : 'refund', eventId, channel, productId, transactionId, customerIds, sandbox };
+    }
+    if (!isPublish) return { kind: 'ignore', reason: 'product' };
+
+    const action = type === 'CANCELLATION'
+        ? (String(event.cancel_reason || '').toUpperCase() === 'CUSTOMER_SUPPORT' ? 'refund' : 'cancel_at_period_end')
+        : SUBSCRIPTION_ACTIONS[type];
+    const original = typeof event.original_transaction_id === 'string' && event.original_transaction_id ? event.original_transaction_id : transactionId;
+    if (original.length > TRANSACTION_MAX) return { kind: 'ignore', reason: 'transaction' };
+    const expires = finiteMs(event.expiration_at_ms);
+    const occurred = finiteMs(event.event_timestamp_ms);
+    if (action === 'activate' && expires === null) return { kind: 'ignore', reason: 'period_end' };
     return {
-        kind: type === 'NON_RENEWING_PURCHASE' ? 'purchase' : 'refund',
-        eventId, channel, productId, transactionId, customerIds,
-        sandbox: store === 'TEST_STORE' || String(event.environment || '').toUpperCase() !== 'PRODUCTION',
+        kind: 'subscription', eventId, type: type.toLowerCase(), action, channel, productId, originalTransactionId: original,
+        periodEnd: expires === null ? null : new Date(expires).toISOString(),
+        occurredAt: new Date(occurred ?? Date.now()).toISOString(), customerIds, sandbox,
     };
 }

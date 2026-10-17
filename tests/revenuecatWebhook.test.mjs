@@ -174,3 +174,70 @@ test('the customer id route is off, authenticated, and returns only the caller\'
     assert.equal(res.headers.get('cache-control'), 'no-store');
     assert.deepEqual(rpcCalls('get_or_create_store_customer')[0].body, { p_auth_id: '11111111-1111-4111-8111-111111111111' });
 });
+
+// ── Publish Plan subscription events (ADR-0109) ──────────────────────────────────────────────
+const sub = (type, over = {}) => purchase({
+    type, id: `evt-sub-${type.toLowerCase()}-1`, product_id: 'ai.veyrnox.publish.monthly', store: 'APP_STORE',
+    transaction_id: '2000000000000002', original_transaction_id: '2000000000000001',
+    expiration_at_ms: Date.UTC(2026, 10, 17), event_timestamp_ms: Date.UTC(2026, 9, 17), ...over,
+});
+
+test('parses subscription events into one action each', () => {
+    const activate = parseStoreEvent(sub('RENEWAL'));
+    assert.deepEqual(
+        [activate.kind, activate.action, activate.originalTransactionId, activate.periodEnd, activate.occurredAt, activate.channel],
+        ['subscription', 'activate', '2000000000000001', '2026-11-17T00:00:00.000Z', '2026-10-17T00:00:00.000Z', 'ios'],
+    );
+    for (const [type, action] of [['INITIAL_PURCHASE', 'activate'], ['UNCANCELLATION', 'activate'], ['BILLING_ISSUE', 'past_due'], ['EXPIRATION', 'expire']]) {
+        assert.equal(parseStoreEvent(sub(type)).action, action, type);
+    }
+    assert.equal(parseStoreEvent(sub('CANCELLATION', { cancel_reason: 'UNSUBSCRIBE' })).action, 'cancel_at_period_end');
+    assert.equal(parseStoreEvent(sub('CANCELLATION', { cancel_reason: 'CUSTOMER_SUPPORT' })).action, 'refund');
+    // A plan change names the new product.
+    assert.equal(parseStoreEvent(sub('PRODUCT_CHANGE', { product_id: 'ai.veyrnox.publish.weekly', new_product_id: 'ai.veyrnox.publish.annual' })).productId, 'ai.veyrnox.publish.annual');
+});
+
+test('keeps credit packs and Publish plans apart and ignores what it cannot place', () => {
+    // A cancellation of a credit pack is a refund of the pack, not a subscription event.
+    assert.equal(parseStoreEvent(purchase({ type: 'CANCELLATION' })).kind, 'refund');
+    assert.equal(parseStoreEvent(sub('RENEWAL', { expiration_at_ms: undefined })).kind, 'ignore');
+    assert.equal(parseStoreEvent(sub('RENEWAL', { product_id: 'ai.veyrnox.credits.100' })).kind, 'ignore');
+    assert.equal(parseStoreEvent(sub('RENEWAL', { product_id: 'com.wallet.sub' })).kind, 'ignore');
+    assert.equal(parseStoreEvent(purchase({ product_id: 'ai.veyrnox.publish.monthly' })).kind, 'ignore'); // not a one-time purchase
+    assert.equal(parseStoreEvent(sub('RENEWAL', { store: 'TEST_STORE', environment: 'PRODUCTION' })).sandbox, true);
+});
+
+test('applies a subscription event through apply_store_publish_event, naming no account', async () => {
+    handlers.apply_store_publish_event = json({ ok: true, status: 'active' });
+    const res = await send(sub('RENEWAL'));
+    assert.equal(res.status, 200);
+    assert.deepEqual(rpcCalls('apply_store_publish_event')[0].body, {
+        p_rc_customer_id: CUSTOMER, p_channel: 'ios', p_store_product_id: 'ai.veyrnox.publish.monthly',
+        p_original_transaction_id: '2000000000000001', p_event_id: 'evt-sub-renewal-1', p_action: 'activate', p_type: 'renewal',
+        p_period_end: '2026-11-17T00:00:00.000Z', p_occurred_at: '2026-10-17T00:00:00.000Z',
+    });
+    assert.equal(rpcCalls('credit_store_purchase').length, 0);
+});
+
+test('never applies a sandbox subscription in production', async () => {
+    handlers.apply_store_publish_event = json({ ok: true });
+    assert.equal((await (await send(sub('RENEWAL', { environment: 'SANDBOX' }))).json()).ignored, true);
+    assert.equal(rpcCalls('apply_store_publish_event').length, 0);
+});
+
+test('warns on a flagged subscription and on final verdicts, and retries on a database error', async () => {
+    handlers.apply_store_publish_event = json({ ok: true, flagged: true, status: 'flagged' });
+    assert.equal((await (await send(sub('INITIAL_PURCHASE'))).json()).warn, 'flagged');
+    handlers.apply_store_publish_event = json({ ok: false, code: 'PLAN_NOT_FOUND' });
+    assert.equal((await (await send(sub('RENEWAL', { id: 'evt-sub-renewal-2' }))).json()).warn, 'plan_not_found');
+    handlers.apply_store_publish_event = () => new Response('{}', { status: 500 });
+    assert.equal((await send(sub('RENEWAL', { id: 'evt-sub-renewal-3' }))).status, 500);
+});
+
+test('tries the original customer id when the current one is unknown, for subscriptions too', async () => {
+    const other = '9c1d2e3f-0000-4000-8000-000000000002';
+    let n = 0;
+    handlers.apply_store_publish_event = () => json(n++ === 0 ? { ok: false, code: 'CUSTOMER_NOT_FOUND' } : { ok: true })();
+    assert.equal((await send(sub('RENEWAL', { app_user_id: other }))).status, 200);
+    assert.deepEqual(rpcCalls('apply_store_publish_event').map((c) => c.body.p_rc_customer_id), [other, CUSTOMER]);
+});

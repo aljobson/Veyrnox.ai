@@ -22,4 +22,10 @@ Introductory offers or trials; a store price uplift; family sharing; regional pr
 
 ## Verification
 
-Catalog created and read back in RevenueCat on 2026-10-17. Migration, webhook mapping and the paywall are unbuilt and unverified.
+Catalog created and read back in RevenueCat on 2026-10-17.
+
+**Built 2026-10-17 (migration 0346, behind `STORE_BILLING_ENABLED`):** `social_publish_subscriptions` gains the store's identity (channel and original transaction id, unique); `social_publish_store_products` maps product ids to plans (iOS seeded; Android waits for the Play listings); `apply_store_publish_event` applies `activate`, `cancel_at_period_end`, `past_due`, `expire` and `refund` for the account that owns the secret customer id. Event ids are idempotent, an older event than the last one changes nothing, a newer activation reopens an ended row (the store keeps one original transaction id across a re-subscription), and a second live plan is flagged, never entitled. The existing entitlement read, one-live index and web "already active" refusal work unchanged, and the credit ledger is never touched. The webhook maps `INITIAL_PURCHASE`, `RENEWAL`, `PRODUCT_CHANGE`, `UNCANCELLATION` to activate, `CANCELLATION` to cancel-at-period-end (or refund when `cancel_reason` is `CUSTOMER_SUPPORT`), `BILLING_ISSUE` to past-due and `EXPIRATION` to expire; a `CANCELLATION` of a credit pack is still a pack refund.
+
+Tested on local Postgres: 11 acceptance tests for 0346 (fresh base schema twice, a full replay, and with every acceptance suite sharing one database as CI does) and 18 webhook tests.
+
+**Not verified, needs the store sandboxes:** that `PRODUCT_CHANGE` carries the new product in `new_product_id` (otherwise the plan does not change), that `cancel_reason` is `CUSTOMER_SUPPORT` for a refund and anything else for "will not renew", that `expiration_at_ms` and `original_transaction_id` are present as read from the docs, the Play product id format (`productId:basePlanId`), and the app side checking the server entitlement before showing the paywall. A store purchase made while a web plan is live is flagged: the person is charged by the store and not entitled until an operator refunds it, so the app must check first.
