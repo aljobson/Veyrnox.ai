@@ -64,9 +64,16 @@ try {
 
     await c.query('BEGIN');
 
-    // ── Plans: the three accepted tiers, cheapest first. ──
+    // ── Plans: the three accepted tiers on weekly and monthly billing, cheapest first. ──
     assert.deepEqual((await rpc('public.list_credit_subscription_plans()')).map((p) => [p.id, p.price_usd_cents, p.credits]),
-        [['starter-monthly', 1900, 270], ['plus-monthly', 5900, 1200], ['ultra-monthly', 12900, 3000]]);
+        [
+            ['starter-weekly', 499, 60],
+            ['plus-weekly', 1499, 275],
+            ['starter-monthly', 1900, 270],
+            ['ultra-weekly', 3299, 700],
+            ['plus-monthly', 5900, 1200],
+            ['ultra-monthly', 12900, 3000],
+        ]);
 
     // ── Start: idempotent on its key; the key cannot be moved to another plan. ──
     const a = await user();

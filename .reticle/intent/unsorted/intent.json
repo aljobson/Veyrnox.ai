@@ -1,74 +1,5 @@
 {
   "intents": {
-    "inline:signed-out-users-can-dismiss-and-reopen-authenti-1d49d724": {
-      "binding": {
-        "absent": true,
-        "kind": "element",
-        "query": {
-          "name": "Sign in to Veyrnox",
-          "role": "dialog"
-        }
-      },
-      "declaredAt": 1791910543765,
-      "id": "inline:signed-out-users-can-dismiss-and-reopen-authenti-1d49d724",
-      "state": "bound",
-      "statement": "Signed-out users can dismiss and reopen authentication from the Publish Plan page.",
-      "status": "proposed",
-      "subject": "unsorted",
-      "updatedAt": 1791910543782
-    },
-    "inline:signed-out-users-can-open-authentication-from-th-6fd59596": {
-      "binding": {
-        "kind": "element",
-        "query": {
-          "name": "Sign in to Veyrnox",
-          "role": "dialog"
-        },
-        "state": "visible"
-      },
-      "declaredAt": 1791910575512,
-      "id": "inline:signed-out-users-can-open-authentication-from-th-6fd59596",
-      "provenBy": {
-        "at": 1791910618172,
-        "grade": "presence",
-        "verdictId": "reticle_act_and_wait:1791910618172"
-      },
-      "state": "proved",
-      "statement": "Signed-out users can open authentication from the Publish Plan billing page.",
-      "status": "proved",
-      "subject": "unsorted",
-      "surface": {
-        "files": [
-          "app/veyrnox/app/publish/plan/PublishPlanPanel.js"
-        ],
-        "route": "/app/publish/plan"
-      },
-      "updatedAt": 1791910618206
-    },
-    "publish-plan-access": {
-      "declaredAt": 1791910533615,
-      "id": "publish-plan-access",
-      "state": "declared",
-      "statement": "Free users can see the plan and sign in to manage billing, while paid access unlocks full analytics history and best-time recommendations.",
-      "status": "proposed",
-      "subject": "unsorted",
-      "updatedAt": 1791910533645
-    },
-    "publish-plan-price": {
-      "declaredAt": 1791910533615,
-      "id": "publish-plan-price",
-      "state": "declared",
-      "statement": "The Veyrnox Publish Plan is offered at $15 per month while five connected accounts and basic scheduling remain free.",
-      "status": "proposed",
-      "subject": "unsorted",
-      "surface": {
-        "files": [
-          "app/veyrnox/app/publish/plan/PublishPlanPanel.js"
-        ],
-        "route": "/app/publish/plan"
-      },
-      "updatedAt": 1791910774865
-    },
     "inline:publish-analytics-x-194b806a": {
       "binding": {
         "kind": "allOf",
@@ -151,6 +82,90 @@
         "route": "/app/publish/plan"
       },
       "updatedAt": 1791924089479
+    },
+    "inline:signed-out-users-can-dismiss-and-reopen-authenti-1d49d724": {
+      "binding": {
+        "absent": true,
+        "kind": "element",
+        "query": {
+          "name": "Sign in to Veyrnox",
+          "role": "dialog"
+        }
+      },
+      "declaredAt": 1791910543765,
+      "id": "inline:signed-out-users-can-dismiss-and-reopen-authenti-1d49d724",
+      "state": "bound",
+      "statement": "Signed-out users can dismiss and reopen authentication from the Publish Plan page.",
+      "status": "proposed",
+      "subject": "unsorted",
+      "updatedAt": 1791910543782
+    },
+    "inline:signed-out-users-can-open-authentication-from-th-6fd59596": {
+      "binding": {
+        "kind": "element",
+        "query": {
+          "name": "Sign in to Veyrnox",
+          "role": "dialog"
+        },
+        "state": "visible"
+      },
+      "declaredAt": 1791910575512,
+      "id": "inline:signed-out-users-can-open-authentication-from-th-6fd59596",
+      "provenBy": {
+        "at": 1791910618172,
+        "grade": "presence",
+        "verdictId": "reticle_act_and_wait:1791910618172"
+      },
+      "state": "proved",
+      "statement": "Signed-out users can open authentication from the Publish Plan billing page.",
+      "status": "proved",
+      "subject": "unsorted",
+      "surface": {
+        "files": [
+          "app/veyrnox/app/publish/plan/PublishPlanPanel.js"
+        ],
+        "route": "/app/publish/plan"
+      },
+      "updatedAt": 1791910618206
+    },
+    "publish-plan-access": {
+      "declaredAt": 1791910533615,
+      "id": "publish-plan-access",
+      "state": "declared",
+      "statement": "Free users can see the plan and sign in to manage billing, while paid access unlocks full analytics history and best-time recommendations.",
+      "status": "proposed",
+      "subject": "unsorted",
+      "updatedAt": 1791910533645
+    },
+    "publish-plan-price": {
+      "declaredAt": 1791910533615,
+      "id": "publish-plan-price",
+      "state": "declared",
+      "statement": "The Veyrnox Publish Plan is offered at $15 per month while five connected accounts and basic scheduling remain free.",
+      "status": "proposed",
+      "subject": "unsorted",
+      "surface": {
+        "files": [
+          "app/veyrnox/app/publish/plan/PublishPlanPanel.js"
+        ],
+        "route": "/app/publish/plan"
+      },
+      "updatedAt": 1791910774865
+    },
+    "weekly-subscription-options": {
+      "declaredAt": 1792194236440,
+      "id": "weekly-subscription-options",
+      "state": "declared",
+      "statement": "Credit Subscriptions, Cinema Pass, and Veyrnox Publish each offer a clearly priced weekly subscription alongside their existing longer billing option, with automatic renewal and cancellation disclosed before checkout.",
+      "status": "proposed",
+      "subject": "unsorted",
+      "surface": {
+        "files": [
+          "app/veyrnox/app/publish/plan/PublishPlanPanel.js"
+        ],
+        "route": "/app/publish/plan"
+      },
+      "updatedAt": 1792194747657
     }
   },
   "subject": "unsorted",

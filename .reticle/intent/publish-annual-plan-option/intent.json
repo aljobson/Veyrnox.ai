@@ -1,0 +1,18 @@
+{
+  "intents": {
+    "flow:publish-annual-plan-option": {
+      "declaredAt": 1792215701000,
+      "id": "flow:publish-annual-plan-option",
+      "state": "declared",
+      "statement": "A publisher can choose Veyrnox Publish annual billing at $126 per year, see the exact 30% saving and monthly equivalent, review the automatic-renewal disclosure, and enable checkout only after consent.",
+      "status": "proposed",
+      "subject": "publish-annual-plan-option",
+      "surface": {
+        "flow": "publish-annual-plan-option"
+      },
+      "updatedAt": 1792215701000
+    }
+  },
+  "subject": "publish-annual-plan-option",
+  "version": 1
+}

@@ -42,6 +42,13 @@ matches (`FREE_SOCIAL_ACCOUNT_LIMIT = 1`, `PUBLISH_SOCIAL_ACCOUNT_LIMIT = 5` in
 `lib/social/accountAllowance.js`; the limit in migration 0298). Recorded here on
 2026-10-16 to remove the conflict between this ADR and the code.
 
+## Owner amendment — 17 October 2026
+
+The owner approved annual billing at **$126/year**, exactly **30% off** twelve
+$15 monthly payments ($180). Weekly remains $4.99 and monthly remains $15.
+Annual renewal, cancellation at period end and Stripe billing-portal management
+use the same Publish Plan lifecycle as the other intervals (migration 0341).
+
 ## Context
 
 ADR-0062 decided Publish is billed as an independent recurring "Publish Plan," never touching

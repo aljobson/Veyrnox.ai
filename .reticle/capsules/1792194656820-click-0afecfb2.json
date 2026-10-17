@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "origin": "failed-assert",
+  "expected": "text \"Weekly\" AND text \"$4.99\" AND text \"Monthly\" AND text \"$15.00\"",
+  "observed": "no element matched {\"text\":\"Weekly\"}",
+  "steps": [
+    {
+      "tool": "reticle_act",
+      "anchor": {
+        "kind": "testid",
+        "value": "",
+        "source": {
+          "file": "app/veyrnox/app/publish/plan/PublishPlanPanel.js",
+          "line": 100,
+          "column": 17
+        }
+      },
+      "action": "click"
+    }
+  ],
+  "id": "1792194656820-click-0afecfb2",
+  "createdAt": 1792194656820,
+  "seen": 1,
+  "lastSeenAt": 1792194656820
+}

@@ -35,13 +35,20 @@ export default function Terms() {
                 <li>Before you buy, you must tick a box confirming: &ldquo;I want my credits added to my account straight away. I understand that once I use any of these credits to generate, I lose my right to cancel this purchase.&rdquo; See our <a href="/legal/refund">Refund Policy</a>.</li>
             </ul>
 
-            <h2>3A. Monthly Credit Subscriptions</h2>
+            <h2>3A. Credit Subscriptions</h2>
             <ul>
-                <li>A Monthly Credit Subscription supplies the number of Subscription Credits and charges the monthly USD price displayed when you subscribe, plus any tax shown at checkout. It renews automatically each month until you cancel.</li>
-                <li>Subscription Credits are added only after each monthly payment is confirmed. They are used before Free Credits and Credit Pack credits, expire at the end of that paid cycle, and do not roll over. Cancelling renewal does not extend their expiry.</li>
+                <li>A Credit Subscription supplies the number of Subscription Credits and charges the weekly or monthly USD price displayed when you subscribe, plus any tax shown at checkout. It renews automatically at the selected interval until you cancel.</li>
+                <li>Subscription Credits are added only after each recurring payment is confirmed. They are used before Free Credits and Credit Pack credits, expire at the end of that paid cycle, and do not roll over. Cancelling renewal does not extend their expiry.</li>
                 <li>You can stop renewal at any time from <a href="/app/credits#credit-subscriptions">Credits &amp; billing</a>. You will not be charged for another cycle, and the current paid cycle continues until its displayed end date.</li>
                 <li>For the initial paid cycle, you may request a full cooling-off refund within 14 days only while none of that cycle&rsquo;s Subscription Credits has been used. If any of those Credits has been used, you can still stop the next renewal. The server checks eligibility and the refund status is not complete until it is confirmed.</li>
-                <li>Before checkout you must expressly accept the recurring monthly price, the number of Credits supplied after each confirmed payment, and the no-rollover expiry. The final price including tax is shown before payment.</li>
+                <li>Before checkout you must expressly accept the recurring price and interval, the number of Credits supplied after each confirmed payment, and the no-rollover expiry. The final price including tax is shown before payment.</li>
+            </ul>
+
+            <h2>3B. Veyrnox Publish Plan</h2>
+            <ul>
+                <li>The Veyrnox Publish Plan supplies the advanced publishing, analytics and account features shown on the plan page. It charges the weekly, monthly or annual USD price selected before checkout, plus any tax shown at checkout, and renews automatically at that interval until you cancel.</li>
+                <li>You can stop renewal from the Publish Plan page or its Stripe billing portal. You will not be charged for another cycle, and paid features continue until the displayed paid-period end.</li>
+                <li>Before checkout you must expressly accept the recurring price and interval. The final price including tax is shown before payment.</li>
             </ul>
 
             <h2>4. Your inputs and outputs</h2>
@@ -68,7 +75,7 @@ export default function Terms() {
             <h2>7B. Cinema Pass</h2>
             <ul>
                 <li>A Cinema Pass supplies access to published Social Cinema films and episodes while the Pass is active, subject to the delivered-minute limit displayed before purchase. It adds no Credits.</li>
-                <li>The Pass charges the recurring USD price displayed when you subscribe, plus any tax shown at checkout, and renews automatically each month until you cancel.</li>
+                <li>The Pass charges the recurring USD price displayed when you subscribe, plus any tax shown at checkout, and renews automatically each week or month, according to the option you select, until you cancel.</li>
                 <li>You can cancel from the Cinema Pass page or use its Stripe billing portal. Outside the initial cooling-off period, cancellation stops the next renewal and access continues until the displayed paid-period end.</li>
                 <li>If you cancel within 14 days of the first charge, the Pass ends immediately and the unused share of the current paid period is refunded to the original payment method. The page shows when this option is available and the refund is not complete until confirmed.</li>
                 <li>Before checkout you must expressly ask us to start the Pass immediately and acknowledge its automatic renewal and cooling-off treatment.</li>
