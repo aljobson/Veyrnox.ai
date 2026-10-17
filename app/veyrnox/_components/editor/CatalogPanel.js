@@ -7,11 +7,14 @@ import { updateSequenceClip, trackFor, setSequenceTransition } from '../../_lib/
 import { SHAPES } from '../../_lib/editorGraphics.mjs';
 import { EFFECT_CATEGORIES, TRANSITION_CATEGORIES, TRANSITIONS, VIDEO_EFFECTS } from '../../_lib/editorEffects.mjs';
 import { PersonProcessingControls } from './PersonProcessingControls';
+import { TransitionPreview } from './TransitionPreview';
+import { GuidanceCard } from './GuidanceCard';
+import { transitionGuidance } from '../../_lib/editorGuidance.mjs';
 
-const chip = active => `rounded-full border px-2 py-1 text-[11px] transition-colors ${active ? 'border-vx-accent bg-vx-accent/10 text-vx-accent' : 'border-vx-border text-vx-fg-muted hover:text-vx-fg'}`;
+const chip = active => `rounded-full border px-3 py-1.5 text-xs transition-colors ${active ? 'border-vx-accent bg-vx-accent/10 text-vx-accent' : 'border-vx-border text-vx-fg-muted hover:text-vx-fg'}`;
 
 function PresetPreview({ item, kind }) {
-    if (kind === 'transition') return <span aria-hidden="true" className="relative block aspect-video overflow-hidden rounded-md bg-gradient-to-br from-cyan-400/80 to-fuchsia-500/80"><span className="absolute inset-y-0 left-1/2 w-px rotate-12 bg-white/70" /><span className="absolute bottom-1 left-2 text-[9px] font-bold uppercase tracking-widest text-white/90">{item.category}</span></span>;
+    if (kind === 'transition') return <TransitionPreview id={item.id} />;
     if (kind === 'shape') return <span aria-hidden="true" className="flex aspect-video items-center justify-center rounded-md bg-gradient-to-br from-vx-accent/15 to-fuchsia-500/10 text-2xl font-black text-vx-accent">{item.symbol}</span>;
     if (kind === 'template') return <span aria-hidden="true" className="relative block aspect-video overflow-hidden rounded-md bg-gradient-to-br from-slate-950 to-slate-700"><span className="absolute left-2 top-2 h-1.5 w-2/3 rounded-full bg-white/75" /><span className="absolute left-2 top-5 h-1 w-1/2 rounded-full bg-vx-accent/80" /><span className="absolute inset-x-2 bottom-2 grid grid-cols-3 gap-1"><i className="h-5 rounded bg-white/15" /><i className="h-5 rounded bg-white/25" /><i className="h-5 rounded bg-white/15" /></span></span>;
     const backgrounds = {
@@ -35,7 +38,7 @@ function PresetGrid({ items, disabled, onChoose, currentId, kind }) {
         return <button key={item.id} type="button" aria-label={item.name} disabled={disabled} aria-pressed={currentId === undefined ? undefined : selected} onClick={() => onChoose(item.id)} className={`group min-w-0 rounded-xl border bg-vx-base p-1.5 text-left text-xs transition-all hover:-translate-y-0.5 hover:border-vx-accent hover:shadow-lg hover:shadow-black/10 disabled:translate-y-0 disabled:opacity-40 ${selected ? 'border-vx-accent ring-1 ring-vx-accent/50' : 'border-vx-border'}`}>
             <PresetPreview item={item} kind={kind} />
             <span className={`mt-2 block truncate px-0.5 font-bold ${selected ? 'text-vx-accent' : ''}`}>{item.name}</span>
-            {item.description && <span className="mt-0.5 line-clamp-2 block px-0.5 text-[10px] leading-4 text-vx-fg-muted">{item.description}</span>}
+            {item.description && <span className="mt-0.5 line-clamp-2 block px-0.5 text-xs leading-4 text-vx-fg-muted">{item.description}</span>}
         </button>;
     })}</div>;
 }
@@ -46,7 +49,7 @@ const SHAPE_SYMBOLS = Object.freeze({
     cross: '✚', lightning: 'ϟ', burst: '✹', bracket: '[ ]', underline: '_', play: '▶', location: '⌖', sparkle: '✦',
 });
 
-export function CatalogPanel({ panel, tl, selected, frame, disabled, apply, onSelect, selectedBlob, localInference, onIngest, onBusy, onError }) {
+export function CatalogPanel({ panel, tl, selected, frame, disabled, apply, onSelect, selectedBlob, localInference, onIngest, onBusy, onError, onOpenMedia }) {
     const [query, setQuery] = useState('');
     const [mediaIds, setMediaIds] = useState([]);
     const [headline, setHeadline] = useState('Your story');
@@ -81,5 +84,5 @@ export function CatalogPanel({ panel, tl, selected, frame, disabled, apply, onSe
     }
 
     const transitions = TRANSITIONS.filter(transition => (transitionCategory === 'All' || transition.category === transitionCategory) && matches(`${transition.name} ${transition.category}`));
-    return <div className="space-y-3"><div><h2 className="text-sm font-bold">Transitions</h2><p className="mt-1 text-xs text-vx-fg-muted">Place a transition on the selected clip boundary.</p></div>{search}<NumberControl label="Transition duration (seconds)" value={transitionFrames / 30} min={1 / 30} max={2} step={1 / 30} onChange={seconds => setTransitionFrames(Math.max(1, Math.round(seconds * 30)))} /><div className="flex flex-wrap gap-1">{TRANSITION_CATEGORIES.map(name => <button key={name} type="button" aria-pressed={transitionCategory === name} className={chip(transitionCategory === name)} onClick={() => setTransitionCategory(name)}>{name}</button>)}</div>{!transitions.length && <EmptyCatalog query={query} />}<PresetGrid items={transitions} kind="transition" currentId={item?.transitionType} disabled={disabled || !item || locked} onChoose={transitionType => apply(timeline => setSequenceTransition(timeline, item.id, transitionType, transitionFrames))} /></div>;
+    return <div className="space-y-3"><div><h2 className="text-sm font-bold">Transitions</h2><p className="mt-1 text-xs text-vx-fg-muted">Place a transition between the selected clip and the one before it.</p></div><GuidanceCard hint={transitionGuidance(tl, selected)} onAction={onOpenMedia} />{search}<NumberControl label="Transition duration (seconds)" value={transitionFrames / 30} min={1 / 30} max={2} step={1 / 30} onChange={seconds => setTransitionFrames(Math.max(1, Math.round(seconds * 30)))} /><div className="flex flex-wrap gap-1">{TRANSITION_CATEGORIES.map(name => <button key={name} type="button" aria-pressed={transitionCategory === name} className={chip(transitionCategory === name)} onClick={() => setTransitionCategory(name)}>{name}</button>)}</div>{!transitions.length && <EmptyCatalog query={query} />}<PresetGrid items={transitions} kind="transition" currentId={item?.transitionType} disabled={disabled || !item || locked} onChoose={transitionType => apply(timeline => setSequenceTransition(timeline, item.id, transitionType, transitionFrames))} /></div>;
 }
