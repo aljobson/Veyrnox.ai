@@ -38,6 +38,6 @@ test('the bar sits above the marketing nav and can be dismissed', () => {
     assert.match(home, /<div className="min-h-dvh">\s*<MarketingNav hideAnnouncementOnMobile \/>/);
     assert.doesNotMatch(home, /AnnouncementBar/);
     const bar = readFileSync(new URL('../app/veyrnox/_components/AnnouncementBar.js', import.meta.url), 'utf8');
-    assert.match(bar, /aria-label="Dismiss announcement"/);
+    assert.match(bar, /aria-label=\{t\('announce\.dismiss'\)\}/);
     assert.match(bar, /dismiss\(window\.localStorage, ANNOUNCEMENT\.id\)/);
 });

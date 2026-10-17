@@ -33,17 +33,17 @@ export const BREAKTHROUGH_FILM = {
 };
 
 // The brand intro: the Veyrnox.ai logo over Earth, shown above the hero
-// headline, with the original aqua V. Phones get the portrait version.
+// headline, with the original aqua V. Phones get a centred crop that keeps the whole wordmark.
 export const BRAND_FILM = {
   video: '/film/brand-intro.mp4',
   poster: '/film/brand-intro.jpg',
-  width: 896,
-  height: 512,
+  width: 1024,
+  height: 576,
   mobile: {
     video: '/film/brand-intro-portrait.mp4',
     poster: '/film/brand-intro-portrait.jpg',
-    width: 512,
-    height: 896,
+    width: 640,
+    height: 576,
   },
 };
 

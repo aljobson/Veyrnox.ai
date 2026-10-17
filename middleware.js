@@ -26,6 +26,8 @@ import {EDITOR_VISION_PATH,editorVisionWorkerPolicy} from './app/veyrnox/_lib/ed
 import { readToken, validateClaims, verifyES256 } from './lib/supabaseJwt.js';
 import { isPublishApiPath, publishShellAvailable, publishAllowed } from './lib/social/publishFeature.js';
 import { isUnknownStaticPage } from './lib/unknownStaticPage.js';
+import { LOCALIZED_PATHS, localesEnabled, localizedPathKey, splitLocalePath } from './lib/i18n/locales.mjs';
+import { LOCALE_HEADER, PATH_HEADER } from './lib/i18n/headerNames.mjs';
 import { recordSecurityEvent } from './lib/securityEvents.js';
 const POSTHOG_INGEST_PATH = '/ingest';
 const POSTHOG_INGEST_ORIGIN = 'https://eu.i.posthog.com';
@@ -125,11 +127,33 @@ export async function middleware(req, event) {
         const policy = contentSecurityPolicy(nonce, process.env.NODE_ENV === 'development');
         headers.set('x-nonce', nonce);
         headers.set('Content-Security-Policy', policy);
+        // Public-site language (ADR-0107). Both headers get a value on every
+        // page request, so a client-supplied copy never reaches a page.
+        // /es/... is served by the English-named route with the language in
+        // a header; a language prefix on a page with no translation is sent
+        // to the English page, never served as a second copy of it.
+        let pagePath = pathname;
+        let locale = 'en';
+        if (localesEnabled()) {
+            const split = splitLocalePath(pathname);
+            if (split.locale) {
+                if (!LOCALIZED_PATHS.has(localizedPathKey(split.rest))) {
+                    const target = new URL(split.rest + requestUrl.search, req.url);
+                    return NextResponse.redirect(target, { status: 307, headers: { 'cache-control': 'private, no-store, max-age=0' } });
+                }
+                pagePath = split.rest;
+                locale = split.locale;
+            }
+        }
+        headers.set(LOCALE_HEADER, locale);
+        headers.set(PATH_HEADER, localizedPathKey(pagePath));
         // An unknown guide or template is sent to a path with no route, so the
         // site's not-found page answers with a real 404 (lib/unknownStaticPage.js).
-        const response = isUnknownStaticPage(pathname)
+        const response = isUnknownStaticPage(pagePath)
             ? NextResponse.rewrite(new URL('/_unknown-page', req.url), { request: { headers } })
-            : NextResponse.next({ request: { headers } });
+            : pagePath !== pathname
+                ? NextResponse.rewrite(new URL(pagePath + requestUrl.search, req.url), { request: { headers } })
+                : NextResponse.next({ request: { headers } });
         response.headers.set('Content-Security-Policy', policy);
         response.headers.set('Cache-Control', 'private, no-store, max-age=0');
         return response;

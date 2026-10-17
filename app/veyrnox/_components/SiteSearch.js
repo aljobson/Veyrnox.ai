@@ -9,6 +9,7 @@ import { searchIndex, MIN_QUERY } from '../_lib/searchIndex';
 import { Icon } from './Icon';
 import { Modal } from './Modal';
 import { useOddlingsPublic } from './OddlingsPublicFlag';
+import { useI18n } from '../../../components/I18nProvider';
 
 // Site-wide search. Everything this site contains is either a route, a
 // catalog row, a preset or an FAQ answer, and all four fit in memory — so
@@ -51,17 +52,18 @@ function modelsToIndex(models) {
 
 export function SiteSearch({ className = '' }) {
   const [open, setOpen] = useState(false);
+  const { t } = useI18n();
   return (
     <>
       <button
         type="button"
         onClick={() => setOpen(true)}
         data-print="hide"
-        aria-label="Search Veyrnox"
+        aria-label={t('ui.searchAria')}
         className={cn('inline-flex h-11 items-center gap-2 rounded-full border border-vx-border px-3 text-[13px] font-semibold text-vx-fg-muted transition-colors hover:border-vx-accent hover:text-vx-fg', className)}
       >
         <Icon name="search" size={14} />
-        <span className="hidden md:inline">Search</span>
+        <span className="hidden md:inline">{t('ui.search')}</span>
       </button>
       {open && <SearchOverlay onClose={() => setOpen(false)} />}
       <SearchHotkey onOpen={() => setOpen(true)} />

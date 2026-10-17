@@ -63,3 +63,30 @@ PLAYWRIGHT_CORE=/tmp/spike/node_modules/playwright-core \
 Real editor in the Browser pane (`next dev --webpack`, `EDITOR_RUNTIME_FLAGS={"scenes":"true"}`): imported the 20 s `hard-4s.mp4` clip, selected it, Scenes found 4 cuts at 0:04, 0:08, 0:12 and 0:16 with 4 preview marks on the ruler, "Add 4 cuts" took the clip from 1 piece to 5 in one edit, and one Undo restored it. The "Scenes" tool appears only with the flag on. Not yet done: the decoded-export check, a Reticle journey, phone-sized layout, and any clip that is not H.264 MP4.
 
 Production uses the multitrack workspace and its sequence model, so the panel is built there (`splitSequenceAtFrames`); the older single-lane editor is not given the panel.
+
+## Slice B decoded-export check (2026-10-17)
+
+`scripts/editor-spike/scenes-export.mjs` runs the real modules in desktop Chrome (`detectClipScenes`, `sceneRows`, `splitSequenceAtFrames`, `exportTimeline`), then decodes the exported MP4 with ffmpeg and compares it with the source. Five clips (20 s, 16 s, 15 s, 15 s and 11 s of 720p H.264), 22 cuts added in total:
+
+- the added cuts are exactly the hand-marked ones; the pieces are contiguous, in source order, with no gap or overlap;
+- the export has **exactly the source's frame count** on every clip;
+- the decoded export matches the source frame by frame: PSNR average 43 to 51 dB, lowest single frame 35 dB (the 1.5 s-shot clip), against a 30 dB / 20 dB bar;
+- ffmpeg's own scene filter sees the same cuts in the export as in the source, so splitting created, lost or moved none. (That filter at 0.3 is blunter than the detector: it misses weak cuts in the source too, which is why the check compares export to source rather than to the marked cuts.)
+
+One finding, not a bug: on `screen.mp4` the cut from flat UI footage into a real shot was reported as a **possible dissolve** (10.17 s) instead of a hard cut, so "Add cuts" adds the cut at 5 s and leaves that one unticked for review. Reviewing it is how the panel is meant to work, but it shows hard cuts into flat footage can land in the "possible" list. Export of the clips that were split is correct.
+
+Still not covered: a Reticle journey, phone layout, non-H.264 sources and a real camera clip.
+
+## Slice C clip finder, stage 1: measured in Chrome (2026-10-17)
+
+`scripts/editor-spike/clipper-run.mjs` runs the real `findClips` (shot cuts from slice A, loudness decoded with Mediabunny's `AudioBufferSink`, captions as speech, ranking) on a 30 s clip of six 5 s shots whose loudness is set (`make-clip-fixtures.sh`). **The picture is our own footage but the sound is synthetic (tones and noise); no video in the repo carries real audio.** So this shows the pipeline and the ranking logic work, not that the picks suit real speech, music or action.
+
+- **Loudness is right:** the browser's half-second windows match an independent ffmpeg decode (correlation 1.0000, largest difference 0.0000 over 60 windows).
+- **Ranking follows the signals:** the two loud shots (10 to 15 s and 20 to 25 s) are the top two picks, the louder first and labelled "Loud, lively audio". Adding dense captions to the first, quiet shot lifts it to first place with "Lots of speech (about 7.8 words a second)".
+- **Insert works:** the top two picks become two new clips after the timeline, as one edit.
+- **Cost:** about 2.5 s for a 30 s clip (scene search plus loudness); the loudness decode alone is about 0.1 s.
+- **Not shown:** that these picks are *good* clips. The weights (loudness 0.3, speech 0.3, edges 0.15, continuity 0.1, length 0.15) are a starting guess; judging them needs real footage and a person's eye. A clip with no audio track in the browser path, a clip with real speech, music or a noisy room, and clips of other lengths are untested. The second loud shot (gain 0.45) is ranked second but is not labelled "Loud", because the label needs 0.7 of the clip's 95th-percentile loudness.
+
+## Slice C panel check (2026-10-17, local, flags on)
+
+Real editor (`next dev --webpack`, `EDITOR_RUNTIME_FLAGS={"scenes":"true","clipper":"true"}`): imported the 30 s six-shot clip with set loudness, selected it, **Clips > Find clips** listed 10 to 15 s first ("Loud, lively audio"), then 20 to 25 s, with 5 ruler marks; "Add 3 clips to the timeline" appended three 5 s clips after the timeline in source order as one edit, and one Undo removed them. The sound in that clip is synthetic, as above. Not driven: the flag-off rail, the no-audio message in the browser, a phone-sized layout, a Reticle journey.

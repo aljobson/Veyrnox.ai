@@ -12,16 +12,20 @@ import {
   presetTitle,
   distinctShelfNames,
 } from '../_lib/tokens';
+import { rich } from '../../../lib/i18n/rich';
+import { getT } from '../../../lib/i18n/server';
+import { localizedHref } from '../../../lib/i18n/locales.mjs';
 
 /* ─── Preset wall: the real presets ─── */
 
-export function PresetWall({ catalog }) {
+export async function PresetWall({ catalog }) {
+  const { locale, t } = await getT();
   return (
     <section className="px-4 sm:px-6 pt-28 sm:pt-36 max-w-[1300px] mx-auto">
       <div className="flex items-end justify-between mb-8 flex-wrap gap-4">
-        <h2 className="vx-display text-[40px] sm:text-[56px] max-w-[14ch]">Templates, priced before you tap.</h2>
-        <Link href="/presets" className="text-[15px] font-bold text-vx-fg-body underline decoration-vx-border decoration-2 underline-offset-[6px] hover:text-vx-fg hover:decoration-vx-accent">
-          All templates
+        <h2 className="vx-display text-[40px] sm:text-[56px] max-w-[14ch]">{t('home.templates.title')}</h2>
+        <Link href={localizedHref(locale, '/presets')} className="text-[15px] font-bold text-vx-fg-body underline decoration-vx-border decoration-2 underline-offset-[6px] hover:text-vx-fg hover:decoration-vx-accent">
+          {t('home.templates.all')}
         </Link>
       </div>
       <div className="columns-1 sm:columns-2 lg:columns-4 gap-3 [&>a]:mb-6 [&>a]:break-inside-avoid">
@@ -31,7 +35,7 @@ export function PresetWall({ catalog }) {
             <MediaTile
               key={preset.id}
               href={templateHref(preset)}
-              ariaLabel={`Open ${presetTitle(preset.name)} template · ${presetCredits(preset, catalog)} credits`}
+              ariaLabel={t('home.templates.open', { name: presetTitle(preset.name), n: presetCredits(preset, catalog) })}
               clip={clip && { ...clip, objectFit: 'contain' }}
               imageSizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 25vw"
               className="block text-left w-full"
@@ -63,7 +67,16 @@ export const LIST_GROUPS = [
   { kind: 'audio', label: 'Audio', unit: 'per clip.' },
 ];
 
-export function ModelShelf({ catalog }) {
+// The catalog keys for a group's label and unit (the English above is what
+// /models prints; the landing page reads these).
+const GROUP_KEYS = {
+  video: { label: 'home.models.video', unit: 'home.models.unitVideo' },
+  image: { label: 'home.models.image', unit: 'home.models.unitImage' },
+  audio: { label: 'home.models.audio', unit: 'home.models.unitAudio' },
+};
+
+export async function ModelShelf({ catalog }) {
+  const { locale, t } = await getT();
   const groups = LIST_GROUPS
     .map((g) => ({ ...g, rows: catalog.filter((m) => m.kind === g.kind) }))
     .filter((g) => g.rows.length > 0)
@@ -73,9 +86,9 @@ export function ModelShelf({ catalog }) {
 
   return (
     <section id="models" className="px-4 sm:px-6 pt-28 sm:pt-36 max-w-[1300px] mx-auto">
-      <h2 className="vx-display text-[40px] sm:text-[56px]">The price list.</h2>
+      <h2 className="vx-display text-[40px] sm:text-[56px]">{t('home.models.title')}</h2>
       <p className="mt-4 text-lg text-vx-fg-body max-w-[48ch] leading-[1.5]">
-        A representative shortlist from {total} models, at the credits the button will show. Read live from the catalog.
+        {t('home.models.lead', { total })}
       </p>
       <div id="shelf" className="mt-12 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-12 gap-y-12">
         {groups.map((g) => {
@@ -86,8 +99,8 @@ export function ModelShelf({ catalog }) {
           return (
             <div key={g.kind}>
               <MediaTile
-                href="/models"
-                ariaLabel={`Explore ${g.label.toLowerCase()} models`}
+                href={localizedHref(locale, '/models')}
+                ariaLabel={t('home.models.explore', { kind: t(GROUP_KEYS[g.kind].label) })}
                 clip={clip && { ...clip, objectFit: 'contain' }}
                 imageSizes="(max-width: 767px) 100vw, (max-width: 1279px) 50vw, 33vw"
                 className="block mb-4"
@@ -95,8 +108,8 @@ export function ModelShelf({ catalog }) {
                 mediaStyle={{ aspectRatio: clip?.aspectRatio || '4 / 5' }}
                 footer={
                   <div className="pt-3 flex items-baseline justify-between gap-3">
-                    <h3 className="text-xl font-black">{g.label}</h3>
-                    <span className="text-[13px] text-vx-fg-body">{g.unit}</span>
+                    <h3 className="text-xl font-black">{t(GROUP_KEYS[g.kind].label)}</h3>
+                    <span className="text-[13px] text-vx-fg-body">{t(GROUP_KEYS[g.kind].unit)}</span>
                   </div>
                 }
               />
@@ -123,8 +136,10 @@ export function ModelShelf({ catalog }) {
         })}
       </div>
       <p className="mt-10 text-[14px] text-vx-fg-muted">
-        Failed generations refund in full. <Link href="/pricing" className="font-bold text-vx-fg-body underline underline-offset-4 hover:text-vx-fg">Credit packs</Link>
-        {' · '}<Link href="/models" className="font-bold text-vx-fg-body underline underline-offset-4 hover:text-vx-fg">Every model</Link>
+        {rich(t('home.models.refund'), {
+          packs: <Link href={localizedHref(locale, '/pricing')} className="font-bold text-vx-fg-body underline underline-offset-4 hover:text-vx-fg">{t('home.models.packs')}</Link>,
+          every: <Link href={localizedHref(locale, '/models')} className="font-bold text-vx-fg-body underline underline-offset-4 hover:text-vx-fg">{t('home.models.every')}</Link>,
+        })}
       </p>
     </section>
   );

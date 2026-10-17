@@ -7,6 +7,7 @@ import { AFFORDABLE_START_MODEL_ID, distinctShelfNames } from '../_lib/tokens';
 import { affordableStarterModel } from '../_lib/starterModels';
 import { outputDurationLabel } from '../_lib/chatMedia';
 import { creditLabel, sourceDurationLimit } from '../_lib/modelPricing';
+import { useI18n } from '../../../components/I18nProvider';
 
 // The landing hero's working form: pick a model and a length, and the slip
 // prints what the button will charge. Pressing Generate opens the studio on
@@ -25,10 +26,11 @@ const SIGNUP_CREDITS = 10;
 // The gateway refuses longer prompts (app/api/v1/generations/route.js).
 const PROMPT_MAX = 2000;
 
-const KIND_LABEL = { video: 'Video', image: 'Image', audio: 'Audio' };
+const KIND_KEY = { video: 'home.models.video', image: 'home.models.image', audio: 'home.models.audio' };
 
 export function PriceSlip({ models }) {
   const router = useRouter();
+  const { t } = useI18n();
   const open = useMemo(() => models.filter((m) => !m.gated), [models]);
   const starter = useMemo(
     () => affordableStarterModel(open, AFFORDABLE_START_MODEL_ID, SIGNUP_CREDITS),
@@ -58,8 +60,8 @@ export function PriceSlip({ models }) {
   const isVideo = model.kind === 'video';
   const cost = model.credits * (isVideo && seconds === 10 ? 2 : 1);
   const sourceDurationMax = sourceDurationLimit(model);
-  const unit = sourceDurationMax ? `one generation, source up to ${sourceDurationMax}s`
-    : isVideo ? `${outputDurationLabel(model, seconds)} clip` : model.kind === 'audio' ? 'one clip' : 'one image';
+  const unit = sourceDurationMax ? t('slip.unitSource', { n: sourceDurationMax })
+    : isVideo ? t('slip.unitClip', { length: outputDurationLabel(model, seconds) }) : model.kind === 'audio' ? t('slip.unitAudio') : t('slip.unitImage');
   const inChips = chips.some((c) => c.id === model.id);
 
   function onSubmit(e) {
@@ -80,9 +82,9 @@ export function PriceSlip({ models }) {
       {/* The printer mouth the slip feeds out of. */}
       <div aria-hidden className="vx-slot mx-auto h-3 w-[calc(100%+12px)] -translate-x-[6px] rounded-full" />
       <div className="vx-paper-shadow -mt-1.5">
-      <form onSubmit={onSubmit} className="vx-paper vx-print relative px-5 sm:px-7 pt-8 pb-9" aria-label="Price a generation">
+      <form onSubmit={onSubmit} className="vx-paper vx-print relative px-5 sm:px-7 pt-8 pb-9" aria-label={t('slip.aria')}>
         <label htmlFor="slip-prompt" className="block text-[13px] font-bold text-vx-fg">
-          What should it make?
+          {t('slip.prompt')}
         </label>
         <textarea
           id="slip-prompt"
@@ -90,12 +92,12 @@ export function PriceSlip({ models }) {
           maxLength={PROMPT_MAX}
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Slow push-in along a rain-soaked street at dusk, neon reflected in the puddles"
+          placeholder={t('slip.placeholder')}
           className="mt-2 w-full resize-none rounded-lg border border-vx-field bg-vx-base px-3 py-2.5 text-[15px] leading-snug text-vx-fg placeholder:text-vx-fg-faint focus:border-vx-accent focus:outline-hidden"
         />
 
         <fieldset className="mt-4 min-w-0">
-          <legend className="text-[13px] font-bold text-vx-fg">Model</legend>
+          <legend className="text-[13px] font-bold text-vx-fg">{t('slip.model')}</legend>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {chips.map((m) => (
               <button
@@ -111,20 +113,20 @@ export function PriceSlip({ models }) {
             {/* Drawn as one more chip, so it keeps the chips' hairline and not the
                 field outline (owner's call, 2026-10-10). */}
             <select
-              aria-label="Every other model"
+              aria-label={t('slip.other')}
               value={inChips ? '' : model.id}
               onChange={(e) => e.target.value && pickModel(e.target.value)}
               className={`min-w-0 max-w-full rounded-full border bg-transparent px-3 py-1.5 text-[13px] font-semibold pointer-coarse:min-h-10 ${inChips ? 'border-vx-border text-vx-fg-muted' : 'border-vx-fg text-vx-fg'}`}
             >
-              <option value="">{models.length - chips.length} more…</option>
+              <option value="">{t('slip.more', { n: models.length - chips.length })}</option>
               {['video', 'image', 'audio'].map((kind) => {
                 const rows = models.filter((m) => m.kind === kind && !chips.includes(m));
                 if (!rows.length) return null;
                 return (
-                  <optgroup key={kind} label={KIND_LABEL[kind]}>
+                  <optgroup key={kind} label={t(KIND_KEY[kind])}>
                     {rows.map((m) => (
                       <option key={m.id} value={m.id}>
-                        {nameOf(m)}{m.gated ? ' (premium)' : ''}
+                        {nameOf(m)}{m.gated ? ` (${t('home.models.premium')})` : ''}
                       </option>
                     ))}
                   </optgroup>
@@ -136,7 +138,7 @@ export function PriceSlip({ models }) {
 
         {lengths.length > 1 && (
           <fieldset className="mt-4 min-w-0">
-            <legend className="text-[13px] font-bold text-vx-fg">Length</legend>
+            <legend className="text-[13px] font-bold text-vx-fg">{t('slip.length')}</legend>
             <div className="mt-2 inline-flex rounded-full border border-vx-border p-0.5">
               {lengths.map((s) => (
                 <button
@@ -159,19 +161,19 @@ export function PriceSlip({ models }) {
         <p className="sr-only" aria-live="polite">{`${nameOf(model)}, ${unit}: ${creditLabel(cost)}.`}</p>
         <dl className="mt-4 space-y-1.5 font-vx-mono text-[13px] vx-num">
           <SlipLine label={`${nameOf(model)}, ${unit}`} value={`${cost} cr`} tick={`${model.id}-${seconds}`} />
-          <SlipLine label="If it fails" value={`${cost} cr back`} muted tick={`${model.id}-${seconds}-r`} />
-          {model.gated && <SlipLine label="Premium model" value="sign-up needed" muted />}
+          <SlipLine label={t('slip.fails')} value={t('slip.back', { n: cost })} muted tick={`${model.id}-${seconds}-r`} />
+          {model.gated && <SlipLine label={t('slip.premium')} value={t('slip.signupNeeded')} muted />}
         </dl>
 
         <button
           type="submit"
           className="vx-press group mt-6 flex w-full items-center justify-between gap-4 rounded-xl bg-vx-accent px-5 py-4 text-left text-vx-accent-ink hover:bg-vx-accent-hover"
         >
-          <span className="text-[17px] font-extrabold">Generate</span>
+          <span className="text-[17px] font-extrabold">{t('slip.generate')}</span>
           <span key={cost} className="vx-tick font-vx-mono text-[17px] font-bold vx-num">{cost} cr</span>
         </button>
         <p className="mt-3 text-[12.5px] leading-snug text-vx-fg-muted">
-          Opens the studio with this model and prompt. It shows the same price before it charges.
+          {t('slip.note')}
         </p>
       </form>
       </div>

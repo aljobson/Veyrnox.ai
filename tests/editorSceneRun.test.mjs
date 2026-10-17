@@ -75,3 +75,14 @@ test('rows place each cut on the timeline, tick hard cuts only, and add all mean
     assert.deepEqual(tickedFrames(rows.map(r => ({ ...r, ticked: true }))), [150, 285]);
     assert.deepEqual(sceneRows(item, []), []);
 });
+
+test('the clipper flag is off unless the grouped value says true, independent of scenes, and closed in the shipped config', () => {
+    const only = key => ({ EDITOR_RUNTIME_FLAGS: JSON.stringify({ [key]: 'true' }) });
+    assert.equal(editorFeatureEnabled('EDITOR_CLIPPER_ENABLED', only('clipper')), true);
+    assert.equal(editorFeatureEnabled('EDITOR_SCENES_ENABLED', only('clipper')), false);
+    assert.equal(editorFeatureEnabled('EDITOR_CLIPPER_ENABLED', only('scenes')), false);
+    assert.equal(editorFeatureEnabled('EDITOR_CLIPPER_ENABLED', { ...only('clipper'), EDITOR_CLIPPER_ENABLED: 'false' }), false);
+    const config = parseJsonc(readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8'));
+    assert.equal(editorFeatureEnabled('EDITOR_CLIPPER_ENABLED', config.vars), false);
+    assert.equal(editorFeatureEnabled('EDITOR_CLIPPER_ENABLED', config.env.staging.vars), false);
+});

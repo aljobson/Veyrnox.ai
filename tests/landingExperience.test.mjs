@@ -9,8 +9,8 @@ test('the landing page samples its exhaustive catalogs', () => {
   const showcase = read('app/veyrnox/_sections/showcase.js');
   assert.match(showcase, /WALL_PRESETS\.slice\(0, LANDING_TEMPLATE_LIMIT\)/);
   assert.match(showcase, /representativeRows/);
-  assert.match(showcase, /href="\/presets"/);
-  assert.match(showcase, /href="\/models"/);
+  assert.match(showcase, /localizedHref\(locale, '\/presets'\)/);
+  assert.match(showcase, /localizedHref\(locale, '\/models'\)/);
   assert.ok(WALL_PRESETS.length > 8, 'fixture must prove the wall is being shortened');
 
   const footer = read('app/veyrnox/_sections/footer.js');
@@ -42,7 +42,7 @@ test('the featured carousel is named and explains horizontal scrolling', () => {
   assert.match(hero, /<section id="explore" aria-labelledby="featured-title"/);
   assert.match(hero, /<h2 id="featured-title" className="sr-only">/);
   assert.match(hero, /<div role="region" aria-labelledby="featured-title" aria-describedby="featured-scroll-hint"/);
-  assert.match(hero, /id="featured-scroll-hint"[^>]*>Scroll horizontally/);
+  assert.match(hero, /id="featured-scroll-hint"[^>]*>\{t\('home\.cards\.hint'\)\}/);
 });
 
 test('responsive tiles retain decorative alt text and declare image sizes', () => {
