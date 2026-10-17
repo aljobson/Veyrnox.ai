@@ -1,0 +1,140 @@
+import { Redirect, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { TurnstileView } from '../auth/TurnstileView';
+import { useAuth } from '../auth/AuthProvider';
+import { AuthError } from '../lib/auth/supabaseAuth';
+import { emailAuthMessage, validateEmailForm } from '../lib/auth/emailForm';
+import type { TurnstileMessage } from '../lib/auth/turnstile';
+import { colors } from '../theme';
+
+type Mode = 'signIn' | 'signUp';
+
+export default function EmailAuth() {
+    const { status, signInWithEmail, signUpWithEmail } = useAuth();
+    const insets = useSafeAreaInsets();
+    const router = useRouter();
+    const [mode, setMode] = useState<Mode>('signIn');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [captcha, setCaptcha] = useState<string | null>(null);
+    const [captchaError, setCaptchaError] = useState(false);
+    const [resetKey, setResetKey] = useState(0);
+    const [busy, setBusy] = useState(false);
+    const [message, setMessage] = useState<string | null>(null);
+
+    if (status === 'signedIn') return <Redirect href="/(app)" />;
+
+    const [, setCaptchaReady] = useState(false);
+    const captchaReadyRef = useRef(false);
+
+    // The check never reported in: the page or Cloudflare did not load.
+    useEffect(() => {
+        captchaReadyRef.current = false;
+        setCaptchaReady(false);
+        const t = setTimeout(() => setCaptchaError((e) => e || !captchaReadyRef.current), 15000);
+        return () => clearTimeout(t);
+    }, [resetKey]);
+
+    function onCaptcha(m: TurnstileMessage) {
+        if (m.type === 'interactive') return;
+        if (m.type === 'ready') {
+            captchaReadyRef.current = true;
+            setCaptchaReady(true);
+            return;
+        }
+        if (m.type === 'token') {
+            setCaptcha(m.token);
+            setCaptchaError(false);
+        } else if (m.type === 'expired') {
+            setCaptcha(null);
+        } else {
+            setCaptcha(null);
+            setCaptchaError(true);
+        }
+    }
+
+    async function submit() {
+        const problem = validateEmailForm(email, password, mode === 'signUp');
+        if (problem) return setMessage(problem);
+        if (!captcha) return setMessage('Finish the security check first.');
+        setBusy(true);
+        setMessage(null);
+        const token = captcha;
+        try {
+            if (mode === 'signIn') {
+                await signInWithEmail(email.trim(), password, token);
+            } else if (!(await signUpWithEmail(email.trim(), password, token))) {
+                setMessage('Check your email and confirm your address, then sign in.');
+                setMode('signIn');
+            }
+        } catch (err) {
+            setMessage(emailAuthMessage(err instanceof AuthError ? err.code : 'unknown'));
+        } finally {
+            // A Turnstile token works once, pass or fail.
+            setCaptcha(null);
+            setResetKey((k) => k + 1);
+            setBusy(false);
+        }
+    }
+
+    const ready = !busy && captcha !== null;
+    return (
+        <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+            <ScrollView contentContainerStyle={[styles.body, { paddingTop: insets.top + 16 }]} keyboardShouldPersistTaps="handled">
+                <Pressable accessibilityRole="button" onPress={() => router.back()}>
+                    <Text style={styles.switch}>Back</Text>
+                </Pressable>
+                <Text style={styles.heading}>{mode === 'signIn' ? 'Sign in' : 'Create account'}</Text>
+                <TextInput
+                    style={styles.input}
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder="Email"
+                    placeholderTextColor={colors.muted}
+                    autoCapitalize="none"
+                    autoComplete="email"
+                    keyboardType="email-address"
+                    textContentType="emailAddress"
+                />
+                <TextInput
+                    style={styles.input}
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholder="Password (8+ characters)"
+                    placeholderTextColor={colors.muted}
+                    secureTextEntry
+                    autoComplete={mode === 'signIn' ? 'current-password' : 'new-password'}
+                    textContentType={mode === 'signIn' ? 'password' : 'newPassword'}
+                />
+                <TurnstileView resetKey={resetKey} onMessage={onCaptcha} />
+                {!captcha && !captchaError ? <Text style={styles.message}>Checking this device…</Text> : null}
+                {captchaError ? <Text style={styles.error}>The security check could not load. Check your connection and try again.</Text> : null}
+                <Pressable accessibilityRole="button" disabled={!ready} style={[styles.submit, !ready && styles.off]} onPress={submit}>
+                    {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.submitText}>{mode === 'signIn' ? 'Sign in' : 'Create account'}</Text>}
+                </Pressable>
+                {message ? <Text style={styles.message}>{message}</Text> : null}
+                <View style={styles.switchRow}>
+                    <Pressable accessibilityRole="button" onPress={() => { setMode(mode === 'signIn' ? 'signUp' : 'signIn'); setMessage(null); }}>
+                        <Text style={styles.switch}>{mode === 'signIn' ? 'New here? Create an account' : 'Have an account? Sign in'}</Text>
+                    </Pressable>
+                </View>
+            </ScrollView>
+        </KeyboardAvoidingView>
+    );
+}
+
+const styles = StyleSheet.create({
+    screen: { flex: 1, backgroundColor: colors.background },
+    body: { padding: 24, gap: 12 },
+    input: { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 14, fontSize: 16 },
+    submit: { backgroundColor: colors.accent, borderRadius: 12, paddingVertical: 16, alignItems: 'center' },
+    off: { opacity: 0.4 },
+    submitText: { color: colors.accentInk, fontWeight: '600', fontSize: 16 },
+    heading: { color: colors.text, fontSize: 28, fontWeight: '700' },
+    message: { color: colors.muted },
+    error: { color: colors.danger },
+    switchRow: { alignItems: 'center', marginTop: 8 },
+    switch: { color: colors.accent },
+});
