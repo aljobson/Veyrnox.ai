@@ -1,4 +1,4 @@
-# 1. Product Specification — Veyrnox Publish
+# 1. Product Specification — Veyrnox.ai Publish
 
 > **Flag values:** every flag state in this document is as of 2026-10-16. `wrangler.jsonc` is the source of truth (top-level `vars` is production, `env.staging` is staging); where this document and that file disagree, the file is right.
 
@@ -15,7 +15,7 @@
 
 ## 1.1 Vision
 
-Veyrnox.ai already lets a creator generate images, video and voice. Veyrnox Publish closes the
+Veyrnox.ai already lets a creator generate images, video and voice. Veyrnox.ai Publish closes the
 loop: connect every social account once, then draft, customize per network, schedule, get
 approval, and publish — from the same tab the media was generated in. The wedge against Metricool
 is that Veyrnox is the only tool in this category that also **makes** the content: a generated
@@ -50,7 +50,7 @@ method), breaks into:
 | Ads | Cross-network paid campaign dashboard (Meta Ads, Google Ads, TikTok Ads) |
 | Integrations | Google Drive/Dropbox media import, Canva, Zapier, etc. |
 
-Veyrnox Publish should build toward this full surface, phased (§1.7). The AI Assistant and
+Veyrnox.ai Publish should build toward this full surface, phased (§1.7). The AI Assistant and
 Integrations rows are the two areas where Veyrnox already wins by default: Veyrnox's own
 generation tools **are** a superset of "AI Assistant," and Veyrnox's own asset library replaces
 "import media from Drive."
@@ -120,7 +120,7 @@ these are not guesses; they come from Metricool's own live API validation rules.
 14. **Ads dashboard** — read-only rollup of Meta/Google/TikTok ad spend and performance (requires ads
     API scopes on top of organic posting scopes — bigger OAuth review lift).
 15. **Reports** — scheduled/exportable PDF or shareable-link reports per brand.
-16. **Looker Studio-equivalent data connector** — expose Veyrnox Publish analytics via a documented
+16. **Looker Studio-equivalent data connector** — expose Veyrnox.ai Publish analytics via a documented
     read API so power users can pull it into their own BI tool.
 
 ### Veyrnox-specific differentiator (not in Metricool)

@@ -75,6 +75,7 @@ APP_ENV=staging SUPABASE_URL=https://yrqzwqywxfesmbvhzjgj.supabase.co \
 NEXT_PUBLIC_SUPABASE_URL=https://yrqzwqywxfesmbvhzjgj.supabase.co \
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<staging publishable key from wrangler.jsonc> \
 PUBLIC_HOST=https://veyrnox-ai-staging.al-jobson.workers.dev npm run build:worker
+npm run verify:baked-env -- staging   # refuses a bundle not built for staging (see docs/operations/staging-deploy.md)
 npx wrangler deploy --env staging --var FREE_ALLOWANCE_ENABLED:true
 ```
 

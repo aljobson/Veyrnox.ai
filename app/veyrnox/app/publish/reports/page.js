@@ -22,7 +22,7 @@ const networkLabel=(network)=>NETWORKS.find((item)=>item.key===network)?.label||
 export default function Reports(){
   const account=useSyncExternalStore(onSessionChange,currentAccount,noAccount);
   return <><AppNav/><Main className="mx-auto max-w-[900px] px-4 py-10 sm:px-8">
-    <Link href="/app/publish" className="text-sm text-vx-accent underline">Veyrnox Publish</Link>
+    <Link href="/app/publish" className="text-sm text-vx-accent underline">Veyrnox.ai Publish</Link>
     <h1 className="mt-3 text-3xl font-black">Reports</h1>
     <p className="mt-2 mb-4 text-sm text-vx-fg-muted">Save branded analytics views for regular client and team reporting.</p>
     {account&&<BrandSwitcher/>}

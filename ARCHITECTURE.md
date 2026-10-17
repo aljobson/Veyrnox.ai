@@ -88,7 +88,7 @@ Project documents follow Organisation → Workspace → Project, with membership
 | Studio and create page | `app/veyrnox/app`, `app/api/v1/generations` | Main product surface |
 | Auto Short / Clip Edit | `lib/autoShort*.js`, `lib/clipEdit*.js` | Composite jobs on `job_steps` |
 | Social Cinema | `lib/cinema`, `app/api/v1/cinema`, `creators` | Gated by rollout flags; Cloudflare Stream for video |
-| Veyrnox Publish | `lib/social`, `packages/adapters/social`, `app/api/v1/social` | OAuth tokens encrypted at rest; async publish engine and sweeps |
+| Veyrnox.ai Publish | `lib/social`, `packages/adapters/social`, `app/api/v1/social` | OAuth tokens encrypted at rest; async publish engine and sweeps |
 | Editor | `app/veyrnox/app/editor`, `lib/editor*` | Browser-local timeline (ADR-0080); private Library renders and local inference behind `EDITOR_*` flags |
 | LLM Chat | `lib/chat*.js`, `app/api/v1/chat` | One reply is one priced job (ADR-0067) |
 | Remote MCP connector | `lib/veyrnoxMcp.js`, `app/api/v1/mcp` | OAuth-authenticated generation, job, asset and balance tools (ADR-0100) |

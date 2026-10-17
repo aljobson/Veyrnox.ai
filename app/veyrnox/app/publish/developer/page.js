@@ -20,7 +20,7 @@ const initialWebhook={label:'',url:'',events:['post.published','post.failed']};
 export default function Developer(){
   const account=useSyncExternalStore(onSessionChange,currentAccount,noAccount);
   return <><AppNav/><Main className="mx-auto max-w-[900px] px-4 py-10 sm:px-8">
-    <Link href="/app/publish" className="text-sm text-vx-accent underline">Veyrnox Publish</Link>
+    <Link href="/app/publish" className="text-sm text-vx-accent underline">Veyrnox.ai Publish</Link>
     <h1 className="mt-3 text-3xl font-black">Developer tools</h1>
     <p className="mt-2 mb-4 text-sm text-vx-fg-muted">Create scoped API keys and signed webhook endpoints for your Publish integrations. Secrets are shown once.</p>
     {account&&<BrandSwitcher/>}

@@ -14,7 +14,7 @@ const button='rounded-full border border-vx-border px-4 py-2 text-sm font-bold d
 const empty={slug:'',title:'',bio:'',avatarUrl:'',theme:'midnight',published:false,items:[]};
 
 export default function SmartLinkEditor(){const auth=useSyncExternalStore(onSessionChange,account,none);return <><AppNav/><Main className="mx-auto max-w-[1000px] px-4 py-10 sm:px-8">
-  <nav className="mb-2 flex gap-4 text-sm" aria-label="Publish"><Link href="/app/publish" className="text-vx-accent underline">Veyrnox Publish</Link><Link href="/app/publish/analytics" className="text-vx-accent underline">Analytics</Link></nav>
+  <nav className="mb-2 flex gap-4 text-sm" aria-label="Publish"><Link href="/app/publish" className="text-vx-accent underline">Veyrnox.ai Publish</Link><Link href="/app/publish/analytics" className="text-vx-accent underline">Analytics</Link></nav>
   <h1 className="text-3xl font-black">SmartLink</h1><p className="mt-2 mb-4 text-sm text-vx-fg-muted">One branded page for every place you want your audience to go, with click totals built in.</p>
   {auth && <BrandSwitcher/>}
   {auth?<Editor/>:<button type="button" className={button} onClick={()=>window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>Sign in</button>}

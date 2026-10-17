@@ -10,7 +10,7 @@ export const metadata = {
 export default function Refund() {
     return (
         <LegalPage title="Refund Policy" updated="16 October 2026">
-            <p>This page explains refunds for generations, Credit Packs, Credit Subscriptions, the Veyrnox Publish Plan and Cinema Pass.</p>
+            <p>This page explains refunds for generations, Credit Packs, Credit Subscriptions, the Veyrnox.ai Publish Plan and Cinema Pass.</p>
 
             <h2>Failed generations — automatic</h2>
             <p>Every generation shows its credit cost before you confirm. Credits are debited on submission. If the model provider rejects the job or fails to return a result, the full debit is refunded to your balance automatically, usually within seconds. You do not need to contact us. The refund appears as a separate entry in your ledger.</p>
@@ -36,7 +36,7 @@ export default function Refund() {
                 <li>A pending or refused refund is not described as complete. The billing screen lets you retry a recoverable request or contact support when operator review is required.</li>
             </ul>
 
-            <h2>Veyrnox Publish Plan</h2>
+            <h2>Veyrnox.ai Publish Plan</h2>
             <ul>
                 <li>You can stop weekly, monthly or annual renewal from the Publish Plan page or its Stripe billing portal. The Plan continues until the current paid period ends.</li>
                 <li>For a refund request, contact support with your account email and the payment reference. Your statutory rights are not affected.</li>

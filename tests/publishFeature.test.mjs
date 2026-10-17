@@ -7,7 +7,7 @@ register('data:text/javascript,' + encodeURIComponent(`export async function res
 const { NextRequest } = await import('next/server.js');
 const { middleware } = await import('../middleware.js');
 
-// Veyrnox Publish remains controlled by PUBLISH_ENABLED, which
+// Veyrnox.ai Publish remains controlled by PUBLISH_ENABLED, which
 // must be exactly "true" before the page, the menu link or any
 // /api/v1/social route answers.
 
