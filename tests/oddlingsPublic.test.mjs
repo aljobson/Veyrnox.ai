@@ -42,11 +42,11 @@ test('only the exact string "true" opens the gallery', () => {
     assert.equal(oddlingsPublicEnabled(null), false);
 });
 
-test('production leaves the flag out (absence is off) and staging names it "true"', () => {
-    // Production is at the Worker text-binding limit (tests/workerBindingBudget.test.mjs). The code needs the
-    // exact string "true", so an absent var is closed, the same as the fal rollout controls and VEY_ACCOUNT_ENABLED.
+test('production and staging both name the flag "true"; a missing var stays closed', () => {
+    // Production is at the Worker text-binding cap (tests/workerBindingBudget.test.mjs), so opening the gallery
+    // replaced an unused false var rather than adding one. The code needs the exact string "true".
     const config = parseJsonc(read('wrangler.jsonc'));
-    assert.equal(Object.hasOwn(config.vars, 'ODDLINGS_PUBLIC_ENABLED'), false);
+    assert.equal(config.vars.ODDLINGS_PUBLIC_ENABLED, 'true');
     assert.equal(config.env.staging.vars.ODDLINGS_PUBLIC_ENABLED, 'true');
     assert.equal(oddlingsPublicEnabled({}), false, 'a missing var is closed');
 });
