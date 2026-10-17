@@ -281,8 +281,8 @@ test('human preset collections are complete, distinct, and human-first', () => {
 test('the All source lists every original character once and is where an unknown source lands', () => {
     const everyone = oddlingsForSource('all');
     assert.deepEqual(everyone.map(({ id }) => id), ODDLING_ARCHETYPES.map(({ id }) => id));
-    assert.equal(everyone.length, 32);
-    assert.equal(new Set(everyone.map(({ id }) => id)).size, 32);
+    assert.equal(everyone.length, 72);
+    assert.equal(new Set(everyone.map(({ id }) => id)).size, 72);
     assert.notEqual(everyone, ODDLING_ARCHETYPES, 'callers get a copy they can sort without touching the cast');
     assert.deepEqual(oddlingsForSource('unknown').map(({ id }) => id), everyone.map(({ id }) => id));
     for (const source of ODDLING_PRESET_SOURCES) {
