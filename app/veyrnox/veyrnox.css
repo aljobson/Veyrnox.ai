@@ -219,3 +219,9 @@
 }
 
 }
+
+/* The mobile helper already has its own reserved dock. A second sticky card
+   can cover source/rights controls when the browser scrolls them into view. */
+html[data-vey-mobile-workspace="true"] [data-create-cost-card] {
+  position: static;
+}

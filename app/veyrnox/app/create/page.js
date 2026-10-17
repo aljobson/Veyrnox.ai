@@ -28,6 +28,7 @@ import { CharacterPanel } from '../../_components/CharacterPanel';
 import { buildCharacterPrompt, sanitizeOddlingPicks } from '../../_lib/character';
 import { DrawOnImage } from '../../_components/DrawOnImage';
 import { SourcePickers } from '../../_components/SourcePickers';
+import SourceRightsConfirmation from '../../_components/SourceRightsConfirmation';
 import { LibraryPicker } from '../../_components/LibraryPicker';
 import { GenerationSettings } from '../../_components/GenerationSettings';
 import { VoiceDescription } from '../../_components/VoiceDescription';
@@ -508,20 +509,7 @@ export default function CreateStudio() {
           )}
 
           {hasUpload && (
-            <label data-assistant-target="create.consent" className="scroll-mt-24 mt-3 flex items-start gap-2.5 rounded-lg border border-vx-border bg-vx-panel px-4 py-3 text-sm text-vx-fg-body cursor-pointer">
-              <input
-                type="checkbox"
-                checked={consent}
-                onChange={(e) => setConsent(e.target.checked)}
-                className="mt-0.5 accent-vx-accent"
-              />
-              <span>
-                I own this file, or I have the permission of everyone identifiable in it. No real person&apos;s face, body or
-                voice is used without their consent, and I hold the rights to any brand, artwork or recording in it
-                (<a href="/legal/aup" target="_blank" rel="noreferrer" className="text-vx-accent underline">Acceptable Use</a>).
-                This statement is recorded against the generation and your account.
-              </span>
-            </label>
+            <SourceRightsConfirmation confirmed={consent} onChange={setConsent} />
           )}
 
           {drawing && sources.image?.file && (
@@ -677,7 +665,7 @@ export default function CreateStudio() {
             <div className="scroll-mt-24" data-assistant-target="create.camera"><CameraPanel enabled={cinemaOn} onToggle={setCinemaOn} settings={cinema} onChange={setCinema} /></div>
           )}
 
-          <div className="sticky bottom-3 z-30 mt-2 rounded-2xl border border-vx-border bg-vx-panel p-5 shadow-2xl lg:static lg:shadow-none">
+          <div data-create-cost-card className="sticky bottom-3 z-30 mt-2 rounded-2xl border border-vx-border bg-vx-panel p-5 shadow-2xl lg:static lg:shadow-none">
             <div data-assistant-target="create.cost" className="scroll-mt-24 flex items-baseline justify-between">
               <span className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">TOTAL COST</span>
               <span className="font-vx-mono text-[12px] text-vx-fg-muted vx-num">
