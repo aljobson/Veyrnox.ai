@@ -93,6 +93,54 @@ test('Create multi-image batch preserves per-job idempotency and stops after an 
   await expect(page.getByText(/may have started and been charged/)).toBeVisible();
 });
 
+test('Create keeps the submitted image label and frame while its next draft switches to audio', async ({ page }) => {
+  const job = '00000000-0000-4000-8000-000000000032';
+  const fixture = await installProductFixtures(page, { routes: ({ url, method, json }) => {
+    if (url.pathname === '/api/v1/generations' && method === 'POST') return json({ job_id: job, balance_after: 998 });
+    if (url.pathname === `/api/v1/jobs/${job}`) return json({ state: 'running' });
+    return false;
+  } });
+  await fixture.open('/app/create?model=flux-2-pro');
+  await page.getByRole('textbox', { name: 'Prompt', exact: true }).fill('Synthetic portrait-format still life');
+  await page.getByRole('group', { name: 'ASPECT', exact: true }).getByRole('button', { name: '9:16', exact: true }).click();
+  await page.getByRole('button', { name: /^Generate for/ }).click();
+  const result = page.locator('[data-assistant-target="create.result"]');
+  await expect(result).toContainText(/RUNNING · SYNTHETIC FLUX-2-PRO/);
+  await page.getByRole('group', { name: 'ASPECT', exact: true }).getByRole('button', { name: '16:9', exact: true }).click();
+  await page.getByRole('button', { name: 'Make audio', exact: true }).click();
+  await expect(page.locator('[data-assistant-target="create.models"]')).toHaveAttribute('data-selected-kind', 'audio');
+  await expect(result).toContainText(/RUNNING · SYNTHETIC FLUX-2-PRO/);
+  await expect(result.locator('[style*="aspect-ratio"]')).toHaveCSS('aspect-ratio', '9 / 16');
+  expect(fixture.requests.filter(row => row.path === '/api/v1/generations')).toHaveLength(1);
+});
+
+test('Create completion cannot turn the no-charge New generation action into a second paid request', async ({ page }) => {
+  const job = '00000000-0000-4000-8000-000000000033';
+  let settled = false;
+  const fixture = await installProductFixtures(page, { routes: async ({ route, url, method, json, origin }) => {
+    if (url.pathname === '/api/v1/generations' && method === 'POST') return json({ job_id: job, balance_after: 998 });
+    if (url.pathname === `/api/v1/jobs/${job}`) return json({ state: settled ? 'succeeded' : 'running' });
+    if (url.pathname === `/api/v1/jobs/${job}/asset`) return json({ url: `${origin}/synthetic-create-image.svg`, mime_type: 'image/svg+xml' });
+    if (url.pathname === '/synthetic-create-image.svg') {
+      await route.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="9"><rect width="16" height="9" fill="blue"/></svg>' });
+      return true;
+    }
+    return false;
+  } });
+  await fixture.open('/app/create?model=flux-2-pro');
+  await page.getByRole('textbox', { name: 'Prompt', exact: true }).fill('Synthetic reset-race image');
+  await page.getByRole('button', { name: /^Generate for/ }).click();
+  const reset = page.getByRole('button', { name: 'New generation — no charge', exact: true });
+  await expect(reset).toBeVisible();
+  await page.getByRole('button', { name: 'Make audio', exact: true }).click();
+  settled = true;
+  await expect(page.locator('[data-assistant-target="create.result"]').getByRole('img', { name: 'Generated result', exact: true })).toBeVisible();
+  await expect(reset).toBeEnabled();
+  await reset.click();
+  await expect(page.getByRole('button', { name: /^Generate for/ })).toBeVisible();
+  expect(fixture.requests.filter(row => row.path === '/api/v1/generations')).toHaveLength(1);
+});
+
 test('Create with unavailable live catalog remains non-billable and retains its prompt', async ({ page }) => {
   const fixture = await installProductFixtures(page, { routes: ({ url, json }) => url.pathname === '/api/catalog' ? json({ error: 'synthetic_catalog_unavailable' }, 503) : false });
   await fixture.open('/app/create'); await page.getByRole('textbox', { name: 'Prompt', exact: true }).fill('Keep my synthetic prompt');
