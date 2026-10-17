@@ -22,7 +22,7 @@ plus Facebook, Threads, Pinterest, Bluesky, Twitch and Google Business Profile f
 ones stay behind `PUBLISH_EXTENDED_NETWORKS_ENABLED` (off in production, on in staging) and Instagram needs its
 provider review. Device uploads (`PUBLISH_UPLOADS_ENABLED`) and native video destinations
 (`PUBLISH_RUNTIME_FLAGS.videoDestinations`) are off in production. Free keeps one connected account and Post now;
-the $15/month Publish Plan (0293, 0298; Stripe live) allows five accounts, scheduling, 366-day analytics and best-time
+the $4.99/week, $15/month or $126/year Publish Plan (0293, 0298, 0335, 0337; new interval migrations pending deployment) allows five accounts, scheduling, 366-day analytics and best-time
 recommendations. The grouped `PUBLISH_RUNTIME_FLAGS` binding also turns on, in production, the management suite built
 in migrations 0299 to 0326: unified inbox and inbox workflows, SmartLinks, content library and presets, queues,
 approval links, teams and brand access, post variants, reports (scheduled, exported, delivered), the customer API and
@@ -129,7 +129,7 @@ should look*.
    parallel with engineering, not after. Per-network status as of 2026-10-08 is in
    [06-oauth-review-runbook.md §6.0](06-oauth-review-runbook.md#60-review-status-by-network-2026-10-08).
 3. **Publish billing** — built and on in production (`PUBLISH_RUNTIME_FLAGS.plans` is `"true"`; migrations 0293 and 0298
-   are applied, consent version `publish-plan-2026-10-13`). Post now on one connected account remains free; $15/month
+   are applied, consent version `publish-plan-annual-2026-10-17`). Post now on one connected account remains free; $4.99/week, $15/month or $126/year
    unlocks up to five accounts, scheduling, analytics and best-time recommendations.
 4. **Does Veyrnox already have a Metricool account for its own brand?** Yes — `getBrandSettings`
    shows a connected brand (`Veyrnox`, blogId `6457974`) with Instagram/X/LinkedIn/TikTok/YouTube

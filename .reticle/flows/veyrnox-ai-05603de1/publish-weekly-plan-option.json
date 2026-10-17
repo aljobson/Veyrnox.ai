@@ -1,0 +1,83 @@
+{
+  "version": 2,
+  "name": "publish-weekly-plan-option",
+  "projectId": "veyrnox-ai-05603de1",
+  "createdAt": 1792194773367,
+  "steps": [
+    {
+      "tool": "reticle_act",
+      "anchor": {
+        "kind": "role",
+        "role": "button",
+        "name": "Choose weekly"
+      },
+      "args": {},
+      "action": "click",
+      "expect": {
+        "kind": "allOf",
+        "predicates": [
+          {
+            "kind": "text",
+            "contains": "Start my Publish Plan at $4.99 plus tax every week. I understand it renews automatically until I cancel."
+          },
+          {
+            "kind": "element",
+            "query": {
+              "role": "button",
+              "name": "Selected"
+            },
+            "state": "enabled"
+          }
+        ]
+      },
+      "page": "/app/publish/plan"
+    },
+    {
+      "tool": "reticle_act",
+      "anchor": {
+        "kind": "role",
+        "role": "checkbox",
+        "name": "Start my Publish Plan at $4.99 plus tax every week. I understand it renews automatically until I cancel."
+      },
+      "args": {},
+      "action": "check",
+      "expect": {
+        "kind": "allOf",
+        "predicates": [
+          {
+            "kind": "element",
+            "query": {
+              "role": "button",
+              "name": "Upgrade with Stripe"
+            },
+            "state": "enabled"
+          },
+          {
+            "kind": "text",
+            "contains": "Cancel any time."
+          }
+        ]
+      },
+      "page": "/app/publish/plan"
+    }
+  ],
+  "startPath": "/app/publish/plan",
+  "intent": "A publisher can select Veyrnox Publish weekly billing, review the exact $4.99 weekly automatic-renewal disclosure, see that cancellation is available, and enable checkout only after consent.",
+  "requires": [
+    {
+      "kind": "route",
+      "pathname": "/app/publish/plan"
+    }
+  ],
+  "ensures": [
+    {
+      "kind": "route",
+      "pathname": "/app/publish/plan"
+    }
+  ],
+  "author": {
+    "agent": "codex-http",
+    "person": "al.jobson@21stclick.co.uk"
+  },
+  "intentId": "flow:publish-weekly-plan-option"
+}

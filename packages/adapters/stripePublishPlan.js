@@ -44,7 +44,7 @@ async function request(path, cfg, fields, idempotencyKey) {
 
 export async function createPublishPlanCheckout(input, cfg) {
   if (!UUID.test(input.subscriptionId || '') || !/^[a-z0-9-]{1,32}$/.test(input.planId || '')
-      || input.interval !== 'month' || !Number.isSafeInteger(input.priceUsdCents)
+      || !['week', 'month', 'year'].includes(input.interval) || !Number.isSafeInteger(input.priceUsdCents)
       || input.priceUsdCents < 100 || input.priceUsdCents > 9999999 || !cfg.signingSecret) {
     return { ok: false, error: 'invalid_checkout' };
   }
@@ -67,7 +67,7 @@ export async function createPublishPlanCheckout(input, cfg) {
     'line_items[0][quantity]': 1,
     'line_items[0][price_data][currency]': 'usd',
     'line_items[0][price_data][unit_amount]': input.priceUsdCents,
-    'line_items[0][price_data][recurring][interval]': 'month',
+    'line_items[0][price_data][recurring][interval]': input.interval,
     'line_items[0][price_data][recurring][interval_count]': 1,
     'line_items[0][price_data][product_data][name]': 'Veyrnox Publish Plan',
     'line_items[0][price_data][product_data][description]': 'Full social analytics and best-time recommendations',

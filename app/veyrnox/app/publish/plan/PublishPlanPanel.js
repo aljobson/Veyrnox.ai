@@ -10,7 +10,7 @@ const noAccount = () => '';
 const money = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
 const date = (value) => value ? new Date(value).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
 const button = 'rounded-full border border-vx-border px-5 py-2.5 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-50';
-const CONSENT = 'Start my Publish Plan now. I understand it renews monthly until I cancel.';
+const intervalName = (value) => ({ week: 'week', month: 'month', year: 'year' }[value] || 'month');
 
 export default function PublishPlanPanel() {
   const account = useSyncExternalStore(onSessionChange, currentAccount, noAccount);
@@ -26,6 +26,7 @@ function Plan() {
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  const [selectedPlanId, setSelectedPlanId] = useState('');
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
@@ -90,7 +91,10 @@ function Plan() {
   const entitlement = data?.entitlement;
   const subscription = entitlement?.subscription;
   const paid = entitlement?.tier === 'publish';
-  const plan = data?.plans?.[0];
+  const selectedPlan = data?.plans?.find((plan) => plan.id === selectedPlanId);
+  const currentPlan = data?.plans?.find((plan) => plan.id === subscription?.plan_id);
+  const currentInterval = currentPlan?.billing_interval
+    || ({ 'publish-weekly': 'week', 'publish-annual': 'year' }[subscription?.plan_id] || 'month');
 
   if (!data) return <div role="status" aria-live="polite" className="rounded-2xl border border-vx-border p-6">
     <p className="text-sm text-vx-fg-muted">{loading ? 'Loading your Publish plan…' : notice}</p>
@@ -114,7 +118,7 @@ function Plan() {
       {paid && <div className="mt-5 border-t border-vx-border pt-5">
         <p className="text-sm text-vx-fg-body">{subscription.cancel_at_period_end
           ? `Ends ${date(subscription.current_period_end)}.`
-          : `Renews ${date(subscription.current_period_end)} at ${money.format(subscription.price_usd_cents / 100)} plus tax.`}</p>
+          : `Renews ${date(subscription.current_period_end)} at ${money.format(subscription.price_usd_cents / 100)} per ${currentInterval}, plus tax.`}</p>
         <div className="mt-4 flex flex-wrap gap-3">
           <button type="button" disabled={busy} className={button} onClick={portal}>Manage billing ↗</button>
           {!subscription.cancel_at_period_end && <button type="button" disabled={busy} className={button} onClick={cancel}>Cancel plan</button>}
@@ -122,10 +126,9 @@ function Plan() {
       </div>}
     </section>
 
-    {!paid && plan && <section aria-labelledby="choose-plan" className="rounded-2xl border border-vx-accent/50 bg-vx-accent/[0.06] p-6">
+    {!paid && data.plans?.length > 0 && <section aria-labelledby="choose-plan" className="rounded-2xl border border-vx-accent/50 bg-vx-accent/[0.06] p-6">
       <p className="text-xs font-bold uppercase tracking-widest text-vx-accent">Advanced publishing</p>
       <h2 id="choose-plan" className="mt-2 text-2xl font-black">Publish Plan</h2>
-      <p className="mt-3 text-4xl font-black">{money.format(plan.price_usd_cents / 100)}<span className="text-base font-normal text-vx-fg-muted"> / month</span></p>
       <ul className="mt-5 space-y-2 text-sm text-vx-fg-body">
         <li>✓ Up to 5 connected accounts</li>
         <li>✓ Multi-account publishing</li>
@@ -137,14 +140,29 @@ function Plan() {
         <li>✓ Unified and per-account social inbox</li>
         <li>✓ Comment replies where the platform grants access</li>
       </ul>
-      <p className="mt-5 text-xs text-vx-fg-muted">Monthly billing in USD. Tax is calculated at checkout. Cancel any time.</p>
-      <label className="mt-4 flex items-start gap-3 text-sm text-vx-fg-body">
-        <input type="checkbox" className="mt-1" checked={agreed} onChange={(event) => setAgreed(event.target.checked)} />
-        <span>{CONSENT}</span>
-      </label>
-      <button type="button" disabled={busy || !agreed} className={`${button} mt-5 border-vx-accent bg-vx-accent text-black`} onClick={() => start(plan.id)}>
-        {busy ? 'Opening checkout…' : 'Upgrade with Stripe'}
-      </button>
+      <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {data.plans.map((plan) => <li key={plan.id} className="rounded-xl border border-vx-border bg-vx-base/60 p-5">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs font-bold uppercase tracking-widest text-vx-accent">{intervalName(plan.billing_interval)}ly</p>
+            {plan.billing_interval === 'year' && <span className="rounded-full bg-vx-accent px-2.5 py-1 text-[0.65rem] font-black uppercase tracking-wide text-black">Save 30%</span>}
+          </div>
+          <p className="mt-3 text-3xl font-black">{money.format(plan.price_usd_cents / 100)}<span className="text-base font-normal text-vx-fg-muted"> / {intervalName(plan.billing_interval)}</span></p>
+          {plan.billing_interval === 'year' && <p className="mt-2 text-xs text-vx-fg-muted">{money.format(plan.price_usd_cents / 1200)} per month equivalent</p>}
+          <button type="button" aria-pressed={selectedPlanId === plan.id} className={`${button} mt-4`} onClick={() => { setSelectedPlanId(plan.id); setAgreed(false); }}>
+            {selectedPlanId === plan.id ? 'Selected' : `Choose ${intervalName(plan.billing_interval)}ly`}
+          </button>
+        </li>)}
+      </ul>
+      <p className="mt-5 text-xs text-vx-fg-muted">Billing in USD. Tax is calculated at checkout. Cancel any time.</p>
+      {selectedPlan && <>
+        <label className="mt-4 flex items-start gap-3 text-sm text-vx-fg-body">
+          <input type="checkbox" className="mt-1" checked={agreed} onChange={(event) => setAgreed(event.target.checked)} />
+          <span>Start my Publish Plan at {money.format(selectedPlan.price_usd_cents / 100)} plus tax every {intervalName(selectedPlan.billing_interval)}. I understand it renews automatically until I cancel.</span>
+        </label>
+        <button type="button" disabled={busy || !agreed} className={`${button} mt-5 border-vx-accent bg-vx-accent text-black`} onClick={() => start(selectedPlan.id)}>
+          {busy ? 'Opening checkout…' : 'Upgrade with Stripe'}
+        </button>
+      </>}
     </section>}
 
     <p className="text-sm text-vx-fg-muted"><Link href="/app/publish" className="underline">Back to Veyrnox Publish</Link></p>

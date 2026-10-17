@@ -10,7 +10,7 @@ const SECRET = 'whsec_credit_subscription_test';
 const NOW = Math.floor(Date.now() / 1000);
 const metadata = { kind: 'credit_subscription', credit_subscription_id: ID,
   credit_subscription_sig: createHmac('sha256', SECRET).update(`credit_subscription:${ID}`).digest('hex') };
-const binding = { id: ID, plan_id: 'starter-monthly', status: 'active', stripe_subscription_id: 'sub_1', stripe_customer_id: 'cus_1', price_usd_cents: 1900, credits: 270 };
+const binding = { id: ID, plan_id: 'starter-monthly', billing_interval: 'month', status: 'active', stripe_subscription_id: 'sub_1', stripe_customer_id: 'cus_1', price_usd_cents: 1900, credits: 270 };
 const sub = (m = metadata) => ({ object: 'subscription', id: 'sub_1', customer: 'cus_1', status: 'active', livemode: false,
   current_period_start: NOW - 60, current_period_end: NOW - 60 + 30 * 86400, metadata: m });
 const inv = () => ({ id: 'in_1', object: 'invoice', subscription: 'sub_1', customer: 'cus_1', livemode: false,

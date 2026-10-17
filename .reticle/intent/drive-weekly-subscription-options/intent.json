@@ -1,0 +1,18 @@
+{
+  "intents": {
+    "flow:drive-weekly-subscription-options": {
+      "declaredAt": 1792194803600,
+      "id": "flow:drive-weekly-subscription-options",
+      "state": "declared",
+      "statement": "weekly-subscription-options",
+      "status": "proposed",
+      "subject": "drive-weekly-subscription-options",
+      "surface": {
+        "flow": "drive-weekly-subscription-options"
+      },
+      "updatedAt": 1792194803609
+    }
+  },
+  "subject": "drive-weekly-subscription-options",
+  "version": 1
+}

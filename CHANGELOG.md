@@ -15,6 +15,7 @@ Summarised from the merge log (`git log --first-parent main`); one line per them
 - Oddlings influencer studio and the Vey product guide (#1009, #1013 and following).
 - Chat: media generation modes and video resolution and audio controls (#1016, #1022).
 - **[money]** Stripe payment boundaries hardened (#931); paywalls improved and subscription cancellation preserved (#1063).
+- **[money]** Weekly renewal options added alongside the existing monthly plans for Credit Subscriptions, Cinema Pass and Veyrnox Publish; Publish also gains a $126/year option, exactly 30% below twelve $15 monthly payments (migrations 0333–0335 and 0337; deployment and payment acceptance pending).
 - Security: social OAuth state consumed once (0326, #1064), audited production boundaries, CodeQL runtime findings and tainted log fields (#1065, #1067, #1068, #1069).
 
 ## Unreleased (2026-10-05)
