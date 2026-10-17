@@ -169,7 +169,7 @@
     "COMMENTS_ENABLED": "false",
     "STORY_POLLS_ENABLED": "false",
     "PPV_ENABLED": "false",
-    // ADR-0106: public-site languages (/es, /fr, ...). On in production at the owner's request ("all languages in PROD", 2026-10-17).
+    // ADR-0107: public-site languages (/es, /fr, ...). On in production at the owner's request ("all languages in PROD", 2026-10-17).
     // Production is at the text-binding cap, so this replaced the unused PREMIERES_ENABLED "false" (absent is off).
     // Rollback: set "false" or remove it and deploy; prefixed paths then answer not-found and the page reads English.
     "LOCALES_ENABLED": "true",
@@ -341,7 +341,7 @@
         "STORY_POLLS_ENABLED": "false",
         // Public Oddlings gallery (production omits the var on purpose, see above); open on staging for testing.
         "ODDLINGS_PUBLIC_ENABLED": "true",
-        // ADR-0106: public-site languages (/es, /fr, ...). Open on staging for review; production omits the var, which is off.
+        // ADR-0107: public-site languages (/es, /fr, ...). Open on staging for review; production omits the var, which is off.
         "LOCALES_ENABLED": "true",
         // ADR-0067: Chat is open on staging for testing only. No text model is
         // active until the owner activates one; production stays "false".

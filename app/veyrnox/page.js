@@ -31,7 +31,7 @@ function faqLd(t, locale) {
   };
 }
 
-// Title, description and the per-language alternates (ADR-0106). With
+// Title, description and the per-language alternates (ADR-0107). With
 // languages off this is the same as the root layout's defaults.
 export async function generateMetadata() {
   const { locale, t } = await getT();

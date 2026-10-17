@@ -1,4 +1,4 @@
-# ADR-0106 — Public-site languages
+# ADR-0107 — Public-site languages
 
 **Status:** Accepted 2026-10-17; `LOCALES_ENABLED` on in staging and production at the owner's request, before native review of the translations.
 

@@ -127,7 +127,7 @@ export async function middleware(req, event) {
         const policy = contentSecurityPolicy(nonce, process.env.NODE_ENV === 'development');
         headers.set('x-nonce', nonce);
         headers.set('Content-Security-Policy', policy);
-        // Public-site language (ADR-0106). Both headers get a value on every
+        // Public-site language (ADR-0107). Both headers get a value on every
         // page request, so a client-supplied copy never reaches a page.
         // /es/... is served by the English-named route with the language in
         // a header; a language prefix on a page with no translation is sent
