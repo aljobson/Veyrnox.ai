@@ -13,8 +13,9 @@
  * is the append-only account_actions log, newest first.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { AppNav } from '../../../_components/NavBar';
 import { Main } from '../../../_components/Main';
 import { AccountBoundary } from '../../../_components/AccountBoundary';
@@ -22,25 +23,41 @@ import { MfaPanel } from '../../../_components/MfaPanel';
 import { Button } from '../../../_components/Button';
 import { Chip } from '../../../_components/Chip';
 import { gatewayFetch } from '../../../_lib/gateway';
+import { adminUserHandoff } from '../../../_lib/adminUserHandoff';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const when = (iso) => (iso ? new Date(iso).toISOString().replace('T', ' ').slice(0, 16) + ' UTC' : '—');
 
 export default function Page() {
-  return <><AppNav /><Main><AccountBoundary><Violations /></AccountBoundary></Main></>;
+  return <><AppNav /><Main><AccountBoundary><Suspense fallback={null}><ViolationsHandoff /></Suspense></AccountBoundary></Main></>;
 }
 
-function Violations() {
-  const [query, setQuery] = useState('');
+function ViolationsHandoff() {
+  const handoff = adminUserHandoff(useSearchParams());
+  return <Violations key={handoff} initialQuery={handoff} />;
+}
+
+function Violations({ initialQuery }) {
+  const [query, setQuery] = useState(initialQuery);
   const [lookup, setLookup] = useState(null);      // { user, jobs }
   const [record, setRecord] = useState([]);        // account_actions rows
   const [recordLoaded, setRecordLoaded] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const generation = useRef(0);
+  const activeLookup = useRef(null);
 
-  const loadRecord = useCallback(async (userId) => {
-    const version = ++generation.current;
+  const invalidate = useCallback(() => {
+    generation.current++;
+    activeLookup.current = null;
+  }, []);
+
+  const reset = useCallback((value) => {
+    invalidate();
+    setQuery(value); setLookup(null); setRecord([]); setRecordLoaded(false); setError(''); setBusy(false);
+  }, [invalidate]);
+
+  const loadRecord = useCallback(async (userId, version = ++generation.current) => {
     try {
       const data = await gatewayFetch(`/admin/violations${userId ? `?user_id=${encodeURIComponent(userId)}` : ''}`);
       if (version === generation.current) { setRecord(data.violations || []); setRecordLoaded(true); }
@@ -49,41 +66,49 @@ function Violations() {
     }
   }, []);
 
-  // A request counter, not a DOM node: the cleanup must bump the live value.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { loadRecord(null); return () => { generation.current++; }; }, [loadRecord]);
+  useEffect(() => {
+    loadRecord(null);
+    return invalidate;
+  }, [invalidate, loadRecord]);
 
   async function find(event) {
     event?.preventDefault();
     const q = query.trim();
     if (!q) return;
-    setBusy(true); setError(''); setLookup(null);
+    const version = ++generation.current;
+    activeLookup.current = null;
+    setBusy(true); setError(''); setLookup(null); setRecord([]); setRecordLoaded(false);
     const key = UUID_RE.test(q) ? 'user_id' : 'email';
     try {
       let data;
       try {
         data = await gatewayFetch(`/admin/users/lookup?${key}=${encodeURIComponent(q)}`);
       } catch (e) {
+        if (version !== generation.current) return;
         // A UUID that is not a user may be a job id.
         if (key === 'user_id' && e.code === 'user_not_found') data = await gatewayFetch(`/admin/users/lookup?job_id=${encodeURIComponent(q)}`);
         else throw e;
       }
-      setLookup(data);
-      await loadRecord(data.user.id);
+      if (version !== generation.current) return;
+      activeLookup.current = { userId: data.user.id, version };
+      setLookup({ ...data, contextVersion: version });
+      await loadRecord(data.user.id, version);
     } catch (e) {
-      setError(message(e.code));
+      if (version === generation.current) setError(message(e.code));
     } finally {
-      setBusy(false);
+      if (version === generation.current) setBusy(false);
     }
   }
 
-  async function refresh() {
-    if (!lookup) return loadRecord(null);
+  async function refresh(userId, contextVersion) {
+    if (activeLookup.current?.userId !== userId || activeLookup.current?.version !== contextVersion) return;
+    const version = ++generation.current;
     try {
-      const data = await gatewayFetch(`/admin/users/lookup?user_id=${encodeURIComponent(lookup.user.id)}`);
-      setLookup(data);
-      await loadRecord(data.user.id);
-    } catch (e) { setError(message(e.code)); }
+      const data = await gatewayFetch(`/admin/users/lookup?user_id=${encodeURIComponent(userId)}`);
+      if (version !== generation.current) return;
+      setLookup({ ...data, contextVersion });
+      await loadRecord(data.user.id, version);
+    } catch (e) { if (version === generation.current) setError(message(e.code)); }
   }
 
   return (
@@ -102,16 +127,16 @@ function Violations() {
       <form onSubmit={find} className="mt-6 flex flex-wrap items-end gap-3" aria-label="Find a user">
         <label className="grow min-w-[260px]">
           <span className="block font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">EMAIL, USER ID OR JOB ID</span>
-          <input value={query} onChange={(e) => setQuery(e.target.value)} autoComplete="off" spellCheck={false}
+          <input value={query} onChange={(e) => reset(e.target.value)} autoComplete="off" spellCheck={false}
             className="mt-1 w-full rounded-lg border border-vx-border bg-vx-panel p-3 text-sm font-vx-mono focus:outline-hidden focus:border-vx-accent" />
         </label>
         <Button type="submit" disabled={busy || !query.trim()}>{busy ? 'Looking…' : 'Find'}</Button>
-        {lookup && <Button type="button" variant="ghost" onClick={() => { setLookup(null); setQuery(''); loadRecord(null); }}>Clear</Button>}
+        {(lookup || query) && <Button type="button" variant="ghost" onClick={() => { reset(''); loadRecord(null); }}>Clear</Button>}
       </form>
       {error && <p role="alert" className="mt-4 text-vx-danger">{error}</p>}
 
-      {lookup && <UserCard user={lookup.user} onDone={refresh} />}
-      {lookup && <Jobs jobs={lookup.jobs} user={lookup.user} onDone={refresh} />}
+      {lookup && <UserCard key={`${lookup.user.id}-standing`} user={lookup.user} onDone={() => refresh(lookup.user.id, lookup.contextVersion)} />}
+      {lookup && <Jobs key={`${lookup.user.id}-jobs`} jobs={lookup.jobs} user={lookup.user} onDone={() => refresh(lookup.user.id, lookup.contextVersion)} />}
 
       <Record rows={record} loaded={recordLoaded} scoped={!!lookup} />
     </div>

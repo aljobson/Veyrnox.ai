@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { mintPlanToken, verifyPlanToken, planIdempotencyKey, publicPlan, BRIEF_RE, PLAN_TTL_SECONDS } from '../lib/montagePlan.js';
 import { providerFor } from '../packages/provider-sdk/registry.js';
 import { capabilityFor } from '../lib/modelCapabilities.js';
+import { normaliseNarration } from '../lib/montageNarration.js';
 
 const SECRET = 'plan-secret';
 const A = '22222222-2222-4222-8222-222222222222';
@@ -89,4 +90,34 @@ test('the video-agent gateway entry refuses when AGENT_VIDEO_ENABLED is off, and
     } finally {
         if (prev === undefined) delete process.env.AGENT_VIDEO_ENABLED; else process.env.AGENT_VIDEO_ENABLED = prev;
     }
+});
+
+test('explicit narration is bound to the approval ticket; legacy native tickets cannot gain a script', async () => {
+    const narrationText = 'This is a private quality assurance test.';
+    const native = await mintPlanToken(ask());
+    assert.equal((await verifyPlanToken({ ...ask(), token: native.token, narrationText })).error, 'plan_mismatch');
+    const exact = await mintPlanToken({ ...ask(), narrationText });
+    assert.ok(exact.token.length <= 600);
+    assert.equal((await verifyPlanToken({ ...ask(), token: exact.token, narrationText })).ok, true);
+    for (const changed of ['', narrationText + '!', 'Different words']) assert.equal((await verifyPlanToken({ ...ask(), token: exact.token, narrationText: changed })).error, 'plan_mismatch');
+    assert.equal((await verifyPlanToken({ ...ask(), token: native.token, narrationText: '' })).ok, true);
+});
+
+test('the explicit narration capability accepts only bounded control-free canonical text', () => {
+    const provider = providerFor('veyrnox'), record = capabilityFor('video-agent:v1');
+    const prev = process.env.AGENT_VIDEO_ENABLED; process.env.AGENT_VIDEO_ENABLED = 'true';
+    try {
+        for (const narration_text of ['Exact words.', 'x'.repeat(300), '']) assert.equal(provider.check(record, {}, { brief: BRIEF, plan_id: 'tok', narration_text }).ok, true);
+        for (const narration_text of ['x'.repeat(301), 'two\nlines', 'tab\tword', 'null\u0000word', 'next\u0085line', 7, null]) assert.deepEqual(provider.check(record, {}, { brief: BRIEF, plan_id: 'tok', narration_text }), { ok: false, error: 'inputs_invalid:narration_text' });
+    } finally { if (prev === undefined) delete process.env.AGENT_VIDEO_ENABLED; else process.env.AGENT_VIDEO_ENABLED = prev; }
+});
+
+test('narration normalization trims only and preserves literal Unicode without accepting malformed text', () => {
+    const literal = 'Café, blue sphere: αβγ. 😀';
+    assert.deepEqual(normaliseNarration(`  ${literal}  `), { ok: true, text: literal });
+    assert.deepEqual(normaliseNarration(undefined), { ok: true, text: '' });
+    assert.deepEqual(normaliseNarration('   '), { ok: true, text: '' });
+    for (const value of ['\uD800', '\uDC00', '\t', '\r', '\u007F', '\u009F', 'x'.repeat(301)]) assert.deepEqual(normaliseNarration(value), { ok: false, error: 'inputs_invalid:narration_text' });
+    assert.equal(normaliseNarration('😀'.repeat(150)).ok, true);
+    assert.equal(normaliseNarration('😀'.repeat(151)).ok, false);
 });

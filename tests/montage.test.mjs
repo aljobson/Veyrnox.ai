@@ -83,6 +83,16 @@ test('a lost claim race never calls the runner', async () => {
     assert.equal(w.calls.cancels.length, 0);
 });
 
+test('explicit narration is forwarded literally once in the signed runner payload without a new debit', async () => {
+    const w = world(), narrationText = 'This is a private quality assurance test.';
+    assert.deepEqual(await start({ ...BRIEF, narrationText }, w.deps), { ok: true });
+    assert.equal(w.calls.runs.length, 1);
+    assert.equal(w.calls.runs[0].narration_text, narrationText);
+    assert.equal(w.calls.refunds.length, 0);
+    const native = world(); await start(BRIEF, native.deps);
+    assert.equal(Object.hasOwn(native.calls.runs[0], 'narration_text'), false);
+});
+
 test('runner refusing the run refunds once and fails the step', async () => {
     const w = world({ runnerOk: false });
     const r = await start(BRIEF, w.deps);

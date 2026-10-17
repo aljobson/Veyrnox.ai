@@ -16,6 +16,7 @@ import { editUnits, clipCaptionsEnabled, clipSlowEnabled } from '../../../../lib
 import { compositeRefundGate } from '../../../../lib/compositeRefunds.js';
 import { resolveEdit, defaultDeps as editDeps } from '../../../../lib/clipEditSources.js';
 import { checkPlan, checkCapacity } from '../../../../lib/montageGate.js';
+import { normaliseNarration } from '../../../../lib/montageNarration.js';
 import { providerSpendBody, providerSpendError, providerSpendLimit } from '../../../../lib/providerSpend.js';
 
 // The AUP statement version a consent tick attests to. Bump when the wording
@@ -49,6 +50,7 @@ const ALLOWED_INPUTS = {
     // Video agent (ADR-0074): the approved brief and its plan token; both are re-checked by verifyPlanToken before the debit.
     brief: { kind: 'string', max: 500 },
     plan_id: { kind: 'string', max: 600 },
+    narration_text: { kind: 'string', max: 300 },
     // Clip Editor: structured, so checked by lib/clipEditSources.js (within MAX_INPUTS_BYTES).
     clips: { kind: 'edit' },
     audio: { kind: 'edit' },
@@ -144,7 +146,7 @@ export async function POST(req) {
     const modelId = body && body.model_id;
     const idempotencyKey = body && body.idempotency_key;
     const confirmedCredits = body && body.confirmed_credits;
-    const inputs = body && body.inputs;
+    let inputs = body && body.inputs;
     if (typeof modelId !== 'string' || !MODEL_ID_RE.test(modelId)) return NextResponse.json({ error: 'model_id_required' }, { status: 400 });
     if (typeof idempotencyKey !== 'string' || !IDEMPOTENCY_RE.test(idempotencyKey)) {
         return NextResponse.json({ error: 'idempotency_key_required' }, { status: 400 });
@@ -157,6 +159,11 @@ export async function POST(req) {
     }
     const inputsCheck = validateInputs(inputs);
     if (!inputsCheck.ok) return NextResponse.json({ error: inputsCheck.error }, { status: 400 });
+    if (Object.hasOwn(inputs, 'narration_text')) {
+        const narration = normaliseNarration(inputs.narration_text);
+        if (!narration.ok) return NextResponse.json({ error: narration.error }, { status: 400 });
+        inputs = { ...inputs, narration_text: narration.text };
+    }
 
     // 0. Shared per-user entry check. After migration 0113 this atomically
     // counts attempts (20 per fixed 60-second window), including requests
@@ -350,7 +357,7 @@ export async function POST(req) {
 
     // Video agent: is the runner free? Asked before the debit, so "busy" or "offline" charges nothing.
     if (record.agent) {
-        const full = await checkCapacity({ userId, idempotencyKey, modelId, cfg });
+        const full = await checkCapacity({ userId, idempotencyKey, modelId, narrationText: modelInputs.narration_text, cfg });
         if (full) {
             return NextResponse.json(full.body, { status: full.status, headers: full.retryAfter ? { 'retry-after': String(full.retryAfter) } : undefined });
         }

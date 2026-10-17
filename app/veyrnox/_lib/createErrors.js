@@ -48,6 +48,8 @@ export const ERROR_COPY = {
   video_agent_unavailable: 'The video agent isn\'t open yet. Nothing was charged.',
   'inputs_invalid:brief': 'A brief is 3 to 500 characters of plain text. Nothing was charged.',
   plan_unavailable:      'We couldn\'t make a plan right now. Nothing was charged — try again in a minute.',
+  narration_unavailable: 'Exact narration is unavailable right now. Nothing was charged. Keep your words and try planning again later.',
+  'inputs_invalid:narration_text': 'Use up to 300 narration characters without line breaks or control characters. Nothing was charged.',
   plan_expired:          'This plan expired. Make a new plan to continue. Nothing was charged.',
   plan_invalid:          'This plan is no longer valid. Make a new plan. Nothing was charged.',
   plan_mismatch:         'The brief changed after the plan was made. Make a new plan. Nothing was charged.',

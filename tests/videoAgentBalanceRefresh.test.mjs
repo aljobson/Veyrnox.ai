@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import ts from 'typescript';
 import { videoAgentBalanceState } from '../app/veyrnox/_lib/authenticatedMedia.js';
+import { normaliseNarration, MAX_NARRATION_LENGTH } from '../lib/montageNarration.js';
 
 const require = createRequire(import.meta.url);
 const plan = { plan_id: 'synthetic-plan', idempotency_key: 'synthetic-plan-key', credits: 165, expires_at: Date.now() / 1000 + 600, brief: 'Synthetic brief', aspect: '9:16', plan: { summary: 'Synthetic shot' } };
@@ -23,7 +24,7 @@ function harness() {
   const fakeReact = {
     useState(initial) {
       const index = stateIndex++;
-      if (!(index in values)) values[index] = index === 4 ? plan : initial;
+      if (!(index in values)) values[index] = index === 4 ? plan : index === 2 ? plan.brief : initial;
       return [values[index], next => { values[index] = typeof next === 'function' ? next(values[index]) : next; }];
     },
     useRef(initial) { const index = refIndex++; if (!refs[index]) refs[index] = { current: initial }; return refs[index]; },
@@ -42,6 +43,7 @@ function harness() {
     } },
     '../../_lib/useStudioJobs': { useStudioJobs: () => ({ jobs: [], generating: false }) },
     '../../_lib/authenticatedMedia': { videoAgentBalanceState },
+    '../../../../lib/montageNarration.js': { normaliseNarration, MAX_NARRATION_LENGTH },
   };
   const source = readFileSync(new URL('../app/veyrnox/app/video-agent/page.js', import.meta.url), 'utf8');
   const code = ts.transpileModule(source, { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS } }).outputText;
