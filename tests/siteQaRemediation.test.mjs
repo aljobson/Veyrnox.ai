@@ -34,7 +34,9 @@ test('Video Agent owns descriptive no-index metadata', () => {
 test('floating utilities avoid bottom actions and remain compact', () => {
   const src = read('app/veyrnox/_components/SiteChrome.js');
   assert.match(src, /fixed right-2 top-\[9\.75rem\]/);
-  assert.match(src, /aria-label="Contact support by email"/);
+  // The label is catalog text (ADR-0107).
+  assert.match(src, /aria-label=\{t\('chrome\.contact'\)\}/);
+  assert.match(read('lib/i18n/messages/en.mjs'), /'chrome\.contact': 'Contact support by email'/);
   assert.doesNotMatch(src, /usePathname|raised=\{|tucked=\{/);
 });
 

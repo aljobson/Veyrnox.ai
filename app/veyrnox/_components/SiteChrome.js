@@ -7,6 +7,7 @@ import { clearAttribution } from '../_lib/utm';
 import { applyStoredTheme } from './ThemeToggle';
 import ReferralBridge from './ReferralBridge';
 import { Icon } from './Icon';
+import { useI18n } from '../../../components/I18nProvider';
 
 // Everything that floats over every page: the read-progress bar, the
 // back-to-top button, the contact button, and the one-time storage notice.
@@ -120,6 +121,7 @@ function ScrollProgress() {
 
 /* ─── Back to top + contact, upper-right utility rail ─── */
 function FloatingActions() {
+  const { t } = useI18n();
   const [showTop, setShowTop] = useState(false);
 
   useEffect(() => {
@@ -148,7 +150,7 @@ function FloatingActions() {
       <button
         type="button"
         onClick={toTop}
-        aria-label="Back to top"
+        aria-label={t('chrome.backToTop')}
         className={`inline-flex h-11 w-11 items-center justify-center rounded-full border border-vx-border bg-vx-panel text-vx-fg-body shadow-lg transition-[opacity,visibility] duration-200 hover:border-vx-accent hover:text-vx-fg ${
           showTop ? 'pointer-events-auto visible opacity-100' : 'invisible opacity-0'
         }`}
@@ -157,8 +159,8 @@ function FloatingActions() {
       </button>
       <a
         href={`mailto:${SUPPORT_EMAIL}`}
-        aria-label="Contact support by email"
-        title="Contact support"
+        aria-label={t('chrome.contact')}
+        title={t('chrome.contactTitle')}
         className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-vx-accent text-sm font-extrabold text-vx-accent-ink shadow-lg hover:bg-vx-accent-hover"
       >
         <Icon name="mail" />
