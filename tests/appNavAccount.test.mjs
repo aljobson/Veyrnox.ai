@@ -262,6 +262,7 @@ test('the summary is email, credits and a server-side asset count', async () => 
         email: 'owner@veyrnox.test',
         credits: 1199,
         assets: 48,
+        created_at: null,
         rights_attested_at: null,
         rights_attestation_version: null,
     });
@@ -307,7 +308,7 @@ test('a user with no row yet reads zero, not an error', async () => {
     ]);
     const res = await accountRoute.GET(accountRequest({ 'x-veyrnox-auth-id': AUTH_ID }));
     assert.equal(res.status, 200);
-    assert.deepEqual(await res.json(), { email: null, credits: 0, assets: null, rights_attested_at: null, rights_attestation_version: null });
+    assert.deepEqual(await res.json(), { email: null, credits: 0, assets: null, created_at: null, rights_attested_at: null, rights_attestation_version: null });
 });
 
 test('a database failure is a typed 502, not a leaked message', async () => {
