@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ODDLING_ARCHETYPES } from '../app/veyrnox/_lib/character.js';
 import { ODDLING_KNOWLEDGE } from '../lib/oddlingKnowledge.js';
+import { ODDLING_PRESET_SOURCES } from '../app/veyrnox/_lib/oddlingStudio.js';
+import { ODDLING_KIND_FILTERS } from '../app/veyrnox/_lib/oddlingExplore.js';
 import { productKnowledgeContext, searchProductKnowledge } from '../lib/productKnowledge.js';
 import { fallbackHelpPlan } from '../lib/productHelpFallback.js';
 import { createHelpPlan } from '../lib/helpAssistant.js';
@@ -49,4 +51,20 @@ test('Vey provider request receives source-derived character canon', async () =>
   });
   assert.match(request.messages[0].content, /enormous iridescent jewel-beetle fashion helmet/);
   assert.match(request.messages[0].content, /ordinary human body and hands/);
+});
+
+test('per-character facts list the themed tabs as collections and describe Human / Other beings as filter chips', () => {
+  const kindSources = ODDLING_PRESET_SOURCES.filter((source) => source.kind);
+  assert.ok(kindSources.length > 0, 'the legacy kind sources still resolve, which is why the fact must skip them');
+  for (const { id, kind } of ODDLING_ARCHETYPES) {
+    const entry = ODDLING_KNOWLEDGE.find((item) => item.id === `oddling-${id}`);
+    const collections = entry.facts.find((fact) => fact.startsWith('Collections:'));
+    const filter = entry.facts.find((fact) => fact.startsWith('Explore filter:'));
+    for (const source of kindSources) assert.ok(!collections.includes(source.label), `${id}: ${source.label} is a filter, not a collection`);
+    for (const source of ODDLING_PRESET_SOURCES.filter((item) => item.ids?.includes(id))) assert.ok(collections.includes(source.label), `${id}: ${source.label}`);
+    const label = ODDLING_KIND_FILTERS.find((item) => item.id === kind).label;
+    assert.ok(filter.startsWith(`Explore filter: ${label}.`), `${id}: ${filter}`);
+    assert.match(filter, /narrow any Explore tab/);
+    assert.match(collections, /^Collections: [^.]+\.$/, 'a sentence, never an empty list');
+  }
 });
