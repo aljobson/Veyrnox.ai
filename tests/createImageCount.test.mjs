@@ -53,7 +53,7 @@ test('requests go one at a time and the first failure stops the rest', () => {
     // Every accepted job is tracked, recorded, and priced per unit.
     // Priced per unit, or 0 when the server marked the job as having used a free allowance (ADR-0069).
     assert.match(sendOne, /const jobCredits = submitted\.free_allowance === true \? 0 : unitCost;/);
-    assert.match(sendOne, /\(i === 0 \? startJobs : addJob\)\(\{ job_id: submitted\.job_id, state: 'queued', credits: jobCredits, model_id: modelId \}\);/);
+    assert.match(sendOne, /\(i === 0 \? startJobs : addJob\)\(\{ job_id: submitted\.job_id, state: 'queued', credits: jobCredits, model_id: modelId, \.\.\.submittedPresentation \}\);/);
     assert.match(sendOne, /pushJobHistory\(\{/);
     assert.match(sendOne, /setBalance\(submitted\.balance_after\);/);
 });
@@ -70,7 +70,7 @@ test('one interval polls every in-flight job and keeps the give-up', () => {
 
 test('one job keeps the single canvas; more get the grid', () => {
     assert.match(page, /const job = jobs\.length === 1 \? jobs\[0\] : null;/);
-    assert.match(page, /\{jobs\.length > 1 \? <StudioJobGrid jobs=\{jobs\} aspect=\{aspect\} \/> : \(/);
+    assert.match(page, /\{jobs\.length > 1 \? <StudioJobGrid jobs=\{jobs\} aspect=\{resultAspect\} \/> : \(/);
     assert.match(grid, /grid grid-cols-2/);
     assert.match(grid, /const ui = jobStateUi\(job\);/);
     assert.match(grid, /<JobAssetPreview job=\{job\} \/>/);
@@ -85,7 +85,7 @@ test('a new click replaces the last click\'s jobs instead of piling onto them', 
     assert.match(hook, /return \{ jobs, generating, startJobs, addJob, clearJobs \};/);
     // onSubmit only runs once every earlier job has settled, and its first
     // accepted job resets the list, so one image keeps the single canvas.
-    assert.match(page, /onClick=\{generating \? cancel : onSubmit\}/);
+    assert.match(page, /onClick=\{hasJobs \? cancel : onSubmit\}/);
     assert.equal((page.match(/\baddJob\(/g) || []).length, 0, 'addJob is never called unconditionally');
     assert.equal((page.match(/startJobs/g) || []).length, 2, 'destructured once, used once');
     assert.ok(sendOne.indexOf('(i === 0 ? startJobs : addJob)(') !== -1);
