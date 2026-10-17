@@ -379,7 +379,6 @@ export default function MascotAssistant() {
         animate={{ x: mobileLayout.position.x, y: mobileLayout.position.y }}
         transition={reduceMotion || manualPosition || mobileLayout.docked ? { duration: 0 } : { type: 'spring', stiffness: 115, damping: 18, mass: 0.8 }}
       >
-        <span aria-hidden="true" className="absolute bottom-full left-1/2 mb-1 -translate-x-1/2 whitespace-nowrap rounded-full border border-vx-border bg-vx-panel/95 px-1.5 py-0.5 text-[9px] leading-3 text-vx-fg-muted">Move me</span>
         <motion.button
           ref={launcherRef}
           type="button"

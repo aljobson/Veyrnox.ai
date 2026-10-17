@@ -86,7 +86,7 @@ test('a page title is one of two sizes', () => {
     }
     // On the home page the visible hero H1 and the closing line share the
     // index size, and nothing is set larger.
-    assert.match(read('app/veyrnox/_sections/hero.js'), /<h1 className="vx-display vx-title-index">\s*The price is on the button\.\s*<\/h1>/);
+    assert.match(read('app/veyrnox/_sections/hero.js'), /<h1 className="vx-display vx-title-index">\s*Reach for the stars\. The price is on the button\.\s*<\/h1>/);
     const closing = read('app/veyrnox/_sections/footer.js');
     assert.match(closing.slice(closing.indexOf('export function ClosingCTA')), /<h2 className="vx-display vx-title-index /);
     for (const s of ['hero', 'film', 'showcase', 'footer']) {
