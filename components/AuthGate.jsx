@@ -48,7 +48,7 @@ const AUTH_ERROR_COPY = [
     // redirects. Safari private browsing and blocked site data throw there,
     // which used to leave the provider buttons silently dead.
     [/storage|quota|securityerror/i, "Your browser is blocking site storage, so sign-in can't start. Turn off private browsing, or allow site data for this site."],
-    [/captcha/i, "The security check failed or expired. Try again."],
+    [/captcha/i, "The security check failed or expired. Try again."], [/database error saving new user/i, "We couldn't create that account. If you used a temporary email address, use a permanent one and try again."], // trigger refusal (0343)
     // GoTrue's passkey codes. "not registered" is the one users actually hit:
     // they tap the passkey button on a device that has never enrolled one.
     [/webauthn_credential_not_found|no passkey/i, "No passkey for this site on this device. Sign in another way first, then add one."],
