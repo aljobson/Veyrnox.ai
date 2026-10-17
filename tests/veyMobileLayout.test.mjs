@@ -80,4 +80,10 @@ test('mobile movement is explicit and the layout never searches page obstacles o
   assert.match(assistant,/w-\[min\(280px,calc\(100vw-80px\)\)\]/);
   assert.doesNotMatch(assistant,/sm:h-auto|sm:w-\[min\(410px/);
   assert.match(assistant,/rows=\{1\}/);
+  assert.match(guide,/max-h-\[76px\]/);
+  assert.match(guide,/w-\[min\(280px,calc\(100vw-80px\)\)\]/);
+  assert.match(layout,/position: 'fixed', top: '64px'/);
+  assert.match(layout,/viewport\.height - dock\.top \+ 8/);
+  assert.match(layout,/overflowY: 'auto'/);
+  assert.match(layout,/else restoreWorkspace\(\)/);
 });

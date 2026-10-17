@@ -141,9 +141,17 @@ export const PRIMARY_NAV_CATEGORIES = [
   { href: '/pricing', label: 'Pricing' },
 ];
 
+// An entry with a `studioHref` fronts a public page that sits behind a server
+// flag (ODDLINGS_PUBLIC_ENABLED). Components pass it through navHref(): the
+// public href once the flag is on, the studio page until then, so the nav never
+// links to a page that answers 404.
+export function navHref(item, publicPageOpen) {
+  return item.studioHref && !publicPageOpen ? item.studioHref : item.href;
+}
+
 export const SECONDARY_NAV_CATEGORIES = [
   { href: '/#explore',   label: 'Explore' },
-  { href: '/app/oddlings', label: 'Oddlings', featured: true },
+  { href: '/oddlings', studioHref: '/app/oddlings', label: 'Oddlings', featured: true },
   { href: '/models',     label: 'Models' },
   { href: '/presets',   label: 'Templates' },
   { href: '/guides',    label: 'Guides' },
@@ -158,7 +166,7 @@ export const NAV_CATEGORIES = [...PRIMARY_NAV_CATEGORIES, ...SECONDARY_NAV_CATEG
 
 // Every public route, with the blurb search and the 404 page reuse.
 export const SITE_PAGES = [
-  { href: '/app/oddlings', label: 'Oddlings', description: 'Create funny, repeatable AI characters with distinctive bodies, outfits, hair and movement.' },
+  { href: '/oddlings', studioHref: '/app/oddlings', label: 'Oddlings', description: 'Create funny, repeatable AI characters with distinctive bodies, outfits, hair and movement.' },
   { href: '/social-cinema', label: 'Social Cinema', description: 'Episodic stories, community voting and upcoming series.' },
   { href: '/',                  label: 'Home',               description: 'Credit-metered AI image, video and audio generation.' },
   { href: '/pricing',           label: 'Pricing',            description: 'Every model, every credit price, one balance.' },

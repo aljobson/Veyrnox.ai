@@ -8,7 +8,8 @@ import { preparePuppetPixels, PUPPET_FRAGMENT_SHADER } from '../app/veyrnox/_lib
 const read = (file) => readFileSync(new URL(`../app/veyrnox/_components/${file}`, import.meta.url), 'utf8');
 const preview = read('OddlingGalleryPreview.js');
 const css = read('OddlingGalleryPreview.module.css');
-const studio = read('OddlingStudio.js');
+// The studio and the pieces split out of it (Explore, its filters, the portrait).
+const studio = ['OddlingStudio.js', 'OddlingExplore.js', 'OddlingExploreFilters.js', 'OddlingPortrait.js'].map(read).join('\n');
 
 test('gallery loops are presentation-only and never submit or upload a generation', () => {
   assert.doesNotMatch(preview, /fetch\s*\(|gatewayFetch|\/generations|\/uploads|onAnimate|router\.push/);
