@@ -5,9 +5,9 @@ import { readFileSync } from 'node:fs';
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 
 test('weekly plans are defined for Credits, Cinema Pass and Veyrnox Publish', () => {
-  const credits = read('packages/db/schema/supabase/0333_weekly_credit_subscriptions.sql');
-  const cinema = read('packages/db/schema/supabase/0334_weekly_cinema_pass.sql');
-  const publish = read('packages/db/schema/supabase/0335_weekly_social_publish_plan.sql');
+  const credits = read('packages/db/schema/supabase/0338_weekly_credit_subscriptions.sql');
+  const cinema = read('packages/db/schema/supabase/0339_weekly_cinema_pass.sql');
+  const publish = read('packages/db/schema/supabase/0340_weekly_social_publish_plan.sql');
 
   assert.match(credits, /'starter-weekly', 'week', 499, 60/);
   assert.match(credits, /'plus-weekly', 'week', 1499, 275/);
@@ -19,7 +19,7 @@ test('weekly plans are defined for Credits, Cinema Pass and Veyrnox Publish', ()
 });
 
 test('Veyrnox Publish offers an annual plan at exactly 30% off monthly', () => {
-  const annual = read('packages/db/schema/supabase/0338_annual_social_publish_plan.sql');
+  const annual = read('packages/db/schema/supabase/0341_annual_social_publish_plan.sql');
   const publish = read('app/veyrnox/app/publish/plan/PublishPlanPanel.js');
 
   assert.match(annual, /'publish-annual', 'Publish Plan', 'year', 12600/);

@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import pg from 'pg';
 
-describe('social Publish Plan entitlement (0293, 0298, 0335, 0338)', { skip: !process.env.DATABASE_URL }, () => {
+describe('social Publish Plan entitlement (0293, 0298, 0340, 0341)', { skip: !process.env.DATABASE_URL }, () => {
   let pool: pg.Pool;
   const one = async (sql: string, args: unknown[] = []) => (await pool.query(sql, args)).rows[0];
   const value = async (sql: string, args: unknown[] = []) => (await one(sql, args)).value;
@@ -23,10 +23,10 @@ describe('social Publish Plan entitlement (0293, 0298, 0335, 0338)', { skip: !pr
     await pool.query(migration);
     await pool.query(entitlementMigration);
     await pool.query(entitlementMigration);
-    const weeklyMigration = await readFile(new URL('./schema/supabase/0335_weekly_social_publish_plan.sql', import.meta.url), 'utf8');
+    const weeklyMigration = await readFile(new URL('./schema/supabase/0340_weekly_social_publish_plan.sql', import.meta.url), 'utf8');
     await pool.query(weeklyMigration);
     await pool.query(weeklyMigration);
-    const annualMigration = await readFile(new URL('./schema/supabase/0338_annual_social_publish_plan.sql', import.meta.url), 'utf8');
+    const annualMigration = await readFile(new URL('./schema/supabase/0341_annual_social_publish_plan.sql', import.meta.url), 'utf8');
     await pool.query(annualMigration);
     await pool.query(annualMigration);
   });
