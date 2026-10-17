@@ -41,6 +41,7 @@ import { promptText, promptIsMissing, promptPlaceholder } from '../../_lib/promp
 import { ParticleButton } from '@/components/ParticleButton';
 import { jobStateUi, SLOW_MODEL_WAIT } from '../../_lib/studioStates';
 import { useCreateJourney } from '../../_lib/useCreateJourney';
+import useCreateDraftRecovery from '../../_lib/useCreateDraftRecovery';
 import { getJourney, trackJourneyJob } from '../../_lib/veyJourneyStore';
 import { outputDurationLabel, mediaGenerationSources } from '../../_lib/chatMedia';
 import { generationSlotKind, generationMimeTypes } from '../../../../lib/generationSourceSlots.mjs';
@@ -102,6 +103,7 @@ export default function CreateStudio() {
   const job = jobs.length === 1 ? jobs[0] : null;
   // True while a batch is still being sent, so New generation cannot clear it halfway.
   const [sending, setSending] = useState(false);
+  const incomingDraft = useRef(false);
 
   // ?model=<id> from landing tiles / hero cards. Read once on mount —
   // avoids the Suspense boundary useSearchParams demands on client pages.
@@ -123,6 +125,7 @@ export default function CreateStudio() {
     const portrait = oddlingPortrait(params.get('oddlingPhoto'));
     const draft = resolveTemplateDraft(preset, wanted, storedDraft)
       || (portrait ? { prompt: buildOddlingAnimationPrompt(portrait.id, params.get('motion')), durationSeconds: 5 } : null);
+    incomingDraft.current = !!draft;
     if (draft) setPrompt(draft.prompt);
     if (draft?.aspect) setAspect(draft.aspect);
     if (draft?.durationSeconds) setDuration(`${draft.durationSeconds}s`);
@@ -154,16 +157,35 @@ export default function CreateStudio() {
     return () => controller.abort();
   }, []);
 
+  const draftRecovery = useCreateDraftRecovery({
+    incoming: incomingDraft,
+    draft: { modelId, goal, prompt: typed, duration, aspect, count, sources, seed, negative, voice, audioDurations, cinemaOn, cinema, characterOn, character },
+    apply: (saved, restoredSources) => {
+      setModelId(saved.modelId); setGoal(saved.goal); setPrompt(saved.prompt); setDuration(saved.duration);
+      setAspect(saved.aspect); setCount(saved.count); setSeed(saved.seed); setNegative(saved.negative); setVoice(saved.voice);
+      setAudioDurations(saved.audioDurations); setCinemaOn(saved.cinemaOn); setCinema({ ...DEFAULT_CINEMA, ...saved.cinema });
+      setCharacterOn(saved.characterOn); setCharacter(sanitizeOddlingPicks(saved.character));
+      setSources(restoredSources); setConsent(false); setAnimationPortrait(null); setTier(null);
+    },
+    reset: () => {
+      setPrompt(null); setSources(current => { Object.values(current).forEach(source => { if (source.file) URL.revokeObjectURL(source.previewUrl); }); return {}; });
+      setConsent(false); setGoal('image'); setModelId(starterModel(catalogModels, 'image')?.id || '');
+      setDuration('5s'); setAspect('16:9'); setCount(1); setCharacterOn(false); setCharacter({}); setOddlingTransfer(null);
+      setCinemaOn(false); setCinema(DEFAULT_CINEMA); setSeed(''); setNegative(''); setVoice(''); setAudioDurations({});
+      setAnimationPortrait(null); setPresetParam(null); setTier(null); clearJobs(); setError(null);
+    },
+  });
+
   // If the selected id isn't in the (live or fallback) catalog, fall back to
   // the goal's cheapest prompt-only model so cost never silently reads 0.
   // Wait for the live catalog first: the tokens.js fallback lacks newer models,
   // and resetting against it threw away any ?model= it didn't list.
   useEffect(() => {
-    if (catalogLoading || !models.length) return;
+    if (draftRecovery.restoring || catalogLoading || !catalogLive || !models.length) return;
     if (models.some((m) => m.id === modelId)) return;
     const first = starterModel(models, goal) || starterModel(models, 'all') || models[0];
     setModelId(first.id);
-  }, [models, modelId, catalogLoading, goal]);
+  }, [models, modelId, catalogLoading, catalogLive, goal, draftRecovery.restoring]);
 
   const model = models.find((m) => m.id === modelId) || null;
   // The controls describe the next draft, not the already submitted job.
@@ -219,7 +241,7 @@ export default function CreateStudio() {
   // key; the client was defeating it by changing the key.
   const inFlight = useRef(false);
   useCreateJourney({ model, models, catalogLive, prompt, characterOn, character, sources, duration, aspect, n, cost, balance,
-    missingSource, missingConsent, missingPrompt, missingVoice, animationMismatch, generating, sending, jobs, error, seed, negative, cinemaOn, cinema,
+    missingSource: missingSource || draftRecovery.blocked, missingConsent, missingPrompt, missingVoice, animationMismatch, generating, sending, jobs, error, seed, negative, cinemaOn, cinema,
     setModelId, setPrompt, setSources, setConsent, setDuration, setAnimationPortrait });
 
   // A 10s selection must not survive a switch to a model that only sells 5s:
@@ -227,10 +249,10 @@ export default function CreateStudio() {
   // A restored Film Studio draft can name a model absent from the fallback
   // catalog. Preserve its duration until that model's real lengths arrive.
   useEffect(() => {
-    if (catalogLoading || !model) return;
+    if (draftRecovery.restoring || catalogLoading || !catalogLive || !model) return;
     const available = durationKey.split(',');
     if (!available.includes(duration)) setDuration(available[0]);
-  }, [catalogLoading, model, durationKey, duration]);
+  }, [catalogLoading, catalogLive, model, durationKey, duration, draftRecovery.restoring]);
 
   function setAudioDuration(value) {
     if (!model?.id) return;
@@ -238,6 +260,7 @@ export default function CreateStudio() {
   }
 
   function pickSource(slot, file, asset = null) {
+    draftRecovery.sourceEdited();
     setConsent(false);
     setSources((prev) => {
       if (prev[slot]?.file) URL.revokeObjectURL(prev[slot].previewUrl);
@@ -313,6 +336,7 @@ export default function CreateStudio() {
   // and job. Sent one at a time; the first failure stops the rest, and none is
   // ever retried under a new key.
   async function onSubmit() {
+    if (draftRecovery.restoring || draftRecovery.blocked) return;
     if (inFlight.current || sending || generating || !model || balance == null || cost > balance) return;
     if (catalogStatus !== 'live') return;
     inFlight.current = true;
@@ -401,7 +425,7 @@ export default function CreateStudio() {
     <div className="min-h-dvh">
       <AppNav balance={balance} active="create" />
 
-      <Main className="max-w-[1500px] mx-auto px-4 sm:px-8 pt-6 pb-16 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] lg:grid-rows-[auto_auto_1fr] gap-6">
+      <Main inert={draftRecovery.restoring} aria-busy={draftRecovery.restoring} className="max-w-[1500px] mx-auto px-4 sm:px-8 pt-6 pb-16 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] lg:grid-rows-[auto_auto_1fr] gap-6">
         {/* ============ CANVAS ============ */}
         <div className="lg:col-start-1 lg:row-start-1">
           <div className="flex items-center justify-between mb-3">
@@ -409,7 +433,7 @@ export default function CreateStudio() {
               <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">STUDIO · UNTITLED</div>
               <h1 className="text-2xl sm:text-3xl font-black tracking-[-0.02em] mt-1">Create</h1>
             </div>
-            <Chip tone="neutral">UNSAVED DRAFT</Chip>
+            <Chip tone="neutral">{draftRecovery.saved ? Object.values(sources).some(source => source.file) ? 'SETTINGS SAVED' : 'SAVED IN THIS TAB' : 'UNSAVED DRAFT'}</Chip>
           </div>
 
           <div data-assistant-target="create.result" className="scroll-mt-24">
@@ -466,6 +490,10 @@ export default function CreateStudio() {
             className="scroll-mt-24 mt-3 w-full bg-vx-panel border border-vx-field rounded-lg p-3.5 text-sm text-vx-fg placeholder:text-vx-fg-faint resize-none focus:outline-hidden focus:border-vx-accent"
             placeholder={promptPlaceholder(model)}
           />
+          {(draftRecovery.restoring || draftRecovery.status) && <div role="status" data-testid="create-draft-recovery" data-restoring={draftRecovery.restoring} className="mt-2 rounded-lg border border-vx-border bg-vx-panel px-3 py-2 text-xs text-vx-fg-muted">
+            {draftRecovery.restoring ? 'Restoring this tab’s draft…' : draftRecovery.status}
+            {draftRecovery.failed && <button type="button" onClick={draftRecovery.retry} className="ml-2 min-h-8 underline text-vx-accent">Retry draft recovery</button>}
+          </div>}
           {oddlingTransfer && model?.kind === 'image' && (
             <section role="status" data-assistant-target="create.oddling-handoff" className="mt-3 flex flex-col gap-3 rounded-xl border border-vx-accent/40 bg-vx-accent/[0.07] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -492,6 +520,7 @@ export default function CreateStudio() {
             <SourcePickers media={media} sources={sources} onPick={pickSource}
               onDraw={model?.kind === 'image' ? () => setDrawing(true) : null} onLibrary={setLibraryFor} />
           </div>
+          {Object.values(sources).some(source => source.file) && <p className="mt-2 text-xs text-vx-fg-muted">Local uploads need reattaching after a reload. Saved Library sources restore automatically.</p>}
           {libraryFor && (
             <LibraryPicker kind={generationSlotKind(libraryFor)} mimeTypes={generationMimeTypes(generationSlotKind(libraryFor))}
               onClose={() => setLibraryFor(null)}
@@ -528,7 +557,7 @@ export default function CreateStudio() {
             data-assistant-target="create.generate"
             onClick={hasJobs ? cancel : onSubmit}
             className="scroll-mt-24 mt-4 w-full flex items-center justify-between bg-vx-accent text-vx-accent-ink rounded-full px-6 py-3.5 font-extrabold hover:bg-vx-accent-hover disabled:opacity-40 disabled:cursor-not-allowed"
-            disabled={sending || (!hasJobs && (catalogStatus !== 'live' || !model || model.gated || animationMismatch || missingPrompt || missingVoice || invalidAudioDuration || balance == null || cost > balance || missingSource || missingConsent))}
+            disabled={draftRecovery.restoring || draftRecovery.blocked || sending || (!hasJobs && (catalogStatus !== 'live' || !model || model.gated || animationMismatch || missingPrompt || missingVoice || invalidAudioDuration || balance == null || cost > balance || missingSource || missingConsent))}
             aria-label={sending ? undefined : hasJobs ? 'New generation — no charge' : model?.gated ? undefined : `Generate ${n > 1 ? `${n} images ` : ''}${cost === 0 ? 'for free' : `for ${creditLabel(cost)}`}`}
           >
             <span>{sending ? 'Sending…' : hasJobs ? 'New generation' : model?.gated ? 'Premium — gated' : n > 1 ? `Generate ${n}` : 'Generate'}</span>

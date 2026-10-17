@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { MediaTile } from '../_components/MediaTile';
 import { SHOWCASE_CLIPS } from '../_lib/showcase';
 import { FEATURE_CARDS, PRESETS, shelfName } from '../_lib/tokens';
+import { FilmPlayer } from '../_components/FilmPlayer';
+import { BRAND_FILM } from '../_lib/film';
 import { PriceSlip } from '../_components/PriceSlip';
 
 /* ─── Hero: the promise on the left, the working price slip on the right ─── */
@@ -9,6 +11,11 @@ import { PriceSlip } from '../_components/PriceSlip';
 export function Hero({ models }) {
   return (
     <section className="relative px-4 sm:px-6 max-w-[1300px] mx-auto pt-12 sm:pt-16 lg:pt-20 pb-16 lg:pb-24">
+      <h2 className="sr-only">Veyrnox.ai</h2>
+      <p className="sr-only">A silent ten-second video: a calm portrait fades into a galaxy above Earth, then the Veyrnox.ai logo appears over the planet’s glowing horizon.</p>
+      <div className="mb-10 lg:mb-14 -mx-4 sm:mx-0">
+        <FilmPlayer film={BRAND_FILM} label="the Veyrnox.ai intro" frameless />
+      </div>
       <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-12 lg:gap-16 items-start">
         <div className="lg:pt-10">
           <h1 className="vx-display vx-title-index">
