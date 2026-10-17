@@ -16,6 +16,14 @@ const LABELS = {
   right_arm: { Normal: 'Biological', 'Cute Prosthetic': 'Decorated prosthetic', None: 'Not present' },
   left_leg: { Normal: 'Biological', 'Cute Prosthetic': 'Decorated prosthetic', None: 'Not present' },
   right_leg: { Normal: 'Biological', 'Cute Prosthetic': 'Decorated prosthetic', None: 'Not present' },
+  // Display only. The Create summary pills show a value with no group name next
+  // to it, so values that would read the same in two groups say what they are.
+  exaggeration: { Natural: 'No exaggeration', Bold: 'Bold exaggeration', Extreme: 'Extreme exaggeration' },
+  brows: { Thick: 'Thick brows', Thin: 'Thin brows', Arched: 'Arched brows', Straight: 'Straight brows', Bushy: 'Bushy brows', Bleached: 'Bleached brows' },
+  nose_shape: { Straight: 'Straight nose', Button: 'Button nose', Aquiline: 'Aquiline nose', Snub: 'Snub nose', Wide: 'Wide nose', Narrow: 'Narrow nose', 'Round Tip': 'Round-tip nose' },
+  lips: { Full: 'Full lips', Thin: 'Thin lips', 'Cupid Bow': 'Cupid bow lips', Glossy: 'Glossy lips', 'Matte Dark': 'Matte dark lips' },
+  skin_tone: { Light: 'Light skin tone' },
+  eye_shape: { Hooded: 'Hooded eyes', Uneven: 'Uneven eyes' },
 };
 
 export function characterOptionLabel(groupId, value) {
@@ -23,9 +31,71 @@ export function characterOptionLabel(groupId, value) {
   return labels && Object.hasOwn(labels, value) ? labels[value] : value;
 }
 
+// Two picks that cannot both be true. The first side is the everyday, explicit
+// choice and the second is the surreal or legacy pick it would contradict. A
+// side without `values` matches any pick in its group. Every `values` list is
+// pinned against the group's options in tests/characterConflicts.test.mjs.
+const BROWS = { key: 'brows', values: ['Thick', 'Thin', 'Arched', 'Straight', 'Bushy', 'Bleached'] };
+const BROW_DETAILS = { key: 'face_features', values: ['Tiny Brows', 'One Brow'] };
+const CHROME_BROWS = { key: 'accessories', values: ['Chrome Brows'] };
+const EYEWEAR = { key: 'everyday_accessories', values: ['Glasses', 'Round Glasses', 'Sunglasses'] };
+const SURREAL_EYEWEAR = { key: 'accessories', values: ['Tiny Sunglasses', 'Tiny Monocle'] };
+const BAG = { key: 'everyday_accessories', values: ['Everyday Bag', 'Tote Bag'] };
+const SURREAL_HANDBAG = { key: 'accessories', values: ['Tiny Handbag', 'Impossible Handbag'] };
+const HANDBAG_PROP = { key: 'distinctive_features', values: ['Impossible Handbag'] };
+const HEADWEAR = { key: 'headwear', values: ['Baseball Cap', 'Beanie', 'Wide-Brim Hat', 'Bucket Hat', 'Headphones'] };
+const HEAD_MASK = { key: 'accessories', values: ['Bug Head Mask'] };
+
+const EXCLUSIVE_PAIRS = [
+  [BROWS, BROW_DETAILS],
+  [BROWS, CHROME_BROWS],
+  [EYEWEAR, SURREAL_EYEWEAR],
+  [EYEWEAR, HEAD_MASK],
+  [BAG, SURREAL_HANDBAG],
+  [BAG, HANDBAG_PROP],
+  [HEADWEAR, HEAD_MASK],
+];
+
+// The same conflicts seen from a cast preset's visual canon: a pick that is
+// swapped out must also take its description out of the canon (character.js).
+const CONFLICT_TOPICS = {
+  brows: [BROWS, BROW_DETAILS, CHROME_BROWS],
+  eyewear: [EYEWEAR, SURREAL_EYEWEAR],
+  bags: [BAG, SURREAL_HANDBAG, HANDBAG_PROP],
+  head_covering: [HEADWEAR, HEAD_MASK],
+};
+
+function sideMatches(side, key, value) {
+  return side.key === key && Boolean(value) && (!side.values || side.values.includes(value));
+}
+
+/** The picks that belong to one conflict topic, as a comparable string ('' when none). */
+export function conflictTopicPicks(topic, picks) {
+  return CONFLICT_TOPICS[topic].map((side) => (sideMatches(side, side.key, picks?.[side.key]) ? picks[side.key] : '')).join('|');
+}
+
+/**
+ * The picks with every contradiction settled in favour of the explicit everyday
+ * choice. changeCharacterPick keeps hand edits free of these pairs, but picks that
+ * reach a prompt another way (Remix styling, an old saved passport) can still
+ * hold both, so every prompt and every sanitised passport goes through this.
+ * Pure; the input is never changed.
+ */
+export function resolveExclusivePicks(picks) {
+  const next = { ...picks };
+  for (const [keep, drop] of EXCLUSIVE_PAIRS) {
+    if (sideMatches(keep, keep.key, picks?.[keep.key]) && sideMatches(drop, drop.key, next[drop.key])) delete next[drop.key];
+  }
+  return next;
+}
+
 export function changeCharacterPick(picks, key, value) {
   const next = { ...picks };
   if (value) next[key] = value; else delete next[key];
+  for (const [a, b] of EXCLUSIVE_PAIRS) {
+    if (sideMatches(a, key, value) && sideMatches(b, b.key, next[b.key])) delete next[b.key];
+    if (sideMatches(b, key, value) && sideMatches(a, a.key, next[a.key])) delete next[a.key];
+  }
   if (key === 'hand_size' && value && ['Huge Hands', 'Tiny Hands'].includes(next.proportions)) delete next.proportions;
   if (key === 'proportions' && ['Huge Hands', 'Tiny Hands'].includes(value)) delete next.hand_size;
   if (key === 'ear_size' && value && next.ears === 'No Ears') delete next.ears;
@@ -113,3 +183,161 @@ export const CHARACTER_SIZE_GROUPS = [
     ['Extra Large', 'extra-large feet relative to the body, both feet fully visible in the frame'],
   ] },
 ];
+
+// Everyday vocabulary added on top of the original builder. Every option stays
+// an original, fictional adult: animal types are "anthropomorphic adult", nothing
+// names a real person, brand or franchise, and Exaggeration styles silhouette,
+// hair, clothing and accessories only. New picks are additive, so saved passports
+// keep working.
+
+// Exaggeration reaches the prompt next to the heritage, skin tone and face-shape
+// picks, so its wording names what it may scale and states what it never touches.
+// It must not be reworded to "the chosen features" or to a caricature.
+export const EXAGGERATION_SCOPE = 'silhouette, hair volume, clothing and accessory scale only';
+export const EXAGGERATION_GUARD = 'skin tone and ethnic or facial heritage traits are never exaggerated';
+
+// New groups. `after` is the group each one is placed behind (tab order and
+// prompt order); it is placement metadata and is not kept on the finished group.
+export const CHARACTER_NEW_GROUPS = [
+  { id: 'exaggeration', tab: 'Face', label: 'Exaggeration', after: 'character_type', options: [
+    ['Natural', 'natural, believable feature proportions'],
+    ['Bold', `bold stylised exaggeration of ${EXAGGERATION_SCOPE}; ${EXAGGERATION_GUARD}`],
+    ['Extreme', `extreme stylised exaggeration of ${EXAGGERATION_SCOPE}; ${EXAGGERATION_GUARD}`],
+  ] },
+  { id: 'brows', tab: 'Face', label: 'Eyebrows', after: 'head_shape', options: [
+    ['Thick', 'thick strong eyebrows'],
+    ['Thin', 'thin delicate eyebrows'],
+    ['Arched', 'high arched eyebrows'],
+    ['Straight', 'straight flat eyebrows'],
+    ['Bushy', 'bushy untamed eyebrows'],
+    ['Bleached', 'bleached, nearly invisible eyebrows'],
+  ] },
+  { id: 'nose_shape', tab: 'Face', label: 'Nose Shape', after: 'head_shape', options: [
+    ['Straight', 'straight nose with a defined bridge'],
+    ['Button', 'small rounded button nose'],
+    ['Aquiline', 'aquiline nose with a high bridge'],
+    ['Snub', 'softly upturned snub nose'],
+    ['Wide', 'wide-bridged nose with softly flared nostrils'],
+    ['Narrow', 'narrow slender nose'],
+    ['Round Tip', 'nose with a soft rounded tip'],
+  ] },
+  { id: 'cheeks', tab: 'Face', label: 'Cheeks', after: 'head_shape', options: [
+    ['High Cheekbones', 'high sculpted cheekbones'],
+    ['Full Cheeks', 'full rounded cheeks'],
+    ['Dimples', 'visible dimples'],
+    ['Hollow Cheeks', 'hollow angular cheeks'],
+  ] },
+  { id: 'lips', tab: 'Face', label: 'Lips', after: 'head_shape', options: [
+    ['Full', 'full soft lips'],
+    ['Thin', 'thin refined lips'],
+    ['Cupid Bow', 'lips with a sharply defined cupid bow'],
+    ['Glossy', 'high-gloss lips'],
+    ['Matte Dark', 'matte dark lip color'],
+  ] },
+  { id: 'chin_jaw', tab: 'Face', label: 'Chin & Jaw', after: 'head_shape', options: [
+    ['Strong Jaw', 'strong, defined jawline'],
+    ['Soft Jaw', 'soft rounded jawline'],
+    ['Pointed Chin', 'pointed chin'],
+    ['Round Chin', 'rounded chin'],
+    ['Cleft Chin', 'cleft chin'],
+    ['Prominent Chin', 'prominent forward chin'],
+  ] },
+  { id: 'headwear', tab: 'Style', label: 'Hats & Headphones', after: 'wardrobe_style', options: [
+    ['Baseball Cap', 'wearing a plain baseball cap'],
+    ['Beanie', 'wearing a knitted beanie'],
+    ['Wide-Brim Hat', 'wearing a wide-brim hat'],
+    ['Bucket Hat', 'wearing a bucket hat'],
+    ['Headphones', 'wearing over-ear headphones'],
+  ] },
+  { id: 'everyday_accessories', tab: 'Style', label: 'Everyday Accessories', after: 'wardrobe_style', options: [
+    ['Glasses', 'wearing everyday glasses at a normal scale'],
+    ['Round Glasses', 'wearing round wire-framed glasses'],
+    ['Sunglasses', 'wearing regular-sized sunglasses'],
+    ['Jewellery', 'wearing small hoop earrings and a thin chain necklace'],
+    ['Everyday Bag', 'carrying an ordinary everyday shoulder bag'],
+    ['Tote Bag', 'carrying a canvas tote bag'],
+  ] },
+];
+
+// Extra options for groups that already exist, inserted behind the option
+// named in `after` (appended if it is ever missing). Existing options never move
+// relative to each other, and the first option of every group is unchanged.
+export const CHARACTER_OPTION_ADDITIONS = {
+  character_type: [{ after: 'Ant', options: [
+    ['Cat', 'anthropomorphic adult cat character with whiskers and feline eyes'],
+    ['Dog', 'anthropomorphic adult dog character with a canine muzzle and expressive ears'],
+    ['Rodent', 'anthropomorphic adult rodent character with whiskers and a long thin tail'],
+    ['Bird', 'anthropomorphic adult bird character with feathers and a beak'],
+  ] }],
+  skin_tone: [{ after: 'Golden', options: [['Light', 'light skin tone']] }],
+  eye_color: [{ after: 'Amber', options: [['Hazel', 'hazel eyes']] }],
+  eye_shape: [{ after: 'Upturned', options: [
+    ['Almond', 'almond-shaped eyes'],
+    ['Monolid', 'monolid eyes with a smooth lid line'],
+    ['Hooded', 'hooded eyelids'],
+    ['Uneven', 'slightly asymmetric, uneven eyes'],
+  ] }],
+  mouth: [{ after: 'Unique Teeth', options: [
+    ['Gap Teeth', 'a small gap between the front teeth'],
+    ['Crooked Teeth', 'charmingly crooked teeth'],
+    ['Gold Tooth', 'one gold tooth'],
+    ['Bright Smile', 'wide, even, bright smile'],
+  ] }],
+  facial_hair: [{ after: 'Clean Shaven', options: [
+    ['Stubble', 'short stubble shadow along the jaw'],
+    ['Full Beard', 'full natural beard'],
+    ['Goatee', 'neatly trimmed goatee'],
+  ] }],
+  hair: [{ after: 'Punk', options: [
+    ['Buzz Cut', 'closely buzzed short hair'],
+    ['Bowl Cut', 'blunt rounded bowl haircut with a straight fringe, adult styling'],
+    ['Mullet', 'mullet haircut, short at the front and long at the back'],
+    ['Braids', 'long thick braids'],
+    ['Pigtails', 'two high pigtails with polished adult styling'],
+    ['Perm', 'tight voluminous permed curls'],
+    ['Beehive', 'tall smooth beehive updo'],
+    ['Pixie Cut', 'cropped textured pixie cut'],
+    ['Ponytail', 'high sleek ponytail'],
+    ['Top Knot', 'high top-knot bun'],
+    ['Undercut', 'undercut with shaved sides and a longer top'],
+    ['Pompadour', 'voluminous swept-up pompadour'],
+    ['Cornrows', 'neat cornrow braids'],
+    ['Locs', 'long natural locs'],
+  ] }],
+  hair_color: [
+    { after: 'Blonde', options: [['Ginger', 'ginger red hair'], ['Auburn', 'rich auburn hair'], ['Platinum', 'platinum blonde hair']] },
+    { after: 'Pink', options: [['Lilac', 'soft lilac hair'], ['Teal', 'deep teal hair']] },
+  ],
+  wardrobe_style: [{ after: 'Modern Basics', options: [
+    ['Streetwear', 'casual streetwear: oversized hoodie, cargo trousers and chunky sneakers'],
+    ['Y2K', 'early-2000s Y2K fashion with metallic fabrics and bright futuristic accents'],
+    ['Goth', 'goth-inspired layered black clothing with lace, silver hardware and heavy boots'],
+    ['Retro', 'retro 1970s-inspired outfit with earth tones, flared trousers and wide collars'],
+    ['Sporty', 'sporty athleisure with a zip track jacket, joggers and trainers'],
+    ['Business Suit', 'sharply tailored business suit with a crisp shirt'],
+  ] }],
+};
+
+function insertAfter(options, block) {
+  const fresh = block.options.filter(([label]) => !options.some(([existing]) => existing === label));
+  const at = options.findIndex(([label]) => label === block.after);
+  const index = at === -1 ? options.length : at + 1;
+  return [...options.slice(0, index), ...fresh, ...options.slice(index)];
+}
+
+const finished = ({ id, tab, label, options }) => ({ id, tab, label, options });
+
+/**
+ * The finished builder: the original groups with their extra options inserted,
+ * and each new group placed behind the group it refines. Pure; the inputs are
+ * never changed. A new group whose anchor is missing goes last.
+ */
+export function extendCharacterGroups(groups, additions = CHARACTER_OPTION_ADDITIONS, newGroups = CHARACTER_NEW_GROUPS) {
+  const ids = new Set(groups.map(({ id }) => id));
+  const fresh = newGroups.filter(({ id }) => !ids.has(id));
+  const result = groups.flatMap((group) => [
+    { ...group, options: (Object.hasOwn(additions, group.id) ? additions[group.id] : []).reduce((all, block) => insertAfter(all, block), group.options) },
+    ...fresh.filter(({ after }) => after === group.id).map(finished),
+  ]);
+  return [...result, ...fresh.filter(({ after }) => !ids.has(after)).map(finished)];
+}
