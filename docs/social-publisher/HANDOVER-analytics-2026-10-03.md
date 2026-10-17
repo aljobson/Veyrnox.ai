@@ -1,6 +1,6 @@
-# Handover: Veyrnox Publish analytics (2026-10-03)
+# Handover: Veyrnox.ai Publish analytics (2026-10-03)
 
-For the next agent picking up Veyrnox Publish. It covers the analytics work on branch
+For the next agent picking up Veyrnox.ai Publish. It covers the analytics work on branch
 `claude/metricool-zernio-replica-adc1db` and what the owner wants built next. The general
 project handover is [docs/product/HANDOVER-2026-10-03.md](../product/HANDOVER-2026-10-03.md);
 read that first for the repo's rules, deploy model and verification standard.

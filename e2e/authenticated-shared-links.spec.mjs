@@ -69,7 +69,7 @@ for (const [query, copy] of [
   const fixture = await installProductFixtures(page);
   await openReal(fixture, `/social/connect/callback/facebook${query}`);
   await expect(page.getByText(copy, { exact: false })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Back to Veyrnox Publish', exact: true })).toHaveAttribute('href', '/app/publish');
+  await expect(page.getByRole('link', { name: 'Back to Veyrnox.ai Publish', exact: true })).toHaveAttribute('href', '/app/publish');
   expect(productWrites(fixture)).toEqual([]);
 });
 
@@ -102,7 +102,7 @@ test('Social callback synthetic success returns to the real Publish UI with no p
   const fixture = await callbackFixture(page, ({ json }) => json({ ok: true }));
   await openReal(fixture, '/social/connect/callback/facebook?code=synthetic-code&state=synthetic-state');
   await expect(page).toHaveURL(/\/app\/publish$/);
-  await expect(page.getByRole('heading', { level: 1, name: 'Veyrnox Publish', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Veyrnox.ai Publish', exact: true })).toBeVisible();
   expect(productWrites(fixture).map(r => r.path)).toEqual(['/api/v1/social/accounts/facebook/callback']);
 });
 
@@ -147,7 +147,7 @@ test('Team invitation handles synthetic identity refusal then accepts the same i
   await expect(page.getByRole('alert').filter({ hasText: `Sign in with ${SYNTHETIC_USER.email} to accept this invitation.` })).toBeVisible();
   await page.getByRole('button', { name: 'Accept invitation', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'You joined Synthetic invited brand', exact: true })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Open Veyrnox Publish', exact: true })).toHaveAttribute('href', '/app/publish');
+  await expect(page.getByRole('link', { name: 'Open Veyrnox.ai Publish', exact: true })).toHaveAttribute('href', '/app/publish');
   expect(productWrites(fixture).map(r => r.body)).toEqual([{ token: INVITE_TOKEN }, { token: INVITE_TOKEN }]);
 });
 

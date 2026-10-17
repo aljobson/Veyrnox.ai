@@ -1,4 +1,4 @@
-# 4. User Flows — Veyrnox Publish
+# 4. User Flows — Veyrnox.ai Publish
 
 > **As of 2026-10-08 (repo `main` at `bee1ea4f`).** Each flow below says what is built. §4.6 (reviewer
 > approval), §4.9 (SmartLink) and §4.10 (multi-brand) are **design only (not built)** and are kept as the

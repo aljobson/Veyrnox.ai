@@ -96,7 +96,7 @@ export default function SocialConnectCallback() {
                     <button disabled={busy || !resourceId} className="rounded-full bg-vx-accent px-4 py-2 text-sm font-bold text-black disabled:opacity-50">{busy ? 'Connecting…' : 'Connect destination'}</button>
                 </form>}
                 {failed && (
-                    <a href="/app/publish" className="mt-4 inline-block text-sm text-white underline">Back to Veyrnox Publish</a>
+                    <a href="/app/publish" className="mt-4 inline-block text-sm text-white underline">Back to Veyrnox.ai Publish</a>
                 )}
             </div>
         </Main>

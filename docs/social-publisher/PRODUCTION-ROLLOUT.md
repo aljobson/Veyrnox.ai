@@ -1,4 +1,4 @@
-# Veyrnox Publish production rollout
+# Veyrnox.ai Publish production rollout
 
 Prepared 9 October 2026. Release platforms individually, starting with YouTube.
 The owner does not need accounts on every platform: designated administrators

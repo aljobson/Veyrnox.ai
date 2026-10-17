@@ -161,7 +161,7 @@ projects have no preview switch any more.
 | Cloudflare Stream | `lib/cinema/stream.js` | Cinema upload (tus) and signed playback | Bearer + signing JWK | webhook HMAC (`webhook-signature`) |
 | Cloudflare Access | `lib/accessJwt.js` | admin routes | — | Worker re-verifies the Access JWT |
 | Turnstile | `components/Turnstile.jsx` | CAPTCHA on auth | — | verified by Supabase Auth |
-| Instagram, LinkedIn, X, TikTok, YouTube, Facebook, Threads, Pinterest, Bluesky, Twitch, Google Business Profile | `adapters/social/*` (the last six: `facebook`, `threads`, `pinterest`, `bluesky`, `twitch`, `gmb`, shared `common.js`; PR #637) | Veyrnox Publish | OAuth2 (PKCE forwarded by X and Business Profile); Bluesky uses a dedicated app password, never stored; tokens AES-GCM encrypted at rest; HMAC-signed state; Facebook, Pinterest and Business Profile destinations chosen from an encrypted, single-use, ten-minute server-side selection (0228) | no inbound webhooks; cron publishes. Pinterest, Business Profile, Twitch, Bluesky and Threads tokens are renewed by the sweeps (atomic rotation, 0228); a durable pre-submission marker stops duplicate public posts (`provider_result_unknown_reconcile_before_retry`) |
+| Instagram, LinkedIn, X, TikTok, YouTube, Facebook, Threads, Pinterest, Bluesky, Twitch, Google Business Profile | `adapters/social/*` (the last six: `facebook`, `threads`, `pinterest`, `bluesky`, `twitch`, `gmb`, shared `common.js`; PR #637) | Veyrnox.ai Publish | OAuth2 (PKCE forwarded by X and Business Profile); Bluesky uses a dedicated app password, never stored; tokens AES-GCM encrypted at rest; HMAC-signed state; Facebook, Pinterest and Business Profile destinations chosen from an encrypted, single-use, ten-minute server-side selection (0228) | no inbound webhooks; cron publishes. Pinterest, Business Profile, Twitch, Bluesky and Threads tokens are renewed by the sweeps (atomic rotation, 0228); a durable pre-submission marker stops duplicate public posts (`provider_result_unknown_reconcile_before_retry`) |
 | fal.ai durable dispatch (ADR-0076/0077/0079) | `lib/falDispatch*.js`, `fal_dispatch` table | atomic admission plus one irreversible fal submission; staging Queue consumer; every switch (`FAL_DURABLE_DISPATCH_ENABLED`, `FAL_DISPATCH_QUEUE_ENABLED`, `FAL_DISPATCH_SCHEMA_ENABLED`) off in production | — | cron `fal_dispatch` task when the schema switch is on |
 | Remote MCP connector (ADR-0100) | `app/api/v1/mcp`, `lib/veyrnoxMcp.js`, `@modelcontextprotocol/server` | `/api/v1/mcp` for OAuth clients; middleware admits only Supabase access tokens carrying an OAuth `client_id`, a browser session gets 403 `oauth_client_required` | Supabase OAuth 2.1 | activation checks in `docs/operations/mcp.md`; unverified |
 | typesafe.ai (Jev) | `lib/jev.js` | classify untyped provider refusals (ADR-0066) | API key | ships `off` |
@@ -230,7 +230,7 @@ most recorded by `observeRecovery`: fal dispatch (when
 `FAL_DISPATCH_SCHEMA_ENABLED`), project asset cleanup, Cinema upload recovery
 and removal, Stripe top-up backfill, upload and reservation sweeps, Auto
 Short step sweep, video-agent (montage) sweep, asset reap, GrsAI and BytePlus
-polls, the Veyrnox Publish queue, the Publish analytics sweep (only when
+polls, the Veyrnox.ai Publish queue, the Publish analytics sweep (only when
 `PUBLISH_ANALYTICS_ENABLED`; also fetches Twitch video statistics when the
 extended switch is on), customer webhook delivery, scheduled report delivery
 and RSS autolists (each when its `PUBLISH_RUNTIME_FLAGS` key is on), and weekly
