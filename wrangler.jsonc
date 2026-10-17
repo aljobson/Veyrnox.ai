@@ -136,8 +136,6 @@
     "CINEMA_UPLOAD_REMOVAL_ENABLED": "true",
     // Fail closed until Cinema bytes enter private quarantine and the exact
     // SHA-256 payload passes malware and media-structure inspection.
-    "CINEMA_PROXY_UPLOADS_ENABLED": "false",
-    "CREATOR_MONETISATION_ENABLED": "false",
     "CINEMA_SUBSCRIPTIONS_ENABLED": "false",
     // Paid credit Unlocks remain closed. Free playback has its own bounded
     // path through CINEMA_FREE_CEILING_ENABLED below.
@@ -161,14 +159,6 @@
     // is free, add "false". Staging names it.
     "CINEMA_PUBLISHING_ENABLED": "true",
     "CINEMA_VIEWING_ENABLED": "true",
-    "VOTING_ENABLED": "false",
-    "CINEMA_AUDIENCE_ENABLED": "false",
-    "CINEMA_RANKINGS_ENABLED": "false",
-    "CINEMA_RETENTION_ENABLED": "false",
-    "CINEMA_CREATOR_ANALYTICS_ENABLED": "false",
-    "COMMENTS_ENABLED": "false",
-    "STORY_POLLS_ENABLED": "false",
-    "PPV_ENABLED": "false",
     // ADR-0107: public-site languages (/es, /fr, ...). On in production at the owner's request ("all languages in PROD", 2026-10-17).
     // Production is at the text-binding cap, so this replaced the unused PREMIERES_ENABLED "false" (absent is off).
     // Rollback: set "false" or remove it and deploy; prefixed paths then answer not-found and the page reads English.
@@ -207,7 +197,6 @@
     // before an admin holds a factor locks every admin out of their own
     // dashboard, so that order is not optional.
     "ADMIN_REQUIRE_AAL2": "true",
-    "ADMIN_CREDIT_GRANTS_ENABLED": "false",
     // ADR-0066: Jev sorts untyped provider submit refusals into
     // provider_moderation / provider_input_rejected. off | shadow | enforce.
     // Needs the TYPESAFE_API_KEY secret; shadow only logs the label.
@@ -310,7 +299,6 @@
         "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_bAxQiodzBhI6bV7lmo9gMQ_Hlg9_Ish",
         "TENANT_PROJECTS_ENABLED": "true",
         "PROJECT_MEDIA_UPLOADS_ENABLED": "true",
-        "FAL_SUBMIT_OUTCOME_ENABLED": "false",
         "FAL_DISPATCH_SCHEMA_ENABLED": "true",
         "RECOVERY_HEALTH_ENABLED": "true",
         // Production controls, named here because vars are not inherited (audit 2026-10-09, S-02;
@@ -328,19 +316,10 @@
         // CORS allows PUT with Content-Type and If-None-Match from this origin (preflight checked 2026-10-09).
         // Production CORS is ready as of 2026-10-10; the real browser/R2 activation proof is still required.
         "UPLOAD_INTEGRITY_ENABLED": "true",
-        "FAL_DURABLE_DISPATCH_ENABLED": "false",
-        "FAL_DISPATCH_QUEUE_ENABLED": "false",
         // Test-mode subscription acceptance is open on staging only. The
         // staging Worker has Stripe, Resend and Operator-alert secret bindings;
         // production remains false above until the external gates are signed.
         "SUBSCRIPTIONS_ENABLED": "true",
-        "VOTING_ENABLED": "false",
-        "CINEMA_AUDIENCE_ENABLED": "false",
-        "CINEMA_RANKINGS_ENABLED": "false",
-        "CINEMA_RETENTION_ENABLED": "false",
-        "CINEMA_CREATOR_ANALYTICS_ENABLED": "false",
-        "COMMENTS_ENABLED": "false",
-        "STORY_POLLS_ENABLED": "false",
         // Public Oddlings gallery (production omits the var on purpose, see above); open on staging for testing.
         "ODDLINGS_PUBLIC_ENABLED": "true",
         // ADR-0107: public-site languages (/es, /fr, ...). Open on staging for review; production omits the var, which is off.
@@ -414,7 +393,6 @@
         "CREATOR_UPLOADS_ENABLED": "true",
         "CINEMA_UPLOAD_RECOVERY_ENABLED": "true",
         "CINEMA_UPLOAD_REMOVAL_ENABLED": "true",
-        "CINEMA_PROXY_UPLOADS_ENABLED": "false",
         // Publication acceptance: administrators can publish the prepared
         // staging title and viewers can load and play entitled Stream media.
         // Production keeps all three switches false.
