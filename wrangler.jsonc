@@ -338,6 +338,8 @@
         "STORY_POLLS_ENABLED": "false",
         // Public Oddlings gallery (production omits the var on purpose, see above); open on staging for testing.
         "ODDLINGS_PUBLIC_ENABLED": "true",
+        // ADR-0106: public-site languages (/es, /fr, ...). Open on staging for review; production omits the var, which is off.
+        "LOCALES_ENABLED": "true",
         // ADR-0067: Chat is open on staging for testing only. No text model is
         // active until the owner activates one; production stays "false".
         "CHAT_ENABLED": "true",

@@ -8,19 +8,45 @@ import { LedgerExample, FAQBlock, ClosingCTA, FooterForest } from './_sections/f
 import { MarketingNav } from './_components/NavBar';
 import { SectionJump } from './_components/SectionJump';
 import { Main } from './_components/Main';
+import { LanguageSwitcher } from './_components/LanguageSwitcher';
+import { getT } from '../../lib/i18n/server';
+import { LOCALES, languageAlternates, localeInfo, localesEnabled } from '../../lib/i18n/locales.mjs';
+import { rich } from '../../lib/i18n/rich';
+import { OG_IMAGE, OPEN_GRAPH_BASE } from '../seo';
 
-// FAQPage built from the same FAQ constant the page renders, so the markup
-// and the structured data cannot drift apart.
-const FAQ_LD = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  '@id': `${SITE_URL}/#faq`,
-  mainEntity: FAQ.map(({ q, a }) => ({
-    '@type': 'Question',
-    name: q,
-    acceptedAnswer: { '@type': 'Answer', text: a },
-  })),
-};
+// FAQPage built from the same messages the page renders, so the markup and
+// the structured data cannot drift apart.
+function faqLd(t, locale) {
+  const path = locale === 'en' ? '' : `/${locale}`;
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    '@id': `${SITE_URL}${path}/#faq`,
+    inLanguage: localeInfo(locale).hreflang,
+    mainEntity: FAQ.map((_, i) => ({
+      '@type': 'Question',
+      name: t(`home.faq.${i}.q`),
+      acceptedAnswer: { '@type': 'Answer', text: t(`home.faq.${i}.a`) },
+    })),
+  };
+}
+
+// Title, description and the per-language alternates (ADR-0106). With
+// languages off this is the same as the root layout's defaults.
+export async function generateMetadata() {
+  const { locale, t } = await getT();
+  if (!localesEnabled()) return {};
+  const path = locale === 'en' ? '/' : `/${locale}`;
+  const title = t('meta.title');
+  const description = t('meta.description');
+  return {
+    title: { absolute: title },
+    description,
+    alternates: { canonical: path, languages: languageAlternates('/') },
+    openGraph: { ...OPEN_GRAPH_BASE, title, description, url: path, locale: localeInfo(locale).og, alternateLocale: LOCALES.filter((l) => l.code !== locale).map((l) => l.og) },
+    twitter: { card: 'summary_large_image', title, description, images: [OG_IMAGE.url] },
+  };
+}
 
 export const revalidate = 300;
 
@@ -70,6 +96,7 @@ async function loadCatalog() {
 
 export default async function VeyrnoxLanding() {
   const catalog = await loadCatalog();
+  const { locale, t } = await getT();
   return (
     <div className="min-h-dvh">
       <MarketingNav hideAnnouncementOnMobile />
@@ -80,30 +107,30 @@ export default async function VeyrnoxLanding() {
       <FeaturedHeroCards catalog={catalog} />
       <PresetWall catalog={catalog} />
       <ModelShelf catalog={catalog} />
-      <LedgerExample catalog={catalog} />
+      <LedgerExample catalog={catalog} locale={locale} />
       {/* Same gap above as every other section, and the rule sits on the
           content column: it used to touch the statement section's last line
           and overhang the text by the page gutter on both sides. */}
       <section id="publish" aria-labelledby="publish-title" className="max-w-[1300px] mx-auto px-4 sm:px-6 mt-28 sm:mt-36">
         <div className="border-t border-vx-border pt-16">
-        <h2 id="publish-title" className="vx-display text-[36px] sm:text-[48px]">Veyrnox Publish</h2>
+        <h2 id="publish-title" className="vx-display text-[36px] sm:text-[48px]">{t('home.publish.title')}</h2>
         <p className="mt-5 max-w-[68ch] text-vx-fg-body text-[16px] leading-[1.7]">
-          Connect a social account, choose media from your Library or device, and publish immediately.
-          The Publish Plan adds multi-account publishing, scheduling and rescheduling, a content calendar,
-          cross-account analytics, CSV exports, and best-time and posting-frequency recommendations.
+          {t('home.publish.p1')}
         </p>
         <p className="mt-4 max-w-[68ch] text-vx-fg-body text-[16px] leading-[1.7]">
-          Connecting YouTube is a separate consent step from signing in to Veyrnox.ai.
-          Videos are sent to your selected channel only when you choose to post or schedule them.
-          Read our <a href="/legal/privacy#youtube" className="underline underline-offset-4">YouTube data privacy information</a> and <a href="/legal/terms" className="underline underline-offset-4">Terms</a>.
+          {rich(t('home.publish.p2'), {
+            privacy: <a href="/legal/privacy#youtube" className="underline underline-offset-4">{t('home.publish.privacy')}</a>,
+            terms: <a href="/legal/terms" className="underline underline-offset-4">{t('home.publish.terms')}</a>,
+          })}
         </p>
         </div>
       </section>
-      <FAQBlock />
-      <ClosingCTA />
+      <FAQBlock locale={locale} />
+      <ClosingCTA locale={locale} />
       </Main>
-      <FooterForest />
-      <JsonLd data={FAQ_LD} />
+      <FooterForest locale={locale} />
+      {localesEnabled() && <LanguageSwitcher locale={locale} path="/" />}
+      <JsonLd data={faqLd(t, locale)} />
       <SectionJump />
     </div>
   );
