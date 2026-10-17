@@ -226,7 +226,7 @@ export default function OddlingStudio() {
   return (
     <>
       <div className="grid min-h-[calc(100dvh-4rem)] xl:grid-cols-[430px_minmax(0,1fr)]">
-        <aside data-assistant-target="oddlings.builder" data-assistant-loaded-passport={loadedPassportId || undefined} className="border-b border-vx-border bg-vx-panel xl:border-b-0 xl:border-r">
+        <aside data-assistant-target="oddlings.builder" data-assistant-loaded-passport={loadedPassportId || undefined} className="min-w-0 border-b border-vx-border bg-vx-panel xl:border-b-0 xl:border-r">
           <div className="sticky top-16 max-h-[calc(100dvh-4rem)] overflow-y-auto p-5 sm:p-7">
             <div className="flex items-center justify-between gap-4">
               <div>

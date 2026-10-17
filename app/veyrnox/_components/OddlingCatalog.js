@@ -18,8 +18,8 @@ export function OddlingCatalog({ picks, onPick, onClear }) {
   const summary = [['Hair', picks?.hair], ['Outfit', picks?.wardrobe_style], ['Body', picks?.body_type]];
 
   return (
-    <section data-assistant-target="oddlings.doll-lab" aria-label="Oddling catalog" className="mt-5 overflow-hidden rounded-2xl border border-vx-border bg-vx-base">
-      <div className="grid grid-cols-[148px_1fr] items-stretch gap-3 border-b border-vx-border p-3">
+    <section data-assistant-target="oddlings.doll-lab" aria-label="Oddling catalog" className="mt-5 min-w-0 max-w-full overflow-hidden rounded-2xl border border-vx-border bg-vx-base">
+      <div className="grid grid-cols-[148px_minmax(0,1fr)] items-stretch gap-3 border-b border-vx-border p-3">
         <div className="rounded-xl border border-vx-border bg-vx-panel p-1"><OddlingMannequin picks={picks} className="h-56 w-full" label="Preview figure of your Oddling" /></div>
         <div className="flex min-w-0 flex-col">
           <span className="font-vx-mono text-[9px] font-bold tracking-[0.14em] text-vx-accent">ODDLING CATALOG</span>
@@ -32,7 +32,7 @@ export function OddlingCatalog({ picks, onPick, onClear }) {
         </div>
       </div>
 
-      <div role="tablist" aria-label="Catalog category" className="flex gap-1 overflow-x-auto border-b border-vx-border px-2 py-2">
+      <div role="tablist" aria-label="Catalog category" className="flex min-w-0 max-w-full gap-1 overflow-x-auto border-b border-vx-border px-2 py-2">
         {CATALOG_CATEGORIES.map((item) => {
           const on = item.id === categoryId, { picked } = categoryProgress(item, picks);
           return (
