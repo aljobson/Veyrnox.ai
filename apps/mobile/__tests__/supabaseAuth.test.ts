@@ -13,12 +13,12 @@ describe('supabase auth', () => {
     });
 
     test('authorize url carries the PKCE challenge and our redirect', () => {
-        const url = new URL(authorizeUrl('google', 'chal', 'veyrnox://auth/callback'));
+        const url = new URL(authorizeUrl('google', 'chal', 'ai.veyrnox.app://auth/callback'));
         expect(url.pathname).toBe('/auth/v1/authorize');
         expect(url.searchParams.get('provider')).toBe('google');
         expect(url.searchParams.get('code_challenge')).toBe('chal');
         expect(url.searchParams.get('code_challenge_method')).toBe('s256');
-        expect(url.searchParams.get('redirect_to')).toBe('veyrnox://auth/callback');
+        expect(url.searchParams.get('redirect_to')).toBe('ai.veyrnox.app://auth/callback');
     });
 
     test('exchanges a PKCE code for a session with an absolute expiry', async () => {

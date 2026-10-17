@@ -16,14 +16,14 @@ The `/api/v1/*` surface is Bearer-only and already carries everything the core l
    - iOS Apple: native `expo-apple-authentication`, identity token exchanged at `/auth/v1/token?grant_type=id_token` with a hashed nonce to Apple and the raw nonce to Supabase.
    - Google, and Apple on Android: system browser session with PKCE (`/auth/v1/authorize`, then `grant_type=pkce`).
    - Refresh token in Keychain / Keystore (`expo-secure-store`); access token in memory only; refresh is single-flight because Supabase rotates refresh tokens. The browser cookie BFF (ADR-0102) is not used; it is for browsers.
-   - `redirect_to` is the constant `veyrnox://auth/callback`, never user input. This is the one non-web origin we control and amends CLAUDE.md's "origin we control" rule for the app scheme only.
+   - `redirect_to` is the constant `ai.veyrnox.app://auth/callback`, never user input. The scheme is the bundle id, not `veyrnox://`: the sibling Veyrnox wallet app claims `veyrnox://`, so a redirect on that scheme could be taken by the wrong app (hard wall). This is the one non-web origin we control and amends CLAUDE.md's "origin we control" rule for the app scheme only.
 3. **Email and password is not in M0.** Turnstile is enforced on those paths (ADR-0026) and a native client cannot produce a token. M1 adds it through a Turnstile web view; until then email-only accounts use the web.
 4. **Billing is deliberately out of M0.** Apple and Google require their own in-app purchase for digital credits, so Stripe checkout cannot be used in the app. Credits bought on the web still show in the app. M2 designs store billing (RevenueCat is connected to this workspace) as its own ADR, including how store purchases reach `credit_top_up` and the refund and dispute paths.
 5. **Slices.** M0: sign-in, balance. M1: chat with Vey, email sign-in. M2: generation, job status, library. M3: billing. M4+: editor, Cinema, Publish, projects, account. Nothing ships to the stores before M2.
 
 ## Owner prerequisites (not visible from the repo)
 
-- Supabase redirect allowlist (production and staging) must include `veyrnox://auth/callback`.
+- Supabase redirect allowlist (production and staging) must include `ai.veyrnox.app://auth/callback`.
 - Supabase Apple provider: add `ai.veyrnox.app` to the authorized client IDs, besides the Services ID (native iOS tokens carry the bundle id as audience).
 - Apple Developer: App ID `ai.veyrnox.app` with Sign in with Apple; App Store Connect record. Google: Android OAuth client is not needed for the browser flow.
 - Confirm the bundle id before the first store build; it cannot change afterwards.

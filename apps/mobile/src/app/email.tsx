@@ -1,5 +1,6 @@
-import { Redirect, Stack } from 'expo-router';
-import { useState } from 'react';
+import { Redirect, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { TurnstileView } from '../auth/TurnstileView';
 import { useAuth } from '../auth/AuthProvider';
@@ -12,6 +13,8 @@ type Mode = 'signIn' | 'signUp';
 
 export default function EmailAuth() {
     const { status, signInWithEmail, signUpWithEmail } = useAuth();
+    const insets = useSafeAreaInsets();
+    const router = useRouter();
     const [mode, setMode] = useState<Mode>('signIn');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -23,7 +26,23 @@ export default function EmailAuth() {
 
     if (status === 'signedIn') return <Redirect href="/(app)" />;
 
+    const [, setCaptchaReady] = useState(false);
+    const captchaReadyRef = useRef(false);
+
+    // The check never reported in: the page or Cloudflare did not load.
+    useEffect(() => {
+        captchaReadyRef.current = false;
+        setCaptchaReady(false);
+        const t = setTimeout(() => setCaptchaError((e) => e || !captchaReadyRef.current), 15000);
+        return () => clearTimeout(t);
+    }, [resetKey]);
+
     function onCaptcha(m: TurnstileMessage) {
+        if (m.type === 'ready') {
+            captchaReadyRef.current = true;
+            setCaptchaReady(true);
+            return;
+        }
         if (m.type === 'token') {
             setCaptcha(m.token);
             setCaptchaError(false);
@@ -62,8 +81,11 @@ export default function EmailAuth() {
     const ready = !busy && captcha !== null;
     return (
         <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-            <Stack.Screen options={{ title: mode === 'signIn' ? 'Sign in' : 'Create account', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.text }} />
-            <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+            <ScrollView contentContainerStyle={[styles.body, { paddingTop: insets.top + 16 }]} keyboardShouldPersistTaps="handled">
+                <Pressable accessibilityRole="button" onPress={() => router.back()}>
+                    <Text style={styles.switch}>Back</Text>
+                </Pressable>
+                <Text style={styles.heading}>{mode === 'signIn' ? 'Sign in' : 'Create account'}</Text>
                 <TextInput
                     style={styles.input}
                     value={email}
@@ -108,6 +130,7 @@ const styles = StyleSheet.create({
     submit: { backgroundColor: colors.accent, borderRadius: 12, paddingVertical: 16, alignItems: 'center' },
     off: { opacity: 0.4 },
     submitText: { color: colors.text, fontWeight: '600', fontSize: 16 },
+    heading: { color: colors.text, fontSize: 28, fontWeight: '700' },
     message: { color: colors.muted },
     error: { color: colors.danger },
     switchRow: { alignItems: 'center', marginTop: 8 },

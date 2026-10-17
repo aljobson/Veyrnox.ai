@@ -27,7 +27,7 @@
       "expo-apple-authentication",
       "expo-web-browser"
     ],
-    "scheme": "veyrnox",
+    "scheme": "ai.veyrnox.app",
     "experiments": {
       "typedRoutes": true
     }

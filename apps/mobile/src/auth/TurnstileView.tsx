@@ -33,7 +33,9 @@ export function TurnstileView({ resetKey, onMessage }: Props) {
                     const message = parseTurnstileMessage(e.nativeEvent.data);
                     if (message) onMessage(message);
                 }}
-                onShouldStartLoadWithRequest={(req) => allowTurnstileNavigation(req.url)}
+                onError={() => onMessage({ type: 'error', code: 'load_failed' })}
+                onHttpError={() => onMessage({ type: 'error', code: 'load_failed' })}
+                onShouldStartLoadWithRequest={(req) => allowTurnstileNavigation(req.url, config.apiBase)}
             />
         </View>
     );

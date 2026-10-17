@@ -30,4 +30,4 @@ export const config: EnvConfig = ENVIRONMENTS[APP_ENV];
 
 // Registered as the app scheme in app.json. Supabase must list this exact URL
 // as an allowed redirect (ADR-0106, owner prerequisite).
-export const AUTH_REDIRECT_URL = 'veyrnox://auth/callback';
+export const AUTH_REDIRECT_URL = 'ai.veyrnox.app://auth/callback';

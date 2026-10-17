@@ -14,6 +14,7 @@ export function turnstileHtml(siteKey: string): string {
 <script>
 function post(m){window.ReactNativeWebView.postMessage(JSON.stringify(m))}
 function init(){
+  post({type:'ready'});
   turnstile.render('#w',{sitekey:'${siteKey}',theme:'dark',
     callback:function(t){post({type:'token',token:t})},
     'error-callback':function(c){post({type:'error',code:String(c)})},
@@ -28,7 +29,8 @@ function init(){
 export type TurnstileMessage =
     | { readonly type: 'token'; readonly token: string }
     | { readonly type: 'error'; readonly code: string }
-    | { readonly type: 'expired' };
+    | { readonly type: 'expired' }
+    | { readonly type: 'ready' };
 
 export function parseTurnstileMessage(raw: string): TurnstileMessage | null {
     let m: unknown;
@@ -44,12 +46,14 @@ export function parseTurnstileMessage(raw: string): TurnstileMessage | null {
     }
     if (o.type === 'error' && typeof o.code === 'string') return { type: 'error', code: o.code.slice(0, 40) };
     if (o.type === 'expired') return { type: 'expired' };
+    if (o.type === 'ready') return { type: 'ready' };
     return null;
 }
 
-// Only Cloudflare's challenge origins and our own blank page may load inside the check.
-export function allowTurnstileNavigation(url: string): boolean {
-    if (url === 'about:blank') return true;
+// Only Cloudflare's challenge origins, the page's own base URL (the initial load) and a blank page
+// may load inside the check.
+export function allowTurnstileNavigation(url: string, baseUrl: string): boolean {
+    if (url === 'about:blank' || url === baseUrl || url === `${baseUrl}/`) return true;
     try {
         const u = new URL(url);
         return u.protocol === 'https:' && (u.hostname === 'challenges.cloudflare.com' || u.hostname.endsWith('.cloudflare.com'));
