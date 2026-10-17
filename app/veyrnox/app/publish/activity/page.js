@@ -17,7 +17,7 @@ const time = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle
 export default function PublishActivityPage() {
   const account = useSyncExternalStore(onSessionChange, currentAccount, noAccount);
   return <><AppNav /><Main className="mx-auto max-w-[1000px] px-4 py-10 sm:px-8">
-    <nav aria-label="Publish" className="mb-2 flex flex-wrap gap-4 text-sm"><Link href="/app/publish" className="text-vx-accent underline">Veyrnox Publish</Link><Link href="/app/publish/team" className="text-vx-accent underline">Team</Link></nav>
+    <nav aria-label="Publish" className="mb-2 flex flex-wrap gap-4 text-sm"><Link href="/app/publish" className="text-vx-accent underline">Veyrnox.ai Publish</Link><Link href="/app/publish/team" className="text-vx-accent underline">Team</Link></nav>
     <h1 className="text-3xl font-black">Activity</h1>
     <p className="mt-2 mb-4 text-sm text-vx-fg-muted">See who changed publishing settings, conversations, approvals and team access for this brand.</p>
     {account && <BrandSwitcher />}

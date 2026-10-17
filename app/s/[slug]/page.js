@@ -16,7 +16,7 @@ async function read(slug, countView = false) {
 
 export async function generateMetadata({ params }) {
   const { slug } = await params; const result = await read(slug);
-  return result ? { title: `${result.smartlink.title} — Veyrnox`, description: result.smartlink.bio || 'Links from Veyrnox Publish' } : { title: 'Link not found — Veyrnox' };
+  return result ? { title: `${result.smartlink.title} — Veyrnox`, description: result.smartlink.bio || 'Links from Veyrnox.ai Publish' } : { title: 'Link not found — Veyrnox' };
 }
 
 export default async function SmartLinkPage({ params }) {

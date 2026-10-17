@@ -63,7 +63,7 @@ function reportOptions(search) {
 export default function PublishAnalytics() {
   const account = useSyncExternalStore(onSessionChange, currentAccount, noAccount);
   return <><AppNav /><Main className="max-w-[900px] mx-auto px-4 sm:px-8 py-10">
-    <p className="text-sm mb-2"><Link href="/app/publish" className="text-vx-accent underline">Veyrnox Publish</Link></p>
+    <p className="text-sm mb-2"><Link href="/app/publish" className="text-vx-accent underline">Veyrnox.ai Publish</Link></p>
     <h1 className="text-3xl font-black mb-2">Analytics</h1>
     <p className="text-sm text-vx-fg-muted mb-4">How your connected accounts and their posts are doing.</p>
     {account && <BrandSwitcher />}
@@ -107,7 +107,7 @@ function DashboardView({ report }) {
   if (accounts === null) return <p className="text-sm text-vx-fg-muted">Loading…</p>;
   if (accounts.length === 0) {
     return <p className="text-sm text-vx-fg-body">
-      No accounts connected yet. <Link href="/app/publish" className="text-vx-accent underline">Connect one in Veyrnox Publish</Link> to see its numbers here.
+      No accounts connected yet. <Link href="/app/publish" className="text-vx-accent underline">Connect one in Veyrnox.ai Publish</Link> to see its numbers here.
     </p>;
   }
 
@@ -315,14 +315,14 @@ function AccountAnalytics({ account, range, comparisonRange, includeContent }) {
     return <p className="rounded-2xl border border-vx-border p-5 text-sm text-vx-fg-body">
       {currentData.sync?.failing
         ? <>We could not read this account&rsquo;s numbers.{' '}
-          <Link href="/app/publish" className="font-bold text-vx-accent underline underline-offset-4">Reconnect it in Veyrnox Publish</Link> to refresh its permissions.</>
+          <Link href="/app/publish" className="font-bold text-vx-accent underline underline-offset-4">Reconnect it in Veyrnox.ai Publish</Link> to refresh its permissions.</>
         : 'No numbers yet. The first ones arrive within a few hours of connecting an account.'}
     </p>;
   }
 
   const failing = currentData.sync?.failing && <p role="status" className="text-sm text-vx-fg-muted">
     The latest update for this account failed, so these numbers may be out of date.{' '}
-    <Link href="/app/publish" className="font-bold text-vx-accent underline underline-offset-4">Reconnect it in Veyrnox Publish</Link> to refresh its permissions.
+    <Link href="/app/publish" className="font-bold text-vx-accent underline underline-offset-4">Reconnect it in Veyrnox.ai Publish</Link> to refresh its permissions.
   </p>;
   const updated = currentData.sync?.last_ok_at && <p className="text-xs text-vx-fg-muted">
     Updated {new Date(currentData.sync.last_ok_at).toLocaleString()}. Numbers refresh every few hours.
@@ -379,7 +379,7 @@ function AccountAnalytics({ account, range, comparisonRange, includeContent }) {
 
     {currentData.postingInsightsEnabled && <PostingInsights accountId={accountId} />}
     {youtube && <p className="text-xs text-vx-fg-muted">YouTube subscriber counts are rounded. Video metrics are lifetime totals for videos published in this period. The latest 50 uploads refresh each round.</p>}
-    {tiktok && <p className="text-xs text-vx-fg-muted">TikTok video metrics cover public videos only. Video metrics are lifetime totals for videos published in this period. The latest 50 public videos refresh each round. Missing numbers may need additional permissions: reconnect in Veyrnox Publish after analytics access is enabled.</p>}
+    {tiktok && <p className="text-xs text-vx-fg-muted">TikTok video metrics cover public videos only. Video metrics are lifetime totals for videos published in this period. The latest 50 public videos refresh each round. Missing numbers may need additional permissions: reconnect in Veyrnox.ai Publish after analytics access is enabled.</p>}
     {twitter && <p className="text-xs text-vx-fg-muted">X metrics cover the latest 100 original posts. Replies and reposts are excluded. Reposts and quotes appear together as shares.</p>}
     {updated}
   </div>;

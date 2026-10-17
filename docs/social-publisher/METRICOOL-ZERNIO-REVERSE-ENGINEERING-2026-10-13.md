@@ -3,7 +3,7 @@
 ## Scope and evidence boundary
 
 This report compares the authenticated Metricool and Zernio product surfaces with
-Veyrnox Publish as shipped on `origin/main` at
+Veyrnox.ai Publish as shipped on `origin/main` at
 `9e94216cc5ad2c0ede6c400780eeaaace7978c8a`.
 
 The requested REA workflow was started first. `rea-agents@6.4.0 doctor` reported

@@ -4,7 +4,7 @@ import PublishPlanPanel from './PublishPlanPanel';
 
 export const metadata = {
   title: 'Publish plans and billing',
-  description: 'Manage your Veyrnox Publish plan and billing.',
+  description: 'Manage your Veyrnox.ai Publish plan and billing.',
   robots: { index: false },
 };
 

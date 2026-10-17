@@ -165,6 +165,6 @@ function Plan() {
       </>}
     </section>}
 
-    <p className="text-sm text-vx-fg-muted"><Link href="/app/publish" className="underline">Back to Veyrnox Publish</Link></p>
+    <p className="text-sm text-vx-fg-muted"><Link href="/app/publish" className="underline">Back to Veyrnox.ai Publish</Link></p>
   </div>;
 }

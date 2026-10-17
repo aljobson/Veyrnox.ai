@@ -23,7 +23,7 @@ export default function PublishContacts() {
   const account = useSyncExternalStore(onSessionChange, currentAccount, noAccount);
   return <><AppNav /><Main className="mx-auto max-w-[1100px] px-4 py-10 sm:px-8">
     <nav aria-label="Publish" className="mb-2 flex flex-wrap gap-4 text-sm">
-      <Link href="/app/publish" className="text-vx-accent underline">Veyrnox Publish</Link>
+      <Link href="/app/publish" className="text-vx-accent underline">Veyrnox.ai Publish</Link>
       <Link href="/app/publish/inbox" className="text-vx-accent underline">Inbox</Link>
       <Link href="/app/publish/analytics" className="text-vx-accent underline">Analytics</Link>
     </nav>

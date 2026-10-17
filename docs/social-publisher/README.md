@@ -1,8 +1,8 @@
-# Veyrnox Publish — Specification Pack
+# Veyrnox.ai Publish — Specification Pack
 
 > **Flag values:** every flag state in this document is as of 2026-10-16. `wrangler.jsonc` is the source of truth (top-level `vars` is production, `env.staging` is staging); where this document and that file disagree, the file is right.
 
-**Feature:** Native multi-platform social scheduling and publishing ("Veyrnox Publish")
+**Feature:** Native multi-platform social scheduling and publishing ("Veyrnox.ai Publish")
 **Version:** 0.2 (reconciled with the code)
 **As of:** 2026-10-08, repo `main` at commit `bee1ea4f` (includes PR #637 and #638); the built-state paragraph below was refreshed on 2026-10-16. The numbered docs were checked against the
 code, migrations through 0228, `wrangler.jsonc`, ADR-0061/0062/0063 and the 2026-10-03 to 2026-10-07

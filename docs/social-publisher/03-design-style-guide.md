@@ -1,4 +1,4 @@
-# 3. Design Style Guide — Veyrnox Publish
+# 3. Design Style Guide — Veyrnox.ai Publish
 
 **Design language:** syntx.ai (per explicit request — this is the aesthetic reference).
 **Interaction patterns:** Metricool (per explicit request — this is the UX-pattern reference).
@@ -60,7 +60,7 @@ editorial character: **Fraunces** (variable, has a "soft"/rounded axis close to 
 display headings, or **Instrument Serif** for a lighter editorial feel. **Onest** itself is open
 source (SIL OFL) and can be used directly for UI/body text.
 
-## 3.2 Veyrnox Publish design tokens
+## 3.2 Veyrnox.ai Publish design tokens
 
 ```css
 :root {
@@ -111,7 +111,7 @@ small orange-on-cream text.
 ## 3.3 Layout patterns borrowed from Metricool (structure only, restyled)
 
 Metricool's own marketing site describes its shell as "1-in-1: Planner, assistant, and calendar"
-and shows a four-tab shell: **Planner · Analytics · Reporting · Inbox**. Veyrnox Publish adopts the
+and shows a four-tab shell: **Planner · Analytics · Reporting · Inbox**. Veyrnox.ai Publish adopts the
 same tab shape, restyled:
 
 ```
@@ -242,7 +242,7 @@ items, each with its own icon, current section highlighted in the accent orange:
 This is a materially richer taxonomy than the marketing site's `Trends · Pricing · Tools · FAQ`
 header — "Tools" on the marketing site collapses what the app actually splits into five distinct
 top-level areas (Agents, LLM Studio, Image, Video, Audio) plus a sixth for post-processing
-(Toolkit). Veyrnox Publish's own nav doesn't need this many top-level items, but the **split between
+(Toolkit). Veyrnox.ai Publish's own nav doesn't need this many top-level items, but the **split between
 "create from scratch" and "edit/enhance existing"** (Image/Video/Audio vs. Toolkit) is a pattern
 worth carrying into Veyrnox's own generation surfaces even outside Publish.
 
@@ -253,7 +253,7 @@ worth carrying into Veyrnox's own generation surfaces even outside Publish.
   first-use inline tooltip ("Here you can choose the AI and its model. ✕"). A **"Model filter"**
   row above it lets the user filter the whole list by cost tier — `Free ∞ / Low ●○○ / Medium ●●○ /
   High ●●●` pill buttons with a dot-strength indicator, plus a `Reset` link. This is directly
-  analogous to a "select network + select post type" step in Veyrnox Publish's composer, and the
+  analogous to a "select network + select post type" step in Veyrnox.ai Publish's composer, and the
   cost-tier filter is a pattern worth reusing for Veyrnox's own model picker generally.
 - **Per-tool composer bottom bar**, consistent shape across Image/Video/Audio/Toolkit but with
   tool-specific option pills inline before the send button: attach (clip icon), aspect ratio pill
@@ -263,13 +263,13 @@ worth carrying into Veyrnox's own generation surfaces even outside Publish.
   visible, never a surprise at submit time.
 - **Inline real-time validation** inside the picker itself, not just at submit: switching Kling to
   "Image to Video" mode immediately shows red text ("There should be 1 image in this mode") right
-  under the mode dropdown. Veyrnox Publish's per-network validation (technical spec §2.4) should
+  under the mode dropdown. Veyrnox.ai Publish's per-network validation (technical spec §2.4) should
   surface the same way — inline, at the point of the mismatched selection, not deferred to a
   submit-time toast.
 - **"Select from uploaded / Select from the generated."** The Toolkit's image-editing tool
   (`/tool/image-inpaint/banana_inpaint`) offers a drag-and-drop upload zone plus two buttons:
   "Select from uploaded" and "Select from the generated" — i.e., pick from your own past output.
-  This is the exact pattern Veyrnox Publish's composer already specifies for sourcing media
+  This is the exact pattern Veyrnox.ai Publish's composer already specifies for sourcing media
   (technical spec §2.2 `social_post_media.source_job_id`, user-flows §4.3's Generate→Schedule
   handoff) — seeing it live, shipped, in a directly comparable product is good validation that the
   pattern is right, not just theoretically sound.
