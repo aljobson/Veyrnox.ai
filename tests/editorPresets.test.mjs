@@ -47,7 +47,7 @@ test('the original effects catalog is complete, unique and accepted by saved pro
     assert.match(updateSequenceClip(tl, 'video', 'v2', { effect: { type: 'third-party-preset', intensity: 1 } }).error, /effect/i);
 });
 test('directional transitions expose the correct compositor geometry', () => {
-    assert.equal(TRANSITIONS.length, 13);
+    assert.equal(TRANSITIONS.length, 25);
     assert.ok(TRANSITION_TYPES.includes('slide'));
     let tl = insertGraphic(emptySequence(), 'circle', '#ffffff', 0);
     tl = duplicateSequence(tl, { track: 'video', id: 'v2' });
