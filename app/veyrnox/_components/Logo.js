@@ -4,15 +4,15 @@ import { cn } from '../../../lib/utils';
 export function Logo({ size = 30, wordmark = false, className = '' }) {
   return (
     <span className={cn('inline-flex items-center gap-2.5', className)}>
-      <svg
-        viewBox="0 0 120 120"
-        xmlns="http://www.w3.org/2000/svg"
+      <img
+        src="/logo-mark.png"
+        alt=""
         aria-hidden="true"
-        style={{ width: size, height: size, display: 'block' }}
-      >
-        {/* Themed: the literal aqua was a 1.9:1 wash on the light palette. */}
-        <path d="M8 12 L38 12 L60 62 L82 12 L112 12 L60 112 Z" fill="rgb(var(--vx-accent))" />
-      </svg>
+        width={size * 1.56}
+        height={size}
+        style={{ width: size * 1.56, height: size }}
+        className="block object-contain"
+      />
       {wordmark && (
         <span className="font-vx font-extrabold tracking-[-0.01em] text-[15px] leading-none">
           <span>VEYRNOX</span>

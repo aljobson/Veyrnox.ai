@@ -74,7 +74,7 @@ export function FilmPlayer({ film, label = 'the film', aspectRatio = '16 / 9', f
   return (
     <div className="relative">
       {/* Reserve the film's full frame before the poster arrives. */}
-      <div style={mobileFullscreen ? undefined : { aspectRatio }} className={`overflow-hidden bg-[#0a0a0b] ${mobileFullscreen ? 'aspect-auto h-[calc(100dvh-4rem)] sm:aspect-video sm:h-auto' : 'aspect-video'}${frameless ? '' : ' rounded-2xl border border-vx-border'}`}>
+      <div style={mobileFullscreen ? undefined : { aspectRatio: phoneLayout && film.mobile ? `${activeFilm.width} / ${activeFilm.height}` : aspectRatio }} className={`overflow-hidden bg-[#0a0a0b] ${mobileFullscreen ? 'aspect-auto h-[calc(100dvh-4rem)] sm:aspect-video sm:h-auto' : 'aspect-video'}${frameless ? '' : ' rounded-2xl border border-vx-border'}`}>
         <video
           ref={videoRef}
           src={activeFilm.video}

@@ -32,6 +32,21 @@ export const BREAKTHROUGH_FILM = {
   },
 };
 
+// The brand intro: the Veyrnox.ai logo over Earth, shown above the hero
+// headline. The portrait crop keeps the whole wordmark on phones.
+export const BRAND_FILM = {
+  video: '/film/brand-intro.mp4',
+  poster: '/film/brand-intro.jpg',
+  width: 1024,
+  height: 576,
+  mobile: {
+    video: '/film/brand-intro-portrait.mp4',
+    poster: '/film/brand-intro-portrait.jpg',
+    width: 540,
+    height: 576,
+  },
+};
+
 // Each film is fetched only once half on screen. The cap catches a careless
 // re-encode before it reaches the landing page.
 export const MAX_FILM_BYTES = 2 * 1024 * 1024;
