@@ -20,8 +20,10 @@ export async function listLibraryMedia(fetcher, { limit = 30, concurrency = 6, i
                 const kind = kindOf(asset?.mime_type);
                 if (kind && (kind !== 'image' || includeImages)) {
                     const item = { jobId: jobs[i].job_id, label: String(jobs[i].label || jobs[i].model_id || 'Generation').slice(0, 80), kind };
+                    // The short-lived link is only used to draw a thumbnail now; it is never stored (a file is re-requested when added).
+                    if (typeof asset.url === 'string' && asset.url.startsWith('https://')) item.previewUrl = asset.url;
                     found[i] = jobs[i].model_id === 'demucs-stems' && kind === 'audio' && JSON.stringify(asset.output_stems) === JSON.stringify(AUDIO_STEMS)
-                        ? AUDIO_STEMS.map(stem => ({...item,stem,label:`${item.label} · ${stem}`})) : item;
+                        ? AUDIO_STEMS.map(stem => ({jobId:item.jobId,kind:item.kind,stem,label:`${item.label} · ${stem}`})) : item;
                 }
             } catch (e) { if (e.status === 401) throw e; onUnavailable(e); }
         }
