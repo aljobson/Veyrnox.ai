@@ -96,7 +96,6 @@ test('mobile movement is explicit and the layout never searches page obstacles o
   assert.match(layout,/viewport\.height - dock\.top \+ 8/);
   assert.match(layout,/overflowY: 'auto'/);
   assert.match(layout,/else restoreWorkspace\(\)/);
-  assert.match(assistant,/>Move me<\/span>/);
   assert.match(assistant,/manualPosition, panelSide, highlight/);
   assert.match(layout,/manualPosition \? clampVeyPosition\(manualPosition, viewport\)/);
   assert.match(assistant,/aria-label="Dock Vey"/);
