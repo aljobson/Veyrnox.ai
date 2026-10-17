@@ -2,11 +2,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Link, Stack } from 'expo-router';
 import { useAuth } from '../../auth/AuthProvider';
+import { useBilling } from '../../billing/BillingProvider';
 import type { Balance } from '../../lib/api';
 import { colors } from '../../theme';
 
 export default function Home() {
     const { api, signOut } = useAuth();
+    const { status: billing } = useBilling();
     const [balance, setBalance] = useState<Balance | null>(null);
     const [failed, setFailed] = useState(false);
 
@@ -56,6 +58,20 @@ export default function Home() {
                     <Text style={styles.secondaryText}>Chat with Vey</Text>
                 </Pressable>
             </Link>
+            {billing !== 'off' ? (
+                <>
+            <Link href="/credits" asChild>
+                <Pressable accessibilityRole="button" style={styles.secondary}>
+                    <Text style={styles.secondaryText}>Buy credits</Text>
+                </Pressable>
+            </Link>
+            <Link href="/publish" asChild>
+                <Pressable accessibilityRole="button" style={styles.secondary}>
+                    <Text style={styles.secondaryText}>Publish Plan</Text>
+                </Pressable>
+            </Link>
+                </>
+            ) : null}
             <Pressable accessibilityRole="button" style={styles.signOut} onPress={() => void signOut()}>
                 <Text style={styles.signOutText}>Sign out</Text>
             </Pressable>

@@ -1,0 +1,109 @@
+import * as WebBrowser from 'expo-web-browser';
+import { Stack } from 'expo-router';
+import { useState } from 'react';
+import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useBilling } from '../../billing/BillingProvider';
+import { API_BASE } from '../../lib/api';
+import { renewalTerms, toDisplayPackages, type Interval } from '../../lib/billing';
+import { colors } from '../../theme';
+
+const BENEFITS = ['Up to five connected accounts', 'Schedule posts ahead', '366 days of analytics', 'Best-time recommendations'];
+const LABEL: Record<Interval, string> = { week: 'Weekly', month: 'Monthly', year: 'Annual' };
+const store = Platform.OS === 'ios' ? 'ios' : 'android';
+
+export default function Publish() {
+    const { status, offerings, canPurchase, publishActive, debug, purchase, restore } = useBilling();
+    const [selected, setSelected] = useState<string | null>(null);
+    const [busy, setBusy] = useState(false);
+    const [message, setMessage] = useState<string | null>(null);
+
+    const plans = toDisplayPackages(offerings?.all.publish?.availablePackages ?? []).filter((p) => p.interval !== null);
+    const chosen = plans.find((p) => p.id === (selected ?? plans.find((x) => x.interval === 'year')?.id)) ?? null;
+
+    async function subscribe() {
+        const pkg = offerings?.all.publish?.availablePackages.find((p) => p.identifier === chosen?.id);
+        if (!pkg || busy) return;
+        setBusy(true);
+        setMessage(null);
+        try {
+            const result = await purchase(pkg);
+            setMessage(result === 'purchased' ? 'Thank you. Your Publish Plan is on.' : null);
+        } catch {
+            setMessage('That did not complete. You were not charged.');
+        } finally {
+            setBusy(false);
+        }
+    }
+
+    async function onRestore() {
+        setBusy(true);
+        try {
+            await restore();
+            setMessage('Purchases restored.');
+        } catch {
+            setMessage('Could not restore purchases. Try again.');
+        } finally {
+            setBusy(false);
+        }
+    }
+
+    return (
+        <ScrollView style={styles.screen} contentContainerStyle={styles.body}>
+            <Stack.Screen options={{ title: 'Publish Plan' }} />
+            <Text style={styles.title}>Publish more, everywhere</Text>
+            {BENEFITS.map((b) => (
+                <Text key={b} style={styles.benefit}>✓  {b}</Text>
+            ))}
+            {status === 'loading' ? (
+                <ActivityIndicator color={colors.accent} />
+            ) : status !== 'ready' || plans.length === 0 ? (
+                <Text style={styles.muted}>The Publish Plan is not available right now.{__DEV__ ? ` [${status}${debug ? `: ${debug}` : ''}; offerings: ${Object.keys(offerings?.all ?? {}).join(',') || 'none'}]` : ''}</Text>
+            ) : publishActive ? (
+                <Text style={styles.ok}>Your Publish Plan is active. Manage it in your {store === 'ios' ? 'Apple ID' : 'Google Play'} subscription settings.</Text>
+            ) : (
+                <>
+                    <View style={styles.plans}>
+                        {plans.map((p) => (
+                            <Pressable key={p.id} accessibilityRole="button" style={[styles.plan, chosen?.id === p.id && styles.planOn]} onPress={() => setSelected(p.id)}>
+                                <Text style={[styles.planName, chosen?.id === p.id && styles.planNameOn]}>{p.interval ? LABEL[p.interval] : p.title}</Text>
+                                <Text style={[styles.planPrice, chosen?.id === p.id && styles.planNameOn]}>{p.priceString}</Text>
+                            </Pressable>
+                        ))}
+                    </View>
+                    {chosen?.interval ? <Text style={styles.terms}>{renewalTerms(chosen.interval, chosen.priceString, store)}</Text> : null}
+                    {!canPurchase ? <Text style={styles.muted}>Purchases are not open yet.</Text> : null}
+                    <Pressable accessibilityRole="button" disabled={!canPurchase || busy || !chosen} style={[styles.button, (!canPurchase || busy || !chosen) && styles.off]} onPress={subscribe}>
+                        {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>Subscribe</Text>}
+                    </Pressable>
+                </>
+            )}
+            {message ? <Text style={styles.muted}>{message}</Text> : null}
+            <View style={styles.links}>
+                <Pressable accessibilityRole="button" onPress={onRestore} disabled={busy}><Text style={styles.link}>Restore purchases</Text></Pressable>
+                <Pressable accessibilityRole="link" onPress={() => WebBrowser.openBrowserAsync(`${API_BASE}/legal/terms`)}><Text style={styles.link}>Terms</Text></Pressable>
+                <Pressable accessibilityRole="link" onPress={() => WebBrowser.openBrowserAsync(`${API_BASE}/legal/privacy`)}><Text style={styles.link}>Privacy</Text></Pressable>
+            </View>
+        </ScrollView>
+    );
+}
+
+const styles = StyleSheet.create({
+    screen: { flex: 1, backgroundColor: colors.background },
+    body: { padding: 20, gap: 12 },
+    title: { color: colors.text, fontSize: 26, fontWeight: '700', marginBottom: 4 },
+    benefit: { color: colors.body, fontSize: 16 },
+    plans: { gap: 10, marginTop: 8 },
+    plan: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 16 },
+    planOn: { backgroundColor: colors.accent, borderColor: colors.accent },
+    planName: { color: colors.text, fontSize: 17, fontWeight: '600' },
+    planPrice: { color: colors.money, fontSize: 17, fontWeight: '700' },
+    planNameOn: { color: colors.accentInk },
+    terms: { color: colors.muted, fontSize: 13 },
+    button: { backgroundColor: colors.accent, borderRadius: 12, paddingVertical: 16, alignItems: 'center' },
+    off: { opacity: 0.4 },
+    buttonText: { color: colors.accentInk, fontWeight: '700', fontSize: 16 },
+    muted: { color: colors.muted },
+    ok: { color: colors.accent },
+    links: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 16 },
+    link: { color: colors.muted, textDecorationLine: 'underline' },
+});
