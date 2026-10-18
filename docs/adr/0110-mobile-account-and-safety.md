@@ -16,9 +16,11 @@ Both stores review an app that lets people make and share AI content for a visib
 5. **Age gate.** The privacy policy says the service is not for anyone under 18, so the sign-in screen asks for a tick on "I am 18 or older and agree to the Terms and Privacy Policy" before any sign-in button works. It is held in memory only and asked again each sign-in; the server stores nothing about it. The store age rating must match 18+.
 6. **Restore purchases** restores store subscriptions (the Publish Plan). Credit packs are consumables and are never restored; their credits arrive through the server on purchase (ADR-0108). The screen says so.
 
+7. **Push notifications** (server ADR-0113) tell a person when a creation finishes or fails. The app never asks for the OS permission on launch: Account has a switch, "Tell me when a creation is ready", and the permission is requested only when the person turns it on. The choice is kept on the device; when it is on, the app registers its Expo push token on every launch and sign-in, and removes it before sign-out revokes the session (`DELETE /api/v1/devices`). The server erases tokens on account deletion. A 404 from `POST /api/v1/devices` means the server flag is off and is skipped silently. The app side is a build-time switch, `EXPO_PUBLIC_PUSH_ENABLED` (off unless `true`); when it is off the native notification modules are not loaded at all. A push carries no prompt text, and tapping it opens that creation.
+
 ## Not decided here
 
-- Block and mute (with Cinema), push consent (S2), the deletion route and its retention rules (S1).
+- Block and mute (with Cinema).
 
 ## Consequences
 
