@@ -11,6 +11,7 @@ const state = {
     threads: [{ id: randomUUID(), model_id: 'claude-sonnet', title: 'Launch plan for the spring drop', pinned: false, updated_at: new Date().toISOString() }],
     messages: new Map(),
     jobs: [],
+    referral: { code: 'K7M2PQ9XWD', referred: 2, attached: false },
 };
 state.messages.set(state.threads[0].id, [
     { id: randomUUID(), role: 'user', content: 'Give me three angles for a spring launch video.' },
@@ -68,6 +69,13 @@ createServer(async (req, res) => {
 
     if (!req.headers.authorization?.startsWith('Bearer ')) return send(res, 401, { error: 'not_authenticated' });
     if (path === '/api/v1/balance') return send(res, 200, { balance: state.balance, free_credits: state.free, free_expires_at: null });
+    if (path === '/api/v1/referrals') return send(res, 200, { enabled: true, code: state.referral.code, referred: state.referral.referred });
+    if (path === '/api/v1/referrals/attach' && req.method === 'POST') {
+        if (body.code === state.referral.code) return send(res, 400, { error: 'self_referral' });
+        if (state.referral.attached) return send(res, 409, { error: 'already_attached' });
+        state.referral.attached = true;
+        return send(res, 200, { attached: true });
+    }
     if (path === '/api/v1/store-purchases/customer') return send(res, 200, { rc_customer_id: '3f2b8a52-6c0e-4d7a-9b1f-0a1b2c3d4e5f' });
     if (path === '/api/v1/social/plan') return send(res, 200, { plans: [], entitlement: { tier: 'free', subscription: null } });
 
