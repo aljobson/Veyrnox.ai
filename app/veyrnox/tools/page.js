@@ -6,6 +6,7 @@ import { toolGroups, toolNeeds } from '../_lib/tools';
 import { OPEN_GRAPH_BASE } from '../../seo';
 import { getT } from '../../../lib/i18n/server';
 import { pageAlternates, openGraphLocale } from '../../../lib/i18n/metadata.mjs';
+import { localizedHref } from '../../../lib/i18n/locales.mjs';
 import { rich } from '../../../lib/i18n/rich';
 
 // Per request, like /models: the catalog needs the Worker's service-role key
@@ -25,7 +26,7 @@ export async function generateMetadata() {
 }
 
 export default async function Tools() {
-  const { t } = await getT();
+  const { locale, t } = await getT();
   // A task or group the catalog adds without a translation keeps its English words.
   const say = (key, fallback) => t.messages[key] ?? fallback;
   // The catalog being unreachable must leave a page, not a 500.
@@ -58,7 +59,7 @@ export default async function Tools() {
                 {g.tools.map((m) => (
                   <li key={m.id} className="py-3 border-b border-vx-border">
                     <div className="flex items-baseline gap-2 font-vx-mono text-[14px] vx-num">
-                      <Link href={`/models/${encodeURIComponent(m.id)}`} className="min-w-0 truncate text-vx-fg-body hover:text-vx-fg hover:underline underline-offset-4">{m.title}</Link>
+                      <Link href={localizedHref(locale, `/models/${encodeURIComponent(m.id)}`)} className="min-w-0 truncate text-vx-fg-body hover:text-vx-fg hover:underline underline-offset-4">{m.title}</Link>
                       <span aria-hidden className="vx-leader flex-1" />
                       <span className="shrink-0 font-bold text-vx-money">{m.credits} cr</span>
                     </div>

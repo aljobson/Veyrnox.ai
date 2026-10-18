@@ -8,6 +8,7 @@ import { modelPriceUnit } from '../_lib/modelPricing';
 import { OPEN_GRAPH_BASE } from '../../seo';
 import { getT } from '../../../lib/i18n/server';
 import { pageAlternates, openGraphLocale } from '../../../lib/i18n/metadata.mjs';
+import { localizedHref } from '../../../lib/i18n/locales.mjs';
 import { rich } from '../../../lib/i18n/rich';
 
 // Rendered per request: the catalog needs the service-role key, which only
@@ -27,7 +28,7 @@ export async function generateMetadata() {
 }
 
 export default async function ModelsIndex() {
-  const { t } = await getT();
+  const { locale, t } = await getT();
   const models = await listModels();
   const groups = LIST_GROUPS
     .map((g) => ({ ...g, rows: models.filter((m) => m.kind === g.kind) }))
@@ -51,7 +52,7 @@ export default async function ModelsIndex() {
               <ul className="mt-2 font-vx-mono text-[14px] vx-num">
                 {g.rows.map((m) => (
                   <li key={m.id}>
-                    <Link href={`/models/${encodeURIComponent(m.id)}`} className="group flex items-baseline gap-2 py-2 text-vx-fg-body hover:text-vx-fg">
+                    <Link href={localizedHref(locale, `/models/${encodeURIComponent(m.id)}`)} className="group flex items-baseline gap-2 py-2 text-vx-fg-body hover:text-vx-fg">
                       <span className="min-w-0">
                         <span className="block truncate group-hover:underline underline-offset-4">{m.title}</span>
                         <span className="block text-[11px] text-vx-fg-muted">{modelPriceUnit(m, t)}</span>
