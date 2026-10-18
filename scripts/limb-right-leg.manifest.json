@@ -17,6 +17,16 @@
         null
       ],
       "inset": 14
+    },
+    {
+      "file": "no-leg.png",
+      "rows": [
+        1
+      ],
+      "styles": [
+        "None"
+      ],
+      "mirror": true
     }
   ]
 }

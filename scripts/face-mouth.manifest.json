@@ -49,6 +49,15 @@
         null,
         null
       ]
+    },
+    {
+      "file": "small-mouth.png",
+      "rows": [
+        1
+      ],
+      "styles": [
+        "Small Mouth"
+      ]
     }
   ]
 }
