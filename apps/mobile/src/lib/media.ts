@@ -55,8 +55,21 @@ export function estimateCredits(model: CatalogModel, durationSeconds: number | n
 
 const KNOWN_SLOTS = ['image', 'endImage', 'video', 'audio'];
 
+// The one free-text input a model takes. Most take `prompt`; Auto Short takes `topic`. The video agent's
+// `brief` is left out on purpose: it needs the plan step first and has its own screen.
+const TEXT_KEYS = ['prompt', 'topic'] as const;
+const DEFAULT_TEXT_MAX = 2000;
+
+export function textInput(model: CatalogModel): { readonly key: string; readonly max: number } | null {
+    const inputs = (model.capabilities?.inputs ?? {}) as Record<string, { max?: number } | undefined>;
+    const key = TEXT_KEYS.find((k) => k in inputs);
+    if (!key) return null;
+    const max = inputs[key]?.max;
+    return { key, max: typeof max === 'number' ? max : DEFAULT_TEXT_MAX };
+}
+
 // A model the app can drive: open, a kind it can show, every file slot a slot it can pick for,
-// and something to send (a prompt, or at least one required file). Stem splitting is held back
+// and something to send (a text input, or at least one required file). Stem splitting is held back
 // because the server answers it with audio_stems_unavailable unless its flag is on.
 export function isSupported(model: CatalogModel): boolean {
     if (model.gated || kindOf(model.modality) === null) return false;
@@ -64,15 +77,13 @@ export function isSupported(model: CatalogModel): boolean {
     if (!caps || caps.outputStems) return false;
     const media = caps.media ?? {};
     if (!Object.keys(media).every((slot) => KNOWN_SLOTS.includes(slot))) return false;
-    const hasPrompt = !!caps.inputs && 'prompt' in caps.inputs;
-    return hasPrompt || Object.values(media).some((slot) => slot.required);
+    return textInput(model) !== null || Object.values(media).some((slot) => slot.required);
 }
 
 // Text-to-X models need words; edit and file-driven models take them as an optional extra.
 export function promptRequired(model: CatalogModel): boolean {
-    const caps = model.capabilities;
-    if (!caps?.inputs || !('prompt' in caps.inputs)) return false;
-    return !Object.values(caps.media ?? {}).some((slot) => slot.required);
+    if (!textInput(model)) return false;
+    return !Object.values(model.capabilities?.media ?? {}).some((slot) => slot.required);
 }
 
 export async function fetchCatalog(): Promise<CatalogModel[]> {
@@ -89,7 +100,9 @@ export async function fetchCatalog(): Promise<CatalogModel[]> {
 
 export interface GenerationRequest {
     readonly modelId: string;
+    // The text the person typed, sent under `textKey` (default `prompt`; Auto Short uses `topic`).
     readonly prompt: string;
+    readonly textKey?: string;
     readonly durationSeconds: number | null;
     // The most the person was shown; the server refuses if the price differs.
     readonly confirmedCredits: number;
@@ -108,7 +121,7 @@ export const mediaApi = (api: ApiClient) => ({
                 model_id: r.modelId,
                 idempotency_key: r.idempotencyKey,
                 confirmed_credits: r.confirmedCredits,
-                inputs: { ...(r.prompt ? { prompt: r.prompt } : {}), ...(r.durationSeconds ? { duration_seconds: r.durationSeconds } : {}) },
+                inputs: { ...(r.prompt ? { [r.textKey ?? 'prompt']: r.prompt } : {}), ...(r.durationSeconds ? { duration_seconds: r.durationSeconds } : {}) },
                 // The server refuses uploaded sources without consent to send them to the provider.
                 ...(r.sources?.length ? { source_keys: r.sources, consent: true } : {}),
             }),

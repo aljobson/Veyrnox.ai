@@ -5,11 +5,11 @@ import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollVie
 import { useAuth } from '../../../auth/AuthProvider';
 import { ApiError } from '../../../lib/api';
 import { SourcePicker } from '../../../components/SourcePicker';
-import { estimateCredits, fetchCatalog, kindOf, mediaApi, promptRequired, type CatalogModel } from '../../../lib/media';
+import { estimateCredits, fetchCatalog, kindOf, mediaApi, promptRequired, textInput, type CatalogModel } from '../../../lib/media';
 import { missingRequired, slotsFor, toSourceKeys, type SlotName } from '../../../lib/sources';
 import { colors } from '../../../theme';
 
-const MAX_PROMPT = 2000;
+const PLACEHOLDER: Record<string, string> = { topic: 'What is the short about? A few words is enough.' };
 
 export default function CreateWithModel() {
     const { modelId } = useLocalSearchParams<{ modelId: string }>();
@@ -48,7 +48,7 @@ export default function CreateWithModel() {
     const sources = toSourceKeys(uploaded);
     const waiting = Object.values(sending).some(Boolean);
     const ready = !waiting && missingRequired(slots, uploaded).length === 0 && (!promptRequired(model) || !!text);
-    const hasPrompt = !!model.capabilities?.inputs && 'prompt' in model.capabilities.inputs;
+    const text_ = textInput(model);
 
     async function generate() {
         if (!model || !ready || busy) return;
@@ -58,7 +58,7 @@ export default function CreateWithModel() {
         setBusy(true);
         setError(null);
         try {
-            const r = await mediaApi(api).createGeneration({ modelId: model.id, prompt: text, durationSeconds: isVideo ? duration : null, confirmedCredits: price, idempotencyKey: key, sources });
+            const r = await mediaApi(api).createGeneration({ modelId: model.id, prompt: text, durationSeconds: isVideo ? duration : null, confirmedCredits: price, idempotencyKey: key, sources, textKey: text_?.key });
             pending.current = null;
             router.replace({ pathname: '/job/[id]', params: { id: r.job_id } });
         } catch (err) {
@@ -81,15 +81,15 @@ export default function CreateWithModel() {
                         onBusy={(b) => setSending((x) => ({ ...x, [s.slot]: b }))}
                     />
                 ))}
-                {hasPrompt ? (
+                {text_ ? (
                     <TextInput
-                        style={styles.prompt}
+                        style={[styles.prompt, text_.key === 'topic' && styles.topic]}
                         value={prompt}
                         onChangeText={setPrompt}
-                        placeholder={promptRequired(model) ? 'Describe what to create' : 'Describe the change (optional)'}
+                        placeholder={PLACEHOLDER[text_.key] ?? (promptRequired(model) ? 'Describe what to create' : 'Describe the change (optional)')}
                         placeholderTextColor={colors.muted}
                         multiline
-                        maxLength={MAX_PROMPT}
+                        maxLength={text_.max}
                     />
                 ) : null}
                 {sources.length ? <Text style={styles.consent}>Your file is sent to the AI provider that makes this. It is deleted after a day.</Text> : null}
@@ -129,6 +129,8 @@ function messageFor(err: unknown): string {
         case 'source_slot_invalid':
         case 'source_key_invalid':
             return 'That file does not fit this model. Choose a different one.';
+        case 'topic_refused':
+            return 'That topic was not accepted. Try different words. You were not charged.';
         case 'consent_required':
             return 'Please try again.';
         default:
@@ -139,6 +141,7 @@ function messageFor(err: unknown): string {
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
     body: { padding: 16, gap: 14 },
+    topic: { minHeight: 90 },
     prompt: { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 14, fontSize: 16, minHeight: 140, textAlignVertical: 'top' },
     chips: { flexDirection: 'row', gap: 8 },
     chip: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 10, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
