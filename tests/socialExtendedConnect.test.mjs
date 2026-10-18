@@ -181,3 +181,11 @@ test('extended resource selection uses the free five-account writer behind the e
         else process.env.PUBLISH_MULTI_ACCOUNT_ENABLED = previous;
     }
 });
+
+test('a mobile connect returns through the bridge and an unknown client is refused (ADR-0136)', async () => {
+    globalThis.fetch = async () => Response.json({ ok: true });
+    const res = await startExtendedConnect(request({ codeChallenge: 'a'.repeat(43), client: 'mobile' }), 'gmb');
+    assert.equal(new URL((await res.json()).authorizeUrl).searchParams.get('redirect_uri'), 'https://staging.test/social/connect/mobile/gmb');
+    assert.equal((await startExtendedConnect(request({ codeChallenge: 'a'.repeat(43), client: 'tablet' }), 'gmb')).status, 400);
+    assert.equal((await finishExtendedConnect(request({ code: 'c', codeVerifier: 'a'.repeat(43), state: 'x', client: 'tablet' }), 'gmb')).status, 400);
+});
