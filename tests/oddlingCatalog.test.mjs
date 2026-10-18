@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { CHARACTER_GROUPS } from '../app/veyrnox/_lib/character.js';
 import {
-  CATALOG_CATEGORIES, CATEGORY_ICONS, SWATCHES, SLIDER_SCALES, controlKind, tileKind, categoryById, categoryGroups, categoryProgress, sliderPosition, sliderValue, catalogGroup,
+  CATALOG_CATEGORIES, CATEGORY_FOCUS, CATEGORY_ICONS, TILE_FOCUS, SWATCHES, SLIDER_SCALES, controlKind, tileKind, tileFocus, categoryById, categoryGroups, categoryProgress, sliderPosition, sliderValue, catalogGroup,
 } from '../app/veyrnox/_lib/oddlingCatalog.js';
 
 const optionsOf = (id) => CHARACTER_GROUPS.find((group) => group.id === id).options.map(([value]) => value);
@@ -48,12 +48,17 @@ test('slider scales use exactly the group\'s own options, ordered smallest first
   for (const group of ['head_size', 'eye_size', 'foot_size']) assert.deepEqual(SLIDER_SCALES[group], ['Small', 'Medium', 'Large', 'Extra Large']);
 });
 
-test('each group gets the right kind of control, and only four groups get drawn tiles', () => {
+test('each group gets the right kind of control, and drawn groups are exactly those with a crop', () => {
   for (const id of ['skin_tone', 'hair_color', 'eye_color']) assert.equal(controlKind(id), 'swatch');
   for (const id of Object.keys(SLIDER_SCALES)) assert.equal(controlKind(id), 'slider');
   for (const id of ['hair', 'wardrobe_style', 'body_type', 'headwear', 'brows', 'accessories']) assert.equal(controlKind(id), 'tiles');
-  assert.deepEqual(CHARACTER_GROUPS.map((g) => g.id).filter((id) => tileKind(id) === 'mannequin').sort(), ['body_type', 'hair', 'headwear', 'wardrobe_style']);
-  assert.equal(tileKind('brows'), 'icon');
+  const drawn = CHARACTER_GROUPS.map((g) => g.id).filter((id) => tileKind(id) === 'mannequin').sort();
+  assert.deepEqual(drawn, Object.keys(TILE_FOCUS).sort(), 'a group is drawn exactly when it has a crop');
+  for (const id of ['hair', 'headwear', 'wardrobe_style', 'body_type', 'head_shape', 'brows', 'nose_shape', 'mouth', 'facial_hair', 'eye_shape']) assert.equal(tileKind(id), 'mannequin', id);
+  assert.equal(tileFocus('nose_shape'), 'face'); assert.equal(tileFocus('hair'), 'head'); assert.equal(tileFocus('body_type'), 'body'); assert.equal(tileFocus('unknown'), 'body');
+  assert.ok(Object.values(TILE_FOCUS).every((focus) => ['face', 'head', 'body'].includes(focus)));
+  assert.deepEqual(Object.keys(CATEGORY_FOCUS).sort(), CATALOG_CATEGORIES.map((c) => c.id).sort());
+  assert.equal(tileKind('accessories'), 'icon', 'a group with no drawing yet falls back to icon tiles');
 });
 
 test('a slider position 0 is Any, positions map to the scale in order, and bad input clamps', () => {

@@ -1,6 +1,7 @@
 // Preview figure for the Oddling catalog. Pure geometry: picks in, a list of SVG shape descriptors out, so it can be tested without a browser.
 // It is a stylised mannequin, not the final image: the real picture is AI-made from the same picks. Unpicked parts show neutral defaults.
 import { SWATCHES } from './oddlingCatalog.js';
+import { faceShapes } from './oddlingFace.js';
 
 export const MANNEQUIN_BOX = Object.freeze({ width: 120, height: 230 });
 const CX = 60, FEET_Y = 224, BUDGET = 205; // the whole figure, feet to top of hair, never taller than this
@@ -43,7 +44,9 @@ const circle = (key, cx, cy, r, attrs = {}) => ({ key, tag: 'circle', attrs: { c
 const path = (key, d, attrs = {}) => ({ key, tag: 'path', attrs: { d, ...attrs } });
 const rect = (key, x, y, width, height, attrs = {}) => ({ key, tag: 'rect', attrs: { x, y, width, height, rx: Math.min(width, height) / 3, ...attrs } });
 const num = (value) => Math.round(value * 10) / 10;
-const cap = (cx, cy, r, extra = 1) => `M${num(cx - r - extra)} ${num(cy - r * 0.1)}A${num(r + extra)} ${num(r + extra)} 0 0 1 ${num(cx + r + extra)} ${num(cy - r * 0.1)}Z`;
+// The hair cap is a dome whose lower edge is the hairline, at the forehead, so brows and eyes stay visible below it.
+const HAIRLINE = 0.66;
+const cap = (cx, cy, r, extra = 1) => { const big = r + extra, drop = r * HAIRLINE, half = Math.sqrt(Math.max(0, big * big - drop * drop)); return `M${num(cx - half)} ${num(cy - drop)}A${num(big)} ${num(big)} 0 0 1 ${num(cx + half)} ${num(cy - drop)}Z`; };
 
 // Each drawer gets the head centre and radius and returns shapes tagged for the layer behind or in front of the face.
 const HAIR_DRAWERS = {
@@ -76,7 +79,6 @@ const HEADWEAR = {
   'Bucket Hat': (c, y, r) => [path('d', `M${num(c - r - 1)} ${num(y - r * 0.5)}L${num(c - r * 0.8)} ${num(y - r * 1.5)}L${num(c + r * 0.8)} ${num(y - r * 1.5)}L${num(c + r + 1)} ${num(y - r * 0.5)}Z`), { key: 'b', tag: 'ellipse', attrs: { cx: c, cy: y - r * 0.5, rx: r * 1.45, ry: r * 0.22 } }],
   Headphones: (c, y, r) => [path('d', `M${num(c - r - 1)} ${num(y)}A${num(r + 1)} ${num(r + 1)} 0 0 1 ${num(c + r + 1)} ${num(y)}`, { fill: 'none', strokeWidth: 2.5, stroke: '#6a7bd1' }), rect('a', c - r - 5, y - r * 0.25, 6, r * 0.8), rect('z', c + r - 1, y - r * 0.25, 6, r * 0.8)],
 };
-const GLASSES = ['Glasses', 'Round Glasses', 'Sunglasses'];
 
 const pickOf = (picks, key) => picks?.[key] || DEFAULTS[key] || '';
 const swatchFill = (group, name, fallback) => SWATCHES[group][name]?.fill || SWATCHES[group][fallback].fill;
@@ -95,13 +97,13 @@ export function mannequinParams(picks) {
   const natural = legPx + torsoPx + neckPx + headR * 2 + headR * (hairLift - 1);
   const fit = natural > BUDGET ? BUDGET / natural : 1;
   return {
-    build, outfit, hairShape, fit,
+    build, outfit, hairShape, fit, headCy: FEET_Y - legPx * fit - torsoPx * fit - neckPx * fit - headR * fit + 2,
     skin: swatchFill('skin_tone', pickOf(picks, 'skin_tone'), 'Light'), hairFill: swatchFill('hair_color', pickOf(picks, 'hair_color'), 'Brown'),
     eyeFill: swatchFill('eye_color', pickOf(picks, 'eye_color'), 'Brown'), eyeScale: { Small: 0.75, Medium: 1, Large: 1.3, 'Extra Large': 1.6 }[picks?.eye_size] || 1,
     mouthScale: SIZE[picks?.mouth_size] || 1, legPx: legPx * fit, torsoPx: torsoPx * fit, neckPx: neckPx * fit, headR: headR * fit,
     armPx: 50 * heightScale * (LIMB[picks?.arm_size] || 1) * fit, armW: 5.5 * (LIMB[picks?.arm_size] || 1), legW: 8 * (LIMB[picks?.leg_size] || 1),
     handR: 3 * (LIMB[picks?.hand_size] || 1), footLen: 10 * (LIMB[picks?.foot_size] || 1),
-    headwear: HEADWEAR[picks?.headwear] ? picks.headwear : '', glasses: GLASSES.includes(picks?.everyday_accessories) ? picks.everyday_accessories : '',
+    headwear: HEADWEAR[picks?.headwear] ? picks.headwear : '',
   };
 }
 
@@ -141,10 +143,11 @@ export function mannequinShapes(picks) {
   if (outfit.detail === 'stripe') add(rect('stripe', CX - 1.5, shoulderY + 2, 3, p.torsoPx - 2, { rx: 0 }), outfit.bottom, { opacity: 0.85 });
   if (outfit.detail === 'collar') add(path('collar', `M${num(CX - 6)} ${num(shoulderY - 1)}L${CX} ${num(shoulderY + 9)}L${num(CX + 6)} ${num(shoulderY - 1)}Z`), outfit.bottom, { opacity: 0.9 });
   add(rect('neck', CX - 4.5, chinY - 1, 9, p.neckPx + 4, { rx: 2 }), p.skin);
-  add(circle('head', CX, headY, p.headR), p.skin);
-  for (const [side, dx] of [['l', -1], ['r', 1]]) add(circle(`eye-${side}`, CX + dx * p.headR * 0.4, headY - p.headR * 0.05, p.headR * 0.16 * p.eyeScale), p.eyeFill, { stroke: '#1a1a1c', strokeWidth: 0.7 });
-  add(path('mouth', `M${num(CX - p.headR * 0.28 * p.mouthScale)} ${num(headY + p.headR * 0.45)}Q${CX} ${num(headY + p.headR * (0.45 + 0.28 * p.mouthScale))} ${num(CX + p.headR * 0.28 * p.mouthScale)} ${num(headY + p.headR * 0.45)}`, { strokeWidth: 1.4, strokeLinecap: 'round' }), 'none', { stroke: '#6b2e2e' });
-  if (p.glasses) for (const dx of [-1, 1]) add(circle(`glass-${dx}`, CX + dx * p.headR * 0.4, headY - p.headR * 0.05, p.headR * 0.3), p.glasses === 'Sunglasses' ? '#1c1c20' : 'none', { stroke: '#1c1c20', strokeWidth: 1.3 });
+  const face = faceShapes(picks, p), faceMove = `translate(${num(CX)} ${num(headY)}) scale(${num(p.headR * face.scale)})`;
+  for (const shape of face.shapes) {
+    const { fill, stroke, opacity, strokeWidth, ...rest } = shape;
+    out.push({ ...rest, attrs: { ...rest.attrs, transform: rest.attrs.transform ? `${faceMove} ${rest.attrs.transform}` : faceMove, ...(strokeWidth ? { strokeWidth } : {}) }, fill, ...(stroke ? { stroke } : {}), ...(opacity ? { opacity } : {}) });
+  }
   drawHair('front');
   if (p.headwear) HEADWEAR[p.headwear](CX, headY, p.headR).forEach((shape) => add({ ...shape, key: `wear-${shape.key}` }, shape.attrs.fill === 'none' ? 'none' : '#6a7bd1'));
   return out;
@@ -153,6 +156,7 @@ export function mannequinShapes(picks) {
 /** What part of the figure a tile should show: the head for hair and hats, the whole figure otherwise. */
 export function mannequinViewBox(focus, picks) {
   const p = mannequinParams(picks);
+  if (focus === 'face') { const half = p.headR * 1.5; return `${num(CX - half)} ${num(p.headCy - half * 1.02)} ${num(half * 2)} ${num(half * 2)}`; }
   if (focus !== 'head') return `0 0 ${MANNEQUIN_BOX.width} ${MANNEQUIN_BOX.height}`;
   const top = FEET_Y - p.legPx - p.torsoPx - p.neckPx - p.headR * 2 - p.headR * 1.5;
   return `${CX - 36} ${num(top)} 72 ${num(p.headR * 2 + p.headR * 3)}`;
