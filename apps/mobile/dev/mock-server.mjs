@@ -191,6 +191,24 @@ createServer(async (req, res) => {
             { id: 'dr-3', draft_batch_id: null, scheduled_at: null, global_text: 'Draft with no batch or time yet.', created_at: '2026-10-17T09:00:00Z', media: [{ media_type: 'video', job_id: 'j2' }], networks: [] },
         ] });
     }
+    // Calendar (ADR-0138): posts whose time falls in [from, to), oldest first, with the action flags the real route adds.
+    if (path === '/api/v1/social/calendar' && req.method === 'GET') {
+        const from = Date.parse(url.searchParams.get('from') || '');
+        const to = Date.parse(url.searchParams.get('to') || '');
+        if (!Number.isFinite(from) || !Number.isFinite(to) || to <= from || to - from > 43 * 86400000) return send(res, 400, { error: 'invalid_range' });
+        const inRange = state.socialPosts.filter((p) => p.scheduled_at && Date.parse(p.scheduled_at) >= from && Date.parse(p.scheduled_at) < to)
+            .sort((a, b) => Date.parse(a.scheduled_at) - Date.parse(b.scheduled_at))
+            .map(({ key, ...p }) => ({ ...p, can_reschedule: p.status === 'scheduled', can_cancel: p.status === 'scheduled', can_restore: p.status === 'canceled' }));
+        return send(res, 200, { posts: inRange, next: null });
+    }
+    // Best time (ADR-0138): a made-up but consistent twelve weeks for any account; ?accountId=none-yet answers "not computed yet".
+    if (path === '/api/v1/social/best-time' && req.method === 'GET') {
+        if (url.searchParams.get('accountId') === 'none-yet') return send(res, 200, { insights: null });
+        const heatmap = [];
+        for (let d = 1; d <= 7; d++) for (const h of [9, 12, 18]) heatmap.push({ day: d, hour: h, posts: 1 + ((d + h) % 5), score: ((d * h) % 7) * 6 });
+        return send(res, 200, { insights: { timezone: 'Europe/London', period_start: '2026-07-27', period_end: '2026-10-19', recorded_posts: 40, measured_posts: 31, history_days: 84, computed_at: '2026-10-18T00:00:00Z',
+            heatmap, frequency: [{ week: '2026-10-05', posts: 2, measured_posts: 2, avg_interactions: 14 }, { week: '2026-10-12', posts: 4, measured_posts: 3, avg_interactions: 21 }, { week: '2026-09-28', posts: 2, measured_posts: 2, avg_interactions: 18 }] } });
+    }
     if (path === '/api/v1/social/posts' && req.method === 'GET') return send(res, 200, { brand_id: 'b1', posts: state.socialPosts.map(({ key, updated_at, ...p }) => p) });
     m = path.match(/^\/api\/v1\/social\/posts\/([^/]+)$/);
     if (m && req.method === 'GET') {
