@@ -171,9 +171,6 @@ fd087777e79b8a1e33774074af9d1f32e18fff05:tests/veyrnoxMcp.test.mjs:generic-api-k
 # Synthetic idempotency-key fixture in the mobile chat test.
 4bc5a6c41851f32591ac25ddb4b8ccfd55edfed1:apps/mobile/__tests__/chat.test.ts:generic-api-key:51
 # apps/mobile (another branch): Supabase publishable keys, public by design, and a fake idempotency key in a test
-4bc5a6c41851f32591ac25ddb4b8ccfd55edfed1:apps/mobile/__tests__/chat.test.ts:generic-api-key:51
-5e48c7504d02ec0e53de3e6b06eebe72be5f3e2a:apps/mobile/src/lib/config.ts:generic-api-key:15
-5e48c7504d02ec0e53de3e6b06eebe72be5f3e2a:apps/mobile/src/lib/config.ts:generic-api-key:20
 # Same mobile-app lines as above, as they appear in the squash commit of #1176 (new SHA): public Supabase publishable keys and a synthetic idempotency key.
 668f5ecf6d84180352e22e49ea9ef50992a13983:apps/mobile/src/lib/config.ts:generic-api-key:15
 668f5ecf6d84180352e22e49ea9ef50992a13983:apps/mobile/src/lib/config.ts:generic-api-key:20
@@ -186,6 +183,7 @@ fd087777e79b8a1e33774074af9d1f32e18fff05:tests/veyrnoxMcp.test.mjs:generic-api-k
 # Synthetic key in the capped generate_image test (branch claude/mcp-generate-image), flagged by the all-branches history scan.
 7b019b70384e7e55353a426f753170a48d19db8a:tests/veyrnoxMcp.test.mjs:generic-api-key:117
 # Test-fixture idempotency keys in the pre-squash commit of #1214 (still in unmerged branches' history)
+# publish-automation tests as squashed on main (88c29b80): synthetic UUIDs and the fake idempotency key idem-12345678
 88c29b8023fe9d286b05a00fd48d87d847306894:agent-harness/cli_anything/veyrnox/tests/test_core.py:generic-api-key:150
 88c29b8023fe9d286b05a00fd48d87d847306894:tests/publishAutomation.test.mjs:generic-api-key:56
 88c29b8023fe9d286b05a00fd48d87d847306894:tests/publishAutomation.test.mjs:generic-api-key:101
