@@ -1,13 +1,16 @@
-import * as Crypto from 'expo-crypto';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { fetchCatalog, mediaApi, type CatalogModel, type Job } from '../../../lib/media';
 import { fetchAccounts, publishErrorMessage, type PublishAccount } from '../../../lib/publish';
 import { MAX_TEXT, captionWarning, composeErrorMessage, createBody, createPost, eligibleAccounts, mediaTypeOf, validateDraft, type Draft, type MediaType, type When } from '../../../lib/publishCompose';
 import { WhenPicker, whenFrom } from '../../../components/WhenPicker';
+import { appStorage, getCacheUser } from '../../../lib/appCache';
+import { createDraftKeys, draftSignature, isDefiniteRefusal } from '../../../lib/draftKey';
 import { colors } from '../../../theme';
+
+const draftKeys = createDraftKeys(appStorage);
 
 interface Pick {
     readonly job: Job;
@@ -30,8 +33,6 @@ export default function Compose() {
     const [time, setTime] = useState('');
     const [busy, setBusy] = useState(false);
     const [problem, setProblem] = useState<string | null>(null);
-    // The same draft keeps its key, so a retry after a dropped connection posts once.
-    const pending = useRef<{ signature: string; key: string } | null>(null);
 
     useEffect(() => {
         let cancelled = false;
@@ -87,15 +88,17 @@ export default function Compose() {
     }
 
     async function send(draft: Draft, now: Date) {
-        const signature = JSON.stringify({ ...draft, when: draft.when.kind === 'now' ? 'now' : draft.when.at.toISOString() });
-        const key = pending.current?.signature === signature ? pending.current.key : Crypto.randomUUID();
-        pending.current = { signature, key };
+        // The key is saved before the send and kept until the server answers, so a retry after a dropped connection,
+        // or after the app was closed in the middle, is the same post and cannot be published twice (ADR-0122).
+        const user = getCacheUser();
+        const key = await draftKeys.keyFor(user, draftSignature(draft));
         setBusy(true);
         try {
             await createPost(api, createBody(draft, key, now));
-            pending.current = null;
+            await draftKeys.drop(user);
             router.replace('/publish/posts');
         } catch (err) {
+            if (isDefiniteRefusal(err)) await draftKeys.drop(user);
             setProblem(composeErrorMessage(err));
         } finally {
             setBusy(false);
