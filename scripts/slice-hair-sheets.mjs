@@ -1,6 +1,7 @@
 // Cuts generated hair contact sheets (a grid of mannequin heads on a plain light background) into one square tile per hairstyle.
-//   node scripts/slice-hair-sheets.mjs <input-dir> [--out public/oddlings/hair] [--only sheet1.jpg]
+//   node scripts/slice-hair-sheets.mjs <input-dir> [--out public/oddlings/hair] [--only sheet1.jpg] [--manifest outfit-tiles.manifest.json]
 // The manifest (scripts/hair-tiles.manifest.json) names each source image, its grid (rows of head counts) and the styles in reading order.
+// An entry may set "window" (default 0.14) to narrow how far a cut may move from the even split, for a sheet whose figures have little contrast with the background.
 // A sheet that does not hold exactly the heads the manifest expects is refused, so a bad generation never ships a mislabelled tile.
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
@@ -54,15 +55,15 @@ function bounds(mask, width, x0, y0, x1, y1) {
 }
 
 /** Split an image into the cells of `rows` (for example [4, 4] or [3, 3]); returns one { x, y, size, rect } per cell, reading order: a square around the head and the cell it was found in. */
-export function cellsOf(image, rows) {
+export function cellsOf(image, rows, window = 0.14) {
   const { width, height } = image, { mask } = foregroundMask(image);
   const rowProfile = Array.from({ length: height }, (_, y) => { let n = 0; for (let x = 0; x < width; x++) n += mask[y * width + x]; return n; });
-  const rowCuts = [0, ...valleys(rowProfile, rows.length), height];
+  const rowCuts = [0, ...valleys(rowProfile, rows.length, window), height];
   const cells = [];
   rows.forEach((count, r) => {
     const y0 = rowCuts[r], y1 = rowCuts[r + 1];
     const colProfile = Array.from({ length: width }, (_, x) => { let n = 0; for (let y = y0; y < y1; y++) n += mask[y * width + x]; return n; });
-    const colCuts = [0, ...valleys(colProfile, count), width];
+    const colCuts = [0, ...valleys(colProfile, count, window), width];
     for (let c = 0; c < count; c++) {
       const box = bounds(mask, width, colCuts[c], y0, colCuts[c + 1], y1);
       cells.push({ box, rect: { x0: colCuts[c], y0, x1: colCuts[c + 1], y1 }, ink: box.ink / ((colCuts[c + 1] - colCuts[c]) * (y1 - y0)) });
@@ -82,7 +83,7 @@ async function sliceOne(entry, inputDir, outDir) {
   const rows = entry.rows || [1];
   const expected = rows.reduce((a, b) => a + b, 0);
   if (entry.styles.length !== expected) throw new Error(`${entry.file}: manifest lists ${entry.styles.length} styles for a ${expected}-cell grid`);
-  const cells = cellsOf(image, rows);
+  const cells = cellsOf(image, rows, entry.window);
   const empty = cells.map((cell, i) => (cell ? null : i)).filter((i) => i !== null);
   if (empty.length) throw new Error(`${entry.file}: ${empty.length} empty cell(s) at ${empty.join(', ')}; the sheet does not hold ${expected} heads`);
   const { background } = foregroundMask(image);
@@ -115,7 +116,7 @@ async function main() {
   if (!inputDir) { console.error('usage: node scripts/slice-hair-sheets.mjs <input-dir> [--out dir] [--only file]'); process.exit(2); }
   const outDir = path.resolve(flag('--out', path.join(HERE, '..', 'public', 'oddlings', 'hair')));
   const only = flag('--only', '');
-  const manifest = JSON.parse(await readFile(path.join(HERE, 'hair-tiles.manifest.json'), 'utf8'));
+  const manifest = JSON.parse(await readFile(path.join(HERE, flag('--manifest', 'hair-tiles.manifest.json')), 'utf8'));
   await mkdir(outDir, { recursive: true });
   let total = 0, failed = 0;
   for (const entry of manifest.sources.filter((source) => !only || source.file === only)) {
