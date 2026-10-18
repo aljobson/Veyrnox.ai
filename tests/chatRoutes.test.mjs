@@ -12,7 +12,7 @@ import { PATCH as patchFolder, DELETE as deleteFolder } from '../app/api/v1/chat
 const AUTH = '11111111-1111-4111-8111-111111111111';
 const THREAD = '3f2b8c1e-5d4a-4c9b-8e7f-1a2b3c4d5e6f';
 const JOB = '22222222-2222-4222-8222-222222222222';
-const KEYS = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'CHAT_ENABLED', 'OPENROUTER_API_KEY', 'EXA_API_KEY'];
+const KEYS = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'CHAT_ENABLED', 'OPENROUTER_API_KEY', 'EXA_API_KEY', 'CHAT_SEARCH_PROVIDER'];
 const realFetch = globalThis.fetch;
 let calls; let rpcReplies; let catalogRows; let openrouter;
 
@@ -315,15 +315,17 @@ test('models: each row names its maker from the endpoint, and the endpoint itsel
     for (const leak of ['anthropic/', 'deepseek/', 'newlab/', 'provider_endpoint', 'openrouter']) assert.ok(!text.includes(leak), leak);
 });
 
-test('models: a capped row offers Web search only while a search key is set, and a plugin row always does', async () => {
+test('models: capped search offers anonymous or configured search, and explicit off preserves the plugin', async () => {
     catalogRows = [
         { id: 'chat-cap', name: 'Capped', provider_endpoint: 'vendor/cap', credits_5s: 1, gated_flag: false, chat_web_extra_credits: 2, chat_web_engine: 'capped' },
         { id: 'chat-plug', name: 'Plugin', provider_endpoint: 'vendor/plug', credits_5s: 1, gated_flag: false, chat_web_extra_credits: 4, chat_web_engine: 'plugin' },
     ];
     const web = async () => Object.fromEntries((await (await getModels(req())).json()).models.map((m) => [m.id, m.options.web]));
-    assert.deepEqual(await web(), { 'chat-cap': null, 'chat-plug': { extra_credits: 4 } }, 'no key: the capped row hides Web search');
+    assert.deepEqual(await web(), { 'chat-cap': { extra_credits: 2 }, 'chat-plug': { extra_credits: 4 } }, 'no key: anonymous capped search is offered');
     process.env.EXA_API_KEY = 'exa-test';
     assert.deepEqual(await web(), { 'chat-cap': { extra_credits: 2 }, 'chat-plug': { extra_credits: 4 } }, 'with the key it is offered at its own price');
+    process.env.CHAT_SEARCH_PROVIDER = 'off';
+    assert.deepEqual(await web(), { 'chat-cap': null, 'chat-plug': { extra_credits: 4 } }, 'explicit off disables only capped search');
     const q = new URL(calls.find((c) => c.url.includes('model_catalog')).url).searchParams;
     assert.match(q.get('select'), /chat_web_engine/);
 });

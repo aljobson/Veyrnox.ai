@@ -48,6 +48,22 @@ npm run dev
 
 Secrets such as the Supabase service-role key, provider keys and R2 credentials are Worker secrets and must never be committed. Public values (`NEXT_PUBLIC_*`, the Supabase URL and anon key) live in `wrangler.jsonc`.
 
+### Chat Web search
+
+Chat catalog rows using the capped search engine use [Parallel Search MCP](https://docs.parallel.ai/integrations/mcp/search-mcp)
+when no search provider is configured. Search uses Fast mode with no account or
+search API key required. Existing `EXA_API_KEY` credentials keep Exa selected.
+Set the server environment variable `CHAT_SEARCH_PROVIDER` to `parallel` or `exa`
+to select one explicitly, or `off` to disable capped search. An explicit Exa
+selection requires its key; unknown values disable capped search. Provider errors
+never switch providers. Catalog rows using the OpenRouter plugin keep that engine.
+
+Users still choose Web search for each reply and pay the catalog's displayed
+Credits. Search completes before charging, with at most three bounded excerpts
+and their source links. Anonymous Parallel searches have lower rate limits; a
+failed or empty search refuses the turn before any Credits move. See
+[ADR-0067 amendment 16](docs/adr/0067-amendment-16-parallel-search.md).
+
 ### Useful commands
 
 | Command | Purpose |

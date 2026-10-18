@@ -5,7 +5,8 @@
  */
 import { select } from '../../../../../packages/db/supabase-client.js';
 import { enter, reply } from '../../../../../lib/chatRoute.js';
-import { MAX_REPLY_TOKENS, MAX_ATTACHMENTS, MAX_IMAGE_EDGE, makerOf, replyBudget, rowOptions, researchEnabled, searchApiKey, selectChatModels } from '../../../../../lib/chat.js';
+import { MAX_REPLY_TOKENS, MAX_ATTACHMENTS, MAX_IMAGE_EDGE, makerOf, replyBudget, rowOptions, researchEnabled, selectChatModels } from '../../../../../lib/chat.js';
+import { resolveChatSearch } from '../../../../../lib/chatSearch.js';
 
 export async function GET(req) {
     const gate = await enter(req);
@@ -18,7 +19,7 @@ export async function GET(req) {
                 + (researchEnabled(process.env) ? ',chat_research_extra_credits,chat_research_write_max_tokens,chat_research_search_model' : ''),
             filter: 'active=eq.true&modality=eq.text&provider=eq.openrouter-chat&order=name.asc',
         }, gate.cfg);
-        const searchConfigured = searchApiKey(process.env) !== '';
+        const searchConfigured = resolveChatSearch(process.env).provider !== 'off';
         const models = (Array.isArray(rows) ? rows : []).map((r) => ({
             id: r.id, name: r.name, maker: makerOf(r.provider_endpoint).maker, maker_label: makerOf(r.provider_endpoint).label,
             credits_per_reply: r.credits_5s, gated: !!r.gated_flag,
