@@ -21,7 +21,7 @@ export async function generateMetadata() {
 }
 
 // Tool names are the connector's own identifiers; each has a description key mcp.tool.<name>.
-const tools = ['list_models', 'estimate_generation', 'get_generation', 'list_generations', 'get_balance'];
+const tools = ['list_models', 'estimate_generation', 'generate_image', 'get_generation', 'list_generations', 'get_balance'];
 
 export default async function McpPage() {
   const { t } = await getT();
