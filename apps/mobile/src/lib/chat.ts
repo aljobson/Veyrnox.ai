@@ -14,6 +14,7 @@ export interface ChatThread {
     readonly model_id: string;
     readonly title: string | null;
     readonly pinned: boolean;
+    readonly folder_id?: string | null;
     readonly updated_at: string;
 }
 

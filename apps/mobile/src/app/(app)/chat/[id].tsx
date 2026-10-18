@@ -1,5 +1,5 @@
 import * as Crypto from 'expo-crypto';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,6 +17,7 @@ const ERROR_TEXT: Record<string, string> = {
 export default function Conversation() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const { api } = useAuth();
+    const router = useRouter();
     const insets = useSafeAreaInsets();
     const [title, setTitle] = useState('Chat');
     const [messages, setMessages] = useState<ChatMessage[] | null>(null);
@@ -74,7 +75,7 @@ export default function Conversation() {
 
     return (
         <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
-            <Stack.Screen options={{ title }} />
+            <Stack.Screen options={{ title, headerRight: () => <Pressable accessibilityRole="button" accessibilityLabel="Move to folder" style={{ minHeight: 44, justifyContent: 'center' }} onPress={() => router.push({ pathname: '/chat/move', params: { threadId: String(id) } })}><Text style={{ color: colors.accent, fontSize: 16 }}>Folder</Text></Pressable> }} />
             {messages === null && !error ? (
                 <ActivityIndicator color={colors.accent} style={styles.center} />
             ) : (

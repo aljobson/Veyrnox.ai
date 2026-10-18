@@ -10,6 +10,8 @@ const state = {
     balance: 240, free: 10,
     threads: [{ id: randomUUID(), model_id: 'claude-sonnet', title: 'Launch plan for the spring drop', pinned: false, updated_at: new Date().toISOString() }],
     messages: new Map(),
+    personas: [{ id: randomUUID(), name: 'Editor', instructions: 'Be concise. Tighten every sentence and keep the brand voice.', model_id: 'claude-sonnet', thinking: false, web: false }],
+    folders: [{ id: randomUUID(), name: 'Launch' }],
     jobs: [],
     deleted: new Set(),
     referral: { code: 'K7M2PQ9XWD', referred: 2, attached: false },
@@ -77,7 +79,7 @@ createServer(async (req, res) => {
     let m;
     const url = new URL(req.url, `http://localhost:${PORT}`);
     const path = url.pathname;
-    const body = req.method === 'POST' ? await readBody(req) : {};
+    const body = req.method === 'POST' || req.method === 'PATCH' ? await readBody(req) : {};
     console.log(req.method, path);
 
     if (path.startsWith('/auth/v1/token') || path === '/auth/v1/signup') return send(res, 200, tokens());
@@ -146,9 +148,62 @@ createServer(async (req, res) => {
     if (path === '/api/v1/reports' && req.method === 'POST') return send(res, 200, { replayed: false });
 
     if (path === '/api/v1/chat/models') return send(res, 200, { models: CHAT_MODELS });
+    // Personas and folders (stateful), with the real routes' limits and error codes.
+    const count = (fid) => state.threads.filter((t) => t.folder_id === fid).length;
+    if (path === '/api/v1/chat/personas' && req.method === 'GET') return send(res, 200, { enabled: true, personas: state.personas });
+    if (path === '/api/v1/chat/personas' && req.method === 'POST') {
+        const name = String(body.name || '').trim(); const ins = String(body.instructions || '').trim();
+        if (!name || name.length > 60) return send(res, 400, { error: 'invalid_persona_name' });
+        if (!ins || ins.length > 4000) return send(res, 400, { error: 'invalid_instructions' });
+        const p = { id: randomUUID(), name, instructions: ins, model_id: body.model_id ?? null, thinking: body.thinking === true, web: body.web === true };
+        state.personas.push(p);
+        return send(res, 201, { persona: p });
+    }
+    m = path.match(/^\/api\/v1\/chat\/personas\/([^/]+)$/);
+    if (m) {
+        const p = state.personas.find((x) => x.id === m[1]);
+        if (!p) return send(res, 404, { error: 'persona_not_found' });
+        if (req.method === 'DELETE') { state.personas = state.personas.filter((x) => x !== p); return send(res, 200, { ok: true }); }
+        if (req.method === 'PATCH') {
+            const name = String(body.name || '').trim(); const ins = String(body.instructions || '').trim();
+            if (!name || name.length > 60) return send(res, 400, { error: 'invalid_persona_name' });
+            if (!ins || ins.length > 4000) return send(res, 400, { error: 'invalid_instructions' });
+            Object.assign(p, { name, instructions: ins, model_id: body.model_id ?? null, thinking: body.thinking === true, web: body.web === true });
+            return send(res, 200, { persona: p });
+        }
+    }
+    if (path === '/api/v1/chat/folders' && req.method === 'GET') return send(res, 200, { folders: state.folders.map((f) => ({ ...f, count: count(f.id) })) });
+    if (path === '/api/v1/chat/folders' && req.method === 'POST') {
+        const name = String(body.name || '').trim();
+        if (!name || name.length > 60) return send(res, 400, { error: 'invalid_name' });
+        if (state.folders.length >= 5) return send(res, 409, { error: 'FOLDER_LIMIT' });
+        const f = { id: randomUUID(), name };
+        state.folders.push(f);
+        return send(res, 201, { folder: { ...f, count: 0 } });
+    }
+    m = path.match(/^\/api\/v1\/chat\/folders\/([^/]+)$/);
+    if (m) {
+        const f = state.folders.find((x) => x.id === m[1]);
+        if (!f) return send(res, 404, { error: 'folder_not_found' });
+        if (req.method === 'DELETE') { state.folders = state.folders.filter((x) => x !== f); state.threads.forEach((t) => { if (t.folder_id === f.id) t.folder_id = null; }); return send(res, 200, { ok: true }); }
+        if (req.method === 'PATCH') { const name = String(body.name || '').trim(); if (!name || name.length > 60) return send(res, 400, { error: 'invalid_name' }); f.name = name; return send(res, 200, { folder: { ...f, count: count(f.id) } }); }
+    }
+    // Change or delete one chat: { folder_id } alone files it; { system_prompt } sets its instructions.
+    m = path.match(/^\/api\/v1\/chat\/threads\/([^/]+)$/);
+    if (m && (req.method === 'PATCH' || req.method === 'DELETE')) {
+        const t = state.threads.find((x) => x.id === m[1]);
+        if (!t) return send(res, 404, { error: 'thread_not_found' });
+        if (req.method === 'DELETE') { state.threads = state.threads.filter((x) => x !== t); return send(res, 200, { ok: true }); }
+        if ('folder_id' in body) {
+            if (body.folder_id !== null && !state.folders.some((f) => f.id === body.folder_id)) return send(res, 404, { error: 'folder_not_found' });
+            t.folder_id = body.folder_id; return send(res, 200, { ok: true, folder_id: t.folder_id });
+        }
+        if (typeof body.system_prompt === 'string') { t.system_prompt = body.system_prompt; if (!t.title) t.title = 'Chat with a persona'; return send(res, 200, { ok: true }); }
+        return send(res, 400, { error: 'invalid_body' });
+    }
     if (path === '/api/v1/chat/threads' && req.method === 'GET') return send(res, 200, { threads: state.threads });
     if (path === '/api/v1/chat/threads' && req.method === 'POST') {
-        const t = { id: randomUUID(), model_id: body.model_id, title: null, pinned: false, updated_at: new Date().toISOString() };
+        const t = { id: randomUUID(), model_id: body.model_id, title: null, pinned: false, folder_id: null, updated_at: new Date().toISOString() };
         state.threads.unshift(t); state.messages.set(t.id, []);
         return send(res, 201, { thread: t });
     }
