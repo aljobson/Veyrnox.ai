@@ -45,6 +45,7 @@ on:
       - "scripts/test-topup-refund-shortfall.mjs"
       - "scripts/test-default-privileges.mjs"
       - "scripts/test-disposable-email-block.mjs"
+      - "scripts/test-account-deletion.mjs"
       - "scripts/test-fk-indexes.mjs"
       - "scripts/test-append-only.mjs"
       - "scripts/test-subscription-credits.mjs"
@@ -232,6 +233,7 @@ jobs:
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-topup-refund-shortfall.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-default-privileges.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-disposable-email-block.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-account-deletion.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-fk-indexes.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-append-only.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-subscription-credits.mjs

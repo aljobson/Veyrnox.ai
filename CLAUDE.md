@@ -56,6 +56,12 @@ If a build starts failing after a dependency change, bisect these three first.
 - **Frozen accounts** (#97): `apply_top_up_refund` and `apply_dispute_event`
   Freeze, `unfreeze_account` is the only way out, and all three write the
   append-only `account_actions` log. Never set `users.frozen_at` directly.
+- **Account deletion** (ADR-0111): a tombstone, never a `DELETE` of `public.users`.
+  `prepare_account_deletion` / `erase_account` / `complete_account_deletion` are the
+  only writers; a Frozen or held account is refused, the balance is left as it is
+  (no ledger row). A new table that references `users` must be classified in
+  `scripts/test-account-deletion.mjs`. The route is off unless
+  `ACCOUNT_DELETION_ENABLED` is `"true"` (not in `wrangler.jsonc`: binding cap).
 - **Free Credits** (ADR-0013): only `grant:signup` credits are free. Every
   ledger row sets `free_delta` (the part of `delta` that moved Free Credits;
   0 for anything else) and `credit_balances.free_balance` moves with it,
@@ -177,6 +183,10 @@ developer surface is `/api/v1/developer/*` and requires a verified OAuth
     Origin, JSON/custom-header CSRF checks, Strict HttpOnly cookie and Auth
     refresh-grant validation. It never trusts forwarded user headers and never
     accepts or returns service-role credentials. See ADR-0102.
+  - `/auth/mobile` — GET-only hand-back for the mobile app's Google and Apple
+    sign-in (ADR-0106 amendment 1). It answers a 302 to the constant
+    `ai.veyrnox.app://auth/callback`, forwarding only a well-formed PKCE `code`
+    or a short error word. It reads no identity header and has no open target.
   - `/api/catalog`, `/api/credit-packs`, `/api/cinema/titles[/:id]`, `/api/cinema/posters/:id`,
     `/api/popular-templates` — anonymous, read-only, cached public data
     (prices, packs, published titles, ranked template ids). Nothing per-user.

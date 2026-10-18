@@ -4,7 +4,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Platform } from 'react-native';
 import { createApiClient, API_BASE, type ApiClient } from '../lib/api';
-import { AUTH_REDIRECT_URL } from '../lib/config';
+import { AUTH_REDIRECT_URL, OAUTH_BRIDGE_URL } from '../lib/config';
 import { createAppleNonce, createPkce } from '../lib/auth/pkce';
 import { clearRefreshToken, readRefreshToken, writeRefreshToken } from '../lib/auth/sessionStore';
 import {
@@ -141,7 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         async (provider: OAuthProvider) => {
             const pkce = await createPkce();
             const result = await WebBrowser.openAuthSessionAsync(
-                authorizeUrl(provider, pkce.challenge, AUTH_REDIRECT_URL),
+                authorizeUrl(provider, pkce.challenge, OAUTH_BRIDGE_URL),
                 AUTH_REDIRECT_URL,
             );
             if (result.type !== 'success') return;

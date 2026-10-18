@@ -65,7 +65,7 @@ export default function SignIn() {
                 <Text style={styles.buttonText}>Continue with Google</Text>
             </Pressable>
             <Link href="/email" asChild>
-                <Pressable accessibilityRole="button" disabled={blocked} style={[styles.button, blocked && styles.off]}>
+                <Pressable accessibilityRole="button" disabled={blocked} style={StyleSheet.flatten([styles.button, blocked && styles.off])}>
                     <Text style={styles.buttonText}>Continue with email</Text>
                 </Pressable>
             </Link>
