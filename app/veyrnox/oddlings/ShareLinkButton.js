@@ -11,7 +11,8 @@ const RESET_AFTER_MS = 2500;
 // from a path the server chose, never from anything the visitor typed. Every
 // browser API is optional: where sharing and the clipboard are both missing,
 // the message says to copy the address bar.
-export function ShareLinkButton({ path, title, label = 'Share link', className = '' }) {
+// `messages` carries the two status lines in the page's language.
+export function ShareLinkButton({ path, title, label = 'Share link', className = '', messages = {} }) {
   const [message, setMessage] = useState('');
   const timer = useRef(null);
 
@@ -36,9 +37,9 @@ export function ShareLinkButton({ path, title, label = 'Share link', className =
     }
     try {
       await navigator.clipboard.writeText(url);
-      say('Link copied');
+      say(messages.copied || 'Link copied');
     } catch {
-      say('Copy the address from your browser bar');
+      say(messages.copyManual || 'Copy the address from your browser bar');
     }
   }
 
