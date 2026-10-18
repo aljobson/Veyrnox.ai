@@ -1,4 +1,10 @@
 /**
+ * GET /api/v1/projects/:id/assets — the project's inspected files, newest first
+ * (at most 100). Read through the caller's own token, so RLS and the project
+ * role decide what is visible; quarantined and rejected rows are not listed and
+ * the storage key is never returned. Metadata only: bytes come from the
+ * per-asset download route.
+ *
  * POST /api/v1/projects/:id/assets — reserve a project asset and mint the
  * presigned PUT that uploads it (0141, ADR-0056).
  *
@@ -58,5 +64,23 @@ export async function POST(request, { params }) {
       ...(signed.headers ? { headers: signed.headers } : {}),
       max_bytes: declared.maxBytes, expires_in: signed.expires,
     }, { headers: { 'Cache-Control': 'no-store' } });
+  });
+}
+
+const LIST_LIMIT = 100;
+
+export async function GET(request, { params }) {
+  return protectedRoute(request, async context => {
+    const id = uuid((await params).id).toLowerCase();
+    const projects = await tenantRequest(request, context, `projects?id=eq.${id}&select=id&limit=1`);
+    if (!projects[0]) throw new ApiError(404, 'NOT_FOUND', 'The project was not found.');
+    const assets = await tenantRequest(request, context,
+      `project_assets?project_id=eq.${id}&state=eq.inspected&select=id,sniffed_type,byte_size,duration_ms,width,height,created_at&order=created_at.desc&limit=${LIST_LIMIT}`);
+    return Response.json({
+      assets: assets.map(a => ({
+        id: a.id, content_type: a.sniffed_type, byte_size: a.byte_size,
+        duration_ms: a.duration_ms, width: a.width, height: a.height, created_at: a.created_at,
+      })),
+    });
   });
 }
