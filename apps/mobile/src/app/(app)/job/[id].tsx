@@ -8,12 +8,14 @@ import { CONFIRM_MESSAGE, CONFIRM_TITLE, deleteCreation, deleteMessage, isAlread
 import { mediaApi, waitForJob, type JobState } from '../../../lib/media';
 import { saveOutput, shareOutput } from '../../../lib/output';
 import { colors } from '../../../theme';
+import { t } from '../../../lib/i18n';
 
+// Catalog keys, looked up when shown.
 const LABEL: Record<JobState, string> = {
-    queued: 'In the queue…',
-    running: 'Creating…',
-    succeeded: 'Done',
-    failed: 'This did not finish. Your credits were refunded.',
+    queued: 'job.queued',
+    running: 'job.running',
+    succeeded: 'job.succeeded',
+    failed: 'job.failed',
 };
 
 function elapsed(seconds: number): string {
@@ -69,11 +71,11 @@ export default function JobScreen() {
                 await shareOutput(asset.url, id, asset.mime);
             } else {
                 const saved = await saveOutput(asset.url, id, asset.mime);
-                setNote(saved ? 'Saved to your photos.' : 'Allow adding to Photos in Settings to save.');
+                setNote(saved ? t('job.savedPhotos') : t('job.allowPhotos'));
             }
         } catch {
             // The link lasts 15 minutes; reopening the creation from the library fetches a new one.
-            setNote(kind === 'save' ? 'Could not save. Try again.' : 'Could not share. Try again.');
+            setNote(kind === 'save' ? t('job.saveFailed') : t('job.shareFailed'));
         } finally {
             setActing(null);
         }
@@ -97,8 +99,8 @@ export default function JobScreen() {
     function confirmDelete() {
         if (deleting) return;
         Alert.alert(CONFIRM_TITLE, CONFIRM_MESSAGE, [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Delete', style: 'destructive', onPress: doDelete },
+            { text: t('cinema.creatorWorkspace.cancel'), style: 'cancel' },
+            { text: t('job.delete'), style: 'destructive', onPress: doDelete },
         ]);
     }
 
@@ -106,42 +108,42 @@ export default function JobScreen() {
 
     return (
         <View style={styles.screen}>
-            <Stack.Screen options={{ title: 'Your creation' }} />
+            <Stack.Screen options={{ title: t('job.title') }} />
             {error ? (
                 <View style={styles.center}>
-                    <Text style={styles.error}>Could not check this job. It is safe to leave; it will appear in your library.</Text>
+                    <Text style={styles.error}>{t('job.checkError')}</Text>
                     <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => setAttempt((n) => n + 1)}>
-                        <Text style={styles.secondaryText}>Check again</Text>
+                        <Text style={styles.secondaryText}>{t('job.checkAgain')}</Text>
                     </Pressable>
                 </View>
             ) : asset ? (
                 asset.mime.startsWith('image/') ? (
-                    <Image source={{ uri: asset.url }} style={styles.image} contentFit="contain" accessibilityLabel="Your creation" accessibilityIgnoresInvertColors />
+                    <Image source={{ uri: asset.url }} style={styles.image} contentFit="contain" accessibilityLabel={t('job.title')} accessibilityIgnoresInvertColors />
                 ) : (
                     <Pressable accessibilityRole="button" style={styles.button} onPress={() => WebBrowser.openBrowserAsync(asset.url)}>
-                        <Text style={styles.buttonText}>{asset.mime.startsWith('video/') ? 'Play video' : 'Play audio'}</Text>
+                        <Text style={styles.buttonText}>{asset.mime.startsWith('video/') ? t('job.playVideo') : t('job.playAudio')}</Text>
                     </Pressable>
                 )
             ) : (
                 <View style={styles.center}>
                     {waiting ? <ActivityIndicator color={colors.accent} /> : null}
-                    <Text style={state === 'failed' ? styles.error : styles.status}>{LABEL[state]}</Text>
+                    <Text style={state === 'failed' ? styles.error : styles.status}>{t(LABEL[state])}</Text>
                     {waiting ? (
                         <Text style={styles.hint}>
-                            {elapsed(seconds)} so far. You can leave this screen; it will appear in your library when it is done.
+                            {t('job.waiting', { elapsed: elapsed(seconds) })}
                         </Text>
                     ) : null}
                     {waiting ? (
                         <>
                             <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => router.replace('/library')}>
-                                <Text style={styles.secondaryText}>Stop waiting</Text>
+                                <Text style={styles.secondaryText}>{t('job.stopWaiting')}</Text>
                             </Pressable>
-                            <Text style={styles.hint}>Your creation keeps running and will appear in your Library. Credits are not refunded.</Text>
+                            <Text style={styles.hint}>{t('job.keepsRunning')}</Text>
                         </>
                     ) : null}
                     {state === 'failed' && modelId ? (
                         <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => router.replace({ pathname: '/create/[modelId]', params: { modelId } })}>
-                            <Text style={styles.secondaryText}>Try again</Text>
+                            <Text style={styles.secondaryText}>{t('recovery.retry')}</Text>
                         </Pressable>
                     ) : null}
                 </View>
@@ -151,21 +153,21 @@ export default function JobScreen() {
                     <View style={styles.row}>
                         {canSave ? (
                             <Pressable accessibilityRole="button" disabled={!!acting} style={[styles.action, !!acting && styles.off]} onPress={() => run('save')}>
-                                <Text style={styles.actionText}>{acting === 'save' ? 'Saving…' : 'Save to photos'}</Text>
+                                <Text style={styles.actionText}>{acting === 'save' ? t('social.saving') : t('job.savePhotos')}</Text>
                             </Pressable>
                         ) : null}
                         <Pressable accessibilityRole="button" disabled={!!acting} style={[styles.action, !!acting && styles.off]} onPress={() => run('share')}>
-                            <Text style={styles.actionText}>{acting === 'share' ? 'Preparing…' : 'Share'}</Text>
+                            <Text style={styles.actionText}>{acting === 'share' ? t('cinema.share.preparing') : t('cinema.share.share')}</Text>
                         </Pressable>
                     </View>
                     {note ? <Text style={styles.note} accessibilityLiveRegion="polite">{note}</Text> : null}
                     <Link href={{ pathname: '/report', params: { kind: 'job', id } }} asChild>
                         <Pressable accessibilityRole="button" style={styles.report}>
-                            <Text style={styles.reportText}>Report this creation</Text>
+                            <Text style={styles.reportText}>{t('job.report')}</Text>
                         </Pressable>
                     </Link>
                     <Pressable accessibilityRole="button" disabled={deleting} style={[styles.delete, deleting && styles.off]} onPress={confirmDelete}>
-                        <Text style={styles.deleteText}>{deleting ? 'Deleting…' : 'Delete this creation'}</Text>
+                        <Text style={styles.deleteText}>{deleting ? t('job.deleting') : t('job.deleteThis')}</Text>
                     </Pressable>
                 </ScrollView>
             ) : null}

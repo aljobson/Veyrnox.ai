@@ -8,9 +8,11 @@ import { POLICIES, type CacheMeta } from '../../lib/cache';
 import { observe } from '../../lib/network';
 import { mediaApi, type Job, type JobPage } from '../../lib/media';
 import { colors } from '../../theme';
+import { t } from '../../lib/i18n';
 import { touchTarget } from '../../lib/a11y';
 
-const BADGE: Record<Job['state'], string> = { queued: 'Queued', running: 'Creating', succeeded: 'Ready', failed: 'Refunded' };
+// Catalog keys, looked up when shown.
+const BADGE: Record<Job['state'], string> = { queued: 'library.queued', running: 'library.running', succeeded: 'library.succeeded', failed: 'library.failed' };
 
 export default function Library() {
     const { api } = useAuth();
@@ -62,10 +64,10 @@ export default function Library() {
 
     return (
         <View style={styles.screen}>
-            <Stack.Screen options={{ title: 'Library', headerRight: () => <Pressable accessibilityRole="button" accessibilityLabel="Video files: film masters and editor renders" style={touchTarget} onPress={() => router.push('/library/files')}><Text style={{ color: colors.accent, fontSize: 16 }}>Video files</Text></Pressable> }} />
+            <Stack.Screen options={{ title: t('label.Library'), headerRight: () => <Pressable accessibilityRole="button" accessibilityLabel={t('library.videoFilesLabel')} style={touchTarget} onPress={() => router.push('/library/files')}><Text style={{ color: colors.accent, fontSize: 16 }}>{t('library.videoFiles')}</Text></Pressable> }} />
             {failed ? (
                 <Pressable accessibilityRole="button" style={touchTarget} onPress={load}>
-                    <Text style={styles.error}>Could not load your library. Tap to retry.</Text>
+                    <Text style={styles.error}>{t('library.loadError')}</Text>
                 </Pressable>
             ) : jobs === null ? (
                 <ActivityIndicator color={colors.accent} />
@@ -77,14 +79,14 @@ export default function Library() {
                     onEndReached={more}
                     onRefresh={load}
                     refreshing={false}
-                    ListEmptyComponent={<Text style={styles.muted}>Nothing here yet. Create something.</Text>}
+                    ListEmptyComponent={<Text style={styles.muted}>{t('library.empty')}</Text>}
                     renderItem={({ item }) => (
-                        <Pressable accessibilityRole="button" accessibilityLabel={`${item.label || item.model_id}, ${BADGE[item.state]}, ${new Date(item.created_at).toLocaleString()}`} style={styles.row} onPress={() => router.push({ pathname: '/job/[id]', params: { id: item.job_id } })}>
+                        <Pressable accessibilityRole="button" accessibilityLabel={`${item.label || item.model_id}, ${t(BADGE[item.state])}, ${new Date(item.created_at).toLocaleString()}`} style={styles.row} onPress={() => router.push({ pathname: '/job/[id]', params: { id: item.job_id } })}>
                             <View style={styles.rowText}>
                                 <Text style={styles.name} numberOfLines={1}>{item.label || item.model_id}</Text>
                                 <Text style={styles.muted}>{new Date(item.created_at).toLocaleString()}</Text>
                             </View>
-                            <Text style={[styles.badge, item.state === 'failed' && styles.badgeFailed]}>{BADGE[item.state]}</Text>
+                            <Text style={[styles.badge, item.state === 'failed' && styles.badgeFailed]}>{t(BADGE[item.state])}</Text>
                         </Pressable>
                     )}
                 />
