@@ -387,6 +387,16 @@ createServer(async (req, res) => {
         return send(res, 200, { job_id: job.id, state: 'SUBMITTED', balance_after: state.balance });
     }
     if (path === '/api/v1/jobs') return send(res, 200, { jobs: state.jobs.map(jobView), next: null });
+    // GET /api/v1/jobs/:id/media-info (server PR #1289): the real length of a finished video. A job whose prompt says
+    // "nolength" answers 422 so the app's player fallback can be seen.
+    m = path.match(/^\/api\/v1\/jobs\/([^/]+)\/media-info$/);
+    if (m && req.method === 'GET') {
+        const j = state.jobs.find((x) => x.id === m[1]);
+        if (!j || jobState(j) !== 'succeeded') return send(res, 404, { error: 'not_found' });
+        if (!j.kind.includes('video')) return send(res, 400, { error: 'not_video' });
+        if (/nolength/i.test(j.label || '')) return send(res, 422, { error: 'unreadable' });
+        return send(res, 200, { seconds: CLIP_LENGTH_S, width: 320, height: 568, size_bytes: 40099, mime_type: 'video/mp4' });
+    }
     m = path.match(/^\/api\/v1\/jobs\/([^/]+)(\/asset)?$/);
     if (m) {
         // DELETE /api/v1/jobs/:id (ADR-0116): a repeat answers replayed; a job still running or whose prompt says "held" is refused.
