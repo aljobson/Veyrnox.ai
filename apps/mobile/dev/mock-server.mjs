@@ -92,6 +92,14 @@ createServer(async (req, res) => {
     }
     if ((m = path.match(/^\/api\/cinema\/posters\/([^/]+)$/))) { res.writeHead(200, { 'content-type': 'image/png' }); return res.end(PNG); }
     if (path === '/api/catalog') return send(res, 200, { models: CATALOG });
+    if (path === '/api/presets')
+        return send(res, 200, {
+            presets: [
+                { id: 'mock-hero', title: 'Studio Product Shot', category: 'PRODUCTS', modelId: 'nano-banana', modelName: 'Nano Banana', modality: 'text-to-image', prompt: 'A glossy product on black acrylic, soft rim light, 4k.', needs: null, durationSeconds: null, credits: 4, gated: false, isNew: true, previewUrl: null, posterUrl: null, previewAspect: '1 / 1' },
+                { id: 'mock-orbit', title: 'Orbit Reveal', category: 'PRODUCTS', modelId: 'kling-3', modelName: 'Kling 3', modality: 'text-to-video', prompt: 'A smooth 360-degree orbit around the product, cinematic lighting.', needs: null, durationSeconds: 10, credits: 18, gated: false, isNew: false, previewUrl: null, posterUrl: null, previewAspect: '9 / 16' },
+                { id: 'mock-gated', title: 'Hidden Gated One', category: 'CINEMATIC', modelId: 'veo-fast', modelName: 'Veo', modality: 'text-to-video', prompt: 'x', needs: null, durationSeconds: 5, credits: 12, gated: true, isNew: false, previewUrl: null, posterUrl: null, previewAspect: '9 / 16' },
+            ],
+        });
 
     if (!req.headers.authorization?.startsWith('Bearer ')) return send(res, 401, { error: 'not_authenticated' });
     if (path === '/api/v1/balance') return send(res, 200, { balance: state.balance, free_credits: state.free, free_expires_at: null });
