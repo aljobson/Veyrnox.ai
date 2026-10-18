@@ -47,6 +47,17 @@ describe('social approvals (0304)', { skip: !process.env.DATABASE_URL }, () => {
     assert.equal((await value('SELECT public.list_social_approvals($1,$2) value',[f.auth,f.brand])).requests[0].status,'approved');
   });
 
+  it('shows an external reviewer no key for a held image',async(t)=>{
+    // Needs 0349 (and the 0289 held_at column), which a bare 0304 bootstrap lacks.
+    if(!(await value(`SELECT to_regprocedure('public.social_post_media_unscanned(uuid)') IS NOT NULL value`)))return t.skip('0349 not applied');
+    const f=await fixture(); const made=await create(f);
+    await pool.query('UPDATE public.assets SET held_at=now() WHERE job_id=$1',[f.job]);
+    const review=await value('SELECT public.get_social_approval_review($1) value',[made.reviewers[0].id]);
+    assert.equal(review.ok,true);
+    assert.equal(review.media.held,true);
+    assert.equal(review.media.r2_key,undefined);
+  });
+
   it('one rejection cancels the draft before it can be claimed',async()=>{
     const f=await fixture(); const made=await create(f,'any');
     const rejected=await value('SELECT public.decide_social_approval($1,$2,$3) value',[made.reviewers[0].id,'rejected','Change the caption']);
