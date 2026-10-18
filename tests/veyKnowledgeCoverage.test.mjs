@@ -30,6 +30,7 @@ const NO_ARTICLE = Object.freeze({
         '/oddlings',
         '/oddlings/[id]',
         '/pricing',
+        '/publish',
         '/legal/aup',
         '/legal/cinema-content',
         '/legal/gdpr',
