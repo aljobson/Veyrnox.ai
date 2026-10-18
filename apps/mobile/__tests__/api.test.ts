@@ -15,6 +15,19 @@ describe('api client', () => {
         return { onSessionLost, api: createApiClient({ baseUrl: 'https://x.test', getAccessToken, onSessionLost }) };
     }
 
+    test('beforeSend runs first and can stop a call before anything leaves the phone', async () => {
+        const getAccessToken = jest.fn(async () => 'tok');
+        const beforeSend = jest.fn(async (path: string) => {
+            if (path === '/api/v1/generations') throw new ApiError(400, 'consent_declined');
+        });
+        const api = createApiClient({ baseUrl: 'https://x.test', getAccessToken, onSessionLost: jest.fn(), beforeSend });
+        await expect(api.request('/api/v1/generations', { method: 'POST' })).rejects.toMatchObject({ code: 'consent_declined' });
+        await expect(api.stream('/api/v1/generations', { method: 'POST' })).rejects.toMatchObject({ code: 'consent_declined' });
+        expect(fetchMock).not.toHaveBeenCalled();
+        expect(getAccessToken).not.toHaveBeenCalled();
+        expect(beforeSend).toHaveBeenCalledWith('/api/v1/generations', 'POST');
+    });
+
     test('sends the bearer token and parses the balance', async () => {
         fetchMock.mockResolvedValue(ok({ balance: 7, free_credits: 2, free_expires_at: null }));
         const { api } = client(async () => 'tok');

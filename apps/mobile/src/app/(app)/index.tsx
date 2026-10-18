@@ -76,6 +76,11 @@ export default function Home() {
                     <Text style={styles.secondaryText}>Cinema</Text>
                 </Pressable>
             </Link>
+            <Link href="/projects" asChild>
+                <Pressable accessibilityRole="button" style={styles.secondary}>
+                    <Text style={styles.secondaryText}>Projects</Text>
+                </Pressable>
+            </Link>
             <Link href="/chat" asChild>
                 <Pressable accessibilityRole="button" style={styles.secondary}>
                     <Text style={styles.secondaryText}>Chat with Vey</Text>

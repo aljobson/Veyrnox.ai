@@ -16,6 +16,8 @@ export interface ApiClientOptions {
     readonly onSessionLost: () => void;
     // Used for streamed responses; React Native's own fetch cannot stream a body.
     readonly streamFetch?: typeof fetch;
+    // Runs before a call leaves the phone; throws to stop it (the AI-sharing consent, ADR-0128).
+    readonly beforeSend?: (path: string, method: string) => Promise<void>;
 }
 
 export interface Balance {
@@ -63,13 +65,15 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
     }
 
     async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+        await options.beforeSend?.(path, init.method ?? 'GET');
         const res = await authed(path, init, fetch);
         const body = (await res.json().catch(() => ({}))) as { error?: string };
         if (!res.ok) throw new ApiError(res.status, typeof body.error === 'string' ? body.error : 'unknown', body);
         return body as T;
     }
 
-    function stream(path: string, init: RequestInit = {}): Promise<Response> {
+    async function stream(path: string, init: RequestInit = {}): Promise<Response> {
+        await options.beforeSend?.(path, init.method ?? 'GET');
         return authed(path, init, options.streamFetch ?? fetch);
     }
 
