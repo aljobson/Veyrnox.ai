@@ -28,6 +28,7 @@
       "expo-secure-store",
       "expo-apple-authentication",
       "expo-web-browser",
+      "expo-notifications",
       "@sentry/react-native"
     ],
     "scheme": "ai.veyrnox.app",
