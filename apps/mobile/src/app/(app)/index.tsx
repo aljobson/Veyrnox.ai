@@ -77,6 +77,11 @@ export default function Home() {
                     <Text style={styles.secondaryText}>{t('home.cinema')}</Text>
                 </Pressable>
             </Link>
+            <Link href="/edit" asChild>
+                <Pressable accessibilityRole="button" style={styles.secondary}>
+                    <Text style={styles.secondaryText}>{t('edit.title')}</Text>
+                </Pressable>
+            </Link>
             <Link href="/projects" asChild>
                 <Pressable accessibilityRole="button" style={styles.secondary}>
                     <Text style={styles.secondaryText}>{t('label.Projects')}</Text>
