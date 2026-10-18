@@ -16,7 +16,7 @@ export interface ApiClientOptions {
     readonly onSessionLost: () => void;
     // Used for streamed responses; React Native's own fetch cannot stream a body.
     readonly streamFetch?: typeof fetch;
-    // Runs before a call leaves the phone; throws to stop it (the AI-sharing consent, ADR-0126).
+    // Runs before a call leaves the phone; throws to stop it (the AI-sharing consent, ADR-0128).
     readonly beforeSend?: (path: string, method: string) => Promise<void>;
 }
 

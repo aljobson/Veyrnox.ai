@@ -1,6 +1,6 @@
 import { ApiError } from './api';
 
-// ADR-0126 (Apple 5.1.2(i), Google AI-content policy): before the app sends a person's content to a third-party AI
+// ADR-0128 (Apple 5.1.2(i), Google AI-content policy): before the app sends a person's content to a third-party AI
 // provider for the first time, it asks, once per wording version and account. Declining sends nothing. The gate sits
 // in the API client, so no screen can reach a provider without it. The server's own `consent: true` on uploaded
 // sources (ADR-0094, aup-2026-09-26) is separate and unchanged.

@@ -1,4 +1,4 @@
-# ADR-0126 — Mobile: consent before content goes to an AI provider
+# ADR-0128 — Mobile: consent before content goes to an AI provider
 
 **Status:** Proposed 2026-10-18
 **Related:** [ADR-0106](0106-mobile-app.md), [ADR-0110](0110-mobile-account-and-safety.md), `docs/mobile/M7-STORE-SUBMISSION-CHECKLIST.md`; Apple App Review Guideline 5.1.2(i), Google Play AI-generated content policy
