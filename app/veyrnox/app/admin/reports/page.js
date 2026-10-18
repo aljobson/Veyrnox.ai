@@ -125,7 +125,8 @@ function ReportCard({ report: r, onDone }) {
       {r.source === 'scanner' && r.held && <ScannerAction jobId={r.subject_id} onDone={onDone} />}
       {r.details && <p className="mt-3 text-sm whitespace-pre-wrap wrap-break-word">{r.details}</p>}
       {r.status === 'resolved' && <p className="mt-3 text-xs text-vx-fg-muted">Resolved {when(r.resolved_at)} by {r.resolved_by}: {r.resolution}</p>}
-      {r.status === 'open' && !open && <Button className="mt-4" size="sm" variant="ghost" onClick={() => setOpen(true)}>Resolve</Button>}
+      {/* Resolving a scanner report would close it and leave the image held with nothing in the queue; Release is the way out. */}
+      {r.status === 'open' && !open && !(r.source === 'scanner' && r.held) && <Button className="mt-4" size="sm" variant="ghost" onClick={() => setOpen(true)}>Resolve</Button>}
       {open && (
         <form onSubmit={resolve} className="mt-3 rounded-lg border border-vx-border p-4 space-y-3" aria-label="Resolve this report">
           <label className="block text-sm">
