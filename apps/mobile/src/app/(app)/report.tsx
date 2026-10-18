@@ -17,8 +17,9 @@ export default function ReportScreen() {
     const params = useLocalSearchParams<{ kind?: string; id?: string }>();
     const { api } = useAuth();
     const router = useRouter();
-    const kind: ReportSubject = params.kind === 'job' && params.id ? 'job' : 'other';
-    const subjectId = kind === 'job' ? (params.id ?? null) : null;
+    const kind: ReportSubject =
+        params.id && (params.kind === 'job' || params.kind === 'cinema_title') ? params.kind : 'other';
+    const subjectId = kind === 'other' ? null : (params.id ?? null);
     const [category, setCategory] = useState<ReportCategory | null>(null);
     const [details, setDetails] = useState('');
     const [busy, setBusy] = useState(false);
@@ -57,9 +58,9 @@ export default function ReportScreen() {
 
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-            <Stack.Screen options={{ title: kind === 'job' ? 'Report this creation' : 'Report a problem' }} />
+            <Stack.Screen options={{ title: kind === 'job' ? 'Report this creation' : kind === 'cinema_title' ? 'Report this title' : 'Report a problem' }} />
             <Text style={styles.body}>
-                {kind === 'job' ? 'What is wrong with this creation?' : 'What would you like to report?'}
+                {kind === 'job' ? 'What is wrong with this creation?' : kind === 'cinema_title' ? 'What is wrong with this title?' : 'What would you like to report?'}
             </Text>
             {REPORT_CATEGORIES.map((c) => (
                 <Pressable

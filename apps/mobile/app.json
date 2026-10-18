@@ -90,7 +90,8 @@
           "savePhotosPermission": "Veyrnox.ai saves your finished creations to your photo library when you ask it to.",
           "isAccessMediaLocationEnabled": false
         }
-      ]
+      ],
+      "expo-video"
     ],
     "scheme": "ai.veyrnox.app",
     "experiments": {
