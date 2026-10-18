@@ -1,4 +1,5 @@
 import { API_BASE, ApiError, type ApiClient } from './api';
+import { OFFLINE_PAID_MESSAGE, OfflineError, ensureOnline } from './network';
 
 // The video agent (ADR-0074): a brief is planned first (no charge), then approved. The server prices
 // the plan and signs a ticket; the app shows what the server says and never works out a price.
@@ -76,6 +77,7 @@ export async function requestPlan(api: ApiClient, rawBrief: string, aspect: Aspe
 // Approve = the ordinary generation request carrying the plan's ticket, its key and the price it showed.
 // The server refuses a changed brief, another account's ticket, an expired plan or a moved price before any charge.
 export async function approvePlan(api: ApiClient, plan: Plan, rawBrief: string): Promise<string> {
+    await ensureOnline();
     const r = await api.request<{ job_id?: unknown }>('/api/v1/generations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -95,6 +97,7 @@ export function minutesLeft(expiresAtSeconds: number, nowMs: number = Date.now()
 }
 
 export function planMessage(err: unknown): string {
+    if (err instanceof OfflineError) return OFFLINE_PAID_MESSAGE;
     if (!(err instanceof ApiError)) return 'Something went wrong. Try again.';
     switch (err.code) {
         case 'video_agent_unavailable':

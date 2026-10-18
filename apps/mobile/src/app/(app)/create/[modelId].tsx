@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { ApiError } from '../../../lib/api';
+import { OFFLINE_PAID_MESSAGE, OfflineError } from '../../../lib/network';
 import { SourcePicker } from '../../../components/SourcePicker';
 import { estimateCredits, fetchCatalog, kindOf, mediaApi, promptRequired, textInput, type CatalogModel } from '../../../lib/media';
 import { missingRequired, slotsFor, toSourceKeys, type SlotName } from '../../../lib/sources';
@@ -117,6 +118,7 @@ export default function CreateWithModel() {
 }
 
 function messageFor(err: unknown): string {
+    if (err instanceof OfflineError) return OFFLINE_PAID_MESSAGE;
     if (!(err instanceof ApiError)) return 'Something went wrong. Try again.';
     switch (err.code) {
         case 'insufficient_credits':
