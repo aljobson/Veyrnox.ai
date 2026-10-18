@@ -126,12 +126,13 @@ BEGIN
         DELETE FROM public.push_tokens WHERE user_id = v_user.id AND device_id = p_device_id AND token <> p_token;
     END IF;
 
-    INSERT INTO public.push_tokens (user_id, token, platform, device_id, app_version, notify_jobs)
-    VALUES (v_user.id, p_token, p_platform, p_device_id, p_app_version, v_notify)
+    -- clock_timestamp(): "least recently seen" must order registrations made inside one transaction too.
+    INSERT INTO public.push_tokens (user_id, token, platform, device_id, app_version, notify_jobs, created_at, updated_at, last_seen_at)
+    VALUES (v_user.id, p_token, p_platform, p_device_id, p_app_version, v_notify, clock_timestamp(), clock_timestamp(), clock_timestamp())
     ON CONFLICT (token) DO UPDATE
        SET user_id = EXCLUDED.user_id, platform = EXCLUDED.platform, device_id = EXCLUDED.device_id,
            app_version = EXCLUDED.app_version, notify_jobs = EXCLUDED.notify_jobs,
-           disabled_at = NULL, updated_at = now(), last_seen_at = now();
+           disabled_at = NULL, updated_at = clock_timestamp(), last_seen_at = clock_timestamp();
     v_changed := true;
 
     -- At most ten devices per account: the least recently seen go first.
