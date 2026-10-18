@@ -37,15 +37,22 @@ export default function SignIn() {
             <Text style={styles.subtitle}>Sign in to create with your credits.</Text>
             <Pressable
                 accessibilityRole="checkbox"
+                accessibilityLabel={`I am ${MIN_AGE} or older and agree to the Terms and Privacy Policy`}
                 accessibilityState={{ checked: agreed }}
+                // The Terms and Privacy links sit inside the checkbox text, which a screen reader cannot reach; offer them as actions.
+                accessibilityActions={[
+                    { name: 'terms', label: 'Open the Terms' },
+                    { name: 'privacy', label: 'Open the Privacy Policy' },
+                ]}
+                onAccessibilityAction={(e) => void WebBrowser.openBrowserAsync(LEGAL_LINKS[e.nativeEvent.actionName === 'terms' ? 0 : 1].url)}
                 style={styles.agree}
                 onPress={() => setAgreed((v) => !v)}
             >
                 <View style={[styles.box, agreed && styles.boxOn]}>{agreed ? <Text style={styles.tick}>✓</Text> : null}</View>
                 <Text style={styles.agreeText}>
                     I am {MIN_AGE} or older and agree to the{' '}
-                    <Text style={styles.link} onPress={() => WebBrowser.openBrowserAsync(LEGAL_LINKS[0].url)}>Terms</Text> and{' '}
-                    <Text style={styles.link} onPress={() => WebBrowser.openBrowserAsync(LEGAL_LINKS[1].url)}>Privacy Policy</Text>.
+                    <Text style={styles.link} accessibilityRole="link" onPress={() => WebBrowser.openBrowserAsync(LEGAL_LINKS[0].url)}>Terms</Text> and{' '}
+                    <Text style={styles.link} accessibilityRole="link" onPress={() => WebBrowser.openBrowserAsync(LEGAL_LINKS[1].url)}>Privacy Policy</Text>.
                 </Text>
             </Pressable>
             <Pressable
@@ -74,8 +81,8 @@ export default function SignIn() {
                     <Text style={styles.buttonText}>Preview with demo data</Text>
                 </Pressable>
             ) : null}
-            {busy ? <ActivityIndicator color={colors.accent} style={styles.spinner} /> : null}
-            {error ? <Text style={styles.error}>{error}</Text> : null}
+            {busy ? <ActivityIndicator color={colors.accent} style={styles.spinner} accessibilityLabel="Signing in" /> : null}
+            {error ? <Text style={styles.error} accessibilityRole="alert" accessibilityLiveRegion="polite">{error}</Text> : null}
         </View>
     );
 }
@@ -94,7 +101,7 @@ const styles = StyleSheet.create({
     },
     buttonText: { color: colors.text, fontSize: 16, fontWeight: '600' },
     off: { opacity: 0.4 },
-    agree: { flexDirection: 'row', gap: 12, alignItems: 'center', marginBottom: 8 },
+    agree: { flexDirection: 'row', gap: 12, alignItems: 'center', marginBottom: 8, minHeight: 44 },
     box: { width: 24, height: 24, borderRadius: 6, borderWidth: 1, borderColor: colors.borderStrong, alignItems: 'center', justifyContent: 'center' },
     boxOn: { backgroundColor: colors.accent, borderColor: colors.accent },
     tick: { color: colors.accentInk, fontWeight: '700' },

@@ -83,19 +83,20 @@ export default function Conversation() {
                     keyExtractor={(m) => m.id}
                     contentContainerStyle={styles.list}
                     renderItem={({ item }) => (
-                        <View style={[styles.bubble, item.role === 'user' ? styles.user : styles.assistant]}>
+                        <View accessible accessibilityLabel={`${item.role === 'user' ? 'You' : 'Vey'}: ${item.content || (sending ? 'writing' : '')}`} style={[styles.bubble, item.role === 'user' ? styles.user : styles.assistant]}>
                             <Text style={[styles.text, item.role === 'user' && styles.userText]}>{item.content || (sending ? '…' : '')}</Text>
                         </View>
                     )}
                 />
             )}
-            {error ? <Text style={styles.error}>{error}</Text> : null}
+            {error ? <Text style={styles.error} accessibilityRole="alert">{error}</Text> : null}
             <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
                 <TextInput
                     style={styles.input}
                     value={draft}
                     onChangeText={setDraft}
                     placeholder="Message Vey"
+                    accessibilityLabel="Message Vey"
                     placeholderTextColor={colors.muted}
                     multiline
                     maxLength={8000}
@@ -120,7 +121,7 @@ const styles = StyleSheet.create({
     error: { color: colors.danger, paddingHorizontal: 16, paddingBottom: 4 },
     composer: { flexDirection: 'row', gap: 8, paddingHorizontal: 12, paddingTop: 8, borderTopColor: colors.border, borderTopWidth: StyleSheet.hairlineWidth },
     input: { flex: 1, color: colors.text, backgroundColor: colors.surface, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, maxHeight: 120 },
-    send: { backgroundColor: colors.accent, borderRadius: 12, paddingHorizontal: 16, justifyContent: 'center' },
+    send: { backgroundColor: colors.accent, borderRadius: 12, paddingHorizontal: 16, minHeight: 44, justifyContent: 'center' },
     sendOff: { opacity: 0.4 },
     sendText: { color: colors.accentInk, fontWeight: '600' },
 });

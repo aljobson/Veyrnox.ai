@@ -8,6 +8,7 @@ import { POLICIES, type CacheMeta } from '../../lib/cache';
 import { observe } from '../../lib/network';
 import { mediaApi, type Job, type JobPage } from '../../lib/media';
 import { colors } from '../../theme';
+import { touchTarget } from '../../lib/a11y';
 
 const BADGE: Record<Job['state'], string> = { queued: 'Queued', running: 'Creating', succeeded: 'Ready', failed: 'Refunded' };
 
@@ -63,7 +64,7 @@ export default function Library() {
         <View style={styles.screen}>
             <Stack.Screen options={{ title: 'Library' }} />
             {failed ? (
-                <Pressable accessibilityRole="button" onPress={load}>
+                <Pressable accessibilityRole="button" style={touchTarget} onPress={load}>
                     <Text style={styles.error}>Could not load your library. Tap to retry.</Text>
                 </Pressable>
             ) : jobs === null ? (
@@ -78,7 +79,7 @@ export default function Library() {
                     refreshing={false}
                     ListEmptyComponent={<Text style={styles.muted}>Nothing here yet. Create something.</Text>}
                     renderItem={({ item }) => (
-                        <Pressable accessibilityRole="button" style={styles.row} onPress={() => router.push({ pathname: '/job/[id]', params: { id: item.job_id } })}>
+                        <Pressable accessibilityRole="button" accessibilityLabel={`${item.label || item.model_id}, ${BADGE[item.state]}, ${new Date(item.created_at).toLocaleString()}`} style={styles.row} onPress={() => router.push({ pathname: '/job/[id]', params: { id: item.job_id } })}>
                             <View style={styles.rowText}>
                                 <Text style={styles.name} numberOfLines={1}>{item.label || item.model_id}</Text>
                                 <Text style={styles.muted}>{new Date(item.created_at).toLocaleString()}</Text>
