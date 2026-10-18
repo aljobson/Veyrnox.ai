@@ -183,6 +183,7 @@ fd087777e79b8a1e33774074af9d1f32e18fff05:tests/veyrnoxMcp.test.mjs:generic-api-k
 0364e98c3842e6ddfdc78ee7a87583934ef0a7ae:tests/publishAutomation.test.mjs:generic-api-key:168
 # Synthetic key in the capped generate_image test (branch claude/mcp-generate-image), flagged by the all-branches history scan.
 7b019b70384e7e55353a426f753170a48d19db8a:tests/veyrnoxMcp.test.mjs:generic-api-key:117
+# Test-fixture idempotency keys in the pre-squash commit of #1214 (still in unmerged branches' history)
 # publish-automation tests as squashed on main (88c29b80): synthetic UUIDs and the fake idempotency key idem-12345678
 88c29b8023fe9d286b05a00fd48d87d847306894:agent-harness/cli_anything/veyrnox/tests/test_core.py:generic-api-key:150
 88c29b8023fe9d286b05a00fd48d87d847306894:tests/publishAutomation.test.mjs:generic-api-key:56
