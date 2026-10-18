@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { checkCatalog } from '../lib/i18n/check.mjs';
 import { TOOL_TASKS } from '../app/veyrnox/_lib/tools.js';
 import { GUIDES } from '../app/veyrnox/_lib/guides.js';
+import { modelFacts } from '../app/veyrnox/_lib/modelPages.js';
 import en from '../lib/i18n/messages/en.mjs';
 import { CATALOGS, messagesFor, translator, richParts } from '../lib/i18n/translate.mjs';
 import {
@@ -127,4 +128,19 @@ test('guide pages take a prefix, the bare prefix path does not', () => {
   assert.equal(switchLanguageHref('de', '/fr/guides/library'), '/de/guides/library');
   assert.equal(isLocalizedPath('/presets/abc'), false, 'template detail pages are not translated yet');
   assert.equal(isLocalizedPath('/presets'), true);
+});
+
+test('model detail pages take a prefix and their fact labels follow the language', () => {
+  assert.equal(isLocalizedPath('/models/wan-2.5-kie'), true);
+  assert.equal(localizedHref('ja', '/models/wan-2.5-kie'), '/ja/models/wan-2.5-kie');
+  const model = {
+    modality: 'image-to-video', kind: 'video', durations: [5, 10],
+    capabilities: { inputs: { prompt: { type: 'string' }, aspect_ratio: { type: 'enum', values: ['16:9', '9:16'] } }, media: { image: { required: true } } },
+  };
+  const english = modelFacts(model);
+  const german = modelFacts(model, translator('de'));
+  assert.equal(english[0].label, 'Mode');
+  assert.equal(german.length, english.length);
+  assert.notEqual(german[0].label, english[0].label, 'Mode label is translated');
+  assert.equal(german.at(-1).value, '16:9, 9:16', 'catalog values stay as they are');
 });
