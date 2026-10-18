@@ -49,7 +49,7 @@ export default function Posts() {
 
     return (
         <View style={styles.screen}>
-            <Stack.Screen options={{ title: 'Posts' }} />
+            <Stack.Screen options={{ title: 'Posts', headerRight: () => <Pressable accessibilityRole="button" accessibilityLabel="New post" onPress={() => router.push('/publish/compose')}><Text style={styles.add}>New post</Text></Pressable> }} />
             {error && !posts ? (
                 <Text style={styles.error}>{error}</Text>
             ) : !posts ? (
@@ -83,4 +83,5 @@ const styles = StyleSheet.create({
     text: { color: colors.text, fontSize: 16 },
     muted: { color: colors.muted, fontSize: 13 },
     error: { color: colors.danger, paddingTop: 16 },
+    add: { color: colors.accent, fontSize: 16, fontWeight: '600' },
 });

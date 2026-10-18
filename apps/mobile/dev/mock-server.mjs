@@ -11,6 +11,11 @@ const state = {
     threads: [{ id: randomUUID(), model_id: 'claude-sonnet', title: 'Launch plan for the spring drop', pinned: false, updated_at: new Date().toISOString() }],
     messages: new Map(),
     jobs: [],
+    socialPlan: 'publish',
+    socialPosts: [
+        { id: 'post-1', key: 'seed-1', status: 'scheduled', scheduled_at: '2026-10-20T09:00:00Z', global_text: 'Spring launch teaser: the product turns in soft light.', created_at: '2026-10-18T10:00:00Z', updated_at: '2026-10-18T10:00:00Z', targets: [{ id: 't1', network: 'instagram', publish_status: 'pending', platform_post_url: null, last_error: null }] },
+        { id: 'post-2', key: 'seed-2', status: 'failed', scheduled_at: '2026-10-17T09:00:00Z', global_text: 'Behind the scenes cut.', created_at: '2026-10-17T08:00:00Z', updated_at: '2026-10-17T09:05:00Z', targets: [{ id: 't2', network: 'tiktok', publish_status: 'failed', platform_post_url: null, last_error: 'The account access token expired. <b>Reconnect</b> the account.' }, { id: 't3', network: 'instagram', publish_status: 'published', platform_post_url: 'https://www.instagram.com/p/mock/', last_error: null }] },
+    ],
     deleted: new Set(),
     referral: { code: 'K7M2PQ9XWD', referred: 2, attached: false },
 };
@@ -77,7 +82,7 @@ createServer(async (req, res) => {
     let m;
     const url = new URL(req.url, `http://localhost:${PORT}`);
     const path = url.pathname;
-    const body = req.method === 'POST' ? await readBody(req) : {};
+    const body = req.method === 'POST' || req.method === 'PATCH' ? await readBody(req) : {};
     console.log(req.method, path);
 
     if (path.startsWith('/auth/v1/token') || path === '/auth/v1/signup') return send(res, 200, tokens());
@@ -93,11 +98,48 @@ createServer(async (req, res) => {
     if ((m = path.match(/^\/api\/cinema\/posters\/([^/]+)$/))) { res.writeHead(200, { 'content-type': 'image/png' }); return res.end(PNG); }
     if (path === '/api/catalog') return send(res, 200, { models: CATALOG });
     if (path === '/api/v1/social/accounts') return send(res, 200, { brand_id: 'b1', accountLimit: 5, planTier: 'publish', accounts: [
-        { id: 'acc-1', network: 'instagram', display_name: 'Veyrnox Studio', avatar_url: null, status: 'active', connected_at: '2026-10-01T10:00:00Z', token_expires_at: '2026-12-01T10:00:00Z' },
-        { id: 'acc-2', network: 'tiktok', display_name: 'veyrnox.ai', avatar_url: null, status: 'expired', connected_at: '2026-09-01T10:00:00Z', token_expires_at: '2026-10-01T10:00:00Z' } ] });
-    if (path === '/api/v1/social/posts') return send(res, 200, { brand_id: 'b1', posts: [
-        { id: 'post-1', status: 'scheduled', scheduled_at: '2026-10-20T09:00:00Z', global_text: 'Spring launch teaser: the product turns in soft light.', created_at: '2026-10-18T10:00:00Z', targets: [{ id: 't1', network: 'instagram', publish_status: 'pending', platform_post_url: null, last_error: null }] },
-        { id: 'post-2', status: 'failed', scheduled_at: '2026-10-17T09:00:00Z', global_text: 'Behind the scenes cut.', created_at: '2026-10-17T08:00:00Z', targets: [{ id: 't2', network: 'tiktok', publish_status: 'failed', platform_post_url: null, last_error: 'The account access token expired. <b>Reconnect</b> the account.' }, { id: 't3', network: 'instagram', publish_status: 'published', platform_post_url: 'https://www.instagram.com/p/mock/', last_error: null }] } ] });
+        { id: 'acc-1', network: 'instagram', display_name: 'Veyrnox Studio', avatar_url: null, status: 'active', connected_at: '2026-10-01T10:00:00Z', token_expires_at: '2026-12-01T10:00:00Z', publishingEnabled: true, supportedMedia: ['image', 'video'] },
+        { id: 'acc-2', network: 'tiktok', display_name: 'veyrnox.ai', avatar_url: null, status: 'expired', connected_at: '2026-09-01T10:00:00Z', token_expires_at: '2026-10-01T10:00:00Z', publishingEnabled: true, supportedMedia: ['image', 'video'] } ] });
+    // Publish posts (stateful): create, reschedule, cancel and restore, with the version stamp the real routes require.
+    if (path === '/api/v1/social/posts' && req.method === 'POST') {
+        const at = body.publishNow === true ? new Date().toISOString() : body.scheduledAt;
+        if (!at || Number.isNaN(Date.parse(at))) return send(res, 400, { error: 'invalid_schedule' });
+        if (body.publishNow !== true && body.scheduledAt && state.socialPlan !== 'publish') return send(res, 402, { error: 'publish_plan_required', feature: 'scheduling' });
+        if (!Array.isArray(body.accountIds) || body.accountIds.length === 0) return send(res, 400, { error: 'invalid_account_ids' });
+        if (typeof body.idempotencyKey !== 'string' || !/^[A-Za-z0-9_-]{8,128}$/.test(body.idempotencyKey)) return send(res, 400, { error: 'invalid_idempotency_key' });
+        const prior = state.socialPosts.find((x) => x.key === body.idempotencyKey);
+        if (prior) return send(res, 201, { post_id: prior.id, idempotent: true, target_count: prior.targets.length });
+        const id = randomUUID();
+        const now = new Date().toISOString();
+        state.socialPosts.unshift({ id, key: body.idempotencyKey, status: body.publishNow === true ? 'published' : 'scheduled', scheduled_at: at, global_text: body.globalText || '', created_at: now, updated_at: now,
+            targets: body.accountIds.map((a, i) => ({ id: randomUUID(), network: a === 'acc-2' ? 'tiktok' : 'instagram', publish_status: body.publishNow === true ? 'published' : 'pending', platform_post_url: null, last_error: null })) });
+        console.log('MOCK created post', id, body.publishNow === true ? 'now' : 'scheduled');
+        return send(res, 201, { post_id: id, idempotent: false, target_count: body.accountIds.length });
+    }
+    if (path === '/api/v1/social/posts' && req.method === 'GET') return send(res, 200, { brand_id: 'b1', posts: state.socialPosts.map(({ key, updated_at, ...p }) => p) });
+    m = path.match(/^\/api\/v1\/social\/posts\/([^/]+)$/);
+    if (m && req.method === 'GET') {
+        const found = state.socialPosts.find((x) => x.id === m[1]);
+        if (!found) return send(res, 404, { error: 'post_not_found' });
+        const { key, ...row } = found;
+        return send(res, 200, { brand_id: 'b1', brandRole: 'owner', post: row });
+    }
+    m = path.match(/^\/api\/v1\/social\/posts\/([^/]+)(\/schedule)?$/);
+    if (m && req.method === 'PATCH') {
+        const post = state.socialPosts.find((x) => x.id === m[1]);
+        if (!post) return send(res, 404, { error: 'POST_NOT_FOUND' });
+        const now = new Date().toISOString();
+        if (m[2]) {
+            if (post.status !== 'scheduled') return send(res, 409, { error: 'POST_STARTED' });
+            if (body.expectedAt !== post.scheduled_at) return send(res, 409, { error: 'SCHEDULE_CHANGED' });
+            post.scheduled_at = body.scheduledAt; post.updated_at = now;
+            return send(res, 200, { scheduled_at: post.scheduled_at, idempotent: false });
+        }
+        if (body.expectedUpdatedAt !== post.updated_at) return send(res, 409, { error: 'POST_CHANGED' });
+        if (body.action === 'cancel') { if (post.status !== 'scheduled') return send(res, 409, { error: 'POST_STARTED' }); post.status = 'canceled'; post.updated_at = now; return send(res, 200, { updated_at: now, idempotent: false }); }
+        if (body.action === 'restore') { if (post.status !== 'canceled') return send(res, 409, { error: 'POST_CHANGED' }); post.status = 'scheduled'; post.scheduled_at = body.scheduledAt; post.updated_at = now; return send(res, 200, { updated_at: now, scheduled_at: post.scheduled_at, idempotent: false }); }
+        return send(res, 400, { error: 'invalid_body' });
+    }
     if (path === '/api/v1/social/analytics') return send(res, 200, { account: { id: 'acc-1', network: 'instagram', display_name: 'Veyrnox Studio', status: 'active' }, sync: { last_ok_at: '2026-10-18T06:00:00Z', failing: false }, evolution: [{ date: '2026-10-17', metrics: { followers: 1240, reach: 5300 } }, { date: '2026-10-18', metrics: { followers: 1262, reach: 6120, video_views: 880 } }], posts: [{ id: 'ap-1', published_at: '2026-10-17T09:00:00Z', type: 'reel', permalink: 'https://www.instagram.com/p/mock/', caption: 'Behind the scenes cut.', metrics: { likes: 140, comments: 12 } }] });
     if (path === '/api/presets')
         return send(res, 200, {

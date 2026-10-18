@@ -6,6 +6,7 @@ Phase-0 decision-support documents for the target architecture at `/Users/aljobs
 
 | ADR | Status | Summary | Blocks |
 |-----|--------|---------|--------|
+| [ADR-0122 — Mobile: Publish composer](0122-mobile-publish-composer.md) | **Proposed 2026-10-18** | Pick a creation, accounts, text, post now or schedule, then change the time, cancel or restore. Server-clock post now, one-post-per-draft keys, confirm before sending, no native date picker. Mock-proved only. | Server `updated_at` on post rows |
 | [ADR-0125 — Mobile: Help and content-decision appeals](0125-mobile-help-and-appeals.md) | **Proposed 2026-10-18** | A Help screen (support, legal, report) and a Content decisions screen over `GET`/`POST /api/v1/appeals`: decision, appeal state, one appeal each with the server's length rule. No FAQ (`/help` is a one-question assistant). No server change, no dependency. | Decision on an in-app assistant |
 | [ADR-0124 — Mobile: Free allowance card](0124-mobile-free-allowance.md) | **Proposed 2026-10-18** | A "Free today" card on Create from `GET /api/v1/free-allowance`: server counts per model, hidden whole when disabled, empty or failing. Nothing computed in the app. No server change, no dependency. | — |
 | [ADR-0123 — Mobile: Credit history](0123-mobile-credit-history.md) | **Proposed 2026-10-18** | A Credit history screen over `GET /api/v1/ledger` and `/ledger/usage`: plain-English entries, cursor paging, a spending summary, no running balance (the route gives none). No server change, no dependency. | Server running balance |

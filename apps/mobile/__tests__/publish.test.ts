@@ -4,12 +4,14 @@ import {
     boundedError,
     fetchAccounts,
     fetchAnalytics,
+    fetchPost,
     fetchPosts,
     findPost,
     lastDays,
     mergePage,
     metricLabel,
     parseAccounts,
+    parsePost,
     parseAnalytics,
     parsePosts,
     postStatusLabel,
@@ -186,5 +188,25 @@ describe('mergePage', () => {
         const a = parsePosts({ posts: [post] });
         expect(mergePage(a, a)).toMatchObject({ added: false });
         expect(mergePage(a, a).posts).toHaveLength(1);
+    });
+});
+
+describe('parsePost and fetchPost', () => {
+    test('a single row keeps updated_at, which cancel and restore need', () => {
+        const p = parsePost({ ...post, updated_at: '2026-10-18T10:05:00Z' });
+        expect(p?.updatedAt).toBe('2026-10-18T10:05:00Z');
+        expect(parsePost({ ...post })?.updatedAt).toBeNull();
+        expect(parsePost(null)).toBeNull();
+        expect(parsePost({ ...post, id: '' })).toBeNull();
+    });
+    test('fetchPost reads GET /social/posts/:id and unwraps the row', async () => {
+        const { api, request } = apiWith({ brand_id: 'b', post: { ...post, updated_at: 'u1' } });
+        const p = await fetchPost(api, 'a/b');
+        expect(request).toHaveBeenCalledWith('/api/v1/social/posts/a%2Fb');
+        expect(p?.updatedAt).toBe('u1');
+    });
+    test('fetchPost gives null for an unusable answer and throws on a server error', async () => {
+        expect(await fetchPost(apiWith({}).api, 'p1')).toBeNull();
+        await expect(fetchPost(apiWith(new ApiError(404, 'not_found')).api, 'p1')).rejects.toBeInstanceOf(ApiError);
     });
 });
