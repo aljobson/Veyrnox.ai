@@ -1,0 +1,37 @@
+{
+  "note": "Eye sheets. Only the eye shapes that read clearly at tile size are kept (Round, Monolid, Graphic Liner); the rest looked the same as their neighbours. The second sheet is shared with the mouth manifest.",
+  "sources": [
+    {
+      "file": "eye-a.jpg",
+      "rows": [
+        4,
+        4
+      ],
+      "styles": [
+        "Round",
+        null,
+        null,
+        null,
+        null,
+        "Monolid",
+        null,
+        null
+      ]
+    },
+    {
+      "file": "eye-b-mouth-b.jpg",
+      "rows": [
+        3,
+        3
+      ],
+      "styles": [
+        null,
+        null,
+        "Graphic Liner",
+        null,
+        null,
+        null
+      ]
+    }
+  ]
+}

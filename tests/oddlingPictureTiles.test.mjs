@@ -36,13 +36,16 @@ test('pictureTileSrc returns the file for a listed option and nothing for the re
   assert.equal(pictureTileSrc('headwear', 'Wide-Brim Hat'), '/oddlings/headwear/wide-brim-hat.webp');
   assert.equal(pictureTileSrc('hair', 'Afro'), '/oddlings/hair/afro.webp');
   assert.equal(pictureTileSrc('wardrobe_style', 'Weather Couture'), '', 'not generated yet: keeps the drawn tile');
-  assert.equal(pictureTileSrc('nose_shape', 'Straight'), '');
+  assert.equal(pictureTileSrc('mouth', 'Forked Tongue'), '/oddlings/face/mouth/forked-tongue.webp');
+  assert.equal(pictureTileSrc('mouth', 'Small Mouth'), '', 'looked the same as No Teeth: keeps the drawn tile');
+  assert.equal(pictureTileSrc('nose_shape', 'Aquiline'), '');
+  assert.equal(pictureTileSrc('brows', 'Thick'), '');
   assert.equal(pictureTileSrc('constructor', 'x'), '');
   assert.equal(pictureTileSrc(undefined, undefined), '');
 });
 
 test('the outfit and headwear manifests name only options that have a picture, and skip the rest with null', () => {
-  for (const [file, group] of [['outfit-tiles.manifest.json', 'wardrobe_style'], ['headwear-tiles.manifest.json', 'headwear']]) {
+  for (const [file, group] of [['outfit-tiles.manifest.json', 'wardrobe_style'], ['headwear-tiles.manifest.json', 'headwear'], ['face-head-shape.manifest.json', 'head_shape'], ['face-eye-shape.manifest.json', 'eye_shape'], ['face-nose-shape.manifest.json', 'nose_shape'], ['face-mouth.manifest.json', 'mouth']]) {
     const manifest = JSON.parse(readFileSync(new URL(`../scripts/${file}`, import.meta.url), 'utf8'));
     const named = manifest.sources.flatMap((source) => source.styles).filter(Boolean);
     assert.deepEqual(named.sort(), [...PICTURE_TILES[group].styles].sort(), `${file} and the picture list differ`);

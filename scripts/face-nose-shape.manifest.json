@@ -1,0 +1,22 @@
+{
+  "note": "Nose sheet. Noses differ little at tile size, so only Straight, Button and Wide are kept.",
+  "sources": [
+    {
+      "file": "nose.jpg",
+      "rows": [
+        4,
+        4
+      ],
+      "styles": [
+        "Straight",
+        "Button",
+        null,
+        null,
+        "Wide",
+        null,
+        null,
+        null
+      ]
+    }
+  ]
+}
