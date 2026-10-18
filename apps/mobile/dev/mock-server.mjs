@@ -113,7 +113,7 @@ createServer(async (req, res) => {
         const now = new Date().toISOString();
         state.socialPosts.unshift({ id, key: body.idempotencyKey, status: body.publishNow === true ? 'published' : 'scheduled', scheduled_at: at, global_text: body.globalText || '', created_at: now, updated_at: now,
             targets: body.accountIds.map((a, i) => ({ id: randomUUID(), network: a === 'acc-2' ? 'tiktok' : 'instagram', publish_status: body.publishNow === true ? 'published' : 'pending', platform_post_url: null, last_error: null })) });
-        console.log('MOCK created post', id, body.publishNow === true ? 'now' : at);
+        console.log('MOCK created post', id, body.publishNow === true ? 'now' : 'scheduled');
         return send(res, 201, { post_id: id, idempotent: false, target_count: body.accountIds.length });
     }
     if (path === '/api/v1/social/posts' && req.method === 'GET') return send(res, 200, { brand_id: 'b1', posts: state.socialPosts.map(({ key, updated_at, ...p }) => p) });
