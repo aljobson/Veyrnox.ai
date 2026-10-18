@@ -7,26 +7,26 @@ const plan = { idempotencyKey: 'k', expiresAt: Date.now() + 60_000 } as unknown 
 const request = jest.fn();
 const api = { request } as unknown as ApiClient;
 const req = { modelId: 'm', prompt: 'p', durationSeconds: null, confirmedCredits: 3, idempotencyKey: 'k' };
-const realFetch = global.fetch;
+const realFetch = globalThis.fetch;
 
 beforeEach(() => {
     resetNetworkState();
     request.mockReset().mockResolvedValue({ job_id: 'j1' });
 });
 afterEach(() => {
-    global.fetch = realFetch;
+    globalThis.fetch = realFetch;
 });
 
 describe('paid actions while offline', () => {
     test('a generation is refused and nothing is sent', async () => {
         markOffline();
-        global.fetch = jest.fn().mockRejectedValue(new Error('down')) as unknown as typeof fetch;
+        globalThis.fetch = jest.fn().mockRejectedValue(new Error('down')) as unknown as typeof fetch;
         await expect(mediaApi(api).createGeneration(req)).rejects.toBeInstanceOf(OfflineError);
         expect(request).not.toHaveBeenCalled();
     });
     test('approving a video plan is refused and nothing is sent', async () => {
         markOffline();
-        global.fetch = jest.fn().mockRejectedValue(new Error('down')) as unknown as typeof fetch;
+        globalThis.fetch = jest.fn().mockRejectedValue(new Error('down')) as unknown as typeof fetch;
         await expect(approvePlan(api, plan, 'a brief about bees')).rejects.toBeInstanceOf(OfflineError);
         expect(request).not.toHaveBeenCalled();
     });
@@ -36,7 +36,7 @@ describe('paid actions while offline', () => {
     });
     test('a stale offline mark does not block: the probe finds the network back and the action goes through', async () => {
         markOffline();
-        global.fetch = jest.fn().mockResolvedValue({ ok: true }) as unknown as typeof fetch;
+        globalThis.fetch = jest.fn().mockResolvedValue({ ok: true }) as unknown as typeof fetch;
         await expect(mediaApi(api).createGeneration(req)).resolves.toEqual({ job_id: 'j1' });
         expect(request).toHaveBeenCalledTimes(1);
         expect(isOffline()).toBe(false);
