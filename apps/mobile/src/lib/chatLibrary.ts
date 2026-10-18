@@ -1,7 +1,7 @@
 import type { ApiClient } from './api';
 import { chatApi } from './chat';
 
-// ADR-0125: personas and folders for chat, over /api/v1/chat/*. The server is the authority on every rule; the
+// ADR-0126: personas and folders for chat, over /api/v1/chat/*. The server is the authority on every rule; the
 // limits here (copied from lib/chat.js) only save a round trip.
 
 export const MAX_PERSONA_NAME = 60;

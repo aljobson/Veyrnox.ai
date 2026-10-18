@@ -1,4 +1,4 @@
-# ADR-0125 — Mobile: chat personas and folders
+# ADR-0126 — Mobile: chat personas and folders
 
 **Status:** Proposed 2026-10-18
 **Related:** [ADR-0067](0067-chat.md) (chat), [ADR-0072](0072-chat-personas.md) (personas), [ADR-0106](0106-mobile-app.md) (the app)
