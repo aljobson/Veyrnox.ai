@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { CATALOG_CATEGORIES, CATEGORY_ICONS, categoryById, categoryGroups, categoryProgress, controlKind } from '../_lib/oddlingCatalog';
+import { CATALOG_CATEGORIES, CATEGORY_FOCUS, CATEGORY_ICONS, categoryById, categoryGroups, categoryProgress, controlKind } from '../_lib/oddlingCatalog';
 import { CHARACTER_GROUPS } from '../_lib/character';
 import { characterOptionLabel } from '../_lib/characterOptions';
 import { OddlingMannequin } from './OddlingMannequin';
@@ -20,7 +20,7 @@ export function OddlingCatalog({ picks, onPick, onClear }) {
   return (
     <section data-assistant-target="oddlings.doll-lab" aria-label="Oddling catalog" className="mt-5 min-w-0 max-w-full overflow-hidden rounded-2xl border border-vx-border bg-vx-base">
       <div className="grid grid-cols-[148px_minmax(0,1fr)] items-stretch gap-3 border-b border-vx-border p-3">
-        <div className="rounded-xl border border-vx-border bg-vx-panel p-1"><OddlingMannequin picks={picks} className="h-56 w-full" label="Preview figure of your Oddling" /></div>
+        <div className="rounded-xl border border-vx-border bg-vx-panel p-1"><OddlingMannequin picks={picks} focus={CATEGORY_FOCUS[categoryId] || 'body'} className="h-56 w-full" label="Preview figure of your Oddling" /></div>
         <div className="flex min-w-0 flex-col">
           <span className="font-vx-mono text-[9px] font-bold tracking-[0.14em] text-vx-accent">ODDLING CATALOG</span>
           <h2 className="mt-1 text-xl font-extrabold leading-tight">Pick it, see it.</h2>
