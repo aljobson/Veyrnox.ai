@@ -38,6 +38,20 @@ export function newClip(source: { readonly jobId: string; readonly label: string
     return { jobId: source.jobId, label: source.label, length, start: 0, end };
 }
 
+// The video's real length from the server (GET /api/v1/jobs/:id/media-info, read from the stored file's own headers),
+// so adding a clip needs no file link and no player. Any failure (not found, not a video, unreadable, rate limited,
+// offline) or an answer that is not a positive number returns null: the screen then reads the length with the player
+// instead, as before. Nothing here is charged or changes anything.
+export async function fetchClipLength(api: ApiClient, jobId: string): Promise<number | null> {
+    try {
+        const res = await api.request<{ seconds?: unknown } | null>(`/api/v1/jobs/${encodeURIComponent(jobId)}/media-info`);
+        const s = res?.seconds;
+        return typeof s === 'number' && Number.isFinite(s) && s > 0 ? s : null;
+    } catch {
+        return null;
+    }
+}
+
 export function stepStart(c: Clip, delta: number): Clip {
     return { ...c, start: round2(clamp(c.start + delta, 0, Math.max(0, c.end - MIN_CLIP_S))) };
 }

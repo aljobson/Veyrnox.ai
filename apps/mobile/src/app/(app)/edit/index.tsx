@@ -14,6 +14,7 @@ import {
     STEP_S,
     clipSeconds,
     editErrorKey,
+    fetchClipLength,
     moveClip,
     newClip,
     priceChanged,
@@ -83,6 +84,9 @@ export default function QuickEdit() {
     async function add(job: Job) {
         if (clips.length + pending.length >= MAX_CLIPS) return setProblem(t('edit.problem.too_many'));
         setProblem(null);
+        // The server's own length first (no file link, no player); the player reads it only if that is not available.
+        const known = await fetchClipLength(api, job.job_id);
+        if (known !== null) return onLength(job, known);
         try {
             const a = await mediaApi(api).getAsset(job.job_id);
             setPending((p) => [...p, { job, url: a.url }]);
