@@ -245,15 +245,3 @@ export function randomizeOddlingAll(picks, random = Math.random) {
   }
   return sanitizeOddlingPicks({ ...kept, ...next });
 }
-
-/** How many of a builder section's groups have a choice, for its header. */
-export function sectionProgress(section, picks) {
-  const groups = (section?.groupIds || []).map(groupById).filter(Boolean);
-  return { picked: groups.filter((group) => picks?.[group.id]).length, total: groups.length };
-}
-
-/** Sections open independently of each other. */
-export function toggleOpenSection(open, id) {
-  const current = Array.isArray(open) ? open : [];
-  return current.includes(id) ? current.filter((item) => item !== id) : [...current, id];
-}

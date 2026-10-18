@@ -13,7 +13,6 @@ import { OddlingCatalog } from './OddlingCatalog';
 import { OddlingExplore, useOddlingExplore } from './OddlingExplore';
 import { OddlingMotionPanel } from './OddlingMotionPanel';
 import { OddlingSheet } from './OddlingSheet';
-import { OddlingTraitSections } from './OddlingTraitSections';
 import { chip, field } from './oddlingStyles';
 import {
   CHARACTER_GROUPS,
@@ -38,7 +37,6 @@ import {
   randomizeOddlingStyle,
   readOddlingLibrary,
   saveOddlingToLibrary,
-  toggleOpenSection,
 } from '../_lib/oddlingStudio';
 
 export default function OddlingStudio() {
@@ -54,7 +52,6 @@ export default function OddlingStudio() {
   const [scene, setScene] = useState(ODDLING_SCENES[0]);
   const [reference, setReference] = useState(null);
   const [referenceNote, setReferenceNote] = useState('');
-  const [openSections, setOpenSections] = useState(['build']);
   const [workspace, setWorkspace] = useState('explore');
   const [library, setLibrary] = useState([]);
   const [sheet, setSheet] = useState(null);
@@ -292,12 +289,6 @@ export default function OddlingStudio() {
               <OddlingMotionPanel portrait={portrait} motionId={motionId} onMotion={setMotionId}
                 priceLine={catalogLive && videoModel ? `${videoModel.name} · 5 seconds · ${videoModel.credits} credits` : 'Loading live animation pricing…'} />
             )}
-
-            <div className="mt-5">
-              <span className="font-vx-mono text-[9px] font-bold tracking-[0.12em] text-vx-fg-muted">DETAILED TRAITS</span>
-              <p className="mt-1 text-xs text-vx-fg-faint">Fine-tune every part after choosing your doll.</p>
-            </div>
-            <OddlingTraitSections picks={picks} openSections={openSections} onToggle={(id) => setOpenSections((current) => toggleOpenSection(current, id))} onPick={setPick} />
 
             <label className="mt-5 block">
               <span className="mb-1 block font-vx-mono text-[9px] font-bold tracking-[0.1em] text-vx-fg-muted">{mode === 'motion' ? 'PORTRAIT SCENE · NOT USED FOR PHOTO ANIMATION' : 'FIRST SCENE'}</span>
