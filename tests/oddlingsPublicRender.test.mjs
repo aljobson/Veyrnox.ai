@@ -21,6 +21,8 @@ const NOT_FOUND = 'NEXT_NOT_FOUND';
 const framework = {
     'next/link': { __esModule: true, default: ({ href, children, ...rest }) => React.createElement('a', { href, ...rest }, children) },
     'next/navigation': { notFound() { throw Object.assign(new Error(NOT_FOUND), { digest: 'NEXT_HTTP_ERROR_FALLBACK;404' }); } },
+    // The pages read the visitor's language from a request header (ADR-0107); with none it is English.
+    'next/headers': { headers: async () => new Headers() },
 };
 // Resolved file -> stand-in. The nav is a client component that reads the router.
 const stubs = new Map([[abs('app/veyrnox/_components/NavBar.js'), { MarketingNav: () => React.createElement('nav', { 'data-stub': 'marketing-nav' }) }]]);
@@ -64,7 +66,7 @@ async function withFlag(value, run) {
         else process.env.ODDLINGS_PUBLIC_ENABLED = previous;
     }
 }
-const renderIndex = () => renderToStaticMarkup(indexPage.default());
+const renderIndex = async () => renderToStaticMarkup(await indexPage.default());
 const renderDetail = async (id) => renderToStaticMarkup(await detailPage.default({ params: Promise.resolve({ id }) }));
 const unescapeHtml = (text) => text.replaceAll('&quot;', '"').replaceAll('&#x27;', "'").replaceAll('&lt;', '<').replaceAll('&gt;', '>').replaceAll('&amp;', '&');
 // Text between tags, read character by character. A regex tag-stripper is the pattern
@@ -96,17 +98,17 @@ const escapeHtml = (text) => text.replaceAll('&', '&amp;').replaceAll('<', '&lt;
 test('while the flag is off every route is not-found, with a noindex head', async () => {
     for (const flag of [undefined, 'false', 'TRUE', '']) {
         await withFlag(flag, async () => {
-            assert.throws(() => indexPage.default(), { message: NOT_FOUND });
+            await assert.rejects(Promise.resolve().then(() => indexPage.default()), { message: NOT_FOUND });
             await assert.rejects(renderDetail(cast[0].id), { message: NOT_FOUND });
-            assert.deepEqual(indexPage.generateMetadata(), { title: 'Page not found', robots: { index: false } });
+            assert.deepEqual(await indexPage.generateMetadata(), { title: 'Page not found', robots: { index: false } });
             assert.deepEqual(await detailPage.generateMetadata({ params: Promise.resolve({ id: cast[0].id }) }),
                 { title: 'Page not found', robots: { index: false } });
         });
     }
 });
 
-test('with the flag on the gallery lists every character with portrait, hook, kind and both studio links', () => withFlag('true', () => {
-    const html = renderIndex();
+test('with the flag on the gallery lists every character with portrait, hook, kind and both studio links', () => withFlag('true', async () => {
+    const html = await renderIndex();
     assert.match(html, /<h1[^>]*>Meet the Oddlings\.<\/h1>/);
     assert.equal((html.match(/data-stub="marketing-nav"/g) || []).length, 1, 'the public nav');
     assert.equal((html.match(/<main[\s>]/g) || []).length, 1, 'exactly one <main>');
@@ -173,7 +175,7 @@ test('the pages render per request and carry no static-params exports that force
 });
 
 test('every labelled link names what it shows (Label in Name)', () => withFlag('true', async () => {
-    assert.deepEqual(labelInNameFailures(renderIndex()), []);
+    assert.deepEqual(labelInNameFailures(await renderIndex()), []);
     for (const oddling of cast) assert.deepEqual(labelInNameFailures(await renderDetail(oddling.id)), [], oddling.id);
     // The checker itself: it must catch the mismatch it exists for.
     assert.deepEqual(labelInNameFailures('<a href="/x" aria-label="Animate Duchess Volume">Animate this character</a>'),
@@ -183,7 +185,7 @@ test('every labelled link names what it shows (Label in Name)', () => withFlag('
 }));
 
 test('page metadata keeps the site name and type and carries the character portrait', () => withFlag('true', async () => {
-    const index = indexPage.generateMetadata();
+    const index = await indexPage.generateMetadata();
     assert.equal(index.alternates.canonical, '/oddlings');
     assert.deepEqual(index.openGraph.images, [seo.OG_IMAGE]);
     assert.equal(index.openGraph.siteName, 'Veyrnox.ai');

@@ -3,8 +3,12 @@ import { notFound } from 'next/navigation';
 import { MarketingNav } from '../../_components/NavBar';
 import { Main } from '../../_components/Main';
 import { OPEN_GRAPH_BASE } from '../../../seo';
+import { getT } from '../../../../lib/i18n/server';
+import { pageAlternates, openGraphLocale } from '../../../../lib/i18n/metadata.mjs';
+import { localizedHref } from '../../../../lib/i18n/locales.mjs';
 import {
   ODDLINGS_PATH,
+  localizeOddling,
   neighbouringOddlings,
   oddlingMetadata,
   oddlingsPublicEnabled,
@@ -26,30 +30,33 @@ const capitalise = (text) => text.charAt(0).toUpperCase() + text.slice(1);
 
 export async function generateMetadata({ params }) {
   const { id } = await params;
+  const { locale, t } = await getT();
   const oddling = oddlingsPublicEnabled() ? publicOddlingById(id) : null;
-  if (!oddling) return { title: 'Page not found', robots: { index: false } };
-  const meta = oddlingMetadata(oddling);
-  return { ...meta, openGraph: { ...OPEN_GRAPH_BASE, ...meta.openGraph } };
+  if (!oddling) return { title: t('notfound.meta.title'), robots: { index: false } };
+  const meta = oddlingMetadata(oddling, { t, alternates: pageAlternates(locale, oddling.path) });
+  return { ...meta, openGraph: { ...OPEN_GRAPH_BASE, ...meta.openGraph, ...openGraphLocale(locale) } };
 }
 
 export default async function OddlingPage({ params }) {
   if (!oddlingsPublicEnabled()) notFound();
   const { id } = await params;
-  const oddling = publicOddlingById(id);
-  if (!oddling) notFound();
+  const found = publicOddlingById(id);
+  if (!found) notFound();
+  const { locale, t } = await getT();
+  const oddling = localizeOddling(found, t);
   const { premise, portrait } = oddling;
   const facts = [
-    { label: 'Obsession', value: capitalise(premise.obsession) },
-    { label: 'Voice', value: `${premise.voice}: ${premise.voiceNote}` },
-    { label: 'Show', value: `${premise.show}: ${premise.showNote}` },
-    { label: 'Kind', value: oddling.kindLabel },
+    { label: t('oddlings.detail.obsession'), value: capitalise(premise.obsession) },
+    { label: t('oddlings.detail.voice'), value: `${premise.voice}: ${premise.voiceNote}` },
+    { label: t('oddlings.detail.show'), value: `${premise.show}: ${premise.showNote}` },
+    { label: t('oddlings.detail.kind'), value: oddling.kindLabel },
   ];
 
   return (
     <div className="min-h-dvh">
       <MarketingNav />
       <Main className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-28">
-        <Link href={ODDLINGS_PATH} className="text-[14px] text-vx-fg-muted hover:text-vx-fg underline-offset-4 hover:underline">All Oddlings</Link>
+        <Link href={localizedHref(locale, ODDLINGS_PATH)} className="text-[14px] text-vx-fg-muted hover:text-vx-fg underline-offset-4 hover:underline">{t('oddlings.detail.all')}</Link>
         <div className="mt-6 grid gap-10 md:grid-cols-[minmax(0,420px)_minmax(0,1fr)] md:gap-16">
           <img
             src={portrait.src}
@@ -64,20 +71,22 @@ export default async function OddlingPage({ params }) {
             <h1 className="mt-3 vx-display vx-title-detail">{oddling.name}</h1>
             <p className="mt-4 text-lg text-vx-fg-body max-w-[46ch] leading-[1.5]">{oddling.hook}</p>
             <p className="mt-4 text-[15px] text-vx-fg-muted max-w-[52ch] leading-[1.55]">
-              {oddling.name} is an original, fictional adult character from the Oddlings cast, not a real person.
+              {t('oddlings.detail.disclaimer', { name: oddling.name })}
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               {/* The heading names the character, so the visible text is the whole accessible name (WCAG 2.5.3). */}
-              <Link href={oddling.studioHref} className={PRIMARY_BUTTON}>Recreate</Link>
-              <Link href={oddling.studioHref} className={QUIET_BUTTON}>Animate this character</Link>
+              <Link href={oddling.studioHref} className={PRIMARY_BUTTON}>{t('oddlings.recreate')}</Link>
+              <Link href={oddling.studioHref} className={QUIET_BUTTON}>{t('oddlings.detail.animateThis')}</Link>
               <ShareLinkButton
-                path={oddling.path}
-                title={`${oddling.name}, an original Oddling`}
+                path={localizedHref(locale, oddling.path)}
+                title={t('oddlings.detail.title', { name: oddling.name })}
+                label={t('oddlings.shareDefault')}
+                messages={{ copied: t('oddlings.copied'), copyManual: t('oddlings.copyManual') }}
                 className="font-bold text-vx-fg-body underline underline-offset-4 hover:text-vx-fg"
               />
             </div>
             <p className="mt-4 text-[14px] text-vx-fg-muted max-w-[52ch]">
-              Both open the Oddling studio. Browsing is free, and nothing is charged until you press Generate.
+              {t('oddlings.detail.studioNote')}
             </p>
             <dl className="mt-10 border-t border-vx-border">
               {facts.map((fact) => (
@@ -90,11 +99,11 @@ export default async function OddlingPage({ params }) {
           </article>
         </div>
         <section aria-labelledby="more-oddlings" className="mt-20">
-          <h2 id="more-oddlings" className="border-b-2 border-vx-fg pb-2 text-xl font-black">More from the cast</h2>
+          <h2 id="more-oddlings" className="border-b-2 border-vx-fg pb-2 text-xl font-black">{t('oddlings.detail.more')}</h2>
           <ul className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-            {neighbouringOddlings(oddling.id).map((other) => (
+            {neighbouringOddlings(oddling.id).map((raw) => localizeOddling(raw, t)).map((other) => (
               <li key={other.id}>
-                <Link href={other.path} className="group block">
+                <Link href={localizedHref(locale, other.path)} className="group block">
                   <img
                     src={other.portrait.src}
                     alt=""
