@@ -27,6 +27,24 @@ The official CLI uses a loopback callback and stores tokens locally. It never re
 | `GET` | `/generations/{job_id}` | Owned job status |
 | `GET` | `/generations/{job_id}/asset` | Short-lived owned asset URL |
 
+## Publish routes (ADR-0112, off by default)
+
+Available only while `PUBLISH_AUTOMATION_ENABLED` is on; otherwise every path below returns `404 publish_automation_not_open`. They run the signed-in Publish handlers, so the Publish Plan, brand role, rate limits and released-network rules are the web app's. All bodies are snake_case; `brand_id` (query or body) is optional.
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/publish/brands` | Brands you can act on (when team access is open) |
+| `GET` | `/publish/accounts` | Connected accounts, plan tier and account limit |
+| `GET` | `/publish/posts?status&network&from&to` | Posts in a window of at most 43 days (Publish Plan); each has `updated_at` |
+| `POST` | `/publish/posts` | Schedule: `scheduled_at` (at least 10 minutes ahead), `account_ids`, `media[{media_type, job_id or upload_id}]`, `text`, `idempotency_key` |
+| `POST` | `/publish/posts/{id}/reschedule` | `scheduled_at`, `expected_at` (the post's current time) |
+| `POST` | `/publish/posts/{id}/cancel` | `expected_updated_at` |
+| `GET` | `/publish/analytics?account_id&from&to` | Period endpoints and recent posts (Publish Plan) |
+
+There is no publish-now. A changed or already-started post returns `409`. CLI: `veyrnox publish brands|accounts|posts|analytics|schedule|reschedule|cancel`; `schedule` and `cancel` ask for confirmation unless `--yes`, and `schedule --dry-run` prints the request.
+
+Before turning the flag on, update the public `/mcp` copy and the consent description (ADR-0112, Consequences).
+
 ## Release acceptance
 
 1. Protected-resource metadata and the public OpenAPI document return `200` without credentials.
