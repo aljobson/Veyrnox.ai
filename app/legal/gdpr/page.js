@@ -9,14 +9,14 @@ export const metadata = {
 
 export default function Gdpr() {
     return (
-        <LegalPage title="GDPR & Data Rights" updated="5 October 2026">
+        <LegalPage title="GDPR & Data Rights" updated="18 October 2026">
             <p>{ENTITY.name} processes personal data under the UK GDPR and, for EU residents, the EU GDPR. This page explains how to exercise your rights.</p>
 
             <h2>Your rights</h2>
             <ul>
                 <li><strong>Access</strong> — a copy of the personal data we hold about you.</li>
                 <li><strong>Rectification</strong> — correction of inaccurate data.</li>
-                <li><strong>Erasure</strong> — deletion of your account and personal data, subject to records we must keep by law (for example ledger entries needed for tax).</li>
+                <li><strong>Erasure</strong> — deletion of your account and personal data, subject to records we must keep by law (for example ledger entries needed for tax). You can delete your account yourself from Account &amp; security; see <a href="/legal/privacy#account-deletion">what is erased and what stays</a>.</li>
                 <li><strong>Portability</strong> — your account data, generation metadata and chat conversations in a machine-readable format.</li>
                 <li><strong>Restriction and objection</strong> — for processing based on legitimate interests.</li>
                 <li><strong>Withdraw consent</strong> — where processing is based on consent.</li>
