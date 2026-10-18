@@ -25,6 +25,10 @@ Run these without pasting an access token into logs or tickets:
 7. Poll the job to completion. The returned asset link opens, belongs to the account and expires within 15 minutes.
 8. Revoke the client in Supabase and confirm its next MCP call is refused.
 
+## Publish tools (ADR-0112)
+
+Seven `publish_*` tools register only while `PUBLISH_AUTOMATION_ENABLED` is on; with it off the connector is the five read-only generation tools the public page describes. Do not turn it on before the `/mcp` page and consent copy say the connector can schedule and cancel posts. Acceptance, with a Publish Plan account and a disposable client: `publish_list_accounts` shows only that brand; `publish_schedule_post` for three days out creates one post and a retry with the same `idempotency_key` creates none; `publish_reschedule_post` with a stale `expected_at` is refused with 409; `publish_cancel_post` removes it from the calendar; a free account gets `publish_plan_required`.
+
 ## Monitoring
 
 - Watch 401, 409, 429 and 5xx rates on `/api/v1/mcp` separately from tool-level errors.
