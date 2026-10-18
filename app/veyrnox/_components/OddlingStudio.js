@@ -242,7 +242,7 @@ export default function OddlingStudio() {
       {mode === 'portrait' && <OddlingCatalog picks={picks} onPick={setPick} onClear={clearLook} />}
       <div className="grid xl:grid-cols-[430px_minmax(0,1fr)]">
         <aside data-assistant-target="oddlings.builder" data-assistant-loaded-passport={loadedPassportId || undefined} className="min-w-0 border-b border-vx-border bg-vx-panel xl:border-b-0 xl:border-r">
-          <div className="sticky top-16 max-h-[calc(100dvh-4rem)] overflow-y-auto scroll-pb-32 p-5 pb-32 sm:p-7 sm:pb-32">
+          <div className="sticky top-16 max-h-[calc(100dvh-4rem)] overflow-y-auto scroll-pb-60 p-5 pb-60 sm:p-7 sm:pb-60">
 
             <div data-assistant-target="oddlings.reference" className="mt-5 rounded-2xl border border-vx-border bg-vx-base p-4">
               <div className="flex items-center justify-between gap-3">
