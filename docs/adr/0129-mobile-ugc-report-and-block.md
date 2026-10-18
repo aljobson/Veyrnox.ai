@@ -27,9 +27,9 @@ Cinema is not open posting. A title stays private while automated checks and, wh
 
 ## Needs the owner
 
-- **Accept or reject point 2.** Apple's reviewer may still ask for a block control because 1.2 names AI content apps. If the owner would rather not risk a rejection, the alternative is a "Hide this creator" control on Cinema cards, stored on the phone (hides that creator's titles in the feed). It is a small slice: the Cinema list already carries the creator's username, which the phone can match on (to be confirmed against the live titles route before building).
+- **Accept or reject point 2.** The decision is the owner's to see, and is recorded as: no block or mute for v1. Apple's reviewer may still ask for a block control because 1.2 names AI content apps. The cheap fallback if review asks is a per-device "Hide this title" on Cinema cards (stored on the phone, hides that title from the feed); a "hide creator" variant can match on the creator username already in the payload.
 - Put the audit table in the App Review notes.
 
 ## Consequences
 
-- No code change. If point 2 is rejected, one more slice (hide creator, with its own ADR) is needed before submission.
+- No code change. If point 2 is rejected, one more slice (hide title, with its own ADR) is needed before submission.
