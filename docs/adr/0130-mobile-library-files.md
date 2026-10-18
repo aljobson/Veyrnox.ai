@@ -1,4 +1,4 @@
-# ADR-0127 — Mobile: Library video files (read-only)
+# ADR-0130 — Mobile: Library video files (read-only)
 
 **Status:** Proposed 2026-10-18
 **Related:** [ADR-0106](0106-mobile-app.md) (the app); the film masters and editor render routes under `/api/v1/library/*`
