@@ -21,7 +21,13 @@ Ten languages besides English for the public marketing site: Spanish `es`, Simpl
 
 ## Review needed
 
-The nine catalogs were machine translated. Each should be read by a native speaker before production, in particular the FAQ answers on commercial use, data rights, watermarking and credit expiry, which are policy statements.
+Native-speaker review is a repeatable loop, not a one-off:
+
+1. `node scripts/export-i18n-review.mjs` writes one CSV per language to `.gstack/i18n-review/` (gitignored): every key with the English beside the translation, policy-critical rows (FAQ, packs and tax, refunds, data rights, limits) first, empty Verdict / Corrected / Note columns, and a README for the reviewer.
+2. The reviewer marks rows `fix` and fills the corrected text.
+3. `node scripts/import-i18n-review.mjs <sheet.csv>` (add `--dry` to preview) writes each fix into the language's catalog, one changed line per correction, and refuses the whole sheet if a placeholder differs from English. Commit the result as a normal PR.
+
+All ten catalogs were machine translated and went live before review (at the owner's request). Each should be read by a native speaker before production, in particular the FAQ answers on commercial use, data rights, watermarking and credit expiry, which are policy statements.
 
 ## Rollout
 
