@@ -80,6 +80,12 @@ export default function Account() {
                 </Link>
             </Section>
 
+            <Section title="Help">
+                <Link href="/help" asChild>
+                    <Row label="Help and content decisions" />
+                </Link>
+            </Section>
+
             <Section title="Safety">
                 <Link href="/report" asChild>
                     <Row label="Report a problem or content" />
