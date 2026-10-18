@@ -18,7 +18,7 @@ function fields(details) {
 const signedInSnapshot = () => Boolean(getSession());
 const signedOutServerSnapshot = () => false;
 
-export function OAuthConsent({ authorizationId }) {
+export function OAuthConsent({ authorizationId, publishOpen = false }) {
   const signedIn = useSyncExternalStore(onSessionChange, signedInSnapshot, signedOutServerSnapshot);
   const [details, setDetails] = useState(null);
   const [state, setState] = useState('loading');
@@ -62,17 +62,18 @@ export function OAuthConsent({ authorizationId }) {
     <Panel>
       <p className="font-vx-mono text-[11px] font-bold tracking-[0.16em] uppercase text-vx-accent">OAuth connection</p>
       <h1 className="vx-display mt-4 text-[40px] sm:text-[52px] leading-[1]">Connect {shown.name}?</h1>
-      <p className="mt-5 text-vx-fg-body leading-[1.65]">This assistant will receive read-only Veyrnox access until you revoke the connection.</p>
+      <p className="mt-5 text-vx-fg-body leading-[1.65]">{publishOpen ? 'This assistant will receive Veyrnox access until you revoke the connection. It can read your account and, with a Publish Plan, schedule, move and cancel posts on your connected accounts.' : 'This assistant will receive read-only Veyrnox access until you revoke the connection.'}</p>
       <div className="mt-7 rounded-2xl border border-vx-border bg-vx-base p-5">
         <h2 className="font-extrabold">Requested access</h2>
         <ul className="mt-3 space-y-2 text-sm text-vx-fg-body">
           <li>View models, generation history and credit balance</li>
           <li>Estimate generation costs without starting or charging for a generation</li>
           <li>Retrieve short-lived links to your finished assets</li>
+          {publishOpen && <li>View your connected accounts, scheduled and published posts and analytics, and schedule, reschedule or cancel posts (Publish Plan). It cannot publish immediately.</li>}
         </ul>
         {shown.scopes.length > 0 && <p className="mt-4 font-vx-mono text-[11px] text-vx-fg-muted">Scopes: {shown.scopes.join(' · ')}</p>}
       </div>
-      <p className="mt-5 text-sm leading-[1.55] text-vx-fg-muted">Veyrnox does not share your password. This connection cannot start generations, change your account or spend credits. You can revoke it from Account &amp; security.</p>
+      <p className="mt-5 text-sm leading-[1.55] text-vx-fg-muted">Veyrnox does not share your password. {publishOpen ? 'This connection cannot start generations, change your account settings, spend credits or publish immediately.' : 'This connection cannot start generations, change your account or spend credits.'} You can revoke it from Account &amp; security.</p>
       {message && <p role="alert" className="mt-5 text-sm text-vx-danger">{message}</p>}
       <div className="mt-8 flex flex-wrap gap-3">
         <button type="button" disabled={busy} onClick={() => decide('approve')} className="rounded-full bg-vx-accent text-vx-accent-ink px-6 py-3 font-extrabold hover:bg-vx-accent-hover disabled:opacity-50">{state === 'approving' ? 'Connecting…' : 'Approve connection'}</button>

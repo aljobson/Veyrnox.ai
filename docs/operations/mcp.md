@@ -27,7 +27,7 @@ Run these without pasting an access token into logs or tickets:
 
 ## Publish tools (ADR-0112)
 
-Seven `publish_*` tools register only while `PUBLISH_AUTOMATION_ENABLED` is on; with it off the connector is the five read-only generation tools the public page describes. Do not turn it on before the `/mcp` page and consent copy say the connector can schedule and cancel posts. Acceptance, with a Publish Plan account and a disposable client: `publish_list_accounts` shows only that brand; `publish_schedule_post` for three days out creates one post and a retry with the same `idempotency_key` creates none; `publish_reschedule_post` with a stale `expected_at` is refused with 409; `publish_cancel_post` removes it from the calendar; a free account gets `publish_plan_required`.
+Seven `publish_*` tools register only while `PUBLISH_AUTOMATION_ENABLED` is on; with it off the connector is the five read-only generation tools the public page describes. The `/mcp` page and the consent screen switch to the Publish wording by themselves when the flag is on (English until translated; other languages show English for those sections). Check both pages after flipping. Acceptance, with a Publish Plan account and a disposable client: `publish_list_accounts` shows only that brand; `publish_schedule_post` for three days out creates one post and a retry with the same `idempotency_key` creates none; `publish_reschedule_post` with a stale `expected_at` is refused with 409; `publish_cancel_post` removes it from the calendar; a free account gets `publish_plan_required`.
 
 ## Monitoring
 
