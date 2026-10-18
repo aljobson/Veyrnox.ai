@@ -140,6 +140,7 @@ export function chatLibraryErrorMessage(err: unknown): string {
     if (code === 'invalid_instructions') return 'Check the instructions: they cannot be empty or longer than 4000 characters.';
     if (code === 'invalid_name') return 'That name is not allowed. Use 1 to 60 characters.';
     if (code === 'FOLDER_LIMIT') return 'You have too many folders. Delete one to make another.';
+    if (code === 'persona_exists') return 'You already have a persona with that name.';
     if (code === 'personas_unavailable') return 'Personas are not available yet.';
     if (code === 'persona_not_found' || code === 'folder_not_found') return 'That is no longer there.';
     if (status === 503) return 'The service is busy. Try again in a moment.';

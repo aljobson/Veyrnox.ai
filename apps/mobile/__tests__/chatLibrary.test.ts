@@ -164,6 +164,7 @@ describe('chatLibraryErrorMessage', () => {
         expect(e(400, 'invalid_instructions')).toMatch(/instructions/);
         expect(e(400, 'invalid_name')).toMatch(/name/);
         expect(e(409, 'FOLDER_LIMIT')).toMatch(/too many folders/i);
+        expect(e(409, 'persona_exists')).toMatch(/already have a persona/);
         expect(e(404, 'personas_unavailable')).toMatch(/not available/);
         expect(e(404, 'persona_not_found')).toMatch(/no longer/);
         expect(e(404, 'folder_not_found')).toMatch(/no longer/);
