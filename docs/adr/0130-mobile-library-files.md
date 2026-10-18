@@ -22,4 +22,14 @@ The web Library keeps two kinds of finished video besides ordinary creations: fi
 ## Consequences
 
 - Rows are text only, since neither list returns a poster.
-- The editor render routes call the database with the person's own token, so a mobile Bearer token must be accepted there; this has to be checked against a running server before the screen is relied on.
+- The editor render routes call the database with the person's own token (`tenantRequest` in `packages/db/tenant-client.js` forwards the incoming `Authorization: Bearer` header to PostgREST), so a mobile Bearer token should be accepted. This was **read from code, not run against a server**.
+
+## Not proved
+
+- Share and Save to Photos over a real `https` link: the dev mock can only serve `http`, which the app refuses, so the download, share sheet and Photos permission have not been exercised.
+- Anything against staging or production, including a file with a real size, length and expiry.
+
+## Manual checks for the owner
+
+1. Share and Save to Photos over `https`, on a device, for one film master and one editor render.
+2. `FILM_LIBRARY_MASTERS_ENABLED` and `EDITOR_LIBRARY_EXPORTS_ENABLED` on staging, and one file of each kind present for the account.
