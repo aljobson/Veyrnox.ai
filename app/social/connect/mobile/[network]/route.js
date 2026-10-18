@@ -1,6 +1,6 @@
 /**
  * GET /social/connect/mobile/<network> — hands a Publish connect code from the
- * browser back to the Veyrnox app (ADR-0135).
+ * browser back to the Veyrnox app (ADR-0136).
  *
  * The mobile app starts a connect with `client: "mobile"`, so the provider
  * redirects here instead of to the web landing page, which would have no

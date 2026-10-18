@@ -1,4 +1,4 @@
-# ADR-0135 — Publish connect return for the mobile app
+# ADR-0136 — Publish connect return for the mobile app
 
 **Status:** Accepted 2026-10-18
 **Related:** [ADR-0061](0061-veyrnox-publish-social-scheduling.md) (Publish connect), [ADR-0106](0106-mobile-app.md) and its amendment 1 (`/auth/mobile`), [ADR-0110](0110-mobile-account-and-safety.md), `docs/mobile/PLAN-2026-10-18.md` section 2C (S4)

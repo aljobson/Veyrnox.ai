@@ -73,7 +73,7 @@ test('returns an X authorize URL, with PKCE forwarded, bound to our https per-ne
     assert.ok(url.searchParams.get('state').includes('.'), 'state is a signed token, not a raw value');
 });
 
-test('a mobile connect asks X to return to the bridge; an unknown client is refused (ADR-0135)', async () => {
+test('a mobile connect asks X to return to the bridge; an unknown client is refused (ADR-0136)', async () => {
     setConfigured();
     allowStateStore();
     const res = await POST(request({ codeChallenge: challenge, client: 'mobile' }));

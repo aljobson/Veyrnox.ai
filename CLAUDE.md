@@ -199,7 +199,7 @@ developer surface is `/api/v1/developer/*` and requires a verified OAuth
     `ai.veyrnox.app://auth/callback`, forwarding only a well-formed PKCE `code`
     or a short error word. It reads no identity header and has no open target.
   - `/social/connect/mobile/:network` — GET-only hand-back for the mobile app's
-    Publish connect (ADR-0135). Used only when connect was started with
+    Publish connect (ADR-0136). Used only when connect was started with
     `client: "mobile"`; answers a 302 to the constant `ai.veyrnox.app://social/callback`,
     forwarding only a well-formed `code` and our signed `state` for a known OAuth
     network. It reads no identity header and has no open target.

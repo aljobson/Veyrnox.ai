@@ -182,7 +182,7 @@ test('extended resource selection uses the free five-account writer behind the e
     }
 });
 
-test('a mobile connect returns through the bridge and an unknown client is refused (ADR-0135)', async () => {
+test('a mobile connect returns through the bridge and an unknown client is refused (ADR-0136)', async () => {
     globalThis.fetch = async () => Response.json({ ok: true });
     const res = await startExtendedConnect(request({ codeChallenge: 'a'.repeat(43), client: 'mobile' }), 'gmb');
     assert.equal(new URL((await res.json()).authorizeUrl).searchParams.get('redirect_uri'), 'https://staging.test/social/connect/mobile/gmb');

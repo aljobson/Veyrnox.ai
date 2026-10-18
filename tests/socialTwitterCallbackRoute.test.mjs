@@ -124,7 +124,7 @@ test('multi-account flag selects the new writer and returns its bounded free lim
     }
 });
 
-test('a mobile callback exchanges the code against the bridge redirect the connect step used (ADR-0135)', async () => {
+test('a mobile callback exchanges the code against the bridge redirect the connect step used (ADR-0136)', async () => {
     setConfigured(); stub();
     const inner = globalThis.fetch;
     const tokenBodies = [];
