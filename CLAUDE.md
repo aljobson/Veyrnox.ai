@@ -62,6 +62,11 @@ If a build starts failing after a dependency change, bisect these three first.
   (no ledger row). A new table that references `users` must be classified in
   `scripts/test-account-deletion.mjs`. The route is off unless
   `ACCOUNT_DELETION_ENABLED` is `"true"` (not in `wrangler.jsonc`: binding cap).
+- **Deleting a creation** (ADR-0116): `delete_user_job` is the only writer of `jobs.deleted_at`. It
+  removes the file (queued in `asset_reap_queue`) and the prompt, and keeps the job row and every
+  ledger entry: no refund, no ledger or `credit_balances` write. It refuses an unsettled job, a hold or
+  open report, a Frozen account, and a file a post, Cinema upload or Film Library master uses. A reader
+  of jobs for a person must filter `deleted_at IS NULL`. No flag.
 - **Push tokens** (ADR-0113): `push_tokens`, `push_outbox` and `push_token_writes` are
   reached only through the `register_push_token` / `remove_push_token` / `push_*` RPCs.
   Pushes are sent by a per-minute sweep that reads finished jobs and writes only `push_*`
@@ -194,8 +199,9 @@ developer surface is `/api/v1/developer/*` and requires a verified OAuth
     `ai.veyrnox.app://auth/callback`, forwarding only a well-formed PKCE `code`
     or a short error word. It reads no identity header and has no open target.
   - `/api/catalog`, `/api/credit-packs`, `/api/cinema/titles[/:id]`, `/api/cinema/posters/:id`,
-    `/api/popular-templates` — anonymous, read-only, cached public data
-    (prices, packs, published titles, ranked template ids). Nothing per-user.
+    `/api/popular-templates`, `/api/presets` — anonymous, read-only, cached public data
+    (prices, packs, published titles, ranked template ids, the template gallery priced
+    from the catalog for the mobile app). Nothing per-user.
   - `/api/cinema/voting`, `/api/cinema/discovery`, `/api/cinema/winners`, `/api/cinema/comments`, `/api/cinema/story-polls`, `/api/credit-subscription-plans`, `/api/cinema-pass-plans` — anonymous read-only, explicitly gated, no-store projections. Factories use `authed: false`, ignore inbound identity headers, and never return another account’s votes, pending comments, reports or billing records.
   - `/api/webhook/*` — the provider's signature (see Provider webhooks).
   - `/api/admin/*` — Cloudflare Access plus a shared token; cron callers only.

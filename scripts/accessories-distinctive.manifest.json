@@ -1,5 +1,5 @@
 {
-  "note": "Distinctive features: held and worn objects. Pocket Weather Station was not drawn, and Tiny Microphone has no picture (a giant comb in the same picture is larger than the microphone). Impossible Handbag is the same picture as in the accessories group.",
+  "note": "Distinctive features: all ten now have a picture. Impossible Handbag is the same picture as in the accessories group.",
   "sources": [
     {
       "file": "acc-c.jpg",
@@ -32,6 +32,20 @@
         "Miniature Cake"
       ],
       "inset": 14
+    },
+    {
+      "file": "rest-props.jpg",
+      "rows": [
+        2,
+        2
+      ],
+      "inset": 14,
+      "styles": [
+        null,
+        null,
+        "Tiny Microphone",
+        "Pocket Weather Station"
+      ]
     }
   ]
 }

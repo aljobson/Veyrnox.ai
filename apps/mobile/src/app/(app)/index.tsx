@@ -4,19 +4,32 @@ import { Link, Stack, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../auth/AuthProvider';
 import { useBilling } from '../../billing/BillingProvider';
 import { Logo } from '../../components/Logo';
+import { StaleNote } from '../../components/StaleNote';
+import { appCache, getCacheUser } from '../../lib/appCache';
+import { POLICIES, type CacheMeta } from '../../lib/cache';
+import { observe } from '../../lib/network';
 import type { Balance } from '../../lib/api';
 import { colors } from '../../theme';
+import { touchTarget } from '../../lib/a11y';
 
 export default function Home() {
     const { api } = useAuth();
     const { status: billing } = useBilling();
     const [balance, setBalance] = useState<Balance | null>(null);
     const [failed, setFailed] = useState(false);
+    const [saved, setSaved] = useState<CacheMeta | null>(null);
 
     const load = useCallback(async () => {
         setFailed(false);
         try {
-            setBalance(await api.getBalance());
+            // A saved balance only fills the screen while the real one loads or when offline. Create still asks the server.
+            const out = await appCache.swr({
+                policy: POLICIES.balance,
+                userId: getCacheUser(),
+                fetcher: () => observe(api.getBalance()),
+                onData: (value) => setBalance(value),
+            });
+            setSaved(out.meta);
         } catch {
             setFailed(true);
         }
@@ -35,13 +48,14 @@ export default function Home() {
             <Text style={styles.label}>Credits</Text>
             {balance ? (
                 <>
-                    <Text style={styles.value}>{balance.balance}</Text>
+                    <Text style={styles.value} accessibilityLabel={`${balance.balance} credits`}>{balance.balance}</Text>
                     {balance.free_credits > 0 ? (
                         <Text style={styles.muted}>{balance.free_credits} of them are free credits</Text>
                     ) : null}
+                    <StaleNote meta={saved} />
                 </>
             ) : failed ? (
-                <Pressable accessibilityRole="button" onPress={load}>
+                <Pressable accessibilityRole="button" style={touchTarget} onPress={load}>
                     <Text style={styles.error}>Could not load your balance. Tap to retry.</Text>
                 </Pressable>
             ) : (
@@ -55,6 +69,11 @@ export default function Home() {
             <Link href="/library" asChild>
                 <Pressable accessibilityRole="button" style={styles.secondary}>
                     <Text style={styles.secondaryText}>Library</Text>
+                </Pressable>
+            </Link>
+            <Link href="/cinema" asChild>
+                <Pressable accessibilityRole="button" style={styles.secondary}>
+                    <Text style={styles.secondaryText}>Cinema</Text>
                 </Pressable>
             </Link>
             <Link href="/chat" asChild>

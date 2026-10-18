@@ -13,7 +13,6 @@ import { OddlingCatalog } from './OddlingCatalog';
 import { OddlingExplore, useOddlingExplore } from './OddlingExplore';
 import { OddlingMotionPanel } from './OddlingMotionPanel';
 import { OddlingSheet } from './OddlingSheet';
-import { OddlingTraitSections } from './OddlingTraitSections';
 import { chip, field } from './oddlingStyles';
 import {
   CHARACTER_GROUPS,
@@ -38,7 +37,6 @@ import {
   randomizeOddlingStyle,
   readOddlingLibrary,
   saveOddlingToLibrary,
-  toggleOpenSection,
 } from '../_lib/oddlingStudio';
 
 export default function OddlingStudio() {
@@ -54,7 +52,6 @@ export default function OddlingStudio() {
   const [scene, setScene] = useState(ODDLING_SCENES[0]);
   const [reference, setReference] = useState(null);
   const [referenceNote, setReferenceNote] = useState('');
-  const [openSections, setOpenSections] = useState(['build']);
   const [workspace, setWorkspace] = useState('explore');
   const [library, setLibrary] = useState([]);
   const [sheet, setSheet] = useState(null);
@@ -225,24 +222,27 @@ export default function OddlingStudio() {
 
   return (
     <>
-      <div className="grid min-h-[calc(100dvh-4rem)] xl:grid-cols-[430px_minmax(0,1fr)]">
-        <aside data-assistant-target="oddlings.builder" data-assistant-loaded-passport={loadedPassportId || undefined} className="min-w-0 border-b border-vx-border bg-vx-panel xl:border-b-0 xl:border-r">
-          <div className="sticky top-16 max-h-[calc(100dvh-4rem)] overflow-y-auto p-5 sm:p-7">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <span className="font-vx-mono text-[10px] font-bold tracking-[0.16em] text-vx-accent">ODDLING STUDIO · FULL BUILD</span>
-                <h1 className="vx-display mt-2 text-4xl">Design the whole character.</h1>
-              </div>
-              <span className="rounded-full border border-vx-border px-2.5 py-1 font-vx-mono text-[9px] text-vx-fg-muted">{selectedTraits} TRAITS</span>
-            </div>
-            <p className="mt-3 text-sm leading-relaxed text-vx-fg-body">Build a fictional adult creator with a repeatable silhouette, worldview and show—then hand the finished draft to Create.</p>
-
-            <div className="mt-5 grid grid-cols-2 rounded-xl border border-vx-border bg-vx-base p-1" role="tablist" aria-label="Creation mode">
+      <div data-oddling-studio className="min-h-[calc(100dvh-4rem)]">
+      <header className="border-b border-vx-border bg-vx-panel px-5 py-5 sm:px-7 xl:px-10">
+        <div className="mx-auto flex max-w-[1500px] flex-wrap items-end justify-between gap-x-8 gap-y-4">
+          <div className="min-w-0">
+            <span className="font-vx-mono text-[10px] font-bold tracking-[0.16em] text-vx-accent">ODDLING STUDIO · FULL BUILD</span>
+            <h1 className="vx-display mt-2 text-3xl sm:text-4xl">Design the whole character.</h1>
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-vx-fg-body">Build a fictional adult creator with a repeatable silhouette, worldview and show—then hand the finished draft to Create.</p>
+          </div>
+          <div className="flex w-full items-center gap-3 sm:w-auto">
+            <span className="rounded-full border border-vx-border px-2.5 py-1 font-vx-mono text-[9px] text-vx-fg-muted">{selectedTraits} TRAITS</span>
+            <div className="grid min-w-0 flex-1 grid-cols-2 rounded-xl border border-vx-border bg-vx-base p-1 sm:w-72 sm:flex-none" role="tablist" aria-label="Creation mode">
               <button type="button" role="tab" aria-selected={mode === 'portrait'} onClick={() => setMode('portrait')} className={`rounded-lg px-3 py-2.5 text-sm font-bold ${mode === 'portrait' ? 'bg-vx-panel text-vx-fg shadow-sm' : 'text-vx-fg-muted'}`}>Create Oddling</button>
               <button type="button" role="tab" aria-selected={mode === 'motion'} onClick={() => setMode('motion')} className={`rounded-lg px-3 py-2.5 text-sm font-bold ${mode === 'motion' ? 'bg-vx-panel text-vx-fg shadow-sm' : 'text-vx-fg-muted'}`}>Motion</button>
             </div>
-
-            {mode === 'portrait' && <OddlingCatalog picks={picks} onPick={setPick} onClear={clearLook} />}
+          </div>
+        </div>
+      </header>
+      {mode === 'portrait' && <OddlingCatalog picks={picks} onPick={setPick} onClear={clearLook} />}
+      <div className="grid xl:grid-cols-[430px_minmax(0,1fr)]">
+        <aside data-assistant-target="oddlings.builder" data-assistant-loaded-passport={loadedPassportId || undefined} className="min-w-0 border-b border-vx-border bg-vx-panel xl:border-b-0 xl:border-r">
+          <div className="sticky top-16 max-h-[calc(100dvh-4rem)] overflow-y-auto scroll-pb-60 p-5 pb-60 sm:p-7 sm:pb-60">
 
             <div data-assistant-target="oddlings.reference" className="mt-5 rounded-2xl border border-vx-border bg-vx-base p-4">
               <div className="flex items-center justify-between gap-3">
@@ -293,12 +293,6 @@ export default function OddlingStudio() {
                 priceLine={catalogLive && videoModel ? `${videoModel.name} · 5 seconds · ${videoModel.credits} credits` : 'Loading live animation pricing…'} />
             )}
 
-            <div className="mt-5">
-              <span className="font-vx-mono text-[9px] font-bold tracking-[0.12em] text-vx-fg-muted">DETAILED TRAITS</span>
-              <p className="mt-1 text-xs text-vx-fg-faint">Fine-tune every part after choosing your doll.</p>
-            </div>
-            <OddlingTraitSections picks={picks} openSections={openSections} onToggle={(id) => setOpenSections((current) => toggleOpenSection(current, id))} onPick={setPick} />
-
             <label className="mt-5 block">
               <span className="mb-1 block font-vx-mono text-[9px] font-bold tracking-[0.1em] text-vx-fg-muted">{mode === 'motion' ? 'PORTRAIT SCENE · NOT USED FOR PHOTO ANIMATION' : 'FIRST SCENE'}</span>
               <textarea value={scene} onChange={(event) => setScene(event.target.value)} maxLength={300} rows={3} className={`${field} resize-none`} />
@@ -315,30 +309,6 @@ export default function OddlingStudio() {
             <div className="mt-5 grid grid-cols-2 gap-2">
               <button type="button" onClick={randomize} className={chip(false)}>Randomize styling</button>
               <button type="button" onClick={save} className={chip(true)}>Save passport</button>
-            </div>
-            <div className="sticky bottom-0 z-10 -mx-5 mt-5 border-t border-vx-border bg-vx-panel/95 px-5 pb-2 pt-4 backdrop-blur-sm sm:-mx-7 sm:px-7">
-              {lowCredits && (
-                <div role="status" className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-vx-money/40 bg-vx-money/[0.08] px-3 py-2.5">
-                  <p className="text-xs leading-relaxed text-vx-fg-body">
-                    <strong className="text-vx-money">{insufficientCredits ? 'Not enough credits.' : 'Credits are running low.'}</strong>{' '}
-                    You have {balance} cr; this {mode === 'motion' ? 'animation' : 'portrait'} costs {generationCost} cr.
-                  </p>
-                  <Link href="/app/credits" className="shrink-0 rounded-full bg-vx-money px-3 py-2 text-[11px] font-extrabold text-vx-money-ink hover:brightness-110">Get credits</Link>
-                </div>
-              )}
-              <div className="flex items-stretch gap-2">
-                {mode === 'portrait' && (
-                  <button type="button" onClick={surprise} className="w-[76px] shrink-0 rounded-xl border border-vx-border bg-vx-base px-2 text-center text-[11px] font-extrabold leading-tight text-vx-fg transition-colors hover:border-vx-accent">Surprise me</button>
-                )}
-                <Button type="button" size="lg" cost={generationCost} disabled={generationCost == null || handingOff} aria-busy={handingOff} data-assistant-target="oddlings.continue" onClick={continueToCreate} className="min-w-0 flex-1 justify-between rounded-xl py-5 text-lg shadow-[0_0_28px_rgb(var(--vx-accent)/0.16)]">
-                  {handingOff ? 'Opening Create…' : generationCost == null ? 'Checking live price…' : mode === 'motion' ? 'Animate character' : 'Generate portrait'}
-                </Button>
-              </div>
-              <div className="mt-2 flex items-center justify-between gap-3 font-vx-mono text-[9px]">
-                <span className="text-vx-fg-faint">OPENS CREATE · NO CHARGE UNTIL CONFIRMED</span>
-                {generationCost != null && <span className="font-bold text-vx-money">LIVE PRICE · {generationCost} CR</span>}
-              </div>
-              {notice && <p role="status" className="mt-3 rounded-xl border border-vx-accent/30 bg-vx-accent/[0.06] px-3 py-2 text-xs text-vx-accent">{notice}</p>}
             </div>
           </div>
         </aside>
@@ -384,6 +354,32 @@ export default function OddlingStudio() {
             )}
           </div>
         </section>
+      </div>
+            <div className="sticky bottom-0 z-20 border-t border-vx-border bg-vx-panel/95 px-5 pb-3 pt-3 backdrop-blur-sm sm:px-7 xl:px-10"><div className="mx-auto max-w-[1500px]">
+              {lowCredits && (
+                <div role="status" className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-vx-money/40 bg-vx-money/[0.08] px-3 py-2.5">
+                  <p className="text-xs leading-relaxed text-vx-fg-body">
+                    <strong className="text-vx-money">{insufficientCredits ? 'Not enough credits.' : 'Credits are running low.'}</strong>{' '}
+                    You have {balance} cr; this {mode === 'motion' ? 'animation' : 'portrait'} costs {generationCost} cr.
+                  </p>
+                  <Link href="/app/credits" className="shrink-0 rounded-full bg-vx-money px-3 py-2 text-[11px] font-extrabold text-vx-money-ink hover:brightness-110">Get credits</Link>
+                </div>
+              )}
+              <div className="flex items-stretch gap-2">
+                {mode === 'portrait' && (
+                  <button type="button" onClick={surprise} className="w-[76px] shrink-0 rounded-xl border border-vx-border bg-vx-base px-2 text-center text-[11px] font-extrabold leading-tight text-vx-fg transition-colors hover:border-vx-accent">Surprise me</button>
+                )}
+                <Button type="button" size="lg" cost={generationCost} disabled={generationCost == null || handingOff} aria-busy={handingOff} data-assistant-target="oddlings.continue" onClick={continueToCreate} className="min-w-0 flex-1 justify-between rounded-xl py-5 text-lg shadow-[0_0_28px_rgb(var(--vx-accent)/0.16)]">
+                  {handingOff ? 'Opening Create…' : generationCost == null ? 'Checking live price…' : mode === 'motion' ? 'Animate character' : 'Generate portrait'}
+                </Button>
+              </div>
+              <div className="mt-2 flex items-center justify-between gap-3 font-vx-mono text-[9px]">
+                <span className="text-vx-fg-faint">OPENS CREATE · NO CHARGE UNTIL CONFIRMED</span>
+                {generationCost != null && <span className="font-bold text-vx-money">LIVE PRICE · {generationCost} CR</span>}
+              </div>
+              {notice && <p role="status" className="mt-3 rounded-xl border border-vx-accent/30 bg-vx-accent/[0.06] px-3 py-2 text-xs text-vx-accent">{notice}</p>}
+            </div>
+            </div>
       </div>
       {sheet && <OddlingSheet oddling={sheet} onClose={() => setSheet(null)} onRecreate={loadOddling} onAnimate={animateOddling} />}
     </>

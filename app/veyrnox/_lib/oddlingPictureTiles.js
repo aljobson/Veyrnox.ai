@@ -2,22 +2,24 @@
 // headwear (one head with the item) and the face groups (all of facial hair, face features, horns, eye type, eye details and brows and lips, most of head shape, eye shape, nose shape, mouth, chin and jaw, cheeks and ears). A listed option has a file (pinned by a test); any other option keeps its drawn tile.
 import { HAIR_TILE_STYLES, hairTileSlug, hairTileSrc } from './oddlingHairTiles.js';
 
-/** Outfits with a picture. Tiny Formalwear and Weather Couture are not generated yet (the sheet drew them as an ordinary suit and a checked suit). */
+/** Outfits with a picture. Tiny Formalwear is the only one without: the sheets drew an ordinary suit, not an undersized one. */
 export const OUTFIT_TILE_STYLES = Object.freeze([
-  'Office Surrealist', 'Quilted Royalty', 'Utility Pop', 'Domestic Futurist', 'Ceremonial Sportswear', 'Soft Sculpture', 'Modern Basics', 'Streetwear', 'Y2K', 'Goth', 'Retro', 'Sporty', 'Business Suit',
+  'Office Surrealist', 'Quilted Royalty', 'Utility Pop', 'Domestic Futurist', 'Ceremonial Sportswear', 'Soft Sculpture', 'Modern Basics', 'Streetwear', 'Y2K', 'Goth', 'Retro', 'Sporty', 'Business Suit', 'Weather Couture', 'Tiny Formalwear',
 ]);
+// Rendering style: the same fictional character in each style. Hyper-Realistic is a photographic portrait of a fictional person.
+export const RENDERING_STYLE_TILE_STYLES = Object.freeze(['Anime', 'Cartoon', '2D Illustration', 'Hyper-Realistic']);
 export const HEADWEAR_TILE_STYLES = Object.freeze(['Baseball Cap', 'Beanie', 'Wide-Brim Hat', 'Bucket Hat', 'Headphones']);
 
 // Face options with a picture. Only the ones that read clearly at tile size are listed: most eye and nose shapes, Tiny Head, Oversized Head,
 // Small Mouth, Crooked Teeth, Soft Jaw, Cleft Chin, Prominent Chin, High and Full Cheeks and No Ears looked the same as their neighbours or were
 // drawn wrongly on the generated sheets, so they keep the drawn tile.
-export const HEAD_SHAPE_TILE_STYLES = Object.freeze(['Long Oval', 'Perfect Round', 'Square', 'Heart', 'Diamond']);
-export const EYE_SHAPE_TILE_STYLES = Object.freeze(['Round', 'Monolid', 'Graphic Liner']);
-export const NOSE_SHAPE_TILE_STYLES = Object.freeze(['Straight', 'Button', 'Wide']);
+export const HEAD_SHAPE_TILE_STYLES = Object.freeze(['Long Oval', 'Perfect Round', 'Square', 'Heart', 'Diamond', 'Tiny Head']);
+export const EYE_SHAPE_TILE_STYLES = Object.freeze(['Round', 'Monolid', 'Graphic Liner', 'Hooded', 'Upturned', 'Uneven', 'Almond', 'Narrow', 'Downturned']);
+export const NOSE_SHAPE_TILE_STYLES = Object.freeze(['Straight', 'Aquiline', 'Snub', 'Wide', 'Narrow', 'Round Tip']);
 export const BROWS_TILE_STYLES = Object.freeze(['Thick', 'Thin', 'Arched', 'Straight', 'Bushy', 'Bleached']);
 export const LIPS_TILE_STYLES = Object.freeze(['Full', 'Thin', 'Cupid Bow', 'Glossy', 'Matte Dark']);
-export const CHIN_JAW_TILE_STYLES = Object.freeze(['Strong Jaw', 'Pointed Chin', 'Round Chin']);
-export const CHEEKS_TILE_STYLES = Object.freeze(['Dimples', 'Hollow Cheeks']);
+export const CHIN_JAW_TILE_STYLES = Object.freeze(['Strong Jaw', 'Pointed Chin', 'Round Chin', 'Soft Jaw', 'Prominent Chin']);
+export const CHEEKS_TILE_STYLES = Object.freeze(['Dimples', 'Hollow Cheeks', 'Full Cheeks']);
 export const EARS_TILE_STYLES = Object.freeze(['Human', 'Elf Ears', 'Wing Ears']);
 export const FACIAL_HAIR_TILE_STYLES = Object.freeze(['Clean Shaven', 'Stubble', 'Full Beard', 'Goatee', 'Pencil Moustache', 'Giant Moustache', 'Forked Beard', 'Beard Cube', 'Single Chin Curl']);
 export const HORNS_TILE_STYLES = Object.freeze(['Small Horns', 'Big Horns', 'Antlers']);
@@ -27,28 +29,29 @@ export const EYES_DETAILS_TILE_STYLES = Object.freeze(['Heterochromia', 'Blind E
 // Neck styling (all six) and limbs. A right arm or leg picture is the left one mirrored; No Arm and No Leg were not drawn, so they keep the drawn tile.
 export const NECK_TILE_STYLES = Object.freeze(['Bare', 'Tower Collar', 'Ruff', 'Stacked Rings', 'Bow Sculpture', 'Feather Halo']);
 export const LIMB_TILE_STYLES = Object.freeze(['Normal', 'Cute Prosthetic', 'Robotic', 'Prosthetic', 'Mechanical']);
-// Skin: conditions, materials and surface patterns on warm beige mannequin heads. Burns, Fur and Metallic were not drawn cleanly on the sheets.
-export const SKIN_CONDITIONS_TILE_STYLES = Object.freeze(['Vitiligo', 'Pigmentation', 'Freckles', 'Birthmarks', 'Scars', 'Albinism', 'Cracked Skin', 'Wrinkled']);
-export const SKIN_MATERIAL_TILE_STYLES = Object.freeze(['Human Skin', 'Scales', 'Amphibian', 'Fish Skin', 'Porcelain', 'Glass']);
+// Skin: conditions, materials and surface patterns on warm beige mannequin heads. Every skin option now has a picture.
+export const SKIN_CONDITIONS_TILE_STYLES = Object.freeze(['Vitiligo', 'Pigmentation', 'Freckles', 'Birthmarks', 'Scars', 'Albinism', 'Cracked Skin', 'Wrinkled', 'Burns']);
+export const SKIN_MATERIAL_TILE_STYLES = Object.freeze(['Human Skin', 'Scales', 'Amphibian', 'Fish Skin', 'Porcelain', 'Glass', 'Fur', 'Metallic']);
 export const SKIN_PATTERN_TILE_STYLES = Object.freeze(['Solid', 'Stripes', 'Spots', 'Chess', 'Veins', 'Gradient', 'Cracked', 'Giraffe']);
 // Creature types: every one of the 20 has a picture (stylised 3D character heads with neck and shoulders).
 export const SPECIES_TILE_STYLES = Object.freeze([
   'Human', 'Elf', 'Alien', 'Moth', 'Spectre', 'Fungus', 'Amphibian', 'Reptile', 'Mantis', 'Bee', 'Octopus', 'Crocodile', 'Iguana', 'Lizard', 'Beetle', 'Ant', 'Cat', 'Dog', 'Rodent', 'Bird',
 ]);
-// Accessories: three catalog groups. Jewellery, Tiny Sunglasses, Tiny Handbag, Piercings, Cyber Markings, Tiny Microphone and Pocket Weather Station were not drawn cleanly (merged with another item, or dominated by one) and keep the drawn tile.
-export const EVERYDAY_ACCESSORIES_TILE_STYLES = Object.freeze(['Glasses', 'Round Glasses', 'Sunglasses', 'Everyday Bag', 'Tote Bag']);
+// Accessories: three catalog groups; every option has a picture.
+export const EVERYDAY_ACCESSORIES_TILE_STYLES = Object.freeze(['Glasses', 'Round Glasses', 'Sunglasses', 'Jewellery', 'Everyday Bag', 'Tote Bag']);
 export const ACCESSORIES_TILE_STYLES = Object.freeze([
   'Geometric Veil', 'Object Jewellery', 'Chrome Brows', 'Receipt Ribbons', 'Tiny Teacup', 'Bug Head Mask', 'Tiny Monocle', 'Impossible Handbag', 'Tattoos', 'Scarification', 'Symbols / Markings',
+  'Tiny Sunglasses', 'Piercings', 'Cyber Markings', 'Tiny Handbag',
 ]);
 export const DISTINCTIVE_FEATURES_TILE_STYLES = Object.freeze([
-  'Giant Comb', 'Sacred Stapler', 'Snack Sceptre', 'Miniature Chair', 'Impossible Handbag', 'Receipt Train', 'Miniature Thermos', 'Miniature Cake',
+  'Tiny Microphone', 'Pocket Weather Station', 'Giant Comb', 'Sacred Stapler', 'Snack Sceptre', 'Miniature Chair', 'Impossible Handbag', 'Receipt Train', 'Miniature Thermos', 'Miniature Cake',
 ]);
-// Body: fully clothed full-body figures. Only options that stay distinguishable once each figure is fitted to its tile have a picture; most builds, most
-// proportions and Extreme exaggeration looked the same as their neighbours (or were drawn shirtless) and keep the drawn tile.
-export const BODY_TYPE_TILE_STYLES = Object.freeze(['Curvy', 'Heavy', 'Fat']);
-export const PROPORTIONS_TILE_STYLES = Object.freeze(['Natural', 'Tiny Torso', 'Huge Hands', 'No Visible Neck']);
-export const EXAGGERATION_TILE_STYLES = Object.freeze(['Natural', 'Bold']);
-export const MOUTH_TILE_STYLES = Object.freeze(['Large Mouth', 'No Teeth', 'Unique Teeth', 'Gap Teeth', 'Gold Tooth', 'Bright Smile', 'Sharp Teeth', 'Forked Tongue', 'Two Tongues']);
+// Body: fully clothed full-body figures. Only options that stay distinguishable once each figure is fitted to its tile have a picture; most builds, some
+// proportions looked the same as their neighbours (or were drawn shirtless) and keep the drawn tile.
+export const BODY_TYPE_TILE_STYLES = Object.freeze(['Curvy', 'Heavy', 'Fat', 'Athletic', 'Muscular', 'Hyper-Muscular', 'Pear', 'Barrel', 'Skinny']);
+export const PROPORTIONS_TILE_STYLES = Object.freeze(['Natural', 'Tiny Torso', 'Huge Hands', 'No Visible Neck', 'Long Neck', 'Wide Shoulders']);
+export const EXAGGERATION_TILE_STYLES = Object.freeze(['Natural', 'Bold', 'Extreme']);
+export const MOUTH_TILE_STYLES = Object.freeze(['Large Mouth', 'No Teeth', 'Unique Teeth', 'Gap Teeth', 'Gold Tooth', 'Bright Smile', 'Sharp Teeth', 'Forked Tongue', 'Two Tongues', 'Crooked Teeth']);
 
 /** Catalog group id -> folder under /oddlings and the options that have a file there. */
 export const PICTURE_TILES = Object.freeze({
@@ -69,6 +72,7 @@ export const PICTURE_TILES = Object.freeze({
   right_arm: { dir: 'limbs/right_arm', styles: LIMB_TILE_STYLES },
   left_leg: { dir: 'limbs/left_leg', styles: LIMB_TILE_STYLES },
   right_leg: { dir: 'limbs/right_leg', styles: LIMB_TILE_STYLES },
+  rendering_style: { dir: 'rendering', styles: RENDERING_STYLE_TILE_STYLES },
   skin_conditions: { dir: 'skin/skin_conditions', styles: SKIN_CONDITIONS_TILE_STYLES },
   face_skin_material: { dir: 'skin/face_skin_material', styles: SKIN_MATERIAL_TILE_STYLES },
   face_surface_pattern: { dir: 'skin/face_surface_pattern', styles: SKIN_PATTERN_TILE_STYLES },

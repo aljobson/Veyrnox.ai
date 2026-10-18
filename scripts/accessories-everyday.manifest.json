@@ -32,6 +32,22 @@
         null
       ],
       "inset": 14
+    },
+    {
+      "file": "rest-hair-acc.jpg",
+      "rows": [
+        3,
+        3
+      ],
+      "inset": 14,
+      "styles": [
+        null,
+        null,
+        null,
+        "Jewellery",
+        null,
+        null
+      ]
     }
   ]
 }

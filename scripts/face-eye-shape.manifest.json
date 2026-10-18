@@ -1,5 +1,5 @@
 {
-  "note": "Eye sheets. Only the eye shapes that read clearly at tile size are kept (Round, Monolid, Graphic Liner); the rest looked the same as their neighbours. The second sheet is shared with the mouth manifest.",
+  "note": "Eye sheets. Round, Monolid and Graphic Liner from the first sheets; Hooded, Upturned, Uneven and Almond from a close-up sheet; Narrow and Downturned from a second try. Wide Set and Close Set drew the same as a normal face twice and keep the drawn tile.",
   "sources": [
     {
       "file": "eye-a.jpg",
@@ -29,6 +29,32 @@
         null,
         "Graphic Liner",
         null,
+        null,
+        null
+      ]
+    },
+    {
+      "file": "rest-eyes.jpg",
+      "rows": [
+        2,
+        2
+      ],
+      "styles": [
+        "Hooded",
+        "Upturned",
+        "Uneven",
+        "Almond"
+      ]
+    },
+    {
+      "file": "gap-eyes.jpg",
+      "rows": [
+        2,
+        2
+      ],
+      "styles": [
+        "Narrow",
+        "Downturned",
         null,
         null
       ]

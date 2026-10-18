@@ -39,8 +39,9 @@ test('each picture is a small WebP, not a stray full-size render', () => {
   }
 });
 
-test('a style without a picture keeps its drawn tile', () => {
-  for (const style of ['Crescent Cut', 'Spines', 'Antennae']) assert.equal(hairTileSrc(style), '', style);
+test('a style with a picture gets its file and anything else gets none', () => {
+  assert.equal(hairTileSrc('Crescent Cut'), '/oddlings/hair/crescent-cut.webp');
+  assert.equal(hairTileSrc('Not A Real Style'), '');
   assert.equal(hairTileSrc('Afro'), '/oddlings/hair/afro.webp');
   assert.equal(hairTileSrc('Fur / Mane'), '/oddlings/hair/fur-mane.webp');
   assert.equal(hairTileSrc(undefined), '');
@@ -110,17 +111,17 @@ const { TileGroup } = load(path.join(ROOT, 'app/veyrnox/_components/OddlingCatal
 const hairGroup = CHARACTER_GROUPS.find((group) => group.id === 'hair');
 const renderHair = (value = '') => renderToStaticMarkup(React.createElement(TileGroup, { group: hairGroup, picks: {}, value, onChange() {}, categoryId: 'hair' }));
 
-test('the hair grid shows a picture for each style that has one and the drawn figure for the rest', () => {
+test('the hair grid shows a picture for every style', () => {
   const html = renderHair('Afro');
   assert.equal((html.match(/<img /g) || []).length, HAIR_TILE_STYLES.length);
   for (const style of HAIR_TILE_STYLES) assert.ok(html.includes(`src="${hairTileSrc(style)}"`), `${style} has no picture in the grid`);
-  // Crescent Cut, Spines and Antennae still draw the mannequin (an svg) in their button.
+  // Every hairstyle now has a picture, so no hair button falls back to the drawn mannequin.
   const buttons = html.split('<button').slice(1);
   for (const style of ['Crescent Cut', 'Spines', 'Antennae']) {
     const button = buttons.find((markup) => markup.includes(`>${style}<`));
     assert.ok(button, `${style} tile missing`);
-    assert.ok(!button.includes('<img '), `${style} should keep its drawn tile`);
-    assert.ok(button.includes('<svg'), `${style} should draw the figure`);
+    assert.ok(button.includes('<img '), `${style} should show its picture`);
+    assert.ok(!button.includes('<svg'), `${style} should not draw the figure`);
   }
 });
 

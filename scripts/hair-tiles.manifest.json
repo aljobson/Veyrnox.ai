@@ -1,13 +1,120 @@
 {
-  "note": "Each source is a generated image on a plain light background: a contact sheet (rows = heads per row, styles in reading order) or a single head (rows omitted). A null style skips that cell (the head is not the style the sheet asked for). Styles still without a clean picture: Crescent Cut, Spines, Antennae.",
+  "note": "Each source is a generated image on a plain light background: a contact sheet (rows = heads per row, styles in reading order) or a single head (rows omitted). A null style skips that cell (the head is not the style the sheet asked for). Every hairstyle now has a picture; Crescent Cut, Spines and Antennae come from a head-and-shoulders sheet.",
   "sources": [
-    { "file": "sheet1.jpg", "rows": [4, 4], "styles": ["Bald", "Short Hair", "Sharp Bob", "Sculpted Waves", "Sculptural Wave Tower", "Monumental Hair", "Cube Cut", "Sphere Cut"] },
-    { "file": "sheet2.jpg", "rows": [3, 3], "styles": ["Wedge Cut", "Tabletop", "Spiral Tower", "Twin Discs", "Zigzag Cut", "Donut Halo"] },
-    { "file": "sheet3.jpg", "rows": [4, 4], "styles": ["Tube Tower", "Shelf Cut", "Long Hair", "Afro", "Punk", "Buzz Cut", "Bowl Cut", null] },
-    { "file": "sheet4.jpg", "rows": [4, 4], "styles": ["Braids", "Pigtails", "Perm", "Beehive", "Pixie Cut", "Ponytail", "Top Knot", "Undercut"] },
-    { "file": "sheet5.jpg", "rows": [3, 3], "styles": ["Pompadour", "Cornrows", "Fur / Mane", "Tentacles", null, "Flowers"] },
-    { "file": "t2.jpg", "styles": ["Anvil Cut"] },
-    { "file": "t3.jpg", "styles": ["Mullet"] },
-    { "file": "t4.jpg", "styles": ["Locs"] }
+    {
+      "file": "sheet1.jpg",
+      "rows": [
+        4,
+        4
+      ],
+      "styles": [
+        "Bald",
+        "Short Hair",
+        "Sharp Bob",
+        "Sculpted Waves",
+        "Sculptural Wave Tower",
+        "Monumental Hair",
+        "Cube Cut",
+        "Sphere Cut"
+      ]
+    },
+    {
+      "file": "sheet2.jpg",
+      "rows": [
+        3,
+        3
+      ],
+      "styles": [
+        "Wedge Cut",
+        "Tabletop",
+        "Spiral Tower",
+        "Twin Discs",
+        "Zigzag Cut",
+        "Donut Halo"
+      ]
+    },
+    {
+      "file": "sheet3.jpg",
+      "rows": [
+        4,
+        4
+      ],
+      "styles": [
+        "Tube Tower",
+        "Shelf Cut",
+        "Long Hair",
+        "Afro",
+        "Punk",
+        "Buzz Cut",
+        "Bowl Cut",
+        null
+      ]
+    },
+    {
+      "file": "sheet4.jpg",
+      "rows": [
+        4,
+        4
+      ],
+      "styles": [
+        "Braids",
+        "Pigtails",
+        "Perm",
+        "Beehive",
+        "Pixie Cut",
+        "Ponytail",
+        "Top Knot",
+        "Undercut"
+      ]
+    },
+    {
+      "file": "sheet5.jpg",
+      "rows": [
+        3,
+        3
+      ],
+      "styles": [
+        "Pompadour",
+        "Cornrows",
+        "Fur / Mane",
+        "Tentacles",
+        null,
+        "Flowers"
+      ]
+    },
+    {
+      "file": "t2.jpg",
+      "styles": [
+        "Anvil Cut"
+      ]
+    },
+    {
+      "file": "t3.jpg",
+      "styles": [
+        "Mullet"
+      ]
+    },
+    {
+      "file": "t4.jpg",
+      "styles": [
+        "Locs"
+      ]
+    },
+    {
+      "file": "rest-hair-acc.jpg",
+      "rows": [
+        3,
+        3
+      ],
+      "inset": 14,
+      "styles": [
+        "Crescent Cut",
+        "Spines",
+        "Antennae",
+        null,
+        null,
+        null
+      ]
+    }
   ]
 }

@@ -1,3 +1,6 @@
+import { appCache } from './appCache';
+import { POLICIES, type CacheMeta } from './cache';
+import { ensureOnline, observe } from './network';
 import { ApiError, API_BASE, type ApiClient } from './api';
 
 export interface CatalogModel {
@@ -10,7 +13,9 @@ export interface CatalogModel {
     readonly durations: number[];
     readonly capabilities: {
         readonly inputs?: Record<string, unknown>;
-        readonly media?: Record<string, { readonly required?: boolean }>;
+        readonly media?: Record<string, { readonly required?: boolean; readonly label?: string; readonly maxSeconds?: number }>;
+        // Present on stem-splitting models, which the server serves only behind a flag.
+        readonly outputStems?: string[];
     } | null;
 }
 
@@ -51,10 +56,43 @@ export function estimateCredits(model: CatalogModel, durationSeconds: number | n
     return model.credits * Math.ceil(seconds / UNIT_SECONDS);
 }
 
-// M2 sells models that need only a prompt: no required image/video slot.
-export function isPromptOnly(model: CatalogModel): boolean {
-    const media = model.capabilities?.media ?? {};
-    return !Object.values(media).some((slot) => slot.required) && !!model.capabilities?.inputs && 'prompt' in model.capabilities.inputs;
+const KNOWN_SLOTS = ['image', 'endImage', 'video', 'audio'];
+
+// The one free-text input a model takes. Most take `prompt`; Auto Short takes `topic`. The video agent's
+// `brief` is left out on purpose: it needs the plan step first and has its own screen.
+const TEXT_KEYS = ['prompt', 'topic'] as const;
+const DEFAULT_TEXT_MAX = 2000;
+
+export function textInput(model: CatalogModel): { readonly key: string; readonly max: number } | null {
+    const inputs = (model.capabilities?.inputs ?? {}) as Record<string, { max?: number } | undefined>;
+    const key = TEXT_KEYS.find((k) => k in inputs);
+    if (!key) return null;
+    const max = inputs[key]?.max;
+    return { key, max: typeof max === 'number' ? max : DEFAULT_TEXT_MAX };
+}
+
+// A model the app can drive: open, a kind it can show, every file slot a slot it can pick for,
+// and something to send (a text input, or at least one required file). Stem splitting is held back
+// because the server answers it with audio_stems_unavailable unless its flag is on.
+export function isSupported(model: CatalogModel): boolean {
+    if (model.gated || kindOf(model.modality) === null) return false;
+    const caps = model.capabilities;
+    if (!caps || caps.outputStems) return false;
+    const media = caps.media ?? {};
+    if (!Object.keys(media).every((slot) => KNOWN_SLOTS.includes(slot))) return false;
+    return textInput(model) !== null || Object.values(media).some((slot) => slot.required);
+}
+
+// Text-to-X models need words; edit and file-driven models take them as an optional extra.
+export function promptRequired(model: CatalogModel): boolean {
+    if (!textInput(model)) return false;
+    return !Object.values(model.capabilities?.media ?? {}).some((slot) => slot.required);
+}
+
+// The catalog is the same public data for everyone, so a saved copy is safe to show when offline. Screens that
+// build a request still send it to the server, which prices it; the saved copy is never a gate.
+export function fetchCatalogCached(onData?: (models: CatalogModel[], meta: CacheMeta) => void) {
+    return appCache.swr({ policy: POLICIES.catalog, fetcher: () => observe(fetchCatalog()), onData });
 }
 
 export async function fetchCatalog(): Promise<CatalogModel[]> {
@@ -66,31 +104,39 @@ export async function fetchCatalog(): Promise<CatalogModel[]> {
     }
     if (!res.ok) throw new ApiError(res.status, 'catalog_unavailable');
     const body = (await res.json()) as { models?: CatalogModel[] };
-    return (body.models ?? []).filter((m) => kindOf(m.modality) !== null && !m.gated && isPromptOnly(m));
+    return (body.models ?? []).filter(isSupported);
 }
 
 export interface GenerationRequest {
     readonly modelId: string;
+    // The text the person typed, sent under `textKey` (default `prompt`; Auto Short uses `topic`).
     readonly prompt: string;
+    readonly textKey?: string;
     readonly durationSeconds: number | null;
     // The most the person was shown; the server refuses if the price differs.
     readonly confirmedCredits: number;
     // Reuse the same key to retry the same request: it is charged once.
     readonly idempotencyKey: string;
+    // Files already uploaded, by the slot the model declares for them.
+    readonly sources?: readonly { readonly key: string; readonly slot: string }[];
 }
 
 export const mediaApi = (api: ApiClient) => ({
-    createGeneration: (r: GenerationRequest) =>
-        api.request<{ job_id: string; balance_after?: number }>('/api/v1/generations', {
+    createGeneration: async (r: GenerationRequest) => {
+        await ensureOnline();
+        return api.request<{ job_id: string; balance_after?: number }>('/api/v1/generations', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 model_id: r.modelId,
                 idempotency_key: r.idempotencyKey,
                 confirmed_credits: r.confirmedCredits,
-                inputs: { prompt: r.prompt, ...(r.durationSeconds ? { duration_seconds: r.durationSeconds } : {}) },
+                inputs: { ...(r.prompt ? { [r.textKey ?? 'prompt']: r.prompt } : {}), ...(r.durationSeconds ? { duration_seconds: r.durationSeconds } : {}) },
+                // The server refuses uploaded sources without consent to send them to the provider.
+                ...(r.sources?.length ? { source_keys: r.sources, consent: true } : {}),
             }),
-        }),
+        });
+    },
     getJob: (id: string) =>
         api.request<{ state: JobState; credits: number; model_id: string; error_code?: string }>(`/api/v1/jobs/${encodeURIComponent(id)}`),
     listJobs: (cursor?: JobPage['next']) => {

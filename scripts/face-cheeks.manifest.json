@@ -1,5 +1,5 @@
 {
-  "note": "Cheeks and ears share one sheet; the model drew six heads, not eight. High Cheekbones and Full Cheeks are not on it.",
+  "note": "Cheeks. Dimples and Hollow Cheeks from the first sheet, Full Cheeks from the lower-face sheet. High Cheekbones was drawn as a glassy mask and keeps the drawn tile.",
   "sources": [
     {
       "file": "cheeks-ears.jpg",
@@ -11,6 +11,23 @@
         null,
         "Dimples",
         "Hollow Cheeks",
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "file": "rest-lowerface.jpg",
+      "rows": [
+        4,
+        4
+      ],
+      "styles": [
+        null,
+        null,
+        null,
+        null,
+        "Full Cheeks",
         null,
         null,
         null

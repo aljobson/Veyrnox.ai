@@ -1,5 +1,5 @@
 {
-  "note": "Outfit sheets: full-body grey mannequins in a grid on a plain light background (rows = figures per row, outfits in reading order). A null style skips that cell: it is bare, a different outfit than the catalog names, or a filler. Outfits still without a clean picture: Tiny Formalwear (drawn as an ordinary suit) and Weather Couture (drawn as a checked suit).",
+  "note": "Outfit sheets: full-body grey mannequins on a plain light background. A null style skips that cell. Tiny Formalwear is the only outfit without a clean picture: the sheet drew an ordinary suit, not an undersized one.",
   "sources": [
     {
       "file": "sheetA.jpg",
@@ -46,6 +46,29 @@
         "Ceremonial Sportswear",
         null,
         "Soft Sculpture",
+        null
+      ]
+    },
+    {
+      "file": "rest-outfits.jpg",
+      "rows": [
+        2
+      ],
+      "styles": [
+        null,
+        "Weather Couture"
+      ]
+    },
+    {
+      "file": "gap-body4.jpg",
+      "rows": [
+        2,
+        2
+      ],
+      "styles": [
+        "Tiny Formalwear",
+        null,
+        null,
         null
       ]
     }

@@ -1,5 +1,5 @@
 {
-  "note": "Chin and jaw sheet. Cleft Chin and Prominent Chin were drawn wrongly (a dripping line, forehead ridges) and Soft Jaw looked the same as Round Chin, so those keep the drawn tile.",
+  "note": "Chin and jaw. Strong Jaw, Pointed Chin and Round Chin from the first sheet; Soft Jaw and Prominent Chin from the lower-face sheet. Cleft Chin was drawn twice (a vertical split through the lower face, then a dimple the tile crop cut off) and keeps the drawn tile.",
   "sources": [
     {
       "file": "chin-jaw.jpg",
@@ -12,6 +12,23 @@
         null,
         "Pointed Chin",
         "Round Chin",
+        null,
+        null
+      ]
+    },
+    {
+      "file": "rest-lowerface.jpg",
+      "rows": [
+        4,
+        4
+      ],
+      "styles": [
+        "Soft Jaw",
+        null,
+        "Prominent Chin",
+        null,
+        null,
+        null,
         null,
         null
       ]

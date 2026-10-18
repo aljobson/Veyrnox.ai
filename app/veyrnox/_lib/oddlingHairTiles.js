@@ -7,7 +7,7 @@ export const HAIR_TILE_STYLES = Object.freeze([
   'Wedge Cut', 'Tabletop', 'Spiral Tower', 'Twin Discs', 'Zigzag Cut', 'Anvil Cut', 'Donut Halo',
   'Tube Tower', 'Shelf Cut', 'Long Hair', 'Afro', 'Punk', 'Buzz Cut', 'Bowl Cut', 'Mullet',
   'Braids', 'Pigtails', 'Perm', 'Beehive', 'Pixie Cut', 'Ponytail', 'Top Knot', 'Undercut',
-  'Pompadour', 'Cornrows', 'Locs', 'Fur / Mane', 'Tentacles', 'Flowers',
+  'Pompadour', 'Cornrows', 'Locs', 'Fur / Mane', 'Tentacles', 'Flowers', 'Crescent Cut', 'Spines', 'Antennae',
 ]);
 
 const TILE_SET = new Set(HAIR_TILE_STYLES);

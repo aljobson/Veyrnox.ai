@@ -71,6 +71,7 @@ export function OAuthConsent({ authorizationId, publishOpen = false }) {
           <li>{t('oauth.models')}</li>
           <li>{t('oauth.estimate')}</li>
           <li>{t('oauth.limit')}</li>
+          <li>{t('oauth.video')}</li>
           <li>{t('oauth.assets')}</li>
           {publishOpen && <li>{t('oauth.publishAccess')}</li>}
         </ul>

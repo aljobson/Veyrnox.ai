@@ -68,6 +68,18 @@ export default function Account() {
                 </Section>
             ) : null}
 
+            <Section title="Credits">
+                <Link href="/history" asChild>
+                    <Row label="Credit history" />
+                </Link>
+            </Section>
+
+            <Section title="Refer a friend">
+                <Link href="/referrals" asChild>
+                    <Row label="Earn Credits when a friend buys" />
+                </Link>
+            </Section>
+
             <Section title="Safety">
                 <Link href="/report" asChild>
                     <Row label="Report a problem or content" />

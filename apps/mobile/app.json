@@ -74,7 +74,24 @@
       "expo-apple-authentication",
       "expo-web-browser",
       "expo-notifications",
-      "@sentry/react-native"
+      "@sentry/react-native",
+      "expo-sharing",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Veyrnox.ai reads the photo or video you choose to use as a starting point for a creation.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "savePhotosPermission": "Veyrnox.ai saves your finished creations to your photo library when you ask it to.",
+          "isAccessMediaLocationEnabled": false
+        }
+      ],
+      "expo-video"
     ],
     "scheme": "ai.veyrnox.app",
     "experiments": {
