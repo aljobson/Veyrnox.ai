@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { translator } from '../lib/i18n/translate.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -111,6 +112,7 @@ test('Library directs signed-out visitors to sign in instead of claiming an empt
 
 test('recovery offers a retry and safe navigation without showing raw error details', () => {
   const { default: Recovery } = component('components/ErrorRecovery.jsx', {
+    './I18nProvider': { useI18n: () => ({ t: translator('en'), href: path => path }) },
     '../app/veyrnox/_components/Main': component('app/veyrnox/_components/Main.js'),
   });
   let retried = false;
@@ -139,7 +141,7 @@ test('root, global and Veyrnox segments provide Next client recovery boundaries'
     assert.match(source, /<ErrorRecovery/);
   }
   const global = read('app/global-error.js');
-  assert.match(global, /<html lang="en">/);
+  assert.match(global, /<html lang=\{info.hreflang\} dir=\{info.dir\}>/);
   assert.match(global, /<body/);
   assert.match(global, /<title>/);
 });

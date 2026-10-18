@@ -1,3 +1,4 @@
+import english from '../lib/i18n/messages/en.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -16,7 +17,8 @@ test('account exposes billing management and Cinema cancellation uses an accessi
   const pass = read('app/veyrnox/social-cinema/pass/PassPanel.js');
   assert.match(account, /Billing &amp; subscriptions/);
   assert.match(account, /href="\/app\/credits#credit-subscriptions"/);
-  assert.match(pass, /1,500 delivered minutes each calendar month/);
+  assert.match(pass, /cinema.passPanel.aCinemaPassUnlocksEveryPublished/);
+  assert.match(english['cinema.passPanel.aCinemaPassUnlocksEveryPublished'], /1,500 delivered minutes each calendar month/);
   assert.match(pass, /<ConfirmDialog/);
   assert.doesNotMatch(pass, /window\.confirm/);
 });

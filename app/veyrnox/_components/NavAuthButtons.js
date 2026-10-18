@@ -40,7 +40,7 @@ export function NavAuthButtons({ account: given }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [leaving, setLeaving] = useState(false);
-  const { t } = useI18n();
+  const { t, href } = useI18n();
   const wrapRef = useRef(null);
   const triggerRef = useRef(null);
   const publishOpen = usePublishEnabled();
@@ -91,11 +91,11 @@ export function NavAuthButtons({ account: given }) {
   function confirmSignOut() {
     setLeaving(true);
     signOut()
-      .then(() => window.location.replace('/'))
+      .then(() => window.location.replace(href('/')))
       .catch(() => {
         // Revoking upstream failed; the local session is gone either way,
         // so land the visitor on the marketing site rather than a dead nav.
-        window.location.replace('/');
+        window.location.replace(href('/'));
       });
   }
 
@@ -110,8 +110,8 @@ export function NavAuthButtons({ account: given }) {
           onClick={() => setMenuOpen((v) => !v)}
           aria-expanded={menuOpen}
           aria-controls="vx-account-menu"
-          aria-label={`Account: ${account.name}`}
-          className="flex items-center min-h-11 gap-2 rounded-full pl-1 pr-1 sm:pr-3 py-1 text-sm font-semibold text-vx-fg-body hover:text-vx-fg hover:bg-vx-fg/[0.05]"
+          aria-label={t('public.account.name', { name: account.name })}
+          className="flex items-center min-h-11 gap-2 rounded-full ps-1 pe-1 sm:pe-3 py-1 text-sm font-semibold text-vx-fg-body hover:text-vx-fg hover:bg-vx-fg/[0.05]"
         >
           <span aria-hidden="true" className="flex h-8 w-8 items-center justify-center rounded-full bg-vx-accent text-vx-accent-ink font-extrabold">
             {account.initial}
@@ -122,7 +122,7 @@ export function NavAuthButtons({ account: given }) {
         {menuOpen && (
           <div
             id="vx-account-menu"
-            className="absolute right-0 top-full mt-2 max-h-[calc(100dvh-5rem)] w-60 overflow-y-auto rounded-xl border border-vx-border bg-vx-panel p-1.5 shadow-2xl z-50"
+            className="absolute end-0 top-full mt-2 max-h-[calc(100dvh-5rem)] w-60 overflow-y-auto rounded-xl border border-vx-border bg-vx-panel p-1.5 shadow-2xl z-50"
           >
             <div className="px-3 py-2 border-b border-vx-border mb-1">
               <div className="text-sm font-bold text-vx-fg truncate">{account.name}</div>
@@ -133,11 +133,11 @@ export function NavAuthButtons({ account: given }) {
             {links.map((l) => (
               <Link
                 key={l.href}
-                href={l.href}
+                href={href(l.href)}
                 onClick={() => setMenuOpen(false)}
                 className="flex min-h-11 items-center rounded-lg px-3 py-2 text-sm text-vx-fg-body hover:bg-vx-fg/[0.05] hover:text-vx-fg"
               >
-                {l.label}
+                {t.label(l.label)}
               </Link>
             ))}
             <button
@@ -145,9 +145,9 @@ export function NavAuthButtons({ account: given }) {
               // Focus goes to the account button first: this one unmounts with the
               // list, and the dialog returns focus to whatever held it on opening.
               onClick={() => { triggerRef.current?.focus(); setMenuOpen(false); setConfirming(true); }}
-              className="block min-h-11 w-full text-left rounded-lg px-3 py-2 text-sm text-vx-fg-body hover:bg-vx-fg/[0.05] hover:text-vx-fg"
+              className="block min-h-11 w-full text-start rounded-lg px-3 py-2 text-sm text-vx-fg-body hover:bg-vx-fg/[0.05] hover:text-vx-fg"
             >
-              Sign out
+              {t('public.account.signOut')}
             </button>
           </div>
         )}
@@ -156,9 +156,9 @@ export function NavAuthButtons({ account: given }) {
           // Sign-out revokes the session in Supabase — one misplaced click
           // used to end the session with no way back but signing in again.
           <ConfirmDialog
-            title="Sign out?"
-            body="This ends your session on this device. Your credits, library and ledger are untouched."
-            confirmLabel={leaving ? 'Signing out…' : 'Sign out'}
+            title={t('public.account.signOutTitle')}
+            body={t('public.account.signOutBody')}
+            confirmLabel={leaving ? t('public.account.signingOut') : t('public.account.signOut')}
             onConfirm={confirmSignOut}
             onCancel={() => setConfirming(false)}
           />

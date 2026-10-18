@@ -1,3 +1,4 @@
+import { tOr } from '../../../lib/i18n/translate.mjs';
 import Link from 'next/link';
 import { MarketingNav } from '../_components/NavBar';
 import { CopyButton } from '../_components/CopyButton';
@@ -6,7 +7,6 @@ import { OPEN_GRAPH_BASE } from '../../seo';
 import { getT } from '../../../lib/i18n/server';
 import { pageAlternates, openGraphLocale } from '../../../lib/i18n/metadata.mjs';
 import { rich } from '../../../lib/i18n/rich';
-import { MCP_PUBLISH_COPY } from '../../../lib/i18n/mcpPublishCopy.mjs';
 import { publishAutomationEnabled } from '../../../lib/social/publishFeature.js';
 
 const ENDPOINT = 'https://veyrnox.ai/api/v1/mcp';
@@ -32,7 +32,7 @@ export default async function McpPage() {
   // The Publish tools exist only while the switch is on (ADR-0112); the other copy is true otherwise.
   const publish = publishAutomationEnabled();
   const shownTools = publish ? [...tools, ...publishTools] : tools;
-  const c = (name) => (publish ? MCP_PUBLISH_COPY[`mcp.pub.${name}`] : t(`mcp.${name}`));
+  const c = (name) => (publish ? tOr(t, `mcp.pub.${name}`, name) : tOr(t, `mcp.${name}`, name));
   return (
     <div className="min-h-dvh">
       <MarketingNav />
@@ -91,7 +91,7 @@ export default async function McpPage() {
             {shownTools.map((name) => (
               <li key={name} className="border-b border-vx-border py-6 md:pr-8">
                 <code className="font-vx-mono text-[13px] font-bold text-vx-money">{name}</code>
-                <p className="mt-2 text-[15px] leading-[1.55] text-vx-fg-body">{MCP_PUBLISH_COPY[`mcp.tool.${name}`] || t(`mcp.tool.${name}`)}</p>
+                <p className="mt-2 text-[15px] leading-[1.55] text-vx-fg-body">{tOr(t, `mcp.tool.${name}`, name)}</p>
               </li>
             ))}
           </ul>

@@ -1,4 +1,5 @@
 'use client';
+import { useI18n } from '../../../components/I18nProvider.jsx';
 
 import { useEffect, useRef, useState } from 'react';
 import { playbackMode } from '../_lib/playbackPolicy';
@@ -13,7 +14,9 @@ import { playbackMode } from '../_lib/playbackPolicy';
 
 const VIEW_THRESHOLD = 0.5;
 
-export function FilmPlayer({ film, label = 'the film', aspectRatio = '16 / 9', frameless = false, mobileFullscreen = false, children }) {
+export function FilmPlayer({ film, label, aspectRatio = '16 / 9', frameless = false, mobileFullscreen = false, children }) {
+  const { t } = useI18n();
+  label ??= t('public.FilmPlayer.theFilm');
   const videoRef = useRef(null);
   const [phoneLayout, setPhoneLayout] = useState(false);
   const activeFilm = phoneLayout && film.mobile ? film.mobile : film;
@@ -105,13 +108,13 @@ export function FilmPlayer({ film, label = 'the film', aspectRatio = '16 / 9', f
       <button
         type="button"
         onClick={toggle}
-        aria-label={`${playing ? 'Pause' : 'Play'} ${label}`}
-        className={`vx-press mt-3 inline-flex min-h-11 items-center gap-2 rounded-full border border-vx-border px-4 text-[13px] font-bold text-vx-fg-body hover:text-vx-fg sm:absolute sm:bottom-3 sm:left-3 sm:mt-0 sm:border-transparent sm:bg-black/70 sm:text-white sm:backdrop-blur-sm sm:hover:bg-black/85 sm:hover:text-white${mobileFullscreen ? ' absolute top-4 right-4 z-10 !mt-0 !border-transparent !bg-black/70 !text-white backdrop-blur-sm sm:top-auto sm:right-auto' : frameless ? ' ml-4 sm:ml-0' : ''}`}
+        aria-label={t(playing ? 'public.film.pause' : 'public.film.play', { title: label })}
+        className={`vx-press mt-3 inline-flex min-h-11 items-center gap-2 rounded-full border border-vx-border px-4 text-[13px] font-bold text-vx-fg-body hover:text-vx-fg sm:absolute sm:bottom-3 sm:start-3 sm:mt-0 sm:border-transparent sm:bg-black/70 sm:text-white sm:backdrop-blur-sm sm:hover:bg-black/85 sm:hover:text-white${mobileFullscreen ? ' absolute top-4 end-4 z-10 !mt-0 !border-transparent !bg-black/70 !text-white backdrop-blur-sm sm:top-auto sm:end-auto' : frameless ? ' ms-4 sm:ms-0' : ''}`}
       >
         <svg aria-hidden="true" viewBox="0 0 12 12" className="h-3 w-3 fill-current">
           {playing ? <path d="M2 1h3v10H2zM7 1h3v10H7z" /> : <path d="M2.5 1 11 6l-8.5 5z" />}
         </svg>
-        {playing ? 'Pause' : 'Play'}
+        {playing ? t("cinema.videoUpload.pause") : t("cinema.titlePage.play")}
       </button>
       )}
     </div>

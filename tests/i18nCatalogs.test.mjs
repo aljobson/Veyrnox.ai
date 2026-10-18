@@ -50,7 +50,7 @@ test('only translated pages take the prefix', () => {
   assert.equal(localizedHref('es', '/'), '/es');
   assert.equal(localizedHref('es', '/#faq'), '/es#faq');
   assert.equal(localizedHref('es', '/pricing'), '/es/pricing');
-  assert.equal(localizedHref('es', '/social-cinema'), '/social-cinema');
+  assert.equal(localizedHref('es', '/social-cinema'), '/es/social-cinema');
   assert.ok(LOCALIZED_PATHS.has('/pricing'));
   assert.equal(localizedHref('es', 'mailto:legal@veyrnox.com'), 'mailto:legal@veyrnox.com');
   assert.equal(localizedHref('en', '/'), '/');
@@ -95,7 +95,7 @@ test('the picker keeps a translated page and falls back to home for the rest', (
   assert.equal(switchLanguageHref('fr', '/es'), '/fr');
   assert.equal(switchLanguageHref('en', '/ja'), '/');
   assert.equal(switchLanguageHref('de', '/pricing'), '/de/pricing', 'pricing is translated');
-  assert.equal(switchLanguageHref('de', '/social-cinema'), '/de', 'no German Social Cinema page yet: home');
+  assert.equal(switchLanguageHref('de', '/social-cinema'), '/de/social-cinema', 'Cinema is translated');
   assert.equal(switchLanguageHref('en', '/es/pricing'), '/pricing');
   assert.equal(switchLanguageHref('en', '/social-cinema'), '/social-cinema', 'English on an English page stays put');
 });
@@ -118,6 +118,7 @@ test('the Publish copy on /mcp exists for every Publish tool and is shown only b
   for (const name of names) assert.ok(copy[`mcp.tool.${name}`], name);
   for (const key of ['lead', 's3.body', 'what.title', 'what.p', 'safe.kicker', 'safe.title', 'safe.p1', 'safe.p2', 'safe.p3']) {
     assert.ok(copy[`mcp.pub.${key}`], key);
+    assert.equal(en[`mcp.pub.${key}`], copy[`mcp.pub.${key}`]);
   }
   const page = readFileSync(new URL('../app/veyrnox/mcp/page.js', import.meta.url), 'utf8');
   assert.match(page, /publishAutomationEnabled\(\)/);
@@ -143,7 +144,7 @@ test('guide pages take a prefix, the bare prefix path does not', () => {
   assert.equal(isLocalizedPath('/guides/'), true);
   assert.equal(localizedHref('fr', '/guides/credits'), '/fr/guides/credits');
   assert.equal(switchLanguageHref('de', '/fr/guides/library'), '/de/guides/library');
-  assert.equal(isLocalizedPath('/presets/abc'), false, 'template detail pages are not translated yet');
+  assert.equal(isLocalizedPath('/presets/abc'), true, 'template detail UI is translated');
   assert.equal(isLocalizedPath('/presets'), true);
 });
 

@@ -1,3 +1,4 @@
+import english from '../lib/i18n/messages/en.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
@@ -85,8 +86,10 @@ test('Social Cinema presents the external series without copying the source vide
   assert.match(discovery, /else if \(mode === 'series'\)/);
   assert.match(player, /youtubeEmbedUrl/);
   assert.match(editorial, /www\.youtube-nocookie\.com/);
-  assert.match(player, /Free viewing via YouTube/);
-  assert.match(player, /Next episode:/);
+  assert.match(player, /t\('cinema.player.rights'\)/);
+  assert.match(english['cinema.player.rights'], /Free viewing via YouTube/);
+  assert.match(player, /cinema.player.next/);
+  assert.match(english['cinema.player.next'], /Next episode:/);
   assert.match(policy, /https:\/\/www\.youtube-nocookie\.com/);
   assert.match(policy, /https:\/\/i\.ytimg\.com/);
   assert.match(nextConfig, /hostname: 'i\.ytimg\.com'/);

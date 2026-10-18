@@ -1,5 +1,6 @@
 'use client';
 
+import { useI18n } from '../../../components/I18nProvider';
 import { useEffect, useRef, useState } from 'react';
 
 const RESET_AFTER_MS = 2500;
@@ -12,7 +13,9 @@ const RESET_AFTER_MS = 2500;
 // browser API is optional: where sharing and the clipboard are both missing,
 // the message says to copy the address bar.
 // `messages` carries the two status lines in the page's language.
-export function ShareLinkButton({ path, title, label = 'Share link', className = '', messages = {} }) {
+export function ShareLinkButton({ path, title, label, className = '', messages = {} }) {
+  const { t } = useI18n();
+  label ??= t('oddlings.shareDefault');
   const [message, setMessage] = useState('');
   const timer = useRef(null);
 
@@ -37,9 +40,9 @@ export function ShareLinkButton({ path, title, label = 'Share link', className =
     }
     try {
       await navigator.clipboard.writeText(url);
-      say(messages.copied || 'Link copied');
+      say(messages.copied || t('oddlings.copied'));
     } catch {
-      say(messages.copyManual || 'Copy the address from your browser bar');
+      say(messages.copyManual || t('oddlings.copyManual'));
     }
   }
 

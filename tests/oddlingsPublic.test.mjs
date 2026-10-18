@@ -199,7 +199,7 @@ test('the share control copies a same-origin link and fails soft', () => {
     assert.match(source, /window\.location\.origin/);
     assert.match(source, /navigator\.share/);
     // It offers the share sheet where one exists, so it is not labelled Copy.
-    assert.match(source, /label = 'Share link'/);
+    assert.match(source, /label \?\?= t\('oddlings.shareDefault'\)/);
     assert.doesNotMatch(source, /Copy link/);
     assert.match(source, /navigator\.clipboard/);
     assert.match(source, /role="status"/);

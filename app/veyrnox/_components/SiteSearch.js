@@ -1,4 +1,5 @@
 'use client';
+import { tOr, pluralKey } from '../../../lib/i18n/translate.mjs';
 
 import { cn } from '../../../lib/utils';
 
@@ -21,31 +22,31 @@ function staticIndex(models, oddlingsPublic, t) {
     ...SITE_PAGES.map((p) => ({
       group: 'Pages',
       title: t.label(p.label),
-      detail: p.description,
+      detail: tOr(t, `search.page.${p.href === '/' ? 'home' : p.href.slice(1).replaceAll('/', '-')}`, p.description),
       href: navHref(p, oddlingsPublic),
     })),
     ...PRESETS.map((p) => ({
       group: 'Templates',
       title: presetTitle(p.name),
-      detail: `${p.category} · ${p.model} · ${presetCredits(p, models)} cr`,
+      detail: t('search.templateDetail', { category: tOr(t, `presets.cat.${p.category}`, p.category), model: p.model, credits: presetCredits(p, models) }),
       href: templateHref(p),
     })),
     ...FAQ.map((f, i) => ({
       group: 'FAQ',
-      title: t(`home.faq.${i}.q`),
-      detail: t(`home.faq.${i}.a`),
+      title: tOr(t, `home.faq.${i}.q`, f.q),
+      detail: tOr(t, `home.faq.${i}.a`, f.a),
       href: '/#faq',
     })),
   ];
 }
 
-function modelsToIndex(models) {
+function modelsToIndex(models, t) {
   // Search offers what Create sells: the Clip Editor lives in the Library, and
   // Auto Short stays out until its flag comes off (isShelfModel).
   return models.filter((m) => isShelfModel(m.capabilities)).map((m) => ({
     group: 'Models',
     title: m.name,
-    detail: `${m.modality || m.kind} · ${m.credits} cr${m.gated ? ' · premium' : ''}`,
+    detail: t('search.modelDetail', { type: tOr(t, `model.mode.${m.modality || m.kind}`, tOr(t, `home.models.${m.modality || m.kind}`, m.modality || m.kind || t('home.models.image'))), credits: m.credits, premium: m.gated ? t('search.premiumDetail', { premium: t('home.models.premium') }) : '' }),
     href: `/app/create?model=${encodeURIComponent(m.id)}`,
   }));
 }
@@ -89,7 +90,7 @@ function SearchHotkey({ onOpen }) {
 
 function SearchOverlay({ onClose }) {
   const router = useRouter();
-  const { t } = useI18n();
+  const { t, href, locale } = useI18n();
   const oddlingsPublic = useOddlingsPublic();
   const [query, setQuery] = useState('');
   const [cursor, setCursor] = useState(0);
@@ -113,7 +114,7 @@ function SearchOverlay({ onClose }) {
   }, []);
 
   const index = useMemo(
-    () => [...staticIndex(models || MODELS_FALLBACK, oddlingsPublic, t), ...modelsToIndex(models || MODELS_FALLBACK)],
+    () => [...staticIndex(models || MODELS_FALLBACK, oddlingsPublic, t), ...modelsToIndex(models || MODELS_FALLBACK, t)],
     [models, oddlingsPublic, t],
   );
   const results = useMemo(() => searchIndex(index, query), [index, query]);
@@ -122,9 +123,9 @@ function SearchOverlay({ onClose }) {
     (item) => {
       if (!item) return;
       onClose();
-      router.push(item.href);
+      router.push(href(item.href));
     },
-    [onClose, router],
+    [onClose, router, href],
   );
 
   function onKeyDown(e) {
@@ -172,7 +173,7 @@ function SearchOverlay({ onClose }) {
             type="button"
             onClick={onClose}
             aria-label={t('search.close')}
-            className="-mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-vx-fg-muted hover:text-vx-fg"
+            className="-me-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-vx-fg-muted hover:text-vx-fg"
           >
             <Icon name="close" />
           </button>
@@ -200,12 +201,12 @@ function SearchOverlay({ onClose }) {
                 tabIndex={-1}
                 onMouseEnter={() => setCursor(i)}
                 onClick={() => go(item)}
-                className={`flex w-full items-start gap-3 px-5 py-3 text-left transition-colors ${
+                className={`flex w-full items-start gap-3 px-5 py-3 text-start transition-colors ${
                   i === cursor ? 'bg-vx-accent/[0.08]' : 'hover:bg-vx-accent/[0.05]'
                 }`}
               >
                 <span className="mt-0.5 w-[62px] shrink-0 font-vx-mono text-[9px] uppercase tracking-[0.12em] text-vx-fg-muted">
-                  {t.messages[`search.group.${item.group}`] ?? item.group}
+                  {tOr(t, `search.group.${item.group}`, item.group)}
                 </span>
                 <span className="min-w-0">
                   <span className="block truncate text-[14px] font-bold text-vx-fg">{item.title}</span>
@@ -220,7 +221,7 @@ function SearchOverlay({ onClose }) {
 
         <div className="flex items-center justify-between border-t border-vx-border px-5 py-2.5 font-vx-mono text-[9.5px] tracking-[0.12em] text-vx-fg-faint">
           <span>{t('search.keys')}</span>
-          <span aria-live="polite" aria-atomic="true">{t(results.length === 1 ? 'search.count.one' : 'search.count.other', { n: results.length })}</span>
+          <span aria-live="polite" aria-atomic="true">{t(pluralKey(t, locale, 'search.count', results.length), { n: results.length })}</span>
         </div>
       </div>
     </Modal>

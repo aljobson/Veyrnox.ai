@@ -23,18 +23,19 @@ const inter = localFont({
   variable: "--font-inter",
 });
 
-const TITLE = 'Veyrnox.ai — AI video & image, priced per generation';
-const DESCRIPTION =
-  'Credit-metered AI video, image and audio generation. Every generation shows its price before you spend, and failed jobs refund automatically.';
-
-export const metadata = {
+export async function generateMetadata() {
+  const locale = await getLocale();
+  const t = translator(locale);
+  const TITLE = t('meta.title');
+  const DESCRIPTION = t('meta.description');
+  return {
   // Absolute URLs for canonical + Open Graph. Without it Next emits
   // relative og:url values that no crawler resolves.
   metadataBase: new URL('https://veyrnox.ai'),
   title: {
     default: TITLE,
     // Per-page titles set only their own half.
-    template: '%s — Veyrnox.ai',
+    template: t('meta.siteTemplate'),
   },
   description: DESCRIPTION,
   applicationName: 'Veyrnox.ai',
@@ -49,6 +50,8 @@ export const metadata = {
   // crops it to a square thumbnail.
   twitter: { card: 'summary_large_image', title: TITLE, description: DESCRIPTION, images: [OG_IMAGE.url] },
 };
+
+}
 
 // Dark is the brand default; the theme toggle overrides it per browser.
 export const viewport = {

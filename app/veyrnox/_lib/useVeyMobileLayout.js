@@ -3,14 +3,14 @@ import { useEffect, useRef, useState } from 'react';
 import { clampVeyPosition, handForPoint, pointerPlacement } from '../../../lib/veyPointer';
 import { dockClearance, mobileDockPosition } from '../../../lib/veyMobileLayout';
 
-const PANEL = '[aria-label="Vey task walkthrough"], [role="dialog"][aria-labelledby="vx-helper-title"]';
+const PANEL = '[data-vey-walkthrough], [role="dialog"][aria-labelledby="vx-helper-title"]';
 
-export default function useVeyMobileLayout({ open, pathname, position, manualPosition, panelSide, highlight, hand, facing, pointRequest, activeTarget }) {
+export default function useVeyMobileLayout({ open, pathname, position, manualPosition, panelSide, highlight, hand, facing, pointRequest, activeTarget, rtl = false }) {
   const [layout, setLayout] = useState(null);
-  const latest = useRef({ highlight, facing, activeTarget, manualPosition, panelSide });
+  const latest = useRef({ highlight, facing, activeTarget, manualPosition, panelSide, rtl });
   const refresh = useRef(null);
   const cue = useRef(null);
-  useEffect(() => { latest.current = { highlight, facing, activeTarget, manualPosition, panelSide }; refresh.current?.(); }, [highlight, facing, activeTarget, manualPosition, panelSide]);
+  useEffect(() => { latest.current = { highlight, facing, activeTarget, manualPosition, panelSide, rtl }; refresh.current?.(); }, [highlight, facing, activeTarget, manualPosition, panelSide, rtl]);
   useEffect(() => {
     cue.current = pointRequest ? { target: pointRequest.id, position: null } : null;
     refresh.current?.();
@@ -39,7 +39,7 @@ export default function useVeyMobileLayout({ open, pathname, position, manualPos
     };
     const resize = new ResizeObserver(() => schedule());
     const measure = () => {
-      const { highlight, facing, activeTarget, manualPosition, panelSide } = latest.current;
+      const { highlight, facing, activeTarget, manualPosition, panelSide, rtl } = latest.current;
       const current = document.querySelector('main');
       if (main !== current) {
         restore(); main = current; original = main?.style.paddingBottom || '';
@@ -47,8 +47,8 @@ export default function useVeyMobileLayout({ open, pathname, position, manualPos
       }
       const editorDock = document.querySelector('[aria-label="Mobile editor sections"]');
       const chat = document.querySelector('[role="dialog"][aria-labelledby="vx-helper-title"]');
-      const guide = document.querySelector('[aria-label="Vey task walkthrough"]');
-      const nextPanel = open ? (guide?.getBoundingClientRect().width > 0 ? guide : chat) : document.querySelector('[aria-label="Browser storage notice"]')
+      const guide = document.querySelector('[data-vey-walkthrough]');
+      const nextPanel = open ? (guide?.getBoundingClientRect().width > 0 ? guide : chat) : document.querySelector('[data-storage-notice]')
         || (editorDock?.getBoundingClientRect().height > 0 ? editorDock : null);
       if (panel !== nextPanel) { resize.disconnect(); panel = nextPanel; if (panel) resize.observe(panel); }
       const viewport = { width: innerWidth, height: innerHeight };
@@ -81,7 +81,7 @@ export default function useVeyMobileLayout({ open, pathname, position, manualPos
       // for gaps. Its short pointing gesture then returns to the stable dock.
       if (pointing && !cue.current.position) cue.current.position = pointerPlacement(highlight, viewport, dock).position;
       const fixed = pointing && cue.current.position;
-      const safe = fixed || (manualPosition ? clampVeyPosition(manualPosition, viewport) : mobileDockPosition(viewport, dock, open && panel?.matches(PANEL), panelSide));
+      const safe = fixed || (manualPosition ? clampVeyPosition(manualPosition, viewport) : mobileDockPosition(viewport, dock, open && panel?.matches(PANEL), panelSide, rtl));
       const next = { position: safe, docked: !fixed && !manualPosition, hand: fixed ? handForPoint(safe, facing, pointerPlacement(highlight, viewport, null, safe).point) : undefined };
       setLayout(previous => JSON.stringify(previous) === JSON.stringify(next) ? previous : next);
     };

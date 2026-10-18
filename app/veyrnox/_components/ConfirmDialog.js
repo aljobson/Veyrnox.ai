@@ -1,5 +1,6 @@
 'use client';
 
+import { useI18n } from '../../../components/I18nProvider';
 import { useRef } from 'react';
 import { Modal } from './Modal';
 
@@ -9,12 +10,13 @@ import { Modal } from './Modal';
 export function ConfirmDialog({
   title,
   body,
-  confirmLabel = 'Confirm',
-  cancelLabel = 'Cancel',
+  confirmLabel,
+  cancelLabel,
   tone = 'accent',
   onConfirm,
   onCancel,
 }) {
+  const { t } = useI18n();
   const cancelRef = useRef(null);
 
 
@@ -42,14 +44,14 @@ export function ConfirmDialog({
             onClick={onCancel}
             className="rounded-full border border-vx-border px-5 py-2.5 text-sm font-bold text-vx-fg-body hover:border-vx-accent hover:text-vx-fg"
           >
-            {cancelLabel}
+            {cancelLabel ?? t('cinema.creatorWorkspace.cancel')}
           </button>
           <button
             type="button"
             onClick={onConfirm}
             className={`rounded-full px-5 py-2.5 text-sm font-extrabold ${confirmCls}`}
           >
-            {confirmLabel}
+            {confirmLabel ?? t('public.ConfirmDialog.confirm')}
           </button>
         </div>
       </div>

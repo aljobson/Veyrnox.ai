@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from '../../../components/I18nProvider';
 
 // Sign-in callback (PKCE) for OAuth and for emailed links. Supabase returns a
 // one-time `?code=`; we exchange it with the verifier this browser stored
@@ -12,24 +13,21 @@ import { MAGIC_VERIFIER_TTL_MS } from "../../lib/pkceVerifier.js";
 import { safeAuthReturnPath } from "../../lib/authReturn.js";
 import { Main } from "../../veyrnox/_components/Main.js";
 
-const TRY_AGAIN = "Nothing was changed. Go back and try signing in again.";
-// No verifier here: an emailed link opened in another browser or on another
-// device, or opened after the verifier kept for it had expired.
-const NOT_STARTED_HERE = `This sign-in was not started in this browser, or its link is more than ${Math.round(MAGIC_VERIFIER_TTL_MS / 60000)} minutes old. Open the link in the browser where you asked for it, or go back and ask for a new one.`;
-
 export default function AuthCallback() {
-    const [status, setStatus] = useState("Signing you in…");
+  const { t, href: localizedHref } = useI18n();
+    const [status, setStatus] = useState(t('callback.signingIn'));
     const [failed, setFailed] = useState(false);
     useEffect(() => {
+        const TRY_AGAIN = t('callback.retry');
         const fail = (message) => { setStatus(message); setFailed(true); };
         const href = window.location.href;
         const requestedNext = new URL(href).searchParams.get('next');
-        const next = safeAuthReturnPath(requestedNext) || '/';
+        const next = safeAuthReturnPath(requestedNext) || localizedHref('/');
         const providerError = oauthCallbackError(href);
         if (providerError) {
             // The provider or our Auth config refused: not a browser problem.
             console.error("[auth-callback] provider returned", providerError);
-            fail(`Sign-in was refused by the provider. ${TRY_AGAIN}`);
+            fail(t('callback.refused', { retry: TRY_AGAIN }));
             return;
         }
         // The email-confirmation link answers with tokens in the fragment, not a
@@ -37,39 +35,39 @@ export default function AuthCallback() {
         if (new URLSearchParams(new URL(href).hash.replace(/^#/, "")).has("access_token")) {
             completeFromFragment()
                 .then((s) => {
-                    if (s) { setStatus("Signed in. Redirecting…"); window.location.replace("/"); }
-                    else fail(`Sign-in could not be completed. ${TRY_AGAIN}`);
+                    if (s) { setStatus(t('callback.signedIn')); window.location.replace(localizedHref('/')); }
+                    else fail(t('callback.failed', { retry: TRY_AGAIN }));
                 })
                 .catch((err) => {
                     console.error("[auth-callback] fragment sign-in failed", err?.status, err?.code);
-                    fail(`Sign-in could not be completed. ${TRY_AGAIN}`);
+                    fail(t('callback.failed', { retry: TRY_AGAIN }));
                 });
             return;
         }
-        if (!new URL(href).searchParams.get("code")) {
-            fail(`This page was opened without a sign-in response. ${TRY_AGAIN}`);
+        if (!new URL(href).searchParams.get('code')) {
+            fail(t('callback.noResponse', { retry: TRY_AGAIN }));
             return;
         }
         completeOAuthFromCode()
             .then((s) => {
                 if (s) {
-                    setStatus("Signed in. Redirecting…");
+                    setStatus(t('callback.signedIn'));
                     window.location.replace(next);
                 } else {
-                    fail(NOT_STARTED_HERE);
+                    fail(t('callback.notStarted', { minutes: Math.round(MAGIC_VERIFIER_TTL_MS / 60000) }));
                 }
             })
             .catch((err) => {
                 console.error("[auth-callback] code exchange failed", err?.status, err?.code);
-                fail(`Sign-in could not be completed. ${TRY_AGAIN}`);
+                fail(t('callback.failed', { retry: TRY_AGAIN }));
             });
-    }, []);
+    }, [t, localizedHref]);
     return (
         <Main className="min-h-screen bg-black text-white flex items-center justify-center px-6">
             <div className="text-center">
                 <div className="text-sm text-zinc-400">{status}</div>
                 {failed && (
-                    <a href="/" className="mt-4 inline-block text-sm text-white underline">Back to Veyrnox</a>
+                    <a href={localizedHref('/')} className="mt-4 inline-block text-sm text-white underline">{t('callback.back')}</a>
                 )}
             </div>
         </Main>

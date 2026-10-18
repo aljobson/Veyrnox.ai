@@ -30,7 +30,7 @@ const cache = new Map();
 
 function resolveRelative(fromFile, id) {
     const base = path.resolve(path.dirname(fromFile), id);
-    for (const candidate of [base, `${base}.js`, path.join(base, 'index.js')]) {
+    for (const candidate of [base, `${base}.js`, `${base}.jsx`, `${base}.mjs`, path.join(base, 'index.js')]) {
         try { readFileSync(candidate); return candidate; } catch { /* try the next */ }
     }
     throw new Error(`cannot resolve ${id} from ${fromFile}`);

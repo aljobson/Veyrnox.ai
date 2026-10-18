@@ -1,3 +1,5 @@
+import { translator } from '../../lib/i18n/translate.mjs';
+const defaultT = translator('en');
 // OAuth provider policy for the shared sign-in dialog. Apple and passkeys
 // always have a place in the dialog; live settings gate starting an action.
 // Google follows the build list. Unavailable methods explain what needs setup
@@ -42,8 +44,8 @@ export function providerAvailable(settings, provider) {
 }
 
 /** A visible passkey option explains missing support rather than disappearing. */
-export function passkeyUnavailableReason(settings, supported) {
-    if (!supported) return "This browser cannot use passkeys. Try a supported browser over HTTPS, or use another method.";
-    if (settings && settings.passkeys_enabled !== true) return "Passkey sign-in isn't enabled for this environment yet. Use another method.";
+export function passkeyUnavailableReason(settings, supported, t = defaultT) {
+    if (!supported) return t('authGate.passkeyBrowser');
+    if (settings && settings.passkeys_enabled !== true) return t('authGate.passkeySetup');
     return null;
 }

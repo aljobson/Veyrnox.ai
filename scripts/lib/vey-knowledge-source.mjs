@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { resolveI18nSource } from './vey-knowledge-i18n.mjs';
 
 const PAGE_FILE = /\/page\.(?:js|jsx|mjs|tsx)$/;
 const SOURCE_EXTENSIONS = ['.js', '.jsx', '.mjs', '.tsx'];
@@ -25,6 +26,8 @@ function normalText(value) {
     .replace(/&rsquo;|&lsquo;/g, "'")
     .replace(/&rdquo;|&ldquo;/g, '"')
     .replace(/&nbsp;/g, ' ')
+    .replace(/&#123;/g, '{').replace(/&#125;/g, '}')
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -106,9 +109,18 @@ async function collectRouteSources(pageFile, productRoot, sourceCache) {
   return [...visited].map((file) => ({ file, source: sourceCache.get(file) }));
 }
 
-function extractRouteKnowledge(root, pageFile, modules) {
+function extractRouteKnowledge(root, pageFile, modules, knowledgeCache) {
   const route = routeFromPage(root, pageFile);
-  const combined = modules.map(({ source }) => source).join('\n');
+  const resolved = modules.map(({ source }) => {
+    if (!knowledgeCache.has(source)) knowledgeCache.set(source, {
+      copy: resolveI18nSource(source),
+      // Preserve nested links while resolving their localized href attributes.
+      references: resolveI18nSource(source, undefined, { attributesOnly: true }),
+    });
+    return knowledgeCache.get(source);
+  });
+  const combined = resolved.map(value => value.copy).join('\n');
+  const references = resolved.map(value => value.references).join('\n');
   const headings = [];
   const primaryHeadings = [];
   const controls = [];
@@ -134,12 +146,12 @@ function extractRouteKnowledge(root, pageFile, modules) {
     const value = jsxText(match[1]);
     if (value.length >= 20 && value.length <= 320) descriptions.push(value);
   }
-  for (const match of combined.matchAll(/\bdata-assistant-target\s*=\s*(['"])(.*?)\1/gi)) targets.push(match[2]);
-  for (const match of combined.matchAll(/\bhref\s*=\s*(['"])(\/[^'"]*)\1/gi)) links.push(match[2]);
+  for (const match of references.matchAll(/\bdata-assistant-target\s*=\s*(['"])(.*?)\1/gi)) targets.push(match[2]);
+  for (const match of references.matchAll(/\bhref\s*=\s*(['"])(\/[^'"]*)\1/gi)) links.push(match[2]);
 
-  const cleanHeadings = unique(headings, 24);
-  const cleanControls = unique(controls, 40);
-  const cleanDescriptions = unique(descriptions, 8);
+  const cleanHeadings = unique(headings, Infinity);
+  const cleanControls = unique(controls, Infinity);
+  const cleanDescriptions = unique(descriptions, Infinity);
   const relativePage = path.relative(root, pageFile).replaceAll(path.sep, '/');
   const sourceHash = createHash('sha256')
     .update(modules.map(({ file, source }) => `${path.relative(root, file)}\n${source}`).join('\n---\n'))
@@ -153,8 +165,8 @@ function extractRouteKnowledge(root, pageFile, modules) {
     headings: cleanHeadings,
     controls: cleanControls,
     descriptions: cleanDescriptions,
-    targets: unique(targets, 24),
-    links: unique(links, 32),
+    targets: unique(targets, Infinity),
+    links: unique(links, Infinity),
     source: relativePage,
     sourceHash,
   };
@@ -195,13 +207,27 @@ function extractDocumentKnowledge(relativeFile, markdown) {
 export async function buildVeyKnowledgeArtifact(root) {
   const productRoot = path.join(root, 'app');
   const sourceCache = new Map();
+  const knowledgeCache = new Map();
+  const layoutModules = new Map();
   const pages = (await walk(productRoot))
     .filter((file) => PAGE_FILE.test(file.replaceAll(path.sep, '/')))
     .sort();
   const routes = [];
   for (const page of pages) {
     const modules = await collectRouteSources(page, productRoot, sourceCache);
-    routes.push(extractRouteKnowledge(root, page, modules));
+    // Next renders ancestor layouts without an explicit import from the page.
+    // Include their UI so shared notice knowledge comes from the rendered
+    // component, rather than incidentally from an English DOM selector.
+    const included = new Set(modules.map(({ file }) => file));
+    for (let directory = path.dirname(page); directory.startsWith(productRoot); directory = path.dirname(directory)) {
+      const layout = await resolveImport('./layout', path.join(directory, 'page.js'), productRoot);
+      if (!layout) continue;
+      if (!layoutModules.has(layout)) layoutModules.set(layout, await collectRouteSources(layout, productRoot, sourceCache));
+      for (const module of layoutModules.get(layout)) {
+        if (!included.has(module.file)) { included.add(module.file); modules.push(module); }
+      }
+    }
+    routes.push(extractRouteKnowledge(root, page, modules, knowledgeCache));
   }
 
   const documents = [];
