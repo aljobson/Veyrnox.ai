@@ -1,0 +1,20 @@
+{
+  "note": "Eyebrow sheet: six grey mannequin heads with painted charcoal brows; all six read clearly.",
+  "sources": [
+    {
+      "file": "brows.jpg",
+      "rows": [
+        3,
+        3
+      ],
+      "styles": [
+        "Thick",
+        "Thin",
+        "Arched",
+        "Straight",
+        "Bushy",
+        "Bleached"
+      ]
+    }
+  ]
+}

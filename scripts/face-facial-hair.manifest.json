@@ -1,0 +1,35 @@
+{
+  "note": "Facial hair: six on the first sheet and three on the second (shared with the horns). All nine read clearly. The antler tips that overlap the chin curl's cell were painted out of a working copy of the sheet before slicing.",
+  "sources": [
+    {
+      "file": "fhair-a.jpg",
+      "rows": [
+        3,
+        3
+      ],
+      "styles": [
+        "Clean Shaven",
+        "Stubble",
+        "Full Beard",
+        "Goatee",
+        "Pencil Moustache",
+        "Giant Moustache"
+      ]
+    },
+    {
+      "file": "fhair-b-curl.jpg",
+      "rows": [
+        3,
+        3
+      ],
+      "styles": [
+        "Forked Beard",
+        "Beard Cube",
+        "Single Chin Curl",
+        null,
+        null,
+        null
+      ]
+    }
+  ]
+}

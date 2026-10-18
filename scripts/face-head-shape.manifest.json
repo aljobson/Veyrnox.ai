@@ -1,0 +1,21 @@
+{
+  "note": "Head-shape sheet: grey mannequin heads with neck and shoulders. Tiny Head and Oversized Head came out looking like the others, so those cells are skipped.",
+  "sources": [
+    {
+      "file": "head-shape.jpg",
+      "rows": [
+        4,
+        3
+      ],
+      "styles": [
+        "Long Oval",
+        "Perfect Round",
+        "Square",
+        "Heart",
+        "Diamond",
+        null,
+        null
+      ]
+    }
+  ]
+}

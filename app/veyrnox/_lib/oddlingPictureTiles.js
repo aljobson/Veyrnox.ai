@@ -1,5 +1,5 @@
-// Picture tiles for the catalog groups that have generated pictures: hair (one head per style), outfits (one full-body figure per outfit) and
-// headwear (one head with the item). A listed option has a file (pinned by a test); any other option keeps its drawn tile.
+// Picture tiles for the catalog groups that have generated pictures: hair (one head per style), outfits (one full-body figure per outfit),
+// headwear (one head with the item) and the face groups (all of facial hair, face features, horns, eye type, eye details and brows and lips, most of head shape, eye shape, nose shape, mouth, chin and jaw, cheeks and ears). A listed option has a file (pinned by a test); any other option keeps its drawn tile.
 import { HAIR_TILE_STYLES, hairTileSlug, hairTileSrc } from './oddlingHairTiles.js';
 
 /** Outfits with a picture. Ceremonial Sportswear, Tiny Formalwear, Soft Sculpture and Weather Couture are not generated yet. */
@@ -8,11 +8,43 @@ export const OUTFIT_TILE_STYLES = Object.freeze([
 ]);
 export const HEADWEAR_TILE_STYLES = Object.freeze(['Baseball Cap', 'Beanie', 'Wide-Brim Hat', 'Bucket Hat', 'Headphones']);
 
+// Face options with a picture. Only the ones that read clearly at tile size are listed: most eye and nose shapes, Tiny Head, Oversized Head,
+// Small Mouth, Crooked Teeth, Soft Jaw, Cleft Chin, Prominent Chin, High and Full Cheeks and No Ears looked the same as their neighbours or were
+// drawn wrongly on the generated sheets, so they keep the drawn tile.
+export const HEAD_SHAPE_TILE_STYLES = Object.freeze(['Long Oval', 'Perfect Round', 'Square', 'Heart', 'Diamond']);
+export const EYE_SHAPE_TILE_STYLES = Object.freeze(['Round', 'Monolid', 'Graphic Liner']);
+export const NOSE_SHAPE_TILE_STYLES = Object.freeze(['Straight', 'Button', 'Wide']);
+export const BROWS_TILE_STYLES = Object.freeze(['Thick', 'Thin', 'Arched', 'Straight', 'Bushy', 'Bleached']);
+export const LIPS_TILE_STYLES = Object.freeze(['Full', 'Thin', 'Cupid Bow', 'Glossy', 'Matte Dark']);
+export const CHIN_JAW_TILE_STYLES = Object.freeze(['Strong Jaw', 'Pointed Chin', 'Round Chin']);
+export const CHEEKS_TILE_STYLES = Object.freeze(['Dimples', 'Hollow Cheeks']);
+export const EARS_TILE_STYLES = Object.freeze(['Human', 'Elf Ears', 'Wing Ears']);
+export const FACIAL_HAIR_TILE_STYLES = Object.freeze(['Clean Shaven', 'Stubble', 'Full Beard', 'Goatee', 'Pencil Moustache', 'Giant Moustache', 'Forked Beard', 'Beard Cube', 'Single Chin Curl']);
+export const HORNS_TILE_STYLES = Object.freeze(['Small Horns', 'Big Horns', 'Antlers']);
+export const FACE_FEATURES_TILE_STYLES = Object.freeze(['Tiny Brows', 'One Brow', 'Huge Lashes', 'Glossy Cheeks', 'Painted Blush', 'Metallic Freckles', 'Beauty Mark Constellation']);
+export const EYES_TYPE_TILE_STYLES = Object.freeze(['Human', 'Reptile', 'Mechanical']);
+export const EYES_DETAILS_TILE_STYLES = Object.freeze(['Heterochromia', 'Blind Eye', 'Scarred Eye', 'Glowing Eye']);
+export const MOUTH_TILE_STYLES = Object.freeze(['Large Mouth', 'No Teeth', 'Unique Teeth', 'Gap Teeth', 'Gold Tooth', 'Bright Smile', 'Sharp Teeth', 'Forked Tongue', 'Two Tongues']);
+
 /** Catalog group id -> folder under /oddlings and the options that have a file there. */
 export const PICTURE_TILES = Object.freeze({
   hair: { dir: 'hair', styles: HAIR_TILE_STYLES },
   wardrobe_style: { dir: 'outfits', styles: OUTFIT_TILE_STYLES },
   headwear: { dir: 'headwear', styles: HEADWEAR_TILE_STYLES },
+  head_shape: { dir: 'face/head_shape', styles: HEAD_SHAPE_TILE_STYLES },
+  eye_shape: { dir: 'face/eye_shape', styles: EYE_SHAPE_TILE_STYLES },
+  nose_shape: { dir: 'face/nose_shape', styles: NOSE_SHAPE_TILE_STYLES },
+  mouth: { dir: 'face/mouth', styles: MOUTH_TILE_STYLES },
+  brows: { dir: 'face/brows', styles: BROWS_TILE_STYLES },
+  lips: { dir: 'face/lips', styles: LIPS_TILE_STYLES },
+  chin_jaw: { dir: 'face/chin_jaw', styles: CHIN_JAW_TILE_STYLES },
+  cheeks: { dir: 'face/cheeks', styles: CHEEKS_TILE_STYLES },
+  ears: { dir: 'face/ears', styles: EARS_TILE_STYLES },
+  facial_hair: { dir: 'face/facial_hair', styles: FACIAL_HAIR_TILE_STYLES },
+  horns: { dir: 'face/horns', styles: HORNS_TILE_STYLES },
+  face_features: { dir: 'face/face_features', styles: FACE_FEATURES_TILE_STYLES },
+  eyes_type: { dir: 'face/eyes_type', styles: EYES_TYPE_TILE_STYLES },
+  eyes_details: { dir: 'face/eyes_details', styles: EYES_DETAILS_TILE_STYLES },
 });
 
 /** The picture for an option of a group, or '' when it has none (the drawn tile is used). */

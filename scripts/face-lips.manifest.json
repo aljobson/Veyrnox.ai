@@ -1,0 +1,20 @@
+{
+  "note": "Lip sheet: the sixth cell is a plain unpainted filler and is skipped.",
+  "sources": [
+    {
+      "file": "lips.jpg",
+      "rows": [
+        3,
+        3
+      ],
+      "styles": [
+        "Full",
+        "Thin",
+        "Cupid Bow",
+        "Glossy",
+        "Matte Dark",
+        null
+      ]
+    }
+  ]
+}

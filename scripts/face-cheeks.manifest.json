@@ -1,0 +1,20 @@
+{
+  "note": "Cheeks and ears share one sheet; the model drew six heads, not eight. High Cheekbones and Full Cheeks are not on it.",
+  "sources": [
+    {
+      "file": "cheeks-ears.jpg",
+      "rows": [
+        3,
+        3
+      ],
+      "styles": [
+        null,
+        "Dimples",
+        "Hollow Cheeks",
+        null,
+        null,
+        null
+      ]
+    }
+  ]
+}
