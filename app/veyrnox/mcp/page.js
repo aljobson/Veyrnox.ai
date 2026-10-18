@@ -23,13 +23,13 @@ export async function generateMetadata() {
 }
 
 // Tool names are the connector's own identifiers; each has a description key mcp.tool.<name>.
-const tools = ['list_models', 'estimate_generation', 'get_generation', 'list_generations', 'get_balance'];
+const tools = ['list_models', 'estimate_generation', 'generate_image', 'get_generation', 'list_generations', 'get_balance'];
 const publishTools = ['publish_list_brands', 'publish_list_accounts', 'publish_list_posts', 'publish_get_analytics',
   'publish_schedule_post', 'publish_reschedule_post', 'publish_cancel_post'];
 
 export default async function McpPage() {
   const { t } = await getT();
-  // The Publish tools exist only while the switch is on (ADR-0112); the read-only copy is true otherwise.
+  // The Publish tools exist only while the switch is on (ADR-0112); the other copy is true otherwise.
   const publish = publishAutomationEnabled();
   const shownTools = publish ? [...tools, ...publishTools] : tools;
   const c = (name) => (publish ? MCP_PUBLISH_COPY[`mcp.pub.${name}`] : t(`mcp.${name}`));

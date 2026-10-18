@@ -21,7 +21,7 @@ Run these without pasting an access token into logs or tickets:
 3. The Supabase authorization-server discovery document advertises authorization, token and dynamic-registration endpoints.
 4. Connect one disposable MCP client. The browser lands on `/oauth/consent`, shows that client's registered name and scopes, and denial returns to the client as a denial.
 5. Approve a new request. `list_models`, `get_balance` and `list_generations` return only that account's data.
-6. Ask for one inexpensive generation. The client shows the maximum credit estimate before the write. Altered `confirmed_credits` is refused without a debit; the correct amount creates one job; retrying the same idempotency key creates no second job.
+6. Ask for one inexpensive generation with `generate_image` (an image model at 2 credits or less). The client shows the maximum credit estimate before the write. Altered `confirmed_credits` is refused without a debit; the correct amount creates one job; retrying the same idempotency key returns the same job. A video or audio model, or a model above 2 credits, is refused before any debit (`mcp_image_only`, `mcp_price_cap`). After 40 credits in 24 hours the next call answers `mcp_daily_cap_reached` (see ADR-0100 amendment 2).
 7. Poll the job to completion. The returned asset link opens, belongs to the account and expires within 15 minutes.
 8. Revoke the client in Supabase and confirm its next MCP call is refused.
 
@@ -34,6 +34,8 @@ Seven `publish_*` tools register only while `PUBLISH_AUTOMATION_ENABLED` is on; 
 - Watch 401, 409, 429 and 5xx rates on `/api/v1/mcp` separately from tool-level errors.
 - Existing generation and asset-link rate limits are the abuse controls; MCP does not bypass them.
 - Treat repeated `credit_confirmation_mismatch` as a stale client/catalog signal, not as a generation failure.
+- Watch `mcp_daily_cap_reached`, `mcp_daily_cap_unverifiable` and `spend_check_unavailable` on `generate_image`: the first is the limit working, the other two mean the recent job list could not prove the total and nothing was spent.
+- Existing authorizations gained `generate_image` when it shipped (ADR-0100 amendment 2). If that is unwanted for an account, revoke its connection in Supabase or in the user's Account & security page.
 
 ## Rollback
 
