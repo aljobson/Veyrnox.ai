@@ -62,6 +62,12 @@ If a build starts failing after a dependency change, bisect these three first.
   (no ledger row). A new table that references `users` must be classified in
   `scripts/test-account-deletion.mjs`. The route is off unless
   `ACCOUNT_DELETION_ENABLED` is `"true"` (not in `wrangler.jsonc`: binding cap).
+- **Push tokens** (ADR-0113): `push_tokens`, `push_outbox` and `push_token_writes` are
+  reached only through the `register_push_token` / `remove_push_token` / `push_*` RPCs.
+  Pushes are sent by a per-minute sweep that reads finished jobs and writes only `push_*`
+  tables: never call the sender from a job-completion or refund path. A table that holds
+  tokens must be erased with the account (trigger on `users.deleted_at`). Off unless
+  `PUSH_NOTIFICATIONS_ENABLED` is `"true"` (staging only; not in production `wrangler.jsonc`).
 - **Free Credits** (ADR-0013): only `grant:signup` credits are free. Every
   ledger row sets `free_delta` (the part of `delta` that moved Free Credits;
   0 for anything else) and `credit_balances.free_balance` moves with it,
