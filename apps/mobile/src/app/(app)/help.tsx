@@ -14,6 +14,12 @@ export default function Help() {
                 <Row label={`Email support: ${SUPPORT_EMAIL}`} onPress={() => Linking.openURL(`mailto:${SUPPORT_EMAIL}`)} />
                 <Text style={styles.note}>For a problem with a charge or a creation, write from the address on your account. Privacy requests go to {PRIVACY_EMAIL}.</Text>
             </Section>
+            <Section title="Ask in chat">
+                <Link href="/chat" asChild>
+                    <Row label="Open chat" />
+                </Link>
+                <Text style={styles.note}>Ask a question about how the app works in a chat. Chat messages use credits as shown there.</Text>
+            </Section>
             <Section title="Content decisions">
                 <Link href="/appeals" asChild>
                     <Row label="Content decisions and appeals" />
