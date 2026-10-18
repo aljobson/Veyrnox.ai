@@ -1,7 +1,7 @@
 # ADR-0127 — Mobile: iOS privacy manifest and permission strings
 
 **Status:** Proposed 2026-10-18
-**Related:** [ADR-0106](0106-mobile-app.md), [ADR-0126](0126-mobile-ai-sharing-consent.md), `docs/mobile/M7-STORE-SUBMISSION-CHECKLIST.md` section 6
+**Related:** [ADR-0106](0106-mobile-app.md), [ADR-0128](0128-mobile-ai-sharing-consent.md), `docs/mobile/M7-STORE-SUBMISSION-CHECKLIST.md` section 6
 
 ## Context
 
