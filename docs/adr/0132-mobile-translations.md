@@ -15,6 +15,7 @@ The app had a translator (`src/lib/i18n`, eleven languages, an English catalog w
 4. **Device language without a new dependency.** `src/lib/i18n/device.ts` reads iOS's language list or Android's locale, with `Intl` as a last resort, once at start. No native module was added, so no rebuild is needed.
 5. **Only English is switched on** (`ACTIVE_LOCALES = ['en']`). Only about a fifth of the strings have a site translation, so turning a language on now would show screens in two languages. Turning one on is adding its code to `ACTIVE_LOCALES` once the localization process has returned its app-only strings (and the owner accepts the site's unreviewed translations for it). Until then nothing visible changes.
 6. **Right-to-left is not done.** Arabic needs `I18nManager.forceRTL` and a restart; it is off with the rest.
+7. **Follow-up: `expo-localization`.** The device language is read without a new dependency. `expo-localization` would read it more fully, but it is a native module: adding it needs a native rebuild and the owner's choice. Right-to-left (item 6) needs the same rebuild.
 7. Text that stays as it was: the AI-sharing consent and offline messages (their own constants), delete-confirmation texts, date and number formatting (still the device's), and every screen outside the list above.
 
 ## Not proved
