@@ -18,7 +18,7 @@ Prompts, chat messages and any photo, video or audio a person adds are sent thro
 ## Not decided here
 
 - A settings row to withdraw agreement. The person can still stop by not sending; a withdraw control is a small follow-up.
-- Chat screens: a decline there still shows chat's generic failure. Map `ConsentDeclinedError` to the same message after the chat-library PR (ADR-0126) has merged; `chat/*` was not edited here.
+- Chat: a decline shows "You need to agree to AI sharing to chat." (the conversation screen's existing error map).
 - Provider names are not listed in the sheet; the Privacy Policy covers them.
 
 ## Consequences
