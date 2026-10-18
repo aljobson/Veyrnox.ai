@@ -36,15 +36,15 @@ test('pictureTileSrc returns the file for a listed option and nothing for the re
   assert.equal(pictureTileSrc('headwear', 'Wide-Brim Hat'), '/oddlings/headwear/wide-brim-hat.webp');
   assert.equal(pictureTileSrc('hair', 'Afro'), '/oddlings/hair/afro.webp');
   assert.equal(pictureTileSrc('mouth', 'Forked Tongue'), '/oddlings/face/mouth/forked-tongue.webp');
-  assert.equal(pictureTileSrc('mouth', 'Small Mouth'), '', 'looked the same as No Teeth: keeps the drawn tile');
+  assert.equal(pictureTileSrc('mouth', 'Small Mouth'), '/oddlings/face/mouth/small-mouth.webp');
   assert.equal(pictureTileSrc('nose_shape', 'Button'), '', 'not on the close-up sheet: keeps the drawn tile');
   assert.equal(pictureTileSrc('wardrobe_style', 'Tiny Formalwear'), '/oddlings/outfits/tiny-formalwear.webp');
   assert.equal(pictureTileSrc('rendering_style', 'Hyper-Realistic'), '/oddlings/rendering/hyper-realistic.webp');
   assert.equal(pictureTileSrc('rendering_style', 'Anime'), '/oddlings/rendering/anime.webp');
-  assert.equal(pictureTileSrc('left_arm', 'None'), '', 'both arms were still drawn: keeps the drawn tile');
+  assert.equal(pictureTileSrc('left_arm', 'None'), '/oddlings/limbs/left_arm/none.webp');
   assert.equal(pictureTileSrc('brows', 'Thick'), '/oddlings/face/brows/thick.webp');
-  assert.equal(pictureTileSrc('chin_jaw', 'Cleft Chin'), '', 'drawn wrongly on the sheet: keeps the drawn tile');
-  assert.equal(pictureTileSrc('ears', 'No Ears'), '');
+  assert.equal(pictureTileSrc('chin_jaw', 'Cleft Chin'), '/oddlings/face/chin_jaw/cleft-chin.webp');
+  assert.equal(pictureTileSrc('ears', 'No Ears'), '/oddlings/face/ears/no-ears.webp');
   assert.equal(pictureTileSrc('horns', 'Antlers'), '/oddlings/face/horns/antlers.webp');
   assert.equal(pictureTileSrc('eyes_details', 'Scarred Eye'), '/oddlings/face/eyes_details/scarred-eye.webp');
   assert.equal(pictureTileSrc('horns', 'Curved'), '');
@@ -72,13 +72,15 @@ test('a right arm or leg picture is the left one mirrored: same options, differe
   const manifest = JSON.parse(readFileSync(new URL('../scripts/limb-right-arm.manifest.json', import.meta.url), 'utf8'));
   assert.ok(manifest.sources.every((source) => source.mirror === true), 'the right arm manifest must mirror');
   assert.equal(pictureTileSrc('right_leg', 'Robotic'), '/oddlings/limbs/right_leg/robotic.webp');
-  assert.equal(pictureTileSrc('left_arm', 'None'), '', 'No Arm was not drawn: keeps the drawn tile');
+  assert.equal(pictureTileSrc('right_leg', 'None'), '/oddlings/limbs/right_leg/none.webp');
   assert.equal(pictureTileSrc('face_skin_material', 'Scales'), '/oddlings/skin/face_skin_material/scales.webp');
   assert.equal(pictureTileSrc('character_type', 'Octopus'), '/oddlings/species/octopus.webp');
   assert.equal(pictureTileSrc('accessories', 'Symbols / Markings'), '/oddlings/accessories/accessories/symbols-markings.webp');
   assert.equal(pictureTileSrc('body_type', 'Fat'), '/oddlings/body/body_type/fat.webp');
   assert.equal(pictureTileSrc('body_type', 'Muscular'), '/oddlings/body/body_type/muscular.webp');
-  assert.equal(pictureTileSrc('body_type', 'Lanky'), '', 'looked the same as the slim builds: keeps the drawn tile');
+  assert.equal(pictureTileSrc('body_type', 'Lanky'), '/oddlings/body/body_type/lanky.webp');
+  assert.equal(pictureTileSrc('body_type', 'Long Torso'), '', 'looked like a normal build: keeps the drawn tile');
+  assert.equal(pictureTileSrc('proportions', 'Tiny Hands'), '', 'hands did not read as small: keeps the drawn tile');
   assert.equal(pictureTileSrc('exaggeration', 'Extreme'), '/oddlings/body/exaggeration/extreme.webp');
 });
 

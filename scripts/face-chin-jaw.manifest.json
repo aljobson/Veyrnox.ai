@@ -32,6 +32,15 @@
         null,
         null
       ]
+    },
+    {
+      "file": "cleft-chin.png",
+      "rows": [
+        1
+      ],
+      "styles": [
+        "Cleft Chin"
+      ]
     }
   ]
 }

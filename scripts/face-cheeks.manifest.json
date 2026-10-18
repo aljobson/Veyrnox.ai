@@ -32,6 +32,15 @@
         null,
         null
       ]
+    },
+    {
+      "file": "high-cheekbones.png",
+      "rows": [
+        1
+      ],
+      "styles": [
+        "High Cheekbones"
+      ]
     }
   ]
 }

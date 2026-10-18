@@ -58,6 +58,24 @@
         null,
         null
       ]
+    },
+    {
+      "file": "wide-set.png",
+      "rows": [
+        1
+      ],
+      "styles": [
+        "Wide Set"
+      ]
+    },
+    {
+      "file": "close-set.png",
+      "rows": [
+        1
+      ],
+      "styles": [
+        "Close Set"
+      ]
     }
   ]
 }

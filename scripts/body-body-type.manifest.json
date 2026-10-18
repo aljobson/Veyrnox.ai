@@ -52,6 +52,69 @@
         null,
         "Skinny"
       ]
+    },
+    {
+      "file": "slim.png",
+      "rows": [
+        1
+      ],
+      "styles": [
+        "Slim"
+      ]
+    },
+    {
+      "file": "lean.png",
+      "rows": [
+        1
+      ],
+      "styles": [
+        "Lean"
+      ]
+    },
+    {
+      "file": "very-skinny.png",
+      "rows": [
+        1
+      ],
+      "styles": [
+        "Very Skinny"
+      ]
+    },
+    {
+      "file": "lanky.png",
+      "rows": [
+        1
+      ],
+      "styles": [
+        "Lanky"
+      ]
+    },
+    {
+      "file": "compact.png",
+      "rows": [
+        1
+      ],
+      "styles": [
+        "Compact"
+      ]
+    },
+    {
+      "file": "inverted-triangle.png",
+      "rows": [
+        1
+      ],
+      "styles": [
+        "Inverted Triangle"
+      ]
+    },
+    {
+      "file": "long-legs.png",
+      "rows": [
+        1
+      ],
+      "styles": [
+        "Long Legs"
+      ]
     }
   ]
 }
