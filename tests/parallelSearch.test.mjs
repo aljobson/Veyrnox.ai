@@ -18,9 +18,13 @@ const aborting = (signal) => new Promise((_, reject) => {
     const abort = () => reject(signal.reason);
     if (signal.aborted) abort(); else signal.addEventListener('abort', abort, { once: true });
 });
-function fixture({ results, toolResult, transform, onRequest } = {}) {
-    const seen = [];
+function fixture({ results, toolResult, transform, onRequest, onDelete } = {}) {
+    const seen = [], closed = [];
     const fetchImpl = async (url, init) => {
+        if (init.method === 'DELETE') {
+            closed.push({ url: String(url), init, headers: new Headers(init.headers) });
+            return onDelete ? onDelete(closed.at(-1)) : new Response(null, { status: 204 });
+        }
         const request = JSON.parse(init.body);
         const row = { url: String(url), init, request, headers: new Headers(init.headers) };
         seen.push(row);
@@ -36,7 +40,7 @@ function fixture({ results, toolResult, transform, onRequest } = {}) {
         if (request.method === 'initialize') response.headers.set('Mcp-Session-Id', 'transport-session');
         return response;
     };
-    return { seen, fetchImpl };
+    return { seen, closed, fetchImpl };
 }
 const search = (f, over = {}) => searchWeb({ query: ' latest stable release ', sessionId: SESSION, modelName: MODEL, fetchImpl: f.fetchImpl, ...over });
 async function errorCode(promise) {
@@ -86,6 +90,30 @@ test('initializes, discovers and calls web_search with UA on every request and n
     assert.deepEqual(call.params.arguments, {
         objective: 'latest stable release', search_queries: ['latest stable release'], session_id: SESSION, model_name: MODEL,
     });
+    assert.equal(f.closed.length, 1);
+    assert.equal(f.closed[0].url, PARALLEL_MCP_URL);
+    assert.equal(f.closed[0].init.redirect, 'error');
+    assert.equal(f.closed[0].headers.get('mcp-session-id'), 'transport-session');
+    assert.equal(f.closed[0].headers.get('mcp-protocol-version'), protocol);
+    assert.equal(f.closed[0].headers.get('user-agent'), PARALLEL_USER_AGENT);
+    assert.equal(f.closed[0].headers.has('authorization'), false);
+});
+
+test('session cleanup errors and deadline do not discard a successful search', async () => {
+    for (const onDelete of [() => { throw new Error('cleanup failure'); }, () => new Response(null, { status: 405 }), row => aborting(row.init.signal)]) {
+        const f = fixture({ onDelete });
+        assert.equal((await search(f, { timeoutMs: 30 })).results[0].text, 'Excerpt 1');
+        assert.equal(f.closed.length, 1);
+    }
+});
+
+test('caller cancellation during session cleanup still propagates the caller reason', async () => {
+    const ac = new AbortController(), reason = new DOMException('Caller stopped', 'AbortError');
+    const f = fixture({ onDelete: row => {
+        queueMicrotask(() => ac.abort(reason));
+        return aborting(row.init.signal);
+    } });
+    await assert.rejects(search(f, { signal: ac.signal }), err => err === reason);
 });
 
 test('supports streamed SSE envelopes split into small CRLF chunks', async () => {

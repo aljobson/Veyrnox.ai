@@ -128,7 +128,21 @@ export async function searchWeb({ query, sessionId, modelName, signal, timeoutMs
         if (err instanceof SearchError) throw err;
         throw new SearchError('search_unavailable');
     } finally {
-        clearTimeout(timer);
-        signal?.removeEventListener('abort', stop);
+        try {
+            // Terminate an advertised MCP session within the same total deadline.
+            // Cleanup failures must not replace useful results or the original error.
+            if (headers['Mcp-Session-Id'] && !ac.signal.aborted) {
+                const response = await fetchImpl(PARALLEL_MCP_URL, {
+                    method: 'DELETE', redirect: 'error', signal: ac.signal,
+                    headers: { ...headers, 'MCP-Protocol-Version': headers['MCP-Protocol-Version'] || PROTOCOL },
+                });
+                void response.body?.cancel().catch(() => {});
+            }
+        } catch { /* best-effort MCP session cleanup */ }
+        finally {
+            clearTimeout(timer);
+            signal?.removeEventListener('abort', stop);
+        }
+        if (signal?.aborted) throw signal.reason;
     }
 }
