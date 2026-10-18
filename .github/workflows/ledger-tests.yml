@@ -35,6 +35,7 @@ on:
       - "scripts/test-cinema-operator-actions.mjs"
       - "scripts/test-cinema-voting.mjs"
       - "scripts/test-cinema-comments.mjs"
+      - "scripts/test-cinema-blocks.mjs"
       - "scripts/test-cinema-story-polls.mjs"
       - "scripts/test-cinema-discovery.mjs"
       - "scripts/test-cinema-posters.mjs"
@@ -222,6 +223,7 @@ jobs:
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-publication.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-voting.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-comments.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-blocks.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-story-polls.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-discovery.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-posters.mjs

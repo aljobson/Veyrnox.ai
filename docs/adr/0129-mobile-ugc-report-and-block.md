@@ -1,6 +1,6 @@
 # ADR-0129 — Mobile: reporting and blocking for content from other people
 
-**Status:** Proposed 2026-10-18 (needs the owner's decision on block)
+**Status:** Point 2 replaced by [ADR-0135](0135-cinema-block-users.md) (2026-10-18)
 **Related:** [ADR-0110](0110-mobile-account-and-safety.md) (report, block deferred), [ADR-0106](0106-mobile-app.md), `docs/mobile/M7-STORE-SUBMISSION-CHECKLIST.md` section 8; Apple App Review Guideline 1.2 (names AI content creation apps as user-generated content apps), Google Play user-generated content and AI-generated content policies
 
 ## Context
