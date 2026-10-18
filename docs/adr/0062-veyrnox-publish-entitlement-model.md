@@ -40,6 +40,16 @@ scheduling remains free. The paid Publish Plan unlocks full analytics history
 and best-time recommendations through the independent Stripe entitlement in
 this ADR; the retired $19 account bundle and $4 add-on do not return.
 
+## Correction — 18 October 2026
+
+The two amendments above say five accounts are free. The shipped code does
+not: `FREE_SOCIAL_ACCOUNT_LIMIT` is 1 and `PUBLISH_SOCIAL_ACCOUNT_LIMIT` is 5
+(`lib/social/accountAllowance.js`, enforced by migration 0169). Free keeps one
+connected account and Post now; the $15/month Publish Plan allows five accounts,
+scheduling, 366-day analytics and best-time recommendations. The owner
+confirmed one free account on 18 October 2026. Public copy (`/publish`) follows
+the code.
+
 ## Context
 
 ADR-0061 specified *what* Veyrnox Publish does and explicitly refused to decide *how

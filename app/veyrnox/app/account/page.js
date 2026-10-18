@@ -8,6 +8,7 @@ import { PasskeyPanel } from '../../_components/PasskeyPanel';
 import { ReferralPanel } from '../../_components/ReferralPanel';
 import { OAuthGrantsPanel } from '../../_components/OAuthGrantsPanel';
 import { ConfirmDialog } from '../../_components/ConfirmDialog';
+import { DeleteAccountPanel } from '../../_components/DeleteAccountPanel';
 import { getStoredUserId, onSessionChange } from '../../../lib/authClient';
 import { requestPasswordCode, changePassword, revokeSessions } from '../../../lib/accountSecurity';
 
@@ -78,13 +79,13 @@ function AccountControls() {
     </section>
     <section className="rounded-2xl border border-vx-border p-5">
       <h2 className="font-bold mb-2">Your data</h2>
-      <p className="text-sm text-vx-fg-muted mb-4">Request an export or account deletion by email. These links open a draft; your request is submitted when you send it. Replies and progress arrive by email. Some payment records must be retained as described in our Privacy Policy.</p>
+      <p className="text-sm text-vx-fg-muted mb-4">Request an export by email. This link opens a draft; your request is submitted when you send it. Replies and progress arrive by email. Some payment records must be retained as described in our Privacy Policy.</p>
       <div className="flex flex-wrap gap-4 text-sm underline">
         <a href="mailto:privacy@veyrnox.com?subject=Veyrnox.ai%20data%20export%20request">Request data export</a>
-        <a href="mailto:privacy@veyrnox.com?subject=Veyrnox.ai%20account%20deletion%20request">Request account deletion</a>
         <a href="/legal/privacy">Privacy Policy</a>
       </div>
     </section>
+    <DeleteAccountPanel />
     {confirm && <ConfirmDialog title={confirm === 'global' ? 'Sign out everywhere?' : 'Sign out other devices?'} body="Those devices will need to sign in again. Your credits and library remain on your account." confirmLabel="Sign out" onCancel={() => setConfirm(null)} onConfirm={() => { const scope = confirm; setConfirm(null); run(() => revokeSessions(scope), 'Other sign-ins have been ended.'); }} />}
   </div>;
 }

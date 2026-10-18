@@ -29,6 +29,7 @@ import { refuseNextData } from './lib/nextDataGuard.js';
 import { refuseCdnCgi } from './lib/cdnCgiGuard.js';
 import { dropInternalHeaders } from './lib/internalRequestHeaders.js';
 import { runScheduledBackfill } from './lib/scheduledBackfill.js';
+import { runPushSweep } from './lib/pushNotifications.js';
 import { removeReservedUpload, sweepUploadReservations } from './lib/uploadReservations.js';
 import { sweepSocialUploads } from './lib/social/uploadSweep.js';
 import { sweepUploads, sweepConsumedUploads } from './lib/uploadSweep.js';
@@ -74,6 +75,11 @@ export default {
             ...(env.CONTENT_SCAN_ENABLED === 'true' ? [observeRecovery('content_scan', () => drainContentScans(
                 { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY }, r2EnvFrom(env), env,
             ), env)] : []),
+            // ADR-0113: tells people a generation finished. It only reads finished jobs, never
+            // touches the ledger, and returns instead of throwing; flag off = does nothing.
+            ...(event.cron === '* * * * *' ? [runPushSweep({
+                env, cfg: { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY },
+            })] : []),
             ...(event.cron === '*/5 * * * *' ? [
             ...(env.FAL_DISPATCH_SCHEMA_ENABLED === 'true'
                 ? [observeRecovery('fal_dispatch', () => runFalDispatch(env), env)] : []),
