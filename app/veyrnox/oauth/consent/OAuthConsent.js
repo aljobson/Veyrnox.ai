@@ -68,7 +68,7 @@ export function OAuthConsent({ authorizationId, publishOpen = false }) {
         <ul className="mt-3 space-y-2 text-sm text-vx-fg-body">
           <li>View models, generation history and credit balance</li>
           <li>Estimate generation costs before anything is charged</li>
-          <li>Start one text-to-image generation at a time that spends your credits: at most 2 credits each and 40 credits a day, and only at the exact price it has shown you</li>
+          <li>Start one text-to-image generation at a time that spends your credits: at most 2 credits each, and only at the exact price it has shown you</li>
           <li>Retrieve short-lived links to your finished assets</li>
           {publishOpen && <li>View your connected accounts, scheduled and published posts and analytics, and schedule, reschedule or cancel posts (Publish Plan). It cannot publish immediately.</li>}
         </ul>
