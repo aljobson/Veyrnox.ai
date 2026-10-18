@@ -1,10 +1,10 @@
-// Picture tiles for the catalog groups that have generated pictures: hair (one head per style), outfits (one full-body figure per outfit),
+// Picture tiles for the catalog groups that have generated pictures: hair (one head per style), outfits (one full-body figure per outfit), neck styling and limbs,
 // headwear (one head with the item) and the face groups (all of facial hair, face features, horns, eye type, eye details and brows and lips, most of head shape, eye shape, nose shape, mouth, chin and jaw, cheeks and ears). A listed option has a file (pinned by a test); any other option keeps its drawn tile.
 import { HAIR_TILE_STYLES, hairTileSlug, hairTileSrc } from './oddlingHairTiles.js';
 
-/** Outfits with a picture. Ceremonial Sportswear, Tiny Formalwear, Soft Sculpture and Weather Couture are not generated yet. */
+/** Outfits with a picture. Tiny Formalwear and Weather Couture are not generated yet (the sheet drew them as an ordinary suit and a checked suit). */
 export const OUTFIT_TILE_STYLES = Object.freeze([
-  'Office Surrealist', 'Quilted Royalty', 'Utility Pop', 'Domestic Futurist', 'Modern Basics', 'Streetwear', 'Y2K', 'Goth', 'Retro', 'Sporty', 'Business Suit',
+  'Office Surrealist', 'Quilted Royalty', 'Utility Pop', 'Domestic Futurist', 'Ceremonial Sportswear', 'Soft Sculpture', 'Modern Basics', 'Streetwear', 'Y2K', 'Goth', 'Retro', 'Sporty', 'Business Suit',
 ]);
 export const HEADWEAR_TILE_STYLES = Object.freeze(['Baseball Cap', 'Beanie', 'Wide-Brim Hat', 'Bucket Hat', 'Headphones']);
 
@@ -24,6 +24,9 @@ export const HORNS_TILE_STYLES = Object.freeze(['Small Horns', 'Big Horns', 'Ant
 export const FACE_FEATURES_TILE_STYLES = Object.freeze(['Tiny Brows', 'One Brow', 'Huge Lashes', 'Glossy Cheeks', 'Painted Blush', 'Metallic Freckles', 'Beauty Mark Constellation']);
 export const EYES_TYPE_TILE_STYLES = Object.freeze(['Human', 'Reptile', 'Mechanical']);
 export const EYES_DETAILS_TILE_STYLES = Object.freeze(['Heterochromia', 'Blind Eye', 'Scarred Eye', 'Glowing Eye']);
+// Neck styling (all six) and limbs. A right arm or leg picture is the left one mirrored; No Arm and No Leg were not drawn, so they keep the drawn tile.
+export const NECK_TILE_STYLES = Object.freeze(['Bare', 'Tower Collar', 'Ruff', 'Stacked Rings', 'Bow Sculpture', 'Feather Halo']);
+export const LIMB_TILE_STYLES = Object.freeze(['Normal', 'Cute Prosthetic', 'Robotic', 'Prosthetic', 'Mechanical']);
 export const MOUTH_TILE_STYLES = Object.freeze(['Large Mouth', 'No Teeth', 'Unique Teeth', 'Gap Teeth', 'Gold Tooth', 'Bright Smile', 'Sharp Teeth', 'Forked Tongue', 'Two Tongues']);
 
 /** Catalog group id -> folder under /oddlings and the options that have a file there. */
@@ -40,6 +43,11 @@ export const PICTURE_TILES = Object.freeze({
   chin_jaw: { dir: 'face/chin_jaw', styles: CHIN_JAW_TILE_STYLES },
   cheeks: { dir: 'face/cheeks', styles: CHEEKS_TILE_STYLES },
   ears: { dir: 'face/ears', styles: EARS_TILE_STYLES },
+  neck: { dir: 'neck', styles: NECK_TILE_STYLES },
+  left_arm: { dir: 'limbs/left_arm', styles: LIMB_TILE_STYLES },
+  right_arm: { dir: 'limbs/right_arm', styles: LIMB_TILE_STYLES },
+  left_leg: { dir: 'limbs/left_leg', styles: LIMB_TILE_STYLES },
+  right_leg: { dir: 'limbs/right_leg', styles: LIMB_TILE_STYLES },
   facial_hair: { dir: 'face/facial_hair', styles: FACIAL_HAIR_TILE_STYLES },
   horns: { dir: 'face/horns', styles: HORNS_TILE_STYLES },
   face_features: { dir: 'face/face_features', styles: FACE_FEATURES_TILE_STYLES },

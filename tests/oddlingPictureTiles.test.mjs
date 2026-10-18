@@ -50,10 +50,24 @@ test('pictureTileSrc returns the file for a listed option and nothing for the re
 });
 
 test('the outfit and headwear manifests name only options that have a picture, and skip the rest with null', () => {
-  for (const [file, group] of [['outfit-tiles.manifest.json', 'wardrobe_style'], ['headwear-tiles.manifest.json', 'headwear'], ['face-head-shape.manifest.json', 'head_shape'], ['face-eye-shape.manifest.json', 'eye_shape'], ['face-nose-shape.manifest.json', 'nose_shape'], ['face-mouth.manifest.json', 'mouth'], ['face-brows.manifest.json', 'brows'], ['face-lips.manifest.json', 'lips'], ['face-chin-jaw.manifest.json', 'chin_jaw'], ['face-cheeks.manifest.json', 'cheeks'], ['face-ears.manifest.json', 'ears'], ['face-facial-hair.manifest.json', 'facial_hair'], ['face-horns.manifest.json', 'horns'], ['face-face-features.manifest.json', 'face_features'], ['face-eyes-type.manifest.json', 'eyes_type'], ['face-eyes-details.manifest.json', 'eyes_details']]) {
+  for (const [file, group] of [['outfit-tiles.manifest.json', 'wardrobe_style'], ['headwear-tiles.manifest.json', 'headwear'], ['face-head-shape.manifest.json', 'head_shape'], ['face-eye-shape.manifest.json', 'eye_shape'], ['face-nose-shape.manifest.json', 'nose_shape'], ['face-mouth.manifest.json', 'mouth'], ['face-brows.manifest.json', 'brows'], ['face-lips.manifest.json', 'lips'], ['face-chin-jaw.manifest.json', 'chin_jaw'], ['face-cheeks.manifest.json', 'cheeks'], ['face-ears.manifest.json', 'ears'], ['face-facial-hair.manifest.json', 'facial_hair'], ['face-horns.manifest.json', 'horns'], ['face-face-features.manifest.json', 'face_features'], ['face-eyes-type.manifest.json', 'eyes_type'], ['face-eyes-details.manifest.json', 'eyes_details'], ['limb-neck.manifest.json', 'neck'], ['limb-left-arm.manifest.json', 'left_arm'], ['limb-right-arm.manifest.json', 'right_arm'], ['limb-left-leg.manifest.json', 'left_leg'], ['limb-right-leg.manifest.json', 'right_leg']]) {
     const manifest = JSON.parse(readFileSync(new URL(`../scripts/${file}`, import.meta.url), 'utf8'));
     const named = manifest.sources.flatMap((source) => source.styles).filter(Boolean);
     assert.deepEqual(named.sort(), [...PICTURE_TILES[group].styles].sort(), `${file} and the picture list differ`);
     for (const source of manifest.sources) assert.equal(source.styles.length, source.rows.reduce((a, b) => a + b, 0), `${file}/${source.file}: cell count`);
   }
+});
+
+test('a right arm or leg picture is the left one mirrored: same options, different pixels, so the changed limb is on the other side', () => {
+  for (const [left, right] of [['left_arm', 'right_arm'], ['left_leg', 'right_leg']]) {
+    assert.deepEqual(PICTURE_TILES[left].styles, PICTURE_TILES[right].styles);
+    for (const style of PICTURE_TILES[left].styles.filter((name) => name !== 'Normal')) {
+      const a = readFileSync(new URL(`${hairTileSlug(style)}.webp`, dirOf(PICTURE_TILES[left]))), b = readFileSync(new URL(`${hairTileSlug(style)}.webp`, dirOf(PICTURE_TILES[right])));
+      assert.ok(!a.equals(b), `${left}/${style}: the mirrored picture is byte-identical to the original`);
+    }
+  }
+  const manifest = JSON.parse(readFileSync(new URL('../scripts/limb-right-arm.manifest.json', import.meta.url), 'utf8'));
+  assert.ok(manifest.sources.every((source) => source.mirror === true), 'the right arm manifest must mirror');
+  assert.equal(pictureTileSrc('right_leg', 'Robotic'), '/oddlings/limbs/right_leg/robotic.webp');
+  assert.equal(pictureTileSrc('left_arm', 'None'), '', 'No Arm was not drawn: keeps the drawn tile');
 });
