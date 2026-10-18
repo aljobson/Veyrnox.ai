@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { MCP_GENERATION_LIMITS, startMcpGeneration } from '../lib/mcpGenerate.js';
+import { startMcpGeneration } from '../lib/mcpGenerate.js';
 
 const IMAGE = { id: 'flux-2-pro-1k-kie', modality: 'text-to-image', credits: 2, durations: [5] };
-const ARGS = { model_id: IMAGE.id, prompt: 'A plain grey mannequin head', confirmed_credits: 2, idempotency_key: 'mcp-trial-0001' };
+const ARGS = { model_id: IMAGE.id, prompt: 'A plain grey mannequin head', confirmed_credits: 2, user_approved: true, idempotency_key: 'mcp-trial-0001' };
 
 // Every dependency is a fake that records its calls, so a test can prove what did NOT happen.
 function harness({ model = IMAGE, created = { status: 202, body: { job_id: 'new-job', state: 'queued' } }, catalogFails = false } = {}) {
@@ -46,12 +46,17 @@ test('only text-to-image models may be started from the connector, and nothing e
   }
 });
 
-test('a model dearer than the per-call limit is refused before any spend', async () => {
-  const { result, calls } = await run({ ...ARGS, confirmed_credits: 3 }, { model: { ...IMAGE, credits: 3 } });
-  assert.deepEqual([result.ok, result.status, result.body.error, result.body.max_credits_per_call, result.body.expected_credits], [false, 400, 'mcp_price_cap', 2, 3]);
-  assert.equal(calls.create.length, 0);
-  const exact = await run({ ...ARGS, confirmed_credits: 2 }, { model: { ...IMAGE, credits: MCP_GENERATION_LIMITS.maxCreditsPerCall } });
-  assert.equal(exact.result.ok, true, 'a model at exactly the limit is allowed');
+test('without the user\'s approval nothing is sent, even with the right price', async () => {
+  for (const user_approved of [undefined, false, 'true', 1]) {
+    const { result, calls } = await run({ ...ARGS, user_approved });
+    assert.deepEqual([result.ok, result.status, result.body.error, calls.create.length], [false, 400, 'approval_required', 0], String(user_approved));
+  }
+});
+
+test('there is no per-call price cap: a dear image model is allowed at its exact price', async () => {
+  const { result, calls } = await run({ ...ARGS, confirmed_credits: 40 }, { model: { ...IMAGE, credits: 40 } });
+  assert.equal(result.ok, true);
+  assert.equal(calls.create[0].confirmed_credits, 40);
 });
 
 test('the confirmed price must equal the live price exactly; any difference is a refusal with no spend', async () => {
@@ -82,7 +87,3 @@ test('a refusal from the generation route is passed through untouched, so its ow
   }
 });
 
-test('the per-call limit is small, fixed and frozen, and there is no daily cap setting', () => {
-  assert.deepEqual({ ...MCP_GENERATION_LIMITS }, { maxCreditsPerCall: 2 });
-  assert.ok(Object.isFrozen(MCP_GENERATION_LIMITS));
-});
