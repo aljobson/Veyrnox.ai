@@ -62,7 +62,7 @@ export default function Library() {
 
     return (
         <View style={styles.screen}>
-            <Stack.Screen options={{ title: 'Library' }} />
+            <Stack.Screen options={{ title: 'Library', headerRight: () => <Pressable accessibilityRole="button" accessibilityLabel="Video files: film masters and editor renders" style={touchTarget} onPress={() => router.push('/library/files')}><Text style={{ color: colors.accent, fontSize: 16 }}>Video files</Text></Pressable> }} />
             {failed ? (
                 <Pressable accessibilityRole="button" style={touchTarget} onPress={load}>
                     <Text style={styles.error}>Could not load your library. Tap to retry.</Text>
