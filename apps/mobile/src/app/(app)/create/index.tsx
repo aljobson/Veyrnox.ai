@@ -28,6 +28,10 @@ export default function Create() {
     return (
         <View style={styles.screen}>
             <Stack.Screen options={{ title: 'Create' }} />
+            <Pressable accessibilityRole="button" style={styles.templates} onPress={() => router.push('/create/presets')}>
+                <Text style={styles.name}>Templates</Text>
+                <Text style={styles.muted}>Start from a ready-made idea</Text>
+            </Pressable>
             <View style={styles.tabs}>
                 {KINDS.map((k) => (
                     <Pressable key={k.kind} accessibilityRole="button" style={[styles.tab, kind === k.kind && styles.tabOn]} onPress={() => setKind(k.kind)}>
@@ -69,6 +73,7 @@ export default function Create() {
 
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background, padding: 16, gap: 12 },
+    templates: { padding: 14, borderRadius: 12, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, gap: 2 },
     tabs: { flexDirection: 'row', gap: 8 },
     tab: { flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
     tabOn: { backgroundColor: colors.accent, borderColor: colors.accent },

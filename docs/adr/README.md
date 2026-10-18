@@ -6,6 +6,7 @@ Phase-0 decision-support documents for the target architecture at `/Users/aljobs
 
 | ADR | Status | Summary | Blocks |
 |-----|--------|---------|--------|
+| [ADR-0120 — Mobile: Templates](0120-mobile-templates.md) | **Proposed 2026-10-18** | A Templates screen from the anonymous `GET /api/presets`: server price, poster, what each needs; tapping opens the existing form with the prompt and length filled in. No server change, no dependency. | — |
 | [ADR-0117 — Mobile: Auto Short in Create](0117-mobile-auto-short.md) | **Proposed 2026-10-18** | The `auto-short-32s` model (one `topic` input, 110 Credits) shown in the app; the form sends text under the model's declared key. No server change. | — |
 | [ADR-0115 — Mobile: Referrals screen](0115-mobile-referrals.md) | **Proposed 2026-10-18** | Code, share link, friend count and a field for a friend's code, on the existing referral routes. No server change, no new dependency. | — |
 | [ADR-0118 — Mobile: Video from a brief](0118-mobile-video-agent.md) | **Proposed 2026-10-18** | The video agent in the app: brief, a free plan with the server's price and 30-minute expiry, then Approve. No server change, no dependency. | — |
