@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Link, Stack, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../auth/AuthProvider';
 import { useBilling } from '../../billing/BillingProvider';
@@ -44,7 +44,7 @@ export default function Home() {
     );
 
     return (
-        <View style={styles.screen}>
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.screen} keyboardShouldPersistTaps="handled">
             <Stack.Screen options={{ headerTitle: () => <Logo size={24} /> }} />
             <Text style={styles.label}>{t('label.Credits')}</Text>
             {balance ? (
@@ -106,12 +106,13 @@ export default function Home() {
                     <Text style={styles.signOutText}>{t('home.account')}</Text>
                 </Pressable>
             </Link>
-        </View>
+        </ScrollView>
     );
 }
 
 const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: colors.background, padding: 24, gap: 8 },
+    scroll: { flex: 1, backgroundColor: colors.background },
+    screen: { flexGrow: 1, backgroundColor: colors.background, padding: 24, gap: 8 },
     label: { color: colors.muted, fontSize: 14 },
     value: { color: colors.money, fontSize: 48, fontWeight: '700' },
     muted: { color: colors.muted },

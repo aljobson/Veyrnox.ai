@@ -8,7 +8,9 @@ export function Logo({ size = 28, wordmark = true }: { size?: number; wordmark?:
         <View style={styles.row} accessibilityRole="header" accessibilityLabel="Veyrnox.ai">
             <Image source={require('../../assets/logo-mark.png')} style={{ width: size, height: size * 0.94 }} contentFit="contain" />
             {wordmark ? (
-                <Text style={[styles.word, { fontSize: size * 0.62 }]}>
+                // The wordmark is part of the brand mark, a fixed-size picture of the name beside a fixed-size icon, so it does not follow
+                // the system text size (the row is read as "Veyrnox.ai" by its label).
+                <Text style={[styles.word, { fontSize: size * 0.62 }]} maxFontSizeMultiplier={1}>
                     VEYRNOX<Text style={styles.ai}>.ai</Text>
                 </Text>
             ) : null}

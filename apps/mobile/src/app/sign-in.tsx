@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Link, Redirect, useRouter } from 'expo-router';
 import { useAuth } from '../auth/AuthProvider';
 import { Logo } from '../components/Logo';
@@ -12,6 +13,8 @@ import { splitSlots, t } from '../lib/i18n';
 export default function SignIn() {
     const { appleNativeAvailable, signInWithApple, signInWithOAuth, signInWithEmail, status } = useAuth();
     const router = useRouter();
+    // This screen has no navigation bar, so it keeps clear of the status bar and home indicator itself.
+    const insets = useSafeAreaInsets();
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [agreed, setAgreed] = useState(false);
@@ -33,7 +36,7 @@ export default function SignIn() {
     if (status === 'signedIn') return <Redirect href="/(app)" />;
 
     return (
-        <View style={styles.screen}>
+        <ScrollView style={styles.scroll} contentContainerStyle={[styles.screen, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]} keyboardShouldPersistTaps="handled">
             <Logo size={44} />
             <Text style={styles.subtitle}>{t('signIn.subtitle')}</Text>
             <Pressable
@@ -90,12 +93,13 @@ export default function SignIn() {
             ) : null}
             {busy ? <ActivityIndicator color={colors.accent} style={styles.spinner} accessibilityLabel={t('signIn.busy')} /> : null}
             {error ? <Text style={styles.error} accessibilityRole="alert" accessibilityLiveRegion="polite">{error}</Text> : null}
-        </View>
+        </ScrollView>
     );
 }
 
 const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: colors.background, padding: 24, justifyContent: 'center', gap: 12 },
+    scroll: { flex: 1, backgroundColor: colors.background },
+    screen: { flexGrow: 1, backgroundColor: colors.background, padding: 24, justifyContent: 'center', gap: 12 },
     title: { color: colors.text, fontSize: 32, fontWeight: '700' },
     subtitle: { color: colors.muted, fontSize: 16, marginBottom: 16 },
     button: {

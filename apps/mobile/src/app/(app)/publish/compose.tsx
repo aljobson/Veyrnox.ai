@@ -112,7 +112,7 @@ export default function Compose() {
         <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
             <Stack.Screen options={{ title: 'New post' }} />
             <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-                <Text style={styles.heading}>1. Creation</Text>
+                <Text style={styles.heading} accessibilityRole="header">1. Creation</Text>
                 {picks.length === 0 ? <Text style={styles.muted}>No finished images or videos yet. Make one in Create first.</Text> : null}
                 {picks.slice(0, 30).map((p) => (
                     <Pressable key={p.job.job_id} accessibilityRole="button" accessibilityState={{ selected: chosen?.job.job_id === p.job.job_id }} style={[styles.row, chosen?.job.job_id === p.job.job_id && styles.rowOn]} onPress={() => { setChosen(p); setAccountIds([]); }}>
@@ -123,7 +123,7 @@ export default function Compose() {
 
                 {chosen ? (
                     <>
-                        <Text style={styles.heading}>2. Accounts</Text>
+                        <Text style={styles.heading} accessibilityRole="header">2. Accounts</Text>
                         {eligible.length === 0 ? <Text style={styles.muted}>No connected account can post a {chosen.mediaType} yet. Connect one on veyrnox.ai.</Text> : null}
                         <View style={styles.chips}>
                             {eligible.map((a) => (
@@ -133,12 +133,12 @@ export default function Compose() {
                             ))}
                         </View>
 
-                        <Text style={styles.heading}>3. Text</Text>
-                        <TextInput style={styles.input} multiline value={text} onChangeText={setText} placeholder="Write the caption" placeholderTextColor={colors.muted} maxLength={MAX_TEXT} />
+                        <Text style={styles.heading} accessibilityRole="header">3. Text</Text>
+                        <TextInput style={styles.input} multiline value={text} onChangeText={setText} placeholder="Write the caption" accessibilityLabel="Caption" placeholderTextColor={colors.muted} maxLength={MAX_TEXT} />
                         <Text style={styles.muted}>{text.length} / {MAX_TEXT}</Text>
                         {warn ? <Text style={styles.warn}>{warn}</Text> : null}
 
-                        <Text style={styles.heading}>4. When</Text>
+                        <Text style={styles.heading} accessibilityRole="header">4. When</Text>
                         <View style={styles.chips}>
                             <Pressable accessibilityRole="button" style={[styles.chip, !schedule && styles.chipOn]} onPress={() => setSchedule(false)}><Text style={[styles.chipText, !schedule && styles.chipTextOn]}>Post now</Text></Pressable>
                             <Pressable accessibilityRole="button" style={[styles.chip, schedule && styles.chipOn]} onPress={() => setSchedule(true)}><Text style={[styles.chipText, schedule && styles.chipTextOn]}>Schedule</Text></Pressable>

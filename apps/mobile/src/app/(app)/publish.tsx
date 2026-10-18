@@ -69,7 +69,7 @@ export default function Publish() {
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.body}>
             <Stack.Screen options={{ title: 'Publish Plan' }} />
-            <Text style={styles.title}>Publish more, everywhere</Text>
+            <Text style={styles.title} accessibilityRole="header">Publish more, everywhere</Text>
             {BENEFITS.map((b) => (
                 <Text key={b} style={styles.benefit}>✓  {b}</Text>
             ))}
