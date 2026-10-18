@@ -182,6 +182,15 @@ createServer(async (req, res) => {
         console.log('MOCK created post', id, body.publishNow === true ? 'now' : 'scheduled');
         return send(res, 201, { post_id: id, idempotent: false, target_count: body.accountIds.length });
     }
+    // Drafts (ADR-0139): two in one batch and one alone; read-only here.
+    if (path === '/api/v1/social/drafts' && req.method === 'GET') {
+        const B = '44444444-4444-4444-8444-444444444444';
+        return send(res, 200, { brand_id: 'b1', approvalEnabled: true, drafts: [
+            { id: 'dr-1', draft_batch_id: B, scheduled_at: '2026-10-23T09:00:00Z', global_text: 'Monday motivation: the studio is open and the kettle is on.', created_at: '2026-10-18T09:00:00Z', media: [{ media_type: 'image', job_id: 'j1' }], networks: ['instagram', 'linkedin'] },
+            { id: 'dr-2', draft_batch_id: B, scheduled_at: '2026-10-24T12:00:00Z', global_text: 'Three tips for softer product light.', created_at: '2026-10-18T09:00:01Z', media: [], networks: ['linkedin'] },
+            { id: 'dr-3', draft_batch_id: null, scheduled_at: null, global_text: 'Draft with no batch or time yet.', created_at: '2026-10-17T09:00:00Z', media: [{ media_type: 'video', job_id: 'j2' }], networks: [] },
+        ] });
+    }
     if (path === '/api/v1/social/posts' && req.method === 'GET') return send(res, 200, { brand_id: 'b1', posts: state.socialPosts.map(({ key, updated_at, ...p }) => p) });
     m = path.match(/^\/api\/v1\/social\/posts\/([^/]+)$/);
     if (m && req.method === 'GET') {

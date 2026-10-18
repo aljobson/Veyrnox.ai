@@ -238,6 +238,22 @@ const en = {
     'approvals.err.rate': 'Too many requests. Wait a moment and try again.',
     'approvals.err.network': 'No connection. Try again.',
     'approvals.err.later': 'Approvals are not available right now. Try again later.',
+
+    // App-only: Publish drafts (read-only).
+    'drafts.title': 'Drafts',
+    'drafts.intro': 'Posts waiting for someone to approve or discard them. Approving schedules real posts and discarding deletes them, so both are done on veyrnox.ai for now.',
+    'drafts.none': 'No drafts are waiting.',
+    'drafts.noText': '(no text)',
+    'drafts.plannedFor': 'Planned for {when}',
+    'drafts.inBatch.one': '{count} draft in this batch',
+    'drafts.inBatch.other': '{count} drafts in this batch',
+    'drafts.noBatch.one': '{count} draft, not in a batch',
+    'drafts.noBatch.other': '{count} drafts, not in a batch',
+    'drafts.openWeb': 'Review drafts on veyrnox.ai',
+    'drafts.err.brand': 'That brand is not available to you. Choose another in Brand.',
+    'drafts.err.rate': 'Too many requests. Wait a moment and try again.',
+    'drafts.err.network': 'No connection. Try again.',
+    'drafts.err.later': 'Drafts are not available right now. Try again later.',
 } as const;
 
 export default en;
