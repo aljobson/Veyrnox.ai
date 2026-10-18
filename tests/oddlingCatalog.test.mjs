@@ -56,7 +56,7 @@ test('each group gets the right kind of control, and drawn groups are exactly th
   assert.deepEqual(drawn, Object.keys(TILE_FOCUS).sort(), 'a group is drawn exactly when it has a crop');
   for (const id of ['hair', 'headwear', 'wardrobe_style', 'body_type', 'head_shape', 'brows', 'nose_shape', 'mouth', 'facial_hair', 'eye_shape']) assert.equal(tileKind(id), 'mannequin', id);
   assert.equal(tileFocus('nose_shape'), 'face'); assert.equal(tileFocus('hair'), 'head'); assert.equal(tileFocus('body_type'), 'body'); assert.equal(tileFocus('unknown'), 'body');
-  assert.ok(Object.values(TILE_FOCUS).every((focus) => ['face', 'head', 'body'].includes(focus)));
+  assert.ok(Object.values(TILE_FOCUS).every((focus) => ['face', 'head', 'neck', 'armLeft', 'armRight', 'legLeft', 'legRight', 'body'].includes(focus)));
   assert.deepEqual(Object.keys(CATEGORY_FOCUS).sort(), CATALOG_CATEGORIES.map((c) => c.id).sort());
   assert.equal(tileKind('accessories'), 'icon', 'a group with no drawing yet falls back to icon tiles');
 });
