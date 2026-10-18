@@ -1,0 +1,37 @@
+{
+  "note": "Skin materials. The sheet drew six heads, not eight, and merged scales with fur (silver scales over a fur border), so Fur and Metallic have no picture. Human Skin is the plain smooth head from the patterns sheet.",
+  "sources": [
+    {
+      "file": "materials.jpg",
+      "rows": [
+        3,
+        3
+      ],
+      "styles": [
+        "Scales",
+        "Amphibian",
+        "Fish Skin",
+        "Porcelain",
+        "Glass",
+        null
+      ]
+    },
+    {
+      "file": "patterns.jpg",
+      "rows": [
+        4,
+        4
+      ],
+      "styles": [
+        "Human Skin",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    }
+  ]
+}

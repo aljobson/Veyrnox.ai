@@ -1,0 +1,37 @@
+{
+  "note": "Skin conditions on warm beige mannequin heads. Burns came out as glossy skin with white brows, so Burns keeps the drawn tile. Wrinkled is the age-lined head from the materials sheet.",
+  "sources": [
+    {
+      "file": "conditions.jpg",
+      "rows": [
+        4,
+        4
+      ],
+      "styles": [
+        "Vitiligo",
+        "Pigmentation",
+        "Freckles",
+        "Birthmarks",
+        "Scars",
+        null,
+        "Albinism",
+        "Cracked Skin"
+      ]
+    },
+    {
+      "file": "materials.jpg",
+      "rows": [
+        3,
+        3
+      ],
+      "styles": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        "Wrinkled"
+      ]
+    }
+  ]
+}

@@ -27,6 +27,14 @@ export const EYES_DETAILS_TILE_STYLES = Object.freeze(['Heterochromia', 'Blind E
 // Neck styling (all six) and limbs. A right arm or leg picture is the left one mirrored; No Arm and No Leg were not drawn, so they keep the drawn tile.
 export const NECK_TILE_STYLES = Object.freeze(['Bare', 'Tower Collar', 'Ruff', 'Stacked Rings', 'Bow Sculpture', 'Feather Halo']);
 export const LIMB_TILE_STYLES = Object.freeze(['Normal', 'Cute Prosthetic', 'Robotic', 'Prosthetic', 'Mechanical']);
+// Skin: conditions, materials and surface patterns on warm beige mannequin heads. Burns, Fur and Metallic were not drawn cleanly on the sheets.
+export const SKIN_CONDITIONS_TILE_STYLES = Object.freeze(['Vitiligo', 'Pigmentation', 'Freckles', 'Birthmarks', 'Scars', 'Albinism', 'Cracked Skin', 'Wrinkled']);
+export const SKIN_MATERIAL_TILE_STYLES = Object.freeze(['Human Skin', 'Scales', 'Amphibian', 'Fish Skin', 'Porcelain', 'Glass']);
+export const SKIN_PATTERN_TILE_STYLES = Object.freeze(['Solid', 'Stripes', 'Spots', 'Chess', 'Veins', 'Gradient', 'Cracked', 'Giraffe']);
+// Creature types: every one of the 20 has a picture (stylised 3D character heads with neck and shoulders).
+export const SPECIES_TILE_STYLES = Object.freeze([
+  'Human', 'Elf', 'Alien', 'Moth', 'Spectre', 'Fungus', 'Amphibian', 'Reptile', 'Mantis', 'Bee', 'Octopus', 'Crocodile', 'Iguana', 'Lizard', 'Beetle', 'Ant', 'Cat', 'Dog', 'Rodent', 'Bird',
+]);
 export const MOUTH_TILE_STYLES = Object.freeze(['Large Mouth', 'No Teeth', 'Unique Teeth', 'Gap Teeth', 'Gold Tooth', 'Bright Smile', 'Sharp Teeth', 'Forked Tongue', 'Two Tongues']);
 
 /** Catalog group id -> folder under /oddlings and the options that have a file there. */
@@ -48,6 +56,10 @@ export const PICTURE_TILES = Object.freeze({
   right_arm: { dir: 'limbs/right_arm', styles: LIMB_TILE_STYLES },
   left_leg: { dir: 'limbs/left_leg', styles: LIMB_TILE_STYLES },
   right_leg: { dir: 'limbs/right_leg', styles: LIMB_TILE_STYLES },
+  skin_conditions: { dir: 'skin/skin_conditions', styles: SKIN_CONDITIONS_TILE_STYLES },
+  face_skin_material: { dir: 'skin/face_skin_material', styles: SKIN_MATERIAL_TILE_STYLES },
+  face_surface_pattern: { dir: 'skin/face_surface_pattern', styles: SKIN_PATTERN_TILE_STYLES },
+  character_type: { dir: 'species', styles: SPECIES_TILE_STYLES },
   facial_hair: { dir: 'face/facial_hair', styles: FACIAL_HAIR_TILE_STYLES },
   horns: { dir: 'face/horns', styles: HORNS_TILE_STYLES },
   face_features: { dir: 'face/face_features', styles: FACE_FEATURES_TILE_STYLES },

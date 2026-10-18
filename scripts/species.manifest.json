@@ -1,0 +1,52 @@
+{
+  "note": "Creature types: stylised 3D character heads with neck and shoulders, 16 on two eight-head sheets and four animals on a re-run sheet (the first animal sheet came out as flat 2D cartoons, which did not match the others).",
+  "sources": [
+    {
+      "file": "species-a.jpg",
+      "rows": [
+        4,
+        4
+      ],
+      "styles": [
+        "Human",
+        "Elf",
+        "Alien",
+        "Moth",
+        "Spectre",
+        "Fungus",
+        "Amphibian",
+        "Reptile"
+      ]
+    },
+    {
+      "file": "species-b.jpg",
+      "rows": [
+        4,
+        4
+      ],
+      "styles": [
+        "Mantis",
+        "Bee",
+        "Octopus",
+        "Crocodile",
+        "Iguana",
+        "Lizard",
+        "Beetle",
+        "Ant"
+      ]
+    },
+    {
+      "file": "species-c2.jpg",
+      "rows": [
+        2,
+        2
+      ],
+      "styles": [
+        "Cat",
+        "Dog",
+        "Rodent",
+        "Bird"
+      ]
+    }
+  ]
+}
