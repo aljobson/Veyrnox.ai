@@ -54,3 +54,15 @@ The security audit (#1065) removed `generate_media`. From that change until Amen
 - The public page, the consent screen and the grants list now say that the connector can start small image generations. The consent screen states the limits.
 - **Existing authorizations widen.** The tool is server-side and the OAuth scopes are only `openid email profile`, so a connection approved while the consent screen said "read-only" can now call `generate_image`. Anyone who wants that to stop can revoke the connection in Account & security. No re-consent is forced.
 - The tool surface test now pins six tools and checks that the generation route has exactly one call site, reached only through `startMcpGeneration`.
+
+## Amendment 3 (2026-10-18): the daily cap is removed, at the owner's request
+
+**Why.** The 40-credit daily cap of amendment 2 stopped the owner's own trial (five hair-tile sheets) partway through: the cap counts every credit the account spent in 24 hours from any source, so spend in the app and in other sessions used it up, and the tool refused with `mcp_daily_cap_reached` while the balance was 492. The owner's position is that users may spend their own credits through the connector as freely as in the app.
+
+**Decision.** Remove the rolling 24-hour cap and the job-history read behind it (`creditsSpentInWindow`, `dailyCreditCap`, `windowMs`, `jobsPageSize`, the `readRecentJobs` dependency and the errors `mcp_daily_cap_reached`, `mcp_daily_cap_unverifiable` and `spend_check_unavailable`). Everything else in amendment 2 stays: text-to-image only, at most 2 credits per call, an exact price confirmation, a required idempotency key, and the existing generation route (rate limit of 10 per 60 s, moderation, debit, refund) behind it.
+
+**Consequences.**
+- What bounds spend through the connector is now the account's balance, the 2-credit per-call limit and the 10-per-60-s rate limit (at most about 20 credits a minute, and only while the balance lasts).
+- A leaked or runaway client can spend a whole balance in images, as a signed-in browser could. A user can revoke the connection in Account & security.
+- Because the tool no longer reads the job list before spending, one failure mode goes away: the call no longer refuses when the list cannot be read.
+- The tool description no longer mentions a daily limit.
