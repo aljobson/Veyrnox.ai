@@ -1,6 +1,7 @@
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FreeAllowanceCard } from '../../../components/FreeAllowanceCard';
 import { fetchCatalogCached, kindOf, type CatalogModel, type Kind } from '../../../lib/media';
 import { selectedState } from '../../../lib/a11y';
 import { fetchAgentListing } from '../../../lib/montage';
@@ -34,6 +35,7 @@ export default function Create() {
                 <Text style={styles.name}>Templates</Text>
                 <Text style={styles.muted}>Start from a ready-made idea</Text>
             </Pressable>
+            {models ? <FreeAllowanceCard models={models} /> : null}
             <View style={styles.tabs}>
                 {KINDS.map((k) => (
                     <Pressable key={k.kind} accessibilityRole="tab" accessibilityState={selectedState(kind === k.kind)} style={[styles.tab, kind === k.kind && styles.tabOn]} onPress={() => setKind(k.kind)}>
