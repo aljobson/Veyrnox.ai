@@ -1,0 +1,22 @@
+{
+  "note": "Surface patterns: all eight read clearly. Solid is the plain head.",
+  "sources": [
+    {
+      "file": "patterns.jpg",
+      "rows": [
+        4,
+        4
+      ],
+      "styles": [
+        "Solid",
+        "Stripes",
+        "Spots",
+        "Chess",
+        "Veins",
+        "Gradient",
+        "Cracked",
+        "Giraffe"
+      ]
+    }
+  ]
+}
