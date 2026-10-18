@@ -88,7 +88,7 @@ function harness(opts: { play?: () => Promise<unknown> | unknown; heartbeat?: ()
     const player = {
         currentTime: 0, playing: false, sources: [] as string[],
         play() { this.playing = true; }, pause() { this.playing = false; },
-        replace(s: { uri: string }) { this.sources.push(s.uri); },
+        async replaceAsync(s: { uri: string }) { this.sources.push(s.uri); },
     };
     const api = {
         async request<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -138,9 +138,7 @@ describe('playback session', () => {
         await h.flushPromises();
         expect(h.mints()).toBe(2);
         expect(h.player.sources).toHaveLength(2);
-        h.player.currentTime = 0; // the new item starts at zero
-        h.session.onReady();
-        expect(h.player.currentTime).toBe(700);
+        expect(h.player.currentTime).toBe(700); // seeked back after the swap
         expect(h.player.playing).toBe(true);
     });
 

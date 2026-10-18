@@ -156,7 +156,7 @@ export interface PlayerLike {
     readonly playing: boolean;
     play(): void;
     pause(): void;
-    replace(source: { uri: string }): void;
+    replaceAsync(source: { uri: string }): Promise<void>;
 }
 
 export interface SessionDeps {
@@ -210,19 +210,28 @@ export function createPlaybackSession(deps: SessionDeps) {
             if (!next) return block('error');
             grant = next;
             if (renewal) {
-                // Keep the place: swap the source, then onReady() seeks back and resumes.
+                // Keep the place: swap the source, then seek back and resume once the new one has loaded.
                 resume = { time: player.currentTime, playing: player.playing };
                 meter.setPlaying(false);
                 coverage.reset();
             }
-            player.replace({ uri: manifestUrl(next) });
-            if (!renewal) {
+            await player.replaceAsync({ uri: manifestUrl(next) });
+            if (!active || blocked) return;
+            if (renewal) {
+                const prior = resume;
+                resume = null;
+                if (prior) {
+                    player.currentTime = prior.time;
+                    if (prior.playing) player.play();
+                }
+            } else {
                 player.play();
                 onState({ kind: 'playing' });
             }
         } catch (err) {
             if (!active) return;
             const reason = classifyPlayError(err);
+            resume = null;
             // A failed renewal keeps the current token playing until it lapses; the next tick tries again.
             if (!renewal || isStopping(reason) || (grant !== null && now() >= grant.expiresAt)) block(reason);
         } finally {
@@ -282,14 +291,6 @@ export function createPlaybackSession(deps: SessionDeps) {
             lastBeat = now();
             onState({ kind: 'loading' });
             void mint(false);
-        },
-        // The player has loaded a source: after a renewal swap, go back to where the viewer was.
-        onReady() {
-            if (!resume) return;
-            const prior = resume;
-            resume = null;
-            player.currentTime = prior.time;
-            if (prior.playing) player.play();
         },
         setPlaying(value: boolean) {
             if (!active || blocked) return;

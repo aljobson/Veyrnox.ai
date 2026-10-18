@@ -18,7 +18,6 @@ export function CinemaPlayer({ contentId }: { readonly contentId: string }) {
         const session = createPlaybackSession({ api, player, onState: setState });
         const subs = [
             player.addListener('statusChange', ({ status }) => {
-                if (status === 'readyToPlay') session.onReady();
                 if (status === 'error') session.fail();
             }),
             player.addListener('playingChange', ({ isPlaying }) => session.setPlaying(isPlaying)),
