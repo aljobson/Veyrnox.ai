@@ -41,6 +41,7 @@ test('balance lookup is gated by a stored session and warns before Create', () =
 test('the catalog cannot widen a phone-sized page: the builder column and the catalog allow themselves to shrink', () => {
   assert.match(source, /<aside data-assistant-target="oddlings\.builder"[^>]*className="min-w-0 /);
   assert.match(catalog, /grid-cols-\[148px_minmax\(0,1fr\)\]/);
-  assert.match(catalog, /aria-label="Oddling catalog" className="mt-5 min-w-0 max-w-full overflow-hidden/);
+  assert.match(catalog, /aria-label="Oddling catalog" className="min-w-0 max-w-full overflow-hidden/);
+  assert.match(catalog, /lg:grid-cols-\[minmax\(260px,340px\)_minmax\(0,1fr\)\]/, 'wide screens put the figure beside the choices, and the choices column may shrink');
   assert.match(catalog, /role="tablist" aria-label="Catalog category" className="flex min-w-0 max-w-full[^"]*overflow-x-auto/);
 });
