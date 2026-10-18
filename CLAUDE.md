@@ -194,8 +194,9 @@ developer surface is `/api/v1/developer/*` and requires a verified OAuth
     `ai.veyrnox.app://auth/callback`, forwarding only a well-formed PKCE `code`
     or a short error word. It reads no identity header and has no open target.
   - `/api/catalog`, `/api/credit-packs`, `/api/cinema/titles[/:id]`, `/api/cinema/posters/:id`,
-    `/api/popular-templates` — anonymous, read-only, cached public data
-    (prices, packs, published titles, ranked template ids). Nothing per-user.
+    `/api/popular-templates`, `/api/presets` — anonymous, read-only, cached public data
+    (prices, packs, published titles, ranked template ids, the template gallery priced
+    from the catalog for the mobile app). Nothing per-user.
   - `/api/cinema/voting`, `/api/cinema/discovery`, `/api/cinema/winners`, `/api/cinema/comments`, `/api/cinema/story-polls`, `/api/credit-subscription-plans`, `/api/cinema-pass-plans` — anonymous read-only, explicitly gated, no-store projections. Factories use `authed: false`, ignore inbound identity headers, and never return another account’s votes, pending comments, reports or billing records.
   - `/api/webhook/*` — the provider's signature (see Provider webhooks).
   - `/api/admin/*` — Cloudflare Access plus a shared token; cron callers only.
