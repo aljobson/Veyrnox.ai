@@ -29,13 +29,12 @@ test('phase A translated routes retain language, query and alternates', () => {
   for (const route of ['/app/create', '/legal/privacy', '/design-system', '/s/example', '/xx/m', '/m/unknown']) assert.equal(isLocalizedPath(route), false, route);
 });
 
-test('new key families, permission ceilings, TTL and sample units survive every translation', () => {
+test('new key families, TTL and sample units survive every translation', () => {
   for (const language of LOCALES) {
     const m = CATALOGS[language.code], t = translator(language.code);
     for (const family of ['cinema.series.', 'mobile.', 'oauth.', 'social.', 'callback.', 'privacy.', 'recovery.', 'search.page.']) {
       assert.ok(Object.keys(m).some(key => key.startsWith(family)), `${language.code}: ${family}`);
     }
-    assert.match(m['oauth.limit'], /\b2\b/, language.code);
     assert.match(m['mobile.recommended'], /WAN 2\.5/, language.code);
     assert.match(m['mobile.queued'], /0:02/, language.code);
     assert.match(m['mobile.renderTime'], /0:18/, language.code);
@@ -51,6 +50,34 @@ test('new key families, permission ceilings, TTL and sample units survive every 
     }
     for (const preset of PRESETS) assert.ok(m[`presets.cat.${preset.category}`], preset.category);
   }
+});
+
+test('OAuth permissions retain media, accepted prices and at most two completed sources with confirmed rights', () => {
+  const facts = {
+    en: [/image and video generations and edits/, /spends your credits, only after it has shown you the exact price and you have accepted it/, /up to two of your finished generations as source material, only after you have confirmed you have the rights to them/],
+    es: [/generaciones y ediciones de imágenes y vídeos/, /gasta tus créditos, solo después de haberte mostrado el precio exacto y de que lo hayas aceptado/, /hasta dos de tus generaciones terminadas como material de origen, solo después de que hayas confirmado que tienes los derechos sobre ellas/],
+    zh: [/图像和视频生成及编辑/, /消耗您.*积分.*仅在向您展示确切价格且您已接受该价格后进行/, /已完成的生成结果中的最多两个作为源素材，但仅在您已确认拥有这些素材的相关权利后才能使用/],
+    hi: [/इमेज और वीडियो जनरेशन और एडिट/, /आपके क्रेडिट खर्च करे, केवल तब जब असिस्टेंट आपको सटीक कीमत दिखा चुका हो और आपने उसे स्वीकार कर लिया हो/, /पूरे हो चुके अधिकतम दो जनरेशन को स्रोत सामग्री के रूप में उपयोग कर सकता है, केवल तब जब आपने पुष्टि कर दी हो कि आपके पास उनके अधिकार हैं/],
+    ar: [/إنشاء الصور والفيديوهات وتعديلها/, /تستهلك الكريدت الخاص بك، فقط بعد أن يعرض عليك السعر الدقيق وتوافق عليه/, /ما يصل إلى اثنين من أعمالك المكتملة التي أنشأتها كمواد مصدر، فقط بعد أن تؤكد أنك تملك الحقوق المتعلقة بها/],
+    fr: [/générations et des modifications d’images et de vidéos/, /consomme vos crédits, uniquement après vous avoir montré le prix exact et après que vous l’avez accepté/, /jusqu’à deux de vos générations terminées comme matériel source, uniquement après que vous avez confirmé en détenir les droits/],
+    pt: [/gerações e edições de imagens e vídeos/, /gasta seus créditos, somente depois de mostrar a você o preço exato e de você aceitá-lo/, /até duas das suas gerações concluídas como material de origem, somente depois de você confirmar que tem os direitos sobre elas/],
+    ru: [/генерации и редактирование изображений и видео/, /за ваши кредиты, только после того, как помощник покажет вам точную цену и вы её примете/, /до двух ваших завершённых генераций в качестве исходного материала, только после того, как вы подтвердите наличие у вас прав на них/],
+    ja: [/画像と動画の生成および編集/, /あなたのクレジットを消費.*アシスタントが正確な価格を提示し、あなたがその価格に同意した後に限ります/, /完成済みのあなたの生成物を最大二件まで素材として使用できますが、それらの権利をあなたが持っていると確認した後に限ります/],
+    de: [/Generierungen und Bearbeitungen von Bildern und Videos/, /deine Credits verbraucht, erst nachdem er dir den genauen Preis gezeigt hat und du ihn akzeptiert hast/, /bis zu zwei deiner fertigen Generierungen als Ausgangsmaterial verwenden, erst nachdem du bestätigt hast, dass du die Rechte daran hast/],
+    ko: [/이미지 및 동영상 생성과 편집/, /회원님의 크레딧을 사용.*어시스턴트가 정확한 가격을 보여 주고 회원님이 그 가격에 동의한 후에만 가능합니다/, /완성된 생성물 중 최대 두 개를 원본 자료로 사용할 수 있으며, 회원님이 해당 자료에 대한 권리를 보유하고 있음을 확인한 후에만 가능합니다/],
+  };
+  for (const { code } of LOCALES) {
+    const m = CATALOGS[code], [media, price, sources] = facts[code];
+    for (const key of ['oauth.summary', 'oauth.summaryPublish']) assert.match(m[key], media, `${code} ${key}`);
+    for (const key of ['oauth.limit', 'oauth.video']) assert.match(m[key], price, `${code} ${key}`);
+    assert.match(m['oauth.video'], sources, code);
+    for (const key of ['oauth.summary', 'oauth.summaryPublish', 'oauth.limit']) assert.doesNotMatch(m[key], /[2٢２]/u, `${code} ${key}: no two-credit ceiling`);
+  }
+  assert.match(CATALOGS.en['oauth.limit'], /^Start one text-to-image generation at a time/);
+  assert.match(CATALOGS.en['oauth.video'], /^Start one video generation, or one edit of videos you already made, at a time/);
+  for (const key of ['oauth.restrictions', 'oauth.restrictionsPublish']) assert.match(CATALOGS.en[key], /cannot start .*audio/);
+  assert.match(CATALOGS.en['oauth.publishAccess'], /It cannot publish immediately\./);
+  assert.equal(CATALOGS.en['oauth.revoke'], 'You can revoke it from Account & security.');
 });
 
 const root = path.resolve(import.meta.dirname, '..');
@@ -81,7 +108,7 @@ test('offline SSR: Korean consent renders invalid and authenticated permission s
   assert.ok(invalid.includes(CATALOGS.ko['oauth.invalid']));
   const ready = fixture('ko', '/oauth/consent', { consentReady: true });
   const html = ready.render(React.createElement(ready.load('app/veyrnox/oauth/consent/OAuthConsent.js').OAuthConsent, { authorizationId: 'test', publishOpen: true }));
-  for (const key of ['oauth.limit', 'oauth.publishAccess', 'oauth.restrictionsPublish', 'oauth.approve']) assert.ok(html.includes(CATALOGS.ko[key]), key);
+  for (const key of ['oauth.summaryPublish', 'oauth.limit', 'oauth.video', 'oauth.publishAccess', 'oauth.restrictionsPublish', 'oauth.approve']) assert.ok(html.includes(CATALOGS.ko[key]), key);
   assert.doesNotMatch(html, /Requested access|Approve connection|Technical details/);
 });
 
@@ -113,7 +140,8 @@ test('Cinema, OAuth, auth and template families and policy quantities survive al
   const families = ['oauth.', 'social.', 'cinema.comments.', 'cinema.discovery.', 'cinema.retention.', 'cinema.share.', 'cinema.storyPolls.', 'cinema.voting.', 'cinema.winners.', 'cinema.creatorApplication.', 'cinema.socialCinema.', 'cinema.creatorAnalytics.', 'cinema.creatorWorkspace.', 'cinema.videoUpload.', 'cinema.passPanel.', 'cinema.titlePage.', 'cinema.player.', 'authGate.', 'presets.detail.', 'presets.use.', 'public.library.', 'public.vey.', 'public.subscription.', 'public.jobs.', 'mcp.pub.'];
   const numbers = text => text.match(/\d+(?:[,.]\d+)*(?:%|\+)?/g) || [];
   const policySamples = {
-    'oauth.limit': ['2'],
+    'oauth.limit': [],
+    'oauth.video': [],
     'authGate.newUsersGet10FreeCredits': ['10'],
     'cinema.passPanel.aCinemaPassUnlocksEveryPublished': ['1,500'],
     'cinema.creatorAnalytics.completionMeansAtLeast90Of': ['90%'],
