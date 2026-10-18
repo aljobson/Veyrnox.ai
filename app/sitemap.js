@@ -34,6 +34,7 @@ export default async function sitemap() {
     page('', 'weekly', 1.0),
     page('/about', 'yearly', 0.4),
     page('/pricing', 'monthly', 0.9),
+    page('/publish', 'monthly', 0.7),
     page('/presets', 'weekly', 0.7),
     ...PRESETS.map((t) => page(`/presets/${t.id}`, 'monthly', 0.5)),
     page('/models', 'weekly', 0.8),
