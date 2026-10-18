@@ -1,4 +1,4 @@
-import { Stack } from 'expo-router';
+import { Link, Stack } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
@@ -55,6 +55,11 @@ export default function Credits() {
                     )}
                 />
             )}
+            <Link href="/history" asChild>
+                <Pressable accessibilityRole="button" style={styles.history}>
+                    <Text style={styles.historyText}>See your credit history</Text>
+                </Pressable>
+            </Link>
             {outcome?.kind === 'credited' ? <Text style={styles.ok}>Credits added. Your balance is {outcome.balance}.</Text> : null}
             {outcome?.kind === 'pending' ? <Text style={styles.muted}>Your purchase went through. The credits can take a minute to appear; check your balance on the home screen.</Text> : null}
             {outcome?.kind === 'error' ? <Text style={styles.error}>That did not complete. If you were charged, the credits will arrive; contact support if they do not.</Text> : null}
@@ -69,6 +74,8 @@ const styles = StyleSheet.create({
     rowText: { flex: 1 },
     name: { color: colors.text, fontSize: 17, fontWeight: '600' },
     price: { color: colors.money, fontSize: 17, fontWeight: '700' },
+    history: { minHeight: 44, justifyContent: 'center' },
+    historyText: { color: colors.accent, fontSize: 15 },
     muted: { color: colors.muted },
     ok: { color: colors.accent },
     error: { color: colors.danger },
