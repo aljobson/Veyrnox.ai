@@ -371,7 +371,7 @@ createServer(async (req, res) => {
         state.balance -= credits;
         const job = { id: randomUUID(), model_id: 'veo-fast', credits, created: Date.now(), label: `Edit of ${clips.length} clip${clips.length > 1 ? 's' : ''}`, kind: 'text-to-video' };
         state.jobs.unshift(job);
-        console.log(`[mock] clip-edit ${clips.length} clip(s), ${credits} credits`);
+        console.log('[mock] clip-edit created');
         return send(res, 200, { job_id: job.id, state: 'SUBMITTED', balance_after: state.balance });
     }
     if (path === '/api/v1/generations' && req.method === 'POST') {
