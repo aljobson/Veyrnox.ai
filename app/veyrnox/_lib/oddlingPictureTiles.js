@@ -10,8 +10,8 @@ export const OUTFIT_TILE_STYLES = Object.freeze([
 export const RENDERING_STYLE_TILE_STYLES = Object.freeze(['Anime', 'Cartoon', '2D Illustration', 'Hyper-Realistic']);
 export const HEADWEAR_TILE_STYLES = Object.freeze(['Baseball Cap', 'Beanie', 'Wide-Brim Hat', 'Bucket Hat', 'Headphones']);
 
-// Face options with a picture. Only the ones that read clearly at tile size are listed. Button nose, Tiny Hands and both Long Torso options were
-// generated as single mannequin pictures but looked the same as their neighbours, so they keep the drawn tile.
+// Face options with a picture. Only the ones that read clearly at tile size are listed. Button nose was generated twice as a single mannequin picture but still
+// looked like a normal nose, so it keeps the drawn tile.
 export const HEAD_SHAPE_TILE_STYLES = Object.freeze(['Long Oval', 'Perfect Round', 'Square', 'Heart', 'Diamond', 'Tiny Head', 'Oversized Head']);
 export const EYE_SHAPE_TILE_STYLES = Object.freeze(['Round', 'Monolid', 'Graphic Liner', 'Hooded', 'Upturned', 'Uneven', 'Almond', 'Narrow', 'Downturned', 'Wide Set', 'Close Set']);
 export const NOSE_SHAPE_TILE_STYLES = Object.freeze(['Straight', 'Aquiline', 'Snub', 'Wide', 'Narrow', 'Round Tip']);
@@ -45,10 +45,10 @@ export const ACCESSORIES_TILE_STYLES = Object.freeze([
 export const DISTINCTIVE_FEATURES_TILE_STYLES = Object.freeze([
   'Tiny Microphone', 'Pocket Weather Station', 'Giant Comb', 'Sacred Stapler', 'Snack Sceptre', 'Miniature Chair', 'Impossible Handbag', 'Receipt Train', 'Miniature Thermos', 'Miniature Cake',
 ]);
-// Body: fully clothed full-body figures. Only options that stay distinguishable once each figure is fitted to its tile have a picture; Long Torso (build and
-// proportion) and Tiny Hands looked the same as their neighbours and keep the drawn tile.
-export const BODY_TYPE_TILE_STYLES = Object.freeze(['Curvy', 'Heavy', 'Fat', 'Athletic', 'Muscular', 'Hyper-Muscular', 'Pear', 'Barrel', 'Skinny', 'Slim', 'Lean', 'Very Skinny', 'Lanky', 'Compact', 'Inverted Triangle', 'Long Legs']);
-export const PROPORTIONS_TILE_STYLES = Object.freeze(['Natural', 'Tiny Torso', 'Huge Hands', 'No Visible Neck', 'Long Neck', 'Wide Shoulders', 'Narrow Shoulders']);
+// Body: fully clothed full-body figures. Only options that stay distinguishable once each figure is fitted to its tile have a picture; Tiny Hands looked the same as its
+// neighbours and keeps the drawn tile.
+export const BODY_TYPE_TILE_STYLES = Object.freeze(['Curvy', 'Heavy', 'Fat', 'Athletic', 'Muscular', 'Hyper-Muscular', 'Pear', 'Barrel', 'Skinny', 'Long Torso', 'Slim', 'Lean', 'Very Skinny', 'Lanky', 'Compact', 'Inverted Triangle', 'Long Legs']);
+export const PROPORTIONS_TILE_STYLES = Object.freeze(['Natural', 'Tiny Torso', 'Huge Hands', 'No Visible Neck', 'Long Neck', 'Wide Shoulders', 'Narrow Shoulders', 'Long Torso']);
 export const EXAGGERATION_TILE_STYLES = Object.freeze(['Natural', 'Bold', 'Extreme']);
 export const MOUTH_TILE_STYLES = Object.freeze(['Large Mouth', 'No Teeth', 'Unique Teeth', 'Gap Teeth', 'Gold Tooth', 'Bright Smile', 'Sharp Teeth', 'Forked Tongue', 'Two Tongues', 'Crooked Teeth', 'Small Mouth']);
 

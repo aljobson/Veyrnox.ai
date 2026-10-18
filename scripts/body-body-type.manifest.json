@@ -115,6 +115,15 @@
       "styles": [
         "Long Legs"
       ]
+    },
+    {
+      "file": "long-torso.png",
+      "rows": [
+        1
+      ],
+      "styles": [
+        "Long Torso"
+      ]
     }
   ]
 }

@@ -79,7 +79,7 @@ test('a right arm or leg picture is the left one mirrored: same options, differe
   assert.equal(pictureTileSrc('body_type', 'Fat'), '/oddlings/body/body_type/fat.webp');
   assert.equal(pictureTileSrc('body_type', 'Muscular'), '/oddlings/body/body_type/muscular.webp');
   assert.equal(pictureTileSrc('body_type', 'Lanky'), '/oddlings/body/body_type/lanky.webp');
-  assert.equal(pictureTileSrc('body_type', 'Long Torso'), '', 'looked like a normal build: keeps the drawn tile');
+  assert.equal(pictureTileSrc('body_type', 'Long Torso'), '/oddlings/body/body_type/long-torso.webp');
   assert.equal(pictureTileSrc('proportions', 'Tiny Hands'), '', 'hands did not read as small: keeps the drawn tile');
   assert.equal(pictureTileSrc('exaggeration', 'Extreme'), '/oddlings/body/exaggeration/extreme.webp');
 });
