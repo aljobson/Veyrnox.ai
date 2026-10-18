@@ -10,7 +10,9 @@ export interface CatalogModel {
     readonly durations: number[];
     readonly capabilities: {
         readonly inputs?: Record<string, unknown>;
-        readonly media?: Record<string, { readonly required?: boolean }>;
+        readonly media?: Record<string, { readonly required?: boolean; readonly label?: string; readonly maxSeconds?: number }>;
+        // Present on stem-splitting models, which the server serves only behind a flag.
+        readonly outputStems?: string[];
     } | null;
 }
 
@@ -51,10 +53,26 @@ export function estimateCredits(model: CatalogModel, durationSeconds: number | n
     return model.credits * Math.ceil(seconds / UNIT_SECONDS);
 }
 
-// M2 sells models that need only a prompt: no required image/video slot.
-export function isPromptOnly(model: CatalogModel): boolean {
-    const media = model.capabilities?.media ?? {};
-    return !Object.values(media).some((slot) => slot.required) && !!model.capabilities?.inputs && 'prompt' in model.capabilities.inputs;
+const KNOWN_SLOTS = ['image', 'endImage', 'video', 'audio'];
+
+// A model the app can drive: open, a kind it can show, every file slot a slot it can pick for,
+// and something to send (a prompt, or at least one required file). Stem splitting is held back
+// because the server answers it with audio_stems_unavailable unless its flag is on.
+export function isSupported(model: CatalogModel): boolean {
+    if (model.gated || kindOf(model.modality) === null) return false;
+    const caps = model.capabilities;
+    if (!caps || caps.outputStems) return false;
+    const media = caps.media ?? {};
+    if (!Object.keys(media).every((slot) => KNOWN_SLOTS.includes(slot))) return false;
+    const hasPrompt = !!caps.inputs && 'prompt' in caps.inputs;
+    return hasPrompt || Object.values(media).some((slot) => slot.required);
+}
+
+// Text-to-X models need words; edit and file-driven models take them as an optional extra.
+export function promptRequired(model: CatalogModel): boolean {
+    const caps = model.capabilities;
+    if (!caps?.inputs || !('prompt' in caps.inputs)) return false;
+    return !Object.values(caps.media ?? {}).some((slot) => slot.required);
 }
 
 export async function fetchCatalog(): Promise<CatalogModel[]> {
@@ -66,7 +84,7 @@ export async function fetchCatalog(): Promise<CatalogModel[]> {
     }
     if (!res.ok) throw new ApiError(res.status, 'catalog_unavailable');
     const body = (await res.json()) as { models?: CatalogModel[] };
-    return (body.models ?? []).filter((m) => kindOf(m.modality) !== null && !m.gated && isPromptOnly(m));
+    return (body.models ?? []).filter(isSupported);
 }
 
 export interface GenerationRequest {
@@ -77,6 +95,8 @@ export interface GenerationRequest {
     readonly confirmedCredits: number;
     // Reuse the same key to retry the same request: it is charged once.
     readonly idempotencyKey: string;
+    // Files already uploaded, by the slot the model declares for them.
+    readonly sources?: readonly { readonly key: string; readonly slot: string }[];
 }
 
 export const mediaApi = (api: ApiClient) => ({
@@ -88,7 +108,9 @@ export const mediaApi = (api: ApiClient) => ({
                 model_id: r.modelId,
                 idempotency_key: r.idempotencyKey,
                 confirmed_credits: r.confirmedCredits,
-                inputs: { prompt: r.prompt, ...(r.durationSeconds ? { duration_seconds: r.durationSeconds } : {}) },
+                inputs: { ...(r.prompt ? { prompt: r.prompt } : {}), ...(r.durationSeconds ? { duration_seconds: r.durationSeconds } : {}) },
+                // The server refuses uploaded sources without consent to send them to the provider.
+                ...(r.sources?.length ? { source_keys: r.sources, consent: true } : {}),
             }),
         }),
     getJob: (id: string) =>

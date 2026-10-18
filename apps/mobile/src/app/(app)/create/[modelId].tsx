@@ -4,7 +4,9 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { ApiError } from '../../../lib/api';
-import { estimateCredits, fetchCatalog, kindOf, mediaApi, type CatalogModel } from '../../../lib/media';
+import { SourcePicker } from '../../../components/SourcePicker';
+import { estimateCredits, fetchCatalog, kindOf, mediaApi, promptRequired, type CatalogModel } from '../../../lib/media';
+import { missingRequired, slotsFor, toSourceKeys, type SlotName } from '../../../lib/sources';
 import { colors } from '../../../theme';
 
 const MAX_PROMPT = 2000;
@@ -17,6 +19,9 @@ export default function CreateWithModel() {
     const [prompt, setPrompt] = useState('');
     const [duration, setDuration] = useState<number | null>(null);
     const [busy, setBusy] = useState(false);
+    // Storage keys of the files already uploaded, by slot, and the slots still uploading.
+    const [uploaded, setUploaded] = useState<Partial<Record<SlotName, string>>>({});
+    const [sending, setSending] = useState<Partial<Record<SlotName, boolean>>>({});
     const [error, setError] = useState<string | null>(null);
     // The same request keeps its key, so a retry after a dropped connection is charged once.
     const pending = useRef<{ signature: string; key: string } | null>(null);
@@ -39,16 +44,21 @@ export default function CreateWithModel() {
     const isVideo = kindOf(model.modality) === 'video';
     const price = estimateCredits(model, duration);
     const text = prompt.trim();
+    const slots = slotsFor(model);
+    const sources = toSourceKeys(uploaded);
+    const waiting = Object.values(sending).some(Boolean);
+    const ready = !waiting && missingRequired(slots, uploaded).length === 0 && (!promptRequired(model) || !!text);
+    const hasPrompt = !!model.capabilities?.inputs && 'prompt' in model.capabilities.inputs;
 
     async function generate() {
-        if (!model || !text || busy) return;
-        const signature = `${model.id}|${text}|${duration}`;
+        if (!model || !ready || busy) return;
+        const signature = `${model.id}|${text}|${duration}|${sources.map((s) => `${s.slot}:${s.key}`).join(',')}`;
         const key = pending.current?.signature === signature ? pending.current.key : Crypto.randomUUID();
         pending.current = { signature, key };
         setBusy(true);
         setError(null);
         try {
-            const r = await mediaApi(api).createGeneration({ modelId: model.id, prompt: text, durationSeconds: isVideo ? duration : null, confirmedCredits: price, idempotencyKey: key });
+            const r = await mediaApi(api).createGeneration({ modelId: model.id, prompt: text, durationSeconds: isVideo ? duration : null, confirmedCredits: price, idempotencyKey: key, sources });
             pending.current = null;
             router.replace({ pathname: '/job/[id]', params: { id: r.job_id } });
         } catch (err) {
@@ -62,15 +72,27 @@ export default function CreateWithModel() {
         <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
             <Stack.Screen options={{ title: model.name }} />
             <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-                <TextInput
-                    style={styles.prompt}
-                    value={prompt}
-                    onChangeText={setPrompt}
-                    placeholder="Describe what to create"
-                    placeholderTextColor={colors.muted}
-                    multiline
-                    maxLength={MAX_PROMPT}
-                />
+                {slots.map((s) => (
+                    <SourcePicker
+                        key={s.slot}
+                        slot={s}
+                        api={api}
+                        onChange={(key) => setUploaded((u) => ({ ...u, [s.slot]: key }))}
+                        onBusy={(b) => setSending((x) => ({ ...x, [s.slot]: b }))}
+                    />
+                ))}
+                {hasPrompt ? (
+                    <TextInput
+                        style={styles.prompt}
+                        value={prompt}
+                        onChangeText={setPrompt}
+                        placeholder={promptRequired(model) ? 'Describe what to create' : 'Describe the change (optional)'}
+                        placeholderTextColor={colors.muted}
+                        multiline
+                        maxLength={MAX_PROMPT}
+                    />
+                ) : null}
+                {sources.length ? <Text style={styles.consent}>Your file is sent to the AI provider that makes this. It is deleted after a day.</Text> : null}
                 {isVideo && model.durations.length > 1 ? (
                     <View style={styles.chips}>
                         {model.durations.map((d) => (
@@ -82,7 +104,7 @@ export default function CreateWithModel() {
                 ) : null}
                 <Text style={styles.price}>Costs {price} {price === 1 ? 'credit' : 'credits'}. Refunded if it fails.</Text>
                 {error ? <Text style={styles.error}>{error}</Text> : null}
-                <Pressable accessibilityRole="button" disabled={!text || busy} style={[styles.button, (!text || busy) && styles.off]} onPress={generate}>
+                <Pressable accessibilityRole="button" disabled={!ready || busy} style={[styles.button, (!ready || busy) && styles.off]} onPress={generate}>
                     {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>Generate</Text>}
                 </Pressable>
             </ScrollView>
@@ -101,6 +123,14 @@ function messageFor(err: unknown): string {
             return `The price changed to ${String(err.body.expected_credits ?? 'a new amount')} credits. Check it and try again.`;
         case 'network':
             return 'No connection. Try again; you will not be charged twice.';
+        case 'source_not_found':
+            return 'Your file expired before it was used. Choose it again.';
+        case 'source_type_unsupported':
+        case 'source_slot_invalid':
+        case 'source_key_invalid':
+            return 'That file does not fit this model. Choose a different one.';
+        case 'consent_required':
+            return 'Please try again.';
         default:
             return 'That could not start. You were not charged.';
     }
@@ -116,6 +146,7 @@ const styles = StyleSheet.create({
     chipText: { color: colors.body, fontWeight: '600' },
     chipTextOn: { color: colors.accentInk },
     price: { color: colors.money },
+    consent: { color: colors.muted, fontSize: 12 },
     button: { backgroundColor: colors.accent, borderRadius: 12, paddingVertical: 16, alignItems: 'center' },
     off: { opacity: 0.4 },
     buttonText: { color: colors.accentInk, fontWeight: '700', fontSize: 16 },
