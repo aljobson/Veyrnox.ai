@@ -16,6 +16,12 @@ A **Quick edit** screen (Home, then `/edit`) lets a person join up to 10 finishe
 5. **Consent.** The AI-sharing sheet (ADR-0128) is asked before the first send, as for Create. A refusal says nothing was sent and nothing was charged.
 6. **Errors** are mapped to plain English by code (bad range, too long, different shapes, file gone, captions off, no credits, no connection). Nothing from the provider is shown.
 
+## Amendment 1: the server's length first
+
+The server now reports a finished video's real length (`GET /api/v1/jobs/:id/media-info`, PR #1289, read from the stored file's own headers). Adding a clip calls it first (`fetchClipLength`): no file link, no player, no wait. Any failure (404, 400 not a video, 422 unreadable, 429, 503, offline) or a value that is not a positive number returns nothing and the hidden player reads the length as before. Nothing is charged by this call.
+
+Proved on the simulator against the mock: with a length from the server, only `media-info` was called; with a 422, the asset link and the video were fetched and the player read the length. Not proved: the real route, or the rate limiter's 429 and 503 behaviour.
+
 ## Proved, and not
 
 Proved on the simulator against the mock server only: the Home link; the empty state; adding a video and reading its real length (8 s) from a real file; trimming; the consent sheet; the quote screen (3 credits); confirming (one 3-credit charge, then the job screen). Unit tests cover range maths, validation, the request body, the quote and every error code.

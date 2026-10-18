@@ -6,6 +6,7 @@ import {
     MAX_OUTPUT_S,
     editBody,
     editErrorKey,
+    fetchClipLength,
     moveClip,
     newClip,
     priceChanged,
@@ -179,5 +180,28 @@ describe('editErrorKey', () => {
         expect(k(429, 'rate_limited')).toBe('edit.err.rate');
         expect(k(502, 'edit_lookup_failed')).toBe('edit.err.busy');
         expect(editErrorKey(new Error('x'))).toBe('common.error');
+    });
+});
+
+describe('fetchClipLength', () => {
+    test('asks the server for the length of that job and returns its seconds', async () => {
+        const { api, request } = apiWith(() => ({ seconds: 8.04, width: 320, height: 568, size_bytes: 40099, mime_type: 'video/mp4' }));
+        expect(await fetchClipLength(api, 'job one/2')).toBe(8.04);
+        expect(request.mock.calls[0][0]).toBe('/api/v1/jobs/job%20one%2F2/media-info');
+    });
+    test.each([[404, 'not_found'], [400, 'not_video'], [422, 'unreadable'], [429, 'rate_limited'], [503, 'rate_limit_unavailable'], [0, 'network']])(
+        'a %s answer gives null so the screen falls back to the player',
+        async (status, code) => {
+            const { api } = apiWith(() => new ApiError(status, code, { error: code }));
+            expect(await fetchClipLength(api, 'j1')).toBeNull();
+        },
+    );
+    test.each([[0], [-3], [Number.NaN], ['8'], [null], [undefined]])('a length of %p is not trusted', async (seconds) => {
+        const { api } = apiWith(() => ({ seconds }));
+        expect(await fetchClipLength(api, 'j1')).toBeNull();
+    });
+    test('an answer with no body is not trusted', async () => {
+        const { api } = apiWith(() => null);
+        expect(await fetchClipLength(api, 'j1')).toBeNull();
     });
 });
