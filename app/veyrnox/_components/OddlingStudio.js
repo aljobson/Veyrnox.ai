@@ -222,7 +222,7 @@ export default function OddlingStudio() {
 
   return (
     <>
-      <div className="min-h-[calc(100dvh-4rem)]">
+      <div data-oddling-studio className="min-h-[calc(100dvh-4rem)]">
       <header className="border-b border-vx-border bg-vx-panel px-5 py-5 sm:px-7 xl:px-10">
         <div className="mx-auto flex max-w-[1500px] flex-wrap items-end justify-between gap-x-8 gap-y-4">
           <div className="min-w-0">
@@ -242,7 +242,7 @@ export default function OddlingStudio() {
       {mode === 'portrait' && <OddlingCatalog picks={picks} onPick={setPick} onClear={clearLook} />}
       <div className="grid xl:grid-cols-[430px_minmax(0,1fr)]">
         <aside data-assistant-target="oddlings.builder" data-assistant-loaded-passport={loadedPassportId || undefined} className="min-w-0 border-b border-vx-border bg-vx-panel xl:border-b-0 xl:border-r">
-          <div className="sticky top-16 max-h-[calc(100dvh-4rem)] overflow-y-auto p-5 sm:p-7">
+          <div className="sticky top-16 max-h-[calc(100dvh-4rem)] overflow-y-auto scroll-pb-32 p-5 pb-32 sm:p-7 sm:pb-32">
 
             <div data-assistant-target="oddlings.reference" className="mt-5 rounded-2xl border border-vx-border bg-vx-base p-4">
               <div className="flex items-center justify-between gap-3">
