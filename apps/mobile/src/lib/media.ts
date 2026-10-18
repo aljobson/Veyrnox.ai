@@ -1,6 +1,6 @@
 import { appCache } from './appCache';
 import { POLICIES, type CacheMeta } from './cache';
-import { observe } from './network';
+import { ensureOnline, observe } from './network';
 import { ApiError, API_BASE, type ApiClient } from './api';
 
 export interface CatalogModel {
@@ -122,8 +122,9 @@ export interface GenerationRequest {
 }
 
 export const mediaApi = (api: ApiClient) => ({
-    createGeneration: (r: GenerationRequest) =>
-        api.request<{ job_id: string; balance_after?: number }>('/api/v1/generations', {
+    createGeneration: async (r: GenerationRequest) => {
+        await ensureOnline();
+        return api.request<{ job_id: string; balance_after?: number }>('/api/v1/generations', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -134,7 +135,8 @@ export const mediaApi = (api: ApiClient) => ({
                 // The server refuses uploaded sources without consent to send them to the provider.
                 ...(r.sources?.length ? { source_keys: r.sources, consent: true } : {}),
             }),
-        }),
+        });
+    },
     getJob: (id: string) =>
         api.request<{ state: JobState; credits: number; model_id: string; error_code?: string }>(`/api/v1/jobs/${encodeURIComponent(id)}`),
     listJobs: (cursor?: JobPage['next']) => {
