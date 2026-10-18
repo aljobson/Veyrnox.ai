@@ -27,6 +27,30 @@ Veyrnox already has one authoritative path for model availability, pricing, rate
 
 ## Verification
 
-- `tests/veyrnoxMcp.test.mjs` pins pricing, tool surface, OAuth discovery and the bearer challenge.
+- `tests/veyrnoxMcp.test.mjs` pins pricing, tool surface, OAuth discovery and the bearer challenge. `tests/mcpGenerate.test.mjs` pins every refusal of the spending tool.
 - The normal generation, job, balance and identity suites continue to cover the reused handlers.
 - Reticle verifies the public connector page and its endpoint-copy interaction in the running app.
+
+## Amendment 1 (2026-10-16): the spending tool was removed
+
+The security audit (#1065) removed `generate_media`. From that change until Amendment 2 the connector had five read-only tools, and the public page, the consent screen and the account grants list said so. This amendment records that decision; it was not written when the code changed.
+
+## Amendment 2 (2026-10-18): a capped `generate_image` returns, at the owner's request
+
+**Why.** The owner wants an assistant to be able to make a small image on their own account (the first use is a batch of tile pictures for the Oddlings catalog, via the owner's test account), and the connector was the intended path.
+
+**Decision.** Add one spending tool, `generate_image`, with limits that are fixed in code (`lib/mcpGenerate.js`, `MCP_GENERATION_LIMITS`), not settings a client can raise:
+
+- **text-to-image models only.** No video, audio, image editing, source files, uploads or consent attestation. The decision to leave those out is the point of the narrow re-add.
+- **at most 2 credits per call.** A dearer model is refused before anything else is read.
+- **the price must be confirmed exactly.** `confirmed_credits` must equal the live estimate; a difference is refused with no charge. The generation route repeats the check.
+- **at most 40 credits per account per rolling 24 hours**, counted from the account's own newest 50 jobs (refunded jobs cost nothing). If the list cannot be read, or the 50 newest jobs are all inside the window so the total cannot be proven, the call is refused (fail closed).
+- **an idempotency key is required**, so a retry is a replay and a new key is a new charge.
+- Everything after those checks is the existing generation route: rate limit (10 per 60 s), moderation, debit, provider, refund. Its refusals are passed through unchanged.
+
+**What the daily cap is and is not.** It is an account-wide bound counted from job history, so it needs no migration. It is not a per-connector counter: it counts credits spent from any source in the last 24 hours, so a heavy day in the Veyrnox app can use up the connector's allowance. Two calls in flight at once can each pass the check; the per-call limit and the rate limit bound that overshoot (at most about 10 calls of 2 credits). A retry of an already accepted key near the cap can be refused as over the cap even though it would have been a harmless replay. A per-connector counter would need a migration and goes through the apply-migrations workflow; it is a follow-up, not part of this change.
+
+**Consequences.**
+- The public page, the consent screen and the grants list now say that the connector can start small image generations. The consent screen states the limits.
+- **Existing authorizations widen.** The tool is server-side and the OAuth scopes are only `openid email profile`, so a connection approved while the consent screen said "read-only" can now call `generate_image`. Anyone who wants that to stop can revoke the connection in Account & security. No re-consent is forced.
+- The tool surface test now pins six tools and checks that the generation route has exactly one call site, reached only through `startMcpGeneration`.

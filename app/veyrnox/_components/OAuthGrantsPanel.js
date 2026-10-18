@@ -87,7 +87,7 @@ export function OAuthGrantsPanel() {
           <div className="min-w-0">
             <p className="font-extrabold text-vx-fg">{grant.name}</p>
             <p className="mt-1 text-xs text-vx-fg-muted">
-              {grant.scopes.length ? `Access: ${grant.scopes.join(', ')}` : 'Read-only Veyrnox access'}
+              {grant.scopes.length ? `Access: ${grant.scopes.join(', ')}` : 'Veyrnox access: read, and small image generations'}
               {grant.grantedAt ? ` · Connected ${new Date(grant.grantedAt).toLocaleDateString()}` : ''}
             </p>
             {website && <a className="mt-1 block truncate text-xs underline text-vx-fg-body" href={website} rel="noreferrer" target="_blank">{website}</a>}
