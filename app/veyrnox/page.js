@@ -123,6 +123,9 @@ export default async function VeyrnoxLanding() {
             terms: <a href="/legal/terms" className="underline underline-offset-4">{t('home.publish.terms')}</a>,
           })}
         </p>
+        <p className="mt-6">
+          <a href="/publish" className="font-bold underline underline-offset-4 hover:text-vx-accent">{t('home.publish.more')} →</a>
+        </p>
         </div>
       </section>
       <FAQBlock locale={locale} />
