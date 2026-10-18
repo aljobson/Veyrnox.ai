@@ -123,3 +123,19 @@ test('multi-account flag selects the new writer and returns its bounded free lim
         else process.env.PUBLISH_MULTI_ACCOUNT_ENABLED = previous;
     }
 });
+
+test('a mobile callback exchanges the code against the bridge redirect the connect step used (ADR-0135)', async () => {
+    setConfigured(); stub();
+    const inner = globalThis.fetch;
+    const tokenBodies = [];
+    globalThis.fetch = async (url, init) => {
+        if (new URL(url).pathname === '/2/oauth2/token') tokenBodies.push(new URLSearchParams(String(init.body)));
+        return inner(url, init);
+    };
+    const payload = { code: 'auth-code', state: await validState(), codeVerifier: verifier };
+    assert.equal((await POST(request({ ...payload, client: 'mobile' }))).status, 200);
+    assert.equal(tokenBodies[0].get('redirect_uri'), 'https://veyrnox.ai/social/connect/mobile/twitter');
+    stub();
+    assert.equal((await POST(request({ ...payload, client: 'tablet' }))).status, 400);
+    assert.equal(calls.length, 0, 'an unknown client is refused before state is consumed');
+});

@@ -198,6 +198,11 @@ developer surface is `/api/v1/developer/*` and requires a verified OAuth
     sign-in (ADR-0106 amendment 1). It answers a 302 to the constant
     `ai.veyrnox.app://auth/callback`, forwarding only a well-formed PKCE `code`
     or a short error word. It reads no identity header and has no open target.
+  - `/social/connect/mobile/:network` — GET-only hand-back for the mobile app's
+    Publish connect (ADR-0135). Used only when connect was started with
+    `client: "mobile"`; answers a 302 to the constant `ai.veyrnox.app://social/callback`,
+    forwarding only a well-formed `code` and our signed `state` for a known OAuth
+    network. It reads no identity header and has no open target.
   - `/api/catalog`, `/api/credit-packs`, `/api/cinema/titles[/:id]`, `/api/cinema/posters/:id`,
     `/api/popular-templates`, `/api/presets` — anonymous, read-only, cached public data
     (prices, packs, published titles, ranked template ids, the template gallery priced

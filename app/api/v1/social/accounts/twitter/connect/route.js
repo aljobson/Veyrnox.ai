@@ -20,17 +20,13 @@
  */
 
 import { NextResponse } from 'next/server';
+import { connectCallbackPath, requestedClient } from '../../../../../../../lib/social/connectReturn.js';
 import { networkReleased } from '../../../../../../../lib/social/networks.js';
 import { envConfig } from '../../../../../../../packages/db/supabase-client.js';
 import { xConfig, buildAuthorizeUrl } from '../../../../../../../packages/adapters/social/twitter.js';
 import { issueOAuthState } from '../../../../../../../lib/social/oauthStateStore.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-// Per-network path (app/social/connect/callback/[network]/page.js), not a
-// shared one: multiple providers redirecting to the same URL would leave
-// the landing page with no reliable way to know which network's /callback
-// route to call — a provider's redirect carries no such hint itself.
-const CALLBACK_PATH = '/social/connect/callback/twitter';
 
 export async function POST(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');
@@ -54,6 +50,8 @@ export async function POST(req) {
     } catch {
         return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
     }
+    const client = requestedClient(body);
+    if (!client) return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
     const codeChallenge = body && body.codeChallenge;
     if (typeof codeChallenge !== 'string' || !/^[A-Za-z0-9_-]{43,128}$/.test(codeChallenge)) {
         return NextResponse.json({ error: 'invalid_code_challenge' }, { status: 400 });
@@ -66,7 +64,7 @@ export async function POST(req) {
     } catch {
         return NextResponse.json({ error: 'twitter_not_configured' }, { status: 503 });
     }
-    const redirectUri = new URL(CALLBACK_PATH, base).toString();
+    const redirectUri = new URL(connectCallbackPath('twitter', client), base).toString();
 
     let state;
     try {
