@@ -4,6 +4,10 @@
 import { createServer } from 'node:http';
 import { deflateSync } from 'node:zlib';
 import { randomUUID } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
+import { existsSync, readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 const PORT = Number(process.env.MOCK_PORT || 8799);
 const state = {
@@ -42,6 +46,20 @@ const episodes = (id) => [1, 2, 3].map((n) => ({ id: randomUUID(), position: n, 
 const PLAY_TTL = Number(process.env.MOCK_PLAY_TTL || 900);
 const plays = new Map();
 
+// A real 8 second video for the quick-edit length probe, made once with ffmpeg when it is installed.
+const CLIP_LENGTH_S = 8;
+let clipFile = null;
+function ensureClip() {
+    if (clipFile) return clipFile;
+    const out = join(tmpdir(), 'veyrnox-mock-clip.mp4');
+    if (!existsSync(out)) {
+        const r = spawnSync('ffmpeg', ['-y', '-f', 'lavfi', '-i', `testsrc=size=320x568:rate=24:duration=${CLIP_LENGTH_S}`, '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out], { stdio: 'ignore' });
+        if (r.status !== 0) return null;
+    }
+    clipFile = out;
+    return out;
+}
+
 const CATALOG = [
     { id: 'nano-banana', name: 'Nano Banana', modality: 'text-to-image', credits: 4, gated: false, durations: [5], capabilities: { inputs: { prompt: { type: 'string' } }, media: {} } },
     { id: 'seedream-4', name: 'Seedream 4', modality: 'text-to-image', credits: 3, gated: false, durations: [5], capabilities: { inputs: { prompt: { type: 'string' } }, media: {} } },
@@ -73,7 +91,10 @@ function png() {
 }
 const PNG = png();
 
-const tokens = () => ({ access_token: 'mock-access', refresh_token: 'mock-refresh', expires_in: 3600, token_type: 'bearer' });
+// A JWT-shaped token (unsigned) with a subject, so the app has an account id for the AI-sharing consent record.
+const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');
+const mockJwt = () => `${b64({ alg: 'none', typ: 'JWT' })}.${b64({ sub: '00000000-0000-4000-8000-000000000001', exp: Math.floor(Date.now() / 1000) + 3600 })}.mock`;
+const tokens = () => ({ access_token: mockJwt(), refresh_token: 'mock-refresh', expires_in: 3600, token_type: 'bearer' });
 const jobState = (j) => { const age = Date.now() - j.created; return age < 2500 ? 'queued' : age < 6000 ? 'running' : 'succeeded'; };
 const jobView = (j) => ({ job_id: j.id, state: jobState(j), credits: j.credits, model_id: j.model_id, created_at: new Date(j.created).toISOString(), label: j.label, has_asset: jobState(j) === 'succeeded' });
 
@@ -89,6 +110,20 @@ createServer(async (req, res) => {
 
     if (path.startsWith('/auth/v1/token') || path === '/auth/v1/signup') return send(res, 200, tokens());
     if (path === '/auth/v1/logout') { res.writeHead(204); return res.end(); }
+    if (path === '/clip.mp4') {
+        const file = ensureClip();
+        if (!file) { res.writeHead(404); return res.end(); }
+        const buf = readFileSync(file);
+        const range = /bytes=(\d*)-(\d*)/.exec(req.headers.range || '');
+        if (range) {
+            const from = range[1] ? Number(range[1]) : 0;
+            const to = range[2] ? Math.min(Number(range[2]), buf.length - 1) : buf.length - 1;
+            res.writeHead(206, { 'content-type': 'video/mp4', 'accept-ranges': 'bytes', 'content-range': `bytes ${from}-${to}/${buf.length}`, 'content-length': to - from + 1 });
+            return res.end(buf.subarray(from, to + 1));
+        }
+        res.writeHead(200, { 'content-type': 'video/mp4', 'accept-ranges': 'bytes', 'content-length': buf.length });
+        return res.end(buf);
+    }
     if (path === '/asset.png') { res.writeHead(200, { 'content-type': 'image/png' }); return res.end(PNG); }
     if (path === '/api/cinema/titles') {
         const limit = Number(url.searchParams.get('limit') || 24), beforeId = url.searchParams.get('before_id');
@@ -316,6 +351,29 @@ createServer(async (req, res) => {
         return;
     }
 
+    if (path === '/api/v1/generations' && req.method === 'POST' && body.model_id === 'clip-edit') {
+        // Quick edit (ADR-0134): checks the clips like the server does, quotes 3 credits per started 10 s plus 4 for captions,
+        // and a confirmed price of 0 is refused with the real price and charges nothing.
+        const clips = body.inputs?.clips;
+        if (!Array.isArray(clips) || clips.length === 0 || clips.length > 10) return send(res, 400, { error: 'inputs_invalid' });
+        let total = 0;
+        for (const c of clips) {
+            const src = state.jobs.find((x) => x.id === c.asset_id);
+            if (!src) return send(res, 404, { error: 'asset_not_found' });
+            if (!src.kind.includes('video')) return send(res, 400, { error: 'clip_not_video' });
+            if (!(c.in_s >= 0 && c.out_s > c.in_s && c.out_s <= CLIP_LENGTH_S + 0.01)) return send(res, 400, { error: 'clip_range' });
+            total += c.out_s - c.in_s;
+        }
+        if (total > 60.01) return send(res, 400, { error: 'too_long' });
+        const credits = 3 * Math.ceil(total / 10) + (body.inputs?.captions ? 4 : 0);
+        if (body.confirmed_credits !== credits) return send(res, 409, { error: 'credit_confirmation_mismatch', expected_credits: credits });
+        if (state.balance < credits) return send(res, 402, { error: 'insufficient_credits' });
+        state.balance -= credits;
+        const job = { id: randomUUID(), model_id: 'veo-fast', credits, created: Date.now(), label: `Edit of ${clips.length} clip${clips.length > 1 ? 's' : ''}`, kind: 'text-to-video' };
+        state.jobs.unshift(job);
+        console.log('[mock] clip-edit created');
+        return send(res, 200, { job_id: job.id, state: 'SUBMITTED', balance_after: state.balance });
+    }
     if (path === '/api/v1/generations' && req.method === 'POST') {
         const model = CATALOG.find((x) => x.id === body.model_id);
         if (!model) return send(res, 400, { error: 'model_id_required' });
@@ -344,7 +402,7 @@ createServer(async (req, res) => {
         const j = state.jobs.find((x) => x.id === m[1]);
         if (!j) return send(res, 404, { error: 'not_found' });
         if (!m[2]) return send(res, 200, { state: jobState(j), credits: j.credits, model_id: j.model_id });
-        return send(res, 200, { url: `http://localhost:${PORT}/asset.png`, mime_type: j.kind.includes('image') ? 'image/png' : 'video/mp4', expires_in: 900 });
+        return send(res, 200, { url: `http://localhost:${PORT}/${j.kind.includes('video') ? 'clip.mp4' : 'asset.png'}`, mime_type: j.kind.includes('image') ? 'image/png' : 'video/mp4', expires_in: 900 });
     }
     return send(res, 404, { error: 'not_found' });
 }).listen(PORT, () => console.log(`mock server on http://localhost:${PORT}`));
