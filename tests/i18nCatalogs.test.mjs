@@ -108,6 +108,21 @@ test('every tool group on /tools has translated words, and every MCP tool a desc
   }
 });
 
+test('the Publish copy on /mcp exists for every Publish tool and is shown only behind the switch (ADR-0112)', async () => {
+  const { MCP_PUBLISH_COPY: copy } = await import('../lib/i18n/mcpPublishCopy.mjs');
+  const { readFileSync } = await import('node:fs');
+  const names = [...readFileSync(new URL('../lib/veyrnoxPublishMcp.js', import.meta.url), 'utf8').matchAll(/registerTool\('([^']+)'/g)].map((m) => m[1]);
+  assert.equal(names.length, 7);
+  for (const name of names) assert.ok(copy[`mcp.tool.${name}`], name);
+  for (const key of ['lead', 's3.body', 'what.title', 'what.p', 'safe.kicker', 'safe.title', 'safe.p1', 'safe.p2', 'safe.p3']) {
+    assert.ok(copy[`mcp.pub.${key}`], key);
+  }
+  const page = readFileSync(new URL('../app/veyrnox/mcp/page.js', import.meta.url), 'utf8');
+  assert.match(page, /publishAutomationEnabled\(\)/);
+  const consent = readFileSync(new URL('../app/veyrnox/oauth/consent/page.js', import.meta.url), 'utf8');
+  assert.match(consent, /publishOpen=\{publishAutomationEnabled\(\)\}/);
+});
+
 test('every guide, step and link has catalog words in English, and the English matches the data', () => {
   for (const g of GUIDES) {
     assert.equal(en[`guide.${g.id}.title`], g.title);
