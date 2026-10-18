@@ -78,6 +78,7 @@ export function MarketingNav({ hideAnnouncementOnMobile = false }) {
         <NavAuthButtons />
         <MobileMenu
           items={NAV_CATEGORIES}
+          grouped
           buttonLabel={t('ui.moreNav')}
         />
       </div>
