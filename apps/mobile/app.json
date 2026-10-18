@@ -12,7 +12,10 @@
       "usesAppleSignIn": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "associatedDomains": [
+        "applinks:veyrnox.ai"
+      ]
     },
     "android": {
       "adaptiveIcon": {
@@ -21,7 +24,49 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "ai.veyrnox.app"
+      "package": "ai.veyrnox.app",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "veyrnox.ai",
+              "pathPrefix": "/app/library"
+            },
+            {
+              "scheme": "https",
+              "host": "veyrnox.ai",
+              "pathPrefix": "/app/chat"
+            },
+            {
+              "scheme": "https",
+              "host": "veyrnox.ai",
+              "pathPrefix": "/app/create"
+            },
+            {
+              "scheme": "https",
+              "host": "veyrnox.ai",
+              "pathPrefix": "/app/credits"
+            },
+            {
+              "scheme": "https",
+              "host": "veyrnox.ai",
+              "pathPrefix": "/app/account"
+            },
+            {
+              "scheme": "https",
+              "host": "veyrnox.ai",
+              "pathPrefix": "/app/publish"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
     },
     "plugins": [
       "expo-router",
