@@ -1,0 +1,20 @@
+{
+  "note": "Horns, from the lower row of the sheet shared with the forked beard, beard cube and chin curl. The chin curl's tail that overlaps the antlers' cell was painted out of a working copy of the sheet before slicing.",
+  "sources": [
+    {
+      "file": "fhair-b-antlers.jpg",
+      "rows": [
+        3,
+        3
+      ],
+      "styles": [
+        null,
+        null,
+        null,
+        "Small Horns",
+        "Big Horns",
+        "Antlers"
+      ]
+    }
+  ]
+}
