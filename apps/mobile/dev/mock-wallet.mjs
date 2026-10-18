@@ -35,6 +35,10 @@ function ledgerPage(url) {
 export function handleWallet(method, url) {
     if (method === 'GET' && url.pathname === '/api/v1/ledger') return ledgerPage(url);
     if (method === 'GET' && url.pathname === '/api/v1/ledger/usage') return [200, { spent: { day: 14, week: 63, month: 210 }, truncated: false }];
+    if (method === 'GET' && url.pathname === '/api/v1/free-allowance') {
+        // MOCK_FREE_OFF=1 answers the disabled shape, which hides the card.
+        return [200, process.env.MOCK_FREE_OFF ? { enabled: false, left: {} } : { enabled: true, left: { 'flux-schnell': 3, 'kling-v2': 1 } }];
+    }
     return null;
 }
 
