@@ -62,6 +62,12 @@ If a build starts failing after a dependency change, bisect these three first.
   (no ledger row). A new table that references `users` must be classified in
   `scripts/test-account-deletion.mjs`. The route is off unless
   `ACCOUNT_DELETION_ENABLED` is `"true"` (not in `wrangler.jsonc`: binding cap).
+- **Push tokens** (ADR-0113): `push_tokens`, `push_outbox` and `push_token_writes` are
+  reached only through the `register_push_token` / `remove_push_token` / `push_*` RPCs.
+  Pushes are sent by a per-minute sweep that reads finished jobs and writes only `push_*`
+  tables: never call the sender from a job-completion or refund path. A table that holds
+  tokens must be erased with the account (trigger on `users.deleted_at`). Off unless
+  `PUSH_NOTIFICATIONS_ENABLED` is `"true"` (staging only; not in production `wrangler.jsonc`).
 - **Free Credits** (ADR-0013): only `grant:signup` credits are free. Every
   ledger row sets `free_delta` (the part of `delta` that moved Free Credits;
   0 for anything else) and `credit_balances.free_balance` moves with it,
@@ -197,6 +203,11 @@ developer surface is `/api/v1/developer/*` and requires a verified OAuth
   - `/api/social/approvals/:token` — an expiring HMAC token naming one reviewer; it returns only the post review projection and accepts that reviewer's one decision.
   - `/api/social/team/:token` — an expiring HMAC token naming one team invitation; it returns only the invited email, role, brand label and expiry. Acceptance remains behind authenticated `/api/v1`.
   - `/api/publish/v1/*` — an expiring, scoped Publish customer API key. Only a SHA-256 hash is stored; each key is limited to 120 requests per minute and stops working when revoked, expired, removed from its brand role, or no longer covered by an active Publish Plan.
+  - `/.well-known/apple-app-site-association`, `/.well-known/assetlinks.json` —
+    anonymous, read-only app-link association files for the mobile app
+    (ADR-0106). Built from constants in `lib/mobileAppLinks.js` (Apple Team ID,
+    Android signing fingerprints; owner edits via PR) and 404 `no-store` until
+    those are set. No user data.
   - `/api/turnstile-failure` — anonymous and write-only: a POST from our own
     pages whose body is one Turnstile error code or the word `unsupported`,
     rate limited per connecting IP in `worker.js`. It logs that and nothing
