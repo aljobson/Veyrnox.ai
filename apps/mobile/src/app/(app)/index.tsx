@@ -4,6 +4,10 @@ import { Link, Stack, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../auth/AuthProvider';
 import { useBilling } from '../../billing/BillingProvider';
 import { Logo } from '../../components/Logo';
+import { StaleNote } from '../../components/StaleNote';
+import { appCache, getCacheUser } from '../../lib/appCache';
+import { POLICIES, type CacheMeta } from '../../lib/cache';
+import { observe } from '../../lib/network';
 import type { Balance } from '../../lib/api';
 import { colors } from '../../theme';
 
@@ -12,11 +16,19 @@ export default function Home() {
     const { status: billing } = useBilling();
     const [balance, setBalance] = useState<Balance | null>(null);
     const [failed, setFailed] = useState(false);
+    const [saved, setSaved] = useState<CacheMeta | null>(null);
 
     const load = useCallback(async () => {
         setFailed(false);
         try {
-            setBalance(await api.getBalance());
+            // A saved balance only fills the screen while the real one loads or when offline. Create still asks the server.
+            const out = await appCache.swr({
+                policy: POLICIES.balance,
+                userId: getCacheUser(),
+                fetcher: () => observe(api.getBalance()),
+                onData: (value) => setBalance(value),
+            });
+            setSaved(out.meta);
         } catch {
             setFailed(true);
         }
@@ -39,6 +51,7 @@ export default function Home() {
                     {balance.free_credits > 0 ? (
                         <Text style={styles.muted}>{balance.free_credits} of them are free credits</Text>
                     ) : null}
+                    <StaleNote meta={saved} />
                 </>
             ) : failed ? (
                 <Pressable accessibilityRole="button" onPress={load}>

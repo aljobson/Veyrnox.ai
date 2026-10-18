@@ -1,3 +1,6 @@
+import { appCache } from './appCache';
+import { POLICIES, type CacheMeta } from './cache';
+import { observe } from './network';
 import { ApiError, API_BASE, type ApiClient } from './api';
 
 export interface CatalogModel {
@@ -84,6 +87,12 @@ export function isSupported(model: CatalogModel): boolean {
 export function promptRequired(model: CatalogModel): boolean {
     if (!textInput(model)) return false;
     return !Object.values(model.capabilities?.media ?? {}).some((slot) => slot.required);
+}
+
+// The catalog is the same public data for everyone, so a saved copy is safe to show when offline. Screens that
+// build a request still send it to the server, which prices it; the saved copy is never a gate.
+export function fetchCatalogCached(onData?: (models: CatalogModel[], meta: CacheMeta) => void) {
+    return appCache.swr({ policy: POLICIES.catalog, fetcher: () => observe(fetchCatalog()), onData });
 }
 
 export async function fetchCatalog(): Promise<CatalogModel[]> {

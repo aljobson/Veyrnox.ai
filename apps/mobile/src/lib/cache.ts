@@ -34,8 +34,10 @@ const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 
 export const POLICIES = {
-    balance: { name: 'balance', perUser: true, freshMs: 30_000, maxAgeMs: DAY },
-    library: { name: 'library', perUser: true, freshMs: MINUTE, maxAgeMs: 7 * DAY },
+    // Balance and Library freshMs 0: a screen always refetches on focus (a purchase or a creation elsewhere must show
+    // at once); the saved copy only fills the gap while that runs, or stands in when it fails.
+    balance: { name: 'balance', perUser: true, freshMs: 0, maxAgeMs: DAY },
+    library: { name: 'library', perUser: true, freshMs: 0, maxAgeMs: 7 * DAY },
     catalog: { name: 'catalog', perUser: false, freshMs: 10 * MINUTE, maxAgeMs: 7 * DAY },
 } as const satisfies Record<string, CachePolicy>;
 
@@ -100,7 +102,7 @@ export function createCache(storage: CacheStorage, now: () => number = Date.now)
             await storage.remove(key).catch(() => undefined);
             return null;
         }
-        const meta: CacheMeta = { fromCache: true, stale: ageMs > policy.freshMs, savedAt: stored.savedAt, ageMs };
+        const meta: CacheMeta = { fromCache: true, stale: ageMs >= policy.freshMs, savedAt: stored.savedAt, ageMs };
         return { value: stored.value as T, meta };
     }
 
@@ -137,4 +139,12 @@ export function createCache(storage: CacheStorage, now: () => number = Date.now)
     }
 
     return { swr, read, write, clear };
+}
+
+// "just now", "5 min", "3 h", "2 d": the age part of the saved-copy label.
+export function formatAge(ageMs: number): string {
+    if (ageMs < MINUTE) return '';
+    if (ageMs < HOUR) return `${Math.floor(ageMs / MINUTE)} min`;
+    if (ageMs < DAY) return `${Math.floor(ageMs / HOUR)} h`;
+    return `${Math.floor(ageMs / DAY)} d`;
 }
