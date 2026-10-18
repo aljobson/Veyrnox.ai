@@ -134,6 +134,35 @@ createServer(async (req, res) => {
     }
     if ((m = path.match(/^\/api\/cinema\/posters\/([^/]+)$/))) { res.writeHead(200, { 'content-type': 'image/png' }); return res.end(PNG); }
     if (path === '/api/catalog') return send(res, 200, { models: CATALOG });
+    // Publish brands (ADR-0135): the person's own, a client brand they edit, and one they can only view.
+    const BRAND_CLIENT = '22222222-2222-4222-8222-222222222222';
+    const BRAND_VIEW = '33333333-3333-4333-8333-333333333333';
+    const brandHeader = String(req.headers['x-publish-brand-id'] || '');
+    if (path === '/api/v1/social/brands' && req.method === 'GET') {
+        return send(res, 200, { brands: [
+            { id: '11111111-1111-4111-8111-111111111111', label: 'Veyrnox Studio', timezone: 'Europe/London', role: 'owner', paid: true },
+            { id: BRAND_CLIENT, label: 'Acme Client', timezone: 'America/New_York', role: 'editor', paid: true },
+            { id: BRAND_VIEW, label: 'Agency (view only)', timezone: 'UTC', role: 'viewer', paid: false },
+        ] });
+    }
+    // Approvals: each reviewer carries a signed link, as the real route adds; the app must not show it.
+    if (path === '/api/v1/social/approvals' && req.method === 'GET') {
+        if (brandHeader === BRAND_VIEW) return send(res, 403, { error: 'brand_role_forbidden', role: 'viewer' });
+        const link = 'https://mock.example/social/review/MOCK-SIGNED-LINK';
+        return send(res, 200, { brand_id: brandHeader || 'b1', requests: brandHeader === BRAND_CLIENT ? [] : [
+            { id: 'ap-1', post_id: 'p-1', policy: 'any', status: 'pending', scheduled_at: '2026-10-22T09:00:00Z', global_text: 'Spring drop is live: three new looks, free shipping this week.', created_at: '2026-10-18T10:00:00Z', reviewers: [
+                { id: 'rv-1', email: 'sam@acme.example', decision: 'pending', comment: null, decided_at: null, url: link },
+                { id: 'rv-2', email: 'lee@acme.example', decision: 'commented', comment: 'Can we soften the second line?', decided_at: '2026-10-18T12:30:00Z', url: link } ] },
+            { id: 'ap-2', post_id: 'p-2', policy: 'any', status: 'approved', scheduled_at: null, global_text: 'Behind the scenes at the studio.', created_at: '2026-10-15T10:00:00Z', reviewers: [
+                { id: 'rv-3', email: 'sam@acme.example', decision: 'approved', comment: 'Great.', decided_at: '2026-10-15T11:00:00Z', url: link } ] },
+            { id: 'ap-3', post_id: 'p-3', policy: 'any', status: 'rejected', scheduled_at: null, global_text: 'Flash sale, 50% off everything.', created_at: '2026-10-12T10:00:00Z', reviewers: [
+                { id: 'rv-4', email: 'lee@acme.example', decision: 'rejected', comment: 'Not approved by legal.', decided_at: '2026-10-12T15:00:00Z', url: link } ] },
+        ] });
+    }
+    if (path === '/api/v1/social/accounts' && brandHeader === BRAND_CLIENT) {
+        return send(res, 200, { brand_id: BRAND_CLIENT, accountLimit: 5, planTier: 'publish', accounts: [
+            { id: 'acc-c1', network: 'linkedin', display_name: 'Acme Corp Page', avatar_url: null, status: 'active', connected_at: '2026-10-02T10:00:00Z', token_expires_at: '2026-12-02T10:00:00Z', publishingEnabled: true, supportedMedia: ['image'] } ] });
+    }
     if (path === '/api/v1/social/accounts') return send(res, 200, { brand_id: 'b1', accountLimit: 5, planTier: 'publish', accounts: [
         { id: 'acc-1', network: 'instagram', display_name: 'Veyrnox Studio', avatar_url: null, status: 'active', connected_at: '2026-10-01T10:00:00Z', token_expires_at: '2026-12-01T10:00:00Z', publishingEnabled: true, supportedMedia: ['image', 'video'] },
         { id: 'acc-2', network: 'tiktok', display_name: 'veyrnox.ai', avatar_url: null, status: 'expired', connected_at: '2026-09-01T10:00:00Z', token_expires_at: '2026-10-01T10:00:00Z', publishingEnabled: true, supportedMedia: ['image', 'video'] } ] });

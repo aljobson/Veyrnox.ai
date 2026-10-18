@@ -2,16 +2,16 @@ import * as WebBrowser from 'expo-web-browser';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useAuth } from '../../../../auth/AuthProvider';
 import { boundedError, fetchPost, fetchPosts, findPost, postStatusLabel, publishErrorMessage, targetStatusLabel, type PublishPost } from '../../../../lib/publish';
 import { WhenPicker, whenFrom } from '../../../../components/WhenPicker';
 import { cancelPost, composeErrorMessage, reschedulePost, restorePost } from '../../../../lib/publishCompose';
 import { colors } from '../../../../theme';
+import { usePublishApi } from '../../../../lib/usePublishApi';
 
 // Reads the single-post route, and falls back to the newest page of the list on a server that lacks it (ADR-0121, ADR-0122).
 export default function PostDetail() {
     const { id } = useLocalSearchParams<{ id: string }>();
-    const { api } = useAuth();
+    const api = usePublishApi();
     const [state, setState] = useState<{ post: PublishPost | null } | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [editing, setEditing] = useState(false);

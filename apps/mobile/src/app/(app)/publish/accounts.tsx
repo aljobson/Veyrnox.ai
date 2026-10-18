@@ -2,14 +2,14 @@ import { Image } from 'expo-image';
 import { Stack } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
-import { useAuth } from '../../../auth/AuthProvider';
 import { accountStatusLabel, fetchAccounts, publishErrorMessage, type PublishAccount } from '../../../lib/publish';
 import { colors } from '../../../theme';
+import { usePublishApi } from '../../../lib/usePublishApi';
 
 const date = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString() : null);
 
 export default function Accounts() {
-    const { api } = useAuth();
+    const api = usePublishApi();
     const [data, setData] = useState<{ accountLimit: number; accounts: PublishAccount[] } | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [refreshing, setRefreshing] = useState(false);
