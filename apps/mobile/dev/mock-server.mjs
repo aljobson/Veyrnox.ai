@@ -143,6 +143,26 @@ createServer(async (req, res) => {
         return send(res, 400, { error: 'invalid_body' });
     }
     if (path === '/api/v1/social/analytics') return send(res, 200, { account: { id: 'acc-1', network: 'instagram', display_name: 'Veyrnox Studio', status: 'active' }, sync: { last_ok_at: '2026-10-18T06:00:00Z', failing: false }, evolution: [{ date: '2026-10-17', metrics: { followers: 1240, reach: 5300 } }, { date: '2026-10-18', metrics: { followers: 1262, reach: 6120, video_views: 880 } }], posts: [{ id: 'ap-1', published_at: '2026-10-17T09:00:00Z', type: 'reel', permalink: 'https://www.instagram.com/p/mock/', caption: 'Behind the scenes cut.', metrics: { likes: 140, comments: 12 } }] });
+    // Library files (read-only): film masters and editor renders, with the real routes' shapes. The asset link is http
+    // here, which the app refuses on purpose, so Share and Save cannot be exercised against the mock.
+    const FILES = {
+        masters: [
+            { id: 'a1111111-1111-4111-8111-111111111111', source_job_id: null, label: 'Spring launch master', sha256: 'a'.repeat(64), size_bytes: 41_943_040, width: 1920, height: 1080, seconds: 74, frame_rate: 30, created_at: new Date(Date.now() - 2 * 86400000).toISOString(), expires_at: new Date(Date.now() + 28 * 86400000).toISOString() },
+            { id: 'a2222222-2222-4222-8222-222222222222', source_job_id: null, label: 'Teaser cut', sha256: 'b'.repeat(64), size_bytes: 9_437_184, width: 1080, height: 1920, seconds: 12.5, frame_rate: 30, created_at: new Date(Date.now() - 20 * 86400000).toISOString(), expires_at: new Date(Date.now() + 3 * 3600000).toISOString() },
+            { id: 'a3333333-3333-4333-8333-333333333333', source_job_id: null, label: 'Old promo', sha256: 'c'.repeat(64), size_bytes: 20_971_520, width: 1280, height: 720, seconds: 30, frame_rate: 25, created_at: new Date(Date.now() - 40 * 86400000).toISOString(), expires_at: new Date(Date.now() - 86400000).toISOString() },
+        ],
+        renders: [
+            { id: 'b1111111-1111-4111-8111-111111111111', label: 'Editor export: product reel', sha256: 'd'.repeat(64), size_bytes: 15_728_640, state: 'stored', width: 1080, height: 1920, seconds: 22, frame_rate: 30, created_at: new Date(Date.now() - 86400000).toISOString(), expires_at: new Date(Date.now() + 60 * 86400000).toISOString(), inspected_at: new Date().toISOString() },
+        ],
+    };
+    if (path === '/api/v1/library/masters' && req.method === 'GET') return send(res, 200, { enabled: true, masters: FILES.masters });
+    if (path === '/api/v1/library/editor-renders' && req.method === 'GET') return send(res, 200, { enabled: true, renders: FILES.renders });
+    m = path.match(/^\/api\/v1\/library\/(masters|editor-renders)\/([^/]+)\/asset$/);
+    if (m && req.method === 'GET') {
+        const f = FILES[m[1] === 'masters' ? 'masters' : 'renders'].find((x) => x.id === m[2]);
+        if (!f) return send(res, 404, { error: 'not_found' });
+        return send(res, 200, { url: `http://localhost:${PORT}/asset.png`, mime_type: 'video/mp4', size_bytes: f.size_bytes, sha256: f.sha256, expires_in: 900, asset_expires_at: f.expires_at });
+    }
     if (path === '/api/presets')
         return send(res, 200, {
             presets: [
