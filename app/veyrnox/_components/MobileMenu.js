@@ -9,7 +9,7 @@ import { navHref } from '../_lib/tokens';
 import { useI18n } from '../../../components/I18nProvider';
 
 // A visible menu keeps every destination reachable on a narrow screen.
-export function MobileMenu({ items, className = '', buttonLabel = 'Menu', buttonText = '', navLabel = 'Site', activeHref }) {
+export function MobileMenu({ items, className = '', buttonLabel = 'Menu', buttonText = '', navLabel = 'Site', activeHref, grouped = false }) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef(null);
   const oddlingsPublic = useOddlingsPublic();
@@ -96,7 +96,20 @@ export function MobileMenu({ items, className = '', buttonLabel = 'Menu', button
             aria-label={navLabel}
             className="vx-drop-in fixed inset-x-0 top-16 z-40 max-h-[calc(100dvh-4rem)] overflow-y-auto border-b border-vx-border bg-vx-base px-4 py-3 shadow-xl"
           >
-            <ul className="grid gap-1 sm:grid-cols-2 lg:grid-cols-3">{renderLinks(items)}</ul>
+            {grouped ? (
+              // A mega panel: one titled column per group, in the order the
+              // groups first appear in the list.
+              <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
+                {[...new Set(items.map((it) => it.group))].map((group) => (
+                  <section key={group} aria-label={t.label(group)}>
+                    <p className="px-3 pb-1 font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-faint uppercase">{t.label(group)}</p>
+                    <ul className="grid gap-1">{renderLinks(items.filter((it) => it.group === group))}</ul>
+                  </section>
+                ))}
+              </div>
+            ) : (
+              <ul className="grid gap-1 sm:grid-cols-2 lg:grid-cols-3">{renderLinks(items)}</ul>
+            )}
             <div className="mt-2 flex items-center justify-between border-t border-vx-border pt-3">
               <span className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-faint">{t('ui.theme')}</span>
               <ThemeToggle />

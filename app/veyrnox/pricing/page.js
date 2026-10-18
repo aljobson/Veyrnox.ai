@@ -85,12 +85,24 @@ function useCreditPacks() {
 // "$10", not "$10.00": the approved wording (#99 item 1).
 const usd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', trailingZeroDisplay: 'stripIfInteger' });
 const num = new Intl.NumberFormat('en-US');
+// Per credit a pack costs fractions of a cent, so the rate keeps three places.
+const rateFormat = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 3, maximumFractionDigits: 3 });
+const perCredit = (pack) => pack.price_usd_cents / 100 / pack.credits;
 
 export default function Pricing() {
   const { locale, t } = useI18n();
   const catalogState = useLiveCatalog();
   const liveModels = catalogState.models;
   const packState = useCreditPacks();
+  // Derived from the live packs, never typed: the saving is measured against
+  // the dearest pack, and only a pack that really is cheapest per credit is
+  // marked best value.
+  const rates = packState.packs.length
+    ? (() => {
+        const all = packState.packs.map(perCredit).filter((r) => Number.isFinite(r) && r > 0);
+        return { min: Math.min(...all), max: Math.max(...all), best: all.length };
+      })()
+    : { min: 0, max: 0, best: 0 };
   const groups = ['video', 'image', 'audio']
     .map((kind) => ({ kind, rows: liveModels.filter((m) => kindOf(m.modality) === kind) }))
     .filter((g) => g.rows.length);
@@ -142,21 +154,34 @@ export default function Pricing() {
         {packState.status === 'success' && packState.packs.length > 0 && (
           <>
           <ul className="mt-10 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
-            {packState.packs.map((p) => (
-              <li key={p.id} className="vx-paper-shadow">
-                {/* h-full: the slips share a row, and a line that wraps on one
-                    (the longest price line does at four across) must not leave
-                    it taller than its neighbours. */}
-                <div className="vx-paper h-full px-6 pt-9 pb-10">
-                  <div className="font-vx-mono text-[40px] font-bold leading-none text-vx-money vx-num">{num.format(p.credits)} cr</div>
-                  <div className="vx-perf mt-6" aria-hidden />
-                  {/* #99 item 1, approved v1: keep verbatim. */}
-                  <div className="mt-4 text-[15px] text-vx-fg-body">
-                    {t('pricing.packs.line', { credits: num.format(p.credits), price: usd.format(p.price_usd_cents / 100) })}
+            {packState.packs.map((p) => {
+              const rate = perCredit(p);
+              const saving = Math.floor((1 - rate / rates.max) * 100);
+              const best = rates.best > 0 && rate === rates.min && rates.min < rates.max;
+              return (
+                <li key={p.id} className="vx-paper-shadow">
+                  {/* h-full: the slips share a row, and a line that wraps on one
+                      (the longest price line does at four across) must not leave
+                      it taller than its neighbours. Every slip keeps the same
+                      top row, so the best-value pill never shifts the figures. */}
+                  <div className="vx-paper h-full px-6 pt-9 pb-10">
+                    <div className="flex h-6 items-center justify-between gap-2 font-vx-mono text-[11px] font-bold">
+                      <span className={best ? 'rounded-full bg-vx-accent px-2.5 py-1 text-vx-accent-ink' : ''}>{best ? t('pricing.packs.best') : ''}</span>
+                      {saving >= 1 && <span className="text-vx-accent">{t('pricing.packs.save', { pct: saving })}</span>}
+                    </div>
+                    <div className="mt-3 font-vx-mono text-[40px] font-bold leading-none text-vx-money vx-num">{num.format(p.credits)} cr</div>
+                    <div className="vx-perf mt-6" aria-hidden />
+                    {/* #99 item 1, approved v1: keep verbatim. */}
+                    <div className="mt-4 text-[15px] text-vx-fg-body">
+                      {t('pricing.packs.line', { credits: num.format(p.credits), price: usd.format(p.price_usd_cents / 100) })}
+                    </div>
+                    <div className="mt-1 font-vx-mono text-[12px] text-vx-fg-muted vx-num">
+                      {t('pricing.packs.rate', { rate: rateFormat.format(rate) })}
+                    </div>
                   </div>
-                </div>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
           <p className="mt-8 text-[13px] text-vx-fg-muted max-w-[640px] leading-[1.6]">
             {t('pricing.packs.tax')}

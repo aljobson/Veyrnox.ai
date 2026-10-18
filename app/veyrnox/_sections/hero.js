@@ -38,6 +38,7 @@ export async function Hero({ models }) {
               {t('home.hero.prices')}
             </Link>
           </div>
+          <p className="mt-5 text-[14px] text-vx-fg-muted">{t('home.cta.note')}</p>
         </div>
         <PriceSlip models={models} />
       </div>
