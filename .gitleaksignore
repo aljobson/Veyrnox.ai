@@ -189,3 +189,5 @@ fd087777e79b8a1e33774074af9d1f32e18fff05:tests/veyrnoxMcp.test.mjs:generic-api-k
 88c29b8023fe9d286b05a00fd48d87d847306894:tests/publishAutomation.test.mjs:generic-api-key:56
 88c29b8023fe9d286b05a00fd48d87d847306894:tests/publishAutomation.test.mjs:generic-api-key:101
 88c29b8023fe9d286b05a00fd48d87d847306894:tests/publishAutomation.test.mjs:generic-api-key:168
+# Same synthetic key in the capped generate_image test, as squashed on main (#1215).
+3d260691370835895eb559e64c629c56575d9e00:tests/veyrnoxMcp.test.mjs:generic-api-key:117
