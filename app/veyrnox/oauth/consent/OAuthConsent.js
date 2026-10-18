@@ -62,13 +62,14 @@ export function OAuthConsent({ authorizationId, publishOpen = false }) {
     <Panel>
       <p className="font-vx-mono text-[11px] font-bold tracking-[0.16em] uppercase text-vx-accent">OAuth connection</p>
       <h1 className="vx-display mt-4 text-[40px] sm:text-[52px] leading-[1]">Connect {shown.name}?</h1>
-      <p className="mt-5 text-vx-fg-body leading-[1.65]">{publishOpen ? 'This assistant will be able to read your Veyrnox account, start small image generations that spend your credits and, with a Publish Plan, schedule, move and cancel posts on your connected accounts, until you revoke the connection.' : 'This assistant will be able to read your Veyrnox account and start small image generations that spend your credits, until you revoke the connection.'}</p>
+      <p className="mt-5 text-vx-fg-body leading-[1.65]">{publishOpen ? 'This assistant will be able to read your Veyrnox account, start image and video generations and edits that spend your credits and, with a Publish Plan, schedule, move and cancel posts on your connected accounts, until you revoke the connection.' : 'This assistant will be able to read your Veyrnox account and start image and video generations and edits that spend your credits, until you revoke the connection.'}</p>
       <div className="mt-7 rounded-2xl border border-vx-border bg-vx-base p-5">
         <h2 className="font-extrabold">Requested access</h2>
         <ul className="mt-3 space-y-2 text-sm text-vx-fg-body">
           <li>View models, generation history and credit balance</li>
           <li>Estimate generation costs before anything is charged</li>
           <li>Start one text-to-image generation at a time that spends your credits: at most 2 credits each, and only at the exact price it has shown you</li>
+          <li>Start one video generation, or one edit of videos you already made, at a time that spends your credits: at most 60 credits each, and only at the exact price it has shown you. It may use up to two of your finished generations as source material, only after you have confirmed you have the rights to them</li>
           <li>Retrieve short-lived links to your finished assets</li>
           {publishOpen && <li>View your connected accounts, scheduled and published posts and analytics, and schedule, reschedule or cancel posts (Publish Plan). It cannot publish immediately.</li>}
         </ul>

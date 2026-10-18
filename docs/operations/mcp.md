@@ -39,3 +39,4 @@ Seven `publish_*` tools register only while `PUBLISH_AUTOMATION_ENABLED` is on; 
 ## Rollback
 
 Disable the OAuth 2.1 server or dynamic client registration in Supabase to stop new connections. Revoke existing grants to stop issued clients immediately. If the HTTP endpoint itself is faulty, roll back the application deployment; the ordinary Veyrnox studio remains on its existing routes and does not depend on MCP.
+- `generate_video` and `edit_video` (ADR-0100 amendment 4) widen existing authorizations the same way, up to 60 credits per call. Check one: `generate_video` with a video model at 5 s; `edit_video` with `confirmed_credits: 0` must answer `credit_confirmation_mismatch` with `expected_credits` and charge nothing.

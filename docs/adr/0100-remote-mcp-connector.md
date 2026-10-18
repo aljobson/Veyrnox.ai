@@ -66,3 +66,15 @@ The security audit (#1065) removed `generate_media`. From that change until Amen
 - A leaked or runaway client can spend a whole balance in images, as a signed-in browser could. A user can revoke the connection in Account & security.
 - Because the tool no longer reads the job list before spending, one failure mode goes away: the call no longer refuses when the list cannot be read.
 - The tool description no longer mentions a daily limit.
+
+## Amendment 4 (2026-10-18): `generate_video` and `edit_video`, at the owner's request
+
+**Why.** The owner wants an assistant to create and edit video on their own account through the connector, as it already can for images.
+
+**Decision.** Add two spending tools, both thin adapters over the existing generation route (`lib/mcpVideo.js`), with limits fixed in code (`MCP_VIDEO_LIMITS`):
+
+- **`generate_video`**: video models only (not `clip-edit`). At most 60 credits per call (about $2 at $0.033 a credit). The price must be confirmed exactly (`estimate_generation` with `duration_seconds`). A required idempotency key. Up to two source files, each an owned finished generation named by job id and slot (`image`, `endImage`, `video`, `audio`), never a URL or upload; any source needs `consent: true`, which the assistant may set only after the user confirms rights to the media and the acceptable use policy. Ownership, MIME and size checks are the route's.
+- **`edit_video`**: the Clip Editor (`clip-edit`) only: trim and join up to 10 owned clips (60 s out), optionally one owned audio file and caption preset. Its price depends on real clip lengths that only the route reads, so a call with `confirmed_credits: 0` is a quote: the route answers `credit_confirmation_mismatch` with `expected_credits` before any debit. A confirmation or a quoted price above 60 credits is refused. Slow motion and captions stay behind their own server flags.
+- No daily cap (amendment 3). Rate limit, moderation, debit, refund and the video-agent plan ticket are the route's, unchanged.
+
+**Consequences.** The connector can now spend up to 60 credits in one call, and, as with amendment 2, existing authorizations widen (revoke in Account & security). Uploads, audio generation and the video agent remain out of reach. `tests/mcpVideo.test.mjs` pins every refusal; the surface test pins eight tools and three call sites to the generation route.

@@ -19,12 +19,18 @@ test('MCP estimates image/audio once and video in five-second units', () => {
   assert.equal(estimatedCredits({ modality: 'text-to-video', credits: 6, durations: [5, 10] }, 15), null);
 });
 
-test('the public MCP surface is deliberately small, and its only spending tool is the capped image generator', () => {
+test('the public MCP surface is deliberately small, and its spending tools are the capped image, video and edit tools', () => {
   const source = readFileSync(new URL('../lib/veyrnoxMcp.js', import.meta.url), 'utf8');
   const names = [...source.matchAll(/registerTool\('([^']+)'/g)].map((match) => match[1]);
-  assert.deepEqual(names, ['list_models', 'estimate_generation', 'generate_image', 'get_generation', 'list_generations', 'get_balance']);
-  assert.doesNotMatch(source, /generate_media|generate_video|generate_audio|source_asset_ids|consent:\s*z\./, 'no video, audio, source-file or consent inputs on the connector');
-  assert.equal([...source.matchAll(/routeJson\(createGeneration/g)].length, 1, 'one call site reaches the generation route, and only through startMcpGeneration');
+  assert.deepEqual(names, ['list_models', 'estimate_generation', 'generate_image', 'generate_video', 'edit_video', 'get_generation', 'list_generations', 'get_balance']);
+  assert.doesNotMatch(source, /generate_media|generate_audio|source_asset_ids/, 'no audio or unbounded-source tools on the connector');
+  assert.equal([...source.matchAll(/routeJson\(createGeneration/g)].length, 3, 'three call sites reach the generation route, each only through startMcpGeneration, startMcpVideo or startMcpEdit');
+  for (const [tool, helper, next] of [['generate_video', 'startMcpVideo', 'edit_video'], ['edit_video', 'startMcpEdit', 'get_generation']]) {
+    const body = source.slice(source.indexOf(`registerTool('${tool}'`), source.indexOf(`registerTool('${next}'`));
+    assert.match(body, new RegExp(helper));
+    assert.match(body, /readOnlyHint: false|spends/);
+    assert.match(body, /This tool spends credits/);
+  }
   const tool = source.slice(source.indexOf("registerTool('generate_image'"), source.indexOf("registerTool('get_generation'"));
   assert.match(tool, /startMcpGeneration/);
   assert.match(tool, /readOnlyHint: false/);
