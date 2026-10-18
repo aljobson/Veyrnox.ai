@@ -33,6 +33,11 @@ export const config: EnvConfig = DEV_API
     ? { ...ENVIRONMENTS[APP_ENV], apiBase: DEV_API, supabaseUrl: DEV_API }
     : ENVIRONMENTS[APP_ENV];
 
-// Registered as the app scheme in app.json. Supabase must list this exact URL
-// as an allowed redirect (ADR-0106, owner prerequisite).
+// Registered as the app scheme in app.json. The sign-in session ends when the
+// browser reaches this address.
 export const AUTH_REDIRECT_URL = 'ai.veyrnox.app://auth/callback';
+
+// Where Supabase sends the browser after Google or Apple. It is on the site's
+// own origin, which Supabase always allows, and forwards the code to
+// AUTH_REDIRECT_URL (app/auth/mobile/route.js, ADR-0106 amendment 1).
+export const OAUTH_BRIDGE_URL = `${config.apiBase}/auth/mobile`;

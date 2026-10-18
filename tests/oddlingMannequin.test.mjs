@@ -49,9 +49,11 @@ test('skin and eye colours follow the picks, and unpicked parts use neutral defa
 });
 
 test('height, head size and body width change the drawing in the expected direction', () => {
-  const headY = (picks) => shapeOf(mannequinShapes(picks), 'head').attrs.cy;
+  const headY = (picks) => mannequinParams(picks).headCy;
   assert.ok(headY({ height: 'Very Tall' }) < headY({ height: 'Average' }) && headY({ height: 'Average' }) < headY({ height: 'Very Short' }));
-  assert.ok(shapeOf(mannequinShapes({ head_size: 'Extra Large' }), 'head').attrs.r > shapeOf(mannequinShapes({ head_size: 'Small' }), 'head').attrs.r);
+  assert.ok(mannequinParams({ head_size: 'Extra Large' }).headR > mannequinParams({ head_size: 'Small' }).headR);
+  const headScale = (picks) => Number(shapeOf(mannequinShapes(picks), 'head').attrs.transform.match(/scale\(([\d.]+)\)/)[1]);
+  assert.ok(headScale({ head_size: 'Extra Large' }) > headScale({ head_size: 'Small' }), 'the drawn head follows the head size');
   const torsoWidth = (body) => { const d = shapeOf(mannequinShapes({ body_type: body }), 'torso').attrs.d; const xs = [...d.matchAll(/[ML]\s?(-?[\d.]+)/g)].map((m) => Number(m[1])); return Math.max(...xs) - Math.min(...xs); };
   assert.ok(torsoWidth('Fat') > torsoWidth('Athletic') && torsoWidth('Athletic') > torsoWidth('Very Skinny'));
   assert.ok(mannequinParams({ leg_size: 'Extra Large' }).legPx > mannequinParams({ leg_size: 'Small' }).legPx);
@@ -70,10 +72,12 @@ test('stacking every tall choice shrinks the whole figure to fit instead of runn
 test('glasses and headwear are drawn only when picked, and a tile can focus on the head', () => {
   const none = mannequinShapes({});
   assert.ok(!none.some((s) => s.key.startsWith('glass-') || s.key.startsWith('wear-')));
-  assert.equal(mannequinShapes({ everyday_accessories: 'Sunglasses' }).filter((s) => s.key.startsWith('glass-')).length, 2);
+  assert.equal(mannequinShapes({ everyday_accessories: 'Sunglasses' }).filter((s) => /^glass--?1$/.test(s.key)).length, 2, 'two lenses');
   assert.equal(mannequinShapes({ everyday_accessories: 'Jewellery' }).filter((s) => s.key.startsWith('glass-')).length, 0, 'accessories the figure cannot show are not faked');
   assert.ok(mannequinShapes({ headwear: 'Beanie' }).some((s) => s.key.startsWith('wear-')));
   assert.equal(mannequinViewBox('body', {}), '0 0 120 230');
   const [x, y, w, h] = mannequinViewBox('head', {}).split(' ').map(Number);
   assert.ok(w < 120 && h < 120 && y > 0 && x > 0);
+  const [fx, fy, fw, fh] = mannequinViewBox('face', {}).split(' ').map(Number);
+  assert.ok(fw < w && fh < h && fx > 0 && fy > 0, 'a face tile is a tighter crop than a head tile');
 });

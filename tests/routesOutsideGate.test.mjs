@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url';
 // purpose.
 const OUTSIDE = {
     'app/api/auth/session/route.js': 'same-origin CSRF + HttpOnly refresh credential',
+    'app/auth/mobile/route.js': 'public redirect to a fixed app address; forwards only a well-formed PKCE code',
     'app/.well-known/oauth-protected-resource/api/v1/mcp/route.js': 'public OAuth metadata',
     'app/.well-known/oauth-protected-resource/api/v1/developer/route.js': 'public OAuth metadata',
     'app/api/catalog/route.js': 'public read',
