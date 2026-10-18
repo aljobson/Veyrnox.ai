@@ -118,5 +118,53 @@ class ClientTests(unittest.TestCase):
         self.assertRegex(opened.call_args.args[0].get_header("User-agent"), r"^Veyrnox-CLI/1\.0\.0")
 
 
+class PublishCommandTests(unittest.TestCase):
+    def run_cli(self, *args, reply=None):
+        from click.testing import CliRunner
+        from cli_anything.veyrnox import veyrnox_cli
+        with mock.patch.object(veyrnox_cli.Client, "request", return_value=reply or {}) as call:
+            result = CliRunner().invoke(veyrnox_cli.cli, ["--json", *args])
+        return result, call
+
+    def test_accounts_hit_the_publish_path_with_brand(self):
+        result, call = self.run_cli("publish", "--brand", "b1", "accounts", reply={"accounts": []})
+        self.assertEqual(result.exit_code, 0, result.output)
+        self.assertEqual(call.call_args.args, ("GET", "/publish/accounts?brand_id=b1"))
+
+    def test_schedule_requires_yes_when_not_interactive(self):
+        result, call = self.run_cli("publish", "schedule", "--at", "2030-01-01T10:00:00Z", "--account", "a1", "--video", "j1")
+        self.assertNotEqual(result.exit_code, 0)
+        self.assertIn("requires --yes", result.output)
+        call.assert_not_called()
+
+    def test_schedule_dry_run_sends_nothing(self):
+        result, call = self.run_cli("publish", "schedule", "--at", "2030-01-01T10:00:00Z", "--account", "a1", "--image", "j1", "--dry-run")
+        self.assertEqual(result.exit_code, 0, result.output)
+        body = json.loads(result.output)["request"]
+        self.assertEqual(body["media"], [{"media_type": "image", "job_id": "j1"}])
+        self.assertNotIn("publish_now", body)
+        call.assert_not_called()
+
+    def test_schedule_posts_the_request(self):
+        result, call = self.run_cli("publish", "schedule", "--at", "2030-01-01T10:00:00Z", "--account", "a1", "--video", "j1",
+            "--idempotency-key", "idem-12345678", "--yes", reply={"post_id": "p", "scheduled_at": "x"})
+        self.assertEqual(result.exit_code, 0, result.output)
+        method, path, body = call.call_args.args
+        self.assertEqual((method, path, body["idempotency_key"]), ("POST", "/publish/posts", "idem-12345678"))
+
+    def test_cancel_needs_the_version_and_confirmation(self):
+        result, call = self.run_cli("publish", "cancel", "p1", "--expected-updated-at", "2030-01-01T00:00:00Z")
+        self.assertIn("requires --yes", result.output)
+        call.assert_not_called()
+        result, call = self.run_cli("publish", "cancel", "p1", "--expected-updated-at", "2030-01-01T00:00:00Z", "--yes",
+            reply={"post_id": "p1"})
+        self.assertEqual(call.call_args.args[:2], ("POST", "/publish/posts/p1/cancel"))
+        self.assertEqual(call.call_args.args[2], {"expected_updated_at": "2030-01-01T00:00:00Z"})
+
+    def test_posts_query_is_encoded(self):
+        _, call = self.run_cli("publish", "posts", "--status", "published", "--network", "youtube", reply={"posts": []})
+        self.assertEqual(call.call_args.args[1], "/publish/posts?status=published&network=youtube")
+
+
 if __name__ == "__main__":
     unittest.main()
