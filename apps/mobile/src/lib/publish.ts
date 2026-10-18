@@ -16,6 +16,9 @@ export interface PublishAccount {
     readonly status: string;
     readonly connectedAt: string | null;
     readonly tokenExpiresAt: string | null;
+    // Whether posting to this network is open for this account, and the media types it takes.
+    readonly publishingEnabled: boolean;
+    readonly supportedMedia: string[];
 }
 
 export function parseAccounts(body: unknown): { accountLimit: number; accounts: PublishAccount[] } {
@@ -34,6 +37,8 @@ export function parseAccounts(body: unknown): { accountLimit: number; accounts: 
             status: str(raw.status) ?? 'error',
             connectedAt: str(raw.connected_at),
             tokenExpiresAt: str(raw.token_expires_at),
+            publishingEnabled: raw.publishingEnabled === true,
+            supportedMedia: list(raw.supportedMedia).filter((m): m is string => typeof m === 'string'),
         });
     }
     const limit = typeof b.accountLimit === 'number' && Number.isInteger(b.accountLimit) && b.accountLimit > 0 ? b.accountLimit : 1;
@@ -54,26 +59,30 @@ export interface PublishPost {
     readonly scheduledAt: string | null;
     readonly text: string;
     readonly createdAt: string | null;
+    // The version stamp cancel and restore need; the server does not send it on every row yet.
+    readonly updatedAt: string | null;
     readonly targets: PostTarget[];
 }
 
-export function parsePosts(body: unknown): PublishPost[] {
-    const out: PublishPost[] = [];
-    for (const raw of list(isObject(body) ? body.posts : null)) {
-        if (!isObject(raw)) continue;
-        const id = str(raw.id);
-        if (!id) continue;
-        const targets: PostTarget[] = [];
-        for (const t of list(raw.targets)) {
-            if (!isObject(t)) continue;
-            const tid = str(t.id);
-            const network = str(t.network);
-            if (!tid || !network) continue;
-            targets.push({ id: tid, network, publishStatus: str(t.publish_status) ?? 'pending', url: https(t.platform_post_url), lastError: str(t.last_error) });
-        }
-        out.push({ id, status: str(raw.status) ?? 'unknown', scheduledAt: str(raw.scheduled_at), text: typeof raw.global_text === 'string' ? raw.global_text : '', createdAt: str(raw.created_at), targets });
+export function parsePost(raw: unknown): PublishPost | null {
+    if (!isObject(raw)) return null;
+    const id = str(raw.id);
+    if (!id) return null;
+    const targets: PostTarget[] = [];
+    for (const t of list(raw.targets)) {
+        if (!isObject(t)) continue;
+        const tid = str(t.id);
+        const network = str(t.network);
+        if (!tid || !network) continue;
+        targets.push({ id: tid, network, publishStatus: str(t.publish_status) ?? 'pending', url: https(t.platform_post_url), lastError: str(t.last_error) });
     }
-    return out;
+    return { id, status: str(raw.status) ?? 'unknown', scheduledAt: str(raw.scheduled_at), text: typeof raw.global_text === 'string' ? raw.global_text : '', createdAt: str(raw.created_at), updatedAt: str(raw.updated_at), targets };
+}
+
+export function parsePosts(body: unknown): PublishPost[] {
+    return list(isObject(body) ? body.posts : null)
+        .map(parsePost)
+        .filter((p): p is PublishPost => p !== null);
 }
 
 export const postStatusLabel = (s: string): string =>
@@ -164,7 +173,13 @@ export function mergePage(existing: readonly PublishPost[], next: readonly Publi
     return { posts: [...existing, ...fresh], added: fresh.length > 0 };
 }
 
-// There is no GET for one post yet, so the detail screen finds it in the list the server returns.
+// GET /api/v1/social/posts/:id (ADR-0121 follow-up). Its row carries updated_at, which cancel and restore need.
+export async function fetchPost(api: ApiClient, id: string): Promise<PublishPost | null> {
+    const body = await api.request<{ post?: unknown }>(`/api/v1/social/posts/${encodeURIComponent(id)}`);
+    return parsePost(isObject(body) ? body.post : null);
+}
+
+// The list is the fallback when the single-post route is not available (an older server).
 export const findPost = (posts: readonly PublishPost[], id: string): PublishPost | null => posts.find((p) => p.id === id) ?? null;
 
 export function publishErrorMessage(err: unknown): string {
