@@ -50,7 +50,7 @@ test('pictureTileSrc returns the file for a listed option and nothing for the re
 });
 
 test('the outfit and headwear manifests name only options that have a picture, and skip the rest with null', () => {
-  for (const [file, group] of [['outfit-tiles.manifest.json', 'wardrobe_style'], ['headwear-tiles.manifest.json', 'headwear'], ['face-head-shape.manifest.json', 'head_shape'], ['face-eye-shape.manifest.json', 'eye_shape'], ['face-nose-shape.manifest.json', 'nose_shape'], ['face-mouth.manifest.json', 'mouth'], ['face-brows.manifest.json', 'brows'], ['face-lips.manifest.json', 'lips'], ['face-chin-jaw.manifest.json', 'chin_jaw'], ['face-cheeks.manifest.json', 'cheeks'], ['face-ears.manifest.json', 'ears'], ['face-facial-hair.manifest.json', 'facial_hair'], ['face-horns.manifest.json', 'horns'], ['face-face-features.manifest.json', 'face_features'], ['face-eyes-type.manifest.json', 'eyes_type'], ['face-eyes-details.manifest.json', 'eyes_details'], ['limb-neck.manifest.json', 'neck'], ['limb-left-arm.manifest.json', 'left_arm'], ['limb-right-arm.manifest.json', 'right_arm'], ['limb-left-leg.manifest.json', 'left_leg'], ['limb-right-leg.manifest.json', 'right_leg'], ['skin-conditions.manifest.json', 'skin_conditions'], ['skin-materials.manifest.json', 'face_skin_material'], ['skin-patterns.manifest.json', 'face_surface_pattern'], ['species.manifest.json', 'character_type']]) {
+  for (const [file, group] of [['outfit-tiles.manifest.json', 'wardrobe_style'], ['headwear-tiles.manifest.json', 'headwear'], ['face-head-shape.manifest.json', 'head_shape'], ['face-eye-shape.manifest.json', 'eye_shape'], ['face-nose-shape.manifest.json', 'nose_shape'], ['face-mouth.manifest.json', 'mouth'], ['face-brows.manifest.json', 'brows'], ['face-lips.manifest.json', 'lips'], ['face-chin-jaw.manifest.json', 'chin_jaw'], ['face-cheeks.manifest.json', 'cheeks'], ['face-ears.manifest.json', 'ears'], ['face-facial-hair.manifest.json', 'facial_hair'], ['face-horns.manifest.json', 'horns'], ['face-face-features.manifest.json', 'face_features'], ['face-eyes-type.manifest.json', 'eyes_type'], ['face-eyes-details.manifest.json', 'eyes_details'], ['limb-neck.manifest.json', 'neck'], ['limb-left-arm.manifest.json', 'left_arm'], ['limb-right-arm.manifest.json', 'right_arm'], ['limb-left-leg.manifest.json', 'left_leg'], ['limb-right-leg.manifest.json', 'right_leg'], ['skin-conditions.manifest.json', 'skin_conditions'], ['skin-materials.manifest.json', 'face_skin_material'], ['skin-patterns.manifest.json', 'face_surface_pattern'], ['species.manifest.json', 'character_type'], ['accessories-everyday.manifest.json', 'everyday_accessories'], ['accessories-accessories.manifest.json', 'accessories'], ['accessories-distinctive.manifest.json', 'distinctive_features']]) {
     const manifest = JSON.parse(readFileSync(new URL(`../scripts/${file}`, import.meta.url), 'utf8'));
     const named = manifest.sources.flatMap((source) => source.styles).filter(Boolean);
     assert.deepEqual(named.sort(), [...PICTURE_TILES[group].styles].sort(), `${file} and the picture list differ`);
@@ -74,9 +74,28 @@ test('a right arm or leg picture is the left one mirrored: same options, differe
   assert.equal(pictureTileSrc('face_skin_material', 'Fur'), '', 'merged with scales on the sheet: keeps the drawn tile');
   assert.equal(pictureTileSrc('skin_conditions', 'Burns'), '', 'drawn as glossy skin: keeps the drawn tile');
   assert.equal(pictureTileSrc('character_type', 'Octopus'), '/oddlings/species/octopus.webp');
+  assert.equal(pictureTileSrc('accessories', 'Symbols / Markings'), '/oddlings/accessories/accessories/symbols-markings.webp');
+  assert.equal(pictureTileSrc('distinctive_features', 'Pocket Weather Station'), '', 'not drawn: keeps the drawn tile');
+  assert.equal(pictureTileSrc('distinctive_features', 'Tiny Microphone'), '', 'dominated by a giant comb in the picture: keeps the drawn tile');
+  assert.equal(pictureTileSrc('accessories', 'Tiny Handbag'), '', 'dominated by a tote bag in the picture: keeps the drawn tile');
+  assert.equal(pictureTileSrc('everyday_accessories', 'Jewellery'), '', 'merged with the sunglasses figure: keeps the drawn tile');
 });
 
 test('every creature type has a picture', () => {
   const types = CHARACTER_GROUPS.find((group) => group.id === 'character_type').options.map(([value]) => value);
   assert.deepEqual(types.filter((type) => !PICTURE_TILES.character_type.styles.includes(type)), []);
+});
+
+test('the same option name in two groups gets a picture in each, and every listed option really belongs to its own group (no picture for an option the catalog does not have there)', () => {
+  assert.ok(PICTURE_TILES.accessories.styles.includes('Impossible Handbag') && PICTURE_TILES.distinctive_features.styles.includes('Impossible Handbag'));
+  for (const [group, set] of Object.entries(PICTURE_TILES)) {
+    const own = CHARACTER_GROUPS.find((entry) => entry.id === group);
+    assert.ok(own, `${group} is not a catalog group`);
+    assert.deepEqual(set.styles.filter((style) => !own.options.some(([value]) => value === style)), [], `${group}: a picture for an option this group does not have`);
+  }
+});
+
+test('the manifest sheets set an inset so divider lines between cells stay out of the tiles', () => {
+  const manifest = JSON.parse(readFileSync(new URL('../scripts/accessories-accessories.manifest.json', import.meta.url), 'utf8'));
+  assert.ok(manifest.sources.every((source) => source.inset > 0));
 });

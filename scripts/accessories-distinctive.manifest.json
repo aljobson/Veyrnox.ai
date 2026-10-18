@@ -1,0 +1,37 @@
+{
+  "note": "Distinctive features: held and worn objects. Pocket Weather Station was not drawn, and Tiny Microphone has no picture (a giant comb in the same picture is larger than the microphone). Impossible Handbag is the same picture as in the accessories group.",
+  "sources": [
+    {
+      "file": "acc-c.jpg",
+      "rows": [
+        3,
+        3
+      ],
+      "styles": [
+        null,
+        null,
+        null,
+        "Impossible Handbag",
+        null,
+        "Giant Comb"
+      ],
+      "inset": 14
+    },
+    {
+      "file": "acc-d.jpg",
+      "rows": [
+        3,
+        3
+      ],
+      "styles": [
+        "Sacred Stapler",
+        "Snack Sceptre",
+        "Miniature Chair",
+        "Receipt Train",
+        "Miniature Thermos",
+        "Miniature Cake"
+      ],
+      "inset": 14
+    }
+  ]
+}

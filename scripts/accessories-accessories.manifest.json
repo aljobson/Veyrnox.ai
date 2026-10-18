@@ -1,0 +1,53 @@
+{
+  "note": "Fashion accessories and body art. Tiny Sunglasses (merged with Chrome Brows), Piercings (merged with Receipt Ribbons), Cyber Markings (not drawn) and Tiny Handbag (the picture is dominated by a tote bag) have no picture.",
+  "sources": [
+    {
+      "file": "acc-a.jpg",
+      "rows": [
+        3,
+        3
+      ],
+      "styles": [
+        null,
+        null,
+        null,
+        "Geometric Veil",
+        "Chrome Brows",
+        "Tiny Monocle"
+      ],
+      "inset": 14
+    },
+    {
+      "file": "acc-b.jpg",
+      "rows": [
+        3,
+        3
+      ],
+      "styles": [
+        "Bug Head Mask",
+        "Object Jewellery",
+        "Receipt Ribbons",
+        "Tattoos",
+        "Scarification",
+        "Symbols / Markings"
+      ],
+      "inset": 14
+    },
+    {
+      "file": "acc-c.jpg",
+      "rows": [
+        3,
+        3
+      ],
+      "styles": [
+        null,
+        null,
+        "Tiny Teacup",
+        "Impossible Handbag",
+        null,
+        null
+      ],
+      "inset": 14
+    }
+  ]
+}
