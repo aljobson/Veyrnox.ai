@@ -79,6 +79,12 @@
     "scheme": "ai.veyrnox.app",
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "92f5cecd-0926-48d7-a292-a8510b43e1d8"
+      }
+    },
+    "owner": "veyrnox"
   }
 }
