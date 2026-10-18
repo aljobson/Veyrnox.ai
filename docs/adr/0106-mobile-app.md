@@ -23,7 +23,7 @@ The `/api/v1/*` surface is Bearer-only and already carries everything the core l
 
 ## Owner prerequisites (not visible from the repo)
 
-- Supabase redirect allowlist (production and staging) must include `ai.veyrnox.app://auth/callback`.
+- Supabase redirect allowlist: no longer required for Google and Apple sign-in (amendment 1). Keep `ai.veyrnox.app://auth/callback` listed if it is already.
 - Supabase Apple provider: add `ai.veyrnox.app` to the authorized client IDs, besides the Services ID (native iOS tokens carry the bundle id as audience).
 - Apple Developer: App ID `ai.veyrnox.app` with Sign in with Apple; App Store Connect record. Google: Android OAuth client is not needed for the browser flow.
 - Confirm the bundle id before the first store build; it cannot change afterwards.
@@ -40,3 +40,7 @@ M0: typecheck and 13 unit tests (API client retry and session loss, token grants
 - `ITSAppUsesNonExemptEncryption` is `false` (the app uses only the system's HTTPS); the owner confirms that declaration.
 
 **Owner steps before a build exists:** an Expo account and `npx eas-cli init` in `apps/mobile` (writes the project id into `app.json`); Apple Developer team and an App Store Connect API key for `eas submit`; a Google Play service account; a Sentry project with its DSN as `EXPO_PUBLIC_SENTRY_DSN` and an auth token as `SENTRY_AUTH_TOKEN` (EAS secrets); the RevenueCat public SDK keys as `EXPO_PUBLIC_REVENUECAT_IOS_KEY` and `_ANDROID_KEY`.
+
+## Amendment 1 (2026-10-18): OAuth redirects through the site
+
+The staging Supabase project kept falling back to its Site URL for `redirect_to=ai.veyrnox.app://auth/callback`, so Google sign-in ended on the website. The app now sends `redirect_to=<apiBase>/auth/mobile`, an address on the site's own origin that Supabase always allows. `app/auth/mobile/route.js` answers a 302 to the fixed `ai.veyrnox.app://auth/callback`, forwarding only a well-formed PKCE `code` or a short error word; the target is a constant, so it is not an open redirect, and a code is useless without the verifier held in the app. The auth session still ends on the app address, so the rest of the flow is unchanged. `tests/authMobileBridge.test.mjs` and `apps/mobile/__tests__/supabaseAuth.test.ts` pin both halves.

@@ -1,9 +1,17 @@
+import { AUTH_REDIRECT_URL, OAUTH_BRIDGE_URL } from '../src/lib/config';
 import { AuthError, authorizeUrl, exchangeAuthCode, refreshSession, signInWithIdToken } from '../src/lib/auth/supabaseAuth';
 import { toBase64Url } from '../src/lib/auth/pkce';
 
 jest.mock('expo-crypto', () => ({}));
 
 const tokens = { access_token: 'a', refresh_token: 'r', expires_in: 3600 };
+
+describe('sign-in redirects', () => {
+    test('OAuth goes through the site bridge and ends on the app address', () => {
+        expect(OAUTH_BRIDGE_URL).toMatch(/^https:\/\/[^/]+\/auth\/mobile$/);
+        expect(AUTH_REDIRECT_URL).toBe('ai.veyrnox.app://auth/callback');
+    });
+});
 
 describe('supabase auth', () => {
     const fetchMock = jest.fn();
