@@ -1,7 +1,8 @@
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import { fetchCatalog, kindOf, type CatalogModel, type Kind } from '../../../lib/media';
+import { fetchCatalogCached, kindOf, type CatalogModel, type Kind } from '../../../lib/media';
+import { selectedState } from '../../../lib/a11y';
 import { fetchAgentListing } from '../../../lib/montage';
 import { colors } from '../../../theme';
 
@@ -19,7 +20,8 @@ export default function Create() {
     const [agent, setAgent] = useState<{ readonly credits: number } | null>(null);
 
     useEffect(() => {
-        fetchCatalog().then(setModels).catch(() => setFailed(true));
+        // Browsing the list works from a saved copy; the next screen loads the live catalog and prices.
+        fetchCatalogCached((list) => setModels(list)).catch(() => setFailed(true));
         fetchAgentListing().then(setAgent);
     }, []);
 
@@ -34,7 +36,7 @@ export default function Create() {
             </Pressable>
             <View style={styles.tabs}>
                 {KINDS.map((k) => (
-                    <Pressable key={k.kind} accessibilityRole="button" style={[styles.tab, kind === k.kind && styles.tabOn]} onPress={() => setKind(k.kind)}>
+                    <Pressable key={k.kind} accessibilityRole="tab" accessibilityState={selectedState(kind === k.kind)} style={[styles.tab, kind === k.kind && styles.tabOn]} onPress={() => setKind(k.kind)}>
                         <Text style={[styles.tabText, kind === k.kind && styles.tabTextOn]}>{k.label}</Text>
                     </Pressable>
                 ))}
@@ -75,7 +77,7 @@ const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background, padding: 16, gap: 12 },
     templates: { padding: 14, borderRadius: 12, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, gap: 2 },
     tabs: { flexDirection: 'row', gap: 8 },
-    tab: { flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
+    tab: { flex: 1, minHeight: 44, justifyContent: 'center', paddingVertical: 10, borderRadius: 10, alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
     tabOn: { backgroundColor: colors.accent, borderColor: colors.accent },
     tabText: { color: colors.body, fontWeight: '600' },
     tabTextOn: { color: colors.accentInk },

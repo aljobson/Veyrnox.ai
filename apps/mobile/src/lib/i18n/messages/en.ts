@@ -5,8 +5,8 @@
 const en = {
     'net.offline': "You're offline. Showing what was saved.",
     'net.offlineAction': "You're offline. Reconnect to continue.",
-    'cache.stale': 'Saved {age} ago',
-    'cache.staleNow': 'Saved just now',
+    'cache.stale': 'Saved {age} ago. Pull to refresh when you are back online.',
+    'cache.staleNow': 'Saved copy. Pull to refresh when you are back online.',
 } as const;
 
 export default en;

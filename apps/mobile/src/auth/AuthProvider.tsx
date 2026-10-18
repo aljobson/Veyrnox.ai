@@ -6,6 +6,7 @@ import { Platform } from 'react-native';
 import { createApiClient, API_BASE, type ApiClient } from '../lib/api';
 import { AUTH_REDIRECT_URL, OAUTH_BRIDGE_URL } from '../lib/config';
 import { createAppleNonce, createPkce } from '../lib/auth/pkce';
+import { bindCacheUser, userIdFromToken, wipeCache } from '../lib/appCache';
 import { clearRefreshToken, readRefreshToken, writeRefreshToken } from '../lib/auth/sessionStore';
 import {
     authorizeUrl,
@@ -54,12 +55,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const adopt = useCallback(async (session: Session) => {
         sessionRef.current = session;
+        await bindCacheUser(userIdFromToken(session.accessToken));
         await writeRefreshToken(session.refreshToken);
         setStatus('signedIn');
     }, []);
 
     const drop = useCallback(async () => {
         sessionRef.current = null;
+        await wipeCache().catch(() => undefined);
         await clearRefreshToken();
         setStatus('signedOut');
     }, []);

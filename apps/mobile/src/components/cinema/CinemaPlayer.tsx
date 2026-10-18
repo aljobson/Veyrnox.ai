@@ -37,6 +37,7 @@ export function CinemaPlayer({ contentId }: { readonly contentId: string }) {
         <View style={styles.box}>
             <VideoView player={player} style={StyleSheet.absoluteFill} contentFit="contain" nativeControls={false} />
             <Pressable
+                accessibilityRole="button"
                 accessibilityLabel="Pause or resume"
                 style={StyleSheet.absoluteFill}
                 onPress={() => (player.playing ? player.pause() : player.play())}

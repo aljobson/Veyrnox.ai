@@ -35,7 +35,7 @@ export default function Threads() {
                 </Pressable>
             </Link>
             {failed ? (
-                <Pressable accessibilityRole="button" onPress={load}>
+                <Pressable accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }} onPress={load}>
                     <Text style={styles.error}>Could not load your chats. Tap to retry.</Text>
                 </Pressable>
             ) : threads === null ? (

@@ -36,7 +36,7 @@ export default function CinemaTitlePage() {
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
             <Stack.Screen options={{ title: title.title }} />
-            <Image source={{ uri: posterUrl(title.id) }} style={styles.poster} contentFit="cover" accessibilityIgnoresInvertColors />
+            <Image source={{ uri: posterUrl(title.id) }} style={styles.poster} contentFit="cover" accessibilityLabel={`Poster for ${title.title}`} accessibilityIgnoresInvertColors />
             <Text style={styles.title}>{title.title}</Text>
             {title.creator ? <Text style={styles.muted}>{title.creator}</Text> : null}
             {title.synopsis ? <Text style={styles.body}>{title.synopsis}</Text> : null}
@@ -83,5 +83,5 @@ const styles = StyleSheet.create({
     row: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 14, gap: 2 },
     rowOff: { opacity: 0.5 },
     rowTitle: { color: colors.text, fontSize: 16 },
-    report: { paddingVertical: 14, alignItems: 'center' },
+    report: { minHeight: 44, justifyContent: 'center', paddingVertical: 14, alignItems: 'center' },
 });

@@ -7,6 +7,7 @@ import { useAuth } from '../auth/AuthProvider';
 import { AuthError } from '../lib/auth/supabaseAuth';
 import { emailAuthMessage, validateEmailForm } from '../lib/auth/emailForm';
 import type { TurnstileMessage } from '../lib/auth/turnstile';
+import { touchTarget } from '../lib/a11y';
 import { colors } from '../theme';
 
 type Mode = 'signIn' | 'signUp';
@@ -83,15 +84,16 @@ export default function EmailAuth() {
     return (
         <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <ScrollView contentContainerStyle={[styles.body, { paddingTop: insets.top + 16 }]} keyboardShouldPersistTaps="handled">
-                <Pressable accessibilityRole="button" onPress={() => router.back()}>
+                <Pressable accessibilityRole="button" style={touchTarget} onPress={() => router.back()}>
                     <Text style={styles.switch}>Back</Text>
                 </Pressable>
-                <Text style={styles.heading}>{mode === 'signIn' ? 'Sign in' : 'Create account'}</Text>
+                <Text style={styles.heading} accessibilityRole="header">{mode === 'signIn' ? 'Sign in' : 'Create account'}</Text>
                 <TextInput
                     style={styles.input}
                     value={email}
                     onChangeText={setEmail}
                     placeholder="Email"
+                    accessibilityLabel="Email"
                     placeholderTextColor={colors.muted}
                     autoCapitalize="none"
                     autoComplete="email"
@@ -103,6 +105,7 @@ export default function EmailAuth() {
                     value={password}
                     onChangeText={setPassword}
                     placeholder="Password (8+ characters)"
+                    accessibilityLabel="Password, 8 or more characters"
                     placeholderTextColor={colors.muted}
                     secureTextEntry
                     autoComplete={mode === 'signIn' ? 'current-password' : 'new-password'}
@@ -110,13 +113,13 @@ export default function EmailAuth() {
                 />
                 <TurnstileView resetKey={resetKey} onMessage={onCaptcha} />
                 {!captcha && !captchaError ? <Text style={styles.message}>Checking this device…</Text> : null}
-                {captchaError ? <Text style={styles.error}>The security check could not load. Check your connection and try again.</Text> : null}
-                <Pressable accessibilityRole="button" disabled={!ready} style={[styles.submit, !ready && styles.off]} onPress={submit}>
+                {captchaError ? <Text style={styles.error} accessibilityRole="alert">The security check could not load. Check your connection and try again.</Text> : null}
+                <Pressable accessibilityRole="button" accessibilityLabel={mode === 'signIn' ? 'Sign in' : 'Create account'} accessibilityState={{ busy }} disabled={!ready} style={[styles.submit, !ready && styles.off]} onPress={submit}>
                     {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.submitText}>{mode === 'signIn' ? 'Sign in' : 'Create account'}</Text>}
                 </Pressable>
-                {message ? <Text style={styles.message}>{message}</Text> : null}
+                {message ? <Text style={styles.message} accessibilityLiveRegion="polite">{message}</Text> : null}
                 <View style={styles.switchRow}>
-                    <Pressable accessibilityRole="button" onPress={() => { setMode(mode === 'signIn' ? 'signUp' : 'signIn'); setMessage(null); }}>
+                    <Pressable accessibilityRole="button" style={touchTarget} onPress={() => { setMode(mode === 'signIn' ? 'signUp' : 'signIn'); setMessage(null); }}>
                         <Text style={styles.switch}>{mode === 'signIn' ? 'New here? Create an account' : 'Have an account? Sign in'}</Text>
                     </Pressable>
                 </View>

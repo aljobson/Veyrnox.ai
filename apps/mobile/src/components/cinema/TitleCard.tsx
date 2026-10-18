@@ -25,12 +25,12 @@ export function TitleCard({ item, height, playing, onPlay, onOpen, onReport }: P
                 <CinemaPlayer contentId={item.id} />
             ) : (
                 <>
-                    <Image source={{ uri: posterUrl(item.id) }} style={StyleSheet.absoluteFill} contentFit="cover" accessibilityIgnoresInvertColors />
+                    <Image source={{ uri: posterUrl(item.id) }} style={StyleSheet.absoluteFill} contentFit="cover" accessible={false} accessibilityIgnoresInvertColors />
                     <View style={styles.shade} />
                 </>
             )}
             <View style={styles.info} pointerEvents="box-none">
-                <Pressable accessibilityRole="button" onPress={onOpen}>
+                <Pressable accessibilityRole="button" accessibilityHint="Opens the title page" onPress={onOpen}>
                     <Text style={styles.title} numberOfLines={2}>{item.title}</Text>
                     <Text style={styles.meta}>{[item.creator, meta].filter(Boolean).join(' · ')}</Text>
                     {!playing && item.synopsis ? <Text style={styles.synopsis} numberOfLines={2}>{item.synopsis}</Text> : null}
@@ -60,6 +60,6 @@ const styles = StyleSheet.create({
     actions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     play: { backgroundColor: colors.accent, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 28 },
     playText: { color: colors.accentInk, fontSize: 16, fontWeight: '700' },
-    report: { paddingVertical: 12, paddingHorizontal: 12 },
+    report: { minHeight: 44, justifyContent: 'center', paddingVertical: 12, paddingHorizontal: 12 },
     reportText: { color: colors.muted, fontSize: 14 },
 });

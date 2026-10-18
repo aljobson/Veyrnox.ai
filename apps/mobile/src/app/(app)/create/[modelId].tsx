@@ -6,6 +6,7 @@ import { useAuth } from '../../../auth/AuthProvider';
 import { ApiError } from '../../../lib/api';
 import { SourcePicker } from '../../../components/SourcePicker';
 import { estimateCredits, fetchCatalog, kindOf, mediaApi, promptRequired, textInput, type CatalogModel } from '../../../lib/media';
+import { selectedState } from '../../../lib/a11y';
 import { missingRequired, slotsFor, toSourceKeys, type SlotName } from '../../../lib/sources';
 import { colors } from '../../../theme';
 
@@ -92,6 +93,7 @@ export default function CreateWithModel() {
                         onChangeText={setPrompt}
                         placeholder={PLACEHOLDER[text_.key] ?? (promptRequired(model) ? 'Describe what to create' : 'Describe the change (optional)')}
                         placeholderTextColor={colors.muted}
+                        accessibilityLabel={text_.key === 'topic' ? 'Topic' : 'Prompt'}
                         multiline
                         maxLength={text_.max}
                     />
@@ -100,7 +102,7 @@ export default function CreateWithModel() {
                 {isVideo && model.durations.length > 1 ? (
                     <View style={styles.chips}>
                         {model.durations.map((d) => (
-                            <Pressable key={d} accessibilityRole="button" style={[styles.chip, duration === d && styles.chipOn]} onPress={() => setDuration(d)}>
+                            <Pressable key={d} accessibilityRole="button" accessibilityLabel={`${d} seconds`} accessibilityState={selectedState(duration === d)} style={[styles.chip, duration === d && styles.chipOn]} onPress={() => setDuration(d)}>
                                 <Text style={[styles.chipText, duration === d && styles.chipTextOn]}>{d}s</Text>
                             </Pressable>
                         ))}
@@ -108,7 +110,7 @@ export default function CreateWithModel() {
                 ) : null}
                 <Text style={styles.price}>Costs {price} {price === 1 ? 'credit' : 'credits'}. Refunded if it fails.</Text>
                 {error ? <Text style={styles.error}>{error}</Text> : null}
-                <Pressable accessibilityRole="button" disabled={!ready || busy} style={[styles.button, (!ready || busy) && styles.off]} onPress={generate}>
+                <Pressable accessibilityRole="button" accessibilityLabel="Generate" accessibilityState={{ busy, disabled: !ready || busy }} disabled={!ready || busy} style={[styles.button, (!ready || busy) && styles.off]} onPress={generate}>
                     {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>Generate</Text>}
                 </Pressable>
             </ScrollView>
@@ -148,7 +150,7 @@ const styles = StyleSheet.create({
     topic: { minHeight: 90 },
     prompt: { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 14, fontSize: 16, minHeight: 140, textAlignVertical: 'top' },
     chips: { flexDirection: 'row', gap: 8 },
-    chip: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 10, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
+    chip: { minHeight: 44, justifyContent: 'center', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 10, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
     chipOn: { backgroundColor: colors.accent, borderColor: colors.accent },
     chipText: { color: colors.body, fontWeight: '600' },
     chipTextOn: { color: colors.accentInk },
