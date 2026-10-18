@@ -3,6 +3,7 @@ import shlex
 import sys
 import time
 import uuid
+import urllib.parse
 import urllib.request
 
 import click
@@ -286,6 +287,147 @@ def generation_wait(ctx, job_id, interval, timeout):
 def generation_download(ctx, job_id, output_path):
     try:
         emit(ctx, client(ctx).download(job_id, output_path), lambda v: f'Downloaded {v["bytes"]} bytes to {v["path"]}.')
+    except Exception as exc:
+        fail(exc)
+
+
+@cli.group()
+@click.option("--brand", "brand_id", help="Publish brand ID from `publish brands` (default: your own brand).")
+@click.pass_context
+def publish(ctx, brand_id):
+    """Veyrnox.ai Publish: accounts, scheduled posts and analytics."""
+    ctx.obj["brand_id"] = brand_id
+
+
+def publish_path(ctx, path, **query):
+    params = {k: v for k, v in {**query, "brand_id": ctx.obj.get("brand_id")}.items() if v}
+    return f"/publish/{path}" + (f"?{urllib.parse.urlencode(params)}" if params else "")
+
+
+def publish_body(ctx, body):
+    return {**body, **({"brand_id": ctx.obj["brand_id"]} if ctx.obj.get("brand_id") else {})}
+
+
+@publish.command("brands")
+@click.pass_context
+def publish_brands(ctx):
+    """List the Publish brands you can act on."""
+    try:
+        emit(ctx, client(ctx).request("GET", "/publish/brands"),
+            lambda v: "\n".join(f'{b.get("brand_id") or b.get("id")} {b.get("role", "")} {b.get("label", "")}' for b in v.get("brands", [])))
+    except Exception as exc:
+        fail(exc)
+
+
+@publish.command("accounts")
+@click.pass_context
+def publish_accounts(ctx):
+    """List connected social accounts."""
+    try:
+        emit(ctx, client(ctx).request("GET", publish_path(ctx, "accounts")),
+            lambda v: "\n".join(f'{a["id"]} {a["network"]:10} {a["status"]:8} {a.get("display_name") or ""}' for a in v["accounts"]))
+    except Exception as exc:
+        fail(exc)
+
+
+@publish.command("posts")
+@click.option("--status", type=click.Choice(["scheduled", "published", "failed", "canceled"]), help="Default: scheduled, next 43 days.")
+@click.option("--network", help="Only posts with a target on this network.")
+@click.option("--from", "from_", help="Window start, ISO 8601 with offset.")
+@click.option("--to", help="Window end, ISO 8601 with offset (at most 43 days after --from).")
+@click.pass_context
+def publish_posts(ctx, status, network, from_, to):
+    """List posts in a time window."""
+    try:
+        value = client(ctx).request("GET", publish_path(ctx, "posts", status=status, network=network, **{"from": from_, "to": to}))
+        emit(ctx, value, lambda v: "\n".join(
+            f'{p["id"]} {p["status"]:10} {p["scheduled_at"]}  updated_at={p.get("updated_at", "")}' for p in v["posts"]))
+    except Exception as exc:
+        fail(exc)
+
+
+@publish.command("analytics")
+@click.argument("account_id")
+@click.option("--from", "from_", required=True, help="First day, YYYY-MM-DD.")
+@click.option("--to", required=True, help="Last day, YYYY-MM-DD (at most 366 days).")
+@click.pass_context
+def publish_analytics(ctx, account_id, from_, to):
+    """Summarize analytics for one account (Publish Plan)."""
+    try:
+        emit(ctx, client(ctx).request("GET", publish_path(ctx, "analytics", account_id=account_id, **{"from": from_, "to": to})))
+    except Exception as exc:
+        fail(exc)
+
+
+def media_list(images, videos):
+    return ([{"media_type": "image", "job_id": job} for job in images]
+        + [{"media_type": "video", "job_id": job} for job in videos])
+
+
+@publish.command("schedule")
+@click.option("--at", "scheduled_at", required=True, help="Publish time, ISO 8601 with offset, at least 10 minutes ahead.")
+@click.option("--account", "accounts", multiple=True, required=True, help="Connected account ID (repeat for several).")
+@click.option("--image", "images", multiple=True, help="Job ID of one of your finished image generations.")
+@click.option("--video", "videos", multiple=True, help="Job ID of one of your finished video generations.")
+@click.option("--text", help="Caption text.")
+@click.option("--idempotency-key", default=lambda: str(uuid.uuid4()), show_default="generated UUID")
+@click.option("--yes", is_flag=True, help="Schedule without asking for confirmation.")
+@click.option("--dry-run", is_flag=True, help="Print the request; schedule nothing.")
+@click.pass_context
+def publish_schedule(ctx, scheduled_at, accounts, images, videos, text, idempotency_key, yes, dry_run):
+    """Schedule a post (Publish Plan). Never posts immediately."""
+    try:
+        body = publish_body(ctx, {"scheduled_at": scheduled_at, "account_ids": list(accounts),
+            "media": media_list(images, videos), "idempotency_key": idempotency_key, **({"text": text} if text else {})})
+        if dry_run:
+            emit(ctx, {"dry_run": True, "request": body})
+            return
+        if not yes:
+            if not sys.stdin.isatty() or ctx.obj["json"]:
+                raise click.ClickException("Non-interactive scheduling requires --yes")
+            if not click.confirm(f"Schedule this post on {len(accounts)} account(s) for {scheduled_at}?"):
+                raise click.Abort()
+        emit(ctx, client(ctx).request("POST", "/publish/posts", body),
+            lambda v: f'Post {v["post_id"]} scheduled for {v["scheduled_at"]}.')
+    except (click.ClickException, click.Abort):
+        raise
+    except Exception as exc:
+        fail(exc)
+
+
+@publish.command("reschedule")
+@click.argument("post_id")
+@click.option("--at", "scheduled_at", required=True, help="New time, ISO 8601 with offset, at least 10 minutes ahead.")
+@click.option("--expected-at", required=True, help="The post's current scheduled_at, from `publish posts`.")
+@click.pass_context
+def publish_reschedule(ctx, post_id, scheduled_at, expected_at):
+    """Move a scheduled post that has not started publishing."""
+    try:
+        body = publish_body(ctx, {"scheduled_at": scheduled_at, "expected_at": expected_at})
+        emit(ctx, client(ctx).request("POST", f"/publish/posts/{post_id}/reschedule", body),
+            lambda v: f'Post {v["post_id"]} now publishes at {v["scheduled_at"]}.')
+    except Exception as exc:
+        fail(exc)
+
+
+@publish.command("cancel")
+@click.argument("post_id")
+@click.option("--expected-updated-at", required=True, help="The post's updated_at, from `publish posts`.")
+@click.option("--yes", is_flag=True, help="Cancel without asking for confirmation.")
+@click.pass_context
+def publish_cancel(ctx, post_id, expected_updated_at, yes):
+    """Cancel a scheduled post that has not started publishing."""
+    try:
+        if not yes:
+            if not sys.stdin.isatty() or ctx.obj["json"]:
+                raise click.ClickException("Non-interactive cancel requires --yes")
+            if not click.confirm(f"Cancel post {post_id}?"):
+                raise click.Abort()
+        body = publish_body(ctx, {"expected_updated_at": expected_updated_at})
+        emit(ctx, client(ctx).request("POST", f"/publish/posts/{post_id}/cancel", body),
+            lambda v: f'Post {v["post_id"]} canceled.')
+    except (click.ClickException, click.Abort):
+        raise
     except Exception as exc:
         fail(exc)
 
