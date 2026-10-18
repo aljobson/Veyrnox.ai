@@ -34,6 +34,15 @@
         null,
         null
       ]
+    },
+    {
+      "file": "oversized-head.png",
+      "rows": [
+        1
+      ],
+      "styles": [
+        "Oversized Head"
+      ]
     }
   ]
 }

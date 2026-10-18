@@ -15,6 +15,15 @@
         "Wing Ears",
         null
       ]
+    },
+    {
+      "file": "no-ears.png",
+      "rows": [
+        1
+      ],
+      "styles": [
+        "No Ears"
+      ]
     }
   ]
 }

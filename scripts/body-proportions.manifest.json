@@ -47,6 +47,24 @@
         null,
         "Wide Shoulders"
       ]
+    },
+    {
+      "file": "narrow-shoulders.png",
+      "rows": [
+        1
+      ],
+      "styles": [
+        "Narrow Shoulders"
+      ]
+    },
+    {
+      "file": "long-torso.png",
+      "rows": [
+        1
+      ],
+      "styles": [
+        "Long Torso"
+      ]
     }
   ]
 }
