@@ -1,4 +1,5 @@
 'use client';
+import { useI18n } from '../../../components/I18nProvider';
 import { useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { getStoredUserId } from '../../lib/authClient';
@@ -12,6 +13,7 @@ import { readJobHistory, jobsToWatch, markJobSettled } from '../_lib/jobHistory'
 const POLL_MS = 5000;
 
 export function JobWatcher() {
+  const { t } = useI18n();
   useEffect(() => {
     let stopped = false;
     async function tick() {
@@ -24,19 +26,19 @@ export function JobWatcher() {
         if (!jobsToWatch(readJobHistory()).some((r) => r.job_id === job.job_id)) continue;
         markJobSettled(job.job_id, next.state);
         notifyBalanceChanged();
-        const label = job.name || job.prompt || 'Your generation';
+        const label = job.name || job.prompt || t('public.jobs.default');
         if (next.state === 'succeeded') {
-          toast.success((t) => (
+          toast.success((toastItem) => (
             <span>
-              {label} is ready.{' '}
-              <a href="/app/library" onClick={() => toast.dismiss(t.id)} className="underline">Open Library</a>
+              {t('public.jobs.ready', { label })}{' '}
+              <a href="/app/library" onClick={() => toast.dismiss(toastItem.id)} className="underline">{t('public.vey.action.open_library')}</a>
             </span>
           ), { duration: 10000 });
         } else {
           // Only claim the refund the ledger has actually made (/jobs/:id
           // `refunded`); otherwise say what is true and what happens next.
           toast.error(
-            next.refunded ? `${label} failed. Credits refunded.` : `${label} failed. Your credits are on their way back.`,
+            next.refunded ? t('public.jobs.refunded', { label }) : t('public.jobs.pendingRefund', { label }),
             { duration: 10000 },
           );
         }
@@ -44,6 +46,6 @@ export function JobWatcher() {
     }
     const id = setInterval(tick, POLL_MS);
     return () => { stopped = true; clearInterval(id); };
-  }, []);
+  }, [t]);
   return null;
 }

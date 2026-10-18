@@ -84,7 +84,7 @@ test('no surface claims a refund the ledger has not made', () => {
     const grid = readFileSync(new URL('../app/veyrnox/_components/StudioJobGrid.js', import.meta.url), 'utf8');
 
     // Every "Credits refunded" is now behind the flag.
-    assert.match(watcher, /next\.refunded \? `\$\{label\} failed\. Credits refunded\.`/);
+    assert.match(watcher, /next\.refunded \? t\('public.jobs.refunded', \{ label \}\) : t\('public.jobs.pendingRefund', \{ label \}\)/);
     // The studio's failed-job label and copy each live in one helper that both
     // the single canvas and the multi-image grid render; neither keeps its own
     // wording, and neither reads a label by state alone.

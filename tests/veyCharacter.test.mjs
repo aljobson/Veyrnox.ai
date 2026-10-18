@@ -21,7 +21,7 @@ test('mobile questions stay in a short panel with a fixed composer and a scrolli
 test('Vey has no floating text badges but retains accessible launcher and movement instructions', async () => {
     const source = await readFile(new URL('app/veyrnox/_components/MascotAssistant.jsx', root), 'utf8');
     assert.doesNotMatch(source, /ASK VEY|POINTING|MOVING|THINKING|TAPPING/);
-    assert.match(source, /aria-label=\{open \? 'Close Veyrnox helper' : 'Ask Veyrnox helper'\}/);
+    assert.match(source, /aria-label=\{open \? t\("public.vey.close"\) : t\("public.vey.open"\)\}/);
     assert.match(source, /id="vey-position-help" className="sr-only"/);
 });
 

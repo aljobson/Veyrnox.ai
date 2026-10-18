@@ -1,4 +1,6 @@
 'use client';
+import { localeTag } from '../../../lib/i18n/locales.mjs';
+import { useI18n } from '../../../components/I18nProvider.jsx';
 import Link from 'next/link';
 import {
   useCallback,
@@ -11,11 +13,11 @@ import { getSession, onSessionChange } from '../../lib/authClient.js';
 import { gatewayFetch } from '../_lib/gateway.js';
 const identity = () => getSession()?.user?.id || '',
   noIdentity = () => '';
-const voteLabels = {
-  qualified: 'Your vote is counted.',
-  under_review: 'Your vote is awaiting review.',
-  rejected: 'Your vote was excluded by moderation.',
-};
+const voteLabels = (t) => ({
+  qualified: t("cinema.voting.yourVoteIsCounted"),
+  under_review: t("cinema.voting.yourVoteIsAwaitingReview"),
+  rejected: t("cinema.voting.yourVoteWasExcludedByModeration"),
+});
 export function CinemaVoting({ contentId }) {
   const account = useSyncExternalStore(onSessionChange, identity, noIdentity);
   return (
@@ -27,6 +29,8 @@ export function CinemaVoting({ contentId }) {
   );
 }
 function Voting({ contentId, account }) {
+  const { t, href: localize, locale } = useI18n();
+
   const [data, setData] = useState(null),
     [error, setError] = useState(''),
     [closed, setClosed] = useState(false),
@@ -59,12 +63,12 @@ function Voting({ contentId, account }) {
         setData(null);
         setError(
           e.code === 'profile_required'
-            ? 'Create an active Cinema profile to vote.'
-            : 'Voting is unavailable right now. Please retry.',
+            ? t("cinema.voting.createAnActiveCinemaProfileTo")
+            : t("cinema.voting.votingIsUnavailableRightNowPlease"),
         );
       }
     }
-  }, [account, contentId]);
+  }, [account, contentId, t]);
   useEffect(() => {
     load();
     return () => {
@@ -87,19 +91,19 @@ function Voting({ contentId, account }) {
         body,
         headers: { 'idempotency-key': attempt.current.key },
       });
-      setNotice(voteLabels[result.status] || 'Vote recorded.');
+      setNotice(voteLabels(t)[result.status] || t("cinema.voting.voteRecorded"));
       await load();
     } catch (e) {
       setError(
         {
           competition_closed:
-            'Voting has closed. Refresh to see current competitions.',
-          profile_required: 'Create an active Cinema profile to vote.',
+            t("cinema.voting.votingHasClosedRefreshToSee"),
+          profile_required: t("cinema.voting.createAnActiveCinemaProfileTo"),
           account_not_active:
-            'Your Cinema account is unavailable. Contact support.',
-          rate_limited: 'Too many requests. Wait a minute and retry.',
+            t("cinema.comments.yourCinemaAccountIsUnavailableContact"),
+          rate_limited: t("cinema.retention.tooManyRequestsWaitAMinute"),
         }[e.code] ||
-          'Your vote was not confirmed. Retry to check the same ballot.',
+          t("cinema.voting.yourVoteWasNotConfirmedRetry"),
       );
     } finally {
       setBusy('');
@@ -112,12 +116,9 @@ function Voting({ contentId, account }) {
       aria-labelledby={`vote-${contentId}`}
     >
       <h2 id={`vote-${contentId}`} className="text-xl font-bold">
-        Community voting
-      </h2>
+        {t("cinema.voting.communityVoting")}</h2>
       <p className="mt-2 text-sm text-vx-fg-muted">
-        One vote per title in each open competition. Voting is free. Votes held
-        for review are excluded from the count until approved.
-      </p>
+        {t("cinema.voting.oneVotePerTitleInEach")}</p>
       {!account && (
         <p className="mt-3 text-sm">
           <button
@@ -126,19 +127,16 @@ function Voting({ contentId, account }) {
               window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))
             }
           >
-            Sign in to vote
-          </button>
+            {t("cinema.voting.signInToVote")}</button>
         </p>
       )}
       {error && (
         <p role="alert" className="mt-3 text-sm">
           {error}{' '}
-          <Link className="underline" href="/social-cinema">
-            Cinema profile
-          </Link>{' '}
+          <Link className="underline" href={localize("/social-cinema")}>
+            {t("cinema.comments.cinemaProfile")}</Link>{' '}
           <button className="underline" onClick={load}>
-            Retry voting
-          </button>
+            {t("cinema.voting.retryVoting")}</button>
         </p>
       )}
       {notice && (
@@ -148,13 +146,11 @@ function Voting({ contentId, account }) {
       )}
       {!data && !error && (
         <p role="status" className="mt-3 text-sm">
-          Loading competitions…
-        </p>
+          {t("cinema.voting.loadingCompetitions")}</p>
       )}
       {data?.competitions?.length === 0 && (
         <p className="mt-3 text-sm text-vx-fg-muted">
-          No open competition for this title.
-        </p>
+          {t("cinema.voting.noOpenCompetitionForThisTitle")}</p>
       )}
       {data?.competitions?.map((comp) => (
         <article key={comp.id} className="mt-4 rounded-xl bg-vx-panel p-4">
@@ -163,10 +159,10 @@ function Voting({ contentId, account }) {
             <span data-testid={`vote-count-${comp.id}`}>
               {comp.qualified_votes}
             </span>{' '}
-            qualified votes · Closes {new Date(comp.ends_at).toLocaleString()}
+            {t("cinema.discovery.qualifiedVotesCloses")}{' '}{new Date(comp.ends_at).toLocaleString(localeTag(locale))}
           </p>
           {comp.my_vote ? (
-            <p className="mt-3 text-sm">{voteLabels[comp.my_vote.status]}</p>
+            <p className="mt-3 text-sm">{voteLabels(t)[comp.my_vote.status]}</p>
           ) : (
             account && (
               <button
@@ -174,7 +170,7 @@ function Voting({ contentId, account }) {
                 disabled={!!busy}
                 onClick={() => vote(comp)}
               >
-                {busy === comp.id ? 'Recording…' : `Vote in ${comp.name}`}
+                {busy === comp.id ? t("cinema.storyPolls.recording") : t('cinema.voting.voteIn', { name: comp.name })}
               </button>
             )
           )}

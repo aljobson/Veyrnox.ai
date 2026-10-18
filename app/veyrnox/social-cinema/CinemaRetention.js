@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from '../../../components/I18nProvider.jsx';
 import Link from "next/link";
 import {
   useCallback,
@@ -14,17 +15,17 @@ const identity = () => getSession()?.user?.id || "",
   empty = () => "";
 const signIn = () =>
   window.dispatchEvent(new CustomEvent("veyrnox:auth-required"));
-const message = (code) =>
+const message = (code, t) =>
   ({
     profile_required:
-      "Create an active Cinema profile to save titles and follow creators.",
-    account_not_active: "Your Cinema account is unavailable. Contact support.",
-    retention_not_open: "Saved titles and follows are not open yet.",
-    content_not_found: "This title is no longer available.",
-    rate_limited: "Too many requests. Wait a minute and retry.",
+      t("cinema.retention.createAnActiveCinemaProfileTo"),
+    account_not_active: t("cinema.comments.yourCinemaAccountIsUnavailableContact"),
+    retention_not_open: t("cinema.retention.savedTitlesAndFollowsAreNot"),
+    content_not_found: t("cinema.retention.thisTitleIsNoLongerAvailable"),
+    rate_limited: t("cinema.retention.tooManyRequestsWaitAMinute"),
     collection_limit:
-      "Your collection is full. Remove an item before adding another.",
-  })[code] || "Could not update your collection. Please retry.";
+      t("cinema.retention.yourCollectionIsFullRemoveAn"),
+  })[code] || t("cinema.retention.couldNotUpdateYourCollectionPlease");
 export function CinemaRetentionControls({ contentId }) {
   const account = useSyncExternalStore(onSessionChange, identity, empty);
   return (
@@ -36,6 +37,7 @@ export function CinemaRetentionControls({ contentId }) {
   );
 }
 function Controls({ account, contentId }) {
+  const { t } = useI18n();
   const [data, setData] = useState(null),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
@@ -60,11 +62,11 @@ function Controls({ account, contentId }) {
         setClosed(
           e.code === "retention_not_open" || e.code === "content_not_found",
         );
-        setError(message(e.code));
+        setError(message(e.code, t));
       }
       return false;
     }
-  }, [contentId]);
+  }, [contentId, t]);
   useEffect(() => {
     let active = true;
     const scope = generation;
@@ -95,7 +97,7 @@ function Controls({ account, contentId }) {
       attempt.current = null;
       await load();
     } catch (e) {
-      if (seq === generation.current) setError(message(e.code));
+      if (seq === generation.current) setError(message(e.code, t));
     } finally {
       pending.current = false;
       if (getSession()?.user?.id === account) setBusy(false);
@@ -105,13 +107,12 @@ function Controls({ account, contentId }) {
     return (
       <div className="mt-4">
         <Button variant="ghost" size="sm" onClick={signIn}>
-          Sign in to save or follow
-        </Button>
+          {t("cinema.retention.signInToSaveOrFollow")}</Button>
       </div>
     );
   if (closed) return null;
   return (
-    <section className="mt-4" aria-label="Save and follow" aria-busy={busy}>
+    <section className="mt-4" aria-label={t("cinema.retention.saveAndFollow")} aria-busy={busy}>
       {data ? (
         <div className="flex flex-wrap gap-3">
           <Button
@@ -121,7 +122,7 @@ function Controls({ account, contentId }) {
             disabled={busy}
             onClick={() => toggle("saved", contentId, data.saved)}
           >
-            {data.saved ? "Remove saved title" : "Save title"}
+            {data.saved ? t("cinema.retention.removeSavedTitle") : t("cinema.retention.saveTitle")}
           </Button>
           {!data.own_creator && (
             <Button
@@ -133,7 +134,7 @@ function Controls({ account, contentId }) {
                 toggle("creator", data.creator_id, data.following_creator)
               }
             >
-              {data.following_creator ? "Unfollow creator" : "Follow creator"}
+              {data.following_creator ? t("cinema.retention.unfollowCreator") : t("cinema.retention.followCreator")}
             </Button>
           )}
           {data.series_id && (
@@ -146,15 +147,14 @@ function Controls({ account, contentId }) {
                 toggle("series", data.series_id, data.following_series)
               }
             >
-              {data.following_series ? "Unfollow series" : "Follow series"}
+              {data.following_series ? t("cinema.retention.unfollowSeries") : t("cinema.retention.followSeries")}
             </Button>
           )}
         </div>
       ) : (
         !error && (
           <p role="status" className="text-sm text-vx-fg-muted">
-            Loading your collection…
-          </p>
+            {t("cinema.retention.loadingYourCollection")}</p>
         )
       )}
       {error && (
@@ -167,8 +167,7 @@ function Controls({ account, contentId }) {
             disabled={busy}
             onClick={load}
           >
-            Retry collection
-          </Button>
+            {t("cinema.retention.retryCollection")}</Button>
         </div>
       )}
     </section>
@@ -181,6 +180,8 @@ export function CinemaCollection({ kind }) {
   );
 }
 function Collection({ kind, account }) {
+  const { t, href: localize } = useI18n();
+
   const [items, setItems] = useState([]),
     [state, setState] = useState("loading"),
     [error, setError] = useState(""),
@@ -216,14 +217,14 @@ function Collection({ kind, account }) {
         setState("ready");
       } catch (e) {
         if (seq === generation.current) {
-          setError(message(e.code));
+          setError(message(e.code, t));
           setState(cursor ? "ready" : "error");
         }
       } finally {
         if (seq === generation.current) pending.current = false;
       }
     },
-    [kind],
+    [kind, t],
   );
   useEffect(() => {
     let active = true;
@@ -237,9 +238,9 @@ function Collection({ kind, account }) {
     };
   }, [account, load]);
   const heading = {
-    saved: "Your saved titles",
-    creator: "Creators you follow",
-    series: "Series you follow",
+    saved: t("cinema.retention.yourSavedTitles"),
+    creator: t("cinema.retention.creatorsYouFollow"),
+    series: t("cinema.retention.seriesYouFollow"),
   }[kind];
   return (
     <section
@@ -249,18 +250,15 @@ function Collection({ kind, account }) {
     >
       <h2 className="text-2xl font-extrabold">{heading}</h2>
       <p className="mt-3 text-sm text-vx-fg-muted">
-        Your collection is private. Only currently available titles appear here.
-      </p>
+        {t("cinema.retention.yourCollectionIsPrivateOnlyCurrently")}</p>
       {!account ? (
         <Button className="mt-5" onClick={signIn}>
-          Sign in to see your collection
-        </Button>
+          {t("cinema.retention.signInToSeeYourCollection")}</Button>
       ) : (
         <>
           {state === "loading" && (
             <p role="status" className="mt-5">
-              Loading your collection…
-            </p>
+              {t("cinema.retention.loadingYourCollection")}</p>
           )}
           {error && (
             <div className="mt-5">
@@ -270,15 +268,14 @@ function Collection({ kind, account }) {
                 variant="ghost"
                 onClick={() => load(next)}
               >
-                Retry collection
-              </Button>
+                {t("cinema.retention.retryCollection")}</Button>
             </div>
           )}
           {state === "ready" && !error && items.length === 0 && (
             <p role="status" className="mt-5">
               {kind === "saved"
-                ? "No saved titles are available yet. Save a title from its page."
-                : "No followed stories are available yet. Follow a creator or series from a title page."}
+                ? t("cinema.retention.noSavedTitlesAreAvailableYet")
+                : t("cinema.retention.noFollowedStoriesAreAvailableYet")}
             </p>
           )}
           <ul className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -294,7 +291,7 @@ function Collection({ kind, account }) {
                 <h3 className="mt-2 text-xl font-bold wrap-break-word">
                   <Link
                     className="hover:underline"
-                    href={`/social-cinema/title/${i.content_id}`}
+                    href={localize(`/social-cinema/title/${i.content_id}`)}
                   >
                     {kind === "creator"
                       ? `${i.display_name} — ${i.title}`
@@ -303,10 +300,9 @@ function Collection({ kind, account }) {
                 </h3>
                 <Link
                   className="mt-4 inline-block underline"
-                  href={`/social-cinema/title/${i.content_id}`}
+                  href={localize(`/social-cinema/title/${i.content_id}`)}
                 >
-                  Open title
-                </Link>
+                  {t("cinema.retention.openTitle")}</Link>
               </li>
             ))}
           </ul>
@@ -317,7 +313,7 @@ function Collection({ kind, account }) {
               disabled={state === "more"}
               onClick={() => load(next)}
             >
-              {state === "more" ? "Loading more…" : "Show more saved stories"}
+              {state === "more" ? t("cinema.discovery.loadingMore") : t("cinema.retention.showMoreSavedStories")}
             </Button>
           )}
         </>

@@ -291,7 +291,7 @@ test('one console line per failure, carrying the code and nothing else', () => {
 
 test('AuthGate shows the failure when it happens and clears it on a token', () => {
     const widget = between(authGate, '<Turnstile', '/>');
-    assert.match(widget, /onFailure=\{\(code\) => \{ setCaptchaFailure\(code\); setNotice\(\(n\) => noticeAfterCaptchaFailure\(n, code\)\); \}\}/);
+    assert.match(widget, /onFailure=\{\(code\) => \{ setCaptchaFailure\(code\); setNotice\(\(n\) => noticeAfterCaptchaFailure\(n, code, t\)\); \}\}/);
     assert.match(widget, /onToken=\{\(token\) => \{ setCaptcha\(token\); if \(token\) \{ setCaptchaFailure\(null\); setNotice\(noticeAfterCaptchaToken\); \} \}\}/);
     assert.match(authGate, /<div role="status" aria-live="polite"/);
 });
@@ -300,19 +300,19 @@ test('AuthGate remembers the wait and rewords what it is already saying', () => 
     const widget = between(authGate, '<Turnstile', '/>');
     // Remembered where the error code is, so a submit without a token says
     // the same thing, and a token or closing the dialog forgets it.
-    assert.match(widget, /onWaiting=\{\(\) => \{ setCaptchaFailure\(CAPTCHA_WAITING\); setNotice\(noticeWhileCaptchaWaits\); \}\}/);
+    assert.match(widget, /onWaiting=\{\(\) => \{ setCaptchaFailure\(CAPTCHA_WAITING\); setNotice\(n => noticeWhileCaptchaWaits\(n, t\)\); \}\}/);
 });
 
 test('AuthGate remembers an unsupported browser and says so at once', () => {
     const widget = between(authGate, '<Turnstile', '/>');
-    assert.match(widget, /onUnsupported=\{\(\) => \{ setCaptchaFailure\(CAPTCHA_UNSUPPORTED\); setNotice\(\(n\) => noticeAfterCaptchaFailure\(n, CAPTCHA_UNSUPPORTED\)\); \}\}/);
+    assert.match(widget, /onUnsupported=\{\(\) => \{ setCaptchaFailure\(CAPTCHA_UNSUPPORTED\); setNotice\(\(n\) => noticeAfterCaptchaFailure\(n, CAPTCHA_UNSUPPORTED, t\)\); \}\}/);
 });
 
 test('a blocked script is remembered like any other failure', () => {
     // Otherwise the next submit wiped the advice and asked the person to
     // complete a check that is not on the page.
     const widget = between(authGate, '<Turnstile', '/>');
-    assert.match(widget, /onError=\{\(\) => \{ setCaptchaFailure\(CAPTCHA_BLOCKED_CODE\); setNotice\(captchaNotice\(CAPTCHA_BLOCKED_CODE\)\); \}\}/);
+    assert.match(widget, /onError=\{\(\) => \{ setCaptchaFailure\(CAPTCHA_BLOCKED_CODE\); setNotice\(captchaNotice\(CAPTCHA_BLOCKED_CODE, t\)\); \}\}/);
 });
 
 test('closing the dialog forgets what its widget reported', () => {
@@ -324,7 +324,7 @@ test('closing the dialog forgets what its widget reported', () => {
 
 test('a submit without a token gives the reason when there is one', () => {
     // Both the form and the passkey button stop here (ADR-0026).
-    const guards = authGate.match(/if \(TURNSTILE_SITE_KEY && !captcha\) \{\s*setNotice\(captchaNotice\(captchaFailure\)\);\s*return;/g) || [];
+    const guards = authGate.match(/if \(TURNSTILE_SITE_KEY && !captcha\) \{\s*setNotice\(captchaNotice\(captchaFailure, t\)\);\s*return;/g) || [];
     assert.equal(guards.length, 2);
     assert.doesNotMatch(authGate, /Complete the security check first/, 'the wording lives in app/lib/turnstileFailure.js');
 });

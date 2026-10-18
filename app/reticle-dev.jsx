@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { journeyStore } from './veyrnox/_lib/veyJourneyStore';
 
 function readVeyLayout() {
-  const guide = document.querySelector('[aria-label="Vey task walkthrough"]')?.getBoundingClientRect();
+  const guide = document.querySelector('[data-vey-walkthrough]')?.getBoundingClientRect();
   const question = document.querySelector('[role="dialog"][aria-labelledby="vx-helper-title"]')?.getBoundingClientRect();
   const mascot = document.querySelector('[data-testid="assistant-mascot"]')?.getBoundingClientRect();
   const overlaps = (a, b) => !!a && !!b && a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
@@ -32,7 +32,7 @@ function readVeyLayout() {
     questionFont: parseFloat(getComputedStyle(document.querySelector('#vx-helper-question') || document.body).fontSize),
     panelsClear: !!guide?.width && !!question?.width && !overlaps(guide, question),
     mascotClearPanels: !overlaps(mascot, guide) && !overlaps(mascot, question),
-    guideStep: document.querySelector('[aria-label="Vey task walkthrough"]')?.dataset.step,
+    guideStep: document.querySelector('[data-vey-walkthrough]')?.dataset.step,
     docked: document.querySelector('[data-testid="assistant-mascot"]')?.getAttribute('data-mobile-docked') === 'true',
     mascotX: mascot ? Math.round(mascot.left) : null,
     mascotY: mascot ? Math.round(mascot.top) : null,
@@ -46,7 +46,7 @@ function readVeyLayout() {
     draftRestored: document.querySelector('[data-testid="create-draft-recovery"]')?.textContent.includes('Draft restored for this account') || false,
     rightsConfirmed: document.querySelector('[data-testid="create-source-rights-status"]')?.dataset.confirmed === 'true',
     costCardStatic: document.querySelector('[data-create-cost-card]') ? getComputedStyle(document.querySelector('[data-create-cost-card]')).position === 'static' : false,
-    storageNoticeOpen: !!document.querySelector('[aria-label="Browser storage notice"]'),
+    storageNoticeOpen: !!document.querySelector('[data-storage-notice]'),
     siteActionsOverlap: interactiveControls.filter((rect) => overlaps(siteActions, rect)).length,
   };
 }

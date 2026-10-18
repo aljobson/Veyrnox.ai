@@ -69,7 +69,7 @@ test('neither value is logged', () => {
 });
 
 test('sign-up warns about breached passwords before the first attempt', () => {
-    assert.match(authGate, /mode === "sign_up"\s*\?\s*"At least 8 characters\. Passwords found in data breaches are rejected/);
+    assert.match(authGate, /mode === "sign_up"\s*\?\s*t\("authGate.atLeast8CharactersPasswordsFound"\)/);
     assert.match(authGate, /aria-describedby="vx-password-hint"/);
     assert.match(authGate, /id="vx-password-hint"/);
 });

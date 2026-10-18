@@ -1,4 +1,6 @@
 'use client';
+import { rich } from '../../../lib/i18n/rich';
+import { useI18n } from '../../../components/I18nProvider.jsx';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useCatalog } from '../_lib/useCatalog';
@@ -15,6 +17,7 @@ function usableAspect(preset, model) {
 }
 
 export function UseTemplate({ preset, prompt = preset.prompt }) {
+  const { t } = useI18n();
   const router = useRouter();
   const { models } = useCatalog();
   const modelId = modelIdForName(preset.model);
@@ -48,9 +51,9 @@ export function UseTemplate({ preset, prompt = preset.prompt }) {
   return (
     <div className="mt-8">
       <dl className="grid grid-cols-2 gap-3 text-[14px]">
-        <div><dt className="text-vx-fg-muted">Cost</dt><dd className="font-vx-mono vx-num text-[22px] font-bold text-vx-money">{credits} cr</dd></div>
-        {aspect && <div><dt className="text-vx-fg-muted">Aspect ratio</dt><dd className="font-vx-mono text-[22px] font-bold">{aspect}</dd></div>}
-        {preset.durationSeconds && <div><dt className="text-vx-fg-muted">Direct clip</dt><dd><select aria-label="Direct clip length" value={durationSeconds} onChange={(event) => setDurationSeconds(Number(event.target.value))} className="mt-1 rounded-lg border border-vx-border bg-vx-panel px-3 py-2 font-vx-mono text-[16px] font-bold">{durationOptions.map((seconds) => <option key={seconds} value={seconds}>{seconds} seconds</option>)}</select></dd></div>}
+        <div><dt className="text-vx-fg-muted">{t("presets.use.cost")}</dt><dd className="font-vx-mono vx-num text-[22px] font-bold text-vx-money">{credits} cr</dd></div>
+        {aspect && <div><dt className="text-vx-fg-muted">{t("presets.use.aspect")}</dt><dd className="font-vx-mono text-[22px] font-bold">{aspect}</dd></div>}
+        {preset.durationSeconds && <div><dt className="text-vx-fg-muted">{t("presets.use.clip")}</dt><dd><select aria-label={t("presets.use.clipLength")} value={durationSeconds} onChange={(event) => setDurationSeconds(Number(event.target.value))} className="mt-1 rounded-lg border border-vx-border bg-vx-panel px-3 py-2 font-vx-mono text-[16px] font-bold">{durationOptions.map((seconds) => <option key={seconds} value={seconds}>{t('presets.use.seconds', { count: seconds })}</option>)}</select></dd></div>}
       </dl>
       <button
         type="button"
@@ -58,21 +61,21 @@ export function UseTemplate({ preset, prompt = preset.prompt }) {
         disabled={!prompt.trim()}
         className="vx-press mt-6 inline-flex items-center gap-4 rounded-full bg-vx-accent px-6 py-3.5 font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover disabled:opacity-50"
       >
-        <span>{preset.inspired ? 'Create a similar video' : 'Use this template'}</span>
+        <span>{preset.inspired ? t("presets.use.similar") : t("presets.use.template")}</span>
         <span className="font-vx-mono vx-num text-[15px] font-bold">{credits} cr</span>
       </button>
       <div className="mt-6 rounded-xl border border-vx-border bg-vx-panel/40 p-4">
-        <p className="font-bold">Need a longer video?</p>
-        <p className="mt-1 text-[13px] text-vx-fg-muted">Plan the edited prompt as connected 10-second shots, then assemble a 30–120 second film.</p>
+        <p className="font-bold">{t("presets.use.longer")}</p>
+        <p className="mt-1 text-[13px] text-vx-fg-muted">{t("presets.use.filmPlan")}</p>
         <div className="mt-3 flex flex-wrap items-center gap-3">
-          <select aria-label="Film target length" value={targetSeconds} onChange={(event) => setTargetSeconds(Number(event.target.value))} className="rounded-lg border border-vx-border bg-vx-base px-3 py-2 text-sm font-bold">
-            {[30, 60, 90, 120].map((seconds) => <option key={seconds} value={seconds}>{seconds} seconds</option>)}
+          <select aria-label={t("presets.use.target")} value={targetSeconds} onChange={(event) => setTargetSeconds(Number(event.target.value))} className="rounded-lg border border-vx-border bg-vx-base px-3 py-2 text-sm font-bold">
+            {[30, 60, 90, 120].map((seconds) => <option key={seconds} value={seconds}>{t('presets.use.seconds', { count: seconds })}</option>)}
           </select>
-          <button type="button" onClick={buildFilm} disabled={!prompt.trim()} className="vx-press rounded-full border border-vx-accent px-5 py-2 text-sm font-extrabold text-vx-accent disabled:opacity-50">Build in Film Studio →</button>
+          <button type="button" onClick={buildFilm} disabled={!prompt.trim()} className="vx-press rounded-full border border-vx-accent px-5 py-2 text-sm font-extrabold text-vx-accent disabled:opacity-50">{t("presets.use.build")}</button>
         </div>
       </div>
-      <p className="mt-3 text-[13px] text-vx-fg-muted">Nothing is charged until you press Generate. Failed generations refund in full.</p>
-      {handoffError && <p role="alert" className="mt-3 text-[13px] text-vx-danger">Your browser blocked saving this edit. Copy the prompt, then <a href={presetHref(preset, durationSeconds)} className="underline">open the studio</a> and paste it there.</p>}
+      <p className="mt-3 text-[13px] text-vx-fg-muted">{t("presets.use.refunds")}</p>
+      {handoffError && <p role="alert" className="mt-3 text-[13px] text-vx-danger">{rich(t('presets.use.handoff'), { studio: <a href={presetHref(preset, durationSeconds)} className="underline">{t('presets.use.openStudio')}</a> })}</p>}
     </div>
   );
 }

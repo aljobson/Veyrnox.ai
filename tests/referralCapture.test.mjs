@@ -66,7 +66,8 @@ test('attachIsFinal: an answer about the code or account is final; sign-in, limi
 test('the disclosure cannot drift from the storage: the notice, the privacy policy, the Terms and the refund policy all say it', () => {
     const chrome = read('../app/veyrnox/_components/SiteChrome.js');
     assert.match(chrome, /<ReferralBridge \/>/);
-    assert.match(chrome, /referral code for up to three days/);
+    assert.match(chrome, /t\('chrome.storageBody'\)/);
+    assert.match(read('../lib/i18n/messages/en.mjs'), /referral code for up to three days/);
     const privacy = read('../app/legal/privacy/page.js');
     assert.match(privacy, /referral link[\s\S]{0,80}local storage for up to three days/);
     assert.match(privacy, /<h2>Referrals<\/h2>/);

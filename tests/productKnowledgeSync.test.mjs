@@ -23,6 +23,14 @@ test('automatic knowledge inventories product routes and approved documentation'
     assert.ok(AUTO_PRODUCT_DOCS.every((entry) => entry.text && entry.sourceHash));
 });
 
+test('ancestor layout notices retain knowledge after selectors switch to stable hooks', () => {
+    for (const route of ['/legal/aup', '/m', '/social-cinema', '/social/review/[token]']) {
+        const entry = AUTO_PRODUCT_INVENTORY.find(value => value.route === route);
+        assert.ok(entry.controls.includes('Browser storage notice'), route);
+        assert.ok(entry.controls.includes('Got it'), route);
+    }
+});
+
 test('every app page is represented exactly once, including legal and callback routes', async () => {
     async function pages(directory) {
         const entries = await readdir(directory, { withFileTypes: true });
@@ -36,4 +44,44 @@ test('every app page is represented exactly once, including legal and callback r
     for (const route of ['/legal/privacy', '/auth/callback', '/s/[slug]', '/social/review/[token]', '/social/team/invite/[token]', '/design-system']) {
         assert.ok(AUTO_PRODUCT_INVENTORY.some((entry) => entry.route === route), route);
     }
+});
+
+test('static translation resolution preserves English copy, rich labels and literal slots without executing code', async () => {
+    const { resolveI18nSource } = await import('../scripts/lib/vey-knowledge-i18n.mjs');
+    const messages = { title: 'Creator workspace', detail: 'Up to {count} minutes.', linked: 'Read {policy}.', 'label.Start frame': 'Start frame' };
+    const source = `<h1>{t('title')}</h1><p>{t('detail', { count: 10 })}</p><label>{t.label('Start frame')}</label><p>{rich(t('linked'), { policy: <a href="/legal/privacy">Privacy</a> })}</p><a href={localizedHref('/m')}>Mobile</a>`;
+    const resolved = resolveI18nSource(source, messages);
+    assert.ok(resolved.includes('<h1>Creator workspace</h1>'));
+    assert.ok(resolved.includes('<p>Up to 10 minutes.</p>'));
+    assert.ok(resolved.includes('<label>Start frame</label>'));
+    assert.ok(resolved.includes('<p>Read Privacy.</p>'));
+    assert.ok(resolved.includes('href="/m"'));
+    const linked = `<p>{rich(t('linked'), { policy: <a href={localize('/legal/privacy')}>Privacy</a> })}</p>`;
+    assert.ok(resolveI18nSource(linked, messages, { attributesOnly: true }).includes('href="/legal/privacy"'));
+    const dynamic = `<p>{t(serverKey)}</p><p>{t('absent')}</p><p>{dangerous()}</p>`;
+    assert.equal(resolveI18nSource(dynamic, messages), dynamic);
+});
+
+test('all main route knowledge survives localization except the retired unknown-series fallback', async () => {
+    const baseline = JSON.parse(await readFile(path.join(root, 'tests/fixtures/public-site-knowledge-main.json'), 'utf8'));
+    // Case, typographic punctuation and link-adjacent spaces are presentation,
+    // not facts. Links and assistant target identifiers must remain exact.
+    const words = value => value.toLowerCase().replace(/[’‘]/g, "'").replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+    for (const [route, fields] of Object.entries(baseline.routes)) {
+        const current = AUTO_PRODUCT_INVENTORY.find(entry => entry.route === route);
+        assert.ok(current, route);
+        for (const [field, indices] of Object.entries(fields)) {
+            const normal = ['links', 'targets'].includes(field) ? value => value : words;
+            const actual = new Set(current[field].map(normal));
+            for (const index of indices) {
+                const expected = baseline.texts[index];
+                // The accepted phase-A correction calls notFound() for unknown
+                // series. Do not restore nonexistent HTTP-200 fallback copy.
+                if (route === '/social-cinema/series/[slug]' && field === 'descriptions' && expected === 'This series is not available.') continue;
+                assert.ok(actual.has(normal(expected)), `${route} ${field}: ${expected}`);
+            }
+        }
+    }
+    const series = await readFile(path.join(root, 'app/veyrnox/social-cinema/series/[slug]/page.js'), 'utf8');
+    assert.match(series, /if \(!series\) notFound\(\)/);
 });

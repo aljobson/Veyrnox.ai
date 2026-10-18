@@ -59,7 +59,7 @@ export default function useVeyPointer({ reduceMotion, moveMascot, setFacing, act
       const r = element.getBoundingClientRect();
       if (r.bottom < 72 || r.top > innerHeight || r.right < 0 || r.left > innerWidth) { setGeometry(null); return; }
       const rect = { left: r.left, top: r.top, right: r.right, bottom: r.bottom, width: r.width, height: r.height };
-      const obstacle = document.querySelector('[aria-label="Vey task walkthrough"]')?.getBoundingClientRect();
+      const obstacle = document.querySelector('[data-vey-walkthrough]')?.getBoundingClientRect();
       const scroll = clearedGuide ? 0 : mobileGuideScroll(rect, obstacle, { width: innerWidth });
       clearedGuide = true;
       if (scroll > 0) window.scrollBy({ top: scroll, behavior: 'instant' });
@@ -72,7 +72,7 @@ export default function useVeyPointer({ reduceMotion, moveMascot, setFacing, act
     const schedule = () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(measure); };
     const observer = new ResizeObserver(schedule);
     if (main) observer.observe(main);
-    const guide = document.querySelector('[aria-label="Vey task walkthrough"]');
+    const guide = document.querySelector('[data-vey-walkthrough]');
     if (guide) observer.observe(guide);
     const mutation = new MutationObserver(schedule);
     if (main) mutation.observe(main, { subtree: true, childList: true, attributes: true, attributeFilter: ['aria-pressed', 'aria-expanded', 'class'] });

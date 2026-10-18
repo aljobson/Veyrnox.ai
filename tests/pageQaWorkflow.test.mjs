@@ -28,8 +28,8 @@ test('anonymous coverage and its artifact are independent of authenticated crede
 test('page sweep bounds browser actions and stabilizes animation-dependent accessibility snapshots', () => {
   assert.match(config, /actionTimeout: 10_000/);
   assert.match(config, /reducedMotion: 'reduce'/);
-  assert.match(sweep, /getByRole\('region', \{ name: 'Privacy choices' \}\)/);
-  assert.match(sweep, /getByRole\('button', \{ name: 'Decline', exact: true \}\)\.click\(\)/);
+  assert.match(sweep,  /locator\('\[data-storage-notice="analytics"\]'\)/);
+  assert.match(sweep, /locator\('\[data-storage-decline\]'\)\.click\(\)/);
 });
 
 function privacyHandlerSource() {
@@ -44,14 +44,12 @@ test('late privacy hydration is handled through the genuine Decline UI, not bypa
   let visible = false;
   let handler;
   const clicks = [];
-  const privacy = { getByRole: (role, options) => {
-    assert.equal(role, 'button');
-    assert.deepEqual({ ...options }, { name: 'Decline', exact: true });
+  const privacy = { locator: (selector) => {
+    assert.equal(selector, '[data-storage-decline]');
     return { click: async (...arguments_) => { assert.equal(visible, true); assert.deepEqual(arguments_, []); clicks.push('Decline'); visible = false; } };
   } };
-  const page = { getByRole: (role, options) => {
-    assert.equal(role, 'region');
-    assert.deepEqual({ ...options }, { name: 'Privacy choices' });
+  const page = { locator: (selector) => {
+    assert.equal(selector, '[data-storage-notice="analytics"]');
     return privacy;
   }, addLocatorHandler: async (locator, callback, ...options) => {
     assert.equal(locator, privacy); assert.deepEqual(options, []); handler = callback;
@@ -69,9 +67,9 @@ test('late privacy hydration is handled through the genuine Decline UI, not bypa
 test('a broken Decline control stays a failure rather than being retried or hidden by the harness', async () => {
   let handler;
   let clicks = 0;
-  const privacy = { getByRole: () => ({ click: async () => { clicks++; throw new Error('Decline control failed'); } }) };
+  const privacy = { locator: () => ({ click: async () => { clicks++; throw new Error('Decline control failed'); } }) };
   const install = runInNewContext(`(${privacyHandlerSource()})`, { expect: () => assert.fail('failed Decline cannot assert successful dismissal') });
-  await install({ getByRole: () => privacy, addLocatorHandler: async (_, callback) => { handler = callback; } });
+  await install({ locator: () => privacy, addLocatorHandler: async (_, callback) => { handler = callback; } });
   await assert.rejects(handler(privacy), /Decline control failed/);
   assert.equal(clicks, 1);
 });
@@ -81,8 +79,8 @@ test('replacement pages receive their own privacy locator and callback, never a 
   const selected = [];
   const install = runInNewContext(`(${privacyHandlerSource()})`, { expect: locator => ({ toBeHidden: async () => selected.push(`hidden:${locator.id}`) }) });
   for (const id of ['original', 'replacement']) {
-    const locator = { id, getByRole: () => ({ click: async () => selected.push(`decline:${id}`) }) };
-    await install({ getByRole: () => locator, addLocatorHandler: async (_, callback) => callbacks.push(callback) });
+    const locator = { id, locator: () => ({ click: async () => selected.push(`decline:${id}`) }) };
+    await install({ locator: () => locator, addLocatorHandler: async (_, callback) => callbacks.push(callback) });
   }
   await callbacks[1]();
   await callbacks[0]();
