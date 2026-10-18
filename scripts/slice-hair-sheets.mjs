@@ -2,6 +2,7 @@
 //   node scripts/slice-hair-sheets.mjs <input-dir> [--out public/oddlings/hair] [--only sheet1.jpg] [--manifest outfit-tiles.manifest.json]
 // The manifest (scripts/hair-tiles.manifest.json) names each source image, its grid (rows of head counts) and the styles in reading order.
 // An entry may set "inset" (pixels) to pull each cell in from its neighbours so divider lines drawn between cells stay out, "mirror" to flip its pictures left to right, and "window" (default 0.14) to narrow how far a cut may move from the even split, for a sheet whose figures have little contrast with the background.
+// An entry with one style may set "region" ({ left, top, width, height }) to cut that square straight out of the image, for a portrait that fills its cell and has no head to find.
 // A sheet that does not hold exactly the heads the manifest expects is refused, so a bad generation never ships a mislabelled tile.
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
@@ -83,6 +84,11 @@ async function sliceOne(entry, inputDir, outDir) {
   const source = await readFile(path.join(inputDir, entry.file));
   const { data, info } = await sharp(source).removeAlpha().raw().toBuffer({ resolveWithObject: true });
   const image = { data, width: info.width, height: info.height };
+  if (entry.region) {
+    const name = path.join(outDir, `${hairTileSlug(entry.styles[0])}.webp`);
+    await writeFile(name, await sharp(source).extract(entry.region).resize(TILE, TILE).webp({ quality: 82 }).toBuffer());
+    return [name];
+  }
   const rows = entry.rows || [1];
   const expected = rows.reduce((a, b) => a + b, 0);
   if (entry.styles.length !== expected) throw new Error(`${entry.file}: manifest lists ${entry.styles.length} styles for a ${expected}-cell grid`);

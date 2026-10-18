@@ -38,8 +38,8 @@ test('pictureTileSrc returns the file for a listed option and nothing for the re
   assert.equal(pictureTileSrc('mouth', 'Forked Tongue'), '/oddlings/face/mouth/forked-tongue.webp');
   assert.equal(pictureTileSrc('mouth', 'Small Mouth'), '', 'looked the same as No Teeth: keeps the drawn tile');
   assert.equal(pictureTileSrc('nose_shape', 'Button'), '', 'not on the close-up sheet: keeps the drawn tile');
-  assert.equal(pictureTileSrc('wardrobe_style', 'Tiny Formalwear'), '', 'drawn as an ordinary suit: keeps the drawn tile');
-  assert.equal(pictureTileSrc('rendering_style', 'Hyper-Realistic'), '', 'came out as a 3D cartoon: keeps the icon tile');
+  assert.equal(pictureTileSrc('wardrobe_style', 'Tiny Formalwear'), '/oddlings/outfits/tiny-formalwear.webp');
+  assert.equal(pictureTileSrc('rendering_style', 'Hyper-Realistic'), '/oddlings/rendering/hyper-realistic.webp');
   assert.equal(pictureTileSrc('rendering_style', 'Anime'), '/oddlings/rendering/anime.webp');
   assert.equal(pictureTileSrc('left_arm', 'None'), '', 'both arms were still drawn: keeps the drawn tile');
   assert.equal(pictureTileSrc('brows', 'Thick'), '/oddlings/face/brows/thick.webp');
@@ -79,7 +79,7 @@ test('a right arm or leg picture is the left one mirrored: same options, differe
   assert.equal(pictureTileSrc('body_type', 'Fat'), '/oddlings/body/body_type/fat.webp');
   assert.equal(pictureTileSrc('body_type', 'Muscular'), '/oddlings/body/body_type/muscular.webp');
   assert.equal(pictureTileSrc('body_type', 'Lanky'), '', 'looked the same as the slim builds: keeps the drawn tile');
-  assert.equal(pictureTileSrc('exaggeration', 'Extreme'), '', 'looked the same as Bold: keeps the drawn tile');
+  assert.equal(pictureTileSrc('exaggeration', 'Extreme'), '/oddlings/body/exaggeration/extreme.webp');
 });
 
 test('every creature type has a picture', () => {

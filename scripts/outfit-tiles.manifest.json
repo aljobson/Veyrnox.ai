@@ -58,6 +58,19 @@
         null,
         "Weather Couture"
       ]
+    },
+    {
+      "file": "gap-body4.jpg",
+      "rows": [
+        2,
+        2
+      ],
+      "styles": [
+        "Tiny Formalwear",
+        null,
+        null,
+        null
+      ]
     }
   ]
 }

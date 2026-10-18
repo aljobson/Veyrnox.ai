@@ -4,17 +4,17 @@ import { HAIR_TILE_STYLES, hairTileSlug, hairTileSrc } from './oddlingHairTiles.
 
 /** Outfits with a picture. Tiny Formalwear is the only one without: the sheets drew an ordinary suit, not an undersized one. */
 export const OUTFIT_TILE_STYLES = Object.freeze([
-  'Office Surrealist', 'Quilted Royalty', 'Utility Pop', 'Domestic Futurist', 'Ceremonial Sportswear', 'Soft Sculpture', 'Modern Basics', 'Streetwear', 'Y2K', 'Goth', 'Retro', 'Sporty', 'Business Suit', 'Weather Couture',
+  'Office Surrealist', 'Quilted Royalty', 'Utility Pop', 'Domestic Futurist', 'Ceremonial Sportswear', 'Soft Sculpture', 'Modern Basics', 'Streetwear', 'Y2K', 'Goth', 'Retro', 'Sporty', 'Business Suit', 'Weather Couture', 'Tiny Formalwear',
 ]);
-// Rendering style: the same fictional character in each style. Hyper-Realistic came out as a 3D cartoon and keeps the icon tile.
-export const RENDERING_STYLE_TILE_STYLES = Object.freeze(['Anime', 'Cartoon', '2D Illustration']);
+// Rendering style: the same fictional character in each style. Hyper-Realistic is a photographic portrait of a fictional person.
+export const RENDERING_STYLE_TILE_STYLES = Object.freeze(['Anime', 'Cartoon', '2D Illustration', 'Hyper-Realistic']);
 export const HEADWEAR_TILE_STYLES = Object.freeze(['Baseball Cap', 'Beanie', 'Wide-Brim Hat', 'Bucket Hat', 'Headphones']);
 
 // Face options with a picture. Only the ones that read clearly at tile size are listed: most eye and nose shapes, Tiny Head, Oversized Head,
 // Small Mouth, Crooked Teeth, Soft Jaw, Cleft Chin, Prominent Chin, High and Full Cheeks and No Ears looked the same as their neighbours or were
 // drawn wrongly on the generated sheets, so they keep the drawn tile.
 export const HEAD_SHAPE_TILE_STYLES = Object.freeze(['Long Oval', 'Perfect Round', 'Square', 'Heart', 'Diamond', 'Tiny Head']);
-export const EYE_SHAPE_TILE_STYLES = Object.freeze(['Round', 'Monolid', 'Graphic Liner', 'Hooded', 'Upturned', 'Uneven', 'Almond']);
+export const EYE_SHAPE_TILE_STYLES = Object.freeze(['Round', 'Monolid', 'Graphic Liner', 'Hooded', 'Upturned', 'Uneven', 'Almond', 'Narrow', 'Downturned']);
 export const NOSE_SHAPE_TILE_STYLES = Object.freeze(['Straight', 'Aquiline', 'Snub', 'Wide', 'Narrow', 'Round Tip']);
 export const BROWS_TILE_STYLES = Object.freeze(['Thick', 'Thin', 'Arched', 'Straight', 'Bushy', 'Bleached']);
 export const LIPS_TILE_STYLES = Object.freeze(['Full', 'Thin', 'Cupid Bow', 'Glossy', 'Matte Dark']);
@@ -46,11 +46,11 @@ export const ACCESSORIES_TILE_STYLES = Object.freeze([
 export const DISTINCTIVE_FEATURES_TILE_STYLES = Object.freeze([
   'Tiny Microphone', 'Pocket Weather Station', 'Giant Comb', 'Sacred Stapler', 'Snack Sceptre', 'Miniature Chair', 'Impossible Handbag', 'Receipt Train', 'Miniature Thermos', 'Miniature Cake',
 ]);
-// Body: fully clothed full-body figures. Only options that stay distinguishable once each figure is fitted to its tile have a picture; most builds, most
-// proportions and Extreme exaggeration looked the same as their neighbours (or were drawn shirtless) and keep the drawn tile.
+// Body: fully clothed full-body figures. Only options that stay distinguishable once each figure is fitted to its tile have a picture; most builds, some
+// proportions looked the same as their neighbours (or were drawn shirtless) and keep the drawn tile.
 export const BODY_TYPE_TILE_STYLES = Object.freeze(['Curvy', 'Heavy', 'Fat', 'Athletic', 'Muscular', 'Hyper-Muscular', 'Pear', 'Barrel', 'Skinny']);
-export const PROPORTIONS_TILE_STYLES = Object.freeze(['Natural', 'Tiny Torso', 'Huge Hands', 'No Visible Neck', 'Long Neck']);
-export const EXAGGERATION_TILE_STYLES = Object.freeze(['Natural', 'Bold']);
+export const PROPORTIONS_TILE_STYLES = Object.freeze(['Natural', 'Tiny Torso', 'Huge Hands', 'No Visible Neck', 'Long Neck', 'Wide Shoulders']);
+export const EXAGGERATION_TILE_STYLES = Object.freeze(['Natural', 'Bold', 'Extreme']);
 export const MOUTH_TILE_STYLES = Object.freeze(['Large Mouth', 'No Teeth', 'Unique Teeth', 'Gap Teeth', 'Gold Tooth', 'Bright Smile', 'Sharp Teeth', 'Forked Tongue', 'Two Tongues', 'Crooked Teeth']);
 
 /** Catalog group id -> folder under /oddlings and the options that have a file there. */
