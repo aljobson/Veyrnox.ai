@@ -6,6 +6,8 @@ import { OPEN_GRAPH_BASE } from '../../seo';
 import { getT } from '../../../lib/i18n/server';
 import { pageAlternates, openGraphLocale } from '../../../lib/i18n/metadata.mjs';
 import { rich } from '../../../lib/i18n/rich';
+import { MCP_PUBLISH_COPY } from '../../../lib/i18n/mcpPublishCopy.mjs';
+import { publishAutomationEnabled } from '../../../lib/social/publishFeature.js';
 
 const ENDPOINT = 'https://veyrnox.ai/api/v1/mcp';
 export async function generateMetadata() {
@@ -22,9 +24,15 @@ export async function generateMetadata() {
 
 // Tool names are the connector's own identifiers; each has a description key mcp.tool.<name>.
 const tools = ['list_models', 'estimate_generation', 'generate_image', 'get_generation', 'list_generations', 'get_balance'];
+const publishTools = ['publish_list_brands', 'publish_list_accounts', 'publish_list_posts', 'publish_get_analytics',
+  'publish_schedule_post', 'publish_reschedule_post', 'publish_cancel_post'];
 
 export default async function McpPage() {
   const { t } = await getT();
+  // The Publish tools exist only while the switch is on (ADR-0112); the other copy is true otherwise.
+  const publish = publishAutomationEnabled();
+  const shownTools = publish ? [...tools, ...publishTools] : tools;
+  const c = (name) => (publish ? MCP_PUBLISH_COPY[`mcp.pub.${name}`] : t(`mcp.${name}`));
   return (
     <div className="min-h-dvh">
       <MarketingNav />
@@ -36,7 +44,7 @@ export default async function McpPage() {
               {t('mcp.title')}
             </h1>
             <p className="mt-7 text-lg sm:text-xl text-vx-fg-body max-w-[50ch] leading-[1.55] text-pretty">
-              {t('mcp.lead')}
+              {c('lead')}
             </p>
             <div className="mt-9 flex flex-wrap gap-3">
               <Link href="/app/credits" className="vx-press rounded-full bg-vx-accent text-vx-accent-ink px-6 py-3 text-sm font-extrabold hover:bg-vx-accent-hover">
@@ -59,7 +67,7 @@ export default async function McpPage() {
               {[
                 ['01', t('mcp.s1.title'), t('mcp.s1.body')],
                 ['02', t('mcp.s2.title'), t('mcp.s2.body')],
-                ['03', t('mcp.s3.title'), t('mcp.s3.body')],
+                ['03', t('mcp.s3.title'), c('s3.body')],
               ].map(([number, title, body]) => (
                 <li key={number} className="grid grid-cols-[36px_1fr] gap-3">
                   <span className="font-vx-mono text-[12px] font-bold text-vx-accent pt-1">{number}</span>
@@ -76,14 +84,14 @@ export default async function McpPage() {
         <section className="mt-24 sm:mt-32" aria-labelledby="tools-heading">
           <div className="max-w-[720px]">
             <p className="font-vx-mono text-[12px] font-bold tracking-[0.18em] uppercase text-vx-accent">{t('mcp.what.kicker')}</p>
-            <h2 id="tools-heading" className="vx-display mt-4 text-[40px] sm:text-[58px]">{t('mcp.what.title')}</h2>
-            <p className="mt-4 text-vx-fg-body leading-[1.65]">{t('mcp.what.p')}</p>
+            <h2 id="tools-heading" className="vx-display mt-4 text-[40px] sm:text-[58px]">{c('what.title')}</h2>
+            <p className="mt-4 text-vx-fg-body leading-[1.65]">{c('what.p')}</p>
           </div>
           <ul className="mt-10 grid md:grid-cols-2 lg:grid-cols-3 border-t border-vx-border">
-            {tools.map((name) => (
+            {shownTools.map((name) => (
               <li key={name} className="border-b border-vx-border py-6 md:pr-8">
                 <code className="font-vx-mono text-[13px] font-bold text-vx-money">{name}</code>
-                <p className="mt-2 text-[15px] leading-[1.55] text-vx-fg-body">{t(`mcp.tool.${name}`)}</p>
+                <p className="mt-2 text-[15px] leading-[1.55] text-vx-fg-body">{MCP_PUBLISH_COPY[`mcp.tool.${name}`] || t(`mcp.tool.${name}`)}</p>
               </li>
             ))}
           </ul>
@@ -91,13 +99,13 @@ export default async function McpPage() {
 
         <section className="mt-24 rounded-[32px] border border-vx-border p-7 sm:p-10 lg:p-14 grid lg:grid-cols-2 gap-10" aria-labelledby="spend-heading">
           <div>
-            <p className="font-vx-mono text-[12px] font-bold tracking-[0.18em] uppercase text-vx-accent">{t('mcp.safe.kicker')}</p>
-            <h2 id="spend-heading" className="vx-display mt-4 text-[40px] sm:text-[56px]">{t('mcp.safe.title')}</h2>
+            <p className="font-vx-mono text-[12px] font-bold tracking-[0.18em] uppercase text-vx-accent">{c('safe.kicker')}</p>
+            <h2 id="spend-heading" className="vx-display mt-4 text-[40px] sm:text-[56px]">{c('safe.title')}</h2>
           </div>
           <div className="space-y-4 text-vx-fg-body leading-[1.65]">
-            <p>{t('mcp.safe.p1')}</p>
-            <p>{t('mcp.safe.p2')}</p>
-            <p className="text-sm text-vx-fg-muted">{t('mcp.safe.p3')}</p>
+            <p>{c('safe.p1')}</p>
+            <p>{c('safe.p2')}</p>
+            <p className="text-sm text-vx-fg-muted">{c('safe.p3')}</p>
           </div>
         </section>
       </Main>
