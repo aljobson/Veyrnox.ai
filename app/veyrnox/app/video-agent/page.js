@@ -20,6 +20,18 @@ const ASPECTS = ['9:16', '16:9', '1:1'];
 const MIN_BRIEF = 3;
 const MAX_BRIEF = 500;
 
+const STEPS = [
+  ['1', 'Write a brief', 'Say what the video is about and how it should feel. Pick a shape: 9:16 for phones, 16:9 for wide screens, 1:1 for squares.'],
+  ['2', 'Check the plan and price', 'The agent drafts a plan and shows the exact Credit price. Planning is free, and you can re-plan as often as you like.'],
+  ['3', 'Approve to start', 'Credits are taken once, when you approve. The agent then produces and edits the video as one job.'],
+];
+const BRIEF_TIPS = [
+  'Name the subject, the setting and the mood: "a lighthouse at dusk, calm and cinematic".',
+  'Say who it is for or where it will play, such as a product teaser or a social clip.',
+  'Keep it to one idea. A tight brief plans better than a long list of wishes.',
+  'Need exact words spoken? Use the narration box. Otherwise any audio is generated and may not repeat quoted words.',
+];
+
 const errorFor = (e) => (e instanceof GatewayError ? { code: e.code, retryAfter: e.retryAfter } : { code: 'internal' });
 
 export default function VideoAgent() {
@@ -133,7 +145,18 @@ export default function VideoAgent() {
         <div className="mb-3">
           <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">VIDEO AGENT</div>
           <h1 className="text-2xl sm:text-3xl font-black tracking-[-0.02em] mt-1">Make a video from a brief</h1>
+          <p className="mt-2 text-sm text-vx-fg-body">Describe the video you want. The agent plans it, shows you the price, and only makes it after you approve.</p>
         </div>
+
+        <ol aria-label="How Video Agent works" className="mb-4 grid gap-2 sm:grid-cols-3">
+          {STEPS.map(([n, title, body]) => (
+            <li key={n} className="rounded-xl border border-vx-border bg-vx-panel p-3">
+              <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-accent">STEP {n}</div>
+              <div className="mt-1 text-sm font-bold">{title}</div>
+              <p className="mt-1 text-xs text-vx-fg-muted">{body}</p>
+            </li>
+          ))}
+        </ol>
 
         <div className="rounded-2xl border border-vx-border bg-vx-panel p-5">
           <label htmlFor="brief" className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">BRIEF</label>
@@ -219,6 +242,18 @@ export default function VideoAgent() {
             )}
           </div>
         )}
+
+        <section aria-labelledby="agent-help" className="mt-8 rounded-2xl border border-vx-border bg-vx-panel p-5">
+          <h2 id="agent-help" className="text-lg font-black tracking-[-0.01em]">Before you start</h2>
+          <h3 className="mt-3 text-sm font-bold">Writing a good brief</h3>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-vx-fg-body">
+            {BRIEF_TIPS.map((t) => <li key={t}>{t}</li>)}
+          </ul>
+          <h3 className="mt-4 text-sm font-bold">What happens after you approve</h3>
+          <p className="mt-1 text-sm text-vx-fg-body">Making a video can take several minutes. It keeps running if you leave this page, and your finished video appears on this page when it is ready.</p>
+          <h3 className="mt-4 text-sm font-bold">Money</h3>
+          <p className="mt-1 text-sm text-vx-fg-body">The price on the plan is the price you pay. Nothing is charged until you approve, and if the video can&apos;t be made the Credits are returned automatically.</p>
+        </section>
       </Main>
     </div>
   );
