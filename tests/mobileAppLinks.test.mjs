@@ -9,14 +9,13 @@ import { GET as assetlinks } from '../app/.well-known/assetlinks.json/route.js';
 
 const FP = Array.from({ length: 32 }, () => 'AB').join(':');
 
-test('fails closed while the owner values are unset', async () => {
-    assert.equal(APPLE_TEAM_ID, '');
+test('Android file fails closed until fingerprints are set', async () => {
+    assert.match(APPLE_TEAM_ID, /^[A-Z0-9]{10}$/);
     assert.deepEqual(ANDROID_SHA256_FINGERPRINTS, []);
-    for (const route of [aasa, assetlinks]) {
-        const res = route();
-        assert.equal(res.status, 404);
-        assert.equal(res.headers.get('cache-control'), 'no-store');
-    }
+    const res = assetlinks();
+    assert.equal(res.status, 404);
+    assert.equal(res.headers.get('cache-control'), 'no-store');
+    assert.equal(aasa().status, 200);
 });
 
 test('rejects malformed values', () => {
