@@ -1,7 +1,7 @@
 // Cuts generated hair contact sheets (a grid of mannequin heads on a plain light background) into one square tile per hairstyle.
 //   node scripts/slice-hair-sheets.mjs <input-dir> [--out public/oddlings/hair] [--only sheet1.jpg] [--manifest outfit-tiles.manifest.json]
 // The manifest (scripts/hair-tiles.manifest.json) names each source image, its grid (rows of head counts) and the styles in reading order.
-// An entry may set "window" (default 0.14) to narrow how far a cut may move from the even split, for a sheet whose figures have little contrast with the background.
+// An entry may set "mirror" to flip its pictures left to right, and "window" (default 0.14) to narrow how far a cut may move from the even split, for a sheet whose figures have little contrast with the background.
 // A sheet that does not hold exactly the heads the manifest expects is refused, so a bad generation never ships a mislabelled tile.
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
@@ -101,7 +101,9 @@ async function sliceOne(entry, inputDir, outDir) {
     }
     // sharp runs extract before extend whatever the call order, so pad into a buffer first and cut the square from that.
     const padded = await sharp(own, { raw: { width: info.width, height: info.height, channels: 3 } }).extend({ top: pad, bottom: pad, left: pad, right: pad, background: fill }).png().toBuffer();
-    const tile = await sharp(padded).extract({ left: x + pad, top: y + pad, width: size, height: size }).resize(TILE, TILE).webp({ quality: 82 }).toBuffer();
+    const cut = sharp(padded).extract({ left: x + pad, top: y + pad, width: size, height: size }).resize(TILE, TILE);
+    // "mirror" writes the picture flipped left to right: a right arm or leg is the left one mirrored.
+    const tile = await (entry.mirror ? cut.flop() : cut).webp({ quality: 82 }).toBuffer();
     const name = path.join(outDir, `${hairTileSlug(entry.styles[i])}.webp`);
     await writeFile(name, tile);
     written.push(name);

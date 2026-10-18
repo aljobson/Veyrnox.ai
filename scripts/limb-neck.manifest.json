@@ -1,0 +1,20 @@
+{
+  "note": "Neck styling sheet: grey mannequin heads with neck and shoulders in a plain top; all six read clearly.",
+  "sources": [
+    {
+      "file": "neck.jpg",
+      "rows": [
+        3,
+        3
+      ],
+      "styles": [
+        "Bare",
+        "Tower Collar",
+        "Ruff",
+        "Stacked Rings",
+        "Bow Sculpture",
+        "Feather Halo"
+      ]
+    }
+  ]
+}

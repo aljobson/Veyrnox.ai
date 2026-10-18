@@ -1,0 +1,21 @@
+{
+  "note": "The left leg pictures flipped left to right, for the right leg.",
+  "sources": [
+    {
+      "file": "legs.jpg",
+      "rows": [
+        3,
+        3
+      ],
+      "mirror": true,
+      "styles": [
+        "Normal",
+        "Cute Prosthetic",
+        "Robotic",
+        "Prosthetic",
+        "Mechanical",
+        null
+      ]
+    }
+  ]
+}
