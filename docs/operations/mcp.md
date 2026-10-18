@@ -21,7 +21,7 @@ Run these without pasting an access token into logs or tickets:
 3. The Supabase authorization-server discovery document advertises authorization, token and dynamic-registration endpoints.
 4. Connect one disposable MCP client. The browser lands on `/oauth/consent`, shows that client's registered name and scopes, and denial returns to the client as a denial.
 5. Approve a new request. `list_models`, `get_balance` and `list_generations` return only that account's data.
-6. Ask for one inexpensive generation with `generate_image` (an image model at 2 credits or less). The client shows the maximum credit estimate before the write. Altered `confirmed_credits` is refused without a debit; the correct amount creates one job; retrying the same idempotency key returns the same job. A video or audio model, or a model above 2 credits, is refused before any debit (`mcp_image_only`, `mcp_price_cap`). There is no daily cap (ADR-0100 amendment 3): spend is bounded by the account balance, the generation route's rate limit and the 2-credit per-call limit.
+6. Ask for one inexpensive generation with `generate_image` (any image model). The client shows the maximum credit estimate before the write. Altered `confirmed_credits` is refused without a debit; the correct amount creates one job; retrying the same idempotency key returns the same job. A video or audio model, or a model above 2 credits, is refused before any debit (`mcp_image_only`, `mcp_price_cap`). There is no daily cap (ADR-0100 amendment 3): spend is bounded by the account balance, the generation route's rate limit and the 2-credit per-call limit.
 7. Poll the job to completion. The returned asset link opens, belongs to the account and expires within 15 minutes.
 8. Revoke the client in Supabase and confirm its next MCP call is refused.
 
@@ -39,3 +39,4 @@ Seven `publish_*` tools register only while `PUBLISH_AUTOMATION_ENABLED` is on; 
 ## Rollback
 
 Disable the OAuth 2.1 server or dynamic client registration in Supabase to stop new connections. Revoke existing grants to stop issued clients immediately. If the HTTP endpoint itself is faulty, roll back the application deployment; the ordinary Veyrnox studio remains on its existing routes and does not depend on MCP.
+- `generate_video` and `edit_video` (ADR-0100 amendment 4) widen existing authorizations the same way, with no per-call cap; each asks for the user's acceptance of the exact price (`user_approved`). Check one: `generate_video` with a video model at 5 s; `edit_video` with `confirmed_credits: 0` must answer `credit_confirmation_mismatch` with `expected_credits` and charge nothing.

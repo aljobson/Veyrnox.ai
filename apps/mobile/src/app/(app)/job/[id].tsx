@@ -2,8 +2,9 @@ import { Image } from 'expo-image';
 import * as WebBrowser from 'expo-web-browser';
 import { Link, Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
+import { CONFIRM_MESSAGE, CONFIRM_TITLE, deleteCreation, deleteMessage, isAlreadyGone } from '../../../lib/deleteCreation';
 import { mediaApi, waitForJob, type JobState } from '../../../lib/media';
 import { saveOutput, shareOutput } from '../../../lib/output';
 import { colors } from '../../../theme';
@@ -32,6 +33,7 @@ export default function JobScreen() {
     const [seconds, setSeconds] = useState(0);
     const [note, setNote] = useState<string | null>(null);
     const [acting, setActing] = useState<'save' | 'share' | null>(null);
+    const [deleting, setDeleting] = useState(false);
 
     useEffect(() => {
         setError(false);
@@ -75,6 +77,29 @@ export default function JobScreen() {
         } finally {
             setActing(null);
         }
+    }
+
+    async function doDelete() {
+        setDeleting(true);
+        setNote(null);
+        try {
+            await deleteCreation(api, id);
+            router.replace('/library');
+        } catch (err) {
+            // Already gone is the same end state; any other refusal changed nothing and says why.
+            if (isAlreadyGone(err)) router.replace('/library');
+            else setNote(deleteMessage(err));
+        } finally {
+            setDeleting(false);
+        }
+    }
+
+    function confirmDelete() {
+        if (deleting) return;
+        Alert.alert(CONFIRM_TITLE, CONFIRM_MESSAGE, [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Delete', style: 'destructive', onPress: doDelete },
+        ]);
     }
 
     const canSave = !!asset && (asset.mime.startsWith('image/') || asset.mime.startsWith('video/'));
@@ -139,6 +164,9 @@ export default function JobScreen() {
                             <Text style={styles.reportText}>Report this creation</Text>
                         </Pressable>
                     </Link>
+                    <Pressable accessibilityRole="button" disabled={deleting} style={[styles.delete, deleting && styles.off]} onPress={confirmDelete}>
+                        <Text style={styles.deleteText}>{deleting ? 'Deleting…' : 'Delete this creation'}</Text>
+                    </Pressable>
                 </ScrollView>
             ) : null}
         </View>
@@ -165,4 +193,6 @@ const styles = StyleSheet.create({
     note: { color: colors.body, textAlign: 'center' },
     report: { paddingVertical: 10, alignItems: 'center' },
     reportText: { color: colors.muted },
+    delete: { paddingVertical: 10, alignItems: 'center' },
+    deleteText: { color: colors.danger },
 });

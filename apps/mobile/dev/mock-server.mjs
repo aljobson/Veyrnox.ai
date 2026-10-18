@@ -11,6 +11,7 @@ const state = {
     threads: [{ id: randomUUID(), model_id: 'claude-sonnet', title: 'Launch plan for the spring drop', pinned: false, updated_at: new Date().toISOString() }],
     messages: new Map(),
     jobs: [],
+    deleted: new Set(),
     referral: { code: 'K7M2PQ9XWD', referred: 2, attached: false },
 };
 state.messages.set(state.threads[0].id, [
@@ -91,6 +92,14 @@ createServer(async (req, res) => {
     }
     if ((m = path.match(/^\/api\/cinema\/posters\/([^/]+)$/))) { res.writeHead(200, { 'content-type': 'image/png' }); return res.end(PNG); }
     if (path === '/api/catalog') return send(res, 200, { models: CATALOG });
+    if (path === '/api/presets')
+        return send(res, 200, {
+            presets: [
+                { id: 'mock-hero', title: 'Studio Product Shot', category: 'PRODUCTS', modelId: 'nano-banana', modelName: 'Nano Banana', modality: 'text-to-image', prompt: 'A glossy product on black acrylic, soft rim light, 4k.', needs: null, durationSeconds: null, credits: 4, gated: false, isNew: true, previewUrl: null, posterUrl: null, previewAspect: '1 / 1' },
+                { id: 'mock-orbit', title: 'Orbit Reveal', category: 'PRODUCTS', modelId: 'kling-3', modelName: 'Kling 3', modality: 'text-to-video', prompt: 'A smooth 360-degree orbit around the product, cinematic lighting.', needs: null, durationSeconds: 10, credits: 18, gated: false, isNew: false, previewUrl: null, posterUrl: null, previewAspect: '9 / 16' },
+                { id: 'mock-gated', title: 'Hidden Gated One', category: 'CINEMATIC', modelId: 'veo-fast', modelName: 'Veo', modality: 'text-to-video', prompt: 'x', needs: null, durationSeconds: 5, credits: 12, gated: true, isNew: false, previewUrl: null, posterUrl: null, previewAspect: '9 / 16' },
+            ],
+        });
 
     if (!req.headers.authorization?.startsWith('Bearer ')) return send(res, 401, { error: 'not_authenticated' });
     if (path === '/api/v1/balance') return send(res, 200, { balance: state.balance, free_credits: state.free, free_expires_at: null });
@@ -175,6 +184,16 @@ createServer(async (req, res) => {
     if (path === '/api/v1/jobs') return send(res, 200, { jobs: state.jobs.map(jobView), next: null });
     m = path.match(/^\/api\/v1\/jobs\/([^/]+)(\/asset)?$/);
     if (m) {
+        // DELETE /api/v1/jobs/:id (ADR-0116): a repeat answers replayed; a job still running or whose prompt says "held" is refused.
+        if (req.method === 'DELETE' && !m[2]) {
+            const target = state.jobs.find((x) => x.id === m[1]);
+            if (!target) return state.deleted.has(m[1]) ? send(res, 200, { deleted: true, replayed: true }) : send(res, 404, { error: 'not_found' });
+            if (jobState(target) !== 'succeeded') return send(res, 409, { error: 'job_in_progress' });
+            if (/held/i.test(target.label || '')) return send(res, 409, { error: 'job_on_hold' });
+            state.jobs = state.jobs.filter((x) => x.id !== m[1]);
+            state.deleted.add(m[1]);
+            return send(res, 200, { deleted: true, replayed: false });
+        }
         const j = state.jobs.find((x) => x.id === m[1]);
         if (!j) return send(res, 404, { error: 'not_found' });
         if (!m[2]) return send(res, 200, { state: jobState(j), credits: j.credits, model_id: j.model_id });

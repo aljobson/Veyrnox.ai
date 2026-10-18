@@ -12,11 +12,12 @@ import { colors } from '../../../theme';
 const PLACEHOLDER: Record<string, string> = { topic: 'What is the short about? A few words is enough.' };
 
 export default function CreateWithModel() {
-    const { modelId } = useLocalSearchParams<{ modelId: string }>();
+    const { modelId, prompt: presetPrompt, duration: presetDuration } = useLocalSearchParams<{ modelId: string; prompt?: string; duration?: string }>();
     const { api } = useAuth();
     const router = useRouter();
     const [model, setModel] = useState<CatalogModel | null>(null);
-    const [prompt, setPrompt] = useState('');
+    // A template (ADR-0120) opens this form with its prompt and length filled in; both stay editable.
+    const [prompt, setPrompt] = useState(typeof presetPrompt === 'string' ? presetPrompt.slice(0, 4000) : '');
     const [duration, setDuration] = useState<number | null>(null);
     const [busy, setBusy] = useState(false);
     // Storage keys of the files already uploaded, by slot, and the slots still uploading.
@@ -31,11 +32,14 @@ export default function CreateWithModel() {
             .then((all) => {
                 const found = all.find((m) => m.id === modelId) ?? null;
                 setModel(found);
-                if (found && kindOf(found.modality) === 'video') setDuration(found.durations[0] ?? 5);
+                if (found && kindOf(found.modality) === 'video') {
+                    const wanted = Number(presetDuration);
+                    setDuration(found.durations.includes(wanted) ? wanted : (found.durations[0] ?? 5));
+                }
                 if (!found) setError('That model is no longer available.');
             })
             .catch(() => setError('Could not load this model.'));
-    }, [modelId]);
+    }, [modelId, presetDuration]);
 
     if (!model) {
         return <View style={styles.screen}>{error ? <Text style={styles.error}>{error}</Text> : <ActivityIndicator color={colors.accent} />}</View>;
