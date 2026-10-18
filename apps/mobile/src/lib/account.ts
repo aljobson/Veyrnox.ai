@@ -17,10 +17,6 @@ export const PRIVACY_EMAIL = 'privacy@veyrnox.com';
 // The privacy policy says the service is not intended for anyone under 18.
 export const MIN_AGE = 18;
 
-// In-app deletion needs the server route (S1). Until it is on staging the
-// button stays visible but off, and the screen names the email route instead.
-export const ACCOUNT_DELETION_ENABLED = false;
-
 // Mirrors CATEGORIES and the subject kinds in app/api/v1/reports/route.js.
 export const REPORT_CATEGORIES = [
     { id: 'csam', label: 'Sexual content involving a minor' },

@@ -1,14 +1,16 @@
 import * as WebBrowser from 'expo-web-browser';
-import { Link, Stack } from 'expo-router';
+import { Link, Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { useBilling } from '../../billing/BillingProvider';
-import { ACCOUNT_DELETION_ENABLED, LEGAL_LINKS, PRIVACY_EMAIL, SUPPORT_EMAIL } from '../../lib/account';
+import { ACCOUNT_DELETION_ENABLED } from '../../lib/accountDeletion';
+import { LEGAL_LINKS, PRIVACY_EMAIL, SUPPORT_EMAIL } from '../../lib/account';
 import { colors } from '../../theme';
 
 export default function Account() {
     const { signOut } = useAuth();
+    const router = useRouter();
     const { status: billing, canPurchase, restore } = useBilling();
     const [restoreNote, setRestoreNote] = useState<string | null>(null);
 
@@ -49,7 +51,7 @@ export default function Account() {
             </Section>
 
             <Section title="Your data">
-                <Row label="Delete my account" danger disabled={!ACCOUNT_DELETION_ENABLED} />
+                <Row label="Delete my account" danger disabled={!ACCOUNT_DELETION_ENABLED} onPress={() => router.push('/delete-account')} />
                 {ACCOUNT_DELETION_ENABLED ? null : (
                     <Text style={styles.note}>
                         Deleting your account from the app is coming. Until then, email {PRIVACY_EMAIL} from your account address and we will delete it.
