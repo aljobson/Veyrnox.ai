@@ -1,5 +1,5 @@
 {
-  "note": "Rendering style: the same fictional character in four styles. Anime, Cartoon and 2D Illustration read clearly. Hyper-Realistic came out as a 3D cartoon, so it keeps the icon tile.",
+  "note": "Rendering style: the same fictional character in four styles. Anime, Cartoon and 2D Illustration read clearly. Hyper-Realistic is a photographic portrait cut straight out of its sheet with \"region\".",
   "sources": [
     {
       "file": "rest-rendering.jpg",
@@ -13,6 +13,21 @@
         "Anime",
         "Cartoon",
         "2D Illustration"
+      ]
+    },
+    {
+      "file": "gap-face3.jpg",
+      "rows": [
+        1
+      ],
+      "region": {
+        "left": 55,
+        "top": 392,
+        "width": 376,
+        "height": 376
+      },
+      "styles": [
+        "Hyper-Realistic"
       ]
     }
   ]

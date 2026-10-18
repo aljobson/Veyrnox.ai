@@ -1,5 +1,5 @@
 {
-  "note": "Exaggeration (silhouette, hair volume and clothing scale; never the face or skin tone). Extreme looked almost the same as Bold, so Extreme keeps the drawn tile.",
+  "note": "Exaggeration (silhouette, hair volume and clothing scale; never the face or skin tone). Extreme drawn as a giant puffed coat on a second try.",
   "sources": [
     {
       "file": "exaggeration.jpg",
@@ -11,6 +11,19 @@
       "styles": [
         "Natural",
         "Bold",
+        null,
+        null
+      ]
+    },
+    {
+      "file": "gap-body4.jpg",
+      "rows": [
+        2,
+        2
+      ],
+      "styles": [
+        null,
+        "Extreme",
         null,
         null
       ]
