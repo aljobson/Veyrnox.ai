@@ -6,6 +6,7 @@ Phase-0 decision-support documents for the target architecture at `/Users/aljobs
 
 | ADR | Status | Summary | Blocks |
 |-----|--------|---------|--------|
+| [ADR-0115 — Mobile: Referrals screen](0115-mobile-referrals.md) | **Proposed 2026-10-18** | Code, share link, friend count and a field for a friend's code, on the existing referral routes. No server change, no new dependency. | — |
 | [ADR-0114 — Mobile: Create with files](0114-mobile-create-with-files.md) | **Proposed 2026-10-18** | Image-to-image, image-to-video, lip sync, upscale and background removal in the app: slot pickers from the catalog, presigned uploads with progress, save and share. No server change. | — |
 | [ADR-0113 — Mobile push notifications](0113-mobile-push-notifications.md) | **Proposed 2026-10-18** | Expo push service; a per-minute sweep announces finished and failed generations (never on the job path, so a push cannot touch the ledger); device tokens registered and removed over `/api/v1/devices`, per-device opt-out, erased with the account; flag off in production, migration 0348. | Owner: iOS/Android push credentials, enabling on staging then production |
 | [ADR-0112 — Publish tools for the MCP connector, developer API and CLI](0112-publish-automation-mcp-api-cli.md) | **Proposed 2026-10-18** | OAuth-based Publish read tools and schedule/reschedule/cancel over the existing handlers; never posts immediately; ships off behind `PUBLISH_AUTOMATION_ENABLED`. | Owner: update public MCP copy, then flip the flag |
