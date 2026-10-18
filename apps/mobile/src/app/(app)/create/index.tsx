@@ -6,11 +6,12 @@ import { fetchCatalogCached, kindOf, type CatalogModel, type Kind } from '../../
 import { selectedState } from '../../../lib/a11y';
 import { fetchAgentListing } from '../../../lib/montage';
 import { colors } from '../../../theme';
+import { plural, t } from '../../../lib/i18n';
 
 const KINDS: { kind: Kind; label: string }[] = [
-    { kind: 'image', label: 'Image' },
-    { kind: 'video', label: 'Video' },
-    { kind: 'audio', label: 'Audio' },
+    { kind: 'image', label: 'model.media.image' },
+    { kind: 'video', label: 'model.media.video' },
+    { kind: 'audio', label: 'model.media.audio' },
 ];
 
 export default function Create() {
@@ -30,21 +31,21 @@ export default function Create() {
 
     return (
         <View style={styles.screen}>
-            <Stack.Screen options={{ title: 'Create' }} />
+            <Stack.Screen options={{ title: t('label.Create') }} />
             <Pressable accessibilityRole="button" style={styles.templates} onPress={() => router.push('/create/presets')}>
-                <Text style={styles.name}>Templates</Text>
-                <Text style={styles.muted}>Start from a ready-made idea</Text>
+                <Text style={styles.name}>{t('label.Templates')}</Text>
+                <Text style={styles.muted}>{t('create.templatesHint')}</Text>
             </Pressable>
             {models ? <FreeAllowanceCard models={models} /> : null}
             <View style={styles.tabs}>
                 {KINDS.map((k) => (
                     <Pressable key={k.kind} accessibilityRole="tab" accessibilityState={selectedState(kind === k.kind)} style={[styles.tab, kind === k.kind && styles.tabOn]} onPress={() => setKind(k.kind)}>
-                        <Text style={[styles.tabText, kind === k.kind && styles.tabTextOn]}>{k.label}</Text>
+                        <Text style={[styles.tabText, kind === k.kind && styles.tabTextOn]}>{t(k.label)}</Text>
                     </Pressable>
                 ))}
             </View>
             {failed ? (
-                <Text style={styles.error}>Could not load models. Check your connection.</Text>
+                <Text style={styles.error}>{t('create.loadError')}</Text>
             ) : models === null ? (
                 <ActivityIndicator color={colors.accent} />
             ) : (
@@ -54,19 +55,19 @@ export default function Create() {
                         kind === 'video' && agent ? (
                             <Pressable accessibilityRole="button" style={styles.row} onPress={() => router.push('/create/agent')}>
                                 <View style={styles.agentText}>
-                                    <Text style={styles.name}>Video from a brief</Text>
-                                    <Text style={styles.muted}>See a plan and the price first</Text>
+                                    <Text style={styles.name}>{t('create.agentTitle')}</Text>
+                                    <Text style={styles.muted}>{t('create.agentHint')}</Text>
                                 </View>
-                                <Text style={styles.price}>from {agent.credits} credits</Text>
+                                <Text style={styles.price}>{plural('create.agentFrom', agent.credits)}</Text>
                             </Pressable>
                         ) : undefined
                     }
                     keyExtractor={(m) => m.id}
-                    ListEmptyComponent={<Text style={styles.muted}>No {kind} models available in the app yet.</Text>}
+                    ListEmptyComponent={<Text style={styles.muted}>{t('create.noModels', { kind: t(`model.media.${kind}`).toLowerCase() })}</Text>}
                     renderItem={({ item }) => (
                         <Pressable accessibilityRole="button" style={styles.row} onPress={() => router.push({ pathname: '/create/[modelId]', params: { modelId: item.id } })}>
                             <Text style={styles.name}>{item.name}</Text>
-                            <Text style={styles.price}>from {item.credits} {item.credits === 1 ? 'credit' : 'credits'}</Text>
+                            <Text style={styles.price}>{plural('create.from', item.credits)}</Text>
                         </Pressable>
                     )}
                 />

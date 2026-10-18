@@ -7,6 +7,7 @@ import { Logo } from '../components/Logo';
 import { LEGAL_LINKS, MIN_AGE } from '../lib/account';
 import { DEV_MOCK } from '../lib/config';
 import { colors } from '../theme';
+import { splitSlots, t } from '../lib/i18n';
 
 export default function SignIn() {
     const { appleNativeAvailable, signInWithApple, signInWithOAuth, signInWithEmail, status } = useAuth();
@@ -23,7 +24,7 @@ export default function SignIn() {
             await action();
             router.replace('/(app)');
         } catch {
-            setError('Sign-in did not complete. Try again.');
+            setError(t('signIn.failed'));
         } finally {
             setBusy(false);
         }
@@ -34,15 +35,15 @@ export default function SignIn() {
     return (
         <View style={styles.screen}>
             <Logo size={44} />
-            <Text style={styles.subtitle}>Sign in to create with your credits.</Text>
+            <Text style={styles.subtitle}>{t('signIn.subtitle')}</Text>
             <Pressable
                 accessibilityRole="checkbox"
-                accessibilityLabel={`I am ${MIN_AGE} or older and agree to the Terms and Privacy Policy`}
+                accessibilityLabel={t('signIn.agree', { age: MIN_AGE, terms: t('label.Terms'), privacy: t('chrome.privacyPolicy') })}
                 accessibilityState={{ checked: agreed }}
                 // The Terms and Privacy links sit inside the checkbox text, which a screen reader cannot reach; offer them as actions.
                 accessibilityActions={[
-                    { name: 'terms', label: 'Open the Terms' },
-                    { name: 'privacy', label: 'Open the Privacy Policy' },
+                    { name: 'terms', label: t('signIn.openTerms') },
+                    { name: 'privacy', label: t('signIn.openPrivacy') },
                 ]}
                 onAccessibilityAction={(e) => void WebBrowser.openBrowserAsync(LEGAL_LINKS[e.nativeEvent.actionName === 'terms' ? 0 : 1].url)}
                 style={styles.agree}
@@ -50,9 +51,15 @@ export default function SignIn() {
             >
                 <View style={[styles.box, agreed && styles.boxOn]}>{agreed ? <Text style={styles.tick}>✓</Text> : null}</View>
                 <Text style={styles.agreeText}>
-                    I am {MIN_AGE} or older and agree to the{' '}
-                    <Text style={styles.link} accessibilityRole="link" onPress={() => WebBrowser.openBrowserAsync(LEGAL_LINKS[0].url)}>Terms</Text> and{' '}
-                    <Text style={styles.link} accessibilityRole="link" onPress={() => WebBrowser.openBrowserAsync(LEGAL_LINKS[1].url)}>Privacy Policy</Text>.
+                    {splitSlots(t('signIn.agree', { age: MIN_AGE }), ['terms', 'privacy']).map((piece, i) =>
+                        typeof piece === 'string' ? (
+                            piece
+                        ) : (
+                            <Text key={i} style={styles.link} accessibilityRole="link" onPress={() => WebBrowser.openBrowserAsync(LEGAL_LINKS[piece.slot === 'terms' ? 0 : 1].url)}>
+                                {t(piece.slot === 'terms' ? 'label.Terms' : 'chrome.privacyPolicy')}
+                            </Text>
+                        ),
+                    )}
                 </Text>
             </Pressable>
             <Pressable
@@ -61,7 +68,7 @@ export default function SignIn() {
                 style={[styles.button, blocked && styles.off]}
                 onPress={() => run(appleNativeAvailable ? signInWithApple : () => signInWithOAuth('apple'))}
             >
-                <Text style={styles.buttonText}>Continue with Apple</Text>
+                <Text style={styles.buttonText}>{t('authGate.continueWithApple')}</Text>
             </Pressable>
             <Pressable
                 accessibilityRole="button"
@@ -69,19 +76,19 @@ export default function SignIn() {
                 style={[styles.button, blocked && styles.off]}
                 onPress={() => run(() => signInWithOAuth('google'))}
             >
-                <Text style={styles.buttonText}>Continue with Google</Text>
+                <Text style={styles.buttonText}>{t('authGate.continueWithGoogle')}</Text>
             </Pressable>
             <Link href="/email" asChild>
                 <Pressable accessibilityRole="button" disabled={blocked} style={StyleSheet.flatten([styles.button, blocked && styles.off])}>
-                    <Text style={styles.buttonText}>Continue with email</Text>
+                    <Text style={styles.buttonText}>{t('signIn.email')}</Text>
                 </Pressable>
             </Link>
             {DEV_MOCK ? (
                 <Pressable accessibilityRole="button" disabled={blocked} style={[styles.button, blocked && styles.off]} onPress={() => run(() => signInWithEmail('demo@veyrnox.ai', 'demo-password', 'mock'))}>
-                    <Text style={styles.buttonText}>Preview with demo data</Text>
+                    <Text style={styles.buttonText}>{t('signIn.demo')}</Text>
                 </Pressable>
             ) : null}
-            {busy ? <ActivityIndicator color={colors.accent} style={styles.spinner} accessibilityLabel="Signing in" /> : null}
+            {busy ? <ActivityIndicator color={colors.accent} style={styles.spinner} accessibilityLabel={t('signIn.busy')} /> : null}
             {error ? <Text style={styles.error} accessibilityRole="alert" accessibilityLiveRegion="polite">{error}</Text> : null}
         </View>
     );

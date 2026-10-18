@@ -5,6 +5,7 @@ import { useAuth } from '../../auth/AuthProvider';
 import { useBilling } from '../../billing/BillingProvider';
 import { toDisplayPackages, waitForBalanceChange } from '../../lib/billing';
 import { colors } from '../../theme';
+import { plural, t } from '../../lib/i18n';
 
 type Outcome = { kind: 'credited'; balance: number } | { kind: 'pending' } | { kind: 'error' } | null;
 
@@ -35,20 +36,20 @@ export default function Credits() {
 
     return (
         <View style={styles.screen}>
-            <Stack.Screen options={{ title: 'Buy credits' }} />
+            <Stack.Screen options={{ title: t('pricing.packs.buy') }} />
             {status === 'loading' ? (
                 <ActivityIndicator color={colors.accent} />
             ) : status !== 'ready' || packs.length === 0 ? (
-                <Text style={styles.muted}>Credit packs are not available right now.</Text>
+                <Text style={styles.muted}>{t('credits.unavailable')}</Text>
             ) : (
                 <FlatList
                     data={packs}
                     keyExtractor={(p) => p.id}
-                    ListHeaderComponent={canPurchase ? undefined : <Text style={styles.muted}>Purchases are not open yet.</Text>}
+                    ListHeaderComponent={canPurchase ? undefined : <Text style={styles.muted}>{t('credits.notOpen')}</Text>}
                     renderItem={({ item }) => (
                         <Pressable accessibilityRole="button" disabled={!canPurchase || busyId !== null} style={[styles.row, !canPurchase && styles.off]} onPress={() => buy(item.id)}>
                             <View style={styles.rowText}>
-                                <Text style={styles.name}>{item.credits?.toLocaleString()} credits</Text>
+                                <Text style={styles.name}>{plural('credits.pack', item.credits ?? 0, { count: item.credits?.toLocaleString() ?? '0' })}</Text>
                             </View>
                             {busyId === item.id ? <ActivityIndicator color={colors.accent} /> : <Text style={styles.price}>{item.priceString}</Text>}
                         </Pressable>
@@ -57,12 +58,12 @@ export default function Credits() {
             )}
             <Link href="/history" asChild>
                 <Pressable accessibilityRole="button" style={styles.history}>
-                    <Text style={styles.historyText}>See your credit history</Text>
+                    <Text style={styles.historyText}>{t('credits.history')}</Text>
                 </Pressable>
             </Link>
-            {outcome?.kind === 'credited' ? <Text style={styles.ok}>Credits added. Your balance is {outcome.balance}.</Text> : null}
-            {outcome?.kind === 'pending' ? <Text style={styles.muted}>Your purchase went through. The credits can take a minute to appear; check your balance on the home screen.</Text> : null}
-            {outcome?.kind === 'error' ? <Text style={styles.error}>That did not complete. If you were charged, the credits will arrive; contact support if they do not.</Text> : null}
+            {outcome?.kind === 'credited' ? <Text style={styles.ok}>{t('credits.added', { balance: outcome.balance })}</Text> : null}
+            {outcome?.kind === 'pending' ? <Text style={styles.muted}>{t('credits.pending')}</Text> : null}
+            {outcome?.kind === 'error' ? <Text style={styles.error}>{t('credits.error')}</Text> : null}
         </View>
     );
 }

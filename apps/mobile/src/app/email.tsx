@@ -9,6 +9,7 @@ import { emailAuthMessage, validateEmailForm } from '../lib/auth/emailForm';
 import type { TurnstileMessage } from '../lib/auth/turnstile';
 import { touchTarget } from '../lib/a11y';
 import { colors } from '../theme';
+import { t } from '../lib/i18n';
 
 type Mode = 'signIn' | 'signUp';
 
@@ -59,7 +60,7 @@ export default function EmailAuth() {
     async function submit() {
         const problem = validateEmailForm(email, password, mode === 'signUp');
         if (problem) return setMessage(problem);
-        if (!captcha) return setMessage('Finish the security check first.');
+        if (!captcha) return setMessage(t('email.securityFirst'));
         setBusy(true);
         setMessage(null);
         const token = captcha;
@@ -67,7 +68,7 @@ export default function EmailAuth() {
             if (mode === 'signIn') {
                 await signInWithEmail(email.trim(), password, token);
             } else if (!(await signUpWithEmail(email.trim(), password, token))) {
-                setMessage('Check your email and confirm your address, then sign in.');
+                setMessage(t('email.checkInbox'));
                 setMode('signIn');
             }
         } catch (err) {
@@ -85,15 +86,15 @@ export default function EmailAuth() {
         <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <ScrollView contentContainerStyle={[styles.body, { paddingTop: insets.top + 16 }]} keyboardShouldPersistTaps="handled">
                 <Pressable accessibilityRole="button" style={touchTarget} onPress={() => router.back()}>
-                    <Text style={styles.switch}>Back</Text>
+                    <Text style={styles.switch}>{t('public.vey.back')}</Text>
                 </Pressable>
-                <Text style={styles.heading} accessibilityRole="header">{mode === 'signIn' ? 'Sign in' : 'Create account'}</Text>
+                <Text style={styles.heading} accessibilityRole="header">{mode === 'signIn' ? t('oauth.signIn') : t('authGate.createAccount')}</Text>
                 <TextInput
                     style={styles.input}
                     value={email}
                     onChangeText={setEmail}
-                    placeholder="Email"
-                    accessibilityLabel="Email"
+                    placeholder={t('authGate.email')}
+                    accessibilityLabel={t('authGate.email')}
                     placeholderTextColor={colors.muted}
                     autoCapitalize="none"
                     autoComplete="email"
@@ -104,23 +105,23 @@ export default function EmailAuth() {
                     style={styles.input}
                     value={password}
                     onChangeText={setPassword}
-                    placeholder="Password (8+ characters)"
-                    accessibilityLabel="Password, 8 or more characters"
+                    placeholder={t('email.password')}
+                    accessibilityLabel={t('email.passwordLabel')}
                     placeholderTextColor={colors.muted}
                     secureTextEntry
                     autoComplete={mode === 'signIn' ? 'current-password' : 'new-password'}
                     textContentType={mode === 'signIn' ? 'password' : 'newPassword'}
                 />
                 <TurnstileView resetKey={resetKey} onMessage={onCaptcha} />
-                {!captcha && !captchaError ? <Text style={styles.message}>Checking this device…</Text> : null}
-                {captchaError ? <Text style={styles.error} accessibilityRole="alert">The security check could not load. Check your connection and try again.</Text> : null}
-                <Pressable accessibilityRole="button" accessibilityLabel={mode === 'signIn' ? 'Sign in' : 'Create account'} accessibilityState={{ busy }} disabled={!ready} style={[styles.submit, !ready && styles.off]} onPress={submit}>
-                    {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.submitText}>{mode === 'signIn' ? 'Sign in' : 'Create account'}</Text>}
+                {!captcha && !captchaError ? <Text style={styles.message}>{t('email.checking')}</Text> : null}
+                {captchaError ? <Text style={styles.error} accessibilityRole="alert">{t('email.captchaFailed')}</Text> : null}
+                <Pressable accessibilityRole="button" accessibilityLabel={mode === 'signIn' ? t('oauth.signIn') : t('authGate.createAccount')} accessibilityState={{ busy }} disabled={!ready} style={[styles.submit, !ready && styles.off]} onPress={submit}>
+                    {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.submitText}>{mode === 'signIn' ? t('oauth.signIn') : t('authGate.createAccount')}</Text>}
                 </Pressable>
                 {message ? <Text style={styles.message} accessibilityLiveRegion="polite">{message}</Text> : null}
                 <View style={styles.switchRow}>
                     <Pressable accessibilityRole="button" style={touchTarget} onPress={() => { setMode(mode === 'signIn' ? 'signUp' : 'signIn'); setMessage(null); }}>
-                        <Text style={styles.switch}>{mode === 'signIn' ? 'New here? Create an account' : 'Have an account? Sign in'}</Text>
+                        <Text style={styles.switch}>{mode === 'signIn' ? t('email.newHere') : t('authGate.haveAnAccountSignIn')}</Text>
                     </Pressable>
                 </View>
             </ScrollView>
