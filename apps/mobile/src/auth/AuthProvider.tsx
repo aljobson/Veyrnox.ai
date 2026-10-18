@@ -6,6 +6,7 @@ import { Platform } from 'react-native';
 import { createApiClient, API_BASE, type ApiClient } from '../lib/api';
 import { AUTH_REDIRECT_URL, OAUTH_BRIDGE_URL } from '../lib/config';
 import { createAppleNonce, createPkce } from '../lib/auth/pkce';
+import { aiConsent } from '../lib/aiConsentStore';
 import { bindCacheUser, userIdFromToken, wipeCache } from '../lib/appCache';
 import { clearRefreshToken, readRefreshToken, writeRefreshToken } from '../lib/auth/sessionStore';
 import {
@@ -55,13 +56,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const adopt = useCallback(async (session: Session) => {
         sessionRef.current = session;
-        await bindCacheUser(userIdFromToken(session.accessToken));
+        const userId = userIdFromToken(session.accessToken);
+        aiConsent.setUser(userId);
+        await bindCacheUser(userId);
         await writeRefreshToken(session.refreshToken);
         setStatus('signedIn');
     }, []);
 
     const drop = useCallback(async () => {
         sessionRef.current = null;
+        aiConsent.setUser(null);
         await wipeCache().catch(() => undefined);
         await clearRefreshToken();
         setStatus('signedOut');
@@ -106,6 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 getAccessToken,
                 onSessionLost: () => void drop(),
                 streamFetch: expoFetch as unknown as typeof fetch,
+                beforeSend: aiConsent.ensure,
             }),
         [getAccessToken, drop],
     );

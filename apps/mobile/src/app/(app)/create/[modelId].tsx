@@ -139,6 +139,8 @@ function messageFor(err: unknown): string {
             return 'That file does not fit this model. Choose a different one.';
         case 'topic_refused':
             return 'That topic was not accepted. Try different words. You were not charged.';
+        case 'consent_declined':
+            return 'You chose not to share your content with the AI providers, so nothing was sent. You were not charged.';
         case 'consent_required':
             return 'Please try again.';
         default:
