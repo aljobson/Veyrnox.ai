@@ -89,7 +89,7 @@ export default function Agent() {
                                 </Pressable>
                             ))}
                         </View>
-                        <Pressable accessibilityRole="button" disabled={!!problem || !!busy} style={[styles.button, (!!problem || !!busy) && styles.off]} onPress={makePlan}>
+                        <Pressable accessibilityRole="button" accessibilityLabel="Make a plan, free" accessibilityState={{ busy: busy === 'planning' }} disabled={!!problem || !!busy} style={[styles.button, (!!problem || !!busy) && styles.off]} onPress={makePlan}>
                             {busy === 'planning' ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>Make a plan (free)</Text>}
                         </Pressable>
                     </>
@@ -106,7 +106,7 @@ export default function Agent() {
                         <Text style={expired ? styles.error : styles.meta}>
                             {expired ? 'This plan ran out. Plan again; you were not charged.' : `This plan runs out in ${left} ${left === 1 ? 'minute' : 'minutes'}.`}
                         </Text>
-                        <Pressable accessibilityRole="button" disabled={!!busy || expired} style={[styles.button, (!!busy || expired) && styles.off]} onPress={approve}>
+                        <Pressable accessibilityRole="button" accessibilityLabel="Approve and make it" accessibilityState={{ busy: busy === 'approving' }} disabled={!!busy || expired} style={[styles.button, (!!busy || expired) && styles.off]} onPress={approve}>
                             {busy === 'approving' ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>Approve and make it</Text>}
                         </Pressable>
                         <Pressable accessibilityRole="button" disabled={!!busy} style={styles.secondary} onPress={() => { setPlan(null); setError(null); }}>
@@ -114,7 +114,7 @@ export default function Agent() {
                         </Pressable>
                     </>
                 )}
-                {error ? <Text style={styles.error}>{error}</Text> : null}
+                {error ? <Text style={styles.error} accessibilityRole="alert">{error}</Text> : null}
                 {showLibrary ? (
                     <Link href="/library" asChild>
                         <Pressable accessibilityRole="button" style={styles.secondary}>
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
     lead: { color: colors.body, fontSize: 15, lineHeight: 22 },
     brief: { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 14, fontSize: 16, minHeight: 140, textAlignVertical: 'top' },
     chips: { flexDirection: 'row', gap: 8 },
-    chip: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 10, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
+    chip: { minHeight: 44, justifyContent: 'center', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 10, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
     chipOn: { backgroundColor: colors.accent, borderColor: colors.accent },
     chipText: { color: colors.body, fontWeight: '600' },
     chipTextOn: { color: colors.accentInk },

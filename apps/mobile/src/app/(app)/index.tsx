@@ -10,6 +10,7 @@ import { POLICIES, type CacheMeta } from '../../lib/cache';
 import { observe } from '../../lib/network';
 import type { Balance } from '../../lib/api';
 import { colors } from '../../theme';
+import { touchTarget } from '../../lib/a11y';
 
 export default function Home() {
     const { api } = useAuth();
@@ -47,14 +48,14 @@ export default function Home() {
             <Text style={styles.label}>Credits</Text>
             {balance ? (
                 <>
-                    <Text style={styles.value}>{balance.balance}</Text>
+                    <Text style={styles.value} accessibilityLabel={`${balance.balance} credits`}>{balance.balance}</Text>
                     {balance.free_credits > 0 ? (
                         <Text style={styles.muted}>{balance.free_credits} of them are free credits</Text>
                     ) : null}
                     <StaleNote meta={saved} />
                 </>
             ) : failed ? (
-                <Pressable accessibilityRole="button" onPress={load}>
+                <Pressable accessibilityRole="button" style={touchTarget} onPress={load}>
                     <Text style={styles.error}>Could not load your balance. Tap to retry.</Text>
                 </Pressable>
             ) : (

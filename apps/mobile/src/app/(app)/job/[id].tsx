@@ -116,7 +116,7 @@ export default function JobScreen() {
                 </View>
             ) : asset ? (
                 asset.mime.startsWith('image/') ? (
-                    <Image source={{ uri: asset.url }} style={styles.image} contentFit="contain" />
+                    <Image source={{ uri: asset.url }} style={styles.image} contentFit="contain" accessibilityLabel="Your creation" accessibilityIgnoresInvertColors />
                 ) : (
                     <Pressable accessibilityRole="button" style={styles.button} onPress={() => WebBrowser.openBrowserAsync(asset.url)}>
                         <Text style={styles.buttonText}>{asset.mime.startsWith('video/') ? 'Play video' : 'Play audio'}</Text>
@@ -158,7 +158,7 @@ export default function JobScreen() {
                             <Text style={styles.actionText}>{acting === 'share' ? 'Preparing…' : 'Share'}</Text>
                         </Pressable>
                     </View>
-                    {note ? <Text style={styles.note}>{note}</Text> : null}
+                    {note ? <Text style={styles.note} accessibilityLiveRegion="polite">{note}</Text> : null}
                     <Link href={{ pathname: '/report', params: { kind: 'job', id } }} asChild>
                         <Pressable accessibilityRole="button" style={styles.report}>
                             <Text style={styles.reportText}>Report this creation</Text>
@@ -191,8 +191,8 @@ const styles = StyleSheet.create({
     actionText: { color: colors.text, fontWeight: '600' },
     off: { opacity: 0.4 },
     note: { color: colors.body, textAlign: 'center' },
-    report: { paddingVertical: 10, alignItems: 'center' },
+    report: { minHeight: 44, justifyContent: 'center', paddingVertical: 10, alignItems: 'center' },
     reportText: { color: colors.muted },
-    delete: { paddingVertical: 10, alignItems: 'center' },
+    delete: { minHeight: 44, justifyContent: 'center', paddingVertical: 10, alignItems: 'center' },
     deleteText: { color: colors.danger },
 });
