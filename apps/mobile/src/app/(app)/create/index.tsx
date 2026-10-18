@@ -2,6 +2,7 @@ import { Stack, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { fetchCatalog, kindOf, type CatalogModel, type Kind } from '../../../lib/media';
+import { fetchAgentListing } from '../../../lib/montage';
 import { colors } from '../../../theme';
 
 const KINDS: { kind: Kind; label: string }[] = [
@@ -15,9 +16,11 @@ export default function Create() {
     const [models, setModels] = useState<CatalogModel[] | null>(null);
     const [failed, setFailed] = useState(false);
     const [kind, setKind] = useState<Kind>('image');
+    const [agent, setAgent] = useState<{ readonly credits: number } | null>(null);
 
     useEffect(() => {
         fetchCatalog().then(setModels).catch(() => setFailed(true));
+        fetchAgentListing().then(setAgent);
     }, []);
 
     const shown = useMemo(() => (models ?? []).filter((m) => kindOf(m.modality) === kind), [models, kind]);
@@ -39,6 +42,17 @@ export default function Create() {
             ) : (
                 <FlatList
                     data={shown}
+                    ListHeaderComponent={
+                        kind === 'video' && agent ? (
+                            <Pressable accessibilityRole="button" style={styles.row} onPress={() => router.push('/create/agent')}>
+                                <View style={styles.agentText}>
+                                    <Text style={styles.name}>Video from a brief</Text>
+                                    <Text style={styles.muted}>See a plan and the price first</Text>
+                                </View>
+                                <Text style={styles.price}>from {agent.credits} credits</Text>
+                            </Pressable>
+                        ) : undefined
+                    }
                     keyExtractor={(m) => m.id}
                     ListEmptyComponent={<Text style={styles.muted}>No {kind} models available in the app yet.</Text>}
                     renderItem={({ item }) => (
@@ -64,5 +78,6 @@ const styles = StyleSheet.create({
     name: { color: colors.text, fontSize: 16, flexShrink: 1 },
     price: { color: colors.money },
     muted: { color: colors.muted },
+    agentText: { flexShrink: 1, gap: 2 },
     error: { color: colors.danger },
 });
