@@ -1,0 +1,23 @@
+{
+  "note": "Body builds, fully clothed (white t-shirt, grey trousers). Only the builds that stay distinguishable once each figure is fitted to its tile have a picture: Curvy, Heavy and Fat. Slim, Lean, Lanky, Athletic and the rest look alike, Muscular and Hyper-Muscular were drawn shirtless, and Compact (short) loses its height when the figure is fitted to the tile.",
+  "sources": [
+    {
+      "file": "builds-b.jpg",
+      "rows": [
+        4,
+        4
+      ],
+      "inset": 14,
+      "styles": [
+        "Curvy",
+        null,
+        null,
+        null,
+        null,
+        null,
+        "Heavy",
+        "Fat"
+      ]
+    }
+  ]
+}

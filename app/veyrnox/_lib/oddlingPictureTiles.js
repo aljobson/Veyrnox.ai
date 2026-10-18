@@ -43,6 +43,11 @@ export const ACCESSORIES_TILE_STYLES = Object.freeze([
 export const DISTINCTIVE_FEATURES_TILE_STYLES = Object.freeze([
   'Giant Comb', 'Sacred Stapler', 'Snack Sceptre', 'Miniature Chair', 'Impossible Handbag', 'Receipt Train', 'Miniature Thermos', 'Miniature Cake',
 ]);
+// Body: fully clothed full-body figures. Only options that stay distinguishable once each figure is fitted to its tile have a picture; most builds, most
+// proportions and Extreme exaggeration looked the same as their neighbours (or were drawn shirtless) and keep the drawn tile.
+export const BODY_TYPE_TILE_STYLES = Object.freeze(['Curvy', 'Heavy', 'Fat']);
+export const PROPORTIONS_TILE_STYLES = Object.freeze(['Natural', 'Tiny Torso', 'Huge Hands', 'No Visible Neck']);
+export const EXAGGERATION_TILE_STYLES = Object.freeze(['Natural', 'Bold']);
 export const MOUTH_TILE_STYLES = Object.freeze(['Large Mouth', 'No Teeth', 'Unique Teeth', 'Gap Teeth', 'Gold Tooth', 'Bright Smile', 'Sharp Teeth', 'Forked Tongue', 'Two Tongues']);
 
 /** Catalog group id -> folder under /oddlings and the options that have a file there. */
@@ -71,6 +76,9 @@ export const PICTURE_TILES = Object.freeze({
   everyday_accessories: { dir: 'accessories/everyday_accessories', styles: EVERYDAY_ACCESSORIES_TILE_STYLES },
   accessories: { dir: 'accessories/accessories', styles: ACCESSORIES_TILE_STYLES },
   distinctive_features: { dir: 'accessories/distinctive_features', styles: DISTINCTIVE_FEATURES_TILE_STYLES },
+  body_type: { dir: 'body/body_type', styles: BODY_TYPE_TILE_STYLES },
+  proportions: { dir: 'body/proportions', styles: PROPORTIONS_TILE_STYLES },
+  exaggeration: { dir: 'body/exaggeration', styles: EXAGGERATION_TILE_STYLES },
   facial_hair: { dir: 'face/facial_hair', styles: FACIAL_HAIR_TILE_STYLES },
   horns: { dir: 'face/horns', styles: HORNS_TILE_STYLES },
   face_features: { dir: 'face/face_features', styles: FACE_FEATURES_TILE_STYLES },
