@@ -80,6 +80,7 @@ export default function Referrals() {
                             value={typed}
                             onChangeText={setTyped}
                             placeholder="10 letters and numbers"
+                            accessibilityLabel="Friend's referral code, 10 letters and numbers"
                             placeholderTextColor={colors.muted}
                             autoCapitalize="characters"
                             autoCorrect={false}

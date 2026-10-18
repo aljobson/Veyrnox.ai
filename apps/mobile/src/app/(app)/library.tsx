@@ -8,6 +8,7 @@ import { POLICIES, type CacheMeta } from '../../lib/cache';
 import { observe } from '../../lib/network';
 import { mediaApi, type Job, type JobPage } from '../../lib/media';
 import { colors } from '../../theme';
+import { HeaderAction } from '../../components/HeaderAction';
 import { t } from '../../lib/i18n';
 import { touchTarget } from '../../lib/a11y';
 
@@ -64,7 +65,7 @@ export default function Library() {
 
     return (
         <View style={styles.screen}>
-            <Stack.Screen options={{ title: t('label.Library'), headerRight: () => <Pressable accessibilityRole="button" accessibilityLabel={t('library.videoFilesLabel')} style={touchTarget} onPress={() => router.push('/library/files')}><Text style={{ color: colors.accent, fontSize: 16 }}>{t('library.videoFiles')}</Text></Pressable> }} />
+            <Stack.Screen options={{ title: t('label.Library'), headerRight: () => <HeaderAction label={t('library.videoFiles')} accessibilityLabel={t('library.videoFilesLabel')} onPress={() => router.push('/library/files')} /> }} />
             {failed ? (
                 <Pressable accessibilityRole="button" style={touchTarget} onPress={load}>
                     <Text style={styles.error}>{t('library.loadError')}</Text>

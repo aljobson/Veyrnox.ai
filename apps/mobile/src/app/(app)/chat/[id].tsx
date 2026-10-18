@@ -7,6 +7,7 @@ import { useAuth } from '../../../auth/AuthProvider';
 import { ApiError } from '../../../lib/api';
 import { chatApi, type ChatMessage } from '../../../lib/chat';
 import { colors } from '../../../theme';
+import { HeaderAction } from '../../../components/HeaderAction';
 
 const ERROR_TEXT: Record<string, string> = {
     insufficient_credits: 'Not enough credits for this reply.',
@@ -76,7 +77,7 @@ export default function Conversation() {
 
     return (
         <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
-            <Stack.Screen options={{ title, headerRight: () => <Pressable accessibilityRole="button" accessibilityLabel="Move to folder" style={{ minHeight: 44, justifyContent: 'center' }} onPress={() => router.push({ pathname: '/chat/move', params: { threadId: String(id) } })}><Text style={{ color: colors.accent, fontSize: 16 }}>Folder</Text></Pressable> }} />
+            <Stack.Screen options={{ title, headerRight: () => <HeaderAction label="Folder" accessibilityLabel="Move to folder" onPress={() => router.push({ pathname: '/chat/move', params: { threadId: String(id) } })} /> }} />
             {messages === null && !error ? (
                 <ActivityIndicator color={colors.accent} style={styles.center} />
             ) : (

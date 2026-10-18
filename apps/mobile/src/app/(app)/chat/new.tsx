@@ -58,14 +58,14 @@ export default function NewChat() {
             {error ? <Text style={styles.error}>{error}</Text> : null}
             {personas.length > 0 ? (
                 <View style={styles.personas}>
-                    <Text style={styles.heading}>Start from a persona</Text>
+                    <Text style={styles.heading} accessibilityRole="header">Start from a persona</Text>
                     {personas.map((p) => (
                         <Pressable key={p.id} accessibilityRole="button" accessibilityLabel={`Start a chat with the ${p.name} persona`} disabled={creating} style={styles.row} onPress={() => pickPersona(p)}>
                             <Text style={styles.name}>{p.name}</Text>
                             <Text style={styles.muted} numberOfLines={1}>{p.instructions}</Text>
                         </Pressable>
                     ))}
-                    <Text style={styles.heading}>Or choose a model</Text>
+                    <Text style={styles.heading} accessibilityRole="header">Or choose a model</Text>
                 </View>
             ) : null}
             {models === null && !error ? (

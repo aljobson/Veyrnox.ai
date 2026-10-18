@@ -37,7 +37,7 @@ export default function CinemaTitlePage() {
         <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
             <Stack.Screen options={{ title: title.title }} />
             <Image source={{ uri: posterUrl(title.id) }} style={styles.poster} contentFit="cover" accessibilityLabel={`Poster for ${title.title}`} accessibilityIgnoresInvertColors />
-            <Text style={styles.title}>{title.title}</Text>
+            <Text style={styles.title} accessibilityRole="header">{title.title}</Text>
             {title.creator ? <Text style={styles.muted}>{title.creator}</Text> : null}
             {title.synopsis ? <Text style={styles.body}>{title.synopsis}</Text> : null}
             {title.contentType !== 'SERIES' ? (

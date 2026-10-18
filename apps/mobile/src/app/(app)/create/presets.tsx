@@ -33,7 +33,7 @@ export default function Templates() {
                     keyExtractor={(p) => p.id}
                     stickySectionHeadersEnabled={false}
                     ListEmptyComponent={<Text style={styles.muted}>No templates available right now.</Text>}
-                    renderSectionHeader={({ section }) => <Text style={styles.header}>{section.title}</Text>}
+                    renderSectionHeader={({ section }) => <Text style={styles.header} accessibilityRole="header">{section.title}</Text>}
                     renderItem={({ item }) => (
                         <Pressable accessibilityRole="button" accessibilityLabel={`${item.title}, ${presetPrice(item)}`} style={styles.row} onPress={() => open(item)}>
                             {item.posterUrl ? <Image source={{ uri: item.posterUrl }} style={styles.poster} contentFit="cover" /> : <View style={styles.poster} />}

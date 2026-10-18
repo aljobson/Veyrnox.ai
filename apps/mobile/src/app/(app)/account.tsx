@@ -120,7 +120,7 @@ export default function Account() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
     return (
         <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{title}</Text>
+            <Text style={styles.sectionTitle} accessibilityRole="header">{title}</Text>
             {children}
         </View>
     );
