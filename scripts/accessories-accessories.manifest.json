@@ -1,5 +1,5 @@
 {
-  "note": "Fashion accessories and body art. Tiny Sunglasses (merged with Chrome Brows), Piercings (merged with Receipt Ribbons), Cyber Markings (not drawn) and Tiny Handbag (the picture is dominated by a tote bag) have no picture.",
+  "note": "Fashion accessories and body art, all fifteen now have a picture.",
   "sources": [
     {
       "file": "acc-a.jpg",
@@ -48,6 +48,36 @@
         null
       ],
       "inset": 14
+    },
+    {
+      "file": "rest-hair-acc.jpg",
+      "rows": [
+        3,
+        3
+      ],
+      "inset": 14,
+      "styles": [
+        null,
+        null,
+        null,
+        null,
+        "Tiny Sunglasses",
+        "Piercings"
+      ]
+    },
+    {
+      "file": "rest-props.jpg",
+      "rows": [
+        2,
+        2
+      ],
+      "inset": 14,
+      "styles": [
+        "Cyber Markings",
+        "Tiny Handbag",
+        null,
+        null
+      ]
     }
   ]
 }

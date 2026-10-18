@@ -1,5 +1,5 @@
 {
-  "note": "Head-shape sheet: grey mannequin heads with neck and shoulders. Tiny Head and Oversized Head came out looking like the others, so those cells are skipped.",
+  "note": "Head shapes. Tiny Head comes from the proportions sheet (a tiny head on a normal body). Oversized Head was not drawn and keeps the drawn tile.",
   "sources": [
     {
       "file": "head-shape.jpg",
@@ -13,6 +13,24 @@
         "Square",
         "Heart",
         "Diamond",
+        null,
+        null
+      ]
+    },
+    {
+      "file": "rest-proportions.jpg",
+      "rows": [
+        4,
+        4
+      ],
+      "inset": 14,
+      "styles": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        "Tiny Head",
         null,
         null
       ]

@@ -1,5 +1,5 @@
 {
-  "note": "Body proportions, fully clothed. The sheet drew six figures, not nine. Tiny Torso (very long limbs), Huge Hands and No Visible Neck read clearly; Natural is the plain figure. The others looked the same as the plain figure.",
+  "note": "Body proportions, fully clothed. Natural, Tiny Torso, Huge Hands and No Visible Neck from the first sheet and Long Neck from a second. Long Torso, Tiny Hands and the shoulder options looked the same as the plain figure (or showed outstretched arms) and keep the drawn tile.",
   "sources": [
     {
       "file": "proportions.jpg",
@@ -15,6 +15,24 @@
         "Huge Hands",
         "Natural",
         "No Visible Neck"
+      ]
+    },
+    {
+      "file": "rest-proportions.jpg",
+      "rows": [
+        4,
+        4
+      ],
+      "inset": 14,
+      "styles": [
+        null,
+        null,
+        null,
+        null,
+        "Long Neck",
+        null,
+        null,
+        null
       ]
     }
   ]
