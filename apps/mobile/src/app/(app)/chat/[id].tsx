@@ -12,6 +12,7 @@ const ERROR_TEXT: Record<string, string> = {
     insufficient_credits: 'Not enough credits for this reply.',
     rate_limited: 'Too many messages. Wait a moment.',
     chat_not_open: 'Chat is not available right now.',
+    consent_declined: 'You need to agree to AI sharing to chat.',
 };
 
 export default function Conversation() {

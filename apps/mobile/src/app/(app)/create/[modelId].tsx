@@ -3,6 +3,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
+import { CONSENT_DECLINED_MESSAGE } from '../../../lib/aiConsent';
 import { ApiError } from '../../../lib/api';
 import { OFFLINE_PAID_MESSAGE, OfflineError } from '../../../lib/network';
 import { SourcePicker } from '../../../components/SourcePicker';
@@ -139,6 +140,8 @@ function messageFor(err: unknown): string {
             return 'That file does not fit this model. Choose a different one.';
         case 'topic_refused':
             return 'That topic was not accepted. Try different words. You were not charged.';
+        case 'consent_declined':
+            return CONSENT_DECLINED_MESSAGE;
         case 'consent_required':
             return 'Please try again.';
         default:
