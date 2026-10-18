@@ -183,3 +183,5 @@ fd087777e79b8a1e33774074af9d1f32e18fff05:tests/veyrnoxMcp.test.mjs:generic-api-k
 0364e98c3842e6ddfdc78ee7a87583934ef0a7ae:tests/publishAutomation.test.mjs:generic-api-key:56
 0364e98c3842e6ddfdc78ee7a87583934ef0a7ae:tests/publishAutomation.test.mjs:generic-api-key:101
 0364e98c3842e6ddfdc78ee7a87583934ef0a7ae:tests/publishAutomation.test.mjs:generic-api-key:168
+# Synthetic key in the capped generate_image test (branch claude/mcp-generate-image), flagged by the all-branches history scan.
+7b019b70384e7e55353a426f753170a48d19db8a:tests/veyrnoxMcp.test.mjs:generic-api-key:117
