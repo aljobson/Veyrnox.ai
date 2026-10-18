@@ -68,7 +68,8 @@ test('OpenAPI documents every developer operation and OAuth security', () => {
     assert.ok(developerOpenApi.components.securitySchemes.oauth.flows.authorizationCode);
     const operations = Object.values(developerOpenApi.paths).flatMap((path) => Object.values(path).map((op) => op.operationId));
     assert.deepEqual(operations.sort(), ['createGeneration', 'estimateGeneration', 'getApi', 'getBalance', 'getGeneration',
-        'getGenerationAsset', 'getMe', 'listGenerations', 'listModels'].sort());
+        'getGenerationAsset', 'getMe', 'listGenerations', 'listModels', 'listPublishBrands', 'listPublishAccounts', 'listPublishPosts',
+        'schedulePublishPost', 'reschedulePublishPost', 'cancelPublishPost', 'getPublishAnalytics'].sort());
     assert.deepEqual(developerOpenApi.paths['/generations'].post.requestBody.content['application/json'].schema.required,
         ['model_id', 'idempotency_key', 'confirmed_credits', 'inputs']);
 });

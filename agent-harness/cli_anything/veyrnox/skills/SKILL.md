@@ -31,3 +31,7 @@ Never guess or reuse an old price. A `409 credit_confirmation_mismatch` means es
 - `veyrnox auth logout`
 
 Pass model-specific controls with repeated `--input KEY=JSON_VALUE`. For referenced media, use `--source-asset SLOT=ASSET_ID --consent` only after the user attests their rights.
+
+## Publish (only when the server reports it open)
+
+`veyrnox --json publish accounts|posts|analytics` read; `schedule`, `reschedule` and `cancel` write. A `404 publish_automation_not_open` means the feature is off: stop and tell the user. Scheduling and analytics need a Publish Plan (`402 publish_plan_required` otherwise). Workflow: `publish accounts` to get account IDs, `publish posts --status scheduled` to read each post's `scheduled_at` and `updated_at`, then `publish schedule --at ISO_TIME --account ID --video JOB_ID --text TEXT --dry-run`, show it to the user, and rerun with `--yes` only after they agree. `reschedule` needs `--expected-at` (the post's current `scheduled_at`) and `cancel` needs `--expected-updated-at`; a 409 means re-read the post. There is no post-now.

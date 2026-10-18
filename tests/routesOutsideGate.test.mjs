@@ -14,6 +14,8 @@ const OUTSIDE = {
     'app/auth/mobile/route.js': 'public redirect to a fixed app address; forwards only a well-formed PKCE code',
     'app/.well-known/oauth-protected-resource/api/v1/mcp/route.js': 'public OAuth metadata',
     'app/.well-known/oauth-protected-resource/api/v1/developer/route.js': 'public OAuth metadata',
+    'app/.well-known/apple-app-site-association/route.js': 'public app-link association; fixed constants, 404 until configured',
+    'app/.well-known/assetlinks.json/route.js': 'public app-link association; fixed constants, 404 until configured',
     'app/api/catalog/route.js': 'public read',
     'app/api/developer/openapi/route.js': 'public read',
     'app/api/credit-packs/route.js': 'public read',

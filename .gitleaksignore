@@ -178,3 +178,15 @@ fd087777e79b8a1e33774074af9d1f32e18fff05:tests/veyrnoxMcp.test.mjs:generic-api-k
 668f5ecf6d84180352e22e49ea9ef50992a13983:apps/mobile/src/lib/config.ts:generic-api-key:15
 668f5ecf6d84180352e22e49ea9ef50992a13983:apps/mobile/src/lib/config.ts:generic-api-key:20
 668f5ecf6d84180352e22e49ea9ef50992a13983:apps/mobile/__tests__/chat.test.ts:generic-api-key:51
+# ADR-0112 tests: the synthetic idempotency key 'idem-12345678' (not a credential).
+0364e98c3842e6ddfdc78ee7a87583934ef0a7ae:agent-harness/cli_anything/veyrnox/tests/test_core.py:generic-api-key:150
+0364e98c3842e6ddfdc78ee7a87583934ef0a7ae:tests/publishAutomation.test.mjs:generic-api-key:56
+0364e98c3842e6ddfdc78ee7a87583934ef0a7ae:tests/publishAutomation.test.mjs:generic-api-key:101
+0364e98c3842e6ddfdc78ee7a87583934ef0a7ae:tests/publishAutomation.test.mjs:generic-api-key:168
+# Synthetic key in the capped generate_image test (branch claude/mcp-generate-image), flagged by the all-branches history scan.
+7b019b70384e7e55353a426f753170a48d19db8a:tests/veyrnoxMcp.test.mjs:generic-api-key:117
+# publish-automation tests as squashed on main (88c29b80): synthetic UUIDs and the fake idempotency key idem-12345678
+88c29b8023fe9d286b05a00fd48d87d847306894:agent-harness/cli_anything/veyrnox/tests/test_core.py:generic-api-key:150
+88c29b8023fe9d286b05a00fd48d87d847306894:tests/publishAutomation.test.mjs:generic-api-key:56
+88c29b8023fe9d286b05a00fd48d87d847306894:tests/publishAutomation.test.mjs:generic-api-key:101
+88c29b8023fe9d286b05a00fd48d87d847306894:tests/publishAutomation.test.mjs:generic-api-key:168
