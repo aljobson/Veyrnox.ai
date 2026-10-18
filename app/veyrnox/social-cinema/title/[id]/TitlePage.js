@@ -1,4 +1,7 @@
 'use client';
+import { tOr } from '../../../../../lib/i18n/translate.mjs';
+import { rich } from '../../../../../lib/i18n/rich';
+import { useI18n } from '../../../../../components/I18nProvider.jsx';
 
 import Link from 'next/link';
 import { CinemaComments } from '../../CinemaComments';
@@ -16,12 +19,13 @@ import { editorialSeriesForEpisode } from '../../editorialSeries';
 const identity = () => getSession()?.user?.id || '';
 const noIdentity = () => '';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
-const labels = { FILM: 'Film', SHORT: 'Short', TRAILER: 'Trailer', SERIES: 'Series' };
-const minutes = (s) => (s ? `${Math.max(1, Math.round(s / 60))} min` : '');
+const minutes = (s, t) => (s ? t('cinema.duration', { n: Math.max(1, Math.round(s / 60)) }) : '');
 // The wording the Unlock consent version stands for. A change needs a new version on both sides.
 const CONSENT_TEXT = 'Unlock now and add it to my account for good. I understand this spends credits straight away and that my right to cancel ends once I press play.';
 
 export function TitlePage({ id }) {
+  const { t, href: localize } = useI18n();
+
   const account = useSyncExternalStore(onSessionChange, identity, noIdentity);
   const [title, setTitle] = useState(null);
   const [state, setState] = useState('loading');
@@ -49,15 +53,15 @@ export function TitlePage({ id }) {
       if (!version) version = (await gatewayFetch(`/cinema/entitlement?content_id=${item.id}`)).consent_version;
       const r = await gatewayFetch('/cinema/unlocks', { method: 'POST', body: JSON.stringify({ content_id: item.id, consent_version: version }) });
       notifyBalanceChanged();
-      setNotice(r.access === 'unlocked' ? `Unlocked. ${r.balance_after != null ? `${r.balance_after} credits left.` : ''}` : 'This one is free.');
+      setNotice(r.access === 'unlocked' ? `${t('cinema.title.unlocked')} ${r.balance_after != null ? t('cinema.title.balance', { count: r.balance_after }) : ''}` : t("cinema.titlePage.thisOneIsFree"));
       await load();
     } catch (err) {
-      setNotice(err?.code === 'insufficient_credits' ? 'Not enough credits. Top up from Credits & billing, or get a Cinema Pass.' : err?.code === 'account_frozen' ? 'Your account is paused. Contact support.' : 'Could not unlock right now. Try again in a moment.');
+      setNotice(err?.code === 'insufficient_credits' ? t("cinema.titlePage.notEnoughCreditsTopUpFrom") : err?.code === 'account_frozen' ? t("cinema.passPanel.yourAccountIsPausedContactSupport") : t("cinema.titlePage.couldNotUnlockRightNowTry"));
     } finally { setBusy(''); }
   };
 
-  if (state === 'loading') return <div className="mx-auto max-w-[1300px] px-4 py-16 sm:px-6"><p role="status" className="text-vx-fg-muted">Loading…</p></div>;
-  if (state !== 'ready') return <div className="mx-auto max-w-[1300px] px-4 py-16 sm:px-6"><p role="status">{state === 'missing' ? 'This title is not available.' : state === 'closed' ? 'Social Cinema viewing is not open yet.' : 'Could not load this title. Try again in a moment.'}</p><Link href="/social-cinema" className="mt-6 inline-block underline">Back to Social Cinema</Link></div>;
+  if (state === 'loading') return <div className="mx-auto max-w-[1300px] px-4 py-16 sm:px-6"><p role="status" className="text-vx-fg-muted">{t("cinema.titlePage.loading")}</p></div>;
+  if (state !== 'ready') return <div className="mx-auto max-w-[1300px] px-4 py-16 sm:px-6"><p role="status">{state === 'missing' ? t("cinema.titlePage.thisTitleIsNotAvailable") : state === 'closed' ? t("cinema.discovery.socialCinemaViewingIsNotOpen") : t("cinema.titlePage.couldNotLoadThisTitleTry")}</p><Link href={localize("/social-cinema")} className="mt-6 inline-block underline">{t("cinema.back")}</Link></div>;
 
   const playable = (item) => ['free', 'unlocked', 'pass'].includes(item.access);
   const renderItem = (item, label) => {
@@ -67,34 +71,34 @@ export function TitlePage({ id }) {
     <div className="min-w-0 flex-1">
       <p className="font-bold wrap-break-word">{label}{item.title}</p>
       {cinemaDescription(item.synopsis) && <p className="mt-1 line-clamp-2 text-sm text-vx-fg-body wrap-break-word">{cinemaDescription(item.synopsis)}</p>}
-      <p className="mt-1 font-vx-mono text-xs text-vx-fg-muted">{minutes(item.duration_seconds)}{item.access === 'free' ? ' · Free' : item.access === 'unlocked' ? ' · Unlocked' : item.access === 'pass' ? ' · Cinema Pass' : item.reason === 'pass_ceiling' ? ' · Pass limit reached this month' : ''}</p>
+      <p className="mt-1 font-vx-mono text-xs text-vx-fg-muted">{minutes(item.duration_seconds, t)}{item.access === 'free' ? t("cinema.titlePage.free") : item.access === 'unlocked' ? t("cinema.titlePage.unlocked") : item.access === 'pass' ? t('cinema.title.passAccess') : item.reason === 'pass_ceiling' ? t("cinema.titlePage.passLimitReachedThisMonth") : ''}</p>
     </div>
-    {playable(item) ? <Link href={watchHref} className="rounded-full bg-vx-accent px-5 py-2 text-sm font-bold text-vx-accent-ink">Play</Link>
-      : <Button size="sm" disabled={busy === item.id || (account && !agreed)} onClick={() => unlock(item)}>{account ? `Unlock for ${item.credits} credits` : 'Sign in to unlock'}</Button>}
+    {playable(item) ? <Link href={localize(watchHref)} className="rounded-full bg-vx-accent px-5 py-2 text-sm font-bold text-vx-accent-ink">{t("cinema.titlePage.play")}</Link>
+      : <Button size="sm" disabled={busy === item.id || (account && !agreed)} onClick={() => unlock(item)}>{account ? t('cinema.title.unlock', { count: item.credits }) : t("cinema.titlePage.signInToUnlock")}</Button>}
     </li>;
   };
   const locked = title.content_type === 'SERIES' ? title.seasons.some((s) => s.episodes.some((e) => e.access === 'locked')) : title.access === 'locked';
   const editorialMembership = editorialSeriesForEpisode(title.id);
 
   return <div className="mx-auto max-w-[1300px] px-4 py-10 pb-40 sm:px-6 sm:py-16 sm:pb-32"><div className="max-w-[952px]">
-    <p className="mb-4 font-vx-mono text-xs tracking-widest text-vx-accent">{editorialMembership ? `SOCIAL CINEMA · SERIES · S${editorialMembership.series.season} E${editorialMembership.episode.position}` : `SOCIAL CINEMA · ${labels[title.content_type]?.toUpperCase()}`}</p>
+    <p className="mb-4 font-vx-mono text-xs tracking-widest text-vx-accent">{editorialMembership ? t('cinema.title.kicker', { detail: t('cinema.title.position', { season: editorialMembership.series.season, episode: editorialMembership.episode.position }) }) : t('cinema.title.kicker', { detail: tOr(t, `cinema.type.${title.content_type}`, title.content_type) }).toUpperCase()}</p>
     <CinemaPoster id={title.id} title={title.title} eager sizes="(min-width: 1024px) 952px, 100vw" className="mb-8" />
     <h1 className="vx-display vx-title-detail wrap-break-word">{title.title}</h1>
-    {editorialMembership && <p className="mt-3 text-sm"><Link href={`/social-cinema/series/${editorialMembership.series.slug}`} className="font-bold text-vx-accent underline">{editorialMembership.series.title}</Link> · Season {editorialMembership.series.season}, Episode {editorialMembership.episode.position}</p>}
-    <p className="mt-3 text-vx-fg-muted">by <Link href={`/social-cinema`} className="underline">{title.creator?.display_name}</Link> · {title.language}{title.categories?.length ? ` · ${title.categories.join(', ')}` : ''}{title.ai_disclosures?.length ? ` · AI: ${title.ai_disclosures.join(', ').replaceAll('_', ' ')}` : ''}</p>
+    {editorialMembership && <p className="mt-3 text-sm"><Link href={localize(`/social-cinema/series/${editorialMembership.series.slug}`)} className="font-bold text-vx-accent underline">{editorialMembership.series.title}</Link> · {t('cinema.title.position', { season: editorialMembership.series.season, episode: editorialMembership.episode.position })}</p>}
+    <p className="mt-3 text-vx-fg-muted">{rich(t('cinema.title.by'), { creator: <Link href={localize('/social-cinema')} className="underline">{title.creator?.display_name}</Link> })} · {title.language}{title.categories?.length ? ` · ${title.categories.map(slug => tOr(t, `cinema.category.${slug}`, slug)).join(', ')}` : ''}{title.ai_disclosures?.length ? t('cinema.title.aiDisclosures', { disclosures: title.ai_disclosures.map(code => tOr(t, `cinema.disclosure.${code}`, code)).join(', ') }) : ''}</p>
     {cinemaDescription(title.synopsis) && <p className="mt-6 max-w-2xl leading-relaxed text-vx-fg-body wrap-break-word">{cinemaDescription(title.synopsis)}</p>}
     <CinemaShare key={id} id={id} title={title.title} />
     <CinemaRetentionControls contentId={id} />
     {notice && <p role="status" aria-live="polite" className="mt-6 rounded-lg border border-vx-border bg-vx-base/60 px-4 py-3 text-sm">{notice}</p>}
     {locked && account && <div className="mt-8 rounded-2xl border border-vx-border p-5">
-      <label className="flex items-start gap-3 text-sm text-vx-fg-body"><input type="checkbox" className="mt-1" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} /><span>{CONSENT_TEXT}</span></label>
-      <p className="mt-3 text-sm text-vx-fg-muted">Or watch everything with a <Link href="/social-cinema/pass" className="underline">Cinema Pass</Link>.</p>
+      <label className="flex items-start gap-3 text-sm text-vx-fg-body"><input type="checkbox" className="mt-1" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} /><span lang="en" dir="ltr">{CONSENT_TEXT}</span></label>
+      <p className="mt-3 text-sm text-vx-fg-muted">{rich(t('cinema.title.passLink'), { pass: <Link href={localize('/social-cinema/pass')} className="underline">{t('label.Cinema Pass')}</Link> })}</p>
     </div>}
     {title.content_type === 'SERIES' ? title.seasons.map((s) => <section key={s.id} className="mt-10" aria-labelledby={`season-${s.id}`}>
-      <h2 id={`season-${s.id}`} className="text-xl font-extrabold">Season {s.position}{s.title && s.title !== title.title ? `: ${s.title}` : ''}</h2>
+      <h2 id={`season-${s.id}`} className="text-xl font-extrabold">{t('cinema.title.season', { number: s.position })}{s.title && s.title !== title.title ? `: ${s.title}` : ''}</h2>
       <ul className="mt-2 divide-y divide-vx-border border-y border-vx-border">{s.episodes.map((e) => renderItem(e, `${e.position}. `))}</ul>
     </section>) : <ul className="mt-10 border-y border-vx-border">{renderItem(title, '')}</ul>}
     <CinemaVoting contentId={id} /><CinemaComments contentId={id} />
-    <p className="mt-10 text-sm">{editorialMembership && <><Link href={`/social-cinema/series/${editorialMembership.series.slug}`} className="underline">Back to {editorialMembership.series.title}</Link> · </>}<Link href="/social-cinema" className="underline">Social Cinema</Link></p>
+    <p className="mt-10 text-sm">{editorialMembership && <><Link href={localize(`/social-cinema/series/${editorialMembership.series.slug}`)} className="underline">{t('cinema.backTitle', { title: editorialMembership.series.title })}</Link> · </>}<Link href={localize("/social-cinema")} className="underline">{t("label.Social Cinema")}</Link></p>
   </div></div>;
 }

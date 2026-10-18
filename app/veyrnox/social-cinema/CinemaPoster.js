@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import { useI18n } from '../../../components/I18nProvider';
 import Link from 'next/link';
 import { useState } from 'react';
 import { cinemaPosterFor } from './cinemaPosters';
@@ -13,6 +14,7 @@ const externalPoster = (value) => {
 };
 
 export function CinemaPoster({ id, title, href, src: requestedSrc = '', eager = false, sizes = '(min-width: 1024px) 30vw, (min-width: 640px) 50vw, 100vw', className = '' }) {
+  const { t } = useI18n();
   const [failed, setFailed] = useState('');
   const external = externalPoster(requestedSrc);
   const curated = cinemaPosterFor(id);
@@ -26,13 +28,13 @@ export function CinemaPoster({ id, title, href, src: requestedSrc = '', eager = 
     height={720}
     sizes={sizes}
     loading={eager ? 'eager' : 'lazy'}
-    alt={`${title} poster frame`}
+    alt={t('cinema.poster', { title })}
     className="h-full w-full object-cover"
     unoptimized={src === automatic || src === external}
     onError={() => setFailed(src)}
   />;
 
   return href
-    ? <Link href={href} aria-label={`Open ${title}`} className={`block aspect-video overflow-hidden bg-vx-panel ${className}`}>{image}</Link>
+    ? <Link href={href} aria-label={t('home.cards.open', { title })} className={`block aspect-video overflow-hidden bg-vx-panel ${className}`}>{image}</Link>
     : <div className={`aspect-video overflow-hidden rounded-2xl border border-vx-border bg-vx-panel ${className}`}>{image}</div>;
 }

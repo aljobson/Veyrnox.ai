@@ -1,4 +1,6 @@
 "use client";
+import { rich } from '../lib/i18n/rich';
+import { useI18n } from './I18nProvider.jsx';
 
 /**
  * AuthGate — root-mounted modal listening for veyrnox:auth-required
@@ -33,40 +35,41 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // "AuthApiError: Invalid login credentials"). Translate the ones users
 // actually hit; anything unrecognised falls back to a plain sentence rather
 // than a raw error object, and the original stays in console.error.
-const AUTH_ERROR_COPY = [
-    [/invalid login credentials/i, "That email and password don't match. Check both and try again."],
-    [/email not confirmed/i, "Confirm your email first — check your inbox for the link."],
-    [/rate limit/i, "Too many attempts. Wait a minute and try again."],
-    [/user already registered/i, "There's already an account with that email. Try signing in."],
-    [/password should be at least/i, "Passwords need at least 8 characters."],
+const AUTH_ERROR_COPY = (t) => ([
+    [/invalid login credentials/i, t("authGate.thatEmailAndPasswordDonT")],
+    [/email not confirmed/i, t("authGate.confirmYourEmailFirstCheckYour")],
+    [/rate limit/i, t("authGate.tooManyAttemptsWaitAMinute")],
+    [/user already registered/i, t("authGate.thereSAlreadyAnAccountWith")],
+    [/password should be at least/i, t("authGate.passwordsNeedAtLeast8Characters")],
     // Supabase's leaked-password check (HaveIBeenPwned; CLAUDE.md OWASP #7
     // keeps it on). Without this line a breached password surfaced as the
     // generic fallback, which never told the user the password was the problem.
-    [/known to be weak|easy to guess|weak.?password/i, "That password has appeared in a data breach. Choose a different one — ideally one you don't use anywhere else."],
-    [/network|fetch|failed to fetch/i, "Couldn't reach the server. Check your connection."],
+    [/known to be weak|easy to guess|weak.?password/i, t("authGate.thatPasswordHasAppearedInA")],
+    [/network|fetch|failed to fetch/i, t("authGate.couldnTReachTheServerCheck")],
     // signInWithOAuth writes the PKCE verifier to sessionStorage before it
     // redirects. Safari private browsing and blocked site data throw there,
     // which used to leave the provider buttons silently dead.
-    [/storage|quota|securityerror/i, "Your browser is blocking site storage, so sign-in can't start. Turn off private browsing, or allow site data for this site."],
-    [/captcha/i, "The security check failed or expired. Try again."], [/database error saving new user/i, "We couldn't create that account. If you used a temporary email address, use a permanent one and try again."], // trigger refusal (0343)
+    [/storage|quota|securityerror/i, t("authGate.yourBrowserIsBlockingSiteStorage")],
+    [/captcha/i, t("authGate.theSecurityCheckFailedOrExpired")], [/database error saving new user/i, t("authGate.weCouldnTCreateThatAccount")], // trigger refusal (0343)
     // GoTrue's passkey codes. "not registered" is the one users actually hit:
     // they tap the passkey button on a device that has never enrolled one.
-    [/webauthn_credential_not_found|no passkey/i, "No passkey for this site on this device. Sign in another way first, then add one."],
-    [/webauthn_challenge_expired/i, "That took too long. Try the passkey again."],
-    [/passkey_disabled/i, "Passkey sign-in isn't available right now. Use another method."],
-];
+    [/webauthn_credential_not_found|no passkey/i, t("authGate.noPasskeyForThisSiteOn")],
+    [/webauthn_challenge_expired/i, t("authGate.thatTookTooLongTryThe")],
+    [/passkey_disabled/i, t("authGate.passkeySignInIsnTAvailable")],
+]);
 
-function humanAuthError(err) {
+function humanAuthError(err, t) {
     const raw = err && err.message ? String(err.message) : "";
     if (raw) {
-        const hit = AUTH_ERROR_COPY.find(([re]) => re.test(raw));
+        const hit = AUTH_ERROR_COPY(t).find(([re]) => re.test(raw));
         if (hit) return hit[1];
         console.error("[auth] unmapped error:", raw);
     }
-    return "That didn't work. Try again.";
+    return t("authGate.thatDidnTWorkTryAgain");
 }
 
 export default function AuthGate() {
+  const { t, locale } = useI18n();
     const [open, setOpen] = useState(false);
     const [mode, setMode] = useState("sign_in");
     const [email, setEmail] = useState("");
@@ -210,14 +213,14 @@ export default function AuthGate() {
         const data = await settingsBeforeSignIn();
         if (!providerAvailable(data, provider)) {
             setBusy(false);
-            setNotice({ kind: "error", text: `${provider === "apple" ? "Apple" : "Google"} sign-in isn't configured for this environment yet. Use another method.` });
+            setNotice({ kind: "error", text: t('authGate.providerSetup', { provider: provider === 'apple' ? 'Apple' : 'Google' }) });
             return;
         }
         try {
             await signInWithOAuth(provider, authCallbackUrl(returnTo.current, window.location.origin));
         } catch (err) {
             setBusy(false);
-            setNotice({ kind: "error", text: humanAuthError(err) });
+            setNotice({ kind: "error", text: humanAuthError(err, t) });
         }
     }
 
@@ -225,7 +228,7 @@ export default function AuthGate() {
     // a failure and should leave the dialog exactly as it was.
     async function startPasskey() {
         setNotice(null);
-        const unsupported = passkeyUnavailableReason(null, passkeysSupported());
+        const unsupported = passkeyUnavailableReason(null, passkeysSupported(), t);
         if (unsupported) {
             setNotice({ kind: "error", text: unsupported });
             return;
@@ -235,12 +238,12 @@ export default function AuthGate() {
         // Without this the request is refused with captcha_failed before any
         // WebAuthn prompt appears, which looks like a broken button.
         if (TURNSTILE_SITE_KEY && !captcha) {
-            setNotice(captchaNotice(captchaFailure));
+            setNotice(captchaNotice(captchaFailure, t));
             return;
         }
         setBusy(true);
         try {
-            const unavailable = passkeyUnavailableReason(await settingsBeforeSignIn(), true);
+            const unavailable = passkeyUnavailableReason(await settingsBeforeSignIn(), true, t);
             if (unavailable) {
                 setNotice({ kind: "error", text: unavailable });
                 return;
@@ -248,7 +251,7 @@ export default function AuthGate() {
             const session = await signInWithPasskey(captcha);
             if (session) close();
         } catch (err) {
-            setNotice({ kind: "error", text: humanAuthError(err) });
+            setNotice({ kind: "error", text: humanAuthError(err, t) });
         } finally {
             setBusy(false);
             // Turnstile tokens are single-use; a retry needs a fresh one.
@@ -260,15 +263,15 @@ export default function AuthGate() {
         e.preventDefault();
         setNotice(null);
         if (!EMAIL_RE.test(email)) {
-            setNotice({ kind: "error", text: "Enter a valid email address." });
+            setNotice({ kind: "error", text: t("authGate.enterAValidEmailAddress") });
             return;
         }
         if (mode !== "magic" && password.length < 8) {
-            setNotice({ kind: "error", text: "Password must be at least 8 characters." });
+            setNotice({ kind: "error", text: t("authGate.passwordMustBeAtLeast8") });
             return;
         }
         if (TURNSTILE_SITE_KEY && !captcha) {
-            setNotice(captchaNotice(captchaFailure));
+            setNotice(captchaNotice(captchaFailure, t));
             return;
         }
         setBusy(true);
@@ -277,7 +280,7 @@ export default function AuthGate() {
                 const { session, needsConfirmation } = await signUp(email, password, captcha);
                 if (needsConfirmation) {
                     setPassword("");
-                    setNotice({ kind: "success", text: "Check your email to confirm your account." });
+                    setNotice({ kind: "success", text: t("authGate.checkYourEmailToConfirmYour") });
                 } else if (session) {
                     close();
                 }
@@ -287,10 +290,10 @@ export default function AuthGate() {
             } else {
                 await sendMagicLink(email, captcha, authCallbackUrl(returnTo.current, window.location.origin));
                 setPassword("");
-                setNotice({ kind: "success", text: "Check your email for a sign-in link." });
+                setNotice({ kind: "success", text: t("authGate.checkYourEmailForASign") });
             }
         } catch (err) {
-            setNotice({ kind: "error", text: humanAuthError(err) || "Sign-in failed" });
+            setNotice({ kind: "error", text: humanAuthError(err, t) || t("authGate.signInFailed") });
         } finally {
             setBusy(false);
             if (TURNSTILE_SITE_KEY) setCaptchaReset((n) => n + 1);
@@ -303,20 +306,21 @@ export default function AuthGate() {
         <div
             role="dialog"
             aria-modal="true"
-            aria-label="Sign in to Veyrnox"
+            aria-label={t("authGate.title")}
             ref={panelRef}
             onKeyDown={onKeyDown}
+            dir={locale === "ar" ? "rtl" : "ltr"}
             className="vx-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4"
         >
             <div className="max-h-full w-full max-w-sm overflow-y-auto overscroll-contain rounded-2xl border border-vx-border bg-vx-panel p-5 sm:p-6 shadow-2xl">
                 <div className="flex items-start justify-between mb-1">
                     <h2 className="text-lg font-semibold text-vx-fg">
-                        {mode === "sign_up" ? "Create your account" : mode === "magic" ? "Email sign-in link" : "Sign in to Veyrnox"}
+                        {mode === "sign_up" ? t("authGate.createYourAccount") : mode === "magic" ? t("authGate.emailSignInLink") : t("authGate.title")}
                     </h2>
                     <button
                         type="button"
                         ref={closeRef}
-                        aria-label="Close"
+                        aria-label={t("authGate.close")}
                         onClick={dismiss}
                         className="-m-2.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-xl leading-none text-vx-fg-muted hover:text-vx-fg"
                     >
@@ -324,39 +328,35 @@ export default function AuthGate() {
                     </button>
                 </div>
                 <p className="text-sm text-vx-fg-muted mb-4">
-                    New users get 10 free credits.
-                </p>
+                    {t("authGate.newUsersGet10FreeCredits")}</p>
 
                 <>
                     <div className="space-y-2 mb-3">
                         <button type="button" onClick={startPasskey} disabled={busy} className="flex w-full items-center justify-center gap-2 rounded-lg bg-vx-base border border-vx-border text-vx-fg font-semibold py-2 text-sm hover:border-vx-accent disabled:opacity-60">
                             <PasskeyMark />
-                            Sign in with a passkey
-                        </button>
+                            {t("authGate.signInWithAPasskey")}</button>
                         <button type="button" onClick={() => startOAuth("apple")} disabled={busy} className="flex w-full items-center justify-center gap-2 rounded-lg border border-transparent bg-vx-fg text-vx-base font-semibold py-2 text-sm hover:opacity-90 disabled:opacity-60">
                             <AppleMark />
-                            Continue with Apple
-                        </button>
+                            {t("authGate.continueWithApple")}</button>
                         {oauth.google && (
                             <button type="button" onClick={() => startOAuth("google")} disabled={busy} className="flex w-full items-center justify-center gap-2 rounded-lg bg-vx-base border border-vx-border text-vx-fg font-semibold py-2 text-sm hover:border-vx-accent disabled:opacity-60">
                                 <GoogleMark />
-                                Continue with Google
-                            </button>
+                                {t("authGate.continueWithGoogle")}</button>
                         )}
                     </div>
                     {settings && (!providerAvailable(settings, "apple") || settings.passkeys_enabled !== true) && (
                         <p className="text-xs text-vx-fg-muted mb-3">
-                            {!providerAvailable(settings, "apple") && "Apple sign-in needs setup in this environment. "}
-                            {settings.passkeys_enabled !== true && "Passkeys need enabling in this environment."}
+                            {!providerAvailable(settings, "apple") && t("authGate.appleSignInNeedsSetupIn")}
+                            {settings.passkeys_enabled !== true && t("authGate.passkeysNeedEnablingInThisEnvironment")}
                         </p>
                     )}
                     <div className="flex items-center gap-3 mb-3 text-[10px] text-vx-fg-faint uppercase tracking-wider">
-                        <div className="h-px bg-vx-border flex-1" /> or email <div className="h-px bg-vx-border flex-1" />
+                        <div className="h-px bg-vx-border flex-1" /> {t("authGate.orEmail")}<div className="h-px bg-vx-border flex-1" />
                     </div>
                 </>
                 <form onSubmit={handleSubmit} className="space-y-3">
                     <label className="block">
-                        <span className="text-xs text-vx-fg-muted">Email</span>
+                        <span className="text-xs text-vx-fg-muted">{t("authGate.email")}</span>
                         <input
                             type="email"
                             required
@@ -371,7 +371,7 @@ export default function AuthGate() {
                         // Not one wrapping <label>: the button and the hint sat inside
                         // it and were read out as part of the field's name.
                         <div>
-                            <label htmlFor="vx-password" className="text-xs text-vx-fg-muted">Password</label>
+                            <label htmlFor="vx-password" className="text-xs text-vx-fg-muted">{t("authGate.password")}</label>
                             <span className="relative mt-1 block">
                                 <input
                                     id="vx-password"
@@ -385,7 +385,7 @@ export default function AuthGate() {
                                     // password; a generated one is never in a breach list.
                                     passwordrules={mode === "sign_up" ? "minlength: 12; required: lower; required: upper; required: digit;" : undefined}
                                     aria-describedby="vx-password-hint"
-                                    className="w-full rounded-lg bg-vx-base border border-vx-field pl-3 pr-16 py-2 text-sm text-vx-fg outline-hidden focus:border-vx-accent focus-visible:ring-2 focus-visible:ring-vx-accent/40"
+                                    className="w-full rounded-lg bg-vx-base border border-vx-field ps-3 pe-16 py-2 text-sm text-vx-fg outline-hidden focus:border-vx-accent focus-visible:ring-2 focus-visible:ring-vx-accent/40"
                                 />
                                 {/* A typo in a masked 8-character minimum is the
                                     commonest reason a sign-up bounces. */}
@@ -394,10 +394,10 @@ export default function AuthGate() {
                                     onClick={() => setShowPassword((v) => !v)}
                                     // The name changes with the state, so there is no
                                     // aria-pressed: "Hide password, pressed" says two things.
-                                    aria-label={showPassword ? "Hide password" : "Show password"}
-                                    className="absolute inset-y-0 right-0 px-3 text-[11px] font-bold uppercase tracking-wide text-vx-fg-muted hover:text-vx-fg"
+                                    aria-label={showPassword ? t("authGate.hidePassword") : t("authGate.showPassword")}
+                                    className="absolute inset-y-0 end-0 px-3 text-[11px] font-bold uppercase tracking-wide text-vx-fg-muted hover:text-vx-fg"
                                 >
-                                    {showPassword ? "Hide" : "Show"}
+                                    {showPassword ? t("authGate.hide") : t("oddlings.detail.show")}
                                 </button>
                             </span>
                             {/* Sign-up runs Supabase's leaked-password check (it
@@ -405,18 +405,18 @@ export default function AuthGate() {
                                 first attempt rather than only after a rejection. */}
                             <span id="vx-password-hint" className="mt-1 block text-[11px] text-vx-fg-faint">
                                 {mode === "sign_up"
-                                    ? "At least 8 characters. Passwords found in data breaches are rejected, so use a new one — let your browser or password manager suggest it."
-                                    : "At least 8 characters."}
+                                    ? t("authGate.atLeast8CharactersPasswordsFound")
+                                    : t("authGate.atLeast8Characters")}
                             </span>
                         </div>
                     )}
 
                     <Turnstile
                         onToken={(token) => { setCaptcha(token); if (token) { setCaptchaFailure(null); setNotice(noticeAfterCaptchaToken); } }}
-                        onFailure={(code) => { setCaptchaFailure(code); setNotice((n) => noticeAfterCaptchaFailure(n, code)); }}
-                        onError={() => { setCaptchaFailure(CAPTCHA_BLOCKED_CODE); setNotice(captchaNotice(CAPTCHA_BLOCKED_CODE)); }}
-                        onWaiting={() => { setCaptchaFailure(CAPTCHA_WAITING); setNotice(noticeWhileCaptchaWaits); }}
-                        onUnsupported={() => { setCaptchaFailure(CAPTCHA_UNSUPPORTED); setNotice((n) => noticeAfterCaptchaFailure(n, CAPTCHA_UNSUPPORTED)); }}
+                        onFailure={(code) => { setCaptchaFailure(code); setNotice((n) => noticeAfterCaptchaFailure(n, code, t)); }}
+                        onError={() => { setCaptchaFailure(CAPTCHA_BLOCKED_CODE); setNotice(captchaNotice(CAPTCHA_BLOCKED_CODE, t)); }}
+                        onWaiting={() => { setCaptchaFailure(CAPTCHA_WAITING); setNotice(n => noticeWhileCaptchaWaits(n, t)); }}
+                        onUnsupported={() => { setCaptchaFailure(CAPTCHA_UNSUPPORTED); setNotice((n) => noticeAfterCaptchaFailure(n, CAPTCHA_UNSUPPORTED, t)); }}
                         resetKey={captchaReset}
                     />
 
@@ -443,35 +443,32 @@ export default function AuthGate() {
                         className="w-full rounded-full bg-vx-accent text-vx-accent-ink font-extrabold py-2.5 text-sm hover:bg-vx-accent-hover focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-accent disabled:opacity-60"
                     >
                         {busy
-                            ? "Working…"
+                            ? t("authGate.working")
                             : mode === "sign_up"
-                                ? "Create account"
+                                ? t("authGate.createAccount")
                                 : mode === "magic"
-                                    ? "Send magic link"
-                                    : "Sign in"}
+                                    ? t("authGate.sendMagicLink")
+                                    : t("oauth.signIn")}
                     </button>
                 </form>
 
                 <div className="mt-4 flex flex-wrap gap-3 text-xs text-vx-fg-muted">
                     {mode !== "sign_in" && (
                         <button type="button" className="-my-2 py-2 underline hover:text-vx-fg" onClick={() => setMode("sign_in")}>
-                            Have an account? Sign in
-                        </button>
+                            {t("authGate.haveAnAccountSignIn")}</button>
                     )}
                     {mode !== "sign_up" && (
                         <button type="button" className="-my-2 py-2 underline hover:text-vx-fg" onClick={() => setMode("sign_up")}>
-                            New? Create an account
-                        </button>
+                            {t("authGate.newCreateAnAccount")}</button>
                     )}
                     {mode !== "magic" && (
                         <button type="button" className="-my-2 py-2 underline hover:text-vx-fg" onClick={() => setMode("magic")}>
-                            Email me a link instead
-                        </button>
+                            {t("authGate.emailMeALinkInstead")}</button>
                     )}
                 </div>
 
                 <p className="mt-4 text-[10px] text-vx-fg-faint leading-tight">
-                    By continuing you accept the Veyrnox <a href="/legal/terms" className="underline hover:text-vx-fg">Terms</a> &amp; <a href="/legal/privacy" className="underline hover:text-vx-fg">Privacy Policy</a>.
+                    {rich(t('authGate.legal'), { terms: <a href="/legal/terms" className="underline hover:text-vx-fg">{t('label.Terms')}</a>, privacy: <a href="/legal/privacy" className="underline hover:text-vx-fg">{t('about.privacy')}</a> })}
                 </p>
             </div>
         </div>

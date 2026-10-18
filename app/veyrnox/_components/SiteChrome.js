@@ -7,6 +7,7 @@ import { clearAttribution } from '../_lib/utm';
 import { applyStoredTheme } from './ThemeToggle';
 import ReferralBridge from './ReferralBridge';
 import { Icon } from './Icon';
+import { rich } from '../../../lib/i18n/rich';
 import { useI18n } from '../../../components/I18nProvider';
 
 // Everything that floats over every page: the read-progress bar, the
@@ -173,27 +174,27 @@ function FloatingActions() {
    Used only when optional analytics is not configured. When it is configured,
    PostHogManager owns the combined storage and consent notice instead. */
 function StorageNotice({ onDismiss }) {
+  const { t } = useI18n();
   return (
     <div
       role="region"
-      aria-label="Browser storage notice"
+      data-storage-notice="essential"
+      aria-label={t('chrome.storageLabel')}
       className="vx-slide-up pointer-events-auto w-full border-t border-vx-border bg-vx-panel/95 px-4 py-3 backdrop-blur-sm sm:px-6"
     >
       <div className="mx-auto flex max-w-[1100px] flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-[13px] leading-[1.55] text-vx-fg-body">
-          Veyrnox keeps your sign-in session, recent job display history and your theme choice in this browser&rsquo;s local
-          storage, plus a friend&rsquo;s referral code for up to three days if you arrived through their link. No advertising cookies, no third-party trackers.{' '}
-          <Link href="/legal/privacy" className="text-vx-accent underline underline-offset-4">
-            Privacy Policy
-          </Link>
+          {rich(t('chrome.storageBody'), {
+            privacy: <Link href="/legal/privacy" className="text-vx-accent underline underline-offset-4">{t('chrome.privacyPolicy')}</Link>,
+          })}
         </p>
         <button
           type="button"
+          data-storage-dismiss
           onClick={onDismiss}
           className="shrink-0 self-start rounded-full bg-vx-accent px-5 py-2 text-[13px] font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover sm:self-auto"
         >
-          Got it
-        </button>
+          {t('chrome.gotIt')}</button>
       </div>
     </div>
   );

@@ -35,14 +35,14 @@ test('the drift check names a provider switched off, and one the app does not of
 test('all sign-in modes retain Apple and passkeys, with availability checked before starting', () => {
     const gate = readFileSync(new URL('../components/AuthGate.jsx', import.meta.url), 'utf8');
     assert.doesNotMatch(gate, /\{(?:oauth\.apple|passkeys) &&/);
-    assert.match(gate, /Continue with Apple/);
-    assert.match(gate, /Sign in with a passkey/);
+    assert.match(gate, /t\("authGate.continueWithApple"\)/);
+    assert.match(gate, /t\("authGate.signInWithAPasskey"\)/);
     const start = gate.slice(gate.indexOf('async function startOAuth'), gate.indexOf('await signInWithOAuth(provider)'));
     assert.match(start, /await settingsBeforeSignIn\(\)/);
     assert.match(start, /if \(!providerAvailable\(data, provider\)\)/);
     const passkey = gate.slice(gate.indexOf('async function startPasskey'), gate.indexOf('const session = await signInWithPasskey'));
-    assert.match(passkey, /passkeyUnavailableReason\(null, passkeysSupported\(\)\)/);
-    assert.match(passkey, /passkeyUnavailableReason\(await settingsBeforeSignIn\(\), true\)/);
+    assert.match(passkey, /passkeyUnavailableReason\(null, passkeysSupported\(\), t\)/);
+    assert.match(passkey, /passkeyUnavailableReason\(await settingsBeforeSignIn\(\), true, t\)/);
     const config = readFileSync(new URL('../next.config.mjs', import.meta.url), 'utf8');
     assert.match(config, /NEXT_PUBLIC_AUTH_PROVIDERS: oauthProvidersFor\(identityConfig\.appEnv\)\.join\(','\)/);
     assert.ok(Object.isFrozen(AI_ENVIRONMENTS.production.oauthProviders));

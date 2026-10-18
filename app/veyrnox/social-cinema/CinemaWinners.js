@@ -1,8 +1,12 @@
 "use client";
+import { localeTag } from '../../../lib/i18n/locales.mjs';
+import { useI18n } from '../../../components/I18nProvider.jsx';
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "../_components/Button";
 export function CinemaWinners() {
+  const { t, href: localize, locale } = useI18n();
+
   const [state, setState] = useState("loading"),
     [weeks, setWeeks] = useState([]),
     [attempt, setAttempt] = useState(0);
@@ -33,45 +37,32 @@ export function CinemaWinners() {
       aria-labelledby="weekly-winners"
     >
       <h2 id="weekly-winners" className="text-2xl font-extrabold">
-        Weekly winners
-      </h2>
+        {t("cinema.winners.weeklyWinners")}</h2>
       <p className="mt-4 max-w-2xl text-vx-fg-body">
-        Votes, viewing completion, audience, sharing and approved comments
-        contribute to weekly scores. A separate moderator approves publication.
-        There are no cash prizes.
-      </p>
+        {t("cinema.winners.votesViewingCompletionAudienceSharingAnd")}</p>
       <details className="mt-4 text-sm">
-        <summary className="cursor-pointer">How rankings work</summary>
+        <summary className="cursor-pointer">{t("cinema.winners.howRankingsWork")}</summary>
         <p className="mt-3">
-          Votes count for 40%, completion 25%, viewers 15%, sharing 10% and
-          engagement 10%. Accounts with enough reported viewing contribute to
-          audience signals. Sharing counts copy/share actions, which do not
-          prove external delivery. Invalid and held activity is excluded; equal
-          scores share a rank.
-        </p>
+          {t("cinema.winners.votesCountFor40Completion25")}</p>
       </details>
       {state === "loading" && (
         <p role="status" className="mt-6">
-          Loading weekly winners…
-        </p>
+          {t("cinema.winners.loadingWeeklyWinners")}</p>
       )}
       {state === "closed" && (
         <p role="status" className="mt-6">
-          Weekly rankings will open after launch review.
-        </p>
+          {t("cinema.winners.weeklyRankingsWillOpenAfterLaunch")}</p>
       )}
       {state === "error" && (
         <div role="alert" className="mt-6">
-          <p>Weekly winners are unavailable right now.</p>
+          <p>{t("cinema.winners.weeklyWinnersAreUnavailableRightNow")}</p>
           <Button className="mt-3" onClick={() => setAttempt((n) => n + 1)}>
-            Retry winners
-          </Button>
+            {t("cinema.winners.retryWinners")}</Button>
         </div>
       )}
       {state === "ready" && !weeks.length && (
         <p role="status" className="mt-6">
-          No moderator-approved winners yet.
-        </p>
+          {t("cinema.winners.noModeratorApprovedWinnersYet")}</p>
       )}
       {state === "ready" &&
         weeks.map((w) => (
@@ -81,34 +72,32 @@ export function CinemaWinners() {
           >
             <h3 className="text-xl font-bold">{w.name}</h3>
             <p className="mt-2 text-xs text-vx-fg-muted">
-              Week ended{" "}
-              {new Date(w.ends_at).toLocaleDateString("en-GB", {
+              {t("cinema.winners.weekEnded")}{" "}
+              {new Date(w.ends_at).toLocaleDateString(localeTag(locale, 'en-GB'), {
                 timeZone: "Europe/London",
               })}
             </p>
             {w.titles.length ? (
               <ol className="mt-4 space-y-3">
-                {w.titles.map((t) => (
-                  <li key={t.id}>
+                {w.titles.map((item) => (
+                  <li key={item.id}>
                     <Link
-                      href={
-                        t.content_type === "EPISODE"
-                          ? `/social-cinema/watch/${t.id}?title_id=${t.root_id}`
-                          : `/social-cinema/title/${t.root_id}`
-                      }
+                      href={localize(item.content_type === "EPISODE"
+                          ? `/social-cinema/watch/${item.id}?title_id=${item.root_id}`
+                          : `/social-cinema/title/${item.root_id}`)}
                       className="block rounded-xl bg-vx-panel p-4 hover:underline"
                     >
-                      <span className="text-vx-accent">#{t.rank}</span> ·{" "}
-                      {t.title}
-                      <span className="ml-3 text-sm text-vx-fg-muted">
-                        {t.score.toFixed(2)} points
+                      <span className="text-vx-accent">#{item.rank}</span> ·{" "}
+                      {item.title}
+                      <span className="ms-3 text-sm text-vx-fg-muted">
+                        {t('cinema.winners.points', { count: item.score.toFixed(2) })}
                       </span>
                     </Link>
                   </li>
                 ))}
               </ol>
             ) : (
-              <p className="mt-4">These titles are currently unavailable.</p>
+              <p className="mt-4">{t("cinema.winners.theseTitlesAreCurrentlyUnavailable")}</p>
             )}
           </article>
         ))}

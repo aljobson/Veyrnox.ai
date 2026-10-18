@@ -60,9 +60,9 @@ test('a toggle has one name, and the password field is named by its label alone'
     assert.match(menu, /aria-label=\{buttonLabel\}/);
     const gate = read('components/AuthGate.jsx');
     // Its visible word changes (Show, Hide), so its name does, and it has no pressed state.
-    assert.match(gate, /aria-label=\{showPassword \? "Hide password" : "Show password"\}/);
+    assert.match(gate, /aria-label=\{showPassword \? t\("authGate.hidePassword"\) : t\("authGate.showPassword"\)\}/);
     assert.doesNotMatch(gate, /aria-pressed=/);
-    assert.match(gate, /<label htmlFor="vx-password" className="[^"]*">Password<\/label>/);
+    assert.match(gate, /<label htmlFor="vx-password" className="[^"]*">\{t\("authGate.password"\)\}<\/label>/);
     assert.match(gate, /id="vx-password"/);
     // ON and OFF alone name nothing: the panel's heading is part of each switch's name.
     assert.match(read('app/veyrnox/_components/CameraPanel.js'), /aria-labelledby="vx-camera-title vx-camera-switch"/);

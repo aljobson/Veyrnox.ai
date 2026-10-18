@@ -1,13 +1,15 @@
+import { getT } from '../../lib/i18n/server';
 import { ANNOUNCEMENT } from './_lib/announcement';
 import { Main } from './_components/Main';
 
 // Route-level skeleton for the marketing shell. The landing page reads the
 // live catalog from Postgres before it can render, so on a cold Worker this
 // is what fills the gap instead of a blank document.
-export default function Loading() {
+export default async function Loading() {
+  const { t } = await getT();
   return (
     <div className="min-h-dvh vx-root font-vx bg-vx-base text-vx-fg" aria-busy="true" aria-live="polite">
-      <span className="sr-only">Loading Veyrnox.ai…</span>
+      <span className="sr-only">{t('chrome.loading')}</span>
       {/* The announcement bar (AnnouncementBar.js), when one is set. */}
       {ANNOUNCEMENT && <div className="h-9 bg-vx-fg" />}
       <div className="h-16 border-b border-vx-border" />

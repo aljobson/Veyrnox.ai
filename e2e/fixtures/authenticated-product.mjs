@@ -60,11 +60,11 @@ export async function installProductFixtures(page, options = {}) {
     if (preparedPages.has(currentPage)) return;
     preparedPages.add(currentPage);
     currentPage.on('pageerror', error => fixture.errors.push(error.message));
-    await currentPage.addLocatorHandler(currentPage.getByRole('region', { name: 'Privacy choices' }), async banner => {
-      await banner.getByRole('button', { name: 'Decline', exact: true }).click();
+    await currentPage.addLocatorHandler(currentPage.locator('[data-storage-notice="analytics"]'), async banner => {
+      await banner.locator('[data-storage-decline]').click();
     });
-    await currentPage.addLocatorHandler(currentPage.getByRole('region', { name: 'Browser storage notice' }), async banner => {
-      await banner.getByRole('button', { name: 'Got it', exact: true }).click();
+    await currentPage.addLocatorHandler(currentPage.locator('[data-storage-notice="essential"]'), async banner => {
+      await banner.locator('[data-storage-dismiss]').click();
     });
   };
   await preparePage(page);

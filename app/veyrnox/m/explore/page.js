@@ -1,4 +1,7 @@
 'use client';
+import { tOr } from '../../../../lib/i18n/translate.mjs';
+import { useI18n } from '../../../../components/I18nProvider';
+
 import { useState } from 'react';
 import { MobileTabs } from '../_MobileNav';
 import { PresetCard } from '../../_components/PresetCard';
@@ -6,6 +9,7 @@ import { PRESET_CATEGORIES, templatesIn } from '../../_lib/tokens';
 import { useCatalog } from '../../_lib/useCatalog';
 
 export default function MobileExplore() {
+  const { t } = useI18n();
   const [cat, setCat] = useState('ALL');
   const { models } = useCatalog();
   const list = templatesIn(cat);
@@ -14,8 +18,8 @@ export default function MobileExplore() {
     <div className="flex-1 flex flex-col min-h-0">
       <div className="flex-1 overflow-y-auto p-[14px_18px_16px]">
         <div className="flex justify-between items-center mb-3">
-          <span className="text-[22px] font-extrabold tracking-[-0.02em]">Explore</span>
-          <span className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">CACHED FREE</span>
+          <span className="text-[22px] font-extrabold tracking-[-0.02em]">{t('label.Explore')}</span>
+          <span className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">{t('mobile.cached')}</span>
         </div>
 
         <div className="flex gap-1.5 overflow-x-auto pb-2 -mx-1 px-1 mb-3">
@@ -30,7 +34,7 @@ export default function MobileExplore() {
                   : 'border-vx-border text-vx-fg-muted'
               }`}
             >
-              {c}
+              {tOr(t, `presets.cat.${c}`, c)}
             </button>
           ))}
         </div>

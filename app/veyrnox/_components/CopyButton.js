@@ -1,10 +1,14 @@
 'use client';
+import { useI18n } from '../../../components/I18nProvider';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 // Copy-to-clipboard with an inline confirmation. Used for model ids on the
 // pricing table — the one string on this site somebody retypes by hand.
-export function CopyButton({ value, label = 'Copy', copiedLabel = 'Copied', title, className = '' }) {
+export function CopyButton({ value, label, copiedLabel, title, className = '' }) {
+  const { t } = useI18n();
+  label ??= t('common.copy');
+  copiedLabel ??= t('common.copied');
   const [state, setState] = useState('idle'); // idle | copied | failed
   const timer = useRef(null);
 
@@ -34,9 +38,9 @@ export function CopyButton({ value, label = 'Copy', copiedLabel = 'Copied', titl
       } ${className}`}
     >
       <span aria-hidden="true">{state === 'copied' ? '✓' : state === 'failed' ? '✕' : '⧉'}</span>
-      <span>{state === 'copied' ? copiedLabel : state === 'failed' ? 'Copy failed' : label}</span>
+      <span>{state === 'copied' ? copiedLabel : state === 'failed' ? t('public.copy.failed') : label}</span>
       <span role="status" aria-live="polite" className="sr-only">
-        {state === 'copied' ? `${value} copied to clipboard` : state === 'failed' ? 'Copy to clipboard failed' : ''}
+        {state === 'copied' ? t('public.copy.done', { value }) : state === 'failed' ? t('public.copy.error') : ''}
       </span>
     </button>
   );

@@ -1,3 +1,4 @@
+import { pluralKey } from '../../../../lib/i18n/translate.mjs';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { MarketingNav } from '../../_components/NavBar';
@@ -15,21 +16,21 @@ import { localizedHref } from '../../../../lib/i18n/locales.mjs';
 export const dynamic = 'force-dynamic';
 
 // "19 credits" / "1 credit" in the page's language.
-const creditsIn = (t, credits) => t(credits === 1 ? 'model.credits.one' : 'model.credits.other', { n: credits });
+const creditsIn = (t, credits, locale) => t(pluralKey(t, locale, 'model.credits', credits), { n: credits });
 
 export async function generateMetadata({ params }) {
   const { id } = await params;
   const model = await findModel(id);
   const { locale, t } = await getT();
   if (!model) return { title: t('model.notFound'), robots: { index: false } };
-  const credits = creditsIn(t, model.credits);
+  const credits = creditsIn(t, model.credits, locale);
   const description = t('model.desc', { title: model.title, credits, unit: modelPriceUnit(model, t) });
   const alternates = pageAlternates(locale, `/models/${model.id}`);
   return {
     title: `${model.title} — ${credits}`,
     description,
     alternates,
-    openGraph: { ...OPEN_GRAPH_BASE, title: `${model.title} — Veyrnox.ai`, description, url: alternates.canonical, ...openGraphLocale(locale) },
+    openGraph: { ...OPEN_GRAPH_BASE, title: t('meta.siteTitle', { title: model.title }), description, url: alternates.canonical, ...openGraphLocale(locale) },
   };
 }
 
@@ -50,7 +51,7 @@ export default async function ModelPage({ params }) {
         <Link href={localizedHref(locale, '/models')} className="text-[14px] text-vx-fg-muted hover:text-vx-fg underline-offset-4 hover:underline">{t('model.all')}</Link>
         <h1 className="mt-4 vx-display vx-title-detail">{model.title}</h1>
         <p className="mt-6 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <span className="font-vx-mono vx-num text-[40px] font-bold text-vx-money">{creditsIn(t, model.credits)}</span>
+          <span className="font-vx-mono vx-num text-[40px] font-bold text-vx-money">{creditsIn(t, model.credits, locale)}</span>
           <span className="text-lg text-vx-fg-muted">{modelPriceUnit(model, t)}</span>
           {model.gated && <PremiumTag />}
         </p>

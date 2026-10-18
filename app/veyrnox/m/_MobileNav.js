@@ -1,5 +1,7 @@
 'use client';
 import Link from 'next/link';
+import { useI18n } from '../../../components/I18nProvider';
+import { splitLocalePath } from '../../../lib/i18n/locales.mjs';
 import { usePathname } from 'next/navigation';
 
 const TABS = [
@@ -10,7 +12,8 @@ const TABS = [
 ];
 
 export function MobileTabs() {
-  const path = usePathname().replace(/^\/veyrnox/, '');
+  const { t: translate, href } = useI18n();
+  const path = splitLocalePath(usePathname()).rest.replace(/^\/veyrnox/, '');
   return (
     <div className="shrink-0 border-t border-vx-border bg-vx-base pb-2 pt-2 px-3">
       <div className="flex justify-around">
@@ -19,13 +22,13 @@ export function MobileTabs() {
           return (
             <Link
               key={t.key}
-              href={t.href}
+              href={href(t.href)}
               className={`flex flex-col items-center gap-1 min-w-14 py-1 ${
                 active ? 'text-vx-fg' : 'text-vx-fg-muted'
               }`}
             >
               <span className={`text-lg leading-none ${active ? 'text-vx-accent' : ''}`}>{t.icon}</span>
-              <span className="font-vx-mono text-[9px] tracking-[0.1em] font-bold">{t.label.toUpperCase()}</span>
+              <span className="font-vx-mono text-[9px] tracking-[0.1em] font-bold">{translate.label(t.label).toLocaleUpperCase()}</span>
             </Link>
           );
         })}
@@ -35,7 +38,8 @@ export function MobileTabs() {
 }
 
 export function MobileJumps() {
-  const path = usePathname().replace(/^\/veyrnox/, '');
+  const { t: translate, href } = useI18n();
+  const path = splitLocalePath(usePathname()).rest.replace(/^\/veyrnox/, '');
   const jumps = [
     { href: '/m/create',  label: 'CREATE' },
     { href: '/m/job',     label: 'JOB' },
@@ -50,14 +54,14 @@ export function MobileJumps() {
         return (
           <Link
             key={j.href}
-            href={j.href}
+            href={href(j.href)}
             className={`font-vx-mono text-[10px] font-bold tracking-[0.12em] px-3.5 py-2 rounded-full border ${
               active
                 ? 'bg-vx-accent text-vx-accent-ink border-transparent'
                 : 'border-vx-border text-vx-fg-muted'
             }`}
           >
-            {j.label}
+            {j.label === 'JOB' ? translate('mobile.job').toLocaleUpperCase() : translate.label(j.label[0] + j.label.slice(1).toLowerCase()).toLocaleUpperCase()}
           </Link>
         );
       })}

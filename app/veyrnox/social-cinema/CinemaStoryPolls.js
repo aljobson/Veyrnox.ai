@@ -1,4 +1,8 @@
 "use client";
+import { localeTag } from '../../../lib/i18n/locales.mjs';
+import { pluralKey } from '../../../lib/i18n/translate.mjs';
+import { rich } from '../../../lib/i18n/rich';
+import { useI18n } from '../../../components/I18nProvider.jsx';
 import {
   useCallback,
   useEffect,
@@ -10,11 +14,11 @@ import { getSession, onSessionChange } from "../../lib/authClient.js";
 import { gatewayFetch } from "../_lib/gateway.js";
 const identity = () => getSession()?.user?.id || "",
   noIdentity = () => "";
-const labels = {
-  qualified: "Your choice is counted.",
-  under_review: "Your choice is awaiting review.",
-  rejected: "Your choice was excluded by moderation.",
-};
+const labels = (t) => ({
+  qualified: t("cinema.storyPolls.yourChoiceIsCounted"),
+  under_review: t("cinema.storyPolls.yourChoiceIsAwaitingReview"),
+  rejected: t("cinema.storyPolls.yourChoiceWasExcludedByModeration"),
+});
 export function CinemaStoryPolls({ contentId }) {
   const account = useSyncExternalStore(onSessionChange, identity, noIdentity);
   return (
@@ -26,6 +30,7 @@ export function CinemaStoryPolls({ contentId }) {
   );
 }
 function Polls({ contentId, account }) {
+  const { t, locale } = useI18n();
   const [data, setData] = useState(null),
     [error, setError] = useState(""),
     [closed, setClosed] = useState(false),
@@ -59,12 +64,12 @@ function Polls({ contentId, account }) {
         );
         setError(
           e.code === "profile_required"
-            ? "Create an active Cinema profile to answer story polls."
-            : "Story polls are unavailable right now. Please retry.",
+            ? t("cinema.storyPolls.createAnActiveCinemaProfileTo")
+            : t("cinema.storyPolls.storyPollsAreUnavailableRightNow"),
         );
       }
     }
-  }, [account, contentId]);
+  }, [account, contentId, t]);
   useEffect(() => {
     load();
     return () => {
@@ -89,7 +94,7 @@ function Polls({ contentId, account }) {
         body,
         headers: { "idempotency-key": attempt.current.key },
       });
-      setNotice(labels[result.status] || "Choice recorded.");
+      setNotice(labels(t)[result.status] || t("cinema.storyPolls.choiceRecorded"));
       await load();
     } catch (e) {
       if (e.code === "choice_already_recorded" || e.code === "poll_closed")
@@ -97,16 +102,16 @@ function Polls({ contentId, account }) {
       setError(
         {
           choice_already_recorded:
-            "You have already answered this poll. Your original choice is kept.",
+            t("cinema.storyPolls.youHaveAlreadyAnsweredThisPoll"),
           poll_closed:
-            "This poll has closed. New answers are no longer accepted.",
+            t("cinema.storyPolls.thisPollHasClosedNewAnswers"),
           profile_required:
-            "Create an active Cinema profile to answer story polls.",
+            t("cinema.storyPolls.createAnActiveCinemaProfileTo"),
           account_not_active:
-            "Your Cinema account is unavailable. Contact support.",
-          rate_limited: "Too many requests. Wait a minute and retry.",
+            t("cinema.comments.yourCinemaAccountIsUnavailableContact"),
+          rate_limited: t("cinema.retention.tooManyRequestsWaitAMinute"),
         }[e.code] ||
-          "Your choice was not confirmed. Retry to check the same answer.",
+          t("cinema.storyPolls.yourChoiceWasNotConfirmedRetry"),
       );
     } finally {
       setBusy("");
@@ -119,12 +124,9 @@ function Polls({ contentId, account }) {
       aria-labelledby={`polls-${contentId}`}
     >
       <h2 id={`polls-${contentId}`} className="text-xl font-bold">
-        Story choices
-      </h2>
+        {t("cinema.storyPolls.storyChoices")}</h2>
       <p className="mt-2 text-sm text-vx-fg-muted">
-        Choose where the story goes next. One answer per account in each open
-        poll. Choices are free and cannot be changed after submission.
-      </p>
+        {t("cinema.storyPolls.chooseWhereTheStoryGoesNext")}</p>
       {!account && (
         <button
           className="mt-3 underline"
@@ -132,15 +134,13 @@ function Polls({ contentId, account }) {
             window.dispatchEvent(new CustomEvent("veyrnox:auth-required"))
           }
         >
-          Sign in to choose
-        </button>
+          {t("cinema.storyPolls.signInToChoose")}</button>
       )}
       {error && (
         <p role="alert" className="mt-3 text-sm">
           {error}{" "}
           <button className="underline" onClick={load}>
-            Refresh story polls
-          </button>
+            {t("cinema.storyPolls.refreshStoryPolls")}</button>
         </p>
       )}
       {notice && (
@@ -150,26 +150,24 @@ function Polls({ contentId, account }) {
       )}
       {!data && !error && (
         <p role="status" className="mt-3 text-sm">
-          Loading story polls…
-        </p>
+          {t("cinema.storyPolls.loadingStoryPolls")}</p>
       )}
       {data?.polls?.length === 0 && (
         <p className="mt-3 text-sm text-vx-fg-muted">
-          No story polls for this episode yet.
-        </p>
+          {t("cinema.storyPolls.noStoryPollsForThisEpisode")}</p>
       )}
       {data?.polls?.map((poll) => (
         <article key={poll.id} className="mt-4 rounded-xl bg-vx-panel p-4">
           <h3 className="font-bold">{poll.question}</h3>
           <p className="mt-1 text-sm">
-            {poll.is_open ? "Closes" : "Closed"}{" "}
-            {new Date(poll.closes_at).toLocaleString()}
+            {poll.is_open ? t("cinema.storyPolls.closes") : t("cinema.storyPolls.closed")}{" "}
+            {new Date(poll.closes_at).toLocaleString(localeTag(locale))}
           </p>
           <form onSubmit={(event) => choose(event, poll)} className="mt-3">
             <fieldset
               disabled={!!busy || !account || !!poll.my_choice || !poll.is_open}
             >
-              <legend className="text-sm">Choose one answer</legend>
+              <legend className="text-sm">{t("cinema.storyPolls.chooseOneAnswer")}</legend>
               {poll.options.map((option) => (
                 <label
                   key={option.id}
@@ -192,16 +190,15 @@ function Polls({ contentId, account }) {
                   />
                   <span>
                     {option.label} —{" "}
-                    <span data-testid={`story-choice-count-${option.id}`}>
-                      {option.votes}
-                    </span>{" "}
-                    counted {option.votes === 1 ? "answer" : "answers"}
+                    {rich(t(pluralKey(t, locale, 'cinema.polls.answers', option.votes)), {
+                      count: <span data-testid={`story-choice-count-${option.id}`}>{option.votes}</span>,
+                    })}
                   </span>
                 </label>
               ))}
             </fieldset>
             {poll.my_choice ? (
-              <p className="mt-3 text-sm">{labels[poll.my_choice.status]}</p>
+              <p className="mt-3 text-sm">{labels(t)[poll.my_choice.status]}</p>
             ) : (
               account &&
               poll.is_open && (
@@ -210,15 +207,13 @@ function Polls({ contentId, account }) {
                   disabled={!!busy || !selected[poll.id]}
                   className="mt-3 rounded-full border border-vx-border px-4 py-2 text-sm font-bold disabled:opacity-50"
                 >
-                  {busy === poll.id ? "Recording…" : "Submit story choice"}
+                  {busy === poll.id ? t("cinema.storyPolls.recording") : t("cinema.storyPolls.submitStoryChoice")}
                 </button>
               )
             )}
           </form>
           <p className="mt-3 text-xs text-vx-fg-muted">
-            Answers held for review are excluded until approved. Story choices
-            do not contribute to competition rankings.
-          </p>
+            {t("cinema.storyPolls.answersHeldForReviewAreExcluded")}</p>
         </article>
       ))}
     </section>

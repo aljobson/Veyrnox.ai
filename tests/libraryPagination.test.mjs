@@ -17,7 +17,7 @@ test('source picker keeps unshown candidates and reads the next keyset page inst
   assert.match(source, /jobsPagePath\(cursor, 48\)/);
   assert.match(source, /queue\.length > 0 \|\| !!cursor/);
   assert.match(source, /checked\+\+ < SHOWN \* 2/);
-  assert.match(source, /Load older \$\{plural\}/);
+  assert.match(source, /t\('public.library.older', \{ type: plural \}\)/);
   assert.match(source, /disabled=\{loading\}/);
   assert.match(source, /onSessionChange, getStoredUserId/);
 });
