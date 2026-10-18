@@ -364,6 +364,8 @@
         // FREE_ALLOWANCE_ENABLED, PERSONAS_ENABLED, REFERRALS_ENABLED, PUBLISH_YOUTUBE_VISIBILITY_ENABLED.
         "STORE_BILLING_ENABLED": "true",
         "STORE_BILLING_ALLOW_SANDBOX": "true",
+        // ADR-0113 push notifications: staging only. Production leaves it unset (off): vars are at the binding budget.
+        "PUSH_NOTIFICATIONS_ENABLED": "true",
         // Publish migrations through 0323 are installed in staging. These
         // management surfaces are enabled here for acceptance before any
         // production rollout; native video destinations remain separately gated.
