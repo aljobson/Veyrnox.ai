@@ -1,4 +1,4 @@
-import { estimateCredits, fetchCatalog, isSupported, kindOf, promptRequired, mediaApi, waitForJob, type CatalogModel } from '../src/lib/media';
+import { estimateCredits, fetchCatalog, isSupported, kindOf, promptRequired, textInput, mediaApi, waitForJob, type CatalogModel } from '../src/lib/media';
 import type { ApiClient } from '../src/lib/api';
 
 const model = (over: Partial<CatalogModel> = {}): CatalogModel => ({
@@ -36,6 +36,18 @@ describe('catalog helpers', () => {
         expect(promptRequired(model({ capabilities: { inputs: { prompt: {} }, media: { image: { required: true } } } }))).toBe(false);
         expect(promptRequired(model({ capabilities: { inputs: {}, media: { image: { required: true } } } }))).toBe(false);
     });
+    test('finds the one text input a model takes: prompt, or topic for Auto Short', () => {
+        expect(textInput(model())).toEqual({ key: 'prompt', max: 2000 });
+        expect(textInput(model({ capabilities: { inputs: { topic: { max: 200 } }, media: {} } }))).toEqual({ key: 'topic', max: 200 });
+        expect(textInput(model({ capabilities: { inputs: { prompt: { max: 500 } }, media: {} } }))).toEqual({ key: 'prompt', max: 500 });
+        expect(textInput(model({ capabilities: { inputs: {}, media: { image: { required: true } } } }))).toBeNull();
+    });
+    test('supports a topic-only model and still refuses the plan-based video agent', () => {
+        expect(isSupported(model({ capabilities: { inputs: { topic: { max: 200 } }, media: {} } }))).toBe(true);
+        expect(promptRequired(model({ capabilities: { inputs: { topic: { max: 200 } }, media: {} } }))).toBe(true);
+        // video-agent takes brief + plan_id and needs the plan step first.
+        expect(isSupported(model({ capabilities: { inputs: { brief: {}, plan_id: {}, aspect_ratio: {} }, media: {} } }))).toBe(false);
+    });
     test('catalog keeps open, supported, known kinds', async () => {
         const fileOnly = model({ id: 'd', modality: 'image-to-image', capabilities: { inputs: {}, media: { image: { required: true } } } });
         const rows = [model({ id: 'a' }), model({ id: 'b', gated: true }), model({ id: 'c', modality: 'x' }), fileOnly];
@@ -64,6 +76,15 @@ describe('media api', () => {
         });
         expect(JSON.parse(request.mock.calls[0][1].body)).toEqual({
             model_id: 'm', idempotency_key: 'key-abcdefgh', confirmed_credits: 5, inputs: {}, source_keys: [{ key: 'uploads/u/1.jpg', slot: 'image' }], consent: true,
+        });
+    });
+    test('sends the text under the key the model declares', async () => {
+        const request = jest.fn().mockResolvedValue({ job_id: 'j1' });
+        await mediaApi({ request } as unknown as ApiClient).createGeneration({
+            modelId: 'auto-short-32s', prompt: 'how bees make honey', textKey: 'topic', durationSeconds: null, confirmedCredits: 110, idempotencyKey: 'key-abcdefgh',
+        });
+        expect(JSON.parse(request.mock.calls[0][1].body)).toEqual({
+            model_id: 'auto-short-32s', idempotency_key: 'key-abcdefgh', confirmed_credits: 110, inputs: { topic: 'how bees make honey' },
         });
     });
     test('library pages with the cursor from the last page', async () => {
