@@ -101,7 +101,7 @@ export default function Publish() {
             {message ? <Text style={styles.muted}>{message}</Text> : null}
             {gate !== 'checking' ? (
                 <View style={styles.menu}>
-                    {([['Connected accounts', '/publish/accounts'], ['Posts', '/publish/posts'], ['Analytics', '/publish/analytics']] as const).map(([label, path]) => (
+                    {([['Connected accounts', '/publish/accounts'], ['Posts', '/publish/posts'], ['Analytics', '/publish/analytics'], ['Approvals', '/publish/approvals'], ['Brand', '/publish/brands']] as const).map(([label, path]) => (
                         <Pressable key={path} accessibilityRole="button" style={styles.menuRow} onPress={() => router.push(path)}>
                             <Text style={styles.menuText}>{label}</Text>
                         </Pressable>

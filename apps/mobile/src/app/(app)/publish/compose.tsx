@@ -1,7 +1,6 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useAuth } from '../../../auth/AuthProvider';
 import { fetchCatalog, mediaApi, type CatalogModel, type Job } from '../../../lib/media';
 import { fetchAccounts, publishErrorMessage, type PublishAccount } from '../../../lib/publish';
 import { MAX_TEXT, captionWarning, composeErrorMessage, createBody, createPost, eligibleAccounts, mediaTypeOf, validateDraft, type Draft, type MediaType, type When } from '../../../lib/publishCompose';
@@ -9,6 +8,7 @@ import { WhenPicker, whenFrom } from '../../../components/WhenPicker';
 import { appStorage, getCacheUser } from '../../../lib/appCache';
 import { createDraftKeys, draftSignature, isDefiniteRefusal } from '../../../lib/draftKey';
 import { colors } from '../../../theme';
+import { usePublishApi } from '../../../lib/usePublishApi';
 
 const draftKeys = createDraftKeys(appStorage);
 
@@ -19,7 +19,7 @@ interface Pick {
 }
 
 export default function Compose() {
-    const { api } = useAuth();
+    const api = usePublishApi();
     const router = useRouter();
     const { jobId: presetJob } = useLocalSearchParams<{ jobId?: string }>();
     const [picks, setPicks] = useState<Pick[] | null>(null);

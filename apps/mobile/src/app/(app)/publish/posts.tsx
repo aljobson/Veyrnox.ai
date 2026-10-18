@@ -1,15 +1,15 @@
 import { Stack, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
-import { useAuth } from '../../../auth/AuthProvider';
 import { fetchPosts, mergePage, postStatusLabel, publishErrorMessage, type PublishPost } from '../../../lib/publish';
 import { colors } from '../../../theme';
 import { HeaderAction } from '../../../components/HeaderAction';
+import { usePublishApi } from '../../../lib/usePublishApi';
 
 const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString() : null);
 
 export default function Posts() {
-    const { api } = useAuth();
+    const api = usePublishApi();
     const router = useRouter();
     const [posts, setPosts] = useState<PublishPost[] | null>(null);
     const [error, setError] = useState<string | null>(null);
