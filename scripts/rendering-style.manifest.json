@@ -1,0 +1,19 @@
+{
+  "note": "Rendering style: the same fictional character in four styles. Anime, Cartoon and 2D Illustration read clearly. Hyper-Realistic came out as a 3D cartoon, so it keeps the icon tile.",
+  "sources": [
+    {
+      "file": "rest-rendering.jpg",
+      "rows": [
+        2,
+        2
+      ],
+      "inset": 14,
+      "styles": [
+        null,
+        "Anime",
+        "Cartoon",
+        "2D Illustration"
+      ]
+    }
+  ]
+}

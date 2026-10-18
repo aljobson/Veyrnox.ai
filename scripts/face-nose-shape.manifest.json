@@ -1,21 +1,20 @@
 {
-  "note": "Nose sheet. Noses differ little at tile size, so only Straight, Button and Wide are kept.",
+  "note": "Nose close-ups on one sheet so the tiles share a style and the differences show: Straight, Aquiline, Snub, Wide, Narrow and Round Tip. Button was not on the sheet and keeps the drawn tile.",
   "sources": [
     {
-      "file": "nose.jpg",
+      "file": "rest-noses.jpg",
       "rows": [
-        4,
-        4
+        3,
+        3
       ],
+      "inset": 14,
       "styles": [
         "Straight",
-        "Button",
-        null,
-        null,
+        "Aquiline",
+        "Snub",
         "Wide",
-        null,
-        null,
-        null
+        "Narrow",
+        "Round Tip"
       ]
     }
   ]

@@ -32,6 +32,23 @@
         "Forked Tongue",
         "Two Tongues"
       ]
+    },
+    {
+      "file": "rest-lowerface.jpg",
+      "rows": [
+        4,
+        4
+      ],
+      "styles": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        "Crooked Teeth",
+        null,
+        null
+      ]
     }
   ]
 }
