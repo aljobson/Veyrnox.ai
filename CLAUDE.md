@@ -177,6 +177,10 @@ developer surface is `/api/v1/developer/*` and requires a verified OAuth
     Origin, JSON/custom-header CSRF checks, Strict HttpOnly cookie and Auth
     refresh-grant validation. It never trusts forwarded user headers and never
     accepts or returns service-role credentials. See ADR-0102.
+  - `/auth/mobile` — GET-only hand-back for the mobile app's Google and Apple
+    sign-in (ADR-0106 amendment 1). It answers a 302 to the constant
+    `ai.veyrnox.app://auth/callback`, forwarding only a well-formed PKCE `code`
+    or a short error word. It reads no identity header and has no open target.
   - `/api/catalog`, `/api/credit-packs`, `/api/cinema/titles[/:id]`, `/api/cinema/posters/:id`,
     `/api/popular-templates` — anonymous, read-only, cached public data
     (prices, packs, published titles, ranked template ids). Nothing per-user.
