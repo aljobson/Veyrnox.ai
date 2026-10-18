@@ -15,7 +15,8 @@
         "Prosthetic",
         "Mechanical",
         null
-      ]
+      ],
+      "inset": 14
     }
   ]
 }

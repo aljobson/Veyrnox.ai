@@ -1,7 +1,7 @@
 // Cuts generated hair contact sheets (a grid of mannequin heads on a plain light background) into one square tile per hairstyle.
 //   node scripts/slice-hair-sheets.mjs <input-dir> [--out public/oddlings/hair] [--only sheet1.jpg] [--manifest outfit-tiles.manifest.json]
 // The manifest (scripts/hair-tiles.manifest.json) names each source image, its grid (rows of head counts) and the styles in reading order.
-// An entry may set "mirror" to flip its pictures left to right, and "window" (default 0.14) to narrow how far a cut may move from the even split, for a sheet whose figures have little contrast with the background.
+// An entry may set "inset" (pixels) to pull each cell in from its neighbours so divider lines drawn between cells stay out, "mirror" to flip its pictures left to right, and "window" (default 0.14) to narrow how far a cut may move from the even split, for a sheet whose figures have little contrast with the background.
 // A sheet that does not hold exactly the heads the manifest expects is refused, so a bad generation never ships a mislabelled tile.
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
@@ -55,7 +55,7 @@ function bounds(mask, width, x0, y0, x1, y1) {
 }
 
 /** Split an image into the cells of `rows` (for example [4, 4] or [3, 3]); returns one { x, y, size, rect } per cell, reading order: a square around the head and the cell it was found in. */
-export function cellsOf(image, rows, window = 0.14) {
+export function cellsOf(image, rows, window = 0.14, inset = 0) {
   const { width, height } = image, { mask } = foregroundMask(image);
   const rowProfile = Array.from({ length: height }, (_, y) => { let n = 0; for (let x = 0; x < width; x++) n += mask[y * width + x]; return n; });
   const rowCuts = [0, ...valleys(rowProfile, rows.length, window), height];
@@ -65,8 +65,11 @@ export function cellsOf(image, rows, window = 0.14) {
     const colProfile = Array.from({ length: width }, (_, x) => { let n = 0; for (let y = y0; y < y1; y++) n += mask[y * width + x]; return n; });
     const colCuts = [0, ...valleys(colProfile, count, window), width];
     for (let c = 0; c < count; c++) {
-      const box = bounds(mask, width, colCuts[c], y0, colCuts[c + 1], y1);
-      cells.push({ box, rect: { x0: colCuts[c], y0, x1: colCuts[c + 1], y1 }, ink: box.ink / ((colCuts[c + 1] - colCuts[c]) * (y1 - y0)) });
+      // The inset pulls a cell's boundary in on the sides it shares with a neighbour (never at the image edge), so a divider line drawn at the cut stays out of it.
+      const x0 = colCuts[c] > 0 ? colCuts[c] + inset : 0, x1 = colCuts[c + 1] < width ? colCuts[c + 1] - inset : width;
+      const top = y0 > 0 ? y0 + inset : 0, bottom = y1 < height ? y1 - inset : height;
+      const box = bounds(mask, width, x0, top, x1, bottom);
+      cells.push({ box, rect: { x0, y0: top, x1, y1: bottom }, ink: box.ink / (Math.max(1, x1 - x0) * Math.max(1, bottom - top)) });
     }
   });
   return cells.map(({ box, rect, ink }) => {
@@ -83,7 +86,7 @@ async function sliceOne(entry, inputDir, outDir) {
   const rows = entry.rows || [1];
   const expected = rows.reduce((a, b) => a + b, 0);
   if (entry.styles.length !== expected) throw new Error(`${entry.file}: manifest lists ${entry.styles.length} styles for a ${expected}-cell grid`);
-  const cells = cellsOf(image, rows, entry.window);
+  const cells = cellsOf(image, rows, entry.window, entry.inset || 0);
   const empty = cells.map((cell, i) => (cell ? null : i)).filter((i) => i !== null);
   if (empty.length) throw new Error(`${entry.file}: ${empty.length} empty cell(s) at ${empty.join(', ')}; the sheet does not hold ${expected} heads`);
   const { background } = foregroundMask(image);

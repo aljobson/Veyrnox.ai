@@ -1,0 +1,37 @@
+{
+  "note": "Everyday accessories on grey mannequins. The sheets drew six figures, not eight, and merged some: Jewellery (hoops and chain) ended up on the sunglasses figure, so Jewellery has no picture.",
+  "sources": [
+    {
+      "file": "acc-a.jpg",
+      "rows": [
+        3,
+        3
+      ],
+      "styles": [
+        "Glasses",
+        "Round Glasses",
+        "Sunglasses",
+        null,
+        null,
+        null
+      ],
+      "inset": 14
+    },
+    {
+      "file": "acc-c.jpg",
+      "rows": [
+        3,
+        3
+      ],
+      "styles": [
+        "Everyday Bag",
+        "Tote Bag",
+        null,
+        null,
+        null,
+        null
+      ],
+      "inset": 14
+    }
+  ]
+}

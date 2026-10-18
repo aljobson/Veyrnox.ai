@@ -35,6 +35,19 @@ export const SKIN_PATTERN_TILE_STYLES = Object.freeze(['Solid', 'Stripes', 'Spot
 export const SPECIES_TILE_STYLES = Object.freeze([
   'Human', 'Elf', 'Alien', 'Moth', 'Spectre', 'Fungus', 'Amphibian', 'Reptile', 'Mantis', 'Bee', 'Octopus', 'Crocodile', 'Iguana', 'Lizard', 'Beetle', 'Ant', 'Cat', 'Dog', 'Rodent', 'Bird',
 ]);
+// Accessories: three catalog groups. Jewellery, Tiny Sunglasses, Tiny Handbag, Piercings, Cyber Markings, Tiny Microphone and Pocket Weather Station were not drawn cleanly (merged with another item, or dominated by one) and keep the drawn tile.
+export const EVERYDAY_ACCESSORIES_TILE_STYLES = Object.freeze(['Glasses', 'Round Glasses', 'Sunglasses', 'Everyday Bag', 'Tote Bag']);
+export const ACCESSORIES_TILE_STYLES = Object.freeze([
+  'Geometric Veil', 'Object Jewellery', 'Chrome Brows', 'Receipt Ribbons', 'Tiny Teacup', 'Bug Head Mask', 'Tiny Monocle', 'Impossible Handbag', 'Tattoos', 'Scarification', 'Symbols / Markings',
+]);
+export const DISTINCTIVE_FEATURES_TILE_STYLES = Object.freeze([
+  'Giant Comb', 'Sacred Stapler', 'Snack Sceptre', 'Miniature Chair', 'Impossible Handbag', 'Receipt Train', 'Miniature Thermos', 'Miniature Cake',
+]);
+// Body: fully clothed full-body figures. Only options that stay distinguishable once each figure is fitted to its tile have a picture; most builds, most
+// proportions and Extreme exaggeration looked the same as their neighbours (or were drawn shirtless) and keep the drawn tile.
+export const BODY_TYPE_TILE_STYLES = Object.freeze(['Curvy', 'Heavy', 'Fat']);
+export const PROPORTIONS_TILE_STYLES = Object.freeze(['Natural', 'Tiny Torso', 'Huge Hands', 'No Visible Neck']);
+export const EXAGGERATION_TILE_STYLES = Object.freeze(['Natural', 'Bold']);
 export const MOUTH_TILE_STYLES = Object.freeze(['Large Mouth', 'No Teeth', 'Unique Teeth', 'Gap Teeth', 'Gold Tooth', 'Bright Smile', 'Sharp Teeth', 'Forked Tongue', 'Two Tongues']);
 
 /** Catalog group id -> folder under /oddlings and the options that have a file there. */
@@ -60,6 +73,12 @@ export const PICTURE_TILES = Object.freeze({
   face_skin_material: { dir: 'skin/face_skin_material', styles: SKIN_MATERIAL_TILE_STYLES },
   face_surface_pattern: { dir: 'skin/face_surface_pattern', styles: SKIN_PATTERN_TILE_STYLES },
   character_type: { dir: 'species', styles: SPECIES_TILE_STYLES },
+  everyday_accessories: { dir: 'accessories/everyday_accessories', styles: EVERYDAY_ACCESSORIES_TILE_STYLES },
+  accessories: { dir: 'accessories/accessories', styles: ACCESSORIES_TILE_STYLES },
+  distinctive_features: { dir: 'accessories/distinctive_features', styles: DISTINCTIVE_FEATURES_TILE_STYLES },
+  body_type: { dir: 'body/body_type', styles: BODY_TYPE_TILE_STYLES },
+  proportions: { dir: 'body/proportions', styles: PROPORTIONS_TILE_STYLES },
+  exaggeration: { dir: 'body/exaggeration', styles: EXAGGERATION_TILE_STYLES },
   facial_hair: { dir: 'face/facial_hair', styles: FACIAL_HAIR_TILE_STYLES },
   horns: { dir: 'face/horns', styles: HORNS_TILE_STYLES },
   face_features: { dir: 'face/face_features', styles: FACE_FEATURES_TILE_STYLES },
