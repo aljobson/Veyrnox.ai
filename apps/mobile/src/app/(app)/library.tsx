@@ -2,6 +2,10 @@ import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
+import { StaleNote } from '../../components/StaleNote';
+import { appCache, getCacheUser } from '../../lib/appCache';
+import { POLICIES, type CacheMeta } from '../../lib/cache';
+import { observe } from '../../lib/network';
 import { mediaApi, type Job, type JobPage } from '../../lib/media';
 import { colors } from '../../theme';
 
@@ -13,14 +17,23 @@ export default function Library() {
     const [jobs, setJobs] = useState<Job[] | null>(null);
     const [next, setNext] = useState<JobPage['next']>(null);
     const [failed, setFailed] = useState(false);
+    const [saved, setSaved] = useState<CacheMeta | null>(null);
     const loadingMore = useRef(false);
 
     const load = useCallback(async () => {
         setFailed(false);
         try {
-            const page = await mediaApi(api).listJobs();
-            setJobs(page.jobs);
-            setNext(page.next);
+            // First page only is saved (labels are personal data: per user, wiped on sign-out). Older pages load live.
+            const out = await appCache.swr({
+                policy: POLICIES.library,
+                userId: getCacheUser(),
+                fetcher: () => observe(mediaApi(api).listJobs()),
+                onData: (page) => {
+                    setJobs(page.jobs);
+                    setNext(page.next);
+                },
+            });
+            setSaved(out.meta);
         } catch {
             setFailed(true);
         }
@@ -36,7 +49,7 @@ export default function Library() {
         if (!next || loadingMore.current) return;
         loadingMore.current = true;
         try {
-            const page = await mediaApi(api).listJobs(next);
+            const page = await observe(mediaApi(api).listJobs(next));
             setJobs((j) => [...(j ?? []), ...page.jobs]);
             setNext(page.next);
         } catch {
@@ -58,6 +71,7 @@ export default function Library() {
             ) : (
                 <FlatList
                     data={jobs}
+                    ListHeaderComponent={<StaleNote meta={saved} />}
                     keyExtractor={(j) => j.job_id}
                     onEndReached={more}
                     onRefresh={load}

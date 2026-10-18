@@ -1,4 +1,4 @@
-import { POLICIES, createCache, createMemoryStorage } from '../src/lib/cache';
+import { POLICIES, formatAge, createCache, createMemoryStorage } from '../src/lib/cache';
 
 function setup() {
     const storage = createMemoryStorage();
@@ -6,6 +6,22 @@ function setup() {
     const cache = createCache(storage, () => time);
     return { storage, cache, advance: (ms: number) => void (time += ms) };
 }
+
+test('balance and Library always refetch but show the saved copy first', async () => {
+    const storage = createMemoryStorage();
+    const cache = createCache(storage, () => 5000);
+    await cache.write(POLICIES.balance, { balance: 1 }, 'u1');
+    const seen: unknown[] = [];
+    await cache.swr({ policy: POLICIES.balance, userId: 'u1', fetcher: async () => ({ balance: 2 }), onData: (v) => seen.push(v) });
+    expect(seen).toEqual([{ balance: 1 }, { balance: 2 }]);
+});
+
+test('formats the age of a saved copy', () => {
+    expect(formatAge(5_000)).toBe('');
+    expect(formatAge(5 * 60_000)).toBe('5 min');
+    expect(formatAge(3 * 3_600_000)).toBe('3 h');
+    expect(formatAge(2 * 86_400_000)).toBe('2 d');
+});
 
 describe('cache', () => {
     test('a miss fetches, stores and reports a live value', async () => {
@@ -20,12 +36,12 @@ describe('cache', () => {
 
     test('a fresh copy is used without a fetch', async () => {
         const { cache, advance } = setup();
-        await cache.write(POLICIES.balance, { balance: 5 }, 'u1');
+        await cache.write(POLICIES.catalog, [5]);
         advance(10_000);
-        const fetcher = jest.fn(async () => ({ balance: 9 }));
-        const out = await cache.swr({ policy: POLICIES.balance, userId: 'u1', fetcher });
+        const fetcher = jest.fn(async () => [9]);
+        const out = await cache.swr({ policy: POLICIES.catalog, fetcher });
         expect(fetcher).not.toHaveBeenCalled();
-        expect(out.value).toEqual({ balance: 5 });
+        expect(out.value).toEqual([5]);
         expect(out.meta.stale).toBe(false);
     });
 

@@ -1,7 +1,7 @@
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import { fetchCatalog, kindOf, type CatalogModel, type Kind } from '../../../lib/media';
+import { fetchCatalogCached, kindOf, type CatalogModel, type Kind } from '../../../lib/media';
 import { fetchAgentListing } from '../../../lib/montage';
 import { colors } from '../../../theme';
 
@@ -19,7 +19,8 @@ export default function Create() {
     const [agent, setAgent] = useState<{ readonly credits: number } | null>(null);
 
     useEffect(() => {
-        fetchCatalog().then(setModels).catch(() => setFailed(true));
+        // Browsing the list works from a saved copy; the next screen loads the live catalog and prices.
+        fetchCatalogCached((list) => setModels(list)).catch(() => setFailed(true));
         fetchAgentListing().then(setAgent);
     }, []);
 
