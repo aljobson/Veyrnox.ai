@@ -56,6 +56,12 @@ If a build starts failing after a dependency change, bisect these three first.
 - **Frozen accounts** (#97): `apply_top_up_refund` and `apply_dispute_event`
   Freeze, `unfreeze_account` is the only way out, and all three write the
   append-only `account_actions` log. Never set `users.frozen_at` directly.
+- **Account deletion** (ADR-0111): a tombstone, never a `DELETE` of `public.users`.
+  `prepare_account_deletion` / `erase_account` / `complete_account_deletion` are the
+  only writers; a Frozen or held account is refused, the balance is left as it is
+  (no ledger row). A new table that references `users` must be classified in
+  `scripts/test-account-deletion.mjs`. The route is off unless
+  `ACCOUNT_DELETION_ENABLED` is `"true"` (not in `wrangler.jsonc`: binding cap).
 - **Free Credits** (ADR-0013): only `grant:signup` credits are free. Every
   ledger row sets `free_delta` (the part of `delta` that moved Free Credits;
   0 for anything else) and `credit_balances.free_balance` moves with it,
