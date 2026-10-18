@@ -84,6 +84,9 @@ export const TILE_FOCUS = Object.freeze({
   hair: 'head', headwear: 'head', wardrobe_style: 'body', body_type: 'body',
   head_shape: 'face', chin_jaw: 'face', eye_shape: 'face', eyes_type: 'face', eyes_details: 'face', brows: 'face', nose_shape: 'face', cheeks: 'face', lips: 'face',
   mouth: 'face', ears: 'face', horns: 'face', face_features: 'face', facial_hair: 'face',
+  skin_conditions: 'face', face_skin_material: 'face', face_surface_pattern: 'face',
+  character_type: 'head', exaggeration: 'body',
+  proportions: 'body', neck: 'neck', left_arm: 'armLeft', right_arm: 'armRight', left_leg: 'legLeft', right_leg: 'legRight',
 });
 
 /** How the big preview is cropped while a category is open: close on the face for face work, on the head for hair, whole body otherwise. */

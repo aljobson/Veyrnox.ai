@@ -2,16 +2,15 @@
 // small table row and a test can check that every option of every face group has its own drawing. The mannequin moves and scales this
 // space onto the figure with one transform. Stylised on purpose: the final picture is made by AI from the same picks.
 
+import { darken, lighten } from './oddlingColour.js';
+import { skinFx } from './oddlingSkinFx.js';
+import { speciesFx } from './oddlingSpecies.js';
+export { darken, lighten };
+
 export const EYE_Y = -0.12;
 export const EYE_GAP = 0.42;
 const num = (value) => Math.round(value * 1000) / 1000;
-const mix = (hex, toward, amount) => {
-  const parse = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
-  const a = parse(hex), b = parse(toward);
-  return `#${a.map((v, i) => Math.round(v + (b[i] - v) * amount).toString(16).padStart(2, '0')).join('')}`;
-};
-export const darken = (hex, amount) => mix(hex, '#000000', amount);
-export const lighten = (hex, amount) => mix(hex, '#ffffff', amount);
+
 
 // ---- head outline: half-widths down the right side (forehead, brow, cheek, jaw, chin), smoothed through a closed spline ----
 const HEAD_BASE = { 'Perfect Round': [0.62, 0.97, 0.98, 0.82, 0.48], 'Long Oval': [0.5, 0.72, 0.74, 0.6, 0.3], Square: [0.8, 0.94, 0.95, 0.9, 0.62], Heart: [0.86, 1, 0.82, 0.52, 0.2], Diamond: [0.46, 0.86, 1, 0.58, 0.2], 'Tiny Head': [0.62, 0.97, 0.98, 0.82, 0.48], 'Oversized Head': [0.62, 0.97, 0.98, 0.82, 0.48] };
@@ -50,12 +49,16 @@ const EYE_DEFAULT = { rx: 0.17, ry: 0.12 };
 const EYE_TYPES = { Human: {}, Reptile: { iris: '#d6c22c', slit: true }, Mechanical: { iris: '#8a94a0', ring: true } };
 
 function eyeShapes(picks, p) {
-  const spec = EYE_SHAPES[picks?.eye_shape] || EYE_DEFAULT, type = EYE_TYPES[picks?.eyes_type] || EYE_TYPES.Human, detail = picks?.eyes_details || '';
+  const spec = EYE_SHAPES[picks?.eye_shape] || EYE_DEFAULT, detail = picks?.eyes_details || '';
+  // A creature's eyes (slit, bulging, solid black) apply unless the person picked an eye type of their own.
+  const base = EYE_TYPES[picks?.eyes_type] || EYE_TYPES.Human, creature = p.creatureEyes || {};
+  const type = picks?.eyes_type ? base : { ...base, ...(creature.slit ? { slit: true } : {}), ...(creature.colour ? { iris: creature.colour } : {}) };
+  const lift = creature.bulge ? -0.22 : creature.top ? -0.3 : 0;
   const out = [];
   for (const [side, dir] of [['l', -1], ['r', 1]]) {
     const own = dir === 1 && spec.right ? { ...spec, ...spec.right } : spec;
-    const gap = spec.gap || EYE_GAP, cx = dir * gap, cy = EYE_Y + (own.dy || 0) + 0;
-    const rx = own.rx * p.eyeScale, ry = own.ry * p.eyeScale, tilt = (spec.tilt || 0) * dir * -1;
+    const gap = spec.gap || EYE_GAP, cx = dir * gap * (creature.top ? 1.1 : 1), cy = EYE_Y + (own.dy || 0) + lift;
+    const grow = (creature.big || 1) * (creature.bulge ? 1.3 : 1), rx = own.rx * p.eyeScale * grow, ry = own.ry * p.eyeScale * grow * (creature.slit && !picks?.eye_shape ? 1.1 : 1), tilt = (spec.tilt || 0) * dir * -1;
     let iris = detail === 'Heterochromia' && dir === 1 ? '#3f7fd0' : (type.iris || p.eyeFill);
     if (detail === 'Heterochromia' && dir === 1 && p.eyeFill === '#3f7fd0') iris = '#c8323a';
     const blind = detail === 'Blind Eye' && dir === 1;
@@ -95,7 +98,7 @@ function browShapes(picks, p) {
 const NOSES = { Straight: { w: 0.11, len: 0.3 }, Button: { w: 0.1, len: 0.24, round: true }, Aquiline: { w: 0.11, len: 0.34, hook: 0.09 }, Snub: { w: 0.11, len: 0.22, up: true }, Wide: { w: 0.2, len: 0.28 }, Narrow: { w: 0.06, len: 0.32 }, 'Round Tip': { w: 0.1, len: 0.28, round: true, tip: 0.07 } };
 
 function noseShapes(picks, p) {
-  const spec = NOSES[picks?.nose_shape] || { w: 0.11, len: 0.28 }, ink = darken(p.skin, 0.38), top = -0.02, base = top + spec.len;
+  const shape = NOSES[picks?.nose_shape] || { w: 0.11, len: 0.28 }, spec = shape, ink = darken(p.skin, 0.38), top = -0.02, base = top + spec.len;
   const out = [{ key: 'nose-bridge', tag: 'path', attrs: { d: `M${num(-0.03)} ${top}Q${num(-spec.w - (spec.hook || 0))} ${num(top + spec.len * 0.55)} ${num(-spec.w)} ${num(base)}M${num(0.03)} ${top}Q${num(spec.w + (spec.hook || 0))} ${num(top + spec.len * 0.55)} ${num(spec.w)} ${num(base)}`, strokeWidth: 0.04, strokeLinecap: 'round' }, fill: 'none', stroke: ink }];
   out.push({ key: 'nose-base', tag: 'path', attrs: { d: `M${num(-spec.w)} ${num(base)}Q0 ${num(base + (spec.up ? -0.04 : 0.07))} ${num(spec.w)} ${num(base)}`, strokeWidth: 0.04, strokeLinecap: 'round' }, fill: 'none', stroke: ink });
   for (const dir of [-1, 1]) out.push({ key: `nostril-${dir}`, tag: 'ellipse', attrs: { cx: num(dir * spec.w * 0.55), cy: num(base - (spec.up ? 0.01 : 0.025)), rx: num(spec.w * (spec.up ? 0.4 : 0.3)), ry: spec.up ? 0.045 : 0.025 }, fill: ink });
@@ -147,7 +150,7 @@ function mouthShapes(picks, p) {
 
 // ---- ears, horns ----
 function earShapes(picks, p) {
-  const kind = picks?.ears || 'Human', inner = darken(p.skin, 0.2), out = [];
+  const kind = picks?.ears || (p.creatureOwnEars ? '' : 'Human'), inner = darken(p.skin, 0.2), out = [];
   const ear = { Human: (dir) => ({ tag: 'ellipse', attrs: { cx: dir * 0.97, cy: 0.05, rx: 0.13, ry: 0.22 } }), 'Elf Ears': (dir) => ({ tag: 'path', attrs: { d: `M${dir * 0.93} -0.12L${dir * 1.55} -0.5L${dir * 0.95} 0.28Z` } }), 'Wing Ears': (dir) => ({ tag: 'path', attrs: { d: `M${dir * 0.93} -0.05Q${dir * 1.5} -0.7 ${dir * 1.7} -0.2Q${dir * 1.45} 0.1 ${dir * 1.5} 0.4Q${dir * 1.1} 0.25 ${dir * 0.93} 0.3Z` } }) }[kind];
   if (!ear) return out;
   for (const dir of [-1, 1]) { const { tag, attrs } = ear(dir); out.push({ key: `ear-${dir}`, tag, attrs, fill: p.skin, stroke: inner, strokeWidth: 0.03 }); }
@@ -203,14 +206,21 @@ function glassesShapes(picks) {
   return [...frames, { key: 'glass-bridge', tag: 'path', attrs: { d: `M${num(-EYE_GAP + 0.3)} ${EYE_Y}Q0 ${EYE_Y - 0.1} ${num(EYE_GAP - 0.3)} ${EYE_Y}`, strokeWidth: 0.04 }, fill: 'none', stroke: '#1c1c20' }];
 }
 
-/** Everything on the face, in drawing order, in unit space. `p`: { skin, hairFill, eyeFill, eyeScale, mouthScale }. */
-export function faceShapes(picks, p) {
+/** Everything on the face, in drawing order, in unit space. `p`: { skin, hairFill, eyeFill, eyeScale, mouthScale, exaggeration }. */
+export function faceShapes(picks, palette) {
+  const species = speciesFx(picks, palette);
+  const withSpecies = { ...palette, skin: species?.skin || palette.skin };
+  const fx = skinFx(picks, withSpecies);
+  // Exaggeration never touches the face: the prompt text limits it to silhouette, hair volume, clothing and accessory scale (see the mannequin).
+  const p = { ...withSpecies, skin: fx.skin, eyeFill: fx.eyeFill, creatureEyes: species?.eyes || null, creatureOwnEars: !!species?.back.length };
   const head = headOutline(picks?.head_shape, picks?.chin_jaw);
   const out = [];
-  out.push(...hornShapes(picks), ...earShapes(picks, p));
+  out.push(...(species?.back || []), ...hornShapes(picks), ...earShapes(picks, p));
   out.push({ key: 'head', tag: 'path', attrs: { d: head.d }, fill: p.skin });
   if (head.cleft) out.push({ key: 'cleft', tag: 'path', attrs: { d: `M0 ${num(head.chinY - 0.22)}v0.12`, strokeWidth: 0.035, strokeLinecap: 'round' }, fill: 'none', stroke: darken(p.skin, 0.4) });
-  out.push(...cheekShapes(picks, p), ...eyeShapes(picks, p), ...browShapes(picks, p), ...noseShapes(picks, p), ...mouthShapes(picks, p), ...detailShapes(picks, p), ...facialHairShapes(picks, p, head), ...glassesShapes(picks));
+  out.push(...fx.marks, ...cheekShapes(picks, p), ...(species?.front || []), ...eyeShapes(picks, p), ...browShapes(picks, p));
+  if (!species?.hasSnout) out.push(...noseShapes(picks, p));
+  out.push(...mouthShapes(picks, p), ...detailShapes(picks, p), ...facialHairShapes(picks, p, head), ...glassesShapes(picks), ...(species?.top || []));
   return { scale: head.scale, shapes: out };
 }
 
