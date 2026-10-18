@@ -54,7 +54,7 @@ export function TileGroup({ group, picks, value, onChange, categoryId }) {
   return (
     <fieldset className="space-y-2">
       <legend className={legend}>{group.label}<span className="ml-2 normal-case tracking-normal text-vx-fg">{value ? characterOptionLabel(group.id, value) : 'Any'}</span></legend>
-      <div className={`grid gap-2 ${focus === 'face' ? 'grid-cols-3' : 'grid-cols-3 sm:grid-cols-4'}`}>
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(104px,1fr))] gap-2 lg:grid-cols-[repeat(auto-fill,minmax(132px,1fr))] lg:gap-3">
         <button type="button" onClick={() => onChange(group.id, '')} aria-pressed={!value} className={`${tileBase} ${tileTone(!value)} justify-center px-1 py-3`}>
           <span className="grid h-10 w-10 place-items-center rounded-full border border-dashed border-vx-border font-vx-mono text-[9px] text-vx-fg-muted" aria-hidden="true">Any</span>
           <span className="mt-1 text-[10px] font-bold text-vx-fg-muted">None picked</span>
@@ -64,7 +64,7 @@ export function TileGroup({ group, picks, value, onChange, categoryId }) {
           const picture = pictureTileSrc(group.id, name);
           return (
             <button key={name} type="button" onClick={() => onChange(group.id, name)} aria-pressed={on} className={`${tileBase} ${tileTone(on)}`}>
-              <span className={`flex w-full items-end justify-center bg-vx-panel px-1 pt-1 ${focus === 'face' ? 'h-28' : 'h-20'}`}>
+              <span className="flex aspect-square w-full items-end justify-center bg-vx-panel px-1 pt-1">
                 {picture
                   ? <img src={picture} alt="" width={256} height={256} loading="lazy" decoding="async" className="h-full w-full rounded-md object-cover" />
                   : drawn

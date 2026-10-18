@@ -128,6 +128,8 @@
    to land underneath it (WCAG 2.4.11). On the scroller, so one rule covers
    both; a scroll-margin on every [id] covered anchors only. */
 html { scroll-padding-top: 5rem; }
+/* The Oddling Studio pins its Generate bar to the bottom, so scrolling a control into view must stop above it, even when the low-credit notice makes the bar taller. */
+html:has([data-oddling-studio]) { scroll-padding-bottom: 15rem; }
 
 body {
   background: rgb(var(--vx-base));
