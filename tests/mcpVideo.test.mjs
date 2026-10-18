@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { MCP_VIDEO_LIMITS, startMcpVideo, startMcpEdit } from '../lib/mcpVideo.js';
+import { startMcpVideo, startMcpEdit } from '../lib/mcpVideo.js';
 
 const VIDEO = { id: 'kling-i2v', modality: 'image-to-video', credits: 10, durations: [5, 10] };
-const ARGS = { model_id: VIDEO.id, prompt: 'A slow dolly shot', confirmed_credits: 10, idempotency_key: 'mcp-video-0001' };
+const ARGS = { model_id: VIDEO.id, prompt: 'A slow dolly shot', confirmed_credits: 10, user_approved: true, idempotency_key: 'mcp-video-0001' };
 const ASSET = '3f2b8c1e-5a47-4d3e-9b0a-1c2d3e4f5a6b';
 
 function harness({ model = VIDEO, created = { status: 202, body: { job_id: 'j1', state: 'queued' } }, catalogFails = false } = {}) {
@@ -43,11 +43,14 @@ test('only video models are accepted, and the clip editor is not started from th
   }
 });
 
-test('a model dearer than the per-call limit is refused before any spend', async () => {
-  const dear = { ...VIDEO, credits: MCP_VIDEO_LIMITS.maxCreditsPerCall + 1 };
-  const { result, calls } = await video({ ...ARGS, confirmed_credits: dear.credits }, { model: dear });
-  assert.deepEqual([result.status, result.body.error, calls.create.length], [400, 'mcp_price_cap', 0]);
-  assert.ok(Object.isFrozen(MCP_VIDEO_LIMITS));
+test('without the user\'s approval nothing is sent, even with the right price', async () => {
+  const { result, calls } = await video({ ...ARGS, user_approved: undefined });
+  assert.deepEqual([result.status, result.body.error, calls.create.length], [400, 'approval_required', 0]);
+});
+
+test('there is no per-call price cap: a dear video model is allowed at its exact price', async () => {
+  const { result } = await video({ ...ARGS, confirmed_credits: 500 }, { model: { ...VIDEO, credits: 500 } });
+  assert.equal(result.ok, true);
 });
 
 test('a source file needs consent and is capped at two; with consent it is passed by id and slot only', async () => {
@@ -79,7 +82,7 @@ test('a refusal from the generation route is passed through untouched', async ()
   }
 });
 
-const EDIT = { clips: [{ asset_id: ASSET, in_s: 0, out_s: 4 }], confirmed_credits: 6, idempotency_key: 'mcp-edit-00001' };
+const EDIT = { clips: [{ asset_id: ASSET, in_s: 0, out_s: 4 }], confirmed_credits: 6, user_approved: true, idempotency_key: 'mcp-edit-00001' };
 
 test('an edit goes to the generation route as the clip editor model, with no sources and no consent', async () => {
   const { result, calls } = await edit({ ...EDIT, audio: { asset_id: ASSET, offset_s: 0 }, captions: { preset: 'simple' }, model_id: 'sora' });
@@ -96,12 +99,11 @@ test('a quote (confirmed 0) returns the route\'s expected price and spends nothi
   assert.deepEqual([result.ok, result.status, result.body.expected_credits], [false, 409, 6]);
 });
 
-test('an edit above the per-call limit is refused, whether confirmed or only quoted', async () => {
-  const cap = MCP_VIDEO_LIMITS.maxCreditsPerCall;
-  const confirmed = await edit({ ...EDIT, confirmed_credits: cap + 1 });
-  assert.deepEqual([confirmed.result.body.error, confirmed.calls.create.length], ['mcp_price_cap', 0]);
-  const quoted = await edit({ ...EDIT, confirmed_credits: 0 }, { created: { status: 409, body: { error: 'credit_confirmation_mismatch', expected_credits: cap + 1 } } });
-  assert.deepEqual([quoted.result.status, quoted.result.body.error, quoted.result.body.expected_credits], [400, 'mcp_price_cap', cap + 1]);
+test('a real charge for an edit needs the user\'s approval, but a quote does not', async () => {
+  const unapproved = await edit({ ...EDIT, user_approved: undefined });
+  assert.deepEqual([unapproved.result.body.error, unapproved.calls.create.length], ['approval_required', 0]);
+  const quote = await edit({ ...EDIT, confirmed_credits: 0, user_approved: undefined }, { created: { status: 409, body: { error: 'credit_confirmation_mismatch', expected_credits: 600 } } });
+  assert.deepEqual([quote.result.status, quote.result.body.expected_credits, quote.calls.create.length], [409, 600, 1]);
 });
 
 test('route refusals for an edit (not owned, not a video, too long) pass through', async () => {
