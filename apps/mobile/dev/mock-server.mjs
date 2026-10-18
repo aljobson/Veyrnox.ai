@@ -143,6 +143,29 @@ createServer(async (req, res) => {
         return send(res, 400, { error: 'invalid_body' });
     }
     if (path === '/api/v1/social/analytics') return send(res, 200, { account: { id: 'acc-1', network: 'instagram', display_name: 'Veyrnox Studio', status: 'active' }, sync: { last_ok_at: '2026-10-18T06:00:00Z', failing: false }, evolution: [{ date: '2026-10-17', metrics: { followers: 1240, reach: 5300 } }, { date: '2026-10-18', metrics: { followers: 1262, reach: 6120, video_views: 880 } }], posts: [{ id: 'ap-1', published_at: '2026-10-17T09:00:00Z', type: 'reel', permalink: 'https://www.instagram.com/p/mock/', caption: 'Behind the scenes cut.', metrics: { likes: 140, comments: 12 } }] });
+    // Workspaces and projects (read-only). The real routes answer errors as {error:{code,message}}, an object.
+    const PROJECTS = [
+        { id: 'c1111111-1111-4111-8111-111111111111', workspace_id: 'w1111111-1111-4111-8111-111111111111', owner_id: 'u1', name: 'Spring launch reel', version: 54, created_at: '2026-10-01T10:00:00Z', updated_at: '2026-10-18T09:00:00Z' },
+        { id: 'c2222222-2222-4222-8222-222222222222', workspace_id: 'w1111111-1111-4111-8111-111111111111', owner_id: 'u1', name: 'Product teaser', version: 3, created_at: '2026-10-10T10:00:00Z', updated_at: '2026-10-12T09:00:00Z' },
+    ];
+    const WORKSPACES = [
+        { id: 'w1111111-1111-4111-8111-111111111111', organisation_id: 'o1', name: 'Studio', is_default: true },
+        { id: 'w2222222-2222-4222-8222-222222222222', organisation_id: 'o1', name: 'Client work', is_default: false },
+    ];
+    if (path === '/api/v1/workspaces' && req.method === 'GET') return send(res, 200, { workspaces: WORKSPACES });
+    if (path === '/api/v1/projects' && req.method === 'GET') {
+        const w = new URL(req.url, 'http://x').searchParams.get('workspace_id');
+        return send(res, 200, { projects: PROJECTS.filter((p) => p.workspace_id === w) });
+    }
+    m = path.match(/^\/api\/v1\/projects\/([^/]+)(\/history)?$/);
+    if (m && req.method === 'GET') {
+        const p = PROJECTS.find((x) => x.id === m[1]);
+        if (!p) return send(res, 404, { error: { code: 'NOT_FOUND', message: 'The resource was not found.', requestId: 'mock' } });
+        if (!m[2]) return send(res, 200, { project: p });
+        const before = Number(new URL(req.url, 'http://x').searchParams.get('before') || p.version + 1);
+        const revs = []; for (let r = Math.min(before - 1, p.version); r >= 1 && revs.length < 50; r--) revs.push({ revision: r, actor_id: 'u1', created_at: new Date(Date.parse(p.updated_at) - (p.version - r) * 3600000).toISOString(), restored_from: r === 40 ? 12 : null });
+        return send(res, 200, { versions: revs, next_before: revs.length === 50 ? revs[49].revision : null });
+    }
     if (path === '/api/presets')
         return send(res, 200, {
             presets: [
