@@ -2,7 +2,7 @@
 
 import { characterOptionLabel } from '../_lib/characterOptions';
 import { CATEGORY_ICONS, SLIDER_SCALES, SWATCHES, sliderPosition, sliderValue, tileFocus, tileKind } from '../_lib/oddlingCatalog';
-import { hairTileSrc } from '../_lib/oddlingHairTiles';
+import { pictureTileSrc } from '../_lib/oddlingPictureTiles';
 import { OddlingMannequin } from './OddlingMannequin';
 
 const legend = 'font-vx-mono text-[9px] font-bold uppercase tracking-[0.12em] text-vx-fg-muted';
@@ -61,7 +61,7 @@ export function TileGroup({ group, picks, value, onChange, categoryId }) {
         </button>
         {group.options.map(([name]) => {
           const on = value === name;
-          const picture = group.id === 'hair' ? hairTileSrc(name) : '';
+          const picture = pictureTileSrc(group.id, name);
           return (
             <button key={name} type="button" onClick={() => onChange(group.id, name)} aria-pressed={on} className={`${tileBase} ${tileTone(on)}`}>
               <span className={`flex w-full items-end justify-center bg-vx-panel px-1 pt-1 ${focus === 'face' ? 'h-28' : 'h-20'}`}>
