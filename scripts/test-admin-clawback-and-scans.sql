@@ -33,6 +33,7 @@ DECLARE
  r JSONB; original_action UUID; original_entry UUID; j1 UUID; j2 UUID; j3 UUID; j4 UUID; jvideo UUID; jlease UUID;
  c RECORD; token UUID; old_token UUID; n INTEGER; b UUID:=gen_random_uuid(); ac UUID:=gen_random_uuid();
  post UUID:=gen_random_uuid(); target UUID:=gen_random_uuid(); claimed RECORD; counts INTEGER[];
+ jscan UUID; post2 UUID:=gen_random_uuid(); target2 UUID:=gen_random_uuid();
 BEGIN
  INSERT INTO auth.users(id,email,email_confirmed_at) VALUES(admin_auth,'scan-admin@test.invalid',NULL),(user_auth,'scan-user@test.invalid',NULL),(sub_auth,'scan-sub@test.invalid',NULL);
  -- Auth hooks may have provisioned shadow users. Never fabricate an unmatched Auth identity.
@@ -155,6 +156,31 @@ BEGIN
   PERFORM pg_temp.check_ok(r->>'ok'='true' AND EXISTS(SELECT 1 FROM public.social_post_targets WHERE id=target
    AND claim_key IS NULL AND claimed_from_status IS NULL AND claimed_attempts IS NULL AND claimed_provider_state IS NULL));
  END LOOP;
+ -- An image whose scan is still undecided is not posted while the scanner is armed (review of #886).
+ jscan:=pg_temp.image(user_id);
+ INSERT INTO public.social_posts(id,brand_id,created_by_user_id,scheduled_at,idempotency_key) VALUES(post2,b,user_id,now()-interval '1 minute','smoke-post-scan');
+ INSERT INTO public.social_post_media(post_id,"position",media_type,source_job_id) VALUES(post2,0,'image',jscan);
+ INSERT INTO public.social_post_targets(id,post_id,account_id,network) VALUES(target2,post2,ac,'threads');
+ UPDATE public.content_scan_monitor SET armed=false,armed_at=NULL WHERE id=1;
+ SELECT * INTO claimed FROM public.claim_due_social_post_targets(5);
+ PERFORM pg_temp.check_ok(claimed.target_id=target2 AND public.social_post_media_unscanned(post2) IS NOT TRUE,'unscanned, scanner disarmed: claimed');
+ UPDATE public.content_scan_monitor SET armed=true,armed_at=now() WHERE id=1;
+ r:=public.authorize_social_target_dispatch(target2,claimed.claim_key);
+ PERFORM pg_temp.check_ok(r->>'code'='MEDIA_SCANNING' AND EXISTS(SELECT 1 FROM public.social_post_targets WHERE id=target2
+  AND publish_status='pending' AND attempts=0 AND claim_key IS NULL),'unscanned, armed: dispatch MEDIA_SCANNING');
+ SELECT count(*) INTO n FROM public.claim_due_social_post_targets(5);
+ PERFORM pg_temp.check_ok(n=0,'unscanned, armed: claim skips');
+ UPDATE public.content_scans SET status='scanning' WHERE job_id=jscan;
+ SELECT count(*) INTO n FROM public.claim_due_social_post_targets(5);
+ PERFORM pg_temp.check_ok(n=0,'scanning, armed: claim skips');
+ UPDATE public.content_scans SET queued_at=now()-interval '61 minutes' WHERE job_id=jscan;
+ SELECT count(*) INTO n FROM public.claim_due_social_post_targets(5);
+ PERFORM pg_temp.check_ok(n=1,'undecided over an hour, armed: fails open');
+ UPDATE public.social_post_targets SET publish_status='pending',claim_key=NULL,claimed_from_status=NULL,claimed_attempts=NULL,claimed_provider_state=NULL,attempts=0 WHERE id=target2;
+ UPDATE public.content_scans SET status='clean',decided_at=now(),queued_at=now() WHERE job_id=jscan;
+ SELECT count(*) INTO n FROM public.claim_due_social_post_targets(5);
+ PERFORM pg_temp.check_ok(n=1,'clean scan, armed: claimed');
+ UPDATE public.content_scan_monitor SET armed=false,armed_at=NULL WHERE id=1;
  jlease:=pg_temp.image(user_id); SELECT * INTO c FROM public.claim_content_scans(5,120); old_token:=c.claim_token;
  UPDATE public.content_scans SET lease_until=now()-interval '1 second' WHERE id=c.id;
  SELECT * INTO c FROM public.claim_content_scans(5,120);

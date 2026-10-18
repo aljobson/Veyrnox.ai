@@ -12,7 +12,7 @@ async function target(state = {}) {
     return { target_id: targetId, account_id: 'account', external_account_id: '12345', network: 'facebook', claim_key: 'claim',
         access_token_enc: await encryptToken('page-token', cryptoCfg), media_type: 'image', r2_key: 'assets/image.jpg', global_text: 'Test', provider_state: state };
 }
-test('native submission is marked before the public request and its result is checkpointed before completion', async () => {
+test('native submission is authorized, then marked, before the public request and its result is checkpointed before completion', async () => {
     const row = await target(), order = []; let saved;
     globalThis.fetch = async (url, init) => {
         const u = new URL(url), name = u.pathname.split('/').pop();
@@ -26,7 +26,7 @@ test('native submission is marked before the public request and its result is ch
         throw new Error(`unexpected request ${name}`);
     };
     assert.equal((await runPublishSweep(deps)).published, 0);
-    assert.deepEqual(order, ['authorize_social_target_dispatch', 'claim_due_social_post_targets', 'authorize_social_target_dispatch', 'mark_social_provider_submission', 'authorize_social_target_dispatch', 'photos', 'report_social_post_progress']);
+    assert.deepEqual(order, ['authorize_social_target_dispatch', 'claim_due_social_post_targets', 'authorize_social_target_dispatch', 'authorize_social_target_dispatch', 'mark_social_provider_submission', 'photos', 'report_social_post_progress']);
     assert.equal(saved.result.platformPostId, '12345_67890');
     row.provider_state = saved; order.length = 0;
     assert.equal((await runPublishSweep(deps)).published, 1);
