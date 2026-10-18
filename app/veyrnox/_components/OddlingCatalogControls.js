@@ -2,6 +2,7 @@
 
 import { characterOptionLabel } from '../_lib/characterOptions';
 import { CATEGORY_ICONS, SLIDER_SCALES, SWATCHES, sliderPosition, sliderValue, tileFocus, tileKind } from '../_lib/oddlingCatalog';
+import { hairTileSrc } from '../_lib/oddlingHairTiles';
 import { OddlingMannequin } from './OddlingMannequin';
 
 const legend = 'font-vx-mono text-[9px] font-bold uppercase tracking-[0.12em] text-vx-fg-muted';
@@ -45,7 +46,7 @@ export function SliderGroup({ group, picks, onChange }) {
   );
 }
 
-/** Everything else: a grid of tiles. Hair, outfit, body and headwear draw the option on the figure; the rest show a plain icon tile. */
+/** Everything else: a grid of tiles. Hair shows a picture of the style when it has one; hair without a picture, outfit, body and headwear draw the option on the figure; the rest show a plain icon tile. */
 export function TileGroup({ group, picks, value, onChange, categoryId }) {
   const drawn = tileKind(group.id) === 'mannequin';
   const focus = tileFocus(group.id);
@@ -60,10 +61,13 @@ export function TileGroup({ group, picks, value, onChange, categoryId }) {
         </button>
         {group.options.map(([name]) => {
           const on = value === name;
+          const picture = group.id === 'hair' ? hairTileSrc(name) : '';
           return (
             <button key={name} type="button" onClick={() => onChange(group.id, name)} aria-pressed={on} className={`${tileBase} ${tileTone(on)}`}>
               <span className={`flex w-full items-end justify-center bg-vx-panel px-1 pt-1 ${focus === 'face' ? 'h-28' : 'h-20'}`}>
-                {drawn
+                {picture
+                  ? <img src={picture} alt="" width={256} height={256} loading="lazy" decoding="async" className="h-full w-full rounded-md object-cover" />
+                  : drawn
                   ? <OddlingMannequin picks={{ ...picks, [group.id]: name }} focus={focus} />
                   : <span className="mb-3 grid h-11 w-11 place-items-center rounded-full border border-vx-border text-vx-fg-muted" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d={icon} /></svg></span>}
               </span>
