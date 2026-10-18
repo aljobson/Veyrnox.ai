@@ -122,7 +122,7 @@ test('Token review preserves comment after synthetic save failure then acknowled
   await expect(page.getByRole('alert').filter({ hasText: 'Your decision could not be saved.' })).toBeVisible();
   await expect(comment).toHaveValue('Synthetic reviewer comment');
   await page.getByRole('button', { name: 'Approve', exact: true }).click();
-  await expect(page.getByRole('status')).toHaveText('Your decision: approved. Request status: approved.');
+  await expect(page.getByRole('status')).toHaveText('Your decision: Approved. Request status: Approved.');
   expect(productWrites(fixture).map(r => r.body)).toEqual(Array(2).fill({ decision: 'approved', comment: 'Synthetic reviewer comment' }));
 });
 
