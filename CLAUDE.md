@@ -49,7 +49,7 @@ If a build starts failing after a dependency change, bisect these three first.
 - **Balance invariant**: `credit_balances.balance = SUM(ledger_entries.delta)`
   per `user_id`. Every mutation goes through `ledger_debit` / `ledger_refund` /
   `ledger_grant` / `signup_grant` / `expire_free_credits` / `credit_top_up` /
-  `apply_top_up_refund` / `subscription_grant` / `expire_subscription_credits` /
+  `apply_top_up_refund` / `admin_credit_clawback_guarded` / `subscription_grant` / `expire_subscription_credits` /
   `reverse_subscription_grant` / `referral_sweep` (ADR-0071: grants through `ledger_grant`,
   clawbacks as `reverse:referral`) RPC — never a raw `INSERT INTO ledger_entries` or a raw
   `UPDATE credit_balances`.
