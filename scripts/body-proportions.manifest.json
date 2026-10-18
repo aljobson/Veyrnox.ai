@@ -65,6 +65,15 @@
       "styles": [
         "Long Torso"
       ]
+    },
+    {
+      "file": "tiny-hands.png",
+      "rows": [
+        1
+      ],
+      "styles": [
+        "Tiny Hands"
+      ]
     }
   ]
 }
