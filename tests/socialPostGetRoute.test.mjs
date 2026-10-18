@@ -15,7 +15,7 @@ const ownerAuth = '66666666-6666-4666-8666-666666666666';
 const brandId = '22222222-2222-4222-8222-222222222222';
 const postId = '55555555-5555-4555-8555-555555555555';
 const post = {
-    id: postId, status: 'scheduled', scheduled_at: '2026-11-01T10:00:00Z', global_text: 'hi', created_at: '2026-10-18T10:00:00Z',
+    id: postId, status: 'scheduled', scheduled_at: '2026-11-01T10:00:00Z', global_text: 'hi', created_at: '2026-10-18T10:00:00Z', updated_at: '2026-10-18T10:05:00Z',
     media: [{ media_type: 'image' }],
     targets: [{ id: 't1', account_id: 'a1', network: 'instagram', publish_status: 'pending' }],
 };
@@ -111,6 +111,7 @@ test('GET /posts/:id: the body carries no token or credential field', async () =
 
 test('0352 get_social_post is brand-scoped, definer-safe and service_role only', async () => {
     const sql = await readFile(new URL('../packages/db/schema/supabase/0352_get_social_post.sql', import.meta.url), 'utf8');
+    assert.match(sql, /'updated_at',p\.updated_at/);
     assert.match(sql, /SECURITY DEFINER SET search_path=''/);
     assert.match(sql, /p\.id=p_post_id AND p\.brand_id=p_brand_id/);
     assert.match(sql, /REVOKE ALL ON FUNCTION public\.get_social_post\(TEXT,UUID,UUID\) FROM PUBLIC,anon,authenticated/);

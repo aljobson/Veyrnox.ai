@@ -9,7 +9,7 @@ BEGIN
   SELECT u.id INTO v_user FROM public.users u JOIN auth.users a ON a.id=p_auth_id::UUID WHERE u.auth_id=p_auth_id;
   IF v_user IS NULL THEN RETURN jsonb_build_object('ok',false,'code','USER_NOT_FOUND');END IF;
   IF NOT EXISTS(SELECT 1 FROM public.social_brands b WHERE b.id=p_brand_id AND b.owner_user_id=v_user) THEN RETURN jsonb_build_object('ok',false,'code','BRAND_NOT_FOUND');END IF;
-  SELECT jsonb_build_object('id',p.id,'status',p.status,'scheduled_at',p.scheduled_at,'global_text',p.global_text,'created_at',p.created_at,
+  SELECT jsonb_build_object('id',p.id,'status',p.status,'scheduled_at',p.scheduled_at,'global_text',p.global_text,'created_at',p.created_at,'updated_at',p.updated_at,
       'media',coalesce((SELECT jsonb_agg(jsonb_strip_nulls(jsonb_build_object('media_type',m.media_type,'job_id',m.source_job_id,'upload_id',m.source_upload_id)) ORDER BY m.position) FROM public.social_post_media m WHERE m.post_id=p.id),'[]'::jsonb),
       'targets',coalesce((SELECT jsonb_agg(jsonb_strip_nulls(jsonb_build_object('id',t.id,'account_id',t.account_id,'network',t.network,'text_override',t.text_override,'publish_status',t.publish_status,'platform_post_url',t.platform_post_url,'last_error',t.last_error)) ORDER BY t.network) FROM public.social_post_targets t WHERE t.post_id=p.id),'[]'::jsonb))
     INTO v_row FROM public.social_posts p WHERE p.id=p_post_id AND p.brand_id=p_brand_id;
