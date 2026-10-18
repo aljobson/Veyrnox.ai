@@ -1,3 +1,4 @@
+import { aiConsent } from './aiConsentStore';
 import { appCache } from './appCache';
 import { POLICIES, type CacheMeta } from './cache';
 import { ensureOnline, observe } from './network';
@@ -124,6 +125,9 @@ export interface GenerationRequest {
 export const mediaApi = (api: ApiClient) => ({
     createGeneration: async (r: GenerationRequest) => {
         await ensureOnline();
+        // Ask first, so the consent sent with a file below is the person's stored agreement and never assumed.
+        await aiConsent.ensure('/api/v1/generations', 'POST');
+        const agreed = await aiConsent.hasAgreed();
         return api.request<{ job_id: string; balance_after?: number }>('/api/v1/generations', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -133,7 +137,7 @@ export const mediaApi = (api: ApiClient) => ({
                 confirmed_credits: r.confirmedCredits,
                 inputs: { ...(r.prompt ? { [r.textKey ?? 'prompt']: r.prompt } : {}), ...(r.durationSeconds ? { duration_seconds: r.durationSeconds } : {}) },
                 // The server refuses uploaded sources without consent to send them to the provider.
-                ...(r.sources?.length ? { source_keys: r.sources, consent: true } : {}),
+                ...(r.sources?.length ? { source_keys: r.sources, consent: agreed } : {}),
             }),
         });
     },

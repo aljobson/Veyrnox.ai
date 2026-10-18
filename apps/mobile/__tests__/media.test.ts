@@ -1,6 +1,8 @@
 import { estimateCredits, fetchCatalog, isSupported, kindOf, promptRequired, textInput, mediaApi, waitForJob, type CatalogModel } from '../src/lib/media';
 import type { ApiClient } from '../src/lib/api';
 
+jest.mock('../src/lib/aiConsentStore', () => ({ aiConsent: { ensure: async () => undefined, hasAgreed: async () => true } }));
+
 const model = (over: Partial<CatalogModel> = {}): CatalogModel => ({
     id: 'm', name: 'M', modality: 'text-to-video', credits: 3, gated: false, durations: [5, 10],
     capabilities: { inputs: { prompt: { type: 'string' } }, media: {} }, ...over,

@@ -4,6 +4,16 @@ import { ApiError } from './api';
 // provider for the first time, it asks, once per wording version and account. Declining sends nothing. The gate sits
 // in the API client, so no screen can reach a provider without it. The server's own `consent: true` on uploaded
 // sources (ADR-0094, aup-2026-09-26) is separate and unchanged.
+// Thrown before a call leaves the phone when the person answered "Not now". Screens map it to one specific message.
+export class ConsentDeclinedError extends ApiError {
+    constructor() {
+        super(400, 'consent_declined');
+        this.name = 'ConsentDeclinedError';
+    }
+}
+
+export const CONSENT_DECLINED_MESSAGE = 'You need to accept to use AI features. Nothing was sent and you were not charged.';
+
 export const AI_CONSENT_VERSION = 'ai-share-2026-10-18';
 
 export const AI_CONSENT_TEXT = {
@@ -31,6 +41,7 @@ export function sendsContent(path: string, method: string): boolean {
 export interface ConsentStorage {
     get(key: string): Promise<string | null>;
     set(key: string, value: string): Promise<void>;
+    remove(key: string): Promise<void>;
 }
 
 export interface ConsentGate {
@@ -40,6 +51,8 @@ export interface ConsentGate {
     ensure(path: string, method: string): Promise<void>;
     // Whether this account has agreed under the current wording (false while signed out).
     hasAgreed(): Promise<boolean>;
+    // Sign-out and account deletion: deletes this account's stored agreement and forgets the account.
+    forget(): Promise<void>;
 }
 
 export function createConsentGate(storage: ConsentStorage): ConsentGate {
@@ -58,11 +71,16 @@ export function createConsentGate(storage: ConsentStorage): ConsentGate {
             ask = fn;
         },
         hasAgreed: async () => (userId ? agreed(userId) : false),
+        async forget() {
+            const id = userId;
+            userId = null;
+            if (id) await storage.remove(keyFor(id)).catch(() => undefined);
+        },
         async ensure(path, method) {
             if (!sendsContent(path, method)) return;
             const id = userId;
             // No known account or no screen to ask on: refuse rather than send without asking.
-            if (!id || !ask) throw new ApiError(400, 'consent_declined');
+            if (!id || !ask) throw new ConsentDeclinedError();
             if (await agreed(id)) return;
             // Two sends at once share one question, and the answer is stored before either goes on.
             pending ??= ask()
@@ -73,7 +91,7 @@ export function createConsentGate(storage: ConsentStorage): ConsentGate {
                 .finally(() => {
                     pending = null;
                 });
-            if (!(await pending)) throw new ApiError(400, 'consent_declined');
+            if (!(await pending)) throw new ConsentDeclinedError();
         },
     };
 }

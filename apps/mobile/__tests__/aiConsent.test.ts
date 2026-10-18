@@ -1,9 +1,9 @@
-import { ApiError } from '../src/lib/api';
-import { AI_CONSENT_TEXT, createConsentGate, sendsContent, type ConsentStorage } from '../src/lib/aiConsent';
+import { ApiError, createApiClient } from '../src/lib/api';
+import { AI_CONSENT_TEXT, CONSENT_DECLINED_MESSAGE, ConsentDeclinedError, createConsentGate, sendsContent, type ConsentStorage } from '../src/lib/aiConsent';
 
 const memory = (): ConsentStorage & { map: Map<string, string> } => {
     const map = new Map<string, string>();
-    return { map, get: async (k) => map.get(k) ?? null, set: async (k, v) => void map.set(k, v) };
+    return { map, get: async (k) => map.get(k) ?? null, set: async (k, v) => void map.set(k, v), remove: async (k) => void map.delete(k) };
 };
 
 describe('which calls carry content', () => {
@@ -82,7 +82,7 @@ describe('the gate', () => {
     });
 
     test('a storage failure re-asks instead of sending silently', async () => {
-        const gate = createConsentGate({ get: async () => { throw new Error('x'); }, set: async () => { throw new Error('x'); } });
+        const gate = createConsentGate({ get: async () => { throw new Error('x'); }, set: async () => { throw new Error('x'); }, remove: async () => { throw new Error('x'); } });
         const ask = jest.fn(async () => true);
         gate.setUser('u');
         gate.setPrompter(ask);
@@ -95,4 +95,71 @@ describe('the gate', () => {
 test('the wording names third-party AI providers and offers Not now', () => {
     expect(AI_CONSENT_TEXT.body).toMatch(/third-party AI providers/);
     expect(AI_CONSENT_TEXT.decline).toBe('Not now');
+});
+
+test('declining throws the typed error with the specific message', async () => {
+    const gate = createConsentGate(memory());
+    gate.setUser('u');
+    gate.setPrompter(async () => false);
+    const err = await gate.ensure('/api/v1/generations', 'POST').catch((e) => e);
+    expect(err).toBeInstanceOf(ConsentDeclinedError);
+    expect(err).toBeInstanceOf(ApiError);
+    expect(CONSENT_DECLINED_MESSAGE).toMatch(/You need to accept to use AI features/);
+});
+
+test('sign-out forgets the agreement: the same account is asked again next time', async () => {
+    const storage = memory();
+    const gate = createConsentGate(storage);
+    const ask = jest.fn(async () => true);
+    gate.setUser('u');
+    gate.setPrompter(ask);
+    await gate.ensure('/api/v1/generations', 'POST');
+    expect(storage.map.size).toBe(1);
+    await gate.forget();
+    expect(storage.map.size).toBe(0);
+    expect(await gate.hasAgreed()).toBe(false);
+    gate.setUser('u');
+    await gate.ensure('/api/v1/generations', 'POST');
+    expect(ask).toHaveBeenCalledTimes(2);
+});
+
+describe('every AI POST goes through the gate in the real client', () => {
+    const fetchMock = jest.fn();
+    beforeEach(() => {
+        fetchMock.mockReset();
+        fetchMock.mockResolvedValue(new Response('{}', { status: 200 }));
+        globalThis.fetch = fetchMock as unknown as typeof fetch;
+    });
+
+    const post = { method: 'POST' };
+    const calls: [string, (api: ReturnType<typeof createApiClient>, p: string) => Promise<unknown>][] = [
+        ['/api/v1/generations', (api, p) => api.request(p, post)],
+        ['/api/v1/uploads', (api, p) => api.request(p, post)],
+        ['/api/v1/montage/plan', (api, p) => api.request(p, post)],
+        ['/api/v1/chat/threads/11111111-1111-4111-8111-111111111111/messages', (api, p) => api.stream(p, post)],
+    ];
+
+    test.each(calls)('%s is blocked until the person agrees, then goes through', async (path, send) => {
+        const gate = createConsentGate(memory());
+        gate.setUser('u');
+        let answer = false;
+        gate.setPrompter(async () => answer);
+        const api = createApiClient({ baseUrl: 'https://x.test', getAccessToken: async () => 'tok', onSessionLost: jest.fn(), beforeSend: gate.ensure });
+        await expect(send(api, path)).rejects.toBeInstanceOf(ConsentDeclinedError);
+        expect(fetchMock).not.toHaveBeenCalled();
+        answer = true;
+        await send(api, path);
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    test('reads are never gated', async () => {
+        const gate = createConsentGate(memory());
+        const ask = jest.fn(async () => false);
+        gate.setUser('u');
+        gate.setPrompter(ask);
+        const api = createApiClient({ baseUrl: 'https://x.test', getAccessToken: async () => 'tok', onSessionLost: jest.fn(), beforeSend: gate.ensure });
+        await api.request('/api/v1/balance');
+        await api.request('/api/v1/chat/threads');
+        expect(ask).not.toHaveBeenCalled();
+    });
 });

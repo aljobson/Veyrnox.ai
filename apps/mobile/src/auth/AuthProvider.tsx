@@ -65,7 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const drop = useCallback(async () => {
         sessionRef.current = null;
-        aiConsent.setUser(null);
+        await aiConsent.forget();
         await wipeCache().catch(() => undefined);
         await clearRefreshToken();
         setStatus('signedOut');

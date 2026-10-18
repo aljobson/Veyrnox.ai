@@ -3,6 +3,8 @@ import { mediaApi } from '../src/lib/media';
 import { approvePlan, planMessage, type Plan } from '../src/lib/montage';
 import { OFFLINE_PAID_MESSAGE, OfflineError, ensureOnline, isOffline, markOffline, resetNetworkState } from '../src/lib/network';
 
+jest.mock('../src/lib/aiConsentStore', () => ({ aiConsent: { ensure: async () => undefined, hasAgreed: async () => true } }));
+
 const plan = { idempotencyKey: 'k', expiresAt: Date.now() + 60_000 } as unknown as Plan;
 const request = jest.fn();
 const api = { request } as unknown as ApiClient;
