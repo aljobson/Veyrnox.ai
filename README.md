@@ -2,7 +2,6 @@
 
 A credit-metered AI generation platform. Users spend credits to generate images, video and voice; every spend goes through an append-only ledger, so a balance can always be proven from its history.
 
-Built from a fork of [Open-Generative-AI](https://github.com/Anil-matcha/Open-Generative-AI) (MIT). The legacy studio code was later extracted ([ADR-0015](docs/adr/0015-legacy-studio-extraction.md)); the money path, gateway and catalog are Veyrnox's own.
 
 ## Status
 
