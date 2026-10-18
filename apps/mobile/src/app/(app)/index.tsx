@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Link, Stack } from 'expo-router';
+import { Link, Stack, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../auth/AuthProvider';
 import { useBilling } from '../../billing/BillingProvider';
 import { Logo } from '../../components/Logo';
@@ -22,9 +22,12 @@ export default function Home() {
         }
     }, [api]);
 
-    useEffect(() => {
-        void load();
-    }, [load]);
+    // On every return to Home, so a purchase or a creation made elsewhere shows at once.
+    useFocusEffect(
+        useCallback(() => {
+            void load();
+        }, [load]),
+    );
 
     return (
         <View style={styles.screen}>
