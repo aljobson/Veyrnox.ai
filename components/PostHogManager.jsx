@@ -20,12 +20,24 @@ const forceConsentedReplay = normaliseReplaySampleRate(process.env.NEXT_PUBLIC_P
 const signedInAccount = () => getSession()?.user?.id || null;
 const signedOutAccount = () => null;
 
+// The "Privacy choices" button hides once the visitor has answered, for the rest
+// of this browser session. It is keyed to the account, so signing in or out
+// brings it back. The choice itself stays in localStorage.
+const DISMISSED_KEY = 'veyrnox_privacy_choices_dismissed';
+const readDismissedFor = () => {
+  try { return window.sessionStorage.getItem(DISMISSED_KEY); } catch { return null; }
+};
+const writeDismissedFor = (account) => {
+  try { window.sessionStorage.setItem(DISMISSED_KEY, account); } catch { /* private mode: button just stays visible */ }
+};
+
 export default function PostHogManager() {
   const posthog = usePostHog();
   const pathname = usePathname() || '/';
   const accountId = useSyncExternalStore(onSessionChange, signedInAccount, signedOutAccount);
   const [preference, setPreference] = useState(undefined);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [dismissedFor, setDismissedFor] = useState(null);
   const previousAccount = useRef(null);
 
   useEffect(() => {
@@ -41,6 +53,7 @@ export default function PostHogManager() {
       const next = readAnalyticsPreference(window.localStorage);
       if (next) setPreference(next);
     };
+    setDismissedFor(readDismissedFor());
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
   }, [posthog]);
@@ -130,9 +143,12 @@ export default function PostHogManager() {
     }
     setPreference(saved);
     setSettingsOpen(false);
+    writeDismissedFor(accountId || '');
+    setDismissedFor(accountId || '');
   }
 
   const bannerOpen = preference === null || settingsOpen;
+  const buttonHidden = dismissedFor !== null && dismissedFor === (accountId || '');
   if (preference === undefined) return null;
 
   return (
@@ -165,7 +181,7 @@ export default function PostHogManager() {
             </div>
           </div>
         </section>
-      ) : (
+      ) : buttonHidden ? null : (
         <button
           data-print="hide"
           type="button"
