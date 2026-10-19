@@ -7,6 +7,60 @@ export interface ChatModel {
     readonly maker_label: string;
     readonly credits_per_reply: number;
     readonly gated: boolean;
+    // What the model offers on top of a plain reply, and what each costs (GET /api/v1/chat/models, ADR-0067).
+    // Absent or null means not offered. Deep research is not read here: it is off in production.
+    readonly options?: ChatModelOptions;
+}
+
+export interface ChatOptionOffer {
+    readonly extra_credits: number;
+}
+
+export interface ChatModelOptions {
+    readonly thinking?: ChatOptionOffer | null;
+    readonly web?: ChatOptionOffer | null;
+    readonly images?: ChatOptionOffer | null;
+}
+
+// The two per-message choices sent as `options`. Thinking and Web can be on together.
+export interface ReplyOptions {
+    readonly thinking: boolean;
+    readonly web: boolean;
+}
+
+export const NO_OPTIONS: ReplyOptions = { thinking: false, web: false };
+
+const extraOf = (offer: ChatOptionOffer | null | undefined): number | null =>
+    offer && Number.isInteger(offer.extra_credits) && offer.extra_credits > 0 ? offer.extra_credits : null;
+
+export const thinkingExtra = (m: ChatModel): number | null => extraOf(m.options?.thinking);
+export const webExtra = (m: ChatModel): number | null => extraOf(m.options?.web);
+
+// Drops a choice the model does not offer, so a model change cannot leave a price on a switch that is gone.
+export function cleanOptions(model: ChatModel, options: ReplyOptions): ReplyOptions {
+    return { thinking: options.thinking && thinkingExtra(model) !== null, web: options.web && webExtra(model) !== null };
+}
+
+// Credits for one reply: the catalog base plus the catalog extra for each choice made. This only adds what the server
+// listed; the server prices the turn itself (lib/chat.js replyPrice) and charges that.
+export function replyPrice(model: ChatModel, options: ReplyOptions): number {
+    const o = cleanOptions(model, options);
+    return model.credits_per_reply + (o.thinking ? (thinkingExtra(model) ?? 0) : 0) + (o.web ? (webExtra(model) ?? 0) : 0);
+}
+
+export const optionsKey = (o: ReplyOptions): string => `${o.thinking ? 't' : ''}${o.web ? 'w' : ''}`;
+
+// A retry of the same message with the same choices reuses its key, so the server charges it once. A different text
+// or different choices are a different send and get a new key.
+export interface PendingSend {
+    readonly text: string;
+    readonly options: string;
+    readonly key: string;
+}
+
+export function sendKeyFor(previous: PendingSend | null, text: string, options: ReplyOptions, make: () => string): PendingSend {
+    const sig = optionsKey(options);
+    return previous && previous.text === text && previous.options === sig ? previous : { text, options: sig, key: make() };
 }
 
 export interface ChatThread {
@@ -71,11 +125,18 @@ export const chatApi = (api: ApiClient) => ({
 
     // Sends one message and reports each server event as it arrives. Resolves when the stream ends.
     // The same idempotencyKey must be reused when retrying the same message: the server charges it once.
-    async sendMessage(threadId: string, text: string, idempotencyKey: string, onEvent: (e: TurnEvent) => void, signal?: AbortSignal) {
+    async sendMessage(
+        threadId: string,
+        text: string,
+        idempotencyKey: string,
+        onEvent: (e: TurnEvent) => void,
+        signal?: AbortSignal,
+        options: ReplyOptions = NO_OPTIONS,
+    ) {
         const res = await api.stream(`/api/v1/chat/threads/${encodeURIComponent(threadId)}/messages`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
-            body: JSON.stringify({ text, idempotency_key: idempotencyKey }),
+            body: JSON.stringify({ text, idempotency_key: idempotencyKey, options: { thinking: options.thinking, web: options.web } }),
             signal,
         });
         if (!res.ok) {
