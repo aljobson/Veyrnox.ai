@@ -108,6 +108,7 @@ export async function installProductFixtures(page, options = {}) {
       }
       if (method === 'GET') {
         if (url.pathname === '/api/catalog') return json({ models: options.models || SYNTHETIC_MODELS });
+        if (url.pathname === '/api/status') return json({ status: 'ok', checkedAt: Date.now() });
         if (url.pathname === '/api/v1/account') return state.user ? json({ email: state.user.email, credits: state.balance, balance: state.balance, assets: 0 }) : json({ error: 'not_authenticated' }, 401);
         if (url.pathname === '/api/v1/balance') return state.user ? json({ balance: state.balance }) : json({ error: 'not_authenticated' }, 401);
         if (url.pathname === '/api/v1/free-allowance') return json({ enabled: false, left: {} });
