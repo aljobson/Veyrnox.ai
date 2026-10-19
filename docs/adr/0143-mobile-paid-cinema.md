@@ -1,6 +1,6 @@
 # ADR-0143 — Mobile: paid Cinema through in-app purchase (M12)
 
-**Status:** Accepted with open checks, 2026-10-19 (owner answers recorded below; three items are recommendations still **awaiting the owner**, and the in-store setup has not been started). **Docs only: no code, no flag, no migration.**
+**Status:** Accepted with open checks, 2026-10-19 (all owner answers recorded below; the in-store setup has not been started). **Docs only: no code, no flag, no migration.**
 **Related:** [ADR-0057](0057-cinema-viewer-paywall.md) (Pass, unlocks, and its "Proposed: $9.99 monthly Pass only" amendment), [ADR-0064](0064-core-subscriptions.md) (credit subscriptions), [ADR-0108](0108-mobile-store-billing.md) (store billing, credit packs), [ADR-0109](0109-mobile-publish-plan-and-store-catalog.md) (store subscriptions for Publish, the pattern this follows), [ADR-0106](0106-mobile-app.md), `docs/mobile/ROADMAP-2026-10-17.md` (decision 4, M12), `docs/mobile/RESEARCH-competitors-2026-10-17.md`
 
 ## Questions for the owner
@@ -19,21 +19,21 @@ Each had a recommendation. The owner's answers are recorded in the next section;
 
 ## Owner answers (2026-10-19)
 
-The owner's replies, quoted as relayed in chat, and what each means here. Only the rows marked **accepted** are the owner's decision; the rest are recommendations the owner has not yet confirmed.
+The owner's replies, quoted as relayed in chat, and what each means here. Rows marked **accepted** are the owner's decisions.
 
 | # | Owner's words | State | What it means |
 |---|---|---|---|
 | 1 | "accept web terms" | **Accepted by owner** | The mobile Pass uses the web terms: $9.99 monthly, 1,500-minute ceiling, 30% creator share (ADR-0057 amendment). |
-| 2 | "I am not sure if this is for AI generation or cinema pass" | **Recommended, awaiting owner** | Parity at $9.99 applies to the **Cinema Pass only**. AI generation keeps the credit packs and Publish keeps its own plan; both are unchanged by this ADR. |
+| 2 | "I am not sure if this is for AI generation or cinema pass" | **Accepted by owner, 2026-10-19: parity** | Parity at $9.99 applies to the **Cinema Pass only**. AI generation keeps the credit packs and Publish keeps its own plan; both are unchanged by this ADR. |
 | 3 | "agreed" | **Accepted by owner** | Unlocks are 6-credit spends with no new SKU, and credits are shared across web and phone. **Check still open:** that Apple's multiplatform-service rule (3.1.3(b)) allows spending web-bought credits in the app has not been verified (see the unproven table). |
 | 4 | "agree" | **Accepted by owner** | Monthly Pass only in the store. |
 | 5 | "agree" | **Accepted by owner** | No credit subscriptions in M12. |
-| 6 | "which store (Cinema / AI generation / Publish)??" | **Recommended, awaiting owner** | No introductory offer or free trial, for the **Cinema Pass only** (it says nothing about the other two). |
+| 6 | "which store (Cinema / AI generation / Publish)??" then "No" | **Accepted by owner, 2026-10-19: no offer** | No introductory offer or free trial, for the **Cinema Pass only** (it says nothing about the other two). |
 | 7 | "confirm" | **Accepted by owner** | The creator share is taken on store revenue after the store's commission. The final rule belongs to the separate creator-payout ADR. |
-| 8 | "give guidance here" | **Recommended, awaiting owner** | See the refund guidance below. |
+| 8 | "give guidance here", then "correct" | **Accepted by owner, 2026-10-19** | See the refund guidance below. EU and UK withdrawal wording still needs Legal sign-off. |
 | 9 | "nothing is stitched yet" | Not started | See the owner checklist below. |
 
-### Refund and withdrawal guidance (question 8, recommended)
+### Refund and withdrawal guidance (question 8, accepted)
 
 - **Store purchases defer to the store's own refund policy.** On Apple that is `reportaproblem.apple.com`; on Google Play it is Play's own refund flow. The app does not process, promise or describe its own refund for a store purchase.
 - **The 14-day pro-rata refund promise stays web-only** (ADR-0057). It is not shown anywhere in the phone app.
@@ -106,7 +106,7 @@ Same webhook, same evidence (RevenueCat's signed event), same secret customer id
 
 Each step is its own PR, mock or Test Store first, and nothing is switched on in production.
 
-1. **Owner:** the checklist above (agreement state, the subscription product, the RevenueCat key, entitlement and offering, Small Business Program, a production slot); confirmation of the rows marked awaiting.
+1. **Owner:** the checklist above (agreement state, the subscription product, the RevenueCat key, entitlement and offering, Small Business Program, a production slot); Legal sign-off on EU and UK withdrawal wording.
 2. **Server:** the migration and `apply_store_cinema_pass_event`, the webhook mapping, the product table seeded for iOS, and acceptance tests on local Postgres in the pattern of 0346 (fresh schema, replay, out-of-order, duplicate source, refund, `reconcile_*` empty). Staging only.
 3. **App, read side:** entitlement and locked-title states, and unlock with credits, against the existing routes (works on staging today, no store involved).
 4. **App, Pass:** the Pass screen and purchase through the RevenueCat SDK on the Test Store, then the sandbox; polling and the "processing" state.

@@ -61,17 +61,38 @@ Order matters; N1 runs alone because it rewrites shared layout files.
 | D3 Android parity pass and Play internal testing | Checks 1 to 9 and 13 to 16 pass on a Pixel-class phone |
 | D4 Public store release | Owner decision; privacy label and Data safety forms match section 6 of the M7 checklist |
 
-## 6. Track E: after the first release
+## 6. Track E: spikes (before the parity phases they gate)
 
-| Work | Gate |
-|------|------|
-| Film Studio runs | A route survey note first, then a slice |
-| Paid Cinema (Pass, unlocks, credit subscriptions) in the app | Own ADR and in-app purchase plan first (server S5) |
-| Publish extras (queues, inbox) | Owner decision on whether they belong on the phone |
-| Oddlings screen | Owner decision |
-| Light theme | Owner decision |
+Run on a real iPhone and a mid-range Android phone. Pass criteria are in PARITY section 7.
 
-## 7. Risks
+| Spike | Gates |
+|-------|-------|
+| S1 Web editor in a web view, export 1080p | The editor approach (phase P4) |
+| S2 Passkeys on a native build | Passkey sign-in (P7) |
+| S3 Resumable 1 GB upload | Creator upload (P6) |
+| S4 Import shared web logic | Film Studio and Oddlings (P8) |
+| S5 to S7 Chat attachment, long chat turn, draw mask | P2, P3 |
+| S8 Film 16:9 master on device | Film Studio master (P8) |
+| S9 Enhance on device | After the web decision |
+
+## 7. Track F: parity phases (owner rule, 2026-10-19: every web feature on the phone)
+
+Detail, sizes and per-feature status are in [../PARITY-2026-10-19.md](../PARITY-2026-10-19.md). Phases run in this order; a phase never starts while another mobile PR touches the same screens. At most two mobile sessions work at once, in separate folders, and only one edits the tab shell.
+
+| Phase | Scope | Exit gate |
+|-------|-------|-----------|
+| P1 | Navigation and first run, N1 to N8 (Track B) | Every screen reachable; a new person completes the walkthrough |
+| P2 | Create and Library parity: options (aspect, seed, negative, count), Library source picker, filters, favourites, provenance, "Schedule this", clip edit add-audio and stems, Explore and presets | Each feature matches the web's behaviour on staging |
+| P3 | Chat parity: per-message options, image attachments, stop, regenerate, rename and pin, Studio skills, Vey help | Spikes S5 and S6 pass; one charge on replay |
+| P4 | Editor, per the S1 outcome | The web editor's feature areas work on a phone with a thumb; export passes the frame and audio checks |
+| P5 | Publish parity in the order of the Publish audit: composer, disconnect, month view and analytics ranges, drafts and approvals, team, queues and autolists, reports, SmartLinks, then uploads, inbox, ads, commerce, developer keys, more networks | One real post per released network from the phone |
+| P6 | Cinema parity: entitlements, tabs, discovery, share, saved and follows, winners, voting, polls; unlocks; Pass through in-app purchase; creator suite; upload; notifications | Screens verified on staging with flags on; paid access under App Store 3.1.1 |
+| P7 | Account and platform: two-factor, password, devices, passkeys, magic link, brand kit, review links, grants, developer, search, catalogue pages, analytics decision, privacy export | Every web account control has a phone equivalent |
+| P8 | Film Studio, Oddlings, Face Filters; Enhance after the web decision | Spikes S4, S8 pass |
+
+**Owner decision 2026-10-19: the first public store release is full parity (all of P1 to P8), including creator tools.** TestFlight and Play internal builds still ship as milestones after each phase. Creator-uploaded video needs a written App Store 1.2 and Play AI-content plan before any submission.
+
+## 8. Risks
 
 1. **Store review on content:** Apple 1.2 and the Google AI-content policy. Block, report and consent are built; paid Cinema and anything new that shows other people's content re-opens it.
 2. **Billing cap:** production vars are at the binding limit; every new server flag needs a slot first.
