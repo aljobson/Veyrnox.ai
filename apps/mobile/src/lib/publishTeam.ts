@@ -1,7 +1,7 @@
 import { ApiError, type ApiClient } from './api';
 import { brandStore } from './publishBrand';
 
-// ADR-0151: team members and the activity log, read-only. Both routes answer 404 `teams_not_open` while the server flag
+// ADR-0163: team members and the activity log, read-only. Both routes answer 404 `teams_not_open` while the server flag
 // is off, and 403 unless the person is an owner or manager of the brand. Invitation links are never read or shown.
 
 const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v : null);

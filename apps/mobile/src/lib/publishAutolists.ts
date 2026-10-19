@@ -1,6 +1,6 @@
 import { ApiError, type ApiClient } from './api';
 
-// ADR-0151: RSS autolists. A feed's new items become posts in a queue. The server checks the feed address, so the
+// ADR-0163: RSS autolists. A feed's new items become posts in a queue. The server checks the feed address, so the
 // phone only requires https. Routes answer 404 `autolists_not_open` while the flag is off.
 
 const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v : null);

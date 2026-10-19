@@ -400,7 +400,7 @@ const en = {
     'comments.err.invalid': 'That could not be sent. Check it and try again.',
     'comments.err.later': 'Comments are not available right now. Try again later.',
     'comments.err.network': 'No connection. Nothing was sent. Try again.',
-    // App-only: Publish team, activity log, queues and RSS autolists (parity P5, ADR-0151).
+    // App-only: Publish team, activity log, queues and RSS autolists (parity P5, ADR-0163).
     'team.title': 'Team',
     'team.intro': 'People who can work in {brand}.',
     'team.members': 'Members',

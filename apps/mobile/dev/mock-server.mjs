@@ -192,7 +192,7 @@ createServer(async (req, res) => {
         console.log('MOCK created post', id, body.publishNow === true ? 'now' : 'scheduled');
         return send(res, 201, { post_id: id, idempotent: false, target_count: body.accountIds.length });
     }
-    // Team, activity, queues and autolists (ADR-0151). Read-mostly; saves answer ok without keeping state.
+    // Team, activity, queues and autolists (ADR-0163). Read-mostly; saves answer ok without keeping state.
     if (path === '/api/v1/social/team' && req.method === 'GET') return send(res, 200, { brand_id: 'b1', brand_name: 'Veyrnox Studio', actor_role: 'owner', members: [{ user_id: 'u-1', email: 'you@example.test', role: 'owner', joined_at: '2026-09-01T00:00:00Z' }, { user_id: 'u-2', email: 'lee@acme.example', role: 'editor', joined_at: '2026-10-05T00:00:00Z' }], invitations: [{ id: 'inv-1', email: 'sam@acme.example', role: 'reviewer', status: 'pending', expires_at: '2026-10-30T00:00:00Z', created_at: '2026-10-16T00:00:00Z' }] });
     if (path === '/api/v1/social/activity' && req.method === 'GET') {
         const first = !url.searchParams.get('cursor');

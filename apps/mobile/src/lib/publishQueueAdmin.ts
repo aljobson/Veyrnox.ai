@@ -1,6 +1,6 @@
 import type { ApiClient } from './api';
 
-// ADR-0151: manage publish queues (list, save, delete). A queue is a set of accounts and weekly time slots; posts
+// ADR-0163: manage publish queues (list, save, delete). A queue is a set of accounts and weekly time slots; posts
 // added to it take the next free slot. Routes answer 404 `queues_not_open` while the server flag is off.
 
 const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v : null);
