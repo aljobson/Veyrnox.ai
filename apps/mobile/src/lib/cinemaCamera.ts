@@ -1,4 +1,4 @@
-// ADR-0171: the web's Cinema camera, as prompt text. A copy of app/veyrnox/_lib/cinema.js; __tests__/cinemaCamera.test.ts
+// ADR-0175: the web's Cinema camera, as prompt text. A copy of app/veyrnox/_lib/cinema.js; __tests__/cinemaCamera.test.ts
 // reads that file and fails if the two drift. Client-side only: it changes the prompt, never the model or the price.
 
 export const CAMERAS: Readonly<Record<string, string>> = {

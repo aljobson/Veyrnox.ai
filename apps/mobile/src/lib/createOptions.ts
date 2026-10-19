@@ -148,7 +148,7 @@ export interface CreateDraft {
     readonly count: number;
     readonly seed: string;
     readonly negative: string;
-    // Added with the Cinema camera and voice (ADR-0171); a draft saved before them reads back without.
+    // Added with the Cinema camera and voice (ADR-0175); a draft saved before them reads back without.
     readonly voice?: string;
     readonly audioSeconds?: string;
     readonly cinemaOn?: boolean;

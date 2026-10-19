@@ -578,7 +578,7 @@ const en = {
     'chat.sendPrice.other': 'Send, {count} credits',
     'chat.sendPriceShort.one': '{count} credit',
     'chat.sendPriceShort.other': '{count} credits',
-    // App-only: Cinema camera, voice and audio length in Create (ADR-0171, parity P2).
+    // App-only: Cinema camera, voice and audio length in Create (ADR-0175, parity P2).
     'cam.title': 'Cinema camera',
     'cam.camera': 'Camera',
     'cam.lens': 'Lens',

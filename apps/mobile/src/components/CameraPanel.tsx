@@ -12,7 +12,7 @@ interface Props {
 }
 
 // The web's Cinema camera: body, lens, focal length and aperture, written into the prompt as plain words. It changes
-// the prompt only, never the model or the price (ADR-0171).
+// the prompt only, never the model or the price (ADR-0175).
 export function CameraPanel({ on, value, onToggle, onChange }: Props) {
     return (
         <View style={styles.box}>
