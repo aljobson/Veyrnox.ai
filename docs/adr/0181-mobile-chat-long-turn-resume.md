@@ -1,4 +1,4 @@
-# ADR-0171: Mobile chat: a long reply through iOS suspension (parity plan P3, spike S6)
+# ADR-0181: Mobile chat: a long reply through iOS suspension (parity plan P3, spike S6)
 
 **Status:** Proposed 2026-10-19.
 

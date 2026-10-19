@@ -349,8 +349,8 @@ const en = {
     'connect.action': 'Connect {network}',
     'connect.done': '{name} is connected.',
     'connect.cancelled': 'Nothing was connected.',
+    'connect.remove': 'To remove an account, open Connected accounts and choose Disconnect.',
     'connect.own': 'New accounts are added to your own brand, whichever brand is chosen.',
-    'connect.remove': 'To remove an account, use Publish on veyrnox.ai for now.',
     'connect.err.link': 'The sign-in page could not be opened safely. Nothing was connected.',
     'connect.err.return': 'The sign-in did not finish correctly. Nothing was connected. Try again.',
     'connect.err.provider': 'The network could not complete the sign-in. Nothing was connected. Try again later.',
@@ -404,6 +404,37 @@ const en = {
     'comments.err.invalid': 'That could not be sent. Check it and try again.',
     'comments.err.later': 'Comments are not available right now. Try again later.',
     'comments.err.network': 'No connection. Nothing was sent. Try again.',
+    // App-only: Publish composer completion, queue choice and disconnecting an account (parity P5, ADR-0161).
+    'publish.cancel': 'Cancel',
+    'compose.networkText': 'Different text for {network}',
+    'compose.networkTextHint': 'Leave empty to use the main text.',
+    'compose.networkTextCount': '{count} of {limit}',
+    'compose.youtube': 'YouTube visibility',
+    'compose.youtube.private': 'Private',
+    'compose.youtube.unlisted': 'Unlisted',
+    'compose.youtube.public': 'Public',
+    'compose.queue': 'Next queue slot',
+    'compose.queuePick': 'Choose a queue',
+    'compose.queueAccounts': 'Posts to the queue\'s accounts: {names}.',
+    'compose.queueNoMatch': 'This queue has an account that cannot post this creation.',
+    'compose.queueConfirm': 'This uses the next free slot in {queue} and posts to {where}. You can change or cancel it until it starts.',
+    'compose.queueTitle': 'Add to queue?',
+    'compose.queueAction': 'Add to queue',
+    'queue.err.network': 'No connection. Nothing was posted. Try again.',
+    'queue.err.plan': 'Queues need the Publish Plan.',
+    'queue.err.notOpen': 'Queues are not open yet.',
+    'queue.err.noSlot': 'That queue has no free slot in the next weeks.',
+    'queue.err.disabled': 'That queue is switched off.',
+    'queue.err.rate': 'Too many requests. Wait a moment and try again.',
+    'queue.err.later': 'The queue is not available right now. Try again later.',
+    'accounts.disconnect': 'Disconnect {name}',
+    'accounts.disconnectTitle': 'Disconnect {name}?',
+    'accounts.disconnectBody': 'This disconnects {name} on {network}. Check your scheduled posts afterwards. You can connect it again later.',
+    'accounts.disconnectAction': 'Disconnect',
+    'accounts.disconnected': '{name} was disconnected.',
+    'accounts.err.network': 'No connection. Nothing was changed. Try again.',
+    'accounts.err.gone': 'That account is already gone.',
+    'accounts.err.later': 'Could not disconnect. Try again later.',
     // App-only: Create options (ADR-0153, parity P2 slice 1).
     'create.goal.image': 'Make an image',
     'create.goal.video': 'Make a video',
@@ -708,7 +739,7 @@ const en = {
 
 
 
-    // App-only: Publish plan source and SmartLinks (parity P5, ADR-0171).
+    // App-only: Publish plan source and SmartLinks (parity P5, ADR-0181).
     'plan.active': 'Your Publish Plan is active.',
     'plan.manageWeb': 'It was bought on veyrnox.ai, so it is managed there, in your account billing.',
     'plan.manageStore': 'Manage it in your {store} subscription settings.',
@@ -894,7 +925,7 @@ const en = {
     'help.err.rate': 'Too many questions. Wait a moment and try again.',
     'help.err.network': 'No connection. Try again when you are back online.',
     'help.err.later': 'Help is not available right now. Try again later, or write to support below.',
-    // Chat reply recovered after the app was in the background (ADR-0171)
+    // Chat reply recovered after the app was in the background (ADR-0181)
     'chat.resume.saved': 'Your reply finished while the app was in the background. It is saved below and charged once.',
     'chat.resume.unsaved': 'Your reply finished while the app was in the background. It was charged but could not be saved.',
     'chat.resume.nothing': 'The connection was lost and no reply was made. No credits were used.',

@@ -52,7 +52,7 @@ export default function Conversation() {
     const [maxImages, setMaxImages] = useState(MAX_ATTACHMENTS);
     const [catalog, setCatalog] = useState<CatalogModel[] | null>(null);
     const abort = useRef<AbortController | null>(null);
-    // The send in flight, for the return from the background (ADR-0171): when the app comes back and the reply has gone quiet,
+    // The send in flight, for the return from the background (ADR-0181): when the app comes back and the reply has gone quiet,
     // the turn is looked for by its job, because the server finishes it either way.
     const live = useRef<{ key: string; text: string; knownIds: ReadonlySet<string>; jobId: string | null; lastEventAt: number } | null>(null);
     const resumed = useRef<StopOutcome | null>(null);
