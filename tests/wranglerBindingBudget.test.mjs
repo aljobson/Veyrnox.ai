@@ -26,10 +26,18 @@ const REMOVED_FALSE_FLAGS = [
     'CINEMA_RANKINGS_ENABLED', 'CINEMA_RETENTION_ENABLED', 'COMMENTS_ENABLED', 'STORY_POLLS_ENABLED', 'VOTING_ENABLED',
     'CREATOR_MONETISATION_ENABLED', 'PPV_ENABLED', 'FAL_DISPATCH_QUEUE_ENABLED', 'FAL_DURABLE_DISPATCH_ENABLED', 'FAL_SUBMIT_OUTCOME_ENABLED',
 ];
+// 2026-10-19: the owner switched these seven on in STAGING ONLY, through CINEMA_RUNTIME_FLAGS, so the phone's Cinema screens can be
+// tested (docs/mobile/FLAG-PLAN-2026-10-19.md step 1). They are not individual vars, so the "false" equivalence below skips them there.
+// Production still has none of them on; tests/cinemaRuntimeFlags.test.mjs pins the exact staging list.
+const STAGING_NOW_ON = new Set([
+    'CINEMA_AUDIENCE_ENABLED', 'CINEMA_CREATOR_ANALYTICS_ENABLED', 'CINEMA_RANKINGS_ENABLED', 'CINEMA_RETENTION_ENABLED',
+    'COMMENTS_ENABLED', 'STORY_POLLS_ENABLED', 'VOTING_ENABLED',
+]);
 for (const [name, vars] of [['production', config.vars], ['staging', config.env.staging.vars]]) {
     test(`${name}: removing the explicit "false" vars changes no feature switch`, () => {
-        const withFalse = { ...vars, ...Object.fromEntries(REMOVED_FALSE_FLAGS.map((flag) => [flag, 'false'])) };
-        for (const flag of REMOVED_FALSE_FLAGS) assert.notEqual(vars[flag], 'true', `${flag} is on in ${name}; it was off before this change`);
+        const checked = name === 'staging' ? REMOVED_FALSE_FLAGS.filter((flag) => !STAGING_NOW_ON.has(flag)) : REMOVED_FALSE_FLAGS;
+        const withFalse = { ...vars, ...Object.fromEntries(checked.map((flag) => [flag, 'false'])) };
+        for (const flag of checked) assert.notEqual(vars[flag], 'true', `${flag} is on in ${name}; it was off before this change`);
         assert.deepEqual(cinemaFeatures(vars), cinemaFeatures(withFalse), 'Cinema switches are identical with or without the "false" vars');
         assert.equal(uploadSafetyHold(vars), uploadSafetyHold(withFalse));
         assert.equal(uploadSafetyHold(vars), true, 'the Cinema upload safety hold stays on');
