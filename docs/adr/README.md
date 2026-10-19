@@ -7,6 +7,7 @@ Phase-0 decision-support documents for the target architecture at `/Users/aljobs
 | ADR | Status | Summary | Blocks |
 |-----|--------|---------|--------|
 | [ADR-0166 — Mobile: Publish reports, PDF and slide download and share (parity plan P5)](0166-mobile-publish-reports.md) | **Proposed 2026-10-19** | Saved reports list; PDF and slides downloaded to the cache and shared; template editing not built |
+| [ADR-0165 — Mobile: Publish contacts (parity plan P5)](0165-mobile-publish-contacts.md) | **Proposed 2026-10-19** | Search, filter, and edit tags, subscription status and notes; add and CSV import not built |
 | [ADR-0170 — Mobile: Vey help panel (parity plan P3)](0170-mobile-vey-help-panel.md) | **Proposed 2026-10-19** | Ask Vey on the Help screen via /api/v1/help; Take me there only where the phone has the screen |
 | [ADR-0163 — Mobile: Publish team, activity log, queues and RSS autolists (parity plan P5)](0163-mobile-publish-team-activity-queues-autolists.md) | **Proposed 2026-10-19** | Team and activity read-only, queue and RSS autolist create, edit, delete; invite and reports not built |
 | [ADR-0128 — Mobile: consent before content goes to an AI provider](0128-mobile-ai-sharing-consent.md) | **Proposed 2026-10-18** | One-time, versioned in-app agreement before the first generation, upload or chat send (Apple 5.1.2(i)); gate in the API client so no screen can bypass it; Not now sends nothing; stored per account in SecureStore. No server change, no dependency. | Withdraw control |
