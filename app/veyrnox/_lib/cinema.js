@@ -1,6 +1,5 @@
 // Cinema camera controls: camera body, lens, focal length and aperture,
-// turned into prompt text. Option lists and wording ported from
-// Open-Generative-AI's CinemaStudio.jsx (MIT, Copyright (c) Anil Matcha).
+// turned into prompt text.
 // Client-side only: it changes the prompt, never the model or the price.
 
 export const CAMERAS = {
