@@ -16,8 +16,9 @@ test('the editor rollout is preserved in both environments with owner-authorized
     assert.equal(config.vars.EDITOR_MULTITRACK_ENABLED, 'true');
     assert.equal(config.vars.EDITOR_SHARED_TOOLS_ENABLED, 'true');
     assert.equal(config.vars.PROJECT_MEDIA_UPLOADS_ENABLED, 'false');
-    assert.equal(config.vars.CINEMA_SUBSCRIPTIONS_ENABLED, 'false');
-    assert.equal(config.vars.CINEMA_UNLOCKS_ENABLED, 'false');
+    // ADR-0145: the Cinema switches live in one JSON var.
+    assert.equal(JSON.parse(config.vars.CINEMA_RUNTIME_FLAGS).subscriptions, 'false');
+    assert.equal(JSON.parse(config.vars.CINEMA_RUNTIME_FLAGS).unlocks, 'false');
 });
 
 test('the request-time server flag controls the route and the Studio navigation', () => {

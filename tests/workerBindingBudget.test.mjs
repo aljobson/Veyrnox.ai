@@ -20,5 +20,7 @@ test('production public variables retain Cloudflare text-binding headroom', () =
     // The 2026-10-16 deploy had 81 public vars plus 48 secrets: 129 text
     // bindings against Cloudflare's 128 limit. Capping vars at 77 leaves three
     // free slots at that same secret footprint and forces future consolidation.
-    assert.ok(Object.keys(config.vars).length <= 77, 'production vars must stay at or below 77');
+    // ADR-0145 moved nine Cinema switches into CINEMA_RUNTIME_FLAGS (66 vars to 58); the cap is now 60, so the next
+    // Cinema flag goes into that JSON object, not into a new var.
+    assert.ok(Object.keys(config.vars).length <= 60, 'production vars must stay at or below 60');
 });
