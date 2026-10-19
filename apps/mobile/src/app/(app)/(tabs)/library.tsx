@@ -10,6 +10,7 @@ import { observe } from '../../../lib/network';
 import { KIND_FILTERS, STATE_FILTERS, VIEWS, canSchedule, filterJobs, kindMap, readFavourites, toggled, writeFavourites, type KindFilter, type StateFilter, type View as LayoutView } from '../../../lib/libraryView';
 import { fetchCatalogCached, mediaApi, type CatalogModel, type Job, type JobPage } from '../../../lib/media';
 import { publishHref } from '../../../lib/nextSteps';
+import { VEY_CLEARANCE } from '../../../components/VeyMascot';
 import { colors } from '../../../theme';
 import { t } from '../../../lib/i18n';
 import { selectedState, touchTarget } from '../../../lib/a11y';
@@ -110,6 +111,7 @@ export default function Library() {
                 <ActivityIndicator color={colors.accent} />
             ) : (
                 <FlatList
+                    contentContainerStyle={styles.list}
                     key={view}
                     numColumns={view === 'grid' ? 2 : 1}
                     data={shown}
@@ -154,6 +156,8 @@ function Chip({ label, on, onPress }: { readonly label: string; readonly on: boo
 }
 
 const styles = StyleSheet.create({
+    // The mascot sits in the bottom corner of every tab; the last row scrolls clear of it.
+    list: { paddingBottom: VEY_CLEARANCE },
     bar: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingBottom: 8 },
     chip: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 12, borderRadius: 10, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
     chipOn: { backgroundColor: colors.accent, borderColor: colors.accent },
