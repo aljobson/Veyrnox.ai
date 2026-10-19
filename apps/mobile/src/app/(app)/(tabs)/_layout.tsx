@@ -8,11 +8,13 @@ import { colors } from '../../../theme';
 
 // The tab bar has a fixed height, so its labels stop growing at the same limit as the header; everything else follows the system text size.
 function tabLabel(key: string) {
-    return ({ color }: { color: ColorValue }) => (
-        <Text style={{ color, fontSize: 12, fontWeight: '600' }} maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} numberOfLines={1}>
-            {t(key)}
-        </Text>
-    );
+    return function TabLabel({ color }: { color: ColorValue }) {
+        return (
+            <Text style={{ color, fontSize: 12, fontWeight: '600' }} maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} numberOfLines={1}>
+                {t(key)}
+            </Text>
+        );
+    };
 }
 
 // Five bottom tabs. Every URL is unchanged: the (tabs) folder is a group, so /create, /cinema, /library and /publish
