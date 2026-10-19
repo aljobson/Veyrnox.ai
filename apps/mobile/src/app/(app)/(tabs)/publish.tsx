@@ -7,7 +7,8 @@ import { useBilling } from '../../../billing/BillingProvider';
 import { API_BASE } from '../../../lib/api';
 import { renewalTerms, toDisplayPackages, type Interval } from '../../../lib/billing';
 import { t } from '../../../lib/i18n';
-import { fetchPublishTier, paywallState, type PublishTier } from '../../../lib/publishPlan';
+import { VEY_CLEARANCE } from '../../../components/VeyMascot';
+import { fetchPublishPlan, paywallState, type PlanSource, type PublishTier } from '../../../lib/publishPlan';
 import { colors } from '../../../theme';
 
 const BENEFITS = ['Up to five connected accounts', 'Schedule posts ahead', '366 days of analytics', 'Best-time recommendations'];
@@ -19,6 +20,7 @@ export default function Publish() {
     const router = useRouter();
     const { status, offerings, canPurchase, publishActive, debug, purchase, restore } = useBilling();
     const [tier, setTier] = useState<PublishTier | null>(null);
+    const [source, setSource] = useState<PlanSource | null>(null);
     const [tierChecked, setTierChecked] = useState(false);
     const [selected, setSelected] = useState<string | null>(null);
     const [busy, setBusy] = useState(false);
@@ -26,9 +28,10 @@ export default function Publish() {
 
     useEffect(() => {
         let cancelled = false;
-        fetchPublishTier(api).then((t) => {
+        fetchPublishPlan(api).then((p) => {
             if (cancelled) return;
-            setTier(t);
+            setTier(p.tier);
+            setSource(p.source);
             setTierChecked(true);
         });
         return () => {
@@ -77,7 +80,7 @@ export default function Publish() {
             {gate === 'checking' || status === 'loading' ? (
                 <ActivityIndicator color={colors.accent} />
             ) : gate === 'active' || publishActive ? (
-                <Text style={styles.ok}>Your Publish Plan is active.{publishActive ? ` Manage it in your ${store === 'ios' ? 'Apple ID' : 'Google Play'} subscription settings.` : ''}</Text>
+                <Text style={styles.ok}>{t('plan.active')} {source === 'stripe' ? t('plan.manageWeb') : source === 'store' || publishActive ? t('plan.manageStore', { store: store === 'ios' ? 'Apple ID' : 'Google Play' }) : ''}</Text>
             ) : gate === 'unknown' ? (
                 <Text style={styles.muted}>We could not check your plan right now. Try again in a moment.</Text>
             ) : status !== 'ready' || plans.length === 0 ? (
@@ -102,7 +105,7 @@ export default function Publish() {
             {message ? <Text style={styles.muted}>{message}</Text> : null}
             {gate !== 'checking' ? (
                 <View style={styles.menu}>
-                    {([['Connected accounts', '/publish/accounts'], ['Posts', '/publish/posts'], ['Analytics', '/publish/analytics'], ['Calendar', '/publish/calendar'], ['Best time', '/publish/best-time'], ['Drafts', '/publish/drafts'], ['Approvals', '/publish/approvals'], ['Brand', '/publish/brands'], ['Contacts', '/publish/contacts'], [t('queues.title'), '/publish/queues'], [t('autolists.title'), '/publish/autolists'], [t('team.title'), '/publish/team'], [t('activity.title'), '/publish/activity']] as const).map(([label, path]) => (
+                    {([['Connected accounts', '/publish/accounts'], ['Posts', '/publish/posts'], ['Analytics', '/publish/analytics'], ['Calendar', '/publish/calendar'], ['Best time', '/publish/best-time'], ['Drafts', '/publish/drafts'], ['Approvals', '/publish/approvals'], ['Brand', '/publish/brands'], [t('smartlink.title'), '/publish/smartlink'], ['Contacts', '/publish/contacts'], [t('queues.title'), '/publish/queues'], [t('autolists.title'), '/publish/autolists'], [t('team.title'), '/publish/team'], [t('activity.title'), '/publish/activity']] as const).map(([label, path]) => (
                         <Pressable key={path} accessibilityRole="button" style={styles.menuRow} onPress={() => router.push(path)}>
                             <Text style={styles.menuText}>{label}</Text>
                         </Pressable>
@@ -120,7 +123,7 @@ export default function Publish() {
 
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
-    body: { padding: 20, gap: 12 },
+    body: { padding: 20, paddingBottom: VEY_CLEARANCE, gap: 12 },
     title: { color: colors.text, fontSize: 26, fontWeight: '700', marginBottom: 4 },
     benefit: { color: colors.body, fontSize: 16 },
     plans: { gap: 10, marginTop: 8 },
