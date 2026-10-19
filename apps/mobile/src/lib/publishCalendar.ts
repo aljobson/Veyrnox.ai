@@ -86,7 +86,7 @@ export function calendarErrorKey(err: unknown): string {
     return 'common.error';
 }
 
-// ADR-0150: the month view. The first of the month to the first of the next, `offsetMonths` away from `now`'s month
+// ADR-0162: the month view. The first of the month to the first of the next, `offsetMonths` away from `now`'s month
 // (31 days at most, under the server's 43).
 export function monthBounds(now: Date, offsetMonths: number): { start: Date; end: Date } {
     const start = new Date(now.getFullYear(), now.getMonth() + offsetMonths, 1);

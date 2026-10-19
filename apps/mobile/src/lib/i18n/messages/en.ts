@@ -400,7 +400,7 @@ const en = {
     'comments.err.invalid': 'That could not be sent. Check it and try again.',
     'comments.err.later': 'Comments are not available right now. Try again later.',
     'comments.err.network': 'No connection. Nothing was sent. Try again.',
-    // App-only: Publish calendar month, analytics range and compare, locked states, draft approval (parity P5, ADR-0150).
+    // App-only: Publish calendar month, analytics range and compare, locked states, draft approval (parity P5, ADR-0162).
     'calendar.week': 'Week',
     'calendar.month': 'Month',
     'calendar.prevMonth': 'Previous month',

@@ -1,4 +1,4 @@
-# ADR-0150 — Mobile: Publish calendar month, analytics range and compare, locked states, draft approval
+# ADR-0162 — Mobile: Publish calendar month, analytics range and compare, locked states, draft approval
 
 **Status:** Proposed 2026-10-19
 **Related:** [ADR-0138](0138-mobile-publish-calendar-best-time.md), [ADR-0139](0139-mobile-publish-drafts.md), [ADR-0109](0109-mobile-publish-plan-and-store-catalog.md), parity phase P5 in `docs/mobile/PARITY-2026-10-19.md` section 4

@@ -1,7 +1,7 @@
 import { ApiError, type ApiClient } from './api';
 
 // Publish drafts (ADR-0139): posts waiting for a person to approve or discard them, usually made in a batch by an
-// automation. ADR-0150 adds approve (schedules real posts) and discard (deletes), each behind a confirm that names the
+// automation. ADR-0162 adds approve (schedules real posts) and discard (deletes), each behind a confirm that names the
 // networks. A draft with no batch cannot be acted on: the route needs a batch id.
 // Media job ids are not kept; only the kind of media is shown.
 

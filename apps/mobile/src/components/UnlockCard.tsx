@@ -9,7 +9,7 @@ import { colors } from '../theme';
 export type LockedFeature = 'calendar' | 'analytics' | 'inbox';
 const store = Platform.OS === 'ios' ? 'ios' : 'android';
 
-// ADR-0150: what a free account sees where the web shows an "Unlock ..." card. The price is the store's own, weekly,
+// ADR-0162: what a free account sees where the web shows an "Unlock ..." card. The price is the store's own, weekly,
 // monthly and annual, read from RevenueCat; there is no link to a web checkout (ADR-0109). `onUnlocked` runs after a
 // completed purchase so the screen can load again; the server stays the authority on whether the plan is on.
 export function UnlockCard({ feature, onUnlocked }: { feature: LockedFeature; onUnlocked: () => void }) {

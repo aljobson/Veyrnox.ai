@@ -192,14 +192,14 @@ createServer(async (req, res) => {
         console.log('MOCK created post', id, body.publishNow === true ? 'now' : 'scheduled');
         return send(res, 201, { post_id: id, idempotent: false, target_count: body.accountIds.length });
     }
-    // Drafts approve and discard (ADR-0150): the batch leaves the list; a free plan is refused for approve like the real route.
+    // Drafts approve and discard (ADR-0162): the batch leaves the list; a free plan is refused for approve like the real route.
     if (path === '/api/v1/social/drafts' && req.method === 'POST') {
         if (body.action === 'approve' && state.socialPlan !== 'publish') return send(res, 402, { error: 'publish_plan_required', feature: 'scheduling' });
         if (!['approve', 'discard'].includes(body.action) || typeof body.batchId !== 'string') return send(res, 400, { error: 'invalid_action' });
         state.draftsGone = [...(state.draftsGone ?? []), ...(body.postId ? [body.postId] : ['dr-1', 'dr-2'])];
         return send(res, 200, body.action === 'approve' ? { approved: 2, failed: 0 } : { discarded: body.postId ? 1 : 2 });
     }
-    // Locked states (ADR-0150): start the mock with state.socialPlan 'free' to see the Unlock card.
+    // Locked states (ADR-0162): start the mock with state.socialPlan 'free' to see the Unlock card.
     if ((path === '/api/v1/social/calendar' || path === '/api/v1/social/analytics') && state.socialPlan !== 'publish') return send(res, 402, { error: 'publish_plan_required', feature: path.endsWith('calendar') ? 'calendar' : 'analytics' });
     // Drafts (ADR-0139): two in one batch and one alone; read-only here.
     if (path === '/api/v1/social/drafts' && req.method === 'GET') {

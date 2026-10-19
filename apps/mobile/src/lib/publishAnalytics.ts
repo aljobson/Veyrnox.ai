@@ -1,6 +1,6 @@
 import type { Analytics } from './publish';
 
-// ADR-0150: analytics range, compare and the followers chart. The summary rules mirror the web's
+// ADR-0162: analytics range, compare and the followers chart. The summary rules mirror the web's
 // lib/social/analyticsSummary.js so the phone and the site show the same numbers for the same data.
 
 export const RANGE_OPTIONS = [7, 30, 90, 365] as const;

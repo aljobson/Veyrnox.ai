@@ -5,7 +5,7 @@ import { colors } from '../theme';
 
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 0]; // Monday first, as getDay numbers
 
-// ADR-0150: a month grid. Each day shows how many posts fall on it; tapping a day selects it. Day cells are 44 pt tall.
+// ADR-0162: a month grid. Each day shows how many posts fall on it; tapping a day selects it. Day cells are 44 pt tall.
 export function CalendarMonth({ monthStart, counts, selected, onSelect }: { monthStart: Date; counts: Map<string, number>; selected: string | null; onSelect: (key: string) => void }) {
     const weeks = monthGrid(monthStart);
     const today = dayKey(new Date());
