@@ -77,9 +77,9 @@ const CATALOG = [
     { id: 'sfx-v2', name: 'ElevenLabs Sound Effects', modality: 'text-to-audio', credits: 2, gated: false, durations: [5], capabilities: { inputs: { prompt: { type: 'string' } }, media: {} } },
 ];
 const CHAT_MODELS = [
-    { id: 'claude-sonnet', name: 'Claude Sonnet', maker: 'claude', maker_label: 'Claude', credits_per_reply: 1, gated: false },
-    { id: 'gpt-luna', name: 'GPT Luna', maker: 'chatgpt', maker_label: 'ChatGPT', credits_per_reply: 1, gated: false },
-    { id: 'gemini-flash', name: 'Gemini Flash', maker: 'gemini', maker_label: 'Gemini', credits_per_reply: 1, gated: false },
+    { id: 'claude-sonnet', name: 'Claude Sonnet', maker: 'claude', maker_label: 'Claude', credits_per_reply: 2, gated: false, options: { thinking: { extra_credits: 1 }, web: { extra_credits: 1 }, images: { extra_credits: 1 } } },
+    { id: 'gpt-luna', name: 'GPT Luna', maker: 'chatgpt', maker_label: 'ChatGPT', credits_per_reply: 1, gated: false, options: { thinking: null, web: { extra_credits: 1 }, images: null } },
+    { id: 'gemini-flash', name: 'Gemini Flash', maker: 'gemini', maker_label: 'Gemini', credits_per_reply: 1, gated: false, options: { thinking: { extra_credits: 1 }, web: null, images: { extra_credits: 1 } } },
 ];
 
 // A 256x256 gradient PNG, so image results have something to show.
@@ -486,17 +486,22 @@ createServer(async (req, res) => {
         if (!t) return send(res, 404, { error: 'thread_not_found' });
         if (!m[2]) return send(res, 200, { thread: t, messages: state.messages.get(t.id) ?? [] });
         const reply = `Here is a quick take on “${String(body.text || '').slice(0, 60)}”: lead with the strongest visual, keep it under ten seconds, and end on the product name.`;
+        // Priced like lib/chat.js replyPrice: the catalog base plus the extra for each option chosen; an option the model does not offer is refused.
+        const model = CHAT_MODELS.find((x) => x.id === t.model_id) ?? CHAT_MODELS[0];
+        const chosen = body.options ?? {};
+        if ((chosen.thinking && !model.options.thinking) || (chosen.web && !model.options.web)) { res.writeHead(400, { 'content-type': 'application/json' }); return res.end(JSON.stringify({ error: 'option_unavailable' })); }
+        const price = model.credits_per_reply + (chosen.thinking ? model.options.thinking.extra_credits : 0) + (chosen.web ? model.options.web.extra_credits : 0);
         res.writeHead(200, { 'content-type': 'text/event-stream' });
         const ev = (e, d) => res.write(`event: ${e}\ndata: ${JSON.stringify(d)}\n\n`);
-        state.balance -= 1;
-        ev('start', { job_id: randomUUID(), credits: 1, balance_after: state.balance });
+        state.balance -= price;
+        ev('start', { job_id: randomUUID(), credits: price, balance_after: state.balance });
         let i = 0;
         const timer = setInterval(() => {
             if (i >= reply.length) {
                 clearInterval(timer);
                 t.title ||= String(body.text || '').slice(0, 40);
-                state.messages.get(t.id).push({ id: randomUUID(), role: 'user', content: body.text }, { id: randomUUID(), role: 'assistant', content: reply, credits: 1 });
-                ev('done', { status: 'succeeded', credits_charged: 1, balance: state.balance });
+                state.messages.get(t.id).push({ id: randomUUID(), role: 'user', content: body.text }, { id: randomUUID(), role: 'assistant', content: reply, credits: price });
+                ev('done', { status: 'succeeded', credits_charged: price, balance: state.balance });
                 return res.end();
             }
             ev('delta', { text: reply.slice(i, i + 6) }); i += 6;
