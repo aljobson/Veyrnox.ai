@@ -907,17 +907,6 @@ const en = {
     'help.err.later': 'Help is not available right now. Try again later, or write to support below.',
 
     // Oddlings handoff, share (parity P8, slice 3 and addendum).
-    'oddlings.handoff.title': 'Make something with this character',
-    'oddlings.handoff.body': 'Opens Create with the words filled in. You see the price there and are charged only when you press Generate.',
-    'oddlings.handoff.portrait': 'Make a portrait',
-    'oddlings.handoff.short': 'Make a short',
-    'oddlings.handoff.credits.one': '{count} credit',
-    'oddlings.handoff.credits.other': '{count} credits',
-    'oddlings.handoff.checking': 'Checking price',
-    'oddlings.handoff.unavailable': 'Not available',
-    'oddlings.handoff.noPrice': 'Prices could not be loaded. Check your connection.',
-    'oddlings.handoff.offline': 'You are offline. Nothing was opened and nothing was charged. Reconnect and try again.',
-    'oddlings.sheet.share': 'Share this character',
     // App-only: Character panel in Create (ADR-0176, parity P2).
     'char.title': 'Character',
     'char.help': 'Turns your choices into words in the prompt, so you can make the same original adult again. The model and the price do not change.',
