@@ -2,6 +2,7 @@ import { Image } from 'expo-image';
 import { Stack, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { MIN_TARGET } from '../../../lib/a11y';
 import { OddlingFilters } from '../../../components/oddlings/OddlingFilters';
 import { plural, t } from '../../../lib/i18n';
 import { portraitUrl, reconcileKind, toggleKind, visibleOddlings, type OddlingKind } from '../../../lib/oddlings';
@@ -27,6 +28,14 @@ export default function OddlingGallery() {
                 ListHeaderComponent={
                     <View>
                         <Text style={styles.intro}>{t('oddlings.intro')}</Text>
+                        <View style={styles.entries}>
+                            <Pressable accessibilityRole="button" style={[styles.entry, styles.entryMain]} onPress={() => router.push('/oddlings/build')}>
+                                <Text style={styles.entryMainText}>{t('oddlings.build.entry')}</Text>
+                            </Pressable>
+                            <Pressable accessibilityRole="button" style={styles.entry} onPress={() => router.push('/oddlings/saved')}>
+                                <Text style={styles.entryText}>{t('oddlings.build.saved')}</Text>
+                            </Pressable>
+                        </View>
                         <OddlingFilters tab={tab} kind={kind} onTab={(id) => { setTab(id); setKind((k) => reconcileKind(id, k)); }} onKind={(id) => setKind((k) => toggleKind(k, id))} />
                         <Text style={styles.count} accessibilityLiveRegion="polite">{plural('oddlings.count', items.length)}</Text>
                     </View>
@@ -49,6 +58,11 @@ const styles = StyleSheet.create({
     list: { paddingBottom: 32 },
     column: { gap: 12, paddingHorizontal: 16 },
     intro: { color: colors.body, fontSize: 15, paddingHorizontal: 16, paddingTop: 12 },
+    entries: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, marginTop: 12 },
+    entry: { minHeight: MIN_TARGET, justifyContent: 'center', paddingHorizontal: 16, borderRadius: 22, borderWidth: 1, borderColor: colors.borderStrong, backgroundColor: colors.surface },
+    entryMain: { backgroundColor: colors.accent, borderColor: colors.accent },
+    entryText: { color: colors.text, fontSize: 15, fontWeight: '600' },
+    entryMainText: { color: colors.accentInk, fontSize: 15, fontWeight: '800' },
     count: { color: colors.muted, fontSize: 13, paddingHorizontal: 16, marginVertical: 12 },
     empty: { color: colors.muted, textAlign: 'center', padding: 24 },
     card: { flex: 1, marginBottom: 16 },

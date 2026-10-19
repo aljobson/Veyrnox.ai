@@ -1,6 +1,6 @@
 # ADR-0158: Oddlings on the phone (parity plan P8)
 
-**Status:** Proposed 2026-10-19. Slice 1 of three: the gallery and character sheets. The builder and the hand-off to Create follow.
+**Status:** Proposed 2026-10-19. Slices 1 and 2 of three: the gallery and character sheets, then the builder. The hand-off to Create follows.
 
 ## Context
 
@@ -29,3 +29,22 @@ person's photo stand in for a likeness.
 ## Consequences
 
 When the web cast changes, run `node apps/mobile/scripts/sync-oddlings-cast.mjs`; the test names the file to refresh.
+
+## Slice 2: the builder
+
+- **Route:** `/oddlings/build` (optionally `?from=<cast id>` or `?passport=<saved id>`) and `/oddlings/saved`. The
+  gallery and each sheet link to them ("Build your own", "Build from this character", "Saved passports").
+- **The option data is generated** into `src/lib/oddlings/builder.json` (51 groups, 390 options, the web's display
+  wording, categories, swatches). **The logic is ported** into `src/lib/oddlingsBuilder.ts`: prompt, traits, canon,
+  conflict rules, sanitiser, Randomize styling and Surprise me. Direct import was not provable without Metro, and jest cannot
+  load files outside the app, so `scripts/oddlings-web-reference.mjs` runs the web files under Node over all 72
+  characters (six hand edits each, three seeds of each randomizer, messy input) and a jest test requires identical
+  picks and identical prompts. The reference script and the port share one seeded generator.
+- **Live preview figure:** the web draws a stylised mannequin from pure geometry. The app has no SVG library and may not
+  add one, so the same web modules are wrapped (generated, not rewritten) into one script that a WebView runs offline;
+  the page loads nothing from the network and refuses navigation. Output is limited to known shape tags and escaped
+  values (tested for all 72 characters and every option). It is a stand-in: the real picture is made from the picks.
+- **Saved passports and the draft** are one JSON file in the app's document folder (`veyrnox-oddlings/passports.json`),
+  up to 24, never sent anywhere (there is no server route). Picks are re-cleaned on every read.
+- **Left out:** the optional reference image (moodboard) upload, and the animated mode (slice 3 sends a prompt to Create).
+- **Not here:** prices. The builder costs nothing; the price is shown by Create, before anything is sent.
