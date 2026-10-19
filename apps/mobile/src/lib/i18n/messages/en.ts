@@ -458,6 +458,18 @@ const en = {
     'chat.sendPrice.other': 'Send, {count} credits',
     'chat.sendPriceShort.one': '{count} credit',
     'chat.sendPriceShort.other': '{count} credits',
+    // App-only: Cinema camera, voice and audio length in Create (ADR-0171, parity P2).
+    'cam.title': 'Cinema camera',
+    'cam.camera': 'Camera',
+    'cam.lens': 'Lens',
+    'cam.focal': 'Focal length',
+    'cam.aperture': 'Aperture',
+    'cam.help': 'Adds camera words to your prompt. The model and the price do not change.',
+    'opt.voice': 'Voice (required)',
+    'opt.voiceExample': 'For example: a warm, slow storyteller',
+    'opt.voiceHelp': 'Describe the voice in words. A recording of a real person is not accepted.',
+    'opt.audioLength': 'Length in seconds',
+    'opt.audioLengthRange': 'Whole seconds from {min} to {max}. Empty uses {def}.',
 } as const;
 
 export default en;

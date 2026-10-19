@@ -1,4 +1,5 @@
-import { SAVED_DRAFT_VERSION, batchCost, draftIsEmpty, filterByTier, freeLeftFor, imageCount, inputsForIndex, modelsForGoal, optionsFor, parseDraft, seedIsInvalid, settingsInputs, takesImageCount, tierById } from '../src/lib/createOptions';
+import { audioLengthInvalid, voiceIsMissing, SAVED_DRAFT_VERSION, batchCost, draftIsEmpty, filterByTier, freeLeftFor, imageCount, inputsForIndex, modelsForGoal, optionsFor, parseDraft, seedIsInvalid, settingsInputs, takesImageCount, tierById } from '../src/lib/createOptions';
+import { DEFAULT_CINEMA } from '../src/lib/cinemaCamera';
 import { loadDraft, saveDraft, clearDraft } from '../src/lib/createDraftStore';
 import { createCache, createMemoryStorage } from '../src/lib/cache';
 import { freeLines } from '../src/lib/freeAllowance';
@@ -35,8 +36,8 @@ describe('goals and tiers', () => {
 
 describe('model options from the catalog', () => {
     test('reads seed, negative prompt limit and aspect ratios', () => {
-        expect(optionsFor(rich)).toEqual({ seed: true, negativeMax: 500, aspects: ['16:9', '1:1'] });
-        expect(optionsFor(model())).toEqual({ seed: false, negativeMax: null, aspects: [] });
+        expect(optionsFor(rich)).toEqual({ seed: true, negativeMax: 500, aspects: ['16:9', '1:1'], voice: false, audioLength: null });
+        expect(optionsFor(model())).toEqual({ seed: false, negativeMax: null, aspects: [], voice: false, audioLength: null });
     });
     test('negative prompt defaults to the 2000 character limit', () => {
         expect(optionsFor(model({ capabilities: { inputs: { negative_prompt: {} }, media: {} } })).negativeMax).toBe(2000);
@@ -92,7 +93,11 @@ describe('price including count and free runs', () => {
 });
 
 describe('draft', () => {
-    const draft = { v: SAVED_DRAFT_VERSION, modelId: 'm', prompt: 'a cat', duration: null, aspect: '1:1', count: 2, seed: '7', negative: 'blur' } as const;
+    const draft = { v: SAVED_DRAFT_VERSION, modelId: 'm', prompt: 'a cat', duration: null, aspect: '1:1', count: 2, seed: '7', negative: 'blur', voice: '', audioSeconds: '', cinemaOn: false, cinema: DEFAULT_CINEMA } as const;
+    test('a draft saved before the camera and voice reads back with their defaults', () => {
+        const { voice, audioSeconds, cinemaOn, cinema, ...old } = draft;
+        expect(parseDraft(old, 'm')).toEqual(draft);
+    });
     test('reads back only a well formed draft for the same model', () => {
         expect(parseDraft(draft, 'm')).toEqual(draft);
         expect(parseDraft(draft, 'other')).toBeNull();
@@ -139,5 +144,38 @@ describe('request carries the options', () => {
         const body = JSON.parse(request.mock.calls[0][1].body);
         expect(body.inputs).toEqual({ seed: 5, aspect_ratio: '1:1', prompt: 'a cat' });
         expect(body.confirmed_credits).toBe(3);
+    });
+});
+
+describe('voice and audio length', () => {
+    const speech = model({ modality: 'text-to-speech', capabilities: { inputs: { prompt: {}, voice_description: { type: 'string', max: 500 }, duration: { type: 'int', min: 5, max: 60, default: 30 } }, media: {} } });
+    test('reads the voice requirement and the length range', () => {
+        expect(optionsFor(speech)).toMatchObject({ voice: true, audioLength: { min: 5, max: 60, def: 30 } });
+        expect(optionsFor(model()).voice).toBe(false);
+        expect(optionsFor(model()).audioLength).toBeNull();
+    });
+    test('a default outside the range falls back to the top; a bad range is no control', () => {
+        const odd = (d: unknown) => model({ modality: 'text-to-speech', capabilities: { inputs: { duration: d as never }, media: {} } });
+        expect(optionsFor(odd({ type: 'int', min: 5, max: 60, default: 99 })).audioLength?.def).toBe(60);
+        expect(optionsFor(odd({ type: 'int', min: 9, max: 5 })).audioLength).toBeNull();
+        expect(optionsFor(odd({ type: 'string' })).audioLength).toBeNull();
+    });
+    test('a described voice is required and sent trimmed', () => {
+        const o = optionsFor(speech);
+        expect(voiceIsMissing(o, '  ')).toBe(true);
+        expect(voiceIsMissing(o, 'warm and slow')).toBe(false);
+        expect(voiceIsMissing(optionsFor(model()), '')).toBe(false);
+        expect(settingsInputs(o, { seed: '', negative: '', aspect: null, voice: ' warm ' })).toMatchObject({ voice_description: 'warm' });
+    });
+    test('length: empty means the default, a whole number in range is sent, anything else is refused', () => {
+        const o = optionsFor(speech);
+        expect(audioLengthInvalid(o, '')).toBe(false);
+        expect(audioLengthInvalid(o, '4')).toBe(true);
+        expect(audioLengthInvalid(o, '61')).toBe(true);
+        expect(audioLengthInvalid(o, '1.5')).toBe(true);
+        expect(audioLengthInvalid(o, '45')).toBe(false);
+        expect(settingsInputs(o, { seed: '', negative: '', aspect: null, voice: 'v', audioSeconds: '45' }).duration).toBe(45);
+        expect(settingsInputs(o, { seed: '', negative: '', aspect: null, voice: 'v' }).duration).toBe(30);
+        expect(settingsInputs(o, { seed: '', negative: '', aspect: null, voice: 'v', audioSeconds: '4' }).duration).toBeUndefined();
     });
 });

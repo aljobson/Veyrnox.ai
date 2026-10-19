@@ -1,3 +1,4 @@
+import { sanitizeCinema, type Cinema } from './cinemaCamera';
 import { kindOf, type CatalogModel, type Kind } from './media';
 
 // ADR-0153: the web Create page's option set, as pure helpers. The catalog (`capabilities.inputs`) says which
@@ -51,6 +52,10 @@ export interface ModelOptions {
     readonly negativeMax: number | null;
     // Aspect ratios the model accepts, or an empty list when it takes none.
     readonly aspects: readonly string[];
+    // Speech models take a voice described in words, and it is required.
+    readonly voice: boolean;
+    // Audio length in seconds, for the models that let you choose one.
+    readonly audioLength: { readonly min: number; readonly max: number; readonly def: number } | null;
 }
 
 export function optionsFor(model: CatalogModel): ModelOptions {
@@ -61,10 +66,35 @@ export function optionsFor(model: CatalogModel): ModelOptions {
         seed: !!inputs.seed,
         negativeMax: neg ? (typeof neg.max === 'number' ? neg.max : NEGATIVE_MAX) : null,
         aspects: Array.isArray(values) ? values.filter((v): v is string => typeof v === 'string') : [],
+        voice: !!inputs.voice_description,
+        audioLength: audioLengthOf(model),
     };
 }
 
+export const VOICE_MAX = 500;
+
+// The audio models that let you pick a length declare `duration` as an int range (web: audioDurationConfig).
+function audioLengthOf(model: CatalogModel): ModelOptions['audioLength'] {
+    if (kindOf(model.modality) !== 'audio') return null;
+    const d = (inputsOf(model).duration ?? {}) as { type?: unknown; min?: unknown; max?: unknown; default?: unknown };
+    if (d.type !== 'int' || !Number.isInteger(d.min) || !Number.isInteger(d.max) || (d.min as number) > (d.max as number)) return null;
+    const min = d.min as number;
+    const max = d.max as number;
+    const def = Number.isInteger(d.default) && (d.default as number) >= min && (d.default as number) <= max ? (d.default as number) : max;
+    return { min, max, def };
+}
+
+export const voiceIsMissing = (o: ModelOptions, voice: string): boolean => o.voice && !voice.trim();
+
+// An empty length means the default; anything else must be a whole number inside the range.
+export function audioLengthInvalid(o: ModelOptions, value: string): boolean {
+    if (!o.audioLength || value === '') return false;
+    const n = Number(value);
+    return !/^\d+$/.test(value) || n < o.audioLength.min || n > o.audioLength.max;
+}
+
 export const hasSettings = (o: ModelOptions): boolean => o.seed || o.negativeMax !== null;
+export const hasAnyOption = (o: ModelOptions): boolean => hasSettings(o) || o.aspects.length > 0 || o.voice || o.audioLength !== null;
 
 // The count control is for image models only, never an Auto Short.
 export function takesImageCount(model: CatalogModel): boolean {
@@ -78,11 +108,13 @@ export function imageCount(model: CatalogModel, count: number): number {
 export const seedIsInvalid = (seed: string): boolean => seed !== '' && !(/^\d+$/.test(seed) && Number(seed) <= SEED_MAX);
 
 // What to send for the settings: only what the model takes and the person set. An invalid seed is dropped.
-export function settingsInputs(options: ModelOptions, s: { seed: string; negative: string; aspect: string | null }): Record<string, string | number> {
+export function settingsInputs(options: ModelOptions, s: { seed: string; negative: string; aspect: string | null; voice?: string; audioSeconds?: string }): Record<string, string | number> {
     const out: Record<string, string | number> = {};
     if (options.seed && /^\d+$/.test(s.seed) && Number(s.seed) <= SEED_MAX) out.seed = Number(s.seed);
     if (options.negativeMax !== null && s.negative.trim()) out.negative_prompt = s.negative.trim().slice(0, options.negativeMax);
     if (s.aspect && options.aspects.includes(s.aspect)) out.aspect_ratio = s.aspect;
+    if (options.voice && s.voice?.trim()) out.voice_description = s.voice.trim().slice(0, VOICE_MAX);
+    if (options.audioLength && !audioLengthInvalid(options, s.audioSeconds ?? '')) out.duration = s.audioSeconds ? Number(s.audioSeconds) : options.audioLength.def;
     return out;
 }
 
@@ -116,6 +148,11 @@ export interface CreateDraft {
     readonly count: number;
     readonly seed: string;
     readonly negative: string;
+    // Added with the Cinema camera and voice (ADR-0171); a draft saved before them reads back without.
+    readonly voice?: string;
+    readonly audioSeconds?: string;
+    readonly cinemaOn?: boolean;
+    readonly cinema?: Cinema;
 }
 
 // A saved draft is read back only if it is well formed and for this model. Files and keys are never saved: a file
@@ -134,7 +171,11 @@ export function parseDraft(raw: unknown, modelId: string): CreateDraft | null {
         count: d.count,
         seed: d.seed.slice(0, 10),
         negative: d.negative.slice(0, NEGATIVE_MAX),
+        voice: typeof d.voice === 'string' ? d.voice.slice(0, VOICE_MAX) : '',
+        audioSeconds: typeof d.audioSeconds === 'string' ? d.audioSeconds.slice(0, 4) : '',
+        cinemaOn: d.cinemaOn === true,
+        cinema: sanitizeCinema(d.cinema),
     };
 }
 
-export const draftIsEmpty = (d: Pick<CreateDraft, 'prompt' | 'seed' | 'negative'>): boolean => !d.prompt.trim() && !d.seed && !d.negative.trim();
+export const draftIsEmpty = (d: Pick<CreateDraft, 'prompt' | 'seed' | 'negative' | 'voice'>): boolean => !d.prompt.trim() && !d.seed && !d.negative.trim() && !d.voice?.trim();
