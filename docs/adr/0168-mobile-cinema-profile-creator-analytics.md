@@ -1,6 +1,6 @@
 # ADR-0168: Mobile Cinema profile, creator application and audience insights (parity P6)
 
-**Status:** Proposed 2026-10-19. Builds on ADR-0164 and ADR-0165. Creator **upload**, drafts, submit, paid unlocks, the Pass and earnings are not in this ADR (ADR-0143 and the parity plan keep them out of this wave).
+**Status:** Proposed 2026-10-19. Builds on ADR-0164 and ADR-0178. Creator **upload**, drafts, submit, paid unlocks, the Pass and earnings are not in this ADR (ADR-0143 and the parity plan keep them out of this wave).
 
 ## Decision
 

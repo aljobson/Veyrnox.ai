@@ -1,4 +1,4 @@
-# ADR-0165: Mobile Cinema social layer (parity P6, viewer slice 2)
+# ADR-0178: Mobile Cinema social layer (parity P6, viewer slice 2)
 
 **Status:** Proposed 2026-10-19. Second viewer slice, built on ADR-0151. Every switch below is **off in production**; the phone ships the screens dark.
 
