@@ -12,5 +12,5 @@ export default function Index() {
             </View>
         );
     }
-    return <Redirect href={status === 'signedIn' ? '/(app)' : '/sign-in'} />;
+    return <Redirect href={status === 'signedIn' ? '/(app)/(tabs)' : '/sign-in'} />;
 }
