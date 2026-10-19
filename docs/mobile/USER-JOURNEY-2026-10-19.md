@@ -14,30 +14,32 @@
 
 The pieces mostly exist (Create, Templates, Auto Short, Quick edit, Publish composer, Cinema feed, Library). The gap is the connective tissue: finding them, being led into them, and moving between them.
 
-## 2. Reference apps (what is and is not known)
+## 2. Reference: the owner's own web product (decision 2026-10-19)
 
-Official sources were thin, so treat this as direction, not fact.
+The owner chose to use the Veyrnox.ai web app as the reference instead of installing CapCut, ReelShort, Higgsfield and Metricool. Official sources for those were thin (CapCut tabs, ReelShort tabs and Higgsfield phone navigation could not be confirmed; Metricool's own help says its phone app is for publishing, basic stats, replies and planning, with calendars, SmartLinks, ads and video editing left to the web), so nothing below depends on them.
 
-- **CapCut:** four bottom tabs and a central "+" to start a project. The exact labels (Edit, Templates, Inbox, Me versus a Home tab) are unconfirmed; only low-quality pages and one beginner guide were found. Templates are a front door, not a menu item.
-- **ReelShort:** the only tab list found is from a clone-script vendor (Home, Discover/Watch, My List, Earn Reward, Profile), so it may not match the real app. Lazyweb holds about 90 captured screens including onboarding; open it before design lock.
-- **Metricool mobile:** by its own help page the app is for publishing, basic stats, replying to messages and planning on the go; advanced work (calendars, SmartLinks, ads, video editing, plan changes) stays on the web. A good model for how little Publish needs on a phone.
-- **Higgsfield:** nothing found on its phone navigation. Its help centre describes an Explore feed of published apps for the web. Unverified.
+What the web product already says about structure:
+- **Studio navigation** (`app/veyrnox/_components/NavBar.js`): Explore (the preset gallery, the web home), Oddlings (featured), Create, Video agent, LLM Chat, Film Studio, Library, then Video editor, Projects and Enhance when their flags are on.
+- **The web's own phone design** (`app/veyrnox/m/*`, a prototype with sample data): four tabs, Create, Explore, Library, Credits. Explore is a category-filtered two-column grid of presets.
+- **Vey** (`VeyCharacter`, `VeyConversation`, `VeyPanelSideButton`): the mascot is a character that opens a conversation panel, which can be moved to the left or right side (`lib/veyPlacement`). It is the web's chat entry point.
 
-Take from this: lead with creation and templates, keep the phone's Publish small, give Cinema its own tab, and verify the rest by installing the apps.
+Rule for the mobile app: reuse these names, ordering and the Explore-first home, and build the phone shape around them.
 
-## 3. Proposed shape
+## 3. Proposed shape (revised 2026-10-19 after the owner's answers)
 
-**Five bottom tabs, Credits balance in the header on every tab, Account behind the avatar.**
+**Five bottom tabs, Credits balance chip in the header of every tab, Account behind the avatar, and Vey the mascot on every screen as the chat entry.**
 
 | Tab | Holds | Replaces on Home |
 |-----|-------|------------------|
-| Home | A prompt box ("What do you want to make?"), Templates strip, recent creations, Vey chat entry, a free-credits note when relevant | The button column |
+| Explore (home) | Preset gallery as on web (category chips, two-column grid), the Oddlings banner, a prompt box on top, recent creations | The button column |
+| Create (centre) | Create today, plus Video agent and Auto Short as clearly named paths | Create button |
 | Cinema | The vertical feed (exists), then My List and Continue watching | Cinema button |
-| Create (centre) | Create today, plus Auto Short and the video agent as clearly named paths | Create button |
 | Library | Creations, Video files, Projects, with Edit, Publish and Delete on each item | Library, Edit, Projects buttons |
 | Publish | Accounts, Compose, Posts, Calendar, Analytics (exists); the plan paywall only when not subscribed | Publish plan button |
 
-Buy credits sits in the header balance chip. Chat lives on Home. Account holds Help, Referrals, Credit history, Blocked, Delete.
+- **Vey mascot = chat.** A floating character on every signed-in screen, as on the web. Tapping it opens the chat as a sheet (threads, personas and folders are already built, ADR-0125); it can be moved to the other side as on the web. The old Chat button on Home goes away. Needs a design pass so it never covers the tab bar, keyboard, player controls or Cinema actions.
+- **Credits** are not a tab (the web's phone prototype made them one): the header chip opens Buy credits and Credit history. This keeps the store-only purchase rule easy to audit.
+- Account holds Help, Referrals, Credit history, Blocked members, Delete.
 
 ## 4. The journeys
 
@@ -108,15 +110,16 @@ Multi-track timeline, creator upload to Cinema, Publish developer keys, ads and 
 
 | Slice | Work | Exit check |
 |-------|------|------------|
-| N1 | Tab shell: five tabs, header balance chip, avatar to Account; existing screens moved in without behaviour change | Every current screen reachable; no screen lost; tests and typecheck |
+| N1 | Tab shell: five tabs (Explore, Create, Cinema, Library, Publish), header balance chip, avatar to Account; existing screens moved in without behaviour change | Every current screen reachable; no screen lost; tests and typecheck |
 | N2 | Signed-out browse: preview Home and the Cinema list, sign-in on play, create or buy | Cold launch without an account shows content; Apple 5.1.1 satisfied |
 | N3 | First-run: three intro cards, the credits explanation, permissions in context | Shown once; skippable; reset in Account for testing |
-| N4 | Home as launchpad: prompt box, Templates strip, recent creations, pick up where you left off | A new person can make something in two taps from Home |
+| N4 | Explore as the home: prompt box, category chips and preset grid, Oddlings banner, recent creations, pick up where you left off | A new person can make something in two taps from Home |
 | N5 | Result screen next steps: Edit, Publish, Make another | Each opens the target with the file carried over |
 | N6 | Empty states and low-balance prompt on Library, Posts, Cinema, Create | No blank screen without a next action |
+| N8 | Vey mascot as the chat entry on every signed-in screen; the Chat button leaves Home | Opens the chat sheet; never covers the tab bar, keyboard, player or composer |
 | N7 | Walkthrough pass: a new person on a real phone from install to a scheduled post, recorded with screenshots | Dated note listing every stall |
 
-Order: N1, N5, N4, N3, N2, N6, N7. N1 comes first because every other slice lands in the tab shell, and it touches shared layout files, so run it alone (no parallel mobile PRs while it is open).
+Order: N1, N5, N4, N8, N3, N2, N6, N7. N1 comes first because every other slice lands in the tab shell, and it touches shared layout files, so run it alone (no parallel mobile PRs while it is open).
 
 ## 6. Rules that still hold
 
@@ -126,9 +129,15 @@ Order: N1, N5, N4, N3, N2, N6, N7. N1 comes first because every other slice land
 - New copy goes through the i18n keys list (`I18N-NEW-KEYS.md`); no machine translation of new strings.
 - Accessibility: 44 pt targets, labels and roles on the tab bar (ADR-0133).
 
-## 7. Open questions for the owner
+## 7. Owner decisions (2026-10-19) and what is still open
 
-1. Is Chat a tab, or a Home entry as proposed? Chat is a core Vey feature on web.
-2. Should signed-out people see Cinema at all, or only a product preview? Cinema may be a draw, but playback needs sign-in either way.
-3. Does the first-run explain credits with the real free-credit amount? It needs the live number from the server, not a hard-coded figure.
-4. Install CapCut, ReelShort, Higgsfield and Metricool and record their first-run and tab layouts, to replace the unverified rows in section 2.
+Decided:
+1. **Chat is the Vey mascot**, not a tab and not a Home button.
+2. **Signed-out people may browse a product preview and the Cinema list; playing, creating and buying need sign-in.** The owner answered "Correct" to this wording. If the intent was previews only, with no Cinema list before sign-in, say so before N2.
+3. **First-run quotes the real free-credit amount from the server**, never a hard-coded number.
+4. **The web product is the reference**, not the competitor apps.
+
+Still open:
+- Where Vey sits by default on a phone, and whether it hides during video playback and in the composer. Design choice for the mobile session; check it against the web's `veyPlacement` rules.
+- Whether Oddlings gets a mobile screen or stays a web link (the web features it first; the phone app has none).
+- Whether the preset gallery needs a mobile-specific cut (the web uses the same catalog; `GET /api/presets` exists).
