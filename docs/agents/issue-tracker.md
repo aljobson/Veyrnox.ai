@@ -2,7 +2,7 @@
 
 Issues and specs for this repo live as GitHub issues. Use the `gh` CLI for all operations.
 
-Always target `aljobson/Veyrnox.ai`. This clone also has an `upstream` remote (Open-Generative-AI); pass `--repo aljobson/Veyrnox.ai` if `gh` ever resolves elsewhere.
+Always target `aljobson/Veyrnox.ai`. If this clone has an `upstream` remote, pass `--repo aljobson/Veyrnox.ai` if `gh` ever resolves elsewhere.
 
 ## Conventions
 

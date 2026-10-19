@@ -1,7 +1,5 @@
 // Character builder: grouped traits turned into one portrait prompt.
-// Option lists ported from Open-Generative-AI's AiInfluencerStudio.jsx (MIT,
-// Copyright (c) Anil Matcha). Two changes: origin options say "... heritage"
-// rather than upstream's "Scandinavian Supermodel" / "K-Pop Idol phenotype",
+// Origin options say "... heritage" rather than stereotyped phenotype labels,
 // and the base prompt always asks for an original adult, not a real person
 // (Terms: no minors, no deepfakes). Client-side only: it changes the prompt,
 // never the model or the price.
