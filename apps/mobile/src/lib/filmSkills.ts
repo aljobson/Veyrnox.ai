@@ -1,4 +1,4 @@
-// The seven Film skills (ADR-0172): chats that help write what Film Studio on the web needs. The wording is the web's
+// The seven Film skills (ADR-0182): chats that help write what Film Studio on the web needs. The wording is the web's
 // (app/veyrnox/_lib/filmStudioAssistants.js). Film Studio itself is not on the phone, so these only help write; they decide,
 // approve and lock nothing.
 import type { Skill } from './studioSkills';
