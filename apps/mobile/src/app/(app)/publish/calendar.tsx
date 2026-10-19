@@ -4,7 +4,10 @@ import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, T
 import { touchTarget } from '../../../lib/a11y';
 import { t } from '../../../lib/i18n';
 import { postStatusLabel, targetStatusLabel } from '../../../lib/publish';
-import { calendarErrorKey, dayGroups, fetchCalendar, weekBounds, type CalendarPost } from '../../../lib/publishCalendar';
+import { ApiError } from '../../../lib/api';
+import { calendarErrorKey, countByDay, dayGroups, fetchCalendar, monthBounds, weekBounds, type CalendarPost } from '../../../lib/publishCalendar';
+import { CalendarMonth } from '../../../components/CalendarMonth';
+import { UnlockCard } from '../../../components/UnlockCard';
 import { usePublishApi } from '../../../lib/usePublishApi';
 import { colors } from '../../../theme';
 
@@ -15,12 +18,16 @@ const time = (iso: string | null) => (iso ? new Date(iso).toLocaleTimeString(und
 export default function Calendar() {
     const api = usePublishApi();
     const router = useRouter();
+    const [view, setView] = useState<'week' | 'month'>('week');
     const [offset, setOffset] = useState(0);
+    const [picked, setPicked] = useState<string | null>(null);
+    const [locked, setLocked] = useState(false);
+    const [reloadKey, setReloadKey] = useState(0);
     const [posts, setPosts] = useState<CalendarPost[] | null>(null);
     const [truncated, setTruncated] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [refreshing, setRefreshing] = useState(false);
-    const week = useMemo(() => weekBounds(new Date(), offset), [offset]);
+    const week = useMemo(() => (view === 'week' ? weekBounds(new Date(), offset) : monthBounds(new Date(), offset)), [view, offset]);
 
     const load = useCallback(async () => {
         try {
@@ -36,37 +43,59 @@ export default function Calendar() {
             setPosts(all);
             setTruncated(cursor !== null);
             setError(null);
+            setLocked(false);
         } catch (err) {
             setPosts(null);
-            setError(t(calendarErrorKey(err)));
+            if (err instanceof ApiError && err.status === 402) setLocked(true);
+            else setError(t(calendarErrorKey(err)));
         }
     }, [api, week]);
 
     useEffect(() => {
         setPosts(null);
         load();
-    }, [load]);
+    }, [load, reloadKey]);
 
-    const groups = useMemo(() => (posts ? dayGroups(posts) : []), [posts]);
+    function switchView(next: 'week' | 'month') {
+        setView(next);
+        setOffset(0);
+        setPicked(null);
+    }
+
+    const groups = useMemo(() => {
+        const all = posts ? dayGroups(posts) : [];
+        return view === 'month' && picked ? all.filter((g) => g.key === picked) : all;
+    }, [posts, view, picked]);
+    const counts = useMemo(() => countByDay(posts ?? []), [posts]);
     const last = new Date(week.end.getFullYear(), week.end.getMonth(), week.end.getDate() - 1);
 
     return (
         <View style={styles.screen}>
             <Stack.Screen options={{ title: t('calendar.title') }} />
             <View style={styles.nav}>
-                <Pressable accessibilityRole="button" accessibilityLabel={t('calendar.prev')} style={[styles.arrow, touchTarget]} onPress={() => setOffset((o) => o - 1)}><Text style={styles.arrowText}>‹</Text></Pressable>
-                <Pressable accessibilityRole="button" accessibilityLabel={t('calendar.thisWeek')} disabled={offset === 0} style={[touchTarget, styles.rangeBox]} onPress={() => setOffset(0)}>
-                    <Text style={styles.range}>{short(week.start)} – {short(last)}</Text>
+                <Pressable accessibilityRole="button" accessibilityLabel={t(view === 'week' ? 'calendar.prev' : 'calendar.prevMonth')} style={[styles.arrow, touchTarget]} onPress={() => setOffset((o) => o - 1)}><Text style={styles.arrowText}>‹</Text></Pressable>
+                <Pressable accessibilityRole="button" accessibilityLabel={t(view === 'week' ? 'calendar.thisWeek' : 'calendar.thisMonth')} disabled={offset === 0} style={[touchTarget, styles.rangeBox]} onPress={() => setOffset(0)}>
+                    <Text style={styles.range}>{view === 'week' ? `${short(week.start)} – ${short(last)}` : week.start.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</Text>
                 </Pressable>
-                <Pressable accessibilityRole="button" accessibilityLabel={t('calendar.next')} style={[styles.arrow, touchTarget]} onPress={() => setOffset((o) => o + 1)}><Text style={styles.arrowText}>›</Text></Pressable>
+                <Pressable accessibilityRole="button" accessibilityLabel={t(view === 'week' ? 'calendar.next' : 'calendar.nextMonth')} style={[styles.arrow, touchTarget]} onPress={() => setOffset((o) => o + 1)}><Text style={styles.arrowText}>›</Text></Pressable>
             </View>
-            {error ? (
+            <View style={styles.views}>
+                {(['week', 'month'] as const).map((v) => (
+                    <Pressable key={v} accessibilityRole="button" accessibilityState={{ selected: view === v }} style={[styles.viewChip, touchTarget, view === v && styles.viewOn]} onPress={() => switchView(v)}>
+                        <Text style={[styles.viewText, view === v && styles.viewTextOn]}>{t(v === 'week' ? 'calendar.week' : 'calendar.month')}</Text>
+                    </Pressable>
+                ))}
+            </View>
+            {locked ? (
+                <UnlockCard feature="calendar" onUnlocked={() => setReloadKey((n) => n + 1)} />
+            ) : error ? (
                 <Text style={styles.error} accessibilityRole="alert">{error}</Text>
             ) : !posts ? (
                 <ActivityIndicator color={colors.accent} />
             ) : (
                 <ScrollView refreshControl={<RefreshControl refreshing={refreshing} tintColor={colors.accent} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}>
-                    {groups.length === 0 ? <Text style={styles.muted}>{t('calendar.none')}</Text> : null}
+                    {view === 'month' ? <CalendarMonth monthStart={week.start} counts={counts} selected={picked} onSelect={(k) => setPicked((cur) => (cur === k ? null : k))} /> : null}
+                    {groups.length === 0 ? <Text style={styles.muted}>{t(view === 'week' ? 'calendar.none' : picked ? 'calendar.noneDay' : 'calendar.noneMonth')}</Text> : null}
                     {groups.map((g) => (
                         <View key={g.key}>
                             <Text style={styles.day} accessibilityRole="header">{g.date.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
@@ -113,4 +142,9 @@ const styles = StyleSheet.create({
     bad: { color: colors.danger },
     muted: { color: colors.muted, paddingVertical: 16 },
     error: { color: colors.danger, paddingTop: 16 },
+    views: { flexDirection: 'row', gap: 8, paddingBottom: 8 },
+    viewChip: { paddingHorizontal: 14, borderRadius: 10, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
+    viewOn: { backgroundColor: colors.accent, borderColor: colors.accent },
+    viewText: { color: colors.body },
+    viewTextOn: { color: colors.accentInk, fontWeight: '600' },
 });
