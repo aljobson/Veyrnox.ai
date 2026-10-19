@@ -1,12 +1,16 @@
 import * as Crypto from 'expo-crypto';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { CONSENT_DECLINED_MESSAGE } from '../../../lib/aiConsent';
 import { ApiError } from '../../../lib/api';
 import { OFFLINE_PAID_MESSAGE, OfflineError } from '../../../lib/network';
+import { CreateOptions, type OptionValues } from '../../../components/CreateOptions';
 import { SourcePicker } from '../../../components/SourcePicker';
+import { clearDraft, loadDraft, saveDraft } from '../../../lib/createDraftStore';
+import { SAVED_DRAFT_VERSION, batchCost, freeLeftFor, hasSettings, imageCount, inputsForIndex, optionsFor, seedIsInvalid, settingsInputs, takesImageCount } from '../../../lib/createOptions';
+import { useFreeLeft } from '../../../lib/useFreeLeft';
 import { estimateCredits, fetchCatalog, kindOf, mediaApi, promptRequired, textInput, type CatalogModel } from '../../../lib/media';
 import { selectedState } from '../../../lib/a11y';
 import { missingRequired, slotsFor, toSourceKeys, type SlotName } from '../../../lib/sources';
@@ -28,8 +32,13 @@ export default function CreateWithModel() {
     const [uploaded, setUploaded] = useState<Partial<Record<SlotName, string>>>({});
     const [sending, setSending] = useState<Partial<Record<SlotName, boolean>>>({});
     const [error, setError] = useState<string | null>(null);
-    // The same request keeps its key, so a retry after a dropped connection is charged once.
-    const pending = useRef<{ signature: string; key: string } | null>(null);
+    const [opts, setOpts] = useState<OptionValues>({ aspect: null, count: 1, seed: '', negative: '' });
+    const [restored, setRestored] = useState(false);
+    const [note, setNote] = useState<string | null>(null);
+    const freeMap = useFreeLeft();
+    // The same request keeps its keys (one per image), so a retry after a dropped connection is charged once.
+    const pending = useRef<{ signature: string; keys: string[] } | null>(null);
+    const draftReady = useRef(false);
 
     useEffect(() => {
         fetchCatalog()
@@ -41,40 +50,95 @@ export default function CreateWithModel() {
                     setDuration(found.durations.includes(wanted) ? wanted : (found.durations[0] ?? 5));
                 }
                 if (!found) setError(t('form.modelGone'));
+                if (!found) return;
+                const o = optionsFor(found);
+                const base: OptionValues = { aspect: o.aspects.includes('16:9') ? '16:9' : (o.aspects[0] ?? null), count: 1, seed: '', negative: '' };
+                // A template brings its own words; only a form opened bare gets the unsent draft back.
+                if (typeof presetPrompt === 'string') {
+                    setOpts(base);
+                    draftReady.current = true;
+                    return;
+                }
+                loadDraft(found.id).then((d) => {
+                    if (d) {
+                        setPrompt(d.prompt);
+                        if (d.duration !== null && found.durations.includes(d.duration)) setDuration(d.duration);
+                        setOpts({ aspect: d.aspect && o.aspects.includes(d.aspect) ? d.aspect : base.aspect, count: imageCount(found, d.count), seed: d.seed, negative: d.negative });
+                        setRestored(true);
+                    } else setOpts(base);
+                    draftReady.current = true;
+                });
             })
             .catch(() => setError(t('form.modelLoad')));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [modelId, presetDuration]);
+
+    // Words and settings are kept as they change, so a closed app or a call does not lose them.
+    useEffect(() => {
+        if (!model || !draftReady.current) return;
+        const id = setTimeout(() => {
+            saveDraft({ v: SAVED_DRAFT_VERSION, modelId: model.id, prompt, duration, aspect: opts.aspect, count: opts.count, seed: opts.seed, negative: opts.negative }).catch(() => undefined);
+        }, 600);
+        return () => clearTimeout(id);
+    }, [model, prompt, duration, opts]);
+
+    const discardDraft = useCallback(() => {
+        setPrompt('');
+        setOpts((o) => ({ ...o, seed: '', negative: '', count: 1 }));
+        setRestored(false);
+        clearDraft().catch(() => undefined);
+    }, []);
 
     if (!model) {
         return <View style={styles.screen}>{error ? <Text style={styles.error}>{error}</Text> : <ActivityIndicator color={colors.accent} />}</View>;
     }
 
     const isVideo = kindOf(model.modality) === 'video';
-    const price = estimateCredits(model, duration);
+    const unit = estimateCredits(model, duration);
+    const options = optionsFor(model);
+    const n = imageCount(model, opts.count);
+    const freeLeft = freeLeftFor(freeMap, model.id);
+    // The first `freeLeft` images of a batch are free today; the server decides, this words the button.
+    const price = batchCost(unit, n, freeLeft);
     const text = prompt.trim();
     const slots = slotsFor(model);
     const sources = toSourceKeys(uploaded);
     const waiting = Object.values(sending).some(Boolean);
-    const ready = !waiting && missingRequired(slots, uploaded).length === 0 && (!promptRequired(model) || !!text);
+    const ready = !waiting && missingRequired(slots, uploaded).length === 0 && (!promptRequired(model) || !!text) && !seedIsInvalid(opts.seed);
     const text_ = textInput(model);
 
     async function generate() {
         if (!model || !ready || busy) return;
-        const signature = `${model.id}|${text}|${duration}|${sources.map((s) => `${s.slot}:${s.key}`).join(',')}`;
-        const key = pending.current?.signature === signature ? pending.current.key : Crypto.randomUUID();
-        pending.current = { signature, key };
+        const extra = settingsInputs(options, { seed: opts.seed, negative: opts.negative, aspect: opts.aspect });
+        const signature = `${model.id}|${text}|${duration}|${n}|${JSON.stringify(extra)}|${sources.map((s) => `${s.slot}:${s.key}`).join(',')}`;
+        const keys = pending.current?.signature === signature ? pending.current.keys : Array.from({ length: n }, () => Crypto.randomUUID());
+        pending.current = { signature, keys };
         setBusy(true);
         setError(null);
+        setNote(null);
+        let started = 0;
+        let first: string | null = null;
         try {
-            const r = await mediaApi(api).createGeneration({ modelId: model.id, prompt: text, durationSeconds: isVideo ? duration : null, confirmedCredits: price, idempotencyKey: key, sources, textKey: text_?.key });
+            // N images are N separate generations: each its own key, charge, refund and job, sent one at a time.
+            // A retry after a failure replays the same keys, so the ones already started are not charged again.
+            for (let i = 0; i < n; i++) {
+                const r = await mediaApi(api).createGeneration({ modelId: model.id, prompt: text, durationSeconds: isVideo ? duration : null, confirmedCredits: unit, idempotencyKey: keys[i], sources, textKey: text_?.key, extraInputs: inputsForIndex(extra, i, n) });
+                first ??= r.job_id;
+                started += 1;
+            }
             pending.current = null;
-            router.replace({ pathname: '/job/[id]', params: { id: r.job_id } });
+            clearDraft().catch(() => undefined);
+            if (n === 1 && first) router.replace({ pathname: '/job/[id]', params: { id: first } });
+            else router.replace('/library');
         } catch (err) {
             setError(messageFor(err));
+            if (n > 1) setNote(t(err instanceof ApiError && err.code !== 'network' ? 'opt.started' : 'opt.startedUnknown', { started: String(started), count: String(n), next: String(started + 1) }));
         } finally {
             setBusy(false);
         }
     }
+
+    const generateLabel = `${n > 1 ? t('opt.generateCount', { count: String(n) }) : t('slip.generate')}. ${costLine(price, n, freeLeft, unit)}`;
 
     return (
         <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
@@ -101,6 +165,14 @@ export default function CreateWithModel() {
                         maxLength={text_.max}
                     />
                 ) : null}
+                {restored ? (
+                    <View style={styles.restored} accessibilityLiveRegion="polite">
+                        <Text style={styles.restoredText}>{t('opt.draftRestored')}</Text>
+                        <Pressable accessibilityRole="button" accessibilityLabel={t('opt.draftClear')} style={styles.clear} onPress={discardDraft}>
+                            <Text style={styles.clearText}>{t('opt.draftClear')}</Text>
+                        </Pressable>
+                    </View>
+                ) : null}
                 {sources.length ? <Text style={styles.consent}>{t('form.consent')}</Text> : null}
                 {isVideo && model.durations.length > 1 ? (
                     <View style={styles.chips}>
@@ -111,14 +183,24 @@ export default function CreateWithModel() {
                         ))}
                     </View>
                 ) : null}
-                <Text style={styles.price}>{plural('form.costs', price)}</Text>
+                {options.aspects.length > 0 || takesImageCount(model) || hasSettings(options) ? <CreateOptions options={options} values={opts} showCount={takesImageCount(model)} onChange={setOpts} /> : null}
+                <Text style={styles.price} accessibilityLiveRegion="polite">{costLine(price, n, freeLeft, unit)}</Text>
                 {error ? <Text style={styles.error}>{error}</Text> : null}
-                <Pressable accessibilityRole="button" accessibilityLabel={t('slip.generate')} accessibilityState={{ busy, disabled: !ready || busy }} disabled={!ready || busy} style={[styles.button, (!ready || busy) && styles.off]} onPress={generate}>
-                    {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>{t('slip.generate')}</Text>}
+                {note ? <Text style={styles.consent}>{note}</Text> : null}
+                <Pressable accessibilityRole="button" accessibilityLabel={generateLabel} accessibilityState={{ busy, disabled: !ready || busy }} disabled={!ready || busy} style={[styles.button, (!ready || busy) && styles.off]} onPress={generate}>
+                    {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>{n > 1 ? t('opt.generateCount', { count: String(n) }) : t('slip.generate')}</Text>}
                 </Pressable>
             </ScrollView>
         </KeyboardAvoidingView>
     );
+}
+
+// What Generate will cost, said before it is pressed. Free runs left today are applied first.
+function costLine(price: number, n: number, freeLeft: number, unit: number): string {
+    if (price === 0) return t('opt.costFree');
+    if (n > 1 && freeLeft > 0) return plural('opt.costsPartial', price, { free: String(Math.min(freeLeft, n)), images: String(n) });
+    if (n > 1) return plural('opt.costsBatch', price, { images: String(n) });
+    return plural('form.costs', unit);
 }
 
 function messageFor(err: unknown): string {
@@ -161,6 +243,10 @@ const styles = StyleSheet.create({
     chipText: { color: colors.body, fontWeight: '600' },
     chipTextOn: { color: colors.accentInk },
     price: { color: colors.money },
+    restored: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, paddingLeft: 14 },
+    restoredText: { color: colors.body, flexShrink: 1 },
+    clear: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 14 },
+    clearText: { color: colors.accent, fontWeight: '600' },
     consent: { color: colors.muted, fontSize: 12 },
     button: { backgroundColor: colors.accent, borderRadius: 12, paddingVertical: 16, alignItems: 'center' },
     off: { opacity: 0.4 },

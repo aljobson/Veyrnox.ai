@@ -38,6 +38,8 @@ export const POLICIES = {
     // at once); the saved copy only fills the gap while that runs, or stands in when it fails.
     balance: { name: 'balance', perUser: true, freshMs: 0, maxAgeMs: DAY },
     library: { name: 'library', perUser: true, freshMs: 0, maxAgeMs: 7 * DAY },
+    // The words of an unsent Create form (ADR-0153). Per account; no files or keys.
+    createDraft: { name: 'create-draft', perUser: true, freshMs: 0, maxAgeMs: 7 * DAY },
     catalog: { name: 'catalog', perUser: false, freshMs: 10 * MINUTE, maxAgeMs: 7 * DAY },
 } as const satisfies Record<string, CachePolicy>;
 
