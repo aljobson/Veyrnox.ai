@@ -91,6 +91,9 @@ export default function Account() {
                 <Link href="/report" asChild>
                     <Row label={t('account.report')} />
                 </Link>
+                <Link href="/blocked" asChild>
+                    <Row label={t('blocks.title')} />
+                </Link>
                 <Text style={styles.note}>{t('account.reportNote')}</Text>
             </Section>
 

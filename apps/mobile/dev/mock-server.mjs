@@ -23,6 +23,7 @@ const state = {
         { id: 'post-2', key: 'seed-2', status: 'failed', scheduled_at: '2026-10-17T09:00:00Z', global_text: 'Behind the scenes cut.', created_at: '2026-10-17T08:00:00Z', updated_at: '2026-10-17T09:05:00Z', targets: [{ id: 't2', network: 'tiktok', publish_status: 'failed', platform_post_url: null, last_error: 'The account access token expired. <b>Reconnect</b> the account.' }, { id: 't3', network: 'instagram', publish_status: 'published', platform_post_url: 'https://www.instagram.com/p/mock/', last_error: null }] },
     ],
     deleted: new Set(),
+    blocks: new Map([['spam_account', { username: 'spam_account', display_name: 'Spam Account', created_at: '2026-10-17T09:00:00.000Z' }]]),
     connectStates: new Map(),
     referral: { code: 'K7M2PQ9XWD', referred: 2, attached: false },
 };
@@ -329,6 +330,24 @@ createServer(async (req, res) => {
     if (path === '/api/v1/store-purchases/customer') return send(res, 200, { rc_customer_id: '3f2b8a52-6c0e-4d7a-9b1f-0a1b2c3d4e5f' });
     if (path === '/api/v1/social/plan') return send(res, 200, { plans: [], entitlement: { tier: 'free', subscription: null } });
 
+    // Cinema blocks (ADR-0141, server ADR-0135): by username, replay-safe, newest first.
+    const mb = path.match(/^\/api\/v1\/cinema\/blocks(?:\/([^/]+))?$/);
+    if (mb) {
+        if (req.method === 'GET' && !mb[1]) return send(res, 200, { blocks: [...state.blocks.values()].sort((a, b) => b.created_at.localeCompare(a.created_at)) });
+        if (req.method === 'POST' && !mb[1]) {
+            const u = String(body.username || '');
+            if (!/^[a-z][a-z0-9_]{2,29}$/.test(u)) return send(res, 400, { error: 'invalid_username' });
+            if (u === 'me_myself') return send(res, 400, { error: 'cannot_block_self' });
+            if (u === 'nobody_here') return send(res, 404, { error: 'user_not_found' });
+            const was = state.blocks.has(u);
+            if (!was) state.blocks.set(u, { username: u, display_name: u, created_at: new Date().toISOString() });
+            return send(res, was ? 200 : 201, { username: u, blocked: true, already: was });
+        }
+        if (req.method === 'DELETE' && mb[1]) {
+            const was = state.blocks.delete(mb[1]);
+            return send(res, 200, { username: mb[1], blocked: false, already: !was });
+        }
+    }
     if ((m = path.match(/^\/api\/v1\/cinema\/titles\/([^/]+)$/))) {
         const t = CINEMA.find((x) => x.id === m[1]);
         if (!t) return send(res, 404, { error: 'title_not_found' });

@@ -1,8 +1,10 @@
 import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
+import { blockMember, blocksErrorKey } from '../../../lib/cinemaBlocks';
+import { t } from '../../../lib/i18n';
 import { formatDuration, parseTitleDetail, posterUrl, type TitleDetail } from '../../../lib/cinema';
 import { colors } from '../../../theme';
 
@@ -28,6 +30,32 @@ export default function CinemaTitlePage() {
 
     const watch = (contentId: string, title: string) => router.push({ pathname: '/cinema/watch/[id]', params: { id: contentId, title } });
     const report = () => router.push({ pathname: '/report', params: { kind: 'cinema_title', id } });
+    const [blocking, setBlocking] = useState(false);
+    const [blockNote, setBlockNote] = useState<string | null>(null);
+    // Blocking hides this member's titles and comments from this person only; it does not tell them. Reporting is separate.
+    const block = () => {
+        const username = detail?.title.creatorUsername;
+        const name = detail?.title.creator || username;
+        if (!username || !name) return;
+        Alert.alert(t('blocks.blockTitle', { name }), t('blocks.blockBody'), [
+            { text: t('blocks.cancel'), style: 'cancel' },
+            {
+                text: t('blocks.block'),
+                style: 'destructive',
+                onPress: async () => {
+                    setBlocking(true);
+                    setBlockNote(null);
+                    try {
+                        await blockMember(api, username);
+                        router.back();
+                    } catch (err) {
+                        setBlockNote(t(blocksErrorKey(err)));
+                        setBlocking(false);
+                    }
+                },
+            },
+        ]);
+    };
 
     if (failed) return <View style={styles.center}><Text style={styles.muted}>This title is not available.</Text></View>;
     if (!detail) return <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>;
@@ -66,6 +94,12 @@ export default function CinemaTitlePage() {
             <Pressable accessibilityRole="button" style={styles.report} onPress={report}>
                 <Text style={styles.muted}>Report this title</Text>
             </Pressable>
+            {title.creatorUsername ? (
+                <Pressable accessibilityRole="button" accessibilityState={{ busy: blocking, disabled: blocking }} disabled={blocking} style={styles.report} onPress={block}>
+                    <Text style={styles.muted}>{t('blocks.blockMember', { name: title.creator || title.creatorUsername })}</Text>
+                </Pressable>
+            ) : null}
+            {blockNote ? <Text style={styles.muted} accessibilityRole="alert">{blockNote}</Text> : null}
         </ScrollView>
     );
 }
