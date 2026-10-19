@@ -6,6 +6,7 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View
 import { useAuth } from '../../../auth/AuthProvider';
 import { CONFIRM_MESSAGE, CONFIRM_TITLE, deleteCreation, deleteMessage, isAlreadyGone } from '../../../lib/deleteCreation';
 import { mediaApi, waitForJob, type JobState } from '../../../lib/media';
+import { editHref, makeAnotherHref, nextStepsFor, publishHref } from '../../../lib/nextSteps';
 import { saveOutput, shareOutput } from '../../../lib/output';
 import { colors } from '../../../theme';
 import { t } from '../../../lib/i18n';
@@ -106,6 +107,8 @@ export default function JobScreen() {
 
     const canSave = !!asset && (asset.mime.startsWith('image/') || asset.mime.startsWith('video/'));
 
+    const next = asset ? nextStepsFor(asset.mime, modelId) : { edit: false, publish: false, makeAnother: false };
+
     return (
         <View style={styles.screen}>
             <Stack.Screen options={{ title: t('job.title') }} />
@@ -149,7 +152,29 @@ export default function JobScreen() {
                 </View>
             )}
             {asset ? (
-                <ScrollView style={styles.actions} contentContainerStyle={styles.actionsBody} scrollEnabled={false}>
+                <ScrollView style={styles.actions} contentContainerStyle={styles.actionsBody}>
+                    {next.edit || next.publish || next.makeAnother ? (
+                        <View style={styles.nextBlock}>
+                            <Text style={styles.nextTitle} accessibilityRole="header">{t('job.next.title')}</Text>
+                            <View style={styles.nextRow}>
+                                {next.edit ? (
+                                    <Pressable accessibilityRole="button" style={styles.nextButton} onPress={() => router.push(editHref(id))}>
+                                        <Text style={styles.nextText}>{t('job.next.edit')}</Text>
+                                    </Pressable>
+                                ) : null}
+                                {next.publish ? (
+                                    <Pressable accessibilityRole="button" style={styles.nextButton} onPress={() => router.push(publishHref(id))}>
+                                        <Text style={styles.nextText}>{t('job.next.publish')}</Text>
+                                    </Pressable>
+                                ) : null}
+                                {next.makeAnother && modelId ? (
+                                    <Pressable accessibilityRole="button" style={styles.nextButton} onPress={() => router.push(makeAnotherHref(modelId))}>
+                                        <Text style={styles.nextText}>{t('job.next.makeAnother')}</Text>
+                                    </Pressable>
+                                ) : null}
+                            </View>
+                        </View>
+                    ) : null}
                     <View style={styles.row}>
                         {canSave ? (
                             <Pressable accessibilityRole="button" disabled={!!acting} style={[styles.action, !!acting && styles.off]} onPress={() => run('save')}>
@@ -186,7 +211,12 @@ const styles = StyleSheet.create({
     buttonText: { color: colors.accentInk, fontWeight: '700', fontSize: 16 },
     secondary: { borderColor: colors.border, borderWidth: 1, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 22 },
     secondaryText: { color: colors.text, fontWeight: '600' },
-    actions: { flexGrow: 0 },
+    actions: { flexGrow: 0, flexShrink: 1 },
+    nextBlock: { gap: 8 },
+    nextTitle: { color: colors.text, fontSize: 16, fontWeight: '700' },
+    nextRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    nextButton: { flexGrow: 1, minHeight: 44, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.accent, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 16 },
+    nextText: { color: colors.accentInk, fontWeight: '700' },
     actionsBody: { gap: 10, paddingTop: 12 },
     row: { flexDirection: 'row', gap: 10 },
     action: { flex: 1, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
