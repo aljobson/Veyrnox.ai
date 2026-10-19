@@ -146,3 +146,19 @@ describe('one charge on a retry', () => {
         expect(JSON.parse(bodies[1]).idempotency_key).toBe('vx-key-a');
     });
 });
+
+describe('replay and cut-off streams', () => {
+    const answer = (type: string, body: unknown) => ({ ok: true, status: 200, headers: { get: () => type }, json: async () => body }) as unknown as Response;
+    test('a JSON replay answer names the job and is not taken for a finished reply', async () => {
+        const stream = jest.fn().mockResolvedValue(answer('application/json', { replay: true, job_id: 'job-1' }));
+        await expect(chatApi({ stream } as unknown as ApiClient).sendMessage('t', 'hi', 'vx-k', () => {})).resolves.toEqual({ replay: true, job: 'job-1' });
+    });
+    test('JSON that is not a replay is no answer', async () => {
+        const stream = jest.fn().mockResolvedValue(answer('application/json', {}));
+        await expect(chatApi({ stream } as unknown as ApiClient).sendMessage('t', 'hi', 'vx-k', () => {})).rejects.toMatchObject({ status: 0 });
+    });
+    test('a stream that ends with no done was cut off', async () => {
+        const stream = jest.fn().mockResolvedValue(streamOf('event: delta\ndata: {"text":"Hel"}\n\n'));
+        await expect(chatApi({ stream } as unknown as ApiClient).sendMessage('t', 'hi', 'vx-k', () => {})).rejects.toMatchObject({ status: 0, code: 'stream_cut' });
+    });
+});

@@ -16,6 +16,9 @@ gone, so "the request failed" is not "nothing was charged".
   with the send's key. `closed: true` as the whole answer means no job exists and none can: nothing was charged.
 - The same look runs after a dropped connection or a request that got no answer. A server refusal (any HTTP
   status) made no reply and is told as such.
+- A **replay** answer (`200` JSON `{ replay: true, job_id }`, sent when the server already holds a job for the key)
+  is read as a send whose outcome is unknown, not as a finished reply; a stream that ends with no `done` is
+  likewise cut off. Both are looked for the same way.
 - Endings and their words (each says whether credits were used): saved (kept, charged; the chat is read again
   for the real reply and price), unsaved (charged, not stored), nothing (no credits; the message returns to the
   box), pending (still checking; what arrived stays on screen and the key is kept).

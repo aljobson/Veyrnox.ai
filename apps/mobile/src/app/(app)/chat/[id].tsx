@@ -86,7 +86,7 @@ export default function Conversation() {
             let unanswered = false;
             let jobId: string | null = null;
             try {
-                await chatApi(api).sendMessage(
+                const result = await chatApi(api).sendMessage(
                     id,
                     text,
                     pending.key,
@@ -98,6 +98,11 @@ export default function Conversation() {
                     controller.signal,
                     chosen,
                 );
+                // A replay says a job exists for this key, not how it ended: it is looked for like a cut-off send.
+                if (result.replay) {
+                    unanswered = true;
+                    jobId = result.job;
+                }
             } catch (err) {
                 // A refusal from the server made no reply. Anything else (Stop, a dropped connection, no answer) may have
                 // reached the server, which charges what it produced, so the send is looked for before it is called free.

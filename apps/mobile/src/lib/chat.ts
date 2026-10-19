@@ -151,7 +151,7 @@ export const chatApi = (api: ApiClient) => ({
         onEvent: (e: TurnEvent) => void,
         signal?: AbortSignal,
         options: ReplyOptions = NO_OPTIONS,
-    ) {
+    ): Promise<{ readonly replay: boolean; readonly job: string | null }> {
         const res = await api.stream(`/api/v1/chat/threads/${encodeURIComponent(threadId)}/messages`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
@@ -162,7 +162,15 @@ export const chatApi = (api: ApiClient) => ({
             const body = (await res.json().catch(() => ({}))) as { error?: string };
             throw new ApiError(res.status, typeof body.error === 'string' ? body.error : 'unknown');
         }
+        // The server already holds a job for this key: it answers JSON, not a stream. That says a job exists, not how it ended.
+        const type = res.headers?.get?.('content-type') ?? '';
+        if (type && !type.includes('text/event-stream')) {
+            const body = (await res.json().catch(() => ({}))) as { replay?: unknown; job_id?: unknown };
+            if (body.replay === true) return { replay: true, job: typeof body.job_id === 'string' ? body.job_id : null };
+            throw new ApiError(0, 'bad_answer');
+        }
         if (!res.body) throw new ApiError(res.status, 'no_stream');
+        let ended = false;
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
         const parser = createSseParser();
@@ -172,8 +180,12 @@ export const chatApi = (api: ApiClient) => ({
             for (const frame of parser.push(decoder.decode(value, { stream: true }))) {
                 const event = toTurnEvent(frame.event, frame.data);
                 if (event) onEvent(event);
+                if (frame.event === 'done') ended = true;
             }
         }
+        // `done` is written last on every path that ends a turn; a stream without it was cut off.
+        if (!ended) throw new ApiError(0, 'stream_cut');
+        return { replay: false, job: null };
     },
 });
 
