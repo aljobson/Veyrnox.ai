@@ -23,7 +23,7 @@ const jwk = generateKeyPairSync('ec', { namedCurve: 'P-256' }).publicKey.export(
 writeFileSync('.dev.vars', `SUPABASE_URL=http://127.0.0.1:54321\nSUPABASE_JWKS='${JSON.stringify({ keys: [{ ...jwk, kid: 'smoke', alg: 'ES256', use: 'sig' }] })}'\n`);
 
 const child = spawn('npx', ['wrangler', 'dev', '--port', String(PORT), '--ip', '127.0.0.1'], {
-    stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, WRANGLER_SEND_METRICS: 'false', CI: '1' },
+    stdio: ['ignore', 'pipe', 'pipe'], detached: true, env: { ...process.env, WRANGLER_SEND_METRICS: 'false', CI: '1' },
 });
 let log = '';
 for (const s of [child.stdout, child.stderr]) s.on('data', (d) => { log += d; });
@@ -32,7 +32,8 @@ child.on('exit', () => { exited = true; });
 
 function cleanup() {
     rmSync('.dev.vars', { force: true });
-    if (!exited) child.kill('SIGTERM');
+    // wrangler spawns workerd/esbuild: kill the whole group, or they keep the job alive.
+    try { process.kill(-child.pid, 'SIGKILL'); } catch { /* already gone */ }
 }
 async function waitUp() {
     const until = Date.now() + STARTUP_MS;
@@ -65,3 +66,4 @@ if (failures.length) {
     process.exit(1);
 }
 console.log('worker smoke passed');
+process.exit(0);
