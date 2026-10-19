@@ -2,6 +2,8 @@ import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { SaveFollow } from '../../../components/cinema/SaveFollow';
+import { VotePolls } from '../../../components/cinema/VotePolls';
 import { useAuth } from '../../../auth/AuthProvider';
 import { blockMember, blocksErrorKey } from '../../../lib/cinemaBlocks';
 import { plural, t } from '../../../lib/i18n';
@@ -130,6 +132,8 @@ export default function CinemaTitlePage() {
                     </Pressable>
                 ))
             )}
+            <SaveFollow contentId={title.id} />
+            <VotePolls contentId={title.id} />
             <Pressable accessibilityRole="button" style={styles.report} onPress={share}>
                 <Text style={styles.muted}>{t('cinemaBrowse.share')}</Text>
             </Pressable>
