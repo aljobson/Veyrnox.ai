@@ -6,6 +6,7 @@ Phase-0 decision-support documents for the target architecture at `/Users/aljobs
 
 | ADR | Status | Summary | Blocks |
 |-----|--------|---------|--------|
+| [ADR-0171 — Mobile: Publish SmartLink and where a plan is managed (parity plan P5)](0171-mobile-publish-smartlink-plan-source.md) | **Proposed 2026-10-19** | SmartLink editor with share; Publish tab says where a plan is managed from the server's subscription source |
 | [ADR-0162 — Mobile: Publish calendar month, analytics range and compare, Unlock cards, draft approval (parity plan P5)](0162-mobile-publish-calendar-analytics-drafts.md) | **Proposed 2026-10-19** | Month view, analytics range and compare with followers chart, store-priced Unlock cards for free accounts, draft approve and discard with a confirm naming the networks |
 | [ADR-0165 — Mobile: Publish contacts (parity plan P5)](0165-mobile-publish-contacts.md) | **Proposed 2026-10-19** | Search, filter, and edit tags, subscription status and notes; add and CSV import not built |
 | [ADR-0170 — Mobile: Vey help panel (parity plan P3)](0170-mobile-vey-help-panel.md) | **Proposed 2026-10-19** | Ask Vey on the Help screen via /api/v1/help; Take me there only where the phone has the screen |
@@ -232,3 +233,4 @@ These existed without an index row. Status is as written in each file. Four numb
 | [ADR-0093 — Native editor video destinations](0093-native-editor-video-destinations.md) | As written in the file (no status line) | Instagram Reels, Facebook Pages and TikTok inbox video transport behind `PUBLISH_VIDEO_DESTINATIONS_ENABLED`, false in production and staging. | Provider app approvals |
 | [ADR-0094 — Explicit Library source slots for editor generation](0094-explicit-generation-source-slots.md) | Implemented; hosted qualification separate | No catalog activation, price change or production SQL. | — |
 | [ADR-0095 — Bounded vocal/instrument separation](0095-editor-audio-stems.md) | Preparation; production flag disabled | `fal-ai/demucs` six stems behind `EDITOR_AUDIO_STEMS_ENABLED`; migration 0291. | Owner enablement |
+| [ADR-0160 — Read-only mode when Supabase is down](0160-supabase-outage-read-only-mode.md) | Proposed 2026-10-19 | Status endpoint, outage banner on web and mobile, saved price list served through an outage. | Production check with a real or simulated outage |
