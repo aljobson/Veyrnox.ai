@@ -40,6 +40,8 @@ export const POLICIES = {
     library: { name: 'library', perUser: true, freshMs: 0, maxAgeMs: 7 * DAY },
     // Starred creations (ADR-0156): job ids only, local, per account, wiped with the cache on sign-out.
     favourites: { name: 'favourites', perUser: true, freshMs: 0, maxAgeMs: 365 * DAY },
+    // The words of an unsent Create form (ADR-0153). Per account; no files or keys.
+    createDraft: { name: 'create-draft', perUser: true, freshMs: 0, maxAgeMs: 7 * DAY },
     catalog: { name: 'catalog', perUser: false, freshMs: 10 * MINUTE, maxAgeMs: 7 * DAY },
 } as const satisfies Record<string, CachePolicy>;
 
