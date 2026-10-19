@@ -6,6 +6,7 @@ Phase-0 decision-support documents for the target architecture at `/Users/aljobs
 
 | ADR | Status | Summary | Blocks |
 |-----|--------|---------|--------|
+| [ADR-0172 — Mobile: Film skill chats (parity plan P3)](0172-mobile-film-skill-chats.md) | **Proposed 2026-10-19** | The web's seven Film skills in the New chat picker; help write, never make or lock |
 | [ADR-0171 — Mobile: chat reply through iOS suspension (parity plan P3, S6)](0171-mobile-chat-long-turn-resume.md) | **Proposed 2026-10-19** | Return from background: look for the job for about a minute, never cut the reader off; one charge on a retry |
 | [ADR-0170 — Mobile: Vey help panel (parity plan P3)](0170-mobile-vey-help-panel.md) | **Proposed 2026-10-19** | Ask Vey on the Help screen via /api/v1/help; Take me there only where the phone has the screen |
 | [ADR-0163 — Mobile: Publish team, activity log, queues and RSS autolists (parity plan P5)](0163-mobile-publish-team-activity-queues-autolists.md) | **Proposed 2026-10-19** | Team and activity read-only, queue and RSS autolist create, edit, delete; invite and reports not built |
