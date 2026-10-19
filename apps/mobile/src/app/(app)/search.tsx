@@ -1,6 +1,7 @@
 import { Link, Stack } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { VEY_CLEARANCE } from '../../components/VeyMascot';
 import { t } from '../../lib/i18n';
 import { fetchCatalog } from '../../lib/media';
 import { modelEntries, screenEntries, searchEntries, type SearchEntry } from '../../lib/siteSearch';
@@ -41,7 +42,7 @@ export default function Search() {
                 data={results}
                 keyboardShouldPersistTaps="handled"
                 keyExtractor={(e) => e.id}
-                contentContainerStyle={{ gap: 8 }}
+                contentContainerStyle={{ gap: 8, paddingBottom: VEY_CLEARANCE }}
                 renderItem={({ item }) => (
                     <Link href={item.href as never} asChild>
                         <Pressable accessibilityRole="button" accessibilityLabel={`${item.title}, ${t(item.kind === 'model' ? 'srch.kindModel' : 'srch.kindScreen')}`} style={styles.row}>

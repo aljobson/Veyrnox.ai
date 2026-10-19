@@ -7,6 +7,8 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 // A catalog model id: letters, digits, dot, dash and underscore only.
 const MODEL_ID_RE = /^[A-Za-z0-9._-]{1,80}$/;
 
+const AUTHORIZATION_ID_RE = /^[A-Za-z0-9_-]{8,128}$/;
+
 // The sections under /app on the website that have a screen in the app.
 const SECTIONS: Record<string, string> = {
     library: '/library',
@@ -40,6 +42,11 @@ export function mapAppLink(path: string): string {
     }
     if (url.protocol !== 'https:' || !WEB_HOSTS.has(url.hostname)) return path;
     const segments = url.pathname.split('/').filter(Boolean);
+    // An assistant's connection request (the web's consent page); the id is Supabase's, so it is checked, not trusted.
+    if (segments[0] === 'oauth' && segments[1] === 'consent' && segments.length === 2) {
+        const id = url.searchParams.get('authorization_id');
+        return id && AUTHORIZATION_ID_RE.test(id) ? `/oauth-consent?authorization_id=${encodeURIComponent(id)}` : '/';
+    }
     if (segments[0] !== 'app') return '/';
     return opened(segments.slice(1));
 }

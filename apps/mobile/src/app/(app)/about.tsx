@@ -4,6 +4,7 @@ import { Stack } from 'expo-router';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ABOUT_FACTS, LEGAL_EMAIL, LEGAL_LINKS } from '../../lib/account';
 import { t } from '../../lib/i18n';
+import { VEY_CLEARANCE } from '../../components/VeyMascot';
 import { colors } from '../../theme';
 
 // About Veyrnox.ai: what it is, who runs it, how to write to us and the policies (the web's /about).
@@ -38,7 +39,7 @@ export default function About() {
 
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
-    content: { padding: 16, gap: 14 },
+    content: { padding: 16, paddingBottom: 16 + VEY_CLEARANCE, gap: 14 },
     lead: { color: colors.text, fontSize: 16, lineHeight: 24 },
     heading: { color: colors.muted, fontSize: 14, textTransform: 'uppercase', marginTop: 8 },
     card: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14 },
