@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { JobProvenance } from '../../../components/JobProvenance';
+import { StemList } from '../../../components/StemList';
 import { CONFIRM_MESSAGE, CONFIRM_TITLE, deleteCreation, deleteMessage, isAlreadyGone } from '../../../lib/deleteCreation';
 import { mediaApi, waitForJob, type JobState } from '../../../lib/media';
 import { editHref, makeAnotherHref, nextStepsFor, publishHref } from '../../../lib/nextSteps';
@@ -31,6 +32,8 @@ export default function JobScreen() {
     const router = useRouter();
     const [state, setState] = useState<JobState>('queued');
     const [asset, setAsset] = useState<{ url: string; mime: string } | null>(null);
+    // A stem-splitting job has six tracks instead of one file.
+    const [stems, setStems] = useState<string[]>([]);
     const [modelId, setModelId] = useState<string | null>(null);
     const [error, setError] = useState(false);
     const [attempt, setAttempt] = useState(0);
@@ -52,6 +55,7 @@ export default function JobScreen() {
                 if (final !== 'succeeded') return;
                 const a = await media.getAsset(id);
                 setAsset({ url: a.url, mime: a.mime_type });
+                setStems(a.output_stems ?? []);
             })
             .catch(() => !controller.signal.aborted && setError(true));
         return () => controller.abort();
@@ -120,6 +124,10 @@ export default function JobScreen() {
                         <Text style={styles.secondaryText}>{t('job.checkAgain')}</Text>
                     </Pressable>
                 </View>
+            ) : asset && stems.length > 0 ? (
+                <ScrollView contentContainerStyle={styles.actionsBody}>
+                    <StemList api={api} jobId={id} stems={stems} />
+                </ScrollView>
             ) : asset ? (
                 asset.mime.startsWith('image/') ? (
                     <Image source={{ uri: asset.url }} style={styles.image} contentFit="contain" accessibilityLabel={t('job.title')} accessibilityIgnoresInvertColors />
@@ -152,7 +160,7 @@ export default function JobScreen() {
                     ) : null}
                 </View>
             )}
-            {asset ? (
+            {asset && stems.length === 0 ? (
                 <ScrollView style={styles.actions} contentContainerStyle={styles.actionsBody}>
                     {next.edit || next.publish || next.makeAnother ? (
                         <View style={styles.nextBlock}>
