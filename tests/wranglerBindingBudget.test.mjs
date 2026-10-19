@@ -28,7 +28,9 @@ const REMOVED_FALSE_FLAGS = [
 ];
 for (const [name, vars] of [['production', config.vars], ['staging', config.env.staging.vars]]) {
     test(`${name}: removing the explicit "false" vars changes no feature switch`, () => {
-        const withFalse = { ...vars, ...Object.fromEntries(REMOVED_FALSE_FLAGS.map((flag) => [flag, 'false'])) };
+        // Comments are packed on in staging on purpose (owner, 2026-10-19; see tests/cinemaRuntimeFlags.test.mjs), so staging's "false" copy leaves it alone.
+        const removed = name === 'staging' ? REMOVED_FALSE_FLAGS.filter((flag) => flag !== 'COMMENTS_ENABLED') : REMOVED_FALSE_FLAGS;
+        const withFalse = { ...vars, ...Object.fromEntries(removed.map((flag) => [flag, 'false'])) };
         for (const flag of REMOVED_FALSE_FLAGS) assert.notEqual(vars[flag], 'true', `${flag} is on in ${name}; it was off before this change`);
         assert.deepEqual(cinemaFeatures(vars), cinemaFeatures(withFalse), 'Cinema switches are identical with or without the "false" vars');
         assert.equal(uploadSafetyHold(vars), uploadSafetyHold(withFalse));

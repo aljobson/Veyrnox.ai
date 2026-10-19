@@ -21,23 +21,26 @@ const LEGACY = {
   },
 };
 const MOVED = Object.keys(LEGACY.production);
+// Switches turned on on purpose since ADR-0145, by the owner's explicit word. Adding one here is the deliberate edit this test exists to force.
+// staging: comments, 2026-10-19, to test the phone comments screens; production keeps it off.
+const DELIBERATE = { production: {}, staging: { comments: 'COMMENTS_ENABLED' } };
 
 for (const [name, vars] of [['production', config.vars], ['staging', config.env.staging.vars]]) {
   test(`${name}: grouped Cinema flags give the same cinemaFeatures() as the old individual vars`, () => {
     assert.equal(vars.CINEMA_ENABLED, 'true', 'CINEMA_ENABLED stays its own var');
     for (const key of MOVED) assert.equal(Object.hasOwn(vars, key), false, `${key} moved into CINEMA_RUNTIME_FLAGS`);
-    const before = cinemaFeatures({ CINEMA_ENABLED: 'true', ...LEGACY[name] });
+    const before = cinemaFeatures({ CINEMA_ENABLED: 'true', ...LEGACY[name], ...Object.fromEntries(Object.values(DELIBERATE[name]).map((k) => [k, 'true'])) });
     assert.deepEqual(cinemaFeatures(vars), before);
     assert.equal(JSON.stringify(cinemaFeatures(vars)), JSON.stringify(before), 'byte for byte');
   });
   test(`${name}: the group names only known switches and turns on nothing new`, () => {
     const group = JSON.parse(vars.CINEMA_RUNTIME_FLAGS);
-    const legacyOn = new Set(Object.entries(LEGACY[name]).filter(([, v]) => v === 'true').map(([k]) => k));
+    const legacyOn = new Set([...Object.entries(LEGACY[name]).filter(([, v]) => v === 'true').map(([k]) => k), ...Object.values(DELIBERATE[name])]);
     for (const [key, value] of Object.entries(group)) {
       assert.ok(Object.hasOwn(CINEMA_FEATURE_FLAGS, key), `${key} is a Cinema switch`);
       assert.equal(value === 'true', legacyOn.has(CINEMA_FEATURE_FLAGS[key]), key);
     }
-    assert.equal(Object.keys(group).length, MOVED.length);
+    assert.equal(Object.keys(group).length, MOVED.length + Object.keys(DELIBERATE[name]).length);
   });
 }
 
