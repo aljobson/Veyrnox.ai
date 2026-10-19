@@ -924,6 +924,17 @@ const en = {
     'help.err.rate': 'Too many questions. Wait a moment and try again.',
     'help.err.network': 'No connection. Try again when you are back online.',
     'help.err.later': 'Help is not available right now. Try again later, or write to support below.',
+    // Chat list: search and delete (ADR-0183)
+    'chat.search.label': 'Search your chats',
+    'chat.search.placeholder': 'Search chats',
+    'chat.search.none': 'No chats match that.',
+    'chat.delete.button': 'Delete',
+    'chat.delete.label': 'Delete the chat {name}',
+    'chat.delete.title': 'Delete this chat?',
+    'chat.delete.body': 'The chat and its messages are removed. Credits it used stay spent.',
+    'chat.delete.keep': 'Keep it',
+    'chat.delete.confirm': 'Delete',
+    'chat.delete.failed': 'Could not delete that chat. Try again.',
 } as const;
 
 export default en;
