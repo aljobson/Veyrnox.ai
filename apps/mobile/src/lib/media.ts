@@ -15,7 +15,8 @@ export interface CatalogModel {
     readonly capabilities: {
         readonly inputs?: Record<string, unknown>;
         readonly media?: Record<string, { readonly required?: boolean; readonly label?: string; readonly maxSeconds?: number }>;
-        // Present on stem-splitting models, which the server serves only behind a flag.
+        // Present on stem-splitting models (six labelled files from one audio file). The server marks the model
+        // gated in the catalog while its flag is off, so the gated check already hides it.
         readonly outputStems?: string[];
     } | null;
 }
@@ -73,12 +74,12 @@ export function textInput(model: CatalogModel): { readonly key: string; readonly
 }
 
 // A model the app can drive: open, a kind it can show, every file slot a slot it can pick for,
-// and something to send (a text input, or at least one required file). Stem splitting is held back
-// because the server answers it with audio_stems_unavailable unless its flag is on.
+// and something to send (a text input, or at least one required file). Stem splitting is included (ADR-0157): the
+// server gates it in the catalog and answers audio_stems_unavailable (503) before any charge while its flag is off.
 export function isSupported(model: CatalogModel): boolean {
     if (model.gated || kindOf(model.modality) === null) return false;
     const caps = model.capabilities;
-    if (!caps || caps.outputStems) return false;
+    if (!caps) return false;
     const media = caps.media ?? {};
     if (!Object.keys(media).every((slot) => KNOWN_SLOTS.includes(slot))) return false;
     return textInput(model) !== null || Object.values(media).some((slot) => slot.required);
@@ -152,8 +153,11 @@ export const mediaApi = (api: ApiClient) => ({
         return api.request<JobPage>(`/api/v1/jobs?${q.toString()}`);
     },
     // A short-lived link (15 minutes): fetch it when needed, never store it.
-    getAsset: (id: string) =>
-        api.request<{ url: string; mime_type: string; asset_expires_at?: string }>(`/api/v1/jobs/${encodeURIComponent(id)}/asset`),
+    // A stem-splitting job lists its six labels in `output_stems`; `stem` asks for one of them.
+    getAsset: (id: string, stem?: string) =>
+        api.request<{ url: string; mime_type: string; asset_expires_at?: string; output_stems?: string[] }>(
+            `/api/v1/jobs/${encodeURIComponent(id)}/asset${stem ? `?stem=${encodeURIComponent(stem)}` : ''}`,
+        ),
 });
 
 const POLL_MS = 3000;

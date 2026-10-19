@@ -41,3 +41,15 @@ describe('mapAppLink', () => {
         expect(mapAppLink('')).toBe('');
     });
 });
+
+describe('shared Cinema links (ADR-0164)', () => {
+    test('a title opens its page and an episode link opens the player', () => {
+        expect(mapAppLink(`https://veyrnox.ai/social-cinema/title/${ID}`)).toBe(`/cinema/${ID}`);
+        expect(mapAppLink(`https://veyrnox.ai/social-cinema/watch/${ID.toUpperCase()}`)).toBe(`/cinema/watch/${ID}`);
+    });
+    test('anything else under social-cinema goes home', () => {
+        expect(mapAppLink('https://veyrnox.ai/social-cinema/title/not-a-uuid')).toBe('/');
+        expect(mapAppLink(`https://veyrnox.ai/social-cinema/creator/${ID}`)).toBe('/');
+        expect(mapAppLink('https://veyrnox.ai/social-cinema')).toBe('/');
+    });
+});

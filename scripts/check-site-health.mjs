@@ -7,7 +7,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 
 export const DEFAULT_BASE_URL = 'https://veyrnox.ai';
 const ATTEMPTS = 3;
-const RETRY_DELAY_MS = 10_000;
+const RETRY_DELAY_MS = Number(process.env.SITE_HEALTH_RETRY_DELAY_MS) || 10_000;
 const TIMEOUT_MS = 20_000;
 
 // Anonymous requests only. /api/v1/health answers 401 without a session,
@@ -115,16 +115,22 @@ export async function checkSite(baseUrl, {
     requireImmutableAssets = true,
 } = {}) {
     const priorAssets = validateStaticAssetPaths(requiredAssets);
-    let last = { problems: [], unreachable: 0, requests: CHECKS.length, assets: priorAssets };
+    let last = { problems: [], unreachable: 0, serverErrors: 0, otherFailures: 0, requests: CHECKS.length, assets: priorAssets };
     for (let attempt = 1; attempt <= attempts; attempt++) {
         const cacheBust = `${Date.now()}-${attempt}`;
         const problems = [];
         let unreachable = 0;
+        // 5xx answers and unreachable requests mean "the site is down";
+        // anything else that failed is a wrong answer from a site that is up.
+        let serverErrors = 0;
+        let otherFailures = 0;
         let discoveredAssets = [];
         for (const check of CHECKS) {
             try {
                 const response = await fetchOne(baseUrl, check, cacheBust);
-                problems.push(...assessResponse(check, response));
+                const found = assessResponse(check, response);
+                problems.push(...found);
+                if (found.length > 0) { if (response.status >= 500) serverErrors++; else otherFailures++; }
                 if (check.html) discoveredAssets = [...discoveredAssets, ...extractStaticAssetPaths(response.body || '')];
             } catch (error) {
                 unreachable++;
@@ -135,11 +141,10 @@ export async function checkSite(baseUrl, {
         if (verifyAssets) {
             for (const path of assets) {
                 try {
-                    problems.push(...assessAssetResponse(
-                        path,
-                        await fetchAsset(baseUrl, path),
-                        { requireImmutable: requireImmutableAssets },
-                    ));
+                    const response = await fetchAsset(baseUrl, path);
+                    const found = assessAssetResponse(path, response, { requireImmutable: requireImmutableAssets });
+                    problems.push(...found);
+                    if (found.length > 0) { if (response.status >= 500) serverErrors++; else otherFailures++; }
                 } catch (error) {
                     unreachable++;
                     problems.push(`${path}: unreachable (${error.name})`);
@@ -147,7 +152,7 @@ export async function checkSite(baseUrl, {
             }
         }
         const requests = CHECKS.length + (verifyAssets ? assets.length : 0);
-        last = { problems, unreachable, requests, assets };
+        last = { problems, unreachable, serverErrors, otherFailures, requests, assets };
         if (problems.length === 0) return last;
         if (attempt < attempts) await new Promise(r => setTimeout(r, delayMs));
     }
@@ -163,6 +168,12 @@ function optionValue(arguments_, name) {
     return arguments_[index + 1];
 }
 
+// True when every failure is a 5xx or an unreachable request, i.e. the live
+// site is down rather than serving something wrong.
+export function siteIsDown(result) {
+    return result.problems.length > 0 && result.otherFailures === 0 && result.serverErrors + result.unreachable > 0;
+}
+
 async function readAssetManifest(path) {
     const manifest = JSON.parse(await readFile(path, 'utf8'));
     return validateStaticAssetPaths(manifest.assets);
@@ -175,10 +186,21 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
         const capturePath = optionValue(arguments_, '--capture-assets');
         const manifestPath = optionValue(arguments_, '--asset-manifest');
         const requireImmutableAssets = !arguments_.includes('--allow-nonimmutable-assets');
+        // Capture only. A down live site cannot say which assets it references,
+        // and must not stop the deploy that fixes it: write a flagged, empty
+        // manifest and let the caller deploy without retained-asset checks.
+        const tolerateServerErrors = arguments_.includes('--tolerate-server-errors');
+        if (tolerateServerErrors && !capturePath) throw new Error('--tolerate-server-errors only applies to --capture-assets.');
         if (capturePath && manifestPath) throw new Error('Capture and manifest modes cannot be combined.');
         const requiredAssets = manifestPath ? await readAssetManifest(manifestPath) : [];
         const result = await checkSite(baseUrl, { requiredAssets, verifyAssets: !capturePath, requireImmutableAssets });
-        if (result.problems.length === 0) {
+        const degraded = Boolean(capturePath && tolerateServerErrors && siteIsDown(result));
+        if (degraded) {
+            await writeFile(capturePath, `${JSON.stringify({ version: 1, degraded: true, assets: [] }, null, 2)}\n`);
+            console.error(`${baseUrl}: ${result.problems.length} problem(s), all 5xx or unreachable`);
+            for (const problem of result.problems) console.error(`- ${problem}`);
+            console.log(`::warning::${baseUrl} is unhealthy (5xx or unreachable), so the previous build's static assets could not be recorded. Continuing as a recovery deploy: retained-asset checks are skipped and the new build is smoke-tested on its own.`);
+        } else if (result.problems.length === 0) {
             if (capturePath) {
                 await writeFile(capturePath, `${JSON.stringify({ version: 1, assets: result.assets }, null, 2)}\n`);
                 console.log(`${baseUrl}: captured ${result.assets.length} referenced static asset(s).`);
@@ -189,7 +211,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
             console.error(`${baseUrl}: ${result.problems.length} problem(s) after ${ATTEMPTS} attempts`);
             for (const problem of result.problems) console.error(`- ${problem}`);
         }
-        process.exitCode = result.problems.length === 0 ? 0 : result.unreachable === result.requests ? 2 : 1;
+        process.exitCode = degraded || result.problems.length === 0 ? 0 : result.unreachable === result.requests ? 2 : 1;
     } catch (error) {
         console.error(`${baseUrl}: ${error.message}`);
         process.exitCode = 1;
