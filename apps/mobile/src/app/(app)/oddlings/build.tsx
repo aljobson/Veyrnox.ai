@@ -10,7 +10,7 @@ import { PickSheet, type PickChoice } from '../../../components/oddlings/PickShe
 import { MIN_TARGET } from '../../../lib/a11y';
 import { plural, t } from '../../../lib/i18n';
 import { findOddling } from '../../../lib/oddlings';
-import { CATEGORIES, CATEGORY_FOCUS, GROUPS, SCENES, SHOWS, TONES, buildStudioPrompt, changePick, groupById, randomizeAll, randomizeStyle, sanitizePicks, swatchOf, type Picks } from '../../../lib/oddlingsBuilder';
+import { CATEGORIES, CATEGORY_FOCUS, GROUPS, MOTIONS, SCENES, SHOWS, TONES, buildStudioPrompt, changePick, groupById, randomizeAll, randomizeStyle, sanitizePicks, swatchOf, type Picks } from '../../../lib/oddlingsBuilder';
 import { fileStore, loadDoc, saveDraft, savePassport } from '../../../lib/oddlingsLibrary';
 import { colors } from '../../../theme';
 
@@ -22,6 +22,7 @@ export default function OddlingBuilder() {
     const { from, passport } = useLocalSearchParams<{ from?: string; passport?: string }>();
     const [picks, setPicks] = useState<Picks>(START);
     const [scene, setScene] = useState(SCENES[0]);
+    const [motionId, setMotionId] = useState(MOTIONS[0].id);
     const [categoryId, setCategoryId] = useState(CATEGORIES[0].id);
     const [open, setOpen] = useState<string | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
@@ -40,7 +41,7 @@ export default function OddlingBuilder() {
             } else {
                 const doc = await loadDoc(fileStore);
                 const item = typeof passport === 'string' ? doc.items.find((i) => i.id === passport) : undefined;
-                if (live && item) { setPicks(item.picks); setLoadedId(item.id); setNotice(t('oddlings.build.loaded', { name: item.name })); }
+                if (live && item) { setPicks(item.picks); setLoadedId(item.id); setMotionId(item.motionId || MOTIONS[0].id); setNotice(t('oddlings.build.loaded', { name: item.name })); }
                 else if (live && doc.draft && Object.keys(doc.draft.picks).length) setPicks(doc.draft.picks);
             }
             if (live) setReady(true);
@@ -64,6 +65,7 @@ export default function OddlingBuilder() {
 
     const sheet = useMemo(() => {
         if (!open) return null;
+        if (open === 'motion') return { title: t('oddlings.build.motion'), choices: MOTIONS.map((m) => ({ value: m.id, label: m.name })) as PickChoice[] };
         if (open === 'oddling_voice' || open === 'oddling_show') {
             const table = open === 'oddling_voice' ? TONES : SHOWS;
             return { title: t(open === 'oddling_voice' ? 'oddlings.build.voice' : 'oddlings.build.show'), choices: table.map(([value]) => ({ value, label: value })) as PickChoice[] };
@@ -74,7 +76,7 @@ export default function OddlingBuilder() {
     }, [open]);
 
     async function save() {
-        const result = await savePassport(fileStore, picks, Date.now(), loadedId);
+        const result = await savePassport(fileStore, picks, Date.now(), loadedId, motionId);
         if (result.ok && result.item) { setLoadedId(result.item.id); setNotice(t(loadedId ? 'oddlings.build.updated' : 'oddlings.build.savedOk')); }
         else setNotice(t('oddlings.build.saveFailed'));
     }
@@ -103,13 +105,13 @@ export default function OddlingBuilder() {
                     <CategoryList categoryId={categoryId} picks={picks} onCategory={setCategoryId} onOpen={setOpen} />
                 </Section>
                 <Section>
-                    <BuilderFields picks={picks} scene={scene} onText={setPick} onOpen={setOpen} onScene={setScene} />
+                    <BuilderFields picks={picks} scene={scene} motionId={motionId} onText={setPick} onOpen={setOpen} onScene={setScene} />
                 </Section>
                 <Pressable accessibilityRole="button" accessibilityState={{ expanded: showPrompt }} style={styles.promptToggle} onPress={() => setShowPrompt((v) => !v)}>
                     <Text style={styles.link}>{showPrompt ? t('oddlings.build.promptHide') : t('oddlings.build.prompt')}</Text>
                 </Pressable>
                 {showPrompt ? <Text style={styles.prompt} selectable>{prompt}</Text> : null}
-                <HandoffCard picks={picks} scene={scene} onLeave={async () => { await savePassport(fileStore, picks, Date.now(), loadedId).then((r) => { if (r.item) setLoadedId(r.item.id); }); }} />
+                <HandoffCard picks={picks} scene={scene} motionId={motionId} onLeave={async () => { await savePassport(fileStore, picks, Date.now(), loadedId, motionId).then((r) => { if (r.item) setLoadedId(r.item.id); }); }} />
                 <Pressable accessibilityRole="button" style={styles.save} onPress={save}>
                     <Text style={styles.saveText}>{t('oddlings.build.save')}</Text>
                 </Pressable>
@@ -117,7 +119,7 @@ export default function OddlingBuilder() {
                     <Text style={styles.link}>{t('oddlings.build.saved')}</Text>
                 </Pressable>
             </ScrollView>
-            {sheet && open ? <PickSheet title={sheet.title} choices={sheet.choices} value={picks[open] || ''} onPick={(v) => setPick(open, v)} onClose={() => setOpen(null)} /> : null}
+            {sheet && open ? <PickSheet title={sheet.title} choices={sheet.choices} value={open === 'motion' ? motionId : picks[open] || ''} onPick={(v) => (open === 'motion' ? setMotionId(v) : setPick(open, v))} onClose={() => setOpen(null)} /> : null}
         </KeyboardAvoidingView>
     );
 }
