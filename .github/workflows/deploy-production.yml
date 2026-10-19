@@ -182,9 +182,26 @@ jobs:
       # has archived a complete build. The first retention-enabled deployment
       # establishes that trusted baseline and still receives strict new-build
       # smoke testing below.
+      #
+      # If the live site is already unhealthy (a bad release, an outage) it
+      # cannot be read for a baseline, and stopping here made the fix
+      # impossible to deploy: on 2026-10-19 the revert of a broken dependency
+      # bump could not ship because the site it replaces was returning 500.
+      # Old references cannot be checked then, so this step records that no
+      # baseline exists, and the full strict smoke test of the NEW build
+      # (every page, every referenced asset, immutable caching) runs instead of
+      # the retained-assets one. That test is not weakened and still rolls back.
       - name: Record currently referenced production assets
         if: env.HAS_TOKEN == 'true' && steps.tip.outputs.stale != 'true' && steps.retained_static.outputs.available == 'true'
-        run: node scripts/check-site-health.mjs --capture-assets previous-build-assets.json
+        id: baseline
+        run: |
+          if node scripts/check-site-health.mjs --capture-assets previous-build-assets.json; then
+            echo "baseline=captured" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::The live site failed its health check, so there is no baseline of referenced assets. Deploying anyway: the new build still gets the full strict smoke test, and a failure rolls back."
+            echo "baseline=skipped" >> "$GITHUB_OUTPUT"
+            echo "Deployed without an asset baseline: the live site was already unhealthy before this deploy." >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       # Each run stores only its own files. The bounded download loop above
       # selects the history, so old files cannot be copied forward forever.
@@ -239,12 +256,12 @@ jobs:
 
       - name: Smoke test the live site with retained assets
         id: smoke_retained
-        if: env.HAS_TOKEN == 'true' && steps.tip.outputs.stale != 'true' && steps.retained_static.outputs.available == 'true'
+        if: env.HAS_TOKEN == 'true' && steps.tip.outputs.stale != 'true' && steps.retained_static.outputs.available == 'true' && steps.baseline.outputs.baseline == 'captured'
         run: sleep 20 && node scripts/check-site-health.mjs --asset-manifest previous-build-assets.json
 
       - name: Smoke test the first retention-enabled deploy
         id: smoke_first
-        if: env.HAS_TOKEN == 'true' && steps.tip.outputs.stale != 'true' && steps.retained_static.outputs.available != 'true'
+        if: env.HAS_TOKEN == 'true' && steps.tip.outputs.stale != 'true' && (steps.retained_static.outputs.available != 'true' || steps.baseline.outputs.baseline == 'skipped')
         run: sleep 20 && node scripts/check-site-health.mjs
 
       # Rolls back the Worker only. Applied migrations stay applied, which is

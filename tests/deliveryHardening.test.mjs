@@ -64,3 +64,40 @@ test('production bootstraps retention once, then enforces old references on ever
         'rollback accepts the previous release cache policy while still checking asset availability');
     assert.doesNotMatch(workflow, /preview_urls:\s*true|workers_dev:\s*true/);
 });
+
+// 2026-10-19: the revert of a broken dependency bump could not deploy, because the step that records the live site's
+// assets runs the health check against the live site, which was already returning 500. Deploying over an unhealthy site
+// is now allowed, but only because the NEW build still gets the full strict smoke test and still rolls back.
+test('an unhealthy live site no longer blocks a deploy, and the new build is still fully smoke tested', () => {
+    const deployJob = workflow.slice(workflow.indexOf('\n  deploy:'), workflow.indexOf('\n  report-failure:'));
+    const stepText = (name) => {
+        const at = deployJob.indexOf(`- name: ${name}`);
+        assert.notEqual(at, -1, `no step named ${name}`);
+        const next = deployJob.indexOf('\n      - ', at + 1);
+        return deployJob.slice(at, next === -1 ? undefined : next);
+    };
+    const baseline = stepText('Record currently referenced production assets');
+    assert.match(baseline, /\n        id: baseline\n/);
+    assert.match(baseline, /if node scripts\/check-site-health\.mjs --capture-assets previous-build-assets\.json; then/,
+        'the capture is a condition, so its failure no longer stops the job');
+    assert.match(baseline, /echo "baseline=captured" >> "\$GITHUB_OUTPUT"/);
+    assert.match(baseline, /echo "baseline=skipped" >> "\$GITHUB_OUTPUT"/);
+    assert.match(baseline, /::warning::/, 'skipping the baseline is visible, never silent');
+    assert.doesNotMatch(baseline, /continue-on-error/, 'the step handles the failure itself instead of ignoring every error');
+
+    // Exactly one strict post-deploy smoke test runs for any baseline outcome.
+    const retained = stepText('Smoke test the live site with retained assets');
+    const first = stepText('Smoke test the first retention-enabled deploy');
+    assert.match(retained, /steps\.retained_static\.outputs\.available == 'true' && steps\.baseline\.outputs\.baseline == 'captured'/,
+        'old-asset enforcement runs only when a baseline exists');
+    assert.match(first, /\(steps\.retained_static\.outputs\.available != 'true' \|\| steps\.baseline\.outputs\.baseline == 'skipped'\)/,
+        'with no baseline the plain strict check runs instead');
+    assert.match(first, /run: sleep 20 && node scripts\/check-site-health\.mjs\n/, 'the strict check keeps every page, asset and immutability rule');
+    assert.doesNotMatch(first, /allow-nonimmutable-assets|continue-on-error/, 'the post-deploy check is not weakened');
+    assert.doesNotMatch(retained, /continue-on-error/);
+
+    // A failed post-deploy check still rolls back and still opens the deploy-failure issue.
+    assert.match(workflow,
+        /steps\.smoke_retained\.outcome == 'failure' \|\| steps\.smoke_first\.outcome == 'failure' \|\| steps\.secret_check\.outcome == 'failure'/);
+    assert.match(workflow, /report-failure:\n    needs: \[ci-green, deploy\]\n    if: failure\(\)/);
+});
