@@ -23,6 +23,13 @@ const state = {
         { id: 'post-2', key: 'seed-2', status: 'failed', scheduled_at: '2026-10-17T09:00:00Z', global_text: 'Behind the scenes cut.', created_at: '2026-10-17T08:00:00Z', updated_at: '2026-10-17T09:05:00Z', targets: [{ id: 't2', network: 'tiktok', publish_status: 'failed', platform_post_url: null, last_error: 'The account access token expired. <b>Reconnect</b> the account.' }, { id: 't3', network: 'instagram', publish_status: 'published', platform_post_url: 'https://www.instagram.com/p/mock/', last_error: null }] },
     ],
     deleted: new Set(),
+    comments: [
+        { id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', body: 'The ending gave me chills. Watched it twice.', created_at: '2026-10-18T09:00:00.000Z', username: 'sam_1', display_name: 'Sam' },
+        { id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2', body: 'Buy cheap followers at example dot com!!!', created_at: '2026-10-18T10:00:00.000Z', username: 'spam_bot', display_name: 'Totally Real Fan' },
+        { id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3', body: 'Great pacing for a short. More like this please.', created_at: '2026-10-18T11:00:00.000Z', username: 'lee_2', display_name: 'Lee' },
+    ],
+    ownComments: [{ id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1', body: 'Lovely cinematography.', status: 'approved', created_at: '2026-10-17T09:00:00.000Z' }],
+    commentKeys: new Map(),
     blocks: new Map([['spam_account', { username: 'spam_account', display_name: 'Spam Account', created_at: '2026-10-17T09:00:00.000Z' }]]),
     connectStates: new Map(),
     referral: { code: 'K7M2PQ9XWD', referred: 2, attached: false },
@@ -330,6 +337,37 @@ createServer(async (req, res) => {
     if (path === '/api/v1/store-purchases/customer') return send(res, 200, { rc_customer_id: '3f2b8a52-6c0e-4d7a-9b1f-0a1b2c3d4e5f' });
     if (path === '/api/v1/social/plan') return send(res, 200, { plans: [], entitlement: { tier: 'free', subscription: null } });
 
+    // Cinema comments (ADR-0142, server ADR-0081): read hides blocked authors (as the real read does), a submit waits for
+    // review, a report returns open, and a repeated Idempotency-Key is a replay.
+    if (path === '/api/v1/cinema/comments') {
+        const UUIDRE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (req.method === 'GET') {
+            if (!UUIDRE.test(url.searchParams.get('content_id') || '')) return send(res, 400, { error: 'invalid_query' });
+            return send(res, 200, {
+                comments: state.comments.filter((c) => !state.blocks.has(c.username)).map((c) => ({ ...c, own: false })),
+                own_comments: state.ownComments,
+                next_cursor: null,
+            });
+        }
+        if (req.method === 'POST') {
+            const key = String(req.headers['idempotency-key'] || '');
+            if (!UUIDRE.test(key)) return send(res, 400, { error: 'invalid_idempotency_key' });
+            if (state.commentKeys.has(key)) return send(res, 200, { ...state.commentKeys.get(key), idempotent: true });
+            let out;
+            if (body.action === 'submit') {
+                if (typeof body.body !== 'string' || !body.body.trim() || body.body.length > 2000) return send(res, 400, { error: 'invalid_body' });
+                if (/profile/i.test(body.body)) return send(res, 403, { error: 'profile_required' });
+                const id = randomUUID();
+                state.ownComments.unshift({ id, body: body.body, status: 'pending', created_at: new Date().toISOString() });
+                out = { id, status: 'pending' };
+            } else if (body.action === 'report') {
+                if (!UUIDRE.test(body.comment_id || '') || !['spam', 'abuse', 'privacy', 'rights', 'other'].includes(body.category) || typeof body.details !== 'string' || body.details.trim().length < 3) return send(res, 400, { error: 'invalid_body' });
+                out = { id: randomUUID(), status: 'open' };
+            } else return send(res, 400, { error: 'invalid_body' });
+            state.commentKeys.set(key, out);
+            return send(res, 201, { ...out, idempotent: false });
+        }
+    }
     // Cinema blocks (ADR-0141, server ADR-0135): by username, replay-safe, newest first.
     const mb = path.match(/^\/api\/v1\/cinema\/blocks(?:\/([^/]+))?$/);
     if (mb) {
