@@ -7,7 +7,8 @@ import { useBilling } from '../../../billing/BillingProvider';
 import { API_BASE } from '../../../lib/api';
 import { renewalTerms, toDisplayPackages, type Interval } from '../../../lib/billing';
 import { t } from '../../../lib/i18n';
-import { fetchPublishTier, paywallState, type PublishTier } from '../../../lib/publishPlan';
+import { VEY_CLEARANCE } from '../../../components/VeyMascot';
+import { fetchPublishPlan, paywallState, type PlanSource, type PublishTier } from '../../../lib/publishPlan';
 import { colors } from '../../../theme';
 
 const BENEFITS = ['Up to five connected accounts', 'Schedule posts ahead', '366 days of analytics', 'Best-time recommendations'];
