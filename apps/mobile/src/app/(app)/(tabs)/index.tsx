@@ -1,17 +1,17 @@
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Link, Stack, useFocusEffect } from 'expo-router';
-import { useAuth } from '../../auth/AuthProvider';
-import { useBilling } from '../../billing/BillingProvider';
-import { Logo } from '../../components/Logo';
-import { StaleNote } from '../../components/StaleNote';
-import { appCache, getCacheUser } from '../../lib/appCache';
-import { POLICIES, type CacheMeta } from '../../lib/cache';
-import { observe } from '../../lib/network';
-import type { Balance } from '../../lib/api';
-import { colors } from '../../theme';
-import { plural, t } from '../../lib/i18n';
-import { touchTarget } from '../../lib/a11y';
+import { useAuth } from '../../../auth/AuthProvider';
+import { useBilling } from '../../../billing/BillingProvider';
+import { Logo } from '../../../components/Logo';
+import { StaleNote } from '../../../components/StaleNote';
+import { appCache, getCacheUser } from '../../../lib/appCache';
+import { POLICIES, type CacheMeta } from '../../../lib/cache';
+import { observe } from '../../../lib/network';
+import type { Balance } from '../../../lib/api';
+import { colors } from '../../../theme';
+import { plural, t } from '../../../lib/i18n';
+import { touchTarget } from '../../../lib/a11y';
 
 export default function Home() {
     const { api } = useAuth();

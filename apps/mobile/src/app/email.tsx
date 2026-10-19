@@ -26,7 +26,7 @@ export default function EmailAuth() {
     const [busy, setBusy] = useState(false);
     const [message, setMessage] = useState<string | null>(null);
 
-    if (status === 'signedIn') return <Redirect href="/(app)" />;
+    if (status === 'signedIn') return <Redirect href="/(app)/(tabs)" />;
 
     const [, setCaptchaReady] = useState(false);
     const captchaReadyRef = useRef(false);

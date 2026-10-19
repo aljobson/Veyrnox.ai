@@ -75,6 +75,7 @@ describe('header actions stay readable at large text', () => {
     test.each(files.map(rel))('%s: headerRight uses HeaderAction', (file) => {
         const text = read(path.join(SRC, file));
         if (!text.includes('headerRight')) return;
-        expect(text).toMatch(/headerRight:\s*\(\)\s*=>\s*<HeaderAction/);
+        // HeaderRight (components/HeaderChips) is the tab bar's credits chip and avatar: text capped at HEADER_MAX_FONT_SCALE, 44 pt targets.
+        expect(text).toMatch(/headerRight:\s*\(\)\s*=>\s*<(HeaderAction|HeaderRight)/);
     });
 });

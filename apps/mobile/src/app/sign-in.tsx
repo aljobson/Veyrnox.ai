@@ -25,7 +25,7 @@ export default function SignIn() {
         setError(null);
         try {
             await action();
-            router.replace('/(app)');
+            router.replace('/(app)/(tabs)');
         } catch {
             setError(t('signIn.failed'));
         } finally {
@@ -33,7 +33,7 @@ export default function SignIn() {
         }
     }
 
-    if (status === 'signedIn') return <Redirect href="/(app)" />;
+    if (status === 'signedIn') return <Redirect href="/(app)/(tabs)" />;
 
     return (
         <ScrollView style={styles.scroll} contentContainerStyle={[styles.screen, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]} keyboardShouldPersistTaps="handled">

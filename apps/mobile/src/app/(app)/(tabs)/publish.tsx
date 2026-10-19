@@ -2,12 +2,12 @@ import * as WebBrowser from 'expo-web-browser';
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useAuth } from '../../auth/AuthProvider';
-import { useBilling } from '../../billing/BillingProvider';
-import { API_BASE } from '../../lib/api';
-import { renewalTerms, toDisplayPackages, type Interval } from '../../lib/billing';
-import { fetchPublishTier, paywallState, type PublishTier } from '../../lib/publishPlan';
-import { colors } from '../../theme';
+import { useAuth } from '../../../auth/AuthProvider';
+import { useBilling } from '../../../billing/BillingProvider';
+import { API_BASE } from '../../../lib/api';
+import { renewalTerms, toDisplayPackages, type Interval } from '../../../lib/billing';
+import { fetchPublishTier, paywallState, type PublishTier } from '../../../lib/publishPlan';
+import { colors } from '../../../theme';
 
 const BENEFITS = ['Up to five connected accounts', 'Schedule posts ahead', '366 days of analytics', 'Best-time recommendations'];
 const LABEL: Record<Interval, string> = { week: 'Weekly', month: 'Monthly', year: 'Annual' };
