@@ -55,7 +55,7 @@ export default function Calendar() {
             <Stack.Screen options={{ title: t('calendar.title') }} />
             <View style={styles.nav}>
                 <Pressable accessibilityRole="button" accessibilityLabel={t('calendar.prev')} style={[styles.arrow, touchTarget]} onPress={() => setOffset((o) => o - 1)}><Text style={styles.arrowText}>‹</Text></Pressable>
-                <Pressable accessibilityRole="button" accessibilityLabel={t('calendar.thisWeek')} disabled={offset === 0} style={touchTarget} onPress={() => setOffset(0)}>
+                <Pressable accessibilityRole="button" accessibilityLabel={t('calendar.thisWeek')} disabled={offset === 0} style={[touchTarget, styles.rangeBox]} onPress={() => setOffset(0)}>
                     <Text style={styles.range}>{short(week.start)} – {short(last)}</Text>
                 </Pressable>
                 <Pressable accessibilityRole="button" accessibilityLabel={t('calendar.next')} style={[styles.arrow, touchTarget]} onPress={() => setOffset((o) => o + 1)}><Text style={styles.arrowText}>›</Text></Pressable>
@@ -102,10 +102,11 @@ const styles = StyleSheet.create({
     nav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8 },
     arrow: { alignItems: 'center', justifyContent: 'center' },
     arrowText: { color: colors.accent, fontSize: 30 },
-    range: { color: colors.text, fontSize: 17, fontWeight: '600' },
+    range: { color: colors.text, fontSize: 17, fontWeight: '600', textAlign: 'center' },
+    rangeBox: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     day: { color: colors.muted, fontSize: 13, textTransform: 'uppercase', paddingTop: 16, paddingBottom: 4 },
     row: { flexDirection: 'row', gap: 12, paddingVertical: 10, borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth },
-    time: { color: colors.body, fontSize: 15, width: 52 },
+    time: { color: colors.body, fontSize: 15, flexShrink: 0 },
     rowText: { flex: 1, gap: 2 },
     text: { color: colors.text, fontSize: 15 },
     status: { color: colors.accent, fontSize: 13 },

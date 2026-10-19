@@ -52,7 +52,7 @@ export default function Connect() {
                     {busy === n.key ? <ActivityIndicator color={colors.accent} /> : <Text style={styles.action}>{t('connect.button')}</Text>}
                 </Pressable>
             ))}
-            {note ? <Text style={[styles.note, note.bad && styles.bad]} accessibilityRole={note.bad ? 'alert' : undefined}>{note.text}</Text> : null}
+            {note ? <Text style={[styles.note, note.bad && styles.bad]} accessibilityRole={note.bad ? 'alert' : undefined} accessibilityLiveRegion="polite">{note.text}</Text> : null}
             <View style={styles.footer}>
                 <Text style={styles.muted}>{t('connect.own')}</Text>
                 <Text style={styles.muted}>{t('connect.remove')}</Text>
@@ -65,9 +65,9 @@ const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
     body: { padding: 16, gap: 10 },
     intro: { color: colors.body },
-    row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14 },
+    row: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 6, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14 },
     off: { opacity: 0.4 },
-    name: { color: colors.text, fontSize: 17 },
+    name: { color: colors.text, fontSize: 17, flexShrink: 1 },
     action: { color: colors.accent, fontWeight: '600' },
     note: { color: colors.accent, marginTop: 6 },
     bad: { color: colors.danger },

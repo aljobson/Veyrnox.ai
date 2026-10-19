@@ -137,7 +137,7 @@ export default function Comments() {
                             <Pressable accessibilityRole="button" accessibilityState={{ busy: posting, disabled: posting || !bodyOk(draft) }} disabled={posting || !bodyOk(draft)} style={[styles.button, (posting || !bodyOk(draft)) && styles.off]} onPress={post}>
                                 {posting ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>{t('comments.post')}</Text>}
                             </Pressable>
-                            {note ? <Text style={[styles.note, note.bad && styles.warn]} accessibilityRole={note.bad ? 'alert' : undefined}>{note.text}</Text> : null}
+                            {note ? <Text style={[styles.note, note.bad && styles.warn]} accessibilityRole={note.bad ? 'alert' : undefined} accessibilityLiveRegion="polite">{note.text}</Text> : null}
                             {own.length > 0 ? (
                                 <View style={styles.ownBox}>
                                     <Text style={styles.heading} accessibilityRole="header">{t('comments.yours')}</Text>
@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
     card: { paddingVertical: 12, gap: 4, borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth },
     author: { color: colors.muted, fontSize: 13 },
     body: { color: colors.text, fontSize: 15 },
-    actions: { flexDirection: 'row', gap: 4 },
+    actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
     act: { paddingRight: 16, justifyContent: 'center' },
     link: { color: colors.accent, fontSize: 14 },
     moreBtn: { alignItems: 'center', justifyContent: 'center' },
