@@ -6,6 +6,7 @@ Phase-0 decision-support documents for the target architecture at `/Users/aljobs
 
 | ADR | Status | Summary | Blocks |
 |-----|--------|---------|--------|
+| [ADR-0166 — Mobile: Publish reports, PDF and slide download and share (parity plan P5)](0166-mobile-publish-reports.md) | **Proposed 2026-10-19** | Saved reports list; PDF and slides downloaded to the cache and shared; template editing not built |
 | [ADR-0128 — Mobile: consent before content goes to an AI provider](0128-mobile-ai-sharing-consent.md) | **Proposed 2026-10-18** | One-time, versioned in-app agreement before the first generation, upload or chat send (Apple 5.1.2(i)); gate in the API client so no screen can bypass it; Not now sends nothing; stored per account in SecureStore. No server change, no dependency. | Withdraw control |
 | [ADR-0127 — Mobile: iOS privacy manifest and permission strings](0127-mobile-ios-privacy-manifest.md) | **Proposed 2026-10-18** | `ios.privacyManifests` (no tracking, required-reason APIs, collected data types matching the store checklist) and the unused Face ID string removed; pinned by a test. Android storage permissions left for the Android pass. | Android permission pass; first signed build's privacy report |
 | [ADR-0122 — Mobile: Publish composer](0122-mobile-publish-composer.md) | **Proposed 2026-10-18** | Pick a creation, accounts, text, post now or schedule, then change the time, cancel or restore. Server-clock post now, one-post-per-draft keys, confirm before sending, no native date picker. Mock-proved only. | Server `updated_at` on post rows |
