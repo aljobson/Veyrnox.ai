@@ -3,7 +3,24 @@ import type { ApiClient } from './api';
 export type PublishTier = 'free' | 'publish';
 
 interface PlanResponse {
-    readonly entitlement?: { readonly tier?: string };
+    readonly entitlement?: { readonly tier?: string; readonly subscription?: { readonly source?: unknown } | null };
+}
+
+// Where a live plan is managed (ADR-0109 amendment 1): bought on the web (stripe) or in a store. Null when there is no
+// live plan or the server does not say; the screen then says nothing about where to manage it.
+export type PlanSource = 'stripe' | 'store';
+export function sourceFrom(body: PlanResponse): PlanSource | null {
+    const s = body.entitlement?.subscription?.source;
+    return s === 'stripe' || s === 'store' ? s : null;
+}
+
+export async function fetchPublishPlan(api: ApiClient): Promise<{ tier: PublishTier | null; source: PlanSource | null }> {
+    try {
+        const body = await api.request<PlanResponse>('/api/v1/social/plan');
+        return { tier: tierFrom(body), source: sourceFrom(body) };
+    } catch {
+        return { tier: null, source: null };
+    }
 }
 
 // The server is the source of truth for the plan: a subscription bought on the web, in the other
