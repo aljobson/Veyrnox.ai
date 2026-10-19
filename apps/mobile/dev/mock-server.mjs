@@ -192,6 +192,13 @@ createServer(async (req, res) => {
         console.log('MOCK created post', id, body.publishNow === true ? 'now' : 'scheduled');
         return send(res, 201, { post_id: id, idempotent: false, target_count: body.accountIds.length });
     }
+    // SmartLink (ADR-0171): one saved page, kept in memory.
+    if (path === '/api/v1/social/smartlink' && req.method === 'GET') return send(res, 200, state.smartlink ?? { brand_id: 'b1', smartlink: null, items: [], totals: { views: 0, clicks: 0 } });
+    if (path === '/api/v1/social/smartlink' && req.method === 'PUT') {
+        if (body.slug === 'taken') return send(res, 409, { error: 'slug_taken' });
+        state.smartlink = { brand_id: 'b1', smartlink: { id: 'sl-1', slug: body.slug, title: body.title, bio: body.bio, avatar_url: body.avatarUrl || null, theme: body.theme, published: body.published }, items: body.items.map((i, n) => ({ id: i.id || `it-${n}`, label: i.label, url: i.url, enabled: i.enabled, clicks: 3 * n })), totals: { views: 42, clicks: 9 } };
+        return send(res, 200, { smartlink_id: 'sl-1' });
+    }
     // Drafts approve and discard (ADR-0162): the batch leaves the list; a free plan is refused for approve like the real route.
     if (path === '/api/v1/social/drafts' && req.method === 'POST') {
         if (body.action === 'approve' && state.socialPlan !== 'publish') return send(res, 402, { error: 'publish_plan_required', feature: 'scheduling' });
