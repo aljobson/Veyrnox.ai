@@ -2,7 +2,8 @@ name: dependabot-automerge
 
 # Queues GitHub auto-merge on Dependabot's patch and minor PRs. The merge
 # itself still waits for the main-protection ruleset's required checks
-# (build-test, guard, verify, acceptance). Majors, and every PR not opened by
+# (build-test, guard, verify, acceptance). Majors, the framework-runtime group (dependabot.yml, outage of
+# 2026-10-19), and every PR not opened by
 # Dependabot, are merged by the owner (decision of 2026-10-02).
 
 on: pull_request
@@ -23,8 +24,23 @@ jobs:
         with:
           github-token: ${{ github.token }}
 
+      # Matched by group, and by package for ungrouped PRs (a security update
+      # for next is not in any group).
+      - id: framework
+        name: Detect framework-runtime updates
+        env:
+          GROUP: ${{ steps.meta.outputs.dependency-group }}
+          NAMES: ${{ steps.meta.outputs.dependency-names }}
+        run: |
+          if [ "$GROUP" = "framework-runtime" ] || printf '%s' "$NAMES" | grep -Eq '(^|, )(next|react|react-dom|eslint-config-next|wrangler|@opennextjs/[^,]+|@types/react|@types/react-dom)(,|$)'; then
+            echo "held=true" >> "$GITHUB_OUTPUT"
+            echo "Framework/runtime update: left for the owner to merge."
+          else
+            echo "held=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Enable auto-merge for patch and minor updates
-        if: steps.meta.outputs.update-type == 'version-update:semver-patch' || steps.meta.outputs.update-type == 'version-update:semver-minor'
+        if: steps.framework.outputs.held == 'false' && (steps.meta.outputs.update-type == 'version-update:semver-patch' || steps.meta.outputs.update-type == 'version-update:semver-minor')
         env:
           GH_TOKEN: ${{ github.token }}
           PR_URL: ${{ github.event.pull_request.html_url }}

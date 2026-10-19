@@ -1,4 +1,5 @@
 import { ApiError, type ApiClient } from './api';
+import type { JobRead } from './chatStop';
 import { createSseParser } from './sse';
 
 export interface ChatModel {
@@ -22,6 +23,8 @@ export interface ChatModelOptions {
     readonly images?: ChatOptionOffer | null;
 }
 
+export const imagesExtra = (m: ChatModel): number | null => extraOf(m.options?.images);
+
 // The two per-message choices sent as `options`. Thinking and Web can be on together.
 export interface ReplyOptions {
     readonly thinking: boolean;
@@ -43,9 +46,11 @@ export function cleanOptions(model: ChatModel, options: ReplyOptions): ReplyOpti
 
 // Credits for one reply: the catalog base plus the catalog extra for each choice made. This only adds what the server
 // listed; the server prices the turn itself (lib/chat.js replyPrice) and charges that.
-export function replyPrice(model: ChatModel, options: ReplyOptions): number {
+export function replyPrice(model: ChatModel, options: ReplyOptions, imageCount = 0): number {
     const o = cleanOptions(model, options);
-    return model.credits_per_reply + (o.thinking ? (thinkingExtra(model) ?? 0) : 0) + (o.web ? (webExtra(model) ?? 0) : 0);
+    // Any attached image adds the model's image extra once, however many there are (lib/chatTurn.js).
+    const images = imageCount > 0 ? (imagesExtra(model) ?? 0) : 0;
+    return model.credits_per_reply + (o.thinking ? (thinkingExtra(model) ?? 0) : 0) + (o.web ? (webExtra(model) ?? 0) : 0) + images;
 }
 
 export const optionsKey = (o: ReplyOptions): string => `${o.thinking ? 't' : ''}${o.web ? 'w' : ''}`;
@@ -58,8 +63,8 @@ export interface PendingSend {
     readonly key: string;
 }
 
-export function sendKeyFor(previous: PendingSend | null, text: string, options: ReplyOptions, make: () => string): PendingSend {
-    const sig = optionsKey(options);
+export function sendKeyFor(previous: PendingSend | null, text: string, options: ReplyOptions, make: () => string, attached = ''): PendingSend {
+    const sig = `${optionsKey(options)}|${attached}`;
     return previous && previous.text === text && previous.options === sig ? previous : { text, options: sig, key: make() };
 }
 
@@ -80,7 +85,7 @@ export interface ChatMessage {
 }
 
 export type TurnEvent =
-    | { readonly type: 'start'; readonly credits: number; readonly balanceAfter: number | null }
+    | { readonly type: 'start'; readonly credits: number; readonly balanceAfter: number | null; readonly jobId: string | null }
     | { readonly type: 'delta'; readonly text: string }
     | { readonly type: 'error'; readonly error: string }
     | { readonly type: 'done'; readonly status: string; readonly creditsCharged: number; readonly balance: number | null };
@@ -90,7 +95,7 @@ export function toTurnEvent(event: string, data: unknown): TurnEvent | null {
     const num = (v: unknown) => (typeof v === 'number' ? v : null);
     switch (event) {
         case 'start':
-            return { type: 'start', credits: num(d.credits) ?? 0, balanceAfter: num(d.balance_after) };
+            return { type: 'start', credits: num(d.credits) ?? 0, balanceAfter: num(d.balance_after), jobId: typeof d.job_id === 'string' ? d.job_id : null };
         case 'delta':
             return typeof d.text === 'string' ? { type: 'delta', text: d.text } : null;
         case 'error':
@@ -109,6 +114,9 @@ export function toTurnEvent(event: string, data: unknown): TurnEvent | null {
 
 export const chatApi = (api: ApiClient) => ({
     listModels: () => api.request<{ models: ChatModel[] }>('/api/v1/chat/models').then((r) => r.models),
+    // The models with the server's attachment limits (max_attachments, max_image_edge), which the app also knows as defaults.
+    listModelsWithLimits: () =>
+        api.request<{ models: ChatModel[]; max_attachments?: number; max_image_edge?: number }>('/api/v1/chat/models'),
     listThreads: () => api.request<{ threads: ChatThread[] }>('/api/v1/chat/threads').then((r) => r.threads),
     createThread: (modelId: string) =>
         api
@@ -120,6 +128,24 @@ export const chatApi = (api: ApiClient) => ({
             .then((r) => r.thread),
     getThread: (id: string) =>
         api.request<{ thread: ChatThread; messages: ChatMessage[] }>(`/api/v1/chat/threads/${encodeURIComponent(id)}`),
+    // Rename and pin. The server refuses an empty or over-long title (MAX_TITLE 120) and unknown keys.
+    updateThread: (id: string, patch: { title?: string; pinned?: boolean; system_prompt?: string }) =>
+        api
+            .request<{ thread: ChatThread }>(`/api/v1/chat/threads/${encodeURIComponent(id)}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(patch),
+            })
+            .then((r) => r.thread),
+    // A reply is a job (ADR-0067); its state tells whether a stopped turn has settled.
+    getJob: (id: string) => api.request<JobRead>(`/api/v1/jobs/${encodeURIComponent(id)}`),
+    // Asks about a send by its own key: the job it made, or `{ closed: true }` when it made none (then none ever can).
+    closeSend: (key: string) =>
+        api.request<unknown>('/api/v1/chat/sends/close', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ idempotency_key: key }),
+        }),
     deleteThread: (id: string) =>
         api.request<{ ok: true }>(`/api/v1/chat/threads/${encodeURIComponent(id)}`, { method: 'DELETE' }),
 
@@ -132,18 +158,33 @@ export const chatApi = (api: ApiClient) => ({
         onEvent: (e: TurnEvent) => void,
         signal?: AbortSignal,
         options: ReplyOptions = NO_OPTIONS,
-    ) {
+        attachments: readonly ({ source_key: string } | { source_asset: string })[] = [],
+    ): Promise<{ readonly replay: boolean; readonly job: string | null }> {
         const res = await api.stream(`/api/v1/chat/threads/${encodeURIComponent(threadId)}/messages`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
-            body: JSON.stringify({ text, idempotency_key: idempotencyKey, options: { thinking: options.thinking, web: options.web } }),
+            body: JSON.stringify({
+                text,
+                idempotency_key: idempotencyKey,
+                options: { thinking: options.thinking, web: options.web },
+                // Present only when there are images, so a text turn keeps the shape it always had.
+                ...(attachments.length ? { attachments } : {}),
+            }),
             signal,
         });
         if (!res.ok) {
             const body = (await res.json().catch(() => ({}))) as { error?: string };
             throw new ApiError(res.status, typeof body.error === 'string' ? body.error : 'unknown');
         }
+        // The server already holds a job for this key: it answers JSON, not a stream. That says a job exists, not how it ended.
+        const type = res.headers?.get?.('content-type') ?? '';
+        if (type && !type.includes('text/event-stream')) {
+            const body = (await res.json().catch(() => ({}))) as { replay?: unknown; job_id?: unknown };
+            if (body.replay === true) return { replay: true, job: typeof body.job_id === 'string' ? body.job_id : null };
+            throw new ApiError(0, 'bad_answer');
+        }
         if (!res.body) throw new ApiError(res.status, 'no_stream');
+        let ended = false;
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
         const parser = createSseParser();
@@ -153,7 +194,24 @@ export const chatApi = (api: ApiClient) => ({
             for (const frame of parser.push(decoder.decode(value, { stream: true }))) {
                 const event = toTurnEvent(frame.event, frame.data);
                 if (event) onEvent(event);
+                if (frame.event === 'done') ended = true;
             }
         }
+        // `done` is written last on every path that ends a turn; a stream without it was cut off.
+        if (!ended) throw new ApiError(0, 'stream_cut');
+        return { replay: false, job: null };
     },
 });
+
+export const MAX_TITLE = 120;
+
+// A title the server will take (1 to 120 characters once trimmed), or null.
+export function cleanTitle(raw: string): string | null {
+    const t = raw.trim();
+    return t.length > 0 && t.length <= MAX_TITLE ? t : null;
+}
+
+// Pinned chats first, otherwise the order the server gave.
+export function pinnedFirst<T extends { readonly pinned?: boolean }>(threads: readonly T[]): T[] {
+    return [...threads.filter((t) => t.pinned), ...threads.filter((t) => !t.pinned)];
+}

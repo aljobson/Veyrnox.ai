@@ -9,3 +9,7 @@ Read the live rule with `npx wrangler r2 bucket cors list veyrnox-ai-media --jur
 `npx wrangler r2 bucket cors set veyrnox-ai-media --jurisdiction eu --file docs/infra/r2-cors-veyrnox-ai-media.json`
 (production: the owner's word first; ADR-0028 amendment 2). The staging bucket `veyrnox-ai-staging-media` already carries the same
 rule for its own origin.
+
+## Production outage
+
+Detect, roll back and hand-deploy steps, with the 2026-10-19 incident record: [`docs/runbooks/production-outage.md`](../runbooks/production-outage.md).

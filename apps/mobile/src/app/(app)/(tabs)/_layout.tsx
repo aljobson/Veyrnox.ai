@@ -1,7 +1,8 @@
 import { Tabs } from 'expo-router';
-import { Text, type ColorValue } from 'react-native';
+import { Text, View, type ColorValue } from 'react-native';
 import { HeaderRight } from '../../../components/HeaderChips';
 import { Logo } from '../../../components/Logo';
+import { VeyMascot } from '../../../components/VeyMascot';
 import { HEADER_MAX_FONT_SCALE, MIN_TARGET } from '../../../lib/a11y';
 import { t } from '../../../lib/i18n';
 import { colors } from '../../../theme';
@@ -22,6 +23,14 @@ function tabLabel(key: string) {
 export default function TabsLayout() {
     return (
         <Tabs
+            // Vey sits inside each tab's scene, so it is always above the tab bar. The Cinema feed keeps its actions at the
+            // bottom, so Vey stays off it.
+            screenLayout={({ children, route }) => (
+                <View style={{ flex: 1 }}>
+                    {children}
+                    {route.name === 'cinema' ? null : <VeyMascot />}
+                </View>
+            )}
             screenOptions={{
                 headerStyle: { backgroundColor: colors.background },
                 headerTintColor: colors.text,
