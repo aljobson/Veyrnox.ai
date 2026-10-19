@@ -205,3 +205,51 @@ describe('fetchClipLength', () => {
         expect(await fetchClipLength(api, 'j1')).toBeNull();
     });
 });
+
+import { newAudio, stepOffset } from '../src/lib/clipEdit';
+import { fileNameFor } from '../src/lib/output';
+import { mediaApi } from '../src/lib/media';
+
+describe('sound under the video', () => {
+    const aud = newAudio({ jobId: '9f2b8a52-6c0e-4d7a-9b1f-0a1b2c3d4e5f', label: 'Song' });
+    test('the body names the audio creation and its offset, beside the clips', () => {
+        const b = editBody([clip()], null, 4, 'k', { ...aud, offset: 1.5 }) as { inputs: Record<string, unknown> };
+        expect(b.inputs.audio).toEqual({ asset_id: aud.jobId, offset_s: 1.5 });
+        expect((editBody([clip()], null, 4, 'k') as { inputs: Record<string, unknown> }).inputs.audio).toBeUndefined();
+    });
+    test('the offset stays inside the video', () => {
+        expect(stepOffset(aud, -0.5, 10).offset).toBe(0);
+        expect(stepOffset({ ...aud, offset: 9.5 }, 0.5, 10).offset).toBe(9.5);
+        expect(validateEdit([clip()], null, { ...aud, offset: 10 })).toBe('audio_offset');
+        expect(validateEdit([clip({ end: 5 })], null, { ...aud, offset: 5 })).toBe('audio_offset');
+    });
+    test('a whole clip with sound is an edit, not nothing to do', () => {
+        expect(validateEdit([clip()], null)).toBe('nothing_to_do');
+        expect(validateEdit([clip()], null, aud)).toBeNull();
+    });
+    test('the quote and the send carry the sound', async () => {
+        const { api, request } = apiWith(() => new ApiError(409, 'credit_confirmation_mismatch', { expected_credits: 4 }));
+        await quoteEdit(api, [clip()], null, 'k', aud);
+        expect((body(request).inputs as Record<string, unknown>).audio).toBeDefined();
+    });
+    test('the server errors for sound map to words', () => {
+        expect(editErrorKey(new ApiError(400, 'audio_not_audio'))).toBe('edit.err.notAudio');
+        expect(editErrorKey(new ApiError(400, 'audio_invalid'))).toBe('edit.problem.audio_offset');
+    });
+});
+
+describe('stems', () => {
+    test('each track gets its own file name; an unknown label adds nothing', () => {
+        const id = 'abcdef12-0000-4000-8000-000000000000';
+        expect(fileNameFor(id, 'audio/mpeg', 'vocals')).toBe('veyrnox-abcdef12-vocals.mp3');
+        expect(fileNameFor(id, 'audio/mpeg', '../x')).toBe('veyrnox-abcdef12.mp3');
+        expect(fileNameFor(id, 'audio/mpeg')).toBe('veyrnox-abcdef12.mp3');
+    });
+    test('asks the asset route for one stem, encoded', async () => {
+        const request = jest.fn().mockResolvedValue({ url: 'u', mime_type: 'audio/mpeg' });
+        await mediaApi({ request } as never).getAsset('j1', 'drums');
+        expect(request).toHaveBeenCalledWith('/api/v1/jobs/j1/asset?stem=drums');
+        await mediaApi({ request } as never).getAsset('j1');
+        expect(request).toHaveBeenLastCalledWith('/api/v1/jobs/j1/asset');
+    });
+});
