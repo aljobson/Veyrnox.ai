@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { fixture } from './helpers/publicSiteRender.mjs';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 
@@ -24,11 +25,13 @@ test('Publish failures lead to recovery and calendar loading has a ceiling', () 
   assert.match(calendar, /return\(\)=>\{active=false;window\.clearTimeout\(timeout\);\}/);
 });
 
-test('Video Agent owns descriptive no-index metadata', () => {
-  const src = read('app/veyrnox/app/video-agent/layout.js');
-  assert.match(src, /title: 'Video Agent'/);
-  assert.match(src, /canonical: '\/app\/video-agent'/);
-  assert.match(src, /robots: \{ index: false, follow: false \}/);
+test('Video Agent owns descriptive no-index metadata', async () => {
+  const { generateMetadata } = fixture('en', '/app/video-agent').load('app/veyrnox/app/video-agent/layout.js');
+  const metadata = await generateMetadata();
+  assert.equal(metadata.title, 'Video Agent');
+  assert.equal(metadata.description, 'Turn a creative brief into a planned, credit-priced video workflow with Veyrnox.');
+  assert.deepEqual(metadata.alternates, { canonical: '/app/video-agent' });
+  assert.deepEqual(metadata.robots, { index: false, follow: false });
 });
 
 test('floating utilities avoid bottom actions and remain compact', () => {

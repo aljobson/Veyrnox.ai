@@ -1,3 +1,4 @@
+import { tOr } from '../../../../lib/i18n/translate.mjs';
 import { getT } from '../../../../lib/i18n/server';
 import { editorFeatureEnabled } from '../../../../lib/editorRuntimeFlags.mjs';
 import { SharedToolsFlagProvider } from '../../_components/editor/SharedToolsFlag';
@@ -7,7 +8,13 @@ import { notFound } from 'next/navigation';
 
 export async function generateMetadata() {
   const { t } = await getT();
-  return { title: t('label.Video editor'), description: t('app.editor.meta.description'), robots: { index: false, follow: false } };
+  const title = tOr(t, 'app.meta.editor.title', 'Video editor');
+  const description = tOr(t, 'app.meta.editor.description', 'Cut, arrange and export a video in your browser.');
+  return {
+    title,
+    description,
+    robots: { index: false, follow: false },
+  };
 }
 export const dynamic = 'force-dynamic';
 

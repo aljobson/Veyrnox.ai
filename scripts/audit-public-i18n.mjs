@@ -5,6 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
 import { helperExceptions } from './lib/helper-i18n-exceptions.mjs';
+import { appMetadataFile, isMetadataExport, inventoryMetadata } from './lib/app-metadata-i18n.mjs';
 import publicEnglish from '../lib/i18n/messages/en.mjs';
 import appEnglish from '../lib/i18n/messages/app/en.mjs';
 const english = { ...publicEnglish, ...appEnglish };
@@ -80,7 +81,7 @@ export function publicFiles({ app = false } = {}) {
     const tree = ts.createSourceFile(file, readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.JSX);
     let jsx = false;
     function scan(node) { if (ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node) || ts.isJsxFragment(node)) jsx = true; else ts.forEachChild(node, scan); }
-    scan(tree); return jsx || (app && /(?:^lib\/|\/_lib\/)/.test(file));
+    scan(tree); return jsx || (app && (/(?:^lib\/|\/_lib\/)/.test(file) || (appMetadataFile(file) && tree.statements.some(isMetadataExport))));
   }).sort();
 }
 export const appFiles = () => publicFiles({ app: true });
@@ -129,6 +130,7 @@ function allowed(file, text) {
   return exceptions.find(rule => (!rule.file || rule.file.test(file)) && rule.pattern.test(text))?.reason;
 }
 export function candidates(file, source, { app = false } = {}) {
+  if (app && /^app\/veyrnox\/app\/admin(?:\/|$)/.test(file)) return [];
   const tree = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JSX);
   const output = [];
   const helper = /(?:^lib\/|\/_lib\/)/.test(file);
@@ -136,12 +138,16 @@ export function candidates(file, source, { app = false } = {}) {
   function add(node, kind, text, status, reason) {
     const value = text.replace(/\s+/g, ' ').trim();
     if (kind === 'expression' && (/^[/.#]/.test(value) || /^[?&][a-z_]+=/.test(value))) return;
-    if (!/[A-Za-z]{2}/.test(value)) return;
+    if (!/[A-Za-z]{2}/.test(value) && !kind.startsWith('metadata')) return;
     if (!status && helper && catalogValues.has(value)) { status = 'translated'; reason = 'helper copy has an English catalog entry; display mapping requires review'; }
     if (!status) { reason = allowed(file, value); status = reason ? 'allowlisted' : 'unresolved'; }
     output.push({ file, line: tree.getLineAndCharacterOfPosition(node.getStart()).line + 1, kind, text: value, status, ...(reason ? { reason } : {}) });
   }
   function visit(node) {
+    if (app && appMetadataFile(file) && isMetadataExport(node)) {
+      inventoryMetadata(node, tree, english, add);
+      return;
+    }
     if ((ts.isCallExpression(node) || ts.isNewExpression(node)) && node.expression.getText(tree) === 'Error' && ['bad response', 'not saved', 'plans unavailable'].includes(node.arguments?.[0]?.text)) return;
     if (ts.isElementAccessExpression(node) && node.expression.getText(tree) === 't.messages') {
       add(node, 'lookup', node.argumentExpression.getText(tree), 'translated', 'catalog lookup'); return;

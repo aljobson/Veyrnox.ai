@@ -8,6 +8,30 @@ test('app coverage inventories all app pages and imported JSX, excluding admin',
   for (const area of ['create', 'library', 'publish', 'account', 'chat', 'editor', 'video-agent']) assert.ok(files.includes(`app/veyrnox/app/${area}/page.js`), area);
   assert.ok(files.includes('app/veyrnox/_components/chat/ChatWorkspace.js'));
   assert.ok(!files.some(file => file.startsWith('app/veyrnox/app/admin/')));
+  for (const area of ['', 'account/', 'create/', 'library/', 'publish/', 'chat/']) assert.ok(files.includes(`app/veyrnox/app/${area}layout.js`), 'metadata-only layouts are included');
+});
+
+test('app audit detects static and generated metadata, including local bindings and title objects', () => {
+  const file = 'app/veyrnox/app/test/layout.js';
+  const sources = [
+    `export const metadata = { title: 'Untranslated', description: 'Description', alternates: { canonical: '/app/test' }, robots: { index: false } };`,
+    `export async function generateMetadata() { const title = 'Untranslated'; return { title, description: 'Description' }; }`,
+    `const title = 'Untranslated'; export const generateMetadata = async () => ({ title: { default: title, template: '%s — Veyrnox.ai' }, description: 'Description' });`,
+    `export const generateMetadata = () => { const title = 'Untranslated'; return { title, description: 'Description' }; };`,
+    `export function generateMetadata() { return { title: { absolute: 'Untranslated' }, openGraph: { description: 'Description', url: '/app/test' } }; }`,
+  ];
+  for (const source of sources) {
+    const rows = candidates(file, source, { app: true });
+    assert.deepEqual(rows.filter(row => row.status === 'unresolved').map(row => row.text).sort(), ['Description', 'Untranslated']);
+    assert.ok(rows.every(row => row.kind === 'metadata'));
+  }
+  const translated = `export async function generateMetadata() { const title = tOr(t, 'app.meta.create.title', 'Create'); return { title, openGraph: { title: \`\${title} — Veyrnox.ai\` } }; }`;
+  assert.ok(candidates(file, translated, { app: true }).some(row => row.kind === 'metadata-lookup' && row.status === 'translated'));
+  assert.ok(!candidates(file, translated, { app: true }).some(row => row.status === 'unresolved'));
+  for (const source of [translated.replaceAll('app.meta.create.title', 'app.meta.missing.title'), translated.replace("'Create'", "'Wrong fallback'"), `export const metadata = { title: 'إنشاء' };`]) {
+    assert.ok(candidates(file, source, { app: true }).some(row => row.status === 'unresolved'));
+  }
+  assert.deepEqual(candidates('app/veyrnox/app/admin/layout.js', sources[0], { app: true }), []);
 });
 
 test('app UI has no unresolved visible literals', () => {

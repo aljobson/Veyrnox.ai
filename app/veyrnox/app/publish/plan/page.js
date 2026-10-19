@@ -1,3 +1,4 @@
+import { tOr } from '../../../../../lib/i18n/translate.mjs';
 import { getT } from '../../../../../lib/i18n/server';
 import { AppNav } from '../../../_components/NavBar';
 import { Main } from '../../../_components/Main';
@@ -5,11 +6,13 @@ import PublishPlanPanel from './PublishPlanPanel';
 
 export async function generateMetadata() {
   const { t } = await getT();
+  const title = tOr(t, 'app.meta.publishPlan.title', 'Publish plans and billing');
+  const description = tOr(t, 'app.meta.publishPlan.description', 'Manage your Veyrnox.ai Publish plan and billing.');
   return {
-  title: t('app.publish.plan.pageTitle'),
-  description: t('app.publish.plan.pageDescription'),
-  robots: { index: false },
-};
+    title,
+    description,
+    robots: { index: false },
+  };
 }
 
 export default async function PublishPlanPage() {
