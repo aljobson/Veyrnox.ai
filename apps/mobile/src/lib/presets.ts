@@ -63,6 +63,11 @@ export function groupByCategory(items: readonly Preset[]): PresetGroup[] {
     return [...groups].map(([category, list]) => ({ category, items: list }));
 }
 
+// Opens Create on the template's model with its prompt and length filled in.
+export function presetHref(p: Preset) {
+    return { pathname: '/create/[modelId]', params: { modelId: p.modelId, prompt: p.prompt, ...(p.durationSeconds ? { duration: String(p.durationSeconds) } : {}) } } as const;
+}
+
 export function presetPrice(p: Preset): string {
     return p.durationSeconds ? `${p.credits} credits · ${p.durationSeconds} s` : `${p.credits} credits`;
 }
