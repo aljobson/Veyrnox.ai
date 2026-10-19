@@ -1,6 +1,6 @@
 import type { ApiClient } from './api';
 
-// The Vey help assistant (ADR-0103, ADR-0125, ADR-0168): free, rate-limited product guidance from POST /api/v1/help. It answers
+// The Vey help assistant (ADR-0103, ADR-0125, ADR-0170): free, rate-limited product guidance from POST /api/v1/help. It answers
 // in words and may point at a place in the app; it can never press anything, and spending, deleting and publishing are not
 // in its contract.
 export const MAX_QUESTION = 500;
