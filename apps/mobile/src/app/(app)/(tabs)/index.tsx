@@ -5,14 +5,16 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, 
 import { useAuth } from '../../../auth/AuthProvider';
 import { VEY_CLEARANCE } from '../../../components/VeyMascot';
 import { selectedState, touchTarget } from '../../../lib/a11y';
-import { ALL_CATEGORIES, categoriesOf, filterByCategory, firstModelFor, pickUp, promptHref, recentCreations } from '../../../lib/explore';
+import { ALL_CATEGORIES, ALL_TYPES, categoriesFor, filterPresets, firstModelFor, pickUp, presetKind, promptHref, recentCreations, splitColumns, type TypeFilter } from '../../../lib/explore';
 import { t } from '../../../lib/i18n';
 import { fetchCatalogCached, mediaApi, type CatalogModel, type Job, type Kind } from '../../../lib/media';
 import { fetchPresets, presetHref, presetPrice, type Preset } from '../../../lib/presets';
 import { colors } from '../../../theme';
 
 // How many templates the home shows; the rest are on the Templates screen.
-const SHOWN = 12;
+const SHOWN = 24;
+// The type chips are always all four, so an empty type can say it is coming soon instead of vanishing.
+const TYPES: readonly TypeFilter[] = [ALL_TYPES, 'image', 'video', 'audio'];
 const RECENT = 6;
 
 const titleCase = (s: string) => s.charAt(0) + s.slice(1).toLowerCase();
@@ -26,7 +28,9 @@ export default function Explore() {
     const [note, setNote] = useState<string | null>(null);
     const [presets, setPresets] = useState<Preset[] | null>(null);
     const [presetsFailed, setPresetsFailed] = useState(false);
+    const [type, setType] = useState<TypeFilter>(ALL_TYPES);
     const [category, setCategory] = useState(ALL_CATEGORIES);
+    const [query, setQuery] = useState('');
     const [jobs, setJobs] = useState<Job[]>([]);
 
     useEffect(() => {
@@ -49,8 +53,15 @@ export default function Explore() {
         }, [api]),
     );
 
-    const categories = useMemo(() => categoriesOf(presets ?? []), [presets]);
-    const shown = useMemo(() => filterByCategory(presets ?? [], category).slice(0, SHOWN), [presets, category]);
+    const categories = useMemo(() => categoriesFor(presets ?? [], type), [presets, type]);
+    const shown = useMemo(() => filterPresets(presets ?? [], { type, category, query }).slice(0, SHOWN), [presets, type, category, query]);
+    const columns = useMemo(() => splitColumns(shown), [shown]);
+
+    function pickType(next: TypeFilter) {
+        setType(next);
+        // A category belongs to a type, so a new type starts at All.
+        setCategory(ALL_CATEGORIES);
+    }
     const resume = useMemo(() => pickUp(jobs), [jobs]);
     const recent = useMemo(() => recentCreations(jobs, RECENT), [jobs]);
 
@@ -111,28 +122,51 @@ export default function Explore() {
                 <ActivityIndicator color={colors.accent} />
             ) : (
                 <>
+                    <TextInput
+                        accessibilityLabel={t('explore.search')}
+                        placeholder={t('explore.search')}
+                        placeholderTextColor={colors.muted}
+                        style={styles.search}
+                        value={query}
+                        onChangeText={setQuery}
+                        returnKeyType="search"
+                        autoCorrect={false}
+                        clearButtonMode="while-editing"
+                    />
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-                        {categories.map((c) => (
-                            <Pressable
-                                key={c}
-                                accessibilityRole="button"
-                                accessibilityState={selectedState(c === category)}
-                                style={[styles.chip, c === category && styles.chipOn, touchTarget]}
-                                onPress={() => setCategory(c)}
-                            >
-                                <Text style={[styles.chipText, c === category && styles.chipTextOn]}>{c === ALL_CATEGORIES ? t('explore.categoryAll') : titleCase(c)}</Text>
+                        {TYPES.map((k) => (
+                            <Pressable key={k} accessibilityRole="button" accessibilityState={selectedState(k === type)} style={[styles.chip, k === type && styles.chipOn, touchTarget]} onPress={() => pickType(k)}>
+                                <Text style={[styles.chipText, k === type && styles.chipTextOn]}>{t(`explore.type.${k}`)}</Text>
                             </Pressable>
                         ))}
                     </ScrollView>
-                    <View style={styles.grid}>
-                        {shown.map((p) => (
-                            <Pressable key={p.id} accessibilityRole="button" accessibilityLabel={`${p.title}, ${presetPrice(p)}`} style={styles.card} onPress={() => router.push(presetHref(p))}>
-                                {p.posterUrl ? <Image source={{ uri: p.posterUrl }} style={styles.poster} contentFit="cover" accessibilityIgnoresInvertColors /> : <View style={styles.poster} />}
-                                <Text style={styles.cardTitle} numberOfLines={2}>{p.title}</Text>
-                                <Text style={styles.cardPrice}>{presetPrice(p)}</Text>
-                            </Pressable>
-                        ))}
-                    </View>
+                    {categories.length > 1 ? (
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+                            {categories.map((c) => (
+                                <Pressable key={c} accessibilityRole="button" accessibilityState={selectedState(c === category)} style={[styles.chip, c === category && styles.chipOn, touchTarget]} onPress={() => setCategory(c)}>
+                                    <Text style={[styles.chipText, c === category && styles.chipTextOn]}>{c === ALL_CATEGORIES ? t('explore.categoryAll') : titleCase(c)}</Text>
+                                </Pressable>
+                            ))}
+                        </ScrollView>
+                    ) : null}
+                    {shown.length === 0 ? (
+                        <Text style={styles.empty} accessibilityLiveRegion="polite">{type === 'audio' && !query.trim() ? t('explore.audioSoon') : t('explore.noMatch')}</Text>
+                    ) : (
+                        <View style={styles.grid}>
+                            {columns.map((column, i) => (
+                                <View key={i} style={styles.column}>
+                                    {column.map((p) => (
+                                        <Pressable key={p.id} accessibilityRole="button" accessibilityLabel={`${p.title}, ${p.modelName}, ${presetPrice(p)}${p.isNew ? `, ${t('explore.new')}` : ''}`} style={styles.card} onPress={() => router.push(presetHref(p))}>
+                                            {p.posterUrl ? <Image source={{ uri: p.posterUrl }} style={[styles.poster, presetKind(p) === 'video' && styles.posterTall]} contentFit="cover" accessibilityIgnoresInvertColors /> : <View style={[styles.poster, presetKind(p) === 'video' && styles.posterTall]} />}
+                                            <Text style={styles.cardTitle} numberOfLines={2}>{p.title}{p.isNew ? `  ${t('explore.new')}` : ''}</Text>
+                                            <Text style={styles.cardModel} numberOfLines={1}>{p.modelName}</Text>
+                                            <Text style={styles.cardPrice}>{presetPrice(p)}</Text>
+                                        </Pressable>
+                                    ))}
+                                </View>
+                            ))}
+                        </View>
+                    )}
                 </>
             )}
 
@@ -184,8 +218,13 @@ const styles = StyleSheet.create({
     chipOn: { backgroundColor: colors.accent, borderColor: colors.accent },
     chipText: { color: colors.body },
     chipTextOn: { color: colors.accentInk, fontWeight: '600' },
-    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-    card: { width: '48%', flexGrow: 1, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, overflow: 'hidden', paddingBottom: 10, gap: 4 },
+    grid: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
+    column: { flex: 1, gap: 10 },
+    search: { minHeight: 44, color: colors.text, fontSize: 16, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14 },
+    empty: { color: colors.muted, paddingVertical: 12 },
+    cardModel: { color: colors.muted, fontSize: 12, paddingHorizontal: 10 },
+    posterTall: { aspectRatio: 0.8 },
+    card: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, overflow: 'hidden', paddingBottom: 10, gap: 4 },
     poster: { width: '100%', aspectRatio: 1, backgroundColor: colors.border },
     cardTitle: { color: colors.text, fontWeight: '600', paddingHorizontal: 10, paddingTop: 6 },
     cardPrice: { color: colors.money, paddingHorizontal: 10 },
