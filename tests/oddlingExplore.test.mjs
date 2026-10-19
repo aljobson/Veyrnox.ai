@@ -1,3 +1,4 @@
+import { resolveI18nSource } from '../scripts/lib/vey-knowledge-i18n.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { access, readdir, readFile } from 'node:fs/promises';
@@ -116,7 +117,7 @@ test('the character sheet renders through the shared Modal instead of a hand-rol
     assert.match(sheet, /onRecreate\(oddling\)/);
     assert.match(sheet, /onAnimate\(oddling\)/);
     assert.doesNotMatch(sheet, /fixed inset-0|aria-modal|role="dialog"|onMouseDown/, 'Modal owns the scrim, the role and the keys');
-    const studio = await component('OddlingStudio.js');
+    const studio = resolveI18nSource(await component('OddlingStudio.js'));
     assert.match(studio, /\{sheet && <OddlingSheet /);
     assert.doesNotMatch(studio, /fixed inset-0|aria-modal/);
 });
@@ -124,9 +125,9 @@ test('the character sheet renders through the shared Modal instead of a hand-rol
 test('the whole gallery card opens the sheet through a real button and keeps Recreate and Animate', async () => {
     const explore = await component('OddlingExplore.js');
     const card = explore.slice(explore.indexOf('function GalleryCard'), explore.indexOf('export function OddlingExplore('));
-    assert.match(card, /<button type="button" onClick=\{\(\) => onSheet\(oddling\)\} aria-label=\{cardButtonLabel\(oddling\.name\)\}[^>]*absolute inset-0/);
-    assert.match(card, /onClick=\{\(\) => onRecreate\(oddling\)\}[\s\S]*Recreate/);
-    assert.match(card, /onClick=\{\(\) => onAnimate\(oddling\)\}[\s\S]*Animate this character/);
+    assert.match(card, /<button type="button" onClick=\{\(\) => onSheet\(oddling\)\} aria-label=\{t\('app\.oddlings\.explore\.card', \{ name: oddling\.name \}\)\}[^>]*absolute inset-0/);
+    assert.match(resolveI18nSource(card), /onClick=\{\(\) => onRecreate\(oddling\)\}[\s\S]*Recreate/);
+    assert.match(resolveI18nSource(card), /onClick=\{\(\) => onAnimate\(oddling\)\}[\s\S]*Animate this character/);
     assert.doesNotMatch(card, /<article[^>]*onClick/, 'no click handler on an element that holds other buttons');
     assert.match(card, /relative z-20/, 'the action buttons sit above the stretched button');
 });
@@ -151,7 +152,7 @@ test('the strip button and the card button for the same character have different
     }
     const explore = await component('OddlingExplore.js');
     const hero = explore.slice(explore.indexOf('function OddlingHeroStrip'), explore.indexOf('function GalleryCard'));
-    assert.match(hero, /aria-label=\{heroButtonLabel\(oddling\.name\)\}/);
+    assert.match(hero, /aria-label=\{t\('app\.oddlings\.explore\.hero', \{ name: oddling\.name \}\)\}/);
     assert.doesNotMatch(hero, /aria-label=\{`Open /, 'the strip no longer shares the card wording');
 });
 
@@ -171,7 +172,7 @@ test('Explore wires the All default, filter chips, hero strip and motion prefere
 });
 
 test('builder wiring: Surprise me beside Generate, one catalog builder, motion captions', async () => {
-    const studio = await component('OddlingStudio.js');
+    const studio = resolveI18nSource(await component('OddlingStudio.js'));
     const motion = await component('OddlingMotionPanel.js');
     assert.match(studio, /randomizeOddlingAll\(current\)/);
     assert.match(studio, />Surprise me</);
@@ -185,7 +186,7 @@ test('builder wiring: Surprise me beside Generate, one catalog builder, motion c
 });
 
 test('deep link loads the character once, then takes the parameter out of the address', async () => {
-    const studio = await component('OddlingStudio.js');
+    const studio = resolveI18nSource(await component('OddlingStudio.js'));
     assert.match(studio, /parseOddlingDeepLink\(window\.location\.search\)/);
     const effect = studio.slice(studio.indexOf('parseOddlingDeepLink(window'), studio.indexOf('}, []);', studio.indexOf('parseOddlingDeepLink(window')));
     assert.match(effect, /setPicks\(\{ \.\.\.linked\.picks \}\)/);
@@ -220,7 +221,7 @@ test('the Oddling Studio is split so no file passes the size ceiling', async () 
 test('Vey can still quote that Explore previews are free: the sentence is within the scanner\'s description budget', async () => {
     // The scanner keeps the first eight <p> descriptions of a route's modules, in module order.
     // The studio file comes before the Explore files, so the sentence lives in the studio header too.
-    const studio = await component('OddlingStudio.js');
+    const studio = resolveI18nSource(await component('OddlingStudio.js'));
     assert.match(studio, /<p [^>]*>[^<]*Dancing puppet previews in Explore are free: no generation or credits\./);
     const route = AUTO_PRODUCT_INVENTORY.find(({ id }) => id === 'route:/app/oddlings');
     assert.ok(route.descriptions.some((line) => /no generation or credits/.test(line)), 'the generated knowledge keeps it');

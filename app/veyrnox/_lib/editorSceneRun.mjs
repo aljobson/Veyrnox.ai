@@ -1,3 +1,4 @@
+import { helperEnglish, helperDiagnostic } from '../../../lib/helperMessages.mjs';
 // Scene detection for one timeline clip (ADR-0105 slice B). The pure helpers are tested in node; detectClipScenes() needs a browser
 // (Mediabunny decoding) and is measured through scripts/editor-spike/scenes-run.mjs, which runs this same code.
 import { FPS } from './editorTimeline.mjs';
@@ -8,10 +9,10 @@ export const SCENE_BOUNDS = Object.freeze({ maxSeconds: 30, maxPixels: 1280 * 72
 
 /** Returns an error message when the clip is outside what scene detection was measured on, otherwise null. */
 export function checkSceneBounds(media, clip) {
-    if (!media || media.kind !== 'video') return 'Scene detection works on video clips.';
-    if (!clip || !Number.isInteger(clip.len) || clip.len < 3) return 'Select a longer video clip first.';
-    if (clip.len > SCENE_BOUNDS.maxSeconds * FPS) return `Scene detection handles up to ${SCENE_BOUNDS.maxSeconds} seconds at a time. Trim or split the clip first.`;
-    if ((media.width || 0) * (media.height || 0) > SCENE_BOUNDS.maxPixels) return 'Scene detection handles up to 720p video for now.';
+    if (!media || media.kind !== 'video') return helperEnglish('scene_detection_works_on_video_clips');
+    if (!clip || !Number.isInteger(clip.len) || clip.len < 3) return helperEnglish('select_a_longer_video_clip_first');
+    if (clip.len > SCENE_BOUNDS.maxSeconds * FPS) return helperEnglish('scene_detection_handles_up_to_seconds_at_a', { value1: SCENE_BOUNDS.maxSeconds });
+    if ((media.width || 0) * (media.height || 0) > SCENE_BOUNDS.maxPixels) return helperEnglish('scene_detection_handles_up_to_720p_video_for');
     return null;
 }
 
@@ -34,7 +35,7 @@ export function cutsToTimelineFrames(clip, clipStart, cuts) {
  */
 export function checkSequenceClipForScenes(media, item) {
     if (!item) return 'Select a video clip on the timeline first.';
-    if (item.reverse || item.speedCurve || item.freezeFrame !== undefined || (item.rate ?? 1) !== 1) return 'Reset speed, reverse and freeze on this clip before detecting scenes.';
+    if (item.reverse || item.speedCurve || item.freezeFrame !== undefined || (item.rate ?? 1) !== 1) return helperEnglish('reset_speed_reverse_and_freeze_on_this_clip');
     return checkSceneBounds(media, item);
 }
 
@@ -78,3 +79,6 @@ export async function detectClipScenes(blob, clip, { signal, onProgress } = {}) 
         return detectScenes(samples);
     } finally { input.dispose?.(); }
 }
+
+/** Locale-neutral display diagnostic; the legacy string interface remains available. */
+export const checkSequenceClipForScenesDiagnostic = (...args) => helperDiagnostic(checkSequenceClipForScenes(...args));

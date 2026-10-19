@@ -1,10 +1,11 @@
+import { helperEnglish } from '../../../lib/helperMessages.mjs';
 import { audioProcessingActive } from './editorAudioSettings.mjs';
 const finite=(v,min,max)=>typeof v==='number' && Number.isFinite(v) && v>=min && v<=max;
 const exact=(v,keys)=>v && typeof v==='object' && !Array.isArray(v) && Object.keys(v).length===keys.length && Object.keys(v).every(k=>keys.includes(k));
 export function speedProblem(c) {
-    if(c.reverse!==undefined && typeof c.reverse!=='boolean')return 'Invalid reverse setting.';
-    if(c.freezeFrame!==undefined && !finite(c.freezeFrame,0,1e7))return 'Invalid freeze frame.';
-    if(c.speedCurve!==undefined && (!Array.isArray(c.speedCurve) || c.speedCurve.length>12 || (c.speedCurve.length && c.speedCurve.length<2) || c.speedCurve.some((p,i)=>!exact(p,['frame','rate']) || !finite(p.frame,-18000,18000) || !finite(p.rate,.1,8) || (i && p.frame<=c.speedCurve[i-1].frame))))return 'Invalid speed curve.';
+    if(c.reverse!==undefined && typeof c.reverse!=='boolean')return helperEnglish('invalid_reverse_setting');
+    if(c.freezeFrame!==undefined && !finite(c.freezeFrame,0,1e7))return helperEnglish('invalid_freeze_frame');
+    if(c.speedCurve!==undefined && (!Array.isArray(c.speedCurve) || c.speedCurve.length>12 || (c.speedCurve.length && c.speedCurve.length<2) || c.speedCurve.some((p,i)=>!exact(p,['frame','rate']) || !finite(p.frame,-18000,18000) || !finite(p.rate,.1,8) || (i && p.frame<=c.speedCurve[i-1].frame))))return helperEnglish('invalid_speed_curve');
     return null;
 }
 /** Antiderivative of a piecewise linear rate. Keys outside a trim retain the original ramp. */

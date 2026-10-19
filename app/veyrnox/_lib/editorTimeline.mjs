@@ -1,3 +1,4 @@
+import { helperEnglish } from '../../../lib/helperMessages.mjs';
 import { sequenceTransition } from './editorSequence.mjs';
 import { validateSequence } from './editorSequenceValidation.mjs';
 // Browser timeline editor, slice 1 (ADR-0080). Pure model: no React, no network, no browser APIs, so every rule here is unit-testable.
@@ -62,7 +63,7 @@ export function addVideoClip(tl, mediaId, { in: from = 0, len } = {}) {
     const length = len ?? media.frames - from;
     if (!isInt(from) || !isInt(length) || from < 0 || length < 1 || from + length > media.frames) return err('That range is outside the clip.');
     if (tl.video.length >= LIMITS.maxVideoClips) return err(`A project holds up to ${LIMITS.maxVideoClips} video clips.`);
-    if (videoFrames(tl) + length > MAX_FRAMES) return err(`A project holds up to ${LIMITS.maxSeconds} seconds.`);
+    if (videoFrames(tl) + length > MAX_FRAMES) return err(helperEnglish('a_project_holds_up_to_seconds', { value1: LIMITS.maxSeconds }));
     const { seq, id } = nextId(tl, 'v');
     return { ...tl, seq, video: [...tl.video, { id, mediaId, in: from, len: length, volume: 1, transition: 0 }] };
 }
@@ -76,7 +77,7 @@ export function addAudioClip(tl, mediaId, { start = 0, in: from = 0, len } = {})
     if (tl.audio.length >= LIMITS.maxAudioClips) return err(`A project holds up to ${LIMITS.maxAudioClips} audio clips.`);
     let at = start;
     for (const c of [...tl.audio].sort((a, b) => a.start - b.start)) if (at < c.start + c.len && at + length > c.start) at = c.start + c.len;
-    if (at + length > MAX_FRAMES) return err(`A project holds up to ${LIMITS.maxSeconds} seconds.`);
+    if (at + length > MAX_FRAMES) return err(helperEnglish('a_project_holds_up_to_seconds', { value1: LIMITS.maxSeconds }));
     const { seq, id } = nextId(tl, 'a');
     return { ...tl, seq, audio: [...tl.audio, { id, mediaId, start: at, in: from, len: length, volume: 1 }] };
 }
@@ -110,9 +111,9 @@ export function trimClip(tl, track, id, { in: from, len, start }) {
     if (track === 'audio' && start !== undefined && (!isInt(start) || start < 0)) return err('That range is outside the clip.');
     const next = replace(tl[track], i, { ...clip, in: nextIn, len: nextLen, ...(track === 'audio' && start !== undefined ? { start } : {}) });
     const out = { ...tl, [track]: next };
-    if (track === 'video' && videoFrames(out) > MAX_FRAMES) return err(`A project holds up to ${LIMITS.maxSeconds} seconds.`);
+    if (track === 'video' && videoFrames(out) > MAX_FRAMES) return err(helperEnglish('a_project_holds_up_to_seconds', { value1: LIMITS.maxSeconds }));
     if (track === 'audio' && overlaps(out.audio)) return err('Audio clips cannot overlap.');
-    if (track === 'audio' && audioEnd(out) > MAX_FRAMES) return err(`A project holds up to ${LIMITS.maxSeconds} seconds.`);
+    if (track === 'audio' && audioEnd(out) > MAX_FRAMES) return err(helperEnglish('a_project_holds_up_to_seconds', { value1: LIMITS.maxSeconds }));
     return out;
 }
 
@@ -148,7 +149,7 @@ export function moveAudioClip(tl, id, start) {
     if (i < 0 || !isInt(start) || start < 0) return err('Select a clip first.');
     const out = { ...tl, audio: replace(tl.audio, i, { ...tl.audio[i], start }) };
     if (overlaps(out.audio)) return err('Audio clips cannot overlap.');
-    if (audioEnd(out) > MAX_FRAMES) return err(`A project holds up to ${LIMITS.maxSeconds} seconds.`);
+    if (audioEnd(out) > MAX_FRAMES) return err(helperEnglish('a_project_holds_up_to_seconds', { value1: LIMITS.maxSeconds }));
     return out;
 }
 
@@ -164,50 +165,50 @@ export function pruneMedia(tl) {
  */
 export function validateTimeline(doc) {
     if (doc?.schemaVersion === 3) return validateSequence(doc);
-    if (!doc || typeof doc !== 'object' || Array.isArray(doc)) return 'Not a timeline.';
-    if (doc.schemaVersion !== SCHEMA_VERSION) return 'Unsupported timeline version.';
-    if (doc.fps !== FPS) return `Only ${FPS} frames a second is supported.`;
-    if (!isInt(doc.seq) || doc.seq < 0 || doc.seq > 1e6) return 'Bad counter.';
-    if (!ASPECTS.includes(doc.aspect)) return 'Bad aspect.';
-    if (!Array.isArray(doc.text)) return 'Bad text list.';
-    if (!doc.media || typeof doc.media !== 'object' || Array.isArray(doc.media)) return 'Bad media list.';
-    if (!Array.isArray(doc.video) || !Array.isArray(doc.audio)) return 'Bad tracks.';
+    if (!doc || typeof doc !== 'object' || Array.isArray(doc)) return helperEnglish('not_a_timeline');
+    if (doc.schemaVersion !== SCHEMA_VERSION) return helperEnglish('unsupported_timeline_version');
+    if (doc.fps !== FPS) return helperEnglish('only_frames_a_second_is_supported', { value1: FPS });
+    if (!isInt(doc.seq) || doc.seq < 0 || doc.seq > 1e6) return helperEnglish('bad_counter');
+    if (!ASPECTS.includes(doc.aspect)) return helperEnglish('bad_aspect');
+    if (!Array.isArray(doc.text)) return helperEnglish('bad_text_list');
+    if (!doc.media || typeof doc.media !== 'object' || Array.isArray(doc.media)) return helperEnglish('bad_media_list');
+    if (!Array.isArray(doc.video) || !Array.isArray(doc.audio)) return helperEnglish('bad_tracks');
     const ids = Object.keys(doc.media);
-    if (ids.length > LIMITS.maxMedia) return 'Too many files.';
+    if (ids.length > LIMITS.maxMedia) return helperEnglish('too_many_files');
     for (const id of ids) {
         const m = doc.media[id];
-        if (!m || m.id !== id || !/^[A-Za-z0-9_-]{1,64}$/.test(id)) return 'Bad media entry.';
-        if (m.kind !== 'video' && m.kind !== 'audio') return 'Bad media kind.';
-        if (!isInt(m.frames) || m.frames < 1 || m.frames > 1e7) return 'Bad media length.';
-        if (typeof m.name !== 'string' || m.name.length > LIMITS.maxNameLength) return 'Bad media name.';
-        if (typeof m.hasAudio !== 'boolean' || !isInt(m.width) || !isInt(m.height) || m.width < 0 || m.height < 0 || m.width > 16384 || m.height > 16384) return 'Bad media entry.';
+        if (!m || m.id !== id || !/^[A-Za-z0-9_-]{1,64}$/.test(id)) return helperEnglish('bad_media_entry');
+        if (m.kind !== 'video' && m.kind !== 'audio') return helperEnglish('bad_media_kind');
+        if (!isInt(m.frames) || m.frames < 1 || m.frames > 1e7) return helperEnglish('bad_media_length');
+        if (typeof m.name !== 'string' || m.name.length > LIMITS.maxNameLength) return helperEnglish('bad_media_name');
+        if (typeof m.hasAudio !== 'boolean' || !isInt(m.width) || !isInt(m.height) || m.width < 0 || m.height < 0 || m.width > 16384 || m.height > 16384) return helperEnglish('bad_media_entry');
     }
-    if (doc.video.length > LIMITS.maxVideoClips) return 'Too many video clips.';
-    if (doc.audio.length > LIMITS.maxAudioClips) return 'Too many audio clips.';
+    if (doc.video.length > LIMITS.maxVideoClips) return helperEnglish('too_many_video_clips');
+    if (doc.audio.length > LIMITS.maxAudioClips) return helperEnglish('too_many_audio_clips');
     const seen = new Set();
     const clipError = (c, track) => {
-        if (!c || typeof c !== 'object' || typeof c.id !== 'string' || !/^[va][0-9]{1,7}$/.test(c.id) || seen.has(c.id)) return 'Bad clip id.';
+        if (!c || typeof c !== 'object' || typeof c.id !== 'string' || !/^[va][0-9]{1,7}$/.test(c.id) || seen.has(c.id)) return helperEnglish('bad_clip_id');
         seen.add(c.id);
         const m = doc.media[c.mediaId];
-        if (!m) return 'A clip points at a missing file.';
-        if (track === 'video' && m.kind !== 'video') return 'A video clip points at an audio file.';
-        if (track === 'audio' && m.kind === 'video' && !m.hasAudio) return 'An audio clip points at a file with no audio.';
-        if (!isInt(c.in) || !isInt(c.len) || c.in < 0 || c.len < 1 || c.in + c.len > m.frames) return 'A clip range is outside its file.';
-        if (typeof c.volume !== 'number' || !Number.isFinite(c.volume) || c.volume < 0 || c.volume > 1) return 'Bad volume.';
-        if (track === 'audio' && (!isInt(c.start) || c.start < 0)) return 'Bad audio start.';
-        if (track === 'video' && (!isInt(c.transition) || c.transition < 0 || c.transition > MAX_TRANSITION)) return 'Bad transition.';
+        if (!m) return helperEnglish('a_clip_points_at_a_missing_file');
+        if (track === 'video' && m.kind !== 'video') return helperEnglish('a_video_clip_points_at_an_audio_file');
+        if (track === 'audio' && m.kind === 'video' && !m.hasAudio) return helperEnglish('an_audio_clip_points_at_a_file_with');
+        if (!isInt(c.in) || !isInt(c.len) || c.in < 0 || c.len < 1 || c.in + c.len > m.frames) return helperEnglish('a_clip_range_is_outside_its_file');
+        if (typeof c.volume !== 'number' || !Number.isFinite(c.volume) || c.volume < 0 || c.volume > 1) return helperEnglish('bad_volume');
+        if (track === 'audio' && (!isInt(c.start) || c.start < 0)) return helperEnglish('bad_audio_start');
+        if (track === 'video' && (!isInt(c.transition) || c.transition < 0 || c.transition > MAX_TRANSITION)) return helperEnglish('bad_transition');
         return null;
     };
     for (const c of doc.video) { const e = clipError(c, 'video'); if (e) return e; }
     for (const c of doc.audio) { const e = clipError(c, 'audio'); if (e) return e; }
-    if (overlaps(doc.audio)) return 'Audio clips overlap.';
-    if (doc.text.length > LIMITS.maxTexts) return 'Too many texts.';
+    if (overlaps(doc.audio)) return helperEnglish('audio_clips_overlap');
+    if (doc.text.length > LIMITS.maxTexts) return helperEnglish('too_many_texts');
     for (const x of doc.text) {
-        if (!x || typeof x !== 'object' || typeof x.id !== 'string' || !/^t[0-9]{1,7}$/.test(x.id) || seen.has(x.id)) return 'Bad text id.';
+        if (!x || typeof x !== 'object' || typeof x.id !== 'string' || !/^t[0-9]{1,7}$/.test(x.id) || seen.has(x.id)) return helperEnglish('bad_text_id');
         seen.add(x.id);
         if (textError(x)) return textError(x);
     }
-    if (totalFrames(doc) > MAX_FRAMES) return `A project holds up to ${LIMITS.maxSeconds} seconds.`;
+    if (totalFrames(doc) > MAX_FRAMES) return helperEnglish('a_project_holds_up_to_seconds', { value1: LIMITS.maxSeconds });
     return null;
 }
 
@@ -243,10 +244,10 @@ export function setTransition(tl, id, frames) {
 const CONTROL_RE = /[\u0000-\u001f\u007f\u2028\u2029]/;
 /** Why a text item is unusable, or null. Text is drawn on a canvas and never put into the page, so its content needs no escaping. */
 function textError(x) {
-    if (typeof x.text !== 'string' || x.text.length < 1 || x.text.length > LIMITS.maxTextChars || CONTROL_RE.test(x.text)) return 'Text is 1 to 120 characters on one line.';
-    if (!isInt(x.start) || !isInt(x.len) || x.start < 0 || x.len < 1 || x.start + x.len > MAX_FRAMES) return 'Text timing is outside the project.';
-    if (typeof x.x !== 'number' || typeof x.y !== 'number' || !(x.x >= 0 && x.x <= 1 && x.y >= 0 && x.y <= 1)) return 'Text position is off the picture.';
-    if (!isInt(x.size) || x.size < LIMITS.minTextSize || x.size > LIMITS.maxTextSize) return 'Text size is 2 to 20.';
+    if (typeof x.text !== 'string' || x.text.length < 1 || x.text.length > LIMITS.maxTextChars || CONTROL_RE.test(x.text)) return helperEnglish('text_is_1_to_120_characters_on_one');
+    if (!isInt(x.start) || !isInt(x.len) || x.start < 0 || x.len < 1 || x.start + x.len > MAX_FRAMES) return helperEnglish('text_timing_is_outside_the_project');
+    if (typeof x.x !== 'number' || typeof x.y !== 'number' || !(x.x >= 0 && x.x <= 1 && x.y >= 0 && x.y <= 1)) return helperEnglish('text_position_is_off_the_picture');
+    if (!isInt(x.size) || x.size < LIMITS.minTextSize || x.size > LIMITS.maxTextSize) return helperEnglish('text_size_is_2_to_20');
     return null;
 }
 

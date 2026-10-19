@@ -17,9 +17,9 @@ test('a job the server marked free is recorded at 0 credits, in the studio and i
 
 test('the Library says FREE for a 0-credit job and never a refund line for a failed one', () => {
     assert.match(library, /const free = row\.credits === 0;/);
-    assert.match(library, /free \? \(row\.state === 'failed' \? '' : 'FREE'\)/);
+    assert.match(library, /free \? \(row\.state === 'failed' \? '' : t\('app.library.free'\)\)/);
     // A paid job keeps its signed delta exactly as before.
-    assert.match(library, /row\.state === 'failed' \? `\+\$\{row\.credits\}` : `−\$\{row\.credits\}`/);
+    assert.match(library, /row\.state === 'failed' \? `\+\$\{creditCount\}` : `−\$\{creditCount\}`/);
 });
 
 test('0207 keeps the five existing reconcile checks and adds the free-allowance one', () => {

@@ -282,3 +282,36 @@ test('logout frees session storage before writing its offline reload marker', as
         assert.deepEqual(actions, ['clear']);
     } finally { globalThis.localStorage = original; }
 });
+
+test('app language choice survives reload, sign-out and password sign-in in the same browser', async () => {
+    const { rememberLocale, localeFromCookie } = await import('../lib/i18n/localeCookie.mjs');
+    const previousDocument = globalThis.document;
+    try {
+        globalThis.document = { cookie: '' };
+        store.clear();
+        let auth = await load('language-before-reload');
+        auth.adoptSession(fresh('locale-user'));
+        rememberLocale('ja');
+        assert.equal(localeFromCookie(document.cookie), 'ja');
+        globalThis.fetch = async (url, init) => {
+            if (String(url).includes('/logout')) return Response.json({});
+            if (String(url) === '/api/auth/session') {
+                const { action } = JSON.parse(init.body);
+                return Response.json(action === 'clear' ? { ok: true } : fresh('locale-user'));
+            }
+            return Response.json({ ...fresh('locale-user'), refresh_token: 'synthetic-refresh' });
+        };
+        auth = await load('language-after-reload');
+        await auth.getFreshAccessToken();
+        assert.equal(localeFromCookie(document.cookie), 'ja');
+        await auth.signOut();
+        assert.equal(auth.getSession(), null);
+        assert.equal(localeFromCookie(document.cookie), 'ja');
+        await auth.signInWithPassword('locale@example.invalid', 'synthetic-password');
+        assert.equal(auth.getStoredUserId(), 'locale-user');
+        assert.equal(localeFromCookie(document.cookie), 'ja');
+    } finally {
+        if (previousDocument === undefined) delete globalThis.document;
+        else globalThis.document = previousDocument;
+    }
+});

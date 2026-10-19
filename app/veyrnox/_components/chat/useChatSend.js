@@ -19,7 +19,7 @@ import { ask, forget, land, onScreen, sendHome } from '../../_lib/chatSendHome';
  * and the warning this one takes the place of.
  * @returns {{send: () => Promise<void>, stop: () => void, busy: boolean, stopping: boolean, checking: boolean, progress: object|null}}
  */
-export function useChatSend({ text, setText, model, imagesBlocked, chosen, price, active, setActive, messages, setMessages, setThreads, setError, att, limits, draftModel, folders, folder, instr, open, refreshThreads, fail, chatView, saveDraft, addDraft, keepNotice, dropNotice, heldWarning }) {
+export function useChatSend({ text, setText, model, imagesBlocked, chosen, price, active, setActive, messages, setMessages, setThreads, setError, att, limits, draftModel, folders, folder, instr, open, refreshThreads, fail, chatView, saveDraft, addDraft, keepNotice, dropNotice, heldWarning, errorCopy = chatErrorCopy, unchargedCopy = chatUnchargedCopy }) {
   const [busy, setBusy] = useState(false);
   const [stopping, setStopping] = useState(false); // Stop was pressed and the stopped turn is being looked for
   const [checking, setChecking] = useState(false); // the connection dropped mid-reply and the turn is being looked for
@@ -54,11 +54,11 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
     // asks about that turn, and a settled turn takes the warning away.
     // A warning still kept for the chat this message was sent from is read first (`before`) and handed on: this notice takes its
     // place, so it then stands for that warning's turns as well, and the store keeps them with it. It goes only when all are settled.
-    const tell = (code, extra) => { const before = heldWarning(from); forgetEarlier(); const { home, here } = at(); keepNotice(home, code, { ...extra, job: jobId, key, sent: content, after: before }); if (here) setError(chatErrorCopy(code, extra)); };
+    const tell = (code, extra) => { const before = heldWarning(from); forgetEarlier(); const { home, here } = at(); keepNotice(home, code, { ...extra, job: jobId, key, sent: content, after: before }); if (here) setError(errorCopy(code, extra)); };
     // A message that used no Credits (it never started, or it started and they came back) has its text given back, and what it says
     // is about itself. It does not take the place of a warning that the message before it used Credits or still may: that warning
     // stays kept, and while its chat is on screen both are said, this one first. True when such a warning is kept, said or not.
-    const besideWarning = (code, extra) => { const { home, here } = at(); const warning = heldWarning(home); if (warning && here) setError(chatUnchargedCopy(code, extra, warning)); return !!warning; };
+    const besideWarning = (code, extra) => { const { home, here } = at(); const warning = heldWarning(home); if (warning && here) setError(unchargedCopy(code, extra, warning)); return !!warning; };
     // With no warning kept it is told like any notice. An ending that says nothing on its own (Stop with nothing kept) skips this
     // and is said only together with a warning.
     const tellUncharged = (code, extra) => { if (!besideWarning(code, extra)) tell(code, extra); };
@@ -159,7 +159,7 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
         if (streamError) tellUncharged(streamError); else besideWarning('stop_refunded');
       } else {
         att.clear();                                 // sent: the images are spent, so the next reply starts clean
-        if (streamError && at().here) setError(chatErrorCopy(streamError)); // on screen only, and not kept: the reload clears it
+        if (streamError && at().here) setError(errorCopy(streamError)); // on screen only, and not kept: the reload clears it
         await reload();                              // the saved messages, with their real status and price
         await relist();                              // first: the notice set below must not be replaced
         if (streamError === 'reply_not_saved') tell(streamError); // after the reload, which clears the notice or replaces it when the chat is gone

@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { activityLabel, canEditPublishing, reportDeliverySummary } from '../app/veyrnox/_lib/publishPresentation.js';
+import english from '../lib/i18n/messages/app/en.mjs';
 import * as presentation from '../app/veyrnox/_lib/publishPresentation.js';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
@@ -53,9 +54,9 @@ test('manual reports never promise automatic email delivery', () => {
 
 test('plan identity is withheld until the plan request resolves and can be retried', () => {
   const source = read('app/veyrnox/app/publish/plan/PublishPlanPanel.js');
-  assert.ok(source.indexOf('if (!data) return') < source.indexOf("paid ? 'Publish Plan' : 'Free'"));
-  assert.match(source, /Loading your Publish plan/);
-  assert.match(source, /onClick=\{load\}>Try again/);
+  assert.ok(source.indexOf('if (!data) return') < source.indexOf('paid ? t("publish.plan.colPlan") : t("publish.plan.colFree")'));
+  assert.equal(english['app.publish.plan.loading'], 'Loading your Publish plan…');
+  assert.match(source, /onClick=\{load\}>\{t\("recovery.retry"\)\}/);
 });
 
 test('analytics scrolls charts inside shrinkable containers', () => {

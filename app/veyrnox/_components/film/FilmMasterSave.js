@@ -1,10 +1,21 @@
 'use client';
+import { tOr } from '../../../../lib/i18n/translate.mjs';
+import { useI18n } from '../../../../components/I18nProvider';
+import { localeTag } from '../../../../lib/i18n/locales.mjs';
+
 import { useEffect, useRef, useState } from 'react';
 import { onSessionChange } from '../../../lib/authClient';
 import { gatewayFetch } from '../../_lib/gateway';
-import { saveFilmMaster, SAVE_ERRORS } from '../../_lib/filmMasterSave.mjs';
+import { saveFilmMaster } from '../../_lib/filmMasterSave.mjs';
 
+export function saveError(t, error) {
+    const fallback = t('app.film.save.failed');
+    if (error?.code) return tOr(t, `app.film.save.error.${error.code}`, fallback);
+    const message = error?.message;
+    return tOr(t, `app.film.save.message.${message}`, message && !/^[a-z][a-z0-9_:-]*$/.test(message) ? message : fallback);
+}
 export function FilmMasterSave({ master, jobId, label, fetcher = gatewayFetch, transfer }) {
+  const { t, locale } = useI18n();
     const [consent, setConsent] = useState(false), [status, setStatus] = useState(''), [error, setError] = useState(''), [saved, setSaved] = useState(null);
     const running = useRef(false), abort = useRef(null), uploadId = useRef(null);
     useEffect(() => {
@@ -22,17 +33,17 @@ export function FilmMasterSave({ master, jobId, label, fetcher = gatewayFetch, t
         } catch (e) {
             if (!controller.signal.aborted) {
                 if (e.code === 'upload_expired') uploadId.current = null;
-                setError(e.code === 'rate_limited' ? `Please wait ${e.retryAfter || 60} seconds and try again.` : SAVE_ERRORS[e.code] || (e.code ? 'Your master could not be saved. Try again; the download is still available.' : e.message));
+                setError(e.code === 'rate_limited' ? t('app.film.save.retry', { seconds: locale === 'en' ? e.retryAfter || 60 : Number(e.retryAfter || 60).toLocaleString(localeTag(locale)) }) : saveError(t, e));
             }
         } finally { running.current = false; if (!controller.signal.aborted) setStatus(''); }
     }
     return <div className="space-y-3">
-        {saved ? <p role="status" className="text-xs font-semibold">Saved to your Library. <a className="text-vx-accent underline" href={saved.url}>View saved video →</a></p> : <>
+        {saved ? <p role="status" className="text-xs font-semibold">{t("app.film.save.saved")}<a className="text-vx-accent underline" href={saved.url}>{t("app.film.save.view")}</a></p> : <>
             <label className="flex items-start gap-2 text-xs text-vx-fg-muted"><input type="checkbox" checked={consent} disabled={!!status} onChange={e => setConsent(e.target.checked)} />
-                <span>I own this video or have permission to use it, including consent from anyone identifiable and rights to any brand, artwork or recording. <a className="underline" href="/legal/aup">Acceptable Use</a></span></label>
-            <button type="button" disabled={!consent || !!status} onClick={save} className="rounded-full bg-vx-accent px-4 py-2 text-xs font-semibold text-vx-accent-ink disabled:opacity-40">{status ? 'Saving to Library…' : 'Save to Library'}</button>
-            {status && <p role="status" className="text-xs">{status}</p>}
-            <p className="text-xs text-vx-fg-muted">Saving is free. The video stays in your Library until its source take expires, up to 90 days.</p>
+                <span>{t("app.film.save.rights")}<a className="underline" href="/legal/aup">{t("label.Acceptable Use")}</a></span></label>
+            <button type="button" disabled={!consent || !!status} onClick={save} className="rounded-full bg-vx-accent px-4 py-2 text-xs font-semibold text-vx-accent-ink disabled:opacity-40">{status ? t("app.film.save.saving") : t("app.film.save.button")}</button>
+            {status && <p role="status" className="text-xs">{tOr(t, `app.film.save.progress.${status}`, t('app.film.save.saving'))}</p>}
+            <p className="text-xs text-vx-fg-muted">{t("app.film.save.policy")}</p>
         </>}
         {error && <p role="alert" className="text-xs text-vx-danger">{error}</p>}
     </div>;

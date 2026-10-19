@@ -39,6 +39,7 @@ export function ConfirmDialog({
         {body && <p className="mt-2 text-sm leading-[1.6] text-vx-fg-body">{body}</p>}
         <div className="mt-6 flex flex-wrap justify-end gap-2">
           <button
+            data-testid="confirm-dialog-cancel"
             ref={cancelRef}
             type="button"
             onClick={onCancel}

@@ -1,13 +1,14 @@
+import { helperEnglish } from '../../../lib/helperMessages.mjs';
 /** Original local effects; absent settings retain the existing sound exactly. */
 export const AUDIO_EFFECT_DEFAULTS = Object.freeze({ width: 1, tremoloRate: 4, tremoloDepth: 0, echoDelay: .2, echoDecay: .45, echoRepeats: 3, echoMix: 0 });
 export const MAX_ECHO_TAIL_SECONDS = 4;
 export function audioEffectsProblem(settings) {
     if (settings === undefined) return null;
-    if (!settings || typeof settings !== 'object' || Array.isArray(settings) || Object.keys(settings).length !== Object.keys(AUDIO_EFFECT_DEFAULTS).length || Object.keys(settings).some(key => !Object.hasOwn(AUDIO_EFFECT_DEFAULTS, key))) return 'Invalid audio effects settings.';
+    if (!settings || typeof settings !== 'object' || Array.isArray(settings) || Object.keys(settings).length !== Object.keys(AUDIO_EFFECT_DEFAULTS).length || Object.keys(settings).some(key => !Object.hasOwn(AUDIO_EFFECT_DEFAULTS, key))) return helperEnglish('invalid_audio_effects_settings');
     for (const [key, min, max] of [['width', 0, 2], ['tremoloRate', .1, 20], ['tremoloDepth', 0, 1], ['echoDelay', .01, 1], ['echoDecay', .05, .9], ['echoRepeats', 1, 8], ['echoMix', 0, 1]]) {
-        if (!Number.isFinite(settings[key]) || settings[key] < min || settings[key] > max) return 'Audio effects are outside their supported range.';
+        if (!Number.isFinite(settings[key]) || settings[key] < min || settings[key] > max) return helperEnglish('audio_effects_are_outside_their_supported_range');
     }
-    if (!Number.isInteger(settings.echoRepeats) || settings.echoDelay * settings.echoRepeats > MAX_ECHO_TAIL_SECONDS) return 'Echo needs whole repeats with a combined delay of at most four seconds.';
+    if (!Number.isInteger(settings.echoRepeats) || settings.echoDelay * settings.echoRepeats > MAX_ECHO_TAIL_SECONDS) return helperEnglish('echo_needs_whole_repeats_with_a_combined_delay');
     return null;
 }
 export const audioEffectsActive = settings => !!settings && (settings.width !== 1 || settings.tremoloDepth > 0 || settings.echoMix > 0);

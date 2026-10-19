@@ -1,3 +1,4 @@
+import { helperEnglish, helperDiagnostic } from '../../../lib/helperMessages.mjs';
 export const COMPOSER_KINDS = Object.freeze({
   CHAT: 'chat',
   IMAGE: 'image',
@@ -76,9 +77,9 @@ export function outputDurationLabel(model, selectedDuration) {
 
 export function videoAudioLabel(model, selectedAudio) {
   const included = typeof selectedAudio === 'boolean' ? selectedAudio : model?.presentation?.audioIncluded;
-  if (included === true) return 'Audio on';
-  if (included === false) return 'Audio off';
-  return 'Audio model default';
+  if (included === true) return helperEnglish('audio_on');
+  if (included === false) return helperEnglish('audio_off');
+  return helperEnglish('audio_model_default');
 }
 
 export function resolutionLabel(model, selectedResolution) {
@@ -96,3 +97,6 @@ export function mediaOutputSettings(model, resolution, audio) {
     : audioOptions.includes(model.presentation?.audioIncluded) ? model.presentation.audioIncluded : audioOptions[0];
   return settings;
 }
+
+/** Locale-neutral display diagnostic; the legacy string interface remains available. */
+export const videoAudioLabelDiagnostic = (...args) => helperDiagnostic(videoAudioLabel(...args));

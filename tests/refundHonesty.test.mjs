@@ -1,3 +1,4 @@
+import appEnglish from '../lib/i18n/messages/app/en.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -98,7 +99,8 @@ test('no surface claims a refund the ledger has not made', () => {
     assert.match(credits, /const isRefund = l\.state === 'failed' && l\.refunded === true;/);
     // The Library keeps its own table but the same rule and the same words.
     assert.match(library, /const refundPending = row\.state === 'failed' && row\.refunded !== true;/);
-    assert.ok(library.includes(`failed_pending: { chip: 'danger', glyph: '✕', label: '${STATE_UI.failed.label}' }`));
+    assert.match(library, /refundPending \? 'failed_pending' : row\.state/);
+    assert.equal(appEnglish['app.library.status.failed_pending'], STATE_UI.failed.label);
     // And a pending refund shows no credit delta at all.
     assert.match(library, /row\.state === 'unknown' \|\| refundPending \? ''/);
 });

@@ -1,0 +1,234 @@
+[
+  {
+    "area": "saved",
+    "text": "User video unchangedPrivate editor video · 1920×1080 · 12.34s · 30 fpsExpires 11/1/2026.Download saved editI have rights and consent to post this edit.Prepare in PublishRemove saved video",
+    "labels": [
+      "aria-label=\"User video unchanged\"",
+      "aria-label=\"User video unchanged preview\"",
+      "aria-label=\"Confirm publishing rights for User video unchanged\""
+    ]
+  },
+  {
+    "area": "saved",
+    "text": "Saved editor videosProvider error unchanged Retry editor videosRemove User video unchanged?The saved video will be removed from your private Library. Existing downloads remain on your devices.Remove saved video",
+    "labels": [
+      "aria-label=\"Saved editor videos\""
+    ]
+  },
+  {
+    "area": "tracks",
+    "text": "TRACKS0s1s2s3s4s5s6s7s8sUser caption unchanged0:03.0 · 1.5×",
+    "labels": [
+      "aria-label=\"Multitrack timeline\"",
+      "aria-label=\"Rename User track unchanged\"",
+      "title=\"Lock User track unchanged\"",
+      "aria-label=\"Lock User track unchanged\"",
+      "title=\"Mute User track unchanged\"",
+      "aria-label=\"Mute User track unchanged\"",
+      "title=\"Move User track unchanged up\"",
+      "aria-label=\"Move User track unchanged up\"",
+      "title=\"Move User track unchanged down\"",
+      "aria-label=\"Move User track unchanged down\"",
+      "title=\"Hide User track unchanged\"",
+      "aria-label=\"Hide User track unchanged\"",
+      "aria-label=\"Timeline ruler\"",
+      "title=\"User marker unchanged · 0:02.0\"",
+      "aria-label=\"Go to User marker unchanged at 0:02.0\"",
+      "aria-label=\"User track unchanged timeline\"",
+      "aria-label=\"User caption unchanged, User track unchanged, starts 0:01.0, duration 0:03.0\"",
+      "aria-label=\"Trim start of User caption unchanged\"",
+      "aria-label=\"Trim end of User caption unchanged\""
+    ]
+  },
+  {
+    "area": "appeals",
+    "text": "Back to accountContent decisions and appealsDecisions we have made about content on your account under the Acceptable Use Policy. If you think one is wrong, appeal it here. A person reviews every appeal and you will hear back by email. A removal that is reversed stops counting against your account; deleted files cannot be restored.Generating is paused on your account until Oct 20, 2099, 12:00 PM. Your library, downloads and credits are unaffected.Nothing has been recorded against your account.",
+    "labels": []
+  },
+  {
+    "area": "appeals",
+    "text": "Content removedOct 1, 2026, 12:00 PM · Model unchanged · generating paused until Oct 20, 2099, 12:00 PMTell us why you think this decision was wrongUser statement unchangedYou can appeal each decision once. Do not include other people&#x27;s personal details.Send appealCancel",
+    "labels": [
+      "aria-label=\"Appeal this decision\""
+    ]
+  },
+  {
+    "area": "appeals",
+    "text": "Content removedOct 1, 2026, 12:00 PM · Model unchanged · generating paused until Oct 20, 2099, 12:00 PMAppeal under review",
+    "labels": []
+  },
+  {
+    "area": "appeals",
+    "text": "Content removedOct 1, 2026, 12:00 PM · Model unchanged · generating paused until Oct 20, 2099, 12:00 PMAppeal successful",
+    "labels": []
+  },
+  {
+    "area": "appeals",
+    "text": "Content removedOct 1, 2026, 12:00 PM · Model unchanged · generating paused until Oct 20, 2099, 12:00 PMAppeal not successful",
+    "labels": []
+  },
+  {
+    "area": "contactImport",
+    "text": "Add contactsAdd one person or import up to 250 contacts for a connected account.Add oneImport CSVConnected accountChoose an accountUser account unchangedPlatform ID or handleNameConsent statusUnknownSubscribedUnsubscribedTags, separated by commasPrivate notesAdd contact",
+    "labels": [
+      "aria-label=\"Contact input method\""
+    ]
+  },
+  {
+    "area": "contactImport",
+    "text": "Add contactsAdd one person or import up to 250 contacts for a connected account.Add oneImport CSVConnected accountChoose an accountCSV fileHeaders: external_id, name, tags, subscription_status, notes. Separate tags with |. Missing consent status defaults to unknown.Import contacts",
+    "labels": [
+      "aria-label=\"Contact input method\""
+    ]
+  },
+  {
+    "area": "agent",
+    "text": "Editing assistant (preview)A dry run. A simple built-in stand-in reads what you type; no AI is used and nothing is sent anywhere yet. It understands only the phrases below. It shows you a list of steps, and nothing changes until you press Apply. Apply is one edit, so one Undo reverts all of it.split the first clip at 2 secondsremove the last clipset the volume of the first clip to 40%add the title &quot;Day one&quot;What should change?Show the steps",
+    "labels": [
+      "aria-label=\"Editing assistant\"",
+      "aria-label=\"What should change\""
+    ]
+  },
+  {
+    "area": "agent",
+    "text": "Editing assistant (preview)A dry run. A simple built-in stand-in reads what you type; no AI is used and nothing is sent anywhere yet. It understands only the phrases below. It shows you a list of steps, and nothing changes until you press Apply. Apply is one edit, so one Undo reverts all of it.split the first clip at 2 secondsremove the last clipset the volume of the first clip to 40%add the title &quot;Day one&quot;What should change?Show the steps1 step: 2 → 1 clips (-1), length 0:04.0 → 0:02.0Provider plan unchangedremoves a clipSkipped 2 steps that this editor does not allow.Apply 1 stepExactly what would be sent to a model{\n &quot;instruction&quot;: &quot;User command unchanged&quot;\n}",
+    "labels": [
+      "aria-label=\"Editing assistant\"",
+      "aria-label=\"What should change\"",
+      "aria-label=\"Plan\"",
+      "aria-label=\"Steps\"",
+      "aria-label=\"Request that would be sent\""
+    ]
+  },
+  {
+    "area": "report",
+    "text": "Report contentIf someone is in immediate danger, contact the police first.What is wrong with it?Sexual content involving a childAn intimate image of someoneA real person shown without consentViolence or threatsHate or harassmentFraud or a scamCopyright or someone else’s workSomething elseAnything we should know (what and where)Do not attach or paste the content. Do not include other people&#x27;s personal details beyond what is needed.Send reportCancel",
+    "labels": [
+      "aria-label=\"Report content\""
+    ]
+  },
+  {
+    "area": "report",
+    "text": "Thank youA person will review your report. If it concerns a child, it is looked at first and may be passed to the Internet Watch Foundation. We do not reply to reports.Back to Library",
+    "labels": []
+  },
+  {
+    "area": "report",
+    "text": "Report contentYou are reporting one of your generations. If someone is in immediate danger, contact the police first.What is wrong with it?Sexual content involving a childAn intimate image of someoneA real person shown without consentViolence or threatsHate or harassmentFraud or a scamCopyright or someone else’s workSomething elseAnything we should know (optional)Do not attach or paste the content. Do not include other people&#x27;s personal details beyond what is needed.Send reportCancel",
+    "labels": [
+      "aria-label=\"Report content\""
+    ]
+  },
+  {
+    "area": "report",
+    "text": "Report contentYou are reporting a Cinema title. If someone is in immediate danger, contact the police first.What is wrong with it?Sexual content involving a childAn intimate image of someoneA real person shown without consentViolence or threatsHate or harassmentFraud or a scamCopyright or someone else’s workSomething elseAnything we should know (optional)Do not attach or paste the content. Do not include other people&#x27;s personal details beyond what is needed.Send reportCancel",
+    "labels": [
+      "aria-label=\"Report content\""
+    ]
+  },
+  {
+    "area": "export",
+    "text": "ExportFile nameSize360p480p720p1080p1440p · 2K2160p · 4K1920 × 1080 pixelsFrame rate24 fps25 fps30 fps50 fps60 fpsContainerMP4 · H.264 / AACMOV · H.264 / AACQualitycompact · 2 Mbpsstandard · 8 Mbpshigh · 16 Mbpsmaximum · 32 MbpsExport MP4Save cover frameCancel exportDownload User export.mp4Export uses the source frames at the chosen rate. Higher rates do not create new motion between source frames.",
+    "labels": [
+      "aria-label=\"Export file name\"",
+      "aria-label=\"Export size\"",
+      "aria-label=\"Export frame rate\"",
+      "aria-label=\"Export format\"",
+      "aria-label=\"Export quality\"",
+      "aria-label=\"Export progress\""
+    ]
+  },
+  {
+    "area": "colour",
+    "text": "Exposure (stops)TemperatureTintShadowsHighlightsGammaHSL channelsHSL channelredorangeyellowgreencyanbluepurplemagentaChannel hueChannel saturationChannel luminanceColour curvesCurve channelmasterredgreenblueCurve input 1 (%)Curve output 1 (%)Curve input 2 (%)Curve output 2 (%)Add curve pointReset curve channelReset advanced colour",
+    "labels": [
+      "aria-label=\"Exposure (stops)\"",
+      "aria-label=\"Temperature\"",
+      "aria-label=\"Tint\"",
+      "aria-label=\"Shadows\"",
+      "aria-label=\"Highlights\"",
+      "aria-label=\"Gamma\"",
+      "aria-label=\"HSL channel\"",
+      "aria-label=\"Channel hue\"",
+      "aria-label=\"Channel saturation\"",
+      "aria-label=\"Channel luminance\"",
+      "aria-label=\"Curve channel\"",
+      "aria-label=\"master colour curve\"",
+      "aria-label=\"Curve input 1 (%)\"",
+      "aria-label=\"Curve output 1 (%)\"",
+      "aria-label=\"Curve input 2 (%)\"",
+      "aria-label=\"Curve output 2 (%)\""
+    ]
+  },
+  {
+    "area": "credits",
+    "text": "Your balanceCurrent balance12,345crFree credits1,234 crExpire1 Nov 2026How billing worksOne balance covers every model. Free credits are spent first.Each generation is charged at the price on its button, when you press it.Failed jobs refund automatically, as their own line in your statement.Credit Packs are one-off purchases and do not renew.Recent generationsFrom this browser&#x27;s historyNothing generated in this browser yet.Open the studio",
+    "labels": []
+  },
+  {
+    "area": "credits",
+    "text": "Your balanceCurrent balance—cr△We couldn&#x27;t read your balance just now. Your credits are safe — reload to try again.How billing worksOne balance covers every model. Free credits are spent first.Each generation is charged at the price on its button, when you press it.Failed jobs refund automatically, as their own line in your statement.Credit Packs are one-off purchases and do not renew.Recent generationsFrom this browser&#x27;s historyNothing generated in this browser yet.Open the studio",
+    "labels": []
+  },
+  {
+    "area": "credits",
+    "text": "Your balance△Sign in to see your balance.How billing worksOne balance covers every model. Free credits are spent first.Each generation is charged at the price on its button, when you press it.Failed jobs refund automatically, as their own line in your statement.Credit Packs are one-off purchases and do not renew.Recent generationsFrom this browser&#x27;s historyNothing generated in this browser yet.Open the studio",
+    "labels": []
+  },
+  {
+    "area": "font",
+    "text": "Custom fontsFont nameFont creditFont usage permissionFont licence URLI have permission to use this font in my video.Load a custom fontUser font unchanged · LoadedUser credit unchanged · User licence unchangedRelink fontRemoveUp to eight fonts, 2 MiB each. Font files stay on this device. Saved projects retain source, rights and SHA-256; relink the same font after reopening on another browser. Export requires every used custom font.",
+    "labels": [
+      "aria-label=\"Custom fonts\"",
+      "aria-label=\"Font name\"",
+      "aria-label=\"Font credit\"",
+      "aria-label=\"Font usage permission\"",
+      "aria-label=\"Font licence URL\"",
+      "aria-label=\"I have permission to use this font\"",
+      "aria-label=\"Load a custom font\"",
+      "aria-label=\"Relink font User font unchanged\"",
+      "aria-label=\"Remove font User font unchanged\""
+    ]
+  },
+  {
+    "area": "setup",
+    "text": "Choose the tools you already use. Every later stage uses these choices.Image workflowVeyrnox StudioExternal app or workflowImage modelChoose your modelVideo workflowVeyrnox StudioExternal app or workflowVideo modelChoose your modelClip length10 secondsFrame format16:99:161:1Lock assets first. Keep one passport per asset and state variant. Change one prompt line per attempt. Version and log every result.",
+    "labels": [
+      "aria-label=\"Image workflow\"",
+      "aria-label=\"Image model\"",
+      "aria-label=\"Video workflow\"",
+      "aria-label=\"Video model\"",
+      "aria-label=\"Clip length\"",
+      "aria-label=\"Frame format\""
+    ]
+  },
+  {
+    "area": "setup",
+    "text": "Project nameTarget film length30 seconds60 seconds90 seconds120 secondsThe studio export contains your project documents and this folder structure.assets/characters/\nassets/locations/\nassets/props/\nprompts/\ngenerations/\nselects/\nedit/\ncolor/\nsound/\nmaster/\ndocs/Only approved takes in selects reach the edit.Raw generation attempts stay in generations for the prompt engineer.Reference filenames stay fixed. A new version gets a new file.",
+    "labels": [
+      "aria-label=\"Project name\"",
+      "aria-label=\"Target film length\""
+    ]
+  },
+  {
+    "area": "schedule",
+    "text": "Automatic runManual onlyEvery weekEvery monthHour (UTC)00:0001:0002:0003:0004:0005:0006:0007:0008:0009:0010:0011:0012:0013:0014:0015:0016:0017:0018:0019:0020:0021:0022:0023:00WeekdayMondayTuesdayWednesdayThursdayFridaySaturdaySundayEmail recipientsUp to 10 addresses. Each scheduled run sends the selected PDF or PowerPoint.Attachment formatPDFPowerPointReply-to addressEmail message",
+    "labels": [
+      "aria-label=\"Automatic run\"",
+      "aria-label=\"Hour (UTC)\"",
+      "aria-label=\"Weekday\"",
+      "aria-label=\"Email recipients\"",
+      "placeholder=\"client@example.com, team@example.com\"",
+      "aria-label=\"Attachment format\""
+    ]
+  },
+  {
+    "area": "schedule",
+    "text": "Automatic runManual onlyEvery weekEvery monthHour (UTC)00:0001:0002:0003:0004:0005:0006:0007:0008:0009:0010:0011:0012:0013:0014:0015:0016:0017:0018:0019:0020:0021:0022:0023:00Day of month12345678910111213141516171819202122232425262728Scheduled email delivery is being rolled out separately. You can save the schedule now; it will not send until delivery is enabled.",
+    "labels": [
+      "aria-label=\"Automatic run\"",
+      "aria-label=\"Hour (UTC)\"",
+      "aria-label=\"Day of month\""
+    ]
+  }
+]

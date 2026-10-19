@@ -1,4 +1,5 @@
 'use client';
+import { useI18n } from '../../../../../components/I18nProvider';
 
 /**
  * Report content (ADR-0083): a generation of your own that came out wrong,
@@ -16,14 +17,14 @@ import { gatewayFetch } from '../../../_lib/gateway';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const CATEGORIES = [
-  ['csam', 'Sexual content involving a child'],
-  ['intimate_image', 'An intimate image of someone'],
-  ['real_person', 'A real person shown without consent'],
-  ['violence', 'Violence or threats'],
-  ['hate', 'Hate or harassment'],
-  ['fraud', 'Fraud or a scam'],
-  ['copyright', 'Copyright or someone else’s work'],
-  ['other', 'Something else'],
+  ['csam', 'app.account.report.category.csam'],
+  ['intimate_image', 'app.account.report.category.intimate_image'],
+  ['real_person', 'app.account.report.category.real_person'],
+  ['violence', 'app.account.report.category.violence'],
+  ['hate', 'app.account.report.category.hate'],
+  ['fraud', 'app.account.report.category.fraud'],
+  ['copyright', 'app.account.report.category.copyright'],
+  ['other', 'app.account.report.category.other'],
 ];
 
 export default function Page() {
@@ -31,6 +32,7 @@ export default function Page() {
 }
 
 function ReportForm() {
+  const { t } = useI18n();
   const params = useSearchParams();
   const job = params.get('job');
   const title = params.get('title');
@@ -50,7 +52,7 @@ function ReportForm() {
       await gatewayFetch('/reports', { method: 'POST', body: JSON.stringify({ subject_kind: subject.kind, subject_id: subject.id, category, details: details.trim() }) });
       setDone(true);
     } catch (e) {
-      setError(e.code === 'no_token' || e.code === 'unauthenticated' ? 'Sign in to send a report.' : e.status === 429 ? 'Too many reports. Wait a while and try again.' : 'Your report could not be sent. Please retry.');
+      setError(e.code === 'no_token' || e.code === 'unauthenticated' ? t("app.account.report.signIn") : e.status === 429 ? t("app.account.report.limited") : t("app.account.report.failed"));
     } finally {
       setBusy(false);
     }
@@ -59,39 +61,36 @@ function ReportForm() {
   if (done) {
     return (
       <div role="status">
-        <h1 className="text-3xl font-black mb-4">Thank you</h1>
-        <p className="text-vx-fg-body">A person will review your report. If it concerns a child, it is looked at first and may be passed to the Internet Watch Foundation. We do not reply to reports.</p>
-        <Link href="/app/library" className="mt-6 inline-block text-sm underline">Back to Library</Link>
+        <h1 data-testid="report-thanks" className="text-3xl font-black mb-4">{t("app.account.report.thanks")}</h1>
+        <p className="text-vx-fg-body">{t("app.account.report.review")}</p>
+        <Link href="/app/library" className="mt-6 inline-block text-sm underline">{t("app.account.report.back")}</Link>
       </div>
     );
   }
   return (
-    <form onSubmit={submit} className="space-y-5" aria-label="Report content">
-      <h1 className="text-3xl font-black">Report content</h1>
+    <form data-testid="content-report" onSubmit={submit} className="space-y-5" aria-label={t("app.account.report")}>
+      <h1 className="text-3xl font-black">{t("app.account.report")}</h1>
       <p className="text-vx-fg-body">
-        {subject.kind === 'job' && 'You are reporting one of your generations. '}
-        {subject.kind === 'cinema_title' && 'You are reporting a Cinema title. '}
-        If someone is in immediate danger, contact the police first.
-      </p>
+        {subject.kind === 'job' && t('app.account.report.job')}
+        {subject.kind === 'cinema_title' && t('app.account.report.cinema')}{t("app.account.report.danger")}</p>
       <fieldset className="space-y-2">
-        <legend className="text-sm font-bold mb-2">What is wrong with it?</legend>
+        <legend className="text-sm font-bold mb-2">{t("app.account.report.question")}</legend>
         {CATEGORIES.map(([value, label]) => (
           <label key={value} className="flex items-center gap-3 text-sm">
-            <input type="radio" name="category" value={value} checked={category === value} onChange={() => setCategory(value)} required />
-            {label}
+            <input data-testid={`report-category-${value}`} type="radio" name="category" value={value} checked={category === value} onChange={() => setCategory(value)} required />
+            {t(label)}
           </label>
         ))}
       </fieldset>
-      <label className="block text-sm">
-        Anything we should know{subject.kind === 'other' ? ' (what and where)' : ' (optional)'}
-        <textarea value={details} onChange={(e) => setDetails(e.target.value)} maxLength={2000} rows={4} required={subject.kind === 'other'} minLength={subject.kind === 'other' ? 10 : 0}
+      <label className="block text-sm">{t("app.account.report.details")}{subject.kind === 'other' ? t("app.account.report.where") : ` ${t("cinema.socialCinema.optional")}`}
+        <textarea data-testid="report-details" value={details} onChange={(e) => setDetails(e.target.value)} maxLength={2000} rows={4} required={subject.kind === 'other'} minLength={subject.kind === 'other' ? 10 : 0}
           className="mt-2 w-full rounded-lg border border-vx-border bg-vx-panel p-3 text-sm" />
       </label>
-      <p className="text-xs text-vx-fg-muted">Do not attach or paste the content. Do not include other people&apos;s personal details beyond what is needed.</p>
+      <p className="text-xs text-vx-fg-muted">{t("app.account.report.privacy")}</p>
       {error && <p role="alert" className="text-vx-danger text-sm">{error}</p>}
       <div className="flex gap-2">
-        <Button type="submit" disabled={busy || !valid}>{busy ? 'Sending…' : 'Send report'}</Button>
-        <Link href="/app/library" className="self-center text-sm underline">Cancel</Link>
+        <Button data-testid="send-report" type="submit" disabled={busy || !valid}>{busy ? t("app.publish.inbox.sending") : t("cinema.comments.sendReport")}</Button>
+        <Link href="/app/library" className="self-center text-sm underline">{t("cinema.creatorWorkspace.cancel")}</Link>
       </div>
     </form>
   );

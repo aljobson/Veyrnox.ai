@@ -1,11 +1,16 @@
 'use client';
+import { useI18n } from '../../../components/I18nProvider';
+import { localeTag } from '../../../lib/i18n/locales.mjs';
+
 import { useCallback, useEffect, useState } from 'react';
 import { gatewayFetch } from '../_lib/gateway';
 
-const ROWS = [['day', 'Last 24 hours'], ['week', 'Last 7 days'], ['month', 'Last 30 days']];
-const num = new Intl.NumberFormat('en-US');
 
 export function UsageMeters() {
+  const { t, locale } = useI18n();
+  const num = new Intl.NumberFormat(localeTag(locale, 'en-US'));
+  const ROWS = [['day', t("app.credits.usage.day")], ['week', t("app.credits.usage.week")], ['month', t("app.credits.usage.month")]];
+
   const [usage, setUsage] = useState(null);
   const [error, setError] = useState(false);
   const load = useCallback(async () => {
@@ -18,8 +23,8 @@ export function UsageMeters() {
   }, [load]);
   if (error) return null; // a convenience: the statement below still shows every line
   return (
-    <section className="max-w-[1200px] mx-auto px-4 sm:px-8 pb-8" aria-label="Credit usage">
-      <h2 className="text-xl font-black">Usage</h2>
+    <section className="max-w-[1200px] mx-auto px-4 sm:px-8 pb-8" aria-label={t("app.credits.usage.label")}>
+      <h2 className="text-xl font-black">{t("app.credits.usage.title")}</h2>
       <dl className="mt-4 grid gap-3 sm:grid-cols-3">
         {ROWS.map(([key, label]) => (
           <div key={key} className="rounded-xl border border-vx-border px-4 py-3">
@@ -30,7 +35,7 @@ export function UsageMeters() {
           </div>
         ))}
       </dl>
-      <p className="mt-2 text-xs text-vx-fg-muted">Generations, net of refunds. Top-ups and welcome credits are not counted.</p>
+      <p className="mt-2 text-xs text-vx-fg-muted">{t("app.credits.usage.help")}</p>
     </section>
   );
 }

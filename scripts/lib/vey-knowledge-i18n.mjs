@@ -1,6 +1,8 @@
 // Resolve static public copy for the build-time inventory, never execute UI code.
 import ts from 'typescript';
-import english from '../../lib/i18n/messages/en.mjs';
+import publicEnglish from '../../lib/i18n/messages/en.mjs';
+import appEnglish from '../../lib/i18n/messages/app/en.mjs';
+const english = { ...publicEnglish, ...appEnglish };
 
 export function resolveI18nSource(source, messages = english, { attributesOnly = false } = {}) {
   const tree = ts.createSourceFile('page.jsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JSX);
@@ -31,7 +33,7 @@ export function resolveI18nSource(source, messages = english, { attributesOnly =
       const message = text(key);
       return message === null ? null : fill(message, vars);
     }
-    if (!['tOr', 't', 'translate', 't.label', 'translate.label'].includes(name)) return null;
+    if (!['tOr', 't', 'translate', 'translation.current', 't.label', 'translate.label'].includes(name)) return null;
     const literal = text(key);
     if (literal === null) return name === 'tOr' ? text(node.arguments[2]) : null;
     const message = messages[name.endsWith('.label') ? `label.${literal}` : literal];
@@ -64,9 +66,39 @@ export function resolveI18nSource(source, messages = english, { attributesOnly =
         return;
       }
     }
+    // Conditional JSX and notices keep their JavaScript shape, but static
+    // lookups still expose the same English text to the inventory scanner.
+    if (!attributesOnly && ts.isCallExpression(node) && ['t', 'tOr', 't.label', 'translate', 'translate.label', 'translation.current'].includes(node.expression.getText(tree))) {
+      const value = text(node);
+      if (value !== null) {
+        edits.push({ start: node.getStart(tree), end: node.end, value: JSON.stringify(value) });
+        return;
+      }
+    }
     ts.forEachChild(node, visit);
   }
   visit(tree);
   for (const edit of edits.sort((a, b) => b.start - a.start)) source = source.slice(0, edit.start) + edit.value + source.slice(edit.end);
   return source;
+}
+
+// Stable DOM hooks keep their accessible meaning in Vey's inventory. Resolve
+// labels from the actual JSX, rather than retaining translated text selectors.
+export function controlLabels(source) {
+  const resolved = resolveI18nSource(source, undefined, { attributesOnly: true });
+  const tree = ts.createSourceFile('controls.jsx', resolved, ts.ScriptTarget.Latest, true, ts.ScriptKind.JSX);
+  const labels = new Map();
+  function visit(node) {
+    if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
+      const attrs = Object.fromEntries(node.attributes.properties.filter(attr => ts.isJsxAttribute(attr) && attr.initializer && ts.isStringLiteral(attr.initializer)).map(attr => [attr.name.text, attr.initializer.text]));
+      if (attrs['data-testid'] && attrs['aria-label']) labels.set(attrs['data-testid'], attrs['aria-label']);
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(tree);
+  return labels;
+}
+
+export function referencedControlLabels(source, labels) {
+  return [...source.matchAll(/\[data-testid=["']([^"']+)["']\]/g)].map(match => labels.get(match[1])).filter(Boolean);
 }

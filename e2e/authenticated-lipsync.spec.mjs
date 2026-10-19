@@ -16,12 +16,13 @@ for (const [error, message] of [
   } });
   await fixture.open('/app/create?model=latentsync');
   await expect(page.getByText(/Speech must not be longer than the video/)).toBeVisible();
-  await page.getByLabel('Add video', { exact: true }).setInputFiles({ name: 'synthetic-7.2s.mp4', mimeType: 'video/mp4', buffer: lipSyncMp4() });
-  await page.getByLabel('Add audio', { exact: true }).setInputFiles({ name: 'synthetic-speech.wav', mimeType: 'audio/wav', buffer: Buffer.from('Synthetic test bytes, never sent to a provider') });
+  await page.getByTestId('source-upload-video').setInputFiles({ name: 'synthetic-7.2s.mp4', mimeType: 'video/mp4', buffer: lipSyncMp4() });
+  await page.getByTestId('source-upload-audio').setInputFiles({ name: 'synthetic-speech.wav', mimeType: 'audio/wav', buffer: Buffer.from('Synthetic test bytes, never sent to a provider') });
   await page.getByTestId('create-source-rights').check(); // Synthetic-only declaration, no account or provider writes.
-  await page.getByRole('button', { name: /^Generate for/ }).click();
+  await page.locator('[data-assistant-target="create.generate"]').click();
   await expect(page.getByRole('alert').filter({ hasText: message })).toContainText('Nothing was charged.');
-  await expect(page.getByRole('link', { name: 'Credit balance: 1,000 credits', exact: true })).toBeVisible();
+  await expect(page.getByTestId('app-credit-balance')).toBeVisible();
+  await expect(page.getByTestId('app-credit-balance')).toHaveAttribute('aria-label', 'Credit balance: 1,000 credits');
   expect(fixture.requests.filter(row => row.path === '/api/v1/generations')).toHaveLength(1);
   expect(fixture.state.balance).toBe(1000);
 });

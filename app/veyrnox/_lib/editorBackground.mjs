@@ -1,9 +1,10 @@
+import { helperEnglish } from '../../../lib/helperMessages.mjs';
 /** Per-clip backdrops share the preview/export compositor and retain normal track ordering. */
 export const BACKGROUND_DEFAULTS = Object.freeze({ type: 'none', color: '#000000', blur: 18, mediaId: '' });
 export function backgroundProblem(value, media) {
     if (value === undefined) return null;
-    if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).length !== 4 || Object.keys(value).some(k => !Object.hasOwn(BACKGROUND_DEFAULTS,k)) || !['none','solid','blur','image'].includes(value.type) || !/^#[0-9a-fA-F]{6}$/.test(value.color) || !Number.isFinite(value.blur) || value.blur < 0 || value.blur > 60 || typeof value.mediaId !== 'string') return 'Invalid clip background.';
-    if (value.type === 'image' ? !['image','graphic'].includes(media?.[value.mediaId]?.kind) : value.mediaId !== '') return 'Choose a project image for the background.';
+    if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).length !== 4 || Object.keys(value).some(k => !Object.hasOwn(BACKGROUND_DEFAULTS,k)) || !['none','solid','blur','image'].includes(value.type) || !/^#[0-9a-fA-F]{6}$/.test(value.color) || !Number.isFinite(value.blur) || value.blur < 0 || value.blur > 60 || typeof value.mediaId !== 'string') return helperEnglish('invalid_clip_background');
+    if (value.type === 'image' ? !['image','graphic'].includes(media?.[value.mediaId]?.kind) : value.mediaId !== '') return helperEnglish('choose_a_project_image_for_the_background');
     return null;
 }
 export const backgroundMediaIds = clip => clip.background?.type === 'image' ? [clip.background.mediaId] : [];

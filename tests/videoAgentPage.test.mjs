@@ -15,7 +15,7 @@ test('the video agent page is open to every signed-in user and has its own tab (
     assert.doesNotMatch(page, /isn&apos;t available yet/);
     assert.match(page, /<AppNav balance=\{balance\} active="agent" \/>/);
     const nav = readFileSync(new URL('../app/veyrnox/_components/NavBar.js', import.meta.url), 'utf8');
-    assert.match(nav, /\{ key: 'agent', href: '\/app\/video-agent', label: 'Video agent' \}/);
+    assert.match(nav, /\{ key: 'agent', href: '\/app\/video-agent', label: t\("app.nav.videoAgent"\) \}/);
     assert.ok(copyFor('video_agent_unavailable'));
 });
 

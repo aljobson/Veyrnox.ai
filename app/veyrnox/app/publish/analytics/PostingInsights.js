@@ -1,15 +1,25 @@
 'use client';
+import { useI18n } from '../../../../../components/I18nProvider';
+import { localeTag } from '../../../../../lib/i18n/locales.mjs';
+import { pluralKey } from '../../../../../lib/i18n/translate.mjs';
 import { useEffect, useState } from 'react';
 import { getSocialPostingInsights } from '../../../../lib/socialAnalyticsClient';
 import { summarizePostingInsights, MIN_SLOT_POSTS, MIN_MEASURED_POSTS, MIN_HISTORY_DAYS } from '../../../../../lib/social/postingInsights.js';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
-const number = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
-const hourLabel = (hour) => `${String(hour).padStart(2, '0')}:00`;
+function labels(locale) {
+  const number = new Intl.NumberFormat(localeTag(locale), { maximumFractionDigits: 1 });
+  const integer = value => locale === 'en' ? String(value) : Number(value).toLocaleString(localeTag(locale));
+  const day = index => locale === 'en' ? DAYS[index] : new Intl.DateTimeFormat(localeTag(locale), { weekday: 'short', timeZone: 'UTC' }).format(new Date(Date.UTC(2024, 0, 1 + index)));
+  const hour = value => locale === 'en' ? String(value).padStart(2, '0') : new Intl.NumberFormat(localeTag(locale), { minimumIntegerDigits: 2 }).format(value);
+  return { number, integer, day, hour, hourLabel: value => `${hour(value)}:${hour(0)}` };
+}
 const tones = ['bg-vx-accent/10', 'bg-vx-accent/20', 'bg-vx-accent/30', 'bg-vx-accent/40'];
 
 export function PostingInsights({ accountId }) {
+  const { t, locale } = useI18n();
+  const { number, integer, day, hourLabel } = labels(locale);
     const [result, setResult] = useState(null);
     const [error, setError] = useState(false);
     const [attempt, setAttempt] = useState(0);
@@ -20,73 +30,73 @@ export function PostingInsights({ accountId }) {
         return () => { active = false; };
     }, [accountId, attempt]);
     if (error) return <section className="rounded-2xl border border-vx-border p-5">
-        <h2 className="font-bold mb-2">Posting insights</h2>
-        <p role="alert" className="text-sm text-vx-danger mb-3">Could not load posting insights. Your other analytics are still available.</p>
+        <h2 className="font-bold mb-2">{t("app.publish.insights.title")}</h2>
+        <p role="alert" className="text-sm text-vx-danger mb-3">{t("app.publish.insights.failed")}</p>
         <button type="button" className="rounded-full border border-vx-border px-4 py-2 text-sm font-bold"
-            onClick={() => { setError(false); setAttempt((n) => n + 1); }}>Try again</button>
+            onClick={() => { setError(false); setAttempt((n) => n + 1); }}>{t("recovery.retry")}</button>
     </section>;
-    if (!result) return <p role="status" className="text-sm text-vx-fg-muted">Loading posting insights…</p>;
+    if (!result) return <p role="status" className="text-sm text-vx-fg-muted">{t("app.publish.insights.loading")}</p>;
     const data = result.insights;
     if (!data) return <section className="rounded-2xl border border-vx-border p-5">
-        <h2 className="font-bold mb-2">Posting insights</h2>
-        <p className="text-sm text-vx-fg-body">Your first timing and frequency insights arrive after the next successful analytics update.</p>
+        <h2 className="font-bold mb-2">{t("app.publish.insights.title")}</h2>
+        <p className="text-sm text-vx-fg-body">{t("app.publish.insights.empty")}</p>
     </section>;
     const summary = summarizePostingInsights(data);
-    const start = new Date(`${data.period_start}T12:00:00Z`).toLocaleDateString();
-    const end = new Date(`${data.period_end}T12:00:00Z`).toLocaleDateString();
+    const start = new Date(`${data.period_start}T12:00:00Z`).toLocaleDateString(localeTag(locale));
+    const end = new Date(`${data.period_end}T12:00:00Z`).toLocaleDateString(localeTag(locale));
     return <div className="space-y-6">
         <section className="rounded-2xl border border-vx-border p-5 space-y-4" aria-labelledby="best-time-heading">
             <div>
-                <h2 id="best-time-heading" className="font-bold">Best time to post</h2>
-                <p className="text-xs text-vx-fg-muted mt-1">Historical performance · {data.timezone} · twelve complete weeks, {start} to {end} (end excluded)</p>
+                <h2 id="best-time-heading" className="font-bold">{t("app.publish.insights.bestTime")}</h2>
+                <p className="text-xs text-vx-fg-muted mt-1">{t('app.publish.insights.period', { timezone: data.timezone, start, end })}</p>
             </div>
             {summary.topSlots.length ? <>
-                <p className="text-sm text-vx-fg-body">Your strongest observed slots: {summary.topSlots.map((slot) =>
-                    `${DAYS[slot.day - 1]} ${hourLabel(slot.hour)} (${number.format(slot.score)} interactions per post, ${slot.posts} posts)`
-                ).join('; ')}.</p>
+                <p className="text-sm text-vx-fg-body">{t('app.publish.insights.strongest', { slots: summary.topSlots.map(slot => t(pluralKey(t, locale, 'app.publish.insights.slot', slot.posts), { day: day(slot.day - 1), hour: hourLabel(slot.hour), score: number.format(slot.score), count: integer(slot.posts) })).join('; ') })}</p>
                 <Heatmap summary={summary} />
-                <p className="text-xs text-vx-fg-muted">Darker cells have more average interactions per post. — means fewer than {MIN_SLOT_POSTS} measured posts. Each hour covers its full hour in {data.timezone}.</p>
-            </> : <p className="text-sm text-vx-fg-body">There is not enough evidence to recommend a time yet. We need at least {MIN_MEASURED_POSTS} measured posts spanning {MIN_HISTORY_DAYS} days, with {MIN_SLOT_POSTS} in a weekday/hour slot and some recorded interactions. Try several days and hours as you build history.</p>}
-            <p className="text-xs text-vx-fg-muted">{data.measured_posts} measured of {data.recorded_posts} recorded posts. Scores use lifetime likes and comments, plus shares and saves when available, on posts at least 48 hours old. They describe past performance, not when your audience is online or what caused engagement. Older posts have had longer to earn interactions.</p>
+                <p className="text-xs text-vx-fg-muted">{t('app.publish.insights.heatHelp', { minimum: integer(MIN_SLOT_POSTS), timezone: data.timezone })}</p>
+            </> : <p className="text-sm text-vx-fg-body">{t('app.publish.insights.notEnough', { posts: integer(MIN_MEASURED_POSTS), days: integer(MIN_HISTORY_DAYS), slots: integer(MIN_SLOT_POSTS) })}</p>}
+            <p className="text-xs text-vx-fg-muted">{t('app.publish.insights.measurement', { measured: integer(data.measured_posts), recorded: integer(data.recorded_posts) })}</p>
         </section>
         <section className="rounded-2xl border border-vx-border p-5 space-y-4" aria-labelledby="frequency-heading">
-            <h2 id="frequency-heading" className="font-bold">Posting frequency and engagement</h2>
-            <p className="text-sm text-vx-fg-body">Compare weeks with the same number of recorded posts. Averages use measured posts only; this does not show that posting more caused higher engagement.</p>
-            <div className="relative overflow-x-auto rounded-sm focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vx-accent" tabIndex={0} role="region" aria-label="Posting frequency comparison">
+            <h2 id="frequency-heading" className="font-bold">{t("app.publish.insights.frequency")}</h2>
+            <p className="text-sm text-vx-fg-body">{t("app.publish.insights.compareHelp")}</p>
+            <div className="relative overflow-x-auto rounded-sm focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vx-accent" tabIndex={0} role="region" aria-label={t("app.publish.insights.comparison")}>
                 <table className="w-full text-sm">
-                    <caption className="sr-only">Recorded weekly posting frequency and average lifetime interactions per measured post</caption>
-                    <thead><tr className="text-left text-xs text-vx-fg-muted">
-                        <th scope="col" className="pb-2 pr-3">Posts per week</th>
-                        <th scope="col" className="pb-2 pr-3">Weeks</th>
-                        <th scope="col" className="pb-2 pr-3">Measured posts</th>
-                        <th scope="col" className="pb-2 text-right">Avg. interactions per post</th>
+                    <caption className="sr-only">{t("app.publish.insights.caption")}</caption>
+                    <thead><tr className="text-start text-xs text-vx-fg-muted">
+                        <th scope="col" className="pb-2 pe-3">{t("app.publish.insights.postsPerWeek")}</th>
+                        <th scope="col" className="pb-2 pe-3">{t("app.publish.insights.weeks")}</th>
+                        <th scope="col" className="pb-2 pe-3">{t("app.publish.insights.measured")}</th>
+                        <th scope="col" className="pb-2 text-end">{t("app.publish.insights.average")}</th>
                     </tr></thead>
                     <tbody>{summary.frequency.map((group) => <tr key={group.postsPerWeek} className="border-t border-vx-border tabular-nums">
-                        <th scope="row" className="py-2 pr-3 text-left">{group.postsPerWeek}</th>
-                        <td className="py-2 pr-3">{group.weeks}</td>
-                        <td className="py-2 pr-3">{group.measuredPosts}</td>
-                        <td className="py-2 text-right">{group.score === null ? '—' : number.format(group.score)}</td>
+                        <th scope="row" className="py-2 pe-3 text-start">{integer(group.postsPerWeek)}</th>
+                        <td className="py-2 pe-3">{integer(group.weeks)}</td>
+                        <td className="py-2 pe-3">{integer(group.measuredPosts)}</td>
+                        <td className="py-2 text-end">{group.score === null ? '—' : number.format(group.score)}</td>
                     </tr>)}</tbody>
                 </table>
             </div>
-            <p className="text-xs text-vx-fg-muted">This covers posts Veyrnox has collected, which may omit older, private or deleted posts. Zero means no stored posts for those weeks. Insights refresh weekly after a successful analytics update. Computed {new Date(data.computed_at).toLocaleString()}.</p>
+            <p className="text-xs text-vx-fg-muted">{t('app.publish.insights.coverage', { date: new Date(data.computed_at).toLocaleString(localeTag(locale)) })}</p>
         </section>
     </div>;
 }
 
 function Heatmap({ summary }) {
-    return <div className="relative overflow-x-auto rounded-sm focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vx-accent" tabIndex={0} role="region" aria-label="Weekday and hour performance heatmap">
+    const { t, locale } = useI18n();
+    const { number, integer, day: dayLabel, hour: hourNumber, hourLabel } = labels(locale);
+    return <div className="relative overflow-x-auto rounded-sm focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vx-accent" tabIndex={0} role="region" aria-label={t("app.publish.insights.heatmap")}>
         <table className="w-full min-w-[680px] border-separate border-spacing-1 text-xs tabular-nums">
-            <caption className="sr-only">Average lifetime interactions per post by local weekday and publication hour</caption>
-            <thead><tr><th scope="col"><span className="sr-only">Day</span></th>{HOURS.map((hour) =>
-                <th scope="col" key={hour} className="font-normal text-vx-fg-muted">{String(hour).padStart(2, '0')}</th>)}</tr></thead>
-            <tbody>{DAYS.map((day, i) => <tr key={day}><th scope="row" className="pr-2 text-left font-bold">{day}</th>
+            <caption className="sr-only">{t("app.publish.insights.heatCaption")}</caption>
+            <thead><tr><th scope="col"><span className="sr-only">{t('app.publish.insights.day')}</span></th>{HOURS.map((hour) =>
+                <th scope="col" key={hour} className="font-normal text-vx-fg-muted">{hourNumber(hour)}</th>)}</tr></thead>
+            <tbody>{DAYS.map((day, i) => <tr key={day}><th scope="row" className="pe-2 text-start font-bold">{dayLabel(i)}</th>
                 {HOURS.map((hour) => {
                     const cell = summary.cells.find((c) => c.day === i + 1 && c.hour === hour);
                     const measured = cell?.posts >= MIN_SLOT_POSTS && Number.isFinite(cell.score);
-                    const label = measured ? `${number.format(cell.score)} avg. interactions, ${cell.posts} posts` : `${cell?.posts || 0} measured posts; insufficient sample`;
+                    const label = measured ? t(pluralKey(t, locale, 'app.publish.insights.cell', cell.posts), { score: number.format(cell.score), count: integer(cell.posts) }) : t(pluralKey(t, locale, 'app.publish.insights.insufficient', cell?.posts || 0), { count: integer(cell?.posts || 0) });
                     const tone = measured ? tones[Math.min(3, Math.floor(cell.score / summary.maxScore * 3))] : 'bg-vx-panel';
-                    return <td key={hour} className={`${tone} rounded-sm px-1 py-2 text-center`} title={`${day} ${hourLabel(hour)}: ${label}`}>
+                    return <td key={hour} className={`${tone} rounded-sm px-1 py-2 text-center`} title={`${dayLabel(i)} ${hourLabel(hour)}: ${label}`}>
                         <span aria-hidden="true">{measured ? number.format(cell.score) : '—'}</span>
                         <span className="sr-only">{label}</span>
                     </td>;

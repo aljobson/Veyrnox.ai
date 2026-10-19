@@ -1,6 +1,6 @@
 'use client';
 import { localeTag } from '../../../lib/i18n/locales.mjs';
-import { tOr } from '../../../lib/i18n/translate.mjs';
+import { pluralKey, tOr } from '../../../lib/i18n/translate.mjs';
 import Link from 'next/link';
 import { useI18n } from '../../../components/I18nProvider';
 import { rich } from '../../../lib/i18n/rich';
@@ -33,24 +33,8 @@ const names = {
 const intervalName = (value) => (value === 'week' ? 'week' : 'month');
 const identity = () => getSession()?.user?.id || '',
   noIdentity = () => '';
-const message = (code) =>
-  ({
-    account_frozen: 'Your account is paused. Contact support.',
-    subscription_already_active:
-      'You already have a current subscription. Refresh its details.',
-    credits_spent:
-      'Cooling-off cancellation requires this cycle’s Credits to be unspent. You can stop renewal at period end.',
-    cooling_off_over:
-      'The fourteen-day cooling-off window has ended. You can stop renewal at period end.',
-    rate_limited: 'Too many requests. Wait a minute and retry.',
-    session_mismatch:
-      'This checkout does not belong to the subscription on this account.',
-    refund_review_required:
-      'Your refund needs operator review. Contact support.',
-    invoice_review_required:
-      'Payment needs operator review before Credits can be added.',
-  })[code] ||
-  'The billing request was not confirmed. Retry or contact support.';
+function message(code, t) { return tOr(t, `app.credits.subscription.error.${code}`, t('app.credits.subscription.errorFallback')); }
+const formatUsd = (value, locale) => locale === 'en' ? usd.format(value) : new Intl.NumberFormat(localeTag(locale, 'en-US'), { style: 'currency', currency: 'USD', trailingZeroDisplay: 'stripIfInteger' }).format(value);
 async function publicPlans() {
   const r = await fetch('/api/credit-subscription-plans', {
       cache: 'no-store',
@@ -79,12 +63,12 @@ function Plans({ plans, selected, onSelect, publicOnly = false }) {
     <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {plans.map((p) => (
         <li key={p.id} className="rounded-xl border border-vx-border p-5">
-          <h3 className="text-xl font-bold">{names[p.id] || p.id}</h3>
+          <h3 className="text-xl font-bold">{tOr(t, `app.credits.subscription.plan.${p.id}`, names[p.id] || p.id)}</h3>
           <p className="mt-1 text-xs font-bold uppercase tracking-widest text-vx-accent">
             {tOr(t, `cinema.pass.${p.billing_interval}ly`, p.billing_interval)}
           </p>
           <p className="mt-3 font-vx-mono text-2xl">
-            {usd.format(p.price_usd_cents / 100)} / {tOr(t, `cinema.pass.${p.billing_interval}`, p.billing_interval)}
+            {publicOnly ? usd.format(p.price_usd_cents / 100) : formatUsd(p.price_usd_cents / 100, locale)} / {tOr(t, `cinema.pass.${p.billing_interval}`, p.billing_interval)}
           </p>
           <p className="mt-2">
             {t('public.subscription.cycle', { credits: p.credits.toLocaleString(localeTag(locale)), interval: tOr(t, `cinema.pass.${p.billing_interval}`, p.billing_interval) })}
@@ -97,7 +81,7 @@ function Plans({ plans, selected, onSelect, publicOnly = false }) {
               href="/app/credits#credit-subscriptions"
               className="mt-4 inline-block underline"
             >
-              {t('public.subscription.choose', { plan: names[p.id] || p.id })}
+              {t('public.subscription.choose', { plan: tOr(t, `app.credits.subscription.plan.${p.id}`, names[p.id] || p.id) })}
             </Link>
           ) : (
             <button
@@ -105,7 +89,7 @@ function Plans({ plans, selected, onSelect, publicOnly = false }) {
               aria-pressed={selected === p.id}
               onClick={() => onSelect(p.id)}
             >
-              {selected === p.id ? t('public.subscription.selected') : t('public.subscription.choose', { plan: names[p.id] || p.id })}
+              {selected === p.id ? t('public.subscription.selected') : t('public.subscription.choose', { plan: tOr(t, `app.credits.subscription.plan.${p.id}`, names[p.id] || p.id) })}
             </button>
           )}
         </li>
@@ -214,6 +198,10 @@ export function CreditSubscriptions() {
   );
 }
 function Billing({ account, recovery, setRecovery }) {
+  const { t, locale } = useI18n();
+  const translation = useRef(t);
+  translation.current = t;
+  const number = value => locale === 'en' ? String(value) : value.toLocaleString(localeTag(locale));
   const [catalog, setCatalog] = useState(null),
     [sub, setSub] = useState(null),
     [closed, setClosed] = useState(false),
@@ -246,14 +234,14 @@ function Billing({ account, recovery, setRecovery }) {
     if (own.status === 'fulfilled') setSub(own.value.subscription);
     else {
       setSub(null);
-      setError(message(own.reason.code));
+      setError(message(own.reason.code, translation.current));
     }
     if (
       plans.status === 'rejected' &&
       plans.reason.code !== 'subscriptions_not_open'
     )
       setError(
-        'Subscription offers are unavailable. Retry to refresh billing.',
+        translation.current("app.credits.subscription.offersUnavailable"),
       );
     setLoaded(true);
   }, [account]);
@@ -273,20 +261,20 @@ function Billing({ account, recovery, setRecovery }) {
           body: JSON.stringify(info),
         });
         if (r.status === 'flagged')
-          setNotice('Payment requires operator review. Contact support.');
+          setNotice(translation.current("app.credits.subscription.paymentReview"));
         else if (r.status === 'ended')
-          setNotice('This subscription has ended. No Credits were added.');
+          setNotice(translation.current("app.credits.subscription.endedNoCredits"));
         else if (r.credited) {
-          setNotice('Payment confirmed. Subscription Credits have been added.');
+          setNotice(translation.current("app.credits.subscription.confirmed"));
           notifyBalanceChanged();
           setRecovery(null);
         } else
           setNotice(
-            'Checkout returned. Payment and Credits are not confirmed yet. Refresh or retry the checkout confirmation.',
+            translation.current("app.credits.subscription.unconfirmed"),
           );
         await load();
       } catch (e) {
-        setError(message(e.code));
+        setError(message(e.code, translation.current));
       } finally {
         setBusy(false);
       }
@@ -297,13 +285,13 @@ function Billing({ account, recovery, setRecovery }) {
     if (!recovery) return;
     if (recovery.invalid) {
       setError(
-        'Invalid subscription checkout return. Contact support if you paid.',
+        translation.current("app.credits.subscription.invalidReturn"),
       );
       return;
     }
     if (recovery.cancelled) {
       setNotice(
-        'Checkout was cancelled. No subscription purchase is confirmed.',
+        translation.current("app.credits.subscription.cancelledCheckout"),
       );
       return;
     }
@@ -330,15 +318,15 @@ function Billing({ account, recovery, setRecovery }) {
       });
       if (r.checkout_url) {
         const destination = subscriptionCheckoutUrl(r.checkout_url);
-        if (!destination) throw Error('unsafe checkout');
+        if (!destination) throw Error(t('app.credits.subscription.errorFallback'));
         window.location.assign(destination);
       } else {
-        setNotice('Your current subscription was found. Refresh its details.');
+        setNotice(t("app.credits.subscription.found"));
         await load();
         setBusy(false);
       }
     } catch (e) {
-      setError(message(e.code));
+      setError(message(e.code, t));
       setBusy(false);
     }
   }
@@ -353,19 +341,19 @@ function Billing({ account, recovery, setRecovery }) {
       });
       if (mode === 'period_end')
         setNotice(
-          'Renewal stopped. This cycle’s Credits remain available until the paid period ends.',
+          t("app.credits.subscription.renewalStoppedNotice"),
         );
       else if (r.pending)
         setNotice(
-          'Subscription ended. Your refund is pending; it is not yet complete.',
+          t("app.credits.subscription.refundPending"),
         );
       else if (r.refunded)
         setNotice(
-          `Subscription ended. A refund of ${usd.format(r.refund_usd_cents / 100)} was confirmed.`,
+          t('app.credits.subscription.refunded', { amount: formatUsd(r.refund_usd_cents / 100, locale) }),
         );
       else
         setNotice(
-          'Cancellation received. Contact support to confirm the refund status.',
+          t("app.credits.subscription.cancellationReceived"),
         );
       setRefundRetry(null);
       setCancellation('');
@@ -373,7 +361,7 @@ function Billing({ account, recovery, setRecovery }) {
       notifyBalanceChanged();
       await load();
     } catch (e) {
-      setError(message(e.code));
+      setError(message(e.code, t));
       if (mode === 'cooling_off') setRefundRetry({ subscription_id: id, mode });
     } finally {
       setBusy(false);
@@ -391,19 +379,16 @@ function Billing({ account, recovery, setRecovery }) {
       aria-labelledby="credit-subscriptions-heading"
     >
       <h2 id="credit-subscriptions-heading" className="text-3xl font-black">
-        Credit Subscriptions
-      </h2>
+        {t("app.credits.subscription.title")}</h2>
       {!loaded && (
         <p role="status" className="mt-4">
-          Loading subscription…
-        </p>
+          {t("app.credits.subscription.loading")}</p>
       )}
       {loaded && closed && !sub && !recovery && (
         <p role="status" className="mt-4">
-          Credit subscriptions aren&apos;t open right now. One-off Credit Packs can be purchased separately when available and do not renew.{' '}
+          {t("app.credits.subscription.closed")}{' '}
           <Link href="#credit-packs" className="underline">
-            Choose a Credit Pack
-          </Link>
+            {t("app.credits.subscription.choosePack")}</Link>
         </p>
       )}
       {error && (
@@ -417,8 +402,7 @@ function Billing({ account, recovery, setRecovery }) {
               load();
             }}
           >
-            Refresh billing
-          </button>
+            {t("app.credits.subscription.refresh")}</button>
         </p>
       )}
       {notice && (
@@ -432,8 +416,7 @@ function Billing({ account, recovery, setRecovery }) {
           disabled={busy}
           onClick={() => recover(recovery)}
         >
-          Retry checkout confirmation
-        </button>
+          {t("app.credits.subscription.retryCheckout")}</button>
       )}
       {refundRetry && (
         <button
@@ -441,28 +424,25 @@ function Billing({ account, recovery, setRecovery }) {
           disabled={busy}
           onClick={() => cancel(refundRetry.subscription_id, refundRetry.mode)}
         >
-          Retry cooling-off cancellation
-        </button>
+          {t("app.credits.subscription.retryCoolingOff")}</button>
       )}
       {sub && (
         <article className="mt-6 rounded-xl border border-vx-border p-5">
-          <h3 className="font-bold">{names[sub.plan_id] || sub.plan_id}</h3>
-          <p className="mt-2">Status: {sub.status}</p>
+          <h3 className="font-bold">{tOr(t, `app.credits.subscription.plan.${sub.plan_id}`, names[sub.plan_id] || sub.plan_id)}</h3>
+          <p className="mt-2">{t('app.credits.subscription.status', { status: tOr(t, `app.credits.subscription.status.${sub.status}`, sub.status) })}</p>
           <p className="mt-2">
-            {usd.format(sub.price_usd_cents / 100)} / {activeInterval} · {sub.credits}{' '}
-            Credits per paid cycle
+            {formatUsd(sub.price_usd_cents / 100, locale)} / {tOr(t, `cinema.pass.${activeInterval}`, activeInterval)} · {t(pluralKey(t, locale, 'app.credits.subscription.cycle', sub.credits), { count: number(sub.credits) })}
           </p>
           {sub.current_period_end && (
             <p className="mt-2">
-              Paid period ends{' '}
-              {new Date(sub.current_period_end).toLocaleString()}
+              {t('app.credits.subscription.periodEnd', { date: new Date(sub.current_period_end).toLocaleString(localeTag(locale)) })}
             </p>
           )}
           {sub.cancel_at_period_end && (
-            <p className="mt-2">Renewal is stopped.</p>
+            <p className="mt-2">{t("app.credits.subscription.stopped")}</p>
           )}
           {['active', 'past_due'].includes(sub.status) && (
-            <div className="mt-4 space-x-4">
+            <div className="mt-4 flex flex-wrap gap-4">
               {!sub.cancel_at_period_end && (
                 <button
                   className="underline"
@@ -472,8 +452,7 @@ function Billing({ account, recovery, setRecovery }) {
                     setConfirmed(false);
                   }}
                 >
-                  Stop renewal at period end
-                </button>
+                  {t("app.credits.subscription.stopRenewal")}</button>
               )}
               <button
                 className="underline"
@@ -483,8 +462,7 @@ function Billing({ account, recovery, setRecovery }) {
                   setConfirmed(false);
                 }}
               >
-                Cancel unused subscription within 14 days
-              </button>
+                {t("app.credits.subscription.cancelUnused")}</button>
             </div>
           )}
           {sub.status === 'ended' && sub.end_reason === 'cooling_off' && (
@@ -493,15 +471,14 @@ function Billing({ account, recovery, setRecovery }) {
               disabled={busy}
               onClick={() => cancel(sub.id, 'cooling_off')}
             >
-              Check cooling-off refund
-            </button>
+              {t("app.credits.subscription.checkRefund")}</button>
           )}
           {cancellation && (
             <div className="mt-4 rounded-lg bg-vx-panel p-4">
               <p>
                 {cancellation === 'period_end'
-                  ? 'Stop the next renewal. This cycle’s Credits expire at the paid period end.'
-                  : 'Request cancellation and a full refund within fourteen days of the initial paid cycle, only if this cycle’s Credits are unspent. The server checks eligibility; pending refunds are not complete.'}
+                  ? t("app.credits.subscription.stopHelp")
+                  : t("app.credits.subscription.coolingHelp")}
               </p>
               <label className="mt-3 flex gap-2">
                 <input
@@ -509,22 +486,19 @@ function Billing({ account, recovery, setRecovery }) {
                   checked={confirmed}
                   onChange={(e) => setConfirmed(e.target.checked)}
                 />
-                I confirm this cancellation request.
-              </label>
+                {t("app.credits.subscription.confirmRequest")}</label>
               <button
                 className="mt-3 rounded-full border border-vx-border px-4 py-2 font-bold disabled:opacity-50"
                 disabled={busy || !confirmed}
                 onClick={() => cancel(sub.id, cancellation)}
               >
-                Confirm cancellation
-              </button>{' '}
+                {t("app.credits.subscription.confirmCancel")}</button>{' '}
               <button
                 className="underline"
                 onClick={() => setCancellation('')}
                 disabled={busy}
               >
-                Keep subscription
-              </button>
+                {t("app.credits.subscription.keep")}</button>
             </div>
           )}
         </article>
@@ -532,10 +506,7 @@ function Billing({ account, recovery, setRecovery }) {
       {!current && !closed && catalog?.plans?.length > 0 && (
         <>
           <p className="mt-4">
-            Choose an optional weekly or monthly subscription. It renews automatically
-            until cancelled. Credits expire at each cycle end and do not roll
-            over. Tax and the final total are shown at checkout.
-          </p>
+            {t("app.credits.subscription.intro")}</p>
           <Plans
             plans={catalog.plans}
             selected={selected}
@@ -551,12 +522,11 @@ function Billing({ account, recovery, setRecovery }) {
                 window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))
               }
             >
-              Sign in to subscribe
-            </button>
+              {t("app.credits.subscription.signIn")}</button>
           ) : (
             plan && (
               <div className="mt-5">
-                <label className="flex items-start gap-3">
+                <label lang="en" dir="ltr" className="flex items-start gap-3">
                   <input
                     type="checkbox"
                     checked={agreed}
@@ -571,23 +541,19 @@ function Billing({ account, recovery, setRecovery }) {
                   </span>
                 </label>
                 <p className="mt-3 text-sm">
-                  You can stop renewal here. An unused initial cycle may qualify
-                  for a full cooling-off refund within fourteen days.{' '}
+                  {t("app.credits.subscription.renewalHelp")}{' '}
                   <Link href="/legal/terms" className="underline">
-                    Terms
-                  </Link>{' '}
+                    {t("home.publish.terms")}</Link>{' '}
                   ·{' '}
                   <Link href="/legal/privacy" className="underline">
-                    Privacy
-                  </Link>
+                    {t("cinema.report.privacy")}</Link>
                 </p>
                 <button
                   className="mt-4 rounded-full bg-vx-accent px-5 py-3 font-bold text-vx-accent-ink disabled:opacity-50"
                   disabled={busy || !agreed}
                   onClick={checkout}
                 >
-                  Continue to secure checkout
-                </button>
+                  {t("app.credits.subscription.checkout")}</button>
               </div>
             )
           )}

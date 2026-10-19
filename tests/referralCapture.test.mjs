@@ -1,3 +1,4 @@
+import { resolveI18nSource } from '../scripts/lib/vey-knowledge-i18n.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -77,7 +78,7 @@ test('the disclosure cannot drift from the storage: the notice, the privacy poli
 });
 
 test('the panel promises Credits only, never money, and the account page mounts it', () => {
-    const panel = read('../app/veyrnox/_components/ReferralPanel.js');
+    const panel = resolveI18nSource(read('../app/veyrnox/_components/ReferralPanel.js'));
     assert.match(panel, /Nothing is paid out as money/);
     assert.doesNotMatch(panel, /\bwallet\b|\bfunds\b|withdraw|payout|earnings/i);
     assert.match(read('../app/veyrnox/app/account/page.js'), /<ReferralPanel \/>/);

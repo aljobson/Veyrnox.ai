@@ -152,14 +152,14 @@ test('the create page keeps the starter out of state, so a speech model cannot s
     assert.match(page, /setPrompt\(null\); setSources/);
     assert.match(page, /if \(draft\) setPrompt\(draft\.prompt\);/);
     assert.match(page, /value=\{prompt\}\s*onChange=\{\(e\) => setPrompt\(e\.target\.value\)\}/);
-    assert.match(page, /placeholder=\{promptPlaceholder\(model\)\}/);
+    assert.match(page, /placeholder=\{helperCopy\(t, locale, promptPlaceholder\(model\)\)\}/);
 });
 
 test('the create page does not send a speech request with no words', () => {
     assert.match(page, /const missingPrompt = promptIsMissing\(model, prompt\);/);
     assert.match(page, /disabled=\{[^\n]*\|\| missingPrompt[^\n]*\}/);
     const submit = page.slice(page.indexOf('async function onSubmit()'), page.indexOf('function cancel()'));
-    const guard = submit.indexOf("if (missingPrompt) { inFlight.current = false; setError({ code: 'inputs_invalid:prompt' }); return; }");
+    const guard = submit.indexOf("if (missingPrompt) { inFlight.current = false; setError(LOCAL_ERRORS.inputs_invalid_prompt); return; }");
     assert.ok(guard > 0, 'guard found');
     assert.ok(guard < submit.indexOf('makeIdempotencyKey()'), 'before a key is minted');
     assert.ok(guard < submit.indexOf("gatewayFetch('/generations'"), 'before the request');

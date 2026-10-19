@@ -1,3 +1,4 @@
+import { helperEnglish } from '../../../lib/helperMessages.mjs';
 export const VIDEO_LIMITS = { bytes: 100 * 1024 * 1024, seconds: 15, dimension: 1920 };
 export const VIDEO_LOOKS = [
     { id: 'natural', label: 'Natural', saturation: 1, contrast: 1, warmth: 0 },
@@ -7,11 +8,11 @@ export const VIDEO_LOOKS = [
 ];
 
 export function validateVideo(file, metadata) {
-    if (!file || !['video/mp4', 'video/webm', 'video/quicktime'].includes(file.type)) return 'Choose an MP4, WebM or MOV video.';
-    if (!(file.size > 0) || file.size > VIDEO_LIMITS.bytes) return 'Choose a video under 100 MiB.';
+    if (!file || !['video/mp4', 'video/webm', 'video/quicktime'].includes(file.type)) return helperEnglish('choose_an_mp4_webm_or_mov_video');
+    if (!(file.size > 0) || file.size > VIDEO_LIMITS.bytes) return helperEnglish('choose_a_video_under_100_mib');
     if (!metadata) return null;
-    if (!Number.isFinite(metadata.duration) || metadata.duration <= 0 || metadata.duration > VIDEO_LIMITS.seconds) return 'Choose a clip up to 15 seconds long.';
-    if (!(metadata.width > 0 && metadata.height > 0) || Math.max(metadata.width, metadata.height) > VIDEO_LIMITS.dimension) return 'Choose a video with a longest edge of 1920 pixels or less.';
+    if (!Number.isFinite(metadata.duration) || metadata.duration <= 0 || metadata.duration > VIDEO_LIMITS.seconds) return helperEnglish('choose_a_clip_up_to_15_seconds_long');
+    if (!(metadata.width > 0 && metadata.height > 0) || Math.max(metadata.width, metadata.height) > VIDEO_LIMITS.dimension) return helperEnglish('choose_a_video_with_a_longest_edge_of');
     return null;
 }
 

@@ -1,4 +1,7 @@
 'use client';
+import { tOr } from '../../../../lib/i18n/translate.mjs';
+import { localeTag } from '../../../../lib/i18n/locales.mjs';
+import { useI18n } from '../../../../components/I18nProvider';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -30,6 +33,7 @@ function defaultScheduleValue() {
 }
 
 function ContentPresets({ accounts, caption, selectedAccountIds, onApply }) {
+  const { t } = useI18n();
     const [presets, setPresets] = useState(null);
     const [selectedId, setSelectedId] = useState('');
     const [name, setName] = useState('');
@@ -42,61 +46,61 @@ function ContentPresets({ accounts, caption, selectedAccountIds, onApply }) {
             const result = await listSocialPresets();
             setPresets(result.presets || []);
         } catch {
-            setError('Could not load your saved presets.');
+            setError(t("app.publish.composer.presetsLoad"));
         }
-    }, []);
+    }, [t]);
     useEffect(() => { load(); }, [load]);
 
     function apply() {
         const preset = (presets || []).find((item) => item.id === selectedId);
-        if (!preset) { setError('Choose a saved preset first.'); return; }
+        if (!preset) { setError(t("app.publish.composer.presetFirst")); return; }
         const availableIds = new Set(accounts.map((account) => account.id));
         onApply(preset.caption, (preset.account_ids || []).filter((id) => availableIds.has(id)));
         setName(preset.name); setError('');
-        setMessage('Preset loaded. Review everything before posting.');
+        setMessage(t("app.publish.composer.presetLoaded"));
     }
 
     async function save() {
         const cleanName = name.trim();
-        if (!cleanName) { setError('Give this preset a name.'); return; }
-        if (!caption) { setError('Write a caption before saving a preset.'); return; }
+        if (!cleanName) { setError(t("app.publish.composer.presetNameRequired")); return; }
+        if (!caption) { setError(t("app.publish.composer.presetCaptionRequired")); return; }
         setBusy(true); setError(''); setMessage('');
         try {
             const existing = (presets || []).find((item) => item.id === selectedId);
             const result = await saveSocialPreset({ id: existing?.id || null, name: cleanName, caption, accountIds: [...selectedAccountIds] });
-            await load(); setSelectedId(result.preset_id); setMessage(existing ? 'Preset updated.' : 'Preset saved.');
+            await load(); setSelectedId(result.preset_id); setMessage(existing ? t("app.publish.composer.presetUpdated") : t("app.publish.composer.presetSaved"));
         } catch (err) {
-            setError(err?.body?.error === 'preset_name_taken' ? 'A preset with that name already exists.' : 'Could not save that preset. Try again.');
+            setError(err?.body?.error === 'preset_name_taken' ? t("app.publish.composer.presetExists") : t("app.publish.composer.presetSaveFailed"));
         } finally { setBusy(false); }
     }
 
     async function remove() {
-        if (!selectedId) { setError('Choose a saved preset first.'); return; }
+        if (!selectedId) { setError(t("app.publish.composer.presetFirst")); return; }
         setBusy(true); setError(''); setMessage('');
         try {
             await deleteSocialPreset(selectedId);
-            setSelectedId(''); setName(''); await load(); setMessage('Preset deleted.');
-        } catch { setError('Could not delete that preset. Try again.'); }
+            setSelectedId(''); setName(''); await load(); setMessage(t("app.publish.composer.presetDeleted"));
+        } catch { setError(t("app.publish.composer.presetDeleteFailed")); }
         finally { setBusy(false); }
     }
 
-    return <section aria-label="Saved content presets" className="rounded-xl border border-vx-border p-3 space-y-3">
+    return <section aria-label={t("app.publish.composer.presets")} className="rounded-xl border border-vx-border p-3 space-y-3">
         <div>
-            <h3 className="text-sm font-bold">Saved captions and destinations</h3>
-            <p className="text-xs text-vx-fg-muted">Reuse caption text and connected accounts. Media is always chosen separately.</p>
+            <h3 className="text-sm font-bold">{t("app.publish.composer.presetsHeading")}</h3>
+            <p className="text-xs text-vx-fg-muted">{t("app.publish.composer.presetsIntro")}</p>
         </div>
         <div className="flex flex-wrap gap-2">
-            <select aria-label="Saved preset" value={selectedId} disabled={busy || presets === null} onChange={(e) => { const id=e.target.value; setSelectedId(id); setName((presets || []).find((item)=>item.id===id)?.name || ''); setError(''); setMessage(''); }} className="min-w-48 rounded-lg border border-vx-border bg-transparent px-3 py-2 text-sm">
-                <option value="">{presets === null ? 'Loading presets…' : presets.length ? 'Choose a preset' : 'No saved presets'}</option>
+            <select aria-label={t("app.publish.composer.preset")} value={selectedId} disabled={busy || presets === null} onChange={(e) => { const id=e.target.value; setSelectedId(id); setName((presets || []).find((item)=>item.id===id)?.name || ''); setError(''); setMessage(''); }} className="min-w-48 rounded-lg border border-vx-border bg-transparent px-3 py-2 text-sm">
+                <option value="">{presets === null ? t("app.publish.composer.presetsLoading") : presets.length ? t("app.publish.composer.presetChoose") : t("app.publish.composer.presetsEmpty")}</option>
                 {(presets || []).map((preset) => <option key={preset.id} value={preset.id}>{preset.name}</option>)}
             </select>
-            <button type="button" className={button} disabled={busy || !selectedId} onClick={apply}>Apply preset</button>
-            <button type="button" className={button} disabled={busy || !selectedId} onClick={remove}>Delete</button>
+            <button type="button" className={button} disabled={busy || !selectedId} onClick={apply}>{t("app.publish.composer.presetApply")}</button>
+            <button type="button" className={button} disabled={busy || !selectedId} onClick={remove}>{t("app.publish.composer.delete")}</button>
         </div>
         <div className="flex flex-wrap gap-2">
-            <label htmlFor="preset-name" className="sr-only">Preset name</label>
-            <input id="preset-name" value={name} maxLength={80} onChange={(e)=>setName(e.target.value)} placeholder="Preset name" className="min-w-56 flex-1 rounded-lg border border-vx-border bg-transparent px-3 py-2 text-sm" />
-            <button type="button" className={button} disabled={busy} onClick={save}>{busy ? 'Saving…' : selectedId ? 'Update preset' : 'Save current'}</button>
+            <label htmlFor="preset-name" className="sr-only">{t("app.publish.composer.presetName")}</label>
+            <input id="preset-name" value={name} maxLength={80} onChange={(e)=>setName(e.target.value)} placeholder={t("app.publish.composer.presetName")} className="min-w-56 flex-1 rounded-lg border border-vx-border bg-transparent px-3 py-2 text-sm" />
+            <button type="button" className={button} disabled={busy} onClick={save}>{busy ? t("social.saving") : selectedId ? t("app.publish.composer.presetUpdate") : t("app.publish.composer.saveCurrent")}</button>
         </div>
         {error && <p role="alert" className="text-sm text-vx-danger">{error}</p>}
         {message && <p role="status" className="text-sm text-vx-accent">{message}</p>}
@@ -105,6 +109,7 @@ function ContentPresets({ accounts, caption, selectedAccountIds, onApply }) {
 
 /** The account's own recent library, single-select, for the composer's one media slot. */
 function MediaPicker({ selected, onSelect }) {
+  const { t } = useI18n();
     const [jobs, setJobs] = useState(null);
     const [thumbs, setThumbs] = useState({});
     const [loadError, setLoadError] = useState('');
@@ -131,15 +136,15 @@ function MediaPicker({ selected, onSelect }) {
                     setJobs(withAssets.filter((j) => ['image', 'video'].includes(loaded[j.job_id]?.mediaType)));
                 }
             } catch {
-                if (!cancelled) setLoadError('Could not load your library. Check your connection and try again.');
+                if (!cancelled) setLoadError(t("app.publish.composer.libraryLoad"));
             }
         })();
         return () => { cancelled = true; };
-    }, []);
+    }, [t]);
 
     if (loadError) return <p role="alert" className="text-sm text-vx-danger">{loadError}</p>;
-    if (jobs === null) return <p className="text-sm text-vx-fg-muted">Loading your library…</p>;
-    if (jobs.length === 0) return <p className="text-sm text-vx-fg-muted">No generated images or videos in this library yet.</p>;
+    if (jobs === null) return <p className="text-sm text-vx-fg-muted">{t("app.library.loading")}</p>;
+    if (jobs.length === 0) return <p className="text-sm text-vx-fg-muted">{t("app.publish.composer.libraryEmpty")}</p>;
 
     return (
         <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-64 overflow-y-auto">
@@ -149,7 +154,7 @@ function MediaPicker({ selected, onSelect }) {
                     <button
                         key={j.job_id}
                         type="button"
-                        aria-label={`Choose ${thumbs[j.job_id]?.mediaType || 'media'} ${j.job_id.slice(0, 8)}`}
+                        aria-label={t('app.publish.composer.chooseMedia', { type: tOr(t, `app.publish.composer.media.${thumbs[j.job_id]?.mediaType}`, t('app.publish.composer.mediaFallback')), id: j.job_id.slice(0, 8) })}
                         aria-pressed={isSelected}
                         onClick={() => onSelect({ jobId: j.job_id, thumbUrl: thumbs[j.job_id]?.url, mediaType: thumbs[j.job_id]?.mediaType })}
                         className={`relative aspect-square rounded-lg overflow-hidden border-2 ${isSelected ? 'border-vx-accent' : 'border-vx-border'}`}
@@ -168,7 +173,10 @@ function MediaPicker({ selected, onSelect }) {
 }
 
 export function Composer({ accounts, onScheduled, initialJobId = null, initialUploadId = null, reusablePost = null, uploadsEnabled = false, youtubeVisibilityEnabled = false, scheduleEnabled = true, multiAccountEnabled = true, presetsEnabled = false, queuesEnabled = false, approvalsEnabled = false, variantsEnabled = false }) {
-    const activeAccounts = (accounts || []).filter((a) => a.status === 'active' && a.publishingEnabled !== false && (a.supportedMedia || NETWORKS.find((n) => n.key === a.network)?.media.filter(t => t !== 'video' || a.network === 'youtube'))?.length);
+  const { t, locale } = useI18n();
+    const number = value => locale === 'en' ? value : Number(value).toLocaleString(localeTag(locale));
+    const networkName = key => tOr(t, `app.publish.network.${key}`, networkLabel(key));
+    const activeAccounts = (accounts || []).filter((a) => a.status === 'active' && a.publishingEnabled !== false && (a.supportedMedia || NETWORKS.find((n) => n.key === a.network)?.media.filter(type => type !== 'video' || a.network === 'youtube'))?.length);
     const [selectedAccountIds, setSelectedAccountIds] = useState(() => new Set());
     const [caption, setCaption] = useState('');
     const [networkText, setNetworkText] = useState({});
@@ -206,36 +214,36 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
         let cancelled = false;
         (async () => {
             try {
-                if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(initialJobId)) throw new Error('invalid job');
+                if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(initialJobId)) throw new Error('invalid_job');
                 const asset = await gatewayFetch(`/jobs/${encodeURIComponent(initialJobId)}/asset`);
                 const type = asset.mime_type?.split('/')[0];
-                if (!asset.url || !['image', 'video'].includes(type)) throw new Error('unsupported media');
+                if (!asset.url || !['image', 'video'].includes(type)) throw new Error('unsupported_media');
                 if (cancelled) return;
                 setMediaType(type);
                 setSelectedMedia({ jobId: initialJobId, thumbUrl: asset.url });
             } catch {
-                if (!cancelled) setMediaError('This generation is unavailable or cannot be posted. Choose an image or video from your library.');
+                if (!cancelled) setMediaError(t("app.publish.composer.jobUnavailable"));
             } finally {
                 if (!cancelled) setLoadingMedia(false);
             }
         })();
         return () => { cancelled = true; };
-    }, [initialJobId]);
+    }, [initialJobId, t]);
 
     useEffect(() => {
         if (!initialUploadId || initialJobId) return;
         let active = true;
         Promise.resolve().then(async () => {
             if (!active) return null;
-            if (!uploadsEnabled) throw new Error('uploads disabled');
+            if (!uploadsEnabled) throw new Error('uploads_disabled');
             setLoadingMedia(true);
             return ownedPublishUpload(gatewayFetch, initialUploadId);
         }).then(media => {
             if (active && media) { setSelectedMedia(media); setMediaType('video'); setMediaError(''); }
-        }).catch(() => { if (active) setMediaError(uploadsEnabled ? 'This upload is unavailable for your account. Choose an image or video from your library or device.' : 'Video uploads are not open here yet.'); })
+        }).catch(() => { if (active) setMediaError(uploadsEnabled ? t("app.publish.composer.uploadUnavailable") : t("app.publish.composer.uploadClosed")); })
             .finally(() => { if (active) setLoadingMedia(false); });
         return () => { active = false; };
-    }, [initialUploadId, initialJobId, uploadsEnabled]);
+    }, [initialUploadId, initialJobId, uploadsEnabled, t]);
 
     useEffect(() => {
         if (!reusablePost?.reuseKey) return;
@@ -246,23 +254,23 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
             setCaption(reusablePost.global_text || '');
             setNetworkText(Object.fromEntries((reusablePost.targets || []).filter((target) => target.text_override).map((target) => [target.network, target.text_override])));
             setSelectedAccountIds(new Set((reusablePost.targets || []).map((target) => target.account_id).filter((id) => activeAccounts.some((account) => account.id === id))));
-            setSuccess('Previous post loaded. Review everything before posting again.');
+            setSuccess(t("app.publish.composer.reused"));
             setError(''); setMediaError(''); setSelectedMedia(null);
             idempotencyKey.current = newIdempotencyKey();
-            if (!source) { setMediaError('The previous post has no reusable media. Choose media below.'); return; }
+            if (!source) { setMediaError(t("app.publish.composer.noReusableMedia")); return; }
             setLoadingMedia(true);
             const media = source.job_id
                 ? await gatewayFetch(`/jobs/${encodeURIComponent(source.job_id)}/asset`).then((asset) => ({ jobId: source.job_id, thumbUrl: asset.url, mediaType: source.media_type }))
                 : uploadsEnabled && source.upload_id
                     ? await ownedPublishUpload(gatewayFetch, source.upload_id)
-                    : await Promise.reject(new Error('media unavailable'));
+                    : await Promise.reject(new Error('media_unavailable'));
             if (active) { setSelectedMedia(media); setMediaType(media.mediaType); }
-        }).catch(() => { if (active) setMediaError('That post’s media is no longer available. Choose another image or video.'); })
+        }).catch(() => { if (active) setMediaError(t("app.publish.composer.mediaUnavailable")); })
             .finally(() => { if (active) setLoadingMedia(false); });
         return () => { active = false; };
     // activeAccounts is derived from the account prop; the reuse key is the intentional trigger.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [reusablePost?.reuseKey, uploadsEnabled]);
+    }, [reusablePost?.reuseKey, uploadsEnabled, t]);
 
     const selectedNetworks = [...new Set(activeAccounts.filter((account) => selectedAccountIds.has(account.id)).map((account) => account.network))];
     const activePreviewNetwork = selectedNetworks.includes(previewNetwork) ? previewNetwork : selectedNetworks[0] || '';
@@ -279,28 +287,28 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
     async function onSubmit(e) {
         e.preventDefault();
         setError(''); setSuccess(''); setReviewLinks([]);
-        if (selectedAccountIds.size === 0) { setError('Pick at least one connected account.'); return; }
-        if (!selectedMedia) { setError('Choose an image or video from your library or device.'); return; }
+        if (selectedAccountIds.size === 0) { setError(t("app.publish.composer.pickAccount")); return; }
+        if (!selectedMedia) { setError(t("app.publish.composer.pickMedia")); return; }
         for (const id of selectedAccountIds) {
             const account = activeAccounts.find((a) => a.id === id);
             const network = NETWORKS.find((n) => n.key === account?.network);
-            if (!(account?.supportedMedia || network?.media.filter(t => t !== 'video' || account?.network === 'youtube'))?.includes(mediaType)) { setError(`${network?.label || 'That account'} does not support this media type.`); return; }
+            if (!(account?.supportedMedia || network?.media.filter(type => type !== 'video' || account?.network === 'youtube'))?.includes(mediaType)) { setError(t('app.publish.composer.unsupported', { network: network?.key ? networkName(network.key) : t('app.publish.composer.accountFallback') })); return; }
             const effectiveCaption = networkText[network.key] || caption;
             const length = captionLength(network.key, effectiveCaption);
-            if (length > network.captionLimit) { setError(`${network.label} supports captions up to ${network.captionLimit} characters.`); return; }
+            if (length > network.captionLimit) { setError(t('app.publish.composer.captionLimit', { network: networkName(network.key), count: number(network.captionLimit) })); return; }
         }
         const mode = e.nativeEvent.submitter?.value;
         const publishNow = mode === 'now';
         const useQueue = mode === 'queue';
         const useApproval = mode === 'review';
-        if (useQueue && !queueId) { setError('Choose a posting queue.'); return; }
+        if (useQueue && !queueId) { setError(t("app.publish.composer.queueRequired")); return; }
         const schedule = futureLocalSchedule(scheduledAt);
         if (!publishNow && !useQueue && !schedule) {
-            setError('Choose a future date and time to schedule your post.'); return;
+            setError(t("app.publish.composer.futureRequired")); return;
         }
         const reviewers = reviewerEmails.split(/[\n,;]/).map((email) => email.trim().toLowerCase()).filter(Boolean);
         if (useApproval && (reviewers.length < 1 || reviewers.length > 10 || reviewers.some((email) => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)))) {
-            setError('Add 1 to 10 valid reviewer email addresses.'); return;
+            setError(t("app.publish.composer.reviewersRequired")); return;
         }
         setSubmitting(mode);
         try {
@@ -318,7 +326,7 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
                 ? await createSocialApproval({ ...payload, reviewers, policy: approvalPolicy })
                 : await createSocialPost(payload);
             if (reservation) await confirmSocialQueueSlot(reservation.assignment_id, result.post_id);
-            setSuccess(useApproval ? 'Review links created. This post stays paused until the approval rule passes.' : publishNow ? 'Post queued for publishing. It can take a few minutes to appear.' : useQueue ? 'Post added to the next open queue slot.' : 'Post scheduled.');
+            setSuccess(useApproval ? t("app.publish.composer.reviewCreated") : publishNow ? t("app.publish.composer.queued") : useQueue ? t("app.publish.composer.queueAdded") : t("app.publish.composer.scheduled"));
             setReviewLinks(result.review_links || []);
             setCaption(''); setNetworkText({}); setPreviewNetwork(''); setSelectedAccountIds(new Set()); setSelectedMedia(null);
             setScheduledAt(defaultScheduleValue());
@@ -328,15 +336,8 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
             idempotencyKey.current = newIdempotencyKey();
             onScheduled?.();
         } catch (err) {
-            const code = err && err.code;
-            setError(code === 'rate_limited'
-                ? 'Too many posts scheduled at once. Wait a moment and try again.'
-                : ['unsupported_media_type', 'publishing_not_supported'].includes(err.body?.error) ? 'That destination does not support this media type.'
-                : err.body?.error === 'caption_too_long' ? 'The caption is too long for a selected platform.'
-                : err.body?.error === 'invalid_schedule' ? 'Choose a future date and time to schedule your post.'
-                : err.body?.error === 'no_queue_slot' ? 'That queue has no open slot in the next eight weeks.'
-                : err.body?.error === 'queue_disabled' ? 'That queue is paused. Choose another queue.'
-                : 'Could not submit that post. Check your connection and try again.');
+            const code = err?.code === 'rate_limited' ? 'rate_limited' : err?.body?.error;
+            setError(tOr(t, `app.publish.composer.error.${code}`, t('app.publish.composer.submitFailed')));
         } finally {
             setSubmitting(false);
         }
@@ -345,8 +346,8 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
     return (
         <form onSubmit={onSubmit} className="space-y-4">
             <div>
-                <div className="text-sm font-bold mb-2">Post to</div>
-                {!activeAccounts.length && <p className="text-sm text-vx-fg-muted">Connect a publishing account above before creating a post. Twitch connects for statistics. You can choose media first.</p>}
+                <div className="text-sm font-bold mb-2">{t("app.publish.composer.postTo")}</div>
+                {!activeAccounts.length && <p className="text-sm text-vx-fg-muted">{t("app.publish.composer.connectFirst")}</p>}
                 <ul className="flex flex-wrap gap-2">
                     {activeAccounts.map((a) => {
                         const on = selectedAccountIds.has(a.id);
@@ -355,54 +356,54 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
                                 <button
                                     type="button"
                                     aria-pressed={on}
-                                    onClick={() => toggleAccount(a.id)}
+                                    data-testid={`publish-account-${a.id}`} onClick={() => toggleAccount(a.id)}
                                     className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-bold ${on ? 'border-vx-accent text-vx-accent' : 'border-vx-border text-vx-fg'}`}
                                 >
                                     <NetworkLogo network={a.network} className="h-4 w-4" />
-                                    {networkLabel(a.network)}: {a.display_name || a.external_account_id}
+                                    {networkName(a.network)}: {a.display_name || a.external_account_id}
                                 </button>
                             </li>
                         );
                     })}
                 </ul>
-                {!multiAccountEnabled && activeAccounts.length > 1 && <p className="mt-2 text-xs text-vx-fg-muted">Free posts to one account at a time. <Link href="/app/publish/plan" className="font-bold text-vx-accent underline">Upgrade for multi-account publishing</Link>.</p>}
+                {!multiAccountEnabled && activeAccounts.length > 1 && <p className="mt-2 text-xs text-vx-fg-muted">{t("app.publish.composer.freeSingle")}{' '}<Link href="/app/publish/plan" className="font-bold text-vx-accent underline">{t("app.publish.composer.upgradeMulti")}</Link>.</p>}
             </div>
 
-            {hasTiktokVideo && <p className="text-sm text-vx-fg-muted">TikTok receives an inbox draft at the chosen time. Finish caption, any AI disclosure and posting in TikTok; this does not publish automatically.</p>}
+            {hasTiktokVideo && <p className="text-sm text-vx-fg-muted">{t("app.publish.composer.tiktokDraft")}</p>}
 
             {hasYoutube && <div>
                 {youtubeVisibilityEnabled ? <>
-                    <label htmlFor="youtube-visibility" className="text-sm font-bold mb-2 block">YouTube visibility</label>
+                    <label htmlFor="youtube-visibility" className="text-sm font-bold mb-2 block">{t("app.publish.composer.youtubeVisibility")}</label>
                     <select id="youtube-visibility" value={youtubeVisibility} onChange={(e) => setYoutubeVisibility(e.target.value)} disabled={Boolean(submitting)} className="rounded-lg border border-vx-border bg-transparent px-3 py-2 text-sm">
-                        <option value="private">Private</option>
-                        <option value="unlisted">Unlisted</option>
-                        <option value="public">Public</option>
+                        <option value="private">{t("app.publish.composer.private")}</option>
+                        <option value="unlisted">{t("app.publish.composer.unlisted")}</option>
+                        <option value="public">{t("app.publish.composer.public")}</option>
                     </select>
-                    <p className="text-sm text-vx-fg-muted mt-2">{youtubeVisibility === 'private' ? 'Only you and people you invite on YouTube can watch.' : youtubeVisibility === 'unlisted' ? 'Anyone with the YouTube link can watch.' : 'Anyone can find and watch this video on YouTube.'} This applies only to YouTube.</p>
-                </> : <p className="text-sm text-vx-fg-muted">YouTube videos will be posted publicly.</p>}
+                    <p className="text-sm text-vx-fg-muted mt-2">{youtubeVisibility === 'private' ? t("app.publish.composer.youtubePrivate") : youtubeVisibility === 'unlisted' ? t("app.publish.composer.youtubeUnlisted") : t("app.publish.composer.youtubePublic")}{' '}{t("app.publish.composer.youtubeOnly")}</p>
+                </> : <p className="text-sm text-vx-fg-muted">{t("app.publish.composer.youtubePublicDefault")}</p>}
             </div>}
 
             <div>
-                <label htmlFor="publish-caption" className="text-sm font-bold mb-2 block">Caption</label>
+                <label htmlFor="publish-caption" className="text-sm font-bold mb-2 block">{t("app.publish.composer.caption")}</label>
                 <textarea
-                    id="publish-caption"
+                    id="publish-caption" data-testid="publish-caption"
                     value={caption}
                     onChange={(e) => setCaption(e.target.value.slice(0, 4000))}
                     rows={4}
                     className="w-full rounded-xl border border-vx-border bg-transparent p-3 text-sm"
-                    placeholder="Write a caption…"
+                    placeholder={t("app.publish.composer.writeCaption")}
                 />
             </div>
 
-            {variantsEnabled && selectedNetworks.length > 0 && <section aria-label="Platform-specific captions" className="rounded-xl border border-vx-border p-4 space-y-3">
+            {variantsEnabled && selectedNetworks.length > 0 && <section aria-label={t("app.publish.composer.platformCaptions")} className="rounded-xl border border-vx-border p-4 space-y-3">
                 <div>
-                    <h3 className="text-sm font-bold">Customize by platform</h3>
-                    <p className="text-xs text-vx-fg-muted">Choose a platform and tailor its caption. Leave it empty to use the main caption.</p>
+                    <h3 className="text-sm font-bold">{t("app.publish.composer.customize")}</h3>
+                    <p className="text-xs text-vx-fg-muted">{t("app.publish.composer.customizeIntro")}</p>
                 </div>
-                <div role="tablist" aria-label="Platform preview" className="flex flex-wrap gap-2">
+                <div role="tablist" aria-label={t("app.publish.composer.platformPreview")} className="flex flex-wrap gap-2">
                     {selectedNetworks.map((network) => <button key={network} type="button" role="tab" aria-selected={activePreviewNetwork === network}
                         onClick={() => setPreviewNetwork(network)} className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-bold ${activePreviewNetwork === network ? 'border-vx-accent text-vx-accent' : 'border-vx-border'}`}>
-                        <NetworkLogo network={network} className="h-4 w-4" />{networkLabel(network)}
+                        <NetworkLogo network={network} className="h-4 w-4" />{networkName(network)}
                     </button>)}
                 </div>
                 {activePreviewNetwork && (() => {
@@ -413,18 +414,18 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
                     const names = activeAccounts.filter((account) => selectedAccountIds.has(account.id) && account.network === activePreviewNetwork).map((account) => account.display_name || account.external_account_id);
                     return <div className="grid gap-4 lg:grid-cols-2">
                         <div>
-                            <label htmlFor={`platform-caption-${activePreviewNetwork}`} className="mb-2 block text-sm font-bold">{network.label} caption</label>
+                            <label htmlFor={`platform-caption-${activePreviewNetwork}`} className="mb-2 block text-sm font-bold">{t('app.publish.composer.networkCaption', { network: networkName(network.key) })}</label>
                             <textarea id={`platform-caption-${activePreviewNetwork}`} rows={4} value={override}
                                 onChange={(event) => setNetworkText((current) => ({ ...current, [activePreviewNetwork]: event.target.value }))}
-                                placeholder={`Use main caption for ${network.label}`} className="w-full rounded-xl border border-vx-border bg-transparent p-3 text-sm" />
-                            <div className="mt-1 flex justify-between text-xs text-vx-fg-muted"><span>{override ? 'Custom caption' : 'Using main caption'}</span><span className={length > network.captionLimit ? 'text-vx-danger' : ''}>{length} / {network.captionLimit}</span></div>
+                                placeholder={t('app.publish.composer.mainCaptionFor', { network: networkName(network.key) })} className="w-full rounded-xl border border-vx-border bg-transparent p-3 text-sm" />
+                            <div className="mt-1 flex justify-between text-xs text-vx-fg-muted"><span>{override ? t("app.publish.composer.customCaption") : t("app.publish.composer.usingMain")}</span><span className={length > network.captionLimit ? 'text-vx-danger' : ''}>{number(length)} / {number(network.captionLimit)}</span></div>
                         </div>
-                        <article aria-label={`${network.label} post preview`} className="overflow-hidden rounded-xl border border-vx-border bg-vx-panel">
+                        <article aria-label={t('app.publish.composer.postPreview', { network: networkName(network.key) })} className="overflow-hidden rounded-xl border border-vx-border bg-vx-panel">
                             <header className="flex items-center gap-2 border-b border-vx-border p-3 text-sm font-bold"><NetworkLogo network={activePreviewNetwork} className="h-5 w-5" /><span>{names.join(', ')}</span></header>
                             {selectedMedia?.thumbUrl && (mediaType === 'video'
                                 ? <video src={selectedMedia.thumbUrl} muted playsInline preload="metadata" className="aspect-video w-full object-cover" />
-                                : <img src={selectedMedia.thumbUrl} alt="Selected post preview" className="aspect-video w-full object-cover" />)}
-                            <p className="whitespace-pre-wrap break-words p-3 text-sm">{effective || 'Your caption preview will appear here.'}</p>
+                                : <img src={selectedMedia.thumbUrl} alt={t("app.publish.composer.selectedPreview")} className="aspect-video w-full object-cover" />)}
+                            <p className="whitespace-pre-wrap break-words p-3 text-sm">{effective || t("app.publish.composer.captionPreview")}</p>
                         </article>
                     </div>;
                 })()}
@@ -434,22 +435,22 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
                 onApply={(nextCaption, accountIds) => { setCaption(nextCaption); setNetworkText({}); setPreviewNetwork(''); setSelectedAccountIds(new Set(accountIds)); setError(''); setSuccess(''); idempotencyKey.current = newIdempotencyKey(); }} />}
 
             <div>
-                <div className="text-sm font-bold mb-2">Media</div>
+                <div className="text-sm font-bold mb-2">{t("app.publish.composer.media")}</div>
                 <div className="flex flex-wrap items-center gap-3 mb-2">
-                    <select aria-label="Media type" disabled={uploading || Boolean(selectedMedia?.uploadId)} value={mediaType} onChange={(e) => setMediaType(e.target.value)} className="rounded-lg border border-vx-border bg-transparent px-2 py-1 text-sm">
-                        <option value="image">Image</option>
-                        <option value="video">Video</option>
+                    <select aria-label={t("app.publish.composer.mediaType")} disabled={uploading || Boolean(selectedMedia?.uploadId)} value={mediaType} onChange={(e) => setMediaType(e.target.value)} className="rounded-lg border border-vx-border bg-transparent px-2 py-1 text-sm">
+                        <option value="image">{t("model.media.image")}</option>
+                        <option value="video">{t("app.library.kind.video")}</option>
                     </select>
                     <button type="button" disabled={loadingMedia || uploading} className={button} onClick={() => setPickerOpen((v) => !v)}>
-                        {selectedMedia ? 'Change' : 'Choose from library'}
+                        {selectedMedia ? t("app.publish.composer.change") : t("app.publish.composer.fromLibrary")}
                     </button>
                     {selectedMedia?.thumbUrl && (mediaType === 'video'
-                        ? <video src={selectedMedia.thumbUrl} aria-label="Selected video" controls playsInline className="h-24 w-40 rounded-sm object-contain" />
-                        : <img src={selectedMedia.thumbUrl} alt="Selected image" className="h-10 w-10 rounded-sm object-cover" />)}
+                        ? <video src={selectedMedia.thumbUrl} aria-label={t("app.publish.composer.selectedVideo")} controls playsInline className="h-24 w-40 rounded-sm object-contain" />
+                        : <img src={selectedMedia.thumbUrl} alt={t("app.publish.composer.selectedImage")} className="h-10 w-10 rounded-sm object-cover" />)}
                 </div>
-                {loadingMedia && <p role="status" className="text-sm text-vx-fg-muted">Loading your generation…</p>}
+                {loadingMedia && <p role="status" className="text-sm text-vx-fg-muted">{t("app.publish.composer.loadingGeneration")}</p>}
                 {mediaError && <p role="alert" className="text-sm text-vx-danger">{mediaError}</p>}
-                {selectedMedia && <p className="text-sm text-vx-fg-muted">Media selected. Choose accounts, add a caption and confirm when to post.</p>}
+                {selectedMedia && <p className="text-sm text-vx-fg-muted">{t("app.publish.composer.mediaSelected")}</p>}
                 {uploadsEnabled && <DeviceUploads selected={selectedMedia} onBusyChange={setUploading} onSelect={(m) => { setSelectedMedia(m); if (m) setMediaType(m.mediaType); setMediaError(''); setPickerOpen(false); }} />}
                 {pickerOpen && (
                     <MediaPicker
@@ -460,51 +461,51 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
             </div>
 
             {scheduleEnabled ? <div>
-                <label htmlFor="publish-schedule" className="text-sm font-bold mb-2 block">Schedule for</label>
+                <label htmlFor="publish-schedule" className="text-sm font-bold mb-2 block">{t("app.publish.composer.scheduleFor")}</label>
                 <input id="publish-schedule" type="datetime-local" min={minimumFutureLocalInput()} value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} className="rounded-lg border border-vx-border bg-transparent px-3 py-2 text-sm" />
-                <p className="mt-1 text-xs text-vx-fg-muted">Choose a future date and time in your local timezone.</p>
+                <p className="mt-1 text-xs text-vx-fg-muted">{t("app.publish.composer.localTime")}</p>
             </div> : <p className="rounded-xl border border-vx-accent/40 bg-vx-accent/[0.06] p-3 text-sm text-vx-fg-body">
-                Post now is included with Free. <Link href="/app/publish/plan" className="font-bold text-vx-accent underline">Upgrade to schedule posts</Link>.
+                {t("app.publish.composer.freeNow")}{' '}<Link href="/app/publish/plan" className="font-bold text-vx-accent underline">{t("app.publish.composer.upgradeSchedule")}</Link>.
             </p>}
 
             {queuesEnabled && <div>
-                <label htmlFor="publish-queue" className="text-sm font-bold mb-2 block">Posting queue</label>
+                <label htmlFor="publish-queue" className="text-sm font-bold mb-2 block">{t("app.publish.composer.queue")}</label>
                 <div className="flex flex-wrap gap-3">
                     <select id="publish-queue" value={queueId} disabled={Boolean(submitting) || queues === null} onChange={(e) => { const id=e.target.value;setQueueId(id);const queue=(queues||[]).find((item)=>item.id===id);if(queue)setSelectedAccountIds(new Set(queue.account_ids.filter((accountId)=>activeAccounts.some((account)=>account.id===accountId)))); }} className="rounded-lg border border-vx-border bg-transparent px-3 py-2 text-sm">
-                        <option value="">{queues===null?'Loading queues…':queues.length?'Choose a queue':'No active queues'}</option>
+                        <option value="">{queues===null?t("app.publish.composer.queuesLoading"):queues.length?t("app.publish.composer.queueChoose"):t("app.publish.composer.queuesEmpty")}</option>
                         {(queues||[]).map((queue)=><option key={queue.id} value={queue.id}>{queue.name}</option>)}
                     </select>
-                    <Link href="/app/publish/queues" className="self-center text-sm font-bold text-vx-accent underline">Manage queues</Link>
+                    <Link href="/app/publish/queues" className="self-center text-sm font-bold text-vx-accent underline">{t("app.publish.composer.queuesManage")}</Link>
                 </div>
-                <p className="mt-2 text-xs text-vx-fg-muted">The chosen queue selects its saved accounts and the next open weekly time.</p>
+                <p className="mt-2 text-xs text-vx-fg-muted">{t("app.publish.composer.queueInfo")}</p>
             </div>}
 
             {approvalsEnabled && <div className="rounded-xl border border-vx-border p-4">
-                <label htmlFor="publish-reviewers" className="text-sm font-bold mb-2 block">Reviewers</label>
-                <textarea id="publish-reviewers" rows={2} value={reviewerEmails} onChange={(event) => setReviewerEmails(event.target.value)} className="w-full rounded-lg border border-vx-border bg-transparent px-3 py-2 text-sm" placeholder="alex@example.com, sam@example.com" />
-                <div className="mt-3 flex flex-wrap items-center gap-3"><label htmlFor="publish-approval-policy" className="text-sm font-bold">Approval rule</label><select id="publish-approval-policy" value={approvalPolicy} onChange={(event) => setApprovalPolicy(event.target.value)} className="rounded-lg border border-vx-border bg-transparent px-3 py-2 text-sm"><option value="all">Everyone must approve</option><option value="any">Any one reviewer can approve</option></select></div>
-                <p className="mt-2 text-xs text-vx-fg-muted">Reviewers use a signed link without creating an account. Any rejection cancels the post before publishing.</p>
+                <label htmlFor="publish-reviewers" className="text-sm font-bold mb-2 block">{t("app.publish.composer.reviewers")}</label>
+                <textarea id="publish-reviewers" data-testid="publish-reviewers" rows={2} value={reviewerEmails} onChange={(event) => setReviewerEmails(event.target.value)} className="w-full rounded-lg border border-vx-border bg-transparent px-3 py-2 text-sm" placeholder={t("app.publish.composer.reviewerExamples")} />
+                <div className="mt-3 flex flex-wrap items-center gap-3"><label htmlFor="publish-approval-policy" className="text-sm font-bold">{t("app.publish.composer.approvalRule")}</label><select id="publish-approval-policy" value={approvalPolicy} onChange={(event) => setApprovalPolicy(event.target.value)} className="rounded-lg border border-vx-border bg-transparent px-3 py-2 text-sm"><option value="all">{t("app.publish.composer.everyone")}</option><option value="any">{t("app.publish.composer.anyone")}</option></select></div>
+                <p className="mt-2 text-xs text-vx-fg-muted">{t("app.publish.composer.reviewersInfo")}</p>
             </div>}
 
             {error && <p role="alert" className="text-sm text-vx-danger">{error}</p>}
-            {success && <p className="text-sm text-vx-accent">{success}</p>}
-            {reviewLinks.length > 0 && <ul aria-label="Review links" className="space-y-2 rounded-xl border border-vx-border p-3">{reviewLinks.map((link) => <li key={link.email} className="flex flex-wrap items-center justify-between gap-2 text-sm"><span className="font-bold">{link.email}</span><button type="button" className={button} onClick={() => navigator.clipboard.writeText(link.url)}>Copy review link</button></li>)}</ul>}
+            {success && <p data-testid="publish-success" className="text-sm text-vx-accent">{success}</p>}
+            {reviewLinks.length > 0 && <ul aria-label={t("app.publish.composer.reviewLinks")} className="space-y-2 rounded-xl border border-vx-border p-3">{reviewLinks.map((link) => <li key={link.email} className="flex flex-wrap items-center justify-between gap-2 text-sm"><span className="font-bold">{link.email}</span><button type="button" className={button} onClick={() => navigator.clipboard.writeText(link.url)}>{t("app.publish.composer.copyReviewLink")}</button></li>)}</ul>}
 
             <div className="flex flex-wrap gap-3">
-                <button type="submit" value="now" formNoValidate disabled={submitting || loadingMedia || uploading || !activeAccounts.length} className={primaryButton}>
-                    {submitting === 'now' ? 'Submitting…' : 'Post now'}
+                <button data-testid="publish-submit-now" type="submit" value="now" formNoValidate disabled={submitting || loadingMedia || uploading || !activeAccounts.length} className={primaryButton}>
+                    {submitting === 'now' ? t("cinema.creatorApplication.submitting") : t("publish.plan.rowPostNow")}
                 </button>
-                {scheduleEnabled && <button type="submit" value="schedule" disabled={submitting || loadingMedia || uploading || !activeAccounts.length} className={button}>
-                    {submitting === 'schedule' ? 'Scheduling…' : 'Schedule post'}
+                {scheduleEnabled && <button data-testid="publish-submit-schedule" type="submit" value="schedule" disabled={submitting || loadingMedia || uploading || !activeAccounts.length} className={button}>
+                    {submitting === 'schedule' ? t("app.publish.composer.scheduling") : t("app.publish.composer.schedulePost")}
                 </button>}
-                {queuesEnabled && <button type="submit" value="queue" formNoValidate disabled={submitting || loadingMedia || uploading || !activeAccounts.length || !queueId} className={button}>
-                    {submitting === 'queue' ? 'Adding…' : 'Add to queue'}
+                {queuesEnabled && <button data-testid="publish-submit-queue" type="submit" value="queue" formNoValidate disabled={submitting || loadingMedia || uploading || !activeAccounts.length || !queueId} className={button}>
+                    {submitting === 'queue' ? t("app.publish.composer.adding") : t("app.publish.composer.addToQueue")}
                 </button>}
-                {approvalsEnabled && <button type="submit" value="review" disabled={submitting || loadingMedia || uploading || !activeAccounts.length} className={button}>
-                    {submitting === 'review' ? 'Creating review…' : 'Send for approval'}
+                {approvalsEnabled && <button data-testid="publish-submit-review" type="submit" value="review" disabled={submitting || loadingMedia || uploading || !activeAccounts.length} className={button}>
+                    {submitting === 'review' ? t("app.publish.composer.creatingReview") : t("app.publish.composer.sendForApproval")}
                 </button>}
             </div>
-            <p className="text-xs text-vx-fg-muted">Post now starts publishing as soon as possible.{scheduleEnabled ? ' Schedule post uses the date and time above.' : ''} Publishing can take a few minutes.</p>
+            <p className="text-xs text-vx-fg-muted">{t("app.publish.composer.nowInfo")}{scheduleEnabled ? t("app.publish.composer.scheduleInfo") : ''}{' '}{t("app.publish.composer.publishingTime")}</p>
         </form>
     );
 }
@@ -513,23 +514,25 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
 // content reached the creator's TikTok inbox as a draft — not itself a
 // live post, so it gets its own honest label rather than reading as
 // "published".
-const STATUS_LABEL = { delivered: 'delivered — finish in TikTok app', submitted: 'in progress' };
+
 
 function TargetBadge({ target }) {
+  const { t } = useI18n();
     const tone = target.publish_status === 'published' || target.publish_status === 'delivered' ? 'text-vx-accent'
         : target.publish_status === 'failed' ? 'text-vx-danger' : 'text-vx-fg-muted';
     return (
         <span className={`inline-flex items-center gap-1.5 text-xs font-bold ${tone}`} title={target.last_error || ''}>
             <NetworkLogo network={target.network} className="h-3.5 w-3.5" />
-            {networkLabel(target.network)}: {STATUS_LABEL[target.publish_status] || target.publish_status}
+            {tOr(t, `app.publish.network.${target.network}`, networkLabel(target.network))}: {tOr(t, `app.publish.composer.status.${target.publish_status}`, target.publish_status)}
             {target.platform_post_url && target.publish_status === 'published' && (
-                <> · <a href={target.platform_post_url} target="_blank" rel="noreferrer" className="underline">view</a></>
+                <> · <a href={target.platform_post_url} target="_blank" rel="noreferrer" className="underline">{t("app.publish.composer.view")}</a></>
             )}
         </span>
     );
 }
 
 export function ScheduledPosts({ refreshToken, scheduleEnabled = true, onReuse }) {
+  const { t, locale } = useI18n();
     const [posts, setPosts] = useState(null);
     const [query, setQuery] = useState('');
     const [calendarOpen, setCalendarOpen] = useState(false);
@@ -542,35 +545,35 @@ export function ScheduledPosts({ refreshToken, scheduleEnabled = true, onReuse }
             setPosts(res.posts || []);
             setCalendarOpen(res.calendarEnabled === true);
         } catch {
-            setLoadError('Could not load your scheduled posts.');
+            setLoadError(t("app.publish.composer.postsLoad"));
         }
-    }, []);
+    }, [t]);
     useEffect(() => { load(); }, [load, refreshToken]);
 
     if (loadError) return <p role="alert" className="text-sm text-vx-danger">{loadError}</p>;
-    if (posts === null) return <p className="text-sm text-vx-fg-muted">Loading…</p>;
+    if (posts === null) return <p className="text-sm text-vx-fg-muted">{t("cinema.titlePage.loading")}</p>;
 
     const visible = posts.filter((post) => !query || `${post.global_text || ''} ${(post.targets || []).map((target) => networkLabel(target.network)).join(' ')}`.toLowerCase().includes(query.toLowerCase()));
     return (
         <div>
         <div className="mb-4 flex flex-wrap items-center gap-3">
-            {calendarOpen && scheduleEnabled && <Link href="/app/publish/calendar" className="text-sm text-vx-accent underline">Open calendar</Link>}
-            {scheduleEnabled && posts.length > 0 && <label className="ml-auto text-sm"><span className="sr-only">Search previous posts</span><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search previous posts" className="rounded-full border border-vx-border bg-transparent px-4 py-2 text-sm" /></label>}
+            {calendarOpen && scheduleEnabled && <Link href="/app/publish/calendar" className="text-sm text-vx-accent underline">{t("app.publish.composer.openCalendar")}</Link>}
+            {scheduleEnabled && posts.length > 0 && <label className="ms-auto text-sm"><span className="sr-only">{t("app.publish.composer.searchPosts")}</span><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("app.publish.composer.searchPosts")} className="rounded-full border border-vx-border bg-transparent px-4 py-2 text-sm" /></label>}
         </div>
-        {posts.length === 0 && <p className="text-sm text-vx-fg-muted">Nothing scheduled yet.</p>}
-        {posts.length > 0 && visible.length === 0 && <p className="text-sm text-vx-fg-muted">No previous posts match that search.</p>}
+        {posts.length === 0 && <p className="text-sm text-vx-fg-muted">{t("app.publish.composer.postsEmpty")}</p>}
+        {posts.length > 0 && visible.length === 0 && <p className="text-sm text-vx-fg-muted">{t("app.publish.composer.noMatches")}</p>}
         <ul className="space-y-3">
             {visible.map((p) => (
                 <li key={p.id} className="rounded-xl border border-vx-border p-3">
                     <div className="flex items-center justify-between gap-3 mb-2">
                         <span className="text-xs font-bold text-vx-fg-muted">
-                            {p.status} · {new Date(p.scheduled_at).toLocaleString()}
+                            {tOr(t, `app.publish.composer.status.${p.status}`, p.status)} · {new Date(p.scheduled_at).toLocaleString(localeTag(locale))}
                         </span>
-                        {scheduleEnabled && onReuse && (p.media || []).length > 0 && <button type="button" className={button} onClick={() => onReuse?.(p)}>Use again</button>}
+                        {scheduleEnabled && onReuse && (p.media || []).length > 0 && <button type="button" className={button} onClick={() => onReuse?.(p)}>{t("app.publish.composer.reuse")}</button>}
                     </div>
                     {p.global_text && <p className="text-sm text-vx-fg mb-2 line-clamp-2">{p.global_text}</p>}
                     <div className="flex flex-wrap gap-x-3 gap-y-1">
-                        {(p.targets || []).map((t) => <TargetBadge key={t.id} target={t} />)}
+                        {(p.targets || []).map((target) => <TargetBadge key={target.id} target={target} />)}
                     </div>
                 </li>
             ))}

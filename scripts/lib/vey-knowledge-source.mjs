@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { resolveI18nSource } from './vey-knowledge-i18n.mjs';
+import { resolveI18nSource, controlLabels, referencedControlLabels } from './vey-knowledge-i18n.mjs';
 
 const PAGE_FILE = /\/page\.(?:js|jsx|mjs|tsx)$/;
 const SOURCE_EXTENSIONS = ['.js', '.jsx', '.mjs', '.tsx'];
@@ -109,7 +109,7 @@ async function collectRouteSources(pageFile, productRoot, sourceCache) {
   return [...visited].map((file) => ({ file, source: sourceCache.get(file) }));
 }
 
-function extractRouteKnowledge(root, pageFile, modules, knowledgeCache) {
+function extractRouteKnowledge(root, pageFile, modules, knowledgeCache, labels) {
   const route = routeFromPage(root, pageFile);
   const resolved = modules.map(({ source }) => {
     if (!knowledgeCache.has(source)) knowledgeCache.set(source, {
@@ -123,7 +123,7 @@ function extractRouteKnowledge(root, pageFile, modules, knowledgeCache) {
   const references = resolved.map(value => value.references).join('\n');
   const headings = [];
   const primaryHeadings = [];
-  const controls = [];
+  const controls = modules.flatMap(({ source }) => referencedControlLabels(source, labels));
   const descriptions = [];
   const targets = [];
   const links = [];
@@ -209,7 +209,16 @@ export async function buildVeyKnowledgeArtifact(root) {
   const sourceCache = new Map();
   const knowledgeCache = new Map();
   const layoutModules = new Map();
-  const pages = (await walk(productRoot))
+  const files = await walk(productRoot);
+  const labels = new Map();
+  for (const file of files.filter(file => SOURCE_EXTENSIONS.includes(path.extname(file)) && !file.includes(`${path.sep}api${path.sep}`))) {
+    const source = await readFile(file, 'utf8');
+    sourceCache.set(file, source);
+    if (source.includes('data-testid=') && source.includes('aria-label=')) {
+      for (const [hook, label] of controlLabels(source)) labels.set(hook, label);
+    }
+  }
+  const pages = files
     .filter((file) => PAGE_FILE.test(file.replaceAll(path.sep, '/')))
     .sort();
   const routes = [];
@@ -227,7 +236,7 @@ export async function buildVeyKnowledgeArtifact(root) {
         if (!included.has(module.file)) { included.add(module.file); modules.push(module); }
       }
     }
-    routes.push(extractRouteKnowledge(root, page, modules, knowledgeCache));
+    routes.push(extractRouteKnowledge(root, page, modules, knowledgeCache, labels));
   }
 
   const documents = [];

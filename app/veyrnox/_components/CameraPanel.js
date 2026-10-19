@@ -1,20 +1,25 @@
 'use client';
+import { localeTag } from '../../../lib/i18n/locales.mjs';
+import { useI18n } from '../../../components/I18nProvider';
+
 import { CAMERAS, LENSES, FOCAL_LENGTHS, APERTURES } from '../_lib/cinema';
 
-const FIELDS = [
-  { key: 'camera', label: 'Camera', options: Object.keys(CAMERAS) },
-  { key: 'lens', label: 'Lens', options: Object.keys(LENSES) },
-  { key: 'focal', label: 'Focal length', options: Object.keys(FOCAL_LENGTHS).map(Number), suffix: 'mm' },
-  { key: 'aperture', label: 'Aperture', options: Object.keys(APERTURES) },
-];
 
 // Cinema controls for the create page. Off by default; when on, the page
 // appends cinemaSuffix(settings) to the prompt it sends.
 export function CameraPanel({ enabled, onToggle, settings, onChange }) {
+  const { t, locale } = useI18n();
+  const FIELDS = [
+    { key: 'camera', label: t("app.create.camera.camera"), options: Object.keys(CAMERAS) },
+    { key: 'lens', label: t("app.create.camera.lens"), options: Object.keys(LENSES) },
+    { key: 'focal', label: t("app.create.camera.focal"), options: Object.keys(FOCAL_LENGTHS).map(Number), suffix: 'mm' },
+    { key: 'aperture', label: t("app.create.camera.aperture"), options: Object.keys(APERTURES) },
+  ];
+
   return (
     <div className="rounded-2xl border border-vx-border bg-vx-panel p-5">
       <div className="flex items-center justify-between">
-        <span id="vx-camera-title" className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">CINEMA CAMERA</span>
+        <span id="vx-camera-title" className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">{t("app.create.camera.title")}</span>
         {/* Named "Cinema camera ON", not just "ON": the heading is part of the name. */}
         <button
           id="vx-camera-switch"
@@ -25,7 +30,7 @@ export function CameraPanel({ enabled, onToggle, settings, onChange }) {
             enabled ? 'border-vx-accent text-vx-accent bg-vx-accent/[0.07]' : 'border-vx-border text-vx-fg-muted hover:text-vx-fg'
           }`}
         >
-          {enabled ? 'ON' : 'OFF'}
+          {enabled ? t("app.create.character.on") : t("app.create.camera.off")}
         </button>
       </div>
       {enabled && (
@@ -38,7 +43,7 @@ export function CameraPanel({ enabled, onToggle, settings, onChange }) {
                 onChange={(e) => onChange({ ...settings, [f.key]: f.key === 'focal' ? Number(e.target.value) : e.target.value })}
                 className="bg-vx-base border border-vx-field rounded-lg px-2 py-1.5 text-xs text-vx-fg focus:outline-hidden focus:border-vx-accent"
               >
-                {f.options.map((o) => <option key={o} value={o}>{o}{f.suffix || ''}</option>)}
+                {f.options.map((o) => <option key={o} value={o}>{locale === 'en' || typeof o !== 'number' ? o : o.toLocaleString(localeTag(locale))}{f.suffix || ''}</option>)}
               </select>
             </label>
           ))}

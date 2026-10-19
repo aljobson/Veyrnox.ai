@@ -1,3 +1,4 @@
+import { helperEnglish } from '../../../lib/helperMessages.mjs';
 export const VOICEOVER_MIMES = Object.freeze(['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/ogg;codecs=opus']);
 
 export function voiceoverMime(supported = type => globalThis.MediaRecorder?.isTypeSupported?.(type)) {
@@ -11,8 +12,8 @@ export function voiceoverExtension(mime) {
 }
 
 export function voiceoverProblem(error) {
-    if(error?.name==='NotAllowedError' || error?.name==='SecurityError')return 'Microphone access was blocked. Allow it in your browser settings and retry.';
-    if(error?.name==='NotFoundError')return 'No microphone was found. Connect one and retry.';
-    if(error?.name==='NotReadableError')return 'The microphone is busy in another app. Close that app and retry.';
-    return 'The microphone could not start in this browser.';
+    if(error?.name==='NotAllowedError' || error?.name==='SecurityError')return helperEnglish('microphone_access_was_blocked_allow_it_in_your');
+    if(error?.name==='NotFoundError')return helperEnglish('no_microphone_was_found_connect_one_and_retry');
+    if(error?.name==='NotReadableError')return helperEnglish('the_microphone_is_busy_in_another_app_close');
+    return helperEnglish('the_microphone_could_not_start_in_this_browser');
 }

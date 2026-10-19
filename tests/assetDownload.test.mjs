@@ -184,7 +184,7 @@ test('the Download button asks for a save link once per click and only follows a
   // Same tab: a click that waited for the link is not a user gesture any more, and Safari would block a new tab.
   assert.match(button, /window\.location\.assign\(asset\.url\)/);
   assert.doesNotMatch(button, /window\.open/);
-  assert.match(button, /setError\(assetErrorMessage\(e\)\)/);
+  assert.match(button, /setError\(tOr\(t, `app\.library\.assetError\.\$\{e\?\.status\}`, t\('app\.library\.assetError\.default'\)\)\)/);
   assert.match(button, /row\?\.state !== 'succeeded' \|\| row\.has_asset === false \|\| !row\.asset_url/, 'only a finished job with a file');
 });
 

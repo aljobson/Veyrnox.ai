@@ -1,3 +1,4 @@
+import { resolveI18nSource } from '../scripts/lib/vey-knowledge-i18n.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -78,8 +79,8 @@ test('conflict copy names remain valid at the project API boundary', () => {
 
 test('the project bar preserves both edits instead of overwriting a newer saved version', () => {
     const source = readFileSync(new URL('../app/veyrnox/_components/editor/ProjectBar.js', import.meta.url), 'utf8');
-    assert.match(source, /Keep my edit as a copy/);
-    assert.match(source, /Discard mine and load latest/);
+    assert.match(resolveI18nSource(source), /Keep my edit as a copy/);
+    assert.match(resolveI18nSource(source), /Discard mine and load latest/);
     assert.match(source, /setInterval\(check, 15000\)/);
     assert.doesNotMatch(source, /Save mine instead|save\(\{ against: remote\.revision \}\)/);
 });

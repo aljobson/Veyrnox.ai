@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { createRequire } from 'node:module';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import * as React from 'react';
+import { fixture } from './helpers/publicSiteRender.mjs';
+import { appMessagesFor } from '../lib/i18n/appMessages.mjs';
 import { CHARACTER_GROUPS } from '../app/veyrnox/_lib/character.js';
 import { HAIR_TILE_STYLES, hairTileSlug, hairTileSrc } from '../app/veyrnox/_lib/oddlingHairTiles.js';
 import { cellsOf, foregroundMask, valleys } from '../scripts/slice-hair-sheets.mjs';
@@ -89,27 +89,10 @@ test('a sheet with a missing head reports an empty cell instead of shifting the 
 });
 
 // ---- the catalog tile grid, rendered from the shipped component ----
-const require = createRequire(import.meta.url);
-const ts = require('typescript');
-const React = require('react');
-const { renderToStaticMarkup } = require('react-dom/server');
-const ROOT = fileURLToPath(new URL('..', import.meta.url));
-const modules = new Map();
-function load(file) {
-  if (modules.has(file)) return modules.get(file).exports;
-  const loaded = { exports: {} };
-  modules.set(file, loaded);
-  const code = ts.transpileModule(readFileSync(file, 'utf8'), { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, esModuleInterop: true } }).outputText;
-  new Function('require', 'module', 'exports', code)((id) => {
-    if (!id.startsWith('.')) return require(id);
-    const base = path.resolve(path.dirname(file), id);
-    return load([base, `${base}.js`].find((candidate) => { try { readFileSync(candidate); return true; } catch { return false; } }));
-  }, loaded, loaded.exports);
-  return loaded.exports;
-}
-const { TileGroup } = load(path.join(ROOT, 'app/veyrnox/_components/OddlingCatalogControls.js'));
+const f = fixture('en', '/app/oddlings', { messages: await appMessagesFor('en') });
+const { TileGroup } = f.load('app/veyrnox/_components/OddlingCatalogControls.js');
 const hairGroup = CHARACTER_GROUPS.find((group) => group.id === 'hair');
-const renderHair = (value = '') => renderToStaticMarkup(React.createElement(TileGroup, { group: hairGroup, picks: {}, value, onChange() {}, categoryId: 'hair' }));
+const renderHair = (value = '') => f.render(React.createElement(TileGroup, { group: hairGroup, picks: {}, value, onChange() {}, categoryId: 'hair' }));
 
 test('the hair grid shows a picture for every style', () => {
   const html = renderHair('Afro');

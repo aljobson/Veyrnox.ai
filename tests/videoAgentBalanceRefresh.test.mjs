@@ -1,3 +1,4 @@
+import { englishAppImports } from './helpers/appI18nStub.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -32,6 +33,7 @@ function harness() {
     useEffect(callback) { if (firstRender) effects.push(callback); },
   };
   const stubs = {
+    ...englishAppImports,
     react: fakeReact,
     '../../_lib/gateway': { GatewayError: class extends Error {}, gatewayFetch: (path, options = {}) => {
       assert.equal(path, '/balance', 'revalidation must not submit or plan a generation');
@@ -72,7 +74,7 @@ function text(node) {
   if (Array.isArray(node)) return node.map(text).join(' ');
   return !node || typeof node === 'boolean' ? '' : typeof node === 'object' ? text(node.props?.children) : String(node);
 }
-const approve = tree => find(tree, node => node.type === 'button' && text(node).startsWith('Approve and make it'));
+const approve = tree => find(tree, node => node.props['data-testid'] === 'agent-approve');
 
 test('Video Agent refreshes on focus and visible return, blocking approval until the fresh balance arrives', async () => {
   const page = harness();

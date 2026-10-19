@@ -6,6 +6,8 @@
 **Language:** terms are those of [CONTEXT.md](../../../CONTEXT.md). This document adds none.
 **Set:** [README.md](README.md) lists the other five documents.
 
+**Scope update 2026-10-19:** the owner decided that every web feature must exist in the phone app, and that the first public store release is full parity (not a phased subset), including creator tools. The rows below that said "deliberately not built" now say "required". The full web-to-phone map, with sizes and spikes, is [../PARITY-2026-10-19.md](../PARITY-2026-10-19.md). A first release may still be a subset; parity is the destination, not the first build.
+
 ## 1. Overview
 
 Veyrnox.ai is a credit-metered AI generation platform on the web: image, video and voice generation, a video editor, a publishing tool (Veyrnox Publish) and Social Cinema, an episodic video catalogue. The mobile app is the same product as a native iOS and Android client of the same `/api/v1` gateway. It is not a second product and has no backend of its own.
@@ -52,8 +54,10 @@ Key: **Shipped** (merged, flag state noted), **In flight**, **Decided, not built
 | Auto Short and the video agent | Shipped (ADR-0117, 0118) |
 | Free allowance card | Shipped (ADR-0124) |
 | Quick edit: trim, join, captions, render on the server | Shipped (ADR-0134) |
-| Film Studio runs | Decided, not built; needs a route survey first |
-| Multi-track timeline editor, in-browser Enhance | Deliberately not built on the phone (decision 2 of the roadmap) |
+| Film Studio (seven planning stages, 16:9 master) | Required, not built (owner, 2026-10-19) |
+| Full editor: multi-track timeline, effects, colour, masks, audio, captions, transcript, export | Required, not built; approach decided after a spike (see PARITY) |
+| Enhance (on-device face smoothing) | Required, not built; the web version is not live, so it waits on that decision |
+| Oddlings studio, Face Filters | Required, not built |
 
 ### 4.3 Library and projects
 
@@ -77,7 +81,7 @@ Key: **Shipped** (merged, flag state noted), **In flight**, **Decided, not built
 | Accounts, posts, analytics, brand switcher, approvals, calendar and best time (read) | Shipped (ADR-0121, 0137, 0138) |
 | Compose, schedule, cancel, restore | Shipped (ADR-0122) |
 | Connect a social account from the phone | Shipped (ADR-0136, 0140); cannot work against a provider until the owner registers redirect addresses |
-| Inbox, contacts, ads, autolists, SmartLinks, developer keys | Deliberately not built on the phone |
+| Queues, autolists, inbox, workflows, contacts, SmartLinks, ads, commerce, reports, team, activity, developer keys | Required, not built (owner, 2026-10-19) |
 
 ### 4.6 Cinema
 
@@ -86,7 +90,7 @@ Key: **Shipped** (merged, flag state noted), **In flight**, **Decided, not built
 | Free viewing feed, one active player, signed playback | Shipped (PR #1251, spike note `CINEMA-PLAYBACK-SPIKE-2026-10-18.md`), not proved on a device |
 | Comments with report and block | Shipped |
 | Pass, pay-per-title unlocks, credit subscriptions in the app | Decided, not built; needs its own decision record and in-app purchase plan (server S5) |
-| Creator upload and analytics | Deliberately not built on the phone (web handoff) |
+| Creator profile, apply, content, upload, analytics; voting, polls, saved and follows, winners | Required, not built; most are off in production on the web today |
 
 ### 4.7 Money
 
@@ -108,7 +112,7 @@ Key: **Shipped** (merged, flag state noted), **In flight**, **Decided, not built
 
 ## 5. Out of scope
 
-- A native multi-track timeline. FFmpegKit is retired and Skia video export is beta; quick edit runs on the server.
+- Features that do not exist on the web (creator cash payouts, ad spend launching, a working Enhance in production). The phone follows the web, not ahead of it.
 - Any wallet, crypto or on-chain wording or feature. The Veyrnox wallet is a separate business (hard wall in `CLAUDE.md`).
 - Selling credits, Pass or subscriptions through anything but the stores, and any link that steers to web checkout (App Store 3.1.1).
 - Per-user model training and real-time camera filters (same reasons as the web).
@@ -132,5 +136,5 @@ Owner steps (accounts, keys, agreements) and flag flips are in [PLAN-2026-10-18.
 1. Targets for success criterion 5.
 2. Whether Oddlings gets a phone screen or stays a web link.
 3. Whether the app needs a light theme (it is dark only today).
-4. Whether paid Cinema ships in the first store release or later (recommended: later, free viewing first).
+4. ~~Whether paid Cinema ships in the first store release or later.~~ Decided 2026-10-19: the first public release is full parity, including paid Cinema and creator tools.
 5. Where Vey sits by default on a phone and when it hides.

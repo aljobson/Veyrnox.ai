@@ -117,7 +117,7 @@ test('the create page asks for the voice when the catalog says the model takes o
     // Generate stays off until the voice is described, as it does for a missing upload.
     assert.match(page, /const missingVoice = voiceIsMissing\(model, voice\);/);
     assert.match(page, /disabled=\{[^\n]*\|\| missingVoice[^\n]*\}/);
-    assert.match(page, /if \(missingVoice\) \{ inFlight\.current = false; setError\(\{ code: 'inputs_invalid:voice_description' \}\); return; \}/);
+    assert.match(page, /if \(missingVoice\) \{ inFlight\.current = false; setError\(LOCAL_ERRORS\.inputs_invalid_voice_description\); return; \}/);
     assert.match(read('../app/veyrnox/_components/VoiceDescription.js'), /maxLength=\{VOICE_MAX\}/);
     assert.match(read('../app/veyrnox/_lib/createErrors.js'), /'inputs_invalid:voice_description':/);
 });

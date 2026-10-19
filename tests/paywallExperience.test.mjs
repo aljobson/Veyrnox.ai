@@ -1,3 +1,4 @@
+import { resolveI18nSource } from '../scripts/lib/vey-knowledge-i18n.mjs';
 import english from '../lib/i18n/messages/en.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -13,7 +14,7 @@ test('every insufficient-credit creation surface links to billing', () => {
 });
 
 test('account exposes billing management and Cinema cancellation uses an accessible confirmation', () => {
-  const account = read('app/veyrnox/app/account/page.js');
+  const account = resolveI18nSource(read('app/veyrnox/app/account/page.js'));
   const pass = read('app/veyrnox/social-cinema/pass/PassPanel.js');
   assert.match(account, /Billing &amp; subscriptions/);
   assert.match(account, /href="\/app\/credits#credit-subscriptions"/);

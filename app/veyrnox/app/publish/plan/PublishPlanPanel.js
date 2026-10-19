@@ -1,4 +1,7 @@
 'use client';
+import { localeTag } from '../../../../../lib/i18n/locales.mjs';
+import { tOr } from '../../../../../lib/i18n/translate.mjs';
+import { useI18n } from '../../../../../components/I18nProvider';
 
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
@@ -7,21 +10,26 @@ import { cancelPublishPlan, getPublishPlan, openPublishBilling, recoverPublishPl
 
 const currentAccount = () => getSession()?.user?.id || '';
 const noAccount = () => '';
-const money = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
-const date = (value) => value ? new Date(value).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+const legalMoney = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+const date = (value, locale = 'en') => value ? new Date(value).toLocaleDateString(localeTag(locale, 'en-GB'), { day: 'numeric', month: 'short', year: 'numeric' }) : '';
 const button = 'rounded-full border border-vx-border px-5 py-2.5 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-50';
 const intervalName = (value) => ({ week: 'week', month: 'month', year: 'year' }[value] || 'month');
 
 export default function PublishPlanPanel() {
+  const { t } = useI18n();
   const account = useSyncExternalStore(onSessionChange, currentAccount, noAccount);
   if (!account) return <div className="rounded-2xl border border-vx-border p-6">
-    <p className="mb-4 text-vx-fg-body">Sign in to view your Publish plan.</p>
-    <button type="button" className={button} onClick={() => window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>Sign in</button>
+    <p className="mb-4 text-vx-fg-body">{t("app.publish.plan.signIn")}</p>
+    <button type="button" className={button} onClick={() => window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>{t("oauth.signIn")}</button>
   </div>;
   return <Plan key={account} />;
 }
 
 function Plan() {
+  const { t, locale } = useI18n();
+  const money = new Intl.NumberFormat(localeTag(locale, 'en-US'), { style: 'currency', currency: 'USD' });
+  const interval = value => tOr(t, `app.publish.plan.interval.${value}`, intervalName(value));
+  const cadence = value => tOr(t, `app.publish.plan.cadence.${value}`, `${intervalName(value)}ly`);
   const [data, setData] = useState(null);
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
@@ -34,10 +42,10 @@ function Plan() {
     try { setData(await getPublishPlan()); }
     catch (error) {
       setNotice(error?.code === 'publish_plans_not_open' || error?.status === 503
-        ? 'Publish plans are not open yet.' : 'Could not load your plan. Try again.');
+        ? t("app.publish.plan.notOpen") : t("app.publish.plan.loadFailed"));
     }
     finally { setLoading(false); }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     const query = new URLSearchParams(window.location.search);
@@ -47,45 +55,45 @@ function Plan() {
       window.history.replaceState(null, '', window.location.pathname);
       recoverPublishPlan(subscriptionId, sessionId)
         .then((result) => setNotice(result.status === 'active'
-          ? 'Your Publish Plan is active.'
-          : 'Payment received. Your Plan will activate in a moment.'))
-        .catch(() => setNotice('We could not confirm checkout yet. Refresh in a minute; do not pay again.'))
+          ? t("app.publish.plan.activated")
+          : t("app.publish.plan.paymentReceived")))
+        .catch(() => setNotice(t("app.publish.plan.checkoutUnconfirmed")))
         .finally(load);
     } else if (query.get('checkout') === 'cancelled') {
       window.history.replaceState(null, '', window.location.pathname);
-      queueMicrotask(() => setNotice('Checkout cancelled. Nothing was charged.'));
+      queueMicrotask(() => setNotice(t("cinema.passPanel.checkoutCancelledNothingWasCharged")));
       void Promise.resolve().then(load);
     } else void Promise.resolve().then(load);
-  }, [load]);
+  }, [load, t]);
 
   async function start(planId) {
     setBusy(true); setNotice('');
     try {
       const result = await startPublishPlan(planId, data.consent_version);
       if (result.checkout_url) window.location.assign(result.checkout_url);
-      else { setNotice('Your Publish Plan is already active.'); await load(); }
+      else { setNotice(t("app.publish.plan.alreadyActive")); await load(); }
     } catch (error) {
       setNotice(error?.code === 'subscription_already_active'
-        ? 'Your Publish Plan is already active.' : 'Could not start checkout. Try again.');
+        ? t("app.publish.plan.alreadyActive") : t("app.publish.plan.checkoutFailed"));
       setBusy(false);
     }
   }
 
   async function cancel() {
-    if (!window.confirm('Stop renewing? Your advanced features stay active until the end of the paid period.')) return;
+    if (!window.confirm(t("app.publish.plan.cancelConfirm"))) return;
     setBusy(true); setNotice('');
     try {
       const result = await cancelPublishPlan();
-      setNotice(`Your Plan will not renew after ${date(result.current_period_end)}.`);
+      setNotice(t('app.publish.plan.noRenewal', { date: date(result.current_period_end, locale) }));
       await load();
-    } catch { setNotice('Could not cancel right now. Try again.'); }
+    } catch { setNotice(t("app.publish.plan.cancelFailed")); }
     finally { setBusy(false); }
   }
 
   async function portal() {
     setBusy(true); setNotice('');
     try { window.location.assign((await openPublishBilling()).url); }
-    catch { setNotice('Could not open billing. Try again.'); setBusy(false); }
+    catch { setNotice(t("app.publish.plan.billingFailed")); setBusy(false); }
   }
 
   const entitlement = data?.entitlement;
@@ -97,8 +105,8 @@ function Plan() {
     || ({ 'publish-weekly': 'week', 'publish-annual': 'year' }[subscription?.plan_id] || 'month');
 
   if (!data) return <div role="status" aria-live="polite" className="rounded-2xl border border-vx-border p-6">
-    <p className="text-sm text-vx-fg-muted">{loading ? 'Loading your Publish plan…' : notice}</p>
-    {!loading && <button type="button" className={`${button} mt-4`} onClick={load}>Try again</button>}
+    <p className="text-sm text-vx-fg-muted">{loading ? t("app.publish.plan.loading") : notice}</p>
+    {!loading && <button type="button" className={`${button} mt-4`} onClick={load}>{t("recovery.retry")}</button>}
   </div>;
 
   return <div className="space-y-6">
@@ -107,64 +115,64 @@ function Plan() {
     <section aria-labelledby="current-plan" className="rounded-2xl border border-vx-border p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-vx-accent">Current plan</p>
-          <h2 id="current-plan" className="mt-2 text-2xl font-black">{paid ? 'Publish Plan' : 'Free'}</h2>
+          <p className="text-xs font-bold uppercase tracking-widest text-vx-accent">{t("app.publish.plan.current")}</p>
+          <h2 id="current-plan" className="mt-2 text-2xl font-black">{paid ? t("publish.plan.colPlan") : t("publish.plan.colFree")}</h2>
           <p className="mt-2 text-sm text-vx-fg-muted">{paid
-            ? `Up to ${entitlement?.account_limit || 5} connected accounts, scheduling and analytics are included.`
-            : 'One connected account and Post now are included.'}</p>
+            ? t('app.publish.plan.included', { count: locale === 'en' ? entitlement?.account_limit || 5 : (entitlement?.account_limit || 5).toLocaleString(localeTag(locale)) })
+            : t("app.publish.plan.freeIncluded")}</p>
         </div>
-        <span className="rounded-full border border-vx-border px-3 py-1 text-xs font-bold">{paid ? 'Active' : 'Free'}</span>
+        <span className="rounded-full border border-vx-border px-3 py-1 text-xs font-bold">{paid ? t("app.publish.plan.active") : t("publish.plan.colFree")}</span>
       </div>
       {paid && <div className="mt-5 border-t border-vx-border pt-5">
         <p className="text-sm text-vx-fg-body">{subscription.cancel_at_period_end
-          ? `Ends ${date(subscription.current_period_end)}.`
-          : `Renews ${date(subscription.current_period_end)} at ${money.format(subscription.price_usd_cents / 100)} per ${currentInterval}, plus tax.`}</p>
+          ? t('app.publish.plan.ends', { date: date(subscription.current_period_end, locale) })
+          : t('app.publish.plan.renews', { date: date(subscription.current_period_end, locale), price: money.format(subscription.price_usd_cents / 100), interval: interval(currentInterval) })}</p>
         <div className="mt-4 flex flex-wrap gap-3">
-          <button type="button" disabled={busy} className={button} onClick={portal}>Manage billing ↗</button>
-          {!subscription.cancel_at_period_end && <button type="button" disabled={busy} className={button} onClick={cancel}>Cancel plan</button>}
+          <button type="button" disabled={busy} className={button} onClick={portal}>{t("cinema.passPanel.manageBilling")}</button>
+          {!subscription.cancel_at_period_end && <button type="button" disabled={busy} className={button} onClick={cancel}>{t("app.publish.plan.cancel")}</button>}
         </div>
       </div>}
     </section>
 
     {!paid && data.plans?.length > 0 && <section aria-labelledby="choose-plan" className="rounded-2xl border border-vx-accent/50 bg-vx-accent/[0.06] p-6">
-      <p className="text-xs font-bold uppercase tracking-widest text-vx-accent">Advanced publishing</p>
-      <h2 id="choose-plan" className="mt-2 text-2xl font-black">Publish Plan</h2>
+      <p className="text-xs font-bold uppercase tracking-widest text-vx-accent">{t("app.publish.plan.advanced")}</p>
+      <h2 id="choose-plan" className="mt-2 text-2xl font-black">{t("publish.plan.colPlan")}</h2>
       <ul className="mt-5 space-y-2 text-sm text-vx-fg-body">
-        <li>✓ Up to 5 connected accounts</li>
-        <li>✓ Multi-account publishing</li>
-        <li>✓ Unlimited fair-use scheduling</li>
-        <li>✓ Calendar and post rescheduling</li>
-        <li>✓ Cross-account analytics and 12 months of history</li>
-        <li>✓ CSV analytics exports</li>
-        <li>✓ Best-time and posting-frequency recommendations</li>
-        <li>✓ Unified and per-account social inbox</li>
-        <li>✓ Comment replies where the platform grants access</li>
+        <li>{t("app.publish.plan.accountsFeature")}</li>
+        <li>{t("app.publish.plan.multiFeature")}</li>
+        <li>{t("app.publish.plan.fairFeature")}</li>
+        <li>{t("app.publish.plan.calendarFeature")}</li>
+        <li>{t("app.publish.plan.historyFeature")}</li>
+        <li>{t("app.publish.plan.csvFeature")}</li>
+        <li>{t("app.publish.plan.recommendFeature")}</li>
+        <li>{t("app.publish.plan.inboxFeature")}</li>
+        <li>{t("app.publish.plan.commentsFeature")}</li>
       </ul>
       <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {data.plans.map((plan) => <li key={plan.id} className="rounded-xl border border-vx-border bg-vx-base/60 p-5">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-xs font-bold uppercase tracking-widest text-vx-accent">{intervalName(plan.billing_interval)}ly</p>
-            {plan.billing_interval === 'year' && <span className="rounded-full bg-vx-accent px-2.5 py-1 text-[0.65rem] font-black uppercase tracking-wide text-black">Save 30%</span>}
+            <p className="text-xs font-bold uppercase tracking-widest text-vx-accent">{cadence(plan.billing_interval)}</p>
+            {plan.billing_interval === 'year' && <span className="rounded-full bg-vx-accent px-2.5 py-1 text-[0.65rem] font-black uppercase tracking-wide text-black">{t("app.publish.plan.save")}</span>}
           </div>
-          <p className="mt-3 text-3xl font-black">{money.format(plan.price_usd_cents / 100)}<span className="text-base font-normal text-vx-fg-muted"> / {intervalName(plan.billing_interval)}</span></p>
-          {plan.billing_interval === 'year' && <p className="mt-2 text-xs text-vx-fg-muted">{money.format(plan.price_usd_cents / 1200)} per month equivalent</p>}
+          <p className="mt-3 text-3xl font-black">{money.format(plan.price_usd_cents / 100)}<span className="text-base font-normal text-vx-fg-muted"> / {interval(plan.billing_interval)}</span></p>
+          {plan.billing_interval === 'year' && <p className="mt-2 text-xs text-vx-fg-muted">{t('app.publish.plan.equivalent', { price: money.format(plan.price_usd_cents / 1200) })}</p>}
           <button type="button" aria-pressed={selectedPlanId === plan.id} className={`${button} mt-4`} onClick={() => { setSelectedPlanId(plan.id); setAgreed(false); }}>
-            {selectedPlanId === plan.id ? 'Selected' : `Choose ${intervalName(plan.billing_interval)}ly`}
+            {selectedPlanId === plan.id ? t("public.subscription.selected") : t('app.publish.plan.choose', { interval: cadence(plan.billing_interval) })}
           </button>
         </li>)}
       </ul>
-      <p className="mt-5 text-xs text-vx-fg-muted">Billing in USD. Tax is calculated at checkout. Cancel any time.</p>
+      <p className="mt-5 text-xs text-vx-fg-muted">{t("app.publish.plan.billing")}</p>
       {selectedPlan && <>
         <label className="mt-4 flex items-start gap-3 text-sm text-vx-fg-body">
           <input type="checkbox" className="mt-1" checked={agreed} onChange={(event) => setAgreed(event.target.checked)} />
-          <span>Start my Publish Plan at {money.format(selectedPlan.price_usd_cents / 100)} plus tax every {intervalName(selectedPlan.billing_interval)}. I understand it renews automatically until I cancel.</span>
+          <span lang="en" dir="ltr">Start my Publish Plan at {legalMoney.format(selectedPlan.price_usd_cents / 100)} plus tax every {intervalName(selectedPlan.billing_interval)}. I understand it renews automatically until I cancel.</span>
         </label>
         <button type="button" disabled={busy || !agreed} className={`${button} mt-5 border-vx-accent bg-vx-accent text-black`} onClick={() => start(selectedPlan.id)}>
-          {busy ? 'Opening checkout…' : 'Upgrade with Stripe'}
+          {busy ? t("app.publish.plan.opening") : t("app.publish.plan.upgrade")}
         </button>
       </>}
     </section>}
 
-    <p className="text-sm text-vx-fg-muted"><Link href="/app/publish" className="underline">Back to Veyrnox.ai Publish</Link></p>
+    <p className="text-sm text-vx-fg-muted"><Link href="/app/publish" className="underline">{t("social.connect.back")}</Link></p>
   </div>;
 }

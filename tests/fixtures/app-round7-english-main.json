@@ -1,0 +1,547 @@
+[
+  {
+    "area": "deletion",
+    "text": "Delete accountPermanently delete your account, library, chats and Publish connections. Unused Credits are forfeited and nothing is refunded. Payment records we must keep (see our Privacy Policy) stay without your name.Delete my account…",
+    "labels": []
+  },
+  {
+    "area": "deletion",
+    "text": "Delete accountPermanently delete your account, library, chats and Publish connections. Unused Credits are forfeited and nothing is refunded. Payment records we must keep (see our Privacy Policy) stay without your name.Delete my account…Delete your account?This cannot be undone. You will lose 1,234 Credits. Type DELETE to confirm.Delete my account",
+    "labels": [
+      "aria-label=\"Type DELETE to confirm\""
+    ]
+  },
+  {
+    "area": "deletion",
+    "text": "Delete accountPermanently delete your account, library, chats and Publish connections. Unused Credits are forfeited and nothing is refunded. Payment records we must keep (see our Privacy Policy) stay without your name.Delete my account…We cannot delete your account yet:You have an active subscription. Cancel it first (Account &amp; security &gt; Manage billing, or in the App Store or Google Play), then delete.You own projects. Delete them from the Projects page first.Contact support@veyrnox.com for help.",
+    "labels": []
+  },
+  {
+    "area": "deletion",
+    "text": "Delete accountPermanently delete your account, library, chats and Publish connections. Unused Credits are forfeited and nothing is refunded. Payment records we must keep (see our Privacy Policy) stay without your name.Delete my account…In-app deletion is not switched on yet. Email privacy@veyrnox.com and we will delete it for you.",
+    "labels": []
+  },
+  {
+    "area": "sources",
+    "text": "START IMAGE · REQUIREDPNG, JPEG or WebP, up to 20 MB, up to 4 MPFrom libraryAdd imageEND IMAGE · OPTIONALPNG, JPEG or WebP, up to 20 MBFrom libraryAdd end imageVIDEO · OPTIONALMP4, up to 100 MB, up to 20sFrom libraryAdd videoAUDIO · OPTIONALMP3 or WAV, up to 20 MBFrom libraryAdd audio",
+    "labels": []
+  },
+  {
+    "area": "sources",
+    "text": "START IMAGE · OPTIONALUser file.pngDrawReplace✕END IMAGE · OPTIONALFrom library: User imageReplace✕✓VIDEO · OPTIONALFrom library: User videoReplace✕✓AUDIO · OPTIONALUser audio.wavReplace✕",
+    "labels": [
+      "alt=\"Start image\"",
+      "aria-label=\"Remove start image\"",
+      "alt=\"End image\"",
+      "aria-label=\"Remove end image\"",
+      "aria-label=\"Remove video\"",
+      "aria-label=\"Remove audio\""
+    ]
+  },
+  {
+    "area": "original",
+    "text": "Original audioMusic loops and sound effects synthesized on this device. Saved projects regenerate these presets when reopened.AllMusicSound effects10 original soundsSoft keysMusic · 10.0s · 96 BPMPreviewInsertBright pluckMusic · 8.0s · 120 BPMPreviewInsertNight pulseMusic · 8.7s · 110 BPMPreviewInsertSlow bellsMusic · 12.0s · 80 BPMPreviewInsertGlass shimmerSound effects · 2.0sPreviewInsertRising sweepSound effects · 3.0sPreviewInsertFalling sweepSound effects · 2.0sPreviewInsertSoft impactSound effects · 1.0sPreviewInsertGentle noticeSound effects · 1.0sPreviewInsertTap clickSound effects · 0.2sPreviewInsert",
+    "labels": [
+      "aria-label=\"Original audio catalog\"",
+      "aria-label=\"Search original audio\"",
+      "aria-label=\"Audio catalog category\"",
+      "aria-label=\"Preview Soft keys\"",
+      "aria-label=\"Insert Soft keys\"",
+      "aria-label=\"Preview Bright pluck\"",
+      "aria-label=\"Insert Bright pluck\"",
+      "aria-label=\"Preview Night pulse\"",
+      "aria-label=\"Insert Night pulse\"",
+      "aria-label=\"Preview Slow bells\"",
+      "aria-label=\"Insert Slow bells\"",
+      "aria-label=\"Preview Glass shimmer\"",
+      "aria-label=\"Insert Glass shimmer\"",
+      "aria-label=\"Preview Rising sweep\"",
+      "aria-label=\"Insert Rising sweep\"",
+      "aria-label=\"Preview Falling sweep\"",
+      "aria-label=\"Insert Falling sweep\"",
+      "aria-label=\"Preview Soft impact\"",
+      "aria-label=\"Insert Soft impact\"",
+      "aria-label=\"Preview Gentle notice\"",
+      "aria-label=\"Insert Gentle notice\"",
+      "aria-label=\"Preview Tap click\"",
+      "aria-label=\"Insert Tap click\""
+    ]
+  },
+  {
+    "area": "original",
+    "text": "Original audioMusic loops and sound effects synthesized on this device. Saved projects regenerate these presets when reopened.AllMusicSound effectsProvider error unchangedInserting sound…User previewDownload original WAV4 original soundsSoft keysMusic · 10.0s · 96 BPMPreviewInsertBright pluckMusic · 8.0s · 120 BPMPreviewInsertNight pulseMusic · 8.7s · 110 BPMPreviewInsertSlow bellsMusic · 12.0s · 80 BPMPreviewInsert",
+    "labels": [
+      "aria-label=\"Original audio catalog\"",
+      "aria-label=\"Search original audio\"",
+      "aria-label=\"Audio catalog category\"",
+      "aria-label=\"Original sound preview\"",
+      "aria-label=\"Preview Soft keys\"",
+      "aria-label=\"Insert Soft keys\"",
+      "aria-label=\"Preview Bright pluck\"",
+      "aria-label=\"Insert Bright pluck\"",
+      "aria-label=\"Preview Night pulse\"",
+      "aria-label=\"Insert Night pulse\"",
+      "aria-label=\"Preview Slow bells\"",
+      "aria-label=\"Insert Slow bells\""
+    ]
+  },
+  {
+    "area": "prompts",
+    "text": "Every referenced asset is locked. Complete the remaining direction, then build the fixed fifteen-block prompt. Passport descriptors and dialogue are carried forward verbatim.Shot to promptUser shotPositions, distances in metres and camera axisCamera height, support, path and stopping pointAction beats of 0.3–0.8 secondsPersistent physical consequencesLight sources and palette from the location passportAmbience and in-frame sound60:30:10 dominant, secondary and accent coloursReference match and quality requirementsVisible positive constraints and the failure conditionBuild fifteen-block prompt",
+    "labels": [
+      "aria-label=\"Shot to prompt\"",
+      "aria-label=\"Positions, distances in metres and camera axis\"",
+      "aria-label=\"Camera height, support, path and stopping point\"",
+      "aria-label=\"Action beats of 0.3–0.8 seconds\"",
+      "aria-label=\"Persistent physical consequences\"",
+      "aria-label=\"Light sources and palette from the location passport\"",
+      "aria-label=\"Ambience and in-frame sound\"",
+      "aria-label=\"60:30:10 dominant, secondary and accent colours\"",
+      "aria-label=\"Reference match and quality requirements\"",
+      "aria-label=\"Visible positive constraints and the failure condition\""
+    ]
+  },
+  {
+    "area": "prompts",
+    "text": "Every referenced asset is locked. Complete the remaining direction, then build the fixed fifteen-block prompt. Passport descriptors and dialogue are carried forward verbatim.Shot to promptUser shotUser shot · Prompt version 2 · Ready for generationFifteen-block shot promptUser prompt unchangedGeneration logWhat changed for this attemptGeneration resultStable output file or Library job ID. Raw attempts belong to generations; accepted takes belong to selects.Take verdictRejectedAcceptedAcceptance checksReferences matchAnatomy and surfaces are cleanCamera follows the cardPerformance and lip-sync holdContinuity matches adjacent shotsPalette matchesRecord generation result",
+    "labels": [
+      "aria-label=\"Shot to prompt\"",
+      "aria-label=\"What changed for this attempt\"",
+      "aria-label=\"Generation result\"",
+      "aria-label=\"Take verdict\""
+    ]
+  },
+  {
+    "area": "brand",
+    "text": "Workspace brand kitBrand namePalette coloursUse up to 12 hex colours separated by commas.System fonts sans-serif serif monospace Arial Helvetica Verdana Georgia Times New Roman Courier New ImpactSave selected text as brand styleSave brand kitReload saved brand kit",
+    "labels": [
+      "aria-label=\"Workspace brand kit\"",
+      "aria-label=\"Brand name\"",
+      "aria-label=\"Brand palette colours\"",
+      "aria-label=\"Brand font sans-serif\"",
+      "aria-label=\"Brand font serif\"",
+      "aria-label=\"Brand font monospace\"",
+      "aria-label=\"Brand font Arial\"",
+      "aria-label=\"Brand font Helvetica\"",
+      "aria-label=\"Brand font Verdana\"",
+      "aria-label=\"Brand font Georgia\"",
+      "aria-label=\"Brand font Times New Roman\"",
+      "aria-label=\"Brand font Courier New\"",
+      "aria-label=\"Brand font Impact\"",
+      "aria-label=\"Brand text style name\"",
+      "aria-label=\"Use brand colour #32d6c5 for canvas\"",
+      "aria-label=\"Use brand colour #ffffff for canvas\"",
+      "aria-label=\"Use brand colour #101827 for canvas\""
+    ]
+  },
+  {
+    "area": "brand",
+    "text": "Save to a workspace project to open its brand kit.",
+    "labels": []
+  },
+  {
+    "area": "credits",
+    "text": "Editor &amp; Credits×Your editor is includedCreate freely. Top up only when you generate.Editing does not require a paid plan. Buy non-expiring Credits only when you want to generate image, video or audio.IncludedVeyrnox Editor$0✓Full multitrack video editor✓Local preview and export✓Cloud projects and version history✓No card requiredTop up when you need to.One-off Credit Packs. No renewal. Purchased Credits never expire.Open Credits &amp; billingCredit Pack1,234cr1,234 credits — $10 + applicable taxOne-off purchase · Never expiresBuy 1,234 creditsPrices are in USD and exclude tax. Stripe, Inc. is the Merchant of Record for Credit Pack purchases and shows the final total before payment. The existing Credits &amp; billing flow requires purchase consent before opening Stripe Checkout. Refund policy.",
+    "labels": [
+      "aria-label=\"Close Editor and Credits\""
+    ]
+  },
+  {
+    "area": "credits",
+    "text": "Editor &amp; Credits×Your editor is includedCreate freely. Top up only when you generate.Editing does not require a paid plan. Buy non-expiring Credits only when you want to generate image, video or audio.IncludedVeyrnox Editor$0✓Full multitrack video editor✓Local preview and export✓Cloud projects and version history✓No card requiredTop up when you need to.One-off Credit Packs. No renewal. Purchased Credits never expire.Open Credits &amp; billingCould not load RetryPrices are in USD and exclude tax. Stripe, Inc. is the Merchant of Record for Credit Pack purchases and shows the final total before payment. The existing Credits &amp; billing flow requires purchase consent before opening Stripe Checkout. Refund policy.",
+    "labels": [
+      "aria-label=\"Close Editor and Credits\""
+    ]
+  },
+  {
+    "area": "scenes",
+    "text": "ScenesFinds where the shot changes in the selected video clip, on your device. Nothing is uploaded and it costs no credits. Check the markers, then add the cuts as one edit; Undo removes them all.Select a video clip on the timeline first.Detect scenes",
+    "labels": [
+      "aria-label=\"Scenes\""
+    ]
+  },
+  {
+    "area": "scenes",
+    "text": "ScenesFinds where the shot changes in the selected video clip, on your device. Nothing is uploaded and it costs no credits. Check the markers, then add the cuts as one edit; Undo removes them all.Scene detection handles up to 720p video for now.Detect againPossible dissolves (2)Review these. Fades are less certain, so they start unticked.0:01.00:03.0Add 2 cuts",
+    "labels": [
+      "aria-label=\"Scenes\"",
+      "aria-label=\"Add a cut at 0:01.0\"",
+      "aria-label=\"Add a cut at 0:03.0\""
+    ]
+  },
+  {
+    "area": "finder",
+    "text": "Clip finderSuggests short stretches of the selected clip that are likely to work on their own, using shot changes, loudness and any captions. It runs on your device: nothing is uploaded and it costs no credits. These are suggestions to review, not a judgement of quality.Select a video clip on the timeline first.Find clips",
+    "labels": [
+      "aria-label=\"Clip finder\""
+    ]
+  },
+  {
+    "area": "finder",
+    "text": "Clip finderSuggests short stretches of the selected clip that are likely to work on their own, using shot changes, loudness and any captions. It runs on your device: nothing is uploaded and it costs no credits. These are suggestions to review, not a judgement of quality.Scene detection handles up to 720p video for now.Search againThis clip has no sound, so loudness was not used.0:01.0–0:06.05.0 sProvider reason unchangedAdd 1 clip to the timeline",
+    "labels": [
+      "aria-label=\"Clip finder\"",
+      "aria-label=\"Suggested clips\"",
+      "aria-label=\"Add 0:01.0 to 0:06.0\""
+    ]
+  },
+  {
+    "area": "filters",
+    "text": "Original looksFilter categoryAllEssentialsCinemaPortraitLandscapeMonochromeCleanEssentialsSoft detailEssentialsBright daylightEssentialsWarm filmCinemaCool filmCinemaNight blueCinemaFaded printCinemaGentle portraitPortraitWarm portraitPortraitCool portraitPortraitVivid landscapeLandscapeForestLandscapeCoastalLandscapeMonochromeMonochromeSoft monochromeMonochromeDeep monochromeMonochromeWarm film · Warm balance, deeper contrast and quieter colour.Filter strength · 100%Apply filter toCurrent visual clipSelected visual clips (1)Apply lookReset colour gradeStrength blends this look with the current colours. Curves, motion, masks and effects stay in place. Apply to several clips makes one edit for Undo. Reset clears colour grading, including curves and animated grading.",
+    "labels": [
+      "aria-label=\"Original filter catalog\"",
+      "aria-label=\"Search filters\"",
+      "placeholder=\"Search looks or colour treatments\"",
+      "aria-label=\"Filter category\"",
+      "aria-label=\"Filter results\"",
+      "aria-label=\"Filter strength (%)\"",
+      "aria-label=\"Apply filter to\""
+    ]
+  },
+  {
+    "area": "masters",
+    "text": "Saved Film Studio mastersCould not load Retry saved masters",
+    "labels": [
+      "aria-label=\"Saved Film Studio masters\""
+    ]
+  },
+  {
+    "area": "masters",
+    "text": "Film Studio master · savedUser master unchanged1920×1080 · 16:9 · 12.3s · 30 fpsEdited from your generated take. Saving uses no credits.Download masterFile detailsSHA-256: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaSource take: source-id12345 bytesGenerated files are kept for 90 days. Save a copy to keep it.",
+    "labels": [
+      "aria-label=\"User master unchanged\"",
+      "aria-label=\"User master unchanged preview\""
+    ]
+  },
+  {
+    "area": "composer",
+    "text": "◇Chat▧Image▷Video◖Audio",
+    "labels": [
+      "aria-label=\"Composer type\""
+    ]
+  },
+  {
+    "area": "composer",
+    "text": "Model unchangedModel unchanged · 2 CreditsThinkingStandardThinking · +2 CreditsDeep research · +3 Credits Web +1 Library",
+    "labels": [
+      "aria-label=\"Reply setup\"",
+      "aria-label=\"Model for next reply\"",
+      "aria-label=\"Response mode\"",
+      "title=\"Use an image you already made\""
+    ]
+  },
+  {
+    "area": "captions",
+    "text": "Import timed subtitles or write captions. Text and timing remain editable.Import SRT, VTT, ASS, LRC or word JSONTimestamped VTT and enhanced LRC retain word timing. JSON accepts word/start/end in seconds. ASS retains text and cue timing; its style tags use your editor style.Add manual captionExport SRTExport VTTStyle all captions0:01.0 — 0:03.0User caption unchangedStart of caption captionDuration of caption captionRemove captionCut this range",
+    "labels": [
+      "aria-label=\"Captions and transcript\"",
+      "aria-label=\"Import captions\"",
+      "aria-label=\"Caption caption\"",
+      "aria-label=\"Start of caption caption\"",
+      "aria-label=\"Duration of caption caption\""
+    ]
+  },
+  {
+    "area": "translation",
+    "text": "Translate captionsSource languageEnglishSpanishFrenchGermanItalianPortugueseJapaneseKoreanChineseHindiArabicTarget languageEnglishSpanishFrenchGermanItalianPortugueseJapaneseKoreanChineseHindiArabicChecking on-device translation… Caption text stays on this device. Review the translation before publishing.Translate captions on device",
+    "labels": [
+      "aria-label=\"Source language\"",
+      "aria-label=\"Target language\"",
+      "aria-label=\"Caption translation availability\""
+    ]
+  },
+  {
+    "area": "translation",
+    "text": "Translate captionsSource languageEnglishSpanishFrenchGermanItalianPortugueseJapaneseKoreanChineseHindiArabicTarget languageEnglishSpanishFrenchGermanItalianPortugueseJapaneseKoreanChineseHindiArabicThe on-device translation model is ready. Caption text stays on this device. Review the translation before publishing.Translate captions on device",
+    "labels": [
+      "aria-label=\"Source language\"",
+      "aria-label=\"Target language\"",
+      "aria-label=\"Caption translation availability\""
+    ]
+  },
+  {
+    "area": "translation",
+    "text": "Translate captionsSource languageEnglishSpanishFrenchGermanItalianPortugueseJapaneseKoreanChineseHindiArabicTarget languageEnglishSpanishFrenchGermanItalianPortugueseJapaneseKoreanChineseHindiArabicOn-device translation is unavailable for this browser or language pair. Caption text stays on this device. Review the translation before publishing.Translate captions on device",
+    "labels": [
+      "aria-label=\"Source language\"",
+      "aria-label=\"Target language\"",
+      "aria-label=\"Caption translation availability\""
+    ]
+  },
+  {
+    "area": "translation",
+    "text": "Translate captionsSource languageEnglishSpanishFrenchGermanItalianPortugueseJapaneseKoreanChineseHindiArabicTarget languageEnglishSpanishFrenchGermanItalianPortugueseJapaneseKoreanChineseHindiArabicThe browser will download its translation model when you choose Translate. Caption text stays on this device. Review the translation before publishing.Translate captions on device",
+    "labels": [
+      "aria-label=\"Source language\"",
+      "aria-label=\"Target language\"",
+      "aria-label=\"Caption translation availability\""
+    ]
+  },
+  {
+    "area": "translation",
+    "text": "Translate captionsSource languageEnglishSpanishFrenchGermanItalianPortugueseJapaneseKoreanChineseHindiArabicTarget languageEnglishSpanishFrenchGermanItalianPortugueseJapaneseKoreanChineseHindiArabicChecking on-device translation… Caption text stays on this device. Review the translation before publishing.Translate captions on devicePreparing translation modelCancel caption translation",
+    "labels": [
+      "aria-label=\"Source language\"",
+      "aria-label=\"Target language\"",
+      "aria-label=\"Caption translation availability\"",
+      "aria-label=\"Caption translation progress\""
+    ]
+  },
+  {
+    "area": "rail",
+    "text": "MediaAudioGenerateTemplatesElementsTextCaptionsTranscriptScenesClipsAssistantEffectsTransitionsFiltersAnimationPluginsBrand kitReview",
+    "labels": [
+      "aria-label=\"Editor tools\"",
+      "title=\"Media\"",
+      "title=\"Audio\"",
+      "title=\"Generate\"",
+      "title=\"Templates\"",
+      "title=\"Elements\"",
+      "title=\"Text\"",
+      "title=\"Captions\"",
+      "title=\"Transcript\"",
+      "title=\"Scenes\"",
+      "title=\"Clips\"",
+      "title=\"Assistant\"",
+      "title=\"Effects\"",
+      "title=\"Transitions\"",
+      "title=\"Filters\"",
+      "title=\"Animation\"",
+      "title=\"Plugins\"",
+      "title=\"Brand kit\"",
+      "title=\"Review\""
+    ]
+  },
+  {
+    "area": "review",
+    "text": "Review saved version 2Comments belong to this saved version. The project link requires workspace access.Open review of this saved versionComment at 0:01.0Refresh commentsShowing 1 of 12 comments on this version.Load earlier comments0:02.0 · OpenUser comment unchanged10/1/2026, 12:00:00 PMResolve comment",
+    "labels": [
+      "aria-label=\"Project review\"",
+      "aria-label=\"Review comment\""
+    ]
+  },
+  {
+    "area": "review",
+    "text": "Save a project version to review it.",
+    "labels": []
+  },
+  {
+    "area": "oauth",
+    "text": "Connected assistantsReview and revoke apps connected through Veyrnox OAuth. Revoking also ends that client’s active sessions.RefreshNo assistants are connected.",
+    "labels": []
+  },
+  {
+    "area": "oauth",
+    "text": "Connected assistantsReview and revoke apps connected through Veyrnox OAuth. Revoking also ends that client’s active sessions.RefreshUser assistant unchangedAccess: openid · Connected 10/1/2026https://example.test/Revoke accessRevoke User assistant unchanged?The assistant will be signed out and must ask for approval again before it can read your Veyrnox data.Revoke access",
+    "labels": []
+  },
+  {
+    "area": "brandAssets",
+    "text": "Brand assetsUser assetnamecreditusageurlUser creditUser licenceRecorded licenceInsert brand asset×Browse inspected workspace assetsShowing the latest 100 inspected assets.Add video new-asse",
+    "labels": [
+      "aria-label=\"Brand asset name 1\"",
+      "aria-label=\"Brand asset credit 1\"",
+      "aria-label=\"Brand asset usage 1\"",
+      "aria-label=\"Brand asset url 1\"",
+      "aria-label=\"Remove brand asset User asset\""
+    ]
+  },
+  {
+    "area": "brandAssets",
+    "text": "Brand assetsBrowse inspected workspace assetsNo inspected project assets are available. Uploads have a separate rollout gate.",
+    "labels": []
+  },
+  {
+    "area": "projectFiles",
+    "text": "FilesProject filesDownload project fileOpen project fileProject files contain your edits and media details. Keep the original media and font files; reopening may require relinking them.Detach from the cloud project before opening a local project file.",
+    "labels": [
+      "aria-label=\"Local project files\"",
+      "aria-label=\"Choose project JSON file\""
+    ]
+  },
+  {
+    "area": "reviewWorkspace",
+    "text": "Review saved version 2This view leaves the saved edit unchanged. The link uses the project’s existing access permissions.Play0:00.0 / 0:00.0Review saved version 2Comments belong to this saved version. The project link requires workspace access.Open review of this saved versionComment at 0:00.0Refresh commentsShowing 1 of 12 comments on this version.Load earlier comments0:02.0 · OpenUser comment unchanged10/1/2026, 12:00:00 PMResolve comment",
+    "labels": [
+      "aria-label=\"Saved edit preview\"",
+      "aria-label=\"Review playhead\"",
+      "aria-label=\"Project review\"",
+      "aria-label=\"Review comment\""
+    ]
+  },
+  {
+    "area": "reviewWorkspace",
+    "text": "Review saved version 2This view leaves the saved edit unchanged. The link uses the project’s existing access permissions.1 sources are unavailable. The preview is incomplete until they are relinked.User sourceChoose an original sourcePlay0:00.0 / 0:00.0Review saved version 2Comments belong to this saved version. The project link requires workspace access.Open review of this saved versionComment at 0:00.0Refresh commentsShowing 1 of 12 comments on this version.Load earlier comments0:02.0 · OpenUser comment unchanged10/1/2026, 12:00:00 PMResolve comment",
+    "labels": [
+      "aria-label=\"Missing review sources\"",
+      "aria-label=\"Relink review source\"",
+      "aria-label=\"Saved edit preview\"",
+      "aria-label=\"Review playhead\"",
+      "aria-label=\"Project review\"",
+      "aria-label=\"Review comment\""
+    ]
+  },
+  {
+    "area": "voiceover",
+    "text": "Record voiceoverRecords from your microphone on this device and places the take at the playhead. Maximum 10 minutes.ReadyStart recording",
+    "labels": [
+      "aria-label=\"Record voiceover\""
+    ]
+  },
+  {
+    "area": "voiceover",
+    "text": "Record voiceoverRecords from your microphone on this device and places the take at the playhead. Maximum 10 minutes.Recording · 1:01Stop and addCancel",
+    "labels": [
+      "aria-label=\"Record voiceover\""
+    ]
+  },
+  {
+    "area": "layout",
+    "text": "LayoutWorkspaceMedia panel positionleftrighthiddenInspectorInspector widthPreview heightTimeline heightFocus previewReset workspace layout",
+    "labels": [
+      "aria-label=\"Media panel position\"",
+      "aria-label=\"Show inspector\"",
+      "aria-label=\"Inspector panel width\"",
+      "aria-label=\"Preview panel height\"",
+      "aria-label=\"Timeline panel height\""
+    ]
+  },
+  {
+    "area": "statement",
+    "text": "Credit statementAll credit movements on your account, across devices. Charges and refunds appear separately.Your statement is unavailable. Try again",
+    "labels": []
+  },
+  {
+    "area": "statement",
+    "text": "Credit statementAll credit movements on your account, across devices. Charges and refunds appear separately.Welcome credits01/10/2026, 12:00:00+1,234 crGeneration01/10/2026, 12:00:00+1,234 crGeneration refund01/10/2026, 12:00:00+1,234 crCredit adjustment01/10/2026, 12:00:00+1,234 crLoad older movements",
+    "labels": []
+  },
+  {
+    "area": "passkeys",
+    "text": "PasskeysA passkey signs you in with this device&#x27;s fingerprint, face or screen lock instead of a password. It works however you first signed up, including with Google or Apple.You have no passkeys yet.Name (optional)Add a passkey",
+    "labels": [
+      "placeholder=\"e.g. MacBook\""
+    ]
+  },
+  {
+    "area": "passkeys",
+    "text": "PasskeysA passkey signs you in with this device&#x27;s fingerprint, face or screen lock instead of a password. It works however you first signed up, including with Google or Apple.PasskeyAdded 1 Oct 2026 · last used 2 Oct 2026Remove PasskeyName (optional)Add a passkeyRemove User passkey?You will no longer be able to sign in with it. Your other ways of signing in keep working.Remove passkey",
+    "labels": [
+      "placeholder=\"e.g. MacBook\""
+    ]
+  },
+  {
+    "area": "timeline",
+    "text": "0s1s2s3s4s5s6s7s8s9s10s11s12s13s14s15s16s17s18s19sVideo0:10.0User text0:02.0",
+    "labels": [
+      "aria-label=\"Timeline\"",
+      "aria-label=\"Video track\"",
+      "aria-label=\"Video, 0:10.0 long, starts at 0:00.0\"",
+      "aria-label=\"Trim start of Video\"",
+      "aria-label=\"Trim end of Video\"",
+      "aria-label=\"Audio track\"",
+      "aria-label=\"Text track\"",
+      "aria-label=\"User text, 0:02.0 long, starts at 0:02.0\""
+    ]
+  },
+  {
+    "area": "typography",
+    "text": "Typography and shadowItalicUnderlineLetter spacing (pixels at 720p)Text line heightText shadow colourText shadow opacity (%)Text shadow blurText shadow XText shadow YSystem fonts use the fonts installed on this computer, with a matching generic fallback.",
+    "labels": [
+      "aria-label=\"Italic text\"",
+      "aria-label=\"Underline text\"",
+      "aria-label=\"Letter spacing (pixels at 720p)\"",
+      "aria-label=\"Text line height\"",
+      "aria-label=\"Text shadow colour\"",
+      "aria-label=\"Text shadow opacity (%)\"",
+      "aria-label=\"Text shadow blur\"",
+      "aria-label=\"Text shadow X\"",
+      "aria-label=\"Text shadow Y\""
+    ]
+  },
+  {
+    "area": "contact",
+    "text": "Consent statusUnknownSubscribedUnsubscribedTagsPrivate notesUser noteSave contact",
+    "labels": [
+      "placeholder=\"customer, vip\"",
+      "placeholder=\"Context for your team\""
+    ]
+  },
+  {
+    "area": "contact",
+    "text": "Consent status: subscribedTags: NonePrivate notes: User note",
+    "labels": []
+  },
+  {
+    "area": "oddling",
+    "text": "ODDLING CATALOGPick it, see it.Change anything, anytime, like a character creator. Every choice updates the real generation prompt.Hairuser-hairOutfitAnyBodyAnyA simple preview. The final picture is made by AI from these choices.1 chosenClear allWhoBodySkinHead &amp; faceEyesHair1ClothesHats &amp; extrasLimbsFinishKind of character, age and heritage",
+    "labels": [
+      "aria-label=\"Oddling catalog\"",
+      "aria-label=\"Preview figure of your Oddling\"",
+      "aria-label=\"Catalog category\"",
+      "title=\"Kind of character, age and heritage\"",
+      "title=\"Build, height and sizes\"",
+      "title=\"Tone, texture and surface\"",
+      "title=\"Head shape, brows, nose, mouth, ears\"",
+      "title=\"Colour, shape and size\"",
+      "title=\"Style and colour\"",
+      "aria-label=\"1 chosen\"",
+      "title=\"The outfit\"",
+      "title=\"Headwear, accessories and props\"",
+      "title=\"Neck, arms and legs\"",
+      "title=\"How the picture is rendered\"",
+      "aria-label=\"Who\""
+    ]
+  },
+  {
+    "area": "lyrics",
+    "text": "Align supplied lyricsPaste lyrics you have permission to use, one display line per line. Match them to existing word timestamps from imported subtitles or local automatic captions. Review recognition before aligning, especially singing. This replaces the selected timed captions and adds karaoke highlighting; Undo restores them. It makes no paid request.Timed lyric sourceAll captions with source word timingSupplied lyricsImport word timing JSON, timestamped VTT or enhanced LRC, or create local automatic captions first. Evenly distributed word timing is an estimate.Align lyrics and replace timed captions",
+    "labels": [
+      "aria-label=\"Timed lyric source\"",
+      "aria-label=\"Supplied lyrics\"",
+      "aria-label=\"Lyric alignment source status\""
+    ]
+  },
+  {
+    "area": "lyrics",
+    "text": "Align supplied lyricsPaste lyrics you have permission to use, one display line per line. Match them to existing word timestamps from imported subtitles or local automatic captions. Review recognition before aligning, especially singing. This replaces the selected timed captions and adds karaoke highlighting; Undo restores them. It makes no paid request.Timed lyric sourceAll captions with source word timingUser lyricSupplied lyrics1 timed caption source is available. Missing or ambiguous matches need correction.Align lyrics and replace timed captions",
+    "labels": [
+      "aria-label=\"Timed lyric source\"",
+      "aria-label=\"Supplied lyrics\"",
+      "aria-label=\"Lyric alignment source status\""
+    ]
+  },
+  {
+    "area": "picture",
+    "text": "Local picture toolsImage noise reductionRemove background by colourBackground key colourKey colour toleranceKey edge featherKey colour spill reductionLocal relight exposureLight position XLight position YLight radiusReset local picture toolsColour keying works with plain backgrounds. Noise reduction preserves strong edges; relighting adds a soft exposure spot. These tools run locally.",
+    "labels": [
+      "aria-label=\"Image noise reduction\"",
+      "aria-label=\"Remove background by colour\"",
+      "aria-label=\"Background key colour\"",
+      "aria-label=\"Key colour tolerance\"",
+      "aria-label=\"Key edge feather\"",
+      "aria-label=\"Key colour spill reduction\"",
+      "aria-label=\"Local relight exposure\"",
+      "aria-label=\"Light position X\"",
+      "aria-label=\"Light position Y\"",
+      "aria-label=\"Light radius\""
+    ]
+  },
+  {
+    "area": "attach",
+    "text": "",
+    "labels": [
+      "aria-label=\"Attach images or a video\"",
+      "title=\"Attach images, or a video (a few frames are used)\""
+    ]
+  },
+  {
+    "area": "attach",
+    "text": "×",
+    "labels": [
+      "aria-label=\"Images for the next reply\"",
+      "alt=\"Image 1\"",
+      "aria-label=\"Remove image 1\""
+    ]
+  }
+]

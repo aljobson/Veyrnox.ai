@@ -5,8 +5,8 @@ import { filmFixture } from '../tests/fixtures/filmStudio.mjs';
 
 const filmKey = `veyrnox_film_studio_v1:${SYNTHETIC_USER.id}`;
 async function importFilm(page, film) {
-  await page.getByLabel('Import studio JSON').setInputFiles({ name: 'synthetic-film.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(film)) });
-  await page.getByRole('button', { name: 'Use imported studio', exact: true }).click();
+  await page.getByTestId('film-import-json').setInputFiles({ name: 'synthetic-film.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(film)) });
+  await page.getByTestId('film-use-import').click();
 }
 function readyFilm(aspect) {
   let film = { ...emptyFilm(), ...filmFixture(), stack: { image: 'flux-2-pro', imageAccess: 'Studio', video: 'seedance-2.0-fast', videoAccess: 'Studio', seconds: '10', aspect } };
@@ -22,10 +22,10 @@ test('Film Setup normalizes declared duration/aspect and persists the chosen wor
   const fixture = await installProductFixtures(page); await fixture.open('/app/film-studio');
   await importFilm(page, { ...emptyFilm(), name: 'Synthetic setup', stack: { image: 'flux-2-pro', imageAccess: 'Studio', video: 'External', videoAccess: 'External', seconds: '12', aspect: '1:1' } });
   await page.getByRole('navigation', { name: 'Film Studio stages' }).getByRole('button').filter({ hasText: 'Set up your tools' }).click();
-  await page.getByLabel('Video workflow', { exact: true }).selectOption('Studio');
-  await page.getByLabel('Video model', { exact: true }).selectOption('seedance-2.0-fast');
-  await expect(page.getByLabel('Clip length', { exact: true })).toHaveValue('10');
-  await expect(page.getByLabel('Frame format', { exact: true })).toHaveValue('16:9');
+  await page.getByTestId('film-video-workflow').selectOption('Studio');
+  await page.getByTestId('film-video-model').selectOption('seedance-2.0-fast');
+  await expect(page.getByTestId('film-clip-length')).toHaveValue('10');
+  await expect(page.getByTestId('film-frame-format')).toHaveValue('16:9');
   await fixture.open('/app/film-studio');
   await expect.poll(() => page.evaluate(key => JSON.parse(localStorage.getItem(key)).stack.seconds, filmKey)).toBe('10');
 });
@@ -33,10 +33,10 @@ test('Film Setup normalizes declared duration/aspect and persists the chosen wor
 test('Film import refuses damage without replacing work and JSON export preserves the current film', async ({ page }) => {
   const fixture = await installProductFixtures(page); await fixture.open('/app/film-studio');
   await importFilm(page, { ...emptyFilm(), name: 'Synthetic preserved film' });
-  await page.getByLabel('Import studio JSON').setInputFiles({ name: 'broken.json', mimeType: 'application/json', buffer: Buffer.from('{broken') });
+  await page.getByTestId('film-import-json').setInputFiles({ name: 'broken.json', mimeType: 'application/json', buffer: Buffer.from('{broken') });
   await expect(page.getByRole('alert').filter({ hasText: 'Choose a Film Studio JSON export' })).toBeVisible();
   expect(await page.evaluate(key => JSON.parse(localStorage.getItem(key)).name, filmKey)).toBe('Synthetic preserved film');
-  const downloading = page.waitForEvent('download'); await page.getByRole('button', { name: 'Export studio JSON', exact: true }).click();
+  const downloading = page.waitForEvent('download'); await page.getByTestId('film-export-json').click();
   const download = await downloading; expect(download.suggestedFilename()).toMatch(/\.json$/); await download.cancel();
 });
 
@@ -44,11 +44,11 @@ test('Film handoff honestly blocks incompatible format then transfers a compatib
   const fixture = await installProductFixtures(page); await fixture.open('/app/film-studio');
   await importFilm(page, readyFilm('1:1'));
   await expect(page.getByText(/does not support the shot’s frame format/)).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Open in Studio', exact: true })).toHaveCount(0);
+  await expect(page.getByTestId('film-open-in-studio')).toHaveCount(0);
   const compatible = readyFilm('9:16'); await importFilm(page, compatible);
-  await page.getByRole('button', { name: 'Open in Studio', exact: true }).click();
+  await page.getByTestId('film-open-in-studio').click();
   await expect(page).toHaveURL(/\/app\/create\?model=seedance-2.0-fast/);
-  await expect(page.getByRole('textbox', { name: 'Prompt', exact: true })).toHaveValue(compatible.prompts[0].content);
+  await expect(page.locator('[data-assistant-target="create.prompt"]')).toHaveValue(compatible.prompts[0].content);
   expect(fixture.requests.filter(row => row.path === '/api/v1/generations')).toEqual([]);
 });
 
@@ -59,23 +59,23 @@ test('Video Agent waits for balance and its retry performs only a balance read',
     if (url.pathname === '/api/v1/montage/plan' && method === 'POST') return json({ plan_id: 'synthetic-plan', idempotency_key: 'synthetic-plan-key', credits: 165, expires_at: Math.floor(Date.now() / 1000) + 600, plan: { summary: 'A synthetic shot', seconds: 10 } });
     return false;
   } });
-  await fixture.open('/app/video-agent'); await page.getByLabel('BRIEF', { exact: true }).fill('Synthetic lighthouse');
-  await page.getByRole('button', { name: 'Make a plan', exact: true }).click();
-  await expect(page.getByRole('button', { name: /Approve and make it/ })).toBeDisabled();
-  await expect(page.getByText(/Your balance is unavailable/)).toBeVisible(); unavailable = false;
-  await page.getByRole('button', { name: 'Retry balance', exact: true }).click();
-  await expect(page.getByRole('button', { name: /Approve and make it/ })).toBeEnabled();
+  await fixture.open('/app/video-agent'); await page.getByTestId('agent-brief').fill('Synthetic lighthouse');
+  await page.getByTestId('agent-plan').click();
+  await expect(page.getByTestId('agent-approve')).toBeDisabled();
+  await expect(page.getByTestId('agent-balance-status')).toBeVisible(); unavailable = false;
+  await page.getByTestId('agent-retry-balance').click();
+  await expect(page.getByTestId('agent-approve')).toBeEnabled();
   expect(fixture.requests.filter(row => row.path === '/api/v1/generations')).toEqual([]);
 });
 
 test('Video Agent expired plan cannot dispatch and editing the brief discards it', async ({ page }) => {
   const fixture = await installProductFixtures(page, { routes: ({ url, json }) => url.pathname === '/api/v1/montage/plan'
     ? json({ plan_id: 'expired-synthetic', idempotency_key: 'expired-synthetic-key', credits: 165, expires_at: 1, plan: { summary: 'Expired synthetic plan' } }) : false });
-  await fixture.open('/app/video-agent'); await page.getByLabel('BRIEF', { exact: true }).fill('Synthetic brief');
-  await page.getByRole('button', { name: 'Make a plan', exact: true }).click();
-  await expect(page.getByRole('button', { name: /Approve and make it/ })).toBeDisabled();
-  await page.getByLabel('BRIEF', { exact: true }).fill('Changed synthetic brief');
-  await expect(page.getByRole('button', { name: /Approve and make it/ })).toHaveCount(0);
+  await fixture.open('/app/video-agent'); await page.getByTestId('agent-brief').fill('Synthetic brief');
+  await page.getByTestId('agent-plan').click();
+  await expect(page.getByTestId('agent-approve')).toBeDisabled();
+  await page.getByTestId('agent-brief').fill('Changed synthetic brief');
+  await expect(page.getByTestId('agent-approve')).toHaveCount(0);
 });
 
 test('Video Agent returning focus refreshes the balance without submitting and blocks a now-unaffordable plan', async ({ page }) => {
@@ -88,19 +88,21 @@ test('Video Agent returning focus refreshes the balance without submitting and b
   } });
   try {
     await fixture.open('/app/video-agent');
-    await page.getByLabel('BRIEF', { exact: true }).fill('Synthetic focus balance brief');
-    await page.getByRole('button', { name: 'Make a plan', exact: true }).click();
-    const approve = page.getByRole('button', { name: /Approve and make it/ });
+    await page.getByTestId('agent-brief').fill('Synthetic focus balance brief');
+    await page.getByTestId('agent-plan').click();
+    const approve = page.getByTestId('agent-approve');
     await expect(approve).toBeEnabled();
     const before = reads;
     hold = true;
     await page.evaluate(() => window.dispatchEvent(new Event('focus')));
     await expect.poll(() => reads).toBeGreaterThan(before);
     await expect(approve).toBeDisabled();
-    await expect(page.getByRole('status').filter({ hasText: 'Checking your balance…' })).toBeVisible();
+    await expect(page.getByTestId('agent-balance-status')).toBeVisible();
     balance = 100; hold = false; release();
-    await expect(page.getByText('165 cr · balance 100 cr', { exact: true })).toBeVisible();
-    await expect(page.getByText('You need 65 more Credits to approve this plan.', { exact: true })).toBeVisible();
+    await expect(page.getByTestId('agent-balance')).toBeVisible();
+    await expect(page.getByTestId('agent-balance')).toHaveText('165 cr · balance 100 cr');
+    await expect(page.getByTestId('agent-shortfall')).toBeVisible();
+    await expect(page.getByTestId('agent-shortfall')).toHaveText('You need 65 more Credits to approve this plan.');
     await expect(approve).toBeDisabled();
     expect(fixture.requests.filter(row => row.path === '/api/v1/generations')).toEqual([]);
   } finally { release(); }
@@ -114,9 +116,9 @@ test('Create multi-image batch preserves per-job idempotency and stops after an 
     if (url.pathname === '/api/v1/jobs/00000000-0000-4000-8000-000000000031') return json({ state: 'running' });
     return false;
   } });
-  await fixture.open('/app/create?model=flux-2-pro'); await page.getByRole('textbox', { name: 'Prompt', exact: true }).fill('Synthetic batch');
+  await fixture.open('/app/create?model=flux-2-pro'); await page.locator('[data-assistant-target="create.prompt"]').fill('Synthetic batch');
   await page.getByRole('group', { name: 'IMAGES', exact: true }).getByRole('button', { name: '4', exact: true }).click();
-  await page.getByRole('button', { name: /^Generate (?:for|\d)/ }).click();
+  await page.locator('[data-assistant-target="create.generate"]').click();
   await expect.poll(() => fixture.requests.filter(row => row.path === '/api/v1/generations').length).toBe(2);
   const calls = fixture.requests.filter(row => row.path === '/api/v1/generations'); expect(new Set(calls.map(row => row.body.idempotency_key)).size).toBe(2);
   await expect(page.getByText(/may have started and been charged/)).toBeVisible();
@@ -133,13 +135,13 @@ test('Create keeps the submitted image label and frame while its next draft swit
     return false;
   } });
   await fixture.open('/app/create?model=nano-banana');
-  await page.getByRole('textbox', { name: 'Prompt', exact: true }).fill('Synthetic portrait-format still life');
+  await page.locator('[data-assistant-target="create.prompt"]').fill('Synthetic portrait-format still life');
   await page.getByRole('group', { name: 'ASPECT', exact: true }).getByRole('button', { name: '9:16', exact: true }).click();
-  await page.getByRole('button', { name: /^Generate for/ }).click();
+  await page.locator('[data-assistant-target="create.generate"]').click();
   const result = page.locator('[data-assistant-target="create.result"]');
   await expect(result).toContainText(/RUNNING · SYNTHETIC NANO-BANANA/);
   await page.getByRole('group', { name: 'ASPECT', exact: true }).getByRole('button', { name: '16:9', exact: true }).click();
-  await page.getByRole('button', { name: 'Make audio', exact: true }).click();
+  await page.getByTestId('create-goal-audio').click();
   await expect(page.locator('[data-assistant-target="create.models"]')).toHaveAttribute('data-selected-kind', 'audio');
   await expect(result).toContainText(/RUNNING · SYNTHETIC NANO-BANANA/);
   await expect(result.locator('[style*="aspect-ratio"]')).toHaveCSS('aspect-ratio', '9 / 16');
@@ -163,24 +165,25 @@ test('Create completion cannot turn the no-charge New generation action into a s
     return false;
   } });
   await fixture.open('/app/create?model=flux-2-pro');
-  await page.getByRole('textbox', { name: 'Prompt', exact: true }).fill('Synthetic reset-race image');
-  await page.getByRole('button', { name: /^Generate for/ }).click();
-  const reset = page.getByRole('button', { name: 'New generation — no charge', exact: true });
+  await page.locator('[data-assistant-target="create.prompt"]').fill('Synthetic reset-race image');
+  await page.locator('[data-assistant-target="create.generate"]').click();
+  const reset = page.locator('[data-assistant-target="create.generate"]');
   await expect(reset).toBeVisible();
-  await page.getByRole('button', { name: 'Make audio', exact: true }).click();
+  await expect(reset).toHaveAttribute('aria-label', 'New generation — no charge');
+  await page.getByTestId('create-goal-audio').click();
   settled = true;
-  await expect(page.locator('[data-assistant-target="create.result"]').getByRole('img', { name: 'Generated result', exact: true })).toBeVisible();
+  await expect(page.locator('[data-assistant-target="create.result"]').getByTestId('generated-result-image')).toBeVisible();
   await expect(reset).toBeEnabled();
   await reset.click();
-  await expect(page.getByRole('button', { name: /^Generate for/ })).toBeVisible();
+  await expect(page.locator('[data-assistant-target="create.generate"]')).toBeVisible();
   expect(fixture.requests.filter(row => row.path === '/api/v1/generations')).toHaveLength(1);
 });
 
 test('Create with unavailable live catalog remains non-billable and retains its prompt', async ({ page }) => {
   const fixture = await installProductFixtures(page, { routes: ({ url, json }) => url.pathname === '/api/catalog' ? json({ error: 'synthetic_catalog_unavailable' }, 503) : false });
-  await fixture.open('/app/create'); await page.getByRole('textbox', { name: 'Prompt', exact: true }).fill('Keep my synthetic prompt');
-  await expect(page.getByRole('button', { name: /^Generate (?:for|\d)/ })).toBeDisabled();
-  await expect(page.getByRole('textbox', { name: 'Prompt', exact: true })).toHaveValue('Keep my synthetic prompt');
+  await fixture.open('/app/create'); await page.locator('[data-assistant-target="create.prompt"]').fill('Keep my synthetic prompt');
+  await expect(page.locator('[data-assistant-target="create.generate"]')).toBeDisabled();
+  await expect(page.locator('[data-assistant-target="create.prompt"]')).toHaveValue('Keep my synthetic prompt');
   expect(fixture.requests.filter(row => row.path === '/api/v1/generations')).toEqual([]);
 });
 
@@ -189,8 +192,8 @@ test('AI music validates declared duration before a synthetic refusal and preser
     url.pathname === '/api/v1/generations' && method === 'POST' ? json({ error: 'inputs_invalid:prompt' }, 422) : false });
   const response = await fixture.open('/app/create?model=ace-step');
   expect(response.status()).toBe(200);
-  const prompt = page.getByRole('textbox', { name: 'Prompt', exact: true });
-  const generate = page.getByRole('button', { name: /^Generate for/ });
+  const prompt = page.locator('[data-assistant-target="create.prompt"]');
+  const generate = page.locator('[data-assistant-target="create.generate"]');
   await expect(prompt).toHaveValue(''); await expect(generate).toBeDisabled();
   await prompt.fill('Synthetic instrumental piano, no vocals');
   const duration = page.getByRole('spinbutton', { name: 'Audio duration in seconds', exact: true });
@@ -210,8 +213,8 @@ test('AI speech requires user words and retains them after a synthetic uncertain
     url.pathname === '/api/v1/generations' && method === 'POST' ? json({ error: 'outcome_unknown' }, 503) : false });
   const response = await fixture.open('/app/create?model=elevenlabs-tts-turbo');
   expect(response.status()).toBe(200);
-  const prompt = page.getByRole('textbox', { name: 'Prompt', exact: true });
-  const generate = page.getByRole('button', { name: /^Generate for/ });
+  const prompt = page.locator('[data-assistant-target="create.prompt"]');
+  const generate = page.locator('[data-assistant-target="create.generate"]');
   await expect(prompt).toHaveAttribute('placeholder', 'Type the words to say…');
   await expect(prompt).toHaveValue(''); await expect(generate).toBeDisabled();
   await prompt.fill('   '); await expect(generate).toBeDisabled();
@@ -234,7 +237,7 @@ test('Chat folder create, rename and delete retain conversations without invokin
     return false;
   } });
   await fixture.open('/app/chat');
-  if (page.viewportSize().width < 768) await page.getByRole('button', { name: 'Chats', exact: true }).click();
+  if (page.viewportSize().width < 768) await page.getByTestId('chat-open-drawer').click();
   const chats = page.getByRole('navigation', { name: 'Chats', exact: true });
   await chats.getByRole('button', { name: 'New folder', exact: true }).click(); await chats.getByLabel('New folder name', { exact: true }).fill('Synthetic folder'); await chats.getByLabel('New folder name', { exact: true }).press('Enter');
   await chats.getByLabel('Folder', { exact: true }).selectOption('00000000-0000-4000-8000-000000000041');

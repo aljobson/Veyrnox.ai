@@ -1,3 +1,4 @@
+import { resolveI18nSource } from '../scripts/lib/vey-knowledge-i18n.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -67,18 +68,18 @@ test('Create sends the selected ACE-Step duration but keeps ACE-Step 1.5 visibly
   const fixed = publicCapabilities(capabilityFor('fal-ai/ace-step-1.5'));
   assert.deepEqual(fixed.presentation, { fixedDurationLabel: '60s' });
 
-  const page = read('app/veyrnox/app/create/page.js');
+  const page = resolveI18nSource(read('app/veyrnox/app/create/page.js'));
   const catalog = read('app/veyrnox/_lib/useCatalog.js');
   const gateway = read('app/api/v1/generations/route.js');
   assert.match(catalog, /durationInput: m\.capabilities\?\.inputs\?\.duration \|\| null/);
-  assert.match(page, /aria-label="Audio duration in seconds"/);
+  assert.match(page, /id="audio-duration"/);
   assert.match(page, /settingsInputs\(model, \{ seed, negative, voice, duration: audioDuration \}\)/);
   assert.match(page, /fixedDurationLabel/);
   assert.match(gateway, /duration: \{ kind: 'int', min: 5, max: 60 \}/);
 });
 
 test('Create and compact Chat label fixed video output duration without multiplying the priced unit', () => {
-  const page = read('app/veyrnox/app/create/page.js');
+  const page = resolveI18nSource(read('app/veyrnox/app/create/page.js'));
   const composer = read('app/veyrnox/_components/chat/MediaComposer.js');
   assert.match(page, /model\?\.presentation\?\.fixedDurationLabel/);
   assert.match(page, /FIXED OUTPUT/);
@@ -91,7 +92,7 @@ test('compact Chat offers the same bounded ACE-Step duration and submits it', ()
   const composer = read('app/veyrnox/_components/chat/MediaComposer.js');
   assert.match(hook, /settingsInputs\(model, \{ seed: '', negative: '', voice, duration: audioDuration \}\)/);
   assert.match(hook, /invalidAudioDuration/);
-  assert.match(composer, /aria-label="Audio duration in seconds"/);
+  assert.match(composer, /data-testid="chat-media-audio-duration"/);
   assert.match(composer, /audioDurationControl\.min/);
   assert.match(composer, /audioDurationControl\.max/);
 });

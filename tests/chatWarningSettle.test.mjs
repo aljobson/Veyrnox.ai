@@ -104,7 +104,7 @@ test('send() keeps the job with each warning about a turn that had started, and 
     // The job, the send's key and the text are handed to tell() for every notice (the store keeps them only beside the
     // three): one place, not three call sites. With them goes the warning this notice takes the place of, read before
     // it is forgotten, so the store can keep every turn the new one stands for (tests/chatWarningTurns.test.mjs).
-    assert.match(sender, /\n {4}const tell = \(code, extra\) => \{ const before = heldWarning\(from\); forgetEarlier\(\); const \{ home, here \} = at\(\); keepNotice\(home, code, \{ \.\.\.extra, job: jobId, key, sent: content, after: before \}\); if \(here\) setError\(chatErrorCopy\(code, extra\)\); \};\n/);
+    assert.match(sender, /\n {4}const tell = \(code, extra\) => \{ const before = heldWarning\(from\); forgetEarlier\(\); const \{ home, here \} = at\(\); keepNotice\(home, code, \{ \.\.\.extra, job: jobId, key, sent: content, after: before \}\); if \(here\) setError\(errorCopy\(code, extra\)\); \};\n/);
     // The key is made once, before any request (the first thing inside the try: a browser that cannot make one ends like
     // any message that never started), and it is the one the send goes out with.
     assert.match(sender, /\n {4}let key = null;[^\n]*\n/);
@@ -343,7 +343,7 @@ test('New chat shows what is kept at once and asks after: the screen changes onl
     // chat can be showing the very same words, for a warning of its own.
     assert.match(settleNew[1], /\n {4}if \(!settleKept\(NEW_CHAT, asked\) \|\| !onScreen\(chatView\.current, NEW_CHAT\)\) return;\n/);
     // A notice set since (a refusal said together with the warning, a failed read) is not this warning's words: it stays.
-    assert.match(settleNew[1], /\n {4}const was = chatErrorCopy\(asked\.warning\.code, asked\.warning\);\n {4}setError\(\(now\) => \(now === was \? waiting\(NEW_CHAT\) : now\)\);$/);
+    assert.match(settleNew[1], /\n {4}const was = asked.warning.code;\n {4}setError\(\(now\) => \(now\?\.code === was \? waiting\(NEW_CHAT\) : now\)\);$/);
     // On a page that has just loaded, and each time New chat is shown.
     assert.match(screen, /\n {2}useEffect\(\(\) => \{ settleNew\(\); \}, \[\]\);[^\n]*\n/);
     const clear = /\n {2}const clear = \(\) => \{([^\n]*)\};\n/.exec(screen);

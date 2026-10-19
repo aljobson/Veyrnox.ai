@@ -1,0 +1,16 @@
+{
+  "app.editor.audio.noiseHelp": "For noise reduction, choose a source section containing background noise alone. Speech or music in the sample can be removed from the result. Preview before applying it.",
+  "app.editor.audio.gateHelp": "At −96 dB the gate is off. Raising it suppresses sound below the threshold. Deep/bright voices adjust pitch; radio and robot add original effects.",
+  "app.editor.audio.widthHelp": "Zero combines the channels into mono, 100 keeps the original width, and 200 doubles their difference. Mono recordings stay centered.",
+  "app.editor.audio.effectsHelp": "Depth and mix at zero turn tremolo and echo off. Echo repeats must fit within four seconds and stop at the clip boundary. Clip fades also shape the echoes; preview before exporting.",
+  "app.editor.words.help": "Even timing is an estimate. Import timestamped VTT, enhanced LRC or word/start/end JSON for source timing, then adjust it here.",
+  "app.editor.speed.help": "Curve rates change duration while keeping the selected source range. Existing transform and mask keyframes are reset; Undo restores them.",
+  "app.editor.speed.freeze": "Freeze source frame (2s)",
+  "app.film.tests.repeat": "Ten of ten repeatability images must pass, plus every scene-lighting and pairing test. One miss keeps the asset draft.",
+  "app.film.files.size": "The studio file must be smaller than 1 MB.",
+  "app.film.master.help": "Create an exact 16:9 master at 1920×1080. The picture fills the frame with a centre crop, without stretching. The shot card sets the length. Export is free. Masters prepared from a Library take can be saved directly to your Library.",
+  "app.film.output.price": "Choose required reference media in Create. The Studio shows the exact price before you press Generate.",
+  "app.library.device.help": "Original videos, images and audio stay in this browser. They are available here and in the editor after a reload. They are not uploaded or available on another device; keep your originals.",
+  "app.chat.media.help": "Choose a model and the controls it supports below. The displayed price includes the selected length and quantity, and every finished result is saved to your Library.",
+  "app.explore.chat": "Ask leading AI models, with Web search if you want it. Every reply shows its price in Credits before you send."
+}

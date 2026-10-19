@@ -1,0 +1,19 @@
+{
+  "app.publish.developer.endpointHelp": "Send {authorization} to {accounts} and {posts}. Responses are JSON and keys are limited to 120 requests per minute.",
+  "app.publish.developer.webhooksIntro": "Receive signed delivery events in your own system. Failed requests retry up to eight times.",
+  "app.publish.developer.keyLimit": "Revoke an active key before creating another.",
+  "app.publish.developer.webhookLimit": "Revoke an active endpoint before creating another.",
+  "app.publish.inbox.planIncludes": "The unified inbox, per-account views, conversation status and supported replies are included with the $15 monthly Publish Plan.",
+  "app.editor.generation.separationPolicy": "One quoted job separates owned MP3/WAV audio up to 120 seconds into vocals, drums, bass, other, guitar and piano. The flat quote covers the source limit. Sources are inspected before any debit.",
+  "app.editor.generation.devicePolicy": "Device files upload only when you choose Generate. File type, ownership and duration are checked before credits are spent.",
+  "app.editor.generation.failedPolicy": "Generation failed. Refunds follow the normal job policy. Edit the prompt and generate again, or retry from your Library.",
+  "app.publish.calendar.invalidTime": "Choose a valid local time more than one minute from now. Daylight saving gaps are not valid times.",
+  "app.publish.calendar.targetsMove": ". All targets move together. Publishing must not have started.",
+  "app.publish.calendar.cancelHelp": "This prevents every untouched target from publishing. The post remains in your calendar so you can restore it later.",
+  "app.oddlings.referenceLimit": "Keep the local reference under 2 MB.",
+  "app.oddlings.opensCreate": "OPENS CREATE · NO CHARGE UNTIL CONFIRMED",
+  "app.editor.legacy.policy": "Editing and export run in this browser and use no credits. Saving a project stores its timeline and settings in your workspace; files from this computer stay here. Keep this tab open during export. Preview and export share the same audio mix. Imported sources can be up to 10 minutes; this edit is up to 60 seconds.",
+  "app.create.feedbackIntro": "Want prompt feedback? Studio skills cost 1 Credit a reply:",
+  "app.create.fixedOutputHelp": "This model produces one fixed output length at the displayed price.",
+  "app.create.pricingUnavailable": "Live prices are unavailable. You can browse models, but generation is paused so a cached quote can never be charged."
+}

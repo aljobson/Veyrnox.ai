@@ -35,14 +35,25 @@ export function usablePasskeys(list) {
 }
 
 // GoTrue's own messages are not written for users and can name internals.
-export function passkeyErrorCopy(err) {
+export function passkeyErrorCode(err) {
   const status = err?.status;
   const text = `${err?.code ?? ''} ${err?.message ?? ''}`;
-  if (/insufficient_aal|AAL2 session is required/i.test(text)) return 'Unlock this session with your authenticator code under Two-factor authentication, then try again.';
-  if (status === 401 || /not signed in/i.test(text)) return 'Your sign-in has expired. Sign in again, then add the passkey.';
-  if (/passkey_disabled/i.test(text)) return 'Passkeys are switched off at the moment.';
-  if (status === 429 || /rate limit/i.test(text)) return 'Too many attempts. Wait a minute, then try again.';
-  if (err?.name === 'InvalidStateError' || /already (registered|exists)/i.test(text)) return 'This device already has a passkey for your account.';
-  if (err?.name === 'SecurityError') return 'Passkeys only work on veyrnox.ai itself.';
-  return 'That did not complete. Check your connection and try again.';
+  if (/insufficient_aal|AAL2 session is required/i.test(text)) return 'aal';
+  if (status === 401 || /not signed in/i.test(text)) return 'expired';
+  if (/passkey_disabled/i.test(text)) return 'disabled';
+  if (status === 429 || /rate limit/i.test(text)) return 'limited';
+  if (err?.name === 'InvalidStateError' || /already (registered|exists)/i.test(text)) return 'exists';
+  if (err?.name === 'SecurityError') return 'security';
+  return 'unknown';
 }
+
+const ERROR_COPY = {
+  "aal": "Unlock this session with your authenticator code under Two-factor authentication, then try again.",
+  "expired": "Your sign-in has expired. Sign in again, then add the passkey.",
+  "disabled": "Passkeys are switched off at the moment.",
+  "limited": "Too many attempts. Wait a minute, then try again.",
+  "exists": "This device already has a passkey for your account.",
+  "security": "Passkeys only work on veyrnox.ai itself.",
+  "unknown": "That did not complete. Check your connection and try again."
+};
+export function passkeyErrorCopy(err) { return ERROR_COPY[passkeyErrorCode(err)]; }

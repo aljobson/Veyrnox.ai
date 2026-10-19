@@ -1,9 +1,11 @@
 'use client';
+import { useI18n } from '../../../components/I18nProvider';
 import { useAssetUrl } from '../_lib/useAssetUrl';
 import { ScheduleGeneration } from './ScheduleGeneration';
 import { AssetLoadStatus } from './AssetLoadStatus';
 
 export function JobAssetPreview({ job }) {
+  const { t } = useI18n();
   const asset = useAssetUrl(job.job_id, job.asset_url);
   return <>
     <AssetLoadStatus asset={asset} />
@@ -15,9 +17,9 @@ export function JobAssetPreview({ job }) {
         <audio src={asset.url} onError={asset.onError} onLoadedData={asset.onLoad} controls autoPlay className="w-full max-w-xl" />
       </div>
     ) : (
-      <img src={asset.url} onError={asset.onError} onLoad={asset.onLoad} alt="Generated result"
+      <img src={asset.url} onError={asset.onError} onLoad={asset.onLoad} data-testid="generated-result-image" alt={t("app.library.result")}
         className="absolute inset-0 w-full h-full object-contain bg-black" />
     )}
-    <div className="absolute top-3 right-3 z-10"><ScheduleGeneration job={job} /></div>
+    <div className="absolute top-3 end-3 z-10"><ScheduleGeneration job={job} /></div>
   </>;
 }

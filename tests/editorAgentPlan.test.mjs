@@ -176,7 +176,9 @@ test('applying a checked plan is one history entry, one Undo restores the exact 
 test('the module makes no network call and imports nothing that can', () => {
     const source = readFileSync(new URL('../app/veyrnox/_lib/editorAgentPlan.mjs', import.meta.url), 'utf8');
     assert.ok(!/\bfetch\s*\(|XMLHttpRequest|WebSocket|sendBeacon|navigator\.|document\.|window\./.test(source));
-    assert.deepEqual([...source.matchAll(/from '([^']+)'/g)].map(m => m[1]).sort(), ['./editorSequence.mjs', './editorTimeline.mjs']);
+    assert.deepEqual([...source.matchAll(/from '([^']+)'/g)].map(m => m[1]).sort(), ['../../../lib/helperMessages.mjs', './editorSequence.mjs', './editorTimeline.mjs']);
+    const diagnostics = readFileSync(new URL('../lib/helperMessages.mjs', import.meta.url), 'utf8');
+    assert.doesNotMatch(diagnostics, /\bfetch\s*\(|XMLHttpRequest|WebSocket|sendBeacon|navigator\.|document\.|window\./);
     assert.ok(Object.isFrozen(AGENT_COMMANDS) && Object.isFrozen(AGENT_LIMITS));
 });
 
