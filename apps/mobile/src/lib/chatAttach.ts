@@ -1,7 +1,7 @@
 import type { Job } from './media';
 import { kindOf, type CatalogModel } from './media';
 
-// Image attachments for a chat reply (ADR-0068, ADR-0156). Up to four, each from the Library (the id of the job that made
+// Image attachments for a chat reply (ADR-0068, ADR-0167). Up to four, each from the Library (the id of the job that made
 // it, already in storage) or from the phone (uploaded first, before anything is charged).
 export const MAX_ATTACHMENTS = 4;
 export const MAX_IMAGE_EDGE = 2048;

@@ -1,4 +1,4 @@
-// Studio skills (ADR-0073, ADR-0156): built-in assistants that help prepare ONE thing to make. A skill is only
+// Studio skills (ADR-0073, ADR-0167): built-in assistants that help prepare ONE thing to make. A skill is only
 // instructions copied onto a new chat; it never makes anything and never spends credits beyond the chat's own replies. Its
 // result is a "Studio draft" block the chat shows as an Open in Create button; only the person's own Create press charges.
 // The wording is the web's (app/veyrnox/_lib/studioSkills.js). Film skills are not built yet.

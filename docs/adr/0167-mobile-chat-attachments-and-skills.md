@@ -1,4 +1,4 @@
-# ADR-0156: Mobile chat image attachments and Studio skills (parity plan P3, slice 3)
+# ADR-0167: Mobile chat image attachments and Studio skills (parity plan P3, slice 3)
 
 **Status:** Proposed 2026-10-19. Third slice of the Chat lane, after ADR-0154 and ADR-0155.
 

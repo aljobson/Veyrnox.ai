@@ -1,6 +1,6 @@
 import { RESIZE_UNAVAILABLE, scaledSize, type ImageResizer } from './chatAttach';
 
-// The phone-photo resizer (ADR-0156): scale to the long-edge cap, keep the picture the right way up, and re-encode as JPEG.
+// The phone-photo resizer (ADR-0167): scale to the long-edge cap, keep the picture the right way up, and re-encode as JPEG.
 // Re-encoding is what drops the EXIF block (camera, time, GPS) and turns HEIC into something the server accepts; a photo is
 // never sent as picked. Backed by expo-image-manipulator, a native module.
 interface Rendered {

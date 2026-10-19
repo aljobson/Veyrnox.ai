@@ -440,7 +440,7 @@ const en = {
     'chat.renameCancel': 'Cancel',
     'chat.renameInvalid': 'A name takes 1 to 120 characters.',
     'chat.updateFailed': 'Could not update this chat. Try again.',
-    // Chat image attachments and Studio skills (ADR-0156)
+    // Chat image attachments and Studio skills (ADR-0167)
     'chat.attach.library': 'Library',
     'chat.attach.photos': 'Photos',
     'chat.attach.extra.one': 'Images add {count} credit',
