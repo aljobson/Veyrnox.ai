@@ -40,7 +40,8 @@ export const scenarios=[
  {area:'personas',name:'PersonaManager',props:{personas:[persona],models:[],onClose:noop},states:[null,persona,false,null,persona]},
  {area:'personas',name:'PersonaManager',props:{personas:[persona],models:[{id:'model',name:'Model name unchanged'}],onClose:noop},states:['persona',persona,true]},
 ];
-export const visibleText=html=>html.replace(/<[^>]*>/g,'');
+import { visibleText } from './visibleText.mjs';
+export { visibleText };
 const nil=()=>null;
 export function renderScenario(scenario,locale,messages,sourceOverrides={}){
  const file=files[scenario.area];

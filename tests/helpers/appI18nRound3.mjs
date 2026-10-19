@@ -32,7 +32,8 @@ export const scenarios = [
   { area: 'video', name: 'default' },
   { area: 'video', name: 'default', states: [100, false, 'User brief unchanged', '9:16', { credits: 165, expires_at: 4102444800, plan: { summary: 'Provider summary unchanged', seconds: 10 }, aspect: '9:16', brief: 'User brief unchanged', narrationText: 'User narration unchanged' }, false, null, 'User narration unchanged'] },
 ];
-export const visibleText = html => html.replace(/<[^>]*>/g, '');
+import { visibleText } from './visibleText.mjs';
+export { visibleText };
 export function renderScenario(scenario, locale, messages, sourceOverrides = {}) {
   const file = files[scenario.area];
   const f = fixture(locale, '/app/' + scenario.area, {
