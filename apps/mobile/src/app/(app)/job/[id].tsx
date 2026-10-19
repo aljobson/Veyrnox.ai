@@ -4,6 +4,7 @@ import { Link, Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
+import { JobProvenance } from '../../../components/JobProvenance';
 import { CONFIRM_MESSAGE, CONFIRM_TITLE, deleteCreation, deleteMessage, isAlreadyGone } from '../../../lib/deleteCreation';
 import { mediaApi, waitForJob, type JobState } from '../../../lib/media';
 import { editHref, makeAnotherHref, nextStepsFor, publishHref } from '../../../lib/nextSteps';
@@ -186,6 +187,7 @@ export default function JobScreen() {
                         </Pressable>
                     </View>
                     {note ? <Text style={styles.note} accessibilityLiveRegion="polite">{note}</Text> : null}
+                    <JobProvenance api={api} jobId={id} />
                     <Link href={{ pathname: '/report', params: { kind: 'job', id } }} asChild>
                         <Pressable accessibilityRole="button" style={styles.report}>
                             <Text style={styles.reportText}>{t('job.report')}</Text>
