@@ -9,6 +9,7 @@ import AuthGate from '../components/AuthGate.jsx';
 import SessionHydration from '../components/SessionHydration.jsx';
 import AnalyticsProvider, { analyticsEnabled } from '../components/AnalyticsProvider.jsx';
 import SiteChrome from './veyrnox/_components/SiteChrome';
+import ServiceStatusBanner from './veyrnox/_components/ServiceStatusBanner';
 import { I18nProvider } from '../components/I18nProvider';
 import { getLocale } from '../lib/i18n/server';
 import { localeInfo, localesEnabled } from '../lib/i18n/locales.mjs';
@@ -72,6 +73,7 @@ export default async function RootLayout({ children }) {
           <a href="#main" className="vx-skip rounded-full bg-vx-accent px-4 py-2 text-sm font-extrabold text-vx-accent-ink">
             {t('ui.skip')}
           </a>
+          <ServiceStatusBanner />
           {/* #main is the page's own Main (app/veyrnox/_components/Main.js): it
               starts after the nav, so this link skips it. */}
           {children}
