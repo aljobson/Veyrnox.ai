@@ -924,6 +924,17 @@ const en = {
     'help.err.rate': 'Too many questions. Wait a moment and try again.',
     'help.err.network': 'No connection. Try again when you are back online.',
     'help.err.later': 'Help is not available right now. Try again later, or write to support below.',
+    // App-only: choose a Library creation as a Create file (ADR-0190, parity P2).
+    'libsrc.choose': 'Choose from Library',
+    'libsrc.chooseLabel': 'Choose {kind} from your Library for {slot}',
+    'libsrc.title': 'Your Library',
+    'libsrc.older': 'Show older creations',
+    'libsrc.empty': 'You have no finished {kind} in your Library yet.',
+    'libsrc.emptyMore': 'No {kind} among the newest creations. Show older ones to keep looking.',
+    'libsrc.kind.image': 'images',
+    'libsrc.kind.video': 'videos',
+    'libsrc.kind.audio': 'audio',
+    'libsrc.ready': 'From your Library: {name}',
 } as const;
 
 export default en;

@@ -33,6 +33,10 @@ export interface Job {
     readonly created_at: string;
     readonly label?: string;
     readonly has_asset: boolean;
+    // On a moderation hold: the file is not served. Absent on older servers.
+    readonly held?: boolean;
+    // When the stored file is removed (about 90 days after it was made). Absent or null: unknown.
+    readonly asset_expires_at?: string | null;
 }
 
 export interface JobPage {
@@ -121,6 +125,8 @@ export interface GenerationRequest {
     readonly idempotencyKey: string;
     // Files already uploaded, by the slot the model declares for them.
     readonly sources?: readonly { readonly key: string; readonly slot: string }[];
+    // Library creations used as files, by the slot the model declares for them (ADR-0190).
+    readonly assets?: readonly { readonly assetId: string; readonly slot: string }[];
     // Options the model's catalog entry declares (aspect_ratio, seed, negative_prompt). The server validates each again.
     readonly extraInputs?: Readonly<Record<string, string | number>>;
 }
@@ -140,7 +146,9 @@ export const mediaApi = (api: ApiClient) => ({
                 confirmed_credits: r.confirmedCredits,
                 inputs: { ...r.extraInputs, ...(r.prompt ? { [r.textKey ?? 'prompt']: r.prompt } : {}), ...(r.durationSeconds ? { duration_seconds: r.durationSeconds } : {}) },
                 // The server refuses uploaded sources without consent to send them to the provider.
-                ...(r.sources?.length ? { source_keys: r.sources, consent: agreed } : {}),
+                ...(r.sources?.length ? { source_keys: r.sources } : {}),
+                ...(r.assets?.length ? { source_assets: r.assets.map((a) => ({ asset_id: a.assetId, slot: a.slot })) } : {}),
+                ...(r.sources?.length || r.assets?.length ? { consent: agreed } : {}),
             }),
         });
     },
