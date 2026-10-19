@@ -121,6 +121,9 @@ export default function Account() {
                 <Link href="/brand-kit" asChild>
                     <Row label={t('acct.brandKit')} />
                 </Link>
+                <Link href="/publish/developer" asChild>
+                    <Row label={t('dev.row')} />
+                </Link>
             </Section>
 
             <Section title={t('account.helpSection')}>
