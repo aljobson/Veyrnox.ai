@@ -1,14 +1,21 @@
 import * as Crypto from 'expo-crypto';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../../auth/AuthProvider';
+import { AttachStrip } from '../../../components/chat/AttachStrip';
+import { DraftCards } from '../../../components/chat/DraftCards';
+import { LibraryImagePicker } from '../../../components/chat/LibraryImagePicker';
 import { ReplyOptionsBar } from '../../../components/chat/ReplyOptionsBar';
 import { HeaderAction } from '../../../components/HeaderAction';
 import { ApiError } from '../../../lib/api';
 import { MIN_TARGET } from '../../../lib/a11y';
-import { chatApi, cleanOptions, cleanTitle, NO_OPTIONS, replyPrice, sendKeyFor, type ChatMessage, type ChatModel, type PendingSend, type ReplyOptions } from '../../../lib/chat';
+import { chatApi, cleanOptions, cleanTitle, imagesExtra, NO_OPTIONS, replyPrice, sendKeyFor, type ChatMessage, type ChatModel, type PendingSend, type ReplyOptions } from '../../../lib/chat';
+import { attachmentRefs, MAX_ATTACHMENTS, roomFor, type ChatImage } from '../../../lib/chatAttach';
+import { pickPhotos, uploadChatImages } from '../../../lib/chatPhotos';
+import { fetchCatalog, type CatalogModel } from '../../../lib/media';
+import { parseStudioDrafts, withoutDrafts } from '../../../lib/studioSkills';
 import { makeSendKey, resolveStoppedSend, stopNoticeKey } from '../../../lib/chatStop';
 import { plural, t } from '../../../lib/i18n';
 import { ensureOnline, OFFLINE_PAID_MESSAGE, OfflineError } from '../../../lib/network';
@@ -23,7 +30,7 @@ const ERROR_TEXT: Record<string, string> = {
 };
 
 export default function Conversation() {
-    const { id } = useLocalSearchParams<{ id: string }>();
+    const { id, starter } = useLocalSearchParams<{ id: string; starter?: string }>();
     const { api } = useAuth();
     const router = useRouter();
     const insets = useSafeAreaInsets();
@@ -40,6 +47,10 @@ export default function Conversation() {
     const pendingKey = useRef<PendingSend | null>(null);
     const [model, setModel] = useState<ChatModel | null>(null);
     const [options, setOptions] = useState<ReplyOptions>(NO_OPTIONS);
+    const [images, setImages] = useState<ChatImage[]>([]);
+    const [pickerOpen, setPickerOpen] = useState(false);
+    const [maxImages, setMaxImages] = useState(MAX_ATTACHMENTS);
+    const [catalog, setCatalog] = useState<CatalogModel[] | null>(null);
     const abort = useRef<AbortController | null>(null);
     const busy = useRef(false); // synchronous: a second tap must not start a second turn
 
@@ -52,12 +63,20 @@ export default function Conversation() {
                 setMessages(r.messages);
                 // The price is shown before sending, so the model list is read; if it fails the chat still opens and
                 // sending is held back until the price is known.
-                const models = await chatApi(api).listModels().catch(() => null);
-                setModel(models?.find((m) => m.id === r.thread.model_id) ?? null);
+                const listed = await chatApi(api).listModelsWithLimits().catch(() => null);
+                setModel(listed?.models.find((m) => m.id === r.thread.model_id) ?? null);
+                if (listed?.max_attachments) setMaxImages(Math.min(MAX_ATTACHMENTS, listed.max_attachments));
             })
             .catch(() => setError('Could not load this chat.'));
         return () => abort.current?.abort();
     }, [api, id]);
+
+    // Studio draft blocks in a reply become Open in Create cards, priced from the live catalog.
+    const hasDrafts = (messages ?? []).some((m) => m.role === 'assistant' && m.content.includes('```studio'));
+    useEffect(() => {
+        if (hasDrafts && !catalog) fetchCatalog().then(setCatalog, () => undefined);
+    }, [hasDrafts, catalog]);
+    const draftsOf = useMemo(() => (content: string) => (catalog ? parseStudioDrafts(content, catalog) : []), [catalog]);
 
     const send = useCallback(
         async (again?: string) => {
@@ -72,10 +91,23 @@ export default function Conversation() {
                 if (err instanceof OfflineError) return setError(OFFLINE_PAID_MESSAGE);
                 throw err;
             }
-            busy.current = true;
-            const pending = sendKeyFor(pendingKey.current, text, chosen, () => makeSendKey(Crypto.randomUUID()));
+            const attached = model && imagesExtra(model) !== null ? images : [];
+            const pending = sendKeyFor(pendingKey.current, text, chosen, () => makeSendKey(Crypto.randomUUID()), attached.map((i) => i.id).join(','));
             pendingKey.current = pending;
+            busy.current = true;
             setSending(true);
+            // Images from the phone go to storage first: a failed upload costs nothing and sends nothing.
+            let refs: ReturnType<typeof attachmentRefs> = [];
+            try {
+                const keys = await uploadChatImages(api, attached.filter((i) => i.uri), new AbortController().signal);
+                refs = attachmentRefs(keys, attached.filter((i) => i.assetId).map((i) => i.assetId as string));
+            } catch {
+                setError(t('chat.attach.uploadFailed'));
+                pendingKey.current = null;
+                setSending(false);
+                busy.current = false;
+                return;
+            }
             if (again === undefined) setDraft('');
             const knownIds = new Set(messages.map((m) => m.id));
             const stamp = Date.now();
@@ -97,6 +129,7 @@ export default function Conversation() {
                     },
                     controller.signal,
                     chosen,
+                    refs,
                 );
                 // A replay says a job exists for this key, not how it ended: it is looked for like a cut-off send.
                 if (result.replay) {
@@ -122,6 +155,7 @@ export default function Conversation() {
                 if (outcome === 'saved' || outcome === 'unsaved') {
                     const r = await chatApi(api).getThread(id).catch(() => null);
                     if (r) setMessages(r.messages);
+                    setImages([]);
                 } else if (outcome === 'nothing') {
                     giveBack();
                 } else {
@@ -139,6 +173,7 @@ export default function Conversation() {
                 pendingKey.current = null;
             } else {
                 pendingKey.current = null;
+                setImages([]);
                 // The saved reply carries its real price.
                 const r = await chatApi(api).getThread(id).catch(() => null);
                 if (r) setMessages(r.messages);
@@ -146,7 +181,7 @@ export default function Conversation() {
             setSending(false);
             busy.current = false;
         },
-        [api, draft, id, messages, model, options],
+        [api, draft, id, images, messages, model, options],
     );
 
     async function togglePin() {
@@ -173,7 +208,13 @@ export default function Conversation() {
         }
     }
 
-    const price = model ? replyPrice(model, options) : null;
+    const imageExtra = model ? imagesExtra(model) : null;
+    const price = model ? replyPrice(model, options, imageExtra !== null ? images.length : 0) : null;
+    async function addPhotos() {
+        const r = await pickPhotos(roomFor(images.length, maxImages)).catch(() => ({ images: [] as ChatImage[], problem: 'failed' as const }));
+        if (r.images.length) setImages((cur) => [...cur, ...r.images]);
+        if (r.problem === 'resize_unavailable') setNotice(t('chat.attach.needsUpdate'));
+    }
     const canSend = !sending && !!draft.trim() && price !== null;
     const last = messages && messages.length >= 2 ? messages[messages.length - 1] : null;
     const lastUser = last?.role === 'assistant' && last.content ? messages![messages!.length - 2] : null;
@@ -213,7 +254,16 @@ export default function Conversation() {
                     }
                     renderItem={({ item }) => (
                         <View accessible accessibilityLabel={`${item.role === 'user' ? 'You' : 'Vey'}: ${item.content || (sending ? 'writing' : '')}`} style={[styles.bubble, item.role === 'user' ? styles.user : styles.assistant]}>
-                            <Text style={[styles.text, item.role === 'user' && styles.userText]}>{item.content || (sending ? '…' : '')}</Text>
+                            {(() => {
+                                const drafts = item.role === 'assistant' ? draftsOf(item.content) : [];
+                                const shown = drafts.length ? withoutDrafts(item.content) : item.content;
+                                return (
+                                    <>
+                                        <Text style={[styles.text, item.role === 'user' && styles.userText]}>{shown || (sending && !item.content ? '…' : '')}</Text>
+                                        {drafts.length ? <DraftCards drafts={drafts} /> : null}
+                                    </>
+                                );
+                            })()}
                             {item.role === 'assistant' && item.credits ? <Text style={styles.cost}>{plural('chat.replyCost', item.credits)}</Text> : null}
                         </View>
                     )}
@@ -229,12 +279,16 @@ export default function Conversation() {
                     <ReplyOptionsBar model={model} options={cleanOptions(model, options)} disabled={sending} onChange={setOptions} />
                 </>
             ) : null}
+            {model && imageExtra !== null ? (
+                <AttachStrip items={images} extra={imageExtra} max={maxImages} disabled={sending} onLibrary={() => setPickerOpen(true)} onPhotos={() => void addPhotos()} onRemove={(rid) => setImages((cur) => cur.filter((x) => x.id !== rid))} />
+            ) : null}
+            <LibraryImagePicker visible={pickerOpen} chosen={images} max={maxImages} onClose={() => setPickerOpen(false)} onPick={(img) => setImages((cur) => (cur.length < maxImages && !cur.some((c) => c.assetId === img.assetId) ? [...cur, img] : cur))} />
             <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
                 <TextInput
                     style={styles.input}
                     value={draft}
                     onChangeText={setDraft}
-                    placeholder="Message Vey"
+                    placeholder={typeof starter === 'string' && starter ? starter.slice(0, 200) : 'Message Vey'}
                     accessibilityLabel="Message Vey"
                     placeholderTextColor={colors.muted}
                     multiline

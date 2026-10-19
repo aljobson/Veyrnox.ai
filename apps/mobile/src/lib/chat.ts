@@ -23,6 +23,8 @@ export interface ChatModelOptions {
     readonly images?: ChatOptionOffer | null;
 }
 
+export const imagesExtra = (m: ChatModel): number | null => extraOf(m.options?.images);
+
 // The two per-message choices sent as `options`. Thinking and Web can be on together.
 export interface ReplyOptions {
     readonly thinking: boolean;
@@ -44,9 +46,11 @@ export function cleanOptions(model: ChatModel, options: ReplyOptions): ReplyOpti
 
 // Credits for one reply: the catalog base plus the catalog extra for each choice made. This only adds what the server
 // listed; the server prices the turn itself (lib/chat.js replyPrice) and charges that.
-export function replyPrice(model: ChatModel, options: ReplyOptions): number {
+export function replyPrice(model: ChatModel, options: ReplyOptions, imageCount = 0): number {
     const o = cleanOptions(model, options);
-    return model.credits_per_reply + (o.thinking ? (thinkingExtra(model) ?? 0) : 0) + (o.web ? (webExtra(model) ?? 0) : 0);
+    // Any attached image adds the model's image extra once, however many there are (lib/chatTurn.js).
+    const images = imageCount > 0 ? (imagesExtra(model) ?? 0) : 0;
+    return model.credits_per_reply + (o.thinking ? (thinkingExtra(model) ?? 0) : 0) + (o.web ? (webExtra(model) ?? 0) : 0) + images;
 }
 
 export const optionsKey = (o: ReplyOptions): string => `${o.thinking ? 't' : ''}${o.web ? 'w' : ''}`;
@@ -59,8 +63,8 @@ export interface PendingSend {
     readonly key: string;
 }
 
-export function sendKeyFor(previous: PendingSend | null, text: string, options: ReplyOptions, make: () => string): PendingSend {
-    const sig = optionsKey(options);
+export function sendKeyFor(previous: PendingSend | null, text: string, options: ReplyOptions, make: () => string, attached = ''): PendingSend {
+    const sig = `${optionsKey(options)}|${attached}`;
     return previous && previous.text === text && previous.options === sig ? previous : { text, options: sig, key: make() };
 }
 
@@ -110,6 +114,9 @@ export function toTurnEvent(event: string, data: unknown): TurnEvent | null {
 
 export const chatApi = (api: ApiClient) => ({
     listModels: () => api.request<{ models: ChatModel[] }>('/api/v1/chat/models').then((r) => r.models),
+    // The models with the server's attachment limits (max_attachments, max_image_edge), which the app also knows as defaults.
+    listModelsWithLimits: () =>
+        api.request<{ models: ChatModel[]; max_attachments?: number; max_image_edge?: number }>('/api/v1/chat/models'),
     listThreads: () => api.request<{ threads: ChatThread[] }>('/api/v1/chat/threads').then((r) => r.threads),
     createThread: (modelId: string) =>
         api
@@ -122,7 +129,7 @@ export const chatApi = (api: ApiClient) => ({
     getThread: (id: string) =>
         api.request<{ thread: ChatThread; messages: ChatMessage[] }>(`/api/v1/chat/threads/${encodeURIComponent(id)}`),
     // Rename and pin. The server refuses an empty or over-long title (MAX_TITLE 120) and unknown keys.
-    updateThread: (id: string, patch: { title?: string; pinned?: boolean }) =>
+    updateThread: (id: string, patch: { title?: string; pinned?: boolean; system_prompt?: string }) =>
         api
             .request<{ thread: ChatThread }>(`/api/v1/chat/threads/${encodeURIComponent(id)}`, {
                 method: 'PATCH',
@@ -151,11 +158,18 @@ export const chatApi = (api: ApiClient) => ({
         onEvent: (e: TurnEvent) => void,
         signal?: AbortSignal,
         options: ReplyOptions = NO_OPTIONS,
+        attachments: readonly ({ source_key: string } | { source_asset: string })[] = [],
     ): Promise<{ readonly replay: boolean; readonly job: string | null }> {
         const res = await api.stream(`/api/v1/chat/threads/${encodeURIComponent(threadId)}/messages`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
-            body: JSON.stringify({ text, idempotency_key: idempotencyKey, options: { thinking: options.thinking, web: options.web } }),
+            body: JSON.stringify({
+                text,
+                idempotency_key: idempotencyKey,
+                options: { thinking: options.thinking, web: options.web },
+                // Present only when there are images, so a text turn keeps the shape it always had.
+                ...(attachments.length ? { attachments } : {}),
+            }),
             signal,
         });
         if (!res.ok) {
