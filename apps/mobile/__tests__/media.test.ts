@@ -25,13 +25,17 @@ describe('catalog helpers', () => {
         expect(isSupported(model({ modality: 'image-to-image', capabilities: { inputs: {}, media: { image: { required: true } } } }))).toBe(true);
         expect(isSupported(model({ capabilities: { inputs: { prompt: {} }, media: { image: { required: false } } } }))).toBe(true);
     });
-    test('refuses gated, unknown, stem-splitting, unknown-slot and capability-less models', () => {
+    test('refuses gated, unknown, unknown-slot and capability-less models', () => {
         expect(isSupported(model({ gated: true }))).toBe(false);
         expect(isSupported(model({ modality: 'mystery' }))).toBe(false);
         expect(isSupported(model({ capabilities: null }))).toBe(false);
-        expect(isSupported(model({ modality: 'audio-to-audio', capabilities: { inputs: {}, media: { audio: { required: true } }, outputStems: ['vocals'] } }))).toBe(false);
         expect(isSupported(model({ capabilities: { inputs: { prompt: {} }, media: { mask: { required: true } } } }))).toBe(false);
         expect(isSupported(model({ capabilities: { inputs: {}, media: {} } }))).toBe(false);
+    });
+    test('supports stem splitting; the catalog gates it while the server flag is off', () => {
+        const stems = model({ modality: 'audio-to-audio', capabilities: { inputs: {}, media: { audio: { required: true } }, outputStems: ['vocals'] } });
+        expect(isSupported(stems)).toBe(true);
+        expect(isSupported({ ...stems, gated: true })).toBe(false);
     });
     test('a prompt is required only when there is no required file', () => {
         expect(promptRequired(model())).toBe(true);
