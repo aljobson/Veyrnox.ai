@@ -1,4 +1,5 @@
 import { createOnRequestError } from '@posthog/next';
+import * as Sentry from '@sentry/cloudflare';
 import { POSTHOG_CONSENT_KEY } from './app/lib/analyticsPrivacy.js';
 
 const captureRequestError = createOnRequestError({
@@ -24,6 +25,8 @@ export async function onRequestError(error, request, context) {
   // Error messages can contain provider output or user input. Preserve stack
   // locations for source maps, but replace the message and drop cause/data.
   const safe = sanitiseServerError(error);
+  // ADR-0170: the same scrubbed error goes to Sentry; both calls are no-ops while their keys are unset.
+  Sentry.captureException(safe);
   await captureRequestError(safe, request, context);
 }
 
