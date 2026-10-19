@@ -8,7 +8,7 @@ import { CinemaFeed } from './CinemaFeed';
 import { DiscoveryList } from './DiscoveryList';
 
 // The Cinema tab: section tabs over the category chips over the section. "Watch" is the one-title-per-screen feed
-// (the phone's own way in); Series and Vote are the web's tabs of the same names (ADR-0151).
+// (the phone's own way in); Series and Vote are the web's tabs of the same names (ADR-0152).
 type Section = 'watch' | 'series' | 'vote';
 const SECTIONS: readonly { key: Section; label: string }[] = [
     { key: 'watch', label: 'cinemaBrowse.tab.watch' },
