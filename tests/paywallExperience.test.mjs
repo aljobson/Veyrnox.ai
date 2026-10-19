@@ -42,7 +42,8 @@ test('subscription launches have versioned consent, complete legal disclosures a
   assert.match(refunds, /How to cancel/);
 
   assert.match(config, /"SUBSCRIPTIONS_ENABLED": "false"[\s\S]*"SUBSCRIPTIONS_ENABLED": "true"/);
-  assert.match(config, /"CINEMA_SUBSCRIPTIONS_ENABLED": "false"[\s\S]*"CINEMA_SUBSCRIPTIONS_ENABLED": "true"/);
+  // ADR-0145: the Cinema switches are grouped; production keeps subscriptions "false", staging "true".
+  assert.ok(config.indexOf('\\"subscriptions\\":\\"false\\"') > -1 && config.indexOf('\\"subscriptions\\":\\"false\\"') < config.indexOf('\\"subscriptions\\":\\"true\\"'));
   assert.match(config, /"VIOLATION_EMAIL_REPLY_TO": "support@veyrnox\.com"/);
   assert.doesNotMatch(config, /"SUBSCRIPTION_ALERT_EMAIL"/);
 });

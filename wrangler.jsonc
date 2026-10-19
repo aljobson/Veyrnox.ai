@@ -127,25 +127,22 @@
     "SUBSCRIPTIONS_ENABLED": "false",
     // Cinema first activation. Paid access and monetisation remain closed.
     // Merge only after the documented production cutover gates pass.
+    // ADR-0145: the nine Cinema and creator switches that cinemaFeatures() reads live in this one JSON binding
+    // (creators, content, profiles, uploads, subscriptions, unlocks, freeCeiling, publishing, viewing); CINEMA_ENABLED stays its own
+    // var. A switch absent from the object is off; an individual CINEMA_* / CREATOR_* var, if ever set, wins. Add the next flag there.
+    "CINEMA_RUNTIME_FLAGS": "{\"creators\":\"true\",\"content\":\"true\",\"profiles\":\"true\",\"uploads\":\"true\",\"subscriptions\":\"false\",\"unlocks\":\"false\",\"freeCeiling\":\"true\",\"publishing\":\"true\",\"viewing\":\"true\"}",
     "CINEMA_ENABLED": "true",
-    "CREATOR_APPLICATIONS_ENABLED": "true",
-    "CREATOR_CONTENT_ENABLED": "true",
-    "SOCIAL_CINEMA_PROFILES_ENABLED": "true",
-    "CREATOR_UPLOADS_ENABLED": "true",
     "CINEMA_UPLOAD_RECOVERY_ENABLED": "true",
     "CINEMA_UPLOAD_REMOVAL_ENABLED": "true",
     // Fail closed until Cinema bytes enter private quarantine and the exact
     // SHA-256 payload passes malware and media-structure inspection.
-    "CINEMA_SUBSCRIPTIONS_ENABLED": "false",
     // Paid credit Unlocks remain closed. Free playback has its own bounded
     // path through CINEMA_FREE_CEILING_ENABLED below.
-    "CINEMA_UNLOCKS_ENABLED": "false",
     // Monthly ceiling on free viewing minutes per account (ADR-0057,
     // docs/cinema/paywall-plan.md P6). On since 2026-10-10 at the owner's
     // request; migration 0245 is applied. Since 2026-10-13 this independently
     // opens free-title playback while paid Unlocks remain closed. Rollback:
     // set "false" and deploy.
-    "CINEMA_FREE_CEILING_ENABLED": "true",
     // WEBHOOK_DELIVERY_LOG_ENABLED: one row per inbound provider webhook and
     // our answer (0276, ADR-0083), read at /app/admin/webhooks. Off until the
     // migration is applied; the handlers' answers do not depend on it.
@@ -157,8 +154,6 @@
     // out and records when the SECURITY_EVENTS_HASH_KEY secret (which keys the
     // source hash) is set; to switch it off, delete the secret or, once a slot
     // is free, add "false". Staging names it.
-    "CINEMA_PUBLISHING_ENABLED": "true",
-    "CINEMA_VIEWING_ENABLED": "true",
     // ADR-0107: public-site languages (/es, /fr, ...). On in production at the owner's request ("all languages in PROD", 2026-10-17).
     // Production is at the text-binding cap, so this replaced the unused PREMIERES_ENABLED "false" (absent is off).
     // Rollback: set "false" or remove it and deploy; prefixed paths then answer not-found and the page reads English.
@@ -388,27 +383,22 @@
         // vars are not inherited by environments and production keeps every
         // one of these "false". Stream secrets are set on this Worker; see
         // docs/architecture/staging-rollout.md.
+        // ADR-0145: the nine Cinema and creator switches that cinemaFeatures() reads live in this one JSON binding
+        // (creators, content, profiles, uploads, subscriptions, unlocks, freeCeiling, publishing, viewing); CINEMA_ENABLED stays its own
+        // var. A switch absent from the object is off; an individual CINEMA_* / CREATOR_* var, if ever set, wins. Add the next flag there.
+        "CINEMA_RUNTIME_FLAGS": "{\"creators\":\"true\",\"content\":\"true\",\"profiles\":\"true\",\"uploads\":\"true\",\"subscriptions\":\"true\",\"unlocks\":\"true\",\"freeCeiling\":\"true\",\"publishing\":\"true\",\"viewing\":\"true\"}",
         "CINEMA_ENABLED": "true",
-        "SOCIAL_CINEMA_PROFILES_ENABLED": "true",
-        "CREATOR_APPLICATIONS_ENABLED": "true",
-        "CREATOR_CONTENT_ENABLED": "true",
-        "CREATOR_UPLOADS_ENABLED": "true",
         "CINEMA_UPLOAD_RECOVERY_ENABLED": "true",
         "CINEMA_UPLOAD_REMOVAL_ENABLED": "true",
         // Publication acceptance: administrators can publish the prepared
         // staging title and viewers can load and play entitled Stream media.
         // Production keeps all three switches false.
-        "CINEMA_UNLOCKS_ENABLED": "true",
         // Test-mode Cinema Pass acceptance is open on staging only. Existing
         // production Pass management remains reachable while new sales are off.
-        "CINEMA_SUBSCRIPTIONS_ENABLED": "true",
-        "CINEMA_PUBLISHING_ENABLED": "true",
-        "CINEMA_VIEWING_ENABLED": "true",
         // Monthly ceiling on free viewing minutes (ADR-0057). Migration 0245
         // is applied on the staging database (2026-10-10), so the metered
         // functions exist here. Production has it on too, behind a closed
         // unlocks switch.
-        "CINEMA_FREE_CEILING_ENABLED": "true",
         "WEBHOOK_DELIVERY_LOG_ENABLED": "true",
         "SECURITY_EVENTS_ENABLED": "true"
       }
