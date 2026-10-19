@@ -17,7 +17,7 @@ const state = {
     personas: [{ id: randomUUID(), name: 'Editor', instructions: 'Be concise. Tighten every sentence and keep the brand voice.', model_id: 'claude-sonnet', thinking: false, web: false }],
     folders: [{ id: randomUUID(), name: 'Launch' }],
     jobs: [],
-    socialPlan: 'publish',
+    socialPlan: process.env.MOCK_SOCIAL_PLAN === 'free' ? 'free' : 'publish',
     socialPosts: [
         { id: 'post-1', key: 'seed-1', status: 'scheduled', scheduled_at: '2026-10-20T09:00:00Z', global_text: 'Spring launch teaser: the product turns in soft light.', created_at: '2026-10-18T10:00:00Z', updated_at: '2026-10-18T10:00:00Z', targets: [{ id: 't1', network: 'instagram', publish_status: 'pending', platform_post_url: null, last_error: null }] },
         { id: 'post-2', key: 'seed-2', status: 'failed', scheduled_at: '2026-10-17T09:00:00Z', global_text: 'Behind the scenes cut.', created_at: '2026-10-17T08:00:00Z', updated_at: '2026-10-17T09:05:00Z', targets: [{ id: 't2', network: 'tiktok', publish_status: 'failed', platform_post_url: null, last_error: 'The account access token expired. <b>Reconnect</b> the account.' }, { id: 't3', network: 'instagram', publish_status: 'published', platform_post_url: 'https://www.instagram.com/p/mock/', last_error: null }] },
@@ -192,6 +192,27 @@ createServer(async (req, res) => {
         console.log('MOCK created post', id, body.publishNow === true ? 'now' : 'scheduled');
         return send(res, 201, { post_id: id, idempotent: false, target_count: body.accountIds.length });
     }
+    // Drafts approve and discard (ADR-0162): the batch leaves the list; a free plan is refused for approve like the real route.
+    if (path === '/api/v1/social/drafts' && req.method === 'POST') {
+        if (body.action === 'approve' && state.socialPlan !== 'publish') return send(res, 402, { error: 'publish_plan_required', feature: 'scheduling' });
+        if (!['approve', 'discard'].includes(body.action) || typeof body.batchId !== 'string') return send(res, 400, { error: 'invalid_action' });
+        state.draftsGone = [...(state.draftsGone ?? []), ...(body.postId ? [body.postId] : ['dr-1', 'dr-2'])];
+        return send(res, 200, body.action === 'approve' ? { approved: 2, failed: 0 } : { discarded: body.postId ? 1 : 2 });
+    }
+    // Locked states (ADR-0162): start the mock with state.socialPlan 'free' to see the Unlock card.
+    if ((path === '/api/v1/social/calendar' || path === '/api/v1/social/analytics') && state.socialPlan !== 'publish') return send(res, 402, { error: 'publish_plan_required', feature: path.endsWith('calendar') ? 'calendar' : 'analytics' });
+    // Contacts (ADR-0165): two people; a save is kept in memory.
+    if (path === '/api/v1/social/contacts' && req.method === 'GET') {
+        state.contacts ??= [{ account_id: 'acc-1', network: 'instagram', account_name: 'Veyrnox Studio', external_id: 'ig-100', name: 'Lee Park', avatar_url: null, last_active_at: '2026-10-19T09:00:00Z', message_count: 6, unread_count: 2, tags: ['vip'], subscription_status: 'subscribed', notes: 'Asked about prints.' }, { account_id: 'acc-1', network: 'instagram', account_name: 'Veyrnox Studio', external_id: 'ig-200', name: 'Sam Rivera', avatar_url: null, last_active_at: '2026-10-17T09:00:00Z', message_count: 2, unread_count: 0, tags: [], subscription_status: 'unknown', notes: null }];
+        const q = (url.searchParams.get('search') || '').toLowerCase(); const st = url.searchParams.get('subscriptionStatus');
+        return send(res, 200, { brandRole: 'owner', contacts: state.contacts.filter((c) => c.name.toLowerCase().includes(q) && (!st || c.subscription_status === st)) });
+    }
+    if (path === '/api/v1/social/contacts' && req.method === 'PATCH') {
+        const c = (state.contacts ?? []).find((x) => x.external_id === body.externalId);
+        if (!c) return send(res, 404, { error: 'contact_not_found' });
+        Object.assign(c, { tags: body.tags, subscription_status: body.subscriptionStatus, notes: body.notes || null });
+        return send(res, 200, { ok: true, tags: c.tags, subscriptionStatus: c.subscription_status });
+    }
     // Team, activity, queues and autolists (ADR-0163). Read-mostly; saves answer ok without keeping state.
     if (path === '/api/v1/social/team' && req.method === 'GET') return send(res, 200, { brand_id: 'b1', brand_name: 'Veyrnox Studio', actor_role: 'owner', members: [{ user_id: 'u-1', email: 'you@example.test', role: 'owner', joined_at: '2026-09-01T00:00:00Z' }, { user_id: 'u-2', email: 'lee@acme.example', role: 'editor', joined_at: '2026-10-05T00:00:00Z' }], invitations: [{ id: 'inv-1', email: 'sam@acme.example', role: 'reviewer', status: 'pending', expires_at: '2026-10-30T00:00:00Z', created_at: '2026-10-16T00:00:00Z' }] });
     if (path === '/api/v1/social/activity' && req.method === 'GET') {
@@ -206,11 +227,11 @@ createServer(async (req, res) => {
     // Drafts (ADR-0139): two in one batch and one alone; read-only here.
     if (path === '/api/v1/social/drafts' && req.method === 'GET') {
         const B = '44444444-4444-4444-8444-444444444444';
-        return send(res, 200, { brand_id: 'b1', approvalEnabled: true, drafts: [
+        return send(res, 200, { brand_id: 'b1', approvalEnabled: true, drafts: ([
             { id: 'dr-1', draft_batch_id: B, scheduled_at: '2026-10-23T09:00:00Z', global_text: 'Monday motivation: the studio is open and the kettle is on.', created_at: '2026-10-18T09:00:00Z', media: [{ media_type: 'image', job_id: 'j1' }], networks: ['instagram', 'linkedin'] },
             { id: 'dr-2', draft_batch_id: B, scheduled_at: '2026-10-24T12:00:00Z', global_text: 'Three tips for softer product light.', created_at: '2026-10-18T09:00:01Z', media: [], networks: ['linkedin'] },
             { id: 'dr-3', draft_batch_id: null, scheduled_at: null, global_text: 'Draft with no batch or time yet.', created_at: '2026-10-17T09:00:00Z', media: [{ media_type: 'video', job_id: 'j2' }], networks: [] },
-        ] });
+        ]).filter((d) => !state.draftsGone?.includes(d.id)) });
     }
     // Calendar (ADR-0138): posts whose time falls in [from, to), oldest first, with the action flags the real route adds.
     if (path === '/api/v1/social/calendar' && req.method === 'GET') {
@@ -422,6 +443,12 @@ createServer(async (req, res) => {
     if (path === '/api/v1/cinema/audience' && req.method === 'POST') return send(res, 200, { ok: true });
     if (path === '/api/v1/reports' && req.method === 'POST') return send(res, 200, { replayed: false });
 
+    if (path === '/api/v1/help' && req.method === 'POST') {
+        const q = String(body.question || '').trim();
+        if (!q || q.length > 500) return send(res, 400, { error: 'invalid_question' });
+        const credits = /credit|balance|cost|price/i.test(q);
+        return send(res, 200, { plan: { message: credits ? 'Your balance is in the credits chip. Every paid action shows its price first.' : 'Open Create, pick a model and describe what you want. The price shows before you start.', target: credits ? 'nav.credits' : 'nav.create', action: 'show_target' } });
+    }
     if (path === '/api/v1/chat/models') return send(res, 200, { models: CHAT_MODELS });
     // Personas and folders (stateful), with the real routes' limits and error codes.
     const count = (fid) => state.threads.filter((t) => t.folder_id === fid).length;
@@ -473,8 +500,18 @@ createServer(async (req, res) => {
             if (body.folder_id !== null && !state.folders.some((f) => f.id === body.folder_id)) return send(res, 404, { error: 'folder_not_found' });
             t.folder_id = body.folder_id; return send(res, 200, { ok: true, folder_id: t.folder_id });
         }
+        if ('title' in body || 'pinned' in body) {
+            if ('title' in body) { const name = typeof body.title === 'string' ? body.title.trim() : ''; if (!name || name.length > 120) return send(res, 400, { error: 'invalid_title' }); t.title = name; }
+            if ('pinned' in body) { if (typeof body.pinned !== 'boolean') return send(res, 400, { error: 'invalid_pinned' }); t.pinned = body.pinned; }
+            return send(res, 200, { thread: t });
+        }
         if (typeof body.system_prompt === 'string') { t.system_prompt = body.system_prompt; if (!t.title) t.title = 'Chat with a persona'; return send(res, 200, { ok: true }); }
         return send(res, 400, { error: 'invalid_body' });
+    }
+    // Closing a send by its key (ADR-0067 amendment 11): the mock never holds a job for a stopped send, so it is closed.
+    if (path === '/api/v1/chat/sends/close' && req.method === 'POST') {
+        if (!/^vx-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(String(body.idempotency_key))) return send(res, 400, { error: 'invalid_key' });
+        return send(res, 200, { closed: true });
     }
     if (path === '/api/v1/chat/threads' && req.method === 'GET') return send(res, 200, { threads: state.threads });
     if (path === '/api/v1/chat/threads' && req.method === 'POST') {
@@ -491,8 +528,8 @@ createServer(async (req, res) => {
         // Priced like lib/chat.js replyPrice: the catalog base plus the extra for each option chosen; an option the model does not offer is refused.
         const model = CHAT_MODELS.find((x) => x.id === t.model_id) ?? CHAT_MODELS[0];
         const chosen = body.options ?? {};
-        if ((chosen.thinking && !model.options.thinking) || (chosen.web && !model.options.web)) { res.writeHead(400, { 'content-type': 'application/json' }); return res.end(JSON.stringify({ error: 'option_unavailable' })); }
-        const price = model.credits_per_reply + (chosen.thinking ? model.options.thinking.extra_credits : 0) + (chosen.web ? model.options.web.extra_credits : 0);
+        if ((chosen.thinking && !model.options.thinking) || (chosen.web && !model.options.web) || (Array.isArray(body.attachments) && body.attachments.length && !model.options.images)) { res.writeHead(400, { 'content-type': 'application/json' }); return res.end(JSON.stringify({ error: 'option_unavailable' })); }
+        const price = model.credits_per_reply + (chosen.thinking ? model.options.thinking.extra_credits : 0) + (chosen.web ? model.options.web.extra_credits : 0) + (Array.isArray(body.attachments) && body.attachments.length ? (model.options.images?.extra_credits ?? 0) : 0);
         res.writeHead(200, { 'content-type': 'text/event-stream' });
         const ev = (e, d) => res.write(`event: ${e}\ndata: ${JSON.stringify(d)}\n\n`);
         state.balance -= price;
