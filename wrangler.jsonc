@@ -383,11 +383,10 @@
         // vars are not inherited by environments and production keeps every
         // one of these "false". Stream secrets are set on this Worker; see
         // docs/architecture/staging-rollout.md.
-        // ADR-0145: the Cinema and creator switches that cinemaFeatures() reads live in this one JSON binding
-        // (creators, content, profiles, uploads, subscriptions, unlocks, freeCeiling, publishing, viewing, and comments for staging
-        // testing of the phone comments screens, owner 2026-10-19; production leaves comments off); CINEMA_ENABLED stays its own
+        // ADR-0145: the nine Cinema and creator switches that cinemaFeatures() reads live in this one JSON binding
+        // (creators, content, profiles, uploads, subscriptions, unlocks, freeCeiling, publishing, viewing); CINEMA_ENABLED stays its own
         // var. A switch absent from the object is off; an individual CINEMA_* / CREATOR_* var, if ever set, wins. Add the next flag there.
-        "CINEMA_RUNTIME_FLAGS": "{\"creators\":\"true\",\"content\":\"true\",\"profiles\":\"true\",\"uploads\":\"true\",\"subscriptions\":\"true\",\"unlocks\":\"true\",\"freeCeiling\":\"true\",\"publishing\":\"true\",\"viewing\":\"true\",\"comments\":\"true\"}",
+        "CINEMA_RUNTIME_FLAGS": "{\"creators\":\"true\",\"content\":\"true\",\"profiles\":\"true\",\"uploads\":\"true\",\"subscriptions\":\"true\",\"unlocks\":\"true\",\"freeCeiling\":\"true\",\"publishing\":\"true\",\"viewing\":\"true\",\"voting\":\"true\",\"audience\":\"true\",\"rankings\":\"true\",\"retention\":\"true\",\"creatorAnalytics\":\"true\",\"comments\":\"true\",\"storyPolls\":\"true\"}",
         "CINEMA_ENABLED": "true",
         "CINEMA_UPLOAD_RECOVERY_ENABLED": "true",
         "CINEMA_UPLOAD_REMOVAL_ENABLED": "true",

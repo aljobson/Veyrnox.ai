@@ -20,27 +20,31 @@ const LEGACY = {
     CINEMA_FREE_CEILING_ENABLED: 'true',
   },
 };
+// Staging only, switched on by the owner on 2026-10-19 so the phone's Cinema screens can be tested (docs/mobile/FLAG-PLAN-2026-10-19.md
+// step 1). Production gets none of these. Proxy uploads, monetisation, pay-per-view, premieres and recommendations stay off.
+const STAGING_APPROVED = {
+  VOTING_ENABLED: 'true', CINEMA_AUDIENCE_ENABLED: 'true', CINEMA_RANKINGS_ENABLED: 'true', CINEMA_RETENTION_ENABLED: 'true',
+  CINEMA_CREATOR_ANALYTICS_ENABLED: 'true', COMMENTS_ENABLED: 'true', STORY_POLLS_ENABLED: 'true',
+};
+const EXTRA = { production: {}, staging: STAGING_APPROVED };
 const MOVED = Object.keys(LEGACY.production);
-// Switches turned on on purpose since ADR-0145, by the owner's explicit word. Adding one here is the deliberate edit this test exists to force.
-// staging: comments, 2026-10-19, to test the phone comments screens; production keeps it off.
-const DELIBERATE = { production: {}, staging: { comments: 'COMMENTS_ENABLED' } };
 
 for (const [name, vars] of [['production', config.vars], ['staging', config.env.staging.vars]]) {
   test(`${name}: grouped Cinema flags give the same cinemaFeatures() as the old individual vars`, () => {
     assert.equal(vars.CINEMA_ENABLED, 'true', 'CINEMA_ENABLED stays its own var');
     for (const key of MOVED) assert.equal(Object.hasOwn(vars, key), false, `${key} moved into CINEMA_RUNTIME_FLAGS`);
-    const before = cinemaFeatures({ CINEMA_ENABLED: 'true', ...LEGACY[name], ...Object.fromEntries(Object.values(DELIBERATE[name]).map((k) => [k, 'true'])) });
+    const before = cinemaFeatures({ CINEMA_ENABLED: 'true', ...LEGACY[name], ...EXTRA[name] });
     assert.deepEqual(cinemaFeatures(vars), before);
     assert.equal(JSON.stringify(cinemaFeatures(vars)), JSON.stringify(before), 'byte for byte');
   });
-  test(`${name}: the group names only known switches and turns on nothing new`, () => {
+  test(`${name}: the group names only known switches and turns on nothing beyond the approved list`, () => {
     const group = JSON.parse(vars.CINEMA_RUNTIME_FLAGS);
-    const legacyOn = new Set([...Object.entries(LEGACY[name]).filter(([, v]) => v === 'true').map(([k]) => k), ...Object.values(DELIBERATE[name])]);
+    const legacyOn = new Set(Object.entries({ ...LEGACY[name], ...EXTRA[name] }).filter(([, v]) => v === 'true').map(([k]) => k));
     for (const [key, value] of Object.entries(group)) {
       assert.ok(Object.hasOwn(CINEMA_FEATURE_FLAGS, key), `${key} is a Cinema switch`);
       assert.equal(value === 'true', legacyOn.has(CINEMA_FEATURE_FLAGS[key]), key);
     }
-    assert.equal(Object.keys(group).length, MOVED.length + Object.keys(DELIBERATE[name]).length);
+    assert.equal(Object.keys(group).length, MOVED.length + Object.keys(EXTRA[name]).length);
   });
 }
 

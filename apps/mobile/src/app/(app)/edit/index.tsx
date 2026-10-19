@@ -1,5 +1,5 @@
 import * as Crypto from 'expo-crypto';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
@@ -28,6 +28,7 @@ import {
 } from '../../../lib/clipEdit';
 import { plural, t } from '../../../lib/i18n';
 import { fetchCatalog, kindOf, mediaApi, type CatalogModel, type Job } from '../../../lib/media';
+import { preloadJob } from '../../../lib/nextSteps';
 import { colors } from '../../../theme';
 
 interface Pending {
@@ -40,6 +41,9 @@ const seconds = (n: number) => (Math.round(n * 10) / 10).toString();
 export default function QuickEdit() {
     const { api } = useAuth();
     const router = useRouter();
+    // Opened from a result, the video comes with it (N5).
+    const { jobId: startWith } = useLocalSearchParams<{ jobId?: string }>();
+    const startedRef = useRef(false);
     const [videos, setVideos] = useState<Job[] | null>(null);
     const [clips, setClips] = useState<Clip[]>([]);
     const [pending, setPending] = useState<Pending[]>([]);
@@ -94,6 +98,18 @@ export default function QuickEdit() {
             setProblem(t(editErrorKey(err)));
         }
     }
+
+    // Once the Library page is in, add the video the person came with, once.
+    useEffect(() => {
+        if (startedRef.current || videos === null) return;
+        const job = preloadJob(videos, startWith);
+        if (!job) return;
+        startedRef.current = true;
+        if (!names.current.has(job.job_id)) names.current.set(job.job_id, job.label || t('edit.untitled'));
+        void add(job);
+        // add reads the current clips, and the guard above makes this run once.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [videos, startWith]);
 
     const check = validateEdit(clips, captions);
     const total = totalSeconds(clips);
