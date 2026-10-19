@@ -169,13 +169,24 @@ createServer(async (req, res) => {
                 { id: 'rv-4', email: 'lee@acme.example', decision: 'rejected', comment: 'Not approved by legal.', decided_at: '2026-10-12T15:00:00Z', url: link } ] },
         ] });
     }
+    // Publish queues and disconnect (ADR-0149). The accounts the mock lists are fixed, so a disconnect is remembered here.
+    const MOCK_QUEUE = { id: 'q-1', name: 'Weekday mornings', timezone: 'Europe/London', account_ids: ['acc-1'], enabled: true, slots: [{ weekday: 1, minute: 540 }, { weekday: 3, minute: 540 }, { weekday: 5, minute: 540 }] };
+    if (path === '/api/v1/social/queues' && req.method === 'GET') return send(res, 200, { queues: [MOCK_QUEUE] });
+    if (path === '/api/v1/social/queues/reserve' && req.method === 'POST') {
+        if (body.queueId !== MOCK_QUEUE.id) return send(res, 404, { error: 'queue_not_found' });
+        const at = new Date(Date.now() + 86_400_000); at.setUTCHours(9, 0, 0, 0);
+        return send(res, 200, { assignment_id: randomUUID(), scheduled_at: at.toISOString(), account_ids: MOCK_QUEUE.account_ids });
+    }
+    if (path === '/api/v1/social/queues/reserve' && req.method === 'PATCH') return send(res, 200, { ok: true });
+    const disc = path.match(/^\/api\/v1\/social\/accounts\/(acc-[a-z0-9]+)$/);
+    if (disc && req.method === 'DELETE') { (state.goneAccounts ??= new Set()).add(disc[1]); return send(res, 200, { ok: true }); }
     if (path === '/api/v1/social/accounts' && brandHeader === BRAND_CLIENT) {
         return send(res, 200, { brand_id: BRAND_CLIENT, accountLimit: 5, planTier: 'publish', accounts: [
             { id: 'acc-c1', network: 'linkedin', display_name: 'Acme Corp Page', avatar_url: null, status: 'active', connected_at: '2026-10-02T10:00:00Z', token_expires_at: '2026-12-02T10:00:00Z', publishingEnabled: true, supportedMedia: ['image'] } ] });
     }
-    if (path === '/api/v1/social/accounts') return send(res, 200, { brand_id: 'b1', accountLimit: 5, planTier: 'publish', accounts: [
+    if (path === '/api/v1/social/accounts') return send(res, 200, { brand_id: 'b1', accountLimit: 5, planTier: 'publish', accounts: ([
         { id: 'acc-1', network: 'instagram', display_name: 'Veyrnox Studio', avatar_url: null, status: 'active', connected_at: '2026-10-01T10:00:00Z', token_expires_at: '2026-12-01T10:00:00Z', publishingEnabled: true, supportedMedia: ['image', 'video'] },
-        { id: 'acc-2', network: 'tiktok', display_name: 'veyrnox.ai', avatar_url: null, status: 'expired', connected_at: '2026-09-01T10:00:00Z', token_expires_at: '2026-10-01T10:00:00Z', publishingEnabled: true, supportedMedia: ['image', 'video'] } ] });
+        { id: 'acc-2', network: 'tiktok', display_name: 'veyrnox.ai', avatar_url: null, status: 'expired', connected_at: '2026-09-01T10:00:00Z', token_expires_at: '2026-10-01T10:00:00Z', publishingEnabled: true, supportedMedia: ['image', 'video'] } ]).filter((a) => !state.goneAccounts?.has(a.id)) });
     // Publish posts (stateful): create, reschedule, cancel and restore, with the version stamp the real routes require.
     if (path === '/api/v1/social/posts' && req.method === 'POST') {
         const at = body.publishNow === true ? new Date().toISOString() : body.scheduledAt;
