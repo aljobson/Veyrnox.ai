@@ -7,6 +7,7 @@ import { GOALS, TIERS, filterByTier, freeLeftFor, modelsForGoal, type Goal, type
 import { useFreeLeft } from '../../../lib/useFreeLeft';
 import { selectedState, touchTarget } from '../../../lib/a11y';
 import { fetchAgentListing } from '../../../lib/montage';
+import { VEY_CLEARANCE } from '../../../components/VeyMascot';
 import { colors } from '../../../theme';
 import { plural, t } from '../../../lib/i18n';
 
@@ -67,6 +68,7 @@ export default function Create() {
                 <ActivityIndicator color={colors.accent} />
             ) : (
                 <FlatList
+                    contentContainerStyle={styles.list}
                     data={shown}
                     ListHeaderComponent={
                         (goal === 'video' || goal === 'all') && agent ? (
@@ -100,6 +102,8 @@ export default function Create() {
 }
 
 const styles = StyleSheet.create({
+    // The mascot sits in the bottom corner of every tab; the last row scrolls clear of it.
+    list: { paddingBottom: VEY_CLEARANCE },
     screen: { flex: 1, backgroundColor: colors.background, padding: 16, gap: 12 },
     templates: { padding: 14, borderRadius: 12, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, gap: 2 },
     tabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
