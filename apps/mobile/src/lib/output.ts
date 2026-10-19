@@ -16,20 +16,24 @@ export function extensionFor(mime: string): string {
 }
 
 // The name comes from the job id, never from the link, so a hostile name cannot choose a path.
-export function fileNameFor(jobId: string, mime: string): string {
+// The six stems a vocal/instrument split makes (lib/audioStems.mjs); only these may be added to a name.
+export const STEMS = ['vocals', 'drums', 'bass', 'other', 'guitar', 'piano'] as const;
+
+export function fileNameFor(jobId: string, mime: string, stem?: string): string {
     const short = /^[0-9a-f]{8}-/i.test(jobId) ? jobId.slice(0, 8).toLowerCase() : 'job';
-    return `veyrnox-${short}.${extensionFor(mime)}`;
+    const part = stem && (STEMS as readonly string[]).includes(stem) ? `-${stem}` : '';
+    return `veyrnox-${short}${part}.${extensionFor(mime)}`;
 }
 
 // The asset link lasts 15 minutes and is not kept: download it to the cache once, then hand the file on.
-export async function downloadToCache(url: string, jobId: string, mime: string): Promise<string> {
-    const file = await File.downloadFileAsync(url, new File(Paths.cache, fileNameFor(jobId, mime)), { idempotent: true });
+export async function downloadToCache(url: string, jobId: string, mime: string, stem?: string): Promise<string> {
+    const file = await File.downloadFileAsync(url, new File(Paths.cache, fileNameFor(jobId, mime, stem)), { idempotent: true });
     return file.uri;
 }
 
 // Opens the system share sheet for the finished file.
-export async function shareOutput(url: string, jobId: string, mime: string): Promise<void> {
-    const uri = await downloadToCache(url, jobId, mime);
+export async function shareOutput(url: string, jobId: string, mime: string, stem?: string): Promise<void> {
+    const uri = await downloadToCache(url, jobId, mime, stem);
     await Sharing.shareAsync(uri, { mimeType: mime });
 }
 
