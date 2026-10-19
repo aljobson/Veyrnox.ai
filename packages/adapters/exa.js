@@ -31,7 +31,7 @@ function codeFor(status) {
 }
 
 /** A usable result, or null: an http(s) link with no credentials, and some text. Cut to the limits. */
-function clean(item) {
+export function cleanSearchResult(item) {
     if (!item || typeof item !== 'object' || typeof item.url !== 'string' || typeof item.text !== 'string') return null;
     let u;
     try { u = new URL(item.url); } catch { return null; }
@@ -78,7 +78,7 @@ export async function searchWeb({ apiKey, query, signal, timeoutMs = SEARCH_LIMI
         const rows = json && Array.isArray(json.results) ? json.results : [];
         const results = [];
         for (const row of rows) {
-            const r = clean(row);
+            const r = cleanSearchResult(row);
             if (r) results.push(r);
             if (results.length >= SEARCH_LIMITS.results) break;
         }
