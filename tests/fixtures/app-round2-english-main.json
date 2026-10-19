@@ -2,12 +2,12 @@
   {
     "area": "developer",
     "name": "ApiKeys",
-    "text": "Create API keyKey nameExpires30 days90 days1 yearPermissionsRead connected accountsaccounts:readRead posts and delivery statusposts:readCreate postsposts:writeCreate keyAPI keysUser key namefixture… · posts:readExpires 1/1/2099 · Last used 10/18/2026, 1:00:00 PMRevokeEndpointsSend Authorization: Bearer YOUR_KEY to GET /api/publish/v1/accounts and GET or POST /api/publish/v1/posts. Responses are JSON and keys are limited to 120 requests per minute."
+    "text": "Create API keyKey nameExpires30 days90 days1 yearPermissionsRead connected accountsaccounts:readRead posts and delivery statusposts:readCreate postsposts:writeCreate keyAPI keysUser key namefixture… · posts:readExpires 1/1/2099 · Last used 10/18/2026, 12:00:00 PMRevokeEndpointsSend Authorization: Bearer YOUR_KEY to GET /api/publish/v1/accounts and GET or POST /api/publish/v1/posts. Responses are JSON and keys are limited to 120 requests per minute."
   },
   {
     "area": "developer",
     "name": "ApiLogs",
-    "text": "API request logsInspect recent customer API outcomes without exposing request bodies or credentials.RefreshExport CSVSearchStatusAllSuccessErrorsPendingRouteAllAccountsPostsApplyLiveTimeAPI keyRequestStatusError10/18/2026, 1:00:00 PMUser key name…GET /api/publish/v1/posts429rate_limited"
+    "text": "API request logsInspect recent customer API outcomes without exposing request bodies or credentials.RefreshExport CSVSearchStatusAllSuccessErrorsPendingRouteAllAccountsPostsApplyLiveTimeAPI keyRequestStatusError10/18/2026, 12:00:00 PMUser key name…GET /api/publish/v1/posts429rate_limited"
   },
   {
     "area": "developer",
@@ -22,12 +22,12 @@
   {
     "area": "inbox",
     "name": "Conversation",
-    "text": "User nameInstagram · message · User accountResolveAssigned toUnassignedPriorityNormalHighUrgentTags, separated by commasSaveUser message unchangedOct 18, 2026, 1:00 PMInternal notesNo team notes yet.Add noteYour team role can read this conversation and manage its workflow, but cannot reply."
+    "text": "User nameInstagram · message · User accountResolveAssigned toUnassignedPriorityNormalHighUrgentTags, separated by commasSaveUser message unchangedOct 18, 2026, 12:00 PMInternal notesNo team notes yet.Add noteYour team role can read this conversation and manage its workflow, but cannot reply."
   },
   {
     "area": "calendar",
     "name": "PostCard",
-    "text": "01:00 PM · scheduledUser caption unchangedTikTok: delivered, finish in TikTokReschedule User caption unchangedCancel post User caption unchanged"
+    "text": "12:00 PM · scheduledUser caption unchangedTikTok: delivered, finish in TikTokReschedule User caption unchangedCancel post User caption unchanged"
   },
   {
     "area": "calendar",

@@ -1,3 +1,5 @@
+// Fixed clock zone: the English baselines in tests/fixtures/app-round2-english-main.json are rendered in UTC, as in CI.
+process.env.TZ = 'UTC';
 import * as React from 'react';
 import { fixture } from './publicSiteRender.mjs';
 export const files = {
