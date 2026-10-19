@@ -490,8 +490,8 @@ createServer(async (req, res) => {
         // Priced like lib/chat.js replyPrice: the catalog base plus the extra for each option chosen; an option the model does not offer is refused.
         const model = CHAT_MODELS.find((x) => x.id === t.model_id) ?? CHAT_MODELS[0];
         const chosen = body.options ?? {};
-        if ((chosen.thinking && !model.options.thinking) || (chosen.web && !model.options.web)) { res.writeHead(400, { 'content-type': 'application/json' }); return res.end(JSON.stringify({ error: 'option_unavailable' })); }
-        const price = model.credits_per_reply + (chosen.thinking ? model.options.thinking.extra_credits : 0) + (chosen.web ? model.options.web.extra_credits : 0);
+        if ((chosen.thinking && !model.options.thinking) || (chosen.web && !model.options.web) || (Array.isArray(body.attachments) && body.attachments.length && !model.options.images)) { res.writeHead(400, { 'content-type': 'application/json' }); return res.end(JSON.stringify({ error: 'option_unavailable' })); }
+        const price = model.credits_per_reply + (chosen.thinking ? model.options.thinking.extra_credits : 0) + (chosen.web ? model.options.web.extra_credits : 0) + (Array.isArray(body.attachments) && body.attachments.length ? (model.options.images?.extra_credits ?? 0) : 0);
         res.writeHead(200, { 'content-type': 'text/event-stream' });
         const ev = (e, d) => res.write(`event: ${e}\ndata: ${JSON.stringify(d)}\n\n`);
         state.balance -= price;
