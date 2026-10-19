@@ -7,6 +7,7 @@ import { BrandKitEditor } from '../../components/brand/BrandKitEditor';
 import { fetchBrandAssets, fetchKit, kitErrorKey, type BrandAsset, type KitState } from '../../lib/brandKit';
 import { t } from '../../lib/i18n';
 import { fetchWorkspaces, type Workspace } from '../../lib/projects';
+import { VEY_CLEARANCE } from '../../components/VeyMascot';
 import { colors } from '../../theme';
 
 const sizeLabel = (b: number | null) => (b === null ? '' : b >= 1_000_000 ? `${(b / 1_000_000).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1000))} KB`);
@@ -88,7 +89,7 @@ export default function BrandKit() {
 
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
-    content: { padding: 16, gap: 16 },
+    content: { padding: 16, paddingBottom: 16 + VEY_CLEARANCE, gap: 16 },
     chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     chip: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 14, borderRadius: 999, borderWidth: 1, borderColor: colors.border },
     chipOn: { borderColor: colors.accent },

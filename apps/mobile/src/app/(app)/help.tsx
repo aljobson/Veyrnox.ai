@@ -3,6 +3,7 @@ import { Link, Stack } from 'expo-router';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { HelpAsk } from '../../components/HelpAsk';
 import { LEGAL_LINKS, PRIVACY_EMAIL, SUPPORT_EMAIL } from '../../lib/account';
+import { VEY_CLEARANCE } from '../../components/VeyMascot';
 import { colors } from '../../theme';
 
 // Help: where to write, the rules, and the way to contest a content decision. There is no FAQ list here: the
@@ -58,7 +59,7 @@ const Row = ({ label, onPress, ...rest }: { label: string; onPress?: () => void 
 
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
-    content: { padding: 16, gap: 24 },
+    content: { padding: 16, paddingBottom: 16 + VEY_CLEARANCE, gap: 24 },
     section: { gap: 8 },
     sectionTitle: { color: colors.muted, fontSize: 14, textTransform: 'uppercase' },
     row: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 16 },

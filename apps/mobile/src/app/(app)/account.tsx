@@ -9,6 +9,7 @@ import { fetchProfile, type Profile } from '../../lib/auth/accountCalls';
 import { signInMethodKey } from '../../lib/accountSecurity';
 import { LEGAL_LINKS, PRIVACY_EMAIL, SUPPORT_EMAIL } from '../../lib/account';
 import { usePush } from '../../push/pushContext';
+import { VEY_CLEARANCE } from '../../components/VeyMascot';
 import { colors } from '../../theme';
 import { t } from '../../lib/i18n';
 
@@ -95,6 +96,9 @@ export default function Account() {
             <Section title={t('label.Credits')}>
                 <Link href="/history" asChild>
                     <Row label={t('account.history')} />
+                </Link>
+                <Link href="/topups" asChild>
+                    <Row label={t('topup.row')} />
                 </Link>
             </Section>
 
@@ -193,7 +197,7 @@ const Row = ({ label, onPress, disabled, danger, ...rest }: RowProps) => (
 
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
-    content: { padding: 16, gap: 24 },
+    content: { padding: 16, paddingBottom: 16 + VEY_CLEARANCE, gap: 24 },
     section: { gap: 8 },
     sectionTitle: { color: colors.muted, fontSize: 14, textTransform: 'uppercase' },
     row: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 16 },

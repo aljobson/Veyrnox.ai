@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { CatalogList, kindTitleKey } from '../../components/CatalogList';
 import { needs, priceLines } from '../../lib/catalogPages';
 import { t } from '../../lib/i18n';
+import { VEY_CLEARANCE } from '../../components/VeyMascot';
 import { colors } from '../../theme';
 
 // Every model the app can use, from the public catalogue (read-only). A row opens Create on that model, where the
@@ -40,7 +41,7 @@ export default function Models() {
 
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
-    content: { padding: 16, gap: 20 },
+    content: { padding: 16, paddingBottom: 16 + VEY_CLEARANCE, gap: 20 },
     heading: { color: colors.muted, fontSize: 14, textTransform: 'uppercase' },
     row: { minHeight: 44, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 14, gap: 2 },
     name: { color: colors.text, fontSize: 16, fontWeight: '600' },
