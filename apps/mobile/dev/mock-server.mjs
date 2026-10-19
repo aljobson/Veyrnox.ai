@@ -169,7 +169,7 @@ createServer(async (req, res) => {
                 { id: 'rv-4', email: 'lee@acme.example', decision: 'rejected', comment: 'Not approved by legal.', decided_at: '2026-10-12T15:00:00Z', url: link } ] },
         ] });
     }
-    // Publish queues and disconnect (ADR-0149). The accounts the mock lists are fixed, so a disconnect is remembered here.
+    // Publish queues and disconnect (ADR-0161). The accounts the mock lists are fixed, so a disconnect is remembered here.
     const MOCK_QUEUE = { id: 'q-1', name: 'Weekday mornings', timezone: 'Europe/London', account_ids: ['acc-1'], enabled: true, slots: [{ weekday: 1, minute: 540 }, { weekday: 3, minute: 540 }, { weekday: 5, minute: 540 }] };
     if (path === '/api/v1/social/queues' && req.method === 'GET') return send(res, 200, { queues: [MOCK_QUEUE] });
     if (path === '/api/v1/social/queues/reserve' && req.method === 'POST') {
