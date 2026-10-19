@@ -17,7 +17,7 @@ const state = {
     personas: [{ id: randomUUID(), name: 'Editor', instructions: 'Be concise. Tighten every sentence and keep the brand voice.', model_id: 'claude-sonnet', thinking: false, web: false }],
     folders: [{ id: randomUUID(), name: 'Launch' }],
     jobs: [],
-    socialPlan: 'publish',
+    socialPlan: process.env.MOCK_SOCIAL_PLAN === 'free' ? 'free' : 'publish',
     socialPosts: [
         { id: 'post-1', key: 'seed-1', status: 'scheduled', scheduled_at: '2026-10-20T09:00:00Z', global_text: 'Spring launch teaser: the product turns in soft light.', created_at: '2026-10-18T10:00:00Z', updated_at: '2026-10-18T10:00:00Z', targets: [{ id: 't1', network: 'instagram', publish_status: 'pending', platform_post_url: null, last_error: null }] },
         { id: 'post-2', key: 'seed-2', status: 'failed', scheduled_at: '2026-10-17T09:00:00Z', global_text: 'Behind the scenes cut.', created_at: '2026-10-17T08:00:00Z', updated_at: '2026-10-17T09:05:00Z', targets: [{ id: 't2', network: 'tiktok', publish_status: 'failed', platform_post_url: null, last_error: 'The account access token expired. <b>Reconnect</b> the account.' }, { id: 't3', network: 'instagram', publish_status: 'published', platform_post_url: 'https://www.instagram.com/p/mock/', last_error: null }] },
@@ -203,6 +203,22 @@ createServer(async (req, res) => {
         console.log('MOCK created post', id, body.publishNow === true ? 'now' : 'scheduled');
         return send(res, 201, { post_id: id, idempotent: false, target_count: body.accountIds.length });
     }
+    // SmartLink (ADR-0171): one saved page, kept in memory.
+    if (path === '/api/v1/social/smartlink' && req.method === 'GET') return send(res, 200, state.smartlink ?? { brand_id: 'b1', smartlink: null, items: [], totals: { views: 0, clicks: 0 } });
+    if (path === '/api/v1/social/smartlink' && req.method === 'PUT') {
+        if (body.slug === 'taken') return send(res, 409, { error: 'slug_taken' });
+        state.smartlink = { brand_id: 'b1', smartlink: { id: 'sl-1', slug: body.slug, title: body.title, bio: body.bio, avatar_url: body.avatarUrl || null, theme: body.theme, published: body.published }, items: body.items.map((i, n) => ({ id: i.id || `it-${n}`, label: i.label, url: i.url, enabled: i.enabled, clicks: 3 * n })), totals: { views: 42, clicks: 9 } };
+        return send(res, 200, { smartlink_id: 'sl-1' });
+    }
+    // Drafts approve and discard (ADR-0162): the batch leaves the list; a free plan is refused for approve like the real route.
+    if (path === '/api/v1/social/drafts' && req.method === 'POST') {
+        if (body.action === 'approve' && state.socialPlan !== 'publish') return send(res, 402, { error: 'publish_plan_required', feature: 'scheduling' });
+        if (!['approve', 'discard'].includes(body.action) || typeof body.batchId !== 'string') return send(res, 400, { error: 'invalid_action' });
+        state.draftsGone = [...(state.draftsGone ?? []), ...(body.postId ? [body.postId] : ['dr-1', 'dr-2'])];
+        return send(res, 200, body.action === 'approve' ? { approved: 2, failed: 0 } : { discarded: body.postId ? 1 : 2 });
+    }
+    // Locked states (ADR-0162): start the mock with state.socialPlan 'free' to see the Unlock card.
+    if ((path === '/api/v1/social/calendar' || path === '/api/v1/social/analytics') && state.socialPlan !== 'publish') return send(res, 402, { error: 'publish_plan_required', feature: path.endsWith('calendar') ? 'calendar' : 'analytics' });
     // Contacts (ADR-0165): two people; a save is kept in memory.
     if (path === '/api/v1/social/contacts' && req.method === 'GET') {
         state.contacts ??= [{ account_id: 'acc-1', network: 'instagram', account_name: 'Veyrnox Studio', external_id: 'ig-100', name: 'Lee Park', avatar_url: null, last_active_at: '2026-10-19T09:00:00Z', message_count: 6, unread_count: 2, tags: ['vip'], subscription_status: 'subscribed', notes: 'Asked about prints.' }, { account_id: 'acc-1', network: 'instagram', account_name: 'Veyrnox Studio', external_id: 'ig-200', name: 'Sam Rivera', avatar_url: null, last_active_at: '2026-10-17T09:00:00Z', message_count: 2, unread_count: 0, tags: [], subscription_status: 'unknown', notes: null }];
@@ -229,11 +245,11 @@ createServer(async (req, res) => {
     // Drafts (ADR-0139): two in one batch and one alone; read-only here.
     if (path === '/api/v1/social/drafts' && req.method === 'GET') {
         const B = '44444444-4444-4444-8444-444444444444';
-        return send(res, 200, { brand_id: 'b1', approvalEnabled: true, drafts: [
+        return send(res, 200, { brand_id: 'b1', approvalEnabled: true, drafts: ([
             { id: 'dr-1', draft_batch_id: B, scheduled_at: '2026-10-23T09:00:00Z', global_text: 'Monday motivation: the studio is open and the kettle is on.', created_at: '2026-10-18T09:00:00Z', media: [{ media_type: 'image', job_id: 'j1' }], networks: ['instagram', 'linkedin'] },
             { id: 'dr-2', draft_batch_id: B, scheduled_at: '2026-10-24T12:00:00Z', global_text: 'Three tips for softer product light.', created_at: '2026-10-18T09:00:01Z', media: [], networks: ['linkedin'] },
             { id: 'dr-3', draft_batch_id: null, scheduled_at: null, global_text: 'Draft with no batch or time yet.', created_at: '2026-10-17T09:00:00Z', media: [{ media_type: 'video', job_id: 'j2' }], networks: [] },
-        ] });
+        ]).filter((d) => !state.draftsGone?.includes(d.id)) });
     }
     // Calendar (ADR-0138): posts whose time falls in [from, to), oldest first, with the action flags the real route adds.
     if (path === '/api/v1/social/calendar' && req.method === 'GET') {
