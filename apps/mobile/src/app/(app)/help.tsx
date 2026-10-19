@@ -1,6 +1,7 @@
 import * as WebBrowser from 'expo-web-browser';
 import { Link, Stack } from 'expo-router';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { HelpAsk } from '../../components/HelpAsk';
 import { LEGAL_LINKS, PRIVACY_EMAIL, SUPPORT_EMAIL } from '../../lib/account';
 import { colors } from '../../theme';
 
@@ -10,6 +11,7 @@ export default function Help() {
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
             <Stack.Screen options={{ title: 'Help' }} />
+            <HelpAsk />
             <Section title="Contact us">
                 <Row label={`Email support: ${SUPPORT_EMAIL}`} onPress={() => Linking.openURL(`mailto:${SUPPORT_EMAIL}`)} />
                 <Text style={styles.note}>For a problem with a charge or a creation, write from the address on your account. Privacy requests go to {PRIVACY_EMAIL}.</Text>
