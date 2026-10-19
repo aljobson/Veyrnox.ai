@@ -2,23 +2,21 @@ import { Stack, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { FreeAllowanceCard } from '../../../components/FreeAllowanceCard';
-import { fetchCatalogCached, kindOf, type CatalogModel, type Kind } from '../../../lib/media';
-import { selectedState } from '../../../lib/a11y';
+import { fetchCatalogCached, type CatalogModel } from '../../../lib/media';
+import { GOALS, TIERS, filterByTier, freeLeftFor, modelsForGoal, type Goal, type Tier } from '../../../lib/createOptions';
+import { useFreeLeft } from '../../../lib/useFreeLeft';
+import { selectedState, touchTarget } from '../../../lib/a11y';
 import { fetchAgentListing } from '../../../lib/montage';
 import { colors } from '../../../theme';
 import { plural, t } from '../../../lib/i18n';
-
-const KINDS: { kind: Kind; label: string }[] = [
-    { kind: 'image', label: 'model.media.image' },
-    { kind: 'video', label: 'model.media.video' },
-    { kind: 'audio', label: 'model.media.audio' },
-];
 
 export default function Create() {
     const router = useRouter();
     const [models, setModels] = useState<CatalogModel[] | null>(null);
     const [failed, setFailed] = useState(false);
-    const [kind, setKind] = useState<Kind>('image');
+    const [goal, setGoal] = useState<Goal>('image');
+    const [tier, setTier] = useState<Tier | null>(null);
+    const freeLeft = useFreeLeft();
     const [agent, setAgent] = useState<{ readonly credits: number } | null>(null);
 
     useEffect(() => {
@@ -27,7 +25,10 @@ export default function Create() {
         fetchAgentListing().then(setAgent);
     }, []);
 
-    const shown = useMemo(() => (models ?? []).filter((m) => kindOf(m.modality) === kind), [models, kind]);
+    const goalModels = useMemo(() => modelsForGoal(models ?? [], goal), [models, goal]);
+    // Tiers are thirds of the goal's own prices, as on the web. Cheapest first, so Low reads as the top of the list.
+    const shown = useMemo(() => [...filterByTier(goalModels, tier)].sort((a, b) => a.credits - b.credits || a.name.localeCompare(b.name)), [goalModels, tier]);
+    const kindWord = t(`create.goal.${goal}`).toLowerCase();
 
     return (
         <View style={styles.screen}>
@@ -36,11 +37,27 @@ export default function Create() {
                 <Text style={styles.name}>{t('label.Templates')}</Text>
                 <Text style={styles.muted}>{t('create.templatesHint')}</Text>
             </Pressable>
-            {models ? <FreeAllowanceCard models={models} /> : null}
-            <View style={styles.tabs}>
-                {KINDS.map((k) => (
-                    <Pressable key={k.kind} accessibilityRole="tab" accessibilityState={selectedState(kind === k.kind)} style={[styles.tab, kind === k.kind && styles.tabOn]} onPress={() => setKind(k.kind)}>
-                        <Text style={[styles.tabText, kind === k.kind && styles.tabTextOn]}>{t(k.label)}</Text>
+            {models ? <FreeAllowanceCard models={models} left={freeLeft} /> : null}
+            <View style={styles.tabs} accessibilityLabel={t('create.goalLabel')}>
+                {GOALS.map((g) => (
+                    <Pressable
+                        key={g.goal}
+                        accessibilityRole="tab"
+                        accessibilityState={selectedState(goal === g.goal)}
+                        style={[styles.tab, goal === g.goal && styles.tabOn]}
+                        onPress={() => {
+                            setGoal(g.goal);
+                            setTier(null);
+                        }}
+                    >
+                        <Text style={[styles.tabText, goal === g.goal && styles.tabTextOn]}>{t(g.label)}</Text>
+                    </Pressable>
+                ))}
+            </View>
+            <View style={styles.tiers} accessibilityLabel={t('create.tierLabel')}>
+                {[null, ...TIERS].map((x) => (
+                    <Pressable key={x ?? 'all'} accessibilityRole="button" accessibilityState={selectedState(tier === x)} style={[styles.tierChip, touchTarget, tier === x && styles.tabOn]} onPress={() => setTier(x)}>
+                        <Text style={[styles.tabText, tier === x && styles.tabTextOn]}>{t(`create.tier.${x ?? 'all'}`)}</Text>
                     </Pressable>
                 ))}
             </View>
@@ -52,7 +69,7 @@ export default function Create() {
                 <FlatList
                     data={shown}
                     ListHeaderComponent={
-                        kind === 'video' && agent ? (
+                        (goal === 'video' || goal === 'all') && agent ? (
                             <Pressable accessibilityRole="button" style={styles.row} onPress={() => router.push('/create/agent')}>
                                 <View style={styles.agentText}>
                                     <Text style={styles.name}>{t('create.agentTitle')}</Text>
@@ -63,11 +80,17 @@ export default function Create() {
                         ) : undefined
                     }
                     keyExtractor={(m) => m.id}
-                    ListEmptyComponent={<Text style={styles.muted}>{t('create.noModels', { kind: t(`model.media.${kind}`).toLowerCase() })}</Text>}
+                    ListEmptyComponent={<Text style={styles.muted}>{t('create.noModels', { kind: kindWord })}</Text>}
                     renderItem={({ item }) => (
                         <Pressable accessibilityRole="button" style={styles.row} onPress={() => router.push({ pathname: '/create/[modelId]', params: { modelId: item.id } })}>
                             <Text style={styles.name}>{item.name}</Text>
-                            <Text style={styles.price}>{plural('create.from', item.credits)}</Text>
+                            {freeLeftFor(freeLeft, item.id) > 0 ? (
+                                <Text style={styles.free} accessibilityLabel={t('create.freeLeftLabel', { name: item.name, count: String(freeLeftFor(freeLeft, item.id)) })}>
+                                    {plural('create.freeLeft', freeLeftFor(freeLeft, item.id))}
+                                </Text>
+                            ) : (
+                                <Text style={styles.price}>{plural('create.from', item.credits)}</Text>
+                            )}
                         </Pressable>
                     )}
                 />
@@ -79,9 +102,12 @@ export default function Create() {
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background, padding: 16, gap: 12 },
     templates: { padding: 14, borderRadius: 12, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, gap: 2 },
-    tabs: { flexDirection: 'row', gap: 8 },
-    tab: { flex: 1, minHeight: 44, justifyContent: 'center', paddingVertical: 10, borderRadius: 10, alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
+    tabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    tab: { flexGrow: 1, flexBasis: '45%', minHeight: 44, justifyContent: 'center', paddingVertical: 10, borderRadius: 10, alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
     tabOn: { backgroundColor: colors.accent, borderColor: colors.accent },
+    tiers: { flexDirection: 'row', gap: 8 },
+    tierChip: { flex: 1, paddingHorizontal: 8, borderRadius: 10, alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
+    free: { color: colors.accent, fontWeight: '700' },
     tabText: { color: colors.body, fontWeight: '600' },
     tabTextOn: { color: colors.accentInk },
     row: { paddingVertical: 14, borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
