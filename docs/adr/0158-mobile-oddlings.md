@@ -63,3 +63,12 @@ When the web cast changes, run `node apps/mobile/scripts/sync-oddlings-cast.mjs`
   `ensureOnline()` and opens nothing. The character is saved as a passport before leaving.
 - **Video agent:** not used. `/create/agent` takes no brief parameter yet; adding one (`brief`, `aspect`) is a small
   change in the Create lane's file, listed in the PR. Auto Short already takes the topic today.
+
+## Addendum: sharing and the mascot
+
+- **Share a character:** the character sheet has a Share button that opens the system share sheet with the public
+  page `https://veyrnox.ai/oddlings/<id>` and a one-line message. Only the 72 cast ids can be shared (the same
+  `findOddling` check as the sheet); a character someone builds is never shared and has no public page.
+- **Room for Vey:** every Oddlings list or scroll area pads its bottom by `VEY_CLEARANCE` (ADR-0159) so the corner
+  mascot never covers the last row.
+- **Explore banner:** the Explore home belongs to the navigation lane. The route to link is `/oddlings`.

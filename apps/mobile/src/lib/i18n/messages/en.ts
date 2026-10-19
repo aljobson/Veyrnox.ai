@@ -485,6 +485,7 @@ const en = {
     'oddlings.handoff.unavailable': 'Not available',
     'oddlings.handoff.noPrice': 'Prices could not be loaded. Check your connection.',
     'oddlings.handoff.offline': 'You are offline. Nothing was opened and nothing was charged. Reconnect and try again.',
+    'oddlings.sheet.share': 'Share this character',
     'oddlings.sheet.preview': 'Animated previews are free on the web.',
 } as const;
 
