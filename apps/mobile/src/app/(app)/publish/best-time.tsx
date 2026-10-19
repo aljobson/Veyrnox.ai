@@ -89,9 +89,8 @@ export default function BestTime() {
                             <Text style={styles.muted}>{t('insights.frequencyNote')}</Text>
                             {summary.frequency.map((g) => (
                                 <View key={g.postsPerWeek} style={styles.freq} accessible accessibilityLabel={`${plural('insights.postsPerWeek', g.postsPerWeek)}, ${plural('insights.weeks', g.weeks)}, ${g.score === null ? t('insights.noScore') : `${num(g.score)} ${t('insights.perPost')}`}`}>
-                                    <Text style={styles.freqCell}>{plural('insights.postsPerWeek', g.postsPerWeek)}</Text>
-                                    <Text style={styles.freqCell}>{plural('insights.weeks', g.weeks)}</Text>
-                                    <Text style={styles.freqCell}>{g.score === null ? '—' : num(g.score)}</Text>
+                                    <Text style={styles.freqMain}>{plural('insights.postsPerWeek', g.postsPerWeek)}</Text>
+                                    <Text style={styles.freqCell}>{plural('insights.weeks', g.weeks)} · {g.score === null ? '—' : num(g.score)}</Text>
                                 </View>
                             ))}
                         </>
@@ -114,8 +113,9 @@ const styles = StyleSheet.create({
     heading: { color: colors.text, fontSize: 18, fontWeight: '700', marginTop: 8 },
     slot: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 14, gap: 2 },
     slotTime: { color: colors.text, fontSize: 17, fontWeight: '600' },
-    freq: { flexDirection: 'row', paddingVertical: 8, borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth },
-    freqCell: { color: colors.body, flex: 1, fontSize: 14 },
+    freq: { paddingVertical: 8, gap: 2, borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth },
+    freqMain: { color: colors.text, fontSize: 15, fontWeight: '600' },
+    freqCell: { color: colors.body, fontSize: 14 },
     body2: { color: colors.body },
     muted: { color: colors.muted, fontSize: 13 },
     note: { color: colors.muted, fontSize: 12, marginTop: 4 },
