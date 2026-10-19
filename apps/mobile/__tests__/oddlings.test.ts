@@ -69,7 +69,7 @@ describe('lookups and images', () => {
 describe('strings', () => {
     test.each([
         'src/app/(app)/oddlings/index.tsx', 'src/app/(app)/oddlings/[id].tsx', 'src/app/(app)/oddlings/build.tsx', 'src/app/(app)/oddlings/saved.tsx',
-        'src/components/oddlings/OddlingFilters.tsx', 'src/components/oddlings/BuilderFields.tsx', 'src/components/oddlings/CategoryList.tsx', 'src/components/oddlings/PickSheet.tsx', 'src/components/oddlings/OddlingFigure.tsx',
+        'src/components/oddlings/OddlingFilters.tsx', 'src/components/oddlings/BuilderFields.tsx', 'src/components/oddlings/CategoryList.tsx', 'src/components/oddlings/PickSheet.tsx', 'src/components/oddlings/OddlingFigure.tsx', 'src/components/oddlings/HandoffCard.tsx',
     ])('%s asks only for keys that exist', (file) => {
         const text = readFileSync(join(__dirname, '..', file), 'utf8');
         const catalog = en as Record<string, string>;

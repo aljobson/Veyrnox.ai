@@ -417,7 +417,7 @@ const en = {
     'chat.sendPriceShort.one': '{count} credit',
     'chat.sendPriceShort.other': '{count} credits',
 
-    // Oddlings gallery, character sheets and builder (parity P8, slices 1 and 2).
+    // Oddlings gallery, character sheets and builder (parity P8, slices 1 to 3).
     'oddlings.title': 'Oddlings',
     'oddlings.intro': 'Original fictional adult characters. Browse them for free.',
     'oddlings.collections': 'Collections',
@@ -472,6 +472,16 @@ const en = {
     'oddlings.saved.deleteBody': 'It is only stored on this phone and cannot be brought back.',
     'oddlings.saved.cancel': 'Cancel',
     'oddlings.saved.noPremise': 'No premise yet',
+    'oddlings.handoff.title': 'Make something with this character',
+    'oddlings.handoff.body': 'Opens Create with the words filled in. You see the price there and are charged only when you press Generate.',
+    'oddlings.handoff.portrait': 'Make a portrait',
+    'oddlings.handoff.short': 'Make a short',
+    'oddlings.handoff.credits.one': '{count} credit',
+    'oddlings.handoff.credits.other': '{count} credits',
+    'oddlings.handoff.checking': 'Checking price',
+    'oddlings.handoff.unavailable': 'Not available',
+    'oddlings.handoff.noPrice': 'Prices could not be loaded. Check your connection.',
+    'oddlings.handoff.offline': 'You are offline. Nothing was opened and nothing was charged. Reconnect and try again.',
     'oddlings.sheet.preview': 'Animated previews are free on the web.',
 } as const;
 

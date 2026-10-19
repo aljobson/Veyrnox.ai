@@ -1,6 +1,6 @@
 # ADR-0158: Oddlings on the phone (parity plan P8)
 
-**Status:** Proposed 2026-10-19. Slices 1 and 2 of three: the gallery and character sheets, then the builder. The hand-off to Create follows.
+**Status:** Proposed 2026-10-19. All three slices: the gallery and character sheets, the builder, and the hand-off to Create.
 
 ## Context
 
@@ -48,3 +48,18 @@ When the web cast changes, run `node apps/mobile/scripts/sync-oddlings-cast.mjs`
   up to 24, never sent anywhere (there is no server route). Picks are re-cleaned on every read.
 - **Left out:** the optional reference image (moodboard) upload, and the animated mode (slice 3 sends a prompt to Create).
 - **Not here:** prices. The builder costs nothing; the price is shown by Create, before anything is sent.
+
+## Slice 3: the hand-off
+
+- A card at the foot of the builder: **Make a portrait** and **Make a short**, each with the catalog price on the
+  button. The price is `estimateCredits` over the catalog row (never computed in the app); Create shows it again.
+- **Portrait:** opens Create on `flux-2-pro` (the model the web uses) with the full builder prompt in the `prompt`
+  parameter. The web hands over only the scene and lets Create add the character; the phone's Create takes a prompt
+  and no picks, so the character goes in the prompt.
+- **Short:** opens Create on Auto Short, found as the open video model whose text input is `topic` (no id is
+  hard-coded), with a topic that names the creator, voice, show, look and scene, cut to the model's own limit so the
+  scene and look go before the creator.
+- **Nothing is sent from here.** Create charges only on its own Generate button. Offline, the card checks
+  `ensureOnline()` and opens nothing. The character is saved as a passport before leaving.
+- **Video agent:** not used. `/create/agent` takes no brief parameter yet; adding one (`brief`, `aspect`) is a small
+  change in the Create lane's file, listed in the PR. Auto Short already takes the topic today.
