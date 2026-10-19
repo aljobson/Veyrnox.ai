@@ -614,6 +614,19 @@ const en = {
     'cinemaBrowse.lock.gone': 'This title is no longer available.',
     'cinemaBrowse.lock.busy': 'We could not check whether you can watch this. Try again later.',
     'cinemaBrowse.lock.network': 'No connection. Reconnect to check whether you can watch this.',
+
+    // Oddlings handoff, share (parity P8, slice 3 and addendum).
+    'oddlings.handoff.title': 'Make something with this character',
+    'oddlings.handoff.body': 'Opens Create with the words filled in. You see the price there and are charged only when you press Generate.',
+    'oddlings.handoff.portrait': 'Make a portrait',
+    'oddlings.handoff.short': 'Make a short',
+    'oddlings.handoff.credits.one': '{count} credit',
+    'oddlings.handoff.credits.other': '{count} credits',
+    'oddlings.handoff.checking': 'Checking price',
+    'oddlings.handoff.unavailable': 'Not available',
+    'oddlings.handoff.noPrice': 'Prices could not be loaded. Check your connection.',
+    'oddlings.handoff.offline': 'You are offline. Nothing was opened and nothing was charged. Reconnect and try again.',
+    'oddlings.sheet.share': 'Share this character',
 } as const;
 
 export default en;

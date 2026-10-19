@@ -1,7 +1,9 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { VEY_CLEARANCE } from '../../../components/VeyMascot';
 import { BuilderFields } from '../../../components/oddlings/BuilderFields';
+import { HandoffCard } from '../../../components/oddlings/HandoffCard';
 import { CategoryList } from '../../../components/oddlings/CategoryList';
 import { OddlingFigure } from '../../../components/oddlings/OddlingFigure';
 import { PickSheet, type PickChoice } from '../../../components/oddlings/PickSheet';
@@ -107,6 +109,7 @@ export default function OddlingBuilder() {
                     <Text style={styles.link}>{showPrompt ? t('oddlings.build.promptHide') : t('oddlings.build.prompt')}</Text>
                 </Pressable>
                 {showPrompt ? <Text style={styles.prompt} selectable>{prompt}</Text> : null}
+                <HandoffCard picks={picks} scene={scene} onLeave={async () => { await savePassport(fileStore, picks, Date.now(), loadedId).then((r) => { if (r.item) setLoadedId(r.item.id); }); }} />
                 <Pressable accessibilityRole="button" style={styles.save} onPress={save}>
                     <Text style={styles.saveText}>{t('oddlings.build.save')}</Text>
                 </Pressable>
@@ -131,7 +134,7 @@ function Action({ label, onPress, disabled }: { label: string; onPress: () => vo
 
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
-    content: { padding: 16, paddingBottom: 48 },
+    content: { padding: 16, paddingBottom: VEY_CLEARANCE + 32 },
     count: { color: colors.body, fontSize: 14, marginTop: 12 },
     note: { color: colors.muted, fontSize: 12, marginTop: 4 },
     actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },

@@ -69,7 +69,7 @@ describe('lookups and images', () => {
 describe('strings', () => {
     test.each([
         'src/app/(app)/oddlings/index.tsx', 'src/app/(app)/oddlings/[id].tsx', 'src/app/(app)/oddlings/build.tsx', 'src/app/(app)/oddlings/saved.tsx',
-        'src/components/oddlings/OddlingFilters.tsx', 'src/components/oddlings/BuilderFields.tsx', 'src/components/oddlings/CategoryList.tsx', 'src/components/oddlings/PickSheet.tsx', 'src/components/oddlings/OddlingFigure.tsx',
+        'src/components/oddlings/OddlingFilters.tsx', 'src/components/oddlings/BuilderFields.tsx', 'src/components/oddlings/CategoryList.tsx', 'src/components/oddlings/PickSheet.tsx', 'src/components/oddlings/OddlingFigure.tsx', 'src/components/oddlings/HandoffCard.tsx',
     ])('%s asks only for keys that exist', (file) => {
         const text = readFileSync(join(__dirname, '..', file), 'utf8');
         const catalog = en as Record<string, string>;
@@ -78,5 +78,20 @@ describe('strings', () => {
 
     test('kind filter labels exist', () => {
         for (const f of KIND_FILTERS) expect(f.labelKey in (en as Record<string, string>)).toBe(true);
+    });
+});
+
+describe('sharing', () => {
+    test('a character shares its public page on the site, by cast id only', () => {
+        const { shareUrl, shareMessage } = require('../src/lib/oddlings');
+        expect(shareUrl('duchess-volume')).toBe('https://veyrnox.ai/oddlings/duchess-volume');
+        expect(shareMessage('Duchess Volume', 'A hook.')).toContain('original fictional character');
+        for (const o of ODDLINGS) expect(findOddling(o.id)).not.toBeNull();
+    });
+
+    test('long lists leave room for the Vey mascot', () => {
+        for (const file of ['index.tsx', 'saved.tsx', 'build.tsx', '[id].tsx']) {
+            expect(readFileSync(join(__dirname, '..', 'src/app/(app)/oddlings', file), 'utf8')).toContain('VEY_CLEARANCE');
+        }
     });
 });
