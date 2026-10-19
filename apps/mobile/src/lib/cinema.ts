@@ -18,6 +18,8 @@ export interface CinemaTitle {
     readonly episodeCount: number;
     readonly durationSeconds: number | null;
     readonly publishedAt: string;
+    // Up to two category slugs (the discovery routes send them; the plain list does not).
+    readonly categories: readonly string[];
 }
 
 export interface Cursor {
@@ -43,6 +45,9 @@ export interface TitleDetail {
     readonly title: CinemaTitle;
     // A film or short is itself the thing to play; a series lists its episodes.
     readonly watchable: boolean;
+    // The title's own access word and reason as the detail read sent them (ADR-0164); the locked state explains from these.
+    readonly access: string;
+    readonly reason: string | null;
     readonly episodes: readonly Episode[];
 }
 
@@ -52,7 +57,7 @@ const str = (v: unknown, fallback = ''): string => (typeof v === 'string' ? v : 
 const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null);
 const TYPES: readonly string[] = ['FILM', 'SHORT', 'TRAILER', 'SERIES'];
 
-function parseTitle(raw: unknown): CinemaTitle | null {
+export function parseTitle(raw: unknown): CinemaTitle | null {
     if (!isObject(raw) || typeof raw.id !== 'string' || !TYPES.includes(str(raw.content_type))) return null;
     const creator = isObject(raw.creator) ? raw.creator : raw;
     return {
@@ -65,6 +70,7 @@ function parseTitle(raw: unknown): CinemaTitle | null {
         episodeCount: num(raw.episode_count) ?? 0,
         durationSeconds: num(raw.duration_seconds),
         publishedAt: str(raw.published_at),
+        categories: Array.isArray(raw.categories) ? raw.categories.filter((c): c is string => typeof c === 'string').slice(0, 2) : [],
     };
 }
 
@@ -75,14 +81,15 @@ export function parseTitlesPage(body: unknown): TitlesPage {
     return { titles, next };
 }
 
-export function titlesUrl(cursor: Cursor | null, base: string = API_BASE): string {
+export function titlesUrl(cursor: Cursor | null, base: string = API_BASE, category: string | null = null): string {
     const q = [`limit=${PAGE_SIZE}`];
+    if (category) q.push(`category=${encodeURIComponent(category)}`);
     if (cursor) q.push(`before=${encodeURIComponent(cursor.before)}`, `before_id=${encodeURIComponent(cursor.beforeId)}`);
     return `${base}/api/cinema/titles?${q.join('&')}`;
 }
 
-export async function fetchTitlesPage(cursor: Cursor | null, doFetch: typeof fetch = fetch, base: string = API_BASE): Promise<TitlesPage> {
-    const res = await doFetch(titlesUrl(cursor, base));
+export async function fetchTitlesPage(cursor: Cursor | null, doFetch: typeof fetch = fetch, base: string = API_BASE, category: string | null = null): Promise<TitlesPage> {
+    const res = await doFetch(titlesUrl(cursor, base, category));
     if (!res.ok) throw new Error(`titles_${res.status}`);
     return parseTitlesPage(await res.json());
 }
@@ -114,7 +121,7 @@ export function parseTitleDetail(body: unknown): TitleDetail | null {
             }
         }
     }
-    return { title, watchable: title.contentType !== 'SERIES' && isFree(raw), episodes };
+    return { title, watchable: title.contentType !== 'SERIES' && isFree(raw), access: str(raw.access), reason: str(raw.reason) || null, episodes };
 }
 
 export function formatDuration(seconds: number | null): string {

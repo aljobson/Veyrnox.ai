@@ -107,3 +107,29 @@ jobs:
       # reason, are the ALLOWED list in the script.
       - name: Audit (high and above)
         run: node scripts/check-audit.mjs
+
+  # CI used to build the Worker nowhere, so a next/adapter mismatch that made
+  # every page 500 (2026-10-19) was green. This builds the Worker, runs it in
+  # workerd and requests public pages. No secrets: a throwaway static JWKS.
+  # Required-ness is a repo ruleset setting, not a file: add `worker-smoke`.
+  worker-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install
+        run: npm ci --no-audit --no-fund
+
+      - name: Build Worker
+        run: npm run build:worker
+
+      - name: Run built Worker and request pages
+        run: node scripts/smoke-built-worker.mjs
