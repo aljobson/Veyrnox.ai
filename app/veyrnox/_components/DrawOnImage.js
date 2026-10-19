@@ -4,8 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 
 // Draw-to-edit: sketch over the start image, then hand back one flattened PNG
 // that replaces it. The edit model reads the marks as instructions, so no
-// mask or second upload is needed. Idea from Open-Generative-AI's
-// DrawModal.jsx (MIT, Copyright (c) Anil Matcha); pencil only.
+// mask or second upload is needed. Pencil only.
 
 const COLORS = ['#eab308', '#ef4444', '#ffffff', '#22d3ee'];
 // Long side of the flattened image. Keeps the PNG well under the 20 MB cap.

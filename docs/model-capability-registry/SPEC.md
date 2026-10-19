@@ -4,11 +4,7 @@
 - **Related**: `lib/modelCapabilities.js` and `lib/additionalModelCapabilities.js` ([ADR-0027](../adr/0027-model-capability-registry.md); replaced `lib/providerDuration.js`, which no longer exists), `app/api/v1/generations/route.js`,
   `app/api/catalog/route.js`, `app/veyrnox/app/create/page.js`,
   [ADR-0020](../adr/0020-kie-and-openrouter-providers.md)
-- **Source of the design** (the `packages/studio` copy went with ADR-0015): `packages/studio/src/modelCapabilities.js`,
-  `videoModelParameters.js`, `imageSizing.js` and the `inputs` schema of
-  `models.js` in Anil-matcha/Open-Generative-AI (MIT, © 2026 Open Generative AI
-  Contributors). We port the helper logic and the schema shape, not the
-  31k-line MuAPI catalog.
+- **Source of the design** (the `packages/studio` copy went with ADR-0015): the helper logic and `inputs` schema shape now live in `lib/modelCapabilities.js`.
 
 ## 1. Problem
 
