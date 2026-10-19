@@ -1,6 +1,6 @@
 import { ApiError } from '../src/lib/api';
 import { withdrawComment } from '../src/lib/cinemaComments';
-import { castChoice, castVote, competitionOpen, fetchWinners, isClosed, parseRetentionList, parseRetentionState, parseStoryPolls, parseVoting, parseWinners, readOf, setRetention, socialErrorKey } from '../src/lib/cinemaSocial';
+import { recordShare, castChoice, castVote, competitionOpen, fetchWinners, isClosed, parseRetentionList, parseRetentionState, parseStoryPolls, parseVoting, parseWinners, readOf, setRetention, socialErrorKey } from '../src/lib/cinemaSocial';
 
 const A = '11111111-1111-4111-8111-111111111111';
 const B = '22222222-2222-4222-8222-222222222222';
@@ -106,4 +106,19 @@ test('withdraws a comment with the action body and a key', async () => {
     expect(await withdrawComment(api as never, A, K)).toEqual({ replayed: true });
     expect(JSON.parse(String(calls[0].init?.body))).toEqual({ action: 'withdraw', comment_id: A });
     await expect(withdrawComment(api as never, 'bad', K)).rejects.toBeInstanceOf(ApiError);
+});
+
+describe('audience share signal', () => {
+    test('sends the share action with a key', async () => {
+        const { api, calls } = recorder({ ok: true });
+        expect(await recordShare(api, A, K)).toBe(true);
+        expect(calls[0].path).toBe('/api/v1/cinema/audience');
+        expect(JSON.parse(String(calls[0].init?.body))).toEqual({ action: 'share', content_id: A, kind: 'share' });
+        expect((calls[0].init?.headers as Record<string, string>)['Idempotency-Key']).toBe(K);
+    });
+    test('never throws: a closed switch, an offline phone or a bad id is just false', async () => {
+        const failing = { request: async () => { throw new ApiError(503, 'audience_not_open'); } };
+        expect(await recordShare(failing, A, K)).toBe(false);
+        expect(await recordShare(failing, 'bad', K)).toBe(false);
+    });
 });
