@@ -16,11 +16,11 @@ a new chat that end in a draft the person opens in Create. The phone had neither
   the Send button before sending. A model that does not offer it hides the strip.
 - Phone photos are uploaded before any charge (`/api/v1/uploads`), so a failed upload costs nothing.
 - The attachment list is part of the idempotency key's identity: the same text with different images is a new send.
-- **Resize is not built.** The web redraws every image on a canvas: scaled to a 2048 px long edge (the server refuses
-  more) and re-encoded, which also drops the EXIF block (camera, time, GPS). On the phone that needs
-  `expo-image-manipulator`, which is **not installed** and was not added. `ImageResizer` is the one seam; the default
-  refuses (`resize_unavailable`), so **a phone photo is never sent unprepared** and the screen says an app update is
-  needed. Library images are unaffected.
+- **Resize** (owner approved `expo-image-manipulator`, `~58.0.14`, the version Expo SDK 58 bundles): each phone photo is
+  rendered upright (the camera's rotation applied, so the cap follows the edge the person sees), scaled so the long edge is at
+  most 2048 px (the server refuses more), and re-encoded as JPEG at 0.9. Re-encoding drops the EXIF block (camera, time, GPS)
+  and means HEIC is never sent. Library images are already in storage and skip it. A build made before the native module was
+  added reads as "resize unavailable" and the photo is refused, never sent as picked.
 
 **Studio skills**
 - The eight Studio skills (Prompt writer, Bring it to life, Fix my prompt, Fix this photo, Edit with words, Add sound,
@@ -33,19 +33,17 @@ a new chat that end in a draft the person opens in Create. The phone had neither
   `/create/[modelId]?prompt=`. Nothing is made or charged until Create is pressed, where its price shows first.
 - Skill names and blurbs are English data from the web file, not new catalog strings.
 
-## What the resize needs (owner decision)
+## Native module
 
-Add `expo-image-manipulator` (Expo SDK 58 build, `npx expo install expo-image-manipulator`). It is a native module, so
-it needs a new native build, not an OTA update. Then implement `ImageResizer.prepare` with
-`manipulateAsync(uri, [{ resize }], { compress: 0.9, format: JPEG })` (the re-encode drops EXIF) and pass it to
-`pickPhotos`. Real-phone checks S5 and S6 in `docs/mobile/PARITY-2026-10-19.md` section 7 cover it.
+`expo-image-manipulator` is a native module: after merge the consolidated build environment needs `npx expo install --check`
+and a new development build (the owner does that). Until a build has it, phone photos are refused and Library images work.
 
 ## Not proved
 
-- Mock server and unit tests only. No simulator, device, VoiceOver or TalkBack. Library thumbnails fetch one asset link
+- Mock server and unit tests only (the resizer is tested against a fake of the manipulator API; the real module was not installed or run, so the upright-size behaviour of `renderAsync` is assumed from its docs). No simulator, device, VoiceOver or TalkBack. Library thumbnails fetch one asset link
   per tile (15-minute links) and were not load-tested.
 - The Library tile list reads the first page of jobs only.
 
 ## Consequences
 
-No new routes, flags, dependencies or server changes.
+One dependency (`expo-image-manipulator`); no new routes, flags or server changes.

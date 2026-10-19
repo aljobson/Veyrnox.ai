@@ -1,14 +1,14 @@
 import * as ImagePicker from 'expo-image-picker';
-import { MAX_IMAGE_EDGE, RESIZE_UNAVAILABLE, unavailableResizer, type ChatImage, type ImageResizer } from './chatAttach';
+import { MAX_IMAGE_EDGE, RESIZE_UNAVAILABLE, type ChatImage, type ImageResizer } from './chatAttach';
+import { createResizer } from './chatResizer';
 import type { ApiClient } from './api';
 import { uploadSource } from './uploads';
 
 export type PhotoResult = { readonly images: ChatImage[]; readonly problem: 'resize_unavailable' | 'failed' | null };
 
-// Photos from the phone. Each is redrawn through the resizer (scaled to the long-edge cap, location data dropped) before it can
-// be attached; with the default resizer that is refused, so nothing unprepared is ever sent. The resizer is the one seam to
-// swap when expo-image-manipulator is approved.
-export async function pickPhotos(room: number, resizer: ImageResizer = unavailableResizer, maxEdge: number = MAX_IMAGE_EDGE): Promise<PhotoResult> {
+// Photos from the phone. Each goes through the resizer (long edge capped, upright, re-encoded as JPEG so location data is
+// dropped) before it can be attached; if that fails nothing unprepared is sent.
+export async function pickPhotos(room: number, resizer: ImageResizer = createResizer(), maxEdge: number = MAX_IMAGE_EDGE): Promise<PhotoResult> {
     if (room <= 0) return { images: [], problem: null };
     const res = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],

@@ -453,7 +453,7 @@ const en = {
     'chat.attach.libraryEmpty': 'No finished images yet.',
     'chat.attach.libraryImage': 'Library image',
     'chat.attach.done': 'Done',
-    'chat.attach.needsUpdate': 'Photos from your phone cannot be sent yet: they must be resized and have their location data removed first, which needs an app update. Choose from your Library instead.',
+    'chat.attach.needsUpdate': 'Photos from your phone need the latest app version before they can be sent. Choose from your Library instead.',
     'chat.attach.uploadFailed': 'An image could not be uploaded. Nothing was sent and you were not charged.',
     'chat.draft.open': 'Open in Create',
     'chat.draft.price.one': '{count} credit',

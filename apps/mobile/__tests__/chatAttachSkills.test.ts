@@ -1,4 +1,4 @@
-import { attachmentRefs, libraryImageJobs, MAX_IMAGE_EDGE, roomFor, scaledSize, unavailableResizer, RESIZE_UNAVAILABLE } from '../src/lib/chatAttach';
+import { attachmentRefs, libraryImageJobs, MAX_IMAGE_EDGE, roomFor, scaledSize } from '../src/lib/chatAttach';
 import { NO_OPTIONS, replyPrice, sendKeyFor, type ChatModel } from '../src/lib/chat';
 import type { CatalogModel, Job } from '../src/lib/media';
 import { MAX_INSTRUCTIONS, parseStudioDrafts, skillById, skillInstructions, SKILLS, withoutDrafts } from '../src/lib/studioSkills';
@@ -28,9 +28,6 @@ describe('attachments', () => {
     });
     test('refs are upload keys and Library job ids in the shapes the server takes', () => {
         expect(attachmentRefs(['k1'], ['ABC-1'])).toEqual([{ source_key: 'k1' }, { source_asset: 'abc-1' }]);
-    });
-    test('a phone photo is refused until a resizer exists, so nothing unprepared is sent', async () => {
-        await expect(unavailableResizer.prepare({ uri: 'file:///p.jpg', width: 4032, height: 3024 }, MAX_IMAGE_EDGE)).rejects.toThrow(RESIZE_UNAVAILABLE);
     });
     test('the Library offers only finished images', () => {
         const job = (job_id: string, model_id: string, state: Job['state'], has_asset = true): Job => ({ job_id, model_id, state, has_asset, credits: 1, created_at: '' });

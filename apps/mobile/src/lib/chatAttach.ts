@@ -33,10 +33,8 @@ export function attachmentRefs(uploadKeys: readonly string[], assetIds: readonly
     return [...uploadKeys.map((k) => ({ source_key: k })), ...assetIds.map((id) => ({ source_asset: id.toLowerCase() }))];
 }
 
-// A photo from the phone must be redrawn before it leaves: scaled to the long-edge cap (the server refuses more) and
-// re-encoded, which drops its EXIF block (camera, time, GPS position). The web does this on a canvas. On the phone it needs
-// expo-image-manipulator, which is not installed, so until the owner approves that dependency the default resizer refuses and
-// phone photos are not sent. Library images are already in storage and never pass through it.
+// A photo from the phone is redrawn before it leaves (chatResizer.ts): scaled to the long-edge cap (the server refuses more) and
+// re-encoded as JPEG, which drops its EXIF block (camera, time, GPS position). Library images are already in storage and skip it.
 export interface PreparedImage {
     readonly uri: string;
     readonly contentType: string;
@@ -46,9 +44,6 @@ export interface ImageResizer {
     prepare(image: { uri: string; width: number; height: number }, maxEdge: number): Promise<PreparedImage>;
 }
 export const RESIZE_UNAVAILABLE = 'resize_unavailable';
-export const unavailableResizer: ImageResizer = {
-    prepare: () => Promise.reject(new Error(RESIZE_UNAVAILABLE)),
-};
 
 // The person's finished images, newest first, from a page of jobs and the catalog (which says what each model makes).
 export function libraryImageJobs(jobs: readonly Job[], catalog: readonly Pick<CatalogModel, 'id' | 'modality'>[]): Job[] {
