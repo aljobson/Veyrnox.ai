@@ -9,7 +9,7 @@ import { VeyCharacter } from './VeyCharacter';
 import { heightFor } from '../lib/veyCharacter';
 
 // The character is drawn as wide as the old round button was tall, plus room for its arms.
-const WIDTH = 72;
+const WIDTH = 56;
 const HEIGHT = heightFor(WIDTH);
 const EDGE = 16;
 // Bottom padding for a scrolling list, so its last row can be scrolled clear of Vey.
