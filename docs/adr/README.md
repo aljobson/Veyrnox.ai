@@ -6,6 +6,7 @@ Phase-0 decision-support documents for the target architecture at `/Users/aljobs
 
 | ADR | Status | Summary | Blocks |
 |-----|--------|---------|--------|
+| [ADR-0163 — Mobile: Publish team, activity log, queues and RSS autolists (parity plan P5)](0163-mobile-publish-team-activity-queues-autolists.md) | **Proposed 2026-10-19** | Team and activity read-only, queue and RSS autolist create, edit, delete; invite and reports not built |
 | [ADR-0162 — Mobile: Publish calendar month, analytics range and compare, Unlock cards, draft approval (parity plan P5)](0162-mobile-publish-calendar-analytics-drafts.md) | **Proposed 2026-10-19** | Month view, analytics range and compare with followers chart, store-priced Unlock cards for free accounts, draft approve and discard with a confirm naming the networks |
 | [ADR-0161 — Mobile: Publish composer completion and disconnect (parity plan P5)](0161-mobile-publish-composer-completion.md) | **Proposed 2026-10-19** | Text per network, YouTube visibility, queue slot, disconnect with a confirm; several media items not built (server refuses more than one) |
 | [ADR-0128 — Mobile: consent before content goes to an AI provider](0128-mobile-ai-sharing-consent.md) | **Proposed 2026-10-18** | One-time, versioned in-app agreement before the first generation, upload or chat send (Apple 5.1.2(i)); gate in the API client so no screen can bypass it; Not now sends nothing; stored per account in SecureStore. No server change, no dependency. | Withdraw control |
