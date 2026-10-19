@@ -6,6 +6,7 @@ Phase-0 decision-support documents for the target architecture at `/Users/aljobs
 
 | ADR | Status | Summary | Blocks |
 |-----|--------|---------|--------|
+| [ADR-0171 — Mobile: chat reply through iOS suspension (parity plan P3, S6)](0171-mobile-chat-long-turn-resume.md) | **Proposed 2026-10-19** | Return from background: look for the job for about a minute, never cut the reader off; one charge on a retry |
 | [ADR-0170 — Mobile: Vey help panel (parity plan P3)](0170-mobile-vey-help-panel.md) | **Proposed 2026-10-19** | Ask Vey on the Help screen via /api/v1/help; Take me there only where the phone has the screen |
 | [ADR-0128 — Mobile: consent before content goes to an AI provider](0128-mobile-ai-sharing-consent.md) | **Proposed 2026-10-18** | One-time, versioned in-app agreement before the first generation, upload or chat send (Apple 5.1.2(i)); gate in the API client so no screen can bypass it; Not now sends nothing; stored per account in SecureStore. No server change, no dependency. | Withdraw control |
 | [ADR-0127 — Mobile: iOS privacy manifest and permission strings](0127-mobile-ios-privacy-manifest.md) | **Proposed 2026-10-18** | `ios.privacyManifests` (no tracking, required-reason APIs, collected data types matching the store checklist) and the unused Face ID string removed; pinned by a test. Android storage permissions left for the Android pass. | Android permission pass; first signed build's privacy report |

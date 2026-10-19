@@ -480,6 +480,11 @@ const en = {
     'help.err.rate': 'Too many questions. Wait a moment and try again.',
     'help.err.network': 'No connection. Try again when you are back online.',
     'help.err.later': 'Help is not available right now. Try again later, or write to support below.',
+    // Chat reply recovered after the app was in the background (ADR-0171)
+    'chat.resume.saved': 'Your reply finished while the app was in the background. It is saved below and charged once.',
+    'chat.resume.unsaved': 'Your reply finished while the app was in the background. It was charged but could not be saved.',
+    'chat.resume.nothing': 'The connection was lost and no reply was made. No credits were used.',
+    'chat.resume.pending': 'We are still checking whether your reply finished. If it did, it is charged once and will appear in this chat.',
 } as const;
 
 export default en;
