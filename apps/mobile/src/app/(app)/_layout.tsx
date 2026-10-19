@@ -2,6 +2,7 @@ import { Redirect, Stack } from 'expo-router';
 import { useAuth } from '../../auth/AuthProvider';
 import { Logo } from '../../components/Logo';
 import { AiConsentHost } from '../../components/AiConsentHost';
+import { FirstRunGate } from '../../components/FirstRunGate';
 import { OfflineBanner } from '../../components/OfflineBanner';
 import { ServiceBanner } from '../../components/ServiceBanner';
 import { colors } from '../../theme';
@@ -12,6 +13,7 @@ export default function AppLayout() {
     return (
         <>
             <AiConsentHost />
+            <FirstRunGate />
             <Stack
                 screenLayout={({ children }) => (
                     <>
