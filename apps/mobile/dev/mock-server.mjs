@@ -17,7 +17,7 @@ const state = {
     personas: [{ id: randomUUID(), name: 'Editor', instructions: 'Be concise. Tighten every sentence and keep the brand voice.', model_id: 'claude-sonnet', thinking: false, web: false }],
     folders: [{ id: randomUUID(), name: 'Launch' }],
     jobs: [],
-    socialPlan: 'publish',
+    socialPlan: process.env.MOCK_SOCIAL_PLAN === 'free' ? 'free' : 'publish',
     socialPosts: [
         { id: 'post-1', key: 'seed-1', status: 'scheduled', scheduled_at: '2026-10-20T09:00:00Z', global_text: 'Spring launch teaser: the product turns in soft light.', created_at: '2026-10-18T10:00:00Z', updated_at: '2026-10-18T10:00:00Z', targets: [{ id: 't1', network: 'instagram', publish_status: 'pending', platform_post_url: null, last_error: null }] },
         { id: 'post-2', key: 'seed-2', status: 'failed', scheduled_at: '2026-10-17T09:00:00Z', global_text: 'Behind the scenes cut.', created_at: '2026-10-17T08:00:00Z', updated_at: '2026-10-17T09:05:00Z', targets: [{ id: 't2', network: 'tiktok', publish_status: 'failed', platform_post_url: null, last_error: 'The account access token expired. <b>Reconnect</b> the account.' }, { id: 't3', network: 'instagram', publish_status: 'published', platform_post_url: 'https://www.instagram.com/p/mock/', last_error: null }] },
