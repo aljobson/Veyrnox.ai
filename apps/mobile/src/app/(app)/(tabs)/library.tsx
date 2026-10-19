@@ -1,16 +1,15 @@
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import { useAuth } from '../../auth/AuthProvider';
-import { StaleNote } from '../../components/StaleNote';
-import { appCache, getCacheUser } from '../../lib/appCache';
-import { POLICIES, type CacheMeta } from '../../lib/cache';
-import { observe } from '../../lib/network';
-import { mediaApi, type Job, type JobPage } from '../../lib/media';
-import { colors } from '../../theme';
-import { HeaderAction } from '../../components/HeaderAction';
-import { t } from '../../lib/i18n';
-import { touchTarget } from '../../lib/a11y';
+import { useAuth } from '../../../auth/AuthProvider';
+import { StaleNote } from '../../../components/StaleNote';
+import { appCache, getCacheUser } from '../../../lib/appCache';
+import { POLICIES, type CacheMeta } from '../../../lib/cache';
+import { observe } from '../../../lib/network';
+import { mediaApi, type Job, type JobPage } from '../../../lib/media';
+import { colors } from '../../../theme';
+import { t } from '../../../lib/i18n';
+import { touchTarget } from '../../../lib/a11y';
 
 // Catalog keys, looked up when shown.
 const BADGE: Record<Job['state'], string> = { queued: 'library.queued', running: 'library.running', succeeded: 'library.succeeded', failed: 'library.failed' };
@@ -65,7 +64,10 @@ export default function Library() {
 
     return (
         <View style={styles.screen}>
-            <Stack.Screen options={{ title: t('label.Library'), headerRight: () => <HeaderAction label={t('library.videoFiles')} accessibilityLabel={t('library.videoFilesLabel')} onPress={() => router.push('/library/files')} /> }} />
+            <Stack.Screen options={{ title: t('label.Library') }} />
+            <Pressable accessibilityRole="button" accessibilityLabel={t('library.videoFilesLabel')} style={[styles.filesLink, touchTarget]} onPress={() => router.push('/library/files')}>
+                <Text style={styles.filesText}>{t('library.videoFiles')}</Text>
+            </Pressable>
             {failed ? (
                 <Pressable accessibilityRole="button" style={touchTarget} onPress={load}>
                     <Text style={styles.error}>{t('library.loadError')}</Text>
@@ -101,6 +103,8 @@ const styles = StyleSheet.create({
     row: { paddingVertical: 14, borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'center', gap: 12 },
     rowText: { flex: 1, gap: 2 },
     name: { color: colors.text, fontSize: 16 },
+    filesLink: { alignSelf: 'flex-start', paddingBottom: 8 },
+    filesText: { color: colors.accent, fontSize: 16 },
     muted: { color: colors.muted },
     badge: { color: colors.accent, fontWeight: '600' },
     badgeFailed: { color: colors.muted },

@@ -24,7 +24,9 @@ export default function AppLayout() {
                     headerBackButtonDisplayMode: 'minimal',
                     contentStyle: { backgroundColor: colors.background },
                 }}
-            />
+            >
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            </Stack>
         </>
     );
 }
