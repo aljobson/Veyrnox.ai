@@ -70,7 +70,8 @@ export const scenarios=[
  {area:'styles',name:'TextStyleCatalog',props:{frame:30,apply:noop,onSelect:noop},states:['No matching user query']},
  {area:'styles',name:'TextStyleCatalog',props:{frame:30,apply:noop,onSelect:noop}},
 ];
-export const visibleText=html=>html.replace(/<[^>]*>/g,'');
+import { visibleText } from './visibleText.mjs';
+export { visibleText };
 export function renderScenario(scenario,locale,messages,sourceOverrides={}){
  const file=files[scenario.area];
  const f=fixture(locale,'/app/editor',{messages,signedIn:true,sourceOverrides,states:scenario.states?{[file]:scenario.states}:{},expose:{[files.device]:['DeviceFiles'],[files.chatText]:['Code']},moduleMocks:{

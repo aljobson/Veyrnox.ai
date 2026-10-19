@@ -42,7 +42,8 @@ export const scenarios = [
   { area: 'transcript', name: 'TranscriptPanel', props: { tl: { ...timeline, text: [caption], tracks: [{ id: 'text', kind: 'text', name: 'User track unchanged' }] }, blobs: { current: new Map() }, frame: 0 } },
   ...['stabilize', 'track-reframe', 'camera-movement'].map(tool => ({ area: 'motion', name: 'MotionProcessingControls', props: { media: { kind: 'video' }, blob: null, timeline, onBusy: noop }, states: [tool] })),
 ];
-export const visibleText = html => html.replace(/<[^>]*>/g, '');
+import { visibleText } from './visibleText.mjs';
+export { visibleText };
 export function renderScenario(scenario, locale, messages, sourceOverrides = {}) {
   const file = files[scenario.area];
   const f = fixture(locale, '/app/' + scenario.area, {

@@ -24,7 +24,8 @@ export const scenarios = [
   { area: 'editor', name: 'Editor', key: 'app.editor.legacy.policy' },
   { area: 'create', name: 'default', key: 'app.create.totalCost' },
 ];
-export const visibleText = html => html.replace(/<[^>]*>/g, '');
+import { visibleText } from './visibleText.mjs';
+export { visibleText };
 export function renderScenario(scenario, locale, messages, sourceOverrides = {}) {
   const file = files[scenario.area];
   const f = fixture(locale, '/app/' + scenario.area, {
