@@ -677,7 +677,7 @@ const en = {
     'oddlings.handoff.noPrice': 'Prices could not be loaded. Check your connection.',
     'oddlings.handoff.offline': 'You are offline. Nothing was opened and nothing was charged. Reconnect and try again.',
     'oddlings.sheet.share': 'Share this character',
-=======
+
     // Chat stop, ask again, rename and pin (ADR-0155)
     'chat.stop': 'Stop',
     'chat.stopLabel': 'Stop the reply',
