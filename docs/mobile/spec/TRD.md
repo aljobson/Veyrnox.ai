@@ -36,8 +36,8 @@ Middleware needs only `Authorization: Bearer <Supabase ES256 JWT>`. There is no 
 ### 2.3 Store billing through RevenueCat; no web checkout
 Apple 3.1.1 and Google Play require their own purchase for digital credits. RevenueCat webhooks reach `POST /api/webhook/revenuecat`, which credits through `credit_top_up` and claws back through the existing refund path (ADR-0108). Rejected: direct StoreKit and Play Billing code (two integrations to keep correct), and any Stripe link in the app (policy).
 
-### 2.4 Editing is a server render, not an on-device timeline
-Quick edit (trim, join, captions) sends a request and renders on the server (ADR-0134). Rejected: FFmpegKit (retired), Skia video export (beta), and porting the browser editor (it depends on browser decode and encode). A multi-track timeline stays on the web.
+### 2.4 Editing: open decision, a spike first
+The owner requires the full web editor on the phone (2026-10-19). The web editor decodes, composites and exports in the browser (WebCodecs, canvas, workers), and its own ADR calls Safari preview-only with no real-device export evidence. Options: (A) the web editor in a web view, (B) a native timeline with a new server renderer, (C) a native shell for bin, Library, generation, stems, brand, review and credits with the web engine in a web view for preview and export. Recommended: C, after Spike S1 in [../PARITY-2026-10-19.md](../PARITY-2026-10-19.md). Until then quick edit (trim, join, captions as one server job, ADR-0134) stays. Rejected for now: FFmpegKit (retired), Skia video export (beta). Any web-view route needs a sign-in bridge and must drop the editor's Stripe credits dialog (store-only rule).
 
 ### 2.5 Playback with `expo-video` on signed HLS
 `cinema/play` mints a 15-minute Cloudflare Stream token; the app plays `.../manifest/video.m3u8` and replays the heartbeat contract against `cinema/play/heartbeat`. Fallback: a web view on the `/iframe` URL (loses native casting). Not proved on a device; see the spike note.
