@@ -703,7 +703,7 @@ test('capped web search: the debit is the row price, and the job keeps the engin
     await (await run(f, { body: webBody(), env: EXA_ENV })).text();
     const d = called(f, 'ledger_debit')[0][1];
     assert.equal(d.p_credits, 3, 'base 1 plus Web search 2, looked up and added');
-    assert.deepEqual(d.p_inputs, { kind: 'chat', thread_id: THREAD, options: { thinking: false, web: true }, web_engine: 'capped', search_cost_usd: 0.008 });
+    assert.deepEqual(d.p_inputs, { kind: 'chat', thread_id: THREAD, options: { thinking: false, web: true }, web_engine: 'capped', search_provider: 'exa', search_cost_usd: 0.008 });
     assert.ok(!JSON.stringify(d).includes('What is'), 'no message text on the job');
 });
 
@@ -715,9 +715,9 @@ test('capped web search: the pages the model was shown are listed under the repl
     assert.equal(called(f, 'chat_complete_turn')[0][1].p_reply, text);
 });
 
-test('capped web search with no key: refused before anything is searched or charged', async () => {
+test('capped web search explicitly off: refused before anything is searched or charged', async () => {
     const f = cappedFakes();
-    const res = await run(f, { body: webBody(), env });
+    const res = await run(f, { body: webBody(), env: { ...env, CHAT_SEARCH_PROVIDER: 'off' } });
     assert.equal(res.status, 409);
     assert.deepEqual(await res.json(), { error: 'option_unavailable' });
     assert.equal(f.searches.length, 0);
