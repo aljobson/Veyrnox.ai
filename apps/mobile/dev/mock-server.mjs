@@ -192,6 +192,18 @@ createServer(async (req, res) => {
         console.log('MOCK created post', id, body.publishNow === true ? 'now' : 'scheduled');
         return send(res, 201, { post_id: id, idempotent: false, target_count: body.accountIds.length });
     }
+    // Contacts (ADR-0165): two people; a save is kept in memory.
+    if (path === '/api/v1/social/contacts' && req.method === 'GET') {
+        state.contacts ??= [{ account_id: 'acc-1', network: 'instagram', account_name: 'Veyrnox Studio', external_id: 'ig-100', name: 'Lee Park', avatar_url: null, last_active_at: '2026-10-19T09:00:00Z', message_count: 6, unread_count: 2, tags: ['vip'], subscription_status: 'subscribed', notes: 'Asked about prints.' }, { account_id: 'acc-1', network: 'instagram', account_name: 'Veyrnox Studio', external_id: 'ig-200', name: 'Sam Rivera', avatar_url: null, last_active_at: '2026-10-17T09:00:00Z', message_count: 2, unread_count: 0, tags: [], subscription_status: 'unknown', notes: null }];
+        const q = (url.searchParams.get('search') || '').toLowerCase(); const st = url.searchParams.get('subscriptionStatus');
+        return send(res, 200, { brandRole: 'owner', contacts: state.contacts.filter((c) => c.name.toLowerCase().includes(q) && (!st || c.subscription_status === st)) });
+    }
+    if (path === '/api/v1/social/contacts' && req.method === 'PATCH') {
+        const c = (state.contacts ?? []).find((x) => x.external_id === body.externalId);
+        if (!c) return send(res, 404, { error: 'contact_not_found' });
+        Object.assign(c, { tags: body.tags, subscription_status: body.subscriptionStatus, notes: body.notes || null });
+        return send(res, 200, { ok: true, tags: c.tags, subscriptionStatus: c.subscription_status });
+    }
     // Drafts (ADR-0139): two in one batch and one alone; read-only here.
     if (path === '/api/v1/social/drafts' && req.method === 'GET') {
         const B = '44444444-4444-4444-8444-444444444444';
