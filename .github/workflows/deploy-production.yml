@@ -20,6 +20,18 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      # For a site that is already down. Skips the retained-asset capture and
+      # checks (the live site cannot answer them) and does not roll back,
+      # because the recorded rollback target is the broken release. Every other
+      # protection stays: the ci-green wait (nothing in the repo's rules
+      # permits shipping a red commit, so a manual run waits for ci too), the
+      # secret binding checks, the new-build smoke test and the workers.dev
+      # check.
+      force_recovery:
+        description: "Recovery deploy for a site that is down: skip retained-asset checks and rollback (ci must still be green)"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -69,6 +81,7 @@ jobs:
       APP_ENV: production
       CLOUDFLARE_ACCOUNT_ID: fb18d9f7052afbea5a5e0eae69948af2
       WORKER_NAME: veyrnox-ai
+      FORCE_RECOVERY: ${{ github.event_name == 'workflow_dispatch' && inputs.force_recovery && 'true' || 'false' }}
       HAS_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
       # The project token is public and baked into the client bundle. The
       # personal key is build-only and uploads source maps; it never reaches
@@ -82,6 +95,7 @@ jobs:
     outputs:
       workers_dev: ${{ steps.workers_dev.outputs.state || (steps.workers_dev.outcome == 'failure' && 'unknown') || '' }}
       workers_dev_detail: ${{ steps.workers_dev.outputs.detail }}
+      last_good: ${{ steps.lkg.outputs.summary }}
     steps:
       - name: Skip until the deploy token is configured
         if: env.HAS_TOKEN != 'true'
@@ -118,7 +132,7 @@ jobs:
       # the deployed set contains at most 21 releases; current files always win.
       - name: Retain previous Next static assets
         id: retained_static
-        if: env.HAS_TOKEN == 'true' && steps.tip.outputs.stale != 'true'
+        if: env.HAS_TOKEN == 'true' && steps.tip.outputs.stale != 'true' && env.FORCE_RECOVERY != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -182,9 +196,34 @@ jobs:
       # has archived a complete build. The first retention-enabled deployment
       # establishes that trusted baseline and still receives strict new-build
       # smoke testing below.
+      #
+      # A live site that is down (every failure a 5xx or unreachable) cannot
+      # say what it references, and must not block the deploy that fixes it
+      # (2026-10-19: the 500 site failed this step, so the fix never shipped).
+      # That case writes a flagged manifest and a warning; any other failure,
+      # such as a 404 or a wrong body, still fails the step.
       - name: Record currently referenced production assets
+        id: capture
         if: env.HAS_TOKEN == 'true' && steps.tip.outputs.stale != 'true' && steps.retained_static.outputs.available == 'true'
-        run: node scripts/check-site-health.mjs --capture-assets previous-build-assets.json
+        run: |
+          node scripts/check-site-health.mjs --capture-assets previous-build-assets.json --tolerate-server-errors
+          if jq -e '.degraded == true' previous-build-assets.json > /dev/null; then
+            echo "degraded=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # One switch for the steps below: true when the site was already down
+      # (forced, or the capture above found it so). The smoke test then covers
+      # the new build only, and there is nothing healthy to roll back to.
+      - name: Decide whether this is a recovery deploy
+        id: recovery
+        if: env.HAS_TOKEN == 'true' && steps.tip.outputs.stale != 'true'
+        env:
+          CAPTURE_DEGRADED: ${{ steps.capture.outputs.degraded }}
+        run: |
+          if [ "$FORCE_RECOVERY" = "true" ] || [ "$CAPTURE_DEGRADED" = "true" ]; then
+            echo "active=true" >> "$GITHUB_OUTPUT"
+            echo "::warning::RECOVERY DEPLOY: production was already unhealthy before $GITHUB_SHA. Retained-asset checks and automatic rollback are skipped; the new build must pass the strict smoke test on its own."
+          fi
 
       # Each run stores only its own files. The bounded download loop above
       # selects the history, so old files cannot be copied forward forever.
@@ -239,13 +278,54 @@ jobs:
 
       - name: Smoke test the live site with retained assets
         id: smoke_retained
-        if: env.HAS_TOKEN == 'true' && steps.tip.outputs.stale != 'true' && steps.retained_static.outputs.available == 'true'
+        if: env.HAS_TOKEN == 'true' && steps.tip.outputs.stale != 'true' && steps.retained_static.outputs.available == 'true' && steps.recovery.outputs.active != 'true'
         run: sleep 20 && node scripts/check-site-health.mjs --asset-manifest previous-build-assets.json
 
       - name: Smoke test the first retention-enabled deploy
         id: smoke_first
-        if: env.HAS_TOKEN == 'true' && steps.tip.outputs.stale != 'true' && steps.retained_static.outputs.available != 'true'
+        if: env.HAS_TOKEN == 'true' && steps.tip.outputs.stale != 'true' && (steps.retained_static.outputs.available != 'true' || steps.recovery.outputs.active == 'true')
         run: sleep 20 && node scripts/check-site-health.mjs
+
+      # The deploy passed, so the versions live now are known good. Kept as an
+      # artifact so a later failed rollback (its target expired, 2026-10-19)
+      # can still name the newest release that worked. Best effort: it never
+      # fails a deploy that is healthy.
+      - name: Record this release as last known-good
+        id: last_good
+        if: env.HAS_TOKEN == 'true' && steps.tip.outputs.stale != 'true' && success()
+        continue-on-error: true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          curl -f --no-progress-meter --retry 4 --retry-all-errors --max-time 10 --retry-max-time 45 \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -o good-deployments.json \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/$WORKER_NAME/deployments"
+          jq -c --arg sha "$GITHUB_SHA" --arg run "$GITHUB_RUN_ID" --arg at "$(date -u +%FT%TZ)" \
+            '.result.deployments | sort_by(.created_on) | last
+             | {sha: $sha, run_id: $run, recorded_at: $at, versions: [.versions[] | {version_id, percentage}]}' \
+            good-deployments.json > last-good-deployment.json
+          jq -e '.versions | length > 0' last-good-deployment.json > /dev/null
+          echo "written=true" >> "$GITHUB_OUTPUT"
+
+      - name: Save the last known-good record
+        if: steps.last_good.outputs.written == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: last-good-deployment
+          path: last-good-deployment.json
+          if-no-files-found: error
+          retention-days: 90
+
+      # Runs when a smoke test or the secret check failed, before any rollback,
+      # so the failure message and the deploy-failure issue can name the newest
+      # release that passed.
+      - name: Find the last known-good deployment
+        id: lkg
+        if: failure() && (steps.smoke_retained.outcome == 'failure' || steps.smoke_first.outcome == 'failure' || steps.secret_check.outcome == 'failure')
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/last-known-good.sh
 
       # Rolls back the Worker only. Applied migrations stay applied, which is
       # why migrations must keep working with the previous release.
@@ -253,23 +333,40 @@ jobs:
       # asks for the recorded versions to be live, so a repeat asks for what is
       # already so. A try cut off at 10 s may still have been applied, which
       # is why a failure here says "may".
+      #
+      # Skipped for a recovery deploy: the recorded target is the release that
+      # was already broken, so "rolling back" would only re-deploy the outage.
       - name: Roll back to the recorded deployment
-        if: failure() && (steps.smoke_retained.outcome == 'failure' || steps.smoke_first.outcome == 'failure' || steps.secret_check.outcome == 'failure')
+        if: failure() && steps.recovery.outputs.active != 'true' && (steps.smoke_retained.outcome == 'failure' || steps.smoke_first.outcome == 'failure' || steps.secret_check.outcome == 'failure')
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          LAST_GOOD: ${{ steps.lkg.outputs.summary }}
         run: |
           jq --arg msg "auto-rollback: production validation failed after $GITHUB_SHA" \
             '. + {annotations: {"workers/message": $msg}}' previous-deployment.json > rollback.json
           if ! curl -f --no-progress-meter --retry 4 --retry-all-errors --max-time 10 --retry-max-time 45 \
             -X POST -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json" \
             --data @rollback.json \
-            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/$WORKER_NAME/deployments" > /dev/null; then
-            echo "::error::ROLLBACK FAILED after deploying $GITHUB_SHA: production may still be serving it. Roll back by hand to $(jq -c .versions previous-deployment.json)"
+            -w '\n%{http_code}\n' \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/$WORKER_NAME/deployments" > rollback-response.txt; then
+            code=$(tail -n 1 rollback-response.txt 2>/dev/null || true)
+            echo "::error::ROLLBACK FAILED after deploying $GITHUB_SHA (HTTP ${code:-unknown}): production may still be serving it. Roll back by hand to $(jq -c .versions previous-deployment.json)"
+            case "$code" in
+              4*) echo "::error::HTTP $code means Cloudflare refused the recorded versions, most likely because they expired (2026-10-19: 2a41e9cd). ${LAST_GOOD:-No last known-good record was found.}" ;;
+            esac
             exit 1
           fi
           echo "::error::Production validation failed after deploying $GITHUB_SHA; rolled back to $(jq -c .versions previous-deployment.json)"
           node scripts/check-worker-secrets.mjs verify previous-secrets.json
           sleep 20 && node scripts/check-site-health.mjs --allow-nonimmutable-assets
+
+      - name: No rollback in a recovery deploy
+        if: failure() && steps.recovery.outputs.active == 'true' && (steps.smoke_retained.outcome == 'failure' || steps.smoke_first.outcome == 'failure' || steps.secret_check.outcome == 'failure')
+        env:
+          LAST_GOOD: ${{ steps.lkg.outputs.summary }}
+        run: |
+          echo "::error::Recovery deploy of $GITHUB_SHA failed validation and was NOT rolled back: production was already unhealthy before it, so there is no healthy release recorded to return to. ${LAST_GOOD:-No last known-good record was found.}"
+          exit 1
 
       # wrangler.jsonc keeps this Worker off workers.dev and Preview URLs
       # (ADR-0078), and `wrangler deploy` is the only thing that applies
@@ -303,6 +400,7 @@ jobs:
           GH_REPO: ${{ github.repository }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           CI_GREEN: ${{ needs.ci-green.result }}
+          LAST_GOOD: ${{ needs.deploy.outputs.last_good }}
         run: |
           if [ "$CI_GREEN" = "failure" ]; then
             title="Production deploy refused — ci is not green at ${GITHUB_SHA:0:7}"
@@ -314,8 +412,11 @@ jobs:
           gh label create deploy-failure --color B60205 --description 'Production deploy failed or was rolled back' 2>/dev/null || true
           existing=$(gh issue list --label deploy-failure --state open --json number --jq '.[0].number // empty')
           if [ -n "$existing" ]; then
-            gh issue comment "$existing" --body "$title: $RUN_URL"
+            gh issue comment "$existing" --body "$title: $RUN_URL ${LAST_GOOD:-}"
             exit 0
+          fi
+          if [ -n "$LAST_GOOD" ]; then
+            detail="$detail $LAST_GOOD"
           fi
           printf 'deploy-production did not deploy %s.\n\n%s\n\nRun: %s\n' "$GITHUB_SHA" "$detail" "$RUN_URL" > body.md
           gh issue create --title "$title" --label deploy-failure --body-file body.md
