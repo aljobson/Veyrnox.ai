@@ -90,7 +90,7 @@ Detail, sizes and per-feature status are in [../PARITY-2026-10-19.md](../PARITY-
 | P7 | Account and platform: two-factor, password, devices, passkeys, magic link, brand kit, review links, grants, developer, search, catalogue pages, analytics decision, privacy export | Every web account control has a phone equivalent |
 | P8 | Film Studio, Oddlings, Face Filters; Enhance after the web decision | Spikes S4, S8 pass |
 
-A first store release may ship after P1, P2, P3 and the finished parts of P5 and P6 (free viewing, comments). Owner decision.
+**Owner decision 2026-10-19: the first public store release is full parity (all of P1 to P8), including creator tools.** TestFlight and Play internal builds still ship as milestones after each phase. Creator-uploaded video needs a written App Store 1.2 and Play AI-content plan before any submission.
 
 ## 8. Risks
 

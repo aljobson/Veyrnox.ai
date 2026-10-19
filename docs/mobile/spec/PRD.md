@@ -6,7 +6,7 @@
 **Language:** terms are those of [CONTEXT.md](../../../CONTEXT.md). This document adds none.
 **Set:** [README.md](README.md) lists the other five documents.
 
-**Scope update 2026-10-19:** the owner decided that every web feature must exist in the phone app. The rows below that said "deliberately not built" now say "required". The full web-to-phone map, with sizes and spikes, is [../PARITY-2026-10-19.md](../PARITY-2026-10-19.md). A first release may still be a subset; parity is the destination, not the first build.
+**Scope update 2026-10-19:** the owner decided that every web feature must exist in the phone app, and that the first public store release is full parity (not a phased subset), including creator tools. The rows below that said "deliberately not built" now say "required". The full web-to-phone map, with sizes and spikes, is [../PARITY-2026-10-19.md](../PARITY-2026-10-19.md). A first release may still be a subset; parity is the destination, not the first build.
 
 ## 1. Overview
 
@@ -136,5 +136,5 @@ Owner steps (accounts, keys, agreements) and flag flips are in [PLAN-2026-10-18.
 1. Targets for success criterion 5.
 2. Whether Oddlings gets a phone screen or stays a web link.
 3. Whether the app needs a light theme (it is dark only today).
-4. Whether paid Cinema ships in the first store release or later (recommended: later, free viewing first).
+4. ~~Whether paid Cinema ships in the first store release or later.~~ Decided 2026-10-19: the first public release is full parity, including paid Cinema and creator tools.
 5. Where Vey sits by default on a phone and when it hides.
