@@ -1,11 +1,11 @@
 # ADR-0143 — Mobile: paid Cinema through in-app purchase (M12)
 
-**Status:** Proposed 2026-10-19. **Docs only: no code, no flag, no migration in this change.**
+**Status:** Accepted with open checks, 2026-10-19 (owner answers recorded below; three items are recommendations still **awaiting the owner**, and the in-store setup has not been started). **Docs only: no code, no flag, no migration.**
 **Related:** [ADR-0057](0057-cinema-viewer-paywall.md) (Pass, unlocks, and its "Proposed: $9.99 monthly Pass only" amendment), [ADR-0064](0064-core-subscriptions.md) (credit subscriptions), [ADR-0108](0108-mobile-store-billing.md) (store billing, credit packs), [ADR-0109](0109-mobile-publish-plan-and-store-catalog.md) (store subscriptions for Publish, the pattern this follows), [ADR-0106](0106-mobile-app.md), `docs/mobile/ROADMAP-2026-10-17.md` (decision 4, M12), `docs/mobile/RESEARCH-competitors-2026-10-17.md`
 
-## Questions for the owner (answer these first)
+## Questions for the owner
 
-Each has a recommendation. Nothing below is built until these are answered.
+Each had a recommendation. The owner's answers are recorded in the next section; the rest of this ADR assumes them. Nothing below is built.
 
 1. **Is the web Pass amendment accepted?** ADR-0057's "$9.99 monthly Pass only, 1,500-minute ceiling, 30% creator share" is still **Proposed**. The mobile Pass should copy whatever the web decides. *Recommendation: accept it first; this ADR assumes it.*
 2. **Store price for the Pass: parity or uplift?** The store keeps 30% (15% under the Small Business Program or after year one on subscriptions; ADR-0108 and ADR-0109). With the ADR-0057 cost model, a Pass at the 1,500-minute ceiling leaves about **$3.43** on web, **$1.89** through the store at 30%, **$2.94** at 15%. Holding $3.43 would need about **$12.99** (30%) or **$10.99** (15%). The web price cannot be linked to (roadmap decision 4), so a lower web price is invisible in the app. *Recommendation: launch at parity, $9.99, because the ceiling binds only heavy viewers; revisit with real minutes data. An uplift is your call, not a default.*
@@ -16,6 +16,39 @@ Each has a recommendation. Nothing below is built until these are answered.
 7. **Creator share on store revenue.** The 30% was modelled on web revenue after payment fees. For a store Pass the base is revenue after the store's commission. This belongs to the separate creator-payout ADR that ADR-0057 decision 6 requires; this ADR only records Pass revenue per channel so that decision can be made. *Please confirm that base.*
 8. **Withdrawal and refunds.** ADR-0057 promises a pro-rata refund within 14 days (UK and EU cooling-off). On a store purchase the **store** takes the refund and the right of withdrawal, not us. *Please confirm with Finance or Legal that the in-app wording defers to the store's policy.*
 9. **Owner accounts (not visible from the repo):** the in-app products (O4) created in App Store Connect and, later, Play Console; the Paid Apps agreement's tax and banking state; the RevenueCat iOS key (O5); Small Business Program enrolment; and a free production variable slot, since production vars are at the 77 cap (ADR-0108 point 8). *The Apple agreement is recorded as accepted on 2026-10-18; this ADR does not list it again.*
+
+## Owner answers (2026-10-19)
+
+The owner's replies, quoted as relayed in chat, and what each means here. Only the rows marked **accepted** are the owner's decision; the rest are recommendations the owner has not yet confirmed.
+
+| # | Owner's words | State | What it means |
+|---|---|---|---|
+| 1 | "accept web terms" | **Accepted by owner** | The mobile Pass uses the web terms: $9.99 monthly, 1,500-minute ceiling, 30% creator share (ADR-0057 amendment). |
+| 2 | "I am not sure if this is for AI generation or cinema pass" | **Recommended, awaiting owner** | Parity at $9.99 applies to the **Cinema Pass only**. AI generation keeps the credit packs and Publish keeps its own plan; both are unchanged by this ADR. |
+| 3 | "agreed" | **Accepted by owner** | Unlocks are 6-credit spends with no new SKU, and credits are shared across web and phone. **Check still open:** that Apple's multiplatform-service rule (3.1.3(b)) allows spending web-bought credits in the app has not been verified (see the unproven table). |
+| 4 | "agree" | **Accepted by owner** | Monthly Pass only in the store. |
+| 5 | "agree" | **Accepted by owner** | No credit subscriptions in M12. |
+| 6 | "which store (Cinema / AI generation / Publish)??" | **Recommended, awaiting owner** | No introductory offer or free trial, for the **Cinema Pass only** (it says nothing about the other two). |
+| 7 | "confirm" | **Accepted by owner** | The creator share is taken on store revenue after the store's commission. The final rule belongs to the separate creator-payout ADR. |
+| 8 | "give guidance here" | **Recommended, awaiting owner** | See the refund guidance below. |
+| 9 | "nothing is stitched yet" | Not started | See the owner checklist below. |
+
+### Refund and withdrawal guidance (question 8, recommended)
+
+- **Store purchases defer to the store's own refund policy.** On Apple that is `reportaproblem.apple.com`; on Google Play it is Play's own refund flow. The app does not process, promise or describe its own refund for a store purchase.
+- **The 14-day pro-rata refund promise stays web-only** (ADR-0057). It is not shown anywhere in the phone app.
+- **EU and UK right-of-withdrawal wording for a store purchase: needs Legal sign-off.** This ADR does not decide it. The in-app text stays minimal (price, period, renewal and cancellation terms, "manage or request a refund through your Apple ID or Google Play") until Legal has signed off.
+
+### Owner checklist, in order
+
+None of this is visible from the repo and **nothing has been set up yet**. Each step blocks the next.
+
+1. Check the **Paid Apps agreement's** tax and banking state in App Store Connect (the developer agreement itself is recorded as accepted on 2026-10-18; paid products also need tax and banking complete).
+2. **Create the Cinema Pass subscription** in App Store Connect: product `ai.veyrnox.cinema.pass.monthly`, its own subscription group, $9.99, auto-renewing monthly, no introductory offer.
+3. In **RevenueCat**, add the iOS key (O5), the entitlement `cinema_pass`, and an offering `cinema` with a `$rc_monthly` package pointing at that product.
+4. Enrol in the **Small Business Program** (15% instead of 30%; changes the margin in question 2).
+5. Free a **production variable slot** (production vars are at the 77 cap) and set the RevenueCat webhook secret in production, before any production flag is turned on.
+6. **Play Console later**: create the app, the subscription and its base plan, then the Play product id in the `productId:basePlanId` form.
 
 ## Context
 
@@ -51,6 +84,7 @@ Same webhook, same evidence (RevenueCat's signed event), same secret customer id
 - **Before purchase.** A locked episode shows "Unlock for 6 credits" and, where a Pass is on offer, "Watch with Cinema Pass". The Pass screen shows the price, the period, auto-renew and how to cancel ("manage it in your Apple ID or Google Play subscriptions"), **Restore purchases**, and Terms and Privacy. It states the fair-use ceiling plainly ("up to 1,500 minutes a month"), not "unlimited", so the claim is true. It never mentions, links to or compares with the web store (decision 4). If credits are short, it goes to the existing Credits screen.
 - **If the Pass is already active elsewhere** (web): "Your Cinema Pass is active. Manage it where you bought it." No link.
 - **After purchase.** The store sheet closes; the app polls the server entitlement for up to about a minute and shows "Cinema Pass active until <date>". If the webhook is late it says the purchase is processing and will appear shortly (RevenueCat retries for about 80 minutes; ADR-0108), and offers Restore. An unlock answers at once and the balance refreshes.
+- **Refunds.** The app makes no refund promise for a store purchase and defers to the store (see the refund guidance above, pending the owner). The 14-day pro-rata promise is web-only.
 - **Restore purchases.** The Account button already exists. Restore re-binds through the secret customer id (`GET /api/v1/store-purchases/customer`); the server entitlement is what the app reads afterwards. A refund or an expiry is shown as "Your Pass ended on <date>".
 
 ### 4. Not proved, and what each needs
@@ -64,13 +98,15 @@ Same webhook, same evidence (RevenueCat's signed event), same secret customer id
 | Apple review of a subscription for user-uploaded video | A TestFlight external review; the 1.2 items (report, block, age gate, contact) are already built |
 | Production enablement | A free production variable slot (cap 77) and the webhook secret in production |
 | The real margin | Stripe's and the store's real fee schedule (ADR-0057 notes the Stripe Managed Payments fee was not read), and real minutes viewed |
+| That spending **web-bought credits** on the phone is allowed under Apple's multiplatform-service rule (3.1.3(b)) | Reading the current App Review Guidelines text and, if unclear, a question to App Review at TestFlight |
+| Legal wording for EU and UK withdrawal rights on a store purchase | Legal sign-off |
 | Android | A Play listing and a device |
 
 ### 5. Build order
 
 Each step is its own PR, mock or Test Store first, and nothing is switched on in production.
 
-1. **Owner:** answers to the questions above; O4 products and the RevenueCat key.
+1. **Owner:** the checklist above (agreement state, the subscription product, the RevenueCat key, entitlement and offering, Small Business Program, a production slot); confirmation of the rows marked awaiting.
 2. **Server:** the migration and `apply_store_cinema_pass_event`, the webhook mapping, the product table seeded for iOS, and acceptance tests on local Postgres in the pattern of 0346 (fresh schema, replay, out-of-order, duplicate source, refund, `reconcile_*` empty). Staging only.
 3. **App, read side:** entitlement and locked-title states, and unlock with credits, against the existing routes (works on staging today, no store involved).
 4. **App, Pass:** the Pass screen and purchase through the RevenueCat SDK on the Test Store, then the sandbox; polling and the "processing" state.
