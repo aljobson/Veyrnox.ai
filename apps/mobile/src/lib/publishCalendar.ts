@@ -85,3 +85,42 @@ export function calendarErrorKey(err: unknown): string {
     if (err.status === 503) return 'calendar.err.notOpen';
     return 'common.error';
 }
+
+// ADR-0150: the month view. The first of the month to the first of the next, `offsetMonths` away from `now`'s month
+// (31 days at most, under the server's 43).
+export function monthBounds(now: Date, offsetMonths: number): { start: Date; end: Date } {
+    const start = new Date(now.getFullYear(), now.getMonth() + offsetMonths, 1);
+    const end = new Date(start.getFullYear(), start.getMonth() + 1, 1);
+    return { start, end };
+}
+
+export interface MonthCell {
+    readonly key: string;
+    readonly date: Date;
+    readonly inMonth: boolean;
+}
+
+// Whole weeks (Monday first) that cover the month; days outside the month are marked so they can be dimmed.
+export function monthGrid(monthStart: Date): MonthCell[][] {
+    const first = new Date(monthStart.getFullYear(), monthStart.getMonth(), 1);
+    const lead = (first.getDay() + 6) % 7;
+    const daysInMonth = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+    const weeks = Math.ceil((lead + daysInMonth) / 7);
+    const rows: MonthCell[][] = [];
+    for (let w = 0; w < weeks; w += 1) {
+        const row: MonthCell[] = [];
+        for (let d = 0; d < 7; d += 1) {
+            const date = new Date(first.getFullYear(), first.getMonth(), 1 - lead + w * 7 + d);
+            row.push({ key: dayKey(date), date, inMonth: date.getMonth() === first.getMonth() });
+        }
+        rows.push(row);
+    }
+    return rows;
+}
+
+// How many posts fall on each local day.
+export function countByDay(posts: readonly CalendarPost[]): Map<string, number> {
+    const out = new Map<string, number>();
+    for (const g of dayGroups(posts)) out.set(g.key, g.posts.length);
+    return out;
+}
