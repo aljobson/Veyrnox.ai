@@ -13,7 +13,7 @@ import { SKILLS, SKILL_GROUPS } from '../../_lib/studioSkills';
 export function SkillsPanel({ selectedId, onPick, disabled }) {
   const { t } = useI18n();
   return (
-    <section aria-label={t("label.Studio skills")} className="mx-auto mt-8 w-full max-w-[760px] text-start">
+    <section data-assistant-target="chat.skills" aria-label={t("label.Studio skills")} className="mx-auto mt-8 w-full max-w-[760px] text-start">
       <h2 className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-fg-muted">{t("app.chat.skills.title")}</h2>
       <p className="mt-1 text-sm text-vx-fg-muted">{t("app.chat.skills.help")}</p>
       <Link href="/app/film-studio" className="mt-3 inline-block text-sm font-semibold text-vx-accent">{t("app.chat.skills.film")}</Link>

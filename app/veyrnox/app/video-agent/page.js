@@ -228,7 +228,7 @@ export default function VideoAgent() {
               <div className="absolute inset-0 flex items-center justify-center text-center px-6">
                 <div>
                   <div className={`font-vx-mono text-[11px] tracking-[0.14em] ${job.state === 'failed' ? 'text-vx-danger' : 'text-vx-accent'}`}>
-                    <span aria-hidden="true">{jobStateUi(job).glyph}</span> {tOr(t, `app.create.jobState.${job.state}`, jobStateUi(job).label)}
+                    <span aria-hidden="true">{jobStateUi(job).glyph}</span> {tOr(t, `app.library.status.${job.state === 'failed' && job.refunded !== true ? 'failed_pending' : job.state}`, jobStateUi(job).label)}
                   </div>
                   {job.state === 'failed'
                     ? <div className="mt-2 text-sm text-vx-fg-body">{failedJobCopy(job)}</div>

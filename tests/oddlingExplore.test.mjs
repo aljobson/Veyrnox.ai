@@ -188,7 +188,7 @@ test('builder wiring: Surprise me beside Generate, one catalog builder, motion c
 test('deep link loads the character once, then takes the parameter out of the address', async () => {
     const studio = resolveI18nSource(await component('OddlingStudio.js'));
     assert.match(studio, /parseOddlingDeepLink\(window\.location\.search\)/);
-    const effect = studio.slice(studio.indexOf('parseOddlingDeepLink(window'), studio.indexOf('}, [t]);', studio.indexOf('parseOddlingDeepLink(window')));
+    const effect = studio.slice(studio.indexOf('parseOddlingDeepLink(window'), studio.indexOf('}, []);', studio.indexOf('parseOddlingDeepLink(window')));
     assert.match(effect, /setPicks\(\{ \.\.\.linked\.picks \}\)/);
     assert.match(effect, /setPortraitId\(linked\.id\)/);
     assert.match(effect, /setSheet\(linked\)/);

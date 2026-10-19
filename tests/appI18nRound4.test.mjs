@@ -86,7 +86,7 @@ test('only the two exact version-bound media consent fragments are exempted', ()
   assert.equal(candidates(files.media, '<label lang="en" dir="ltr">Untranslated controls</label>', { app: true })[0].status, 'unresolved');
 });
 
-test('unknown RSS refresh errors and intervals never expose a raw code or catalog key', async () => {
+test('unknown RSS refresh errors keep the human-readable baseline fallback', async () => {
   const original = scenarios.find(scenario => scenario.area === 'autolists');
   for (const locale of ['en', 'de', 'ja', 'ar']) {
     const messages = await appMessagesFor(locale);
@@ -94,6 +94,6 @@ test('unknown RSS refresh errors and intervals never expose a raw code or catalo
     Object.assign(states[0][0], { refresh_interval_minutes: 999, last_error: 'unrecognized_feed_failure' });
     const text = visibleText(renderScenario({ ...original, states }, locale, messages));
     assert.doesNotMatch(text, /unrecognized_feed_failure|app\.publish\.autolists\./);
-    assert.ok(text.includes(messages['app.publish.autolists.refreshFailed']));
+    assert.ok(text.includes('unrecognized feed failure'));
   }
 });

@@ -45,7 +45,7 @@ test('there is one public nav, in one order', () => {
         'the phone uses the compact mark so the public Oddlings link and account controls fit');
     // A home-page section is a plain link: the browser glides to it on the home page.
     assert.match(marketing, /const Item = section \? 'a' : Link;/);
-    assert.match(read('app/veyrnox/_components/MobileMenu.js'), /const Item = it\.href\.includes\('#'\) \? 'a' : Link;/);
+    assert.match(read('app/veyrnox/_components/MobileMenu.js'), /const Item = it\.href\.includes\('#'\) \|\| isAppLocalePath\(pathname\) !== isAppLocalePath\(href\) \? 'a' : Link;/);
     assert.deepEqual(PRIMARY_NAV_CATEGORIES.map((c) => c.label),
         ['Create', 'Edit', 'Make a film', 'Publish', 'Pricing']);
     assert.deepEqual(NAV_CATEGORIES, [...PRIMARY_NAV_CATEGORIES, ...SECONDARY_NAV_CATEGORIES]);

@@ -68,7 +68,7 @@ function Plans({ plans, selected, onSelect, publicOnly = false }) {
             {tOr(t, `cinema.pass.${p.billing_interval}ly`, p.billing_interval)}
           </p>
           <p className="mt-3 font-vx-mono text-2xl">
-            {formatUsd(p.price_usd_cents / 100, locale)} / {tOr(t, `cinema.pass.${p.billing_interval}`, p.billing_interval)}
+            {publicOnly ? usd.format(p.price_usd_cents / 100) : formatUsd(p.price_usd_cents / 100, locale)} / {tOr(t, `cinema.pass.${p.billing_interval}`, p.billing_interval)}
           </p>
           <p className="mt-2">
             {t('public.subscription.cycle', { credits: p.credits.toLocaleString(localeTag(locale)), interval: tOr(t, `cinema.pass.${p.billing_interval}`, p.billing_interval) })}
@@ -199,6 +199,8 @@ export function CreditSubscriptions() {
 }
 function Billing({ account, recovery, setRecovery }) {
   const { t, locale } = useI18n();
+  const translation = useRef(t);
+  translation.current = t;
   const number = value => locale === 'en' ? String(value) : value.toLocaleString(localeTag(locale));
   const [catalog, setCatalog] = useState(null),
     [sub, setSub] = useState(null),
@@ -232,17 +234,17 @@ function Billing({ account, recovery, setRecovery }) {
     if (own.status === 'fulfilled') setSub(own.value.subscription);
     else {
       setSub(null);
-      setError(message(own.reason.code, t));
+      setError(message(own.reason.code, translation.current));
     }
     if (
       plans.status === 'rejected' &&
       plans.reason.code !== 'subscriptions_not_open'
     )
       setError(
-        t("app.credits.subscription.offersUnavailable"),
+        translation.current("app.credits.subscription.offersUnavailable"),
       );
     setLoaded(true);
-  }, [account, t]);
+  }, [account]);
   useEffect(() => {
     load();
     return () => {
@@ -259,42 +261,42 @@ function Billing({ account, recovery, setRecovery }) {
           body: JSON.stringify(info),
         });
         if (r.status === 'flagged')
-          setNotice(t("app.credits.subscription.paymentReview"));
+          setNotice(translation.current("app.credits.subscription.paymentReview"));
         else if (r.status === 'ended')
-          setNotice(t("app.credits.subscription.endedNoCredits"));
+          setNotice(translation.current("app.credits.subscription.endedNoCredits"));
         else if (r.credited) {
-          setNotice(t("app.credits.subscription.confirmed"));
+          setNotice(translation.current("app.credits.subscription.confirmed"));
           notifyBalanceChanged();
           setRecovery(null);
         } else
           setNotice(
-            t("app.credits.subscription.unconfirmed"),
+            translation.current("app.credits.subscription.unconfirmed"),
           );
         await load();
       } catch (e) {
-        setError(message(e.code, t));
+        setError(message(e.code, translation.current));
       } finally {
         setBusy(false);
       }
     },
-    [load, setRecovery, t],
+    [load, setRecovery],
   );
   useEffect(() => {
     if (!recovery) return;
     if (recovery.invalid) {
       setError(
-        t("app.credits.subscription.invalidReturn"),
+        translation.current("app.credits.subscription.invalidReturn"),
       );
       return;
     }
     if (recovery.cancelled) {
       setNotice(
-        t("app.credits.subscription.cancelledCheckout"),
+        translation.current("app.credits.subscription.cancelledCheckout"),
       );
       return;
     }
     if (account) recover(recovery);
-  }, [account, recovery, recover, t]);
+  }, [account, recovery, recover]);
   async function checkout() {
     const plan = catalog?.plans.find((p) => p.id === selected);
     if (!account || !plan || !agreed || busy) return;

@@ -77,6 +77,7 @@ async function editor(page, options = {}) {
   const fixture = await installProductFixtures(page, options); const response = await fixture.open('/app/editor');
   expect(response.status(), 'The owned local server must enable the editor rollout for these fixtures').toBe(200);
   await expect(page.getByTestId('editor-workspace')).toBeVisible();
+  await expect(page.getByTestId('editor-workspace')).toHaveAccessibleName('Multitrack editing workspace');
   const header = page.getByTestId('editor-workspace').getByTestId('editor-header');
   await expect(header.getByTestId('assistant-editor-launcher')).toBeVisible();
   await expect(page.getByTestId('assistant-mascot')).toHaveCount(0);

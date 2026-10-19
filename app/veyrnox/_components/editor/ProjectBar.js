@@ -208,7 +208,7 @@ function ProjectSessionBar({ tl, blobs, onLoadTimeline, onRelinked, onContext,co
     }
 
     if (!enabled) return null;
-    const status = busy ? 'Saving…' : error ? t("app.editor.project.notSaved") : dirty ? t("app.projects.unsaved") : savedAt ? t('app.projects.savedVersion', { version: number(revision) }) : t("app.editor.project.notSavedYet");
+    const status = busy ? t('social.saving') : error ? t("app.editor.project.notSaved") : dirty ? t("app.projects.unsaved") : savedAt ? t('app.projects.savedVersion', { version: number(revision) }) : t("app.editor.project.notSavedYet");
     return <section aria-label={t("app.editor.project.title")} className={compact?'min-w-0 flex-1 space-y-2':'space-y-3 rounded-2xl border border-vx-border bg-vx-panel p-4'}>
         <div className={`flex items-center ${compact?'min-w-0 gap-2':'flex-wrap gap-3'}`}>
             {projectId ? <>

@@ -81,7 +81,7 @@ export default function Projects() {
               {!workspaces.length && <option value="">{loading ? t("app.projects.loadingWorkspaces") : t("app.projects.noWorkspace")}</option>}
               {workspaces.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
             </select></label>
-          <label className="text-xs font-bold text-vx-fg-muted">{t("app.projects.find")}<input data-testid="project-search" type="search" className={`${field} mt-2`} placeholder={t("app.projects.search")} value={query} onChange={e => setQuery(e.target.value)} /></label>
+          <label className="text-xs font-bold text-vx-fg-muted">{t("app.projects.find")}<input data-testid="project-search" type="search" className={`${field} mt-2`} data-assistant-target="projects.search" placeholder={t("app.projects.search")} value={query} onChange={e => setQuery(e.target.value)} /></label>
         </div>
         <p role="status" className="mb-3 min-h-5 text-sm text-vx-accent">{notice}</p>
         {error ? <div role="alert" className="rounded-2xl border border-vx-border p-8"><p className="mb-4">{error}</p><Button variant="ghost" onClick={() => load(workspace)}>{t("recovery.retry")}</Button></div>

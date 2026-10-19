@@ -4,7 +4,6 @@ import { useI18n } from '../../../components/I18nProvider';
 import { tOr, pluralKey } from '../../../lib/i18n/translate.mjs';
 import { localeTag } from '../../../lib/i18n/locales.mjs';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { ConfirmDialog } from './ConfirmDialog';
 import { signOut } from '../../lib/authClient';
 import { BLOCKER_COPY, prepareDeletion, confirmDeletion } from '../_lib/accountDeletion';
@@ -15,7 +14,6 @@ const RETRYABLE = new Set(['deletion_incomplete', 'deletion_unavailable', 'netwo
 
 export function DeleteAccountPanel() {
   const { t, locale } = useI18n();
-  const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [plan, setPlan] = useState(null);
   const [typed, setTyped] = useState('');
@@ -34,7 +32,7 @@ export function DeleteAccountPanel() {
     try {
       await confirmDeletion(plan.token);
       await signOut();
-      router.replace('/');
+      window.location.assign('/');
     } catch (err) {
       if (err.code === 'confirmation_expired' || err.code === 'confirmation_invalid') { setPlan(null); setError(t("app.account.delete.expired")); }
       else if (err.code === 'deletion_blocked') setPlan({ state: 'blocked', blockers: err.body?.blockers || [], credits: plan.credits });

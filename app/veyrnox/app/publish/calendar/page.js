@@ -92,7 +92,7 @@ function CalendarControls({today}) {
     }
     const groups=new Map(range.days.map(day=>[day,posts.filter(p=>dateKey(p.scheduled_at)===day)]));
     return <div className="space-y-5">
-        <div className="flex flex-wrap gap-2" role="group" aria-label={t("app.publish.calendar.view")}>
+        <div className="flex flex-wrap gap-2" role="group" data-assistant-target="publish.calendar" aria-label={t("app.publish.calendar.view")}>
             {CALENDAR_VIEWS.map(option=><button key={option.id} type="button" className={`${button} capitalize ${view===option.id?'bg-vx-accent text-black':''}`} aria-pressed={view===option.id} onClick={()=>setView(option.id)}>{t(option.key)}</button>)}
         </div>
         <div className="flex flex-wrap items-center gap-3">

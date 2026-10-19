@@ -149,7 +149,7 @@ function DashboardView({ report }) {
           ))}
         </select>
       </label>
-      <div className="flex flex-wrap gap-2" role="group" aria-label={t("app.publish.analytics.rangePresets")}>
+      <div className="flex flex-wrap gap-2" role="group" data-assistant-target="publish.analytics" aria-label={t("app.publish.analytics.rangePresets")}>
         {ranges.map((r) => (
           <button
             key={r.days}

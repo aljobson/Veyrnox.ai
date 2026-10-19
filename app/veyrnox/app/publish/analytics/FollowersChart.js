@@ -13,10 +13,10 @@ export function FollowersChart({ series, label: suppliedLabel }) {
   const label = suppliedLabel ?? t('app.publish.analytics.followers');
   const whole = new Intl.NumberFormat(localeTag(locale));
   const day = value => formatDay(value, locale);
-  if (series.length === 0) return <p className="text-sm text-vx-fg-muted">{t('app.publish.analytics.noNumbers', { label: label.toLowerCase() })}</p>;
+  if (series.length === 0) return <p className="text-sm text-vx-fg-muted">{t('app.publish.analytics.noNumbers', { label: locale === 'en' ? label.toLowerCase() : label })}</p>;
   if (series.length === 1) {
     return <p className="text-sm text-vx-fg-muted">
-      {t('app.publish.analytics.oneDay', { count: whole.format(series[0].followers), label: label.toLowerCase(), date: day(series[0].date) })}
+      {t('app.publish.analytics.oneDay', { count: whole.format(series[0].followers), label: locale === 'en' ? label.toLowerCase() : label, date: day(series[0].date) })}
     </p>;
   }
 

@@ -3,7 +3,7 @@ import { pluralKey } from '../../../lib/i18n/translate.mjs';
 import { localeTag } from '../../../lib/i18n/locales.mjs';
 import { useI18n } from '../../../components/I18nProvider';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getStoredSession, onSessionChange } from '../../lib/authClient';
@@ -44,6 +44,8 @@ import {
 
 export default function OddlingStudio() {
   const { t, locale } = useI18n();
+  const translation = useRef(t);
+  translation.current = t;
   const number = value => locale === 'en' ? value : Number(value).toLocaleString(localeTag(locale));
   const router = useRouter();
   const explore = useOddlingExplore();
@@ -118,12 +120,12 @@ export default function OddlingStudio() {
       if (!linked) return;
       setPicks({ ...linked.picks });
       setPortraitId(linked.id);
-      setNotice(t('app.oddlings.loaded',{name:linked.name}));
+      setNotice(translation.current('app.oddlings.loaded',{name:linked.name}));
       setSheet(linked);
       try { window.history.replaceState(window.history.state, '', withoutDeepLink(window.location)); } catch { /* the sheet is open; the address keeps the parameter */ }
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [t]);
+  }, []);
 
   useEffect(() => () => {
     if (reference?.url) URL.revokeObjectURL(reference.url);

@@ -236,7 +236,7 @@ test('opening a chat notes the press first, and a read that lands after another 
     // shown after the failure's own words, never dropped. That covers one raised while they were on their way out,
     // and one that was on screen before the press: fail() has just written over it.
     // When the two are the same words (a stored notice with no code of its own reads as the general failure), they are said once.
-    assert.match(open[1], /\} catch \(e\) \{ fail\(e\); if \(giveUp\(chatView\.current, id\)\) \{ const kept = waiting\(chatView\.current\.shown\); if \(kept\) setError\(\(was\) => \(was && was !== kept \? `\$\{was\} \$\{kept\}` : kept\)\); \} return false; \}$/);
+    assert.match(open[1], /\} catch \(e\) \{ fail\(e\); if \(giveUp\(chatView\.current, id\)\) \{ const kept = waiting\(chatView\.current\.shown\); if \(kept\) setError\(\(was\) => \(was && was.code !== kept.code \? \{ \.\.\.was, following: kept \} : kept\)\); \} return false; \}$/);
 });
 
 test('the screen says when the chat page is left, so an ending that lands afterwards changes nothing', () => {
@@ -274,7 +274,7 @@ test('the view is made once, and the send hook is given it and a way to store a 
     const call = /useChatSend\(\{\n([\s\S]*?)\n {2}\}\);/.exec(screen);
     assert.ok(call, 'the screen calls the send hook');
     // `heldWarning` since a refusal asks whether a warning about Credits is kept for the chat (tests/chatLocal.test.mjs pins its line).
-    assert.match(call[1], /\bchatView, saveDraft, addDraft, keepNotice, dropNotice, heldWarning,$/);
+    assert.match(call[1], /\bchatView, saveDraft, addDraft, keepNotice, dropNotice, heldWarning,/);
 });
 
 // ---- send(): every ending goes through the same four doors ----
@@ -295,7 +295,7 @@ test('the notice is always kept with its chat, as a code, and goes on screen onl
     // to take its place, so one warning then stands for both turns. PR 764 kept no job with it (one job cannot answer for two
     // turns). It is handed to the store now, with this send's own key, and the store keeps every turn the new warning stands
     // for (tests/chatLocalTurns.test.mjs, tests/chatWarningTurns.test.mjs).
-    assert.match(send, /\n {4}const tell = \(code, extra\) => \{ const before = heldWarning\(from\); forgetEarlier\(\); const \{ home, here \} = at\(\); keepNotice\(home, code, \{ \.\.\.extra, job: jobId, key, sent: content, after: before \}\); if \(here\) setError\(chatErrorCopy\(code, extra\)\); \};\n/);
+    assert.match(send, /\n {4}const tell = \(code, extra\) => \{ const before = heldWarning\(from\); forgetEarlier\(\); const \{ home, here \} = at\(\); keepNotice\(home, code, \{ \.\.\.extra, job: jobId, key, sent: content, after: before \}\); if \(here\) setError\(errorCopy\(code, extra\)\); \};\n/);
     assert.equal(send.split('keepNotice(').length - 1, 1, 'every notice that is kept is kept by tell()');
     assert.doesNotMatch(send, /tell\(chatErrorCopy\(/, 'no ending hands tell() words');
     // setError appears four times in send(): clearing the notice as the message is sent, inside tell(), inside besideWarning()
@@ -310,14 +310,14 @@ test('a message that used no Credits does not take the place of a warning about 
     // With one kept, nothing is kept or forgotten: what the message ended with is said on screen with the warning after
     // it, and only while that chat is the one on it. This was the body of refuse(), which only a message that never
     // started reached. It is its own function, besideWarning(), since an ending that says nothing on its own uses it alone.
-    assert.match(send, /\n {4}const besideWarning = \(code, extra\) => \{ const \{ home, here \} = at\(\); const warning = heldWarning\(home\); if \(warning && here\) setError\(chatUnchargedCopy\(code, extra, warning\)\); return !!warning; \};\n/);
+    assert.match(send, /\n {4}const besideWarning = \(code, extra\) => \{ const \{ home, here \} = at\(\); const warning = heldWarning\(home\); if \(warning && here\) setError\(unchargedCopy\(code, extra, warning\)\); return !!warning; \};\n/);
     // With none kept, the ending is told like any notice, and replaces what was there. refuse() until it also told a
     // message that started and was refunded, which is not a refusal.
     assert.match(send, /\n {4}const tellUncharged = \(code, extra\) => \{ if \(!besideWarning\(code, extra\)\) tell\(code, extra\); \};\n/);
     // Under `home`, where the given-back text now is and the notice would be kept: New chat when the chat is gone.
     // Three since tell() reads the kept warning its notice takes the place of (tests/chatWarningTurns.test.mjs). It was two.
     assert.equal(send.split('heldWarning(').length - 1, 3, 'the store is asked three times: at the press, here, and in tell()');
-    assert.equal(send.split('chatUnchargedCopy(').length - 1, 1);
+    assert.equal(send.split('unchargedCopy(').length - 1, 1);
     // Five endings are told this way, each right after giveBack(true), the one call that offers the text again with
     // the turn known to be over. Three for the turn that never started, in that branch or in failed() (pinned further
     // down), as before. Two more now, for a turn that started and kept nothing: `done` said it failed, and a dropped
@@ -436,7 +436,7 @@ test('what waits for a chat that is not on screen is what the person would have 
     // (only "charged but not stored" is set again afterwards). So there is nothing to hold from the first of those.
     // The first is the one notice that is not kept: it goes straight on screen, where the reload clears it. Kept, it
     // would come back with the chat the reload reads, and stay.
-    assert.match(send, /\n {8}att\.clear\(\);[^\n]*\n {8}if \(streamError && at\(\)\.here\) setError\(chatErrorCopy\(streamError\)\);[^\n]*\n {8}await reload\(\);[^\n]*\n {8}await relist\(\);[^\n]*\n {8}if \(streamError === 'reply_not_saved'\) tell\(streamError\);/);
+    assert.match(send, /\n {8}att\.clear\(\);[^\n]*\n {8}if \(streamError && at\(\)\.here\) setError\(errorCopy\(streamError\)\);[^\n]*\n {8}await reload\(\);[^\n]*\n {8}await relist\(\);[^\n]*\n {8}if \(streamError === 'reply_not_saved'\) tell\(streamError\);/);
     // A reply that ended with nothing is not reloaded, so its notice stays on screen, and is kept with its chat. It was
     // tell(streamError): it is told as a message that used no Credits, so a warning kept before it stays kept (above).
     assert.match(send, /\n {8}giveBack\(true\);\n {8}if \(streamError\) tellUncharged\(streamError\);/);

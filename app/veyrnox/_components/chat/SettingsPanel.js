@@ -51,7 +51,7 @@ export function SettingsPanel({ models, model, busy, onSelectModel, tiers, onTie
   const tier = tierOf(model.credits_per_reply);
 
   return (
-    <div className="flex h-full flex-col gap-3 overflow-y-auto p-3" aria-label={t("label.Chat settings")} role="region">
+    <div className="flex h-full flex-col gap-3 overflow-y-auto p-3" data-assistant-target="chat.settings" aria-label={t("label.Chat settings")} role="region">
       {personasOn && (
         <Section id="persona" title={t("app.chat.settings.persona")} open={open.persona} onToggle={toggle}>
           <p className="text-vx-fg-muted">{hasThread ? t("app.chat.settings.personaExisting") : t("app.chat.settings.personaNew")}</p>
@@ -114,7 +114,7 @@ export function SettingsPanel({ models, model, busy, onSelectModel, tiers, onTie
           <dt className="text-vx-fg-muted">{t("pricing.col.model")}</dt><dd>{model.name}</dd>
           <dt className="text-vx-fg-muted">{t("app.chat.settings.family")}</dt><dd>{model.maker_label}</dd>
           <dt className="text-vx-fg-muted">{t("publish.plan.rowPrice")}</dt>
-          <dd><span className="font-vx-mono vx-num">{credits(t, locale, model.credits_per_reply)}</span>{' '}{t("app.chat.settings.perReply")}{' '}<Dots count={['low', 'medium', 'high'].indexOf(tier) + 1} /> <span className="text-vx-fg-muted">{tOr(t, `app.chat.tier.${tier}`, tierLabel(tier))}</span></dd>
+          <dd><span className="font-vx-mono vx-num">{credits(t, locale, model.credits_per_reply)}</span>{' '}{t("app.chat.settings.perReply")}{' '}<Dots count={['low', 'medium', 'high'].indexOf(tier) + 1} /> <span className="text-vx-fg-muted">{tOr(t, `app.create.tier.${tier}`, tierLabel(tier))}</span></dd>
           <dt className="text-vx-fg-muted">{t("app.chat.settings.replyLength")}</dt><dd>{t(pluralKey(t, locale, 'app.chat.settings.words', words(model.max_reply_tokens)), { count: locale === 'en' ? String(words(model.max_reply_tokens)) : words(model.max_reply_tokens).toLocaleString(localeTag(locale)) })}</dd>
           <dt className="text-vx-fg-muted">{t("app.chat.settings.thinking")}</dt><dd>{offer.thinking ? `+${credits(t, locale, offer.thinking.extra_credits)}` : t("app.chat.settings.notOffered")}</dd>
           <dt className="text-vx-fg-muted">{t("app.chat.settings.web")}</dt><dd>{offer.web ? `+${credits(t, locale, offer.web.extra_credits)}` : t("app.chat.settings.notOffered")}</dd>

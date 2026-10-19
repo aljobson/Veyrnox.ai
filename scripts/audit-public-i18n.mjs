@@ -20,6 +20,15 @@ const privateFunctions = {
 
 // Exact public exceptions. Do not add blanket file exclusions for UI code.
 const exceptions = [
+  { file: /\/_lib\/(?:showcase|sourceTemplateExpansion\d*|character|characterOptions|oddlingCatalog)\.js$/, pattern: /./, reason: 'source catalog names, descriptors and prompts remain unchanged (ADR-0107)' },
+  { file: /\/_lib\/(?:studioSkills|filmStudioAssistants)\.js$/, pattern: /^(?:Skill:|Film stage)/, reason: 'canonical assistant instructions, not UI copy (ADR-0107)' },
+  { file: /\/_lib\/filmStudio\.js$/, pattern: /^Neutral grey background/, reason: 'generated reference-sheet prompt, not UI copy (ADR-0107)' },
+  { file: /\/_lib\/oddlingStudio\.js$/, pattern: /^Animate /, reason: 'generated motion prompt, not UI copy (ADR-0107)' },
+  { file: /\/_lib\/(?:editorVisionRuntime|localSpeechAssets)\.mjs$/, pattern: /^default-src /, reason: 'CSP protocol value, not visible text' },
+  { file: /^lib\/social\/networks\.js$/, pattern: /./, reason: 'social network brand names remain unchanged (ADR-0107)' },
+  { file: /\/_components\/editor\/(?:OriginalAudioPanel|PersonProcessingControls|MotionProcessingControls)\.js$/, pattern: /^(?:Processed video|Original audio\/|Veyrnox procedural synthesizer|Generated locally; version 1 preset\.)$/, reason: 'canonical persisted folder/attribution metadata; display translation is separate' },
+  { file: /\/publish\/ads\/page\.js$/, pattern: /^United Kingdom$/, reason: 'canonical stored campaign targeting value, not a translated display label' },
+
   { file: /\/editor\/AgentPanel\.js$/, pattern: /^(?:split the first clip at 2 seconds|remove the last clip|set the volume of the first clip to 40%|add the title "Day one")$/, reason: 'literal command prompts accepted by the existing English-only local parser; no localized parser exists' },
   { file: /\/editor\/MultitrackWorkspace\.js$/, pattern: /^(?:Veyrnox\.ai Cut|Cut)$/, reason: 'Cut is the editor product name in the branded header' },
   { file: /\/publish\/smartlink\/page\.js$/, pattern: /^(?:veyrnox\.ai\/s\/|https:\/\/)$/, reason: 'literal branded address or URL protocol required by the link editor' },
@@ -50,7 +59,8 @@ export function publicFiles({ app = false } = {}) {
   const files = new Set();
   function visit(file) {
     if (files.has(file) || exclude.test(file) || (!app && privateFiles.test(file)) || !existsSync(file)) return;
-    if (!/^(?:app\/(?:veyrnox|social|auth\/callback)\/|components\/|app\/(?:layout|not-found|error|global-error)\.js$)/.test(file)) return;
+    if (/^lib\/i18n\//.test(file)) return;
+    if (!/^(?:app\/(?:veyrnox|social|auth\/callback)\/|components\/|app\/(?:layout|not-found|error|global-error)\.js$|lib\/)/.test(file)) return;
     files.add(file);
     const tree = ts.createSourceFile(file, readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.JSX);
     for (const node of tree.statements) {
@@ -63,13 +73,12 @@ export function publicFiles({ app = false } = {}) {
     }
   }
   roots.forEach(visit);
-  // Non-JSX modules hold excluded catalogs, source prompts, API contracts and
-  // selectors. Their translated display sites are inspected in the UI modules.
+  // Inventory imported helper copy as well as JSX display sites.
   return [...files].filter(file => {
     const tree = ts.createSourceFile(file, readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.JSX);
     let jsx = false;
     function scan(node) { if (ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node) || ts.isJsxFragment(node)) jsx = true; else ts.forEachChild(node, scan); }
-    scan(tree); return jsx;
+    scan(tree); return jsx || (app && /(?:^lib\/|\/_lib\/)/.test(file));
   }).sort();
 }
 export const appFiles = () => publicFiles({ app: true });
@@ -80,7 +89,7 @@ function owner(node) {
   }
 }
 function translateCall(node, tree) {
-  return ts.isCallExpression(node) && /^(?:tOr|t|tr|translate|say|c)(?:\.label)?$/.test(node.expression.getText(tree));
+  return ts.isCallExpression(node) && /^(?:(?:tOr|t|tr|translate|say|c)(?:\.label)?|translation\.current)$/.test(node.expression.getText(tree));
 }
 // Version-bound legal declarations remain English by the 2026-10-18 host decision.
 const legalStatements = new Set([
@@ -120,10 +129,13 @@ function allowed(file, text) {
 export function candidates(file, source, { app = false } = {}) {
   const tree = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JSX);
   const output = [];
+  const helper = /(?:^lib\/|\/_lib\/)/.test(file);
+  const catalogValues = new Set(Object.values(english).map(text => text.replace(/\{\w+\}/g, ' ').replace(/\s+/g, ' ').trim()));
   function add(node, kind, text, status, reason) {
     const value = text.replace(/\s+/g, ' ').trim();
     if (kind === 'expression' && (/^[/.#]/.test(value) || /^[?&][a-z_]+=/.test(value))) return;
     if (!/[A-Za-z]{2}/.test(value)) return;
+    if (!status && helper && catalogValues.has(value)) { status = 'translated'; reason = 'helper copy has an English catalog entry; display mapping requires review'; }
     if (!status) { reason = allowed(file, value); status = reason ? 'allowlisted' : 'unresolved'; }
     output.push({ file, line: tree.getLineAndCharacterOfPosition(node.getStart()).line + 1, kind, text: value, status, ...(reason ? { reason } : {}) });
   }
@@ -151,6 +163,18 @@ export function candidates(file, source, { app = false } = {}) {
         const scoped = ['tr', 'c', 'say'].includes(node.expression.getText(tree));
         add(first, 'lookup', key, english[key] || scoped ? 'translated' : 'unresolved', english[key] || scoped ? undefined : 'missing English key');
       }
+      if (first && ts.isTemplateExpression(first)) {
+        const prefix = first.head.text;
+        if (prefix.includes('.') && !Object.keys(english).some(key => key.startsWith(prefix))) {
+          const fallback = node.expression.getText(tree) === 'tOr' && node.arguments[2];
+          const translatedFallback = fallback && ts.isCallExpression(fallback) && translateCall(fallback, tree) && english[fallback.arguments[0]?.text];
+          add(first, 'lookup', first.getText(tree), translatedFallback ? 'translated' : 'unresolved', translatedFallback ? 'translated generic fallback; no code-specific catalog entries' : 'dynamic lookup family has no catalog keys');
+        }
+      }
+      if (node.expression.getText(tree) === 'tOr') {
+        const fallback = node.arguments[2];
+        if (fallback && ts.isStringLiteral(fallback) && /\s/.test(fallback.text) && !catalogValues.has(fallback.text)) add(fallback, 'fallback', fallback.text, 'unresolved', 'fallback has no English catalog entry');
+      }
       // Slot values may themselves contain copy; inspect all but the key.
       node.arguments.slice(offset + 1).forEach(visit);
       return;
@@ -164,7 +188,14 @@ export function candidates(file, source, { app = false } = {}) {
       if (!publicProps.has(node.name.text) && !(app && /^on[A-Z]/.test(node.name.text))) return;
       if (node.initializer && ts.isStringLiteral(node.initializer)) { add(node, 'prop', node.initializer.text); return; }
     }
+    if (helper && (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node) || ts.isTemplateExpression(node))) {
+      const returned = ts.isReturnStatement(node.parent);
+      const field = ts.isPropertyAssignment(node.parent) && /^(?:label|title|body|description|message|placeholder|action)$/.test(node.parent.name.getText(tree));
+      if (!returned && !field) return;
+    }
     if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node) || ts.isTemplateExpression(node)) {
+      if (ts.isCallExpression(node.parent) && node.parent.expression.getText(tree) === 'box' && node.parent.arguments[2] === node) return;
+      if (ts.isArrayLiteralExpression(node.parent) && node.parent.elements[0] === node && ['source', 'target'].includes(node.text) && node.parent.elements.length === 4) return;
       if (ts.isImportDeclaration(node.parent) || ts.isExportDeclaration(node.parent) || ts.isJsxAttribute(node.parent)) return;
       if (ts.isPropertyAssignment(node.parent) && node.parent.name === node) return;
       // Equality tests, object keys, route/URL construction and CSS never render.

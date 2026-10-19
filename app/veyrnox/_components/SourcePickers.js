@@ -43,7 +43,7 @@ export function SourcePickers({ media, sources, onPick, onDraw, onLibrary }) {
         )}
         <div className="min-w-0 flex-1">
           <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">
-            {(spec.label ? tOr(t, `app.create.sources.label.${spec.label}`, spec.label) : t(ui.labelKey))}{spec.required ? t("app.create.sources.required") : t("app.create.sources.optional")}
+            {(spec.label ? tOr(t, `label.${spec.label}`, spec.label) : t(ui.labelKey))}{spec.required ? t("app.create.sources.required") : t("app.create.sources.optional")}
           </div>
           <div className="text-xs text-vx-fg-body truncate mt-1">
             {picked ? (picked.file ? picked.file.name : t('app.create.sources.libraryName', {name: picked.label})) : [t(ui.hint), ...limits].join(', ')}

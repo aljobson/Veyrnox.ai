@@ -34,6 +34,16 @@ import { CHAT_SCREEN_COPY, chatScreen, loadFailure } from '../../_lib/chatScreen
 import { ask, enter, forget, giveUp, land, leave, newChatView, onScreen } from '../../_lib/chatSendHome';
 import { askKeptWarning, settleKeptWarning } from '../../_lib/chatWarning';
 
+function errorText(t, error) {
+  const code = error.code || 'unknown';
+  const fallback = chatErrorCopy(code, error.extra);
+  const key = t.messages[`app.chat.error.${code}`] ? code : code.startsWith('provider_') ? 'provider_failed' : 'unknown';
+  let text = tOr(t, `app.chat.error.${key}`, fallback, { n: error.extra?.credits ?? t('app.chat.error.more') });
+  if (error.before) text = t('app.chat.error.before', { current: text, previous: errorText(t, error.before) });
+  if (error.following) text += ` ${errorText(t, error.following)}`;
+  return text;
+}
+
 function credits(t, locale, n) { return t(pluralKey(t, locale, 'app.chat.settings.credits', n), { count: locale === 'en' ? String(n) : n.toLocaleString(localeTag(locale)) }); }
 const MAX_TEXT = 8000;
 const MAX_PROMPT = 4000;
@@ -46,7 +56,7 @@ const addDraft = (chatId, text) => addToDraft(store(), getStoredUserId(), chatId
 const keepNotice = (chatId, code, extra) => writeNotice(store(), getStoredUserId(), chatId, code, extra);
 const dropNotice = (chatId) => clearNotice(store(), getStoredUserId(), chatId);
 const heldWarning = (chatId) => readCreditsWarning(store(), getStoredUserId(), chatId);
-const waiting = (chatId) => { const n = readNotice(store(), getStoredUserId(), chatId); return n ? chatErrorCopy(n.code, n) : null; };
+const waiting = (chatId) => { const n = readNotice(store(), getStoredUserId(), chatId); return n ? { code: n.code, extra: n } : null; };
 // A warning about a turn that was not settled is kept with what the server can be asked about it by: the turn's job, or the key its
 // send went out with (chatWarning.js). When its chat arrives on screen each turn it stands for is asked about, and once the server
 // has settled them all the warning is taken out of the store, or what is kept is changed, before the screen reads it.
@@ -120,7 +130,7 @@ export function ChatWorkspace() {
     const why = loadFailure(e);
     if (why === 'closed') setClosed(true);
     else if (why === 'signed_out') setSignedOut(true); // the sign-in dialog is already open; this is what sits behind it
-    else setError(chatErrorCopy(e?.code));
+    else setError({ code: e?.code, extra: e?.body });
     return why;
   }, []);
   const refreshThreads = useCallback(async () => { try { setThreads((await chatApi.threads()).threads); } catch (e) { fail(e); } }, [fail]);
@@ -166,15 +176,15 @@ export function ChatWorkspace() {
       settleKept(id, asked); // in the store, so the notice and the box read from it below are what the server now says
       setPersonaId(''); setActive(r.thread); setSkillId(''); setMessages(r.messages); setInstr(r.thread.system_prompt || ''); land(chatView.current, id); setError(waiting(id)); setDrawer(false);
       setText(readDraft(store(), getStoredUserId(), r.thread.id)); setStars(readStars(store(), getStoredUserId(), r.thread.id)); setStarredOnly(false); return true;
-    } catch (e) { fail(e); if (giveUp(chatView.current, id)) { const kept = waiting(chatView.current.shown); if (kept) setError((was) => (was && was !== kept ? `${was} ${kept}` : kept)); } return false; }
+    } catch (e) { fail(e); if (giveUp(chatView.current, id)) { const kept = waiting(chatView.current.shown); if (kept) setError((was) => (was && was.code !== kept.code ? { ...was, following: kept } : kept)); } return false; }
   };
   // New chat has no chat to read, so what is kept for it is shown at once and its job is asked after. The screen changes only
   // while New chat is still on it and still says that warning: a notice set since, or another chat's, is left alone.
   const settleNew = async () => {
     const asked = await askKept(NEW_CHAT);
     if (!settleKept(NEW_CHAT, asked) || !onScreen(chatView.current, NEW_CHAT)) return;
-    const was = chatErrorCopy(asked.warning.code, asked.warning);
-    setError((now) => (now === was ? waiting(NEW_CHAT) : now));
+    const was = asked.warning.code;
+    setError((now) => (now?.code === was ? waiting(NEW_CHAT) : now));
   };
   useEffect(() => { settleNew(); }, []); // once: a page that has just loaded shows New chat
   // A chat that has not started. A notice waits for it too: one about a message that was sent before a chat was made, or whose chat no longer exists.
@@ -286,6 +296,8 @@ export function ChatWorkspace() {
   const { send, stop, busy, stopping, checking, progress } = useChatSend({
     text, setText, model, imagesBlocked, chosen, price, active, setActive, messages, setMessages, setThreads, setError,
     att, limits, draftModel, folders, folder, instr, open, refreshThreads, fail, chatView, saveDraft, addDraft, keepNotice, dropNotice, heldWarning,
+    errorCopy: (code, extra) => ({ code, extra }),
+    unchargedCopy: (code, extra, warning) => ({ code, extra, before: { code: warning.code, extra: warning } }),
   });
 
   if (!ready) return <div className="p-8 text-sm text-vx-fg-muted" role="status">{t("app.chat.loading")}</div>;
@@ -295,8 +307,8 @@ export function ChatWorkspace() {
     const retry = () => { setReady(false); setLoadFailed(false); setError(waiting(NEW_CHAT)); setAttempt((n) => n + 1); };
     return (
       <div className="mx-auto max-w-[640px] px-4 py-16">
-        <h1 className="vx-display text-[32px]">{CHAT_SCREEN_COPY[view].title}</h1>
-        <p className="mt-3 text-vx-fg-body">{(view === 'failed' && error) || CHAT_SCREEN_COPY[view].body}</p>
+        <h1 className="vx-display text-[32px]">{tOr(t, `app.chat.screen.${view}.title`, CHAT_SCREEN_COPY[view].title)}</h1>
+        <p className="mt-3 text-vx-fg-body">{(view === 'failed' && error && errorText(t, error)) || tOr(t, `app.chat.screen.${view}.body`, CHAT_SCREEN_COPY[view].body)}</p>
         {view === 'signed_out'
           ? <button type="button" className={action} onClick={() => window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>{t("oauth.signIn")}</button>
           : view === 'failed'
@@ -334,7 +346,7 @@ export function ChatWorkspace() {
               {composerKind === COMPOSER_KINDS.CHAT ? t('app.chat.workspace.perReply', { price: credits(t, locale, model.credits_per_reply) }) : mediaGeneration.model ? t('app.chat.workspace.base', { count: number(mediaGeneration.model.credits) }) : ''}
             </span>
           </p>
-          {composerKind === COMPOSER_KINDS.CHAT && <button type="button" aria-expanded={settingsOpen} onClick={() => setSettingsOpen(true)} className="rounded-full border border-vx-border px-3 py-1.5 text-sm xl:hidden">{t("app.chat.settings")}</button>}
+          {composerKind === COMPOSER_KINDS.CHAT && <button type="button" data-assistant-target="chat.settings" aria-expanded={settingsOpen} onClick={() => setSettingsOpen(true)} className="rounded-full border border-vx-border px-3 py-1.5 text-sm xl:hidden">{t("app.chat.settings")}</button>}
           {composerKind === COMPOSER_KINDS.CHAT && <button type="button" disabled={!active || stars.length === 0} aria-pressed={starredOnly} onClick={() => setStarredOnly((v) => !v)}
             className="rounded-full border border-vx-border px-3 py-1.5 text-sm aria-pressed:border-vx-accent disabled:opacity-50">{t("app.chat.workspace.starred")}</button>}
         </div>
@@ -377,7 +389,7 @@ export function ChatWorkspace() {
           <div className="mx-auto max-w-[820px]">
             {composerKind === COMPOSER_KINDS.CHAT && error && (
               <div role="alert" className="mb-2 rounded-lg border border-vx-danger/40 bg-vx-danger/[0.07] px-4 py-3 text-sm text-vx-danger">
-                {error} {error.includes('Top up') && <Link className="underline" href="/app/credits">{t("mobile.topUp")}</Link>}
+                {errorText(t, error)} {error.code === 'insufficient_balance' && <Link className="underline" href="/app/credits">{t("mobile.topUp")}</Link>}
               </div>
             )}
             {composerKind === COMPOSER_KINDS.CHAT && researchOn && (
@@ -400,9 +412,9 @@ export function ChatWorkspace() {
             )}
             {composerKind === COMPOSER_KINDS.CHAT && skillId && !active && (
               <div className="mb-2 flex flex-wrap gap-2">
-                <button type="button" onClick={clearSkill} disabled={busy} aria-label={t('app.chat.workspace.removeSkill', { name: skillById(skillId)?.name })}
+                <button type="button" onClick={clearSkill} disabled={busy} aria-label={t('app.chat.workspace.removeSkill', { name: tOr(t, `app.chat.skill.${skillId}.name`, skillById(skillId)?.name || '') })}
                   className="rounded-full border border-vx-accent px-3 py-1.5 text-xs font-semibold text-vx-fg disabled:opacity-50">
-                  {t("app.chat.workspace.skill")}{' '}{skillById(skillId)?.name} <span aria-hidden="true">×</span>
+                  {t("app.chat.workspace.skill")}{' '}{tOr(t, `app.chat.skill.${skillId}.name`, skillById(skillId)?.name || '')} <span aria-hidden="true">×</span>
                 </button>
               </div>
             )}
@@ -422,7 +434,7 @@ export function ChatWorkspace() {
               <div className="flex items-end gap-2 px-2 pb-2">
                 {offer.images && <AttachButton onPick={att.add} disabled={busy} full={att.items.length >= limits.maxAttachments} />}
                 <label className="sr-only" htmlFor="chat-msg">{t("app.chat.message")}</label>
-                <textarea id="chat-msg" rows={1} value={text} maxLength={MAX_TEXT} placeholder={skillById(skillId)?.starter || t("app.chat.ask")} onChange={(e) => setText(e.target.value)}
+                <textarea id="chat-msg" rows={1} value={text} maxLength={MAX_TEXT} placeholder={skillId ? tOr(t, `app.chat.skill.${skillId}.starter`, skillById(skillId)?.starter || t('app.chat.ask')) : t('app.chat.ask')} onChange={(e) => setText(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
                   className="max-h-48 min-h-14 min-w-0 flex-1 resize-none bg-transparent px-2 py-3 text-[15px] text-vx-fg outline-hidden placeholder:text-vx-fg-faint" />
                 {busy

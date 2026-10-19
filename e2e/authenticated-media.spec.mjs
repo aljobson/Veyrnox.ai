@@ -100,7 +100,9 @@ test('Video Agent returning focus refreshes the balance without submitting and b
     await expect(page.getByTestId('agent-balance-status')).toBeVisible();
     balance = 100; hold = false; release();
     await expect(page.getByTestId('agent-balance')).toBeVisible();
+    await expect(page.getByTestId('agent-balance')).toHaveText('165 cr · balance 100 cr');
     await expect(page.getByTestId('agent-shortfall')).toBeVisible();
+    await expect(page.getByTestId('agent-shortfall')).toHaveText('You need 65 more Credits to approve this plan.');
     await expect(approve).toBeDisabled();
     expect(fixture.requests.filter(row => row.path === '/api/v1/generations')).toEqual([]);
   } finally { release(); }

@@ -69,7 +69,7 @@ export function ComposerControls({ models, model, offer, opts, busy, onSelectMod
   const number = value => locale === 'en' ? String(value) : new Intl.NumberFormat(localeTag(locale)).format(value);
   const credits = count => t(pluralKey(t, locale, 'app.chat.settings.credits', count), {count:number(count)});
   const mode = replyMode(opts);
-  const modeLabel = mode === REPLY_MODES.RESEARCH ? t("app.chat.settings.research") : mode === REPLY_MODES.THINKING ? 'Thinking' : 'Standard';
+  const modeLabel = mode === REPLY_MODES.RESEARCH ? t("app.chat.settings.research") : mode === REPLY_MODES.THINKING ? t('app.chat.settings.thinking') : t('app.chat.controls.standard');
 
   return (
     <div className="scrollbar-none flex gap-1.5 overflow-x-auto border-b border-vx-border px-3 py-2" role="group" aria-label={t("app.chat.controls.setup")}>

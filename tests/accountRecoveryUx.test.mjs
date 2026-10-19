@@ -1,7 +1,7 @@
 import test from 'node:test';
 import * as locales from '../lib/i18n/locales.mjs';
 import appEnglish from '../lib/i18n/messages/app/en.mjs';
-import { messagesFor, translator } from '../lib/i18n/translate.mjs';
+import { messagesFor, translator, tOr } from '../lib/i18n/translate.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -16,7 +16,7 @@ function component(path, mocks = {}) {
     compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS },
   }).outputText;
   const output = { exports: {} };
-  new Function('require', 'module', 'exports', js)((id) => mocks[id] ?? (id.endsWith('/i18n/locales.mjs') ? locales : id.endsWith('/I18nProvider') ? { useI18n: () => ({ t: translator('en', { ...messagesFor('en'), ...appEnglish }), locale: 'en' }) } : require(id)), output, output.exports);
+  new Function('require', 'module', 'exports', js)((id) => mocks[id] ?? (id.endsWith('/i18n/translate.mjs') ? { tOr } : id.endsWith('/i18n/locales.mjs') ? locales : id.endsWith('/I18nProvider') ? { useI18n: () => ({ t: translator('en', { ...messagesFor('en'), ...appEnglish }), locale: 'en' }) } : require(id)), output, output.exports);
   return output.exports;
 }
 

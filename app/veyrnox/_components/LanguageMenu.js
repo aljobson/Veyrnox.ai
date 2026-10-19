@@ -57,20 +57,22 @@ export function LanguageMenu({ className = '', id = 'vx-language-menu' }) {
           {LOCALES.map((l) => (
             <li key={l.code}>
               <a
-                href={switchLanguageHref(l.code, pathname)}
+                href={switchLanguageHref(l.code, pathname) + (typeof window === 'undefined' ? '' : window.location.search + window.location.hash)}
                 hrefLang={l.hreflang}
                 lang={l.hreflang}
                 aria-current={l.code === locale ? 'true' : undefined}
                 data-locale={l.code}
                 onClick={(event) => {
+                  if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
                   rememberLocale(l.code);
                   setOpen(false);
-                  if (isAppLocalePath(pathname) && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) {
+                  if (isAppLocalePath(pathname)) {
                     event.preventDefault();
                     // Refresh server components and retain the query and hash.
                     window.location.reload();
                   }
                 }}
+                onAuxClick={() => setOpen(false)}
                 className={`flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm ${l.code === locale ? 'bg-vx-base font-bold text-vx-fg' : 'text-vx-fg-body hover:bg-vx-fg/[0.05] hover:text-vx-fg'}`}
               >
                 <span aria-hidden="true" className="text-[18px] leading-none">{l.flag}</span>

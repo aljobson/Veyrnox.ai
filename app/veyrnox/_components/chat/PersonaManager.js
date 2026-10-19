@@ -14,7 +14,7 @@ const blank = { name: '', instructions: '', model_id: '', thinking: false, web: 
 // Saved instructions plus a default model and options (ADR-0072). A persona starts a chat; it never changes one that exists, and it is not priced.
 export function PersonaManager({ personas, models, onChange, onClose }) {
   const { t, locale } = useI18n();
-  const number = new Intl.NumberFormat(localeTag(locale), { useGrouping: false });
+  const number = new Intl.NumberFormat(localeTag(locale, 'en-US'), { useGrouping: false });
   const [editing, setEditing] = useState(null); // null = list, 'new' or an id = the form
   const [form, setForm] = useState(blank);
   const [busy, setBusy] = useState(false);

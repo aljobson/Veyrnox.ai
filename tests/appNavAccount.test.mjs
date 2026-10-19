@@ -1,8 +1,8 @@
 import test from 'node:test';
 import { appMessagesFor } from '../lib/i18n/appMessages.mjs';
-import { translator, pluralKey } from '../lib/i18n/translate.mjs';
+import { translator, pluralKey, messagesFor } from '../lib/i18n/translate.mjs';
 import { localeTag } from '../lib/i18n/locales.mjs';
-const t = translator('en', await appMessagesFor('en'));
+const t = translator('en', { ...messagesFor('en'), ...await appMessagesFor('en') });
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { register } from 'node:module';

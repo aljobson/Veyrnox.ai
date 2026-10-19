@@ -1,4 +1,5 @@
 'use client';
+import { PROCESSED_FOLDER } from '../../_lib/editorStoredLabels.mjs';
 import { useI18n } from '../../../../components/I18nProvider';
 import { pluralKey, tOr } from '../../../../lib/i18n/translate.mjs';
 import { localeTag } from '../../../../lib/i18n/locales.mjs';
@@ -28,7 +29,7 @@ export function PersonProcessingControls({media,blob,timeline,disabled,onIngest,
     }
     async function insert(){
         if(!ready){onError(t("app.editor.person.changed"));return;}setInserting(true);onBusy(true);
-        try{await onIngest(ready.file,ready.file.name,undefined,undefined,{...(media.attribution?{attribution:media.attribution}:{}),folder:t("app.editor.person.folder")});if(alive.current)setResult(null);}catch(e){if(alive.current)onError(e.message);}finally{if(alive.current){setInserting(false);onBusy(false);}}
+        try{await onIngest(ready.file,ready.file.name,undefined,undefined,{...(media.attribution?{attribution:media.attribution}:{}),folder:PROCESSED_FOLDER});if(alive.current)setResult(null);}catch(e){if(alive.current)onError(e.message);}finally{if(alive.current){setInserting(false);onBusy(false);}}
     }
     const locked=disabled||!!progress||inserting;
     return <details><summary className="cursor-pointer text-xs font-bold">{t("app.editor.person.title")}</summary><div className="mt-2 space-y-2"><fieldset disabled={locked} className="space-y-2">

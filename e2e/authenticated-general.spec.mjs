@@ -154,6 +154,7 @@ test('Library server rows filter by real catalog type and local favourites witho
   await expect(page.getByText('Synthetic failed image', { exact: true })).toBeVisible();
   await expect(page.getByText('Synthetic failed audio', { exact: true })).toBeVisible();
   await expect(page.locator('[data-library-status="failed_pending"]')).toHaveCount(2);
+  await expect(page.locator('[data-library-status="failed_pending"]')).toHaveText(['FAILED · REFUND PENDING', 'FAILED · REFUND PENDING']);
   const types = page.getByTestId('library-types');
   await types.getByTestId('library-kind-image').click();
   await expect(page.getByText('Synthetic failed audio', { exact: true })).toHaveCount(0);

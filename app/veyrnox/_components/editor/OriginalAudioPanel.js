@@ -1,4 +1,5 @@
 'use client';
+import { originalFolder, ORIGINAL_CREDIT, ORIGINAL_USAGE } from '../../_lib/editorStoredLabels.mjs';
 import { useI18n } from '../../../../components/I18nProvider';
 import { localeTag } from '../../../../lib/i18n/locales.mjs';
 import { pluralKey, tOr } from '../../../../lib/i18n/translate.mjs';
@@ -15,7 +16,7 @@ export function OriginalAudioPanel({disabled,onIngest}){
     useEffect(()=>()=>{if(preview)URL.revokeObjectURL(preview.url);},[preview]);
     const entries=ORIGINAL_AUDIO.filter(p=>(category==='All' || p.category===category) && `${p.title} ${p.tags}`.toLowerCase().includes(search.toLowerCase()));
     const open=p=>{const blob=originalAudioBlob(p.id);setPreview({url:URL.createObjectURL(blob),title:p.title,id:p.id});};
-    async function insert(p){setBusy(true);setError('');try{await onIngest(new File([originalAudioBlob(p.id)],`${p.id}.wav`,{type:'audio/wav'}),p.title,undefined,undefined,{originalAudio:{version:1,presetId:p.id},sourceName:`${p.id}.wav`,folder:t('app.editor.original.folder', {category: p.category}),attribution:{credit:t("app.editor.original.credit"),usage:t("app.editor.original.usage"),url:''}});}catch(e){if(alive.current)setError(e.message || t("app.editor.original.failed"));}finally{if(alive.current)setBusy(false);}}
+    async function insert(p){setBusy(true);setError('');try{await onIngest(new File([originalAudioBlob(p.id)],`${p.id}.wav`,{type:'audio/wav'}),p.title,undefined,undefined,{originalAudio:{version:1,presetId:p.id},sourceName:`${p.id}.wav`,folder:originalFolder(p.category),attribution:{credit:ORIGINAL_CREDIT,usage:ORIGINAL_USAGE,url:''}});}catch(e){if(alive.current)setError(e.message || t("app.editor.original.failed"));}finally{if(alive.current)setBusy(false);}}
     return <section aria-label={t("app.editor.original.catalog")} className="space-y-3"><h2 className="text-sm font-bold">{t("app.editor.original.title")}</h2><p className="text-xs text-vx-fg-muted">{t("app.editor.original.help")}</p>
         <input aria-label={t("app.editor.original.search")} className="w-full rounded border border-vx-border bg-vx-base p-2 text-xs" value={search} onChange={e=>setSearch(e.target.value)} /><select aria-label={t("app.editor.original.category")} className="w-full rounded bg-vx-base p-2 text-xs" value={category} onChange={e=>setCategory(e.target.value)}>{AUDIO_CATEGORIES.map(item=><option key={item} value={item}>{categoryLabel(item)}</option>)}</select>
         {error && <p role="alert" className="text-xs">{error}</p>}{busy && <p role="status" className="text-xs">{t("app.editor.original.inserting")}</p>}

@@ -38,7 +38,7 @@ export default function Publish() {
     <h1 className="text-3xl font-black mb-2">Veyrnox.ai Publish</h1>
     <p className="text-sm text-vx-fg-muted mb-4">{t("app.publish.lead")}{' '}<Link href="/app/publish/analytics" className="text-vx-accent underline">{t("app.publish.analytics")}</Link>.</p>
     {account && <BrandSwitcher />}
-    <ul aria-label={t("app.publish.platforms")} className="flex flex-wrap gap-3 mb-6">
+    <ul data-assistant-target="publish.accounts" aria-label={t("app.publish.platforms")} className="flex flex-wrap gap-3 mb-6">
       {CATALOGUE_NETWORKS.map((n) => <li key={n.key} className="inline-flex items-center gap-2 rounded-full border border-vx-border px-3 py-2 text-sm font-bold text-vx-fg">
         <NetworkLogo network={n.key} />{tOr(t, `app.publish.network.${n.key}`, n.label)}
       </li>)}

@@ -3,6 +3,8 @@ import { installNarrationFixtures } from './fixtures/narration-product.mjs';
 
 const SCRIPT = 'This is a private quality assurance test.';
 async function draft(page, script = SCRIPT) {
+  await expect(page.getByTestId('agent-brief')).toHaveAccessibleName('BRIEF');
+  await expect(page.getByTestId('agent-narration')).toHaveAccessibleName('Exact narration');
   await page.getByTestId('agent-brief').fill('A blue sphere moves slowly on a private studio table.');
   await page.getByTestId('agent-narration').fill(script);
 }
@@ -14,6 +16,7 @@ test('exact narration is fully previewed and one approval carries the same scrip
   await draft(page); await page.getByTestId('agent-plan').click();
   await expect(page.getByTestId('agent-narration-preview')).toContainText(SCRIPT);
   const approve = page.getByTestId('agent-approve');
+  await expect(approve).toHaveAccessibleName('Approve and make it · 165 cr');
   await expect(approve).toBeEnabled(); await approve.dblclick();
   await expect.poll(() => fixture.generations.length).toBe(1);
   expect(fixture.plans[0].narration_text).toBe(SCRIPT);

@@ -123,6 +123,8 @@ function useTypicalCosts() {
 
 export function TopUpPacks({ signedIn }) {
   const { t, locale } = useI18n();
+  const translation = useRef(t);
+  translation.current = t;
   const number = new Intl.NumberFormat(localeTag(locale, 'en-US'));
   const usd = new Intl.NumberFormat(localeTag(locale, 'en-US'), { style: 'currency', currency: 'USD', trailingZeroDisplay: 'stripIfInteger' });
   const [packs, setPacks] = useState(null);
@@ -140,9 +142,9 @@ export function TopUpPacks({ signedIn }) {
     let cancelled = false;
     gatewayFetch('/credit-packs')
       .then((b) => { if (!cancelled) setPacks(Array.isArray(b?.packs) ? b.packs : []); })
-      .catch(() => { if (!cancelled) setError(t("app.credits.packs.unavailable")); });
+      .catch(() => { if (!cancelled) setError(translation.current("app.credits.packs.unavailable")); });
     return () => { cancelled = true; };
-  }, [signedIn, t]);
+  }, [signedIn]);
 
   if (!signedIn) {
     return (

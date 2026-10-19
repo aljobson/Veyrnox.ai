@@ -1,4 +1,5 @@
 'use client';
+import { tOr } from '../../../lib/i18n/translate.mjs';
 import { localeTag } from '../../../lib/i18n/locales.mjs';
 import { useI18n } from '../../../components/I18nProvider';
 
@@ -65,7 +66,7 @@ export function MfaPanel({ requireFresh = false, onVerified } = {}) {
 
   async function run(fn) {
     setBusy(true); setError(null);
-    try { await fn(); } catch (err) { setError(err?.message || t("app.account.mfa.failed")); }
+    try { await fn(); } catch (err) { setError(tOr(t, `app.account.mfa.error.${err?.code}`, t('app.account.mfa.failed'))); }
     finally { setBusy(false); }
   }
 

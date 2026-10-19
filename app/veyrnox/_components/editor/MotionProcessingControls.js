@@ -1,4 +1,5 @@
 'use client';
+import { PROCESSED_FOLDER } from '../../_lib/editorStoredLabels.mjs';
 import { useI18n } from '../../../../components/I18nProvider';
 import { localeTag } from '../../../../lib/i18n/locales.mjs';
 import { pluralKey } from '../../../../lib/i18n/translate.mjs';
@@ -25,7 +26,7 @@ export function MotionProcessingControls({ media, blob, disabled, timeline, onIn
         finally{if(controller.current===job){controller.current=null;if(alive.current){setProgress(null);onBusy(false);}}}
     }
     const ready=result?.snapshot===timeline&&result?.original===blob?result:null;
-    async function insert(){if(!ready){onError(t("app.editor.person.changed"));return;}setInserting(true);onBusy(true);try{await onIngest(ready.file,ready.file.name,undefined,undefined,{...(media.attribution?{attribution:media.attribution}:{}),folder:t("app.editor.person.folder")});if(alive.current)setResult(null);}catch(e){if(alive.current)onError(e.message);}finally{if(alive.current){setInserting(false);onBusy(false);}}}
+    async function insert(){if(!ready){onError(t("app.editor.person.changed"));return;}setInserting(true);onBusy(true);try{await onIngest(ready.file,ready.file.name,undefined,undefined,{...(media.attribution?{attribution:media.attribution}:{}),folder:PROCESSED_FOLDER});if(alive.current)setResult(null);}catch(e){if(alive.current)onError(e.message);}finally{if(alive.current){setInserting(false);onBusy(false);}}}
     const locked=disabled || !!progress || inserting;
     return <details><summary className="cursor-pointer text-xs font-bold">{t("app.editor.motion.title")}</summary><div className="mt-2 space-y-2">
         <fieldset disabled={locked} className="space-y-2"><label className="block text-xs">{t("app.editor.motion.operation")}<select aria-label={t("app.editor.motion.operation")} value={tool} onChange={e=>setTool(e.target.value)} className="w-full rounded border border-vx-border bg-vx-base p-2">{TOOLS.map(id=><option key={id} value={id}>{t(`app.editor.motion.tool.${id}`)}</option>)}</select></label>

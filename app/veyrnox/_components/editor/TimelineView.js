@@ -64,10 +64,10 @@ export function TimelineView({ tl, frame, selected, ppf, disabled, onSelect, onS
                 {marks.map(s => <span key={s} className="absolute top-0 border-s border-vx-border ps-1" style={{ insetInlineStart: s * FPS * ppf }}>{s % (ppf < 1 ? 5 : 1) === 0 ? `${locale === 'en' ? s : new Intl.NumberFormat(localeTag(locale)).format(s)}s` : ''}</span>)}
             </div>
             <div className={LANE} onClick={seek} aria-label={t("app.editor.timeline.video")} role="group" onDragOver={e => e.preventDefault()} onDrop={e => drop(e, 'video', Math.max(0, tl.video.length - 1))}>
-                {videoLayout(tl).map(({ clip, start }, index) => box(clip, start, t("app.publish.composer.media.video"), index, tl.media[clip.mediaId]?.name || t("app.library.kind.video")))}
+                {videoLayout(tl).map(({ clip, start }, index) => box(clip, start, 'video', index, tl.media[clip.mediaId]?.name || t("app.library.kind.video")))}
             </div>
             <div className={LANE} onClick={seek} aria-label={t("app.editor.timeline.audio")} role="group" onDragOver={e => e.preventDefault()} onDrop={e => drop(e, 'audio')}>
-                {tl.audio.map(clip => box(clip, clip.start, t("app.editor.media.kind.audio"), 0, tl.media[clip.mediaId]?.name || t("app.library.kind.audio")))}
+                {tl.audio.map(clip => box(clip, clip.start, 'audio', 0, tl.media[clip.mediaId]?.name || t("app.library.kind.audio")))}
             </div>
             <div className={LANE} onClick={seek} aria-label={t("app.editor.timeline.text")} role="group" onDragOver={e => e.preventDefault()} onDrop={e => drop(e, 'text')}>
                 {tl.text.map(clip => box(clip, clip.start, TRACK_TEXT, 0, clip.text))}

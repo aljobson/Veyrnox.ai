@@ -234,7 +234,7 @@ function Editor() {
             <aside className="space-y-5 rounded-2xl border border-vx-border bg-vx-panel p-5" aria-label={t("app.editor.legacy.clipExport")}>
                 <fieldset disabled={exporting} className="min-w-0">
                 {clip ? <div className="space-y-3">
-                    <h2 className="text-sm font-bold">{media?.name} <span className="font-normal text-vx-fg-muted">({tOr(t, `app.editor.workspace.track.${selected.track}`, selected.track)})</span></h2>
+                    <h2 className="text-sm font-bold">{media?.name} <span className="font-normal text-vx-fg-muted">({tOr(t, `app.editor.media.kind.${selected.track}`, selected.track)})</span></h2>
                     <p className="font-vx-mono text-xs text-vx-fg-muted">{t('app.editor.legacy.starts',{start:formatTime(layoutStart),duration:formatTime(clip.len)})}</p>
                     <div className="flex flex-wrap gap-2">
                         <Button size="sm" variant="ghost" onClick={() => apply(timeline => splitSelection(timeline, selected, frame))}>{t("app.editor.legacy.split")}</Button>

@@ -15,7 +15,7 @@ import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { ConfirmDialog } from './ConfirmDialog';
 import { readAuthSettings } from '../../lib/authProviders.js';
 import { passkeysSupported, registerPasskey, listPasskeys, deletePasskey } from '../../lib/passkeys.js';
-import { PASSKEY_NAME_MAX, cleanPasskeyName, passkeyDates, usablePasskeys, passkeyErrorCopy } from '../_lib/passkeyList.js';
+import { PASSKEY_NAME_MAX, cleanPasskeyName, passkeyDates, usablePasskeys, passkeyErrorCode } from '../_lib/passkeyList.js';
 
 const never = () => () => {};
 const cannot = () => false;
@@ -45,7 +45,7 @@ export function PasskeyPanel() {
       setPasskeys(usablePasskeys(await listPasskeys()));
     } catch (err) {
       setPasskeys(null);
-      setError(passkeyErrorCopy(err));
+      setError(passkeyErrorCode(err));
     }
   }, []);
 
@@ -76,7 +76,7 @@ export function PasskeyPanel() {
         await refresh();
       }
     } catch (err) {
-      setError(passkeyErrorCopy(err));
+      setError(passkeyErrorCode(err));
     } finally {
       setBusy(false);
     }
@@ -90,7 +90,7 @@ export function PasskeyPanel() {
       setMessage(t("app.account.passkeys.removed"));
       await refresh();
     } catch (err) {
-      setError(passkeyErrorCopy(err));
+      setError(passkeyErrorCode(err));
     } finally {
       setBusy(false);
     }
@@ -134,7 +134,7 @@ export function PasskeyPanel() {
       {message && <p role="status" className="mt-3 text-sm text-vx-accent">{message}</p>}
       {error && (
         <p role="alert" className="mt-3 text-sm text-vx-danger">
-          {error} {passkeys === null && <button type="button" className="underline" onClick={() => { setError(''); refresh(); }}>{t("app.account.mfa.retry")}</button>}
+          {t(`app.account.passkeys.error.${error}`)} {passkeys === null && <button type="button" className="underline" onClick={() => { setError(''); refresh(); }}>{t("app.account.mfa.retry")}</button>}
         </p>
       )}
 

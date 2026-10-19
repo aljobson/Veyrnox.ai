@@ -34,7 +34,7 @@ export function ThreadList({ threads, folders = null, folder = ALL_CHATS, onFold
   const choose = (value) => { setFolderMode(null); onFolder(value); };
 
   return (
-    <nav aria-label={t("app.chat.chats")} className="flex h-full flex-col gap-2 p-3">
+    <nav data-assistant-target="chat.threads" aria-label={t("app.chat.chats")} className="flex h-full flex-col gap-2 p-3">
       <button type="button" onClick={onNew} className="rounded-full border border-vx-border px-4 py-2 text-start text-sm font-semibold hover:border-vx-accent">{t("app.chat.threads.new")}</button>
       <label className="sr-only" htmlFor={searchId}>{t("app.chat.threads.search")}</label>
       <input id={searchId} value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("app.chat.threads.search")}

@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { isAppLocalePath } from '../../../lib/i18n/localeCookie.mjs';
 import { ThemeToggle } from './ThemeToggle';
 import { Icon } from './Icon';
 import { useOddlingsPublic } from './OddlingsPublicFlag';
@@ -11,6 +13,7 @@ import { useI18n } from '../../../components/I18nProvider';
 
 // A visible menu keeps every destination reachable on a narrow screen.
 export function MobileMenu({ items, className = '', buttonLabel = 'Menu', buttonText = '', navLabel = 'Site', activeHref, grouped = false, languageMenu = false }) {
+  const pathname = usePathname() || '/';
   const [open, setOpen] = useState(false);
   const triggerRef = useRef(null);
   const oddlingsPublic = useOddlingsPublic();
@@ -39,9 +42,9 @@ export function MobileMenu({ items, className = '', buttonLabel = 'Menu', button
 
   const renderLinks = (list) => list.map((it) => {
     // Home-page sections use a plain link, as on the marketing bar.
-    const Item = it.href.includes('#') ? 'a' : Link;
     // A public page that is still behind its flag links to the studio instead.
     const href = localHref(navHref(it, oddlingsPublic));
+    const Item = it.href.includes('#') || isAppLocalePath(pathname) !== isAppLocalePath(href) ? 'a' : Link;
     return (
       <li key={it.href}>
         <Item

@@ -43,7 +43,7 @@ export function MediaCanvas({ kind, media }) {
             <div className="absolute inset-0 flex items-center justify-center px-6 text-center">
               <div>
                 <p className={`font-vx-mono text-[11px] uppercase tracking-[0.14em] ${job?.state === 'failed' ? 'text-vx-danger' : 'text-vx-accent'}`}>
-                  <span aria-hidden="true">{jobStateUi(job).glyph}</span> {jobStateUi(job).label}
+                  <span aria-hidden="true">{jobStateUi(job).glyph}</span> {tOr(t, `app.library.status.${job.state === 'failed' && job.refunded !== true ? 'failed_pending' : job.state}`, jobStateUi(job).label)}
                 </p>
                 {job?.state === 'failed'
                   ? <p className="mt-2 text-sm text-vx-fg-body">{failedJobCopy(job)}</p>

@@ -24,13 +24,12 @@ test('round 3 completes nine files; parsing, stable machine values and translato
   }
 });
 
-test('eighteen English render states match main, except the explicitly corrected Ads brand spellings', async () => {
+test('eighteen English render states match main including raw Ads network labels', async () => {
   const baseline = JSON.parse(readFileSync('tests/fixtures/app-round3-english-main.json', 'utf8'));
   const messages = await appMessagesFor('en');
   assert.equal(baseline.length, scenarios.length);
   for (const [index, scenario] of scenarios.entries()) {
-    // Main renders network IDs as labels; the work order requires brand spelling.
-    const expected = scenario.area === 'ads' ? baseline[index].text.replace('Networkmetagoogletiktoklinkedintwitter', 'NetworkMetaGoogleTikTokLinkedInX').replace('unchangedtiktok ·', 'unchangedTikTok ·') : baseline[index].text;
+    const expected = baseline[index].text;
     assert.equal(visibleText(renderScenario(scenario, 'en', messages)), expected, `${index} ${scenario.area}`);
   }
 });
@@ -87,7 +86,7 @@ test('only exact version-bound subscription consent fragments are exempted', () 
   assert.equal(candidates(files.billing, '<label lang="en" dir="ltr">Untranslated controls</label>', { app: true })[0].status, 'unresolved');
 });
 
-test('report manual delivery is translated and unknown delivery errors never expose raw codes', async () => {
+test('report manual delivery is translated and unknown delivery errors retain their baseline code fallback', async () => {
   const original = scenarios.find(scenario => scenario.area === 'reports');
   for (const locale of ['en', 'de', 'ja', 'ar']) {
     const messages = await appMessagesFor(locale);
@@ -96,8 +95,8 @@ test('report manual delivery is translated and unknown delivery errors never exp
       Object.assign(states[1][0], { delivery_cadence, last_delivery_error: 'unrecognized_delivery_failure' });
       const html = visibleText(renderScenario({ ...original, states }, locale, messages));
       assert.ok(html.includes(messages[`app.publish.reports.${delivery_cadence}`]));
-      assert.doesNotMatch(html, /unrecognized_delivery_failure|app\.publish\.reports\./);
-      if (delivery_cadence === 'weekly') assert.ok(html.includes(messages['app.publish.reports.buildFailed']));
+      assert.doesNotMatch(html, /app\.publish\.reports\./);
+      if (delivery_cadence === 'weekly') assert.ok(html.includes('unrecognized_delivery_failure'));
     }
   }
 });

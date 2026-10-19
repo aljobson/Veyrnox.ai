@@ -94,6 +94,7 @@ test('Account security renders private controls, validates password and cancels 
   await openReal(fixture, '/app/account');
   await expect(page.getByTestId('account-password-heading')).toBeVisible();
   await expect(page.getByTestId('account-password-heading')).toHaveText('Set a new password');
+  await expect(page.getByTestId('account-password-heading')).toHaveAccessibleName('Set a new password');
   await expect(page.getByText('No assistants are connected.', { exact: true })).toBeVisible();
   await page.getByTestId('account-new-password').fill('short');
   await page.getByTestId('account-verification-code').fill('bad');
@@ -120,6 +121,7 @@ test('Account connected assistant failure has a functional refresh', async ({ pa
   const fixture = await installAccessFixtures(page, { scenario: { oauthError: true } });
   await openReal(fixture, '/app/account');
   const section = page.getByTestId('oauth-grants');
+  await expect(section).toHaveAccessibleName('Connected assistants');
   await expect(section.getByRole('alert')).toContainText('could not be loaded');
   fixture.scenario.oauthError = false;
   await section.getByTestId('oauth-grants-refresh').click();

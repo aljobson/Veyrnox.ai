@@ -70,6 +70,8 @@ const off = () => false;
 
 export default function CreateStudio() {
   const { t, locale } = useI18n();
+  const translation = useRef(t);
+  translation.current = t;
   const number = value => locale === 'en' ? value : Number(value).toLocaleString(localeTag(locale));
   const creditLabel = value => t(pluralKey(t, locale, 'app.create.credits', value), { count: number(value) });
   const generationCostLabel = value => value === 0 ? t('publish.plan.colFree') : t('app.create.cost',{count:number(value)});
@@ -151,7 +153,7 @@ export default function CreateStudio() {
     const controller = new AbortController();
     if (portrait) {
       setAnimationPortrait(portrait);
-      setPortraitStatus(t('app.create.photoLoading',{name:portrait.name}));
+      setPortraitStatus(translation.current('app.create.photoLoading',{name:portrait.name}));
       fetch(portrait.image, { signal: controller.signal }).then(async (response) => {
         if (!response.ok) throw new Error('portrait_load_failed');
         const blob = await response.blob();
@@ -159,13 +161,13 @@ export default function CreateStudio() {
         if (controller.signal.aborted) return;
         const file = new File([blob], `${portrait.id}.webp`, { type: 'image/webp' });
         setSources((current) => ({ ...current, image: { file, previewUrl: portrait.image, label: portrait.name } }));
-        setPortraitStatus(t('app.create.photoReady',{name:portrait.name}));
+        setPortraitStatus(translation.current('app.create.photoReady',{name:portrait.name}));
       }).catch(() => {
-        if (!controller.signal.aborted) setPortraitStatus(t("app.create.photoFailed"));
+        if (!controller.signal.aborted) setPortraitStatus(translation.current("app.create.photoFailed"));
       });
     }
     return () => controller.abort();
-  }, [t]);
+  }, []);
 
   const draftRecovery = useCreateDraftRecovery({
     incoming: incomingDraft,
@@ -459,7 +461,7 @@ export default function CreateStudio() {
                   {generating ? (
                     <div className="text-center">
                       <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-accent">
-                        <span aria-hidden="true">●</span> {jobStateUi(job).label} · {resultModelName.toUpperCase()}
+                        <span aria-hidden="true">●</span> {tOr(t, `app.library.status.${job.state === 'failed' && job.refunded !== true ? 'failed_pending' : job.state}`, jobStateUi(job).label)} · {resultModelName.toUpperCase()}
                       </div>
                       <div className="mt-2 font-vx-mono text-[42px] font-bold vx-num">…</div>
                       {SLOW_MODEL_WAIT[job?.model_id] && (
@@ -470,7 +472,7 @@ export default function CreateStudio() {
                   ) : job?.state === 'failed' ? (
                     <div className="text-center max-w-md px-6">
                       <div className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-danger">
-                        <span aria-hidden="true">✕</span> {jobStateUi(job).label}
+                        <span aria-hidden="true">✕</span> {tOr(t, `app.library.status.${job.state === 'failed' && job.refunded !== true ? 'failed_pending' : job.state}`, jobStateUi(job).label)}
                       </div>
                       <div className="mt-2 text-sm text-vx-fg-body">
                         {failedJobCopy(job)}

@@ -25,11 +25,18 @@ async function publicPacks() {
   return body;
 }
 
+const BENEFIT_IDS = {
+  "Full multitrack video editor": "multitrack",
+  "Local preview and export": "local",
+  "Cloud projects and version history": "cloud",
+  "No card required": "no_card"
+};
+
 function BenefitList({ items }) {
   const { t } = useI18n();
   return (
     <ul className="grid gap-3 text-sm text-vx-fg-body sm:grid-cols-2 xl:grid-cols-4">
-      {items.map((item, index) => (
+      {items.map((item) => (
         <li key={item} className="flex items-center gap-2.5">
           <span
             aria-hidden="true"
@@ -37,7 +44,7 @@ function BenefitList({ items }) {
           >
             ✓
           </span>
-          <span>{tOr(t, `app.editor.credits.benefit.${index}`, item)}</span>
+          <span>{tOr(t, `app.editor.credits.benefit.${BENEFIT_IDS[item]}`, item)}</span>
         </li>
       ))}
     </ul>

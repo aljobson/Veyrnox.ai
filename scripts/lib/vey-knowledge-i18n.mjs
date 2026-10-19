@@ -33,7 +33,7 @@ export function resolveI18nSource(source, messages = english, { attributesOnly =
       const message = text(key);
       return message === null ? null : fill(message, vars);
     }
-    if (!['tOr', 't', 'translate', 't.label', 'translate.label'].includes(name)) return null;
+    if (!['tOr', 't', 'translate', 'translation.current', 't.label', 'translate.label'].includes(name)) return null;
     const literal = text(key);
     if (literal === null) return name === 'tOr' ? text(node.arguments[2]) : null;
     const message = messages[name.endsWith('.label') ? `label.${literal}` : literal];
@@ -68,7 +68,7 @@ export function resolveI18nSource(source, messages = english, { attributesOnly =
     }
     // Conditional JSX and notices keep their JavaScript shape, but static
     // lookups still expose the same English text to the inventory scanner.
-    if (!attributesOnly && ts.isCallExpression(node) && ['t', 'tOr', 't.label', 'translate', 'translate.label'].includes(node.expression.getText(tree))) {
+    if (!attributesOnly && ts.isCallExpression(node) && ['t', 'tOr', 't.label', 'translate', 'translate.label', 'translation.current'].includes(node.expression.getText(tree))) {
       const value = text(node);
       if (value !== null) {
         edits.push({ start: node.getStart(tree), end: node.end, value: JSON.stringify(value) });
