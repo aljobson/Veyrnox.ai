@@ -40,6 +40,11 @@ export function mapAppLink(path: string): string {
     }
     if (url.protocol !== 'https:' || !WEB_HOSTS.has(url.hostname)) return path;
     const segments = url.pathname.split('/').filter(Boolean);
+    // A shared Cinema title or episode: /social-cinema/title/<id> and /social-cinema/watch/<id> (ADR-0164).
+    if (segments[0] === 'social-cinema' && segments.length === 3 && UUID_RE.test(segments[2])) {
+        if (segments[1] === 'title') return `/cinema/${segments[2].toLowerCase()}`;
+        if (segments[1] === 'watch') return `/cinema/watch/${segments[2].toLowerCase()}`;
+    }
     if (segments[0] !== 'app') return '/';
     return opened(segments.slice(1));
 }

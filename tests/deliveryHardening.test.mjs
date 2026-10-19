@@ -45,12 +45,12 @@ test('production rolls retained static assets forward across releases', () => {
 });
 
 test('production bootstraps retention once, then enforces old references on every later deploy', () => {
-    const captureAt = workflow.indexOf('node scripts/check-site-health.mjs --capture-assets previous-build-assets.json');
+    const captureAt = workflow.indexOf('node scripts/check-site-health.mjs --capture-assets previous-build-assets.json --tolerate-server-errors');
     const deployAt = workflow.indexOf('- name: Deploy');
     const verifyAt = workflow.indexOf('node scripts/check-site-health.mjs --asset-manifest previous-build-assets.json');
     assert.ok(captureAt !== -1 && captureAt < deployAt, 'old asset references are captured before deploy');
     assert.match(workflow,
-        /Record currently referenced production assets\n\s+if: .*steps\.retained_static\.outputs\.available == 'true'/,
+        /Record currently referenced production assets\n\s+id: capture\n\s+if: .*steps\.retained_static\.outputs\.available == 'true'/,
         'old references are captured only when their complete build artifact was retained');
     assert.ok(verifyAt > deployAt, 'old and current references are checked after deploy');
     assert.match(workflow,
