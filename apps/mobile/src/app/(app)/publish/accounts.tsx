@@ -1,8 +1,10 @@
 import { Image } from 'expo-image';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { accountStatusLabel, fetchAccounts, publishErrorMessage, type PublishAccount } from '../../../lib/publish';
+import { touchTarget } from '../../../lib/a11y';
+import { t } from '../../../lib/i18n';
 import { colors } from '../../../theme';
 import { usePublishApi } from '../../../lib/usePublishApi';
 
@@ -10,6 +12,7 @@ const date = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString() :
 
 export default function Accounts() {
     const api = usePublishApi();
+    const router = useRouter();
     const [data, setData] = useState<{ accountLimit: number; accounts: PublishAccount[] } | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [refreshing, setRefreshing] = useState(false);
@@ -41,7 +44,14 @@ export default function Accounts() {
                     refreshControl={<RefreshControl refreshing={refreshing} tintColor={colors.accent} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}
                     ListHeaderComponent={<Text style={styles.muted}>{data.accounts.length} of {data.accountLimit} accounts</Text>}
                     ListEmptyComponent={<Text style={styles.muted}>No accounts are connected yet.</Text>}
-                    ListFooterComponent={<Text style={styles.note}>To connect or remove an account, use Publish on veyrnox.ai for now.</Text>}
+                    ListFooterComponent={
+                        <View>
+                            <Pressable accessibilityRole="button" style={[styles.connect, touchTarget]} onPress={() => router.push('/publish/connect')}>
+                                <Text style={styles.connectText}>{t('connect.title')}</Text>
+                            </Pressable>
+                            <Text style={styles.note}>{t('connect.remove')}</Text>
+                        </View>
+                    }
                     renderItem={({ item }) => (
                         <View style={styles.row} accessible accessibilityLabel={`${item.displayName}, ${item.network}, ${accountStatusLabel(item.status)}`}>
                             {item.avatarUrl ? <Image source={{ uri: item.avatarUrl }} style={styles.avatar} contentFit="cover" /> : <View style={styles.avatar} />}
@@ -68,6 +78,8 @@ const styles = StyleSheet.create({
     status: { color: colors.accent },
     warn: { color: colors.money },
     muted: { color: colors.muted, fontSize: 13, paddingTop: 2 },
+    connect: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, marginTop: 16 },
+    connectText: { color: colors.accent, fontSize: 16, fontWeight: '600' },
     note: { color: colors.muted, fontSize: 13, paddingVertical: 20 },
     error: { color: colors.danger, paddingTop: 16 },
 });

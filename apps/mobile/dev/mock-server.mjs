@@ -3,7 +3,7 @@
 // previewed in the simulator without an account. Development only: `node dev/mock-server.mjs` (port 8799).
 import { createServer } from 'node:http';
 import { deflateSync } from 'node:zlib';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -23,6 +23,7 @@ const state = {
         { id: 'post-2', key: 'seed-2', status: 'failed', scheduled_at: '2026-10-17T09:00:00Z', global_text: 'Behind the scenes cut.', created_at: '2026-10-17T08:00:00Z', updated_at: '2026-10-17T09:05:00Z', targets: [{ id: 't2', network: 'tiktok', publish_status: 'failed', platform_post_url: null, last_error: 'The account access token expired. <b>Reconnect</b> the account.' }, { id: 't3', network: 'instagram', publish_status: 'published', platform_post_url: 'https://www.instagram.com/p/mock/', last_error: null }] },
     ],
     deleted: new Set(),
+    connectStates: new Map(),
     referral: { code: 'K7M2PQ9XWD', referred: 2, attached: false },
 };
 state.messages.set(state.threads[0].id, [
@@ -135,6 +136,7 @@ createServer(async (req, res) => {
     if ((m = path.match(/^\/api\/cinema\/posters\/([^/]+)$/))) { res.writeHead(200, { 'content-type': 'image/png' }); return res.end(PNG); }
     if (path === '/api/catalog') return send(res, 200, { models: CATALOG });
     // Publish brands (ADR-0135): the person's own, a client brand they edit, and one they can only view.
+    const m0 = path.match(/^\/mock-provider\/(youtube|linkedin|twitter|tiktok)$/);
     const BRAND_CLIENT = '22222222-2222-4222-8222-222222222222';
     const BRAND_VIEW = '33333333-3333-4333-8333-333333333333';
     const brandHeader = String(req.headers['x-publish-brand-id'] || '');
@@ -208,6 +210,35 @@ createServer(async (req, res) => {
         for (let d = 1; d <= 7; d++) for (const h of [9, 12, 18]) heatmap.push({ day: d, hour: h, posts: 1 + ((d + h) % 5), score: ((d * h) % 7) * 6 });
         return send(res, 200, { insights: { timezone: 'Europe/London', period_start: '2026-07-27', period_end: '2026-10-19', recorded_posts: 40, measured_posts: 31, history_days: 84, computed_at: '2026-10-18T00:00:00Z',
             heatmap, frequency: [{ week: '2026-10-05', posts: 2, measured_posts: 2, avg_interactions: 14 }, { week: '2026-10-12', posts: 4, measured_posts: 3, avg_interactions: 21 }, { week: '2026-09-28', posts: 2, measured_posts: 2, avg_interactions: 18 }] } });
+    }
+    // Connect a network (ADR-0140): the server's mobile contract (ADR-0136), with a real PKCE check. youtube and twitter
+    // connect; linkedin answers the account-limit refusal; tiktok's fake provider page says access_denied.
+    if (m0 && req.method === 'GET') {
+        const name = m0[1];
+        const st = url.searchParams.get('state') || '';
+        const target = name === 'tiktok'
+            ? `ai.veyrnox.app://social/callback?network=${name}&error=access_denied`
+            : `ai.veyrnox.app://social/callback?network=${name}&code=MOCKCODE&state=${encodeURIComponent(st)}`;
+        res.writeHead(302, { location: target, 'cache-control': 'no-store', 'referrer-policy': 'no-referrer' });
+        return res.end();
+    }
+    const mc = path.match(/^\/api\/v1\/social\/accounts\/(youtube|linkedin|twitter|tiktok)\/(connect|callback)$/);
+    if (mc && req.method === 'POST') {
+        if (body.client !== 'mobile') return send(res, 400, { error: 'invalid_body' });
+        if (mc[2] === 'connect') {
+            if (typeof body.codeChallenge !== 'string' || !/^[A-Za-z0-9_-]{43,128}$/.test(body.codeChallenge)) return send(res, 400, { error: 'invalid_code_challenge' });
+            const stateId = `MOCK.${randomUUID()}`;
+            state.connectStates.set(stateId, body.codeChallenge);
+            return send(res, 200, { authorizeUrl: `http://localhost:${PORT}/mock-provider/${mc[1]}?state=${encodeURIComponent(stateId)}` });
+        }
+        const challenge = state.connectStates.get(body.state);
+        if (!challenge) return send(res, 400, { error: 'invalid_state' });
+        state.connectStates.delete(body.state);
+        const verifier = String(body.codeVerifier || '');
+        if (!/^[A-Za-z0-9_-]{43,128}$/.test(verifier) || createHash('sha256').update(verifier).digest('base64url') !== challenge) return send(res, 502, { error: 'connect_failed' });
+        if (body.code !== 'MOCKCODE') return send(res, 502, { error: 'connect_failed' });
+        if (mc[1] === 'linkedin') return send(res, 409, { ok: false, code: 'ACCOUNT_LIMIT', limit: 1 });
+        return send(res, 200, { ok: true, account: { id: `acc-${mc[1]}`, network: mc[1], display_name: `Mock ${mc[1]} page`, avatar_url: null, status: 'active' } });
     }
     if (path === '/api/v1/social/posts' && req.method === 'GET') return send(res, 200, { brand_id: 'b1', posts: state.socialPosts.map(({ key, updated_at, ...p }) => p) });
     m = path.match(/^\/api\/v1\/social\/posts\/([^/]+)$/);
