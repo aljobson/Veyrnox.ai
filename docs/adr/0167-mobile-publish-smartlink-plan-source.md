@@ -1,4 +1,4 @@
-# ADR-0164 — Mobile: Publish SmartLink and where a plan is managed
+# ADR-0167 — Mobile: Publish SmartLink and where a plan is managed
 
 **Status:** Proposed 2026-10-19
 **Related:** [ADR-0109](0109-mobile-publish-plan-and-store-catalog.md) (amendment 1: `subscription.source`), parity phase P5 in `docs/mobile/PARITY-2026-10-19.md` section 4

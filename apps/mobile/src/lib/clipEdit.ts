@@ -29,6 +29,21 @@ export interface Clip {
     readonly end: number;
 }
 
+// A sound laid under the video: one of the person's own audio creations, starting `offset` seconds in (ADR-0157).
+export interface AudioTrack {
+    readonly jobId: string;
+    readonly label: string;
+    readonly offset: number;
+}
+
+export const newAudio = (source: { readonly jobId: string; readonly label: string }): AudioTrack => ({ jobId: source.jobId, label: source.label, offset: 0 });
+
+// The sound may start anywhere inside the video, not at or after its end (the server's audio_invalid).
+export function stepOffset(a: AudioTrack, delta: number, total: number): AudioTrack {
+    const top = Math.max(0, round2(total - STEP_S));
+    return { ...a, offset: round2(clamp(a.offset + delta, 0, top)) };
+}
+
 const round2 = (n: number): number => Math.round(n * 100) / 100;
 const floor1 = (n: number): number => Math.floor(n * 10 + 1e-9) / 10;
 const clamp = (n: number, lo: number, hi: number): number => Math.min(Math.max(n, lo), hi);
@@ -73,9 +88,9 @@ export function moveClip(clips: readonly Clip[], index: number, dir: -1 | 1): Cl
 export const clipSeconds = (c: Clip): number => Math.max(0, round2(c.end - c.start));
 export const totalSeconds = (clips: readonly Clip[]): number => round2(clips.reduce((n, c) => n + clipSeconds(c), 0));
 
-export type EditProblem = 'no_clips' | 'too_many' | 'unknown_length' | 'bad_range' | 'too_long' | 'nothing_to_do';
+export type EditProblem = 'audio_offset' | 'no_clips' | 'too_many' | 'unknown_length' | 'bad_range' | 'too_long' | 'nothing_to_do';
 
-export function validateEdit(clips: readonly Clip[], captions: string | null): EditProblem | null {
+export function validateEdit(clips: readonly Clip[], captions: string | null, audio: AudioTrack | null = null): EditProblem | null {
     if (clips.length === 0) return 'no_clips';
     if (clips.length > MAX_CLIPS) return 'too_many';
     if (clips.some((c) => c.length === null)) return 'unknown_length';
@@ -83,18 +98,20 @@ export function validateEdit(clips: readonly Clip[], captions: string | null): E
         if (!(c.start >= 0 && c.end > c.start && c.end <= (c.length as number) + EPSILON)) return 'bad_range';
     }
     if (totalSeconds(clips) > MAX_OUTPUT_S + EPSILON) return 'too_long';
+    if (audio && !(audio.offset >= 0 && audio.offset < totalSeconds(clips))) return 'audio_offset';
     const only = clips[0] as Clip;
-    if (clips.length === 1 && !captions && only.start === 0 && (only.length as number) - only.end < 0.15) return 'nothing_to_do';
+    if (clips.length === 1 && !captions && !audio && only.start === 0 && (only.length as number) - only.end < 0.15) return 'nothing_to_do';
     return null;
 }
 
-export function editBody(clips: readonly Clip[], captions: string | null, confirmedCredits: number, idempotencyKey: string): Record<string, unknown> {
+export function editBody(clips: readonly Clip[], captions: string | null, confirmedCredits: number, idempotencyKey: string, audio: AudioTrack | null = null): Record<string, unknown> {
     return {
         model_id: CLIP_EDIT_MODEL,
         idempotency_key: idempotencyKey,
         confirmed_credits: confirmedCredits,
         inputs: {
             clips: clips.map((c) => ({ asset_id: c.jobId, in_s: round2(c.start), out_s: round2(c.end) })),
+            ...(audio ? { audio: { asset_id: audio.jobId, offset_s: round2(audio.offset) } } : {}),
             ...(captions ? { captions: { preset: captions } } : {}),
         },
     };
@@ -107,10 +124,10 @@ export type Quote = { readonly kind: 'quote'; readonly credits: number } | { rea
 
 // The server's own quote: the same request pinned to 0 credits is refused with the real price and charges nothing. The
 // edit is checked first, so a bad range or a missing file comes back here as that error, also uncharged.
-export async function quoteEdit(api: ApiClient, clips: readonly Clip[], captions: string | null, idempotencyKey: string): Promise<Quote> {
+export async function quoteEdit(api: ApiClient, clips: readonly Clip[], captions: string | null, idempotencyKey: string, audio: AudioTrack | null = null): Promise<Quote> {
     await ensureOnline();
     try {
-        const res = await post(api, editBody(clips, captions, 0, idempotencyKey));
+        const res = await post(api, editBody(clips, captions, 0, idempotencyKey, audio));
         // The server accepted a price of 0 and made the job: say so rather than hide it.
         if (typeof res.job_id === 'string') return { kind: 'created', jobId: res.job_id };
         throw new ApiError(502, 'unexpected_quote');
@@ -121,9 +138,9 @@ export async function quoteEdit(api: ApiClient, clips: readonly Clip[], captions
     }
 }
 
-export async function submitEdit(api: ApiClient, clips: readonly Clip[], captions: string | null, credits: number, idempotencyKey: string): Promise<{ jobId: string }> {
+export async function submitEdit(api: ApiClient, clips: readonly Clip[], captions: string | null, credits: number, idempotencyKey: string, audio: AudioTrack | null = null): Promise<{ jobId: string }> {
     await ensureOnline();
-    const res = await post(api, editBody(clips, captions, credits, idempotencyKey));
+    const res = await post(api, editBody(clips, captions, credits, idempotencyKey, audio));
     if (typeof res.job_id !== 'string') throw new ApiError(502, 'unexpected_submit');
     return { jobId: res.job_id };
 }
@@ -160,6 +177,10 @@ export function editErrorKey(err: unknown): string {
             return 'edit.err.unreadable';
         case 'asset_not_found':
             return 'edit.err.gone';
+        case 'audio_not_audio':
+            return 'edit.err.notAudio';
+        case 'audio_invalid':
+            return 'edit.problem.audio_offset';
         case 'captions_unavailable':
             return 'edit.err.captionsOff';
         default:
