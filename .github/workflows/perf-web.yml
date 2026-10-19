@@ -1,0 +1,43 @@
+name: perf-web
+
+# Weekly Lighthouse run against the public pages of https://veyrnox.ai
+# (the same anonymous GETs site-health makes; nothing signed in, nothing
+# that spends credits). Scores below the floors in .github/lighthouse/
+# lighthouserc.json fail the run; the HTML reports are kept as an artifact.
+# Not a PR gate: it measures what is live, so a slow third party cannot
+# block a merge.
+
+on:
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: perf-web
+  cancel-in-progress: false
+
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+
+      - name: Lighthouse
+        run: npx --yes @lhci/cli@0.15.1 autorun --config=.github/lighthouse/lighthouserc.json
+
+      - name: Keep the reports
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: lighthouse-reports
+          path: .lighthouseci/
+          if-no-files-found: ignore
+          retention-days: 30
