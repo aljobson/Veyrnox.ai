@@ -462,8 +462,18 @@ createServer(async (req, res) => {
             if (body.folder_id !== null && !state.folders.some((f) => f.id === body.folder_id)) return send(res, 404, { error: 'folder_not_found' });
             t.folder_id = body.folder_id; return send(res, 200, { ok: true, folder_id: t.folder_id });
         }
+        if ('title' in body || 'pinned' in body) {
+            if ('title' in body) { const name = typeof body.title === 'string' ? body.title.trim() : ''; if (!name || name.length > 120) return send(res, 400, { error: 'invalid_title' }); t.title = name; }
+            if ('pinned' in body) { if (typeof body.pinned !== 'boolean') return send(res, 400, { error: 'invalid_pinned' }); t.pinned = body.pinned; }
+            return send(res, 200, { thread: t });
+        }
         if (typeof body.system_prompt === 'string') { t.system_prompt = body.system_prompt; if (!t.title) t.title = 'Chat with a persona'; return send(res, 200, { ok: true }); }
         return send(res, 400, { error: 'invalid_body' });
+    }
+    // Closing a send by its key (ADR-0067 amendment 11): the mock never holds a job for a stopped send, so it is closed.
+    if (path === '/api/v1/chat/sends/close' && req.method === 'POST') {
+        if (!/^vx-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(String(body.idempotency_key))) return send(res, 400, { error: 'invalid_key' });
+        return send(res, 200, { closed: true });
     }
     if (path === '/api/v1/chat/threads' && req.method === 'GET') return send(res, 200, { threads: state.threads });
     if (path === '/api/v1/chat/threads' && req.method === 'POST') {

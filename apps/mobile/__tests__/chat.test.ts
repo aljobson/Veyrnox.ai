@@ -1,5 +1,5 @@
 import { createSseParser } from '../src/lib/sse';
-import { chatApi, cleanOptions, NO_OPTIONS, optionsKey, replyPrice, sendKeyFor, toTurnEvent, type ChatModel } from '../src/lib/chat';
+import { chatApi, cleanOptions, cleanTitle, NO_OPTIONS, pinnedFirst, optionsKey, replyPrice, sendKeyFor, toTurnEvent, type ChatModel } from '../src/lib/chat';
 import type { ApiClient } from '../src/lib/api';
 
 describe('sse parser', () => {
@@ -21,7 +21,7 @@ describe('sse parser', () => {
 
 describe('turn events', () => {
     test('maps the server events', () => {
-        expect(toTurnEvent('start', { credits: 2, balance_after: 8 })).toEqual({ type: 'start', credits: 2, balanceAfter: 8 });
+        expect(toTurnEvent('start', { credits: 2, balance_after: 8 })).toEqual({ type: 'start', credits: 2, balanceAfter: 8, jobId: null });
         expect(toTurnEvent('done', { status: 'succeeded', credits_charged: 2, balance: 8 })).toEqual({
             type: 'done', status: 'succeeded', creditsCharged: 2, balance: 8,
         });
@@ -101,5 +101,48 @@ describe('sendMessage options', () => {
         const stream = jest.fn().mockResolvedValue(streamOf('event: done\ndata: {"status":"succeeded"}\n\n'));
         await chatApi({ stream } as unknown as ApiClient).sendMessage('t1', 'hi', 'key-12345678', () => {}, undefined, { thinking: true, web: true });
         expect(JSON.parse(stream.mock.calls[0][1].body).options).toEqual({ thinking: true, web: true });
+    });
+});
+
+describe('thread edits', () => {
+    test('a title is trimmed and held to 1 to 120 characters', () => {
+        expect(cleanTitle('  Hello  ')).toBe('Hello');
+        expect(cleanTitle('   ')).toBeNull();
+        expect(cleanTitle('x'.repeat(121))).toBeNull();
+        expect(cleanTitle('x'.repeat(120))).not.toBeNull();
+    });
+    test('pinned chats come first and keep their order', () => {
+        const rows = [{ id: 'a', pinned: false }, { id: 'b', pinned: true }, { id: 'c', pinned: false }, { id: 'd', pinned: true }];
+        expect(pinnedFirst(rows).map((r) => r.id)).toEqual(['b', 'd', 'a', 'c']);
+    });
+    test('rename and pin are PATCHes with only the changed key', async () => {
+        const request = jest.fn().mockResolvedValue({ thread: { id: 't' } });
+        await chatApi({ request } as unknown as ApiClient).updateThread('t', { pinned: true });
+        expect(request.mock.calls[0][0]).toBe('/api/v1/chat/threads/t');
+        expect(request.mock.calls[0][1].method).toBe('PATCH');
+        expect(JSON.parse(request.mock.calls[0][1].body)).toEqual({ pinned: true });
+    });
+    test('the stop question posts the send key to chat/sends/close', async () => {
+        const request = jest.fn().mockResolvedValue({ closed: true });
+        await chatApi({ request } as unknown as ApiClient).closeSend('vx-key');
+        expect(request.mock.calls[0][0]).toBe('/api/v1/chat/sends/close');
+        expect(JSON.parse(request.mock.calls[0][1].body)).toEqual({ idempotency_key: 'vx-key' });
+    });
+});
+
+describe('one charge on a retry', () => {
+    test('the retry of an unsettled send goes out with the same key and the same body', async () => {
+        const bodies: string[] = [];
+        const stream = jest.fn(async (_p: string, init: RequestInit) => {
+            bodies.push(String(init.body));
+            return streamOf('event: done\ndata: {"status":"succeeded"}\n\n');
+        });
+        const api = chatApi({ stream } as unknown as ApiClient);
+        const first = sendKeyFor(null, 'hi', NO_OPTIONS, () => 'vx-key-a');
+        await api.sendMessage('t', 'hi', first.key, () => {}, undefined, NO_OPTIONS);
+        const retry = sendKeyFor(first, 'hi', NO_OPTIONS, () => 'vx-key-b');
+        await api.sendMessage('t', 'hi', retry.key, () => {}, undefined, NO_OPTIONS);
+        expect(bodies[1]).toBe(bodies[0]);
+        expect(JSON.parse(bodies[1]).idempotency_key).toBe('vx-key-a');
     });
 });

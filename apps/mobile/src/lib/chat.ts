@@ -1,4 +1,5 @@
 import { ApiError, type ApiClient } from './api';
+import type { JobRead } from './chatStop';
 import { createSseParser } from './sse';
 
 export interface ChatModel {
@@ -80,7 +81,7 @@ export interface ChatMessage {
 }
 
 export type TurnEvent =
-    | { readonly type: 'start'; readonly credits: number; readonly balanceAfter: number | null }
+    | { readonly type: 'start'; readonly credits: number; readonly balanceAfter: number | null; readonly jobId: string | null }
     | { readonly type: 'delta'; readonly text: string }
     | { readonly type: 'error'; readonly error: string }
     | { readonly type: 'done'; readonly status: string; readonly creditsCharged: number; readonly balance: number | null };
@@ -90,7 +91,7 @@ export function toTurnEvent(event: string, data: unknown): TurnEvent | null {
     const num = (v: unknown) => (typeof v === 'number' ? v : null);
     switch (event) {
         case 'start':
-            return { type: 'start', credits: num(d.credits) ?? 0, balanceAfter: num(d.balance_after) };
+            return { type: 'start', credits: num(d.credits) ?? 0, balanceAfter: num(d.balance_after), jobId: typeof d.job_id === 'string' ? d.job_id : null };
         case 'delta':
             return typeof d.text === 'string' ? { type: 'delta', text: d.text } : null;
         case 'error':
@@ -120,6 +121,24 @@ export const chatApi = (api: ApiClient) => ({
             .then((r) => r.thread),
     getThread: (id: string) =>
         api.request<{ thread: ChatThread; messages: ChatMessage[] }>(`/api/v1/chat/threads/${encodeURIComponent(id)}`),
+    // Rename and pin. The server refuses an empty or over-long title (MAX_TITLE 120) and unknown keys.
+    updateThread: (id: string, patch: { title?: string; pinned?: boolean }) =>
+        api
+            .request<{ thread: ChatThread }>(`/api/v1/chat/threads/${encodeURIComponent(id)}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(patch),
+            })
+            .then((r) => r.thread),
+    // A reply is a job (ADR-0067); its state tells whether a stopped turn has settled.
+    getJob: (id: string) => api.request<JobRead>(`/api/v1/jobs/${encodeURIComponent(id)}`),
+    // Asks about a send by its own key: the job it made, or `{ closed: true }` when it made none (then none ever can).
+    closeSend: (key: string) =>
+        api.request<unknown>('/api/v1/chat/sends/close', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ idempotency_key: key }),
+        }),
     deleteThread: (id: string) =>
         api.request<{ ok: true }>(`/api/v1/chat/threads/${encodeURIComponent(id)}`, { method: 'DELETE' }),
 
@@ -157,3 +176,16 @@ export const chatApi = (api: ApiClient) => ({
         }
     },
 });
+
+export const MAX_TITLE = 120;
+
+// A title the server will take (1 to 120 characters once trimmed), or null.
+export function cleanTitle(raw: string): string | null {
+    const t = raw.trim();
+    return t.length > 0 && t.length <= MAX_TITLE ? t : null;
+}
+
+// Pinned chats first, otherwise the order the server gave.
+export function pinnedFirst<T extends { readonly pinned?: boolean }>(threads: readonly T[]): T[] {
+    return [...threads.filter((t) => t.pinned), ...threads.filter((t) => !t.pinned)];
+}
