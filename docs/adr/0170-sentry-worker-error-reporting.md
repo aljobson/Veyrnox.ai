@@ -15,7 +15,9 @@ unhandled exceptions. Production is at its Cloudflare text-binding cap, so a new
   a `next.config.mjs` that already carries PostHog and Reticle wrappers, and adds browser code, CSP hosts and consent
   work this ADR does not take on.
 - Server-side Next errors reach Sentry through the existing `onRequestError` in `instrumentation.js`, after the
-  same sanitising PostHog gets (message replaced, stack frames kept).
+  same sanitising PostHog gets (message replaced, stack frames kept). `worker-entry.js` sets
+  `globalThis.__veyrnoxCaptureException`; instrumentation.js cannot import the SDK because webpack bundles it for
+  runtimes without `node:url`.
 - The DSN is public (it only allows sending). It is a constant in `lib/sentryConfig.js`, empty today, so there is
   no binding and nothing is sent. The owner sets it by pull request.
 - Errors only: `tracesSampleRate` 0, `sendDefaultPii` false. `lib/sentryScrub.js` runs on every event and
