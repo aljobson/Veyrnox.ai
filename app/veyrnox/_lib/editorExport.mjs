@@ -1,3 +1,4 @@
+import { helperEnglish } from '../../../lib/helperMessages.mjs';
 import { backgroundMediaIds } from './editorBackground.mjs';
 import { sourceRange } from './editorSpeed.mjs';
 import { exportMemoryProblem } from './editorExportMemory.mjs';
@@ -51,12 +52,12 @@ const slice = (mix, from, to) => {
 
 /** Why export cannot run here, or null. A cheap check the page shows before the user spends time editing. */
 export async function exportBlocker(size = { width: 1280, height: 720 }, options) {
-    if (typeof VideoEncoder === 'undefined' || typeof OfflineAudioContext === 'undefined') return 'This browser cannot export video. Use desktop Google Chrome.';
+    if (typeof VideoEncoder === 'undefined' || typeof OfflineAudioContext === 'undefined') return helperEnglish('this_browser_cannot_export_video_use_desktop_google');
     try {
         const supported = usesWebKit() ? await canEncodeSafariVideo(size, options) : await canEncodeVideo('avc', { width: size.width, height: size.height, quality: QUALITY_HIGH });
-        if (!supported) return 'This browser cannot encode H.264 video at this size and frame rate. Try a smaller export or desktop Google Chrome.';
-        if (!await canEncodeAudio('aac')) return 'This browser cannot encode AAC audio. Use desktop Google Chrome.';
-    } catch { return 'Export compatibility could not be checked. Use desktop Google Chrome.'; }
+        if (!supported) return helperEnglish('this_browser_cannot_encode_h264_video_at_this');
+        if (!await canEncodeAudio('aac')) return helperEnglish('this_browser_cannot_encode_aac_audio_use_desktop');
+    } catch { return helperEnglish('export_compatibility_could_not_be_checked_use_desktop'); }
     return null;
 }
 

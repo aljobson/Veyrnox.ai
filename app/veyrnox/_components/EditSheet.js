@@ -1,5 +1,8 @@
 'use client';
+import { useI18n } from '../../../components/I18nProvider';
 import { useEffect, useRef, useState } from 'react';
+import { localeTag } from '../../../lib/i18n/locales.mjs';
+import { pluralKey, tOr } from '../../../lib/i18n/translate.mjs';
 import Link from 'next/link';
 import { useAssetUrl } from '../_lib/useAssetUrl';
 import { Modal } from './Modal';
@@ -25,22 +28,8 @@ const SLOW_UNITS_PER_SECOND = 20;
 const SLOW_MAX_SOURCE_S = 15;
 const slowPreview = () => { try { return window.localStorage.getItem('veyrnox_editor_slow') === '1'; } catch { return false; } };
 
-const ERRORS = {
-  mixed_aspect: 'These clips have different shapes. Pick clips that are all portrait or all landscape.',
-  clip_range: 'An in or out point is past the end of its clip.',
-  too_long: `An edit can be at most ${MAX_OUTPUT_S} seconds long.`,
-  nothing_to_do: 'Trim the clip, add audio or add captions: as it stands the result would be the same video.',
-  captions_unavailable: 'Captions are not open yet.',
-  captions_invalid: 'That caption style is not available.',
-  slow_unavailable: 'Slow motion is not open yet.',
-  slow_invalid: 'That slow-motion speed is not available.',
-  slow_needs_audio: 'Slowed clips cannot keep their own sound. Pick an audio track for the edit.',
-  slow_too_long: `At most ${SLOW_MAX_SOURCE_S} seconds of source video can be slowed in one edit.`,
-  asset_not_found: 'One of these files is no longer available.',
-  insufficient_balance: 'Not enough credits for this edit.',
-  rate_limited: 'Too many requests. Wait a minute and try again.',
-  model_not_found: 'The editor is not open yet.',
-};
+const POINTS = ['in_s', 'out_s'];
+const INTERNAL_ERROR = 'internal';
 
 const round = (n) => Math.round(n * 100) / 100;
 
@@ -49,6 +38,9 @@ const round = (n) => Math.round(n * 100) / 100;
  *           credits5s: number|null, onClose: () => void, onSubmitted: (job:object) => void }} props
  */
 export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted }) {
+  const { t, locale } = useI18n();
+  const number = n => locale === 'en' ? String(n) : n.toLocaleString(localeTag(locale));
+  const errorCopy = code => code === 'rate_limited' ? t('cinema.creatorApplication.tooManyRequestsWaitAMinute') : tOr(t, `app.editor.sheet.error.${code}`, t('app.editor.sheet.fallback'), { limit: number(code === 'too_long' ? MAX_OUTPUT_S : SLOW_MAX_SOURCE_S) });
   const [items, setItems] = useState(() => clips.map((c, i) => ({ ...c, uid: `${c.job_id}#${i}`, in_s: 0, out_s: null, duration: null, ratio: null })));
   const [audioId, setAudioId] = useState('');
   const [offset, setOffset] = useState(0);
@@ -104,9 +96,9 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted }) {
         method: 'POST',
         body: JSON.stringify({ model_id: 'clip-edit', idempotency_key: makeIdempotencyKey(), inputs }),
       });
-      onSubmitted({ job_id: r.job_id, credits: cost, balance_after: r.balance_after, name: `Edit · ${items.length} clip${items.length > 1 ? 's' : ''}` });
+      onSubmitted({ job_id: r.job_id, credits: cost, balance_after: r.balance_after, name: t(pluralKey(t, locale, 'app.editor.sheet.job', items.length), { count: number(items.length) }) });
     } catch (e) {
-      setError(e instanceof GatewayError ? e.code : 'internal');
+      setError(e instanceof GatewayError ? e.code : INTERNAL_ERROR);
       setBusy(false);
     }
   }
@@ -118,8 +110,8 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted }) {
         className="w-full sm:max-w-[760px] max-h-[92dvh] overflow-y-auto rounded-t-2xl sm:rounded-2xl border border-vx-border bg-vx-base p-4 sm:p-6"
       >
         <div className="flex items-center justify-between mb-4">
-          <h2 id="edit-sheet-title" className="text-xl font-black">Edit {items.length} clip{items.length === 1 ? '' : 's'}</h2>
-          <button onClick={onClose} disabled={busy} aria-label="Close" className="text-vx-fg-muted hover:text-vx-fg px-2 py-1">✕</button>
+          <h2 id="edit-sheet-title" className="text-xl font-black">{t(pluralKey(t, locale, 'app.editor.sheet.title', items.length), { count: number(items.length) })}</h2>
+          <button onClick={onClose} disabled={busy} aria-label={t("app.editor.workspace.close")} className="text-vx-fg-muted hover:text-vx-fg px-2 py-1">✕</button>
         </div>
 
         <ol className="flex flex-col gap-3">
@@ -131,66 +123,60 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted }) {
 
         <div className="mt-4 rounded-xl border border-vx-border bg-vx-panel p-3 flex flex-wrap items-end gap-3">
           <label className="flex flex-col gap-1 text-xs text-vx-fg-muted grow min-w-[200px]">
-            Audio (optional)
-            <select value={audioId} onChange={(e) => setAudioId(e.target.value)} className="rounded-lg bg-vx-base border border-vx-field px-2 py-2 text-sm text-vx-fg">
-              <option value="">No audio</option>
+            {t("app.editor.sheet.audio")}<select value={audioId} onChange={(e) => setAudioId(e.target.value)} className="rounded-lg bg-vx-base border border-vx-field px-2 py-2 text-sm text-vx-fg">
+              <option value="">{t("app.editor.sheet.noAudio")}</option>
               {audios.map((a) => <option key={a.job_id} value={a.job_id}>{a.name || a.job_id.slice(0, 8)}</option>)}
             </select>
           </label>
           {audioId && (
             <label className="flex flex-col gap-1 text-xs text-vx-fg-muted">
-              Start at (s)
-              <input type="number" min={0} step={0.1} value={offset} onChange={(e) => setOffset(e.target.value)}
+              {t("app.editor.sheet.startAt")}<input type="number" min={0} step={0.1} value={offset} onChange={(e) => setOffset(e.target.value)}
                 className="w-24 rounded-lg bg-vx-base border border-vx-field px-2 py-2 text-sm text-vx-fg" />
             </label>
           )}
-          {audioId && <p className="text-xs text-vx-fg-muted basis-full">The audio is cut to the video&rsquo;s length.</p>}
+          {audioId && <p className="text-xs text-vx-fg-muted basis-full">{t("app.editor.sheet.audioHelp")}</p>}
         </div>
 
         {slowedSource > 0 && (
           <p className="mt-3 text-xs text-vx-fg-muted">
-            Slow motion can take several minutes to finish, longer for taller or larger videos. If it fails, your credits are refunded.
-          </p>
+            {t("app.editor.sheet.slowHelp")}</p>
         )}
 
         {showCaptions && (
           <div className="mt-3 rounded-xl border border-vx-border bg-vx-panel p-3 flex flex-wrap items-center gap-3">
             <label className="flex items-center gap-2 text-sm text-vx-fg">
               <input type="checkbox" checked={captions} onChange={(e) => setCaptions(e.target.checked)} />
-              Add captions
-            </label>
+              {t("app.editor.sheet.captions")}</label>
             {captions && (
               <label className="flex items-center gap-2 text-xs text-vx-fg-muted">
-                Style
-                <select value={style} onChange={(e) => setStyle(e.target.value)} className="rounded-lg bg-vx-base border border-vx-field px-2 py-2 text-sm text-vx-fg">
+                {t("app.editor.sheet.style")}<select value={style} onChange={(e) => setStyle(e.target.value)} className="rounded-lg bg-vx-base border border-vx-field px-2 py-2 text-sm text-vx-fg">
                   {CAPTION_STYLES.map((n) => <option key={n} value={n}>{n[0].toUpperCase() + n.slice(1)}</option>)}
                 </select>
               </label>
             )}
             {captions && (
               <p className="text-xs text-vx-fg-muted basis-full">
-                Captions are written from the speech in the finished video. A video with no speech can&rsquo;t be captioned: the edit fails and your credits are refunded.
-              </p>
+                {t("app.editor.sheet.captionHelp")}</p>
             )}
           </div>
         )}
 
         <div role="status" className="mt-3 text-sm min-h-[1.25rem]">
-          {mixed && <span className="text-vx-danger">{ERRORS.mixed_aspect}</span>}
-          {!mixed && output > MAX_OUTPUT_S && <span className="text-vx-danger">{ERRORS.too_long}</span>}
-          {!mixed && badRange && <span className="text-vx-danger">{ERRORS.clip_range}</span>}
-          {slowTooLong && <span className="text-vx-danger">{ERRORS.slow_too_long}</span>}
-          {!slowTooLong && slowNoAudio && <span className="text-vx-danger">{ERRORS.slow_needs_audio}</span>}
-          {noop && <span className="text-vx-fg-muted">{ERRORS.nothing_to_do}</span>}
-          {error && <span className="text-vx-danger">{ERRORS[error] || 'That didn’t work. Your credits were not taken; try again.'}</span>}
-          {error === 'insufficient_balance' && <Link href="/app/credits" className="ml-2 font-bold text-vx-accent underline underline-offset-4" onClick={onClose}>Add Credits</Link>}
+          {mixed && <span className="text-vx-danger">{t('app.editor.sheet.error.mixed_aspect')}</span>}
+          {!mixed && output > MAX_OUTPUT_S && <span className="text-vx-danger">{t('app.editor.sheet.error.too_long', { limit: number(MAX_OUTPUT_S) })}</span>}
+          {!mixed && badRange && <span className="text-vx-danger">{t('app.editor.sheet.error.clip_range')}</span>}
+          {slowTooLong && <span className="text-vx-danger">{t('app.editor.sheet.error.slow_too_long', { limit: number(SLOW_MAX_SOURCE_S) })}</span>}
+          {!slowTooLong && slowNoAudio && <span className="text-vx-danger">{t('app.editor.sheet.error.slow_needs_audio')}</span>}
+          {noop && <span className="text-vx-fg-muted">{t('app.editor.sheet.error.nothing_to_do')}</span>}
+          {error && <span className="text-vx-danger">{errorCopy(error)}</span>}
+          {error === 'insufficient_balance' && <Link href="/app/credits" className="ms-2 font-bold text-vx-accent underline underline-offset-4" onClick={onClose}>{t("app.create.addCredits")}</Link>}
         </div>
 
         <div className="mt-3 flex items-center justify-between gap-3">
-          <span className="font-vx-mono text-xs text-vx-fg-muted vx-num">{output.toFixed(1)} s output</span>
+          <span className="font-vx-mono text-xs text-vx-fg-muted vx-num">{t('app.editor.sheet.output', { seconds: locale === 'en' ? output.toFixed(1) : output.toLocaleString(localeTag(locale), { minimumFractionDigits: 1, maximumFractionDigits: 1 }) })}</span>
           <button onClick={submit} disabled={blocked}
             className="rounded-full px-5 py-2.5 font-bold bg-vx-accent text-vx-accent-ink disabled:opacity-40">
-            {busy ? 'Starting…' : cost == null ? 'Create video' : `Create video · ${cost} cr`}
+            {busy ? t("app.editor.sheet.starting") : cost == null ? t("app.editor.sheet.create") : t('app.editor.sheet.createCost', { cost: number(cost) })}
           </button>
         </div>
       </div>
@@ -199,6 +185,8 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted }) {
 }
 
 function ClipRow({ item, index, count, showSlow, onChange, onMove, onRemove }) {
+  const { t, locale } = useI18n();
+  const number = n => locale === 'en' ? String(n) : n.toLocaleString(localeTag(locale));
   const asset = useAssetUrl(item.job_id, item.asset_url);
   const ref = useRef(null);
   const d = item.duration;
@@ -217,38 +205,37 @@ function ClipRow({ item, index, count, showSlow, onChange, onMove, onRemove }) {
       </div>
       <div className="flex-1 min-w-0 flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-sm font-bold truncate">{index + 1}. {item.name || item.job_id.slice(0, 8)}</span>
+          <span className="text-sm font-bold truncate">{number(index + 1)}. {item.name || item.job_id.slice(0, 8)}</span>
           <span className="flex gap-1 shrink-0">
-            <button onClick={() => onMove(-1)} disabled={index === 0} aria-label="Move earlier" className="px-2 py-1 rounded-sm border border-vx-border disabled:opacity-30">↑</button>
-            <button onClick={() => onMove(1)} disabled={index === count - 1} aria-label="Move later" className="px-2 py-1 rounded-sm border border-vx-border disabled:opacity-30">↓</button>
-            <button onClick={onRemove} aria-label="Remove from edit" className="px-2 py-1 rounded-sm border border-vx-border">✕</button>
+            <button onClick={() => onMove(-1)} disabled={index === 0} aria-label={t("app.editor.legacy.earlier")} className="px-2 py-1 rounded-sm border border-vx-border disabled:opacity-30">↑</button>
+            <button onClick={() => onMove(1)} disabled={index === count - 1} aria-label={t("app.editor.legacy.later")} className="px-2 py-1 rounded-sm border border-vx-border disabled:opacity-30">↓</button>
+            <button onClick={onRemove} aria-label={t("app.editor.sheet.remove")} className="px-2 py-1 rounded-sm border border-vx-border">✕</button>
           </span>
         </div>
-        {['in_s', 'out_s'].map((key) => (
+        {POINTS.map((key) => (
           <div key={key} className="flex items-center gap-2 text-xs text-vx-fg-muted">
             <label className="flex items-center gap-2">
-              <span className="w-8">{key === 'in_s' ? 'In' : 'Out'}</span>
+              <span className="w-8">{key === 'in_s' ? t("app.editor.sheet.in") : t("app.editor.sheet.out")}</span>
               <input type="number" min={0} max={d ?? undefined} step={0.1} disabled={d == null}
                 value={item[key] == null ? '' : round(item[key])} onChange={(e) => setPoint(key, e.target.value)}
                 className="w-24 rounded-lg bg-vx-base border border-vx-field px-2 py-1.5 text-sm text-vx-fg" />
             </label>
             <button disabled={d == null} onClick={() => setPoint(key, ref.current ? ref.current.currentTime : 0)}
               className="rounded-full border border-vx-border px-3 py-1 hover:text-vx-fg disabled:opacity-40">
-              Set to playhead
-            </button>
+              {t("app.editor.sheet.playhead")}</button>
           </div>
         ))}
         {showSlow && (
           <label className="flex items-center gap-2 text-xs text-vx-fg-muted">
-            <span className="w-16">Speed</span>
+            <span className="w-16">{t("app.editor.sheet.speed")}</span>
             <select value={item.slow || 1} onChange={(e) => onChange({ slow: Number(e.target.value) })}
               className="rounded-lg bg-vx-base border border-vx-field px-2 py-1.5 text-sm text-vx-fg">
-              <option value={1}>Normal</option>
-              {SLOW_FACTORS.map((n) => <option key={n} value={n}>{n}x slower</option>)}
+              <option value={1}>{t("app.publish.inbox.priority.normal")}</option>
+              {SLOW_FACTORS.map((n) => <option key={n} value={n}>{t('app.editor.sheet.slower', { factor: number(n) })}</option>)}
             </select>
           </label>
         )}
-        {d != null && <span className="font-vx-mono text-[11px] text-vx-fg-muted vx-num">{round(d)} s clip</span>}
+        {d != null && <span className="font-vx-mono text-[11px] text-vx-fg-muted vx-num">{t('app.editor.sheet.clipDuration', { seconds: number(round(d)) })}</span>}
       </div>
     </li>
   );

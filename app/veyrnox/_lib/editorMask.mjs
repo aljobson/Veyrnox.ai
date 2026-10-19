@@ -1,3 +1,4 @@
+import { helperEnglish } from '../../../lib/helperMessages.mjs';
 export const MASK_DEFAULTS = Object.freeze({ x: 0.5, y: 0.5, width: 1, height: 1, rotation: 0, feather: 0, inverted: false });
 const geometry = ['x', 'y', 'width', 'height', 'rotation', 'feather'];
 const exact = (v, keys) => v && typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length === keys.length && Object.keys(v).every(k => keys.includes(k));
@@ -7,8 +8,8 @@ export function maskDefaults(type) {
     return { ...MASK_DEFAULTS, ...(type === 'horizontal' ? { y: 0.25, height: 0.5 } : type === 'vertical' ? { x: 0.25, width: 0.5 } : {}) };
 }
 export function maskProblem(clip) {
-    if (clip.maskSettings !== undefined && (!exact(clip.maskSettings, Object.keys(MASK_DEFAULTS)) || !validGeometry(clip.maskSettings) || typeof clip.maskSettings.inverted !== 'boolean')) return 'Invalid mask geometry.';
-    if (clip.maskKeyframes !== undefined && (!Array.isArray(clip.maskKeyframes) || clip.maskKeyframes.length > 40 || clip.maskKeyframes.some((k, i) => !exact(k, ['frame', ...geometry, 'easing']) || !Number.isInteger(k.frame) || k.frame < -18000 || k.frame > 18000 || !validGeometry(k) || (i > 0 && k.frame <= clip.maskKeyframes[i - 1].frame) || !['linear', 'ease-in', 'ease-out', 'ease-in-out'].includes(k.easing)))) return 'Invalid mask keyframes.';
+    if (clip.maskSettings !== undefined && (!exact(clip.maskSettings, Object.keys(MASK_DEFAULTS)) || !validGeometry(clip.maskSettings) || typeof clip.maskSettings.inverted !== 'boolean')) return helperEnglish('invalid_mask_geometry');
+    if (clip.maskKeyframes !== undefined && (!Array.isArray(clip.maskKeyframes) || clip.maskKeyframes.length > 40 || clip.maskKeyframes.some((k, i) => !exact(k, ['frame', ...geometry, 'easing']) || !Number.isInteger(k.frame) || k.frame < -18000 || k.frame > 18000 || !validGeometry(k) || (i > 0 && k.frame <= clip.maskKeyframes[i - 1].frame) || !['linear', 'ease-in', 'ease-out', 'ease-in-out'].includes(k.easing)))) return helperEnglish('invalid_mask_keyframes');
     return null;
 }
 const ease = (p, mode) => mode === 'ease-in' ? p * p : mode === 'ease-out' ? 1 - (1 - p) ** 2 : mode === 'ease-in-out' ? p * p * (3 - 2 * p) : p;

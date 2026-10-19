@@ -1,3 +1,4 @@
+import { englishAppImports } from './helpers/appI18nStub.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -28,7 +29,7 @@ function component(path, name) {
     '../../../components/I18nProvider': { useI18n: () => ({ locale: 'en', t: translator('en'), href: (p) => p }) },
     '../_lib/landingDraft': { writeStudioDraft() {} }, '../_lib/tokens': tokens, '../_lib/starterModels': starters,
   };
-  new Function('require', 'module', 'exports', code)((id) => imports[id] || require(id), output, output.exports);
+  new Function('require', 'module', 'exports', code)((id) => imports[id] || englishAppImports[id] || require(id), output, output.exports);
   return output.exports[name];
 }
 function modelFor(endpoint) {
@@ -46,7 +47,7 @@ const renderComposer = (model, { prompt = 'Test prompt', ...overrides } = {}) =>
 
 test('prompt-less Chat transforms enable with valid sources while all other submit guards remain active', () => {
   const model = modelFor('fal-ai/latentsync');
-  const generateButton = (html) => html.match(/<button\b[^>]*>Generate · 10 cr<\/button>/)[0];
+  const generateButton = (html) => html.match(/<button\b[^>]*data-testid="chat-media-generate"[^>]*>[^<]*<\/button>/)[0];
   assert.doesNotMatch(generateButton(renderComposer(model, { prompt: '', missingSource: false, missingConsent: false })), /\sdisabled=/);
   for (const guard of [{ missingSource: true }, { missingConsent: true }, { missingVoice: true }, { balance: 0 }, { catalogLive: false }]) {
     assert.match(generateButton(renderComposer(model, { prompt: '', ...guard })), /\sdisabled=/);
@@ -55,7 +56,7 @@ test('prompt-less Chat transforms enable with valid sources while all other subm
 });
 
 test('all eight prompt-driven audio families keep their Chat text guard; source-only Demucs does not', () => {
-  const button = html => html.match(/<button\b[^>]*>Generate · 10 cr<\/button>/)[0];
+  const button = html => html.match(/<button\b[^>]*data-testid="chat-media-generate"[^>]*>[^<]*<\/button>/)[0];
   for (const endpoint of ['fal-ai/ace-step', 'fal-ai/ace-step-1.5', 'fal-ai/elevenlabs/sound-effects/v2', 'fal-ai/mmaudio-v2/text-to-audio', 'fal-ai/inworld-tts', 'fal-ai/elevenlabs/tts/turbo-v2.5', 'fal-ai/minimax/speech-2.6-hd', 'fal-ai/elevenlabs/text-to-dialogue/eleven-v3']) {
     const model = modelFor(endpoint);
     assert.match(button(renderComposer(model, { prompt: '' })), /\sdisabled=/, endpoint);
@@ -77,7 +78,7 @@ test('Chat describes uploaded-source limits and never offers a 5s source duratio
     const html = renderComposer(modelFor(endpoint));
     assert.ok(html.includes(`Source up to ${max}s`), endpoint);
     assert.match(html, /Follows your uploaded source/);
-    assert.doesNotMatch(html, /aria-label="Video duration"|>5s</);
+    assert.doesNotMatch(html, /data-testid="chat-media-duration"|>5s</);
   }
 });
 
@@ -91,7 +92,7 @@ test('landing price slips describe source limits rather than internal 5s units',
 
 test('Chat retains generated video durations for fixed and selectable output models', () => {
   const veo = renderComposer(modelFor('veo:veo3_lite'));
-  assert.match(veo, /aria-label="Video duration"/);
+  assert.match(veo, /data-testid="chat-media-duration"/);
   assert.match(veo, />8s</);
   assert.doesNotMatch(veo, /Source up to/);
   const wan = renderComposer(modelFor('fal-ai/wan-25-preview/text-to-video'));

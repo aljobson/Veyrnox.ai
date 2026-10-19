@@ -1,0 +1,19 @@
+{
+  "commit": "c9c4cd696a9f81c520906e2c5d166cc7abdcbb15",
+  "files": [
+    "app/veyrnox/app/publish/plan/PublishPlanPanel.js",
+    "app/veyrnox/app/publish/DeviceUploads.js",
+    "app/veyrnox/app/publish/page.js"
+  ],
+  "messages": {
+    "app.publish.plan.freeIncluded": "One connected account and Post now are included.",
+    "app.publish.plan.accountsFeature": "✓ Up to 5 connected accounts",
+    "app.publish.plan.historyFeature": "✓ Cross-account analytics and 12 months of history",
+    "app.publish.plan.billing": "Billing in USD. Tax is calculated at checkout. Cancel any time.",
+    "app.publish.plan.save": "Save 30%",
+    "app.publish.uploads.limits": "JPG, PNG or WebP up to 20 MB. MP4 up to 100 MB. Uploading uses no generation credits. Files stay in your Publish uploads until removed.",
+    "app.publish.connect.freeIncluded": "Free includes one connected account and Post now.",
+    "app.publish.connect.intro": "Choose a platform to connect. Facebook uses Pages and Google Business Profile uses business locations. TikTok delivers a draft to your inbox. Twitch connects for video statistics.",
+    "app.publish.connect.confirmBody": "Scheduled posts to this account will stop going out. You can reconnect it any time."
+  }
+}

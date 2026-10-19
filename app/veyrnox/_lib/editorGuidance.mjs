@@ -29,17 +29,18 @@ const hasClipBefore = (tl, clip) => tl.video.some(c => c.trackId === clip.trackI
 /** Why the Transitions panel cannot apply anything yet, or null when it can. */
 export function transitionGuidance(tl, selected) {
     if (!selected) {
-        return { title: 'Select a clip on the timeline first', body: 'Click the clip that should fade or slide in. The transition plays between it and the clip before it.', action: null };
+        return { id: 'select', title: 'Select a clip on the timeline first', body: 'Click the clip that should fade or slide in. The transition plays between it and the clip before it.', action: null };
     }
     if (selected.track !== 'video') {
-        return { title: 'Transitions need a video clip', body: 'Select a video clip on the timeline. Text and sound clips do not take transitions.', action: null };
+        return { id: 'video', title: 'Transitions need a video clip', body: 'Select a video clip on the timeline. Text and sound clips do not take transitions.', action: null };
     }
     const clip = tl.video.find(c => c.id === selected.id);
     if (!clip) {
-        return { title: 'Select a clip on the timeline first', body: 'Click the clip that should fade or slide in.', action: null };
+        return { id: 'missing', title: 'Select a clip on the timeline first', body: 'Click the clip that should fade or slide in.', action: null };
     }
     if (hasClipBefore(tl, clip)) return null;
     return {
+        id: 'first',
         title: 'This clip has no clip before it',
         body: 'A transition goes between two clips that touch on the same track. Add another video with Add to timeline, or select the second clip.',
         action: OPEN_MEDIA,

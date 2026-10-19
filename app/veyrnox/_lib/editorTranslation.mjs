@@ -1,11 +1,12 @@
+import { helperEnglish } from '../../../lib/helperMessages.mjs';
 // Browser-owned translation models never receive audio or upload caption text.
 const language = value => typeof value === 'string' && /^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8}){0,2}$/i.test(value);
 const abort = signal => { if (signal?.aborted) throw new DOMException('Translation cancelled.', 'AbortError'); };
 export function translationProblem(cues, sourceLanguage, targetLanguage) {
-    if (!language(sourceLanguage) || !language(targetLanguage)) return 'Choose valid source and target languages.';
-    if (sourceLanguage.toLowerCase() === targetLanguage.toLowerCase()) return 'Choose a different target language.';
-    if (!Array.isArray(cues) || !cues.length || cues.length > 150 || cues.some(c => !c || typeof c.text !== 'string' || !c.text.trim() || c.text.length > 1000 || !Number.isInteger(c.start) || c.start < 0 || !Number.isInteger(c.len) || c.len < 1 || c.start + c.len > 18000)) return 'Choose up to 150 valid timed captions.';
-    if (cues.reduce((sum, c) => sum + c.text.length, 0) > 24000) return 'Translate fewer caption lines at once.';
+    if (!language(sourceLanguage) || !language(targetLanguage)) return helperEnglish('choose_valid_source_and_target_languages');
+    if (sourceLanguage.toLowerCase() === targetLanguage.toLowerCase()) return helperEnglish('choose_a_different_target_language');
+    if (!Array.isArray(cues) || !cues.length || cues.length > 150 || cues.some(c => !c || typeof c.text !== 'string' || !c.text.trim() || c.text.length > 1000 || !Number.isInteger(c.start) || c.start < 0 || !Number.isInteger(c.len) || c.len < 1 || c.start + c.len > 18000)) return helperEnglish('choose_up_to_150_valid_timed_captions');
+    if (cues.reduce((sum, c) => sum + c.text.length, 0) > 24000) return helperEnglish('translate_fewer_caption_lines_at_once');
     return null;
 }
 export async function translationAvailability(sourceLanguage, targetLanguage, runtime = globalThis.Translator) {

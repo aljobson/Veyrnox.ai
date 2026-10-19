@@ -1,3 +1,4 @@
+import { helperEnglish } from '../../../lib/helperMessages.mjs';
 import { addSequenceText, updateSequenceClip, addSequenceMedia, addSequenceClip, addSequenceTrack, sequenceEnd } from './editorSequence.mjs';
 import { FILTER_DEFAULTS, TEXT_DEFAULTS } from './editorSequenceValidation.mjs';
 // Original preset definitions; no licensed CapCut assets or effects.
@@ -39,14 +40,14 @@ export function applyLook(tl, id, name, intensity = 1) {
 }
 
 export const EDIT_TEMPLATE_CATALOG = Object.freeze([
-    {name:'Title intro',description:'A clean animated opening title.'},
-    {name:'Slideshow',description:'Append selected shots with gentle motion.'},
-    {name:'Picture in picture',description:'Overlay one source at the playhead.'},
-    {name:'Vlog opener',description:'Fast three-shot opener with a headline.'},
-    {name:'Split screen',description:'Place two sources side by side.'},
-    {name:'Social quote',description:'A bold quote card for vertical posts.'},
-    {name:'Product promo',description:'A product shot with a lower headline.'},
-    {name:'End card',description:'Append a short closing message.'},
+    {name:'Title intro',description:helperEnglish('a_clean_animated_opening_title')},
+    {name:'Slideshow',description:helperEnglish('append_selected_shots_with_gentle_motion')},
+    {name:'Picture in picture',description:helperEnglish('overlay_one_source_at_the_playhead')},
+    {name:'Vlog opener',description:helperEnglish('fast_threeshot_opener_with_a_headline')},
+    {name:'Split screen',description:helperEnglish('place_two_sources_side_by_side')},
+    {name:'Social quote',description:helperEnglish('a_bold_quote_card_for_vertical_posts')},
+    {name:'Product promo',description:helperEnglish('a_product_shot_with_a_lower_headline')},
+    {name:'End card',description:helperEnglish('append_a_short_closing_message')},
 ]);
 export const EDIT_TEMPLATES = Object.freeze(EDIT_TEMPLATE_CATALOG.map(template=>template.name));
 export function insertEditTemplate(tl, name, mediaIds, headline, frame) {

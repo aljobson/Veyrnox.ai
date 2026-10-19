@@ -1,3 +1,4 @@
+import { helperEnglish } from '../../../lib/helperMessages.mjs';
 import { colourDefaults } from './editorColour.mjs';
 export const TRANSFORM_DEFAULTS=Object.freeze({x:.5,y:.5,scale:1,rotation:0,opacity:1,flipX:false,flipY:false});
 export const FILTER_DEFAULTS=Object.freeze({brightness:1,contrast:1,saturate:1,hue:0,blur:0});
@@ -70,7 +71,7 @@ export function parameterKeyframe(clip,frame) {
 }
 export function parameterProblem(keys) {
     if(keys===undefined)return null;
-    if(!Array.isArray(keys)||keys.length>40||keys.some((k,i)=>!k||typeof k!=='object'||Object.keys(k).length!==10||Object.keys(k).some(name=>!['frame','easing',...Object.keys(PARAMETER_BOUNDS)].includes(name))||!Number.isInteger(k.frame)||Math.abs(k.frame)>18000||(i>0&&k.frame<=keys[i-1].frame)||!EASINGS.includes(k.easing)||Object.entries(PARAMETER_BOUNDS).some(([name,[min,max]])=>!Number.isFinite(k[name])||k[name]<min||k[name]>max)))return 'Invalid animated picture parameters.';
+    if(!Array.isArray(keys)||keys.length>40||keys.some((k,i)=>!k||typeof k!=='object'||Object.keys(k).length!==10||Object.keys(k).some(name=>!['frame','easing',...Object.keys(PARAMETER_BOUNDS)].includes(name))||!Number.isInteger(k.frame)||Math.abs(k.frame)>18000||(i>0&&k.frame<=keys[i-1].frame)||!EASINGS.includes(k.easing)||Object.entries(PARAMETER_BOUNDS).some(([name,[min,max]])=>!Number.isFinite(k[name])||k[name]<min||k[name]>max)))return helperEnglish('invalid_animated_picture_parameters');
     return null;
 }
 /** Keep outer anchors: deleting them changes nonlinear interpolation inside the surviving range. */

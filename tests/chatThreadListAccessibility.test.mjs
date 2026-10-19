@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { englishAppImports } from './helpers/appI18nStub.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -11,7 +12,7 @@ const require = createRequire(import.meta.url);
 const source = readFileSync(new URL('../app/veyrnox/_components/chat/ThreadList.js', import.meta.url), 'utf8');
 const output = { exports: {} };
 const code = ts.transpileModule(source, { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS } }).outputText;
-new Function('require', 'module', 'exports', code)(id => id === '../../_lib/chatFolders' ? folderLogic : require(id), output, output.exports);
+new Function('require', 'module', 'exports', code)(id => englishAppImports[id] ?? (id === '../../_lib/chatFolders' ? folderLogic : require(id)), output, output.exports);
 const { ThreadList } = output.exports;
 const props = { threads: [], folders: [] };
 const ids = html => [...html.matchAll(/<(?:input|select)\b[^>]*\bid="([^"]+)"/g)].map(match => match[1]);
@@ -33,10 +34,11 @@ test('each chat search and folder label targets its own instance rather than the
   const desktop = html.match(/<aside\b[^>]*>(.*?)<\/aside>/s)[1];
   const mobile = html.match(/<div role="dialog"[^>]*>(.*?)<\/div>$/s)[1];
   const desktopIds = ids(desktop), mobileIds = ids(mobile);
-  for (const [index, name] of ['Search chats', 'Folder'].entries()) {
-    const target = mobile.match(new RegExp(`<label[^>]*for="([^"]+)"[^>]*>${name}<\\/label>`))[1];
+  const labels = [...mobile.matchAll(/<label[^>]*for="([^"]+)"/g)].map(match => match[1]);
+  for (const index of [0, 1]) {
+    const target = labels[index];
     assert.equal(target, mobileIds[index]);
-    assert.notEqual(target, desktopIds[index], `${name} must associate with the visible mobile control`);
+    assert.notEqual(target, desktopIds[index], `Control ${index} must associate with the visible mobile control`);
     assert.equal(ids(html).filter(id => id === target).length, 1);
   }
 });

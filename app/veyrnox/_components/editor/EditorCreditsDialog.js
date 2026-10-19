@@ -1,5 +1,8 @@
 'use client';
+import { useI18n } from '../../../../components/I18nProvider';
 
+import { pluralKey, tOr } from '../../../../lib/i18n/translate.mjs';
+import { localeTag } from '../../../../lib/i18n/locales.mjs';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -8,12 +11,12 @@ import {
 } from '../../_lib/editorCredits.mjs';
 import { Logo } from '../Logo';
 
-const usd = new Intl.NumberFormat('en-US', {
+const usdFor = locale => new Intl.NumberFormat(localeTag(locale, 'en-US'), {
   style: 'currency',
   currency: 'USD',
   trailingZeroDisplay: 'stripIfInteger',
 });
-const credits = new Intl.NumberFormat('en-US');
+
 
 async function publicPacks() {
   const response = await fetch('/api/credit-packs', { cache: 'no-store' });
@@ -22,7 +25,15 @@ async function publicPacks() {
   return body;
 }
 
+const BENEFIT_IDS = {
+  "Full multitrack video editor": "multitrack",
+  "Local preview and export": "local",
+  "Cloud projects and version history": "cloud",
+  "No card required": "no_card"
+};
+
 function BenefitList({ items }) {
+  const { t } = useI18n();
   return (
     <ul className="grid gap-3 text-sm text-vx-fg-body sm:grid-cols-2 xl:grid-cols-4">
       {items.map((item) => (
@@ -33,7 +44,7 @@ function BenefitList({ items }) {
           >
             ✓
           </span>
-          <span>{item}</span>
+          <span>{tOr(t, `app.editor.credits.benefit.${BENEFIT_IDS[item]}`, item)}</span>
         </li>
       ))}
     </ul>
@@ -41,34 +52,32 @@ function BenefitList({ items }) {
 }
 
 function PackCard({ pack }) {
+  const { t, locale } = useI18n();
+  const usd = usdFor(locale), credits = new Intl.NumberFormat(localeTag(locale, 'en-US'));
   return (
     <article className="flex min-h-[245px] flex-col rounded-2xl border border-vx-border bg-vx-panel/55 p-5 transition-colors hover:border-vx-money/70">
-      <p className="text-[10px] font-black uppercase tracking-[0.15em] text-vx-fg-muted">
-        Credit Pack
-      </p>
+      <p className="text-[10px] font-black uppercase tracking-[0.15em] text-vx-fg-muted">{t("app.editor.credits.pack")}</p>
       <p className="mt-4 font-vx-mono text-4xl font-black tracking-[-0.05em] text-vx-money">
         {credits.format(pack.credits)}
-        <span className="ml-2 text-lg text-vx-fg-muted">cr</span>
+        <span className="ms-2 text-lg text-vx-fg-muted">cr</span>
       </p>
       <div className="vx-perf mt-5" aria-hidden />
       <p className="mt-4 text-sm text-vx-fg-body">
-        {credits.format(pack.credits)} credits —{' '}
-        <strong>{usd.format(pack.price_usd_cents / 100)}</strong> + applicable tax
-      </p>
-      <p className="mt-2 text-xs font-bold text-vx-fg-muted">
-        One-off purchase · Never expires
-      </p>
+        {t(pluralKey(t, locale, 'app.editor.credits.amount', pack.credits), {count: credits.format(pack.credits)})}
+        <strong>{usd.format(pack.price_usd_cents / 100)}</strong>{' '}{t("app.credits.packs.tax")}</p>
+      <p className="mt-2 text-xs font-bold text-vx-fg-muted">{t("app.editor.credits.once")}</p>
       <Link
         href="/app/credits#credit-packs"
         className="mt-auto inline-flex w-full items-center justify-center rounded-full bg-vx-money px-4 py-3 text-sm font-black text-vx-money-ink transition-[filter,scale] hover:brightness-110 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-accent"
       >
-        Buy {credits.format(pack.credits)} credits
+        {t(pluralKey(t, locale, 'app.editor.credits.buy', pack.credits), {count: credits.format(pack.credits)})}
       </Link>
     </article>
   );
 }
 
 export function EditorCreditsDialog({ open, onClose }) {
+  const { t, locale } = useI18n();
   const closeRef = useRef(null);
   const [catalog, setCatalog] = useState(null);
   const [error, setError] = useState('');
@@ -84,9 +93,9 @@ export function EditorCreditsDialog({ open, onClose }) {
       setCatalog(await publicPacks());
     } catch {
       setCatalog(null);
-      setError('Credit Packs could not be loaded. Retry in a moment.');
+      setError(t("app.editor.credits.failed"));
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -125,15 +134,13 @@ export function EditorCreditsDialog({ open, onClose }) {
       >
         <header className="flex items-center gap-4 border-b border-vx-border px-5 py-4 sm:px-7">
           <Logo wordmark />
-          <span className="rounded-full bg-vx-panel px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-vx-fg-muted">
-            Editor &amp; Credits
-          </span>
+          <span className="rounded-full bg-vx-panel px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-vx-fg-muted">{t("app.editor.credits.title")}</span>
           <button
             ref={closeRef}
             type="button"
             onClick={onClose}
-            className="ml-auto grid size-10 place-items-center rounded-full border border-vx-border text-xl hover:border-vx-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-accent"
-            aria-label="Close Editor and Credits"
+            className="ms-auto grid size-10 place-items-center rounded-full border border-vx-border text-xl hover:border-vx-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-accent"
+            aria-label={t("app.editor.credits.close")}
           >
             ×
           </button>
@@ -141,47 +148,34 @@ export function EditorCreditsDialog({ open, onClose }) {
 
         <div className="px-5 py-7 sm:px-7 sm:py-9">
           <div className="mx-auto max-w-3xl text-center">
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-vx-accent">
-              Your editor is included
-            </p>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-vx-accent">{t("app.editor.credits.included")}</p>
             <h2
               id="editor-credits-title"
               className="mt-2 text-3xl font-black tracking-[-0.04em] sm:text-5xl"
-            >
-              Create freely. Top up only when you generate.
-            </h2>
-            <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-vx-fg-body sm:text-base">
-              Editing does not require a paid plan. Buy non-expiring Credits
-              only when you want to generate image, video or audio.
-            </p>
+            >{t("app.editor.credits.heading")}</h2>
+            <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-vx-fg-body sm:text-base">{t("app.editor.credits.explanation")}</p>
           </div>
 
           <section className="mt-8 rounded-2xl border border-vx-accent/45 bg-vx-accent/[0.06] p-5 sm:p-6">
             <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
               <div>
-                <p className="text-xs font-black uppercase tracking-[0.14em] text-vx-accent">
-                  Included
-                </p>
-                <h3 className="mt-1 text-2xl font-black">Veyrnox Editor</h3>
+                <p className="text-xs font-black uppercase tracking-[0.14em] text-vx-accent">{t("app.editor.credits.includedLabel")}</p>
+                <h3 className="mt-1 text-2xl font-black">{t("app.editor.credits.brand")}</h3>
               </div>
-              <p className="font-vx-mono text-2xl font-black">$0</p>
+              <p className="font-vx-mono text-2xl font-black">{usdFor(locale).format(0)}</p>
             </div>
             <BenefitList items={FREE_EDITOR_BENEFITS} />
           </section>
 
           <div className="mt-9 flex flex-wrap items-end justify-between gap-3">
             <div>
-              <h3 className="text-2xl font-black">Top up when you need to.</h3>
-              <p className="mt-1 text-sm text-vx-fg-muted">
-                One-off Credit Packs. No renewal. Purchased Credits never expire.
-              </p>
+              <h3 className="text-2xl font-black">{t("pricing.packs.title")}</h3>
+              <p className="mt-1 text-sm text-vx-fg-muted">{t("app.editor.credits.expiry")}</p>
             </div>
             <Link
               href="/app/credits#credit-packs"
               className="text-sm font-black text-vx-accent underline underline-offset-4"
-            >
-              Open Credits &amp; billing
-            </Link>
+            >{t("app.editor.credits.open")}</Link>
           </div>
 
           {packs.length > 0 && (
@@ -196,20 +190,12 @@ export function EditorCreditsDialog({ open, onClose }) {
               className="mt-5 rounded-xl border border-vx-danger/50 bg-vx-danger/[0.08] p-3 text-sm text-vx-danger"
             >
               {error}{' '}
-              <button type="button" className="font-black underline" onClick={load}>
-                Retry
-              </button>
+              <button type="button" className="font-black underline" onClick={load}>{t("app.account.mfa.retry")}</button>
             </div>
           )}
 
-          <p className="mt-6 text-xs leading-5 text-vx-fg-muted">
-            Prices are in USD and exclude tax. Stripe, Inc. is the Merchant of
-            Record for Credit Pack purchases and shows the final total before
-            payment. The existing Credits &amp; billing flow requires purchase
-            consent before opening Stripe Checkout.{' '}
-            <Link className="underline" href="/legal/refund">
-              Refund policy
-            </Link>
+          <p className="mt-6 text-xs leading-5 text-vx-fg-muted">{t("app.editor.credits.policy")}{' '}
+            <Link className="underline" href="/legal/refund">{t("app.credits.packs.refund")}</Link>
             .
           </p>
         </div>

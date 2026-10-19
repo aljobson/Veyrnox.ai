@@ -1,3 +1,4 @@
+import { helperEnglish } from '../../../lib/helperMessages.mjs';
 export const HSL_CHANNELS = Object.freeze(['red','orange','yellow','green','cyan','blue','purple','magenta']);
 export const CURVE_CHANNELS = Object.freeze(['master','red','green','blue']);
 const centres = [0,30,60,120,180,240,270,300];
@@ -7,9 +8,9 @@ const range = (v,a,b) => typeof v === 'number' && Number.isFinite(v) && v >= a &
 export function colourDefaults() { return { exposure:0, temperature:0, tint:0, shadows:0, highlights:0, gamma:1, hsl:Object.fromEntries(HSL_CHANNELS.map(k => [k,{hue:0,saturation:0,luminance:0}])), curves:Object.fromEntries(CURVE_CHANNELS.map(k => [k,[{x:0,y:0},{x:1,y:1}]])) }; }
 export function colourProblem(c) {
     if (c === undefined) return null;
-    if (!exact(c, ['exposure','temperature','tint','shadows','highlights','gamma','hsl','curves']) || !range(c.exposure,-3,3) || ['temperature','tint','shadows','highlights'].some(k => !range(c[k],-1,1)) || !range(c.gamma,.1,4)) return 'Invalid advanced colour adjustment.';
-    if (!exact(c.hsl,HSL_CHANNELS) || Object.values(c.hsl).some(v => !exact(v,['hue','saturation','luminance']) || !range(v.hue,-180,180) || !range(v.saturation,-1,1) || !range(v.luminance,-1,1))) return 'Invalid HSL adjustment.';
-    if (!exact(c.curves,CURVE_CHANNELS) || Object.values(c.curves).some(points => !Array.isArray(points) || points.length < 2 || points.length > 8 || points[0].x !== 0 || points.at(-1).x !== 1 || points.some((p,i) => !exact(p,['x','y']) || !range(p.x,0,1) || !range(p.y,0,1) || (i && p.x <= points[i-1].x)))) return 'Invalid colour curve.';
+    if (!exact(c, ['exposure','temperature','tint','shadows','highlights','gamma','hsl','curves']) || !range(c.exposure,-3,3) || ['temperature','tint','shadows','highlights'].some(k => !range(c[k],-1,1)) || !range(c.gamma,.1,4)) return helperEnglish('invalid_advanced_colour_adjustment');
+    if (!exact(c.hsl,HSL_CHANNELS) || Object.values(c.hsl).some(v => !exact(v,['hue','saturation','luminance']) || !range(v.hue,-180,180) || !range(v.saturation,-1,1) || !range(v.luminance,-1,1))) return helperEnglish('invalid_hsl_adjustment');
+    if (!exact(c.curves,CURVE_CHANNELS) || Object.values(c.curves).some(points => !Array.isArray(points) || points.length < 2 || points.length > 8 || points[0].x !== 0 || points.at(-1).x !== 1 || points.some((p,i) => !exact(p,['x','y']) || !range(p.x,0,1) || !range(p.y,0,1) || (i && p.x <= points[i-1].x)))) return helperEnglish('invalid_colour_curve');
     return null;
 }
 export function curveValue(points, value) {

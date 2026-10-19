@@ -1,13 +1,21 @@
 'use client';
+import { localeTag } from '../../../../lib/i18n/locales.mjs';
+import { pluralKey } from '../../../../lib/i18n/translate.mjs';
+import { useI18n } from '../../../../components/I18nProvider';
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Button } from '../Button';
 import { insertCaptions } from '../../_lib/editorCaptions.mjs';
 import { localSpeechAvailable, recognizeTimelineSpeech, SPEECH_LANGUAGES } from '../../_lib/editorSpeechRecognition.mjs';
 import { sequenceEnd } from '../../_lib/editorSequence.mjs';
 import { NumberControl } from './EditorFields';
+const languageCodes = { english: 'en', spanish: 'es', french: 'fr', german: 'de', italian: 'it', portuguese: 'pt', japanese: 'ja', korean: 'ko', chinese: 'zh', hindi: 'hi', arabic: 'ar' };
 const subscribeCapability = () => () => {};
 const unavailableOnServer = () => false;
 export function SpeechRecognitionControls({ tl, blobs, disabled, apply, onError, onBusy }) {
+  const { t, locale } = useI18n();
+  const languageLabel = (code, name) => locale === 'en' || !languageCodes[code] ? name : new Intl.DisplayNames([localeTag(locale)], { type: 'language' }).of(languageCodes[code]);
+  const number = new Intl.NumberFormat(localeTag(locale), { useGrouping: false });
+  const seconds = value => locale === 'en' ? value.toFixed(2) : new Intl.NumberFormat(localeTag(locale), { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: false }).format(value);
     const [trackId,setTrackId] = useState('mix'), [rangeStart,setRangeStart] = useState(0), [rangeEnd,setRangeEnd] = useState(null);
     const end = sequenceEnd(tl), selectedEnd = rangeEnd === null ? Math.min(end / 30, 120) : rangeEnd;
     const [language,setLanguage] = useState('english'), [progress,setProgress] = useState(null), [status,setStatus] = useState('');
@@ -21,26 +29,26 @@ export function SpeechRecognitionControls({ tl, blobs, disabled, apply, onError,
         try {
             const cues = await recognizeTimelineSpeech(snapshot, blobs?.current || blobs, { language, trackId, startFrame:Math.round(rangeStart * 30), endFrame:Math.round(selectedEnd * 30), signal:job.signal, onProgress:value => alive.current && !job.signal.aborted && setProgress(value) });
             if (job.signal.aborted || !alive.current || current.current !== snapshot) return;
-            const next = apply(t => t !== snapshot ? {error:'The edit changed. Retry local captions.'} : insertCaptions(t,cues));
-            if (next && alive.current) setStatus(`Created ${cues.length} editable caption ${cues.length === 1 ? 'cue' : 'cues'}. Review the words and timings.`);
+            const next = apply(timeline => timeline !== snapshot ? {error:t("app.editor.speech.changed")} : insertCaptions(timeline,cues));
+            if (next && alive.current) setStatus(t(pluralKey(t, locale, 'app.editor.speech.created', cues.length), { count: number.format(cues.length) }));
         } catch (error) {
             if (!alive.current) return;
-            if (error.name === 'AbortError') setStatus('Local automatic captions cancelled.');
-            else onError(error.message || 'Local automatic captions failed.');
+            if (error.name === 'AbortError') setStatus(t("app.editor.speech.cancelled"));
+            else onError(error.message || t("app.editor.speech.failed"));
         } finally {
             if (controller.current === job) { controller.current = null; if (alive.current) { setProgress(null); onBusy?.(false); } }
         }
     }
     const locked = disabled || !!progress;
-    return <details><summary className="cursor-pointer text-xs font-bold">Local automatic captions</summary><div className="mt-2 space-y-2">
-        <p className="text-xs text-vx-fg-muted">Create editable words and timings from the selected track or audible edit range. Each run supports up to two minutes, including ranges inside longer projects. Source timing, audio adjustments and mute are respected; selecting one track ignores other tracks’ solo. This action downloads a speech model of about 65 MiB; CPU processing can take several minutes. Audio stays on this device. Review results, especially music, singing, accents and background noise.</p>
-        <label className="block text-xs">Spoken language<select aria-label="Local captions spoken language" value={language} disabled={locked} onChange={event=>setLanguage(event.target.value)} className="w-full rounded border border-vx-border bg-vx-base p-2">{SPEECH_LANGUAGES.map(([code,name])=><option key={code} value={code}>{name}</option>)}</select></label>
-        <label className="block text-xs">Track to recognize<select aria-label="Track to recognize" value={trackId} disabled={locked} onChange={event=>setTrackId(event.target.value)} className="w-full rounded border border-vx-border bg-vx-base p-2"><option value="mix">Audible edit mix</option>{trackId!=='mix'&&!tl.tracks.some(track=>track.id===trackId)&&<option value={trackId}>Track removed — choose again</option>}{tl.tracks.filter(track=>['video','audio'].includes(track.kind)).map(track=><option key={track.id} value={track.id}>{track.name}{track.muted?' (muted)':''}</option>)}</select></label>
-        <fieldset disabled={locked} className="space-y-2"><NumberControl label="Recognition start (seconds)" value={rangeStart} min={0} max={end/30} step={1/30} onChange={setRangeStart} /><NumberControl label="Recognition end (seconds)" value={selectedEnd} min={0} max={end/30} step={1/30} onChange={setRangeEnd} /></fieldset>
-        <p className="text-xs text-vx-fg-muted">Recognition range: {rangeStart.toFixed(2)}–{selectedEnd.toFixed(2)} seconds. New captions retain their position in the timeline. Existing captions stay until you remove them.</p>
-        {!available && <p role="status" className="text-xs">Local automatic captions are unavailable in this browser. Use manual captions or import subtitles.</p>}
-        <Button size="sm" disabled={locked || !available || (!tl.video.length && !tl.audio.length) || selectedEnd<=rangeStart || selectedEnd-rangeStart>120 || selectedEnd>end/30 || (trackId!=='mix'&&!tl.tracks.some(track=>track.id===trackId))} onClick={transcribe}>Create local automatic captions</Button>
-        {progress && <><progress aria-label="Local automatic caption progress" max={1} value={progress.stage === 'audio' ? progress.fraction : undefined} className="w-full" /><p role="status" aria-label="Local automatic caption status" className="text-xs">{progress.stage === 'audio' ? 'Preparing the audible edit' : progress.stage === 'model' ? 'Downloading and preparing the local speech model' : 'Recognizing speech on this device'}</p><Button size="sm" onClick={()=>controller.current?.abort()}>Cancel local automatic captions</Button></>}
-        {status && <p role="status" aria-label="Local automatic caption result" className="text-xs">{status}</p>}
+    return <details><summary className="cursor-pointer text-xs font-bold">{t("app.editor.speech.title")}</summary><div className="mt-2 space-y-2">
+        <p className="text-xs text-vx-fg-muted">{t("app.editor.speech.help")}</p>
+        <label className="block text-xs">{t("app.editor.speech.language")}<select aria-label={t("app.editor.speech.languageLabel")} value={language} disabled={locked} onChange={event=>setLanguage(event.target.value)} className="w-full rounded border border-vx-border bg-vx-base p-2">{SPEECH_LANGUAGES.map(([code,name])=><option key={code} value={code}>{languageLabel(code, name)}</option>)}</select></label>
+        <label className="block text-xs">{t("app.editor.speech.track")}<select aria-label={t("app.editor.speech.track")} value={trackId} disabled={locked} onChange={event=>setTrackId(event.target.value)} className="w-full rounded border border-vx-border bg-vx-base p-2"><option value="mix">{t("app.editor.speech.mix")}</option>{trackId!=='mix'&&!tl.tracks.some(track=>track.id===trackId)&&<option value={trackId}>{t("app.editor.transcript.removed")}</option>}{tl.tracks.filter(track=>['video','audio'].includes(track.kind)).map(track=><option key={track.id} value={track.id}>{track.name}{track.muted?t('app.editor.speech.muted'):''}</option>)}</select></label>
+        <fieldset disabled={locked} className="space-y-2"><NumberControl label={t("app.editor.speech.start")} value={rangeStart} min={0} max={end/30} step={1/30} onChange={setRangeStart} /><NumberControl label={t("app.editor.speech.end")} value={selectedEnd} min={0} max={end/30} step={1/30} onChange={setRangeEnd} /></fieldset>
+        <p className="text-xs text-vx-fg-muted">{t('app.editor.speech.range', { start: seconds(rangeStart), end: seconds(selectedEnd) })}</p>
+        {!available && <p role="status" className="text-xs">{t("app.editor.speech.unavailable")}</p>}
+        <Button size="sm" disabled={locked || !available || (!tl.video.length && !tl.audio.length) || selectedEnd<=rangeStart || selectedEnd-rangeStart>120 || selectedEnd>end/30 || (trackId!=='mix'&&!tl.tracks.some(track=>track.id===trackId))} onClick={transcribe}>{t("app.editor.speech.create")}</Button>
+        {progress && <><progress aria-label={t("app.editor.speech.progress")} max={1} value={progress.stage === 'audio' ? progress.fraction : undefined} className="w-full" /><p role="status" aria-label={t("app.editor.speech.status")} className="text-xs">{progress.stage === 'audio' ? t("app.editor.speech.preparing") : progress.stage === 'model' ? t("app.editor.speech.downloading") : t("app.editor.speech.recognizing")}</p><Button size="sm" onClick={()=>controller.current?.abort()}>{t("app.editor.speech.cancel")}</Button></>}
+        {status && <p role="status" aria-label={t("app.editor.speech.result")} className="text-xs">{status}</p>}
     </div></details>;
 }

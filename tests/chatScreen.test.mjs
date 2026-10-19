@@ -1,3 +1,4 @@
+import { resolveI18nSource } from '../scripts/lib/vey-knowledge-i18n.mjs';
 // What the chat page shows once its first load has ended. A closed flag, a signed-out reader and a failed load all
 // leave the model list empty, and the page used to say "There are no chat models available right now." for each.
 // The decision is a pure module; the screen itself is not importable here, so its wiring is pinned by reading the source.
@@ -6,7 +7,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { CHAT_SCREEN_COPY, chatScreen, loadFailure } from '../app/veyrnox/_lib/chatScreen.js';
 
-const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
+const read = (path) => resolveI18nSource(readFileSync(new URL(path, import.meta.url), 'utf8'));
 const screen = read('../app/veyrnox/_components/chat/ChatWorkspace.js');
 
 test('a failed load is sorted into closed, signed out, or failed', () => {

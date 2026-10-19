@@ -1,0 +1,70 @@
+{
+  "commit": "1675cf4d1061bd822bc2f6738ac512abe5dc043f",
+  "facts": [
+    {
+      "key": "app.account.referral.policy",
+      "source": "app/veyrnox/_components/ReferralPanel.js",
+      "english": "When a friend you refer buys their first Credit Pack, you earn Credits worth 10% of that Pack, added to your balance 14 days later if the purchase has not been refunded or disputed. Credits only; they never expire. Nothing is paid out as money."
+    },
+    {
+      "key": "app.create.voice.help",
+      "source": "app/veyrnox/_components/VoiceDescription.js",
+      "english": "Describe how the voice sounds (age, accent, pace, tone), not a real person. The box above holds the words it will say, up to 1,000 characters."
+    },
+    {
+      "key": "app.credits.usage.day",
+      "source": "app/veyrnox/_components/UsageMeters.js",
+      "english": "Last 24 hours"
+    },
+    {
+      "key": "app.credits.usage.week",
+      "source": "app/veyrnox/_components/UsageMeters.js",
+      "english": "Last 7 days"
+    },
+    {
+      "key": "app.credits.usage.month",
+      "source": "app/veyrnox/_components/UsageMeters.js",
+      "english": "Last 30 days"
+    },
+    {
+      "key": "app.film.boards.help",
+      "source": "app/veyrnox/_components/film/FilmBoards.js",
+      "english": "Supply existing images and describe exactly what each specifies. Lead characters need 10–20 references, locations 8–15 and props 3–5. Each style category gets its own board."
+    },
+    {
+      "key": "app.film.save.policy",
+      "source": "app/veyrnox/_components/film/FilmMasterSave.js",
+      "english": "Saving is free. The video stays in your Library until its source take expires, up to 90 days."
+    },
+    {
+      "key": "app.film.save.error.master_limit",
+      "source": "app/veyrnox/_lib/filmMasterSave.mjs",
+      "english": "Your Library has reached its limit of 100 Film Studio masters."
+    },
+    {
+      "key": "app.film.save.error.invalid_master_media",
+      "source": "app/veyrnox/_lib/filmMasterSave.mjs",
+      "english": "This file did not pass the 1920×1080, 24 fps MP4 checks. Prepare the master again."
+    },
+    {
+      "key": "app.film.save.size",
+      "source": "app/veyrnox/_lib/filmMasterSave.mjs",
+      "english": "Library masters must be no larger than 25 MiB. You can still download this file."
+    },
+    {
+      "key": "app.film.issue.duration",
+      "source": "app/veyrnox/_lib/filmStudio.js",
+      "english": "A clip must last 10–15 seconds."
+    },
+    {
+      "key": "app.film.issue.length",
+      "source": "app/veyrnox/_lib/filmStudio.js",
+      "english": "Choose a clip length of 10–15 seconds."
+    },
+    {
+      "key": "app.film.issue.location",
+      "source": "app/veyrnox/_lib/filmStudio.js",
+      "english": "Use an exact location tag and version, such as @room:v1."
+    }
+  ]
+}

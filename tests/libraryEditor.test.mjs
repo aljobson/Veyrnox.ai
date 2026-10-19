@@ -1,3 +1,4 @@
+import { resolveI18nSource } from '../scripts/lib/vey-knowledge-i18n.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -60,6 +61,6 @@ test('the sheet\'s slow motion shares the server\'s numbers, sends a factor only
     // The sheet refuses what the gateway would: no sound, or too much slowed.
     assert.ok(sheet.includes('slowNoAudio') && sheet.includes('slowTooLong'));
     // Slow motion took about four minutes on a tall 1080p clip on staging, so the sheet says so before the debit.
-    assert.match(sheet, /Slow motion can take several minutes to finish/);
+    assert.match(resolveI18nSource(sheet), /Slow motion can take several minutes to finish/);
     assert.doesNotMatch(sheet, /topaz|target_fps|slowdown_factor/, 'no provider detail reaches the browser');
 });

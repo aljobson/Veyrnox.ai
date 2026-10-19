@@ -1,0 +1,24 @@
+{
+  "commit": "c028779c8c8035d44eebadae32810eb24093303a",
+  "files": [
+    "app/veyrnox/app/publish/Composer.js",
+    "app/veyrnox/_components/editor/MultitrackWorkspace.js",
+    "app/veyrnox/app/publish/analytics/page.js"
+  ],
+  "messages": {
+    "app.publish.composer.reviewersRequired": "Add 1 to 10 valid reviewer email addresses.",
+    "app.editor.workspace.limits": "Editing and export run in this browser. Imported files remain on this computer. Up to 10 minutes, 16 tracks and 40 video clips. Video tracks later in the track list draw over earlier ones. Shift-click clips to select several; groups move together.",
+    "app.publish.analytics.period7": "7 days",
+    "app.publish.analytics.period30": "30 days",
+    "app.publish.analytics.period90": "90 days",
+    "app.publish.analytics.period365": "12 months",
+    "app.publish.analytics.twitchPolicy": "Twitch shares a view count for each of your latest 20 videos. Follower, subscriber, like and comment numbers are not available.",
+    "app.publish.analytics.youtubePolicy": "YouTube subscriber counts are rounded. Video metrics are lifetime totals for videos published in this period. The latest 50 uploads refresh each round.",
+    "app.publish.analytics.tiktokPolicy": "TikTok video metrics cover public videos only. Video metrics are lifetime totals for videos published in this period. The latest 50 public videos refresh each round. Missing numbers may need additional permissions: reconnect in Veyrnox.ai Publish after analytics access is enabled.",
+    "app.publish.analytics.xPolicy": "X metrics cover the latest 100 original posts. Replies and reposts are excluded. Reposts and quotes appear together as shares.",
+    "app.publish.analytics.latest20": "In this period, from your latest 20",
+    "app.publish.analytics.subscriberEngagement": "Interactions per video, per 1,000 subscribers",
+    "app.publish.analytics.videoEngagement": "Interactions per video, per 1,000 followers",
+    "app.publish.analytics.postEngagement": "Interactions per post, per 1,000 followers"
+  }
+}

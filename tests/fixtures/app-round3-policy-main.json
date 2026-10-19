@@ -1,0 +1,21 @@
+{
+  "app.editor.person.policy": "Runs the person model locally in a separate Worker. Up to 10 seconds at 720p; requires browser graphics support and downloads a model/runtime of about 28 MiB. Transparent cutout creates a silent VP9 WebM overlay and requires a silent source. Other operations create an opaque MP4 and preserve AAC audio. Retouch smooths detected skin and changes its light; reshape is a separate operation. Reframe follows the largest detected person. Review edges, occlusions and multiple people.",
+  "app.editor.person.lightHelp": "0° lights from the right; −90° from above. Directional colour and exposure follow the person matte. This 2D effect does not reconstruct depth or shadows.",
+  "app.editor.person.reshapeHelp": "Negative values narrow or shorten; positive values widen or lengthen. The 2D warp follows the largest detected person. Face uses the detected face region; body uses the full silhouette. Nearby background can bend. Review the result.",
+  "app.projects.limit": "Showing the 100 most recent projects. Search filters this list.",
+  "app.projects.nameHelp": "Choose a name you will recognise. Up to 120 characters.",
+  "app.publish.ads.spendPolicy": " Veyrnox saves campaign plans here. Launching spend stays disabled until the selected provider account, ad permissions and billing are connected.",
+  "app.credits.subscription.coolingHelp": "Request cancellation and a full refund within fourteen days of the initial paid cycle, only if this cycle’s Credits are unspent. The server checks eligibility; pending refunds are not complete.",
+  "app.credits.subscription.intro": "Choose an optional weekly or monthly subscription. It renews automatically until cancelled. Credits expire at each cycle end and do not roll over. Tax and the final total are shown at checkout.",
+  "app.credits.subscription.renewalHelp": "You can stop renewal here. An unused initial cycle may qualify for a full cooling-off refund within fourteen days.",
+  "app.credits.subscription.error.credits_spent": "Cooling-off cancellation requires this cycle’s Credits to be unspent. You can stop renewal at period end.",
+  "app.credits.subscription.error.cooling_off_over": "The fourteen-day cooling-off window has ended. You can stop renewal at period end.",
+  "app.credits.subscription.cancelUnused": "Cancel unused subscription within 14 days",
+  "app.videoAgent.narrationPlaceholder": "Type only the words to speak, up to 300 characters.",
+  "app.videoAgent.narrationHelp": "Brief-only audio is generated and may not repeat quoted words exactly. This field sends your words separately to a speech model; pronunciation can still vary. One approval, the same displayed price.",
+  "app.videoAgent.narrationLimit": "Use up to 300 characters without line breaks or control characters.",
+  "app.videoAgent.step1Body": "Say what the video is about and how it should feel. Pick a shape: 9:16 for phones, 16:9 for wide screens, 1:1 for squares.",
+  "app.videoAgent.step2Body": "The agent drafts a plan and shows the exact Credit price. Planning is free, and you can re-plan as often as you like.",
+  "app.videoAgent.step3Body": "Credits are taken once, when you approve. The agent then produces and edits the video as one job.",
+  "app.videoAgent.moneyHelp": "The price on the plan is the price you pay. Nothing is charged until you approve, and if the video can't be made the Credits are returned automatically."
+}

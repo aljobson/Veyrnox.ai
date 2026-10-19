@@ -1,4 +1,5 @@
 'use client';
+import { useI18n } from '../../../../components/I18nProvider';
 import Link from 'next/link';
 import { useState, useSyncExternalStore } from 'react';
 import { AppNav } from '../../_components/NavBar';
@@ -17,16 +18,18 @@ const noAccount = () => '';
 const button = 'rounded-full border border-vx-border px-4 py-2 text-sm font-bold disabled:opacity-50';
 
 export default function Account() {
+  const { t } = useI18n();
   const account = useSyncExternalStore(onSessionChange, currentAccount, noAccount);
   return <><AppNav /><Main className="max-w-[900px] mx-auto px-4 sm:px-8 py-10">
-    <h1 className="text-3xl font-black mb-6">Account & security</h1>
+    <h1 className="text-3xl font-black mb-6">{t("label.Account & security")}</h1>
     {account ? <AccountControls key={account} /> : <div className="text-vx-fg-body">
-      <p className="mb-4">Sign in to manage your account. If you forgot your password, use the email sign-in option, then return here to set a new password.</p>
-      <button type="button" className={button} onClick={() => window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>Sign in</button>
+      <p className="mb-4">{t("app.account.signInHelp")}</p>
+      <button type="button" className={button} onClick={() => window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>{t("oauth.signIn")}</button>
     </div>}
   </Main></>;
 }
 function AccountControls() {
+  const { t } = useI18n();
   const [password, setPassword] = useState('');
   const [nonce, setNonce] = useState('');
   const [busy, setBusy] = useState(false);
@@ -36,56 +39,56 @@ function AccountControls() {
   async function run(action, success) {
     setBusy(true); setMessage(''); setError('');
     try { await action(); setMessage(success); }
-    catch { setError('That did not complete. Check your code and connection, then try again.'); }
+    catch { setError(t("app.account.actionFailed")); }
     finally { setBusy(false); }
   }
   return <div className="space-y-6">
     <section className="rounded-2xl border border-vx-border p-5">
-      <h2 className="font-bold mb-2">Billing &amp; subscriptions</h2>
-      <p className="text-sm text-vx-fg-muted mb-4">See your balance, buy one-off Credits, manage a monthly Credit Subscription, or stop renewal online.</p>
-      <Link href="/app/credits#credit-subscriptions" className={button}>Manage billing</Link>
+      <h2 className="font-bold mb-2">{t("app.account.billing")}</h2>
+      <p className="text-sm text-vx-fg-muted mb-4">{t("app.account.billingHelp")}</p>
+      <Link href="/app/credits#credit-subscriptions" className={button}>{t("app.account.manageBilling")}</Link>
     </section>
     <MfaPanel />
     <PasskeyPanel />
     <OAuthGrantsPanel />
     <ReferralPanel />
     <section className="rounded-2xl border border-vx-border p-5">
-      <h2 className="font-bold mb-2">Set a new password</h2>
-      <p className="text-sm text-vx-fg-muted mb-4">First request a verification code, then enter it with your new password.</p>
-      <button type="button" disabled={busy} className={button} onClick={() => run(requestPasswordCode, 'Check your account email for a verification code.')}>Email me a code</button>
-      <form className="mt-4 space-y-3" onSubmit={event => { event.preventDefault(); run(async () => { await changePassword(password, nonce); setPassword(''); setNonce(''); }, 'Password updated.'); }}>
-        <label className="block text-sm">New password<input type="password" autoComplete="new-password" required minLength={8} maxLength={72} value={password} onChange={e => setPassword(e.target.value)} className="block w-full rounded-lg border border-vx-border bg-vx-panel p-3 mt-1" /></label>
-        <label className="block text-sm">Email verification code<input inputMode="numeric" autoComplete="one-time-code" required pattern="[0-9]{6,10}" value={nonce} onChange={e => setNonce(e.target.value.trim())} className="block w-full rounded-lg border border-vx-border bg-vx-panel p-3 mt-1" /></label>
-        <button type="submit" disabled={busy} className={button}>Update password</button>
+      <h2 data-testid="account-password-heading" className="font-bold mb-2">{t("app.account.setPassword")}</h2>
+      <p className="text-sm text-vx-fg-muted mb-4">{t("app.account.passwordHelp")}</p>
+      <button type="button" disabled={busy} className={button} onClick={() => run(requestPasswordCode, t("app.account.checkEmail"))}>{t("app.account.emailCode")}</button>
+      <form className="mt-4 space-y-3" onSubmit={event => { event.preventDefault(); run(async () => { await changePassword(password, nonce); setPassword(''); setNonce(''); }, t("app.account.passwordUpdated")); }}>
+        <label className="block text-sm">{t("app.account.newPassword")}<input data-testid="account-new-password" type="password" autoComplete="new-password" required minLength={8} maxLength={72} value={password} onChange={e => setPassword(e.target.value)} className="block w-full rounded-lg border border-vx-border bg-vx-panel p-3 mt-1" /></label>
+        <label className="block text-sm">{t("app.account.verificationCode")}<input data-testid="account-verification-code" inputMode="numeric" autoComplete="one-time-code" required pattern="[0-9]{6,10}" value={nonce} onChange={e => setNonce(e.target.value.trim())} className="block w-full rounded-lg border border-vx-border bg-vx-panel p-3 mt-1" /></label>
+        <button data-testid="account-update-password" type="submit" disabled={busy} className={button}>{t("app.account.updatePassword")}</button>
       </form>
     </section>
     <section className="rounded-2xl border border-vx-border p-5">
-      <h2 className="font-bold mb-2">Signed-in devices</h2>
-      <p className="text-sm text-vx-fg-muted mb-4">End other sign-ins, or sign out everywhere. Other devices may retain access until their current access expires.</p>
+      <h2 className="font-bold mb-2">{t("app.account.devices")}</h2>
+      <p className="text-sm text-vx-fg-muted mb-4">{t("app.account.devicesHelp")}</p>
       <div className="flex flex-wrap gap-3">
-        <button type="button" disabled={busy} className={button} onClick={() => setConfirm('others')}>Sign out other devices</button>
-        <button type="button" disabled={busy} className={button} onClick={() => setConfirm('global')}>Sign out everywhere</button>
+        <button data-testid="account-sign-out-others" type="button" disabled={busy} className={button} onClick={() => setConfirm('others')}>{t("app.account.signOutOthers")}</button>
+        <button type="button" disabled={busy} className={button} onClick={() => setConfirm('global')}>{t("app.account.signOutEverywhere")}</button>
       </div>
     </section>
     {message && <p role="status" className="text-sm text-vx-accent">{message}</p>}
     {error && <p role="alert" className="text-sm text-vx-danger">{error}</p>}
     <section className="rounded-2xl border border-vx-border p-5">
-      <h2 className="font-bold mb-2">Content decisions</h2>
-      <p className="text-sm text-vx-fg-muted mb-4">If content on your account was given a warning or removed, you can see the decision and appeal it.</p>
+      <h2 className="font-bold mb-2">{t("app.account.contentDecisions")}</h2>
+      <p className="text-sm text-vx-fg-muted mb-4">{t("app.account.contentHelp")}</p>
       <div className="flex flex-wrap gap-4 text-sm underline">
-        <a href="/app/account/appeals">Content decisions and appeals</a>
-        <a href="/app/account/report">Report content</a>
+        <a href="/app/account/appeals">{t("app.account.appeals")}</a>
+        <a href="/app/account/report">{t("app.account.report")}</a>
       </div>
     </section>
     <section className="rounded-2xl border border-vx-border p-5">
-      <h2 className="font-bold mb-2">Your data</h2>
-      <p className="text-sm text-vx-fg-muted mb-4">Request an export by email. This link opens a draft; your request is submitted when you send it. Replies and progress arrive by email. Some payment records must be retained as described in our Privacy Policy.</p>
+      <h2 className="font-bold mb-2">{t("app.account.data")}</h2>
+      <p className="text-sm text-vx-fg-muted mb-4">{t("app.account.exportHelp")}</p>
       <div className="flex flex-wrap gap-4 text-sm underline">
-        <a href="mailto:privacy@veyrnox.com?subject=Veyrnox.ai%20data%20export%20request">Request data export</a>
-        <a href="/legal/privacy">Privacy Policy</a>
+        <a href="mailto:privacy@veyrnox.com?subject=Veyrnox.ai%20data%20export%20request">{t("app.account.export")}</a>
+        <a href="/legal/privacy">{t("label.Privacy Policy")}</a>
       </div>
     </section>
     <DeleteAccountPanel />
-    {confirm && <ConfirmDialog title={confirm === 'global' ? 'Sign out everywhere?' : 'Sign out other devices?'} body="Those devices will need to sign in again. Your credits and library remain on your account." confirmLabel="Sign out" onCancel={() => setConfirm(null)} onConfirm={() => { const scope = confirm; setConfirm(null); run(() => revokeSessions(scope), 'Other sign-ins have been ended.'); }} />}
+    {confirm && <ConfirmDialog title={confirm === 'global' ? t("app.account.signOutEverywhereConfirm") : t("app.account.signOutOthersConfirm")} body={t("app.account.signOutHelp")} confirmLabel={t("public.account.signOut")} onCancel={() => setConfirm(null)} onConfirm={() => { const scope = confirm; setConfirm(null); run(() => revokeSessions(scope), t("app.account.sessionsEnded")); }} />}
   </div>;
 }

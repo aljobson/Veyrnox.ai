@@ -1,0 +1,568 @@
+[
+  {
+    "area": "processing",
+    "text": "Voice and noise processingPreserve pitch when changing speedVoice presetnonedeepbrightradiorobotVoice pitch (semitones)Noise reduction (%)Noise sample source start (seconds)Noise sample length (seconds)For noise reduction, choose a source section containing background noise alone. Speech or music in the sample can be removed from the result. Preview before applying it.Noise gate threshold (dB)At −96 dB the gate is off. Raising it suppresses sound below the threshold. Deep/bright voices adjust pitch; radio and robot add original effects.Apply voice and gate to all sound clipsReset voice processing",
+    "labels": [
+      "aria-label=\"Preserve pitch when changing speed\"",
+      "aria-label=\"Voice preset\"",
+      "aria-label=\"Voice pitch (semitones)\"",
+      "aria-label=\"Noise reduction (%)\"",
+      "aria-label=\"Noise sample source start (seconds)\"",
+      "aria-label=\"Noise sample length (seconds)\"",
+      "aria-label=\"Noise gate threshold (dB)\""
+    ]
+  },
+  {
+    "area": "effects",
+    "text": "Stereo, tremolo and echoStereo width (%)Zero combines the channels into mono, 100 keeps the original width, and 200 doubles their difference. Mono recordings stay centered.Tremolo rate (Hz)Tremolo depth (%)Echo delay (seconds)Echo repeatsEcho decay (%)Echo mix (%)Depth and mix at zero turn tremolo and echo off. Echo repeats must fit within four seconds and stop at the clip boundary. Clip fades also shape the echoes; preview before exporting.Reset stereo, tremolo and echo",
+    "labels": [
+      "aria-label=\"Stereo width (%)\"",
+      "aria-label=\"Tremolo rate (Hz)\"",
+      "aria-label=\"Tremolo depth (%)\"",
+      "aria-label=\"Echo delay (seconds)\"",
+      "aria-label=\"Echo repeats\"",
+      "aria-label=\"Echo decay (%)\"",
+      "aria-label=\"Echo mix (%)\""
+    ]
+  },
+  {
+    "area": "mask",
+    "text": "Masknonecircleroundedhorizontalvertical Invert maskMask feather (%)Mask x (%)Mask y (%)Mask width (%)Mask height (%)Mask rotation (degrees)Add mask keyframe at playhead1.00sMask easing at frame 30linearease-inease-outease-in-out×Reset mask",
+    "labels": [
+      "aria-label=\"Mask\"",
+      "aria-label=\"Invert mask\"",
+      "aria-label=\"Mask feather (%)\"",
+      "aria-label=\"Mask x (%)\"",
+      "aria-label=\"Mask y (%)\"",
+      "aria-label=\"Mask width (%)\"",
+      "aria-label=\"Mask height (%)\"",
+      "aria-label=\"Mask rotation (degrees)\"",
+      "aria-label=\"Mask easing at frame 30\"",
+      "aria-label=\"Delete mask keyframe at frame 30\""
+    ]
+  },
+  {
+    "area": "speed",
+    "text": "Speed curve presetcustomconstantsmoothacceleratedeceleratepulseCurve rates change duration while keeping the selected source range. Existing transform and mask keyframes are reset; Undo restores them.Speed point 1 position (%)Speed point 1 rate (×)Speed point 2 position (%)Speed point 2 rate (×)Add speed pointApply speed curveReverse sourceFreeze source frame (2s)",
+    "labels": [
+      "aria-label=\"Speed curve preset\"",
+      "aria-label=\"Speed curve\"",
+      "aria-label=\"Speed point 1 position (%)\"",
+      "aria-label=\"Speed point 1 rate (×)\"",
+      "aria-label=\"Speed point 2 position (%)\"",
+      "aria-label=\"Speed point 2 rate (×)\""
+    ]
+  },
+  {
+    "area": "speed",
+    "text": "This clip holds one source frame. Its source sound is muted.",
+    "labels": []
+  },
+  {
+    "area": "words",
+    "text": "Word timing and highlightingWord caption stylenonehighlightkaraokewordActive word colourDistribute words evenlyEven timing is an estimate. Import timestamped VTT, enhanced LRC or word/start/end JSON for source timing, then adjust it here.Timed word or segment1. User wordWord start in caption (seconds)Word duration (seconds)Estimated or manually adjusted word timing.Clear word timing",
+    "labels": [
+      "aria-label=\"Word caption style\"",
+      "aria-label=\"Active word colour\"",
+      "aria-label=\"Timed word or segment\"",
+      "aria-label=\"Word start in caption (seconds)\"",
+      "aria-label=\"Word duration (seconds)\""
+    ]
+  },
+  {
+    "area": "words",
+    "text": "Word timing and highlightingWord caption stylenonehighlightkaraokewordActive word colourDistribute words evenlyEven timing is an estimate. Import timestamped VTT, enhanced LRC or word/start/end JSON for source timing, then adjust it here.Timed word or segment1. User wordWord start in caption (seconds)Word duration (seconds)Imported source timing.Clear word timing",
+    "labels": [
+      "aria-label=\"Word caption style\"",
+      "aria-label=\"Active word colour\"",
+      "aria-label=\"Timed word or segment\"",
+      "aria-label=\"Word start in caption (seconds)\"",
+      "aria-label=\"Word duration (seconds)\""
+    ]
+  },
+  {
+    "area": "sources",
+    "text": "image source · required · up to 15sUser image · LibraryChoose image source from deviceChoose Library image sourceClear image sourceaudio source · optionalUser audio · DeviceChoose audio source from deviceChoose Library audio sourceClear audio source",
+    "labels": [
+      "alt=\"image source: User image\"",
+      "aria-label=\"image source selection\"",
+      "aria-label=\"Choose image source from device\"",
+      "aria-label=\"Choose image source from Library\"",
+      "aria-label=\"audio source selection\"",
+      "aria-label=\"Choose audio source from device\"",
+      "aria-label=\"Choose audio source from Library\""
+    ]
+  },
+  {
+    "area": "sources",
+    "text": "Provider label unchanged · optionalChoose provider label unchanged from deviceChoose Library provider label unchanged",
+    "labels": [
+      "aria-label=\"Choose Provider label unchanged from device\"",
+      "aria-label=\"Choose Provider label unchanged from Library\""
+    ]
+  },
+  {
+    "area": "transport",
+    "text": "Current timecode/ 0:10.0",
+    "labels": [
+      "aria-label=\"Playback controls\"",
+      "aria-label=\"Go to start (Home)\"",
+      "title=\"Go to start (Home)\"",
+      "aria-label=\"Previous frame (Left arrow)\"",
+      "title=\"Previous frame (Left arrow)\"",
+      "aria-label=\"Play video\"",
+      "aria-label=\"Next frame (Right arrow)\"",
+      "title=\"Next frame (Right arrow)\"",
+      "aria-label=\"Go to end (End)\"",
+      "title=\"Go to end (End)\"",
+      "aria-label=\"Fit timeline to window (Shift+Z)\"",
+      "title=\"Fit timeline to window (Shift+Z)\"",
+      "aria-label=\"Keyboard shortcuts (?)\"",
+      "title=\"Keyboard shortcuts (?)\""
+    ]
+  },
+  {
+    "area": "transport",
+    "text": "Current timecode/ 0:10.0Use hours, minutes, seconds and frames, for example 00:00:03:12.",
+    "labels": [
+      "aria-label=\"Playback controls\"",
+      "aria-label=\"Go to start (Home)\"",
+      "title=\"Go to start (Home)\"",
+      "aria-label=\"Previous frame (Left arrow)\"",
+      "title=\"Previous frame (Left arrow)\"",
+      "aria-label=\"Pause playback\"",
+      "aria-label=\"Next frame (Right arrow)\"",
+      "title=\"Next frame (Right arrow)\"",
+      "aria-label=\"Go to end (End)\"",
+      "title=\"Go to end (End)\"",
+      "aria-label=\"Fit timeline to window (Shift+Z)\"",
+      "title=\"Fit timeline to window (Shift+Z)\"",
+      "aria-label=\"Keyboard shortcuts (?)\"",
+      "title=\"Keyboard shortcuts (?)\""
+    ]
+  },
+  {
+    "area": "folders",
+    "text": "Organize foldersFolder pathCreate folderFolder to organizeChoose folderUser folderRename or move folderDelete empty folderEmpty folders are saved with the project. Rename or move includes child folders and media. Move media out before deleting.",
+    "labels": [
+      "aria-label=\"Folder path\"",
+      "placeholder=\"Campaign/Scenes\"",
+      "aria-label=\"Folder to organize\""
+    ]
+  },
+  {
+    "area": "folders",
+    "text": "Organize foldersFolder pathCreate folderFolder to organizeChoose folderUser folderRename or move folderDelete empty folderEmpty folders are saved with the project. Rename or move includes child folders and media. Move media out before deleting.",
+    "labels": [
+      "aria-label=\"Folder path\"",
+      "placeholder=\"Campaign/Scenes\"",
+      "aria-label=\"Folder to organize\""
+    ]
+  },
+  {
+    "area": "filmTests",
+    "text": "Use static images to test angles, sizes, real scene lighting and every shared-frame pairing. Record actual output files or Library job IDs and review them against the passport.Asset to test@actor:v1 · draft@actor:v1 · Draft · 0/12 tests passedTen of ten repeatability images must pass, plus every scene-lighting and pairing test. One miss keeps the asset draft.Test 1: front · medium · User shot · pendingStatic test 1 promptUser descriptor\nReferences: User reference.\nfront, medium. Static image. Scene User shot, light: User time.Copy promptThe live catalog must confirm this model before the prompt can open in Studio.Test 1 outputUse a stable output file or Library job ID.Test 1 verdictPendingPassMissTest 2: three-quarter · medium · User shot · pendingStatic test 2 promptUser descriptor\nReferences: User reference.\nthree-quarter, medium. Static image. Scene User shot, light: User time.Copy promptThe live catalog must confirm this model before the prompt can open in Studio.Test 2 outputUse a stable output file or Library job ID.Test 2 verdictPendingPassMissTest 3: profile · medium · User shot · pendingStatic test 3 promptUser descriptor\nReferences: User reference.\nprofile, medium. Static image. Scene User shot, light: User time.Copy promptThe live catalog must confirm this model before the prompt can open in Studio.Test 3 outputUse a stable output file or Library job ID.Test 3 verdictPendingPassMissTest 4: back · medium · User shot · pendingStatic test 4 promptUser descriptor\nReferences: User reference.\nback, medium. Static image. Scene User shot, light: User time.Copy promptThe live catalog must confirm this model before the prompt can open in Studio.Test 4 outputUse a stable output file or Library job ID.Test 4 verdictPendingPassMissTest 5: close detail · medium · User shot · pendingStatic test 5 promptUser descriptor\nReferences: User reference.\nclose detail, medium. Static image. Scene User shot, light: User time.Copy promptThe live catalog must confirm this model before the prompt can open in Studio.Test 5 outputUse a stable output file or Library job ID.Test 5 verdictPendingPassMissTest 6: front · wide · User shot · pendingStatic test 6 promptUser descriptor\nReferences: User reference.\nfront, wide. Static image. Scene User shot, light: User time.Copy promptThe live catalog must confirm this model before the prompt can open in Studio.Test 6 outputUse a stable output file or Library job ID.Test 6 verdictPendingPassMissTest 7: three-quarter · wide · User shot · pendingStatic test 7 promptUser descriptor\nReferences: User reference.\nthree-quarter, wide. Static image. Scene User shot, light: User time.Copy promptThe live catalog must confirm this model before the prompt can open in Studio.Test 7 outputUse a stable output file or Library job ID.Test 7 verdictPendingPassMissTest 8: profile · wide · User shot · pendingStatic test 8 promptUser descriptor\nReferences: User reference.\nprofile, wide. Static image. Scene User shot, light: User time.Copy promptThe live catalog must confirm this model before the prompt can open in Studio.Test 8 outputUse a stable output file or Library job ID.Test 8 verdictPendingPassMissTest 9: back · wide · User shot · pendingStatic test 9 promptUser descriptor\nReferences: User reference.\nback, wide. Static image. Scene User shot, light: User time.Copy promptThe live catalog must confirm this model before the prompt can open in Studio.Test 9 outputUse a stable output file or Library job ID.Test 9 verdictPendingPassMissTest 10: close detail · wide · User shot · pendingStatic test 10 promptUser descriptor\nReferences: User reference.\nclose detail, wide. Static image. Scene User shot, light: User time.Copy promptThe live catalog must confirm this model before the prompt can open in Studio.Test 10 outputUse a stable output file or Library job ID.Test 10 verdictPendingPassMissTest 11: User angle · User size · User shot · pendingStatic test 11 promptUser descriptor\nReferences: User reference.\nUser angle, User size. Static image. Scene User shot, light: User time.Copy promptThe live catalog must confirm this model before the prompt can open in Studio.Test 11 outputUse a stable output file or Library job ID.Test 11 verdictPendingPassMissTest 12: three-quarter · two-shot · User shot · beside @room:v1 · pendingStatic test 12 promptUser descriptor\nReferences: User reference.\nthree-quarter, two-shot. Static image. Scene User shot, light: User time.Copy promptThe live catalog must confirm this model before the prompt can open in Studio.Test 12 outputUse a stable output file or Library job ID.Test 12 verdictPendingPassMissRecord pass decision and lock @actor:v1",
+    "labels": [
+      "aria-label=\"Asset to test\"",
+      "aria-label=\"Static test 1 prompt\"",
+      "aria-label=\"Test 1 output\"",
+      "aria-label=\"Test 1 verdict\"",
+      "aria-label=\"Static test 2 prompt\"",
+      "aria-label=\"Test 2 output\"",
+      "aria-label=\"Test 2 verdict\"",
+      "aria-label=\"Static test 3 prompt\"",
+      "aria-label=\"Test 3 output\"",
+      "aria-label=\"Test 3 verdict\"",
+      "aria-label=\"Static test 4 prompt\"",
+      "aria-label=\"Test 4 output\"",
+      "aria-label=\"Test 4 verdict\"",
+      "aria-label=\"Static test 5 prompt\"",
+      "aria-label=\"Test 5 output\"",
+      "aria-label=\"Test 5 verdict\"",
+      "aria-label=\"Static test 6 prompt\"",
+      "aria-label=\"Test 6 output\"",
+      "aria-label=\"Test 6 verdict\"",
+      "aria-label=\"Static test 7 prompt\"",
+      "aria-label=\"Test 7 output\"",
+      "aria-label=\"Test 7 verdict\"",
+      "aria-label=\"Static test 8 prompt\"",
+      "aria-label=\"Test 8 output\"",
+      "aria-label=\"Test 8 verdict\"",
+      "aria-label=\"Static test 9 prompt\"",
+      "aria-label=\"Test 9 output\"",
+      "aria-label=\"Test 9 verdict\"",
+      "aria-label=\"Static test 10 prompt\"",
+      "aria-label=\"Test 10 output\"",
+      "aria-label=\"Test 10 verdict\"",
+      "aria-label=\"Static test 11 prompt\"",
+      "aria-label=\"Test 11 output\"",
+      "aria-label=\"Test 11 verdict\"",
+      "aria-label=\"Static test 12 prompt\"",
+      "aria-label=\"Test 12 output\"",
+      "aria-label=\"Test 12 verdict\""
+    ]
+  },
+  {
+    "area": "filmTests",
+    "text": "Use static images to test angles, sizes, real scene lighting and every shared-frame pairing. Record actual output files or Library job IDs and review them against the passport.Asset to test@actor:v1 · locked@actor:v1 · Locked · 12/12 tests passedTen of ten repeatability images must pass, plus every scene-lighting and pairing test. One miss keeps the asset draft.Test 1: front · medium · User shot · passStatic test 1 promptUser descriptor\nReferences: User reference.\nfront, medium. Static image. Scene User shot, light: User time.Copy promptThe live catalog must confirm this model before the prompt can open in Studio.Test 1 outputUse a stable output file or Library job ID.Test 1 verdictPendingPassMissTest 2: three-quarter · medium · User shot · passStatic test 2 promptUser descriptor\nReferences: User reference.\nthree-quarter, medium. Static image. Scene User shot, light: User time.Copy promptThe live catalog must confirm this model before the prompt can open in Studio.Test 2 outputUse a stable output file or Library job ID.Test 2 verdictPendingPassMissTest 3: profile · medium · User shot · passStatic test 3 promptUser descriptor\nReferences: User reference.\nprofile, medium. Static image. Scene User shot, light: User time.Copy promptThe live catalog must confirm this model before the prompt can open in Studio.Test 3 outputUse a stable output file or Library job ID.Test 3 verdictPendingPassMissTest 4: back · medium · User shot · passStatic test 4 promptUser descriptor\nReferences: User reference.\nback, medium. Static image. Scene User shot, light: User time.Copy promptThe live catalog must confirm this model before the prompt can open in Studio.Test 4 outputUse a stable output file or Library job ID.Test 4 verdictPendingPassMissTest 5: close detail · medium · User shot · passStatic test 5 promptUser descriptor\nReferences: User reference.\nclose detail, medium. Static image. Scene User shot, light: User time.Copy promptThe live catalog must confirm this model before the prompt can open in Studio.Test 5 outputUse a stable output file or Library job ID.Test 5 verdictPendingPassMissTest 6: front · wide · User shot · passStatic test 6 promptUser descriptor\nReferences: User reference.\nfront, wide. Static image. Scene User shot, light: User time.Copy promptThe live catalog must confirm this model before the prompt can open in Studio.Test 6 outputUse a stable output file or Library job ID.Test 6 verdictPendingPassMissTest 7: three-quarter · wide · User shot · passStatic test 7 promptUser descriptor\nReferences: User reference.\nthree-quarter, wide. Static image. Scene User shot, light: User time.Copy promptThe live catalog must confirm this model before the prompt can open in Studio.Test 7 outputUse a stable output file or Library job ID.Test 7 verdictPendingPassMissTest 8: profile · wide · User shot · passStatic test 8 promptUser descriptor\nReferences: User reference.\nprofile, wide. Static image. Scene User shot, light: User time.Copy promptThe live catalog must confirm this model before the prompt can open in Studio.Test 8 outputUse a stable output file or Library job ID.Test 8 verdictPendingPassMissTest 9: back · wide · User shot · passStatic test 9 promptUser descriptor\nReferences: User reference.\nback, wide. Static image. Scene User shot, light: User time.Copy promptThe live catalog must confirm this model before the prompt can open in Studio.Test 9 outputUse a stable output file or Library job ID.Test 9 verdictPendingPassMissTest 10: close detail · wide · User shot · passStatic test 10 promptUser descriptor\nReferences: User reference.\nclose detail, wide. Static image. Scene User shot, light: User time.Copy promptThe live catalog must confirm this model before the prompt can open in Studio.Test 10 outputUse a stable output file or Library job ID.Test 10 verdictPendingPassMissTest 11: User angle · User size · User shot · passStatic test 11 promptUser descriptor\nReferences: User reference.\nUser angle, User size. Static image. Scene User shot, light: User time.Copy promptThe live catalog must confirm this model before the prompt can open in Studio.Test 11 outputUse a stable output file or Library job ID.Test 11 verdictPendingPassMissTest 12: three-quarter · two-shot · User shot · beside @room:v1 · passStatic test 12 promptUser descriptor\nReferences: User reference.\nthree-quarter, two-shot. Static image. Scene User shot, light: User time.Copy promptThe live catalog must confirm this model before the prompt can open in Studio.Test 12 outputUse a stable output file or Library job ID.Test 12 verdictPendingPassMissRecord pass decision and lock @actor:v1",
+    "labels": [
+      "aria-label=\"Asset to test\"",
+      "aria-label=\"Static test 1 prompt\"",
+      "aria-label=\"Test 1 output\"",
+      "aria-label=\"Test 1 verdict\"",
+      "aria-label=\"Static test 2 prompt\"",
+      "aria-label=\"Test 2 output\"",
+      "aria-label=\"Test 2 verdict\"",
+      "aria-label=\"Static test 3 prompt\"",
+      "aria-label=\"Test 3 output\"",
+      "aria-label=\"Test 3 verdict\"",
+      "aria-label=\"Static test 4 prompt\"",
+      "aria-label=\"Test 4 output\"",
+      "aria-label=\"Test 4 verdict\"",
+      "aria-label=\"Static test 5 prompt\"",
+      "aria-label=\"Test 5 output\"",
+      "aria-label=\"Test 5 verdict\"",
+      "aria-label=\"Static test 6 prompt\"",
+      "aria-label=\"Test 6 output\"",
+      "aria-label=\"Test 6 verdict\"",
+      "aria-label=\"Static test 7 prompt\"",
+      "aria-label=\"Test 7 output\"",
+      "aria-label=\"Test 7 verdict\"",
+      "aria-label=\"Static test 8 prompt\"",
+      "aria-label=\"Test 8 output\"",
+      "aria-label=\"Test 8 verdict\"",
+      "aria-label=\"Static test 9 prompt\"",
+      "aria-label=\"Test 9 output\"",
+      "aria-label=\"Test 9 verdict\"",
+      "aria-label=\"Static test 10 prompt\"",
+      "aria-label=\"Test 10 output\"",
+      "aria-label=\"Test 10 verdict\"",
+      "aria-label=\"Static test 11 prompt\"",
+      "aria-label=\"Test 11 output\"",
+      "aria-label=\"Test 11 verdict\"",
+      "aria-label=\"Static test 12 prompt\"",
+      "aria-label=\"Test 12 output\"",
+      "aria-label=\"Test 12 verdict\""
+    ]
+  },
+  {
+    "area": "breakdown",
+    "text": "Script, treatment or ideaKeep supplied dialogue unchanged. Resolve gaps scene by scene.Runtime plan: 10s planned of 60s target. Add focused shots until the planned runtime reaches your target.User shotAdd shotIdentityScene / shot IDLocation assetExact tag and version, e.g. @cal:v1. Separate tags with commas; use none for no characters or props.Time of dayCharacter assetsExact tag and version, e.g. @cal:v1. Separate tags with commas; use none for no characters or props.Prop assetsExact tag and version, e.g. @cal:v1. Separate tags with commas; use none for no characters or props.DescriptionVerbatim dialogueRunning timeOne clip, 10–15 seconds.ComplexityDirectionShot goalTask as a verbDramaturgyBlockingActingStyle deviceCamera / editShot sizeCamera movementLensAngleCut typePaceTransitionThis clip contains one action.Text for the editTitles, signs and screens are separate editing tasks. Keep their words out of the generation description.Exact in-frame textText placementText context",
+    "labels": [
+      "aria-label=\"Script, treatment or idea\"",
+      "aria-label=\"Shot cards\"",
+      "aria-label=\"Scene / shot ID\"",
+      "aria-label=\"Location asset\"",
+      "aria-label=\"Time of day\"",
+      "aria-label=\"Character assets\"",
+      "aria-label=\"Prop assets\"",
+      "aria-label=\"Description\"",
+      "aria-label=\"Verbatim dialogue\"",
+      "aria-label=\"Running time\"",
+      "aria-label=\"Complexity\"",
+      "aria-label=\"Shot goal\"",
+      "aria-label=\"Task as a verb\"",
+      "aria-label=\"Dramaturgy\"",
+      "aria-label=\"Blocking\"",
+      "aria-label=\"Acting\"",
+      "aria-label=\"Style device\"",
+      "aria-label=\"Shot size\"",
+      "aria-label=\"Camera movement\"",
+      "aria-label=\"Lens\"",
+      "aria-label=\"Angle\"",
+      "aria-label=\"Cut type\"",
+      "aria-label=\"Pace\"",
+      "aria-label=\"Transition\"",
+      "aria-label=\"Exact in-frame text\"",
+      "aria-label=\"Text placement\"",
+      "aria-label=\"Text context\""
+    ]
+  },
+  {
+    "area": "filmFiles",
+    "text": "Export studio JSONDownload studio folderImport studio JSON",
+    "labels": [
+      "aria-label=\"Import studio JSON\""
+    ]
+  },
+  {
+    "area": "filmFiles",
+    "text": "Export studio JSONDownload studio folderImport studio JSONReplace the current workspace with Imported user film? Export your current work first to keep it.Use imported studioKeep current studio",
+    "labels": [
+      "aria-label=\"Import studio JSON\""
+    ]
+  },
+  {
+    "area": "filmFiles",
+    "text": "Export studio JSONDownload studio folderImport studio JSONReplace the current workspace with this studio? Export your current work first to keep it.Use imported studioKeep current studio",
+    "labels": [
+      "aria-label=\"Import studio JSON\""
+    ]
+  },
+  {
+    "area": "master",
+    "text": "Create an exact 16:9 master at 1920×1080. The picture fills the frame with a centre crop, without stretching. The shot card sets the length. Export is free. Masters prepared from a Library take can be saved directly to your Library.Video file for this take (optional)Prepare 16:9 master",
+    "labels": []
+  },
+  {
+    "area": "master",
+    "text": "Create an exact 16:9 master at 1920×1080. The picture fills the frame with a centre crop, without stretching. The shot card sets the length. Export is free. Masters prepared from a Library take can be saved directly to your Library.Video file for this takePreparing 16:9 master… 50%Cancel master export",
+    "labels": []
+  },
+  {
+    "area": "master",
+    "text": "Create an exact 16:9 master at 1920×1080. The picture fills the frame with a centre crop, without stretching. The shot card sets the length. Export is free. Masters prepared from a Library take can be saved directly to your Library.Video file for this takePrepare 16:9 master16:9 master ready · 1920×1080 · 10sTo save directly to Library, log a Library take ID and prepare its master without choosing a local file.Download 16:9 master",
+    "labels": []
+  },
+  {
+    "area": "output",
+    "text": "User titleUser promptCopy promptOpen in StudioChoose required reference media in Create. The Studio shows the exact price before you press Generate.",
+    "labels": [
+      "aria-label=\"User title\""
+    ]
+  },
+  {
+    "area": "output",
+    "text": "User titlexxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxCopy promptThis full prompt exceeds the model&#x27;s 100-character limit. Use an external workflow that accepts it; canonical descriptors stay complete.",
+    "labels": [
+      "aria-label=\"User title\""
+    ]
+  },
+  {
+    "area": "output",
+    "text": "User titleUser promptCopy promptThis model does not support the shot’s clip length. Choose a compatible workflow in setup.",
+    "labels": [
+      "aria-label=\"User title\""
+    ]
+  },
+  {
+    "area": "output",
+    "text": "User titleUser promptCopy promptThis model does not support the shot’s frame format. Choose a compatible workflow in setup.",
+    "labels": [
+      "aria-label=\"User title\""
+    ]
+  },
+  {
+    "area": "canvas",
+    "text": "▧Create image in ChatChoose a model and the controls it supports below. The displayed price includes the selected length and quantity, and every finished result is saved to your Library.",
+    "labels": []
+  },
+  {
+    "area": "canvas",
+    "text": "Model unchangedVideo readyClear resultSaved automatically · Open Library",
+    "labels": []
+  },
+  {
+    "area": "canvas",
+    "text": "GenerationCreating audio● RUNNING…You can switch back to Chat while this runs.",
+    "labels": []
+  },
+  {
+    "area": "device",
+    "text": "On this deviceOriginal videos, images and audio stay in this browser. They are available here and in the editor after a reload. They are not uploaded or available on another device; keep your originals.Add files from deviceNo matching originals saved on this device yet.",
+    "labels": [
+      "aria-label=\"Device Library\"",
+      "aria-label=\"Add files to Device Library\""
+    ]
+  },
+  {
+    "area": "device",
+    "text": "On this deviceOriginal videos, images and audio stay in this browser. They are available here and in the editor after a reload. They are not uploaded or available on another device; keep your originals.Add files from deviceUser file unchangedvideo · 11.77 MiB · This deviceAdd to video editor",
+    "labels": [
+      "aria-label=\"Device Library\"",
+      "aria-label=\"Add files to Device Library\"",
+      "aria-label=\"Add User file unchanged to video editor\""
+    ]
+  },
+  {
+    "area": "bin",
+    "text": "Project media 1 filesUser video unchangedVideo · source 0:10.0Add to timelineRemove file",
+    "labels": [
+      "aria-label=\"Project media\"",
+      "title=\"User video unchanged\"",
+      "aria-label=\"Add User video unchanged to timeline\"",
+      "aria-label=\"Remove User video unchanged from project\""
+    ]
+  },
+  {
+    "area": "details",
+    "text": "Media detailsMedia display nameMedia folderOriginal source: Original file.mp4Rights and attributionMedia creditMedia usage noteMedia source or licence URLOpen recorded source or licence",
+    "labels": [
+      "aria-label=\"Media details\"",
+      "aria-label=\"Media display name\"",
+      "aria-label=\"Media folder\"",
+      "aria-label=\"Media credit\"",
+      "aria-label=\"Media usage note\"",
+      "aria-label=\"Media source or licence URL\""
+    ]
+  },
+  {
+    "area": "explore",
+    "text": "Explore presetsEach one opens the studio on its model and prompt, priced before you press Generate.ORIGINAL FICTIONAL CASTNEW · ODDLINGSMake the silhouette impossible to ignore.Explore expressive silhouettes, sculptural hair and imaginative costumes. Give your fictional creator a distinctive personality, visual style and recurring show.Open the full Oddling Studio →LLM ChatAsk leading AI models, with Web search if you want it. Every reply shows its price in Credits before you send.Open chat →",
+    "labels": [
+      "alt=\"Four fictional human Oddling creators with distinctive silhouettes and costumes\""
+    ]
+  },
+  {
+    "area": "ask",
+    "text": "Ask about this",
+    "labels": []
+  },
+  {
+    "area": "asset",
+    "text": "Reloading file…",
+    "labels": []
+  },
+  {
+    "area": "asset",
+    "text": "Provider message unchanged Retry",
+    "labels": []
+  },
+  {
+    "area": "draw",
+    "text": "DRAW TO EDITSizeUndoClearMark what to change, then describe it in the prompt, e.g. “replace the yellow scribble with a red sailboat”.CancelUse drawing",
+    "labels": [
+      "aria-label=\"Draw on start image\"",
+      "aria-label=\"Colour #eab308\"",
+      "aria-label=\"Colour #ef4444\"",
+      "aria-label=\"Colour #ffffff\"",
+      "aria-label=\"Colour #22d3ee\""
+    ]
+  },
+  {
+    "area": "preview",
+    "text": "Schedule this",
+    "labels": [
+      "alt=\"Generated result\""
+    ]
+  },
+  {
+    "area": "report",
+    "text": "Report",
+    "labels": []
+  },
+  {
+    "area": "schedule",
+    "text": "Schedule this",
+    "labels": []
+  },
+  {
+    "area": "chatText",
+    "text": "User prosejsCopyconsole.log(&quot;User code&quot;);",
+    "labels": [
+      "aria-label=\"Copy code\""
+    ]
+  },
+  {
+    "area": "chatText",
+    "text": "codeCopiedUser code",
+    "labels": [
+      "aria-label=\"Copy code\""
+    ]
+  },
+  {
+    "area": "persona",
+    "text": "PersonaNo personas yetPersonas",
+    "labels": []
+  },
+  {
+    "area": "persona",
+    "text": "PersonaNo personaUser personaPersonas",
+    "labels": []
+  },
+  {
+    "area": "background",
+    "text": "BackgroundClip backgroundnonesolidblurimageApply background to all video clipsBackdrops fill the canvas behind this clip. Reduce its scale or change the canvas shape to expose the backdrop.",
+    "labels": [
+      "aria-label=\"Clip background\""
+    ]
+  },
+  {
+    "area": "background",
+    "text": "BackgroundClip backgroundnonesolidblurimageBackground colourApply background to all video clipsBackdrops fill the canvas behind this clip. Reduce its scale or change the canvas shape to expose the backdrop.",
+    "labels": [
+      "aria-label=\"Clip background\"",
+      "aria-label=\"Background colour\""
+    ]
+  },
+  {
+    "area": "background",
+    "text": "BackgroundClip backgroundnonesolidblurimageBackground colourBackground blurApply background to all video clipsBackdrops fill the canvas behind this clip. Reduce its scale or change the canvas shape to expose the backdrop.",
+    "labels": [
+      "aria-label=\"Clip background\"",
+      "aria-label=\"Background colour\"",
+      "aria-label=\"Background blur\""
+    ]
+  },
+  {
+    "area": "background",
+    "text": "BackgroundClip backgroundnonesolidblurimageBackground colourBackground imageUser backgroundApply background to all video clipsBackdrops fill the canvas behind this clip. Reduce its scale or change the canvas shape to expose the backdrop.",
+    "labels": [
+      "aria-label=\"Clip background\"",
+      "aria-label=\"Background colour\"",
+      "aria-label=\"Background image\""
+    ]
+  },
+  {
+    "area": "handles",
+    "text": "",
+    "labels": [
+      "aria-label=\"Canvas selection\"",
+      "aria-label=\"Move selection on canvas\"",
+      "aria-label=\"Resize selection on canvas\""
+    ]
+  },
+  {
+    "area": "fields",
+    "text": "User field labelNormalnonelinearUser option",
+    "labels": [
+      "aria-label=\"User field label\""
+    ]
+  },
+  {
+    "area": "helper",
+    "text": "Close Vey",
+    "labels": [
+      "aria-label=\"Close Veyrnox helper\""
+    ]
+  },
+  {
+    "area": "helper",
+    "text": "Ask Vey",
+    "labels": [
+      "aria-label=\"Ask Veyrnox helper\""
+    ]
+  },
+  {
+    "area": "styles",
+    "text": "TextOriginal editable styles for titles, labels and captions.No text styles match “No matching user query”.",
+    "labels": [
+      "aria-label=\"Search text styles\"",
+      "placeholder=\"Search\""
+    ]
+  },
+  {
+    "area": "styles",
+    "text": "TextOriginal editable styles for titles, labels and captions.AaClean titleAaLower thirdAaEditorialAaCaption highlightAaSerif quoteAaNeon headingAaTypewriterAaWarm labelAaBold impactAaMinimal subtitleAaRetro popAaDocumentaryAaKinetic blockAaLuxury serifAaBreaking headlineAaOutlined",
+    "labels": [
+      "aria-label=\"Search text styles\"",
+      "placeholder=\"Search\"",
+      "aria-label=\"Clean title\"",
+      "aria-label=\"Lower third\"",
+      "aria-label=\"Editorial\"",
+      "aria-label=\"Caption highlight\"",
+      "aria-label=\"Serif quote\"",
+      "aria-label=\"Neon heading\"",
+      "aria-label=\"Typewriter\"",
+      "aria-label=\"Warm label\"",
+      "aria-label=\"Bold impact\"",
+      "aria-label=\"Minimal subtitle\"",
+      "aria-label=\"Retro pop\"",
+      "aria-label=\"Documentary\"",
+      "aria-label=\"Kinetic block\"",
+      "aria-label=\"Luxury serif\"",
+      "aria-label=\"Breaking headline\"",
+      "aria-label=\"Outlined\""
+    ]
+  }
+]

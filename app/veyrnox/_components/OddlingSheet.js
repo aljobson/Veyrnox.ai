@@ -1,4 +1,6 @@
 'use client';
+import { useI18n } from '../../../components/I18nProvider';
+
 
 import { useRef } from 'react';
 import { Modal } from './Modal';
@@ -10,6 +12,7 @@ import { characterOptionLabel } from '../_lib/characterOptions';
 // The shared Modal supplies Escape, the focus trap, an inert page behind and
 // focus returning to the card that opened it; mount this only while it is open.
 export function OddlingSheet({ oddling, onClose, onRecreate, onAnimate }) {
+  const { t } = useI18n();
   const closeRef = useRef(null);
   if (!oddling) return null;
   const picks = oddling.picks;
@@ -25,30 +28,29 @@ export function OddlingSheet({ oddling, onClose, onRecreate, onAnimate }) {
           <div className="p-6 sm:p-8">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <span className="font-vx-mono text-[9px] font-bold tracking-[0.15em] text-vx-accent">CHARACTER SHEET</span>
+                <span className="font-vx-mono text-[9px] font-bold tracking-[0.15em] text-vx-accent">{t("app.oddlings.sheet.title")}</span>
                 <h2 id="character-sheet-title" className="vx-display mt-2 text-4xl">{oddling.name}</h2>
                 <p className="mt-2 text-sm leading-relaxed text-vx-fg-body">{oddling.hook}</p>
               </div>
-              <button ref={closeRef} type="button" onClick={onClose} aria-label="Close character sheet" className={chip(false)}>Close</button>
+              <button ref={closeRef} type="button" onClick={onClose} aria-label={t("app.oddlings.sheet.close")} className={chip(false)}>{t("authGate.close")}</button>
             </div>
             <div className="mt-6 space-y-4">
               <div>
-                <span className="font-vx-mono text-[9px] font-bold tracking-[0.12em] text-vx-fg-muted">CREATOR PREMISE</span>
+                <span className="font-vx-mono text-[9px] font-bold tracking-[0.12em] text-vx-fg-muted">{t("app.oddlings.sheet.premise")}</span>
                 <ul className="mt-2 space-y-1.5 text-sm text-vx-fg-body">
                   {identity.map((line) => <li key={line}>— {line}</li>)}
                 </ul>
               </div>
               <div>
-                <span className="font-vx-mono text-[9px] font-bold tracking-[0.12em] text-vx-fg-muted">VISIBLE CANON</span>
+                <span className="font-vx-mono text-[9px] font-bold tracking-[0.12em] text-vx-fg-muted">{t("app.oddlings.sheet.canon")}</span>
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {traits.map((line) => <span key={line} className="rounded-full bg-vx-fg/[0.06] px-2.5 py-1 text-[11px] text-vx-fg-muted">{line}</span>)}
                 </div>
               </div>
             </div>
             <button type="button" onClick={() => onRecreate(oddling)} className="mt-7 w-full rounded-xl bg-vx-accent px-4 py-3 text-sm font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover">
-              Recreate as my own →
-            </button>
-            <button type="button" onClick={() => onAnimate(oddling)} className={`${chip(true)} mt-3 w-full`}>Animate this character</button>
+              {t("app.oddlings.sheet.recreate")}</button>
+            <button type="button" onClick={() => onAnimate(oddling)} className={`${chip(true)} mt-3 w-full`}>{t("oddlings.detail.animateThis")}</button>
           </div>
         </div>
       </section>

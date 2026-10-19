@@ -1,10 +1,11 @@
+import { resolveI18nSource } from '../scripts/lib/vey-knowledge-i18n.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 // JSX page and a React hook, so this reads the source, like uploadConsent.test.mjs.
 const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
-const page = read('../app/veyrnox/app/create/page.js');
+const page = resolveI18nSource(read('../app/veyrnox/app/create/page.js'));
 const hook = read('../app/veyrnox/_lib/useStudioJobs.js');
 const grid = read('../app/veyrnox/_components/StudioJobGrid.js');
 const errors = read('../app/veyrnox/_lib/createErrors.js');
@@ -24,7 +25,7 @@ test('the total drives the price, the balance guard and the button', () => {
     assert.match(submit, /cost > balance\) return;/);
     assert.match(page, /balance == null \|\| cost > balance \|\| missingSource/);
     assert.match(page, />\{generationCostLabel\(cost\)\}<\/div>/);
-    assert.match(page, /cost === 0 \? 'for free' : `for \$\{creditLabel\(cost\)\}`/);
+    assert.match(page, /cost===0\?'app.create.generateFree':'app.create.generatePaid',\{credits:creditLabel\(cost\)\}/);
 });
 
 test('each source is uploaded once, before any request, and reused by all', () => {
@@ -65,7 +66,7 @@ test('one interval polls every in-flight job and keeps the give-up', () => {
     assert.match(hook, /markJobSettled\(id, next\.state\);/);
     assert.match(hook, /notifyBalanceChanged\(\);/);
     assert.match(hook, /gatewayFetch\(`\/jobs\/\$\{id\}\/asset`\)/);
-    assert.match(page, /setError\(\{ code: 'poll_unreachable' \}\)/);
+    assert.match(page, /setError\(LOCAL_ERRORS\.poll_unreachable\)/);
 });
 
 test('one job keeps the single canvas; more get the grid', () => {

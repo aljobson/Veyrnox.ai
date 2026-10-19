@@ -1,4 +1,8 @@
 'use client';
+import { helperCopy } from '../../../../lib/i18n/helperCopy.mjs';
+import { useI18n } from '../../../../components/I18nProvider';
+import { localeTag } from '../../../../lib/i18n/locales.mjs';
+import { tOr } from '../../../../lib/i18n/translate.mjs';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { AppNav } from '../../_components/NavBar';
@@ -12,6 +16,7 @@ const initialSettings = { smoothing: 30, look: 'natural', intensity: 100 };
 const rangeStyle = 'mt-3 w-full accent-vx-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-vx-accent';
 
 function Editor() {
+  const { t, locale } = useI18n();
     const video = useRef(null), canvas = useRef(null), engine = useRef(null), alive = useRef(true), failed = useRef(false), sourceEpoch = useRef(0);
     const [source, setSource] = useState(null), [duration, setDuration] = useState(0);
     const [aspect, setAspect] = useState(16 / 9);
@@ -20,7 +25,7 @@ function Editor() {
     const [state, setState] = useState('empty'), [error, setError] = useState(''), [result, setResult] = useState(null);
     const exporting = state === 'exporting';
     useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
-    useEffect(() => () => { if (source) URL.revokeObjectURL(source.url); }, [source]);
+    useEffect(() => () => { if (source) URL.revokeObjectURL(source.url); }, [source, t]);
     useEffect(() => () => { if (result) URL.revokeObjectURL(result.url); }, [result]);
     useEffect(() => {
         if (!source) return;
@@ -30,7 +35,7 @@ function Editor() {
         const deadline = createSetupDeadline(() => {
             element.removeEventListener('loadeddata', setup);
             element.pause();
-            setError('Video setup timed out. Choose the video again to retry, or try another clip.'); setState('error');
+            setError(t("app.enhance.timeout")); setState('error');
         });
         const { signal } = deadline;
         async function setup() {
@@ -52,7 +57,7 @@ function Editor() {
                     message => { if (!signal.aborted) { failed.current = true; setError(message); setState('error'); } }, signal);
                 if (signal.aborted) { instance.close(); instance = undefined; return; }
                 engine.current = instance; setState(failed.current ? 'error' : 'ready');
-            } catch { if (!signal.aborted) { setError('The face tracker could not load. Prepare the local preview assets and reload, or try desktop Chrome.'); setState('error'); } }
+            } catch { if (!signal.aborted) { setError(t("app.enhance.trackerFailed")); setState('error'); } }
             finally { deadline.finish(); }
         }
         element.addEventListener('loadeddata', setup, { once: true });
@@ -61,7 +66,7 @@ function Editor() {
             deadline.cancel(); element.removeEventListener('loadeddata', setup);
             instance?.close(); if (engine.current === instance) engine.current = null;
         };
-    }, [source]);
+    }, [source, t]);
     useEffect(() => { if (state === 'ready') engine.current?.setSettings(settings); }, [settings, state]);
 
     function choose(event) {
@@ -82,7 +87,7 @@ function Editor() {
         try {
             if (element.paused) await activeEngine.play(); else activeEngine.pause();
             if (isCurrent()) setFrame(previous => ({ ...previous, playing: !element.paused }));
-        } catch { if (isCurrent()) setError('Playback could not start. Try a different clip.'); }
+        } catch { if (isCurrent()) setError(t("app.enhance.playbackFailed")); }
     }
     function seek(seconds) {
         const epoch = sourceEpoch.current;
@@ -106,40 +111,40 @@ function Editor() {
     }
     return <>
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-            <p className="max-w-2xl text-sm leading-relaxed text-vx-fg-body">Choose a short clip, adjust the look, and download a copy. Your video stays in this browser. This experimental preview uses no credits.</p>
+            <p className="max-w-2xl text-sm leading-relaxed text-vx-fg-body">{t("app.enhance.intro")}</p>
             <label className={`inline-flex shrink-0 cursor-pointer rounded-full border border-vx-border px-5 py-3 text-sm font-bold focus-within:outline focus-within:outline-2 focus-within:outline-vx-accent ${exporting ? 'opacity-40' : ''}`}>
-                {source ? 'Choose another video' : 'Choose video'}<input aria-label="Choose video" className="sr-only" type="file" accept="video/mp4,video/webm,video/quicktime" disabled={exporting} onChange={choose} />
+                {source ? t("app.enhance.chooseAnother") : t("label.Choose video")}<input data-testid="enhance-upload" aria-label={t("label.Choose video")} className="sr-only" type="file" accept="video/mp4,video/webm,video/quicktime" disabled={exporting} onChange={choose} />
             </label>
         </div>
-        {error && <p role="alert" className="mb-5 rounded-xl border border-vx-danger p-4 text-sm">{error}</p>}
+        {error && <p role="alert" className="mb-5 rounded-xl border border-vx-danger p-4 text-sm">{helperCopy(t, locale, error)}</p>}
         <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
-            <section aria-label="Video comparison" className="min-w-0 overflow-hidden rounded-2xl border border-vx-border bg-vx-panel">
-                <div className="flex items-center justify-between gap-3 border-b border-vx-border px-5 py-4 text-xs text-vx-fg-muted"><span className="min-w-0 truncate">{source ? source.file.name : 'Your next edit starts here'}</span><span className="shrink-0">{duration && source ? `${duration.toFixed(1)}s` : 'UP TO 15 SECONDS'}</span></div>
-                {!source ? <div className="flex min-h-80 flex-col items-center justify-center gap-3 p-8 text-center"><span aria-hidden="true" className="text-4xl text-vx-accent">▷</span><h2 className="text-xl font-bold">A natural finish. Still you.</h2><p className="max-w-sm text-sm leading-relaxed text-vx-fg-muted">Start with a single-person clip. MP4, WebM or MOV, up to 100 MiB and a longest edge of 1920 pixels.</p></div>
+            <section aria-label={t("app.enhance.comparison")} className="min-w-0 overflow-hidden rounded-2xl border border-vx-border bg-vx-panel">
+                <div className="flex items-center justify-between gap-3 border-b border-vx-border px-5 py-4 text-xs text-vx-fg-muted"><span className="min-w-0 truncate">{source ? source.file.name : t("app.enhance.empty")}</span><span className="shrink-0">{duration && source ? `${duration.toLocaleString(localeTag(locale, 'en-US'), { minimumFractionDigits: 1, maximumFractionDigits: 1, useGrouping: false })}s` : t("app.enhance.limit")}</span></div>
+                {!source ? <div className="flex min-h-80 flex-col items-center justify-center gap-3 p-8 text-center"><span aria-hidden="true" className="text-4xl text-vx-accent">▷</span><h2 className="text-xl font-bold">{t("app.enhance.natural")}</h2><p className="max-w-sm text-sm leading-relaxed text-vx-fg-muted">{t("app.enhance.requirements")}</p></div>
                     : <div className="grid gap-px bg-vx-border sm:grid-cols-2">
-                        <figure className="min-w-0 bg-vx-base p-3"><figcaption className="mb-2 text-xs font-bold text-vx-fg-muted">ORIGINAL</figcaption><video key={source.url} ref={video} src={source.url} playsInline preload="auto" style={{ aspectRatio: aspect }} className="max-h-[460px] w-full bg-black object-contain" onError={() => { failed.current = true; setError('This browser could not decode that video. Try an MP4 clip.'); setState('error'); }} onEnded={() => setFrame(previous => ({ ...previous, playing: false }))} /></figure>
-                        <figure className="min-w-0 bg-vx-base p-3"><figcaption className="mb-2 text-xs font-bold text-vx-accent">ENHANCED</figcaption><canvas key={source.url} ref={canvas} aria-label="Enhanced video preview" style={{ aspectRatio: aspect }} className="max-h-[460px] w-full bg-black object-contain" /></figure>
+                        <figure className="min-w-0 bg-vx-base p-3"><figcaption className="mb-2 text-xs font-bold text-vx-fg-muted">{t("app.enhance.original")}</figcaption><video key={source.url} ref={video} src={source.url} playsInline preload="auto" style={{ aspectRatio: aspect }} className="max-h-[460px] w-full bg-black object-contain" onError={() => { failed.current = true; setError(t("app.enhance.decodeFailed")); setState('error'); }} onEnded={() => setFrame(previous => ({ ...previous, playing: false }))} /></figure>
+                        <figure className="min-w-0 bg-vx-base p-3"><figcaption className="mb-2 text-xs font-bold text-vx-accent">{t("app.enhance.enhanced")}</figcaption><canvas key={source.url} ref={canvas} aria-label={t("app.enhance.preview")} style={{ aspectRatio: aspect }} className="max-h-[460px] w-full bg-black object-contain" /></figure>
                     </div>}
                 {source && <div className="space-y-3 border-t border-vx-border p-4">
-                    <label className="block text-xs text-vx-fg-muted">Playback position <span className="float-right">{frame.time.toFixed(1)} / {duration.toFixed(1)}s</span>
+                    <label className="block text-xs text-vx-fg-muted">{t("app.enhance.position")}{' '}<span className="float-end">{frame.time.toLocaleString(localeTag(locale, 'en-US'), { minimumFractionDigits: 1, maximumFractionDigits: 1, useGrouping: false })} / {duration.toLocaleString(localeTag(locale, 'en-US'), { minimumFractionDigits: 1, maximumFractionDigits: 1, useGrouping: false })}s</span>
                         <input className={rangeStyle} type="range" min="0" max={duration || 1} step="0.01" value={Math.min(frame.time,duration)} disabled={state !== 'ready'} onChange={event => seek(Number(event.target.value))} />
                     </label>
-                    <Button size="sm" variant="ghost" disabled={state !== 'ready'} onClick={play}>{frame.playing ? 'Pause' : 'Play comparison'}</Button>
-                    <p role="status" className="text-xs leading-relaxed text-vx-fg-muted">{state === 'error' ? 'Preview stopped. Choose the video again to retry.' : state === 'loading' ? 'Preparing face tracking…' : settings.smoothing === 0 ? 'Skin smoothing is off.' : frame.faces === 1 ? 'One face tracked. Smoothing is applied to the face region.' : frame.faces > 1 ? 'Multiple faces detected. Smoothing is paused; colour settings still apply.' : 'No face tracked. Smoothing is paused; colour settings still apply.'}</p>
+                    <Button size="sm" variant="ghost" disabled={state !== 'ready'} onClick={play}>{frame.playing ? t("cinema.videoUpload.pause") : t("app.enhance.play")}</Button>
+                    <p role="status" className="text-xs leading-relaxed text-vx-fg-muted">{state === 'error' ? t("app.enhance.stopped") : state === 'loading' ? t("app.enhance.preparing") : settings.smoothing === 0 ? t("app.enhance.smoothingOff") : frame.faces === 1 ? t("app.enhance.oneFace") : frame.faces > 1 ? t("app.enhance.multipleFaces") : t("app.enhance.noFace")}</p>
                 </div>}
             </section>
-            <aside aria-label="Adjustments" className="space-y-6 rounded-2xl border border-vx-border p-5">
-                <div className="flex items-center justify-between"><h2 className="text-lg font-bold">Adjustments</h2><button type="button" className="text-xs text-vx-accent underline disabled:opacity-40" disabled={state !== 'ready'} onClick={() => update(initialSettings)}>Reset</button></div>
-                <label className="block text-sm font-bold">Skin smoothing <span className="float-right font-vx-mono text-vx-fg-muted">{settings.smoothing}%</span><input className={rangeStyle} type="range" min="0" max="100" value={settings.smoothing} disabled={state !== 'ready'} onChange={event => update({ smoothing: Number(event.target.value) })} /></label>
-                <p className="text-xs leading-relaxed text-vx-fg-muted">Start low to retain texture. Smoothing can also affect hands or hair covering the face. Turn it off for those clips, and check eyes and head turns before keeping your export.</p>
-                <fieldset disabled={state !== 'ready'}><legend className="mb-3 text-sm font-bold">Colour look</legend><div className="grid grid-cols-2 gap-2">{VIDEO_LOOKS.map(look => <button type="button" key={look.id} aria-pressed={settings.look === look.id} onClick={() => update({ look: look.id })} className={`rounded-xl border px-3 py-3 text-xs font-bold disabled:opacity-40 ${settings.look === look.id ? 'border-vx-accent text-vx-accent' : 'border-vx-border text-vx-fg-muted'}`}>{look.label}</button>)}</div></fieldset>
-                <label className="block text-sm font-bold">Look intensity <span className="float-right font-vx-mono text-vx-fg-muted">{settings.intensity}%</span><input className={rangeStyle} type="range" min="0" max="100" value={settings.intensity} disabled={state !== 'ready' || settings.look === 'natural'} onChange={event => update({ intensity: Number(event.target.value) })} /></label>
+            <aside data-assistant-target="enhance.adjustments" aria-label={t("app.enhance.adjustments")} className="space-y-6 rounded-2xl border border-vx-border p-5">
+                <div className="flex items-center justify-between"><h2 className="text-lg font-bold">{t("app.enhance.adjustments")}</h2><button type="button" className="text-xs text-vx-accent underline disabled:opacity-40" disabled={state !== 'ready'} onClick={() => update(initialSettings)}>{t("app.enhance.reset")}</button></div>
+                <label className="block text-sm font-bold">{t("app.enhance.smoothing")}{' '}<span className="float-end font-vx-mono text-vx-fg-muted">{settings.smoothing.toLocaleString(localeTag(locale, 'en-US'))}%</span><input className={rangeStyle} type="range" min="0" max="100" value={settings.smoothing} disabled={state !== 'ready'} onChange={event => update({ smoothing: Number(event.target.value) })} /></label>
+                <p className="text-xs leading-relaxed text-vx-fg-muted">{t("app.enhance.smoothingHelp")}</p>
+                <fieldset disabled={state !== 'ready'}><legend className="mb-3 text-sm font-bold">{t("app.enhance.look")}</legend><div className="grid grid-cols-2 gap-2">{VIDEO_LOOKS.map(look => <button type="button" key={look.id} aria-pressed={settings.look === look.id} onClick={() => update({ look: look.id })} className={`rounded-xl border px-3 py-3 text-xs font-bold disabled:opacity-40 ${settings.look === look.id ? 'border-vx-accent text-vx-accent' : 'border-vx-border text-vx-fg-muted'}`}>{tOr(t, `app.enhance.look.${look.id}`, look.label)}</button>)}</div></fieldset>
+                <label className="block text-sm font-bold">{t("app.enhance.intensity")}{' '}<span className="float-end font-vx-mono text-vx-fg-muted">{settings.intensity.toLocaleString(localeTag(locale, 'en-US'))}%</span><input className={rangeStyle} type="range" min="0" max="100" value={settings.intensity} disabled={state !== 'ready' || settings.look === 'natural'} onChange={event => update({ intensity: Number(event.target.value) })} /></label>
                 <div className="space-y-3 border-t border-vx-border pt-5">
-                    {exportWarning && <p id="export-warning" role="status" className="rounded-xl border border-vx-border bg-vx-panel p-3 text-xs leading-relaxed text-vx-fg-body"><strong className="block mb-1">Preview only</strong>{exportWarning} You can still preview and adjust this clip.</p>}
-                    <Button className="w-full justify-center" aria-describedby={exportWarning ? 'export-warning' : undefined} disabled={state !== 'ready' || Boolean(exportWarning)} onClick={exportVideo}>{exporting ? 'Exporting…' : exportWarning ? 'Export unavailable' : 'Export video'}</Button>
-                    {exporting && <><progress aria-label="Export progress" className="w-full accent-vx-accent" value={frame.time} max={duration} /><Button variant="ghost" size="sm" onClick={() => engine.current?.cancel()}>Cancel export</Button></>}
-                    <p className="text-xs leading-relaxed text-vx-fg-muted">Keep this tab visible during export. Export supports MP4 input with one video track and up to one AAC audio track. Subtitles and descriptive metadata are not included. Output is H.264 MP4 when this browser supports it.</p>
-                    {result && <div role="status"><a className="inline-block break-words text-sm font-bold text-vx-accent underline" href={result.url} download={result.name}>Download {result.type.startsWith('video/mp4') ? 'MP4' : 'WebM'}</a><p className="mt-2 text-xs text-vx-fg-muted">Saved locally when downloaded. Not added to Library.</p></div>}
+                    {exportWarning && <p id="export-warning" role="status" className="rounded-xl border border-vx-border bg-vx-panel p-3 text-xs leading-relaxed text-vx-fg-body"><strong className="block mb-1">{t("app.enhance.previewOnly")}</strong>{exportWarning}{' '}{t("app.enhance.previewHelp")}</p>}
+                    <Button data-testid="enhance-export" className="w-full justify-center" aria-describedby={exportWarning ? 'export-warning' : undefined} disabled={state !== 'ready' || Boolean(exportWarning)} onClick={exportVideo}>{exporting ? t("app.enhance.exporting") : exportWarning ? t("app.enhance.exportUnavailable") : t("app.editor.workspace.exportVideo")}</Button>
+                    {exporting && <><progress aria-label={t("app.editor.legacy.exportProgress")} className="w-full accent-vx-accent" value={frame.time} max={duration} /><Button variant="ghost" size="sm" onClick={() => engine.current?.cancel()}>{t("app.editor.legacy.cancelExport")}</Button></>}
+                    <p className="text-xs leading-relaxed text-vx-fg-muted">{t("app.enhance.exportHelp")}</p>
+                    {result && <div role="status"><a className="inline-block break-words text-sm font-bold text-vx-accent underline" href={result.url} download={result.name}>{t("label.Download")}{' '}{result.type.startsWith('video/mp4') ? t("app.enhance.format.mp4") : t("app.enhance.format.webm")}</a><p className="mt-2 text-xs text-vx-fg-muted">{t("app.enhance.localDownload")}</p></div>}
                 </div>
             </aside>
         </div>
@@ -147,9 +152,10 @@ function Editor() {
 }
 
 export default function VideoEnhance() {
+  const { t, locale } = useI18n();
     const enabled = useVideoEnhancePreview();
     return <><AppNav active="enhance" readAccount={false} /><Main className="mx-auto max-w-6xl px-4 py-8 sm:px-8 sm:py-12">
-        <p className="mb-2 font-vx-mono text-xs tracking-widest text-vx-accent">LOCAL PREVIEW</p><h1 className="mb-3 text-3xl font-black sm:text-4xl">Video Enhance</h1>
-        {enabled ? <Editor /> : <section className="mt-6 rounded-2xl border border-vx-border p-8"><h2 className="text-lg font-bold">Preview unavailable</h2><p className="mt-2 text-sm text-vx-fg-muted">Video Enhance is available only in an enabled local development preview.</p>{process.env.NODE_ENV === 'development' && <Button className="mt-5 mr-5" onClick={() => { try { localStorage.setItem('veyrnox_video_enhance', '1'); window.dispatchEvent(new Event('storage')); } catch { /* Storage unavailable: keep the preview closed. */ } }}>Enable local preview</Button>}<Link className="mt-5 inline-block text-vx-accent underline" href="/app">Back to Explore</Link></section>}
+        <p className="mb-2 font-vx-mono text-xs tracking-widest text-vx-accent">{t("app.enhance.localPreview")}</p><h1 data-testid="enhance-title" className="mb-3 text-3xl font-black sm:text-4xl">{t("app.enhance.title")}</h1>
+        {enabled ? <Editor /> : <section className="mt-6 rounded-2xl border border-vx-border p-8"><h2 data-testid="enhance-unavailable" className="text-lg font-bold">{t("app.enhance.unavailable")}</h2><p data-testid="enhance-local-only" className="mt-2 text-sm text-vx-fg-muted">{t("app.enhance.localOnly")}</p>{process.env.NODE_ENV === 'development' && <Button className="mt-5 me-5" onClick={() => { try { localStorage.setItem('veyrnox_video_enhance', '1'); window.dispatchEvent(new Event('storage')); } catch { /* Storage unavailable: keep the preview closed. */ } }}>{t("app.enhance.enable")}</Button>}<Link className="mt-5 inline-block text-vx-accent underline" href="/app">{t("app.projects.backExplore")}</Link></section>}
     </Main></>;
 }

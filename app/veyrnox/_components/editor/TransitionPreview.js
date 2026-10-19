@@ -4,7 +4,6 @@ import { transitionPreview } from '../../_lib/editorGuidance.mjs';
 import { NEW_TRANSITION_IDS } from '../../_lib/editorTransitionGeometry.mjs';
 import { paintTransitionPreview } from '../../_lib/editorTransitionPreviewPaint.mjs';
 
-const layer = 'absolute inset-0 flex items-center justify-center text-lg font-black text-white';
 const PREVIEW_WIDTH = 192, PREVIEW_HEIGHT = 108, CYCLE_MS = 1800, HOLD_MS = 400;
 const reducedMotion = () => typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
@@ -44,8 +43,8 @@ export function TransitionPreview({ id }) {
     if (drawn) return <CanvasPreview id={id} />;
     const plan = transitionPreview(id);
     return <span aria-hidden="true" className="relative block aspect-video overflow-hidden rounded-md bg-slate-900">
-        <span ref={outgoing} className={`${layer} bg-cyan-500`}>A</span>
-        <span ref={incoming} className={`${layer} bg-fuchsia-600`}>B</span>
-        {plan.overlay && <span ref={overlay} className={`${layer} ${id === 'flash' ? 'bg-white' : 'bg-black'} opacity-0`} />}
+        <span ref={outgoing} className={`absolute inset-0 flex items-center justify-center text-lg font-black text-white bg-cyan-500`}>A</span>
+        <span ref={incoming} className={`absolute inset-0 flex items-center justify-center text-lg font-black text-white bg-fuchsia-600`}>B</span>
+        {plan.overlay && <span ref={overlay} className={`absolute inset-0 flex items-center justify-center text-lg font-black text-white ${id === 'flash' ? 'bg-white' : 'bg-black'} opacity-0`} />}
     </span>;
 }

@@ -1,3 +1,4 @@
+import { englishAppImports } from './helpers/appI18nStub.mjs';
 import test from 'node:test';
 import { richParts } from '../lib/i18n/translate.mjs';
 import assert from 'node:assert/strict';
@@ -18,7 +19,7 @@ const read = path => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8'
 function load(path, stubs = {}) {
   const output = { exports: {} };
   const code = ts.transpileModule(read(path), { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS } }).outputText;
-  new Function('require', 'module', 'exports', code)(id => id === '../../_lib/authenticatedMedia' ? contracts : stubs[id] || require(id), output, output.exports);
+  new Function('require', 'module', 'exports', code)(id => id === '../../_lib/authenticatedMedia' ? contracts : stubs[id] || englishAppImports[id] || require(id), output, output.exports);
   return output.exports;
 }
 const record = capabilityFor('bytedance/seedance-2.0-fast');
@@ -94,7 +95,7 @@ function agent(balance, loading = false) {
   return renderToStaticMarkup(React.createElement(Page));
 }
 test('Video Agent offers a read-only balance retry and never enables paid approval until balance is confirmed', () => {
-  const approval = html => html.match(/<button[^>]*>Approve and make it[^<]*<\/button>/)?.[0];
+  const approval = html => html.match(/<button[^>]*data-testid="agent-approve"[^>]*>[^<]*<\/button>/)?.[0];
   assert.match(approval(agent(null)), /\sdisabled=/);
   assert.match(agent(null), />Retry balance</);
   assert.doesNotMatch(agent(null), /You need 165 more/);
@@ -131,7 +132,7 @@ test('the closed mobile assistant docks above the editor section controls withou
   const mocks = {
     innerWidth: 390, innerHeight: 844, requestAnimationFrame: callback => { callback(); return 1; }, cancelAnimationFrame() {},
     ResizeObserver: class { observe() {} disconnect() {} }, MutationObserver: class { observe() {} disconnect() {} },
-    document: { documentElement: { style: {} }, body: {}, querySelector: selector => selector.includes('Mobile editor sections') ? nav : null },
+    document: { documentElement: { style: {} }, body: {}, querySelector: selector => selector.includes('editor-sections') ? nav : null },
     window: { addEventListener() {}, removeEventListener() {} },
   };
   const previous = Object.fromEntries(Object.keys(mocks).map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]));

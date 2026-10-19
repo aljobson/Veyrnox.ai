@@ -1,3 +1,4 @@
+import { helperEnglish } from '../../../lib/helperMessages.mjs';
 const text=(v,max)=>typeof v==='string'&&v.length<=max&&!/[\u0000-\u001f\u007f]/.test(v);
 const exact=(v,keys)=>v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).length===keys.length&&Object.keys(v).every(k=>keys.includes(k));
 export const FONT_LIMITS=Object.freeze({count:8,bytes:2*1024*1024});
@@ -7,15 +8,15 @@ export function folderProblem(value){
     return !text(value,80)||!value||value.split('/').length>4||value.split('/').some(p=>!p||p!==p.trim()||p==='.'||p==='..'||/[\\:*?<>|]/.test(p))?'Use a folder path up to 80 characters and four levels.':null;
 }
 export function fontMetadataProblem(f){
-    if(!exact(f,['family','name','sourceName','sha256','bytes','format','rights'])||!text(f.name,80)||!f.name.trim()||!text(f.sourceName,255)||!f.sourceName||!/^[a-f0-9]{64}$/.test(f.sha256)||f.family!==customFontFamily(f.sha256)||!Number.isInteger(f.bytes)||f.bytes<12||f.bytes>FONT_LIMITS.bytes||!['ttf','otf','woff','woff2'].includes(f.format))return 'Invalid custom font metadata.';
-    const r=f.rights;if(!exact(r,['credit','usage','url'])||!text(r.credit,120)||!text(r.usage,240)||!r.usage.trim()||!text(r.url,1000))return 'Record the font source and permission to use it.';
-    if(r.url){try{const u=new URL(r.url);if(u.protocol!=='https:'||u.username||u.password)return 'Use an HTTPS font licence URL.';}catch{return 'Use an HTTPS font licence URL.';}}
+    if(!exact(f,['family','name','sourceName','sha256','bytes','format','rights'])||!text(f.name,80)||!f.name.trim()||!text(f.sourceName,255)||!f.sourceName||!/^[a-f0-9]{64}$/.test(f.sha256)||f.family!==customFontFamily(f.sha256)||!Number.isInteger(f.bytes)||f.bytes<12||f.bytes>FONT_LIMITS.bytes||!['ttf','otf','woff','woff2'].includes(f.format))return helperEnglish('invalid_custom_font_metadata');
+    const r=f.rights;if(!exact(r,['credit','usage','url'])||!text(r.credit,120)||!text(r.usage,240)||!r.usage.trim()||!text(r.url,1000))return helperEnglish('record_the_font_source_and_permission_to_use');
+    if(r.url){try{const u=new URL(r.url);if(u.protocol!=='https:'||u.username||u.password)return helperEnglish('use_an_https_font_licence_url');}catch{return helperEnglish('use_an_https_font_licence_url');}}
     return null;
 }
 export function organizationProblem(tl){
-    if(tl.folders!==undefined&&(!Array.isArray(tl.folders)||tl.folders.length>40||new Set(tl.folders).size!==tl.folders.length||tl.folders.some(folderProblem)))return 'Use up to 40 distinct valid folder paths.';
-    if(tl.fonts!==undefined&&(!Array.isArray(tl.fonts)||tl.fonts.length>FONT_LIMITS.count||new Set(tl.fonts.map(f=>f?.family)).size!==tl.fonts.length||tl.fonts.some(fontMetadataProblem)))return 'Use up to eight valid custom fonts with recorded rights.';
-    for(const c of Array.isArray(tl.text)?tl.text:[])if(isCustomFontFamily(c?.style?.font)&&!tl.fonts?.some(f=>f.family===c.style.font))return 'Relink a declared custom font before using it.';
+    if(tl.folders!==undefined&&(!Array.isArray(tl.folders)||tl.folders.length>40||new Set(tl.folders).size!==tl.folders.length||tl.folders.some(folderProblem)))return helperEnglish('use_up_to_40_distinct_valid_folder_paths');
+    if(tl.fonts!==undefined&&(!Array.isArray(tl.fonts)||tl.fonts.length>FONT_LIMITS.count||new Set(tl.fonts.map(f=>f?.family)).size!==tl.fonts.length||tl.fonts.some(fontMetadataProblem)))return helperEnglish('use_up_to_eight_valid_custom_fonts_with');
+    for(const c of Array.isArray(tl.text)?tl.text:[])if(isCustomFontFamily(c?.style?.font)&&!tl.fonts?.some(f=>f.family===c.style.font))return helperEnglish('relink_a_declared_custom_font_before_using_it');
     return null;
 }
 export function folderPaths(tl){

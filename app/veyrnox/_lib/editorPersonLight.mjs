@@ -1,14 +1,15 @@
+import { helperEnglish } from '../../../lib/helperMessages.mjs';
 import {assertPicture} from './editorMotionAnalysis.mjs';
 import {assertVisionMasks} from './editorVisionPixelProcessing.mjs';
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const linear=v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4;
 const srgb=v=>v<=.0031308?v*12.92:1.055*v**(1/2.4)-.055;
 export function personLightProblem(s){
- if(!Number.isFinite(s.lightAngle)||s.lightAngle < -180||s.lightAngle>180)return 'Choose a light direction between −180° and 180°.';
- if(!Number.isFinite(s.lightExposure)||s.lightExposure<0||s.lightExposure>1.5)return 'Choose light intensity between 0 and 1.5 stops.';
- if(!Number.isFinite(s.lightAmbient)||s.lightAmbient<-.5||s.lightAmbient>.5)return 'Choose ambient light between −0.5 and 0.5 stops.';
- if(!Array.isArray(s.colour)||s.colour.length!==3||!s.colour.every(v=>Number.isInteger(v)&&v>=0&&v<=255))return 'Choose a valid light colour.';
- if(!s.lightExposure&&!s.lightAmbient)return 'Increase the light intensity or change the ambient light.';
+ if(!Number.isFinite(s.lightAngle)||s.lightAngle < -180||s.lightAngle>180)return helperEnglish('choose_a_light_direction_between_180_and_180');
+ if(!Number.isFinite(s.lightExposure)||s.lightExposure<0||s.lightExposure>1.5)return helperEnglish('choose_light_intensity_between_0_and_15_stops');
+ if(!Number.isFinite(s.lightAmbient)||s.lightAmbient<-.5||s.lightAmbient>.5)return helperEnglish('choose_ambient_light_between_05_and_05_stops');
+ if(!Array.isArray(s.colour)||s.colour.length!==3||!s.colour.every(v=>Number.isInteger(v)&&v>=0&&v<=255))return helperEnglish('choose_a_valid_light_colour');
+ if(!s.lightExposure&&!s.lightAmbient)return helperEnglish('increase_the_light_intensity_or_change_the_ambient');
  return null;
 }
 /** Directional 2D colour/exposure across a semantic person matte; never estimates surface depth. */

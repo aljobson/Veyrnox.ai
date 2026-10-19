@@ -1,9 +1,10 @@
+import { helperEnglish } from '../../../lib/helperMessages.mjs';
 const clamp=(n,a=0,b=1)=>Math.max(a,Math.min(b,n));
 export const SMART_PICTURE=Object.freeze({denoise:0,keyEnabled:false,keyColor:'#00ff00',keyTolerance:.12,keyFeather:.1,despill:.5,light:0,lightX:.5,lightY:.5,lightRadius:.6});
 export function smartPictureProblem(v) {
     if(v===undefined)return null;
     const bounds={denoise:[0,1],keyTolerance:[0,1],keyFeather:[.001,1],despill:[0,1],light:[-2,2],lightX:[0,1],lightY:[0,1],lightRadius:[.05,2]};
-    if(!v || typeof v!=='object' || Array.isArray(v) || Object.keys(v).length!==Object.keys(SMART_PICTURE).length || Object.keys(v).some(k=>!Object.hasOwn(SMART_PICTURE,k)) || typeof v.keyEnabled!=='boolean' || !/^#[0-9a-f]{6}$/i.test(v.keyColor) || Object.entries(bounds).some(([k,[a,b]])=>!Number.isFinite(v[k]) || v[k]<a || v[k]>b))return 'Invalid local picture processing.';
+    if(!v || typeof v!=='object' || Array.isArray(v) || Object.keys(v).length!==Object.keys(SMART_PICTURE).length || Object.keys(v).some(k=>!Object.hasOwn(SMART_PICTURE,k)) || typeof v.keyEnabled!=='boolean' || !/^#[0-9a-f]{6}$/i.test(v.keyColor) || Object.entries(bounds).some(([k,[a,b]])=>!Number.isFinite(v[k]) || v[k]<a || v[k]>b))return helperEnglish('invalid_local_picture_processing');
     return null;
 }
 const chroma=(r,g,b)=>[-.168736*r-.331264*g+.5*b,.5*r-.418688*g-.081312*b];

@@ -1,3 +1,4 @@
+import { resolveI18nSource } from '../scripts/lib/vey-knowledge-i18n.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -9,7 +10,7 @@ import {
 } from '../app/veyrnox/_lib/starterModels.js';
 import { MODELS } from '../app/veyrnox/_lib/tokens.js';
 
-const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
+const read = (path) => resolveI18nSource(readFileSync(new URL(`../${path}`, import.meta.url), 'utf8'));
 
 const models = [
   { id: 'video-cheap', name: 'Video cheap', kind: 'video', credits: 3, media: {}, takesPrompt: true },
@@ -82,5 +83,6 @@ test('catalog quote state is tri-state and stale prices cannot submit', () => {
 test('Create explains commercial-rights uncertainty and links the Terms', () => {
   const page = read('app/veyrnox/app/create/page.js');
   assert.match(page, /Commercial use depends on the selected model and provider terms/);
-  assert.match(page, /<Link href="\/legal\/terms"[\s\S]*>Terms<\/Link>/);
+  assert.match(readFileSync(new URL('../app/veyrnox/app/create/page.js', import.meta.url), 'utf8'), /terms:<Link href="\/legal\/terms"/);
+  assert.match(page, /Check the Terms before publishing/);
 });

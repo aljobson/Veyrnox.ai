@@ -1,0 +1,67 @@
+[
+  {
+    "area": "developer",
+    "name": "ApiKeys",
+    "text": "Create API keyKey nameExpires30 days90 days1 yearPermissionsRead connected accountsaccounts:readRead posts and delivery statusposts:readCreate postsposts:writeCreate keyAPI keysUser key namefixture… · posts:readExpires 1/1/2099 · Last used 10/18/2026, 12:00:00 PMRevokeEndpointsSend Authorization: Bearer YOUR_KEY to GET /api/publish/v1/accounts and GET or POST /api/publish/v1/posts. Responses are JSON and keys are limited to 120 requests per minute."
+  },
+  {
+    "area": "developer",
+    "name": "ApiLogs",
+    "text": "API request logsInspect recent customer API outcomes without exposing request bodies or credentials.RefreshExport CSVSearchStatusAllSuccessErrorsPendingRouteAllAccountsPostsApplyLiveTimeAPI keyRequestStatusError10/18/2026, 12:00:00 PMUser key name…GET /api/publish/v1/posts429rate_limited"
+  },
+  {
+    "area": "developer",
+    "name": "Webhooks",
+    "text": "WebhooksReceive signed delivery events in your own system. Failed requests retry up to eight times.Add endpointEndpoint nameHTTPS URLEventsPost publishedpost.publishedDraft deliveredpost.deliveredPost failedpost.failedAdd endpointEndpointsUser webhookhttps://example.invalid/hookpost.published · RevokedRecent deliveriesEventEndpointStatusAttemptspost.publishedUser webhookretrying · HTTP 5031234"
+  },
+  {
+    "area": "inbox",
+    "name": "Upgrade",
+    "text": "Publish PlanUnlock the social inboxThe unified inbox, per-account views, conversation status and supported replies are included with the $15 monthly Publish Plan.View Publish Plan"
+  },
+  {
+    "area": "inbox",
+    "name": "Conversation",
+    "text": "User nameInstagram · message · User accountResolveAssigned toUnassignedPriorityNormalHighUrgentTags, separated by commasSaveUser message unchangedOct 18, 2026, 12:00 PMInternal notesNo team notes yet.Add noteYour team role can read this conversation and manage its workflow, but cannot reply."
+  },
+  {
+    "area": "calendar",
+    "name": "PostCard",
+    "text": "12:00 PM · scheduledUser caption unchangedTikTok: delivered, finish in TikTokReschedule User caption unchangedCancel post User caption unchanged"
+  },
+  {
+    "area": "calendar",
+    "name": "CalendarControls",
+    "text": "Publish PlanUnlock schedulingThe calendar, scheduled posts and rescheduling are included with the Publish Plan.View Publish Plan"
+  },
+  {
+    "area": "generation",
+    "name": "GenerationPanel",
+    "text": "AI voiceoverUses the existing Studio speech models and credit balance. Review the live quote before generating. Finished speech can be added as an editable audio track.No speech model is currently available in the live catalog.Audio toolGenerate voiceoverSeparate vocals and instruments— credits · Balance unavailableGenerateRefresh balanceChoose device files or existing Library media as generation sources. Closing this panel leaves accepted jobs running; completed media remains in your Library."
+  },
+  {
+    "area": "generation",
+    "name": "GenerationPanel",
+    "text": "AI avatar and lip syncAnimate an owned photo or video with your speech audio. The output follows the audio; source limits are checked before any credit debit. Generate speech in Audio, then select its finished Library result here. Review the live quote before generating.No avatar or lip sync model is currently available in the live catalog.— credits · Balance unavailableGenerateRefresh balanceChoose device files or existing Library media as generation sources. Closing this panel leaves accepted jobs running; completed media remains in your Library."
+  },
+  {
+    "area": "generation",
+    "name": "GenerationPanel",
+    "text": "Vocals and instrumentsNo separation model is currently available in the live catalog.Audio toolGenerate voiceoverSeparate vocals and instrumentsOne quoted job separates owned MP3/WAV audio up to 120 seconds into vocals, drums, bass, other, guitar and piano. The flat quote covers the source limit. Sources are inspected before any debit.— credits · Balance unavailableSeparate audioRefresh balanceChoose device files or existing Library media as generation sources. Closing this panel leaves accepted jobs running; completed media remains in your Library."
+  },
+  {
+    "area": "oddlings",
+    "name": "default",
+    "text": "ODDLING STUDIO · FULL BUILDDesign the whole character.Build a fictional adult creator with a repeatable silhouette, worldview and show—then hand the finished draft to Create.5 TRAITSCreate OddlingMotionODDLING CATALOGPick it, see it.Change anything, anytime, like a character creator. Every choice updates the real generation prompt.HairSculpted WavesOutfitAnyBodyFull-bodiedA simple preview. The final picture is made by AI from these choices.5 chosenClear allWho1Body1SkinHead &amp; faceEyesHair1ClothesHats &amp; extras1LimbsFinish1Kind of character, age and heritageCharacter TypeHumanAnyNone pickedHumanElfAlienMothSpectreFungusAmphibianReptileMantisBeeOctopusCrocodileIguanaLizardBeetleAntCatDogRodentBirdExaggerationAnyAnyNone pickedNo exaggerationBold exaggerationExtreme exaggerationGenderAnyAnyNone pickedWomanManNon-binaryTrans ManTrans WomanAdult AgeAnyAny20s70+HeritageAnyAnyNone pickedAfricanEast AsianEuropeanIndianMiddle EasternMultiracialOPTIONAL REFERENCELocal moodboard preview; describe what to borrow below.Upload photoNAMEVOICEChooseDry oracleTender menaceGrand ceremonyChaotic expertCosmic neighbourWHY PEOPLE FOLLOWRECURRING SHOWChoose a formatHuman object reviewsImpossible weatherTiny field reportsFive-second verdictsConfessions from elsewhereNEVER DRIFT · VISUAL CANONlarge soft body, circular ivory quilted couture, miniature silver handbag, tiny crown, pearl detailsFIRST SCENEFull-body studio introduction, neutral backdrop, silhouette completely visibleScene 1Scene 2Scene 3GENERATION PROMPT PREVIEWPortrait of an original adult character, not a real person, cinematic lighting, sharp detail, human features, full-bodied adult with a large soft build, carefully sculpted vintage waves, comically tiny silver handbag, hyper-realistic 8k photograph, fictional creator named Duchess Volume, interested in tiny snacks, enormous entrances, and whether a room has enough drama, formal, theatrical, ceremonial delivery, gives sharp five-second verdicts on fashion, food, or design, immutable visual canon: large soft body, circular ivory quilted couture, miniature silver handbag, tiny crown, pearl details, full-body editorial creator portrait, complete silhouette visible, character-sheet clarity, slowly turns to camera, waits one beat, then delivers a perfectly deadpan look, Full-body studio introduction, neutral backdrop, silhouette completely visibleRandomize stylingSave passport68 HUMAN ORIGINALS · 4 OTHER BEINGSYour original character, your recurring hit.Explore expressive silhouettes, statement fashion, sculptural hair and contemporary basics. Choose head, body and individual feature sizes independently, then refine your character for portraits and motion. Dancing puppet previews in Explore are free: no generation or credits.ExploreHistory · 0Surprise meChecking live price…OPENS CREATE · NO CHARGE UNTIL CONFIRMED"
+  },
+  {
+    "area": "editor",
+    "name": "Editor",
+    "text": "Add files from this computerAdd from my LibraryAdd textUndoRedoDuplicatePlay0:00.0 / 0:00.0Timeline zoom Space play · S split · ⌘/Ctrl Z undo · Shift Z redo · ⌘/Ctrl D duplicateAdd a video, sound or title to start. Up to 60 seconds, 10 video clips and 10 sounds.Select a clip or a text on the timeline to change it.ShapeSame as the first clip16:9 landscape9:16 portrait1:1 squareSize720p1080pExport MP4Editing and export run in this browser and use no credits. Saving a project stores its timeline and settings in your workspace; files from this computer stay here. Keep this tab open during export. Preview and export share the same audio mix. Imported sources can be up to 10 minutes; this edit is up to 60 seconds."
+  },
+  {
+    "area": "create",
+    "name": "default",
+    "text": "STUDIO · UNTITLEDCreateUNSAVED DRAFTType a prompt or pick a presetA neon-lit Tokyo alley at 3am, low anamorphic tracking shotRestoring this tab’s draft…TOTAL COSTbalance — crFreeGenerateFreeREFUND ON FAILURE · ALWAYSCommercial use depends on the selected model and provider terms. Check the Terms before publishing.Want prompt feedback? Studio skills cost 1 Credit a reply: Prompt writer, Fix my prompt, or browse all skills.WHAT DO YOU WANT TO MAKE?Make an imageMake a videoMake audioAll modelsFree to use — this only narrows the model list and picks its lowest-cost open option.MODEL● LIVE PRICESLowMediumHighGeneration model"
+  }
+]

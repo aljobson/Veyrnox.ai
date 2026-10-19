@@ -1,0 +1,174 @@
+{
+  "app/veyrnox/app/account/layout.js": {
+    "title": "Account & security",
+    "robots": {
+      "index": false,
+      "follow": false
+    }
+  },
+  "app/veyrnox/app/admin/layout.js": {
+    "title": "Admin",
+    "description": "Internal metrics.",
+    "robots": {
+      "index": false,
+      "follow": false
+    }
+  },
+  "app/veyrnox/app/chat/layout.js": {
+    "title": "LLM Chat",
+    "description": "Chat with leading AI models. Every reply shows its price in Credits before you send, and failed replies are refunded.",
+    "alternates": {
+      "canonical": "/app/chat"
+    },
+    "robots": {
+      "index": false,
+      "follow": false
+    }
+  },
+  "app/veyrnox/app/create/layout.js": {
+    "title": "Create",
+    "description": "Pick a model, see the exact credit cost on the button, and generate. Failed jobs refund automatically.",
+    "alternates": {
+      "canonical": "/app/create"
+    },
+    "openGraph": {
+      "type": "website",
+      "siteName": "Veyrnox.ai",
+      "images": [
+        {
+          "url": "/og.png",
+          "width": 1200,
+          "height": 630,
+          "alt": "Veyrnox.ai — credit-metered AI video, image and audio generation, priced on the button."
+        }
+      ],
+      "title": "Create — Veyrnox.ai",
+      "description": "Pick a model, see the exact credit cost on the button, and generate. Failed jobs refund automatically.",
+      "url": "/app/create"
+    }
+  },
+  "app/veyrnox/app/credits/layout.js": {
+    "title": "Credits & billing",
+    "description": "Your credit balance, free-credit expiry and the ledger rows behind it.",
+    "alternates": {
+      "canonical": "/app/credits"
+    },
+    "openGraph": {
+      "type": "website",
+      "siteName": "Veyrnox.ai",
+      "images": [
+        {
+          "url": "/og.png",
+          "width": 1200,
+          "height": 630,
+          "alt": "Veyrnox.ai — credit-metered AI video, image and audio generation, priced on the button."
+        }
+      ],
+      "title": "Credits & billing — Veyrnox.ai",
+      "description": "Your credit balance, free-credit expiry and the ledger rows behind it.",
+      "url": "/app/credits"
+    }
+  },
+  "app/veyrnox/app/editor/layout.js": {
+    "title": "Video editor",
+    "description": "Cut, arrange and export a video in your browser.",
+    "robots": {
+      "index": false,
+      "follow": false
+    }
+  },
+  "app/veyrnox/app/editor/review/page.js": {
+    "title": "Review saved edit",
+    "robots": {
+      "index": false,
+      "follow": false
+    }
+  },
+  "app/veyrnox/app/enhance/layout.js": {
+    "title": "Video Enhance preview",
+    "robots": {
+      "index": false,
+      "follow": false
+    }
+  },
+  "app/veyrnox/app/film-studio/page.js": {
+    "title": "Film Studio",
+    "description": "Plan a film in seven stages, from your story to consistent, generation-ready shot prompts.",
+    "robots": {
+      "index": false,
+      "follow": false
+    }
+  },
+  "app/veyrnox/app/layout.js": {
+    "title": {
+      "default": "Explore",
+      "template": "%s — Veyrnox.ai"
+    },
+    "description": "Browse curated presets pinned to their best-fit model, each priced up front. Open one to generate on your credit balance.",
+    "alternates": {
+      "canonical": "/app"
+    }
+  },
+  "app/veyrnox/app/library/layout.js": {
+    "title": "Library",
+    "description": "Every generation you have run — successes, failures and the refunds that followed.",
+    "alternates": {
+      "canonical": "/app/library"
+    },
+    "openGraph": {
+      "type": "website",
+      "siteName": "Veyrnox.ai",
+      "images": [
+        {
+          "url": "/og.png",
+          "width": 1200,
+          "height": 630,
+          "alt": "Veyrnox.ai — credit-metered AI video, image and audio generation, priced on the button."
+        }
+      ],
+      "title": "Library — Veyrnox.ai",
+      "description": "Every generation you have run — successes, failures and the refunds that followed.",
+      "url": "/app/library"
+    }
+  },
+  "app/veyrnox/app/oddlings/layout.js": {
+    "title": "Oddling Studio",
+    "description": "Design an original fictional creator, lock their visual canon and recurring show, then continue to portrait or motion generation.",
+    "alternates": {
+      "canonical": "/app/oddlings"
+    }
+  },
+  "app/veyrnox/app/projects/layout.js": {
+    "title": "Projects",
+    "description": "Manage projects in your workspace.",
+    "robots": {
+      "index": false,
+      "follow": false
+    }
+  },
+  "app/veyrnox/app/publish/layout.js": {
+    "title": "Veyrnox.ai Publish",
+    "robots": {
+      "index": false,
+      "follow": false
+    }
+  },
+  "app/veyrnox/app/publish/plan/page.js": {
+    "title": "Publish plans and billing",
+    "description": "Manage your Veyrnox.ai Publish plan and billing.",
+    "robots": {
+      "index": false
+    }
+  },
+  "app/veyrnox/app/video-agent/layout.js": {
+    "title": "Video Agent",
+    "description": "Turn a creative brief into a planned, credit-priced video workflow with Veyrnox.",
+    "alternates": {
+      "canonical": "/app/video-agent"
+    },
+    "robots": {
+      "index": false,
+      "follow": false
+    }
+  }
+}

@@ -1,4 +1,7 @@
 'use client';
+import { pluralKey, tOr } from '../../../../lib/i18n/translate.mjs';
+import { localeTag } from '../../../../lib/i18n/locales.mjs';
+import { useI18n } from '../../../../components/I18nProvider';
 
 // Review of draft posts (ADR-0061 amendment, 0182): the weekly brand drafts
 // wait here until the owner approves their batch. Nothing in a batch is
@@ -23,6 +26,7 @@ function groupByBatch(drafts) {
 }
 
 function Preview({ media }) {
+  const { t } = useI18n();
     const [url, setUrl] = useState(null);
     const [failed, setFailed] = useState(false);
     useEffect(() => {
@@ -34,7 +38,7 @@ function Preview({ media }) {
         return () => { live = false; };
     }, [media]);
     const box = 'h-24 w-24 shrink-0 rounded-lg bg-vx-panel overflow-hidden flex items-center justify-center';
-    if (!media || failed) return <div className={`${box} text-xs text-vx-fg-muted`}>No preview</div>;
+    if (!media || failed) return <div className={`${box} text-xs text-vx-fg-muted`}>{t("app.publish.drafts.noPreview")}</div>;
     if (!url) return <div className={box} aria-busy="true" />;
     return media.media_type === 'video'
         ? <video src={url} className={`${box} object-cover`} muted playsInline controls preload="metadata" />
@@ -42,6 +46,7 @@ function Preview({ media }) {
 }
 
 export function DraftReview({ onApproved }) {
+  const { t, locale } = useI18n();
     const [drafts, setDrafts] = useState(null);
     const [approvalEnabled, setApprovalEnabled] = useState(true);
     const [error, setError] = useState('');
@@ -54,9 +59,9 @@ export function DraftReview({ onApproved }) {
             setDrafts(res.drafts || []);
             setApprovalEnabled(res.approvalEnabled !== false);
         } catch {
-            setError('Could not load your drafts.');
+            setError(t('app.publish.drafts.loadFailed'));
         }
-    }, []);
+    }, [t]);
     useEffect(() => { load(); }, [load]);
 
     async function act(key, fn, message) {
@@ -73,34 +78,34 @@ export function DraftReview({ onApproved }) {
         }
     }
 
-    if (drafts === null && !error) return <p className="text-sm text-vx-fg-muted">Loading…</p>;
+    if (drafts === null && !error) return <p className="text-sm text-vx-fg-muted">{t("cinema.titlePage.loading")}</p>;
     const batches = groupByBatch(drafts || []);
 
     return <div className="space-y-6">
         {error && <p role="alert" className="text-sm text-vx-danger">{error}</p>}
-        {!approvalEnabled && <p className="text-sm text-vx-fg-muted">Weekly drafts and batch approval are paused during the limited rollout. Use Compose to schedule a post or post now.</p>}
+        {!approvalEnabled && <p className="text-sm text-vx-fg-muted">{t("app.publish.drafts.paused")}</p>}
         {drafts && batches.length === 0 && (
-            <p className="text-sm text-vx-fg-muted">{approvalEnabled ? 'No drafts waiting. Each Monday your generations from the past week arrive here as drafts.' : 'No drafts waiting.'}</p>
+            <p className="text-sm text-vx-fg-muted">{approvalEnabled ? t("app.publish.drafts.emptyWeekly") : t("app.publish.drafts.empty")}</p>
         )}
         {batches.map((batch) => (
             <div key={batch.id} className="rounded-xl border border-vx-border p-4">
                 <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-                    <span className="text-sm font-bold text-vx-fg">{batch.posts.length} draft{batch.posts.length === 1 ? '' : 's'}</span>
+                    <span className="text-sm font-bold text-vx-fg">{t(pluralKey(t, locale, 'app.publish.drafts.count', batch.posts.length), { count: locale === 'en' ? batch.posts.length : batch.posts.length.toLocaleString(localeTag(locale)) })}</span>
                     <div className="flex gap-2">
                         <button
                             type="button" className={button} disabled={busy !== null}
-                            onClick={() => act(`discard:${batch.id}`, () => discardDrafts(batch.id), 'Could not discard this batch. Try again.')}
+                            onClick={() => act(`discard:${batch.id}`, () => discardDrafts(batch.id), t("app.publish.drafts.discardBatchFailed"))}
                         >
-                            {busy === `discard:${batch.id}` ? 'Discarding…' : 'Discard all'}
+                            {busy === `discard:${batch.id}` ? t("app.publish.drafts.discarding") : t("app.publish.drafts.discardAll")}
                         </button>
                         <button
                             type="button" className={primaryButton} disabled={busy !== null || !approvalEnabled}
                             onClick={async () => {
-                                const out = await act(`approve:${batch.id}`, () => approveDraftBatch(batch.id), 'Could not approve this batch. Try again.');
+                                const out = await act(`approve:${batch.id}`, () => approveDraftBatch(batch.id), t("app.publish.drafts.approveBatchFailed"));
                                 if (out && onApproved) onApproved(out);
                             }}
                         >
-                            {busy === `approve:${batch.id}` ? 'Approving…' : `Approve ${batch.posts.length}`}
+                            {busy === `approve:${batch.id}` ? t("app.publish.drafts.approving") : t('app.publish.drafts.approve', { count: locale === 'en' ? batch.posts.length : batch.posts.length.toLocaleString(localeTag(locale)) })}
                         </button>
                     </div>
                 </div>
@@ -110,15 +115,15 @@ export function DraftReview({ onApproved }) {
                             <Preview media={(p.media || [])[0]} />
                             <div className="min-w-0 flex-1">
                                 <p className="text-xs font-bold text-vx-fg-muted">
-                                    {new Date(p.scheduled_at).toLocaleString()} · {(p.networks || []).map(networkLabel).join(', ')}
+                                    {new Date(p.scheduled_at).toLocaleString(localeTag(locale))} · {(p.networks || []).map(network => tOr(t, `app.publish.network.${network}`, networkLabel(network))).join(', ')}
                                 </p>
                                 {p.global_text && <p className="text-sm text-vx-fg mt-1 wrap-break-word">{p.global_text}</p>}
                                 <button
                                     type="button" className="mt-2 text-xs font-bold text-vx-fg-muted underline disabled:opacity-50"
                                     disabled={busy !== null}
-                                    onClick={() => act(`discard:${p.id}`, () => discardDrafts(batch.id, p.id), 'Could not discard that draft. Try again.')}
+                                    onClick={() => act(`discard:${p.id}`, () => discardDrafts(batch.id, p.id), t("app.publish.drafts.discardFailed"))}
                                 >
-                                    {busy === `discard:${p.id}` ? 'Discarding…' : 'Discard'}
+                                    {busy === `discard:${p.id}` ? t("app.publish.drafts.discarding") : t("app.publish.drafts.discard")}
                                 </button>
                             </div>
                         </li>

@@ -1,4 +1,7 @@
 'use client';
+import { tOr } from '../../../lib/i18n/translate.mjs';
+import { localeTag } from '../../../lib/i18n/locales.mjs';
+import { useI18n } from '../../../components/I18nProvider';
 
 /**
  * Two-factor enrolment for the signed-in account.
@@ -22,6 +25,7 @@ import {
 const CODE_RE = /^[0-9]{6}$/;
 
 export function MfaPanel({ requireFresh = false, onVerified } = {}) {
+  const { t, locale } = useI18n();
   const [factors, setFactors] = useState(null);
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState(null); // { factorId, secret, uri }
@@ -40,11 +44,11 @@ export function MfaPanel({ requireFresh = false, onVerified } = {}) {
       setAal(getAal());
     } catch {
       setFactors(null);
-      setError('Could not read your authenticator settings. Try again.');
+      setError(t("app.account.mfa.loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => { refresh(); }, [refresh]);
   useEffect(() => {
@@ -62,32 +66,33 @@ export function MfaPanel({ requireFresh = false, onVerified } = {}) {
 
   async function run(fn) {
     setBusy(true); setError(null);
-    try { await fn(); } catch (err) { setError(err?.message || 'That did not work.'); }
+    try { await fn(); } catch (err) { setError(tOr(t, `app.account.mfa.error.${err?.code}`, t('app.account.mfa.failed'))); }
     finally { setBusy(false); }
   }
 
+  const verifiedTime = freshUntil ? new Date(freshUntil).toLocaleTimeString(localeTag(locale, []), { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '';
   const verified = (factors || []).filter((f) => f.status === 'verified');
 
   return (
     <div className="rounded-2xl border border-vx-border p-5">
-      <h2 className="text-[15px] font-bold">Two-factor authentication</h2>
+      <h2 className="text-[15px] font-bold">{t("app.account.mfa.title")}</h2>
       <p className="mt-1 text-[13px] text-vx-fg-body">
-        {loading ? 'Loading authenticator settings…' : verified.length > 0
-          ? 'Your authenticator is enabled.'
-          : factors === null ? 'Authenticator status is unavailable.' : 'Add an authenticator to help protect your account.'}
+        {loading ? t("app.account.mfa.loading") : verified.length > 0
+          ? t("app.account.mfa.enabled")
+          : factors === null ? t("app.account.mfa.unavailable") : t("app.account.mfa.intro")}
       </p>
 
       {requireFresh && verified.length > 0 && (
         <p role="status" className="mt-3 text-[13px] text-vx-fg-body">
           {freshUntil
-            ? `Verified — recent access is valid until ${new Date(freshUntil).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}.`
+            ? t('app.account.mfa.verified', { time: verifiedTime })
             : wasVerified
-              ? 'Verification expired. Enter a new authenticator code to continue.'
-              : 'Recent access is not verified. Enter an authenticator code to continue.'}
+              ? t("app.account.mfa.expired")
+              : t("app.account.mfa.notVerified")}
         </p>
       )}
 
-      {error && <p role="alert" className="mt-3 text-[13px] text-vx-danger">{error} <button type="button" onClick={refresh} className="underline">Retry</button></p>}
+      {error && <p role="alert" className="mt-3 text-[13px] text-vx-danger">{error} <button type="button" onClick={refresh} className="underline">{t('app.account.mfa.retry')}</button></p>}
 
       {factors !== null && verified.length === 0 && !pending && (
         <button
@@ -103,15 +108,14 @@ export function MfaPanel({ requireFresh = false, onVerified } = {}) {
           })}
           className="mt-4 rounded-full bg-vx-accent text-vx-accent-ink font-bold px-4 py-2 text-[13px] disabled:opacity-60"
         >
-          {busy ? 'Working…' : 'Set up an authenticator app'}
+          {busy ? t("authGate.working") : t("app.account.mfa.setup")}
         </button>
       )}
 
       {pending && (
         <div className="mt-4 space-y-3">
           <p className="text-[13px] text-vx-fg-body">
-            Add this to your authenticator app, then enter the 6-digit code it shows.
-          </p>
+            {t("app.account.mfa.setupHelp")}</p>
           {pending.uri && (
             <div className="w-fit rounded-xl bg-white p-3">
               <QRCodeSVG
@@ -120,20 +124,20 @@ export function MfaPanel({ requireFresh = false, onVerified } = {}) {
                 level="M"
                 bgColor="#ffffff"
                 fgColor="#000000"
-                title="Scan to add Veyrnox.ai to your authenticator app"
+                title={t("app.account.mfa.qrTitle")}
               />
             </div>
           )}
-          <p className="text-[12px] text-vx-fg-muted">Scan the QR code, or use the setup details below.</p>
+          <p className="text-[12px] text-vx-fg-muted">{t("app.account.mfa.scan")}</p>
           <code className="block break-all rounded-lg bg-vx-panel p-3 text-[11px]">{pending.uri}</code>
           <p className="text-[12px] text-vx-fg-body">
-            Or type the secret by hand: <code className="break-all">{pending.secret}</code>
+            {t("app.account.mfa.secret")}{' '}<code className="break-all">{pending.secret}</code>
           </p>
           <div className="flex gap-2">
             <input
               value={code} onChange={(e) => setCode(e.target.value.trim())}
               inputMode="numeric" autoComplete="one-time-code" placeholder="000000" maxLength={6}
-              aria-label="Six-digit code from your authenticator app"
+              aria-label={t("app.account.mfa.code")}
               className="w-28 rounded-lg bg-vx-panel border border-vx-border px-3 py-2 text-[13px]"
             />
             <button
@@ -146,7 +150,7 @@ export function MfaPanel({ requireFresh = false, onVerified } = {}) {
               })}
               className="rounded-full bg-vx-accent text-vx-accent-ink font-bold px-4 py-2 text-[13px] disabled:opacity-60"
             >
-              {busy ? 'Checking…' : 'Confirm'}
+              {busy ? t("cinema.videoUpload.checking") : t("public.ConfirmDialog.confirm")}
             </button>
           </div>
         </div>
@@ -157,7 +161,7 @@ export function MfaPanel({ requireFresh = false, onVerified } = {}) {
           <input
             value={code} onChange={(e) => setCode(e.target.value.trim())}
             inputMode="numeric" autoComplete="one-time-code" placeholder="000000" maxLength={6}
-            aria-label="Six-digit code from your authenticator app"
+            aria-label={t("app.account.mfa.code")}
             className="w-28 rounded-lg bg-vx-panel border border-vx-border px-3 py-2 text-[13px]"
           />
           <button
@@ -169,7 +173,7 @@ export function MfaPanel({ requireFresh = false, onVerified } = {}) {
             })}
             className="rounded-full bg-vx-accent text-vx-accent-ink font-bold px-4 py-2 text-[13px] disabled:opacity-60"
           >
-            {busy ? 'Checking…' : requireFresh ? 'Verify recent access' : 'Unlock this session'}
+            {busy ? t("cinema.videoUpload.checking") : requireFresh ? t("app.account.mfa.verify") : t("app.account.mfa.unlock")}
           </button>
         </div>
       )}
@@ -180,8 +184,7 @@ export function MfaPanel({ requireFresh = false, onVerified } = {}) {
           onClick={() => run(async () => { await unenrollFactor(verified[0].id); await refresh(); })}
           className="mt-4 text-[13px] underline text-vx-fg-body disabled:opacity-60"
         >
-          Remove this factor
-        </button>
+          {t("app.account.mfa.remove")}</button>
       )}
     </div>
   );

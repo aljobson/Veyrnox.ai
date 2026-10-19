@@ -1,3 +1,4 @@
+import { helperEnglish, helperDiagnostic } from '../../../lib/helperMessages.mjs';
 import { FILTER_DEFAULTS } from './editorAnimation.mjs';
 import { colourDefaults, HSL_CHANNELS } from './editorColour.mjs';
 import { trackFor } from './editorSequence.mjs';
@@ -45,11 +46,11 @@ export function searchFilterLooks(query = '', category = 'All') {
         && words.every(word => `${item.name} ${item.category} ${item.description}`.toLocaleLowerCase().includes(word)));
 }
 export function filterSelectionProblem(tl, selection) {
-    if (!Array.isArray(selection) || !selection.length || selection.length > 40) return 'Select a video or image clip first.';
-    if (selection.some(item => !item || item.track !== 'video' || typeof item.id !== 'string')) return 'Choose visual clips for a filter.';
+    if (!Array.isArray(selection) || !selection.length || selection.length > 40) return helperEnglish('select_a_video_or_image_clip_first');
+    if (selection.some(item => !item || item.track !== 'video' || typeof item.id !== 'string')) return helperEnglish('choose_visual_clips_for_a_filter');
     const ids = new Set(selection.map(item => item.id));
-    if ([...ids].some(id => !tl.video.some(clip => clip.id === id))) return 'The selection changed. Select the visual clips again.';
-    if (tl.video.some(clip => ids.has(clip.id) && trackFor(tl, clip)?.locked)) return 'Unlock every selected visual track first.';
+    if ([...ids].some(id => !tl.video.some(clip => clip.id === id))) return helperEnglish('the_selection_changed_select_the_visual_clips_again');
+    if (tl.video.some(clip => ids.has(clip.id) && trackFor(tl, clip)?.locked)) return helperEnglish('unlock_every_selected_visual_track_first');
     return null;
 }
 function blendClip(clip, preset, intensity) {
@@ -89,3 +90,6 @@ export function resetFilterGrade(tl, selection) {
     const problem = validateSequence(next);
     return problem ? { error: problem } : next;
 }
+
+/** Locale-neutral display diagnostic; the legacy string interface remains available. */
+export const filterSelectionProblemDiagnostic = (...args) => helperDiagnostic(filterSelectionProblem(...args));

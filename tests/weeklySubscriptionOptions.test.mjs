@@ -1,3 +1,4 @@
+import appEnglish from '../lib/i18n/messages/app/en.mjs';
 import english from '../lib/i18n/messages/en.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -25,8 +26,10 @@ test('Veyrnox.ai Publish offers an annual plan at exactly 30% off monthly', () =
 
   assert.match(annual, /'publish-annual', 'Publish Plan', 'year', 12600/);
   assert.equal(12600, 1500 * 12 * 0.7);
-  assert.match(publish, /Save 30%/);
-  assert.match(publish, /per month equivalent/);
+  assert.match(publish, /t\("app.publish.plan.save"\)/);
+  assert.equal(appEnglish['app.publish.plan.save'], 'Save 30%');
+  assert.match(publish, /t\('app.publish.plan.equivalent'/);
+  assert.equal(appEnglish['app.publish.plan.equivalent'], '{price} per month equivalent');
 });
 
 test('all three paywalls disclose and render weekly billing', () => {

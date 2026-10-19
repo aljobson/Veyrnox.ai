@@ -1,3 +1,4 @@
+import { helperEnglish, helperDiagnostic } from '../../../lib/helperMessages.mjs';
 // Browser timeline editor, slice 3 (ADR-0080): a timeline saved inside a project document (v2, lib/projectDocument.js) and
 // reopened later. Pure helpers, no network: the page does the fetching. A document never carries media bytes, so reopening means
 // fetching every Library file again (its id names the generation) and asking for every local file again (never uploaded).
@@ -48,11 +49,11 @@ export function matchLocalFile(tl, file, probe, loaded = new Set()) {
 /** Plain words for a save failure the page shows. */
 export function saveProblem(error) {
     if (!error) return '';
-    if (error.status === 409) return 'A newer version was saved elsewhere. Choose which to keep.';
+    if (error.status === 409) return helperEnglish('a_newer_version_was_saved_elsewhere_choose_which');
     if (error.status === 404) return 'This project is no longer available.';
-    if (error.status === 429) return 'Too many saves for now. Try again in a minute.';
-    if (error.status === 400) return 'This timeline could not be saved. Remove the last change and try again.';
-    return 'Could not save. Check your connection and try again.';
+    if (error.status === 429) return helperEnglish('too_many_saves_for_now_try_again_in');
+    if (error.status === 400) return helperEnglish('this_timeline_could_not_be_saved_remove_the');
+    return helperEnglish('could_not_save_check_your_connection_and_try');
 }
 
 const documentCounts = doc => {
@@ -81,3 +82,6 @@ export function conflictCopyName(name) {
 export function remoteSaveLabel(actorId, currentActorId) {
     return actorId && actorId === currentActorId ? 'Another device' : 'A collaborator';
 }
+
+/** Locale-neutral display diagnostic; the legacy string interface remains available. */
+export const saveProblemDiagnostic = (...args) => helperDiagnostic(saveProblem(...args));

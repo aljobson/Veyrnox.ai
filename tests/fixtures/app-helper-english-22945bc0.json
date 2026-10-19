@@ -1,0 +1,1097 @@
+{
+  "commit": "22945bc05d17ba1deadf0e1e05a76f4d1e21be76",
+  "rows": [
+    {
+      "file": "app/veyrnox/_lib/chatMedia.js",
+      "code": "audio_on",
+      "english": "Audio on"
+    },
+    {
+      "file": "app/veyrnox/_lib/chatMedia.js",
+      "code": "audio_off",
+      "english": "Audio off"
+    },
+    {
+      "file": "app/veyrnox/_lib/chatMedia.js",
+      "code": "audio_model_default",
+      "english": "Audio model default"
+    },
+    {
+      "file": "app/veyrnox/_lib/chatResearchUi.js",
+      "code": "planning_the_research",
+      "english": "Planning the research"
+    },
+    {
+      "file": "app/veyrnox/_lib/chatResearchUi.js",
+      "code": "writing_the_answer",
+      "english": "Writing the answer"
+    },
+    {
+      "file": "app/veyrnox/_lib/editorAgentPlan.mjs",
+      "code": "clips_length",
+      "english": "{value1} {value2}: {value3} → {value4} clips ({value5}{value6}), length {value7} → {value8}"
+    },
+    {
+      "file": "app/veyrnox/_lib/editorAnimation.mjs",
+      "code": "invalid_animated_picture_parameters",
+      "english": "Invalid animated picture parameters."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorAnimationCatalog.mjs",
+      "code": "select_one_visual_clip_title_or_caption",
+      "english": "Select one visual clip, title or caption."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorAnimationCatalog.mjs",
+      "code": "select_a_current_visual_clip_title_or_caption",
+      "english": "Select a current visual clip, title or caption."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorAnimationCatalog.mjs",
+      "code": "unlock_this_track_before_changing_animation",
+      "english": "Unlock this track before changing animation."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorAssetPacks.mjs",
+      "code": "use_a_version_1_localcatalog_asset_pack",
+      "english": "Use a version 1 local-catalog asset pack."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorAssetPacks.mjs",
+      "code": "an_asset_pack_holds_between_1_and_40",
+      "english": "An asset pack holds between 1 and 40 items."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorAssetPacks.mjs",
+      "code": "an_asset_has_invalid_identity_local_filename_content",
+      "english": "An asset has invalid identity, local filename, content hash or licence metadata."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorAssetPacks.mjs",
+      "code": "the_asset_category_must_match_its_media_type",
+      "english": "The asset category must match its media type."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorAudioEffects.mjs",
+      "code": "invalid_audio_effects_settings",
+      "english": "Invalid audio effects settings."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorAudioEffects.mjs",
+      "code": "audio_effects_are_outside_their_supported_range",
+      "english": "Audio effects are outside their supported range."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorAudioEffects.mjs",
+      "code": "echo_needs_whole_repeats_with_a_combined_delay",
+      "english": "Echo needs whole repeats with a combined delay of at most four seconds."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorAudioSettings.mjs",
+      "code": "invalid_pitch_preservation_setting",
+      "english": "Invalid pitch preservation setting."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorAudioSettings.mjs",
+      "code": "invalid_audio_processing_settings",
+      "english": "Invalid audio processing settings."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorAudioSettings.mjs",
+      "code": "audio_processing_is_outside_its_supported_range",
+      "english": "Audio processing is outside its supported range."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorAudioSettings.mjs",
+      "code": "choose_a_noiseonly_sample_within_this_source_file",
+      "english": "Choose a noise-only sample within this source file."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorBackground.mjs",
+      "code": "invalid_clip_background",
+      "english": "Invalid clip background."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorBackground.mjs",
+      "code": "choose_a_project_image_for_the_background",
+      "english": "Choose a project image for the background."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorColour.mjs",
+      "code": "invalid_advanced_colour_adjustment",
+      "english": "Invalid advanced colour adjustment."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorColour.mjs",
+      "code": "invalid_hsl_adjustment",
+      "english": "Invalid HSL adjustment."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorColour.mjs",
+      "code": "invalid_colour_curve",
+      "english": "Invalid colour curve."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorEffects.mjs",
+      "code": "remove_the_clip_effect",
+      "english": "Remove the clip effect."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorEffects.mjs",
+      "code": "darken_the_frame_edges",
+      "english": "Darken the frame edges."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorEffects.mjs",
+      "code": "create_a_blocky_lowresolution_look",
+      "english": "Create a blocky low-resolution look."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorEffects.mjs",
+      "code": "add_animated_fine_grain",
+      "english": "Add animated fine grain."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorEffects.mjs",
+      "code": "bloom_highlights_over_the_source",
+      "english": "Bloom highlights over the source."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorEffects.mjs",
+      "code": "sweep_a_warm_light_flare_across_the_frame",
+      "english": "Sweep a warm light flare across the frame."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorEffects.mjs",
+      "code": "pulse_the_exposure_with_the_clip_time",
+      "english": "Pulse the exposure with the clip time."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorEffects.mjs",
+      "code": "flash_the_picture_at_a_bounded_rate",
+      "english": "Flash the picture at a bounded rate."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorEffects.mjs",
+      "code": "warm_the_picture_with_grain_flicker_and_scratches",
+      "english": "Warm the picture with grain, flicker and scratches."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorEffects.mjs",
+      "code": "add_animated_display_scanlines",
+      "english": "Add animated display scanlines."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorEffects.mjs",
+      "code": "blend_the_picture_toward_black_and_white",
+      "english": "Blend the picture toward black and white."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorEffects.mjs",
+      "code": "blend_in_a_warm_archival_tone",
+      "english": "Blend in a warm archival tone."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorEffects.mjs",
+      "code": "offset_red_and_cyan_image_channels",
+      "english": "Offset red and cyan image channels."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorEffects.mjs",
+      "code": "invert_the_source_colours",
+      "english": "Invert the source colours."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorEffects.mjs",
+      "code": "reflect_half_the_frame",
+      "english": "Reflect half the frame."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorEffects.mjs",
+      "code": "repeat_the_picture_in_a_moving_tile_grid",
+      "english": "Repeat the picture in a moving tile grid."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorEffects.mjs",
+      "code": "map_the_picture_into_teal_and_violet_light",
+      "english": "Map the picture into teal and violet light."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorEffects.mjs",
+      "code": "reduce_the_picture_to_bold_colour_bands",
+      "english": "Reduce the picture to bold colour bands."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorExport.mjs",
+      "code": "this_browser_cannot_export_video_use_desktop_google",
+      "english": "This browser cannot export video. Use desktop Google Chrome."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorExport.mjs",
+      "code": "this_browser_cannot_encode_h264_video_at_this",
+      "english": "This browser cannot encode H.264 video at this size and frame rate. Try a smaller export or desktop Google Chrome."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorExport.mjs",
+      "code": "this_browser_cannot_encode_aac_audio_use_desktop",
+      "english": "This browser cannot encode AAC audio. Use desktop Google Chrome."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorExport.mjs",
+      "code": "export_compatibility_could_not_be_checked_use_desktop",
+      "english": "Export compatibility could not be checked. Use desktop Google Chrome."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorExportSettings.mjs",
+      "code": "choose_valid_export_settings",
+      "english": "Choose valid export settings."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorExportSettings.mjs",
+      "code": "this_export_exceeds_the_browser_memory_budget_choose",
+      "english": "This export exceeds the browser memory budget. Choose Compact quality or shorten the edit."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorFilters.mjs",
+      "code": "select_a_video_or_image_clip_first",
+      "english": "Select a video or image clip first."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorFilters.mjs",
+      "code": "choose_visual_clips_for_a_filter",
+      "english": "Choose visual clips for a filter."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorFilters.mjs",
+      "code": "the_selection_changed_select_the_visual_clips_again",
+      "english": "The selection changed. Select the visual clips again."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorFilters.mjs",
+      "code": "unlock_every_selected_visual_track_first",
+      "english": "Unlock every selected visual track first."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorGeneration.mjs",
+      "code": "use_one_name_line_per_speaker_up_to",
+      "english": "Use one Name: line per speaker, up to four speakers and {value1} characters. Existing model voices apply."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorGeneration.mjs",
+      "code": "up_to_spoken_characters_existing_model_voices_and",
+      "english": "Up to {value1} spoken characters. Existing model voices and settings apply."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorGenerationUploads.mjs",
+      "code": "choose_a_supported_image_mp4_video_or_mp3wav",
+      "english": "Choose a supported image, MP4 video or MP3/WAV audio file for this source."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorGenerationUploads.mjs",
+      "code": "choose_a_file_between_1_byte_and_mib",
+      "english": "Choose a file between 1 byte and {value1} MiB."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorMask.mjs",
+      "code": "invalid_mask_geometry",
+      "english": "Invalid mask geometry."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorMask.mjs",
+      "code": "invalid_mask_keyframes",
+      "english": "Invalid mask keyframes."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorMedia.mjs",
+      "code": "this_browser_cannot_decode_that_video_try_an",
+      "english": "This browser cannot decode that video. Try an H.264 MP4."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorMedia.mjs",
+      "code": "that_video_has_no_picture_size",
+      "english": "That video has no picture size."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorMedia.mjs",
+      "code": "choose_a_video_up_to_pixels_wide",
+      "english": "Choose a video up to {value1} pixels wide."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorMedia.mjs",
+      "code": "this_browser_cannot_decode_that_sound_try_an",
+      "english": "This browser cannot decode that sound. Try an MP3 or WAV."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorMedia.mjs",
+      "code": "that_file_has_no_length",
+      "english": "That file has no length."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorMedia.mjs",
+      "code": "choose_a_file_up_to_10_minutes_long",
+      "english": "Choose a file up to 10 minutes long. You can trim it after."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorMediaDetails.mjs",
+      "code": "invalid_original_source_name",
+      "english": "Invalid original source name."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorMediaDetails.mjs",
+      "code": "use_a_folder_name_up_to_80_characters",
+      "english": "Use a folder name up to 80 characters and four levels."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorMediaDetails.mjs",
+      "code": "invalid_media_attribution",
+      "english": "Invalid media attribution."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorMediaDetails.mjs",
+      "code": "use_an_https_source_or_licence_url",
+      "english": "Use an HTTPS source or licence URL."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorMotionProcessing.mjs",
+      "code": "choose_a_picture_processing_tool",
+      "english": "Choose a picture processing tool."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorMotionProcessing.mjs",
+      "code": "choose_a_supported_output_frame_rate",
+      "english": "Choose a supported output frame rate."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorMotionProcessing.mjs",
+      "code": "choose_a_supported_output_size",
+      "english": "Choose a supported output size."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorMotionProcessing.mjs",
+      "code": "optical_flow_currently_supports_up_to_480p",
+      "english": "Optical flow currently supports up to 480p."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorMotionProcessing.mjs",
+      "code": "choose_a_smoothing_window_from_1_to_30",
+      "english": "Choose a smoothing window from 1 to 30 frames."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorMotionProcessing.mjs",
+      "code": "choose_a_processing_strength_from_0_to_1",
+      "english": "Choose a processing strength from 0 to 1."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorMotionProcessing.mjs",
+      "code": "choose_a_portrait_square_or_landscape_output",
+      "english": "Choose a portrait, square or landscape output."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorMotionProcessing.mjs",
+      "code": "select_a_textured_subject_region_inside_the_picture",
+      "english": "Select a textured subject region inside the picture."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorMotionProcessing.mjs",
+      "code": "choose_bounded_start_and_end_camera_positions",
+      "english": "Choose bounded start and end camera positions."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorOrganization.mjs",
+      "code": "invalid_custom_font_metadata",
+      "english": "Invalid custom font metadata."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorOrganization.mjs",
+      "code": "record_the_font_source_and_permission_to_use",
+      "english": "Record the font source and permission to use it."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorOrganization.mjs",
+      "code": "use_an_https_font_licence_url",
+      "english": "Use an HTTPS font licence URL."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorOrganization.mjs",
+      "code": "use_up_to_40_distinct_valid_folder_paths",
+      "english": "Use up to 40 distinct valid folder paths."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorOrganization.mjs",
+      "code": "use_up_to_eight_valid_custom_fonts_with",
+      "english": "Use up to eight valid custom fonts with recorded rights."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorOrganization.mjs",
+      "code": "relink_a_declared_custom_font_before_using_it",
+      "english": "Relink a declared custom font before using it."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorPersonGeometry.mjs",
+      "code": "choose_face_or_body_reshaping",
+      "english": "Choose face or body reshaping."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorPersonGeometry.mjs",
+      "code": "choose_reshape_amounts_between_25_and_25",
+      "english": "Choose reshape amounts between −25% and 25%."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorPersonGeometry.mjs",
+      "code": "change_the_width_or_height_before_reshaping",
+      "english": "Change the width or height before reshaping."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorPersonLight.mjs",
+      "code": "choose_a_light_direction_between_180_and_180",
+      "english": "Choose a light direction between −180° and 180°."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorPersonLight.mjs",
+      "code": "choose_light_intensity_between_0_and_15_stops",
+      "english": "Choose light intensity between 0 and 1.5 stops."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorPersonLight.mjs",
+      "code": "choose_ambient_light_between_05_and_05_stops",
+      "english": "Choose ambient light between −0.5 and 0.5 stops."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorPersonLight.mjs",
+      "code": "choose_a_valid_light_colour",
+      "english": "Choose a valid light colour."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorPersonLight.mjs",
+      "code": "increase_the_light_intensity_or_change_the_ambient",
+      "english": "Increase the light intensity or change the ambient light."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorPresets.mjs",
+      "code": "a_clean_animated_opening_title",
+      "english": "A clean animated opening title."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorPresets.mjs",
+      "code": "append_selected_shots_with_gentle_motion",
+      "english": "Append selected shots with gentle motion."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorPresets.mjs",
+      "code": "overlay_one_source_at_the_playhead",
+      "english": "Overlay one source at the playhead."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorPresets.mjs",
+      "code": "fast_threeshot_opener_with_a_headline",
+      "english": "Fast three-shot opener with a headline."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorPresets.mjs",
+      "code": "place_two_sources_side_by_side",
+      "english": "Place two sources side by side."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorPresets.mjs",
+      "code": "a_bold_quote_card_for_vertical_posts",
+      "english": "A bold quote card for vertical posts."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorPresets.mjs",
+      "code": "a_product_shot_with_a_lower_headline",
+      "english": "A product shot with a lower headline."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorPresets.mjs",
+      "code": "append_a_short_closing_message",
+      "english": "Append a short closing message."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorProject.mjs",
+      "code": "a_newer_version_was_saved_elsewhere_choose_which",
+      "english": "A newer version was saved elsewhere. Choose which to keep."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorProject.mjs",
+      "code": "too_many_saves_for_now_try_again_in",
+      "english": "Too many saves for now. Try again in a minute."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorProject.mjs",
+      "code": "this_timeline_could_not_be_saved_remove_the",
+      "english": "This timeline could not be saved. Remove the last change and try again."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorProject.mjs",
+      "code": "could_not_save_check_your_connection_and_try",
+      "english": "Could not save. Check your connection and try again."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorProjectFile.mjs",
+      "code": "invalid_multitrack_document",
+      "english": "Invalid multitrack document."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSceneRun.mjs",
+      "code": "scene_detection_works_on_video_clips",
+      "english": "Scene detection works on video clips."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSceneRun.mjs",
+      "code": "select_a_longer_video_clip_first",
+      "english": "Select a longer video clip first."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSceneRun.mjs",
+      "code": "scene_detection_handles_up_to_seconds_at_a",
+      "english": "Scene detection handles up to {value1} seconds at a time. Trim or split the clip first."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSceneRun.mjs",
+      "code": "scene_detection_handles_up_to_720p_video_for",
+      "english": "Scene detection handles up to 720p video for now."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSceneRun.mjs",
+      "code": "reset_speed_reverse_and_freeze_on_this_clip",
+      "english": "Reset speed, reverse and freeze on this clip before detecting scenes."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSequenceValidation.mjs",
+      "code": "invalid_transform",
+      "english": "Invalid transform."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSequenceValidation.mjs",
+      "code": "invalid_colour_adjustment",
+      "english": "Invalid colour adjustment."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSequenceValidation.mjs",
+      "code": "crop_is_outside_the_picture",
+      "english": "Crop is outside the picture."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSequenceValidation.mjs",
+      "code": "invalid_effect",
+      "english": "Invalid effect."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSequenceValidation.mjs",
+      "code": "invalid_transition_type",
+      "english": "Invalid transition type."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSequenceValidation.mjs",
+      "code": "invalid_mask",
+      "english": "Invalid mask."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSequenceValidation.mjs",
+      "code": "invalid_blend_mode",
+      "english": "Invalid blend mode."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSequenceValidation.mjs",
+      "code": "invalid_picture_fit",
+      "english": "Invalid picture fit."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSequenceValidation.mjs",
+      "code": "invalid_animation",
+      "english": "Invalid animation."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSequenceValidation.mjs",
+      "code": "invalid_keyframes",
+      "english": "Invalid keyframes."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSequenceValidation.mjs",
+      "code": "invalid_project_settings",
+      "english": "Invalid project settings."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSequenceValidation.mjs",
+      "code": "a_project_holds_up_to_40_files",
+      "english": "A project holds up to 40 files."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSequenceValidation.mjs",
+      "code": "invalid_media_entry",
+      "english": "Invalid media entry."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSequenceValidation.mjs",
+      "code": "invalid_original_audio_media",
+      "english": "Invalid original audio media."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSequenceValidation.mjs",
+      "code": "invalid_graphic",
+      "english": "Invalid graphic."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSequenceValidation.mjs",
+      "code": "invalid_graphic_media",
+      "english": "Invalid graphic media."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSequenceValidation.mjs",
+      "code": "a_project_holds_up_to_16_tracks",
+      "english": "A project holds up to 16 tracks."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSequenceValidation.mjs",
+      "code": "invalid_track",
+      "english": "Invalid track."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSequenceValidation.mjs",
+      "code": "keep_a_video_audio_and_text_track",
+      "english": "Keep a video, audio and text track."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSequenceValidation.mjs",
+      "code": "invalid_timeline_marker",
+      "english": "Invalid timeline marker."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSequenceValidation.mjs",
+      "code": "too_many_clips",
+      "english": "Too many {value1} clips."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSequenceValidation.mjs",
+      "code": "invalid_clip_id",
+      "english": "Invalid clip id."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSequenceValidation.mjs",
+      "code": "invalid_clip_group",
+      "english": "Invalid clip group."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSequenceValidation.mjs",
+      "code": "clip_timing_or_track_is_invalid",
+      "english": "Clip timing or track is invalid."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSequenceValidation.mjs",
+      "code": "invalid_caption_flag",
+      "english": "Invalid caption flag."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSequenceValidation.mjs",
+      "code": "invalid_text",
+      "english": "Invalid text."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSequenceValidation.mjs",
+      "code": "invalid_text_style",
+      "english": "Invalid text style."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSequenceValidation.mjs",
+      "code": "audio_effects_need_a_source_with_sound",
+      "english": "Audio effects need a source with sound."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSequenceValidation.mjs",
+      "code": "a_freeze_frame_must_hold_a_valid_picture",
+      "english": "A freeze frame must hold a valid picture with no source sound."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSequenceValidation.mjs",
+      "code": "a_clip_points_at_an_incompatible_file",
+      "english": "A clip points at an incompatible file."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSequenceValidation.mjs",
+      "code": "a_clip_range_or_volume_is_invalid",
+      "english": "A clip range or volume is invalid."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSequenceValidation.mjs",
+      "code": "invalid_transition",
+      "english": "Invalid transition."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSequenceValidation.mjs",
+      "code": "invalid_audio_fade",
+      "english": "Invalid audio fade."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSequenceValidation.mjs",
+      "code": "invalid_audio_pan",
+      "english": "Invalid audio pan."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSequenceValidation.mjs",
+      "code": "invalid_audio_eq",
+      "english": "Invalid audio EQ."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSequenceValidation.mjs",
+      "code": "this_project_is_too_large_to_save_use",
+      "english": "This project is too large to save. Use fewer clips or caption lines."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSmartPicture.mjs",
+      "code": "invalid_local_picture_processing",
+      "english": "Invalid local picture processing."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSpeed.mjs",
+      "code": "invalid_reverse_setting",
+      "english": "Invalid reverse setting."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSpeed.mjs",
+      "code": "invalid_freeze_frame",
+      "english": "Invalid freeze frame."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorSpeed.mjs",
+      "code": "invalid_speed_curve",
+      "english": "Invalid speed curve."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorTextStyle.mjs",
+      "code": "choose_an_available_font",
+      "english": "Choose an available font."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorTextStyle.mjs",
+      "code": "invalid_text_emphasis",
+      "english": "Invalid text emphasis."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorTextStyle.mjs",
+      "code": "invalid_shadow_colour",
+      "english": "Invalid shadow colour."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorTextStyle.mjs",
+      "code": "invalid_text_spacing_or_shadow",
+      "english": "Invalid text spacing or shadow."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorTimeline.mjs",
+      "code": "not_a_timeline",
+      "english": "Not a timeline."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorTimeline.mjs",
+      "code": "unsupported_timeline_version",
+      "english": "Unsupported timeline version."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorTimeline.mjs",
+      "code": "only_frames_a_second_is_supported",
+      "english": "Only {value1} frames a second is supported."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorTimeline.mjs",
+      "code": "bad_counter",
+      "english": "Bad counter."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorTimeline.mjs",
+      "code": "bad_aspect",
+      "english": "Bad aspect."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorTimeline.mjs",
+      "code": "bad_text_list",
+      "english": "Bad text list."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorTimeline.mjs",
+      "code": "bad_media_list",
+      "english": "Bad media list."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorTimeline.mjs",
+      "code": "bad_tracks",
+      "english": "Bad tracks."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorTimeline.mjs",
+      "code": "too_many_files",
+      "english": "Too many files."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorTimeline.mjs",
+      "code": "bad_media_entry",
+      "english": "Bad media entry."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorTimeline.mjs",
+      "code": "bad_media_kind",
+      "english": "Bad media kind."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorTimeline.mjs",
+      "code": "bad_media_length",
+      "english": "Bad media length."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorTimeline.mjs",
+      "code": "bad_media_name",
+      "english": "Bad media name."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorTimeline.mjs",
+      "code": "too_many_video_clips",
+      "english": "Too many video clips."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorTimeline.mjs",
+      "code": "too_many_audio_clips",
+      "english": "Too many audio clips."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorTimeline.mjs",
+      "code": "bad_clip_id",
+      "english": "Bad clip id."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorTimeline.mjs",
+      "code": "a_clip_points_at_a_missing_file",
+      "english": "A clip points at a missing file."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorTimeline.mjs",
+      "code": "a_video_clip_points_at_an_audio_file",
+      "english": "A video clip points at an audio file."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorTimeline.mjs",
+      "code": "an_audio_clip_points_at_a_file_with",
+      "english": "An audio clip points at a file with no audio."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorTimeline.mjs",
+      "code": "a_clip_range_is_outside_its_file",
+      "english": "A clip range is outside its file."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorTimeline.mjs",
+      "code": "bad_volume",
+      "english": "Bad volume."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorTimeline.mjs",
+      "code": "bad_audio_start",
+      "english": "Bad audio start."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorTimeline.mjs",
+      "code": "bad_transition",
+      "english": "Bad transition."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorTimeline.mjs",
+      "code": "audio_clips_overlap",
+      "english": "Audio clips overlap."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorTimeline.mjs",
+      "code": "too_many_texts",
+      "english": "Too many texts."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorTimeline.mjs",
+      "code": "bad_text_id",
+      "english": "Bad text id."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorTimeline.mjs",
+      "code": "a_project_holds_up_to_seconds",
+      "english": "A project holds up to {value1} seconds."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorTimeline.mjs",
+      "code": "text_is_1_to_120_characters_on_one",
+      "english": "Text is 1 to 120 characters on one line."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorTimeline.mjs",
+      "code": "text_timing_is_outside_the_project",
+      "english": "Text timing is outside the project."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorTimeline.mjs",
+      "code": "text_position_is_off_the_picture",
+      "english": "Text position is off the picture."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorTimeline.mjs",
+      "code": "text_size_is_2_to_20",
+      "english": "Text size is 2 to 20."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorTranslation.mjs",
+      "code": "choose_valid_source_and_target_languages",
+      "english": "Choose valid source and target languages."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorTranslation.mjs",
+      "code": "choose_a_different_target_language",
+      "english": "Choose a different target language."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorTranslation.mjs",
+      "code": "choose_up_to_150_valid_timed_captions",
+      "english": "Choose up to 150 valid timed captions."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorTranslation.mjs",
+      "code": "translate_fewer_caption_lines_at_once",
+      "english": "Translate fewer caption lines at once."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorVisionPixelProcessing.mjs",
+      "code": "choose_a_person_processing_tool",
+      "english": "Choose a person processing tool."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorVisionPixelProcessing.mjs",
+      "code": "choose_an_intensity_from_0_to_1",
+      "english": "Choose an intensity from 0 to 1."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorVisionPixelProcessing.mjs",
+      "code": "choose_face_body_or_both_skin_regions",
+      "english": "Choose face, body or both skin regions."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorVisionPixelProcessing.mjs",
+      "code": "choose_a_bounded_skin_light_adjustment",
+      "english": "Choose a bounded skin light adjustment."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorVisionPixelProcessing.mjs",
+      "code": "choose_a_valid_processing_colour",
+      "english": "Choose a valid processing colour."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorVoiceover.mjs",
+      "code": "microphone_access_was_blocked_allow_it_in_your",
+      "english": "Microphone access was blocked. Allow it in your browser settings and retry."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorVoiceover.mjs",
+      "code": "no_microphone_was_found_connect_one_and_retry",
+      "english": "No microphone was found. Connect one and retry."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorVoiceover.mjs",
+      "code": "the_microphone_is_busy_in_another_app_close",
+      "english": "The microphone is busy in another app. Close that app and retry."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorVoiceover.mjs",
+      "code": "the_microphone_could_not_start_in_this_browser",
+      "english": "The microphone could not start in this browser."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorWords.mjs",
+      "code": "invalid_word_timing_source",
+      "english": "Invalid word timing source."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorWords.mjs",
+      "code": "invalid_word_highlight_style",
+      "english": "Invalid word highlight style."
+    },
+    {
+      "file": "app/veyrnox/_lib/editorWords.mjs",
+      "code": "word_text_or_timing_does_not_match_this",
+      "english": "Word text or timing does not match this caption."
+    },
+    {
+      "file": "app/veyrnox/_lib/promptBox.js",
+      "code": "a_topic_for_a_32second_short_eg_3",
+      "english": "A topic for a 32-second short, e.g. 3 facts about octopuses"
+    },
+    {
+      "file": "app/veyrnox/_lib/promptBox.js",
+      "code": "one_line_per_speaker_egana_did_you_hear",
+      "english": "One line per speaker, e.g.\nAna: Did you hear that?\nBen: [whispers] Stay quiet."
+    },
+    {
+      "file": "app/veyrnox/_lib/promptBox.js",
+      "code": "type_the_words_to_say",
+      "english": "Type the words to say…"
+    },
+    {
+      "file": "app/veyrnox/_lib/useCreateJourney.js",
+      "code": "walkthrough_image",
+      "english": "Walkthrough image"
+    },
+    {
+      "file": "app/veyrnox/_lib/videoEnhance.mjs",
+      "code": "choose_an_mp4_webm_or_mov_video",
+      "english": "Choose an MP4, WebM or MOV video."
+    },
+    {
+      "file": "app/veyrnox/_lib/videoEnhance.mjs",
+      "code": "choose_a_video_under_100_mib",
+      "english": "Choose a video under 100 MiB."
+    },
+    {
+      "file": "app/veyrnox/_lib/videoEnhance.mjs",
+      "code": "choose_a_clip_up_to_15_seconds_long",
+      "english": "Choose a clip up to 15 seconds long."
+    },
+    {
+      "file": "app/veyrnox/_lib/videoEnhance.mjs",
+      "code": "choose_a_video_with_a_longest_edge_of",
+      "english": "Choose a video with a longest edge of 1920 pixels or less."
+    },
+    {
+      "file": "lib/editorShared.js",
+      "code": "invalid_brand_kit",
+      "english": "Invalid brand kit."
+    },
+    {
+      "file": "lib/editorShared.js",
+      "code": "invalid_brand_text_style",
+      "english": "Invalid brand text style."
+    },
+    {
+      "file": "lib/editorShared.js",
+      "code": "invalid_brand_asset",
+      "english": "Invalid brand asset."
+    },
+    {
+      "file": "lib/editorShared.js",
+      "code": "this_brand_kit_exceeds_the_save_limit",
+      "english": "This brand kit exceeds the save limit."
+    }
+  ],
+  "tokenCards": [
+    {
+      "key": "nano-banana-kie",
+      "body": "Photoreal images for product shots and stills, at 2 credits each."
+    },
+    {
+      "key": "ace-step",
+      "body": "Audio generation on the same credit balance. 1 credit per clip. See it before you spend."
+    },
+    {
+      "key": "wan-2.5-kie",
+      "body": "5 seconds of 720p motion for 19 credits. The workhorse, priced on the button before you press it."
+    },
+    {
+      "key": "kling-26",
+      "body": "The go-to for narrative video work. 17 credits per 5-second shot, priced on the button."
+    },
+    {
+      "key": "presets",
+      "body": "Curated looks wired to a model and a prompt, each showing its credit cost. Browse free, generate on-tap."
+    }
+  ]
+}

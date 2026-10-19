@@ -7,6 +7,22 @@ import { buildVeyKnowledgeArtifact, renderVeyKnowledgeModule } from '../scripts/
 
 const root = process.cwd();
 
+test('phase B retains every app route knowledge item from origin/main', async () => {
+    const baseline = JSON.parse(await readFile(path.join(root, 'tests/fixtures/app-knowledge-main.json'), 'utf8'));
+    assert.equal(baseline.routes.length, 32);
+    const words = value => value.toLowerCase().replace(/[’‘]/g, "'").replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+    for (const entry of baseline.routes) {
+        const current = AUTO_PRODUCT_INVENTORY.find(row => row.route === entry.route);
+        assert.ok(current, entry.route);
+        for (const [field, values] of Object.entries(entry)) {
+            if (field === 'route') continue;
+            const normal = ['links', 'targets'].includes(field) ? value => value : words;
+            const actual = new Set(current[field].map(normal));
+            for (const value of values) assert.ok(actual.has(normal(value)), `${entry.route} ${field}: ${value}`);
+        }
+    }
+});
+
 test('generated Vey knowledge matches the current product source', async () => {
     const artifact = await buildVeyKnowledgeArtifact(root);
     const generated = await readFile(path.join(root, 'lib/generatedProductInventory.js'), 'utf8');

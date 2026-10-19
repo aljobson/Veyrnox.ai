@@ -25,7 +25,7 @@ test('Library saves a corrected legacy audio response as FLAC without generating
   const fixture = await libraryAudio(page);
   await fixture.open('/app/library');
   const downloadEvent = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Download', exact: true }).click();
+  await page.getByTestId('library-download').click();
   const download = await downloadEvent;
   expect(download.suggestedFilename()).toBe('veyrnox-00000000.flac');
   await download.cancel();
@@ -37,9 +37,9 @@ test('Library saves a corrected legacy audio response as FLAC without generating
 test('Library failed audio verification shows a retryable error without following a download URL', async ({ page }) => {
   const fixture = await libraryAudio(page, { unavailable: true });
   await fixture.open('/app/library');
-  await page.getByRole('button', { name: 'Download', exact: true }).click();
-  await expect(page.getByRole('alert').filter({ hasText: 'Could not load this file. Try again.' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Download', exact: true })).toBeEnabled();
+  await page.getByTestId('library-download').click();
+  await expect(page.getByTestId('library-download-error')).toHaveText('Could not load this file. Try again.');
+  await expect(page.getByTestId('library-download')).toBeEnabled();
   expect(fixture.requests.filter(row => row.path === '/download')).toEqual([]);
   expect(fixture.requests.filter(row => !['GET', 'HEAD', 'OPTIONS'].includes(row.method) && row.path !== '/api/auth/session')).toEqual([]);
 });

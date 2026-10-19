@@ -418,7 +418,7 @@ test('the workspace names the stored user on every read and write', () => {
 test('the workspace turns a stored notice into words itself, each time it is shown', () => {
   // The words come from chatErrorCopy, from the code: what is in storage is never put on screen as it is. The record
   // is passed as the second argument for the number a notice may need (`credits`).
-  assert.match(workspace, /\nconst waiting = \(chatId\) => \{ const n = readNotice\(store\(\), getStoredUserId\(\), chatId\); return n \? chatErrorCopy\(n\.code, n\) : null; \};\n/);
+  assert.match(workspace, /\nconst waiting = \(chatId\) => \{ const n = readNotice\(store\(\), getStoredUserId\(\), chatId\); return n \? \{ code: n.code, extra: n \} : null; \};\n/);
   assert.match(workspace, /\nconst keepNotice = \(chatId, code, extra\) => writeNotice\(store\(\), getStoredUserId\(\), chatId, code, extra\);\n/);
   assert.match(workspace, /\nconst dropNotice = \(chatId\) => clearNotice\(store\(\), getStoredUserId\(\), chatId\);\n/);
   // The send hook is told whether a warning about Credits is kept for a chat. It gets the record, never words.

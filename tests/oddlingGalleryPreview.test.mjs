@@ -1,3 +1,4 @@
+import { resolveI18nSource } from '../scripts/lib/vey-knowledge-i18n.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -9,7 +10,7 @@ const read = (file) => readFileSync(new URL(`../app/veyrnox/_components/${file}`
 const preview = read('OddlingGalleryPreview.js');
 const css = read('OddlingGalleryPreview.module.css');
 // The studio and the pieces split out of it (Explore, its filters, the portrait).
-const studio = ['OddlingStudio.js', 'OddlingExplore.js', 'OddlingExploreFilters.js', 'OddlingPortrait.js'].map(read).join('\n');
+const studio = ['OddlingStudio.js', 'OddlingExplore.js', 'OddlingExploreFilters.js', 'OddlingPortrait.js'].map(file => resolveI18nSource(read(file))).join('\n');
 
 test('gallery loops are presentation-only and never submit or upload a generation', () => {
   assert.doesNotMatch(preview, /fetch\s*\(|gatewayFetch|\/generations|\/uploads|onAnimate|router\.push/);
@@ -35,7 +36,7 @@ test('loops pause off-screen, in hidden tabs, on user request and for reduced mo
   assert.match(preview, /renderer\?\.destroy\(\)/);
   assert.match(css, /prefers-reduced-motion: reduce[\s\S]*display: none/);
   assert.match(studio, /aria-pressed=\{previewsPlaying\}/);
-  assert.match(studio, /'Pause dancing' : 'Play dancing'/);
+  assert.match(studio, /["']Pause dancing["'] : ["']Play dancing["']/);
 });
 
 test('motion never zooms beyond the full portrait and leaves the source untouched', () => {

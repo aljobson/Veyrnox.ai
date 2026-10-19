@@ -1,3 +1,4 @@
+import { helperEnglish } from '../../../lib/helperMessages.mjs';
 import {assertPicture} from './editorMotionAnalysis.mjs';
 // Original 2D inverse warps, driven by the existing local semantic segmentation model.
 const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
@@ -20,9 +21,9 @@ export function smoothRegion(previous, next) {
     return Object.fromEntries(['x','y','width','height'].map(k => [k, previous[k] + (next[k] - previous[k]) * .35]));
 }
 export function reshapeProblem(settings) {
-    if (!['face','body'].includes(settings.region)) return 'Choose face or body reshaping.';
-    if (![settings.widthAmount, settings.heightAmount].every(n => Number.isFinite(n) && n >= -.25 && n <= .25)) return 'Choose reshape amounts between −25% and 25%.';
-    if (!settings.widthAmount && !settings.heightAmount) return 'Change the width or height before reshaping.';
+    if (!['face','body'].includes(settings.region)) return helperEnglish('choose_face_or_body_reshaping');
+    if (![settings.widthAmount, settings.heightAmount].every(n => Number.isFinite(n) && n >= -.25 && n <= .25)) return helperEnglish('choose_reshape_amounts_between_25_and_25');
+    if (!settings.widthAmount && !settings.heightAmount) return helperEnglish('change_the_width_or_height_before_reshaping');
     return null;
 }
 function bilinear(frame, x, y, output, p) {

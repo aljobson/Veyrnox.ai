@@ -1,4 +1,7 @@
 'use client';
+import { useI18n } from '../../../../components/I18nProvider';
+import { pluralKey, tOr } from '../../../../lib/i18n/translate.mjs';
+import { localeTag } from '../../../../lib/i18n/locales.mjs';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { AppNav } from '../../_components/NavBar';
@@ -15,7 +18,7 @@ import { AssetLoadStatus } from '../../_components/AssetLoadStatus';
 import { EditSheet } from '../../_components/EditSheet';
 import { useCatalog } from '../../_lib/useCatalog';
 import { mergeHydrated, shouldPoll } from '../../_lib/jobWindow';
-import { STATE_TABS, KIND_TABS, KIND_LABEL, VIEWS, VIEW_KEY, filterRows, readView } from '../../_lib/libraryFilter';
+import { STATE_TABS, KIND_TABS, VIEWS, VIEW_KEY, filterRows, readView } from '../../_lib/libraryFilter';
 import { readFavourites, toggleFavourite } from '../../_lib/favourites';
 import { formatWhen } from '../../_lib/formatWhen';
 import { FilmLibraryMasters } from '../../_components/film/FilmLibraryMasters';
@@ -26,18 +29,18 @@ import { useOlderLibraryJobs } from '../../_lib/useOlderLibraryJobs';
 
 // Account list is authoritative; local history supplies cached display names.
 const STATE_UI = {
-  queued:    { chip: 'accent', glyph: '●', label: 'QUEUED' },
-  running:   { chip: 'accent', glyph: '●', label: 'RUNNING' },
-  succeeded: { chip: 'accent', glyph: '✓', label: 'DONE' },
+  queued:    { chip: 'accent', glyph: '●' },
+  running:   { chip: 'accent', glyph: '●' },
+  succeeded: { chip: 'accent', glyph: '✓' },
   // FAILED is not REFUNDED: the refund is a second call, and /jobs/:id says
   // whether it has landed. Claiming it either way was the old bug.
-  failed:    { chip: 'danger', glyph: '✕', label: 'FAILED · REFUNDED' },
-  failed_pending: { chip: 'danger', glyph: '✕', label: 'FAILED · REFUND PENDING' },
+  failed:    { chip: 'danger', glyph: '✕' },
+  failed_pending: { chip: 'danger', glyph: '✕' },
   // We could not read this job's state: it 404s (not ours, or aged out of the
   // window) or the server was unreachable. Deliberately neutral — claiming
   // either DONE or FAILED · REFUNDED would assert something about the ledger
   // that we have not checked.
-  unknown:   { chip: 'neutral', glyph: '?', label: 'UNKNOWN' },
+  unknown:   { chip: 'neutral', glyph: '?' },
 };
 
 const POLL_MS = 3000;
@@ -62,6 +65,8 @@ const isVideo = (r) => !!r.asset_url && !!r.mime_type?.startsWith('video/');
 const isAudio = (r) => !!r.asset_url && !!r.mime_type?.startsWith('audio/');
 
 export default function Library() {
+  const { t, locale } = useI18n();
+  const number = value => locale === 'en' ? String(value) : value.toLocaleString(localeTag(locale));
   const { models } = useCatalog();
   const [tab, setTab] = useState('all');
   const [kind, setKind] = useState('all');
@@ -268,7 +273,7 @@ export default function Library() {
         <div className="max-w-[1500px] mx-auto px-4 sm:px-8 pt-4">
           <div role="status" className="rounded-lg border border-vx-border bg-vx-panel px-4 py-3 text-sm text-vx-fg-body flex items-start gap-2">
             <span aria-hidden="true">△</span>
-            <span>We couldn&apos;t reach your library, so this is what this browser remembers — up to 50 recent jobs. Reload to try again.</span>
+            <span>{t("app.library.cached")}</span>
           </div>
         </div>
       )}
@@ -277,48 +282,47 @@ export default function Library() {
         <div className="max-w-[1500px] mx-auto px-4 sm:px-8 pt-4">
           <div role="status" className="rounded-lg border border-vx-danger/40 bg-vx-danger/[0.07] px-4 py-3 text-sm text-vx-danger flex items-start gap-2">
             <span aria-hidden="true">△</span>
-            <span>We stopped checking for updates — the server isn&apos;t responding. Cards marked UNKNOWN may have finished. Reload to try again.</span>
+            <span>{t("app.library.unreachable")}</span>
           </div>
         </div>
       )}
 
       <section className="max-w-[1400px] mx-auto px-4 sm:px-8 pt-10 pb-4">
-        <h1 className="vx-display text-[40px] sm:text-[56px]">Everything you&rsquo;ve made</h1>
+        <h1 data-testid="library-title" className="vx-display text-[40px] sm:text-[56px]">{t("app.library.title")}</h1>
         <p className="text-vx-fg-body mt-3">
-          Failed jobs refund automatically. They still show here so you can retry.
-        </p>
+          {t("app.library.refundHelp")}</p>
 
         <div className="mt-6 flex flex-wrap gap-2">
-          {STATE_TABS.map((t) => (
+          {STATE_TABS.map((state) => (
             <button
-              key={t}
-              onClick={() => setTab(t)}
-              aria-pressed={tab === t}
+              key={state}
+              data-testid={`library-state-${state}`}
+              onClick={() => setTab(state)}
+              aria-pressed={tab === state}
               type="button"
               className="vx-press rounded-full border px-4 py-2 text-[14px] font-semibold capitalize border-vx-border text-vx-fg-body hover:border-vx-fg-muted aria-pressed:border-vx-fg aria-pressed:bg-vx-fg aria-pressed:text-vx-base"
             >
-              {t}
+              {t(`app.library.tab.${state}`)}
             </button>
           ))}
         </div>
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by type">
+          <div className="flex flex-wrap gap-2" role="group" data-testid="library-types" aria-label={t("app.library.typeFilter")}>
             {KIND_TABS.map((k) => (
-              <button key={k} onClick={() => setKind(k)} aria-pressed={kind === k} type="button"
+              <button data-testid={`library-kind-${k}`} key={k} onClick={() => setKind(k)} aria-pressed={kind === k} type="button"
                 className="vx-press rounded-full border px-4 py-2 text-[14px] font-semibold border-vx-border text-vx-fg-body hover:border-vx-fg-muted aria-pressed:border-vx-fg aria-pressed:bg-vx-fg aria-pressed:text-vx-base">
-                {KIND_LABEL[k]}
+                {t(`app.library.kind.${k}`)}
               </button>
             ))}
-            <button onClick={() => setFavOnly((v) => !v)} aria-pressed={favOnly} type="button"
+            <button data-testid="library-favourites" onClick={() => setFavOnly((v) => !v)} aria-pressed={favOnly} type="button"
               className="vx-press rounded-full border px-4 py-2 text-[14px] font-semibold border-vx-border text-vx-fg-body hover:border-vx-fg-muted aria-pressed:border-vx-fg aria-pressed:bg-vx-fg aria-pressed:text-vx-base">
-              ★ Favourites
-            </button>
+              {t("app.library.favourites")}</button>
           </div>
-          <div className="flex gap-2" role="group" aria-label="Layout">
+          <div className="flex gap-2" role="group" data-testid="library-layout" aria-label={t("app.library.layout")}>
             {VIEWS.map((v) => (
-              <button key={v} onClick={() => chooseView(v)} aria-pressed={view === v} type="button"
+              <button data-testid={`library-view-${v}`} key={v} onClick={() => chooseView(v)} aria-pressed={view === v} type="button"
                 className="vx-press rounded-full border px-4 py-2 text-[14px] font-semibold capitalize border-vx-border text-vx-fg-body hover:border-vx-fg-muted aria-pressed:border-vx-fg aria-pressed:bg-vx-fg aria-pressed:text-vx-base">
-                {v}
+                {t(`app.library.view.${v}`)}
               </button>
             ))}
           </div>
@@ -332,13 +336,11 @@ export default function Library() {
       <section className="max-w-[1400px] mx-auto px-4 sm:px-8 pb-16">
         {!historyLoaded ? null : list.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-vx-border p-12 text-center">
-            <div className="text-lg font-black">Nothing here yet.</div>
+            <div data-testid="library-empty" className="text-lg font-black">{t("app.library.empty")}</div>
             <div className="text-[15px] text-vx-fg-body mt-1">
-              Jobs appear here as they run, failed ones included.
-            </div>
+              {t("app.library.emptyHelp")}</div>
             <Link href="/app/create" className="vx-press inline-block mt-5 rounded-full bg-vx-accent text-vx-accent-ink px-5 py-2.5 text-sm font-extrabold hover:bg-vx-accent-hover">
-              Open the studio
-            </Link>
+              {t("app.library.openStudio")}</Link>
           </div>
         ) : (
           <div className={view === 'list' ? 'grid grid-cols-1 gap-3 max-w-[760px]' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3'}>
@@ -358,7 +360,7 @@ export default function Library() {
               aria-busy={loadingOlder}
               className="vx-press rounded-full px-5 py-2.5 border border-vx-border text-[14px] font-bold text-vx-fg hover:border-vx-fg-muted disabled:opacity-50"
             >
-              {loadingOlder ? 'Loading older…' : hasMore ? `Show ${Math.min(PAGE, rows.length - visible)} older` : 'Load older'}
+              {loadingOlder ? t("app.library.loadingOlder") : hasMore ? t('app.library.showOlder', { count: number(Math.min(PAGE, rows.length - visible)) }) : t("app.library.loadOlder")}
             </button>
           </div>
         )}
@@ -368,14 +370,16 @@ export default function Library() {
         <div className="fixed bottom-0 inset-x-0 z-40 border-t border-vx-border bg-vx-panel">
           <div className="max-w-[1400px] mx-auto px-4 sm:px-8 py-3 flex items-center justify-between gap-3">
             <span className="text-sm text-vx-fg-body">
-              {pickedClips.length} video{pickedClips.length === 1 ? '' : 's'}
-              {picked.length > pickedClips.length ? ` · ${picked.length - pickedClips.length} audio` : ''} selected
+              {t(pluralKey(t, locale, 'app.library.selected', pickedClips.length), {
+                count: number(pickedClips.length),
+                audio: picked.length > pickedClips.length ? t('app.library.audioSelected', { count: number(picked.length - pickedClips.length) }) : '',
+              })}
             </span>
             <span className="flex gap-2">
-              <button onClick={() => setSelected([])} className="rounded-full px-4 py-2 text-sm border border-vx-border text-vx-fg-muted hover:text-vx-fg">Clear</button>
+              <button onClick={() => setSelected([])} className="rounded-full px-4 py-2 text-sm border border-vx-border text-vx-fg-muted hover:text-vx-fg">{t("app.library.clear")}</button>
               <button onClick={() => setEditing(true)} disabled={!pickedClips.length}
                 className="rounded-full px-5 py-2 text-sm font-bold bg-vx-accent text-vx-accent-ink disabled:opacity-40">
-                Edit ({pickedClips.length})
+                {t('app.library.edit', { count: number(pickedClips.length) })}
               </button>
             </span>
           </div>
@@ -392,6 +396,7 @@ export default function Library() {
 }
 
 function JobCard({ row, models, selectable, selected, onToggle, starred, onStar }) {
+  const { t, locale } = useI18n();
   const asset = useAssetUrl(row.job_id, row.asset_url);
   const refundPending = row.state === 'failed' && row.refunded !== true;
   const s = STATE_UI[refundPending ? 'failed_pending' : row.state] || STATE_UI.queued;
@@ -401,9 +406,10 @@ function JobCard({ row, models, selectable, selected, onToggle, starred, onStar 
   // A job that used a free allowance (ADR-0069) has credits 0: say FREE, and show nothing if it failed
   // (its allowance went back, there is no refund line to claim).
   const free = row.credits === 0;
+  const creditCount = locale === 'en' ? row.credits : Number(row.credits).toLocaleString(localeTag(locale));
   const delta = row.state === 'unknown' || refundPending ? ''
-    : free ? (row.state === 'failed' ? '' : 'FREE')
-    : row.state === 'failed' ? `+${row.credits}` : `−${row.credits}`;
+    : free ? (row.state === 'failed' ? '' : t('app.library.free'))
+    : row.state === 'failed' ? `+${creditCount}` : `−${creditCount}`;
   const deltaCls = free || row.state === 'failed' ? 'text-vx-accent' : 'text-vx-fg-muted';
   // Live catalog (tokens.js fallback) so newly added models show their name.
   const model = models.find((m) => m.id === row.model_id);
@@ -423,25 +429,25 @@ function JobCard({ row, models, selectable, selected, onToggle, starred, onStar 
           </div>
         )}
         {row.asset_url && row.mime_type?.startsWith('image/') && (
-          <img src={asset.url} onError={asset.onError} onLoad={asset.onLoad} alt={row.name || 'generation'} className="absolute inset-0 w-full h-full object-cover" />
+          <img src={asset.url} onError={asset.onError} onLoad={asset.onLoad} alt={row.name || t("app.library.generation")} className="absolute inset-0 w-full h-full object-cover" />
         )}
         <AssetLoadStatus asset={asset} />
-        <div className="absolute top-3 left-3">
+        <div data-library-status={refundPending ? 'failed_pending' : row.state} className="absolute top-3 start-3">
           <Chip tone={s.chip} noGlyph>
-            <span aria-hidden="true" className="text-[10px] mr-1">{s.glyph}</span>
-            {s.label}
+            <span aria-hidden="true" className="text-[10px] me-1">{s.glyph}</span>
+            {tOr(t, `app.library.status.${refundPending ? 'failed_pending' : row.state}`, t('app.library.status.queued'))}
           </Chip>
         </div>
         {row.asset_url && (
           // Disclosure on every generated asset (ADR-0058 decision 8; provider
           // GenAI policies and EU AI Act Article 50 both ask for it).
-          <div className={`absolute top-3 ${selectable ? 'right-14' : 'right-3'}`}>
-            <Chip tone="neutral" noGlyph className="bg-black/50">AI generated</Chip>
+          <div className={`absolute top-3 ${selectable ? 'end-14' : 'end-3'}`}>
+            <Chip tone="neutral" noGlyph className="bg-black/50">{t("app.library.generated")}</Chip>
           </div>
         )}
         {selectable && (
-          <button onClick={onToggle} aria-pressed={selected} aria-label="Add to edit"
-            className={`absolute top-3 right-3 w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold ${
+          <button onClick={onToggle} aria-pressed={selected} data-testid="library-add-to-edit" aria-label={t("app.library.addToEdit")}
+            className={`absolute top-3 end-3 w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold ${
               selected ? 'bg-vx-accent border-vx-accent text-vx-accent-ink' : 'bg-black/50 border-white/70 text-transparent'
             }`}>
             ✓
@@ -453,12 +459,12 @@ function JobCard({ row, models, selectable, selected, onToggle, starred, onStar 
           <div className="text-sm font-bold truncate">{row.name || row.prompt || row.job_id.slice(0, 8)}</div>
           <div className="text-xs text-vx-fg-muted mt-0.5 truncate">
             {model?.name || row.model_id}
-            {row.submitted_at ? ` · ${formatWhen(row.submitted_at)}` : ''}
+            {row.submitted_at ? ` · ${formatWhen(row.submitted_at, locale)}` : ''}
           </div>
         </div>
         <div className="shrink-0 flex items-center gap-3">
           <span className={`font-vx-mono text-[13px] font-bold vx-num ${deltaCls}`}>{delta}{free ? '' : ' cr'}</span>
-          <button onClick={onStar} aria-pressed={starred} aria-label="Favourite" type="button"
+          <button onClick={onStar} aria-pressed={starred} data-testid="library-favourite" aria-label={t("app.library.favourite")} type="button"
             className={`text-[18px] leading-none ${starred ? 'text-vx-accent' : 'text-vx-fg-faint hover:text-vx-fg'}`}>
             {starred ? '★' : '☆'}
           </button>

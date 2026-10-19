@@ -1,3 +1,4 @@
+import { resolveI18nSource } from '../scripts/lib/vey-knowledge-i18n.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
@@ -143,5 +144,5 @@ test('a passport handoff only loads a saved Oddling for an explicit Create launc
 test('Create activates the character controls when an Oddling passport is handed off', async () => {
     const panel = await readFile(new URL('../app/veyrnox/_components/CharacterPanel.js', import.meta.url), 'utf8');
     assert.match(panel, /if \(passport\) \{[\s\S]*onChange\(passport\.picks\);[\s\S]*onToggle\(true\);/);
-    assert.match(panel, /passport loaded and active\. Current model pricing is shown below\./);
+    assert.match(resolveI18nSource(panel), /passport loaded and active\. Current model pricing is shown below\./);
 });

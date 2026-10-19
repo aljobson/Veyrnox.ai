@@ -1,3 +1,4 @@
+import { resolveI18nSource } from '../scripts/lib/vey-knowledge-i18n.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -19,8 +20,8 @@ test('U3: warnings and notices do not use amber', () => {
     'app/veyrnox/social-cinema/pass/PassPanel.js',
     'app/veyrnox/guides/[id]/page.js',
   ]) assert.doesNotMatch(read(p), /vx-money/, p);
-  const credits = read('app/veyrnox/app/credits/page.js');
-  assert.match(credits, /text-vx-warn[^\n]*\n[^\n]*\n\s*<span>Sign in to see your balance/);
+  const credits = resolveI18nSource(read('app/veyrnox/app/credits/page.js'));
+  assert.match(credits, /text-vx-warn[^\n]*\n[^\n]*\n\s*<span>\{?"?Sign in to see your balance/);
   assert.doesNotMatch(read('app/veyrnox/app/library/page.js'), /starred \? 'text-vx-money'/);
 });
 

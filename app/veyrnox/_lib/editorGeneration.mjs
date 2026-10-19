@@ -1,3 +1,4 @@
+import { helperEnglish, helperDiagnostic } from '../../../lib/helperMessages.mjs';
 import { generationFileProblem } from './editorGenerationUploads.mjs';
 import { generationSlotKind, generationMimeTypes } from '../../../lib/generationSourceSlots.mjs';
 export function generationQuote(model, duration) {
@@ -75,8 +76,8 @@ export function generationSourceLabel(model,slot) {
 }
 export function generationPromptHelp(model) {
     const limit = model?.promptMax || 2000;
-    if (['elevenlabs-dialogue','elevenlabs-dialogue-kie'].includes(model?.id)) return `Use one Name: line per speaker, up to four speakers and ${limit} characters. Existing model voices apply.`;
-    if (model?.isSpeech) return `Up to ${limit} spoken characters. Existing model voices and settings apply.`;
+    if (['elevenlabs-dialogue','elevenlabs-dialogue-kie'].includes(model?.id)) return helperEnglish('use_one_name_line_per_speaker_up_to', { value1: limit });
+    if (model?.isSpeech) return helperEnglish('up_to_spoken_characters_existing_model_voices_and', { value1: limit });
     return null;
 }
 
@@ -97,3 +98,6 @@ export function generationSources(model, sources, consent) {
     if ((assets.length || uploads.length) && consent !== true) return { error: 'Confirm the source permission statement.' };
     return { assets,...(uploads.length ? { uploads } : {}) };
 }
+
+/** Locale-neutral display diagnostic; the legacy string interface remains available. */
+export const generationPromptHelpDiagnostic = (...args) => helperDiagnostic(generationPromptHelp(...args));
