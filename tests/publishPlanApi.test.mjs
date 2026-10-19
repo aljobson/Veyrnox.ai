@@ -125,3 +125,39 @@ test('public entitlement never exposes Stripe ids', () => {
   assert.equal(value.subscription.stripe_customer_id, undefined);
   assert.equal(value.account_limit, 5);
 });
+
+test('subscription.source says where a live plan is managed, from existing columns only', () => {
+  const read = (subscription) => publicEntitlement(entitlement({ tier: 'publish', analytics_days: 366, best_time_enabled: true, subscription }));
+  const base = { id: subscriptionId, price_usd_cents: 1500, current_period_end: '2099-01-01T00:00:00Z' };
+  assert.equal(read({ ...base, status: 'active', stripe_subscription_id: 'sub_1', stripe_customer_id: 'cus_1' }).subscription.source, 'stripe');
+  assert.equal(read({ ...base, status: 'past_due', stripe_subscription_id: 'sub_1', stripe_customer_id: 'cus_1' }).subscription.source, 'stripe');
+  // A store row has no Stripe ids (0346 writes store_channel instead).
+  assert.equal(read({ ...base, status: 'active', stripe_subscription_id: null, stripe_customer_id: null }).subscription.source, 'store');
+  assert.equal(read({ ...base, status: 'past_due' }).subscription.source, 'store');
+  // Nothing live to manage: pending checkout, ended, flagged duplicate.
+  for (const status of ['pending', 'ended', 'flagged']) assert.equal(read({ ...base, status }).subscription.source, null);
+  // Free with no subscription row at all.
+  const free = publicEntitlement(entitlement({ tier: 'free', subscription: null }));
+  assert.equal(free.subscription, null);
+});
+
+test('source never carries a customer id, receipt, store identity or token', () => {
+  const value = publicEntitlement(entitlement({ tier: 'publish', analytics_days: 366, best_time_enabled: true, subscription: {
+    id: subscriptionId, status: 'active', stripe_subscription_id: null, stripe_customer_id: null,
+    store_channel: 'ios', store_original_transaction_id: '2000000123456789', rc_customer_id: 'secret',
+  } }));
+  assert.equal(JSON.stringify(value).includes('2000000123456789'), false);
+  assert.equal(JSON.stringify(value).includes('secret'), false);
+  assert.equal(value.subscription.store_channel, undefined);
+});
+
+test('one live row at most: a store plan next to a Stripe record reports the live one', () => {
+  // read_social_publish_entitlement orders live rows first and the one-live index allows one, so the row the
+  // read returns is the live one. The second purchase is flagged (status flagged) and reads as null source.
+  const live = publicEntitlement(entitlement({ tier: 'publish', analytics_days: 366, best_time_enabled: true, subscription: {
+    id: subscriptionId, status: 'active', stripe_subscription_id: null,
+  } }));
+  assert.equal(live.subscription.source, 'store');
+  const flaggedOnly = publicEntitlement(entitlement({ tier: 'free', subscription: { id: subscriptionId, status: 'flagged', stripe_subscription_id: 'sub_1' } }));
+  assert.equal(flaggedOnly.subscription.source, null);
+});
