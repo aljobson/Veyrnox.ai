@@ -1,6 +1,6 @@
 import { ApiError } from '../src/lib/api';
 import { withdrawComment } from '../src/lib/cinemaComments';
-import { castChoice, castVote, competitionOpen, fetchWinners, isClosed, parseRetentionList, parseRetentionState, parseStoryPolls, parseVoting, parseWinners, readOf, setRetention, socialErrorKey } from '../src/lib/cinemaSocial';
+import { recordShare, castChoice, castVote, competitionOpen, fetchWinners, isClosed, parseRetentionList, parseRetentionState, parseStoryPolls, parseVoting, parseWinners, readOf, setRetention, socialErrorKey } from '../src/lib/cinemaSocial';
 
 const A = '11111111-1111-4111-8111-111111111111';
 const B = '22222222-2222-4222-8222-222222222222';
@@ -110,7 +110,6 @@ test('withdraws a comment with the action body and a key', async () => {
 
 describe('audience share signal', () => {
     test('sends the share action with a key', async () => {
-        const { recordShare } = await import('../src/lib/cinemaSocial');
         const { api, calls } = recorder({ ok: true });
         expect(await recordShare(api, A, K)).toBe(true);
         expect(calls[0].path).toBe('/api/v1/cinema/audience');
@@ -118,7 +117,6 @@ describe('audience share signal', () => {
         expect((calls[0].init?.headers as Record<string, string>)['Idempotency-Key']).toBe(K);
     });
     test('never throws: a closed switch, an offline phone or a bad id is just false', async () => {
-        const { recordShare } = await import('../src/lib/cinemaSocial');
         const failing = { request: async () => { throw new ApiError(503, 'audience_not_open'); } };
         expect(await recordShare(failing, A, K)).toBe(false);
         expect(await recordShare(failing, 'bad', K)).toBe(false);
