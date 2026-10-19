@@ -176,13 +176,13 @@ test('Cinema Pass closed sales do not expose checkout', async ({ page }) => {
   const fixture = await installAccessFixtures(page);
   await openReal(fixture, '/social-cinema/pass');
   await expect(page.getByText('Cinema Pass is not open yet.', { exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Start .* Pass/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Start Pass/ })).toHaveCount(0);
 });
 
 test('Cinema Pass requires consent and displays safe intercepted checkout failure', async ({ page }) => {
   const fixture = await installAccessFixtures(page, { preview: true });
   await openReal(fixture, '/social-cinema/pass');
-  const start = page.getByRole('button', { name: 'Start monthly Pass', exact: true });
+  const start = page.getByRole('button', { name: 'Start Pass: Monthly', exact: true });
   await expect(start).toBeDisabled();
   await page.getByRole('checkbox').check();
   await start.click();

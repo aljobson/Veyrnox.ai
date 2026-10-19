@@ -1,4 +1,5 @@
 import { API_BASE } from './api';
+import { isUsername } from './cinemaBlocks';
 
 // Cinema catalogue reads (ADR-0059). The list is anonymous and cached by the server for a minute;
 // the per-title read under /api/v1 adds what this viewer may watch, episode by episode.
@@ -12,6 +13,8 @@ export interface CinemaTitle {
     readonly title: string;
     readonly synopsis: string;
     readonly creator: string;
+    // The creator's public handle, kept only when it is a valid username: it is what Block needs (ADR-0141).
+    readonly creatorUsername: string | null;
     readonly episodeCount: number;
     readonly durationSeconds: number | null;
     readonly publishedAt: string;
@@ -58,6 +61,7 @@ function parseTitle(raw: unknown): CinemaTitle | null {
         title: str(raw.title, 'Untitled'),
         synopsis: str(raw.synopsis),
         creator: str(creator.display_name) || str(creator.username),
+        creatorUsername: isUsername(creator.username) ? creator.username : null,
         episodeCount: num(raw.episode_count) ?? 0,
         durationSeconds: num(raw.duration_seconds),
         publishedAt: str(raw.published_at),

@@ -72,3 +72,17 @@ test('returns an X authorize URL, with PKCE forwarded, bound to our https per-ne
     assert.equal(url.searchParams.get('scope'), 'tweet.read tweet.write users.read offline.access media.write');
     assert.ok(url.searchParams.get('state').includes('.'), 'state is a signed token, not a raw value');
 });
+
+test('a mobile connect asks X to return to the bridge; an unknown client is refused (ADR-0136)', async () => {
+    setConfigured();
+    allowStateStore();
+    const res = await POST(request({ codeChallenge: challenge, client: 'mobile' }));
+    assert.equal(res.status, 200);
+    const url = new URL((await res.json()).authorizeUrl);
+    assert.equal(url.searchParams.get('redirect_uri'), 'https://veyrnox.ai/social/connect/mobile/twitter');
+    for (const bad of ['ios', '', null, 1, 'https://evil.test']) {
+        const refused = await POST(request({ codeChallenge: challenge, client: bad }));
+        assert.equal(refused.status, 400, String(bad));
+        assert.deepEqual(await refused.json(), { error: 'invalid_body' });
+    }
+});

@@ -54,7 +54,7 @@ export default function ProjectDetail() {
         <View style={styles.screen}>
             <Stack.Screen options={{ title: project.name }} />
             <Text style={styles.meta}>Version {project.version}{project.createdAt ? ` · created ${new Date(project.createdAt).toLocaleDateString()}` : ''}{project.updatedAt ? ` · updated ${new Date(project.updatedAt).toLocaleString()}` : ''}</Text>
-            <Text style={styles.heading}>Saved versions</Text>
+            <Text style={styles.heading} accessibilityRole="header">Saved versions</Text>
             <FlatList
                 data={versions}
                 keyExtractor={(v) => String(v.revision)}

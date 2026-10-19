@@ -11,8 +11,9 @@ import { estimateCredits, fetchCatalog, kindOf, mediaApi, promptRequired, textIn
 import { selectedState } from '../../../lib/a11y';
 import { missingRequired, slotsFor, toSourceKeys, type SlotName } from '../../../lib/sources';
 import { colors } from '../../../theme';
+import { plural, t } from '../../../lib/i18n';
 
-const PLACEHOLDER: Record<string, string> = { topic: 'What is the short about? A few words is enough.' };
+const PLACEHOLDER: Record<string, string> = { topic: 'form.topicPlaceholder' };
 
 export default function CreateWithModel() {
     const { modelId, prompt: presetPrompt, duration: presetDuration } = useLocalSearchParams<{ modelId: string; prompt?: string; duration?: string }>();
@@ -39,9 +40,9 @@ export default function CreateWithModel() {
                     const wanted = Number(presetDuration);
                     setDuration(found.durations.includes(wanted) ? wanted : (found.durations[0] ?? 5));
                 }
-                if (!found) setError('That model is no longer available.');
+                if (!found) setError(t('form.modelGone'));
             })
-            .catch(() => setError('Could not load this model.'));
+            .catch(() => setError(t('form.modelLoad')));
     }, [modelId, presetDuration]);
 
     if (!model) {
@@ -93,27 +94,27 @@ export default function CreateWithModel() {
                         style={[styles.prompt, text_.key === 'topic' && styles.topic]}
                         value={prompt}
                         onChangeText={setPrompt}
-                        placeholder={PLACEHOLDER[text_.key] ?? (promptRequired(model) ? 'Describe what to create' : 'Describe the change (optional)')}
+                        placeholder={t(PLACEHOLDER[text_.key] ?? (promptRequired(model) ? 'form.describeCreate' : 'form.describeChange'))}
                         placeholderTextColor={colors.muted}
-                        accessibilityLabel={text_.key === 'topic' ? 'Topic' : 'Prompt'}
+                        accessibilityLabel={text_.key === 'topic' ? t('form.topic') : t('mobile.prompt')}
                         multiline
                         maxLength={text_.max}
                     />
                 ) : null}
-                {sources.length ? <Text style={styles.consent}>Your file is sent to the AI provider that makes this. It is deleted after a day.</Text> : null}
+                {sources.length ? <Text style={styles.consent}>{t('form.consent')}</Text> : null}
                 {isVideo && model.durations.length > 1 ? (
                     <View style={styles.chips}>
                         {model.durations.map((d) => (
-                            <Pressable key={d} accessibilityRole="button" accessibilityLabel={`${d} seconds`} accessibilityState={selectedState(duration === d)} style={[styles.chip, duration === d && styles.chipOn]} onPress={() => setDuration(d)}>
+                            <Pressable key={d} accessibilityRole="button" accessibilityLabel={plural('form.seconds', d)} accessibilityState={selectedState(duration === d)} style={[styles.chip, duration === d && styles.chipOn]} onPress={() => setDuration(d)}>
                                 <Text style={[styles.chipText, duration === d && styles.chipTextOn]}>{d}s</Text>
                             </Pressable>
                         ))}
                     </View>
                 ) : null}
-                <Text style={styles.price}>Costs {price} {price === 1 ? 'credit' : 'credits'}. Refunded if it fails.</Text>
+                <Text style={styles.price}>{plural('form.costs', price)}</Text>
                 {error ? <Text style={styles.error}>{error}</Text> : null}
-                <Pressable accessibilityRole="button" accessibilityLabel="Generate" accessibilityState={{ busy, disabled: !ready || busy }} disabled={!ready || busy} style={[styles.button, (!ready || busy) && styles.off]} onPress={generate}>
-                    {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>Generate</Text>}
+                <Pressable accessibilityRole="button" accessibilityLabel={t('slip.generate')} accessibilityState={{ busy, disabled: !ready || busy }} disabled={!ready || busy} style={[styles.button, (!ready || busy) && styles.off]} onPress={generate}>
+                    {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>{t('slip.generate')}</Text>}
                 </Pressable>
             </ScrollView>
         </KeyboardAvoidingView>
@@ -122,30 +123,30 @@ export default function CreateWithModel() {
 
 function messageFor(err: unknown): string {
     if (err instanceof OfflineError) return OFFLINE_PAID_MESSAGE;
-    if (!(err instanceof ApiError)) return 'Something went wrong. Try again.';
+    if (!(err instanceof ApiError)) return t('common.error');
     switch (err.code) {
         case 'insufficient_credits':
-            return 'Not enough credits for this.';
+            return t('form.err.insufficient');
         case 'rate_limited':
-            return 'Too many requests. Wait a moment.';
+            return t('form.err.rate');
         case 'credit_confirmation_mismatch':
-            return `The price changed to ${String(err.body.expected_credits ?? 'a new amount')} credits. Check it and try again.`;
+            return err.body.expected_credits === undefined ? t('form.err.priceChangedUnknown') : t('form.err.priceChanged', { credits: String(err.body.expected_credits) });
         case 'network':
-            return 'No connection. Try again; you will not be charged twice.';
+            return t('form.err.network');
         case 'source_not_found':
-            return 'Your file expired before it was used. Choose it again.';
+            return t('form.err.sourceExpired');
         case 'source_type_unsupported':
         case 'source_slot_invalid':
         case 'source_key_invalid':
-            return 'That file does not fit this model. Choose a different one.';
+            return t('form.err.sourceMismatch');
         case 'topic_refused':
-            return 'That topic was not accepted. Try different words. You were not charged.';
+            return t('form.err.topicRefused');
         case 'consent_declined':
             return CONSENT_DECLINED_MESSAGE;
         case 'consent_required':
-            return 'Please try again.';
+            return t('form.err.tryAgain');
         default:
-            return 'That could not start. You were not charged.';
+            return t('form.err.default');
     }
 }
 

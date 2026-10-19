@@ -5,10 +5,10 @@ import { ApiError, type ApiClient } from './api';
 const SITE = 'https://veyrnox.ai';
 
 export const LEGAL_LINKS = [
-    { label: 'Terms of service', url: `${SITE}/legal/terms` },
-    { label: 'Privacy policy', url: `${SITE}/legal/privacy` },
-    { label: 'Acceptable use policy', url: `${SITE}/legal/aup` },
-    { label: 'Refunds', url: `${SITE}/legal/refund` },
+    { label: 'Terms of service', labelKey: 'account.legal.terms', url: `${SITE}/legal/terms` },
+    { label: 'Privacy policy', labelKey: 'account.legal.privacy', url: `${SITE}/legal/privacy` },
+    { label: 'Acceptable use policy', labelKey: 'account.legal.aup', url: `${SITE}/legal/aup` },
+    { label: 'Refunds', labelKey: 'account.legal.refunds', url: `${SITE}/legal/refund` },
 ] as const;
 
 export const SUPPORT_EMAIL = 'support@veyrnox.com';

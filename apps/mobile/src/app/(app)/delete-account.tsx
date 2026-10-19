@@ -104,7 +104,7 @@ function Prepared_({ result, typed, setTyped, note, onErase, onRetry }: Prepared
     if (result.kind === 'blocked') {
         return (
             <>
-                <Text style={styles.title}>Not yet</Text>
+                <Text style={styles.title} accessibilityRole="header">Not yet</Text>
                 <Text style={styles.body}>Something on your account has to be sorted first:</Text>
                 {result.blockers.map((code) => (
                     <Text key={code} style={styles.blocker}>
@@ -118,7 +118,7 @@ function Prepared_({ result, typed, setTyped, note, onErase, onRetry }: Prepared
     const ok = typed.trim() === CONFIRM_WORD;
     return (
         <>
-            <Text style={styles.title}>Delete your account?</Text>
+            <Text style={styles.title} accessibilityRole="header">Delete your account?</Text>
             <Forfeits forfeit={result.forfeit} />
             <Text style={styles.body}>
                 This erases your account and what is stored with it. It cannot be undone. Records we must keep by law, such as payment records, are kept.

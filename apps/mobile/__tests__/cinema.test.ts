@@ -47,3 +47,14 @@ test('formats a duration', () => {
     expect(formatDuration(94)).toBe('1:34');
     expect(formatDuration(null)).toBe('');
 });
+
+describe('creator username (for blocking)', () => {
+    test('is kept only when it is a valid username', () => {
+        const ok = parseTitleDetail({ title: { ...ROW, creator: { display_name: 'C', username: 'studio_9' } } });
+        const bad = parseTitleDetail({ title: { ...ROW, creator: { display_name: 'C', username: 'Not Valid!' } } });
+        const none = parseTitleDetail({ title: { ...ROW, creator: { display_name: 'C' } } });
+        expect(ok?.title.creatorUsername).toBe('studio_9');
+        expect(bad?.title.creatorUsername).toBeNull();
+        expect(none?.title.creatorUsername).toBeNull();
+    });
+});

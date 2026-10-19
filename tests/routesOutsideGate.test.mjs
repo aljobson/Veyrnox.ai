@@ -12,6 +12,7 @@ import { fileURLToPath } from 'node:url';
 const OUTSIDE = {
     'app/api/auth/session/route.js': 'same-origin CSRF + HttpOnly refresh credential',
     'app/auth/mobile/route.js': 'public redirect to a fixed app address; forwards only a well-formed PKCE code',
+    'app/social/connect/mobile/[network]/route.js': 'public redirect to a fixed app address; forwards only a code and our signed state for a known network',
     'app/.well-known/oauth-protected-resource/api/v1/mcp/route.js': 'public OAuth metadata',
     'app/.well-known/oauth-protected-resource/api/v1/developer/route.js': 'public OAuth metadata',
     'app/.well-known/apple-app-site-association/route.js': 'public app-link association; fixed constants, 404 until configured',

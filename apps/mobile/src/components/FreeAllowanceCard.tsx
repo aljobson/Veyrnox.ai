@@ -24,7 +24,7 @@ export function FreeAllowanceCard({ models }: { readonly models: readonly { read
     if (lines.length === 0) return null;
     return (
         <View style={styles.card} accessible accessibilityLabel={`Free today. ${lines.join('. ')}`}>
-            <Text style={styles.title}>Free today</Text>
+            <Text style={styles.title} accessibilityRole="header">Free today</Text>
             {lines.map((l) => (
                 <Text key={l} style={styles.line}>
                     {l}

@@ -8,6 +8,7 @@ import { ACCOUNT_DELETION_ENABLED } from '../../lib/accountDeletion';
 import { LEGAL_LINKS, PRIVACY_EMAIL, SUPPORT_EMAIL } from '../../lib/account';
 import { usePush } from '../../push/pushContext';
 import { colors } from '../../theme';
+import { t } from '../../lib/i18n';
 
 export default function Account() {
     const { signOut } = useAuth();
@@ -18,20 +19,20 @@ export default function Account() {
     const [restoreNote, setRestoreNote] = useState<string | null>(null);
 
     async function onRestore() {
-        setRestoreNote('Checking with the store…');
+        setRestoreNote(t('account.restoreChecking'));
         try {
             await restore();
-            setRestoreNote('Done. A Publish Plan bought with this store account is active again.');
+            setRestoreNote(t('account.restoreDone'));
         } catch {
-            setRestoreNote('Could not reach the store. Try again.');
+            setRestoreNote(t('account.restoreFailed'));
         }
     }
 
     async function onPush(on: boolean) {
         setPushNote(null);
         const out = await push.setEnabled(on);
-        if (out === 'denied') setPushNote('Notifications are off for this app. Turn them on in your phone settings first.');
-        else if (out === 'unavailable') setPushNote('Notifications are not available right now. Try again later.');
+        if (out === 'denied') setPushNote(t('account.pushDenied'));
+        else if (out === 'unavailable') setPushNote(t('account.pushUnavailable'));
     }
 
     // Remove this device's push token while the session is still valid, then sign out.
@@ -42,75 +43,78 @@ export default function Account() {
 
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-            <Stack.Screen options={{ title: 'Account' }} />
+            <Stack.Screen options={{ title: t('account.title') }} />
 
             {billing !== 'off' ? (
-                <Section title="Purchases">
-                    <Row label="Restore purchases" onPress={onRestore} disabled={!canPurchase} />
+                <Section title={t('account.purchases')}>
+                    <Row label={t('account.restore')} onPress={onRestore} disabled={!canPurchase} />
                     {restoreNote ? <Text style={styles.note}>{restoreNote}</Text> : null}
-                    <Text style={styles.note}>Credit packs are added to your balance when you buy them and are not restored.</Text>
+                    <Text style={styles.note}>{t('account.packsNote')}</Text>
                 </Section>
             ) : null}
 
             {push.supported ? (
-                <Section title="Notifications">
+                <Section title={t('account.notifications')}>
                     <View style={styles.switchRow}>
-                        <Text style={styles.rowText}>Tell me when a creation is ready</Text>
+                        <Text style={styles.rowText}>{t('account.notifyMe')}</Text>
                         <Switch
-                            accessibilityLabel="Tell me when a creation is ready"
+                            accessibilityLabel={t('account.notifyMe')}
                             value={push.enabled}
                             onValueChange={(on) => void onPush(on)}
                             trackColor={{ true: colors.accent, false: colors.border }}
                         />
                     </View>
                     {pushNote ? <Text style={styles.note}>{pushNote}</Text> : null}
-                    <Text style={styles.note}>One notification when a creation finishes or fails. It never contains your prompt.</Text>
+                    <Text style={styles.note}>{t('account.notifyNote')}</Text>
                 </Section>
             ) : null}
 
-            <Section title="Credits">
+            <Section title={t('label.Credits')}>
                 <Link href="/history" asChild>
-                    <Row label="Credit history" />
+                    <Row label={t('account.history')} />
                 </Link>
             </Section>
 
-            <Section title="Refer a friend">
+            <Section title={t('account.referSection')}>
                 <Link href="/referrals" asChild>
-                    <Row label="Earn Credits when a friend buys" />
+                    <Row label={t('account.refer')} />
                 </Link>
             </Section>
 
-            <Section title="Help">
+            <Section title={t('account.helpSection')}>
                 <Link href="/help" asChild>
-                    <Row label="Help and content decisions" />
+                    <Row label={t('account.help')} />
                 </Link>
             </Section>
 
-            <Section title="Safety">
+            <Section title={t('account.safetySection')}>
                 <Link href="/report" asChild>
-                    <Row label="Report a problem or content" />
+                    <Row label={t('account.report')} />
                 </Link>
-                <Text style={styles.note}>To report one of your creations, open it from your library and use Report.</Text>
+                <Link href="/blocked" asChild>
+                    <Row label={t('blocks.title')} />
+                </Link>
+                <Text style={styles.note}>{t('account.reportNote')}</Text>
             </Section>
 
-            <Section title="About and contact">
+            <Section title={t('account.aboutSection')}>
                 {LEGAL_LINKS.map((l) => (
-                    <Row key={l.url} label={l.label} onPress={() => WebBrowser.openBrowserAsync(l.url)} />
+                    <Row key={l.url} label={t(l.labelKey)} onPress={() => WebBrowser.openBrowserAsync(l.url)} />
                 ))}
-                <Row label={`Contact support: ${SUPPORT_EMAIL}`} onPress={() => Linking.openURL(`mailto:${SUPPORT_EMAIL}`)} />
+                <Row label={t('account.contact', { email: SUPPORT_EMAIL })} onPress={() => Linking.openURL(`mailto:${SUPPORT_EMAIL}`)} />
             </Section>
 
-            <Section title="Your data">
-                <Row label="Delete my account" danger disabled={!ACCOUNT_DELETION_ENABLED} onPress={() => router.push('/delete-account')} />
+            <Section title={t('account.dataSection')}>
+                <Row label={t('account.deleteAccount')} danger disabled={!ACCOUNT_DELETION_ENABLED} onPress={() => router.push('/delete-account')} />
                 {ACCOUNT_DELETION_ENABLED ? null : (
                     <Text style={styles.note}>
-                        Deleting your account from the app is coming. Until then, email {PRIVACY_EMAIL} from your account address and we will delete it.
+                        {t('account.deleteSoon', { email: PRIVACY_EMAIL })}
                     </Text>
                 )}
             </Section>
 
             <Pressable accessibilityRole="button" style={styles.signOut} onPress={() => void onSignOut()}>
-                <Text style={styles.signOutText}>Sign out</Text>
+                <Text style={styles.signOutText}>{t('public.account.signOut')}</Text>
             </Pressable>
         </ScrollView>
     );
@@ -119,7 +123,7 @@ export default function Account() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
     return (
         <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{title}</Text>
+            <Text style={styles.sectionTitle} accessibilityRole="header">{title}</Text>
             {children}
         </View>
     );

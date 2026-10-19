@@ -16,6 +16,15 @@
         "Narrow",
         "Round Tip"
       ]
+    },
+    {
+      "file": "button-nose.png",
+      "rows": [
+        1
+      ],
+      "styles": [
+        "Button"
+      ]
     }
   ]
 }

@@ -36,15 +36,15 @@ test('pictureTileSrc returns the file for a listed option and nothing for the re
   assert.equal(pictureTileSrc('headwear', 'Wide-Brim Hat'), '/oddlings/headwear/wide-brim-hat.webp');
   assert.equal(pictureTileSrc('hair', 'Afro'), '/oddlings/hair/afro.webp');
   assert.equal(pictureTileSrc('mouth', 'Forked Tongue'), '/oddlings/face/mouth/forked-tongue.webp');
-  assert.equal(pictureTileSrc('mouth', 'Small Mouth'), '', 'looked the same as No Teeth: keeps the drawn tile');
-  assert.equal(pictureTileSrc('nose_shape', 'Button'), '', 'not on the close-up sheet: keeps the drawn tile');
+  assert.equal(pictureTileSrc('mouth', 'Small Mouth'), '/oddlings/face/mouth/small-mouth.webp');
+  assert.equal(pictureTileSrc('nose_shape', 'Button'), '/oddlings/face/nose_shape/button.webp');
   assert.equal(pictureTileSrc('wardrobe_style', 'Tiny Formalwear'), '/oddlings/outfits/tiny-formalwear.webp');
   assert.equal(pictureTileSrc('rendering_style', 'Hyper-Realistic'), '/oddlings/rendering/hyper-realistic.webp');
   assert.equal(pictureTileSrc('rendering_style', 'Anime'), '/oddlings/rendering/anime.webp');
-  assert.equal(pictureTileSrc('left_arm', 'None'), '', 'both arms were still drawn: keeps the drawn tile');
+  assert.equal(pictureTileSrc('left_arm', 'None'), '/oddlings/limbs/left_arm/none.webp');
   assert.equal(pictureTileSrc('brows', 'Thick'), '/oddlings/face/brows/thick.webp');
-  assert.equal(pictureTileSrc('chin_jaw', 'Cleft Chin'), '', 'drawn wrongly on the sheet: keeps the drawn tile');
-  assert.equal(pictureTileSrc('ears', 'No Ears'), '');
+  assert.equal(pictureTileSrc('chin_jaw', 'Cleft Chin'), '/oddlings/face/chin_jaw/cleft-chin.webp');
+  assert.equal(pictureTileSrc('ears', 'No Ears'), '/oddlings/face/ears/no-ears.webp');
   assert.equal(pictureTileSrc('horns', 'Antlers'), '/oddlings/face/horns/antlers.webp');
   assert.equal(pictureTileSrc('eyes_details', 'Scarred Eye'), '/oddlings/face/eyes_details/scarred-eye.webp');
   assert.equal(pictureTileSrc('horns', 'Curved'), '');
@@ -53,7 +53,7 @@ test('pictureTileSrc returns the file for a listed option and nothing for the re
 });
 
 test('the outfit and headwear manifests name only options that have a picture, and skip the rest with null', () => {
-  for (const [file, group] of [['outfit-tiles.manifest.json', 'wardrobe_style'], ['headwear-tiles.manifest.json', 'headwear'], ['face-head-shape.manifest.json', 'head_shape'], ['face-eye-shape.manifest.json', 'eye_shape'], ['face-nose-shape.manifest.json', 'nose_shape'], ['face-mouth.manifest.json', 'mouth'], ['face-brows.manifest.json', 'brows'], ['face-lips.manifest.json', 'lips'], ['face-chin-jaw.manifest.json', 'chin_jaw'], ['face-cheeks.manifest.json', 'cheeks'], ['face-ears.manifest.json', 'ears'], ['face-facial-hair.manifest.json', 'facial_hair'], ['face-horns.manifest.json', 'horns'], ['face-face-features.manifest.json', 'face_features'], ['face-eyes-type.manifest.json', 'eyes_type'], ['face-eyes-details.manifest.json', 'eyes_details'], ['limb-neck.manifest.json', 'neck'], ['limb-left-arm.manifest.json', 'left_arm'], ['limb-right-arm.manifest.json', 'right_arm'], ['limb-left-leg.manifest.json', 'left_leg'], ['limb-right-leg.manifest.json', 'right_leg'], ['skin-conditions.manifest.json', 'skin_conditions'], ['skin-materials.manifest.json', 'face_skin_material'], ['skin-patterns.manifest.json', 'face_surface_pattern'], ['species.manifest.json', 'character_type'], ['accessories-everyday.manifest.json', 'everyday_accessories'], ['accessories-accessories.manifest.json', 'accessories'], ['accessories-distinctive.manifest.json', 'distinctive_features'], ['body-body-type.manifest.json', 'body_type'], ['body-proportions.manifest.json', 'proportions'], ['body-exaggeration.manifest.json', 'exaggeration'], ['rendering-style.manifest.json', 'rendering_style']]) {
+  for (const [file, group] of [['outfit-tiles.manifest.json', 'wardrobe_style'], ['headwear-tiles.manifest.json', 'headwear'], ['face-head-shape.manifest.json', 'head_shape'], ['face-eye-shape.manifest.json', 'eye_shape'], ['face-nose-shape.manifest.json', 'nose_shape'], ['face-mouth.manifest.json', 'mouth'], ['face-brows.manifest.json', 'brows'], ['face-lips.manifest.json', 'lips'], ['face-chin-jaw.manifest.json', 'chin_jaw'], ['face-cheeks.manifest.json', 'cheeks'], ['face-ears.manifest.json', 'ears'], ['face-facial-hair.manifest.json', 'facial_hair'], ['face-horns.manifest.json', 'horns'], ['face-face-features.manifest.json', 'face_features'], ['face-eyes-type.manifest.json', 'eyes_type'], ['face-eyes-details.manifest.json', 'eyes_details'], ['limb-neck.manifest.json', 'neck'], ['limb-left-arm.manifest.json', 'left_arm'], ['limb-right-arm.manifest.json', 'right_arm'], ['limb-left-leg.manifest.json', 'left_leg'], ['limb-right-leg.manifest.json', 'right_leg'], ['skin-conditions.manifest.json', 'skin_conditions'], ['skin-materials.manifest.json', 'face_skin_material'], ['skin-patterns.manifest.json', 'face_surface_pattern'], ['species.manifest.json', 'character_type'], ['accessories-everyday.manifest.json', 'everyday_accessories'], ['accessories-accessories.manifest.json', 'accessories'], ['accessories-distinctive.manifest.json', 'distinctive_features'], ['body-body-type.manifest.json', 'body_type'], ['body-proportions.manifest.json', 'proportions'], ['body-exaggeration.manifest.json', 'exaggeration'], ['rendering-style.manifest.json', 'rendering_style'], ['identity-ethnicity.manifest.json', 'ethnicity_origin_base'], ['identity-gender.manifest.json', 'gender']]) {
     const manifest = JSON.parse(readFileSync(new URL(`../scripts/${file}`, import.meta.url), 'utf8'));
     const named = manifest.sources.flatMap((source) => source.styles).filter(Boolean);
     assert.deepEqual(named.sort(), [...PICTURE_TILES[group].styles].sort(), `${file} and the picture list differ`);
@@ -72,13 +72,15 @@ test('a right arm or leg picture is the left one mirrored: same options, differe
   const manifest = JSON.parse(readFileSync(new URL('../scripts/limb-right-arm.manifest.json', import.meta.url), 'utf8'));
   assert.ok(manifest.sources.every((source) => source.mirror === true), 'the right arm manifest must mirror');
   assert.equal(pictureTileSrc('right_leg', 'Robotic'), '/oddlings/limbs/right_leg/robotic.webp');
-  assert.equal(pictureTileSrc('left_arm', 'None'), '', 'No Arm was not drawn: keeps the drawn tile');
+  assert.equal(pictureTileSrc('right_leg', 'None'), '/oddlings/limbs/right_leg/none.webp');
   assert.equal(pictureTileSrc('face_skin_material', 'Scales'), '/oddlings/skin/face_skin_material/scales.webp');
   assert.equal(pictureTileSrc('character_type', 'Octopus'), '/oddlings/species/octopus.webp');
   assert.equal(pictureTileSrc('accessories', 'Symbols / Markings'), '/oddlings/accessories/accessories/symbols-markings.webp');
   assert.equal(pictureTileSrc('body_type', 'Fat'), '/oddlings/body/body_type/fat.webp');
   assert.equal(pictureTileSrc('body_type', 'Muscular'), '/oddlings/body/body_type/muscular.webp');
-  assert.equal(pictureTileSrc('body_type', 'Lanky'), '', 'looked the same as the slim builds: keeps the drawn tile');
+  assert.equal(pictureTileSrc('body_type', 'Lanky'), '/oddlings/body/body_type/lanky.webp');
+  assert.equal(pictureTileSrc('body_type', 'Long Torso'), '/oddlings/body/body_type/long-torso.webp');
+  assert.equal(pictureTileSrc('proportions', 'Tiny Hands'), '/oddlings/body/proportions/tiny-hands.webp');
   assert.equal(pictureTileSrc('exaggeration', 'Extreme'), '/oddlings/body/exaggeration/extreme.webp');
 });
 

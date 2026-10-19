@@ -1,14 +1,14 @@
 import { Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useAuth } from '../../../auth/AuthProvider';
 import { fetchAccounts, fetchAnalytics, lastDays, metricLabel, publishErrorMessage, type Analytics, type PublishAccount } from '../../../lib/publish';
 import { colors } from '../../../theme';
+import { usePublishApi } from '../../../lib/usePublishApi';
 
 const DAYS = 30;
 
 export default function AnalyticsScreen() {
-    const { api } = useAuth();
+    const api = usePublishApi();
     const [accounts, setAccounts] = useState<PublishAccount[] | null>(null);
     const [accountId, setAccountId] = useState<string | null>(null);
     const [data, setData] = useState<Analytics | null>(null);

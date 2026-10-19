@@ -1,5 +1,5 @@
 {
-  "note": "Arm sheet: the arm on the right of the image is the character's left. No Arm was not drawn (an arm is still there), so it keeps the drawn tile.",
+  "note": "Arm sheet: the arm on the right of the image is the character's left.",
   "sources": [
     {
       "file": "arms.jpg",
@@ -14,6 +14,15 @@
         "Prosthetic",
         "Mechanical",
         null
+      ]
+    },
+    {
+      "file": "no-arm.png",
+      "rows": [
+        1
+      ],
+      "styles": [
+        "None"
       ]
     }
   ]

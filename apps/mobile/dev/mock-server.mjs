@@ -3,7 +3,11 @@
 // previewed in the simulator without an account. Development only: `node dev/mock-server.mjs` (port 8799).
 import { createServer } from 'node:http';
 import { deflateSync } from 'node:zlib';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
+import { existsSync, readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 const PORT = Number(process.env.MOCK_PORT || 8799);
 const state = {
@@ -19,6 +23,15 @@ const state = {
         { id: 'post-2', key: 'seed-2', status: 'failed', scheduled_at: '2026-10-17T09:00:00Z', global_text: 'Behind the scenes cut.', created_at: '2026-10-17T08:00:00Z', updated_at: '2026-10-17T09:05:00Z', targets: [{ id: 't2', network: 'tiktok', publish_status: 'failed', platform_post_url: null, last_error: 'The account access token expired. <b>Reconnect</b> the account.' }, { id: 't3', network: 'instagram', publish_status: 'published', platform_post_url: 'https://www.instagram.com/p/mock/', last_error: null }] },
     ],
     deleted: new Set(),
+    comments: [
+        { id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1', body: 'The ending gave me chills. Watched it twice.', created_at: '2026-10-18T09:00:00.000Z', username: 'sam_1', display_name: 'Sam' },
+        { id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2', body: 'Buy cheap followers at example dot com!!!', created_at: '2026-10-18T10:00:00.000Z', username: 'spam_bot', display_name: 'Totally Real Fan' },
+        { id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3', body: 'Great pacing for a short. More like this please.', created_at: '2026-10-18T11:00:00.000Z', username: 'lee_2', display_name: 'Lee' },
+    ],
+    ownComments: [{ id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1', body: 'Lovely cinematography.', status: 'approved', created_at: '2026-10-17T09:00:00.000Z' }],
+    commentKeys: new Map(),
+    blocks: new Map([['spam_account', { username: 'spam_account', display_name: 'Spam Account', created_at: '2026-10-17T09:00:00.000Z' }]]),
+    connectStates: new Map(),
     referral: { code: 'K7M2PQ9XWD', referred: 2, attached: false },
 };
 state.messages.set(state.threads[0].id, [
@@ -41,6 +54,20 @@ const episodes = (id) => [1, 2, 3].map((n) => ({ id: randomUUID(), position: n, 
 // MOCK_PLAY_TTL shortens the token lifetime so renewal can be watched (the app renews 3 minutes early; use 200+).
 const PLAY_TTL = Number(process.env.MOCK_PLAY_TTL || 900);
 const plays = new Map();
+
+// A real 8 second video for the quick-edit length probe, made once with ffmpeg when it is installed.
+const CLIP_LENGTH_S = 8;
+let clipFile = null;
+function ensureClip() {
+    if (clipFile) return clipFile;
+    const out = join(tmpdir(), 'veyrnox-mock-clip.mp4');
+    if (!existsSync(out)) {
+        const r = spawnSync('ffmpeg', ['-y', '-f', 'lavfi', '-i', `testsrc=size=320x568:rate=24:duration=${CLIP_LENGTH_S}`, '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out], { stdio: 'ignore' });
+        if (r.status !== 0) return null;
+    }
+    clipFile = out;
+    return out;
+}
 
 const CATALOG = [
     { id: 'nano-banana', name: 'Nano Banana', modality: 'text-to-image', credits: 4, gated: false, durations: [5], capabilities: { inputs: { prompt: { type: 'string' } }, media: {} } },
@@ -73,7 +100,10 @@ function png() {
 }
 const PNG = png();
 
-const tokens = () => ({ access_token: 'mock-access', refresh_token: 'mock-refresh', expires_in: 3600, token_type: 'bearer' });
+// A JWT-shaped token (unsigned) with a subject, so the app has an account id for the AI-sharing consent record.
+const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');
+const mockJwt = () => `${b64({ alg: 'none', typ: 'JWT' })}.${b64({ sub: '00000000-0000-4000-8000-000000000001', exp: Math.floor(Date.now() / 1000) + 3600 })}.mock`;
+const tokens = () => ({ access_token: mockJwt(), refresh_token: 'mock-refresh', expires_in: 3600, token_type: 'bearer' });
 const jobState = (j) => { const age = Date.now() - j.created; return age < 2500 ? 'queued' : age < 6000 ? 'running' : 'succeeded'; };
 const jobView = (j) => ({ job_id: j.id, state: jobState(j), credits: j.credits, model_id: j.model_id, created_at: new Date(j.created).toISOString(), label: j.label, has_asset: jobState(j) === 'succeeded' });
 
@@ -89,6 +119,20 @@ createServer(async (req, res) => {
 
     if (path.startsWith('/auth/v1/token') || path === '/auth/v1/signup') return send(res, 200, tokens());
     if (path === '/auth/v1/logout') { res.writeHead(204); return res.end(); }
+    if (path === '/clip.mp4') {
+        const file = ensureClip();
+        if (!file) { res.writeHead(404); return res.end(); }
+        const buf = readFileSync(file);
+        const range = /bytes=(\d*)-(\d*)/.exec(req.headers.range || '');
+        if (range) {
+            const from = range[1] ? Number(range[1]) : 0;
+            const to = range[2] ? Math.min(Number(range[2]), buf.length - 1) : buf.length - 1;
+            res.writeHead(206, { 'content-type': 'video/mp4', 'accept-ranges': 'bytes', 'content-range': `bytes ${from}-${to}/${buf.length}`, 'content-length': to - from + 1 });
+            return res.end(buf.subarray(from, to + 1));
+        }
+        res.writeHead(200, { 'content-type': 'video/mp4', 'accept-ranges': 'bytes', 'content-length': buf.length });
+        return res.end(buf);
+    }
     if (path === '/asset.png') { res.writeHead(200, { 'content-type': 'image/png' }); return res.end(PNG); }
     if (path === '/api/cinema/titles') {
         const limit = Number(url.searchParams.get('limit') || 24), beforeId = url.searchParams.get('before_id');
@@ -99,6 +143,36 @@ createServer(async (req, res) => {
     }
     if ((m = path.match(/^\/api\/cinema\/posters\/([^/]+)$/))) { res.writeHead(200, { 'content-type': 'image/png' }); return res.end(PNG); }
     if (path === '/api/catalog') return send(res, 200, { models: CATALOG });
+    // Publish brands (ADR-0135): the person's own, a client brand they edit, and one they can only view.
+    const m0 = path.match(/^\/mock-provider\/(youtube|linkedin|twitter|tiktok)$/);
+    const BRAND_CLIENT = '22222222-2222-4222-8222-222222222222';
+    const BRAND_VIEW = '33333333-3333-4333-8333-333333333333';
+    const brandHeader = String(req.headers['x-publish-brand-id'] || '');
+    if (path === '/api/v1/social/brands' && req.method === 'GET') {
+        return send(res, 200, { brands: [
+            { id: '11111111-1111-4111-8111-111111111111', label: 'Veyrnox Studio', timezone: 'Europe/London', role: 'owner', paid: true },
+            { id: BRAND_CLIENT, label: 'Acme Client', timezone: 'America/New_York', role: 'editor', paid: true },
+            { id: BRAND_VIEW, label: 'Agency (view only)', timezone: 'UTC', role: 'viewer', paid: false },
+        ] });
+    }
+    // Approvals: each reviewer carries a signed link, as the real route adds; the app must not show it.
+    if (path === '/api/v1/social/approvals' && req.method === 'GET') {
+        if (brandHeader === BRAND_VIEW) return send(res, 403, { error: 'brand_role_forbidden', role: 'viewer' });
+        const link = 'https://mock.example/social/review/MOCK-SIGNED-LINK';
+        return send(res, 200, { brand_id: brandHeader || 'b1', requests: brandHeader === BRAND_CLIENT ? [] : [
+            { id: 'ap-1', post_id: 'p-1', policy: 'any', status: 'pending', scheduled_at: '2026-10-22T09:00:00Z', global_text: 'Spring drop is live: three new looks, free shipping this week.', created_at: '2026-10-18T10:00:00Z', reviewers: [
+                { id: 'rv-1', email: 'sam@acme.example', decision: 'pending', comment: null, decided_at: null, url: link },
+                { id: 'rv-2', email: 'lee@acme.example', decision: 'commented', comment: 'Can we soften the second line?', decided_at: '2026-10-18T12:30:00Z', url: link } ] },
+            { id: 'ap-2', post_id: 'p-2', policy: 'any', status: 'approved', scheduled_at: null, global_text: 'Behind the scenes at the studio.', created_at: '2026-10-15T10:00:00Z', reviewers: [
+                { id: 'rv-3', email: 'sam@acme.example', decision: 'approved', comment: 'Great.', decided_at: '2026-10-15T11:00:00Z', url: link } ] },
+            { id: 'ap-3', post_id: 'p-3', policy: 'any', status: 'rejected', scheduled_at: null, global_text: 'Flash sale, 50% off everything.', created_at: '2026-10-12T10:00:00Z', reviewers: [
+                { id: 'rv-4', email: 'lee@acme.example', decision: 'rejected', comment: 'Not approved by legal.', decided_at: '2026-10-12T15:00:00Z', url: link } ] },
+        ] });
+    }
+    if (path === '/api/v1/social/accounts' && brandHeader === BRAND_CLIENT) {
+        return send(res, 200, { brand_id: BRAND_CLIENT, accountLimit: 5, planTier: 'publish', accounts: [
+            { id: 'acc-c1', network: 'linkedin', display_name: 'Acme Corp Page', avatar_url: null, status: 'active', connected_at: '2026-10-02T10:00:00Z', token_expires_at: '2026-12-02T10:00:00Z', publishingEnabled: true, supportedMedia: ['image'] } ] });
+    }
     if (path === '/api/v1/social/accounts') return send(res, 200, { brand_id: 'b1', accountLimit: 5, planTier: 'publish', accounts: [
         { id: 'acc-1', network: 'instagram', display_name: 'Veyrnox Studio', avatar_url: null, status: 'active', connected_at: '2026-10-01T10:00:00Z', token_expires_at: '2026-12-01T10:00:00Z', publishingEnabled: true, supportedMedia: ['image', 'video'] },
         { id: 'acc-2', network: 'tiktok', display_name: 'veyrnox.ai', avatar_url: null, status: 'expired', connected_at: '2026-09-01T10:00:00Z', token_expires_at: '2026-10-01T10:00:00Z', publishingEnabled: true, supportedMedia: ['image', 'video'] } ] });
@@ -117,6 +191,62 @@ createServer(async (req, res) => {
             targets: body.accountIds.map((a, i) => ({ id: randomUUID(), network: a === 'acc-2' ? 'tiktok' : 'instagram', publish_status: body.publishNow === true ? 'published' : 'pending', platform_post_url: null, last_error: null })) });
         console.log('MOCK created post', id, body.publishNow === true ? 'now' : 'scheduled');
         return send(res, 201, { post_id: id, idempotent: false, target_count: body.accountIds.length });
+    }
+    // Drafts (ADR-0139): two in one batch and one alone; read-only here.
+    if (path === '/api/v1/social/drafts' && req.method === 'GET') {
+        const B = '44444444-4444-4444-8444-444444444444';
+        return send(res, 200, { brand_id: 'b1', approvalEnabled: true, drafts: [
+            { id: 'dr-1', draft_batch_id: B, scheduled_at: '2026-10-23T09:00:00Z', global_text: 'Monday motivation: the studio is open and the kettle is on.', created_at: '2026-10-18T09:00:00Z', media: [{ media_type: 'image', job_id: 'j1' }], networks: ['instagram', 'linkedin'] },
+            { id: 'dr-2', draft_batch_id: B, scheduled_at: '2026-10-24T12:00:00Z', global_text: 'Three tips for softer product light.', created_at: '2026-10-18T09:00:01Z', media: [], networks: ['linkedin'] },
+            { id: 'dr-3', draft_batch_id: null, scheduled_at: null, global_text: 'Draft with no batch or time yet.', created_at: '2026-10-17T09:00:00Z', media: [{ media_type: 'video', job_id: 'j2' }], networks: [] },
+        ] });
+    }
+    // Calendar (ADR-0138): posts whose time falls in [from, to), oldest first, with the action flags the real route adds.
+    if (path === '/api/v1/social/calendar' && req.method === 'GET') {
+        const from = Date.parse(url.searchParams.get('from') || '');
+        const to = Date.parse(url.searchParams.get('to') || '');
+        if (!Number.isFinite(from) || !Number.isFinite(to) || to <= from || to - from > 43 * 86400000) return send(res, 400, { error: 'invalid_range' });
+        const inRange = state.socialPosts.filter((p) => p.scheduled_at && Date.parse(p.scheduled_at) >= from && Date.parse(p.scheduled_at) < to)
+            .sort((a, b) => Date.parse(a.scheduled_at) - Date.parse(b.scheduled_at))
+            .map(({ key, ...p }) => ({ ...p, can_reschedule: p.status === 'scheduled', can_cancel: p.status === 'scheduled', can_restore: p.status === 'canceled' }));
+        return send(res, 200, { posts: inRange, next: null });
+    }
+    // Best time (ADR-0138): a made-up but consistent twelve weeks for any account; ?accountId=none-yet answers "not computed yet".
+    if (path === '/api/v1/social/best-time' && req.method === 'GET') {
+        if (url.searchParams.get('accountId') === 'none-yet') return send(res, 200, { insights: null });
+        const heatmap = [];
+        for (let d = 1; d <= 7; d++) for (const h of [9, 12, 18]) heatmap.push({ day: d, hour: h, posts: 1 + ((d + h) % 5), score: ((d * h) % 7) * 6 });
+        return send(res, 200, { insights: { timezone: 'Europe/London', period_start: '2026-07-27', period_end: '2026-10-19', recorded_posts: 40, measured_posts: 31, history_days: 84, computed_at: '2026-10-18T00:00:00Z',
+            heatmap, frequency: [{ week: '2026-10-05', posts: 2, measured_posts: 2, avg_interactions: 14 }, { week: '2026-10-12', posts: 4, measured_posts: 3, avg_interactions: 21 }, { week: '2026-09-28', posts: 2, measured_posts: 2, avg_interactions: 18 }] } });
+    }
+    // Connect a network (ADR-0140): the server's mobile contract (ADR-0136), with a real PKCE check. youtube and twitter
+    // connect; linkedin answers the account-limit refusal; tiktok's fake provider page says access_denied.
+    if (m0 && req.method === 'GET') {
+        const name = m0[1];
+        const st = url.searchParams.get('state') || '';
+        const target = name === 'tiktok'
+            ? `ai.veyrnox.app://social/callback?network=${name}&error=access_denied`
+            : `ai.veyrnox.app://social/callback?network=${name}&code=MOCKCODE&state=${encodeURIComponent(st)}`;
+        res.writeHead(302, { location: target, 'cache-control': 'no-store', 'referrer-policy': 'no-referrer' });
+        return res.end();
+    }
+    const mc = path.match(/^\/api\/v1\/social\/accounts\/(youtube|linkedin|twitter|tiktok)\/(connect|callback)$/);
+    if (mc && req.method === 'POST') {
+        if (body.client !== 'mobile') return send(res, 400, { error: 'invalid_body' });
+        if (mc[2] === 'connect') {
+            if (typeof body.codeChallenge !== 'string' || !/^[A-Za-z0-9_-]{43,128}$/.test(body.codeChallenge)) return send(res, 400, { error: 'invalid_code_challenge' });
+            const stateId = `MOCK.${randomUUID()}`;
+            state.connectStates.set(stateId, body.codeChallenge);
+            return send(res, 200, { authorizeUrl: `http://localhost:${PORT}/mock-provider/${mc[1]}?state=${encodeURIComponent(stateId)}` });
+        }
+        const challenge = state.connectStates.get(body.state);
+        if (!challenge) return send(res, 400, { error: 'invalid_state' });
+        state.connectStates.delete(body.state);
+        const verifier = String(body.codeVerifier || '');
+        if (!/^[A-Za-z0-9_-]{43,128}$/.test(verifier) || createHash('sha256').update(verifier).digest('base64url') !== challenge) return send(res, 502, { error: 'connect_failed' });
+        if (body.code !== 'MOCKCODE') return send(res, 502, { error: 'connect_failed' });
+        if (mc[1] === 'linkedin') return send(res, 409, { ok: false, code: 'ACCOUNT_LIMIT', limit: 1 });
+        return send(res, 200, { ok: true, account: { id: `acc-${mc[1]}`, network: mc[1], display_name: `Mock ${mc[1]} page`, avatar_url: null, status: 'active' } });
     }
     if (path === '/api/v1/social/posts' && req.method === 'GET') return send(res, 200, { brand_id: 'b1', posts: state.socialPosts.map(({ key, updated_at, ...p }) => p) });
     m = path.match(/^\/api\/v1\/social\/posts\/([^/]+)$/);
@@ -207,6 +337,55 @@ createServer(async (req, res) => {
     if (path === '/api/v1/store-purchases/customer') return send(res, 200, { rc_customer_id: '3f2b8a52-6c0e-4d7a-9b1f-0a1b2c3d4e5f' });
     if (path === '/api/v1/social/plan') return send(res, 200, { plans: [], entitlement: { tier: 'free', subscription: null } });
 
+    // Cinema comments (ADR-0142, server ADR-0081): read hides blocked authors (as the real read does), a submit waits for
+    // review, a report returns open, and a repeated Idempotency-Key is a replay.
+    if (path === '/api/v1/cinema/comments') {
+        const UUIDRE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (req.method === 'GET') {
+            if (!UUIDRE.test(url.searchParams.get('content_id') || '')) return send(res, 400, { error: 'invalid_query' });
+            return send(res, 200, {
+                comments: state.comments.filter((c) => !state.blocks.has(c.username)).map((c) => ({ ...c, own: false })),
+                own_comments: state.ownComments,
+                next_cursor: null,
+            });
+        }
+        if (req.method === 'POST') {
+            const key = String(req.headers['idempotency-key'] || '');
+            if (!UUIDRE.test(key)) return send(res, 400, { error: 'invalid_idempotency_key' });
+            if (state.commentKeys.has(key)) return send(res, 200, { ...state.commentKeys.get(key), idempotent: true });
+            let out;
+            if (body.action === 'submit') {
+                if (typeof body.body !== 'string' || !body.body.trim() || body.body.length > 2000) return send(res, 400, { error: 'invalid_body' });
+                if (/profile/i.test(body.body)) return send(res, 403, { error: 'profile_required' });
+                const id = randomUUID();
+                state.ownComments.unshift({ id, body: body.body, status: 'pending', created_at: new Date().toISOString() });
+                out = { id, status: 'pending' };
+            } else if (body.action === 'report') {
+                if (!UUIDRE.test(body.comment_id || '') || !['spam', 'abuse', 'privacy', 'rights', 'other'].includes(body.category) || typeof body.details !== 'string' || body.details.trim().length < 3) return send(res, 400, { error: 'invalid_body' });
+                out = { id: randomUUID(), status: 'open' };
+            } else return send(res, 400, { error: 'invalid_body' });
+            state.commentKeys.set(key, out);
+            return send(res, 201, { ...out, idempotent: false });
+        }
+    }
+    // Cinema blocks (ADR-0141, server ADR-0135): by username, replay-safe, newest first.
+    const mb = path.match(/^\/api\/v1\/cinema\/blocks(?:\/([^/]+))?$/);
+    if (mb) {
+        if (req.method === 'GET' && !mb[1]) return send(res, 200, { blocks: [...state.blocks.values()].sort((a, b) => b.created_at.localeCompare(a.created_at)) });
+        if (req.method === 'POST' && !mb[1]) {
+            const u = String(body.username || '');
+            if (!/^[a-z][a-z0-9_]{2,29}$/.test(u)) return send(res, 400, { error: 'invalid_username' });
+            if (u === 'me_myself') return send(res, 400, { error: 'cannot_block_self' });
+            if (u === 'nobody_here') return send(res, 404, { error: 'user_not_found' });
+            const was = state.blocks.has(u);
+            if (!was) state.blocks.set(u, { username: u, display_name: u, created_at: new Date().toISOString() });
+            return send(res, was ? 200 : 201, { username: u, blocked: true, already: was });
+        }
+        if (req.method === 'DELETE' && mb[1]) {
+            const was = state.blocks.delete(mb[1]);
+            return send(res, 200, { username: mb[1], blocked: false, already: !was });
+        }
+    }
     if ((m = path.match(/^\/api\/v1\/cinema\/titles\/([^/]+)$/))) {
         const t = CINEMA.find((x) => x.id === m[1]);
         if (!t) return send(res, 404, { error: 'title_not_found' });
@@ -316,6 +495,29 @@ createServer(async (req, res) => {
         return;
     }
 
+    if (path === '/api/v1/generations' && req.method === 'POST' && body.model_id === 'clip-edit') {
+        // Quick edit (ADR-0134): checks the clips like the server does, quotes 3 credits per started 10 s plus 4 for captions,
+        // and a confirmed price of 0 is refused with the real price and charges nothing.
+        const clips = body.inputs?.clips;
+        if (!Array.isArray(clips) || clips.length === 0 || clips.length > 10) return send(res, 400, { error: 'inputs_invalid' });
+        let total = 0;
+        for (const c of clips) {
+            const src = state.jobs.find((x) => x.id === c.asset_id);
+            if (!src) return send(res, 404, { error: 'asset_not_found' });
+            if (!src.kind.includes('video')) return send(res, 400, { error: 'clip_not_video' });
+            if (!(c.in_s >= 0 && c.out_s > c.in_s && c.out_s <= CLIP_LENGTH_S + 0.01)) return send(res, 400, { error: 'clip_range' });
+            total += c.out_s - c.in_s;
+        }
+        if (total > 60.01) return send(res, 400, { error: 'too_long' });
+        const credits = 3 * Math.ceil(total / 10) + (body.inputs?.captions ? 4 : 0);
+        if (body.confirmed_credits !== credits) return send(res, 409, { error: 'credit_confirmation_mismatch', expected_credits: credits });
+        if (state.balance < credits) return send(res, 402, { error: 'insufficient_credits' });
+        state.balance -= credits;
+        const job = { id: randomUUID(), model_id: 'veo-fast', credits, created: Date.now(), label: `Edit of ${clips.length} clip${clips.length > 1 ? 's' : ''}`, kind: 'text-to-video' };
+        state.jobs.unshift(job);
+        console.log('[mock] clip-edit created');
+        return send(res, 200, { job_id: job.id, state: 'SUBMITTED', balance_after: state.balance });
+    }
     if (path === '/api/v1/generations' && req.method === 'POST') {
         const model = CATALOG.find((x) => x.id === body.model_id);
         if (!model) return send(res, 400, { error: 'model_id_required' });
@@ -329,6 +531,16 @@ createServer(async (req, res) => {
         return send(res, 200, { job_id: job.id, state: 'SUBMITTED', balance_after: state.balance });
     }
     if (path === '/api/v1/jobs') return send(res, 200, { jobs: state.jobs.map(jobView), next: null });
+    // GET /api/v1/jobs/:id/media-info (server PR #1289): the real length of a finished video. A job whose prompt says
+    // "nolength" answers 422 so the app's player fallback can be seen.
+    m = path.match(/^\/api\/v1\/jobs\/([^/]+)\/media-info$/);
+    if (m && req.method === 'GET') {
+        const j = state.jobs.find((x) => x.id === m[1]);
+        if (!j || jobState(j) !== 'succeeded') return send(res, 404, { error: 'not_found' });
+        if (!j.kind.includes('video')) return send(res, 400, { error: 'not_video' });
+        if (/nolength/i.test(j.label || '')) return send(res, 422, { error: 'unreadable' });
+        return send(res, 200, { seconds: CLIP_LENGTH_S, width: 320, height: 568, size_bytes: 40099, mime_type: 'video/mp4' });
+    }
     m = path.match(/^\/api\/v1\/jobs\/([^/]+)(\/asset)?$/);
     if (m) {
         // DELETE /api/v1/jobs/:id (ADR-0116): a repeat answers replayed; a job still running or whose prompt says "held" is refused.
@@ -344,7 +556,7 @@ createServer(async (req, res) => {
         const j = state.jobs.find((x) => x.id === m[1]);
         if (!j) return send(res, 404, { error: 'not_found' });
         if (!m[2]) return send(res, 200, { state: jobState(j), credits: j.credits, model_id: j.model_id });
-        return send(res, 200, { url: `http://localhost:${PORT}/asset.png`, mime_type: j.kind.includes('image') ? 'image/png' : 'video/mp4', expires_in: 900 });
+        return send(res, 200, { url: `http://localhost:${PORT}/${j.kind.includes('video') ? 'clip.mp4' : 'asset.png'}`, mime_type: j.kind.includes('image') ? 'image/png' : 'video/mp4', expires_in: 900 });
     }
     return send(res, 404, { error: 'not_found' });
 }).listen(PORT, () => console.log(`mock server on http://localhost:${PORT}`));

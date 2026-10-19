@@ -16,6 +16,16 @@
         "Mechanical",
         null
       ]
+    },
+    {
+      "file": "no-arm.png",
+      "rows": [
+        1
+      ],
+      "styles": [
+        "None"
+      ],
+      "mirror": true
     }
   ]
 }

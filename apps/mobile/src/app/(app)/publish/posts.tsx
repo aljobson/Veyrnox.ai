@@ -1,14 +1,15 @@
 import { Stack, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
-import { useAuth } from '../../../auth/AuthProvider';
 import { fetchPosts, mergePage, postStatusLabel, publishErrorMessage, type PublishPost } from '../../../lib/publish';
 import { colors } from '../../../theme';
+import { HeaderAction } from '../../../components/HeaderAction';
+import { usePublishApi } from '../../../lib/usePublishApi';
 
 const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString() : null);
 
 export default function Posts() {
-    const { api } = useAuth();
+    const api = usePublishApi();
     const router = useRouter();
     const [posts, setPosts] = useState<PublishPost[] | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -49,7 +50,7 @@ export default function Posts() {
 
     return (
         <View style={styles.screen}>
-            <Stack.Screen options={{ title: 'Posts', headerRight: () => <Pressable accessibilityRole="button" accessibilityLabel="New post" onPress={() => router.push('/publish/compose')}><Text style={styles.add}>New post</Text></Pressable> }} />
+            <Stack.Screen options={{ title: 'Posts', headerRight: () => <HeaderAction label="New post" onPress={() => router.push('/publish/compose')} /> }} />
             {error && !posts ? (
                 <Text style={styles.error}>{error}</Text>
             ) : !posts ? (
@@ -83,5 +84,4 @@ const styles = StyleSheet.create({
     text: { color: colors.text, fontSize: 16 },
     muted: { color: colors.muted, fontSize: 13 },
     error: { color: colors.danger, paddingTop: 16 },
-    add: { color: colors.accent, fontSize: 16, fontWeight: '600' },
 });

@@ -1,0 +1,49 @@
+name: zap-baseline
+
+# Weekly OWASP ZAP baseline scan of STAGING, never production. Baseline is
+# passive: it spiders for about a minute and flags missing headers, cookie
+# flags and leaked info; it sends no attack payloads. Anonymous only, so it
+# cannot reach /app or /api/v1 behind the gate. Warnings (exit 2) do not
+# fail the run; a FAIL-level finding (exit 1) does. The HTML/MD reports are
+# kept as an artifact.
+
+on:
+  schedule:
+    - cron: '43 6 * * 2'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: zap-baseline
+  cancel-in-progress: false
+
+env:
+  TARGET: https://veyrnox-ai-staging.al-jobson.workers.dev
+
+jobs:
+  zap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Scan
+        run: |
+          mkdir -p zap-wrk && chmod 777 zap-wrk
+          set +e
+          docker run --rm -v "$PWD/zap-wrk:/zap/wrk:rw" ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py -t "$TARGET" -m 2 -I \
+            -r zap-report.html -w zap-report.md
+          code=$?
+          echo "zap exit: $code"
+          [ "$code" -le 2 ] && [ "$code" -ne 1 ]
+
+      - name: Keep the reports
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: zap-baseline-reports
+          path: zap-wrk/
+          if-no-files-found: ignore
+          retention-days: 30
