@@ -1,0 +1,49 @@
+{
+  "note": "Eye details: Glowing Eye from the face-features sheet, Heterochromia and Blind Eye from the eye-types sheet, Scarred Eye from the follow-up sheet.",
+  "sources": [
+    {
+      "file": "features.jpg",
+      "rows": [
+        3,
+        3
+      ],
+      "styles": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        "Glowing Eye"
+      ]
+    },
+    {
+      "file": "marks-eyes.jpg",
+      "rows": [
+        3,
+        3
+      ],
+      "styles": [
+        null,
+        null,
+        null,
+        null,
+        "Heterochromia",
+        "Blind Eye"
+      ]
+    },
+    {
+      "file": "fixups.jpg",
+      "rows": [
+        3,
+        2
+      ],
+      "styles": [
+        null,
+        null,
+        null,
+        "Scarred Eye",
+        null
+      ]
+    }
+  ]
+}

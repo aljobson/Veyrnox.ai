@@ -1,4 +1,7 @@
 'use client';
+import { localeTag } from '../../../lib/i18n/locales.mjs';
+import { tOr } from '../../../lib/i18n/translate.mjs';
+import { useI18n } from '../../../components/I18nProvider.jsx';
 import Link from 'next/link';
 import {
   useCallback,
@@ -11,22 +14,22 @@ import { getSession, onSessionChange } from '../../lib/authClient.js';
 import { gatewayFetch } from '../_lib/gateway.js';
 const identity = () => getSession()?.user?.id || '',
   noIdentity = () => '';
-const labels = {
-  pending: 'Awaiting moderator approval',
-  rejected: 'Not approved',
-  removed: 'Removed by moderation',
-  withdrawn: 'Withdrawn',
-};
-const message = (code) =>
+const labels = (t) => ({
+  pending: t("cinema.comments.awaitingModeratorApproval"),
+  rejected: t("cinema.comments.notApproved"),
+  removed: t("cinema.comments.removedByModeration"),
+  withdrawn: t("cinema.comments.withdrawn"),
+});
+const message = (code, t) =>
   ({
-    profile_required: 'Create an active Cinema profile to comment.',
+    profile_required: t("cinema.comments.createAnActiveCinemaProfileTo"),
     pending_limit:
-      'You already have five comments awaiting review. Wait for a decision or withdraw one.',
+      t("cinema.comments.youAlreadyHaveFiveCommentsAwaiting"),
     rate_limited:
-      'Please wait before posting again. Comments are limited to one per minute and twenty per day.',
-    comment_not_found: 'This comment is no longer available.',
-    account_not_active: 'Your Cinema account is unavailable. Contact support.',
-  })[code] || 'Your request was not confirmed. Retry to check the same action.';
+      t("cinema.comments.pleaseWaitBeforePostingAgainComments"),
+    comment_not_found: t("cinema.comments.thisCommentIsNoLongerAvailable"),
+    account_not_active: t("cinema.comments.yourCinemaAccountIsUnavailableContact"),
+  })[code] || t("cinema.comments.yourRequestWasNotConfirmedRetry");
 export function CinemaComments({ contentId }) {
   const account = useSyncExternalStore(onSessionChange, identity, noIdentity);
   return (
@@ -38,6 +41,8 @@ export function CinemaComments({ contentId }) {
   );
 }
 function Comments({ contentId, account }) {
+  const { t, href: localize, locale } = useI18n();
+
   const [data, setData] = useState(null),
     [error, setError] = useState(''),
     [notice, setNotice] = useState(''),
@@ -83,11 +88,11 @@ function Comments({ contentId, account }) {
           setClosed(
             e.code === 'comments_not_open' || e.code === 'content_not_found',
           );
-          setError(message(e.code));
+          setError(message(e.code, t));
         }
       }
     },
-    [account, contentId],
+    [account, contentId, t],
   );
   useEffect(() => {
     load();
@@ -111,22 +116,22 @@ function Comments({ contentId, account }) {
       if (payload.action === 'submit') {
         setDraft('');
         setNotice(
-          'Submitted for moderator approval. Your comment is not public yet.',
+          t("cinema.comments.submittedForModeratorApprovalYourComment"),
         );
       } else if (payload.action === 'withdraw')
-        setNotice('Your comment was withdrawn.');
+        setNotice(t("cinema.comments.yourCommentWasWithdrawn"));
       else {
         setReporting('');
         setNotice(
           result.status === 'resolved'
-            ? 'This report has already been reviewed.'
-            : 'Report received for moderator review.',
+            ? t("cinema.comments.thisReportHasAlreadyBeenReviewed")
+            : t("cinema.comments.reportReceivedForModeratorReview"),
         );
       }
       await load();
       return true;
     } catch (e) {
-      setError(message(e.code));
+      setError(message(e.code, t));
       return false;
     } finally {
       setBusy(false);
@@ -139,8 +144,7 @@ function Comments({ contentId, account }) {
       disabled={busy}
       onClick={() => mutate({ action: 'withdraw', comment_id: id })}
     >
-      Withdraw comment
-    </button>
+      {t("cinema.comments.withdrawComment")}</button>
   );
   return (
     <section
@@ -148,12 +152,9 @@ function Comments({ contentId, account }) {
       aria-labelledby={`comments-${contentId}`}
     >
       <h2 id={`comments-${contentId}`} className="text-xl font-bold">
-        Comments
-      </h2>
+        {t("cinema.comments.comments")}</h2>
       <p className="mt-2 text-sm text-vx-fg-muted">
-        Comments are reviewed before publication. Be respectful and do not share
-        personal information.
-      </p>
+        {t("cinema.comments.commentsAreReviewedBeforePublicationBe")}</p>
       {account ? (
         <form
           className="mt-4"
@@ -167,8 +168,7 @@ function Comments({ contentId, account }) {
           }}
         >
           <label className="block">
-            Your comment
-            <textarea
+            {t("cinema.comments.yourComment")}<textarea
               name="comment"
               required
               minLength={1}
@@ -184,8 +184,7 @@ function Comments({ contentId, account }) {
             disabled={busy || !draft.trim()}
             className="mt-3 rounded-full border border-vx-border px-4 py-2 font-bold disabled:opacity-50"
           >
-            Submit for review
-          </button>
+            {t("cinema.comments.submitForReview")}</button>
         </form>
       ) : (
         <button
@@ -194,18 +193,15 @@ function Comments({ contentId, account }) {
             window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))
           }
         >
-          Sign in to comment
-        </button>
+          {t("cinema.comments.signInToComment")}</button>
       )}
       {error && (
         <p role="alert" className="mt-4">
           {error}{' '}
-          <Link href="/social-cinema" className="underline">
-            Cinema profile
-          </Link>{' '}
+          <Link href={localize("/social-cinema")} className="underline">
+            {t("cinema.comments.cinemaProfile")}</Link>{' '}
           <button onClick={() => load()} disabled={busy} className="underline">
-            Retry comments
-          </button>
+            {t("cinema.comments.retryComments")}</button>
         </p>
       )}
       {notice && (
@@ -215,17 +211,15 @@ function Comments({ contentId, account }) {
       )}
       {!data && !error && (
         <p role="status" className="mt-4">
-          Loading comments…
-        </p>
+          {t("cinema.comments.loadingComments")}</p>
       )}
       {data?.own_comments?.length > 0 && (
         <div className="mt-6">
           <h3 className="font-bold">
-            Your comments awaiting publication or removed
-          </h3>
+            {t("cinema.comments.yourCommentsAwaitingPublicationOrRemoved")}</h3>
           {data.own_comments.map((c) => (
             <article key={c.id} className="mt-3 rounded-lg bg-vx-panel p-3">
-              <p className="text-xs">{labels[c.status]}</p>
+              <p className="text-xs">{labels(t)[c.status]}</p>
               <p className="mt-2 whitespace-pre-wrap wrap-break-word">
                 {c.body}
               </p>
@@ -235,14 +229,14 @@ function Comments({ contentId, account }) {
         </div>
       )}
       {data?.comments?.length === 0 && (
-        <p className="mt-6 text-sm">No approved comments yet.</p>
+        <p className="mt-6 text-sm">{t("cinema.comments.noApprovedCommentsYet")}</p>
       )}
       {data?.comments?.map((c) => (
         <article key={c.id} className="mt-5 border-t border-vx-border pt-4">
           <p className="text-sm font-bold">
             {c.display_name}{' '}
             <span className="font-normal text-vx-fg-muted">
-              @{c.username} · {new Date(c.created_at).toLocaleString()}
+              @{c.username} · {new Date(c.created_at).toLocaleString(localeTag(locale))}
             </span>
           </p>
           <p className="mt-2 whitespace-pre-wrap wrap-break-word">{c.body}</p>
@@ -254,8 +248,7 @@ function Comments({ contentId, account }) {
                   disabled={busy}
                   onClick={() => setReporting(c.id)}
                 >
-                  Report comment
-                </button>
+                  {t("cinema.comments.reportComment")}</button>
               )}
           {reporting === c.id && (
             <form
@@ -272,21 +265,19 @@ function Comments({ contentId, account }) {
               }}
             >
               <label className="block">
-                Report category
-                <select
+                {t("cinema.comments.reportCategory")}<select
                   name="category"
-                  className="ml-2 rounded-lg bg-vx-panel p-2"
+                  className="ms-2 rounded-lg bg-vx-panel p-2"
                 >
-                  {['spam', 'abuse', 'privacy', 'rights', 'other'].map((t) => (
-                    <option key={t} value={t}>
-                      {t}
+                  {['spam', 'abuse', 'privacy', 'rights', 'other'].map((category) => (
+                    <option key={category} value={category}>
+                      {tOr(t, `cinema.report.${category}`, category)}
                     </option>
                   ))}
                 </select>
               </label>
               <label className="block">
-                Reason for report
-                <textarea
+                {t("cinema.comments.reasonForReport")}<textarea
                   name="details"
                   required
                   minLength={3}
@@ -295,19 +286,15 @@ function Comments({ contentId, account }) {
                 />
               </label>
               <p className="text-xs">
-                Do not include sensitive personal information. Moderators can
-                already see the comment.
-              </p>
+                {t("cinema.comments.doNotIncludeSensitivePersonalInformation")}</p>
               <button type="submit" disabled={busy} className="underline">
-                Send report
-              </button>{' '}
+                {t("cinema.comments.sendReport")}</button>{' '}
               <button
                 type="button"
                 onClick={() => setReporting('')}
                 className="underline"
               >
-                Cancel report
-              </button>
+                {t("cinema.comments.cancelReport")}</button>
             </form>
           )}
         </article>
@@ -318,8 +305,7 @@ function Comments({ contentId, account }) {
           disabled={busy}
           onClick={() => load(data.next_cursor)}
         >
-          Older comments
-        </button>
+          {t("cinema.comments.olderComments")}</button>
       )}
     </section>
   );

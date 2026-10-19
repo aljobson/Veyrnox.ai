@@ -165,8 +165,8 @@ test('the pages read the flag per request, validate the id and import no client-
     // force-dynamic makes these two inert, and they imply a router-level 404 that does not happen.
     assert.doesNotMatch(detail, /export (?:async )?(?:function generateStaticParams|const dynamicParams)/);
     assert.match(detail, /publicOddlingById\(id\)/);
-    assert.match(detail, /\{ \.\.\.OPEN_GRAPH_BASE, \.\.\.meta\.openGraph \}/, 'the site name and type come from the shared base');
-    assert.match(index, /\{ \.\.\.OPEN_GRAPH_BASE, \.\.\.meta\.openGraph \}/);
+    assert.match(detail, /\{ \.\.\.OPEN_GRAPH_BASE, \.\.\.meta\.openGraph(?:, \.\.\.openGraphLocale\(locale\))? \}/, 'the site name and type come from the shared base');
+    assert.match(index, /\{ \.\.\.OPEN_GRAPH_BASE, \.\.\.meta\.openGraph(?:, \.\.\.openGraphLocale\(locale\))? \}/);
     // generateMetadata must not describe a page that answers 404.
     assert.match(detail, /robots: \{ index: false \}/);
     // The one client file is the share control; nothing else under the route is.
@@ -179,10 +179,15 @@ test('the Recreate and Animate buttons link to the studio deep link', () => {
     const index = read('app/veyrnox/oddlings/page.js');
     const detail = read('app/veyrnox/oddlings/[id]/page.js');
     const card = read('app/veyrnox/oddlings/OddlingCard.js');
-    assert.match(detail, />\s*Recreate\s*</);
-    assert.match(detail, />\s*Animate/);
-    assert.match(card, />\s*Recreate\s*</);
-    assert.match(card, />\s*Animate\s*</);
+    // The words are catalog text (ADR-0107); the English catalog holds the originals.
+    const english = read('lib/i18n/messages/en.mjs');
+    assert.match(english, /'oddlings\.recreate': 'Recreate'/);
+    assert.match(english, /'oddlings\.animate': 'Animate'/);
+    assert.match(english, /'oddlings\.detail\.animateThis': 'Animate this character'/);
+    assert.match(detail, /t\('oddlings\.recreate'\)/);
+    assert.match(detail, /t\('oddlings\.detail\.animateThis'\)/);
+    assert.match(card, /t\('oddlings\.recreate'\)/);
+    assert.match(card, /t\('oddlings\.animate'\)/);
     for (const source of [detail, card]) assert.match(source, /href=\{[a-z.]*studioHref\}/);
     assert.match(index, /OddlingCard/);
     assert.doesNotMatch(`${index}${detail}${card}`, /\/app\/oddlings\?oddling=\$\{/, 'the URL comes from oddlingStudioHref, not a template literal');
@@ -194,7 +199,7 @@ test('the share control copies a same-origin link and fails soft', () => {
     assert.match(source, /window\.location\.origin/);
     assert.match(source, /navigator\.share/);
     // It offers the share sheet where one exists, so it is not labelled Copy.
-    assert.match(source, /label = 'Share link'/);
+    assert.match(source, /label \?\?= t\('oddlings.shareDefault'\)/);
     assert.doesNotMatch(source, /Copy link/);
     assert.match(source, /navigator\.clipboard/);
     assert.match(source, /role="status"/);
@@ -207,7 +212,9 @@ test('copy describes original fictional characters and avoids the influencer fra
         .filter((f) => /\.js$/.test(f)).map((f) => `app/veyrnox/oddlings/${f}`);
     files.push('app/veyrnox/_lib/oddlingsPublic.js');
     assert.ok(files.length >= 5);
-    const copy = files.map(read).join('\n');
+    // The page copy lives in the English catalog (ADR-0107): hold it to the same rules.
+    const catalogCopy = read('lib/i18n/messages/en.mjs').split('\n').filter((line) => /^\s*'oddlings?\./.test(line)).join('\n');
+    const copy = [...files.map(read), catalogCopy].join('\n');
     assert.doesNotMatch(copy, /ai[ -]influencer|influencer/i);
     assert.doesNotMatch(copy, /wallet|multichain|on-?chain|payout|ethereum|solana/i, 'inside the hard wall');
     assert.match(copy, /original/i);

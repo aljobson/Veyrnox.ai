@@ -12,7 +12,7 @@ export async function BreakthroughVideo() {
     <section id="breakthrough" aria-labelledby="breakthrough-title" className="scroll-mt-20 pb-16 lg:pb-24">
       <h2 id="breakthrough-title" className="sr-only">{t('home.breakthrough.title')}</h2>
       <p className="sr-only">{t('home.breakthrough.film')}</p>
-      <FilmPlayer film={BREAKTHROUGH_FILM} label="the robot video" frameless mobileFullscreen>
+      <FilmPlayer film={BREAKTHROUGH_FILM} label={t('public.film.robot')} frameless mobileFullscreen>
         <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-end px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:hidden">
           <Link href={create} className="pointer-events-auto vx-press inline-flex min-h-11 items-center justify-center rounded-full bg-white px-6 py-3 text-[15px] font-extrabold text-[#0a0a0b] hover:bg-white/85">{t('home.hero.start')}</Link>
         </div>

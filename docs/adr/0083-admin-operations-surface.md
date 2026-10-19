@@ -61,3 +61,22 @@ Known limits at merge, from the final independent inspection. Fix the first befo
 - A social target claimed before the snapshot columns exist has no stored pre-claim status. If it is then deferred, it is restored as pending and one attempt is subtracted that the claim never added. The window is closed by applying the migration before either flag is turned on.
 - The Threads two-hour `poll_timeout` now applies only to containers that are not yet finished, so a held target released late can still publish. This changes a shared adapter on purpose.
 - Opening a held asset writes one `held_asset_viewed` row per request, so a retry or prefetch adds a duplicate row.
+
+## Amendment 2 (2026-10-18): scans in flight and approval previews
+
+A review of amendment 1 found two ways a held or undecided image still reached a third party, and one ordering bug in the sweep. Migration 0349 and `lib/socialPublishSweep.js` change them.
+
+- **Undecided scans defer a post.** While the scanner is armed, a post whose image has a scan still `queued` or `scanning` for less than an hour is not claimed, and the dispatch check answers `MEDIA_SCANNING`, which defers it exactly as `MEDIA_HELD` does (no attempt spent). A scan undecided for an hour no longer blocks: the outage rule of amendment 1 still applies, so a dead scanner cannot stop publishing for good. Nothing changes while the scanner is disarmed, which is its state wherever `CONTENT_SCAN_ENABLED` is off. An image the provider rejects outright is `unavailable` and still passes; that is unchanged.
+- **Approval links never show a held image.** `get_social_approval_review` returns `held: true` and no `r2_key` for a held image, so the reviewer page gets no preview link.
+- **The hold check comes before the submission marker.** The sweep used to mark a target as submitted and then ask the hold check. A transient failure of the check left the marker on a post that had not been sent, and the next attempt failed it as "reconcile before retry". Every network now authorizes first and marks immediately before the provider call, as Threads already did.
+
+Not changed here: held assets still expire with the 90-day retention sweep, "Resolve" on a scanner report does not touch the hold, a held Threads container keeps being polled until Meta expires it, and the clawback does not refuse a deleted account.
+
+## Amendment 3 (2026-10-18): the four known limits left by amendment 2
+
+Migration 0350 and the reports page close them.
+
+- **Held assets no longer expire.** `expire_assets` skips an asset with `held_at` set, so a held image stays until a release or a takedown and "View held image" keeps working. Evidence preservation needs the object.
+- **Resolve is hidden on a held scanner report.** Release is the way out, so a report cannot be closed while its image stays held.
+- **A held Threads container is reset.** When the check finds the image held after the container finished and nothing was published (no post id, no submission marker), the target goes back to pending with an empty state and a new container is made after release. Other networks keep their state.
+- **A deleted account takes no clawback.** `admin_credit_clawback_guarded` answers `ACCOUNT_DELETED`, per ADR-0111. The grant function has the same gap and is unchanged here.

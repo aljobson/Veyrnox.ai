@@ -1,3 +1,4 @@
+import english from '../lib/i18n/messages/en.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -36,7 +37,8 @@ test('all three paywalls disclose and render weekly billing', () => {
 
   assert.match(credits, /Credits every week or month/);
   assert.match(credits, /every \{intervalName\(plan\.billing_interval\)\}/);
-  assert.match(cinema, /INTERVAL = \{ week: 'week', month: 'month', year: 'year' \}/);
+  assert.match(cinema, /tOr\(t, `cinema.pass.\$\{p.billing_interval\}`, p.billing_interval\)/);
+  for (const interval of ['week', 'month', 'year']) assert.equal(english[`cinema.pass.${interval}`], interval);
   assert.match(publish, /every \{intervalName\(selectedPlan\.billing_interval\)\}/);
   for (const source of [credits, cinema, publish]) assert.match(source, /cancel/i);
 });

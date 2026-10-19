@@ -4,6 +4,9 @@ import { readFileSync } from 'node:fs';
 import { checkCatalog } from '../lib/i18n/check.mjs';
 import { TOOL_TASKS } from '../app/veyrnox/_lib/tools.js';
 import { GUIDES } from '../app/veyrnox/_lib/guides.js';
+import { modelFacts } from '../app/veyrnox/_lib/modelPages.js';
+import { ODDLING_ARCHETYPES, ODDLING_SHOWS, ODDLING_TONES } from '../app/veyrnox/_lib/character.js';
+import { listPublicOddlings, localizeOddling } from '../app/veyrnox/_lib/oddlingsPublic.js';
 import en from '../lib/i18n/messages/en.mjs';
 import { CATALOGS, messagesFor, translator, richParts } from '../lib/i18n/translate.mjs';
 import {
@@ -47,7 +50,7 @@ test('only translated pages take the prefix', () => {
   assert.equal(localizedHref('es', '/'), '/es');
   assert.equal(localizedHref('es', '/#faq'), '/es#faq');
   assert.equal(localizedHref('es', '/pricing'), '/es/pricing');
-  assert.equal(localizedHref('es', '/oddlings'), '/oddlings');
+  assert.equal(localizedHref('es', '/social-cinema'), '/es/social-cinema');
   assert.ok(LOCALIZED_PATHS.has('/pricing'));
   assert.equal(localizedHref('es', 'mailto:legal@veyrnox.com'), 'mailto:legal@veyrnox.com');
   assert.equal(localizedHref('en', '/'), '/');
@@ -92,9 +95,9 @@ test('the picker keeps a translated page and falls back to home for the rest', (
   assert.equal(switchLanguageHref('fr', '/es'), '/fr');
   assert.equal(switchLanguageHref('en', '/ja'), '/');
   assert.equal(switchLanguageHref('de', '/pricing'), '/de/pricing', 'pricing is translated');
-  assert.equal(switchLanguageHref('de', '/oddlings'), '/de', 'no German Oddlings page yet: home');
+  assert.equal(switchLanguageHref('de', '/social-cinema'), '/de/social-cinema', 'Cinema is translated');
   assert.equal(switchLanguageHref('en', '/es/pricing'), '/pricing');
-  assert.equal(switchLanguageHref('en', '/oddlings'), '/oddlings', 'English on an English page stays put');
+  assert.equal(switchLanguageHref('en', '/social-cinema'), '/social-cinema', 'English on an English page stays put');
 });
 
 test('every tool group on /tools has translated words, and every MCP tool a description', () => {
@@ -105,6 +108,22 @@ test('every tool group on /tools has translated words, and every MCP tool a desc
   for (const name of ['list_models', 'estimate_generation', 'get_generation', 'list_generations', 'get_balance']) {
     assert.ok(en[`mcp.tool.${name}`], name);
   }
+});
+
+test('the Publish copy on /mcp exists for every Publish tool and is shown only behind the switch (ADR-0112)', async () => {
+  const { MCP_PUBLISH_COPY: copy } = await import('../lib/i18n/mcpPublishCopy.mjs');
+  const { readFileSync } = await import('node:fs');
+  const names = [...readFileSync(new URL('../lib/veyrnoxPublishMcp.js', import.meta.url), 'utf8').matchAll(/registerTool\('([^']+)'/g)].map((m) => m[1]);
+  assert.equal(names.length, 7);
+  for (const name of names) assert.ok(copy[`mcp.tool.${name}`], name);
+  for (const key of ['lead', 's3.body', 'what.title', 'what.p', 'safe.kicker', 'safe.title', 'safe.p1', 'safe.p2', 'safe.p3']) {
+    assert.ok(copy[`mcp.pub.${key}`], key);
+    assert.equal(en[`mcp.pub.${key}`], copy[`mcp.pub.${key}`]);
+  }
+  const page = readFileSync(new URL('../app/veyrnox/mcp/page.js', import.meta.url), 'utf8');
+  assert.match(page, /publishAutomationEnabled\(\)/);
+  const consent = readFileSync(new URL('../app/veyrnox/oauth/consent/page.js', import.meta.url), 'utf8');
+  assert.match(consent, /publishOpen=\{publishAutomationEnabled\(\)\}/);
 });
 
 test('every guide, step and link has catalog words in English, and the English matches the data', () => {
@@ -125,6 +144,48 @@ test('guide pages take a prefix, the bare prefix path does not', () => {
   assert.equal(isLocalizedPath('/guides/'), true);
   assert.equal(localizedHref('fr', '/guides/credits'), '/fr/guides/credits');
   assert.equal(switchLanguageHref('de', '/fr/guides/library'), '/de/guides/library');
-  assert.equal(isLocalizedPath('/presets/abc'), false, 'template detail pages are not translated yet');
+  assert.equal(isLocalizedPath('/presets/abc'), true, 'template detail UI is translated');
   assert.equal(isLocalizedPath('/presets'), true);
+});
+
+test('model detail pages take a prefix and their fact labels follow the language', () => {
+  assert.equal(isLocalizedPath('/models/wan-2.5-kie'), true);
+  assert.equal(localizedHref('ja', '/models/wan-2.5-kie'), '/ja/models/wan-2.5-kie');
+  const model = {
+    modality: 'image-to-video', kind: 'video', durations: [5, 10],
+    capabilities: { inputs: { prompt: { type: 'string' }, aspect_ratio: { type: 'enum', values: ['16:9', '9:16'] } }, media: { image: { required: true } } },
+  };
+  const english = modelFacts(model);
+  const german = modelFacts(model, translator('de'));
+  assert.equal(english[0].label, 'Mode');
+  assert.equal(german.length, english.length);
+  assert.notEqual(german[0].label, english[0].label, 'Mode label is translated');
+  assert.equal(german.at(-1).value, '16:9, 9:16', 'catalog values stay as they are');
+});
+
+test('every Oddling has catalog words equal to the cast data, and localizing keeps names and ids', () => {
+  const slug = (text) => text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  for (const a of ODDLING_ARCHETYPES) {
+    assert.equal(en[`oddling.${a.id}.hook`], a.hook, `${a.id} hook`);
+    assert.equal(en[`oddling.${a.id}.accent`], a.accent, `${a.id} accent`);
+    assert.equal(en[`oddling.${a.id}.obsession`], a.picks.oddling_obsession, `${a.id} obsession`);
+  }
+  for (const [name, note] of ODDLING_TONES) {
+    assert.equal(en[`oddling.voice.${slug(name)}.name`], name);
+    assert.equal(en[`oddling.voice.${slug(name)}.note`], note);
+  }
+  for (const [name, note] of ODDLING_SHOWS) {
+    assert.equal(en[`oddling.show.${slug(name)}.name`], name);
+    assert.equal(en[`oddling.show.${slug(name)}.note`], note);
+  }
+  const first = listPublicOddlings()[0];
+  const english = localizeOddling(first);
+  assert.equal(english.hook, first.hook, 'English output is unchanged');
+  assert.equal(english.portrait.alt, first.portrait.alt);
+  const japanese = localizeOddling(first, translator('ja'));
+  assert.equal(japanese.name, first.name, 'names stay as they are');
+  assert.equal(japanese.id, first.id);
+  assert.notEqual(japanese.hook, first.hook, 'the hook is translated');
+  assert.equal(isLocalizedPath('/oddlings'), true);
+  assert.equal(isLocalizedPath(`/oddlings/${first.id}`), true);
 });

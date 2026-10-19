@@ -1,0 +1,49 @@
+{
+  "note": "Face features. The first sheet drew six heads, not eight, and merged some, so Glossy Cheeks and One Brow come from a follow-up sheet. Tiny Brows, Huge Lashes, Painted Blush, Metallic Freckles and Beauty Mark Constellation come from the first two sheets.",
+  "sources": [
+    {
+      "file": "features.jpg",
+      "rows": [
+        3,
+        3
+      ],
+      "styles": [
+        "Tiny Brows",
+        null,
+        "Huge Lashes",
+        "Painted Blush",
+        "Metallic Freckles",
+        null
+      ]
+    },
+    {
+      "file": "marks-eyes.jpg",
+      "rows": [
+        3,
+        3
+      ],
+      "styles": [
+        "Beauty Mark Constellation",
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "file": "fixups.jpg",
+      "rows": [
+        3,
+        2
+      ],
+      "styles": [
+        null,
+        "Glossy Cheeks",
+        "One Brow",
+        null,
+        null
+      ]
+    }
+  ]
+}

@@ -1,4 +1,6 @@
 'use client';
+import { localeTag } from '../../../lib/i18n/locales.mjs';
+import { tOr } from '../../../lib/i18n/translate.mjs';
 import Link from 'next/link';
 import { useI18n } from '../../../components/I18nProvider';
 import { rich } from '../../../lib/i18n/rich';
@@ -72,29 +74,30 @@ async function publicOfferState() {
   }
 }
 function Plans({ plans, selected, onSelect, publicOnly = false }) {
+  const { t, locale } = useI18n();
   return (
     <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {plans.map((p) => (
         <li key={p.id} className="rounded-xl border border-vx-border p-5">
           <h3 className="text-xl font-bold">{names[p.id] || p.id}</h3>
           <p className="mt-1 text-xs font-bold uppercase tracking-widest text-vx-accent">
-            {intervalName(p.billing_interval)}ly
+            {tOr(t, `cinema.pass.${p.billing_interval}ly`, p.billing_interval)}
           </p>
           <p className="mt-3 font-vx-mono text-2xl">
-            {usd.format(p.price_usd_cents / 100)} / {intervalName(p.billing_interval)}
+            {usd.format(p.price_usd_cents / 100)} / {tOr(t, `cinema.pass.${p.billing_interval}`, p.billing_interval)}
           </p>
           <p className="mt-2">
-            {p.credits.toLocaleString()} Credits each paid {intervalName(p.billing_interval)}
+            {t('public.subscription.cycle', { credits: p.credits.toLocaleString(localeTag(locale)), interval: tOr(t, `cinema.pass.${p.billing_interval}`, p.billing_interval) })}
           </p>
           <p className="mt-2 text-sm text-vx-fg-muted">
-            Plus applicable tax. Cycle Credits expire and do not roll over.
+            {t('public.subscription.expiry')}
           </p>
           {publicOnly ? (
             <Link
               href="/app/credits#credit-subscriptions"
               className="mt-4 inline-block underline"
             >
-              Choose {names[p.id] || p.id}
+              {t('public.subscription.choose', { plan: names[p.id] || p.id })}
             </Link>
           ) : (
             <button
@@ -102,7 +105,7 @@ function Plans({ plans, selected, onSelect, publicOnly = false }) {
               aria-pressed={selected === p.id}
               onClick={() => onSelect(p.id)}
             >
-              {selected === p.id ? 'Selected' : `Choose ${names[p.id] || p.id}`}
+              {selected === p.id ? t('public.subscription.selected') : t('public.subscription.choose', { plan: names[p.id] || p.id })}
             </button>
           )}
         </li>
@@ -173,13 +176,11 @@ export function CreditSubscriptionOffer() {
       {offerState.phase === 'open' && catalog?.plans?.length > 0 && (
         <>
           <p className="mt-4">
-            Optional weekly and monthly subscriptions renew automatically until cancelled.
-            Manage renewal in Credits &amp; billing. Prices are in USD; tax and
-            the final total are shown before payment.
+            {t('public.subscription.terms')}
           </p>
           <Plans plans={catalog.plans} publicOnly />
           <button className="mt-5 text-sm underline" onClick={load}>
-            Refresh prices
+            {t('public.subscription.refresh')}
           </button>
         </>
       )}

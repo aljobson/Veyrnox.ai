@@ -1,6 +1,8 @@
 // Preview figure for the Oddling catalog. Pure geometry: picks in, a list of SVG shape descriptors out, so it can be tested without a browser.
 // It is a stylised mannequin, not the final image: the real picture is AI-made from the same picks. Unpicked parts show neutral defaults.
 import { SWATCHES } from './oddlingCatalog.js';
+import { faceShapes } from './oddlingFace.js';
+import { limbShapes, neckShapes, PROPORTIONS } from './oddlingBodyParts.js';
 
 export const MANNEQUIN_BOX = Object.freeze({ width: 120, height: 230 });
 const CX = 60, FEET_Y = 224, BUDGET = 205; // the whole figure, feet to top of hair, never taller than this
@@ -16,6 +18,7 @@ export const BUILDS = Object.freeze({
 const HEIGHT = { 'Very Short': 0.86, Short: 0.93, Average: 1, Tall: 1.07, 'Very Tall': 1.14 };
 const SIZE = { Small: 0.8, Medium: 1, Large: 1.2, 'Extra Large': 1.4 };
 const LIMB = { Small: 0.85, Medium: 1, Large: 1.12, 'Extra Large': 1.25 };
+const EXAGGERATION = Object.freeze({ Natural: 1, Bold: 1.12, Extreme: 1.28 });
 const NECK = { Small: 3, Medium: 6, Large: 10, 'Extra Large': 15 };
 
 // Outfits: top colour, bottom colour, the bottom's cut, an optional detail, and whether the shoulders are padded.
@@ -43,7 +46,9 @@ const circle = (key, cx, cy, r, attrs = {}) => ({ key, tag: 'circle', attrs: { c
 const path = (key, d, attrs = {}) => ({ key, tag: 'path', attrs: { d, ...attrs } });
 const rect = (key, x, y, width, height, attrs = {}) => ({ key, tag: 'rect', attrs: { x, y, width, height, rx: Math.min(width, height) / 3, ...attrs } });
 const num = (value) => Math.round(value * 10) / 10;
-const cap = (cx, cy, r, extra = 1) => `M${num(cx - r - extra)} ${num(cy - r * 0.1)}A${num(r + extra)} ${num(r + extra)} 0 0 1 ${num(cx + r + extra)} ${num(cy - r * 0.1)}Z`;
+// The hair cap is a dome whose lower edge is the hairline, at the forehead, so brows and eyes stay visible below it.
+const HAIRLINE = 0.66;
+const cap = (cx, cy, r, extra = 1) => { const big = r + extra, drop = r * HAIRLINE, half = Math.sqrt(Math.max(0, big * big - drop * drop)); return `M${num(cx - half)} ${num(cy - drop)}A${num(big)} ${num(big)} 0 0 1 ${num(cx + half)} ${num(cy - drop)}Z`; };
 
 // Each drawer gets the head centre and radius and returns shapes tagged for the layer behind or in front of the face.
 const HAIR_DRAWERS = {
@@ -76,7 +81,6 @@ const HEADWEAR = {
   'Bucket Hat': (c, y, r) => [path('d', `M${num(c - r - 1)} ${num(y - r * 0.5)}L${num(c - r * 0.8)} ${num(y - r * 1.5)}L${num(c + r * 0.8)} ${num(y - r * 1.5)}L${num(c + r + 1)} ${num(y - r * 0.5)}Z`), { key: 'b', tag: 'ellipse', attrs: { cx: c, cy: y - r * 0.5, rx: r * 1.45, ry: r * 0.22 } }],
   Headphones: (c, y, r) => [path('d', `M${num(c - r - 1)} ${num(y)}A${num(r + 1)} ${num(r + 1)} 0 0 1 ${num(c + r + 1)} ${num(y)}`, { fill: 'none', strokeWidth: 2.5, stroke: '#6a7bd1' }), rect('a', c - r - 5, y - r * 0.25, 6, r * 0.8), rect('z', c + r - 1, y - r * 0.25, 6, r * 0.8)],
 };
-const GLASSES = ['Glasses', 'Round Glasses', 'Sunglasses'];
 
 const pickOf = (picks, key) => picks?.[key] || DEFAULTS[key] || '';
 const swatchFill = (group, name, fallback) => SWATCHES[group][name]?.fill || SWATCHES[group][fallback].fill;
@@ -86,22 +90,24 @@ export function mannequinParams(picks) {
   const build = BUILDS[pickOf(picks, 'body_type')] || BUILDS[DEFAULTS.body_type];
   const outfit = OUTFITS[pickOf(picks, 'wardrobe_style')] || OUTFITS[DEFAULTS.wardrobe_style];
   const heightScale = HEIGHT[picks?.height] || 1;
-  const legPx = 64 * (build.leg || 1) * heightScale * (LIMB[picks?.leg_size] || 1);
-  const torsoPx = 54 * (build.torso || 1) * heightScale * (LIMB[picks?.torso_size] || 1);
-  const neckPx = NECK[picks?.neck_size] ?? NECK.Medium;
-  const headR = 17 * (SIZE[picks?.head_size] || 1);
+  const prop = PROPORTIONS[picks?.proportions] || {};
+  const ex = EXAGGERATION[picks?.exaggeration] || 1; // silhouette only: head, hands, feet, shoulders, hair and accessory scale; never the face
+  const legPx = 64 * (build.leg || 1) * heightScale * (LIMB[picks?.leg_size] || 1) * (prop.limb || 1);
+  const torsoPx = 54 * (build.torso || 1) * heightScale * (LIMB[picks?.torso_size] || 1) * (prop.torso || 1);
+  const neckPx = (NECK[picks?.neck_size] ?? NECK.Medium) * (prop.neck || 1);
+  const headR = 17 * (SIZE[picks?.head_size] || 1) * (1 + (ex - 1) * 0.8);
   const hairShape = HAIR_SHAPES[pickOf(picks, 'hair')] || 'short';
   const hairLift = { tower: 2.3, wild: 1.6, antennae: 1.9, halo: 1.6, wedge: 1.9, round: 1.6, spike: 1.55, box: 1.6, flat: 1.4, knot: 1.55, buns: 1.45, wave: 1.7 }[hairShape] || 1.1;
   const natural = legPx + torsoPx + neckPx + headR * 2 + headR * (hairLift - 1);
   const fit = natural > BUDGET ? BUDGET / natural : 1;
   return {
-    build, outfit, hairShape, fit,
+    build, outfit, hairShape, fit, headCy: FEET_Y - legPx * fit - torsoPx * fit - neckPx * fit - headR * fit + 2,
     skin: swatchFill('skin_tone', pickOf(picks, 'skin_tone'), 'Light'), hairFill: swatchFill('hair_color', pickOf(picks, 'hair_color'), 'Brown'),
     eyeFill: swatchFill('eye_color', pickOf(picks, 'eye_color'), 'Brown'), eyeScale: { Small: 0.75, Medium: 1, Large: 1.3, 'Extra Large': 1.6 }[picks?.eye_size] || 1,
     mouthScale: SIZE[picks?.mouth_size] || 1, legPx: legPx * fit, torsoPx: torsoPx * fit, neckPx: neckPx * fit, headR: headR * fit,
-    armPx: 50 * heightScale * (LIMB[picks?.arm_size] || 1) * fit, armW: 5.5 * (LIMB[picks?.arm_size] || 1), legW: 8 * (LIMB[picks?.leg_size] || 1),
-    handR: 3 * (LIMB[picks?.hand_size] || 1), footLen: 10 * (LIMB[picks?.foot_size] || 1),
-    headwear: HEADWEAR[picks?.headwear] ? picks.headwear : '', glasses: GLASSES.includes(picks?.everyday_accessories) ? picks.everyday_accessories : '',
+    armPx: 50 * heightScale * (LIMB[picks?.arm_size] || 1) * (prop.limb || 1) * fit, shoulderAdd: (prop.shoulder || 0) + (ex - 1) * 25, volume: 1 + (ex - 1) * 0.9, armW: 5.5 * (LIMB[picks?.arm_size] || 1), legW: 8 * (LIMB[picks?.leg_size] || 1),
+    handR: 3 * (LIMB[picks?.hand_size] || 1) * (prop.hand || 1) * (1 + (ex - 1) * 2), footLen: 10 * (LIMB[picks?.foot_size] || 1) * (1 + (ex - 1) * 2),
+    headwear: HEADWEAR[picks?.headwear] ? picks.headwear : '',
   };
 }
 
@@ -109,10 +115,12 @@ export function mannequinParams(picks) {
 export function mannequinShapes(picks) {
   const p = mannequinParams(picks), { build, outfit } = p;
   const hipY = FEET_Y - p.legPx, shoulderY = hipY - p.torsoPx, chinY = shoulderY - p.neckPx, headY = chinY - p.headR + 2, waistY = shoulderY + p.torsoPx * 0.5;
-  const sw = build.s + (outfit.pad || 0), ww = build.w, hw = build.h;
+  const sw = Math.max(8, build.s + (outfit.pad || 0) + p.shoulderAdd), ww = build.w, hw = build.h;
   const out = [];
   const add = (shape, fill, extra = {}) => out.push({ ...shape, fill, ...extra });
-  const hair = HAIR_DRAWERS[p.hairShape](CX, headY, p.headR).map((shape) => ({ ...shape, key: `hair-${shape.key}` }));
+  // Hair volume and accessory scale: grown about the head centre.
+  const grown = (attrs) => (p.volume > 1 ? { ...attrs, transform: `translate(${CX} ${num(headY)}) scale(${num(p.volume * 100) / 100}) translate(${-CX} ${num(-headY)})` } : attrs);
+  const hair = HAIR_DRAWERS[p.hairShape](CX, headY, p.headR).map((shape) => ({ ...shape, key: `hair-${shape.key}`, attrs: grown(shape.attrs) }));
   const drawHair = (layer) => hair.filter((s) => s.layer === layer).forEach((s) => {
     const { layer: _layer, thin, ring, stroked, ...shape } = s;
     if (stroked) out.push({ ...shape, fill: 'none', stroke: p.hairFill, attrs: { ...shape.attrs, strokeLinecap: 'round' } });
@@ -124,35 +132,50 @@ export function mannequinShapes(picks) {
   drawHair('back');
   // Legs (skin), then the cut of the bottoms over them, then shoes.
   for (const [side, x] of [['l', CX - hw * 0.55], ['r', CX + hw * 0.55]]) {
-    add(rect(`leg-${side}`, x - p.legW / 2, hipY - 2, p.legW, p.legPx, { rx: p.legW / 2 }), p.skin);
     const down = outfit.cut === 'shorts' ? 0.45 : outfit.cut === 'trousers' ? 0.97 : 0;
-    if (down) add(rect(`bottom-${side}`, x - p.legW / 2 - 0.8, hipY - 2, p.legW + 1.6, p.legPx * down, { rx: 2 }), outfit.bottom);
-    add({ key: `shoe-${side}`, tag: 'ellipse', attrs: { cx: x + (side === 'l' ? -p.footLen * 0.15 : p.footLen * 0.15), cy: FEET_Y, rx: p.footLen / 2 + p.legW / 3, ry: 3.6 } }, '#26262b');
+    out.push(...limbShapes(`${side === 'l' ? 'right' : 'left'}_leg`, picks, { side, x, hipY, len: p.legPx, w: p.legW, footLen: p.footLen, footX: x + (side === 'l' ? -1 : 1) * p.footLen * 0.15, skin: p.skin, bottom: outfit.bottom, down }));
   }
   if (outfit.cut === 'skirt') add(path('skirt', `M${num(CX - hw)} ${num(hipY - 3)}L${num(CX + hw)} ${num(hipY - 3)}L${num(CX + hw + 9)} ${num(hipY + p.legPx * 0.45)}L${num(CX - hw - 9)} ${num(hipY + p.legPx * 0.45)}Z`), outfit.bottom);
   // Arms: skin, a sleeve in the top's colour over the upper part, and the hands.
   for (const [side, dir] of [['l', -1], ['r', 1]]) {
     const x0 = CX + dir * (sw - 1), y0 = shoulderY + 3, x1 = CX + dir * (sw + 6 + build.s * 0.05), y1 = y0 + p.armPx;
-    add(path(`arm-${side}`, `M${num(x0)} ${num(y0)}L${num(x1)} ${num(y1)}`, { strokeWidth: p.armW, strokeLinecap: 'round' }), 'none', { stroke: p.skin });
+    out.push(...limbShapes(`${side === 'l' ? 'right' : 'left'}_arm`, picks, { side, x0: num(x0), y0: num(y0), x1: num(x1), y1: num(y1), w: p.armW, handR: p.handR, skin: p.skin }));
     add(path(`sleeve-${side}`, `M${num(x0)} ${num(y0)}L${num(x0 + (x1 - x0) * 0.4)} ${num(y0 + p.armPx * 0.4)}`, { strokeWidth: p.armW + 1.2, strokeLinecap: 'round' }), 'none', { stroke: outfit.top });
-    add(circle(`hand-${side}`, x1, y1 + p.handR * 0.4, p.handR), p.skin);
   }
   add(path('torso', `M${num(CX - sw)} ${num(shoulderY + 2)}Q${CX} ${num(shoulderY - 5)} ${num(CX + sw)} ${num(shoulderY + 2)}L${num(CX + ww)} ${num(waistY)}L${num(CX + hw)} ${num(hipY)}L${num(CX - hw)} ${num(hipY)}L${num(CX - ww)} ${num(waistY)}Z`, { strokeLinejoin: 'round', strokeWidth: 2 }), outfit.top, { stroke: outfit.top });
   if (outfit.detail === 'stripe') add(rect('stripe', CX - 1.5, shoulderY + 2, 3, p.torsoPx - 2, { rx: 0 }), outfit.bottom, { opacity: 0.85 });
   if (outfit.detail === 'collar') add(path('collar', `M${num(CX - 6)} ${num(shoulderY - 1)}L${CX} ${num(shoulderY + 9)}L${num(CX + 6)} ${num(shoulderY - 1)}Z`), outfit.bottom, { opacity: 0.9 });
   add(rect('neck', CX - 4.5, chinY - 1, 9, p.neckPx + 4, { rx: 2 }), p.skin);
-  add(circle('head', CX, headY, p.headR), p.skin);
-  for (const [side, dx] of [['l', -1], ['r', 1]]) add(circle(`eye-${side}`, CX + dx * p.headR * 0.4, headY - p.headR * 0.05, p.headR * 0.16 * p.eyeScale), p.eyeFill, { stroke: '#1a1a1c', strokeWidth: 0.7 });
-  add(path('mouth', `M${num(CX - p.headR * 0.28 * p.mouthScale)} ${num(headY + p.headR * 0.45)}Q${CX} ${num(headY + p.headR * (0.45 + 0.28 * p.mouthScale))} ${num(CX + p.headR * 0.28 * p.mouthScale)} ${num(headY + p.headR * 0.45)}`, { strokeWidth: 1.4, strokeLinecap: 'round' }), 'none', { stroke: '#6b2e2e' });
-  if (p.glasses) for (const dx of [-1, 1]) add(circle(`glass-${dx}`, CX + dx * p.headR * 0.4, headY - p.headR * 0.05, p.headR * 0.3), p.glasses === 'Sunglasses' ? '#1c1c20' : 'none', { stroke: '#1c1c20', strokeWidth: 1.3 });
+  out.push(...neckShapes(picks, { chinY, shoulderY, neckPx: p.neckPx, top: outfit.top }));
+  const face = faceShapes(picks, p), faceMove = `translate(${num(CX)} ${num(headY)}) scale(${num(p.headR * face.scale)})`;
+  for (const shape of face.shapes) {
+    const { fill, stroke, opacity, strokeWidth, ...rest } = shape;
+    out.push({ ...rest, attrs: { ...rest.attrs, transform: rest.attrs.transform ? `${faceMove} ${rest.attrs.transform}` : faceMove, ...(strokeWidth ? { strokeWidth } : {}) }, fill, ...(stroke ? { stroke } : {}), ...(opacity ? { opacity } : {}) });
+  }
   drawHair('front');
-  if (p.headwear) HEADWEAR[p.headwear](CX, headY, p.headR).forEach((shape) => add({ ...shape, key: `wear-${shape.key}` }, shape.attrs.fill === 'none' ? 'none' : '#6a7bd1'));
+  if (p.headwear) HEADWEAR[p.headwear](CX, headY, p.headR).forEach((shape) => add({ ...shape, key: `wear-${shape.key}`, attrs: grown(shape.attrs) }, shape.attrs.fill === 'none' ? 'none' : '#6a7bd1'));
   return out;
 }
 
 /** What part of the figure a tile should show: the head for hair and hats, the whole figure otherwise. */
 export function mannequinViewBox(focus, picks) {
   const p = mannequinParams(picks);
+  if (focus === 'face') { const half = p.headR * 1.5; return `${num(CX - half)} ${num(p.headCy - half * 1.02)} ${num(half * 2)} ${num(half * 2)}`; }
+  if (focus === 'neck') {
+    const chinY = p.headCy + p.headR - 2, size = p.headR * 3.4;
+    return `${num(CX - size / 2)} ${num(chinY - p.headR * 1.3)} ${num(size)} ${num(size)}`;
+  }
+  if (/^(arm|leg)(Left|Right)$/.test(focus)) {
+    // The character's left is on the viewer's right.
+    const dir = focus.endsWith('Left') ? 1 : -1, hipY = FEET_Y - p.legPx, shoulderY = hipY - p.torsoPx;
+    const isArm = focus.startsWith('arm'), build = p.build, reach = isArm ? build.s + (p.outfit.pad || 0) + p.shoulderAdd + 3 : build.h * 0.55;
+    const size = (isArm ? p.armPx : p.legPx) + 22, top = (isArm ? shoulderY : hipY) - 4;
+    return `${num(CX + dir * reach - size / 2)} ${num(top)} ${num(size)} ${num(size)}`;
+  }
+  if (focus === 'upper' || focus === 'lower') {
+    const hipY = FEET_Y - p.legPx, top = focus === 'upper' ? p.headCy - p.headR * 2 : hipY - 8, bottom = focus === 'upper' ? hipY + 6 : FEET_Y + 6, size = bottom - top;
+    return `${num(CX - size / 2)} ${num(top)} ${num(size)} ${num(size)}`;
+  }
   if (focus !== 'head') return `0 0 ${MANNEQUIN_BOX.width} ${MANNEQUIN_BOX.height}`;
   const top = FEET_Y - p.legPx - p.torsoPx - p.neckPx - p.headR * 2 - p.headR * 1.5;
   return `${CX - 36} ${num(top)} 72 ${num(p.headR * 2 + p.headR * 3)}`;

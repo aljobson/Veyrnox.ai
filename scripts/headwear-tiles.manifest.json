@@ -1,0 +1,20 @@
+{
+  "note": "Headwear sheet: grey mannequin heads with shoulders, each wearing one item, on a plain light background. The sixth cell is a bare head and is skipped.",
+  "sources": [
+    {
+      "file": "sheetC.jpg",
+      "rows": [
+        3,
+        3
+      ],
+      "styles": [
+        "Baseball Cap",
+        "Beanie",
+        "Wide-Brim Hat",
+        "Bucket Hat",
+        "Headphones",
+        null
+      ]
+    }
+  ]
+}

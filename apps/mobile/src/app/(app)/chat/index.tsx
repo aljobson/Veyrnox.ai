@@ -1,8 +1,9 @@
 import { Link, Stack, useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { chatApi, type ChatThread } from '../../../lib/chat';
+import { fetchFolders, type Folder } from '../../../lib/chatLibrary';
 import { colors } from '../../../theme';
 
 export default function Threads() {
@@ -10,15 +11,22 @@ export default function Threads() {
     const router = useRouter();
     const [threads, setThreads] = useState<ChatThread[] | null>(null);
     const [failed, setFailed] = useState(false);
+    const [folders, setFolders] = useState<Folder[]>([]);
+    // undefined shows every chat; null shows chats in no folder; an id shows that folder.
+    const [filter, setFilter] = useState<string | null | undefined>(undefined);
 
     const load = useCallback(async () => {
         setFailed(false);
         try {
             setThreads(await chatApi(api).listThreads());
+            // Folders are an extra: a failure here never hides the chats.
+            fetchFolders(api).then(setFolders, () => undefined);
         } catch {
             setFailed(true);
         }
     }, [api]);
+
+    const shown = useMemo(() => (threads ?? []).filter((t) => filter === undefined || (t.folder_id ?? null) === filter), [threads, filter]);
 
     useFocusEffect(
         useCallback(() => {
@@ -34,15 +42,28 @@ export default function Threads() {
                     <Text style={styles.newText}>New chat</Text>
                 </Pressable>
             </Link>
+            <View style={styles.links}>
+                <Pressable accessibilityRole="button" style={styles.linkBox} onPress={() => router.push('/chat/personas')}><Text style={styles.link}>Personas</Text></Pressable>
+                <Pressable accessibilityRole="button" style={styles.linkBox} onPress={() => router.push('/chat/folders')}><Text style={styles.link}>Folders</Text></Pressable>
+            </View>
+            {folders.length > 0 ? (
+                <View style={styles.chips}>
+                    {[{ id: undefined, name: 'All' }, { id: null, name: 'No folder' }, ...folders.map((f) => ({ id: f.id as string | null | undefined, name: f.name }))].map((c) => (
+                        <Pressable key={String(c.id ?? c.name)} accessibilityRole="button" accessibilityState={{ selected: filter === c.id }} style={[styles.chip, filter === c.id && styles.chipOn]} onPress={() => setFilter(c.id)}>
+                            <Text style={[styles.chipText, filter === c.id && styles.chipTextOn]}>{c.name}</Text>
+                        </Pressable>
+                    ))}
+                </View>
+            ) : null}
             {failed ? (
-                <Pressable accessibilityRole="button" onPress={load}>
+                <Pressable accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }} onPress={load}>
                     <Text style={styles.error}>Could not load your chats. Tap to retry.</Text>
                 </Pressable>
             ) : threads === null ? (
                 <ActivityIndicator color={colors.accent} />
             ) : (
                 <FlatList
-                    data={threads}
+                    data={shown}
                     keyExtractor={(t) => t.id}
                     ListEmptyComponent={<Text style={styles.muted}>No chats yet.</Text>}
                     renderItem={({ item }) => (
@@ -71,4 +92,12 @@ const styles = StyleSheet.create({
     rowTitle: { color: colors.text, fontSize: 16 },
     muted: { color: colors.muted },
     error: { color: colors.danger },
+    links: { flexDirection: 'row', gap: 16 },
+    linkBox: { minHeight: 44, justifyContent: 'center' },
+    link: { color: colors.accent, fontSize: 16 },
+    chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    chip: { minHeight: 40, justifyContent: 'center', paddingHorizontal: 12, borderRadius: 10, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
+    chipOn: { backgroundColor: colors.accent, borderColor: colors.accent },
+    chipText: { color: colors.body },
+    chipTextOn: { color: colors.accentInk, fontWeight: '600' },
 });

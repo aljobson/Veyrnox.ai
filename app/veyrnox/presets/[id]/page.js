@@ -1,3 +1,8 @@
+import { tOr } from '../../../../lib/i18n/translate.mjs';
+import { getT } from '../../../../lib/i18n/server';
+import { pageAlternates, openGraphLocale } from '../../../../lib/i18n/metadata.mjs';
+import { rich } from '../../../../lib/i18n/rich';
+import { localizedHref } from '../../../../lib/i18n/locales.mjs';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { MarketingNav } from '../../_components/NavBar';
@@ -17,25 +22,27 @@ export function generateStaticParams() {
 export const dynamicParams = false;
 
 export async function generateMetadata({ params }) {
+  const { locale, t } = await getT();
   const { id } = await params;
-  const t = templateById(id);
-  if (!t) return { title: 'Template not found', robots: { index: false } };
-  const title = presetTitle(t.name);
-  const description = `${title}: a ${t.model} template. See the preview, prompt, inputs and credit cost before you generate.`;
+  const template = templateById(id);
+  if (!template) return { title: t("presets.detail.templateNotFound"), robots: { index: false } };
+  const title = presetTitle(template.name);
+  const description = t('presets.detail.metaDescription', { title, model: template.model });
   return {
-    title: `${title} template`,
+    title: t('presets.detail.metaTitle', { title }),
     description,
-    alternates: { canonical: `/presets/${t.id}` },
-    openGraph: { ...OPEN_GRAPH_BASE, title: `${title} — Veyrnox.ai`, description, url: `/presets/${t.id}` },
+    alternates: pageAlternates(locale, `/presets/${template.id}`),
+    openGraph: { ...OPEN_GRAPH_BASE, title: t('meta.siteTitle', { title }), description, url: localizedHref(locale, `/presets/${template.id}`), ...openGraphLocale(locale) },
   };
 }
 
 export default async function TemplatePage({ params }) {
+  const { locale, t } = await getT();
   const { id } = await params;
-  const t = templateById(id);
-  if (!t) notFound();
-  const modelId = modelIdForName(t.model);
-  const clip = SHOWCASE_CLIPS[t.clipKey];
+  const template = templateById(id);
+  if (!template) notFound();
+  const modelId = modelIdForName(template.model);
+  const clip = SHOWCASE_CLIPS[template.clipKey];
   return (
     <div className="min-h-dvh">
       <MarketingNav />
@@ -43,7 +50,7 @@ export default async function TemplatePage({ params }) {
           logo's edge. Its own width is the inner block. */}
       <Main className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-28">
         <div className="max-w-[1052px]">
-        <Link href="/presets" className="text-[14px] text-vx-fg-muted hover:text-vx-fg underline-offset-4 hover:underline">All templates</Link>
+        <Link href={localizedHref(locale, '/presets')} className="text-[14px] text-vx-fg-muted hover:text-vx-fg underline-offset-4 hover:underline">{t("home.templates.all")}</Link>
         {/* In one column the name, model and inputs come before the preview:
             a 9:16 clip fills a phone's first screen and used to push the
             title below it. From lg the preview is the left column again and
@@ -52,32 +59,29 @@ export default async function TemplatePage({ params }) {
         <div className="mt-6 grid gap-x-10 gap-y-6 lg:grid-cols-[1fr_420px] lg:grid-rows-[auto_1fr] lg:gap-y-0">
           <div className="lg:col-start-2 lg:row-start-1">
             <p className="font-vx-mono text-[11px] tracking-[0.12em] text-vx-fg-muted">
-              {t.category}{t.isNew ? ' · NEW' : ''}
+              {tOr(t, `presets.cat.${template.category}`, template.category)}{template.isNew ? t("presets.detail.new") : ''}
             </p>
-            <h1 className="mt-2 vx-display vx-title-detail">{presetTitle(t.name)}</h1>
+            <h1 className="mt-2 vx-display vx-title-detail">{presetTitle(template.name)}</h1>
             <p className="mt-4 text-vx-fg-body">
-              Runs on{' '}
-              {modelId
-                ? <Link href={`/models/${encodeURIComponent(modelId)}`} className="font-bold underline underline-offset-4">{t.model}</Link>
-                : <span className="font-bold">{t.model}</span>}
+              {rich(t('presets.detail.runsOn'), { model: modelId ? <Link href={localizedHref(locale, `/models/${encodeURIComponent(modelId)}`)} className="font-bold underline underline-offset-4">{template.model}</Link> : <span className="font-bold">{template.model}</span> })}
             </p>
-            {t.needs && (
+            {template.needs && (
               <p className="mt-4 rounded-xl border border-vx-border px-4 py-3 text-[14px] text-vx-fg-body">
-                <span className="font-bold">You add:</span> {t.needs}. You upload it in the studio.
+                {t('presets.detail.inputs', { inputs: template.needs })}
               </p>
             )}
           </div>
           <div className="lg:col-start-1 lg:row-start-1 lg:row-span-2">
             {clip ? (
               <div className="relative mx-auto max-w-[480px]">
-                <FilmPlayer key={t.id} film={clip} label={`${presetTitle(t.name)} preview`} aspectRatio={clip.aspectRatio || t.previewAspect || '9 / 16'} />
+                <FilmPlayer key={template.id} film={clip} label={t('presets.detail.preview', { title: presetTitle(template.name) })} aspectRatio={clip.aspectRatio || template.previewAspect || '9 / 16'} />
                 <ClipBadge clip={clip} />
-                <p className="mt-3 text-sm text-vx-fg-muted">{clip.generatedOnVeyrnox ? 'High-quality five-second preview generated on Veyrnox with the prompt below.' : 'High-quality five-second inspiration preview. Generate a 5s or 10s shot, or plan a 30–120s multi-shot film.'}</p>
+                <p className="mt-3 text-sm text-vx-fg-muted">{clip.generatedOnVeyrnox ? t("presets.detail.highQualityFiveSecondPreviewGenerated") : t("presets.detail.highQualityFiveSecondInspirationPreview")}</p>
               </div>
-            ) : <div className="min-h-[280px] lg:min-h-[480px] rounded-2xl" style={{ background: t.bg }} aria-hidden />}
+            ) : <div className="min-h-[280px] lg:min-h-[480px] rounded-2xl" style={{ background: template.bg }} aria-hidden />}
           </div>
           <div className="lg:col-start-2 lg:row-start-2">
-            <TemplateRecipe key={t.id} preset={t} generatedPreview={clip?.generatedOnVeyrnox} />
+            <TemplateRecipe key={template.id} preset={template} generatedPreview={clip?.generatedOnVeyrnox} />
           </div>
         </div>
         </div>

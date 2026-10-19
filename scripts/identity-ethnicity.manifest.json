@@ -1,0 +1,22 @@
+{
+  "note": "Heritage: stylised 3D busts from one 2-by-3 sheet; every option has a picture.",
+  "sources": [
+    {
+      "file": "heritage.png",
+      "rows": [
+        2,
+        2,
+        2
+      ],
+      "styles": [
+        "African",
+        "Asian",
+        "European",
+        "Indian",
+        "Middle Eastern",
+        "Mixed"
+      ],
+      "inset": 14
+    }
+  ]
+}

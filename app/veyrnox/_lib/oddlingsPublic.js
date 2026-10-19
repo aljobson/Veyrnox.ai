@@ -9,6 +9,9 @@
 
 import { ODDLING_ARCHETYPES, ODDLING_SHOWS, ODDLING_TONES } from './character.js';
 import { oddlingPortrait } from './oddlingStudio.js';
+import { translator } from '../../../lib/i18n/translate.mjs';
+
+const ENGLISH = translator('en');
 
 // The flag lives in its own module so the shared layout can read it without
 // loading the cast. Re-exported here so the gallery has one import.
@@ -90,6 +93,33 @@ export function groupPublicOddlings() {
     .filter((group) => group.oddlings.length > 0);
 }
 
+const slugOf = (text) => String(text).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+/**
+ * One character in the page's language (ADR-0107): hook, tagline, obsession,
+ * voice and show, kind and the portrait's alt text. Names are the characters'
+ * own and stay as they are. `t` is a translator; a field with no translation
+ * keeps its English words.
+ */
+export function localizeOddling(oddling, t = ENGLISH) {
+  const say = (key, fallback) => t.messages[key] ?? fallback;
+  const { premise } = oddling;
+  return Object.freeze({
+    ...oddling,
+    hook: say(`oddling.${oddling.id}.hook`, oddling.hook),
+    accent: say(`oddling.${oddling.id}.accent`, oddling.accent),
+    kindLabel: say(`oddlings.kind.${oddling.kind}`, oddling.kindLabel),
+    portrait: Object.freeze({ ...oddling.portrait, alt: t('oddlings.portraitAlt', { name: oddling.name }) }),
+    premise: Object.freeze({
+      obsession: say(`oddling.${oddling.id}.obsession`, premise.obsession),
+      voice: say(`oddling.voice.${slugOf(premise.voice)}.name`, premise.voice),
+      voiceNote: say(`oddling.voice.${slugOf(premise.voice)}.note`, premise.voiceNote),
+      show: say(`oddling.show.${slugOf(premise.show)}.name`, premise.show),
+      showNote: say(`oddling.show.${slugOf(premise.show)}.note`, premise.showNote),
+    }),
+  });
+}
+
 /** The character for an id, or null for anything that is not in the cast. */
 export function publicOddlingById(id) {
   if (typeof id !== 'string' || id.length === 0 || id.length > MAX_ID_LENGTH || !ID_PATTERN.test(id)) return null;
@@ -114,30 +144,33 @@ export function oddlingSitemapPaths() {
  * spreads OPEN_GRAPH_BASE underneath openGraph (site name, type) because Next
  * merges nested metadata shallowly; twitter is replaced whole, so it is complete.
  */
-export function oddlingMetadata(oddling) {
-  const title = `${oddling.name}, an original Oddling`;
-  const description = `${oddling.hook} An original fictional adult character from the Oddlings cast.`;
+export function oddlingMetadata(oddling, { t = ENGLISH, alternates } = {}) {
+  const local = localizeOddling(oddling, t);
+  const title = t('oddlings.detail.title', { name: oddling.name });
+  const description = t('oddlings.detail.description', { hook: local.hook });
+  const canonical = alternates?.canonical || oddling.path;
   const image = { url: oddling.portrait.src, width: oddling.portrait.width, height: oddling.portrait.height, alt: oddling.portrait.alt };
   const shareTitle = `${title} — Veyrnox.ai`;
   return {
     title,
     description,
-    alternates: { canonical: oddling.path },
-    openGraph: { title: shareTitle, description, url: oddling.path, images: [image] },
+    alternates: alternates || { canonical: oddling.path },
+    openGraph: { title: shareTitle, description, url: canonical, images: [image] },
     twitter: { card: 'summary', title: shareTitle, description, images: [{ url: image.url, alt: image.alt }] },
   };
 }
 
 /** Metadata for the gallery page. `siteImage` is the site-wide share card. */
-export function oddlingsIndexMetadata(siteImage) {
-  const title = 'Meet the Oddlings';
-  const description = `Browse ${ROSTER.length} original fictional adult characters, from human oddballs to strange beings. Recreate one as your own or animate it. Free to browse, no sign-in.`;
-  const shareTitle = `${title} — Veyrnox.ai`;
+export function oddlingsIndexMetadata(siteImage, { t = ENGLISH, alternates } = {}) {
+  const title = t('oddlings.meta.title');
+  const description = t('oddlings.meta.description', { n: ROSTER.length });
+  const shareTitle = t('oddlings.meta.ogTitle');
+  const canonical = alternates?.canonical || ODDLINGS_PATH;
   return {
     title,
     description,
-    alternates: { canonical: ODDLINGS_PATH },
-    openGraph: { title: shareTitle, description, url: ODDLINGS_PATH, images: [siteImage] },
+    alternates: alternates || { canonical: ODDLINGS_PATH },
+    openGraph: { title: shareTitle, description, url: canonical, images: [siteImage] },
     twitter: { card: 'summary_large_image', title: shareTitle, description, images: [siteImage.url] },
   };
 }

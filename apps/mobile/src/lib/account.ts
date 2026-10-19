@@ -5,10 +5,10 @@ import { ApiError, type ApiClient } from './api';
 const SITE = 'https://veyrnox.ai';
 
 export const LEGAL_LINKS = [
-    { label: 'Terms of service', url: `${SITE}/legal/terms` },
-    { label: 'Privacy policy', url: `${SITE}/legal/privacy` },
-    { label: 'Acceptable use policy', url: `${SITE}/legal/aup` },
-    { label: 'Refunds', url: `${SITE}/legal/refund` },
+    { label: 'Terms of service', labelKey: 'account.legal.terms', url: `${SITE}/legal/terms` },
+    { label: 'Privacy policy', labelKey: 'account.legal.privacy', url: `${SITE}/legal/privacy` },
+    { label: 'Acceptable use policy', labelKey: 'account.legal.aup', url: `${SITE}/legal/aup` },
+    { label: 'Refunds', labelKey: 'account.legal.refunds', url: `${SITE}/legal/refund` },
 ] as const;
 
 export const SUPPORT_EMAIL = 'support@veyrnox.com';
@@ -16,10 +16,6 @@ export const PRIVACY_EMAIL = 'privacy@veyrnox.com';
 
 // The privacy policy says the service is not intended for anyone under 18.
 export const MIN_AGE = 18;
-
-// In-app deletion needs the server route (S1). Until it is on staging the
-// button stays visible but off, and the screen names the email route instead.
-export const ACCOUNT_DELETION_ENABLED = false;
 
 // Mirrors CATEGORIES and the subject kinds in app/api/v1/reports/route.js.
 export const REPORT_CATEGORIES = [

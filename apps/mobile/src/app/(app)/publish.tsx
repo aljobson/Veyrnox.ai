@@ -1,5 +1,5 @@
 import * as WebBrowser from 'expo-web-browser';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
@@ -15,6 +15,7 @@ const store = Platform.OS === 'ios' ? 'ios' : 'android';
 
 export default function Publish() {
     const { api } = useAuth();
+    const router = useRouter();
     const { status, offerings, canPurchase, publishActive, debug, purchase, restore } = useBilling();
     const [tier, setTier] = useState<PublishTier | null>(null);
     const [tierChecked, setTierChecked] = useState(false);
@@ -68,7 +69,7 @@ export default function Publish() {
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.body}>
             <Stack.Screen options={{ title: 'Publish Plan' }} />
-            <Text style={styles.title}>Publish more, everywhere</Text>
+            <Text style={styles.title} accessibilityRole="header">Publish more, everywhere</Text>
             {BENEFITS.map((b) => (
                 <Text key={b} style={styles.benefit}>✓  {b}</Text>
             ))}
@@ -98,6 +99,15 @@ export default function Publish() {
                 </>
             )}
             {message ? <Text style={styles.muted}>{message}</Text> : null}
+            {gate !== 'checking' ? (
+                <View style={styles.menu}>
+                    {([['Connected accounts', '/publish/accounts'], ['Posts', '/publish/posts'], ['Analytics', '/publish/analytics'], ['Calendar', '/publish/calendar'], ['Best time', '/publish/best-time'], ['Drafts', '/publish/drafts'], ['Approvals', '/publish/approvals'], ['Brand', '/publish/brands']] as const).map(([label, path]) => (
+                        <Pressable key={path} accessibilityRole="button" style={styles.menuRow} onPress={() => router.push(path)}>
+                            <Text style={styles.menuText}>{label}</Text>
+                        </Pressable>
+                    ))}
+                </View>
+            ) : null}
             <View style={styles.links}>
                 <Pressable accessibilityRole="button" onPress={onRestore} disabled={busy}><Text style={styles.link}>Restore purchases</Text></Pressable>
                 <Pressable accessibilityRole="link" onPress={() => WebBrowser.openBrowserAsync(`${API_BASE}/legal/terms`)}><Text style={styles.link}>Terms</Text></Pressable>
@@ -124,6 +134,9 @@ const styles = StyleSheet.create({
     buttonText: { color: colors.accentInk, fontWeight: '700', fontSize: 16 },
     muted: { color: colors.muted },
     ok: { color: colors.accent },
+    menu: { marginTop: 8, borderTopColor: colors.border, borderTopWidth: StyleSheet.hairlineWidth },
+    menuRow: { paddingVertical: 16, borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth },
+    menuText: { color: colors.text, fontSize: 16 },
     links: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 16 },
     link: { color: colors.muted, textDecorationLine: 'underline' },
 });

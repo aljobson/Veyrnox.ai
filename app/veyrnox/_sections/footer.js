@@ -143,14 +143,27 @@ export function ClosingCTA({ locale = 'en' }) {
   const t = translator(locale);
   return (
     <section className="px-4 sm:px-6 pt-28 sm:pt-36 max-w-[1300px] mx-auto">
-      <h2 className="vx-display vx-title-index max-w-[11ch]">
-        {t('home.cta.title')}
-      </h2>
-      <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-4">
-        <Link href={localizedHref(locale, '/app/create?model=nano-banana-kie')} className="vx-press inline-flex min-h-11 items-center rounded-full bg-vx-accent text-vx-accent-ink px-8 py-4 text-base font-extrabold hover:bg-vx-accent-hover">
-          {t('home.cta.open')}
-        </Link>
-        <p className="text-vx-fg-muted text-[15px]">{t('home.cta.note')}</p>
+      {/* A panel, not loose type: the last screen of the page reads as the
+          place to act. The glow is one soft accent wash behind the headline. */}
+      <div className="relative overflow-hidden rounded-2xl border border-vx-border bg-vx-panel px-6 py-14 sm:px-12 sm:py-20 lg:px-16 lg:py-24">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-24 -top-32 h-[420px] w-[420px] rounded-full bg-vx-accent/20 blur-3xl"
+        />
+        <div className="relative">
+          <h2 className="vx-display vx-title-index max-w-[11ch]">
+            {t('home.cta.title')}
+          </h2>
+          <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-4">
+            <Link href={localizedHref(locale, '/app/create?model=nano-banana-kie')} className="vx-press inline-flex min-h-11 items-center rounded-full bg-vx-accent text-vx-accent-ink px-8 py-4 text-base font-extrabold hover:bg-vx-accent-hover">
+              {t('home.cta.open')}
+            </Link>
+            <Link href={localizedHref(locale, '/pricing')} className="text-[15px] font-bold text-vx-fg-body underline decoration-vx-border decoration-2 underline-offset-[6px] hover:text-vx-fg hover:decoration-vx-accent">
+              {t('home.hero.prices')}
+            </Link>
+          </div>
+          <p className="mt-6 text-vx-fg-muted text-[15px]">{t('home.cta.note')}</p>
+        </div>
       </div>
     </section>
   );
@@ -164,7 +177,7 @@ export function FooterForest({ locale = 'en' }) {
   return (
     <footer className="mt-28 sm:mt-36 border-t border-vx-border">
       <div className="max-w-[1300px] mx-auto px-4 sm:px-6 py-10 sm:py-14">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-[1.4fr_repeat(3,1fr)] gap-8 sm:gap-10">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-[1.4fr_repeat(4,1fr)] gap-8 sm:gap-10">
           <div className="col-span-2 sm:col-span-3 lg:col-span-1">
             {/* The wordmark is the conventional way back to the top of a
                 site; it used to be inert down here. */}

@@ -1,0 +1,29 @@
+{
+  "note": "Arm sheet: the arm on the right of the image is the character's left.",
+  "sources": [
+    {
+      "file": "arms.jpg",
+      "rows": [
+        3,
+        3
+      ],
+      "styles": [
+        "Normal",
+        "Cute Prosthetic",
+        "Robotic",
+        "Prosthetic",
+        "Mechanical",
+        null
+      ]
+    },
+    {
+      "file": "no-arm.png",
+      "rows": [
+        1
+      ],
+      "styles": [
+        "None"
+      ]
+    }
+  ]
+}

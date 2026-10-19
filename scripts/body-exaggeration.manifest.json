@@ -1,0 +1,32 @@
+{
+  "note": "Exaggeration (silhouette, hair volume and clothing scale; never the face or skin tone). Extreme drawn as a giant puffed coat on a second try.",
+  "sources": [
+    {
+      "file": "exaggeration.jpg",
+      "rows": [
+        2,
+        2
+      ],
+      "inset": 14,
+      "styles": [
+        "Natural",
+        "Bold",
+        null,
+        null
+      ]
+    },
+    {
+      "file": "gap-body4.jpg",
+      "rows": [
+        2,
+        2
+      ],
+      "styles": [
+        null,
+        "Extreme",
+        null,
+        null
+      ]
+    }
+  ]
+}

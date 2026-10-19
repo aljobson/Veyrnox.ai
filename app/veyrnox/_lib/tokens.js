@@ -131,14 +131,16 @@ export const SUPPORT_EMAIL = 'legal@veyrnox.com';
 
 // The public bar answers the visitor's first question: what job can I do?
 // Deeper product and reference destinations remain together under More.
+// `group` titles the column an entry sits in when the header menu opens as
+// a grouped panel; the list order is unchanged.
 // The logo is the Home link. A `/#…` entry is a section of the home page;
 // from any other page it opens the home page at that section.
 export const PRIMARY_NAV_CATEGORIES = [
-  { href: '/app/create?model=nano-banana-kie', label: 'Create' },
-  { href: '/tools', label: 'Edit' },
-  { href: '/app/film-studio', label: 'Make a film' },
-  { href: '/#publish', label: 'Publish' },
-  { href: '/pricing', label: 'Pricing' },
+  { href: '/app/create?model=nano-banana-kie', label: 'Create', group: 'Product' },
+  { href: '/tools', label: 'Edit', group: 'Product' },
+  { href: '/app/film-studio', label: 'Make a film', group: 'Product' },
+  { href: '/#publish', label: 'Publish', group: 'Product' },
+  { href: '/pricing', label: 'Pricing', group: 'Product' },
 ];
 
 // An entry with a `studioHref` fronts a public page that sits behind a server
@@ -150,16 +152,16 @@ export function navHref(item, publicPageOpen) {
 }
 
 export const SECONDARY_NAV_CATEGORIES = [
-  { href: '/#explore',   label: 'Explore' },
-  { href: '/oddlings', studioHref: '/app/oddlings', label: 'Oddlings', featured: true },
-  { href: '/models',     label: 'Models' },
-  { href: '/presets',   label: 'Templates' },
-  { href: '/guides',    label: 'Guides' },
-  { href: '/mcp',       label: 'MCP' },
-  { href: '/developers', label: 'Developers' },
-  { href: '/app/chat',  label: 'LLM Chat' },
-  { href: '/#faq',       label: 'FAQ' },
-  { href: '/social-cinema', label: 'Social Cinema' },
+  { href: '/#explore',   label: 'Explore', group: 'Discover' },
+  { href: '/oddlings', studioHref: '/app/oddlings', label: 'Oddlings', featured: true, group: 'Discover' },
+  { href: '/models',     label: 'Models', group: 'Discover' },
+  { href: '/presets',   label: 'Templates', group: 'Discover' },
+  { href: '/guides',    label: 'Guides', group: 'Learn' },
+  { href: '/mcp',       label: 'MCP', group: 'Build' },
+  { href: '/developers', label: 'Developers', group: 'Build' },
+  { href: '/app/chat',  label: 'LLM Chat', group: 'Build' },
+  { href: '/#faq',       label: 'FAQ', group: 'Learn' },
+  { href: '/social-cinema', label: 'Social Cinema', group: 'Discover' },
 ];
 
 export const NAV_CATEGORIES = [...PRIMARY_NAV_CATEGORIES, ...SECONDARY_NAV_CATEGORIES];
@@ -274,11 +276,16 @@ export const FAQ = [
 export const MORE_FEATURES = [
   { group: 'Product',   items: [
     { label: 'Explore', href: '/#explore' },
-    { label: 'Models',  href: '/models' },
     { label: 'Pricing', href: '/pricing' },
     { label: 'Templates', href: '/presets' },
     { label: 'Tools', href: '/tools' },
     { label: 'Guides', href: '/guides' },
+  ] },
+  { group: 'Build',     items: [
+    { label: 'Models',     href: '/models' },
+    { label: 'LLM Chat',   href: '/app/chat' },
+    { label: 'MCP',        href: '/mcp' },
+    { label: 'Developers', href: '/developers' },
   ] },
   { group: 'Tools',     items: [
     { label: 'Image Generator', href: '/app/create?model=nano-banana-kie' },

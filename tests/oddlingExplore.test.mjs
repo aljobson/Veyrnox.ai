@@ -170,19 +170,14 @@ test('Explore wires the All default, filter chips, hero strip and motion prefere
     assert.doesNotMatch(hero, /animate-|@keyframes|setInterval|requestAnimationFrame/, 'the strip is still; hover transitions are motion-safe only');
 });
 
-test('builder wiring: Surprise me beside Generate, picked/total headers, many open sections, motion captions', async () => {
+test('builder wiring: Surprise me beside Generate, one catalog builder, motion captions', async () => {
     const studio = await component('OddlingStudio.js');
-    const sections = await component('OddlingTraitSections.js');
     const motion = await component('OddlingMotionPanel.js');
     assert.match(studio, /randomizeOddlingAll\(current\)/);
     assert.match(studio, />Surprise me</);
     assert.match(studio, />Randomize styling</, 'Randomize styling stays');
+    assert.doesNotMatch(studio, /OddlingTraitSections|DETAILED TRAITS/, 'the catalog is the only builder: no second list of chips');
     assert.ok(studio.indexOf('Surprise me') < studio.indexOf('onClick={continueToCreate}'), 'Surprise me sits before Generate in the same row');
-    assert.match(studio, /useState\(\['build'\]\)/);
-    assert.match(studio, /toggleOpenSection\(current, id\)/);
-    assert.match(sections, /sectionProgress\(section, picks\)/);
-    assert.match(sections, /\{picked\}\/\{total\}/);
-    assert.match(sections, /aria-expanded=\{open\}/);
     assert.match(motion, /\{motion\.phrase\}/);
     assert.match(motion, /aria-describedby=/);
     assert.doesNotMatch(motion, /truncate|line-clamp|text-ellipsis|whitespace-nowrap/, 'a caption wraps so a keyboard or touch user can read the whole phrase');
@@ -216,7 +211,7 @@ test('withoutDeepLink drops only the oddling parameter and keeps the rest of the
 });
 
 test('the Oddling Studio is split so no file passes the size ceiling', async () => {
-    for (const file of ['OddlingStudio.js', 'OddlingExplore.js', 'OddlingExploreFilters.js', 'OddlingSheet.js', 'OddlingPortrait.js', 'OddlingTraitSections.js', 'OddlingMotionPanel.js']) {
+    for (const file of ['OddlingStudio.js', 'OddlingExplore.js', 'OddlingExploreFilters.js', 'OddlingSheet.js', 'OddlingPortrait.js', 'OddlingMotionPanel.js']) {
         const lines = (await component(file)).split('\n').length;
         assert.ok(lines < 500, `${file} is ${lines} lines`);
     }

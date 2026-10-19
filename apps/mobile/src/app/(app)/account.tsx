@@ -1,64 +1,120 @@
 import * as WebBrowser from 'expo-web-browser';
-import { Link, Stack } from 'expo-router';
+import { Link, Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { useBilling } from '../../billing/BillingProvider';
-import { ACCOUNT_DELETION_ENABLED, LEGAL_LINKS, PRIVACY_EMAIL, SUPPORT_EMAIL } from '../../lib/account';
+import { ACCOUNT_DELETION_ENABLED } from '../../lib/accountDeletion';
+import { LEGAL_LINKS, PRIVACY_EMAIL, SUPPORT_EMAIL } from '../../lib/account';
+import { usePush } from '../../push/pushContext';
 import { colors } from '../../theme';
+import { t } from '../../lib/i18n';
 
 export default function Account() {
     const { signOut } = useAuth();
+    const push = usePush();
+    const [pushNote, setPushNote] = useState<string | null>(null);
+    const router = useRouter();
     const { status: billing, canPurchase, restore } = useBilling();
     const [restoreNote, setRestoreNote] = useState<string | null>(null);
 
     async function onRestore() {
-        setRestoreNote('Checking with the store…');
+        setRestoreNote(t('account.restoreChecking'));
         try {
             await restore();
-            setRestoreNote('Done. A Publish Plan bought with this store account is active again.');
+            setRestoreNote(t('account.restoreDone'));
         } catch {
-            setRestoreNote('Could not reach the store. Try again.');
+            setRestoreNote(t('account.restoreFailed'));
         }
+    }
+
+    async function onPush(on: boolean) {
+        setPushNote(null);
+        const out = await push.setEnabled(on);
+        if (out === 'denied') setPushNote(t('account.pushDenied'));
+        else if (out === 'unavailable') setPushNote(t('account.pushUnavailable'));
+    }
+
+    // Remove this device's push token while the session is still valid, then sign out.
+    async function onSignOut() {
+        await push.unregister();
+        await signOut();
     }
 
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-            <Stack.Screen options={{ title: 'Account' }} />
+            <Stack.Screen options={{ title: t('account.title') }} />
 
             {billing !== 'off' ? (
-                <Section title="Purchases">
-                    <Row label="Restore purchases" onPress={onRestore} disabled={!canPurchase} />
+                <Section title={t('account.purchases')}>
+                    <Row label={t('account.restore')} onPress={onRestore} disabled={!canPurchase} />
                     {restoreNote ? <Text style={styles.note}>{restoreNote}</Text> : null}
-                    <Text style={styles.note}>Credit packs are added to your balance when you buy them and are not restored.</Text>
+                    <Text style={styles.note}>{t('account.packsNote')}</Text>
                 </Section>
             ) : null}
 
-            <Section title="Safety">
-                <Link href="/report" asChild>
-                    <Row label="Report a problem or content" />
+            {push.supported ? (
+                <Section title={t('account.notifications')}>
+                    <View style={styles.switchRow}>
+                        <Text style={styles.rowText}>{t('account.notifyMe')}</Text>
+                        <Switch
+                            accessibilityLabel={t('account.notifyMe')}
+                            value={push.enabled}
+                            onValueChange={(on) => void onPush(on)}
+                            trackColor={{ true: colors.accent, false: colors.border }}
+                        />
+                    </View>
+                    {pushNote ? <Text style={styles.note}>{pushNote}</Text> : null}
+                    <Text style={styles.note}>{t('account.notifyNote')}</Text>
+                </Section>
+            ) : null}
+
+            <Section title={t('label.Credits')}>
+                <Link href="/history" asChild>
+                    <Row label={t('account.history')} />
                 </Link>
-                <Text style={styles.note}>To report one of your creations, open it from your library and use Report.</Text>
             </Section>
 
-            <Section title="About and contact">
+            <Section title={t('account.referSection')}>
+                <Link href="/referrals" asChild>
+                    <Row label={t('account.refer')} />
+                </Link>
+            </Section>
+
+            <Section title={t('account.helpSection')}>
+                <Link href="/help" asChild>
+                    <Row label={t('account.help')} />
+                </Link>
+            </Section>
+
+            <Section title={t('account.safetySection')}>
+                <Link href="/report" asChild>
+                    <Row label={t('account.report')} />
+                </Link>
+                <Link href="/blocked" asChild>
+                    <Row label={t('blocks.title')} />
+                </Link>
+                <Text style={styles.note}>{t('account.reportNote')}</Text>
+            </Section>
+
+            <Section title={t('account.aboutSection')}>
                 {LEGAL_LINKS.map((l) => (
-                    <Row key={l.url} label={l.label} onPress={() => WebBrowser.openBrowserAsync(l.url)} />
+                    <Row key={l.url} label={t(l.labelKey)} onPress={() => WebBrowser.openBrowserAsync(l.url)} />
                 ))}
-                <Row label={`Contact support: ${SUPPORT_EMAIL}`} onPress={() => Linking.openURL(`mailto:${SUPPORT_EMAIL}`)} />
+                <Row label={t('account.contact', { email: SUPPORT_EMAIL })} onPress={() => Linking.openURL(`mailto:${SUPPORT_EMAIL}`)} />
             </Section>
 
-            <Section title="Your data">
-                <Row label="Delete my account" danger disabled={!ACCOUNT_DELETION_ENABLED} />
+            <Section title={t('account.dataSection')}>
+                <Row label={t('account.deleteAccount')} danger disabled={!ACCOUNT_DELETION_ENABLED} onPress={() => router.push('/delete-account')} />
                 {ACCOUNT_DELETION_ENABLED ? null : (
                     <Text style={styles.note}>
-                        Deleting your account from the app is coming. Until then, email {PRIVACY_EMAIL} from your account address and we will delete it.
+                        {t('account.deleteSoon', { email: PRIVACY_EMAIL })}
                     </Text>
                 )}
             </Section>
 
-            <Pressable accessibilityRole="button" style={styles.signOut} onPress={() => void signOut()}>
-                <Text style={styles.signOutText}>Sign out</Text>
+            <Pressable accessibilityRole="button" style={styles.signOut} onPress={() => void onSignOut()}>
+                <Text style={styles.signOutText}>{t('public.account.signOut')}</Text>
             </Pressable>
         </ScrollView>
     );
@@ -67,7 +123,7 @@ export default function Account() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
     return (
         <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{title}</Text>
+            <Text style={styles.sectionTitle} accessibilityRole="header">{title}</Text>
             {children}
         </View>
     );
@@ -100,7 +156,8 @@ const styles = StyleSheet.create({
     section: { gap: 8 },
     sectionTitle: { color: colors.muted, fontSize: 14, textTransform: 'uppercase' },
     row: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 16 },
-    rowText: { color: colors.text, fontSize: 16 },
+    rowText: { color: colors.text, fontSize: 16, flexShrink: 1 },
+    switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 16 },
     danger: { color: colors.danger },
     off: { opacity: 0.5 },
     note: { color: colors.muted, fontSize: 13 },

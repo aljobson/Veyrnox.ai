@@ -5,11 +5,11 @@ import path from 'node:path';
 import { buildPageManifest, sitemapPaths } from './page-manifest.mjs';
 
 async function handlePrivacyChoices(page) {
-  const privacyChoices = page.getByRole('region', { name: 'Privacy choices' });
+  const privacyChoices = page.locator('[data-storage-notice="analytics"]');
   // Consent hydrates after the document loads; handle it at actionability time,
   // within the original action timeout, using the normal essential-only choice.
   await page.addLocatorHandler(privacyChoices, async () => {
-    await privacyChoices.getByRole('button', { name: 'Decline', exact: true }).click();
+    await privacyChoices.locator('[data-storage-decline]').click();
     await expect(privacyChoices).toBeHidden();
   });
 }

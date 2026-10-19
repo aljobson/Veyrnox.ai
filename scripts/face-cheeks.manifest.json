@@ -1,0 +1,46 @@
+{
+  "note": "Cheeks. Dimples and Hollow Cheeks from the first sheet, Full Cheeks from the lower-face sheet. High Cheekbones was drawn as a glassy mask and keeps the drawn tile.",
+  "sources": [
+    {
+      "file": "cheeks-ears.jpg",
+      "rows": [
+        3,
+        3
+      ],
+      "styles": [
+        null,
+        "Dimples",
+        "Hollow Cheeks",
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "file": "rest-lowerface.jpg",
+      "rows": [
+        4,
+        4
+      ],
+      "styles": [
+        null,
+        null,
+        null,
+        null,
+        "Full Cheeks",
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "file": "high-cheekbones.png",
+      "rows": [
+        1
+      ],
+      "styles": [
+        "High Cheekbones"
+      ]
+    }
+  ]
+}

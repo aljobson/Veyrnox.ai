@@ -1,10 +1,45 @@
 import { NextResponse } from 'next/server';
 import { calendarEnabled, publishPlansEnabled } from '../../../../../../lib/social/publishFeature.js';
 import { readPublishEntitlement } from '../../../../../../lib/social/publishPlanApi.js';
+import { accountReadLimit } from '../../../../../../lib/accountReadLimit.js';
 import { socialPostWriteLimit } from '../../../../../../lib/socialPostWriteLimit.js';
 import { instant, UUID_RE } from '../../../../../../lib/social/calendar.js';
 import { resolveBrand } from '../../../../../../lib/social/resolveBrand.js';
 import { rpc, envConfig, SupabaseError } from '../../../../../../packages/db/supabase-client.js';
+
+const READ_ROLES = ['owner', 'manager', 'editor', 'reviewer', 'analyst', 'viewer'];
+const NO_STORE = { 'Cache-Control': 'no-store' };
+
+/**
+ * GET /api/v1/social/posts/:id — one post, the same row the list returns:
+ * { post: { id, status, scheduled_at, global_text, created_at, media, targets } }.
+ * Any member of the post's brand may read it. A post of another brand answers
+ * exactly like a missing one: 404 post_not_found.
+ */
+export async function GET(req, { params }) {
+    const authId = req.headers.get('x-veyrnox-auth-id');
+    if (!authId || !UUID_RE.test(authId)) return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
+    const { id } = await params;
+    if (!UUID_RE.test(id || '')) return NextResponse.json({ error: 'invalid_post_id' }, { status: 400 });
+    const cfg = envConfig();
+    if (!cfg.supabaseUrl || !cfg.serviceRoleKey) return NextResponse.json({ error: 'supabase_not_configured' }, { status: 503 });
+    const limited = await accountReadLimit(authId, cfg, { post: null });
+    if (limited) return limited;
+    const brand = await resolveBrand(authId, cfg, 'api/v1/social/posts/[id]:GET', { request: req, allowedRoles: READ_ROLES });
+    if (brand.error) return brand.error;
+    let result;
+    try {
+        result = await rpc('get_social_post', { p_auth_id: brand.rpcAuthId, p_brand_id: brand.brandId, p_post_id: id }, cfg);
+    } catch (err) {
+        console.error('[api/v1/social/posts/[id]:GET] read failed:', err instanceof SupabaseError ? err.status : 0);
+        return NextResponse.json({ error: 'internal' }, { status: 502 });
+    }
+    if (result?.ok !== true) {
+        if (result?.code === 'POST_NOT_FOUND') return NextResponse.json({ error: 'post_not_found' }, { status: 404, headers: NO_STORE });
+        return NextResponse.json({ error: 'internal' }, { status: 502 });
+    }
+    return NextResponse.json({ brand_id: brand.brandId, brandRole: brand.role, post: result.post }, { headers: NO_STORE });
+}
 
 const CONFLICTS = new Set(['POST_STARTED', 'POST_CHANGED', 'POST_BUSY', 'RESTORE_UNAVAILABLE']);
 

@@ -1,0 +1,30 @@
+{
+  "note": "Leg sheet: the leg on the right of the image is the character's left. No Leg was not drawn (both legs are there), so it keeps the drawn tile.",
+  "sources": [
+    {
+      "file": "legs.jpg",
+      "rows": [
+        3,
+        3
+      ],
+      "styles": [
+        "Normal",
+        "Cute Prosthetic",
+        "Robotic",
+        "Prosthetic",
+        "Mechanical",
+        null
+      ],
+      "inset": 14
+    },
+    {
+      "file": "no-leg.png",
+      "rows": [
+        1
+      ],
+      "styles": [
+        "None"
+      ]
+    }
+  ]
+}

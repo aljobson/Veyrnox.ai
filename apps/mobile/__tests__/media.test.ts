@@ -1,5 +1,7 @@
-import { estimateCredits, fetchCatalog, isPromptOnly, kindOf, mediaApi, waitForJob, type CatalogModel } from '../src/lib/media';
+import { estimateCredits, fetchCatalog, isSupported, kindOf, promptRequired, textInput, mediaApi, waitForJob, type CatalogModel } from '../src/lib/media';
 import type { ApiClient } from '../src/lib/api';
+
+jest.mock('../src/lib/aiConsentStore', () => ({ aiConsent: { ensure: async () => undefined, hasAgreed: async () => true } }));
 
 const model = (over: Partial<CatalogModel> = {}): CatalogModel => ({
     id: 'm', name: 'M', modality: 'text-to-video', credits: 3, gated: false, durations: [5, 10],
@@ -18,15 +20,41 @@ describe('catalog helpers', () => {
         expect(estimateCredits(model(), null)).toBe(3);
         expect(estimateCredits(model({ modality: 'image' }), 10)).toBe(3);
     });
-    test('prompt-only excludes models needing a source file', () => {
-        expect(isPromptOnly(model())).toBe(true);
-        expect(isPromptOnly(model({ capabilities: { inputs: { prompt: {} }, media: { image: { required: true } } } }))).toBe(false);
-        expect(isPromptOnly(model({ capabilities: null }))).toBe(false);
+    test('supports prompt models, file-only models and models with optional files', () => {
+        expect(isSupported(model())).toBe(true);
+        expect(isSupported(model({ modality: 'image-to-image', capabilities: { inputs: {}, media: { image: { required: true } } } }))).toBe(true);
+        expect(isSupported(model({ capabilities: { inputs: { prompt: {} }, media: { image: { required: false } } } }))).toBe(true);
     });
-    test('catalog keeps only open, prompt-only, known kinds', async () => {
-        const rows = [model({ id: 'a' }), model({ id: 'b', gated: true }), model({ id: 'c', modality: 'x' })];
+    test('refuses gated, unknown, stem-splitting, unknown-slot and capability-less models', () => {
+        expect(isSupported(model({ gated: true }))).toBe(false);
+        expect(isSupported(model({ modality: 'mystery' }))).toBe(false);
+        expect(isSupported(model({ capabilities: null }))).toBe(false);
+        expect(isSupported(model({ modality: 'audio-to-audio', capabilities: { inputs: {}, media: { audio: { required: true } }, outputStems: ['vocals'] } }))).toBe(false);
+        expect(isSupported(model({ capabilities: { inputs: { prompt: {} }, media: { mask: { required: true } } } }))).toBe(false);
+        expect(isSupported(model({ capabilities: { inputs: {}, media: {} } }))).toBe(false);
+    });
+    test('a prompt is required only when there is no required file', () => {
+        expect(promptRequired(model())).toBe(true);
+        expect(promptRequired(model({ capabilities: { inputs: { prompt: {} }, media: { image: { required: true } } } }))).toBe(false);
+        expect(promptRequired(model({ capabilities: { inputs: {}, media: { image: { required: true } } } }))).toBe(false);
+    });
+    test('finds the one text input a model takes: prompt, or topic for Auto Short', () => {
+        expect(textInput(model())).toEqual({ key: 'prompt', max: 2000 });
+        expect(textInput(model({ capabilities: { inputs: { topic: { max: 200 } }, media: {} } }))).toEqual({ key: 'topic', max: 200 });
+        expect(textInput(model({ capabilities: { inputs: { prompt: { max: 500 } }, media: {} } }))).toEqual({ key: 'prompt', max: 500 });
+        expect(textInput(model({ capabilities: { inputs: {}, media: { image: { required: true } } } }))).toBeNull();
+    });
+    test('supports a topic-only model and still refuses the plan-based video agent', () => {
+        expect(isSupported(model({ capabilities: { inputs: { topic: { max: 200 } }, media: {} } }))).toBe(true);
+        expect(promptRequired(model({ capabilities: { inputs: { topic: { max: 200 } }, media: {} } }))).toBe(true);
+        // video-agent takes brief + plan_id and needs the plan step first.
+        expect(isSupported(model({ capabilities: { inputs: { brief: {}, plan_id: {}, aspect_ratio: {} }, media: {} } }))).toBe(false);
+    });
+    test('catalog keeps open, supported, known kinds', async () => {
+        const fileOnly = model({ id: 'd', modality: 'image-to-image', capabilities: { inputs: {}, media: { image: { required: true } } } });
+        const rows = [model({ id: 'a' }), model({ id: 'b', gated: true }), model({ id: 'c', modality: 'x' }), fileOnly];
         globalThis.fetch = jest.fn().mockResolvedValue(new Response(JSON.stringify({ models: rows }))) as unknown as typeof fetch;
-        expect((await fetchCatalog()).map((m) => m.id)).toEqual(['a']);
+        expect((await fetchCatalog()).map((m) => m.id)).toEqual(['a', 'd']);
     });
 });
 
@@ -40,6 +68,25 @@ describe('media api', () => {
         expect(path).toBe('/api/v1/generations');
         expect(JSON.parse(init.body)).toEqual({
             model_id: 'm', idempotency_key: 'key-abcdefgh', confirmed_credits: 6, inputs: { prompt: 'a cat', duration_seconds: 10 },
+        });
+    });
+    test('sends uploaded files by slot with consent, and omits both when there are none', async () => {
+        const request = jest.fn().mockResolvedValue({ job_id: 'j1' });
+        await mediaApi({ request } as unknown as ApiClient).createGeneration({
+            modelId: 'm', prompt: '', durationSeconds: null, confirmedCredits: 5, idempotencyKey: 'key-abcdefgh',
+            sources: [{ key: 'uploads/u/1.jpg', slot: 'image' }],
+        });
+        expect(JSON.parse(request.mock.calls[0][1].body)).toEqual({
+            model_id: 'm', idempotency_key: 'key-abcdefgh', confirmed_credits: 5, inputs: {}, source_keys: [{ key: 'uploads/u/1.jpg', slot: 'image' }], consent: true,
+        });
+    });
+    test('sends the text under the key the model declares', async () => {
+        const request = jest.fn().mockResolvedValue({ job_id: 'j1' });
+        await mediaApi({ request } as unknown as ApiClient).createGeneration({
+            modelId: 'auto-short-32s', prompt: 'how bees make honey', textKey: 'topic', durationSeconds: null, confirmedCredits: 110, idempotencyKey: 'key-abcdefgh',
+        });
+        expect(JSON.parse(request.mock.calls[0][1].body)).toEqual({
+            model_id: 'auto-short-32s', idempotency_key: 'key-abcdefgh', confirmed_credits: 110, inputs: { topic: 'how bees make honey' },
         });
     });
     test('library pages with the cursor from the last page', async () => {

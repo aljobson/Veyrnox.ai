@@ -1,0 +1,48 @@
+{
+  "note": "Head shapes. Tiny Head comes from the proportions sheet (a tiny head on a normal body). Oversized Head was not drawn and keeps the drawn tile.",
+  "sources": [
+    {
+      "file": "head-shape.jpg",
+      "rows": [
+        4,
+        3
+      ],
+      "styles": [
+        "Long Oval",
+        "Perfect Round",
+        "Square",
+        "Heart",
+        "Diamond",
+        null,
+        null
+      ]
+    },
+    {
+      "file": "rest-proportions.jpg",
+      "rows": [
+        4,
+        4
+      ],
+      "inset": 14,
+      "styles": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        "Tiny Head",
+        null,
+        null
+      ]
+    },
+    {
+      "file": "oversized-head.png",
+      "rows": [
+        1
+      ],
+      "styles": [
+        "Oversized Head"
+      ]
+    }
+  ]
+}

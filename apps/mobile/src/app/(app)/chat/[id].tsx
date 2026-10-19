@@ -1,5 +1,5 @@
 import * as Crypto from 'expo-crypto';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,16 +7,19 @@ import { useAuth } from '../../../auth/AuthProvider';
 import { ApiError } from '../../../lib/api';
 import { chatApi, type ChatMessage } from '../../../lib/chat';
 import { colors } from '../../../theme';
+import { HeaderAction } from '../../../components/HeaderAction';
 
 const ERROR_TEXT: Record<string, string> = {
     insufficient_credits: 'Not enough credits for this reply.',
     rate_limited: 'Too many messages. Wait a moment.',
     chat_not_open: 'Chat is not available right now.',
+    consent_declined: 'You need to agree to AI sharing to chat.',
 };
 
 export default function Conversation() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const { api } = useAuth();
+    const router = useRouter();
     const insets = useSafeAreaInsets();
     const [title, setTitle] = useState('Chat');
     const [messages, setMessages] = useState<ChatMessage[] | null>(null);
@@ -74,7 +77,7 @@ export default function Conversation() {
 
     return (
         <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
-            <Stack.Screen options={{ title }} />
+            <Stack.Screen options={{ title, headerRight: () => <HeaderAction label="Folder" accessibilityLabel="Move to folder" onPress={() => router.push({ pathname: '/chat/move', params: { threadId: String(id) } })} /> }} />
             {messages === null && !error ? (
                 <ActivityIndicator color={colors.accent} style={styles.center} />
             ) : (
@@ -83,19 +86,20 @@ export default function Conversation() {
                     keyExtractor={(m) => m.id}
                     contentContainerStyle={styles.list}
                     renderItem={({ item }) => (
-                        <View style={[styles.bubble, item.role === 'user' ? styles.user : styles.assistant]}>
+                        <View accessible accessibilityLabel={`${item.role === 'user' ? 'You' : 'Vey'}: ${item.content || (sending ? 'writing' : '')}`} style={[styles.bubble, item.role === 'user' ? styles.user : styles.assistant]}>
                             <Text style={[styles.text, item.role === 'user' && styles.userText]}>{item.content || (sending ? '…' : '')}</Text>
                         </View>
                     )}
                 />
             )}
-            {error ? <Text style={styles.error}>{error}</Text> : null}
+            {error ? <Text style={styles.error} accessibilityRole="alert">{error}</Text> : null}
             <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
                 <TextInput
                     style={styles.input}
                     value={draft}
                     onChangeText={setDraft}
                     placeholder="Message Vey"
+                    accessibilityLabel="Message Vey"
                     placeholderTextColor={colors.muted}
                     multiline
                     maxLength={8000}
@@ -120,7 +124,7 @@ const styles = StyleSheet.create({
     error: { color: colors.danger, paddingHorizontal: 16, paddingBottom: 4 },
     composer: { flexDirection: 'row', gap: 8, paddingHorizontal: 12, paddingTop: 8, borderTopColor: colors.border, borderTopWidth: StyleSheet.hairlineWidth },
     input: { flex: 1, color: colors.text, backgroundColor: colors.surface, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, maxHeight: 120 },
-    send: { backgroundColor: colors.accent, borderRadius: 12, paddingHorizontal: 16, justifyContent: 'center' },
+    send: { backgroundColor: colors.accent, borderRadius: 12, paddingHorizontal: 16, minHeight: 44, justifyContent: 'center' },
     sendOff: { opacity: 0.4 },
     sendText: { color: colors.accentInk, fontWeight: '600' },
 });

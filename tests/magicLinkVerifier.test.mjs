@@ -153,7 +153,8 @@ test('asking for a link after an abandoned OAuth start uses the link\'s verifier
 
 test('the callback page says what to do when the link was opened elsewhere or too late', () => {
     const page = readFileSync(new URL('../app/auth/callback/page.js', import.meta.url), 'utf8');
-    assert.match(page, /was not started in this browser, or its link is more than \$\{Math\.round\(MAGIC_VERIFIER_TTL_MS \/ 60000\)\} minutes old/);
-    assert.match(page, /fail\(NOT_STARTED_HERE\)/);
+    const en = readFileSync(new URL('../lib/i18n/messages/en.mjs', import.meta.url), 'utf8');
+    assert.match(en, /This sign-in was not started in this browser, or its link is more than \{minutes\} minutes old/);
+    assert.match(page, /fail\(t\('callback.notStarted', \{ minutes: Math\.round\(MAGIC_VERIFIER_TTL_MS \/ 60000\) \}\)\)/);
     assert.doesNotMatch(page, /different browser or tab/, 'a new tab is how an emailed link normally opens');
 });

@@ -1,0 +1,48 @@
+{
+  "note": "Skin materials: all eight. Human Skin is the plain smooth head from the patterns sheet; Fur and Metallic are from a follow-up sheet.",
+  "sources": [
+    {
+      "file": "materials.jpg",
+      "rows": [
+        3,
+        3
+      ],
+      "styles": [
+        "Scales",
+        "Amphibian",
+        "Fish Skin",
+        "Porcelain",
+        "Glass",
+        null
+      ]
+    },
+    {
+      "file": "patterns.jpg",
+      "rows": [
+        4,
+        4
+      ],
+      "styles": [
+        "Human Skin",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "file": "rest-skin.jpg",
+      "rows": [
+        3
+      ],
+      "styles": [
+        null,
+        "Fur",
+        "Metallic"
+      ]
+    }
+  ]
+}

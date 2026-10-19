@@ -1,0 +1,63 @@
+{
+  "note": "Mouth sheets (the second is shared with the eye manifest). Cells are labelled by what the model drew, not by the prompt order: the sheet drew a closed smile where Crooked Teeth was asked, so Crooked Teeth has no picture. Small Mouth looked the same as No Teeth, so it keeps the drawn tile.",
+  "sources": [
+    {
+      "file": "mouth-a.jpg",
+      "rows": [
+        4,
+        4
+      ],
+      "styles": [
+        null,
+        "Unique Teeth",
+        "No Teeth",
+        "Large Mouth",
+        null,
+        "Gap Teeth",
+        "Gold Tooth",
+        "Bright Smile"
+      ]
+    },
+    {
+      "file": "eye-b-mouth-b.jpg",
+      "rows": [
+        3,
+        3
+      ],
+      "styles": [
+        null,
+        null,
+        null,
+        "Sharp Teeth",
+        "Forked Tongue",
+        "Two Tongues"
+      ]
+    },
+    {
+      "file": "rest-lowerface.jpg",
+      "rows": [
+        4,
+        4
+      ],
+      "styles": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        "Crooked Teeth",
+        null,
+        null
+      ]
+    },
+    {
+      "file": "small-mouth.png",
+      "rows": [
+        1
+      ],
+      "styles": [
+        "Small Mouth"
+      ]
+    }
+  ]
+}

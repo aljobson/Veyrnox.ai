@@ -1,0 +1,48 @@
+{
+  "note": "Skin conditions on warm beige mannequin heads: all nine. Wrinkled is the age-lined head from the materials sheet; Burns is from a follow-up sheet.",
+  "sources": [
+    {
+      "file": "conditions.jpg",
+      "rows": [
+        4,
+        4
+      ],
+      "styles": [
+        "Vitiligo",
+        "Pigmentation",
+        "Freckles",
+        "Birthmarks",
+        "Scars",
+        null,
+        "Albinism",
+        "Cracked Skin"
+      ]
+    },
+    {
+      "file": "materials.jpg",
+      "rows": [
+        3,
+        3
+      ],
+      "styles": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        "Wrinkled"
+      ]
+    },
+    {
+      "file": "rest-skin.jpg",
+      "rows": [
+        3
+      ],
+      "styles": [
+        "Burns",
+        null,
+        null
+      ]
+    }
+  ]
+}

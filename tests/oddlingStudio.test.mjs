@@ -19,8 +19,6 @@ import {
     oddlingCreditState,
     randomizeOddlingStyle,
     randomizeOddlingAll,
-    sectionProgress,
-    toggleOpenSection,
     readOddlingLibrary,
     saveOddlingToLibrary,
 } from '../app/veyrnox/_lib/oddlingStudio.js';
@@ -217,19 +215,6 @@ test('Surprise me resolves clashes the way a hand edit does', () => {
         assert.ok(!(rolled.torso_size && ['Tiny Torso', 'Long Torso'].includes(rolled.proportions)), `seed ${seed}`);
         assert.ok(!(rolled.hand_size && ['Huge Hands', 'Tiny Hands'].includes(rolled.proportions)), `seed ${seed}`);
     }
-});
-
-test('builder section headers report picked of total and sections open independently', () => {
-    for (const section of ODDLING_STUDIO_SECTIONS) {
-        assert.deepEqual(sectionProgress(section, {}), { picked: 0, total: section.groupIds.length });
-    }
-    const build = ODDLING_STUDIO_SECTIONS.find(({ id }) => id === 'build');
-    assert.deepEqual(sectionProgress(build, { body_type: 'Pear', height: 'Tall', hair: 'Bald', arm_size: '' }), { picked: 2, total: build.groupIds.length });
-    assert.deepEqual(sectionProgress({ groupIds: ['hair', 'not-a-group'] }, { hair: 'Bald' }), { picked: 1, total: 1 });
-    assert.deepEqual(sectionProgress(null, null), { picked: 0, total: 0 });
-    assert.deepEqual(toggleOpenSection(['build'], 'hair'), ['build', 'hair']);
-    assert.deepEqual(toggleOpenSection(['build', 'hair'], 'build'), ['hair']);
-    assert.deepEqual(toggleOpenSection(undefined, 'hair'), ['hair']);
 });
 
 test('local History stores bounded sanitized passports newest first', () => {

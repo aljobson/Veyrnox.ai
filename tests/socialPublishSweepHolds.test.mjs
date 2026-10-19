@@ -18,7 +18,7 @@ async function target(state = {}, network = 'threads') {
         network, token_expires_at: new Date(Date.now() + 3 * 86400000).toISOString(), r2_key: 'image.png', media_type: 'image', external_account_id: '123',
         access_token_enc: await encryptToken('token', cryptoCfg), provider_state: state };
 }
-for (const code of ['MEDIA_HELD', 'CLAIM_LOST']) test(`${code} defers before presign and consumes no attempt`, async () => {
+for (const code of ['MEDIA_HELD', 'MEDIA_SCANNING', 'CLAIM_LOST']) test(`${code} defers before presign and consumes no attempt`, async () => {
     const row = await target(); const calls = [];
     globalThis.fetch = async (url, init) => {
         const name = new URL(url).pathname.split('/').pop(); calls.push(name);
@@ -70,6 +70,27 @@ test('Threads publishing authorizes before marker and provider call; permalink r
     assert.deepEqual(calls, ['hold_probe', 'claim_due_social_post_targets','container','authorize_social_target_dispatch','mark_social_provider_submission','threads_publish','report_social_post_progress']);
     calls.length = 0; await runPublishSweep(deps);
     assert.deepEqual(calls, ['hold_probe', 'claim_due_social_post_targets','post','complete_social_post_target']);
+});
+
+// Review of PR #886: the marker used to be written before the hold check, so a
+// hold check that failed for a transient reason left a marker on a post that
+// was never sent, and the next attempt failed it as "reconcile before retry".
+for (const network of ['facebook', 'instagram', 'linkedin', 'twitter']) test(`${network}: a hold check that fails transiently writes no submission marker and calls no provider`, async () => {
+    const row = await target({}, network); const calls = []; let reported, authorizations = 0;
+    globalThis.fetch = async (url, init) => {
+        const u = new URL(url), name = u.pathname.split('/').pop(); calls.push(name);
+        const probe = presentProbe(name, init, calls); if (probe) return probe;
+        if (name === 'claim_due_social_post_targets') return Response.json([row]);
+        // The pre-dispatch check passes; the one right before the provider call fails.
+        if (name === 'authorize_social_target_dispatch') return ++authorizations === 1 ? Response.json({ ok: true }) : new Response('{"message":"upstream"}', { status: 503 });
+        if (name === 'complete_social_post_target') { reported = JSON.parse(init.body); return Response.json({ ok: true }); }
+        if (u.hostname === 'db.test') assert.fail('unexpected mutation: ' + name);
+        return new Response('{}', { status: 200 });
+    };
+    await runPublishSweep(deps);
+    assert.ok(!calls.includes('mark_social_provider_submission'), 'no marker before the hold check has passed');
+    assert.equal(reported.p_ok, false);
+    assert.notEqual(reported.p_error, 'provider_result_unknown_reconcile_before_retry');
 });
 
 test('hold checks call the RPC only when the server gate is exactly true', async () => {

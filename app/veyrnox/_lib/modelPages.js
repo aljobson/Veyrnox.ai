@@ -5,6 +5,9 @@ import { readPublicCatalog } from '../../../lib/publicCatalog.js';
 import { isShelfModel, kindOf, distinctShelfNames } from './tokens.js';
 import { outputDurationLabel } from './chatMedia.js';
 import { audioDurationLabel, sourceDurationLimit } from './modelPricing.js';
+import { translator } from '../../../lib/i18n/translate.mjs';
+
+const ENGLISH = translator('en');
 
 // Catalog ids are lowercase slugs such as `wan-2.5-kie`.
 export const MODEL_ID_RE = /^[a-z0-9][a-z0-9.-]{0,63}$/;
@@ -46,30 +49,34 @@ const MEDIA_LABEL = { image: 'Image', video: 'Video', audio: 'Audio' };
 
 const humanise = (key) => key.replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase());
 
-// What the catalog says the model takes, as label/value rows.
-export function modelFacts(model) {
+// What the catalog says the model takes, as label/value rows. `t` is a
+// translator (lib/i18n/translate.mjs); with none the words are English. Values
+// the catalog supplies (aspect ratios, stem names) are data and stay as they are.
+export function modelFacts(model, t = ENGLISH) {
   const caps = model.capabilities || {};
   const inputs = caps.inputs || {};
-  const facts = [{ label: 'Mode', value: String(model.modality || '').replace(/-/g, ' ') }];
+  const modeKey = `model.mode.${model.modality}`;
+  const facts = [{ label: t('model.fact.mode'), value: t.messages[modeKey] ? t(modeKey) : String(model.modality || '').replace(/-/g, ' ') }];
   if (model.kind === 'video' && Array.isArray(model.durations) && model.durations.length > 0) {
     const sourceLimit = sourceDurationLimit(model);
-    facts.push({ label: 'Clip lengths', value: sourceLimit ? `Follows source duration (up to ${sourceLimit} s)`
+    facts.push({ label: t('model.fact.clipLengths'), value: sourceLimit ? t('model.fact.followsSource', { n: sourceLimit })
       : model.durations.map((s) => outputDurationLabel(model, s).replace(/s$/i, ' s')).join(', ') });
   }
   if (model.kind === 'audio') {
     const duration = audioDurationLabel(model);
-    if (duration) facts.push({ label: 'Output duration', value: duration });
-    else if (caps.kind === 'speech') facts.push({ label: 'Output duration', value: 'Depends on text and voice' });
+    if (duration) facts.push({ label: t('model.fact.outputDuration'), value: duration });
+    else if (caps.kind === 'speech') facts.push({ label: t('model.fact.outputDuration'), value: t('model.fact.dependsOnText') });
   }
-  if (Array.isArray(caps.outputStems)) facts.push({ label: 'Output stems', value: caps.outputStems.join(', ') });
-  if (inputs.prompt) facts.push({ label: 'Prompt', value: 'Text prompt' });
+  if (Array.isArray(caps.outputStems)) facts.push({ label: t('model.fact.stems'), value: caps.outputStems.join(', ') });
+  if (inputs.prompt) facts.push({ label: t('model.fact.prompt'), value: t('model.fact.textPrompt') });
   for (const [slot, spec] of Object.entries(caps.media || {})) {
-    const limit = spec.maxSeconds ? `, up to ${spec.maxSeconds} s` : '';
-    facts.push({ label: `${MEDIA_LABEL[slot] || humanise(slot)} input`, value: `${spec.required ? 'Required' : 'Optional'}${limit}` });
+    const state = t(spec.required ? 'model.fact.required' : 'model.fact.optional');
+    const media = MEDIA_LABEL[slot] ? t(`model.media.${slot}`) : humanise(slot);
+    facts.push({ label: t('model.fact.input', { media }), value: spec.maxSeconds ? t('model.fact.upTo', { state, n: spec.maxSeconds }) : state });
   }
   for (const [key, rule] of Object.entries(inputs)) {
     if (rule.type === 'enum' && Array.isArray(rule.values) && rule.values.length > 0) {
-      facts.push({ label: humanise(key), value: rule.values.join(', ') });
+      facts.push({ label: t.messages[`model.field.${key}`] ? t(`model.field.${key}`) : humanise(key), value: rule.values.join(', ') });
     }
   }
   return facts;

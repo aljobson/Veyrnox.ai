@@ -1,4 +1,7 @@
 'use client';
+import { localeTag } from '../../../../lib/i18n/locales.mjs';
+import { tOr } from '../../../../lib/i18n/translate.mjs';
+import { useI18n } from '../../../../components/I18nProvider.jsx';
 
 import Link from 'next/link';
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
@@ -11,12 +14,14 @@ import { useCinemaPreview } from '../preview';
 const identity = () => getSession()?.user?.id || '';
 const noIdentity = () => '';
 const usd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
-const when = (iso) => (iso ? new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '');
-const INTERVAL = { week: 'week', month: 'month', year: 'year' };
+const when = (iso, locale) => (iso ? new Date(iso).toLocaleDateString(localeTag(locale, 'en-GB'), { day: 'numeric', month: 'short', year: 'numeric' }) : '');
+
 // The wording the consent version stands for. A change needs a new version on both sides.
 const CONSENT_TEXT = 'Start my Cinema Pass now. I understand it renews automatically until I cancel, and that if I cancel within 14 days I get back the unused share of what I paid.';
 
 export function PassPanel() {
+  const { t, href: localize } = useI18n();
+
   const account = useSyncExternalStore(onSessionChange, identity, noIdentity);
   const preview = useCinemaPreview();
   const [salesOpen, setSalesOpen] = useState(null);
@@ -33,19 +38,20 @@ export function PassPanel() {
 
   return <div className="mx-auto max-w-[1300px] px-4 py-10 pb-40 sm:px-6 sm:py-16 sm:pb-32"><div className="max-w-[852px]">
     <header className="max-w-2xl">
-      <p className="mb-4 font-vx-mono text-xs tracking-widest text-vx-accent">SOCIAL CINEMA · CINEMA PASS</p>
-      <h1 className="vx-display vx-title-detail">Every story, one Pass.</h1>
-      <p className="mt-6 text-lg leading-relaxed text-vx-fg-body">A Cinema Pass unlocks every published episode and film while it is active, up to 1,500 delivered minutes each calendar month. It adds no credits; your credits stay yours for the Studio.</p>
-      <p className="mt-3 text-sm text-vx-fg-muted"><Link href="/social-cinema" className="underline">Back to Social Cinema</Link></p>
+      <p className="mb-4 font-vx-mono text-xs tracking-widest text-vx-accent">{t('cinema.pass.kicker')}</p>
+      <h1 className="vx-display vx-title-detail">{t("cinema.passPanel.everyStoryOnePass")}</h1>
+      <p className="mt-6 text-lg leading-relaxed text-vx-fg-body">{t("cinema.passPanel.aCinemaPassUnlocksEveryPublished")}</p>
+      <p className="mt-3 text-sm text-vx-fg-muted"><Link href={localize("/social-cinema")} className="underline">{t("cinema.back")}</Link></p>
     </header>
-    {!account && !preview && salesOpen === null ? <p className="mt-10 text-vx-fg-muted" role="status">Checking Pass availability…</p>
-      : !account && !effectiveSalesOpen ? <p className="mt-10 text-vx-fg-muted">Cinema Pass is not open yet.</p>
-      : !account ? <div className="mt-10"><p className="mb-4 text-vx-fg-body">Use your Veyrnox.ai account to continue.</p><Button onClick={() => window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>Sign in</Button></div>
+    {!account && !preview && salesOpen === null ? <p className="mt-10 text-vx-fg-muted" role="status">{t("cinema.passPanel.checkingPassAvailability")}</p>
+      : !account && !effectiveSalesOpen ? <p className="mt-10 text-vx-fg-muted">{t("cinema.passPanel.cinemaPassIsNotOpenYet")}</p>
+      : !account ? <div className="mt-10"><p className="mb-4 text-vx-fg-body">{t("cinema.passPanel.useYourVeyrnoxAiAccountTo")}</p><Button onClick={() => window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>{t("oauth.signIn")}</Button></div>
         : <Pass key={account} salesOpen={effectiveSalesOpen} />}
   </div></div>;
 }
 
 function Pass({ salesOpen }) {
+  const { t, locale } = useI18n();
   const [plans, setPlans] = useState(null);
   const [consentVersion, setConsentVersion] = useState(null);
   const [pass, setPass] = useState(null);
@@ -61,16 +67,16 @@ function Pass({ salesOpen }) {
     ]);
     if (own.status === 'fulfilled') {
       setPass(own.value.pass);
-      if (!own.value.pass && !salesOpen) setNotice('Cinema Pass is not open yet.');
+      if (!own.value.pass && !salesOpen) setNotice(t("cinema.passPanel.cinemaPassIsNotOpenYet"));
     }
-    else setNotice('Could not load your Pass right now.');
+    else setNotice(t("cinema.passPanel.couldNotLoadYourPassRight"));
     if (catalog.status === 'fulfilled' && catalog.value) {
       setPlans(catalog.value.plans);
       setConsentVersion(catalog.value.consent_version);
     } else if (salesOpen) {
-      setNotice('Cinema Pass checkout is unavailable right now. Existing Pass management is unaffected.');
+      setNotice(t("cinema.passPanel.cinemaPassCheckoutIsUnavailableRight"));
     }
-  }, [salesOpen]);
+  }, [salesOpen, t]);
 
   // Back from checkout: record the session so a lost webhook cannot lose the Pass.
   useEffect(() => {
@@ -79,24 +85,24 @@ function Pass({ salesOpen }) {
     if (params.get('checkout') === 'done' && passId && sessionId) {
       window.history.replaceState(null, '', window.location.pathname);
       gatewayFetch('/cinema/pass/return', { method: 'POST', body: JSON.stringify({ pass_id: passId, session_id: sessionId }) })
-        .then((r) => setNotice(r.status === 'active' ? 'Your Cinema Pass is active.' : 'Payment received. Your Pass will activate in a moment.'))
-        .catch(() => setNotice('We could not confirm your checkout yet. Refresh in a minute; do not pay again.'))
+        .then((r) => setNotice(r.status === 'active' ? t("cinema.passPanel.yourCinemaPassIsActive") : t("cinema.passPanel.paymentReceivedYourPassWillActivate")))
+        .catch(() => setNotice(t("cinema.passPanel.weCouldNotConfirmYourCheckout")))
         .finally(load);
     } else if (params.get('checkout') === 'cancelled') {
       window.history.replaceState(null, '', window.location.pathname);
-      setNotice('Checkout cancelled. Nothing was charged.');
+      setNotice(t("cinema.passPanel.checkoutCancelledNothingWasCharged"));
       load();
     } else load();
-  }, [load]);
+  }, [load, t]);
 
   const start = async (planId) => {
     setBusy(true); setNotice('');
     try {
       const r = await gatewayFetch('/cinema/pass', { method: 'POST', body: JSON.stringify({ plan_id: planId, idempotency_key: makeIdempotencyKey(), consent: true, consent_version: consentVersion }) });
       if (r.checkout_url) window.location.assign(r.checkout_url);
-      else { setNotice('You already have a Cinema Pass.'); await load(); }
+      else { setNotice(t("cinema.passPanel.youAlreadyHaveACinemaPass")); await load(); }
     } catch (err) {
-      setNotice(err?.code === 'pass_already_active' ? 'You already have a Cinema Pass.' : err?.code === 'account_frozen' ? 'Your account is paused. Contact support.' : 'Could not start checkout. Try again in a moment.');
+      setNotice(err?.code === 'pass_already_active' ? t("cinema.passPanel.youAlreadyHaveACinemaPass") : err?.code === 'account_frozen' ? t("cinema.passPanel.yourAccountIsPausedContactSupport") : t("cinema.passPanel.couldNotStartCheckoutTryAgain"));
     } finally { setBusy(false); }
   };
   const cancel = async () => {
@@ -104,50 +110,50 @@ function Pass({ salesOpen }) {
     setBusy(true); setNotice('');
     try {
       const r = await gatewayFetch('/cinema/pass/cancel', { method: 'POST', body: '{}' });
-      setNotice(r.mode === 'cooling_off' ? `Your Pass has ended. ${r.refund_usd_cents > 0 ? `${usd.format(r.refund_usd_cents / 100)} is on its way back to your card.` : ''}` : `Your Pass will not renew after ${when(r.current_period_end)}.`);
+      setNotice(r.mode === 'cooling_off' ? `${t('cinema.pass.ended')} ${r.refund_usd_cents > 0 ? t('cinema.pass.refund', { amount: usd.format(r.refund_usd_cents / 100) }) : ''}` : t('cinema.pass.noRenew', { date: when(r.current_period_end, locale) }));
       await load();
-    } catch { setNotice('Could not cancel right now. Try again in a moment.'); } finally { setBusy(false); }
+    } catch { setNotice(t("cinema.passPanel.couldNotCancelRightNowTry")); } finally { setBusy(false); }
   };
   const portal = async () => {
     setBusy(true);
     try { const r = await gatewayFetch('/cinema/pass/portal', { method: 'POST', body: '{}' }); window.location.assign(r.url); }
-    catch { setNotice('Could not open your billing page.'); setBusy(false); }
+    catch { setNotice(t("cinema.passPanel.couldNotOpenYourBillingPage")); setBusy(false); }
   };
 
   const live = pass && ['active', 'past_due'].includes(pass.status);
   return <div className="mt-10 space-y-10">
     {notice && <p role="status" aria-live="polite" className="rounded-lg border border-vx-border bg-vx-base/60 px-4 py-3 text-sm text-vx-fg-body">{notice}</p>}
     {live && <section aria-labelledby="own-pass" className="rounded-2xl border border-vx-accent/40 bg-vx-accent/[0.07] p-6">
-      <h2 id="own-pass" className="text-xl font-extrabold">Your Cinema Pass</h2>
-      <p className="mt-2 text-vx-fg-body">{pass.status === 'past_due' ? 'Payment is overdue; update your card to keep watching.' : pass.cancel_at_period_end ? `Ends ${when(pass.current_period_end)}.` : `Renews ${when(pass.current_period_end)} at ${usd.format(pass.price_usd_cents / 100)} plus tax.`}</p>
-      {pass.within_cooling_off && !pass.cancel_at_period_end && <p className="mt-2 text-sm text-vx-fg-muted">Cancel before {when(pass.cooling_off_until)} for a pro-rata refund.</p>}
+      <h2 id="own-pass" className="text-xl font-extrabold">{t("cinema.passPanel.yourCinemaPass")}</h2>
+      <p className="mt-2 text-vx-fg-body">{pass.status === 'past_due' ? t("cinema.passPanel.paymentIsOverdueUpdateYourCard") : pass.cancel_at_period_end ? t('cinema.pass.ends', { date: when(pass.current_period_end, locale) }) : t('cinema.pass.renews', { date: when(pass.current_period_end, locale), amount: usd.format(pass.price_usd_cents / 100) })}</p>
+      {pass.within_cooling_off && !pass.cancel_at_period_end && <p className="mt-2 text-sm text-vx-fg-muted">{t('cinema.pass.cancelBefore', { date: when(pass.cooling_off_until, locale) })}</p>}
       <div className="mt-4 flex flex-wrap gap-3">
-        <Button variant="secondary" disabled={busy} onClick={portal}>Manage billing ↗</Button>
-        {!pass.cancel_at_period_end && <Button variant="secondary" disabled={busy} onClick={() => setConfirmingCancel(true)}>Cancel Pass</Button>}
+        <Button variant="secondary" disabled={busy} onClick={portal}>{t("cinema.passPanel.manageBilling")}</Button>
+        {!pass.cancel_at_period_end && <Button variant="secondary" disabled={busy} onClick={() => setConfirmingCancel(true)}>{t("cinema.passPanel.cancelPass")}</Button>}
       </div>
     </section>}
     {!live && plans && <section aria-labelledby="plans">
-      <h2 id="plans" className="text-xl font-extrabold">Choose a Pass</h2>
-      <p className="mt-2 text-sm text-vx-fg-muted">Prices in USD, tax added at checkout. Cancel any time.</p>
+      <h2 id="plans" className="text-xl font-extrabold">{t("cinema.passPanel.chooseAPass")}</h2>
+      <p className="mt-2 text-sm text-vx-fg-muted">{t("cinema.passPanel.pricesInUsdTaxAddedAt")}</p>
       <label className="mt-4 flex items-start gap-3 text-sm text-vx-fg-body">
         <input type="checkbox" className="mt-1" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
-        <span>{CONSENT_TEXT}</span>
+        <span lang="en" dir="ltr">{CONSENT_TEXT}</span>
       </label>
       <ul className="mt-6 grid gap-4 sm:grid-cols-3">
         {plans.map((p) => <li key={p.id} className="flex flex-col rounded-2xl border border-vx-border bg-vx-base/60 p-5">
-          <p className="font-vx-mono text-xs tracking-widest text-vx-accent uppercase">{INTERVAL[p.billing_interval]}ly</p>
-          <p className="mt-3 text-3xl font-black">{usd.format(p.price_usd_cents / 100)}<span className="text-base font-normal text-vx-fg-muted"> / {INTERVAL[p.billing_interval]}</span></p>
-          {p.intro_price_usd_cents != null && <p className="mt-1 text-sm font-bold text-vx-fg-body">First {INTERVAL[p.billing_interval]} {usd.format(p.intro_price_usd_cents / 100)} for new Pass holders.</p>}
-          <Button className="mt-5" disabled={busy || !agreed} onClick={() => start(p.id)}>Start {INTERVAL[p.billing_interval]}ly Pass</Button>
+          <p className="font-vx-mono text-xs tracking-widest text-vx-accent uppercase">{tOr(t, `cinema.pass.${p.billing_interval}ly`, p.billing_interval)}</p>
+          <p className="mt-3 text-3xl font-black">{usd.format(p.price_usd_cents / 100)}<span className="text-base font-normal text-vx-fg-muted"> / {tOr(t, `cinema.pass.${p.billing_interval}`, p.billing_interval)}</span></p>
+          {p.intro_price_usd_cents != null && <p className="mt-1 text-sm font-bold text-vx-fg-body">{t('cinema.pass.intro', { interval: tOr(t, `cinema.pass.${p.billing_interval}`, p.billing_interval), amount: usd.format(p.intro_price_usd_cents / 100) })}</p>}
+          <Button className="mt-5" disabled={busy || !agreed} onClick={() => start(p.id)}>{t('cinema.pass.start', { interval: tOr(t, `cinema.pass.${p.billing_interval}ly`, p.billing_interval) })}</Button>
         </li>)}
       </ul>
     </section>}
     {confirmingCancel && <ConfirmDialog
-      title={pass?.within_cooling_off ? 'End your Cinema Pass now?' : 'Cancel Cinema Pass renewal?'}
+      title={pass?.within_cooling_off ? t("cinema.passPanel.endYourCinemaPassNow") : t("cinema.passPanel.cancelCinemaPassRenewal")}
       body={pass?.within_cooling_off
-        ? 'Your Pass ends today. The unused share of this paid period will be refunded to your original payment method.'
-        : `You will not be charged again. Your Pass continues until ${when(pass?.current_period_end)}.`}
-      confirmLabel={pass?.within_cooling_off ? 'End Pass and refund' : 'Cancel renewal'}
+        ? t("cinema.passPanel.yourPassEndsTodayTheUnused")
+        : t('cinema.pass.continues', { date: when(pass?.current_period_end, locale) })}
+      confirmLabel={pass?.within_cooling_off ? t("cinema.passPanel.endPassAndRefund") : t("cinema.passPanel.cancelRenewal")}
       tone="danger"
       onCancel={() => setConfirmingCancel(false)}
       onConfirm={cancel}

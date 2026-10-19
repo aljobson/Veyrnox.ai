@@ -1,0 +1,51 @@
+{
+  "note": "Distinctive features: all ten now have a picture. Impossible Handbag is the same picture as in the accessories group.",
+  "sources": [
+    {
+      "file": "acc-c.jpg",
+      "rows": [
+        3,
+        3
+      ],
+      "styles": [
+        null,
+        null,
+        null,
+        "Impossible Handbag",
+        null,
+        "Giant Comb"
+      ],
+      "inset": 14
+    },
+    {
+      "file": "acc-d.jpg",
+      "rows": [
+        3,
+        3
+      ],
+      "styles": [
+        "Sacred Stapler",
+        "Snack Sceptre",
+        "Miniature Chair",
+        "Receipt Train",
+        "Miniature Thermos",
+        "Miniature Cake"
+      ],
+      "inset": 14
+    },
+    {
+      "file": "rest-props.jpg",
+      "rows": [
+        2,
+        2
+      ],
+      "inset": 14,
+      "styles": [
+        null,
+        null,
+        "Tiny Microphone",
+        "Pocket Weather Station"
+      ]
+    }
+  ]
+}

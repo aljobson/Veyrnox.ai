@@ -25,7 +25,7 @@ export async function generateMetadata({ params }) {
     title,
     description: summary,
     alternates,
-    openGraph: { ...OPEN_GRAPH_BASE, title: `${title} — Veyrnox.ai`, description: summary, url: alternates.canonical, ...openGraphLocale(locale) },
+    openGraph: { ...OPEN_GRAPH_BASE, title: t('meta.siteTitle', { title }), description: summary, url: alternates.canonical, ...openGraphLocale(locale) },
   };
 }
 

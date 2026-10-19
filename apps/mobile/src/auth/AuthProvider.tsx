@@ -4,8 +4,10 @@ import * as WebBrowser from 'expo-web-browser';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Platform } from 'react-native';
 import { createApiClient, API_BASE, type ApiClient } from '../lib/api';
-import { AUTH_REDIRECT_URL } from '../lib/config';
+import { AUTH_REDIRECT_URL, OAUTH_BRIDGE_URL } from '../lib/config';
 import { createAppleNonce, createPkce } from '../lib/auth/pkce';
+import { aiConsent } from '../lib/aiConsentStore';
+import { bindCacheUser, userIdFromToken, wipeCache } from '../lib/appCache';
 import { clearRefreshToken, readRefreshToken, writeRefreshToken } from '../lib/auth/sessionStore';
 import {
     authorizeUrl,
@@ -54,12 +56,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const adopt = useCallback(async (session: Session) => {
         sessionRef.current = session;
+        const userId = userIdFromToken(session.accessToken);
+        aiConsent.setUser(userId);
+        await bindCacheUser(userId);
         await writeRefreshToken(session.refreshToken);
         setStatus('signedIn');
     }, []);
 
     const drop = useCallback(async () => {
         sessionRef.current = null;
+        await aiConsent.forget();
+        await wipeCache().catch(() => undefined);
         await clearRefreshToken();
         setStatus('signedOut');
     }, []);
@@ -103,6 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 getAccessToken,
                 onSessionLost: () => void drop(),
                 streamFetch: expoFetch as unknown as typeof fetch,
+                beforeSend: aiConsent.ensure,
             }),
         [getAccessToken, drop],
     );
@@ -141,7 +149,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         async (provider: OAuthProvider) => {
             const pkce = await createPkce();
             const result = await WebBrowser.openAuthSessionAsync(
-                authorizeUrl(provider, pkce.challenge, AUTH_REDIRECT_URL),
+                authorizeUrl(provider, pkce.challenge, OAUTH_BRIDGE_URL),
                 AUTH_REDIRECT_URL,
             );
             if (result.type !== 'success') return;

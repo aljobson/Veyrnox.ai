@@ -17,7 +17,7 @@ export async function Hero({ models }) {
       <h2 className="sr-only">Veyrnox.ai</h2>
       <p className="sr-only">{t('home.hero.film')}</p>
       <div className="mb-10 lg:mb-14 -mx-4 sm:mx-0">
-        <FilmPlayer film={BRAND_FILM} label="the Veyrnox.ai intro" frameless />
+        <FilmPlayer film={BRAND_FILM} label={t('public.film.intro')} frameless />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-12 lg:gap-16 items-start">
         <div className="lg:pt-10">
@@ -38,6 +38,7 @@ export async function Hero({ models }) {
               {t('home.hero.prices')}
             </Link>
           </div>
+          <p className="mt-5 text-[14px] text-vx-fg-muted">{t('home.cta.note')}</p>
         </div>
         <PriceSlip models={models} />
       </div>

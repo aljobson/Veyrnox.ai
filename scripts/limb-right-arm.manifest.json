@@ -1,0 +1,31 @@
+{
+  "note": "The left arm pictures flipped left to right, for the right arm.",
+  "sources": [
+    {
+      "file": "arms.jpg",
+      "rows": [
+        3,
+        3
+      ],
+      "mirror": true,
+      "styles": [
+        "Normal",
+        "Cute Prosthetic",
+        "Robotic",
+        "Prosthetic",
+        "Mechanical",
+        null
+      ]
+    },
+    {
+      "file": "no-arm.png",
+      "rows": [
+        1
+      ],
+      "styles": [
+        "None"
+      ],
+      "mirror": true
+    }
+  ]
+}

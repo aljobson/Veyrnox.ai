@@ -1,3 +1,5 @@
+'use client';
+import { useI18n } from '../../../components/I18nProvider';
 import { MediaTile } from './MediaTile';
 import { SHOWCASE_CLIPS } from '../_lib/showcase';
 import { templateHref, presetCredits, presetTitle } from '../_lib/tokens.js';
@@ -10,6 +12,7 @@ import { templateHref, presetCredits, presetTitle } from '../_lib/tokens.js';
 // inert, while the landing page sent people here with "Browse presets free".
 // An onClick is still honoured for callers that want to intercept.
 export function PresetCard({ preset, size = 'md', onClick, catalog }) {
+  const { t } = useI18n();
   const sizes = {
     sm: { title: 'text-sm' },
     md: { title: 'text-base' },
@@ -25,15 +28,15 @@ export function PresetCard({ preset, size = 'md', onClick, catalog }) {
       href={href}
       clip={clip && { ...clip, objectFit: 'contain' }}
       onClick={onClick}
-      ariaLabel={`Open the ${presetTitle(preset.name)} template`}
-      className="block text-left w-full"
+      ariaLabel={t('mobile.templateOpen', { name: presetTitle(preset.name) })}
+      className="block text-start w-full"
       mediaClassName="rounded-2xl"
       mediaStyle={{ background: preset.bg, aspectRatio: clip?.aspectRatio || '4 / 5' }}
       footer={
         <div className="pt-3 flex items-baseline gap-2">
           <div className="min-w-0">
             <div className={`font-extrabold tracking-tight truncate ${s.title}`}>{presetTitle(preset.name)}</div>
-            <div className="mt-0.5 text-vx-fg-muted text-xs truncate">{preset.model}{preset.durationSeconds ? ` · up to ${preset.durationSeconds}s clips · long-film ready` : ''}</div>
+            <div className="mt-0.5 text-vx-fg-muted text-xs truncate">{preset.model}{preset.durationSeconds ? t('mobile.templateDuration', { n: preset.durationSeconds }) : ''}</div>
             <div className="mt-1 line-clamp-1 text-[11px] text-vx-fg-muted">{preset.prompt}</div>
           </div>
           <span aria-hidden className="vx-leader flex-1 self-start mt-3 text-vx-fg-muted" />
@@ -41,7 +44,7 @@ export function PresetCard({ preset, size = 'md', onClick, catalog }) {
         </div>
       }
     >
-      {preset.isNew && <span className="absolute right-3 top-3 rounded-full bg-vx-base/80 px-2 py-0.5 font-vx-mono text-[10px] font-bold tracking-[0.12em]">NEW</span>}
+      {preset.isNew && <span className="absolute end-3 top-3 rounded-full bg-vx-base/80 px-2 py-0.5 font-vx-mono text-[10px] font-bold tracking-[0.12em]">{t('mobile.new')}</span>}
     </MediaTile>
   );
 }

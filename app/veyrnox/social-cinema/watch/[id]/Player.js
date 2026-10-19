@@ -1,4 +1,7 @@
 'use client';
+import { localeTag } from '../../../../../lib/i18n/locales.mjs';
+import { rich } from '../../../../../lib/i18n/rich';
+import { useI18n } from '../../../../../components/I18nProvider.jsx';
 
 import Link from 'next/link';
 import Script from 'next/script';
@@ -25,12 +28,23 @@ const RENEW_BEFORE_MS = 3 * 60 * 1000;
  * media events rather than the time the watch page is open. The server records
  * those for Cinema Pass viewing and, with the monthly ceiling on, free titles.
  */
+function localizedYoutubeSource(url, locale) {
+  if (!url) return null;
+  const source = new URL(url);
+  source.searchParams.set('hl', localeTag(locale, 'en'));
+  return source.toString();
+}
+
 export function Player({ id, titleId = null, seriesSlug = null }) {
+  const { t, href: localize, locale } = useI18n();
+
   const episodeContext = editorialEpisodeContext(seriesSlug, id);
   const series = episodeContext?.series || null;
   const episode = episodeContext?.episode || null;
   const nextEpisode = episodeContext?.nextEpisode || null;
-  const externalSrc = youtubeEmbedUrl(episode?.playback);
+  const externalUrl = youtubeEmbedUrl(episode?.playback);
+  // YouTube's documented hl parameter selects controls, not catalog/caption text.
+  const externalSrc = localizedYoutubeSource(externalUrl, locale);
   const account = useSyncExternalStore(onSessionChange, identity, noIdentity);
   const [state, setState] = useState('loading');
   const [src, setSrc] = useState('');
@@ -156,21 +170,21 @@ export function Player({ id, titleId = null, seriesSlug = null }) {
     };
   }, [id, account, src, state, sdkReady]);
 
-  const back = <p className="mt-6 text-sm">{series ? <><Link href={`/social-cinema/series/${series.slug}`} className="underline">Back to {series.title}</Link> · </> : UUID.test(titleId || '') && <><Link href={`/social-cinema/title/${titleId}`} className="underline">Back to the title</Link> · </>}<Link href="/social-cinema" className="underline">Social Cinema</Link></p>;
-  const copy = { locked: 'This episode is locked. Unlock it from the title page or get a Cinema Pass.', not_ready: 'This video is still being prepared. Try again in a few minutes.', missing: 'This title is not available.', closed: 'Social Cinema viewing is not open yet.', pass_ceiling: 'Your Cinema Pass has reached its viewing limit for this month. You can still unlock episodes with credits.', free_ceiling: 'You have reached the free viewing limit for this month. Free viewing starts again next month.', error: 'Playback is unavailable right now. Try again in a moment.' };
+  const back = <p className="mt-6 text-sm">{series ? <><Link href={localize(`/social-cinema/series/${series.slug}`)} className="underline">{t('cinema.backTitle', { title: series.title })}</Link> · </> : UUID.test(titleId || '') && <><Link href={localize(`/social-cinema/title/${titleId}`)} className="underline">{t("cinema.player.backToTheTitle")}</Link> · </>}<Link href={localize("/social-cinema")} className="underline">{t("label.Social Cinema")}</Link></p>;
+  const copy = { locked: t("cinema.player.thisEpisodeIsLockedUnlockIt"), not_ready: t("cinema.player.thisVideoIsStillBeingPrepared"), missing: t("cinema.titlePage.thisTitleIsNotAvailable"), closed: t("cinema.discovery.socialCinemaViewingIsNotOpen"), pass_ceiling: t("cinema.player.yourCinemaPassHasReachedIts"), free_ceiling: t("cinema.player.youHaveReachedTheFreeViewing"), error: t("cinema.player.playbackIsUnavailableRightNowTry") };
 
   return <>{!externalSrc && scriptNonce && account && <Script src="https://embed.cloudflarestream.com/embed/sdk.latest.js" nonce={scriptNonce || undefined} onReady={() => setSdkReady(typeof window.Stream === 'function')} onError={() => setState('error')} />}
   <div className="mx-auto max-w-[1300px] px-4 py-8 pb-40 sm:px-6 sm:pb-32"><div className="max-w-[952px]">
-    {episode && <header className="mb-6"><p className="font-vx-mono text-xs tracking-widest text-vx-accent uppercase">{series.title} · S{series.season} E{episode.position}</p><h1 className="mt-2 text-2xl font-extrabold wrap-break-word">{episode.title}</h1></header>}
+    {episode && <header className="mb-6"><p className="font-vx-mono text-xs tracking-widest text-vx-accent uppercase">{series.title} · {t('cinema.title.position', { season: series.season, episode: episode.position })}</p><h1 className="mt-2 text-2xl font-extrabold wrap-break-word">{episode.title}</h1></header>}
     {state === 'external' ? <div className="aspect-video w-full overflow-hidden rounded-2xl border border-vx-border bg-black">
-      <iframe title={`${episode.title} — streamed from YouTube`} src={externalSrc} allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen className="h-full w-full" />
+      <iframe title={t('cinema.player.youtube', { title: episode.title })} src={externalSrc} allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen className="h-full w-full" />
     </div> : state === 'playing' ? <div className="aspect-[9/16] w-full max-w-[420px] overflow-hidden rounded-2xl border border-vx-border bg-black mx-auto sm:aspect-video sm:max-w-none">
-      <iframe ref={frame} title="Now playing" src={src} allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" />
-    </div> : state === 'loading' ? <p role="status" className="text-vx-fg-muted">Preparing playback…</p>
-      : state === 'signin' ? <div><p className="mb-4 text-vx-fg-body">Sign in to watch.</p><Button onClick={() => window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>Sign in</Button></div>
+      <iframe ref={frame} title={t("cinema.player.nowPlaying")} src={src} allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture" allowFullScreen className="h-full w-full" />
+    </div> : state === 'loading' ? <p role="status" className="text-vx-fg-muted">{t("cinema.player.preparingPlayback")}</p>
+      : state === 'signin' ? <div><p className="mb-4 text-vx-fg-body">{t("cinema.player.signInToWatch")}</p><Button onClick={() => window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>{t("oauth.signIn")}</Button></div>
         : <p role="status">{copy[state === 'blocked' ? reason : state] || copy.error}</p>}
-    {state === 'external' && <p className="mt-3 text-xs text-vx-fg-muted">Free viewing via YouTube. Video rights remain with <a href={series.creator.url} target="_blank" rel="noreferrer" className="underline">{series.creator.name}</a>.</p>}
-    {nextEpisode && <Link href={`/social-cinema/watch/${nextEpisode.id}?series=${series.slug}`} className="mt-6 inline-flex rounded-full bg-vx-accent px-5 py-3 text-sm font-bold text-vx-accent-ink">Next episode: {nextEpisode.title} →</Link>}
+    {state === 'external' && <p className="mt-3 text-xs text-vx-fg-muted">{rich(t('cinema.player.rights'), { creator: <a href={localize(series.creator.url)} target="_blank" rel="noreferrer" className="underline">{series.creator.name}</a> })}</p>}
+    {nextEpisode && <Link href={localize(`/social-cinema/watch/${nextEpisode.id}?series=${series.slug}`)} className="mt-6 inline-flex rounded-full bg-vx-accent px-5 py-3 text-sm font-bold text-vx-accent-ink">{t('cinema.player.next', { title: nextEpisode.title })}</Link>}
     {back}
   </div></div></>;
 }

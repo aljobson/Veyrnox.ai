@@ -1,23 +1,25 @@
 "use client";
+import { useI18n } from '../../../../components/I18nProvider.jsx';
 import { useEffect, useRef, useState } from "react";
 import { gatewayFetch } from "../../_lib/gateway";
 import { Button } from "../../_components/Button";
-const labels = {
-  viewers: "Qualified viewers",
-  completions: "Completed viewing",
-  voters: "Viewers who voted",
-  sharers: "Viewers who shared",
-  commenters: "Viewers who commented",
-};
-const message = (code) =>
+const labels = (t) => ({
+  viewers: t("cinema.creatorAnalytics.qualifiedViewers"),
+  completions: t("cinema.creatorAnalytics.completedViewing"),
+  voters: t("cinema.creatorAnalytics.viewersWhoVoted"),
+  sharers: t("cinema.creatorAnalytics.viewersWhoShared"),
+  commenters: t("cinema.creatorAnalytics.viewersWhoCommented"),
+});
+const message = (code, t) =>
   code === "creator_required"
-    ? "Analytics are available to active Cinema creators."
+    ? t("cinema.creatorAnalytics.analyticsAreAvailableToActiveCinema")
     : code === "content_not_found"
-      ? "This title is no longer available for analytics."
+      ? t("cinema.creatorAnalytics.thisTitleIsNoLongerAvailable")
       : code === "rate_limited"
-        ? "Please wait a minute before trying again."
-        : "Analytics are temporarily unavailable. Try again.";
+        ? t("cinema.creatorAnalytics.pleaseWaitAMinuteBeforeTrying")
+        : t("cinema.creatorAnalytics.analyticsAreTemporarilyUnavailableTryAgain");
 export function CreatorAnalytics() {
+  const { t } = useI18n();
   const [titles, setTitles] = useState([]),
     [selected, setSelected] = useState(""),
     [data, setData] = useState(null);
@@ -36,13 +38,13 @@ export function CreatorAnalytics() {
         const own = await gatewayFetch("/cinema/content");
         if (current !== generation.current) return;
         const available = own.content.filter(
-          (t) =>
-            t.lifecycle_status === "PUBLISHED" &&
-            t.visibility === "PUBLIC" &&
-            !t.parent_id,
+          (item) =>
+            item.lifecycle_status === "PUBLISHED" &&
+            item.visibility === "PUBLIC" &&
+            !item.parent_id,
         );
         setTitles(available);
-        const id = available.some((t) => t.id === selected)
+        const id = available.some((item) => item.id === selected)
           ? selected
           : available[0]?.id;
         if (!id) {
@@ -63,7 +65,7 @@ export function CreatorAnalytics() {
         }
       } catch (e) {
         if (current === generation.current) {
-          setError(message(e.code));
+          setError(message(e.code, t));
           setState("error");
         }
       }
@@ -71,24 +73,20 @@ export function CreatorAnalytics() {
     return () => {
       generation.current = current + 1;
     };
-  }, [selected, attempt]);
+  }, [selected, attempt, t]);
   return (
     <section
       aria-labelledby="creator-analytics-heading"
       className="mt-10 rounded-2xl border border-vx-border bg-vx-panel p-5 sm:p-7"
     >
       <h2 id="creator-analytics-heading" className="text-xl font-bold">
-        Your audience
-      </h2>
+        {t("cinema.creatorAnalytics.yourAudience")}</h2>
       <p className="mt-2 text-sm text-vx-fg-muted">
-        The last 28 complete days, updated daily. Counts cover qualified
-        signed-in viewers and exclude your own activity.
-      </p>
+        {t("cinema.creatorAnalytics.theLast28CompleteDaysUpdated")}</p>
       {titles.length > 0 && (
         <label className="mt-5 block text-sm font-semibold">
-          Published title
-          <select
-            aria-label="Analytics title"
+          {t("cinema.creatorAnalytics.publishedTitle")}<select
+            aria-label={t("cinema.creatorAnalytics.analyticsTitle")}
             value={selected}
             onChange={(e) => {
               setData(null);
@@ -97,9 +95,9 @@ export function CreatorAnalytics() {
             }}
             className="mt-2 w-full rounded-xl border border-vx-border bg-vx-panel px-3 py-2"
           >
-            {titles.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.title}
+            {titles.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.title}
               </option>
             ))}
           </select>
@@ -107,32 +105,27 @@ export function CreatorAnalytics() {
       )}
       {state === "loading" && (
         <p role="status" className="mt-5">
-          Loading your audience…
-        </p>
+          {t("cinema.creatorAnalytics.loadingYourAudience")}</p>
       )}
       {state === "empty" && (
         <p role="status" className="mt-5">
-          Publish a title to start seeing audience insights.
-        </p>
+          {t("cinema.creatorAnalytics.publishATitleToStartSeeing")}</p>
       )}
       {state === "error" && (
         <div role="alert" className="mt-5">
           <p>{error}</p>
           <Button className="mt-3" onClick={() => setAttempt((n) => n + 1)}>
-            Retry analytics
-          </Button>
+            {t("cinema.creatorAnalytics.retryAnalytics")}</Button>
         </div>
       )}
       {state === "ready" && data.suppressed && (
         <p role="status" className="mt-5" data-testid="analytics-suppressed">
-          Audience insights appear after at least five qualified viewers.
-          Individual audience details stay private.
-        </p>
+          {t("cinema.creatorAnalytics.audienceInsightsAppearAfterAtLeast")}</p>
       )}
       {state === "ready" && !data.suppressed && (
         <>
           <dl className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {Object.entries(labels).map(([key, label]) => (
+            {Object.entries(labels(t)).map(([key, label]) => (
               <div key={key} className="rounded-xl border border-vx-border p-4">
                 <dt className="text-sm text-vx-fg-muted">{label}</dt>
                 <dd
@@ -145,11 +138,7 @@ export function CreatorAnalytics() {
             ))}
           </dl>
           <p className="mt-4 text-xs text-vx-fg-muted">
-            Completion means at least 90% of watched media; series counts cover
-            watched episodes. Shares are copy or share actions, rather than
-            confirmed deliveries. Comments count approved, unreported comments.
-            These insights do not calculate earnings or weekly ranking scores.
-          </p>
+            {t("cinema.creatorAnalytics.completionMeansAtLeast90Of")}</p>
         </>
       )}
     </section>

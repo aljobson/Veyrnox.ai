@@ -1,0 +1,76 @@
+{
+  "note": "Outfit sheets: full-body grey mannequins on a plain light background. A null style skips that cell. Tiny Formalwear is the only outfit without a clean picture: the sheet drew an ordinary suit, not an undersized one.",
+  "sources": [
+    {
+      "file": "sheetA.jpg",
+      "rows": [
+        4,
+        4
+      ],
+      "styles": [
+        "Office Surrealist",
+        "Quilted Royalty",
+        "Utility Pop",
+        "Domestic Futurist",
+        null,
+        null,
+        null,
+        null
+      ],
+      "window": 0.06
+    },
+    {
+      "file": "sheetB.jpg",
+      "rows": [
+        4,
+        4
+      ],
+      "styles": [
+        "Modern Basics",
+        "Streetwear",
+        "Y2K",
+        "Goth",
+        "Retro",
+        "Sporty",
+        "Business Suit",
+        null
+      ]
+    },
+    {
+      "file": "sheetD.jpg",
+      "rows": [
+        2,
+        2
+      ],
+      "styles": [
+        "Ceremonial Sportswear",
+        null,
+        "Soft Sculpture",
+        null
+      ]
+    },
+    {
+      "file": "rest-outfits.jpg",
+      "rows": [
+        2
+      ],
+      "styles": [
+        null,
+        "Weather Couture"
+      ]
+    },
+    {
+      "file": "gap-body4.jpg",
+      "rows": [
+        2,
+        2
+      ],
+      "styles": [
+        "Tiny Formalwear",
+        null,
+        null,
+        null
+      ]
+    }
+  ]
+}

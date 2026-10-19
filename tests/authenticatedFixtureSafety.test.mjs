@@ -36,7 +36,7 @@ async function installedRouting(controls = {}) {
   };
   const makePage = name => {
     let closed = false;
-    const page = { on() {}, addLocatorHandler: async () => controls.prepare?.(name, context), getByRole: () => ({}), context: () => context,
+    const page = { on() {}, addLocatorHandler: async () => controls.prepare?.(name, context), locator: () => ({}), context: () => context,
       isClosed: () => closed, close: async options => { assert.equal(options.runBeforeUnload, false); events.push(`close:${name}`); await controls.close?.(name); closed = true; events.push(`closed:${name}`); } };
     pages.push(page); return page;
   };

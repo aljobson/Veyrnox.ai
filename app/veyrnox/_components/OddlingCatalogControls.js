@@ -1,7 +1,8 @@
 'use client';
 
 import { characterOptionLabel } from '../_lib/characterOptions';
-import { CATEGORY_ICONS, SLIDER_SCALES, SWATCHES, sliderPosition, sliderValue, tileKind } from '../_lib/oddlingCatalog';
+import { CATEGORY_ICONS, SLIDER_SCALES, SWATCHES, sliderPosition, sliderValue, tileFocus, tileKind } from '../_lib/oddlingCatalog';
+import { pictureTileSrc } from '../_lib/oddlingPictureTiles';
 import { OddlingMannequin } from './OddlingMannequin';
 
 const legend = 'font-vx-mono text-[9px] font-bold uppercase tracking-[0.12em] text-vx-fg-muted';
@@ -45,25 +46,28 @@ export function SliderGroup({ group, picks, onChange }) {
   );
 }
 
-/** Everything else: a grid of tiles. Hair, outfit, body and headwear draw the option on the figure; the rest show a plain icon tile. */
+/** Everything else: a grid of tiles. Hair shows a picture of the style when it has one; hair without a picture, outfit, body and headwear draw the option on the figure; the rest show a plain icon tile. */
 export function TileGroup({ group, picks, value, onChange, categoryId }) {
   const drawn = tileKind(group.id) === 'mannequin';
-  const focus = group.id === 'hair' || group.id === 'headwear' ? 'head' : 'body';
+  const focus = tileFocus(group.id);
   const icon = CATEGORY_ICONS[categoryId];
   return (
     <fieldset className="space-y-2">
       <legend className={legend}>{group.label}<span className="ml-2 normal-case tracking-normal text-vx-fg">{value ? characterOptionLabel(group.id, value) : 'Any'}</span></legend>
-      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(104px,1fr))] gap-2 lg:grid-cols-[repeat(auto-fill,minmax(132px,1fr))] lg:gap-3">
         <button type="button" onClick={() => onChange(group.id, '')} aria-pressed={!value} className={`${tileBase} ${tileTone(!value)} justify-center px-1 py-3`}>
           <span className="grid h-10 w-10 place-items-center rounded-full border border-dashed border-vx-border font-vx-mono text-[9px] text-vx-fg-muted" aria-hidden="true">Any</span>
           <span className="mt-1 text-[10px] font-bold text-vx-fg-muted">None picked</span>
         </button>
         {group.options.map(([name]) => {
           const on = value === name;
+          const picture = pictureTileSrc(group.id, name);
           return (
             <button key={name} type="button" onClick={() => onChange(group.id, name)} aria-pressed={on} className={`${tileBase} ${tileTone(on)}`}>
-              <span className="flex h-20 w-full items-end justify-center bg-vx-panel px-1 pt-1">
-                {drawn
+              <span className="flex aspect-square w-full items-end justify-center bg-vx-panel px-1 pt-1">
+                {picture
+                  ? <img src={picture} alt="" width={256} height={256} loading="lazy" decoding="async" className="h-full w-full rounded-md object-cover" />
+                  : drawn
                   ? <OddlingMannequin picks={{ ...picks, [group.id]: name }} focus={focus} />
                   : <span className="mb-3 grid h-11 w-11 place-items-center rounded-full border border-vx-border text-vx-fg-muted" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d={icon} /></svg></span>}
               </span>

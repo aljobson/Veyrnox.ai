@@ -1,18 +1,19 @@
+import { getT } from '../../../lib/i18n/server';
 import { MarketingNav } from '../_components/NavBar';
 import { Main } from '../_components/Main';
 
 const PLACEHOLDERS = ['Image tools', 'Video tools', 'Audio tools'];
 
-export default function LoadingTools() {
+export default async function LoadingTools() {
+  const { t } = await getT();
   return (
     <div className="min-h-dvh" aria-busy="true" aria-live="polite">
       <MarketingNav />
       <Main className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-14 sm:pt-20 pb-28">
-        <p className="font-vx-mono text-sm font-bold uppercase tracking-[0.14em] text-vx-fg-muted">Tools</p>
-        <h1 className="vx-display vx-title-index mt-3 max-w-[12ch]">Loading tools…</h1>
+        <p className="font-vx-mono text-sm font-bold uppercase tracking-[0.14em] text-vx-fg-muted">{t('label.Tools')}</p>
+        <h1 className="vx-display vx-title-index mt-3 max-w-[12ch]">{t('chrome.toolsLoading')}</h1>
         <p className="mt-6 mb-12 text-lg sm:text-xl text-vx-fg-body max-w-[46ch] leading-[1.5] text-pretty">
-          Getting current models and credit prices.
-        </p>
+          {t('chrome.toolsPrices')}</p>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-12 gap-y-12" aria-hidden="true">
           {PLACEHOLDERS.map((label) => (
             <div key={label} className="animate-pulse">

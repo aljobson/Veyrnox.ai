@@ -1,0 +1,46 @@
+{
+  "note": "Chin and jaw. Strong Jaw, Pointed Chin and Round Chin from the first sheet; Soft Jaw and Prominent Chin from the lower-face sheet. Cleft Chin was drawn twice (a vertical split through the lower face, then a dimple the tile crop cut off) and keeps the drawn tile.",
+  "sources": [
+    {
+      "file": "chin-jaw.jpg",
+      "rows": [
+        3,
+        3
+      ],
+      "styles": [
+        "Strong Jaw",
+        null,
+        "Pointed Chin",
+        "Round Chin",
+        null,
+        null
+      ]
+    },
+    {
+      "file": "rest-lowerface.jpg",
+      "rows": [
+        4,
+        4
+      ],
+      "styles": [
+        "Soft Jaw",
+        null,
+        "Prominent Chin",
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "file": "cleft-chin.png",
+      "rows": [
+        1
+      ],
+      "styles": [
+        "Cleft Chin"
+      ]
+    }
+  ]
+}

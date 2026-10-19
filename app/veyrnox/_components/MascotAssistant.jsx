@@ -1,4 +1,6 @@
 'use client';
+import { tOr } from '../../../lib/i18n/translate.mjs';
+import { useI18n } from '../../../components/I18nProvider.jsx';
 
 import { usePathname, useRouter } from 'next/navigation';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
@@ -24,35 +26,40 @@ import VeyPanelSideButton from './VeyPanelSideButton';
 import { getJourney } from '../_lib/veyJourneyStore';
 import useVeyPointer from '../_lib/useVeyPointer';
 import useVeyDrag from '../_lib/useVeyDrag';
+import { physicalVeyPanelSide } from '../../../lib/veyPlacement';
 import useVeyPlacement from '../_lib/useVeyPlacement';
 import useVeyWorkspaceSession from '../_lib/useVeyWorkspaceSession';
 import useVeyMobileLayout from '../_lib/useVeyMobileLayout';
 import useEditorHelperHost from '../_lib/useEditorHelperHost';
 import { EditorHelperLauncher } from './editor/EditorHelperLauncher';
+import { splitLocalePath } from '../../../lib/i18n/locales.mjs';
 import { clampVeyPosition, VEY_SIZE as CHARACTER } from '../../../lib/veyPointer';
 
 const HOME = { x: 18, y: 0 };
-const WELCOME = 'Ask me how to use Veyrnox.';
+const WELCOME = (t) => (t("public.vey.welcome"));
 const MAX_CONVERSATION_MESSAGES = 10;
 function browserPath(pathname) {
-  return (pathname || '/app').replace(/^\/veyrnox/, '') || '/app';
+  return splitLocalePath(pathname || '/app').rest.replace(/^\/veyrnox/, '') || '/app';
 }
-function resolveHelpAction(plan) {
+function resolveHelpAction(plan, t) {
   if (!plan?.action || plan.action === 'none') return null;
   const target = plan.target && HELP_TARGETS[plan.target];
   if (plan.action === 'show_target' && target) {
-    return { route: target.route, target: plan.target, label: `Show ${target.label}` };
+    return { route: target.route, target: plan.target, label: t('public.vey.show', { target: t.label(target.label) }) };
   }
   if (plan.action === 'focus_target' && target) {
-    return { route: target.route, target: plan.target, focus: true, label: `Take me to ${target.label}` };
+    return { route: target.route, target: plan.target, focus: true, label: t('public.vey.take', { target: t.label(target.label) }) };
   }
   if (plan.action === 'activate_target' && target?.canActivate) {
-    return { route: target.route, target: plan.target, activate: true, label: `Open ${target.label}` };
+    return { route: target.route, target: plan.target, activate: true, label: t('public.vey.openTarget', { target: t.label(target.label) }) };
   }
-  return HELP_ACTIONS[plan.action] || null;
+  const action = HELP_ACTIONS[plan.action];
+  if (!action) return null;
+  return { ...action, label: tOr(t, `public.vey.action.${plan.action}`, action.label) };
 }
 
 export default function MascotAssistant() {
+  const { t, locale } = useI18n();
   const pathname = browserPath(usePathname());
   const router = useRouter();
   const reduceMotion = useReducedMotion();
@@ -66,7 +73,7 @@ export default function MascotAssistant() {
   const { open, setOpen, chatting, setChatting } = useVeyWorkspaceSession();
   const [busy, setBusy] = useState(false);
   const [question, setQuestion] = useState('');
-  const [answer, setAnswer] = useState(WELCOME);
+  const [answer, setAnswer] = useState(WELCOME(t));
   const [messages, setMessages] = useState([]);
   const [plan, setPlan] = useState(null);
   const [answerSource, setAnswerSource] = useState(null);
@@ -83,14 +90,17 @@ export default function MascotAssistant() {
   const [mobilePointRequest, setMobilePointRequest] = useState(null);
 
   const homePosition = useCallback(() => ({
-    x: 18,
+    x: locale === 'ar' ? Math.max(18, window.innerWidth - CHARACTER.width - 18) : 18,
     y: Math.max(88, window.innerHeight - CHARACTER.height - 20),
-  }), []);
+  }), [locale]);
 
-  const perchPosition = useCallback(() => ({
-    x: Math.max(18, Math.min(330, window.innerWidth - CHARACTER.width - 14)),
-    y: Math.max(72, window.innerHeight - Math.min(650, window.innerHeight - 72)),
-  }), []);
+  const perchPosition = useCallback(() => {
+    const x = Math.max(18, Math.min(330, window.innerWidth - CHARACTER.width - 14));
+    return {
+      x: locale === 'ar' ? Math.max(18, window.innerWidth - CHARACTER.width - x) : x,
+      y: Math.max(72, window.innerHeight - Math.min(650, window.innerHeight - 72)),
+    };
+  }, [locale]);
 
   const clearAction = useCallback(() => {
     window.clearTimeout(actionTimerRef.current);
@@ -122,7 +132,7 @@ export default function MascotAssistant() {
   const drag = useVeyDrag({ onStart: clearAction, onReset: resetPosition,
     onMove: (next) => { window.clearTimeout(travelTimerRef.current); setTravelling(false); setManualPosition(next); setPosition(next); } });
   const { activeTarget, highlight, hand, point, locate: locateTarget, clear: clearPointer } = useVeyPointer({ reduceMotion, moveMascot, setFacing, activateTarget, clearAction, manualPosition });
-  const mobileLayout = useVeyMobileLayout({ open, pathname, position, manualPosition, panelSide, highlight, hand, facing, pointRequest: mobilePointRequest, activeTarget });
+  const mobileLayout = useVeyMobileLayout({ open, pathname, position, manualPosition, panelSide: physicalVeyPanelSide(panelSide, locale), highlight, hand, facing, pointRequest: mobilePointRequest, activeTarget, rtl: locale === 'ar' });
   const editorHelperHost = useEditorHelperHost(pathname);
   const clearTarget = useCallback(() => {
     window.clearTimeout(timerRef.current);
@@ -228,8 +238,8 @@ export default function MascotAssistant() {
     setPlan(null);
     setFeedback(null);
     setAnswerSource(null);
-    setAnswer('Let me check…');
-    setMessages((current) => [...current, { id: userId, role: 'user', content: asked, localOnly: !!local }, { id: assistantId, role: 'assistant', content: 'Let me check…', pending: true, localOnly: !!local }].slice(-MAX_CONVERSATION_MESSAGES));
+    setAnswer(t("public.vey.check"));
+    setMessages((current) => [...current, { id: userId, role: 'user', content: asked, displayContent: tOr(t, `public.vey.question.${asked}`, asked), localOnly: !!local }, { id: assistantId, role: 'assistant', content: t("public.vey.check"), pending: true, localOnly: !!local }].slice(-MAX_CONVERSATION_MESSAGES));
     captureProductEvent('helper_question', { route: pathname, starter: starters.includes(asked) });
     const startedAt = performance.now();
     let next = local;
@@ -262,7 +272,7 @@ export default function MascotAssistant() {
       duration_ms: Math.round(performance.now() - startedAt),
     });
     if (next.target && pathname.startsWith(HELP_TARGETS[next.target]?.route || '#')) showTarget(next.target);
-  }, [availableTargets, busy, messages, pathname, showTarget, starters]);
+  }, [availableTargets, busy, messages, pathname, showTarget, starters, t]);
 
   const doAction = useCallback(() => {
     if (plan?.savedOddlingId) {
@@ -274,7 +284,7 @@ export default function MascotAssistant() {
       if (pathname !== '/app/oddlings') router.push('/app/oddlings');
       return;
     }
-    const action = resolveHelpAction(plan);
+    const action = resolveHelpAction(plan, t);
     if (!action) {
       if (plan?.target) showTarget(plan.target, { explicit: true });
       return;
@@ -292,9 +302,9 @@ export default function MascotAssistant() {
     if (action.target) {
       showTarget(action.target, { explicit: true, focus: action.focus || plan.action === 'focus_prompt', activate: action.activate });
     }
-  }, [ask, pathname, plan, router, showTarget]);
+  }, [ask, pathname, plan, router, showTarget, t]);
 
-  const action = resolveHelpAction(plan);
+  const action = resolveHelpAction(plan, t);
   const targetLabel = plan?.target ? HELP_TARGETS[plan.target]?.label : null;
   const showButton = action || (plan?.target && activeTarget !== plan.target);
   const mood = actionPhase === 'tapping'
@@ -313,14 +323,14 @@ export default function MascotAssistant() {
     savedSubjectRef.current = null;
     setPendingSavedId(null);
     setMessages([]);
-    setAnswer(WELCOME);
+    setAnswer(WELCOME(t));
     setPlan(null);
     setAnswerSource(null);
     setFeedback(null);
     clearTarget();
     moveMascot(homePosition());
     captureProductEvent('helper_reset', { route: pathname });
-  }, [clearTarget, homePosition, moveMascot, pathname]);
+  }, [clearTarget, homePosition, moveMascot, pathname, t]);
 
   const rateAnswer = useCallback((helpful) => {
     setFeedback(helpful ? 'helpful' : 'not_helpful');
@@ -382,7 +392,7 @@ export default function MascotAssistant() {
         <motion.button
           ref={launcherRef}
           type="button"
-          aria-label={open ? 'Close Veyrnox helper' : 'Ask Veyrnox helper'}
+          aria-label={open ? t("public.vey.close") : t("public.vey.open")}
           aria-expanded={open}
           aria-describedby="vey-position-help"
           {...drag.handlers}
@@ -394,7 +404,7 @@ export default function MascotAssistant() {
           transition={{ duration: travelling ? 0.52 : 2.8, repeat: Infinity, ease: 'easeInOut' }}
           style={{ width: CHARACTER.width, height: CHARACTER.height, scaleX: facing }}
         >
-          <span id="vey-position-help" className="sr-only">Drag Vey to position it. With Vey focused, use Alt and arrow keys to move, or Escape to return to automatic positioning.</span>
+          <span id="vey-position-help" className="sr-only">{t("public.vey.drag")}</span>
           <span className="absolute inset-x-4 bottom-2 h-5 rounded-full bg-black/35 blur-md" aria-hidden="true" />
           <span className="relative block h-full w-full transition-[filter] group-hover:brightness-110">
             <VeyCharacter pose={mood} reducedMotion={reduceMotion} hand={mobileLayout.hand} />
@@ -414,34 +424,34 @@ export default function MascotAssistant() {
             transition={{ duration: 0.2 }}
             style={VEY_CHAT_STYLE}
             data-panel-side={panelSide}
-            className={`fixed bottom-[max(8px,env(safe-area-inset-bottom))] ${panelSide === 'left' ? 'left-2' : 'right-2'} z-[60] flex h-[var(--vey-chat-height)] max-h-[calc(100dvh-80px)] w-[min(280px,calc(100vw-80px))] flex-col overflow-hidden rounded-xl border border-vx-border bg-vx-panel/95 shadow-xl backdrop-blur-xl`}
+            className={`fixed bottom-[max(8px,env(safe-area-inset-bottom))] ${panelSide === 'left' ? 'start-2' : 'end-2'} z-[60] flex h-[var(--vey-chat-height)] max-h-[calc(100dvh-80px)] w-[min(280px,calc(100vw-80px))] flex-col overflow-hidden rounded-xl border border-vx-border bg-vx-panel/95 shadow-xl backdrop-blur-xl`}
           >
             <header className="flex shrink-0 items-center justify-between gap-2 border-b border-vx-border px-2 py-0.5">
               <div>
-                <h2 id="vx-helper-title" className="text-xs font-bold">Ask Vey</h2>
+                <h2 id="vx-helper-title" className="text-xs font-bold">{t("public.vey.ask")}</h2>
               </div>
               <div className="flex items-center gap-2">
                 <VeyPanelSideButton side={panelSide} onMove={movePanels} />
-                {manualPosition && <button type="button" onClick={resetPosition} aria-label="Dock Vey" title="Dock Vey"
-                  className="min-h-8 rounded-full px-1 text-[10px] text-vx-fg-muted">Dock</button>}
+                {manualPosition && <button type="button" onClick={resetPosition} aria-label={t("public.vey.dockTitle")} title={t("public.vey.dockTitle")}
+                  className="min-h-8 rounded-full px-1 text-[10px] text-vx-fg-muted">{t("public.vey.dock")}</button>}
                 {messages.length > 0 && (
-                  <button type="button" onClick={resetConversation} aria-label="Start a new Vey conversation"
-                    className="min-h-8 rounded-full px-2 text-[10px] font-semibold text-vx-fg-muted hover:text-vx-fg">New</button>
+                  <button type="button" onClick={resetConversation} aria-label={t("public.vey.newTitle")}
+                    className="min-h-8 rounded-full px-2 text-[10px] font-semibold text-vx-fg-muted hover:text-vx-fg">{t("public.vey.new")}</button>
                 )}
-                <button type="button" onClick={() => { setOpen(false); launcherRef.current?.focus(); }} aria-label="Close helper"
+                <button type="button" onClick={() => { setOpen(false); launcherRef.current?.focus(); }} aria-label={t("public.vey.closeShort")}
                   className="min-h-8 min-w-8 rounded-full text-xs text-vx-fg-muted hover:text-vx-fg">✕</button>
               </div>
             </header>
 
-            <div ref={transcriptRef} role="log" aria-label="Conversation with Vey" className="min-h-0 flex-1 overflow-y-auto px-2 py-1">
+            <div ref={transcriptRef} role="log" aria-label={t("public.vey.conversation")} className="min-h-0 flex-1 overflow-y-auto px-2 py-1">
               <VeyConversation messages={messages} answer={answer} plan={plan} busy={busy}
-                showButton={showButton} actionLabel={plan?.savedOddlingId ? 'Show this saved passport' : (action?.label || `Show ${targetLabel}`)}
+                showButton={showButton} actionLabel={plan?.savedOddlingId ? t("public.vey.passport") : (action?.label || t('public.vey.show', { target: t.label(targetLabel) }))}
                 doAction={doAction} activeTarget={activeTarget} park={() => { clearTarget(); moveMascot(homePosition()); }}
                 answerSource={answerSource} feedback={feedback} rateAnswer={rateAnswer} starters={starters} ask={ask} />
             </div>
 
             <form className="mt-auto shrink-0 border-t border-vx-border p-1.5" onSubmit={(event) => { event.preventDefault(); ask(question); }}>
-              <label htmlFor="vx-helper-question" className="sr-only">Ask how to use Veyrnox</label>
+              <label htmlFor="vx-helper-question" className="sr-only">{t("public.vey.askLabel")}</label>
               <div className="flex items-end gap-1 rounded-lg border border-vx-border bg-vx-base p-0.5 focus-within:border-vx-accent">
                 <textarea
                   ref={inputRef}
@@ -450,15 +460,15 @@ export default function MascotAssistant() {
                   maxLength={500}
                   value={question}
                   onChange={(event) => setQuestion(event.target.value)}
-                  placeholder="How do I…?"
+                  placeholder={t("public.vey.placeholder")}
                   className="min-h-8 min-w-0 flex-1 resize-none bg-transparent px-1.5 py-1.5 text-xs leading-5 text-vx-fg outline-hidden placeholder:text-vx-fg-faint"
                 />
                 <button type="submit" disabled={busy || !question.trim()}
                   className="min-h-8 shrink-0 rounded-md bg-vx-accent px-2 text-[11px] font-bold text-vx-accent-ink disabled:opacity-40">
-                  {busy ? 'Thinking…' : 'Ask'}
+                  {busy ? t("public.vey.thinking") : t("public.vey.send")}
                 </button>
               </div>
-              <p className="px-1 pt-0.5 text-[9px] leading-3 text-vx-fg-faint">You approve spending and changes.</p>
+              <p className="px-1 pt-0.5 text-[9px] leading-3 text-vx-fg-faint">{t("public.vey.approval")}</p>
             </form>
           </motion.section>
         )}

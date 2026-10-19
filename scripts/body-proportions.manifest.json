@@ -1,0 +1,79 @@
+{
+  "note": "Body proportions, fully clothed. Natural, Tiny Torso, Huge Hands and No Visible Neck from the first sheet, Long Neck from a second and Wide Shoulders from a third. Long Torso, Tiny Hands and Narrow Shoulders looked the same as the plain figure (or showed a back view) and keep the drawn tile.",
+  "sources": [
+    {
+      "file": "proportions.jpg",
+      "rows": [
+        3,
+        3
+      ],
+      "inset": 14,
+      "styles": [
+        null,
+        "Tiny Torso",
+        null,
+        "Huge Hands",
+        "Natural",
+        "No Visible Neck"
+      ]
+    },
+    {
+      "file": "rest-proportions.jpg",
+      "rows": [
+        4,
+        4
+      ],
+      "inset": 14,
+      "styles": [
+        null,
+        null,
+        null,
+        null,
+        "Long Neck",
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "file": "gap-body4.jpg",
+      "rows": [
+        2,
+        2
+      ],
+      "styles": [
+        null,
+        null,
+        null,
+        "Wide Shoulders"
+      ]
+    },
+    {
+      "file": "narrow-shoulders.png",
+      "rows": [
+        1
+      ],
+      "styles": [
+        "Narrow Shoulders"
+      ]
+    },
+    {
+      "file": "long-torso.png",
+      "rows": [
+        1
+      ],
+      "styles": [
+        "Long Torso"
+      ]
+    },
+    {
+      "file": "tiny-hands.png",
+      "rows": [
+        1
+      ],
+      "styles": [
+        "Tiny Hands"
+      ]
+    }
+  ]
+}

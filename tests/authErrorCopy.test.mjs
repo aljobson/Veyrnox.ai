@@ -1,3 +1,4 @@
+import english from '../lib/i18n/messages/en.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -7,8 +8,8 @@ import { readFileSync } from 'node:fs';
 // The component is JSX, so read its source and rebuild the same table rather
 // than importing it — the pattern tests/authCaptcha.test.mjs already uses.
 const src = readFileSync(new URL('../components/AuthGate.jsx', import.meta.url), 'utf8');
-const table = src.slice(src.indexOf('const AUTH_ERROR_COPY = ['), src.indexOf('];', src.indexOf('const AUTH_ERROR_COPY = [')));
-const entries = [...table.matchAll(/\[\/(.+?)\/([a-z]*),\s*"([^"]+)"\]/g)].map(([, body, flags, copy]) => [new RegExp(body, flags), copy]);
+const table = src.slice(src.indexOf('const AUTH_ERROR_COPY ='), src.indexOf('function humanAuthError'));
+const entries = [...table.matchAll(/\[\/(.+?)\/([a-z]*),\s*t\("([^"]+)"\)\]/g)].map(([, body, flags, copy]) => [new RegExp(body, flags), english[copy]]);
 
 function human(message) {
     const hit = entries.find(([re]) => re.test(message));

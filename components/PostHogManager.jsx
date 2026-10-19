@@ -1,4 +1,6 @@
 'use client';
+import { rich } from '../lib/i18n/rich';
+import { useI18n } from './I18nProvider';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -20,12 +22,25 @@ const forceConsentedReplay = normaliseReplaySampleRate(process.env.NEXT_PUBLIC_P
 const signedInAccount = () => getSession()?.user?.id || null;
 const signedOutAccount = () => null;
 
+// The "Privacy choices" button hides once the visitor has answered, for the rest
+// of this browser session. It is keyed to the account, so signing in or out
+// brings it back. The choice itself stays in localStorage.
+const DISMISSED_KEY = 'veyrnox_privacy_choices_dismissed';
+const readDismissedFor = () => {
+  try { return window.sessionStorage.getItem(DISMISSED_KEY); } catch { return null; }
+};
+const writeDismissedFor = (account) => {
+  try { window.sessionStorage.setItem(DISMISSED_KEY, account); } catch { /* private mode: button just stays visible */ }
+};
+
 export default function PostHogManager() {
+  const { t } = useI18n();
   const posthog = usePostHog();
   const pathname = usePathname() || '/';
   const accountId = useSyncExternalStore(onSessionChange, signedInAccount, signedOutAccount);
   const [preference, setPreference] = useState(undefined);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [dismissedFor, setDismissedFor] = useState(null);
   const previousAccount = useRef(null);
 
   useEffect(() => {
@@ -41,6 +56,7 @@ export default function PostHogManager() {
       const next = readAnalyticsPreference(window.localStorage);
       if (next) setPreference(next);
     };
+    setDismissedFor(readDismissedFor());
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
   }, [posthog]);
@@ -130,9 +146,12 @@ export default function PostHogManager() {
     }
     setPreference(saved);
     setSettingsOpen(false);
+    writeDismissedFor(accountId || '');
+    setDismissedFor(accountId || '');
   }
 
   const bannerOpen = preference === null || settingsOpen;
+  const buttonHidden = dismissedFor !== null && dismissedFor === (accountId || '');
   if (preference === undefined) return null;
 
   return (
@@ -141,39 +160,37 @@ export default function PostHogManager() {
         <section
           data-print="hide"
           role="region"
-          aria-label="Privacy choices"
+          data-storage-notice="analytics"
+          aria-label={t('privacy.choices')}
           className="fixed inset-x-0 bottom-0 z-[70] border-t border-vx-border bg-vx-panel/95 px-4 py-4 shadow-2xl backdrop-blur-sm sm:px-6"
         >
           <div className="mx-auto grid max-w-[1100px] gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
             <div>
-              <p className="text-sm font-extrabold text-vx-fg">Help us improve Veyrnox?</p>
+              <p className="text-sm font-extrabold text-vx-fg">{t('privacy.title')}</p>
               <p className="mt-1 max-w-3xl text-[13px] leading-[1.55] text-vx-fg-body">
-                Optional analytics show which pages and controls work. Optional session replay helps us reproduce bugs; it masks all text and inputs, blocks images, video, audio and canvas, and is disabled on sign-in, account, admin and payment pages. We never record prompts, chats, passwords or uploaded or generated media. Necessary browser storage still keeps sign-in and preferences working.{' '}
-                <Link href="/legal/privacy" className="text-vx-accent underline underline-offset-4">Privacy Policy</Link>
+                {rich(t('privacy.body'), {
+                  privacy: <Link href="/legal/privacy" className="text-vx-accent underline underline-offset-4">{t('chrome.privacyPolicy')}</Link>,
+                })}
               </p>
             </div>
             <div className="flex flex-wrap gap-2 lg:max-w-[390px] lg:justify-end">
               <button type="button" onClick={() => choose({ analytics: true, replay: true })} className="rounded-full bg-vx-accent px-4 py-2 text-[13px] font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover">
-                Allow analytics &amp; replay
-              </button>
+                {t('privacy.allow')}</button>
               <button type="button" onClick={() => choose({ analytics: true, replay: false })} className="rounded-full border border-vx-border bg-vx-base px-4 py-2 text-[13px] font-bold text-vx-fg hover:border-vx-accent">
-                Analytics only
-              </button>
-              <button type="button" onClick={() => choose({ analytics: false, replay: false })} className="rounded-full border border-vx-border bg-vx-base px-4 py-2 text-[13px] font-bold text-vx-fg hover:border-vx-accent">
-                Decline
-              </button>
+                {t('privacy.analytics')}</button>
+              <button type="button" data-storage-decline onClick={() => choose({ analytics: false, replay: false })} className="rounded-full border border-vx-border bg-vx-base px-4 py-2 text-[13px] font-bold text-vx-fg hover:border-vx-accent">
+                {t('privacy.decline')}</button>
             </div>
           </div>
         </section>
-      ) : (
+      ) : buttonHidden ? null : (
         <button
           data-print="hide"
           type="button"
           onClick={() => setSettingsOpen(true)}
-          className="fixed bottom-4 left-4 z-50 rounded-full border border-vx-border bg-vx-panel px-3 py-2 text-xs font-bold text-vx-fg-body shadow-lg hover:border-vx-accent hover:text-vx-fg sm:bottom-6 sm:left-6"
+          className="fixed bottom-4 start-4 z-50 rounded-full border border-vx-border bg-vx-panel px-3 py-2 text-xs font-bold text-vx-fg-body shadow-lg hover:border-vx-accent hover:text-vx-fg sm:bottom-6 sm:start-6"
         >
-          Privacy choices
-        </button>
+          {t('privacy.choices')}</button>
       )}
     </>
   );

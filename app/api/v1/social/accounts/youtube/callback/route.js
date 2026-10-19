@@ -24,6 +24,7 @@
  */
 
 import { NextResponse } from 'next/server';
+import { connectCallbackPath, requestedClient } from '../../../../../../../lib/social/connectReturn.js';
 import { socialConnectionWriter } from '../../../../../../../lib/social/accountAllowance.js';
 import { networkReleased } from '../../../../../../../lib/social/networks.js';
 import { rpc, envConfig, SupabaseError } from '../../../../../../../packages/db/supabase-client.js';
@@ -34,7 +35,6 @@ import { tokenCryptoConfig, encryptToken } from '../../../../../../../lib/social
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 // Must match the connect route's CALLBACK_PATH exactly — this is the
 // redirect_uri the token exchange authenticates against.
-const CALLBACK_PATH = '/social/connect/callback/youtube';
 
 export async function POST(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');
@@ -59,6 +59,8 @@ export async function POST(req) {
     } catch {
         return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
     }
+    const client = requestedClient(body);
+    if (!client) return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
     const { code, state, codeVerifier } = body || {};
     if (typeof code !== 'string' || !code || code.length > 2048
         || typeof codeVerifier !== 'string' || !/^[A-Za-z0-9_-]{43,128}$/.test(codeVerifier)) {
@@ -81,7 +83,7 @@ export async function POST(req) {
     } catch {
         return NextResponse.json({ error: 'youtube_not_configured' }, { status: 503 });
     }
-    const redirectUri = new URL(CALLBACK_PATH, base).toString();
+    const redirectUri = new URL(connectCallbackPath('youtube', client), base).toString();
 
     let account;
     try {

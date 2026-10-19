@@ -35,6 +35,7 @@ on:
       - "scripts/test-cinema-operator-actions.mjs"
       - "scripts/test-cinema-voting.mjs"
       - "scripts/test-cinema-comments.mjs"
+      - "scripts/test-cinema-blocks.mjs"
       - "scripts/test-cinema-story-polls.mjs"
       - "scripts/test-cinema-discovery.mjs"
       - "scripts/test-cinema-posters.mjs"
@@ -45,6 +46,9 @@ on:
       - "scripts/test-topup-refund-shortfall.mjs"
       - "scripts/test-default-privileges.mjs"
       - "scripts/test-disposable-email-block.mjs"
+      - "scripts/test-account-deletion.mjs"
+      - "scripts/test-job-deletion.mjs"
+      - "scripts/test-push-tokens.mjs"
       - "scripts/test-fk-indexes.mjs"
       - "scripts/test-append-only.mjs"
       - "scripts/test-subscription-credits.mjs"
@@ -219,6 +223,7 @@ jobs:
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-publication.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-voting.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-comments.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-blocks.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-story-polls.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-discovery.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-posters.mjs
@@ -232,6 +237,9 @@ jobs:
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-topup-refund-shortfall.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-default-privileges.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-disposable-email-block.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-account-deletion.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-job-deletion.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-push-tokens.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-fk-indexes.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-append-only.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-subscription-credits.mjs

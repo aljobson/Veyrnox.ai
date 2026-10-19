@@ -49,13 +49,30 @@ If a build starts failing after a dependency change, bisect these three first.
 - **Balance invariant**: `credit_balances.balance = SUM(ledger_entries.delta)`
   per `user_id`. Every mutation goes through `ledger_debit` / `ledger_refund` /
   `ledger_grant` / `signup_grant` / `expire_free_credits` / `credit_top_up` /
-  `apply_top_up_refund` / `subscription_grant` / `expire_subscription_credits` /
+  `apply_top_up_refund` / `admin_credit_clawback_guarded` / `subscription_grant` / `expire_subscription_credits` /
   `reverse_subscription_grant` / `referral_sweep` (ADR-0071: grants through `ledger_grant`,
   clawbacks as `reverse:referral`) RPC — never a raw `INSERT INTO ledger_entries` or a raw
   `UPDATE credit_balances`.
 - **Frozen accounts** (#97): `apply_top_up_refund` and `apply_dispute_event`
   Freeze, `unfreeze_account` is the only way out, and all three write the
   append-only `account_actions` log. Never set `users.frozen_at` directly.
+- **Account deletion** (ADR-0111): a tombstone, never a `DELETE` of `public.users`.
+  `prepare_account_deletion` / `erase_account` / `complete_account_deletion` are the
+  only writers; a Frozen or held account is refused, the balance is left as it is
+  (no ledger row). A new table that references `users` must be classified in
+  `scripts/test-account-deletion.mjs`. The route is off unless
+  `ACCOUNT_DELETION_ENABLED` is `"true"` (not in `wrangler.jsonc`: binding cap).
+- **Deleting a creation** (ADR-0116): `delete_user_job` is the only writer of `jobs.deleted_at`. It
+  removes the file (queued in `asset_reap_queue`) and the prompt, and keeps the job row and every
+  ledger entry: no refund, no ledger or `credit_balances` write. It refuses an unsettled job, a hold or
+  open report, a Frozen account, and a file a post, Cinema upload or Film Library master uses. A reader
+  of jobs for a person must filter `deleted_at IS NULL`. No flag.
+- **Push tokens** (ADR-0113): `push_tokens`, `push_outbox` and `push_token_writes` are
+  reached only through the `register_push_token` / `remove_push_token` / `push_*` RPCs.
+  Pushes are sent by a per-minute sweep that reads finished jobs and writes only `push_*`
+  tables: never call the sender from a job-completion or refund path. A table that holds
+  tokens must be erased with the account (trigger on `users.deleted_at`). Off unless
+  `PUSH_NOTIFICATIONS_ENABLED` is `"true"` (staging only; not in production `wrangler.jsonc`).
 - **Free Credits** (ADR-0013): only `grant:signup` credits are free. Every
   ledger row sets `free_delta` (the part of `delta` that moved Free Credits;
   0 for anything else) and `credit_balances.free_balance` moves with it,
@@ -177,9 +194,19 @@ developer surface is `/api/v1/developer/*` and requires a verified OAuth
     Origin, JSON/custom-header CSRF checks, Strict HttpOnly cookie and Auth
     refresh-grant validation. It never trusts forwarded user headers and never
     accepts or returns service-role credentials. See ADR-0102.
+  - `/auth/mobile` — GET-only hand-back for the mobile app's Google and Apple
+    sign-in (ADR-0106 amendment 1). It answers a 302 to the constant
+    `ai.veyrnox.app://auth/callback`, forwarding only a well-formed PKCE `code`
+    or a short error word. It reads no identity header and has no open target.
+  - `/social/connect/mobile/:network` — GET-only hand-back for the mobile app's
+    Publish connect (ADR-0136). Used only when connect was started with
+    `client: "mobile"`; answers a 302 to the constant `ai.veyrnox.app://social/callback`,
+    forwarding only a well-formed `code` and our signed `state` for a known OAuth
+    network. It reads no identity header and has no open target.
   - `/api/catalog`, `/api/credit-packs`, `/api/cinema/titles[/:id]`, `/api/cinema/posters/:id`,
-    `/api/popular-templates` — anonymous, read-only, cached public data
-    (prices, packs, published titles, ranked template ids). Nothing per-user.
+    `/api/popular-templates`, `/api/presets` — anonymous, read-only, cached public data
+    (prices, packs, published titles, ranked template ids, the template gallery priced
+    from the catalog for the mobile app). Nothing per-user.
   - `/api/cinema/voting`, `/api/cinema/discovery`, `/api/cinema/winners`, `/api/cinema/comments`, `/api/cinema/story-polls`, `/api/credit-subscription-plans`, `/api/cinema-pass-plans` — anonymous read-only, explicitly gated, no-store projections. Factories use `authed: false`, ignore inbound identity headers, and never return another account’s votes, pending comments, reports or billing records.
   - `/api/webhook/*` — the provider's signature (see Provider webhooks).
   - `/api/admin/*` — Cloudflare Access plus a shared token; cron callers only.
@@ -187,6 +214,11 @@ developer surface is `/api/v1/developer/*` and requires a verified OAuth
   - `/api/social/approvals/:token` — an expiring HMAC token naming one reviewer; it returns only the post review projection and accepts that reviewer's one decision.
   - `/api/social/team/:token` — an expiring HMAC token naming one team invitation; it returns only the invited email, role, brand label and expiry. Acceptance remains behind authenticated `/api/v1`.
   - `/api/publish/v1/*` — an expiring, scoped Publish customer API key. Only a SHA-256 hash is stored; each key is limited to 120 requests per minute and stops working when revoked, expired, removed from its brand role, or no longer covered by an active Publish Plan.
+  - `/.well-known/apple-app-site-association`, `/.well-known/assetlinks.json` —
+    anonymous, read-only app-link association files for the mobile app
+    (ADR-0106). Built from constants in `lib/mobileAppLinks.js` (Apple Team ID,
+    Android signing fingerprints; owner edits via PR) and 404 `no-store` until
+    those are set. No user data.
   - `/api/turnstile-failure` — anonymous and write-only: a POST from our own
     pages whose body is one Turnstile error code or the word `unsupported`,
     rate limited per connecting IP in `worker.js`. It logs that and nothing

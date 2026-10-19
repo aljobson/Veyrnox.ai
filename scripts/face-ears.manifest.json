@@ -1,0 +1,29 @@
+{
+  "note": "Ears from the shared cheeks and ears sheet. No Ears was not drawn; the sixth head repeats the elf ears.",
+  "sources": [
+    {
+      "file": "cheeks-ears.jpg",
+      "rows": [
+        3,
+        3
+      ],
+      "styles": [
+        "Human",
+        null,
+        null,
+        "Elf Ears",
+        "Wing Ears",
+        null
+      ]
+    },
+    {
+      "file": "no-ears.png",
+      "rows": [
+        1
+      ],
+      "styles": [
+        "No Ears"
+      ]
+    }
+  ]
+}

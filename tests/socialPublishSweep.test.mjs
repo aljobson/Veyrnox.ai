@@ -223,9 +223,20 @@ test('a core target whose marker is lost to another sweep is not sent either', a
         },
         complete_social_post_target: async (body) => { assert.equal(body.p_error, 'submission_claim_lost'); return { ok: true }; },
     }, async () => {
+        // The marker is written right before the publishing call, so LinkedIn's
+        // image preparation still runs; only the public post must not go out.
         const real = globalThis.fetch;
+        const headerGet = (values) => ({ get: (k) => values[k.toLowerCase()] ?? null });
         globalThis.fetch = async (url, init) => {
-            if (new URL(url).hostname === 'api.linkedin.com') { providerCalls += 1; return Response.json({}); }
+            const u = new URL(url);
+            if (u.hostname === 'api.linkedin.com' && u.pathname === '/rest/images') {
+                return { ok: true, status: 200, headers: headerGet({}), json: async () => ({ value: { uploadUrl: 'https://www.linkedin.com/dms-uploads/x/0', image: 'urn:li:image:x' } }) };
+            }
+            if (u.hostname === 'acct.r2.cloudflarestorage.com') {
+                return { ok: true, status: 200, headers: headerGet({ 'content-type': 'image/jpeg' }), arrayBuffer: async () => new Uint8Array([1]).buffer };
+            }
+            if (u.hostname === 'www.linkedin.com' && u.pathname === '/dms-uploads/x/0') return { ok: true, status: 201, headers: headerGet({}) };
+            if (u.hostname === 'api.linkedin.com' && u.pathname === '/rest/posts') { providerCalls += 1; return Response.json({}); }
             return real(url, init);
         };
         const out = await runPublishSweep({ cfg, cryptoCfg, r2cfg });

@@ -1,0 +1,129 @@
+{
+  "note": "Body builds, fully clothed. Only the builds that stay distinguishable once each figure is fitted to its tile have a picture: Curvy, Heavy, Fat, Athletic, Muscular, Hyper-Muscular, Pear, Barrel and Skinny. Slim, Lean, Very Skinny, Lanky, Compact, Inverted Triangle, Long Torso and Long Legs look alike and keep the drawn tile.",
+  "sources": [
+    {
+      "file": "builds-b.jpg",
+      "rows": [
+        4,
+        4
+      ],
+      "inset": 14,
+      "styles": [
+        "Curvy",
+        null,
+        null,
+        null,
+        null,
+        null,
+        "Heavy",
+        "Fat"
+      ]
+    },
+    {
+      "file": "rest-builds-a.jpg",
+      "rows": [
+        4,
+        4
+      ],
+      "inset": 14,
+      "styles": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        "Athletic",
+        "Muscular",
+        "Hyper-Muscular"
+      ]
+    },
+    {
+      "file": "rest-builds-b.jpg",
+      "rows": [
+        3,
+        3
+      ],
+      "inset": 14,
+      "styles": [
+        "Pear",
+        null,
+        "Barrel",
+        null,
+        null,
+        "Skinny"
+      ]
+    },
+    {
+      "file": "slim.png",
+      "rows": [
+        1
+      ],
+      "styles": [
+        "Slim"
+      ]
+    },
+    {
+      "file": "lean.png",
+      "rows": [
+        1
+      ],
+      "styles": [
+        "Lean"
+      ]
+    },
+    {
+      "file": "very-skinny.png",
+      "rows": [
+        1
+      ],
+      "styles": [
+        "Very Skinny"
+      ]
+    },
+    {
+      "file": "lanky.png",
+      "rows": [
+        1
+      ],
+      "styles": [
+        "Lanky"
+      ]
+    },
+    {
+      "file": "compact.png",
+      "rows": [
+        1
+      ],
+      "styles": [
+        "Compact"
+      ]
+    },
+    {
+      "file": "inverted-triangle.png",
+      "rows": [
+        1
+      ],
+      "styles": [
+        "Inverted Triangle"
+      ]
+    },
+    {
+      "file": "long-legs.png",
+      "rows": [
+        1
+      ],
+      "styles": [
+        "Long Legs"
+      ]
+    },
+    {
+      "file": "long-torso.png",
+      "rows": [
+        1
+      ],
+      "styles": [
+        "Long Torso"
+      ]
+    }
+  ]
+}

@@ -78,8 +78,19 @@ export const SLIDER_SCALES = Object.freeze({
   nose_size: ['Small', 'Medium', 'Large', 'Extra Large'],
 });
 
-// Groups whose tile can be drawn on the preview figure. The rest get a plain icon tile until real tile art exists.
-const MANNEQUIN_TILES = new Set(['hair', 'wardrobe_style', 'body_type', 'headwear']);
+// Groups whose tile is a picture of the figure with that option applied, and how closely the tile is cropped: 'face', 'head' (with hair and
+// hats) or 'body'. Every other group still shows an icon tile until it gets a drawing.
+export const TILE_FOCUS = Object.freeze({
+  hair: 'head', headwear: 'head', wardrobe_style: 'body', body_type: 'body',
+  head_shape: 'face', chin_jaw: 'face', eye_shape: 'face', eyes_type: 'face', eyes_details: 'face', brows: 'face', nose_shape: 'face', cheeks: 'face', lips: 'face',
+  mouth: 'face', ears: 'face', horns: 'face', face_features: 'face', facial_hair: 'face',
+  skin_conditions: 'face', face_skin_material: 'face', face_surface_pattern: 'face',
+  character_type: 'head', exaggeration: 'body',
+  proportions: 'body', neck: 'neck', left_arm: 'armLeft', right_arm: 'armRight', left_leg: 'legLeft', right_leg: 'legRight',
+});
+
+/** How the big preview is cropped while a category is open: close on the face for face work, on the head for hair, whole body otherwise. */
+export const CATEGORY_FOCUS = Object.freeze({ head: 'face', eyes: 'face', hair: 'head', who: 'body', body: 'body', skin: 'body', clothes: 'body', extras: 'head', limbs: 'body', finish: 'body' });
 
 const byId = new Map(CHARACTER_GROUPS.map((group) => [group.id, group]));
 export const catalogGroup = (id) => byId.get(id) || null;
@@ -92,7 +103,10 @@ export function controlKind(groupId) {
 }
 
 /** 'mannequin' when the preview can draw this option on the figure, otherwise 'icon'. */
-export const tileKind = (groupId) => (MANNEQUIN_TILES.has(groupId) ? 'mannequin' : 'icon');
+export const tileKind = (groupId) => (Object.hasOwn(TILE_FOCUS, groupId) ? 'mannequin' : 'icon');
+
+/** The crop a tile of this group uses. */
+export const tileFocus = (groupId) => TILE_FOCUS[groupId] || 'body';
 
 export function categoryById(id) {
   return CATALOG_CATEGORIES.find((category) => category.id === id) || CATALOG_CATEGORIES[0];
