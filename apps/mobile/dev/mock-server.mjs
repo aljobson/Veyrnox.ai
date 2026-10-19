@@ -203,6 +203,17 @@ createServer(async (req, res) => {
         console.log('MOCK created post', id, body.publishNow === true ? 'now' : 'scheduled');
         return send(res, 201, { post_id: id, idempotent: false, target_count: body.accountIds.length });
     }
+    // Team, activity, queues and autolists (ADR-0163). Read-mostly; saves answer ok without keeping state.
+    if (path === '/api/v1/social/team' && req.method === 'GET') return send(res, 200, { brand_id: 'b1', brand_name: 'Veyrnox Studio', actor_role: 'owner', members: [{ user_id: 'u-1', email: 'you@example.test', role: 'owner', joined_at: '2026-09-01T00:00:00Z' }, { user_id: 'u-2', email: 'lee@acme.example', role: 'editor', joined_at: '2026-10-05T00:00:00Z' }], invitations: [{ id: 'inv-1', email: 'sam@acme.example', role: 'reviewer', status: 'pending', expires_at: '2026-10-30T00:00:00Z', created_at: '2026-10-16T00:00:00Z' }] });
+    if (path === '/api/v1/social/activity' && req.method === 'GET') {
+        const first = !url.searchParams.get('cursor');
+        const mk = (n, action) => ({ id: `ev-${n}`, source: 'publish', action, target_id: null, actor_email: n % 2 ? 'you@example.test' : null, detail: n === 1 ? { network: 'instagram' } : null, created_at: new Date(Date.now() - n * 3_600_000).toISOString() });
+        return send(res, 200, first ? { actor_role: 'owner', events: [mk(1, 'account_connected'), mk(2, 'post_scheduled'), mk(3, 'invite_member')], next_cursor: { created_at: mk(3).created_at, id: 'ev-3', source: 'publish' } } : { actor_role: 'owner', events: [mk(4, 'draft_approved'), mk(5, 'account_disconnected')], next_cursor: null });
+    }
+    if (path === '/api/v1/social/queues' && req.method === 'PUT') return send(res, 200, { queue_id: body.id || randomUUID() });
+    if (path === '/api/v1/social/queues' && req.method === 'DELETE') return send(res, 200, { ok: true });
+    if (path === '/api/v1/social/autolists' && req.method === 'GET') return send(res, 200, { brandRole: 'owner', autolists: [{ id: 'al-1', queue_id: 'q-1', queue_name: 'Weekday mornings', name: 'Studio blog', feed_url: 'https://example.test/feed.xml', caption_template: '{{title}} {{link}}', refresh_interval_minutes: 360, enabled: true, auto_schedule: false, last_refreshed_at: '2026-10-19T06:00:00Z', last_error: null, items: [{ id: 'it-1', title: 'Softer product light', status: 'new' }] }] });
+    if (path === '/api/v1/social/autolists' && (req.method === 'PUT' || req.method === 'DELETE')) return send(res, 200, req.method === 'PUT' ? { autolist_id: body.id || randomUUID() } : { ok: true });
     // Drafts (ADR-0139): two in one batch and one alone; read-only here.
     if (path === '/api/v1/social/drafts' && req.method === 'GET') {
         const B = '44444444-4444-4444-8444-444444444444';

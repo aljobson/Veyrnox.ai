@@ -6,6 +6,7 @@ import { useAuth } from '../../../auth/AuthProvider';
 import { useBilling } from '../../../billing/BillingProvider';
 import { API_BASE } from '../../../lib/api';
 import { renewalTerms, toDisplayPackages, type Interval } from '../../../lib/billing';
+import { t } from '../../../lib/i18n';
 import { fetchPublishTier, paywallState, type PublishTier } from '../../../lib/publishPlan';
 import { colors } from '../../../theme';
 
@@ -101,7 +102,7 @@ export default function Publish() {
             {message ? <Text style={styles.muted}>{message}</Text> : null}
             {gate !== 'checking' ? (
                 <View style={styles.menu}>
-                    {([['Connected accounts', '/publish/accounts'], ['Posts', '/publish/posts'], ['Analytics', '/publish/analytics'], ['Calendar', '/publish/calendar'], ['Best time', '/publish/best-time'], ['Drafts', '/publish/drafts'], ['Approvals', '/publish/approvals'], ['Brand', '/publish/brands']] as const).map(([label, path]) => (
+                    {([['Connected accounts', '/publish/accounts'], ['Posts', '/publish/posts'], ['Analytics', '/publish/analytics'], ['Calendar', '/publish/calendar'], ['Best time', '/publish/best-time'], ['Drafts', '/publish/drafts'], ['Approvals', '/publish/approvals'], ['Brand', '/publish/brands'], [t('queues.title'), '/publish/queues'], [t('autolists.title'), '/publish/autolists'], [t('team.title'), '/publish/team'], [t('activity.title'), '/publish/activity']] as const).map(([label, path]) => (
                         <Pressable key={path} accessibilityRole="button" style={styles.menuRow} onPress={() => router.push(path)}>
                             <Text style={styles.menuText}>{label}</Text>
                         </Pressable>
