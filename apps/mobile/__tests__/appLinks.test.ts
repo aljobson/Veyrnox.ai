@@ -42,7 +42,7 @@ describe('mapAppLink', () => {
     });
 });
 
-describe('shared Cinema links (ADR-0164)', () => {
+describe('shared Cinema links (ADR-0167)', () => {
     test('a title opens its page and an episode link opens the player', () => {
         expect(mapAppLink(`https://veyrnox.ai/social-cinema/title/${ID}`)).toBe(`/cinema/${ID}`);
         expect(mapAppLink(`https://veyrnox.ai/social-cinema/watch/${ID.toUpperCase()}`)).toBe(`/cinema/watch/${ID}`);
