@@ -2,8 +2,9 @@ import { Link, Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
-import { chatApi, type ChatThread } from '../../../lib/chat';
+import { chatApi, pinnedFirst, type ChatThread } from '../../../lib/chat';
 import { fetchFolders, type Folder } from '../../../lib/chatLibrary';
+import { t } from '../../../lib/i18n';
 import { colors } from '../../../theme';
 
 export default function Threads() {
@@ -26,7 +27,7 @@ export default function Threads() {
         }
     }, [api]);
 
-    const shown = useMemo(() => (threads ?? []).filter((t) => filter === undefined || (t.folder_id ?? null) === filter), [threads, filter]);
+    const shown = useMemo(() => pinnedFirst(threads ?? []).filter((t) => filter === undefined || (t.folder_id ?? null) === filter), [threads, filter]);
 
     useFocusEffect(
         useCallback(() => {
@@ -73,6 +74,7 @@ export default function Threads() {
                             onPress={() => router.push({ pathname: '/chat/[id]', params: { id: item.id } })}
                         >
                             <Text style={styles.rowTitle} numberOfLines={1}>
+                                {item.pinned ? `${t('chat.pinned')} · ` : ''}
                                 {item.title || 'New chat'}
                             </Text>
                             <Text style={styles.muted}>{item.model_id}</Text>

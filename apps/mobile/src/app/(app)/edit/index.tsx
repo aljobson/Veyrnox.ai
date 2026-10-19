@@ -16,14 +16,17 @@ import {
     editErrorKey,
     fetchClipLength,
     moveClip,
+    newAudio,
     newClip,
     priceChanged,
     quoteEdit,
     stepEnd,
+    stepOffset,
     stepStart,
     submitEdit,
     totalSeconds,
     validateEdit,
+    type AudioTrack,
     type Clip,
 } from '../../../lib/clipEdit';
 import { plural, t } from '../../../lib/i18n';
@@ -48,6 +51,10 @@ export default function QuickEdit() {
     const [clips, setClips] = useState<Clip[]>([]);
     const [pending, setPending] = useState<Pending[]>([]);
     const [adding, setAdding] = useState(false);
+    // Sounds the person made (audio creations), and the one laid under the video.
+    const [sounds, setSounds] = useState<Job[]>([]);
+    const [audio, setAudio] = useState<AudioTrack | null>(null);
+    const [pickingSound, setPickingSound] = useState(false);
     const [captionsOn, setCaptionsOn] = useState(false);
     const [preset, setPreset] = useState<string>(DEFAULT_CAPTION_PRESET);
     const [stage, setStage] = useState<'edit' | 'review'>('edit');
@@ -69,6 +76,9 @@ export default function QuickEdit() {
                 const list = page.jobs.filter((j) => j.state === 'succeeded' && j.has_asset && kindOf(byId.get(j.model_id)?.modality ?? '') === 'video');
                 for (const j of list) names.current.set(j.job_id, j.label || byId.get(j.model_id)?.name || t('edit.untitled'));
                 setVideos(list);
+                const heard = page.jobs.filter((j) => j.state === 'succeeded' && j.has_asset && kindOf(byId.get(j.model_id)?.modality ?? '') === 'audio');
+                for (const j of heard) names.current.set(j.job_id, j.label || byId.get(j.model_id)?.name || t('edit.untitled'));
+                setSounds(heard);
             })
             .catch(() => !cancelled && setProblem(t('common.error')));
         return () => {
@@ -111,7 +121,7 @@ export default function QuickEdit() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [videos, startWith]);
 
-    const check = validateEdit(clips, captions);
+    const check = validateEdit(clips, captions, audio);
     const total = totalSeconds(clips);
 
     async function review() {
@@ -120,10 +130,10 @@ export default function QuickEdit() {
         setProblem(null);
         try {
             await aiConsent.ensure('/api/v1/generations', 'POST');
-            const signature = JSON.stringify([clips.map((c) => [c.jobId, c.start, c.end]), captions]);
+            const signature = JSON.stringify([clips.map((c) => [c.jobId, c.start, c.end]), captions, audio && [audio.jobId, audio.offset]]);
             const key = keyRef.current?.signature === signature ? keyRef.current.key : Crypto.randomUUID();
             keyRef.current = { signature, key };
-            const q = await quoteEdit(api, clips, captions, key);
+            const q = await quoteEdit(api, clips, captions, key, audio);
             if (q.kind === 'created') return router.replace({ pathname: '/job/[id]', params: { id: q.jobId } });
             setCredits(q.credits);
             setStage('review');
@@ -139,7 +149,7 @@ export default function QuickEdit() {
         setBusy(true);
         setProblem(null);
         try {
-            const r = await submitEdit(api, clips, captions, credits, keyRef.current.key);
+            const r = await submitEdit(api, clips, captions, credits, keyRef.current.key, audio);
             keyRef.current = null;
             router.replace({ pathname: '/job/[id]', params: { id: r.jobId } });
         } catch (err) {
@@ -167,6 +177,7 @@ export default function QuickEdit() {
                     </Text>
                 ))}
                 <Text style={styles.line}>{t('edit.total', { seconds: seconds(total), max: MAX_OUTPUT_S })}</Text>
+                {audio ? <Text style={styles.line}>{t('edit.audio.with', { name: audio.label, seconds: seconds(audio.offset) })}</Text> : null}
                 {captions ? <Text style={styles.line}>{t('edit.captionsWith', { preset: captions })}</Text> : null}
                 <Text style={styles.price}>{plural('edit.costs', credits)}</Text>
                 {problem ? <Text style={styles.error} accessibilityRole="alert">{problem}</Text> : null}
@@ -215,6 +226,31 @@ export default function QuickEdit() {
                     ) : (
                         library.slice(0, 30).map((j) => (
                             <Pressable key={j.job_id} accessibilityRole="button" style={styles.row} onPress={() => add(j)}>
+                                <Text style={styles.name}>{names.current.get(j.job_id)}</Text>
+                                <Text style={styles.muted}>{new Date(j.created_at).toLocaleDateString()}</Text>
+                            </Pressable>
+                        ))
+                    )
+                ) : null}
+
+                {audio ? (
+                    <View style={styles.card}>
+                        <Text style={styles.name} accessibilityRole="header">{t('edit.audio.title')}</Text>
+                        <Text style={styles.muted}>{audio.label}</Text>
+                        <Stepper label={t('edit.audio.start')} value={audio.offset} onLess={() => setAudio((a) => a && stepOffset(a, -STEP_S, total))} onMore={() => setAudio((a) => a && stepOffset(a, STEP_S, total))} lessLabel={t('edit.audio.earlier')} moreLabel={t('edit.audio.later')} />
+                        <Pressable accessibilityRole="button" style={styles.small} onPress={() => setAudio(null)}><Text style={styles.removeText}>{t('edit.audio.remove')}</Text></Pressable>
+                    </View>
+                ) : (
+                    <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => setPickingSound((x) => !x)}>
+                        <Text style={styles.secondaryText}>{t('edit.audio.add')}</Text>
+                    </Pressable>
+                )}
+                {pickingSound && !audio ? (
+                    sounds.length === 0 ? (
+                        <Text style={styles.muted}>{t('edit.audio.none')}</Text>
+                    ) : (
+                        sounds.slice(0, 30).map((j) => (
+                            <Pressable key={j.job_id} accessibilityRole="button" style={styles.row} onPress={() => { setAudio(newAudio({ jobId: j.job_id, label: names.current.get(j.job_id) ?? t('edit.untitled') })); setPickingSound(false); }}>
                                 <Text style={styles.name}>{names.current.get(j.job_id)}</Text>
                                 <Text style={styles.muted}>{new Date(j.created_at).toLocaleDateString()}</Text>
                             </Pressable>

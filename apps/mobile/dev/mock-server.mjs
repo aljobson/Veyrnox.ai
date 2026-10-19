@@ -431,6 +431,12 @@ createServer(async (req, res) => {
     if (path === '/api/v1/cinema/audience' && req.method === 'POST') return send(res, 200, { ok: true });
     if (path === '/api/v1/reports' && req.method === 'POST') return send(res, 200, { replayed: false });
 
+    if (path === '/api/v1/help' && req.method === 'POST') {
+        const q = String(body.question || '').trim();
+        if (!q || q.length > 500) return send(res, 400, { error: 'invalid_question' });
+        const credits = /credit|balance|cost|price/i.test(q);
+        return send(res, 200, { plan: { message: credits ? 'Your balance is in the credits chip. Every paid action shows its price first.' : 'Open Create, pick a model and describe what you want. The price shows before you start.', target: credits ? 'nav.credits' : 'nav.create', action: 'show_target' } });
+    }
     if (path === '/api/v1/chat/models') return send(res, 200, { models: CHAT_MODELS });
     // Personas and folders (stateful), with the real routes' limits and error codes.
     const count = (fid) => state.threads.filter((t) => t.folder_id === fid).length;
@@ -482,8 +488,18 @@ createServer(async (req, res) => {
             if (body.folder_id !== null && !state.folders.some((f) => f.id === body.folder_id)) return send(res, 404, { error: 'folder_not_found' });
             t.folder_id = body.folder_id; return send(res, 200, { ok: true, folder_id: t.folder_id });
         }
+        if ('title' in body || 'pinned' in body) {
+            if ('title' in body) { const name = typeof body.title === 'string' ? body.title.trim() : ''; if (!name || name.length > 120) return send(res, 400, { error: 'invalid_title' }); t.title = name; }
+            if ('pinned' in body) { if (typeof body.pinned !== 'boolean') return send(res, 400, { error: 'invalid_pinned' }); t.pinned = body.pinned; }
+            return send(res, 200, { thread: t });
+        }
         if (typeof body.system_prompt === 'string') { t.system_prompt = body.system_prompt; if (!t.title) t.title = 'Chat with a persona'; return send(res, 200, { ok: true }); }
         return send(res, 400, { error: 'invalid_body' });
+    }
+    // Closing a send by its key (ADR-0067 amendment 11): the mock never holds a job for a stopped send, so it is closed.
+    if (path === '/api/v1/chat/sends/close' && req.method === 'POST') {
+        if (!/^vx-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(String(body.idempotency_key))) return send(res, 400, { error: 'invalid_key' });
+        return send(res, 200, { closed: true });
     }
     if (path === '/api/v1/chat/threads' && req.method === 'GET') return send(res, 200, { threads: state.threads });
     if (path === '/api/v1/chat/threads' && req.method === 'POST') {
@@ -500,8 +516,8 @@ createServer(async (req, res) => {
         // Priced like lib/chat.js replyPrice: the catalog base plus the extra for each option chosen; an option the model does not offer is refused.
         const model = CHAT_MODELS.find((x) => x.id === t.model_id) ?? CHAT_MODELS[0];
         const chosen = body.options ?? {};
-        if ((chosen.thinking && !model.options.thinking) || (chosen.web && !model.options.web)) { res.writeHead(400, { 'content-type': 'application/json' }); return res.end(JSON.stringify({ error: 'option_unavailable' })); }
-        const price = model.credits_per_reply + (chosen.thinking ? model.options.thinking.extra_credits : 0) + (chosen.web ? model.options.web.extra_credits : 0);
+        if ((chosen.thinking && !model.options.thinking) || (chosen.web && !model.options.web) || (Array.isArray(body.attachments) && body.attachments.length && !model.options.images)) { res.writeHead(400, { 'content-type': 'application/json' }); return res.end(JSON.stringify({ error: 'option_unavailable' })); }
+        const price = model.credits_per_reply + (chosen.thinking ? model.options.thinking.extra_credits : 0) + (chosen.web ? model.options.web.extra_credits : 0) + (Array.isArray(body.attachments) && body.attachments.length ? (model.options.images?.extra_credits ?? 0) : 0);
         res.writeHead(200, { 'content-type': 'text/event-stream' });
         const ev = (e, d) => res.write(`event: ${e}\ndata: ${JSON.stringify(d)}\n\n`);
         state.balance -= price;
