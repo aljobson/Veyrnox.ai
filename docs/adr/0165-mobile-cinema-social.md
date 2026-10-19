@@ -26,3 +26,9 @@
 ## Not proved
 
 Jest and the mock only. No run against a server with the switches on; the shapes come from the route source. No device.
+
+## Slice 3 addendum: share signal, My List, Continue watching
+
+- A completed share from a title page posts `{action:'share', content_id, kind:'share'}` to `POST /api/v1/cinema/audience` (`audience` switch, off in production). It is best effort and silent: a closed switch, no connection or no profile is no signal and never affects the share. Dismissing the sheet records nothing; `kind:'copy'` has no phone path because the share sheet does not say a copy happened.
+- **My List** is the Saved tab: the retention routes have one saved list per person and the web calls it Saved, so there is no separate My List.
+- **Continue watching is not built.** The retention routes hold saved titles and follows only, and the audience route accepts watch progress but has no read path, so the server has nothing to resume from. It needs a read route for a person's progress (a server change, not made here); until then the phone's own resume is the playback screen's.

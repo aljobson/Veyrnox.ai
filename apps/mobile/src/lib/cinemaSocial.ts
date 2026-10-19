@@ -227,3 +227,17 @@ export async function castChoice(api: Pick<ApiClient, 'request'>, pollId: string
     if (!isUuid(pollId) || !isUuid(optionId) || !isUuid(key)) throw new ApiError(400, 'invalid_choice');
     await post(api, '/api/v1/cinema/story-choices', key, { poll_id: pollId, option_id: optionId });
 }
+
+// ---- Audience: a share (POST /api/v1/cinema/audience, action "share") ----
+
+// Tells Cinema a title was shared, for its audience counts (CINEMA_AUDIENCE_ENABLED, off in production). Best effort: it
+// never blocks or fails the share, and a closed switch, an offline phone or a missing profile is simply no signal.
+export async function recordShare(api: Pick<ApiClient, 'request'>, contentId: string, key: string): Promise<boolean> {
+    if (!isUuid(contentId) || !isUuid(key)) return false;
+    try {
+        await post(api, '/api/v1/cinema/audience', key, { action: 'share', content_id: contentId, kind: 'share' });
+        return true;
+    } catch {
+        return false;
+    }
+}

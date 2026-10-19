@@ -1,7 +1,9 @@
+import * as Crypto from 'expo-crypto';
 import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { recordShare } from '../../../lib/cinemaSocial';
 import { SaveFollow } from '../../../components/cinema/SaveFollow';
 import { VotePolls } from '../../../components/cinema/VotePolls';
 import { useAuth } from '../../../auth/AuthProvider';
@@ -54,7 +56,10 @@ export default function CinemaTitlePage() {
     const share = () => {
         const url = titleShareUrl(id);
         if (!url || !detail) return;
-        void Share.share({ message: `${detail.title.title}\n${url}`, url }).catch(() => undefined);
+        // Only a completed share counts toward the audience; dismissing the sheet records nothing.
+        void Share.share({ message: `${detail.title.title}\n${url}`, url })
+            .then((r) => { if (r.action === Share.sharedAction) void recordShare(api, id, Crypto.randomUUID()); })
+            .catch(() => undefined);
     };
     const watch = (contentId: string, title: string) => router.push({ pathname: '/cinema/watch/[id]', params: { id: contentId, title } });
     const report = () => router.push({ pathname: '/report', params: { kind: 'cinema_title', id } });
