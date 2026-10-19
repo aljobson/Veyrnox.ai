@@ -437,7 +437,7 @@ passkey wallet recovery) lives in `VEYRNOX/veyrnox` — never in here.
 
 ### Issue tracker
 
-GitHub Issues on `aljobson/Veyrnox.ai` via `gh` (never the `upstream` fork). See `docs/agents/issue-tracker.md`.
+GitHub Issues on `aljobson/Veyrnox.ai` via `gh` (never an `upstream` remote). See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 

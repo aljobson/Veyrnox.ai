@@ -23,7 +23,7 @@ test('the portrait always asks for an original adult, then the traits, then the 
     assert.ok(out.endsWith(', female, deer antlers on head, anime art style, waving at the camera'));
 });
 
-test('origin options use neutral heritage wording, not upstream\'s supermodel phrasing', () => {
+test('origin options use neutral heritage wording, not stereotyped phenotype phrasing', () => {
     const origin = CHARACTER_GROUPS.find((g) => g.id === 'ethnicity_origin_base');
     for (const [, phrase] of origin.options) assert.doesNotMatch(phrase, /supermodel|idol|phenotype/i, phrase);
 });
