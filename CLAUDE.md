@@ -203,6 +203,10 @@ developer surface is `/api/v1/developer/*` and requires a verified OAuth
     `client: "mobile"`; answers a 302 to the constant `ai.veyrnox.app://social/callback`,
     forwarding only a well-formed `code` and our signed `state` for a known OAuth
     network. It reads no identity header and has no open target.
+  - `/api/status` — anonymous, read-only, no-store: one word (`ok`, `degraded`, `unknown`) from a shared
+    probe of the database (`lib/upstreamStatus.js`, ADR-0160). Feeds the outage banner on the site and in the
+    mobile app. It reads no identity header, lives outside `/api/v1` so it answers when sign-in cannot be
+    verified, and never probes more than once per 15 s per isolate.
   - `/api/catalog`, `/api/credit-packs`, `/api/cinema/titles[/:id]`, `/api/cinema/posters/:id`,
     `/api/popular-templates`, `/api/presets` — anonymous, read-only, cached public data
     (prices, packs, published titles, ranked template ids, the template gallery priced
