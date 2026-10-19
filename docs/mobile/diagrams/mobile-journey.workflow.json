@@ -1,0 +1,271 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Veyrnox mobile: first launch to a live post",
+    "output": "mobile-journey.html",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "get-started",
+        "label": "Get started",
+        "focus": [
+          "intro",
+          "signin",
+          "review"
+        ],
+        "note": "Intro and preview are not built yet. Store review needs a review account."
+      },
+      {
+        "id": "make",
+        "label": "Make something",
+        "focus": [
+          "explore",
+          "collage",
+          "create",
+          "job",
+          "result"
+        ],
+        "note": "Presets are video only today; image and audio prompts are still to add."
+      },
+      {
+        "id": "post",
+        "label": "Edit and post",
+        "focus": [
+          "result",
+          "edit",
+          "publish",
+          "redirects"
+        ],
+        "note": "Connecting an account waits on the provider redirect addresses."
+      }
+    ],
+    "legend": {
+      "mode": "hidden"
+    },
+    "viewBox": [
+      1000,
+      528
+    ]
+  },
+  "lanes": [
+    {
+      "id": "phone",
+      "label": "Phone app"
+    },
+    {
+      "id": "server",
+      "label": "Server"
+    },
+    {
+      "id": "owner",
+      "label": "Owner steps",
+      "variant": "exception"
+    }
+  ],
+  "mainPath": [
+    "intro",
+    "signin",
+    "explore",
+    "create",
+    "result",
+    "publish"
+  ],
+  "nodes": [
+    {
+      "id": "intro",
+      "lane": "phone",
+      "col": 0,
+      "type": "frontend",
+      "label": "First run",
+      "sublabel": "missing: N2, N3"
+    },
+    {
+      "id": "signin",
+      "lane": "phone",
+      "col": 1,
+      "type": "frontend",
+      "label": "Sign in",
+      "sublabel": "built"
+    },
+    {
+      "id": "explore",
+      "lane": "phone",
+      "col": 2,
+      "type": "frontend",
+      "label": "Explore",
+      "sublabel": "prompt collage; N4"
+    },
+    {
+      "id": "create",
+      "lane": "phone",
+      "col": 3,
+      "type": "frontend",
+      "label": "Create",
+      "sublabel": "built; options PR"
+    },
+    {
+      "id": "result",
+      "lane": "phone",
+      "col": 4,
+      "type": "frontend",
+      "label": "Result",
+      "sublabel": "merged: N5"
+    },
+    {
+      "id": "publish",
+      "lane": "phone",
+      "col": 5,
+      "type": "frontend",
+      "label": "Publish",
+      "sublabel": "built"
+    },
+    {
+      "id": "job",
+      "lane": "server",
+      "col": 3,
+      "type": "backend",
+      "label": "Generation job",
+      "sublabel": "built; refund on failure",
+      "width": 120
+    },
+    {
+      "id": "edit",
+      "lane": "server",
+      "col": 4,
+      "type": "backend",
+      "label": "Quick edit",
+      "sublabel": "built; server render",
+      "width": 100
+    },
+    {
+      "id": "review",
+      "lane": "owner",
+      "col": 1,
+      "type": "external",
+      "label": "Review account",
+      "sublabel": "owner step: sandbox",
+      "width": 130
+    },
+    {
+      "id": "redirects",
+      "lane": "owner",
+      "col": 5,
+      "type": "external",
+      "label": "Provider redirects",
+      "sublabel": "owner step: 4 networks",
+      "width": 150
+    },
+    {
+      "id": "collage",
+      "lane": "server",
+      "col": 2,
+      "type": "backend",
+      "label": "Prompt collage",
+      "sublabel": "video only today",
+      "width": 110
+    }
+  ],
+  "edges": [
+    {
+      "from": "intro",
+      "to": "signin",
+      "role": "main"
+    },
+    {
+      "from": "signin",
+      "to": "explore",
+      "role": "main"
+    },
+    {
+      "from": "explore",
+      "to": "create",
+      "role": "main"
+    },
+    {
+      "from": "create",
+      "to": "result",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "from": "result",
+      "to": "publish",
+      "role": "main",
+      "label": "Publish",
+      "variant": "emphasis"
+    },
+    {
+      "from": "create",
+      "to": "job",
+      "label": "run",
+      "role": "branch"
+    },
+    {
+      "from": "result",
+      "to": "edit",
+      "label": "Edit",
+      "role": "branch"
+    },
+    {
+      "from": "review",
+      "to": "signin",
+      "label": "store review",
+      "role": "branch",
+      "variant": "dashed"
+    },
+    {
+      "from": "redirects",
+      "to": "publish",
+      "label": "needed to connect",
+      "role": "branch",
+      "variant": "dashed"
+    },
+    {
+      "from": "explore",
+      "to": "collage",
+      "label": "presets",
+      "role": "branch"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "violet",
+      "title": "To add",
+      "items": [
+        "Image and audio prompt categories",
+        "Collage filter by type and category"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Needs you",
+      "items": [
+        "Provider redirect addresses",
+        "Sandbox tester, review account, flags"
+      ]
+    }
+  ],
+  "phases": [
+    {
+      "id": "start",
+      "label": "Get started",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "make",
+      "label": "Make something",
+      "fromCol": 2,
+      "toCol": 3,
+      "variant": "emphasis"
+    },
+    {
+      "id": "ship",
+      "label": "Edit and post",
+      "fromCol": 4,
+      "toCol": 5,
+      "variant": "dashed"
+    }
+  ]
+}
