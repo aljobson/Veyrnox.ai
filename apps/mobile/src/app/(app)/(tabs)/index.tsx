@@ -1,82 +1,154 @@
-import { useCallback, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Link, Stack, useFocusEffect } from 'expo-router';
+import { Image } from 'expo-image';
+import { Link, useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
-import { useBilling } from '../../../billing/BillingProvider';
-import { Logo } from '../../../components/Logo';
-import { StaleNote } from '../../../components/StaleNote';
-import { appCache, getCacheUser } from '../../../lib/appCache';
-import { POLICIES, type CacheMeta } from '../../../lib/cache';
-import { observe } from '../../../lib/network';
-import type { Balance } from '../../../lib/api';
+import { selectedState, touchTarget } from '../../../lib/a11y';
+import { ALL_CATEGORIES, categoriesOf, filterByCategory, firstModelFor, pickUp, promptHref, recentCreations } from '../../../lib/explore';
+import { t } from '../../../lib/i18n';
+import { fetchCatalogCached, mediaApi, type CatalogModel, type Job, type Kind } from '../../../lib/media';
+import { fetchPresets, presetHref, presetPrice, type Preset } from '../../../lib/presets';
 import { colors } from '../../../theme';
-import { plural, t } from '../../../lib/i18n';
-import { touchTarget } from '../../../lib/a11y';
 
-export default function Home() {
+// How many templates the home shows; the rest are on the Templates screen.
+const SHOWN = 12;
+const RECENT = 6;
+
+const titleCase = (s: string) => s.charAt(0) + s.slice(1).toLowerCase();
+
+// Explore is the home: say what to make, or start from a template, or pick up what you were making.
+export default function Explore() {
     const { api } = useAuth();
-    const { status: billing } = useBilling();
-    const [balance, setBalance] = useState<Balance | null>(null);
-    const [failed, setFailed] = useState(false);
-    const [saved, setSaved] = useState<CacheMeta | null>(null);
+    const router = useRouter();
+    const [prompt, setPrompt] = useState('');
+    const [catalog, setCatalog] = useState<CatalogModel[]>([]);
+    const [note, setNote] = useState<string | null>(null);
+    const [presets, setPresets] = useState<Preset[] | null>(null);
+    const [presetsFailed, setPresetsFailed] = useState(false);
+    const [category, setCategory] = useState(ALL_CATEGORIES);
+    const [jobs, setJobs] = useState<Job[]>([]);
 
-    const load = useCallback(async () => {
-        setFailed(false);
-        try {
-            // A saved balance only fills the screen while the real one loads or when offline. Create still asks the server.
-            const out = await appCache.swr({
-                policy: POLICIES.balance,
-                userId: getCacheUser(),
-                fetcher: () => observe(api.getBalance()),
-                onData: (value) => setBalance(value),
-            });
-            setSaved(out.meta);
-        } catch {
-            setFailed(true);
-        }
-    }, [api]);
+    useEffect(() => {
+        void fetchCatalogCached((models) => setCatalog(models)).catch(() => {});
+    }, []);
 
-    // On every return to Home, so a purchase or a creation made elsewhere shows at once.
+    const loadPresets = useCallback(() => {
+        setPresetsFailed(false);
+        fetchPresets().then(setPresets).catch(() => setPresetsFailed(true));
+    }, []);
+    useEffect(loadPresets, [loadPresets]);
+
+    // On every return, so a creation started elsewhere shows at once.
     useFocusEffect(
         useCallback(() => {
-            void load();
-        }, [load]),
+            mediaApi(api)
+                .listJobs()
+                .then((page) => setJobs(page.jobs))
+                .catch(() => {});
+        }, [api]),
     );
+
+    const categories = useMemo(() => categoriesOf(presets ?? []), [presets]);
+    const shown = useMemo(() => filterByCategory(presets ?? [], category).slice(0, SHOWN), [presets, category]);
+    const resume = useMemo(() => pickUp(jobs), [jobs]);
+    const recent = useMemo(() => recentCreations(jobs, RECENT), [jobs]);
+
+    function make(kind: Kind) {
+        const model = firstModelFor(catalog, kind);
+        if (!model) return setNote(t('explore.noModel'));
+        setNote(null);
+        router.push(promptHref(model.id, prompt));
+    }
+
+    const empty = prompt.trim().length === 0;
+    const label = (j: Job) => j.label || t('edit.untitled');
 
     return (
         <ScrollView style={styles.scroll} contentContainerStyle={styles.screen} keyboardShouldPersistTaps="handled">
-            <Stack.Screen options={{ headerTitle: () => <Logo size={24} /> }} />
-            <Text style={styles.label}>{t('label.Credits')}</Text>
-            {balance ? (
-                <>
-                    <Text style={styles.value} accessibilityLabel={plural('home.credits', balance.balance)}>{balance.balance}</Text>
-                    {balance.free_credits > 0 ? (
-                        <Text style={styles.muted}>{balance.free_credits} of them are free credits</Text>
-                    ) : null}
-                    <StaleNote meta={saved} />
-                </>
-            ) : failed ? (
-                <Pressable accessibilityRole="button" style={touchTarget} onPress={load}>
-                    <Text style={styles.error}>{t('home.balanceError')}</Text>
+            <TextInput
+                accessibilityLabel={t('explore.promptLabel')}
+                placeholder={t('explore.promptPlaceholder')}
+                placeholderTextColor={colors.muted}
+                style={styles.prompt}
+                multiline
+                value={prompt}
+                onChangeText={setPrompt}
+            />
+            <View style={styles.row}>
+                <Pressable accessibilityRole="button" accessibilityState={{ disabled: empty }} disabled={empty} style={[styles.make, empty && styles.off]} onPress={() => make('image')}>
+                    <Text style={styles.makeText}>{t('explore.makeImage')}</Text>
                 </Pressable>
-            ) : (
+                <Pressable accessibilityRole="button" accessibilityState={{ disabled: empty }} disabled={empty} style={[styles.make, empty && styles.off]} onPress={() => make('video')}>
+                    <Text style={styles.makeText}>{t('explore.makeVideo')}</Text>
+                </Pressable>
+            </View>
+            {note ? <Text style={styles.note} accessibilityLiveRegion="polite">{note}</Text> : null}
+
+            {resume ? (
+                <Pressable
+                    accessibilityRole="button"
+                    style={styles.resume}
+                    onPress={() => router.push({ pathname: '/job/[id]', params: { id: resume.job.job_id } })}
+                >
+                    <Text style={styles.resumeText}>{t(resume.kind === 'making' ? 'explore.pickUp.making' : 'explore.pickUp.latest', { label: label(resume.job) })}</Text>
+                </Pressable>
+            ) : null}
+
+            <View style={styles.headerRow}>
+                <Text style={styles.heading} accessibilityRole="header">{t('explore.templates')}</Text>
+                <Link href="/create/presets" asChild>
+                    <Pressable accessibilityRole="button" style={touchTarget}>
+                        <Text style={styles.link}>{t('explore.seeAll')}</Text>
+                    </Pressable>
+                </Link>
+            </View>
+            {presetsFailed ? (
+                <Pressable accessibilityRole="button" style={touchTarget} onPress={loadPresets}>
+                    <Text style={styles.error}>{t('explore.templatesError')}</Text>
+                </Pressable>
+            ) : presets === null ? (
                 <ActivityIndicator color={colors.accent} />
+            ) : (
+                <>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+                        {categories.map((c) => (
+                            <Pressable
+                                key={c}
+                                accessibilityRole="button"
+                                accessibilityState={selectedState(c === category)}
+                                style={[styles.chip, c === category && styles.chipOn, touchTarget]}
+                                onPress={() => setCategory(c)}
+                            >
+                                <Text style={[styles.chipText, c === category && styles.chipTextOn]}>{c === ALL_CATEGORIES ? t('explore.categoryAll') : titleCase(c)}</Text>
+                            </Pressable>
+                        ))}
+                    </ScrollView>
+                    <View style={styles.grid}>
+                        {shown.map((p) => (
+                            <Pressable key={p.id} accessibilityRole="button" accessibilityLabel={`${p.title}, ${presetPrice(p)}`} style={styles.card} onPress={() => router.push(presetHref(p))}>
+                                {p.posterUrl ? <Image source={{ uri: p.posterUrl }} style={styles.poster} contentFit="cover" accessibilityIgnoresInvertColors /> : <View style={styles.poster} />}
+                                <Text style={styles.cardTitle} numberOfLines={2}>{p.title}</Text>
+                                <Text style={styles.cardPrice}>{presetPrice(p)}</Text>
+                            </Pressable>
+                        ))}
+                    </View>
+                </>
             )}
-            <Link href="/create" asChild>
-                <Pressable accessibilityRole="button" style={styles.primary}>
-                    <Text style={styles.primaryText}>{t('label.Create')}</Text>
-                </Pressable>
-            </Link>
-            <Link href="/library" asChild>
-                <Pressable accessibilityRole="button" style={styles.secondary}>
-                    <Text style={styles.secondaryText}>{t('label.Library')}</Text>
-                </Pressable>
-            </Link>
-            <Link href="/cinema" asChild>
-                <Pressable accessibilityRole="button" style={styles.secondary}>
-                    <Text style={styles.secondaryText}>{t('home.cinema')}</Text>
-                </Pressable>
-            </Link>
+
+            {recent.length > 0 ? (
+                <>
+                    <Text style={styles.heading} accessibilityRole="header">{t('explore.recent')}</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+                        {recent.map((j) => (
+                            <Pressable key={j.job_id} accessibilityRole="button" style={[styles.recent, touchTarget]} onPress={() => router.push({ pathname: '/job/[id]', params: { id: j.job_id } })}>
+                                <Text style={styles.recentText} numberOfLines={1}>{label(j)}</Text>
+                            </Pressable>
+                        ))}
+                    </ScrollView>
+                </>
+            ) : null}
+
+            <Text style={styles.heading} accessibilityRole="header">{t('explore.more')}</Text>
             <Link href="/edit" asChild>
                 <Pressable accessibilityRole="button" style={styles.secondary}>
                     <Text style={styles.secondaryText}>{t('edit.title')}</Text>
@@ -92,40 +164,37 @@ export default function Home() {
                     <Text style={styles.secondaryText}>{t('home.chat')}</Text>
                 </Pressable>
             </Link>
-            {billing !== 'off' ? (
-                <>
-            <Link href="/credits" asChild>
-                <Pressable accessibilityRole="button" style={styles.secondary}>
-                    <Text style={styles.secondaryText}>{t('pricing.packs.buy')}</Text>
-                </Pressable>
-            </Link>
-            <Link href="/publish" asChild>
-                <Pressable accessibilityRole="button" style={styles.secondary}>
-                    <Text style={styles.secondaryText}>{t('publish.plan.colPlan')}</Text>
-                </Pressable>
-            </Link>
-                </>
-            ) : null}
-            <Link href="/account" asChild>
-                <Pressable accessibilityRole="button" style={styles.signOut}>
-                    <Text style={styles.signOutText}>{t('home.account')}</Text>
-                </Pressable>
-            </Link>
         </ScrollView>
     );
 }
 
 const styles = StyleSheet.create({
     scroll: { flex: 1, backgroundColor: colors.background },
-    screen: { flexGrow: 1, backgroundColor: colors.background, padding: 24, gap: 8 },
-    label: { color: colors.muted, fontSize: 14 },
-    value: { color: colors.money, fontSize: 48, fontWeight: '700' },
-    muted: { color: colors.muted },
+    screen: { padding: 16, gap: 12 },
+    prompt: { minHeight: 96, textAlignVertical: 'top', color: colors.text, fontSize: 16, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 14 },
+    row: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    make: { flexGrow: 1, minHeight: 44, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.accent, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 16 },
+    makeText: { color: colors.accentInk, fontWeight: '700', fontSize: 16 },
+    off: { opacity: 0.4 },
+    note: { color: colors.body },
+    resume: { minHeight: 44, justifyContent: 'center', backgroundColor: colors.surface, borderColor: colors.accent, borderWidth: 1, borderRadius: 12, padding: 14 },
+    resumeText: { color: colors.text, fontWeight: '600' },
+    headerRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
+    heading: { color: colors.text, fontSize: 18, fontWeight: '700', marginTop: 8 },
+    link: { color: colors.accent, fontSize: 15 },
     error: { color: colors.danger },
-    primary: { marginTop: 24, backgroundColor: colors.accent, borderRadius: 12, paddingVertical: 16, alignItems: 'center' },
-    primaryText: { color: colors.accentInk, fontSize: 16, fontWeight: '700' },
-    secondary: { marginTop: 12, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, paddingVertical: 16, alignItems: 'center' },
+    chips: { flexDirection: 'row', gap: 8, paddingVertical: 2 },
+    chip: { paddingHorizontal: 14, borderRadius: 10, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, justifyContent: 'center' },
+    chipOn: { backgroundColor: colors.accent, borderColor: colors.accent },
+    chipText: { color: colors.body },
+    chipTextOn: { color: colors.accentInk, fontWeight: '600' },
+    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    card: { width: '48%', flexGrow: 1, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, overflow: 'hidden', paddingBottom: 10, gap: 4 },
+    poster: { width: '100%', aspectRatio: 1, backgroundColor: colors.border },
+    cardTitle: { color: colors.text, fontWeight: '600', paddingHorizontal: 10, paddingTop: 6 },
+    cardPrice: { color: colors.money, paddingHorizontal: 10 },
+    recent: { paddingHorizontal: 14, borderRadius: 10, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, justifyContent: 'center', maxWidth: 220 },
+    recentText: { color: colors.text },
+    secondary: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, paddingVertical: 16, alignItems: 'center' },
     secondaryText: { color: colors.text, fontSize: 16, fontWeight: '600' },
-    signOut: { marginTop: 'auto', paddingVertical: 14, alignItems: 'center' },
-    signOutText: { color: colors.muted },
 });

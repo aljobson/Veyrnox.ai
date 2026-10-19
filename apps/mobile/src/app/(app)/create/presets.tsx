@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, SectionList, StyleSheet, Text, View } from 'react-native';
-import { fetchPresets, groupByCategory, presetPrice, type Preset } from '../../../lib/presets';
+import { fetchPresets, groupByCategory, presetHref, presetPrice, type Preset } from '../../../lib/presets';
 import { colors } from '../../../theme';
 
 export default function Templates() {
@@ -17,7 +17,7 @@ export default function Templates() {
     const sections = useMemo(() => groupByCategory(presets ?? []).map((g) => ({ title: g.category, data: g.items })), [presets]);
 
     function open(p: Preset) {
-        router.push({ pathname: '/create/[modelId]', params: { modelId: p.modelId, prompt: p.prompt, ...(p.durationSeconds ? { duration: String(p.durationSeconds) } : {}) } });
+        router.push(presetHref(p));
     }
 
     return (
