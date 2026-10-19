@@ -91,6 +91,9 @@ export default function CinemaTitlePage() {
                     </Pressable>
                 ))
             )}
+            <Pressable accessibilityRole="button" style={styles.report} onPress={() => router.push({ pathname: '/cinema/comments', params: { id: title.id } })}>
+                <Text style={styles.muted}>{t('comments.title')}</Text>
+            </Pressable>
             <Pressable accessibilityRole="button" style={styles.report} onPress={report}>
                 <Text style={styles.muted}>Report this title</Text>
             </Pressable>
