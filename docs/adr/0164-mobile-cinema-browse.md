@@ -1,4 +1,4 @@
-# ADR-0152: Mobile Cinema browse, series page, locked state and share (parity P6, viewer slice 1)
+# ADR-0164: Mobile Cinema browse, series page, locked state and share (parity P6, viewer slice 1)
 
 **Status:** Proposed 2026-10-19. First of three viewer slices; creator tools, paid unlocks, the Pass and credit subscriptions are not in this wave (ADR-0143).
 

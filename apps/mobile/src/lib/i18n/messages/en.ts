@@ -416,7 +416,7 @@ const en = {
     'chat.sendPrice.other': 'Send, {count} credits',
     'chat.sendPriceShort.one': '{count} credit',
     'chat.sendPriceShort.other': '{count} credits',
-    // --- Cinema browse (ADR-0152, parity P6 slice 1) ---
+    // --- Cinema browse (ADR-0164, parity P6 slice 1) ---
     'cinemaBrowse.tab.watch': 'Watch',
     'cinemaBrowse.tab.series': 'Series',
     'cinemaBrowse.tab.vote': 'Vote',

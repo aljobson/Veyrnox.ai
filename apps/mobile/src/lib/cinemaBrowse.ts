@@ -1,7 +1,7 @@
 import { API_BASE, ApiError, type ApiClient } from './api';
 import { parseTitle, type CinemaTitle, type Episode } from './cinema';
 
-// Cinema browse (ADR-0152): the Series and Vote lists, the 12 category chips, the entitlement read and the share link.
+// Cinema browse (ADR-0164): the Series and Vote lists, the 12 category chips, the entitlement read and the share link.
 // The server is the authority on every rule. A closed switch is an answer, not a failure: the screen says so.
 
 export const CATEGORIES = [
