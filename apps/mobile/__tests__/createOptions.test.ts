@@ -93,9 +93,9 @@ describe('price including count and free runs', () => {
 });
 
 describe('draft', () => {
-    const draft = { v: SAVED_DRAFT_VERSION, modelId: 'm', prompt: 'a cat', duration: null, aspect: '1:1', count: 2, seed: '7', negative: 'blur', voice: '', audioSeconds: '', cinemaOn: false, cinema: DEFAULT_CINEMA } as const;
+    const draft = { v: SAVED_DRAFT_VERSION, modelId: 'm', prompt: 'a cat', duration: null, aspect: '1:1', count: 2, seed: '7', negative: 'blur', voice: '', audioSeconds: '', cinemaOn: false, cinema: DEFAULT_CINEMA, characterOn: false, character: {} } as const;
     test('a draft saved before the camera and voice reads back with their defaults', () => {
-        const { voice, audioSeconds, cinemaOn, cinema, ...old } = draft;
+        const { voice, audioSeconds, cinemaOn, cinema, characterOn, character, ...old } = draft;
         expect(parseDraft(old, 'm')).toEqual(draft);
     });
     test('reads back only a well formed draft for the same model', () => {

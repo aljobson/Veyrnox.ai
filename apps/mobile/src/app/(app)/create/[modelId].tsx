@@ -7,11 +7,13 @@ import { CONSENT_DECLINED_MESSAGE } from '../../../lib/aiConsent';
 import { ApiError } from '../../../lib/api';
 import { OFFLINE_PAID_MESSAGE, OfflineError } from '../../../lib/network';
 import { CameraPanel } from '../../../components/CameraPanel';
+import { CharacterPanel } from '../../../components/CharacterPanel';
 import { CreateOptions, type OptionValues } from '../../../components/CreateOptions';
 import { SourcePicker } from '../../../components/SourcePicker';
 import { DEFAULT_CINEMA, buildCinemaPrompt, sanitizeCinema, type Cinema } from '../../../lib/cinemaCamera';
 import { clearDraft, loadDraft, saveDraft } from '../../../lib/createDraftStore';
 import { SAVED_DRAFT_VERSION, audioLengthInvalid, batchCost, freeLeftFor, hasAnyOption, imageCount, inputsForIndex, optionsFor, seedIsInvalid, settingsInputs, takesImageCount, voiceIsMissing } from '../../../lib/createOptions';
+import { buildCharacterPrompt, sanitizePicks, type Picks } from '../../../lib/oddlingsBuilder';
 import { useFreeLeft } from '../../../lib/useFreeLeft';
 import { estimateCredits, fetchCatalog, kindOf, mediaApi, promptRequired, textInput, type CatalogModel } from '../../../lib/media';
 import { selectedState } from '../../../lib/a11y';
@@ -37,6 +39,8 @@ export default function CreateWithModel() {
     const [opts, setOpts] = useState<OptionValues>({ aspect: null, count: 1, seed: '', negative: '', voice: '', audioSeconds: '' });
     const [cameraOn, setCameraOn] = useState(false);
     const [cinema, setCinema] = useState<Cinema>(DEFAULT_CINEMA);
+    const [characterOn, setCharacterOn] = useState(false);
+    const [character, setCharacter] = useState<Picks>({});
     const [restored, setRestored] = useState(false);
     const [note, setNote] = useState<string | null>(null);
     const freeMap = useFreeLeft();
@@ -70,6 +74,8 @@ export default function CreateWithModel() {
                         setOpts({ aspect: d.aspect && o.aspects.includes(d.aspect) ? d.aspect : base.aspect, count: imageCount(found, d.count), seed: d.seed, negative: d.negative, voice: d.voice ?? '', audioSeconds: d.audioSeconds ?? '' });
                         setCameraOn(d.cinemaOn === true);
                         setCinema(sanitizeCinema(d.cinema));
+                        setCharacterOn(d.characterOn === true);
+                        setCharacter(sanitizePicks(d.character));
                         setRestored(true);
                     } else setOpts(base);
                     draftReady.current = true;
@@ -83,15 +89,17 @@ export default function CreateWithModel() {
     useEffect(() => {
         if (!model || !draftReady.current) return;
         const id = setTimeout(() => {
-            saveDraft({ v: SAVED_DRAFT_VERSION, modelId: model.id, prompt, duration, aspect: opts.aspect, count: opts.count, seed: opts.seed, negative: opts.negative, voice: opts.voice, audioSeconds: opts.audioSeconds, cinemaOn: cameraOn, cinema }).catch(() => undefined);
+            saveDraft({ v: SAVED_DRAFT_VERSION, modelId: model.id, prompt, duration, aspect: opts.aspect, count: opts.count, seed: opts.seed, negative: opts.negative, voice: opts.voice, audioSeconds: opts.audioSeconds, cinemaOn: cameraOn, cinema, characterOn, character }).catch(() => undefined);
         }, 600);
         return () => clearTimeout(id);
-    }, [model, prompt, duration, opts, cameraOn, cinema]);
+    }, [model, prompt, duration, opts, cameraOn, cinema, characterOn, character]);
 
     const discardDraft = useCallback(() => {
         setPrompt('');
         setOpts((o) => ({ ...o, seed: '', negative: '', count: 1, voice: '', audioSeconds: '' }));
         setCameraOn(false);
+        setCharacterOn(false);
+        setCharacter({});
         setRestored(false);
         clearDraft().catch(() => undefined);
     }, []);
@@ -108,8 +116,11 @@ export default function CreateWithModel() {
     // The first `freeLeft` images of a batch are free today; the server decides, this words the button.
     const price = batchCost(unit, n, freeLeft);
     // The camera words go into the prompt for image and video models; the price and the model do not change.
+    const takesCharacter = kindOf(model.modality) === 'image' && textInput(model)?.key === 'prompt';
     const takesCamera = (kindOf(model.modality) === 'image' || isVideo) && textInput(model)?.key === 'prompt';
-    const text = takesCamera && cameraOn ? buildCinemaPrompt(prompt, cinema) : prompt.trim();
+    // Character first, then the camera, as on the web. Both only rewrite the prompt.
+    const withCharacter = takesCharacter && characterOn ? buildCharacterPrompt(prompt, character) : prompt.trim();
+    const text = takesCamera && cameraOn ? buildCinemaPrompt(withCharacter, cinema) : withCharacter;
     const slots = slotsFor(model);
     const sources = toSourceKeys(uploaded);
     const waiting = Object.values(sending).some(Boolean);
@@ -193,6 +204,7 @@ export default function CreateWithModel() {
                     </View>
                 ) : null}
                 {hasAnyOption(options) || takesImageCount(model) ? <CreateOptions options={options} values={opts} showCount={takesImageCount(model)} onChange={setOpts} /> : null}
+                {takesCharacter ? <CharacterPanel on={characterOn} picks={character} onToggle={setCharacterOn} onChange={setCharacter} /> : null}
                 {takesCamera ? <CameraPanel on={cameraOn} value={cinema} onToggle={setCameraOn} onChange={setCinema} /> : null}
                 <Text style={styles.price} accessibilityLiveRegion="polite">{costLine(price, n, freeLeft, unit)}</Text>
                 {error ? <Text style={styles.error}>{error}</Text> : null}

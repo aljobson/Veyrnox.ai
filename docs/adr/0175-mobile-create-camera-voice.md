@@ -1,4 +1,4 @@
-# ADR-0171: Mobile Cinema camera, voice description and audio length (parity plan P2)
+# ADR-0175: Mobile Cinema camera, voice description and audio length (parity plan P2)
 
 **Status:** Proposed 2026-10-19. Stacked on ADR-0153 (Create options, PR #1338): it extends the same form.
 

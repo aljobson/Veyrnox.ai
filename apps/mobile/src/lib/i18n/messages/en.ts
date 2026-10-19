@@ -578,7 +578,7 @@ const en = {
     'chat.sendPrice.other': 'Send, {count} credits',
     'chat.sendPriceShort.one': '{count} credit',
     'chat.sendPriceShort.other': '{count} credits',
-    // App-only: Cinema camera, voice and audio length in Create (ADR-0171, parity P2).
+    // App-only: Cinema camera, voice and audio length in Create (ADR-0175, parity P2).
     'cam.title': 'Cinema camera',
     'cam.camera': 'Camera',
     'cam.lens': 'Lens',
@@ -761,6 +761,9 @@ const en = {
     'oddlings.handoff.noPrice': 'Prices could not be loaded. Check your connection.',
     'oddlings.handoff.offline': 'You are offline. Nothing was opened and nothing was charged. Reconnect and try again.',
     'oddlings.sheet.share': 'Share this character',
+    // App-only: Character panel in Create (ADR-0176, parity P2).
+    'char.title': 'Character',
+    'char.help': 'Turns your choices into words in the prompt, so you can make the same original adult again. The model and the price do not change.',
 } as const;
 
 export default en;

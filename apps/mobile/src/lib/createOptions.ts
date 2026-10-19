@@ -1,4 +1,5 @@
 import { sanitizeCinema, type Cinema } from './cinemaCamera';
+import { sanitizePicks, type Picks } from './oddlingsBuilder';
 import { kindOf, type CatalogModel, type Kind } from './media';
 
 // ADR-0153: the web Create page's option set, as pure helpers. The catalog (`capabilities.inputs`) says which
@@ -148,11 +149,14 @@ export interface CreateDraft {
     readonly count: number;
     readonly seed: string;
     readonly negative: string;
-    // Added with the Cinema camera and voice (ADR-0171); a draft saved before them reads back without.
+    // Added with the Cinema camera and voice (ADR-0175); a draft saved before them reads back without.
     readonly voice?: string;
     readonly audioSeconds?: string;
     readonly cinemaOn?: boolean;
     readonly cinema?: Cinema;
+    // The Character panel (ADR-0176): on or off, and the traits chosen.
+    readonly characterOn?: boolean;
+    readonly character?: Picks;
 }
 
 // A saved draft is read back only if it is well formed and for this model. Files and keys are never saved: a file
@@ -175,6 +179,8 @@ export function parseDraft(raw: unknown, modelId: string): CreateDraft | null {
         audioSeconds: typeof d.audioSeconds === 'string' ? d.audioSeconds.slice(0, 4) : '',
         cinemaOn: d.cinemaOn === true,
         cinema: sanitizeCinema(d.cinema),
+        characterOn: d.characterOn === true,
+        character: sanitizePicks(d.character),
     };
 }
 
