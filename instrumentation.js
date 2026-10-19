@@ -24,6 +24,9 @@ export async function onRequestError(error, request, context) {
   // Error messages can contain provider output or user input. Preserve stack
   // locations for source maps, but replace the message and drop cause/data.
   const safe = sanitiseServerError(error);
+  // ADR-0170: the same scrubbed error goes to Sentry. worker-entry.js sets this hook; instrumentation.js must not
+  // import the SDK itself, because webpack bundles this file for runtimes that lack node:url (isolated-feature-qa).
+  globalThis.__veyrnoxCaptureException?.(safe);
   await captureRequestError(safe, request, context);
 }
 

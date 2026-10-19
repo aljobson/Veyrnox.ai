@@ -7,6 +7,7 @@ Phase-0 decision-support documents for the target architecture at `/Users/aljobs
 | ADR | Status | Summary | Blocks |
 |-----|--------|---------|--------|
 | [ADR-0166 — Mobile: Publish reports, PDF and slide download and share (parity plan P5)](0166-mobile-publish-reports.md) | **Proposed 2026-10-19** | Saved reports list; PDF and slides downloaded to the cache and shared; template editing not built |
+| [ADR-0171 — Mobile: Publish SmartLink and where a plan is managed (parity plan P5)](0171-mobile-publish-smartlink-plan-source.md) | **Proposed 2026-10-19** | SmartLink editor with share; Publish tab says where a plan is managed from the server's subscription source |
 | [ADR-0162 — Mobile: Publish calendar month, analytics range and compare, Unlock cards, draft approval (parity plan P5)](0162-mobile-publish-calendar-analytics-drafts.md) | **Proposed 2026-10-19** | Month view, analytics range and compare with followers chart, store-priced Unlock cards for free accounts, draft approve and discard with a confirm naming the networks |
 | [ADR-0165 — Mobile: Publish contacts (parity plan P5)](0165-mobile-publish-contacts.md) | **Proposed 2026-10-19** | Search, filter, and edit tags, subscription status and notes; add and CSV import not built |
 | [ADR-0170 — Mobile: Vey help panel (parity plan P3)](0170-mobile-vey-help-panel.md) | **Proposed 2026-10-19** | Ask Vey on the Help screen via /api/v1/help; Take me there only where the phone has the screen |
