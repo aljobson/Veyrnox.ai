@@ -1,10 +1,14 @@
+import { getT } from '../../../../lib/i18n/server';
 import { editorFeatureEnabled } from '../../../../lib/editorRuntimeFlags.mjs';
 import { SharedToolsFlagProvider } from '../../_components/editor/SharedToolsFlag';
 import { MultitrackFlagProvider } from '../../_components/editor/MultitrackFlag';
 import { CompletionFlagsProvider } from '../../_components/editor/CompletionFlags';
 import { notFound } from 'next/navigation';
 
-export const metadata = { title: 'Video editor', description: 'Cut, arrange and export a video in your browser.', robots: { index: false, follow: false } };
+export async function generateMetadata() {
+  const { t } = await getT();
+  return { title: t('label.Video editor'), description: t('app.editor.meta.description'), robots: { index: false, follow: false } };
+}
 export const dynamic = 'force-dynamic';
 
 // ADR-0080: the editor has no server API, so the route itself is what the flag closes. Read per request.

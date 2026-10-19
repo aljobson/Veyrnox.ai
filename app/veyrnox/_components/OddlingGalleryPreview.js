@@ -1,4 +1,6 @@
 'use client';
+import { useI18n } from '../../../components/I18nProvider';
+
 
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import styles from './OddlingGalleryPreview.module.css';
@@ -22,6 +24,7 @@ export function useGalleryMotionAllowed() {
 }
 
 function PuppetCanvas({ id, playing }) {
+  const { t } = useI18n();
   const canvas = useRef(null);
   const control = useRef(null);
   const requested = useRef(playing);
@@ -88,7 +91,7 @@ function PuppetCanvas({ id, playing }) {
       data-testid={`oddling-puppet-${id}`} data-rig-id={id}
       data-puppet-state={failed ? 'unavailable' : ready ? (playing ? 'running' : 'paused') : 'loading'}
       className={`${styles.canvas} ${ready ? styles.ready : ''}`} />
-    {failed && <span className={styles.fallback}>Static portrait · graphics preview unavailable</span>}
+    {failed && <span className={styles.fallback}>{t("app.oddlings.explore.fallback")}</span>}
   </>;
 }
 

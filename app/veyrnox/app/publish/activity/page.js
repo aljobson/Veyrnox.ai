@@ -1,4 +1,6 @@
 'use client';
+import { localeTag } from '../../../../../lib/i18n/locales.mjs';
+import { tOr, pluralKey } from '../../../../../lib/i18n/translate.mjs';
 import { useI18n } from '../../../../../components/I18nProvider';
 
 import { useEffect, useState, useSyncExternalStore } from 'react';
@@ -13,7 +15,6 @@ import { activityLabel, activityLoadError } from '../../../_lib/publishPresentat
 const currentAccount = () => getSession()?.user?.id || '';
 const noAccount = () => '';
 const button = 'rounded-full border border-vx-border px-4 py-2 text-sm font-bold';
-const time = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 
 export default function PublishActivityPage() {
   const { t } = useI18n();
@@ -21,14 +22,15 @@ export default function PublishActivityPage() {
   return <><AppNav /><Main className="mx-auto max-w-[1000px] px-4 py-10 sm:px-8">
     <nav aria-label={t("label.Publish")} className="mb-2 flex flex-wrap gap-4 text-sm"><Link href="/app/publish" className="text-vx-accent underline">Veyrnox.ai Publish</Link><Link href="/app/publish/team" className="text-vx-accent underline">{t("app.publish.nav.team")}</Link></nav>
     <h1 className="text-3xl font-black">{t("app.publish.nav.activity")}</h1>
-    <p className="mt-2 mb-4 text-sm text-vx-fg-muted">See who changed publishing settings, conversations, approvals and team access for this brand.</p>
+    <p className="mt-2 mb-4 text-sm text-vx-fg-muted">{t("app.publish.activity.help")}</p>
     {account && <BrandSwitcher />}
     {account ? <Activity key={account} /> : <button type="button" className={button} onClick={() => window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>{t("oauth.signIn")}</button>}
   </Main></>;
 }
 
 function Activity() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const time = new Intl.DateTimeFormat(localeTag(locale), { dateStyle: 'medium', timeStyle: 'short' });
   const [events, setEvents] = useState(null); const [error, setError] = useState(null);
   const [cursor, setCursor] = useState(null), [busy, setBusy] = useState(false), [notice, setNotice] = useState('');
   useEffect(() => { let active = true; listSocialActivity().then((result) => { if (active) { setEvents(result.events || []); setCursor(result.next_cursor); setNotice(result.notice || ''); } })
@@ -44,23 +46,28 @@ function Activity() {
     finally { setBusy(false); }
   }
   if (error && events === null) return <ActivityError error={error} boxed />;
-  if (events === null) return <p className="text-sm text-vx-fg-muted">Loading activity…</p>;
+  if (events === null) return <p className="text-sm text-vx-fg-muted">{t("app.publish.activity.loading")}</p>;
   return <div className="space-y-4">
-    {notice && <p role="status" className="text-sm text-vx-fg-muted">{notice}</p>}
-    {events.length === 0 ? <p className="rounded-2xl border border-vx-border p-5 text-sm text-vx-fg-muted">No brand activity has been recorded yet.</p> : <ol className="divide-y divide-vx-border rounded-2xl border border-vx-border">{events.map((event) => <li key={`${event.source}-${event.id}`} className="flex flex-wrap items-start justify-between gap-3 p-4">
-    <div><p className="font-bold">{activityLabel(event.action)}</p><p className="mt-1 break-all text-sm text-vx-fg-muted">{event.actor_email} · {event.source}</p></div>
+    {notice && <p role="status" className="text-sm text-vx-fg-muted">{activityNotice(t, locale, notice)}</p>}
+    {events.length === 0 ? <p className="rounded-2xl border border-vx-border p-5 text-sm text-vx-fg-muted">{t("app.publish.activity.empty")}</p> : <ol className="divide-y divide-vx-border rounded-2xl border border-vx-border">{events.map((event) => <li key={`${event.source}-${event.id}`} className="flex flex-wrap items-start justify-between gap-3 p-4">
+    <div><p className="font-bold">{tOr(t, `app.publish.activity.action.${event.action}`, locale === 'en' ? activityLabel(event.action) : t('app.publish.activity.unknown'))}</p><p className="mt-1 break-all text-sm text-vx-fg-muted">{event.actor_email} · {tOr(t, `app.publish.activity.source.${event.source}`, event.source)}</p></div>
     <time className="text-xs text-vx-fg-muted" dateTime={event.created_at}>{time.format(new Date(event.created_at))}</time>
   </li>)}</ol>}
     {error && <ActivityError error={error} />}
-    {cursor ? <button type="button" disabled={busy} className={`${button} disabled:opacity-50`} onClick={older}>{busy ? t("cinema.titlePage.loading") : 'Load older activity'}</button>
-      : events.length > 0 && !notice && <p className="text-sm text-vx-fg-muted">Showing all {events.length} recorded events.</p>}
+    {cursor ? <button type="button" disabled={busy} className={`${button} disabled:opacity-50`} onClick={older}>{busy ? t("cinema.titlePage.loading") : t("app.publish.activity.older")}</button>
+      : events.length > 0 && !notice && <p className="text-sm text-vx-fg-muted">{t(pluralKey(t, locale, 'app.publish.activity.count', events.length), { count: locale === 'en' ? events.length : events.length.toLocaleString(localeTag(locale)) })}</p>}
   </div>;
 }
 
 function ActivityError({ error, boxed = false }) {
   const { t } = useI18n();
   return <p role="alert" className={`text-sm text-vx-danger${boxed ? ' rounded-xl border border-vx-danger/40 p-4' : ''}`}>
-    {error.message}
+    {tOr(t, `app.publish.activity.error.${error.message}`, error.message)}
     {error.planHref && <>{' '}<Link href={error.planHref} className="font-bold underline underline-offset-4">{t("app.publish.smartlink.viewPlan")}</Link></>}
   </p>;
+}
+
+function activityNotice(t, locale, notice) {
+  const count = /^Showing the latest (\d+) entries\. Older history will be available after the activity history upgrade\.$/.exec(notice)?.[1];
+  return count ? t('app.publish.activity.limited', { count: locale === 'en' ? count : Number(count).toLocaleString(localeTag(locale)) }) : notice;
 }

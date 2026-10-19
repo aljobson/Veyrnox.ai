@@ -125,9 +125,9 @@ test('the character sheet renders through the shared Modal instead of a hand-rol
 test('the whole gallery card opens the sheet through a real button and keeps Recreate and Animate', async () => {
     const explore = await component('OddlingExplore.js');
     const card = explore.slice(explore.indexOf('function GalleryCard'), explore.indexOf('export function OddlingExplore('));
-    assert.match(card, /<button type="button" onClick=\{\(\) => onSheet\(oddling\)\} aria-label=\{cardButtonLabel\(oddling\.name\)\}[^>]*absolute inset-0/);
-    assert.match(card, /onClick=\{\(\) => onRecreate\(oddling\)\}[\s\S]*Recreate/);
-    assert.match(card, /onClick=\{\(\) => onAnimate\(oddling\)\}[\s\S]*Animate this character/);
+    assert.match(card, /<button type="button" onClick=\{\(\) => onSheet\(oddling\)\} aria-label=\{t\('app\.oddlings\.explore\.card', \{ name: oddling\.name \}\)\}[^>]*absolute inset-0/);
+    assert.match(resolveI18nSource(card), /onClick=\{\(\) => onRecreate\(oddling\)\}[\s\S]*Recreate/);
+    assert.match(resolveI18nSource(card), /onClick=\{\(\) => onAnimate\(oddling\)\}[\s\S]*Animate this character/);
     assert.doesNotMatch(card, /<article[^>]*onClick/, 'no click handler on an element that holds other buttons');
     assert.match(card, /relative z-20/, 'the action buttons sit above the stretched button');
 });
@@ -152,7 +152,7 @@ test('the strip button and the card button for the same character have different
     }
     const explore = await component('OddlingExplore.js');
     const hero = explore.slice(explore.indexOf('function OddlingHeroStrip'), explore.indexOf('function GalleryCard'));
-    assert.match(hero, /aria-label=\{heroButtonLabel\(oddling\.name\)\}/);
+    assert.match(hero, /aria-label=\{t\('app\.oddlings\.explore\.hero', \{ name: oddling\.name \}\)\}/);
     assert.doesNotMatch(hero, /aria-label=\{`Open /, 'the strip no longer shares the card wording');
 });
 

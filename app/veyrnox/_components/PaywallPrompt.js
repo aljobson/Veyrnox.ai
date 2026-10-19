@@ -1,4 +1,6 @@
 'use client';
+import { useI18n } from '../../../components/I18nProvider';
+
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Modal } from './Modal';
@@ -19,15 +21,17 @@ function write(store, key, on) {
   try { on ? window[store].setItem(key, '1') : window[store].removeItem(key); } catch {}
 }
 
-const COPY = {
-  first: { title: 'Get credits to start creating', body: 'Every generation is priced up front in credits. Pick a pack to top up. Credits never expire.' },
-  low: { title: "You're running low on credits", body: 'Top up now so your next generation does not stop halfway. Credits never expire.' },
-};
 
 // Puts the credit packs in front of a signed-in account: once for a new
 // account, and once per sign-in while the balance is low. It never blocks
 // use of the app, and never grants anything (TopUpPacks starts Stripe checkout).
 export function PaywallPrompt({ credits, createdAt }) {
+  const { t } = useI18n();
+  const COPY = {
+    first: { title: t("app.credits.paywall.firstTitle"), body: t("app.credits.paywall.firstBody") },
+    low: { title: t("app.credits.paywall.lowTitle"), body: t("app.credits.paywall.lowBody") },
+  };
+
   const pathname = usePathname();
   const [reason, setReason] = useState(null);
 
@@ -63,7 +67,7 @@ export function PaywallPrompt({ credits, createdAt }) {
         <p className="mt-2 text-vx-fg-body">{body}</p>
         <TopUpPacks signedIn />
         <div className="mt-5">
-          <Button variant="ghost" onClick={() => setReason(null)}>Not now</Button>
+          <Button variant="ghost" onClick={() => setReason(null)}>{t("app.credits.paywall.later")}</Button>
         </div>
       </div>
     </Modal>

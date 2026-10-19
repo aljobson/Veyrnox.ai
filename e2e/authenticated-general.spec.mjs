@@ -62,7 +62,7 @@ test('Credits pack selection never accepts consent or starts checkout and closed
   await expect(consent).not.toBeChecked(); await expect(buy).toBeDisabled();
   await expect(page.getByText(/Credit subscriptions aren't open right now/)).toBeVisible();
   await expect(page.getByText('No credit movements yet.', { exact: true })).toBeVisible();
-  await expect(page.getByText('No Top-ups yet.', { exact: true })).toBeVisible();
+  await expect(page.getByTestId('topup-history-empty')).toHaveText('No Top-ups yet.');
   expect(writes(fixture)).toEqual([]);
 });
 

@@ -139,7 +139,7 @@ test('Create keeps the submitted image label and frame while its next draft swit
   const result = page.locator('[data-assistant-target="create.result"]');
   await expect(result).toContainText(/RUNNING · SYNTHETIC NANO-BANANA/);
   await page.getByRole('group', { name: 'ASPECT', exact: true }).getByRole('button', { name: '16:9', exact: true }).click();
-  await page.getByRole('button', { name: 'Make audio', exact: true }).click();
+  await page.getByTestId('create-goal-audio').click();
   await expect(page.locator('[data-assistant-target="create.models"]')).toHaveAttribute('data-selected-kind', 'audio');
   await expect(result).toContainText(/RUNNING · SYNTHETIC NANO-BANANA/);
   await expect(result.locator('[style*="aspect-ratio"]')).toHaveCSS('aspect-ratio', '9 / 16');
@@ -168,7 +168,7 @@ test('Create completion cannot turn the no-charge New generation action into a s
   const reset = page.locator('[data-assistant-target="create.generate"]');
   await expect(reset).toBeVisible();
   await expect(reset).toHaveAttribute('aria-label', 'New generation — no charge');
-  await page.getByRole('button', { name: 'Make audio', exact: true }).click();
+  await page.getByTestId('create-goal-audio').click();
   settled = true;
   await expect(page.locator('[data-assistant-target="create.result"]').getByTestId('generated-result-image')).toBeVisible();
   await expect(reset).toBeEnabled();

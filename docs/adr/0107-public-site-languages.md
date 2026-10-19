@@ -312,3 +312,58 @@ translated unknown fallback. Film prompt content, reference names and user text
 are unchanged. No consent statement, rights identifier or API locale field is
 changed in this round. The film import E2E control uses `film-import-json` rather
 than its translated accessible name.
+
+### Phase B remainder: app controls and validation (2026-10-19)
+
+The frozen remainder work order's 32 files now resolve their visible UI copy
+through the existing app catalogs. The strict app inventory reaches zero
+unresolved candidates without adding audit exceptions. This supersedes the
+remaining-literal count above; it does not claim that arbitrary provider output,
+user content, or helper responses outside these display sites are translated.
+
+Creation settings and goals, source-duration and rights guidance, audio-stem
+controls, Oddling controls, referral and credit history/usage, chat skill cards,
+Film boards/passports/master saving, Publish activity and the remaining editor
+and film metadata use all eleven catalogs. Known Film validation templates,
+master-save errors/progress, and Publish activity actions/errors are translated
+at their display sites; the underlying helpers, payloads and stored IDs retain
+their existing contracts. Unknown error codes use a safe translated fallback;
+unknown provider prose and user content retain their original text. English
+activity action fallbacks retain the existing human-readable presentation.
+
+The complete ownership/identifiable-person/brand/artwork/recording statement in
+`SourceRightsConfirmation.jsx`, including its Acceptable Use link and recording
+sentence, remains exact English within `lang="en" dir="ltr"`. It is the existing
+`RIGHTS_ATTESTATION_VERSION` (`aup-2026-09-26`) declaration, not a new consent.
+The surrounding confirmation status and per-tab explanation are translated.
+`FilmMasterSave` sends only the existing boolean `rights_confirmed`; its rights
+checkbox text is translated, as with the previously documented saved-video
+confirmation. No consent version or API locale field changes.
+
+Oddling names, hooks, identity/trait descriptors, preset collection titles and
+motion names/phrases remain source catalog data. Camera/lens model names and
+photographic settings, model-family brand names, model names, user filenames,
+asset tags/versions, prompts, reference captions, and generated draft content
+remain unchanged. Film style-board names are also persistent catalog IDs.
+The `cr` abbreviation retains the existing Credits product convention. Skill
+card names and explanations translate; their canonical assistant instructions
+and stored skill IDs remain unchanged.
+
+English number/date formats and singular/plural wording are pinned by offline
+React render fixtures extracted from main commit
+`1675cf4d1061bd822bc2f6738ac512abe5dc043f`. Other locales use `localeTag` and
+`Intl.PluralRules`. Numeric policy fixtures are extracted from that same English
+source, including referral percentages/delays, source limits, reference counts,
+master size/format/retention limits and usage periods. Catalog validation checks
+identical keys/placeholders, numeric facts and duplicates across all languages.
+Logical placement preserves Arabic flow; SVG/transition geometry is unchanged.
+Create goals, Library downloads and empty top-up history have stable data hooks
+used by their existing E2E tests instead of translated selector text. Offline
+renders are not a browser or end-to-end execution claim.
+
+The frozen remainder scope excludes `lib/generatedProductInventory.js` and its
+extractor. The source edits make its strict freshness test fail. Regenerating
+that tracked artifact with `npm run sync:vey-knowledge` is a proposed follow-up
+scope change, not performed as part of this work order. The freshness assertion
+remains unchanged; the checked-in inventory must be refreshed before a green
+full-suite result can be claimed outside the two sandbox socket failures.
