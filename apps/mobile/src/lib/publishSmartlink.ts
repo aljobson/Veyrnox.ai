@@ -1,7 +1,7 @@
 import { ApiError, type ApiClient } from './api';
 import { API_BASE } from './api';
 
-// ADR-0167: SmartLinks. One public link page per brand at /s/<address> with up to 20 buttons. The editor route
+// ADR-0171: SmartLinks. One public link page per brand at /s/<address> with up to 20 buttons. The editor route
 // answers 404 `smartlinks_not_open` while its flag is off and 402 without the Publish Plan.
 
 const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v : null);
