@@ -3,6 +3,7 @@ import { Link, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
+import { VEY_CLEARANCE } from '../../../components/VeyMascot';
 import { selectedState, touchTarget } from '../../../lib/a11y';
 import { ALL_CATEGORIES, categoriesOf, filterByCategory, firstModelFor, pickUp, promptHref, recentCreations } from '../../../lib/explore';
 import { t } from '../../../lib/i18n';
@@ -159,18 +160,13 @@ export default function Explore() {
                     <Text style={styles.secondaryText}>{t('label.Projects')}</Text>
                 </Pressable>
             </Link>
-            <Link href="/chat" asChild>
-                <Pressable accessibilityRole="button" style={styles.secondary}>
-                    <Text style={styles.secondaryText}>{t('home.chat')}</Text>
-                </Pressable>
-            </Link>
         </ScrollView>
     );
 }
 
 const styles = StyleSheet.create({
     scroll: { flex: 1, backgroundColor: colors.background },
-    screen: { padding: 16, gap: 12 },
+    screen: { padding: 16, paddingBottom: VEY_CLEARANCE, gap: 12 },
     prompt: { minHeight: 96, textAlignVertical: 'top', color: colors.text, fontSize: 16, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 14 },
     row: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
     make: { flexGrow: 1, minHeight: 44, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.accent, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 16 },
