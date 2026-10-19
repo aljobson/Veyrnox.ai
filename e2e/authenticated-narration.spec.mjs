@@ -4,7 +4,7 @@ import { installNarrationFixtures } from './fixtures/narration-product.mjs';
 const SCRIPT = 'This is a private quality assurance test.';
 async function draft(page, script = SCRIPT) {
   await expect(page.getByTestId('agent-brief')).toHaveAccessibleName('BRIEF');
-  await expect(page.getByTestId('agent-narration')).toHaveAccessibleName('Exact narration');
+  await expect(page.getByTestId('agent-narration')).toHaveAccessibleName('Exact narration (optional)');
   await page.getByTestId('agent-brief').fill('A blue sphere moves slowly on a private studio table.');
   await page.getByTestId('agent-narration').fill(script);
 }
