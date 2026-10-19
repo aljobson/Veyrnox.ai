@@ -121,6 +121,8 @@ export interface GenerationRequest {
     readonly idempotencyKey: string;
     // Files already uploaded, by the slot the model declares for them.
     readonly sources?: readonly { readonly key: string; readonly slot: string }[];
+    // Options the model's catalog entry declares (aspect_ratio, seed, negative_prompt). The server validates each again.
+    readonly extraInputs?: Readonly<Record<string, string | number>>;
 }
 
 export const mediaApi = (api: ApiClient) => ({
@@ -136,7 +138,7 @@ export const mediaApi = (api: ApiClient) => ({
                 model_id: r.modelId,
                 idempotency_key: r.idempotencyKey,
                 confirmed_credits: r.confirmedCredits,
-                inputs: { ...(r.prompt ? { [r.textKey ?? 'prompt']: r.prompt } : {}), ...(r.durationSeconds ? { duration_seconds: r.durationSeconds } : {}) },
+                inputs: { ...r.extraInputs, ...(r.prompt ? { [r.textKey ?? 'prompt']: r.prompt } : {}), ...(r.durationSeconds ? { duration_seconds: r.durationSeconds } : {}) },
                 // The server refuses uploaded sources without consent to send them to the provider.
                 ...(r.sources?.length ? { source_keys: r.sources, consent: agreed } : {}),
             }),
