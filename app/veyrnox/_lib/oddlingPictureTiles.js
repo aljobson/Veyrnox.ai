@@ -10,11 +10,10 @@ export const OUTFIT_TILE_STYLES = Object.freeze([
 export const RENDERING_STYLE_TILE_STYLES = Object.freeze(['Anime', 'Cartoon', '2D Illustration', 'Hyper-Realistic']);
 export const HEADWEAR_TILE_STYLES = Object.freeze(['Baseball Cap', 'Beanie', 'Wide-Brim Hat', 'Bucket Hat', 'Headphones']);
 
-// Face options with a picture. Only the ones that read clearly at tile size are listed. Button nose was generated twice as a single mannequin picture but still
-// looked like a normal nose, so it keeps the drawn tile.
+// Face options with a picture. Every option now has one.
 export const HEAD_SHAPE_TILE_STYLES = Object.freeze(['Long Oval', 'Perfect Round', 'Square', 'Heart', 'Diamond', 'Tiny Head', 'Oversized Head']);
 export const EYE_SHAPE_TILE_STYLES = Object.freeze(['Round', 'Monolid', 'Graphic Liner', 'Hooded', 'Upturned', 'Uneven', 'Almond', 'Narrow', 'Downturned', 'Wide Set', 'Close Set']);
-export const NOSE_SHAPE_TILE_STYLES = Object.freeze(['Straight', 'Aquiline', 'Snub', 'Wide', 'Narrow', 'Round Tip']);
+export const NOSE_SHAPE_TILE_STYLES = Object.freeze(['Straight', 'Aquiline', 'Snub', 'Wide', 'Narrow', 'Round Tip', 'Button']);
 export const BROWS_TILE_STYLES = Object.freeze(['Thick', 'Thin', 'Arched', 'Straight', 'Bushy', 'Bleached']);
 export const LIPS_TILE_STYLES = Object.freeze(['Full', 'Thin', 'Cupid Bow', 'Glossy', 'Matte Dark']);
 export const CHIN_JAW_TILE_STYLES = Object.freeze(['Strong Jaw', 'Pointed Chin', 'Round Chin', 'Soft Jaw', 'Prominent Chin', 'Cleft Chin']);
@@ -45,11 +44,14 @@ export const ACCESSORIES_TILE_STYLES = Object.freeze([
 export const DISTINCTIVE_FEATURES_TILE_STYLES = Object.freeze([
   'Tiny Microphone', 'Pocket Weather Station', 'Giant Comb', 'Sacred Stapler', 'Snack Sceptre', 'Miniature Chair', 'Impossible Handbag', 'Receipt Train', 'Miniature Thermos', 'Miniature Cake',
 ]);
-// Body: fully clothed full-body figures. Only options that stay distinguishable once each figure is fitted to its tile have a picture; Tiny Hands looked the same as its
-// neighbours and keeps the drawn tile.
+// Body: fully clothed full-body figures. Only options that stay distinguishable once each figure is fitted to its tile have a picture.
 export const BODY_TYPE_TILE_STYLES = Object.freeze(['Curvy', 'Heavy', 'Fat', 'Athletic', 'Muscular', 'Hyper-Muscular', 'Pear', 'Barrel', 'Skinny', 'Long Torso', 'Slim', 'Lean', 'Very Skinny', 'Lanky', 'Compact', 'Inverted Triangle', 'Long Legs']);
-export const PROPORTIONS_TILE_STYLES = Object.freeze(['Natural', 'Tiny Torso', 'Huge Hands', 'No Visible Neck', 'Long Neck', 'Wide Shoulders', 'Narrow Shoulders', 'Long Torso']);
+export const PROPORTIONS_TILE_STYLES = Object.freeze(['Natural', 'Tiny Torso', 'Huge Hands', 'No Visible Neck', 'Long Neck', 'Wide Shoulders', 'Narrow Shoulders', 'Long Torso', 'Tiny Hands']);
 export const EXAGGERATION_TILE_STYLES = Object.freeze(['Natural', 'Bold', 'Extreme']);
+// Heritage: stylised 3D busts. Every option has a picture.
+// Gender: grey mannequin busts; Trans Man and Trans Woman carry a small trans-flag pin so they differ from Male and Female.
+export const GENDER_TILE_STYLES = Object.freeze(['Female', 'Male', 'Non-binary', 'Trans Man', 'Trans Woman']);
+export const ETHNICITY_TILE_STYLES = Object.freeze(['African', 'Asian', 'European', 'Indian', 'Middle Eastern', 'Mixed']);
 export const MOUTH_TILE_STYLES = Object.freeze(['Large Mouth', 'No Teeth', 'Unique Teeth', 'Gap Teeth', 'Gold Tooth', 'Bright Smile', 'Sharp Teeth', 'Forked Tongue', 'Two Tongues', 'Crooked Teeth', 'Small Mouth']);
 
 /** Catalog group id -> folder under /oddlings and the options that have a file there. */
@@ -86,6 +88,8 @@ export const PICTURE_TILES = Object.freeze({
   horns: { dir: 'face/horns', styles: HORNS_TILE_STYLES },
   face_features: { dir: 'face/face_features', styles: FACE_FEATURES_TILE_STYLES },
   eyes_type: { dir: 'face/eyes_type', styles: EYES_TYPE_TILE_STYLES },
+  gender: { dir: 'identity/gender', styles: GENDER_TILE_STYLES },
+  ethnicity_origin_base: { dir: 'identity/ethnicity_origin_base', styles: ETHNICITY_TILE_STYLES },
   eyes_details: { dir: 'face/eyes_details', styles: EYES_DETAILS_TILE_STYLES },
 });
 

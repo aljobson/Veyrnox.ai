@@ -1,0 +1,21 @@
+{
+  "note": "Gender: grey mannequin busts from one sheet (first five panels); Trans Man and Trans Woman carry a small trans-flag pin.",
+  "sources": [
+    {
+      "file": "gender.png",
+      "rows": [
+        3,
+        3
+      ],
+      "styles": [
+        "Female",
+        "Male",
+        "Non-binary",
+        "Trans Man",
+        "Trans Woman",
+        null
+      ],
+      "inset": 14
+    }
+  ]
+}
