@@ -29,3 +29,13 @@ Catalog created and read back in RevenueCat on 2026-10-17.
 Tested on local Postgres: 11 acceptance tests for 0346 (fresh base schema twice, a full replay, and with every acceptance suite sharing one database as CI does) and 18 webhook tests.
 
 **Not verified, needs the store sandboxes:** that `PRODUCT_CHANGE` carries the new product in `new_product_id` (otherwise the plan does not change), that `cancel_reason` is `CUSTOMER_SUPPORT` for a refund and anything else for "will not renew", that `expiration_at_ms` and `original_transaction_id` are present as read from the docs, the Play product id format (`productId:basePlanId`), and the app side checking the server entitlement before showing the paywall. A store purchase made while a web plan is live is flagged: the person is charged by the store and not entitled until an operator refunds it, so the app must check first.
+
+## Amendment 1 (2026-10-19): the plan says where it is managed
+
+`GET /api/v1/social/plan` gains `entitlement.subscription.source`: `'stripe'` (bought on the web), `'store'` (bought in the iOS or Android app) or `null` (no live plan, so Free). Additive; every existing field and the web page are unchanged, and the web client ignores it.
+
+- **Derived, no migration.** A live plan (`active` or `past_due`) is `'stripe'` when the entitlement read returns a Stripe subscription id, otherwise `'store'`: a Stripe plan always has the id (the cancel and portal routes already rely on it) and 0346 writes the store identity instead. Pending, ended and flagged rows are `null`. The channel (`ios` or `android`) is not exposed; the app already knows which store it runs on, and a store subscriber on the other platform is told to manage it in that store.
+- **Which wins.** The one-live index allows one live row per account and the read returns it first, so a store plan and a Stripe plan cannot both show. The second purchase is a `flagged` row and reads `null`.
+- **Double billing is not visible here.** The person is charged by both and entitled once; the flagged row is not in this response. The app must call this endpoint before showing its paywall (ADR-0109 decision 5), and an operator refund is the fix. Surfacing a flagged row to the app needs a new field from the RPC and is not done.
+- **Mobile reads** `subscription.source`: `'stripe'` -> "Manage on the web" (no in-app link to Stripe); `'store'` -> the store's subscription settings; `null` -> offer the paywall. Never a customer id, receipt or token.
+
