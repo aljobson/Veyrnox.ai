@@ -416,6 +416,25 @@ const en = {
     'chat.sendPrice.other': 'Send, {count} credits',
     'chat.sendPriceShort.one': '{count} credit',
     'chat.sendPriceShort.other': '{count} credits',
+
+
+    // Oddlings gallery and character sheets (parity P8, slice 1).
+    'oddlings.title': 'Oddlings',
+    'oddlings.intro': 'Original fictional adult characters. Browse them for free.',
+    'oddlings.collections': 'Collections',
+    'oddlings.show': 'Show',
+    'oddlings.kind.human': 'Human',
+    'oddlings.kind.creature': 'Other beings',
+    'oddlings.count.one': '{count} character',
+    'oddlings.count.other': '{count} characters',
+    'oddlings.empty': 'No characters match.',
+    'oddlings.card': 'Open {name} character sheet',
+    'oddlings.portrait': 'Portrait of {name}, an original fictional character',
+    'oddlings.sheet.title': 'Character sheet',
+    'oddlings.sheet.premise': 'Premise',
+    'oddlings.sheet.canon': 'Canon',
+    'oddlings.sheet.notFound': 'That character is not in the cast.',
+    'oddlings.sheet.preview': 'Animated previews are free on the web.',
 } as const;
 
 export default en;
