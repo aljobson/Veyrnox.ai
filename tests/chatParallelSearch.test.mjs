@@ -55,7 +55,7 @@ test('no-key capped turn uses actual resolver and MCP transport through context,
     assert.equal(model.webSearch, false);
     assert.ok(model.messages.at(-1).content.includes('Release facts from the web.'));
     assert.ok(!model.messages.filter(m => m.role === 'system').some(m => m.content.includes('Release facts from the web.')));
-    assert.match(text, /https:\/\/nodejs.org\/en\/blog\/release/);
+    assert.ok(text.includes('https://nodejs.org/en/blog/release'));
     const debit = f.calls.find(c => c.name === 'ledger_debit').args;
     assert.equal(debit.p_credits, 3);
     assert.equal(debit.p_inputs.search_provider, 'parallel');
