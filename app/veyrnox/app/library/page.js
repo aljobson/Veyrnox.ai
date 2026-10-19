@@ -432,10 +432,10 @@ function JobCard({ row, models, selectable, selected, onToggle, starred, onStar 
           <img src={asset.url} onError={asset.onError} onLoad={asset.onLoad} alt={row.name || t("app.library.generation")} className="absolute inset-0 w-full h-full object-cover" />
         )}
         <AssetLoadStatus asset={asset} />
-        <div data-library-status={refundPending ? 'failed_pending' : row.state} className="absolute top-3 start-3">
+        <div className="absolute top-3 start-3">
           <Chip tone={s.chip} noGlyph>
             <span aria-hidden="true" className="text-[10px] me-1">{s.glyph}</span>
-            {tOr(t, `app.library.status.${refundPending ? 'failed_pending' : row.state}`, t('app.library.status.queued'))}
+            <span data-library-status={refundPending ? 'failed_pending' : row.state}>{tOr(t, `app.library.status.${refundPending ? 'failed_pending' : row.state}`, t('app.library.status.queued'))}</span>
           </Chip>
         </div>
         {row.asset_url && (
