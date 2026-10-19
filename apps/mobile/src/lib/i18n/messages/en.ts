@@ -417,7 +417,6 @@ const en = {
     'chat.sendPriceShort.one': '{count} credit',
     'chat.sendPriceShort.other': '{count} credits',
 
-
     // Oddlings gallery and character sheets (parity P8, slice 1).
     'oddlings.title': 'Oddlings',
     'oddlings.intro': 'Original fictional adult characters. Browse them for free.',
