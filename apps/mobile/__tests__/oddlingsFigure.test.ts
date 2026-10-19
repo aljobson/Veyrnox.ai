@@ -29,7 +29,10 @@ describe('the preview figure', () => {
     });
 
     test('the page is offline: no URLs to load', () => {
-        expect(figureHtml()).not.toMatch(/https?:\/\/(?!www\.w3\.org)/);
+        // The only address in the page is the SVG namespace, which is an identifier and is never fetched.
+        const html = figureHtml().replaceAll('http://www.w3.org/2000/svg', '');
+        expect(html.includes('http://')).toBe(false);
+        expect(html.includes('https://')).toBe(false);
     });
 });
 
