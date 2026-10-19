@@ -31,6 +31,8 @@ type Status = 'loading' | 'signedOut' | 'signedIn';
 interface AuthContextValue {
     readonly status: Status;
     readonly api: ApiClient;
+    // For account calls that go to Supabase Auth directly (lib/auth/accountCalls.ts).
+    getAccessToken(forceRefresh?: boolean): Promise<string | null>;
     readonly appleNativeAvailable: boolean;
     signInWithApple(): Promise<void>;
     signInWithOAuth(provider: OAuthProvider): Promise<void>;
@@ -184,8 +186,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, [drop]);
 
     const value = useMemo<AuthContextValue>(
-        () => ({ status, api, appleNativeAvailable, signInWithApple, signInWithOAuth, signInWithEmail, signUpWithEmail, signOut }),
-        [status, api, appleNativeAvailable, signInWithApple, signInWithOAuth, signInWithEmail, signUpWithEmail, signOut],
+        () => ({ status, api, getAccessToken, appleNativeAvailable, signInWithApple, signInWithOAuth, signInWithEmail, signUpWithEmail, signOut }),
+        [status, api, getAccessToken, appleNativeAvailable, signInWithApple, signInWithOAuth, signInWithEmail, signUpWithEmail, signOut],
     );
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
