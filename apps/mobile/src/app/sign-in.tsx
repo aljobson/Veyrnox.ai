@@ -4,7 +4,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Link, Redirect, useRouter } from 'expo-router';
 import { useAuth } from '../auth/AuthProvider';
-import { Logo } from '../components/Logo';
+import { MascotWordmark } from '../components/MascotWordmark';
 import { LEGAL_LINKS, MIN_AGE } from '../lib/account';
 import { DEV_MOCK } from '../lib/config';
 import { colors } from '../theme';
@@ -37,7 +37,7 @@ export default function SignIn() {
 
     return (
         <ScrollView style={styles.scroll} contentContainerStyle={[styles.screen, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]} keyboardShouldPersistTaps="handled">
-            <Logo size={44} />
+            <MascotWordmark />
             <Text style={styles.subtitle}>{t('signIn.subtitle')}</Text>
             <Pressable
                 accessibilityRole="checkbox"
