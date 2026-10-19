@@ -7,6 +7,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 // A catalog model id: letters, digits, dot, dash and underscore only.
 const MODEL_ID_RE = /^[A-Za-z0-9._-]{1,80}$/;
 
+const SHARE_TOKEN_RE = /^[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+){1,3}$/;
 const AUTHORIZATION_ID_RE = /^[A-Za-z0-9_-]{8,128}$/;
 
 // The sections under /app on the website that have a screen in the app.
@@ -46,6 +47,13 @@ export function mapAppLink(path: string): string {
     if (segments[0] === 'oauth' && segments[1] === 'consent' && segments.length === 2) {
         const id = url.searchParams.get('authorization_id');
         return id && AUTHORIZATION_ID_RE.test(id) ? `/oauth-consent?authorization_id=${encodeURIComponent(id)}` : '/';
+    }
+    // A team invitation and a post review request: each carries one signed token in the path, checked for shape only.
+    if (segments[0] === 'social' && segments.length === 4 && segments[1] === 'team' && segments[2] === 'invite') {
+        return SHARE_TOKEN_RE.test(segments[3]) ? `/team-invite?token=${encodeURIComponent(segments[3])}` : '/';
+    }
+    if (segments[0] === 'social' && segments.length === 3 && segments[1] === 'review') {
+        return SHARE_TOKEN_RE.test(segments[2]) ? `/review?token=${encodeURIComponent(segments[2])}` : '/';
     }
     if (segments[0] !== 'app') return '/';
     return opened(segments.slice(1));
