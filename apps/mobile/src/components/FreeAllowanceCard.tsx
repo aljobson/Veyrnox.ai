@@ -1,26 +1,10 @@
-import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { useAuth } from '../auth/AuthProvider';
-import { fetchFreeAllowance, freeLines } from '../lib/freeAllowance';
+import { freeLines, type FreeLeft } from '../lib/freeAllowance';
 import { colors } from '../theme';
 
-// Renders nothing when the server says the allowance is off, nothing is left, or the read fails.
-export function FreeAllowanceCard({ models }: { readonly models: readonly { readonly id: string; readonly name: string }[] }) {
-    const { api } = useAuth();
-    const [lines, setLines] = useState<string[]>([]);
-    const ids = models.map((m) => m.id).join(',');
-
-    useEffect(() => {
-        let live = true;
-        fetchFreeAllowance(api)
-            .then((left) => live && setLines(freeLines(left, models)))
-            .catch(() => live && setLines([]));
-        return () => {
-            live = false;
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [api, ids]);
-
+// Renders nothing when the server says the allowance is off, nothing is left, or the read failed (`left` is empty).
+export function FreeAllowanceCard({ models, left }: { readonly models: readonly { readonly id: string; readonly name: string }[]; readonly left: FreeLeft }) {
+    const lines = freeLines(left, models);
     if (lines.length === 0) return null;
     return (
         <View style={styles.card} accessible accessibilityLabel={`Free today. ${lines.join('. ')}`}>

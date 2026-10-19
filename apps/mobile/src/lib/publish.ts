@@ -120,6 +120,8 @@ export interface Analytics {
     readonly syncFailing: boolean;
     readonly days: AnalyticsDay[];
     readonly posts: AnalyticsPost[];
+    // How many days of history the plan allows, when the server says (plans on); null otherwise.
+    readonly analyticsDays: number | null;
 }
 
 const numbers = (v: unknown): Record<string, number> => {
@@ -146,6 +148,7 @@ export function parseAnalytics(body: unknown): Analytics {
         syncFailing: sync.failing === true,
         days,
         posts,
+        analyticsDays: typeof b.analyticsDays === 'number' && Number.isInteger(b.analyticsDays) && b.analyticsDays > 0 ? b.analyticsDays : null,
     };
 }
 
