@@ -71,5 +71,6 @@ export function renderScenario(scenario,locale,messages,sourceOverrides={}){
  const previous=globalThis.window;globalThis.window={location:{origin:'https://example.test'}};
  try{return f.render(React.createElement(f.load(files[scenario.area])[scenario.name],scenario.props||{}));}finally{globalThis.window=previous;}
 }
-export const visibleText=html=>html.replace(/<[^>]*>/g,'');
+import { visibleText } from './visibleText.mjs';
+export { visibleText };
 export const labels=html=>[...html.matchAll(/(?:aria-label|title|placeholder|alt)="([^"]*)"/g)].map(m=>m[0]);

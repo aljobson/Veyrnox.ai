@@ -1,3 +1,4 @@
+import { visibleText } from './helpers/visibleText.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -117,7 +118,7 @@ test('offline SSR: English, Arabic and Russian poll plurals keep the test hook o
     const html = f.render(React.createElement(f.load(file).Polls, { contentId: 'title', account: null }));
     const match = html.match(/<span data-testid="story-choice-count-answer">([^<]*)<\/span>/);
     assert.equal(match?.[1], String(count), `${locale}/${count}`);
-    const plain = html.replace(/<[^>]+>/g, '');
+    const plain = visibleText(html);
     assert.ok(plain.includes(translator(locale)(`cinema.polls.answers.${category}`, { count })), `${locale}/${count}`);
     if (locale === 'en') assert.ok(plain.includes(`${count} counted ${count === 1 ? 'answer' : 'answers'}`));
     for (const family of pluralFamilies) assert.equal(pluralKey(translator(locale), locale, family, count), `${family}.${category}`);

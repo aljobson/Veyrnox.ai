@@ -37,7 +37,8 @@ export const scenarios=[
  {area:'schedule',name:'ReportScheduleFields',props:{enabled:true,deliveryEnabled:true,value:schedule,onChange:noop}},
  {area:'schedule',name:'ReportScheduleFields',props:{enabled:true,deliveryEnabled:false,value:{...schedule,deliveryCadence:'monthly'},onChange:noop}},
 ];
-export const visibleText=html=>html.replace(/<[^>]*>/g,'');
+import { visibleText } from './visibleText.mjs';
+export { visibleText };
 export function renderScenario(scenario,locale,messages,sourceOverrides={}) {
  const file=files[scenario.area];
  const f=fixture(locale,'/app/'+scenario.area,{messages,signedIn:true,sourceOverrides,states:scenario.states?{[file]:scenario.states}:{},expose:{[files.saved]:['RenderList','RenderCard'],[files.appeals]:['Appeals','Sanction'],[files.report]:['ReportForm']},moduleMocks:{

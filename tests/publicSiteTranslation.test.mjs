@@ -1,3 +1,4 @@
+import { visibleText } from './helpers/visibleText.mjs';
 import { fixture } from './helpers/publicSiteRender.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -406,7 +407,7 @@ test('offline SSR: version-bound legal declarations remain exact English inside 
       const name = `app/veyrnox/social-cinema/${file}`;
       const f = fixture(locale, '/social-cinema', { signedIn: true, states: { [name]: states }, expose: component === 'TitlePage' ? {} : { [name]: [component] } });
       const html = f.render(React.createElement(f.load(name)[component], props));
-      const statements = [...html.matchAll(/<span lang="en" dir="ltr">([\s\S]*?)<\/span>/g)].map(match => match[1].replace(/<[^>]+>/g, ''));
+      const statements = [...html.matchAll(/<span lang="en" dir="ltr">([\s\S]*?)<\/span>/g)].map(match => visibleText(match[1]));
       assert.deepEqual(statements, legal, `${locale} ${component}`);
       assert.ok(html.includes(CATALOGS[locale][component === 'Pass' ? 'cinema.passPanel.chooseAPass' : component === 'TitlePage' ? 'label.Cinema Pass' : 'cinema.comments.submitForReview']));
       if (component === 'TitlePage') {
