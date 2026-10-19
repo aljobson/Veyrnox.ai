@@ -51,5 +51,5 @@ test('the option appears only for a model that offers it, and progress is cleare
     assert.doesNotMatch(workspace, /\(offer\.thinking \|\| offer\.web \|\| offer\.research\) && \(/, 'the options are no longer a row above the message box');
     assert.match(sender, /if \(ev === 'progress'\) setProgress\(d\);/);
     assert.match(sender, /finally \{ setBusy\(false\); setProgress\(null\);/);
-    assert.match(resolveI18nSource(workspace), /researchProgressLabel\(progress\) \|\| "Thinking"/);
+    assert.match(resolveI18nSource(workspace), /helperCopy\(t, locale, researchProgressLabel\(progress\)\) \|\| "Thinking"/);
 });

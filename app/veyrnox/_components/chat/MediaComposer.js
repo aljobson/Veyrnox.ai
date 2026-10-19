@@ -1,10 +1,11 @@
 'use client';
+import { helperCopy } from '../../../../lib/i18n/helperCopy.mjs';
 import { useI18n } from '../../../../components/I18nProvider';
 import { localeTag } from '../../../../lib/i18n/locales.mjs';
 import { pluralKey, tOr } from '../../../../lib/i18n/translate.mjs';
 import { generationSlotKind, generationMimeTypes } from '../../../../lib/generationSourceSlots.mjs';
 import { ERROR_COPY } from '../../_lib/createErrors';
-import { mediaPromptIsMissing, outputDurationLabel, resolutionLabel, videoAudioLabel } from '../../_lib/chatMedia';
+import { mediaPromptIsMissing, outputDurationLabel, resolutionLabel, videoAudioLabelDiagnostic as videoAudioLabel } from '../../_lib/chatMedia';
 import { sourceDurationLimit } from '../../_lib/modelPricing';
 import { SourcePickers } from '../SourcePickers';
 import { LibraryPicker } from '../LibraryPicker';
@@ -103,9 +104,9 @@ export function MediaComposer({ kind, media, prompt, onPrompt }) {
           {model?.kind === 'video' && (model.audioOptions?.length > 1 ? (
             <button type="button" role="switch" aria-label={t("app.chat.media.generateAudio")} aria-checked={audio} disabled={busy}
               onClick={() => setAudio(!audio)} className={`${control} aria-checked:border-vx-accent aria-checked:text-vx-accent`}>
-              <span className={`h-2 w-2 rounded-full ${audio ? 'bg-vx-accent' : 'bg-vx-fg-faint'}`} aria-hidden="true" />{videoAudioLabel(model, audio)}
+              <span className={`h-2 w-2 rounded-full ${audio ? 'bg-vx-accent' : 'bg-vx-fg-faint'}`} aria-hidden="true" />{helperCopy(t, locale, videoAudioLabel(model, audio))}
             </button>
-          ) : <OutputFact title={t("app.chat.media.fixedAudio")}>{videoAudioLabel(model)}</OutputFact>)}
+          ) : <OutputFact title={t("app.chat.media.fixedAudio")}>{helperCopy(t, locale, videoAudioLabel(model))}</OutputFact>)}
           {model?.kind === 'audio' && actualLength && !sourceDurationMax && <OutputFact>{actualLength} {' '}{t("app.chat.media.output")}</OutputFact>}
         </div>
 
@@ -154,7 +155,7 @@ export function MediaComposer({ kind, media, prompt, onPrompt }) {
       <div className="border-t border-vx-border px-3 py-2 text-xs text-vx-fg-muted">
         {!catalogLive ? t("app.chat.media.noPricing")
           : !model ? t('app.chat.media.unavailable', { kind: kindLabel })
-            : <><span className="font-vx-mono text-vx-money vx-num">{freeLeft > 0 && cost === 0 ? t("publish.plan.colFree") : credits(t, locale, cost)}</span> · {actualLength ? `${actualLength} · ` : ''}{aspect ? `${aspect} · ` : ''}{model.kind === 'audio' ? t("app.chat.media.audioOutput") : resolutionLabel(model, resolution)}{model.kind === 'video' ? ` · ${videoAudioLabel(model, audio)}` : ''}{t("app.chat.media.refundHelp")}{resultReady ? t("app.chat.media.shownAbove") : ''}.</>}
+            : <><span className="font-vx-mono text-vx-money vx-num">{freeLeft > 0 && cost === 0 ? t("publish.plan.colFree") : credits(t, locale, cost)}</span> · {actualLength ? `${actualLength} · ` : ''}{aspect ? `${aspect} · ` : ''}{model.kind === 'audio' ? t("app.chat.media.audioOutput") : resolutionLabel(model, resolution)}{model.kind === 'video' ? ` · ${helperCopy(t, locale, videoAudioLabel(model, audio))}` : ''}{t("app.chat.media.refundHelp")}{resultReady ? t("app.chat.media.shownAbove") : ''}.</>}
       </div>
 
       {error && <p role="alert" className="border-t border-vx-danger/30 bg-vx-danger/[0.06] px-3 py-2 text-sm text-vx-danger">{errorCopy}{error.note ? ` ${error.note}` : ''}</p>}

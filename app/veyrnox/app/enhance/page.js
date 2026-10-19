@@ -1,4 +1,5 @@
 'use client';
+import { helperCopy } from '../../../../lib/i18n/helperCopy.mjs';
 import { useI18n } from '../../../../components/I18nProvider';
 import { localeTag } from '../../../../lib/i18n/locales.mjs';
 import { tOr } from '../../../../lib/i18n/translate.mjs';
@@ -115,7 +116,7 @@ function Editor() {
                 {source ? t("app.enhance.chooseAnother") : t("label.Choose video")}<input data-testid="enhance-upload" aria-label={t("label.Choose video")} className="sr-only" type="file" accept="video/mp4,video/webm,video/quicktime" disabled={exporting} onChange={choose} />
             </label>
         </div>
-        {error && <p role="alert" className="mb-5 rounded-xl border border-vx-danger p-4 text-sm">{error}</p>}
+        {error && <p role="alert" className="mb-5 rounded-xl border border-vx-danger p-4 text-sm">{helperCopy(t, locale, error)}</p>}
         <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
             <section aria-label={t("app.enhance.comparison")} className="min-w-0 overflow-hidden rounded-2xl border border-vx-border bg-vx-panel">
                 <div className="flex items-center justify-between gap-3 border-b border-vx-border px-5 py-4 text-xs text-vx-fg-muted"><span className="min-w-0 truncate">{source ? source.file.name : t("app.enhance.empty")}</span><span className="shrink-0">{duration && source ? `${duration.toLocaleString(localeTag(locale, 'en-US'), { minimumFractionDigits: 1, maximumFractionDigits: 1, useGrouping: false })}s` : t("app.enhance.limit")}</span></div>
@@ -151,7 +152,7 @@ function Editor() {
 }
 
 export default function VideoEnhance() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
     const enabled = useVideoEnhancePreview();
     return <><AppNav active="enhance" readAccount={false} /><Main className="mx-auto max-w-6xl px-4 py-8 sm:px-8 sm:py-12">
         <p className="mb-2 font-vx-mono text-xs tracking-widest text-vx-accent">{t("app.enhance.localPreview")}</p><h1 data-testid="enhance-title" className="mb-3 text-3xl font-black sm:text-4xl">{t("app.enhance.title")}</h1>

@@ -1,3 +1,4 @@
+import { helperEnglish } from '../../../lib/helperMessages.mjs';
 // Browser timeline editor, slice 1 (ADR-0080): getting media into the timeline.
 // Two sources, both read in the browser and neither uploaded: the user's own GENERATED assets (fetched from their signed link) and a LOCAL
 // file picked from their computer. A local file never leaves the machine, so it needs no storage, scanning or moderation. Pure checks
@@ -18,7 +19,7 @@ export function checkLocalFile(file) {
     const video = VIDEO_TYPES.has(file.type), audio = AUDIO_TYPES.has(file.type), image = IMAGE_TYPES.has(file.type);
     if (!video && !audio && !image) return { error: 'Choose an MP4, MOV or WebM video, an MP3, WAV or M4A sound, or a PNG, JPEG or WebP image.' };
     if (!(file.size > 0)) return { error: 'That file is empty.' };
-    if (video && file.size > MEDIA_LIMITS.videoBytes) return { error: 'Choose a video under 100 MiB.' };
+    if (video && file.size > MEDIA_LIMITS.videoBytes) return { error: helperEnglish('choose_a_video_under_100_mib') };
     if (audio && file.size > MEDIA_LIMITS.audioBytes) return { error: 'Choose a sound under 20 MiB.' };
     if (image && file.size > 20 * 1024 * 1024) return { error: 'Choose an image under 20 MiB.' };
     return { kind: video ? 'video' : image ? 'image' : 'audio' };
@@ -28,14 +29,14 @@ export function checkLocalFile(file) {
 export function checkProbe(probe) {
     if (!probe || probe.error) return probe?.error || 'This file could not be read.';
     if (probe.kind === 'video' || probe.kind === 'image') {
-        if (!probe.canDecodeVideo) return 'This browser cannot decode that video. Try an H.264 MP4.';
-        if (!(probe.width > 0 && probe.height > 0)) return 'That video has no picture size.';
-        if (Math.max(probe.width, probe.height) > MEDIA_LIMITS.maxEdge) return `Choose a video up to ${MEDIA_LIMITS.maxEdge} pixels wide.`;
+        if (!probe.canDecodeVideo) return helperEnglish('this_browser_cannot_decode_that_video_try_an');
+        if (!(probe.width > 0 && probe.height > 0)) return helperEnglish('that_video_has_no_picture_size');
+        if (Math.max(probe.width, probe.height) > MEDIA_LIMITS.maxEdge) return helperEnglish('choose_a_video_up_to_pixels_wide', { value1: MEDIA_LIMITS.maxEdge });
     } else if (!probe.canDecodeAudio) {
-        return 'This browser cannot decode that sound. Try an MP3 or WAV.';
+        return helperEnglish('this_browser_cannot_decode_that_sound_try_an');
     }
-    if (!(probe.seconds > 0)) return 'That file has no length.';
-    if (probe.seconds > MEDIA_LIMITS.maxSourceSeconds) return 'Choose a file up to 10 minutes long. You can trim it after.';
+    if (!(probe.seconds > 0)) return helperEnglish('that_file_has_no_length');
+    if (probe.seconds > MEDIA_LIMITS.maxSourceSeconds) return helperEnglish('choose_a_file_up_to_10_minutes_long');
     return null;
 }
 

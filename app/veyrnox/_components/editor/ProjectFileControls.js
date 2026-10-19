@@ -1,4 +1,5 @@
 'use client';
+import { helperCopy } from '../../../../lib/i18n/helperCopy.mjs';
 import { useI18n } from '../../../../components/I18nProvider';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '../Button';
@@ -6,7 +7,7 @@ import { exportProjectFile, readProjectFile } from '../../_lib/editorProjectFile
 
 /** onLoadTimeline(next, details) owns the single undo boundary and ordinary source relinking. */
 export function ProjectFileControls({ tl, onLoadTimeline, disabled = false, openDisabled = false, name = 'veyrnox-studio-project', projectDocument = null, compact = false }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
     const chooser = useRef(null), alive = useRef(true), current = useRef({ tl, disabled }), running = useRef(false), downloads = useRef(new Map());
     const [busy, setBusy] = useState(false), [error, setError] = useState(''), [status, setStatus] = useState('');
     useEffect(() => { current.current = { tl, disabled }; }, [tl, disabled]);
@@ -49,7 +50,7 @@ export function ProjectFileControls({ tl, onLoadTimeline, disabled = false, open
         <p className="text-[10px] text-vx-fg-muted">{t("app.editor.projectFiles.help")}</p>
         {openDisabled && <p className="text-[10px] text-vx-fg-muted">{t("app.editor.projectFiles.detach")}</p>}
         {busy && <p role="status" className="text-xs">{t("app.editor.projectFiles.opening")}</p>}
-        {error && <p role="alert" className="text-xs">{error}</p>}
+        {error && <p role="alert" className="text-xs">{helperCopy(t, locale, error)}</p>}
         {status && <p data-testid="project-file-status" role="status" className="text-xs">{status}</p>}
     </>;
     if (compact) return <details className="group relative shrink-0">

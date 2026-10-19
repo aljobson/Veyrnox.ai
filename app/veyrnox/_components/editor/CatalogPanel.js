@@ -1,4 +1,5 @@
 'use client';
+import { helperCopy } from '../../../../lib/i18n/helperCopy.mjs';
 import { tOr } from '../../../../lib/i18n/translate.mjs';
 import { localeTag } from '../../../../lib/i18n/locales.mjs';
 import { useI18n } from '../../../../components/I18nProvider';
@@ -37,13 +38,14 @@ function EmptyCatalog({ query }) {
 }
 
 function PresetGrid({ items, disabled, onChoose, currentId, kind }) {
+    const { t, locale } = useI18n();
     if (!items.length) return null;
     return <div className="grid grid-cols-2 gap-2">{items.map(item => {
         const selected = currentId !== undefined && currentId === item.id;
         return <button key={item.id} type="button" aria-label={item.name} disabled={disabled} aria-pressed={currentId === undefined ? undefined : selected} onClick={() => onChoose(item.id)} className={`group min-w-0 rounded-xl border bg-vx-base p-1.5 text-start text-xs transition-all hover:-translate-y-0.5 hover:border-vx-accent hover:shadow-lg hover:shadow-black/10 disabled:translate-y-0 disabled:opacity-40 ${selected ? 'border-vx-accent ring-1 ring-vx-accent/50' : 'border-vx-border'}`}>
             <PresetPreview item={item} kind={kind} />
             <span className={`mt-2 block truncate px-0.5 font-bold ${selected ? 'text-vx-accent' : ''}`}>{item.name}</span>
-            {item.description && <span className="mt-0.5 line-clamp-2 block px-0.5 text-xs leading-4 text-vx-fg-muted">{item.description}</span>}
+            {item.description && <span className="mt-0.5 line-clamp-2 block px-0.5 text-xs leading-4 text-vx-fg-muted">{helperCopy(t, locale, item.description)}</span>}
         </button>;
     })}</div>;
 }

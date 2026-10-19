@@ -1,4 +1,6 @@
 'use client';
+import { helperEnglish } from '../../../lib/helperMessages.mjs';
+
 import { useEffect } from 'react';
 import { gatewayFetch } from './gateway';
 import { animationModel } from './oddlingStudio';
@@ -38,7 +40,7 @@ export function useCreateJourney({ model, models, catalogLive, prompt, character
         if (cancelled || getJourney().task !== task) return;
         setModelId(next.id);
         setAnimationPortrait(null);
-        setSources({ image: { assetId: imageId, previewUrl: asset.url, label: 'Walkthrough image' } });
+        setSources({ image: { assetId: imageId, previewUrl: asset.url, label: helperEnglish('walkthrough_image'), labelCode: 'walkthrough_image' } });
         setConsent(false);
         setPrompt(MOTION_DRAFT);
         setDuration('5s');

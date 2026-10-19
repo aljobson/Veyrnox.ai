@@ -1,4 +1,6 @@
 'use client';
+import { helperCopy } from '../../../../lib/i18n/helperCopy.mjs';
+import { HelperNotice } from '../../../../components/HelperNotice.jsx';
 import { useI18n } from '../../../../components/I18nProvider';
 import { tOr, pluralKey } from '../../../../lib/i18n/translate.mjs';
 import { localeTag } from '../../../../lib/i18n/locales.mjs';
@@ -58,7 +60,7 @@ import { TrackTimeline } from './TrackTimeline';
 import { EditorTransport } from './EditorTransport';
 import { ShortcutGuide } from './ShortcutGuide';
 import { emptySequence, upgradeSequence, sequenceEnd, SEQUENCE_MAX, addSequenceMedia, addSequenceClip, addSequenceText, addSequenceTrack, removeSequenceTrack, updateSequenceTrack, addSequenceMarker, updateSequenceMarker, removeSequenceMarker, moveSequence, trimSequence, splitSequenceClip, updateSequenceClip, replaceSequenceClipMedia, trackFor, removeSequenceMedia, setSequenceRate, setSequenceSpeedCurve, reverseSequenceClip, insertSequenceFreeze, extractSequenceAudio, updateMediaDetails } from '../../_lib/editorSequence.mjs';
-import { validateSequence } from '../../_lib/editorSequenceValidation.mjs';
+import { validateSequenceDiagnostic as validateSequence } from '../../_lib/editorSequenceValidation.mjs';
 import { createHistory, commitHistory, undoHistory, redoHistory, retainedMedia } from '../../_lib/editorHistory.mjs';
 import { checkLocalFile, probeMedia, checkProbe, mediaFromProbe, localMediaId } from '../../_lib/editorMedia.mjs';
 import { createPreviewer } from '../../_lib/editorPreview.mjs';
@@ -308,7 +310,7 @@ export function MultitrackWorkspace({ onCredits }) {
                 <button type="button" className="min-h-8 min-w-8 rounded-full text-vx-fg-muted hover:text-vx-fg" aria-label={t('app.editor.workspace.remove', { label: marker.label })} onClick={()=>apply(sequence=>removeSequenceMarker(sequence,marker.id))}>×</button>
             </div>)}
         </div>}
-        {notice && <p role="alert" className="mx-3 mt-2 rounded-lg border border-vx-border bg-vx-panel p-3 text-sm">{notice}</p>}
+        {notice && <HelperNotice message={notice} className="mx-3 mt-2 rounded-lg border border-vx-border bg-vx-panel p-3 text-sm" />}
         <div className={`${mobileStage==='timeline'?'hidden lg:grid':'grid'} min-h-0 gap-px bg-vx-border lg:grid-cols-[var(--workspace-columns)] ${fitScreen?"flex-1 [container-type:size] [--panel-max-height:100%]":""}`} style={{ '--workspace-columns':workspaceColumns(layout,binWidth) }}>
             <aside aria-label={t("app.editor.workspace.projectMedia")} hidden={layout.mediaDock==='hidden'} style={{order:layout.mediaDock==='right'?3:1,maxHeight:fitScreen?`var(--panel-max-height, ${layout.previewHeight+5}vh)`:`${layout.previewHeight+5}vh`}} className={`${mobileStage==='media'?'flex':'hidden'} flex-col gap-3 overflow-hidden bg-vx-panel p-2 md:flex-row lg:flex`}>
                 <EditorToolRail panel={panel} onPanel={setPanel} disabled={disabled} sharedTools={sharedTools} scenes={scenes} clipper={clipper} agent={agent}/><div className="min-w-0 flex-1 space-y-3 overflow-y-auto py-1 pe-1">

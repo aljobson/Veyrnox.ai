@@ -1,4 +1,6 @@
 'use client';
+import { helperCopy } from '../../../../lib/i18n/helperCopy.mjs';
+import { HelperNotice } from '../../../../components/HelperNotice.jsx';
 import { tOr } from '../../../../lib/i18n/translate.mjs';
 import { localeTag } from '../../../../lib/i18n/locales.mjs';
 import { useI18n } from '../../../../components/I18nProvider';
@@ -199,7 +201,7 @@ function Editor() {
             <Button variant="ghost" size="md" disabled={!selected || exporting} onClick={duplicate}>{t("app.editor.workspace.duplicate")}</Button>
             {busy && <span role="status" className="text-sm text-vx-fg-muted">{t("app.editor.legacy.reading")}</span>}
         </div>
-        {notice && <p role="alert" className="rounded-xl border border-vx-border bg-vx-panel p-3 text-sm">{notice}</p>}
+        {notice && <HelperNotice message={notice} className="rounded-xl border border-vx-border bg-vx-panel p-3 text-sm" />}
         <ProjectBar tl={tl} blobs={blobs} onLoadTimeline={loadTimeline} onRelinked={relinked} />
         {library && <section aria-label={t("app.editor.legacy.myLibrary")} className="rounded-2xl border border-vx-border p-4">
             <div className="mb-2 flex items-center justify-between"><h2 className="text-sm font-bold">{t("app.editor.legacy.myLibrary")}</h2><Button variant="ghost" size="sm" onClick={() => setLibrary(null)}>{t("app.editor.workspace.close")}</Button></div>
@@ -272,7 +274,7 @@ function Editor() {
                 <div className="space-y-3 border-t border-vx-border pt-5">
                     <label className="block text-sm font-bold">{t("app.editor.workspace.shape")}<select className={`${field} mt-2 w-full`} value={tl.aspect} onChange={e => { const a = e.target.value; apply(timeline => setAspect(timeline, a)); }} disabled={exporting}>{ASPECTS.map(a => <option key={a} value={a}>{a === 'source' ? t("app.editor.legacy.sourceAspect") : a === '16:9' ? t("app.editor.legacy.landscape") : a === '9:16' ? t("app.editor.legacy.portrait") : t("app.editor.legacy.square")}</option>)}</select></label>
                     <label className="block text-sm font-bold">{t("app.editor.legacy.size")}<select className={`${field} mt-2 w-full`} value={height} onChange={e => setHeight(Number(e.target.value))} disabled={exporting}><option value={720}>720p</option><option value={1080}>1080p</option></select></label>
-                    {blocker && <p role="status" className="rounded-xl border border-vx-border bg-vx-base p-3 text-xs leading-relaxed">{blocker}</p>}
+                    {blocker && <p role="status" className="rounded-xl border border-vx-border bg-vx-base p-3 text-xs leading-relaxed">{helperCopy(t, locale, blocker)}</p>}
                     <Button className="w-full justify-center" disabled={empty || exporting || Boolean(blocker)} onClick={runExport}>{t("app.editor.legacy.export")}</Button>
                     {exporting && <><progress aria-label={t("app.editor.legacy.exportProgress")} className="w-full accent-vx-accent" value={progress} max={1} /><Button size="sm" variant="ghost" onClick={() => exportAbort.current?.abort()}>{t("app.editor.legacy.cancelExport")}</Button></>}
                     {result && <div role="status"><a className="break-words text-sm font-bold text-vx-accent underline" href={result.url} download={result.name}>{t("label.Download")}{' '}{result.name}{t('app.editor.legacy.resultSize',{size:locale==='en'?(result.size / 1048576).toFixed(1):(result.size / 1048576).toLocaleString(localeTag(locale),{minimumFractionDigits:1,maximumFractionDigits:1})})}</a></div>}
@@ -284,7 +286,7 @@ function Editor() {
 }
 
 export default function EditorPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
     const multitrack = useMultitrackEnabled();
     const [creditsOpen, setCreditsOpen] = useState(false);
     return <><AppNav active="editor" readAccount={false} /><Main className="mx-auto max-w-[1600px] px-4 py-8 sm:px-8 sm:py-12">

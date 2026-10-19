@@ -1,9 +1,10 @@
+import { helperEnglish } from '../../../lib/helperMessages.mjs';
 const text=(v,max)=>typeof v==='string' && v.length<=max && !/[\u0000-\u001f\u007f]/.test(v);
 export function mediaDetailsProblem(m) {
-    if(m.sourceName!==undefined && (!text(m.sourceName,255)||!m.sourceName))return 'Invalid original source name.';
-    if(m.folder!==undefined && (!text(m.folder,80)||m.folder.split('/').length>4||m.folder.split('/').some(part=>part && (!part.trim()||part==='.'||part==='..'||/[\\:*?<>|]/.test(part)))))return 'Use a folder name up to 80 characters and four levels.';
+    if(m.sourceName!==undefined && (!text(m.sourceName,255)||!m.sourceName))return helperEnglish('invalid_original_source_name');
+    if(m.folder!==undefined && (!text(m.folder,80)||m.folder.split('/').length>4||m.folder.split('/').some(part=>part && (!part.trim()||part==='.'||part==='..'||/[\\:*?<>|]/.test(part)))))return helperEnglish('use_a_folder_name_up_to_80_characters');
     const note=m.attribution;
-    if(note!==undefined){if(!note||typeof note!=='object'||Object.keys(note).length!==3||!text(note.credit,120)||!text(note.usage,240)||!text(note.url,1000))return 'Invalid media attribution.';if(note.url){try{const u=new URL(note.url);if(u.protocol!=='https:'||u.username||u.password)return 'Use an HTTPS source or licence URL.';}catch{return 'Use an HTTPS source or licence URL.';}}}
+    if(note!==undefined){if(!note||typeof note!=='object'||Object.keys(note).length!==3||!text(note.credit,120)||!text(note.usage,240)||!text(note.url,1000))return helperEnglish('invalid_media_attribution');if(note.url){try{const u=new URL(note.url);if(u.protocol!=='https:'||u.username||u.password)return helperEnglish('use_an_https_source_or_licence_url');}catch{return helperEnglish('use_an_https_source_or_licence_url');}}}
     return null;
 }
 export const mediaFolders=folderPaths;

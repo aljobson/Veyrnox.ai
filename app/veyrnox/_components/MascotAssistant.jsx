@@ -262,7 +262,7 @@ export default function MascotAssistant() {
     setPlan(next);
     setAnswerSource(next.source);
     setMessages((current) => current.map((message) => message.id === assistantId
-      ? { id: assistantId, role: 'assistant', content: next.message, source: next.source, localOnly: !!next.localOnly }
+      ? { id: assistantId, role: 'assistant', content: next.message, diagnostic: next.code ? { code: next.code, message: next.message, params: next.params } : null, source: next.source, localOnly: !!next.localOnly }
       : message));
     setBusy(false);
     captureProductEvent('helper_answer', {

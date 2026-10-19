@@ -1,4 +1,5 @@
 'use client';
+import { helperCopy } from '../../../../lib/i18n/helperCopy.mjs';
 import { useI18n } from '../../../../components/I18nProvider';
 import { localeTag } from '../../../../lib/i18n/locales.mjs';
 import { pluralKey, tOr } from '../../../../lib/i18n/translate.mjs';
@@ -11,7 +12,7 @@ import { attachmentLabel } from '../../_lib/chatImages';
 import { NEW_CHAT, addToDraft, clearNotice, readCreditsWarning, readDraft, readNotice, writeDraft, writeNotice, readStars, toggleStar } from '../../_lib/chatLocal';
 import { useFreeAllowance } from '../../_lib/useFreeAllowance';
 import { freeLeftFor } from '../../_lib/freeAllowance';
-import { researchProgressLabel } from '../../_lib/chatResearchUi';
+import { researchProgressLabelDiagnostic as researchProgressLabel } from '../../_lib/chatResearchUi';
 import { PersonaManager } from './PersonaManager';
 import { AttachButton, AttachChips, useAttachments } from './AttachBar';
 import { LibraryPicker } from '../LibraryPicker';
@@ -374,7 +375,7 @@ export function ChatWorkspace() {
                       )}
                     </>
                   )
-                    : <div aria-live={m.status === 'streaming' ? 'polite' : undefined}>{m.content ? <ChatText text={m.content} /> : <p className="text-vx-fg-muted">{m.status === 'saving' ? t("app.chat.workspace.stopping") : m.status === 'lost' ? t("app.chat.workspace.connectionChecking") : researchProgressLabel(progress) || t("app.chat.settings.thinking")}</p>}</div>}
+                    : <div aria-live={m.status === 'streaming' ? 'polite' : undefined}>{m.content ? <ChatText text={m.content} /> : <p className="text-vx-fg-muted">{m.status === 'saving' ? t("app.chat.workspace.stopping") : m.status === 'lost' ? t("app.chat.workspace.connectionChecking") : helperCopy(t, locale, researchProgressLabel(progress)) || t("app.chat.settings.thinking")}</p>}</div>}
                   {(m.status === 'saving' || m.status === 'lost') && m.content && <p role="status" className="mt-2 font-vx-mono text-xs text-vx-fg-muted">{m.status === 'saving' ? t("app.chat.workspace.savingStopped") : t("app.chat.workspace.connectionLost")}</p>}
                   {m.role === 'assistant' && !isLive(m) && <StudioDraftCards text={m.content} models={studioModels} />}
                   {m.role === 'assistant' && !isLive(m) && <Footer m={m} starred={stars.includes(m.id)} onStar={() => star(m.id)} />}

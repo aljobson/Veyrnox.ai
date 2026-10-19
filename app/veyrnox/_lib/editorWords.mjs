@@ -1,11 +1,12 @@
+import { helperEnglish } from '../../../lib/helperMessages.mjs';
 const normal=s=>s.trim().replace(/\s+/g,' ');
 export const WORD_STYLE=Object.freeze({mode:'highlight',color:'#ffe66d'});
 export function wordTimingProblem(clip) {
     const words=clip.words;
-    if(clip.wordsEstimated!==undefined && typeof clip.wordsEstimated!=='boolean')return 'Invalid word timing source.';
-    if(clip.wordStyle!==undefined && (!clip.wordStyle || Object.keys(clip.wordStyle).length!==2 || !['none','highlight','karaoke','word'].includes(clip.wordStyle.mode) || !/^#[0-9a-fA-F]{6}$/.test(clip.wordStyle.color)))return 'Invalid word highlight style.';
+    if(clip.wordsEstimated!==undefined && typeof clip.wordsEstimated!=='boolean')return helperEnglish('invalid_word_timing_source');
+    if(clip.wordStyle!==undefined && (!clip.wordStyle || Object.keys(clip.wordStyle).length!==2 || !['none','highlight','karaoke','word'].includes(clip.wordStyle.mode) || !/^#[0-9a-fA-F]{6}$/.test(clip.wordStyle.color)))return helperEnglish('invalid_word_highlight_style');
     if(words===undefined || (Array.isArray(words)&&!words.length))return null;
-    if(!clip.caption || !Array.isArray(words)||words.length>100 || words.some((w,i)=>!w||typeof w!=='object'||Object.keys(w).length!==3||typeof w.text!=='string'||!w.text.trim()||w.text.length>1000||!Number.isInteger(w.start)||w.start < -18000 || w.start>18000||!Number.isInteger(w.len)||w.len<1||w.len>18000||w.start+w.len>18000||(i>0&&w.start<words[i-1].start+words[i-1].len)) || normal(words.map(w=>w.text).join(' '))!==normal(clip.text))return 'Word text or timing does not match this caption.';
+    if(!clip.caption || !Array.isArray(words)||words.length>100 || words.some((w,i)=>!w||typeof w!=='object'||Object.keys(w).length!==3||typeof w.text!=='string'||!w.text.trim()||w.text.length>1000||!Number.isInteger(w.start)||w.start < -18000 || w.start>18000||!Number.isInteger(w.len)||w.len<1||w.len>18000||w.start+w.len>18000||(i>0&&w.start<words[i-1].start+words[i-1].len)) || normal(words.map(w=>w.text).join(' '))!==normal(clip.text))return helperEnglish('word_text_or_timing_does_not_match_this');
     return null;
 }
 export function distributeWords(clip) {

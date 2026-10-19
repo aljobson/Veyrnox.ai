@@ -1,4 +1,5 @@
 'use client';
+import { helperCopy } from '../../../../lib/i18n/helperCopy.mjs';
 import { useI18n } from '../../../../components/I18nProvider';
 import { pluralKey } from '../../../../lib/i18n/translate.mjs';
 import { localeTag } from '../../../../lib/i18n/locales.mjs';
@@ -12,7 +13,7 @@ import { Modal } from '../Modal';
 import { gatewayFetch, makeIdempotencyKey } from '../../_lib/gateway';
 import { useProjectsEnabled } from '../ProjectsFlag';
 import { equalProjectDocuments } from '../../../../lib/projectDocument.js';
-import { conflictCopyName, documentForTimeline, matchLocalFile, mediaToRelink, projectDocumentDifferences, saveProblem, timelineFromDocument } from '../../_lib/editorProject.mjs';
+import { conflictCopyName, documentForTimeline, matchLocalFile, mediaToRelink, projectDocumentDifferences, saveProblemDiagnostic as saveProblem, timelineFromDocument } from '../../_lib/editorProject.mjs';
 import { loadProjectAssetBlob } from '../../_lib/editorProjectAssets.mjs';
 import { loadEditorLibraryItem } from '../../_lib/editorLibraryCollection.mjs';
 import { probeMedia, checkProbe, checkLocalFile } from '../../_lib/editorMedia.mjs';
@@ -78,12 +79,12 @@ function ProjectSessionBar({ tl, blobs, onLoadTimeline, onRelinked, onContext,co
             const { timeline, problem } = timelineFromDocument(d.document);
             setWorkspaceId(p.project?.workspace_id || null);setProjectId(id); setName(p.project?.name || 'Project'); setDoc(d.document); setRevision(d.revision); setSavedAt(d.created_at);
             onLoadTimeline(timeline);
-            if (problem) setError(t('app.editor.project.openTimelineFailed', { problem }));
+            if (problem) setError(t('app.editor.project.openTimelineFailed', { problem: helperCopy(t, locale, problem) }));
             const need = refreshRelink(timeline);
             if (need.library.length || need.assets.length) fetchLibrary([...need.library,...need.assets], timeline);
         } catch (e) { if (currentAccount()) setError(e.status === 404 ? t("app.editor.project.unavailable") : t("app.editor.project.openFailed")); }
         finally { if (currentAccount()) setBusy(false); }
-    }, [onLoadTimeline, refreshRelink, fetchLibrary, multitrack,currentAccount,t]);
+    }, [onLoadTimeline, refreshRelink, fetchLibrary, multitrack,currentAccount,t,locale]);
     useEffect(() => {
         const id = new URLSearchParams(window.location.search).get('project');
         if (enabled && id && UUID.test(id)) open(id.toLowerCase());
@@ -219,7 +220,7 @@ function ProjectSessionBar({ tl, blobs, onLoadTimeline, onRelinked, onContext,co
             </> : <Button className="max-w-full px-3" size="sm" variant="ghost" disabled={busy} onClick={openPicker}><span className="sm:hidden">{t("app.editor.project.save")}</span><span className="hidden sm:inline">{t("app.editor.project.saveTo")}</span></Button>}
             {relinking && <span role="status" className="text-xs text-vx-fg-muted">{t("app.editor.project.fetching")}</span>}
         </div>
-        {error && <p role="alert" className="text-sm">{error}</p>}
+        {error && <p role="alert" className="text-sm">{helperCopy(t, locale, error)}</p>}
         {remote && <div className="rounded-xl border border-vx-accent p-3 text-sm" role="alert"><p className="font-bold">{t('app.editor.project.remoteSaved', { actor: t(remote.actor_id && remote.actor_id === actor ? 'app.editor.project.otherDevice' : 'app.editor.project.otherPerson'), version: number(remote.revision) })}</p><p className="mt-1 text-xs text-vx-fg-muted">{t("app.editor.project.keepHelp")}</p>{projectDocumentDifferences(current,remote.document).length>0 && <ul className="mt-2 list-disc ps-5 text-xs">{projectDocumentDifferences(current,remote.document).map(change=><li key={change}>{change}</li>)}</ul>}{remote.document.schema_version === 3 && !multitrack && <p>{t("app.editor.project.openMultitrack")}</p>}
             <div className="mt-2 flex flex-wrap gap-2">
                 <Button size="sm" disabled={busy} onClick={keepLocalCopy}>{t("app.editor.project.keepCopy")}</Button>
@@ -233,7 +234,7 @@ function ProjectSessionBar({ tl, blobs, onLoadTimeline, onRelinked, onContext,co
         {(relink.library.length > 0 || relink.assets?.length > 0) && !relinking && <p className="text-xs text-vx-fg-muted">{t(pluralKey(t, locale, 'app.editor.project.missing', relink.library.length+(relink.assets?.length || 0)), { count: number(relink.library.length+(relink.assets?.length || 0)) })}<button type="button" className="underline" onClick={() => fetchLibrary([...relink.library,...(relink.assets || [])], tl)}>{t("recovery.retry")}</button></p>}
         {picker && <Modal aria-label={t("app.editor.project.saveTo")} onCancel={() => setPicker(null)} className="items-center justify-center p-4"><div className="w-full max-w-md rounded-2xl border border-vx-border bg-vx-base p-6">
             <h2 className="text-lg font-black">{t("app.editor.project.saveTo")}</h2>
-            {picker.problem && <p role="alert" className="mt-2 text-sm">{picker.problem}</p>}
+            {picker.problem && <p role="alert" className="mt-2 text-sm">{helperCopy(t, locale, picker.problem)}</p>}
             {picker.projects === null ? <p className="mt-3 text-sm text-vx-fg-muted">{t("cinema.titlePage.loading")}</p> : <ul className="mt-3 max-h-60 space-y-2 overflow-auto">
                 {picker.projects.map(p => <li key={p.id}><button type="button" className={`${field} w-full text-start`} onClick={() => attach(p.id, p.name)}>{p.name}</button></li>)}
             </ul>}

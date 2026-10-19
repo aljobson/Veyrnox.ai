@@ -1,3 +1,4 @@
+import { helperEnglish } from '../../../lib/helperMessages.mjs';
 import { emptyProjectDocument, validProjectDocument } from '../../../lib/projectDocument.js';
 import { documentForTimeline, timelineFromDocument, mediaToRelink } from './editorProject.mjs';
 import { upgradeSequence } from './editorSequence.mjs';
@@ -15,7 +16,7 @@ const validDocument = value => {
 };
 const timelineProblem = timeline => {
     try { return validateSequence(timeline); }
-    catch { return 'Invalid multitrack document.'; }
+    catch { return helperEnglish('invalid_multitrack_document'); }
 };
 export function projectFileName(name = 'veyrnox-studio-project') {
     const stem = typeof name === 'string' ? name.replace(/(?:\.veyrnox)?\.json$/i, '').replace(/[^\p{L}\p{N}_-]+/gu, '-').replace(/^-+|-+$/g, '').slice(0, 80) : '';
@@ -25,7 +26,7 @@ export function projectFileName(name = 'veyrnox-studio-project') {
 /** Metadata and edits only. Browser blobs, loaded fonts, URLs and cloud state are never read or written. */
 export function exportProjectFile(timeline, { projectDocument = null, name } = {}) {
     const problem = timelineProblem(timeline);
-    if (problem) throw new Error(`This edit could not be downloaded: ${problem}`);
+    if (problem) throw new Error(helperEnglish('file_download', { reason: problem }));
     if (projectDocument !== null && !validDocument(projectDocument)) throw new Error('The project metadata is invalid. Reopen its saved version before downloading it.');
     const base = projectDocument || { ...emptyProjectDocument(LOCAL_PROJECT_ID), canvas: { aspect_ratio: timeline.aspect === 'source' ? '16:9' : timeline.aspect, frame_rate: timeline.fps } };
     const document = documentForTimeline(base, timeline), json = JSON.stringify(document), bytes = encoder.encode(json).byteLength;
@@ -43,9 +44,9 @@ export function parseProjectFile(text) {
     catch { throw new Error('This project file is not valid JSON. Choose the original downloaded project file.'); }
     if (!validDocument(source)) throw new Error('This project file has unsupported or invalid project data. Its contents were not loaded.');
     const { timeline: saved, problem } = timelineFromDocument(source);
-    if (problem) throw new Error(`This project file could not be opened: ${problem}`);
+    if (problem) throw new Error(helperEnglish('file_open', { reason: problem }));
     const timeline = upgradeSequence(saved), upgradedProblem = timelineProblem(timeline);
-    if (upgradedProblem) throw new Error(`This project file could not be opened: ${upgradedProblem}`);
+    if (upgradedProblem) throw new Error(helperEnglish('file_open', { reason: upgradedProblem }));
     const document = documentForTimeline(source, timeline);
     if (encoder.encode(JSON.stringify(document)).byteLength > PROJECT_FILE_LIMIT) throw new Error(sizeProblem);
     if (!validDocument(document)) throw new Error('This project file could not be upgraded to the current editor. Its contents were not loaded.');

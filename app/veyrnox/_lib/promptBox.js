@@ -1,3 +1,4 @@
+import { helperEnglish, helperDiagnostic } from '../../../lib/helperMessages.mjs';
 // Pure helpers for the create page's prompt box (unit-tested).
 
 // A shot to try, shown until the user types. For pictures and clips only.
@@ -31,8 +32,11 @@ export function promptIsMissing(model, prompt) {
 }
 
 export function promptPlaceholder(model) {
-  if (model?.takesTopic) return 'A topic for a 32-second short, e.g. 3 facts about octopuses';
-  if (model?.id === 'elevenlabs-dialogue') return 'One line per speaker, e.g.\nAna: Did you hear that?\nBen: [whispers] Stay quiet.';
-  if (model?.isSpeech) return 'Type the words to say…';
+  if (model?.takesTopic) return helperEnglish('a_topic_for_a_32second_short_eg_3');
+  if (model?.id === 'elevenlabs-dialogue') return helperEnglish('one_line_per_speaker_egana_did_you_hear');
+  if (model?.isSpeech) return helperEnglish('type_the_words_to_say');
   return model?.kind === 'audio' ? 'Describe the sound or music…' : 'Describe the shot…';
 }
+
+/** Locale-neutral display diagnostic; the legacy string interface remains available. */
+export const promptPlaceholderDiagnostic = (...args) => helperDiagnostic(promptPlaceholder(...args));

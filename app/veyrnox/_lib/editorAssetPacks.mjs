@@ -1,3 +1,4 @@
+import { helperEnglish } from '../../../lib/helperMessages.mjs';
 import { checkLocalFile } from './editorMedia.mjs';
 import { mediaDetailsProblem } from './editorMediaDetails.mjs';
 const object = v => v && typeof v === 'object' && !Array.isArray(v);
@@ -10,12 +11,12 @@ export const ASSET_PACK_CATEGORIES = Object.freeze(['Photos', 'Video', 'Stickers
 export const ASSET_PACK_LIMITS = Object.freeze({ manifestBytes: 131072, assets: 40, totalBytes: 256 * 1024 * 1024 });
 /** Extensions are data-only catalogs. No script, URL fetch, account, timeline or billing capability is granted. */
 export function assetPackProblem(pack) {
-    if (!exact(pack, ['version', 'id', 'name', 'capabilities', 'assets']) || pack.version !== 1 || !id(pack.id) || !packName(pack.name) || !Array.isArray(pack.capabilities) || pack.capabilities.length !== 1 || pack.capabilities[0] !== 'local-catalog') return 'Use a version 1 local-catalog asset pack.';
-    if (!Array.isArray(pack.assets) || !pack.assets.length || pack.assets.length > ASSET_PACK_LIMITS.assets) return 'An asset pack holds between 1 and 40 items.';
+    if (!exact(pack, ['version', 'id', 'name', 'capabilities', 'assets']) || pack.version !== 1 || !id(pack.id) || !packName(pack.name) || !Array.isArray(pack.capabilities) || pack.capabilities.length !== 1 || pack.capabilities[0] !== 'local-catalog') return helperEnglish('use_a_version_1_localcatalog_asset_pack');
+    if (!Array.isArray(pack.assets) || !pack.assets.length || pack.assets.length > ASSET_PACK_LIMITS.assets) return helperEnglish('an_asset_pack_holds_between_1_and_40');
     const ids = new Set(), names = new Set();
     for (const asset of pack.assets) {
-        if (!exact(asset, ['id', 'name', 'file', 'kind', 'category', 'tags', 'sha256', 'attribution']) || !id(asset.id) || ids.has(asset.id) || !text(asset.name, 120) || !fileName(asset.file) || names.has(asset.file) || !['image', 'video', 'audio'].includes(asset.kind) || !ASSET_PACK_CATEGORIES.includes(asset.category) || !Array.isArray(asset.tags) || asset.tags.length > 12 || asset.tags.some(tag => !text(tag, 40)) || typeof asset.sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(asset.sha256) || mediaDetailsProblem({ attribution: asset.attribution }) || !asset.attribution?.credit?.trim() || !asset.attribution?.usage?.trim()) return 'An asset has invalid identity, local filename, content hash or licence metadata.';
-        if ((['Music', 'Sound effects'].includes(asset.category) && asset.kind !== 'audio') || (['Photos', 'Stickers', 'Avatars'].includes(asset.category) && asset.kind !== 'image') || (asset.category === 'Video' && asset.kind !== 'video')) return 'The asset category must match its media type.';
+        if (!exact(asset, ['id', 'name', 'file', 'kind', 'category', 'tags', 'sha256', 'attribution']) || !id(asset.id) || ids.has(asset.id) || !text(asset.name, 120) || !fileName(asset.file) || names.has(asset.file) || !['image', 'video', 'audio'].includes(asset.kind) || !ASSET_PACK_CATEGORIES.includes(asset.category) || !Array.isArray(asset.tags) || asset.tags.length > 12 || asset.tags.some(tag => !text(tag, 40)) || typeof asset.sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(asset.sha256) || mediaDetailsProblem({ attribution: asset.attribution }) || !asset.attribution?.credit?.trim() || !asset.attribution?.usage?.trim()) return helperEnglish('an_asset_has_invalid_identity_local_filename_content');
+        if ((['Music', 'Sound effects'].includes(asset.category) && asset.kind !== 'audio') || (['Photos', 'Stickers', 'Avatars'].includes(asset.category) && asset.kind !== 'image') || (asset.category === 'Video' && asset.kind !== 'video')) return helperEnglish('the_asset_category_must_match_its_media_type');
         ids.add(asset.id); names.add(asset.file);
     }
     if (new TextEncoder().encode(JSON.stringify(pack)).byteLength > ASSET_PACK_LIMITS.manifestBytes) return 'Choose an asset pack under 128 KiB.';

@@ -1,3 +1,4 @@
+import { helperEnglish } from '../../../lib/helperMessages.mjs';
 import { assertPicture } from './editorMotionAnalysis.mjs';
 const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
 export function assertVisionMasks(masks) {
@@ -36,11 +37,11 @@ export function personFraming(masks) {
     return components.length ? { found: true, ...components[0], regions: components.length } : { found: false, x: .5, y: .5, confidence: 0, area: 0, regions: 0 };
 }
 export function validateVisionSettings(settings) {
-    if (!settings || !['remove-background', 'replace-background', 'skin-retouch', 'person-glow'].includes(settings.tool)) return 'Choose a person processing tool.';
-    if (!Number.isFinite(settings.strength ?? 1) || (settings.strength ?? 1) < 0 || (settings.strength ?? 1) > 1) return 'Choose an intensity from 0 to 1.';
-    if (settings.tool === 'skin-retouch' && !['face', 'body', 'both'].includes(settings.region ?? 'face')) return 'Choose face, body or both skin regions.';
-    if (settings.light !== undefined && (!Number.isFinite(settings.light) || settings.light < -.5 || settings.light > .5)) return 'Choose a bounded skin light adjustment.';
-    if (settings.colour !== undefined && (!Array.isArray(settings.colour) || settings.colour.length !== 3 || !settings.colour.every(v => Number.isInteger(v) && v >= 0 && v <= 255))) return 'Choose a valid processing colour.';
+    if (!settings || !['remove-background', 'replace-background', 'skin-retouch', 'person-glow'].includes(settings.tool)) return helperEnglish('choose_a_person_processing_tool');
+    if (!Number.isFinite(settings.strength ?? 1) || (settings.strength ?? 1) < 0 || (settings.strength ?? 1) > 1) return helperEnglish('choose_an_intensity_from_0_to_1');
+    if (settings.tool === 'skin-retouch' && !['face', 'body', 'both'].includes(settings.region ?? 'face')) return helperEnglish('choose_face_body_or_both_skin_regions');
+    if (settings.light !== undefined && (!Number.isFinite(settings.light) || settings.light < -.5 || settings.light > .5)) return helperEnglish('choose_a_bounded_skin_light_adjustment');
+    if (settings.colour !== undefined && (!Array.isArray(settings.colour) || settings.colour.length !== 3 || !settings.colour.every(v => Number.isInteger(v) && v >= 0 && v <= 255))) return helperEnglish('choose_a_valid_processing_colour');
     return null;
 }
 /** Original compositing and edge-preserving skin smoothing driven by real semantic masks. */

@@ -1,3 +1,4 @@
+import * as helperDisplay from '../lib/i18n/helperCopy.mjs';
 import { appMessagesFor } from '../lib/i18n/appMessages.mjs';
 import { translator, tOr, pluralKey } from '../lib/i18n/translate.mjs';
 import { localeTag } from '../lib/i18n/locales.mjs';
@@ -25,6 +26,7 @@ function harness(initialJobs, selected = audio) {
     useRef: initial => ({ current: initial }), useEffect() {}, useCallback: fn => fn, useSyncExternalStore: () => false,
   };
   const stubs = {
+    '../../../../lib/i18n/helperCopy.mjs': helperDisplay,
     react,
     '../../../../components/I18nProvider': { useI18n: () => ({ t, locale: 'en' }) },
     '../../../../lib/i18n/locales.mjs': { localeTag },
@@ -39,7 +41,7 @@ function harness(initialJobs, selected = audio) {
     '../../_lib/imageBatch': { imageCount: () => 1, totalCost: cost => cost, takesImageCount: () => false, IMAGE_COUNTS: [] },
     '../../_lib/freeAllowance': { freeLeftFor: () => 0 },
     '../../_lib/generationSettings': { audioDurationConfig: () => null, audioDurationIsInvalid: () => false, voiceIsMissing: () => false },
-    '../../_lib/promptBox': { promptText: () => 'QA prompt', promptIsMissing: () => false, promptPlaceholder: () => '' },
+    '../../_lib/promptBox': { promptText: () => 'QA prompt', promptIsMissing: () => false, promptPlaceholderDiagnostic: () => null },
     '../../_lib/modelPricing': { sourceDurationLimit: () => null, generationCostLabel: cost => `${cost} credits`, creditLabel: cost => `${cost} credits` },
     '../../_lib/studioStates': { jobStateUi: job => ({ label: job?.state?.toUpperCase() }), SLOW_MODEL_WAIT: { 'slow-video': 'This submitted video takes longer.' } },
     '../../_lib/gateway': { gatewayFetch: async () => { submitted++; return {}; }, GatewayError: class extends Error {} },

@@ -46,7 +46,7 @@ export function SourcePickers({ media, sources, onPick, onDraw, onLibrary }) {
             {(spec.label ? tOr(t, `label.${spec.label}`, spec.label) : t(ui.labelKey))}{spec.required ? t("app.create.sources.required") : t("app.create.sources.optional")}
           </div>
           <div className="text-xs text-vx-fg-body truncate mt-1">
-            {picked ? (picked.file ? picked.file.name : t('app.create.sources.libraryName', {name: picked.label})) : [t(ui.hint), ...limits].join(', ')}
+            {picked ? (picked.file ? picked.file.name : t('app.create.sources.libraryName', {name: tOr(t, `app.helpers.message.${picked.labelCode}`, picked.label)})) : [t(ui.hint), ...limits].join(', ')}
           </div>
         </div>
         {/* A Library image is a presigned R2 URL: the canvas cannot read it back. */}

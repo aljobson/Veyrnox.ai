@@ -1,4 +1,5 @@
 'use client';
+import { helperCopy } from '../../../../lib/i18n/helperCopy.mjs';
 import { tOr, pluralKey } from '../../../../lib/i18n/translate.mjs';
 import { rich } from '../../../../lib/i18n/rich';
 import { localeTag } from '../../../../lib/i18n/locales.mjs';
@@ -41,7 +42,7 @@ import { CreateGoalPicker } from '../../_components/CreateGoalPicker';
 import { TIERS, TIER_LABEL, filterByTier } from '../../_lib/modelTiers';
 import { modelsForGoal, starterModel } from '../../_lib/starterModels';
 import { audioDurationConfig, audioDurationIsInvalid, settingsInputs, voiceIsMissing } from '../../_lib/generationSettings';
-import { promptText, promptIsMissing, promptPlaceholder } from '../../_lib/promptBox';
+import { promptText, promptIsMissing, promptPlaceholderDiagnostic as promptPlaceholder } from '../../_lib/promptBox';
 import { ParticleButton } from '@/components/ParticleButton';
 import { jobStateUi, SLOW_MODEL_WAIT } from '../../_lib/studioStates';
 import { useCreateJourney } from '../../_lib/useCreateJourney';
@@ -500,7 +501,7 @@ export default function CreateStudio() {
             maxLength={isShort ? 200 : undefined}
             rows={3}
             className="scroll-mt-24 mt-3 w-full bg-vx-panel border border-vx-field rounded-lg p-3.5 text-sm text-vx-fg placeholder:text-vx-fg-faint resize-none focus:outline-hidden focus:border-vx-accent"
-            placeholder={promptPlaceholder(model)}
+            placeholder={helperCopy(t, locale, promptPlaceholder(model))}
           />
           {(draftRecovery.restoring || draftRecovery.status) && <div role="status" data-testid="create-draft-recovery" data-restoring={draftRecovery.restoring} className="mt-2 rounded-lg border border-vx-border bg-vx-panel px-3 py-2 text-xs text-vx-fg-muted">
             {draftRecovery.restoring ? t("app.create.restoring") : draftRecovery.status}

@@ -152,7 +152,7 @@ test('the create page keeps the starter out of state, so a speech model cannot s
     assert.match(page, /setPrompt\(null\); setSources/);
     assert.match(page, /if \(draft\) setPrompt\(draft\.prompt\);/);
     assert.match(page, /value=\{prompt\}\s*onChange=\{\(e\) => setPrompt\(e\.target\.value\)\}/);
-    assert.match(page, /placeholder=\{promptPlaceholder\(model\)\}/);
+    assert.match(page, /placeholder=\{helperCopy\(t, locale, promptPlaceholder\(model\)\)\}/);
 });
 
 test('the create page does not send a speech request with no words', () => {

@@ -1,3 +1,4 @@
+import { helperEnglish, helperDiagnostic } from '../../../lib/helperMessages.mjs';
 import { ANIMATIONS, COMBOS } from './editorAnimation.mjs';
 import { updateSequenceClip, trackFor } from './editorSequence.mjs';
 import { validateSequence } from './editorSequenceValidation.mjs';
@@ -33,10 +34,10 @@ export function searchAnimations(mode='in',query='') {
     return (mode==='loop'?LOOP_CATALOG:ANIMATION_CATALOG).filter(item=>words.every(word=>`${item.name} ${item.description}`.toLowerCase().includes(word)));
 }
 export function animationSelectionProblem(tl,selected) {
-    if(!['video','text'].includes(selected?.track) || typeof selected.id!=='string')return 'Select one visual clip, title or caption.';
+    if(!['video','text'].includes(selected?.track) || typeof selected.id!=='string')return helperEnglish('select_one_visual_clip_title_or_caption');
     const clip=tl[selected.track]?.find(item=>item.id===selected.id);
-    if(!clip)return 'Select a current visual clip, title or caption.';
-    if(trackFor(tl,clip)?.locked)return 'Unlock this track before changing animation.';
+    if(!clip)return helperEnglish('select_a_current_visual_clip_title_or_caption');
+    if(trackFor(tl,clip)?.locked)return helperEnglish('unlock_this_track_before_changing_animation');
     return null;
 }
 /** Parent history receives one checked replacement. Applying one channel preserves every other channel and motion key. */
@@ -52,3 +53,6 @@ export function resetAnimationCatalog(tl,selected) {
     const problem=validateSequence(tl)||animationSelectionProblem(tl,selected);if(problem)return {error:problem};
     return updateSequenceClip(tl,selected.track,selected.id,{animation:{in:'none',out:'none',duration:15,combo:'none',period:60,amount:.5}});
 }
+
+/** Locale-neutral display diagnostic; the legacy string interface remains available. */
+export const animationSelectionProblemDiagnostic = (...args) => helperDiagnostic(animationSelectionProblem(...args));

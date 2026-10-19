@@ -1,3 +1,4 @@
+import { helperEnglish } from '../../../lib/helperMessages.mjs';
 import { generationSlotKind,generationMimeTypes } from '../../../lib/generationSourceSlots.mjs';
 import { ALLOWED_UPLOAD_TYPES } from '../../../lib/uploadSource.js';
 export function generationFileType(file) {
@@ -6,8 +7,8 @@ export function generationFileType(file) {
 }
 export function generationFileProblem(slot,file) {
     const kind=generationSlotKind(slot),type=generationFileType(file),spec=ALLOWED_UPLOAD_TYPES[type];
-    if (!(file instanceof Blob) || !generationMimeTypes(kind).includes(type) || !spec) return 'Choose a supported image, MP4 video or MP3/WAV audio file for this source.';
-    if (!file.size || file.size > spec.maxBytes) return `Choose a file between 1 byte and ${spec.maxBytes/1024/1024} MiB.`;
+    if (!(file instanceof Blob) || !generationMimeTypes(kind).includes(type) || !spec) return helperEnglish('choose_a_supported_image_mp4_video_or_mp3wav');
+    if (!file.size || file.size > spec.maxBytes) return helperEnglish('choose_a_file_between_1_byte_and_mib', { value1: spec.maxBytes/1024/1024 });
     return null;
 }
 /** Upload originals once per unchanged attempt; keys carry roles, never client URLs. */

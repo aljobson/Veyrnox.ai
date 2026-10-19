@@ -1,3 +1,4 @@
+import { helperEnglish, helperDiagnostic, helperMessage } from '../../../lib/helperMessages.mjs';
 // Editing agent, dry run (ADR-0105 slice D). Pure and offline: no model, no network, no media API. It defines what an agent may ask for
 // (a closed list of commands), what would be sent to a model (timeline JSON, transcript text, the user's instruction, nothing else), and how a
 // returned plan is checked and shown before anything changes. A plan that cannot be applied cleanly changes nothing.
@@ -124,7 +125,7 @@ export function checkPlan(tl, plan) {
 export function planSummary(result) {
     if (!result.ok) return result.error;
     const d = result.after.clips - result.before.clips;
-    return `${result.steps.length} ${result.steps.length === 1 ? 'step' : 'steps'}: ${result.before.clips} → ${result.after.clips} clips (${d >= 0 ? '+' : ''}${d}), length ${formatTime(result.before.end)} → ${formatTime(result.after.end)}`;
+    return helperEnglish('clips_length', { value1: result.steps.length, value2: result.steps.length === 1 ? 'step' : 'steps', value3: result.before.clips, value4: result.after.clips, value5: d >= 0 ? '+' : '', value6: d, value7: formatTime(result.before.end), value8: formatTime(result.after.end) });
 }
 
 const generated = (id, media) => !/^l-/.test(id) || !!media.assetSource;
@@ -181,4 +182,11 @@ export function stubModel(request, tl) {
         return { commands: [{ op: 'addText', text: request.instruction.match(/"([^"]{1,100})"/)[1], start: 0, len: 3 * FPS }] };
     }
     return { commands: [] };
+}
+
+/** Locale-neutral display diagnostic; the legacy string interface remains available. */
+export function planSummaryDiagnostic(result) {
+    if (!result.ok) return helperDiagnostic(result.error);
+    const delta = result.after.clips - result.before.clips;
+    return helperMessage('clips_length', { value1: result.steps.length, value2: result.steps.length === 1 ? 'step' : 'steps', value3: result.before.clips, value4: result.after.clips, value5: delta >= 0 ? '+' : '', value6: delta, value7: formatTime(result.before.end), value8: formatTime(result.after.end) });
 }

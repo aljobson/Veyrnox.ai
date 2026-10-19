@@ -4,6 +4,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
+import { helperExceptions } from './lib/helper-i18n-exceptions.mjs';
 import publicEnglish from '../lib/i18n/messages/en.mjs';
 import appEnglish from '../lib/i18n/messages/app/en.mjs';
 const english = { ...publicEnglish, ...appEnglish };
@@ -20,6 +21,7 @@ const privateFunctions = {
 
 // Exact public exceptions. Do not add blanket file exclusions for UI code.
 const exceptions = [
+  ...helperExceptions,
   { file: /\/_lib\/(?:showcase|sourceTemplateExpansion\d*|character|characterOptions|oddlingCatalog)\.js$/, pattern: /./, reason: 'source catalog names, descriptors and prompts remain unchanged (ADR-0107)' },
   { file: /\/_lib\/(?:studioSkills|filmStudioAssistants)\.js$/, pattern: /^(?:Skill:|Film stage)/, reason: 'canonical assistant instructions, not UI copy (ADR-0107)' },
   { file: /\/_lib\/filmStudio\.js$/, pattern: /^Neutral grey background/, reason: 'generated reference-sheet prompt, not UI copy (ADR-0107)' },

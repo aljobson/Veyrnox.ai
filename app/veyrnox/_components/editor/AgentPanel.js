@@ -1,10 +1,11 @@
 'use client';
+import { helperCopy } from '../../../../lib/i18n/helperCopy.mjs';
 import { useI18n } from '../../../../components/I18nProvider';
 import { pluralKey } from '../../../../lib/i18n/translate.mjs';
 import { localeTag } from '../../../../lib/i18n/locales.mjs';
 import { useState } from 'react';
 import { Button } from '../Button';
-import { AGENT_LIMITS, buildAgentRequest, checkPlan, planSummary, stubModel } from '../../_lib/editorAgentPlan.mjs';
+import { AGENT_LIMITS, buildAgentRequest, checkPlan, planSummaryDiagnostic as planSummary, stubModel } from '../../_lib/editorAgentPlan.mjs';
 import { transcriptText } from '../../_lib/editorTranscript.mjs';
 
 const EXAMPLES = ['split the first clip at 2 seconds', 'remove the last clip', 'set the volume of the first clip to 40%', 'add the title "Day one"'];
@@ -39,7 +40,7 @@ export function AgentPanel({ tl, disabled, apply, onError }) {
             <Button size="sm" type="submit" disabled={disabled || !instruction.trim()}>{t("app.editor.agent.show")}</Button>
         </form>
         {asked && <div className="space-y-2" aria-label={t("app.editor.agent.plan")}>
-            <p role="status" className="text-xs font-bold">{planSummary(result)}</p>
+            <p role="status" className="text-xs font-bold">{helperCopy(t, locale, planSummary(result))}</p>
             {result.ok && <ol aria-label={t("app.editor.agent.steps")} className="list-decimal space-y-1 ps-5 text-xs">{result.steps.map(step => <li key={step.index}>{step.text}{step.destructive && <span className="ms-1 rounded border border-vx-danger px-1 text-[10px] text-vx-danger">{t('app.editor.agent.destructive').trimStart()}</span>}</li>)}</ol>}
             {!!result.skipped.length && <p role="status" className="text-xs text-vx-fg-muted">{t(pluralKey(t, locale, 'app.editor.agent.skipped', result.skipped.length), { count: number(result.skipped.length) })}</p>}
             {stale && <p role="status" className="text-xs">{t("app.editor.agent.stale")}</p>}

@@ -1,21 +1,22 @@
+import { helperEnglish } from '../../../lib/helperMessages.mjs';
 import { assertPicture, flowAt, globalMotion } from './editorMotionAnalysis.mjs';
 const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
 export const MOTION_TOOLS = Object.freeze(['stabilize', 'flicker', 'optical-flow', 'track-reframe', 'camera-movement']);
 export const MOTION_VIDEO_LIMITS = Object.freeze({ sourceSeconds: 30, opticalSeconds: 10, sourceBytes: 100 * 1024 * 1024, outputBytes: 100 * 1024 * 1024, height: 720, opticalHeight: 480, frames: 1800 });
 export function validateMotionOptions(options = {}) {
-    if (!MOTION_TOOLS.includes(options.tool)) return 'Choose a picture processing tool.';
-    if (options.frameRate !== undefined && ![24, 25, 30, 50, 60].includes(options.frameRate)) return 'Choose a supported output frame rate.';
-    if (options.height !== undefined && ![360, 480, 720].includes(options.height)) return 'Choose a supported output size.';
-    if (options.tool === 'optical-flow' && options.height > MOTION_VIDEO_LIMITS.opticalHeight) return 'Optical flow currently supports up to 480p.';
-    if (options.smoothing !== undefined && (!Number.isInteger(options.smoothing) || options.smoothing < 1 || options.smoothing > 30)) return 'Choose a smoothing window from 1 to 30 frames.';
-    if (options.strength !== undefined && (!Number.isFinite(options.strength) || options.strength < 0 || options.strength > 1)) return 'Choose a processing strength from 0 to 1.';
+    if (!MOTION_TOOLS.includes(options.tool)) return helperEnglish('choose_a_picture_processing_tool');
+    if (options.frameRate !== undefined && ![24, 25, 30, 50, 60].includes(options.frameRate)) return helperEnglish('choose_a_supported_output_frame_rate');
+    if (options.height !== undefined && ![360, 480, 720].includes(options.height)) return helperEnglish('choose_a_supported_output_size');
+    if (options.tool === 'optical-flow' && options.height > MOTION_VIDEO_LIMITS.opticalHeight) return helperEnglish('optical_flow_currently_supports_up_to_480p');
+    if (options.smoothing !== undefined && (!Number.isInteger(options.smoothing) || options.smoothing < 1 || options.smoothing > 30)) return helperEnglish('choose_a_smoothing_window_from_1_to_30');
+    if (options.strength !== undefined && (!Number.isFinite(options.strength) || options.strength < 0 || options.strength > 1)) return helperEnglish('choose_a_processing_strength_from_0_to_1');
     if (options.tool === 'track-reframe') {
-        if (![9 / 16, 1, 16 / 9].includes(options.aspect)) return 'Choose a portrait, square or landscape output.';
+        if (![9 / 16, 1, 16 / 9].includes(options.aspect)) return helperEnglish('choose_a_portrait_square_or_landscape_output');
         const region = options.region;
-        if (!region || !['x', 'y', 'width', 'height'].every(k => Number.isFinite(region[k]) && region[k] >= 0 && region[k] <= 1) || region.width < .05 || region.height < .05 || region.x + region.width > 1 || region.y + region.height > 1) return 'Select a textured subject region inside the picture.';
+        if (!region || !['x', 'y', 'width', 'height'].every(k => Number.isFinite(region[k]) && region[k] >= 0 && region[k] <= 1) || region.width < .05 || region.height < .05 || region.x + region.width > 1 || region.y + region.height > 1) return helperEnglish('select_a_textured_subject_region_inside_the_picture');
     }
     if (options.tool === 'camera-movement') {
-        for (const point of [options.from, options.to]) if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y) || !Number.isFinite(point.zoom) || point.x < 0 || point.x > 1 || point.y < 0 || point.y > 1 || point.zoom < 1 || point.zoom > 3) return 'Choose bounded start and end camera positions.';
+        for (const point of [options.from, options.to]) if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y) || !Number.isFinite(point.zoom) || point.x < 0 || point.x > 1 || point.y < 0 || point.y > 1 || point.zoom < 1 || point.zoom > 3) return helperEnglish('choose_bounded_start_and_end_camera_positions');
     }
     return null;
 }

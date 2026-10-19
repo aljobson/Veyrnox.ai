@@ -1,4 +1,5 @@
 'use client';
+import { helperCopy } from '../../../lib/i18n/helperCopy.mjs';
 import { localeTag } from '../../../lib/i18n/locales.mjs';
 import { tOr } from '../../../lib/i18n/translate.mjs';
 import { useI18n } from '../../../components/I18nProvider.jsx';
@@ -6,7 +7,7 @@ export default function VeyConversation({ messages, answer, plan, busy, showButt
   const { t, locale } = useI18n();
   return <>
     {messages.length === 0 ? (
-      <div role="status" aria-live="polite" className="rounded-lg bg-vx-base px-2 py-1.5 text-[11px] leading-4 text-vx-fg-body">{answer}</div>
+      <div role="status" aria-live="polite" className="rounded-lg bg-vx-base px-2 py-1.5 text-[11px] leading-4 text-vx-fg-body">{helperCopy(t, locale, plan?.code ? plan : answer)}</div>
     ) : (
       <div className="space-y-1.5">
         {messages.map((message, index) => {
@@ -15,7 +16,7 @@ export default function VeyConversation({ messages, answer, plan, busy, showButt
             <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div role={lastAssistant ? 'status' : undefined} aria-live={lastAssistant ? 'polite' : undefined}
                 className={`max-w-[96%] rounded-lg px-2 py-1.5 text-[11px] leading-4 ${message.role === 'user' ? 'rounded-ee-md bg-vx-accent text-vx-accent-ink' : 'rounded-es-md bg-vx-base text-vx-fg-body'} ${message.pending ? 'animate-pulse' : ''}`}>
-                {message.displayContent || message.content}
+                {message.role === 'assistant' ? helperCopy(t, locale, message.diagnostic || message.content) : message.displayContent || message.content}
               </div>
             </div>
           );

@@ -1,4 +1,5 @@
 'use client';
+import { helperCopy } from '../../../../lib/i18n/helperCopy.mjs';
 import { useI18n } from '../../../../components/I18nProvider';
 import { localeTag } from '../../../../lib/i18n/locales.mjs';
 import { pluralKey } from '../../../../lib/i18n/translate.mjs';
@@ -6,7 +7,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '../Button';
 import { formatTime } from '../../_lib/editorTimeline.mjs';
 import { splitSequenceAtFrames } from '../../_lib/editorSequence.mjs';
-import { checkSequenceClipForScenes, detectClipScenes, sceneRows, tickedFrames } from '../../_lib/editorSceneRun.mjs';
+import { checkSequenceClipForScenesDiagnostic as checkSequenceClipForScenes, detectClipScenes, sceneRows, tickedFrames } from '../../_lib/editorSceneRun.mjs';
 
 const NONE = [];
 // ADR-0105 slice B. Finds shot changes in the selected video clip, previews them on the timeline and adds the ticked ones as one undoable edit.
@@ -57,7 +58,7 @@ export function ScenesPanel({ tl, blobs, disabled, selected, apply, onSeek, onEr
     return <section aria-label={t("app.editor.scenes.title")} className="space-y-3">
         <h2 className="text-sm font-bold">{t("app.editor.scenes.title")}</h2>
         <p className="text-xs text-vx-fg-muted">{t("app.editor.scenes.help")}</p>
-        {blocker && <p role="status" className="text-xs">{blocker}</p>}
+        {blocker && <p role="status" className="text-xs">{helperCopy(t, locale, blocker)}</p>}
         {run.status === 'running'
             ? <div className="space-y-2"><progress aria-label={t("app.editor.scenes.progress")} className="w-full" value={run.progress} max={1} /><Button size="sm" variant="ghost" onClick={() => abort.current?.abort()}>{t("cinema.creatorWorkspace.cancel")}</Button></div>
             : <Button size="sm" disabled={disabled || !!blocker} onClick={detect}>{fresh ? t("app.editor.scenes.again") : t("app.editor.scenes.detect")}</Button>}
