@@ -403,6 +403,22 @@ const en = {
     'comments.err.invalid': 'That could not be sent. Check it and try again.',
     'comments.err.later': 'Comments are not available right now. Try again later.',
     'comments.err.network': 'No connection. Nothing was sent. Try again.',
+    // Chat reply options and prices (ADR-0154)
+    'chat.opt.group': 'Reply options',
+    'chat.opt.standard': 'Standard',
+    'chat.opt.thinking': 'Thinking',
+    'chat.opt.web': 'Web',
+    'chat.opt.extra.one': '+{count} credit',
+    'chat.opt.extra.other': '+{count} credits',
+    'chat.opt.extraSpoken.one': 'adds {count} credit',
+    'chat.opt.extraSpoken.other': 'adds {count} credits',
+    'chat.perReply.one': '{count} credit per reply',
+    'chat.perReply.other': '{count} credits per reply',
+    'chat.send': 'Send',
+    'chat.sendPrice.one': 'Send, {count} credit',
+    'chat.sendPrice.other': 'Send, {count} credits',
+    'chat.sendPriceShort.one': '{count} credit',
+    'chat.sendPriceShort.other': '{count} credits',
 } as const;
 
 export default en;
