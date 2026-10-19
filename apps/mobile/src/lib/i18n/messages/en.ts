@@ -455,7 +455,7 @@ const en = {
     'cinemaBrowse.lock.gone': 'This title is no longer available.',
     'cinemaBrowse.lock.busy': 'We could not check whether you can watch this. Try again later.',
     'cinemaBrowse.lock.network': 'No connection. Reconnect to check whether you can watch this.',
-    // --- Cinema social layer (ADR-0160, parity P6 slice 2) ---
+    // --- Cinema social layer (ADR-0165, parity P6 slice 2) ---
     'cinemaBrowse.tab.saved': 'Saved',
     'cinemaBrowse.tab.following': 'Following',
     'cinemaBrowse.tab.winners': 'Winners',

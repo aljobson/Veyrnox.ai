@@ -88,7 +88,7 @@ export async function submitComment(api: ApiClient, contentId: string, body: str
     return { id: uuid(r?.id), status: typeof r?.status === 'string' ? r.status : 'pending', replayed: r?.idempotent === true };
 }
 
-// Withdraws the person's own comment (ADR-0160). Only theirs can be withdrawn; the server checks.
+// Withdraws the person's own comment (ADR-0165). Only theirs can be withdrawn; the server checks.
 export async function withdrawComment(api: ApiClient, commentId: string, key: string): Promise<{ replayed: boolean }> {
     if (!uuid(key)) throw new ApiError(400, 'invalid_idempotency_key');
     if (!uuid(commentId)) throw new ApiError(400, 'invalid_comment');

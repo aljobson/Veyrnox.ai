@@ -1,6 +1,6 @@
 import { API_BASE, ApiError, type ApiClient } from './api';
 
-// Cinema's social layer (ADR-0160): saved titles and follows, winners, voting, story polls. Every one of these is behind
+// Cinema's social layer (ADR-0165): saved titles and follows, winners, voting, story polls. Every one of these is behind
 // a Cinema switch that is off in production, so each read separates "closed" (the switch is off: say so) from "failed".
 // The server is the authority on every rule; nothing here decides who may vote or follow.
 
