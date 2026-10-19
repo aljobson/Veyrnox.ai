@@ -3,7 +3,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { fetchCatalog, mediaApi, type CatalogModel, type Job } from '../../../lib/media';
 import { fetchAccounts, publishErrorMessage, type PublishAccount } from '../../../lib/publish';
-import { MAX_TEXT, captionWarning, composeErrorMessage, createBody, createPost, eligibleAccounts, mediaTypeOf, validateDraft, type Draft, type MediaType, type When } from '../../../lib/publishCompose';
+import { MAX_TEXT, captionWarning, cleanNetworkText, composeErrorMessage, createBody, createPost, eligibleAccounts, mediaTypeOf, validateDraft, type Draft, type MediaType, type When, type YoutubeVisibility } from '../../../lib/publishCompose';
+import { confirmSlot, fetchQueues, queueErrorKey, reserveSlot, type PublishQueue } from '../../../lib/publishQueues';
+import { NetworkTextFields, QueuePicker, YoutubeVisibilityChips } from '../../../components/ComposeExtras';
+import { t } from '../../../lib/i18n';
 import { WhenPicker, whenFrom } from '../../../components/WhenPicker';
 import { appStorage, getCacheUser } from '../../../lib/appCache';
 import { createDraftKeys, draftSignature, isDefiniteRefusal } from '../../../lib/draftKey';
@@ -28,7 +31,11 @@ export default function Compose() {
     const [chosen, setChosen] = useState<Pick | null>(null);
     const [accountIds, setAccountIds] = useState<string[]>([]);
     const [text, setText] = useState('');
-    const [schedule, setSchedule] = useState(false);
+    const [mode, setMode] = useState<'now' | 'schedule' | 'queue'>('now');
+    const [networkText, setNetworkText] = useState<Record<string, string>>({});
+    const [ytVisibility, setYtVisibility] = useState<YoutubeVisibility>('private');
+    const [queues, setQueues] = useState<PublishQueue[]>([]);
+    const [queueId, setQueueId] = useState<string | null>(null);
     const [date, setDate] = useState('');
     const [time, setTime] = useState('');
     const [busy, setBusy] = useState(false);
@@ -36,9 +43,10 @@ export default function Compose() {
 
     useEffect(() => {
         let cancelled = false;
-        Promise.all([mediaApi(api).listJobs(), fetchCatalog(), fetchAccounts(api)])
-            .then(([page, catalog, acc]) => {
+        Promise.all([mediaApi(api).listJobs(), fetchCatalog(), fetchAccounts(api), fetchQueues(api).catch(() => [] as PublishQueue[])])
+            .then(([page, catalog, acc, queueList]) => {
                 if (cancelled) return;
+                setQueues(queueList.filter((q) => q.enabled));
                 const byId = new Map<string, CatalogModel>(catalog.map((m) => [m.id, m]));
                 const list: Pick[] = [];
                 for (const job of page.jobs) {
@@ -57,9 +65,14 @@ export default function Compose() {
     }, [api, presetJob]);
 
     const eligible = useMemo(() => (chosen && accounts ? eligibleAccounts(accounts, chosen.mediaType) : []), [chosen, accounts]);
-    const selected = eligible.filter((a) => accountIds.includes(a.id));
-    const when: When | null = !schedule ? { kind: 'now' } : (() => { const d = whenFrom(date, time); return d ? { kind: 'at', at: d } : null; })();
-    const warn = captionWarning(text, selected.map((a) => a.network));
+    const queue = mode === 'queue' ? queues.find((q) => q.id === queueId) ?? null : null;
+    const queueAccounts = queue && accounts ? accounts.filter((a) => queue.accountIds.includes(a.id)) : [];
+    const queueUsable = !!queue && queueAccounts.length === queue.accountIds.length && queueAccounts.every((a) => eligible.some((e) => e.id === a.id));
+    const selected = queue ? queueAccounts : eligible.filter((a) => accountIds.includes(a.id));
+    const when: When | null = mode !== 'schedule' ? { kind: 'now' } : (() => { const d = whenFrom(date, time); return d ? { kind: 'at', at: d } : null; })();
+    const networks = [...new Set(selected.map((a) => a.network))];
+    const warn = captionWarning(text, networks);
+    const showYoutube = networks.includes('youtube');
 
     function toggle(id: string) {
         setAccountIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
@@ -71,7 +84,11 @@ export default function Compose() {
             setProblem('Enter the date as YYYY-MM-DD and the time as HH:MM.');
             return;
         }
-        const draft: Draft = { jobId: chosen.job.job_id, mediaType: chosen.mediaType, accountIds: selected.map((a) => a.id), text, when };
+        if (mode === 'queue' && (!queue || !queueUsable)) {
+            setProblem(queue ? t('compose.queueNoMatch') : t('compose.queuePick'));
+            return;
+        }
+        const draft: Draft = { jobId: chosen.job.job_id, mediaType: chosen.mediaType, accountIds: selected.map((a) => a.id), text, when, networkText: cleanNetworkText(networkText, networks), ...(showYoutube ? { youtubeVisibility: ytVisibility } : {}), ...(queue ? { queue: { id: queue.id, name: queue.name } } : {}) };
         const now = new Date();
         const invalid = validateDraft(draft, accounts ?? [], now);
         if (invalid) {
@@ -80,6 +97,13 @@ export default function Compose() {
         }
         setProblem(null);
         const where = selected.map((a) => `${a.displayName} (${a.network})`).join(', ');
+        if (queue) {
+            Alert.alert(t('compose.queueTitle'), t('compose.queueConfirm', { queue: queue.name, where }), [
+                { text: t('publish.cancel'), style: 'cancel' },
+                { text: t('compose.queueAction'), onPress: () => void send(draft, now) },
+            ]);
+            return;
+        }
         const answer = when.kind === 'now' ? `This posts to ${where} now and is public. It cannot be undone from here.` : `This schedules a post to ${where} for ${when.at.toLocaleString()}. You can change or cancel it until it starts.`;
         Alert.alert(when.kind === 'now' ? 'Post now?' : 'Schedule this post?', answer, [
             { text: 'Cancel', style: 'cancel' },
@@ -93,13 +117,24 @@ export default function Compose() {
         const user = getCacheUser();
         const key = await draftKeys.keyFor(user, draftSignature(draft));
         setBusy(true);
+        let stage: 'reserve' | 'post' | 'confirm' = 'post';
         try {
-            await createPost(api, createBody(draft, key, now));
+            if (draft.queue) {
+                stage = 'reserve';
+                // Reserve the slot, post at its time, then confirm it. A retry repeats all three safely with the same key.
+                const slot = await reserveSlot(api, draft.queue.id, key);
+                stage = 'post';
+                const made = await createPost(api, createBody({ ...draft, accountIds: slot.accountIds, when: { kind: 'at', at: slot.scheduledAt } }, key, now));
+                stage = 'confirm';
+                await confirmSlot(api, slot.assignmentId, made.postId);
+            } else {
+                await createPost(api, createBody(draft, key, now));
+            }
             await draftKeys.drop(user);
             router.replace('/publish/posts');
         } catch (err) {
-            if (isDefiniteRefusal(err)) await draftKeys.drop(user);
-            setProblem(composeErrorMessage(err));
+            if (stage !== 'confirm' && isDefiniteRefusal(err)) await draftKeys.drop(user);
+            setProblem(stage === 'post' ? composeErrorMessage(err) : t(queueErrorKey(err)));
         } finally {
             setBusy(false);
         }
@@ -125,8 +160,9 @@ export default function Compose() {
                     <>
                         <Text style={styles.heading} accessibilityRole="header">2. Accounts</Text>
                         {eligible.length === 0 ? <Text style={styles.muted}>No connected account can post a {chosen.mediaType} yet. Connect one on veyrnox.ai.</Text> : null}
+                        {queue ? <Text style={styles.muted}>{queueUsable ? t('compose.queueAccounts', { names: queueAccounts.map((a) => a.displayName).join(', ') }) : t('compose.queueNoMatch')}</Text> : null}
                         <View style={styles.chips}>
-                            {eligible.map((a) => (
+                            {(queue ? [] : eligible).map((a) => (
                                 <Pressable key={a.id} accessibilityRole="button" accessibilityState={{ selected: accountIds.includes(a.id) }} style={[styles.chip, accountIds.includes(a.id) && styles.chipOn]} onPress={() => toggle(a.id)}>
                                     <Text style={[styles.chipText, accountIds.includes(a.id) && styles.chipTextOn]}>{a.displayName} · {a.network}</Text>
                                 </Pressable>
@@ -137,19 +173,23 @@ export default function Compose() {
                         <TextInput style={styles.input} multiline value={text} onChangeText={setText} placeholder="Write the caption" accessibilityLabel="Caption" placeholderTextColor={colors.muted} maxLength={MAX_TEXT} />
                         <Text style={styles.muted}>{text.length} / {MAX_TEXT}</Text>
                         {warn ? <Text style={styles.warn}>{warn}</Text> : null}
+                        <NetworkTextFields networks={networks} values={networkText} onChange={(n, v) => setNetworkText((m) => ({ ...m, [n]: v }))} />
+                        {showYoutube ? <YoutubeVisibilityChips value={ytVisibility} onChange={setYtVisibility} /> : null}
 
                         <Text style={styles.heading} accessibilityRole="header">4. When</Text>
                         <View style={styles.chips}>
-                            <Pressable accessibilityRole="button" style={[styles.chip, !schedule && styles.chipOn]} onPress={() => setSchedule(false)}><Text style={[styles.chipText, !schedule && styles.chipTextOn]}>Post now</Text></Pressable>
-                            <Pressable accessibilityRole="button" style={[styles.chip, schedule && styles.chipOn]} onPress={() => setSchedule(true)}><Text style={[styles.chipText, schedule && styles.chipTextOn]}>Schedule</Text></Pressable>
+                            <Pressable accessibilityRole="button" accessibilityState={{ selected: mode === 'now' }} style={[styles.chip, mode === 'now' && styles.chipOn]} onPress={() => setMode('now')}><Text style={[styles.chipText, mode === 'now' && styles.chipTextOn]}>Post now</Text></Pressable>
+                            <Pressable accessibilityRole="button" accessibilityState={{ selected: mode === 'schedule' }} style={[styles.chip, mode === 'schedule' && styles.chipOn]} onPress={() => setMode('schedule')}><Text style={[styles.chipText, mode === 'schedule' && styles.chipTextOn]}>Schedule</Text></Pressable>
+                            {queues.length > 0 ? <Pressable accessibilityRole="button" accessibilityState={{ selected: mode === 'queue' }} style={[styles.chip, mode === 'queue' && styles.chipOn]} onPress={() => setMode('queue')}><Text style={[styles.chipText, mode === 'queue' && styles.chipTextOn]}>{t('compose.queue')}</Text></Pressable> : null}
                         </View>
-                        {schedule ? (
+                        {mode === 'queue' ? <QueuePicker queues={queues} value={queueId} onChange={setQueueId} /> : null}
+                        {mode === 'schedule' ? (
                             <WhenPicker date={date} time={time} onChange={(d, t) => { setDate(d); setTime(t); }} />
                         ) : null}
 
                         {problem ? <Text style={styles.error}>{problem}</Text> : null}
-                        <Pressable accessibilityRole="button" disabled={busy || selected.length === 0} style={[styles.button, (busy || selected.length === 0) && styles.off]} onPress={submit}>
-                            {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>{schedule ? 'Schedule' : 'Post now'}</Text>}
+                        <Pressable accessibilityRole="button" disabled={busy || selected.length === 0} accessibilityState={{ disabled: busy || selected.length === 0 }} style={[styles.button, (busy || selected.length === 0) && styles.off]} onPress={submit}>
+                            {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>{mode === 'queue' ? t('compose.queueAction') : mode === 'schedule' ? 'Schedule' : 'Post now'}</Text>}
                         </Pressable>
                     </>
                 ) : null}
