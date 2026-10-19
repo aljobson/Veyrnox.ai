@@ -10,7 +10,7 @@ unhandled exceptions. Production is at its Cloudflare text-binding cap, so a new
 
 ## Decision
 
-- `@sentry/cloudflare` (pinned) wraps the Worker's default export in `worker.js` with `Sentry.withSentry`. This
+- `@sentry/cloudflare` (pinned) wraps the Worker's default export, in the new `worker-entry.js` (wrangler `main`), with `Sentry.withSentry`; `worker.js` stays the plain handler its tests call. This
   covers `fetch` and `scheduled`. Sentry's own `@sentry/nextjs` is **not** added: it needs `withSentryConfig` around
   a `next.config.mjs` that already carries PostHog and Reticle wrappers, and adds browser code, CSP hosts and consent
   work this ADR does not take on.
