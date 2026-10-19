@@ -411,6 +411,12 @@ createServer(async (req, res) => {
     if (path === '/api/v1/cinema/audience' && req.method === 'POST') return send(res, 200, { ok: true });
     if (path === '/api/v1/reports' && req.method === 'POST') return send(res, 200, { replayed: false });
 
+    if (path === '/api/v1/help' && req.method === 'POST') {
+        const q = String(body.question || '').trim();
+        if (!q || q.length > 500) return send(res, 400, { error: 'invalid_question' });
+        const credits = /credit|balance|cost|price/i.test(q);
+        return send(res, 200, { plan: { message: credits ? 'Your balance is in the credits chip. Every paid action shows its price first.' : 'Open Create, pick a model and describe what you want. The price shows before you start.', target: credits ? 'nav.credits' : 'nav.create', action: 'show_target' } });
+    }
     if (path === '/api/v1/chat/models') return send(res, 200, { models: CHAT_MODELS });
     // Personas and folders (stateful), with the real routes' limits and error codes.
     const count = (fid) => state.threads.filter((t) => t.folder_id === fid).length;

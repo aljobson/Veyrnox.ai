@@ -469,6 +469,17 @@ const en = {
     'chat.skills.group.Plan': 'Plan',
     'chat.skills.start': 'Start {name}',
     'chat.skills.failed': 'Could not start that skill. Try again.',
+    // Vey help panel (ADR-0168)
+    'help.ask.title': 'Ask Vey',
+    'help.ask.placeholder': 'Ask how something works',
+    'help.ask.label': 'Your question for Vey',
+    'help.ask.send': 'Ask',
+    'help.ask.free': 'Free. Questions about the app use no credits. Vey can point you somewhere but never spends credits or changes anything.',
+    'help.answer': 'Vey says',
+    'help.go': 'Take me there',
+    'help.err.rate': 'Too many questions. Wait a moment and try again.',
+    'help.err.network': 'No connection. Try again when you are back online.',
+    'help.err.later': 'Help is not available right now. Try again later, or write to support below.',
 } as const;
 
 export default en;
