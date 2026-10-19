@@ -11,7 +11,6 @@ import { Button } from '../../_components/Button';
 import { useVideoEnhancePreview } from '../../_lib/useVideoEnhancePreview';
 import { VIDEO_LOOKS, validateVideo, downloadName } from '../../_lib/videoEnhance.mjs';
 import { createSetupDeadline } from '../../_lib/videoEnhanceSetup.mjs';
-import { blobUrl } from '../../_lib/blobUrl';
 
 const initialSettings = { smoothing: 30, look: 'natural', intensity: 100 };
 const rangeStyle = 'mt-3 w-full accent-vx-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-vx-accent';
@@ -123,7 +122,7 @@ function Editor() {
                 <div className="flex items-center justify-between gap-3 border-b border-vx-border px-5 py-4 text-xs text-vx-fg-muted"><span className="min-w-0 truncate">{source ? source.file.name : t("app.enhance.empty")}</span><span className="shrink-0">{duration && source ? `${duration.toLocaleString(localeTag(locale, 'en-US'), { minimumFractionDigits: 1, maximumFractionDigits: 1, useGrouping: false })}s` : t("app.enhance.limit")}</span></div>
                 {!source ? <div className="flex min-h-80 flex-col items-center justify-center gap-3 p-8 text-center"><span aria-hidden="true" className="text-4xl text-vx-accent">▷</span><h2 className="text-xl font-bold">{t("app.enhance.natural")}</h2><p className="max-w-sm text-sm leading-relaxed text-vx-fg-muted">{t("app.enhance.requirements")}</p></div>
                     : <div className="grid gap-px bg-vx-border sm:grid-cols-2">
-                        <figure className="min-w-0 bg-vx-base p-3"><figcaption className="mb-2 text-xs font-bold text-vx-fg-muted">{t("app.enhance.original")}</figcaption><video key={source.url} ref={video} src={blobUrl(source.url)} playsInline preload="auto" style={{ aspectRatio: aspect }} className="max-h-[460px] w-full bg-black object-contain" onError={() => { failed.current = true; setError(t("app.enhance.decodeFailed")); setState('error'); }} onEnded={() => setFrame(previous => ({ ...previous, playing: false }))} /></figure>
+                        <figure className="min-w-0 bg-vx-base p-3"><figcaption className="mb-2 text-xs font-bold text-vx-fg-muted">{t("app.enhance.original")}</figcaption><video key={source.url} ref={video} src={source.url} playsInline preload="auto" style={{ aspectRatio: aspect }} className="max-h-[460px] w-full bg-black object-contain" onError={() => { failed.current = true; setError(t("app.enhance.decodeFailed")); setState('error'); }} onEnded={() => setFrame(previous => ({ ...previous, playing: false }))} /></figure>
                         <figure className="min-w-0 bg-vx-base p-3"><figcaption className="mb-2 text-xs font-bold text-vx-accent">{t("app.enhance.enhanced")}</figcaption><canvas key={source.url} ref={canvas} aria-label={t("app.enhance.preview")} style={{ aspectRatio: aspect }} className="max-h-[460px] w-full bg-black object-contain" /></figure>
                     </div>}
                 {source && <div className="space-y-3 border-t border-vx-border p-4">

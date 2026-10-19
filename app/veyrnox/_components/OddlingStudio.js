@@ -27,7 +27,6 @@ import {
 import { writeStudioDraft } from '../_lib/landingDraft';
 import { changeCharacterPick } from '../_lib/characterOptions';
 import { parseOddlingDeepLink, withoutDeepLink } from '../_lib/oddlingExplore';
-import { blobUrl } from '../_lib/blobUrl';
 import {
   ODDLING_MOTIONS,
   ODDLING_SCENES,
@@ -264,7 +263,7 @@ export default function OddlingStudio() {
                   <input data-testid="oddling-reference-file" type="file" accept="image/*" onChange={uploadReference} className="sr-only" />
                 </label>
               </div>
-              {reference && <img data-testid="oddling-reference-image" src={blobUrl(reference.url)} alt={t('app.oddlings.referenceAlt',{name:reference.name})} className="mt-3 max-h-48 w-full rounded-xl object-cover" />}
+              {reference && <img data-testid="oddling-reference-image" src={reference.url} alt={t('app.oddlings.referenceAlt',{name:reference.name})} className="mt-3 max-h-48 w-full rounded-xl object-cover" />}
               <input value={referenceNote} onChange={(event) => setReferenceNote(event.target.value)} maxLength={180} className={`${field} mt-3`} placeholder={t("app.oddlings.referencePlaceholder")} />
             </div>
 
