@@ -34,7 +34,7 @@ export interface Draft {
     readonly accountIds: readonly string[];
     readonly text: string;
     readonly when: When;
-    // ADR-0149: own text for some networks (network key -> text), YouTube visibility, and the queue whose next slot
+    // ADR-0161: own text for some networks (network key -> text), YouTube visibility, and the queue whose next slot
     // sets the time (then `when` is a placeholder until the slot is reserved).
     readonly networkText?: Readonly<Record<string, string>>;
     readonly youtubeVisibility?: YoutubeVisibility;

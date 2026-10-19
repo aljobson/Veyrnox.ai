@@ -1,4 +1,4 @@
-# ADR-0149 — Mobile: Publish composer completion and disconnecting an account
+# ADR-0161 — Mobile: Publish composer completion and disconnecting an account
 
 **Status:** Proposed 2026-10-19
 **Related:** [ADR-0122](0122-mobile-publish-composer.md) (the composer), [ADR-0140](0140-mobile-publish-connect.md) (connect), [ADR-0109](0109-mobile-publish-plan-and-store-catalog.md), parity phase P5 in `docs/mobile/PARITY-2026-10-19.md` section 4

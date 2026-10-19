@@ -400,7 +400,7 @@ const en = {
     'comments.err.invalid': 'That could not be sent. Check it and try again.',
     'comments.err.later': 'Comments are not available right now. Try again later.',
     'comments.err.network': 'No connection. Nothing was sent. Try again.',
-    // App-only: Publish composer completion, queue choice and disconnecting an account (parity P5, ADR-0149).
+    // App-only: Publish composer completion, queue choice and disconnecting an account (parity P5, ADR-0161).
     'publish.cancel': 'Cancel',
     'compose.networkText': 'Different text for {network}',
     'compose.networkTextHint': 'Leave empty to use the main text.',

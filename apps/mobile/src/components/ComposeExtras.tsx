@@ -6,7 +6,7 @@ import type { PublishQueue } from '../lib/publishQueues';
 import { slotLabel } from '../lib/publishQueues';
 import { colors } from '../theme';
 
-// ADR-0149: the parts of the Publish composer added in parity phase P5.
+// ADR-0161: the parts of the Publish composer added in parity phase P5.
 
 // One optional text box per chosen network. Empty means the main text is used.
 export function NetworkTextFields({ networks, values, onChange }: { networks: readonly string[]; values: Readonly<Record<string, string>>; onChange: (network: string, text: string) => void }) {

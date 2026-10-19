@@ -1,6 +1,6 @@
 import type { ApiClient } from './api';
 
-// ADR-0149: publish queues. The composer reserves the next free slot of a queue, creates the post at that time, then
+// ADR-0161: publish queues. The composer reserves the next free slot of a queue, creates the post at that time, then
 // confirms the slot. The queue routes answer 404 `queues_not_open` while the server flag is off; the composer then
 // simply does not offer queues.
 
