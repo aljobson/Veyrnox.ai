@@ -104,6 +104,21 @@ export default function Account() {
                 </Link>
             </Section>
 
+            <Section title={t('acct.exploreSection')}>
+                <Link href="/search" asChild>
+                    <Row label={t('acct.search')} />
+                </Link>
+                <Link href="/models" asChild>
+                    <Row label={t('acct.models')} />
+                </Link>
+                <Link href="/pricing" asChild>
+                    <Row label={t('acct.pricing')} />
+                </Link>
+                <Link href="/brand-kit" asChild>
+                    <Row label={t('acct.brandKit')} />
+                </Link>
+            </Section>
+
             <Section title={t('account.helpSection')}>
                 <Link href="/help" asChild>
                     <Row label={t('account.help')} />
@@ -121,6 +136,9 @@ export default function Account() {
             </Section>
 
             <Section title={t('account.aboutSection')}>
+                <Link href="/about" asChild>
+                    <Row label={t('acct.about')} />
+                </Link>
                 {LEGAL_LINKS.map((l) => (
                     <Row key={l.url} label={t(l.labelKey)} onPress={() => WebBrowser.openBrowserAsync(l.url)} />
                 ))}
