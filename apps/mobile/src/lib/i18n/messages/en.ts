@@ -924,6 +924,16 @@ const en = {
     'help.err.rate': 'Too many questions. Wait a moment and try again.',
     'help.err.network': 'No connection. Try again when you are back online.',
     'help.err.later': 'Help is not available right now. Try again later, or write to support below.',
+    // Chat settings: model and instructions (ADR-0184)
+    'chat.settings.open': 'Settings',
+    'chat.settings.title': 'Chat settings',
+    'chat.settings.model': 'Model',
+    'chat.settings.instructions': 'Instructions',
+    'chat.settings.instructionsHint': 'Tell the chat how to answer, for example a role or a tone',
+    'chat.settings.count': '{n} of {max} characters',
+    'chat.settings.save': 'Save',
+    'chat.settings.failed': 'Could not save. Try again.',
+    'chat.settings.close': 'Close',
 } as const;
 
 export default en;

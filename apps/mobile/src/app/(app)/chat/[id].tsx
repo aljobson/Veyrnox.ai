@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../../auth/AuthProvider';
 import { AttachStrip } from '../../../components/chat/AttachStrip';
 import { DraftCards } from '../../../components/chat/DraftCards';
+import { ChatSettings } from '../../../components/chat/ChatSettings';
 import { LibraryImagePicker } from '../../../components/chat/LibraryImagePicker';
 import { ReplyOptionsBar } from '../../../components/chat/ReplyOptionsBar';
 import { HeaderAction } from '../../../components/HeaderAction';
@@ -49,6 +50,9 @@ export default function Conversation() {
     const [options, setOptions] = useState<ReplyOptions>(NO_OPTIONS);
     const [images, setImages] = useState<ChatImage[]>([]);
     const [pickerOpen, setPickerOpen] = useState(false);
+    const [settingsOpen, setSettingsOpen] = useState(false);
+    const [allModels, setAllModels] = useState<ChatModel[]>([]);
+    const [thread, setThread] = useState<{ model_id: string; system_prompt: string | null } | null>(null);
     const [maxImages, setMaxImages] = useState(MAX_ATTACHMENTS);
     const [catalog, setCatalog] = useState<CatalogModel[] | null>(null);
     const abort = useRef<AbortController | null>(null);
@@ -65,6 +69,8 @@ export default function Conversation() {
                 // sending is held back until the price is known.
                 const listed = await chatApi(api).listModelsWithLimits().catch(() => null);
                 setModel(listed?.models.find((m) => m.id === r.thread.model_id) ?? null);
+                setAllModels(listed?.models ?? []);
+                setThread({ model_id: r.thread.model_id, system_prompt: r.thread.system_prompt ?? null });
                 if (listed?.max_attachments) setMaxImages(Math.min(MAX_ATTACHMENTS, listed.max_attachments));
             })
             .catch(() => setError('Could not load this chat.'));
@@ -184,6 +190,18 @@ export default function Conversation() {
         [api, draft, id, images, messages, model, options],
     );
 
+    // Switching the model changes what the next reply costs; the choices the new model does not offer are dropped.
+    async function saveSettings(patch: { model_id?: string; system_prompt?: string }) {
+        const updated = await chatApi(api).updateThread(id, patch);
+        const model_id = updated.model_id ?? patch.model_id ?? thread?.model_id ?? '';
+        setThread({ model_id, system_prompt: updated.system_prompt ?? patch.system_prompt ?? thread?.system_prompt ?? null });
+        const next = allModels.find((m) => m.id === model_id);
+        if (next) {
+            setModel(next);
+            setOptions((o) => cleanOptions(next, o));
+        }
+    }
+
     async function togglePin() {
         const next = !pinned;
         setPinned(next);
@@ -236,6 +254,9 @@ export default function Conversation() {
                     <Pressable accessibilityRole="button" style={styles.tool} onPress={() => setRenaming(title === 'Chat' ? '' : title)}>
                         <Text style={styles.toolText}>{t('chat.rename')}</Text>
                     </Pressable>
+                    <Pressable accessibilityRole="button" disabled={!thread || sending} style={styles.tool} onPress={() => setSettingsOpen(true)}>
+                        <Text style={styles.toolText}>{t('chat.settings.open')}</Text>
+                    </Pressable>
                 </View>
             )}
             {messages === null && !error ? (
@@ -282,6 +303,7 @@ export default function Conversation() {
             {model && imageExtra !== null ? (
                 <AttachStrip items={images} extra={imageExtra} max={maxImages} disabled={sending} onLibrary={() => setPickerOpen(true)} onPhotos={() => void addPhotos()} onRemove={(rid) => setImages((cur) => cur.filter((x) => x.id !== rid))} />
             ) : null}
+            {thread && settingsOpen ? <ChatSettings visible thread={thread} models={allModels} onSave={saveSettings} onClose={() => setSettingsOpen(false)} /> : null}
             <LibraryImagePicker visible={pickerOpen} chosen={images} max={maxImages} onClose={() => setPickerOpen(false)} onPick={(img) => setImages((cur) => (cur.length < maxImages && !cur.some((c) => c.assetId === img.assetId) ? [...cur, img] : cur))} />
             <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
                 <TextInput
