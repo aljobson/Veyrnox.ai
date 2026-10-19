@@ -1,9 +1,10 @@
 import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { VEY_CLEARANCE } from '../../../components/VeyMascot';
 import { MIN_TARGET } from '../../../lib/a11y';
 import { t } from '../../../lib/i18n';
-import { findOddling, portraitUrl } from '../../../lib/oddlings';
+import { findOddling, portraitUrl, shareMessage, shareUrl } from '../../../lib/oddlings';
 import { colors } from '../../../theme';
 
 export default function OddlingSheet() {
@@ -34,6 +35,9 @@ export default function OddlingSheet() {
             <Pressable accessibilityRole="button" style={styles.build} onPress={() => router.push({ pathname: '/oddlings/build', params: { from: oddling.id } })}>
                 <Text style={styles.buildText}>{t('oddlings.build.recreate')}</Text>
             </Pressable>
+            <Pressable accessibilityRole="button" style={styles.share} onPress={() => { void Share.share({ message: shareMessage(oddling.name, oddling.hook), url: shareUrl(oddling.id) }).catch(() => undefined); }}>
+                <Text style={styles.shareText}>{t('oddlings.sheet.share')}</Text>
+            </Pressable>
             <Text style={styles.note}>{t('oddlings.sheet.preview')}</Text>
         </ScrollView>
     );
@@ -41,7 +45,7 @@ export default function OddlingSheet() {
 
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
-    content: { padding: 16, paddingBottom: 40 },
+    content: { padding: 16, paddingBottom: VEY_CLEARANCE + 32 },
     muted: { color: colors.muted, padding: 24 },
     portrait: { width: '100%', aspectRatio: 2 / 3, borderRadius: 16, backgroundColor: colors.surface },
     kicker: { color: colors.accent, fontSize: 11, fontWeight: '700', letterSpacing: 1.5, marginTop: 16 },
@@ -53,5 +57,7 @@ const styles = StyleSheet.create({
     tag: { color: colors.muted, fontSize: 12, backgroundColor: colors.surface, borderRadius: 14, paddingHorizontal: 10, paddingVertical: 5, overflow: 'hidden' },
     build: { minHeight: MIN_TARGET, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.accent, borderRadius: 12, marginTop: 24 },
     buildText: { color: colors.accentInk, fontSize: 16, fontWeight: '800' },
+    share: { minHeight: MIN_TARGET, justifyContent: 'center', alignItems: 'center', borderRadius: 12, borderWidth: 1, borderColor: colors.borderStrong, marginTop: 12 },
+    shareText: { color: colors.text, fontSize: 16, fontWeight: '700' },
     note: { color: colors.muted, fontSize: 13, marginTop: 24 },
 });

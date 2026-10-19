@@ -66,3 +66,9 @@ export function toggleKind(current: OddlingKind | null, next: OddlingKind): Oddl
 export function reconcileKind(tabId: string, kind: OddlingKind | null): OddlingKind | null {
     return kind && kindCount(tabId, kind) > 0 ? kind : null;
 }
+
+// The public page for a character on the site. Only an id from the cast ever reaches here (findOddling), so the link
+// is always one of the 72 original characters and never a user-made one.
+export const shareUrl = (id: string): string => `${PORTRAIT_HOST}/oddlings/${encodeURIComponent(id)}`;
+
+export const shareMessage = (name: string, hook: string): string => `${name}: ${hook} An original fictional character on Veyrnox.ai.`;
