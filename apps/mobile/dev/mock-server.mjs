@@ -203,6 +203,18 @@ createServer(async (req, res) => {
         console.log('MOCK created post', id, body.publishNow === true ? 'now' : 'scheduled');
         return send(res, 201, { post_id: id, idempotent: false, target_count: body.accountIds.length });
     }
+    // Contacts (ADR-0165): two people; a save is kept in memory.
+    if (path === '/api/v1/social/contacts' && req.method === 'GET') {
+        state.contacts ??= [{ account_id: 'acc-1', network: 'instagram', account_name: 'Veyrnox Studio', external_id: 'ig-100', name: 'Lee Park', avatar_url: null, last_active_at: '2026-10-19T09:00:00Z', message_count: 6, unread_count: 2, tags: ['vip'], subscription_status: 'subscribed', notes: 'Asked about prints.' }, { account_id: 'acc-1', network: 'instagram', account_name: 'Veyrnox Studio', external_id: 'ig-200', name: 'Sam Rivera', avatar_url: null, last_active_at: '2026-10-17T09:00:00Z', message_count: 2, unread_count: 0, tags: [], subscription_status: 'unknown', notes: null }];
+        const q = (url.searchParams.get('search') || '').toLowerCase(); const st = url.searchParams.get('subscriptionStatus');
+        return send(res, 200, { brandRole: 'owner', contacts: state.contacts.filter((c) => c.name.toLowerCase().includes(q) && (!st || c.subscription_status === st)) });
+    }
+    if (path === '/api/v1/social/contacts' && req.method === 'PATCH') {
+        const c = (state.contacts ?? []).find((x) => x.external_id === body.externalId);
+        if (!c) return send(res, 404, { error: 'contact_not_found' });
+        Object.assign(c, { tags: body.tags, subscription_status: body.subscriptionStatus, notes: body.notes || null });
+        return send(res, 200, { ok: true, tags: c.tags, subscriptionStatus: c.subscription_status });
+    }
     // Team, activity, queues and autolists (ADR-0163). Read-mostly; saves answer ok without keeping state.
     if (path === '/api/v1/social/team' && req.method === 'GET') return send(res, 200, { brand_id: 'b1', brand_name: 'Veyrnox Studio', actor_role: 'owner', members: [{ user_id: 'u-1', email: 'you@example.test', role: 'owner', joined_at: '2026-09-01T00:00:00Z' }, { user_id: 'u-2', email: 'lee@acme.example', role: 'editor', joined_at: '2026-10-05T00:00:00Z' }], invitations: [{ id: 'inv-1', email: 'sam@acme.example', role: 'reviewer', status: 'pending', expires_at: '2026-10-30T00:00:00Z', created_at: '2026-10-16T00:00:00Z' }] });
     if (path === '/api/v1/social/activity' && req.method === 'GET') {
