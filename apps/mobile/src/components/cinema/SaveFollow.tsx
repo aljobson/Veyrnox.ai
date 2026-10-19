@@ -1,5 +1,6 @@
 import * as Crypto from 'expo-crypto';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { MIN_TARGET } from '../../lib/a11y';
@@ -11,6 +12,7 @@ import { colors } from '../../theme';
 // Following tabs already say so); a failed change puts the button back and says why.
 export function SaveFollow({ contentId }: { readonly contentId: string }) {
     const { api } = useAuth();
+    const router = useRouter();
     const [state, setState] = useState<RetentionState | null>(null);
     const [note, setNote] = useState<string | null>(null);
     const [busy, setBusy] = useState<FollowKind | null>(null);
@@ -58,6 +60,11 @@ export function SaveFollow({ contentId }: { readonly contentId: string }) {
                     </Pressable>
                 ))}
             </View>
+            {state.ownCreator ? (
+                <Pressable accessibilityRole="button" style={styles.btn} onPress={() => router.push({ pathname: '/cinema/analytics', params: { id: contentId } })}>
+                    <Text style={styles.text}>{t('cinemaCreator.analytics.open')}</Text>
+                </Pressable>
+            ) : null}
             {note ? <Text style={styles.error} accessibilityRole="alert">{note}</Text> : null}
         </View>
     );

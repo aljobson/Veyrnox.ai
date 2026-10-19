@@ -5,13 +5,14 @@ import { MIN_TARGET } from '../../lib/a11y';
 import { colors } from '../../theme';
 import { CategoryChips } from './CategoryChips';
 import { CinemaFeed } from './CinemaFeed';
+import { CinemaProfile } from './CinemaProfile';
 import { DiscoveryList } from './DiscoveryList';
 import { SavedList } from './SavedList';
 import { WinnersList } from './WinnersList';
 
 // The Cinema tab: section tabs over the category chips over the section. "Watch" is the one-title-per-screen feed
 // (the phone's own way in); Series, Vote, Saved, Following and Winners are the web's tabs (ADR-0164, ADR-0165).
-type Section = 'watch' | 'series' | 'vote' | 'saved' | 'following' | 'winners';
+type Section = 'watch' | 'series' | 'vote' | 'saved' | 'following' | 'winners' | 'profile';
 const SECTIONS: readonly { key: Section; label: string }[] = [
     { key: 'watch', label: 'cinemaBrowse.tab.watch' },
     { key: 'series', label: 'cinemaBrowse.tab.series' },
@@ -19,6 +20,7 @@ const SECTIONS: readonly { key: Section; label: string }[] = [
     { key: 'saved', label: 'cinemaBrowse.tab.saved' },
     { key: 'following', label: 'cinemaBrowse.tab.following' },
     { key: 'winners', label: 'cinemaBrowse.tab.winners' },
+    { key: 'profile', label: 'cinemaBrowse.tab.profile' },
 ];
 
 export function CinemaHome() {
@@ -53,6 +55,7 @@ export function CinemaHome() {
                     : section === 'saved' ? <SavedList key="saved" kind="saved" />
                         : section === 'following' ? <SavedList key={`f:${follow}`} kind={follow} />
                             : section === 'winners' ? <WinnersList />
+                                : section === 'profile' ? <CinemaProfile />
                                 : <DiscoveryList key={`${section}:${category}`} mode={section === 'vote' ? 'voting' : 'series'} category={category} />}
             </View>
         </View>

@@ -12,7 +12,7 @@ const isObject = (v: unknown): v is Raw => typeof v === 'object' && v !== null &
 const str = (v: unknown, max = 240): string => (typeof v === 'string' ? v.slice(0, max) : '');
 const num = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
 
-const CLOSED_CODES = ['retention_not_open', 'voting_not_open', 'story_polls_not_open', 'rankings_not_open', 'viewing_not_open'];
+const CLOSED_CODES = ['retention_not_open', 'voting_not_open', 'story_polls_not_open', 'rankings_not_open', 'viewing_not_open', 'profiles_not_open', 'creators_not_open', 'analytics_not_open'];
 export const isClosed = (err: unknown): boolean => err instanceof ApiError && err.status === 503 && CLOSED_CODES.includes(err.code);
 
 // Result of a read that may be closed.
