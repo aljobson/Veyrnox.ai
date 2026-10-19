@@ -7,7 +7,7 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf
 test('mobile Studio has a compact model picker and a visible cost action', () => {
   const src = read('app/veyrnox/app/create/page.js');
   assert.match(src, /<select[\s\S]*id="studio-model"[\s\S]*onChange=\{\(event\) => setModelId\(event\.target\.value\)\}/);
-  assert.match(src, /item\.credits === 1 \? 'credit' : 'credits'/);
+  assert.match(src, /creditLabel\(item\.credits\)/);
   assert.match(src, /sticky bottom-3[\s\S]*lg:static/);
 });
 
@@ -18,9 +18,9 @@ test('the Explore hero image is eagerly responsive', () => {
 
 test('Publish failures lead to recovery and calendar loading has a ceiling', () => {
   const analytics = read('app/veyrnox/app/publish/analytics/page.js');
-  assert.match(analytics, /href="\/app\/publish"[\s\S]*Reconnect it in Veyrnox.ai Publish/);
+  assert.match(analytics, /data-testid="publish-analytics-reconnect" href="\/app\/publish"/);
   const calendar = read('app/veyrnox/app/publish/calendar/page.js');
-  assert.match(calendar, /window\.setTimeout\([\s\S]*calendar is taking too long to load[\s\S]*,8000\)/);
+  assert.match(calendar, /window\.setTimeout\([\s\S]*app\.publish\.calendar\.timeout[\s\S]*,8000\)/);
   assert.match(calendar, /return\(\)=>\{active=false;window\.clearTimeout\(timeout\);\}/);
 });
 

@@ -1,3 +1,4 @@
+import { resolveI18nSource } from '../scripts/lib/vey-knowledge-i18n.mjs';
 // After Stop (ADR-0067): the server saves the stopped turn a moment after the browser lets go, so the screen reads the
 // job and the chat a few times instead of reloading once and showing a chat without the turn.
 // The reading is a plain module and is tested directly. The screen is not importable here, so its part is pinned by
@@ -366,9 +367,9 @@ test('a reply that is still being saved shows no price, and the button says it i
     assert.match(screen, /const isLive = \(m\) => m\.status === 'streaming' \|\| m\.status === 'saving'/);
     assert.match(screen, /!isLive\(m\) && <Footer /, 'no price, Copy or Star until the saved reply is shown');
     // One line under the text serves both look-ups (Stop here, a dropped connection in tests/chatBrokenStream.test.mjs).
-    assert.match(screen, /m\.status === 'lost'\) && m\.content && <p role="status"[^>]*>\{m\.status === 'saving' \? 'Stopped\. Saving this reply\.' : /);
+    assert.match(resolveI18nSource(screen), /m\.status === 'lost'\) && m\.content && <p role="status"[^>]*>\{m\.status === 'saving' \? "Stopped\. Saving this reply\." : /);
     // The button is also disabled, and reads "Checking", while a turn cut off by a dropped connection is looked for.
-    assert.match(screen, /disabled=\{stopping \|\| checking\}[^\n]*\{stopping \? 'Stopping' : /);
+    assert.match(resolveI18nSource(screen), /disabled=\{stopping \|\| checking\}[^\n]*\{stopping \? "Stopping" : /);
     // Its own state, cleared when the send ends. A bubble an earlier Stop left as 'saving' must not disable the button
     // on the next reply, so the button does not read the messages.
     assert.match(stopBranch(), /setStopping\(true\);/);

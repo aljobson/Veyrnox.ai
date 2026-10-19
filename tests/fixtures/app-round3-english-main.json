@@ -1,0 +1,92 @@
+[
+  {
+    "area": "media",
+    "name": "AdvancedMediaBin",
+    "text": "MediaUpload video, image or audioAdd from my LibraryallfavoritesrecentallvideoaudioimagegraphicAll foldersUnfiled1 matching media itemsUser media unchanged☆video · 0:03.0 · Relink neededUnfiledAdd to timelineCreate proxySourceDetailsRemove mediaRelink a missing file"
+  },
+  {
+    "area": "media",
+    "name": "MediaArtwork",
+    "text": ""
+  },
+  {
+    "area": "project",
+    "name": "DocumentEditor",
+    "text": "← All projectsProject briefUser project unchangedSaved · version 2Save nowSaved version 3User brief unchanged16:9 · 30 fpsYour draft is still below. Choose which version to keep; previous saved versions remain in history.Use saved versionSave my draft insteadWhat are you creating?Capture the idea, audience, and direction. Your changes save automatically.User brief unchanged20 / 6,000Output canvasAspect ratioLandscape · 16:9Portrait · 9:16Square · 1:1Frame rate24 fps25 fps30 fps60 fpsThese settings belong to this project. They do not change existing media in your library.Version historyEach save keeps a snapshot. Restore a previous version whenever you need.Version 2 · CurrentOct 18, 2026, 12:00 PMRestored from version 1Older versionsVersion 1Oct 18, 2026, 12:00 PM · 16:9 · 30 fpsUser brief unchangedRestoring creates a new version. Your existing history is preserved.CloseRestore as new version"
+  },
+  {
+    "area": "projects",
+    "name": "default",
+    "text": "Your workspaceProjectsA home for your next idea. Create and manage projects in your workspace.New projectWorkspaceUser workspace unchangedFind a project1 projectNewest firstUser project unchangedCreated Oct 18, 2026RenameDeleteLooking for generated images, video or audio? Open your library"
+  },
+  {
+    "area": "projects",
+    "name": "ProjectDialog",
+    "text": "New projectProject nameChoose a name you will recognise. Up to 120 characters.CancelCreate project"
+  },
+  {
+    "area": "projects",
+    "name": "ProjectDialog",
+    "text": "Delete project?“User project unchanged” will be removed from this workspace. Generated media in your library stays there.CancelDelete project"
+  },
+  {
+    "area": "person",
+    "name": "PersonProcessingControls",
+    "text": "Person and body toolsPerson operationPerson cutout and backgroundTransparent person cutoutFace and body skin retouchTracked person glowAutomatic person reframeFace or body reshapeDirectional person lightingProcessed colourProcess person videoRuns the person model locally in a separate Worker. Up to 10 seconds at 720p; requires browser graphics support and downloads a model/runtime of about 28 MiB. Transparent cutout creates a silent VP9 WebM overlay and requires a silent source. Other operations create an opaque MP4 and preserve AAC audio. Retouch smooths detected skin and changes its light; reshape is a separate operation. Reframe follows the largest detected person. Review edges, occlusions and multiple people."
+  },
+  {
+    "area": "person",
+    "name": "PersonProcessingControls",
+    "text": "Person and body toolsPerson operationPerson cutout and backgroundTransparent person cutoutFace and body skin retouchTracked person glowAutomatic person reframeFace or body reshapeDirectional person lightingPerson processing strengthSkin regionfacebodybothSkin lightingProcess person videoRuns the person model locally in a separate Worker. Up to 10 seconds at 720p; requires browser graphics support and downloads a model/runtime of about 28 MiB. Transparent cutout creates a silent VP9 WebM overlay and requires a silent source. Other operations create an opaque MP4 and preserve AAC audio. Retouch smooths detected skin and changes its light; reshape is a separate operation. Reframe follows the largest detected person. Review edges, occlusions and multiple people."
+  },
+  {
+    "area": "person",
+    "name": "PersonProcessingControls",
+    "text": "Person and body toolsPerson operationPerson cutout and backgroundTransparent person cutoutFace and body skin retouchTracked person glowAutomatic person reframeFace or body reshapeDirectional person lightingLight colourPerson light direction (degrees)Person light intensity (stops)Person ambient light (stops)0° lights from the right; −90° from above. Directional colour and exposure follow the person matte. This 2D effect does not reconstruct depth or shadows.Process person videoRuns the person model locally in a separate Worker. Up to 10 seconds at 720p; requires browser graphics support and downloads a model/runtime of about 28 MiB. Transparent cutout creates a silent VP9 WebM overlay and requires a silent source. Other operations create an opaque MP4 and preserve AAC audio. Retouch smooths detected skin and changes its light; reshape is a separate operation. Reframe follows the largest detected person. Review edges, occlusions and multiple people."
+  },
+  {
+    "area": "person",
+    "name": "PersonProcessingControls",
+    "text": "Person and body toolsPerson operationPerson cutout and backgroundTransparent person cutoutFace and body skin retouchTracked person glowAutomatic person reframeFace or body reshapeDirectional person lightingReshape regionFaceBodyReshape width (%)Reshape height (%)Negative values narrow or shorten; positive values widen or lengthen. The 2D warp follows the largest detected person. Face uses the detected face region; body uses the full silhouette. Nearby background can bend. Review the result.Process person videoRuns the person model locally in a separate Worker. Up to 10 seconds at 720p; requires browser graphics support and downloads a model/runtime of about 28 MiB. Transparent cutout creates a silent VP9 WebM overlay and requires a silent source. Other operations create an opaque MP4 and preserve AAC audio. Retouch smooths detected skin and changes its light; reshape is a separate operation. Reframe follows the largest detected person. Review edges, occlusions and multiple people."
+  },
+  {
+    "area": "person",
+    "name": "PersonProcessingControls",
+    "text": "Person and body toolsPerson operationPerson cutout and backgroundTransparent person cutoutFace and body skin retouchTracked person glowAutomatic person reframeFace or body reshapeDirectional person lightingPerson reframe shapePortraitSquareLandscapeProcess person videoRuns the person model locally in a separate Worker. Up to 10 seconds at 720p; requires browser graphics support and downloads a model/runtime of about 28 MiB. Transparent cutout creates a silent VP9 WebM overlay and requires a silent source. Other operations create an opaque MP4 and preserve AAC audio. Retouch smooths detected skin and changes its light; reshape is a separate operation. Reframe follows the largest detected person. Review edges, occlusions and multiple people."
+  },
+  {
+    "area": "ads",
+    "name": "AdsWorkspace",
+    "text": "Draft workspace. Veyrnox saves campaign plans here. Launching spend stays disabled until the selected provider account, ad permissions and billing are connected.New campaign draftCampaign nameNetworkmetagoogletiktoklinkedintwitterCampaign typeStandalone campaignBoost a published postObjectiveawarenesstrafficengagementleadssalesDaily budgetLocationsSeparate values with commas.InterestsSeparate values with commas.Minimum ageMaximum ageDestination URLLead form URLStartsEndsSave draftCampaign draftsUser campaign unchangedtiktok · standalone · awareness · GBP 1234.56 per dayEditDelete"
+  },
+  {
+    "area": "projectBar",
+    "name": "ProjectSessionBar",
+    "text": "User project unchangedSaved · version 2SaveVersionsSave to a projectCreateCancelVersionsVersion 1You · 10/18/2026, 12:00:00 PM · restored from 2Close"
+  },
+  {
+    "area": "reports",
+    "name": "ReportTemplates",
+    "text": "New report templateChoose the repeatable view. Running it always uses the latest available provider data.Template nameReport titleAccountAll supported accountsPeriod7 days30 days90 days12 monthsAccent colorCompare with previous periodInclude content tablesSave templateSaved templatesUser report unchanged30 days · All supported accounts · Previous-period comparison · Content included · Weekly scheduleDelivers PDF to 1 recipientNext run 10/18/2026, 12:00:00 PM · Last run readyRun reportDownload PDFDownload PowerPointEditDelete"
+  },
+  {
+    "area": "billing",
+    "name": "Billing",
+    "text": "Credit SubscriptionsChoose an optional weekly or monthly subscription. It renews automatically until cancelled. Credits expire at each cycle end and do not roll over. Tax and the final total are shown at checkout.StarterMonthly$10 / month1,200 Credits each paid monthPlus applicable tax. Cycle Credits expire and do not roll over.SelectedI agree to Starter at $10 plus applicable tax every month until I cancel. I receive 1200 Credits after each confirmed monthly payment; unused cycle Credits expire without rollover.You can stop renewal here. An unused initial cycle may qualify for a full cooling-off refund within fourteen days. Terms · PrivacyContinue to secure checkout"
+  },
+  {
+    "area": "billing",
+    "name": "Billing",
+    "text": "Credit SubscriptionsStarterStatus: active$10 / month · 1200 Credits per paid cyclePaid period ends 10/18/2026, 12:00:00 PMStop renewal at period endCancel unused subscription within 14 daysRequest cancellation and a full refund within fourteen days of the initial paid cycle, only if this cycle’s Credits are unspent. The server checks eligibility; pending refunds are not complete.I confirm this cancellation request.Confirm cancellation Keep subscription"
+  },
+  {
+    "area": "video",
+    "name": "default",
+    "text": "VIDEO AGENTMake a video from a briefDescribe the video you want. The agent plans it, shows you the price, and only makes it after you approve.STEP 1Write a briefSay what the video is about and how it should feel. Pick a shape: 9:16 for phones, 16:9 for wide screens, 1:1 for squares.STEP 2Check the plan and priceThe agent drafts a plan and shows the exact Credit price. Planning is free, and you can re-plan as often as you like.STEP 3Approve to startCredits are taken once, when you approve. The agent then produces and edits the video as one job.BRIEFExact narration (optional)Brief-only audio is generated and may not repeat quoted words exactly. This field sends your words separately to a speech model; pronunciation can still vary. One approval, the same displayed price.9:1616:91:1Make a planPlanning is free. You are only charged when you approve the plan.Before you startWriting a good briefName the subject, the setting and the mood: &quot;a lighthouse at dusk, calm and cinematic&quot;.Say who it is for or where it will play, such as a product teaser or a social clip.Keep it to one idea. A tight brief plans better than a long list of wishes.Need exact words spoken? Use the narration box. Otherwise any audio is generated and may not repeat quoted words.What happens after you approveMaking a video can take several minutes. It keeps running if you leave this page, and your finished video appears on this page when it is ready.MoneyThe price on the plan is the price you pay. Nothing is charged until you approve, and if the video can&#x27;t be made the Credits are returned automatically."
+  },
+  {
+    "area": "video",
+    "name": "default",
+    "text": "VIDEO AGENTMake a video from a briefDescribe the video you want. The agent plans it, shows you the price, and only makes it after you approve.STEP 1Write a briefSay what the video is about and how it should feel. Pick a shape: 9:16 for phones, 16:9 for wide screens, 1:1 for squares.STEP 2Check the plan and priceThe agent drafts a plan and shows the exact Credit price. Planning is free, and you can re-plan as often as you like.STEP 3Approve to startCredits are taken once, when you approve. The agent then produces and edits the video as one job.BRIEFUser brief unchangedExact narration (optional)User narration unchangedBrief-only audio is generated and may not repeat quoted words exactly. This field sends your words separately to a speech model; pronunciation can still vary. One approval, the same displayed price.9:1616:91:1Re-planPlanning is free. You are only charged when you approve the plan.PLANProvider summary unchangedAbout 10 seconds · 9:16Exact narration to be spokenUser narration unchangedReview every word before approving. Editing this text requires a new plan.165 cr · balance 100 crApprove and make it · 165 crYou need 65 more Credits to approve this plan.Compare monthly plans and packsIf the video can&#x27;t be made, the credits come back automatically.Before you startWriting a good briefName the subject, the setting and the mood: &quot;a lighthouse at dusk, calm and cinematic&quot;.Say who it is for or where it will play, such as a product teaser or a social clip.Keep it to one idea. A tight brief plans better than a long list of wishes.Need exact words spoken? Use the narration box. Otherwise any audio is generated and may not repeat quoted words.What happens after you approveMaking a video can take several minutes. It keeps running if you leave this page, and your finished video appears on this page when it is ready.MoneyThe price on the plan is the price you pay. Nothing is charged until you approve, and if the video can&#x27;t be made the Credits are returned automatically."
+  }
+]

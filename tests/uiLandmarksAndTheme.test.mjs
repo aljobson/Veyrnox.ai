@@ -53,7 +53,7 @@ test('the account button opens a list of links, not an ARIA menu, and takes focu
 
 test('a toggle has one name, and the password field is named by its label alone', () => {
     const library = read('app/veyrnox/app/library/page.js');
-    assert.match(library, /aria-pressed=\{selected\} aria-label="Add to edit"/);
+    assert.match(library, /aria-pressed=\{selected\} data-testid="library-add-to-edit"/);
     const menu = read('app/veyrnox/_components/MobileMenu.js');
     assert.match(menu, /aria-expanded=\{open\}/);
     assert.match(menu, /buttonLabel = 'Menu'/);

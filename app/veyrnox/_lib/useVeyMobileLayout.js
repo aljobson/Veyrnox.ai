@@ -45,7 +45,7 @@ export default function useVeyMobileLayout({ open, pathname, position, manualPos
         restore(); main = current; original = main?.style.paddingBottom || '';
         base = main ? parseFloat(getComputedStyle(main).paddingBottom) || 0 : 0;
       }
-      const editorDock = document.querySelector('[aria-label="Mobile editor sections"]');
+      const editorDock = document.querySelector('[data-testid="editor-sections"]');
       const chat = document.querySelector('[role="dialog"][aria-labelledby="vx-helper-title"]');
       const guide = document.querySelector('[data-vey-walkthrough]');
       const nextPanel = open ? (guide?.getBoundingClientRect().width > 0 ? guide : chat) : document.querySelector('[data-storage-notice]')

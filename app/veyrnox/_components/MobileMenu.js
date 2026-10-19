@@ -6,10 +6,11 @@ import { ThemeToggle } from './ThemeToggle';
 import { Icon } from './Icon';
 import { useOddlingsPublic } from './OddlingsPublicFlag';
 import { navHref } from '../_lib/tokens';
+import { LanguageMenu } from './LanguageMenu';
 import { useI18n } from '../../../components/I18nProvider';
 
 // A visible menu keeps every destination reachable on a narrow screen.
-export function MobileMenu({ items, className = '', buttonLabel = 'Menu', buttonText = '', navLabel = 'Site', activeHref, grouped = false }) {
+export function MobileMenu({ items, className = '', buttonLabel = 'Menu', buttonText = '', navLabel = 'Site', activeHref, grouped = false, languageMenu = false }) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef(null);
   const oddlingsPublic = useOddlingsPublic();
@@ -112,7 +113,7 @@ export function MobileMenu({ items, className = '', buttonLabel = 'Menu', button
             )}
             <div className="mt-2 flex items-center justify-between border-t border-vx-border pt-3">
               <span className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-faint">{t('ui.theme')}</span>
-              <ThemeToggle />
+              <div className="flex items-center gap-2">{languageMenu && <LanguageMenu id="vx-studio-language-menu" />}<ThemeToggle /></div>
             </div>
           </nav>
         </>

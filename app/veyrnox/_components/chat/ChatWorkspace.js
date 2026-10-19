@@ -1,4 +1,7 @@
 'use client';
+import { useI18n } from '../../../../components/I18nProvider';
+import { localeTag } from '../../../../lib/i18n/locales.mjs';
+import { pluralKey, tOr } from '../../../../lib/i18n/translate.mjs';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { gatewayFetch } from '../../_lib/gateway';
@@ -31,7 +34,7 @@ import { CHAT_SCREEN_COPY, chatScreen, loadFailure } from '../../_lib/chatScreen
 import { ask, enter, forget, giveUp, land, leave, newChatView, onScreen } from '../../_lib/chatSendHome';
 import { askKeptWarning, settleKeptWarning } from '../../_lib/chatWarning';
 
-const credits = (n) => `${n} Credit${n === 1 ? '' : 's'}`;
+function credits(t, locale, n) { return t(pluralKey(t, locale, 'app.chat.settings.credits', n), { count: locale === 'en' ? String(n) : n.toLocaleString(localeTag(locale)) }); }
 const MAX_TEXT = 8000;
 const MAX_PROMPT = 4000;
 const store = () => { try { return window.localStorage; } catch { return null; } };
@@ -55,20 +58,23 @@ const wordsFor = (tokens) => Math.round(((tokens || 1024) * 0.75) / 10) * 10;
 const isLive = (m) => m.status === 'streaming' || m.status === 'saving' || m.status === 'lost';
 
 function Footer({ m, starred, onStar }) {
+  const { t, locale } = useI18n();
   const [copied, setCopied] = useState(false);
-  const price = m.credits === 0 ? 'Free' : credits(m.credits); // a reply that used a free allowance (ADR-0069)
-  const label = m.status === 'error' ? 'Cut off. No Credits used' : m.status === 'canceled' ? `Stopped. ${price}` : price;
+  const price = m.credits === 0 ? t('publish.plan.colFree') : credits(t, locale, m.credits); // a reply that used a free allowance (ADR-0069)
+  const label = m.status === 'error' ? t("app.chat.workspace.cutOff") : m.status === 'canceled' ? t('app.chat.workspace.stoppedPrice', { price }) : price;
   const copy = async () => { try { await navigator.clipboard.writeText(m.content); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* blocked */ } };
   return (
     <p className="mt-2 flex items-center gap-3 font-vx-mono text-xs text-vx-fg-muted vx-num">
       <span>{label}</span>
-      <button type="button" onClick={copy} className="rounded-sm px-1.5 py-0.5 font-sans hover:text-vx-fg" aria-label="Copy reply">{copied ? 'Copied' : 'Copy'}</button>
-      <button type="button" onClick={onStar} aria-pressed={starred} className="rounded-sm px-1.5 py-0.5 font-sans hover:text-vx-fg" aria-label={starred ? 'Remove star' : 'Star reply'}>{starred ? '★ Starred' : '☆ Star'}</button>
+      <button type="button" onClick={copy} className="rounded-sm px-1.5 py-0.5 font-sans hover:text-vx-fg" aria-label={t("app.chat.workspace.copy")}>{copied ? t("common.copied") : t("common.copy")}</button>
+      <button type="button" onClick={onStar} aria-pressed={starred} className="rounded-sm px-1.5 py-0.5 font-sans hover:text-vx-fg" aria-label={starred ? t("app.chat.workspace.unstar") : t("app.chat.workspace.starReply")}>{starred ? t("app.chat.workspace.starred") : t("app.chat.workspace.star")}</button>
     </p>
   );
 }
 
 export function ChatWorkspace() {
+  const { t, locale } = useI18n();
+  const number = n => locale === 'en' ? String(n) : n.toLocaleString(localeTag(locale));
   const [models, setModels] = useState([]);
   const [threads, setThreads] = useState([]);
   const [folders, setFolders] = useState(null); // null: folders are not available here, so their controls stay hidden
@@ -123,11 +129,11 @@ export function ChatWorkspace() {
     (async () => {
       try {
         // Folders are optional: if they fail to load, chat works without them.
-        const [m, t, f] = await Promise.all([chatApi.models(), chatApi.threads(), chatApi.folders().catch(() => null)]);
+        const [m, threadResult, f] = await Promise.all([chatApi.models(), chatApi.threads(), chatApi.folders().catch(() => null)]);
         if (f) setFolders(f.folders);
         // Personas are optional too: any failure leaves the feature hidden and chat unchanged.
         chatApi.personas().then((r) => { if (r && r.enabled) { setPersonasOn(true); setPersonas(r.personas || []); } }).catch(() => {});
-        setModels(m.models); setLimits({ maxAttachments: m.max_attachments || 4, maxEdge: m.max_image_edge || 2048 }); setThreads(t.threads); setDraftModel(defaultModel(m.models)?.id || '');
+        setModels(m.models); setLimits({ maxAttachments: m.max_attachments || 4, maxEdge: m.max_image_edge || 2048 }); setThreads(threadResult.threads); setDraftModel(defaultModel(m.models)?.id || '');
       } catch (e) { if (fail(e) === 'failed') setLoadFailed(true); } finally { setReady(true); }
     })();
   }, [fail, attempt]);
@@ -179,13 +185,13 @@ export function ChatWorkspace() {
   const patch = async (id, body) => {
     try {
       const { thread } = await chatApi.patch(id, body);
-      setThreads((ts) => ts.map((t) => (t.id === id ? { ...t, ...thread } : t)));
+      setThreads((ts) => ts.map((item) => (item.id === id ? { ...item, ...thread } : item)));
       setActive((a) => (a?.id === id ? { ...a, ...thread } : a));
       return true;
     } catch (e) { fail(e); return false; }
   };
   const remove = async (id) => {
-    try { await chatApi.remove(id); dropNotice(id); setThreads((ts) => ts.filter((t) => t.id !== id)); if (forget(chatView.current, id)) clear(); } catch (e) { fail(e); }
+    try { await chatApi.remove(id); dropNotice(id); setThreads((ts) => ts.filter((thread) => thread.id !== id)); if (forget(chatView.current, id)) clear(); } catch (e) { fail(e); }
   };
   const selectModel = (id) => (active ? patch(active.id, { model_id: id }) : setDraftModel(id));
   // Choosing a persona fills the draft of a chat that has not started: its instructions, its model if still offered, and its options.
@@ -212,11 +218,11 @@ export function ChatWorkspace() {
     (async () => {
       try {
         const a = await gatewayFetch(`/jobs/${encodeURIComponent(id)}/asset`);
-        if (!String(a.mime_type).startsWith('image/')) { att.setNotice('Chat reads images only. Pick an image from your Library.'); return; }
-        await pickFromLibrary({ id, url: a.url, label: 'Library image' });
+        if (!String(a.mime_type).startsWith('image/')) { att.setNotice(t("app.chat.workspace.imagesOnly")); return; }
+        await pickFromLibrary({ id, url: a.url, label: t("app.chat.workspace.libraryImage") });
         document.getElementById('chat-msg')?.focus();
       } catch {
-        att.setNotice('That image could not be opened. It may have expired.');
+        att.setNotice(t("app.chat.workspace.imageExpired"));
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -251,12 +257,12 @@ export function ChatWorkspace() {
     try {
       await chatApi.removeFolder(id);
       setFolders((fs) => fs.filter((x) => x.id !== id));
-      setThreads((ts) => ts.map((t) => (t.folder_id === id ? { ...t, folder_id: null } : t)));
+      setThreads((ts) => ts.map((thread) => (thread.folder_id === id ? { ...thread, folder_id: null } : thread)));
       setFolder((cur) => (cur === id ? ALL_CHATS : cur));
     } catch (e) { fail(e); }
   };
   const move = async (id, folderId) => {
-    try { await chatApi.move(id, folderId); setThreads((ts) => ts.map((t) => (t.id === id ? { ...t, folder_id: folderId } : t))); } catch (e) { fail(e); }
+    try { await chatApi.move(id, folderId); setThreads((ts) => ts.map((thread) => (thread.id === id ? { ...thread, folder_id: folderId } : thread))); } catch (e) { fail(e); }
   };
 
   // A Library image goes by id and is read from storage by the server, which cannot shrink it, so one over the size cap
@@ -270,7 +276,7 @@ export function ChatWorkspace() {
       im.src = it.url;
     });
     if (size && Math.max(size.w, size.h) > limits.maxEdge) {
-      att.setNotice(`That image is ${size.w} by ${size.h}. Chat reads images up to ${limits.maxEdge} pixels on the long side. Pick a smaller one, or download it, shrink it and attach the file.`);
+      att.setNotice(t('app.chat.workspace.imageSize', { width: number(size.w), height: number(size.h), limit: number(limits.maxEdge) }));
       return;
     }
     att.addAsset(it);
@@ -282,7 +288,7 @@ export function ChatWorkspace() {
     att, limits, draftModel, folders, folder, instr, open, refreshThreads, fail, chatView, saveDraft, addDraft, keepNotice, dropNotice, heldWarning,
   });
 
-  if (!ready) return <div className="p-8 text-sm text-vx-fg-muted" role="status">Loading</div>;
+  if (!ready) return <div className="p-8 text-sm text-vx-fg-muted" role="status">{t("app.chat.loading")}</div>;
   const view = chatScreen({ closed, signedOut, loadFailed, modelCount: models.length });
   if (view !== 'ready') {
     const action = 'mt-6 inline-block rounded-full border border-vx-border px-5 py-2 text-sm font-semibold hover:border-vx-accent';
@@ -292,15 +298,15 @@ export function ChatWorkspace() {
         <h1 className="vx-display text-[32px]">{CHAT_SCREEN_COPY[view].title}</h1>
         <p className="mt-3 text-vx-fg-body">{(view === 'failed' && error) || CHAT_SCREEN_COPY[view].body}</p>
         {view === 'signed_out'
-          ? <button type="button" className={action} onClick={() => window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>Sign in</button>
+          ? <button type="button" className={action} onClick={() => window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>{t("oauth.signIn")}</button>
           : view === 'failed'
-            ? <button type="button" className={action} onClick={retry}>Try again</button>
-            : <Link href="/app/create" className={action}>Back to Create</Link>}
+            ? <button type="button" className={action} onClick={retry}>{t("recovery.retry")}</button>
+            : <Link href="/app/create" className={action}>{t("app.chat.workspace.back")}</Link>}
       </div>
     );
   }
 
-  const counted = folders && folders.map((f) => ({ ...f, count: threads.filter((t) => t.folder_id === f.id).length }));
+  const counted = folders && folders.map((f) => ({ ...f, count: threads.filter((thread) => thread.folder_id === f.id).length }));
   const list = (
     <ThreadList threads={threads} folders={counted} folder={folder} onFolder={setFolder} onNewFolder={newFolder} onRenameFolder={renameFolder}
       onDeleteFolder={deleteFolder} onMove={move} activeId={active?.id} onOpen={open} onNew={blank} onPatch={patch} onDelete={remove} />
@@ -312,52 +318,52 @@ export function ChatWorkspace() {
   );
   return (
     <div className="mx-auto flex h-[calc(100dvh-64px)] max-w-[1500px]">
-      <aside className="hidden w-[280px] shrink-0 border-r border-vx-border bg-vx-panel md:block">{list}</aside>
+      <aside className="hidden w-[280px] shrink-0 border-e border-vx-border bg-vx-panel md:block">{list}</aside>
       {drawer && (
-        <div className="fixed inset-0 z-40 flex md:hidden" role="dialog" aria-modal="true" aria-label="Chats">
+        <div className="fixed inset-0 z-40 flex md:hidden" role="dialog" aria-modal="true" data-testid="chat-drawer" aria-label={t("app.chat.chats")}>
           <div className="w-[300px] bg-vx-panel">{list}</div>
-          <button type="button" aria-label="Close chats" className="flex-1 bg-black/50" onClick={() => setDrawer(false)} />
+          <button type="button" aria-label={t("app.chat.closeChats")} className="flex-1 bg-black/50" onClick={() => setDrawer(false)} />
         </div>
       )}
-      <section className="flex min-w-0 flex-1 flex-col" aria-label="Conversation">
+      <section className="flex min-w-0 flex-1 flex-col" data-testid="chat-conversation" aria-label={t("app.chat.conversation")}>
         <div className="flex items-center gap-2 border-b border-vx-border px-4 py-2">
-          <button type="button" className="rounded-full border border-vx-border px-3 py-1.5 text-sm md:hidden" onClick={() => setDrawer(true)}>Chats</button>
+          <button data-testid="chat-open-drawer" type="button" className="rounded-full border border-vx-border px-3 py-1.5 text-sm md:hidden" onClick={() => setDrawer(true)}>{t("app.chat.chats")}</button>
           <p className="min-w-0 flex-1 truncate text-sm" aria-live="polite">
-            <span className="font-semibold">{composerKind === COMPOSER_KINDS.CHAT ? model.name : mediaGeneration.model?.name || `No ${composerKind} model`}</span>{' '}
+            <span className="font-semibold">{composerKind === COMPOSER_KINDS.CHAT ? model.name : mediaGeneration.model?.name || t('app.chat.workspace.noModel', { kind: tOr(t, `app.editor.media.kind.${composerKind}`, composerKind) })}</span>{' '}
             <span className="font-vx-mono text-xs text-vx-money vx-num">
-              {composerKind === COMPOSER_KINDS.CHAT ? `${credits(model.credits_per_reply)} per reply` : mediaGeneration.model ? `${mediaGeneration.model.credits} cr base` : ''}
+              {composerKind === COMPOSER_KINDS.CHAT ? t('app.chat.workspace.perReply', { price: credits(t, locale, model.credits_per_reply) }) : mediaGeneration.model ? t('app.chat.workspace.base', { count: number(mediaGeneration.model.credits) }) : ''}
             </span>
           </p>
-          {composerKind === COMPOSER_KINDS.CHAT && <button type="button" aria-expanded={settingsOpen} onClick={() => setSettingsOpen(true)} className="rounded-full border border-vx-border px-3 py-1.5 text-sm xl:hidden">Settings</button>}
+          {composerKind === COMPOSER_KINDS.CHAT && <button type="button" aria-expanded={settingsOpen} onClick={() => setSettingsOpen(true)} className="rounded-full border border-vx-border px-3 py-1.5 text-sm xl:hidden">{t("app.chat.settings")}</button>}
           {composerKind === COMPOSER_KINDS.CHAT && <button type="button" disabled={!active || stars.length === 0} aria-pressed={starredOnly} onClick={() => setStarredOnly((v) => !v)}
-            className="rounded-full border border-vx-border px-3 py-1.5 text-sm aria-pressed:border-vx-accent disabled:opacity-50">★ Starred</button>}
+            className="rounded-full border border-vx-border px-3 py-1.5 text-sm aria-pressed:border-vx-accent disabled:opacity-50">{t("app.chat.workspace.starred")}</button>}
         </div>
 
         <div className="flex-1 overflow-y-auto">
           {composerKind !== COMPOSER_KINDS.CHAT ? <MediaCanvas kind={composerKind} media={mediaGeneration} /> : <div className="mx-auto max-w-[760px] space-y-6 px-4 py-6">
             {messages.length === 0 && (
               <div className="py-16 text-center">
-                <h1 className="vx-display text-[32px]">What do you want to work on?</h1>
-                <p className="mt-2 text-vx-fg-muted">Every reply shows its price before you send. If a reply fails, the Credits come back.</p>
+                <h1 data-testid="chat-title" className="vx-display text-[32px]">{t("app.chat.workOn")}</h1>
+                <p className="mt-2 text-vx-fg-muted">{t("app.chat.priceHelp")}</p>
                 {!active && <SkillsPanel selectedId={skillId} onPick={pickSkill} disabled={busy} />}
               </div>
             )}
-            {starredOnly && shown.length === 0 && <p className="py-8 text-center text-vx-fg-muted">No starred replies in this chat.</p>}
+            {starredOnly && shown.length === 0 && <p className="py-8 text-center text-vx-fg-muted">{t("app.chat.workspace.noStars")}</p>}
             {shown.map((m) => (
-              <article key={m.id} aria-label={m.role === 'user' ? 'You' : 'Assistant'} className={m.role === 'user' ? 'flex justify-end' : ''}>
+              <article key={m.id} aria-label={m.role === 'user' ? t("app.editor.project.you") : t("app.chat.workspace.assistant")} className={m.role === 'user' ? 'flex justify-end' : ''}>
                 <div className={m.role === 'user' ? 'max-w-[85%] rounded-2xl bg-vx-panel px-4 py-3' : 'w-full'}>
                   {m.role === 'user' ? (
                     <>
                       <p className="whitespace-pre-wrap wrap-break-word text-[15px]">{m.content}</p>
                       {m.attachments?.length > 0 && (
-                        <ul className="mt-2 flex flex-wrap gap-1.5" aria-label="Attached images">
+                        <ul className="mt-2 flex flex-wrap gap-1.5" aria-label={t("app.chat.workspace.attachments")}>
                           {m.attachments.map((a, i) => <li key={i} className="rounded-full border border-vx-border px-2 py-0.5 text-xs text-vx-fg-muted">{attachmentLabel(a)}</li>)}
                         </ul>
                       )}
                     </>
                   )
-                    : <div aria-live={m.status === 'streaming' ? 'polite' : undefined}>{m.content ? <ChatText text={m.content} /> : <p className="text-vx-fg-muted">{m.status === 'saving' ? 'Stopping' : m.status === 'lost' ? 'Connection lost. Checking what was saved.' : researchProgressLabel(progress) || 'Thinking'}</p>}</div>}
-                  {(m.status === 'saving' || m.status === 'lost') && m.content && <p role="status" className="mt-2 font-vx-mono text-xs text-vx-fg-muted">{m.status === 'saving' ? 'Stopped. Saving this reply.' : 'Connection lost before this reply finished.'}</p>}
+                    : <div aria-live={m.status === 'streaming' ? 'polite' : undefined}>{m.content ? <ChatText text={m.content} /> : <p className="text-vx-fg-muted">{m.status === 'saving' ? t("app.chat.workspace.stopping") : m.status === 'lost' ? t("app.chat.workspace.connectionChecking") : researchProgressLabel(progress) || t("app.chat.settings.thinking")}</p>}</div>}
+                  {(m.status === 'saving' || m.status === 'lost') && m.content && <p role="status" className="mt-2 font-vx-mono text-xs text-vx-fg-muted">{m.status === 'saving' ? t("app.chat.workspace.savingStopped") : t("app.chat.workspace.connectionLost")}</p>}
                   {m.role === 'assistant' && !isLive(m) && <StudioDraftCards text={m.content} models={studioModels} />}
                   {m.role === 'assistant' && !isLive(m) && <Footer m={m} starred={stars.includes(m.id)} onStar={() => star(m.id)} />}
                 </div>
@@ -371,32 +377,32 @@ export function ChatWorkspace() {
           <div className="mx-auto max-w-[820px]">
             {composerKind === COMPOSER_KINDS.CHAT && error && (
               <div role="alert" className="mb-2 rounded-lg border border-vx-danger/40 bg-vx-danger/[0.07] px-4 py-3 text-sm text-vx-danger">
-                {error} {error.includes('Top up') && <Link className="underline" href="/app/credits">Top up</Link>}
+                {error} {error.includes('Top up') && <Link className="underline" href="/app/credits">{t("mobile.topUp")}</Link>}
               </div>
             )}
             {composerKind === COMPOSER_KINDS.CHAT && researchOn && (
-              <p className="mb-2 text-xs text-vx-fg-muted">Plans a few searches, reads what the web returns, then writes a cited answer. It can take up to about a minute and works on text only. If it fails before the answer starts, the Credits come back.</p>
+              <p className="mb-2 text-xs text-vx-fg-muted">{t("app.chat.workspace.researchHelp")}</p>
             )}
             {composerKind === COMPOSER_KINDS.CHAT && hasImages && !imagesBlocked && (
               <p className="mb-2 text-xs text-vx-fg-muted">
                 {att.items.some((i) => i.asset)
                   ? (att.items.some((i) => !i.asset)
-                    ? 'Images are sent to the model provider to answer. Uploaded files are deleted from our storage within a day; images from your Library stay there.'
-                    : 'Images are sent to the model provider to answer. They stay in your Library.')
-                  : 'Images are sent to the model provider to answer, and are deleted from our storage within a day.'}
-                {att.items.some((i) => i.video) && ' Your video is not uploaded: only a few frames from it, taken on your device, are.'}
+                    ? t("app.chat.workspace.mixedImages")
+                    : t("app.chat.workspace.libraryImages"))
+                  : t("app.chat.workspace.uploadImages")}
+                {att.items.some((i) => i.video) && (' ' + t('app.chat.workspace.videoFrames'))}
               </p>
             )}
             {composerKind === COMPOSER_KINDS.CHAT && (att.notice || imagesBlocked) && (
               <p role="status" className="mb-2 text-sm text-vx-fg-muted">
-                {imagesBlocked ? (researchOn ? 'Deep research reads text only. Remove the images or turn it off.' : 'This model cannot read images. Remove them or pick another model.') : att.notice}
+                {imagesBlocked ? (researchOn ? t("app.chat.workspace.researchImages") : t("app.chat.workspace.modelImages")) : att.notice}
               </p>
             )}
             {composerKind === COMPOSER_KINDS.CHAT && skillId && !active && (
               <div className="mb-2 flex flex-wrap gap-2">
-                <button type="button" onClick={clearSkill} disabled={busy} aria-label={`Skill: ${skillById(skillId)?.name}. Remove`}
+                <button type="button" onClick={clearSkill} disabled={busy} aria-label={t('app.chat.workspace.removeSkill', { name: skillById(skillId)?.name })}
                   className="rounded-full border border-vx-accent px-3 py-1.5 text-xs font-semibold text-vx-fg disabled:opacity-50">
-                  Skill: {skillById(skillId)?.name} <span aria-hidden="true">×</span>
+                  {t("app.chat.workspace.skill")}{' '}{skillById(skillId)?.name} <span aria-hidden="true">×</span>
                 </button>
               </div>
             )}
@@ -415,29 +421,29 @@ export function ChatWorkspace() {
               )}
               <div className="flex items-end gap-2 px-2 pb-2">
                 {offer.images && <AttachButton onPick={att.add} disabled={busy} full={att.items.length >= limits.maxAttachments} />}
-                <label className="sr-only" htmlFor="chat-msg">Message</label>
-                <textarea id="chat-msg" rows={1} value={text} maxLength={MAX_TEXT} placeholder={skillById(skillId)?.starter || 'Ask anything…'} onChange={(e) => setText(e.target.value)}
+                <label className="sr-only" htmlFor="chat-msg">{t("app.chat.message")}</label>
+                <textarea id="chat-msg" rows={1} value={text} maxLength={MAX_TEXT} placeholder={skillById(skillId)?.starter || t("app.chat.ask")} onChange={(e) => setText(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
                   className="max-h-48 min-h-14 min-w-0 flex-1 resize-none bg-transparent px-2 py-3 text-[15px] text-vx-fg outline-hidden placeholder:text-vx-fg-faint" />
                 {busy
-                  ? <button type="button" onClick={stop} disabled={stopping || checking} className="mb-1 rounded-xl border border-vx-border px-4 py-2.5 text-sm font-semibold disabled:opacity-50">{stopping ? 'Stopping' : checking ? 'Checking' : 'Stop'}</button>
-                  : <button type="button" onClick={send} disabled={!text.trim() || imagesBlocked} className="mb-1 min-w-28 rounded-xl bg-vx-accent px-4 py-2.5 text-sm font-semibold text-vx-accent-ink transition-colors hover:bg-vx-accent-hover disabled:opacity-50">{isFree ? 'Send free' : `Send · ${credits(price)}`}</button>}
+                  ? <button type="button" onClick={stop} disabled={stopping || checking} className="mb-1 rounded-xl border border-vx-border px-4 py-2.5 text-sm font-semibold disabled:opacity-50">{stopping ? t("app.chat.workspace.stopping") : checking ? t("app.chat.workspace.checking") : t("app.chat.workspace.stop")}</button>
+                  : <button type="button" onClick={send} disabled={!text.trim() || imagesBlocked} className="mb-1 min-w-28 rounded-xl bg-vx-accent px-4 py-2.5 text-sm font-semibold text-vx-accent-ink transition-colors hover:bg-vx-accent-hover disabled:opacity-50">{isFree ? t("app.chat.workspace.sendFree") : t('app.chat.workspace.send', { price: credits(t, locale, price) })}</button>}
               </div>
               </> : <MediaComposer kind={composerKind} media={mediaGeneration} prompt={mediaPrompt} onPrompt={setMediaPrompt} />}
             </div>
             {composerKind === COMPOSER_KINDS.CHAT && <p className="mt-1.5 px-1 text-xs text-vx-fg-muted">
-              <span className="font-vx-mono text-vx-money vx-num">{isFree ? 'Free' : credits(price)}</span> per reply{chosen.thinking || chosen.web ? ` (with ${[chosen.thinking && 'Thinking', chosen.web && 'Web search'].filter(Boolean).join(' and ')})` : ''}, up to about {wordsFor(model.max_reply_tokens)} words. Stop after text appears and you keep it and the price. If nothing arrives, the Credits come back.
+              <span className="font-vx-mono text-vx-money vx-num">{isFree ? t("publish.plan.colFree") : credits(t, locale, price)}</span>{' '}{t("app.chat.settings.perReply")}{chosen.thinking || chosen.web ? t('app.chat.workspace.with', { options: chosen.thinking && chosen.web ? t('app.chat.workspace.bothOptions') : t(chosen.thinking ? 'app.chat.settings.thinking' : 'app.chat.settings.web') }) : ''}{t('app.chat.workspace.replyPolicy', { count: number(wordsFor(model.max_reply_tokens)) })}
             </p>}
           </div>
         </div>
       </section>
-      {composerKind === COMPOSER_KINDS.CHAT && <aside className="hidden w-[320px] shrink-0 border-l border-vx-border bg-vx-base xl:block">{settings}</aside>}
+      {composerKind === COMPOSER_KINDS.CHAT && <aside className="hidden w-[320px] shrink-0 border-s border-vx-border bg-vx-base xl:block">{settings}</aside>}
       {composerKind === COMPOSER_KINDS.CHAT && pickingLibrary && <LibraryPicker onPick={pickFromLibrary} onClose={() => setPickingLibrary(false)} />}
       {settingsOpen && (
-        <div className="fixed inset-0 z-40 flex justify-end xl:hidden" role="dialog" aria-modal="true" aria-label="Chat settings">
-          <button type="button" aria-label="Close settings" className="flex-1 bg-black/50" onClick={() => setSettingsOpen(false)} />
+        <div className="fixed inset-0 z-40 flex justify-end xl:hidden" role="dialog" aria-modal="true" aria-label={t("label.Chat settings")}>
+          <button type="button" aria-label={t("app.chat.closeSettings")} className="flex-1 bg-black/50" onClick={() => setSettingsOpen(false)} />
           <div className="relative w-[340px] max-w-[90vw] bg-vx-base">
-            <button type="button" aria-label="Close settings" className="absolute right-3 top-3 z-10 rounded-full border border-vx-border px-3 py-1 text-sm" onClick={() => setSettingsOpen(false)}>Close</button>
+            <button type="button" aria-label={t("app.chat.closeSettings")} className="absolute end-3 top-3 z-10 rounded-full border border-vx-border px-3 py-1 text-sm" onClick={() => setSettingsOpen(false)}>{t("authGate.close")}</button>
             <div className="h-full pt-10">{settings}</div>
           </div>
         </div>

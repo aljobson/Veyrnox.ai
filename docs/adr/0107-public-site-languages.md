@@ -119,3 +119,196 @@ policy version identifiers are unchanged. These statements are explicitly marked
 them. Surrounding controls and non-binding explanations remain translated. This
 is the same legal-text exception as the English legal documents, and overrides
 the earlier amendment's inclusion of these binding statements in translated copy.
+
+## Amendment 2026-10-18 — phase B app display preference
+
+The signed-in app uses the `veyrnox_locale` browser cookie, never a URL prefix or
+an account setting. Its accepted non-English values are `es`, `zh`, `hi`, `ar`,
+`fr`, `pt`, `ru`, `ja`, `de` and `ko`. Absence, invalid values, wrong case and
+ambiguous duplicate cookies mean English. Choosing English expires the cookie.
+It has `Path=/`, `SameSite=Lax`, a one-year lifetime and `Secure` in production;
+it is not HttpOnly because the language controls write it.
+
+The cookie is sent with same-origin requests like any cookie, but only page rendering reads it.
+
+No API handler, RPC, authorization decision, rate limit, billing or ledger path,
+or database write reads this preference or changes behavior because of it. No
+API payload carries the language, and API error codes remain language-neutral.
+The middleware reads it only for `/app` and `/app/*` page rendering, and sets
+`x-site-locale` to the validated preference or `en`. It overwrites inbound locale
+and site-path headers, rather than deleting them, because OpenNext overlays set
+headers on inbound headers. Public pages retain their URL-selected language;
+public unprefixed pages and legal documents ignore this cookie. Prefixed app
+paths still redirect to their unprefixed address. `LOCALES_ENABLED` off ignores
+the cookie and uses English. Admin pages always use English.
+
+Both public language controls remember the choice. App navigation offers the
+same menu; app links retain the unprefixed route. The root document receives the
+validated language and Arabic direction through the existing `lang` / `dir`
+contract. Edited navigation, Library cards and chat panel edges use logical
+start/end placement. Existing English number-format locales are retained;
+non-English number and relative-date formatting use the selected locale.
+
+App-only messages live in flat area catalogs at
+`lib/i18n/messages/app/<code>/<area>.mjs`, aggregated by `<code>.mjs`.
+The server imports these only for app routes, including the English
+admin shell, and passes the selected merged messages to a provider in the app template.
+The template also loads on client navigation from public pages, where the root
+layout persists; its language/direction wrapper keeps the app subtree correct.
+The public translator does not import these catalogs, and public pages keep their
+existing provider loading behavior. Catalog checks cover all eleven app catalogs,
+all public catalogs, placeholders, duplicate keys and numeric policy facts.
+
+The phase B work order still requires all non-admin app UI and its shared
+components to be translated. The current implementation covers app navigation,
+the main Account page, Library access and main-page copy, and portions of the
+Create, Publish and chat workspaces. It is **not a completed phase B rollout**:
+account subpanels, billing, editor, video agent, personas, Publish subpages and
+many shared controls and error messages still contain untranslated UI. The app
+coverage test fails on those residuals; they are not exempted or allowlisted.
+Run `node scripts/audit-public-i18n.mjs --app` for the source inventory. This
+status records incomplete implementation, not a decision to reduce the scope.
+
+Admin, legal documents, emails, API responses, model names/blurbs, templates and
+prompts, Oddling/Cinema catalog data, brand names, user content and provider output
+retain their existing language. Version-bound binding statements remain exact
+English until lawyer-reviewed translations exist. The source-upload rights
+statement in `SourceRightsConfirmation.jsx` is marked `lang="en" dir="ltr"`;
+its existing consent payload is unchanged. Credit checkout/subscription, Publish
+plan, deletion and other binding statements remain untranslated alongside their
+currently untranslated forms. Phase A's explicit English Cinema declarations
+remain unchanged. They must retain their English markup when those remaining
+forms are localized.
+
+Library tab/kind/view keys are closed sets from `STATE_TABS`, `KIND_TABS` and
+`VIEWS` in `libraryFilter.js`; the persisted view is checked by `readView`.
+Server job states and Create error codes use `tOr`, with existing safe English
+copy or a translated default when a key is unknown. Library selection plurals
+and navigation asset nouns use `Intl.PluralRules`, including Arabic and Russian
+categories. Source extraction for Vey resolves app English catalogs as well as
+public English. A retention fixture captures the 32 non-admin app routes from
+`origin/main` at `22945bc0` before this change.
+
+### Phase B Publish batch (2026-10-18; implementation in progress)
+
+The app catalog indexes now merge area files. Each area must have the same keys
+and placeholders in all eleven languages; tests reject duplicate keys within or
+across areas and files exceeding 800 lines. This does not change the public
+catalog import graph. The app header and mobile menu both expose the persistent
+language choice; the two menus have distinct accessibility IDs.
+
+Publish's plan checkout declaration beginning “Start my Publish Plan at” remains
+English, with `lang="en" dir="ltr"`, including its price, tax, billing interval
+and automatic-renewal acceptance. It is submitted with `consent_version` and
+uses the original English currency formatter. Device-upload rights confirmation
+is translated: its request carries a boolean `rights_confirmed`, not a consent
+version identifier. Neither request gains a locale field.
+
+The completed Publish components use `tOr` for server statuses, roles, network
+labels, billing intervals and upload error codes. Network brand names and user
+content remain unchanged. Draft and click counts use `Intl.PluralRules`;
+English click wording remains the original “clicks”, including for one click.
+Date and currency formatting retains the original English locale choices.
+SVG path coordinates and literal link-editor URLs are technical data, not copy.
+
+The global coverage test remains strict and reports unresolved totals by area.
+A separate Publish regression test protects completed components without
+exempting any other Publish file from the global inventory. The remaining
+Publish screens are still unfinished; this amendment does not reduce the work
+order or authorize a rollout of the partial translations.
+
+Editor mobile-stage IDs and aspect values remain fixed machine values in
+`MOBILE_STAGES` and `ASPECTS`; only their labels are translated. Analytics date
+presets are the closed `RANGES` list. Dynamic provider types, capability labels
+and statuses use `tOr` fallbacks. Editor DOM queries and e2e navigation use stable
+hooks; the knowledge generator resolves their labels from the actual JSX.
+
+### Phase B continuation: editor rights statement (2026-10-18)
+
+The consent checkbox in `app/veyrnox/_components/editor/GenerationPanel.js`
+attests to `RIGHTS_ATTESTATION_VERSION` (`aup-2026-09-26`), recorded by the
+existing generations handler and `attest_upload_rights`. Its complete ownership,
+identifiable-person, brand/artwork/recording declaration, Acceptable Use link text,
+and account-recording sentence remain English inside `lang="en" dir="ltr"`.
+The audit recognises only these exact legal fragments; other literals remain
+subject to the strict coverage test. Generated camera directions, model/catalog
+content, user drafts, captions and provider diagnostics retain their source text.
+
+### Phase B continuation: subscription checkout consent (2026-10-18)
+
+The checkout declaration in `CreditSubscriptions.js`, beginning “I agree to”
+and ending “expire without rollover.”, remains English inside `lang="en"
+dir="ltr"`. It is submitted with the existing `catalog.consent_version`. Its
+plan names, US-dollar price, interval and Credits retain the original English
+formatting. The cancellation confirmation has no version identifier in its
+request and is translated. The audit exempts only the six exact checkout
+fragments, not the surrounding billing controls or policy explanations.
+
+### Phase B continuation: chat media rights (2026-10-18)
+
+`chat/MediaComposer.js` keeps its upload rights declaration and Acceptable Use
+Policy link in English inside `lang="en" dir="ltr"`. The generations endpoint
+records this consent under `RIGHTS_ATTESTATION_VERSION`, as for GenerationPanel.
+Only the two exact declaration fragments are exempted from the literal audit.
+No request payload, version identifier or authorization behavior changes.
+
+### Phase B continuation: credit-pack consent (2026-10-18)
+
+`TopUpPacks` keeps the complete `supply-consent-v1` acceptance statement in English, byte-for-byte, inside `lang="en" dir="ltr"`. Its translated refund-policy link is outside that English span. The version and consent payload remain unchanged; translating this acceptance requires a separately approved legal version. Keyboard chord identifiers and catalog preset/model names remain unchanged. The app catalogs continue to load only at the signed-in boundary, split into area modules.
+
+### Amendment — editor and account rendering, 2026-10-18
+
+The local editing assistant still parses four fixed English command examples. Those
+examples remain verbatim, with `lang="en" dir="ltr"`; translating them would make
+the advertised commands unusable. The audit exception names each accepted command
+and does not exempt other assistant copy. The generated plan descriptions and
+validation messages from the existing local helper still require a separate
+localization pass; they are not evidence of completed helper coverage.
+
+The multitrack timeline's chronological canvas keeps an explicit left-to-right
+time axis so pointer coordinates, trim gestures and horizontal scrolling retain
+their existing meaning. Surrounding Arabic controls inherit RTL and use logical
+placement classes. Track names, captions and marker names remain user content.
+
+Saved-video publishing confirmation and custom-font permission are boolean/local
+rights declarations without a version identifier, and their UI copy is translated.
+Previously listed version-bound legal statements remain English. Form enum values,
+report categories, CSV headers, codec names and stored project identifiers do not
+change with display language. Report category labels are selected from the fixed
+`CATEGORIES` list; film workflow labels branch on the closed image/video pair;
+trim labels branch on the closed `TRIM_EDGES` pair. Server-provided sanction actions,
+credit job states and export-quality labels use `tOr` with a display fallback.
+
+### Amendment — local controls and account confirmations, 2026-10-19
+
+Account deletion, OAuth revocation and passkey removal confirmations do not submit
+an acceptance-version identifier, so their display copy is translated. Deletion
+still requires the exact `DELETE` input and the existing opaque confirmation
+token. Existing version-bound consent statements remain English. OAuth scopes,
+passkey IDs and source-slot IDs are unchanged; names supplied by users or clients
+remain verbatim. Unknown deletion blockers and ledger kinds use translated safe
+fallbacks through `tOr`.
+
+The legacy timeline, like the multitrack timeline, keeps an explicit LTR time axis
+for pointer and keyboard editing; its placement styles use logical properties.
+Workspace dock values remain the closed `left`/`right`/`hidden` set while their
+labels translate. Composer labels use the closed `COMPOSER_KINDS` table and mode
+labels use `replyMode()`/`REPLY_MODES`; typography switches use the fixed
+`italic`/`underline` pair. These display translations do not change stored enums.
+
+### Phase B continuation: local media controls (2026-10-19)
+
+Canvas selection handles retain an explicit LTR coordinate space, like the
+existing timeline, so horizontal pointer movement still matches the rendered
+image. Their placement uses logical properties. Transport buttons and editable
+timecodes retain their chronological LTR order; surrounding controls follow the
+page direction. Displayed non-English numbers use `localeTag`; English precision,
+spacing and timecode syntax remain unchanged.
+
+Mask dimension labels use the closed `x`/`y`/`width`/`height` key table. Select
+controls keep their existing stored option values and use `tOr` for display;
+unknown provider labels remain verbatim. Film test verdicts use `tOr` with a
+translated unknown fallback. Film prompt content, reference names and user text
+are unchanged. No consent statement, rights identifier or API locale field is
+changed in this round. The film import E2E control uses `film-import-json` rather
+than its translated accessible name.

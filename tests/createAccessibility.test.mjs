@@ -13,7 +13,7 @@ test('inline prompt-help links are visually distinct without requiring hover', (
 });
 
 test('model-kind text uses the readable foreground token on selected cards', () => {
-  const label = page.split('\n').find((line) => line.includes('>{m.kind}</span>'));
+  const label = page.split('\n').find((line) => line.includes('`public.library.${m.kind}`') && line.includes('<span'));
   assert.match(label, /text-vx-fg-(?:muted|body)/);
   assert.doesNotMatch(label, /text-vx-fg-faint/);
 });

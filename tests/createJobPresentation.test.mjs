@@ -1,3 +1,7 @@
+import { appMessagesFor } from '../lib/i18n/appMessages.mjs';
+import { translator, tOr, pluralKey } from '../lib/i18n/translate.mjs';
+import { localeTag } from '../lib/i18n/locales.mjs';
+const t = translator('en', await appMessagesFor('en'));
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -22,6 +26,9 @@ function harness(initialJobs, selected = audio) {
   };
   const stubs = {
     react,
+    '../../../../components/I18nProvider': { useI18n: () => ({ t, locale: 'en' }) },
+    '../../../../lib/i18n/locales.mjs': { localeTag },
+    '../../../../lib/i18n/translate.mjs': { tOr, pluralKey },
     '../../_lib/useCatalog': { useCatalog: () => ({ models: [image, audio, slow], live: true, loading: false }) },
     '../../_lib/useCreateDraftRecovery': { __esModule: true, default: () => ({ restoring: false, blocked: false, failed: false, saved: false, status: '', retry() {}, sourceEdited() {} }) },
     '../../_lib/useFreeAllowance': { useFreeAllowance: () => ({}) },

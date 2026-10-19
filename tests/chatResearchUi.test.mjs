@@ -1,3 +1,4 @@
+import { resolveI18nSource } from '../scripts/lib/vey-knowledge-i18n.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -40,15 +41,15 @@ test('research stands in for Thinking and Web search: they are disabled while it
 
 test('research cannot be sent with images, and is never shown as free', () => {
     assert.match(workspace, /const imagesBlocked = hasImages && \(!offer\.images \|\| researchOn\);/);
-    assert.match(workspace, /Deep research reads text only/);
+    assert.match(resolveI18nSource(workspace), /Deep research reads text only/);
     assert.match(workspace, /const isFree = freeLeft > 0 && !researchOn &&/);
 });
 
 test('the option appears only for a model that offers it, and progress is cleared when a reply ends', () => {
     assert.match(panel, /\{offer\.research && \(/);
-    assert.match(panel, /t === 'Deep research' && offer\.research/, 'it is not listed as unavailable on a model that offers it');
+    assert.match(panel, /tool === 'research' && offer\.research/, 'it is not listed as unavailable on a model that offers it');
     assert.doesNotMatch(workspace, /\(offer\.thinking \|\| offer\.web \|\| offer\.research\) && \(/, 'the options are no longer a row above the message box');
     assert.match(sender, /if \(ev === 'progress'\) setProgress\(d\);/);
     assert.match(sender, /finally \{ setBusy\(false\); setProgress\(null\);/);
-    assert.match(workspace, /researchProgressLabel\(progress\) \|\| 'Thinking'/);
+    assert.match(resolveI18nSource(workspace), /researchProgressLabel\(progress\) \|\| "Thinking"/);
 });

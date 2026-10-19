@@ -1,4 +1,7 @@
 'use client';
+import { pluralKey } from '../../../lib/i18n/translate.mjs';
+import { localeTag } from '../../../lib/i18n/locales.mjs';
+import { useI18n } from '../../../components/I18nProvider';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -40,6 +43,8 @@ import {
 } from '../_lib/oddlingStudio';
 
 export default function OddlingStudio() {
+  const { t, locale } = useI18n();
+  const number = value => locale === 'en' ? value : Number(value).toLocaleString(localeTag(locale));
   const router = useRouter();
   const explore = useOddlingExplore();
   const { models, live: catalogLive } = useCatalog();
@@ -113,12 +118,12 @@ export default function OddlingStudio() {
       if (!linked) return;
       setPicks({ ...linked.picks });
       setPortraitId(linked.id);
-      setNotice(`${linked.name} loaded. Every detail is editable.`);
+      setNotice(t('app.oddlings.loaded',{name:linked.name}));
       setSheet(linked);
       try { window.history.replaceState(window.history.state, '', withoutDeepLink(window.location)); } catch { /* the sheet is open; the address keeps the parameter */ }
     }, 0);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [t]);
 
   useEffect(() => () => {
     if (reference?.url) URL.revokeObjectURL(reference.url);
@@ -152,7 +157,7 @@ export default function OddlingStudio() {
     setPicks({ ...oddling.picks });
     setPortraitId(oddling.id || '');
     setSheet(null);
-    setNotice(`${oddling.name} loaded. Every detail is editable.`);
+    setNotice(t('app.oddlings.loaded',{name:oddling.name}));
     // The sheet's dialog hands focus back to its card as it closes, which scrolls
     // the card into view; scroll to the builder after that has happened.
     window.setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 0);
@@ -161,17 +166,17 @@ export default function OddlingStudio() {
   function animateOddling(oddling) {
     loadOddling(oddling);
     setMode('motion');
-    setNotice(`Animate ${oddling.name}'s exact portrait. Choose a movement below; Create confirms the price before generating.`);
+    setNotice(t('app.oddlings.animateNotice',{name:oddling.name}));
   }
 
   function randomize() {
     setPicks((current) => randomizeOddlingStyle(current));
-    setNotice('Styling remixed. Body, identity and creator premise stayed locked.');
+    setNotice(t("app.oddlings.remixed"));
   }
 
   function surprise() {
     setPicks((current) => randomizeOddlingAll(current));
-    setNotice('New look rolled. Skin features and limbs were left as they were; your name, premise, voice, show and canon stayed yours.');
+    setNotice(t("app.oddlings.randomized"));
   }
 
   function save() {
@@ -180,27 +185,27 @@ export default function OddlingStudio() {
     const result = saveOddlingToLibrary(window.localStorage, picks, motionId, savedAt);
     if (result.ok) {
       setLibrary(result.items);
-      setNotice('Passport saved to History on this browser.');
+      setNotice(t("app.oddlings.saved"));
     } else {
-      setNotice('This browser blocked saving. Your current character is still here.');
+      setNotice(t("app.oddlings.saveBlocked"));
     }
   }
 
   function uploadReference(event) {
     const file = event.target.files?.[0];
     if (!file) return;
-    if (!['image/jpeg', 'image/png', 'image/webp', 'image/avif'].includes(file.type)) { setNotice('Choose a JPEG, PNG, WebP or AVIF image.'); return; }
-    if (file.size > 2 * 1024 * 1024) { setNotice('Keep the local reference under 2 MB.'); return; }
+    if (!['image/jpeg', 'image/png', 'image/webp', 'image/avif'].includes(file.type)) { setNotice(t("app.oddlings.imageTypes")); return; }
+    if (file.size > 2 * 1024 * 1024) { setNotice(t("app.oddlings.referenceLimit")); return; }
     setReference({ name: file.name, url: URL.createObjectURL(file) });
-    setNotice('Reference added locally. Describe what to borrow so it carries into the prompt.');
+    setNotice(t("app.oddlings.referenceAdded"));
   }
 
   function continueToCreate() {
     if (!generationModel || !catalogLive || generationCost == null) {
-      setNotice('Wait for the live price before continuing to Create.'); return;
+      setNotice(t("app.oddlings.waitPrice")); return;
     }
     if (mode === 'motion' && !portrait) {
-      setNotice('Choose an original character to animate.'); return;
+      setNotice(t("app.oddlings.chooseCharacter")); return;
     }
     const model = mode === 'motion' ? videoModel.id : 'flux-2-pro';
     const prompt = mode === 'motion'
@@ -213,10 +218,11 @@ export default function OddlingStudio() {
       prompt, model, aspect: '9:16', oddlingPicks: picks,
       ...(mode === 'motion' ? { durationSeconds: 5 } : {}),
     });
-    if (!written) { setNotice('The Create draft could not be handed off. Copy the prompt preview and paste it into Create.'); return; }
+    if (!written) { setNotice(t("app.oddlings.handoffFailed")); return; }
     if (mode !== 'motion') journeyHandoff(loadedPassportId);
     setHandingOff(true);
-    const destination = `/app/create?model=${encodeURIComponent(model)}&oddling=1&passport=1${mode === 'motion' ? `&oddlingPhoto=${encodeURIComponent(portraitId)}&motion=${encodeURIComponent(motionId)}` : ''}`;
+    let destination = `/app/create?model=${encodeURIComponent(model)}&oddling=1&passport=1`;
+    if (mode === 'motion') destination += '&oddlingPhoto=' + encodeURIComponent(portraitId) + '&motion=' + encodeURIComponent(motionId);
     router.push(destination);
   }
 
@@ -226,104 +232,104 @@ export default function OddlingStudio() {
       <header className="border-b border-vx-border bg-vx-panel px-5 py-5 sm:px-7 xl:px-10">
         <div className="mx-auto flex max-w-[1500px] flex-wrap items-end justify-between gap-x-8 gap-y-4">
           <div className="min-w-0">
-            <span className="font-vx-mono text-[10px] font-bold tracking-[0.16em] text-vx-accent">ODDLING STUDIO · FULL BUILD</span>
-            <h1 className="vx-display mt-2 text-3xl sm:text-4xl">Design the whole character.</h1>
-            <p className="mt-2 max-w-xl text-sm leading-relaxed text-vx-fg-body">Build a fictional adult creator with a repeatable silhouette, worldview and show—then hand the finished draft to Create.</p>
+            <span className="font-vx-mono text-[10px] font-bold tracking-[0.16em] text-vx-accent">{t("app.oddlings.eyebrow")}</span>
+            <h1 data-testid="oddling-title" className="vx-display mt-2 text-3xl sm:text-4xl">{t("app.oddlings.title")}</h1>
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-vx-fg-body">{t("app.oddlings.intro")}</p>
           </div>
           <div className="flex w-full items-center gap-3 sm:w-auto">
-            <span className="rounded-full border border-vx-border px-2.5 py-1 font-vx-mono text-[9px] text-vx-fg-muted">{selectedTraits} TRAITS</span>
-            <div className="grid min-w-0 flex-1 grid-cols-2 rounded-xl border border-vx-border bg-vx-base p-1 sm:w-72 sm:flex-none" role="tablist" aria-label="Creation mode">
-              <button type="button" role="tab" aria-selected={mode === 'portrait'} onClick={() => setMode('portrait')} className={`rounded-lg px-3 py-2.5 text-sm font-bold ${mode === 'portrait' ? 'bg-vx-panel text-vx-fg shadow-sm' : 'text-vx-fg-muted'}`}>Create Oddling</button>
-              <button type="button" role="tab" aria-selected={mode === 'motion'} onClick={() => setMode('motion')} className={`rounded-lg px-3 py-2.5 text-sm font-bold ${mode === 'motion' ? 'bg-vx-panel text-vx-fg shadow-sm' : 'text-vx-fg-muted'}`}>Motion</button>
+            <span className="rounded-full border border-vx-border px-2.5 py-1 font-vx-mono text-[9px] text-vx-fg-muted">{t(pluralKey(t,locale,'app.oddlings.traits',selectedTraits),{count:number(selectedTraits)})}</span>
+            <div className="grid min-w-0 flex-1 grid-cols-2 rounded-xl border border-vx-border bg-vx-base p-1 sm:w-72 sm:flex-none" role="tablist" aria-label={t("app.oddlings.creationMode")}>
+              <button type="button" role="tab" aria-selected={mode === 'portrait'} onClick={() => setMode('portrait')} className={`rounded-lg px-3 py-2.5 text-sm font-bold ${mode === 'portrait' ? 'bg-vx-panel text-vx-fg shadow-sm' : 'text-vx-fg-muted'}`}>{t("app.oddlings.create")}</button>
+              <button type="button" role="tab" aria-selected={mode === 'motion'} onClick={() => setMode('motion')} className={`rounded-lg px-3 py-2.5 text-sm font-bold ${mode === 'motion' ? 'bg-vx-panel text-vx-fg shadow-sm' : 'text-vx-fg-muted'}`}>{t("app.oddlings.motion")}</button>
             </div>
           </div>
         </div>
       </header>
       {mode === 'portrait' && <OddlingCatalog picks={picks} onPick={setPick} onClear={clearLook} />}
       <div className="grid xl:grid-cols-[430px_minmax(0,1fr)]">
-        <aside data-assistant-target="oddlings.builder" data-assistant-loaded-passport={loadedPassportId || undefined} className="min-w-0 border-b border-vx-border bg-vx-panel xl:border-b-0 xl:border-r">
+        <aside data-assistant-target="oddlings.builder" data-assistant-loaded-passport={loadedPassportId || undefined} className="min-w-0 border-b border-vx-border bg-vx-panel xl:border-b-0 xl:border-e">
           <div className="sticky top-16 max-h-[calc(100dvh-4rem)] overflow-y-auto scroll-pb-60 p-5 pb-60 sm:p-7 sm:pb-60">
 
             <div data-assistant-target="oddlings.reference" className="mt-5 rounded-2xl border border-vx-border bg-vx-base p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <span className="font-vx-mono text-[9px] font-bold tracking-[0.12em] text-vx-fg-muted">OPTIONAL REFERENCE</span>
-                  <p className="mt-1 text-xs text-vx-fg-faint">Local moodboard preview; describe what to borrow below.</p>
+                  <span className="font-vx-mono text-[9px] font-bold tracking-[0.12em] text-vx-fg-muted">{t("app.oddlings.optionalReference")}</span>
+                  <p className="mt-1 text-xs text-vx-fg-faint">{t("app.oddlings.moodboard")}</p>
                 </div>
                 <label className={chip(!!reference)}>
-                  {reference ? 'Replace' : 'Upload photo'}
-                  <input type="file" accept="image/*" onChange={uploadReference} className="sr-only" />
+                  {reference ? t("app.oddlings.replace") : t("app.oddlings.uploadPhoto")}
+                  <input data-testid="oddling-reference-file" type="file" accept="image/*" onChange={uploadReference} className="sr-only" />
                 </label>
               </div>
-              {reference && <img src={reference.url} alt={`Local reference ${reference.name}`} className="mt-3 max-h-48 w-full rounded-xl object-cover" />}
-              <input value={referenceNote} onChange={(event) => setReferenceNote(event.target.value)} maxLength={180} className={`${field} mt-3`} placeholder="Borrow the checkerboard makeup and high collar—not the identity" />
+              {reference && <img data-testid="oddling-reference-image" src={reference.url} alt={t('app.oddlings.referenceAlt',{name:reference.name})} className="mt-3 max-h-48 w-full rounded-xl object-cover" />}
+              <input value={referenceNote} onChange={(event) => setReferenceNote(event.target.value)} maxLength={180} className={`${field} mt-3`} placeholder={t("app.oddlings.referencePlaceholder")} />
             </div>
 
             <div className="mt-5 grid grid-cols-2 gap-2">
               <label>
-                <span className="mb-1 block font-vx-mono text-[9px] font-bold tracking-[0.1em] text-vx-fg-muted">NAME</span>
+                <span className="mb-1 block font-vx-mono text-[9px] font-bold tracking-[0.1em] text-vx-fg-muted">{t("app.oddlings.name")}</span>
                 <input value={picks.oddling_name || ''} onChange={(event) => setPick('oddling_name', event.target.value)} maxLength={40} className={field} />
               </label>
               <label>
-                <span className="mb-1 block font-vx-mono text-[9px] font-bold tracking-[0.1em] text-vx-fg-muted">VOICE</span>
+                <span className="mb-1 block font-vx-mono text-[9px] font-bold tracking-[0.1em] text-vx-fg-muted">{t("app.oddlings.voice")}</span>
                 <select value={picks.oddling_voice || ''} onChange={(event) => setPick('oddling_voice', event.target.value)} className={field}>
-                  <option value="">Choose</option>
+                  <option value="">{t("app.oddlings.choose")}</option>
                   {ODDLING_TONES.map(([label]) => <option key={label}>{label}</option>)}
                 </select>
               </label>
             </div>
             <label className="mt-3 block">
-              <span className="mb-1 block font-vx-mono text-[9px] font-bold tracking-[0.1em] text-vx-fg-muted">WHY PEOPLE FOLLOW</span>
+              <span className="mb-1 block font-vx-mono text-[9px] font-bold tracking-[0.1em] text-vx-fg-muted">{t("app.oddlings.followReason")}</span>
               <input value={picks.oddling_obsession || ''} onChange={(event) => setPick('oddling_obsession', event.target.value)} maxLength={140} className={field} />
             </label>
             <label className="mt-3 block">
-              <span className="mb-1 block font-vx-mono text-[9px] font-bold tracking-[0.1em] text-vx-fg-muted">RECURRING SHOW</span>
+              <span className="mb-1 block font-vx-mono text-[9px] font-bold tracking-[0.1em] text-vx-fg-muted">{t("app.oddlings.show")}</span>
               <select value={picks.oddling_show || ''} onChange={(event) => setPick('oddling_show', event.target.value)} className={field}>
-                <option value="">Choose a format</option>
+                <option value="">{t("app.oddlings.chooseFormat")}</option>
                 {ODDLING_SHOWS.map(([label]) => <option key={label}>{label}</option>)}
               </select>
             </label>
             <label className="mt-3 block">
-              <span className="mb-1 block font-vx-mono text-[9px] font-bold tracking-[0.1em] text-vx-fg-muted">NEVER DRIFT · VISUAL CANON</span>
+              <span className="mb-1 block font-vx-mono text-[9px] font-bold tracking-[0.1em] text-vx-fg-muted">{t("app.oddlings.canon")}</span>
               <textarea value={picks.oddling_rule || ''} onChange={(event) => setPick('oddling_rule', event.target.value)} maxLength={160} rows={2} className={`${field} resize-none`} />
             </label>
 
             {mode === 'motion' && (
               <OddlingMotionPanel portrait={portrait} motionId={motionId} onMotion={setMotionId}
-                priceLine={catalogLive && videoModel ? `${videoModel.name} · 5 seconds · ${videoModel.credits} credits` : 'Loading live animation pricing…'} />
+                priceLine={catalogLive && videoModel ? t('app.oddlings.priceLine',{model:videoModel.name,credits:t(pluralKey(t,locale,'app.editor.generation.credits',videoModel.credits),{count:number(videoModel.credits)})}) : t('app.oddlings.loadingPrice')} />
             )}
 
             <label className="mt-5 block">
-              <span className="mb-1 block font-vx-mono text-[9px] font-bold tracking-[0.1em] text-vx-fg-muted">{mode === 'motion' ? 'PORTRAIT SCENE · NOT USED FOR PHOTO ANIMATION' : 'FIRST SCENE'}</span>
+              <span className="mb-1 block font-vx-mono text-[9px] font-bold tracking-[0.1em] text-vx-fg-muted">{mode === 'motion' ? t("app.oddlings.portraitScene") : t("app.oddlings.firstScene")}</span>
               <textarea value={scene} onChange={(event) => setScene(event.target.value)} maxLength={300} rows={3} className={`${field} resize-none`} />
             </label>
             <div className="mt-2 flex flex-wrap gap-1.5">
-              {ODDLING_SCENES.slice(0, 3).map((item, index) => <button key={item} type="button" onClick={() => setScene(item)} className={chip(scene === item)}>Scene {index + 1}</button>)}
+              {ODDLING_SCENES.slice(0, 3).map((item, index) => <button key={item} type="button" onClick={() => setScene(item)} className={chip(scene === item)}>{t('app.oddlings.scene',{count:number(index+1)})}</button>)}
             </div>
 
             <details data-assistant-target="oddlings.prompt" className="mt-5 rounded-xl border border-vx-border bg-vx-base p-3">
-              <summary className="cursor-pointer font-vx-mono text-[9px] font-bold tracking-[0.12em] text-vx-fg-muted">GENERATION PROMPT PREVIEW</summary>
+              <summary className="cursor-pointer font-vx-mono text-[9px] font-bold tracking-[0.12em] text-vx-fg-muted">{t("app.oddlings.promptPreview")}</summary>
               <p className="mt-3 break-words text-xs leading-relaxed text-vx-fg-body">{promptPreview}</p>
             </details>
 
             <div className="mt-5 grid grid-cols-2 gap-2">
-              <button type="button" onClick={randomize} className={chip(false)}>Randomize styling</button>
-              <button type="button" onClick={save} className={chip(true)}>Save passport</button>
+              <button type="button" onClick={randomize} className={chip(false)}>{t("app.oddlings.randomize")}</button>
+              <button type="button" onClick={save} className={chip(true)}>{t("app.oddlings.save")}</button>
             </div>
           </div>
         </aside>
 
-        <section aria-label="Oddling library" className="min-w-0 bg-vx-base p-5 sm:p-8 lg:p-10">
+        <section aria-label={t("app.oddlings.library")} className="min-w-0 bg-vx-base p-5 sm:p-8 lg:p-10">
           <div className="mx-auto max-w-6xl">
             <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
               <div>
-                <span className="font-vx-mono text-[10px] font-bold tracking-[0.16em] text-vx-accent">{ODDLING_ARCHETYPES.filter((item) => item.kind === 'human').length} HUMAN ORIGINALS · {ODDLING_ARCHETYPES.filter((item) => item.kind === 'creature').length} OTHER BEINGS</span>
-                <h2 className="vx-display mt-2 text-5xl sm:text-6xl">Your original character, your recurring hit.</h2>
-                <p className="mt-3 max-w-2xl text-vx-fg-body">Explore expressive silhouettes, statement fashion, sculptural hair and contemporary basics. Choose head, body and individual feature sizes independently, then refine your character for portraits and motion. Dancing puppet previews in Explore are free: no generation or credits.</p>
+                <span className="font-vx-mono text-[10px] font-bold tracking-[0.16em] text-vx-accent">{t(pluralKey(t,locale,'app.oddlings.humans',ODDLING_ARCHETYPES.filter((item) => item.kind === 'human').length),{count:number(ODDLING_ARCHETYPES.filter((item) => item.kind === 'human').length)})} · {t(pluralKey(t,locale,'app.oddlings.beings',ODDLING_ARCHETYPES.filter((item) => item.kind === 'creature').length),{count:number(ODDLING_ARCHETYPES.filter((item) => item.kind === 'creature').length)})}</span>
+                <h2 className="vx-display mt-2 text-5xl sm:text-6xl">{t("app.oddlings.libraryTitle")}</h2>
+                <p className="mt-3 max-w-2xl text-vx-fg-body">{t("app.oddlings.exploreIntro")}</p>
               </div>
-              <div className="flex rounded-xl border border-vx-border bg-vx-panel p-1" role="tablist" aria-label="Workspace view">
-                <button type="button" role="tab" aria-selected={workspace === 'explore'} onClick={() => setWorkspace('explore')} className={`rounded-lg px-4 py-2 text-sm font-bold ${workspace === 'explore' ? 'bg-vx-base text-vx-fg' : 'text-vx-fg-muted'}`}>Explore</button>
-                <button type="button" role="tab" data-assistant-target="oddlings.history" aria-selected={workspace === 'history'} onClick={() => setWorkspace('history')} className={`rounded-lg px-4 py-2 text-sm font-bold ${workspace === 'history' ? 'bg-vx-base text-vx-fg' : 'text-vx-fg-muted'}`}>History · {library.length}</button>
+              <div className="flex rounded-xl border border-vx-border bg-vx-panel p-1" role="tablist" aria-label={t("app.oddlings.workspace")}>
+                <button type="button" role="tab" aria-selected={workspace === 'explore'} onClick={() => setWorkspace('explore')} className={`rounded-lg px-4 py-2 text-sm font-bold ${workspace === 'explore' ? 'bg-vx-base text-vx-fg' : 'text-vx-fg-muted'}`}>{t("label.Explore")}</button>
+                <button type="button" role="tab" data-assistant-target="oddlings.history" aria-selected={workspace === 'history'} onClick={() => setWorkspace('history')} className={`rounded-lg px-4 py-2 text-sm font-bold ${workspace === 'history' ? 'bg-vx-base text-vx-fg' : 'text-vx-fg-muted'}`}>{t('app.oddlings.history',{count:number(library.length)})}</button>
               </div>
             </div>
 
@@ -333,23 +339,23 @@ export default function OddlingStudio() {
               <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {library.map((item) => (
                   <article key={item.id} data-saved-passport-id={item.id} data-assistant-target={highlightedPassportId === item.id ? 'oddlings.saved' : undefined} className="scroll-mt-24 rounded-2xl border border-vx-border bg-vx-panel p-5">
-                    <span className="font-vx-mono text-[9px] font-bold tracking-[0.12em] text-vx-accent">SAVED PASSPORT</span>
+                    <span className="font-vx-mono text-[9px] font-bold tracking-[0.12em] text-vx-accent">{t("app.oddlings.savedPassport")}</span>
                     <h3 className="mt-2 text-xl font-extrabold">{item.name}</h3>
-                    <p className="mt-2 text-xs leading-relaxed text-vx-fg-muted">{item.picks.oddling_obsession || 'No creator premise yet.'}</p>
-                    <p className="mt-4 font-vx-mono text-[9px] text-vx-fg-faint">{new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(item.savedAt)}</p>
+                    <p className="mt-2 text-xs leading-relaxed text-vx-fg-muted">{item.picks.oddling_obsession || t("app.oddlings.noPremise")}</p>
+                    <p className="mt-4 font-vx-mono text-[9px] text-vx-fg-faint">{new Intl.DateTimeFormat(localeTag(locale), { dateStyle: 'medium', timeStyle: 'short' }).format(item.savedAt)}</p>
                     <button type="button" onClick={() => {
-                      loadOddling({ name: item.name, hook: item.picks.oddling_obsession || 'Saved Oddling', picks: item.picks });
+                      loadOddling({ name: item.name, hook: item.picks.oddling_obsession || t("app.oddlings.savedOddling"), picks: item.picks });
                       setMode('portrait');
                       setMotionId(item.motionId || ODDLING_MOTIONS[0].id);
                       setLoadedPassportId(item.id);
-                    }} className={`${chip(true)} mt-4`}>Load and edit</button>
+                    }} className={`${chip(true)} mt-4`}>{t("app.oddlings.loadEdit")}</button>
                   </article>
                 ))}
               </div>
             ) : (
               <div className="mt-8 rounded-2xl border border-dashed border-vx-border p-12 text-center">
-                <h3 className="text-xl font-extrabold">No saved passports yet.</h3>
-                <p className="mt-2 text-sm text-vx-fg-muted">Save a character on the left and it will appear here on this browser.</p>
+                <h3 className="text-xl font-extrabold">{t("app.oddlings.noPassports")}</h3>
+                <p className="mt-2 text-sm text-vx-fg-muted">{t("app.oddlings.saveHelp")}</p>
               </div>
             )}
           </div>
@@ -359,25 +365,25 @@ export default function OddlingStudio() {
               {lowCredits && (
                 <div role="status" className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-vx-money/40 bg-vx-money/[0.08] px-3 py-2.5">
                   <p className="text-xs leading-relaxed text-vx-fg-body">
-                    <strong className="text-vx-money">{insufficientCredits ? 'Not enough credits.' : 'Credits are running low.'}</strong>{' '}
-                    You have {balance} cr; this {mode === 'motion' ? 'animation' : 'portrait'} costs {generationCost} cr.
+                    <strong className="text-vx-money">{insufficientCredits ? t("app.oddlings.insufficient") : t("app.oddlings.low")}</strong>{' '}
+                    {t(mode==='motion'?'app.oddlings.balanceAnimation':'app.oddlings.balancePortrait',{balance:number(balance),cost:number(generationCost)})}
                   </p>
-                  <Link href="/app/credits" className="shrink-0 rounded-full bg-vx-money px-3 py-2 text-[11px] font-extrabold text-vx-money-ink hover:brightness-110">Get credits</Link>
+                  <Link href="/app/credits" className="shrink-0 rounded-full bg-vx-money px-3 py-2 text-[11px] font-extrabold text-vx-money-ink hover:brightness-110">{t("app.oddlings.getCredits")}</Link>
                 </div>
               )}
               <div className="flex items-stretch gap-2">
                 {mode === 'portrait' && (
-                  <button type="button" onClick={surprise} className="w-[76px] shrink-0 rounded-xl border border-vx-border bg-vx-base px-2 text-center text-[11px] font-extrabold leading-tight text-vx-fg transition-colors hover:border-vx-accent">Surprise me</button>
+                  <button type="button" onClick={surprise} className="w-[76px] shrink-0 rounded-xl border border-vx-border bg-vx-base px-2 text-center text-[11px] font-extrabold leading-tight text-vx-fg transition-colors hover:border-vx-accent">{t("app.oddlings.surprise")}</button>
                 )}
                 <Button type="button" size="lg" cost={generationCost} disabled={generationCost == null || handingOff} aria-busy={handingOff} data-assistant-target="oddlings.continue" onClick={continueToCreate} className="min-w-0 flex-1 justify-between rounded-xl py-5 text-lg shadow-[0_0_28px_rgb(var(--vx-accent)/0.16)]">
-                  {handingOff ? 'Opening Create…' : generationCost == null ? 'Checking live price…' : mode === 'motion' ? 'Animate character' : 'Generate portrait'}
+                  {handingOff ? t("app.oddlings.opening") : generationCost == null ? t("app.oddlings.checkingPrice") : mode === 'motion' ? t("app.oddlings.animate") : t("app.oddlings.generatePortrait")}
                 </Button>
               </div>
               <div className="mt-2 flex items-center justify-between gap-3 font-vx-mono text-[9px]">
-                <span className="text-vx-fg-faint">OPENS CREATE · NO CHARGE UNTIL CONFIRMED</span>
-                {generationCost != null && <span className="font-bold text-vx-money">LIVE PRICE · {generationCost} CR</span>}
+                <span className="text-vx-fg-faint">{t("app.oddlings.opensCreate")}</span>
+                {generationCost != null && <span className="font-bold text-vx-money">{t('app.oddlings.livePrice',{count:number(generationCost)})}</span>}
               </div>
-              {notice && <p role="status" className="mt-3 rounded-xl border border-vx-accent/30 bg-vx-accent/[0.06] px-3 py-2 text-xs text-vx-accent">{notice}</p>}
+              {notice && <p data-testid="oddling-notice" role="status" className="mt-3 rounded-xl border border-vx-accent/30 bg-vx-accent/[0.06] px-3 py-2 text-xs text-vx-accent">{notice}</p>}
             </div>
             </div>
       </div>

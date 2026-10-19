@@ -18,6 +18,8 @@ import { AnnouncementBar } from './AnnouncementBar';
 import { PaywallPrompt } from './PaywallPrompt';
 import { LanguageMenu } from './LanguageMenu';
 import { useI18n } from '../../../components/I18nProvider';
+import { localeTag } from '../../../lib/i18n/locales.mjs';
+import { pluralKey } from '../../../lib/i18n/translate.mjs';
 
 // Studio pages keep the making tools in the tab strip. This complementary
 // list makes the rest of the public site reachable from that same header,
@@ -94,21 +96,22 @@ export function MarketingNav({ hideAnnouncementOnMobile = false }) {
 // If `balance` prop is provided the parent owns it; otherwise the pill
 // self-fetches and subscribes to veyrnox:balance-changed.
 export function AppNav({ balance, active = 'explore', readAccount = true }) {
+  const { t, locale } = useI18n();
   const projectsEnabled = useProjectsEnabled();
   const enhanceEnabled = useVideoEnhancePreview();
   const editorEnabled = useEditorEnabled();
   const items = [
-    { key: 'explore', href: '/app',         label: 'Explore' },
-    { key: 'oddlings', href: '/app/oddlings', label: 'Oddlings', featured: true },
-    { key: 'create',  href: '/app/create',  label: 'Create' },
+    { key: 'explore', href: '/app',         label: t("label.Explore") },
+    { key: 'oddlings', href: '/app/oddlings', label: t("label.Oddlings"), featured: true },
+    { key: 'create',  href: '/app/create',  label: t("label.Create") },
     // Video agent (ADR-0074): bought from a plan on its own page, so it has its own tab and is not in the Create picker.
-    { key: 'agent', href: '/app/video-agent', label: 'Video agent' },
-    { key: 'chat', href: '/app/chat', label: 'LLM Chat' },
-    { key: 'film', href: '/app/film-studio', label: 'Film Studio' },
-    { key: 'library', href: '/app/library', label: 'Library' },
-    ...(editorEnabled ? [{ key: 'editor', href: '/app/editor', label: 'Video editor' }] : []),
-    ...(projectsEnabled ? [{ key: 'projects', href: '/app/projects', label: 'Projects' }] : []),
-    ...(enhanceEnabled ? [{ key: 'enhance', href: '/app/enhance', label: 'Enhance' }] : []),
+    { key: 'agent', href: '/app/video-agent', label: t("app.nav.videoAgent") },
+    { key: 'chat', href: '/app/chat', label: t("label.LLM Chat") },
+    { key: 'film', href: '/app/film-studio', label: t("label.Film Studio") },
+    { key: 'library', href: '/app/library', label: t("label.Library") },
+    ...(editorEnabled ? [{ key: 'editor', href: '/app/editor', label: t("label.Video editor") }] : []),
+    ...(projectsEnabled ? [{ key: 'projects', href: '/app/projects', label: t("label.Projects") }] : []),
+    ...(enhanceEnabled ? [{ key: 'enhance', href: '/app/enhance', label: t("label.Enhance") }] : []),
   ];
   const primaryKeys = new Set(['explore', 'create', 'library']);
   const primaryItems = items.filter((item) => primaryKeys.has(item.key));
@@ -152,15 +155,15 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
 
   const assets = summary?.assets ?? null;
   const shown = balance != null ? balance : summary?.credits ?? null;
-  const fmt = shown != null ? new Intl.NumberFormat('en-US').format(shown) : '—';
-  const assetFmt = assets != null ? new Intl.NumberFormat('en-US').format(assets) : '—';
-  const assetWord = assets === 1 ? 'asset' : 'assets';
+  const fmt = shown != null ? new Intl.NumberFormat(localeTag(locale, 'en-US')).format(shown) : '—';
+  const assetFmt = assets != null ? new Intl.NumberFormat(localeTag(locale, 'en-US')).format(assets) : '—';
+  const assetWord = t(pluralKey(t, locale, 'app.nav.asset', assets ?? 0));
   return (
     <header data-print="hide" className="sticky top-0 z-40 flex items-center justify-between gap-2 px-4 sm:px-8 h-16 border-b border-vx-border bg-vx-base/88 backdrop-blur-sm">
       {summary && <PaywallPrompt credits={summary.credits} createdAt={summary.created_at} />}
       <Link
         href="/app"
-        aria-label="Veyrnox studio — explore"
+        aria-label={t("app.nav.explore")}
         className={`items-center gap-2.5 shrink-0 ${account ? 'hidden sm:flex' : 'flex'}`}
       >
         {/* On signed-in phones the Studio menu carries every destination, so
@@ -170,12 +173,13 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
       </Link>
       <MobileMenu
         items={menuItems}
+        languageMenu
         activeHref={items.find((item) => item.key === active)?.href}
-        buttonLabel="Studio menu"
-        navLabel="Studio"
+        buttonLabel={t("app.nav.menu")}
+        navLabel={t("app.nav.studio")}
         className="lg:hidden"
       />
-      <nav aria-label="Studio" className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 text-[12px] font-semibold sm:gap-1 sm:text-sm lg:flex">
+      <nav aria-label={t("app.nav.studio")} className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 text-[12px] font-semibold sm:gap-1 sm:text-sm lg:flex">
         {primaryItems.map((it) => {
           const current = active === it.key;
           return (
@@ -200,9 +204,9 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
           <summary className={`cursor-pointer list-none rounded-full px-2 py-2 hover:bg-vx-panel hover:text-vx-fg sm:px-3 ${
             moreItems.some((item) => item.key === active) ? 'bg-vx-panel text-vx-fg' : 'text-vx-fg-muted'
           }`}>
-            More <span aria-hidden="true">▾</span>
+            {t("public.vey.more")}{' '}<span aria-hidden="true">▾</span>
           </summary>
-          <div className="absolute left-1/2 top-[calc(100%+0.5rem)] z-50 min-w-48 -translate-x-1/2 rounded-2xl border border-vx-border bg-vx-panel p-2 shadow-2xl">
+          <div className="absolute start-1/2 top-[calc(100%+0.5rem)] z-50 min-w-48 -translate-x-1/2 rtl:translate-x-1/2 rounded-2xl border border-vx-border bg-vx-panel p-2 shadow-2xl">
             {moreItems.map((it) => (
               <Link
                 key={it.key}
@@ -244,11 +248,12 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
       <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
         <MobileMenu
           items={APP_BROWSE_CATEGORIES}
-          buttonLabel="Browse more Veyrnox pages"
-          buttonText="Browse"
-          navLabel="More Veyrnox pages"
+          buttonLabel={t("app.nav.browseMore")}
+          buttonText={t("app.nav.browse")}
+          navLabel={t("app.nav.morePages")}
           className="hidden lg:block"
         />
+        <LanguageMenu />
         <ThemeToggle className="hidden md:inline-flex" />
         {account ? (
           <>
@@ -258,7 +263,8 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
             <span className="flex flex-col gap-px rounded-2xl border border-vx-border bg-vx-panel px-1.5 sm:px-2.5 py-0.5">
               <Link
                 href="/app/credits"
-                aria-label={`Credit balance: ${fmt} credits`}
+                data-testid="app-credit-balance"
+                aria-label={t('app.nav.balance', { count: fmt })}
                 className="flex min-h-6 items-center gap-1.5 py-1 leading-none transition-opacity hover:opacity-80"
               >
                 <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-vx-money" />
@@ -266,7 +272,7 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
               </Link>
               <Link
                 href="/app/library"
-                aria-label={`${assetFmt} ${assetWord} in your library`}
+                aria-label={t('app.nav.libraryCount', { count: assetFmt, unit: assetWord })}
                 className="flex min-h-6 items-center gap-1.5 py-1 leading-none transition-opacity hover:opacity-80"
               >
                 {/* Keeps the count's first digit under the balance's. */}
@@ -286,8 +292,7 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
             onClick={() => window.dispatchEvent(new CustomEvent('veyrnox:auth-required', { detail: { mode: 'sign_in' } }))}
             className="rounded-full bg-vx-accent text-vx-accent-ink text-[13px] sm:text-sm font-bold px-3 sm:px-4 py-2 hover:bg-vx-accent-hover"
           >
-            Sign in
-          </button>
+            {t("oauth.signIn")}</button>
         )}
       </div>
     </header>

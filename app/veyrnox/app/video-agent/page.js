@@ -1,4 +1,7 @@
 'use client';
+import { useI18n } from '../../../../components/I18nProvider';
+import { pluralKey, tOr } from '../../../../lib/i18n/translate.mjs';
+import { localeTag } from '../../../../lib/i18n/locales.mjs';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AppNav } from '../../_components/NavBar';
@@ -20,21 +23,14 @@ const ASPECTS = ['9:16', '16:9', '1:1'];
 const MIN_BRIEF = 3;
 const MAX_BRIEF = 500;
 
-const STEPS = [
-  ['1', 'Write a brief', 'Say what the video is about and how it should feel. Pick a shape: 9:16 for phones, 16:9 for wide screens, 1:1 for squares.'],
-  ['2', 'Check the plan and price', 'The agent drafts a plan and shows the exact Credit price. Planning is free, and you can re-plan as often as you like.'],
-  ['3', 'Approve to start', 'Credits are taken once, when you approve. The agent then produces and edits the video as one job.'],
-];
-const BRIEF_TIPS = [
-  'Name the subject, the setting and the mood: "a lighthouse at dusk, calm and cinematic".',
-  'Say who it is for or where it will play, such as a product teaser or a social clip.',
-  'Keep it to one idea. A tight brief plans better than a long list of wishes.',
-  'Need exact words spoken? Use the narration box. Otherwise any audio is generated and may not repeat quoted words.',
-];
-
+const STEPS = ['1', '2', '3'];
+const BRIEF_TIPS = ['app.videoAgent.tip1', 'app.videoAgent.tip2', 'app.videoAgent.tip3', 'app.videoAgent.tip4'];
+const UNREACHABLE = { code: 'poll_unreachable' };
 const errorFor = (e) => (e instanceof GatewayError ? { code: e.code, retryAfter: e.retryAfter } : { code: 'internal' });
 
 export default function VideoAgent() {
+  const { t, locale } = useI18n();
+  const number = value => locale === 'en' ? String(value) : value.toLocaleString(localeTag(locale));
   const [balance, setBalance] = useState(null);
   const [balanceLoading, setBalanceLoading] = useState(true);
   const [brief, setBrief] = useState('');
@@ -48,7 +44,7 @@ export default function VideoAgent() {
   const balanceRequest = useRef(0);
   const draftVersion = useRef(0);
   const mounted = useRef(true);
-  const { jobs, startJobs, generating } = useStudioJobs({ onUnreachable: () => setError({ code: 'poll_unreachable' }) });
+  const { jobs, startJobs, generating } = useStudioJobs({ onUnreachable: () => setError(UNREACHABLE) });
   const job = jobs[0];
 
   const refreshBalance = useCallback(async () => {
@@ -109,7 +105,7 @@ export default function VideoAgent() {
       const body = { brief: brief.trim(), aspect_ratio: aspect, ...(narration.text ? { narration_text: narration.text } : {}) };
       const p = await gatewayFetch('/montage/plan', { method: 'POST', body: JSON.stringify(body) });
       if (!mounted.current || requestVersion !== draftVersion.current) return;
-      if (narration.text && (p.narration_text !== narration.text || p.plan?.narration_supported !== true)) throw new GatewayError('Narration is unavailable', { code: 'narration_unavailable' });
+      if (narration.text && (p.narration_text !== narration.text || p.plan?.narration_supported !== true)) throw new GatewayError(t('app.videoAgent.errorFallback'), { code: 'narration_unavailable' });
       setPlan({ ...p, brief: body.brief, aspect: body.aspect_ratio, narrationText: narration.text, draftVersion: requestVersion });
     } catch (e) {
       if (mounted.current && requestVersion === draftVersion.current) setError(errorFor(e));
@@ -143,37 +139,37 @@ export default function VideoAgent() {
       <AppNav balance={balance} active="agent" />
       <Main className="max-w-3xl mx-auto px-4 sm:px-8 pt-6 pb-16">
         <div className="mb-3">
-          <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">VIDEO AGENT</div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-[-0.02em] mt-1">Make a video from a brief</h1>
-          <p className="mt-2 text-sm text-vx-fg-body">Describe the video you want. The agent plans it, shows you the price, and only makes it after you approve.</p>
+          <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">{t("app.videoAgent.tag")}</div>
+          <h1 className="text-2xl sm:text-3xl font-black tracking-[-0.02em] mt-1">{t("app.videoAgent.title")}</h1>
+          <p className="mt-2 text-sm text-vx-fg-body">{t("app.videoAgent.intro")}</p>
         </div>
 
-        <ol aria-label="How Video Agent works" className="mb-4 grid gap-2 sm:grid-cols-3">
-          {STEPS.map(([n, title, body]) => (
+        <ol aria-label={t("app.videoAgent.how")} className="mb-4 grid gap-2 sm:grid-cols-3">
+          {STEPS.map(n => (
             <li key={n} className="rounded-xl border border-vx-border bg-vx-panel p-3">
-              <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-accent">STEP {n}</div>
-              <div className="mt-1 text-sm font-bold">{title}</div>
-              <p className="mt-1 text-xs text-vx-fg-muted">{body}</p>
+              <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-accent">{t('app.videoAgent.step', { number: number(Number(n)) })}</div>
+              <div className="mt-1 text-sm font-bold">{t(`app.videoAgent.step${n}Title`)}</div>
+              <p className="mt-1 text-xs text-vx-fg-muted">{t(`app.videoAgent.step${n}Body`)}</p>
             </li>
           ))}
         </ol>
 
         <div className="rounded-2xl border border-vx-border bg-vx-panel p-5">
-          <label htmlFor="brief" className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">BRIEF</label>
+          <label htmlFor="brief" className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">{t("app.videoAgent.brief")}</label>
           <textarea
-            id="brief" rows={4} maxLength={MAX_BRIEF} value={brief} disabled={approving || generating}
+            id="brief" data-testid="agent-brief" rows={4} maxLength={MAX_BRIEF} value={brief} disabled={approving || generating}
             onChange={(e) => editDraft(setBrief, e.target.value)}
-            placeholder="What should the video be about, and what should it feel like?"
+            placeholder={t("app.videoAgent.briefPlaceholder")}
             className="mt-2 w-full rounded-lg border border-vx-border bg-vx-bg p-3 text-sm"
           />
-          <label htmlFor="narration-text" className="mt-4 block text-sm font-bold">Exact narration (optional)</label>
-          <textarea id="narration-text" rows={3} maxLength={MAX_NARRATION_LENGTH} value={narrationText}
+          <label htmlFor="narration-text" className="mt-4 block text-sm font-bold">{t("app.videoAgent.narration")}</label>
+          <textarea id="narration-text" data-testid="agent-narration" rows={3} maxLength={MAX_NARRATION_LENGTH} value={narrationText}
             disabled={approving || generating} onChange={e => editDraft(setNarrationText, e.target.value)}
             aria-describedby="narration-help" className="mt-2 w-full rounded-lg border border-vx-border bg-vx-bg p-3 text-sm"
-            placeholder="Type only the words to speak, up to 300 characters." />
-          <p id="narration-help" className="mt-2 text-xs text-vx-fg-muted">Brief-only audio is generated and may not repeat quoted words exactly. This field sends your words separately to a speech model; pronunciation can still vary. One approval, the same displayed price.</p>
-          {!narration.ok && <p role="alert" className="mt-2 text-xs text-vx-danger">Use up to 300 characters without line breaks or control characters.</p>}
-          <div className="mt-3 flex items-center gap-1.5" role="group" aria-label="Aspect ratio">
+            placeholder={t("app.videoAgent.narrationPlaceholder")} />
+          <p id="narration-help" data-testid="agent-narration-help" className="mt-2 text-xs text-vx-fg-muted">{t("app.videoAgent.narrationHelp")}</p>
+          {!narration.ok && <p role="alert" className="mt-2 text-xs text-vx-danger">{t("app.videoAgent.narrationLimit")}</p>}
+          <div className="mt-3 flex items-center gap-1.5" role="group" aria-label={t("label.Aspect ratio")}>
             {ASPECTS.map((a) => (
               <button
                 key={a} type="button" aria-pressed={aspect === a} disabled={approving || generating}
@@ -182,47 +178,47 @@ export default function VideoAgent() {
               >{a}</button>
             ))}
             <button
-              type="button" onClick={onPlan} disabled={!briefOk || !narration.ok || busy || generating}
-              className="ml-auto rounded-lg bg-vx-accent px-4 py-2 text-sm font-bold text-black disabled:opacity-40"
-            >{busy && !plan ? 'Planning…' : plan ? 'Re-plan' : 'Make a plan'}</button>
+              data-testid="agent-plan" type="button" onClick={onPlan} disabled={!briefOk || !narration.ok || busy || generating}
+              className="ms-auto rounded-lg bg-vx-accent px-4 py-2 text-sm font-bold text-black disabled:opacity-40"
+            >{busy && !plan ? t("app.videoAgent.planning") : plan ? t("app.videoAgent.replan") : t("app.videoAgent.makePlan")}</button>
           </div>
-          <p className="mt-2 text-xs text-vx-fg-muted">Planning is free. You are only charged when you approve the plan.</p>
+          <p className="mt-2 text-xs text-vx-fg-muted">{t("app.videoAgent.freePlanning")}</p>
         </div>
 
         {error && (
-          <div role="alert" className="mt-3 rounded-lg border border-vx-danger/40 bg-vx-danger/[0.07] px-4 py-3 text-sm text-vx-danger">
-            {ERROR_COPY[error.code] || 'Something went wrong. Nothing was charged.'}
-            {error.retryAfter ? ` Try again in ${error.retryAfter}s.` : ''}
+          <div data-testid="agent-error" role="alert" className="mt-3 rounded-lg border border-vx-danger/40 bg-vx-danger/[0.07] px-4 py-3 text-sm text-vx-danger">
+            {tOr(t, `app.create.error.${error.code}`, ERROR_COPY[error.code] || t('app.videoAgent.errorFallback'))}
+            {error.retryAfter ? t('app.videoAgent.retry', { count: number(error.retryAfter) }) : ''}
           </div>
         )}
 
         {plan && (
           <div className="mt-4 rounded-2xl border border-vx-border bg-vx-panel p-5">
-            <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">PLAN</div>
-            <p className="mt-2 text-sm text-vx-fg-body whitespace-pre-line">{plan.plan.summary || 'The agent will plan, produce and edit your video.'}</p>
-            {plan.plan.seconds && <p className="mt-1 text-xs text-vx-fg-muted">About {plan.plan.seconds} seconds · {plan.aspect}</p>}
-            {plan.narrationText && <section aria-label="Approved exact narration" className="mt-3 rounded-lg border border-vx-border p-3">
-              <h2 className="text-sm font-bold">Exact narration to be spoken</h2>
+            <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">{t("app.videoAgent.plan")}</div>
+            <p className="mt-2 text-sm text-vx-fg-body whitespace-pre-line">{plan.plan.summary || t("app.videoAgent.planFallback")}</p>
+            {plan.plan.seconds && <p className="mt-1 text-xs text-vx-fg-muted">{t(pluralKey(t, locale, 'app.videoAgent.seconds', plan.plan.seconds), { count: number(plan.plan.seconds), aspect: plan.aspect })}</p>}
+            {plan.narrationText && <section data-testid="agent-narration-preview" aria-label={t("app.videoAgent.approvedNarration")} className="mt-3 rounded-lg border border-vx-border p-3">
+              <h2 className="text-sm font-bold">{t("app.videoAgent.narrationToSpeak")}</h2>
               <p className="mt-2 whitespace-pre-wrap break-words text-sm">{plan.narrationText}</p>
-              <p className="mt-2 text-xs text-vx-fg-muted">Review every word before approving. Editing this text requires a new plan.</p>
+              <p className="mt-2 text-xs text-vx-fg-muted">{t("app.videoAgent.reviewNarration")}</p>
             </section>}
             <div className="mt-4 flex items-center justify-between">
-              <span className="font-vx-mono text-[12px] text-vx-money vx-num">{plan.credits} cr · balance {balance ?? '—'} cr</span>
+              <span data-testid="agent-balance" className="font-vx-mono text-[12px] text-vx-money vx-num">{t('app.videoAgent.balance', { credits: number(plan.credits), balance: balance == null ? '—' : number(balance) })}</span>
               <button
-                type="button" onClick={onApprove} disabled={busy || expired || cannotAfford || stalePlan || !narration.ok}
+                data-testid="agent-approve" type="button" onClick={onApprove} disabled={busy || expired || cannotAfford || stalePlan || !narration.ok}
                 className="rounded-lg bg-vx-accent px-4 py-2 text-sm font-bold text-black disabled:opacity-40"
-              >Approve and make it · {plan.credits} cr</button>
+              >{t('app.videoAgent.approve', { credits: number(plan.credits) })}</button>
             </div>
-            {expired && <p className="mt-2 text-xs text-vx-danger">{ERROR_COPY.plan_expired}</p>}
+            {expired && <p className="mt-2 text-xs text-vx-danger">{tOr(t, 'app.create.error.plan_expired', ERROR_COPY.plan_expired)}</p>}
             {balanceState === 'unavailable' && <div className="mt-3 text-sm text-vx-fg-muted">
-              <p role="status">{balanceLoading ? 'Checking your balance…' : 'Your balance is unavailable. Retry to confirm it before approving.'}</p>
-              <button type="button" disabled={balanceLoading || busy} onClick={refreshBalance} className="mt-2 text-vx-accent underline disabled:opacity-40">Retry balance</button>
+              <p data-testid="agent-balance-status" role="status">{balanceLoading ? t("app.videoAgent.checkingBalance") : t("app.videoAgent.balanceUnavailable")}</p>
+              <button type="button" disabled={balanceLoading || busy} data-testid="agent-retry-balance" onClick={refreshBalance} className="mt-2 text-vx-accent underline disabled:opacity-40">{t("app.videoAgent.retryBalance")}</button>
             </div>}
             {balanceState === 'insufficient' && <div className="mt-3 rounded-xl border border-vx-money/40 bg-vx-money/[0.06] p-3 text-sm">
-              <p className="text-vx-fg">You need {plan.credits - balance} more Credits to approve this plan.</p>
-              <Link href="/app/credits" className="mt-2 inline-block font-bold text-vx-accent underline underline-offset-4">Compare monthly plans and packs</Link>
+              <p data-testid="agent-shortfall" className="text-vx-fg">{t(pluralKey(t, locale, 'app.videoAgent.moreCredits', plan.credits - balance), { count: number(plan.credits - balance) })}</p>
+              <Link href="/app/credits" className="mt-2 inline-block font-bold text-vx-accent underline underline-offset-4">{t("app.videoAgent.compare")}</Link>
             </div>}
-            <p className="mt-2 text-xs text-vx-fg-muted">If the video can&apos;t be made, the credits come back automatically.</p>
+            <p className="mt-2 text-xs text-vx-fg-muted">{t("app.videoAgent.refund")}</p>
           </div>
         )}
 
@@ -232,11 +228,11 @@ export default function VideoAgent() {
               <div className="absolute inset-0 flex items-center justify-center text-center px-6">
                 <div>
                   <div className={`font-vx-mono text-[11px] tracking-[0.14em] ${job.state === 'failed' ? 'text-vx-danger' : 'text-vx-accent'}`}>
-                    <span aria-hidden="true">{jobStateUi(job).glyph}</span> {jobStateUi(job).label}
+                    <span aria-hidden="true">{jobStateUi(job).glyph}</span> {tOr(t, `app.create.jobState.${job.state}`, jobStateUi(job).label)}
                   </div>
                   {job.state === 'failed'
                     ? <div className="mt-2 text-sm text-vx-fg-body">{failedJobCopy(job)}</div>
-                    : <div className="mt-2 text-xs text-vx-fg-muted">This can take several minutes. It keeps running if you leave, and we&apos;ll tell you when it&apos;s ready.</div>}
+                    : <div className="mt-2 text-xs text-vx-fg-muted">{t("app.videoAgent.waiting")}</div>}
                 </div>
               </div>
             )}
@@ -244,15 +240,15 @@ export default function VideoAgent() {
         )}
 
         <section aria-labelledby="agent-help" className="mt-8 rounded-2xl border border-vx-border bg-vx-panel p-5">
-          <h2 id="agent-help" className="text-lg font-black tracking-[-0.01em]">Before you start</h2>
-          <h3 className="mt-3 text-sm font-bold">Writing a good brief</h3>
-          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-vx-fg-body">
-            {BRIEF_TIPS.map((t) => <li key={t}>{t}</li>)}
+          <h2 id="agent-help" className="text-lg font-black tracking-[-0.01em]">{t("app.videoAgent.before")}</h2>
+          <h3 className="mt-3 text-sm font-bold">{t("app.videoAgent.writing")}</h3>
+          <ul className="mt-2 list-disc space-y-1 ps-5 text-sm text-vx-fg-body">
+            {BRIEF_TIPS.map(key => <li key={key}>{t(key)}</li>)}
           </ul>
-          <h3 className="mt-4 text-sm font-bold">What happens after you approve</h3>
-          <p className="mt-1 text-sm text-vx-fg-body">Making a video can take several minutes. It keeps running if you leave this page, and your finished video appears on this page when it is ready.</p>
-          <h3 className="mt-4 text-sm font-bold">Money</h3>
-          <p className="mt-1 text-sm text-vx-fg-body">The price on the plan is the price you pay. Nothing is charged until you approve, and if the video can&apos;t be made the Credits are returned automatically.</p>
+          <h3 className="mt-4 text-sm font-bold">{t("app.videoAgent.after")}</h3>
+          <p className="mt-1 text-sm text-vx-fg-body">{t("app.videoAgent.afterHelp")}</p>
+          <h3 className="mt-4 text-sm font-bold">{t("app.videoAgent.money")}</h3>
+          <p className="mt-1 text-sm text-vx-fg-body">{t("app.videoAgent.moneyHelp")}</p>
         </section>
       </Main>
     </div>

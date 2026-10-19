@@ -1,4 +1,5 @@
 'use client';
+import { useI18n } from '../../../components/I18nProvider';
 import { useEffect, useRef, useState } from 'react';
 
 // Draw-to-edit: sketch over the start image, then hand back one flattened PNG
@@ -11,6 +12,7 @@ const COLORS = ['#eab308', '#ef4444', '#ffffff', '#22d3ee'];
 const MAX_SIDE = 2048;
 
 export function DrawOnImage({ file, onDone, onCancel }) {
+  const { t } = useI18n();
   const canvasRef = useRef(null);
   const imgRef = useRef(null);
   const drawing = useRef(null);
@@ -81,36 +83,30 @@ export function DrawOnImage({ file, onDone, onCancel }) {
 
   const btn = 'font-vx-mono text-[11px] font-bold rounded-full px-3.5 py-1.5 border border-vx-border text-vx-fg-muted hover:text-vx-fg disabled:opacity-40';
   return (
-    <div role="dialog" aria-modal="true" aria-label="Draw on start image"
+    <div role="dialog" aria-modal="true" aria-label={t("app.create.draw.dialog")}
       className="fixed inset-0 z-[80] flex items-center justify-center bg-black/80 p-4 backdrop-blur-xs">
       <div className="w-full max-w-4xl rounded-2xl border border-vx-border bg-vx-panel p-4 flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted mr-2">DRAW TO EDIT</span>
+          <span className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted me-2">{t("app.create.draw.title")}</span>
           {COLORS.map((c) => (
-            <button key={c} onClick={() => setColor(c)} aria-label={`Colour ${c}`} aria-pressed={color === c}
+            <button key={c} onClick={() => setColor(c)} aria-label={t("app.create.draw.color",{color:c})} aria-pressed={color === c}
               className={`w-6 h-6 rounded-full border-2 ${color === c ? 'border-vx-accent' : 'border-vx-border'}`}
               style={{ background: c }} />
           ))}
-          <label className="flex items-center gap-2 ml-2 text-xs text-vx-fg-muted">
-            Size
-            <input type="range" min="2" max="40" value={size} onChange={(e) => setSize(Number(e.target.value))} />
+          <label className="flex items-center gap-2 ms-2 text-xs text-vx-fg-muted">{t("app.editor.legacy.size")}<input type="range" min="2" max="40" value={size} onChange={(e) => setSize(Number(e.target.value))} />
           </label>
           <span className="flex-1" />
-          <button className={btn} disabled={!strokes.length} onClick={() => setStrokes((s) => s.slice(0, -1))}>Undo</button>
-          <button className={btn} disabled={!strokes.length} onClick={() => setStrokes([])}>Clear</button>
+          <button className={btn} disabled={!strokes.length} onClick={() => setStrokes((s) => s.slice(0, -1))}>{t("app.editor.workspace.undo")}</button>
+          <button className={btn} disabled={!strokes.length} onClick={() => setStrokes([])}>{t("app.library.clear")}</button>
         </div>
         <canvas ref={canvasRef}
           onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}
           className="w-full max-h-[65vh] object-contain rounded-lg bg-black touch-none cursor-crosshair" />
-        <div className="text-xs text-vx-fg-muted">
-          Mark what to change, then describe it in the prompt, e.g. “replace the yellow scribble with a red sailboat”.
-        </div>
+        <div className="text-xs text-vx-fg-muted">{t("app.create.draw.help")}</div>
         <div className="flex justify-end gap-2">
-          <button className={btn} onClick={onCancel}>Cancel</button>
+          <button className={btn} onClick={onCancel}>{t("cinema.creatorWorkspace.cancel")}</button>
           <button onClick={done} disabled={!ready || !strokes.length}
-            className="rounded-full px-5 py-2 font-extrabold bg-vx-accent text-vx-accent-ink hover:bg-vx-accent-hover disabled:opacity-40">
-            Use drawing
-          </button>
+            className="rounded-full px-5 py-2 font-extrabold bg-vx-accent text-vx-accent-ink hover:bg-vx-accent-hover disabled:opacity-40">{t("app.create.draw.use")}</button>
         </div>
       </div>
     </div>

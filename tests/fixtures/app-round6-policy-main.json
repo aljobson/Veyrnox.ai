@@ -1,0 +1,11 @@
+{
+  "app.account.appeals.length": "Write 10 to 2000 characters.",
+  "app.publish.contactImport.fileSize": "Choose a CSV file no larger than 32 KB.",
+  "app.publish.contactImport.help": "Add one person or import up to 250 contacts for a connected account.",
+  "app.editor.font.note": "Up to eight fonts, 2 MiB each. Font files stay on this device. Saved projects retain source, rights and SHA-256; relink the same font after reopening on another browser. Export requires every used custom font.",
+  "app.publish.schedule.limit": "Up to 10 addresses. Each scheduled run sends the selected PDF or PowerPoint.",
+  "app.credits.page.balanceRule": "One balance covers every model. Free credits are spent first.",
+  "app.credits.page.priceRule": "Each generation is charged at the price on its button, when you press it.",
+  "app.credits.page.refundRule": "Failed jobs refund automatically, as their own line in your statement.",
+  "app.credits.page.packRule": "Credit Packs are one-off purchases and do not renew."
+}

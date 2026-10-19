@@ -92,15 +92,16 @@ test('Webhook operations time-window tabs issue distinct bounded reads', async (
 test('Account security renders private controls, validates password and cancels revocation', async ({ page }) => {
   const fixture = await installAccessFixtures(page);
   await openReal(fixture, '/app/account');
-  await expect(page.getByRole('heading', { name: 'Set a new password' })).toBeVisible();
+  await expect(page.getByTestId('account-password-heading')).toBeVisible();
+  await expect(page.getByTestId('account-password-heading')).toHaveText('Set a new password');
   await expect(page.getByText('No assistants are connected.', { exact: true })).toBeVisible();
-  await page.getByLabel('New password', { exact: true }).fill('short');
-  await page.getByLabel('Email verification code', { exact: true }).fill('bad');
-  await page.getByRole('button', { name: 'Update password', exact: true }).click();
-  expect(await page.getByLabel('New password', { exact: true }).evaluate(node => node.validity.valid)).toBe(false);
-  await page.getByRole('button', { name: 'Sign out other devices', exact: true }).click();
+  await page.getByTestId('account-new-password').fill('short');
+  await page.getByTestId('account-verification-code').fill('bad');
+  await page.getByTestId('account-update-password').click();
+  expect(await page.getByTestId('account-new-password').evaluate(node => node.validity.valid)).toBe(false);
+  await page.getByTestId('account-sign-out-others').click();
   await expect(page.getByRole('dialog')).toBeVisible();
-  await page.getByRole('dialog').getByRole('button', { name: 'Cancel', exact: true }).click();
+  await page.getByRole('dialog').getByTestId('confirm-dialog-cancel').click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   expect(productWrites(fixture)).toEqual([]);
 });
@@ -118,21 +119,21 @@ test('Account authenticator read failure recovers without enrollment', async ({ 
 test('Account connected assistant failure has a functional refresh', async ({ page }) => {
   const fixture = await installAccessFixtures(page, { scenario: { oauthError: true } });
   await openReal(fixture, '/app/account');
-  const section = page.getByRole('region', { name: 'Connected assistants' });
+  const section = page.getByTestId('oauth-grants');
   await expect(section.getByRole('alert')).toContainText('could not be loaded');
   fixture.scenario.oauthError = false;
-  await section.getByRole('button', { name: 'Refresh' }).click();
-  await expect(section.getByText('No assistants are connected.', { exact: true })).toBeVisible();
+  await section.getByTestId('oauth-grants-refresh').click();
+  await expect(section.getByTestId('oauth-grants-empty')).toHaveText('No assistants are connected.');
 });
 
 test('Content appeal validates statement and transitions synthetic decision once', async ({ page }) => {
   const fixture = await installAccessFixtures(page, { sanction: true });
   await openReal(fixture, '/app/account/appeals');
-  await page.getByRole('button', { name: 'Appeal this decision', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Send appeal', exact: true })).toBeDisabled();
-  await page.getByLabel('Tell us why you think this decision was wrong').fill('Synthetic fixture decision review only.');
-  await page.getByRole('button', { name: 'Send appeal', exact: true }).click();
-  await expect(page.getByText('Appeal under review', { exact: true })).toBeVisible();
+  await page.getByTestId('open-appeal').click();
+  await expect(page.getByTestId('send-appeal')).toBeDisabled();
+  await page.getByTestId('appeal-statement').fill('Synthetic fixture decision review only.');
+  await page.getByTestId('send-appeal').click();
+  await expect(page.getByTestId('appeal-under-review')).toBeVisible();
   expect(fixture.requests.filter(r => r.path === '/api/v1/appeals' && r.method === 'POST').map(r => r.body.action_id)).toEqual([ACTION_ID]);
 });
 
@@ -140,12 +141,12 @@ test('Content report validates free-text subject and acknowledges intercepted re
   const fixture = await installAccessFixtures(page);
   await openReal(fixture, '/app/account/report?job=invalid-id');
   await expect(page.getByRole('button', { name: 'Account: synthetic-feature-qa', exact: true })).toBeVisible();
-  const form = page.getByRole('form', { name: 'Report content', exact: true });
-  await form.getByRole('radio', { name: 'Something else', exact: true }).check();
-  await expect(form.getByRole('button', { name: 'Send report', exact: true })).toBeDisabled();
-  await form.getByRole('textbox', { name: 'Anything we should know (what and where)', exact: true }).fill('Entirely synthetic QA report; no real content or people.');
-  await form.getByRole('button', { name: 'Send report', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Thank you' })).toBeVisible();
+  const form = page.getByTestId('content-report');
+  await form.getByTestId('report-category-other').check();
+  await expect(form.getByTestId('send-report')).toBeDisabled();
+  await form.getByTestId('report-details').fill('Entirely synthetic QA report; no real content or people.');
+  await form.getByTestId('send-report').click();
+  await expect(page.getByTestId('report-thanks')).toBeVisible();
   expect(fixture.requests.find(r => r.path === '/api/v1/reports' && r.method === 'POST').body.subject_kind).toBe('other');
 });
 

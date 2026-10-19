@@ -1,4 +1,5 @@
 'use client';
+import { useI18n } from '../../../../components/I18nProvider';
 import { useState } from 'react';
 import { parseMarkdown } from '../../../../lib/chatMarkdown.js';
 
@@ -13,6 +14,7 @@ function Inline({ parts }) {
 }
 
 function Code({ lang, text }) {
+  const { t } = useI18n();
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     try { await navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* blocked */ }
@@ -20,8 +22,8 @@ function Code({ lang, text }) {
   return (
     <div className="my-3 overflow-hidden rounded-lg border border-vx-border bg-vx-base">
       <div className="flex items-center justify-between border-b border-vx-border bg-vx-panel px-3 py-1 text-xs text-vx-fg-muted">
-        <span className="font-vx-mono">{lang || 'code'}</span>
-        <button type="button" onClick={copy} className="rounded-sm px-1.5 py-0.5 hover:text-vx-fg" aria-label="Copy code">{copied ? 'Copied' : 'Copy'}</button>
+        <span className="font-vx-mono">{lang || t("app.chat.code")}</span>
+        <button type="button" onClick={copy} className="rounded-sm px-1.5 py-0.5 hover:text-vx-fg" aria-label={t("app.chat.copyCode")}>{copied ? t("common.copied") : t("app.editor.workspace.copy")}</button>
       </div>
       <pre className="overflow-x-auto p-3 text-sm" tabIndex={0}><code className="font-vx-mono">{text}</code></pre>
     </div>
@@ -35,7 +37,7 @@ export function ChatText({ text }) {
         if (b.type === 'code') return <Code key={i} lang={b.lang} text={b.text} />;
         if (b.type === 'ul' || b.type === 'ol') {
           const List = b.type;
-          return <List key={i} className={`${b.type === 'ul' ? 'list-disc' : 'list-decimal'} ml-5 space-y-1`}>{b.items.map((it, j) => <li key={j}><Inline parts={it} /></li>)}</List>;
+          return <List key={i} className={`${b.type === 'ul' ? 'list-disc' : 'list-decimal'} ms-5 space-y-1`}>{b.items.map((it, j) => <li key={j}><Inline parts={it} /></li>)}</List>;
         }
         return <p key={i} className={`whitespace-pre-wrap ${b.type === 'h' ? 'font-semibold text-vx-fg' : ''}`}><Inline parts={b.inline} /></p>;
       })}

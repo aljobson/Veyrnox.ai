@@ -83,6 +83,6 @@ test('flag on: a failing read answers a typed 502 and leaks nothing', () => with
 
 test('the create page prices the batch through freeCost and shows a free banner and badge', () => {
     assert.match(page, /freeCost\(unitCost, n, freeLeft\)/);
-    assert.match(page, /FREE · \$\{freeLeft\} LEFT TODAY/);
-    assert.match(page, /FREE · \{freeLeftFor\(freeMap, m\.id\)\} left/);
+    assert.match(page, /pluralKey\(t,locale,'app.create.freeLeft',freeLeft\),\{count:number\(freeLeft\)\}/);
+    assert.match(page, /pluralKey\(t,locale,'app.create.freeRemaining',freeLeftFor\(freeMap,m.id\)\),\{count:number\(freeLeftFor\(freeMap,m.id\)\)\}/);
 });

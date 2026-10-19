@@ -1,9 +1,10 @@
+import { resolveI18nSource } from '../scripts/lib/vey-knowledge-i18n.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-const source = await readFile(new URL('../app/veyrnox/_components/OddlingStudio.js', import.meta.url), 'utf8');
-const catalog = await readFile(new URL('../app/veyrnox/_components/OddlingCatalog.js', import.meta.url), 'utf8');
+const source = resolveI18nSource(await readFile(new URL('../app/veyrnox/_components/OddlingStudio.js', import.meta.url), 'utf8'));
+const catalog = resolveI18nSource(await readFile(new URL('../app/veyrnox/_components/OddlingCatalog.js', import.meta.url), 'utf8'));
 
 test('Oddling Studio presents a Sims-style catalog and a price-forward action', () => {
   assert.match(source, /<OddlingCatalog picks=\{picks\} onPick=\{setPick\}/);
@@ -20,7 +21,7 @@ test('Oddling Studio presents a Sims-style catalog and a price-forward action', 
 });
 
 test('Create visibly confirms the exact edited Oddling handoff', async () => {
-  const create = await readFile(new URL('../app/veyrnox/app/create/page.js', import.meta.url), 'utf8');
+  const create = resolveI18nSource(await readFile(new URL('../app/veyrnox/app/create/page.js', import.meta.url), 'utf8'));
   assert.match(create, /storedDraft\?\.oddlingPicks/);
   assert.match(create, /setCharacter\(imported\)/);
   assert.match(create, /handoffPicks=\{oddlingTransfer\}/);

@@ -1,8 +1,11 @@
 'use client';
+import { useI18n } from '../../../../components/I18nProvider';
+import { localeTag } from '../../../../lib/i18n/locales.mjs';
+import { pluralKey } from '../../../../lib/i18n/translate.mjs';
 import { optionsForReplyMode, REPLY_MODES, replyMode } from '../../_lib/chatComposer';
 import { COMPOSER_KINDS } from '../../_lib/chatMedia';
 
-const credits = (n) => `${n} Credit${n === 1 ? '' : 's'}`;
+
 const control = 'relative inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-vx-border bg-vx-base px-3 text-xs font-semibold text-vx-fg-muted transition-colors hover:border-vx-accent hover:text-vx-fg focus-within:border-vx-accent focus-within:outline-solid focus-within:outline-2 focus-within:outline-vx-accent disabled:opacity-50';
 
 function Chevron() {
@@ -26,20 +29,21 @@ function LibraryIcon() {
 }
 
 const composerKinds = [
-  { id: COMPOSER_KINDS.CHAT, label: 'Chat', glyph: '◇' },
-  { id: COMPOSER_KINDS.IMAGE, label: 'Image', glyph: '▧' },
-  { id: COMPOSER_KINDS.VIDEO, label: 'Video', glyph: '▷' },
-  { id: COMPOSER_KINDS.AUDIO, label: 'Audio', glyph: '◖' },
+  { id: COMPOSER_KINDS.CHAT, labelKey: 'app.chat.controls.chat', glyph: '◇' },
+  { id: COMPOSER_KINDS.IMAGE, labelKey: 'home.models.image', glyph: '▧' },
+  { id: COMPOSER_KINDS.VIDEO, labelKey: 'app.library.kind.video', glyph: '▷' },
+  { id: COMPOSER_KINDS.AUDIO, labelKey: 'app.library.kind.audio', glyph: '◖' },
 ];
 
 export function ComposerTypeTabs({ value, onChange, disabled = false }) {
+  const { t } = useI18n();
   return (
-    <div className="scrollbar-none flex gap-1 overflow-x-auto border-b border-vx-border px-3 py-2" role="tablist" aria-label="Composer type">
+    <div className="scrollbar-none flex gap-1 overflow-x-auto border-b border-vx-border px-3 py-2" role="tablist" aria-label={t("app.chat.controls.type")}>
       {composerKinds.map((item) => (
         <button key={item.id} type="button" role="tab" aria-selected={value === item.id} disabled={disabled && value !== item.id}
           onClick={() => onChange(item.id)}
           className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-transparent px-3 text-xs font-semibold text-vx-fg-muted transition-colors hover:text-vx-fg aria-selected:border-vx-accent aria-selected:bg-vx-accent/[0.08] aria-selected:text-vx-accent disabled:opacity-40">
-          <span aria-hidden="true">{item.glyph}</span>{item.label}
+          <span aria-hidden="true">{item.glyph}</span>{t(item.labelKey)}
         </button>
       ))}
     </div>
@@ -61,20 +65,23 @@ function SelectControl({ label, ariaLabel, value, disabled, onChange, children, 
 }
 
 export function ComposerControls({ models, model, offer, opts, busy, onSelectModel, onOpts, onLibrary, libraryDisabled }) {
+  const { t, locale } = useI18n();
+  const number = value => locale === 'en' ? String(value) : new Intl.NumberFormat(localeTag(locale)).format(value);
+  const credits = count => t(pluralKey(t, locale, 'app.chat.settings.credits', count), {count:number(count)});
   const mode = replyMode(opts);
-  const modeLabel = mode === REPLY_MODES.RESEARCH ? 'Deep research' : mode === REPLY_MODES.THINKING ? 'Thinking' : 'Standard';
+  const modeLabel = mode === REPLY_MODES.RESEARCH ? t("app.chat.settings.research") : mode === REPLY_MODES.THINKING ? 'Thinking' : 'Standard';
 
   return (
-    <div className="scrollbar-none flex gap-1.5 overflow-x-auto border-b border-vx-border px-3 py-2" role="group" aria-label="Reply setup">
-      <SelectControl label={model.name} ariaLabel="Model for next reply" value={model.id} disabled={busy} onChange={onSelectModel} icon={<ModelIcon />}>
+    <div className="scrollbar-none flex gap-1.5 overflow-x-auto border-b border-vx-border px-3 py-2" role="group" aria-label={t("app.chat.controls.setup")}>
+      <SelectControl label={model.name} ariaLabel={t("app.chat.controls.model")} value={model.id} disabled={busy} onChange={onSelectModel} icon={<ModelIcon />}>
         {models.map((item) => <option key={item.id} value={item.id}>{item.name} · {credits(item.credits_per_reply)}</option>)}
       </SelectControl>
 
       {(offer.thinking || offer.research) && (
-        <SelectControl label={modeLabel} ariaLabel="Response mode" value={mode} disabled={busy} onChange={(next) => onOpts(optionsForReplyMode(next, opts))} icon={<ModeIcon />}>
-          <option value={REPLY_MODES.STANDARD}>Standard</option>
-          {offer.thinking && <option value={REPLY_MODES.THINKING}>Thinking · +{credits(offer.thinking.extra_credits)}</option>}
-          {offer.research && <option value={REPLY_MODES.RESEARCH}>Deep research · +{credits(offer.research.extra_credits)}</option>}
+        <SelectControl label={modeLabel} ariaLabel={t("app.chat.controls.mode")} value={mode} disabled={busy} onChange={(next) => onOpts(optionsForReplyMode(next, opts))} icon={<ModeIcon />}>
+          <option value={REPLY_MODES.STANDARD}>{t("app.chat.controls.standard")}</option>
+          {offer.thinking && <option value={REPLY_MODES.THINKING}>{t("app.chat.settings.thinking")} · +{credits(offer.thinking.extra_credits)}</option>}
+          {offer.research && <option value={REPLY_MODES.RESEARCH}>{t("app.chat.settings.research")} · +{credits(offer.research.extra_credits)}</option>}
         </SelectControl>
       )}
 
@@ -82,15 +89,14 @@ export function ComposerControls({ models, model, offer, opts, busy, onSelectMod
         <button type="button" aria-pressed={opts.web && !opts.research} disabled={busy || opts.research}
           onClick={() => onOpts({ ...opts, web: !opts.web, research: false })}
           className={`${control} aria-pressed:border-vx-accent aria-pressed:bg-vx-accent/[0.08] aria-pressed:text-vx-accent`}>
-          <WebIcon /> Web <span className="font-vx-mono text-[10px] text-vx-money">+{offer.web.extra_credits}</span>
+          <WebIcon />{' '}{t("app.chat.controls.web")}{' '}<span className="font-vx-mono text-[10px] text-vx-money">+{number(offer.web.extra_credits)}</span>
         </button>
       )}
 
       {offer.images && (
         <button type="button" onClick={onLibrary} disabled={busy || libraryDisabled} className={control}
-          title={libraryDisabled ? 'The most images for one reply' : 'Use an image you already made'}>
-          <LibraryIcon /> Library
-        </button>
+          title={libraryDisabled ? t("app.chat.controls.imageLimit") : t("app.chat.controls.useImage")}>
+          <LibraryIcon />{' '}{t("label.Library")}</button>
       )}
     </div>
   );

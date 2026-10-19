@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { englishAppImports } from './helpers/appI18nStub.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -11,7 +12,7 @@ function load(path, stubs = {}) {
   const source = readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
   const output = { exports: {} };
   const code = ts.transpileModule(source, { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS } }).outputText;
-  new Function('require', 'module', 'exports', code)(id => stubs[id] || require(id), output, output.exports);
+  new Function('require', 'module', 'exports', code)(id => stubs[id] || englishAppImports[id] || require(id), output, output.exports);
   return output.exports;
 }
 
@@ -72,7 +73,7 @@ test('the workspace uses the hydration-owned host instead of advertising an SSR 
 test('real React server rendering leaves the editor slot undiscoverable by the shared portal', () => {
   const { EditorHelperHost } = load('app/veyrnox/_components/editor/EditorHelperLauncher.js');
   const html = renderToStaticMarkup(createElement(EditorHelperHost));
-  assert.equal(html, '<div class="ml-auto shrink-0 sm:ml-0"></div>');
+  assert.equal(html, '<div class="ms-auto shrink-0 sm:ms-0"></div>');
   assert.doesNotMatch(html, /data-vey-editor-helper/);
 });
 

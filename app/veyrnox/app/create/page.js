@@ -1,4 +1,8 @@
 'use client';
+import { tOr, pluralKey } from '../../../../lib/i18n/translate.mjs';
+import { rich } from '../../../../lib/i18n/rich';
+import { localeTag } from '../../../../lib/i18n/locales.mjs';
+import { useI18n } from '../../../../components/I18nProvider';
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { AppNav } from '../../_components/NavBar';
@@ -15,7 +19,7 @@ import { IMAGE_COUNTS, takesImageCount, imageCount, totalCost, inputsForIndex, b
 import { useCatalog } from '../../_lib/useCatalog';
 import { useFreeAllowance } from '../../_lib/useFreeAllowance';
 import { freeCost, freeLeftFor } from '../../_lib/freeAllowance';
-import { creditLabel, generationCostLabel, sourceDurationLimit } from '../../_lib/modelPricing';
+import { sourceDurationLimit } from '../../_lib/modelPricing';
 import { SourceDurationCard } from '../../_components/SourceDurationCard';
 import { takeStudioDraft } from '../../_lib/landingDraft';
 import { oddlingPortrait, buildOddlingAnimationPrompt } from '../../_lib/oddlingStudio';
@@ -53,6 +57,8 @@ function readFlag(name) {
   try { return window.localStorage.getItem(name) === '1'; } catch { return false; }
 }
 
+const LOCAL_ERRORS = {poll_unreachable: {"code": "poll_unreachable"}, model_gated: {"code": "model_gated"}, source_required: {"code": "source_required"}, consent_required: {"code": "consent_required"}, inputs_invalid_prompt: {"code": "inputs_invalid:prompt"}, inputs_invalid_voice_description: {"code": "inputs_invalid:voice_description"}, inputs_invalid_duration: {"code": "inputs_invalid:duration"}};
+
 function errorFor(e) {
   return e instanceof GatewayError ? { code: e.code, retryAfter: e.retryAfter } : { code: 'internal' };
 }
@@ -63,6 +69,10 @@ const autoShortFlag = () => readFlag(AUTO_SHORT_FLAG);
 const off = () => false;
 
 export default function CreateStudio() {
+  const { t, locale } = useI18n();
+  const number = value => locale === 'en' ? value : Number(value).toLocaleString(localeTag(locale));
+  const creditLabel = value => t(pluralKey(t, locale, 'app.create.credits', value), { count: number(value) });
+  const generationCostLabel = value => value === 0 ? t('publish.plan.colFree') : t('app.create.cost',{count:number(value)});
   const { models: catalogModels, live: catalogLive, loading: catalogLoading } = useCatalog();
   const freeMap = useFreeAllowance(); // ADR-0069: free jobs left today per model; empty while the feature is off
   const autoShortOn = useSyncExternalStore(never, autoShortFlag, off);
@@ -98,7 +108,7 @@ export default function CreateStudio() {
 
   const [balance, setBalance] = useState(null);
   const [error, setError] = useState(null);
-  const onUnreachable = useCallback(() => setError({ code: 'poll_unreachable' }), []);
+  const onUnreachable = useCallback(() => setError(LOCAL_ERRORS.poll_unreachable), []);
   const { jobs, generating, startJobs, addJob, clearJobs } = useStudioJobs({ onUnreachable });
   const job = jobs.length === 1 ? jobs[0] : null;
   // True while a batch is still being sent, so New generation cannot clear it halfway.
@@ -141,7 +151,7 @@ export default function CreateStudio() {
     const controller = new AbortController();
     if (portrait) {
       setAnimationPortrait(portrait);
-      setPortraitStatus(`Loading ${portrait.name}'s animation start frame…`);
+      setPortraitStatus(t('app.create.photoLoading',{name:portrait.name}));
       fetch(portrait.image, { signal: controller.signal }).then(async (response) => {
         if (!response.ok) throw new Error('portrait_load_failed');
         const blob = await response.blob();
@@ -149,13 +159,13 @@ export default function CreateStudio() {
         if (controller.signal.aborted) return;
         const file = new File([blob], `${portrait.id}.webp`, { type: 'image/webp' });
         setSources((current) => ({ ...current, image: { file, previewUrl: portrait.image, label: portrait.name } }));
-        setPortraitStatus(`${portrait.name}'s portrait is ready as the animation start frame.`);
+        setPortraitStatus(t('app.create.photoReady',{name:portrait.name}));
       }).catch(() => {
-        if (!controller.signal.aborted) setPortraitStatus('The character photo could not load. Reload before generating.');
+        if (!controller.signal.aborted) setPortraitStatus(t("app.create.photoFailed"));
       });
     }
     return () => controller.abort();
-  }, []);
+  }, [t]);
 
   const draftRecovery = useCreateDraftRecovery({
     incoming: incomingDraft,
@@ -340,13 +350,13 @@ export default function CreateStudio() {
     if (inFlight.current || sending || generating || !model || balance == null || cost > balance) return;
     if (catalogStatus !== 'live') return;
     inFlight.current = true;
-    if (model.gated) { inFlight.current = false; setError({ code: 'model_gated' }); return; }
-    if (animationMismatch) { inFlight.current = false; setError({ code: 'source_required' }); return; }
-    if (missingSource) { inFlight.current = false; setError({ code: 'source_required' }); return; }
-    if (missingConsent) { inFlight.current = false; setError({ code: 'consent_required' }); return; }
-    if (missingPrompt) { inFlight.current = false; setError({ code: 'inputs_invalid:prompt' }); return; }
-    if (missingVoice) { inFlight.current = false; setError({ code: 'inputs_invalid:voice_description' }); return; }
-    if (invalidAudioDuration) { inFlight.current = false; setError({ code: 'inputs_invalid:duration' }); return; }
+    if (model.gated) { inFlight.current = false; setError(LOCAL_ERRORS.model_gated); return; }
+    if (animationMismatch) { inFlight.current = false; setError(LOCAL_ERRORS.source_required); return; }
+    if (missingSource) { inFlight.current = false; setError(LOCAL_ERRORS.source_required); return; }
+    if (missingConsent) { inFlight.current = false; setError(LOCAL_ERRORS.consent_required); return; }
+    if (missingPrompt) { inFlight.current = false; setError(LOCAL_ERRORS.inputs_invalid_prompt); return; }
+    if (missingVoice) { inFlight.current = false; setError(LOCAL_ERRORS.inputs_invalid_voice_description); return; }
+    if (invalidAudioDuration) { inFlight.current = false; setError(LOCAL_ERRORS.inputs_invalid_duration); return; }
     setError(null);
     setSending(true);
     const submittedTask = getJourney().task;
@@ -430,10 +440,10 @@ export default function CreateStudio() {
         <div className="lg:col-start-1 lg:row-start-1">
           <div className="flex items-center justify-between mb-3">
             <div>
-              <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">STUDIO · UNTITLED</div>
-              <h1 className="text-2xl sm:text-3xl font-black tracking-[-0.02em] mt-1">Create</h1>
+              <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">{t("app.create.untitled")}</div>
+              <h1 className="text-2xl sm:text-3xl font-black tracking-[-0.02em] mt-1">{t("label.Create")}</h1>
             </div>
-            <Chip tone="neutral">{draftRecovery.saved ? Object.values(sources).some(source => source.file) ? 'SETTINGS SAVED' : 'SAVED IN THIS TAB' : 'UNSAVED DRAFT'}</Chip>
+            <Chip tone="neutral">{draftRecovery.saved ? Object.values(sources).some(source => source.file) ? t("app.create.settingsSaved") : t("app.create.savedInTab") : t("app.create.unsaved")}</Chip>
           </div>
 
           <div data-assistant-target="create.result" className="scroll-mt-24">
@@ -455,7 +465,7 @@ export default function CreateStudio() {
                       {SLOW_MODEL_WAIT[job?.model_id] && (
                         <div className="text-xs text-vx-fg-body mt-2">{SLOW_MODEL_WAIT[job.model_id]}</div>
                       )}
-                      <div className="text-xs text-vx-fg-muted mt-2">Keeps running if you leave or start another — we&apos;ll tell you when it&apos;s ready. Refund on failure, always.</div>
+                      <div className="text-xs text-vx-fg-muted mt-2">{t("app.create.keepRunning")}</div>
                     </div>
                   ) : job?.state === 'failed' ? (
                     <div className="text-center max-w-md px-6">
@@ -469,9 +479,9 @@ export default function CreateStudio() {
                   ) : (
                     <div className="text-center">
                       <div className="w-16 h-16 rounded-full border border-vx-border/60 flex items-center justify-center mx-auto opacity-70">
-                        <div className="w-0 h-0 border-l-[16px] border-l-vx-fg-muted border-y-[10px] border-y-transparent ml-1" />
+                        <div className="w-0 h-0 border-s-[16px] border-s-vx-fg-muted border-y-[10px] border-y-transparent ms-1" />
                       </div>
-                      <div className="mt-3 text-sm text-vx-fg-muted">Type a prompt or pick a preset</div>
+                      <div className="mt-3 text-sm text-vx-fg-muted">{t("app.create.promptOrPreset")}</div>
                     </div>
                   )}
                 </div>
@@ -484,43 +494,41 @@ export default function CreateStudio() {
             data-assistant-target="create.prompt"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            aria-label={isShort ? 'Topic' : 'Prompt'}
+            aria-label={isShort ? t("app.create.topic") : t("mobile.prompt")}
             maxLength={isShort ? 200 : undefined}
             rows={3}
             className="scroll-mt-24 mt-3 w-full bg-vx-panel border border-vx-field rounded-lg p-3.5 text-sm text-vx-fg placeholder:text-vx-fg-faint resize-none focus:outline-hidden focus:border-vx-accent"
             placeholder={promptPlaceholder(model)}
           />
           {(draftRecovery.restoring || draftRecovery.status) && <div role="status" data-testid="create-draft-recovery" data-restoring={draftRecovery.restoring} className="mt-2 rounded-lg border border-vx-border bg-vx-panel px-3 py-2 text-xs text-vx-fg-muted">
-            {draftRecovery.restoring ? 'Restoring this tab’s draft…' : draftRecovery.status}
-            {draftRecovery.failed && <button type="button" onClick={draftRecovery.retry} className="ml-2 min-h-8 underline text-vx-accent">Retry draft recovery</button>}
+            {draftRecovery.restoring ? t("app.create.restoring") : draftRecovery.status}
+            {draftRecovery.failed && <button type="button" onClick={draftRecovery.retry} className="ms-2 min-h-8 underline text-vx-accent">{t("app.create.retryDraft")}</button>}
           </div>}
           {oddlingTransfer && model?.kind === 'image' && (
             <section role="status" data-assistant-target="create.oddling-handoff" className="mt-3 flex flex-col gap-3 rounded-xl border border-vx-accent/40 bg-vx-accent/[0.07] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <div className="font-vx-mono text-[9px] font-bold tracking-[0.14em] text-vx-accent">ODDLING LOADED</div>
-                <div className="mt-1 text-sm font-extrabold text-vx-fg">{oddlingTransfer.oddling_name || 'Your edited character'} is linked to this generation</div>
+                <div className="font-vx-mono text-[9px] font-bold tracking-[0.14em] text-vx-accent">{t("app.create.oddlingLoaded")}</div>
+                <div className="mt-1 text-sm font-extrabold text-vx-fg">{t('app.create.characterLinked',{name:oddlingTransfer.oddling_name || t('app.create.editedCharacter')})}</div>
                 <p className="mt-1 text-xs text-vx-fg-muted">
                   {[oddlingTransfer.body_type, oddlingTransfer.wardrobe_style, oddlingTransfer.hair].filter(Boolean).join(' · ')}
                 </p>
               </div>
               <button type="button" onClick={() => document.querySelector('[data-assistant-target="create.character"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="shrink-0 rounded-full border border-vx-accent/50 px-3 py-2 text-xs font-extrabold text-vx-accent hover:bg-vx-accent/10">
-                Review character
-              </button>
+                {t("app.create.reviewCharacter")}</button>
             </section>
           )}
           {activeTemplate?.inspired && (
             <p className="mt-2 text-sm text-vx-fg-body">
-              {activeTemplate.needs}. This prompt creates a similar scene using your image.
-            </p>
+              {activeTemplate.needs}{t("app.create.similarScene")}</p>
           )}
           {model?.takesVoice && <VoiceDescription value={voice} onChange={setVoice} />}
 
-          {animationPortrait && <div role="status" className="mt-4 rounded-xl border border-vx-accent/30 bg-vx-panel p-4 text-sm text-vx-fg-body">{portraitStatus}{animationMismatch && <p className="mt-2 text-vx-danger">Choose an image-to-video model with a required start frame to animate this photo.</p>}</div>}
+          {animationPortrait && <div role="status" className="mt-4 rounded-xl border border-vx-accent/30 bg-vx-panel p-4 text-sm text-vx-fg-body">{portraitStatus}{animationMismatch && <p className="mt-2 text-vx-danger">{t("app.create.animationModel")}</p>}</div>}
           <div className="scroll-mt-24" data-assistant-target={Object.keys(media).length ? 'create.upload' : undefined}>
             <SourcePickers media={media} sources={sources} onPick={pickSource}
               onDraw={model?.kind === 'image' ? () => setDrawing(true) : null} onLibrary={setLibraryFor} />
           </div>
-          {Object.values(sources).some(source => source.file) && <p className="mt-2 text-xs text-vx-fg-muted">Local uploads need reattaching after a reload. Saved Library sources restore automatically.</p>}
+          {Object.values(sources).some(source => source.file) && <p className="mt-2 text-xs text-vx-fg-muted">{t("app.create.reattach")}</p>}
           {libraryFor && (
             <LibraryPicker kind={generationSlotKind(libraryFor)} mimeTypes={generationMimeTypes(generationSlotKind(libraryFor))}
               onClose={() => setLibraryFor(null)}
@@ -542,15 +550,15 @@ export default function CreateStudio() {
             drops to the end of the page and stays pinned to the screen. */}
         <div data-create-cost-card className="order-last sticky bottom-3 z-30 rounded-2xl border border-vx-border bg-vx-panel p-5 shadow-2xl lg:order-none lg:col-start-1 lg:row-start-2 lg:self-start lg:static lg:shadow-none">
           <div data-assistant-target="create.cost" className="scroll-mt-24 flex items-baseline justify-between">
-            <span className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">TOTAL COST</span>
+            <span className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">{t("app.create.totalCost")}</span>
             <span className="font-vx-mono text-[12px] text-vx-fg-muted vx-num">
-              balance {balance == null ? '—' : balance.toLocaleString('en-US')} cr
+              {t('app.create.balanceLabel',{count:balance == null ? '—' : balance.toLocaleString(localeTag(locale, 'en-US'))})}
             </span>
           </div>
           <div className="mt-1 font-vx-mono text-[36px] font-bold text-vx-money vx-num">{generationCostLabel(cost)}</div>
           {freeLeft > 0 && (
             <div role="status" className="mt-1 font-vx-mono text-[11px] tracking-[0.08em] text-vx-accent">
-              {n > freeLeft ? `FREE · ${freeLeft} OF ${n} · ${freeLeft} LEFT TODAY` : `FREE · ${freeLeft} LEFT TODAY`}
+              {n > freeLeft ? t(pluralKey(t,locale,'app.create.freePartial',freeLeft),{free:number(freeLeft),total:number(n),left:number(freeLeft)}) : t(pluralKey(t,locale,'app.create.freeLeft',freeLeft),{count:number(freeLeft)})}
             </div>
           )}
           <ParticleButton
@@ -558,22 +566,22 @@ export default function CreateStudio() {
             onClick={hasJobs ? cancel : onSubmit}
             className="scroll-mt-24 mt-4 w-full flex items-center justify-between bg-vx-accent text-vx-accent-ink rounded-full px-6 py-3.5 font-extrabold hover:bg-vx-accent-hover disabled:opacity-40 disabled:cursor-not-allowed"
             disabled={draftRecovery.restoring || draftRecovery.blocked || sending || (!hasJobs && (catalogStatus !== 'live' || !model || model.gated || animationMismatch || missingPrompt || missingVoice || invalidAudioDuration || balance == null || cost > balance || missingSource || missingConsent))}
-            aria-label={sending ? undefined : hasJobs ? 'New generation — no charge' : model?.gated ? undefined : `Generate ${n > 1 ? `${n} images ` : ''}${cost === 0 ? 'for free' : `for ${creditLabel(cost)}`}`}
+            aria-label={sending ? undefined : hasJobs ? t("app.create.newNoCharge") : model?.gated ? undefined : n > 1 ? t(pluralKey(t,locale,cost===0?'app.create.generateImagesFree':'app.create.generateImagesPaid',n),{count:number(n),credits:creditLabel(cost)}) : t(cost===0?'app.create.generateFree':'app.create.generatePaid',{credits:creditLabel(cost)})}
           >
-            <span>{sending ? 'Sending…' : hasJobs ? 'New generation' : model?.gated ? 'Premium — gated' : n > 1 ? `Generate ${n}` : 'Generate'}</span>
-            <span className="font-vx-mono text-sm">{hasJobs ? 'No charge' : generationCostLabel(cost)}</span>
+            <span>{sending ? t("app.publish.inbox.sending") : hasJobs ? t("app.create.newGeneration") : model?.gated ? t("app.create.premiumGated") : n > 1 ? t('app.create.generateCount',{count:number(n)}) : t("label.Generate")}</span>
+            <span className="font-vx-mono text-sm">{hasJobs ? t("app.create.noCharge") : generationCostLabel(cost)}</span>
           </ParticleButton>
           <div className="mt-2 font-vx-mono text-[9.5px] tracking-[0.1em] text-vx-fg-faint text-center">
-            {model?.gated ? '◆ PREMIUM MODEL · NOT OPEN YET' : 'REFUND ON FAILURE · ALWAYS'}
+            {model?.gated ? t("app.create.premiumClosed") : t("mobile.refund")}
           </div>
           <p className="mt-3 text-center text-[11px] leading-relaxed text-vx-fg-muted">
-            Commercial use depends on the selected model and provider terms. Check the <Link href="/legal/terms" className="text-vx-accent underline underline-offset-2">Terms</Link> before publishing.
+            {rich(t('app.create.commercial'),{terms:<Link href="/legal/terms" className="text-vx-accent underline underline-offset-2">{t('home.publish.terms')}</Link>})}
           </p>
           {balance != null && cost > balance && !model?.gated && (
             <div className="mt-4 rounded-xl border border-vx-money/40 bg-vx-money/[0.06] p-4 text-sm text-vx-fg-body">
-              <p className="font-bold text-vx-fg">You need {cost - balance} more Credits.</p>
-              <p className="mt-1 text-xs text-vx-fg-muted">Compare a monthly plan with a one-off pack before leaving the Studio.</p>
-              <Link href="/app/credits" className="mt-3 inline-block font-bold text-vx-accent underline underline-offset-4">Add Credits</Link>
+              <p className="font-bold text-vx-fg">{t(pluralKey(t,locale,'app.create.moreCredits',cost-balance),{count:number(cost-balance)})}</p>
+              <p className="mt-1 text-xs text-vx-fg-muted">{t("app.create.compareCredits")}</p>
+              <Link href="/app/credits" className="mt-3 inline-block font-bold text-vx-accent underline underline-offset-4">{t("app.create.addCredits")}</Link>
             </div>
           )}
         </div>
@@ -581,19 +589,19 @@ export default function CreateStudio() {
         <div className="lg:col-start-1 lg:row-start-3">
           {!isShort && (
             <p className="mt-2 text-xs text-vx-fg-muted">
-              Want prompt feedback? Studio skills cost 1 Credit a reply:{' '}
-              <Link href="/app/chat?skill=prompt-writer" className="text-vx-accent underline underline-offset-2">Prompt writer</Link>,{' '}
-              <Link href="/app/chat?skill=fix-my-prompt" className="text-vx-accent underline underline-offset-2">Fix my prompt</Link>,{' '}
-              or browse{' '}
-              <Link href="/app/chat" className="text-vx-accent underline underline-offset-2">all skills</Link>.
+              {t("app.create.feedbackIntro")}{' '}
+              <Link href="/app/chat?skill=prompt-writer" className="text-vx-accent underline underline-offset-2">{t("app.create.promptWriter")}</Link>,{' '}
+              <Link href="/app/chat?skill=fix-my-prompt" className="text-vx-accent underline underline-offset-2">{t("app.create.fixPrompt")}</Link>,{' '}
+              {t("app.create.orBrowse")}{' '}
+              <Link href="/app/chat" className="text-vx-accent underline underline-offset-2">{t("app.create.allSkills")}</Link>.
             </p>
           )}
           {error && (
             <div role="alert" className="mt-3 rounded-lg border border-vx-danger/40 bg-vx-danger/[0.07] px-4 py-3 text-sm text-vx-danger flex items-start gap-2">
               <span aria-hidden="true">✕</span>
               <span>
-                {ERROR_COPY[error.code] || 'Something went wrong. Nothing was charged unless the panel above says otherwise.'}
-                {error.retryAfter && ` Retry in ${error.retryAfter}s.`}
+                {tOr(t, `app.create.error.${error.code}`, ERROR_COPY[error.code] || t('app.create.error.unknown'))}
+                {error.retryAfter && t('app.create.retryIn', { seconds: locale === 'en' ? error.retryAfter : Number(error.retryAfter).toLocaleString(localeTag(locale)) })}
                 {error.note && ` ${error.note}`}
               </span>
             </div>
@@ -605,41 +613,40 @@ export default function CreateStudio() {
           <CreateGoalPicker goal={goal} onChange={pickGoal} />
           <div className="rounded-2xl border border-vx-border bg-vx-panel p-5">
             <div className="flex items-baseline justify-between mb-3">
-              <span className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">MODEL</span>
+              <span className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">{t("app.create.modelHeading")}</span>
               {catalogStatus === 'live' ? (
                 <span className="inline-flex items-center gap-1 font-vx-mono text-[9px] tracking-[0.12em] text-vx-accent">
-                  <span aria-hidden="true">●</span> LIVE PRICES
-                </span>
+                  <span aria-hidden="true">●</span>{' '}{t("app.create.livePrices")}</span>
               ) : catalogStatus === 'loading' ? (
-                <span className="font-vx-mono text-[9px] tracking-[0.12em] text-vx-fg-muted">CHECKING PRICES</span>
+                <span className="font-vx-mono text-[9px] tracking-[0.12em] text-vx-fg-muted">{t("app.create.checkingPrices")}</span>
               ) : (
-                <span className="font-vx-mono text-[9px] tracking-[0.12em] text-vx-danger">PRICES UNAVAILABLE</span>
+                <span className="font-vx-mono text-[9px] tracking-[0.12em] text-vx-danger">{t("app.create.pricesUnavailable")}</span>
               )}
             </div>
             {catalogStatus !== 'live' && (
               <p role="status" className={`mb-3 rounded-lg border px-3 py-2 text-xs ${catalogStatus === 'loading' ? 'border-vx-border text-vx-fg-muted' : 'border-vx-danger/40 bg-vx-danger/[0.07] text-vx-danger'}`}>
                 {catalogStatus === 'loading'
-                  ? 'Checking live prices… Generation unlocks when the current catalog arrives.'
-                  : 'Live prices are unavailable. You can browse models, but generation is paused so a cached quote can never be charged.'}
+                  ? t("app.create.pricingLoading")
+                  : t("app.create.pricingUnavailable")}
               </p>
             )}
-            <div className="flex gap-1.5 mb-3" role="group" aria-label="Price tier">
-              {TIERS.map((t) => (
+            <div className="flex gap-1.5 mb-3" role="group" aria-label={t("app.create.priceTier")}>
+              {TIERS.map((type) => (
                 <button
-                  key={t}
-                  onClick={() => setTier(tier === t ? null : t)}
-                  aria-pressed={tier === t}
+                  key={type}
+                  onClick={() => setTier(tier === type ? null : type)}
+                  aria-pressed={tier === type}
                   className={`rounded-full px-3 py-1 border font-vx-mono text-[10px] tracking-[0.1em] uppercase ${
-                    tier === t ? 'border-vx-accent text-vx-accent' : 'border-vx-fg/15 text-vx-fg-muted hover:bg-vx-fg/[0.04]'
+                    tier === type ? 'border-vx-accent text-vx-accent' : 'border-vx-fg/15 text-vx-fg-muted hover:bg-vx-fg/[0.04]'
                   }`}
                 >
-                  {TIER_LABEL[t]}
+                  {tOr(t,`app.create.tier.${type}`,TIER_LABEL[type])}
                 </button>
               ))}
             </div>
             <div data-assistant-target="create.models" data-selected-kind={model?.kind} className="scroll-mt-24">
               <div className="lg:hidden">
-                <label htmlFor="studio-model" className="sr-only">Generation model</label>
+                <label htmlFor="studio-model" className="sr-only">{t("app.create.generationModel")}</label>
                 <select
                   id="studio-model"
                   value={modelId}
@@ -648,18 +655,18 @@ export default function CreateStudio() {
                 >
                   {visibleModels.map((item) => (
                     <option key={item.id} value={item.id}>
-                      {item.name} · {item.gated ? 'Preview' : freeLeftFor(freeMap, item.id) > 0 ? 'Free today' : `${item.credits} ${item.credits === 1 ? 'credit' : 'credits'}`}
+                      {item.name} · {item.gated ? t("app.editor.workspace.preview") : freeLeftFor(freeMap, item.id) > 0 ? t("app.create.freeToday") : creditLabel(item.credits)}
                     </option>
                   ))}
                 </select>
                 {model && (
                   <p className="mt-2 flex items-center justify-between gap-3 text-xs text-vx-fg-muted">
-                    <span className="truncate">{model.name} · {model.kind}</span>
-                    <span className="shrink-0 font-vx-mono font-bold text-vx-money">{model.credits} cr</span>
+                    <span className="truncate">{model.name} · {tOr(t,`public.library.${model.kind}`,model.kind)}</span>
+                    <span className="shrink-0 font-vx-mono font-bold text-vx-money">{number(model.credits)} cr</span>
                   </p>
                 )}
               </div>
-              <div role="group" aria-label="Model" className="hidden flex-col gap-1.5 lg:flex">
+              <div role="group" aria-label={t("pricing.col.model")} className="hidden flex-col gap-1.5 lg:flex">
                 {visibleModels.map((m) => (
                   <button
                     key={m.id}
@@ -676,13 +683,13 @@ export default function CreateStudio() {
                     <span className="flex items-center gap-2 min-w-0">
                       <span className="text-sm font-bold truncate">{m.name}</span>
                       {m.gated && (
-                        <span className="font-vx-mono text-[10px] tracking-[0.1em] text-vx-money shrink-0">◆ PREMIUM</span>
+                        <span className="font-vx-mono text-[10px] tracking-[0.1em] text-vx-money shrink-0">{t("app.create.premium")}</span>
                       )}
-                      <span className="font-vx-mono text-[10px] tracking-[0.1em] text-vx-fg-body uppercase shrink-0">{m.kind}</span>
+                      <span className="font-vx-mono text-[10px] tracking-[0.1em] text-vx-fg-body uppercase shrink-0">{tOr(t,`public.library.${m.kind}`,m.kind)}</span>
                     </span>
                     {freeLeftFor(freeMap, m.id) > 0
-                      ? <span className="font-vx-mono text-[12px] font-bold text-vx-accent shrink-0">FREE · {freeLeftFor(freeMap, m.id)} left</span>
-                      : <span className="font-vx-mono text-[12px] font-bold text-vx-money vx-num shrink-0">{m.credits} cr</span>}
+                      ? <span className="font-vx-mono text-[12px] font-bold text-vx-accent shrink-0">{t(pluralKey(t,locale,'app.create.freeRemaining',freeLeftFor(freeMap,m.id)),{count:number(freeLeftFor(freeMap,m.id))})}</span>
+                      : <span className="font-vx-mono text-[12px] font-bold text-vx-money vx-num shrink-0">{number(m.credits)} cr</span>}
                   </button>
                 ))}
               </div>
@@ -690,39 +697,39 @@ export default function CreateStudio() {
           </div>
 
           {model?.kind === 'video' && !fixedDurationLabel && !sourceDurationMax && (
-            <ControlRow assistantTarget="create.duration" label="DURATION" options={durations} value={duration} onChange={setDuration}
+            <ControlRow assistantTarget="create.duration" label={t("app.create.durationHeading")} options={durations} value={duration} onChange={setDuration}
               formatOption={(option) => outputDurationLabel(model, Number(option.replace('s', '')))} />
           )}
           {(model?.kind === 'video' || model?.kind === 'audio') && sourceDurationMax && <SourceDurationCard model={model} />}
           {(model?.kind === 'video' || model?.kind === 'audio') && fixedDurationLabel && (
             <div data-assistant-target="create.duration" className="scroll-mt-24 rounded-2xl border border-vx-border bg-vx-panel p-5">
-              <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">FIXED OUTPUT</div>
+              <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">{t("app.create.fixedOutput")}</div>
               <div className="mt-3 font-vx-mono text-lg font-bold text-vx-fg">{fixedDurationLabel}</div>
-              <p className="mt-1 text-xs text-vx-fg-muted">This model produces one fixed output length at the displayed price.</p>
+              <p className="mt-1 text-xs text-vx-fg-muted">{t("app.create.fixedOutputHelp")}</p>
             </div>
           )}
           {model?.kind === 'audio' && audioDurationControl && (
             <div data-assistant-target="create.duration" className="scroll-mt-24 rounded-2xl border border-vx-border bg-vx-panel p-5">
-              <label htmlFor="audio-duration" className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">DURATION</label>
+              <label htmlFor="audio-duration" className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">{t("app.create.durationHeading")}</label>
               <div className="mt-3 flex items-center gap-3">
-                <input id="audio-duration" aria-label="Audio duration in seconds" type="number" inputMode="numeric" step="1"
+                <input id="audio-duration" aria-label={t("app.create.audioDuration")} type="number" inputMode="numeric" step="1"
                   min={audioDurationControl.min} max={audioDurationControl.max} value={audioDuration}
                   aria-invalid={invalidAudioDuration} onChange={(event) => setAudioDuration(event.target.value)}
                   className="w-28 rounded-lg border border-vx-field bg-vx-base px-3 py-2 font-vx-mono text-sm text-vx-fg" />
-                <span className="text-sm text-vx-fg-muted">seconds</span>
+                <span className="text-sm text-vx-fg-muted">{t("app.create.seconds")}</span>
               </div>
               <p className={`mt-2 text-xs ${invalidAudioDuration ? 'text-vx-danger' : 'text-vx-fg-muted'}`}>
                 {invalidAudioDuration
-                  ? `Use a whole number from ${audioDurationControl.min} to ${audioDurationControl.max}.`
-                  : `${audioDurationControl.min}–${audioDurationControl.max} seconds · defaults to ${audioDurationControl.defaultValue}.`}
+                  ? t('app.create.durationInvalid',{min:number(audioDurationControl.min),max:number(audioDurationControl.max)})
+                  : t('app.create.durationRange',{min:number(audioDurationControl.min),max:number(audioDurationControl.max),default:number(audioDurationControl.defaultValue)})}
               </p>
             </div>
           )}
           {aspectOptions.length > 0 && (
-            <ControlRow assistantTarget="create.aspect" label="ASPECT" options={aspectOptions} value={aspect} onChange={setAspect} />
+            <ControlRow assistantTarget="create.aspect" label={t("app.create.aspectHeading")} options={aspectOptions} value={aspect} onChange={setAspect} />
           )}
           {takesImageCount(model) && (
-            <ControlRow assistantTarget="create.count" label="IMAGES" options={IMAGE_COUNTS} value={count} onChange={setCount} />
+            <ControlRow assistantTarget="create.count" label={t("app.create.imagesHeading")} options={IMAGE_COUNTS} value={count} onChange={setCount} />
           )}
 
           {model?.kind === 'image' && (

@@ -35,10 +35,10 @@ test('Saved Editor review loads a valid revision and recovers comment reads with
   await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeEnabled();
   const review = page.getByRole('region', { name: 'Project review', exact: true });
   await expect(review.getByRole('alert')).toContainText('Could not complete this request. Your draft is kept.');
-  await expect(review.getByRole('textbox', { name: 'Review comment', exact: true })).toBeDisabled();
+  await expect(review.getByTestId('review-comment')).toBeDisabled();
   reviewReadsFail = false;
   await review.getByRole('button', { name: 'Refresh comments', exact: true }).click();
-  await review.getByRole('textbox', { name: 'Review comment', exact: true }).fill('Synthetic version-specific comment');
+  await review.getByTestId('review-comment').fill('Synthetic version-specific comment');
   await review.getByRole('button', { name: /^Comment at / }).click();
   await expect(review.getByText('Synthetic version-specific comment', { exact: true })).toBeVisible();
   await review.getByRole('button', { name: 'Resolve comment', exact: true }).click();

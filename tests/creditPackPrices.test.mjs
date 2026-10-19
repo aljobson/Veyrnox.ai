@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { resolveI18nSource } from '../scripts/lib/vey-knowledge-i18n.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
@@ -26,7 +27,7 @@ test('the credits page prices nothing itself', () => {
 test('a pack list that cannot be read shows no prices at all', () => {
     // Empty array on failure, and the block only renders with packs in hand:
     // an unreachable catalog must not fall back to invented numbers.
-    assert.match(packs, /if \(!cancelled\) setError\('Credit packs are unavailable right now\.'\)/);
+    assert.match(resolveI18nSource(packs), /if \(!cancelled\) setError\("Credit packs are unavailable right now\."\)/);
     assert.match(packs, /\{packs && packs\.length > 0 && \(/);
 });
 

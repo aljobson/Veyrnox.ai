@@ -1,0 +1,9 @@
+{
+  "app.chat.personas.limit": "You have 20, the most you can keep. Delete one to make another.",
+  "app.editor.speech.help": "Create editable words and timings from the selected track or audible edit range. Each run supports up to two minutes, including ranges inside longer projects. Source timing, audio adjustments and mute are respected; selecting one track ignores other tracks’ solo. This action downloads a speech model of about 65 MiB; CPU processing can take several minutes. Audio stays on this device. Review results, especially music, singing, accents and background noise.",
+  "app.account.mfa.setupHelp": "Add this to your authenticator app, then enter the 6-digit code it shows.",
+  "app.publish.contacts.plan": "Cross-network contacts, consent status, tags and team notes are included with the $15 monthly Publish Plan.",
+  "app.editor.delivery.error.RENDER_LIMIT": "Your private renders are full (100 videos or 200 MiB). Remove unused videos and try again.",
+  "app.editor.delivery.error.INVALID_RENDER": "This MP4 could not be verified. Export it again.",
+  "app.editor.delivery.limits": "Private Library videos: MP4/H.264, up to 25 MiB, 10 minutes and 4096 pixels per edge, at 24, 25, 30, 50 or 60 fps. Retained for 90 days. Saving uses no credits."
+}

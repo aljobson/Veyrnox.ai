@@ -1,4 +1,8 @@
 import test from 'node:test';
+import { appMessagesFor } from '../lib/i18n/appMessages.mjs';
+import { translator, pluralKey } from '../lib/i18n/translate.mjs';
+import { localeTag } from '../lib/i18n/locales.mjs';
+const t = translator('en', await appMessagesFor('en'));
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { register } from 'node:module';
@@ -41,7 +45,8 @@ const signedIn = appNav.slice(ternary, elseArm);
 const signedOut = appNav.slice(elseArm, appNav.indexOf('</div>', elseArm));
 
 test('signed out there is a sign-in affordance and no figures at all', () => {
-    assert.match(signedOut, /Sign in/, 'must offer a way in');
+    assert.match(signedOut, /t\("oauth.signIn"\)/, 'must offer a way in');
+    assert.equal(t('oauth.signIn'), 'Sign in');
     assert.match(signedOut, /veyrnox:auth-required/, 'must open the existing AuthGate, not a new screen');
     assert.ok(!signedOut.includes('Credit balance:'), 'no balance pill for a visitor with no balance');
     assert.ok(!signedOut.includes('in your library'), 'no asset count either');
@@ -49,8 +54,10 @@ test('signed out there is a sign-in affordance and no figures at all', () => {
 });
 
 test('signed in the top right names the account, the balance and the asset count', () => {
-    assert.match(signedIn, /aria-label=\{`Credit balance: \$\{fmt\} credits`\}/);
-    assert.match(signedIn, /aria-label=\{`\$\{assetFmt\} \$\{assetWord\} in your library`\}/);
+    assert.match(signedIn, /aria-label=\{t\('app.nav.balance', \{ count: fmt \}\)\}/);
+    assert.equal(t('app.nav.balance', { count: '1,000' }), 'Credit balance: 1,000 credits');
+    assert.match(signedIn, /aria-label=\{t\('app.nav.libraryCount', \{ count: assetFmt, unit: assetWord \}\)\}/);
+    assert.equal(t('app.nav.libraryCount', { count: '2', unit: 'assets' }), '2 assets in your library');
     // The account element opens the menu the marketing nav already ships
     // (who you are, links into the app, Sign out) rather than a new one,
     // and is named from the endpoint rather than a stale session copy.
@@ -62,8 +69,8 @@ test('signed in the top right names the account, the balance and the asset count
 
 test('neither figure is a bare number to a screen reader', () => {
     // Both digits sit in their own element; the meaning is on the link.
-    assert.ok(signedIn.includes('aria-label={`Credit balance: '), 'the balance needs a spoken label');
-    assert.ok(signedIn.includes('in your library`}'), 'and the count needs one that reads as a sentence');
+    assert.ok(signedIn.includes("aria-label={t('app.nav.balance'"), 'the balance needs a spoken label');
+    assert.ok(signedIn.includes("aria-label={t('app.nav.libraryCount'"), 'and the count needs one that reads as a sentence');
     assert.match(signedIn, /aria-hidden="true" className="h-1\.5 w-1\.5 rounded-full bg-vx-money"/,
         'the amber dot is decoration, not content');
 });
@@ -90,7 +97,7 @@ test('the studio nav exposes the rest of the public site on desktop and mobile',
         'the public destination list stays derived from the shared site nav');
     assert.match(appNav, /const menuItems = \[[\s\S]*\.\.\.items,[\s\S]*\.\.\.APP_BROWSE_CATEGORIES\.filter/,
         'the phone menu combines studio tools with the public site');
-    assert.match(appNav, /items=\{APP_BROWSE_CATEGORIES\}[\s\S]*buttonText="Browse"[\s\S]*className="hidden lg:block"/,
+    assert.match(appNav, /items=\{APP_BROWSE_CATEGORIES\}[\s\S]*buttonText=\{t\("app.nav.browse"\)\}[\s\S]*className="hidden lg:block"/,
         'desktop studio pages provide a clearly labelled public browse menu');
 });
 
@@ -159,11 +166,11 @@ test('the whole nav still fits without a hidden horizontal rail', () => {
 });
 
 test('Oddlings is prominent without crowding the phone bar', () => {
-    assert.match(appNav, /\{ key: 'oddlings', href: '\/app\/oddlings', label: 'Oddlings', featured: true \}/,
+    assert.match(appNav, /\{ key: 'oddlings', href: '\/app\/oddlings', label: t\("label.Oddlings"\), featured: true \}/,
         'the desktop tab and phone menu share the featured destination');
     assert.ok(appNav.indexOf("key: 'oddlings'") < appNav.indexOf("key: 'create'"),
         'Oddlings appears before Create in the studio destination list');
-    const compactBar = appNav.slice(appNav.indexOf('<MobileMenu'), appNav.indexOf('<nav aria-label="Studio"'));
+    const compactBar = appNav.slice(appNav.indexOf('<MobileMenu'), appNav.indexOf('<nav aria-label={t("app.nav.studio")}'));
     assert.doesNotMatch(compactBar, /href="\/app\/oddlings"/,
         'the compact bar does not duplicate the highlighted Oddlings menu item');
 });
@@ -178,7 +185,7 @@ test('marketing auth controls reserve their space until the client session is re
 // than a copy of them, so the branch is what is under test.
 function figures(assets) {
     const decl = appNav.slice(appNav.indexOf('const assetFmt ='), appNav.indexOf('return (', appNav.indexOf('const assetFmt =')));
-    return new Function('assets', `${decl} return assetFmt + ' ' + assetWord;`)(assets);
+    return new Function('assets', 't', 'pluralKey', 'localeTag', 'locale', `${decl} return assetFmt + ' ' + assetWord;`)(assets, t, pluralKey, localeTag, 'en');
 }
 
 test('the count is singular at one and plural everywhere else', () => {

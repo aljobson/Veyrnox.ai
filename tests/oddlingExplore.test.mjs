@@ -1,3 +1,4 @@
+import { resolveI18nSource } from '../scripts/lib/vey-knowledge-i18n.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { access, readdir, readFile } from 'node:fs/promises';
@@ -116,7 +117,7 @@ test('the character sheet renders through the shared Modal instead of a hand-rol
     assert.match(sheet, /onRecreate\(oddling\)/);
     assert.match(sheet, /onAnimate\(oddling\)/);
     assert.doesNotMatch(sheet, /fixed inset-0|aria-modal|role="dialog"|onMouseDown/, 'Modal owns the scrim, the role and the keys');
-    const studio = await component('OddlingStudio.js');
+    const studio = resolveI18nSource(await component('OddlingStudio.js'));
     assert.match(studio, /\{sheet && <OddlingSheet /);
     assert.doesNotMatch(studio, /fixed inset-0|aria-modal/);
 });
@@ -171,7 +172,7 @@ test('Explore wires the All default, filter chips, hero strip and motion prefere
 });
 
 test('builder wiring: Surprise me beside Generate, one catalog builder, motion captions', async () => {
-    const studio = await component('OddlingStudio.js');
+    const studio = resolveI18nSource(await component('OddlingStudio.js'));
     const motion = await component('OddlingMotionPanel.js');
     assert.match(studio, /randomizeOddlingAll\(current\)/);
     assert.match(studio, />Surprise me</);
@@ -185,9 +186,9 @@ test('builder wiring: Surprise me beside Generate, one catalog builder, motion c
 });
 
 test('deep link loads the character once, then takes the parameter out of the address', async () => {
-    const studio = await component('OddlingStudio.js');
+    const studio = resolveI18nSource(await component('OddlingStudio.js'));
     assert.match(studio, /parseOddlingDeepLink\(window\.location\.search\)/);
-    const effect = studio.slice(studio.indexOf('parseOddlingDeepLink(window'), studio.indexOf('}, []);', studio.indexOf('parseOddlingDeepLink(window')));
+    const effect = studio.slice(studio.indexOf('parseOddlingDeepLink(window'), studio.indexOf('}, [t]);', studio.indexOf('parseOddlingDeepLink(window')));
     assert.match(effect, /setPicks\(\{ \.\.\.linked\.picks \}\)/);
     assert.match(effect, /setPortraitId\(linked\.id\)/);
     assert.match(effect, /setSheet\(linked\)/);
@@ -220,7 +221,7 @@ test('the Oddling Studio is split so no file passes the size ceiling', async () 
 test('Vey can still quote that Explore previews are free: the sentence is within the scanner\'s description budget', async () => {
     // The scanner keeps the first eight <p> descriptions of a route's modules, in module order.
     // The studio file comes before the Explore files, so the sentence lives in the studio header too.
-    const studio = await component('OddlingStudio.js');
+    const studio = resolveI18nSource(await component('OddlingStudio.js'));
     assert.match(studio, /<p [^>]*>[^<]*Dancing puppet previews in Explore are free: no generation or credits\./);
     const route = AUTO_PRODUCT_INVENTORY.find(({ id }) => id === 'route:/app/oddlings');
     assert.ok(route.descriptions.some((line) => /no generation or credits/.test(line)), 'the generated knowledge keeps it');

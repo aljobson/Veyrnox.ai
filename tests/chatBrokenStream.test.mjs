@@ -1,3 +1,4 @@
+import { resolveI18nSource } from '../scripts/lib/vey-knowledge-i18n.mjs';
 // A chat stream that breaks after `start` (ADR-0067): the Credits have moved and the server treats the dropped
 // connection like Stop, so the screen keeps the chat instead of deleting it and offering the message again.
 // What happened to the turn is the reply's job to say, so the screen looks for it as it does after Stop
@@ -170,10 +171,10 @@ test('while the turn is looked for the bubble says the connection was lost, and 
     assert.match(screen, /const isLive = \(m\) => m\.status === 'streaming' \|\| m\.status === 'saving' \|\| m\.status === 'lost';/);
     // With text: a line under it that stays true if the look-up ends without an answer. Without text: the bubble says
     // what is happening, and is removed if the look-up ends without an answer.
-    assert.match(screen, /\(m\.status === 'saving' \|\| m\.status === 'lost'\) && m\.content && <p role="status"[^>]*>\{m\.status === 'saving' \? [^:]+ : 'Connection lost before this reply finished\.'\}<\/p>/);
-    assert.match(screen, /m\.status === 'lost' \? 'Connection lost\. Checking what was saved\.' : /);
+    assert.match(resolveI18nSource(screen), /\(m\.status === 'saving' \|\| m\.status === 'lost'\) && m\.content && <p role="status"[^>]*>\{m\.status === 'saving' \? [^:]+ : "Connection lost before this reply finished\."\}<\/p>/);
+    assert.match(resolveI18nSource(screen), /m\.status === 'lost' \? "Connection lost\. Checking what was saved\." : /);
     // Its own state, cleared when the send ends, as for Stop.
-    assert.match(screen, /disabled=\{stopping \|\| checking\}[^\n]*\{stopping \? 'Stopping' : checking \? 'Checking' : 'Stop'\}/);
+    assert.match(resolveI18nSource(screen), /disabled=\{stopping \|\| checking\}[^\n]*\{stopping \? "Stopping" : checking \? "Checking" : "Stop"\}/);
     assert.match(sender, /\} finally \{ setBusy\(false\); setProgress\(null\); setStopping\(false\); setChecking\(false\);/);
 });
 

@@ -8,18 +8,19 @@ import { translator } from '../lib/i18n/translate.mjs';
 // outside the layout) everything reads as English.
 const LocaleContext = createContext({ locale: DEFAULT_LOCALE, enabled: false });
 
-export function I18nProvider({ locale, enabled = false, children }) {
-  const value = useMemo(() => ({ locale, enabled }), [locale, enabled]);
+export function I18nProvider({ locale, enabled = false, messages, children }) {
+  const activeLocale = enabled ? locale : DEFAULT_LOCALE;
+  const value = useMemo(() => ({ locale: activeLocale, enabled, messages }), [activeLocale, enabled, messages]);
   return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>;
 }
 
 /** { locale, languagesEnabled, t, href } for a client component. `href` adds the language prefix where a translation exists. */
 export function useI18n() {
-  const { locale, enabled } = useContext(LocaleContext);
+  const { locale, enabled, messages } = useContext(LocaleContext);
   return useMemo(() => ({
     locale,
     languagesEnabled: enabled,
-    t: translator(locale),
+    t: translator(locale, messages),
     href: (path) => localizedHref(locale, path),
-  }), [locale, enabled]);
+  }), [locale, enabled, messages]);
 }

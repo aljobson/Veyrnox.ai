@@ -25,51 +25,56 @@ const interiors = [
 for (const [suffix, heading, api, interior] of interiors) test(`Publish ${suffix || 'home'} authenticated interior hydrates with synthetic APIs`, async ({ page }) => {
   const fixture = await installPublishFixtures(page);
   const response = await fixture.open(`/app/publish${suffix}`); expect(response.status()).toBe(200);
-  await expect(page.getByRole('heading', { name: heading, exact: true, level: 1 })).toBeVisible();
+  const translatedTitle = { '/workflows': 'publish-workflows-title', '/queues': 'publish-queues-title', '/team': 'publish-team-title', '/contacts': 'publish-contacts-title', '/commerce': 'publish-commerce-title', '/autolists': 'publish-autolists-title', '/ads': 'publish-ads-title', '/reports': 'publish-reports-title', '/developer': 'publish-developer-title', '/inbox': 'publish-inbox-title', '/calendar': 'publish-calendar-title' }[suffix];
+  const title = translatedTitle ? page.getByTestId(translatedTitle) : page.getByRole('heading', { name: heading, exact: true, level: 1 });
+  await expect(title).toBeVisible();
+  if (translatedTitle) await expect(title).toHaveText(heading);
   await expect.poll(() => fixture.requests.some(row => row.path === `/api/v1/social${api}`)).toBe(true);
-  await expect(page.getByText(interior).first()).toBeVisible();
+  const translatedInterior = { '/workflows': 'publish-workflows-form', '/queues': 'publish-queues-form', '/team': 'publish-team-form', '/contacts': 'publish-contacts-empty', '/commerce': 'publish-commerce-form', '/autolists': 'publish-autolists-form', '/ads': 'publish-ads-form', '/reports': 'publish-reports-form', '/developer': 'publish-api-key-form', '/inbox': 'publish-inbox-empty', '/calendar': 'publish-calendar-today' }[suffix];
+  if (translatedInterior) { await expect(page.getByTestId(translatedInterior)).toBeVisible(); await expect(page.getByTestId(translatedInterior)).toContainText(interior); }
+  else await expect(page.getByText(interior).first()).toBeVisible();
   await expect(page.getByRole('button', { name: 'Sign in', exact: true })).toHaveCount(0);
   // Next's empty route-announcer has role=alert even on healthy pages.
   await expect(page.getByRole('alert').filter({ hasText: /\S/ })).toHaveCount(0);
   if (suffix === '/ads') {
-    await page.getByLabel('Campaign name', { exact: true }).fill('Synthetic campaign draft');
-    await page.getByRole('combobox', { name: 'Campaign type', exact: true }).selectOption('boost');
-    await expect(page.getByRole('combobox', { name: 'Published post', exact: true })).toBeVisible();
+    await page.getByTestId('publish-campaign-name').fill('Synthetic campaign draft');
+    await page.getByTestId('publish-campaign-type').selectOption('boost');
+    await expect(page.getByTestId('publish-campaign-post')).toBeVisible();
   } else if (suffix === '/commerce') {
-    await page.getByRole('button', { name: 'Add variant', exact: true }).click();
-    await page.getByLabel('Variant 1 title', { exact: true }).fill('Synthetic size');
-    await page.getByLabel('Variant 1 price', { exact: true }).fill('12.34');
-    await page.getByRole('button', { name: 'Remove variant 1', exact: true }).click();
-    await expect(page.getByLabel('Variant 1 title', { exact: true })).toHaveCount(0);
+    await page.getByTestId('commerce-variant-add').click();
+    await page.getByTestId('commerce-variant-title-0').fill('Synthetic size');
+    await page.getByTestId('commerce-variant-price-0').fill('12.34');
+    await page.getByTestId('commerce-variant-remove-0').click();
+    await expect(page.getByTestId('commerce-variant-title-0')).toHaveCount(0);
   } else if (suffix === '/contacts') {
-    await page.getByRole('combobox', { name: 'Network', exact: true }).selectOption('youtube');
+    await page.getByTestId('publish-contacts-network').selectOption('youtube');
     await expect.poll(() => fixture.requests.some(row => row.path.endsWith('/contacts') && new URLSearchParams(row.query).get('network') === 'youtube')).toBe(true);
   } else if (suffix === '/developer') {
-    await page.getByLabel('Search', { exact: true }).fill('synthetic-filter');
-    await page.getByRole('button', { name: 'Apply', exact: true }).click();
+    await page.getByTestId('publish-api-log-query').fill('synthetic-filter');
+    await page.getByTestId('publish-api-log-apply').click();
     await expect.poll(() => fixture.requests.some(row => row.path.endsWith('/developer/logs') && new URLSearchParams(row.query).get('q') === 'synthetic-filter')).toBe(true);
   } else if (suffix === '/inbox') {
-    await page.getByLabel('Search', { exact: true }).fill('synthetic-search');
-    await page.getByRole('button', { name: 'Search', exact: true }).click();
+    await page.getByTestId('publish-inbox-query').fill('synthetic-search');
+    await page.getByTestId('publish-inbox-search').click();
     await expect.poll(() => fixture.requests.some(row => row.path.endsWith('/inbox') && new URLSearchParams(row.query).get('search') === 'synthetic-search')).toBe(true);
   } else if (suffix === '/calendar') {
-    await page.getByRole('combobox', { name: 'Status', exact: true }).selectOption('scheduled');
+    await page.getByTestId('publish-calendar-status').selectOption('scheduled');
     await expect.poll(() => fixture.requests.some(row => row.path.endsWith('/calendar') && new URLSearchParams(row.query).get('status') === 'scheduled')).toBe(true);
   } else if (suffix === '/plan') {
     page.once('dialog', dialog => dialog.dismiss());
     await page.getByRole('button', { name: 'Cancel plan', exact: true }).click();
     expect(fixture.requests.filter(row => row.path.endsWith('/plan/cancel'))).toEqual([]);
   } else if (suffix === '/queues') {
-    await page.getByRole('button', { name: 'Add time', exact: true }).click();
-    await page.getByLabel('Time 2', { exact: true }).fill('14:30');
-    await expect(page.getByLabel('Time 2', { exact: true })).toHaveValue('14:30');
+    await page.getByTestId('publish-queue-add-time').click();
+    await page.getByTestId('publish-queue-time-2').fill('14:30');
+    await expect(page.getByTestId('publish-queue-time-2')).toHaveValue('14:30');
   } else if (suffix === '/reports') {
-    await page.getByLabel('Template name', { exact: true }).fill('Synthetic report');
-    await page.getByRole('combobox', { name: 'Period', exact: true }).selectOption('7');
-    await expect(page.getByRole('combobox', { name: 'Period', exact: true })).toHaveValue('7');
+    await page.getByTestId('publish-report-name').fill('Synthetic report');
+    await page.getByTestId('publish-report-period').selectOption('7');
+    await expect(page.getByTestId('publish-report-period')).toHaveValue('7');
   } else if (suffix === '/team') {
-    await page.getByLabel('Email', { exact: true }).fill('invalid-address');
-    await page.getByRole('button', { name: 'Create invitation', exact: true }).click();
+    await page.getByTestId('publish-team-email').fill('invalid-address');
+    await page.getByTestId('publish-team-invite').click();
     expect(fixture.requests.filter(row => row.path.endsWith('/team') && row.method === 'POST')).toEqual([]);
   }
 });
@@ -77,24 +82,24 @@ for (const [suffix, heading, api, interior] of interiors) test(`Publish ${suffix
 test('SmartLink unavailable initial read stays fail-closed and recovers by read-only retry', async ({ page }) => {
   let failing = true; const fixture = await installPublishFixtures(page, { routes: ({ url, method, json }) => url.pathname === '/api/v1/social/smartlink' && method === 'GET' && failing ? json({ error: 'synthetic_unavailable' }, 503) : false });
   await fixture.open('/app/publish/smartlink'); await expect(page.getByText('Could not load your SmartLink. Try again.', { exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Save SmartLink', exact: true })).toHaveCount(0); await expect(page.getByLabel('Title', { exact: true })).toHaveCount(0);
-  failing = false; await page.getByRole('button', { name: 'Try again', exact: true }).click(); await expect(page.getByLabel('Title', { exact: true })).toHaveValue(LINK.smartlink.title); expect(fixture.writes).toEqual([]);
+  await expect(page.getByTestId('smartlink-save')).toHaveCount(0); await expect(page.getByTestId('smartlink-title')).toHaveCount(0);
+  failing = false; await page.getByTestId('smartlink-retry').click(); await expect(page.getByTestId('smartlink-title')).toHaveValue(LINK.smartlink.title); expect(fixture.writes).toEqual([]);
 });
 test('SmartLink unknown role cannot write an otherwise loaded document', async ({ page }) => {
   const fixture = await installPublishFixtures(page, { role: null }); await fixture.open('/app/publish/smartlink');
-  await expect(page.getByLabel('Title', { exact: true })).toBeDisabled(); await expect(page.getByRole('button', { name: 'Save SmartLink', exact: true })).toHaveCount(0); expect(fixture.writes).toEqual([]);
+  await expect(page.getByTestId('smartlink-title')).toBeDisabled(); await expect(page.getByTestId('smartlink-save')).toHaveCount(0); expect(fixture.writes).toEqual([]);
 });
 test('SmartLink edits save an unpublished synthetic page with its selected brand snapshot', async ({ page }) => {
   const fixture = await installPublishFixtures(page); await fixture.open('/app/publish/smartlink');
-  await page.getByLabel('Title', { exact: true }).fill('Edited synthetic title'); await page.getByRole('button', { name: 'Add link', exact: true }).click();
+  await page.getByTestId('smartlink-title').fill('Edited synthetic title'); await page.getByRole('button', { name: 'Add link', exact: true }).click();
   await page.getByLabel('Link 2 label', { exact: true }).fill('Second synthetic link'); await page.getByLabel('Link 2 URL', { exact: true }).fill('https://example.invalid/second');
-  await page.getByRole('button', { name: 'Save SmartLink', exact: true }).click(); await expect(page.getByRole('status')).toHaveText('SmartLink saved.');
+  await page.getByTestId('smartlink-save').click(); await expect(page.getByRole('status')).toHaveText('SmartLink saved.');
   expect(fixture.writes).toHaveLength(1); expect(fixture.writes[0].brand).toBe(BRAND); expect(fixture.writes[0].body.published).toBe(false); expect(fixture.writes[0].body.items).toHaveLength(2);
 });
 test('SmartLink readback failure retains edited title and every destination', async ({ page }) => {
   let reads = 0; const fixture = await installPublishFixtures(page, { routes: ({ url, method, json }) => url.pathname === '/api/v1/social/smartlink' && method === 'GET' && ++reads > 1 ? json({ error: 'synthetic_unavailable' }, 503) : false });
-  await fixture.open('/app/publish/smartlink'); await page.getByLabel('Title', { exact: true }).fill('Preserved edit'); await page.getByRole('button', { name: 'Save SmartLink', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('Could not save your SmartLink'); await expect(page.getByLabel('Title', { exact: true })).toHaveValue('Preserved edit'); await expect(page.getByLabel('Link 1 label', { exact: true })).toHaveValue('Synthetic destination'); expect(fixture.writes).toHaveLength(1);
+  await fixture.open('/app/publish/smartlink'); await page.getByTestId('smartlink-title').fill('Preserved edit'); await page.getByTestId('smartlink-save').click();
+  await expect(page.getByRole('status')).toContainText('Could not save your SmartLink'); await expect(page.getByTestId('smartlink-title')).toHaveValue('Preserved edit'); await expect(page.getByTestId('smartlink-link-label').first()).toHaveValue('Synthetic destination'); expect(fixture.writes).toHaveLength(1);
 });
 test('SmartLink ignores a pending default-brand response when the shell selects its initial brand', async ({ page }) => {
   let releaseBrands; const brandsReady = new Promise(resolve => { releaseBrands = resolve; });
@@ -108,8 +113,8 @@ test('SmartLink ignores a pending default-brand response when the shell selects 
     return false;
   } });
   await fixture.open('/app/publish/smartlink'); await expect.poll(() => oldStarted).toBe(true); releaseBrands();
-  await expect(page.getByLabel('Title', { exact: true })).toHaveValue('Selected brand title'); releaseOld();
-  await expect(page.getByLabel('Title', { exact: true })).toHaveValue('Selected brand title'); await page.getByRole('button', { name: 'Save SmartLink', exact: true }).click();
+  await expect(page.getByTestId('smartlink-title')).toHaveValue('Selected brand title'); releaseOld();
+  await expect(page.getByTestId('smartlink-title')).toHaveValue('Selected brand title'); await page.getByTestId('smartlink-save').click();
   await expect(page.getByRole('status')).toHaveText('SmartLink saved.'); expect(fixture.writes[0].brand).toBe(SECOND_BRAND);
 });
 
@@ -123,16 +128,16 @@ for (const mode of ['Post now', 'Schedule post', 'Send for approval']) test(`Com
     return false;
   } });
   await fixture.open(`/app/publish?job=${job}`);
-  await page.getByRole('button', { name: 'Facebook: Synthetic destination', exact: true }).click();
-  await page.getByLabel('Caption', { exact: true }).fill('Synthetic test only — no external delivery');
-  if (mode === 'Send for approval') await page.getByLabel('Reviewers', { exact: true }).fill('synthetic-reviewer@example.invalid');
-  await page.getByRole('button', { name: mode, exact: true }).click();
+  await page.getByTestId(`publish-account-${destination.id}`).click();
+  await page.getByTestId('publish-caption').fill('Synthetic test only — no external delivery');
+  if (mode === 'Send for approval') await page.getByTestId('publish-reviewers').fill('synthetic-reviewer@example.invalid');
+  await page.getByTestId(`publish-submit-${{ 'Post now': 'now', 'Schedule post': 'schedule', 'Send for approval': 'review' }[mode]}`).click();
   await expect.poll(() => submissions.length).toBe(1);
   expect(submissions[0].body.accountIds).toEqual([destination.id]); expect(submissions[0].body.media).toEqual([{ mediaType: 'image', jobId: job }]);
   if (mode === 'Post now') expect(submissions[0].body.publishNow).toBe(true);
   else expect(new Date(submissions[0].body.scheduledAt).getTime()).toBeGreaterThan(Date.now());
   if (mode === 'Send for approval') { expect(submissions[0].path).toBe('/api/v1/social/approvals'); expect(submissions[0].body.reviewers).toEqual(['synthetic-reviewer@example.invalid']); }
-  await expect(page.getByText(mode === 'Post now' ? 'Post queued for publishing. It can take a few minutes to appear.' : mode === 'Schedule post' ? 'Post scheduled.' : 'Review links created. This post stays paused until the approval rule passes.', { exact: true })).toBeVisible();
+  await expect(page.getByTestId('publish-success')).toHaveText(mode === 'Post now' ? 'Post queued for publishing. It can take a few minutes to appear.' : mode === 'Schedule post' ? 'Post scheduled.' : 'Review links created. This post stays paused until the approval rule passes.');
 });
 
 test('Activity pagination retains microsecond cursor and de-duplicates repeated rows', async ({ page }) => {

@@ -4,7 +4,9 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
-import english from '../lib/i18n/messages/en.mjs';
+import publicEnglish from '../lib/i18n/messages/en.mjs';
+import appEnglish from '../lib/i18n/messages/app/en.mjs';
+const english = { ...publicEnglish, ...appEnglish };
 
 const publicProps = new Set(['title', 'aria-label', 'placeholder', 'alt', 'label', 'ariaLabel', 'body', 'confirmLabel']);
 const excluded = /^(?:app\/veyrnox\/(?:app|design-system)\/|app\/legal\/)/;
@@ -18,6 +20,10 @@ const privateFunctions = {
 
 // Exact public exceptions. Do not add blanket file exclusions for UI code.
 const exceptions = [
+  { file: /\/editor\/AgentPanel\.js$/, pattern: /^(?:split the first clip at 2 seconds|remove the last clip|set the volume of the first clip to 40%|add the title "Day one")$/, reason: 'literal command prompts accepted by the existing English-only local parser; no localized parser exists' },
+  { file: /\/editor\/MultitrackWorkspace\.js$/, pattern: /^(?:Veyrnox\.ai Cut|Cut)$/, reason: 'Cut is the editor product name in the branded header' },
+  { file: /\/publish\/smartlink\/page\.js$/, pattern: /^(?:veyrnox\.ai\/s\/|https:\/\/)$/, reason: 'literal branded address or URL protocol required by the link editor' },
+  { file: /\/publish\/BlueskyConnect\.js$/, pattern: /^you\.bsky\.social$/, reason: 'brand-domain example showing the required Bluesky handle format' },
   { pattern: /^(?:\.ai|cr)$/, reason: 'brand suffix or abbreviated Credits product name' },
   { file: /\/m\/create\/page\.js$/, pattern: /^−16 cr$/, reason: 'sample catalog price in Credits' },
   { file: /\/developers\/page\.js$/, pattern: /^(?:pipx install|veyrnox |OAuth 2\.1|token_endpoint_auth_method:|confirmed_credits$)/, reason: 'literal CLI/API code or protocol name' },
@@ -29,26 +35,29 @@ const exceptions = [
   { file: /\/VeyTaskGuide\.jsx$/, pattern: /^What is the next step in my current task\?$/, reason: 'provider text: canonical request for the existing English local help interpreter' },
 ];
 
-function walk(directory) {
+function walk(directory, exclude = excluded) {
   return readdirSync(directory, { withFileTypes: true }).flatMap(entry => {
     const file = path.join(directory, entry.name);
-    if (excluded.test(file)) return [];
-    return entry.isDirectory() ? walk(file) : /\.[jm]?[jt]sx?$/.test(file) ? [file] : [];
+    if (exclude.test(file)) return [];
+    return entry.isDirectory() ? walk(file, exclude) : /\.[jm]?[jt]sx?$/.test(file) ? [file] : [];
   });
 }
-export function publicFiles() {
-  const roots = ['app/veyrnox', 'app/social', 'app/auth/callback'].flatMap(walk)
-    .filter(file => /\/(?:page|layout|error|loading|not-found)\.[jt]sx?$/.test(file));
+export function publicFiles({ app = false } = {}) {
+  const exclude = app ? /^app\/veyrnox\/app\/admin(?:\/|$)/ : excluded;
+  const roots = (app ? ['app/veyrnox/app'] : ['app/veyrnox', 'app/social', 'app/auth/callback']).flatMap(directory => walk(directory, exclude))
+    .filter(file => /\/(?:page|layout|template|error|loading|not-found)\.[jt]sx?$/.test(file));
   roots.push('app/layout.js', 'app/not-found.js', 'app/error.js', 'app/global-error.js');
   const files = new Set();
   function visit(file) {
-    if (files.has(file) || excluded.test(file) || privateFiles.test(file) || !existsSync(file)) return;
+    if (files.has(file) || exclude.test(file) || (!app && privateFiles.test(file)) || !existsSync(file)) return;
     if (!/^(?:app\/(?:veyrnox|social|auth\/callback)\/|components\/|app\/(?:layout|not-found|error|global-error)\.js$)/.test(file)) return;
     files.add(file);
     const tree = ts.createSourceFile(file, readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.JSX);
     for (const node of tree.statements) {
-      if (!(ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) || !node.moduleSpecifier?.text.startsWith('.')) continue;
-      const base = path.join(path.dirname(file), node.moduleSpecifier.text);
+      if (!(ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) || !node.moduleSpecifier) continue;
+      const specifier = node.moduleSpecifier.text;
+      if (!specifier.startsWith('.') && !specifier.startsWith('@/')) continue;
+      const base = specifier.startsWith('@/') ? specifier.slice(2) : path.join(path.dirname(file), specifier);
       const target = [base, `${base}.js`, `${base}.jsx`, `${base}.mjs`].find(f => existsSync(f) && statSync(f).isFile());
       if (target) visit(target);
     }
@@ -63,6 +72,7 @@ export function publicFiles() {
     scan(tree); return jsx;
   }).sort();
 }
+export const appFiles = () => publicFiles({ app: true });
 function owner(node) {
   for (let p = node; p; p = p.parent) {
     if (ts.isFunctionDeclaration(p)) return p.name?.text;
@@ -74,6 +84,27 @@ function translateCall(node, tree) {
 }
 // Version-bound legal declarations remain English by the 2026-10-18 host decision.
 const legalStatements = new Set([
+  "app/veyrnox/_components/TopUpPacks.js\nI want my credits added to my account straight away. I understand that once I use any of these credits to generate, I lose my right to cancel this purchase.",
+  "app/veyrnox/_components/chat/MediaComposer.js\nI own these files or have permission to use every identifiable person, voice, brand, artwork, and recording under the",
+  "app/veyrnox/_components/chat/MediaComposer.js\nAcceptable Use Policy",
+
+  "app/veyrnox/_components/CreditSubscriptions.js\nI agree to",
+  "app/veyrnox/_components/CreditSubscriptions.js\nat",
+  "app/veyrnox/_components/CreditSubscriptions.js\nplus applicable tax every",
+  "app/veyrnox/_components/CreditSubscriptions.js\nuntil I cancel. I receive",
+  "app/veyrnox/_components/CreditSubscriptions.js\nCredits after each confirmed",
+  "app/veyrnox/_components/CreditSubscriptions.js\nly payment; unused cycle Credits expire without rollover.",
+
+  "app/veyrnox/_components/editor/GenerationPanel.js\nI own this file, or I have the permission of everyone identifiable in it. No real person’s face, body or voice is used without their consent, and I hold the rights to any brand, artwork or recording in it (",
+  "app/veyrnox/_components/editor/GenerationPanel.js\nAcceptable Use",
+  "app/veyrnox/_components/editor/GenerationPanel.js\n). This statement is recorded against the generation and your account.",
+
+  "app/veyrnox/app/publish/plan/PublishPlanPanel.js\nStart my Publish Plan at",
+  "app/veyrnox/app/publish/plan/PublishPlanPanel.js\nplus tax every",
+  "app/veyrnox/app/publish/plan/PublishPlanPanel.js\n. I understand it renews automatically until I cancel.",
+  "app/veyrnox/_components/SourceRightsConfirmation.jsx\nI own this file, or I have the permission of everyone identifiable in it. No real person&apos;s face, body or voice is used without their consent, and I hold the rights to any brand, artwork or recording in it (",
+  "app/veyrnox/_components/SourceRightsConfirmation.jsx\nAcceptable Use",
+  "app/veyrnox/_components/SourceRightsConfirmation.jsx\n). This statement is recorded against the generation and your account.",
   "app/veyrnox/social-cinema/pass/PassPanel.js\nStart my Cinema Pass now. I understand it renews automatically until I cancel, and that if I cancel within 14 days I get back the unused share of what I paid.",
   "app/veyrnox/social-cinema/title/[id]/TitlePage.js\nUnlock now and add it to my account for good. I understand this spends credits straight away and that my right to cancel ends once I press play.",
   "app/veyrnox/social-cinema/creator/CreatorWorkspace.js\nI own or hold the rights to everything in this title, including any real people, voices, music and footage, and I have declared its AI use truthfully.",
@@ -86,7 +117,7 @@ function allowed(file, text) {
   if (legalStatements.has(`${file}\n${text}`)) return 'version-bound English legal statement; lawyer-reviewed translation required (ADR-0107)';
   return exceptions.find(rule => (!rule.file || rule.file.test(file)) && rule.pattern.test(text))?.reason;
 }
-export function candidates(file, source) {
+export function candidates(file, source, { app = false } = {}) {
   const tree = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JSX);
   const output = [];
   function add(node, kind, text, status, reason) {
@@ -102,12 +133,16 @@ export function candidates(file, source) {
       add(node, 'lookup', node.argumentExpression.getText(tree), 'translated', 'catalog lookup'); return;
     }
     if (ts.isVariableDeclaration(node)) {
+      // SVG geometry is not display copy. Verify every entry is path syntax.
+      if (['paths', 'controlPaths'].includes(node.name.getText(tree)) && ts.isObjectLiteralExpression(node.initializer) && new RegExp(`<path d=\\{${node.name.getText(tree)}\\[(?:network|name)\\]\\}`).test(source) && node.initializer.properties.every(property => ts.isPropertyAssignment(property) && ts.isStringLiteral(property.initializer) && /^[Mm][MmZzLlHhVvCcSsQqTtAaEe\d., +\-]+$/.test(property.initializer.text))) return;
+      // A validated gradient palette consumed as className is CSS, not display copy.
+      if (node.name.getText(tree) === 'backgrounds' && ts.isObjectLiteralExpression(node.initializer) && /className=\{`[^`]*\$\{backgrounds\[/.test(source) && node.initializer.properties.every(property => ts.isPropertyAssignment(property) && ts.isStringLiteral(property.initializer) && /^(?:from|via|to)-[a-z]+-\d{2,3}(?: (?:from|via|to)-[a-z]+-\d{2,3})*$/.test(property.initializer.text))) return;
       const name = node.name.getText(tree);
       const mapped = (file.endsWith('/NavAuthButtons.js') && name === 'ACCOUNT_LINKS') || (file.endsWith('/m/_MobileNav.js') && ['TABS', 'jumps'].includes(name)) || (file.endsWith('/_sections/showcase.js') && ['LIST_GROUPS', 'GROUP_KEYS'].includes(name));
       if (mapped) { add(node, 'label-map', name, 'translated', 'display uses catalog keys or t.label'); return; }
       if (file.endsWith('/tools/loading.js') && name === 'PLACEHOLDERS') return; // React skeleton keys, never displayed
     }
-    if (privateFunctions[file]?.has(owner(node))) return;
+    if (!app && privateFunctions[file]?.has(owner(node))) return;
     if (translateCall(node, tree)) {
       const offset = node.expression.getText(tree) === 'tOr' ? 1 : 0;
       const first = node.arguments[offset];
@@ -126,7 +161,7 @@ export function candidates(file, source) {
     }
     if (ts.isJsxText(node)) { add(node, 'jsx', node.text); return; }
     if (ts.isJsxAttribute(node)) {
-      if (!publicProps.has(node.name.text)) return;
+      if (!publicProps.has(node.name.text) && !(app && /^on[A-Z]/.test(node.name.text))) return;
       if (node.initializer && ts.isStringLiteral(node.initializer)) { add(node, 'prop', node.initializer.text); return; }
     }
     if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node) || ts.isTemplateExpression(node)) {
@@ -135,10 +170,12 @@ export function candidates(file, source) {
       // Equality tests, object keys, route/URL construction and CSS never render.
       if (ts.isPropertyAssignment(node.parent) && ['dateStyle', 'timeStyle', 'day', 'month', 'year', 'timeZone', 'colorScheme'].includes(node.parent.name.getText(tree))) return;
       if (ts.isBinaryExpression(node.parent) && ![ts.SyntaxKind.BarBarToken, ts.SyntaxKind.QuestionQuestionToken, ts.SyntaxKind.PlusToken].includes(node.parent.operatorToken.kind)) return;
-      let p = node.parent, jsx = false, ignored = false;
+      let p = node.parent, jsx = false, ignored = false, event = false, visibleCall = false;
       while (p && !ts.isStatement(p)) {
         if (ts.isJsxExpression(p)) jsx = true;
-        if ((ts.isCallExpression(p) || ts.isNewExpression(p)) && /^(?:providerAvailable|querySelector|matchMedia|console\.|.*\.(?:toLocaleDateString|toLocaleString|includes|startsWith|endsWith|querySelector|matchMedia|join|setAttribute))/.test(p.expression.getText(tree))) ignored = true;
+        if (ts.isJsxAttribute(p) && /^on[A-Z]/.test(p.name.text)) event = true;
+        if (app && ts.isCallExpression(p) && /^(?:toast(?:\.(?:success|error|info|warning))?|(?:window\.)?(?:alert|confirm|prompt)|set(?:Error|Message|Status))$/.test(p.expression.getText(tree))) visibleCall = true;
+        if ((ts.isCallExpression(p) || ts.isNewExpression(p)) && /^(?:providerAvailable|querySelector|matchMedia|console\.|.*\.(?:toLocaleDateString|toLocaleString|includes|startsWith|endsWith|querySelector|closest|matchMedia|join|setAttribute))/.test(p.expression.getText(tree))) ignored = true;
         p = p.parent;
       }
       if (ts.isArrayLiteralExpression(node.parent) && ['creator', 'series'].includes(node.text)) return; // Following tab ids have separately translated labels
@@ -146,7 +183,7 @@ export function candidates(file, source) {
       if (!ignored && !/^(?:[/.#]|https?:|use client|use server)/.test(text) && !/(?:vx-|\b(?:px|py|mt|mb)-|=>|linear-gradient|\bBearer\b)/.test(text)
           && !/^(?:\(m(?:in|ax)-width:|(?:hidden|object-contain|text-sm|text-base|text-lg)(?:\s|$))/.test(text)
           && !/^(?:\s|[\d%+.,:;·/—−–()[\]{}-]|px|USD|ms|seconds)*$/.test(text)
-          && (jsx || /\s/.test(text) || (ts.isPropertyAssignment(node.parent) && /^(?:label|title|description|message|placeholder)$/.test(node.parent.name.getText(tree))))) {
+          && ((jsx && !event) || visibleCall || /\s/.test(text) || (ts.isPropertyAssignment(node.parent) && /^(?:label|title|description|message|placeholder)$/.test(node.parent.name.getText(tree))))) {
         add(node, 'expression', text);
       }
       if (!ts.isTemplateExpression(node)) return;
@@ -160,8 +197,9 @@ export function candidates(file, source) {
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const files = process.argv.slice(2).filter(arg => arg !== '--all');
-  const rows = (files.length ? files : publicFiles()).flatMap(file => candidates(file, readFileSync(file, 'utf8')));
+  const app = process.argv.includes('--app');
+  const files = process.argv.slice(2).filter(arg => !['--all', '--app'].includes(arg));
+  const rows = (files.length ? files : app ? appFiles() : publicFiles()).flatMap(file => candidates(file, readFileSync(file, 'utf8'), { app }));
   for (const row of rows) if (row.status !== 'translated' || process.argv.includes('--all')) console.log(JSON.stringify(row));
   const counts = Object.fromEntries(['translated', 'allowlisted', 'unresolved'].map(status => [status, rows.filter(row => row.status === status).length]));
   console.log(JSON.stringify({ summary: counts }));

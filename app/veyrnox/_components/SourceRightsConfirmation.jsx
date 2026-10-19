@@ -8,7 +8,7 @@ export default function SourceRightsConfirmation({ confirmed, onChange }) {
           checked={confirmed} onChange={event => onChange(event.target.checked)}
           aria-describedby="create-source-rights-status" className="h-5 w-5 accent-vx-accent" />
       </span>
-      <span className="py-2">
+      <span lang="en" dir="ltr" className="py-2">
         I own this file, or I have the permission of everyone identifiable in it. No real person&apos;s face, body or
         voice is used without their consent, and I hold the rights to any brand, artwork or recording in it
         (<a href="/legal/aup" target="_blank" rel="noreferrer" className="text-vx-accent underline">Acceptable Use</a>).

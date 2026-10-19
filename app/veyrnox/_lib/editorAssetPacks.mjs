@@ -6,6 +6,7 @@ const text = (v, max) => typeof v === 'string' && v.length > 0 && v.length <= ma
 const id = v => typeof v === 'string' && /^[A-Za-z0-9_-]{1,48}$/.test(v);
 const packName = v => text(v, 40) && !/[\\/:*?<>|]/.test(v) && !['.', '..'].includes(v) && v.trim() === v;
 const fileName = v => text(v, 255) && !/[\\/:]/.test(v) && !['.', '..'].includes(v);
+export const ASSET_PACK_CATEGORIES = Object.freeze(['Photos', 'Video', 'Stickers', 'Avatars', 'Music', 'Sound effects']);
 export const ASSET_PACK_LIMITS = Object.freeze({ manifestBytes: 131072, assets: 40, totalBytes: 256 * 1024 * 1024 });
 /** Extensions are data-only catalogs. No script, URL fetch, account, timeline or billing capability is granted. */
 export function assetPackProblem(pack) {
@@ -13,7 +14,7 @@ export function assetPackProblem(pack) {
     if (!Array.isArray(pack.assets) || !pack.assets.length || pack.assets.length > ASSET_PACK_LIMITS.assets) return 'An asset pack holds between 1 and 40 items.';
     const ids = new Set(), names = new Set();
     for (const asset of pack.assets) {
-        if (!exact(asset, ['id', 'name', 'file', 'kind', 'category', 'tags', 'sha256', 'attribution']) || !id(asset.id) || ids.has(asset.id) || !text(asset.name, 120) || !fileName(asset.file) || names.has(asset.file) || !['image', 'video', 'audio'].includes(asset.kind) || !['Photos', 'Video', 'Stickers', 'Avatars', 'Music', 'Sound effects'].includes(asset.category) || !Array.isArray(asset.tags) || asset.tags.length > 12 || asset.tags.some(tag => !text(tag, 40)) || typeof asset.sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(asset.sha256) || mediaDetailsProblem({ attribution: asset.attribution }) || !asset.attribution?.credit?.trim() || !asset.attribution?.usage?.trim()) return 'An asset has invalid identity, local filename, content hash or licence metadata.';
+        if (!exact(asset, ['id', 'name', 'file', 'kind', 'category', 'tags', 'sha256', 'attribution']) || !id(asset.id) || ids.has(asset.id) || !text(asset.name, 120) || !fileName(asset.file) || names.has(asset.file) || !['image', 'video', 'audio'].includes(asset.kind) || !ASSET_PACK_CATEGORIES.includes(asset.category) || !Array.isArray(asset.tags) || asset.tags.length > 12 || asset.tags.some(tag => !text(tag, 40)) || typeof asset.sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(asset.sha256) || mediaDetailsProblem({ attribution: asset.attribution }) || !asset.attribution?.credit?.trim() || !asset.attribution?.usage?.trim()) return 'An asset has invalid identity, local filename, content hash or licence metadata.';
         if ((['Music', 'Sound effects'].includes(asset.category) && asset.kind !== 'audio') || (['Photos', 'Stickers', 'Avatars'].includes(asset.category) && asset.kind !== 'image') || (asset.category === 'Video' && asset.kind !== 'video')) return 'The asset category must match its media type.';
         ids.add(asset.id); names.add(asset.file);
     }

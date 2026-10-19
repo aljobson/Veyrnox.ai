@@ -40,5 +40,5 @@ test('a single model or an empty list does not throw', () => {
 
 test('the create page filters the model list by tier without hiding the selected model', () => {
   assert.match(page, /filterByTier\(/);
-  assert.match(page, /aria-pressed=\{tier === t\}/);
+  assert.match(page, /aria-pressed=\{tier === type\}/);
 });

@@ -1,4 +1,7 @@
 'use client';
+import { localeTag } from '../../../lib/i18n/locales.mjs';
+import { tOr, pluralKey } from '../../../lib/i18n/translate.mjs';
+import { useI18n } from '../../../components/I18nProvider';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from './Button';
 import { gatewayFetch, GatewayError, makeIdempotencyKey, notifyBalanceChanged, ACCOUNT_PAUSED_COPY } from '../_lib/gateway';
@@ -12,15 +15,6 @@ export const SUPPLY_CONSENT_VERSION = 'supply-consent-v1';
 const SUPPLY_CONSENT_TEXT =
   'I want my credits added to my account straight away. I understand that once I use any of these credits to generate, I lose my right to cancel this purchase.';
 
-const ERROR_COPY = {
-  consent_required: 'Tick the box above to continue.',
-  pack_not_found: 'That pack is no longer available. Refresh and pick again.',
-  rate_limited: 'Too many checkout attempts. Try again in a few minutes.',
-  idempotency_key_reused: 'Pick your pack again to start a new checkout.',
-  user_not_provisioned: 'Your account is still being set up. Try again in a moment.',
-  account_frozen: ACCOUNT_PAUSED_COPY,
-};
-
 const TOP_UP_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const POLL_MS = 2000;
 const POLL_GIVE_UP_MS = 3 * 60 * 1000;
@@ -29,6 +23,8 @@ const POLL_GIVE_UP_MS = 3 * 60 * 1000;
 // Top-up until the server credits it, then refreshes every balance on the
 // page. This component never grants anything.
 export function TopUpReturn() {
+  const { t, locale } = useI18n();
+  const number = new Intl.NumberFormat(localeTag(locale, 'en-US'));
   const [topUpId, setTopUpId] = useState(null);
   const [phase, setPhase] = useState('processing');
   const [credits, setCredits] = useState(null);
@@ -70,10 +66,10 @@ export function TopUpReturn() {
     const started = Date.now();
     async function poll() {
       try {
-        const t = await gatewayFetch(`/top-ups/${topUpId}`);
+        const topUp = await gatewayFetch(`/top-ups/${topUpId}`);
         if (stopped) return;
-        if (t.status === 'credited') {
-          setCredits(t.credits);
+        if (topUp.status === 'credited') {
+          setCredits(topUp.credits);
           setPhase('credited');
           notifyBalanceChanged();
           window.history.replaceState(null, '', window.location.pathname);
@@ -92,21 +88,21 @@ export function TopUpReturn() {
 
   if (!topUpId) return null;
   const copy = {
-    processing: 'Payment received. Adding your credits…',
-    credited: `${credits == null ? 'Your' : new Intl.NumberFormat('en-US').format(credits)} credits added to your balance.`,
-    slow: 'Still processing. Your credits usually arrive within a few minutes. Don’t pay again; if they haven’t arrived within the hour, contact support.',
-    not_found: 'We couldn’t find that purchase on this account. If you were charged, contact support.',
+    processing: t("app.credits.packs.processing"),
+    credited: credits == null ? t('app.credits.packs.creditedUnknown') : t(pluralKey(t, locale, 'app.credits.packs.credited', credits), { count: number.format(credits) }),
+    slow: t("app.credits.packs.slow"),
+    not_found: t("app.credits.packs.notFound"),
   }[phase];
   return (
     <div role="status" aria-live="polite" className={`mt-4 rounded-lg border px-4 py-3 text-sm ${phase === 'credited' ? 'border-vx-money/40 bg-vx-money/[0.07] text-vx-money' : 'border-vx-border bg-vx-base/60 text-vx-fg-body'}`}>
-      {phase === 'processing' && <span className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted mr-2">PROCESSING</span>}
+      {phase === 'processing' && <span className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted me-2">{t("app.credits.packs.processingLabel")}</span>}
       {copy}
     </div>
   );
 }
 
 // "$10", not "$10.00": the approved wording (#99 item 1).
-const usd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', trailingZeroDisplay: 'stripIfInteger' });
+
 
 function median(nums) {
   if (!nums.length) return null;
@@ -126,6 +122,9 @@ function useTypicalCosts() {
 }
 
 export function TopUpPacks({ signedIn }) {
+  const { t, locale } = useI18n();
+  const number = new Intl.NumberFormat(localeTag(locale, 'en-US'));
+  const usd = new Intl.NumberFormat(localeTag(locale, 'en-US'), { style: 'currency', currency: 'USD', trailingZeroDisplay: 'stripIfInteger' });
   const [packs, setPacks] = useState(null);
   const [selected, setSelected] = useState(null);
   // One key per pack choice: a retry after a failed checkout reuses the same
@@ -141,16 +140,15 @@ export function TopUpPacks({ signedIn }) {
     let cancelled = false;
     gatewayFetch('/credit-packs')
       .then((b) => { if (!cancelled) setPacks(Array.isArray(b?.packs) ? b.packs : []); })
-      .catch(() => { if (!cancelled) setError('Credit packs are unavailable right now.'); });
+      .catch(() => { if (!cancelled) setError(t("app.credits.packs.unavailable")); });
     return () => { cancelled = true; };
-  }, [signedIn]);
+  }, [signedIn, t]);
 
   if (!signedIn) {
     return (
       <div className="mt-6">
         <Button variant="money" onClick={() => window.dispatchEvent(new CustomEvent('veyrnox:auth-required', { detail: { mode: 'sign_in' } }))}>
-          Sign in to buy credits
-        </Button>
+          {t("app.credits.packs.signIn")}</Button>
       </div>
     );
   }
@@ -174,7 +172,7 @@ export function TopUpPacks({ signedIn }) {
       window.location.assign(res.checkout_url);
     } catch (e) {
       const code = e instanceof GatewayError ? e.code : null;
-      setError(ERROR_COPY[code] || 'Checkout could not start. Nothing was charged. Try again.');
+      setError(tOr(t, `app.credits.packs.error.${code}`, code === 'account_frozen' ? ACCOUNT_PAUSED_COPY : t('app.credits.packs.failed')));
       setBusy(false);
     }
   }
@@ -182,35 +180,36 @@ export function TopUpPacks({ signedIn }) {
   return (
     <div className="mt-6">
       {packs == null && !error && (
-        <div className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">LOADING PACKS…</div>
+        <div className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">{t("app.credits.packs.loading")}</div>
       )}
       {packs && packs.length === 0 && (
-        <div className="text-sm text-vx-fg-muted">No credit packs are available right now.</div>
+        <div className="text-sm text-vx-fg-muted">{t("app.credits.packs.empty")}</div>
       )}
       {packs && packs.length > 0 && (
-        <fieldset>
-          <legend className="sr-only">Choose a credit pack</legend>
+        <fieldset data-testid="credit-packs">
+          <legend className="sr-only">{t("app.credits.packs.choose")}</legend>
           <div className="flex flex-wrap gap-2">
             {packs.map((p) => {
               const on = selected === p.id;
               return (
                 <label
                   key={p.id}
+                  data-credit-pack={p.id}
                   className={`flex flex-col items-start rounded-xl border px-4 py-3 cursor-pointer transition-colors duration-150 has-focus-visible:outline-solid has-focus-visible:outline-2 has-focus-visible:outline-vx-accent ${on ? 'border-vx-money bg-vx-money/[0.07] shadow-[inset_0_0_0_1px_rgb(var(--vx-money))]' : 'border-vx-border bg-vx-base/60 hover:border-vx-money/60'}`}
                 >
                   <input type="radio" name="credit-pack" value={p.id} checked={on} onChange={() => { setSelected(p.id); setIdempotencyKey(makeIdempotencyKey()); }} className="sr-only" />
-                  <span className="flex w-full items-center justify-between gap-3 font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">CREDIT PACK{on && <span aria-hidden="true" className="text-vx-money">✓</span>}</span>
-                  <span className="font-vx-mono text-[18px] font-bold text-vx-money mt-1 vx-num">+{new Intl.NumberFormat('en-US').format(p.credits)} cr</span>
+                  <span className="flex w-full items-center justify-between gap-3 font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">{t("app.credits.packs.pack")}{on && <span aria-hidden="true" className="text-vx-money">✓</span>}</span>
+                  <span className="font-vx-mono text-[18px] font-bold text-vx-money mt-1 vx-num">+{number.format(p.credits)} cr</span>
                   <span className="font-vx-mono text-[12px] text-vx-fg-body mt-1">
-                    {new Intl.NumberFormat('en-US').format(p.credits)} credits — {usd.format(p.price_usd_cents / 100)} <span className="text-vx-fg-muted">+ applicable tax</span>
+                    {t(pluralKey(t, locale, 'app.credits.packs.price', p.credits), { count: number.format(p.credits), price: usd.format(p.price_usd_cents / 100) })} <span className="text-vx-fg-muted">{t("app.credits.packs.tax")}</span>
                   </span>
-                  <span className="text-[11px] text-vx-fg-muted mt-1">Never expire</span>
+                  <span className="text-[11px] text-vx-fg-muted mt-1">{t("app.credits.packs.neverExpire")}</span>
                   {typical && (
                     <span className="text-[11px] text-vx-fg-muted">
                       ≈ {[
-                        typical.video && `${Math.floor(p.credits / typical.video)} 5s videos`,
-                        typical.image && `${Math.floor(p.credits / typical.image)} images`,
-                      ].filter(Boolean).join(' or ')}
+                        typical.video && t(pluralKey(t, locale, 'app.credits.packs.videos', Math.floor(p.credits / typical.video)), { count: number.format(Math.floor(p.credits / typical.video)) }),
+                        typical.image && t(pluralKey(t, locale, 'app.credits.packs.images', Math.floor(p.credits / typical.image)), { count: number.format(Math.floor(p.credits / typical.image)) }),
+                      ].filter(Boolean).join(t("app.credits.packs.or"))}
                     </span>
                   )}
                 </label>
@@ -219,22 +218,21 @@ export function TopUpPacks({ signedIn }) {
           </div>
 
           <p className="mt-3 text-[12px] text-vx-fg-muted max-w-[640px]">
-            Prices are in USD and exclude tax. Stripe, Inc. is the Merchant of Record for credit pack purchases and charges and remits any VAT or sales tax for your location; your total including tax is shown at checkout before you pay.
-          </p>
+            {t("pricing.packs.tax")}</p>
 
           <label className="mt-4 flex items-start gap-2 text-sm text-vx-fg-body cursor-pointer">
             <input type="checkbox" required checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-1 accent-vx-accent" />
             <span>
-              {SUPPLY_CONSENT_TEXT}{' '}
-              <a href="/legal/refund" className="underline text-vx-fg-muted">Refund policy</a>
+              <span lang="en" dir="ltr">{SUPPLY_CONSENT_TEXT}</span>{' '}
+              <a href="/legal/refund" className="underline text-vx-fg-muted">{t("app.credits.packs.refund")}</a>
             </span>
           </label>
 
           <div className="mt-4 flex items-center gap-3">
-            <Button variant="money" className="min-w-[11.5rem] justify-center" onClick={buy} disabled={!selected || !consent || busy}>
-              {busy ? 'Opening checkout…' : 'Buy credits'}
+            <Button data-testid="credit-packs-buy" variant="money" className="min-w-[11.5rem] justify-center" onClick={buy} disabled={!selected || !consent || busy}>
+              {busy ? t("app.publish.plan.opening") : t("pricing.packs.buy")}
             </Button>
-            <span className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-faint">SECURE CHECKOUT BY STRIPE · STRIPE, INC. IS MERCHANT OF RECORD</span>
+            <span className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-faint">{t("app.credits.packs.secure")}</span>
           </div>
         </fieldset>
       )}
