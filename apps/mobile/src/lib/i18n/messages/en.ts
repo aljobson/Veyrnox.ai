@@ -1621,6 +1621,9 @@ const en = {
     'commerce.err.notOpen': 'Products are not open yet.',
     'commerce.err.rate': 'Too many requests. Wait a moment and try again.',
     'commerce.err.later': 'Products are not available right now. Try again later.',
+    // App-only: credits moments in Create (ADR-0220).
+    'create.short.one': 'You have {have} credits and this costs {need}. You need {count} more.',
+    'create.short.other': 'You have {have} credits and this costs {need}. You need {count} more.',
     // App-only: tools for your own files (ADR-0221, parity P2).
     'toolsDir.entry': 'Tools for your own files',
     'toolsDir.entryHint': 'Upscale, remove a background, lip sync and more',
