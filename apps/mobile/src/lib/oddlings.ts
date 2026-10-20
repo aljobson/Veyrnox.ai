@@ -23,6 +23,8 @@ export interface OddlingTab {
 }
 
 export const ODDLING_TABS: readonly OddlingTab[] = cast.tabs;
+// The five characters the web features first (a mix of body, hair, fashion and a creature).
+export const HERO_IDS: readonly string[] = cast.heroes;
 export const ODDLINGS: readonly Oddling[] = cast.characters as unknown as Oddling[];
 
 export const KIND_FILTERS: readonly { id: OddlingKind; labelKey: string }[] = [

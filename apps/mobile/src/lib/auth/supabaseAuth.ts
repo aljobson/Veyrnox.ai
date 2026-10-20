@@ -16,7 +16,7 @@ export class AuthError extends Error {
 
 export type OAuthProvider = 'apple' | 'google';
 
-interface TokenResponse {
+export interface TokenResponse {
     access_token?: string;
     refresh_token?: string;
     expires_in?: number;
@@ -24,7 +24,7 @@ interface TokenResponse {
     error?: string;
 }
 
-function toSession(body: TokenResponse, now: number): Session {
+export function toSession(body: TokenResponse, now: number): Session {
     if (!body.access_token || !body.refresh_token || typeof body.expires_in !== 'number') {
         throw new AuthError(502, 'malformed_token_response');
     }

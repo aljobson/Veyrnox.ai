@@ -1,21 +1,22 @@
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { MIN_TARGET } from '../../lib/a11y';
 import { t } from '../../lib/i18n';
-import { SCENES, SHOWS, TONES, type Picks } from '../../lib/oddlingsBuilder';
+import { MOTIONS, SCENES, SHOWS, TONES, type Picks } from '../../lib/oddlingsBuilder';
 import { colors } from '../../theme';
 
 interface Props {
     picks: Picks;
     scene: string;
+    motionId: string;
     onText: (key: string, value: string) => void;
-    onOpen: (key: 'oddling_voice' | 'oddling_show') => void;
+    onOpen: (key: 'oddling_voice' | 'oddling_show' | 'motion') => void;
     onScene: (value: string) => void;
 }
 
 const known = (table: readonly (readonly [string, string])[], value: string | undefined) => (table.some(([label]) => label === value) ? (value as string) : t('oddlings.build.notSet'));
 
 // The creator's own words: name, voice, why people follow them, the recurring show, canon and the first scene.
-export function BuilderFields({ picks, scene, onText, onOpen, onScene }: Props) {
+export function BuilderFields({ picks, scene, motionId, onText, onOpen, onScene }: Props) {
     return (
         <View>
             <Label text={t('oddlings.build.name')} />
@@ -28,6 +29,8 @@ export function BuilderFields({ picks, scene, onText, onOpen, onScene }: Props) 
             <Row text={known(SHOWS, picks.oddling_show)} label={t('oddlings.build.show')} onPress={() => onOpen('oddling_show')} />
             <Label text={t('oddlings.build.canon')} />
             <TextInput style={[styles.input, styles.multi]} value={picks.oddling_rule || ''} maxLength={160} multiline onChangeText={(v) => onText('oddling_rule', v)} accessibilityLabel={t('oddlings.build.canon')} />
+            <Label text={t('oddlings.build.motion')} />
+            <Row text={MOTIONS.find((m) => m.id === motionId)?.name ?? MOTIONS[0].name} label={t('oddlings.build.motion')} onPress={() => onOpen('motion')} />
             <Label text={t('oddlings.build.scene')} />
             <TextInput style={[styles.input, styles.multi]} value={scene} maxLength={300} multiline onChangeText={onScene} accessibilityLabel={t('oddlings.build.scene')} />
             <View style={styles.chips}>

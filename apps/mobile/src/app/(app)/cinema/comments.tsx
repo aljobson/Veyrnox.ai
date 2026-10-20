@@ -5,7 +5,7 @@ import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Platform, Pre
 import { useAuth } from '../../../auth/AuthProvider';
 import { touchTarget } from '../../../lib/a11y';
 import { blockMember, blocksErrorKey } from '../../../lib/cinemaBlocks';
-import { BODY_MAX, bodyOk, commentsErrorKey, fetchComments, parseComments, submitComment, type Comment, type OwnComment } from '../../../lib/cinemaComments';
+import { BODY_MAX, bodyOk, commentsErrorKey, fetchComments, parseComments, submitComment, withdrawComment, type Comment, type OwnComment } from '../../../lib/cinemaComments';
 import { t } from '../../../lib/i18n';
 import { colors } from '../../../theme';
 
@@ -46,6 +46,26 @@ export default function Comments() {
     useEffect(() => {
         load();
     }, [load]);
+
+    // Withdrawing takes the person's own comment down; it cannot be put back, so ask first.
+    function withdraw(o: OwnComment) {
+        Alert.alert(t('comments.withdrawTitle'), t('comments.withdrawBody'), [
+            { text: t('comments.withdrawKeep'), style: 'cancel' },
+            {
+                text: t('comments.withdraw'),
+                style: 'destructive',
+                onPress: async () => {
+                    try {
+                        await withdrawComment(api, o.id, Crypto.randomUUID());
+                        setNote({ text: t('comments.withdrawn'), bad: false });
+                        await load();
+                    } catch (err) {
+                        setNote({ text: t(commentsErrorKey(err)), bad: true });
+                    }
+                },
+            },
+        ]);
+    }
 
     async function loadMore() {
         if (!id || !next || more) return;
@@ -145,6 +165,11 @@ export default function Comments() {
                                         <View key={o.id} style={styles.own}>
                                             <Text style={styles.body}>{o.body}</Text>
                                             <Text style={styles.muted}>{t(STATUS[o.status] ?? 'comments.status.pending')}{o.createdAt ? ` · ${when(o.createdAt)}` : ''}</Text>
+                                            {o.status === 'pending' || o.status === 'approved' ? (
+                                                <Pressable accessibilityRole="button" accessibilityLabel={t('comments.withdrawLabel')} style={[touchTarget, styles.act]} onPress={() => withdraw(o)}>
+                                                    <Text style={styles.link}>{t('comments.withdraw')}</Text>
+                                                </Pressable>
+                                            ) : null}
                                         </View>
                                     ))}
                                 </View>

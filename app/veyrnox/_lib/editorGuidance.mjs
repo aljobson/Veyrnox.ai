@@ -26,6 +26,15 @@ export function timelineGuidance(tl) {
 
 const hasClipBefore = (tl, clip) => tl.video.some(c => c.trackId === clip.trackId && c.start + c.len === clip.start);
 
+/** Timeline joins where the incoming clip can take a transition. */
+export function transitionJunctions(tl, trackId) {
+    const clips = tl.video.filter(clip => clip.trackId === trackId).sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
+    return clips.flatMap(incoming => {
+        const outgoing = clips.find(clip => clip.id !== incoming.id && clip.start + clip.len === incoming.start);
+        return outgoing ? [{ frame: incoming.start, incoming, outgoing }] : [];
+    });
+}
+
 /** Why the Transitions panel cannot apply anything yet, or null when it can. */
 export function transitionGuidance(tl, selected) {
     if (!selected) {

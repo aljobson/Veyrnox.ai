@@ -53,10 +53,10 @@ export async function loadDoc(store: DocStore): Promise<PassportDoc> {
 }
 
 // Saving twice for the same loaded passport updates it instead of adding a copy.
-export async function savePassport(store: DocStore, picks: Picks, now: number, existingId?: string | null): Promise<{ ok: boolean; doc: PassportDoc; item: Passport | null }> {
+export async function savePassport(store: DocStore, picks: Picks, now: number, existingId?: string | null, motionId = ''): Promise<{ ok: boolean; doc: PassportDoc; item: Passport | null }> {
     const doc = await loadDoc(store);
     const clean = sanitizePicks(picks);
-    const item = cleanItem({ id: existingId && doc.items.some((i) => i.id === existingId) ? existingId : `oddling-${now}-${Math.random().toString(36).slice(2, 8)}`, savedAt: now, picks: clean });
+    const item = cleanItem({ id: existingId && doc.items.some((i) => i.id === existingId) ? existingId : `oddling-${now}-${Math.random().toString(36).slice(2, 8)}`, savedAt: now, picks: clean, motionId });
     if (!item) return { ok: false, doc, item: null };
     const next: PassportDoc = { items: [item, ...doc.items.filter((i) => i.id !== item.id)].slice(0, PASSPORT_LIMIT), draft: { savedAt: now, picks: clean } };
     try {
