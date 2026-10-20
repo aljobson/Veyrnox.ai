@@ -129,6 +129,8 @@ export interface ResolveDeps {
     readonly getThread: () => Promise<{ messages: ChatMessage[] }>;
     readonly getJob: (id: string) => Promise<JobRead>;
     readonly wait?: (ms: number) => Promise<void>;
+    readonly waits?: readonly number[];
+    readonly limitMs?: number;
 }
 
 // What became of a send that was stopped or cut off. With a job id (the `start` event) the turn is looked for by it.
@@ -140,7 +142,7 @@ export async function resolveStoppedSend(deps: ResolveDeps, send: { key: string;
         if (asked.closed) return 'nothing';
         jobId = asked.job;
     }
-    return settleStoppedTurn({ jobId, text: send.text, knownIds: send.knownIds, getThread: deps.getThread, getJob: deps.getJob, wait: deps.wait });
+    return settleStoppedTurn({ jobId, text: send.text, knownIds: send.knownIds, getThread: deps.getThread, getJob: deps.getJob, wait: deps.wait, waits: deps.waits, limitMs: deps.limitMs });
 }
 
 // The words for each ending; they always say whether credits were used.
@@ -155,4 +157,29 @@ export function stopNoticeKey(outcome: StopOutcome): string {
         default:
             return 'chat.stop.pending';
     }
+}
+
+// A long reply can outlive the phone's attention: iOS suspends the app, the stream goes quiet, and on return it may be dead or
+// simply silent. The server finishes the turn either way (it is a job that saves the reply in the step that ends it), so the
+// phone waits for the job instead of cutting the reader off, which the server would take for Stop and end early. These bounds
+// are for that wait: a look every 1.5 s for about a minute.
+export const RESUME_WAIT_MS = 1500;
+export const RESUME_LIMIT_MS = 65000;
+export const RESUME_WAITS: readonly number[] = Array.from({ length: 42 }, () => RESUME_WAIT_MS);
+
+// After the app returns to the foreground mid-reply and nothing has arrived for a while. Same outcomes as a stopped send, with the
+// longer wait; `pending` means the turn is still running and the screen keeps waiting on its own stream.
+export const resolveResumedSend = (deps: ResolveDeps, send: { key: string; jobId: string | null; text: string; knownIds: ReadonlySet<string> }): Promise<StopOutcome> =>
+    resolveStoppedSend({ ...deps, waits: deps.waits ?? RESUME_WAITS, limitMs: deps.limitMs ?? RESUME_LIMIT_MS }, send);
+
+// How long the stream may stay silent after returning to the foreground before the phone starts looking for the turn. A live
+// reply sends text every moment, so silence this long means the connection did not survive the suspension.
+export const RESUME_QUIET_MS = 4000;
+export const isQuiet = (lastEventAt: number, now: number, quietMs: number = RESUME_QUIET_MS): boolean => now - lastEventAt >= quietMs;
+
+// The words when the turn was found after a return from the background (not after the person pressed Stop).
+export function resumeNoticeKey(outcome: StopOutcome): string {
+    if (outcome === 'saved') return 'chat.resume.saved';
+    if (outcome === 'nothing') return 'chat.resume.nothing';
+    return stopNoticeKey(outcome) === 'chat.stop.unsaved' ? 'chat.resume.unsaved' : 'chat.resume.pending';
 }
