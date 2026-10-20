@@ -1,4 +1,5 @@
 'use client';
+import LegalLink from '../../../../components/LegalLink';
 import { helperCopy } from '../../../../lib/i18n/helperCopy.mjs';
 import { tOr, pluralKey } from '../../../../lib/i18n/translate.mjs';
 import { rich } from '../../../../lib/i18n/rich';
@@ -578,7 +579,7 @@ export default function CreateStudio() {
             {model?.gated ? t("app.create.premiumClosed") : t("mobile.refund")}
           </div>
           <p className="mt-3 text-center text-[11px] leading-relaxed text-vx-fg-muted">
-            {rich(t('app.create.commercial'),{terms:<Link href="/legal/terms" className="text-vx-accent underline underline-offset-2">{t('home.publish.terms')}</Link>})}
+            {rich(t('app.create.commercial'),{terms:<LegalLink element="Link" href="/legal/terms" className="text-vx-accent underline underline-offset-2">{t('home.publish.terms')}</LegalLink>})}
           </p>
           {balance != null && cost > balance && !model?.gated && (
             <div className="mt-4 rounded-xl border border-vx-money/40 bg-vx-money/[0.06] p-4 text-sm text-vx-fg-body">

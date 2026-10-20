@@ -1,4 +1,5 @@
 'use client';
+import LegalLink from '../../../../../components/LegalLink';
 import { localeTag } from '../../../../../lib/i18n/locales.mjs';
 import { tOr } from '../../../../../lib/i18n/translate.mjs';
 import { useI18n } from '../../../../../components/I18nProvider';
@@ -49,7 +50,7 @@ function Appeals() {
     <>
       <Link href="/app/account" className="text-sm underline">{t("app.account.appeals.back")}</Link>
       <h1 className="text-3xl font-black mt-4 mb-2">{t("app.account.appeals")}</h1>
-      <p className="text-vx-fg-body mb-6 max-w-[640px]">{t("app.account.appeals.introBefore")}<a href="/legal/aup" className="underline">{t("app.account.appeals.policy")}</a>{t("app.account.appeals.introAfter")}</p>
+      <p className="text-vx-fg-body mb-6 max-w-[640px]">{t("app.account.appeals.introBefore")}<LegalLink element="a" href="/legal/aup" className="underline">{t("app.account.appeals.policy")}</LegalLink>{t("app.account.appeals.introAfter")}</p>
       {data?.hold_until && (
         <p role="status" className="mb-6 rounded-lg border border-vx-border bg-vx-panel p-4 text-sm">
           {t('app.account.appeals.hold', { date: when(data.hold_until) })}

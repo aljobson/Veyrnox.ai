@@ -69,11 +69,11 @@ test('the disclosure cannot drift from the storage: the notice, the privacy poli
     assert.match(chrome, /<ReferralBridge \/>/);
     assert.match(chrome, /t\('chrome.storageBody'\)/);
     assert.match(read('../lib/i18n/messages/en.mjs'), /referral code for up to three days/);
-    const privacy = read('../app/legal/privacy/page.js');
+    const privacy = read('../lib/i18n/messages/legal/en/privacy.mjs');
     assert.match(privacy, /referral link[\s\S]{0,80}local storage for up to three days/);
-    assert.match(privacy, /<h2>Referrals<\/h2>/);
-    assert.match(read('../app/legal/terms/page.js'), /Referral rewards:[\s\S]{0,200}10% of that pack/);
-    assert.match(read('../app/legal/refund/page.js'), /reverses the referral reward/);
+    assert.match(privacy, /"Referrals"/);
+    assert.match(read('../lib/i18n/messages/legal/en/terms.mjs'), /Referral rewards:[\s\S]{0,200}10% of that pack/);
+    assert.match(read('../lib/i18n/messages/legal/en/refund.mjs'), /reverses the referral reward/);
     assert.equal(REFERRAL_TTL_MS, 3 * 24 * 60 * 60 * 1000, 'three days, as the copy says');
 });
 
