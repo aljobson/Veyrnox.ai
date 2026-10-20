@@ -18,7 +18,7 @@ export async function markWelcomeSeen(): Promise<void> {
     }
 }
 
-// Three cards, shown once and skippable on every one. Vey waves on the first; the second quotes the real free credits.
+// Three cards, shown once and skippable on every one. Vey waves on the first and last; the second quotes the real free credits.
 export default function Welcome() {
     const router = useRouter();
     const { api } = useAuth();
@@ -66,6 +66,9 @@ export default function Welcome() {
                 ) : null}
                 {card === 'start' ? (
                     <View style={styles.card}>
+                        <View style={styles.hero} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+                            <VeyCharacter width={160} />
+                        </View>
                         <Text style={styles.title} accessibilityRole="header">{t('welcome.start.title')}</Text>
                         <Text style={styles.text}>{t('welcome.start.body')}</Text>
                     </View>
