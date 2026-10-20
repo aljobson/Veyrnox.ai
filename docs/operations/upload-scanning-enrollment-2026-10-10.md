@@ -20,6 +20,12 @@ The [terms](https://www.microsoft.com/en-us/photodna/termsofuse) incorporate Mic
 
 Cloudflare's [CSAM Scanning Tool](https://developers.cloudflare.com/cache/reference/csam-scanning/) compares content served through its website cache, then notifies the operator and attempts blocking. That documented placement does not establish pre-storage scanning of private R2 uploads or Cinema transfers. It can be considered additional coverage after a separate terms review; it does not satisfy D1's ingest exit check.
 
+## Code state (2026-10-20)
+
+`lib/uploadAdmission.js` is the fail-closed seam. `UPLOAD_HASH_MATCH_REQUIRED` is off by default and is not set in production. When it is `"true"` and `ADMISSION_PROVIDERS` is empty (it is), these refuse with `upload_admission_unavailable` (503): `POST /api/v1/uploads`, the social upload `reserve` action, and `POST /api/v1/projects/:id/assets`; and `resolveUploadedSource` (generation and chat sources) refuses with `source_not_admitted`, so an object stored before the flag was set is not handed to a provider either. Our own finished generations are not gated. The Cinema transfer routes are not wired: their safety hold already prevents new starts.
+
+This is not a matcher. No receipt table, no adapter and no inspection exist, and none can be written until the account's documented contract is in hand. The adapter PR registers a provider in `ADMISSION_PROVIDERS`, adds the service-only receipt (owner, SHA-256, size, MIME, policy version, reservation) and replaces the browser PUT with trusted inspection, as the contract below describes. Setting the flag before then closes every upload surface.
+
 ## Enrollment packet to prepare
 
 | Information | Owner-supplied or confirmed value |

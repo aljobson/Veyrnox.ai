@@ -22,12 +22,16 @@ import { ApiError } from '../../../../../../packages/security/errors.js';
 import { exactKeys, idempotencyKey, readJson, uuid } from '../../../../../../packages/security/input.js';
 import { checkDeclared } from '../../../../../../lib/uploadSource.js';
 import { ASSET_URL_TTL_SECONDS } from '../../../../../../lib/projectAssets.js';
+import { admissionAvailable } from '../../../../../../lib/uploadAdmission.js';
 import { presignPutUrl, isConfigured, envConfig } from '../../../../../../packages/adapters/r2.js';
 
 export async function POST(request, { params }) {
   return protectedRoute(request, async context => {
     // Cloud document saving can open independently of device-media upload acceptance.
     if (process.env.PROJECT_MEDIA_UPLOADS_ENABLED !== 'true') throw new ApiError(404, 'NOT_FOUND', 'The resource was not found.');
+    // Known-CSAM hash matching gates every public upload surface; with it
+    // required and no matcher enrolled, nothing is reserved or signed.
+    if (!admissionAvailable().ok) throw new ApiError(503, 'UPLOAD_ADMISSION_UNAVAILABLE', 'Uploads are temporarily unavailable.');
     const id = uuid((await params).id).toLowerCase();
     const body = await readJson(request, 4096);
     exactKeys(body, ['media_type', 'size_bytes']);

@@ -1,6 +1,6 @@
 # PRD — Face Filters & Media Authenticity
 
-**Status:** Draft · 2026-09-18 · status lines updated 2026-10-08 against `main` at `42150476`. The upload spine (§5) is built; no Track A filter is in the catalog; A7/A8 and Track B are blocked.
+**Status:** Draft · 2026-09-18 · status lines updated 2026-10-08 against `main` at `42150476`. The upload spine (§5) is built; A1-A5 are staged inactive in the catalog (0356, 2026-10-20) and listed on the Tools page; A6 is not staged; A7/A8 and Track B are blocked. Upload hash matching has a fail-closed gate but no matching service.
 **Owner:** product owner (Al Jobson)
 **Predecessors:** [ADR-0000](../adr/0000-product-strategy.md) (Replacer), [ADR-0005](../adr/0005-phase-0-business-preconditions.md) (Phase-0 preconditions), [ADR-0007](../adr/0007-legacy-muapi-proxy-deprecation.md) (upload proxy retired), [ADR-0008](../adr/0008-asset-retention-policy-and-sweep.md) (retention), [ADR-0017](../adr/0017-c2pa-claims-withdrawn.md) (C2PA claims withdrawn)
 **Language:** every term used here is defined in [CONTEXT.md](../../CONTEXT.md). This document adds none.
@@ -75,6 +75,8 @@ A1–A6 are the launch set. **A7 and A8 do not ship until §6 is satisfied.**
 
 *Status 2026-10-08:* A1-A5 produced real output in Slice 0 (cost unread). A6 not run. A1-A8: no catalog row, nothing active, no Studio surface.
 
+*Status 2026-10-20:* migration 0356 stages A1-A5 as `face-retouch`, `face-enhance`, `face-relight`, `face-makeup`, `face-age`, all `active = false`, at fal's list prices (read from the model pages, not yet checked against a billed run). Their capability records pin the safety checker on, one output, and a 1 MP canvas for A3. A5 cannot be asked for an age under 18. The existing Tools page (`/tools` and the phone's tool directory) groups them under "Face filters" once a row is active; no new surface was built. A6 stays unstaged: it was never run, costs $0.10-$0.20 per second, and Light-X's inputs are conditional. A7/A8 are not staged.
+
 ### Track B
 
 | # | Feature | User value | Provider | Status |
@@ -146,8 +148,12 @@ page); the wiring to the ADR-0005 §6 designated agent is unverified, and the
 DMCA agent filing is still a product launch blocker. (4) face-reference
 retention: uploads are swept at 24 hours or within minutes of a finished job;
 deletion on account closure is unverified. (5) published statement: not found.
-Separately, **CSAM hash matching (ADR-0025 §8.1) has no code and no chosen
-service**, and gates any public upload surface.
+Separately, **CSAM hash matching (ADR-0025 §8.1) has no chosen service**, and
+gates any public upload surface. *2026-10-20:* `lib/uploadAdmission.js` is the
+fail-closed seam: with `UPLOAD_HASH_MATCH_REQUIRED=true` and no enrolled
+adapter, every path that mints a browser PUT, and every hand-off of a stored
+upload to a provider, refuses. It is off in production, so nothing changes
+until a matcher is enrolled; there is still no matching code.
 
 A1–A6 carry none of this weight — they modify the user's own photo and produce a
 photo of the same person. That asymmetry is why the launch set stops at A6.

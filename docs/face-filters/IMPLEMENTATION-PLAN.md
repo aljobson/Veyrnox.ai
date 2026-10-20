@@ -1,6 +1,6 @@
 # Implementation Plan — Face Filters
 
-**Status:** Draft · 2026-09-18 · slice status updated 2026-10-08 against `main` at `42150476`. Slices 1-4 done (#187); Slice 0 partly done; Slices 5-9 not started.
+**Status:** Draft · 2026-09-18 · slice status updated 2026-10-08 against `main` at `42150476`. Slices 1-4 done (#187); Slice 0 partly done; Slice 5 done for A1-A5 (0356, 2026-10-20); Slices 6-9 not started.
 **Reads with:** [PRD.md](PRD.md) · [TRD.md](TRD.md) · [APP-FLOW.md](APP-FLOW.md) · [UI-UX.md](UI-UX.md) · [SCHEMA.md](SCHEMA.md)
 
 Slices ship in order, each one PR-sized. A slice does not merge before its
@@ -14,8 +14,8 @@ not done.
 | 2 Upload endpoint | done (#187), since extended (audio, rate limit, consent, caps) |
 | 3 Content verification | done (#187) |
 | 4 Gateway accepts a source | done (#187) |
-| 5 Catalog rows, inactive | not started; no Track A row in any migration through 0227 |
-| 6 Studio Transform mode | not started as specified; per-slot upload field exists |
+| 5 Catalog rows, inactive | A1-A5 done 2026-10-20 (0356); A6 left out on purpose |
+| 6 Studio Transform mode | not built as specified; the Tools page lists the filters under "Face filters" once active |
 | 7 Result and Library | not started |
 | 8 Upload retention | partly: sweeps exist; account-closure deletion unverified |
 | 9 Activate | nothing to activate |
@@ -139,7 +139,8 @@ No catalog migration until that exists.
 - Next free number on `main`; check open PRs first.
 - **Exit gate:** migration applies cleanly twice; `migration-ledger` green; rows
   present and inactive; no UI change visible.
-- **Status 2026-10-08: not started.** Next free number on `main` is 0228 (check open PRs). The CI rule for new catalog UPDATE migrations (exact positive row count) applies to the Slice 9 flip, and `apply-migrations` skips silently when a file is numbered below production's latest.
+- **Status 2026-10-20: A1-A5 done** in `0356_face_filters_staged.sql` (ids `face-retouch`, `face-enhance`, `face-relight`, `face-makeup`, `face-age`; 3, 3, 7, 3, 3 Credits at the ADR-0014 floor), with capability records in `lib/additionalModelCapabilities.js` and a "Face filters" group on the Tools page (web and phone). Prices are fal's list prices, not a billed run. A6 is not staged (never run, per-second price, conditional inputs). The exit gate (applies cleanly twice, `migration-ledger` green) is checked by CI and the apply workflow, not from here.
+- *Earlier status 2026-10-08: not started.* Next free number on `main` was 0228 (check open PRs). The CI rule for new catalog UPDATE migrations (exact positive row count) applies to the Slice 9 flip, and `apply-migrations` skips silently when a file is numbered below production's latest.
 
 ## Slice 6 — Studio Transform mode
 
@@ -188,6 +189,8 @@ ADR-0005 §6 designated agent, shortened retention for face references, and a
 published statement of use. That is its own ADR and its own plan.
 
 *Status 2026-10-08: unchanged, and no ADR drafted. Closest existing pieces: the consent attestation (0096, 0146) and violation records (0146). CSAM hash matching (ADR-0025 §8.1, product plan D1) has no code; it gates any public upload surface, including Slice 6.*
+
+*Status 2026-10-20: the gate has a fail-closed seam (`lib/uploadAdmission.js`, `UPLOAD_HASH_MATCH_REQUIRED`), still no matching code. Activation of any filter waits on an enrolled matcher as well as on billed prices.*
 
 ## Blocked — Track B (authenticity)
 

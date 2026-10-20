@@ -21,6 +21,7 @@ import { NextResponse } from 'next/server';
 import { rpc, envConfig } from '../../../../packages/db/supabase-client.js';
 import { presignPutUrl, listObjects, isConfigured as r2IsConfigured, envConfig as r2EnvConfig } from '../../../../packages/adapters/r2.js';
 import { checkDeclared, uploadKeyFor, UPLOAD_URL_TTL_SECONDS, UPLOAD_PREFIX } from '../../../../lib/uploadSource.js';
+import { admissionAvailable } from '../../../../lib/uploadAdmission.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -42,6 +43,11 @@ export async function POST(req) {
     if (!cfg.supabaseUrl || !cfg.serviceRoleKey || !r2IsConfigured(r2cfg)) {
         return NextResponse.json({ error: 'not_configured' }, { status: 503 });
     }
+
+    // Known-CSAM hash matching gates every public upload surface. With the
+    // gate required and no matcher enrolled, no browser PUT is minted.
+    const admission = admissionAvailable();
+    if (!admission.ok) return NextResponse.json({ error: admission.error }, { status: 503, headers: { 'Cache-Control': 'no-store' } });
 
     let body;
     try { body = await req.json(); } catch { return NextResponse.json({ error: 'invalid_json' }, { status: 400 }); }
