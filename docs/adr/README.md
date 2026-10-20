@@ -7,6 +7,7 @@ Phase-0 decision-support documents for the target architecture at `/Users/aljobs
 | ADR | Status | Summary | Blocks |
 |-----|--------|---------|--------|
 | [ADR-0183 — Mobile: chat list search and delete (parity plan P3)](0183-mobile-chat-list-search-delete.md) | **Proposed 2026-10-19** | Title search and an asked-first Delete on each chat row |
+| [ADR-0166 — Mobile: Publish reports, PDF and slide download and share (parity plan P5)](0166-mobile-publish-reports.md) | **Proposed 2026-10-19** | Saved reports list; PDF and slides downloaded to the cache and shared; template editing not built |
 | [ADR-0180 — Mobile: make media from a chat (parity plan P3)](0180-mobile-chat-make-media.md) | **Proposed 2026-10-19** | Make button in chat: kind, cheapest-first models with prices, price on the button; file-needing models stay in Create |
 | [ADR-0182 — Mobile: Film skill chats (parity plan P3)](0182-mobile-film-skill-chats.md) | **Proposed 2026-10-19** | The web's seven Film skills in the New chat picker; help write, never make or lock |
 | [ADR-0171 — Mobile: chat reply through iOS suspension (parity plan P3, S6)](0171-mobile-chat-long-turn-resume.md) | **Proposed 2026-10-19** | Return from background: look for the job for about a minute, never cut the reader off; one charge on a retry |
@@ -244,3 +245,4 @@ These existed without an index row. Status is as written in each file. Four numb
 | [ADR-0094 — Explicit Library source slots for editor generation](0094-explicit-generation-source-slots.md) | Implemented; hosted qualification separate | No catalog activation, price change or production SQL. | — |
 | [ADR-0095 — Bounded vocal/instrument separation](0095-editor-audio-stems.md) | Preparation; production flag disabled | `fal-ai/demucs` six stems behind `EDITOR_AUDIO_STEMS_ENABLED`; migration 0291. | Owner enablement |
 | [ADR-0160 — Read-only mode when Supabase is down](0160-supabase-outage-read-only-mode.md) | Proposed 2026-10-19 | Status endpoint, outage banner on web and mobile, saved price list served through an outage. | Production check with a real or simulated outage |
+| [ADR-0191 — Mobile empty states and low-balance prompt](0191-mobile-empty-states.md) | Proposed 2026-10-20 | `EmptyState` with one next action on Library and Posts; a Buy credits note on Explore when the balance cannot start anything |
