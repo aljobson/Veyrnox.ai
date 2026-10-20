@@ -43,6 +43,7 @@ import area_empty from './en/empty';
 import area_explore from './en/explore';
 import area_form from './en/form';
 import area_help from './en/help';
+import area_helpGuides from './en/helpGuides';
 import area_home from './en/home';
 import area_inbox from './en/inbox';
 import area_insights from './en/insights';
@@ -129,6 +130,7 @@ const catalog = {
     ...area_explore,
     ...area_form,
     ...area_help,
+    ...area_helpGuides,
     ...area_home,
     ...area_inbox,
     ...area_insights,
