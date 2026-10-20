@@ -1,3 +1,5 @@
+import { EmptyState } from '../../../components/EmptyState';
+import { t as tr } from '../../../lib/i18n';
 import { Stack, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
@@ -62,7 +64,7 @@ export default function Posts() {
                     onEndReached={loadMore}
                     onEndReachedThreshold={0.4}
                     refreshControl={<RefreshControl refreshing={refreshing} tintColor={colors.accent} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}
-                    ListEmptyComponent={<Text style={styles.muted}>No posts yet.</Text>}
+                    ListEmptyComponent={<EmptyState title={tr('empty.posts.title')} body={tr('empty.posts.body')} actionLabel={tr('empty.posts.action')} href="/publish/compose" />}
                     renderItem={({ item }) => (
                         <Pressable accessibilityRole="button" accessibilityLabel={`${postStatusLabel(item.status)} post: ${item.text.slice(0, 60)}`} style={styles.row} onPress={() => router.push({ pathname: '/publish/post/[id]', params: { id: item.id } })}>
                             <Text style={[styles.status, (item.status === 'failed') && styles.bad]}>{postStatusLabel(item.status)}{item.scheduledAt ? `  ·  ${when(item.scheduledAt)}` : ''}</Text>

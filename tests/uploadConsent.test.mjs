@@ -7,7 +7,7 @@ const route = read('../app/api/v1/generations/route.js');
 const page = read('../app/veyrnox/app/create/page.js');
 const confirmation = read('../app/veyrnox/_components/SourceRightsConfirmation.jsx');
 const errors = read('../app/veyrnox/_lib/createErrors.js');
-const aup = read('../app/legal/aup/page.js');
+const aup = read('../lib/i18n/messages/legal/en/aup.mjs');
 const legalNav = read('../app/legal/_lib/Legal.js');
 const footer = read('../app/veyrnox/_sections/footer.js');
 const sitemap = read('../app/sitemap.js');
@@ -48,11 +48,11 @@ test('the create page blocks Generate until the box is ticked, and sends it', ()
 });
 
 test('the Acceptable Use Policy is published and linked', () => {
-    assert.match(aup, /canonical: '\/legal\/aup'/);
+    assert.match(read('../app/legal/aup/page.js'), /legalMetadata\('aup'\)/);
     for (const rule of [/Sexual content/, /minors/, /Impersonation and deepfakes/, /voice-cloning/, /AI-generated/]) {
         assert.match(aup, rule);
     }
-    assert.match(legalNav, /href="\/legal\/aup"/);
+    assert.match(legalNav, /href=\{href\("\/legal\/aup"\)\}/);
     assert.match(footer, /href="\/legal\/aup"/);
     assert.match(sitemap, /'\/legal\/aup'/);
 });

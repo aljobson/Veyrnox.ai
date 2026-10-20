@@ -1,3 +1,4 @@
+import { fixture } from './helpers/publicSiteRender.mjs';
 import { englishAppImports } from './helpers/appI18nStub.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -15,12 +16,14 @@ import * as sourceSlots from '../lib/generationSourceSlots.mjs';
 import { translator } from '../lib/i18n/translate.mjs';
 
 const require = createRequire(import.meta.url);
+const binding = fixture('en', '/app/chat').load('components/BindingText.jsx');
 function component(path, name) {
   const output = { exports: {} };
   const code = ts.transpileModule(readFileSync(new URL(`../${path}`, import.meta.url), 'utf8'), {
     compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS },
   }).outputText;
   const imports = {
+    '../../../../components/BindingText': binding,
     '../../../../lib/generationSourceSlots.mjs': sourceSlots,
     '../../_lib/chatMedia': chatMedia, '../_lib/chatMedia': chatMedia,
     '../../_lib/modelPricing': pricing, '../_lib/modelPricing': pricing,

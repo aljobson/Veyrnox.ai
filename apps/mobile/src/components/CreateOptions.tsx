@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { selectedState, touchTarget } from '../lib/a11y';
-import { IMAGE_COUNTS, SEED_MAX, seedIsInvalid, type ModelOptions } from '../lib/createOptions';
+import { IMAGE_COUNTS, SEED_MAX, VOICE_MAX, audioLengthInvalid, seedIsInvalid, type ModelOptions } from '../lib/createOptions';
 import { t } from '../lib/i18n';
 import { colors } from '../theme';
 
@@ -10,6 +10,8 @@ export interface OptionValues {
     readonly count: number;
     readonly seed: string;
     readonly negative: string;
+    readonly voice: string;
+    readonly audioSeconds: string;
 }
 
 interface Props {
@@ -36,6 +38,39 @@ export function CreateOptions({ options, values, showCount, onChange }: Props) {
                         <Chip key={a} label={a} on={values.aspect === a} onPress={() => set({ aspect: a })} />
                     ))}
                 </Group>
+            ) : null}
+            {options.voice ? (
+                <View style={styles.field}>
+                    <Text style={styles.fieldLabel}>{t('opt.voice')}</Text>
+                    <TextInput
+                        style={[styles.input, styles.negative]}
+                        value={values.voice}
+                        onChangeText={(v) => set({ voice: v })}
+                        placeholder={t('opt.voiceExample')}
+                        placeholderTextColor={colors.muted}
+                        multiline
+                        maxLength={VOICE_MAX}
+                        accessibilityLabel={t('opt.voice')}
+                    />
+                    <Text style={styles.help}>{t('opt.voiceHelp')}</Text>
+                </View>
+            ) : null}
+            {options.audioLength ? (
+                <View style={styles.field}>
+                    <Text style={styles.fieldLabel}>{t('opt.audioLength')}</Text>
+                    <TextInput
+                        style={[styles.input, styles.seed, audioLengthInvalid(options, values.audioSeconds) && styles.inputBad]}
+                        value={values.audioSeconds}
+                        onChangeText={(v) => set({ audioSeconds: v.replace(/\s/g, '').slice(0, 4) })}
+                        placeholder={String(options.audioLength.def)}
+                        placeholderTextColor={colors.muted}
+                        keyboardType="number-pad"
+                        accessibilityLabel={t('opt.audioLength')}
+                    />
+                    <Text style={[styles.help, audioLengthInvalid(options, values.audioSeconds) && styles.helpBad]} accessibilityLiveRegion="polite">
+                        {t('opt.audioLengthRange', { min: String(options.audioLength.min), max: String(options.audioLength.max), def: String(options.audioLength.def) })}
+                    </Text>
+                </View>
             ) : null}
             {showCount ? (
                 <Group label={t('opt.count')}>

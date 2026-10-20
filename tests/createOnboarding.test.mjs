@@ -83,6 +83,6 @@ test('catalog quote state is tri-state and stale prices cannot submit', () => {
 test('Create explains commercial-rights uncertainty and links the Terms', () => {
   const page = read('app/veyrnox/app/create/page.js');
   assert.match(page, /Commercial use depends on the selected model and provider terms/);
-  assert.match(readFileSync(new URL('../app/veyrnox/app/create/page.js', import.meta.url), 'utf8'), /terms:<Link href="\/legal\/terms"/);
+  assert.match(readFileSync(new URL('../app/veyrnox/app/create/page.js', import.meta.url), 'utf8'), /terms:<LegalLink element="Link" href="\/legal\/terms"/);
   assert.match(page, /Check the Terms before publishing/);
 });

@@ -43,10 +43,10 @@ test('a breadcrumb message that is not a url is dropped', () => {
     assert.equal(scrubBreadcrumb({ category: 'x', message: 'https://a.test/p?q=1' }).message, 'https://a.test/p');
 });
 
-test('with no DSN committed nothing is sent, errors only, no default PII', () => {
-    assert.equal(SENTRY_DSN, '');
+test('the committed DSN is a public ingest address; errors only, no default PII', () => {
+    assert.match(SENTRY_DSN, /^https:\/\/[0-9a-f]{32}@o\d+\.ingest\.[a-z.]*sentry\.io\/\d+$/);
     const options = sentryOptions({ APP_ENV: 'staging' });
-    assert.equal(options.dsn, undefined);
+    assert.equal(options.dsn, SENTRY_DSN);
     assert.equal(options.environment, 'staging');
     assert.equal(options.sendDefaultPii, false);
     assert.equal(options.tracesSampleRate, 0);

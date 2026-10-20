@@ -1,4 +1,5 @@
 'use client';
+import LegalLink from '../../../../components/LegalLink';
 import { useI18n } from '../../../../components/I18nProvider';
 import Link from 'next/link';
 import { useState, useSyncExternalStore } from 'react';
@@ -85,7 +86,7 @@ function AccountControls() {
       <p className="text-sm text-vx-fg-muted mb-4">{t("app.account.exportHelp")}</p>
       <div className="flex flex-wrap gap-4 text-sm underline">
         <a href="mailto:privacy@veyrnox.com?subject=Veyrnox.ai%20data%20export%20request">{t("app.account.export")}</a>
-        <a href="/legal/privacy">{t("label.Privacy Policy")}</a>
+        <LegalLink element="a" href="/legal/privacy">{t("label.Privacy Policy")}</LegalLink>
       </div>
     </section>
     <DeleteAccountPanel />
