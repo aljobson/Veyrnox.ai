@@ -42,6 +42,9 @@ export default function Help() {
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
             <Stack.Screen options={{ title: 'Help' }} />
+            <Link href="/guides" asChild>
+                <Row label={t('helpGuides.title')} />
+            </Link>
             <Section title={t('help.ask.title')}>
                 <TextInput style={styles.input} value={question} onChangeText={setQuestion} maxLength={MAX_QUESTION} multiline placeholder={t('help.ask.placeholder')} accessibilityLabel={t('help.ask.label')} placeholderTextColor={colors.muted} />
                 <Pressable accessibilityRole="button" accessibilityLabel={t('help.ask.send')} disabled={busy || !question.trim()} style={[styles.ask, (busy || !question.trim()) && styles.off]} onPress={ask}>
