@@ -42,6 +42,10 @@ export default function Create() {
                 <Text style={styles.name}>{t('toolsDir.entry')}</Text>
                 <Text style={styles.muted}>{t('toolsDir.entryHint')}</Text>
             </Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel={t('faceFilters.title')} style={styles.templates} onPress={() => router.push('/face-filters')}>
+                <Text style={styles.name}>{t('faceFilters.title')}</Text>
+                <Text style={styles.muted}>{t('faceFilters.lead')}</Text>
+            </Pressable>
             {models ? <FreeAllowanceCard models={models} left={freeLeft} /> : null}
             <View style={styles.tabs} accessibilityLabel={t('create.goalLabel')}>
                 {GOALS.map((g) => (
@@ -109,7 +113,7 @@ const styles = StyleSheet.create({
     // The mascot sits in the bottom corner of every tab; the last row scrolls clear of it.
     list: { paddingBottom: VEY_CLEARANCE },
     screen: { flex: 1, backgroundColor: colors.background, padding: 16, gap: 12 },
-    templates: { padding: 14, borderRadius: 12, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, gap: 2 },
+    templates: { minHeight: 44, padding: 14, borderRadius: 12, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, gap: 2 },
     tabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     tab: { flexGrow: 1, flexBasis: '45%', minHeight: 44, justifyContent: 'center', paddingVertical: 10, borderRadius: 10, alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
     tabOn: { backgroundColor: colors.accent, borderColor: colors.accent },

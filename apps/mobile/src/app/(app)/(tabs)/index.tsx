@@ -101,23 +101,6 @@ export default function Explore() {
             {balance !== null && isLowBalance(balance, cheapestCredits(presets)) ? <LowBalanceNote balance={balance} /> : null}
             {note ? <Text style={styles.note} accessibilityLiveRegion="polite">{note}</Text> : null}
 
-            {resume ? (
-                <Pressable
-                    accessibilityRole="button"
-                    style={styles.resume}
-                    onPress={() => router.push({ pathname: '/job/[id]', params: { id: resume.job.job_id } })}
-                >
-                    <Text style={styles.resumeText}>{t(resume.kind === 'making' ? 'explore.pickUp.making' : 'explore.pickUp.latest', { label: label(resume.job) })}</Text>
-                </Pressable>
-            ) : null}
-
-            <Link href="/oddlings" asChild>
-                <Pressable accessibilityRole="button" accessibilityLabel={t('explore.oddlings.title')} accessibilityHint={t('explore.oddlings.hint')} style={styles.banner}>
-                    <Text style={styles.bannerTitle}>{t('explore.oddlings.title')}</Text>
-                    <Text style={styles.bannerText}>{t('explore.oddlings.body')}</Text>
-                </Pressable>
-            </Link>
-
             <View style={styles.headerRow}>
                 <Text style={styles.heading} accessibilityRole="header">{t('explore.templates')}</Text>
                 <Link href="/create/presets" asChild>
@@ -182,10 +165,26 @@ export default function Explore() {
                 </>
             )}
 
-            {recent.length > 0 ? (
+            <Link href="/oddlings" asChild>
+                <Pressable accessibilityRole="button" accessibilityLabel={t('explore.oddlings.title')} accessibilityHint={t('explore.oddlings.hint')} style={styles.banner}>
+                    <Text style={styles.bannerTitle}>{t('explore.oddlings.title')}</Text>
+                    <Text style={styles.bannerText}>{t('explore.oddlings.body')}</Text>
+                </Pressable>
+            </Link>
+
+            {resume || recent.length > 0 ? (
                 <>
                     <Text style={styles.heading} accessibilityRole="header">{t('explore.recent')}</Text>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+                        {resume ? (
+                            <Pressable
+                                accessibilityRole="button"
+                                style={[styles.recent, styles.recentResume, touchTarget]}
+                                onPress={() => router.push({ pathname: '/job/[id]', params: { id: resume.job.job_id } })}
+                            >
+                                <Text style={styles.resumeText} numberOfLines={1}>{t(resume.kind === 'making' ? 'explore.pickUp.making' : 'explore.pickUp.latest', { label: label(resume.job) })}</Text>
+                            </Pressable>
+                        ) : null}
                         {recent.map((j) => (
                             <Pressable key={j.job_id} accessibilityRole="button" style={[styles.recent, touchTarget]} onPress={() => router.push({ pathname: '/job/[id]', params: { id: j.job_id } })}>
                                 <Text style={styles.recentText} numberOfLines={1}>{label(j)}</Text>
@@ -222,7 +221,7 @@ const styles = StyleSheet.create({
     bannerTitle: { color: colors.accent, fontSize: 17, fontWeight: '700' },
     bannerText: { color: colors.body, fontSize: 15 },
     note: { color: colors.body },
-    resume: { minHeight: 44, justifyContent: 'center', backgroundColor: colors.surface, borderColor: colors.accent, borderWidth: 1, borderRadius: 12, padding: 14 },
+    recentResume: { borderColor: colors.accent, maxWidth: 280 },
     resumeText: { color: colors.text, fontWeight: '600' },
     headerRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
     heading: { color: colors.text, fontSize: 18, fontWeight: '700', marginTop: 8 },
@@ -237,7 +236,7 @@ const styles = StyleSheet.create({
     column: { flex: 1, gap: 10 },
     search: { minHeight: 44, color: colors.text, fontSize: 16, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14 },
     empty: { color: colors.muted, paddingVertical: 12 },
-    cardModel: { color: colors.muted, fontSize: 12, paddingHorizontal: 10 },
+    cardModel: { color: colors.muted, fontSize: 13, paddingHorizontal: 10 },
     posterTall: { aspectRatio: 0.8 },
     card: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, overflow: 'hidden', paddingBottom: 10, gap: 4 },
     poster: { width: '100%', aspectRatio: 1, backgroundColor: colors.border },

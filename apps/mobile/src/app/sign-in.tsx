@@ -7,8 +7,9 @@ import { useAuth } from '../auth/AuthProvider';
 import { MascotWordmark } from '../components/MascotWordmark';
 import { LEGAL_LINKS, MIN_AGE } from '../lib/account';
 import { DEV_MOCK } from '../lib/config';
-import { colors } from '../theme';
+import { colors, disabledOpacity, radius, space, type } from '../theme';
 import { splitSlots, t } from '../lib/i18n';
+import { MIN_TARGET } from '../lib/a11y';
 
 export default function SignIn() {
     const { appleNativeAvailable, signInWithApple, signInWithOAuth, signInWithEmail, status } = useAuth();
@@ -105,28 +106,28 @@ export default function SignIn() {
 
 const styles = StyleSheet.create({
     scroll: { flex: 1, backgroundColor: colors.background },
-    screen: { flexGrow: 1, backgroundColor: colors.background, padding: 24, justifyContent: 'center', gap: 12 },
-    title: { color: colors.text, fontSize: 32, fontWeight: '700' },
-    subtitle: { color: colors.muted, fontSize: 16, marginBottom: 16 },
-    hint: { color: colors.muted, fontSize: 14, marginBottom: 12 },
+    screen: { flexGrow: 1, backgroundColor: colors.background, padding: space.xl, justifyContent: 'center', gap: space.md },
+    title: { color: colors.text, ...type.titleLarge },
+    subtitle: { color: colors.muted, ...type.body, marginBottom: space.lg },
+    hint: { color: colors.muted, ...type.footnote, marginBottom: space.md },
     button: {
         backgroundColor: colors.surface,
         borderColor: colors.border,
         borderWidth: 1,
-        borderRadius: 12,
-        paddingVertical: 16,
+        borderRadius: radius.lg,
+        paddingVertical: space.lg,
         alignItems: 'center',
     },
-    buttonText: { color: colors.text, fontSize: 16, fontWeight: '600' },
-    browse: { paddingVertical: 14, alignItems: 'center', minHeight: 44 },
-    browseText: { color: colors.muted, fontSize: 15, textDecorationLine: 'underline' },
-    off: { opacity: 0.4 },
-    agree: { flexDirection: 'row', gap: 12, alignItems: 'center', marginBottom: 8, minHeight: 44 },
-    box: { width: 24, height: 24, borderRadius: 6, borderWidth: 1, borderColor: colors.borderStrong, alignItems: 'center', justifyContent: 'center' },
+    buttonText: { color: colors.text, ...type.label },
+    browse: { paddingVertical: 14, alignItems: 'center', minHeight: MIN_TARGET },
+    browseText: { color: colors.muted, ...type.callout, textDecorationLine: 'underline' },
+    off: { opacity: disabledOpacity },
+    agree: { flexDirection: 'row', gap: space.md, alignItems: 'center', marginBottom: space.sm, minHeight: MIN_TARGET },
+    box: { width: 24, height: 24, borderRadius: radius.sm, borderWidth: 1, borderColor: colors.borderStrong, alignItems: 'center', justifyContent: 'center' },
     boxOn: { backgroundColor: colors.accent, borderColor: colors.accent },
     tick: { color: colors.accentInk, fontWeight: '700' },
-    agreeText: { flex: 1, color: colors.body, fontSize: 14 },
+    agreeText: { flex: 1, color: colors.body, ...type.footnote },
     link: { color: colors.accent, textDecorationLine: 'underline' },
-    spinner: { marginTop: 8 },
-    error: { color: colors.danger, marginTop: 8 },
+    spinner: { marginTop: space.sm },
+    error: { color: colors.danger, marginTop: space.sm },
 });

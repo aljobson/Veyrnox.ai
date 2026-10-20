@@ -8,6 +8,7 @@ import { AUTH_REDIRECT_URL, OAUTH_BRIDGE_URL } from '../lib/config';
 import { createAppleNonce, createPkce } from '../lib/auth/pkce';
 import { aiConsent } from '../lib/aiConsentStore';
 import { bindCacheUser, userIdFromToken, wipeCache } from '../lib/appCache';
+import { cinemaProgressIdentity } from '../lib/cinemaProgress';
 import { clearRefreshToken, readRefreshToken, writeRefreshToken } from '../lib/auth/sessionStore';
 import {
     authorizeUrl,
@@ -31,6 +32,8 @@ type Status = 'loading' | 'signedOut' | 'signedIn';
 interface AuthContextValue {
     readonly status: Status;
     readonly api: ApiClient;
+    // Shared by account-bound transports: clear local auth without remote revocation.
+    readonly onSessionLost: () => void;
     // For account calls that go to Supabase Auth directly (lib/auth/accountCalls.ts).
     getAccessToken(forceRefresh?: boolean): Promise<string | null>;
     // Makes a session the live one: the step-up after a second-factor code returns a fresh token pair.
@@ -61,6 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const adopt = useCallback(async (session: Session) => {
         sessionRef.current = session;
         const userId = userIdFromToken(session.accessToken);
+        cinemaProgressIdentity.setUser(userId);
         aiConsent.setUser(userId);
         await bindCacheUser(userId);
         await writeRefreshToken(session.refreshToken);
@@ -69,6 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const drop = useCallback(async () => {
         sessionRef.current = null;
+        cinemaProgressIdentity.setUser(null);
         await aiConsent.forget();
         await wipeCache().catch(() => undefined);
         await clearRefreshToken();
@@ -108,15 +113,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         [refresh],
     );
 
+    const onSessionLost = useCallback(() => void drop(), [drop]);
+
     const api = useMemo(
         () => createApiClient({
                 baseUrl: API_BASE,
                 getAccessToken,
-                onSessionLost: () => void drop(),
+                onSessionLost,
                 streamFetch: expoFetch as unknown as typeof fetch,
                 beforeSend: aiConsent.ensure,
             }),
-        [getAccessToken, drop],
+        [getAccessToken, onSessionLost],
     );
 
     useEffect(() => {
@@ -188,8 +195,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, [drop]);
 
     const value = useMemo<AuthContextValue>(
-        () => ({ status, api, getAccessToken, adoptSession: adopt, appleNativeAvailable, signInWithApple, signInWithOAuth, signInWithEmail, signUpWithEmail, signOut }),
-        [status, api, getAccessToken, adopt, appleNativeAvailable, signInWithApple, signInWithOAuth, signInWithEmail, signUpWithEmail, signOut],
+        () => ({ status, api, onSessionLost, getAccessToken, adoptSession: adopt, appleNativeAvailable, signInWithApple, signInWithOAuth, signInWithEmail, signUpWithEmail, signOut }),
+        [status, api, onSessionLost, getAccessToken, adopt, appleNativeAvailable, signInWithApple, signInWithOAuth, signInWithEmail, signUpWithEmail, signOut],
     );
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

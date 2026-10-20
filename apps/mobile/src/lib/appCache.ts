@@ -57,6 +57,17 @@ export function userIdFromToken(accessToken: string): string | null {
 }
 
 let activeUser: string | null = null;
+const userListeners = new Set<() => void>();
+// Face filters holds sensitive local photo state outside the cache. Notify it before
+// switching accounts so that it can abort work and discard that state immediately.
+export function subscribeCacheUser(listener: () => void): () => void {
+    userListeners.add(listener);
+    return () => { userListeners.delete(listener); };
+}
+function setCacheUser(userId: string | null) {
+    activeUser = userId;
+    userListeners.forEach(listener => listener());
+}
 
 export const getCacheUser = (): string | undefined => activeUser ?? undefined;
 
@@ -66,18 +77,18 @@ export async function bindCacheUser(userId: string | null, cache: Cache = appCac
     if (!userId) return;
     if (activeUser === userId) return;
     const last = activeUser ?? (await storage.get(USER_KEY).catch(() => null));
+    setCacheUser(userId);
     if (last !== userId) await cache.clear();
-    activeUser = userId;
     await storage.set(USER_KEY, userId).catch(() => undefined);
 }
 
 // Called when the session is dropped: sign-out, a lost session, or account deletion (which signs out).
 export async function wipeCache(cache: Cache = appCache): Promise<void> {
-    activeUser = null;
+    setCacheUser(null);
     await cache.clear();
 }
 
 // For tests.
 export function resetCacheUser() {
-    activeUser = null;
+    setCacheUser(null);
 }

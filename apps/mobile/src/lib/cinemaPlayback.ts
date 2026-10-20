@@ -165,6 +165,7 @@ export interface SessionDeps {
     readonly onState: (state: SessionState) => void;
     readonly now?: () => number;
     readonly newKey?: () => string;
+    readonly saveProgress?: (position: number, final: boolean) => Promise<void>;
 }
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
@@ -184,12 +185,28 @@ export function createPlaybackSession(deps: SessionDeps) {
     let minting = false;
     let resume: { time: number; playing: boolean } | null = null;
     let lastBeat = now();
+    let lastProgress = now();
+    let lastFinal: { position: number; time: number } | null = null;
+    let initialPosition = 0;
+    let loaded = false;
     let beating = false;
     let audienceSending = false;
     let pendingAudience: { key: string; body: string } | null = null;
 
+    function saveProgress(final: boolean) {
+        if (!active || !loaded || !deps.saveProgress || (resume && !final)) return;
+        // Capture before pause/source replacement/unmount can reset or release the native player.
+        const position = resume?.time ?? player.currentTime;
+        const time = now();
+        if (final && lastFinal?.position === position && time - lastFinal.time < 1000) return;
+        if (final) lastFinal = { position, time };
+        lastProgress = time;
+        void deps.saveProgress(position, final).catch(() => undefined);
+    }
+
     function block(reason: BlockReason) {
         if (blocked) return;
+        saveProgress(true);
         blocked = true;
         meter.setPlaying(false);
         player.pause();
@@ -225,6 +242,8 @@ export function createPlaybackSession(deps: SessionDeps) {
                     if (prior.playing) player.play();
                 }
             } else {
+                player.currentTime = initialPosition;
+                loaded = true;
                 player.play();
                 onState({ kind: 'playing' });
             }
@@ -282,38 +301,48 @@ export function createPlaybackSession(deps: SessionDeps) {
     }
 
     return {
-        start(id: string) {
+        start(id: string, position = 0) {
             contentId = id;
             active = true;
             blocked = false;
             grant = null;
             resume = null;
+            loaded = false;
+            lastFinal = null;
+            initialPosition = Number.isFinite(position) ? Math.max(0, Math.min(600, position)) : 0;
             lastBeat = now();
+            lastProgress = now();
             onState({ kind: 'loading' });
             void mint(false);
         },
         setPlaying(value: boolean) {
             if (!active || blocked) return;
-            if (resume && value) return; // the swap is still loading
+            if (resume) return; // the swap is still loading
             meter.setPlaying(value);
-            if (!value) { coverage.reset(); flush(); }
+            if (!value) { saveProgress(true); coverage.reset(); flush(); }
         },
         setVisible(value: boolean) {
             meter.setVisible(value);
-            if (!value) { player.pause(); flush(); }
+            if (!value) { saveProgress(true); player.pause(); flush(); }
         },
+        // Router blur only saves progress; the mounted session still owns its original grant.
+        saveFinalProgress() { saveProgress(true); },
         // The player itself failed (a bad or expired manifest).
         fail() { block('error'); },
         // Called about once a second while mounted.
         tick() {
             if (!active || blocked || !grant) return;
             if (!resume) coverage.sample(player.currentTime, player.playing && meter.isPlaying());
+            if (!resume && player.playing && meter.isPlaying() && now() - lastProgress >= 15_000) saveProgress(false);
             if (now() - lastBeat >= HEARTBEAT_SECONDS * 1000) flush();
             if ((meter.isPlaying() || player.playing) && msUntilRenewal(grant.expiresAt, now()) <= 0) void mint(true);
         },
         stop() {
+            const position = active && loaded ? (resume?.time ?? player.currentTime) : null;
+            saveProgress(true);
             if (active && !blocked) { meter.setPlaying(false); flush(); }
             active = false;
+            return position;
         },
     };
 }
