@@ -98,3 +98,12 @@ test('the Tools page groups the filters in one place, web and phone', () => {
     const en = readFileSync(new URL('../lib/i18n/messages/en.mjs', import.meta.url), 'utf8');
     assert.match(en, /'tools\.t\.face-filters\.label': 'Face filters'/);
 });
+
+test('0357 activates the four filters fal billed at list price, and leaves relight staged', () => {
+    const act = readFileSync(new URL('../packages/db/schema/supabase/0357_activate_face_filters.sql', import.meta.url), 'utf8');
+    assert.equal((act.match(/UPDATE public\.model_catalog/g) || []).length, 1, 'exactly one catalog UPDATE');
+    assert.match(act, /active = false AND credits_5s = 3 AND provider_cost_per_unit = 0\.0400/, 'pins the 0356 values');
+    assert.match(act, /affected <> 4/);
+    for (const id of ['face-retouch', 'face-enhance', 'face-makeup', 'face-age']) assert.match(act, new RegExp(`'${id}'`));
+    assert.doesNotMatch(act, /'face-relight'|iclight-v2'\)/, 'relight is not activated');
+});
