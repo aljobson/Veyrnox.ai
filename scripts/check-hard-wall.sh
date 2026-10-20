@@ -41,6 +41,9 @@ BANNED=(
 SCOPE=(
   'app/veyrnox'
   'app/legal'
+  'lib/i18n/legal'
+  'lib/i18n/messages'
+  'lib/i18n/messages/legal'
   'app/layout.js'
   'app/sitemap.js'
   'components'
@@ -50,7 +53,7 @@ SCOPE=(
 
 fail=0
 for term in "${BANNED[@]}"; do
-  hits=$(grep -RniE "$term" "${SCOPE[@]}" 2>/dev/null || true)
+  hits=$(grep -IRniE "$term" "${SCOPE[@]}" 2>/dev/null || true)
   if [ -n "$hits" ]; then
     echo "HARD WALL breach — banned term matches:"
     echo "$hits"

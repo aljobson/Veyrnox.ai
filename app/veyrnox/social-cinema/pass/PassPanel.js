@@ -1,4 +1,5 @@
 'use client';
+import BindingText from '../../../../components/BindingText';
 import { localeTag } from '../../../../lib/i18n/locales.mjs';
 import { tOr } from '../../../../lib/i18n/translate.mjs';
 import { useI18n } from '../../../../components/I18nProvider.jsx';
@@ -135,10 +136,10 @@ function Pass({ salesOpen }) {
     {!live && plans && <section aria-labelledby="plans">
       <h2 id="plans" className="text-xl font-extrabold">{t("cinema.passPanel.chooseAPass")}</h2>
       <p className="mt-2 text-sm text-vx-fg-muted">{t("cinema.passPanel.pricesInUsdTaxAddedAt")}</p>
-      <label className="mt-4 flex items-start gap-3 text-sm text-vx-fg-body">
+      <BindingText id="pass"  ><label className="mt-4 flex items-start gap-3 text-sm text-vx-fg-body">
         <input type="checkbox" className="mt-1" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
         <span lang="en" dir="ltr">{CONSENT_TEXT}</span>
-      </label>
+      </label></BindingText>
       <ul className="mt-6 grid gap-4 sm:grid-cols-3">
         {plans.map((p) => <li key={p.id} className="flex flex-col rounded-2xl border border-vx-border bg-vx-base/60 p-5">
           <p className="font-vx-mono text-xs tracking-widest text-vx-accent uppercase">{tOr(t, `cinema.pass.${p.billing_interval}ly`, p.billing_interval)}</p>

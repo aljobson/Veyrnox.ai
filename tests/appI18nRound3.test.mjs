@@ -76,11 +76,11 @@ test('counts cover Arabic and Russian forms; unknown billing errors never expose
   for (const original of [undefined, 'en-US', 'en-GB']) assert.equal(localeTag('en', original), original);
 });
 
-test('only exact version-bound subscription consent fragments are exempted', () => {
+test('subscription consent is paired with its translated catalog', () => {
   const source = readFileSync(files.billing, 'utf8');
-  const legal = candidates(files.billing, source, { app: true }).filter(row => row.status === 'allowlisted');
-  assert.equal(legal.length, 6);
-  assert.ok(legal.every(row => row.reason.includes('version-bound')));
+  const legal = candidates(files.billing, source, { app: true }).filter(row => row.kind === 'binding');
+  assert.equal(legal.length, 1);
+  assert.ok(legal.every(row => row.status === 'translated'));
   assert.match(source, /<label lang="en" dir="ltr"/);
   assert.match(source, /consent_version: catalog.consent_version/);
   assert.equal(candidates(files.billing, '<label lang="en" dir="ltr">Untranslated controls</label>', { app: true })[0].status, 'unresolved');

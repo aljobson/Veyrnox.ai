@@ -4,6 +4,7 @@ import { useI18n } from '../../../../components/I18nProvider';
 import { MediaArtwork } from './AdvancedMediaBin';
 import { useEffect, useRef, useState } from 'react';
 import { sequenceEnd, trackFor } from '../../_lib/editorSequence.mjs';
+import { transitionJunctions } from '../../_lib/editorGuidance.mjs';
 import { formatTime } from '../../_lib/editorTimeline.mjs';
 const TRIM_EDGES = ['in', 'out'];
 const button = 'grid size-6 place-items-center rounded border border-vx-border text-vx-fg-muted transition-colors hover:border-vx-accent hover:text-vx-fg disabled:opacity-40';
@@ -31,7 +32,7 @@ function TimedClip({ clip, track, name, ppf, selected, disabled, onSelect, onTri
         {selected && !track.locked && TRIM_EDGES.map(edge => <button key={edge} type="button" disabled={disabled} {...trim(edge)} aria-label={t(edge === 'in' ? 'app.editor.tracks.trimIn' : 'app.editor.tracks.trimOut', { name })} className={`absolute bottom-0 top-0 w-5 cursor-ew-resize touch-none bg-vx-accent/60 md:w-2 ${edge === 'in' ? 'start-0' : 'end-0'}`} />)}
     </div>;
 }
-export function TrackTimeline({ previewMarks=[],height=420,onMediaDrop,tl, frame, selected, selection = [], ppf, disabled, snap, follow=false, onSelect, onSeek, onZoom, onViewport, onTrim, onMove, onTrack, onReorder, onRemove, blobs, loaded }) {
+export function TrackTimeline({ previewMarks=[],height=420,onMediaDrop,tl, frame, selected, selection = [], ppf, disabled, snap, follow=false, onSelect, onTransition, onSeek, onZoom, onViewport, onTrim, onMove, onTrack, onReorder, onRemove, blobs, loaded }) {
   const { t, locale } = useI18n();
   const time = value => locale === 'en' ? formatTime(value) : formatTime(value).replace(/\d+/g, part => new Intl.NumberFormat(localeTag(locale), { useGrouping: false, minimumIntegerDigits: part.length }).format(Number(part)));
     const dragged = useRef(null),scrubbing=useRef(false),scroll=useRef(null), total = sequenceEnd(tl), width = Math.max(480, (total + 150) * ppf);
@@ -76,6 +77,12 @@ export function TrackTimeline({ previewMarks=[],height=420,onMediaDrop,tl, frame
                 onDragOver={e => { if (!track.locked && !disabled && (dragged.current?.kind === track.kind || (track.kind!=='text' && e.dataTransfer.types.includes('application/x-veyrnox-media')))) e.preventDefault(); }}
                 onDrop={e => { e.preventDefault();const mediaId=e.dataTransfer.getData('application/x-veyrnox-media');if(mediaId && track.kind!=='text' && !disabled && !track.locked){onMediaDrop?.(track.kind,mediaId,at(e),track.id);return;} const source = dragged.current; dragged.current = null; if (source && source.kind === track.kind && !disabled && !track.locked) onMove(track.kind, source.id, Math.max(0, at(e) - Math.round(source.offset / ppf)), track.id, snap); }}>
                 {tl[track.kind].filter(c => c.trackId === track.id).map(c => <TimedClip key={c.id} media={tl.media[c.mediaId]} blobs={blobs} loaded={loaded.includes(c.mediaId)} sourceRevision={loaded} clip={c} track={trackFor(tl, c)} ppf={ppf} name={track.kind === 'text' ? c.text : tl.media[c.mediaId]?.name} selected={selection.some(s => s.id === c.id) || selected?.id === c.id} disabled={disabled} onSelect={onSelect} onTrim={onTrim} onDrag={source => { dragged.current = source; }} />)}
+                {track.kind === 'video' && transitionJunctions(tl, track.id).map(({frame: junctionFrame, incoming, outgoing}) => {
+                    const active = (incoming.transition || 0) > 0;
+                    const outgoingName = tl.media[outgoing.mediaId]?.name || outgoing.id;
+                    const incomingName = tl.media[incoming.mediaId]?.name || incoming.id;
+                    return <button key={`transition-${incoming.id}`} type="button" data-testid={`transition-junction-${incoming.id}`} aria-pressed={active} aria-label={`${t("app.editor.catalog.transitions")}: ${outgoingName} → ${incomingName}`} title={t("app.editor.catalog.transitions")} disabled={disabled || track.locked} onPointerDown={e=>e.stopPropagation()} onClick={e=>{e.stopPropagation();onTransition?.({track:'video',id:incoming.id});}} className={`absolute top-1/2 z-20 grid size-7 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border text-sm font-black shadow-lg transition-transform hover:scale-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-accent disabled:opacity-40 ${active?'border-vx-accent bg-vx-accent text-vx-accent-ink':'border-vx-border bg-vx-panel text-vx-fg hover:border-vx-accent hover:text-vx-accent'}`} style={{insetInlineStart:junctionFrame*ppf}}><span aria-hidden="true">{active?'◆':'+'}</span></button>;
+                })}
             </div>)}
             <div aria-hidden="true" className="pointer-events-none absolute bottom-0 top-0 w-px bg-vx-accent" style={{ insetInlineStart: frame * ppf }}><span className="absolute -start-1 top-0 size-2 rounded-full bg-vx-accent" /></div>
         </div></div></div>

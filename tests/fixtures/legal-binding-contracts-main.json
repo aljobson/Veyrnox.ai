@@ -1,0 +1,76 @@
+{
+  "app/veyrnox/social-cinema/pass/PassPanel.js": {
+    "calls": [
+      "fetch('/api/cinema-pass-plans', { cache: 'no-store', signal: controller.signal })",
+      "gatewayFetch('/cinema/pass')",
+      "gatewayFetch('/cinema/pass/plans')",
+      "gatewayFetch('/cinema/pass/return', { method: 'POST', body: JSON.stringify({ pass_id: passId, session_id: sessionId }) })",
+      "gatewayFetch('/cinema/pass', { method: 'POST', body: JSON.stringify({ plan_id: planId, idempotency_key: makeIdempotencyKey(), consent: true, consent_version: consentVersion }) })",
+      "gatewayFetch('/cinema/pass/cancel', { method: 'POST', body: '{}' })",
+      "gatewayFetch('/cinema/pass/portal', { method: 'POST', body: '{}' })"
+    ],
+    "versions": []
+  },
+  "app/veyrnox/social-cinema/title/[id]/TitlePage.js": {
+    "calls": [
+      "gatewayFetch(`/cinema/titles/${id}`)",
+      "fetch(`/api/cinema/titles/${id}`)",
+      "gatewayFetch(`/cinema/entitlement?content_id=${id}`)",
+      "gatewayFetch(`/cinema/entitlement?content_id=${item.id}`)",
+      "gatewayFetch('/cinema/unlocks', { method: 'POST', body: JSON.stringify({ content_id: item.id, consent_version: version }) })"
+    ],
+    "versions": []
+  },
+  "app/veyrnox/social-cinema/creator/CreatorWorkspace.js": {
+    "calls": [
+      "gatewayFetch('/cinema/content/withdraw', { method: 'POST', body: JSON.stringify({ content_id: item.id, reason: reason.trim() }), headers: { 'idempotency-key': crypto.randomUUID() } })",
+      "gatewayFetch(`/cinema/content${parentId ? `?parent_id=${encodeURIComponent(parentId)}` : ''}`)",
+      "gatewayFetch('/cinema/content', { method: draft.id ? 'PATCH' : 'POST', body, headers: { 'idempotency-key': attempt.current.key } })",
+      "gatewayFetch('/cinema/content/submit', { method: 'POST', body, headers: { 'idempotency-key': attempt.current.key } })"
+    ],
+    "versions": [
+      "RIGHTS_VERSION = 'rights-2026-10-13'"
+    ]
+  },
+  "app/veyrnox/app/publish/plan/PublishPlanPanel.js": {
+    "calls": [],
+    "versions": []
+  },
+  "app/veyrnox/_components/TopUpPacks.js": {
+    "calls": [
+      "gatewayFetch(`/top-ups/${id}/return`, {\n        method: 'POST',\n        body: JSON.stringify({ session_id: sessionId }),\n        signal: controller.signal,\n      })",
+      "gatewayFetch(`/top-ups/${topUpId}`)",
+      "gatewayFetch('/credit-packs')",
+      "gatewayFetch('/top-ups', {\n        method: 'POST',\n        body: JSON.stringify({\n          pack_id: selected,\n          idempotency_key: idempotencyKey,\n          consent: true,\n          consent_version: SUPPLY_CONSENT_VERSION,\n        }),\n      })"
+    ],
+    "versions": [
+      "SUPPLY_CONSENT_VERSION = 'supply-consent-v1'"
+    ]
+  },
+  "app/veyrnox/_components/SourceRightsConfirmation.jsx": {
+    "calls": [],
+    "versions": []
+  },
+  "app/veyrnox/_components/CreditSubscriptions.js": {
+    "calls": [
+      "fetch('/api/credit-subscription-plans', {\n      cache: 'no-store',\n    })",
+      "gatewayFetch('/subscriptions')",
+      "gatewayFetch('/subscriptions/return', {\n          method: 'POST',\n          body: JSON.stringify(info),\n        })",
+      "gatewayFetch('/subscriptions/checkout', {\n        method: 'POST',\n        body: JSON.stringify({ ...base, idempotency_key: attempt.current.key }),\n      })",
+      "gatewayFetch('/subscriptions/cancel', {\n        method: 'POST',\n        body: JSON.stringify({ subscription_id: id, mode }),\n      })"
+    ],
+    "versions": []
+  },
+  "app/veyrnox/_components/chat/MediaComposer.js": {
+    "calls": [],
+    "versions": []
+  },
+  "app/veyrnox/_components/editor/GenerationPanel.js": {
+    "calls": [
+      "gatewayFetch('/balance')",
+      "gatewayFetch('/free-allowance')",
+      "gatewayFetch('/generations', { method: 'POST', body: JSON.stringify(pending.current.body) })"
+    ],
+    "versions": []
+  }
+}

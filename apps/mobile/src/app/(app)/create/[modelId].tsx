@@ -6,14 +6,19 @@ import { useAuth } from '../../../auth/AuthProvider';
 import { CONSENT_DECLINED_MESSAGE } from '../../../lib/aiConsent';
 import { ApiError } from '../../../lib/api';
 import { OFFLINE_PAID_MESSAGE, OfflineError } from '../../../lib/network';
+import { CameraPanel } from '../../../components/CameraPanel';
+import { CharacterPanel } from '../../../components/CharacterPanel';
 import { CreateOptions, type OptionValues } from '../../../components/CreateOptions';
 import { SourcePicker } from '../../../components/SourcePicker';
+import { DEFAULT_CINEMA, buildCinemaPrompt, sanitizeCinema, type Cinema } from '../../../lib/cinemaCamera';
 import { clearDraft, loadDraft, saveDraft } from '../../../lib/createDraftStore';
-import { SAVED_DRAFT_VERSION, batchCost, freeLeftFor, hasSettings, imageCount, inputsForIndex, optionsFor, seedIsInvalid, settingsInputs, takesImageCount } from '../../../lib/createOptions';
+import { SAVED_DRAFT_VERSION, audioLengthInvalid, batchCost, freeLeftFor, hasAnyOption, imageCount, inputsForIndex, optionsFor, seedIsInvalid, settingsInputs, takesImageCount, voiceIsMissing } from '../../../lib/createOptions';
+import { buildCharacterPrompt, sanitizePicks, type Picks } from '../../../lib/oddlingsBuilder';
 import { useFreeLeft } from '../../../lib/useFreeLeft';
 import { estimateCredits, fetchCatalog, kindOf, mediaApi, promptRequired, textInput, type CatalogModel } from '../../../lib/media';
 import { selectedState } from '../../../lib/a11y';
-import { missingRequired, slotsFor, toSourceKeys, type SlotName } from '../../../lib/sources';
+import { toSourceAssets } from '../../../lib/librarySource';
+import { SLOT_ORDER, missingRequired, slotsFor, toSourceKeys, type SlotName } from '../../../lib/sources';
 import { colors } from '../../../theme';
 import { plural, t } from '../../../lib/i18n';
 
@@ -30,9 +35,15 @@ export default function CreateWithModel() {
     const [busy, setBusy] = useState(false);
     // Storage keys of the files already uploaded, by slot, and the slots still uploading.
     const [uploaded, setUploaded] = useState<Partial<Record<SlotName, string>>>({});
+    // Library creations chosen as files, by slot (job ids). A slot has an upload or a Library file, never both.
+    const [fromLibrary, setFromLibrary] = useState<Partial<Record<SlotName, string>>>({});
     const [sending, setSending] = useState<Partial<Record<SlotName, boolean>>>({});
     const [error, setError] = useState<string | null>(null);
-    const [opts, setOpts] = useState<OptionValues>({ aspect: null, count: 1, seed: '', negative: '' });
+    const [opts, setOpts] = useState<OptionValues>({ aspect: null, count: 1, seed: '', negative: '', voice: '', audioSeconds: '' });
+    const [cameraOn, setCameraOn] = useState(false);
+    const [cinema, setCinema] = useState<Cinema>(DEFAULT_CINEMA);
+    const [characterOn, setCharacterOn] = useState(false);
+    const [character, setCharacter] = useState<Picks>({});
     const [restored, setRestored] = useState(false);
     const [note, setNote] = useState<string | null>(null);
     const freeMap = useFreeLeft();
@@ -52,7 +63,7 @@ export default function CreateWithModel() {
                 if (!found) setError(t('form.modelGone'));
                 if (!found) return;
                 const o = optionsFor(found);
-                const base: OptionValues = { aspect: o.aspects.includes('16:9') ? '16:9' : (o.aspects[0] ?? null), count: 1, seed: '', negative: '' };
+                const base: OptionValues = { aspect: o.aspects.includes('16:9') ? '16:9' : (o.aspects[0] ?? null), count: 1, seed: '', negative: '', voice: '', audioSeconds: '' };
                 // A template brings its own words; only a form opened bare gets the unsent draft back.
                 if (typeof presetPrompt === 'string') {
                     setOpts(base);
@@ -63,7 +74,11 @@ export default function CreateWithModel() {
                     if (d) {
                         setPrompt(d.prompt);
                         if (d.duration !== null && found.durations.includes(d.duration)) setDuration(d.duration);
-                        setOpts({ aspect: d.aspect && o.aspects.includes(d.aspect) ? d.aspect : base.aspect, count: imageCount(found, d.count), seed: d.seed, negative: d.negative });
+                        setOpts({ aspect: d.aspect && o.aspects.includes(d.aspect) ? d.aspect : base.aspect, count: imageCount(found, d.count), seed: d.seed, negative: d.negative, voice: d.voice ?? '', audioSeconds: d.audioSeconds ?? '' });
+                        setCameraOn(d.cinemaOn === true);
+                        setCinema(sanitizeCinema(d.cinema));
+                        setCharacterOn(d.characterOn === true);
+                        setCharacter(sanitizePicks(d.character));
                         setRestored(true);
                     } else setOpts(base);
                     draftReady.current = true;
@@ -77,14 +92,17 @@ export default function CreateWithModel() {
     useEffect(() => {
         if (!model || !draftReady.current) return;
         const id = setTimeout(() => {
-            saveDraft({ v: SAVED_DRAFT_VERSION, modelId: model.id, prompt, duration, aspect: opts.aspect, count: opts.count, seed: opts.seed, negative: opts.negative }).catch(() => undefined);
+            saveDraft({ v: SAVED_DRAFT_VERSION, modelId: model.id, prompt, duration, aspect: opts.aspect, count: opts.count, seed: opts.seed, negative: opts.negative, voice: opts.voice, audioSeconds: opts.audioSeconds, cinemaOn: cameraOn, cinema, characterOn, character }).catch(() => undefined);
         }, 600);
         return () => clearTimeout(id);
-    }, [model, prompt, duration, opts]);
+    }, [model, prompt, duration, opts, cameraOn, cinema, characterOn, character]);
 
     const discardDraft = useCallback(() => {
         setPrompt('');
-        setOpts((o) => ({ ...o, seed: '', negative: '', count: 1 }));
+        setOpts((o) => ({ ...o, seed: '', negative: '', count: 1, voice: '', audioSeconds: '' }));
+        setCameraOn(false);
+        setCharacterOn(false);
+        setCharacter({});
         setRestored(false);
         clearDraft().catch(() => undefined);
     }, []);
@@ -100,17 +118,23 @@ export default function CreateWithModel() {
     const freeLeft = freeLeftFor(freeMap, model.id);
     // The first `freeLeft` images of a batch are free today; the server decides, this words the button.
     const price = batchCost(unit, n, freeLeft);
-    const text = prompt.trim();
+    // The camera words go into the prompt for image and video models; the price and the model do not change.
+    const takesCharacter = kindOf(model.modality) === 'image' && textInput(model)?.key === 'prompt';
+    const takesCamera = (kindOf(model.modality) === 'image' || isVideo) && textInput(model)?.key === 'prompt';
+    // Character first, then the camera, as on the web. Both only rewrite the prompt.
+    const withCharacter = takesCharacter && characterOn ? buildCharacterPrompt(prompt, character) : prompt.trim();
+    const text = takesCamera && cameraOn ? buildCinemaPrompt(withCharacter, cinema) : withCharacter;
     const slots = slotsFor(model);
     const sources = toSourceKeys(uploaded);
+    const assets = toSourceAssets(fromLibrary, SLOT_ORDER);
     const waiting = Object.values(sending).some(Boolean);
-    const ready = !waiting && missingRequired(slots, uploaded).length === 0 && (!promptRequired(model) || !!text) && !seedIsInvalid(opts.seed);
+    const ready = !waiting && missingRequired(slots, { ...uploaded, ...fromLibrary }).length === 0 && (!promptRequired(model) || !!text) && !seedIsInvalid(opts.seed) && !voiceIsMissing(options, opts.voice) && !audioLengthInvalid(options, opts.audioSeconds);
     const text_ = textInput(model);
 
     async function generate() {
         if (!model || !ready || busy) return;
-        const extra = settingsInputs(options, { seed: opts.seed, negative: opts.negative, aspect: opts.aspect });
-        const signature = `${model.id}|${text}|${duration}|${n}|${JSON.stringify(extra)}|${sources.map((s) => `${s.slot}:${s.key}`).join(',')}`;
+        const extra = settingsInputs(options, { seed: opts.seed, negative: opts.negative, aspect: opts.aspect, voice: opts.voice, audioSeconds: opts.audioSeconds });
+        const signature = `${model.id}|${text}|${duration}|${n}|${JSON.stringify(extra)}|${sources.map((s) => `${s.slot}:${s.key}`).join(',')}|${assets.map((a) => `${a.slot}:${a.assetId}`).join(',')}`;
         const keys = pending.current?.signature === signature ? pending.current.keys : Array.from({ length: n }, () => Crypto.randomUUID());
         pending.current = { signature, keys };
         setBusy(true);
@@ -122,7 +146,7 @@ export default function CreateWithModel() {
             // N images are N separate generations: each its own key, charge, refund and job, sent one at a time.
             // A retry after a failure replays the same keys, so the ones already started are not charged again.
             for (let i = 0; i < n; i++) {
-                const r = await mediaApi(api).createGeneration({ modelId: model.id, prompt: text, durationSeconds: isVideo ? duration : null, confirmedCredits: unit, idempotencyKey: keys[i], sources, textKey: text_?.key, extraInputs: inputsForIndex(extra, i, n) });
+                const r = await mediaApi(api).createGeneration({ modelId: model.id, prompt: text, durationSeconds: isVideo ? duration : null, confirmedCredits: unit, idempotencyKey: keys[i], sources, assets, textKey: text_?.key, extraInputs: inputsForIndex(extra, i, n) });
                 first ??= r.job_id;
                 started += 1;
             }
@@ -150,6 +174,7 @@ export default function CreateWithModel() {
                         slot={s}
                         api={api}
                         onChange={(key) => setUploaded((u) => ({ ...u, [s.slot]: key }))}
+                        onLibrary={(jobId) => setFromLibrary((l) => ({ ...l, [s.slot]: jobId }))}
                         onBusy={(b) => setSending((x) => ({ ...x, [s.slot]: b }))}
                     />
                 ))}
@@ -173,7 +198,7 @@ export default function CreateWithModel() {
                         </Pressable>
                     </View>
                 ) : null}
-                {sources.length ? <Text style={styles.consent}>{t('form.consent')}</Text> : null}
+                {sources.length || assets.length ? <Text style={styles.consent}>{t('form.consent')}</Text> : null}
                 {isVideo && model.durations.length > 1 ? (
                     <View style={styles.chips}>
                         {model.durations.map((d) => (
@@ -183,7 +208,9 @@ export default function CreateWithModel() {
                         ))}
                     </View>
                 ) : null}
-                {options.aspects.length > 0 || takesImageCount(model) || hasSettings(options) ? <CreateOptions options={options} values={opts} showCount={takesImageCount(model)} onChange={setOpts} /> : null}
+                {hasAnyOption(options) || takesImageCount(model) ? <CreateOptions options={options} values={opts} showCount={takesImageCount(model)} onChange={setOpts} /> : null}
+                {takesCharacter ? <CharacterPanel on={characterOn} picks={character} onToggle={setCharacterOn} onChange={setCharacter} /> : null}
+                {takesCamera ? <CameraPanel on={cameraOn} value={cinema} onToggle={setCameraOn} onChange={setCinema} /> : null}
                 <Text style={styles.price} accessibilityLiveRegion="polite">{costLine(price, n, freeLeft, unit)}</Text>
                 {error ? <Text style={styles.error}>{error}</Text> : null}
                 {note ? <Text style={styles.consent}>{note}</Text> : null}
