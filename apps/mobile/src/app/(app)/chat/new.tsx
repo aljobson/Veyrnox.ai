@@ -103,6 +103,7 @@ export default function NewChat() {
                     {SKILL_GROUPS.map((g) => (
                         <View key={g}>
                             <Text style={styles.heading} accessibilityRole="header">{t(`chat.skills.group.${g}`)}</Text>
+                            {g === 'Film' ? <Text style={styles.muted}>{t('chat.skills.filmNote')}</Text> : null}
                             {SKILLS.filter((s) => s.group === g).map((s) => (
                                 <Pressable key={s.id} accessibilityRole="button" accessibilityLabel={`${t('chat.skills.start', { name: s.name })}. ${s.blurb}`} disabled={creating} style={[styles.row, { minHeight: MIN_TARGET }]} onPress={() => pickSkill(s)}>
                                     <Text style={styles.name}>{s.name}</Text>

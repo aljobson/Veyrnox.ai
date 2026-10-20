@@ -933,6 +933,9 @@ const en = {
     'explore.oddlings.title': 'Oddlings',
     'explore.oddlings.body': 'Original characters you can browse, then make into a portrait or a short.',
     'explore.oddlings.hint': 'Opens the Oddlings area.',
+    // Film skill chats (ADR-0182)
+    'chat.skills.group.Film': 'Film',
+    'chat.skills.filmNote': 'Film Studio is on the web. These chats help you write what it needs; they never make, approve or lock anything.',
 } as const;
 
 export default en;
