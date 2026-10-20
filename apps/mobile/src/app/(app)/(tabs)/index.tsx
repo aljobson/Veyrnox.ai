@@ -8,6 +8,9 @@ import { selectedState, touchTarget } from '../../../lib/a11y';
 import { ALL_CATEGORIES, categoriesOf, filterByCategory, firstModelFor, pickUp, promptHref, recentCreations } from '../../../lib/explore';
 import { t } from '../../../lib/i18n';
 import { fetchCatalogCached, mediaApi, type CatalogModel, type Job, type Kind } from '../../../lib/media';
+import { LowBalanceNote } from '../../../components/LowBalanceNote';
+import { cheapestCredits, isLowBalance } from '../../../lib/lowBalance';
+import { useBalance } from '../../../lib/useBalance';
 import { fetchPresets, presetHref, presetPrice, type Preset } from '../../../lib/presets';
 import { colors } from '../../../theme';
 
@@ -26,6 +29,7 @@ export default function Explore() {
     const [note, setNote] = useState<string | null>(null);
     const [presets, setPresets] = useState<Preset[] | null>(null);
     const [presetsFailed, setPresetsFailed] = useState(false);
+    const balance = useBalance();
     const [category, setCategory] = useState(ALL_CATEGORIES);
     const [jobs, setJobs] = useState<Job[]>([]);
 
@@ -83,6 +87,7 @@ export default function Explore() {
                     <Text style={styles.makeText}>{t('explore.makeVideo')}</Text>
                 </Pressable>
             </View>
+            {balance !== null && isLowBalance(balance, cheapestCredits(presets)) ? <LowBalanceNote balance={balance} /> : null}
             {note ? <Text style={styles.note} accessibilityLiveRegion="polite">{note}</Text> : null}
 
             {resume ? (
