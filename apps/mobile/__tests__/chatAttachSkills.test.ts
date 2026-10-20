@@ -45,7 +45,18 @@ describe('attachments', () => {
 
 describe('studio skills', () => {
     test('the eight Studio skills are present', () => {
-        expect(SKILLS.map((s) => s.id).sort()).toEqual(['add-sound', 'bring-to-life', 'edit-with-words', 'fix-my-photo', 'fix-my-prompt', 'model-picker', 'prompt-writer', 'storyboard']);
+        expect(SKILLS.filter((s) => s.group !== 'Film').map((s) => s.id).sort()).toEqual(['add-sound', 'bring-to-life', 'edit-with-words', 'fix-my-photo', 'fix-my-prompt', 'model-picker', 'prompt-writer', 'storyboard']);
+    });
+    test('the seven Film skills are present, in stage order, each fitting a chat with the live model list', () => {
+        const film = SKILLS.filter((s) => s.group === 'Film');
+        expect(film.map((s) => s.id)).toEqual(['film-setup', 'film-studio-init', 'film-breakdown', 'film-reference-board', 'film-asset-passport', 'film-stress-test', 'film-shot-prompt']);
+        const many = Array.from({ length: 400 }, (_, i) => cat(`m${i}`, 'text-to-image', i + 1));
+        for (const s of film) {
+            expect(s.starter.length).toBeGreaterThan(0);
+            const text = skillInstructions(s, many);
+            expect(text).toContain(s.body);
+            expect(text.length).toBeLessThanOrEqual(MAX_INSTRUCTIONS);
+        }
     });
     test('instructions carry the live open models, cheapest first, and stay within the limit', () => {
         const text = skillInstructions(skillById('prompt-writer')!, catalog);
