@@ -2,6 +2,7 @@ import { Redirect, Stack } from 'expo-router';
 import { useAuth } from '../../auth/AuthProvider';
 import { Logo } from '../../components/Logo';
 import { AiConsentHost } from '../../components/AiConsentHost';
+import { FirstRunGate } from '../../components/FirstRunGate';
 import { OfflineBanner } from '../../components/OfflineBanner';
 import { MfaGate } from '../../components/account/MfaGate';
 import { ServiceBanner } from '../../components/ServiceBanner';
@@ -13,6 +14,7 @@ export default function AppLayout() {
     return (
         <>
             <AiConsentHost />
+            <FirstRunGate />
             <MfaGate>
             <Stack
                 screenLayout={({ children }) => (
