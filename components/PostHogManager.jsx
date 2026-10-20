@@ -1,4 +1,5 @@
 'use client';
+import LegalLink from './LegalLink';
 import { rich } from '../lib/i18n/rich';
 import { useI18n } from './I18nProvider';
 
@@ -169,7 +170,7 @@ export default function PostHogManager() {
               <p className="text-sm font-extrabold text-vx-fg">{t('privacy.title')}</p>
               <p className="mt-1 max-w-3xl text-[13px] leading-[1.55] text-vx-fg-body">
                 {rich(t('privacy.body'), {
-                  privacy: <Link href="/legal/privacy" className="text-vx-accent underline underline-offset-4">{t('chrome.privacyPolicy')}</Link>,
+                  privacy: <LegalLink element="Link" href="/legal/privacy" className="text-vx-accent underline underline-offset-4">{t('chrome.privacyPolicy')}</LegalLink>,
                 })}
               </p>
             </div>

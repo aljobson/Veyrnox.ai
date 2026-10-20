@@ -64,9 +64,9 @@ test('round 2 policy numbers survive translations and remain the original Englis
 test('generation rights consent stays English and exactly scoped in the audit', () => {
   const source = readFileSync(files.generation, 'utf8');
   assert.match(source, /<label lang="en" dir="ltr"[^>]*><input type="checkbox" checked=\{consent\}/);
-  const legal = candidates(files.generation, source, { app: true }).filter(row => row.status === 'allowlisted');
-  assert.equal(legal.length, 3);
-  assert.ok(legal.every(row => row.reason.includes('version-bound')));
+  const legal = candidates(files.generation, source, { app: true }).filter(row => row.kind === 'binding');
+  assert.equal(legal.length, 1);
+  assert.ok(legal.every(row => row.status === 'translated'));
   assert.equal(candidates(files.generation, '<label lang="en" dir="ltr">Untranslated controls</label>', { app: true })[0].status, 'unresolved');
   assert.match(readFileSync('app/api/v1/generations/route.js', 'utf8'), /p_version: RIGHTS_ATTESTATION_VERSION/);
 });

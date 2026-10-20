@@ -1,3 +1,4 @@
+import LegalLink from '../../../components/LegalLink';
 import Link from 'next/link';
 import { Logo } from '../_components/Logo';
 import { ENTITY } from '../../legal/_lib/entity';
@@ -222,10 +223,10 @@ export function FooterForest({ locale = 'en' }) {
           {/* py-2 on each link, taken back out of the bar's own padding: the
               row reads the same and a thumb gets 32px instead of 16. */}
           <div className="flex flex-wrap gap-x-4">
-            <Link href="/legal/terms" className="py-2 transition-colors hover:text-vx-fg">{t.label('Terms')}</Link>
-            <Link href="/legal/privacy" className="py-2 transition-colors hover:text-vx-fg">{t.label('Privacy')}</Link>
-            <Link href="/legal/aup" className="py-2 transition-colors hover:text-vx-fg">{t.label('Acceptable Use')}</Link>
-            <Link href="/legal/cinema-content" className="py-2 transition-colors hover:text-vx-fg">{t.label('Cinema Content')}</Link>
+            <LegalLink element="Link" href="/legal/terms" className="py-2 transition-colors hover:text-vx-fg">{t.label('Terms')}</LegalLink>
+            <LegalLink element="Link" href="/legal/privacy" className="py-2 transition-colors hover:text-vx-fg">{t.label('Privacy')}</LegalLink>
+            <LegalLink element="Link" href="/legal/aup" className="py-2 transition-colors hover:text-vx-fg">{t.label('Acceptable Use')}</LegalLink>
+            <LegalLink element="Link" href="/legal/cinema-content" className="py-2 transition-colors hover:text-vx-fg">{t.label('Cinema Content')}</LegalLink>
             <Link href="/design-system" className="py-2 transition-colors hover:text-vx-fg">{t.label('Design')}</Link>
           </div>
         </div>
