@@ -1,4 +1,4 @@
-import { ApiError, createApiClient } from '../src/lib/api';
+import { ApiError, createApiClient, isServiceUnavailable } from '../src/lib/api';
 
 const ok = (body: unknown) => new Response(JSON.stringify(body), { status: 200 });
 const status = (code: number, body: unknown = {}) => new Response(JSON.stringify(body), { status: code });
@@ -70,5 +70,16 @@ describe('api client', () => {
         fetchMock.mockRejectedValue(new TypeError('offline'));
         const { api } = client(async () => 'tok');
         await expect(api.getBalance()).rejects.toMatchObject({ status: 0, code: 'network' });
+    });
+    test('a 503 service_unavailable is a retryable outage: the session is kept and Retry-After is passed on', async () => {
+        fetchMock.mockResolvedValue(new Response(JSON.stringify({ error: 'service_unavailable', requestId: 'r1' }), {
+            status: 503, headers: { 'retry-after': '10' },
+        }));
+        const { api, onSessionLost } = client(async () => 'tok');
+        const err = await api.getBalance().catch((e: unknown) => e);
+        expect(isServiceUnavailable(err)).toBe(true);
+        expect((err as ApiError).retryAfterSeconds).toBe(10);
+        expect(onSessionLost).not.toHaveBeenCalled();
+        expect(isServiceUnavailable(new ApiError(500, 'internal'))).toBe(false);
     });
 });

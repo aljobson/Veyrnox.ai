@@ -7,6 +7,7 @@ import { useAuth } from '../../../auth/AuthProvider';
 import { AttachStrip } from '../../../components/chat/AttachStrip';
 import { DraftCards } from '../../../components/chat/DraftCards';
 import { ChatSettings } from '../../../components/chat/ChatSettings';
+import { MakePanel } from '../../../components/chat/MakePanel';
 import { LibraryImagePicker } from '../../../components/chat/LibraryImagePicker';
 import { ReplyOptionsBar } from '../../../components/chat/ReplyOptionsBar';
 import { HeaderAction } from '../../../components/HeaderAction';
@@ -53,6 +54,7 @@ export default function Conversation() {
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [allModels, setAllModels] = useState<ChatModel[]>([]);
     const [thread, setThread] = useState<{ model_id: string; system_prompt: string | null } | null>(null);
+    const [makeOpen, setMakeOpen] = useState(false);
     const [maxImages, setMaxImages] = useState(MAX_ATTACHMENTS);
     const [catalog, setCatalog] = useState<CatalogModel[] | null>(null);
     const abort = useRef<AbortController | null>(null);
@@ -296,6 +298,9 @@ export default function Conversation() {
                     <Pressable accessibilityRole="button" disabled={!thread || sending} style={styles.tool} onPress={() => setSettingsOpen(true)}>
                         <Text style={styles.toolText}>{t('chat.settings.open')}</Text>
                     </Pressable>
+                    <Pressable accessibilityRole="button" style={styles.tool} onPress={() => setMakeOpen(true)}>
+                        <Text style={styles.toolText}>{t('chat.make.open')}</Text>
+                    </Pressable>
                 </View>
             )}
             {messages === null && !error ? (
@@ -343,6 +348,7 @@ export default function Conversation() {
                 <AttachStrip items={images} extra={imageExtra} max={maxImages} disabled={sending} onLibrary={() => setPickerOpen(true)} onPhotos={() => void addPhotos()} onRemove={(rid) => setImages((cur) => cur.filter((x) => x.id !== rid))} />
             ) : null}
             {thread && settingsOpen ? <ChatSettings visible thread={thread} models={allModels} onSave={saveSettings} onClose={() => setSettingsOpen(false)} /> : null}
+            <MakePanel visible={makeOpen} initialPrompt={draft.trim().slice(0, 2000)} onClose={() => setMakeOpen(false)} />
             <LibraryImagePicker visible={pickerOpen} chosen={images} max={maxImages} onClose={() => setPickerOpen(false)} onPick={(img) => setImages((cur) => (cur.length < maxImages && !cur.some((c) => c.assetId === img.assetId) ? [...cur, img] : cur))} />
             <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
                 <TextInput
