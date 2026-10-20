@@ -74,4 +74,10 @@ export default {
     'oddlings.featured': 'Featured',
     'oddlings.featuredCard': 'Featured: {name}, open character sheet',
     'oddlings.sheet.share': 'Share this character',
+    'oddlings.animate.title': 'Animate this portrait',
+    'oddlings.animate.body': 'Opens Create with this portrait as the start image of a five-second video and the opening move in the words. You see the price there and are charged only when you press Generate.',
+    'oddlings.animate.move': 'Opening move',
+    'oddlings.animate.action': 'Animate this portrait',
+    'oddlings.animate.startNote': 'The start image is this character\'s portrait. Change the words if you like; nothing is charged until you press Generate.',
+    'oddlings.animate.loadFailed': 'The portrait could not be loaded. Go back and try again, or choose an image yourself.',
 } as const;
