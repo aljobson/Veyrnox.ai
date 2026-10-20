@@ -97,8 +97,8 @@ test('the studio nav exposes the rest of the public site on desktop and mobile',
         'the public destination list stays derived from the shared site nav');
     assert.match(appNav, /const menuItems = \[[\s\S]*\.\.\.items,[\s\S]*\.\.\.APP_BROWSE_CATEGORIES\.filter/,
         'the phone menu combines studio tools with the public site');
-    assert.match(appNav, /items=\{APP_BROWSE_CATEGORIES\}[\s\S]*buttonText=\{t\("app.nav.browse"\)\}[\s\S]*className="hidden lg:block"/,
-        'desktop studio pages provide a clearly labelled public browse menu');
+    assert.match(appNav, /id: 'inspire'[\s\S]*href: '\/presets'[\s\S]*href: '\/models'[\s\S]*href: '\/guides'/,
+        'the desktop sidebar carries the public Inspire destinations');
 });
 
 test('credits and assets come from the endpoint, the name from the session', () => {
@@ -156,11 +156,12 @@ test('the whole nav still fits without a hidden horizontal rail', () => {
     // Primary destinations remain visible; specialist tools live in the
     // explicit More menu until a 2xl viewport can hold them all.
     assert.match(signedIn, /flex flex-col gap-px/, 'the two figures stack');
-    assert.match(appNav, /\$\{account \? 'hidden sm:flex' : 'flex'\}/,
+    assert.match(appNav, /lg:hidden \$\{account \? 'hidden sm:flex' : 'flex'\}/,
         'the mark yields to signed-in account controls below sm, and only then');
-    assert.match(appNav, /primaryKeys = new Set\(\['explore', 'create', 'library'\]\)/,
-        'the three core destinations remain first-class');
-    assert.match(appNav, /2xl:hidden/, 'secondary destinations collapse into More');
+    assert.match(appNav, /<AppSidebar[\s\S]*sections=\{sidebarSections\}/,
+        'desktop destinations live in the grouped left sidebar');
+    assert.match(appNav, /id: 'agents'[\s\S]*id: 'tools'[\s\S]*id: 'assets'[\s\S]*id: 'inspire'/,
+        'the sidebar groups Agents, Tools, Assets and Inspire');
     assert.doesNotMatch(appNav, /<nav[^>]*overflow-x-auto/,
         'the nav no longer hides destinations in a horizontal scroller');
 });
@@ -170,7 +171,7 @@ test('Oddlings is prominent without crowding the phone bar', () => {
         'the desktop tab and phone menu share the featured destination');
     assert.ok(appNav.indexOf("key: 'oddlings'") < appNav.indexOf("key: 'create'"),
         'Oddlings appears before Create in the studio destination list');
-    const compactBar = appNav.slice(appNav.indexOf('<MobileMenu'), appNav.indexOf('<nav aria-label={t("app.nav.studio")}'));
+    const compactBar = appNav.slice(appNav.indexOf('<MobileMenu'), appNav.indexOf('<span aria-hidden="true" className="flex-1"'));
     assert.doesNotMatch(compactBar, /href="\/app\/oddlings"/,
         'the compact bar does not duplicate the highlighted Oddlings menu item');
 });
