@@ -26,7 +26,7 @@ This repo is single-context:
 └── packages/
 ```
 
-ADRs are numbered `NNNN-kebab-title.md` and indexed in `docs/adr/README.md`; add new ones at the next number and update the index.
+Create standalone `docs/adr/NNNN-kebab-title.md` ADRs at the next free number after checking main and open PRs, with a first `#` heading and a `Status:` line. Do not edit the frozen `docs/adr/README.md` or `index-baseline.txt`. Read the complete index with `node scripts/adr-index.mjs` from the repository root, or list `docs/adr/`; filenames distinguish amendments and repeated numbers.
 
 ## Use the glossary's vocabulary
 

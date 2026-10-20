@@ -49,7 +49,7 @@ The job screen polls every 3 seconds for up to 10 minutes and stops when it clos
 `src/lib/cache.ts` and `appCache.ts` hold the balance, Library list and model list per user; an offline banner shows; a paid action refuses to start offline. Rejected: an offline write queue (a queued debit is a surprise charge).
 
 ### 2.8 Translations reuse the web's keys
-11 locales (`en` plus es, zh, hi, ar, fr, pt, ru, ja, de, ko). `src/lib/i18n/` holds the catalogues and `webKeys.json`; new keys are listed in `I18N-NEW-KEYS.md` for the localization process, never machine-translated in the PR. Arabic needs right-to-left layout.
+11 locales (`en` plus es, zh, hi, ar, fr, pt, ru, ja, de, ko). `src/lib/i18n/` holds the catalogues and `webKeys.json`; new keys go to the localization process through the ignored `I18N-NEW-KEYS.md` report, generated with `cd apps/mobile && node scripts/sync-web-i18n.mjs`. Do not commit the report or machine-translate new strings in the PR. Arabic needs right-to-left layout.
 
 ### 2.9 Auth redirects go through the site
 `redirect_to` is `<apiBase>/auth/mobile`, which answers a 302 to the constant `ai.veyrnox.app://auth/callback` (ADR-0106 amendment 1). Publish connect uses `/social/connect/mobile/<network>` to the constant `ai.veyrnox.app://social/callback` (ADR-0136). The scheme is the bundle id, not `veyrnox://`, because the wallet app claims that scheme (hard wall).
