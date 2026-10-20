@@ -234,3 +234,9 @@ export function settingsPatch(
     if (next.instructions !== (current.system_prompt ?? '')) patch.system_prompt = next.instructions.slice(0, MAX_SYSTEM_PROMPT);
     return Object.keys(patch).length ? patch : null;
 }
+
+// The chats whose title contains the words typed (case-insensitive), as the web's list does. An empty search shows all.
+export function searchThreads<T extends { readonly title: string | null }>(threads: readonly T[], query: string): T[] {
+    const q = query.trim().toLowerCase();
+    return q ? threads.filter((t) => (t.title ?? '').toLowerCase().includes(q)) : [...threads];
+}

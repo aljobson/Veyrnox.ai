@@ -7,6 +7,7 @@ Phase-0 decision-support documents for the target architecture at `/Users/aljobs
 | ADR | Status | Summary | Blocks |
 |-----|--------|---------|--------|
 | [ADR-0184 — Mobile: chat settings, model and instructions (parity plan P3)](0184-mobile-chat-settings.md) | **Proposed 2026-10-19** | Settings in the chat toolbar: switch the model with its price, edit instructions; sends only what changed |
+| [ADR-0183 — Mobile: chat list search and delete (parity plan P3)](0183-mobile-chat-list-search-delete.md) | **Proposed 2026-10-19** | Title search and an asked-first Delete on each chat row |
 | [ADR-0166 — Mobile: Publish reports, PDF and slide download and share (parity plan P5)](0166-mobile-publish-reports.md) | **Proposed 2026-10-19** | Saved reports list; PDF and slides downloaded to the cache and shared; template editing not built |
 | [ADR-0180 — Mobile: make media from a chat (parity plan P3)](0180-mobile-chat-make-media.md) | **Proposed 2026-10-19** | Make button in chat: kind, cheapest-first models with prices, price on the button; file-needing models stay in Create |
 | [ADR-0182 — Mobile: Film skill chats (parity plan P3)](0182-mobile-film-skill-chats.md) | **Proposed 2026-10-19** | The web's seven Film skills in the New chat picker; help write, never make or lock |
