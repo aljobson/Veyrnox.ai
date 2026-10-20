@@ -17,3 +17,10 @@ export function isLowBalance(balance: number | null | undefined, cheapest: numbe
     if (typeof balance !== 'number' || !Number.isFinite(balance)) return false;
     return balance < (cheapest ?? LOW_BALANCE_FALLBACK);
 }
+
+// Credits still missing for a price the person has been shown, or 0 when the balance is unknown or enough. A hint only:
+// the server judges the real charge, and a refused one comes back as insufficient_credits.
+export function shortfall(balance: number | null | undefined, price: number): number {
+    if (typeof balance !== 'number' || !Number.isFinite(balance) || !Number.isFinite(price)) return 0;
+    return Math.max(0, Math.ceil(price - balance));
+}
