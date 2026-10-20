@@ -6,6 +6,7 @@ Phase-0 decision-support documents for the target architecture at `/Users/aljobs
 
 | ADR | Status | Summary | Blocks |
 |-----|--------|---------|--------|
+| [ADR-0186 — Mobile: Publish product catalogue, read-only (parity plan P5)](0186-mobile-publish-products-read-only.md) | **Proposed 2026-10-20** | Product list with prices, stock and sync status; editing and shop sync stay on the web |
 | [ADR-0185 — Mobile: Publish ads, read-only (parity plan P5)](0185-mobile-publish-ads-read-only.md) | **Proposed 2026-10-20** | Campaign drafts and status; links shown as host only; starting and editing stay on the web |
 | [ADR-0187 — Mobile: Publish team, change a role, remove, cancel an invitation (parity plan P5)](0187-mobile-publish-team-manage.md) | **Proposed 2026-10-20** | Role change, removal and invitation cancel with confirms; inviting and accepting not built |
 | [ADR-0208 — Mobile: creator upload shell, Continue on web (parity P6)](0208-mobile-creator-upload-shell.md) | **Proposed 2026-10-20** | Creators get a card that opens the web creator workspace; no upload built; what spike S3 must prove |
