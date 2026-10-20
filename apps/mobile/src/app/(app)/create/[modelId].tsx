@@ -1,23 +1,21 @@
-import * as Crypto from 'expo-crypto';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
-import { CONSENT_DECLINED_MESSAGE } from '../../../lib/aiConsent';
 import { ApiError } from '../../../lib/api';
-import { OFFLINE_PAID_MESSAGE, OfflineError } from '../../../lib/network';
+import { createGenerationSubmit, generationMessage } from '../../../lib/generationSubmit';
 import { CameraPanel } from '../../../components/CameraPanel';
 import { CharacterPanel } from '../../../components/CharacterPanel';
 import { CreateOptions, type OptionValues } from '../../../components/CreateOptions';
 import { SourcePicker } from '../../../components/SourcePicker';
 import { DEFAULT_CINEMA, buildCinemaPrompt, sanitizeCinema, type Cinema } from '../../../lib/cinemaCamera';
 import { clearDraft, loadDraft, saveDraft } from '../../../lib/createDraftStore';
-import { SAVED_DRAFT_VERSION, type CreateDraft, audioLengthInvalid, batchCost, freeLeftFor, hasAnyOption, imageCount, inputsForIndex, optionsFor, resolveAudio, resolveResolution, seedIsInvalid, settingsInputs, takesImageCount, voiceIsMissing } from '../../../lib/createOptions';
+import { SAVED_DRAFT_VERSION, type CreateDraft, audioLengthInvalid, batchCost, freeLeftFor, hasAnyOption, imageCount, optionsFor, resolveAudio, resolveResolution, seedIsInvalid, settingsInputs, takesImageCount, voiceIsMissing } from '../../../lib/createOptions';
 import { buildCharacterPrompt, sanitizePicks, type Picks } from '../../../lib/oddlingsBuilder';
 import { useBalance } from '../../../lib/useBalance';
 import { shortfall } from '../../../lib/lowBalance';
 import { useFreeLeft } from '../../../lib/useFreeLeft';
-import { estimateCredits, fetchCatalog, kindOf, mediaApi, promptRequired, textInput, type CatalogModel } from '../../../lib/media';
+import { estimateCredits, fetchCatalog, kindOf, promptRequired, textInput, type CatalogModel } from '../../../lib/media';
 import { selectedState } from '../../../lib/a11y';
 import { toSourceAssets } from '../../../lib/librarySource';
 import { portraitAsPickedFile, startOddlingId } from '../../../lib/oddlingsAnimate';
@@ -59,7 +57,7 @@ export default function CreateWithModel() {
     // The newest unsaved draft, so leaving the screen (to buy credits, say) never loses the last words typed.
     const unsaved = useRef<CreateDraft | null>(null);
     // The same request keeps its keys (one per image), so a retry after a dropped connection is charged once.
-    const pending = useRef<{ signature: string; keys: string[] } | null>(null);
+    const pending = useRef(createGenerationSubmit());
     const draftReady = useRef(false);
 
     useEffect(() => {
@@ -171,28 +169,18 @@ export default function CreateWithModel() {
     async function generate() {
         if (!model || !ready || busy) return;
         const extra = settingsInputs(options, { seed: opts.seed, negative: opts.negative, aspect: opts.aspect, voice: opts.voice, audioSeconds: opts.audioSeconds, resolution, audio });
-        const signature = `${model.id}|${text}|${duration}|${n}|${JSON.stringify(extra)}|${sources.map((s) => `${s.slot}:${s.key}`).join(',')}|${assets.map((a) => `${a.slot}:${a.assetId}`).join(',')}`;
-        const keys = pending.current?.signature === signature ? pending.current.keys : Array.from({ length: n }, () => Crypto.randomUUID());
-        pending.current = { signature, keys };
         setBusy(true);
         setError(null);
         setNote(null);
         let started = 0;
         let first: string | null = null;
         try {
-            // N images are N separate generations: each its own key, charge, refund and job, sent one at a time.
-            // A retry after a failure replays the same keys, so the ones already started are not charged again.
-            for (let i = 0; i < n; i++) {
-                const r = await mediaApi(api).createGeneration({ modelId: model.id, prompt: text, durationSeconds: isVideo ? duration : null, confirmedCredits: unit, idempotencyKey: keys[i], sources, assets, textKey: text_?.key, extraInputs: inputsForIndex(extra, i, n) });
-                first ??= r.job_id;
-                started += 1;
-            }
-            pending.current = null;
+            first = await pending.current.run(api, { modelId: model.id, prompt: text, durationSeconds: isVideo ? duration : null, confirmedCredits: unit, sources, assets, textKey: text_?.key, extraInputs: extra }, n, (count) => { started = count; });
             clearDraft().catch(() => undefined);
             if (n === 1 && first) router.replace({ pathname: '/job/[id]', params: { id: first } });
             else router.replace('/library');
         } catch (err) {
-            setError(messageFor(err));
+            setError(generationMessage(err));
             if (n > 1) setNote(t(err instanceof ApiError && err.code !== 'network' ? 'opt.started' : 'opt.startedUnknown', { started: String(started), count: String(n), next: String(started + 1) }));
         } finally {
             setBusy(false);
@@ -276,35 +264,6 @@ function costLine(price: number, n: number, freeLeft: number, unit: number): str
     if (n > 1 && freeLeft > 0) return plural('opt.costsPartial', price, { free: String(Math.min(freeLeft, n)), images: String(n) });
     if (n > 1) return plural('opt.costsBatch', price, { images: String(n) });
     return plural('form.costs', unit);
-}
-
-function messageFor(err: unknown): string {
-    if (err instanceof OfflineError) return OFFLINE_PAID_MESSAGE;
-    if (!(err instanceof ApiError)) return t('common.error');
-    switch (err.code) {
-        case 'insufficient_credits':
-            return t('form.err.insufficient');
-        case 'rate_limited':
-            return t('form.err.rate');
-        case 'credit_confirmation_mismatch':
-            return err.body.expected_credits === undefined ? t('form.err.priceChangedUnknown') : t('form.err.priceChanged', { credits: String(err.body.expected_credits) });
-        case 'network':
-            return t('form.err.network');
-        case 'source_not_found':
-            return t('form.err.sourceExpired');
-        case 'source_type_unsupported':
-        case 'source_slot_invalid':
-        case 'source_key_invalid':
-            return t('form.err.sourceMismatch');
-        case 'topic_refused':
-            return t('form.err.topicRefused');
-        case 'consent_declined':
-            return CONSENT_DECLINED_MESSAGE;
-        case 'consent_required':
-            return t('form.err.tryAgain');
-        default:
-            return t('form.err.default');
-    }
 }
 
 const styles = StyleSheet.create({

@@ -25,6 +25,10 @@ export default function CreateTools() {
         <ScrollView style={styles.screen} contentContainerStyle={styles.body}>
             <Stack.Screen options={{ title: t('toolsDir.title') }} />
             <Text style={styles.lead}>{t('toolsDir.lead')}</Text>
+            <Pressable accessibilityRole="button" accessibilityLabel={t('faceFilters.title')} style={[styles.row, touchTarget]} onPress={() => router.push('/face-filters')}>
+                <Text style={styles.name}>{t('faceFilters.title')}</Text>
+                <Text style={styles.muted}>{t('faceFilters.lead')}</Text>
+            </Pressable>
             {failed && !models ? (
                 <Text style={styles.error}>{t('create.loadError')}</Text>
             ) : models === null ? (
@@ -42,7 +46,7 @@ export default function CreateTools() {
                                 accessibilityRole="button"
                                 accessibilityLabel={`${m.name}. ${t('toolsDir.needs', { what: toolNeeds(m) })}. ${plural('create.from', m.credits)}`}
                                 style={[styles.row, touchTarget]}
-                                onPress={() => router.push({ pathname: '/create/[modelId]', params: { modelId: m.id } })}
+                                onPress={() => g.key === 'face-filters' ? router.push('/face-filters') : router.push({ pathname: '/create/[modelId]', params: { modelId: m.id } })}
                             >
                                 <View style={styles.rowText}>
                                     <Text style={styles.name}>{m.name}</Text>
