@@ -57,7 +57,7 @@ export default {
     'oddlings.saved.deleteBody': 'It is only stored on this phone and cannot be brought back.',
     'oddlings.saved.cancel': 'Cancel',
     'oddlings.saved.noPremise': 'No premise yet',
-    'oddlings.sheet.preview': 'Animated previews are free on the web.',
+    'oddlings.sheet.preview': 'The moving preview is a short loop drawn on your phone from this portrait. It has no sound and costs nothing.',
 
     // Oddlings handoff, share (parity P8, slice 3 and addendum).
     'oddlings.handoff.title': 'Make something with this character',
@@ -80,4 +80,9 @@ export default {
     'oddlings.animate.action': 'Animate this portrait',
     'oddlings.animate.startNote': 'The start image is this character\'s portrait. Change the words if you like; nothing is charged until you press Generate.',
     'oddlings.animate.loadFailed': 'The portrait could not be loaded. Go back and try again, or choose an image yourself.',
+    'oddlings.puppet.pause': 'Pause preview',
+    'oddlings.puppet.play': 'Play preview',
+    'oddlings.puppet.preparing': 'Preparing the moving preview',
+    'oddlings.puppet.failed': 'This phone could not draw the moving preview. The picture is the same character.',
+    'oddlings.puppet.offline': 'The moving preview needs the portrait once. Connect and try again.',
 } as const;

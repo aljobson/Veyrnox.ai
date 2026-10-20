@@ -1,11 +1,11 @@
-import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { AnimateCard } from '../../../components/oddlings/AnimateCard';
+import { OddlingPortrait } from '../../../components/oddlings/OddlingPortrait';
 import { VEY_CLEARANCE } from '../../../components/VeyMascot';
 import { MIN_TARGET } from '../../../lib/a11y';
 import { t } from '../../../lib/i18n';
-import { findOddling, portraitUrl, shareMessage, shareUrl } from '../../../lib/oddlings';
+import { findOddling, shareMessage, shareUrl } from '../../../lib/oddlings';
 import { colors } from '../../../theme';
 
 export default function OddlingSheet() {
@@ -23,7 +23,7 @@ export default function OddlingSheet() {
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
             <Stack.Screen options={{ title: oddling.name }} />
-            <Image source={{ uri: portraitUrl(oddling.id) }} style={styles.portrait} contentFit="cover" cachePolicy="disk" accessibilityLabel={t('oddlings.portrait', { name: oddling.name })} accessibilityIgnoresInvertColors />
+            <OddlingPortrait id={oddling.id} name={oddling.name} />
             <Text style={styles.kicker}>{t('oddlings.sheet.title').toUpperCase()}</Text>
             <Text style={styles.name} accessibilityRole="header">{oddling.name}</Text>
             <Text style={styles.hook}>{oddling.hook}</Text>
@@ -49,7 +49,6 @@ const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
     content: { padding: 16, paddingBottom: VEY_CLEARANCE + 32 },
     muted: { color: colors.muted, padding: 24 },
-    portrait: { width: '100%', aspectRatio: 2 / 3, borderRadius: 16, backgroundColor: colors.surface },
     kicker: { color: colors.accent, fontSize: 11, fontWeight: '700', letterSpacing: 1.5, marginTop: 16 },
     name: { color: colors.text, fontSize: 30, fontWeight: '800', marginTop: 4 },
     hook: { color: colors.body, fontSize: 16, lineHeight: 22, marginTop: 8 },
