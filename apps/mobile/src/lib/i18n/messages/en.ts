@@ -1501,6 +1501,7 @@ const en = {
     'chat.make.err.network': 'No connection. Nothing was started and you were not charged.',
     'chat.make.err.later': 'That could not be started. You were not charged. Try again.',
     'preview.title': 'Preview',
+    'preview.back': 'Back',
     'preview.browse': 'Browse first',
     'preview.browseHint': 'Opens a preview of templates and Cinema. No account needed.',
     'preview.tab.templates': 'Templates',
