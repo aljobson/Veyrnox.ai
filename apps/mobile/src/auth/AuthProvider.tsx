@@ -8,6 +8,7 @@ import { AUTH_REDIRECT_URL, OAUTH_BRIDGE_URL } from '../lib/config';
 import { createAppleNonce, createPkce } from '../lib/auth/pkce';
 import { aiConsent } from '../lib/aiConsentStore';
 import { bindCacheUser, userIdFromToken, wipeCache } from '../lib/appCache';
+import { cinemaProgressIdentity } from '../lib/cinemaProgress';
 import { clearRefreshToken, readRefreshToken, writeRefreshToken } from '../lib/auth/sessionStore';
 import {
     authorizeUrl,
@@ -61,6 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const adopt = useCallback(async (session: Session) => {
         sessionRef.current = session;
         const userId = userIdFromToken(session.accessToken);
+        cinemaProgressIdentity.setUser(userId);
         aiConsent.setUser(userId);
         await bindCacheUser(userId);
         await writeRefreshToken(session.refreshToken);
@@ -69,6 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const drop = useCallback(async () => {
         sessionRef.current = null;
+        cinemaProgressIdentity.setUser(null);
         await aiConsent.forget();
         await wipeCache().catch(() => undefined);
         await clearRefreshToken();
