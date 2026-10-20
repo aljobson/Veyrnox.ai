@@ -6,6 +6,7 @@ Phase-0 decision-support documents for the target architecture at `/Users/aljobs
 
 | ADR | Status | Summary | Blocks |
 |-----|--------|---------|--------|
+| [ADR-0180 — Mobile: make media from a chat (parity plan P3)](0180-mobile-chat-make-media.md) | **Proposed 2026-10-19** | Make button in chat: kind, cheapest-first models with prices, price on the button; file-needing models stay in Create |
 | [ADR-0182 — Mobile: Film skill chats (parity plan P3)](0182-mobile-film-skill-chats.md) | **Proposed 2026-10-19** | The web's seven Film skills in the New chat picker; help write, never make or lock |
 | [ADR-0171 — Mobile: chat reply through iOS suspension (parity plan P3, S6)](0171-mobile-chat-long-turn-resume.md) | **Proposed 2026-10-19** | Return from background: look for the job for about a minute, never cut the reader off; one charge on a retry |
 | [ADR-0181 — Mobile: chat reply through iOS suspension (parity plan P3, S6)](0181-mobile-chat-long-turn-resume.md) | **Proposed 2026-10-19** | Return from background: look for the job for about a minute, never cut the reader off; one charge on a retry |

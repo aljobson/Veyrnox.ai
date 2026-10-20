@@ -1113,6 +1113,32 @@ const en = {
     // Film skill chats (ADR-0182)
     'chat.skills.group.Film': 'Film',
     'chat.skills.filmNote': 'Film Studio is on the web. These chats help you write what it needs; they never make, approve or lock anything.',
+    // Make from chat (ADR-0180)
+    'chat.make.open': 'Make',
+    'chat.make.title': 'Make something',
+    'chat.make.kind': 'What to make',
+    'chat.make.kind.image': 'Image',
+    'chat.make.kind.video': 'Video',
+    'chat.make.kind.audio': 'Audio',
+    'chat.make.length': 'Length',
+    'chat.make.seconds': '{n} s',
+    'chat.make.from.one': 'from {count} credit',
+    'chat.make.from.other': 'from {count} credits',
+    'chat.make.none': 'No models here can be started from a chat. Use Create for models that need a file.',
+    'chat.make.placeholder': 'Describe what to make',
+    'chat.make.promptLabel': 'What to make',
+    'chat.make.more': 'Models that need a file, several images at once and other settings are in Create.',
+    'chat.make.button': 'Make',
+    'chat.make.buttonPrice.one': 'Make, {count} credit',
+    'chat.make.buttonPrice.other': 'Make, {count} credits',
+    'chat.make.buttonLabel.one': 'Make it. Costs {count} credit.',
+    'chat.make.buttonLabel.other': 'Make it. Costs {count} credits.',
+    'chat.make.close': 'Close',
+    'chat.make.loadFailed': 'Could not load the models. Try again.',
+    'chat.make.err.credits': 'Not enough credits for this. Nothing was started.',
+    'chat.make.err.rate': 'Too many requests. Wait a moment and try again.',
+    'chat.make.err.network': 'No connection. Nothing was started and you were not charged.',
+    'chat.make.err.later': 'That could not be started. You were not charged. Try again.',
 } as const;
 
 export default en;
