@@ -45,7 +45,7 @@ export interface TitleDetail {
     readonly title: CinemaTitle;
     // A film or short is itself the thing to play; a series lists its episodes.
     readonly watchable: boolean;
-    // The title's own access word and reason as the detail read sent them (ADR-0167); the locked state explains from these.
+    // The title's own access word and reason as the detail read sent them (ADR-0164); the locked state explains from these.
     readonly access: string;
     readonly reason: string | null;
     readonly episodes: readonly Episode[];
