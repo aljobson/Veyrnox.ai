@@ -37,7 +37,7 @@ export function PassPanel() {
     return () => controller.abort();
   }, [preview]);
 
-  return <div className="mx-auto max-w-[1300px] px-4 py-10 pb-40 sm:px-6 sm:py-16 sm:pb-32"><div className="max-w-[852px]">
+  return <div className="mx-auto max-w-[1300px] px-4 py-10 pb-40 sm:px-6 sm:py-16 sm:pb-32"><div className="max-w-[1100px]">
     <header className="max-w-2xl">
       <p className="mb-4 font-vx-mono text-xs tracking-widest text-vx-accent">{t('cinema.pass.kicker')}</p>
       <h1 className="vx-display vx-title-detail">{t("cinema.passPanel.everyStoryOnePass")}</h1>
@@ -140,12 +140,12 @@ function Pass({ salesOpen }) {
         <input type="checkbox" className="mt-1" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
         <span lang="en" dir="ltr">{CONSENT_TEXT}</span>
       </label></BindingText>
-      <ul className="mt-6 grid gap-4 sm:grid-cols-3">
-        {plans.map((p) => <li key={p.id} className="flex flex-col rounded-2xl border border-vx-border bg-vx-base/60 p-5">
+      <ul className="mt-6 grid grid-cols-[repeat(auto-fit,minmax(14rem,1fr))] gap-4">
+        {plans.map((p) => <li key={p.id} className={`flex flex-col rounded-2xl border bg-vx-base/60 p-6 ${p.billing_interval === 'year' ? 'border-vx-accent shadow-[inset_0_0_0_1px_rgb(var(--vx-accent))]' : 'border-vx-border'}`}>
           <p className="font-vx-mono text-xs tracking-widest text-vx-accent uppercase">{tOr(t, `cinema.pass.${p.billing_interval}ly`, p.billing_interval)}</p>
-          <p className="mt-3 text-3xl font-black">{usd.format(p.price_usd_cents / 100)}<span className="text-base font-normal text-vx-fg-muted"> / {tOr(t, `cinema.pass.${p.billing_interval}`, p.billing_interval)}</span></p>
-          {p.intro_price_usd_cents != null && <p className="mt-1 text-sm font-bold text-vx-fg-body">{t('cinema.pass.intro', { interval: tOr(t, `cinema.pass.${p.billing_interval}`, p.billing_interval), amount: usd.format(p.intro_price_usd_cents / 100) })}</p>}
-          <Button className="mt-5" disabled={busy || !agreed} onClick={() => start(p.id)}>{t('cinema.pass.start', { interval: tOr(t, `cinema.pass.${p.billing_interval}ly`, p.billing_interval) })}</Button>
+          <p className="mt-4 text-[44px] font-black leading-none">{usd.format(p.price_usd_cents / 100)}<span className="text-base font-normal text-vx-fg-muted"> / {tOr(t, `cinema.pass.${p.billing_interval}`, p.billing_interval)}</span></p>
+          {p.intro_price_usd_cents != null && <p className="mt-3 rounded-lg bg-vx-accent/[0.12] px-3 py-2 text-sm font-bold text-vx-fg-body">{t('cinema.pass.intro', { interval: tOr(t, `cinema.pass.${p.billing_interval}`, p.billing_interval), amount: usd.format(p.intro_price_usd_cents / 100) })}</p>}
+          <Button className="mt-5 w-full justify-center py-3" disabled={busy || !agreed} onClick={() => start(p.id)}>{t('cinema.pass.start', { interval: tOr(t, `cinema.pass.${p.billing_interval}ly`, p.billing_interval) })}</Button>
         </li>)}
       </ul>
     </section>}
