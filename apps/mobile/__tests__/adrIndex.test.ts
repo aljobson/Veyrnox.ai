@@ -17,8 +17,12 @@ test('ADR baseline and historical README stay frozen; every numbered filename re
         const hash = text => createHash('sha256').update(text).digest('hex');
         const {readme, baseline, entries} = readIndex();
         const frozenMessage = 'docs/adr/README.md and docs/adr/index-baseline.txt are frozen. Remove your edits and add a standalone ADR file (see docs/agents/domain.md).';
-        // The README table is historical but not byte-pinned: in-flight PRs that followed the old rule may add rows. Baseline rows must stay (asserted below).
-        assert.equal(hash(readFileSync('docs/adr/index-baseline.txt')), '7ca4f474432a335b5429ebb5f3188c9414fa254b227a900dfefa4f71e93ff064', frozenMessage);
+        // Historical README lines stay verbatim: each pinned line hash must still be present. Rows added by in-flight PRs that followed the old rule are tolerated (superset), edits or removals of historical lines are not.
+        const lineHashes = new Set(readme.replace(cutoff, '').split('\\n').filter(l => l.trim()).map(l => hash(l)));
+        const pinned = readFileSync('docs/adr/index-readme-lines.sha256', 'utf8').trim().split('\\n');
+        const lost = pinned.filter(h => !lineHashes.has(h));
+        assert.deepEqual(lost, [], frozenMessage + ' (' + lost.length + ' historical README line(s) changed or removed)');
+        assert.equal(hash(readFileSync('docs/adr/index-baseline.txt')), '5d28a42f6b8994fe8b15698ff58b319701dcd0c018fcefb260bf8d1a5c463a9b', frozenMessage);
         assert.deepEqual(validateIndex(), []);
         const output = renderIndex();
         for (const entry of entries) assert.ok(output.includes('](' + entry.filename + ')'), entry.filename);

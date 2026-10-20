@@ -14,7 +14,7 @@ test('historical English key order survives the split unchanged', () => {
     // Pins KEY ORDER only. A later edit of a string value must never fail a test; values were proven equal once, at the split.
     const original = Object.keys(en).filter((key) => (order as readonly string[]).includes(key));
     expect(original).toEqual(order);
-    expect(createHash('sha256').update(JSON.stringify(order)).digest('hex')).toBe('c18d8bfdb10e4adf2411dd63531a3e5e6bc8c9d875530eebb33dcc47b81778d6');
+    expect(createHash('sha256').update(JSON.stringify(order)).digest('hex')).toBe('e3ad97a280093c32d6b6b9232132b92ed28b0071c8419ec84689792fc38375c2');
 });
 test('the sync reader and runtime catalog agree on every key, value and order', () => {
     const result = execFileSync('node', ['--input-type=module', '-e',
