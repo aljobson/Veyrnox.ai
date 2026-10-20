@@ -1528,6 +1528,9 @@ const en = {
     'cinemaPass.renewsOn': 'Active. Renews on {date}.',
     'cinemaPass.endsOn': 'Active until {date}. It will not renew.',
     'cinemaPass.manage': 'You manage a Pass where you bought it.',
+    // App-only: credits moments in Create (ADR-0220).
+    'create.short.one': 'You have {have} credits and this costs {need}. You need {count} more.',
+    'create.short.other': 'You have {have} credits and this costs {need}. You need {count} more.',
 } as const;
 
 export default en;
