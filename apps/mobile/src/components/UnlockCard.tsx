@@ -6,7 +6,7 @@ import { renewalTerms, toDisplayPackages } from '../lib/billing';
 import { t } from '../lib/i18n';
 import { colors } from '../theme';
 
-export type LockedFeature = 'calendar' | 'analytics' | 'inbox';
+export type LockedFeature = 'calendar' | 'analytics' | 'inbox' | 'ads' | 'commerce';
 const store = Platform.OS === 'ios' ? 'ios' : 'android';
 
 // ADR-0162: what a free account sees where the web shows an "Unlock ..." card. The price is the store's own, weekly,
