@@ -10,7 +10,7 @@ import { colors } from '../theme';
 
 // One optional text box per chosen network. Empty means the main text is used.
 export function NetworkTextFields({ networks, values, onChange }: { networks: readonly string[]; values: Readonly<Record<string, string>>; onChange: (network: string, text: string) => void }) {
-    if (networks.length === 0) return null;
+    if (networks.length === 0) return <Text style={styles.muted}>{t('compose.networkTextPending')}</Text>;
     return (
         <View style={styles.box}>
             {networks.map((n) => {

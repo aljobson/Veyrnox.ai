@@ -20,6 +20,7 @@ export function CameraPanel({ on, value, onToggle, onChange }: Props) {
                 <Text style={styles.title} accessibilityRole="header">{t('cam.title')}</Text>
                 <Switch accessibilityLabel={t('cam.title')} value={on} onValueChange={onToggle} trackColor={{ true: colors.accent, false: colors.border }} />
             </View>
+            {on ? null : <Text style={styles.muted}>{t('cam.offHint')}</Text>}
             {on ? (
                 <>
                     <Row label={t('cam.camera')} options={Object.keys(CAMERAS)} selected={value.camera} onPick={(camera) => onChange({ ...value, camera })} />

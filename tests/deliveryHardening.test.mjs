@@ -24,7 +24,7 @@ test('the canonical About URL routes to the internal About page', () => {
 
 test('production rolls retained static assets forward across releases', () => {
     assert.match(workflow, /permissions:\n\s+actions: read\n\s+contents: read/);
-    assert.match(workflow, /gh run list --workflow deploy-production\.yml --branch main --status completed --limit 100/);
+    assert.match(workflow, /gh run list --workflow deploy-production\.yml --branch main --status completed --limit 300/);
     assert.match(workflow,
         /\.jobs\[\] \| select\(\.name == "deploy" and \.conclusion == "success"\)[\s\S]*\.steps\[\] \| select\(\.name == "Deploy" and \.conclusion == "success"\)/,
         'history requires both a successful deploy job and an actual successful Deploy step');

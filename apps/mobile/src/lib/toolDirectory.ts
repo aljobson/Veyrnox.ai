@@ -17,6 +17,7 @@ export const TOOL_TASKS: readonly ToolTask[] = [
     { key: 'background', label: 'Remove background', blurb: 'Cut the subject out of a photo.', ids: ['bria-bg-remove'] },
     { key: 'expand', label: 'Expand', blurb: 'Extend an image beyond its edges.', ids: ['bria-expand'] },
     { key: 'edit', label: 'Edit with a prompt', blurb: 'Change an image by describing the change.', ids: ['nano-banana-pro-edit', 'nano-banana-pro-edit-grsai'] },
+    { key: 'face-filters', label: 'Face filters', blurb: 'Retouch, relight or restyle the face in your own photo.', ids: ['face-retouch', 'face-enhance', 'face-relight', 'face-makeup', 'face-age'] },
     { key: 'animate', label: 'Photo to video', blurb: 'Turn a still image into a moving clip.', ids: ['kling-3.0-i2v', 'kling-3.0-i2v-kie'] },
     { key: 'avatar', label: 'Talking avatar', blurb: 'Make a photo speak a voice clip.', ids: ['kling-avatar-v2'] },
     { key: 'lipsync', label: 'Lip sync', blurb: "Match a video's lips to new speech.", ids: ['latentsync'] },

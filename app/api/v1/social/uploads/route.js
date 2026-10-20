@@ -6,6 +6,7 @@ import { socialPostWriteLimit } from '../../../../../lib/socialPostWriteLimit.js
 import { accountReadLimit } from '../../../../../lib/accountReadLimit.js';
 import { checkSocialUpload, socialUploadsEnabled } from '../../../../../lib/social/uploadPolicy.js';
 import { checkSniffed } from '../../../../../lib/uploadSource.js';
+import { admissionAvailable } from '../../../../../lib/uploadAdmission.js';
 import { fetchWithTimeout } from '../../../../../lib/fetchWithTimeout.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -47,6 +48,8 @@ export async function POST(req) {
     if (limited) return limited;
     try {
         if (body.action === 'reserve') {
+            const admission = admissionAvailable();
+            if (!admission.ok) return reply({ error: admission.error }, 503);
             if (body.rights_confirmed !== true) return reply({ error: 'upload_consent_required' }, 400);
             const checked = checkSocialUpload(body.content_type, body.size_bytes);
             if (!checked.ok) return reply({ error: checked.error }, 400);

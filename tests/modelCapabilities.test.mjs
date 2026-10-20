@@ -36,6 +36,9 @@ const CATALOG = [
     'byteplus:seedance-2.5', 'byteplus:seedance-1.0-pro-fast',
     // Qwen 3 TTS Voice Design, staged inactive by migration 0235.
     'fal-ai/qwen-3-tts/voice-design/1.7b', 'fal-ai/demucs',
+    // Face Filters A1-A5, staged inactive by migration 0356.
+    'fal-ai/image-editing/retouch', 'fal-ai/image-editing/face-enhancement', 'fal-ai/iclight-v2',
+    'fal-ai/image-apps-v2/makeup-application', 'fal-ai/image-apps-v2/age-modify',
 ];
 
 // Endpoints the pre-registry snapshot does not cover: corrected on purpose
@@ -44,7 +47,9 @@ const CORRECTED = new Set(['fal-ai/sana/v1.5/4.8b', 'fal-ai/kling-video/v3/pro/i
     'fal-ai/ace-step', 'fal-ai/elevenlabs/tts/turbo-v2.5', 'fal-ai/minimax/speech-2.6-hd', 'fal-ai/mmaudio-v2/text-to-audio', 'fal-ai/bria/background/remove',
     'fal-ai/topaz/upscale/image', 'fal-ai/bria/expand', 'fal-ai/latentsync', 'fal-ai/kling-video/ai-avatar/v2/standard',
     'fal-ai/mmaudio-v2', 'fal-ai/topaz/upscale/video',
-    'fal-ai/elevenlabs/text-to-dialogue/eleven-v3', 'fal-ai/qwen-3-tts/voice-design/1.7b', 'fal-ai/demucs']);
+    'fal-ai/elevenlabs/text-to-dialogue/eleven-v3', 'fal-ai/qwen-3-tts/voice-design/1.7b', 'fal-ai/demucs',
+    'fal-ai/image-editing/retouch', 'fal-ai/image-editing/face-enhancement', 'fal-ai/iclight-v2',
+    'fal-ai/image-apps-v2/makeup-application', 'fal-ai/image-apps-v2/age-modify']);
 
 /** Every valid combination of a record's inputs: all declared keys, each enum value, each length. */
 function fixtures(record) {

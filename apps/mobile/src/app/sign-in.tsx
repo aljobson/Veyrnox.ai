@@ -88,8 +88,8 @@ export default function SignIn() {
                 </Pressable>
             </Link>
             <Link href="/preview" asChild>
-                <Pressable accessibilityRole="button" accessibilityHint={t('preview.browseHint')} style={styles.button}>
-                    <Text style={styles.buttonText}>{t('preview.browse')}</Text>
+                <Pressable accessibilityRole="link" accessibilityHint={t('preview.browseHint')} style={styles.browse}>
+                    <Text style={styles.browseText}>{t('preview.browse')}</Text>
                 </Pressable>
             </Link>
             {DEV_MOCK ? (
@@ -118,6 +118,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     buttonText: { color: colors.text, fontSize: 16, fontWeight: '600' },
+    browse: { paddingVertical: 14, alignItems: 'center', minHeight: 44 },
+    browseText: { color: colors.muted, fontSize: 15, textDecorationLine: 'underline' },
     off: { opacity: 0.4 },
     agree: { flexDirection: 'row', gap: 12, alignItems: 'center', marginBottom: 8, minHeight: 44 },
     box: { width: 24, height: 24, borderRadius: 6, borderWidth: 1, borderColor: colors.borderStrong, alignItems: 'center', justifyContent: 'center' },

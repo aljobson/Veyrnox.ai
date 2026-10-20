@@ -111,13 +111,6 @@ export default function Explore() {
                 </Pressable>
             ) : null}
 
-            <Link href="/oddlings" asChild>
-                <Pressable accessibilityRole="button" accessibilityLabel={t('explore.oddlings.title')} accessibilityHint={t('explore.oddlings.hint')} style={styles.banner}>
-                    <Text style={styles.bannerTitle}>{t('explore.oddlings.title')}</Text>
-                    <Text style={styles.bannerText}>{t('explore.oddlings.body')}</Text>
-                </Pressable>
-            </Link>
-
             <View style={styles.headerRow}>
                 <Text style={styles.heading} accessibilityRole="header">{t('explore.templates')}</Text>
                 <Link href="/create/presets" asChild>
@@ -181,6 +174,13 @@ export default function Explore() {
                     )}
                 </>
             )}
+
+            <Link href="/oddlings" asChild>
+                <Pressable accessibilityRole="button" accessibilityLabel={t('explore.oddlings.title')} accessibilityHint={t('explore.oddlings.hint')} style={styles.banner}>
+                    <Text style={styles.bannerTitle}>{t('explore.oddlings.title')}</Text>
+                    <Text style={styles.bannerText}>{t('explore.oddlings.body')}</Text>
+                </Pressable>
+            </Link>
 
             {recent.length > 0 ? (
                 <>
