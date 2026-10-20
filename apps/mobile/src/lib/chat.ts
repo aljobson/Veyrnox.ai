@@ -74,6 +74,8 @@ export interface ChatThread {
     readonly title: string | null;
     readonly pinned: boolean;
     readonly folder_id?: string | null;
+    // The chat's instructions (GET chat/threads/:id returns them).
+    readonly system_prompt?: string | null;
     readonly updated_at: string;
 }
 
@@ -129,7 +131,7 @@ export const chatApi = (api: ApiClient) => ({
     getThread: (id: string) =>
         api.request<{ thread: ChatThread; messages: ChatMessage[] }>(`/api/v1/chat/threads/${encodeURIComponent(id)}`),
     // Rename and pin. The server refuses an empty or over-long title (MAX_TITLE 120) and unknown keys.
-    updateThread: (id: string, patch: { title?: string; pinned?: boolean; system_prompt?: string }) =>
+    updateThread: (id: string, patch: { title?: string; pinned?: boolean; system_prompt?: string; model_id?: string }) =>
         api
             .request<{ thread: ChatThread }>(`/api/v1/chat/threads/${encodeURIComponent(id)}`, {
                 method: 'PATCH',
@@ -214,6 +216,23 @@ export function cleanTitle(raw: string): string | null {
 // Pinned chats first, otherwise the order the server gave.
 export function pinnedFirst<T extends { readonly pinned?: boolean }>(threads: readonly T[]): T[] {
     return [...threads.filter((t) => t.pinned), ...threads.filter((t) => !t.pinned)];
+}
+
+export const MAX_SYSTEM_PROMPT = 4000;
+
+// The models a chat can be switched to: open ones. Cheapest first, so the price of a switch is easy to read.
+export const switchableModels = (models: readonly ChatModel[]): ChatModel[] =>
+    models.filter((m) => !m.gated).sort((a, b) => a.credits_per_reply - b.credits_per_reply || a.name.localeCompare(b.name));
+
+// What a settings save sends: only what changed, so an untouched field is never rewritten.
+export function settingsPatch(
+    current: { readonly model_id: string; readonly system_prompt?: string | null },
+    next: { readonly model_id: string; readonly instructions: string },
+): { model_id?: string; system_prompt?: string } | null {
+    const patch: { model_id?: string; system_prompt?: string } = {};
+    if (next.model_id !== current.model_id) patch.model_id = next.model_id;
+    if (next.instructions !== (current.system_prompt ?? '')) patch.system_prompt = next.instructions.slice(0, MAX_SYSTEM_PROMPT);
+    return Object.keys(patch).length ? patch : null;
 }
 
 // The chats whose title contains the words typed (case-insensitive), as the web's list does. An empty search shows all.

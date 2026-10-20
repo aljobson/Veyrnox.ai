@@ -72,3 +72,12 @@ When the web cast changes, run `node apps/mobile/scripts/sync-oddlings-cast.mjs`
 - **Room for Vey:** every Oddlings list or scroll area pads its bottom by `VEY_CLEARANCE` (ADR-0159) so the corner
   mascot never covers the last row.
 - **Explore banner:** the Explore home belongs to the navigation lane. The route to link is `/oddlings`.
+
+## Addendum 2: opening move and featured strip
+
+- **Opening move:** the builder has the web's motion list ("Opening move"). It is saved with the passport and used in the
+  Auto Short topic (first move by default). The portrait prompt is unchanged.
+- **Featured strip:** the gallery opens with the web's five featured characters (taken from the web file by the
+  generator, so the list cannot drift).
+- **Still not built, on purpose:** the animated puppet previews and "animate this portrait" (it needs the portrait as a
+  start image in Create, which is another lane's screen), the moodboard upload, and the Explore banner (navigation lane).
