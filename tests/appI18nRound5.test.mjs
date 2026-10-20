@@ -74,8 +74,8 @@ test('new count families supply all plural forms and retain original English Int
   for (const original of [undefined,'en-US','en-GB',[]]) assert.equal(localeTag('en',original),original);
 });
 
-test('the audit exempts only exact version-bound supply consent and validated CSS palette syntax', () => {
-  const consent = candidates(files.packs,readFileSync(files.packs,'utf8'),{app:true}).filter(row=>row.reason?.includes('version-bound'));
+test('the audit validates paired supply consent and excludes validated CSS palette syntax', () => {
+  const consent = candidates(files.packs,readFileSync(files.packs,'utf8'),{app:true}).filter(row=>row.kind==='binding' && row.status==='translated');
   assert.equal(consent.length,1);
   assert.equal(candidates(files.packs,'<span lang="en" dir="ltr">Untranslated controls</span>',{app:true})[0].status,'unresolved');
   const css = "const backgrounds = { Basic: 'from-slate-900 via-slate-600 to-slate-950' }; const preview = <span className={`block ${backgrounds[item.category]}`} />;";
