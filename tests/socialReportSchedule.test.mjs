@@ -48,3 +48,22 @@ test('a partial recipient failure fails the claimed delivery for retry', async (
   assert.deepEqual(result, { ok: true, claimed: 1, sent: 0, failed: 1 });
   assert.equal(calls.at(-1).args.p_success, false); assert.equal(calls.at(-1).args.p_error, 'resend_503');
 });
+
+test('the default report sentence follows the report owner account language; a custom message and English stay as written', async () => {
+  const run = async (locale, extra = {}) => {
+    const messages = [];
+    const rpcCall = async (name, args) => {
+      if (name === 'claim_social_report_deliveries') return { ok: true, reports: [{ ...report, ...extra }] };
+      if (name === 'get_user_language') { assert.equal(args.p_auth_id, report.owner_auth_id); return { ok: true, locale }; }
+      return { ok: true };
+    };
+    await runSocialReportScheduleSweep({ env: enabled, cfg, rpcCall,
+      loadData: async () => ({ ok: true, range: { from: '2026-10-08', to: '2026-10-14' } }),
+      buildDocument: () => ({ bytes: Uint8Array.of(1), filename: 'weekly.pdf', contentType: 'application/pdf' }),
+      send: async (mail, message) => { messages.push(message); return { ok: true, id: 'e' }; } });
+    return messages[0].text;
+  };
+  assert.equal(await run(null, { delivery_message: null }), 'Your Veyrnox.ai Publish report for 2026-10-08 to 2026-10-14 is attached.');
+  assert.equal(await run('de', { delivery_message: null }), 'Ihr Veyrnox.ai-Publish-Bericht für den Zeitraum 2026-10-08 bis 2026-10-14 ist angehängt.');
+  assert.equal(await run('de', { delivery_message: 'Weekly numbers' }), 'Weekly numbers');
+});

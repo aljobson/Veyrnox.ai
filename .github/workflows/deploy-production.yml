@@ -156,7 +156,12 @@ jobs:
             if [ "${#successful_deploy_runs[@]}" -eq 20 ]; then
               break
             fi
-          done < <(gh run list --workflow deploy-production.yml --branch main --status completed --limit 100 \
+          # The window must reach past the last real deploy. Most completed runs on
+          # main are cancelled, stale-skipped or failed, so 100 runs is about a day
+          # of merges: on 2026-10-20 the last real deploy (2026-10-19 04:53) sat at
+          # position 106, every run then failed here, and with no new deploy the
+          # window could never recover on its own.
+          done < <(gh run list --workflow deploy-production.yml --branch main --status completed --limit 300 \
             --json databaseId,headSha --jq '.[] | [.databaseId, .headSha] | @tsv')
           if [ -z "$latest_deployed_sha" ]; then
             echo "::error::Could not identify an earlier successful production deployment."
