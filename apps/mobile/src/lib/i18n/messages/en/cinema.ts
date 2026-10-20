@@ -3,4 +3,5 @@ export default {
     'cinema.creatorWorkspace.cancel': 'Cancel',
     'cinema.share.preparing': 'Preparing…',
     'cinema.share.share': 'Share',
+    'cinema.retention.unavailable': 'Not available yet',
 } as const;

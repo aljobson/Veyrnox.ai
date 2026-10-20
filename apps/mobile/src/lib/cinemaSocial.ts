@@ -95,7 +95,7 @@ export function parseRetentionState(body: unknown): RetentionState {
     };
 }
 export const fetchRetentionState = async (api: Pick<ApiClient, 'request'>, contentId: string) =>
-    parseRetentionState(await api.request(`/api/v1/cinema/retention?content_id=${encodeURIComponent(contentId)}`));
+    parseRetentionState(await retentionRequest(api, () => api.request(`/api/v1/cinema/retention?content_id=${encodeURIComponent(contentId)}`)));
 
 export function parseRetentionList(body: unknown): { items: RetentionItem[]; next: string | null } {
     const b = isObject(body) ? body : {};
@@ -107,12 +107,185 @@ export function parseRetentionList(body: unknown): { items: RetentionItem[]; nex
     return { items, next: isUuid(b.next) ? b.next : null };
 }
 export const fetchRetentionList = async (api: Pick<ApiClient, 'request'>, kind: FollowKind, beforeId: string | null = null) =>
-    parseRetentionList(await api.request(`/api/v1/cinema/retention?kind=${kind}&limit=20${beforeId ? `&before_id=${encodeURIComponent(beforeId)}` : ''}`));
+    parseRetentionList(await retentionRequest(api, () => api.request(`/api/v1/cinema/retention?kind=${kind}&limit=20${beforeId ? `&before_id=${encodeURIComponent(beforeId)}` : ''}`)));
 
 export async function setRetention(api: Pick<ApiClient, 'request'>, kind: FollowKind, targetId: string, active: boolean, key: string): Promise<boolean> {
     if (!isUuid(targetId) || !isUuid(key)) throw new ApiError(400, 'invalid_action');
-    const r = await post<{ active?: unknown }>(api, '/api/v1/cinema/retention', key, { kind, target_id: targetId, active });
+    const r = await retentionRequest(api, () => post<{ active?: unknown }>(api, '/api/v1/cinema/retention', key, { kind, target_id: targetId, active }), true);
+    retentionSession(api).listeners.forEach((listener) => listener({ kind, targetId }));
     return r?.active === true;
+}
+
+// Session metadata only: no personal collection data is retained here. AuthProvider keeps one API client for
+// the app lifetime. Closure survives screen remount/focus and resets with the next app session (new client).
+type RetentionApi = Pick<ApiClient, 'request'>;
+type RetentionEvent = { kind: FollowKind; targetId: string } | { kind: 'closed' };
+const retentionSessions = new WeakMap<RetentionApi, { closed: boolean; listeners: Set<(event: RetentionEvent) => void> }>();
+function retentionSession(api: RetentionApi) {
+    let session = retentionSessions.get(api);
+    if (!session) {
+        session = { closed: false, listeners: new Set() };
+        retentionSessions.set(api, session);
+    }
+    return session;
+}
+export const retentionDisabled = (api: RetentionApi): boolean => retentionSession(api).closed;
+const retentionClosedError = () => new ApiError(503, 'retention_not_open');
+async function retentionRequest<T>(api: RetentionApi, run: () => Promise<T>, write = false): Promise<T> {
+    const session = retentionSession(api);
+    if (session.closed) throw retentionClosedError();
+    try {
+        const value = await run();
+        // A completed write remains acknowledged even if a concurrent read closed retention.
+        if (session.closed && !write) throw retentionClosedError();
+        return value;
+    } catch (err) {
+        if (err instanceof ApiError && err.status === 503 && err.code === 'retention_not_open' && !session.closed) {
+            session.closed = true;
+            session.listeners.forEach((listener) => listener({ kind: 'closed' }));
+        }
+        throw err;
+    }
+}
+
+// One mounted consumer owns a lifecycle. Disposed writes still settle on the server, but never update
+// a replacement component. Kept outside React so the signed-out and unmount guards can be proved in Jest.
+export function createRetentionLifecycle(api: RetentionApi, status: string) {
+    let live = true;
+    let writing = false;
+    const active = () => live && status === 'signedIn';
+    return {
+        start<T>(run: () => T): T | undefined { return active() ? run() : undefined; },
+        isWriting: () => writing,
+        async write<T>(run: () => Promise<T>, changed: { busy: (busy: boolean) => void; success: (value: T) => void; error: (err: unknown) => void }): Promise<void> {
+            if (!active() || writing || retentionDisabled(api)) return;
+            writing = true;
+            changed.busy(true);
+            try {
+                const value = await run();
+                if (active()) changed.success(value);
+            } catch (err) {
+                if (active()) changed.error(err);
+            } finally {
+                writing = false;
+                if (active()) changed.busy(false);
+            }
+        },
+        dispose: () => { live = false; writing = false; },
+    };
+}
+
+export interface RetentionListView {
+    readonly items: RetentionItem[];
+    readonly next: string | null;
+    readonly status: 'loading' | 'ready' | 'closed' | 'error';
+    readonly error: string | null;
+}
+export const emptyRetentionList: RetentionListView = { items: [], next: null, status: 'loading', error: null };
+
+// The mounted list's lifecycle lives here so cursor recovery and mutation races are testable without a renderer.
+// Every request still goes through fetchRetentionList/setRetention above.
+export function createRetentionList(api: RetentionApi, kind: FollowKind, changed: (view: RetentionListView) => void) {
+    let view = emptyRetentionList;
+    let live = true;
+    let busy = false;
+    let revision = 0;
+    let reloadPending = false;
+    const update = (next: RetentionListView) => { if (live) { view = next; changed(view); } };
+    const close = () => {
+        revision++;
+        reloadPending = false;
+        update({ ...emptyRetentionList, status: 'closed' });
+    };
+    async function load(cursor: string | null): Promise<void> {
+        if (!live || busy) return;
+        if (retentionDisabled(api)) { close(); return; }
+        busy = true;
+        const started = revision;
+        try {
+            let page;
+            try {
+                page = await fetchRetentionList(api, kind, cursor);
+            } catch (err) {
+                if (!live || started !== revision) return;
+                if (!cursor || !(err instanceof ApiError) || err.status !== 400 || err.code !== 'invalid_cursor') throw err;
+                // Discard the deleted cursor before the single recovery attempt. Never recurse on this error.
+                cursor = null;
+                update({ ...view, next: null, error: null });
+                page = await fetchRetentionList(api, kind);
+            }
+            if (!live || started !== revision) return;
+            update({ items: cursor ? [...view.items, ...page.items.filter((x) => !view.items.some((y) => y.targetId === x.targetId))] : page.items,
+                next: page.next, status: 'ready', error: null });
+        } catch (err) {
+            if (!live || started !== revision) return;
+            if (retentionDisabled(api)) close();
+            else update({ ...view, status: view.status === 'ready' ? 'ready' : 'error', error: socialErrorKey(err) });
+        } finally {
+            busy = false;
+            if (live && reloadPending) {
+                reloadPending = false;
+                await load(null);
+            }
+        }
+    }
+    async function reload() {
+        if (!live) return;
+        if (retentionDisabled(api)) { close(); return; }
+        revision++;
+        update({ ...view, next: null, error: null, status: view.status === 'error' ? 'loading' : view.status });
+        if (busy) { reloadPending = true; return; }
+        await load(null);
+    }
+    const listener = (event: RetentionEvent) => {
+        if (event.kind === 'closed') close();
+        else if (event.kind === kind) void reload();
+    };
+    retentionSession(api).listeners.add(listener);
+    if (retentionDisabled(api)) close();
+    return {
+        getSnapshot: () => view,
+        reload,
+        loadMore: async () => { if (view.status === 'ready' && view.next && !retentionDisabled(api)) await load(view.next); },
+        dispose: () => { live = false; revision++; retentionSession(api).listeners.delete(listener); },
+    };
+}
+
+// Mounted controls reload only for their title/creator/series. In-flight reads invalidated by a mutation are
+// discarded and coalesced into one fresh read; disposed controls never receive a late completion.
+export function observeRetentionState(api: RetentionApi, contentId: string, changed: (state: Read<RetentionState>) => void): () => void {
+    let live = true;
+    let busy = false;
+    let revision = 0;
+    let pending = false;
+    let state: RetentionState | null = null;
+    async function reload(): Promise<void> {
+        revision++;
+        if (busy) { pending = true; return; }
+        busy = true;
+        do {
+            pending = false;
+            const started = revision;
+            const result = await readOf(() => fetchRetentionState(api, contentId));
+            if (live && started === revision) {
+                if (result.kind === 'ok') state = result.value;
+                changed(result);
+            }
+        } while (live && pending && !retentionDisabled(api));
+        busy = false;
+    }
+    const listener = (event: RetentionEvent) => {
+        if (event.kind === 'closed') {
+            revision++;
+            pending = false;
+            changed({ kind: 'closed' });
+        } else if (!state || event.targetId === (event.kind === 'saved' ? contentId : event.kind === 'creator' ? state.creatorId : state.seriesId)) {
+            void reload();
+        }
+    };
+    retentionSession(api).listeners.add(listener);
+    void reload();
+    return () => { live = false; retentionSession(api).listeners.delete(listener); };
 }
 
 // ---- Winners (anonymous GET /api/cinema/winners) ----

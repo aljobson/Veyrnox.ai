@@ -3,7 +3,6 @@ export default {
     'cinemaSocial.following.creator': 'Creators',
     'cinemaSocial.following.series': 'Series',
     'cinemaSocial.tapRetry': 'Tap to retry.',
-    'cinemaSocial.closed.retention': 'Saving and following are not open yet.',
     'cinemaSocial.closed.winners': 'Weekly winners are not open yet.',
     'cinemaSocial.empty.saved': 'Nothing saved yet. Save a title from its page.',
     'cinemaSocial.empty.creator': 'You are not following anyone yet.',
@@ -47,4 +46,5 @@ export default {
     'cinemaSocial.err.conflict': 'That was already sent differently. Try again.',
     'cinemaSocial.err.rate': 'Too many requests. Wait a moment and try again.',
     'cinemaSocial.err.later': 'Not available right now. Try again later.',
+    'cinemaSocial.closed.retention': 'Saving and following are not open yet.',
 } as const;
