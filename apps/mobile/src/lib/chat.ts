@@ -215,3 +215,9 @@ export function cleanTitle(raw: string): string | null {
 export function pinnedFirst<T extends { readonly pinned?: boolean }>(threads: readonly T[]): T[] {
     return [...threads.filter((t) => t.pinned), ...threads.filter((t) => !t.pinned)];
 }
+
+// The chats whose title contains the words typed (case-insensitive), as the web's list does. An empty search shows all.
+export function searchThreads<T extends { readonly title: string | null }>(threads: readonly T[], query: string): T[] {
+    const q = query.trim().toLowerCase();
+    return q ? threads.filter((t) => (t.title ?? '').toLowerCase().includes(q)) : [...threads];
+}
