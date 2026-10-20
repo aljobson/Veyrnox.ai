@@ -114,6 +114,8 @@ export async function fetchCatalog(): Promise<CatalogModel[]> {
 }
 
 export interface GenerationRequest {
+    // Explicit per-run rights for curated source flows; undefined preserves existing Create behavior.
+    readonly sourceRights?: boolean;
     readonly modelId: string;
     // The text the person typed, sent under `textKey` (default `prompt`; Auto Short uses `topic`).
     readonly prompt: string;
@@ -133,6 +135,7 @@ export interface GenerationRequest {
 
 export const mediaApi = (api: ApiClient) => ({
     createGeneration: async (r: GenerationRequest) => {
+        if (r.sourceRights === false) throw new ApiError(400, 'consent_required');
         await ensureOnline();
         // Ask first, so the consent sent with a file below is the person's stored agreement and never assumed.
         await aiConsent.ensure('/api/v1/generations', 'POST');
@@ -148,7 +151,7 @@ export const mediaApi = (api: ApiClient) => ({
                 // The server refuses uploaded sources without consent to send them to the provider.
                 ...(r.sources?.length ? { source_keys: r.sources } : {}),
                 ...(r.assets?.length ? { source_assets: r.assets.map((a) => ({ asset_id: a.assetId, slot: a.slot })) } : {}),
-                ...(r.sources?.length || r.assets?.length ? { consent: agreed } : {}),
+                ...(r.sources?.length || r.assets?.length ? { consent: r.sourceRights === undefined ? agreed : r.sourceRights && agreed } : {}),
             }),
         });
     },
