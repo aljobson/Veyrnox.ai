@@ -192,7 +192,7 @@ try {
     // 10. Drift guard. Every foreign key to a person's row is classified here on purpose, so a new table
     // that points at users forces a decision about deleting it, keeping it, or refusing the account.
     const ERASED = new Set(['chat_threads', 'chat_folders', 'chat_personas', 'chat_closed_sends', 'cinema_profiles', 'cinema_memberships',
-        'cinema_creator_applications', 'cinema_creator_follows', 'cinema_series_follows', 'cinema_saved_titles', 'cinema_retention_requests',
+        'cinema_creator_applications', 'cinema_creator_follows', 'cinema_series_follows', 'cinema_saved_titles', 'cinema_retention_requests', 'cinema_watch_resume',
         'referral_codes', 'upload_reservations', 'social_uploads', 'film_library_masters', 'editor_library_renders',
         'social_brands', 'social_api_keys', 'social_webhook_endpoints', 'social_posts', 'jobs',
         'push_tokens', 'push_outbox', 'push_token_writes', 'user_blocks']);
