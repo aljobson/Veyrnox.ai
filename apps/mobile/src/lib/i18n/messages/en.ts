@@ -1160,6 +1160,24 @@ const en = {
     'chat.make.err.rate': 'Too many requests. Wait a moment and try again.',
     'chat.make.err.network': 'No connection. Nothing was started and you were not charged.',
     'chat.make.err.later': 'That could not be started. You were not charged. Try again.',
+    'empty.library.title': 'No creations yet',
+    'empty.library.action': 'Make something',
+    'empty.posts.title': 'No posts yet',
+    'empty.posts.body': 'Schedule or publish something and it will show up here.',
+    'empty.posts.action': 'New post',
+    'lowBalance.body': 'You have {credits}, which is not enough to start a creation.',
+    'lowBalance.buy': 'Buy credits',
+    // Chat list: search and delete (ADR-0183)
+    'chat.search.label': 'Search your chats',
+    'chat.search.placeholder': 'Search chats',
+    'chat.search.none': 'No chats match that.',
+    'chat.delete.button': 'Delete',
+    'chat.delete.label': 'Delete the chat {name}',
+    'chat.delete.title': 'Delete this chat?',
+    'chat.delete.body': 'The chat and its messages are removed. Credits it used stay spent.',
+    'chat.delete.keep': 'Keep it',
+    'chat.delete.confirm': 'Delete',
+    'chat.delete.failed': 'Could not delete that chat. Try again.',
 } as const;
 
 export default en;

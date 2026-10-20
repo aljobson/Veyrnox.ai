@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { emptySequence, addSequenceMedia, addSequenceClip } from '../app/veyrnox/_lib/editorSequence.mjs';
 import { TRANSITIONS } from '../app/veyrnox/_lib/editorEffects.mjs';
-import { timelineGuidance, transitionGuidance, transitionPreview } from '../app/veyrnox/_lib/editorGuidance.mjs';
+import { timelineGuidance, transitionGuidance, transitionJunctions, transitionPreview } from '../app/veyrnox/_lib/editorGuidance.mjs';
 
 const media = { id: 'l-a', kind: 'video', frames: 300, width: 1280, height: 720, hasAudio: true, name: 'A.mp4' };
 const withMedia = () => addSequenceMedia(emptySequence(), media);
@@ -46,6 +46,16 @@ test('the first of two clips has no clip before it, the second does', () => {
     const tl = twoClips();
     assert.ok(transitionGuidance(tl, { track: 'video', id: tl.video[0].id }));
     assert.equal(transitionGuidance(tl, { track: 'video', id: tl.video[1].id }), null);
+});
+
+test('the timeline exposes one transition action at every touching video join', () => {
+    const tl = twoClips();
+    const [junction] = transitionJunctions(tl, 'video-0');
+    assert.equal(transitionJunctions(tl, 'video-0').length, 1);
+    assert.equal(junction.frame, tl.video[1].start);
+    assert.equal(junction.outgoing.id, tl.video[0].id);
+    assert.equal(junction.incoming.id, tl.video[1].id);
+    assert.deepEqual(transitionJunctions(tl, 'video-2'), []);
 });
 
 test('non-video selections are told transitions are for video clips', () => {
