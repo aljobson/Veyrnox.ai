@@ -11,4 +11,5 @@ export default {
     'preview.footer': 'Playing, creating and buying need an account.',
     'preview.signIn': 'Sign in',
     'preview.error': 'The preview could not load. Check your connection and try again.',
+    'preview.back': 'Back',
 } as const;

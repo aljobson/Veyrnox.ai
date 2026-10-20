@@ -35,6 +35,7 @@ test('the two messages say what is down and what keeps working, and carry the ru
     assert.match(down.text, /creating, buying and saving are paused/);
     assert.match(down.text, /Run: https:\/\/github\.test\/run\/1/);
     assert.match(buildMessage('recovery').subject, /back/);
+    assert.match(buildMessage('test').text, /Nothing is wrong/);
     assert.throws(() => buildMessage('nope'));
 });
 
@@ -72,4 +73,5 @@ test('the workflow runs every 5 minutes on main only, pins its actions, and hold
     assert.match(yml, /secrets\.SLACK_WEBHOOK_URL/);
     assert.match(yml, /secrets\.RESEND_API_KEY/);
     assert.doesNotMatch(yml, /pull_request/);
+    assert.match(yml, /inputs\.send_test/);
 });
