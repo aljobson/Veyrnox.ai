@@ -64,6 +64,9 @@ export default function Account() {
                     <Text style={styles.rowText}>{profile?.email ?? t('acct.profileLoading')}</Text>
                     {profile ? <Text style={styles.note}>{t('acct.signedInWith', { method: t(signInMethodKey(profile.provider)) })}</Text> : null}
                 </View>
+                <Pressable accessibilityRole="button" style={styles.signOut} onPress={() => void onSignOut()}>
+                    <Text style={styles.signOutText}>{t('public.account.signOut')}</Text>
+                </Pressable>
                 <Link href="/security" asChild>
                     <Row label={t('acct.securityRow')} />
                 </Link>
@@ -161,9 +164,6 @@ export default function Account() {
                 )}
             </Section>
 
-            <Pressable accessibilityRole="button" style={styles.signOut} onPress={() => void onSignOut()}>
-                <Text style={styles.signOutText}>{t('public.account.signOut')}</Text>
-            </Pressable>
         </ScrollView>
     );
 }
@@ -209,6 +209,6 @@ const styles = StyleSheet.create({
     danger: { color: colors.danger },
     off: { opacity: 0.5 },
     note: { color: colors.muted, fontSize: 13 },
-    signOut: { paddingVertical: 14, alignItems: 'center' },
-    signOutText: { color: colors.muted },
+    signOut: { paddingVertical: 12, minHeight: 44, justifyContent: 'center' },
+    signOutText: { color: colors.accent, fontSize: 16 },
 });
