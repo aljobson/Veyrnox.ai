@@ -47,7 +47,7 @@ Pieces:
 - A Supabase outage and the API shape (follow-up, 2026-10-20): see "Uniform outage answer" below. Still unproved on a
   real or simulated outage on staging; covered by `tests/outageShape.test.mjs` and `apps/mobile/__tests__/api.test.ts`
   (the phone tests were not run in this checkout, no install).
-- Routes outside `/api/v1` (webhooks, `/api/auth/session`, `/api/status`) keep their own answers on purpose.
+- The anonymous read-only routes that read Supabase (`/api/catalog`, `/api/credit-packs`, `/api/presets`, `/api/popular-templates`, `/api/credit-subscription-plans`, `/api/cinema-pass-plans`, `/api/cinema/*`) get the same shape (`isShapedPath`); a saved copy (a 200) is served as before. Webhooks, `/api/auth/session` and `/api/status` keep their own answers on purpose.
 
 ## Uniform outage answer
 
@@ -68,3 +68,18 @@ Every `/api/v1/*` request that fails because Supabase did not answer (no respons
   `retryAfterSeconds`; only a 401 triggers `onSessionLost`.
 - Limit: a request that notes an outage and then fails for an unrelated reason is also reported as an outage. That is
   the safe direction (the client retries).
+
+## Amendment 1 (2026-10-20): alert the owner on Slack and by email
+
+- `.github/workflows/supabase-status-alert.yml` runs every 5 minutes on `main`. `scripts/check-supabase-status.mjs`
+  reads `/api/status` twice, 30 s apart; `degraded` needs both. A site that does not answer is `unreachable` and stays
+  with `site-health.yml`.
+- The open `supabase-outage` issue is the episode: the first degraded run sends one Slack message and one email and
+  opens the issue; later runs do nothing; the first `ok` run sends a recovery notice and closes it.
+- `scripts/notify-outage.mjs` posts to an incoming webhook (only `https://hooks.slack.com/` is accepted) and sends
+  mail through the Resend adapter. A channel that is not configured is skipped; if none delivers, the run is red.
+  Logs carry error codes only, never a URL, key or address.
+- Needs `SLACK_WEBHOOK_URL` and `RESEND_API_KEY` as repository secrets and `ALERT_EMAIL_TO` (optionally
+  `ALERT_EMAIL_FROM`) as a repository variable. Until they are set, an outage still opens the issue, which GitHub emails
+  to watchers.
+- Not proved: no real send to Slack or Resend; the workflow has not run on GitHub.

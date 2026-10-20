@@ -35,7 +35,7 @@ export const BREAKTHROUGH_FILM = {
 // The brand intro: the Veyrnox.ai logo over Earth, shown above the hero
 // headline, with the original aqua V. Both files are 10.3 s re-encodes of the
 // owner's 2160 x 3840 export: the wide one is the 16:9 picture cut out of it,
-// the phone one is the whole portrait frame.
+// the phone one is a sharp square cut from its middle (no blurred bands).
 export const BRAND_FILM = {
   video: '/film/brand-intro.mp4',
   poster: '/film/brand-intro.jpg',
@@ -45,7 +45,7 @@ export const BRAND_FILM = {
     video: '/film/brand-intro-portrait.mp4',
     poster: '/film/brand-intro-portrait.jpg',
     width: 1080,
-    height: 1920,
+    height: 1080,
   },
 };
 

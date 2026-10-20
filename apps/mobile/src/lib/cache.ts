@@ -38,8 +38,12 @@ export const POLICIES = {
     // at once); the saved copy only fills the gap while that runs, or stands in when it fails.
     balance: { name: 'balance', perUser: true, freshMs: 0, maxAgeMs: DAY },
     library: { name: 'library', perUser: true, freshMs: 0, maxAgeMs: 7 * DAY },
+    // Starred creations (ADR-0156): job ids only, local, per account, wiped with the cache on sign-out.
+    favourites: { name: 'favourites', perUser: true, freshMs: 0, maxAgeMs: 365 * DAY },
     // The words of an unsent Create form (ADR-0153). Per account; no files or keys.
     createDraft: { name: 'create-draft', perUser: true, freshMs: 0, maxAgeMs: 7 * DAY },
+    // The studio a person imported from the web's Film Studio export (ADR-0210). Per account; words only, no media.
+    filmStudio: { name: 'film-studio', perUser: true, freshMs: 0, maxAgeMs: 90 * DAY },
     catalog: { name: 'catalog', perUser: false, freshMs: 10 * MINUTE, maxAgeMs: 7 * DAY },
 } as const satisfies Record<string, CachePolicy>;
 
