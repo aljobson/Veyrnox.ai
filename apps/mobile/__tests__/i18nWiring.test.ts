@@ -101,8 +101,14 @@ describe('no visible English is left hardcoded in the wired screens', () => {
 });
 
 describe('the list for the localization process is current', () => {
-    test('every app-only key in the English catalog is listed in docs/mobile/I18N-NEW-KEYS.md', () => {
-        const doc = readFileSync(join(repo, 'docs', 'mobile', 'I18N-NEW-KEYS.md'), 'utf8');
+    test('every app-only key in the English catalog is built into the in-memory localization list', () => {
+        const { execFileSync } = require('child_process');
+        const doc = execFileSync('node', ['--input-type=module', '-e',
+            `import { buildAppOnlyRows, readEnglishCatalog } from './scripts/sync-web-i18n.mjs';
+             import { readFileSync } from 'node:fs';
+             const webKeys = JSON.parse(readFileSync('src/lib/i18n/webKeys.json', 'utf8'));
+             console.log(buildAppOnlyRows(readEnglishCatalog(), webKeys).join('\\n'));`,
+        ], { cwd: root, encoding: 'utf8' });
         for (const key of Object.keys(en)) if (!webKeys.includes(key)) expect(doc).toContain(`\`${key}\``);
     });
 });

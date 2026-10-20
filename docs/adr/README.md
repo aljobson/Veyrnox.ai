@@ -4,6 +4,8 @@ Phase-0 decision-support documents for the target architecture at `/Users/aljobs
 
 ## Index
 
+The historical index below is frozen at the exact filenames in `index-baseline.txt`; create new ADR files without editing this README or baseline, and read the full index with `node scripts/adr-index.mjs` from the repository root.
+
 | ADR | Status | Summary | Blocks |
 |-----|--------|---------|--------|
 | [ADR-0184 — Mobile: chat settings, model and instructions (parity plan P3)](0184-mobile-chat-settings.md) | **Proposed 2026-10-19** | Settings in the chat toolbar: switch the model with its price, edit instructions; sends only what changed |

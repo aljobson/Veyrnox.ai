@@ -1,0 +1,26 @@
+// English strings for create. Add keys here; keep their original wording and placeholders.
+export default {
+    'create.templatesHint': 'Start from a ready-made idea',
+    'create.loadError': 'Could not load models. Check your connection.',
+    'create.agentTitle': 'Video from a brief',
+    'create.agentHint': 'See a plan and the price first',
+    'create.agentFrom.one': 'from {count} credit',
+    'create.agentFrom.other': 'from {count} credits',
+    'create.from.one': 'from {count} credit',
+    'create.from.other': 'from {count} credits',
+    'create.noModels': 'No {kind} models available in the app yet.',
+    // App-only: Create options (ADR-0153, parity P2 slice 1).
+    'create.goal.image': 'Make an image',
+    'create.goal.video': 'Make a video',
+    'create.goal.audio': 'Make audio',
+    'create.goal.all': 'All models',
+    'create.tier.all': 'Any price',
+    'create.tier.low': 'Low',
+    'create.tier.medium': 'Medium',
+    'create.tier.high': 'High',
+    'create.tierLabel': 'Price range',
+    'create.goalLabel': 'What to make',
+    'create.freeLeft.one': 'FREE, {count} left',
+    'create.freeLeft.other': 'FREE, {count} left',
+    'create.freeLeftLabel': '{name}: free today, {count} left',
+} as const;
