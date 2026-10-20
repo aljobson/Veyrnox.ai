@@ -1411,6 +1411,17 @@ const en = {
     'empty.posts.action': 'New post',
     'lowBalance.body': 'You have {credits}, which is not enough to start a creation.',
     'lowBalance.buy': 'Buy credits',
+    // Chat list: search and delete (ADR-0183)
+    'chat.search.label': 'Search your chats',
+    'chat.search.placeholder': 'Search chats',
+    'chat.search.none': 'No chats match that.',
+    'chat.delete.button': 'Delete',
+    'chat.delete.label': 'Delete the chat {name}',
+    'chat.delete.title': 'Delete this chat?',
+    'chat.delete.body': 'The chat and its messages are removed. Credits it used stay spent.',
+    'chat.delete.keep': 'Keep it',
+    'chat.delete.confirm': 'Delete',
+    'chat.delete.failed': 'Could not delete that chat. Try again.',
 } as const;
 
 export default en;

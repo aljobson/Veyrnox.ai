@@ -1,5 +1,5 @@
 import { createSseParser } from '../src/lib/sse';
-import { chatApi, cleanOptions, cleanTitle, NO_OPTIONS, pinnedFirst, optionsKey, replyPrice, sendKeyFor, toTurnEvent, type ChatModel } from '../src/lib/chat';
+import { searchThreads, chatApi, cleanOptions, cleanTitle, NO_OPTIONS, pinnedFirst, optionsKey, replyPrice, sendKeyFor, toTurnEvent, type ChatModel } from '../src/lib/chat';
 import type { ApiClient } from '../src/lib/api';
 
 describe('sse parser', () => {
@@ -160,5 +160,22 @@ describe('replay and cut-off streams', () => {
     test('a stream that ends with no done was cut off', async () => {
         const stream = jest.fn().mockResolvedValue(streamOf('event: delta\ndata: {"text":"Hel"}\n\n'));
         await expect(chatApi({ stream } as unknown as ApiClient).sendMessage('t', 'hi', 'vx-k', () => {})).rejects.toMatchObject({ status: 0, code: 'stream_cut' });
+    });
+});
+
+describe('chat list search', () => {
+    const rows = [{ id: 'a', title: 'Birthday ideas' }, { id: 'b', title: null }, { id: 'c', title: 'Product launch' }];
+    test('matches the title, ignoring case and spaces around the words', () => {
+        expect(searchThreads(rows, ' BIRTH ').map((r) => r.id)).toEqual(['a']);
+        expect(searchThreads(rows, 'launch').map((r) => r.id)).toEqual(['c']);
+    });
+    test('an empty search shows every chat, and a chat with no title is never a match', () => {
+        expect(searchThreads(rows, '  ')).toHaveLength(3);
+        expect(searchThreads(rows, 'x')).toEqual([]);
+    });
+    test('deleting a chat is a DELETE of that chat only', async () => {
+        const request = jest.fn().mockResolvedValue({ ok: true });
+        await chatApi({ request } as unknown as ApiClient).deleteThread('t 1');
+        expect(request).toHaveBeenCalledWith('/api/v1/chat/threads/t%201', { method: 'DELETE' });
     });
 });
