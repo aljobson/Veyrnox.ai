@@ -1,6 +1,6 @@
 import { EmptyState } from '../../../components/EmptyState';
 import { t as tr } from '../../../lib/i18n';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { fetchPosts, mergePage, postStatusLabel, publishErrorMessage, type PublishPost } from '../../../lib/publish';
@@ -13,6 +13,8 @@ const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString() : nul
 export default function Posts() {
     const api = usePublishApi();
     const router = useRouter();
+    const { done } = useLocalSearchParams<{ done?: string }>();
+    const doneKey = done === 'scheduled' ? 'compose.doneScheduled' : done === 'queued' ? 'compose.doneQueued' : done === 'posted' ? 'compose.donePosted' : null;
     const [posts, setPosts] = useState<PublishPost[] | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [refreshing, setRefreshing] = useState(false);
@@ -53,6 +55,7 @@ export default function Posts() {
     return (
         <View style={styles.screen}>
             <Stack.Screen options={{ title: 'Posts', headerRight: () => <HeaderAction label="New post" onPress={() => router.push('/publish/compose')} /> }} />
+            {doneKey ? <Text style={styles.done} accessibilityRole="alert" accessibilityLiveRegion="polite">{tr(doneKey)}</Text> : null}
             {error && !posts ? (
                 <Text style={styles.error}>{error}</Text>
             ) : !posts ? (
@@ -86,4 +89,5 @@ const styles = StyleSheet.create({
     text: { color: colors.text, fontSize: 16 },
     muted: { color: colors.muted, fontSize: 13 },
     error: { color: colors.danger, paddingTop: 16 },
+    done: { color: colors.text, backgroundColor: colors.surface, borderRadius: 10, padding: 12, marginBottom: 12, fontSize: 14 },
 });
