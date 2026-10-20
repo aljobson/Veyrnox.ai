@@ -1,8 +1,8 @@
 # TRD: Veyrnox.ai mobile app
 
-**Status:** Source refresh 2026-10-20 against local `origin/main` at `b5bdc1081bbc5876f0852dd7be9628d4ba5da154`; live deployment and device behaviour not verified.
+**Status:** Source refresh 2026-10-20 against checkout HEAD `df14bedb`; live deployment and device behaviour not verified.
 
-**Evidence boundary:** Source and local merge history were read at that pinned revision. `gh pr list --state merged --limit 200` and the open-PR query could not connect to GitHub; remote freshness and what is currently in review are **not verified**. Paths beginning `src/` are relative to `apps/mobile/`; other repository paths are relative to the checkout. Configuration states are source values, not a live environment inspection; see [TRD section 3](TRD.md#3-configuration-and-flags).
+**Evidence boundary:** Source baseline and PR-query evidence are recorded in [README.md](README.md). Paths beginning `src/` are relative to `apps/mobile/`; other repository paths are relative to this checkout. Configuration states are source values, not a live environment inspection; see [TRD section 3](TRD.md#3-configuration-and-flags).
 **Reads with:** [PRD.md](PRD.md), [SCHEMA.md](SCHEMA.md), [../../../CLAUDE.md](../../../CLAUDE.md), `apps/mobile/AGENTS.md`.
 
 The server stack is inherited from the web product and is not repeated here. This document records the client stack and the decisions an agent would otherwise guess at, with what each one rejected.
@@ -48,7 +48,7 @@ The owner requires the full web editor on the phone (2026-10-19). The web editor
 Job status polling runs while the job screen is active; exact polling timing is **not verified** in this refresh. Push registration/delivery is independently gated (section 3) and is not a guarantee of completion notification. Rejected: a socket per job (server cost and battery for a minutes-long wait).
 
 ### 2.7 Cache and offline: stale-while-revalidate, never queue a paid action
-`src/lib/cache.ts` and `appCache.ts` hold per-user balance/Library, favourites, Create draft and imported Film Studio text; the catalogue policy is public rather than per-user; an offline banner shows; a paid action refuses to start offline. Rejected: an offline write queue (a queued debit is a surprise charge).
+`src/lib/cache.ts` and `appCache.ts` hold per-user balance/Library, favourites, Create draft and imported Film Studio text; the catalogue policy is public rather than per-user; an offline banner shows; a paid action refuses to start offline. Oddlings passports and the builder draft instead use install-scoped document storage, outside `appCache`; account isolation and cleanup are unresolved (SCHEMA section 2). Rejected: an offline write queue (a queued debit is a surprise charge).
 
 ### 2.8 Translations reuse the web's keys
 11 locales (`en` plus es, zh, hi, ar, fr, pt, ru, ja, de, ko). English is split by area under `src/lib/i18n/messages/en/`; `apps/mobile/scripts/gen-en-registry.mjs` generates `en.ts`. Do not edit the frozen `_order.ts`. `src/lib/i18n/` holds the catalogues and `webKeys.json`; new keys go to the localization process through the ignored `I18N-NEW-KEYS.md` report, generated with `cd apps/mobile && node scripts/sync-web-i18n.mjs`. Do not commit the report or machine-translate new strings in the PR. Arabic needs right-to-left layout.
@@ -58,7 +58,7 @@ Job status polling runs while the job screen is active; exact polling timing is 
 
 ## 3. Configuration and flags
 
-All server values below were read from **`wrangler.jsonc` at the pinned main revision**: top-level `vars` is production; `env.staging.vars` is staging and does not inherit production. Cinema effective states were checked against **`lib/cinema/features.js`**. This is checked-in configuration, not a claim that a deployment has received it. Live flags, remote EAS settings, secrets and migration application are **not verified**. `FLAG-PLAN-2026-10-19.md` is historical planning, not a source of current flag values.
+All server values below were read from **`wrangler.jsonc` at the pinned checkout revision**: top-level `vars` is production; `env.staging.vars` is staging and does not inherit production. Cinema effective states were checked against **`lib/cinema/features.js`**. This is checked-in configuration, not a claim that a deployment has received it. Live flags, remote EAS settings, secrets and migration application are **not verified**. `FLAG-PLAN-2026-10-19.md` is historical planning, not a source of current flag values.
 
 | App setting | Checked-in value / effect | Source |
 |-------------|---------------------------|--------|
@@ -92,6 +92,8 @@ The table's direct flags come from `wrangler.jsonc`; absent/off describes exact-
 Sources: the two `CINEMA_RUNTIME_FLAGS` objects in `wrangler.jsonc` and the name mapping/dependency rules in `lib/cinema/features.js`. Grouping is already implemented (ADR-0145); the dated plan's “pending consolidation” is obsolete. An enabled creator-upload capability does not prove a native phone uploader or scanner readiness.
 
 `PUBLISH_RUNTIME_FLAGS` in both source environments enables `multiAccount`, `plans`, `inbox`, `inboxWorkflows`, `smartlinks`, `contentPresets`, `queues`, `approvals`, `teams`, `variants`, `reports`, `scheduledReports`, `reportExports`, `reportDelivery`, `customerApi`, `customerWebhooks`, `ads`, `commerce`, `rssAutolists`, `automation`; `videoDestinations` is explicitly false. These are configured switches, not proof of provider approval or complete phone UI. No assistant flips flags as part of this spec refresh. Binding headroom in the live Worker is **not verified**; the historical “every new flag needs a freed slot” assertion must be checked before a rollout.
+
+Face Filters catalogue activation is migration state, not a Worker flag: #1439 merged `packages/db/schema/supabase/0357_activate_face_filters.sql`, activating A1, A2, A4, A5. A3 relight remains inactive; A6–A8 are absent. Production application is **not verified from the repo**. The dedicated phone surface (#1453) and related docs (#1446) are in review.
 
 ## 4. Security requirements
 

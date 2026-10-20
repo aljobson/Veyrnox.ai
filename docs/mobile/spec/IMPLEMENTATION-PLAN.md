@@ -1,8 +1,8 @@
 # Implementation plan: Veyrnox.ai mobile app
 
-**Status:** Source refresh 2026-10-20 against local `origin/main` at `b5bdc1081bbc5876f0852dd7be9628d4ba5da154`; live deployment and device behaviour not verified.
+**Status:** Source refresh 2026-10-20 against checkout HEAD `df14bedb`; live deployment and device behaviour not verified.
 
-**Evidence boundary:** Facts were read from source on `origin/main` at `b5bdc108`; this branch was then merged with main at `cf1573bf` (later commits: #1436 to #1438 and Face Filters staging, not re-audited line by line). PR state was read with `gh` on 2026-10-20 after the snapshot. Paths beginning `src/` are relative to `apps/mobile/`; other repository paths are relative to the checkout. Configuration states are source values, not a live environment inspection; see [TRD section 3](TRD.md#3-configuration-and-flags).
+**Evidence boundary:** Source baseline and PR-query evidence are recorded in [README.md](README.md). Paths beginning `src/` are relative to `apps/mobile/`; other repository paths are relative to this checkout. Configuration states are source values, not a live environment inspection; see [TRD section 3](TRD.md#3-configuration-and-flags).
 **Rule:** one slice, one PR, each with an exit gate. No flag is enabled by an assistant. A mobile slice never edits server code, migrations or `wrangler.jsonc`.
 
 ## 1. Foundation (done)
@@ -21,22 +21,34 @@
 | M13 | AI consent, privacy manifest, report and block audit | #1278 to #1280 |
 | S4, S10 | Publish connect return, block members | #1295, #1294, #1307, #1308 |
 
-The foundation table above is retained as historical PR attribution. Current source adds the following; PR numbers come from squash-merge subjects on main and were corroborated with `gh pr list --state merged` on 2026-10-20.
+The foundation table above is retained as historical PR attribution. Current source adds the following; the shared evidence record is in README.
 
-| Current area | Built at pinned main | Evidence |
+| Current area | Built at pinned checkout | Evidence |
 |--------------|----------------------|----------|
 | Create/Library | Options, drafts, Library input, resolution/audio selectors, Character/camera controls, filters/favourites/provenance/Schedule this, sound and stems | `src/lib/createOptions.ts`, `src/lib/libraryView.ts`, `src/lib/clipEdit.ts`; #1338, #1344, #1346, #1393, #1427, #1436 |
 | Chat | Reply options, attachments, Stop/ask again, rename/pin, search/delete, model/instructions, Film/Studio skills, media handoff, suspended-turn recovery | `src/app/(app)/chat/`, `src/lib/chat*.ts`; #1333, #1342, #1374, #1381, #1389, #1391, #1392 |
-| Publish | Composer completion, disconnect, calendar/ranges, approvals/drafts, queues/autolists, team/activity, contacts, SmartLink, reports, developer keys/webhooks/logs, ad draft/product editing | `src/app/(app)/publish/`; #1336, #1341, #1347, #1368, #1371, #1373, #1377, #1415, #1428, #1430, #1438 |
-| Inbox | Conversation/thread read-only screens | `src/lib/publishInbox.ts`; #1388; reply/workflow editing remains |
+| Publish | Composer completion, disconnect, calendar/ranges, approvals/drafts, queues/autolists, team/activity, contacts, SmartLink, reports, developer keys/webhooks/logs, ad draft/product editing, Schedule default, Posts confirmation and per-account text hint | `src/app/(app)/publish/`; #1336, #1341, #1347, #1368, #1371, #1373, #1377, #1415, #1428, #1430, #1438, #1441, #1445 |
+| Inbox | Conversation/thread read-only screens | `src/lib/publishInbox.ts`; #1388; reply editing remains; workflows and Plan status #1454 in review |
 | Cinema | Browse/discovery/social/share/profile/application/analytics, Saved/Following hardening, read-only Pass, creator upload web-link shell | `src/lib/cinema*.ts`; #1379, #1405, #1407, #1425 |
 | Account/platform | Password, session revocation, assistant grants, TOTP, passkey list/remove; catalogue/search, brand kit and related routes | `src/app/(app)/security.tsx`, `src/lib/auth/accountCalls.ts`, `src/lib/passkeys.ts`; #1334, #1408 |
 | Oddlings | Gallery, builder, saved characters, moving previews, portrait animation handoff to Create | `src/app/(app)/oddlings/`; #1348, #1387, #1394, #1429, #1431 |
 | Film Studio | Read-first JSON import, seven-stage status, shots, prompt sharing and eligible Create handoff | `src/app/(app)/film/`, `src/lib/filmStudioStore.ts`; #1406, ADR-0210 |
 | Continue watching | Server progress route and migration source only | `app/api/v1/cinema/progress/route.js`; #1434, ADR-0232 |
-| Face Filters | Inactive A1–A5 catalog staging and phone tools-directory entry | Main #1437, `src/lib/toolDirectory.ts`; activation/use **not verified** |
+| Face Filters | Activation merged on main: 0357 activates A1, A2, A4, A5 after 0356 staging; A3 relight remains inactive, A6–A8 absent. Existing phone tools-directory entry is built | #1439, `packages/db/schema/supabase/0357_activate_face_filters.sql`, `src/lib/toolDirectory.ts`; production application **not verified from the repo**; dedicated phone UI #1453 and docs #1446 in review |
 
-**In review:** none. `gh pr list --state open` on 2026-10-20 shows no open mobile PR; the phone Continue watching row and this spec refresh are being built separately and are not counted as built.
+**In review (not shipped at this baseline):** PR state and query date are recorded once in README.
+
+| PR | Proposed work | Boundary |
+|----|---------------|----------|
+| #1452 | Phone Continue watching row | Server #1434 is merged; phone integration is not. Migration 0355 and activation remain gated below |
+| #1453 | Phone Face filters | Dedicated UI is in review; catalogue activation #1439 is already merged |
+| #1454 | Publish workflows and Plan status | Existing Publish screens do not establish these proposed additions as built |
+| #1455 | Help guides | Existing Help route is built; new guides are in review |
+| #1446 | Face Filters docs for web and phone | Unmerged docs are not the baseline for shipped functionality |
+| #1448 | Spacing/radius/type tokens and sign-in migration | Current theme still declares colours only |
+| #1449 | Explore resume card joins Recent | Current unfinished-creation card still precedes templates |
+
+Other main changes reviewed: #1445 makes Browse first a text link and places Sign out under the email; #1447 places templates before Oddlings; #1443 localizes the scheduled Publish report default email sentence to the report owner's account language (`lib/social/reportSchedule.js`), preserving a custom message. #1440 changes a web test fixture and #1442 deploy asset retention; neither ships a phone feature.
 
 ## 2. Track A: owner prerequisites (gate everything that ships)
 
@@ -90,7 +102,8 @@ Run on a real iPhone and a mid-range Android phone. Pass criteria are in PARITY 
 | Native device uploads | S3 must prove a 1 GB resumable/background transfer through force-quit and network changes. Cinema only has a web-link upload shell (ADR-0208); native draft/Rights Declaration/submit follow. Publish device upload is also unfinished. `PUBLISH_UPLOADS_ENABLED` and `PROJECT_MEDIA_UPLOADS_ENABLED` are false in production/true staging; Cinema packed `uploads` is true both, which does not prove device upload or scanner readiness (source: `wrangler.jsonc`, `lib/cinema/features.js`) |
 | Passkey enrolment/sign-in | S2 must prove a native WebAuthn dependency, relying-party association/origin and real Auth roundtrip. List/remove already exists; not a reason to mark enrolment built (ADR-0204) |
 | Film Studio cross-device list/open | Web state is account-scoped browser-local, explicitly outside Projects (`docs/product/film-studio.md`). Server-side persistence/discovery does not exist. Phone JSON import/read/Create handoff exists; native stage editing and S8 master export are separate remaining work, not solved by adding a list screen |
-| Continue watching | `/api/v1/cinema/progress` merged (#1434); migration 0355 unapplied per frozen work order, live application **not verified**. `watchProgress`/`CINEMA_WATCH_PROGRESS_ENABLED` absent/off in both environments (`wrangler.jsonc`, interpreted by `lib/cinema/features.js`). Needs owner migration/activation and account-isolation proof, then phone list/save/seek/dismiss integration |
+| Continue watching | `/api/v1/cinema/progress` merged (#1434); migration 0355 unapplied per frozen work order, live application **not verified**. `watchProgress`/`CINEMA_WATCH_PROGRESS_ENABLED` absent/off in both environments (`wrangler.jsonc`, interpreted by `lib/cinema/features.js`). Needs owner migration/activation and account-isolation proof, and merge/device proof of phone list/save/seek/dismiss integration (#1452, in review) |
+| Oddlings account isolation and cleanup | **UNRESOLVED WORK:** saved passports and builder draft use `Paths.document/veyrnox-oddlings/passports.json` without an account key. They survive sign-out, account switch and account deletion; account scoping and cleanup need implementation and proof (SCHEMA section 2). No code fix is part of this docs refresh |
 | Draw on image | Canvas/dependency decision and S7 source-size PNG mask proof outstanding; no new dependency is selected by these docs |
 | Enhance | Web feature is not live per parity decision; source/live release readiness **not verified**. Web product/implementation decision precedes native S9 |
 | Paid Cinema | Read-only Pass is built; store product, webhook mapping/migration, double-billing guard and credit-subscription decision remain (ADR-0143). Production packed subscriptions/unlocks are false, staging true (`wrangler.jsonc`, `lib/cinema/features.js`); that does not create a phone store purchase path |

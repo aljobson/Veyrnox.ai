@@ -1,8 +1,8 @@
 # PRD: Veyrnox.ai mobile app
 
-**Status:** Source refresh 2026-10-20 against local `origin/main` at `b5bdc1081bbc5876f0852dd7be9628d4ba5da154`; live deployment and device behaviour not verified.
+**Status:** Source refresh 2026-10-20 against checkout HEAD `df14bedb`; live deployment and device behaviour not verified.
 
-**Evidence boundary:** Source and local merge history were read at that pinned revision. `gh pr list --state merged --limit 200` and the open-PR query could not connect to GitHub; remote freshness and what is currently in review are **not verified**. Paths beginning `src/` are relative to `apps/mobile/`; other repository paths are relative to the checkout. Configuration states are source values, not a live environment inspection; see [TRD section 3](TRD.md#3-configuration-and-flags).
+**Evidence boundary:** Source baseline and PR-query evidence are recorded in [README.md](README.md). Paths beginning `src/` are relative to `apps/mobile/`; other repository paths are relative to this checkout. Configuration states are source values, not a live environment inspection; see [TRD section 3](TRD.md#3-configuration-and-flags).
 **Owner:** product owner (Al Jobson). The "Veyrnox.ai mobile app" session builds; the planning session writes specs.
 **Predecessors:** [ADR-0106](../../adr/0106-mobile-app.md) (the app), [ADR-0108](../../adr/0108-mobile-store-billing.md) (store billing), [ADR-0109](../../adr/0109-mobile-publish-plan-and-store-catalog.md) (Publish Plan in stores), [ADR-0110](../../adr/0110-mobile-account-and-safety.md) (account and safety), [ADR-0135](../../adr/0135-cinema-block-users.md) (blocking).
 **Language:** terms are those of [CONTEXT.md](../../../CONTEXT.md). This document adds none.
@@ -35,14 +35,14 @@ The reference points the owner named are Higgsfield (AI video and audio), CapCut
 
 ## 4. Features and state
 
-Key: **Built** or **Shipped** means source merged at the pinned revision, not device or production acceptance. **Partial** names the implemented slice and its remaining work. Current in-review work is **not verified** because GitHub was unreachable. Evidence: `src/app/**`, the corresponding `src/lib/*.ts`, `docs/adr/` and local merge history; the dated PARITY list supplies scope, not current completion or flags.
+Key: **Built** or **Shipped** means source merged at the pinned revision, not device or production acceptance. **Partial** names the implemented slice and its remaining work. In-review work is listed separately in IMPLEMENTATION-PLAN and is not counted as built. Evidence: `src/app/**`, the corresponding `src/lib/*.ts`, `docs/adr/` and local merge history; the dated PARITY list supplies scope, not current completion or flags.
 
 ### 4.1 Account and trust
 
 | Feature | State |
 |---------|-------|
 | Sign in with Apple, Google, email (hidden bot check), 18+ tick | Shipped (ADR-0106, 0110) |
-| Account: sign out, restore purchases, report, appeals, help, referrals, credit history, legal links | Shipped |
+| Account: sign out, restore purchases, report, appeals, help, referrals, credit history, legal links | Built; Sign out sits under the email (#1445). Existing Help is built; new Help guides (#1455) are in review |
 | Delete account in the app | Built; both app default and server source gates are off (`apps/mobile/eas.json`, `src/lib/accountDeletion.ts`, `wrangler.jsonc`; TRD section 3). External EAS/deployed values **not verified** (ADR-0111) |
 | Consent before content goes to an AI provider | Shipped (ADR-0128) |
 | Account security | Password by emailed code, revoke other/all sessions, connected-assistant grants, TOTP enrol/verify/remove and passkeys list/remove built (`src/app/(app)/security.tsx`, `src/lib/auth/accountCalls.ts`, `src/lib/passkeys.ts`). Native passkey enrolment/sign-in blocked on S2 |
@@ -63,7 +63,7 @@ Key: **Built** or **Shipped** means source merged at the pinned revision, not de
 | Film Studio (seven planning stages, 16:9 master) | Partial: `/film` imports a web JSON export, reads stages/shots and hands an eligible prompt to Create (ADR-0210). No cross-device project discovery: web state is account-scoped browser-local (`docs/product/film-studio.md`). Server persistence is required for listing/opening web projects; editing and master preparation remain separate work |
 | Full editor: multi-track timeline, effects, colour, masks, audio, captions, transcript, export | Required, not built; owner-selected native shell/WebView approach is conditional on real-device S1 (see PARITY) |
 | Enhance (on-device face smoothing) | Required, not built; the web version is not live, so it waits on that decision |
-| Oddlings studio, Face Filters | Oddlings gallery, sheets, builder, saved characters, moving previews and portrait-to-Create animation handoff built (`src/app/(app)/oddlings/`, ADR-0158/0230). Face Filters are staged inactive on main (#1437); `src/lib/toolDirectory.ts` lists the tools but catalog activation and real use are **not verified** |
+| Oddlings studio, Face Filters | Oddlings gallery, sheets, builder, saved characters, moving previews and portrait-to-Create animation handoff built (`src/app/(app)/oddlings/`, ADR-0158/0230). Saved passports and the builder draft are install-scoped; account isolation/cleanup is **UNRESOLVED WORK** (SCHEMA section 2). Face Filters activation merged on main in #1439: `packages/db/schema/supabase/0357_activate_face_filters.sql` activates A1, A2, A4, A5; A3 relight stays inactive and A6–A8 are absent. Production application is **not verified from the repo**. The existing tools directory is built; dedicated phone Face filters (#1453) and related docs (#1446) are in review |
 
 ### 4.3 Library and projects
 
@@ -85,9 +85,9 @@ Key: **Built** or **Shipped** means source merged at the pinned revision, not de
 |---------|-------|
 | Publish Plan paywall through the store | Shipped (ADR-0109) |
 | Accounts, posts, analytics, brand switcher, approvals, calendar and best time (read) | Shipped (ADR-0121, 0137, 0138) |
-| Compose, schedule, cancel, restore | Built; per-network text, YouTube visibility, queue slot, account disconnect, draft approve/discard, month calendar and analytics range/compare. Main defaults compose to Schedule (#1438); this older checkout still defaults to now and is not changed by this docs refresh |
+| Compose, schedule, cancel, restore | Built; per-network text, YouTube visibility, queue slot, account disconnect, draft approve/discard, month calendar and analytics range/compare. Schedule is the default in `src/app/(app)/publish/compose.tsx` (#1438); successful submit opens Posts with scheduled/queued/posting-now confirmation (#1441). Per-account text has a hint before account selection (#1445) |
 | Connect a social account from the phone | Shipped (ADR-0136, 0140); cannot work against a provider until the owner registers redirect addresses |
-| Queues, autolists, inbox, workflows, contacts, SmartLinks, ads, commerce, reports, team, activity, developer keys | Queues/autolists, contacts editing, SmartLink editor, report download/share, team management, activity and developer keys/webhooks/logs built. Inbox is read-only; replies and workflow editing remain. Ad draft create/edit/delete and product create/edit/archive built (#1428/#1430); no ad-spend launch. See `src/app/(app)/publish/` |
+| Queues, autolists, inbox, workflows, contacts, SmartLinks, ads, commerce, reports, team, activity, developer keys | Queues/autolists, contacts editing, SmartLink editor, report download/share, team management, activity and developer keys/webhooks/logs built. Inbox is read-only; replies remain, and Publish workflows and Plan status (#1454) are in review. Ad draft create/edit/delete and product create/edit/archive built (#1428/#1430); no ad-spend launch. See `src/app/(app)/publish/` |
 
 ### 4.6 Cinema
 
@@ -97,7 +97,7 @@ Key: **Built** or **Shipped** means source merged at the pinned revision, not de
 | Comments with report and block | Shipped |
 | Pass, pay-per-title unlocks, credit subscriptions in the app | Partial: entitlement/locked states and read-only existing Pass card built (`src/lib/cinemaPass.ts`, ADR-0207). Store Pass purchase, unlock purchase and credit subscriptions remain blocked on billing decisions/products (ADR-0143); no phone purchase link |
 | Creator profile, apply, content, upload, analytics; voting, polls, saved and follows, winners | Browse/discovery, voting/polls, Saved/Following, rankings, sharing, profile/application and analytics source built (`src/lib/cinemaBrowse.ts`, `cinemaSocial.ts`, `cinemaCreator.ts`). Creator upload is only Continue on web (ADR-0208); native drafts/upload/submit remain. Social features are staging-only in configuration; see TRD section 3 |
-| Continue watching | Server `/api/v1/cinema/progress` merged (#1434, ADR-0232); phone integration absent. Migration 0355 activation pending/unapplied per work order, live state **not verified**; `watchProgress` absent/off in both source environments |
+| Continue watching | Server `/api/v1/cinema/progress` merged (#1434, ADR-0232); phone integration (#1452) is in review, absent from this baseline. Migration 0355 activation pending/unapplied per work order, live state **not verified**; `watchProgress` absent/off in both source environments (`wrangler.jsonc`, interpreted by `lib/cinema/features.js`) |
 
 ### 4.7 Money
 
@@ -112,10 +112,10 @@ Key: **Built** or **Shipped** means source merged at the pinned revision, not de
 |---------|-------|
 | Five-tab shell, balance chip, avatar to Account | Built: Explore, Create, Cinema, Library, Publish (`src/app/(app)/(tabs)/_layout.tsx`) |
 | First-run intro and credits explanation with the real free amount | Built after sign-in at `/welcome`; `GET /api/v1/balance` (`free_credits`), versioned local seen flag (`src/lib/firstRun.ts`) |
-| Signed-out preview of Explore and the Cinema list | Built at `/preview`, entered from sign-in; templates/Cinema list only. Selecting content asks to sign in; automatic return to the selected item is not implemented there |
+| Signed-out preview of Explore and the Cinema list | Built at `/preview`, entered through the Browse first text link on sign-in (#1445); templates/Cinema list only. Selecting content asks to sign in; automatic return to the selected item is not implemented there |
 | Vey mascot as the chat entry on every screen | Partial: animated sheet entry on Explore/Create/Library/Publish tabs; excluded from Cinema and stack screens by the tab layout |
 | Result screen next steps: Edit, Publish, Make another | Built (`src/lib/nextSteps.ts`, ADR-0147), availability depends on output |
-| Explore as the home screen | Built: prompt collage, type/category/search, presets, recents, Oddlings banner; empty states and low-balance prompt also built |
+| Explore as the home screen | Built: prompt collage, type/category/search, templates before the Oddlings banner (#1447), recents; empty states and low-balance prompt also built |
 
 ## 5. Out of scope
 

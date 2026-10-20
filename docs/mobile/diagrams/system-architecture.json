@@ -7,7 +7,7 @@
     "quality_profile": "showcase",
     "repository": {
       "url": "https://github.com/aljobson/Veyrnox.ai",
-      "revision": "b5bdc1081bbc5876f0852dd7be9628d4ba5da154",
+      "revision": "df14bedb6935ba4e613dc936b01fbc5383b97c3f",
       "link_mode": "local-only"
     },
     "viewBox": [
@@ -335,7 +335,7 @@
       "dot": "slate",
       "title": "Source snapshot · 2026-10-20",
       "items": [
-        "Local origin/main b5bdc108; live deployment not verified.",
+        "Checkout HEAD df14bedb; live deployment not verified.",
         "Expo push returns job notices to the phone; Sentry requires a release DSN.",
         "Store billing and push remain off in production configuration."
       ]

@@ -1,8 +1,8 @@
 # App flow: Veyrnox.ai mobile app
 
-**Status:** Source refresh 2026-10-20 against local `origin/main` at `b5bdc1081bbc5876f0852dd7be9628d4ba5da154`; live deployment and device behaviour not verified.
+**Status:** Source refresh 2026-10-20 against checkout HEAD `df14bedb`; live deployment and device behaviour not verified.
 
-**Evidence boundary:** Source and local merge history were read at that pinned revision. `gh pr list --state merged --limit 200` and the open-PR query could not connect to GitHub; remote freshness and what is currently in review are **not verified**. Paths beginning `src/` are relative to `apps/mobile/`; other repository paths are relative to the checkout. Configuration states are source values, not a live environment inspection; see [TRD section 3](TRD.md#3-configuration-and-flags).
+**Evidence boundary:** Source baseline and PR-query evidence are recorded in [README.md](README.md). Paths beginning `src/` are relative to `apps/mobile/`; other repository paths are relative to this checkout. Configuration states are source values, not a live environment inspection; see [TRD section 3](TRD.md#3-configuration-and-flags).
 **Reads with:** [PRD.md](PRD.md), [UI-UX.md](UI-UX.md), [TRD.md](TRD.md).
 
 Existing behaviour is marked *(today)*. Headings containing *(new)* retain historical slice names; their current implementation state is stated below.
@@ -28,7 +28,7 @@ Route files are under `apps/mobile/src/app/`. `(app)` and `(tabs)` are groups, n
 | `/publish/inbox`, `/publish/inbox-thread`, `/publish/contacts`, `/publish/contact-edit` | Read-only inbox; contacts editing | signed in |
 | `/publish/smartlink`, `/publish/ads`, `/publish/ads-edit`, `/publish/commerce`, `/publish/commerce-edit` | SmartLink, ad drafts, product catalogue | signed in |
 | `/publish/team`, `/publish/activity`, `/publish/developer`, `/team-invite` | Team, activity, keys/webhooks/logs, invitation | signed in |
-| `/oddlings`, `/oddlings/[id]`, `/oddlings/build`, `/oddlings/saved` | Characters, builder and local saved characters | signed in |
+| `/oddlings`, `/oddlings/[id]`, `/oddlings/build`, `/oddlings/saved` | Characters, builder and install-scoped saved passports/draft (account cleanup unresolved; SCHEMA section 2) | signed in |
 | `/film`, `/film/shot/[id]` | Imported web Film Studio export, stages, shots and Create handoff | signed in |
 | `/credits`, `/history`, `/topups`, `/account`, `/security` | Billing/history and account/security | signed in |
 | `/help`, `/appeals`, `/report`, `/referrals`, `/blocked`, `/delete-account` | Help, safety and account actions | signed in |
@@ -58,21 +58,23 @@ Preview is optional from sign-in, not the cold-launch default. Film import and O
 
 The heading retains the original slice naming; N2/N3 are now built (`src/app/preview.tsx`, `src/app/(app)/welcome.tsx`, `src/lib/firstRun.ts`).
 
-1. **Launch/sign-in.** Root redirects signed-out users to sign-in; the 18+ check precedes provider sign-in. Preview is an optional entry there.
+1. **Launch/sign-in.** Root redirects signed-out users to sign-in; the 18+ check precedes provider sign-in. Browse first is an optional text-link entry there (#1445).
 2. **Preview.** Public templates and the Cinema list use anonymous reads; selecting an item opens sign-in. Returning automatically to that specific item is not implemented in this screen.
 3. **Welcome after sign-in.** Three skippable cards (`hello`, `credits`, `start`); a versioned SecureStore seen flag; an Account reset control is not implemented in the inspected source. No pre-auth looping preview sequence is claimed.
 4. **Credits.** Reads `free_credits` from `GET /api/v1/balance`; shows a number only when positive and readable, otherwise explains Credits without promising a grant.
 5. **Permissions.** Media and push remain contextual; real permission prompts on iOS/Android are **not verified** in this refresh.
-6. **Land.** Explore: prompt collage, templates and Oddlings entry.
+6. **Land.** Explore: prompt collage, templates before the Oddlings banner (#1447), then Recent. An unfinished-creation card can appear above templates.
 
 ## 5. Create to publish *(today, with the gaps marked)*
 
 1. Choose a model/template or a Library input. Model-supported options include resolution/audio, aspect, seed and image count; the form shows price and a low-balance Buy credits card that preserves the prompt.
 2. Accept AI consent before the first provider send. Generate uses an idempotency key; the job screen polls and explains refunds on failure.
 3. Result offers output-appropriate Edit, Publish and Make another, then Save/Share/Report/Delete (`src/lib/nextSteps.ts`). Quick edit supports trim/join/captions and sound; stem results are available through the tools.
-4. Publish accepts a Library creation, destination accounts, global/per-network text, YouTube visibility, now/schedule/queue. On pinned main, Schedule is the default (#1438). The current checkout's older source still defaults to now; no app change is included here.
-5. Posts show status; draft approve/discard, approvals, month calendar and analytics ranges are built. Provider account connect needs external redirect registration; real posts are **not verified**.
+4. Publish accepts a Library creation, destination accounts, global/per-network text, YouTube visibility, now/schedule/queue. Schedule is the default in `src/app/(app)/publish/compose.tsx` (#1438); before account selection, the per-account text area explains how to enable it (#1445).
+5. Successful submit opens Posts with a scheduled, queued or posting-now confirmation (#1441); posting-now is not proof that the provider has published it. Posts show status; draft approve/discard, approvals, month calendar and analytics ranges are built. Provider account connect needs external redirect registration; real posts are **not verified**.
 6. Publish completion/failure push is not verified as built; the implemented push contract is generation-job notifications.
+
+Account places Sign out directly under the email (#1445). Continue watching (#1452), dedicated Face filters (#1453), Publish workflows and Plan status (#1454), Help guides (#1455) and Face Filters docs (#1446) are in review; their proposed screens are not added to this baseline route map.
 
 A Cinema creator's Upload card only opens the website. Pass is read-only; paid purchase flows and native resumable upload remain blocked. Film Studio can import a web export, but cannot discover browser-local projects across devices.
 
