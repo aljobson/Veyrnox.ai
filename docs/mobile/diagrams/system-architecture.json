@@ -20,7 +20,7 @@
       "id": "phone",
       "type": "frontend",
       "label": "Phone app",
-      "sublabel": "Expo \u00b7 iOS / Android",
+      "sublabel": "Expo · iOS / Android",
       "pos": [
         380.0,
         330
@@ -39,7 +39,7 @@
       "id": "gateway",
       "type": "security",
       "label": "Cloudflare Worker",
-      "sublabel": "/api/v1 \u00b7 Bearer ES256",
+      "sublabel": "/api/v1 · Bearer ES256",
       "pos": [
         760.0,
         330
@@ -58,7 +58,7 @@
       "id": "postgres",
       "type": "database",
       "label": "Supabase Postgres",
-      "sublabel": "RPCs \u00b7 ledger \u00b7 RLS",
+      "sublabel": "RPCs · ledger · RLS",
       "pos": [
         1140.0,
         330
@@ -77,7 +77,7 @@
       "id": "auth",
       "type": "security",
       "label": "Supabase Auth",
-      "sublabel": "PKCE \u00b7 tokens \u00b7 MFA",
+      "sublabel": "PKCE · tokens · MFA",
       "pos": [
         380.0,
         90
@@ -96,7 +96,7 @@
       "id": "handback",
       "type": "backend",
       "label": "OAuth hand-back",
-      "sublabel": "Site routes \u2192 app scheme",
+      "sublabel": "Site routes → app scheme",
       "pos": [
         38.0,
         90
@@ -191,7 +191,7 @@
       "id": "billing",
       "type": "external",
       "label": "RevenueCat + stores",
-      "sublabel": "App Store \u00b7 Google Play",
+      "sublabel": "App Store · Google Play",
       "pos": [
         760.0,
         90
@@ -300,7 +300,7 @@
     {
       "from": "billing",
       "to": "gateway",
-      "label": "Billing webhook",
+      "label": "Billing webhook (outside Bearer gate)",
       "labelAt": [
         855.0,
         245
@@ -309,7 +309,7 @@
     {
       "from": "providers",
       "to": "gateway",
-      "label": "Job webhook"
+      "label": "Job webhook (outside Bearer gate)"
     }
   ],
   "cards": [
@@ -317,8 +317,8 @@
       "dot": "cyan",
       "title": "Identity returns through the site",
       "items": [
-        "/auth/mobile \u2192 ai.veyrnox.app://auth/callback",
-        "/social/connect/mobile/:network \u2192 ai.veyrnox.app://social/callback",
+        "/auth/mobile → ai.veyrnox.app://auth/callback",
+        "/social/connect/mobile/:network → ai.veyrnox.app://social/callback",
         "Supabase Auth is called directly; app data uses /api/v1."
       ]
     },
@@ -333,7 +333,7 @@
     },
     {
       "dot": "slate",
-      "title": "Source snapshot \u00b7 2026-10-20",
+      "title": "Source snapshot · 2026-10-20",
       "items": [
         "Local origin/main b5bdc108; live deployment not verified.",
         "Expo push returns job notices to the phone; Sentry requires a release DSN.",

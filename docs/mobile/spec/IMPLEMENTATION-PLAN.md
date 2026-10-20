@@ -2,7 +2,7 @@
 
 **Status:** Source refresh 2026-10-20 against local `origin/main` at `b5bdc1081bbc5876f0852dd7be9628d4ba5da154`; live deployment and device behaviour not verified.
 
-**Evidence boundary:** Source and local merge history were read at that pinned revision. `gh pr list --state merged --limit 200` and the open-PR query could not connect to GitHub; remote freshness and what is currently in review are **not verified**. Paths beginning `src/` are relative to `apps/mobile/`; other repository paths are relative to the checkout. Configuration states are source values, not a live environment inspection; see [TRD section 3](TRD.md#3-configuration-and-flags).
+**Evidence boundary:** Facts were read from source on `origin/main` at `b5bdc108`; this branch was then merged with main at `cf1573bf` (later commits: #1436 to #1438 and Face Filters staging, not re-audited line by line). PR state was read with `gh` on 2026-10-20 after the snapshot. Paths beginning `src/` are relative to `apps/mobile/`; other repository paths are relative to the checkout. Configuration states are source values, not a live environment inspection; see [TRD section 3](TRD.md#3-configuration-and-flags).
 **Rule:** one slice, one PR, each with an exit gate. No flag is enabled by an assistant. A mobile slice never edits server code, migrations or `wrangler.jsonc`.
 
 ## 1. Foundation (done)
@@ -21,7 +21,7 @@
 | M13 | AI consent, privacy manifest, report and block audit | #1278 to #1280 |
 | S4, S10 | Publish connect return, block members | #1295, #1294, #1307, #1308 |
 
-The foundation table above is retained as historical PR attribution. Current source adds the following; local squash-merge subjects corroborate the PR numbers, but GitHub's merged/open PR lists are **not verified** because the network query failed.
+The foundation table above is retained as historical PR attribution. Current source adds the following; PR numbers come from squash-merge subjects on main and were corroborated with `gh pr list --state merged` on 2026-10-20.
 
 | Current area | Built at pinned main | Evidence |
 |--------------|----------------------|----------|
@@ -36,7 +36,7 @@ The foundation table above is retained as historical PR attribution. Current sou
 | Continue watching | Server progress route and migration source only | `app/api/v1/cinema/progress/route.js`; #1434, ADR-0232 |
 | Face Filters | Inactive A1–A5 catalog staging and phone tools-directory entry | Main #1437, `src/lib/toolDirectory.ts`; activation/use **not verified** |
 
-**In review:** not verified. `gh pr list --state open --limit 100` could not connect; no unmerged work is labelled built or assigned a guessed PR. This checkout starts at `88ef8eb95b126dd3c81131e0abc5fa20c8b246c2`, three commits behind pinned local main; #1436–#1438 facts were read with `git show origin/main:<path>`, without modifying source. The initial diff against origin/main already included 33 unrelated paths; the docs-only acceptance must distinguish that baseline from this task's working diff.
+**In review:** none. `gh pr list --state open` on 2026-10-20 shows no open mobile PR; the phone Continue watching row and this spec refresh are being built separately and are not counted as built.
 
 ## 2. Track A: owner prerequisites (gate everything that ships)
 
