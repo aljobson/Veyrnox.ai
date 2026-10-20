@@ -23,4 +23,6 @@ export default {
     'create.freeLeft.one': 'FREE, {count} left',
     'create.freeLeft.other': 'FREE, {count} left',
     'create.freeLeftLabel': '{name}: free today, {count} left',
+    'create.short.one': 'You have {have} credits and this costs {need}. You need {count} more.',
+    'create.short.other': 'You have {have} credits and this costs {need}. You need {count} more.',
 } as const;

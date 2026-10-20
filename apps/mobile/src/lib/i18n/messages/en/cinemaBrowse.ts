@@ -45,4 +45,5 @@ export default {
     'cinemaBrowse.tab.winners': 'Winners',
     // --- Cinema profile, creator application, audience insights (ADR-0168, parity P6) ---
     'cinemaBrowse.tab.profile': 'Profile',
+    'cinemaBrowse.lock.paid': 'This is a paid title. Paid titles are not available in the app yet.',
 } as const;

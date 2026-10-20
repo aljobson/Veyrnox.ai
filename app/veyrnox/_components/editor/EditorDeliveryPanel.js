@@ -1,4 +1,5 @@
 'use client';
+import LegalLink from '../../../../components/LegalLink';
 import { useI18n } from '../../../../components/I18nProvider';
 import { tOr } from '../../../../lib/i18n/translate.mjs';
 import { localeTag } from '../../../../lib/i18n/locales.mjs';
@@ -76,7 +77,7 @@ function DeliverySession({ actor, result }) {
         <Button size="sm" variant="ghost" disabled={!!status} onClick={options}>{open ? t("app.editor.delivery.refresh") : t("app.editor.delivery.open")}</Button>
         {open && <>
             {!actor ? <p className="text-xs">{t("app.editor.delivery.signIn")}{' '}<Button size="sm" onClick={() => window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>{t("oauth.signIn")}</Button></p> : <>
-                <label className="flex items-start gap-2 text-xs"><input aria-label={t("app.editor.delivery.confirm")} type="checkbox" checked={consent} disabled={!!status} onChange={e => setConsent(e.target.checked)} /><span>{t("app.editor.delivery.rights")}{' '}<a className="underline" href="/legal/aup">{t("guide.your-own-files.l2")}</a></span></label>
+                <label className="flex items-start gap-2 text-xs"><input aria-label={t("app.editor.delivery.confirm")} type="checkbox" checked={consent} disabled={!!status} onChange={e => setConsent(e.target.checked)} /><span>{t("app.editor.delivery.rights")}{' '}<LegalLink element="a" className="underline" href="/legal/aup">{t("guide.your-own-files.l2")}</LegalLink></span></label>
                 {saved ? <p role="status" className="text-xs">{t("app.editor.delivery.saved")}{' '}<a className="text-vx-accent underline" href={saved.url}>{t("app.editor.delivery.view")}</a></p> : <Button size="sm" disabled={!library || !consent || !!status} onClick={() => deliver('library')}>{t("app.editor.delivery.save")}</Button>}
                 {library === false && <p className="text-xs text-vx-fg-muted">{t("app.editor.delivery.closed")}</p>}
                 <p className="text-[10px] text-vx-fg-muted">{t("app.editor.delivery.limits")}</p>

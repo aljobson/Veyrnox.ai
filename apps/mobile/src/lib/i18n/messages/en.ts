@@ -7,6 +7,7 @@ import area_account from './en/account';
 import area_accounts from './en/accounts';
 import area_acct from './en/acct';
 import area_activity from './en/activity';
+import area_ads from './en/ads';
 import area_analytics from './en/analytics';
 import area_approvals from './en/approvals';
 import area_authGate from './en/authGate';
@@ -16,14 +17,18 @@ import area_brand from './en/brand';
 import area_brands from './en/brands';
 import area_cache from './en/cache';
 import area_calendar from './en/calendar';
+import area_cam from './en/cam';
 import area_catalog from './en/catalog';
+import area_char from './en/char';
 import area_chat from './en/chat';
 import area_chrome from './en/chrome';
 import area_cinema from './en/cinema';
 import area_cinemaBrowse from './en/cinemaBrowse';
 import area_cinemaCreator from './en/cinemaCreator';
+import area_cinemaPass from './en/cinemaPass';
 import area_cinemaSocial from './en/cinemaSocial';
 import area_comments from './en/comments';
+import area_commerce from './en/commerce';
 import area_common from './en/common';
 import area_compose from './en/compose';
 import area_connect from './en/connect';
@@ -39,10 +44,12 @@ import area_explore from './en/explore';
 import area_form from './en/form';
 import area_help from './en/help';
 import area_home from './en/home';
+import area_inbox from './en/inbox';
 import area_insights from './en/insights';
 import area_job from './en/job';
 import area_label from './en/label';
 import area_library from './en/library';
+import area_libsrc from './en/libsrc';
 import area_lowBalance from './en/lowBalance';
 import area_mdl from './en/mdl';
 import area_mobile from './en/mobile';
@@ -52,8 +59,10 @@ import area_oac from './en/oac';
 import area_oauth from './en/oauth';
 import area_oddlings from './en/oddlings';
 import area_opt from './en/opt';
+import area_pk from './en/pk';
 import area_plan from './en/plan';
 import area_prc from './en/prc';
+import area_preview from './en/preview';
 import area_pricing from './en/pricing';
 import area_prov from './en/prov';
 import area_public from './en/public';
@@ -72,9 +81,11 @@ import area_stem from './en/stem';
 import area_stems from './en/stems';
 import area_tabs from './en/tabs';
 import area_team from './en/team';
+import area_toolsDir from './en/toolsDir';
 import area_topup from './en/topup';
 import area_unlock from './en/unlock';
 import area_vey from './en/vey';
+import area_welcome from './en/welcome';
 
 const catalog = {
     ...area_abt,
@@ -82,6 +93,7 @@ const catalog = {
     ...area_accounts,
     ...area_acct,
     ...area_activity,
+    ...area_ads,
     ...area_analytics,
     ...area_approvals,
     ...area_authGate,
@@ -91,14 +103,18 @@ const catalog = {
     ...area_brands,
     ...area_cache,
     ...area_calendar,
+    ...area_cam,
     ...area_catalog,
+    ...area_char,
     ...area_chat,
     ...area_chrome,
     ...area_cinema,
     ...area_cinemaBrowse,
     ...area_cinemaCreator,
+    ...area_cinemaPass,
     ...area_cinemaSocial,
     ...area_comments,
+    ...area_commerce,
     ...area_common,
     ...area_compose,
     ...area_connect,
@@ -114,10 +130,12 @@ const catalog = {
     ...area_form,
     ...area_help,
     ...area_home,
+    ...area_inbox,
     ...area_insights,
     ...area_job,
     ...area_label,
     ...area_library,
+    ...area_libsrc,
     ...area_lowBalance,
     ...area_mdl,
     ...area_mobile,
@@ -127,8 +145,10 @@ const catalog = {
     ...area_oauth,
     ...area_oddlings,
     ...area_opt,
+    ...area_pk,
     ...area_plan,
     ...area_prc,
+    ...area_preview,
     ...area_pricing,
     ...area_prov,
     ...area_public,
@@ -147,9 +167,11 @@ const catalog = {
     ...area_stems,
     ...area_tabs,
     ...area_team,
+    ...area_toolsDir,
     ...area_topup,
     ...area_unlock,
     ...area_vey,
+    ...area_welcome,
 } as const;
 
 const historical = new Set<string>(order);

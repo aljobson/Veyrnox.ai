@@ -18,4 +18,8 @@ export default {
     'unlock.failed': 'That did not complete. You were not charged.',
     'unlock.restored': 'Purchases restored.',
     'unlock.restoreFailed': 'Could not restore purchases. Try again.',
+    'unlock.ads.title': 'Unlock ads',
+    'unlock.ads.body': 'Plan ad campaigns for your posts with the Publish Plan.',
+    'unlock.commerce.title': 'Unlock products',
+    'unlock.commerce.body': 'Keep a product catalogue for your posts with the Publish Plan.',
 } as const;

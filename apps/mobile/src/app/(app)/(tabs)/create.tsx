@@ -38,6 +38,10 @@ export default function Create() {
                 <Text style={styles.name}>{t('label.Templates')}</Text>
                 <Text style={styles.muted}>{t('create.templatesHint')}</Text>
             </Pressable>
+            <Pressable accessibilityRole="button" style={styles.templates} onPress={() => router.push('/create/tools')}>
+                <Text style={styles.name}>{t('toolsDir.entry')}</Text>
+                <Text style={styles.muted}>{t('toolsDir.entryHint')}</Text>
+            </Pressable>
             {models ? <FreeAllowanceCard models={models} left={freeLeft} /> : null}
             <View style={styles.tabs} accessibilityLabel={t('create.goalLabel')}>
                 {GOALS.map((g) => (

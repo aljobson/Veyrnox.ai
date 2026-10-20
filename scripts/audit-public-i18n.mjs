@@ -6,12 +6,14 @@ import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
 import { helperExceptions } from './lib/helper-i18n-exceptions.mjs';
 import { appMetadataFile, isMetadataExport, inventoryMetadata } from './lib/app-metadata-i18n.mjs';
+import { bindingInventory } from './lib/legal-i18n.mjs';
+import { checkSources } from './legal-source-hashes.mjs';
 import publicEnglish from '../lib/i18n/messages/en.mjs';
 import appEnglish from '../lib/i18n/messages/app/en.mjs';
 const english = { ...publicEnglish, ...appEnglish };
 
 const publicProps = new Set(['title', 'aria-label', 'placeholder', 'alt', 'label', 'ariaLabel', 'body', 'confirmLabel']);
-const excluded = /^(?:app\/veyrnox\/(?:app|design-system)\/|app\/legal\/)/;
+const excluded = /^(?:app\/veyrnox\/(?:app|design-system)\/)/;
 // Imports shared by MarketingNav/AppNav and public/private billing exports do
 // not make the app-only render branches part of the public site.
 const privateFiles = /\/(?:PaywallPrompt|TopUpPacks|editor\/EditorHelperLauncher)\.[jt]sx?$/;
@@ -56,14 +58,14 @@ function walk(directory, exclude = excluded) {
 }
 export function publicFiles({ app = false } = {}) {
   const exclude = app ? /^app\/veyrnox\/app\/admin(?:\/|$)/ : excluded;
-  const roots = (app ? ['app/veyrnox/app'] : ['app/veyrnox', 'app/social', 'app/auth/callback']).flatMap(directory => walk(directory, exclude))
+  const roots = (app ? ['app/veyrnox/app'] : ['app/veyrnox', 'app/social', 'app/auth/callback', 'app/legal']).flatMap(directory => walk(directory, exclude))
     .filter(file => /\/(?:page|layout|template|error|loading|not-found)\.[jt]sx?$/.test(file));
   roots.push('app/layout.js', 'app/not-found.js', 'app/error.js', 'app/global-error.js');
   const files = new Set();
   function visit(file) {
     if (files.has(file) || exclude.test(file) || (!app && privateFiles.test(file)) || !existsSync(file)) return;
     if (/^lib\/i18n\//.test(file)) return;
-    if (!/^(?:app\/(?:veyrnox|social|auth\/callback)\/|components\/|app\/(?:layout|not-found|error|global-error)\.js$|lib\/)/.test(file)) return;
+    if (!/^(?:app\/(?:veyrnox|social|legal|auth\/callback)\/|components\/|app\/(?:layout|not-found|error|global-error)\.js$|lib\/)/.test(file)) return;
     files.add(file);
     const tree = ts.createSourceFile(file, readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.JSX);
     for (const node of tree.statements) {
@@ -81,7 +83,7 @@ export function publicFiles({ app = false } = {}) {
     const tree = ts.createSourceFile(file, readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.JSX);
     let jsx = false;
     function scan(node) { if (ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node) || ts.isJsxFragment(node)) jsx = true; else ts.forEachChild(node, scan); }
-    scan(tree); return jsx || (app && (/(?:^lib\/|\/_lib\/)/.test(file) || (appMetadataFile(file) && tree.statements.some(isMetadataExport))));
+    scan(tree); return jsx || /^app\/legal\/[^/]+\/page\.js$/.test(file) || (app && (/(?:^lib\/|\/_lib\/)/.test(file) || (appMetadataFile(file) && tree.statements.some(isMetadataExport))));
   }).sort();
 }
 export const appFiles = () => publicFiles({ app: true });
@@ -94,45 +96,14 @@ function owner(node) {
 function translateCall(node, tree) {
   return ts.isCallExpression(node) && /^(?:(?:tOr|t|tr|translate|say|c)(?:\.label)?|translation\.current)$/.test(node.expression.getText(tree));
 }
-// Version-bound legal declarations remain English by the 2026-10-18 host decision.
-const legalStatements = new Set([
-  "app/veyrnox/_components/TopUpPacks.js\nI want my credits added to my account straight away. I understand that once I use any of these credits to generate, I lose my right to cancel this purchase.",
-  "app/veyrnox/_components/chat/MediaComposer.js\nI own these files or have permission to use every identifiable person, voice, brand, artwork, and recording under the",
-  "app/veyrnox/_components/chat/MediaComposer.js\nAcceptable Use Policy",
-
-  "app/veyrnox/_components/CreditSubscriptions.js\nI agree to",
-  "app/veyrnox/_components/CreditSubscriptions.js\nat",
-  "app/veyrnox/_components/CreditSubscriptions.js\nplus applicable tax every",
-  "app/veyrnox/_components/CreditSubscriptions.js\nuntil I cancel. I receive",
-  "app/veyrnox/_components/CreditSubscriptions.js\nCredits after each confirmed",
-  "app/veyrnox/_components/CreditSubscriptions.js\nly payment; unused cycle Credits expire without rollover.",
-
-  "app/veyrnox/_components/editor/GenerationPanel.js\nI own this file, or I have the permission of everyone identifiable in it. No real person’s face, body or voice is used without their consent, and I hold the rights to any brand, artwork or recording in it (",
-  "app/veyrnox/_components/editor/GenerationPanel.js\nAcceptable Use",
-  "app/veyrnox/_components/editor/GenerationPanel.js\n). This statement is recorded against the generation and your account.",
-
-  "app/veyrnox/app/publish/plan/PublishPlanPanel.js\nStart my Publish Plan at",
-  "app/veyrnox/app/publish/plan/PublishPlanPanel.js\nplus tax every",
-  "app/veyrnox/app/publish/plan/PublishPlanPanel.js\n. I understand it renews automatically until I cancel.",
-  "app/veyrnox/_components/SourceRightsConfirmation.jsx\nI own this file, or I have the permission of everyone identifiable in it. No real person&apos;s face, body or voice is used without their consent, and I hold the rights to any brand, artwork or recording in it (",
-  "app/veyrnox/_components/SourceRightsConfirmation.jsx\nAcceptable Use",
-  "app/veyrnox/_components/SourceRightsConfirmation.jsx\n). This statement is recorded against the generation and your account.",
-  "app/veyrnox/social-cinema/pass/PassPanel.js\nStart my Cinema Pass now. I understand it renews automatically until I cancel, and that if I cancel within 14 days I get back the unused share of what I paid.",
-  "app/veyrnox/social-cinema/title/[id]/TitlePage.js\nUnlock now and add it to my account for good. I understand this spends credits straight away and that my right to cancel ends once I press play.",
-  "app/veyrnox/social-cinema/creator/CreatorWorkspace.js\nI own or hold the rights to everything in this title, including any real people, voices, music and footage, and I have declared its AI use truthfully.",
-  "app/veyrnox/social-cinema/creator/CreatorWorkspace.js\nThis title contains no nudity, pornography, explicit sexual content, sexualised minors, non-consensual intimate imagery, sexual violence, or sexual deepfake of a real person. I have read the",
-  "app/veyrnox/social-cinema/creator/CreatorWorkspace.js\nCinema Content Policy",
-  "app/veyrnox/social-cinema/creator/CreatorWorkspace.js\nI have not intentionally included malware, executable code, disguised files or links intended to compromise viewers or Veyrnox."
-]);
-
 function allowed(file, text) {
-  if (legalStatements.has(`${file}\n${text}`)) return 'version-bound English legal statement; lawyer-reviewed translation required (ADR-0107)';
   return exceptions.find(rule => (!rule.file || rule.file.test(file)) && rule.pattern.test(text))?.reason;
 }
 export function candidates(file, source, { app = false } = {}) {
   if (app && /^app\/veyrnox\/app\/admin(?:\/|$)/.test(file)) return [];
   const tree = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JSX);
   const output = [];
+  const bindings = bindingInventory(tree);
   const helper = /(?:^lib\/|\/_lib\/)/.test(file);
   const catalogValues = new Set(Object.values(english).map(text => text.replace(/\{\w+\}/g, ' ').replace(/\s+/g, ' ').trim()));
   function add(node, kind, text, status, reason) {
@@ -144,6 +115,22 @@ export function candidates(file, source, { app = false } = {}) {
     output.push({ file, line: tree.getLineAndCharacterOfPosition(node.getStart()).line + 1, kind, text: value, status, ...(reason ? { reason } : {}) });
   }
   function visit(node) {
+    if (ts.isCallExpression(node) && node.expression.getText(tree) === 'LegalDocument') {
+      const doc = node.arguments[0]?.properties?.find(property => property.name?.getText(tree) === 'document')?.initializer?.text;
+      if (doc) for (const code of ['es', 'zh', 'hi', 'ar', 'fr', 'pt', 'ru', 'ja', 'de', 'ko']) {
+        const present = existsSync(`lib/i18n/messages/legal/${code}/${doc}.mjs`);
+        add(node, 'legal-catalog', `${code}/${doc}`, present ? 'translated' : 'unresolved', present ? 'legal document catalog; parity and render tested separately' : 'missing legal document translation');
+      }
+      return;
+    }
+    if (bindings.used.has(node)) {
+      add(node, 'binding-source', node.name.getText(tree), 'translated', 'English source paired with a validated BindingText translation'); return;
+    }
+    if (bindings.paired.has(node)) {
+      const { id, valid } = bindings.paired.get(node);
+      add(node, 'binding', id || 'missing binding id', valid ? 'translated' : 'unresolved', valid ? 'English statement matches its translated binding catalog' : 'binding id or English source differs from the catalog');
+      if (valid) return;
+    }
     if (app && appMetadataFile(file) && isMetadataExport(node)) {
       inventoryMetadata(node, tree, english, add);
       return;
@@ -236,6 +223,7 @@ export function candidates(file, source, { app = false } = {}) {
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  try { await checkSources(); } catch (error) { console.error(error.message); process.exitCode = 1; }
   const app = process.argv.includes('--app');
   const files = process.argv.slice(2).filter(arg => !['--all', '--app'].includes(arg));
   const rows = (files.length ? files : app ? appFiles() : publicFiles()).flatMap(file => candidates(file, readFileSync(file, 'utf8'), { app }));

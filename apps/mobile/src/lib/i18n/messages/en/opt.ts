@@ -25,4 +25,9 @@ export default {
     'opt.draftClear': 'Clear draft',
     'opt.started': '{started} of {count} started. Image {next} did not.',
     'opt.startedUnknown': '{started} of {count} started. Image {next} may have too. Check Library.',
+    'opt.voice': 'Voice (required)',
+    'opt.voiceExample': 'For example: a warm, slow storyteller',
+    'opt.voiceHelp': 'Describe the voice in words. A recording of a real person is not accepted.',
+    'opt.audioLength': 'Length in seconds',
+    'opt.audioLengthRange': 'Whole seconds from {min} to {max}. Empty uses {def}.',
 } as const;

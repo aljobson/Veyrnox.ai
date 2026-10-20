@@ -35,4 +35,7 @@ export default {
     'cinemaCreator.analytics.commenters': 'Commenters',
     'cinemaCreator.analytics.suppressed.one': 'Counts are hidden until at least {count} person has watched.',
     'cinemaCreator.analytics.suppressed.other': 'Counts are hidden until at least {count} people have watched.',
+    'cinemaCreator.upload.title': 'Upload a title',
+    'cinemaCreator.upload.body': 'Uploading and managing titles is on the web for now. Your creator account works there as it does here.',
+    'cinemaCreator.upload.web': 'Continue on web',
 } as const;
