@@ -5,7 +5,20 @@ export class ApiError extends Error {
         super(`api_${code}`);
         this.name = 'ApiError';
     }
+
+    // ADR-0160: the server's one answer for "the database is not answering". Retryable; never a reason to sign out.
+    get isServiceUnavailable(): boolean {
+        return this.status === 503 && this.code === 'service_unavailable';
+    }
+
+    // Seconds the server asked us to wait (Retry-After), when it said.
+    get retryAfterSeconds(): number | undefined {
+        const value = this.body.retryAfterSeconds;
+        return typeof value === 'number' && value > 0 ? value : undefined;
+    }
 }
+
+export const isServiceUnavailable = (err: unknown): boolean => err instanceof ApiError && err.isServiceUnavailable;
 
 export interface ApiClientOptions {
     readonly baseUrl: string;
@@ -68,7 +81,11 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
         await options.beforeSend?.(path, init.method ?? 'GET');
         const res = await authed(path, init, fetch);
         const body = (await res.json().catch(() => ({}))) as { error?: string };
-        if (!res.ok) throw new ApiError(res.status, typeof body.error === 'string' ? body.error : 'unknown', body);
+        if (!res.ok) {
+            const wait = Number(res.headers.get('retry-after'));
+            throw new ApiError(res.status, typeof body.error === 'string' ? body.error : 'unknown',
+                wait > 0 ? { ...body, retryAfterSeconds: wait } : body);
+        }
         return body as T;
     }
 
