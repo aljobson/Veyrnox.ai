@@ -41,7 +41,7 @@ const never = () => {
   throw Error("should not run");
 };
 
-test("flag is off by default and the production and staging switches ship false", () => {
+test("flag is off by default, and neither environment file turns it on", () => {
   assert.equal(cinemaFeatures({ CINEMA_ENABLED: "true" }).watchProgress, false);
   assert.equal(cinemaFeatures({ ...flags, CINEMA_WATCH_PROGRESS_ENABLED: "TRUE" }).watchProgress, false);
   assert.equal(cinemaFeatures({ ...flags, CINEMA_VIEWING_ENABLED: "false" }).watchProgress, false);
@@ -50,7 +50,8 @@ test("flag is off by default and the production and staging switches ship false"
     JSON.parse(JSON.parse(`"${m[1]}"`)),
   );
   assert.ok(packed.length >= 2);
-  for (const p of packed) assert.equal(p.watchProgress, "false");
+  for (const p of packed) assert.notEqual(p.watchProgress, "true");
+  assert.doesNotMatch(wrangler, /CINEMA_WATCH_PROGRESS_ENABLED"\s*:\s*"true"/);
 });
 
 test("authenticates before the flag, and flag off never reaches the database", async () => {

@@ -130,7 +130,7 @@
     // ADR-0145: the nine Cinema and creator switches that cinemaFeatures() reads live in this one JSON binding
     // (creators, content, profiles, uploads, subscriptions, unlocks, freeCeiling, publishing, viewing); CINEMA_ENABLED stays its own
     // var. A switch absent from the object is off; an individual CINEMA_* / CREATOR_* var, if ever set, wins. Add the next flag there.
-    "CINEMA_RUNTIME_FLAGS": "{\"creators\":\"true\",\"content\":\"true\",\"profiles\":\"true\",\"uploads\":\"true\",\"subscriptions\":\"false\",\"unlocks\":\"false\",\"freeCeiling\":\"true\",\"publishing\":\"true\",\"viewing\":\"true\",\"watchProgress\":\"false\"}",
+    "CINEMA_RUNTIME_FLAGS": "{\"creators\":\"true\",\"content\":\"true\",\"profiles\":\"true\",\"uploads\":\"true\",\"subscriptions\":\"false\",\"unlocks\":\"false\",\"freeCeiling\":\"true\",\"publishing\":\"true\",\"viewing\":\"true\"}",
     "CINEMA_ENABLED": "true",
     "CINEMA_UPLOAD_RECOVERY_ENABLED": "true",
     "CINEMA_UPLOAD_REMOVAL_ENABLED": "true",
@@ -386,7 +386,7 @@
         // ADR-0145: the nine Cinema and creator switches that cinemaFeatures() reads live in this one JSON binding
         // (creators, content, profiles, uploads, subscriptions, unlocks, freeCeiling, publishing, viewing); CINEMA_ENABLED stays its own
         // var. A switch absent from the object is off; an individual CINEMA_* / CREATOR_* var, if ever set, wins. Add the next flag there.
-        "CINEMA_RUNTIME_FLAGS": "{\"creators\":\"true\",\"content\":\"true\",\"profiles\":\"true\",\"uploads\":\"true\",\"subscriptions\":\"true\",\"unlocks\":\"true\",\"freeCeiling\":\"true\",\"publishing\":\"true\",\"viewing\":\"true\",\"voting\":\"true\",\"audience\":\"true\",\"rankings\":\"true\",\"retention\":\"true\",\"creatorAnalytics\":\"true\",\"comments\":\"true\",\"storyPolls\":\"true\",\"watchProgress\":\"false\"}",
+        "CINEMA_RUNTIME_FLAGS": "{\"creators\":\"true\",\"content\":\"true\",\"profiles\":\"true\",\"uploads\":\"true\",\"subscriptions\":\"true\",\"unlocks\":\"true\",\"freeCeiling\":\"true\",\"publishing\":\"true\",\"viewing\":\"true\",\"voting\":\"true\",\"audience\":\"true\",\"rankings\":\"true\",\"retention\":\"true\",\"creatorAnalytics\":\"true\",\"comments\":\"true\",\"storyPolls\":\"true\"}",
         "CINEMA_ENABLED": "true",
         "CINEMA_UPLOAD_RECOVERY_ENABLED": "true",
         "CINEMA_UPLOAD_REMOVAL_ENABLED": "true",

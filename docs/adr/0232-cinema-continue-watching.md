@@ -39,8 +39,8 @@ person's own reads. A trigger on `users.deleted_at` erases the rows with the acc
 
 ## Flag
 
-`watchProgress` in `CINEMA_RUNTIME_FLAGS` (`CINEMA_WATCH_PROGRESS_ENABLED` as a separate override), explicitly `"false"`
-in production and staging. It also needs `CINEMA_ENABLED`, profiles and viewing. Activation needs the migration applied
+`watchProgress` in `CINEMA_RUNTIME_FLAGS` (`CINEMA_WATCH_PROGRESS_ENABLED` as a separate override), absent from
+`CINEMA_RUNTIME_FLAGS` in production and staging, which is off (the grouped-flags test allows only approved keys). It also needs `CINEMA_ENABLED`, profiles and viewing. Activation needs the migration applied
 by the `apply-migrations` workflow after owner approval, then a real-account check: play, leave at a position, reload and
 resume, a second account seeing nothing, a completed title leaving the list, and a withdrawn title disappearing.
 
