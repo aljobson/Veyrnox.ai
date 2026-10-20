@@ -14,6 +14,7 @@ const noAccount = () => '';
 const legalMoney = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
 const date = (value, locale = 'en') => value ? new Date(value).toLocaleDateString(localeTag(locale, 'en-GB'), { day: 'numeric', month: 'short', year: 'numeric' }) : '';
 const button = 'rounded-full border border-vx-border px-5 py-2.5 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-50';
+const FEATURES = ['accountsFeature', 'multiFeature', 'fairFeature', 'calendarFeature', 'historyFeature', 'csvFeature', 'recommendFeature', 'inboxFeature', 'commentsFeature'].map((name) => `app.publish.plan.${name}`);
 const intervalName = (value) => ({ week: 'week', month: 'month', year: 'year' }[value] || 'month');
 
 export default function PublishPlanPanel() {
@@ -138,29 +139,28 @@ function Plan() {
     {!paid && data.plans?.length > 0 && <section aria-labelledby="choose-plan" className="rounded-2xl border border-vx-accent/50 bg-vx-accent/[0.06] p-6">
       <p className="text-xs font-bold uppercase tracking-widest text-vx-accent">{t("app.publish.plan.advanced")}</p>
       <h2 id="choose-plan" className="mt-2 text-2xl font-black">{t("publish.plan.colPlan")}</h2>
-      <ul className="mt-5 space-y-2 text-sm text-vx-fg-body">
-        <li>{t("app.publish.plan.accountsFeature")}</li>
-        <li>{t("app.publish.plan.multiFeature")}</li>
-        <li>{t("app.publish.plan.fairFeature")}</li>
-        <li>{t("app.publish.plan.calendarFeature")}</li>
-        <li>{t("app.publish.plan.historyFeature")}</li>
-        <li>{t("app.publish.plan.csvFeature")}</li>
-        <li>{t("app.publish.plan.recommendFeature")}</li>
-        <li>{t("app.publish.plan.inboxFeature")}</li>
-        <li>{t("app.publish.plan.commentsFeature")}</li>
-      </ul>
-      <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {data.plans.map((plan) => <li key={plan.id} className="rounded-xl border border-vx-border bg-vx-base/60 p-5">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-xs font-bold uppercase tracking-widest text-vx-accent">{cadence(plan.billing_interval)}</p>
-            {plan.billing_interval === 'year' && <span className="rounded-full bg-vx-accent px-2.5 py-1 text-[0.65rem] font-black uppercase tracking-wide text-black">{t("app.publish.plan.save")}</span>}
-          </div>
-          <p className="mt-3 text-3xl font-black">{money.format(plan.price_usd_cents / 100)}<span className="text-base font-normal text-vx-fg-muted"> / {interval(plan.billing_interval)}</span></p>
-          {plan.billing_interval === 'year' && <p className="mt-2 text-xs text-vx-fg-muted">{t('app.publish.plan.equivalent', { price: money.format(plan.price_usd_cents / 1200) })}</p>}
-          <button type="button" aria-pressed={selectedPlanId === plan.id} className={`${button} mt-4`} onClick={() => { setSelectedPlanId(plan.id); setAgreed(false); }}>
-            {selectedPlanId === plan.id ? t("public.subscription.selected") : t('app.publish.plan.choose', { interval: cadence(plan.billing_interval) })}
-          </button>
-        </li>)}
+      <ul className="mt-6 grid grid-cols-[repeat(auto-fit,minmax(15rem,1fr))] gap-4">
+        {data.plans.map((plan) => {
+          const on = selectedPlanId === plan.id;
+          const best = plan.billing_interval === 'year';
+          return <li key={plan.id} className={`flex flex-col rounded-2xl border p-6 transition-[border-color,box-shadow] duration-150 ${on || best ? 'border-vx-accent' : 'border-vx-border'} ${on ? 'shadow-[inset_0_0_0_1px_rgb(var(--vx-accent))]' : ''} bg-vx-base/60`}>
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs font-bold uppercase tracking-widest text-vx-accent">{cadence(plan.billing_interval)}</p>
+              {best && <span className="rounded-full bg-vx-accent px-2.5 py-1 text-[0.65rem] font-black uppercase tracking-wide text-black">{t("app.publish.plan.save")}</span>}
+            </div>
+            <p className="mt-4 text-[44px] font-black leading-none">{money.format(plan.price_usd_cents / 100)}<span className="text-base font-normal text-vx-fg-muted"> / {interval(plan.billing_interval)}</span></p>
+            {best && <p className="mt-2 text-xs text-vx-fg-muted">{t('app.publish.plan.equivalent', { price: money.format(plan.price_usd_cents / 1200) })}</p>}
+            <button type="button" aria-pressed={on} className={`${button} mt-5 w-full py-3 ${on ? 'border-vx-accent bg-vx-accent text-black' : 'hover:border-vx-accent'}`} onClick={() => { setSelectedPlanId(plan.id); setAgreed(false); }}>
+              {on ? t("public.subscription.selected") : t('app.publish.plan.choose', { interval: cadence(plan.billing_interval) })}
+            </button>
+            <ul className="mt-6 space-y-2.5 border-t border-vx-border pt-5 text-[13px] text-vx-fg-body">
+              {FEATURES.map((key) => <li key={key} className="flex items-start gap-2">
+                <svg aria-hidden="true" viewBox="0 0 16 16" className="mt-[3px] h-3.5 w-3.5 shrink-0 text-vx-accent" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 8.5 3.2 3.2L13 4.5" /></svg>
+                <span>{t(key)}</span>
+              </li>)}
+            </ul>
+          </li>;
+        })}
       </ul>
       <p className="mt-5 text-xs text-vx-fg-muted">{t("app.publish.plan.billing")}</p>
       {selectedPlan && <>
