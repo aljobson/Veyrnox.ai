@@ -12,7 +12,7 @@ import { CreateOptions, type OptionValues } from '../../../components/CreateOpti
 import { SourcePicker } from '../../../components/SourcePicker';
 import { DEFAULT_CINEMA, buildCinemaPrompt, sanitizeCinema, type Cinema } from '../../../lib/cinemaCamera';
 import { clearDraft, loadDraft, saveDraft } from '../../../lib/createDraftStore';
-import { SAVED_DRAFT_VERSION, type CreateDraft, audioLengthInvalid, batchCost, freeLeftFor, hasAnyOption, imageCount, inputsForIndex, optionsFor, seedIsInvalid, settingsInputs, takesImageCount, voiceIsMissing } from '../../../lib/createOptions';
+import { SAVED_DRAFT_VERSION, type CreateDraft, audioLengthInvalid, batchCost, freeLeftFor, hasAnyOption, imageCount, inputsForIndex, optionsFor, resolveAudio, resolveResolution, seedIsInvalid, settingsInputs, takesImageCount, voiceIsMissing } from '../../../lib/createOptions';
 import { buildCharacterPrompt, sanitizePicks, type Picks } from '../../../lib/oddlingsBuilder';
 import { useBalance } from '../../../lib/useBalance';
 import { shortfall } from '../../../lib/lowBalance';
@@ -132,6 +132,8 @@ export default function CreateWithModel() {
     const unit = estimateCredits(model, duration);
     const options = optionsFor(model);
     const n = imageCount(model, opts.count);
+    const resolution = resolveResolution(model, options, opts.resolution);
+    const audio = resolveAudio(model, options, opts.audio);
     const freeLeft = freeLeftFor(freeMap, model.id);
     // The first `freeLeft` images of a batch are free today; the server decides, this words the button.
     const price = batchCost(unit, n, freeLeft);
@@ -150,7 +152,7 @@ export default function CreateWithModel() {
 
     async function generate() {
         if (!model || !ready || busy) return;
-        const extra = settingsInputs(options, { seed: opts.seed, negative: opts.negative, aspect: opts.aspect, voice: opts.voice, audioSeconds: opts.audioSeconds });
+        const extra = settingsInputs(options, { seed: opts.seed, negative: opts.negative, aspect: opts.aspect, voice: opts.voice, audioSeconds: opts.audioSeconds, resolution, audio });
         const signature = `${model.id}|${text}|${duration}|${n}|${JSON.stringify(extra)}|${sources.map((s) => `${s.slot}:${s.key}`).join(',')}|${assets.map((a) => `${a.slot}:${a.assetId}`).join(',')}`;
         const keys = pending.current?.signature === signature ? pending.current.keys : Array.from({ length: n }, () => Crypto.randomUUID());
         pending.current = { signature, keys };
@@ -226,7 +228,7 @@ export default function CreateWithModel() {
                         ))}
                     </View>
                 ) : null}
-                {hasAnyOption(options) || takesImageCount(model) ? <CreateOptions options={options} values={opts} showCount={takesImageCount(model)} onChange={setOpts} /> : null}
+                {hasAnyOption(options) || takesImageCount(model) ? <CreateOptions options={options} values={opts} showCount={takesImageCount(model)} resolution={resolution} audio={audio} outputPrice={plural('opt.outputPriceSame', unit)} onChange={setOpts} /> : null}
                 {takesCharacter ? <CharacterPanel on={characterOn} picks={character} onToggle={setCharacterOn} onChange={setCharacter} /> : null}
                 {takesCamera ? <CameraPanel on={cameraOn} value={cinema} onToggle={setCameraOn} onChange={setCinema} /> : null}
                 <Text style={styles.price} accessibilityLiveRegion="polite">{costLine(price, n, freeLeft, unit)}</Text>

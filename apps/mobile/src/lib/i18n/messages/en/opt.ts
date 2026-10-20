@@ -30,4 +30,10 @@ export default {
     'opt.voiceHelp': 'Describe the voice in words. A recording of a real person is not accepted.',
     'opt.audioLength': 'Length in seconds',
     'opt.audioLengthRange': 'Whole seconds from {min} to {max}. Empty uses {def}.',
+    'opt.resolution': 'Resolution',
+    'opt.audio': 'Sound',
+    'opt.audioOn': 'Audio on',
+    'opt.audioOff': 'Audio off',
+    'opt.outputPriceSame.one': 'Costs {count} credit at every resolution, with or without audio.',
+    'opt.outputPriceSame.other': 'Costs {count} credits at every resolution, with or without audio.',
 } as const;
