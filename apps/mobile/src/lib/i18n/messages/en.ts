@@ -758,6 +758,18 @@ const en = {
     'chat.sendPrice.other': 'Send, {count} credits',
     'chat.sendPriceShort.one': '{count} credit',
     'chat.sendPriceShort.other': '{count} credits',
+    // App-only: Cinema camera, voice and audio length in Create (ADR-0175, parity P2).
+    'cam.title': 'Cinema camera',
+    'cam.camera': 'Camera',
+    'cam.lens': 'Lens',
+    'cam.focal': 'Focal length',
+    'cam.aperture': 'Aperture',
+    'cam.help': 'Adds camera words to your prompt. The model and the price do not change.',
+    'opt.voice': 'Voice (required)',
+    'opt.voiceExample': 'For example: a warm, slow storyteller',
+    'opt.voiceHelp': 'Describe the voice in words. A recording of a real person is not accepted.',
+    'opt.audioLength': 'Length in seconds',
+    'opt.audioLengthRange': 'Whole seconds from {min} to {max}. Empty uses {def}.',
     // App-only: Publish reports, PDF and slide download and share (parity P5, ADR-0166).
     'reports.title': 'Reports',
     'reports.intro': 'Saved reports. Download one as a PDF or slides and share it. Reports are made and edited on veyrnox.ai for now.',
@@ -1208,6 +1220,11 @@ const en = {
     'help.err.rate': 'Too many questions. Wait a moment and try again.',
     'help.err.network': 'No connection. Try again when you are back online.',
     'help.err.later': 'Help is not available right now. Try again later, or write to support below.',
+
+    // Oddlings handoff, share (parity P8, slice 3 and addendum).
+    // App-only: Character panel in Create (ADR-0176, parity P2).
+    'char.title': 'Character',
+    'char.help': 'Turns your choices into words in the prompt, so you can make the same original adult again. The model and the price do not change.',
     // Chat reply recovered after the app was in the background (ADR-0181)
     'chat.resume.saved': 'Your reply finished while the app was in the background. It is saved below and charged once.',
     'chat.resume.unsaved': 'Your reply finished while the app was in the background. It was charged but could not be saved.',
