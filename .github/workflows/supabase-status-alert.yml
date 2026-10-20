@@ -1,0 +1,114 @@
+name: supabase-status-alert
+
+# Tells the owner on Slack and by email when the database provider is failing, and when it is back
+# (ADR-0160). Every 5 minutes it reads https://veyrnox.ai/api/status twice, 30 seconds apart
+# (scripts/check-supabase-status.mjs). Two degraded readings in a row open one supabase-outage issue
+# and send one alert; the first ok reading after it closes the issue and sends the recovery notice.
+# The open issue is the episode, so a long outage is one alert, not one every 5 minutes. If the site
+# itself does not answer, site-health.yml owns that and this stays quiet.
+#
+# Secrets: SLACK_WEBHOOK_URL, RESEND_API_KEY. Variables: ALERT_EMAIL_TO (and optionally ALERT_EMAIL_FROM).
+
+on:
+  schedule:
+    - cron: '2,7,12,17,22,27,32,37,42,47,52,57 * * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: supabase-status-alert
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      state: ${{ steps.check.outputs.state }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+      - id: check
+        run: |
+          set +e
+          node scripts/check-supabase-status.mjs
+          code=$?
+          # 1 (degraded) and 2 (unreachable) are answers, not a failed step.
+          if [ "$code" -gt 2 ]; then exit "$code"; fi
+
+  alert:
+    needs: check
+    if: needs.check.outputs.state == 'degraded' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+      - name: Alert once per episode
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ALERT_EMAIL_TO: ${{ vars.ALERT_EMAIL_TO }}
+          ALERT_EMAIL_FROM: ${{ vars.ALERT_EMAIL_FROM }}
+        run: |
+          existing=$(gh issue list --label supabase-outage --state open --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then exit 0; fi
+          gh label create supabase-outage --color B60205 --description 'Supabase is failing; closes itself on recovery' 2>/dev/null || true
+          set +e
+          node scripts/notify-outage.mjs outage
+          sent=$?
+          set -e
+          # The issue is the episode marker and, through GitHub's own notifications, a fallback alert.
+          printf '%s\n\n%s\n' \
+            'GET /api/status reported "degraded" on two checks in a row. Sign-in and browsing keep working; creating, buying and saving are paused. This issue closes itself when it recovers.' \
+            "Run: $RUN_URL" > body.md
+          gh issue create --title "Supabase down — $(date -u +%Y-%m-%dT%H:%MZ)" --label supabase-outage --body-file body.md
+          # Red when nobody could be told, so a missing secret is noticed.
+          exit "$sent"
+
+  resolve:
+    needs: check
+    if: needs.check.outputs.state == 'ok' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+      - name: Close the open episode and say so
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ALERT_EMAIL_TO: ${{ vars.ALERT_EMAIL_TO }}
+          ALERT_EMAIL_FROM: ${{ vars.ALERT_EMAIL_FROM }}
+        run: |
+          open=$(gh issue list --label supabase-outage --state open --json number --jq '.[].number')
+          if [ -z "$open" ]; then exit 0; fi
+          set +e
+          node scripts/notify-outage.mjs recovery
+          sent=$?
+          set -e
+          for n in $open; do
+            gh issue close "$n" --comment "Back to ok: $RUN_URL"
+          done
+          exit "$sent"

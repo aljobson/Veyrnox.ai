@@ -3,16 +3,17 @@ declare const __dirname: string;
 const fs = require('fs') as { readFileSync: (p: string, e: 'utf8') => string };
 const path = require('path') as { join: (...p: string[]) => string };
 
-import { ALL_CATEGORIES, categoriesOf, filterByCategory, firstModelFor, pickUp, promptHref, recentCreations } from '../src/lib/explore';
+import { ALL_CATEGORIES, ALL_TYPES, categoriesOf, categoriesFor, filterByCategory, filterPresets, firstModelFor, pickUp, presetKind, promptHref, recentCreations, splitColumns, typesPresent } from '../src/lib/explore';
 import type { CatalogModel, Job } from '../src/lib/media';
 import { presetHref, type Preset } from '../src/lib/presets';
 
-const preset = (id: string, category: string): Preset => ({
+const preset = (id: string, category: string, modality = 'image-to-video'): Preset => ({
     id,
     title: id,
     category,
     modelId: 'm',
     modelName: 'M',
+    modality,
     prompt: 'p',
     needs: null,
     durationSeconds: null,
@@ -129,5 +130,61 @@ describe('the Explore screen', () => {
         const text = screen();
         // Quick edit and Projects have no tab yet, so they stay one tap from the home. Chat is Vey, on every tab (N8).
         for (const href of ['/edit', '/projects', '/create/presets']) expect(text).toContain(`href="${href}"`);
+    });
+});
+
+describe('the collage: type filter, categories and search', () => {
+    const list = [
+        { ...preset('fox', 'ANIMALS', 'text-to-image'), title: 'Red Fox', prompt: 'a fox in snow' },
+        { ...preset('mug', 'PRODUCTS', 'text-to-image'), title: 'Coffee Mug', prompt: 'studio shot of a mug' },
+        { ...preset('orbit', 'PRODUCTS', 'image-to-video'), title: 'Orbit Reveal', prompt: 'camera orbits a bottle' },
+        { ...preset('city', 'CINEMATIC', 'text-to-video'), title: 'City Night', prompt: 'neon rain on a street' },
+    ];
+
+    test('a template is an image, a video or audio by its modality', () => {
+        expect(presetKind(list[0] as Preset)).toBe('image');
+        expect(presetKind(list[2] as Preset)).toBe('video');
+        expect(presetKind(preset('a', 'X', 'text-to-audio'))).toBe('audio');
+        expect(presetKind(preset('b', 'X', ''))).toBeNull();
+    });
+
+    test('the type chips come from what exists, in a fixed order', () => {
+        expect(ALL_TYPES).toBe('all');
+        expect(typesPresent(list)).toEqual(['image', 'video']);
+        expect(typesPresent([])).toEqual([]);
+    });
+
+    test('the categories depend on the type chosen', () => {
+        expect(categoriesFor(list, 'all')).toEqual([ALL_CATEGORIES, 'ANIMALS', 'PRODUCTS', 'CINEMATIC']);
+        expect(categoriesFor(list, 'image')).toEqual([ALL_CATEGORIES, 'ANIMALS', 'PRODUCTS']);
+        expect(categoriesFor(list, 'video')).toEqual([ALL_CATEGORIES, 'PRODUCTS', 'CINEMATIC']);
+        expect(categoriesFor(list, 'audio')).toEqual([ALL_CATEGORIES]);
+    });
+
+    test('type, category and search combine', () => {
+        const ids = (q: Parameters<typeof filterPresets>[1]) => filterPresets(list, q).map((p) => p.id);
+        expect(ids({ type: 'all', category: ALL_CATEGORIES, query: '' })).toEqual(['fox', 'mug', 'orbit', 'city']);
+        expect(ids({ type: 'image', category: ALL_CATEGORIES, query: '' })).toEqual(['fox', 'mug']);
+        expect(ids({ type: 'video', category: 'PRODUCTS', query: '' })).toEqual(['orbit']);
+        expect(ids({ type: 'all', category: 'PRODUCTS', query: 'mug' })).toEqual(['mug']);
+    });
+
+    test('search looks at titles and prompts, ignoring case and extra spaces', () => {
+        const ids = (query: string) => filterPresets(list, { type: 'all', category: ALL_CATEGORIES, query }).map((p) => p.id);
+        expect(ids('  RED fox ')).toEqual(['fox']);
+        expect(ids('neon rain')).toEqual(['city']);
+        expect(ids('bottle')).toEqual(['orbit']);
+        expect(ids('zebra')).toEqual([]);
+    });
+
+    test('a type with no templates gives an empty list, never a failure', () => {
+        expect(filterPresets(list, { type: 'audio', category: ALL_CATEGORIES, query: '' })).toEqual([]);
+    });
+
+    test('the masonry splits into two columns, alternating, keeping order within each', () => {
+        const [left, right] = splitColumns(['a', 'b', 'c', 'd', 'e']);
+        expect(left).toEqual(['a', 'c', 'e']);
+        expect(right).toEqual(['b', 'd']);
+        expect(splitColumns([])).toEqual([[], []]);
     });
 });
