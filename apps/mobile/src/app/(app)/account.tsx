@@ -9,6 +9,7 @@ import { fetchProfile, type Profile } from '../../lib/auth/accountCalls';
 import { signInMethodKey } from '../../lib/accountSecurity';
 import { LEGAL_LINKS, PRIVACY_EMAIL, SUPPORT_EMAIL } from '../../lib/account';
 import { usePush } from '../../push/pushContext';
+import { VEY_CLEARANCE } from '../../components/VeyMascot';
 import { colors } from '../../theme';
 import { t } from '../../lib/i18n';
 
@@ -96,11 +97,32 @@ export default function Account() {
                 <Link href="/history" asChild>
                     <Row label={t('account.history')} />
                 </Link>
+                <Link href="/topups" asChild>
+                    <Row label={t('topup.row')} />
+                </Link>
             </Section>
 
             <Section title={t('account.referSection')}>
                 <Link href="/referrals" asChild>
                     <Row label={t('account.refer')} />
+                </Link>
+            </Section>
+
+            <Section title={t('acct.exploreSection')}>
+                <Link href="/search" asChild>
+                    <Row label={t('acct.search')} />
+                </Link>
+                <Link href="/models" asChild>
+                    <Row label={t('acct.models')} />
+                </Link>
+                <Link href="/pricing" asChild>
+                    <Row label={t('acct.pricing')} />
+                </Link>
+                <Link href="/brand-kit" asChild>
+                    <Row label={t('acct.brandKit')} />
+                </Link>
+                <Link href="/publish/developer" asChild>
+                    <Row label={t('dev.row')} />
                 </Link>
             </Section>
 
@@ -121,6 +143,9 @@ export default function Account() {
             </Section>
 
             <Section title={t('account.aboutSection')}>
+                <Link href="/about" asChild>
+                    <Row label={t('acct.about')} />
+                </Link>
                 {LEGAL_LINKS.map((l) => (
                     <Row key={l.url} label={t(l.labelKey)} onPress={() => WebBrowser.openBrowserAsync(l.url)} />
                 ))}
@@ -175,7 +200,7 @@ const Row = ({ label, onPress, disabled, danger, ...rest }: RowProps) => (
 
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
-    content: { padding: 16, gap: 24 },
+    content: { padding: 16, paddingBottom: 16 + VEY_CLEARANCE, gap: 24 },
     section: { gap: 8 },
     sectionTitle: { color: colors.muted, fontSize: 14, textTransform: 'uppercase' },
     row: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 16 },

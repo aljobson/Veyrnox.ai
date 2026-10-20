@@ -95,3 +95,11 @@ describe('sharing', () => {
         }
     });
 });
+
+describe('featured', () => {
+    test('the featured strip is the web hero list and every id is in the cast', () => {
+        const { HERO_IDS } = require('../src/lib/oddlings');
+        expect(HERO_IDS).toHaveLength(5);
+        for (const id of HERO_IDS) expect(findOddling(id)).not.toBeNull();
+    });
+});

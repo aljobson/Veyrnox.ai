@@ -1,4 +1,4 @@
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
@@ -14,6 +14,7 @@ const TABS: { kind: FileKind; label: string }[] = [
 
 export default function LibraryFiles() {
     const { api } = useAuth();
+    const router = useRouter();
     const [kind, setKind] = useState<FileKind>('masters');
     const [state, setState] = useState<{ enabled: boolean; files: LibraryFile[] } | null>(null);
     const [problem, setProblem] = useState<string | null>(null);
@@ -66,6 +67,11 @@ export default function LibraryFiles() {
                     </Pressable>
                 ))}
             </View>
+            {kind === 'masters' ? (
+                <Pressable accessibilityRole="button" style={touchTarget} onPress={() => router.push('/film')}>
+                    <Text style={styles.link}>Open your film in Film Studio</Text>
+                </Pressable>
+            ) : null}
             {note ? <Text style={styles.note}>{note}</Text> : null}
             {problem ? (
                 <Pressable accessibilityRole="button" style={touchTarget} onPress={load}>
@@ -125,4 +131,5 @@ const styles = StyleSheet.create({
     actionText: { color: colors.accent, fontWeight: '600' },
     note: { color: colors.body },
     error: { color: colors.danger },
+    link: { color: colors.accent, fontWeight: '600' },
 });

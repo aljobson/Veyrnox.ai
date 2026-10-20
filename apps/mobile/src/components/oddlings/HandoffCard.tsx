@@ -12,6 +12,7 @@ import { colors } from '../../theme';
 interface Props {
     picks: Picks;
     scene: string;
+    motionId: string;
     // Keeps the character before leaving, so coming back finds it.
     onLeave: () => Promise<void>;
 }
@@ -20,7 +21,7 @@ type Which = 'portrait' | 'short';
 
 // Sends the character on to Create. The price comes from the catalog and is on the button; Create shows it again and
 // charges only when Generate is pressed there. Offline, nothing opens.
-export function HandoffCard({ picks, scene, onLeave }: Props) {
+export function HandoffCard({ picks, scene, motionId, onLeave }: Props) {
     const router = useRouter();
     const [models, setModels] = useState<readonly CatalogModel[] | null>(null);
     const [problem, setProblem] = useState<string | null>(null);
@@ -43,7 +44,7 @@ export function HandoffCard({ picks, scene, onLeave }: Props) {
             throw err;
         }
         await onLeave();
-        router.push(which === 'portrait' ? portraitLink(model, picks, scene) : shortLink(model, picks, scene));
+        router.push(which === 'portrait' ? portraitLink(model, picks, scene) : shortLink(model, picks, scene, motionId));
     }
 
     return (

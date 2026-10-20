@@ -1,5 +1,5 @@
 import { createSseParser } from '../src/lib/sse';
-import { chatApi, cleanOptions, cleanTitle, NO_OPTIONS, pinnedFirst, optionsKey, replyPrice, sendKeyFor, toTurnEvent, type ChatModel } from '../src/lib/chat';
+import { MAX_SYSTEM_PROMPT, searchThreads, settingsPatch, switchableModels, chatApi, cleanOptions, cleanTitle, NO_OPTIONS, pinnedFirst, optionsKey, replyPrice, sendKeyFor, toTurnEvent, type ChatModel } from '../src/lib/chat';
 import type { ApiClient } from '../src/lib/api';
 
 describe('sse parser', () => {
@@ -160,5 +160,40 @@ describe('replay and cut-off streams', () => {
     test('a stream that ends with no done was cut off', async () => {
         const stream = jest.fn().mockResolvedValue(streamOf('event: delta\ndata: {"text":"Hel"}\n\n'));
         await expect(chatApi({ stream } as unknown as ApiClient).sendMessage('t', 'hi', 'vx-k', () => {})).rejects.toMatchObject({ status: 0, code: 'stream_cut' });
+    });
+});
+
+describe('chat settings', () => {
+    const cur = { model_id: 'a', system_prompt: 'Be brief.' };
+    test('only what changed is sent', () => {
+        expect(settingsPatch(cur, { model_id: 'a', instructions: 'Be brief.' })).toBeNull();
+        expect(settingsPatch(cur, { model_id: 'b', instructions: 'Be brief.' })).toEqual({ model_id: 'b' });
+        expect(settingsPatch(cur, { model_id: 'a', instructions: '' })).toEqual({ system_prompt: '' });
+        expect(settingsPatch({ model_id: 'a', system_prompt: null }, { model_id: 'a', instructions: '' })).toBeNull();
+    });
+    test('instructions are held to the server limit', () => {
+        const patch = settingsPatch(cur, { model_id: 'a', instructions: 'x'.repeat(MAX_SYSTEM_PROMPT + 10) });
+        expect(patch?.system_prompt).toHaveLength(MAX_SYSTEM_PROMPT);
+    });
+    test('only open models are offered, cheapest first', () => {
+        const m = (id: string, c: number, gated = false): ChatModel => ({ id, name: id, maker_label: 'X', credits_per_reply: c, gated });
+        expect(switchableModels([m('c', 3), m('g', 1, true), m('a', 1), m('b', 2)]).map((x) => x.id)).toEqual(['a', 'b', 'c']);
+    });
+});
+
+describe('chat list search', () => {
+    const rows = [{ id: 'a', title: 'Birthday ideas' }, { id: 'b', title: null }, { id: 'c', title: 'Product launch' }];
+    test('matches the title, ignoring case and spaces around the words', () => {
+        expect(searchThreads(rows, ' BIRTH ').map((r) => r.id)).toEqual(['a']);
+        expect(searchThreads(rows, 'launch').map((r) => r.id)).toEqual(['c']);
+    });
+    test('an empty search shows every chat, and a chat with no title is never a match', () => {
+        expect(searchThreads(rows, '  ')).toHaveLength(3);
+        expect(searchThreads(rows, 'x')).toEqual([]);
+    });
+    test('deleting a chat is a DELETE of that chat only', async () => {
+        const request = jest.fn().mockResolvedValue({ ok: true });
+        await chatApi({ request } as unknown as ApiClient).deleteThread('t 1');
+        expect(request).toHaveBeenCalledWith('/api/v1/chat/threads/t%201', { method: 'DELETE' });
     });
 });
