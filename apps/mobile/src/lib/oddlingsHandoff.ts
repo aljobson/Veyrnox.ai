@@ -35,12 +35,12 @@ const clean = (text: string, max: number) => text.replace(/\s+/g, ' ').trim().sl
 
 // The words for Auto Short: who the creator is, their voice and show, the look and the first scene, longest parts last,
 // cut to the model's own limit so the creator is never the part that is lost.
-export function shortTopic(picks: Picks, scene: string, max: number = SHORT_FALLBACK_MAX): string {
+export function shortTopic(picks: Picks, scene: string, max: number = SHORT_FALLBACK_MAX, motionId = ''): string {
     const name = clean(picks.oddling_name || '', 40);
     const who = name ? `A vertical short starring ${name}, an original fictional adult creator` : 'A vertical short starring an original fictional adult creator';
     const parts = [who, ...oddlingIdentity(picks).filter((line) => !line.startsWith('fictional creator named') && !line.startsWith('immutable'))];
     const look = characterTraits(picks).slice(0, LOOK_TRAITS);
-    const motion = MOTIONS[0];
+    const motion = MOTIONS.find((m) => m.id === motionId) ?? MOTIONS[0];
     const tail = [look.length ? `Look: ${look.join(', ')}` : '', clean(scene, 300) ? `Scene: ${clean(scene, 300)}` : '', `Opening: the character ${motion.phrase}`].filter(Boolean);
     const head = parts.join('. ');
     for (let keep = tail.length; keep > 0; keep -= 1) {
@@ -54,6 +54,6 @@ export function portraitLink(model: CatalogModel, picks: Picks, scene: string) {
     return promptHref(model.id, buildStudioPrompt({ picks, scene }));
 }
 
-export function shortLink(model: CatalogModel, picks: Picks, scene: string) {
-    return promptHref(model.id, shortTopic(picks, scene, textInput(model)?.max ?? SHORT_FALLBACK_MAX));
+export function shortLink(model: CatalogModel, picks: Picks, scene: string, motionId = '') {
+    return promptHref(model.id, shortTopic(picks, scene, textInput(model)?.max ?? SHORT_FALLBACK_MAX, motionId));
 }

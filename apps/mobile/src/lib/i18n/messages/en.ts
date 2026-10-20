@@ -1093,6 +1093,9 @@ const en = {
     'oddlings.handoff.unavailable': 'Not available',
     'oddlings.handoff.noPrice': 'Prices could not be loaded. Check your connection.',
     'oddlings.handoff.offline': 'You are offline. Nothing was opened and nothing was charged. Reconnect and try again.',
+    'oddlings.build.motion': 'Opening move (for shorts)',
+    'oddlings.featured': 'Featured',
+    'oddlings.featuredCard': 'Featured: {name}, open character sheet',
     'oddlings.sheet.share': 'Share this character',
 
     // Chat stop, ask again, rename and pin (ADR-0155)

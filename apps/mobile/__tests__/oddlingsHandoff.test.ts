@@ -84,3 +84,11 @@ describe('the card', () => {
         for (const m of src.matchAll(/\b(t|plural)\(\s*'([A-Za-z0-9_.]+)'/g)) expect(m[1] === 'plural' ? `${m[2]}.other` in catalogEn : m[2] in catalogEn).toBe(true);
     });
 });
+
+describe('opening move', () => {
+    test('the short topic uses the chosen move and falls back to the first', () => {
+        const { MOTIONS } = require('../src/lib/oddlingsBuilder');
+        expect(shortTopic(picks, '', 2000, MOTIONS[3].id)).toContain(MOTIONS[3].phrase);
+        expect(shortTopic(picks, '', 2000, 'nope')).toContain(MOTIONS[0].phrase);
+    });
+});
