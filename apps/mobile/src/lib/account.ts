@@ -13,6 +13,16 @@ export const LEGAL_LINKS = [
 
 export const SUPPORT_EMAIL = 'support@veyrnox.com';
 export const PRIVACY_EMAIL = 'privacy@veyrnox.com';
+export const LEGAL_EMAIL = 'legal@veyrnox.com';
+
+// Company details, as on the site's About page (app/legal/_lib/entity.js). Change both together.
+export const ABOUT_FACTS = [
+    { labelKey: 'abt.f.legal', value: 'Veyrnox Ltd' },
+    { labelKey: 'abt.f.trading', value: 'Veyrnox.ai' },
+    { labelKey: 'abt.f.number', value: '17299951' },
+    { labelKey: 'abt.f.registered', value: 'England & Wales' },
+    { labelKey: 'abt.f.office', value: 'Suite RA01, 195-197 Wood Street, London, England, E17 3NU' },
+] as const;
 
 // The privacy policy says the service is not intended for anyone under 18.
 export const MIN_AGE = 18;
