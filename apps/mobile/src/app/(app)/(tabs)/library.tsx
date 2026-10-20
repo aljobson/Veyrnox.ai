@@ -14,6 +14,7 @@ import { VEY_CLEARANCE } from '../../../components/VeyMascot';
 import { colors } from '../../../theme';
 import { t } from '../../../lib/i18n';
 import { selectedState, touchTarget } from '../../../lib/a11y';
+import { EmptyState } from '../../../components/EmptyState';
 
 export default function Library() {
     const { api } = useAuth();
@@ -120,7 +121,13 @@ export default function Library() {
                     onEndReached={more}
                     onRefresh={load}
                     refreshing={false}
-                    ListEmptyComponent={<Text style={styles.muted}>{jobs && jobs.length > 0 ? (next ? t('library.noMatchOlder') : t('library.noMatch')) : t('library.empty')}</Text>}
+                    ListEmptyComponent={
+                        jobs && jobs.length > 0 ? (
+                            <Text style={styles.muted}>{next ? t('library.noMatchOlder') : t('library.noMatch')}</Text>
+                        ) : (
+                            <EmptyState title={t('empty.library.title')} body={t('library.empty')} actionLabel={t('empty.library.action')} href="/create" />
+                        )
+                    }
                     ListFooterComponent={
                         next ? (
                             <Pressable accessibilityRole="button" style={[styles.older, touchTarget]} onPress={more}>

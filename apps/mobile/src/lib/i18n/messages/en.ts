@@ -1208,6 +1208,13 @@ const en = {
     'chat.make.err.rate': 'Too many requests. Wait a moment and try again.',
     'chat.make.err.network': 'No connection. Nothing was started and you were not charged.',
     'chat.make.err.later': 'That could not be started. You were not charged. Try again.',
+    'empty.library.title': 'No creations yet',
+    'empty.library.action': 'Make something',
+    'empty.posts.title': 'No posts yet',
+    'empty.posts.body': 'Schedule or publish something and it will show up here.',
+    'empty.posts.action': 'New post',
+    'lowBalance.body': 'You have {credits}, which is not enough to start a creation.',
+    'lowBalance.buy': 'Buy credits',
 } as const;
 
 export default en;
