@@ -122,6 +122,22 @@ function useTypicalCosts() {
   return video || image ? { video, image } : null;
 }
 
+// Decorative icons for the pack columns; the words next to them carry the meaning.
+function Diamond() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 16 16" className="h-4 w-4 shrink-0 text-vx-money" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round">
+      <path d="M8 1.5 14 8l-6 6.5L2 8z" />
+    </svg>
+  );
+}
+function Check() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 16 16" className="mt-[3px] h-3.5 w-3.5 shrink-0 text-vx-money" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m3 8.5 3.2 3.2L13 4.5" />
+    </svg>
+  );
+}
+
 export function TopUpPacks({ signedIn }) {
   const { t, locale } = useI18n();
   const translation = useRef(t);
@@ -137,6 +153,8 @@ export function TopUpPacks({ signedIn }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const typical = useTypicalCosts();
+  const rate = (p) => p.price_usd_cents / 100 / p.credits;
+  const perCredit = new Intl.NumberFormat(localeTag(locale, 'en-US'), { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 3 });
 
   useEffect(() => {
     if (!signedIn) return;
@@ -191,30 +209,43 @@ export function TopUpPacks({ signedIn }) {
       {packs && packs.length > 0 && (
         <fieldset data-testid="credit-packs">
           <legend className="sr-only">{t("app.credits.packs.choose")}</legend>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(13rem,1fr))] gap-3">
             {packs.map((p) => {
               const on = selected === p.id;
+              // Best value: strictly the lowest catalog rate, and only when packs differ.
+              const best = packs.length > 1 && packs.every((o) => o === p || rate(p) < rate(o));
+              const videos = typical?.video && Math.floor(p.credits / typical.video);
+              const images = typical?.image && Math.floor(p.credits / typical.image);
               return (
                 <label
                   key={p.id}
                   data-credit-pack={p.id}
-                  className={`flex flex-col items-start rounded-xl border px-4 py-3 cursor-pointer transition-colors duration-150 has-focus-visible:outline-solid has-focus-visible:outline-2 has-focus-visible:outline-vx-accent ${on ? 'border-vx-money bg-vx-money/[0.07] shadow-[inset_0_0_0_1px_rgb(var(--vx-money))]' : 'border-vx-border bg-vx-base/60 hover:border-vx-money/60'}`}
+                  className={`flex flex-col items-stretch rounded-2xl border px-5 py-5 cursor-pointer transition-[border-color,background-color,box-shadow] duration-150 has-focus-visible:outline-solid has-focus-visible:outline-2 has-focus-visible:outline-vx-accent ${on ? 'border-vx-money bg-vx-money/[0.07] shadow-[inset_0_0_0_1px_rgb(var(--vx-money)),0_8px_28px_-12px_rgb(var(--vx-money)/0.55)]' : 'border-vx-border bg-vx-base/60 hover:border-vx-money/60'}`}
                 >
                   <input type="radio" name="credit-pack" value={p.id} checked={on} onChange={() => { setSelected(p.id); setIdempotencyKey(makeIdempotencyKey()); }} className="sr-only" />
-                  <span className="flex w-full items-center justify-between gap-3 font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">{t("app.credits.packs.pack")}{on && <span aria-hidden="true" className="text-vx-money">✓</span>}</span>
-                  <span className="font-vx-mono text-[18px] font-bold text-vx-money mt-1 vx-num">+{number.format(p.credits)} cr</span>
-                  <span className="font-vx-mono text-[12px] text-vx-fg-body mt-1">
-                    {t(pluralKey(t, locale, 'app.credits.packs.price', p.credits), { count: number.format(p.credits), price: usd.format(p.price_usd_cents / 100) })} <span className="text-vx-fg-muted">{t("app.credits.packs.tax")}</span>
+                  <span className="flex w-full items-center justify-between gap-3 font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">{t("app.credits.packs.pack")}{best && <span className="rounded-full bg-vx-money px-2 py-0.5 text-[9px] font-bold tracking-[0.1em] text-vx-base">{t("app.credits.packs.bestValue")}</span>}{on && <span aria-hidden="true" className="flex h-5 w-5 items-center justify-center rounded-full bg-vx-money text-[11px] font-bold text-vx-base">✓</span>}</span>
+                  <span className="mt-4 flex items-center gap-2 rounded-lg bg-vx-money/[0.12] px-3 py-2.5 font-vx-mono text-[18px] font-bold text-vx-money vx-num">
+                    <Diamond />
+                    +{number.format(p.credits)} cr
                   </span>
-                  <span className="text-[11px] text-vx-fg-muted mt-1">{t("app.credits.packs.neverExpire")}</span>
-                  {typical && (
-                    <span className="text-[11px] text-vx-fg-muted">
-                      ≈ {[
-                        typical.video && t(pluralKey(t, locale, 'app.credits.packs.videos', Math.floor(p.credits / typical.video)), { count: number.format(Math.floor(p.credits / typical.video)) }),
-                        typical.image && t(pluralKey(t, locale, 'app.credits.packs.images', Math.floor(p.credits / typical.image)), { count: number.format(Math.floor(p.credits / typical.image)) }),
-                      ].filter(Boolean).join(t("app.credits.packs.or"))}
-                    </span>
-                  )}
+                  <span className="mt-4 text-[17px] font-semibold leading-snug text-vx-fg">
+                    {t(pluralKey(t, locale, 'app.credits.packs.price', p.credits), { count: number.format(p.credits), price: usd.format(p.price_usd_cents / 100) })} <span className="text-[12px] font-normal text-vx-fg-muted">{t("app.credits.packs.tax")}</span>
+                  </span>
+                  <span className="mt-1 text-[12px] text-vx-fg-muted">{t("app.credits.packs.perCredit", { price: perCredit.format(rate(p)) })}</span>
+                  <span className="mt-4 flex flex-col gap-2 border-t border-vx-border pt-4 text-[13px] text-vx-fg-body">
+                    <span className="flex items-start gap-2"><Check />{t("app.credits.packs.neverExpire")}</span>
+                    {typical && (
+                      <span className="flex items-start gap-2">
+                        <Check />
+                        <span>
+                          ≈ {[
+                            typical.video && t(pluralKey(t, locale, 'app.credits.packs.videos', videos), { count: number.format(videos) }),
+                            typical.image && t(pluralKey(t, locale, 'app.credits.packs.images', images), { count: number.format(images) }),
+                          ].filter(Boolean).join(t("app.credits.packs.or"))}
+                        </span>
+                      </span>
+                    )}
+                  </span>
                 </label>
               );
             })}
@@ -232,7 +263,7 @@ export function TopUpPacks({ signedIn }) {
           </label></BindingText>
 
           <div className="mt-4 flex items-center gap-3">
-            <Button data-testid="credit-packs-buy" variant="money" className="min-w-[11.5rem] justify-center" onClick={buy} disabled={!selected || !consent || busy}>
+            <Button data-testid="credit-packs-buy" variant="money" className="min-w-[14rem] justify-center py-3 text-[15px] font-semibold" onClick={buy} disabled={!selected || !consent || busy}>
               {busy ? t("app.publish.plan.opening") : t("pricing.packs.buy")}
             </Button>
             <span className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-faint">{t("app.credits.packs.secure")}</span>
