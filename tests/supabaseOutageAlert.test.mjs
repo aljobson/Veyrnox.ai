@@ -51,7 +51,7 @@ test('Slack only takes a hooks.slack.com webhook, and reports a code, never the 
 });
 
 test('delivered when either channel works; undelivered only when both fail; one email key per run and kind', async () => {
-    const env = { SLACK_WEBHOOK_URL: HOOK, ALERT_EMAIL_TO: 'owner@example.test', RESEND_API_KEY: 'test-key-12345678', GITHUB_RUN_ID: '42' };
+    const env = { SLACK_WEBHOOK_URL: HOOK, ALERT_EMAIL_TO: 'owner@example.test', RESEND_API_KEY: 'k'.repeat(16), GITHUB_RUN_ID: '42' };
     const calls = [];
     const deps = { sendSlack: async () => ({ ok: false, error: 'slack_500' }), sendEmail: async (cfg, mail) => { calls.push({ cfg, mail }); return { ok: true, id: 'e1' }; } };
     const both = await notify('outage', env, deps);
