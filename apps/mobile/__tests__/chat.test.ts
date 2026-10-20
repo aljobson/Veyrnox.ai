@@ -178,6 +178,9 @@ describe('chat settings', () => {
     test('only open models are offered, cheapest first', () => {
         const m = (id: string, c: number, gated = false): ChatModel => ({ id, name: id, maker_label: 'X', credits_per_reply: c, gated });
         expect(switchableModels([m('c', 3), m('g', 1, true), m('a', 1), m('b', 2)]).map((x) => x.id)).toEqual(['a', 'b', 'c']);
+    });
+});
+
 describe('chat list search', () => {
     const rows = [{ id: 'a', title: 'Birthday ideas' }, { id: 'b', title: null }, { id: 'c', title: 'Product launch' }];
     test('matches the title, ignoring case and spaces around the words', () => {
