@@ -10,6 +10,9 @@ type Raw = Record<string, unknown>;
 const isObject = (v: unknown): v is Raw => typeof v === 'object' && v !== null && !Array.isArray(v);
 const str = (v: unknown, max: number): string => (typeof v === 'string' ? v.slice(0, max) : '');
 
+// The web creator workspace, where uploading is done until the app can resume a large upload (ADR-0208).
+export const CREATOR_WORKSPACE_URL = 'https://veyrnox.ai/social-cinema/creator';
+
 export const USERNAME_RE = /^[a-z][a-z0-9_]{2,29}$/;
 export const NAME_MAX = 80;
 export const BIO_MAX = 500;

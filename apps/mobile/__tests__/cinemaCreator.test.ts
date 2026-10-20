@@ -75,3 +75,9 @@ describe('analytics', () => {
         await expect(fetchAnalytics(recorder({}).api, A)).rejects.toMatchObject({ status: 503 });
     });
 });
+
+test('the web creator workspace address is the public https page with no account data', () => {
+    const { CREATOR_WORKSPACE_URL } = jest.requireActual('../src/lib/cinemaCreator');
+    expect(CREATOR_WORKSPACE_URL).toBe('https://veyrnox.ai/social-cinema/creator');
+    expect(new URL(CREATOR_WORKSPACE_URL).search).toBe('');
+});

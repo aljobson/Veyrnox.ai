@@ -111,6 +111,13 @@ export default function Explore() {
                 </Pressable>
             ) : null}
 
+            <Link href="/oddlings" asChild>
+                <Pressable accessibilityRole="button" accessibilityLabel={t('explore.oddlings.title')} accessibilityHint={t('explore.oddlings.hint')} style={styles.banner}>
+                    <Text style={styles.bannerTitle}>{t('explore.oddlings.title')}</Text>
+                    <Text style={styles.bannerText}>{t('explore.oddlings.body')}</Text>
+                </Pressable>
+            </Link>
+
             <View style={styles.headerRow}>
                 <Text style={styles.heading} accessibilityRole="header">{t('explore.templates')}</Text>
                 <Link href="/create/presets" asChild>
@@ -211,6 +218,9 @@ const styles = StyleSheet.create({
     make: { flexGrow: 1, minHeight: 44, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.accent, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 16 },
     makeText: { color: colors.accentInk, fontWeight: '700', fontSize: 16 },
     off: { opacity: 0.4 },
+    banner: { backgroundColor: colors.surface, borderColor: colors.accent, borderWidth: 1, borderRadius: 12, padding: 14, gap: 4, minHeight: 44, justifyContent: 'center' },
+    bannerTitle: { color: colors.accent, fontSize: 17, fontWeight: '700' },
+    bannerText: { color: colors.body, fontSize: 15 },
     note: { color: colors.body },
     resume: { minHeight: 44, justifyContent: 'center', backgroundColor: colors.surface, borderColor: colors.accent, borderWidth: 1, borderRadius: 12, padding: 14 },
     resumeText: { color: colors.text, fontWeight: '600' },
