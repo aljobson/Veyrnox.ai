@@ -31,7 +31,7 @@ export default function Compose() {
     const [chosen, setChosen] = useState<Pick | null>(null);
     const [accountIds, setAccountIds] = useState<string[]>([]);
     const [text, setText] = useState('');
-    const [mode, setMode] = useState<'now' | 'schedule' | 'queue'>('now');
+    const [mode, setMode] = useState<'now' | 'schedule' | 'queue'>('schedule');
     const [networkText, setNetworkText] = useState<Record<string, string>>({});
     const [ytVisibility, setYtVisibility] = useState<YoutubeVisibility>('private');
     const [queues, setQueues] = useState<PublishQueue[]>([]);
@@ -131,7 +131,7 @@ export default function Compose() {
                 await createPost(api, createBody(draft, key, now));
             }
             await draftKeys.drop(user);
-            router.replace('/publish/posts');
+            router.replace({ pathname: '/publish/posts', params: { done: draft.queue ? 'queued' : draft.when.kind === 'at' ? 'scheduled' : 'posted' } });
         } catch (err) {
             if (stage !== 'confirm' && isDefiniteRefusal(err)) await draftKeys.drop(user);
             setProblem(stage === 'post' ? composeErrorMessage(err) : t(queueErrorKey(err)));
