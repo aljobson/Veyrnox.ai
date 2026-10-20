@@ -131,7 +131,7 @@ export default function Compose() {
                 await createPost(api, createBody(draft, key, now));
             }
             await draftKeys.drop(user);
-            router.replace('/publish/posts');
+            router.replace({ pathname: '/publish/posts', params: { done: draft.queue ? 'queued' : draft.when.kind === 'at' ? 'scheduled' : 'posted' } });
         } catch (err) {
             if (stage !== 'confirm' && isDefiniteRefusal(err)) await draftKeys.drop(user);
             setProblem(stage === 'post' ? composeErrorMessage(err) : t(queueErrorKey(err)));
