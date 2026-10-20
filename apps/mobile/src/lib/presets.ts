@@ -8,6 +8,8 @@ export interface Preset {
     readonly category: string;
     readonly modelId: string;
     readonly modelName: string;
+    // What the model makes, from the catalog: an image, video or audio family (empty when the server did not say).
+    readonly modality: string;
     readonly prompt: string;
     readonly needs: string | null;
     readonly durationSeconds: number | null;
@@ -36,6 +38,7 @@ function parseOne(raw: unknown): Preset | null {
         category: str(r.category) ?? 'OTHER',
         modelId,
         modelName: str(r.modelName) ?? modelId,
+        modality: str(r.modality) ?? '',
         prompt,
         needs: str(r.needs),
         durationSeconds: typeof r.durationSeconds === 'number' && r.durationSeconds > 0 ? r.durationSeconds : null,
