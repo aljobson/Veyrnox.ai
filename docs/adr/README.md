@@ -6,6 +6,7 @@ Phase-0 decision-support documents for the target architecture at `/Users/aljobs
 
 | ADR | Status | Summary | Blocks |
 |-----|--------|---------|--------|
+| [ADR-0180 — Mobile: Publish inbox, read-only (parity plan P5)](0180-mobile-publish-inbox-read-only.md) | **Proposed 2026-10-19** | Conversation list with state and kind filters, thread view with messages and notes; replies, assigning and resolving not built |
 | [ADR-0177 — Mobile: Vey as the web's animated character](0177-mobile-vey-character.md) | **Proposed 2026-10-19** | The web artwork as seven layers; head nods, arms sway and wave, eyes blink, core pulses; Reduce Motion stills it; no new dependency |
 | [ADR-0172 — Mobile: prompt collage on Explore, slice 1](0172-mobile-prompt-collage.md) | **Proposed 2026-10-19** | Type filter (Images, Video, Audio), categories by type, search, two-column masonry, empty states; favourites, audio samples and content later |
 | [ADR-0207 — Mobile: Cinema Pass read-only and the paid locked state (parity P6)](0207-mobile-cinema-pass-readonly.md) | **Proposed 2026-10-20** | Pass status card when the account has one; no price or buy path; locked paid titles explained; continue watching and store price blocked on the server and the store |
