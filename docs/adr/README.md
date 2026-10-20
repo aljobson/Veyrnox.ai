@@ -6,6 +6,7 @@ Phase-0 decision-support documents for the target architecture at `/Users/aljobs
 
 | ADR | Status | Summary | Blocks |
 |-----|--------|---------|--------|
+| [ADR-0185 — Mobile: Publish ads, read-only (parity plan P5)](0185-mobile-publish-ads-read-only.md) | **Proposed 2026-10-20** | Campaign drafts and status; links shown as host only; starting and editing stay on the web |
 | [ADR-0184 — Mobile: chat settings, model and instructions (parity plan P3)](0184-mobile-chat-settings.md) | **Proposed 2026-10-19** | Settings in the chat toolbar: switch the model with its price, edit instructions; sends only what changed |
 | [ADR-0183 — Mobile: chat list search and delete (parity plan P3)](0183-mobile-chat-list-search-delete.md) | **Proposed 2026-10-19** | Title search and an asked-first Delete on each chat row |
 | [ADR-0166 — Mobile: Publish reports, PDF and slide download and share (parity plan P5)](0166-mobile-publish-reports.md) | **Proposed 2026-10-19** | Saved reports list; PDF and slides downloaded to the cache and shared; template editing not built |
