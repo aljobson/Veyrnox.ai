@@ -367,3 +367,69 @@ that tracked artifact with `npm run sync:vey-knowledge` is a proposed follow-up
 scope change, not performed as part of this work order. The freshness assertion
 remains unchanged; the checked-in inventory must be refreshed before a green
 full-suite result can be claimed outside the two sandbox socket failures.
+
+## Amendment 2026-10-20 — phase C1: convenience translations; English governs
+
+The owner authorizes machine translations of the six legal documents and the
+binding consent statements in es, zh, hi, ar, fr, pt, ru, ja, de and ko. This
+supersedes the earlier requirement to wait for a lawyer-reviewed translation.
+Every translated document must say, in its own language, that it is a machine
+translation for convenience, has not been reviewed by a lawyer, and that the
+English text governs any difference. Its unchanged English document is one
+click away. Public documents use language prefixes; app statements use the
+existing browser preference. No account language setting is introduced.
+
+`BindingText` retains the original English statement and its `lang="en" dir="ltr"`
+markup, with a separate translated block immediately below. The block includes
+the governing-English notice and says that agreement is to the English text
+above. The checkbox, button, consent version identifiers and request payloads
+are unchanged. No API, server policy, database, authorization or billing change
+is made. What the person agrees to remains the English text.
+
+Legal documents use stable message and inline-element IDs in per-language
+`lib/i18n/messages/legal/<code>/<document>.mjs` catalogs. Shared structure retains
+English headings, lists, links and anchors; tests compare complete English
+markup to origin/main `18f835916db97793ab50917956bf7f5b9968c892`. Numeric policy facts
+and placeholders must agree. Dates retain their underlying UTC date and Latin
+digits; non-English month/day order follows `Intl` and `localeTag`. English date
+strings remain exact. This interprets the date-formatting instruction as an
+exception to retaining the literal English date string.
+
+The literal audit now validates each binding's English text against the paired
+catalog instead of exempting version-bound English fragments. Legal pages are
+included, including pages whose JSX is supplied by the shared document renderer;
+a missing language catalog is unresolved. Native-speaker review remains needed.
+
+All six documents now have complete ten-language catalogs and are registered
+for prefixes, canonical/hreflang and existing sitemap alternates. All eleven
+binding statements have translations. Tests cover the notice, English link and
+metadata on every translated document, all catalog keys and placeholders,
+duplicate keys, numeric and link facts, and the original English renders.
+
+Admin, emails and an account language setting remain outside C1. Brand, company
+and product names, company number, registered address, email addresses, statutory
+references, section numbers, prices, credit amounts and durations retain their
+source facts. User/catalog/provider content and the existing English-only local
+editor command parser are unchanged. Regenerate the product inventory with
+`npm run sync:vey-knowledge`; its legal source reader now follows the English
+catalogs and shared document structure.
+
+C1 review fixes: the only grouped legal number is two thousand in Terms
+`b014`: de/pt use `2.000`, es `2000`, fr `2 000` (U+202F), ru `2 000`
+(U+00A0), ar `2٬000` (U+066C), and en/zh/ja/ko/hi `2,000`.
+Numeric parity normalizes grouping and Arabic-Indic/Devanagari digits.
+Terms `b016` quotes the same English supply source as checkout, isolated with
+`lang="en" dir="ltr"`, followed by a localized explanation that English governs.
+It no longer substitutes a translated quotation for the actual statement.
+
+`BindingText` wraps the original label and emits the convenience translation
+as its sibling, with a unique ID referenced by the checkbox's `aria-describedby`.
+Existing descriptions are retained. The English path emits the original label
+without a new description or block; English labels, flags and payloads are pinned
+by render and contract tests. Binding anchor destinations and English labels are
+also recorded in the source manifest. The hard-wall scan includes legal structures
+and all message catalogs and skips binary files without changing banned terms.
+
+After changing English legal, binding or chrome text, re-translate or confirm every affected translation.
+Run `node scripts/legal-source-hashes.mjs --update` to record English SHA-256 hashes, anchors and each document's reviewed-against date.
+Review that manifest diff; run the default hash check, both translation audits, tests, lint and `npm run sync:vey-knowledge`.

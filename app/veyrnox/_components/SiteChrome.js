@@ -1,4 +1,5 @@
 'use client';
+import LegalLink from '../../../components/LegalLink';
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
@@ -185,7 +186,7 @@ function StorageNotice({ onDismiss }) {
       <div className="mx-auto flex max-w-[1100px] flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-[13px] leading-[1.55] text-vx-fg-body">
           {rich(t('chrome.storageBody'), {
-            privacy: <Link href="/legal/privacy" className="text-vx-accent underline underline-offset-4">{t('chrome.privacyPolicy')}</Link>,
+            privacy: <LegalLink element="Link" href="/legal/privacy" className="text-vx-accent underline underline-offset-4">{t('chrome.privacyPolicy')}</LegalLink>,
           })}
         </p>
         <button

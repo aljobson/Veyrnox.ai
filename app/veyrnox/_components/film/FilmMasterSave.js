@@ -1,4 +1,5 @@
 'use client';
+import LegalLink from '../../../../components/LegalLink';
 import { tOr } from '../../../../lib/i18n/translate.mjs';
 import { useI18n } from '../../../../components/I18nProvider';
 import { localeTag } from '../../../../lib/i18n/locales.mjs';
@@ -40,7 +41,7 @@ export function FilmMasterSave({ master, jobId, label, fetcher = gatewayFetch, t
     return <div className="space-y-3">
         {saved ? <p role="status" className="text-xs font-semibold">{t("app.film.save.saved")}<a className="text-vx-accent underline" href={saved.url}>{t("app.film.save.view")}</a></p> : <>
             <label className="flex items-start gap-2 text-xs text-vx-fg-muted"><input type="checkbox" checked={consent} disabled={!!status} onChange={e => setConsent(e.target.checked)} />
-                <span>{t("app.film.save.rights")}<a className="underline" href="/legal/aup">{t("label.Acceptable Use")}</a></span></label>
+                <span>{t("app.film.save.rights")}<LegalLink element="a" className="underline" href="/legal/aup">{t("label.Acceptable Use")}</LegalLink></span></label>
             <button type="button" disabled={!consent || !!status} onClick={save} className="rounded-full bg-vx-accent px-4 py-2 text-xs font-semibold text-vx-accent-ink disabled:opacity-40">{status ? t("app.film.save.saving") : t("app.film.save.button")}</button>
             {status && <p role="status" className="text-xs">{tOr(t, `app.film.save.progress.${status}`, t('app.film.save.saving'))}</p>}
             <p className="text-xs text-vx-fg-muted">{t("app.film.save.policy")}</p>

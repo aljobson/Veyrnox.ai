@@ -1,3 +1,4 @@
+import { legalKnowledgeSource } from './legal-knowledge-source.mjs';
 import { createHash } from 'node:crypto';
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -224,6 +225,8 @@ export async function buildVeyKnowledgeArtifact(root) {
   const routes = [];
   for (const page of pages) {
     const modules = await collectRouteSources(page, productRoot, sourceCache);
+    const document = /LegalDocument\(\{ document: '([a-z-]+)' \}\)/.exec(modules[0]?.source || '')?.[1];
+    if (document) modules.splice(1, 0, await legalKnowledgeSource(root, document));
     // Next renders ancestor layouts without an explicit import from the page.
     // Include their UI so shared notice knowledge comes from the rendered
     // component, rather than incidentally from an English DOM selector.
