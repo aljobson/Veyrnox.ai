@@ -10,6 +10,7 @@
 | UI/UX | [UI-UX.md](UI-UX.md) | Tokens, components, new components, screen shapes, copy, motion, accessibility floor |
 | Schema | [SCHEMA.md](SCHEMA.md) | Sign-in flow, what the phone stores, server tables the features touch, who may write them |
 | Build plan | [IMPLEMENTATION-PLAN.md](IMPLEMENTATION-PLAN.md) | What is done, then tracks A to E with exit gates |
+| Face Filters | [FACE-FILTERS.md](FACE-FILTERS.md) | Filter states, planned phone flow, API contract, consent, comparison lifetime and Library/Photos actions |
 
 Related, not part of the set: [../PARITY-2026-10-19.md](../PARITY-2026-10-19.md) (every web feature against the phone, with sizes, spikes and owner decisions; the scope is all web features, per the owner on 2026-10-19), [../PLAN-2026-10-18.md](../PLAN-2026-10-18.md) (status and ownership), [../USER-JOURNEY-2026-10-19.md](../USER-JOURNEY-2026-10-19.md) (the journeys and slices N1 to N8), [../DEVICE-PASS-2026-10-18.md](../DEVICE-PASS-2026-10-18.md) (16 checks), [../M7-STORE-SUBMISSION-CHECKLIST.md](../M7-STORE-SUBMISSION-CHECKLIST.md) (store forms), ADR-0106 to 0143.
 

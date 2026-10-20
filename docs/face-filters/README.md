@@ -1,5 +1,7 @@
 # Face Filters & Media Authenticity — spec set
 
+**Status:** Updated 2026-10-20 against local `origin/main` at `4ccfbd2a1d4b39c8e20db9a0c5269ddab8f908bd`; the Face Filters sources are identical in this checkout (`cf1573bf`). Activation is **merged; production application not verified from the repo**.
+
 For uploaded-video skin smoothing, see [Video Enhance validation](VIDEO-ENHANCE.md)
 (2026-09-26), including the runnable local MediaPipe/WebGL prototype. The photo
 retouchers below do not establish video support; production qualification remains
@@ -19,6 +21,26 @@ Six documents covering one feature, not the whole app. Read in this order:
 Rendered with two interactive diagrams (credit ledger flow, generation webhook
 sequence): https://claude.ai/artifact/Rjn2EPF72mgjgrKuuB9Wic
 
+**Current catalog state (2026-10-20, `4ccfbd2a`):** 0356 stages A1-A5;
+0357 activates A1 `face-retouch`, A2 `face-enhance`, A4 `face-makeup` and A5
+`face-age`, each at 3 credits / $0.0400 recorded provider cost. A3 `face-relight`
+stays inactive at 7 credits / $0.1000: the unpinned probe billed 2 MP ($0.20);
+a run with the pinned 1000×1000 canvas is still required. A6 is not staged;
+A7/A8 are absent and blocked by PRD §6. These are migration states, not a
+production read. The web uses Studio models and the per-slot `SourcePickers`
+upload field; **a Transform mode does not exist**. Web and phone Tools entries
+come from the active catalog. The dedicated phone flow is
+[planned until the build PR merges](../mobile/spec/FACE-FILTERS.md).
+
+**Upload admission:** `lib/uploadAdmission.js` has no enrolled matching provider.
+`UPLOAD_HASH_MATCH_REQUIRED` is absent from the production vars in the checked-in
+`wrangler.jsonc` (default off), while `UPLOAD_INTEGRITY_ENABLED` and
+`UPLOAD_REQUEST_RATE_LIMIT_ENABLED` are `"true"`. These are repository settings,
+not verified deployed values. Requiring hash matching now fails closed:
+`upload_admission_unavailable` at upload issuance, `source_not_admitted` when
+resolving an uploaded source for a generation. This seam is not a scanner and
+catalog activation does not establish that the public-upload admission gate is met.
+
 ## Scope of this set
 
 These six document the Face Filters feature only. They are not the project's
@@ -32,48 +54,38 @@ Track B (media authenticity) has its own decision record in
 
 ## Where the build has got to
 
-**As of 2026-10-08, `main` at `42150476`** (207 commits after the 2026-10-02
-snapshot at `38ede60a`; checked against code, migrations, ADRs and
-`wrangler.jsonc`, not against production).
+The upload spine (Slices 1-4, #187) is implemented in
+`packages/adapters/r2.js`, `app/api/v1/uploads/route.js`, `lib/uploadSource.js`,
+`lib/resolveSource.js` and `lib/generationSources.js`. Sources use an owned
+`source_key` or slot descriptors; the gateway resolves and inspects the bytes,
+then supplies the provider URL. A source requires `consent: true`; the server
+records wording version `aup-2026-09-26` (0096 and 0146).
 
-Slices 1-4 landed in #187 and the upload spine is in the codebase:
+Slice 0's September timings and missing request-id evidence remain in
+[IMPLEMENTATION-PLAN.md](IMPLEMENTATION-PLAN.md). Migration 0357 now records
+2026-10-20 billed evidence for A1/A2/A4/A5 at $0.04 each, superseding the old
+blanket “prices unread” status. A3's pinned-payload billing remains unverified.
+Slice 5 is complete for A1-A5 only. Slice 9's four-row activation is merged;
+production application not verified from the repo. The reported successful
+manual apply-migrations dispatch is not a production catalog read.
 
-- `presignPutUrl` in `packages/adapters/r2.js`
-- `POST /api/v1/uploads`, with `lib/uploadSource.js`, `lib/resolveSource.js`
-  and `lib/uploadSweep.js`. Magic-number check (`sniffType`) runs before a
-  source is handed to a provider.
-- `ALLOWED_INPUTS` carries `video_url` and the filter selectors
-  (`makeup_style`, `intensity`, `target_age`, `preserve_identity`)
-- Since the snapshot: the Studio uploads a start image straight to R2
-  (ADR-0028, accepted 2026-09-22, #217), a job that carries a source must send
-  `consent: true` (`consent_required` otherwise; recorded by migrations 0096
-  and 0146), uploads are rate limited (ADR-0035, flag on in production) and
-  swept at 24 hours, or within minutes once the job finishes. ADR-0044
-  (reserved, bounded uploads) is still *Proposed* as a document, but migration
-  0129 is applied and `UPLOAD_INTEGRITY_ENABLED` is `"true"` in production
-  (`wrangler.jsonc`, 2026-10-16).
+Slices 6-7's proposed `ModeToggle`, `UploadZone`, `BeforeAfter` and Library source
+thumbnail are not implemented. The existing Studio per-slot upload field and
+Tools directory serve the models; there is no Transform mode. A completed
+output appears automatically in Library through `lib/falWebhookHandler.js` and
+`job_stored` (0077); there is no extra save-to-Library request. Uploaded originals
+are not available through job or asset reads.
 
-Slice 0 is partly done: five of eight endpoints submitted real jobs, but fal
-returns no cost per call, so `provider_cost_per_unit` still has to be read off
-the dashboard. `scripts/.slice0-results.json` is not in the repository
-checkout, so the cost reading is **unverified**.
+Slice 8 is partial: `lib/uploadSweep.js` runs on the five-minute cron. Abandoned
+uploads are eligible at 24 hours; consumed sources are removed on subsequent
+runs after a terminal job, with a 16-minute job-age guard to outlive the PUT URL.
+This is scheduled cleanup, not an exact deletion deadline. Account-closure
+cleanup of uploads remains unverified.
 
-**None of A1-A8 exists in the catalog.** No migration through 0326 mentions a
-Track A endpoint, so Slice 5 has not started and nothing is active. Slice 6
-(Studio Transform mode with `ModeToggle`, `UploadZone`, `BeforeAfter`) and
-Slice 7 are not built; no such component exists in `app/`. What shipped
-instead is adjacent: Library images as a start image (`source_assets`, #444),
-a `/tools` page for models that start from your own file (#456), and the
-existing image-to-image and video-to-video rows (upscale, background removal,
-expand, Nano Banana Pro Edit, LatentSync lip sync).
-
-Slice 8 is partly done: the age sweep and the consumed-source sweep exist and
-run on the 5-minute cron (`worker.js`). Deletion on account closure is
-**unverified** (no code found). Slice 9 (activation) has nothing to activate.
-
-A7 and A8 remain blocked on PRD §6. Of its five conditions, the per-upload
-attestation exists in a general form (above); output moderation, a takedown
-route wired to the designated agent, shortened face-reference retention and a
-published statement are not built. CSAM hash matching (ADR-0025 §8.1, product
-plan D1) has no code and no chosen service, and it gates any public upload
-surface. Track B (ADR-0025) is still *Proposed*; nothing is built.
+A7/A8 remain blocked by PRD §6; the general attestation and provider safety
+settings do not establish those gates. Track B verdicts remain unimplemented;
+ADR-0025 is Proposed (existing provenance does not provide authenticity verdicts).
+`tests/faceFilters.test.mjs` covers the staged rows, activation predicate,
+selectors, fixed payloads and Tools grouping; `tests/uploadAdmission.test.mjs`
+covers the flag and admission seams. Neither proves production activation,
+matcher enrollment or real billing for A3's pinned canvas.
