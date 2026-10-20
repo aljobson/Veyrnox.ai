@@ -80,6 +80,9 @@
     "wrangler": "^4.147.0"
   },
   "overrides": {
+    "@node-minify/core": {
+      "glob": "10.5.0"
+    },
     "postcss": "$postcss",
     "sharp": "$sharp",
     "prismjs": "^1.30.0",
