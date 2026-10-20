@@ -7,6 +7,7 @@ Phase-0 decision-support documents for the target architecture at `/Users/aljobs
 | ADR | Status | Summary | Blocks |
 |-----|--------|---------|--------|
 | [ADR-0208 — Mobile: creator upload shell, Continue on web (parity P6)](0208-mobile-creator-upload-shell.md) | **Proposed 2026-10-20** | Creators get a card that opens the web creator workspace; no upload built; what spike S3 must prove |
+| [ADR-0207 — Mobile: Cinema Pass read-only and the paid locked state (parity P6)](0207-mobile-cinema-pass-readonly.md) | **Proposed 2026-10-20** | Pass status card when the account has one; no price or buy path; locked paid titles explained; continue watching and store price blocked on the server and the store |
 | [ADR-0184 — Mobile: chat settings, model and instructions (parity plan P3)](0184-mobile-chat-settings.md) | **Proposed 2026-10-19** | Settings in the chat toolbar: switch the model with its price, edit instructions; sends only what changed |
 | [ADR-0183 — Mobile: chat list search and delete (parity plan P3)](0183-mobile-chat-list-search-delete.md) | **Proposed 2026-10-19** | Title search and an asked-first Delete on each chat row |
 | [ADR-0166 — Mobile: Publish reports, PDF and slide download and share (parity plan P5)](0166-mobile-publish-reports.md) | **Proposed 2026-10-19** | Saved reports list; PDF and slides downloaded to the cache and shared; template editing not built |
@@ -253,3 +254,4 @@ These existed without an index row. Status is as written in each file. Four numb
 | [ADR-0095 — Bounded vocal/instrument separation](0095-editor-audio-stems.md) | Preparation; production flag disabled | `fal-ai/demucs` six stems behind `EDITOR_AUDIO_STEMS_ENABLED`; migration 0291. | Owner enablement |
 | [ADR-0160 — Read-only mode when Supabase is down](0160-supabase-outage-read-only-mode.md) | Proposed 2026-10-19 | Status endpoint, outage banner on web and mobile, saved price list served through an outage. | Production check with a real or simulated outage |
 | [ADR-0191 — Mobile empty states and low-balance prompt](0191-mobile-empty-states.md) | Proposed 2026-10-20 | `EmptyState` with one next action on Library and Posts; a Buy credits note on Explore when the balance cannot start anything |
+| [ADR-0210 — Mobile Film Studio, first slice](0210-mobile-film-studio-read-first.md) | Proposed 2026-10-20 | Open a studio exported from the web, read its stages, shots and asset locks, and send a current shot prompt to Create with the price shown first. | — |
