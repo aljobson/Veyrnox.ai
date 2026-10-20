@@ -17,7 +17,8 @@ import { buildCharacterPrompt, sanitizePicks, type Picks } from '../../../lib/od
 import { useFreeLeft } from '../../../lib/useFreeLeft';
 import { estimateCredits, fetchCatalog, kindOf, mediaApi, promptRequired, textInput, type CatalogModel } from '../../../lib/media';
 import { selectedState } from '../../../lib/a11y';
-import { missingRequired, slotsFor, toSourceKeys, type SlotName } from '../../../lib/sources';
+import { toSourceAssets } from '../../../lib/librarySource';
+import { SLOT_ORDER, missingRequired, slotsFor, toSourceKeys, type SlotName } from '../../../lib/sources';
 import { colors } from '../../../theme';
 import { plural, t } from '../../../lib/i18n';
 
@@ -34,6 +35,8 @@ export default function CreateWithModel() {
     const [busy, setBusy] = useState(false);
     // Storage keys of the files already uploaded, by slot, and the slots still uploading.
     const [uploaded, setUploaded] = useState<Partial<Record<SlotName, string>>>({});
+    // Library creations chosen as files, by slot (job ids). A slot has an upload or a Library file, never both.
+    const [fromLibrary, setFromLibrary] = useState<Partial<Record<SlotName, string>>>({});
     const [sending, setSending] = useState<Partial<Record<SlotName, boolean>>>({});
     const [error, setError] = useState<string | null>(null);
     const [opts, setOpts] = useState<OptionValues>({ aspect: null, count: 1, seed: '', negative: '', voice: '', audioSeconds: '' });
@@ -123,14 +126,15 @@ export default function CreateWithModel() {
     const text = takesCamera && cameraOn ? buildCinemaPrompt(withCharacter, cinema) : withCharacter;
     const slots = slotsFor(model);
     const sources = toSourceKeys(uploaded);
+    const assets = toSourceAssets(fromLibrary, SLOT_ORDER);
     const waiting = Object.values(sending).some(Boolean);
-    const ready = !waiting && missingRequired(slots, uploaded).length === 0 && (!promptRequired(model) || !!text) && !seedIsInvalid(opts.seed) && !voiceIsMissing(options, opts.voice) && !audioLengthInvalid(options, opts.audioSeconds);
+    const ready = !waiting && missingRequired(slots, { ...uploaded, ...fromLibrary }).length === 0 && (!promptRequired(model) || !!text) && !seedIsInvalid(opts.seed) && !voiceIsMissing(options, opts.voice) && !audioLengthInvalid(options, opts.audioSeconds);
     const text_ = textInput(model);
 
     async function generate() {
         if (!model || !ready || busy) return;
         const extra = settingsInputs(options, { seed: opts.seed, negative: opts.negative, aspect: opts.aspect, voice: opts.voice, audioSeconds: opts.audioSeconds });
-        const signature = `${model.id}|${text}|${duration}|${n}|${JSON.stringify(extra)}|${sources.map((s) => `${s.slot}:${s.key}`).join(',')}`;
+        const signature = `${model.id}|${text}|${duration}|${n}|${JSON.stringify(extra)}|${sources.map((s) => `${s.slot}:${s.key}`).join(',')}|${assets.map((a) => `${a.slot}:${a.assetId}`).join(',')}`;
         const keys = pending.current?.signature === signature ? pending.current.keys : Array.from({ length: n }, () => Crypto.randomUUID());
         pending.current = { signature, keys };
         setBusy(true);
@@ -142,7 +146,7 @@ export default function CreateWithModel() {
             // N images are N separate generations: each its own key, charge, refund and job, sent one at a time.
             // A retry after a failure replays the same keys, so the ones already started are not charged again.
             for (let i = 0; i < n; i++) {
-                const r = await mediaApi(api).createGeneration({ modelId: model.id, prompt: text, durationSeconds: isVideo ? duration : null, confirmedCredits: unit, idempotencyKey: keys[i], sources, textKey: text_?.key, extraInputs: inputsForIndex(extra, i, n) });
+                const r = await mediaApi(api).createGeneration({ modelId: model.id, prompt: text, durationSeconds: isVideo ? duration : null, confirmedCredits: unit, idempotencyKey: keys[i], sources, assets, textKey: text_?.key, extraInputs: inputsForIndex(extra, i, n) });
                 first ??= r.job_id;
                 started += 1;
             }
@@ -170,6 +174,7 @@ export default function CreateWithModel() {
                         slot={s}
                         api={api}
                         onChange={(key) => setUploaded((u) => ({ ...u, [s.slot]: key }))}
+                        onLibrary={(jobId) => setFromLibrary((l) => ({ ...l, [s.slot]: jobId }))}
                         onBusy={(b) => setSending((x) => ({ ...x, [s.slot]: b }))}
                     />
                 ))}
@@ -193,7 +198,7 @@ export default function CreateWithModel() {
                         </Pressable>
                     </View>
                 ) : null}
-                {sources.length ? <Text style={styles.consent}>{t('form.consent')}</Text> : null}
+                {sources.length || assets.length ? <Text style={styles.consent}>{t('form.consent')}</Text> : null}
                 {isVideo && model.durations.length > 1 ? (
                     <View style={styles.chips}>
                         {model.durations.map((d) => (
