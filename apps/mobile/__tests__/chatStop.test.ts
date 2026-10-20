@@ -98,3 +98,43 @@ describe('keys and notices', () => {
         expect(stopNoticeKey('pending')).toBe('chat.stop.pending');
     });
 });
+
+describe('return from the background', () => {
+    const { isQuiet, resolveResumedSend, resumeNoticeKey, RESUME_WAITS, RESUME_LIMIT_MS, RESUME_QUIET_MS } = jest.requireActual('../src/lib/chatStop') as typeof import('../src/lib/chatStop');
+    const send = { key: 'vx-k', jobId: JOB, text: 'hi', knownIds: new Set(['k1', 'k2']) };
+    test('a reply that is still running after many looks is found once it finishes', async () => {
+        let calls = 0;
+        const getJob = jest.fn(async () => ({ state: ++calls < 20 ? 'running' : 'succeeded' }));
+        const out = await resolveResumedSend({ closeSend: jest.fn(), getThread: jest.fn(), getJob, wait: async () => undefined }, send);
+        expect(out).toBe('saved');
+        expect(getJob).toHaveBeenCalledTimes(20); // the stopped-send look gives up after four
+    });
+    test('a reply that never finishes inside the wait is pending and is not cut off', async () => {
+        const out = await resolveResumedSend({ closeSend: jest.fn(), getThread: jest.fn(), getJob: async () => ({ state: 'running' }), wait: async () => undefined }, send);
+        expect(out).toBe('pending');
+    });
+    test('a turn the server finished and could not store is charged, not lost', async () => {
+        const out = await resolveResumedSend({ closeSend: jest.fn(), getThread: jest.fn(), getJob: async () => ({ state: 'succeeded', error_code: 'reply_not_saved' }), wait: async () => undefined }, send);
+        expect(out).toBe('unsaved');
+    });
+    test('with no job yet, the send key is asked about first', async () => {
+        const closeSend = jest.fn(async () => ({ closed: true }));
+        const out = await resolveResumedSend({ closeSend, getThread: jest.fn(), getJob: jest.fn(), wait: async () => undefined }, { ...send, jobId: null });
+        expect(out).toBe('nothing');
+        expect(closeSend).toHaveBeenCalledWith('vx-k');
+    });
+    test('quiet means no event for the quiet period', () => {
+        expect(isQuiet(1000, 1000 + RESUME_QUIET_MS - 1)).toBe(false);
+        expect(isQuiet(1000, 1000 + RESUME_QUIET_MS)).toBe(true);
+    });
+    test('the wait covers about a minute', () => {
+        expect(RESUME_WAITS.length * 1500).toBeGreaterThanOrEqual(60000);
+        expect(RESUME_LIMIT_MS).toBeGreaterThan(60000);
+    });
+    test('each ending has its own words, none claiming a free reply that was charged', () => {
+        expect(resumeNoticeKey('saved')).toBe('chat.resume.saved');
+        expect(resumeNoticeKey('unsaved')).toBe('chat.resume.unsaved');
+        expect(resumeNoticeKey('nothing')).toBe('chat.resume.nothing');
+        expect(resumeNoticeKey('pending')).toBe('chat.resume.pending');
+    });
+});
