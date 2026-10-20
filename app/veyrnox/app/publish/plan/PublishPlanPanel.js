@@ -164,10 +164,10 @@ function Plan() {
       </ul>
       <p className="mt-5 text-xs text-vx-fg-muted">{t("app.publish.plan.billing")}</p>
       {selectedPlan && <>
-        <label className="mt-4 flex items-start gap-3 text-sm text-vx-fg-body">
+        <BindingText id="publish" values={{ price: legalMoney.format(selectedPlan.price_usd_cents / 100), interval: intervalName(selectedPlan.billing_interval) }} ><label className="mt-4 flex items-start gap-3 text-sm text-vx-fg-body">
           <input type="checkbox" className="mt-1" checked={agreed} onChange={(event) => setAgreed(event.target.checked)} />
-          <BindingText id="publish" values={{ price: legalMoney.format(selectedPlan.price_usd_cents / 100), interval: intervalName(selectedPlan.billing_interval) }} ><span lang="en" dir="ltr">Start my Publish Plan at {legalMoney.format(selectedPlan.price_usd_cents / 100)} plus tax every {intervalName(selectedPlan.billing_interval)}. I understand it renews automatically until I cancel.</span></BindingText>
-        </label>
+          <span lang="en" dir="ltr">Start my Publish Plan at {legalMoney.format(selectedPlan.price_usd_cents / 100)} plus tax every {intervalName(selectedPlan.billing_interval)}. I understand it renews automatically until I cancel.</span>
+        </label></BindingText>
         <button type="button" disabled={busy || !agreed} className={`${button} mt-5 border-vx-accent bg-vx-accent text-black`} onClick={() => start(selectedPlan.id)}>
           {busy ? t("app.publish.plan.opening") : t("app.publish.plan.upgrade")}
         </button>

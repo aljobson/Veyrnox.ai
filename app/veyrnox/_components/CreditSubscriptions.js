@@ -528,20 +528,20 @@ function Billing({ account, recovery, setRecovery }) {
           ) : (
             plan && (
               <div className="mt-5">
-                <label lang="en" dir="ltr" className="flex items-start gap-3">
+                <BindingText id="subscription" values={{ plan: names[plan.id] || plan.id, price: usd.format(plan.price_usd_cents / 100), interval: intervalName(plan.billing_interval), credits: plan.credits }} ><label lang="en" dir="ltr" className="flex items-start gap-3">
                   <input
                     type="checkbox"
                     checked={agreed}
                     onChange={(e) => setAgreed(e.target.checked)}
                   />
-                  <BindingText id="subscription" values={{ plan: names[plan.id] || plan.id, price: usd.format(plan.price_usd_cents / 100), interval: intervalName(plan.billing_interval), credits: plan.credits }} ><span>
+                  <span>
                     I agree to {names[plan.id] || plan.id} at{' '}
                     {usd.format(plan.price_usd_cents / 100)} plus applicable tax
                     every {intervalName(plan.billing_interval)} until I cancel. I receive {plan.credits} Credits
                     after each confirmed {intervalName(plan.billing_interval)}ly payment; unused cycle Credits
                     expire without rollover.
-                  </span></BindingText>
-                </label>
+                  </span>
+                </label></BindingText>
                 <p className="mt-3 text-sm">
                   {t("app.credits.subscription.renewalHelp")}{' '}
                   <LegalLink element="Link" href="/legal/terms" className="underline">

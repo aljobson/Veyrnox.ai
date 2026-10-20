@@ -19,7 +19,11 @@ process.env.LOCALES_ENABLED = 'true';
 const moduleMocks = { '../../veyrnox/layout': { __esModule: true, default: ({ children }) => React.createElement('div', { 'data-layout': 'legal' }, children) } };
 const baseline = JSON.parse(readFileSync('tests/fixtures/legal-english-main.json', 'utf8'));
 const slots = text => [...text.matchAll(/\{\w+\}/g)].map(match => match[0]).sort();
-const numbers = text => (text.match(/\d+(?:[.,]\d+)*(?:%|\+)?/g) || []).sort();
+export const numbers = text => {
+  const latin = text.replace(/[٠-٩०-९]/g, digit => String(digit.charCodeAt(0) - (digit >= '०' ? 0x0966 : 0x0660)));
+  return (latin.match(/\d+(?:[.,]\d+|[ \u00a0\u202f\u066c]\d{3}(?!\d))*(?:%|\+)?/g) || [])
+    .map(number => number.replace(/(?<=\d)[,. \u00a0\u202f\u066c](?=\d{3}(?:\D|$))/g, '')).sort();
+};
 const facts = text => text.match(/https?:\/\/[^\s<>]+|[\w.+-]+@[\w.-]+\.[a-z]+|\b(?:[a-z]+\.)+(?:org|uk|ai|com)\b/g) || [];
 const escape = text => text.replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll("'", '&#x27;');
 const periods = {
@@ -33,6 +37,15 @@ const privacyPeriods = {
   pt: ['sete dias', 'três dias'], ru: ['семи дней', 'трёх дней'], ja: ['七日間', '三日間'],
   de: ['sieben Tage', 'drei Tage'], ko: ['칠 일', '삼 일'],
 };
+
+test('numeric parity normalizes grouping and Arabic-Indic/Devanagari digits without merging decimal or section facts', () => {
+  for (const grouped of ['2,000', '2.000', '2 000', '2\u00a0000', '2\u202f000', '2\u066c000', '٢٬٠٠٠', '२,०००']) {
+    assert.deepEqual(numbers(grouped), ['2000'], grouped);
+  }
+  assert.deepEqual(numbers('3.1 14 20 10% $2.50'), ['10%', '14', '2.50', '20', '3.1']);
+  assert.deepEqual(numbers('1,234,567'), ['1234567']);
+  assert.notDeepEqual(numbers('2,000'), numbers('2'));
+});
 
 for (const document of LEGAL_DOCUMENTS) {
   test(`${document}: English render equals origin/main ${baseline.commit}`, async () => {
@@ -121,7 +134,7 @@ for (const locale of ['en', 'de', 'ja', 'ar']) test(`${locale}: BindingText pres
   const english = React.createElement('span', { lang: 'en', dir: 'ltr' }, BINDINGS.en.pass);
   const f = fixture(locale, '/social-cinema/pass');
   const BindingText = f.load('components/BindingText.jsx').default;
-  const html = f.render(React.createElement('label', null, input, React.createElement(BindingText, { id: 'pass' }, english)));
+  const html = f.render(React.createElement(BindingText, { id: 'pass' }, React.createElement('label', null, input, english)));
   assert.ok(html.includes(`<span lang="en" dir="ltr">${BINDINGS.en.pass}</span>`));
   assert.ok(html.includes('data-version="unchanged-version"'));
   input.props.onChange({ target: { checked: true } });
@@ -133,6 +146,9 @@ for (const locale of ['en', 'de', 'ja', 'ar']) test(`${locale}: BindingText pres
     assert.ok(html.includes('data-binding-translation="pass"'));
     assert.ok(html.includes(escape(LEGAL_CHROME[locale].notice)));
     assert.ok(html.includes(escape(LEGAL_CHROME[locale].agree)));
+    assert.doesNotMatch(html.match(/<label[^>]*>(.*?)<\/label>/s)[1], /data-binding-translation/);
+    const description = html.match(/aria-describedby="([^"]+)"/)[1];
+    assert.ok(html.includes(`</label><span id="${description}"`));
     assert.ok(html.includes(`lang="${localeInfo(locale).hreflang}" dir="${localeInfo(locale).dir}"`));
     if (locale === 'ar') assert.match(html, /<bdi dir="ltr">14<\/bdi>/);
   }

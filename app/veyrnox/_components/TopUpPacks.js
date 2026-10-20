@@ -1,6 +1,6 @@
 'use client';
-import LegalLink from '../../../components/LegalLink';
 import BindingText from '../../../components/BindingText';
+import englishBindings from '../../../lib/i18n/messages/legal/en/binding.mjs';
 import { localeTag } from '../../../lib/i18n/locales.mjs';
 import { tOr, pluralKey } from '../../../lib/i18n/translate.mjs';
 import { useI18n } from '../../../components/I18nProvider';
@@ -14,8 +14,7 @@ import { useCatalog } from '../_lib/useCatalog';
 // Changing it needs a new sign-off and a new version, here and in
 // SUPPLY_CONSENT_VERSION in app/api/v1/top-ups/route.js.
 export const SUPPLY_CONSENT_VERSION = 'supply-consent-v1';
-const SUPPLY_CONSENT_TEXT =
-  'I want my credits added to my account straight away. I understand that once I use any of these credits to generate, I lose my right to cancel this purchase.';
+const SUPPLY_CONSENT_TEXT = englishBindings.supply;
 
 const TOP_UP_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const POLL_MS = 2000;
@@ -224,13 +223,13 @@ export function TopUpPacks({ signedIn }) {
           <p className="mt-3 text-[12px] text-vx-fg-muted max-w-[640px]">
             {t("pricing.packs.tax")}</p>
 
-          <label className="mt-4 flex items-start gap-2 text-sm text-vx-fg-body cursor-pointer">
+          <BindingText id="supply"  ><label className="mt-4 flex items-start gap-2 text-sm text-vx-fg-body cursor-pointer">
             <input type="checkbox" required checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-1 accent-vx-accent" />
             <span>
-              <BindingText id="supply"  ><span lang="en" dir="ltr">{SUPPLY_CONSENT_TEXT}</span></BindingText>{' '}
-              <LegalLink element="a" href="/legal/refund" className="underline text-vx-fg-muted">{t("app.credits.packs.refund")}</LegalLink>
+              <span lang="en" dir="ltr">{SUPPLY_CONSENT_TEXT}</span>{' '}
+              <a href="/legal/refund" className="underline text-vx-fg-muted">Refund policy</a>
             </span>
-          </label>
+          </label></BindingText>
 
           <div className="mt-4 flex items-center gap-3">
             <Button data-testid="credit-packs-buy" variant="money" className="min-w-[11.5rem] justify-center" onClick={buy} disabled={!selected || !consent || busy}>

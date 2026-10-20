@@ -7,6 +7,7 @@ import ts from 'typescript';
 import { helperExceptions } from './lib/helper-i18n-exceptions.mjs';
 import { appMetadataFile, isMetadataExport, inventoryMetadata } from './lib/app-metadata-i18n.mjs';
 import { bindingInventory } from './lib/legal-i18n.mjs';
+import { checkSources } from './legal-source-hashes.mjs';
 import publicEnglish from '../lib/i18n/messages/en.mjs';
 import appEnglish from '../lib/i18n/messages/app/en.mjs';
 const english = { ...publicEnglish, ...appEnglish };
@@ -222,6 +223,7 @@ export function candidates(file, source, { app = false } = {}) {
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  try { await checkSources(); } catch (error) { console.error(error.message); process.exitCode = 1; }
   const app = process.argv.includes('--app');
   const files = process.argv.slice(2).filter(arg => !['--all', '--app'].includes(arg));
   const rows = (files.length ? files : app ? appFiles() : publicFiles()).flatMap(file => candidates(file, readFileSync(file, 'utf8'), { app }));

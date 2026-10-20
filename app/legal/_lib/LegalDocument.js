@@ -6,11 +6,12 @@ import { localizedHref, localeTag, isLocalizedPath } from '../../../lib/i18n/loc
 import { rich } from '../../../lib/i18n/rich';
 import { fill, translator } from '../../../lib/i18n/translate.mjs';
 import { LegalPage, ENTITY } from './Legal';
+import englishBindings from '../../../lib/i18n/messages/legal/en/binding.mjs';
 
 // The English branch emits the original strings without added numeric wrappers.
 export function legalText(text, locale) {
   if (locale !== 'ar') return text;
-  return text.split(/(\d+(?:[.,:/+-]\d+)*(?:%|\+)?)/g).map((part, index) =>
+  return text.split(/(\d+(?:[.,٬:/+-]\d+)*(?:%|\+)?)/g).map((part, index) =>
     /^\d/.test(part) ? <bdi dir="ltr" key={index}>{part}</bdi> : part);
 }
 
@@ -22,7 +23,11 @@ export function LegalBlocks({ blocks, messages, locale }) {
     const slots = Object.fromEntries(Object.entries(block.slots || {}).map(([id, child]) => [id, render(child, id)]));
     for (const [id, value] of Object.entries(ENTITY)) slots[id] = legalText(value, locale);
     // rich() keeps inline links/emphasis as elements, never interpreted HTML.
-    const text = messages[block.key];
+    let text = messages[block.key];
+    if (locale !== 'en' && text.includes(englishBindings.supply)) {
+      text = text.replace(englishBindings.supply, '{supplyStatement}');
+      slots.supplyStatement = <span lang="en" dir="ltr">{englishBindings.supply}</span>;
+    }
     const parts = rich(text, slots);
     if (locale === 'ar') return createElement(block.tag, { ...attrs, key }, parts.map((part, index) =>
       createElement(Fragment, { key: index }, typeof part.props.children === 'string' ? legalText(part.props.children, locale) : part)));

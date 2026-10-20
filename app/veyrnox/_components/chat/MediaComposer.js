@@ -123,10 +123,10 @@ export function MediaComposer({ kind, media, prompt, onPrompt }) {
           <div className="border-b border-vx-border px-3 pb-3">
             <SourcePickers media={model.media} sources={sources} onPick={pickSource} onDraw={null} onLibrary={setLibraryFor} />
             {hasSource && (
-              <label lang="en" dir="ltr" className="mt-2 flex items-start gap-2 text-xs text-vx-fg-muted">
+              <BindingText id="mediaRights"  slots={{ policy: <BindingPolicyLink policy="aup" /> }}><label lang="en" dir="ltr" className="mt-2 flex items-start gap-2 text-xs text-vx-fg-muted">
                 <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} className="mt-0.5 accent-vx-accent" />
-                <BindingText id="mediaRights"  slots={{ policy: <BindingPolicyLink policy="aup" /> }}><span>I own these files or have permission to use every identifiable person, voice, brand, artwork, and recording under the <a href="/legal/aup" target="_blank" rel="noreferrer" className="text-vx-accent underline">Acceptable Use Policy</a>.</span></BindingText>
-              </label>
+                <span>I own these files or have permission to use every identifiable person, voice, brand, artwork, and recording under the <a href="/legal/aup" target="_blank" rel="noreferrer" className="text-vx-accent underline">Acceptable Use Policy</a>.</span>
+              </label></BindingText>
             )}
           </div>
         )}
