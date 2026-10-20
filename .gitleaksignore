@@ -191,3 +191,5 @@ fd087777e79b8a1e33774074af9d1f32e18fff05:tests/veyrnoxMcp.test.mjs:generic-api-k
 88c29b8023fe9d286b05a00fd48d87d847306894:tests/publishAutomation.test.mjs:generic-api-key:168
 # Squash commit of #1215 (generate_image test): a synthetic key, not a credential.
 3d260691370835895eb559e64c629c56575d9e00:tests/veyrnoxMcp.test.mjs:generic-api-key:117
+# Synthetic Resend key in an alert test, rewritten in the next commit of PR 1412.
+556c869d32e45c610543ec68202a7ce6b26156ea:tests/supabaseOutageAlert.test.mjs:generic-api-key:54

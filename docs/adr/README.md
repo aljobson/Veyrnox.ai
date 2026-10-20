@@ -7,6 +7,7 @@ Phase-0 decision-support documents for the target architecture at `/Users/aljobs
 | ADR | Status | Summary | Blocks |
 |-----|--------|---------|--------|
 | [ADR-0177 — Mobile: Vey as the web's animated character](0177-mobile-vey-character.md) | **Proposed 2026-10-19** | The web artwork as seven layers; head nods, arms sway and wave, eyes blink, core pulses; Reduce Motion stills it; no new dependency |
+| [ADR-0172 — Mobile: prompt collage on Explore, slice 1](0172-mobile-prompt-collage.md) | **Proposed 2026-10-19** | Type filter (Images, Video, Audio), categories by type, search, two-column masonry, empty states; favourites, audio samples and content later |
 | [ADR-0207 — Mobile: Cinema Pass read-only and the paid locked state (parity P6)](0207-mobile-cinema-pass-readonly.md) | **Proposed 2026-10-20** | Pass status card when the account has one; no price or buy path; locked paid titles explained; continue watching and store price blocked on the server and the store |
 | [ADR-0184 — Mobile: chat settings, model and instructions (parity plan P3)](0184-mobile-chat-settings.md) | **Proposed 2026-10-19** | Settings in the chat toolbar: switch the model with its price, edit instructions; sends only what changed |
 | [ADR-0183 — Mobile: chat list search and delete (parity plan P3)](0183-mobile-chat-list-search-delete.md) | **Proposed 2026-10-19** | Title search and an asked-first Delete on each chat row |
