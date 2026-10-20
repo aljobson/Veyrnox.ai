@@ -1,4 +1,4 @@
-// Acceptance for 0354: private resume positions. Run against a rebuilt database.
+// Acceptance for 0355: private resume positions. Run against a rebuilt database.
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -39,7 +39,7 @@ const drop = (a, id) => value("SELECT public.remove_cinema_watch_resume($1,$2) A
 const age = (user, content) =>
   q("UPDATE public.cinema_watch_resume SET updated_at=updated_at-interval '1 minute' WHERE user_id=$1 AND content_id=$2", [user, content]);
 try {
-  const migration = await readFile(new URL("../packages/db/schema/supabase/0354_cinema_watch_progress.sql", import.meta.url), "utf8");
+  const migration = await readFile(new URL("../packages/db/schema/supabase/0355_cinema_watch_progress.sql", import.meta.url), "utf8");
   await q(migration);
   await q(migration);
   await q("BEGIN");

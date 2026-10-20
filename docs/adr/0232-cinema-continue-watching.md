@@ -12,7 +12,7 @@ one without turning a private convenience into a ranking or billing input.
 
 ## Decision
 
-Migration 0354 adds `cinema_watch_resume`, one row per person and title: position, the real duration, a completed flag
+Migration 0355 adds `cinema_watch_resume`, one row per person and title: position, the real duration, a completed flag
 and the time of the last write. Forced RLS, no policy, and every browser and service role is revoked. Three
 service-only SECURITY DEFINER RPCs (`search_path=''`) take the middleware-verified Supabase subject; a caller never
 supplies an owner.
@@ -21,8 +21,8 @@ supplies an owner.
   key. It rechecks the actor, that the title is public and its media ready, and entitlement (free, unlocked or Pass,
   the same test as starting a watch session). Duration comes from the media row, never the client; position clamps to
   it; 95% or more marks the title completed. A title written again within 10 seconds keeps its stored value and
-  answers `recorded:false`. Another title may not be written once 30 others changed in the past minute. A person keeps at
-  most 200 titles, the oldest dropped first.
+  answers `recorded:false`. With the 10 second floor and a cap of 20 other titles changed in a minute, a person writes at most 120 times a minute. A trigger
+  keeps at most 200 titles per person, dropping the oldest.
 - `list_cinema_watch_resume`: the caller's own unfinished titles, newest first, 20 per page (max 40), stable cursor on
   content id. Public visibility, ready media and entitlement are rechecked on every read, so withdrawal, a suspended
   creator or a lapsed Pass remove the row from the projection at once.

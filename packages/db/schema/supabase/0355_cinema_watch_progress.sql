@@ -23,7 +23,7 @@ ALTER TABLE public.cinema_watch_resume ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.cinema_watch_resume FORCE ROW LEVEL SECURITY;
 REVOKE ALL ON public.cinema_watch_resume FROM PUBLIC, anon, authenticated, service_role;
 
--- Save the position. An absolute last-write-wins upsert, so a replay changes nothing.
+-- Save the position (at most 6 titles' writes per 10 s each, 20 titles a minute: 120 writes a minute). An absolute last-write-wins upsert, so a replay changes nothing.
 CREATE OR REPLACE FUNCTION public.save_cinema_watch_resume(p_auth_id TEXT, p_content_id UUID, p_position INTEGER)
 RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
 DECLARE
@@ -36,7 +36,7 @@ BEGIN
         RETURN jsonb_build_object('error', 'invalid_position');
     END IF;
     IF public.cinema_community_root(p_content_id) IS NULL THEN RETURN jsonb_build_object('error', 'content_not_found'); END IF;
-    PERFORM pg_advisory_xact_lock(354, hashtext(v_user::TEXT));
+    PERFORM pg_advisory_xact_lock(355, hashtext(v_user::TEXT));
     IF public.cinema_community_actor(p_auth_id) IS DISTINCT FROM v_user THEN
         RETURN jsonb_build_object('error', 'account_not_active');
     END IF;
@@ -61,7 +61,7 @@ BEGIN
             'duration_seconds', v_old.duration_seconds, 'completed', v_old.completed);
     END IF;
     IF (SELECT count(*) FROM public.cinema_watch_resume
-         WHERE user_id = v_user AND content_id <> p_content_id AND updated_at > v_now - interval '1 minute') >= 30 THEN
+         WHERE user_id = v_user AND content_id <> p_content_id AND updated_at > v_now - interval '1 minute') >= 20 THEN
         RETURN jsonb_build_object('error', 'rate_limited');
     END IF;
 
@@ -70,12 +70,6 @@ BEGIN
     ON CONFLICT (user_id, content_id) DO UPDATE
         SET position_seconds = EXCLUDED.position_seconds, duration_seconds = EXCLUDED.duration_seconds,
             completed = EXCLUDED.completed, updated_at = EXCLUDED.updated_at;
-
-    -- At most 200 titles per person; the least recently watched go first.
-    DELETE FROM public.cinema_watch_resume r
-     WHERE r.user_id = v_user AND r.content_id IN (
-         SELECT x.content_id FROM public.cinema_watch_resume x WHERE x.user_id = v_user
-          ORDER BY x.updated_at DESC, x.content_id DESC OFFSET 200);
 
     RETURN jsonb_build_object('recorded', true, 'content_id', p_content_id, 'position_seconds', v_pos,
         'duration_seconds', v_duration, 'completed', v_done);
@@ -122,6 +116,23 @@ BEGIN
     DELETE FROM public.cinema_watch_resume WHERE user_id = v_user AND content_id = p_content_id;
     RETURN jsonb_build_object('content_id', p_content_id, 'removed', true);
 END $$;
+
+-- At most 200 titles per person; a new title pushes out the least recently watched.
+CREATE OR REPLACE FUNCTION private.watch_resume_cap()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
+BEGIN
+    DELETE FROM public.cinema_watch_resume r
+     WHERE r.user_id = NEW.user_id AND r.content_id IN (
+         SELECT x.content_id FROM public.cinema_watch_resume x WHERE x.user_id = NEW.user_id
+          ORDER BY x.updated_at DESC, x.content_id DESC OFFSET 200);
+    RETURN NULL;
+END $$;
+REVOKE ALL ON FUNCTION private.watch_resume_cap() FROM PUBLIC, anon, authenticated;
+
+DROP TRIGGER IF EXISTS cinema_watch_resume_cap ON public.cinema_watch_resume;
+CREATE TRIGGER cinema_watch_resume_cap
+    AFTER INSERT ON public.cinema_watch_resume
+    FOR EACH ROW EXECUTE FUNCTION private.watch_resume_cap();
 
 -- ── Account deletion hook (ADR-0111): a tombstoned account keeps no resume positions ──
 CREATE OR REPLACE FUNCTION private.watch_resume_forget_erased_user()

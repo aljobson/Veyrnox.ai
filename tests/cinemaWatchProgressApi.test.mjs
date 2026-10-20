@@ -187,11 +187,11 @@ test("DELETE removes only the named title for the verified subject", async () =>
     assert.deepEqual((({ content_id, removed }) => ({ content_id, removed }))(await r.json()), { content_id: B, removed: true });
   }));
 
-test("migration 0354 keeps the table private, forces RLS, pins search_path and revokes before granting", () => {
-  const sql = readFileSync(new URL("../packages/db/schema/supabase/0354_cinema_watch_progress.sql", import.meta.url), "utf8");
+test("migration 0355 keeps the table private, forces RLS, pins search_path and revokes before granting", () => {
+  const sql = readFileSync(new URL("../packages/db/schema/supabase/0355_cinema_watch_progress.sql", import.meta.url), "utf8");
   assert.match(sql, /ALTER TABLE public\.cinema_watch_resume FORCE ROW LEVEL SECURITY/);
   assert.match(sql, /REVOKE ALL ON public\.cinema_watch_resume FROM PUBLIC, anon, authenticated, service_role/);
-  assert.equal((sql.match(/SECURITY DEFINER SET search_path = ''/g) || []).length, 4);
+  assert.equal((sql.match(/SECURITY DEFINER SET search_path = ''/g) || []).length, 5);
   assert.match(sql, /GRANT EXECUTE ON FUNCTION public\.save_cinema_watch_resume\(TEXT, UUID, INTEGER\)/);
   assert.doesNotMatch(sql, /INSERT INTO public\.(ledger_entries|credit_balances)|UPDATE public\.credit_balances/);
   assert.match(sql, /AFTER UPDATE OF deleted_at ON public\.users/);
