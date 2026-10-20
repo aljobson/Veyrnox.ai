@@ -28,8 +28,8 @@ test('subscription launches have versioned consent, complete legal disclosures a
   const config = read('wrangler.jsonc');
   const subscriptions = read('lib/subscriptions/api.js');
   const passApi = read('lib/cinema/passApi.js');
-  const terms = read('app/legal/terms/page.js');
-  const refunds = read('app/legal/refund/page.js');
+  const terms = read('lib/i18n/messages/legal/en/terms.mjs');
+  const refunds = read('lib/i18n/messages/legal/en/refund.mjs');
 
   assert.match(subscriptions, /credit-subscription-2026-10-17/);
   assert.match(passApi, /cinema-pass-2026-10-16/);
