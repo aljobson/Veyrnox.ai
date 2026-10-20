@@ -1,11 +1,11 @@
 import { Stack } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, TextInput, View } from 'react-native';
 import { VEY_CLEARANCE } from '../../../components/VeyMascot';
 import { touchTarget } from '../../../lib/a11y';
 import { t } from '../../../lib/i18n';
 import { roleLabel } from '../../../lib/publishBrand';
-import { canManage, changeRole, fetchTeam, removeMember, revokeInvite, rolesFor, teamActionErrorKey, teamErrorKey, type ChangeableRole, type Member, type Team } from '../../../lib/publishTeam';
+import { canManage, changeRole, fetchTeam, inviteErrorKey, inviteMember, removeMember, revokeInvite, rolesFor, teamActionErrorKey, teamErrorKey, validEmail, type ChangeableRole, type Invitation_, type Member, type Team } from '../../../lib/publishTeam';
 import { usePublishApi } from '../../../lib/usePublishApi';
 import { colors } from '../../../theme';
 
@@ -18,6 +18,9 @@ export default function TeamScreen() {
     const [notice, setNotice] = useState<string | null>(null);
     const [open, setOpen] = useState<string | null>(null);
     const [busy, setBusy] = useState(false);
+    const [inviteEmail, setInviteEmail] = useState('');
+    const [inviteRole, setInviteRole] = useState<ChangeableRole>('editor');
+    const [invited, setInvited] = useState<Invitation_ | null>(null);
     const [refreshing, setRefreshing] = useState(false);
 
     const load = useCallback(async () => {
@@ -72,6 +75,44 @@ export default function TeamScreen() {
             { text: t('team.cancel'), style: 'cancel' },
             { text: t('team.revokeAction'), style: 'destructive', onPress: () => run(() => revokeInvite(api, team.brandId, id), t('team.revoked', { email })) },
         ]);
+    }
+
+    function invite() {
+        if (!team || busy) return;
+        const email = inviteEmail.trim().toLowerCase();
+        if (!validEmail(email)) {
+            setNotice(t('team.err.inviteEmail'));
+            return;
+        }
+        Alert.alert(t('team.inviteTitle', { email }), t('team.inviteBody', { role: roleLabel(inviteRole) }), [
+            { text: t('team.cancel'), style: 'cancel' },
+            {
+                text: t('team.inviteAction'),
+                onPress: () => {
+                    setBusy(true);
+                    setNotice(null);
+                    setInvited(null);
+                    inviteMember(api, team.brandId, email, inviteRole)
+                        .then((r) => {
+                            setInvited(r.invitation);
+                            setInviteEmail('');
+                            setNotice(t('team.invitedDone', { email }));
+                            void load();
+                        })
+                        .catch((err) => setNotice(t(inviteErrorKey(err))))
+                        .finally(() => setBusy(false));
+                },
+            },
+        ]);
+    }
+
+    // The link goes only to the share sheet, on a tap.
+    async function shareInvite(url: string) {
+        try {
+            await Share.share({ message: url });
+        } catch {
+            setNotice(t('team.err.share'));
+        }
     }
 
     const mayChange = team ? team.actorRole === 'owner' || team.actorRole === 'manager' : false;
@@ -132,7 +173,30 @@ export default function TeamScreen() {
                             ) : null}
                         </View>
                     ))}
-                    <Text style={styles.muted}>{t('team.manageNote')}</Text>
+                    {mayChange ? (
+                        <View style={styles.row}>
+                            <Text style={styles.heading} accessibilityRole="header">{t('team.inviteHeading')}</Text>
+                            <TextInput style={styles.input} value={inviteEmail} onChangeText={setInviteEmail} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" placeholder={t('team.inviteEmail')} accessibilityLabel={t('team.inviteEmail')} placeholderTextColor={colors.muted} />
+                            <View style={styles.chips}>
+                                {rolesFor(team.actorRole).map((r) => (
+                                    <Pressable key={r} accessibilityRole="button" accessibilityState={{ selected: r === inviteRole }} style={[styles.chip, touchTarget, r === inviteRole && styles.chipOn]} onPress={() => setInviteRole(r)}>
+                                        <Text style={[styles.chipText, r === inviteRole && styles.chipTextOn]}>{roleLabel(r)}</Text>
+                                    </Pressable>
+                                ))}
+                            </View>
+                            <Pressable disabled={busy} accessibilityRole="button" accessibilityState={{ disabled: busy }} style={[styles.send, touchTarget, busy && styles.off]} onPress={invite}>
+                                <Text style={styles.sendText}>{t('team.inviteAction')}</Text>
+                            </Pressable>
+                            {invited?.url ? (
+                                <View>
+                                    <Text style={styles.muted}>{t('team.inviteLinkNote', { email: invited.email })}</Text>
+                                    <Pressable accessibilityRole="button" accessibilityLabel={t('team.shareInviteFor', { email: invited.email })} style={[styles.link, touchTarget]} onPress={() => shareInvite(invited.url as string)}>
+                                        <Text style={styles.linkText}>{t('team.shareInvite')}</Text>
+                                    </Pressable>
+                                </View>
+                            ) : null}
+                        </View>
+                    ) : <Text style={styles.muted}>{t('team.manageNote')}</Text>}
                 </>
             )}
         </ScrollView>
@@ -156,5 +220,9 @@ const styles = StyleSheet.create({
     chipText: { color: colors.body },
     chipTextOn: { color: colors.accentInk, fontWeight: '600' },
     danger: { color: colors.danger, fontWeight: '600' },
+    input: { backgroundColor: colors.background, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 12, color: colors.text, fontSize: 16, minHeight: 48 },
+    send: { backgroundColor: colors.accent, borderRadius: 12, alignItems: 'center', justifyContent: 'center', paddingVertical: 12, marginTop: 6 },
+    sendText: { color: colors.accentInk, fontWeight: '700' },
+    off: { opacity: 0.4 },
     error: { color: colors.danger },
 });
