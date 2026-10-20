@@ -1287,6 +1287,9 @@ const en = {
     'chat.resume.unsaved': 'Your reply finished while the app was in the background. It was charged but could not be saved.',
     'chat.resume.nothing': 'The connection was lost and no reply was made. No credits were used.',
     'chat.resume.pending': 'We are still checking whether your reply finished. If it did, it is charged once and will appear in this chat.',
+    'explore.oddlings.title': 'Oddlings',
+    'explore.oddlings.body': 'Original characters you can browse, then make into a portrait or a short.',
+    'explore.oddlings.hint': 'Opens the Oddlings area.',
     // Film skill chats (ADR-0182)
     'chat.skills.group.Film': 'Film',
     'chat.skills.filmNote': 'Film Studio is on the web. These chats help you write what it needs; they never make, approve or lock anything.',
@@ -1568,6 +1571,26 @@ const en = {
     'chat.settings.save': 'Save',
     'chat.settings.failed': 'Could not save. Try again.',
     'chat.settings.close': 'Close',
+
+    // App-only: passkeys already on the account (parity P7 slice 7).
+    'pk.title': 'Passkeys',
+    'pk.help': 'Passkeys you added on the website or another device. You can remove one here if you lose that device.',
+    'pk.loading': 'Loading passkeys',
+    'pk.none': 'No passkeys on this account.',
+    'pk.unnamed': 'Passkey',
+    'pk.added': 'added {date}',
+    'pk.used': 'last used {date}',
+    'pk.remove': 'Remove',
+    'pk.removeNamed': 'Remove passkey {name}',
+    'pk.removeTitle': 'Remove {name}?',
+    'pk.removeBody': 'You will no longer be able to sign in with it. Your password and other sign-in methods still work.',
+    'pk.removed': '{name} was removed.',
+    'pk.addLater': 'Adding a passkey is not available in the app yet. Add one on the website.',
+    'pk.err.network': 'No connection. Nothing was changed.',
+    'pk.err.off': 'Passkeys are not available for this account.',
+    'pk.err.aal': 'Confirm with your authenticator code first, then try again.',
+    'pk.err.failed': 'That did not work. Try again.',
+
     // --- Cinema Pass, read-only, and paid locked state (ADR-0207, parity P6) ---
     'cinemaBrowse.lock.paid': 'This is a paid title. Paid titles are not available in the app yet.',
     'cinemaPass.title': 'Cinema Pass',
