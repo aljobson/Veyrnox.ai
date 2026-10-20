@@ -7,6 +7,7 @@ Phase-0 decision-support documents for the target architecture at `/Users/aljobs
 | ADR | Status | Summary | Blocks |
 |-----|--------|---------|--------|
 | [ADR-0186 — Mobile: Publish product catalogue, read-only (parity plan P5)](0186-mobile-publish-products-read-only.md) | **Proposed 2026-10-20** | Product list with prices, stock and sync status; editing and shop sync stay on the web |
+| [ADR-0177 — Mobile: Vey as the web's animated character](0177-mobile-vey-character.md) | **Proposed 2026-10-19** | The web artwork as seven layers; head nods, arms sway and wave, eyes blink, core pulses; Reduce Motion stills it; no new dependency |
 | [ADR-0172 — Mobile: prompt collage on Explore, slice 1](0172-mobile-prompt-collage.md) | **Proposed 2026-10-19** | Type filter (Images, Video, Audio), categories by type, search, two-column masonry, empty states; favourites, audio samples and content later |
 | [ADR-0207 — Mobile: Cinema Pass read-only and the paid locked state (parity P6)](0207-mobile-cinema-pass-readonly.md) | **Proposed 2026-10-20** | Pass status card when the account has one; no price or buy path; locked paid titles explained; continue watching and store price blocked on the server and the store |
 | [ADR-0184 — Mobile: chat settings, model and instructions (parity plan P3)](0184-mobile-chat-settings.md) | **Proposed 2026-10-19** | Settings in the chat toolbar: switch the model with its price, edit instructions; sends only what changed |
@@ -254,6 +255,7 @@ These existed without an index row. Status is as written in each file. Four numb
 | [ADR-0094 — Explicit Library source slots for editor generation](0094-explicit-generation-source-slots.md) | Implemented; hosted qualification separate | No catalog activation, price change or production SQL. | — |
 | [ADR-0095 — Bounded vocal/instrument separation](0095-editor-audio-stems.md) | Preparation; production flag disabled | `fal-ai/demucs` six stems behind `EDITOR_AUDIO_STEMS_ENABLED`; migration 0291. | Owner enablement |
 | [ADR-0160 — Read-only mode when Supabase is down](0160-supabase-outage-read-only-mode.md) | Proposed 2026-10-19 | Status endpoint, outage banner on web and mobile, saved price list served through an outage. | Production check with a real or simulated outage |
+| [ADR-0179 — Mobile first run](0179-mobile-first-run.md) | Proposed 2026-10-19 | Three skippable welcome cards shown once, Vey as the hero, the real free credits from the balance; one local flag |
 | [ADR-0192 — Mobile signed-out preview](0192-mobile-signed-out-preview.md) | Proposed 2026-10-20 | `/preview`: templates and the Cinema list from public data before an account; every action asks to sign in |
 | [ADR-0191 — Mobile empty states and low-balance prompt](0191-mobile-empty-states.md) | Proposed 2026-10-20 | `EmptyState` with one next action on Library and Posts; a Buy credits note on Explore when the balance cannot start anything |
 | [ADR-0210 — Mobile Film Studio, first slice](0210-mobile-film-studio-read-first.md) | Proposed 2026-10-20 | Open a studio exported from the web, read its stages, shots and asset locks, and send a current shot prompt to Create with the price shown first. | — |
