@@ -1,4 +1,5 @@
 "use client";
+import { watchAccountLanguage } from '../app/lib/accountLanguageClient.js';
 import LegalLink from './LegalLink';
 import { rich } from '../lib/i18n/rich';
 import { useI18n } from './I18nProvider.jsx';
@@ -70,6 +71,7 @@ function humanAuthError(err, t) {
 }
 
 export default function AuthGate() {
+    useEffect(() => watchAccountLanguage(), []);
   const { t, locale } = useI18n();
     const [open, setOpen] = useState(false);
     const [mode, setMode] = useState("sign_in");

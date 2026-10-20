@@ -8,12 +8,13 @@ import * as localeCookie from '../lib/i18n/localeCookie.mjs';
 import * as locales from '../lib/i18n/locales.mjs';
 
 const require = createRequire(import.meta.url);
-function control(name, pathname, enabled = true) {
+function control(name, pathname, enabled = true, saveAccountLanguage = () => {}) {
   const file = `app/veyrnox/_components/${name}.js`;
   const source = readFileSync(file, 'utf8');
   const code = ts.transpileModule(source, { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS } }).outputText;
   const module = { exports: {} };
   const dependencies = {
+    '../../lib/accountLanguageClient.js': { saveAccountLanguage },
     react: { useState: () => [true, () => {}], useRef: () => ({ current: null }), useEffect() {} },
     'next/navigation': { usePathname: () => pathname },
     '../../../components/I18nProvider': { useI18n: () => ({ locale: 'de', languagesEnabled: enabled, t: translator('de') }) },
@@ -93,4 +94,25 @@ test('modified and auxiliary app language clicks preserve the current cookie and
     globalThis.window = previousWindow;
     globalThis.document = previousDocument;
   }
+});
+
+
+test('both language controls sync only plain clicks, after the cookie is written', () => {
+  const previous = globalThis.document;
+  try {
+    globalThis.document = { cookie: '' };
+    for (const name of ['LanguageMenu', 'LanguageSwitcher']) {
+      const choices = [];
+      const tree = control(name, '/pricing', true, code => {
+        assert.match(document.cookie, new RegExp(`^veyrnox_locale=${code === 'en' ? '' : code};`));
+        choices.push(code);
+      });
+      const link = find(tree, 'de');
+      for (const event of [{ button: 1 }, { button: 0, metaKey: true }, { button: 0, ctrlKey: true }, { button: 0, shiftKey: true }, { button: 0, altKey: true }]) link.props.onClick(event);
+      assert.deepEqual(choices, []);
+      link.props.onClick({ button: 0 });
+      find(tree, 'en').props.onClick({ button: 0 });
+      assert.deepEqual(choices, ['de', 'en']);
+    }
+  } finally { if (previous === undefined) delete globalThis.document; else globalThis.document = previous; }
 });
