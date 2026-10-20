@@ -62,7 +62,7 @@ export function PaywallPrompt({ credits, createdAt }) {
   const { title, body } = COPY[reason];
   return (
     <Modal onCancel={() => setReason(null)} aria-labelledby="paywall-title" className="items-center justify-center p-4">
-      <div className="max-h-full w-full max-w-[640px] overflow-y-auto rounded-2xl border border-vx-border bg-vx-panel p-6">
+      <div className="max-h-full w-full max-w-[1040px] overflow-y-auto rounded-2xl border border-vx-border bg-vx-panel p-6 sm:p-8">
         <h2 id="paywall-title" className="vx-display text-[28px]">{title}</h2>
         <p className="mt-2 text-vx-fg-body">{body}</p>
         <TopUpPacks signedIn />
