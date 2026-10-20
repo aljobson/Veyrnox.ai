@@ -86,6 +86,11 @@ export default function SignIn() {
                     <Text style={styles.buttonText}>{t('signIn.email')}</Text>
                 </Pressable>
             </Link>
+            <Link href="/preview" asChild>
+                <Pressable accessibilityRole="button" accessibilityHint={t('preview.browseHint')} style={styles.button}>
+                    <Text style={styles.buttonText}>{t('preview.browse')}</Text>
+                </Pressable>
+            </Link>
             {DEV_MOCK ? (
                 <Pressable accessibilityRole="button" disabled={blocked} style={[styles.button, blocked && styles.off]} onPress={() => run(() => signInWithEmail('demo@veyrnox.ai', 'demo-password', 'mock'))}>
                     <Text style={styles.buttonText}>{t('signIn.demo')}</Text>
