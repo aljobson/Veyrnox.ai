@@ -40,6 +40,13 @@ describe('the signed-out preview', () => {
         expect(signIn).toContain("t('preview.browse')");
     });
 
+    test('has its own top bar inside the safe area, with a Back button, since the root has no header', () => {
+        expect(screen).toContain('useSafeAreaInsets()');
+        expect(screen).toContain('paddingTop: insets.top');
+        expect(screen).toContain("t('preview.back')");
+        expect(screen).not.toContain('Stack.Screen');
+    });
+
     test('tabs are labelled and the list headings announce themselves', () => {
         expect(screen).toContain("'preview.tab.templates'");
         expect(screen).toContain("'preview.tab.cinema'");

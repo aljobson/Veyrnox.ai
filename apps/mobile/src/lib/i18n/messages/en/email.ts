@@ -1,0 +1,20 @@
+// English strings for email. Add keys here; keep their original wording and placeholders.
+export default {
+    'email.err.invalid': 'Enter a valid email address.',
+    'email.err.shortPassword': 'Use at least {min} characters for the password.',
+    'email.err.noPassword': 'Enter your password.',
+    'email.err.invalid_credentials': 'That email and password do not match.',
+    'email.err.email_not_confirmed': 'Confirm your email first, then sign in.',
+    'email.err.user_already_exists': 'That email already has an account. Sign in instead.',
+    'email.err.weak_password': 'That password is too weak. Try a longer one.',
+    'email.err.captcha_failed': 'The security check failed. Try again.',
+    'email.err.rate': 'Too many attempts. Wait a moment.',
+    'email.err.network': 'No connection. Check your network and try again.',
+    'email.securityFirst': 'Finish the security check first.',
+    'email.checkInbox': 'Check your email and confirm your address, then sign in.',
+    'email.password': 'Password (8+ characters)',
+    'email.passwordLabel': 'Password, 8 or more characters',
+    'email.checking': 'Checking this device…',
+    'email.captchaFailed': 'The security check could not load. Check your connection and try again.',
+    'email.newHere': 'New here? Create an account',
+} as const;

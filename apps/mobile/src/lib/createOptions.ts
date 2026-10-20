@@ -57,6 +57,10 @@ export interface ModelOptions {
     readonly voice: boolean;
     // Audio length in seconds, for the models that let you choose one.
     readonly audioLength: { readonly min: number; readonly max: number; readonly def: number } | null;
+    // Output resolutions and audio on/off, for the models that declare them (Seedance 2.0 Fast). The catalog price
+    // is flat across every choice (ADR-0027, 2026-10-15), so these never change the credits.
+    readonly resolutions: readonly string[];
+    readonly audioChoice: boolean;
 }
 
 export function optionsFor(model: CatalogModel): ModelOptions {
@@ -69,7 +73,39 @@ export function optionsFor(model: CatalogModel): ModelOptions {
         aspects: Array.isArray(values) ? values.filter((v): v is string => typeof v === 'string') : [],
         voice: !!inputs.voice_description,
         audioLength: audioLengthOf(model),
+        resolutions: resolutionsOf(model),
+        audioChoice: audioChoiceOf(model),
     };
+}
+
+// Like the web (useCatalog.js): a choice is shown only when the model offers more than one.
+function resolutionsOf(model: CatalogModel): string[] {
+    const values = inputsOf(model).output_resolution?.values;
+    const list = Array.isArray(values) ? values.filter((v): v is string => typeof v === 'string') : [];
+    return list.length > 1 ? list : [];
+}
+
+function audioChoiceOf(model: CatalogModel): boolean {
+    const values = inputsOf(model).audio_enabled?.values;
+    return Array.isArray(values) && values.includes(true) && values.includes(false);
+}
+
+const presentationOf = (model: CatalogModel): { resolutionLabel?: unknown; audioIncluded?: unknown } =>
+    ((model.capabilities as { presentation?: object } | null)?.presentation ?? {}) as { resolutionLabel?: unknown; audioIncluded?: unknown };
+
+// The choice shown when none was made: the tier the catalog price buys, else the first offered (web: mediaOutputSettings).
+export function resolveResolution(model: CatalogModel, o: ModelOptions, wanted: string | null | undefined): string | null {
+    if (!o.resolutions.length) return null;
+    if (wanted && o.resolutions.includes(wanted)) return wanted;
+    const priced = presentationOf(model).resolutionLabel;
+    return typeof priced === 'string' && o.resolutions.includes(priced) ? priced : o.resolutions[0];
+}
+
+export function resolveAudio(model: CatalogModel, o: ModelOptions, wanted: boolean | null | undefined): boolean | null {
+    if (!o.audioChoice) return null;
+    if (typeof wanted === 'boolean') return wanted;
+    const priced = presentationOf(model).audioIncluded;
+    return typeof priced === 'boolean' ? priced : true;
 }
 
 export const VOICE_MAX = 500;
@@ -95,7 +131,8 @@ export function audioLengthInvalid(o: ModelOptions, value: string): boolean {
 }
 
 export const hasSettings = (o: ModelOptions): boolean => o.seed || o.negativeMax !== null;
-export const hasAnyOption = (o: ModelOptions): boolean => hasSettings(o) || o.aspects.length > 0 || o.voice || o.audioLength !== null;
+export const hasOutputChoice = (o: ModelOptions): boolean => o.resolutions.length > 0 || o.audioChoice;
+export const hasAnyOption = (o: ModelOptions): boolean => hasSettings(o) || o.aspects.length > 0 || o.voice || o.audioLength !== null || hasOutputChoice(o);
 
 // The count control is for image models only, never an Auto Short.
 export function takesImageCount(model: CatalogModel): boolean {
@@ -109,8 +146,13 @@ export function imageCount(model: CatalogModel, count: number): number {
 export const seedIsInvalid = (seed: string): boolean => seed !== '' && !(/^\d+$/.test(seed) && Number(seed) <= SEED_MAX);
 
 // What to send for the settings: only what the model takes and the person set. An invalid seed is dropped.
-export function settingsInputs(options: ModelOptions, s: { seed: string; negative: string; aspect: string | null; voice?: string; audioSeconds?: string }): Record<string, string | number> {
-    const out: Record<string, string | number> = {};
+export function settingsInputs(
+    options: ModelOptions,
+    s: { seed: string; negative: string; aspect: string | null; voice?: string; audioSeconds?: string; resolution?: string | null; audio?: boolean | null },
+): Record<string, string | number | boolean> {
+    const out: Record<string, string | number | boolean> = {};
+    if (options.resolutions.length && s.resolution && options.resolutions.includes(s.resolution)) out.output_resolution = s.resolution;
+    if (options.audioChoice && typeof s.audio === 'boolean') out.audio_enabled = s.audio;
     if (options.seed && /^\d+$/.test(s.seed) && Number(s.seed) <= SEED_MAX) out.seed = Number(s.seed);
     if (options.negativeMax !== null && s.negative.trim()) out.negative_prompt = s.negative.trim().slice(0, options.negativeMax);
     if (s.aspect && options.aspects.includes(s.aspect)) out.aspect_ratio = s.aspect;

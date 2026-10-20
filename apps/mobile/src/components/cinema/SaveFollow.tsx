@@ -1,42 +1,55 @@
 import * as Crypto from 'expo-crypto';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { MIN_TARGET } from '../../lib/a11y';
-import { fetchRetentionState, readOf, setRetention, socialErrorKey, type FollowKind, type RetentionState } from '../../lib/cinemaSocial';
+import { createRetentionLifecycle, observeRetentionState, retentionDisabled, setRetention, socialErrorKey, type FollowKind, type RetentionState } from '../../lib/cinemaSocial';
 import { t } from '../../lib/i18n';
 import { colors } from '../../theme';
 
-// Save this title, follow its creator, follow its series. Hidden while the retention switch is off (the Saved and
-// Following tabs already say so); a failed change puts the button back and says why.
+// Save this title, follow its creator, follow its series. A closed switch disables all retention controls until
+// the next app session; a transient write failure leaves the controls retryable.
 export function SaveFollow({ contentId }: { readonly contentId: string }) {
-    const { api } = useAuth();
+    const { api, status } = useAuth();
     const router = useRouter();
     const [state, setState] = useState<RetentionState | null>(null);
     const [note, setNote] = useState<string | null>(null);
     const [busy, setBusy] = useState<FollowKind | null>(null);
 
-    useEffect(() => {
-        let live = true;
-        readOf(() => fetchRetentionState(api, contentId)).then((r) => { if (live && r.kind === 'ok') setState(r.value); });
-        return () => { live = false; };
-    }, [api, contentId]);
+    const [closed, setClosed] = useState(false);
+    const lifecycle = useRef<ReturnType<typeof createRetentionLifecycle> | null>(null);
 
-    if (!state) return null;
+    useEffect(() => {
+        const scope = createRetentionLifecycle(api, status);
+        lifecycle.current = scope;
+        setState(null);
+        setNote(null);
+        setBusy(null);
+        setClosed(false);
+        const off = scope.start(() => observeRetentionState(api, contentId, (result) => {
+            if (result.kind === 'ok') { setState(result.value); setNote(null); }
+            else if (result.kind === 'closed') { setClosed(true); setNote(null); }
+            else setNote(t(result.key));
+        }));
+        return () => { scope.dispose(); off?.(); lifecycle.current = null; };
+    }, [api, contentId, status]);
+
+    // Retention was hidden on main until a title state loaded. Initial closure keeps that behaviour.
+    if (status !== 'signedIn' || !state) return null;
 
     async function toggle(kind: FollowKind, targetId: string | null, current: boolean) {
-        if (!targetId || busy) return;
-        setBusy(kind);
-        setNote(null);
-        try {
-            const active = await setRetention(api, kind, targetId, !current, Crypto.randomUUID());
-            setState((s) => (s ? { ...s, ...(kind === 'saved' ? { saved: active } : kind === 'creator' ? { followingCreator: active } : { followingSeries: active }) } : s));
-        } catch (err) {
-            setNote(t(socialErrorKey(err)));
-        } finally {
-            setBusy(null);
-        }
+        if (!targetId) return;
+        await lifecycle.current?.write(
+            () => setRetention(api, kind, targetId, !current, Crypto.randomUUID()),
+            {
+                busy: (active) => { setBusy(active ? kind : null); if (active) setNote(null); },
+                success: (active) => {
+                    if (!retentionDisabled(api)) setState((s) => (s ? { ...s, ...(kind === 'saved' ? { saved: active } : kind === 'creator' ? { followingCreator: active } : { followingSeries: active }) } : s));
+                },
+                error: (err) => { if (!retentionDisabled(api)) setNote(t(socialErrorKey(err))); },
+            },
+        );
     }
 
     const buttons: { kind: FollowKind; target: string | null; on: boolean; on_label: string; off_label: string }[] = [
@@ -51,8 +64,8 @@ export function SaveFollow({ contentId }: { readonly contentId: string }) {
                     <Pressable
                         key={b.kind}
                         accessibilityRole="button"
-                        accessibilityState={{ selected: b.on, busy: busy === b.kind, disabled: busy !== null }}
-                        disabled={busy !== null}
+                        accessibilityState={{ selected: b.on, busy: busy === b.kind, disabled: closed || busy !== null }}
+                        disabled={closed || busy !== null}
                         style={[styles.btn, b.on && styles.btnOn]}
                         onPress={() => toggle(b.kind, b.target, b.on)}
                     >
@@ -65,6 +78,7 @@ export function SaveFollow({ contentId }: { readonly contentId: string }) {
                     <Text style={styles.text}>{t('cinemaCreator.analytics.open')}</Text>
                 </Pressable>
             ) : null}
+            {closed ? <Text style={styles.muted}>{t('cinema.retention.unavailable')}</Text> : null}
             {note ? <Text style={styles.error} accessibilityRole="alert">{note}</Text> : null}
         </View>
     );
@@ -78,4 +92,5 @@ const styles = StyleSheet.create({
     text: { color: colors.text, fontWeight: '600' },
     textOn: { color: colors.accentInk },
     error: { color: colors.danger },
+    muted: { color: colors.muted },
 });

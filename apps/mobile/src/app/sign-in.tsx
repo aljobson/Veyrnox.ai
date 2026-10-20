@@ -65,6 +65,7 @@ export default function SignIn() {
                     )}
                 </Text>
             </Pressable>
+            {agreed ? null : <Text style={styles.hint}>{t('signIn.tickFirst')}</Text>}
             <Pressable
                 accessibilityRole="button"
                 disabled={blocked}
@@ -107,6 +108,7 @@ const styles = StyleSheet.create({
     screen: { flexGrow: 1, backgroundColor: colors.background, padding: 24, justifyContent: 'center', gap: 12 },
     title: { color: colors.text, fontSize: 32, fontWeight: '700' },
     subtitle: { color: colors.muted, fontSize: 16, marginBottom: 16 },
+    hint: { color: colors.muted, fontSize: 14, marginBottom: 12 },
     button: {
         backgroundColor: colors.surface,
         borderColor: colors.border,

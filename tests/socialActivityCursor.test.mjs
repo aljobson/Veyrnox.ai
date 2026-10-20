@@ -16,7 +16,7 @@ const { listSocialActivity } = await import('../app/lib/socialActivityClient.js'
 const adapter = readFileSync(new URL('../node_modules/@opennextjs/aws/dist/core/routing/util.js', import.meta.url), 'utf8');
 const definition = adapter.match(/export function convertToQueryString\(query\) \{[\s\S]*?\n\}/)?.[0];
 assert.ok(definition, 'the installed OpenNext query reconstruction function must be exercised');
-const convertToQueryString = runInNewContext(`(${definition.replace(/^export /, '')})`);
+const convertToQueryString = runInNewContext(`(${definition.replace(/^export /, '')})`, { URLSearchParams });
 const adapterRoundTrip = (path) => {
   const initial = new URL(path, 'https://veyrnox.test');
   return new URL(initial.pathname + convertToQueryString(Object.fromEntries(initial.searchParams)), initial.origin);
@@ -31,11 +31,12 @@ test('the Activity client cursor survives the actual OpenNext query reconstructi
   assert.deepEqual(decodeActivityCursor(reconstructed.searchParams.get('cursor')), cursor);
 });
 
-test('raw JSON positive offsets reproduce the deployed adapter failure and remain readable for legacy clients', () => {
+test('raw JSON positive offsets survive the adapter and legacy space-corrupted values remain readable', () => {
   const reconstructed = adapterRoundTrip(`/social/activity?cursor=${encodeURIComponent(JSON.stringify(cursor))}`);
   const raw = reconstructed.searchParams.get('cursor');
-  assert.equal(JSON.parse(raw).created_at, '2026-10-16T12:34:56.123456 00:00');
+  assert.equal(JSON.parse(raw).created_at, cursor.created_at);
   assert.deepEqual(decodeActivityCursor(raw), cursor);
+  assert.deepEqual(decodeActivityCursor(JSON.stringify({ ...cursor, created_at: '2026-10-16T12:34:56.123456 00:00' })), cursor);
   assert.deepEqual(decodeActivityCursor(JSON.stringify({ ...cursor, created_at: '2026-10-16T12:34:56.123456Z' })), { ...cursor, created_at: '2026-10-16T12:34:56.123456Z' });
 });
 

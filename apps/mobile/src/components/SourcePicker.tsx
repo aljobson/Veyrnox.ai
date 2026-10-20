@@ -20,6 +20,9 @@ interface SourcePickerProps {
     readonly onLibrary?: (jobId: string | undefined) => void;
     // True while a file is being sent, so the form does not run without a file still on its way.
     readonly onBusy: (busy: boolean) => void;
+    // A file the app already holds (the Oddlings "animate this portrait" start image). It goes through the same checks and
+    // upload as a picked file, once, as soon as it is given.
+    readonly initial?: PickedFile | null;
 }
 
 type Status = { readonly step: 'empty' } | { readonly step: 'uploading'; readonly fraction: number } | { readonly step: 'ready' };
@@ -43,7 +46,7 @@ async function choose(kind: Slot['kind']): Promise<PickedFile | null> {
     return { uri: a.uri, mimeType: a.mimeType, size: a.fileSize, durationSeconds: typeof a.duration === 'number' ? a.duration / 1000 : undefined };
 }
 
-export function SourcePicker({ slot, api, onChange, onLibrary, onBusy }: SourcePickerProps) {
+export function SourcePicker({ slot, api, onChange, onLibrary, onBusy, initial }: SourcePickerProps) {
     const [status, setStatus] = useState<Status>({ step: 'empty' });
     const [preview, setPreview] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -69,7 +72,11 @@ export function SourcePicker({ slot, api, onChange, onLibrary, onBusy }: SourceP
             setError('Could not open your files. Check the permission in Settings.');
             return;
         }
-        if (!file) return;
+        if (file) await accept(file);
+    }
+
+    async function accept(file: PickedFile) {
+        setError(null);
         const checked = checkPicked(slot.kind, file, slot.maxSeconds);
         if (!checked.ok) {
             setError(pickedProblem(checked.error, slot.kind));
@@ -98,6 +105,15 @@ export function SourcePicker({ slot, api, onChange, onLibrary, onBusy }: SourceP
             setError(uploadMessage(err));
         }
     }
+
+    // The given file is sent once; choosing or removing something afterwards is the person's own call.
+    const sentInitial = useRef<string | null>(null);
+    useEffect(() => {
+        if (!initial || sentInitial.current === initial.uri) return;
+        sentInitial.current = initial.uri;
+        void accept(initial);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- once per given file
+    }, [initial]);
 
     function chooseFromLibrary(choice: LibraryChoice) {
         controller.current?.abort();

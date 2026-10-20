@@ -128,7 +128,7 @@ export interface GenerationRequest {
     // Library creations used as files, by the slot the model declares for them (ADR-0190).
     readonly assets?: readonly { readonly assetId: string; readonly slot: string }[];
     // Options the model's catalog entry declares (aspect_ratio, seed, negative_prompt). The server validates each again.
-    readonly extraInputs?: Readonly<Record<string, string | number>>;
+    readonly extraInputs?: Readonly<Record<string, string | number | boolean>>;
 }
 
 export const mediaApi = (api: ApiClient) => ({

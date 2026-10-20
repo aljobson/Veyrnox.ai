@@ -1,5 +1,6 @@
 // The five-tab shell (ADR-0146). The (tabs) folder is a route group, so these checks keep every URL the same, every tab
 // named in the English catalog, and the sign-in redirects pointed at a route that exists.
+import en from '../src/lib/i18n/messages/en';
 declare const require: (id: string) => any;
 declare const __dirname: string;
 const fs = require('fs') as { existsSync: (p: string) => boolean; readFileSync: (p: string, e: 'utf8') => string };
@@ -28,9 +29,8 @@ describe('tab shell', () => {
         const layout = read(path.join(TABS, '_layout.tsx'));
         const named = [...layout.matchAll(/<Tabs\.Screen name="(\w+)"/g)].map((m) => m[1]);
         expect(named).toEqual(ORDER);
-        const en = read(path.join(__dirname, '..', 'src', 'lib', 'i18n', 'messages', 'en.ts'));
         for (const key of ['explore', 'create', 'cinema', 'library', 'publish', 'account']) {
-            expect(en).toContain(`'tabs.${key}':`);
+            expect((en as Record<string, string>)[`tabs.${key}`]).toEqual(expect.any(String));
         }
         // Every tab has its own spoken label and its label growth is capped like the header's.
         expect(layout.match(/tabBarAccessibilityLabel/g)?.length).toBe(ORDER.length);
