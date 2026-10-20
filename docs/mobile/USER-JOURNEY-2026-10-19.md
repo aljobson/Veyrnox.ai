@@ -126,7 +126,7 @@ Order: N1, N5, N4, N8, N3, N2, N6, N7. N1 comes first because every other slice 
 - Credits are bought only through the store (ADR-0108). No web link, no steering.
 - No wallet or crypto wording in any screen (hard wall).
 - Browse-before-sign-in shows only anonymous public data (`/api/cinema/*`, `/api/catalog`, `/api/presets`); nothing per-user.
-- New copy goes through the i18n keys list (`I18N-NEW-KEYS.md`); no machine translation of new strings.
+- New copy goes through the i18n keys list (`I18N-NEW-KEYS.md`, generated on demand with `cd apps/mobile && node scripts/sync-web-i18n.mjs` and never committed); no machine translation of new strings.
 - Accessibility: 44 pt targets, labels and roles on the tab bar (ADR-0133).
 
 ## 7. Owner decisions (2026-10-19) and what is still open

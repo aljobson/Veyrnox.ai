@@ -1,0 +1,21 @@
+// English strings for analytics. Add keys here; keep their original wording and placeholders.
+export default {
+    'analytics.title': 'Analytics',
+    'analytics.range': '{days} days',
+    'analytics.compare': 'Compare',
+    'analytics.connect': 'Connect an account to see analytics.',
+    'analytics.last': 'Last {days} days.',
+    'analytics.syncFailing': 'Syncing is failing, so the newest numbers may be missing.',
+    'analytics.updated': 'Updated {when}.',
+    'analytics.compareFailed': 'The period before could not be loaded, so there is nothing to compare.',
+    'analytics.followers': 'Followers',
+    'analytics.posts': 'Posts',
+    'analytics.interactions': 'Interactions',
+    'analytics.followersChange': 'Followers changed by {change} in this period.',
+    'analytics.followersChart': 'Followers, {from} to {to}',
+    'analytics.chartSummary': 'From {first} to {last}.',
+    'analytics.latestDay': 'Latest day, {date}',
+    'analytics.noNumbers': 'No numbers yet for this period.',
+    'analytics.post': 'Post',
+    'analytics.vsBefore': '{change} vs the period before',
+} as const;

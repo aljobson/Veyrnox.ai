@@ -4,6 +4,8 @@ Phase-0 decision-support documents for the target architecture at `/Users/aljobs
 
 ## Index
 
+The historical index below is frozen at the exact filenames in `index-baseline.txt`; create new ADR files without editing this README or baseline, and read the full index with `node scripts/adr-index.mjs` from the repository root.
+
 | ADR | Status | Summary | Blocks |
 |-----|--------|---------|--------|
 | [ADR-0186 — Mobile: Publish product catalogue, read-only (parity plan P5)](0186-mobile-publish-products-read-only.md) | **Proposed 2026-10-20** | Product list with prices, stock and sync status; editing and shop sync stay on the web |

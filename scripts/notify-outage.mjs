@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Tells the owner, on Slack and by email, that the database is down or back. Used by
-// .github/workflows/supabase-status-alert.yml: `node scripts/notify-outage.mjs outage|recovery`.
+// .github/workflows/supabase-status-alert.yml: `node scripts/notify-outage.mjs outage|recovery|test`.
 //   SLACK_WEBHOOK_URL   Slack incoming webhook (secret). Only https://hooks.slack.com/ is accepted.
 //   RESEND_API_KEY      Resend key (secret). ALERT_EMAIL_TO is the recipient; ALERT_EMAIL_FROM overrides the sender.
 // A channel that is not configured is skipped. Exit 0 when at least one channel delivered, 1 when none did,
@@ -12,6 +12,12 @@ const SLACK_URL_RE = /^https:\/\/hooks\.slack\.com\/(?:services|triggers)\/[A-Za
 const TIMEOUT_MS = 10_000;
 
 export function buildMessage(kind, { runUrl = '', baseUrl = 'https://veyrnox.ai' } = {}) {
+    if (kind === 'test') {
+        return {
+            subject: 'Veyrnox.ai: test alert',
+            text: 'This is a test of the Supabase outage alert. Nothing is wrong; both channels are wired up.\n' + (runUrl ? `\nRun: ${runUrl}\n` : ''),
+        };
+    }
     if (kind !== 'outage' && kind !== 'recovery') throw new Error(`unknown alert kind: ${kind}`);
     const outage = kind === 'outage';
     const subject = outage ? 'Veyrnox.ai: Supabase is down' : 'Veyrnox.ai: Supabase is back';
