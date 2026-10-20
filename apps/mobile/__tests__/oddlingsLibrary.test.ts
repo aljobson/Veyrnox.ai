@@ -58,3 +58,13 @@ describe('saved passports', () => {
         expect(doc.items).toHaveLength(1);
     });
 });
+
+describe('opening move in a passport', () => {
+    test('is saved and read back, and an unknown move is dropped', async () => {
+        const store = memory();
+        await savePassport(store, { oddling_name: 'A' }, 1, null, 'micro-dance');
+        expect((await loadDoc(store)).items[0].motionId).toBe('micro-dance');
+        await savePassport(store, { oddling_name: 'B' }, 2, null, 'not-a-move');
+        expect((await loadDoc(store)).items[0].motionId).toBe('');
+    });
+});

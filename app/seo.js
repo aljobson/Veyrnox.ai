@@ -11,7 +11,7 @@ export const OG_IMAGE = {
   url: '/og.png',
   width: 1200,
   height: 630,
-  alt: 'Veyrnox.ai — credit-metered AI video, image and audio generation, priced on the button.',
+  alt: 'Veyrnox.ai — credit-metered AI video, image and audio generation, price on the receipt.',
 };
 
 // Next merges nested metadata objects shallowly. Every route that supplies an
