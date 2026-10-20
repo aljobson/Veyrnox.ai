@@ -12,6 +12,9 @@ export interface OptionValues {
     readonly negative: string;
     readonly voice: string;
     readonly audioSeconds: string;
+    // Unset means the model's priced default (resolveResolution / resolveAudio).
+    readonly resolution?: string | null;
+    readonly audio?: boolean | null;
 }
 
 interface Props {
@@ -19,12 +22,16 @@ interface Props {
     readonly values: OptionValues;
     // True for image models: they can make one to four images in one go.
     readonly showCount: boolean;
+    // The resolution and audio choices shown now, already resolved to defaults, and the price line that goes with them.
+    readonly resolution?: string | null;
+    readonly audio?: boolean | null;
+    readonly outputPrice?: string;
     readonly onChange: (next: OptionValues) => void;
 }
 
 // The web Create page's shape, image count and Settings (seed, leave out), for the options a model's catalog entry
 // declares (ADR-0153). The server checks every value again, so a control that does not apply is simply not shown.
-export function CreateOptions({ options, values, showCount, onChange }: Props) {
+export function CreateOptions({ options, values, showCount, resolution, audio, outputPrice, onChange }: Props) {
     const [open, setOpen] = useState(values.seed !== '' || values.negative !== '');
     const bad = seedIsInvalid(values.seed);
     const settings = options.seed || options.negativeMax !== null;
@@ -38,6 +45,22 @@ export function CreateOptions({ options, values, showCount, onChange }: Props) {
                         <Chip key={a} label={a} on={values.aspect === a} onPress={() => set({ aspect: a })} />
                     ))}
                 </Group>
+            ) : null}
+            {options.resolutions.length > 0 ? (
+                <Group label={t('opt.resolution')}>
+                    {options.resolutions.map((r) => (
+                        <Chip key={r} label={r} on={resolution === r} onPress={() => set({ resolution: r })} />
+                    ))}
+                </Group>
+            ) : null}
+            {options.audioChoice ? (
+                <Group label={t('opt.audio')}>
+                    <Chip label={t('opt.audioOn')} on={audio === true} onPress={() => set({ audio: true })} />
+                    <Chip label={t('opt.audioOff')} on={audio === false} onPress={() => set({ audio: false })} />
+                </Group>
+            ) : null}
+            {outputPrice && (options.resolutions.length > 0 || options.audioChoice) ? (
+                <Text style={styles.help} accessibilityLiveRegion="polite">{outputPrice}</Text>
             ) : null}
             {options.voice ? (
                 <View style={styles.field}>

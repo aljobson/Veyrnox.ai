@@ -1,9 +1,9 @@
-import { audioLengthInvalid, voiceIsMissing, SAVED_DRAFT_VERSION, batchCost, draftIsEmpty, filterByTier, freeLeftFor, imageCount, inputsForIndex, modelsForGoal, optionsFor, parseDraft, seedIsInvalid, settingsInputs, takesImageCount, tierById } from '../src/lib/createOptions';
+import { hasAnyOption, resolveAudio, resolveResolution, audioLengthInvalid, voiceIsMissing, SAVED_DRAFT_VERSION, batchCost, draftIsEmpty, filterByTier, freeLeftFor, imageCount, inputsForIndex, modelsForGoal, optionsFor, parseDraft, seedIsInvalid, settingsInputs, takesImageCount, tierById } from '../src/lib/createOptions';
 import { DEFAULT_CINEMA } from '../src/lib/cinemaCamera';
 import { loadDraft, saveDraft, clearDraft } from '../src/lib/createDraftStore';
 import { createCache, createMemoryStorage } from '../src/lib/cache';
 import { freeLines } from '../src/lib/freeAllowance';
-import { mediaApi, type CatalogModel } from '../src/lib/media';
+import { estimateCredits, mediaApi, type CatalogModel } from '../src/lib/media';
 import type { ApiClient } from '../src/lib/api';
 
 jest.mock('../src/lib/aiConsentStore', () => ({ aiConsent: { ensure: async () => undefined, hasAgreed: async () => true } }));
@@ -36,8 +36,8 @@ describe('goals and tiers', () => {
 
 describe('model options from the catalog', () => {
     test('reads seed, negative prompt limit and aspect ratios', () => {
-        expect(optionsFor(rich)).toEqual({ seed: true, negativeMax: 500, aspects: ['16:9', '1:1'], voice: false, audioLength: null });
-        expect(optionsFor(model())).toEqual({ seed: false, negativeMax: null, aspects: [], voice: false, audioLength: null });
+        expect(optionsFor(rich)).toEqual({ seed: true, negativeMax: 500, aspects: ['16:9', '1:1'], voice: false, audioLength: null, resolutions: [], audioChoice: false });
+        expect(optionsFor(model())).toEqual({ seed: false, negativeMax: null, aspects: [], voice: false, audioLength: null, resolutions: [], audioChoice: false });
     });
     test('negative prompt defaults to the 2000 character limit', () => {
         expect(optionsFor(model({ capabilities: { inputs: { negative_prompt: {} }, media: {} } })).negativeMax).toBe(2000);
@@ -177,5 +177,38 @@ describe('voice and audio length', () => {
         expect(settingsInputs(o, { seed: '', negative: '', aspect: null, voice: 'v', audioSeconds: '45' }).duration).toBe(45);
         expect(settingsInputs(o, { seed: '', negative: '', aspect: null, voice: 'v' }).duration).toBe(30);
         expect(settingsInputs(o, { seed: '', negative: '', aspect: null, voice: 'v', audioSeconds: '4' }).duration).toBeUndefined();
+    });
+});
+
+describe('output resolution and audio (flat catalog price)', () => {
+    const seedance = model({
+        modality: 'text-to-video', credits: 12, durations: [5, 10],
+        capabilities: {
+            inputs: { prompt: {}, output_resolution: { type: 'enum', values: ['480p', '720p'] }, audio_enabled: { type: 'enum', values: [true, false] } },
+            media: {}, presentation: { resolutionLabel: '720p', audioIncluded: true },
+        } as CatalogModel['capabilities'],
+    });
+    test('offered only when the model declares more than one choice', () => {
+        const o = optionsFor(seedance);
+        expect(o.resolutions).toEqual(['480p', '720p']);
+        expect(o.audioChoice).toBe(true);
+        expect(hasAnyOption(o)).toBe(true);
+        const plain = optionsFor(rich);
+        expect(plain.resolutions).toEqual([]);
+        expect(plain.audioChoice).toBe(false);
+        expect(settingsInputs(plain, { seed: '', negative: '', aspect: null, resolution: '480p', audio: false })).toEqual({});
+    });
+    test('defaults to the priced tier and sends what was chosen', () => {
+        const o = optionsFor(seedance);
+        expect(resolveResolution(seedance, o, null)).toBe('720p');
+        expect(resolveResolution(seedance, o, '1080p')).toBe('720p');
+        expect(resolveAudio(seedance, o, undefined)).toBe(true);
+        expect(resolveAudio(seedance, o, false)).toBe(false);
+        expect(settingsInputs(o, { seed: '', negative: '', aspect: null, resolution: '480p', audio: false })).toEqual({ output_resolution: '480p', audio_enabled: false });
+        expect(settingsInputs(o, { seed: '', negative: '', aspect: null, resolution: '4k', audio: null })).toEqual({});
+    });
+    test('the price does not depend on the choice', () => {
+        expect(estimateCredits(seedance, 5)).toBe(12);
+        expect(estimateCredits(seedance, 10)).toBe(24);
     });
 });
