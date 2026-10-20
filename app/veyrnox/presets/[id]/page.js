@@ -81,7 +81,7 @@ export default async function TemplatePage({ params }) {
             ) : template.original ? (
               <div className="relative min-h-[280px] overflow-hidden rounded-2xl lg:min-h-[480px]" style={{ background: template.bg }}>
                 <div className="absolute inset-0 flex flex-col justify-between p-7 text-white sm:p-10">
-                  <span className="font-vx-mono text-[11px] font-bold tracking-[0.16em] text-white/75">VEYRNOX ORIGINAL</span>
+                  <span className="font-vx-mono text-[11px] font-bold tracking-[0.16em] text-white/75">{t('presets.original')}</span>
                   <span className="max-w-[12ch] text-[40px] font-extrabold leading-[0.92] tracking-tight sm:text-[52px]">{presetTitle(template.name)}</span>
                 </div>
               </div>
