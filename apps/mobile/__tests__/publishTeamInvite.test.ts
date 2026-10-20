@@ -1,4 +1,4 @@
-import { ApiError, type ApiClient } from '../src/lib/api';
+import { API_BASE, ApiError, type ApiClient } from '../src/lib/api';
 import { inviteErrorKey, inviteMember, isInviteLink, parseInvited, validEmail } from '../src/lib/publishTeam';
 
 describe('team invite', () => {
@@ -8,16 +8,27 @@ describe('team invite', () => {
         expect(validEmail('a b@x.test')).toBe(false);
         expect(validEmail(`${'a'.repeat(250)}@x.test`)).toBe(false);
     });
-    test('only an https invitation link is kept', () => {
-        expect(isInviteLink('https://h.test/social/team/invite/tok')).toBe(true);
-        expect(isInviteLink('http://h.test/social/team/invite/tok')).toBe(false);
-        expect(isInviteLink('https://h.test/social/review/tok')).toBe(false);
-        expect(isInviteLink('javascript:alert(1)')).toBe(false);
-        expect(isInviteLink(5)).toBe(false);
+    test('only an https invitation link on the API origin is kept', () => {
+        const base = 'https://app.example.test';
+        expect(isInviteLink('https://app.example.test/social/team/invite/tok', base)).toBe(true);
+        expect(isInviteLink('http://app.example.test/social/team/invite/tok', base)).toBe(false);
+        expect(isInviteLink('https://app.example.test/social/review/tok', base)).toBe(false);
+        expect(isInviteLink('javascript:alert(1)', base)).toBe(false);
+        expect(isInviteLink(5, base)).toBe(false);
+    });
+    test('a link on another host or a lookalike is dropped', () => {
+        const base = 'https://app.example.test';
+        expect(isInviteLink('https://evil.test/social/team/invite/tok', base)).toBe(false);
+        expect(isInviteLink('https://app.example.test.evil.test/social/team/invite/tok', base)).toBe(false);
+        expect(isInviteLink('https://app.example.test@evil.test/social/team/invite/tok', base)).toBe(false);
+        expect(isInviteLink('https://evil.test@app.example.test/social/team/invite/tok', base)).toBe(false);
+        expect(isInviteLink('https://user:pw@app.example.test/social/team/invite/tok', base)).toBe(false);
+        expect(isInviteLink('https://app.example.test:8443/social/team/invite/tok', base)).toBe(false);
     });
     test('parses the answer and drops a bad link', () => {
-        const ok = parseInvited({ invitation: { id: 'i1', email: 'a@x.test', role: 'editor', expires_at: '2026-11-01T00:00:00Z', url: 'https://h.test/social/team/invite/t' }, idempotent: true });
-        expect(ok.invitation).toEqual({ id: 'i1', email: 'a@x.test', role: 'editor', expiresAt: '2026-11-01T00:00:00Z', url: 'https://h.test/social/team/invite/t' });
+        const mine = `${API_BASE}/social/team/invite/t`;
+        const ok = parseInvited({ invitation: { id: 'i1', email: 'a@x.test', role: 'editor', expires_at: '2026-11-01T00:00:00Z', url: mine }, idempotent: true });
+        expect(ok.invitation).toEqual({ id: 'i1', email: 'a@x.test', role: 'editor', expiresAt: '2026-11-01T00:00:00Z', url: mine });
         expect(ok.idempotent).toBe(true);
         expect(parseInvited({ invitation: { id: 'i1', email: 'a@x.test', url: 'https://evil.test/x' } }).invitation?.url).toBeNull();
         expect(parseInvited(null).invitation).toBeNull();

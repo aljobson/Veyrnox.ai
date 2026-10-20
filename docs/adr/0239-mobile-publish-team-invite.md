@@ -10,3 +10,5 @@ With the owner's "buildit" on sharing bearer links (ADR-0238), the Team screen g
 **Not built:** accepting an invitation inside the app. The link opens on the web; opening it in the app needs an app-link path for `/social/team/invite/...` in the app's link config (not in this slice's files). Until then accepting happens in the browser.
 
 No server change, no dependency, no flag. Unit tests only; the screen was not run on a device.
+
+The link's host is pinned: it is kept only when its origin equals the app's own API origin (the one every request uses), with no userinfo, so a link on another host or a lookalike is dropped, not shared.

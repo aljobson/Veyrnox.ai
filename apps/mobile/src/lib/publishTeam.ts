@@ -1,4 +1,5 @@
 import { ApiError, type ApiClient } from './api';
+import { isLinkOnOrigin } from './bearerLink';
 import { brandStore } from './publishBrand';
 
 // ADR-0163: team members and the activity log, read-only. Both routes answer 404 `teams_not_open` while the server flag
@@ -168,15 +169,9 @@ export interface Invitation_ {
     readonly url: string | null;
 }
 
-// Only an https link whose path is /social/team/invite/... is kept.
-export function isInviteLink(url: unknown): url is string {
-    if (typeof url !== 'string' || url.length > 2000) return false;
-    try {
-        const u = new URL(url);
-        return u.protocol === 'https:' && u.pathname.startsWith('/social/team/invite/');
-    } catch {
-        return false;
-    }
+// Only a link on the app's own API origin, https, with path /social/team/invite/..., is kept (see bearerLink.ts).
+export function isInviteLink(url: unknown, base?: string): url is string {
+    return isLinkOnOrigin(url, '/social/team/invite/', base);
 }
 
 export function parseInvited(body: unknown): { invitation: Invitation_ | null; idempotent: boolean } {
