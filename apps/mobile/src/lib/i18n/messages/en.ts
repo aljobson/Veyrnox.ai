@@ -1440,6 +1440,17 @@ const en = {
     'chat.make.err.rate': 'Too many requests. Wait a moment and try again.',
     'chat.make.err.network': 'No connection. Nothing was started and you were not charged.',
     'chat.make.err.later': 'That could not be started. You were not charged. Try again.',
+    'preview.title': 'Preview',
+    'preview.browse': 'Browse first',
+    'preview.browseHint': 'Opens a preview of templates and Cinema. No account needed.',
+    'preview.tab.templates': 'Templates',
+    'preview.tab.cinema': 'Cinema',
+    'preview.templates.heading': 'Templates you can make',
+    'preview.cinema.heading': 'Now in Cinema',
+    'preview.signInHint': 'Asks you to sign in first.',
+    'preview.footer': 'Playing, creating and buying need an account.',
+    'preview.signIn': 'Sign in',
+    'preview.error': 'The preview could not load. Check your connection and try again.',
 
     // App-only: team invitation and post review links (parity P7 slice 6).
     'share.loading': 'Loading',
