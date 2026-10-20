@@ -1,15 +1,8 @@
-# ADR draft: Mobile Cinema retention recovery and shared closure
+# ADR-0224: Mobile Cinema Saved and Following, recovery and shared closure
 
-**Status:** Proposed 2026-10-20; numbering blocked pending the open-PR inventory.
+**Status:** Proposed 2026-10-20
 
-The frozen work order requires the highest ADR number on main and open PRs plus two.
-The local origin/main has ADR-0203; GitHub access failed, so this draft deliberately
-claims no number. Assign and index it after independently checking main and open PRs.
-This document is the conditional ADR addition allowed by acceptance criterion 8;
-it and the generated localization inventory are exceptions to the work order's otherwise
-source/tests/strings-only diff. The existing i18nWiring test requires every new
-English key to appear in docs/mobile/I18N-NEW-KEYS.md. Round 2 explicitly requires
-regeneration with the repository script, including its existing missing entries.
+Highest ADR on main was 0221 when this was written; 0224 leaves room for open PRs. Rename the file if another PR took the number before this merges. This change hardens the existing Saved titles and Following screens (ADR-0178); it adds no new screen or client.
 
 ## Decision
 
