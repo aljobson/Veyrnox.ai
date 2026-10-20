@@ -27,6 +27,7 @@ import { apiEdgeRateLimit } from './lib/apiEdgeRateLimit.js';
 import { turnstileReportRateLimit } from './lib/turnstileFailureReport.js';
 import { refuseNextData } from './lib/nextDataGuard.js';
 import { refuseCdnCgi } from './lib/cdnCgiGuard.js';
+import { withOutageShape } from './lib/outageScope.js';
 import { dropInternalHeaders } from './lib/internalRequestHeaders.js';
 import { runScheduledBackfill } from './lib/scheduledBackfill.js';
 import { runPushSweep } from './lib/pushNotifications.js';
@@ -66,7 +67,9 @@ export default {
             || await apiEdgeRateLimit(request, env);
         if (limited) return limited;
         const bounded = await limitRequestBody(request);
-        const response = bounded.response || await handler.fetch(dropInternalHeaders(bounded.request), env, ctx);
+        const response = bounded.response || await withOutageShape(
+            bounded.request, (req) => handler.fetch(dropInternalHeaders(req), env, ctx),
+        );
         return stripTechnologyHeaders(response);
     },
 

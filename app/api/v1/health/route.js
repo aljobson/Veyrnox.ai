@@ -13,6 +13,7 @@
 
 import { NextResponse } from 'next/server';
 import { select, envConfig, SupabaseError } from '../../../../packages/db/supabase-client.js';
+import { isOutageStatus, serviceUnavailable } from '../../../../lib/outageScope.js';
 
 export async function GET(req) {
     const cfg = envConfig();
@@ -29,6 +30,7 @@ export async function GET(req) {
     } catch (err) {
         const status = err instanceof SupabaseError ? err.status : 0;
         console.error('[api/v1/health] supabase unreachable:', status, err && err.body);
+        if (isOutageStatus(status)) return serviceUnavailable(req);
         return NextResponse.json(
             { ok: false, error: 'supabase_unreachable' },
             { status: 502 }
