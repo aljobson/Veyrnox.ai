@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { SOURCE_TEMPLATES } from '../app/veyrnox/_lib/sourceTemplates.js';
+import { VEYRNOX_ORIGINALS } from '../app/veyrnox/_lib/originalTemplates.js';
 import { ALL_TEMPLATES, LEGACY_PRESETS, PRESETS, WALL_PRESETS, templateById } from '../app/veyrnox/_lib/templates.js';
 import { MODELS, modelIdForName, presetCredits, presetHref } from '../app/veyrnox/_lib/tokens.js';
 import { SHOWCASE_CLIPS } from '../app/veyrnox/_lib/showcase.js';
@@ -30,15 +31,37 @@ test('every imported clip has its own matching recipe and a supported video mode
   }
 });
 
-test('gallery and homepage templates describe separate footage, with reachable recipe URLs', () => {
-  assert.equal(PRESETS.length, 110);
+test('gallery and homepage templates have reachable recipe URLs', () => {
+  assert.equal(PRESETS.length, 142);
   assert.equal(WALL_PRESETS.length, 24);
   const visible = [...PRESETS, ...WALL_PRESETS];
-  assert.equal(new Set(visible.map((p) => p.clipKey)).size, 134);
+  assert.equal(new Set(visible.map((p) => p.clipKey).filter(Boolean)).size, 134);
   for (const preset of visible) {
     assert.equal(templateById(preset.id), preset);
     assert.equal(isUnknownStaticPage(`/presets/${preset.id}`), false);
     assert.equal(templateStartId(preset.id, modelIdForName(preset.model)), preset.id);
+  }
+});
+
+test('Veyrnox originals are complete, supported and free of imported attribution', () => {
+  assert.equal(VEYRNOX_ORIGINALS.length, 32);
+  assert.equal(new Set(VEYRNOX_ORIGINALS.map((preset) => preset.id)).size, 32);
+  for (const preset of VEYRNOX_ORIGINALS) {
+    assert.equal(preset.original, true, preset.id);
+    assert.equal(preset.promptOrigin, 'veyrnox-original', preset.id);
+    assert.equal(preset.clipKey, undefined, preset.id);
+    assert.equal(preset.inspired, undefined, preset.id);
+    assert.ok(!Object.hasOwn(preset, 'source'), preset.id);
+    assert.ok(!Object.hasOwn(preset, 'sourceUrl'), preset.id);
+    assert.ok(!Object.hasOwn(preset, 'promptSource'), preset.id);
+    assert.ok(!Object.hasOwn(preset, 'promptSourceUrl'), preset.id);
+    assert.ok(preset.prompt.length > 100 && preset.prompt.length <= 2000, preset.id);
+    const model = MODELS.find((candidate) => candidate.id === modelIdForName(preset.model));
+    assert.ok(model, `${preset.id} names an unsupported model`);
+    assert.equal(preset.credits, model.credits, preset.id);
+    if (preset.aspect && model.aspects) assert.ok(model.aspects.includes(preset.aspect), `${preset.id} uses unsupported ${preset.aspect}`);
+    if (preset.durationSeconds) assert.ok(model.durations?.includes(preset.durationSeconds), `${preset.id} uses unsupported duration`);
+    assert.equal(templateById(preset.id), preset);
   }
 });
 
@@ -58,7 +81,7 @@ test('public template data and media paths are source-platform neutral', () => {
     assert.equal(preset.inspired, true, preset.id);
     assert.ok(!Object.hasOwn(preset, 'sourceRecipe'), preset.id);
   }
-  const publicData = JSON.stringify({ SOURCE_TEMPLATES, SHOWCASE_CLIPS });
+  const publicData = JSON.stringify({ SOURCE_TEMPLATES, VEYRNOX_ORIGINALS, SHOWCASE_CLIPS });
   assert.doesNotMatch(publicData, /higgsfield|capcut|syntx/i);
   for (const clip of Object.values(SHOWCASE_CLIPS)) {
     assert.doesNotMatch(clip.video, /higgsfield|capcut|syntx/i);

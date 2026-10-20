@@ -19,7 +19,7 @@ const LANDING_KEYS = [
     ...WALL_PRESETS.map((p) => WALL_SHOWCASE_KEYS[p.id]),
     ...Object.values(MODEL_SHOWCASE_KEYS),
 ];
-const PUBLIC_KEYS = [...LANDING_KEYS, ...PRESETS.map((p) => p.clipKey)];
+const PUBLIC_KEYS = [...LANDING_KEYS, ...PRESETS.map((p) => p.clipKey).filter(Boolean)];
 const TILE_KEYS = new Set(PUBLIC_KEYS);
 const PATH_RE = {
     video: /^\/showcase\/[a-z0-9-]+\.(mp4|webm)$/,
@@ -140,6 +140,11 @@ test('previews keep their titles without exposing source-platform metadata', () 
 test('the full preset gallery has a distinct preview and poster for every filter result', () => {
     const videos = new Set();
     for (const preset of PRESETS) {
+        if (!preset.clipKey) {
+            assert.equal(preset.original, true, `${preset.id} has neither a preview nor original art direction`);
+            assert.ok(preset.bg, `${preset.id} has no original art direction`);
+            continue;
+        }
         const clip = SHOWCASE_CLIPS[preset.clipKey];
         assert.ok(clip?.video, `${preset.id} has no gallery preview`);
         assert.ok(clip.poster, `${preset.id} has no gallery poster`);

@@ -22,7 +22,7 @@ export function PresetCard({ preset, size = 'md', onClick, catalog }) {
   // The template's own page shows its prompt and inputs before anyone is
   // sent to the studio with them.
   const href = templateHref(preset);
-  const clip = SHOWCASE_CLIPS[preset.clipKey];
+  const clip = preset.clipKey ? SHOWCASE_CLIPS[preset.clipKey] : null;
   return (
     <MediaTile
       href={href}
@@ -31,7 +31,7 @@ export function PresetCard({ preset, size = 'md', onClick, catalog }) {
       ariaLabel={t('mobile.templateOpen', { name: presetTitle(preset.name) })}
       className="block text-start w-full"
       mediaClassName="rounded-2xl"
-      mediaStyle={{ background: preset.bg, aspectRatio: clip?.aspectRatio || '4 / 5' }}
+      mediaStyle={{ background: preset.bg, aspectRatio: clip?.aspectRatio || preset.previewAspect || '4 / 5' }}
       footer={
         <div className="pt-3 flex items-baseline gap-2">
           <div className="min-w-0">
@@ -44,6 +44,12 @@ export function PresetCard({ preset, size = 'md', onClick, catalog }) {
         </div>
       }
     >
+      {preset.original && !clip && (
+        <div className="absolute inset-0 flex flex-col justify-between p-5 text-white">
+          <span className="font-vx-mono text-[10px] font-bold tracking-[0.14em] text-white/75">VEYRNOX ORIGINAL</span>
+          <span className="max-w-[12ch] text-[24px] font-extrabold leading-[0.95] tracking-tight sm:text-[28px]">{presetTitle(preset.name)}</span>
+        </div>
+      )}
       {preset.isNew && <span className="absolute end-3 top-3 rounded-full bg-vx-base/80 px-2 py-0.5 font-vx-mono text-[10px] font-bold tracking-[0.12em]">{t('mobile.new')}</span>}
     </MediaTile>
   );
