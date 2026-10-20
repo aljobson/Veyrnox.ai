@@ -1,4 +1,5 @@
 'use client';
+import LegalLink from '../../../../components/LegalLink';
 import { useI18n } from '../../../../components/I18nProvider';
 
 import { pluralKey, tOr } from '../../../../lib/i18n/translate.mjs';
@@ -195,7 +196,7 @@ export function EditorCreditsDialog({ open, onClose }) {
           )}
 
           <p className="mt-6 text-xs leading-5 text-vx-fg-muted">{t("app.editor.credits.policy")}{' '}
-            <Link className="underline" href="/legal/refund">{t("app.credits.packs.refund")}</Link>
+            <LegalLink element="Link" className="underline" href="/legal/refund">{t("app.credits.packs.refund")}</LegalLink>
             .
           </p>
         </div>
