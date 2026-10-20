@@ -1,0 +1,344 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Veyrnox.ai phone system architecture",
+    "locale": "en",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/aljobson/Veyrnox.ai",
+      "revision": "b5bdc1081bbc5876f0852dd7be9628d4ba5da154",
+      "link_mode": "local-only"
+    },
+    "viewBox": [
+      1380,
+      720
+    ]
+  },
+  "components": [
+    {
+      "id": "phone",
+      "type": "frontend",
+      "label": "Phone app",
+      "sublabel": "Expo \u00b7 iOS / Android",
+      "pos": [
+        380.0,
+        330
+      ],
+      "size": [
+        200,
+        68
+      ],
+      "sources": [
+        {
+          "path": "apps/mobile/src/app/_layout.tsx"
+        }
+      ]
+    },
+    {
+      "id": "gateway",
+      "type": "security",
+      "label": "Cloudflare Worker",
+      "sublabel": "/api/v1 \u00b7 Bearer ES256",
+      "pos": [
+        760.0,
+        330
+      ],
+      "size": [
+        200,
+        68
+      ],
+      "sources": [
+        {
+          "path": "middleware.js"
+        }
+      ]
+    },
+    {
+      "id": "postgres",
+      "type": "database",
+      "label": "Supabase Postgres",
+      "sublabel": "RPCs \u00b7 ledger \u00b7 RLS",
+      "pos": [
+        1140.0,
+        330
+      ],
+      "size": [
+        200,
+        68
+      ],
+      "sources": [
+        {
+          "path": "packages/db/supabase-client.js"
+        }
+      ]
+    },
+    {
+      "id": "auth",
+      "type": "security",
+      "label": "Supabase Auth",
+      "sublabel": "PKCE \u00b7 tokens \u00b7 MFA",
+      "pos": [
+        380.0,
+        90
+      ],
+      "size": [
+        200,
+        68
+      ],
+      "sources": [
+        {
+          "path": "apps/mobile/src/lib/auth/supabaseAuth.ts"
+        }
+      ]
+    },
+    {
+      "id": "handback",
+      "type": "backend",
+      "label": "OAuth hand-back",
+      "sublabel": "Site routes \u2192 app scheme",
+      "pos": [
+        38.0,
+        90
+      ],
+      "size": [
+        200,
+        68
+      ],
+      "sources": [
+        {
+          "path": "app/auth/mobile/route.js"
+        }
+      ]
+    },
+    {
+      "id": "sentry",
+      "type": "external",
+      "label": "Sentry",
+      "sublabel": "Scrubbed crash reports",
+      "pos": [
+        38.0,
+        330
+      ],
+      "size": [
+        200,
+        68
+      ],
+      "sources": [
+        {
+          "path": "apps/mobile/src/lib/crash.ts"
+        }
+      ]
+    },
+    {
+      "id": "stream",
+      "type": "cloud",
+      "label": "Cloudflare Stream",
+      "sublabel": "Signed HLS playback",
+      "pos": [
+        380.0,
+        570
+      ],
+      "size": [
+        200,
+        68
+      ],
+      "sources": [
+        {
+          "path": "apps/mobile/src/lib/cinemaPlayback.ts"
+        }
+      ]
+    },
+    {
+      "id": "r2",
+      "type": "cloud",
+      "label": "R2 media",
+      "sublabel": "Signed object access",
+      "pos": [
+        1140.0,
+        570
+      ],
+      "size": [
+        200,
+        68
+      ],
+      "sources": [
+        {
+          "path": "packages/adapters/r2.js"
+        }
+      ]
+    },
+    {
+      "id": "push",
+      "type": "messagebus",
+      "label": "Expo push",
+      "sublabel": "Job notifications",
+      "pos": [
+        760.0,
+        570
+      ],
+      "size": [
+        200,
+        68
+      ],
+      "sources": [
+        {
+          "path": "lib/pushNotifications.js"
+        }
+      ]
+    },
+    {
+      "id": "billing",
+      "type": "external",
+      "label": "RevenueCat + stores",
+      "sublabel": "App Store \u00b7 Google Play",
+      "pos": [
+        760.0,
+        90
+      ],
+      "size": [
+        200,
+        68
+      ],
+      "sources": [
+        {
+          "path": "apps/mobile/src/billing/BillingProvider.tsx"
+        }
+      ]
+    },
+    {
+      "id": "providers",
+      "type": "external",
+      "label": "Provider webhooks",
+      "sublabel": "Verified job callbacks",
+      "pos": [
+        1140.0,
+        90
+      ],
+      "size": [
+        200,
+        68
+      ],
+      "sources": [
+        {
+          "path": "app/api/webhook/fal/route.js"
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "from": "phone",
+      "to": "gateway",
+      "label": "HTTPS API",
+      "labelAt": [
+        712.5,
+        384
+      ]
+    },
+    {
+      "from": "gateway",
+      "to": "postgres",
+      "label": "RPC / RLS",
+      "labelAt": [
+        1092.5,
+        385
+      ]
+    },
+    {
+      "from": "phone",
+      "to": "auth",
+      "label": "Sign in / refresh"
+    },
+    {
+      "from": "auth",
+      "to": "handback",
+      "label": "Browser return"
+    },
+    {
+      "from": "handback",
+      "to": "phone",
+      "label": "Deep link"
+    },
+    {
+      "from": "phone",
+      "to": "sentry",
+      "label": "Crashes",
+      "labelAt": [
+        280,
+        385
+      ]
+    },
+    {
+      "from": "phone",
+      "to": "stream",
+      "label": "Signed HLS",
+      "labelAt": [
+        475.0,
+        490
+      ]
+    },
+    {
+      "from": "gateway",
+      "to": "r2",
+      "label": "Sign media URLs"
+    },
+    {
+      "from": "gateway",
+      "to": "push",
+      "label": "Send jobs",
+      "labelAt": [
+        855.0,
+        490
+      ]
+    },
+    {
+      "from": "phone",
+      "to": "billing",
+      "label": "Store SDK"
+    },
+    {
+      "from": "billing",
+      "to": "gateway",
+      "label": "Billing webhook",
+      "labelAt": [
+        855.0,
+        245
+      ]
+    },
+    {
+      "from": "providers",
+      "to": "gateway",
+      "label": "Job webhook"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Identity returns through the site",
+      "items": [
+        "/auth/mobile \u2192 ai.veyrnox.app://auth/callback",
+        "/social/connect/mobile/:network \u2192 ai.veyrnox.app://social/callback",
+        "Supabase Auth is called directly; app data uses /api/v1."
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Server owns paid state",
+      "items": [
+        "Webhooks use /api/webhook/* with provider verification, outside the Bearer gate.",
+        "RevenueCat credits and refunds use server RPCs.",
+        "Worker mints Stream tokens and signs R2 URLs; the phone fetches media directly."
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Source snapshot \u00b7 2026-10-20",
+      "items": [
+        "Local origin/main b5bdc108; live deployment not verified.",
+        "Expo push returns job notices to the phone; Sentry requires a release DSN.",
+        "Store billing and push remain off in production configuration."
+      ]
+    }
+  ]
+}

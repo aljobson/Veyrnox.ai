@@ -1,12 +1,16 @@
 # PRD: Veyrnox.ai mobile app
 
-**Status:** Proposed 2026-10-19, written against `main` at `4768d535`. Feature states come from merged PRs, ADR status lines and the code; nothing was run on a device.
+**Status:** Source refresh 2026-10-20 against local `origin/main` at `b5bdc1081bbc5876f0852dd7be9628d4ba5da154`; live deployment and device behaviour not verified.
+
+**Evidence boundary:** Source and local merge history were read at that pinned revision. `gh pr list --state merged --limit 200` and the open-PR query could not connect to GitHub; remote freshness and what is currently in review are **not verified**. Paths beginning `src/` are relative to `apps/mobile/`; other repository paths are relative to the checkout. Configuration states are source values, not a live environment inspection; see [TRD section 3](TRD.md#3-configuration-and-flags).
 **Owner:** product owner (Al Jobson). The "Veyrnox.ai mobile app" session builds; the planning session writes specs.
 **Predecessors:** [ADR-0106](../../adr/0106-mobile-app.md) (the app), [ADR-0108](../../adr/0108-mobile-store-billing.md) (store billing), [ADR-0109](../../adr/0109-mobile-publish-plan-and-store-catalog.md) (Publish Plan in stores), [ADR-0110](../../adr/0110-mobile-account-and-safety.md) (account and safety), [ADR-0135](../../adr/0135-cinema-block-users.md) (blocking).
 **Language:** terms are those of [CONTEXT.md](../../../CONTEXT.md). This document adds none.
-**Set:** [README.md](README.md) lists the other five documents.
+**Set:** [README.md](README.md) lists all seven files in this set.
 
 **Scope update 2026-10-19:** the owner decided that every web feature must exist in the phone app, and that the first public store release is full parity (not a phased subset), including creator tools. The rows below that said "deliberately not built" now say "required". The full web-to-phone map, with sizes and spikes, is [../PARITY-2026-10-19.md](../PARITY-2026-10-19.md). A first release may still be a subset; parity is the destination, not the first build.
+
+**Current scope clarification (2026-10-20):** The dated scope update above is retained as history. Its last sentence conflicts with the recorded owner decision: the first **public store release requires full parity**; intermediate TestFlight/Play internal builds may be subsets (PARITY section 9).
 
 ## 1. Overview
 
@@ -31,7 +35,7 @@ The reference points the owner named are Higgsfield (AI video and audio), CapCut
 
 ## 4. Features and state
 
-Key: **Shipped** (merged, flag state noted), **In flight**, **Decided, not built**, **Deliberately not built**.
+Key: **Built** or **Shipped** means source merged at the pinned revision, not device or production acceptance. **Partial** names the implemented slice and its remaining work. Current in-review work is **not verified** because GitHub was unreachable. Evidence: `src/app/**`, the corresponding `src/lib/*.ts`, `docs/adr/` and local merge history; the dated PARITY list supplies scope, not current completion or flags.
 
 ### 4.1 Account and trust
 
@@ -39,10 +43,11 @@ Key: **Shipped** (merged, flag state noted), **In flight**, **Decided, not built
 |---------|-------|
 | Sign in with Apple, Google, email (hidden bot check), 18+ tick | Shipped (ADR-0106, 0110) |
 | Account: sign out, restore purchases, report, appeals, help, referrals, credit history, legal links | Shipped |
-| Delete account in the app | Shipped, off until `EXPO_PUBLIC_ACCOUNT_DELETION_ENABLED` and the server flag are on (ADR-0111) |
+| Delete account in the app | Built; both app default and server source gates are off (`apps/mobile/eas.json`, `src/lib/accountDeletion.ts`, `wrangler.jsonc`; TRD section 3). External EAS/deployed values **not verified** (ADR-0111) |
 | Consent before content goes to an AI provider | Shipped (ADR-0128) |
-| Block a Cinema member, Blocked list, report on comments | Shipped; server migration 0353 applied 2026-10-18 (ADR-0135, 0141, 0142) |
-| Push notification when a creation finishes | Shipped, off behind `EXPO_PUBLIC_PUSH_ENABLED`; server `PUSH_NOTIFICATIONS_ENABLED` on staging only (ADR-0113) |
+| Account security | Password by emailed code, revoke other/all sessions, connected-assistant grants, TOTP enrol/verify/remove and passkeys list/remove built (`src/app/(app)/security.tsx`, `src/lib/auth/accountCalls.ts`, `src/lib/passkeys.ts`). Native passkey enrolment/sign-in blocked on S2 |
+| Block a Cinema member, Blocked list, report on comments | Built (ADR-0135, 0141, 0142). Historical migration application report: 2026-10-18; current applied state **not verified** |
+| Push notification when a creation finishes | Built; app flag defaults off, EAS remote value **not verified**. Server source: staging on, production absent/off (`wrangler.jsonc`; TRD section 3) |
 
 ### 4.2 Create
 
@@ -51,19 +56,20 @@ Key: **Shipped** (merged, flag state noted), **In flight**, **Decided, not built
 | Create with a prompt: image, video, audio models from the catalog, price shown first, idempotent submit | Shipped |
 | Create from your own photo, video or audio (upload, save, share) | Shipped (ADR-0114) |
 | Templates from `GET /api/presets` | Shipped (ADR-0120) |
+| Create options | Aspect, seed, negative prompt, 1–4 images, goals/tiers, saved draft, Library input, Character/camera prompt controls, resolution/audio selectors when declared by the model built (`src/lib/createOptions.ts`, `src/app/(app)/create/[modelId].tsx`). Draw-on-image still needs a dependency decision |
 | Auto Short and the video agent | Shipped (ADR-0117, 0118) |
 | Free allowance card | Shipped (ADR-0124) |
 | Quick edit: trim, join, captions, render on the server | Shipped (ADR-0134) |
-| Film Studio (seven planning stages, 16:9 master) | Required, not built (owner, 2026-10-19) |
-| Full editor: multi-track timeline, effects, colour, masks, audio, captions, transcript, export | Required, not built; approach decided after a spike (see PARITY) |
+| Film Studio (seven planning stages, 16:9 master) | Partial: `/film` imports a web JSON export, reads stages/shots and hands an eligible prompt to Create (ADR-0210). No cross-device project discovery: web state is account-scoped browser-local (`docs/product/film-studio.md`). Server persistence is required for listing/opening web projects; editing and master preparation remain separate work |
+| Full editor: multi-track timeline, effects, colour, masks, audio, captions, transcript, export | Required, not built; owner-selected native shell/WebView approach is conditional on real-device S1 (see PARITY) |
 | Enhance (on-device face smoothing) | Required, not built; the web version is not live, so it waits on that decision |
-| Oddlings studio, Face Filters | Required, not built |
+| Oddlings studio, Face Filters | Oddlings gallery, sheets, builder, saved characters, moving previews and portrait-to-Create animation handoff built (`src/app/(app)/oddlings/`, ADR-0158/0230). Face Filters are staged inactive on main (#1437); `src/lib/toolDirectory.ts` lists the tools but catalog activation and real use are **not verified** |
 
 ### 4.3 Library and projects
 
 | Feature | State |
 |---------|-------|
-| Library of creations with cache and offline view; Save to Photos, Share, Delete | Shipped (ADR-0119, M8) |
+| Library of creations with cache and offline view; Save to Photos, Share, Delete | Built; filters, favourites, grid/list, expiry/refunded states, provenance and Schedule this are also built (`src/lib/libraryView.ts`, ADR-0156) |
 | Library video files (film masters, editor renders), read-only | Shipped (ADR-0130) |
 | Workspaces and projects, read-only | Shipped (ADR-0131) |
 
@@ -71,7 +77,7 @@ Key: **Shipped** (merged, flag state noted), **In flight**, **Decided, not built
 
 | Feature | State |
 |---------|-------|
-| Chat with Vey: threads, personas, folders | Shipped (ADR-0125, 0126). Becomes the mascot sheet (slice N8) |
+| Chat with Vey: threads, personas, folders | Built; Thinking/Web options, attachments, Stop/ask again, rename/pin, search/delete, model/instructions, Studio/Film skills, media handoff and suspended-reply recovery (`src/lib/chat*.ts`, `src/app/(app)/chat/`). Vey opens a sheet on supported tabs; real-device recovery **not verified** |
 
 ### 4.5 Publish
 
@@ -79,9 +85,9 @@ Key: **Shipped** (merged, flag state noted), **In flight**, **Decided, not built
 |---------|-------|
 | Publish Plan paywall through the store | Shipped (ADR-0109) |
 | Accounts, posts, analytics, brand switcher, approvals, calendar and best time (read) | Shipped (ADR-0121, 0137, 0138) |
-| Compose, schedule, cancel, restore | Shipped (ADR-0122) |
+| Compose, schedule, cancel, restore | Built; per-network text, YouTube visibility, queue slot, account disconnect, draft approve/discard, month calendar and analytics range/compare. Main defaults compose to Schedule (#1438); this older checkout still defaults to now and is not changed by this docs refresh |
 | Connect a social account from the phone | Shipped (ADR-0136, 0140); cannot work against a provider until the owner registers redirect addresses |
-| Queues, autolists, inbox, workflows, contacts, SmartLinks, ads, commerce, reports, team, activity, developer keys | Required, not built (owner, 2026-10-19) |
+| Queues, autolists, inbox, workflows, contacts, SmartLinks, ads, commerce, reports, team, activity, developer keys | Queues/autolists, contacts editing, SmartLink editor, report download/share, team management, activity and developer keys/webhooks/logs built. Inbox is read-only; replies and workflow editing remain. Ad draft create/edit/delete and product create/edit/archive built (#1428/#1430); no ad-spend launch. See `src/app/(app)/publish/` |
 
 ### 4.6 Cinema
 
@@ -89,26 +95,27 @@ Key: **Shipped** (merged, flag state noted), **In flight**, **Decided, not built
 |---------|-------|
 | Free viewing feed, one active player, signed playback | Shipped (PR #1251, spike note `CINEMA-PLAYBACK-SPIKE-2026-10-18.md`), not proved on a device |
 | Comments with report and block | Shipped |
-| Pass, pay-per-title unlocks, credit subscriptions in the app | Decided, not built; needs its own decision record and in-app purchase plan (server S5) |
-| Creator profile, apply, content, upload, analytics; voting, polls, saved and follows, winners | Required, not built; most are off in production on the web today |
+| Pass, pay-per-title unlocks, credit subscriptions in the app | Partial: entitlement/locked states and read-only existing Pass card built (`src/lib/cinemaPass.ts`, ADR-0207). Store Pass purchase, unlock purchase and credit subscriptions remain blocked on billing decisions/products (ADR-0143); no phone purchase link |
+| Creator profile, apply, content, upload, analytics; voting, polls, saved and follows, winners | Browse/discovery, voting/polls, Saved/Following, rankings, sharing, profile/application and analytics source built (`src/lib/cinemaBrowse.ts`, `cinemaSocial.ts`, `cinemaCreator.ts`). Creator upload is only Continue on web (ADR-0208); native drafts/upload/submit remain. Social features are staging-only in configuration; see TRD section 3 |
+| Continue watching | Server `/api/v1/cinema/progress` merged (#1434, ADR-0232); phone integration absent. Migration 0355 activation pending/unapplied per work order, live state **not verified**; `watchProgress` absent/off in both source environments |
 
 ### 4.7 Money
 
 | Feature | State |
 |---------|-------|
-| Credit packs through the store only (RevenueCat) | Shipped, sandbox buy proved on the Test Store; refund and a real sandbox purchase not proved |
+| Credit packs through the store only (RevenueCat) | Shipped, historical Test Store claim **not verified** in this refresh; real sandbox purchase, restore and refund still need device evidence |
 | Web link-out to buy credits | Deliberately not built (roadmap decision 4) |
 
 ### 4.8 Navigation and first run
 
 | Feature | State |
 |---------|-------|
-| Five-tab shell, balance chip, avatar to Account | Decided, not built (N1) |
-| First-run intro and credits explanation with the real free amount | Decided, not built (N3) |
-| Signed-out preview of Explore and the Cinema list | Decided, not built (N2) |
-| Vey mascot as the chat entry on every screen | Decided, not built (N8) |
-| Result screen next steps: Edit, Publish, Make another | Decided, not built (N5) |
-| Explore as the home screen | Decided, not built (N4) |
+| Five-tab shell, balance chip, avatar to Account | Built: Explore, Create, Cinema, Library, Publish (`src/app/(app)/(tabs)/_layout.tsx`) |
+| First-run intro and credits explanation with the real free amount | Built after sign-in at `/welcome`; `GET /api/v1/balance` (`free_credits`), versioned local seen flag (`src/lib/firstRun.ts`) |
+| Signed-out preview of Explore and the Cinema list | Built at `/preview`, entered from sign-in; templates/Cinema list only. Selecting content asks to sign in; automatic return to the selected item is not implemented there |
+| Vey mascot as the chat entry on every screen | Partial: animated sheet entry on Explore/Create/Library/Publish tabs; excluded from Cinema and stack screens by the tab layout |
+| Result screen next steps: Edit, Publish, Make another | Built (`src/lib/nextSteps.ts`, ADR-0147), availability depends on output |
+| Explore as the home screen | Built: prompt collage, type/category/search, presets, recents, Oddlings banner; empty states and low-balance prompt also built |
 
 ## 5. Out of scope
 
@@ -129,12 +136,12 @@ Proposed; the owner has not set numbers.
 
 ## 7. Launch blockers
 
-Owner steps (accounts, keys, agreements) and flag flips are in [PLAN-2026-10-18.md](../PLAN-2026-10-18.md) section 2A and the M7 checklist. The three that stop a first TestFlight build: the App Store Connect API key and in-app purchase products, the RevenueCat iOS key, and a review account on production.
+Owner steps (accounts, keys, agreements) and flag flips are in [PLAN-2026-10-18.md](../PLAN-2026-10-18.md) section 2A and the M7 checklist. Completion of these external prerequisites is **not verified**. The historically listed three that stop a first TestFlight build: the App Store Connect API key and in-app purchase products, the RevenueCat iOS key, and a review account on production.
 
 ## 8. Open questions
 
 1. Targets for success criterion 5.
-2. Whether Oddlings gets a phone screen or stays a web link.
+2. Resolved in source: Oddlings has native routes; remaining parity and device acceptance are still open.
 3. Whether the app needs a light theme (it is dark only today).
 4. ~~Whether paid Cinema ships in the first store release or later.~~ Decided 2026-10-19: the first public release is full parity, including paid Cinema and creator tools.
 5. Where Vey sits by default on a phone and when it hides.

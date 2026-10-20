@@ -1,9 +1,11 @@
 # Schema: data and identity for the mobile app
 
-**Status:** Proposed 2026-10-19. Table and migration names come from `packages/db/schema/supabase/` file and `CREATE TABLE` names on `main` at `4768d535`; the SQL bodies were not re-read, so column lists are not repeated here. ADRs 0108, 0111, 0113, 0116 and 0135 are the authority.
+**Status:** Source refresh 2026-10-20 against local `origin/main` at `b5bdc1081bbc5876f0852dd7be9628d4ba5da154`; live deployment and device behaviour not verified.
+
+**Evidence boundary:** Source and local merge history were read at that pinned revision. `gh pr list --state merged --limit 200` and the open-PR query could not connect to GitHub; remote freshness and what is currently in review are **not verified**. Paths beginning `src/` are relative to `apps/mobile/`; other repository paths are relative to the checkout. Configuration states are source values, not a live environment inspection; see [TRD section 3](TRD.md#3-configuration-and-flags).
 **Reads with:** [TRD.md](TRD.md), [APP-FLOW.md](APP-FLOW.md), [../../../CLAUDE.md](../../../CLAUDE.md) "Database".
 
-The mobile app has **no database of its own and writes no table directly.** Everything it changes goes through `/api/v1` and the RPCs behind it. This document lists what the app stores on the phone, what server tables its features touch, and who may write them.
+The mobile app has **no database of its own and writes no table directly.** Application data changes go through `/api/v1` and its server handlers/RPCs. Identity and security operations call Supabase Auth `/auth/v1` directly (`src/lib/auth/accountCalls.ts`, `src/lib/passkeys.ts`); public preview/review-link calls and signed-media transfers are other explicit exceptions to gateway routing. This document lists what the app stores on the phone, what server tables its features touch, and who may write them.
 
 ## 1. Identity and sign-in flow
 
@@ -12,7 +14,8 @@ The mobile app has **no database of its own and writes no table directly.** Ever
 3. Google, and Apple on Android: system browser, PKCE (`/auth/v1/authorize`, then `grant_type=pkce`), returning through `<apiBase>/auth/mobile` to `ai.veyrnox.app://auth/callback`.
 4. Email: password grant with the hidden bot check (ADR-0026).
 5. The access token lives in memory. The refresh token lives in Keychain or Keystore. A 401 triggers one single-flight refresh and one retry.
-6. The `auth.users` to `public.users` and `credit_balances` triggers (0010, 0071) are the only path that provisions a user. The signup grant follows email confirmation. The app creates no user rows.
+6. Account security now includes password reauthentication, logout scope, OAuth grants, TOTP factors and existing passkeys. These use the user token directly against Supabase Auth; no service role key is shipped. Passkey enrolment/sign-in remains blocked on S2.
+7. The `auth.users` to `public.users` and `credit_balances` triggers (0010, 0071) are the only path that provisions a user. The signup grant follows email confirmation. The app creates no user rows.
 
 ## 2. On the phone
 
@@ -20,13 +23,16 @@ The mobile app has **no database of its own and writes no table directly.** Ever
 |-------|-------|-------|
 | `expo-secure-store` | Refresh token | Keychain `AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY` |
 | Memory | Access token, in-flight request state | Never persisted |
-| App cache (`appCache`) | Balance, Library list, model list, saved per user id | Stale-while-revalidate; cleared on sign-out and account deletion |
+| App cache (`appCache`) | Per-account balance/Library, favourites, Create draft and imported Film Studio; public model catalogue | Stale-while-revalidate; cleared on sign-out and account deletion |
 | Consent store (`aiConsentStore`) | That the AI processing agreement was accepted, with its wording version | Per install and account |
 | Push token | Registered with the server on sign-in, removed before sign-out | Server copy is authoritative |
-| First-run flag *(new, N3)* | That the intro was shown | Local only; resettable from Account |
-| Draft key (`draftKey`) | An unsent composer or prompt draft | Local only |
+| First-run flag (built, N3) | `veyrnox.welcome.seen.v1`, version and seen boolean | SecureStore, install-local; Account reset control not implemented; not a server preference |
+| Draft key (`src/lib/draftKey.ts`) | Publish submission signature and idempotency key | Persisted before submission, per account; does not itself store the composer form |
+| Create draft (`src/lib/createDraftStore.ts`) | Unsent Create form text/options | Per-account cache, seven days; no media bytes |
+| Film Studio (`src/lib/filmStudioStore.ts`) | Validated imported web JSON, read-only | Per-account cache, 90 days; reparsed on read, removed on sign-out/account change/deletion; not cloud sync |
+| Library favourites (`src/lib/libraryView.ts`) | Starred job IDs | Per-account cache, 365 days; local only |
 
-Nothing the app caches may contain a signed asset URL beyond its 15-minute life, and no cache outlives sign-out.
+Cache retention above is read from `src/lib/cache.ts`; account cache clearing is in `src/lib/appCache.ts`. Signed-media lifetime must be enforced independently of cache retention. A complete cache payload/URL audit is **not verified**; the install-local welcome flag is not account data and may outlive sign-out.
 
 ## 3. Server tables the mobile features touch
 
@@ -41,17 +47,20 @@ Nothing the app caches may contain a signed asset URL beyond its 15-minute life,
 | `push_tokens`, `push_outbox`, `push_token_writes` | 0348 | `register_push_token`, `remove_push_token`, `push_*` RPCs | Push for finished creations (ADR-0113) |
 | `user_blocks` and `block_cinema_user`, `unblock_cinema_user`, `list_blocked_cinema_users` | 0353 | Those functions only | Block a Cinema member (ADR-0135) |
 | `read_cinema_comments` | changed in 0353 | Read function | Comments hide blocked authors |
-| `social_*` tables | 0229 to 0352 | `/api/v1/social/*` | Publish: accounts, posts, calendar, approvals |
+| `social_*` tables | See existing social migrations; complete range **not verified** | `/api/v1/social/*` | Publish including queues/autolists, contacts, SmartLink, ad drafts/products, reports, team and developer surfaces |
+| `cinema_watch_resume`; `save_cinema_watch_resume`, `list_cinema_watch_resume`, `remove_cinema_watch_resume` | 0355, ADR-0232 | Service-only RPCs behind `/api/v1/cinema/progress`; owner is middleware identity | Continue watching server route merged; phone integration absent; activation pending |
 | Workspace, project, document, asset tables | tenant projects | The user's own JWT through RLS (ADR-0051) | Projects, read-only on the phone |
 
-Applied state: migrations through 0353 are applied on production as of 2026-10-18 for 0353 (workflow run approved by the owner); the earlier mobile migrations were applied before. Production was not read for this document.
+Applied state is **not verified** from a database. The earlier spec reported 0353 applied on 2026-10-18; that is historical evidence only. The frozen work order says 0355 is unapplied and ADR-0232 says activation pending. Both source environments omit `watchProgress` and `CINEMA_WATCH_PROGRESS_ENABLED` (`wrangler.jsonc`, interpreted by `lib/cinema/features.js`), so the route fails closed before database access. No migration was applied for this refresh.
+
+Film Studio web drafts live in account-scoped browser storage, not tenant Projects (`docs/product/film-studio.md`). The phone has a read-only imported copy. Cross-device discovery/list/open requires new server persistence; the existing Projects tables cannot be described as a Film Studio backend.
 
 ## 4. Who may write what
 
-- The app writes nothing directly. It calls routes; routes call RPCs.
+- The app writes no application tables directly. It calls application routes and Supabase Auth endpoints; server handlers/RPCs own database changes.
 - The ledger is append-only. A refund or clawback is a compensating row through its RPC; the app never sees a ledger write.
 - Store purchases enter only through the RevenueCat webhook, verified by signature, deduplicated in `webhook_events(source, external_id)`.
-- Every state-changing call carries an idempotency key; replay is a no-op.
+- Paid submission retries use idempotency keys. Do not generalise this to every mutation: Continue watching uses absolute upserts without an idempotency key (ADR-0232); Auth endpoints follow Supabase contracts.
 - A table that holds a person's data and references `users` is erased with the account (trigger on `users.deleted_at`) and classified in `scripts/test-account-deletion.mjs`. `user_blocks` and the push tables are.
 - Deleting a creation removes the file and the prompt and keeps the job row and every ledger entry. A reader of jobs must filter `deleted_at IS NULL`.
 
@@ -61,4 +70,4 @@ Service-role keys, provider keys, refresh tokens in logs or crash reports, anoth
 
 ## 6. New data for the navigation work
 
-N1 to N8 add no table. N3 stores one local flag. N3 also needs the free-credit amount from an existing read: `GET /api/v1/free-allowance` and `GET /api/v1/balance` already return `free_credits`; confirm which one carries the signup amount before building (open question).
+N1 to N8 add no application table. The built N3 welcome stores the install-local seen flag and reads current `free_credits` from `GET /api/v1/balance` (`src/lib/firstRun.ts`, `src/app/(app)/welcome.tsx`). This is the available balance, not a hard-coded signup grant. Create drafts, favourites and Film Studio imports add per-account cache policies only; Continue watching is separate server work in migration 0355 and still needs phone integration.

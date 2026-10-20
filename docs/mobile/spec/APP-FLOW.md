@@ -1,63 +1,80 @@
 # App flow: Veyrnox.ai mobile app
 
-**Status:** Proposed 2026-10-19; routes read from `apps/mobile/src/app/` on `main` at `4768d535`. Target navigation is from [../USER-JOURNEY-2026-10-19.md](../USER-JOURNEY-2026-10-19.md) and the owner's answers of 2026-10-19. The diagrammed version is the journey artifact.
+**Status:** Source refresh 2026-10-20 against local `origin/main` at `b5bdc1081bbc5876f0852dd7be9628d4ba5da154`; live deployment and device behaviour not verified.
+
+**Evidence boundary:** Source and local merge history were read at that pinned revision. `gh pr list --state merged --limit 200` and the open-PR query could not connect to GitHub; remote freshness and what is currently in review are **not verified**. Paths beginning `src/` are relative to `apps/mobile/`; other repository paths are relative to the checkout. Configuration states are source values, not a live environment inspection; see [TRD section 3](TRD.md#3-configuration-and-flags).
 **Reads with:** [PRD.md](PRD.md), [UI-UX.md](UI-UX.md), [TRD.md](TRD.md).
 
-Existing behaviour is marked *(today)*; new behaviour *(new)*.
+Existing behaviour is marked *(today)*. Headings containing *(new)* retain historical slice names; their current implementation state is stated below.
 
 ## 1. Route map
 
+Route files are under `apps/mobile/src/app/`. `(app)` and `(tabs)` are groups, not URL segments. The table groups the verified routes; helpers such as `_layout.tsx` and `+native-intent.tsx` are not screens.
+
 | Route | Purpose | Auth |
 |-------|---------|------|
-| `/` | Splash and redirect to sign-in or the app *(today)* | none |
-| `/sign-in`, `/email` | Apple, Google, email with the bot check, 18+ tick *(today)* | none |
-| `/(app)` | Home: balance and a button list *(today)*; Explore home *(new, N4)* | signed in |
-| `/create`, `/create/[modelId]`, `/create/presets`, `/create/agent` | Models, templates, Auto Short and video agent *(today)* | signed in |
-| `/job/[id]` | Wait, then result: Save, Share, Report, Delete *(today)*; Edit, Publish, Make another *(new, N5)* | signed in |
-| `/library`, `/library/files` | Creations, film masters, editor renders *(today)* | signed in |
-| `/edit` | Quick edit: trim, join, captions *(today)* | signed in |
-| `/projects`, `/projects/[id]` | Workspaces and projects, read-only *(today)* | signed in |
-| `/chat`, `/chat/new`, `/chat/[id]`, `/chat/personas`, `/chat/folders` | Chat with Vey *(today)*; reached from the mascot *(new, N8)* | signed in |
-| `/cinema`, `/cinema/[id]`, `/cinema/watch/[id]` | Feed, title page, player *(today)*; list readable signed out *(new, N2)* | list none, play signed in |
-| `/publish`, `/publish/accounts`, `/publish/compose`, `/publish/posts`, `/publish/post/[id]`, `/publish/analytics` | Plan paywall, accounts, compose, posts, analytics *(today)* | signed in |
-| `/credits`, `/history` | Buy credits, credit history *(today)* | signed in |
-| `/account`, `/help`, `/appeals`, `/report`, `/referrals`, `/blocked`, `/delete-account` | Account and safety *(today)* | signed in |
-| `/welcome/*` | First-run cards and credits explanation *(new, N3)* | none, then signed in |
+| `/` | Loading indicator, then sign-in or signed-in tabs | none |
+| `/sign-in`, `/email`, `/preview` | Sign-in, email, public templates/Cinema preview | none |
+| `/welcome` | Once-per-install welcome after sign-in | signed in |
+| `/(app)/(tabs)`; `/create`, `/cinema`, `/library`, `/publish` | Explore and the other four tabs | signed in |
+| `/create/[modelId]`, `/create/presets`, `/create/agent`, `/create/tools` | Form, templates, agents, file-tool directory | signed in |
+| `/job/[id]`, `/edit`, `/library/files` | Result/next steps, quick edit, film masters/editor renders | signed in |
+| `/projects`, `/projects/[id]`, `/brand-kit` | Projects read-only; brand kit | signed in |
+| `/chat`, `/chat/new`, `/chat/[id]`, `/chat/personas`, `/chat/persona/[id]`, `/chat/folders`, `/chat/move` | Chat and organisation | signed in |
+| `/cinema/[id]`, `/cinema/watch/[id]`, `/cinema/comments`, `/cinema/report-comment`, `/cinema/analytics`, `/cinema/probe` | Titles, playback, comments, reporting, analytics, playback probe | signed in |
+| `/publish/accounts`, `/publish/connect`, `/publish/brands`, `/publish/compose`, `/publish/drafts`, `/publish/posts`, `/publish/post/[id]` | Accounts, compose, drafts/posts | signed in |
+| `/publish/analytics`, `/publish/calendar`, `/publish/best-time`, `/publish/approvals`, `/publish/reports` | Planning, review and reporting | signed in |
+| `/publish/queues`, `/publish/queue-edit`, `/publish/autolists`, `/publish/autolist-edit` | Queue and RSS autolist management | signed in |
+| `/publish/inbox`, `/publish/inbox-thread`, `/publish/contacts`, `/publish/contact-edit` | Read-only inbox; contacts editing | signed in |
+| `/publish/smartlink`, `/publish/ads`, `/publish/ads-edit`, `/publish/commerce`, `/publish/commerce-edit` | SmartLink, ad drafts, product catalogue | signed in |
+| `/publish/team`, `/publish/activity`, `/publish/developer`, `/team-invite` | Team, activity, keys/webhooks/logs, invitation | signed in |
+| `/oddlings`, `/oddlings/[id]`, `/oddlings/build`, `/oddlings/saved` | Characters, builder and local saved characters | signed in |
+| `/film`, `/film/shot/[id]` | Imported web Film Studio export, stages, shots and Create handoff | signed in |
+| `/credits`, `/history`, `/topups`, `/account`, `/security` | Billing/history and account/security | signed in |
+| `/help`, `/appeals`, `/report`, `/referrals`, `/blocked`, `/delete-account` | Help, safety and account actions | signed in |
+| `/models`, `/pricing`, `/search`, `/about`, `/oauth-consent` | Catalogue, search, product info, assistant consent | signed in |
+| `/review` | Publish post approve/reject entry | No account required; signed link token is the credential (`src/lib/shareLinks.ts`) |
+| `/dev-s1-editor` | S1 WebView test harness | Signed in; development-only harness checks |
+
+OAuth hand-back is on the **site**, not an Expo screen: `/auth/mobile` and `/social/connect/mobile/:network` return to the constant app schemes (TRD section 2.9).
 
 ## 2. Navigation model
 
-*Today:* one stack. Home lists nine buttons. There is no tab bar.
+*Today:* five tabs in source order **Explore, Create, Cinema, Library, Publish**, with text labels and no icons. `HeaderChips.tsx` supplies Credits and Account. The stack above the tabs contains detail/tools/account screens. `VeyMascot.tsx` opens a chat/help sheet on the four non-Cinema tabs; it is not on every signed-in screen.
 
-*New (N1):* five bottom tabs in this order: **Explore**, **Cinema**, **Create** (centre), **Library**, **Publish**. Every tab shows the Credits chip in its header (opens Buy credits and Credit history) and an avatar (opens Account). The **Vey mascot** floats over every signed-in screen and opens chat as a sheet (N8). Screens that are not tabs (Edit, Projects, Library files, Referrals, Help, Blocked) stay reachable from Library, Explore and Account.
+The earlier target order (Explore, Cinema, centred Create, Library, Publish), icon treatment and universal mascot coverage remain design intent, not implemented facts. The source order is documented here without changing the app.
 
 ## 3. Phases
 
 ```
-Install ─► Launch ─► Preview ─► Sign in ─► Credits explained ─► Explore ─► Create ─► Wait ─► Result
-                                                                              │                  │
-                                                                              └── Vey chat ──────┤
-                                                              Edit ◄──────────────────────────────┤
-                                                              Publish ◄───────────────────────────┘
+Launch → Sign in ───────────────────────→ Welcome (once) → Explore → Create → Wait → Result
+           └→ Public preview → Sign in                                  │          ├→ Edit
+                                                    Vey sheet ←────────┘          └→ Publish
 ```
+
+Preview is optional from sign-in, not the cold-launch default. Film import and Oddlings can hand a draft to Create; that handoff never spends Credits.
 
 ## 4. First run *(new, N2 and N3)*
 
-1. **Launch.** A splash states the promise in one line, then three intro cards (Make, Edit and Publish, Watch). Skippable. Shown once; resettable from Account for testing.
-2. **Preview.** Explore and the Cinema list are readable signed out, from anonymous public data only (`/api/catalog`, `/api/presets`, `/api/cinema/*`). Playing, creating and buying ask to sign in and return to the same place.
-3. **Sign in.** As today. The 18+ tick stays before any provider button.
-4. **Credits.** One screen: what a credit is, and "You have N free credits" with N read from the server, never a fixed number. No purchase is required to try.
-5. **Permissions in context.** Photos at the first pick; push after the first job that runs long; nothing at install.
-6. **Land.** Explore with a prompt box and presets.
+The heading retains the original slice naming; N2/N3 are now built (`src/app/preview.tsx`, `src/app/(app)/welcome.tsx`, `src/lib/firstRun.ts`).
+
+1. **Launch/sign-in.** Root redirects signed-out users to sign-in; the 18+ check precedes provider sign-in. Preview is an optional entry there.
+2. **Preview.** Public templates and the Cinema list use anonymous reads; selecting an item opens sign-in. Returning automatically to that specific item is not implemented in this screen.
+3. **Welcome after sign-in.** Three skippable cards (`hello`, `credits`, `start`); a versioned SecureStore seen flag; an Account reset control is not implemented in the inspected source. No pre-auth looping preview sequence is claimed.
+4. **Credits.** Reads `free_credits` from `GET /api/v1/balance`; shows a number only when positive and readable, otherwise explains Credits without promising a grant.
+5. **Permissions.** Media and push remain contextual; real permission prompts on iOS/Android are **not verified** in this refresh.
+6. **Land.** Explore: prompt collage, templates and Oddlings entry.
 
 ## 5. Create to publish *(today, with the gaps marked)*
 
-1. Pick a template or type a prompt on Create. The price shows before payment. *(today)*
-2. First send: the AI consent sheet (ADR-0128). *(today)*
-3. Submit with an idempotency key; the job screen waits, polling, and a push arrives if enabled. *(today)*
-4. Result: Save to Photos (permission asked once), Share, Report, Delete. *(today)* **Edit, Publish and Make another do not exist yet.** *(new, N5)*
-5. Edit: quick edit renders on the server and the clip lands in Library. *(today, reached from Home only)*
-6. Publish: the composer picks a Library file, accounts, text, now or later. *(today)* First time with no account: Connect (needs provider redirects). *(today, unproven)*
-7. Posts list shows status. A push on publish or failure. *(new)*
+1. Choose a model/template or a Library input. Model-supported options include resolution/audio, aspect, seed and image count; the form shows price and a low-balance Buy credits card that preserves the prompt.
+2. Accept AI consent before the first provider send. Generate uses an idempotency key; the job screen polls and explains refunds on failure.
+3. Result offers output-appropriate Edit, Publish and Make another, then Save/Share/Report/Delete (`src/lib/nextSteps.ts`). Quick edit supports trim/join/captions and sound; stem results are available through the tools.
+4. Publish accepts a Library creation, destination accounts, global/per-network text, YouTube visibility, now/schedule/queue. On pinned main, Schedule is the default (#1438). The current checkout's older source still defaults to now; no app change is included here.
+5. Posts show status; draft approve/discard, approvals, month calendar and analytics ranges are built. Provider account connect needs external redirect registration; real posts are **not verified**.
+6. Publish completion/failure push is not verified as built; the implemented push contract is generation-job notifications.
+
+A Cinema creator's Upload card only opens the website. Pass is read-only; paid purchase flows and native resumable upload remain blocked. Film Studio can import a web export, but cannot discover browser-local projects across devices.
 
 ## 6. Failure paths
 
@@ -67,18 +84,18 @@ Every row says what the person sees and what happens to their credits.
 |---------|----------------------|---------|
 | Offline | Banner; cached Library and balance; paid actions refuse to start | None debited |
 | 401 on any call | One silent refresh and retry; on failure, signed out with the sign-in screen | None |
-| 429 | "Try again in a moment" (Retry-After to be surfaced) | None |
-| Balance too low | Prompt before the job, with Buy credits *(new, N6)* | None |
+| 429 | Rate-limit error; `src/lib/api.ts` parses Retry-After. Consistent screen presentation is **not verified** | None |
+| Balance too low | Built pre-submit low-balance card with Buy credits; prompt retained | None |
 | AI consent declined | The send does not happen | None |
 | Provider failure after submit | The job screen says it failed | Refunded to the source it came from (ledger refund) |
 | Cancel while running | Stops waiting; the job keeps running (ADR job-cancel options) | Settled by the job outcome |
 | Store purchase fails or is cancelled | Message on Buy credits; nothing credited | None |
 | Purchase refunded by the store | Balance reduced by the clawback; nothing shown unless it empties the balance | Clawback caps at the Pack balance |
 | Push denied | The job screen still polls while open; Library shows the result later | None |
-| Deep link while signed out | Sign in, then land on the target | None |
+| Deep link while signed out | App-link mapping preserves supported targets; preview item selection only opens sign-in. Device return behaviour **not verified** | None |
 | Locked Cinema title | Reason shown, not a spinner | None |
 | Account deletion blocked (Frozen or held account) | The server's reason on the delete screen | Balance left as it is |
 
 ## 7. Out of the phone, on purpose
 
-Multi-track timeline, creator upload, Publish developer keys, ads, SmartLinks, inbox. Each shows a "Continue on web" row, not a dead end.
+Current explicit web continuations include full editor work, Film Studio editing/master preparation, adding passkeys and the Cinema creator upload shell. These are parity gaps, not permanent exclusions. Publish developer keys, ad drafts, SmartLinks and the read-only inbox now have native screens; the old blanket web-only list no longer applies. See IMPLEMENTATION-PLAN for S1/S2/S3 and persistence blockers.

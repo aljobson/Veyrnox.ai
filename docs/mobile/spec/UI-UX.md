@@ -1,6 +1,8 @@
 # UI/UX brief: Veyrnox.ai mobile app
 
-**Status:** Proposed 2026-10-19. Tokens are copied from `apps/mobile/src/theme.ts` on `main` at `4768d535`, which records the web's `--vx-*` palette as hex. Screen shapes are the wireframes in the journey artifact.
+**Status:** Source refresh 2026-10-20 against local `origin/main` at `b5bdc1081bbc5876f0852dd7be9628d4ba5da154`; live deployment and device behaviour not verified.
+
+**Evidence boundary:** Source and local merge history were read at that pinned revision. `gh pr list --state merged --limit 200` and the open-PR query could not connect to GitHub; remote freshness and what is currently in review are **not verified**. Paths beginning `src/` are relative to `apps/mobile/`; other repository paths are relative to the checkout. Configuration states are source values, not a live environment inspection; see [TRD section 3](TRD.md#3-configuration-and-flags).
 **Reads with:** [APP-FLOW.md](APP-FLOW.md), [PRD.md](PRD.md), ADR-0133.
 
 The product already has a design language (control room with receipt paper, in `docs/product/UI-UX.md`). This brief records what the phone inherits and what is new, so the app extends it and does not start a second one.
@@ -23,32 +25,36 @@ Rule: amber means money. Nothing else is amber. Semantic status (built, partial,
 
 ## 2. Type
 
-The web uses IBM Plex Sans and Plex Mono. Which faces the app loads is not verified; read `src/theme.ts` and the layout before assuming system fonts. Keep one scale across screens: 48 for the balance figure, 16 for body and buttons, 14 for labels and secondary text. Uppercase labels take letter spacing. Respect Dynamic Type: nothing clips or becomes unreachable at the largest size (ADR-0133).
+The web uses IBM Plex Sans and Plex Mono. The phone theme currently declares colours only; a custom font loader is not established here, so actual device font rendering is **not verified**. Keep one scale across screens: 48 for the balance figure, 16 for body and buttons, 14 for labels and secondary text. Uppercase labels take letter spacing. Respect Dynamic Type: nothing clips or becomes unreachable at the largest size (ADR-0133).
 
 ## 3. Components that exist
 
-`HeaderAction`, `OfflineBanner`, `StaleNote`, `SourcePicker`, `WhenPicker`, `FreeAllowanceCard`, `AiConsentHost` (a sheet), `Logo`, and for Cinema `CinemaPlayer` and `TitleCard`. Reuse these; do not fork them.
+`HeaderAction`, `OfflineBanner`, `StaleNote`, `SourcePicker`, `WhenPicker`, `FreeAllowanceCard`, `AiConsentHost`, `Logo`, `CinemaPlayer` and `TitleCard` remain. `HeaderChips`, `VeyMascot`, `CameraPanel` and `CharacterPanel` are also implemented under `src/components/`. The tab layout, welcome cards, result actions and empty/low-balance states now exist; reuse the current components.
 
 ## 4. New components
 
+The table retains the original design brief. Current source differs where noted; these rows are not blanket completion claims.
+
 | Component | Spec |
 |-----------|------|
-| Tab bar | Five tabs: Explore, Cinema, Create (centre, filled accent circle), Library, Publish. Icon over a short uppercase label. Active tab uses `accent`; others `muted`. 44 pt minimum target. Hidden during full-screen playback |
-| Credits chip | In every tab header: `money` colour, tabular figures, opens Buy credits and Credit history. Shows a placeholder, not a stale number, while loading |
+| Tab bar | Built with text-only tabs in order Explore, Create, Cinema, Library, Publish (`src/app/(app)/(tabs)/_layout.tsx`), `accent`/`muted`, 44 pt minimum. Centre-circle/icons remain design intent; stack playback is above tabs |
+| Credits chip | Built in `HeaderChips.tsx`, with balance and Credits entry; current text uses `accent`, while money-coloured text remains the design brief. Device loading and number-format appearance **not verified** |
 | Avatar | Opens Account. A neutral circle until a profile image exists |
-| Vey mascot | A floating circular button on every signed-in screen; opens chat as a sheet; can be moved to the other side as on the web (`lib/veyPlacement`). Never covers the tab bar, keyboard, player controls, the composer's primary action, or Cinema comments. Hides while a video plays full screen |
-| Intro cards | Three full-width cards with a looping preview, a dot indicator and Skip. One idea per card |
-| Preset grid | Two columns, category chips above, the web's preset catalogue (`GET /api/presets`), price visible on each card |
-| Next-step buttons | On the result screen: Edit, Publish, Make another as full-width buttons above Save and Share |
-| Empty state | A sentence and one button; never a blank screen |
+| Vey mascot | Animated `VeyMascot` with placement support (`src/lib/veyPlacement.ts`) and sheet entry on four tabs. The layout excludes Cinema and does not install it on stack screens. Collision-free keyboard/large-text behaviour **not verified** on a device |
+| Intro cards | Built welcome has three cards (hello, credits, start), step text and Skip; mascot introduction, no claimed looping media preview. Seen flag persists locally |
+| Preset grid | Explore prompt collage has type/category/search and masonry-style cards; catalogue data comes from `GET /api/presets`. Real catalogue coverage **not verified** |
+| Next-step buttons | Built output-appropriate actions via `src/lib/nextSteps.ts`; unsupported actions are omitted |
+| Empty state | Built empty states and low-balance card (ADR-0191/0220); a complete device audit remains **not verified** |
 
 ## 5. Screen shapes
 
 - **Explore (home):** header (logo, Credits chip, avatar); a prompt box; category chips; the preset grid; the Oddlings banner; a "Pick up where you left off" row when something is unfinished.
-- **Create:** model or template picker, price, prompt, source slots; the consent sheet on first send.
+- **Create:** model/template picker, Library/device input, price/balance, supported options including resolution/audio, Character and camera prompt controls, consent on first send. Main adds explanatory text while the two controls are off (#1436). Draw mask remains unbuilt.
 - **Result:** the media, next-step buttons, then Save and Share, then Report and Delete.
-- **Cinema:** a vertical, paged feed; one active player; a title page with comments, report and block.
-- **Publish:** plan paywall until subscribed; then accounts, compose, posts, calendar, analytics as segments.
+- **Cinema:** browse/category/social/profile surfaces, Saved/Following, locked entitlement states and read-only Pass; title/player/comments/report/block. Creator Upload is a Continue on web card. Continue watching phone UI is not built.
+- **Publish:** plan entry and links to native accounts/composer, calendar, analytics, queues/autolists, contacts, reports, SmartLink, team, developer and ad/product screens. Inbox is read-only. Schedule is the pinned-main composer default (#1438).
+- **Oddlings:** gallery, character sheets, builder, saved characters, animated preview and Create handoff.
+- **Film Studio:** import/remove the web JSON copy; seven-stage summary, shot details and eligible Create handoff. Editing remains on the web; no server project browser exists.
 
 ## 6. Copy rules
 
@@ -60,8 +66,8 @@ The web uses IBM Plex Sans and Plex Mono. Which faces the app loads is not verif
 
 ## 7. Motion
 
-Transitions under 250 ms; no motion that delays a paid action; honour Reduce Motion (cross-fade instead of slide, no looping previews on intro cards). The mascot idles with a single subtle movement, not a loop that competes with content.
+Design requirements, not measured acceptance: transitions under 250 ms; no motion that delays a paid action; honour Reduce Motion (cross-fade instead of slide, no looping previews on intro cards). The mascot idles with a single subtle movement, not a loop that competes with content.
 
 ## 8. Accessibility floor
 
-44 pt targets on every control; a label and role on every interactive element; state announced on selectable rows; a live region for job status and streaming chat text; contrast of every token pair checked in the largest text size; VoiceOver and TalkBack read the sign-in, Create and Account flows. This is the bar from ADR-0133.
+Acceptance floor, not a completed device audit: 44 pt targets on every control; a label and role on every interactive element; state announced on selectable rows; a live region for job status and streaming chat text; contrast of every token pair checked in the largest text size; VoiceOver and TalkBack read the sign-in, Create and Account flows. This is the bar from ADR-0133.
