@@ -20,6 +20,8 @@ import { useFreeLeft } from '../../../lib/useFreeLeft';
 import { estimateCredits, fetchCatalog, kindOf, mediaApi, promptRequired, textInput, type CatalogModel } from '../../../lib/media';
 import { selectedState } from '../../../lib/a11y';
 import { toSourceAssets } from '../../../lib/librarySource';
+import { portraitAsPickedFile, startOddlingId } from '../../../lib/oddlingsAnimate';
+import type { PickedFile } from '../../../lib/sources';
 import { SLOT_ORDER, missingRequired, slotsFor, toSourceKeys, type SlotName } from '../../../lib/sources';
 import { colors } from '../../../theme';
 import { plural, t } from '../../../lib/i18n';
@@ -27,7 +29,7 @@ import { plural, t } from '../../../lib/i18n';
 const PLACEHOLDER: Record<string, string> = { topic: 'form.topicPlaceholder' };
 
 export default function CreateWithModel() {
-    const { modelId, prompt: presetPrompt, duration: presetDuration } = useLocalSearchParams<{ modelId: string; prompt?: string; duration?: string }>();
+    const { modelId, prompt: presetPrompt, duration: presetDuration, startOddling } = useLocalSearchParams<{ modelId: string; prompt?: string; duration?: string; startOddling?: string }>();
     const { api } = useAuth();
     const router = useRouter();
     const [model, setModel] = useState<CatalogModel | null>(null);
@@ -48,6 +50,10 @@ export default function CreateWithModel() {
     const [character, setCharacter] = useState<Picks>({});
     const [restored, setRestored] = useState(false);
     const [note, setNote] = useState<string | null>(null);
+    // "Animate this portrait" (Oddlings): the cast portrait goes into the image slot like any picked file.
+    const startId = startOddlingId(startOddling);
+    const [startFile, setStartFile] = useState<PickedFile | null>(null);
+    const [startProblem, setStartProblem] = useState<string | null>(null);
     const freeMap = useFreeLeft();
     const balance = useBalance();
     // The newest unsaved draft, so leaving the screen (to buy credits, say) never loses the last words typed.
@@ -92,6 +98,18 @@ export default function CreateWithModel() {
             .catch(() => setError(t('form.modelLoad')));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [modelId, presetDuration]);
+
+    const takesStartImage = !!model && slotsFor(model).some((s) => s.slot === 'image' && s.kind === 'image');
+    useEffect(() => {
+        if (!startId || !takesStartImage) return;
+        let live = true;
+        setStartProblem(null);
+        portraitAsPickedFile(startId).then(
+            (file) => { if (!live) return; if (file) setStartFile(file); else setStartProblem(t('oddlings.animate.loadFailed')); },
+            () => { if (live) setStartProblem(t('oddlings.animate.loadFailed')); },
+        );
+        return () => { live = false; };
+    }, [startId, takesStartImage]);
 
     // Words and settings are kept as they change, so a closed app or a call does not lose them.
     useEffect(() => {
@@ -188,6 +206,7 @@ export default function CreateWithModel() {
         <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
             <Stack.Screen options={{ title: model.name }} />
             <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+                {startId && takesStartImage ? <Text style={styles.consent} accessibilityLiveRegion="polite">{startProblem ?? t('oddlings.animate.startNote')}</Text> : null}
                 {slots.map((s) => (
                     <SourcePicker
                         key={s.slot}
@@ -196,6 +215,7 @@ export default function CreateWithModel() {
                         onChange={(key) => setUploaded((u) => ({ ...u, [s.slot]: key }))}
                         onLibrary={(jobId) => setFromLibrary((l) => ({ ...l, [s.slot]: jobId }))}
                         onBusy={(b) => setSending((x) => ({ ...x, [s.slot]: b }))}
+                        initial={s.slot === 'image' ? startFile : null}
                     />
                 ))}
                 {text_ ? (

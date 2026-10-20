@@ -1,5 +1,6 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { AnimateCard } from '../../../components/oddlings/AnimateCard';
 import { OddlingPortrait } from '../../../components/oddlings/OddlingPortrait';
 import { VEY_CLEARANCE } from '../../../components/VeyMascot';
 import { MIN_TARGET } from '../../../lib/a11y';
@@ -32,6 +33,7 @@ export default function OddlingSheet() {
             <View style={styles.tags}>
                 {oddling.traits.map((line) => <Text key={line} style={styles.tag}>{line}</Text>)}
             </View>
+            <AnimateCard id={oddling.id} />
             <Pressable accessibilityRole="button" style={styles.build} onPress={() => router.push({ pathname: '/oddlings/build', params: { from: oddling.id } })}>
                 <Text style={styles.buildText}>{t('oddlings.build.recreate')}</Text>
             </Pressable>
