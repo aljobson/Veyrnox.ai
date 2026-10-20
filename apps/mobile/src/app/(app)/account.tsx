@@ -1,22 +1,34 @@
 import * as WebBrowser from 'expo-web-browser';
 import { Link, Stack, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { useBilling } from '../../billing/BillingProvider';
 import { ACCOUNT_DELETION_ENABLED } from '../../lib/accountDeletion';
+import { fetchProfile, type Profile } from '../../lib/auth/accountCalls';
+import { signInMethodKey } from '../../lib/accountSecurity';
 import { LEGAL_LINKS, PRIVACY_EMAIL, SUPPORT_EMAIL } from '../../lib/account';
 import { usePush } from '../../push/pushContext';
 import { colors } from '../../theme';
 import { t } from '../../lib/i18n';
 
 export default function Account() {
-    const { signOut } = useAuth();
+    const { signOut, getAccessToken } = useAuth();
+    const [profile, setProfile] = useState<Profile | null>(null);
     const push = usePush();
     const [pushNote, setPushNote] = useState<string | null>(null);
     const router = useRouter();
     const { status: billing, canPurchase, restore } = useBilling();
     const [restoreNote, setRestoreNote] = useState<string | null>(null);
+
+    // Best effort: when it fails the section simply shows no details.
+    useEffect(() => {
+        let live = true;
+        fetchProfile(getAccessToken).then((p) => live && setProfile(p), () => undefined);
+        return () => {
+            live = false;
+        };
+    }, [getAccessToken]);
 
     async function onRestore() {
         setRestoreNote(t('account.restoreChecking'));
@@ -44,6 +56,17 @@ export default function Account() {
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
             <Stack.Screen options={{ title: t('account.title') }} />
+
+            <Section title={t('acct.profile')}>
+                <View style={styles.row} accessible accessibilityLabel={`${t('acct.email')}: ${profile?.email ?? t('acct.profileLoading')}`}>
+                    <Text style={styles.note}>{t('acct.email')}</Text>
+                    <Text style={styles.rowText}>{profile?.email ?? t('acct.profileLoading')}</Text>
+                    {profile ? <Text style={styles.note}>{t('acct.signedInWith', { method: t(signInMethodKey(profile.provider)) })}</Text> : null}
+                </View>
+                <Link href="/security" asChild>
+                    <Row label={t('acct.securityRow')} />
+                </Link>
+            </Section>
 
             {billing !== 'off' ? (
                 <Section title={t('account.purchases')}>
