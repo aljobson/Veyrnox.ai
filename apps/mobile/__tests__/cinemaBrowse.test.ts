@@ -42,7 +42,7 @@ describe('entitlement', () => {
         expect(parseEntitlement({ access: 'free', credits: 0 })).toEqual({ kind: 'open' });
         expect(parseEntitlement({ access: 'pass' })).toEqual({ kind: 'open' });
         expect(parseEntitlement({ access: 'locked', reason: 'free_ceiling', credits: 0 })).toEqual({ kind: 'locked', reason: 'free_ceiling', credits: 0 });
-        expect(parseEntitlement({ access: 'locked', credits: 6 })).toEqual({ kind: 'locked', reason: 'locked', credits: 6 });
+        expect(parseEntitlement({ access: 'locked', credits: 6 })).toEqual({ kind: 'locked', reason: 'paid', credits: 6 });
         expect(parseEntitlement(null)).toMatchObject({ kind: 'locked', reason: 'busy' });
     });
     test('typed errors become designed reasons', async () => {
@@ -72,4 +72,12 @@ test('episode order and the first watchable one', () => {
 test('the share address is the public title page and refuses a bad id', () => {
     expect(titleShareUrl(ID.toUpperCase())).toBe(`https://veyrnox.ai/social-cinema/title/${ID}`);
     expect(titleShareUrl('../x')).toBeNull();
+});
+
+describe('paid locked state (ADR-0207)', () => {
+    test('a locked title with a credit price is paid, and no price is carried to the screen text', () => {
+        expect(parseEntitlement({ access: 'locked', credits: 6 })).toMatchObject({ reason: 'paid' });
+        expect(parseEntitlement({ access: 'locked', credits: 0 })).toMatchObject({ reason: 'locked' });
+        expect(parseEntitlement({ access: 'locked', reason: 'free_ceiling', credits: 6 })).toMatchObject({ reason: 'free_ceiling' });
+    });
 });

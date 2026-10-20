@@ -8,7 +8,7 @@ export type SlotName = 'image' | 'endImage' | 'video' | 'audio';
 export type SlotKind = 'image' | 'video' | 'audio';
 
 const KIND: Record<SlotName, SlotKind> = { image: 'image', endImage: 'image', video: 'video', audio: 'audio' };
-const SLOT_ORDER: SlotName[] = ['image', 'endImage', 'video', 'audio'];
+export const SLOT_ORDER: SlotName[] = ['image', 'endImage', 'video', 'audio'];
 
 const ALLOWED: Record<string, { kind: SlotKind; maxBytes: number }> = {
     'image/jpeg': { kind: 'image', maxBytes: 20 * MB },
