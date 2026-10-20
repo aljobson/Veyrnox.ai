@@ -40,7 +40,7 @@ const characters = character.ODDLING_ARCHETYPES.map((item) => {
 });
 
 // One character per line keeps the file small and a diff readable.
-const out = `{"generatedFrom":"app/veyrnox/_lib/character.js","tabs":${JSON.stringify(tabs)},"characters":[\n${characters.map((c) => JSON.stringify(c)).join(',\n')}\n]}\n`;
+const out = `{"generatedFrom":"app/veyrnox/_lib/character.js","tabs":${JSON.stringify(tabs)},"heroes":${JSON.stringify(explore.ODDLING_HERO_IDS)},"characters":[\n${characters.map((c) => JSON.stringify(c)).join(',\n')}\n]}\n`;
 
 // The builder's data: every group with its options (value, prompt phrase, display label), the voices and shows, the
 // studio sections, motions and scenes. The logic that uses it is ported by hand in src/lib/oddlingsBuilder.ts and a
