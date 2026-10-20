@@ -1,4 +1,5 @@
 import { fetchWithTimeout } from '../../lib/fetchWithTimeout.js';
+import { isOutageStatus, noteOutage } from '../../lib/outageScope.js';
 
 /**
  * Minimal Supabase / PostgREST client for the Cloudflare Worker runtime.
@@ -33,6 +34,8 @@ export class SupabaseError extends Error {
         this.name = 'SupabaseError';
         this.status = status;
         this.body = body;
+        // ADR-0160: tells the request's outage scope (if any) that the database did not answer.
+        if (isOutageStatus(status)) noteOutage();
         // Where the call went and Cloudflare's request id, when a response came back: for telling a gateway block from a database refusal.
         if (host) this.host = host;
         if (ray) this.ray = ray;

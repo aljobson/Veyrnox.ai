@@ -36,6 +36,7 @@ export class GatewayError extends Error {
  * On 401 → dispatches window.CustomEvent('veyrnox:auth-required') so the
  *          root-mounted AuthGate can prompt sign-in, then throws.
  * On 429 → throws with .retryAfter set to the header's seconds.
+ * On 503 service_unavailable (Supabase outage, ADR-0160) → throws with .retryAfter; the session is kept.
  * On 5xx or shape error → throws with .code = 'gateway_error'.
  *
  * @param {string} path       leading slash, e.g. '/balance', '/jobs/123'
@@ -98,6 +99,11 @@ export async function gatewayFetch(path, init = {}, brandRetried = false, brandS
   try { body = await res.json(); } catch { /* no body */ }
   assertCurrentAccount();
   assertCurrentBrand();
+  if (res.status === 503 && body?.error === 'service_unavailable') {
+    // ADR-0160: the database is not answering. Not a bug and not a lost session: keep the sign-in and let the caller retry.
+    const retryAfter = Math.max(1, Number(res.headers.get('retry-after')) || 10);
+    throw new GatewayError('service_unavailable', { status: 503, code: 'service_unavailable', retryAfter, body });
+  }
   if (!res.ok) {
     // A removed team membership must not strand read pages on a stale brand.
     // Retry only reads, once, under the current/default authorized brand.

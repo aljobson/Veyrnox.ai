@@ -1,6 +1,6 @@
 # ADR-0170: Sentry error reporting for the Worker
 
-**Status:** Proposed 2026-10-19. Dormant until the owner commits a DSN.
+**Status:** Proposed 2026-10-19. DSN for the `veyrnox-worker` project committed 2026-10-20; reporting is on.
 
 ## Context
 
@@ -18,8 +18,8 @@ unhandled exceptions. Production is at its Cloudflare text-binding cap, so a new
   same sanitising PostHog gets (message replaced, stack frames kept). `worker-entry.js` sets
   `globalThis.__veyrnoxCaptureException`; instrumentation.js cannot import the SDK because webpack bundles it for
   runtimes without `node:url`.
-- The DSN is public (it only allows sending). It is a constant in `lib/sentryConfig.js`, empty today, so there is
-  no binding and nothing is sent. The owner sets it by pull request.
+- The DSN is public (it only allows sending). It is a constant in `lib/sentryConfig.js`, set to the `veyrnox-worker`
+  project, so there is no binding. Empty turns reporting off.
 - Errors only: `tracesSampleRate` 0, `sendDefaultPii` false. `lib/sentryScrub.js` runs on every event and
   breadcrumb: no user, extra, request headers, cookies, body or query; exception messages become
   "Server request failed"; console breadcrumbs keep no text.

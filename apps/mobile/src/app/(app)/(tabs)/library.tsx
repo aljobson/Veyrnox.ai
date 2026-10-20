@@ -10,6 +10,7 @@ import { mediaApi, type Job, type JobPage } from '../../../lib/media';
 import { colors } from '../../../theme';
 import { t } from '../../../lib/i18n';
 import { touchTarget } from '../../../lib/a11y';
+import { EmptyState } from '../../../components/EmptyState';
 
 // Catalog keys, looked up when shown.
 const BADGE: Record<Job['state'], string> = { queued: 'library.queued', running: 'library.running', succeeded: 'library.succeeded', failed: 'library.failed' };
@@ -82,7 +83,7 @@ export default function Library() {
                     onEndReached={more}
                     onRefresh={load}
                     refreshing={false}
-                    ListEmptyComponent={<Text style={styles.muted}>{t('library.empty')}</Text>}
+                    ListEmptyComponent={<EmptyState title={t('empty.library.title')} body={t('library.empty')} actionLabel={t('empty.library.action')} href="/create" />}
                     renderItem={({ item }) => (
                         <Pressable accessibilityRole="button" accessibilityLabel={`${item.label || item.model_id}, ${t(BADGE[item.state])}, ${new Date(item.created_at).toLocaleString()}`} style={styles.row} onPress={() => router.push({ pathname: '/job/[id]', params: { id: item.job_id } })}>
                             <View style={styles.rowText}>
