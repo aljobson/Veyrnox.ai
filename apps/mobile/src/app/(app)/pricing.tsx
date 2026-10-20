@@ -4,7 +4,8 @@ import { CatalogList, kindTitleKey } from '../../components/CatalogList';
 import { priceLines } from '../../lib/catalogPages';
 import { t } from '../../lib/i18n';
 import { VEY_CLEARANCE } from '../../components/VeyMascot';
-import { colors } from '../../theme';
+import { colors, radius, space, type } from '../../theme';
+import { MIN_TARGET } from '../../lib/a11y';
 
 // What each model costs, in credits, from the public catalogue (read-only). It shows prices only: credits are
 // bought in the store, and nothing on this screen links anywhere to buy them.
@@ -39,10 +40,10 @@ export default function Pricing() {
 
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
-    content: { padding: 16, paddingBottom: 16 + VEY_CLEARANCE, gap: 20 },
-    heading: { color: colors.muted, fontSize: 14, textTransform: 'uppercase' },
-    row: { minHeight: 44, flexDirection: 'row', justifyContent: 'space-between', gap: 12, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 14 },
-    name: { color: colors.text, fontSize: 16, flexShrink: 1 },
-    price: { color: colors.text, fontSize: 14 },
-    note: { color: colors.muted, fontSize: 13 },
+    content: { padding: space.lg, paddingBottom: space.lg + VEY_CLEARANCE, gap: 20 },
+    heading: { color: colors.muted, ...type.footnote, textTransform: 'uppercase' },
+    row: { minHeight: MIN_TARGET, flexDirection: 'row', justifyContent: 'space-between', gap: space.md, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: radius.lg, padding: 14 },
+    name: { color: colors.text, ...type.body, flexShrink: 1 },
+    price: { color: colors.text, ...type.footnote },
+    note: { color: colors.muted, ...type.small },
 });
