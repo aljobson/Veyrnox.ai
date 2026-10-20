@@ -1,3 +1,4 @@
+import { readAccountLanguage } from '../../../../lib/accountLanguage.js';
 import { rpc, envConfig } from '../../../../packages/db/supabase-client.js';
 import { createHelpPlan, helpApiKey, helpNeedsCatalog } from '../../../../lib/helpAssistant.js';
 import { normaliseHelpPlan, parseHelpRequest } from '../../../../lib/productHelp.js';
@@ -71,7 +72,8 @@ export async function POST(req) {
             console.error('[help] supplier spend admission failed:', error?.message);
         }
     }
-    const plan = await createHelpPlan({ ...parsed, catalog, allowAi });
+    const locale = allowAi ? await readAccountLanguage(authId, cfg) : null;
+    const plan = await createHelpPlan({ ...parsed, catalog, allowAi, locale });
     if (accountReadFailed) return reply({ plan: normaliseHelpPlan({ ...plan, message: accountUnavailablePrefix() + plan.message }) });
     return reply({ plan });
 }
