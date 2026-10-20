@@ -1,4 +1,5 @@
 'use client';
+import BindingText, { BindingPolicyLink } from '../../../../components/BindingText';
 import { helperCopy } from '../../../../lib/i18n/helperCopy.mjs';
 import { useI18n } from '../../../../components/I18nProvider';
 import { localeTag } from '../../../../lib/i18n/locales.mjs';
@@ -124,7 +125,7 @@ export function MediaComposer({ kind, media, prompt, onPrompt }) {
             {hasSource && (
               <label lang="en" dir="ltr" className="mt-2 flex items-start gap-2 text-xs text-vx-fg-muted">
                 <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} className="mt-0.5 accent-vx-accent" />
-                <span>I own these files or have permission to use every identifiable person, voice, brand, artwork, and recording under the <a href="/legal/aup" target="_blank" rel="noreferrer" className="text-vx-accent underline">Acceptable Use Policy</a>.</span>
+                <BindingText id="mediaRights"  slots={{ policy: <BindingPolicyLink policy="aup" /> }}><span>I own these files or have permission to use every identifiable person, voice, brand, artwork, and recording under the <a href="/legal/aup" target="_blank" rel="noreferrer" className="text-vx-accent underline">Acceptable Use Policy</a>.</span></BindingText>
               </label>
             )}
           </div>

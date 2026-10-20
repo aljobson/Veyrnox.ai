@@ -16,8 +16,9 @@ import { editorialSeries } from '../app/veyrnox/social-cinema/editorialSeries.js
 import { MAGIC_VERIFIER_TTL_MS } from '../app/lib/pkceVerifier.js';
 
 const paths = ['/social-cinema', '/social-cinema/creator', '/social-cinema/pass', '/social-cinema/title/example', '/social-cinema/watch/example', '/presets/example', '/social-cinema/series/example', '/m', '/m/create', '/m/credits', '/m/explore', '/m/job', '/m/library', '/oauth/consent', '/auth/callback', '/social/review/example-token', '/social/team/invite/example-token', '/social/connect/callback/facebook'];
-test('phase A translated routes retain language, query and alternates', () => {
-  for (const route of paths) {
+test('phase A and C1 translated routes retain language, query and alternates', () => {
+  const legalPaths = ['terms', 'privacy', 'refund', 'aup', 'cinema-content', 'gdpr'].map(document => `/legal/${document}`);
+  for (const route of [...paths, ...legalPaths]) {
     assert.ok(isLocalizedPath(route), route);
     assert.equal(languageAlternates(route)['x-default'], route);
     for (const language of LOCALES) {
@@ -27,7 +28,7 @@ test('phase A translated routes retain language, query and alternates', () => {
       if (language.code !== 'en') assert.equal(splitLocalePath(expected).rest, route);
     }
   }
-  for (const route of ['/app/create', '/legal/privacy', '/design-system', '/s/example', '/xx/m', '/m/unknown']) assert.equal(isLocalizedPath(route), false, route);
+  for (const route of ['/app/create', '/legal/unknown', '/design-system', '/s/example', '/xx/m', '/xx/legal/privacy', '/m/unknown']) assert.equal(isLocalizedPath(route), false, route);
 });
 
 test('new key families, TTL and sample units survive every translation', () => {

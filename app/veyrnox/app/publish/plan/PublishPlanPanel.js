@@ -1,4 +1,5 @@
 'use client';
+import BindingText from '../../../../../components/BindingText';
 import { localeTag } from '../../../../../lib/i18n/locales.mjs';
 import { tOr } from '../../../../../lib/i18n/translate.mjs';
 import { useI18n } from '../../../../../components/I18nProvider';
@@ -165,7 +166,7 @@ function Plan() {
       {selectedPlan && <>
         <label className="mt-4 flex items-start gap-3 text-sm text-vx-fg-body">
           <input type="checkbox" className="mt-1" checked={agreed} onChange={(event) => setAgreed(event.target.checked)} />
-          <span lang="en" dir="ltr">Start my Publish Plan at {legalMoney.format(selectedPlan.price_usd_cents / 100)} plus tax every {intervalName(selectedPlan.billing_interval)}. I understand it renews automatically until I cancel.</span>
+          <BindingText id="publish" values={{ price: legalMoney.format(selectedPlan.price_usd_cents / 100), interval: intervalName(selectedPlan.billing_interval) }} ><span lang="en" dir="ltr">Start my Publish Plan at {legalMoney.format(selectedPlan.price_usd_cents / 100)} plus tax every {intervalName(selectedPlan.billing_interval)}. I understand it renews automatically until I cancel.</span></BindingText>
         </label>
         <button type="button" disabled={busy || !agreed} className={`${button} mt-5 border-vx-accent bg-vx-accent text-black`} onClick={() => start(selectedPlan.id)}>
           {busy ? t("app.publish.plan.opening") : t("app.publish.plan.upgrade")}

@@ -1,4 +1,5 @@
 'use client';
+import BindingText from '../../../../components/BindingText';
 import { localeTag } from '../../../../lib/i18n/locales.mjs';
 import { tOr } from '../../../../lib/i18n/translate.mjs';
 import { useI18n } from '../../../../components/I18nProvider.jsx';
@@ -137,7 +138,7 @@ function Pass({ salesOpen }) {
       <p className="mt-2 text-sm text-vx-fg-muted">{t("cinema.passPanel.pricesInUsdTaxAddedAt")}</p>
       <label className="mt-4 flex items-start gap-3 text-sm text-vx-fg-body">
         <input type="checkbox" className="mt-1" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
-        <span lang="en" dir="ltr">{CONSENT_TEXT}</span>
+        <BindingText id="pass"  ><span lang="en" dir="ltr">{CONSENT_TEXT}</span></BindingText>
       </label>
       <ul className="mt-6 grid gap-4 sm:grid-cols-3">
         {plans.map((p) => <li key={p.id} className="flex flex-col rounded-2xl border border-vx-border bg-vx-base/60 p-5">

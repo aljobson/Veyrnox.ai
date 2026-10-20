@@ -1,4 +1,5 @@
 'use client';
+import BindingText, { BindingPolicyLink } from '../../../components/BindingText';
 import { useI18n } from '../../../components/I18nProvider';
 
 
@@ -11,12 +12,12 @@ export default function SourceRightsConfirmation({ confirmed, onChange }) {
           checked={confirmed} onChange={event => onChange(event.target.checked)}
           aria-describedby="create-source-rights-status" className="h-5 w-5 accent-vx-accent" />
       </span>
-      <span lang="en" dir="ltr" className="py-2">
+      <BindingText id="sourceRights"  slots={{ policy: <BindingPolicyLink policy="aup" /> }}><span lang="en" dir="ltr" className="py-2">
         I own this file, or I have the permission of everyone identifiable in it. No real person&apos;s face, body or
         voice is used without their consent, and I hold the rights to any brand, artwork or recording in it
         (<a href="/legal/aup" target="_blank" rel="noreferrer" className="text-vx-accent underline">Acceptable Use</a>).
         This statement is recorded against the generation and your account.
-      </span>
+      </span></BindingText>
     </label>
     <p id="create-source-rights-status" role="status" data-testid="create-source-rights-status" data-confirmed={confirmed}
       className={`mt-2 text-xs ${confirmed ? 'text-vx-accent' : 'text-vx-fg-muted'}`}>

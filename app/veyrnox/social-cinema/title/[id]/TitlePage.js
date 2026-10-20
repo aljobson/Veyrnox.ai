@@ -1,4 +1,5 @@
 'use client';
+import BindingText from '../../../../../components/BindingText';
 import { tOr } from '../../../../../lib/i18n/translate.mjs';
 import { rich } from '../../../../../lib/i18n/rich';
 import { useI18n } from '../../../../../components/I18nProvider.jsx';
@@ -91,7 +92,7 @@ export function TitlePage({ id }) {
     <CinemaRetentionControls contentId={id} />
     {notice && <p role="status" aria-live="polite" className="mt-6 rounded-lg border border-vx-border bg-vx-base/60 px-4 py-3 text-sm">{notice}</p>}
     {locked && account && <div className="mt-8 rounded-2xl border border-vx-border p-5">
-      <label className="flex items-start gap-3 text-sm text-vx-fg-body"><input type="checkbox" className="mt-1" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} /><span lang="en" dir="ltr">{CONSENT_TEXT}</span></label>
+      <label className="flex items-start gap-3 text-sm text-vx-fg-body"><input type="checkbox" className="mt-1" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} /><BindingText id="unlock"  ><span lang="en" dir="ltr">{CONSENT_TEXT}</span></BindingText></label>
       <p className="mt-3 text-sm text-vx-fg-muted">{rich(t('cinema.title.passLink'), { pass: <Link href={localize('/social-cinema/pass')} className="underline">{t('label.Cinema Pass')}</Link> })}</p>
     </div>}
     {title.content_type === 'SERIES' ? title.seasons.map((s) => <section key={s.id} className="mt-10" aria-labelledby={`season-${s.id}`}>

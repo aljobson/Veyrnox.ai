@@ -1,4 +1,6 @@
 'use client';
+import LegalLink from '../../../components/LegalLink';
+import BindingText from '../../../components/BindingText';
 import { localeTag } from '../../../lib/i18n/locales.mjs';
 import { pluralKey, tOr } from '../../../lib/i18n/translate.mjs';
 import Link from 'next/link';
@@ -532,21 +534,21 @@ function Billing({ account, recovery, setRecovery }) {
                     checked={agreed}
                     onChange={(e) => setAgreed(e.target.checked)}
                   />
-                  <span>
+                  <BindingText id="subscription" values={{ plan: names[plan.id] || plan.id, price: usd.format(plan.price_usd_cents / 100), interval: intervalName(plan.billing_interval), credits: plan.credits }} ><span>
                     I agree to {names[plan.id] || plan.id} at{' '}
                     {usd.format(plan.price_usd_cents / 100)} plus applicable tax
                     every {intervalName(plan.billing_interval)} until I cancel. I receive {plan.credits} Credits
                     after each confirmed {intervalName(plan.billing_interval)}ly payment; unused cycle Credits
                     expire without rollover.
-                  </span>
+                  </span></BindingText>
                 </label>
                 <p className="mt-3 text-sm">
                   {t("app.credits.subscription.renewalHelp")}{' '}
-                  <Link href="/legal/terms" className="underline">
-                    {t("home.publish.terms")}</Link>{' '}
+                  <LegalLink element="Link" href="/legal/terms" className="underline">
+                    {t("home.publish.terms")}</LegalLink>{' '}
                   ·{' '}
-                  <Link href="/legal/privacy" className="underline">
-                    {t("cinema.report.privacy")}</Link>
+                  <LegalLink element="Link" href="/legal/privacy" className="underline">
+                    {t("cinema.report.privacy")}</LegalLink>
                 </p>
                 <button
                   className="mt-4 rounded-full bg-vx-accent px-5 py-3 font-bold text-vx-accent-ink disabled:opacity-50"

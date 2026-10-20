@@ -1,3 +1,4 @@
+import LegalLink from '../../components/LegalLink';
 import { FAQ, MODELS as MODELS_FALLBACK, kindOf, isShelfModel } from './_lib/tokens';
 import { readPublicCatalog } from '../../lib/publicCatalog.js';
 import { SITE_URL, JsonLd } from '../seo';
@@ -119,8 +120,8 @@ export default async function VeyrnoxLanding() {
         </p>
         <p className="mt-4 max-w-[68ch] text-vx-fg-body text-[16px] leading-[1.7]">
           {rich(t('home.publish.p2'), {
-            privacy: <a href="/legal/privacy#youtube" className="underline underline-offset-4">{t('home.publish.privacy')}</a>,
-            terms: <a href="/legal/terms" className="underline underline-offset-4">{t('home.publish.terms')}</a>,
+            privacy: <LegalLink element="a" href="/legal/privacy#youtube" className="underline underline-offset-4">{t('home.publish.privacy')}</LegalLink>,
+            terms: <LegalLink element="a" href="/legal/terms" className="underline underline-offset-4">{t('home.publish.terms')}</LegalLink>,
           })}
         </p>
         <p className="mt-6">

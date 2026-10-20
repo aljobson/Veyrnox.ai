@@ -1,4 +1,6 @@
 'use client';
+import LegalLink from '../../../components/LegalLink';
+import BindingText from '../../../components/BindingText';
 import { localeTag } from '../../../lib/i18n/locales.mjs';
 import { tOr, pluralKey } from '../../../lib/i18n/translate.mjs';
 import { useI18n } from '../../../components/I18nProvider';
@@ -225,8 +227,8 @@ export function TopUpPacks({ signedIn }) {
           <label className="mt-4 flex items-start gap-2 text-sm text-vx-fg-body cursor-pointer">
             <input type="checkbox" required checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-1 accent-vx-accent" />
             <span>
-              <span lang="en" dir="ltr">{SUPPLY_CONSENT_TEXT}</span>{' '}
-              <a href="/legal/refund" className="underline text-vx-fg-muted">{t("app.credits.packs.refund")}</a>
+              <BindingText id="supply"  ><span lang="en" dir="ltr">{SUPPLY_CONSENT_TEXT}</span></BindingText>{' '}
+              <LegalLink element="a" href="/legal/refund" className="underline text-vx-fg-muted">{t("app.credits.packs.refund")}</LegalLink>
             </span>
           </label>
 
