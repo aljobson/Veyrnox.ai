@@ -68,7 +68,7 @@ export default function FilmStudio() {
         return (
             <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
                 <Stack.Screen options={{ title: 'Film Studio' }} />
-                <Text style={styles.title}>Open your film on the phone</Text>
+                <Text style={styles.title} accessibilityRole="header">Open your film on the phone</Text>
                 <Text style={styles.body}>Film Studio plans a film in seven stages. It is saved in the browser on veyrnox.ai, not on our servers, so the phone opens a copy of it.</Text>
                 <Text style={styles.step}>1. On veyrnox.ai open Film Studio and export your studio as JSON.</Text>
                 <Text style={styles.step}>2. Put the file in Files, iCloud Drive or an email to yourself.</Text>
@@ -88,13 +88,13 @@ export default function FilmStudio() {
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
             <Stack.Screen options={{ title: 'Film Studio' }} />
-            <Text style={styles.title}>{sum.name}</Text>
+            <Text style={styles.title} accessibilityRole="header">{sum.name}</Text>
             <Text style={styles.muted}>
                 {sum.aspect} · {sum.shots} {sum.shots === 1 ? 'shot' : 'shots'} · {sum.lockedAssets} of {sum.assets} assets locked · {sum.acceptedShots} takes accepted
             </Text>
             <Text style={styles.muted}>A copy from {savedAt ? new Date(savedAt).toLocaleDateString() : 'the web'}. Changes are made on the web; open a newer export to update it.</Text>
 
-            <Text style={styles.heading}>Stages</Text>
+            <Text style={styles.heading} accessibilityRole="header">Stages</Text>
             {stages.map((s, i) => (
                 <View key={s.id} style={styles.row} accessible accessibilityLabel={`Stage ${i + 1}, ${s.title}, ${s.done ? 'done' : `${s.open} to fix`}`}>
                     <Text style={styles.name}>
@@ -109,7 +109,7 @@ export default function FilmStudio() {
                 </View>
             ))}
 
-            <Text style={styles.heading}>Shots</Text>
+            <Text style={styles.heading} accessibilityRole="header">Shots</Text>
             {rows.length === 0 ? <Text style={styles.muted}>No shots yet. Add them in the breakdown on the web.</Text> : null}
             {rows.map((r) => (
                 <Pressable key={r.shot.id} accessibilityRole="button" accessibilityLabel={`${r.shot.id}, ${r.label}`} style={[styles.row, touchTarget]} onPress={() => router.push({ pathname: '/film/shot/[id]', params: { id: r.shot.id } })}>

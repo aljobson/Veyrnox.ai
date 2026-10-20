@@ -1,3 +1,4 @@
+import LegalLink from '../../../components/LegalLink';
 import Link from 'next/link';
 import { ENTITY } from '../../legal/_lib/entity';
 import { OPEN_GRAPH_BASE } from '../../seo';
@@ -52,9 +53,9 @@ export default async function AboutPage() {
             </p>
             <p className="mt-4 text-vx-fg-body leading-[1.65]">
               {rich(t('about.policiesP'), {
-                terms: <Link className="font-bold underline underline-offset-4 hover:text-vx-accent" href="/legal/terms">{t('about.terms')}</Link>,
-                privacy: <Link className="font-bold underline underline-offset-4 hover:text-vx-accent" href="/legal/privacy">{t('about.privacy')}</Link>,
-                refund: <Link className="font-bold underline underline-offset-4 hover:text-vx-accent" href="/legal/refund">{t('about.refund')}</Link>,
+                terms: <LegalLink element="Link" className="font-bold underline underline-offset-4 hover:text-vx-accent" href="/legal/terms">{t('about.terms')}</LegalLink>,
+                privacy: <LegalLink element="Link" className="font-bold underline underline-offset-4 hover:text-vx-accent" href="/legal/privacy">{t('about.privacy')}</LegalLink>,
+                refund: <LegalLink element="Link" className="font-bold underline underline-offset-4 hover:text-vx-accent" href="/legal/refund">{t('about.refund')}</LegalLink>,
               })}
             </p>
           </section>

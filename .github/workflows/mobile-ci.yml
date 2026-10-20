@@ -9,11 +9,15 @@ on:
     paths:
       - "apps/mobile/**"
       - ".github/workflows/mobile-ci.yml"
+      - "scripts/adr-index.mjs"
+      - "docs/adr/**"
   push:
     branches: [main]
     paths:
       - "apps/mobile/**"
       - ".github/workflows/mobile-ci.yml"
+      - "scripts/adr-index.mjs"
+      - "docs/adr/**"
 
 permissions: {}
 
@@ -40,6 +44,21 @@ jobs:
 
       - name: Install
         run: npm ci --no-audit --no-fund
+
+      - name: Check English registry and locale catalogs
+        run: |
+          node scripts/gen-en-registry.mjs --check
+          node scripts/sync-web-i18n.mjs --check
+
+      - name: Generate localization list
+        run: node scripts/sync-web-i18n.mjs
+
+      - name: Upload localization list
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: i18n-new-keys
+          path: docs/mobile/I18N-NEW-KEYS.md
+          if-no-files-found: error
 
       - name: Typecheck
         run: npx tsc --noEmit

@@ -86,7 +86,7 @@ function agent(balance, loading = false) {
   let stateIndex = 0;
   const fakeReact = { ...React, useState: initial => [stateIndex++ === 2 ? 'A lighthouse' : initial === null ? nullStates.shift() : initial === true ? loading : initial, () => {}], useEffect() {}, useCallback: fn => fn, useRef: value => ({ current: value }) };
   const { default: Page } = load('app/veyrnox/app/video-agent/page.js', {
-    react: fakeReact, '../../../lib/i18n/rich': load('lib/i18n/rich.js', { './translate.mjs': { richParts } }), 'next/link': 'a', '../../_components/NavBar': { AppNav: () => null }, '../../_components/Main': { Main: 'main' },
+    react: fakeReact, '../../../components/LegalLink': 'a', '../../../lib/i18n/rich': load('lib/i18n/rich.js', { './translate.mjs': { richParts } }), 'next/link': 'a', '../../_components/NavBar': { AppNav: () => null }, '../../_components/Main': { Main: 'main' },
     '../../_components/JobAssetPreview': { JobAssetPreview: () => null }, '../../_lib/gateway': { GatewayError: Error },
     '../../_lib/createErrors': { ERROR_COPY: {}, failedJobCopy() {} }, '../../_lib/jobHistory': {}, '../../_lib/videoAgentResume': {},
     '../../_lib/useStudioJobs': { useStudioJobs: () => ({ jobs: [], generating: false }) }, '../../_lib/studioStates': {},
@@ -110,7 +110,7 @@ test('Video Agent offers a read-only balance retry and never enables paid approv
 test('the browser-storage notice remains above the full-screen editor so its acknowledgement is reachable', () => {
   const fakeReact = { ...React, useState: initial => [initial, () => {}], useSyncExternalStore: () => true, useEffect() {}, useCallback: fn => fn, useRef: value => ({ current: value }) };
   const { default: SiteChrome } = load('app/veyrnox/_components/SiteChrome.js', {
-    react: fakeReact, '../../../lib/i18n/rich': load('lib/i18n/rich.js', { './translate.mjs': { richParts } }), 'next/link': 'a', '../_lib/tokens': { SUPPORT_EMAIL: 'synthetic@example.invalid' },
+    react: fakeReact, '../../../components/LegalLink': 'a', '../../../lib/i18n/rich': load('lib/i18n/rich.js', { './translate.mjs': { richParts } }), 'next/link': 'a', '../_lib/tokens': { SUPPORT_EMAIL: 'synthetic@example.invalid' },
     '../_lib/utm': {}, './ThemeToggle': {}, './ReferralBridge': () => null, './Icon': { Icon: 'span' },
     '../../../components/I18nProvider': { useI18n: () => ({ locale: 'en', t: Object.assign((key) => key, { messages: {}, label: (label) => label }), href: (path) => path }) },
   });

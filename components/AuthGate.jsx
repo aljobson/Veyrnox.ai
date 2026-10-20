@@ -1,4 +1,5 @@
 "use client";
+import LegalLink from './LegalLink';
 import { rich } from '../lib/i18n/rich';
 import { useI18n } from './I18nProvider.jsx';
 
@@ -468,7 +469,7 @@ export default function AuthGate() {
                 </div>
 
                 <p className="mt-4 text-[10px] text-vx-fg-faint leading-tight">
-                    {rich(t('authGate.legal'), { terms: <a href="/legal/terms" className="underline hover:text-vx-fg">{t('label.Terms')}</a>, privacy: <a href="/legal/privacy" className="underline hover:text-vx-fg">{t('about.privacy')}</a> })}
+                    {rich(t('authGate.legal'), { terms: <LegalLink element="a" href="/legal/terms" className="underline hover:text-vx-fg">{t('label.Terms')}</LegalLink>, privacy: <LegalLink element="a" href="/legal/privacy" className="underline hover:text-vx-fg">{t('about.privacy')}</LegalLink> })}
                 </p>
             </div>
         </div>

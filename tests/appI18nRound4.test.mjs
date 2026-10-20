@@ -77,11 +77,11 @@ test('all new count families provide Arabic and Russian plural forms and preserv
   for (const original of [undefined, 'en-US', 'en-GB']) assert.equal(localeTag('en', original), original);
 });
 
-test('only the two exact version-bound media consent fragments are exempted', () => {
+test('media consent is paired with its translated catalog', () => {
   const source = readFileSync(files.media, 'utf8');
-  const legal = candidates(files.media, source, { app: true }).filter(row => row.status === 'allowlisted');
-  assert.equal(legal.length, 2);
-  assert.ok(legal.every(row => row.reason.includes('version-bound')));
+  const legal = candidates(files.media, source, { app: true }).filter(row => row.kind === 'binding');
+  assert.equal(legal.length, 1);
+  assert.ok(legal.every(row => row.status === 'translated'));
   assert.match(source, /<label lang="en" dir="ltr"/);
   assert.equal(candidates(files.media, '<label lang="en" dir="ltr">Untranslated controls</label>', { app: true })[0].status, 'unresolved');
 });
