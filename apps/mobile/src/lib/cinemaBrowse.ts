@@ -87,7 +87,7 @@ export async function fetchDiscovery(mode: BrowseMode, category: string | null, 
 
 // ---- Entitlement (GET /api/v1/cinema/entitlement?content_id=) ----
 
-export type LockReason = 'free_ceiling' | 'not_open' | 'locked' | 'gone' | 'busy' | 'network';
+export type LockReason = 'free_ceiling' | 'not_open' | 'locked' | 'paid' | 'gone' | 'busy' | 'network';
 export type Entitlement =
     | { readonly kind: 'open' }
     | { readonly kind: 'locked'; readonly reason: LockReason; readonly credits: number | null };
@@ -100,7 +100,9 @@ export function parseEntitlement(body: unknown): Entitlement {
     if (!isObject(body)) return { kind: 'locked', reason: 'busy', credits: null };
     if (body.access === 'free' || body.access === 'unlocked' || body.access === 'pass') return { kind: 'open' };
     const credits = typeof body.credits === 'number' ? body.credits : null;
-    return { kind: 'locked', reason: body.reason === 'free_ceiling' ? 'free_ceiling' : 'locked', credits };
+    // A locked title that has a credit price is a paid one: say so, and never show the price (ADR-0207).
+    const reason = body.reason === 'free_ceiling' ? 'free_ceiling' : credits !== null && credits > 0 ? 'paid' : 'locked';
+    return { kind: 'locked', reason, credits };
 }
 
 export async function fetchEntitlement(api: Pick<ApiClient, 'request'>, contentId: string): Promise<Entitlement> {

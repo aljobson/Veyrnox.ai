@@ -96,6 +96,14 @@ const en = {
     'explore.pickUp.making': 'Still making: {label}',
     'explore.pickUp.latest': 'Pick up where you left off: {label}',
     'explore.categoryAll': 'All',
+    'explore.search': 'Search templates',
+    'explore.type.all': 'All',
+    'explore.type.image': 'Images',
+    'explore.type.video': 'Video',
+    'explore.type.audio': 'Audio',
+    'explore.new': 'New',
+    'explore.audioSoon': 'Audio templates are coming soon.',
+    'explore.noMatch': 'No templates match.',
     'explore.templates': 'Templates',
     'explore.seeAll': 'See all templates',
     'explore.templatesError': 'Could not load templates. Tap to retry.',
@@ -1451,6 +1459,17 @@ const en = {
     'chat.make.err.rate': 'Too many requests. Wait a moment and try again.',
     'chat.make.err.network': 'No connection. Nothing was started and you were not charged.',
     'chat.make.err.later': 'That could not be started. You were not charged. Try again.',
+    'preview.title': 'Preview',
+    'preview.browse': 'Browse first',
+    'preview.browseHint': 'Opens a preview of templates and Cinema. No account needed.',
+    'preview.tab.templates': 'Templates',
+    'preview.tab.cinema': 'Cinema',
+    'preview.templates.heading': 'Templates you can make',
+    'preview.cinema.heading': 'Now in Cinema',
+    'preview.signInHint': 'Asks you to sign in first.',
+    'preview.footer': 'Playing, creating and buying need an account.',
+    'preview.signIn': 'Sign in',
+    'preview.error': 'The preview could not load. Check your connection and try again.',
 
     // App-only: team invitation and post review links (parity P7 slice 6).
     'share.loading': 'Loading',
@@ -1511,6 +1530,15 @@ const en = {
     'chat.settings.save': 'Save',
     'chat.settings.failed': 'Could not save. Try again.',
     'chat.settings.close': 'Close',
+    // --- Cinema Pass, read-only, and paid locked state (ADR-0207, parity P6) ---
+    'cinemaBrowse.lock.paid': 'This is a paid title. Paid titles are not available in the app yet.',
+    'cinemaPass.title': 'Cinema Pass',
+    'cinemaPass.pending': 'Your Cinema Pass is being set up.',
+    'cinemaPass.ended': 'Your Cinema Pass has ended.',
+    'cinemaPass.active': 'Your Cinema Pass is active.',
+    'cinemaPass.renewsOn': 'Active. Renews on {date}.',
+    'cinemaPass.endsOn': 'Active until {date}. It will not renew.',
+    'cinemaPass.manage': 'You manage a Pass where you bought it.',
 } as const;
 
 export default en;

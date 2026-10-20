@@ -84,3 +84,26 @@ test('serviceUnavailable() builds the shape directly for a route', async () => {
     assert.equal(res.status, 503);
     assert.equal((await res.json()).error, 'service_unavailable');
 });
+
+test('the anonymous public routes outside the gate get the same shape; a saved copy (200) is untouched', async () => {
+    const paths = ['/api/catalog', '/api/credit-packs', '/api/presets', '/api/popular-templates',
+        '/api/credit-subscription-plans', '/api/cinema-pass-plans', '/api/cinema/titles', '/api/cinema/titles/abc', '/api/cinema/voting'];
+    for (const path of paths) {
+        const down = await withOutageShape(gw(path), async () => {
+            new SupabaseError('x', { status: 0, body: null });
+            return json(502, { error: 'internal' });
+        });
+        assert.equal(down.status, 503, path);
+        assert.equal(down.headers.get('retry-after'), '10', path);
+        assert.equal((await down.json()).error, 'service_unavailable', path);
+        const stale = await withOutageShape(gw(path), async () => { noteOutage(); return json(200, { models: ['saved copy'] }); });
+        assert.equal(stale.status, 200, path);
+    }
+});
+
+test('routes that are not on the list keep their own answers', async () => {
+    for (const path of ['/api/status', '/api/webhook/stripe', '/api/auth/session', '/api/catalogue']) {
+        const res = await withOutageShape(gw(path), async () => { noteOutage(); return json(502, { error: 'x' }); });
+        assert.equal(res.status, 502, path);
+    }
+});
