@@ -930,6 +930,9 @@ const en = {
     'chat.resume.unsaved': 'Your reply finished while the app was in the background. It was charged but could not be saved.',
     'chat.resume.nothing': 'The connection was lost and no reply was made. No credits were used.',
     'chat.resume.pending': 'We are still checking whether your reply finished. If it did, it is charged once and will appear in this chat.',
+    'explore.oddlings.title': 'Oddlings',
+    'explore.oddlings.body': 'Original characters you can browse, then make into a portrait or a short.',
+    'explore.oddlings.hint': 'Opens the Oddlings area.',
 } as const;
 
 export default en;
