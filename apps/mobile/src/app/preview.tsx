@@ -1,7 +1,8 @@
 import { Image } from 'expo-image';
-import { Redirect, Stack, useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../auth/AuthProvider';
 import { touchTarget } from '../lib/a11y';
 import { fetchTitlesPage, posterUrl, type CinemaTitle } from '../lib/cinema';
@@ -16,6 +17,7 @@ type Tab = 'templates' | 'cinema';
 export default function Preview() {
     const { status } = useAuth();
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const [tab, setTab] = useState<Tab>('templates');
     const [presets, setPresets] = useState<Preset[] | null>(null);
     const [titles, setTitles] = useState<CinemaTitle[] | null>(null);
@@ -39,8 +41,14 @@ export default function Preview() {
     const signIn = () => router.push('/sign-in');
     const loading = tab === 'templates' ? presets === null : titles === null;
     return (
-        <View style={styles.screen}>
-            <Stack.Screen options={{ title: t('preview.title'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.text }} />
+        <View style={[styles.screen, { paddingTop: insets.top }]}>
+            <View style={styles.bar}>
+                <Pressable accessibilityRole="button" accessibilityLabel={t('preview.back')} style={[styles.back, touchTarget]} onPress={() => (router.canGoBack() ? router.back() : router.replace('/sign-in'))}>
+                    <Text style={styles.backText}>{'‹'}</Text>
+                </Pressable>
+                <Text style={styles.barTitle} accessibilityRole="header">{t('preview.title')}</Text>
+                <View style={styles.back} />
+            </View>
             <View style={styles.tabs}>
                 {(['templates', 'cinema'] as const).map((k) => (
                     <Pressable
@@ -74,7 +82,7 @@ export default function Preview() {
                           </Pressable>
                       ))}
             </ScrollView>
-            <View style={styles.footer}>
+            <View style={[styles.footer, { paddingBottom: 16 + insets.bottom }]}>
                 <Text style={styles.note}>{t('preview.footer')}</Text>
                 <Pressable accessibilityRole="button" style={[styles.primary, touchTarget]} onPress={signIn}>
                     <Text style={styles.primaryText}>{t('preview.signIn')}</Text>
@@ -86,6 +94,10 @@ export default function Preview() {
 
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
+    bar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 8 },
+    back: { width: 44, alignItems: 'center', justifyContent: 'center' },
+    backText: { color: colors.text, fontSize: 32, lineHeight: 36 },
+    barTitle: { color: colors.text, fontSize: 18, fontWeight: '700' },
     tabs: { flexDirection: 'row', gap: 8, padding: 16, paddingBottom: 0 },
     tab: { flex: 1, borderRadius: 10, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center' },
     tabOn: { backgroundColor: colors.accent, borderColor: colors.accent },
