@@ -2,6 +2,7 @@ import { Tabs } from 'expo-router';
 import { Text, View, type ColorValue } from 'react-native';
 import { HeaderRight } from '../../../components/HeaderChips';
 import { Logo } from '../../../components/Logo';
+import { MenuButton } from '../../../components/MenuDrawer';
 import { VeyMascot } from '../../../components/VeyMascot';
 import { HEADER_MAX_FONT_SCALE, MIN_TARGET } from '../../../lib/a11y';
 import { t } from '../../../lib/i18n';
@@ -35,6 +36,7 @@ export default function TabsLayout() {
                 headerStyle: { backgroundColor: colors.background },
                 headerTintColor: colors.text,
                 headerTitle: () => <Logo size={24} />,
+                headerLeft: () => <MenuButton />,
                 headerRight: () => <HeaderRight />,
                 sceneStyle: { backgroundColor: colors.background },
                 tabBarStyle: { backgroundColor: colors.background, borderTopColor: colors.border },
