@@ -1241,6 +1241,17 @@ const en = {
     'welcome.skip': 'Skip',
     'welcome.go': 'Start creating',
     'welcome.step': 'Step {n} of {total}',
+    // App-only: choose a Library creation as a Create file (ADR-0190, parity P2).
+    'libsrc.choose': 'Choose from Library',
+    'libsrc.chooseLabel': 'Choose {kind} from your Library for {slot}',
+    'libsrc.title': 'Your Library',
+    'libsrc.older': 'Show older creations',
+    'libsrc.empty': 'You have no finished {kind} in your Library yet.',
+    'libsrc.emptyMore': 'No {kind} among the newest creations. Show older ones to keep looking.',
+    'libsrc.kind.image': 'images',
+    'libsrc.kind.video': 'videos',
+    'libsrc.kind.audio': 'audio',
+    'libsrc.ready': 'From your Library: {name}',
 
     // Oddlings handoff, share (parity P8, slice 3 and addendum).
     // App-only: Character panel in Create (ADR-0176, parity P2).
