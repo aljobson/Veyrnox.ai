@@ -33,6 +33,10 @@ export interface Job {
     readonly created_at: string;
     readonly label?: string;
     readonly has_asset: boolean;
+    // On a moderation hold: the file is not served. Absent on older servers.
+    readonly held?: boolean;
+    // When the stored file is removed (about 90 days after it was made). Absent or null: unknown.
+    readonly asset_expires_at?: string | null;
 }
 
 export interface JobPage {
@@ -154,6 +158,8 @@ export const mediaApi = (api: ApiClient) => ({
         }
         return api.request<JobPage>(`/api/v1/jobs?${q.toString()}`);
     },
+    // What Veyrnox.ai records about how a stored file was made. 409 while the job has no stored output.
+    getProvenance: (id: string) => api.request<unknown>(`/api/v1/jobs/${encodeURIComponent(id)}/provenance`),
     // A short-lived link (15 minutes): fetch it when needed, never store it.
     // A stem-splitting job lists its six labels in `output_stems`; `stem` asks for one of them.
     getAsset: (id: string, stem?: string) =>
