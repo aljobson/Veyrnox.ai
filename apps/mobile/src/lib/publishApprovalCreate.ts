@@ -1,5 +1,6 @@
 import type { ApiClient } from './api';
 import { ApiError } from './api';
+import { isLinkOnOrigin } from './bearerLink';
 import { MAX_TEXT, type MediaType } from './publishCompose';
 
 // ADR-0238: ask outside reviewers to approve a post. The server schedules the post once the policy is met and answers
@@ -73,14 +74,9 @@ export interface Created {
 
 const isObject = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 
-// Only an https review link (path /social/review/...) is kept; anything else is dropped rather than shared.
-export function isReviewLink(url: string): boolean {
-    try {
-        const u = new URL(url);
-        return u.protocol === 'https:' && u.pathname.startsWith('/social/review/') && url.length < 2000;
-    } catch {
-        return false;
-    }
+// Only a link on the app's own API origin, https, with path /social/review/..., is kept (see bearerLink.ts).
+export function isReviewLink(url: unknown, base?: string): url is string {
+    return isLinkOnOrigin(url, '/social/review/', base);
 }
 
 export function parseCreated(body: unknown): Created {

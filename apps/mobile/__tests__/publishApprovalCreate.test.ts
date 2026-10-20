@@ -1,4 +1,4 @@
-import { ApiError, type ApiClient } from '../src/lib/api';
+import { API_BASE, ApiError, type ApiClient } from '../src/lib/api';
 import { approvalBody, approvalCreateErrorKey, createApproval, isReviewLink, parseCreated, parseReviewers, signatureOf, validateApproval, type ApprovalDraft } from '../src/lib/publishApprovalCreate';
 
 const NOW = new Date('2026-10-20T12:00:00Z');
@@ -27,17 +27,30 @@ describe('approval create', () => {
         expect(signatureOf(draft({ reviewers: ['a@x.test', 'b@x.test'] }))).toBe(signatureOf(draft({ reviewers: ['b@x.test', 'a@x.test'] })));
         expect(signatureOf(draft({ scheduledAt: new Date('2026-10-22T09:00:00Z') }))).not.toBe(base);
     });
-    test('only https review links are kept', () => {
-        expect(isReviewLink('https://www.example.test/social/review/tok')).toBe(true);
-        expect(isReviewLink('http://www.example.test/social/review/tok')).toBe(false);
-        expect(isReviewLink('https://www.example.test/other/tok')).toBe(false);
-        expect(isReviewLink('javascript:alert(1)')).toBe(false);
-        const c = parseCreated({ request_id: 'r1', idempotent: true, review_links: [{ email: 'a@x.test', url: 'https://h.test/social/review/t' }, { email: 'b@x.test', url: 'https://h.test/evil' }, 'x'] });
-        expect(c).toEqual({ requestId: 'r1', idempotent: true, links: [{ email: 'a@x.test', url: 'https://h.test/social/review/t' }] });
+    test('only an https review link on the API origin is kept', () => {
+        const base = 'https://app.example.test';
+        expect(isReviewLink('https://app.example.test/social/review/tok', base)).toBe(true);
+        expect(isReviewLink('http://app.example.test/social/review/tok', base)).toBe(false);
+        expect(isReviewLink('https://app.example.test/other/tok', base)).toBe(false);
+        expect(isReviewLink('javascript:alert(1)', base)).toBe(false);
+    });
+    test('a link on another host or a lookalike is dropped', () => {
+        const base = 'https://app.example.test';
+        expect(isReviewLink('https://evil.test/social/review/tok', base)).toBe(false);
+        expect(isReviewLink('https://app.example.test.evil.test/social/review/tok', base)).toBe(false);
+        expect(isReviewLink('https://app.example.test@evil.test/social/review/tok', base)).toBe(false);
+        expect(isReviewLink('https://evil.test@app.example.test/social/review/tok', base)).toBe(false);
+        expect(isReviewLink('https://user:pw@app.example.test/social/review/tok', base)).toBe(false);
+        expect(isReviewLink('https://app.example.test:8443/social/review/tok', base)).toBe(false);
+    });
+    test('parseCreated keeps only links on the API origin', () => {
+        const mine = `${API_BASE}/social/review/t`;
+        const c = parseCreated({ request_id: 'r1', idempotent: true, review_links: [{ email: 'a@x.test', url: mine }, { email: 'b@x.test', url: 'https://evil.test/social/review/t' }, 'x'] });
+        expect(c).toEqual({ requestId: 'r1', idempotent: true, links: [{ email: 'a@x.test', url: mine }] });
         expect(parseCreated(null).links).toEqual([]);
     });
     test('create posts to approvals and returns links', async () => {
-        const request = jest.fn(async (_p: string, _i?: RequestInit) => ({ request_id: 'r1', review_links: [{ email: 'lee@x.test', url: 'https://h.test/social/review/t' }] }));
+        const request = jest.fn(async (_p: string, _i?: RequestInit) => ({ request_id: 'r1', review_links: [{ email: 'lee@x.test', url: `${API_BASE}/social/review/t` }] }));
         const c = await createApproval({ request } as unknown as ApiClient, draft(), 'aaaabbbb');
         expect(request.mock.calls[0][0]).toBe('/api/v1/social/approvals');
         expect(request.mock.calls[0][1]?.method).toBe('POST');
