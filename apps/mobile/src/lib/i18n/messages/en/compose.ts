@@ -12,6 +12,7 @@ export default {
     'compose.doneScheduled': 'Scheduled. It will post at the time you chose. You can change or cancel it below until it starts.',
     'compose.doneQueued': 'Added to the queue. You can change or cancel it below until it starts.',
     'compose.donePosted': 'Posting now. Its status shows below.',
+    'compose.networkTextPending': 'After you pick an account, you can give it its own text here if you want.',
     'compose.queuePick': 'Choose a queue',
     'compose.queueAccounts': 'Posts to the queue\'s accounts: {names}.',
     'compose.queueNoMatch': 'This queue has an account that cannot post this creation.',
