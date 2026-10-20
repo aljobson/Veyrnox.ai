@@ -310,7 +310,7 @@ export const MORE_FEATURES = [
   ] },
 ];
 
-export const FOOTER_TAGLINE = 'Credit-metered AI generation for creators. Priced on the button, refund on failure, always.';
+export const FOOTER_TAGLINE = 'Credit-metered AI generation for creators. Price on the Receipt, refund on failure, always.';
 
 // A function, not a constant. `new Date()` at module scope is evaluated once
 // per Worker isolate — the footer showed whatever year the bundle happened to
