@@ -17,7 +17,7 @@ export async function generateMetadata() {
 
 export default async function PublishPlanPage() {
   const { t } = await getT();
-  return <><AppNav /><Main className="mx-auto max-w-[900px] px-4 py-10 sm:px-8">
+  return <><AppNav /><Main className="mx-auto max-w-[1040px] px-4 py-10 sm:px-8">
     <h1 className="text-3xl font-black">{t('app.publish.plan.heading')}</h1>
     <p className="mb-6 mt-2 text-sm text-vx-fg-muted">{t('app.publish.plan.intro')}</p>
     <PublishPlanPanel />
