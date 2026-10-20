@@ -1,10 +1,30 @@
 # TRD — Face Filters & Media Authenticity
 
-**Status:** Draft · 2026-09-18 · checked against `main` at `42150476` on 2026-10-08 (corrections inline, marked *2026-10-08*)
+**Status:** Updated 2026-10-20 against local `origin/main` at `4ccfbd2a1d4b39c8e20db9a0c5269ddab8f908bd`; the Face Filters sources are identical in this checkout (`cf1573bf`). Activation is **merged; production application not verified from the repo**.
 **Reads with:** [PRD.md](PRD.md), [SCHEMA.md](SCHEMA.md), [../../CLAUDE.md](../../CLAUDE.md)
 
 The stack is already chosen and running. This document records only what
 changes, and the decisions an agent would otherwise have to guess at.
+
+**Current catalog state (2026-10-20, `4ccfbd2a`):** 0356 stages A1-A5;
+0357 activates A1 `face-retouch`, A2 `face-enhance`, A4 `face-makeup` and A5
+`face-age`, each at 3 credits / $0.0400 recorded provider cost. A3 `face-relight`
+stays inactive at 7 credits / $0.1000: the unpinned probe billed 2 MP ($0.20);
+a run with the pinned 1000×1000 canvas is still required. A6 is not staged;
+A7/A8 are absent and blocked by PRD §6. These are migration states, not a
+production read. The web uses Studio models and the per-slot `SourcePickers`
+upload field; **a Transform mode does not exist**. Web and phone Tools entries
+come from the active catalog. The dedicated phone flow is
+[planned until the build PR merges](../mobile/spec/FACE-FILTERS.md).
+
+**Upload admission:** `lib/uploadAdmission.js` has no enrolled matching provider.
+`UPLOAD_HASH_MATCH_REQUIRED` is absent from the production vars in the checked-in
+`wrangler.jsonc` (default off), while `UPLOAD_INTEGRITY_ENABLED` and
+`UPLOAD_REQUEST_RATE_LIMIT_ENABLED` are `"true"`. These are repository settings,
+not verified deployed values. Requiring hash matching now fails closed:
+`upload_admission_unavailable` at upload issuance, `source_not_admitted` when
+resolving an uploaded source for a generation. This seam is not a scanner and
+catalog activation does not establish that the public-upload admission gate is met.
 
 ## 1. Inherited stack — do not re-litigate
 
@@ -24,7 +44,7 @@ LemonSqueezy adapter, route and secrets-of-record were removed in #424.*
 
 Three libraries break the Workers build and must not appear: `tsx` in root
 devDependencies, `jose` anywhere on the SSR graph, `@supabase/supabase-js` in
-anything `packages/studio` drags in. See CLAUDE.md.
+the SSR import graph. See CLAUDE.md.
 
 ## 2. Decision: uploads use a presigned R2 PUT, not a Worker proxy
 
@@ -42,8 +62,8 @@ Consequences:
 
 - `packages/adapters/r2.js` gains `presignPutUrl(key, contentType, expiresSeconds, cfg)`,
   built on the existing `signingKey` / `rfc3986` SigV4 helpers. No new crypto.
-- The Worker, not the client, picks the R2 key: `uploads/{user_id}/{uuid}`.
-  A user-controlled path is forbidden by CLAUDE.md, and the `user_id` prefix is
+- The Worker, not the client, picks the R2 key: `uploads/{auth_id}/{uuid}.{ext}`.
+  A user-controlled path is forbidden by CLAUDE.md, and the `auth_id` prefix is
   what makes ownership checkable later.
 - The presigned PUT carries a fixed `Content-Type` and the client must send the
   same one, so the signature pins the declared type.
@@ -53,8 +73,8 @@ Consequences:
 (`tests/r2PresignPut.test.mjs`), `POST /api/v1/uploads` mints the key
 `uploads/{auth_id}/{uuid}.{ext}` and pins the `Content-Type`. It is also used by
 the Publish device uploads and project assets routes. Bounded by ADR-0035 (rate
-limit, flag on in production) and by a 10-unconsumed-upload cap; the ADR-0044
-byte budget (ADR-0044) is on: `UPLOAD_INTEGRITY_ENABLED` is `"true"` in production as of 2026-10-16.
+limit, flag enabled in checked-in production vars) and by a 10-unconsumed-upload cap; the ADR-0044
+byte budget (ADR-0044) is on: `UPLOAD_INTEGRITY_ENABLED` is `"true"` in checked-in production vars (runtime unverified).
 
 ## 3. Decision: fal reads the upload through a presigned GET
 
@@ -78,9 +98,10 @@ A declared `Content-Type` is a claim. The gate is:
 1. **Before signing** — the requested MIME must be in an allowlist
    (`image/jpeg`, `image/png`, `image/webp`, `video/mp4`), and the declared size
    under a per-type cap. Reject with a typed error, never a 500.
-2. **After upload, before submit** — the Worker HEADs the object and reads the
+2. **After upload, before submit** — the Worker makes a bounded ranged GET and reads the
    first bytes to confirm the magic number matches the declared type. A `.mp4`
-   that is really an HTML file must never reach a provider or a presigned GET.
+   that is really an HTML file must never be handed to a provider. Internal
+   presigned reads are used to inspect the object first.
 
 Rate limit uploads at the entry point on the existing Postgres sliding window,
 the same mechanism as `check_generation_rate_limit`.
@@ -106,19 +127,18 @@ A filter is a `model_catalog` row. It reuses, unchanged:
 
 No new table, no new RPC, no new webhook for Track A.
 
-Two code changes are needed:
+Historical implementation requirements (completed unless noted):
 
 - **`modality`.** Filters are `image-to-image` and `video-to-video`, neither of
   which existed in the catalog on 2026-09-18. *2026-10-08: both do now* (Nano
   Banana Pro Edit, Bria background removal and expand, Topaz upscale, LatentSync,
-  MMAudio v2, Topaz video upscale), and `tests/kindOf.test.mjs` pins `kindOf()`.
-  `priceFor()` for `video-to-video` is exercised by those rows; whether a test
-  pins it by name is unverified. `kindOf()` in `app/veyrnox/_lib/tokens.js`
+  MMAudio v2, Topaz video upscale). `tests/uploadKeyType.test.mjs` pins
+  `kindOf()` for transform modalities and mirrors the video-pricing rule; it
+  does not invoke the route's unexported `priceFor()` directly. `kindOf()` in `app/veyrnox/_lib/tokens.js`
   already handles them correctly — `video-to-video` contains "video", so it
   buckets as video; `image-to-image` falls to the image default. `priceFor()` in
   `app/api/v1/generations/route.js` tests `modality.endsWith('video')`, which is
-  true for `video-to-video`, so a video filter is priced per 5s unit. Both are
-  correct by accident; add a test that pins the behaviour before relying on it.
+  true for `video-to-video`, so a video filter is priced per 5s unit. The transform modality test above records that distinction.
 - **`ALLOWED_INPUTS`.** Add `video_url` with the same `kind: 'url'` rule as
   `image_url`, for A6. Add nothing else. *Status 2026-10-08: done, together with
   the four selectors of §6.* The comment in that file explains why
@@ -136,7 +156,7 @@ The distinction that actually matters is not "parameter or no parameter", it is
 **does this buy more output than the catalog price covers**:
 
 - **Feature selectors are allowed.** `makeup_style` (11 values), `intensity`
-  (4 values), `target_age` (6-100), `preserve_identity` (boolean). Each
+  (4 values), `target_age` (outer allowlist 6-100), `preserve_identity` (outer allowlist boolean). Each
   produces exactly one output, the same as the default. Bounds in
   `ALLOWED_INPUTS` mirror the provider's own enum and range, verified against
   the live schema, so a value we accept is a value the provider accepts.
@@ -152,7 +172,14 @@ the allowlist, not the provider's default, is what enforces that.
 *Status 2026-10-08: built.* `makeup_style`, `intensity`, `target_age` and
 `preserve_identity` are in `ALLOWED_INPUTS` (`app/api/v1/generations/route.js`),
 and `tests/uploadKeyType.test.mjs` records that `num_images` and `num_frames`
-must never be client-settable. No catalog row uses them yet.
+must never be client-settable. A4 now declares `makeup_style` and `intensity`;
+A5 narrows `target_age` to integer 18-100 (default 30) and pins
+`preserve_identity: true`, so clients must omit that fixed field. A1/A2 allow
+optional `seed`; A3 requires `prompt` and allows `seed`, but is inactive.
+`lib/additionalModelCapabilities.js` is the per-model contract; membership in
+the outer allowlist alone does not make a field valid for every filter.
+A4 defaults to `natural` / `medium`. A3 pins one image at 1000×1000; safety
+checker settings are fixed where supported, not customer controls.
 
 One consequence for the UI: `fal-ai/iclight-v2` marks `prompt` **required**, so
 the relight filter cannot submit without one. The Studio must treat prompt as
@@ -177,22 +204,21 @@ still *Proposed*. It rejects the self-hosted detector (C), recommends publishing
 our own provenance (E) and reading provenance (D), and allows a reseller (B) only
 in a narrow B2B, one-directional form. No decision is recorded and nothing is
 built. Its section 8.1 adds a Track A obligation: CSAM hash matching at ingest
-before any public upload path. That is not built either (no code found).
+before any public upload path. The fail-closed seam now exists in
+`lib/uploadAdmission.js`; enrollment and matching remain unimplemented.
 
 ## 8. Security requirements specific to this feature
 
 - The presigned PUT URL is minted only for the authenticated caller's own
-  `user_id` prefix. The Worker derives `user_id` from `x-veyrnox-auth-id`,
+  `auth_id` prefix. The Worker derives that identity from `x-veyrnox-auth-id`,
   which `middleware.js` overwrites on every request.
 - A presigned GET on an upload is minted only for the owner's own object.
   Reuse the ownership check pattern of `get_user_asset`.
 - Upload keys are random UUIDs. Never a filename from the client.
-- Every rejection is a typed `{error: "kebab_case_code"}` — no vendor payloads,
+- Every rejection is a typed `{error: "snake_case_code"}` — no vendor payloads,
   no stack traces.
-- An upload that fails magic-number validation is deleted, and the failure is
-  `console.error`'d as a security-relevant event. *2026-10-08: the
-  `console.error` is confirmed in `lib/resolveSource.js`; no immediate delete
-  on failure was found there, so the object waits for the 24-hour sweep.*
+- An upload that fails magic-number validation is refused and logged by
+  `lib/resolveSource.js`; it is not immediately deleted and waits for the age sweep.
 - A job that carries a source must send `consent: true` (`consent_required`
   otherwise). The statement is stored on the job (`jobs.consent_attested_at`,
   0096) and on the account (`users.rights_attested_at`, 0146). *Added after
@@ -200,9 +226,14 @@ before any public upload path. That is not built either (no code found).
 
 ## 9. Testing
 
+- Existing `tests/faceFilters.test.mjs`: 0356/0357 rows and activation predicate,
+  price floor, selectors, fixed safety/quantity fields, age bounds and Tools grouping.
+- Existing `tests/uploadAdmission.test.mjs`: flag defaults, unenrolled-provider
+  refusal at PUT entry points and source resolution, generated-asset exemption.
 - Unit: MIME allowlist, size cap, magic-number check, key derivation.
 - Unit: `priceFor()` and `kindOf()` against `image-to-image` and `video-to-video`.
-- Integration: upload → presign → submit → webhook → asset, against local
+- Intended integration proof (not established by the static filter tests):
+  upload → presign → submit → webhook → asset, against local
   Postgres per the ledger acceptance test harness.
 - Idempotency: replaying the same `idempotency_key` after an upload must not
   debit twice.
