@@ -3,6 +3,8 @@ import { useAuth } from '../../auth/AuthProvider';
 import { Logo } from '../../components/Logo';
 import { AiConsentHost } from '../../components/AiConsentHost';
 import { OfflineBanner } from '../../components/OfflineBanner';
+import { MfaGate } from '../../components/account/MfaGate';
+import { ServiceBanner } from '../../components/ServiceBanner';
 import { colors } from '../../theme';
 
 export default function AppLayout() {
@@ -11,10 +13,12 @@ export default function AppLayout() {
     return (
         <>
             <AiConsentHost />
+            <MfaGate>
             <Stack
                 screenLayout={({ children }) => (
                     <>
                         <OfflineBanner />
+                        <ServiceBanner />
                         {children}
                     </>
                 )}
@@ -27,6 +31,7 @@ export default function AppLayout() {
             >
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             </Stack>
+            </MfaGate>
         </>
     );
 }

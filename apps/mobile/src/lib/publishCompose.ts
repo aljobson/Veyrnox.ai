@@ -25,12 +25,33 @@ const CAPTION_LIMIT: Record<string, { label: string; limit: number }> = {
 
 export type When = { readonly kind: 'now' } | { readonly kind: 'at'; readonly at: Date };
 
+export type YoutubeVisibility = 'private' | 'unlisted' | 'public';
+export const YOUTUBE_VISIBILITIES: readonly YoutubeVisibility[] = ['private', 'unlisted', 'public'];
+
 export interface Draft {
     readonly jobId: string;
     readonly mediaType: MediaType;
     readonly accountIds: readonly string[];
     readonly text: string;
     readonly when: When;
+    // ADR-0161: own text for some networks (network key -> text), YouTube visibility, and the queue whose next slot
+    // sets the time (then `when` is a placeholder until the slot is reserved).
+    readonly networkText?: Readonly<Record<string, string>>;
+    readonly youtubeVisibility?: YoutubeVisibility;
+    readonly queue?: { readonly id: string; readonly name: string };
+}
+
+export const captionLimit = (network: string): number | null => CAPTION_LIMIT[network]?.limit ?? null;
+export const networkLabel = (network: string): string => CAPTION_LIMIT[network]?.label ?? network;
+
+// Keeps only non-empty text for networks that are chosen; the server refuses text for any other network.
+export function cleanNetworkText(variants: Readonly<Record<string, string>>, networks: readonly string[]): Record<string, string> {
+    const out: Record<string, string> = {};
+    for (const n of networks) {
+        const v = variants[n];
+        if (typeof v === 'string' && v.trim()) out[n] = v;
+    }
+    return out;
 }
 
 export function mediaTypeOf(modality: string): MediaType | null {
@@ -77,7 +98,11 @@ export function validateDraft(draft: Draft, accounts: readonly PublishAccount[],
         const a = accounts.find((x) => x.id === id);
         if (!a || !a.supportedMedia.includes(draft.mediaType)) return `${a?.displayName ?? 'That account'} cannot post a ${draft.mediaType}.`;
     }
-    if (draft.when.kind === 'at' && draft.when.at.getTime() <= now.getTime() + MIN_LEAD_MS) return 'Choose a time in the future (at least a minute away).';
+    for (const [network, v] of Object.entries(draft.networkText ?? {})) {
+        const limit = captionLimit(network);
+        if (limit !== null && [...v].length > limit) return `${networkLabel(network)} allows ${limit} characters; this is ${[...v].length}.`;
+    }
+    if (!draft.queue && draft.when.kind === 'at' && draft.when.at.getTime() <= now.getTime() + MIN_LEAD_MS) return 'Choose a time in the future (at least a minute away).';
     return null;
 }
 
@@ -86,6 +111,8 @@ export function createBody(draft: Draft, idempotencyKey: string, _now: Date): Re
     return {
         ...(draft.when.kind === 'now' ? { publishNow: true } : { scheduledAt: draft.when.at.toISOString() }),
         globalText: draft.text.trim(),
+        ...(draft.networkText && Object.keys(draft.networkText).length > 0 ? { networkText: draft.networkText } : {}),
+        ...(draft.youtubeVisibility ? { youtubeVisibility: draft.youtubeVisibility } : {}),
         idempotencyKey,
         accountIds: [...draft.accountIds],
         media: [{ mediaType: draft.mediaType, jobId: draft.jobId }],
@@ -117,10 +144,16 @@ export function composeErrorMessage(err: unknown): string {
     if (status === 402) {
         const feature = e?.body?.feature;
         if (feature === 'scheduling') return 'Scheduling needs the Publish Plan. You can still post now.';
+        if (feature === 'platform_variants') return 'Different text for each network needs the Publish Plan.';
         if (feature === 'multiple_accounts') return 'Posting to more than one account needs the Publish Plan.';
         return 'This needs the Publish Plan.';
     }
     if (status === 403) return 'You do not have permission to do that for this brand.';
+    if (code === 'variants_not_open' || code === 'variants_not_configured') return 'Different text for each network is not open yet. Remove it and try again.';
+    if (code === 'youtube_visibility_not_open') return 'Choosing YouTube visibility is not open yet. Remove it and try again.';
+    if (code === 'caption_too_long') return 'The text is too long for one of the networks.';
+    if (code === 'unsupported_media_type') return 'One of the chosen networks cannot post this creation.';
+    if (code === 'network_unavailable') return 'One of the chosen networks is not open for posting yet.';
     if (code === 'POST_NOT_FOUND') return 'That post is no longer there.';
     if (code === 'ACCOUNT_NOT_FOUND') return 'One of the chosen accounts is no longer connected.';
     if (code === 'MEDIA_NOT_FOUND') return 'That creation could not be found or has no file yet.';
