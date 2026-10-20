@@ -20,7 +20,7 @@ export default {
     'job.playAudio': 'Play audio',
     'job.waiting': '{elapsed} so far. You can leave this screen; it will appear in your library when it is done.',
     'job.stopWaiting': 'Stop waiting',
-    'job.keepsRunning': 'Your creation keeps running and will appear in your Library. Credits are not refunded.',
+    'job.keepsRunning': 'Your creation keeps running and will appear in your Library. If it fails, your credits are refunded.',
     'job.savePhotos': 'Save to photos',
     'job.report': 'Report this creation',
     'job.deleteThis': 'Delete this creation',
