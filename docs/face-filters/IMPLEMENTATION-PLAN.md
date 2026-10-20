@@ -18,7 +18,7 @@ not done.
 | 6 Studio Transform mode | not built as specified; the Tools page lists the filters under "Face filters" once active |
 | 7 Result and Library | not started |
 | 8 Upload retention | partly: sweeps exist; account-closure deletion unverified |
-| 9 Activate | nothing to activate |
+| 9 Activate | A1, A2, A4, A5 activated by 0357 (billed $0.04 each); A3 held (billed $0.20, unpinned payload) |
 
 Track B is absent. It does not start until its ADR is accepted.
 
