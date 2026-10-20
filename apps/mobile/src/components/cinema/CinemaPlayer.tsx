@@ -1,21 +1,26 @@
-import { Link } from 'expo-router';
+import { Link, useFocusEffect } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, AppState, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
-import { BLOCK_COPY, createPlaybackSession, type SessionState } from '../../lib/cinemaPlayback';
+import { BLOCK_COPY, createPlaybackSession, type PlaybackSession, type SessionState } from '../../lib/cinemaPlayback';
+import { getCinemaProgress } from '../../lib/cinemaProgress';
 import { colors } from '../../theme';
 
 // Plays one title. It mints a token when it mounts (the viewer pressed Play), never before.
-export function CinemaPlayer({ contentId }: { readonly contentId: string }) {
-    const { api } = useAuth();
+export function CinemaPlayer({ contentId, resumePosition = 0 }: { readonly contentId: string; readonly resumePosition?: number }) {
+    const { api, getAccessToken } = useAuth();
     const [state, setState] = useState<SessionState>({ kind: 'loading' });
+    const playback = useRef<PlaybackSession | null>(null);
     const player = useVideoPlayer(null, (p) => {
         p.keepScreenOnWhilePlaying = true;
     });
 
     useEffect(() => {
-        const session = createPlaybackSession({ api, player, onState: setState });
+        const progress = getCinemaProgress(api, getAccessToken);
+        const saveProgress = progress.recorder(contentId);
+        const session = createPlaybackSession({ api, player, onState: setState, saveProgress });
+        playback.current = session;
         const subs = [
             player.addListener('statusChange', ({ status }) => {
                 if (status === 'error') session.fail();
@@ -24,14 +29,18 @@ export function CinemaPlayer({ contentId }: { readonly contentId: string }) {
             AppState.addEventListener('change', (next) => session.setVisible(next === 'active')),
         ];
         const timer = setInterval(() => session.tick(), 1000);
-        session.start(contentId);
+        session.start(contentId, resumePosition);
         return () => {
             clearInterval(timer);
             subs.forEach((s) => s.remove());
             session.stop();
+            playback.current = null;
             player.pause();
         };
-    }, [api, player, contentId]);
+    }, [api, getAccessToken, player, contentId, resumePosition]);
+
+    // Leaving a mounted screen saves its position without changing the grant/session lifecycle.
+    useFocusEffect(useCallback(() => () => { playback.current?.saveFinalProgress(); }, []));
 
     return (
         <View style={styles.box}>

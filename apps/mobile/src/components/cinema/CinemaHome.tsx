@@ -5,6 +5,7 @@ import { MIN_TARGET } from '../../lib/a11y';
 import { colors } from '../../theme';
 import { CategoryChips } from './CategoryChips';
 import { CinemaFeed } from './CinemaFeed';
+import { ContinueWatching } from './ContinueWatching';
 import { CinemaProfile } from './CinemaProfile';
 import { DiscoveryList } from './DiscoveryList';
 import { SavedList } from './SavedList';
@@ -50,6 +51,7 @@ export function CinemaHome() {
                     ))}
                 </View>
             ) : null}
+            {section === 'watch' ? <ContinueWatching /> : null}
             <View style={styles.body}>
                 {section === 'watch' ? <CinemaFeed key={`w:${category}`} category={category} />
                     : section === 'saved' ? <SavedList key="saved" kind="saved" />
