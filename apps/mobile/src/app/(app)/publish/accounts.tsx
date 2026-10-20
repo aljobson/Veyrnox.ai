@@ -1,8 +1,9 @@
 import { Image } from 'expo-image';
 import { Stack, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { accountStatusLabel, fetchAccounts, publishErrorMessage, type PublishAccount } from '../../../lib/publish';
+import { disconnectAccount, disconnectErrorKey } from '../../../lib/publishAccounts';
 import { touchTarget } from '../../../lib/a11y';
 import { t } from '../../../lib/i18n';
 import { colors } from '../../../theme';
@@ -16,6 +17,7 @@ export default function Accounts() {
     const [data, setData] = useState<{ accountLimit: number; accounts: PublishAccount[] } | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [refreshing, setRefreshing] = useState(false);
+    const [notice, setNotice] = useState<string | null>(null);
 
     const load = useCallback(async () => {
         try {
@@ -30,6 +32,26 @@ export default function Accounts() {
         load();
     }, [load]);
 
+    function confirmDisconnect(a: PublishAccount) {
+        const vars = { name: a.displayName, network: a.network };
+        Alert.alert(t('accounts.disconnectTitle', vars), t('accounts.disconnectBody', vars), [
+            { text: t('publish.cancel'), style: 'cancel' },
+            {
+                text: t('accounts.disconnectAction'),
+                style: 'destructive',
+                onPress: () => {
+                    setNotice(null);
+                    disconnectAccount(api, a.id)
+                        .then(() => {
+                            setData((d) => (d ? { ...d, accounts: d.accounts.filter((x) => x.id !== a.id) } : d));
+                            setNotice(t('accounts.disconnected', vars));
+                        })
+                        .catch((err) => setNotice(t(disconnectErrorKey(err))));
+                },
+            },
+        ]);
+    }
+
     return (
         <View style={styles.screen}>
             <Stack.Screen options={{ title: 'Connected accounts' }} />
@@ -42,25 +64,27 @@ export default function Accounts() {
                     data={data.accounts}
                     keyExtractor={(a) => a.id}
                     refreshControl={<RefreshControl refreshing={refreshing} tintColor={colors.accent} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}
-                    ListHeaderComponent={<Text style={styles.muted}>{data.accounts.length} of {data.accountLimit} accounts</Text>}
+                    ListHeaderComponent={<View><Text style={styles.muted}>{data.accounts.length} of {data.accountLimit} accounts</Text>{notice ? <Text style={styles.notice} accessibilityLiveRegion="polite">{notice}</Text> : null}</View>}
                     ListEmptyComponent={<Text style={styles.muted}>No accounts are connected yet.</Text>}
                     ListFooterComponent={
                         <View>
                             <Pressable accessibilityRole="button" style={[styles.connect, touchTarget]} onPress={() => router.push('/publish/connect')}>
                                 <Text style={styles.connectText}>{t('connect.title')}</Text>
                             </Pressable>
-                            <Text style={styles.note}>{t('connect.remove')}</Text>
                         </View>
                     }
                     renderItem={({ item }) => (
-                        <View style={styles.row} accessible accessibilityLabel={`${item.displayName}, ${item.network}, ${accountStatusLabel(item.status)}`}>
+                        <View style={styles.row}>
                             {item.avatarUrl ? <Image source={{ uri: item.avatarUrl }} style={styles.avatar} contentFit="cover" /> : <View style={styles.avatar} />}
-                            <View style={styles.text}>
+                            <View style={styles.text} accessible accessibilityLabel={`${item.displayName}, ${item.network}, ${accountStatusLabel(item.status)}`}>
                                 <Text style={styles.name}>{item.displayName}</Text>
                                 <Text style={styles.muted}>{item.network}</Text>
                                 <Text style={[styles.status, item.status !== 'active' && styles.warn]}>{accountStatusLabel(item.status)}</Text>
                                 {item.tokenExpiresAt && item.status === 'active' ? <Text style={styles.muted}>Access renews by {date(item.tokenExpiresAt)}</Text> : null}
                             </View>
+                            <Pressable accessibilityRole="button" accessibilityLabel={t('accounts.disconnect', { name: item.displayName })} style={[styles.disconnect, touchTarget]} onPress={() => confirmDisconnect(item)}>
+                                <Text style={styles.disconnectText}>{t('accounts.disconnectAction')}</Text>
+                            </Pressable>
                         </View>
                     )}
                 />
@@ -80,6 +104,8 @@ const styles = StyleSheet.create({
     muted: { color: colors.muted, fontSize: 13, paddingTop: 2 },
     connect: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, marginTop: 16 },
     connectText: { color: colors.accent, fontSize: 16, fontWeight: '600' },
-    note: { color: colors.muted, fontSize: 13, paddingVertical: 20 },
+    notice: { color: colors.accent, paddingTop: 6 },
+    disconnect: { paddingHorizontal: 12, alignSelf: 'center' },
+    disconnectText: { color: colors.danger, fontWeight: '600' },
     error: { color: colors.danger, paddingTop: 16 },
 });
