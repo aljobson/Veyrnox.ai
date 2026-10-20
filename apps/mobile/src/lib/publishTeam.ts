@@ -1,4 +1,5 @@
 import { ApiError, type ApiClient } from './api';
+import { isLinkOnOrigin } from './bearerLink';
 import { brandStore } from './publishBrand';
 
 // ADR-0163: team members and the activity log, read-only. Both routes answer 404 `teams_not_open` while the server flag
@@ -152,4 +153,42 @@ export function teamActionErrorKey(err: unknown): string {
     if (err instanceof ApiError && err.status === 403) return 'team.err.cannot';
     if (err instanceof ApiError && err.status === 400) return 'team.err.invalid';
     return teamErrorKey(err);
+}
+
+// ADR-0239: invite a person. The route answers with a private invitation link (a bearer link: whoever opens it while
+// signed in with the invited email joins). It is shown once, on the form that made it, and handed to the share sheet
+// only on a tap; it is not stored or logged, and the team list still never reads links.
+const EMAIL_RE = /^[^\s<>@]{1,64}@[^\s<>@]{1,185}\.[^\s<>@]{1,63}$/;
+export const validEmail = (e: string): boolean => e.length <= 254 && EMAIL_RE.test(e);
+
+export interface Invitation_ {
+    readonly id: string;
+    readonly email: string;
+    readonly role: string;
+    readonly expiresAt: string | null;
+    readonly url: string | null;
+}
+
+// Only a link on the app's own API origin, https, with path /social/team/invite/..., is kept (see bearerLink.ts).
+export function isInviteLink(url: unknown, base?: string): url is string {
+    return isLinkOnOrigin(url, '/social/team/invite/', base);
+}
+
+export function parseInvited(body: unknown): { invitation: Invitation_ | null; idempotent: boolean } {
+    const b = isObject(body) ? body : {};
+    const i = isObject(b.invitation) ? b.invitation : null;
+    const id = i ? str(i.id) : null;
+    const email = i ? str(i.email) : null;
+    if (!i || !id || !email) return { invitation: null, idempotent: false };
+    return { invitation: { id, email: email.slice(0, 254), role: str(i.role) ?? 'viewer', expiresAt: str(i.expires_at), url: isInviteLink(i.url) ? i.url : null }, idempotent: b.idempotent === true };
+}
+
+export async function inviteMember(api: ApiClient, brandId: string, email: string, role: ChangeableRole) {
+    return parseInvited(await api.request('/api/v1/social/team', json('POST', { brandId, email: email.trim().toLowerCase(), role })));
+}
+
+export function inviteErrorKey(err: unknown): string {
+    if (err instanceof ApiError && err.status === 400) return 'team.err.inviteInvalid';
+    if (err instanceof ApiError && err.status === 429) return 'team.err.rate';
+    return teamActionErrorKey(err);
 }
