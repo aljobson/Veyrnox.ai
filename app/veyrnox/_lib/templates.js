@@ -12,6 +12,7 @@
 import { SOURCE_TEMPLATES } from './sourceTemplates.js';
 import { SOURCE_TEMPLATE_EXPANSION_4 } from './sourceTemplateExpansion4.js';
 import { SOURCE_TEMPLATE_EXPANSION_5 } from './sourceTemplateExpansion5.js';
+import { VEYRNOX_ORIGINALS } from './originalTemplates.js';
 
 const CATEGORY_ORDER = ['YOUR PHOTO', 'KIDS BIRTHDAY', 'CINEMATIC', 'ANIME', 'CARTOONS', 'MOVIES', 'FANTASY', 'REALISTIC', 'FASHION', 'PRODUCTS', 'VFX', 'UGC', 'ADS'];
 
@@ -147,10 +148,13 @@ const WALL_CLIP_KEYS = [
   'wall-dolphin-surf-ride',
   'wall-event-character-swap',
 ];
-export const PRESETS = GALLERY_CLIP_KEYS.map((key) => SOURCE_TEMPLATES.find((p) => p.clipKey === key));
+export const PRESETS = [
+  ...GALLERY_CLIP_KEYS.map((key) => SOURCE_TEMPLATES.find((p) => p.clipKey === key)),
+  ...VEYRNOX_ORIGINALS,
+];
 export const WALL_PRESETS = WALL_CLIP_KEYS.map((key) => SOURCE_TEMPLATES.find((p) => p.clipKey === key));
 // Old bookmarks retain their original prompt, without an unrelated demo clip.
-export const ALL_TEMPLATES = [...SOURCE_TEMPLATES, ...LEGACY_PRESETS];
+export const ALL_TEMPLATES = [...SOURCE_TEMPLATES, ...LEGACY_PRESETS, ...VEYRNOX_ORIGINALS];
 export const PRESET_CATEGORIES = ['ALL', 'NEW', ...CATEGORY_ORDER.filter((category) => PRESETS.some((p) => p.category === category))];
 
 // "New" is a flag, not a home category: a new template also sits in its own.
