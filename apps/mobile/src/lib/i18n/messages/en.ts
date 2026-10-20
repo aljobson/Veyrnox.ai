@@ -1483,6 +1483,10 @@ const en = {
     'chat.settings.save': 'Save',
     'chat.settings.failed': 'Could not save. Try again.',
     'chat.settings.close': 'Close',
+    // --- Creator upload shell, Continue on web (ADR-0208, parity P6) ---
+    'cinemaCreator.upload.title': 'Upload a title',
+    'cinemaCreator.upload.body': 'Uploading and managing titles is on the web for now. Your creator account works there as it does here.',
+    'cinemaCreator.upload.web': 'Continue on web',
 } as const;
 
 export default en;
