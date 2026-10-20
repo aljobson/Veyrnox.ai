@@ -31,7 +31,7 @@ export default function Compose() {
     const [chosen, setChosen] = useState<Pick | null>(null);
     const [accountIds, setAccountIds] = useState<string[]>([]);
     const [text, setText] = useState('');
-    const [mode, setMode] = useState<'now' | 'schedule' | 'queue'>('now');
+    const [mode, setMode] = useState<'now' | 'schedule' | 'queue'>('schedule');
     const [networkText, setNetworkText] = useState<Record<string, string>>({});
     const [ytVisibility, setYtVisibility] = useState<YoutubeVisibility>('private');
     const [queues, setQueues] = useState<PublishQueue[]>([]);
