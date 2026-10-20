@@ -1,4 +1,4 @@
-# ADR-0191: Mobile brand kit, search, catalogue pages, Ask Vey and About (parity plan P7, slice 3)
+# ADR-0200: Mobile brand kit, search, catalogue pages, Ask Vey and About (parity plan P7, slice 3)
 
 **Status:** Proposed 2026-10-19. Stacked on ADR-0150.
 

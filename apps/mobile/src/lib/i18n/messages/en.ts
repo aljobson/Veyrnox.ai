@@ -1403,6 +1403,14 @@ const en = {
     'share.review.result': 'Your decision: {decision}. Request: {status}.',
     'share.review.err.gone': 'This review link is invalid, expired or no longer available.',
     'share.review.err.failed': 'Your decision could not be saved. Try again.',
+
+    'empty.library.title': 'No creations yet',
+    'empty.library.action': 'Make something',
+    'empty.posts.title': 'No posts yet',
+    'empty.posts.body': 'Schedule or publish something and it will show up here.',
+    'empty.posts.action': 'New post',
+    'lowBalance.body': 'You have {credits}, which is not enough to start a creation.',
+    'lowBalance.buy': 'Buy credits',
 } as const;
 
 export default en;

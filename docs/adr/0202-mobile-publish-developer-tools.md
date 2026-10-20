@@ -1,4 +1,4 @@
-# ADR-0193: Mobile Publish developer tools (parity plan P7, slice 5)
+# ADR-0202: Mobile Publish developer tools (parity plan P7, slice 5)
 
 **Status:** Proposed 2026-10-19. Builds on ADR-0135 (Publish brands) and ADR-0149.
 

@@ -1,4 +1,4 @@
-# ADR-0194: Mobile team invitation and post review links (parity plan P7, slice 6)
+# ADR-0203: Mobile team invitation and post review links (parity plan P7, slice 6)
 
 **Status:** Proposed 2026-10-19. Builds on ADR-0135 (Publish brands) and ADR-0136 (hand-back routes).
 

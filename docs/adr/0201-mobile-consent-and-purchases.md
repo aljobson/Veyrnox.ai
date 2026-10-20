@@ -1,4 +1,4 @@
-# ADR-0192: Mobile assistant consent and purchase history (parity plan P7, slice 4)
+# ADR-0201: Mobile assistant consent and purchase history (parity plan P7, slice 4)
 
 **Status:** Proposed 2026-10-19. Builds on ADR-0149 (the app talks to Supabase Auth with the user's token).
 
