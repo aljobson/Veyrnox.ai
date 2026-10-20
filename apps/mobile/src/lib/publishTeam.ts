@@ -22,6 +22,7 @@ export interface Invitation {
     readonly expiresAt: string | null;
 }
 export interface Team {
+    readonly brandId: string;
     readonly brandName: string;
     readonly actorRole: string;
     readonly members: Member[];
@@ -44,7 +45,7 @@ export function parseTeam(body: unknown): Team {
         const email = str(i.email);
         if (id && email) invitations.push({ id, email, role: str(i.role) ?? 'viewer', status: str(i.status) ?? 'pending', expiresAt: str(i.expires_at) });
     }
-    return { brandName: str(b.brand_name) ?? '', actorRole: str(b.actor_role) ?? '', members, invitations };
+    return { brandId: str(b.brand_id) ?? '', brandName: str(b.brand_name) ?? '', actorRole: str(b.actor_role) ?? '', members, invitations };
 }
 
 // The chosen brand's id goes in the query because the team route does not read the brand header.
@@ -117,4 +118,38 @@ export function teamErrorKey(err: unknown): string {
     if (err.status === 404) return 'team.err.notOpen';
     if (err.status === 429) return 'team.err.rate';
     return 'team.err.later';
+}
+
+// ADR-0187: change a member's role, remove a member, revoke a pending invitation. The route wants the brand id, which
+// the team read returns. Only an owner or manager may; a manager cannot touch another manager or make one, and nobody
+// changes the owner. The server enforces all of it; these helpers only keep the buttons honest.
+export const CHANGEABLE_ROLES = ['manager', 'editor', 'reviewer', 'analyst', 'viewer'] as const;
+export type ChangeableRole = (typeof CHANGEABLE_ROLES)[number];
+
+export function canManage(actorRole: string, memberRole: string): boolean {
+    if (memberRole === 'owner') return false;
+    if (actorRole === 'owner') return true;
+    return actorRole === 'manager' && memberRole !== 'manager';
+}
+
+// Roles the actor may give: a manager cannot make another manager.
+export const rolesFor = (actorRole: string): readonly ChangeableRole[] => (actorRole === 'owner' ? CHANGEABLE_ROLES : CHANGEABLE_ROLES.filter((r) => r !== 'manager'));
+
+const json = (method: string, body: unknown): RequestInit => ({ method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+
+export const changeRole = (api: ApiClient, brandId: string, memberUserId: string, role: ChangeableRole) =>
+    api.request('/api/v1/social/team', json('PATCH', { brandId, memberUserId, action: 'role', role }));
+
+export const removeMember = (api: ApiClient, brandId: string, memberUserId: string) =>
+    api.request('/api/v1/social/team', json('PATCH', { brandId, memberUserId, action: 'remove' }));
+
+export const revokeInvite = (api: ApiClient, brandId: string, inviteId: string) =>
+    api.request(`/api/v1/social/team?brand_id=${encodeURIComponent(brandId)}&invite_id=${encodeURIComponent(inviteId)}`, { method: 'DELETE' });
+
+export function teamActionErrorKey(err: unknown): string {
+    const code = err instanceof ApiError ? err.code : '';
+    if (code === 'MEMBER_NOT_FOUND' || code === 'INVITE_NOT_FOUND') return 'team.err.gone';
+    if (err instanceof ApiError && err.status === 403) return 'team.err.cannot';
+    if (err instanceof ApiError && err.status === 400) return 'team.err.invalid';
+    return teamErrorKey(err);
 }

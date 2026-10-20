@@ -6,6 +6,7 @@ Phase-0 decision-support documents for the target architecture at `/Users/aljobs
 
 | ADR | Status | Summary | Blocks |
 |-----|--------|---------|--------|
+| [ADR-0187 — Mobile: Publish team, change a role, remove, cancel an invitation (parity plan P5)](0187-mobile-publish-team-manage.md) | **Proposed 2026-10-20** | Role change, removal and invitation cancel with confirms; inviting and accepting not built |
 | [ADR-0208 — Mobile: creator upload shell, Continue on web (parity P6)](0208-mobile-creator-upload-shell.md) | **Proposed 2026-10-20** | Creators get a card that opens the web creator workspace; no upload built; what spike S3 must prove |
 | [ADR-0180 — Mobile: Publish inbox, read-only (parity plan P5)](0180-mobile-publish-inbox-read-only.md) | **Proposed 2026-10-19** | Conversation list with state and kind filters, thread view with messages and notes; replies, assigning and resolving not built |
 | [ADR-0177 — Mobile: Vey as the web's animated character](0177-mobile-vey-character.md) | **Proposed 2026-10-19** | The web artwork as seven layers; head nods, arms sway and wave, eyes blink, core pulses; Reduce Motion stills it; no new dependency |
