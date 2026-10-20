@@ -1,6 +1,8 @@
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { touchTarget } from '../../../lib/a11y';
+import { VEY_CLEARANCE } from '../../../components/VeyMascot';
 import { approvalErrorKey, approvalStatusLabel, decisionLabel, fetchApprovals, type ApprovalRequest } from '../../../lib/publishApprovals';
 import { t } from '../../../lib/i18n';
 import { usePublishApi } from '../../../lib/usePublishApi';
@@ -10,6 +12,7 @@ const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString() : nul
 
 export default function Approvals() {
     const api = usePublishApi();
+    const router = useRouter();
     const [requests, setRequests] = useState<ApprovalRequest[] | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [refreshing, setRefreshing] = useState(false);
@@ -41,7 +44,8 @@ export default function Approvals() {
                     data={requests}
                     keyExtractor={(r) => r.id}
                     refreshControl={<RefreshControl refreshing={refreshing} tintColor={colors.accent} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}
-                    ListHeaderComponent={<Text style={styles.intro}>{t('approvals.intro')}</Text>}
+                    contentContainerStyle={{ paddingBottom: VEY_CLEARANCE }}
+                    ListHeaderComponent={<View><Text style={styles.intro}>{t('approvals.intro')}</Text><Pressable accessibilityRole="button" style={[styles.ask, touchTarget]} onPress={() => router.push('/publish/approval-new')}><Text style={styles.askText}>{t('approvals.new')}</Text></Pressable></View>}
                     ListEmptyComponent={<Text style={styles.muted}>{t('approvals.none')}</Text>}
                     renderItem={({ item }) => (
                         <View style={styles.card} accessible accessibilityLabel={`${approvalStatusLabel(item.status)}. ${item.text}`}>
@@ -75,4 +79,6 @@ const styles = StyleSheet.create({
     email: { color: colors.body, fontSize: 14 },
     comment: { color: colors.text, fontSize: 14, fontStyle: 'italic' },
     error: { color: colors.danger, paddingTop: 16 },
+    ask: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, marginBottom: 12 },
+    askText: { color: colors.accent, fontSize: 16, fontWeight: '600' },
 });
