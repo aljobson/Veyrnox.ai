@@ -82,7 +82,7 @@ export default function Ads() {
                         </View>
                     }
                     renderItem={({ item }) => (
-                        <View style={styles.card} accessible accessibilityLabel={`${item.name}, ${t(`ads.status.${item.status}`)}, ${money(item.dailyBudgetCents, item.currency)} ${t('ads.perDay')}`}>
+                        <View style={styles.card} accessible={!(canEdit && item.status === 'draft')} accessibilityLabel={`${item.name}, ${t(`ads.status.${item.status}`)}, ${money(item.dailyBudgetCents, item.currency)} ${t('ads.perDay')}`}>
                             <Text style={styles.name}>{item.name}</Text>
                             <Text style={styles.status}>{t(`ads.status.${item.status}`)} · {item.network} · {t(`ads.mode.${item.mode}`)}</Text>
                             <Text style={styles.muted}>{t(`ads.objective.${item.objective}`)} · {money(item.dailyBudgetCents, item.currency)} {t('ads.perDay')}</Text>
