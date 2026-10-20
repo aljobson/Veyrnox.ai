@@ -40,7 +40,7 @@ export function validateIndex(directory = defaultDirectory) {
 }
 export function renderIndex(directory = defaultDirectory) {
     const { readme, entries, linked } = readIndex(directory);
-    const cell = value => String(value).replace(/\|/g, '\\|');
+    const cell = value => String(value).replace(/\\/g, '\\\\').replace(/\|/g, '\\|');
     const missing = entries.filter(entry => !linked.has(entry.filename));
     return readme + '\n\n## ADR files without a historical README entry\n\n' +
         '| Filename | Number | First heading | Status line |\n|---|---|---|---|\n' +
