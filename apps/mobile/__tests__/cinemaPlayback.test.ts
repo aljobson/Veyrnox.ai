@@ -80,7 +80,7 @@ describe('meter and coverage', () => {
 
 type Call = { path: string; body: Record<string, unknown>; headers: Record<string, string> };
 
-function harness(opts: { play?: () => Promise<unknown> | unknown; heartbeat?: () => Promise<unknown> | unknown; audience?: () => Promise<unknown> | unknown } = {}) {
+function harness(opts: { play?: () => Promise<unknown> | unknown; heartbeat?: () => Promise<unknown> | unknown; audience?: () => Promise<unknown> | unknown; saveProgress?: (position: number, final: boolean) => Promise<void> } = {}) {
     let t = Date.parse('2026-10-18T10:00:00Z');
     const calls: Call[] = [];
     let mints = 0;
@@ -104,7 +104,7 @@ function harness(opts: { play?: () => Promise<unknown> | unknown; heartbeat?: ()
         },
     };
     let k = 0;
-    const session = createPlaybackSession({ api, player, onState: (s) => states.push(s), now: () => t, newKey: () => `key-${++k}` });
+    const session = createPlaybackSession({ api, player, onState: (s) => states.push(s), now: () => t, newKey: () => `key-${++k}`, saveProgress: opts.saveProgress });
     const advance = (ms: number) => { t += ms; };
     const flushPromises = () => new Promise<void>((r) => setTimeout(r, 0));
     const count = (suffix: string) => calls.filter((c) => c.path.endsWith(suffix));
@@ -255,5 +255,83 @@ describe('playback session', () => {
         h.advance(3 * 60_000);
         h.session.tick(); await h.flushPromises();
         expect(h.states.at(-1)).toEqual({ kind: 'blocked', reason: 'network' });
+    });
+});
+
+
+describe('continue watching playback integration', () => {
+    test('resume seeks after the play grant and source load, before playing', async () => {
+        const h = harness();
+        h.player.currentTime = 0;
+        const replace = jest.spyOn(h.player, 'replaceAsync').mockImplementation(async () => { h.player.currentTime = 0; });
+        const positions: number[] = [];
+        const play = jest.spyOn(h.player, 'play').mockImplementation(() => { positions.push(h.player.currentTime); h.player.playing = true; });
+        h.session.start(ID, 43);
+        expect(play).not.toHaveBeenCalled();
+        await h.flushPromises();
+        expect(h.count('/play')).toHaveLength(1);
+        expect(replace).toHaveBeenCalledTimes(1); expect(play).toHaveBeenCalledTimes(1);
+        expect(positions).toEqual([43]); expect(h.states.at(-1)).toEqual({ kind: 'playing' });
+    });
+
+    test('saves every 15 seconds of visible playback and on pause, background and listener-free teardown', async () => {
+        const saveProgress = jest.fn(async (_position: number, _final: boolean) => undefined);
+        const h = harness({ saveProgress }); h.session.start(ID); await h.flushPromises();
+        h.session.setPlaying(true);
+        h.advance(14_000); h.player.currentTime = 14; h.session.tick(); expect(saveProgress).not.toHaveBeenCalled();
+        h.advance(1000); h.player.currentTime = 15; h.session.tick(); expect(saveProgress).toHaveBeenLastCalledWith(15, false);
+        h.player.currentTime = 19; h.session.setPlaying(false); expect(saveProgress).toHaveBeenLastCalledWith(19, true);
+        const count = saveProgress.mock.calls.length;
+        h.advance(30_000); h.session.tick(); expect(saveProgress).toHaveBeenCalledTimes(count);
+        h.session.setPlaying(true); h.player.currentTime = 22; h.session.setVisible(false);
+        expect(saveProgress).toHaveBeenLastCalledWith(22, true);
+        h.player.currentTime = 27; h.session.stop(); h.player.currentTime = 0;
+        expect(saveProgress).toHaveBeenLastCalledWith(27, true);
+        const stoppedCount = saveProgress.mock.calls.length;
+        h.session.stop(); h.session.tick(); expect(saveProgress).toHaveBeenCalledTimes(stoppedCount);
+    });
+
+    test('unmount during a source renewal saves the captured position', async () => {
+        const saveProgress = jest.fn(async (_position: number, _final: boolean) => undefined);
+        const h = harness({ saveProgress }); h.session.start(ID); await h.flushPromises();
+        h.session.setPlaying(true); h.player.currentTime = 77;
+        let finish!: () => void;
+        jest.spyOn(h.player, 'replaceAsync').mockImplementation(() => { h.player.currentTime = 0; return new Promise((r) => { finish = r; }); });
+        h.advance(13 * 60_000); h.session.tick(); await h.flushPromises();
+        expect(h.session.stop()).toBe(77); expect(saveProgress).toHaveBeenLastCalledWith(77, true);
+        finish(); await h.flushPromises();
+    });
+
+    test('a failed progress save does not stop playback', async () => {
+        const h = harness({ saveProgress: async () => { throw new ApiError(503, 'watch_progress_not_open'); } });
+        h.session.start(ID); await h.flushPromises(); h.session.setPlaying(true);
+        h.advance(15_000); h.session.tick(); await h.flushPromises();
+        expect(h.player.playing).toBe(true); expect(h.states.at(-1)).toEqual({ kind: 'playing' });
+    });
+
+    test('failed grant or unmount before a grant does not overwrite progress with zero', async () => {
+        const saveProgress = jest.fn(async (_position: number, _final: boolean) => undefined);
+        const h = harness({ saveProgress, play: async () => { throw new ApiError(403, 'locked'); } });
+        h.session.start(ID, 40); h.session.stop(); await h.flushPromises();
+        expect(saveProgress).not.toHaveBeenCalled();
+    });
+
+    test('background followed by the native pause event saves the same final position only once', async () => {
+        const saveProgress = jest.fn(async (_position: number, _final: boolean) => undefined);
+        const h = harness({ saveProgress }); h.session.start(ID); await h.flushPromises();
+        h.session.setPlaying(true); h.player.currentTime = 24;
+        h.session.setVisible(false); h.session.setPlaying(false);
+        expect(saveProgress.mock.calls).toEqual([[24, true]]);
+        h.advance(999); h.session.stop();
+        expect(saveProgress).toHaveBeenCalledTimes(1);
+    });
+
+    test('a changed position or a final save after one second is not deduplicated', async () => {
+        const saveProgress = jest.fn(async (_position: number, _final: boolean) => undefined);
+        const h = harness({ saveProgress }); h.session.start(ID); await h.flushPromises();
+        h.player.currentTime = 24; h.session.setPlaying(false);
+        h.player.currentTime = 25; h.session.setPlaying(false);
+        h.advance(1000); h.session.setPlaying(false);
+        expect(saveProgress.mock.calls).toEqual([[24, true], [25, true], [25, true]]);
     });
 });

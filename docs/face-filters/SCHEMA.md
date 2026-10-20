@@ -1,12 +1,32 @@
 # Backend Schema — Face Filters & Media Authenticity
 
-**Status:** Draft · 2026-09-18 · checked against `main` at `42150476` on 2026-10-08
+**Status:** Updated 2026-10-20 against local `origin/main` at `4ccfbd2a1d4b39c8e20db9a0c5269ddab8f908bd`; the Face Filters sources are identical in this checkout (`cf1573bf`). Activation is **merged; production application not verified from the repo**.
 **Reads with:** [TRD.md](TRD.md), `packages/db/schema/0001_initial.sql`, [../../CLAUDE.md](../../CLAUDE.md)
 
 *Status 2026-10-08: still true for Track A's own work (no filter table or column exists). Other work since has added columns to the tables below; the main ones are listed in the notes. For the full current schema see `docs/product/SCHEMA.md`.*
 
 Track A adds **no tables and no columns**. This document records the existing
 shape an agent must work within, then the one new table Track B would need.
+
+**Current catalog state (2026-10-20, `4ccfbd2a`):** 0356 stages A1-A5;
+0357 activates A1 `face-retouch`, A2 `face-enhance`, A4 `face-makeup` and A5
+`face-age`, each at 3 credits / $0.0400 recorded provider cost. A3 `face-relight`
+stays inactive at 7 credits / $0.1000: the unpinned probe billed 2 MP ($0.20);
+a run with the pinned 1000×1000 canvas is still required. A6 is not staged;
+A7/A8 are absent and blocked by PRD §6. These are migration states, not a
+production read. The web uses Studio models and the per-slot `SourcePickers`
+upload field; **a Transform mode does not exist**. Web and phone Tools entries
+come from the active catalog. The dedicated phone flow is
+[planned until the build PR merges](../mobile/spec/FACE-FILTERS.md).
+
+**Upload admission:** `lib/uploadAdmission.js` has no enrolled matching provider.
+`UPLOAD_HASH_MATCH_REQUIRED` is absent from the production vars in the checked-in
+`wrangler.jsonc` (default off), while `UPLOAD_INTEGRITY_ENABLED` and
+`UPLOAD_REQUEST_RATE_LIMIT_ENABLED` are `"true"`. These are repository settings,
+not verified deployed values. Requiring hash matching now fails closed:
+`upload_admission_unavailable` at upload issuance, `source_not_admitted` when
+resolving an uploaded source for a generation. This seam is not a scanner and
+catalog activation does not establish that the public-upload admission gate is met.
 
 ## 1. Authentication flow
 
@@ -58,7 +78,8 @@ migrations `0010` and `0071`. The `grant:signup` credit follows
 | `plan` | TEXT | default `free` |
 | `created_at`, `updated_at` | TIMESTAMPTZ | |
 
-Not modified. Supplies the `user_id` that prefixes every upload key.
+Not modified by the filter catalog migrations. `auth_id`, not the internal
+`users.id`, prefixes upload keys.
 
 ### `credit_balances`
 *2026-10-08: also carries `subscription_balance` (ADR-0064, 0183/0184); the invariant is now `free_balance + subscription_balance <= balance`.*
@@ -87,7 +108,7 @@ UPDATE and DELETE raise via trigger `ledger_entries_append_only`. A filter debit
 is an ordinary row — same reason format, same refund path. No new reason vocabulary.
 
 ### `jobs`
-*2026-10-08: gained `consent_attested_at` (0096, set once by `job_consent_attested`) and other columns; the state list below is as written 2026-09-18 and was not re-checked.*
+*2026-10-08: gained `consent_attested_at` (0096, set once by `job_consent_attested`) and other columns; the state list below matches `lib/jobState.js`. Public reads map only `STORED` to `succeeded`; `SUCCEEDED` still means output storage is running. `refunded: true` requires `REFUNDED`.*
 
 | Column | Type | Notes |
 |--------|------|-------|
@@ -107,7 +128,7 @@ URL.** A signed URL in a durable column is a credential that outlives its use.
 The enum is unchanged — a filter moves through exactly the same states.
 
 ### `model_catalog` — normative for pricing
-*2026-10-08: `modality` values `image-to-image` and `video-to-video` already exist in the catalog (0086, 0088, 0089, 0090, 0221). No Track A row is present. The table also has `cost_unit`, `billing_seconds` and `free_allowance_per_day` (ADR-0069) among others.*
+*2026-10-08: `modality` values `image-to-image` and `video-to-video` already exist in the catalog (0086, 0088, 0089, 0090, 0221). That historical no-row status is superseded by 0356/0357: five Track A rows, four activated in migrations. The table also has `cost_unit`, `billing_seconds` and `free_allowance_per_day` (ADR-0069) among others.*
 
 | Column | Type | Notes |
 |--------|------|-------|
@@ -115,9 +136,9 @@ The enum is unchanged — a filter moves through exactly the same states.
 | `name` | TEXT | display name |
 | `provider` | TEXT | `fal` |
 | `provider_endpoint` | TEXT | the fal endpoint id |
-| `modality` | TEXT | **new values:** `image-to-image`, `video-to-video` |
+| `modality` | TEXT | existing values include `image-to-image`, `video-to-video`; A1-A5 use `image-to-image` |
 | `credits_5s` | INTEGER | `CHECK > 0`; price per output, or per 5s of video |
-| `provider_cost_per_unit` | NUMERIC(10,4) | measured, not estimated |
+| `provider_cost_per_unit` | NUMERIC(10,4) | A1/A2/A4/A5: 0.0400, billed evidence recorded in 0357; A3: 0.1000 list-price assumption, pinned run unverified |
 | `gated_flag` | BOOLEAN | |
 | `active` | BOOLEAN | false until the endpoint is verified live |
 | `updated_at` | TIMESTAMPTZ | |
@@ -136,9 +157,11 @@ no DDL — but `kindOf()` and `priceFor()` must be pinned by tests first (TRD §
 | `expires_at` | TIMESTAMPTZ NULL | retention sweep |
 | `created_at` | TIMESTAMPTZ | |
 
-*2026-10-08: the 24-hour age sweep and the consumed-source sweep for `uploads/` are in `lib/uploadSweep.js`, run by the 5-minute cron.* Holds **results only**. A user's uploaded source is not an asset row — it has no
+*2026-10-20: `lib/uploadSweep.js` runs on the five-minute cron: 24-hour age sweep and consumed-source cleanup after terminal jobs, guarded by a 16-minute job age. Cleanup timing is best effort.* Holds **results only**. `job_stored` called by `lib/falWebhookHandler.js` inserts the result asset
+(0077 adds its SHA-256), making it automatically available in Library. No extra
+Library-save API call is required. A user's uploaded source is not an asset row — it has no
 job, no output, and a different retention need. It lives in R2 under
-`uploads/{user_id}/{uuid}` and is swept by prefix and age.
+`uploads/{auth_id}/{uuid}.{ext}` and is swept by prefix and age.
 
 ### `webhook_events`
 `UNIQUE (source, external_id)`. Filter completions arrive on the existing fal
@@ -158,10 +181,10 @@ model_catalog 1──* jobs          (by model_id, no FK — catalog rows outliv
 
 | Prefix | Contents | Written by | Lifetime |
 |--------|----------|-----------|----------|
-| `uploads/{user_id}/{uuid}` | user-supplied sources *(new)* | presigned PUT | short, swept by age |
+| `uploads/{auth_id}/{uuid}.{ext}` | user-supplied sources *(new)* | presigned PUT | short, swept by age |
 | existing result prefix | generated outputs | `copyUrlToR2` | ADR-0008 retention |
 
-Ownership is checkable from the key because `user_id` is in the path. A
+Ownership is checkable from the key because `auth_id` is in the path. A
 presigned GET on an upload is minted only when the path segment matches the
 caller's `x-veyrnox-auth-id`.
 
@@ -192,16 +215,17 @@ SECURITY DEFINER function, and an idempotency key on any state-changing RPC.
 
 ## 6. Migrations
 
-*2026-10-08: next free migration number on `main` is 0228 (latest present: 0227; 0224 was renumbered to 0227). Check open PRs first.* Filters need at most two files, both idempotent, both
-`packages/db/schema/supabase/NNNN_<snake_case>.sql`:
+Both catalog migrations are merged under `packages/db/schema/supabase/`:
 
-1. The catalog rows — `INSERT ... ON CONFLICT (id) DO UPDATE`, inserted with
-   `active = false`.
-2. The activation — flips `active = true` only for endpoints that returned a
-   real output on a live call, with measured `provider_cost_per_unit`.
+1. `0356_face_filters_staged.sql`: A1-A5 inserted inactive with
+   `ON CONFLICT (id) DO NOTHING`; replay preserves later activation/repricing.
+2. `0357_activate_face_filters.sql`: activates only A1/A2/A4/A5, pinning endpoint,
+   provider, modality, cost unit, ungated state, previous inactive state, 3 credits
+   and $0.0400. It requires exactly four updated rows and raises otherwise.
+   **It is not an independently replayable no-op** after activation; the migration
+   ledger controls application. A3 remains inactive at 7 credits / $0.1000.
 
-Two files, not one, because activation is evidence-gated and the Seedance cycle
-(migrations 0045–0057) is what happens when it is not.
-
-Take the next free number on `main` and check open PRs first. Production
-migrations are applied only by the `apply-migrations` workflow (ADR-0023).
+Production application is not verified from the repo. A successful manual
+apply-migrations dispatch alone does not prove the live row state. Future
+migrations take the next free number after checking main and open PRs; production
+application uses the owner-approved workflow (ADR-0023).

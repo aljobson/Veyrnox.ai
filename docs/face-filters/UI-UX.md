@@ -1,12 +1,32 @@
 # UI/UX Brief — Face Filters
 
-**Status:** Draft · 2026-09-18 · checked against `main` at `42150476` on 2026-10-08
+**Status:** Updated 2026-10-20 against local `origin/main` at `4ccfbd2a1d4b39c8e20db9a0c5269ddab8f908bd`; the Face Filters sources are identical in this checkout (`cf1573bf`). Activation is **merged; production application not verified from the repo**.
 **Reads with:** [APP-FLOW.md](APP-FLOW.md)
 
 *Status 2026-10-08: the three new components below (`ModeToggle`, `UploadZone`, `BeforeAfter`) are not built; no such file exists under `app/`. The Studio's own upload field, `SourcePickers`, plays the `UploadZone` role in a simpler form. The colour table is still right except that a thirteenth token, `--vx-warn` (blue, for warnings and notices; amber stays Credits only), was added after the audit. Palette values below were not re-measured.*
 
 Veyrnox already has a design language. This brief records it so an agent extends
 it instead of inventing a second one, then specifies only the new surfaces.
+
+**Current catalog state (2026-10-20, `4ccfbd2a`):** 0356 stages A1-A5;
+0357 activates A1 `face-retouch`, A2 `face-enhance`, A4 `face-makeup` and A5
+`face-age`, each at 3 credits / $0.0400 recorded provider cost. A3 `face-relight`
+stays inactive at 7 credits / $0.1000: the unpinned probe billed 2 MP ($0.20);
+a run with the pinned 1000×1000 canvas is still required. A6 is not staged;
+A7/A8 are absent and blocked by PRD §6. These are migration states, not a
+production read. The web uses Studio models and the per-slot `SourcePickers`
+upload field; **a Transform mode does not exist**. Web and phone Tools entries
+come from the active catalog. The dedicated phone flow is
+[planned until the build PR merges](../mobile/spec/FACE-FILTERS.md).
+
+**Upload admission:** `lib/uploadAdmission.js` has no enrolled matching provider.
+`UPLOAD_HASH_MATCH_REQUIRED` is absent from the production vars in the checked-in
+`wrangler.jsonc` (default off), while `UPLOAD_INTEGRITY_ENABLED` and
+`UPLOAD_REQUEST_RATE_LIMIT_ENABLED` are `"true"`. These are repository settings,
+not verified deployed values. Requiring hash matching now fails closed:
+`upload_admission_unavailable` at upload issuance, `source_not_admitted` when
+resolving an uploaded source for a generation. This seam is not a scanner and
+catalog activation does not establish that the public-upload admission gate is met.
 
 ## 1. Look and feel
 
@@ -74,7 +94,10 @@ Already in `app/veyrnox/_components/`: `Button`, `Chip`, `BalancePill`,
 
 *2026-10-08: the folder has grown (`SourcePickers`, `LibraryPicker`, `PriceSlip`, `EditSheet`, `JobAssetPreview`, among others). Check it before building any of the three below.*
 
-New components, and only these:
+The following are the original proposed components, **not shipped UI**.
+Current web filters use Studio models and its per-slot `SourcePickers` upload
+field, not a Transform mode. The Face filters Tools entries do not establish
+that dedicated selector or comparison controls exist.
 
 ### `ModeToggle`
 
@@ -104,7 +127,12 @@ drop is an enhancement, never the only route.
 The result view for a Transform job. Source and result side by side above `sm`,
 stacked below, each labelled in monospace (`SOURCE` / `RESULT`). Deliberately
 not a drag slider — a slider hides half the image at all times and is awkward on
-touch. Both images visible at once is the honest comparison.
+touch. Both images visible at once is the proposed comparison.
+
+The [phone specification](../mobile/spec/FACE-FILTERS.md) scopes comparison to a
+temporary local original in the immediate result view; Library/restart views
+show output only. Actions are “Open in Library” and optional “Save to Photos”,
+not a second Library-save request. Persistent source thumbnails are unresolved.
 
 ## 6. Motion
 
@@ -114,7 +142,7 @@ Respect `prefers-reduced-motion`: progress becomes a static percentage.
 
 ## 7. Screens
 
-### Studio — Transform mode
+### Studio — Transform mode *(unbuilt proposal)*
 
 Rail top to bottom: mode toggle · upload zone · model picker (filtered to
 transform modalities) · model controls · cost row in amber · submit.
@@ -125,7 +153,11 @@ something to look at. On success it becomes the before/after.
 
 ### Library
 
-Unchanged grid. A Transform card carries a small source thumbnail inset at the
+Current behaviour: stored outputs appear automatically; no additional save
+request is required. Originals are not returned by job/asset reads. The source
+thumbnail below remains an unbuilt proposal requiring a retention/API decision.
+
+Proposed grid: a Transform card carries a small source thumbnail inset at the
 corner of its result thumbnail, marking it as a transform without a badge or a
 second colour.
 
@@ -135,6 +167,13 @@ Plain, specific, no exclamation marks. Say what happened and what to do.
 
 - Good: "Over 20 MB. Try a smaller file."
 - Bad: "Oops! Something went wrong 😔"
+
+Describe only the active A1/A2/A4/A5 set; do not promise A3 or video filters.
+Show the rights attestation matching `aup-2026-09-26` before sending
+`consent: true`; the server supplies that version, not a client field.
+Upload admission unavailable means the upload cannot proceed; do not suggest
+a bypass. Provider moderation/refusal copy must not imply guaranteed acceptance
+on retry. Refund copy requires `refunded: true`, not merely a failed job.
 
 Never show a raw error code to a user. `inputs_invalid:image_url` becomes
 "That file could not be read."

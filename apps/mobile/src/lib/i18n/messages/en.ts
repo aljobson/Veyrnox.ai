@@ -41,8 +41,10 @@ import area_edit from './en/edit';
 import area_email from './en/email';
 import area_empty from './en/empty';
 import area_explore from './en/explore';
+import area_faceFilters from './en/faceFilters';
 import area_form from './en/form';
 import area_help from './en/help';
+import area_helpGuides from './en/helpGuides';
 import area_home from './en/home';
 import area_inbox from './en/inbox';
 import area_insights from './en/insights';
@@ -67,6 +69,7 @@ import area_pricing from './en/pricing';
 import area_prov from './en/prov';
 import area_public from './en/public';
 import area_publish from './en/publish';
+import area_publishWorkflows from './en/publishWorkflows';
 import area_queue from './en/queue';
 import area_queues from './en/queues';
 import area_recovery from './en/recovery';
@@ -127,8 +130,10 @@ const catalog = {
     ...area_email,
     ...area_empty,
     ...area_explore,
+    ...area_faceFilters,
     ...area_form,
     ...area_help,
+    ...area_helpGuides,
     ...area_home,
     ...area_inbox,
     ...area_insights,
@@ -153,6 +158,7 @@ const catalog = {
     ...area_prov,
     ...area_public,
     ...area_publish,
+    ...area_publishWorkflows,
     ...area_queue,
     ...area_queues,
     ...area_recovery,

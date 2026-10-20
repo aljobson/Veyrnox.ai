@@ -1,9 +1,29 @@
 # PRD — Face Filters & Media Authenticity
 
-**Status:** Draft · 2026-09-18 · status lines updated 2026-10-08 against `main` at `42150476`. The upload spine (§5) is built; A1-A5 are staged inactive in the catalog (0356, 2026-10-20) and listed on the Tools page; A6 is not staged; A7/A8 and Track B are blocked. Upload hash matching has a fail-closed gate but no matching service.
+**Status:** Updated 2026-10-20 against local `origin/main` at `4ccfbd2a1d4b39c8e20db9a0c5269ddab8f908bd`; the Face Filters sources are identical in this checkout (`cf1573bf`). Activation is **merged; production application not verified from the repo**.
 **Owner:** product owner (Al Jobson)
 **Predecessors:** [ADR-0000](../adr/0000-product-strategy.md) (Replacer), [ADR-0005](../adr/0005-phase-0-business-preconditions.md) (Phase-0 preconditions), [ADR-0007](../adr/0007-legacy-muapi-proxy-deprecation.md) (upload proxy retired), [ADR-0008](../adr/0008-asset-retention-policy-and-sweep.md) (retention), [ADR-0017](../adr/0017-c2pa-claims-withdrawn.md) (C2PA claims withdrawn)
 **Language:** every term used here is defined in [CONTEXT.md](../../CONTEXT.md). This document adds none.
+
+**Current catalog state (2026-10-20, `4ccfbd2a`):** 0356 stages A1-A5;
+0357 activates A1 `face-retouch`, A2 `face-enhance`, A4 `face-makeup` and A5
+`face-age`, each at 3 credits / $0.0400 recorded provider cost. A3 `face-relight`
+stays inactive at 7 credits / $0.1000: the unpinned probe billed 2 MP ($0.20);
+a run with the pinned 1000×1000 canvas is still required. A6 is not staged;
+A7/A8 are absent and blocked by PRD §6. These are migration states, not a
+production read. The web uses Studio models and the per-slot `SourcePickers`
+upload field; **a Transform mode does not exist**. Web and phone Tools entries
+come from the active catalog. The dedicated phone flow is
+[planned until the build PR merges](../mobile/spec/FACE-FILTERS.md).
+
+**Upload admission:** `lib/uploadAdmission.js` has no enrolled matching provider.
+`UPLOAD_HASH_MATCH_REQUIRED` is absent from the production vars in the checked-in
+`wrangler.jsonc` (default off), while `UPLOAD_INTEGRITY_ENABLED` and
+`UPLOAD_REQUEST_RATE_LIMIT_ENABLED` are `"true"`. These are repository settings,
+not verified deployed values. Requiring hash matching now fails closed:
+`upload_admission_unavailable` at upload issuance, `source_not_admitted` when
+resolving an uploaded source for a generation. This seam is not a scanner and
+catalog activation does not establish that the public-upload admission gate is met.
 
 ## 1. Overview
 
@@ -16,8 +36,8 @@ This document covers two additions, which are **not** one feature:
 - **Track A — Face Filters.** The user supplies their own photo or video and a
   model transforms it: retouching, relighting, makeup, style, age, face swap.
   Mechanically these are generations like any other. The novel part is not the
-  models — it is that the *input* is a user-supplied file, which Veyrnox cannot
-  accept today.
+  models — it is that the *input* is a user-supplied file. The upload
+  infrastructure is built; the dedicated comparison UI remains planned.
 - **Track B — Media Authenticity.** The user supplies a photo, video, or audio
   clip and receives a judgement about whether it was AI-generated or manipulated.
   This is not a generation. It produces a verdict, not an asset, and no current
@@ -52,13 +72,10 @@ billing mechanics.
 
 ### Track A
 
-Each row is one `model_catalog` entry. Endpoints are fal endpoint IDs confirmed
-present in fal's public model index on 2026-09-18. **As of 2026-10-08 none is in
-`model_catalog`** (no migration through 0227 names one). Slice 0 submitted real
-jobs for A1-A5 (and the `fal-ai/retoucher` alternative); the two video relight
-endpoints were never run; no price has been measured. Verifying and pricing
-happens per [ADR-0011](../adr/0011-model-catalog-gaps.md)'s rule before
-`active = true`.
+A1-A5 have `model_catalog` rows from 0356; 0357 activates A1/A2/A4/A5.
+A6-A8 remain candidates, not catalog entries. Endpoint availability below was
+originally checked on 2026-09-18; current billed evidence is recorded in 0357,
+not independently re-run for this documentation update.
 
 | # | Feature | User value | Candidate endpoint | Identity risk |
 |---|---------|-----------|--------------------|---------------|
@@ -71,11 +88,11 @@ happens per [ADR-0011](../adr/0011-model-catalog-gaps.md)'s rule before
 | A7 | Identity reference | Generate a new image that keeps one reference face | `fal-ai/ip-adapter-face-id` | **high** |
 | A8 | Face swap | Put a reference face onto another image | `fal-ai/hy-wu-edit` | **high** |
 
-A1–A6 are the launch set. **A7 and A8 do not ship until §6 is satisfied.**
+A1/A2/A4/A5 are the merged activation set; A3/A6 remain deferred. **A7 and A8 do not ship until §6 is satisfied.**
 
-*Status 2026-10-08:* A1-A5 produced real output in Slice 0 (cost unread). A6 not run. A1-A8: no catalog row, nothing active, no Studio surface.
+*Historical status 2026-10-08, superseded by 0356/0357:* Slice 0 output existed, but no catalog rows or activation existed then. Keep the historical measurements in the implementation plan.
 
-*Status 2026-10-20:* migration 0356 stages A1-A5 as `face-retouch`, `face-enhance`, `face-relight`, `face-makeup`, `face-age`, all `active = false`, at fal's list prices (read from the model pages, not yet checked against a billed run). Their capability records pin the safety checker on, one output, and a 1 MP canvas for A3. A5 cannot be asked for an age under 18. The existing Tools page (`/tools` and the phone's tool directory) groups them under "Face filters" once a row is active; no new surface was built. *Billed 2026-10-20 (fal usage page):* A1, A2, A4 and A5 each billed exactly $0.04 for one image, and 0357 activates them. A3 billed 2.00 MP = $0.20 on a payload that did not use the pinned 1 MP canvas; it stays staged until a pinned run shows what a gateway job bills. A6 stays unstaged: it was never run, costs $0.10-$0.20 per second, and Light-X's inputs are conditional. A7/A8 are not staged.
+*Status 2026-10-20:* migration 0356 stages A1-A5 as `face-retouch`, `face-enhance`, `face-relight`, `face-makeup`, `face-age`, all `active = false`, at fal's list prices (read from the model pages, not yet billed at the time of staging). Their capability records pin safety settings where the endpoint supports them; A3 pins one output on a 1 MP canvas. A5 cannot be asked for an age under 18. The existing Tools page (`/tools` and the phone's tool directory) groups them under "Face filters" once a row is active; no new surface was built. *Billed evidence recorded in 0357, 2026-10-20 (not independently re-read here):* A1, A2, A4 and A5 each billed exactly $0.04 for one image, and 0357 activates them. A3 billed 2.00 MP = $0.20 on a payload that did not use the pinned 1 MP canvas; it stays staged until a pinned run shows what a gateway job bills. A6 stays unstaged: it was never run, costs $0.10-$0.20 per second, and Light-X's inputs are conditional. A7/A8 are not staged.
 
 ### Track B
 
@@ -146,21 +163,25 @@ is a legal call, unverified. (2) output moderation: not built. (3) takedown
 route: violation records and warnings/takedowns exist (0146, admin violations
 page); the wiring to the ADR-0005 §6 designated agent is unverified, and the
 DMCA agent filing is still a product launch blocker. (4) face-reference
-retention: uploads are swept at 24 hours or within minutes of a finished job;
+retention: uploads have a 24-hour age sweep and post-completion cleanup on the five-minute cron (16-minute job-age guard);
 deletion on account closure is unverified. (5) published statement: not found.
 Separately, **CSAM hash matching (ADR-0025 §8.1) has no chosen service**, and
 gates any public upload surface. *2026-10-20:* `lib/uploadAdmission.js` is the
 fail-closed seam: with `UPLOAD_HASH_MATCH_REQUIRED=true` and no enrolled
 adapter, every path that mints a browser PUT, and every hand-off of a stored
-upload to a provider, refuses. It is off in production, so nothing changes
-until a matcher is enrolled; there is still no matching code.
+upload to a provider, refuses. The flag is absent from checked-in production vars (default off); deployed values
+are unverified. There is still no matching adapter. The four-row activation
+merged despite this unresolved public-upload launch gate; do not describe the
+activation as evidence that the gate passed.
 
-A1–A6 carry none of this weight — they modify the user's own photo and produce a
-photo of the same person. That asymmetry is why the launch set stops at A6.
+A1–A6 modify a supplied photo or clip; A7/A8 have the additional identity-use
+gates above. The general rights attestation and upload-admission obligations
+still apply to the activated filters.
 
 ## 7. Success criteria
 
-- A user can upload a photo, apply A1–A6, and see the result in Library.
+- A user can upload a photo, apply A1/A2/A4/A5, and see the output automatically
+  in Library once stored. A3 and A6 need their remaining activation evidence.
 - Every filter debits and, on provider failure, refunds — proven by the same
   acceptance tests that cover existing models.
 - `reconcile_balances()`, `reconcile_free_credits()`, `reconcile_top_ups()` all
@@ -173,14 +194,15 @@ photo of the same person. That asymmetry is why the launch set stops at A6.
 ## 8. Open questions
 
 1. Retention for user uploads — inherit ADR-0008, or shorter? (Recommend shorter.)
-   *Answered in code:* shorter. 24 hours for an abandoned upload, minutes after
-   the job finishes (ADR-0028, `lib/uploadSweep.js`).
+   *Answered in code:* shorter. 24-hour age sweep for an abandoned upload; subsequent cron runs after
+   completion for consumed sources, with a 16-minute job-age guard
+   (ADR-0028, `lib/uploadSweep.js`). Cleanup is best effort.
 2. Does an upload count against a quota, or is it free until a filter runs?
    (Recommend free but rate-limited and size-capped; storage is the only cost.)
    *Answered in code, with a twist:* free of credits, rate limited (ADR-0035),
    capped at 10 unconsumed uploads, 20 MB per image and 100 MB per video, and
    refused to an account with a zero balance (`insufficient_credits`). The
-   reserved byte budget (ADR-0044) is on in production (`UPLOAD_INTEGRITY_ENABLED`, 2026-10-16).
+   reserved byte budget (ADR-0044) is enabled in checked-in production vars (`UPLOAD_INTEGRITY_ENABLED`; runtime unverified).
 3. Track B: is Veyrnox willing to publish a probabilistic "this is fake" verdict
    about a named person's media? Detectors run 70–85% in the wild and worse on
    re-compressed social uploads. This is an ownership decision, not engineering.
