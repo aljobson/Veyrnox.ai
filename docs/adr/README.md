@@ -6,6 +6,7 @@ Phase-0 decision-support documents for the target architecture at `/Users/aljobs
 
 | ADR | Status | Summary | Blocks |
 |-----|--------|---------|--------|
+| [ADR-0207 — Mobile: Cinema Pass read-only and the paid locked state (parity P6)](0207-mobile-cinema-pass-readonly.md) | **Proposed 2026-10-20** | Pass status card when the account has one; no price or buy path; locked paid titles explained; continue watching and store price blocked on the server and the store |
 | [ADR-0184 — Mobile: chat settings, model and instructions (parity plan P3)](0184-mobile-chat-settings.md) | **Proposed 2026-10-19** | Settings in the chat toolbar: switch the model with its price, edit instructions; sends only what changed |
 | [ADR-0183 — Mobile: chat list search and delete (parity plan P3)](0183-mobile-chat-list-search-delete.md) | **Proposed 2026-10-19** | Title search and an asked-first Delete on each chat row |
 | [ADR-0166 — Mobile: Publish reports, PDF and slide download and share (parity plan P5)](0166-mobile-publish-reports.md) | **Proposed 2026-10-19** | Saved reports list; PDF and slides downloaded to the cache and shared; template editing not built |

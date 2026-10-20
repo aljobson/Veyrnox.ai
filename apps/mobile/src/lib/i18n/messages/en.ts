@@ -1435,6 +1435,15 @@ const en = {
     'chat.settings.save': 'Save',
     'chat.settings.failed': 'Could not save. Try again.',
     'chat.settings.close': 'Close',
+    // --- Cinema Pass, read-only, and paid locked state (ADR-0207, parity P6) ---
+    'cinemaBrowse.lock.paid': 'This is a paid title. Paid titles are not available in the app yet.',
+    'cinemaPass.title': 'Cinema Pass',
+    'cinemaPass.pending': 'Your Cinema Pass is being set up.',
+    'cinemaPass.ended': 'Your Cinema Pass has ended.',
+    'cinemaPass.active': 'Your Cinema Pass is active.',
+    'cinemaPass.renewsOn': 'Active. Renews on {date}.',
+    'cinemaPass.endsOn': 'Active until {date}. It will not renew.',
+    'cinemaPass.manage': 'You manage a Pass where you bought it.',
 } as const;
 
 export default en;
