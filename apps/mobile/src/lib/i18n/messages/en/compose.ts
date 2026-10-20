@@ -8,6 +8,7 @@ export default {
     'compose.youtube.unlisted': 'Unlisted',
     'compose.youtube.public': 'Public',
     'compose.queue': 'Next queue slot',
+    'compose.pickAccount': 'Choose an account above to turn on the button.',
     'compose.queuePick': 'Choose a queue',
     'compose.queueAccounts': 'Posts to the queue\'s accounts: {names}.',
     'compose.queueNoMatch': 'This queue has an account that cannot post this creation.',

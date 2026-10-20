@@ -104,7 +104,7 @@ export default function Compose() {
             ]);
             return;
         }
-        const answer = when.kind === 'now' ? `This posts to ${where} now and is public. It cannot be undone from here.` : `This schedules a post to ${where} for ${when.at.toLocaleString()}. You can change or cancel it until it starts.`;
+        const answer = when.kind === 'now' ? `This posts to ${where} now and is public. It cannot be undone from here.` : `This schedules a post to ${where} for ${when.at.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}. You can change or cancel it until it starts.`;
         Alert.alert(when.kind === 'now' ? 'Post now?' : 'Schedule this post?', answer, [
             { text: 'Cancel', style: 'cancel' },
             { text: when.kind === 'now' ? 'Post now' : 'Schedule', onPress: () => void send(draft, now) },
@@ -188,6 +188,7 @@ export default function Compose() {
                         ) : null}
 
                         {problem ? <Text style={styles.error}>{problem}</Text> : null}
+                        {selected.length === 0 ? <Text style={styles.muted}>{t('compose.pickAccount')}</Text> : null}
                         <Pressable accessibilityRole="button" disabled={busy || selected.length === 0} accessibilityState={{ disabled: busy || selected.length === 0 }} style={[styles.button, (busy || selected.length === 0) && styles.off]} onPress={submit}>
                             {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>{mode === 'queue' ? t('compose.queueAction') : mode === 'schedule' ? 'Schedule' : 'Post now'}</Text>}
                         </Pressable>
