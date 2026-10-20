@@ -6,6 +6,7 @@ Phase-0 decision-support documents for the target architecture at `/Users/aljobs
 
 | ADR | Status | Summary | Blocks |
 |-----|--------|---------|--------|
+| [ADR-0187 — Mobile: Publish team, change a role, remove, cancel an invitation (parity plan P5)](0187-mobile-publish-team-manage.md) | **Proposed 2026-10-20** | Role change, removal and invitation cancel with confirms; inviting and accepting not built |
 | [ADR-0172 — Mobile: prompt collage on Explore, slice 1](0172-mobile-prompt-collage.md) | **Proposed 2026-10-19** | Type filter (Images, Video, Audio), categories by type, search, two-column masonry, empty states; favourites, audio samples and content later |
 | [ADR-0207 — Mobile: Cinema Pass read-only and the paid locked state (parity P6)](0207-mobile-cinema-pass-readonly.md) | **Proposed 2026-10-20** | Pass status card when the account has one; no price or buy path; locked paid titles explained; continue watching and store price blocked on the server and the store |
 | [ADR-0184 — Mobile: chat settings, model and instructions (parity plan P3)](0184-mobile-chat-settings.md) | **Proposed 2026-10-19** | Settings in the chat toolbar: switch the model with its price, edit instructions; sends only what changed |
