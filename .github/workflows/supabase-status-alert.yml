@@ -13,6 +13,11 @@ on:
   schedule:
     - cron: '2,7,12,17,22,27,32,37,42,47,52,57 * * * *'
   workflow_dispatch:
+    inputs:
+      send_test:
+        description: 'Send a test alert to Slack and email, and nothing else'
+        type: boolean
+        default: false
 
 permissions: {}
 
@@ -21,7 +26,28 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  test-alert:
+    if: github.event_name == 'workflow_dispatch' && inputs.send_test
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+      - name: Send a test alert
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ALERT_EMAIL_TO: ${{ vars.ALERT_EMAIL_TO }}
+          ALERT_EMAIL_FROM: ${{ vars.ALERT_EMAIL_FROM }}
+        run: node scripts/notify-outage.mjs test
+
   check:
+    if: github.event_name != 'workflow_dispatch' || !inputs.send_test
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:

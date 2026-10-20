@@ -12,8 +12,10 @@ import { CreateOptions, type OptionValues } from '../../../components/CreateOpti
 import { SourcePicker } from '../../../components/SourcePicker';
 import { DEFAULT_CINEMA, buildCinemaPrompt, sanitizeCinema, type Cinema } from '../../../lib/cinemaCamera';
 import { clearDraft, loadDraft, saveDraft } from '../../../lib/createDraftStore';
-import { SAVED_DRAFT_VERSION, audioLengthInvalid, batchCost, freeLeftFor, hasAnyOption, imageCount, inputsForIndex, optionsFor, seedIsInvalid, settingsInputs, takesImageCount, voiceIsMissing } from '../../../lib/createOptions';
+import { SAVED_DRAFT_VERSION, type CreateDraft, audioLengthInvalid, batchCost, freeLeftFor, hasAnyOption, imageCount, inputsForIndex, optionsFor, seedIsInvalid, settingsInputs, takesImageCount, voiceIsMissing } from '../../../lib/createOptions';
 import { buildCharacterPrompt, sanitizePicks, type Picks } from '../../../lib/oddlingsBuilder';
+import { useBalance } from '../../../lib/useBalance';
+import { shortfall } from '../../../lib/lowBalance';
 import { useFreeLeft } from '../../../lib/useFreeLeft';
 import { estimateCredits, fetchCatalog, kindOf, mediaApi, promptRequired, textInput, type CatalogModel } from '../../../lib/media';
 import { selectedState } from '../../../lib/a11y';
@@ -47,6 +49,9 @@ export default function CreateWithModel() {
     const [restored, setRestored] = useState(false);
     const [note, setNote] = useState<string | null>(null);
     const freeMap = useFreeLeft();
+    const balance = useBalance();
+    // The newest unsaved draft, so leaving the screen (to buy credits, say) never loses the last words typed.
+    const unsaved = useRef<CreateDraft | null>(null);
     // The same request keeps its keys (one per image), so a retry after a dropped connection is charged once.
     const pending = useRef<{ signature: string; keys: string[] } | null>(null);
     const draftReady = useRef(false);
@@ -91,11 +96,23 @@ export default function CreateWithModel() {
     // Words and settings are kept as they change, so a closed app or a call does not lose them.
     useEffect(() => {
         if (!model || !draftReady.current) return;
+        const draft: CreateDraft = { v: SAVED_DRAFT_VERSION, modelId: model.id, prompt, duration, aspect: opts.aspect, count: opts.count, seed: opts.seed, negative: opts.negative, voice: opts.voice, audioSeconds: opts.audioSeconds, cinemaOn: cameraOn, cinema, characterOn, character };
+        unsaved.current = draft;
         const id = setTimeout(() => {
-            saveDraft({ v: SAVED_DRAFT_VERSION, modelId: model.id, prompt, duration, aspect: opts.aspect, count: opts.count, seed: opts.seed, negative: opts.negative, voice: opts.voice, audioSeconds: opts.audioSeconds, cinemaOn: cameraOn, cinema, characterOn, character }).catch(() => undefined);
+            unsaved.current = null;
+            saveDraft(draft).catch(() => undefined);
         }, 600);
         return () => clearTimeout(id);
     }, [model, prompt, duration, opts, cameraOn, cinema, characterOn, character]);
+
+    const flushDraft = useCallback(async () => {
+        const draft = unsaved.current;
+        unsaved.current = null;
+        if (draft) await saveDraft(draft).catch(() => undefined);
+    }, []);
+
+    // Closing the screen saves what was typed in the last moments too.
+    useEffect(() => () => void flushDraft(), [flushDraft]);
 
     const discardDraft = useCallback(() => {
         setPrompt('');
@@ -162,6 +179,7 @@ export default function CreateWithModel() {
         }
     }
 
+    const missing = shortfall(balance, price);
     const generateLabel = `${n > 1 ? t('opt.generateCount', { count: String(n) }) : t('slip.generate')}. ${costLine(price, n, freeLeft, unit)}`;
 
     return (
@@ -212,9 +230,17 @@ export default function CreateWithModel() {
                 {takesCharacter ? <CharacterPanel on={characterOn} picks={character} onToggle={setCharacterOn} onChange={setCharacter} /> : null}
                 {takesCamera ? <CameraPanel on={cameraOn} value={cinema} onToggle={setCameraOn} onChange={setCinema} /> : null}
                 <Text style={styles.price} accessibilityLiveRegion="polite">{costLine(price, n, freeLeft, unit)}</Text>
+                {missing > 0 ? (
+                    <View style={styles.short} accessibilityLiveRegion="polite">
+                        <Text style={styles.shortText}>{plural('create.short', missing, { have: String(balance ?? 0), need: String(price) })}</Text>
+                        <Pressable accessibilityRole="button" accessibilityLabel={t('lowBalance.buy')} style={styles.shortBuy} onPress={async () => { await flushDraft(); router.push('/credits'); }}>
+                            <Text style={styles.shortBuyText}>{t('lowBalance.buy')}</Text>
+                        </Pressable>
+                    </View>
+                ) : null}
                 {error ? <Text style={styles.error}>{error}</Text> : null}
                 {note ? <Text style={styles.consent}>{note}</Text> : null}
-                <Pressable accessibilityRole="button" accessibilityLabel={generateLabel} accessibilityState={{ busy, disabled: !ready || busy }} disabled={!ready || busy} style={[styles.button, (!ready || busy) && styles.off]} onPress={generate}>
+                <Pressable accessibilityRole="button" accessibilityLabel={generateLabel} accessibilityState={{ busy, disabled: !ready || busy || missing > 0 }} disabled={!ready || busy || missing > 0} style={[styles.button, (!ready || busy || missing > 0) && styles.off]} onPress={generate}>
                     {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>{n > 1 ? t('opt.generateCount', { count: String(n) }) : t('slip.generate')}</Text>}
                 </Pressable>
             </ScrollView>
@@ -270,6 +296,10 @@ const styles = StyleSheet.create({
     chipText: { color: colors.body, fontWeight: '600' },
     chipTextOn: { color: colors.accentInk },
     price: { color: colors.money },
+    short: { backgroundColor: colors.surface, borderColor: colors.money, borderWidth: 1, borderRadius: 12, padding: 14, gap: 4 },
+    shortText: { color: colors.body, fontSize: 15, lineHeight: 22 },
+    shortBuy: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
+    shortBuyText: { color: colors.money, fontSize: 16, fontWeight: '700' },
     restored: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, paddingLeft: 14 },
     restoredText: { color: colors.body, flexShrink: 1 },
     clear: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 14 },
