@@ -44,5 +44,27 @@ Pieces:
   `apps/mobile/__tests__/serviceStatus.test.ts`). No real or simulated Supabase outage on staging, no browser or
   simulator look at the banner, and the phone tests were not run in this checkout (no install).
 - The nine non-English site translations were written without a native review.
-- API routes still answer 500/502 on a Supabase failure rather than a uniform 503 with `Retry-After`; making that
-  one shape is a follow-up.
+- A Supabase outage and the API shape (follow-up, 2026-10-20): see "Uniform outage answer" below. Still unproved on a
+  real or simulated outage on staging; covered by `tests/outageShape.test.mjs` and `apps/mobile/__tests__/api.test.ts`
+  (the phone tests were not run in this checkout, no install).
+- Routes outside `/api/v1` (webhooks, `/api/auth/session`, `/api/status`) keep their own answers on purpose.
+
+## Uniform outage answer
+
+Every `/api/v1/*` request that fails because Supabase did not answer (no response, a timeout, or a 5xx:
+`SupabaseError` status 0 or 5xx) ends as **503 `{error:'service_unavailable', requestId}` with `Retry-After: 10`**.
+
+- One helper, `lib/outageScope.js`, not an edit per route. `worker.js` runs each `/api/v1` request in an
+  `AsyncLocalStorage` scope; `SupabaseError` notes the failure into it; if the route then answers 500/502/503/504,
+  the Worker swaps the answer. A 4xx, a 2xx, a stream, and a 5xx with no Supabase failure behind it are left alone,
+  so a real bug still shows as one. `serviceUnavailable(request)` is there for a route that wants to answer directly
+  (`/api/v1/health` does).
+- Only the response changes. No ledger call is added, skipped or retried, so every debit keeps its refund path and a
+  replay with the same idempotency key is still a no-op: clients retry the same request.
+- No stack, database text or upstream payload is in the body; the detail stays in the server log. `requestId` is the
+  Cloudflare ray id.
+- Web (`app/veyrnox/_lib/gateway.js`) throws `GatewayError` code `service_unavailable` with `retryAfter` and keeps the
+  session; only a 401 clears it. Phone (`apps/mobile/src/lib/api.ts`) exposes `isServiceUnavailable` and
+  `retryAfterSeconds`; only a 401 triggers `onSessionLost`.
+- Limit: a request that notes an outage and then fails for an unrelated reason is also reported as an outage. That is
+  the safe direction (the client retries).
