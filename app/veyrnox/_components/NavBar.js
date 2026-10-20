@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Logo } from './Logo';
 import { NavAuthButtons } from './NavAuthButtons';
 import { MobileMenu } from './MobileMenu';
+import { AppSidebar } from './AppSidebar';
 import { SiteSearch } from './SiteSearch';
 import { ThemeToggle } from './ThemeToggle';
 import { gatewayFetch, GatewayError } from '../_lib/gateway';
@@ -113,12 +114,33 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
     ...(projectsEnabled ? [{ key: 'projects', href: '/app/projects', label: t("label.Projects") }] : []),
     ...(enhanceEnabled ? [{ key: 'enhance', href: '/app/enhance', label: t("label.Enhance") }] : []),
   ];
-  const primaryKeys = new Set(['explore', 'create', 'library']);
-  const primaryItems = items.filter((item) => primaryKeys.has(item.key));
-  const moreItems = items.filter((item) => !primaryKeys.has(item.key));
   const menuItems = [
     ...items,
     ...APP_BROWSE_CATEGORIES.filter((browse) => !items.some((item) => item.href === browse.href)),
+  ];
+  const sidebarSections = [
+    { id: 'agents', label: t('app.nav.side.agents'), items: [
+      { key: 'chat', href: '/app/chat', label: t('label.LLM Chat'), icon: 'chat' },
+      { key: 'agent', href: '/app/video-agent', label: t('app.nav.videoAgent'), icon: 'agent' },
+    ] },
+    { id: 'tools', label: t('app.nav.side.tools'), grid: true, items: [
+      { key: 'create', href: '/app/create', label: t('label.Create'), icon: 'image' },
+      { key: 'film', href: '/app/film-studio', label: t('label.Film Studio'), icon: 'film' },
+      { key: 'oddlings', href: '/app/oddlings', label: t('label.Oddlings'), icon: 'character', featured: true },
+      ...(enhanceEnabled ? [{ key: 'enhance', href: '/app/enhance', label: t('label.Enhance'), icon: 'wand' }] : []),
+      ...(editorEnabled ? [{ key: 'editor', href: '/app/editor', label: t('label.Video editor'), icon: 'scissors' }] : []),
+      { href: '/mcp', label: t('label.MCP'), icon: 'plug' },
+    ] },
+    { id: 'assets', label: t('app.nav.side.assets'), items: [
+      { key: 'library', href: '/app/library', label: t('label.Library'), icon: 'library' },
+      ...(projectsEnabled ? [{ key: 'projects', href: '/app/projects', label: t('label.Projects'), icon: 'folder' }] : []),
+      { key: 'credits', href: '/app/credits', label: t('label.Credits'), icon: 'coins' },
+    ] },
+    { id: 'inspire', label: t('app.nav.side.inspire'), items: [
+      { href: '/presets', label: t('label.Templates'), icon: 'template' },
+      { href: '/models', label: t('label.Models'), icon: 'cube' },
+      { href: '/guides', label: t('label.Guides'), icon: 'book' },
+    ] },
   ];
   // Stored identity is display metadata, not authorization. It needs no
   // network to draw the nav while the HttpOnly session restores. Google puts
@@ -159,12 +181,24 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
   const assetFmt = assets != null ? new Intl.NumberFormat(localeTag(locale, 'en-US')).format(assets) : '—';
   const assetWord = t(pluralKey(t, locale, 'app.nav.asset', assets ?? 0));
   return (
+    <>
+    <AppSidebar
+      sections={sidebarSections}
+      homeLabel={t('label.Home')}
+      logoLabel={t('ui.home')}
+      accountLabel={account?.name}
+      accountHref="/app/account"
+      activeKey={active}
+      label={t('app.nav.studio')}
+      collapseLabel={t('app.nav.side.collapse')}
+      expandLabel={t('app.nav.side.expand')}
+    />
     <header data-print="hide" className="sticky top-0 z-40 flex items-center justify-between gap-2 px-4 sm:px-8 h-16 border-b border-vx-border bg-vx-base/88 backdrop-blur-sm">
       {summary && <PaywallPrompt credits={summary.credits} createdAt={summary.created_at} />}
       <Link
         href="/app"
         aria-label={t("app.nav.explore")}
-        className={`items-center gap-2.5 shrink-0 ${account ? 'hidden sm:flex' : 'flex'}`}
+        className={`items-center gap-2.5 shrink-0 lg:hidden ${account ? 'hidden sm:flex' : 'flex'}`}
       >
         {/* On signed-in phones the Studio menu carries every destination, so
             the mark yields to the balance and account controls. */}
@@ -179,80 +213,8 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
         navLabel={t("app.nav.studio")}
         className="lg:hidden"
       />
-      <nav aria-label={t("app.nav.studio")} className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 text-[12px] font-semibold sm:gap-1 sm:text-sm lg:flex">
-        {primaryItems.map((it) => {
-          const current = active === it.key;
-          return (
-            <Link
-              key={it.key}
-              href={it.href}
-              aria-current={current ? 'page' : undefined}
-              className={`inline-flex shrink-0 items-center gap-2 rounded-full px-2 py-2 transition-colors sm:px-4 ${
-                current
-                  ? it.featured ? 'bg-vx-accent text-vx-accent-ink' : 'bg-vx-panel text-vx-fg'
-                  : it.featured
-                    ? 'border border-vx-accent/50 bg-vx-accent/10 text-vx-accent hover:bg-vx-accent/20'
-                    : 'text-vx-fg-muted hover:text-vx-fg'
-              }`}
-            >
-              {it.featured && <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-current" />}
-              {it.label}
-            </Link>
-          );
-        })}
-        <details className="group relative 2xl:hidden">
-          <summary className={`cursor-pointer list-none rounded-full px-2 py-2 hover:bg-vx-panel hover:text-vx-fg sm:px-3 ${
-            moreItems.some((item) => item.key === active) ? 'bg-vx-panel text-vx-fg' : 'text-vx-fg-muted'
-          }`}>
-            {t("public.vey.more")}{' '}<span aria-hidden="true">▾</span>
-          </summary>
-          <div className="absolute start-1/2 top-[calc(100%+0.5rem)] z-50 min-w-48 -translate-x-1/2 rtl:translate-x-1/2 rounded-2xl border border-vx-border bg-vx-panel p-2 shadow-2xl">
-            {moreItems.map((it) => (
-              <Link
-                key={it.key}
-                href={it.href}
-                aria-current={active === it.key ? 'page' : undefined}
-                className={`flex items-center gap-2 rounded-xl px-3 py-2.5 ${
-                  active === it.key ? 'bg-vx-base text-vx-fg' : 'text-vx-fg-muted hover:bg-vx-base hover:text-vx-fg'
-                }`}
-              >
-                {it.featured && <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-vx-accent" />}
-                {it.label}
-              </Link>
-            ))}
-          </div>
-        </details>
-        <div className="hidden items-center gap-1 2xl:flex">
-          {moreItems.map((it) => {
-            const current = active === it.key;
-            return (
-              <Link
-                key={it.key}
-                href={it.href}
-                aria-current={current ? 'page' : undefined}
-                className={`inline-flex shrink-0 items-center gap-2 rounded-full px-4 py-2 transition-colors ${
-                  current
-                    ? it.featured ? 'bg-vx-accent text-vx-accent-ink' : 'bg-vx-panel text-vx-fg'
-                    : it.featured
-                      ? 'border border-vx-accent/50 bg-vx-accent/10 text-vx-accent hover:bg-vx-accent/20'
-                      : 'text-vx-fg-muted hover:text-vx-fg'
-                }`}
-              >
-                {it.featured && <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-current" />}
-                {it.label}
-              </Link>
-            );
-          })}
-        </div>
-      </nav>
+      <span aria-hidden="true" className="flex-1" />
       <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-        <MobileMenu
-          items={APP_BROWSE_CATEGORIES}
-          buttonLabel={t("app.nav.browseMore")}
-          buttonText={t("app.nav.browse")}
-          navLabel={t("app.nav.morePages")}
-          className="hidden lg:block"
-        />
         <LanguageMenu />
         <ThemeToggle className="hidden md:inline-flex" />
         {account ? (
@@ -296,5 +258,6 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
         )}
       </div>
     </header>
+    </>
   );
 }

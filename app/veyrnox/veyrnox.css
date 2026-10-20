@@ -250,3 +250,11 @@
 html[data-vey-mobile-workspace="true"] [data-create-cost-card] {
   position: static;
 }
+
+/* App sidebar (AppSidebar.js): the rail is fixed, so the page makes room.
+   :has() keeps the 50 pages that render <AppNav/> unchanged. */
+@media (min-width: 1024px) {
+  .vx-root:has(.vx-sidebar) { padding-inline-start: 16rem; }
+  html[data-vx-rail] .vx-root:has(.vx-sidebar) { padding-inline-start: 4rem; }
+  html[data-vx-rail] .vx-sidebar { width: 4rem; }
+}
