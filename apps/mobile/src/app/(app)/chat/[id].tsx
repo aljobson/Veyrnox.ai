@@ -1,7 +1,7 @@
 import * as Crypto from 'expo-crypto';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, AppState, FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../../auth/AuthProvider';
 import { AttachStrip } from '../../../components/chat/AttachStrip';
@@ -17,7 +17,7 @@ import { attachmentRefs, MAX_ATTACHMENTS, roomFor, type ChatImage } from '../../
 import { pickPhotos, uploadChatImages } from '../../../lib/chatPhotos';
 import { fetchCatalog, type CatalogModel } from '../../../lib/media';
 import { parseStudioDrafts, withoutDrafts } from '../../../lib/studioSkills';
-import { makeSendKey, resolveStoppedSend, stopNoticeKey } from '../../../lib/chatStop';
+import { isQuiet, makeSendKey, resolveResumedSend, resolveStoppedSend, RESUME_QUIET_MS, resumeNoticeKey, stopNoticeKey, type StopOutcome } from '../../../lib/chatStop';
 import { plural, t } from '../../../lib/i18n';
 import { ensureOnline, OFFLINE_PAID_MESSAGE, OfflineError } from '../../../lib/network';
 import { colors } from '../../../theme';
@@ -54,6 +54,10 @@ export default function Conversation() {
     const [maxImages, setMaxImages] = useState(MAX_ATTACHMENTS);
     const [catalog, setCatalog] = useState<CatalogModel[] | null>(null);
     const abort = useRef<AbortController | null>(null);
+    // The send in flight, for the return from the background (ADR-0181): when the app comes back and the reply has gone quiet,
+    // the turn is looked for by its job, because the server finishes it either way.
+    const live = useRef<{ key: string; text: string; knownIds: ReadonlySet<string>; jobId: string | null; lastEventAt: number } | null>(null);
+    const resumed = useRef<StopOutcome | null>(null);
     const busy = useRef(false); // synchronous: a second tap must not start a second turn
 
     useEffect(() => {
@@ -79,6 +83,30 @@ export default function Conversation() {
         if (hasDrafts && !catalog) fetchCatalog().then(setCatalog, () => undefined);
     }, [hasDrafts, catalog]);
     const draftsOf = useMemo(() => (content: string) => (catalog ? parseStudioDrafts(content, catalog) : []), [catalog]);
+
+    useEffect(() => {
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        const sub = AppState.addEventListener('change', (state) => {
+            if (state !== 'active' || !busy.current || !live.current) return;
+            clearTimeout(timer);
+            timer = setTimeout(async () => {
+                const l = live.current;
+                if (!l || !busy.current || !isQuiet(l.lastEventAt, Date.now())) return;
+                const outcome = await resolveResumedSend(
+                    { closeSend: chatApi(api).closeSend, getThread: () => chatApi(api).getThread(id), getJob: chatApi(api).getJob },
+                    { key: l.key, jobId: l.jobId, text: l.text, knownIds: l.knownIds },
+                );
+                // Still running: the stream stays the authority. Settled: let go of the stream and show what the server kept.
+                if (outcome === 'pending' || live.current !== l) return;
+                resumed.current = outcome;
+                abort.current?.abort();
+            }, RESUME_QUIET_MS);
+        });
+        return () => {
+            clearTimeout(timer);
+            sub.remove();
+        };
+    }, [api, id]);
 
     const send = useCallback(
         async (again?: string) => {
@@ -116,6 +144,8 @@ export default function Conversation() {
             setMessages((m) => [...(m ?? []), { id: `u${stamp}`, role: 'user', content: text }, { id: `a${stamp}`, role: 'assistant', content: '' }]);
             const controller = new AbortController();
             abort.current = controller;
+            resumed.current = null;
+            live.current = { key: pending.key, text, knownIds, jobId: null, lastEventAt: Date.now() };
             let failed: string | null = null;
             let unanswered = false;
             let jobId: string | null = null;
@@ -125,7 +155,11 @@ export default function Conversation() {
                     text,
                     pending.key,
                     (e) => {
-                        if (e.type === 'start') jobId = e.jobId;
+                        if (live.current) live.current.lastEventAt = Date.now();
+                        if (e.type === 'start') {
+                            jobId = e.jobId;
+                            if (live.current) live.current.jobId = e.jobId;
+                        }
                         else if (e.type === 'delta') setMessages((m) => (m ?? []).map((x) => (x.id === `a${stamp}` ? { ...x, content: x.content + e.text } : x)));
                         else if (e.type === 'error') failed = e.error;
                     },
@@ -150,10 +184,14 @@ export default function Conversation() {
             };
             if (unanswered) {
                 setStopping(true);
-                const outcome = await resolveStoppedSend(
-                    { closeSend: chatApi(api).closeSend, getThread: () => chatApi(api).getThread(id), getJob: chatApi(api).getJob },
-                    { key: pending.key, jobId, text, knownIds },
-                );
+                const wasResumed = resumed.current !== null;
+                const outcome =
+                    resumed.current ??
+                    (await resolveStoppedSend(
+                        { closeSend: chatApi(api).closeSend, getThread: () => chatApi(api).getThread(id), getJob: chatApi(api).getJob },
+                        { key: pending.key, jobId, text, knownIds },
+                    ));
+                resumed.current = null;
                 if (outcome === 'saved' || outcome === 'unsaved') {
                     const r = await chatApi(api).getThread(id).catch(() => null);
                     if (r) setMessages(r.messages);
@@ -166,7 +204,7 @@ export default function Conversation() {
                 }
                 // Only an unsettled send keeps its key, so retrying it cannot be charged twice. A closed key can never send again.
                 if (outcome !== 'pending') pendingKey.current = null;
-                setNotice(t(outcome === 'nothing' && !controller.signal.aborted ? 'chat.lost.nothing' : stopNoticeKey(outcome)));
+                setNotice(t(wasResumed ? resumeNoticeKey(outcome) : outcome === 'nothing' && !controller.signal.aborted ? 'chat.lost.nothing' : stopNoticeKey(outcome)));
                 setStopping(false);
             } else if (failed) {
                 setError(ERROR_TEXT[failed] ?? 'The reply did not complete. You were not charged for a failed reply.');
@@ -180,6 +218,7 @@ export default function Conversation() {
                 const r = await chatApi(api).getThread(id).catch(() => null);
                 if (r) setMessages(r.messages);
             }
+            live.current = null;
             setSending(false);
             busy.current = false;
         },
