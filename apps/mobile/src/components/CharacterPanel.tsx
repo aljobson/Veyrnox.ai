@@ -34,6 +34,7 @@ export function CharacterPanel({ on, picks, onToggle, onChange }: Props) {
                 <Text style={styles.title} accessibilityRole="header">{t('char.title')}</Text>
                 <Switch accessibilityLabel={t('char.title')} value={on} onValueChange={onToggle} trackColor={{ true: colors.accent, false: colors.border }} />
             </View>
+            {on ? null : <Text style={styles.muted}>{t('char.offHint')}</Text>}
             {on ? (
                 <>
                     <Text style={styles.muted}>{t('char.help')}</Text>

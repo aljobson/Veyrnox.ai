@@ -73,7 +73,7 @@ test('a notice goes to the account address, keyed on the action, and reports sen
         },
     });
     assert.equal(out, 'sent');
-    assert.deepEqual(query, { table: 'users', columns: 'email', filter: `id=eq.${USER}`, limit: 1 });
+    assert.deepEqual(query, { table: 'users', columns: 'email,preferred_locale', filter: `id=eq.${USER}`, limit: 1 });
     assert.equal(sent.m.to, 'user@example.com');
     assert.equal(sent.m.idempotencyKey, `violation-${ACTION}`);
     assert.equal(sent.c.from, env.VIOLATION_EMAIL_FROM);

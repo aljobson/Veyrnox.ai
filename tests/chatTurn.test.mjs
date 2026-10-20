@@ -1030,3 +1030,13 @@ test('a waitUntil that refuses the work does not break the turn', async () => {
     assert.deepEqual([evs.at(-1).data.status, evs.at(-1).data.credits_charged], ['complete', 2]);
     assert.equal(called(f, 'chat_complete_turn').length, 1);
 });
+
+test('account language is read with the verified auth ID and changes only the model instruction', async () => {
+    const f = fakes({ replies: { get_user_language: { ok: true, locale: 'de' } } });
+    await events(await run(f));
+    assert.deepEqual(called(f, 'get_user_language'), [['get_user_language', { p_auth_id: AUTH }]]);
+    assert.match(f.streamCalls[0].messages[0].content, /Reply in German unless the person writes in another language/);
+    const english = fakes({ replies: { get_user_language: new Error('missing RPC') } });
+    await events(await run(english));
+    assert.equal(english.streamCalls[0].messages[0].content, 'Write mathematics in plain text. Do not use LaTeX or dollar-sign delimiters.\n\nBe brief.');
+});

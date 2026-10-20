@@ -1,4 +1,5 @@
 'use client';
+import { saveAccountLanguage } from '../../lib/accountLanguageClient.js';
 import { LOCALES, isLocalizedPath, languageAlternates, localizedPathKey } from '../../../lib/i18n/locales.mjs';
 import { translator } from '../../../lib/i18n/translate.mjs';
 import { useI18n } from '../../../components/I18nProvider';
@@ -25,7 +26,11 @@ export function LanguageSwitcher({ locale, path = '/' }) {
               lang={l.hreflang}
               aria-current={l.code === locale ? 'true' : undefined}
               data-locale={l.code}
-              onClick={() => rememberLocale(l.code)}
+              onClick={(event) => {
+                if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                rememberLocale(l.code);
+                saveAccountLanguage(l.code);
+              }}
               className={`inline-block py-1.5 hover:text-vx-fg ${l.code === locale ? 'font-bold text-vx-fg' : 'text-vx-fg-body underline underline-offset-4'}`}
             >
               <span aria-hidden="true">{l.flag}</span> {l.name}

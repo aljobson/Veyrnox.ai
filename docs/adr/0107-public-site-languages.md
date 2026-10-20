@@ -433,3 +433,58 @@ and all message catalogs and skips binary files without changing banned terms.
 After changing English legal, binding or chrome text, re-translate or confirm every affected translation.
 Run `node scripts/legal-source-hashes.mjs --update` to record English SHA-256 hashes, anchors and each document's reviewed-against date.
 Review that manifest diff; run the default hash check, both translation audits, tests, lint and `npm run sync:vey-knowledge`.
+
+## Amendment 2026-10-20 — phase C2: account language
+
+The account now has an optional display preference, `users.preferred_locale`:
+`es`, `zh`, `hi`, `ar`, `fr`, `pt`, `ru`, `ja`, `de` or `ko`. English is NULL.
+Migration 0354 adds service-role-only `set_user_language(TEXT, TEXT)` and
+`get_user_language(TEXT)` RPCs. Repeating a setting writes nothing. A Frozen
+account may change language; a deleted account may not. This column is retained
+on the deleted account's tombstone row. Account deletion clears nothing from
+this column; `erase_account` is unchanged. Choosing English while the account
+exists explicitly clears the preference to NULL.
+
+`GET /api/v1/account/language` returns `{ locale }`. `PUT` accepts `{ locale }`,
+with NULL or `en` clearing it. Both require middleware-verified identity, are
+same-origin with no CORS, and return `Cache-Control: no-store`. Missing identity
+is 401; invalid body/locale is 400; a foreign Origin is 403; an unknown account
+is 404; a deleted account write is 409. An unavailable database/RPC, including
+PostgREST `PGRST202` before migration, is 503 `language_unavailable`, silently
+ignored by the client. API error codes remain language-neutral. No API handler
+or package reads the browser language cookie or `x-site-locale`.
+
+An ordinary language-link click still updates the browser cookie immediately.
+If signed in, it also sends a best-effort keepalive PUT without delaying
+navigation/reload. Modified clicks do neither. On sign-in or app load with a
+session, the browser reads the account preference. An existing browser cookie
+wins and is written back if different. With no cookie, the account preference
+is adopted and the page reloads only after the cookie can be read back. A pending
+explicit choice is remembered per account in sessionStorage until confirmed,
+so choosing English (which removes the cookie) cannot be reversed by an older
+account value after the immediate reload. Late reads are discarded after a new
+choice or account change. Sign-out retains the cookie. Signed-out public visits
+make no language request. Failures preserve the current cookie behavior.
+
+Moderation warning, removal, freeze and appeal-decision emails read the recipient's
+preference by user ID at send time. Eleven email catalogs preserve policy facts,
+appeal rights, UTC dates and URLs; absent/unknown languages or missing messages
+fall back to English. The pre-migration missing-column case retries the address
+read without that column and sends English. Internal moderation reasons remain
+private; no free-text reason or violation-category field is sent by these emails.
+Supabase auth emails and operator alerts are unchanged. Scheduled Publish report
+emails remain unchanged: their recipient list contains arbitrary email addresses,
+not recipient account IDs; their subject and optional message are customer text.
+The default attachment sentence remains English pending a recipient identity
+contract and explicit scope for the report delivery path.
+
+Vey's help model, chat model and research final-answer model receive one language
+instruction from the verified account lookup. It requests that language unless
+the person writes in another, preserving product names, credit amounts, prices,
+URLs and code. Unset/English accounts retain the exact existing system prompt.
+Local help retrieval, unknown-answer fallbacks, account-answer templates, local
+editor parsing and research progress/source labels remain English; C2 does not
+translate retrieved/canned server text. Public page language remains URL-selected.
+This amendment supersedes earlier exclusions only for the account preference,
+these system emails and the model reply instruction. No billing, credit, ledger,
+webhook or generation-job behavior changes.

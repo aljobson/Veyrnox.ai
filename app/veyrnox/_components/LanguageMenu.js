@@ -1,4 +1,5 @@
 'use client';
+import { saveAccountLanguage } from '../../lib/accountLanguageClient.js';
 import { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useI18n } from '../../../components/I18nProvider';
@@ -65,6 +66,7 @@ export function LanguageMenu({ className = '', id = 'vx-language-menu' }) {
                 onClick={(event) => {
                   if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
                   rememberLocale(l.code);
+                  saveAccountLanguage(l.code);
                   setOpen(false);
                   if (isAppLocalePath(pathname)) {
                     event.preventDefault();
