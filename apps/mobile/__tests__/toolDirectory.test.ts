@@ -17,7 +17,7 @@ describe('the tasks match the web /tools page', () => {
         key: m[1], label: m[2].replace(/\\'/g, "'"), blurb: m[3].replace(/\\'/g, "'"), ids: [...(m[4] as string).matchAll(/'([^']+)'/g)].map((x) => x[1]),
     }));
     test('same tasks, labels, blurbs, models and order', () => {
-        expect(theirs.length).toBe(10);
+        expect(theirs.length).toBe(11);
         expect(TOOL_TASKS.map((t) => ({ key: t.key, label: t.label, blurb: t.blurb, ids: [...t.ids] }))).toEqual(theirs);
     });
 });
