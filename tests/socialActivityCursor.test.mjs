@@ -16,7 +16,7 @@ const { listSocialActivity } = await import('../app/lib/socialActivityClient.js'
 const adapter = readFileSync(new URL('../node_modules/@opennextjs/aws/dist/core/routing/util.js', import.meta.url), 'utf8');
 const definition = adapter.match(/export function convertToQueryString\(query\) \{[\s\S]*?\n\}/)?.[0];
 assert.ok(definition, 'the installed OpenNext query reconstruction function must be exercised');
-const convertToQueryString = runInNewContext(`(${definition.replace(/^export /, '')})`);
+const convertToQueryString = runInNewContext(`(${definition.replace(/^export /, '')})`, { URLSearchParams });
 const adapterRoundTrip = (path) => {
   const initial = new URL(path, 'https://veyrnox.test');
   return new URL(initial.pathname + convertToQueryString(Object.fromEntries(initial.searchParams)), initial.origin);
