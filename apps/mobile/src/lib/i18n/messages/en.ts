@@ -1042,7 +1042,7 @@ const en = {
     'cinemaSocial.following.creator': 'Creators',
     'cinemaSocial.following.series': 'Series',
     'cinemaSocial.tapRetry': 'Tap to retry.',
-    'cinemaSocial.closed.retention': 'Saving and following are not open yet.',
+    'cinema.retention.unavailable': 'Not available yet',
     'cinemaSocial.closed.winners': 'Weekly winners are not open yet.',
     'cinemaSocial.empty.saved': 'Nothing saved yet. Save a title from its page.',
     'cinemaSocial.empty.creator': 'You are not following anyone yet.',
