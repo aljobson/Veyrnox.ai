@@ -1,15 +1,16 @@
 // Studio skills (ADR-0073, ADR-0167): built-in assistants that help prepare ONE thing to make. A skill is only
 // instructions copied onto a new chat; it never makes anything and never spends credits beyond the chat's own replies. Its
 // result is a "Studio draft" block the chat shows as an Open in Create button; only the person's own Create press charges.
-// The wording is the web's (app/veyrnox/_lib/studioSkills.js). Film skills are not built yet.
+// The wording is the web's (app/veyrnox/_lib/studioSkills.js); the Film group is in filmSkills.ts.
+import { FILM_SKILLS } from './filmSkills';
 import { kindOf, type CatalogModel } from './media';
 
 export const MAX_INSTRUCTIONS = 4000;
 export const MAX_DRAFTS = 6;
 export const MAX_DRAFT_PROMPT = 2000;
 
-export type SkillGroup = 'Make' | 'Edit' | 'Plan';
-export const SKILL_GROUPS: readonly SkillGroup[] = ['Make', 'Edit', 'Plan'];
+export type SkillGroup = 'Make' | 'Edit' | 'Plan' | 'Film';
+export const SKILL_GROUPS: readonly SkillGroup[] = ['Make', 'Edit', 'Plan', 'Film'];
 
 // 1 credit, reads images: the cheapest chat model that can look at a picture the person attached.
 export const SKILL_MODEL = 'chat-gpt-6-luna';
@@ -83,6 +84,7 @@ export const SKILLS: readonly Skill[] = [
     starter: 'Paste the prompt and say what went wrong',
     body: 'Skill: Fix my prompt. They paste a prompt and say what went wrong, or attach the result. Name the likely cause in one or two lines: too vague, conflicting instructions, too many subjects, or the wrong model for the job. Rewrite the prompt and say what you changed. If a different model would suit better, say which.',
   },
+    ...FILM_SKILLS,
 ];
 
 export const skillById = (id: string): Skill | null => SKILLS.find((s) => s.id === id) ?? null;

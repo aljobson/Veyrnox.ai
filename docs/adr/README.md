@@ -7,6 +7,8 @@ Phase-0 decision-support documents for the target architecture at `/Users/aljobs
 | ADR | Status | Summary | Blocks |
 |-----|--------|---------|--------|
 | [ADR-0172 — Mobile: prompt collage on Explore, slice 1](0172-mobile-prompt-collage.md) | **Proposed 2026-10-19** | Type filter (Images, Video, Audio), categories by type, search, two-column masonry, empty states; favourites, audio samples and content later |
+| [ADR-0182 — Mobile: Film skill chats (parity plan P3)](0182-mobile-film-skill-chats.md) | **Proposed 2026-10-19** | The web's seven Film skills in the New chat picker; help write, never make or lock |
+| [ADR-0171 — Mobile: chat reply through iOS suspension (parity plan P3, S6)](0171-mobile-chat-long-turn-resume.md) | **Proposed 2026-10-19** | Return from background: look for the job for about a minute, never cut the reader off; one charge on a retry |
 | [ADR-0181 — Mobile: chat reply through iOS suspension (parity plan P3, S6)](0181-mobile-chat-long-turn-resume.md) | **Proposed 2026-10-19** | Return from background: look for the job for about a minute, never cut the reader off; one charge on a retry |
 | [ADR-0161 — Mobile: Publish composer completion and disconnect (parity plan P5)](0161-mobile-publish-composer-completion.md) | **Proposed 2026-10-19** | Text per network, YouTube visibility, queue slot, disconnect with a confirm; several media items not built (server refuses more than one) |
 | [ADR-0171 — Mobile: Publish SmartLink and where a plan is managed (parity plan P5)](0171-mobile-publish-smartlink-plan-source.md) | **Proposed 2026-10-19** | SmartLink editor with share; Publish tab says where a plan is managed from the server's subscription source |
