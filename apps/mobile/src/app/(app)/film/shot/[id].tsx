@@ -46,10 +46,10 @@ export default function FilmShot() {
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
             <Stack.Screen options={{ title: shot.id }} />
-            <Text style={styles.title}>{shot.id}</Text>
+            <Text style={styles.title} accessibilityRole="header">{shot.id}</Text>
             <Text style={styles.status}>{row.label}</Text>
 
-            <Text style={styles.heading}>Assets</Text>
+            <Text style={styles.heading} accessibilityRole="header">Assets</Text>
             {row.assets.length === 0 ? <Text style={styles.muted}>No assets named.</Text> : null}
             {row.assets.map((a) => (
                 <Text key={a.key} style={a.locked ? styles.good : styles.muted}>
@@ -57,7 +57,7 @@ export default function FilmShot() {
                 </Text>
             ))}
 
-            <Text style={styles.heading}>Make this shot</Text>
+            <Text style={styles.heading} accessibilityRole="header">Make this shot</Text>
             {!prompt ? <Text style={styles.muted}>No prompt yet.</Text> : null}
             {!offer ? <ActivityIndicator color={colors.accent} /> : null}
             {offer && offer.ok ? (
@@ -77,7 +77,7 @@ export default function FilmShot() {
                 </Pressable>
             ) : null}
 
-            {attempts.length ? <Text style={styles.heading}>Attempts</Text> : null}
+            {attempts.length ? <Text style={styles.heading} accessibilityRole="header">Attempts</Text> : null}
             {attempts.map((a) => (
                 <View key={a.version} style={styles.attempt}>
                     <Text style={styles.name}>Version {a.version} · {a.verdict}</Text>
@@ -85,7 +85,7 @@ export default function FilmShot() {
                 </View>
             ))}
 
-            <Text style={styles.heading}>Shot card</Text>
+            <Text style={styles.heading} accessibilityRole="header">Shot card</Text>
             {SHOT_LANES.map(([lane, fields]) => (
                 <View key={lane} style={styles.lane}>
                     <Text style={styles.laneName}>{lane}</Text>

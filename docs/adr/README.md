@@ -7,6 +7,8 @@ Phase-0 decision-support documents for the target architecture at `/Users/aljobs
 | ADR | Status | Summary | Blocks |
 |-----|--------|---------|--------|
 | [ADR-0187 — Mobile: Publish team, change a role, remove, cancel an invitation (parity plan P5)](0187-mobile-publish-team-manage.md) | **Proposed 2026-10-20** | Role change, removal and invitation cancel with confirms; inviting and accepting not built |
+| [ADR-0208 — Mobile: creator upload shell, Continue on web (parity P6)](0208-mobile-creator-upload-shell.md) | **Proposed 2026-10-20** | Creators get a card that opens the web creator workspace; no upload built; what spike S3 must prove |
+| [ADR-0180 — Mobile: Publish inbox, read-only (parity plan P5)](0180-mobile-publish-inbox-read-only.md) | **Proposed 2026-10-19** | Conversation list with state and kind filters, thread view with messages and notes; replies, assigning and resolving not built |
 | [ADR-0177 — Mobile: Vey as the web's animated character](0177-mobile-vey-character.md) | **Proposed 2026-10-19** | The web artwork as seven layers; head nods, arms sway and wave, eyes blink, core pulses; Reduce Motion stills it; no new dependency |
 | [ADR-0172 — Mobile: prompt collage on Explore, slice 1](0172-mobile-prompt-collage.md) | **Proposed 2026-10-19** | Type filter (Images, Video, Audio), categories by type, search, two-column masonry, empty states; favourites, audio samples and content later |
 | [ADR-0207 — Mobile: Cinema Pass read-only and the paid locked state (parity P6)](0207-mobile-cinema-pass-readonly.md) | **Proposed 2026-10-20** | Pass status card when the account has one; no price or buy path; locked paid titles explained; continue watching and store price blocked on the server and the store |
@@ -42,6 +44,7 @@ Phase-0 decision-support documents for the target architecture at `/Users/aljobs
 | [ADR-0202 — Mobile: Publish developer tools (parity plan P7, slice 5)](0202-mobile-publish-developer-tools.md) | **Proposed 2026-10-19** | API keys, webhooks and request log for the chosen brand; secrets shown once in memory with share sheet; no clipboard module |
 
 | [ADR-0203 — Mobile: team invitation and post review links (parity plan P7, slice 6)](0203-mobile-team-invite-and-review-links.md) | **Proposed 2026-10-19** | Accept a Publish team invitation; review and approve or reject a post from a link without an account; links need APP_LINK_PATHS |
+| [ADR-0204 — Mobile: passkeys, list and remove (parity plan P7, slice 7)](0204-mobile-passkeys-list-and-remove.md) | **Proposed 2026-10-20** | See and remove passkeys on the account; adding or signing in waits for spike S2 (harness note in docs/mobile/PASSKEYS-SPIKE-S2.md) |
 | [ADR-0147 — Mobile: result screen next steps (parity plan N5)](0147-mobile-result-next-steps.md) | **Proposed 2026-10-19** | Edit, Publish and Make another on a finished result, carrying the file or model; the job route returns no prompt |
 | [ADR-0146 — Mobile: five-tab shell (parity plan N1)](0146-mobile-tab-shell.md) | **Proposed 2026-10-19** | Explore, Create, Cinema, Library and Publish tabs; credits chip and avatar in every tab header; every URL unchanged |
 | [ADR-0144 — Mobile: accessibility pass on the M10-M11 screens](0144-mobile-accessibility-new-screens.md) | **Proposed 2026-10-19** | Rows and the Best time table wrap at the largest text size; VoiceOver and TalkBack not run |
