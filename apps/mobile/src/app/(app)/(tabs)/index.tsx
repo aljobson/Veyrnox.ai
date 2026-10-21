@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { Link, useFocusEffect, useRouter } from 'expo-router';
+import { Link, useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
@@ -38,6 +38,9 @@ export default function Explore() {
     const balance = useBalance();
     const [category, setCategory] = useState(ALL_CATEGORIES);
     const [query, setQuery] = useState('');
+    // The search box and the category row are tucked away until asked for, so the templates are what you see.
+    const [searchOpen, setSearchOpen] = useState(false);
+    const [categoriesOpen, setCategoriesOpen] = useState(false);
     const [jobs, setJobs] = useState<Job[]>([]);
 
     useEffect(() => {
@@ -81,44 +84,45 @@ export default function Explore() {
     const empty = prompt.trim().length === 0;
     const label = (j: Job) => j.label || t('edit.untitled');
 
+    const searchShown = searchOpen || query.length > 0;
+
     return (
         <ScrollView style={styles.scroll} contentContainerStyle={styles.screen} keyboardShouldPersistTaps="handled" onScroll={onScroll} scrollEventThrottle={64}>
-            <TextInput
-                accessibilityLabel={t('explore.promptLabel')}
-                placeholder={t('explore.promptPlaceholder')}
-                placeholderTextColor={colors.muted}
-                style={styles.prompt}
-                multiline
-                value={prompt}
-                onChangeText={setPrompt}
-            />
-            <View style={styles.row}>
-                <Pressable accessibilityRole="button" accessibilityState={{ disabled: empty }} disabled={empty} style={[styles.make, empty && styles.off]} onPress={() => make('image')}>
-                    <Text style={styles.makeText}>{t('explore.makeImage')}</Text>
-                </Pressable>
-                <Pressable accessibilityRole="button" accessibilityState={{ disabled: empty }} disabled={empty} style={[styles.make, empty && styles.off]} onPress={() => make('video')}>
-                    <Text style={styles.makeText}>{t('explore.makeVideo')}</Text>
-                </Pressable>
+            <View style={styles.composer}>
+                <TextInput
+                    accessibilityLabel={t('explore.promptLabel')}
+                    placeholder={t('explore.promptPlaceholder')}
+                    placeholderTextColor={colors.muted}
+                    style={styles.prompt}
+                    multiline
+                    value={prompt}
+                    onChangeText={setPrompt}
+                />
+                <View style={styles.actions}>
+                    <Pressable accessibilityRole="button" accessibilityState={{ disabled: empty }} disabled={empty} style={[styles.makeGhost, empty && styles.off]} onPress={() => make('video')}>
+                        <Text style={styles.makeGhostText}>{t('explore.makeVideo')}</Text>
+                    </Pressable>
+                    <Pressable accessibilityRole="button" accessibilityState={{ disabled: empty }} disabled={empty} style={[styles.make, empty && styles.off]} onPress={() => make('image')}>
+                        <Text style={styles.makeText}>{t('explore.makeImage')}</Text>
+                    </Pressable>
+                </View>
             </View>
-            <Link href="/chat" asChild>
-                <Pressable accessibilityRole="button" accessibilityLabel={t('explore.chat.title')} accessibilityHint={t('explore.chat.hint')} style={styles.chatCard}>
-                    <View style={styles.chatText}>
-                        <Text style={styles.chatName}>{t('explore.chat.title')}</Text>
-                        <Text style={styles.chatBody}>{t('explore.chat.body')}</Text>
-                    </View>
-                    <Text style={styles.chatArrow} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">›</Text>
-                </Pressable>
-            </Link>
+            <EntryRow href="/chat" title={t('explore.chat.title')} body={t('explore.chat.body')} hint={t('explore.chat.hint')} />
             {balance !== null && isLowBalance(balance, cheapestCredits(presets)) ? <LowBalanceNote balance={balance} /> : null}
             {note ? <Text style={styles.note} accessibilityLiveRegion="polite">{note}</Text> : null}
 
             <View style={styles.headerRow}>
                 <Text style={styles.heading} accessibilityRole="header">{t('explore.templates')}</Text>
-                <Link href="/create/presets" asChild>
-                    <Pressable accessibilityRole="button" style={touchTarget}>
-                        <Text style={styles.link}>{t('explore.seeAll')}</Text>
+                <View style={styles.headerLinks}>
+                    <Pressable accessibilityRole="button" accessibilityState={{ expanded: searchShown }} style={touchTarget} onPress={() => setSearchOpen((open) => !open)}>
+                        <Text style={styles.link}>{t('explore.searchOpen')}</Text>
                     </Pressable>
-                </Link>
+                    <Link href="/create/presets" asChild>
+                        <Pressable accessibilityRole="button" accessibilityLabel={t('explore.seeAll')} style={touchTarget}>
+                            <Text style={styles.link}>{t('explore.seeAllShort')}</Text>
+                        </Pressable>
+                    </Link>
+                </View>
             </View>
             {presetsFailed ? (
                 <Pressable accessibilityRole="button" style={touchTarget} onPress={loadPresets}>
@@ -128,25 +132,38 @@ export default function Explore() {
                 <ActivityIndicator color={colors.accent} />
             ) : (
                 <>
-                    <TextInput
-                        accessibilityLabel={t('explore.search')}
-                        placeholder={t('explore.search')}
-                        placeholderTextColor={colors.muted}
-                        style={styles.search}
-                        value={query}
-                        onChangeText={setQuery}
-                        returnKeyType="search"
-                        autoCorrect={false}
-                        clearButtonMode="while-editing"
-                    />
+                    {searchShown ? (
+                        <TextInput
+                            accessibilityLabel={t('explore.search')}
+                            placeholder={t('explore.search')}
+                            placeholderTextColor={colors.muted}
+                            style={styles.search}
+                            value={query}
+                            onChangeText={setQuery}
+                            returnKeyType="search"
+                            autoCorrect={false}
+                            autoFocus={searchOpen && query.length === 0}
+                            clearButtonMode="while-editing"
+                        />
+                    ) : null}
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
                         {TYPES.map((k) => (
                             <Pressable key={k} accessibilityRole="button" accessibilityState={selectedState(k === type)} style={[styles.chip, k === type && styles.chipOn, touchTarget]} onPress={() => pickType(k)}>
                                 <Text style={[styles.chipText, k === type && styles.chipTextOn]}>{t(`explore.type.${k}`)}</Text>
                             </Pressable>
                         ))}
+                        {categories.length > 1 ? (
+                            <Pressable
+                                accessibilityRole="button"
+                                accessibilityState={{ expanded: categoriesOpen, selected: category !== ALL_CATEGORIES }}
+                                style={[styles.chip, styles.chipGhost, category !== ALL_CATEGORIES && styles.chipOn, touchTarget]}
+                                onPress={() => setCategoriesOpen((open) => !open)}
+                            >
+                                <Text style={[styles.chipText, category !== ALL_CATEGORIES && styles.chipTextOn]}>{category !== ALL_CATEGORIES ? titleCase(category) : t('explore.categories')}</Text>
+                            </Pressable>
+                        ) : null}
                     </ScrollView>
-                    {categories.length > 1 ? (
+                    {categories.length > 1 && categoriesOpen ? (
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
                             {categories.map((c) => (
                                 <Pressable key={c} accessibilityRole="button" accessibilityState={selectedState(c === category)} style={[styles.chip, c === category && styles.chipOn, touchTarget]} onPress={() => setCategory(c)}>
@@ -163,16 +180,11 @@ export default function Explore() {
                 </>
             )}
 
-            <Link href="/oddlings" asChild>
-                <Pressable accessibilityRole="button" accessibilityLabel={t('explore.oddlings.title')} accessibilityHint={t('explore.oddlings.hint')} style={styles.banner}>
-                    <Text style={styles.bannerTitle}>{t('explore.oddlings.title')}</Text>
-                    <Text style={styles.bannerText}>{t('explore.oddlings.body')}</Text>
-                </Pressable>
-            </Link>
+            <EntryRow href="/oddlings" title={t('explore.oddlings.title')} body={t('explore.oddlings.body')} hint={t('explore.oddlings.hint')} />
 
             {resume || recent.length > 0 ? (
                 <>
-                    <Text style={styles.heading} accessibilityRole="header">{t('explore.recent')}</Text>
+                    <Text style={styles.subheading} accessibilityRole="header">{t('explore.recent')}</Text>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
                         {resume ? (
                             <Pressable
@@ -192,53 +204,63 @@ export default function Explore() {
                 </>
             ) : null}
 
-            <Text style={styles.heading} accessibilityRole="header">{t('explore.more')}</Text>
-            <Link href="/edit" asChild>
-                <Pressable accessibilityRole="button" style={styles.secondary}>
-                    <Text style={styles.secondaryText}>{t('edit.title')}</Text>
-                </Pressable>
-            </Link>
-            <Link href="/projects" asChild>
-                <Pressable accessibilityRole="button" style={styles.secondary}>
-                    <Text style={styles.secondaryText}>{t('label.Projects')}</Text>
-                </Pressable>
-            </Link>
+            <Text style={styles.subheading} accessibilityRole="header">{t('explore.more')}</Text>
+            <EntryRow href="/edit" title={t('edit.title')} />
+            <EntryRow href="/projects" title={t('label.Projects')} />
         </ScrollView>
+    );
+}
+
+// One calm row for a place you can go: a title, an optional line under it, and a chevron. Hairlines, no fill, so the
+// page has one thing that is lit at a time.
+function EntryRow({ href, title, body, hint }: { href: Href; title: string; body?: string; hint?: string }) {
+    return (
+        <Link href={href} asChild>
+            <Pressable accessibilityRole="button" accessibilityLabel={title} accessibilityHint={hint} style={styles.entry}>
+                <View style={styles.entryText}>
+                    <Text style={styles.entryName}>{title}</Text>
+                    {body ? <Text style={styles.entryBody}>{body}</Text> : null}
+                </View>
+                <Text style={styles.entryArrow} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">›</Text>
+            </Pressable>
+        </Link>
     );
 }
 
 const styles = StyleSheet.create({
     scroll: { flex: 1, backgroundColor: colors.background },
-    screen: { padding: 16, paddingBottom: VEY_CLEARANCE, gap: 12 },
-    prompt: { minHeight: 96, textAlignVertical: 'top', color: colors.text, fontSize: 16, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 14 },
-    row: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-    make: { flexGrow: 1, minHeight: 44, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.accent, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 16 },
+    screen: { padding: 16, paddingBottom: VEY_CLEARANCE, gap: 16 },
+    composer: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 16, padding: 12, gap: 10 },
+    prompt: { minHeight: 76, textAlignVertical: 'top', color: colors.text, fontSize: 17, paddingHorizontal: 4, paddingTop: 4 },
+    actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10 },
+    make: { minHeight: 44, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.accent, borderRadius: 12, paddingHorizontal: 18 },
     makeText: { color: colors.accentInk, fontWeight: '700', fontSize: 16 },
+    makeGhost: { minHeight: 44, justifyContent: 'center', alignItems: 'center', borderColor: colors.borderStrong, borderWidth: 1, borderRadius: 12, paddingHorizontal: 16 },
+    makeGhostText: { color: colors.text, fontWeight: '600', fontSize: 16 },
     off: { opacity: 0.4 },
-    chatCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, minHeight: 44 },
-    chatText: { flex: 1, gap: 2 },
-    chatName: { color: colors.text, fontSize: 16, fontWeight: '700' },
-    chatBody: { color: colors.muted, fontSize: 14 },
-    chatArrow: { color: colors.accent, fontSize: 26, fontWeight: '600' },
-    banner: { backgroundColor: colors.surface, borderColor: colors.accent, borderWidth: 1, borderRadius: 12, padding: 14, gap: 4, minHeight: 44, justifyContent: 'center' },
-    bannerTitle: { color: colors.accent, fontSize: 17, fontWeight: '700' },
-    bannerText: { color: colors.body, fontSize: 15 },
+    entry: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 52, paddingVertical: 10, borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
+    entryText: { flex: 1, gap: 2 },
+    entryName: { color: colors.text, fontSize: 16, fontWeight: '600' },
+    entryBody: { color: colors.muted, fontSize: 14 },
+    entryArrow: { color: colors.muted, fontSize: 26 },
     note: { color: colors.body },
     recentResume: { borderColor: colors.accent, maxWidth: 280 },
     resumeText: { color: colors.text, fontWeight: '600' },
-    headerRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
-    heading: { color: colors.text, fontSize: 18, fontWeight: '700', marginTop: 8 },
-    link: { color: colors.accent, fontSize: 15 },
+    headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
+    headerLinks: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    heading: { color: colors.text, fontSize: 26, fontWeight: '700', letterSpacing: -0.5 },
+    subheading: { color: colors.muted, fontSize: 15, fontWeight: '600', marginTop: 8 },
+    link: { color: colors.body, fontSize: 15, fontWeight: '600' },
     error: { color: colors.danger },
-    chips: { flexDirection: 'row', gap: 8, paddingVertical: 2 },
-    chip: { paddingHorizontal: 14, borderRadius: 10, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, justifyContent: 'center' },
+    chips: { flexDirection: 'row', gap: 6, paddingVertical: 2 },
+    // Only the chosen chip is a pill; the rest are plain words, so one thing in the row is lit.
+    chip: { paddingHorizontal: 14, borderRadius: 999, borderColor: 'transparent', borderWidth: 1, justifyContent: 'center' },
+    chipGhost: { borderColor: colors.border },
     chipOn: { backgroundColor: colors.accent, borderColor: colors.accent },
-    chipText: { color: colors.body },
-    chipTextOn: { color: colors.accentInk, fontWeight: '600' },
+    chipText: { color: colors.muted, fontSize: 15 },
+    chipTextOn: { color: colors.accentInk, fontWeight: '700' },
     search: { minHeight: 44, color: colors.text, fontSize: 16, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14 },
     empty: { color: colors.muted, paddingVertical: 12 },
-    recent: { paddingHorizontal: 14, borderRadius: 10, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, justifyContent: 'center', maxWidth: 220 },
+    recent: { paddingHorizontal: 14, borderRadius: 999, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, justifyContent: 'center', maxWidth: 220 },
     recentText: { color: colors.text },
-    secondary: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, paddingVertical: 16, alignItems: 'center' },
-    secondaryText: { color: colors.text, fontSize: 16, fontWeight: '600' },
 });
