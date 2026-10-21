@@ -84,7 +84,7 @@ export default function Publish() {
             ) : gate === 'unknown' ? (
                 <Text style={styles.muted}>We could not check your plan right now. Try again in a moment.</Text>
             ) : status !== 'ready' || plans.length === 0 ? (
-                <Text style={styles.muted}>The Publish Plan is not available right now.{__DEV__ ? ` [${status}${debug ? `: ${debug}` : ''}; offerings: ${Object.keys(offerings?.all ?? {}).join(',') || 'none'}]` : ''}</Text>
+                <Text style={styles.muted}>{t('plan.unavailable')}{__DEV__ ? ` [${status}${debug ? `: ${debug}` : ''}; offerings: ${Object.keys(offerings?.all ?? {}).join(',') || 'none'}]` : ''}</Text>
             ) : (
                 <>
                     <View style={styles.plans}>
