@@ -9,8 +9,9 @@ import { appMetadataFile, isMetadataExport, inventoryMetadata } from './lib/app-
 import { bindingInventory } from './lib/legal-i18n.mjs';
 import { dataInventory } from './lib/data-i18n.mjs';
 import { checkSources } from './legal-source-hashes.mjs';
-import publicEnglish from '../lib/i18n/messages/en.mjs';
+import { CATALOGS } from '../lib/i18n/translate.mjs';
 import appEnglish from '../lib/i18n/messages/app/en.mjs';
+const publicEnglish = CATALOGS.en;
 const english = { ...publicEnglish, ...appEnglish };
 
 const publicProps = new Set(['title', 'aria-label', 'placeholder', 'alt', 'label', 'ariaLabel', 'body', 'confirmLabel']);

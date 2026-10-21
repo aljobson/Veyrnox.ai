@@ -7,11 +7,12 @@ import { GUIDES } from '../app/veyrnox/_lib/guides.js';
 import { modelFacts } from '../app/veyrnox/_lib/modelPages.js';
 import { ODDLING_ARCHETYPES, ODDLING_SHOWS, ODDLING_TONES } from '../app/veyrnox/_lib/character.js';
 import { listPublicOddlings, localizeOddling } from '../app/veyrnox/_lib/oddlingsPublic.js';
-import en from '../lib/i18n/messages/en.mjs';
 import { CATALOGS, messagesFor, translator, richParts } from '../lib/i18n/translate.mjs';
 import {
   LOCALES, LOCALIZED_PATHS, localesEnabled, splitLocalePath, isLocalizedPath, localizedHref, languageAlternates, localeInfo, switchLanguageHref,
 } from '../lib/i18n/locales.mjs';
+
+const en = CATALOGS.en;
 
 test('every language has a catalog that matches English key for key', () => {
   for (const l of LOCALES) {
