@@ -37,6 +37,7 @@ import area_create from './en/create';
 import area_credits from './en/credits';
 import area_dev from './en/dev';
 import area_drafts from './en/drafts';
+import area_draw from './en/draw';
 import area_edit from './en/edit';
 import area_email from './en/email';
 import area_empty from './en/empty';
@@ -127,6 +128,7 @@ const catalog = {
     ...area_credits,
     ...area_dev,
     ...area_drafts,
+    ...area_draw,
     ...area_edit,
     ...area_email,
     ...area_empty,
