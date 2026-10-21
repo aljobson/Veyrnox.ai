@@ -44,3 +44,34 @@ describe('grouped menu', () => {
         expect(layout).toMatch(/headerLeft:\s*\(\)\s*=>\s*<MenuButton/);
     });
 });
+
+describe('the current screen in the menu', () => {
+    // imported here, after the catalog test above, to keep the file's imports together
+    const { activeItemKey } = require('../src/lib/menu') as { activeItemKey: (p: string) => string | null };
+
+    test('Home is lit only on the home screen', () => {
+        expect(activeItemKey('/')).toBe('home');
+        expect(activeItemKey('/library')).toBe('library');
+    });
+
+    test('a screen inside a section lights its own item, not the parent', () => {
+        expect(activeItemKey('/create')).toBe('create');
+        expect(activeItemKey('/create/agent')).toBe('videoAgent');
+        expect(activeItemKey('/create/presets')).toBe('templates');
+    });
+
+    test('a deeper screen lights the item it belongs to', () => {
+        expect(activeItemKey('/chat/abc-123')).toBe('chat');
+        expect(activeItemKey('/oddlings/some-character')).toBe('oddlings');
+    });
+
+    test('a screen that is not in the menu lights nothing', () => {
+        expect(activeItemKey('/account')).toBeNull();
+        expect(activeItemKey('/welcome')).toBeNull();
+    });
+
+    test('every menu icon has an image', () => {
+        const { MENU_ICONS } = require('../src/lib/menuIcons') as { MENU_ICONS: Record<string, unknown> };
+        for (const item of MENU_SECTIONS.flatMap((s) => s.items)) expect(MENU_ICONS[item.icon]).toBeDefined();
+    });
+});
