@@ -3,12 +3,11 @@ import { useI18n } from '../../../components/I18nProvider';
 
 // Sign-in callback (PKCE) for OAuth and for emailed links. Supabase returns a
 // one-time `?code=`; we exchange it with the verifier this browser stored
-// when it started the flow (app/lib/pkceVerifier.js). The email-confirmation
-// link instead returns tokens in the fragment; those are taken into the
-// session and cleared from the URL (completeFromFragment).
+// when it started the flow (app/lib/pkceVerifier.js). Implicit fragment tokens
+// are scrubbed and rejected: they do not prove this browser started a sign-in.
 
 import { useEffect, useState } from "react";
-import { completeFromFragment, completeOAuthFromCode, oauthCallbackError } from "../../lib/authClient.js";
+import { rejectImplicitCallbackFragment, completeOAuthFromCode, oauthCallbackError } from "../../lib/authClient.js";
 import { MAGIC_VERIFIER_TTL_MS } from "../../lib/pkceVerifier.js";
 import { safeAuthReturnPath } from "../../lib/authReturn.js";
 import { Main } from "../../veyrnox/_components/Main.js";
@@ -23,25 +22,15 @@ export default function AuthCallback() {
         const href = window.location.href;
         const requestedNext = new URL(href).searchParams.get('next');
         const next = safeAuthReturnPath(requestedNext) || localizedHref('/');
+        if (rejectImplicitCallbackFragment()) {
+            fail(t('callback.notStarted', { minutes: Math.round(MAGIC_VERIFIER_TTL_MS / 60000) }));
+            return;
+        }
         const providerError = oauthCallbackError(href);
         if (providerError) {
             // The provider or our Auth config refused: not a browser problem.
             console.error("[auth-callback] provider returned", providerError);
             fail(t('callback.refused', { retry: TRY_AGAIN }));
-            return;
-        }
-        // The email-confirmation link answers with tokens in the fragment, not a
-        // code: take them into the session and clear them from the address bar.
-        if (new URLSearchParams(new URL(href).hash.replace(/^#/, "")).has("access_token")) {
-            completeFromFragment()
-                .then((s) => {
-                    if (s) { setStatus(t('callback.signedIn')); window.location.replace(localizedHref('/')); }
-                    else fail(t('callback.failed', { retry: TRY_AGAIN }));
-                })
-                .catch((err) => {
-                    console.error("[auth-callback] fragment sign-in failed", err?.status, err?.code);
-                    fail(t('callback.failed', { retry: TRY_AGAIN }));
-                });
             return;
         }
         if (!new URL(href).searchParams.get('code')) {
