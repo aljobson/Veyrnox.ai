@@ -51,7 +51,7 @@ Cost dominates now. The MFA-UI-gap that killed Supabase in ADR-0004 is a 3–5 d
 
 **Amend to Option A — Supabase Auth + Supabase Postgres (Frankfurt region).**
 
-- Bundle at $25/mo covers auth + Postgres + a small R2-alternative storage (though R2 stays for media per ADR-0000)
+- Bundle at $25/mo covers auth + Postgres + a small R2-alternative storage (though R2 stays for media per ADR-0240)
 - Build MFA on top of Supabase's TOTP API in Phase 4 (before Article 50 launch anyway)
 - Save ~$225–375/mo indefinitely
 - Row-Level Security is a real security win

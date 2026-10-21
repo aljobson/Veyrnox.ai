@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { posterUrl } from '../../lib/cinema';
 import { fetchDiscovery, type BrowseMode, type DiscoveryCursor, type DiscoveryTitle } from '../../lib/cinemaBrowse';
+import { editorialSeriesList, phoneCategories, type EditorialSeries } from '../../lib/cinemaSeries';
 import { plural, t } from '../../lib/i18n';
 import { MIN_TARGET } from '../../lib/a11y';
 import { colors } from '../../theme';
@@ -20,6 +21,7 @@ type State = 'loading' | 'ready' | 'closed' | 'error';
 // another tab.
 export function DiscoveryList({ mode, category }: Props) {
     const router = useRouter();
+    const editorial = mode === 'series' ? editorialSeriesList(category) : [];
     const [titles, setTitles] = useState<DiscoveryTitle[]>([]);
     const [next, setNext] = useState<DiscoveryCursor | null>(null);
     const [state, setState] = useState<State>('loading');
@@ -53,27 +55,44 @@ export function DiscoveryList({ mode, category }: Props) {
     }, [load]);
 
     if (state === 'loading') return <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>;
-    if (state === 'closed') return <View style={styles.center}><Text style={styles.muted} accessibilityRole="text">{t(mode === 'voting' ? 'cinemaBrowse.voteClosed' : 'cinemaBrowse.viewingClosed')}</Text></View>;
-    if (state === 'error') {
+    if (state === 'closed' && !editorial.length) return <View style={styles.center}><Text style={styles.muted} accessibilityRole="text">{t(mode === 'voting' ? 'cinemaBrowse.voteClosed' : 'cinemaBrowse.viewingClosed')}</Text></View>;
+    if (state === 'error' && !editorial.length) {
         return (
             <Pressable accessibilityRole="button" style={styles.center} onPress={() => load(null)}>
                 <Text style={styles.error}>{t('cinemaBrowse.loadFailed')}</Text>
             </Pressable>
         );
     }
-    if (titles.length === 0) return <View style={styles.center}><Text style={styles.muted}>{t(mode === 'voting' ? 'cinemaBrowse.voteEmpty' : 'cinemaBrowse.seriesEmpty')}</Text></View>;
+    if (titles.length === 0 && editorial.length === 0) return <View style={styles.center}><Text style={styles.muted}>{t(mode === 'voting' ? 'cinemaBrowse.voteEmpty' : 'cinemaBrowse.seriesEmpty')}</Text></View>;
     return (
-        <FlatList
-            data={titles}
-            keyExtractor={(x) => x.id}
+        <FlatList<DiscoveryTitle | EditorialSeries>
+            data={[...editorial, ...titles]}
+            keyExtractor={(x) => 'slug' in x ? x.slug : x.id}
             contentContainerStyle={styles.list}
             onEndReached={() => next && load(next)}
             onEndReachedThreshold={0.6}
             ListFooterComponent={moreFailed ? (
                 <Pressable accessibilityRole="button" style={styles.more} onPress={() => next && load(next)}><Text style={styles.error}>{t('cinemaBrowse.moreFailed')}</Text></Pressable>
             ) : undefined}
-            renderItem={({ item }) => <Row item={item} mode={mode} onOpen={() => router.push({ pathname: '/cinema/[id]', params: { id: item.id } })} />}
+            renderItem={({ item }) => 'slug' in item ? <EditorialRow series={item} onOpen={() => router.push({ pathname: '/cinema/series/[slug]', params: { slug: item.slug } })} /> : <Row item={item} mode={mode} onOpen={() => router.push({ pathname: '/cinema/[id]', params: { id: item.id } })} />}
         />
+    );
+}
+
+function EditorialRow({ series, onOpen }: { series: EditorialSeries; onOpen: () => void }) {
+    const meta = `${t('cinemaSeries.by', { creator: series.creatorName })} · ${plural('cinemaBrowse.episodes', series.episodes.length)}`;
+    const categories = phoneCategories(series.categories);
+    return (
+        <Pressable accessibilityRole="button" accessibilityLabel={`${series.title}. ${meta}`} style={styles.row} onPress={onOpen}>
+            <Image source={{ uri: series.posterUrl }} style={styles.poster} contentFit="cover" accessible={false} accessibilityIgnoresInvertColors />
+            <View style={styles.body}>
+                <Text style={styles.name} numberOfLines={2}>{series.title}</Text>
+                <Text style={styles.muted} numberOfLines={1}>{meta}</Text>
+                {categories.length ? <Text style={styles.cats} numberOfLines={1}>{categories.map(c => t(`cinemaBrowse.cat.${c}`)).join(' · ')}</Text> : null}
+                <Text style={styles.synopsis} numberOfLines={2}>{series.description}</Text>
+                <View style={styles.watch}><Text style={styles.watchText}>{t('cinemaBrowse.watch')}</Text></View>
+            </View>
+        </Pressable>
     );
 }
 

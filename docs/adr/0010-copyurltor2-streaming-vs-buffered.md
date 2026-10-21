@@ -3,7 +3,7 @@
 - **Status**: Proposed (2026-09-11)
 - **Date**: 2026-09-11
 - **Deciders**: Product owner (sole)
-- **Related**: [ADR-0000 — Product strategy](0000-product-strategy.md), `docs/PHASE-1.md`
+- **Related**: [ADR-0240 — Product strategy](0000-product-strategy.md), `docs/PHASE-1.md`
 
 ## Context
 

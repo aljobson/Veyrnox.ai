@@ -3,7 +3,7 @@
 - **Status**: Accepted (2026-09-11) — corrected 2026-09-20. It read Proposed while the decision was signed off in this document and the retry policy is in packages/adapters/fal.js.
 - **Date**: 2026-09-11
 - **Deciders**: Product owner (sole)
-- **Related**: [ADR-0000 — Product strategy](0000-product-strategy.md), `docs/PHASE-1.md`
+- **Related**: [ADR-0240 — Product strategy](0000-product-strategy.md), `docs/PHASE-1.md`
 
 ## Context
 
