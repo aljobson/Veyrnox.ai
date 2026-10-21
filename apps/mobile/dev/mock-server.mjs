@@ -34,6 +34,8 @@ const state = {
     blocks: new Map([['spam_account', { username: 'spam_account', display_name: 'Spam Account', created_at: '2026-10-17T09:00:00.000Z' }]]),
     connectStates: new Map(),
     referral: { code: 'K7M2PQ9XWD', referred: 2, attached: false },
+    // The Vibe Check (server ADR-0251): none | skipped | completed, with the answers the app sent.
+    vibe: { status: 'none', answers: {} },
 };
 state.messages.set(state.threads[0].id, [
     { id: randomUUID(), role: 'user', content: 'Give me three angles for a spring launch video.' },
@@ -455,6 +457,15 @@ createServer(async (req, res) => {
 
     if (!req.headers.authorization?.startsWith('Bearer ')) return send(res, 401, { error: 'not_authenticated' });
     if (path === '/api/v1/balance') return send(res, 200, { balance: state.balance, free_credits: state.free, free_expires_at: null });
+    if (path === '/api/v1/creator-profile') {
+        if (req.method === 'GET') return send(res, 200, state.vibe.status === 'none' ? { status: 'none' } : { status: state.vibe.status, answers: state.vibe.answers });
+        if (req.method === 'PUT') { state.vibe = { status: 'completed', answers: body }; return send(res, 200, { status: 'completed', answers: body, changed: true }); }
+        if (req.method === 'DELETE') { state.vibe = { status: 'none', answers: {} }; return send(res, 200, { reset: true }); }
+    }
+    if (path === '/api/v1/creator-profile/skip' && req.method === 'POST') {
+        if (state.vibe.status === 'none') state.vibe = { status: 'skipped', answers: {} };
+        return send(res, 200, { status: state.vibe.status, changed: true });
+    }
     if (path === '/api/v1/referrals') return send(res, 200, { enabled: true, code: state.referral.code, referred: state.referral.referred });
     if (path === '/api/v1/referrals/attach' && req.method === 'POST') {
         if (body.code === state.referral.code) return send(res, 400, { error: 'self_referral' });

@@ -8,7 +8,8 @@ import { CHAOS_MAX, CREATOR_ANSWERS, STUDIO_NAME_MAX, isCreatorAnswers, type Cre
 import { creatorCard } from '../../lib/creatorArchetype';
 import { saveVibe, skipVibe } from '../../lib/creatorProfile';
 import { loadVibe, storeVibe } from '../../lib/creatorProfileStore';
-import { tastePicks } from '../../lib/creatorTaste';
+import { rankPresets, tastePicks } from '../../lib/creatorTaste';
+import { presetKind } from '../../lib/explore';
 import { t } from '../../lib/i18n';
 import { fetchPresets, presetHref } from '../../lib/presets';
 import { colors } from '../../theme';
@@ -74,7 +75,9 @@ export default function Vibe() {
 
     async function makeFirst() {
         try {
-            const pick = tastePicks(await fetchPresets(), saved, 1)[0];
+            const all = await fetchPresets();
+            // A template with a picture that fits comes first; with none, the best fit that is not audio (a still cannot show it).
+            const pick = tastePicks(all, saved, 1)[0] ?? rankPresets(all, saved).find((p) => presetKind(p) !== 'audio');
             router.replace(pick ? presetHref(pick) : '/');
         } catch {
             router.replace('/');
