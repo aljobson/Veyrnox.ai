@@ -75,7 +75,7 @@ export function LanguageMenu({ className = '', id = 'vx-language-menu' }) {
                   }
                 }}
                 onAuxClick={() => setOpen(false)}
-                className={`flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm ${l.code === locale ? 'bg-vx-base font-bold text-vx-fg' : 'text-vx-fg-body hover:bg-vx-fg/[0.05] hover:text-vx-fg'}`}
+                className={`flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm ${l.code === locale ? 'bg-vx-base font-bold text-vx-fg' : 'vx-side-row text-vx-fg-body'}`}
               >
                 <span aria-hidden="true" className="text-[18px] leading-none">{l.flag}</span>
                 <span>{l.name}</span>

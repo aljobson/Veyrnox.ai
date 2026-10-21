@@ -65,7 +65,7 @@ export function MarketingNav({ hideAnnouncementOnMobile = false }) {
                   ? 'bg-vx-accent text-vx-accent-ink'
                   : featured
                     ? 'border border-vx-accent/50 bg-vx-accent/10 text-vx-accent hover:bg-vx-accent/20'
-                    : 'text-vx-fg-body hover:bg-vx-panel hover:text-vx-fg'
+                    : 'vx-side-row text-vx-fg-body'
               }`}
             >
               {featured && <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-current" />}
@@ -203,7 +203,7 @@ function SectionHeading({ id, label, open, onToggle, rail }) {
       onClick={onToggle}
       aria-expanded={open}
       aria-controls={`vx-side-${id}`}
-      className="flex w-full items-center gap-2 px-3 pb-1.5 pt-4 text-start font-vx-mono text-[10px] font-bold uppercase tracking-[0.14em] text-vx-fg-muted hover:text-vx-fg"
+      className="flex w-full items-center gap-2 px-3 pb-1.5 pt-4 text-start font-vx-mono text-[10px] font-bold uppercase tracking-[0.14em] text-vx-fg-muted transition-colors duration-150 hover:text-vx-fg"
     >
       <Icon name={open ? 'chevronDown' : 'chevronRight'} size={10} className="rtl:-scale-x-100" />
       {label}
@@ -264,7 +264,7 @@ function AppSidebar({ sections, homeLabel, logoLabel, accountLabel, accountHref,
           onClick={toggleRail}
           aria-label={rail ? expandLabel : collapseLabel}
           aria-pressed={rail}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-vx-fg-muted hover:bg-vx-panel hover:text-vx-fg"
+          className="vx-side-row inline-flex h-9 w-9 items-center justify-center rounded-lg text-vx-fg-muted"
         >
           <Icon name="panel" size={18} className="rtl:-scale-x-100" />
         </button>
@@ -289,11 +289,9 @@ function AppSidebar({ sections, homeLabel, logoLabel, accountLabel, accountHref,
           href="/app"
           title={homeLabel}
           aria-current={activeKey === 'explore' ? 'page' : undefined}
-          className={`flex items-center gap-3 rounded-xl py-2.5 text-sm font-semibold transition-colors ${rail ? 'justify-center px-0' : 'px-3'} ${
-            activeKey === 'explore' ? 'bg-vx-panel text-vx-fg' : 'text-vx-fg-body hover:bg-vx-panel hover:text-vx-fg'
-          }`}
+          className={`vx-side-row flex items-center gap-2.5 rounded-lg py-2 text-[13px] font-medium text-vx-fg-body ${rail ? 'justify-center px-0' : 'px-2.5'}`}
         >
-          <Icon name="home" size={18} />
+          <Icon name="home" size={16} />
           {!rail && homeLabel}
         </Link>
 
@@ -316,17 +314,15 @@ function AppSidebar({ sections, homeLabel, logoLabel, accountLabel, accountHref,
                           href={item.href}
                           title={item.label}
                           aria-current={current ? 'page' : undefined}
-                          className={`flex items-center rounded-xl text-sm font-semibold transition-colors ${
-                            rail ? 'justify-center px-0 py-2.5' : tile ? 'gap-1.5 px-2 py-2.5 text-[13px]' : 'gap-3 px-3 py-2.5'
+                          className={`flex items-center rounded-lg text-[13px] font-medium ${
+                            rail ? 'justify-center px-0 py-2' : tile ? 'gap-1.5 px-2 py-2' : 'gap-2.5 px-2.5 py-2'
                           } ${
                             item.featured && !rail
-                              ? featuredClasses(current)
-                              : current
-                                ? 'bg-vx-panel text-vx-fg'
-                                : 'text-vx-fg-body hover:bg-vx-panel hover:text-vx-fg'
+                              ? `transition-colors duration-150 ${featuredClasses(current)}`
+                              : 'vx-side-row text-vx-fg-body'
                           }`}
                         >
-                          <Icon name={item.icon} size={tile ? 16 : 18} />
+                          <Icon name={item.icon} size={16} />
                           {!rail && <span className="min-w-0 truncate">{item.label}</span>}
                         </Link>
                       </li>

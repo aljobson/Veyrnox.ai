@@ -253,6 +253,37 @@ html[data-vey-mobile-workspace="true"] [data-create-cost-card] {
 
 /* App sidebar (AppSidebar.js): the rail is fixed, so the page makes room.
    :has() keeps the 50 pages that render <AppNav/> unchanged. */
+/* Sidebar rows: a soft translucent fill plus a 1px lit top edge on hover, the
+   current page a step stronger. Tinted from --vx-fg so both themes follow. */
+.vx-side-row {
+  position: relative;
+  transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1), color 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.vx-side-row::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset 0 1px 0 0 transparent;
+  transition: box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.vx-side-row:hover,
+.vx-side-row:focus-visible {
+  background-color: rgb(var(--vx-fg) / 0.07);
+  color: rgb(var(--vx-fg));
+}
+.vx-side-row:hover::after,
+.vx-side-row:focus-visible::after { box-shadow: inset 0 1px 0 0 rgb(var(--vx-fg) / 0.08); }
+.vx-side-row[aria-current='page'] {
+  background-color: rgb(var(--vx-fg) / 0.1);
+  color: rgb(var(--vx-fg));
+}
+.vx-side-row[aria-current='page']::after { box-shadow: inset 0 1px 0 0 rgb(var(--vx-fg) / 0.1); }
+@media (prefers-reduced-motion: reduce) {
+  .vx-side-row, .vx-side-row::after { transition: none; }
+}
+
 @media (min-width: 1024px) {
   .vx-root:has(.vx-sidebar) { padding-inline-start: 16rem; }
   html[data-vx-rail] .vx-root:has(.vx-sidebar) { padding-inline-start: 4rem; }
