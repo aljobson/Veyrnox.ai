@@ -1,3 +1,4 @@
+import { setOwner as setCinemaUploadOwner } from '../lib/cinemaUploadStore';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { fetch as expoFetch } from 'expo/fetch';
 import * as WebBrowser from 'expo-web-browser';
@@ -67,6 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         cinemaProgressIdentity.setUser(userId);
         aiConsent.setUser(userId);
         await bindCacheUser(userId);
+        await setCinemaUploadOwner(userId).catch(() => undefined);
         await writeRefreshToken(session.refreshToken);
         setStatus('signedIn');
     }, []);
@@ -76,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         cinemaProgressIdentity.setUser(null);
         await aiConsent.forget();
         await wipeCache().catch(() => undefined);
+        await setCinemaUploadOwner(null).catch(() => undefined);
         await clearRefreshToken();
         setStatus('signedOut');
     }, []);

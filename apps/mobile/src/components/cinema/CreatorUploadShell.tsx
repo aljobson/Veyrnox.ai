@@ -1,3 +1,5 @@
+import { router } from 'expo-router';
+import { CINEMA_DEVICE_UPLOAD_ENABLED } from '../../lib/cinemaUpload';
 import * as WebBrowser from 'expo-web-browser';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MIN_TARGET } from '../../lib/a11y';
@@ -5,14 +7,16 @@ import { CREATOR_WORKSPACE_URL } from '../../lib/cinemaCreator';
 import { t } from '../../lib/i18n';
 import { colors } from '../../theme';
 
-// The place creator upload will live in the app (ADR-0208). Uploading a title is not built: a resumable upload of a
-// large file that survives force-quit and a network change is spike S3. Until it passes, a creator continues on the web.
+// Device upload stays behind its build flag until spike S3 passes (ADR-0249).
 // This opens the web creator workspace and carries nothing about the account.
 export function CreatorUploadShell() {
     return (
         <View style={styles.card}>
             <Text style={styles.heading} accessibilityRole="header">{t('cinemaCreator.upload.title')}</Text>
             <Text style={styles.body}>{t('cinemaCreator.upload.body')}</Text>
+            {CINEMA_DEVICE_UPLOAD_ENABLED && <Pressable accessibilityRole="button" accessibilityLabel={t('cinemaUpload.titles')} style={styles.button} onPress={() => router.push('/cinema/creator')}>
+                <Text style={styles.buttonText}>{t('cinemaUpload.titles')}</Text>
+            </Pressable>}
             <Pressable accessibilityRole="link" style={styles.button} onPress={() => void WebBrowser.openBrowserAsync(CREATOR_WORKSPACE_URL)}>
                 <Text style={styles.buttonText}>{t('cinemaCreator.upload.web')}</Text>
             </Pressable>
