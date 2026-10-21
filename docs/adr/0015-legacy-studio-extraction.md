@@ -3,7 +3,7 @@
 - **Status**: Accepted (2026-09-12)
 - **Date**: 2026-09-12
 - **Deciders**: Product owner (sole)
-- **Related**: [ADR-0007 — Legacy Muapi proxy deprecation](0007-legacy-muapi-proxy-deprecation.md), [ADR-0241 — Product strategy](0000-product-strategy.md), `CLAUDE.md` HARD WALL
+- **Related**: [ADR-0007 — Legacy Muapi proxy deprecation](0007-legacy-muapi-proxy-deprecation.md), [ADR-0000 — Product strategy](0000-product-strategy.md), `CLAUDE.md` HARD WALL
 
 ## Context
 

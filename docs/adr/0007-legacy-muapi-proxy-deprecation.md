@@ -3,7 +3,7 @@
 - **Status**: Accepted (2026-09-11) — corrected 2026-09-20. It read Proposed while the decision was signed off in this document and the 410 routes ship and verify.yml enforces the ban.
 - **Date**: 2026-09-11
 - **Deciders**: Product owner (sole)
-- **Related**: [ADR-0241 — Product strategy](0000-product-strategy.md), `CLAUDE.md` HARD WALL
+- **Related**: [ADR-0000 — Product strategy](0000-product-strategy.md), `CLAUDE.md` HARD WALL
 
 ## Context
 
@@ -11,7 +11,7 @@
 
 Two forces make this route awkward today:
 
-1. **ADR-0241 chose the Hybrid path via Reseller-first**, but Phase 1 shipped `/api/v1/generations` as a *direct* fal.ai adapter. The legacy `/api/v1/[[...path]]/*` catch-all sits alongside it and can shadow-match the new route depending on Next.js path-priority rules — a genuine footgun, not just aesthetic clutter.
+1. **ADR-0000 chose the Hybrid path via Reseller-first**, but Phase 1 shipped `/api/v1/generations` as a *direct* fal.ai adapter. The legacy `/api/v1/[[...path]]/*` catch-all sits alongside it and can shadow-match the new route depending on Next.js path-priority rules — a genuine footgun, not just aesthetic clutter.
 2. **CLAUDE.md HARD WALL** says Veyrnox.ai and the legacy Muapi studio are separate products. Every request the catch-all serves is a request the new product would rather not own — no ledger entry, no moderation gate, no margin capture, and the user's own MuAPI key does the paying.
 
 There is no known first-party client of this route in the current app tree. We do not have telemetry on outside callers.

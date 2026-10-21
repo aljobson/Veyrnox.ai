@@ -8,13 +8,13 @@
 **Status:** Superseded · Kicked off 2026-09-10
 **Target:** an authenticated user can debit credits, submit an image job through Inngest to fal.ai, receive the result stored in R2, and get refunded on failure — provably atomic under concurrent test.
 **Timeline:** 4–6 weeks solo + AI assist
-**Predecessor:** ADR-0241 (Replacer accepted), ADR-0003 (LemonSqueezy), ADR-0004 (Clerk + Neon).
+**Predecessor:** ADR-0000 (Replacer accepted), ADR-0003 (LemonSqueezy), ADR-0004 (Clerk + Neon).
 
 Phase 1 exists to prove the money invariants — nothing user-visible until the ledger cannot lose money under concurrent load. Once proven, Phase 2 (billing) plugs in and Phase 3 (studio migration) can start.
 
 ## Load-bearing blockers
 
-Six open questions from ADR-0241 gate vendor onboarding. Engineering can proceed on schema/logic in parallel, but Phase 1's Exit gate requires Clerk + Neon + Inngest + fal.ai + R2 accounts, which in turn require:
+Six open questions from ADR-0000 gate vendor onboarding. Engineering can proceed on schema/logic in parallel, but Phase 1's Exit gate requires Clerk + Neon + Inngest + fal.ai + R2 accounts, which in turn require:
 
 - [x] Legal entity for Veyrnox — **UK Ltd** ([ADR-0005 §1](adr/0005-phase-0-business-preconditions.md))
 - [x] Product-owner tax residency — **United Kingdom** ([ADR-0005 §2](adr/0005-phase-0-business-preconditions.md))
