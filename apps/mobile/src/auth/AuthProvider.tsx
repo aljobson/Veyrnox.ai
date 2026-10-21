@@ -11,7 +11,7 @@ import { AUTH_REDIRECT_URL, OAUTH_BRIDGE_URL } from '../lib/config';
 import { apiTokenSource, isTransientRefreshFailure } from '../lib/auth/apiToken';
 import { createAppleNonce, createPkce } from '../lib/auth/pkce';
 import { aiConsent } from '../lib/aiConsentStore';
-import { bindCacheUser, userIdFromToken, wipeCache } from '../lib/appCache';
+import { bindCacheUser, clearExportFiles, userIdFromToken, wipeCache } from '../lib/appCache';
 import { cinemaProgressIdentity } from '../lib/cinemaProgress';
 import { clearRefreshToken, readRefreshToken, writeRefreshToken } from '../lib/auth/sessionStore';
 import {
@@ -32,6 +32,7 @@ WebBrowser.maybeCompleteAuthSession();
 
 // Refresh this long before expiry so a request never leaves with a dying token.
 const REFRESH_SKEW_MS = 60_000;
+let exportFilesCleared = false;
 
 type Status = 'loading' | 'signedOut' | 'signedIn';
 
@@ -145,6 +146,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     useEffect(() => {
+        if (!exportFilesCleared) { clearExportFiles(); exportFilesCleared = true; }
         let cancelled = false;
         void (async () => {
             const next = await refresh();

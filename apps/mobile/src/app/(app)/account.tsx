@@ -156,6 +156,7 @@ export default function Account() {
             </Section>
 
             <Section title={t('account.dataSection')}>
+                <Row label={t('privacyExport.title')} onPress={() => router.push('/privacy-export')} />
                 <Row label={t('account.deleteAccount')} danger disabled={!ACCOUNT_DELETION_ENABLED} onPress={() => router.push('/delete-account')} />
                 {ACCOUNT_DELETION_ENABLED ? null : (
                     <Text style={styles.note}>

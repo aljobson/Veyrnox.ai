@@ -40,6 +40,17 @@ export function createFileStorage(dir: () => Directory): CacheStorage {
     };
 }
 
+export const exportDirectory = () => new Directory(Paths.cache, 'veyrnox-export');
+// Best effort: a failed delete must never stop the cache wipe or the app launch that follows it.
+export function clearExportFiles(): void {
+    try {
+        const directory = exportDirectory();
+        if (directory.exists) directory.delete();
+    } catch {
+        // The OS may reclaim the cache directory; the next sign-out or launch retries.
+    }
+}
+
 export const appStorage: CacheStorage = createFileStorage(() => new Directory(Paths.cache, 'veyrnox-cache'));
 export const userDocStorage: CacheStorage = createFileStorage(() => new Directory(Paths.document, 'veyrnox-user-docs'));
 export const appCache: Cache = createCache(appStorage);
@@ -79,7 +90,7 @@ export async function bindCacheUser(userId: string | null, cache: Cache = appCac
     if (activeUser === userId) return;
     const last = activeUser ?? (await storage.get(USER_KEY).catch(() => null));
     setCacheUser(userId);
-    if (last !== userId) await cache.clear();
+    if (last !== userId) { clearExportFiles(); await cache.clear(); }
     await sweepUserDocs(userId, docs).catch(() => undefined);
     await storage.set(USER_KEY, userId).catch(() => undefined);
 }
@@ -87,6 +98,7 @@ export async function bindCacheUser(userId: string | null, cache: Cache = appCac
 // Called when the session is dropped: sign-out, a lost session, or account deletion (which signs out).
 export async function wipeCache(cache: Cache = appCache, docs: CacheStorage = userDocStorage): Promise<void> {
     setCacheUser(null);
+    clearExportFiles();
     await Promise.all([cache.clear(), docs.keys().then(keys => Promise.all(keys.map(key => docs.remove(key))))]);
 }
 

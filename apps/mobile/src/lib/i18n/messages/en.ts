@@ -73,6 +73,7 @@ import area_plan from './en/plan';
 import area_prc from './en/prc';
 import area_preview from './en/preview';
 import area_pricing from './en/pricing';
+import area_privacyExport from './en/privacyExport';
 import area_prov from './en/prov';
 import area_public from './en/public';
 import area_publish from './en/publish';
@@ -171,6 +172,7 @@ const catalog = {
     ...area_prc,
     ...area_preview,
     ...area_pricing,
+    ...area_privacyExport,
     ...area_prov,
     ...area_public,
     ...area_publish,
