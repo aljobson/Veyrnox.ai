@@ -17,7 +17,7 @@ import { chatApi, cleanOptions, cleanTitle, imagesExtra, NO_OPTIONS, replyPrice,
 import { attachmentRefs, MAX_ATTACHMENTS, roomFor, type ChatImage } from '../../../lib/chatAttach';
 import { pickPhotos, uploadChatImages } from '../../../lib/chatPhotos';
 import { fetchCatalog, type CatalogModel } from '../../../lib/media';
-import { parseStudioDrafts, withoutDrafts } from '../../../lib/studioSkills';
+import { parseStudioDrafts, skillById, skillInstructions, withoutDrafts, type Skill } from '../../../lib/studioSkills';
 import { isQuiet, makeSendKey, resolveResumedSend, resolveStoppedSend, RESUME_QUIET_MS, resumeNoticeKey, stopNoticeKey, type StopOutcome } from '../../../lib/chatStop';
 import { plural, t } from '../../../lib/i18n';
 import { ensureOnline, OFFLINE_PAID_MESSAGE, OfflineError } from '../../../lib/network';
@@ -57,12 +57,26 @@ export default function Conversation() {
     const [makeOpen, setMakeOpen] = useState(false);
     const [maxImages, setMaxImages] = useState(MAX_ATTACHMENTS);
     const [catalog, setCatalog] = useState<CatalogModel[] | null>(null);
+    const [skillNote, setSkillNote] = useState<string | null>(null);
     const abort = useRef<AbortController | null>(null);
     // The send in flight, for the return from the background (ADR-0181): when the app comes back and the reply has gone quiet,
     // the turn is looked for by its job, because the server finishes it either way.
     const live = useRef<{ key: string; text: string; knownIds: ReadonlySet<string>; jobId: string | null; lastEventAt: number } | null>(null);
     const resumed = useRef<StopOutcome | null>(null);
     const busy = useRef(false); // synchronous: a second tap must not start a second turn
+
+    // A starter card is only instructions copied onto this chat; it costs nothing until a reply is sent.
+    async function useStarter(skill: Skill) {
+        try {
+            const list = catalog ?? (await fetchCatalog().catch(() => []));
+            await chatApi(api).updateThread(id, { system_prompt: skillInstructions(skill, list) });
+            setThread((th) => (th ? { ...th, system_prompt: skillInstructions(skill, list) } : th));
+            setSkillNote(skill.name);
+            setDraft((d) => d || '');
+        } catch {
+            setError(t('chat.skills.failed'));
+        }
+    }
 
     useEffect(() => {
         chatApi(api)
@@ -310,6 +324,21 @@ export default function Conversation() {
                     data={messages ?? []}
                     keyExtractor={(m) => m.id}
                     contentContainerStyle={styles.list}
+                    ListEmptyComponent={
+                        <View style={styles.starters}>
+                            {(['prompt-writer', 'bring-to-life'] as const).map((sid) => {
+                                const sk = skillById(sid);
+                                if (!sk) return null;
+                                const on = skillNote === sk.name;
+                                return (
+                                    <Pressable key={sid} accessibilityRole="button" accessibilityLabel={`${sk.name}. ${sk.blurb}`} accessibilityState={{ selected: on }} style={[styles.starter, on && styles.starterOn]} onPress={() => void useStarter(sk)}>
+                                        <Text style={styles.starterName}>{sk.name}</Text>
+                                        <Text style={styles.starterBlurb}>{sk.blurb}</Text>
+                                    </Pressable>
+                                );
+                            })}
+                        </View>
+                    }
                     ListFooterComponent={
                         lastUser && !sending && model && price !== null ? (
                             <Pressable accessibilityRole="button" accessibilityLabel={plural('chat.againLabel', price)} style={styles.again} onPress={() => void send(lastUser.content)}>
@@ -405,5 +434,10 @@ const styles = StyleSheet.create({
     sendOff: { opacity: 0.4 },
     sendText: { color: colors.accentInk, fontWeight: '600', textAlign: 'center' },
     sendPrice: { color: colors.accentInk, fontSize: 12, textAlign: 'center' },
+    starters: { gap: 10 },
+    starter: { borderRadius: 14, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 14, gap: 4 },
+    starterOn: { borderColor: colors.accent },
+    starterName: { color: colors.text, fontSize: 16, fontWeight: '600' },
+    starterBlurb: { color: colors.muted, fontSize: 14 },
     modelLine: { color: colors.muted, fontSize: 13, paddingHorizontal: 12, paddingTop: 8 },
 });
