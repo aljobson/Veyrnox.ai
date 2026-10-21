@@ -56,6 +56,15 @@ export function cleanNetworkText(variants: Readonly<Record<string, string>>, net
     return out;
 }
 
+export function networkTextProblem(networkText?: Readonly<Record<string, string>>): { network: string; limit: number; length: number } | null {
+    for (const [network, v] of Object.entries(networkText ?? {})) {
+        const limit = captionLimit(network);
+        const length = [...v].length;
+        if (limit !== null && length > limit) return { network, limit, length };
+    }
+    return null;
+}
+
 export function mediaTypeOf(modality: string): MediaType | null {
     const kind = kindOf(modality);
     return kind === 'image' || kind === 'video' ? kind : null;
@@ -100,10 +109,8 @@ export function validateDraft(draft: Draft, accounts: readonly PublishAccount[],
         const a = accounts.find((x) => x.id === id);
         if (!a || !a.supportedMedia.includes(draft.mediaType)) return `${a?.displayName ?? 'That account'} cannot post a ${draft.mediaType}.`;
     }
-    for (const [network, v] of Object.entries(draft.networkText ?? {})) {
-        const limit = captionLimit(network);
-        if (limit !== null && [...v].length > limit) return `${networkLabel(network)} allows ${limit} characters; this is ${[...v].length}.`;
-    }
+    const problem = networkTextProblem(draft.networkText);
+    if (problem) return `${networkLabel(problem.network)} allows ${problem.limit} characters; this is ${problem.length}.`;
     if (!draft.queue && draft.when.kind === 'at' && draft.when.at.getTime() <= now.getTime() + MIN_LEAD_MS) return 'Choose a time in the future (at least a minute away).';
     return null;
 }

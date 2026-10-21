@@ -10,8 +10,10 @@ import { fetchAgentListing } from '../../../lib/montage';
 import { VEY_CLEARANCE } from '../../../components/VeyMascot';
 import { colors } from '../../../theme';
 import { plural, t } from '../../../lib/i18n';
+import { useVeyScroll } from '../../../lib/useVeyScroll';
 
 export default function Create() {
+    const onScroll = useVeyScroll();
     const router = useRouter();
     const [models, setModels] = useState<CatalogModel[] | null>(null);
     const [failed, setFailed] = useState(false);
@@ -77,6 +79,8 @@ export default function Create() {
             ) : (
                 <FlatList
                     contentContainerStyle={styles.list}
+                    onScroll={onScroll}
+                    scrollEventThrottle={64}
                     data={shown}
                     ListHeaderComponent={
                         (goal === 'video' || goal === 'all') && agent ? (

@@ -129,7 +129,7 @@ export default function Pricing() {
         </div>
       </section>
 
-      <section
+      <section data-vey-perch
         id="credit-packs"
         className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-24 sm:pt-32"
         aria-labelledby="credit-packs-heading"
@@ -197,7 +197,7 @@ export default function Pricing() {
       </section>
 
       <CreditSubscriptionOffer />
-      <section className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-24 sm:pt-32 pb-8">
+      <section data-vey-perch className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-24 sm:pt-32 pb-8">
         <div className="flex items-end justify-between flex-wrap gap-4">
           <h2 className="vx-display text-[40px] sm:text-[56px]">{t('pricing.models.title')}</h2>
           <p role="status" aria-live="polite" className="text-[14px] text-vx-fg-muted">
@@ -272,7 +272,7 @@ export default function Pricing() {
         </p>
       </section>
 
-      <section className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-24 sm:pt-32 pb-28">
+      <section data-vey-perch className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-24 sm:pt-32 pb-28">
         <h2 className="vx-display text-[40px] sm:text-[56px] max-w-[14ch]">{t('pricing.see.title')}</h2>
         <p className="mt-4 text-vx-fg-body">{t('pricing.see.lead')}</p>
         <Link

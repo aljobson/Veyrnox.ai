@@ -25,9 +25,13 @@ function fakeNet({ dedup = [{ id: 'row' }], processedAt = 'x', currentState = 'S
         }
         if (u.includes('/rest/v1/jobs?')) {
             calls.push({ name: 'job_state', url: u });
-            return Response.json(currentState ? [{ state: currentState }] : []);
+            return Response.json(currentState ? [{ ...job, state: currentState }] : []);
         }
         if (u.includes('r2.cloudflarestorage.com')) { calls.push({ name: 'r2_put' }); return new Response(null, { status: 200 }); }
+        const host = new URL(u).hostname;
+        if (!['tempfile.aiquickdraw.com', 'openrouter.ai', ...Array.from({ length: 8 }, (_, i) => `file${i + 1}.aitohumanize.com`)].includes(host)) {
+            throw new Error(`Unexpected mocked request: ${host}`);
+        }
         calls.push({ name: 'source', url: u, auth: init.headers && init.headers.Authorization });
         return source();
     };
@@ -61,12 +65,12 @@ test('no refund when job_failed refuses a job that is not FAILED', async () => {
     } finally { net.restore(); }
 });
 
-test('a processed duplicate has no side effects', async () => {
-    const net = fakeNet({ dedup: [], processedAt: '2026-09-12T00:00:00Z' });
+test('a processed duplicate of a settled job has no write side effects', async () => {
+    const net = fakeNet({ dedup: [], processedAt: '2026-09-12T00:00:00Z', currentState: 'REFUNDED' });
     try {
         const r = await completeJob({ source: 'kie', job, providerJobId: 't1', outcome: { state: 'fail', errorCode: 'x' }, ext: '', cfg });
         assert.equal(r.body.duplicate, true);
-        assert.equal(net.calls.length, 0);
+        assert.deepEqual(net.calls.map((c) => c.name), ['job_state']);
     } finally { net.restore(); }
 });
 
@@ -142,10 +146,10 @@ test('GrsAI provider failure refunds once; processed replay has no side effects'
         await completeJob(call);
         assert.equal(net.calls.find((c) => c.name === 'ledger_refund').args.p_credits, 2);
     } finally { net.restore(); }
-    net = fakeNet({ dedup: [], processedAt: 'done' });
+    net = fakeNet({ dedup: [], processedAt: 'done', currentState: 'REFUNDED' });
     try {
         assert.equal((await completeJob(call)).body.duplicate, true);
-        assert.equal(net.calls.length, 0);
+        assert.deepEqual(net.calls.map((c) => c.name), ['job_state']);
     } finally { net.restore(); }
 });
 
@@ -166,21 +170,22 @@ test('GrsAI recovers a previously processed success that still has no stored ass
         const r = await completeJob({ source: 'grsai', job: { ...job, state: 'SUCCEEDED' }, providerJobId: 'grs-copy',
             outcome: { state: 'success', outputUrl: 'https://file6.aitohumanize.com/a.png' }, ext: '.png', cfg });
         assert.equal(r.status, 200);
-        assert.deepEqual(net.calls.map((c) => c.name), ['job_state', 'job_succeeded', 'source', 'r2_put', 'job_stored', 'processed']);
+        assert.deepEqual(net.calls.map((c) => c.name), ['job_state', 'job_succeeded', 'job_state', 'source', 'r2_put', 'job_stored', 'processed']);
         const q = new URL(net.calls[0].url).searchParams;
         assert.equal(q.get('id'), 'eq.job-1');
+        assert.equal(q.get('user_id'), 'eq.user-1');
         assert.equal(q.get('provider'), 'eq.grsai');
         assert.equal(q.get('provider_job_id'), 'eq.grs-copy');
     } finally { net.restore(); }
 });
 
 for (const state of ['STORED', 'FAILED', 'CANCELLED', null]) test(`GrsAI recovery cannot copy a stale SUCCEEDED snapshot when the current job is ${state}`, async () => {
-    const net = fakeNet({ dedup: [], processedAt: 'done', currentState: state });
+    const net = fakeNet({ dedup: [], processedAt: 'done', currentState: state, rpcs: { job_succeeded: { ok: false } } });
     try {
         const r = await completeJob({ source: 'grsai', job: { ...job, state: 'SUCCEEDED' }, providerJobId: 'grs-copy',
             outcome: { state: 'success', outputUrl: 'https://file6.aitohumanize.com/a.png' }, ext: '.png', cfg });
-        assert.equal(r.body.duplicate, true);
-        assert.deepEqual(net.calls.map((c) => c.name), ['job_state']);
+        assert.equal(r.status, state === 'STORED' || state === 'CANCELLED' ? 200 : 500);
+        assert.deepEqual(net.calls.map((c) => c.name), state === 'FAILED' ? ['job_state', 'job_succeeded', 'job_state'] : ['job_state']);
     } finally { net.restore(); }
 });
 

@@ -65,3 +65,24 @@ describe('supabase auth', () => {
         expect(toBase64Url('a+b/c==')).toBe('a-b_c');
     });
 });
+
+import { passkeySignInOptions, passkeySignInVerify } from '../src/lib/auth/supabaseAuth';
+
+describe('passkey authentication transport', () => {
+    test('options carries the single-use captcha and verify adopts a normal token response', async () => {
+        const options = { challenge_id: 'challenge', options: { challenge: 'base64' } };
+        const fetchMock = jest.fn().mockResolvedValueOnce(new Response(JSON.stringify(options), { status: 200 }))
+            .mockResolvedValueOnce(new Response(JSON.stringify(tokens), { status: 200 }));
+        globalThis.fetch = fetchMock;
+        expect(await passkeySignInOptions('captcha')).toEqual(options);
+        expect(fetchMock.mock.calls[0][0]).toContain('/auth/v1/passkeys/authentication/options');
+        expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ gotrue_meta_security: { captcha_token: 'captcha' } });
+        expect(await passkeySignInVerify('challenge', { id: 'credential' }, 1000)).toEqual({ accessToken: 'a', refreshToken: 'r', expiresAt: 3601000 });
+        expect(fetchMock.mock.calls[1][0]).toContain('/auth/v1/passkeys/authentication/verify');
+        expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toEqual({ challenge_id: 'challenge', credential: { id: 'credential' } });
+    });
+    test('captcha rejection preserves the typed status and code', async () => {
+        globalThis.fetch = jest.fn().mockResolvedValue(new Response(JSON.stringify({ error_code: 'captcha_failed' }), { status: 400 }));
+        await expect(passkeySignInOptions('bad')).rejects.toEqual(new AuthError(400, 'captcha_failed'));
+    });
+});

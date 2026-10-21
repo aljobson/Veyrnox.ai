@@ -181,3 +181,6 @@ test.each([[404, 'MEDIA_NOT_FOUND'], [400, 'invalid_media']] as const)('upload-o
     expect(composeErrorMessage(err)).toBe(composeErrorMessage(err, false));
     expect(composeErrorMessage(err)).not.toBe(composeErrorMessage(err, true));
 });
+test('over-limit variant preserves the composer message exactly', () => {
+    expect(validateDraft(draft({ networkText: { twitter: '😀'.repeat(281) } }), [acct()], now)).toBe('X allows 280 characters; this is 281.');
+});

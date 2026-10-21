@@ -26,6 +26,7 @@ import area_cinema from './en/cinema';
 import area_cinemaBrowse from './en/cinemaBrowse';
 import area_cinemaCreator from './en/cinemaCreator';
 import area_cinemaPass from './en/cinemaPass';
+import area_cinemaSeries from './en/cinemaSeries';
 import area_cinemaSocial from './en/cinemaSocial';
 import area_comments from './en/comments';
 import area_commerce from './en/commerce';
@@ -62,6 +63,7 @@ import area_oac from './en/oac';
 import area_oauth from './en/oauth';
 import area_oddlings from './en/oddlings';
 import area_opt from './en/opt';
+import area_passkey from './en/passkey';
 import area_pk from './en/pk';
 import area_plan from './en/plan';
 import area_prc from './en/prc';
@@ -71,6 +73,7 @@ import area_prov from './en/prov';
 import area_public from './en/public';
 import area_publish from './en/publish';
 import area_publishUploads from './en/publishUploads';
+import area_publishLinks from './en/publishLinks';
 import area_publishWorkflows from './en/publishWorkflows';
 import area_queue from './en/queue';
 import area_queues from './en/queues';
@@ -117,6 +120,7 @@ const catalog = {
     ...area_cinemaBrowse,
     ...area_cinemaCreator,
     ...area_cinemaPass,
+    ...area_cinemaSeries,
     ...area_cinemaSocial,
     ...area_comments,
     ...area_commerce,
@@ -153,6 +157,7 @@ const catalog = {
     ...area_oauth,
     ...area_oddlings,
     ...area_opt,
+    ...area_passkey,
     ...area_pk,
     ...area_plan,
     ...area_prc,
@@ -162,6 +167,7 @@ const catalog = {
     ...area_public,
     ...area_publish,
     ...area_publishUploads,
+    ...area_publishLinks,
     ...area_publishWorkflows,
     ...area_queue,
     ...area_queues,

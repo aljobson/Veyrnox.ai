@@ -21,7 +21,7 @@ import { localizedHref } from '../../../lib/i18n/locales.mjs';
 export async function PresetWall({ catalog }) {
   const { locale, t } = await getT();
   return (
-    <section className="px-4 sm:px-6 pt-28 sm:pt-36 max-w-[1300px] mx-auto">
+    <section data-vey-perch className="px-4 sm:px-6 pt-28 sm:pt-36 max-w-[1300px] mx-auto">
       <div className="flex items-end justify-between mb-8 flex-wrap gap-4">
         <h2 className="vx-display text-[40px] sm:text-[56px] max-w-[14ch]">{t('home.templates.title')}</h2>
         <Link href={localizedHref(locale, '/presets')} className="text-[15px] font-bold text-vx-fg-body underline decoration-vx-border decoration-2 underline-offset-[6px] hover:text-vx-fg hover:decoration-vx-accent">
@@ -85,7 +85,7 @@ export async function ModelShelf({ catalog }) {
   const total = groups.reduce((n, g) => n + g.rows.length, 0);
 
   return (
-    <section id="models" className="px-4 sm:px-6 pt-28 sm:pt-36 max-w-[1300px] mx-auto">
+    <section data-vey-perch id="models" className="px-4 sm:px-6 pt-28 sm:pt-36 max-w-[1300px] mx-auto">
       <h2 className="vx-display text-[40px] sm:text-[56px]">{t('home.models.title')}</h2>
       <p className="mt-4 text-lg text-vx-fg-body max-w-[48ch] leading-[1.5]">
         {t('home.models.lead', { total })}

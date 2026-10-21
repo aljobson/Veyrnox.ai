@@ -30,7 +30,8 @@ test('apple file shape and paths', () => {
     const d = body.applinks.details[0];
     assert.deepEqual(d.appIDs, ['ABCDE12345.ai.veyrnox.app']);
     assert.deepEqual(d.components.map((c) => c['/']), APP_LINK_PATHS);
-    assert.ok(APP_LINK_PATHS.every((p) => p.startsWith('/app/')));
+    assert.ok(APP_LINK_PATHS.every((p) => p.startsWith('/app/') || p === '/social/team/invite/*'));
+    assert.ok(d.components.some((c) => c['/'] === '/social/team/invite/*'));
 });
 
 test('android file shape', () => {

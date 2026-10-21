@@ -1,6 +1,7 @@
 import { Stack, useRouter } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from 'react-native';
+import { NetworkTextFields, YoutubeVisibilityChips } from '../../../components/ComposeExtras';
 import { WhenPicker, whenFrom } from '../../../components/WhenPicker';
 import { VEY_CLEARANCE } from '../../../components/VeyMascot';
 import { touchTarget } from '../../../lib/a11y';
@@ -9,8 +10,10 @@ import { createDraftKeys, isDefiniteRefusal } from '../../../lib/draftKey';
 import { t } from '../../../lib/i18n';
 import { fetchCatalog, mediaApi, type CatalogModel } from '../../../lib/media';
 import { fetchAccounts, publishErrorMessage, type PublishAccount } from '../../../lib/publish';
-import { MAX_REVIEWERS, approvalCreateErrorKey, createApproval, parseReviewers, signatureOf, validateApproval, type ApprovalDraft, type Created, type Policy } from '../../../lib/publishApprovalCreate';
-import { MAX_TEXT, eligibleAccounts, mediaTypeOf } from '../../../lib/publishCompose';
+import { MAX_REVIEWERS, approvalConfirmExtra, approvalCreateErrorKey, variantsUnavailable, createApproval, parseReviewers, signatureOf, validateApproval, type ApprovalDraft, type Created, type Policy } from '../../../lib/publishApprovalCreate';
+import { MAX_TEXT, cleanNetworkText, eligibleAccounts, mediaTypeOf, type YoutubeVisibility } from '../../../lib/publishCompose';
+import { brandStore } from '../../../lib/publishBrand';
+import { useBrandScopedVariants } from '../../../lib/useBrandScopedVariants';
 import { usePublishApi } from '../../../lib/usePublishApi';
 import { PublishUploadPanel } from '../../../components/PublishUploadPanel';
 import { choose, clearUpload, type CreationPick, type MediaChoice } from '../../../lib/publishMediaChoice';
@@ -27,6 +30,14 @@ export default function ApprovalNew() {
     const [chosen, setChosen] = useState<MediaChoice | null>(null);
     const [accountIds, setAccountIds] = useState<string[]>([]);
     const [text, setText] = useState('');
+    const { off: variantsOff, networkText, setNetworkText, markOff } = useBrandScopedVariants();
+    const brand = useSyncExternalStore(brandStore.subscribe, brandStore.get, () => null);
+    let [visibility, setVisibility] = useState<{ brand: string | null; value: YoutubeVisibility }>(() => ({ brand, value: 'private' }));
+    if (visibility.brand !== brand) {
+        visibility = { brand, value: 'private' };
+        setVisibility(visibility);
+    }
+    const youtubeVisibility = visibility.value;
     const [date, setDate] = useState('');
     const [time, setTime] = useState('');
     const [reviewerText, setReviewerText] = useState('');
@@ -61,6 +72,7 @@ export default function ApprovalNew() {
     }, [api]);
 
     const eligible = useMemo(() => (chosen && accounts ? eligibleAccounts(accounts, chosen.mediaType) : []), [chosen, accounts]);
+    const networks = [...new Set(eligible.filter((a) => accountIds.includes(a.id)).map((a) => a.network))];
     const reviewers = parseReviewers(reviewerText);
 
     function submit() {
@@ -74,7 +86,7 @@ export default function ApprovalNew() {
             setProblem(t('approvals.err.badReviewer', { value: reviewers.rejected[0] }));
             return;
         }
-        const draft: ApprovalDraft = { jobId: chosen.kind === 'job' ? chosen.job.job_id : '', ...(chosen.kind === 'upload' ? { uploadId: chosen.uploadId } : {}), mediaType: chosen.mediaType, accountIds, text, scheduledAt: at, reviewers: reviewers.emails, policy };
+        const draft: ApprovalDraft = { jobId: chosen.kind === 'job' ? chosen.job.job_id : '', ...(chosen.kind === 'upload' ? { uploadId: chosen.uploadId } : {}), mediaType: chosen.mediaType, accountIds, text, scheduledAt: at, reviewers: reviewers.emails, policy, networkText: cleanNetworkText(networkText, networks), ...(networks.includes('youtube') ? { youtubeVisibility } : {}) };
         const invalid = validateApproval(draft, new Date());
         if (invalid) {
             setProblem(t(invalid));
@@ -82,7 +94,9 @@ export default function ApprovalNew() {
         }
         setProblem(null);
         const where = eligible.filter((a) => accountIds.includes(a.id)).map((a) => `${a.displayName} (${a.network})`).join(', ');
-        Alert.alert(t('approvals.confirmTitle'), t('approvals.confirmBody', { reviewers: reviewers.emails.join(', '), where, when: at.toLocaleString(), policy: t(`approvals.policy.${policy}`) }), [
+        const extra = approvalConfirmExtra(draft.networkText, draft.youtubeVisibility);
+        const confirmation = t('approvals.confirmBody', { reviewers: reviewers.emails.join(', '), where, when: at.toLocaleString(), policy: t(`approvals.policy.${policy}`) });
+        Alert.alert(t('approvals.confirmTitle'), confirmation + (extra.length ? '\n\n' + extra.join('\n') : ''), [
             { text: t('approvals.cancel'), style: 'cancel' },
             { text: t('approvals.send'), onPress: () => { if (!preparingRef.current) void send(draft); } },
         ]);
@@ -94,10 +108,12 @@ export default function ApprovalNew() {
         const key = await draftKeys.keyFor(user, signatureOf(draft));
         if (preparingRef.current) return;
         setBusy(true);
+        const sentBrand = brandStore.get();
         try {
             setCreated(await createApproval(api, draft, key));
             await draftKeys.drop(user);
         } catch (err) {
+            if (variantsUnavailable(err)) markOff(sentBrand);
             if (isDefiniteRefusal(err)) await draftKeys.drop(user);
             setProblem(t(approvalCreateErrorKey(err, !!draft.uploadId)));
         } finally {
@@ -172,6 +188,8 @@ export default function ApprovalNew() {
                         </View>
                         <Text style={styles.heading} accessibilityRole="header">{t('approvals.step.text')}</Text>
                         <TextInput style={styles.input} multiline value={text} onChangeText={setText} maxLength={MAX_TEXT} placeholder={t('approvals.textPlaceholder')} accessibilityLabel={t('approvals.step.text')} placeholderTextColor={colors.muted} />
+                        {variantsOff ? <Text style={styles.muted}>{t('publishLinks.variantsOffNote')}</Text> : <NetworkTextFields networks={networks} values={networkText} onChange={(network, value) => setNetworkText((old) => ({ ...old, [network]: value }))} />}
+                        {networks.includes('youtube') ? <YoutubeVisibilityChips value={youtubeVisibility} onChange={(value) => setVisibility({ brand, value })} /> : null}
                         <Text style={styles.heading} accessibilityRole="header">{t('approvals.step.when')}</Text>
                         <Text style={styles.muted}>{t('approvals.whenNote')}</Text>
                         <WhenPicker date={date} time={time} onChange={(d, tm) => { setDate(d); setTime(tm); }} />

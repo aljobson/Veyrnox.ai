@@ -27,7 +27,7 @@ export function FilterPanel({ tl, selected, selection = [], disabled, apply }) {
         </div>
         {!matches.length && <p role="status" className="text-xs text-vx-fg-muted">{t("app.editor.filters.empty")}</p>}
         <div className="space-y-2 border-t border-vx-border pt-3">
-            <p className="text-xs"><strong>{preset.name}</strong> · {preset.description}</p>
+            <p className="text-xs"><strong>{preset.name}</strong> · {tOr(t, `app.data.filter.${preset.id}`, preset.description)}</p>
             <label className="block text-xs">{t('app.editor.filters.strength', {value: number(intensity)})}<input aria-label={t("app.editor.filters.strengthLabel")} type="range" min="0" max="100" step="1" value={intensity} disabled={disabled} onChange={event => setIntensity(Number(event.target.value))} className="mt-1 w-full" /></label>
             <label className="block text-xs">{t("app.editor.filters.scope")}<select aria-label={t("app.editor.filters.scope")} value={scope} onChange={event => setScope(event.target.value)} className="mt-1 w-full rounded-lg border border-vx-border bg-vx-base p-2 text-xs"><option value="current">{t("app.editor.filters.current")}</option><option value="selected">{t(pluralKey(t, locale, 'app.editor.filters.selected', visuals.length), {count: number(visuals.length)})}</option></select></label>
             {problem && <p role="status" className="text-xs text-vx-fg-muted">{helperCopy(t, locale, problem)}</p>}

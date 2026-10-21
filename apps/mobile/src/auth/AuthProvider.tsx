@@ -1,3 +1,5 @@
+import { passkeyGate, toGoTrueCredential, validatePasskeyOptions } from '../lib/passkeys';
+import { getCredential } from '../lib/auth/passkeyNative';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { fetch as expoFetch } from 'expo/fetch';
 import * as WebBrowser from 'expo-web-browser';
@@ -11,6 +13,8 @@ import { bindCacheUser, userIdFromToken, wipeCache } from '../lib/appCache';
 import { cinemaProgressIdentity } from '../lib/cinemaProgress';
 import { clearRefreshToken, readRefreshToken, writeRefreshToken } from '../lib/auth/sessionStore';
 import {
+    passkeySignInOptions,
+    passkeySignInVerify,
     authorizeUrl,
     exchangeAuthCode,
     refreshSession,
@@ -44,6 +48,7 @@ interface AuthContextValue {
     signInWithEmail(email: string, password: string, captchaToken: string): Promise<void>;
     // Resolves true when signed in, false when the user must confirm their email first.
     signUpWithEmail(email: string, password: string, captchaToken: string): Promise<boolean>;
+    signInWithPasskey(captchaToken: string): Promise<boolean>;
     signOut(): Promise<void>;
 }
 
@@ -188,6 +193,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         [adopt],
     );
 
+    const signInWithPasskey = useCallback(async (captchaToken: string): Promise<boolean> => {
+        if (!passkeyGate()) return false;
+        const { challengeId, options } = validatePasskeyOptions(await passkeySignInOptions(captchaToken), false);
+        const credential = await getCredential(options);
+        if (credential === null) return false;
+        await adopt(await passkeySignInVerify(challengeId, toGoTrueCredential(credential)));
+        return true;
+    }, [adopt]);
+
     const signOut = useCallback(async () => {
         const token = sessionRef.current?.accessToken;
         await drop();
@@ -195,8 +209,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, [drop]);
 
     const value = useMemo<AuthContextValue>(
-        () => ({ status, api, onSessionLost, getAccessToken, adoptSession: adopt, appleNativeAvailable, signInWithApple, signInWithOAuth, signInWithEmail, signUpWithEmail, signOut }),
-        [status, api, onSessionLost, getAccessToken, adopt, appleNativeAvailable, signInWithApple, signInWithOAuth, signInWithEmail, signUpWithEmail, signOut],
+        () => ({ status, api, onSessionLost, getAccessToken, adoptSession: adopt, appleNativeAvailable, signInWithApple, signInWithOAuth, signInWithEmail, signUpWithEmail, signInWithPasskey, signOut }),
+        [status, api, onSessionLost, getAccessToken, adopt, appleNativeAvailable, signInWithApple, signInWithOAuth, signInWithEmail, signUpWithEmail, signInWithPasskey, signOut],
     );
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
