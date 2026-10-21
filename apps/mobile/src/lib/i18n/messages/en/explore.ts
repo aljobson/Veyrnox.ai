@@ -19,6 +19,7 @@ export default {
     'explore.type.video': 'Video',
     'explore.type.audio': 'Audio',
     'explore.new': 'New',
+    'explore.collageHint': 'Swipe to browse templates',
     'explore.audioSoon': 'Audio templates are coming soon.',
     'explore.noMatch': 'No templates match.',
     'explore.oddlings.title': 'Oddlings',
