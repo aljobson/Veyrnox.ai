@@ -15,8 +15,10 @@ import { colors } from '../../../theme';
 import { t } from '../../../lib/i18n';
 import { selectedState, touchTarget } from '../../../lib/a11y';
 import { EmptyState } from '../../../components/EmptyState';
+import { useVeyScroll } from '../../../lib/useVeyScroll';
 
 export default function Library() {
+    const onScroll = useVeyScroll();
     const { api } = useAuth();
     const router = useRouter();
     const [jobs, setJobs] = useState<Job[] | null>(null);
@@ -113,6 +115,8 @@ export default function Library() {
             ) : (
                 <FlatList
                     contentContainerStyle={styles.list}
+                    onScroll={onScroll}
+                    scrollEventThrottle={64}
                     key={view}
                     numColumns={view === 'grid' ? 2 : 1}
                     data={shown}

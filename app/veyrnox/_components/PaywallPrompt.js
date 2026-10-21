@@ -65,7 +65,7 @@ export function PaywallPrompt({ credits, createdAt }) {
       <div className="max-h-full w-full max-w-[1040px] overflow-y-auto rounded-2xl border border-vx-border bg-vx-panel p-6 sm:p-8">
         <h2 id="paywall-title" className="vx-display text-[28px]">{title}</h2>
         <p className="mt-2 text-vx-fg-body">{body}</p>
-        <TopUpPacks signedIn />
+        <TopUpPacks signedIn welcome={reason === 'low' ? 'welcomeLow' : 'welcomeFirst'} />
         <div className="mt-5">
           <Button variant="ghost" onClick={() => setReason(null)}>{t("app.credits.paywall.later")}</Button>
         </div>

@@ -3,6 +3,8 @@ import { VEY_SHOULDER } from '../../../lib/veyPointer';
 
 const LOOP = { duration: 1.8, repeat: Infinity, ease: 'easeInOut' };
 const QUICK_LOOP = { duration: 0.52, repeat: Infinity, ease: 'easeInOut' };
+const CHEER_LOOP = { duration: 0.9, repeat: Infinity, ease: 'easeInOut' };
+const HOP_ONCE = { duration: 0.72, times: [0, 0.38, 0.62, 0.8, 1], ease: 'easeOut' };
 
 function animated(reducedMotion, active, still) {
   return reducedMotion ? still : active;
@@ -14,33 +16,48 @@ export default function VeyCharacter({ pose = 'idle', reducedMotion = false, han
   const tapping = pose === 'tapping';
   const thinking = pose === 'thinking';
   const listening = pose === 'listening';
+  const hopping = pose === 'hop';
+  const cheering = pose === 'cheer' || hopping;
+  const worried = pose === 'worried';
   const aimed = pointing && hand;
   const dx = hand ? hand.x - VEY_SHOULDER.x : 0, dy = hand ? hand.y - VEY_SHOULDER.y : 0;
   const reach = Math.hypot(dx, dy);
   const angle = Math.atan2(dy, dx) * 180 / Math.PI;
 
   const headAnimation = animated(reducedMotion,
-    thinking
+    cheering
+      ? { rotate: [-5, 5, -5], y: [0, -4, 0] }
+      : worried
+        ? { rotate: [-7, -3, -7], y: [1, 3, 1] }
+    : thinking
       ? { rotate: [-4, 5, -4], y: [0, -2, 0] }
       : walking
         ? { rotate: [-3, 3, -3], y: [0, -3, 0] }
         : pointing
           ? { rotate: [0, 4, 0], y: [0, -1, 0] }
           : { rotate: [-1.5, 1.5, -1.5], y: [0, -2, 0] },
-    { rotate: pointing ? 4 : 0, y: 0 });
+    { rotate: pointing ? 4 : worried ? -5 : 0, y: 0 });
 
   const leftArmAnimation = animated(reducedMotion,
-    walking
+    cheering
+      ? { rotate: [92, 112, 92] }
+      : worried
+        ? { rotate: [-4, 2, -4] }
+    : walking
       ? { rotate: [24, -18, 24] }
       : listening
         ? { rotate: [-8, -28, -8] }
         : thinking
           ? { rotate: [2, 10, 2] }
           : { rotate: [5, -5, 5] },
-    { rotate: listening ? -18 : 0 });
+    { rotate: cheering ? 100 : listening ? -18 : 0 });
 
   const rightArmAnimation = animated(reducedMotion,
-    tapping
+    cheering
+      ? { rotate: [-36, -54, -36] }
+      : worried
+        ? { rotate: [20, 26, 20] }
+    : tapping
       ? { rotate: [-34, -39, -34], x: [0, 5, 0] }
       : pointing
         ? { rotate: [-34, -30, -34] }
@@ -49,7 +66,17 @@ export default function VeyCharacter({ pose = 'idle', reducedMotion = false, han
           : walking
             ? { rotate: [-18, 24, -18] }
             : { rotate: [12, 5, 12] },
-    { rotate: pointing ? -34 : thinking ? -60 : 8 });
+    { rotate: cheering ? -44 : pointing ? -34 : thinking ? -60 : worried ? 22 : 8 });
+
+  const armTransition = cheering ? CHEER_LOOP : walking ? QUICK_LOOP : LOOP;
+  const jump = animated(reducedMotion,
+    hopping
+      ? { y: [0, -30, 0, -12, 0] }
+      : cheering
+        ? { y: [0, -12, 0] }
+        : { y: 0 },
+    { y: 0 });
+  const jumpTransition = hopping ? HOP_ONCE : cheering ? CHEER_LOOP : { duration: 0.2 };
 
   return (
     <svg
@@ -83,9 +110,11 @@ export default function VeyCharacter({ pose = 'idle', reducedMotion = false, han
       <motion.ellipse
         cx="80" cy="157" rx="39" ry="7"
         fill="rgb(0 0 0 / 0.32)"
-        animate={animated(reducedMotion, walking ? { rx: [33, 42, 33], opacity: [0.26, 0.38, 0.26] } : { rx: [36, 39, 36] }, { rx: 39 })}
-        transition={walking ? QUICK_LOOP : LOOP}
+        animate={animated(reducedMotion, hopping ? { rx: [39, 24, 39, 31, 39], opacity: [0.32, 0.14, 0.32, 0.22, 0.32] } : cheering ? { rx: [39, 30, 39], opacity: [0.32, 0.2, 0.32] } : walking ? { rx: [33, 42, 33], opacity: [0.26, 0.38, 0.26] } : { rx: [36, 39, 36] }, { rx: 39 })}
+        transition={hopping ? HOP_ONCE : cheering ? CHEER_LOOP : walking ? QUICK_LOOP : LOOP}
       />
+
+      <motion.g data-part="figure" animate={jump} transition={jumpTransition}>
 
       <motion.g
         data-part="left-leg"
@@ -113,7 +142,7 @@ export default function VeyCharacter({ pose = 'idle', reducedMotion = false, han
         data-part="left-arm"
         style={{ transformBox: 'fill-box', transformOrigin: 'right center' }}
         animate={leftArmAnimation}
-        transition={walking ? QUICK_LOOP : LOOP}
+        transition={armTransition}
       >
         <path d="M51 84 C40 83 34 90 27 99" fill="none" stroke="#172329" strokeWidth="13" strokeLinecap="round" />
         <path d="M48 84 C39 83 34 90 29 96" fill="none" stroke="#718f94" strokeWidth="3" strokeLinecap="round" opacity="0.75" />
@@ -141,7 +170,7 @@ export default function VeyCharacter({ pose = 'idle', reducedMotion = false, han
         data-part="right-arm"
         style={{ transformBox: 'fill-box', transformOrigin: 'left center' }}
         animate={rightArmAnimation}
-        transition={tapping ? { duration: 0.36, repeat: Infinity, ease: 'easeInOut' } : walking ? QUICK_LOOP : LOOP}
+        transition={tapping ? { duration: 0.36, repeat: Infinity, ease: 'easeInOut' } : armTransition}
       >
         <path d="M108 85 C120 83 128 78 136 69" fill="none" stroke="#172329" strokeWidth="13" strokeLinecap="round" />
         <path d="M111 83 C121 82 128 76 134 70" fill="none" stroke="#718f94" strokeWidth="3" strokeLinecap="round" opacity="0.75" />
@@ -180,7 +209,7 @@ export default function VeyCharacter({ pose = 'idle', reducedMotion = false, han
         data-part="head"
         style={{ transformBox: 'fill-box', transformOrigin: 'center bottom' }}
         animate={headAnimation}
-        transition={thinking ? { duration: 0.72, repeat: Infinity, ease: 'easeInOut' } : walking ? QUICK_LOOP : LOOP}
+        transition={thinking ? { duration: 0.72, repeat: Infinity, ease: 'easeInOut' } : cheering ? CHEER_LOOP : walking ? QUICK_LOOP : LOOP}
       >
         <path d="M28 28 C34 10 55 9 80 31 C105 9 126 10 132 28 C139 53 121 86 81 96 C40 86 21 53 28 28Z" fill="url(#vey-shell)" stroke="#83a6aa" strokeWidth="2.5" />
         <path d="M36 30 C42 18 56 18 80 40 C104 18 118 18 124 30 C131 50 114 77 80 85 C46 77 29 50 36 30Z" fill="url(#vey-visor)" stroke="#1ee6c2" strokeWidth="2" />
@@ -202,10 +231,43 @@ export default function VeyCharacter({ pose = 'idle', reducedMotion = false, han
 
         {thinking ? (
           <motion.circle cx="80" cy="72" r="4" fill="#3ef0d0" animate={animated(reducedMotion, { scale: [0.72, 1, 0.72] }, { scale: 1 })} transition={QUICK_LOOP} />
+        ) : cheering ? (
+          <path d="M70 68 Q80 86 90 68Z" fill="#49f3d5" stroke="#49f3d5" strokeWidth="3" strokeLinejoin="round" />
+        ) : worried ? (
+          <path d="M72 77 Q80 69 88 77" fill="none" stroke="#49f3d5" strokeWidth="4" strokeLinecap="round" />
         ) : (
           <path d="M72 70 Q80 79 88 70" fill="none" stroke="#49f3d5" strokeWidth="4" strokeLinecap="round" />
         )}
       </motion.g>
+      </motion.g>
+
+      <AnimatePresence>
+        {cheering && !reducedMotion && [[22, 22, 0], [142, 28, 0.3], [128, 6, 0.6]].map(([x, y, delay]) => (
+          <motion.path
+            key={`${x}-${y}`}
+            data-part="sparkle"
+            d={`M${x} ${y - 7} V${y + 7} M${x - 7} ${y} H${x + 7}`}
+            stroke="#7effec" strokeWidth="3" strokeLinecap="round"
+            initial={{ opacity: 0, scale: 0.3 }}
+            animate={{ opacity: [0, 1, 0], scale: [0.3, 1, 0.3], rotate: [0, 45, 90] }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1.1, repeat: Infinity, delay, ease: 'easeInOut' }}
+            style={{ transformBox: 'fill-box', transformOrigin: 'center' }}
+          />
+        ))}
+        {worried && !reducedMotion && (
+          <motion.path
+            key="sweat"
+            data-part="sweat"
+            d="M126 36 C122 44 122 48 126 49 C130 48 130 44 126 36Z"
+            fill="#8fe3ff" stroke="#4cb6d8" strokeWidth="1.5"
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: [0, 1, 1, 0], y: [-4, 0, 6, 12] }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1.4, repeat: Infinity, ease: 'easeIn' }}
+          />
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {tapping && !aimed && (

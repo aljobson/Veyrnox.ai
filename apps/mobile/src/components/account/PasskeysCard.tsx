@@ -1,18 +1,19 @@
-import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Text, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Text, TextInput, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { getLocale, t } from '../../lib/i18n';
-import { fetchPasskeys, passkeyErrorKey, removePasskey, type Passkey } from '../../lib/passkeys';
+import { addPasskey, passkeyGate, passkeyAddErrorKey, fetchPasskeys, passkeyErrorKey, removePasskey, type Passkey } from '../../lib/passkeys';
 import { colors } from '../../theme';
 import { Action, Card, Status, styles } from './shared';
 
 const when = (iso: string | null) => (iso && !Number.isNaN(Date.parse(iso)) ? new Date(iso).toLocaleDateString(getLocale()) : '');
 
-// Passkeys on the account: see them and remove one (a passkey on a lost device is only removable from a signed-in
-// session). Adding one needs the native module from spike S2, so this says so rather than offering a dead button.
 export function PasskeysCard() {
     const { getAccessToken } = useAuth();
     const [list, setList] = useState<Passkey[] | null>(null);
+    const [name, setName] = useState('');
+    const adding = useRef(false);
+    const available = passkeyGate();
     const [busy, setBusy] = useState(false);
     const [note, setNote] = useState<{ text: string; error: boolean } | null>(null);
 
@@ -28,6 +29,30 @@ export function PasskeysCard() {
     useEffect(() => {
         void load();
     }, [load]);
+
+    async function add() {
+        if (!passkeyGate() || busy || adding.current) return;
+        adding.current = true;
+        setBusy(true);
+        setNote(null);
+        try {
+            const result = await addPasskey(getAccessToken, name);
+            if (result === null) return;
+            setName('');
+            setNote({ text: t('passkey.added'), error: false });
+            try {
+                setList(await fetchPasskeys(getAccessToken));
+            } catch {
+                // The passkey was added; a failed list reload must not report a failure.
+            }
+        } catch (err) {
+            const key = passkeyAddErrorKey(err);
+            if (key) setNote({ text: t(key), error: true });
+        } finally {
+            adding.current = false;
+            setBusy(false);
+        }
+    }
 
     function confirm(p: Passkey) {
         const name = p.name ?? t('pk.unnamed');
@@ -64,7 +89,16 @@ export function PasskeysCard() {
                     <Action label={t('pk.removeNamed', { name: p.name ?? t('pk.unnamed') })} danger disabled={busy} onPress={() => confirm(p)} />
                 </View>
             ))}
-            <Text style={styles.help}>{t('pk.addLater')}</Text>
+            {available ? (
+                <View style={{ gap: 12 }} accessibilityState={{ busy }}>
+                    <Text style={styles.label}>{t('passkey.nameLabel')}</Text>
+                    <TextInput style={styles.input} value={name} onChangeText={setName} editable={!busy}
+                        accessibilityLabel={t('passkey.nameLabel')} placeholder={t('passkey.namePlaceholder')}
+                        placeholderTextColor={colors.muted} maxLength={64} />
+                    <Action label={t('passkey.add')} disabled={busy} onPress={() => void add()} />
+                    {busy ? <Text style={styles.help} accessibilityLiveRegion="polite">{t('passkey.busy')}</Text> : null}
+                </View>
+            ) : <Text style={styles.help}>{t('pk.addLater')}</Text>}
             <Status text={note?.text ?? null} error={note?.error} />
         </Card>
     );

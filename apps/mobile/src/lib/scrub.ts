@@ -3,7 +3,8 @@
 
 export function scrubUrl(url: string): string {
     const cut = url.search(/[?#]/);
-    return cut === -1 ? url : url.slice(0, cut);
+    const bare = cut === -1 ? url : url.slice(0, cut);
+    return bare.replace(/^((?:[a-z][a-z0-9+.-]*:\/\/[^/]+)?\/(?:api\/social\/team|social\/team\/invite|api\/social\/approvals|social\/review)\/)[^/]+/i, '$1:token');
 }
 
 type Bag = Record<string, unknown>;
