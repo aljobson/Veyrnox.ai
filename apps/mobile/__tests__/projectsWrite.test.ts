@@ -22,11 +22,11 @@ describe('project names', () => {
 describe('project writes', () => {
     test('create sends the workspace, the name and an idempotency key', async () => {
         const { api, calls } = fakeApi();
-        const made = await createProject(api, 'w1', 'Film', 'key-12345678');
+        const made = await createProject(api, 'w1', 'Film', 'retry-once-attempt');
         expect(made?.id).toBe('p1');
         expect(calls[0].path).toBe('/api/v1/projects');
         expect(calls[0].init?.method).toBe('POST');
-        expect((calls[0].init?.headers as Record<string, string>)['Idempotency-Key']).toBe('key-12345678');
+        expect((calls[0].init?.headers as Record<string, string>)['Idempotency-Key']).toBe('retry-once-attempt');
         expect(JSON.parse(String(calls[0].init?.body))).toEqual({ workspace_id: 'w1', name: 'Film' });
     });
     test('rename and delete carry the version being looked at', async () => {

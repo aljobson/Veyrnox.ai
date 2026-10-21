@@ -1,8 +1,8 @@
 import { ApiError, type ApiClient } from './api';
 
-// ADR-0180: the Publish inbox, read-only. Conversations from the connected accounts: messages, comments and reviews.
+// ADR-0180: the Publish inbox. Read first; reply, resolve, reopen and assign now match the web. Conversations from the connected accounts: messages, comments and reviews.
 // What people wrote is third-party text, so it is shown as plain bounded text; links the network sent are never opened
-// from here. Replies, assigning, tagging and resolving stay on the web for now (read first).
+// from here. Tags and priority stay on the web.
 
 const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v : null);
 const isObject = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -127,3 +127,32 @@ export function inboxErrorKey(err: unknown): string {
     if (err.status === 429) return 'inbox.err.rate';
     return 'inbox.err.later';
 }
+
+const JSON_HEADERS = { 'Content-Type': 'application/json' } as const;
+export interface Member {
+    readonly userId: string;
+    readonly email: string;
+}
+
+// The team members a conversation can be assigned to come with the inbox list.
+export async function fetchMembers(api: ApiClient): Promise<Member[]> {
+    const body = await api.request<unknown>('/api/v1/social/inbox?state=all');
+    const list = isObject(body) && Array.isArray(body.members) ? body.members : [];
+    const out: Member[] = [];
+    for (const raw of list) {
+        if (isObject(raw) && str(raw.user_id) && UUID_RE.test(raw.user_id as string) && str(raw.email)) out.push({ userId: raw.user_id as string, email: bounded(raw.email, NAME_MAX) });
+    }
+    return out;
+}
+
+// What the reply route accepts: 1 to 8000 characters after trimming. The key makes a retry of the same reply send once.
+export const cleanReply = (v: string): string | null => {
+    const body = v.trim();
+    return body && body.length <= 8000 ? body : null;
+};
+export const replyToThread = (api: ApiClient, id: string, body: string, idempotencyKey: string) =>
+    api.request(`/api/v1/social/inbox/${encodeURIComponent(id)}/reply`, { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ body, idempotencyKey }) });
+export const setThreadStatus = (api: ApiClient, id: string, action: 'resolve' | 'reopen') =>
+    api.request(`/api/v1/social/inbox/${encodeURIComponent(id)}`, { method: 'PATCH', headers: JSON_HEADERS, body: JSON.stringify({ action }) });
+export const assignThread = (api: ApiClient, id: string, userId: string | null) =>
+    api.request(`/api/v1/social/inbox/${encodeURIComponent(id)}`, { method: 'PATCH', headers: JSON_HEADERS, body: JSON.stringify(userId ? { action: 'assign', userId } : { action: 'unassign' }) });
