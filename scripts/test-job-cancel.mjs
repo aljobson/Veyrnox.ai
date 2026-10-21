@@ -264,6 +264,9 @@ try {
         }
         assert.deepEqual(await snapshot(u, id), before);
     });
+    // Drain any push events this script's later fixtures created, so the next script in the workflow (test-push-tokens)
+    // counts only its own jobs when it sweeps.
+    await call('push_enqueue_job_events', 1000);
     for (const fn of ['reconcile_balances', 'reconcile_free_credits', 'reconcile_subscription_credits']) {
         assert.deepEqual(await q(`SELECT * FROM public.${fn}() WHERE user_id=ANY($1::uuid[])`, [users.map(u => u.id)]), [], fn);
     }
