@@ -31,9 +31,10 @@ const MIGRATIONS = [
     "0167_stripe_packs_without_variant.sql",
     "0174_flagged_orders_append_only.sql",
     "0344_store_purchases.sql",
+    "0358_store_refund_ordering.sql",
 ].map((f) => new URL(`./schema/supabase/${f}`, import.meta.url));
 
-describe("Store purchases (0344)", { skip: !DATABASE_URL && "DATABASE_URL not set" }, () => {
+describe("Store purchases (0344, 0358 refund ordering)", { skip: !DATABASE_URL && "DATABASE_URL not set" }, () => {
     let pool: pg.Pool;
     const mine: string[] = []; // accounts this suite made; the database is shared with other suites
 
@@ -197,8 +198,114 @@ describe("Store purchases (0344)", { skip: !DATABASE_URL && "DATABASE_URL not se
         assert.equal(replay.ok, true);
         assert.equal(replay.taken, 0);
         assert.equal(await balance(userId), start);
-        const unknown = (await one(`SELECT public.apply_store_refund('ios', $1) AS r`, [txn()])).r;
-        assert.deepEqual(unknown, { ok: false, code: "ORDER_NOT_FOUND" });
+        const delayedReplay = await buy(customerId, p.product, t);
+        assert.equal(delayedReplay.refunded, true);
+        assert.equal(delayedReplay.credits, 0);
+        assert.equal(await balance(userId), start);
+    });
+
+    it("durably remembers a refund before its purchase without granting or retaining customer data", async () => {
+        const { customerId, userId } = await newUser();
+        const p = await storePack();
+        const t = txn();
+        const start = await balance(userId);
+        const refund = (await one(`SELECT public.apply_store_refund('ios', $1) AS r`, [t])).r;
+        assert.equal(refund.ok, true);
+        assert.equal(refund.pending_purchase, true);
+        assert.equal(refund.taken, 0);
+        assert.equal((await buy(customerId, p.product, t)).refunded, true);
+        assert.equal((await buy(customerId, p.product, t)).credits, 0);
+        assert.equal(await balance(userId), start);
+        assert.equal(Number((await one(`SELECT count(*) AS n FROM public.top_ups WHERE user_id = $1`, [userId])).n), 0);
+        assert.equal(Number((await one(`SELECT count(*) AS n FROM public.ledger_entries WHERE user_id = $1 AND reason = 'grant:topup'`, [userId])).n), 0);
+        const order = (await one(`SELECT public.store_order_id('ios', $1) AS id`, [t])).id;
+        const tombstone = await one(`SELECT * FROM public.store_refund_tombstones WHERE order_id = $1`, [order]);
+        assert.deepEqual(Object.keys(tombstone).sort(), ['order_id', 'refunded_at']);
+        assert.match(tombstone.order_id, /^st_[0-9a-f]{48}$/);
+        const replay = (await one(`SELECT public.apply_store_refund('ios', $1) AS r`, [t])).r;
+        assert.equal(replay.ok, true);
+        assert.equal(replay.idempotent, true);
+        assert.deepEqual(await one(`SELECT * FROM public.store_refund_tombstones WHERE order_id = $1`, [order]), tombstone);
+    });
+
+    it("preserves capped clawback and the existing freeze rule after credits were spent", async () => {
+        const { customerId, userId } = await newUser();
+        const p = await storePack();
+        const t = txn();
+        await buy(customerId, p.product, t);
+        const held = await balance(userId);
+        const debit = (await one(`SELECT public.ledger_debit($1, $2, $3, 'debit:generation', 'test-model', '{}'::jsonb) AS r`, [userId, randomUUID(), held - 10])).r;
+        assert.equal(debit.ok, true, JSON.stringify(debit));
+        const refund = (await one(`SELECT public.apply_store_refund('ios', $1) AS r`, [t])).r;
+        assert.equal(refund.ok, true);
+        assert.equal(refund.taken, 10);
+        assert.equal(refund.shortfall, 90);
+        assert.equal(refund.frozen, true);
+        assert.equal(await balance(userId), 0);
+        const replay = (await one(`SELECT public.apply_store_refund('ios', $1) AS r`, [t])).r;
+        assert.equal(replay.taken, 0);
+        assert.equal(replay.frozen, false);
+    });
+
+    it("isolates early refunds by channel and grants the other channel normally", async () => {
+        const { customerId, userId } = await newUser();
+        const ios = await storePack();
+        const android = await storePack({ channel: 'android' });
+        const t = txn();
+        const start = await balance(userId);
+        assert.equal((await one(`SELECT public.apply_store_refund('ios', $1) AS r`, [t])).r.ok, true);
+        assert.equal((await buy(customerId, android.product, t, 'android')).credits, 100);
+        assert.equal((await buy(customerId, ios.product, t)).credits, 0);
+        assert.equal(await balance(userId), start + 100);
+    });
+
+    it("serializes concurrent purchases and refunds without deadlocking different orders for one user", async () => {
+        const { customerId, userId } = await newUser();
+        const p = await storePack();
+        const start = await balance(userId);
+        const transactions = Array.from({ length: 6 }, txn);
+        const results = await Promise.all(transactions.flatMap((t) => [
+            buy(customerId, p.product, t),
+            one(`SELECT public.apply_store_refund('ios', $1) AS r`, [t]).then((row) => row.r),
+        ]));
+        assert.ok(results.every((r) => r.ok === true), JSON.stringify(results));
+        assert.equal(await balance(userId), start);
+        for (const t of transactions) {
+            assert.equal((await buy(customerId, p.product, t)).credits, 0);
+            assert.equal((await one(`SELECT public.apply_store_refund('ios', $1) AS r`, [t])).r.taken, 0);
+        }
+    });
+
+    it("keeps refund tombstones append-only, FORCE RLS, inaccessible even to direct service-role queries", async () => {
+        const t = txn();
+        await one(`SELECT public.apply_store_refund('android', $1) AS r`, [t]);
+        const order = (await one(`SELECT public.store_order_id('android', $1) AS id`, [t])).id;
+        for (const role of ['anon', 'authenticated', 'service_role']) {
+            for (const privilege of ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER']) {
+                assert.equal((await one(`SELECT has_table_privilege($1, 'public.store_refund_tombstones', $2) AS allowed`, [role, privilege])).allowed, false, `${role} ${privilege}`);
+            }
+        }
+        assert.deepEqual(await one(`SELECT relrowsecurity AS rls, relforcerowsecurity AS force FROM pg_class WHERE oid = 'public.store_refund_tombstones'::regclass`), { rls: true, force: true });
+        for (const sql of [
+            `UPDATE public.store_refund_tombstones SET refunded_at = now() WHERE order_id = $1`,
+            `DELETE FROM public.store_refund_tombstones WHERE order_id = $1`,
+        ]) await assert.rejects(pool.query(sql, [order]), /append-only/);
+        await assert.rejects(pool.query(`TRUNCATE public.store_refund_tombstones`), /append-only/);
+        for (const fn of ['credit_store_purchase(text,text,text,text)', 'apply_store_refund(text,text)']) {
+            const row = await one(`SELECT proconfig, prosecdef FROM pg_proc WHERE oid = $1::regprocedure`, [`public.${fn}`]);
+            assert.equal(row.prosecdef, true);
+            assert.ok(row.proconfig.includes('search_path=""'));
+        }
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+            await client.query('SET LOCAL ROLE service_role');
+            assert.equal((await client.query(`SELECT public.apply_store_refund('ios', $1) AS r`, [txn()])).rows[0].r.ok, true);
+            await assert.rejects(client.query('SELECT * FROM public.store_refund_tombstones'), /permission denied/);
+        } finally {
+            await client.query('ROLLBACK');
+            client.release();
+        }
     });
 
     it("enforces the pack shape and the store-fee floor", async () => {
