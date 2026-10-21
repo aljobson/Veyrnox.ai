@@ -1,0 +1,8 @@
+# Generated Archify diagram viewers under docs/ are static documentation. They are
+# about 800 KB of vendored viewer code each and are not executed by the product, so
+# they only produce js/remote-property-injection noise. The 64 web alerts (2026-10-16)
+# and the 11 phone alerts (2026-10-20) were dismissed as false positives; this stops
+# the next generated diagram from failing the check again.
+name: veyrnox-codeql-config
+paths-ignore:
+  - 'docs/**/diagrams/*.html'
