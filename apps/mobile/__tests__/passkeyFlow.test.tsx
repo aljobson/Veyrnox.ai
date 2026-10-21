@@ -31,6 +31,7 @@ jest.mock('../src/lib/api', () => ({ createApiClient: () => ({}) }));
 jest.mock('../src/lib/appCache', () => ({
     appStorage: { get: jest.fn(), set: jest.fn(), remove: jest.fn(), keys: jest.fn(async () => []) },
     bindCacheUser: jest.fn(),
+    clearExportFiles: jest.fn(),
     getCacheUser: jest.fn(() => null),
     subscribeCacheUser: jest.fn(() => jest.fn()),
     userIdFromToken: () => 'passkey-user',
