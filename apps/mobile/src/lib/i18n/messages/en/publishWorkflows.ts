@@ -1,6 +1,6 @@
 export default {
     'publishWorkflows.title': 'Workflows',
-    'publishWorkflows.intro': 'Review the keyword rules for your connected accounts. Changes are available on the web.',
+    'publishWorkflows.intro': 'Keyword rules that suggest replies for your connected accounts. Switch one on or off, edit it, or add a new one. Replies are suggestions for review.',
     'publishWorkflows.loading': 'Loading…',
     'publishWorkflows.refresh': 'Refresh',
     'publishWorkflows.unavailable': 'Not available yet',

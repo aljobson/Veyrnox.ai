@@ -1,14 +1,15 @@
 import * as WebBrowser from 'expo-web-browser';
 import { Stack, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { WorkflowEditor } from '../../../components/publish/WorkflowEditor';
 import { VEY_CLEARANCE } from '../../../components/VeyMascot';
 import { touchTarget } from '../../../lib/a11y';
 import { API_BASE, type ApiClient } from '../../../lib/api';
 import { t } from '../../../lib/i18n';
 import {
-    fetchWorkflows, fetchWorkflowPlan, planManagementKey, planPeriodKey, workflowErrorKey,
-    type Workflow, type WorkflowPlan,
+    deleteWorkflow, draftOf, fetchWorkflows, fetchWorkflowPlan, planManagementKey, planPeriodKey, saveWorkflow, workflowErrorKey,
+    type Workflow, type WorkflowDraft, type WorkflowPlan,
 } from '../../../lib/publishWorkflows';
 import { usePublishApi } from '../../../lib/usePublishApi';
 import { colors } from '../../../theme';
@@ -24,6 +25,33 @@ export default function Workflows() {
     const [expanded, setExpanded] = useState<string | null>(null);
     const [webError, setWebError] = useState(false);
     const [reload, setReload] = useState(0);
+    // Editing and switching on or off save the whole workflow, like the web (PUT); a new one starts from this blank draft.
+    const [editing, setEditing] = useState<string | 'new' | null>(null);
+    const [busy, setBusy] = useState(false);
+    const [note, setNote] = useState<string | null>(null);
+    const BLANK: WorkflowDraft = { id: null, accountId: null, name: '', kind: null, matchMode: 'contains', keyword: '', replyText: '', enabled: true };
+
+    async function write(run: () => Promise<unknown>) {
+        if (busy) return;
+        setBusy(true);
+        setNote(null);
+        try {
+            await run();
+            setEditing(null);
+            setReload((n) => n + 1);
+        } catch (err) {
+            setNote(t(workflowErrorKey(err)));
+        } finally {
+            setBusy(false);
+        }
+    }
+
+    const toggle = (w: Workflow, enabled: boolean) => write(() => saveWorkflow(api, { ...draftOf(w), enabled }));
+    const confirmDelete = (w: Workflow) =>
+        Alert.alert('Delete this workflow?', 'It stops suggesting replies. This cannot be undone.', [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Delete', style: 'destructive', onPress: () => void write(() => deleteWorkflow(api, w.id)) },
+        ]);
 
     useFocusEffect(useCallback(() => {
         // Drop old-brand results on focus/refresh, and ignore requests completed after blur or a brand change.
@@ -59,7 +87,7 @@ export default function Workflows() {
             <FlatList
                 data={currentWorkflows?.value ?? []}
                 keyExtractor={(item) => item.id}
-                extraData={expanded}
+                extraData={[expanded, editing, busy]}
                 contentContainerStyle={styles.content}
                 ListHeaderComponent={
                     <View style={styles.section}>
@@ -68,6 +96,19 @@ export default function Workflows() {
                         <Pressable accessibilityRole="button" style={[styles.action, touchTarget]} onPress={() => setReload((n) => n + 1)}>
                             <Text style={styles.link}>{t('publishWorkflows.refresh')}</Text>
                         </Pressable>
+                        {currentWorkflows?.value ? (
+                            editing === 'new' ? (
+                                <View style={styles.card}>
+                                    <Text accessibilityRole="header" style={styles.name}>New workflow</Text>
+                                    <WorkflowEditor initial={BLANK} busy={busy} onSave={(d) => void write(() => saveWorkflow(api, d))} onCancel={() => setEditing(null)} />
+                                </View>
+                            ) : (
+                                <Pressable accessibilityRole="button" style={[styles.action, touchTarget]} onPress={() => setEditing('new')}>
+                                    <Text style={styles.link}>+ New workflow</Text>
+                                </Pressable>
+                            )
+                        ) : null}
+                        {note ? <Text style={styles.muted} accessibilityRole="alert">{note}</Text> : null}
                         <PlanCard state={currentPlan} />
                     </View>
                 }
@@ -78,7 +119,6 @@ export default function Workflows() {
                 }
                 ListFooterComponent={currentWorkflows?.value ? (
                     <View style={styles.section}>
-                        <Text style={styles.muted}>{t('publishWorkflows.webOnly')}</Text>
                         <Pressable accessibilityRole="link" style={[styles.action, touchTarget]} onPress={() => void continueOnWeb()}>
                             <Text style={styles.link}>{t('publishWorkflows.continueWeb')}</Text>
                         </Pressable>
@@ -87,7 +127,18 @@ export default function Workflows() {
                 ) : undefined}
                 renderItem={({ item }) => (
                     <View style={styles.card}>
-                        <Text accessibilityRole="header" style={styles.name}>{item.name || t('publishWorkflows.unnamed')}</Text>
+                        <View style={styles.titleRow}>
+                            <Text accessibilityRole="header" style={[styles.name, styles.titleText]}>{item.name || t('publishWorkflows.unnamed')}</Text>
+                            {item.enabled !== null ? (
+                                <Switch
+                                    accessibilityLabel={`${item.name || t('publishWorkflows.unnamed')}: ${t(item.enabled ? 'publishWorkflows.on' : 'publishWorkflows.off')}`}
+                                    value={item.enabled}
+                                    disabled={busy}
+                                    onValueChange={(on) => void toggle(item, on)}
+                                    trackColor={{ true: colors.accent, false: colors.border }}
+                                />
+                            ) : null}
+                        </View>
                         <Text style={styles.body}>{t('publishWorkflows.status', {
                             state: t(item.enabled === null ? 'publishWorkflows.unknown' : item.enabled ? 'publishWorkflows.on' : 'publishWorkflows.off'),
                         })}</Text>
@@ -106,6 +157,14 @@ export default function Workflows() {
                         >
                             <Text style={styles.link}>{t(expanded === item.id ? 'publishWorkflows.hideDetails' : 'publishWorkflows.details')}</Text>
                         </Pressable>
+                        {editing === item.id ? (
+                            <WorkflowEditor initial={draftOf(item)} busy={busy} onSave={(d) => void write(() => saveWorkflow(api, d))} onCancel={() => setEditing(null)} />
+                        ) : (
+                            <View style={styles.titleRow}>
+                                <Pressable accessibilityRole="button" disabled={busy} style={[styles.action, touchTarget]} onPress={() => setEditing(item.id)}><Text style={styles.link}>Edit</Text></Pressable>
+                                <Pressable accessibilityRole="button" disabled={busy} style={[styles.action, touchTarget]} onPress={() => confirmDelete(item)}><Text style={styles.danger}>Delete</Text></Pressable>
+                            </View>
+                        )}
                         {expanded === item.id ? (
                             <View style={styles.section}>
                                 <Text style={styles.body}>{item.allAccounts ? t('publishWorkflows.allAccounts') : t('publishWorkflows.accounts', {
@@ -156,4 +215,7 @@ const styles = StyleSheet.create({
     muted: { color: colors.muted, fontSize: 13, paddingVertical: 2 },
     action: { minWidth: 44, paddingHorizontal: 8 },
     link: { color: colors.accent, textDecorationLine: 'underline' },
+    danger: { color: colors.danger, textDecorationLine: 'underline' },
+    titleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    titleText: { flex: 1 },
 });
