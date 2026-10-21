@@ -12,6 +12,7 @@ import { Main } from '../../_components/Main';
 import { Chip } from '../../_components/Chip';
 import { ASPECT_RATIOS, modelIdForName } from '../../_lib/tokens';
 import { gatewayFetch, makeIdempotencyKey, notifyBalanceChanged, GatewayError } from '../../_lib/gateway';
+import { failedCreationCopy } from '../../../../lib/i18n/createCopy.mjs';
 import { ERROR_COPY, failedJobCopy } from '../../_lib/createErrors';
 import { pushJobHistory } from '../../_lib/jobHistory';
 import { JobAssetPreview } from '../../_components/JobAssetPreview';
@@ -467,7 +468,7 @@ export default function CreateStudio() {
                       </div>
                       <div className="mt-2 font-vx-mono text-[42px] font-bold vx-num">…</div>
                       {SLOW_MODEL_WAIT[job?.model_id] && (
-                        <div className="text-xs text-vx-fg-body mt-2">{SLOW_MODEL_WAIT[job.model_id]}</div>
+                        <div className="text-xs text-vx-fg-body mt-2">{tOr(t, `app.data.wait.${job.model_id}`, SLOW_MODEL_WAIT[job.model_id])}</div>
                       )}
                       <div className="text-xs text-vx-fg-muted mt-2">{t("app.create.keepRunning")}</div>
                     </div>
@@ -477,7 +478,7 @@ export default function CreateStudio() {
                         <span aria-hidden="true">✕</span> {tOr(t, `app.library.status.${job.state === 'failed' && job.refunded !== true ? 'failed_pending' : job.state}`, jobStateUi(job).label)}
                       </div>
                       <div className="mt-2 text-sm text-vx-fg-body">
-                        {failedJobCopy(job)}
+                        {failedCreationCopy(t, locale, job, failedJobCopy(job))}
                       </div>
                     </div>
                   ) : (
@@ -523,7 +524,7 @@ export default function CreateStudio() {
           )}
           {activeTemplate?.inspired && (
             <p className="mt-2 text-sm text-vx-fg-body">
-              {activeTemplate.needs}{t("app.create.similarScene")}</p>
+              {tOr(t, `presets.needs.${activeTemplate.id}`, activeTemplate.needs)}{t("app.create.similarScene")}</p>
           )}
           {model?.takesVoice && <VoiceDescription value={voice} onChange={setVoice} />}
 

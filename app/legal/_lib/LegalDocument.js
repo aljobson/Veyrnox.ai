@@ -16,12 +16,13 @@ export function legalText(text, locale) {
 }
 
 export function LegalBlocks({ blocks, messages, locale }) {
+  const jurisdiction = translator(locale)('legal.jurisdiction');
   function render(block, key) {
     const attrs = Object.fromEntries(Object.entries(block.attrs || {}).map(([name, value]) => [name,
       name === 'href' ? localizedHref(locale, fill(value, ENTITY)) : value]));
     if (block.children) return createElement(block.tag, { ...attrs, key }, block.children.map(render));
     const slots = Object.fromEntries(Object.entries(block.slots || {}).map(([id, child]) => [id, render(child, id)]));
-    for (const [id, value] of Object.entries(ENTITY)) slots[id] = legalText(value, locale);
+    for (const [id, value] of Object.entries(ENTITY)) slots[id] = legalText(id === 'jurisdiction' ? jurisdiction : value, locale);
     // rich() keeps inline links/emphasis as elements, never interpreted HTML.
     let text = messages[block.key];
     if (locale !== 'en' && text.includes(englishBindings.supply)) {
