@@ -24,9 +24,12 @@ export function SkillsPanel({ selectedId, onPick, disabled }) {
             {SKILLS.filter((s) => s.group === group).map((s) => (
               <li key={s.id}>
                 <button type="button" disabled={disabled} aria-pressed={selectedId === s.id} onClick={() => onPick(s.id)}
-                  className={`h-full w-full rounded-xl border p-3 text-start transition-colors disabled:opacity-50 ${selectedId === s.id ? 'border-vx-accent bg-vx-panel' : 'border-vx-border hover:border-vx-accent'}`}>
-                  <span className="block text-sm font-semibold">{tOr(t, `app.chat.skill.${s.id}.name`, s.name)}</span>
-                  <span className="mt-0.5 block text-xs text-vx-fg-muted">{tOr(t, `app.chat.skill.${s.id}.blurb`, s.blurb)}</span>
+                  className={`flex h-full w-full items-center gap-3 rounded-2xl border p-3 text-start transition-colors disabled:opacity-50 ${selectedId === s.id ? 'border-vx-accent bg-vx-panel' : 'border-vx-border bg-vx-panel hover:border-vx-accent'}`}>
+                  <span aria-hidden="true" className="grid size-11 shrink-0 place-items-center rounded-full bg-vx-base"><span className="size-2.5 rounded-full bg-vx-accent" /></span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold">{tOr(t, `app.chat.skill.${s.id}.name`, s.name)}</span>
+                    <span className="mt-0.5 block text-xs text-vx-fg-muted">{tOr(t, `app.chat.skill.${s.id}.blurb`, s.blurb)}</span>
+                  </span>
                 </button>
               </li>
             ))}

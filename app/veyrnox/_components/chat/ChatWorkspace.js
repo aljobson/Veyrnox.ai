@@ -364,7 +364,7 @@ export function ChatWorkspace() {
             {starredOnly && shown.length === 0 && <p className="py-8 text-center text-vx-fg-muted">{t("app.chat.workspace.noStars")}</p>}
             {shown.map((m) => (
               <article key={m.id} aria-label={m.role === 'user' ? t("app.editor.project.you") : t("app.chat.workspace.assistant")} className={m.role === 'user' ? 'flex justify-end' : ''}>
-                <div className={m.role === 'user' ? 'max-w-[85%] rounded-2xl bg-vx-panel px-4 py-3' : 'w-full'}>
+                <div className={m.role === 'user' ? 'max-w-[85%] rounded-3xl border border-vx-border bg-vx-panel px-5 py-3' : 'w-full'}>
                   {m.role === 'user' ? (
                     <>
                       <p className="whitespace-pre-wrap wrap-break-word text-[15px]">{m.content}</p>
@@ -419,7 +419,7 @@ export function ChatWorkspace() {
                 </button>
               </div>
             )}
-            <div className="overflow-hidden rounded-[20px] border border-vx-border bg-vx-panel shadow-[0_18px_50px_rgba(0,0,0,0.18)] focus-within:border-vx-accent">
+            <div className="overflow-hidden rounded-[28px] border border-vx-border bg-vx-panel shadow-[0_18px_50px_rgba(0,0,0,0.18)] focus-within:border-vx-accent">
               <ComposerTypeTabs value={composerKind} disabled={busy || mediaGeneration.sending} onChange={(next) => {
                 if (next !== COMPOSER_KINDS.CHAT && mediaGeneration.jobKind && next !== mediaGeneration.jobKind) mediaGeneration.clearJobs();
                 setComposerKind(next);
@@ -439,8 +439,8 @@ export function ChatWorkspace() {
                   onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
                   className="max-h-48 min-h-14 min-w-0 flex-1 resize-none bg-transparent px-2 py-3 text-[15px] text-vx-fg outline-hidden placeholder:text-vx-fg-faint" />
                 {busy
-                  ? <button type="button" onClick={stop} disabled={stopping || checking} className="mb-1 rounded-xl border border-vx-border px-4 py-2.5 text-sm font-semibold disabled:opacity-50">{stopping ? t("app.chat.workspace.stopping") : checking ? t("app.chat.workspace.checking") : t("app.chat.workspace.stop")}</button>
-                  : <button type="button" onClick={send} disabled={!text.trim() || imagesBlocked} className="mb-1 min-w-28 rounded-xl bg-vx-accent px-4 py-2.5 text-sm font-semibold text-vx-accent-ink transition-colors hover:bg-vx-accent-hover disabled:opacity-50">{isFree ? t("app.chat.workspace.sendFree") : t('app.chat.workspace.send', { price: credits(t, locale, price) })}</button>}
+                  ? <button type="button" onClick={stop} disabled={stopping || checking} className="mb-1 rounded-full border border-vx-border px-5 py-2.5 text-sm font-semibold disabled:opacity-50">{stopping ? t("app.chat.workspace.stopping") : checking ? t("app.chat.workspace.checking") : t("app.chat.workspace.stop")}</button>
+                  : <button type="button" onClick={send} disabled={!text.trim() || imagesBlocked} className="mb-1 min-w-28 rounded-full bg-vx-accent px-5 py-2.5 text-sm font-semibold text-vx-accent-ink transition-colors hover:bg-vx-accent-hover disabled:opacity-50">{isFree ? t("app.chat.workspace.sendFree") : t('app.chat.workspace.send', { price: credits(t, locale, price) })}</button>}
               </div>
               </> : <MediaComposer kind={composerKind} media={mediaGeneration} prompt={mediaPrompt} onPrompt={setMediaPrompt} />}
             </div>

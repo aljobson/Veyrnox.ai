@@ -4,7 +4,7 @@ import { localeTag } from '../../../../lib/i18n/locales.mjs';
 import { useId, useMemo, useState } from 'react';
 import { ALL_CHATS, UNFILED, visibleThreads } from '../../_lib/chatFolders';
 
-const field = 'rounded-lg border bg-vx-base px-3 py-2 text-sm text-vx-fg';
+const field = 'rounded-full border bg-vx-base px-3 py-2 text-sm text-vx-fg';
 
 // Search, pin, rename, move and delete. Delete asks first. Pinned chats sort first. Folders group chats: pick one to
 // narrow the list; deleting a folder keeps its chats. `folders` is null when folders are not available, and then none of
@@ -35,7 +35,7 @@ export function ThreadList({ threads, folders = null, folder = ALL_CHATS, onFold
 
   return (
     <nav data-assistant-target="chat.threads" aria-label={t("app.chat.chats")} className="flex h-full flex-col gap-2 p-3">
-      <button type="button" onClick={onNew} className="rounded-full border border-vx-border px-4 py-2 text-start text-sm font-semibold hover:border-vx-accent">{t("app.chat.threads.new")}</button>
+      <button type="button" onClick={onNew} className="rounded-full bg-vx-accent px-4 py-2.5 text-center text-sm font-semibold text-vx-accent-ink hover:bg-vx-accent-hover">{t("app.chat.threads.new")}</button>
       <label className="sr-only" htmlFor={searchId}>{t("app.chat.threads.search")}</label>
       <input id={searchId} value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("app.chat.threads.search")}
         className={`${field} border-vx-border placeholder:text-vx-fg-faint`} />
@@ -100,7 +100,7 @@ export function ThreadList({ threads, folders = null, folder = ALL_CHATS, onFold
             ) : (
               <>
                 <button type="button" onClick={() => onOpen(thread.id)} aria-current={activeId === thread.id ? 'page' : undefined}
-                  className={`block w-full truncate rounded-lg px-3 py-2 ${folders && folders.length ? 'pe-36' : 'pe-24'} text-start text-sm hover:bg-vx-border/50 ${activeId === thread.id ? 'bg-vx-border/50 font-semibold' : 'text-vx-fg-body'}`}>
+                  className={`block w-full truncate rounded-xl px-3 py-2.5 ${folders && folders.length ? 'pe-36' : 'pe-24'} text-start text-sm hover:bg-vx-border/50 ${activeId === thread.id ? 'bg-vx-border/50 font-semibold' : 'text-vx-fg-body'}`}>
                   {thread.pinned ? <span aria-label={t("app.chat.threads.pinned")} className="me-1 text-vx-fg-muted">◆</span> : null}{thread.title}
                 </button>
                 <span className="absolute end-1 top-1/2 flex -translate-y-1/2 gap-0.5 text-xs opacity-0 focus-within:opacity-100 group-hover:opacity-100">

@@ -134,11 +134,11 @@ export default function NewChat() {
 
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background, padding: 16 },
-    row: { paddingVertical: 14, borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth, gap: 2 },
+    row: { padding: 14, marginTop: 8, borderRadius: 16, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, gap: 2 },
     gated: { opacity: 0.4 },
-    name: { color: colors.text, fontSize: 16 },
+    name: { color: colors.text, fontSize: 16, fontWeight: '600' },
     muted: { color: colors.muted },
     error: { color: colors.danger, marginBottom: 8 },
     personas: { marginBottom: 8 },
-    heading: { color: colors.muted, fontSize: 13, fontWeight: '700', letterSpacing: 0.5, marginTop: 8 },
+    heading: { color: colors.muted, fontSize: 13, fontWeight: '700', letterSpacing: 0.5, marginTop: 16 },
 });
