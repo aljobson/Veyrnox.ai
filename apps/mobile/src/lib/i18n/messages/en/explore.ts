@@ -22,6 +22,7 @@ export default {
     'explore.chat.title': 'Chat with Vey',
     'explore.chat.body': 'Ask a question, brainstorm, or get help with a prompt.',
     'explore.chat.hint': 'Opens the chat.',
+    'explore.collageHint': 'Swipe to browse templates',
     'explore.audioSoon': 'Audio templates are coming soon.',
     'explore.noMatch': 'No templates match.',
     'explore.oddlings.title': 'Oddlings',
