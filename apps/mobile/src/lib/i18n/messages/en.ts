@@ -50,6 +50,7 @@ import area_home from './en/home';
 import area_inbox from './en/inbox';
 import area_insights from './en/insights';
 import area_job from './en/job';
+import area_jobCancel from './en/jobCancel';
 import area_label from './en/label';
 import area_library from './en/library';
 import area_libsrc from './en/libsrc';
@@ -143,6 +144,7 @@ const catalog = {
     ...area_inbox,
     ...area_insights,
     ...area_job,
+    ...area_jobCancel,
     ...area_label,
     ...area_library,
     ...area_libsrc,

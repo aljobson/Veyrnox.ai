@@ -20,6 +20,7 @@ on:
       - "scripts/test-project-documents.mjs"
       - "scripts/test-project-document-timeline.mjs"
       - "scripts/test-project-document-multitrack.mjs"
+      - "scripts/test-project-document-oddlings.mjs"
       - "scripts/test-editor-shared-storage.mjs"
       - "scripts/test-editor-library-renders.mjs"
       - "scripts/test-editor-organization.mjs"
@@ -48,6 +49,7 @@ on:
       - "scripts/test-disposable-email-block.mjs"
       - "scripts/test-account-deletion.mjs"
       - "scripts/test-job-deletion.mjs"
+      - "scripts/test-job-cancel.mjs"
       - "scripts/test-push-tokens.mjs"
       - "scripts/test-fk-indexes.mjs"
       - "scripts/test-append-only.mjs"
@@ -204,6 +206,7 @@ jobs:
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-project-documents.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-project-document-timeline.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-project-document-multitrack.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-project-document-oddlings.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-editor-shared-storage.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-editor-library-renders.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-editor-organization.mjs
@@ -240,6 +243,7 @@ jobs:
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-disposable-email-block.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-account-deletion.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-job-deletion.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-job-cancel.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-push-tokens.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-fk-indexes.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-append-only.mjs

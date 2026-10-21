@@ -4,6 +4,7 @@ import { protectedRoute } from '../../../../../../packages/security/route.js';
 import { ApiError } from '../../../../../../packages/security/errors.js';
 import { exactKeys, idempotencyKey, readJson, uuid } from '../../../../../../packages/security/input.js';
 import { emptyProjectDocument, validProjectDocument } from '../../../../../../lib/projectDocument.js';
+import { validOddlingsProjectDocument } from '../../../../../../lib/projectOddlingsDocument.js';
 
 export async function GET(request, { params }) {
   return protectedRoute(request, async context => {
@@ -25,8 +26,11 @@ export async function PUT(request, { params }) {
     if (!Number.isSafeInteger(body.expected_revision) || body.expected_revision < 0 || body.expected_revision >= 2147483647)
       throw new ApiError(400, 'INVALID_REVISION', 'A non-negative revision is required.');
     const restore = body.restore_revision !== undefined;
+    const oddlings = !restore && body.document?.schema_version === 4;
+    if (oddlings && !editorFeatureEnabled('PROJECT_ODDLINGS_ENABLED'))
+      throw new ApiError(404, 'NOT_FOUND', 'Oddlings saving is not available here yet.');
     if (restore ? (body.document !== undefined || !Number.isSafeInteger(body.restore_revision) || body.restore_revision < 1 || body.restore_revision >= 2147483647)
-      : !validProjectDocument(body.document, id)) throw new ApiError(400, 'INVALID_DOCUMENT', 'The project document is invalid.');
+      : !(oddlings ? validOddlingsProjectDocument(body.document, id) : validProjectDocument(body.document, id))) throw new ApiError(400, 'INVALID_DOCUMENT', 'The project document is invalid.');
     if (!restore && body.document?.schema_version === 3 && process.env.EDITOR_MULTITRACK_ENABLED !== 'true')
       throw new ApiError(404, 'NOT_FOUND', 'Multitrack saving is not available here yet.');
     if (!restore && (body.document?.timeline?.folders!==undefined || body.document?.timeline?.fonts!==undefined) && !editorFeatureEnabled('EDITOR_ORGANIZATION_ENABLED'))

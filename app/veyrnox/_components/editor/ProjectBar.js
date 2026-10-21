@@ -12,6 +12,7 @@ import { Button } from '../Button';
 import { Modal } from '../Modal';
 import { gatewayFetch, makeIdempotencyKey } from '../../_lib/gateway';
 import { useProjectsEnabled } from '../ProjectsFlag';
+import { isOddlingsDocument } from '../../../../lib/projectOddlingsDocument.js';
 import { equalProjectDocuments } from '../../../../lib/projectDocument.js';
 import { conflictCopyName, documentForTimeline, matchLocalFile, mediaToRelink, projectDocumentDifferences, saveProblemDiagnostic as saveProblem, timelineFromDocument } from '../../_lib/editorProject.mjs';
 import { loadProjectAssetBlob } from '../../_lib/editorProjectAssets.mjs';
@@ -75,6 +76,7 @@ function ProjectSessionBar({ tl, blobs, onLoadTimeline, onRelinked, onContext,co
         try {
             const [p, d] = await Promise.all([gatewayFetch(`/projects/${encodeURIComponent(id)}`), gatewayFetch(`/projects/${encodeURIComponent(id)}/document`)]);
             if (!currentAccount()) return;
+            if (isOddlingsDocument(d.document)) { setError(t("app.editor.project.unavailable")); return; }
             if (d.document.schema_version === 3 && !multitrack) { setError(t("app.editor.project.multitrack")); return; }
             const { timeline, problem } = timelineFromDocument(d.document);
             setWorkspaceId(p.project?.workspace_id || null);setProjectId(id); setName(p.project?.name || 'Project'); setDoc(d.document); setRevision(d.revision); setSavedAt(d.created_at);
@@ -95,6 +97,7 @@ function ProjectSessionBar({ tl, blobs, onLoadTimeline, onRelinked, onContext,co
     const dirty = !!doc && !equalProjectDocuments(doc, current);
     useEffect(()=>{onContext?.({id:projectId,workspaceId,revision,dirty,busy,error:!!error,savedAt});},[onContext,projectId,workspaceId,revision,dirty,busy,error,savedAt]);
     const save = useCallback(async ({ against = revision, restore = null } = {}) => {
+        if (isOddlingsDocument(doc)) return;
         if (!currentAccount() || !endpoint || !doc) return;
         const snapshot = restore ? null : documentForTimeline(doc, tl);
         if (snapshot && new TextEncoder().encode(JSON.stringify(snapshot)).byteLength > 32768) { setError(t("app.editor.project.saveLimit")); return; }
@@ -104,6 +107,7 @@ function ProjectSessionBar({ tl, blobs, onLoadTimeline, onRelinked, onContext,co
             const body = JSON.stringify({ expected_revision: against, ...(restore ? { restore_revision: restore } : { document: snapshot }) });
             const r = await gatewayFetch(`${endpoint}/document`, { method: 'PUT', body, headers: { 'idempotency-key': pending.current.key }, signal: AbortSignal.timeout(15000) });
             if (!currentAccount()) return;
+            if (isOddlingsDocument(r.document)) { setError(t("app.editor.project.unavailable")); setProjectId(null); setDoc(null); setRemote(null); return; }
             setDoc(r.document); setRevision(r.revision); setSavedAt(r.created_at); setRemote(null); pending.current = null;
             if (restore) { const { timeline } = timelineFromDocument(r.document); onLoadTimeline(timeline); const need = refreshRelink(timeline); if (need.library.length || need.assets.length) fetchLibrary([...need.library,...need.assets], timeline); setPreview(null); setVersions(null); }
         } catch (e) {
@@ -163,6 +167,7 @@ function ProjectSessionBar({ tl, blobs, onLoadTimeline, onRelinked, onContext,co
         try {
             const [d,p]=await Promise.all([gatewayFetch(`/projects/${encodeURIComponent(id)}/document`),gatewayFetch(`/projects/${encodeURIComponent(id)}`)]);
             if (!currentAccount()) return;
+            if (isOddlingsDocument(d.document)) { setError(t("app.editor.project.unavailable")); return; }
             if (d.document.schema_version === 3 && !multitrack) { setError(t("app.editor.project.multitrack")); return; }
             window.history.replaceState(null, '', `${window.location.pathname}?project=${encodeURIComponent(id)}`);
             setWorkspaceId(p.project?.workspace_id || null);setProjectId(id); setName(created || 'Project'); setDoc(d.document); setRevision(d.revision); setSavedAt(d.created_at);
@@ -186,6 +191,7 @@ function ProjectSessionBar({ tl, blobs, onLoadTimeline, onRelinked, onContext,co
         try { const r = await gatewayFetch(`${endpoint}/document?revision=${n}`); if (currentAccount()) setPreview(r); } catch { if (currentAccount()) setError(t("app.editor.project.versionFailed")); }
     }
     function loadRemote() {
+        if (isOddlingsDocument(remote.document)) { setError(t("app.editor.project.unavailable")); setProjectId(null); setDoc(null); setRemote(null); return; }
         const { timeline } = timelineFromDocument(remote.document);
         setDoc(remote.document); setRevision(remote.revision); setSavedAt(remote.created_at); setRemote(null); setError(''); pending.current = null;
         onLoadTimeline(timeline); const need = refreshRelink(timeline); if (need.library.length || need.assets.length) fetchLibrary([...need.library,...need.assets], timeline);
