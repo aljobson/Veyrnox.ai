@@ -49,6 +49,8 @@ Migration 0362 follows 0358 to 0361, which are all on main (store refund orderin
 
 These user-linked tables are deliberately left out of the file (the drift guard in `scripts/test-privacy-export.mjs` lists every one). The ones that hold the person's own data, and so may be asked for by email, are: `cinema_passes` and `cinema_unlocks` (paid Cinema purchases), `cinema_creator_applications`, `cinema_submissions`, `social_uploads`, `social_brand_members`, `organisation_members`, `workspace_members`, `project_members`, `cinema_watch_sessions`, `cinema_free_plays`, `cinema_pass_plays`, `cinema_story_polls`, `cinema_share_actions`, `editor_requests`, `editor_library_renders`, `film_library_masters`, `referral_rewards`, `model_free_allowance_claims`, `store_customers` and the social inbox, approval, campaign and API-key tables. The rest are rate-limit counters, request logs, outboxes and internal bookkeeping.
 
+Film Studio saved films (`film_studio_projects`, from #1476, behind two flags that are off) and their rate-limit windows (`film_studio_save_windows`) are classified as not exported for now. The films are the person's own data, so a Film Studio section must be added to this export before `FILM_STUDIO_CLOUD_ENABLED` is turned on; the drift guard in `scripts/test-privacy-export.mjs` is what caught the missing classification.
+
 ## Owner decisions
 
 1. The 24-hour limit of one export per account.

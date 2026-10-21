@@ -268,7 +268,7 @@ try {
         'cinema_audience_clock', 'cinema_competitions', 'cinema_creator_applications', 'cinema_free_plays', 'cinema_pass_plays',
         'cinema_passes', 'cinema_ranking_decisions', 'cinema_ranking_snapshots', 'cinema_retention_requests', 'cinema_share_actions',
         'cinema_story_polls', 'cinema_submissions', 'cinema_unlock_rate_limits', 'cinema_unlocks', 'cinema_watch_sessions',
-        'editor_library_renders', 'editor_requests', 'film_library_masters', 'generation_attempt_rate_limits', 'job_read_rate_limits',
+        'editor_library_renders', 'editor_requests', 'film_library_masters', 'film_studio_projects', 'film_studio_save_windows', 'generation_attempt_rate_limits', 'job_read_rate_limits',
         'model_free_allowance_claims', 'organisation_members', 'privacy_export_requests', 'project_members', 'provider_spend_reservations',
         'push_outbox', 'push_token_writes', 'referral_rewards', 'social_account_actions', 'social_ad_campaigns',
         'social_api_keys', 'social_approval_events', 'social_approval_requests', 'social_brand_invitations', 'social_brand_members',
@@ -294,7 +294,7 @@ let created = false, a, b;
 await admin.connect();
 try {
     // Deliberately fail if someone else owns a database with this name; never drop their database.
-    await admin.query('CREATE DATABASE privacy_export_lock_check'); created = true;
+    await admin.query("CREATE DATABASE privacy_export_lock_check TEMPLATE template0 ENCODING 'UTF8' LC_COLLATE 'C' LC_CTYPE 'C'"); created = true;
     await promisify(execFile)(process.execPath, ['scripts/replay-migrations.mjs'], {
         cwd: new URL('..', import.meta.url), env: { ...process.env, DATABASE_URL: lockUrl.href }, maxBuffer: 8 * 1024 * 1024,
     });
