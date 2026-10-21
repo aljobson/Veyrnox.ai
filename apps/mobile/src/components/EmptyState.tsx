@@ -11,7 +11,7 @@ export function EmptyState({ title, body, actionLabel, href }: { title: string; 
             {body ? <Text style={styles.body}>{body}</Text> : null}
             {actionLabel && href ? (
                 <Link href={href} asChild>
-                    <Pressable accessibilityRole="button" style={[touchTarget, styles.action]}>
+                    <Pressable accessibilityRole="button" style={StyleSheet.flatten([touchTarget, styles.action])}>
                         <Text style={styles.actionText}>{actionLabel}</Text>
                     </Pressable>
                 </Link>
