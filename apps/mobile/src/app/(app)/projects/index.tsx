@@ -1,10 +1,11 @@
 import { Stack, useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import * as Crypto from 'expo-crypto';
 import { HeaderAction } from '../../../components/HeaderAction';
 import { useAuth } from '../../../auth/AuthProvider';
 import { touchTarget } from '../../../lib/a11y';
-import { fetchProjects, fetchWorkspaces, projectsErrorMessage, type Project, type Workspace } from '../../../lib/projects';
+import { cleanProjectName, createProject, fetchProjects, fetchWorkspaces, projectsErrorMessage, type Project, type Workspace } from '../../../lib/projects';
 import { EDITOR_ENABLED } from '../../../lib/editorFlag';
 import { t } from '../../../lib/i18n';
 import { colors } from '../../../theme';
@@ -16,6 +17,31 @@ export default function Projects() {
     const [workspaceId, setWorkspaceId] = useState<string | null>(null);
     const [projects, setProjects] = useState<Project[] | null>(null);
     const [problem, setProblem] = useState<string | null>(null);
+    const [naming, setNaming] = useState(false);
+    const [newName, setNewName] = useState('');
+    const [creating, setCreating] = useState(false);
+    const [formError, setFormError] = useState<string | null>(null);
+    // One key per attempt: tapping Create twice, or retrying after a dropped connection, makes one project.
+    const createKey = useRef<string | null>(null);
+
+    async function create() {
+        const name = cleanProjectName(newName);
+        if (!name || !workspaceId || creating) return setFormError('Give the project a name of up to 120 characters.');
+        setCreating(true);
+        setFormError(null);
+        createKey.current ??= Crypto.randomUUID();
+        try {
+            const made = await createProject(api, workspaceId, name, createKey.current);
+            createKey.current = null;
+            setNaming(false);
+            setNewName('');
+            if (made) router.push({ pathname: '/projects/[id]', params: { id: made.id } });
+        } catch (err) {
+            setFormError(projectsErrorMessage(err));
+        } finally {
+            setCreating(false);
+        }
+    }
 
     const loadWorkspaces = useCallback(async () => {
         setProblem(null);
@@ -67,6 +93,30 @@ export default function Projects() {
                             ))}
                         </View>
                     ) : null}
+                    {naming ? (
+                        <View style={styles.newBox}>
+                            <TextInput
+                                style={styles.input}
+                                value={newName}
+                                onChangeText={setNewName}
+                                placeholder="Project name"
+                                placeholderTextColor={colors.muted}
+                                accessibilityLabel="Project name"
+                                maxLength={120}
+                                autoFocus
+                                returnKeyType="done"
+                                onSubmitEditing={create}
+                            />
+                            <Pressable accessibilityRole="button" disabled={creating} style={[styles.go, touchTarget, creating && styles.off]} onPress={create}>
+                                <Text style={styles.goText}>{creating ? '…' : 'Create'}</Text>
+                            </Pressable>
+                        </View>
+                    ) : (
+                        <Pressable accessibilityRole="button" style={[styles.newRow, touchTarget]} onPress={() => setNaming(true)}>
+                            <Text style={styles.newText}>+ New project</Text>
+                        </Pressable>
+                    )}
+                    {formError ? <Text style={styles.error} accessibilityRole="alert">{formError}</Text> : null}
                     {!projects ? (
                         <ActivityIndicator color={colors.accent} />
                     ) : (
@@ -74,7 +124,7 @@ export default function Projects() {
                             data={projects}
                             keyExtractor={(p) => p.id}
                             ListEmptyComponent={<Text style={styles.muted}>No projects in this workspace yet.</Text>}
-                            ListFooterComponent={<Text style={styles.note}>Projects are made and edited in the editor on veyrnox.ai. Here you can look at them and their saved versions.</Text>}
+                            ListFooterComponent={<Text style={styles.note}>Open a project to rename it, delete it or restore a saved version. Editing the timeline is in the editor.</Text>}
                             renderItem={({ item }) => (
                                 <Pressable accessibilityRole="button" accessibilityLabel={`${item.name}, version ${item.version}`} style={styles.row} onPress={() => router.push({ pathname: '/projects/[id]', params: { id: item.id } })}>
                                     <Text style={styles.name}>{item.name}</Text>
@@ -101,4 +151,11 @@ const styles = StyleSheet.create({
     muted: { color: colors.muted },
     note: { color: colors.muted, fontSize: 13, paddingVertical: 20 },
     error: { color: colors.danger },
+    newRow: { alignSelf: 'flex-start', justifyContent: 'center' },
+    newText: { color: colors.accent, fontSize: 16, fontWeight: '600' },
+    newBox: { flexDirection: 'row', gap: 8 },
+    input: { flex: 1, color: colors.text, backgroundColor: colors.surface, borderRadius: 12, paddingHorizontal: 12, minHeight: 44 },
+    go: { backgroundColor: colors.accent, borderRadius: 12, paddingHorizontal: 16, justifyContent: 'center' },
+    goText: { color: colors.accentInk, fontWeight: '600' },
+    off: { opacity: 0.4 },
 });

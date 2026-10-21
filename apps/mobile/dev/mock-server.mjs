@@ -116,7 +116,7 @@ createServer(async (req, res) => {
     const url = new URL(req.url, `http://localhost:${PORT}`);
     const path = url.pathname;
     if (await mockSocialUploads(req, res, `http://${req.headers.host || `localhost:${PORT}`}`, state.socialPosts)) return;
-    const body = req.method === 'POST' || req.method === 'PATCH' ? await readBody(req) : {};
+    const body = req.method === 'POST' || req.method === 'PATCH' || req.method === 'PUT' || req.method === 'DELETE' ? await readBody(req) : {};
     console.log(req.method, path);
 
     if (path.startsWith('/auth/v1/token') || path === '/auth/v1/signup') return send(res, 200, tokens());
@@ -350,11 +350,11 @@ createServer(async (req, res) => {
             return send(res, 200, { ok: true });
         }
     }
-    // Workspaces and projects (read-only). The real routes answer errors as {error:{code,message}}, an object.
-    const PROJECTS = [
+    // Workspaces and projects (create, rename, delete and restore keep their state while the mock runs). The real routes answer errors as {error:{code,message}}, an object.
+    const PROJECTS = (globalThis.__MOCK_PROJECTS ??= [
         { id: 'c1111111-1111-4111-8111-111111111111', workspace_id: 'w1111111-1111-4111-8111-111111111111', owner_id: 'u1', name: 'Spring launch reel', version: 54, created_at: '2026-10-01T10:00:00Z', updated_at: '2026-10-18T09:00:00Z' },
         { id: 'c2222222-2222-4222-8222-222222222222', workspace_id: 'w1111111-1111-4111-8111-111111111111', owner_id: 'u1', name: 'Product teaser', version: 3, created_at: '2026-10-10T10:00:00Z', updated_at: '2026-10-12T09:00:00Z' },
-    ];
+    ]);
     const WORKSPACES = [
         { id: 'w1111111-1111-4111-8111-111111111111', organisation_id: 'o1', name: 'Studio', is_default: true },
         { id: 'w2222222-2222-4222-8222-222222222222', organisation_id: 'o1', name: 'Client work', is_default: false },
@@ -364,7 +364,29 @@ createServer(async (req, res) => {
         const w = new URL(req.url, 'http://x').searchParams.get('workspace_id');
         return send(res, 200, { projects: PROJECTS.filter((p) => p.workspace_id === w) });
     }
+    if (path === '/api/v1/projects' && req.method === 'POST') {
+        if (typeof body.name !== 'string' || !body.name.trim()) return send(res, 400, { error: { code: 'INVALID_NAME', message: 'Project name must contain 1-120 characters.', requestId: 'mock' } });
+        const made = { id: `c${Date.now().toString(16).padStart(7, '0')}-3333-4333-8333-333333333333`, workspace_id: body.workspace_id, owner_id: 'u1', name: body.name.trim(), version: 1, created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+        PROJECTS.push(made);
+        return send(res, 201, { project: made, idempotent: false });
+    }
+    m = path.match(/^\/api\/v1\/projects\/([^/]+)\/document$/);
+    if (m && req.method === 'PUT') {
+        const p = PROJECTS.find((x) => x.id === m[1]);
+        if (!p) return send(res, 404, { error: { code: 'NOT_FOUND', message: 'The resource was not found.', requestId: 'mock' } });
+        if (body.expected_revision !== p.version) return send(res, 409, { error: { code: 'REVISION_CONFLICT', message: 'The project changed.', requestId: 'mock' } });
+        p.version += 1; p.updated_at = new Date().toISOString();
+        return send(res, 200, { revision: p.version, restored_from: body.restore_revision });
+    }
     m = path.match(/^\/api\/v1\/projects\/([^/]+)(\/history)?$/);
+    if (m && !m[2] && (req.method === 'PATCH' || req.method === 'DELETE')) {
+        const i = PROJECTS.findIndex((x) => x.id === m[1]);
+        if (i < 0) return send(res, 404, { error: { code: 'NOT_FOUND', message: 'The resource was not found.', requestId: 'mock' } });
+        if (body.version !== PROJECTS[i].version) return send(res, 409, { error: { code: 'VERSION_CONFLICT', message: 'The project changed.', requestId: 'mock' } });
+        if (req.method === 'DELETE') { const [gone] = PROJECTS.splice(i, 1); return send(res, 200, { project: gone }); }
+        PROJECTS[i].name = String(body.name).trim(); PROJECTS[i].version += 1; PROJECTS[i].updated_at = new Date().toISOString();
+        return send(res, 200, { project: PROJECTS[i] });
+    }
     if (m && req.method === 'GET') {
         const p = PROJECTS.find((x) => x.id === m[1]);
         if (!p) return send(res, 404, { error: { code: 'NOT_FOUND', message: 'The resource was not found.', requestId: 'mock' } });

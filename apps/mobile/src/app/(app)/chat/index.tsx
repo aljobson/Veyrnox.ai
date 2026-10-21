@@ -1,11 +1,13 @@
 import { Link, Stack, useFocusEffect, useRouter } from 'expo-router';
+import { Image } from 'expo-image';
 import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { chatApi, pinnedFirst, searchThreads, type ChatThread } from '../../../lib/chat';
 import { fetchFolders, type Folder } from '../../../lib/chatLibrary';
 import { t } from '../../../lib/i18n';
-import { colors } from '../../../theme';
+import { MENU_ICONS } from '../../../lib/menuIcons';
+import { colors, radius } from '../../../theme';
 
 export default function Threads() {
     const { api } = useAuth();
@@ -95,11 +97,16 @@ export default function Threads() {
                                 style={[styles.row, styles.rowMain]}
                                 onPress={() => router.push({ pathname: '/chat/[id]', params: { id: item.id } })}
                             >
-                                <Text style={styles.rowTitle} numberOfLines={1}>
-                                    {item.pinned ? `${t('chat.pinned')} · ` : ''}
-                                    {item.title || 'New chat'}
-                                </Text>
-                                <Text style={styles.muted}>{item.model_id}</Text>
+                                <View style={styles.badge}>
+                                    <Image source={MENU_ICONS.chat} style={styles.badgeIcon} tintColor={colors.accent} contentFit="contain" accessibilityElementsHidden />
+                                </View>
+                                <View style={styles.rowText}>
+                                    <Text style={styles.rowTitle} numberOfLines={1}>
+                                        {item.pinned ? `${t('chat.pinned')} · ` : ''}
+                                        {item.title || 'New chat'}
+                                    </Text>
+                                    <Text style={styles.muted} numberOfLines={1}>{item.model_id}</Text>
+                                </View>
                             </Pressable>
                             <Pressable accessibilityRole="button" accessibilityLabel={t('chat.delete.label', { name: item.title || 'New chat' })} style={styles.del} onPress={() => confirmDelete(item)}>
                                 <Text style={styles.delText}>{t('chat.delete.button')}</Text>
@@ -114,13 +121,16 @@ export default function Threads() {
 
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background, padding: 16, gap: 12 },
-    newButton: { backgroundColor: colors.accent, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
+    newButton: { backgroundColor: colors.accent, borderRadius: radius.pill, paddingVertical: 14, alignItems: 'center' },
     newText: { color: colors.accentInk, fontWeight: '600', fontSize: 16 },
-    row: { paddingVertical: 14, borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth, gap: 2 },
-    rowTitle: { color: colors.text, fontSize: 16 },
+    row: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 16, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
+    badge: { width: 44, height: 44, borderRadius: radius.pill, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
+    badgeIcon: { width: 22, height: 22 },
+    rowText: { flex: 1, gap: 2 },
+    rowTitle: { color: colors.text, fontSize: 16, fontWeight: '600' },
     muted: { color: colors.muted },
-    search: { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, minHeight: 44 },
-    itemRow: { flexDirection: 'row', alignItems: 'center' },
+    search: { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: 12, minHeight: 44 },
+    itemRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 8 },
     rowMain: { flex: 1 },
     del: { minHeight: 44, minWidth: 44, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 8 },
     delText: { color: colors.danger },
@@ -129,7 +139,7 @@ const styles = StyleSheet.create({
     linkBox: { minHeight: 44, justifyContent: 'center' },
     link: { color: colors.accent, fontSize: 16 },
     chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-    chip: { minHeight: 40, justifyContent: 'center', paddingHorizontal: 12, borderRadius: 10, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
+    chip: { minHeight: 40, justifyContent: 'center', paddingHorizontal: 14, borderRadius: radius.pill, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
     chipOn: { backgroundColor: colors.accent, borderColor: colors.accent },
     chipText: { color: colors.body },
     chipTextOn: { color: colors.accentInk, fontWeight: '600' },
