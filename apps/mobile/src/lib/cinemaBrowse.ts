@@ -126,6 +126,7 @@ export const firstWatchable = (episodes: readonly Episode[]): Episode | null => 
 // ---- Share ----
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const WEB_ORIGIN = 'https://veyrnox.ai';
+export const WEB_ORIGIN = 'https://veyrnox.ai';
+export const isTitleId = (id: string) => UUID_RE.test(id);
 // The public page for a title (the same address lib/cinema/publicUrl.js builds). Nothing about the viewer is in it.
 export const titleShareUrl = (id: string): string | null => (UUID_RE.test(id) ? `${WEB_ORIGIN}/social-cinema/title/${id.toLowerCase()}` : null);
