@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { ApiError } from '../../../lib/api';
+import { canDraw } from '../../../lib/drawOnImage';
 import { createGenerationSubmit, generationMessage } from '../../../lib/generationSubmit';
 import { CameraPanel } from '../../../components/CameraPanel';
 import { CharacterPanel } from '../../../components/CharacterPanel';
@@ -199,6 +200,7 @@ export default function CreateWithModel() {
                     <SourcePicker
                         key={s.slot}
                         slot={s}
+                        drawable={canDraw(model) && s.slot === 'image'}
                         api={api}
                         onChange={(key) => setUploaded((u) => ({ ...u, [s.slot]: key }))}
                         onLibrary={(jobId) => setFromLibrary((l) => ({ ...l, [s.slot]: jobId }))}

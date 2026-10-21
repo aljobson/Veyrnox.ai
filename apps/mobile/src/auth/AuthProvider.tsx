@@ -1,3 +1,6 @@
+import { setOwner as setCinemaUploadOwner } from '../lib/cinemaUploadStore';
+import { passkeyGate, toGoTrueCredential, validatePasskeyOptions } from '../lib/passkeys';
+import { getCredential } from '../lib/auth/passkeyNative';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { fetch as expoFetch } from 'expo/fetch';
 import * as WebBrowser from 'expo-web-browser';
@@ -5,12 +8,15 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { Platform } from 'react-native';
 import { createApiClient, API_BASE, type ApiClient } from '../lib/api';
 import { AUTH_REDIRECT_URL, OAUTH_BRIDGE_URL } from '../lib/config';
+import { apiTokenSource, isTransientRefreshFailure } from '../lib/auth/apiToken';
 import { createAppleNonce, createPkce } from '../lib/auth/pkce';
 import { aiConsent } from '../lib/aiConsentStore';
 import { bindCacheUser, clearExportFiles, userIdFromToken, wipeCache } from '../lib/appCache';
 import { cinemaProgressIdentity } from '../lib/cinemaProgress';
 import { clearRefreshToken, readRefreshToken, writeRefreshToken } from '../lib/auth/sessionStore';
 import {
+    passkeySignInOptions,
+    passkeySignInVerify,
     authorizeUrl,
     exchangeAuthCode,
     refreshSession,
@@ -45,6 +51,7 @@ interface AuthContextValue {
     signInWithEmail(email: string, password: string, captchaToken: string): Promise<void>;
     // Resolves true when signed in, false when the user must confirm their email first.
     signUpWithEmail(email: string, password: string, captchaToken: string): Promise<boolean>;
+    signInWithPasskey(captchaToken: string): Promise<boolean>;
     signOut(): Promise<void>;
 }
 
@@ -60,23 +67,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [status, setStatus] = useState<Status>('loading');
     const [appleNativeAvailable, setAppleNativeAvailable] = useState(false);
     const sessionRef = useRef<Session | null>(null);
+    const transientFailure = useRef(false);
+    const dropped = useRef(false);
     const refreshInFlight = useRef<Promise<Session | null> | null>(null);
 
     const adopt = useCallback(async (session: Session) => {
         sessionRef.current = session;
+        dropped.current = false;
+        transientFailure.current = false;
         const userId = userIdFromToken(session.accessToken);
         cinemaProgressIdentity.setUser(userId);
         aiConsent.setUser(userId);
         await bindCacheUser(userId);
+        await setCinemaUploadOwner(userId).catch(() => undefined);
         await writeRefreshToken(session.refreshToken);
         setStatus('signedIn');
     }, []);
 
     const drop = useCallback(async () => {
+        // A refresh rejection and the request's session-loss callback can both arrive.
+        if (dropped.current) return;
+        dropped.current = true;
         sessionRef.current = null;
+        transientFailure.current = false;
         cinemaProgressIdentity.setUser(null);
         await aiConsent.forget();
         await wipeCache().catch(() => undefined);
+        await setCinemaUploadOwner(null).catch(() => undefined);
         await clearRefreshToken();
         setStatus('signedOut');
     }, []);
@@ -87,12 +104,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (refreshInFlight.current) return refreshInFlight.current;
         const run = (async () => {
             const stored = sessionRef.current?.refreshToken ?? (await readRefreshToken());
-            if (!stored) return null;
+            if (!stored) { transientFailure.current = false; return null; }
             try {
                 const next = await refreshSession(stored);
                 await adopt(next);
                 return next;
             } catch (err) {
+                transientFailure.current = isTransientRefreshFailure(err);
                 // A rejected token is final; a network error keeps the stored token for next launch.
                 if (err instanceof Error && 'status' in err && (err as { status: number }).status !== 0) await drop();
                 return null;
@@ -119,7 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const api = useMemo(
         () => createApiClient({
                 baseUrl: API_BASE,
-                getAccessToken,
+                getAccessToken: apiTokenSource(getAccessToken, () => transientFailure.current),
                 onSessionLost,
                 streamFetch: expoFetch as unknown as typeof fetch,
                 beforeSend: aiConsent.ensure,
@@ -190,6 +208,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         [adopt],
     );
 
+    const signInWithPasskey = useCallback(async (captchaToken: string): Promise<boolean> => {
+        if (!passkeyGate()) return false;
+        const { challengeId, options } = validatePasskeyOptions(await passkeySignInOptions(captchaToken), false);
+        const credential = await getCredential(options);
+        if (credential === null) return false;
+        await adopt(await passkeySignInVerify(challengeId, toGoTrueCredential(credential)));
+        return true;
+    }, [adopt]);
+
     const signOut = useCallback(async () => {
         const token = sessionRef.current?.accessToken;
         await drop();
@@ -197,8 +224,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, [drop]);
 
     const value = useMemo<AuthContextValue>(
-        () => ({ status, api, onSessionLost, getAccessToken, adoptSession: adopt, appleNativeAvailable, signInWithApple, signInWithOAuth, signInWithEmail, signUpWithEmail, signOut }),
-        [status, api, onSessionLost, getAccessToken, adopt, appleNativeAvailable, signInWithApple, signInWithOAuth, signInWithEmail, signUpWithEmail, signOut],
+        () => ({ status, api, onSessionLost, getAccessToken, adoptSession: adopt, appleNativeAvailable, signInWithApple, signInWithOAuth, signInWithEmail, signUpWithEmail, signInWithPasskey, signOut }),
+        [status, api, onSessionLost, getAccessToken, adopt, appleNativeAvailable, signInWithApple, signInWithOAuth, signInWithEmail, signUpWithEmail, signInWithPasskey, signOut],
     );
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

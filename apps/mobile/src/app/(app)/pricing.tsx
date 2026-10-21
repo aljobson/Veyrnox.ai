@@ -4,14 +4,16 @@ import { CatalogList, kindTitleKey } from '../../components/CatalogList';
 import { priceLines } from '../../lib/catalogPages';
 import { t } from '../../lib/i18n';
 import { VEY_CLEARANCE } from '../../components/VeyMascot';
+import { useVeyScroll } from '../../lib/useVeyScroll';
 import { colors, radius, space, type } from '../../theme';
 import { MIN_TARGET } from '../../lib/a11y';
 
 // What each model costs, in credits, from the public catalogue (read-only). It shows prices only: credits are
 // bought in the store, and nothing on this screen links anywhere to buy them.
 export default function Pricing() {
+    const onScroll = useVeyScroll();
     return (
-        <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+        <ScrollView style={styles.screen} contentContainerStyle={styles.content} onScroll={onScroll} scrollEventThrottle={64}>
             <Stack.Screen options={{ title: t('prc.title') }} />
             <Text style={styles.note}>{t('prc.intro')}</Text>
             <CatalogList

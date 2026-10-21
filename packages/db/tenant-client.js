@@ -3,7 +3,7 @@ import { readConfig } from '../security/config.js';
 import { ApiError } from '../security/errors.js';
 import { readBody } from '../security/input.js';
 
-export async function tenantRequest(request, context, path, { method = 'GET', body } = {}) {
+export async function tenantRequest(request, context, path, { method = 'GET', body, maxBytes = 256 * 1024, limitAware = false } = {}) {
     const cfg = readConfig(process.env);
     const authorization = request.headers.get('authorization');
     if (!authorization?.toLowerCase().startsWith('bearer ')) throw new ApiError(401, 'UNAUTHORIZED', 'Authentication required.');
@@ -26,12 +26,20 @@ export async function tenantRequest(request, context, path, { method = 'GET', bo
             409: ['CONFLICT', 'The request conflicts with the saved state.'],
             429: ['RATE_LIMITED', 'Too many requests. Try again later.'],
         };
-        await response.body?.cancel();
+        if (limitAware && response.status === 429) {
+            let limitReached = false;
+            try {
+                const bytes = await readBody(response, 4096);
+                limitReached = JSON.parse(new TextDecoder().decode(bytes))?.message === 'LIMIT_REACHED';
+            } catch { /* Malformed or oversized errors retain the generic throttle response. */ }
+            finally { await response.body?.cancel().catch(() => {}); }
+            if (limitReached) throw new ApiError(429, 'LIMIT_REACHED', 'A saved-item limit was reached.');
+        } else await response.body?.cancel();
         const safe = safeErrors[response.status];
         throw new ApiError(safe ? response.status : 503, ...(safe || ['DATA_UNAVAILABLE', 'Data is temporarily unavailable.']));
     }
     // Bound upstream JSON before parsing; PostgREST returns objects or arrays.
-    const bytes = await readBody(response, 256 * 1024);
+    const bytes = await readBody(response, maxBytes);
     try { return JSON.parse(new TextDecoder().decode(bytes)); }
     catch { throw new ApiError(503, 'DATA_UNAVAILABLE', 'Data is temporarily unavailable.'); }
 }

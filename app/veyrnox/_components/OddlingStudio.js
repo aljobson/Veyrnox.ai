@@ -364,29 +364,26 @@ export default function OddlingStudio() {
           </div>
         </section>
       </div>
-            <div className="sticky bottom-0 z-20 border-t border-vx-border bg-vx-panel/95 px-5 pb-3 pt-3 backdrop-blur-sm sm:px-7 xl:px-10"><div className="mx-auto max-w-[1500px]">
+            <div className="sticky bottom-0 z-20 border-t border-vx-border bg-vx-panel/95 px-4 py-2 backdrop-blur-sm sm:px-7 xl:px-10"><div className="mx-auto flex max-w-[1500px] flex-wrap items-center gap-x-4 gap-y-2">
               {lowCredits && (
-                <div role="status" className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-vx-money/40 bg-vx-money/[0.08] px-3 py-2.5">
-                  <p className="text-xs leading-relaxed text-vx-fg-body">
+                <div role="status" className="flex min-w-0 flex-1 basis-full items-center justify-between gap-3 rounded-lg border border-vx-money/40 bg-vx-money/[0.08] px-3 py-1.5 sm:basis-0">
+                  <p className="text-xs leading-snug text-vx-fg-body">
                     <strong className="text-vx-money">{insufficientCredits ? t("app.oddlings.insufficient") : t("app.oddlings.low")}</strong>{' '}
                     {t(mode==='motion'?'app.oddlings.balanceAnimation':'app.oddlings.balancePortrait',{balance:number(balance),cost:number(generationCost)})}
                   </p>
-                  <Link href="/app/credits" className="shrink-0 rounded-full bg-vx-money px-3 py-2 text-[11px] font-extrabold text-vx-money-ink hover:brightness-110">{t("app.oddlings.getCredits")}</Link>
+                  <Link href="/app/credits" className="shrink-0 rounded-full bg-vx-money px-3 py-1.5 text-[11px] font-extrabold text-vx-money-ink hover:brightness-110">{t("app.oddlings.getCredits")}</Link>
                 </div>
               )}
-              <div className="flex items-stretch gap-2">
+              {!lowCredits && <p className="hidden min-w-0 flex-1 font-vx-mono text-[10px] text-vx-fg-faint sm:block">{t("app.oddlings.opensCreate")}{generationCost != null && <> · <span className="font-bold text-vx-money">{t('app.oddlings.livePrice',{count:number(generationCost)})}</span></>}</p>}
+              <div className="ms-auto flex w-full items-center justify-end gap-2 sm:w-auto">
                 {mode === 'portrait' && (
-                  <button type="button" onClick={surprise} className="w-[76px] shrink-0 rounded-xl border border-vx-border bg-vx-base px-2 text-center text-[11px] font-extrabold leading-tight text-vx-fg transition-colors hover:border-vx-accent">{t("app.oddlings.surprise")}</button>
+                  <button type="button" onClick={surprise} className="shrink-0 rounded-full border border-vx-border bg-vx-base px-4 py-2 text-xs font-extrabold text-vx-fg transition-colors hover:border-vx-accent">{t("app.oddlings.surprise")}</button>
                 )}
-                <Button type="button" size="lg" cost={generationCost} disabled={generationCost == null || handingOff} aria-busy={handingOff} data-assistant-target="oddlings.continue" onClick={continueToCreate} className="min-w-0 flex-1 justify-between rounded-xl py-5 text-lg shadow-[0_0_28px_rgb(var(--vx-accent)/0.16)]">
+                <Button type="button" size="md" cost={generationCost} disabled={generationCost == null || handingOff} aria-busy={handingOff} data-assistant-target="oddlings.continue" onClick={continueToCreate} className="min-w-0 max-sm:flex-1 max-sm:justify-between">
                   {handingOff ? t("app.oddlings.opening") : generationCost == null ? t("app.oddlings.checkingPrice") : mode === 'motion' ? t("app.oddlings.animate") : t("app.oddlings.generatePortrait")}
                 </Button>
               </div>
-              <div className="mt-2 flex items-center justify-between gap-3 font-vx-mono text-[9px]">
-                <span className="text-vx-fg-faint">{t("app.oddlings.opensCreate")}</span>
-                {generationCost != null && <span className="font-bold text-vx-money">{t('app.oddlings.livePrice',{count:number(generationCost)})}</span>}
-              </div>
-              {notice && <p data-testid="oddling-notice" role="status" className="mt-3 rounded-xl border border-vx-accent/30 bg-vx-accent/[0.06] px-3 py-2 text-xs text-vx-accent">{notice}</p>}
+              {notice && <p data-testid="oddling-notice" role="status" className="basis-full rounded-lg border border-vx-accent/30 bg-vx-accent/[0.06] px-3 py-1.5 text-xs text-vx-accent">{notice}</p>}
             </div>
             </div>
       </div>

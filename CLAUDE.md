@@ -43,6 +43,7 @@ If a build starts failing after a dependency change, bisect these three first.
   `private` schema must stay out of the API's exposed schemas — the wrappers
   exist so it never has to be exposed. Anything added to this surface goes on
   the allowlist in `scripts/test-default-privileges.mjs` on purpose.
+  Film Studio (ADR-0245) adds owner-only SELECT on `film_studio_projects` and the `save_film_studio` / `remove_film_studio` invoker wrappers to this user-JWT surface.
 - **Ledger is append-only** — enforced by trigger `ledger_entries_append_only`.
   Never `UPDATE` or `DELETE` a ledger row. Corrections are compensating rows
   (positive delta = refund/grant, negative = debit).
@@ -247,8 +248,9 @@ developer surface is `/api/v1/developer/*` and requires a verified OAuth
   that cookie with exact-origin, JSON and custom-header CSRF checks. Ordinary
   product/developer/MCP APIs remain Bearer-only. Existing token records migrate
   once via the BFF and are replaced with token-free metadata after success.
-  Never send refresh tokens in URL parameters. OAuth callback parses the URL fragment
-  (`#access_token=...`) in `app/auth/callback/page.js` and clears it.
+  Never send refresh tokens in URL parameters. Signup, emailed links and OAuth use
+  S256 PKCE. The callback scrubs and rejects implicit token fragments without
+  adopting or replacing a session; old implicit links require a fresh sign-in.
 - Password minimum 8 chars enforced client-side; Supabase enforces its own
   server-side rules — don't bypass. No password logs, no password telemetry.
 - Sign-out revokes the Supabase session (`POST /auth/v1/logout`), expires the

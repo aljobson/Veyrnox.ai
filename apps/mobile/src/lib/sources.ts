@@ -33,6 +33,7 @@ export interface Slot {
     readonly required: boolean;
     readonly label: string;
     readonly maxSeconds?: number;
+    readonly maxPixels?: number;
 }
 
 export interface PickedFile {
@@ -48,12 +49,13 @@ const DEFAULT_LABEL: Record<SlotName, string> = { image: 'Image', endImage: 'Las
 
 // The file slots a model declares, in a fixed order, ignoring names the server does not know.
 export function slotsFor(model: CatalogModel): Slot[] {
-    const media = (model.capabilities?.media ?? {}) as Record<string, { required?: boolean; label?: string; maxSeconds?: number }>;
+    const media = (model.capabilities?.media ?? {}) as Record<string, { required?: boolean; label?: string; maxSeconds?: number; maxPixels?: number }>;
     return SLOT_ORDER.filter((name) => Object.hasOwn(media, name)).map((name) => ({
         slot: name,
         kind: KIND[name],
         required: media[name].required === true,
         label: media[name].label ?? DEFAULT_LABEL[name],
+        ...(typeof media[name].maxPixels === 'number' ? { maxPixels: media[name].maxPixels } : {}),
         ...(typeof media[name].maxSeconds === 'number' ? { maxSeconds: media[name].maxSeconds } : {}),
     }));
 }

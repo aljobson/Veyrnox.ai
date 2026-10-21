@@ -1,6 +1,7 @@
 'use client';
 import { useI18n } from '../../../components/I18nProvider.jsx';
 
+import { presetStep } from '../../../lib/i18n/presetSteps.mjs';
 import { useState } from 'react';
 import { UseTemplate } from './UseTemplate';
 
@@ -35,7 +36,7 @@ export function TemplateRecipe({ preset, generatedPreview = false }) {
       <p className="mt-3 text-[13px] text-vx-fg-muted">{generatedPreview ? t("public.TemplateRecipe.thePreviewWasGeneratedUsingThis") : preset.inspired ? t("public.TemplateRecipe.adaptedForTheModelBelowTo") : t("public.TemplateRecipe.editItHereOrInThe")}</p>
       {preset.steps && (
         <ol className="mt-5 list-decimal space-y-2 ps-5 text-sm text-vx-fg-body">
-          {preset.steps.map((step) => <li key={step}>{step}</li>)}
+          {preset.steps.map((step) => <li key={step}>{presetStep(t, step)}</li>)}
         </ol>
       )}
       <UseTemplate preset={preset} prompt={prompt} />

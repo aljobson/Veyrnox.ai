@@ -36,3 +36,22 @@ describe('crash report scrubbing', () => {
         expect(crumb.data.url).toBe('https://x.test/?a=1');
     });
 });
+
+describe('bearer path redaction', () => {
+    test.each(['/api/social/team/', '/social/team/invite/', '/api/social/approvals/', '/social/review/'])('redacts one segment of %s on any host or a bare path', (prefix) => {
+        for (const origin of ['', 'https://other.example.test']) {
+            expect(scrubUrl(`${origin}${prefix}a.b/after?secret=1#fragment`)).toBe(`${origin}${prefix}:token/after`);
+        }
+    });
+    test('redacts HTTP and navigation breadcrumbs, URL messages and event requests', () => {
+        const url = 'https://veyrnox.ai/api/social/team/a.b';
+        const clean = 'https://veyrnox.ai/api/social/team/:token';
+        expect(scrubBreadcrumb({ category: 'http', data: { url } })).toEqual({ category: 'http', data: { url: clean } });
+        expect(scrubBreadcrumb({ data: { from: url, to: url }, message: url })).toEqual({ data: { from: clean, to: clean }, message: clean });
+        expect(scrubEvent({ request: { url } })).toEqual({ request: { url: clean } });
+    });
+    test.each(['/api/v1/social/team/accept', '/api/v1/social/approvals', '/other/api/social/team/a.b'])('does not redact unrelated path %s', (path) => {
+        expect(scrubUrl(path)).toBe(path);
+        expect(scrubUrl(`https://veyrnox.ai${path}`)).toBe(`https://veyrnox.ai${path}`);
+    });
+});

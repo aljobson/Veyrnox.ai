@@ -63,9 +63,15 @@ test('TikTok: first dispatch proxies the media through our own domain and report
         claim_due_social_post_targets: async () => [target({
             network: 'tiktok', target_id: 't-tt', external_account_id: 'tt-open-id', access_token_enc: accessTokenEnc,
         })],
+        mark_social_provider_submission: async (body) => {
+            assert.equal(body.p_target_id, 't-tt');
+            assert.equal(body.p_network, 'tiktok');
+            return { ok: true };
+        },
         report_social_post_progress: async (body) => {
             assert.equal(body.p_target_id, 't-tt');
             assert.equal(body.p_provider_state.publish_id, 'publish-1');
+            assert.equal(body.p_provider_state.submission_started, true);
             assert.ok(body.p_provider_state.started_at);
             assert.ok(body.p_next_check_at);
             return { ok: true };
@@ -85,7 +91,7 @@ test('TikTok: first dispatch proxies the media through our own domain and report
         };
         const out = await runPublishSweep(asyncDeps);
         assert.deepEqual(out, { ok: true, claimed: 1, published: 0, failed: 0, errors: 0 });
-        assert.deepEqual(calls, ['authorize_social_target_dispatch', 'claim_due_social_post_targets', 'authorize_social_target_dispatch', 'report_social_post_progress']);
+        assert.deepEqual(calls, ['authorize_social_target_dispatch', 'claim_due_social_post_targets', 'authorize_social_target_dispatch', 'authorize_social_target_dispatch', 'mark_social_provider_submission', 'report_social_post_progress']);
         assert.ok(seenPhotoUrl.startsWith('https://veyrnox.ai/media/social/'));
     });
 });

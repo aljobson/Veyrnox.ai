@@ -163,3 +163,24 @@ describe('composeErrorMessage', () => {
         expect(composeErrorMessage(new Error('x'))).toMatch(/Nothing was posted/);
     });
 });
+
+test('upload draft requires exactly one source and sends only uploadId', () => {
+    const upload = draft({ jobId: '', uploadId: 'upload-one' });
+    expect(validateDraft(upload, [acct()], now)).toBeNull();
+    expect(validateDraft(draft({ uploadId: 'upload-one' }), [acct()], now)).toBe('Choose a creation to post.');
+    expect(createBody(upload, DRAFT_ID, now).media).toEqual([{ mediaType: 'image', uploadId: 'upload-one' }]);
+});
+test('job signature is byte-identical; upload has a distinct source prefix', () => {
+    const { draftSignature } = require('../src/lib/draftKey');
+    expect(draftSignature(draft())).toBe('["3f2b8a52-6c0e-4d7a-9b1f-0a1b2c3d4e5f","image",["a1"],"Hello","now",[],null]');
+    expect(draftSignature(draft({ jobId: '', uploadId: 'u' }))).toBe('["upload:u","image",["a1"],"Hello","now",[],null]');
+});
+test.each([[404, 'MEDIA_NOT_FOUND'], [400, 'invalid_media']] as const)('upload-only media errors %s %s', (status, code) => {
+    const err = new ApiError(status, code);
+    expect(composeErrorMessage(err, true)).toBe('That upload is no longer available. Choose it or upload it again.');
+    expect(composeErrorMessage(err)).toBe(composeErrorMessage(err, false));
+    expect(composeErrorMessage(err)).not.toBe(composeErrorMessage(err, true));
+});
+test('over-limit variant preserves the composer message exactly', () => {
+    expect(validateDraft(draft({ networkText: { twitter: '😀'.repeat(281) } }), [acct()], now)).toBe('X allows 280 characters; this is 281.');
+});

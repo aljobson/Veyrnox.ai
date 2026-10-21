@@ -1,5 +1,5 @@
 import { Directory, Paths } from 'expo-file-system';
-import { bindCacheUser, clearExportFiles, createFileStorage, exportDirectory, resetCacheUser, userIdFromToken, wipeCache } from '../src/lib/appCache';
+import { bindCacheUser, clearExportFiles, createFileStorage, exportDirectory, resetCacheUser, sweepUserDocs, userIdFromToken, wipeCache } from '../src/lib/appCache';
 import { POLICIES, createCache, createMemoryStorage } from '../src/lib/cache';
 
 const b64 = (o: object) => btoa(JSON.stringify(o)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -87,4 +87,54 @@ describe('file storage', () => {
         expect(await storage.get('veyrnox.cache.v1.library.u/1')).toBeNull();
         expect(await storage.keys()).toEqual([]);
     });
+});
+
+describe('durable user documents', () => {
+    test('cold start with no cache marker preserves records owned by the same user', async () => {
+        const docs = createMemoryStorage(), storage = createMemoryStorage(), cache = createCache(storage);
+        const clear = jest.spyOn(cache, 'clear');
+        await docs.set('draft', JSON.stringify({ owner: 'U' }));
+        await bindCacheUser('U', cache, storage, docs);
+        expect(await docs.get('draft')).not.toBeNull(); expect(clear).toHaveBeenCalledTimes(1);
+        await bindCacheUser('U', cache, storage, docs);
+        expect(await docs.get('draft')).not.toBeNull(); expect(clear).toHaveBeenCalledTimes(1);
+    });
+    test('switching users sweeps by each record, even without a cache marker', async () => {
+        const docs = createMemoryStorage(), storage = createMemoryStorage(), cache = createCache(storage);
+        await docs.set('u', JSON.stringify({ owner: 'U' }));
+        await docs.set('v', JSON.stringify({ owner: 'V' }));
+        await docs.set('broken', '{'); await docs.set('ownerless', '{}'); await docs.set('empty', '{"owner":""}');
+        await bindCacheUser('V', cache, storage, docs);
+        expect(await docs.keys()).toEqual(['v']);
+        await wipeCache(cache, docs); expect(await docs.keys()).toEqual([]);
+    });
+});
+
+
+test('same-user refresh does not sweep an unfinished draft write', async () => {
+    const docs = createMemoryStorage(), storage = createMemoryStorage(), cache = createCache(storage);
+    await bindCacheUser('U', cache, storage, docs);
+    // File creation exposes an empty file until the asynchronous write completes.
+    await docs.set('draft', '');
+    const keys = jest.spyOn(docs, 'keys'), get = jest.spyOn(docs, 'get'), remove = jest.spyOn(docs, 'remove');
+    await bindCacheUser('U', cache, storage, docs);
+    expect(keys).not.toHaveBeenCalled(); expect(get).not.toHaveBeenCalled(); expect(remove).not.toHaveBeenCalled();
+    expect(await docs.get('draft')).toBe('');
+    await docs.set('draft', JSON.stringify({ owner: 'U' }));
+    expect(await docs.get('draft')).toBe('{"owner":"U"}');
+});
+test('a failed read during a sweep preserves the record', async () => {
+    const docs = createMemoryStorage();
+    await docs.set('draft', JSON.stringify({ owner: 'U' }));
+    const get = jest.spyOn(docs, 'get').mockRejectedValueOnce(new Error('read failed'));
+    const remove = jest.spyOn(docs, 'remove');
+    await sweepUserDocs('U', docs);
+    expect(remove).not.toHaveBeenCalled();
+    get.mockRestore(); expect(await docs.get('draft')).not.toBeNull();
+});
+test.each(['keys', 'remove'] as const)('a throwing sweep %s cannot reject account binding', async method => {
+    const docs = createMemoryStorage(), storage = createMemoryStorage(), cache = createCache(storage);
+    await docs.set('foreign', JSON.stringify({ owner: 'V' }));
+    jest.spyOn(docs, method).mockRejectedValue(new Error('storage failed'));
+    await expect(bindCacheUser('U', cache, storage, docs)).resolves.toBeUndefined();
 });

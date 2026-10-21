@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Local stand-in for Supabase Auth and the /api/v1 routes the app uses, so every signed-in screen can be
 // previewed in the simulator without an account. Development only: `node dev/mock-server.mjs` (port 8799).
+import { mockSocialUploads, uploadsEnabled, validateUploadMedia } from './mockSocialUploads.mjs';
 import { createServer } from 'node:http';
 import { deflateSync } from 'node:zlib';
 import { createHash, randomUUID } from 'node:crypto';
@@ -114,6 +115,7 @@ createServer(async (req, res) => {
     let m;
     const url = new URL(req.url, `http://localhost:${PORT}`);
     const path = url.pathname;
+    if (await mockSocialUploads(req, res, `http://${req.headers.host || `localhost:${PORT}`}`, state.socialPosts)) return;
     const body = req.method === 'POST' || req.method === 'PATCH' ? await readBody(req) : {};
     console.log(req.method, path);
 
@@ -181,14 +183,15 @@ createServer(async (req, res) => {
     const disc = path.match(/^\/api\/v1\/social\/accounts\/(acc-[a-z0-9]+)$/);
     if (disc && req.method === 'DELETE') { (state.goneAccounts ??= new Set()).add(disc[1]); return send(res, 200, { ok: true }); }
     if (path === '/api/v1/social/accounts' && brandHeader === BRAND_CLIENT) {
-        return send(res, 200, { brand_id: BRAND_CLIENT, accountLimit: 5, planTier: 'publish', accounts: [
+        return send(res, 200, { brand_id: BRAND_CLIENT, accountLimit: 5, planTier: 'publish', ...(uploadsEnabled ? { uploadsEnabled: true } : {}), accounts: [
             { id: 'acc-c1', network: 'linkedin', display_name: 'Acme Corp Page', avatar_url: null, status: 'active', connected_at: '2026-10-02T10:00:00Z', token_expires_at: '2026-12-02T10:00:00Z', publishingEnabled: true, supportedMedia: ['image'] } ] });
     }
-    if (path === '/api/v1/social/accounts') return send(res, 200, { brand_id: 'b1', accountLimit: 5, planTier: 'publish', accounts: ([
+    if (path === '/api/v1/social/accounts') return send(res, 200, { brand_id: 'b1', accountLimit: 5, planTier: 'publish', ...(uploadsEnabled ? { uploadsEnabled: true } : {}), accounts: ([
         { id: 'acc-1', network: 'instagram', display_name: 'Veyrnox Studio', avatar_url: null, status: 'active', connected_at: '2026-10-01T10:00:00Z', token_expires_at: '2026-12-01T10:00:00Z', publishingEnabled: true, supportedMedia: ['image', 'video'] },
         { id: 'acc-2', network: 'tiktok', display_name: 'veyrnox.ai', avatar_url: null, status: 'expired', connected_at: '2026-09-01T10:00:00Z', token_expires_at: '2026-10-01T10:00:00Z', publishingEnabled: true, supportedMedia: ['image', 'video'] } ]).filter((a) => !state.goneAccounts?.has(a.id)) });
     // Publish posts (stateful): create, reschedule, cancel and restore, with the version stamp the real routes require.
     if (path === '/api/v1/social/posts' && req.method === 'POST') {
+        if (validateUploadMedia(req, res, body)) return;
         const at = body.publishNow === true ? new Date().toISOString() : body.scheduledAt;
         if (!at || Number.isNaN(Date.parse(at))) return send(res, 400, { error: 'invalid_schedule' });
         if (body.publishNow !== true && body.scheduledAt && state.socialPlan !== 'publish') return send(res, 402, { error: 'publish_plan_required', feature: 'scheduling' });
@@ -198,7 +201,7 @@ createServer(async (req, res) => {
         if (prior) return send(res, 201, { post_id: prior.id, idempotent: true, target_count: prior.targets.length });
         const id = randomUUID();
         const now = new Date().toISOString();
-        state.socialPosts.unshift({ id, key: body.idempotencyKey, status: body.publishNow === true ? 'published' : 'scheduled', scheduled_at: at, global_text: body.globalText || '', created_at: now, updated_at: now,
+        state.socialPosts.unshift({ id, key: body.idempotencyKey, media: body.media, status: body.publishNow === true ? 'published' : 'scheduled', scheduled_at: at, global_text: body.globalText || '', created_at: now, updated_at: now,
             targets: body.accountIds.map((a, i) => ({ id: randomUUID(), network: a === 'acc-2' ? 'tiktok' : 'instagram', publish_status: body.publishNow === true ? 'published' : 'pending', platform_post_url: null, last_error: null })) });
         console.log('MOCK created post', id, body.publishNow === true ? 'now' : 'scheduled');
         return send(res, 201, { post_id: id, idempotent: false, target_count: body.accountIds.length });
