@@ -1,8 +1,11 @@
 import * as DocumentPicker from 'expo-document-picker';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { subscribeCacheUser } from '../lib/appCache';
+import { claimDrawFile, deleteDrawFile, isDrawFile, releaseDrawFile } from '../lib/drawFiles';
+import { loadDrawOnImage } from '../lib/drawLoader';
 import type { ApiClient } from '../lib/api';
 import { LibraryChooser } from './LibraryChooser';
 import { t } from '../lib/i18n';
@@ -23,6 +26,7 @@ interface SourcePickerProps {
     // A file the app already holds (the Oddlings "animate this portrait" start image). It goes through the same checks and
     // upload as a picked file, once, as soon as it is given.
     readonly initial?: PickedFile | null;
+    readonly drawable?: boolean;
 }
 
 type Status = { readonly step: 'empty' } | { readonly step: 'uploading'; readonly fraction: number } | { readonly step: 'ready' };
@@ -46,22 +50,43 @@ async function choose(kind: Slot['kind']): Promise<PickedFile | null> {
     return { uri: a.uri, mimeType: a.mimeType, size: a.fileSize, durationSeconds: typeof a.duration === 'number' ? a.duration / 1000 : undefined };
 }
 
-export function SourcePicker({ slot, api, onChange, onLibrary, onBusy, initial }: SourcePickerProps) {
+export function SourcePicker({ slot, api, onChange, onLibrary, onBusy, initial, drawable = false }: SourcePickerProps) {
     const [status, setStatus] = useState<Status>({ step: 'empty' });
     const [preview, setPreview] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [choosing, setChoosing] = useState(false);
     const [libraryName, setLibraryName] = useState<string | null>(null);
+    const [drawing, setDrawing] = useState<number | null>(null);
+    const DrawScreen = useMemo(() => drawable ? loadDrawOnImage() : null, [drawable]);
+    const owned = useRef<string | null>(null);
+    const mounted = useRef(true);
+    const drawEpoch = useRef(0);
     const controller = useRef<AbortController | null>(null);
 
     useEffect(
-        () => () => {
-            controller.current?.abort();
-            onBusy(false);
+        () => {
+            mounted.current = true;
+            return () => {
+                mounted.current = false;
+                drawEpoch.current++;
+                releaseOwned();
+                controller.current?.abort();
+                onBusy(false);
+            };
         },
         // eslint-disable-next-line react-hooks/exhaustive-deps -- cleanup on unmount only
         [],
     );
+
+    function releaseOwned() {
+        if (owned.current) { releaseDrawFile(owned.current); owned.current = null; }
+    }
+    useEffect(() => subscribeCacheUser(() => {
+        drawEpoch.current++;
+        setDrawing(null);
+        if (owned.current) remove();
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- current owner is held in a ref
+    }), []);
 
     async function pick() {
         setError(null);
@@ -79,8 +104,13 @@ export function SourcePicker({ slot, api, onChange, onLibrary, onBusy, initial }
         setError(null);
         const checked = checkPicked(slot.kind, file, slot.maxSeconds);
         if (!checked.ok) {
+            if (isDrawFile(file.uri)) deleteDrawFile(file.uri);
             setError(pickedProblem(checked.error, slot.kind));
             return;
+        }
+        if (owned.current !== file.uri) {
+            releaseOwned();
+            if (isDrawFile(file.uri)) { claimDrawFile(file.uri); owned.current = file.uri; }
         }
         controller.current?.abort();
         const current = new AbortController();
@@ -93,7 +123,8 @@ export function SourcePicker({ slot, api, onChange, onLibrary, onBusy, initial }
         onChange(undefined);
         onBusy(true);
         try {
-            const key = await uploadSource(api, file, checked.contentType, (fraction) => setStatus({ step: 'uploading', fraction }), current.signal);
+            const key = await uploadSource(api, file, checked.contentType, (fraction) => { if (!current.signal.aborted) setStatus({ step: 'uploading', fraction }); }, current.signal);
+            if (current.signal.aborted || !mounted.current) return;
             setStatus({ step: 'ready' });
             onChange(key);
             onBusy(false);
@@ -102,6 +133,7 @@ export function SourcePicker({ slot, api, onChange, onLibrary, onBusy, initial }
             onBusy(false);
             setStatus({ step: 'empty' });
             setPreview(null);
+            releaseOwned();
             setError(uploadMessage(err));
         }
     }
@@ -116,6 +148,9 @@ export function SourcePicker({ slot, api, onChange, onLibrary, onBusy, initial }
     }, [initial]);
 
     function chooseFromLibrary(choice: LibraryChoice) {
+        releaseOwned();
+        drawEpoch.current++;
+        setDrawing(null);
         controller.current?.abort();
         onBusy(false);
         setError(null);
@@ -127,6 +162,9 @@ export function SourcePicker({ slot, api, onChange, onLibrary, onBusy, initial }
     }
 
     function remove() {
+        releaseOwned();
+        drawEpoch.current++;
+        setDrawing(null);
         controller.current?.abort();
         setLibraryName(null);
         onLibrary?.(undefined);
@@ -170,6 +208,17 @@ export function SourcePicker({ slot, api, onChange, onLibrary, onBusy, initial }
                     <Text style={styles.pickText}>{t('libsrc.choose')}</Text>
                 </Pressable>
             ) : null}
+            {drawable && DrawScreen && status.step === 'ready' && preview && !libraryName ? (
+                <Pressable accessibilityRole="button" accessibilityLabel={t('draw.open')} style={styles.library} onPress={() => setDrawing(++drawEpoch.current)}>
+                    <Text style={styles.pickText}>{t('draw.open')}</Text>
+                </Pressable>
+            ) : null}
+            {drawing !== null && DrawScreen && preview ? <DrawScreen uri={preview} maxPixels={slot.maxPixels} onCancel={() => { drawEpoch.current++; setDrawing(null); }} onDone={file => {
+                if (!mounted.current || drawing !== drawEpoch.current) { deleteDrawFile(file.uri); return; }
+                drawEpoch.current++;
+                setDrawing(null);
+                void accept(file);
+            }} /> : null}
             {choosing ? <LibraryChooser api={api} kind={slot.kind} onPick={chooseFromLibrary} onClose={() => setChoosing(false)} /> : null}
             {slot.maxSeconds ? <Text style={styles.hint}>Up to {slot.maxSeconds} seconds.</Text> : null}
             {error ? <Text style={styles.error}>{error}</Text> : null}
