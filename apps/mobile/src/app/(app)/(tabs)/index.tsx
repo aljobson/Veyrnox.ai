@@ -100,6 +100,15 @@ export default function Explore() {
                     <Text style={styles.makeText}>{t('explore.makeVideo')}</Text>
                 </Pressable>
             </View>
+            <Link href="/chat" asChild>
+                <Pressable accessibilityRole="button" accessibilityLabel={t('explore.chat.title')} accessibilityHint={t('explore.chat.hint')} style={styles.chatCard}>
+                    <View style={styles.chatText}>
+                        <Text style={styles.chatName}>{t('explore.chat.title')}</Text>
+                        <Text style={styles.chatBody}>{t('explore.chat.body')}</Text>
+                    </View>
+                    <Text style={styles.chatArrow} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">›</Text>
+                </Pressable>
+            </Link>
             {balance !== null && isLowBalance(balance, cheapestCredits(presets)) ? <LowBalanceNote balance={balance} /> : null}
             {note ? <Text style={styles.note} accessibilityLiveRegion="polite">{note}</Text> : null}
 
@@ -219,6 +228,11 @@ const styles = StyleSheet.create({
     make: { flexGrow: 1, minHeight: 44, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.accent, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 16 },
     makeText: { color: colors.accentInk, fontWeight: '700', fontSize: 16 },
     off: { opacity: 0.4 },
+    chatCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, minHeight: 44 },
+    chatText: { flex: 1, gap: 2 },
+    chatName: { color: colors.text, fontSize: 16, fontWeight: '700' },
+    chatBody: { color: colors.muted, fontSize: 14 },
+    chatArrow: { color: colors.accent, fontSize: 26, fontWeight: '600' },
     banner: { backgroundColor: colors.surface, borderColor: colors.accent, borderWidth: 1, borderRadius: 12, padding: 14, gap: 4, minHeight: 44, justifyContent: 'center' },
     bannerTitle: { color: colors.accent, fontSize: 17, fontWeight: '700' },
     bannerText: { color: colors.body, fontSize: 15 },
