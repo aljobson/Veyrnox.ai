@@ -72,8 +72,8 @@ import area_pricing from './en/pricing';
 import area_prov from './en/prov';
 import area_public from './en/public';
 import area_publish from './en/publish';
-import area_publishUploads from './en/publishUploads';
 import area_publishLinks from './en/publishLinks';
+import area_publishUploads from './en/publishUploads';
 import area_publishWorkflows from './en/publishWorkflows';
 import area_queue from './en/queue';
 import area_queues from './en/queues';
@@ -166,8 +166,8 @@ const catalog = {
     ...area_prov,
     ...area_public,
     ...area_publish,
-    ...area_publishUploads,
     ...area_publishLinks,
+    ...area_publishUploads,
     ...area_publishWorkflows,
     ...area_queue,
     ...area_queues,
