@@ -326,6 +326,28 @@ createServer(async (req, res) => {
         return send(res, 400, { error: 'invalid_body' });
     }
     if (path === '/api/v1/social/analytics') return send(res, 200, { account: { id: 'acc-1', network: 'instagram', display_name: 'Veyrnox Studio', status: 'active' }, sync: { last_ok_at: '2026-10-18T06:00:00Z', failing: false }, evolution: [{ date: '2026-10-17', metrics: { followers: 1240, reach: 5300 } }, { date: '2026-10-18', metrics: { followers: 1262, reach: 6120, video_views: 880 } }], posts: [{ id: 'ap-1', published_at: '2026-10-17T09:00:00Z', type: 'reel', permalink: 'https://www.instagram.com/p/mock/', caption: 'Behind the scenes cut.', metrics: { likes: 140, comments: 12 } }] });
+    // Publish workflows: two saved ones you can edit, switch on or off, create and delete. State is kept while the mock runs.
+    const WORKFLOWS = (globalThis.__MOCK_WORKFLOWS ??= [
+        { id: '66666666-6666-4666-8666-666666666666', name: 'Shipping questions', kind: 'message', match_mode: 'contains', keyword: 'ship', reply_text: 'We ship worldwide, usually in 5 to 7 days.', enabled: true, suggestion_count: 12, updated_at: '2026-10-19T09:00:00Z', account_id: null },
+        { id: '77777777-7777-4777-8777-777777777777', name: 'Welcome comments', kind: 'comment', match_mode: 'exact', keyword: 'hello', reply_text: 'Welcome aboard!', enabled: false, suggestion_count: 3, updated_at: '2026-10-18T09:00:00Z', account_id: null },
+    ]);
+    if (path === '/api/v1/social/workflows' && req.method === 'GET') return send(res, 200, { workflows: WORKFLOWS });
+    if (path === '/api/v1/social/workflows' && req.method === 'PUT') {
+        const row = { name: String(body.name || '').trim(), kind: body.kind ?? null, match_mode: body.matchMode, keyword: String(body.keyword || '').trim(), reply_text: String(body.replyText || '').trim(), enabled: body.enabled === true, account_id: body.accountId ?? null, updated_at: new Date().toISOString() };
+        if (!row.name || !row.keyword || !row.reply_text) return send(res, 400, { error: 'invalid_workflow' });
+        const i = WORKFLOWS.findIndex((w) => w.id === body.id);
+        if (i >= 0) { Object.assign(WORKFLOWS[i], row); return send(res, 200, { id: body.id, created: false }); }
+        const id = `88888888-8888-4888-8888-${String(Date.now()).slice(-12).padStart(12, '0')}`;
+        WORKFLOWS.push({ id, suggestion_count: 0, ...row });
+        return send(res, 201, { id, created: true });
+    }
+    if (path === '/api/v1/social/workflows' && req.method === 'DELETE') {
+        const id = new URL(req.url, 'http://x').searchParams.get('id');
+        const i = WORKFLOWS.findIndex((w) => w.id === id);
+        if (i < 0) return send(res, 404, { error: 'not_found' });
+        WORKFLOWS.splice(i, 1);
+        return send(res, 200, { deleted: true });
+    }
     // Workspaces and projects (create, rename, delete and restore keep their state while the mock runs). The real routes answer errors as {error:{code,message}}, an object.
     const PROJECTS = (globalThis.__MOCK_PROJECTS ??= [
         { id: 'c1111111-1111-4111-8111-111111111111', workspace_id: 'w1111111-1111-4111-8111-111111111111', owner_id: 'u1', name: 'Spring launch reel', version: 54, created_at: '2026-10-01T10:00:00Z', updated_at: '2026-10-18T09:00:00Z' },
@@ -417,7 +439,7 @@ createServer(async (req, res) => {
         return send(res, 200, { attached: true });
     }
     if (path === '/api/v1/store-purchases/customer') return send(res, 200, { rc_customer_id: '3f2b8a52-6c0e-4d7a-9b1f-0a1b2c3d4e5f' });
-    if (path === '/api/v1/social/plan') return send(res, 200, { plans: [], entitlement: { tier: 'free', subscription: null } });
+    if (path === '/api/v1/social/plan') return send(res, 200, { plans: [], entitlement: { tier: 'publish', account_limit: 5, analytics_days: 366, best_time_enabled: true, subscription: { source: 'stripe', status: 'active', current_period_end: '2026-11-20T12:00:00Z', cancel_at_period_end: false } } });
 
     // Cinema comments (ADR-0142, server ADR-0081): read hides blocked authors (as the real read does), a submit waits for
     // review, a report returns open, and a repeated Idempotency-Key is a replay.

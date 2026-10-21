@@ -1,7 +1,8 @@
 import { ApiError, type ApiClient } from './api';
 import type { PlanSource, PublishTier } from './publishPlan';
 
-// GET-only by design: the web saves an entire workflow with PUT; there is no safe PATCH toggle.
+// Read, then edit like the web: the web saves a whole workflow with PUT (there is no PATCH toggle), so switching one on or off
+// sends the workflow's current fields with `enabled` flipped. Delete is DELETE ?id=.
 const object = (v: unknown): Record<string, unknown> | null =>
     v !== null && typeof v === 'object' && !Array.isArray(v) ? v as Record<string, unknown> : null;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -25,6 +26,7 @@ export interface Workflow {
     readonly suggestionCount: number | null;
     readonly updatedAt: string | null;
     readonly replyText: string;
+    readonly accountId: string | null;
     readonly allAccounts: boolean;
     readonly accountName: string;
     readonly network: string;
@@ -42,7 +44,7 @@ export function parseWorkflows(body: unknown): Workflow[] {
             matchMode: r.match_mode === 'contains' || r.match_mode === 'exact' ? r.match_mode : 'unknown',
             keyword: bounded(r.keyword, 100), enabled: boolean(r.enabled),
             suggestionCount: number(r.suggestion_count), updatedAt: date(r.updated_at),
-            replyText: bounded(r.reply_text, 8000), allAccounts: r.account_id === null,
+            replyText: bounded(r.reply_text, 8000), accountId: typeof r.account_id === 'string' && UUID.test(r.account_id) ? r.account_id : null, allAccounts: r.account_id === null,
             accountName: bounded(r.account_name, 80), network: bounded(r.network, 40),
         }];
     });
@@ -50,6 +52,37 @@ export function parseWorkflows(body: unknown): Workflow[] {
 
 export const fetchWorkflows = async (api: ApiClient): Promise<Workflow[]> =>
     parseWorkflows(await api.request('/api/v1/social/workflows'));
+
+export interface WorkflowDraft {
+    readonly id: string | null;
+    readonly accountId: string | null;
+    readonly name: string;
+    readonly kind: 'message' | 'comment' | 'review' | null;
+    readonly matchMode: 'contains' | 'exact';
+    readonly keyword: string;
+    readonly replyText: string;
+    readonly enabled: boolean;
+}
+
+// The same limits the route enforces: name 1-80, keyword 1-100, reply 1-8000 after trimming.
+export function cleanWorkflowDraft(d: WorkflowDraft): WorkflowDraft | null {
+    const name = d.name.trim();
+    const keyword = d.keyword.trim();
+    const replyText = d.replyText.trim();
+    if (!name || name.length > 80 || !keyword || keyword.length > 100 || !replyText || replyText.length > 8000) return null;
+    return { ...d, name, keyword, replyText };
+}
+
+export const draftOf = (w: Workflow): WorkflowDraft => ({
+    id: w.id, accountId: w.accountId, name: w.name,
+    kind: w.kind === 'message' || w.kind === 'comment' || w.kind === 'review' ? w.kind : null,
+    matchMode: w.matchMode === 'exact' ? 'exact' : 'contains', keyword: w.keyword, replyText: w.replyText, enabled: w.enabled === true,
+});
+
+export const saveWorkflow = (api: ApiClient, d: WorkflowDraft) =>
+    api.request('/api/v1/social/workflows', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) });
+export const deleteWorkflow = (api: ApiClient, id: string) =>
+    api.request(`/api/v1/social/workflows?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
 
 export interface WorkflowPlan {
     readonly tier: PublishTier;

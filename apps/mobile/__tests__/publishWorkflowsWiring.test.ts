@@ -21,11 +21,13 @@ test('Publish has one Workflows entry and the destination has the plan and expan
     expect(screen).toContain('touchTarget');
 });
 
-test('the new surface cannot purchase, send, toggle or open billing and has no custom motion', () => {
+test('the surface cannot purchase or open billing, saves only through the workflow routes, and has no custom motion', () => {
     const screen = read('app/(app)/publish/workflows.tsx');
     const client = read('lib/publishWorkflows.ts');
-    expect(screen).not.toMatch(/UnlockCard|paywall|purchase|checkout|\/plan\/portal|Switch|TextInput|Animated|LayoutAnimation/);
-    expect(client).not.toMatch(/method:\s*['"](?:POST|PATCH|PUT|DELETE)/);
+    expect(screen).not.toMatch(/UnlockCard|paywall|purchase|checkout|\/plan\/portal|Animated|LayoutAnimation/);
+    // Editing and switching on or off save the whole workflow with PUT, like the web; delete is DELETE. Nothing else writes.
+    expect(client.match(/method:\s*['"](?:POST|PATCH|PUT|DELETE)['"]/g)).toEqual(["method: 'PUT'", "method: 'DELETE'"]);
+    expect(client).toContain('/api/v1/social/workflows');
     expect(screen).toContain('`${API_BASE}/app/publish/workflows`');
     expect(screen.match(/openBrowserAsync/g)).toHaveLength(1);
     expect(screen).toMatch(/<Text[^>]*>\{t\(managementKey\)\}<\/Text>/);

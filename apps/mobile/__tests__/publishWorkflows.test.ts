@@ -23,7 +23,7 @@ describe('Publish workflow reads', () => {
         expect(result[0]).toEqual({
             id: ID, name: 'Welcome', kind: 'comment', matchMode: 'contains', keyword: 'hello',
             enabled: true, suggestionCount: 3, updatedAt: edited, replyText: 'Welcome aboard',
-            allAccounts: true, accountName: '', network: '',
+            accountId: null, allAccounts: true, accountName: '', network: '',
         });
         expect(JSON.stringify(result)).not.toMatch(/lastRun|neverRun/);
     });
