@@ -31,7 +31,7 @@ function scenario(run: (dir: string, git: (...args: string[]) => string, write: 
         registry(dir);
         git('add', '.'); git('commit', '-m', 'fixture');
         run(dir, git, write);
-    } finally { rmSync(dir, { recursive: true, force: true }); }
+    } finally { rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }); }
 }
 function registry(dir: string) { execFileSync('node', ['scripts/gen-en-registry.mjs'], { cwd: dir }); }
 function catalog(dir: string) {
