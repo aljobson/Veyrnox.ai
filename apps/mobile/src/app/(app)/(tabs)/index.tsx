@@ -5,11 +5,13 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, 
 import { useAuth } from '../../../auth/AuthProvider';
 import { VEY_CLEARANCE } from '../../../components/VeyMascot';
 import { selectedState, touchTarget } from '../../../lib/a11y';
-import { ALL_CATEGORIES, ALL_TYPES, categoriesFor, filterPresets, firstModelFor, pickUp, presetKind, promptHref, recentCreations, type TypeFilter } from '../../../lib/explore';
+import { celebrateFinished } from '../../../lib/celebrate';
+import { ALL_CATEGORIES, ALL_TYPES, categoriesFor, filterPresets, firstModelFor, heroPicks, pickUp, presetKind, promptHref, recentCreations, type TypeFilter } from '../../../lib/explore';
 import { t } from '../../../lib/i18n';
 import { fetchCatalogCached, mediaApi, type CatalogModel, type Job, type Kind } from '../../../lib/media';
 import { LowBalanceNote } from '../../../components/LowBalanceNote';
 import { TemplateCollage } from '../../../components/TemplateCollage';
+import { TryThisRow } from '../../../components/TryThisRow';
 import { cheapestCredits, isLowBalance } from '../../../lib/lowBalance';
 import { useBalance } from '../../../lib/useBalance';
 import { fetchPresets, presetHref, presetPrice, type Preset } from '../../../lib/presets';
@@ -58,13 +60,18 @@ export default function Explore() {
         useCallback(() => {
             mediaApi(api)
                 .listJobs()
-                .then((page) => setJobs(page.jobs))
+                .then((page) => {
+                    // A creation that finished while you were elsewhere gets its cheer and buzz now.
+                    celebrateFinished(page.jobs);
+                    setJobs(page.jobs);
+                })
                 .catch(() => {});
         }, [api]),
     );
 
     const categories = useMemo(() => categoriesFor(presets ?? [], type), [presets, type]);
     const shown = useMemo(() => filterPresets(presets ?? [], { type, category, query }).slice(0, SHOWN), [presets, type, category, query]);
+    const hero = useMemo(() => heroPicks(presets ?? []), [presets]);
 
     function pickType(next: TypeFilter) {
         setType(next);
@@ -88,6 +95,7 @@ export default function Explore() {
 
     return (
         <ScrollView style={styles.scroll} contentContainerStyle={styles.screen} keyboardShouldPersistTaps="handled" onScroll={onScroll} scrollEventThrottle={64}>
+            {presetsFailed || (presets !== null && hero.length === 0) ? null : <TryThisRow presets={presets === null ? null : hero} onOpen={(p) => router.push(presetHref(p))} />}
             <View style={styles.composer}>
                 <TextInput
                     accessibilityLabel={t('explore.promptLabel')}

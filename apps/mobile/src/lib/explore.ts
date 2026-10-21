@@ -49,6 +49,32 @@ export type TypeFilter = typeof ALL_TYPES | Kind;
 
 export const presetKind = (p: Preset): Kind | null => kindOf(p.modality);
 
+// A template that starts from the person's own photo (an image-to-video model), so Create opens asking for one.
+export const needsPhoto = (p: Preset): boolean => p.modality.startsWith('image-to-');
+
+// The few templates the home leads with: ones with a picture, never audio (a still cannot show it), and ones that start
+// from words alone before ones that first ask for a photo, so "Try it" is one tap where it can be. New ones first
+// within each, a different category each where there are enough. Order otherwise stays as the server sent it.
+export function heroPicks(presets: readonly Preset[], count = 3): Preset[] {
+    const shown = presets.filter((p) => p.posterUrl && presetKind(p) !== 'audio');
+    const ready = shown.filter((p) => !needsPhoto(p));
+    const upload = shown.filter(needsPhoto);
+    const ordered = [...ready.filter((p) => p.isNew), ...ready.filter((p) => !p.isNew), ...upload.filter((p) => p.isNew), ...upload.filter((p) => !p.isNew)];
+    const picks: Preset[] = [];
+    const categories = new Set<string>();
+    for (const p of ordered) {
+        if (picks.length === count) break;
+        if (categories.has(p.category)) continue;
+        categories.add(p.category);
+        picks.push(p);
+    }
+    for (const p of ordered) {
+        if (picks.length === count) break;
+        if (!picks.includes(p)) picks.push(p);
+    }
+    return picks;
+}
+
 const TYPE_ORDER: readonly Kind[] = ['image', 'video', 'audio'];
 
 // The type chips that have at least one template, in a fixed order.
