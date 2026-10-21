@@ -6,6 +6,21 @@ import { capabilityPath, scrubTelemetryTree, scrubTelemetryUrl, telemetryPath, u
 
 const locales = ['', 'en', 'de', 'es', 'fr', 'pt', 'ru', 'ar', 'zh', 'ja', 'ko', 'hi'];
 const paths = ['social/review', 'social/team/invite', 'media/social', 'api/social/approvals', 'api/social/team'];
+test('SDK Date timestamps survive redaction as independent Date copies', () => {
+  const timestamp = new Date('2026-10-21T12:34:56.789Z');
+  const event = { timestamp, properties: { nested: { receivedAt: timestamp }, $pathname: '/social/review/SYNTHETIC_BEARER' } };
+  const clean = sanitisePostHogEvent(event);
+  const sentry = scrubEvent({ timestamp, breadcrumbs: [{ category: 'fetch', timestamp }] });
+  for (const date of [clean.timestamp, clean.properties.nested.receivedAt, sentry.timestamp, sentry.breadcrumbs[0].timestamp]) {
+    assert.ok(date instanceof Date);
+    assert.equal(date.getTime(), timestamp.getTime());
+    assert.notEqual(date, timestamp);
+  }
+  assert.equal(JSON.parse(JSON.stringify(clean)).timestamp, '2026-10-21T12:34:56.789Z');
+  clean.timestamp.setUTCFullYear(2000);
+  assert.equal(timestamp.toISOString(), '2026-10-21T12:34:56.789Z');
+  assert.equal(event.properties.$pathname, '/social/review/SYNTHETIC_BEARER');
+});
 test('shared telemetry boundary tolerates malformed URLs, primitive values and circular SDK structures', () => {
   assert.equal(scrubTelemetryUrl(null), null);
   assert.equal(scrubTelemetryUrl('/models/%invalid?private=x'), '/models/%invalid');
