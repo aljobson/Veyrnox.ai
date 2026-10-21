@@ -90,7 +90,7 @@ async function resolveImport(specifier, importer, productRoot) {
 async function collectRouteSources(pageFile, productRoot, sourceCache) {
   const visited = new Set();
   const queue = [pageFile];
-  while (queue.length && visited.size < 80) {
+  while (queue.length && visited.size < 96) {
     const file = queue.shift();
     if (visited.has(file)) continue;
     visited.add(file);

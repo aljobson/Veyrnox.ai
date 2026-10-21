@@ -11,6 +11,7 @@ import { gatewayFetch, GatewayError } from '../_lib/gateway';
 import { getStoredSession, onSessionChange } from '../../lib/authClient';
 import { accountLabel } from '../_lib/account';
 import { useProjectsEnabled } from './ProjectsFlag';
+import { usePublishEnabled } from './PublishFlag';
 import { useVideoEnhancePreview } from '../_lib/useVideoEnhancePreview';
 import { useEditorEnabled } from './EditorFlag';
 import { NAV_CATEGORIES, PRIMARY_NAV_CATEGORIES } from '../_lib/tokens';
@@ -165,6 +166,7 @@ const SIDE_ICONS = {
   ),
   cube: <path d="m12 3 8 4.5v9L12 21l-8-4.5v-9ZM12 12l8-4.5M12 12 4 7.5M12 12v9" />,
   book: <path d="M5 4h10a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3Zm0 13a3 3 0 0 1 3-3h10" />,
+  send: <path d="m21 3-9.5 9.5M21 3l-6.5 18-3-8.5L3 9.5Z" />,
   plug: <path d="M9 3v5m6-5v5M7 8h10v3a5 5 0 0 1-10 0Zm5 8v5" />,
 };
 
@@ -348,6 +350,7 @@ function AppSidebar({ sections, homeLabel, logoLabel, accountLabel, accountHref,
 export function AppNav({ balance, active = 'explore', readAccount = true }) {
   const { t, locale } = useI18n();
   const projectsEnabled = useProjectsEnabled();
+  const publishEnabled = usePublishEnabled();
   const enhanceEnabled = useVideoEnhancePreview();
   const editorEnabled = useEditorEnabled();
   const items = [
@@ -361,6 +364,7 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
     { key: 'library', href: '/app/library', label: t("label.Library") },
     ...(editorEnabled ? [{ key: 'editor', href: '/app/editor', label: t("label.Video editor") }] : []),
     ...(projectsEnabled ? [{ key: 'projects', href: '/app/projects', label: t("label.Projects") }] : []),
+    ...(publishEnabled ? [{ key: 'publish', href: '/app/publish', label: t("app.nav.publish") }] : []),
     ...(enhanceEnabled ? [{ key: 'enhance', href: '/app/enhance', label: t("label.Enhance") }] : []),
   ];
   const menuItems = [
@@ -383,6 +387,7 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
     { id: 'assets', label: t('app.nav.side.assets'), items: [
       { key: 'library', href: '/app/library', label: t('label.Library'), icon: 'library' },
       ...(projectsEnabled ? [{ key: 'projects', href: '/app/projects', label: t('label.Projects'), icon: 'folder' }] : []),
+      ...(publishEnabled ? [{ key: 'publish', href: '/app/publish', label: t('app.nav.publish'), icon: 'send' }] : []),
       { key: 'credits', href: '/app/credits', label: t('label.Credits'), icon: 'coins' },
     ] },
     { id: 'inspire', label: t('app.nav.side.inspire'), items: [
