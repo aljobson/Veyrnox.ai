@@ -21,7 +21,7 @@ import { parseStudioDrafts, skillById, skillInstructions, withoutDrafts, type Sk
 import { isQuiet, makeSendKey, resolveResumedSend, resolveStoppedSend, RESUME_QUIET_MS, resumeNoticeKey, stopNoticeKey, type StopOutcome } from '../../../lib/chatStop';
 import { plural, t } from '../../../lib/i18n';
 import { ensureOnline, OFFLINE_PAID_MESSAGE, OfflineError } from '../../../lib/network';
-import { colors } from '../../../theme';
+import { colors, radius } from '../../../theme';
 
 const ERROR_TEXT: Record<string, string> = {
     insufficient_credits: 'Not enough credits for this reply.',
@@ -379,7 +379,7 @@ export default function Conversation() {
             {thread && settingsOpen ? <ChatSettings visible thread={thread} models={allModels} onSave={saveSettings} onClose={() => setSettingsOpen(false)} /> : null}
             <MakePanel visible={makeOpen} initialPrompt={draft.trim().slice(0, 2000)} onClose={() => setMakeOpen(false)} />
             <LibraryImagePicker visible={pickerOpen} chosen={images} max={maxImages} onClose={() => setPickerOpen(false)} onPick={(img) => setImages((cur) => (cur.length < maxImages && !cur.some((c) => c.assetId === img.assetId) ? [...cur, img] : cur))} />
-            <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+            <View style={[styles.composer, { marginBottom: Math.max(insets.bottom, 12) }]}>
                 <TextInput
                     style={styles.input}
                     value={draft}
@@ -414,30 +414,30 @@ export default function Conversation() {
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
     center: { flex: 1 },
-    list: { padding: 16, gap: 10 },
-    bubble: { maxWidth: '85%', borderRadius: 14, padding: 12 },
-    user: { alignSelf: 'flex-end', backgroundColor: colors.accent },
-    assistant: { alignSelf: 'flex-start', backgroundColor: colors.surface },
-    text: { color: colors.text, fontSize: 16 },
-    userText: { color: colors.accentInk },
+    list: { padding: 16, gap: 16 },
+    bubble: { maxWidth: '88%', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 12 },
+    user: { alignSelf: 'flex-end', backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
+    assistant: { alignSelf: 'stretch', maxWidth: '100%', paddingHorizontal: 4 },
+    text: { color: colors.text, fontSize: 16, lineHeight: 24 },
+    userText: { color: colors.text },
     cost: { color: colors.muted, fontSize: 12, marginTop: 4 },
     error: { color: colors.danger, paddingHorizontal: 16, paddingBottom: 4 },
     notice: { color: colors.body, paddingHorizontal: 16, paddingBottom: 4 },
-    toolbar: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingTop: 4 },
-    tool: { minHeight: MIN_TARGET, justifyContent: 'center', paddingHorizontal: 8 },
-    toolText: { color: colors.accent, fontSize: 15 },
+    toolbar: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 6 },
+    tool: { minHeight: MIN_TARGET, justifyContent: 'center', paddingHorizontal: 14, borderRadius: radius.pill, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
+    toolText: { color: colors.text, fontSize: 14, fontWeight: '600' },
     renameInput: { flex: 1 },
     again: { alignSelf: 'flex-start', minHeight: MIN_TARGET, justifyContent: 'center', paddingHorizontal: 4 },
-    composer: { flexDirection: 'row', gap: 8, paddingHorizontal: 12, paddingTop: 8, borderTopColor: colors.border, borderTopWidth: StyleSheet.hairlineWidth },
-    input: { flex: 1, color: colors.text, backgroundColor: colors.surface, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, maxHeight: 120 },
-    send: { backgroundColor: colors.accent, borderRadius: 12, paddingHorizontal: 16, minHeight: MIN_TARGET, justifyContent: 'center' },
+    composer: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginHorizontal: 12, marginTop: 8, paddingLeft: 16, paddingRight: 6, paddingVertical: 6, borderRadius: 28, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
+    input: { flex: 1, color: colors.text, paddingVertical: 10, maxHeight: 120, fontSize: 16 },
+    send: { backgroundColor: colors.accent, borderRadius: radius.pill, paddingHorizontal: 18, minHeight: MIN_TARGET, justifyContent: 'center' },
     sendOff: { opacity: 0.4 },
     sendText: { color: colors.accentInk, fontWeight: '600', textAlign: 'center' },
     sendPrice: { color: colors.accentInk, fontSize: 12, textAlign: 'center' },
     starters: { gap: 10 },
-    starter: { borderRadius: 14, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 14, gap: 4 },
+    starter: { borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 14, gap: 4 },
     starterOn: { borderColor: colors.accent },
     starterName: { color: colors.text, fontSize: 16, fontWeight: '600' },
     starterBlurb: { color: colors.muted, fontSize: 14 },
-    modelLine: { color: colors.muted, fontSize: 13, paddingHorizontal: 12, paddingTop: 8 },
+    modelLine: { color: colors.muted, fontSize: 13, paddingHorizontal: 16, paddingTop: 8 },
 });
