@@ -1,7 +1,7 @@
 'use client';
 import { useI18n } from '../../../components/I18nProvider';
 import { localeTag } from '../../../lib/i18n/locales.mjs';
-import { pluralKey } from '../../../lib/i18n/translate.mjs';
+import { pluralKey, tOr } from '../../../lib/i18n/translate.mjs';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -189,12 +189,12 @@ export function CharacterPanel({ enabled, onToggle, picks, onChange, handoffPick
               <div className="mt-3 grid grid-cols-2 gap-2">
                 {CHARACTER_GROUPS.filter((group) => group.tab === tab).map((group) => (
                   <label key={group.id} className="flex flex-col gap-1">
-                    <span className="font-vx-mono text-[8px] tracking-[0.1em] text-vx-fg-faint uppercase">{group.label}</span>
+                    <span className="font-vx-mono text-[8px] tracking-[0.1em] text-vx-fg-faint uppercase">{tOr(t, `app.data.character.${group.id}`, group.label)}</span>
                     <select
                       value={picks[group.id] || ''}
                       onChange={(event) => {
                         setPick(group.id, event.target.value);
-                        setNotice(`${group.label}: ${characterOptionLabel(group.id, event.target.value) || 'Any'}.`);
+                        setNotice(`${tOr(t, `app.data.character.${group.id}`, group.label)}: ${characterOptionLabel(group.id, event.target.value) || t('app.create.character.any')}.`);
                       }}
                       className="w-full rounded-xl border border-vx-field bg-vx-base px-3 py-2 text-xs text-vx-fg focus:border-vx-accent focus:outline-hidden"
                     >

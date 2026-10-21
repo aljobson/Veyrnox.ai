@@ -90,7 +90,8 @@ test('no surface claims a refund the ledger has not made', () => {
     // the single canvas and the multi-image grid render; neither keeps its own
     // wording, and neither reads a label by state alone.
     for (const [name, src] of [['create', create], ['grid', grid]]) {
-        assert.match(src, /\{failedJobCopy\(job\)\}/, name);
+        // The studio canvas hands the canonical English to the locale wrapper, which swaps the refund phrase for the pending one until /jobs/:id reports refunded.
+        assert.match(src, name === 'create' ? /\{failedCreationCopy\(t, locale, job, failedJobCopy\(job\)\)\}/ : /\{failedJobCopy\(job\)\}/, name);
         assert.doesNotMatch(src, /Credits refunded\./, `${name} has its own refund wording`);
         assert.match(src, /jobStateUi\(job\)/, name);
         assert.doesNotMatch(src, /REFUNDED|STATE_UI/, `${name} has its own state label`);
