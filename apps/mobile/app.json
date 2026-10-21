@@ -158,6 +158,11 @@
               "scheme": "https",
               "host": "veyrnox.ai",
               "pathPrefix": "/app/publish"
+            },
+            {
+              "scheme": "https",
+              "host": "veyrnox.ai",
+              "pathPrefix": "/social/team/invite/"
             }
           ],
           "category": [
