@@ -85,6 +85,11 @@ export default function Welcome() {
                 >
                     <Text style={styles.primaryText}>{last ? t('welcome.go') : t('welcome.next')}</Text>
                 </Pressable>
+                {index > 0 ? (
+                    <Pressable accessibilityRole="button" style={[touchTarget, styles.skip]} onPress={() => setIndex(index - 1)}>
+                        <Text style={styles.skipText}>{t('public.vey.back')}</Text>
+                    </Pressable>
+                ) : null}
                 {last ? null : (
                     <Pressable accessibilityRole="button" style={[touchTarget, styles.skip]} onPress={() => void done()}>
                         <Text style={styles.skipText}>{t('welcome.skip')}</Text>
