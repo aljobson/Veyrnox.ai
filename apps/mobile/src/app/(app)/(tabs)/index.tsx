@@ -13,6 +13,7 @@ import { cheapestCredits, isLowBalance } from '../../../lib/lowBalance';
 import { useBalance } from '../../../lib/useBalance';
 import { fetchPresets, presetHref, presetPrice, type Preset } from '../../../lib/presets';
 import { colors } from '../../../theme';
+import { useVeyScroll } from '../../../lib/useVeyScroll';
 
 // How many templates the home shows; the rest are on the Templates screen.
 const SHOWN = 24;
@@ -24,6 +25,7 @@ const titleCase = (s: string) => s.charAt(0) + s.slice(1).toLowerCase();
 
 // Explore is the home: say what to make, or start from a template, or pick up what you were making.
 export default function Explore() {
+    const onScroll = useVeyScroll();
     const { api } = useAuth();
     const router = useRouter();
     const [prompt, setPrompt] = useState('');
@@ -80,7 +82,7 @@ export default function Explore() {
     const label = (j: Job) => j.label || t('edit.untitled');
 
     return (
-        <ScrollView style={styles.scroll} contentContainerStyle={styles.screen} keyboardShouldPersistTaps="handled">
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.screen} keyboardShouldPersistTaps="handled" onScroll={onScroll} scrollEventThrottle={64}>
             <TextInput
                 accessibilityLabel={t('explore.promptLabel')}
                 placeholder={t('explore.promptPlaceholder')}
