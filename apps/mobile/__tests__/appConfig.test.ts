@@ -40,8 +40,8 @@ describe('iOS privacy manifest', () => {
 describe('permissions', () => {
     const plugin = (name: string) => (expo.plugins as unknown[]).find((p) => p === name || (Array.isArray(p) && p[0] === name));
 
-    test('camera and microphone are off in the picker, and Face ID is not requested', () => {
-        expect(plugin('expo-image-picker')).toEqual(['expo-image-picker', expect.objectContaining({ cameraPermission: false, microphonePermission: false })]);
+    test('Publish camera and photo wording is explicit; microphone and Face ID remain off', () => {
+        expect(plugin('expo-image-picker')).toEqual(['expo-image-picker', { cameraPermission: 'Veyrnox.ai uses the camera when you take a photo to post with Publish.', photosPermission: 'Veyrnox.ai reads the photo or video you choose, to use as a starting point for a creation or to post with Publish.', microphonePermission: false }]);
         expect(plugin('expo-secure-store')).toEqual(['expo-secure-store', { faceIDPermission: false }]);
     });
 

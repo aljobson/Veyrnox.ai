@@ -63,3 +63,18 @@ describe('approval create', () => {
         expect(approvalCreateErrorKey(new ApiError(0, 'network'))).toBe('approvals.err.createNetwork');
     });
 });
+
+test('upload source validation, body and signatures preserve the job signature', () => {
+    const d = draft({ jobId: '', uploadId: 'u' });
+    expect(validateApproval(d, NOW)).toBeNull();
+    expect(validateApproval(draft({ uploadId: 'u' }), NOW)).toBe('approvals.err.creation');
+    expect(approvalBody(d, 'key').media).toEqual([{ mediaType: 'image', uploadId: 'u' }]);
+    expect(signatureOf(draft())).toBe('["approval","job-1","image",["a1"],"Hi","2026-10-21T09:00:00.000Z",["lee@x.test"],"any"]');
+    expect(signatureOf(d)).toBe('["approval","upload:u","image",["a1"],"Hi","2026-10-21T09:00:00.000Z",["lee@x.test"],"any"]');
+});
+test.each([[404, 'MEDIA_NOT_FOUND'], [400, 'invalid_media']] as const)('upload-only error mapping %s %s', (status, code) => {
+    const err = new ApiError(status, code);
+    expect(approvalCreateErrorKey(err, true)).toBe('publishUploads.unavailable');
+    expect(approvalCreateErrorKey(err)).toBe(approvalCreateErrorKey(err, false));
+    expect(approvalCreateErrorKey(err)).not.toBe('publishUploads.unavailable');
+});

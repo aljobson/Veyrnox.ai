@@ -183,8 +183,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Veyrnox.ai reads the photo or video you choose to use as a starting point for a creation.",
-          "cameraPermission": false,
+          "photosPermission": "Veyrnox.ai reads the photo or video you choose, to use as a starting point for a creation or to post with Publish.",
+          "cameraPermission": "Veyrnox.ai uses the camera when you take a photo to post with Publish.",
           "microphonePermission": false
         }
       ],
