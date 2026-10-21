@@ -1,4 +1,4 @@
-// Geometry for the onboarding mascot: it hops along the capitals of "VEYRNOX" one letter at a time (each letter sinks
+// Geometry for the onboarding mascot: it runs along the capitals of "VEYRNOX" one letter at a time (each letter sinks
 // under its weight), steps over the dot onto the "a", then jumps onto a dotless i and stays there as the dot of the "i"
 // in ".ai". Pure numbers, so the path is testable without rendering.
 
@@ -8,12 +8,20 @@ export const A_INDEX = 8;
 export const I_INDEX = 9;
 
 export const MASCOT_ASPECT = 108 / 102; // assets/mascot.png (cropped to the figure), width / height
+
+// The layered pictures in assets/vey sit on one 480 x 510 canvas; FIGURE is where the drawn figure sits on it (left, top,
+// right, bottom), which is what mascot.png was cropped to. RUN is the run cycle in source pixels: how high a foot lifts,
+// how far the feet scissor, how much the body bobs, and how far the arms swing (degrees), over one left-right step.
+export const SOURCE = { width: 480, height: 510 } as const;
+export const FIGURE = { left: 12, top: 39, right: 478, bottom: 492 } as const;
+export const RUN = { lift: 48, reach: 32, bob: 11, armSwing: 64 } as const;
+export const STRIDE_MS = 370; // one full left-right step; the strides land every HOP_MS, two to a step
 export const DOT_SCALE = 0.55; // the mascot's size once it is the dot, against its running size
-export const HOP_MS = 380; // one slow hop from letter to letter
-export const LEAP_IN_MS = 900; // the first leap, in from off the left edge
-export const PRESS_MS = 130; // the letter takes the weight
-export const JUMP_MS = 560; // the last jump onto the i
-export const HOP_HEIGHT_RATIO = 0.32; // hop apex above the higher of the two perches, in mascot heights
+export const HOP_MS = 185; // one quick stride from letter to letter
+export const LEAP_IN_MS = 520; // the first leap, in from off the left edge
+export const PRESS_MS = 45; // the letter takes the weight
+export const JUMP_MS = 360; // the last jump onto the i
+export const HOP_HEIGHT_RATIO = 0.12; // stride height above the higher of the two perches: low, so it reads as a run
 export const JUMP_HEIGHT_RATIO = 0.75;
 export const SINK_RATIO = 0.075; // how far a letter sinks, against the font size
 export const STEM_GAP_RATIO = 0.06; // air between the stem and the dot, in mascot heights

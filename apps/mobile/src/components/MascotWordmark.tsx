@@ -2,14 +2,18 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { colors } from '../theme';
+import { VeyRunner } from './VeyRunner';
 import {
     DOT_SCALE,
+    FIGURE,
+    HOP_MS,
     FALLBACK_CAP_TOP,
     FALLBACK_STEM_TOP,
     I_INDEX,
     JUMP_MS,
     PRESS_MS,
     SINK_RATIO,
+    STRIDE_MS,
     WORD,
     mascotPath,
     type Box,
@@ -18,7 +22,7 @@ import {
 
 const ACCENT_FROM = 7; // ".ai" is aqua, "VEYRNOX" is white (the website lockup)
 
-// The website lockup (aqua V mark + "VEYRNOX.ai") where the mascot leaps in, hops along the capitals one letter at a time
+// The website lockup (aqua V mark + "VEYRNOX.ai") where the mascot leaps in, runs along the capitals one letter at a time
 // (each letter sinks under its weight), and lands on a dotless i as its dot. The row reads as "Veyrnox.ai" to a screen
 // reader; the mascot is decoration. Reduce Motion skips straight to the end.
 export function MascotWordmark({ fontSize = 36 }: { fontSize?: number }) {
@@ -27,6 +31,7 @@ export function MascotWordmark({ fontSize = 36 }: { fontSize?: number }) {
     const [stemTop, setStemTop] = useState(fontSize * FALLBACK_STEM_TOP);
     const [reduceMotion, setReduceMotion] = useState<boolean | null>(null);
     const mascotHeight = fontSize * 0.95;
+    const figureScale = mascotHeight / (FIGURE.bottom - FIGURE.top); // screen points per source pixel
 
     useEffect(() => {
         let live = true;
@@ -42,97 +47,109 @@ export function MascotWordmark({ fontSize = 36 }: { fontSize?: number }) {
         return mascotPath(layout, mascotHeight, fontSize);
     }, [boxes, capTop, stemTop, mascotHeight, fontSize]);
 
-    const x = useRef(new Animated.Value(0)).current;
-    const y = useRef(new Animated.Value(0)).current;
-    const tilt = useRef(new Animated.Value(0)).current; // 0 upright, 1 leaning into the hop
+    const tilt = useRef(new Animated.Value(0)).current; // 0 upright, 1 leaning into the run
     const squash = useRef(new Animated.Value(0)).current; // 0 neutral to 1 squashed
     const shrink = useRef(new Animated.Value(0)).current; // 0 running size to 1 dot size
     const shown = useRef(new Animated.Value(0)).current;
-    const press = useRef(WORD.map(() => new Animated.Value(0))).current; // per letter, 0 at rest to 1 under the weight
+    const stride = useRef(new Animated.Value(0)).current; // one left-right step, 0 to 1 on a loop while it runs
+    const along = useRef(new Animated.Value(0)).current; // 0 at the start of the run, 1 on the a: everything on the run follows this
+    const jumpX = useRef(new Animated.Value(0)).current; // the last jump, from the a onto the i, relative to the a
+    const jumpY = useRef(new Animated.Value(0)).current;
+    const release = useRef(new Animated.Value(1)).current; // 1 while the a carries the weight, 0 once it has jumped off
     const started = useRef(false);
 
+    // One continuous run: where it is, how high its feet are and how hard each letter is pressed are all read off `along`
+    // on the native thread, so there is no pause at a letter and nothing waits on the JS thread.
+    const track = useMemo(() => {
+        if (!path) return null;
+        const total = path.stops.reduce((t, stop) => t + stop.durationMs, 0);
+        const marks = [0];
+        let at = 0;
+        path.stops.forEach((stop) => {
+            at += stop.durationMs;
+            marks.push(at / total);
+        });
+        const clamp = { extrapolate: 'clamp' as const };
+        const xs = [path.start.x, ...path.stops.map((stop) => stop.x)];
+        const ys = [path.start.y, ...path.stops.map((stop) => stop.y)];
+        const near = (HOP_MS / total) * 0.6;
+        const press = new Map<number, Animated.AnimatedInterpolation<number>>();
+        path.stops.forEach((stop, n) => {
+            const f = marks[n + 1];
+            const dip = along.interpolate({ inputRange: [f - near, f, f + near], outputRange: [0, 1, 0], ...clamp });
+            press.set(stop.letter, n === path.stops.length - 1 ? Animated.multiply(dip, release).interpolate({ inputRange: [0, 1], outputRange: [0, 1] }) : dip);
+        });
+        return {
+            total,
+            x: along.interpolate({ inputRange: marks, outputRange: xs, ...clamp }),
+            y: along.interpolate({ inputRange: marks, outputRange: ys, ...clamp }),
+            press,
+        };
+    }, [path, along, release]);
+
     useEffect(() => {
-        if (!path || reduceMotion === null || started.current) return;
+        if (!path || !track || reduceMotion === null || started.current) return;
         started.current = true;
+        const last = path.stops[path.stops.length - 1];
         if (reduceMotion) {
-            x.setValue(path.jump.x);
-            y.setValue(path.jump.dotY);
+            along.setValue(1);
+            jumpX.setValue(path.jump.x - last.x);
+            jumpY.setValue(path.jump.dotY - last.y);
+            release.setValue(0);
             shrink.setValue(1);
             shown.setValue(1);
             return;
         }
         const native = { useNativeDriver: true };
-        x.setValue(path.start.x);
-        y.setValue(path.start.y);
         shown.setValue(1);
-
-        const steps: Animated.CompositeAnimation[] = [];
-        path.stops.forEach((stop, n) => {
-            const half = stop.durationMs / 2;
-            const prev = n > 0 ? path.stops[n - 1] : null;
-            const air = [
-                Animated.timing(x, { toValue: stop.x, duration: stop.durationMs, easing: Easing.inOut(Easing.sin), ...native }),
-                Animated.sequence([
-                    Animated.timing(y, { toValue: stop.apexY, duration: half, easing: Easing.out(Easing.quad), ...native }),
-                    Animated.timing(y, { toValue: stop.y, duration: half, easing: Easing.in(Easing.quad), ...native }),
-                ]),
-                Animated.sequence([
-                    Animated.timing(tilt, { toValue: 1, duration: half, ...native }),
-                    Animated.timing(tilt, { toValue: 0, duration: half, ...native }),
-                ]),
-            ];
-            // The letter it just left springs back up as it takes off.
-            if (prev) air.push(Animated.spring(press[prev.letter], { toValue: 0, friction: 3, tension: 160, ...native }));
-            steps.push(Animated.parallel(air));
-            // Landing: the letter takes the weight and the mascot sinks with it.
-            steps.push(
-                Animated.parallel([
-                    Animated.timing(press[stop.letter], { toValue: 1, duration: PRESS_MS, easing: Easing.out(Easing.quad), ...native }),
-                    Animated.timing(y, { toValue: stop.y + path.sink, duration: PRESS_MS, easing: Easing.out(Easing.quad), ...native }),
-                    Animated.sequence([
-                        Animated.timing(squash, { toValue: 1, duration: PRESS_MS / 2, ...native }),
-                        Animated.timing(squash, { toValue: 0, duration: PRESS_MS / 2, ...native }),
-                    ]),
-                ]),
-            );
-        });
-        const last = path.stops[path.stops.length - 1];
-        // The big jump from the a onto the i, then it squashes and shrinks into the dot.
-        steps.push(
+        const run = Animated.sequence([
+            // The run along the capitals and onto the a, leaning forward, with no stop at any letter.
             Animated.parallel([
-                Animated.timing(x, { toValue: path.jump.x, duration: JUMP_MS, easing: Easing.linear, ...native }),
+                Animated.timing(along, { toValue: 1, duration: track.total, easing: Easing.linear, ...native }),
+                Animated.timing(tilt, { toValue: 1, duration: 200, easing: Easing.out(Easing.quad), ...native }),
+            ]),
+            // The big jump from the a onto the i, then it squashes and shrinks into the dot.
+            Animated.parallel([
+                Animated.timing(jumpX, { toValue: path.jump.x - last.x, duration: JUMP_MS, easing: Easing.linear, ...native }),
                 Animated.sequence([
-                    Animated.timing(y, { toValue: path.jump.apexY, duration: JUMP_MS * 0.5, easing: Easing.out(Easing.cubic), ...native }),
-                    Animated.timing(y, { toValue: path.jump.dotY, duration: JUMP_MS * 0.5, easing: Easing.in(Easing.cubic), ...native }),
+                    Animated.timing(jumpY, { toValue: path.jump.apexY - last.y, duration: JUMP_MS * 0.5, easing: Easing.out(Easing.cubic), ...native }),
+                    Animated.timing(jumpY, { toValue: path.jump.dotY - last.y, duration: JUMP_MS * 0.5, easing: Easing.in(Easing.cubic), ...native }),
                 ]),
                 Animated.timing(tilt, { toValue: 0, duration: JUMP_MS, ...native }),
-                Animated.spring(press[last.letter], { toValue: 0, friction: 3, tension: 160, ...native }),
+                Animated.timing(release, { toValue: 0, duration: 140, ...native }),
             ]),
             Animated.sequence([
                 Animated.timing(squash, { toValue: 1, duration: 90, easing: Easing.out(Easing.quad), ...native }),
                 Animated.parallel([
                     Animated.spring(squash, { toValue: 0, friction: 4, tension: 200, ...native }),
-                    Animated.spring(shrink, { toValue: 1, friction: 6, tension: 90, ...native }),
+                    Animated.spring(shrink, { toValue: 1, friction: 6, tension: 190, ...native }),
                 ]),
             ]),
-        );
-        const run = Animated.sequence(steps);
-        run.start();
+        ]);
+        const legs = Animated.loop(Animated.timing(stride, { toValue: 1, duration: STRIDE_MS, easing: Easing.linear, ...native }));
+        legs.start();
+        // The arms and legs stop once it has landed as the dot.
+        run.start(() => {
+            legs.stop();
+            stride.setValue(0);
+        });
         return () => {
             started.current = false;
             run.stop();
+            legs.stop();
         };
-    }, [path, reduceMotion, x, y, tilt, squash, shrink, shown, press]);
+    }, [path, track, reduceMotion, along, jumpX, jumpY, release, tilt, squash, shrink, shown, stride]);
 
     const scale = shrink.interpolate({ inputRange: [0, 1], outputRange: [1, DOT_SCALE] });
     const sx = Animated.multiply(scale, squash.interpolate({ inputRange: [0, 1], outputRange: [1, 1.18] }));
     const sy = Animated.multiply(scale, squash.interpolate({ inputRange: [0, 1], outputRange: [1, 0.78] }));
-    const rotate = tilt.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '7deg'] });
+    const rotate = tilt.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '11deg'] });
 
     const word = [styles.word, { fontSize, lineHeight: fontSize * 1.2 }];
     const sink = fontSize * SINK_RATIO;
+    const zero = useRef(new Animated.Value(0).interpolate({ inputRange: [0, 1], outputRange: [0, 1] })).current; // a letter nobody stands on
     // The mascot's bottom-centre is its anchor: scaling and squashing keep its feet on the letters.
-    const mascotStyle = path
+    const mascotStyle = path && track
         ? {
               width: path.mascotWidth,
               height: path.mascotHeight,
@@ -140,7 +157,7 @@ export function MascotWordmark({ fontSize = 36 }: { fontSize?: number }) {
               marginTop: -path.mascotHeight,
               opacity: shown,
               transformOrigin: 'bottom' as const,
-              transform: [{ translateX: x }, { translateY: y }, { rotate }, { scaleX: sx }, { scaleY: sy }],
+              transform: [{ translateX: Animated.add(track.x, jumpX) }, { translateY: Animated.add(track.y, jumpY) }, { rotate }, { scaleX: sx }, { scaleY: sy }],
           }
         : null;
 
@@ -158,8 +175,8 @@ export function MascotWordmark({ fontSize = 36 }: { fontSize?: number }) {
                         style={{
                             transformOrigin: 'bottom',
                             transform: [
-                                { translateY: press[i].interpolate({ inputRange: [0, 1], outputRange: [0, sink] }) },
-                                { scaleY: press[i].interpolate({ inputRange: [0, 1], outputRange: [1, 0.93] }) },
+                                { translateY: (track?.press.get(i) ?? zero).interpolate({ inputRange: [0, 1], outputRange: [0, sink] }) },
+                                { scaleY: (track?.press.get(i) ?? zero).interpolate({ inputRange: [0, 1], outputRange: [1, 0.93] }) },
                             ],
                         }}
                     >
@@ -179,7 +196,9 @@ export function MascotWordmark({ fontSize = 36 }: { fontSize?: number }) {
                 ))}
                 {mascotStyle ? (
                     <Animated.View pointerEvents="none" importantForAccessibility="no-hide-descendants" accessibilityElementsHidden style={[styles.mascot, mascotStyle]}>
-                        <Image source={require('../../assets/mascot.png')} style={StyleSheet.absoluteFill} contentFit="contain" />
+                        <View style={{ position: 'absolute', left: path!.mascotWidth / 2 - ((FIGURE.left + FIGURE.right) / 2) * figureScale, top: path!.mascotHeight - FIGURE.bottom * figureScale }}>
+                            <VeyRunner stride={stride} scale={figureScale} />
+                        </View>
                     </Animated.View>
                 ) : null}
             </View>
