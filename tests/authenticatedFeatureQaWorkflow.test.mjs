@@ -42,9 +42,23 @@ test('reproducible install, pinned browser and webpack build precede all feature
   for (const step of steps) { const index = workflow.indexOf(step); assert.ok(index > previous, `ordered required step: ${step}`); previous = index; }
 });
 test('the fixture lifecycle source and its regression tests pass lint before browser acceptance', () => {
-  const lint = 'npx eslint e2e/fixtures/authenticated-product.mjs tests/authenticatedFixtureSafety.test.mjs tests/authenticatedFeatureQaWorkflow.test.mjs --max-warnings=0';
+  const lint = 'npx eslint e2e/fixtures/authenticated-product.mjs e2e/authenticated-privacy-choices.spec.mjs tests/authenticatedFixtureSafety.test.mjs tests/authenticatedFeatureQaWorkflow.test.mjs --max-warnings=0';
   assert.ok(workflow.includes(lint), 'test fixture source must have its own lint gate');
   assert.ok(workflow.indexOf(lint) < workflow.indexOf('npm run build -- --webpack'));
+});
+test('privacy choice acceptance is built with an explicitly synthetic analytics key, never a real provider secret', () => {
+  const build = workflow.match(/      - name: Build owned local application\n([^]*?)(?=\n      - name:|$)/)?.[1];
+  assert.ok(build, 'the owned build step exists');
+  assert.match(build, /        env:\n          NEXT_PUBLIC_POSTHOG_KEY: phc_synthetic_privacy_qa\n/);
+  assert.equal((workflow.match(/^\s+NEXT_PUBLIC_POSTHOG_KEY:/gm) || []).length, 1, 'fake browser build key is scoped only to this step');
+  assert.doesNotMatch(runtimeStep(), /NEXT_PUBLIC_POSTHOG_KEY|POSTHOG_API_KEY/);
+  const privacy = readFileSync(new URL('../e2e/authenticated-privacy-choices.spec.mjs', import.meta.url), 'utf8');
+  assert.match(privacy, /from '@playwright\/test'/, 'privacy suite must not inherit the automatic Decline fixture');
+  for (const choice of ['Allow analytics & replay', 'Analytics only', 'Decline']) assert.ok(privacy.includes(choice));
+  assert.match(privacy, /url\.origin !== target\.origin/);
+  assert.match(privacy, /url\.pathname\.startsWith\('\/ingest\/'\)/);
+  assert.match(privacy, /route\.fulfill/);
+  assert.match(config, /testMatch: 'authenticated-\*\.spec\.mjs'/, 'privacy suite remains part of the unfiltered desktop/mobile matrix');
 });
 test('all six rollout flags are local to the synthetic runtime step and no real account or provider configuration is supplied', () => {
   const step = runtimeStep();

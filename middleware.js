@@ -245,10 +245,12 @@ function rewritePostHogRequest(req) {
     // The SDK payload carries its public project token and event data. Site
     // cookies, Supabase bearer tokens and the visitor's forwarding/IP headers
     // are not part of that contract and must not cross the proxy boundary.
+    // Same-origin Referer can contain an entire signed review/invitation URL,
+    // even when the SDK payload has already been sanitized.
     const blockedHeaders = new Set([
         'authorization', 'cookie', 'cf-connecting-ip', 'true-client-ip',
         'x-forwarded-for', 'forwarded', 'x-real-ip', 'x-nonce',
-        'content-security-policy',
+        'content-security-policy', 'referer', 'referrer',
     ]);
     const headers = new Headers();
     for (const [name, value] of req.headers.entries()) {

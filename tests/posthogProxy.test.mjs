@@ -28,6 +28,9 @@ test('the configured ingest proxy rewrites only to PostHog Cloud EU', async () =
         const request = new NextRequest('https://veyrnox.ai/ingest/e/?ip=1', { headers: {
             cookie: '__Host-veyrnox_refresh=private-refresh', authorization: 'Bearer secret', 'cf-connecting-ip': '192.0.2.1',
             'x-veyrnox-auth-id': 'private-account', 'content-type': 'application/json',
+            referer: 'https://veyrnox.ai/social/review/SYNTHETIC_REVIEW_BEARER',
+            referrer: 'https://veyrnox.ai/social/team/invite/SYNTHETIC_INVITE_BEARER',
+            origin: 'https://veyrnox.ai', accept: '*/*',
         } });
         const response = await middleware(request);
         assert.equal(response.status, 200);
@@ -41,12 +44,16 @@ test('the configured ingest proxy rewrites only to PostHog Cloud EU', async () =
         response.headers.forEach((value, key) => {
             if (key.startsWith('x-middleware-request-')) outbound.set(key.slice('x-middleware-request-'.length), value);
         });
-        for (const name of ['cookie', 'authorization', 'cf-connecting-ip', 'x-veyrnox-auth-id']) {
+        for (const name of ['cookie', 'authorization', 'cf-connecting-ip', 'x-veyrnox-auth-id', 'referer', 'referrer']) {
             assert.ok(forwarded.includes(name), `${name} has an explicit override`);
             assert.equal(response.headers.get(`x-middleware-request-${name}`), '', `${name} is blanked at the proxy boundary`);
             assert.equal(outbound.get(name), '', `${name} remains blank under OpenNext's overlay`);
         }
         assert.equal(outbound.get('content-type'), 'application/json');
+        assert.equal(outbound.get('accept'), '*/*');
+        assert.equal(outbound.get('origin'), 'https://veyrnox.ai');
+        assert.ok(!JSON.stringify([...outbound]).includes('SYNTHETIC_REVIEW_BEARER'));
+        assert.ok(!JSON.stringify([...outbound]).includes('SYNTHETIC_INVITE_BEARER'));
     } finally {
         if (before === undefined) delete process.env.NEXT_PUBLIC_POSTHOG_KEY;
         else process.env.NEXT_PUBLIC_POSTHOG_KEY = before;
