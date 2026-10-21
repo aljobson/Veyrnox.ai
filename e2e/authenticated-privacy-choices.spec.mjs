@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import { readdirSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { PAGE_TEMPLATES, templateMatches } from './page-manifest.mjs';
+import { installInteractiveAnalyticsNavigator } from './fixtures/interactive-analytics.mjs';
 
 // Independent from authenticated-product: its automatic Decline handler would
 // conceal the exact consent/reopen regression being exercised here.
@@ -39,6 +40,7 @@ async function installPrivacyFixtures(page, origin) {
       || target.username || target.password) throw new Error('Privacy fixtures require exact loopback HTTP');
   const fixture = { unhandled: [], errors: [], events: [], pending: new Set() };
   const context = page.context();
+  await installInteractiveAnalyticsNavigator(context, origin);
   page.on('pageerror', error => fixture.errors.push(error.message));
   await context.addInitScript(user => {
     if (!localStorage.getItem('veyrnox_supabase_session')) localStorage.setItem('veyrnox_supabase_session', JSON.stringify({
