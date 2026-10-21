@@ -364,7 +364,7 @@ export function ChatWorkspace() {
             {starredOnly && shown.length === 0 && <p className="py-8 text-center text-vx-fg-muted">{t("app.chat.workspace.noStars")}</p>}
             {shown.map((m) => (
               <article key={m.id} aria-label={m.role === 'user' ? t("app.editor.project.you") : t("app.chat.workspace.assistant")} className={m.role === 'user' ? 'flex justify-end' : ''}>
-                <div className={m.role === 'user' ? 'max-w-[85%] rounded-3xl border border-vx-border bg-vx-panel px-5 py-3' : 'w-full'}>
+                <div className={m.role === 'user' ? 'max-w-[85%] rounded-2xl border border-vx-border bg-vx-panel px-5 py-3' : 'w-full'}>
                   {m.role === 'user' ? (
                     <>
                       <p className="whitespace-pre-wrap wrap-break-word text-[15px]">{m.content}</p>
