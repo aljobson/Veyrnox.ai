@@ -11,8 +11,8 @@ import { VEY_CLEARANCE } from '../../../components/VeyMascot';
 import { fetchPublishPlan, paywallState, type PlanSource, type PublishTier } from '../../../lib/publishPlan';
 import { colors } from '../../../theme';
 
-const BENEFITS = ['Up to five connected accounts', 'Schedule posts ahead', '366 days of analytics', 'Best-time recommendations'];
-const LABEL: Record<Interval, string> = { week: 'Weekly', month: 'Monthly', year: 'Annual' };
+const BENEFITS = ['plan.benefit.accounts', 'plan.benefit.schedule', 'plan.benefit.analytics', 'plan.benefit.bestTime'] as const;
+const LABEL: Record<Interval, string> = { week: 'unlock.plan.week', month: 'unlock.plan.month', year: 'unlock.plan.year' };
 const store = Platform.OS === 'ios' ? 'ios' : 'android';
 
 export default function Publish() {
@@ -50,9 +50,9 @@ export default function Publish() {
         setMessage(null);
         try {
             const result = await purchase(pkg);
-            setMessage(result === 'purchased' ? 'Thank you. Your Publish Plan is on.' : null);
+            setMessage(result === 'purchased' ? t('plan.thanks') : null);
         } catch {
-            setMessage('That did not complete. You were not charged.');
+            setMessage(t('plan.notCompleted'));
         } finally {
             setBusy(false);
         }
@@ -62,9 +62,9 @@ export default function Publish() {
         setBusy(true);
         try {
             await restore();
-            setMessage('Purchases restored.');
+            setMessage(t('plan.restored'));
         } catch {
-            setMessage('Could not restore purchases. Try again.');
+            setMessage(t('plan.restoreFailed'));
         } finally {
             setBusy(false);
         }
@@ -72,17 +72,17 @@ export default function Publish() {
 
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.body}>
-            <Stack.Screen options={{ title: 'Publish Plan' }} />
-            <Text style={styles.title} accessibilityRole="header">Publish more, everywhere</Text>
+            <Stack.Screen options={{ title: t('plan.navTitle') }} />
+            <Text style={styles.title} accessibilityRole="header">{t('plan.headline')}</Text>
             {BENEFITS.map((b) => (
-                <Text key={b} style={styles.benefit}>✓  {b}</Text>
+                <Text key={b} style={styles.benefit}>✓  {t(b)}</Text>
             ))}
             {gate === 'checking' || status === 'loading' ? (
                 <ActivityIndicator color={colors.accent} />
             ) : gate === 'active' || publishActive ? (
                 <Text style={styles.ok}>{t('plan.active')} {source === 'stripe' ? t('plan.manageWeb') : source === 'store' || publishActive ? t('plan.manageStore', { store: store === 'ios' ? 'Apple ID' : 'Google Play' }) : ''}</Text>
             ) : gate === 'unknown' ? (
-                <Text style={styles.muted}>We could not check your plan right now. Try again in a moment.</Text>
+                <Text style={styles.muted}>{t('plan.checkFailed')}</Text>
             ) : status !== 'ready' || plans.length === 0 ? (
                 <Text style={styles.muted}>{t('plan.unavailable')}{__DEV__ ? ` [${status}${debug ? `: ${debug}` : ''}; offerings: ${Object.keys(offerings?.all ?? {}).join(',') || 'none'}]` : ''}</Text>
             ) : (
@@ -90,22 +90,22 @@ export default function Publish() {
                     <View style={styles.plans}>
                         {plans.map((p) => (
                             <Pressable key={p.id} accessibilityRole="button" style={[styles.plan, chosen?.id === p.id && styles.planOn]} onPress={() => setSelected(p.id)}>
-                                <Text style={[styles.planName, chosen?.id === p.id && styles.planNameOn]}>{p.interval ? LABEL[p.interval] : p.title}</Text>
+                                <Text style={[styles.planName, chosen?.id === p.id && styles.planNameOn]}>{p.interval ? t(LABEL[p.interval]) : p.title}</Text>
                                 <Text style={[styles.planPrice, chosen?.id === p.id && styles.planNameOn]}>{p.priceString}</Text>
                             </Pressable>
                         ))}
                     </View>
                     {chosen?.interval ? <Text style={styles.terms}>{renewalTerms(chosen.interval, chosen.priceString, store)}</Text> : null}
-                    {!canPurchase ? <Text style={styles.muted}>Purchases are not open yet.</Text> : null}
+                    {!canPurchase ? <Text style={styles.muted}>{t('plan.notOpen')}</Text> : null}
                     <Pressable accessibilityRole="button" disabled={!canPurchase || busy || !chosen} style={[styles.button, (!canPurchase || busy || !chosen) && styles.off]} onPress={subscribe}>
-                        {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>Subscribe</Text>}
+                        {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>{t('unlock.subscribe')}</Text>}
                     </Pressable>
                 </>
             )}
             {message ? <Text style={styles.muted}>{message}</Text> : null}
             {gate !== 'checking' ? (
                 <View style={styles.menu}>
-                    {([['Connected accounts', '/publish/accounts'], ['Posts', '/publish/posts'], ['Analytics', '/publish/analytics'], ['Calendar', '/publish/calendar'], ['Best time', '/publish/best-time'], ['Drafts', '/publish/drafts'], ['Approvals', '/publish/approvals'], ['Brand', '/publish/brands'], ['Products', '/publish/commerce'], ['Ads', '/publish/ads'], ['Reports', '/publish/reports'], ['Inbox', '/publish/inbox'], [t('publishWorkflows.title'), '/publish/workflows'], [t('smartlink.title'), '/publish/smartlink'], ['Contacts', '/publish/contacts'], [t('queues.title'), '/publish/queues'], [t('autolists.title'), '/publish/autolists'], [t('team.title'), '/publish/team'], [t('publishLinks.teamJoin.menu'), '/team-invite'], [t('activity.title'), '/publish/activity']] as const).map(([label, path]) => (
+                    {([[t('plan.menu.accounts'), '/publish/accounts'], [t('plan.menu.posts'), '/publish/posts'], [t('analytics.title'), '/publish/analytics'], [t('calendar.title'), '/publish/calendar'], [t('plan.menu.bestTime'), '/publish/best-time'], [t('drafts.title'), '/publish/drafts'], [t('approvals.title'), '/publish/approvals'], [t('brands.title'), '/publish/brands'], [t('commerce.title'), '/publish/commerce'], [t('ads.title'), '/publish/ads'], [t('reports.title'), '/publish/reports'], [t('inbox.title'), '/publish/inbox'], [t('publishWorkflows.title'), '/publish/workflows'], [t('smartlink.title'), '/publish/smartlink'], [t('contacts.title'), '/publish/contacts'], [t('queues.title'), '/publish/queues'], [t('autolists.title'), '/publish/autolists'], [t('team.title'), '/publish/team'], [t('publishLinks.teamJoin.menu'), '/team-invite'], [t('activity.title'), '/publish/activity']] as const).map(([label, path]) => (
                         <Pressable key={path} accessibilityRole="button" style={styles.menuRow} onPress={() => router.push(path)}>
                             <Text style={styles.menuText}>{label}</Text>
                         </Pressable>
@@ -113,9 +113,9 @@ export default function Publish() {
                 </View>
             ) : null}
             <View style={styles.links}>
-                <Pressable accessibilityRole="button" onPress={onRestore} disabled={busy}><Text style={styles.link}>Restore purchases</Text></Pressable>
-                <Pressable accessibilityRole="link" onPress={() => WebBrowser.openBrowserAsync(`${API_BASE}/legal/terms`)}><Text style={styles.link}>Terms</Text></Pressable>
-                <Pressable accessibilityRole="link" onPress={() => WebBrowser.openBrowserAsync(`${API_BASE}/legal/privacy`)}><Text style={styles.link}>Privacy</Text></Pressable>
+                <Pressable accessibilityRole="button" onPress={onRestore} disabled={busy}><Text style={styles.link}>{t('account.restore')}</Text></Pressable>
+                <Pressable accessibilityRole="link" onPress={() => WebBrowser.openBrowserAsync(`${API_BASE}/legal/terms`)}><Text style={styles.link}>{t('plan.terms')}</Text></Pressable>
+                <Pressable accessibilityRole="link" onPress={() => WebBrowser.openBrowserAsync(`${API_BASE}/legal/privacy`)}><Text style={styles.link}>{t('plan.privacy')}</Text></Pressable>
             </View>
         </ScrollView>
     );
