@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
 import { StyleSheet, Pressable, Text, View } from 'react-native';
 import { formatDuration, posterUrl, type CinemaTitle } from '../../lib/cinema';
+import { MENU_ICONS } from '../../lib/menuIcons';
 import { colors } from '../../theme';
 import { CinemaPlayer } from './CinemaPlayer';
 
@@ -42,7 +43,7 @@ export function TitleCard({ item, height, playing, onPlay, onOpen, onReport }: P
                         </Pressable>
                     ) : null}
                     <Pressable accessibilityRole="button" accessibilityLabel={`Report ${item.title}`} style={styles.report} onPress={onReport}>
-                        <Text style={styles.reportText}>Report</Text>
+                        <Image source={MENU_ICONS.flag} style={styles.reportIcon} tintColor={colors.muted} contentFit="contain" accessibilityElementsHidden />
                     </Pressable>
                 </View>
             </View>
@@ -61,5 +62,5 @@ const styles = StyleSheet.create({
     play: { backgroundColor: colors.accent, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 28 },
     playText: { color: colors.accentInk, fontSize: 16, fontWeight: '700' },
     report: { minHeight: 44, justifyContent: 'center', paddingVertical: 12, paddingHorizontal: 12 },
-    reportText: { color: colors.muted, fontSize: 14 },
+    reportIcon: { width: 22, height: 22 },
 });

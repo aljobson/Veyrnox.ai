@@ -8,3 +8,5 @@ with `#ffffff`, and render it the same way.
 MIT License. Copyright (c) 2023 Phosphor Icons.
 
 Create screen additions: video-camera, music-notes, wrench, smiley (Phosphor regular, same render steps).
+
+Cinema additions: thumbs-up, bookmark-simple, heart, trophy, flag (Phosphor regular, same render steps).

@@ -23,6 +23,11 @@ export const MENU_ICONS = {
     audio: require('../../assets/icons/music-notes.png'),
     wrench: require('../../assets/icons/wrench.png'),
     smiley: require('../../assets/icons/smiley.png'),
+    thumbsUp: require('../../assets/icons/thumbs-up.png'),
+    bookmark: require('../../assets/icons/bookmark-simple.png'),
+    heart: require('../../assets/icons/heart.png'),
+    trophy: require('../../assets/icons/trophy.png'),
+    flag: require('../../assets/icons/flag.png'),
 } as const;
 
 export type MenuIcon = keyof typeof MENU_ICONS;
