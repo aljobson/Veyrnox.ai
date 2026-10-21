@@ -50,7 +50,7 @@ export function LedgerExample({ catalog, locale = 'en' }) {
   const lines = exampleLines(catalog, t);
   const balance = lines.reduce((n, l) => n + l.delta, 0);
   return (
-    <section className="px-4 sm:px-6 pt-28 sm:pt-36 max-w-[1300px] mx-auto">
+    <section data-vey-perch className="px-4 sm:px-6 pt-28 sm:pt-36 max-w-[1300px] mx-auto">
       <div className="grid grid-cols-1 lg:grid-cols-[0.8fr_1fr] gap-12 lg:gap-20 items-center">
         <div className="order-2 lg:order-1 max-w-[460px] w-full mx-auto lg:mx-0">
           <div className="vx-paper-shadow">
@@ -104,7 +104,7 @@ export function LedgerExample({ catalog, locale = 'en' }) {
 export function FAQBlock({ locale = 'en' }) {
   const t = translator(locale);
   return (
-    <section id="faq" className="px-4 sm:px-6 pt-28 sm:pt-36 max-w-[1300px] mx-auto">
+    <section data-vey-perch id="faq" className="px-4 sm:px-6 pt-28 sm:pt-36 max-w-[1300px] mx-auto">
       <div className="grid grid-cols-1 lg:grid-cols-[0.8fr_1fr] gap-8 lg:gap-20">
         <h2 className="vx-display text-[40px] sm:text-[56px] lg:sticky lg:top-24 self-start">{t('home.faq.title')}</h2>
         <div className="border-t-2 border-vx-fg">
@@ -143,7 +143,7 @@ export function FAQBlock({ locale = 'en' }) {
 export function ClosingCTA({ locale = 'en' }) {
   const t = translator(locale);
   return (
-    <section className="px-4 sm:px-6 pt-28 sm:pt-36 max-w-[1300px] mx-auto">
+    <section data-vey-perch className="px-4 sm:px-6 pt-28 sm:pt-36 max-w-[1300px] mx-auto">
       {/* A panel, not loose type: the last screen of the page reads as the
           place to act. The glow is one soft accent wash behind the headline. */}
       <div className="relative overflow-hidden rounded-2xl border border-vx-border bg-vx-panel px-6 py-14 sm:px-12 sm:py-20 lg:px-16 lg:py-24">

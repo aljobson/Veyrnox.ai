@@ -4,6 +4,7 @@ import { useBilling } from '../billing/BillingProvider';
 import { touchTarget } from '../lib/a11y';
 import { renewalTerms, toDisplayPackages } from '../lib/billing';
 import { t } from '../lib/i18n';
+import { VeyPaywallBuddy, useVeyPaywallMood } from './VeyPaywallBuddy';
 import { colors } from '../theme';
 
 export type LockedFeature = 'calendar' | 'analytics' | 'inbox' | 'ads' | 'commerce';
@@ -17,6 +18,7 @@ export function UnlockCard({ feature, onUnlocked }: { feature: LockedFeature; on
     const [selected, setSelected] = useState<string | null>(null);
     const [busy, setBusy] = useState(false);
     const [message, setMessage] = useState<string | null>(null);
+    const { mood, notify } = useVeyPaywallMood();
 
     const plans = toDisplayPackages(offerings?.all.publish?.availablePackages ?? []).filter((p) => p.interval !== null);
     const chosen = plans.find((p) => p.id === (selected ?? plans.find((x) => x.interval === 'year')?.id)) ?? null;
@@ -27,13 +29,16 @@ export function UnlockCard({ feature, onUnlocked }: { feature: LockedFeature; on
         if (!pkg || busy) return;
         setBusy(true);
         setMessage(null);
+        notify('checkout');
         try {
             if ((await purchase(pkg)) === 'purchased') {
                 setMessage(t('unlock.purchased'));
+                notify('credited');
                 onUnlocked();
-            }
+            } else notify('ambient');
         } catch {
             setMessage(t('unlock.failed'));
+            notify('error');
         } finally {
             setBusy(false);
         }
@@ -55,6 +60,7 @@ export function UnlockCard({ feature, onUnlocked }: { feature: LockedFeature; on
 
     return (
         <View style={styles.card}>
+            {canBuy && !publishActive ? <VeyPaywallBuddy mood={mood} width={64} /> : null}
             <Text style={styles.title} accessibilityRole="header">{t(`unlock.${feature}.title`)}</Text>
             <Text style={styles.body}>{t(`unlock.${feature}.body`)}</Text>
             {status === 'loading' ? (
@@ -67,7 +73,7 @@ export function UnlockCard({ feature, onUnlocked }: { feature: LockedFeature; on
                 <>
                     <View style={styles.plans}>
                         {plans.map((p) => (
-                            <Pressable key={p.id} accessibilityRole="button" accessibilityState={{ selected: chosen?.id === p.id }} style={[styles.plan, touchTarget, chosen?.id === p.id && styles.planOn]} onPress={() => setSelected(p.id)}>
+                            <Pressable key={p.id} accessibilityRole="button" accessibilityState={{ selected: chosen?.id === p.id }} style={[styles.plan, touchTarget, chosen?.id === p.id && styles.planOn]} onPress={() => { setSelected(p.id); notify('select'); }}>
                                 <Text style={[styles.planName, chosen?.id === p.id && styles.planOnText]}>{p.interval ? t(`unlock.plan.${p.interval}`) : p.title}</Text>
                                 <Text style={[styles.planPrice, chosen?.id === p.id && styles.planOnText]}>{p.priceString}</Text>
                             </Pressable>
