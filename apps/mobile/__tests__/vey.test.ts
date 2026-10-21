@@ -58,7 +58,13 @@ describe('where Vey shows (N8)', () => {
         expect(mascot).toContain('Keyboard.addListener');
     });
 
-    test('the old Chat button left the home', () => {
-        expect(read('app', '(app)', '(tabs)', 'index.tsx')).not.toContain('href="/chat"');
+    // N8 took the plain Chat button off the home because Vey opens the chat. The owner then asked for a "Chat with Vey" card
+    // right under the Make buttons (2026-10-21), so the home has one, and Vey still opens the same chat.
+    test('the home has one Chat with Vey card, right under the Make buttons', () => {
+        const home = read('app', '(app)', '(tabs)', 'index.tsx');
+        expect(home.split('href="/chat"').length - 1).toBe(1);
+        expect(home).toContain("t('explore.chat.title')");
+        expect(home.indexOf("t('explore.makeVideo')")).toBeLessThan(home.indexOf('href="/chat"'));
+        expect(home.indexOf('href="/chat"')).toBeLessThan(home.indexOf("t('explore.templates')"));
     });
 });
