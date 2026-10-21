@@ -1,5 +1,6 @@
 // Shared, dependency-free privacy rules for browser analytics. Keeping these
 // pure makes the redaction and replay boundary easy to pin in node:test.
+import { capabilityPath, scrubTelemetryTree, scrubTelemetryUrl, unlocalizedTelemetryPath } from '../../lib/telemetryUrl.js';
 
 export const POSTHOG_CONSENT_KEY = 'veyrnox_analytics_consent';
 export const ANALYTICS_PREFERENCE_KEY = 'veyrnox_analytics_preference_v1';
@@ -41,14 +42,15 @@ const URL_PROPERTIES = [
 ];
 
 export function replayAllowedOnPath(pathname) {
-  const path = normalisePathname(pathname);
+  const path = unlocalizedTelemetryPath(pathname);
+  if (capabilityPath(path)) return false;
   return !BLOCKED_REPLAY_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
 }
 
 export function pathOnlyUrl(value, origin = 'https://veyrnox.ai') {
   if (typeof value !== 'string' || !value) return value;
   try {
-    const parsed = new URL(value, origin);
+    const parsed = new URL(scrubTelemetryUrl(value), origin);
     return `${parsed.origin}${parsed.pathname}`;
   } catch {
     return normalisePathname(value.split(/[?#]/, 1)[0]);
@@ -57,7 +59,7 @@ export function pathOnlyUrl(value, origin = 'https://veyrnox.ai') {
 
 export function sanitisePostHogEvent(event, origin = 'https://veyrnox.ai') {
   if (!event || typeof event !== 'object' || !event.properties) return event;
-  const properties = { ...event.properties };
+  const properties = scrubTelemetryTree(event.properties);
   for (const key of URL_PROPERTIES) {
     if (properties[key]) properties[key] = pathOnlyUrl(properties[key], origin);
   }
@@ -88,7 +90,7 @@ export function sanitisePostHogEvent(event, origin = 'https://veyrnox.ai') {
     properties.$exception_values = properties.$exception_values.map(() => 'Browser error');
   }
 
-  return { ...event, properties };
+  return scrubTelemetryTree({ ...event, properties });
 }
 
 function sanitiseException(exception) {
