@@ -31,7 +31,7 @@ export function FilmPrompts({film,update,models,live}){
   }catch(e){setError(e.message);}};
   return <div className="space-y-5"><p className="text-sm text-vx-fg-muted">{t("app.film.prompts.help")}</p>
     <FilmSelect label={t("app.film.prompts.shot")} value={shot.id} onChange={v=>{setSelected(v);setDetails({});setRevision(null);setResult('');setError('');setChecks([]);}} options={film.shots.map(s=>[s.id,s.id])}/>
-    {!current&&<><div className="space-y-4">{PROMPT_DETAILS.map(([key,label])=><FilmField key={key} label={label} multiline value={details[key]||''} onChange={value=>setDetails({...details,[key]:value})}/>)}</div>
+    {!current&&<><div className="space-y-4">{PROMPT_DETAILS.map(([key,label])=><FilmField key={key} label={label} labelKey={`app.data.film.detail.${key}`} multiline value={details[key]||''} onChange={value=>setDetails({...details,[key]:value})}/>)}</div>
       <button type="button" onClick={build} className="rounded-full bg-vx-accent px-5 py-2 text-sm font-semibold text-vx-accent-ink">{t("app.film.prompts.build")}</button></>}
     {current&&<>
       <p role="status" className="text-sm font-semibold">{t('app.film.prompts.version', {shot: shot.id, version: number(last.version), status: logged?t("app.film.prompts.logged"):t("app.film.prompts.ready")})}</p>
@@ -40,7 +40,7 @@ export function FilmPrompts({film,update,models,live}){
         <FilmField label={t("app.film.prompts.changed")} value={changed} onChange={setChanged}/>
         <FilmField label={t("label.Generation result")} value={result} onChange={setResult} hint={t('app.film.prompts.resultHint')}/>
         <FilmSelect label={t("app.film.prompts.verdict")} value={verdict} onChange={setVerdict} options={[['rejected', t('app.film.prompts.verdict.rejected')],['accepted', t('app.film.prompts.verdict.accepted')]]}/>
-        {verdict==='accepted'&&<fieldset className="space-y-2"><legend className="mb-3 text-sm font-semibold">{t("app.film.prompts.checks")}</legend>{ACCEPTANCE_CHECKS.map(c=><label key={c} className="flex gap-3 text-sm"><input type="checkbox" checked={checks.includes(c)} onChange={e=>setChecks(e.target.checked?[...checks,c]:checks.filter(v=>v!==c))}/>{c}</label>)}</fieldset>}
+        {verdict==='accepted'&&<fieldset className="space-y-2"><legend className="mb-3 text-sm font-semibold">{t("app.film.prompts.checks")}</legend>{ACCEPTANCE_CHECKS.map((c,index)=><label key={c} className="flex gap-3 text-sm"><input type="checkbox" checked={checks.includes(c)} onChange={e=>setChecks(e.target.checked?[...checks,c]:checks.filter(v=>v!==c))}/>{tOr(t, `app.data.film.check.${index}`, c)}</label>)}</fieldset>}
         <button type="button" onClick={log} disabled={!result.trim()||!changed.trim()} className="rounded-full bg-vx-accent px-4 py-2 text-sm font-semibold text-vx-accent-ink disabled:opacity-40">{t("app.film.prompts.record")}</button>
       </section>}
       {logged&&failed<15&&<section className="space-y-4"><h3 className="font-bold">{t("app.film.prompts.revise")}</h3><FilmField label={t("app.film.prompts.next")} multiline rows={14} value={revision??last.content} onChange={setRevision}/>
