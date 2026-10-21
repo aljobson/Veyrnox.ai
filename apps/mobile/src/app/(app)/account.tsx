@@ -11,10 +11,12 @@ import { LEGAL_LINKS, PRIVACY_EMAIL, SUPPORT_EMAIL } from '../../lib/account';
 import { usePush } from '../../push/pushContext';
 import { VEY_CLEARANCE } from '../../components/VeyMascot';
 import { colors, saveThemePreference, themePreference, THEME_PREFERENCES, type ThemePreference } from '../../theme';
+import { CREATOR_PROFILE_ENABLED, resetVibe } from '../../lib/creatorProfile';
+import { clearVibe } from '../../lib/creatorProfileStore';
 import { t } from '../../lib/i18n';
 
 export default function Account() {
-    const { signOut, getAccessToken } = useAuth();
+    const { api, signOut, getAccessToken } = useAuth();
     const [profile, setProfile] = useState<Profile | null>(null);
     const push = usePush();
     const [pushNote, setPushNote] = useState<string | null>(null);
@@ -32,6 +34,19 @@ export default function Account() {
             live = false;
         };
     }, [getAccessToken]);
+
+    const [vibeNote, setVibeNote] = useState<string | null>(null);
+    async function onResetVibe() {
+        setVibeNote(null);
+        const r = await resetVibe(api);
+        // Cleared on the phone even if the server flag is off; only a real failure keeps it, so the person can try again.
+        if (r.kind === 'failed') {
+            setVibeNote(t('vibe.error'));
+            return;
+        }
+        await clearVibe();
+        setVibeNote(t('vibe.account.resetDone'));
+    }
 
     async function onRestore() {
         setRestoreNote(t('account.restoreChecking'));
@@ -112,6 +127,14 @@ export default function Account() {
                     </View>
                     {pushNote ? <Text style={styles.note}>{pushNote}</Text> : null}
                     <Text style={styles.note}>{t('account.notifyNote')}</Text>
+                </Section>
+            ) : null}
+
+            {CREATOR_PROFILE_ENABLED ? (
+                <Section title={t('vibe.account.title')}>
+                    <Row label={t('vibe.account.retake')} onPress={() => router.push('/vibe?retake=1')} />
+                    <Row label={t('vibe.account.reset')} onPress={() => void onResetVibe()} />
+                    {vibeNote ? <Text style={styles.note} accessibilityRole="alert">{vibeNote}</Text> : null}
                 </Section>
             ) : null}
 
