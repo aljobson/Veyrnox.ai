@@ -31,7 +31,7 @@ function capture() {
 }
 
 const CASES = [
-    ['/auth/v1/signup', (t) => signUp('a@b.co', 'password1', t)],
+    ['/auth/v1/signup?redirect_to=https%3A%2F%2Fveyrnox.test%2Fauth%2Fcallback', (t) => signUp('a@b.co', 'password1', t)],
     ['/auth/v1/token?grant_type=password', (t) => signInWithPassword('a@b.co', 'password1', t)],
     ['/auth/v1/otp?redirect_to=https%3A%2F%2Fveyrnox.test%2Fauth%2Fcallback', (t) => sendMagicLink('a@b.co', t)],
 ];
