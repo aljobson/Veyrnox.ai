@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, StyleSheet, View } from 'react-native';
 import { CANVAS, heightFor, pivotStyle } from '../lib/veyCharacter';
+import type { VeyMood } from '../lib/veyMotion';
 
 const art = {
     base: require('../../assets/vey/base.png'),
@@ -25,8 +26,10 @@ function swing(value: Animated.Value, duration: number) {
 }
 
 // Vey with a head that nods, arms that sway (the right one waves), eyes that blink and a core that glows. All of it runs
-// on the native thread. With Reduce Motion on, Vey stands still. The picture is decoration: whatever holds it carries the label.
-export function VeyCharacter({ width = 72 }: { width?: number }) {
+// on the native thread. `mood` sets what Vey is doing: idle (every few seconds a hop, a cheer or a look to the side),
+// a single hop, a cheer that keeps going until the mood changes, or worried (head down, arms still). With Reduce Motion
+// on, Vey stands still. The picture is decoration: whatever holds it carries the label.
+export function VeyCharacter({ width = 72, mood = 'idle' }: { width?: number; mood?: VeyMood }) {
     const k = width / CANVAS.width;
     const sway = useRef(new Animated.Value(0.5)).current;
     const wave = useRef(new Animated.Value(0.5)).current;
@@ -34,6 +37,7 @@ export function VeyCharacter({ width = 72 }: { width?: number }) {
     const cheer = useRef(new Animated.Value(0)).current;
     const tilt = useRef(new Animated.Value(0.5)).current;
     const blink = useRef(new Animated.Value(1)).current;
+    const droop = useRef(new Animated.Value(0)).current;
     const [still, setStill] = useState(false);
 
     useEffect(() => {
@@ -54,25 +58,14 @@ export function VeyCharacter({ width = 72 }: { width?: number }) {
             cheer.setValue(0);
             tilt.setValue(0.5);
             blink.setValue(1);
+            droop.setValue(0);
             return;
         }
         const t = (v: Animated.Value, toValue: number, duration: number) => Animated.timing(v, { toValue, duration, easing: ease, useNativeDriver: true });
-        // Every few seconds Vey does something new: a hop, a two-arm cheer, or a look to one side.
-        const moves = Animated.loop(
-            Animated.sequence([
-                Animated.delay(1800),
-                Animated.parallel([
-                    Animated.sequence([t(hop, 1, 220), t(hop, 0, 260), t(hop, 1, 200), t(hop, 0, 240)]),
-                    Animated.sequence([t(cheer, 1, 260), Animated.delay(420), t(cheer, 0, 300)]),
-                ]),
-                Animated.delay(1600),
-                Animated.sequence([t(tilt, 0, 380), Animated.delay(500), t(tilt, 1, 520), Animated.delay(400), t(tilt, 0.5, 380)]),
-            ]),
-        );
-        const loops = [
-            moves,
+        const hops = () => Animated.sequence([t(hop, 1, 220), t(hop, 0, 260), t(hop, 1, 200), t(hop, 0, 240)]);
+        const cheers = () => Animated.sequence([t(cheer, 1, 260), Animated.delay(420), t(cheer, 0, 300)]);
+        const loops: Animated.CompositeAnimation[] = [
             swing(sway, 1100),
-            swing(wave, 520),
             Animated.loop(
                 Animated.sequence([
                     Animated.delay(2400),
@@ -82,9 +75,24 @@ export function VeyCharacter({ width = 72 }: { width?: number }) {
                 ]),
             ),
         ];
+        // The right arm waves unless Vey is worried; then it hangs.
+        if (mood === 'worried') wave.setValue(0.5);
+        else loops.push(swing(wave, 520));
+        // Every few seconds Vey does something new: a hop, a two-arm cheer, or a look to one side.
+        if (mood === 'idle') {
+            loops.push(Animated.loop(Animated.sequence([Animated.delay(1800), Animated.parallel([hops(), cheers()]), Animated.delay(1600), Animated.sequence([t(tilt, 0, 380), Animated.delay(500), t(tilt, 1, 520), Animated.delay(400), t(tilt, 0.5, 380)])])));
+        }
+        if (mood === 'hop') loops.push(Animated.parallel([hops(), cheers()]));
+        if (mood === 'cheer') loops.push(Animated.loop(Animated.parallel([hops(), cheers()])));
+        loops.push(t(droop, mood === 'worried' ? 1 : 0, 320));
         loops.forEach((l) => l.start());
-        return () => loops.forEach((l) => l.stop());
-    }, [still, sway, wave, blink]);
+        return () => {
+            loops.forEach((l) => l.stop());
+            hop.setValue(0);
+            cheer.setValue(0);
+            tilt.setValue(0.5);
+        };
+    }, [still, mood, sway, wave, hop, cheer, tilt, blink, droop]);
 
     const turn = (value: Animated.Value, from: number, to: number) => value.interpolate({ inputRange: [0, 1], outputRange: [`${from}deg`, `${to}deg`] });
     const hopY = hop.interpolate({ inputRange: [0, 1], outputRange: [0, -8 * k] });
@@ -98,9 +106,9 @@ export function VeyCharacter({ width = 72 }: { width?: number }) {
             <Animated.Image source={art.leftArm} style={[styles.layer, pivotStyle('leftArm', width), { transform: [{ rotate: Animated.add(sway.interpolate({ inputRange: [0, 1], outputRange: [28, -28] }), cheer.interpolate({ inputRange: [0, 1], outputRange: [0, -70] })).interpolate({ inputRange: [-120, 120], outputRange: ['-120deg', '120deg'] }) }, { translateY: hopY }] }]} />
             <Animated.Image source={art.rightArm} style={[styles.layer, pivotStyle('rightArm', width), { transform: [{ rotate: Animated.add(wave.interpolate({ inputRange: [0, 1], outputRange: [38, -48] }), cheer.interpolate({ inputRange: [0, 1], outputRange: [0, 60] })).interpolate({ inputRange: [-120, 120], outputRange: ['-120deg', '120deg'] }) }, { translateY: hopY }] }]} />
             <Animated.Image source={art.body} style={[styles.layer, { transform: [{ translateY: Animated.add(lift(sway, 3), hopY) }] }]} />
-            <Animated.Image source={art.core} style={[styles.layer, pivotStyle('core', width), { opacity: sway.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] }), transform: [{ translateY: Animated.add(lift(sway, 3), hopY) }, { scale: sway.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1.12] }) }] }]} />
-            <Animated.Image source={art.head} style={[styles.layer, pivotStyle('head', width), { transform: [{ translateY: Animated.add(lift(sway, 4), hopY) }, { rotate: Animated.add(sway.interpolate({ inputRange: [0, 1], outputRange: [-6, 6] }), tilt.interpolate({ inputRange: [0, 1], outputRange: [-14, 14] })).interpolate({ inputRange: [-40, 40], outputRange: ['-40deg', '40deg'] }) }] }]} />
-            <Animated.Image source={art.eyes} style={[styles.layer, pivotStyle('eyes', width), { transform: [{ translateY: Animated.add(lift(sway, 4), hopY) }, { rotate: Animated.add(sway.interpolate({ inputRange: [0, 1], outputRange: [-6, 6] }), tilt.interpolate({ inputRange: [0, 1], outputRange: [-14, 14] })).interpolate({ inputRange: [-40, 40], outputRange: ['-40deg', '40deg'] }) }, { scaleY: blink }] }]} />
+            <Animated.Image source={art.core} style={[styles.layer, pivotStyle('core', width), { opacity: Animated.multiply(sway.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] }), droop.interpolate({ inputRange: [0, 1], outputRange: [1, 0.55] })), transform: [{ translateY: Animated.add(lift(sway, 3), hopY) }, { scale: sway.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1.12] }) }] }]} />
+            <Animated.Image source={art.head} style={[styles.layer, pivotStyle('head', width), { transform: [{ translateY: Animated.add(Animated.add(lift(sway, 4), hopY), droop.interpolate({ inputRange: [0, 1], outputRange: [0, 3 * k] })) }, { rotate: Animated.add(Animated.add(sway.interpolate({ inputRange: [0, 1], outputRange: [-6, 6] }), tilt.interpolate({ inputRange: [0, 1], outputRange: [-14, 14] })), droop.interpolate({ inputRange: [0, 1], outputRange: [0, -10] })).interpolate({ inputRange: [-50, 50], outputRange: ['-50deg', '50deg'] }) }] }]} />
+            <Animated.Image source={art.eyes} style={[styles.layer, pivotStyle('eyes', width), { transform: [{ translateY: Animated.add(Animated.add(lift(sway, 4), hopY), droop.interpolate({ inputRange: [0, 1], outputRange: [0, 3 * k] })) }, { rotate: Animated.add(Animated.add(sway.interpolate({ inputRange: [0, 1], outputRange: [-6, 6] }), tilt.interpolate({ inputRange: [0, 1], outputRange: [-14, 14] })), droop.interpolate({ inputRange: [0, 1], outputRange: [0, -10] })).interpolate({ inputRange: [-50, 50], outputRange: ['-50deg', '50deg'] }) }, { scaleY: blink }] }]} />
         </View>
     );
 }

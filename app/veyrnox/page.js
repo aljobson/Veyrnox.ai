@@ -112,7 +112,7 @@ export default async function VeyrnoxLanding() {
       {/* Same gap above as every other section, and the rule sits on the
           content column: it used to touch the statement section's last line
           and overhang the text by the page gutter on both sides. */}
-      <section id="publish" aria-labelledby="publish-title" className="max-w-[1300px] mx-auto px-4 sm:px-6 mt-28 sm:mt-36">
+      <section data-vey-perch id="publish" aria-labelledby="publish-title" className="max-w-[1300px] mx-auto px-4 sm:px-6 mt-28 sm:mt-36">
         <div className="border-t border-vx-border pt-16">
         <h2 id="publish-title" className="vx-display text-[36px] sm:text-[48px]">{t('home.publish.title')}</h2>
         <p className="mt-5 max-w-[68ch] text-vx-fg-body text-[16px] leading-[1.7]">
