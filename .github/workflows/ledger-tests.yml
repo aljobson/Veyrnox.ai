@@ -20,6 +20,7 @@ on:
       - "scripts/test-project-documents.mjs"
       - "scripts/test-project-document-timeline.mjs"
       - "scripts/test-project-document-multitrack.mjs"
+      - "scripts/test-project-document-oddlings.mjs"
       - "scripts/test-editor-shared-storage.mjs"
       - "scripts/test-editor-library-renders.mjs"
       - "scripts/test-editor-organization.mjs"
@@ -205,6 +206,7 @@ jobs:
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-project-documents.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-project-document-timeline.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-project-document-multitrack.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-project-document-oddlings.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-editor-shared-storage.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-editor-library-renders.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-editor-organization.mjs
