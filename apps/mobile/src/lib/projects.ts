@@ -1,6 +1,6 @@
 import type { ApiClient } from './api';
 
-// ADR-0131: read-only workspaces and projects (the editor's cloud saves). The routes sit behind TENANT_PROJECTS_ENABLED
+// ADR-0131: workspaces and projects (the editor's cloud saves). Reading, plus create, rename, delete and restore a version (same routes as the web). The routes sit behind TENANT_PROJECTS_ENABLED
 // and answer 404 while it is off. They also return errors as {error:{code,message}} (an object), which the API client
 // reports with the code 'unknown', so the wording here follows the HTTP status.
 
@@ -85,10 +85,29 @@ export const fetchProject = async (api: ApiClient, id: string) => parseProject(a
 export const fetchHistory = async (api: ApiClient, id: string, before?: number) =>
     parseHistory(await api.request(`/api/v1/projects/${enc(id)}/history${before === undefined ? '' : `?before=${enc(String(before))}`}`));
 
+const JSON_HEADERS = { 'Content-Type': 'application/json' } as const;
+// A name the server accepts: 1 to 120 characters, no control characters (packages/security/input.js, projectName).
+export const cleanProjectName = (v: string): string | null => {
+    const name = v.trim();
+    return name && name.length <= 120 && !/[\u0000-\u001f]/.test(name) ? name : null;
+};
+// Create is idempotent on the key, so a retry of the same tap makes one project.
+export const createProject = async (api: ApiClient, workspaceId: string, name: string, idempotencyKey: string) =>
+    parseProject(await api.request('/api/v1/projects', { method: 'POST', headers: { ...JSON_HEADERS, 'Idempotency-Key': idempotencyKey }, body: JSON.stringify({ workspace_id: workspaceId, name }) }));
+// Rename and delete carry the version the person was looking at; a stale one is refused (409) instead of overwriting.
+export const renameProject = async (api: ApiClient, id: string, name: string, version: number) =>
+    parseProject(await api.request(`/api/v1/projects/${enc(id)}`, { method: 'PATCH', headers: JSON_HEADERS, body: JSON.stringify({ name, version }) }));
+export const deleteProject = (api: ApiClient, id: string, version: number) =>
+    api.request(`/api/v1/projects/${enc(id)}`, { method: 'DELETE', headers: JSON_HEADERS, body: JSON.stringify({ version }) });
+// Restoring writes a new version copied from an older one; nothing is lost.
+export const restoreVersion = (api: ApiClient, id: string, currentRevision: number, restoreRevision: number) =>
+    api.request(`/api/v1/projects/${enc(id)}/document`, { method: 'PUT', headers: JSON_HEADERS, body: JSON.stringify({ expected_revision: currentRevision, restore_revision: restoreRevision }) });
+
 export function projectsErrorMessage(err: unknown): string {
     const status = (err as { status?: unknown } | null)?.status;
     if (status === 0) return 'No connection. Check your internet and try again.';
     if (status === 404) return 'Projects are not available yet.';
+    if (status === 409) return 'This project changed somewhere else. Reload it and try again.';
     if (status === 401 || status === 403) return 'You do not have permission to see this.';
     if (status === 429) return 'Too many requests. Try again in a moment.';
     if (status === 502 || status === 503) return 'The service is busy. Try again in a moment.';
