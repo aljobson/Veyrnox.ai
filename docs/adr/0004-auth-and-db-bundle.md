@@ -3,7 +3,7 @@
 - **Status**: Accepted (2026-09-10) — Clerk + Neon (Replacer path fallback per this ADR)
 - **Date**: 2026-09-10
 - **Deciders**: Product owner (approver), Architect, Security reviewer
-- **Depends on**: ADR-0000 (product strategy). If B (Reseller) accepted, scope is smaller than if A (Replacer) accepted.
+- **Depends on**: ADR-0241 (product strategy). If B (Reseller) accepted, scope is smaller than if A (Replacer) accepted.
 - **Supersedes**: ADR-0001 (auth alone) and ADR-0002 (DB alone) — those were circular; this bundle is the honest form of the decision.
 - **Related**: architecture.md §9.2, §10, §11.2, §25.3
 
@@ -13,7 +13,7 @@ Authentication and the primary datastore are coupled. Every real user has a `use
 
 Additionally, this app runs on Cloudflare Workers via OpenNext. Workers cannot hold long-lived TCP connections to Postgres — they need an HTTP-based driver or a connection pooler in front. That constrains DB options.
 
-Two constraints from ADR-0000:
+Two constraints from ADR-0241:
 
 - **If Option B (Reseller)** is chosen, the DB and auth are small: `users`, `credit_balances`, `ledger_entries`, `subscriptions`, `webhook_events`. That's it. Volume is modest.
 - **If Option A (Replacer)** is chosen, add `jobs`, `assets`, `model_catalog`, plus much heavier write load from every generation. Volume grows fast.
@@ -79,7 +79,7 @@ Full ownership. Full effort. Rejected up-front — MFA + OAuth + credential-stuf
 ## Decision drivers (ranked)
 
 1. **MFA out of the box** — non-negotiable for money.
-2. **Time-to-Phase-1** — Reseller (ADR-0000 option B) targets 6–8 weeks total. Auth+DB must not eat more than 2 of them.
+2. **Time-to-Phase-1** — Reseller (ADR-0241 option B) targets 6–8 weeks total. Auth+DB must not eat more than 2 of them.
 3. **Serverless-driver quality on Cloudflare Workers** — no persistent TCP.
 4. **Blast radius** — single vendor vs split.
 5. **Reversibility** — a wrong choice must be migratable.
@@ -101,12 +101,12 @@ Full ownership. Full effort. Rejected up-front — MFA + OAuth + credential-stuf
 | Data residency | Region-selected | Neon region-selected; Clerk US-primary | D1 replicates globally, primary region selectable | N/A | Where you put it |
 | Anonymous users | Native | Guest pattern needed | Guest pattern needed | N/A | Roll your own |
 | Postgres feature parity | Full | Full | SQLite subset — ledger schema must adapt | N/A | Full |
-| Suits Reseller (ADR-0000 B) | Yes | Yes | Yes — best fit | N/A | Yes |
-| Suits Replacer (ADR-0000 A) | Yes | Yes | Concurrency ceiling risk | N/A | Yes |
+| Suits Reseller (ADR-0241 B) | Yes | Yes | Yes — best fit | N/A | Yes |
+| Suits Replacer (ADR-0241 A) | Yes | Yes | Concurrency ceiling risk | N/A | Yes |
 
 ## Recommendation
 
-**Option B' — Clerk + Cloudflare D1**, if ADR-0000 accepts Reseller (B) or Hybrid (C).
+**Option B' — Clerk + Cloudflare D1**, if ADR-0241 accepts Reseller (B) or Hybrid (C).
 
 Reasoning:
 
@@ -117,9 +117,9 @@ Reasoning:
 - If Replacer is chosen later and D1's SQLite ceiling becomes a real problem, migration to Neon is a schema-compatible export/import (SQLite → Postgres has well-worn tools). Escape is bounded.
 - The Clerk + D1 combination is $25/mo total at Phase-1 scale.
 
-**If ADR-0000 accepts Replacer (A)**: switch this recommendation to **Option B — Clerk + Neon**. Postgres feature parity + branching become worth their cost as generation volume grows; the SQLite ceiling would bite within 12 months.
+**If ADR-0241 accepts Replacer (A)**: switch this recommendation to **Option B — Clerk + Neon**. Postgres feature parity + branching become worth their cost as generation volume grows; the SQLite ceiling would bite within 12 months.
 
-**If ADR-0000 accepts Status Quo (D)**: this ADR does not apply — no auth or DB needed.
+**If ADR-0241 accepts Status Quo (D)**: this ADR does not apply — no auth or DB needed.
 
 **Reject Option A (Supabase)** on MFA — the "build your own TOTP UI" gap is 3–5 days of work at a moment when we cannot spare it. Supabase would be a strong pick if MFA-UI shipped natively; monitor for that change.
 

@@ -3,7 +3,7 @@
 - **Status**: Accepted (2026-09-11) — corrected 2026-09-20. It read Proposed while the decision was signed off in this document and migration 0017 is applied.
 - **Date**: 2026-09-11
 - **Deciders**: Product owner (sole)
-- **Related**: [ADR-0000 — Product strategy](0000-product-strategy.md), `docs/PHASE-1.md`
+- **Related**: [ADR-0241 — Product strategy](0000-product-strategy.md), `docs/PHASE-1.md`
 
 ## Context
 
@@ -28,7 +28,7 @@ For every row below: the framing lists all three options with trade-offs, and cl
   - Voice catalog: n/a.
   - First-visit UX: introduces a "some models need an image, some don't" fork that the UI may not be ready for.
 - **Swap provider**. Route `kling-3.0` (text-to-video) to Kling's own API, Replicate, or another aggregator that exposes v3 t2v.
-  - Margin impact: new billing relationship needed; adapter work. ADR-0000 rules this out for Phase-1 (single-provider now, Hybrid milestone later).
+  - Margin impact: new billing relationship needed; adapter work. ADR-0241 rules this out for Phase-1 (single-provider now, Hybrid milestone later).
   - Voice catalog: n/a.
   - First-visit UX: fine, but the effort cost is disproportionate for one row.
 
@@ -48,7 +48,7 @@ For every row below: the framing lists all three options with trade-offs, and cl
   - Margin impact: neutral-to-positive — same-family successor; users who chose Hailuo for MiniMax's video style still get it.
   - Voice catalog: n/a.
   - First-visit UX: the pricing page shows a working row with a slightly different name; brand recognition partly preserved.
-- **Swap provider**. Route to MiniMax's own API. Same objections as Row 1 (out of Phase-1 scope per ADR-0000).
+- **Swap provider**. Route to MiniMax's own API. Same objections as Row 1 (out of Phase-1 scope per ADR-0241).
 
 **Row 2 recommendation**: **rename to the current fal MiniMax SKU** we verify at implementation time. Least-surprise for existing users while staying single-provider.
 
@@ -90,9 +90,9 @@ This is the only row where all three options have a serious voice-catalog integr
   - Margin impact: variable — depends on the provider's wholesale terms; voice usually has healthy margins.
   - Voice catalog: preserved and strengthened.
   - First-visit UX: good — the row works.
-  - Effort: real. This is an adapter build, not a config change; probably breaks the "single-provider Phase-1" premise of ADR-0000 unless voice is deferred to the Hybrid milestone.
+  - Effort: real. This is an adapter build, not a config change; probably breaks the "single-provider Phase-1" premise of ADR-0241 unless voice is deferred to the Hybrid milestone.
 
-**Row 4 recommendation**: **drop for Phase-1**, and mark voice as a distinct Phase-2 decision. Renaming to a mismatched fal SKU is worse than the drop; adding a whole provider is out of Phase-1 scope per ADR-0000. This is the row that most needs its own follow-up ADR.
+**Row 4 recommendation**: **drop for Phase-1**, and mark voice as a distinct Phase-2 decision. Renaming to a mismatched fal SKU is worse than the drop; adding a whole provider is out of Phase-1 scope per ADR-0241. This is the row that most needs its own follow-up ADR.
 
 ## Aggregate recommendation
 
@@ -105,7 +105,7 @@ Apply to the catalog now (all row-level "drop" or "rename" actions require a con
 | `seedream-4.5` | Rename to `seedream-v4` |
 | `cosyvoice-2` | Drop; open a follow-up ADR for a voice/TTS provider decision |
 
-One-line reason across the four: minimize the "your first prompt was rejected" moment on `/pricing`, keep single-provider (fal) discipline for Phase-1 per ADR-0000, and defer any provider-add decision (voice, Kling direct) to an explicit later call.
+One-line reason across the four: minimize the "your first prompt was rejected" moment on `/pricing`, keep single-provider (fal) discipline for Phase-1 per ADR-0241, and defer any provider-add decision (voice, Kling direct) to an explicit later call.
 
 ## Decision
 

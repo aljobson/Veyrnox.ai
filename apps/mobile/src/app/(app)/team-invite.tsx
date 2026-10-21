@@ -1,12 +1,13 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text } from 'react-native';
+import { useState } from 'react';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { Action, Card, Status, styles as shared } from '../../components/account/shared';
 import { VEY_CLEARANCE } from '../../components/VeyMascot';
 import { t } from '../../lib/i18n';
-import { brandStore } from '../../lib/publishBrand';
-import { acceptInvite, fetchInvite, inviteErrorKey, inviteOpen, validToken, type Invite } from '../../lib/shareLinks';
+import { roleLabel } from '../../lib/publishBrand';
+import { inviteState, inviteTokenFromLink, validToken } from '../../lib/shareLinks';
+import { useTeamInvite } from '../../lib/useTeamInvite';
 import { colors } from '../../theme';
 
 // Join a Publish brand from an invitation link. The invitation is for one email address: the server refuses anyone
@@ -16,45 +17,34 @@ export default function TeamInvite() {
     const token = typeof raw === 'string' ? raw : '';
     const { api } = useAuth();
     const router = useRouter();
-    const [invite, setInvite] = useState<Invite | null>(null);
-    const [error, setError] = useState<string | null>(null);
-    const [busy, setBusy] = useState(false);
-    const [joined, setJoined] = useState(false);
+    const { invite, error, phase, idempotent, accept } = useTeamInvite(api, token);
+    const [link, setLink] = useState('');
+    const [pasteError, setPasteError] = useState<string | null>(null);
+    const state = invite ? inviteState(invite, new Date()) : null;
 
-    useEffect(() => {
-        if (!validToken(token)) return;
-        let live = true;
-        fetchInvite(token).then(
-            (i) => live && setInvite(i),
-            (err) => live && setError(t(inviteErrorKey(err))),
-        );
-        return () => {
-            live = false;
-        };
-    }, [token]);
-
-    async function accept() {
-        setBusy(true);
-        setError(null);
-        try {
-            const out = await acceptInvite(api, token);
-            if (out.brandId) brandStore.set(out.brandId);
-            setJoined(true);
-        } catch (err) {
-            const key = inviteErrorKey(err);
-            setError(key === 'share.invite.err.email' && invite ? t(key, { email: invite.email }) : t(key));
-        } finally {
-            setBusy(false);
+    function continueWithLink() {
+        const next = inviteTokenFromLink(link);
+        if (!next) {
+            setPasteError(t('publishLinks.teamJoin.err.badLink'));
+            return;
         }
+        router.setParams({ token: next });
+        setLink('');
+        setPasteError(null);
     }
 
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
             <Stack.Screen options={{ title: t('share.invite.title') }} />
             {!validToken(token) ? (
-                <Card title={t('share.invite.title')}><Text style={shared.help}>{t('share.invite.err.gone')}</Text></Card>
-            ) : joined && invite ? (
-                <Card title={t('share.invite.joined', { brand: invite.brandName })} help={t('share.invite.joinedHelp')}>
+                <Card title={t('publishLinks.teamJoin.pasteTitle')}>
+                    <Text style={shared.label}>{t('publishLinks.teamJoin.link')}</Text>
+                    <TextInput style={shared.input} accessibilityLabel={t('publishLinks.teamJoin.link')} autoCapitalize="none" autoCorrect={false} value={link} onChangeText={setLink} />
+                    <Action label={t('publishLinks.teamJoin.continue')} onPress={continueWithLink} />
+                    <Status text={pasteError} error />
+                </Card>
+            ) : phase === 'joined' && invite ? (
+                <Card title={t(idempotent ? 'publishLinks.teamJoin.alreadyMember' : 'share.invite.joined', { brand: invite.brandName })} help={t('share.invite.joinedHelp')}>
                     <Action label={t('share.invite.open')} onPress={() => router.replace('/publish')} />
                 </Card>
             ) : invite ? (
@@ -62,9 +52,15 @@ export default function TeamInvite() {
                     <Text style={shared.label}>{t('share.invite.brand')}</Text>
                     <Text style={shared.name}>{invite.brandName}</Text>
                     <Text style={shared.label}>{t('share.invite.role')}</Text>
-                    <Text style={shared.name}>{invite.role}</Text>
+                    <Text style={shared.name}>{roleLabel(invite.role)}</Text>
                     <Text style={shared.help}>{t('share.invite.for', { email: invite.email })}</Text>
-                    {inviteOpen(invite) ? <Action label={busy ? t('share.invite.joining') : t('share.invite.accept')} disabled={busy} onPress={() => void accept()} /> : <Text style={shared.help}>{t('share.invite.closed')}</Text>}
+                    {invite.expiresAt ? <Text style={shared.help}>{t('publishLinks.teamJoin.expires', { date: new Date(invite.expiresAt).toLocaleString() })}</Text> : null}
+                    {state === 'open' ? <Action label={phase === 'accepting' ? t('share.invite.joining') : t('share.invite.accept')} disabled={phase !== 'ready'} onPress={() => void accept()} /> : state === 'accepted' ? (
+                        <>
+                            <Text style={shared.help}>{t('publishLinks.teamJoin.already')}</Text>
+                            <Action label={t('share.invite.open')} onPress={() => router.replace('/publish')} />
+                        </>
+                    ) : <Text style={shared.help}>{state === 'revoked' ? t('publishLinks.teamJoin.revoked') : state === 'expired' ? t('publishLinks.teamJoin.expired') : t('share.invite.closed')}</Text>}
                     <Status text={error} error />
                 </Card>
             ) : error ? (
