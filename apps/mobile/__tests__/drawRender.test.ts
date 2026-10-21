@@ -1,6 +1,15 @@
-/** @jest-environment ./__tests__/support/canvasKitEnv.js */
 import { exportDrawing } from '../src/lib/drawRender';
-const { Skia, ImageFormat, ColorType, AlphaType } = require('@shopify/react-native-skia/lib/commonjs/mock').Mock((globalThis as any).CanvasKit);
+const CanvasKitInit = require('canvaskit-wasm/bin/full/canvaskit');
+
+let Skia: any;
+let ImageFormat: any;
+let ColorType: any;
+let AlphaType: any;
+
+beforeAll(async () => {
+    const canvasKit = await CanvasKitInit({});
+    ({ Skia, ImageFormat, ColorType, AlphaType } = require('@shopify/react-native-skia/lib/commonjs/mock').Mock(canvasKit));
+});
 
 test('pixel export keeps source dimensions and erases marks without erasing the opaque photo', () => {
     const surface = Skia.Surface.Make(300, 200);
