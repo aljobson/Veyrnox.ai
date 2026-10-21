@@ -25,7 +25,7 @@ function openTab(href) {
 }
 const visit = (href) => { globalThis.window.location.href = href; };
 
-const { sendMagicLink, signInWithOAuth, completeOAuthFromCode, clearSession, getSession } = await import('../app/lib/authClient.js');
+const { signUp, sendMagicLink, signInWithOAuth, completeOAuthFromCode, clearSession, getSession, adoptSession } = await import('../app/lib/authClient.js');
 
 const MAGIC_KEY = 'veyrnox_pkce_magic_verifier';
 const OAUTH_KEY = 'veyrnox_pkce_verifier';
@@ -60,10 +60,88 @@ function stubExchange() {
 const noRequest = () => { globalThis.fetch = (url) => String(url) === '/api/auth/session'
     ? Response.json({}) : assert.fail('nothing should have been sent'); };
 
+async function requestSignup() {
+    let request;
+    globalThis.fetch = async (url, init) => {
+        assert.equal(new URL(url).pathname, '/auth/v1/signup');
+        request = { url: new URL(url), body: JSON.parse(init.body) };
+        return Response.json({ id: 'pending-user', identities: [] });
+    };
+    assert.deepEqual(await signUp('user@test.invalid', 'synthetic-password', 'synthetic-captcha'),
+        { session: null, needsConfirmation: true });
+    return request;
+}
+
 test.afterEach(async () => {
     globalThis.fetch = async () => Response.json({});
     clearSession(); localStorage.removeItem(MAGIC_KEY);
     await new Promise(resolve => setImmediate(resolve));
+});
+
+test('signup confirmation uses an S256 challenge and controlled callback origin', async () => {
+    openTab('https://veyrnox.test/?redirect_to=https://attacker.invalid/');
+    const { url, body } = await requestSignup();
+    const verifier = JSON.parse(localStorage.getItem(MAGIC_KEY)).verifier;
+    assert.equal(body.code_challenge_method, 's256');
+    assert.equal(body.code_challenge, await sha256(verifier));
+    assert.equal(url.searchParams.get('redirect_to'), 'https://veyrnox.test/auth/callback');
+    assert.deepEqual(body.gotrue_meta_security, { captcha_token: 'synthetic-captcha' });
+    assert.equal(body.password, 'synthetic-password');
+    assert.deepEqual(sessionStorage.keys(), []);
+});
+
+test('signup email confirmation opens in another tab and exchanges only the matching PKCE verifier', async () => {
+    openTab('https://veyrnox.test/');
+    const { body } = await requestSignup();
+    openTab(CALLBACK);
+    const calls = stubExchange();
+    assert.equal((await completeOAuthFromCode()).user.id, 'user-1');
+    assert.equal(calls.length, 1);
+    assert.equal(await sha256(calls[0].code_verifier), body.code_challenge);
+    assert.equal(localStorage.getItem(MAGIC_KEY), null);
+});
+
+test('signup fails closed before network when the browser cannot retain its verifier', async () => {
+    openTab('https://veyrnox.test/');
+    const original = globalThis.localStorage;
+    globalThis.localStorage = { ...original, setItem() { throw new Error('storage blocked'); } };
+    let requests = 0;
+    globalThis.fetch = async () => { requests += 1; return Response.json({}); };
+    try {
+        await assert.rejects(signUp('user@test.invalid', 'synthetic-password'), /storage blocked/);
+        assert.equal(requests, 0);
+    } finally { globalThis.localStorage = original; }
+});
+
+test('expired signup confirmation cannot exchange or create a session', async (t) => {
+    t.mock.timers.enable({ apis: ['Date'], now: Date.now() });
+    openTab('https://veyrnox.test/');
+    await requestSignup();
+    t.mock.timers.tick(16 * 60 * 1000);
+    openTab(CALLBACK);
+    noRequest();
+    assert.equal(await completeOAuthFromCode(), null);
+    assert.equal(localStorage.getItem(MAGIC_KEY), null);
+});
+
+test('failed signup code exchange consumes its verifier and preserves a signed-out browser', async () => {
+    openTab('https://veyrnox.test/');
+    await requestSignup();
+    openTab(CALLBACK);
+    globalThis.fetch = async () => Response.json({ error: 'invalid_grant' }, { status: 400 });
+    await assert.rejects(completeOAuthFromCode(), { status: 400 });
+    assert.equal(localStorage.getItem(MAGIC_KEY), null);
+    assert.equal(getSession(), null);
+});
+
+test('a legitimate pending signup callback does not replace an already valid account session', async () => {
+    openTab('https://veyrnox.test/');
+    await requestSignup();
+    adoptSession({ access_token: 'existing-user-token', expires_in: 3600, user: { id: 'existing-user' } });
+    openTab(CALLBACK);
+    globalThis.fetch = async () => assert.fail('existing session must not exchange another code');
+    assert.equal((await completeOAuthFromCode()).user.id, 'existing-user');
+    assert.equal(localStorage.getItem(MAGIC_KEY), null);
 });
 
 test('a magic link opened in a new tab signs in with the verifier this browser kept', async () => {

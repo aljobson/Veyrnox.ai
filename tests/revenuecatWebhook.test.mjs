@@ -152,13 +152,27 @@ test('asks RevenueCat to retry when the database fails', async () => {
     assert.equal((await send(purchase())).status, 500);
 });
 
-test('turns a cancellation into a store refund, and ignores one we never credited', async () => {
+test('turns a cancellation into a durable store refund', async () => {
     handlers.apply_store_refund = json({ ok: true, taken: 100 });
     const refund = purchase({ type: 'CANCELLATION', cancel_reason: 'CUSTOMER_SUPPORT' });
     assert.equal((await send(refund)).status, 200);
     assert.deepEqual(rpcCalls('apply_store_refund')[0].body, { p_channel: 'android', p_transaction_id: 'GPA.1234-5678-9012-34567' });
+});
+
+test('acknowledges a refund before its purchase only after durable database acceptance', async () => {
+    handlers.apply_store_refund = json({ ok: true, pending_purchase: true, taken: 0 });
+    const res = await send(purchase({ type: 'CANCELLATION' }));
+    assert.equal(res.status, 200);
+    assert.deepEqual(await res.json(), { ok: true });
+    assert.equal(calls.filter((c) => c.name === 'webhook_events' && c.method === 'PATCH').length, 1);
+});
+
+test('retries an old database ORDER_NOT_FOUND instead of permanently dropping the refund', async () => {
     handlers.apply_store_refund = json({ ok: false, code: 'ORDER_NOT_FOUND' });
-    assert.equal((await (await send(purchase({ type: 'CANCELLATION', id: 'evt-bbbbbbbb-2' }))).json()).ignored, true);
+    const res = await send(purchase({ type: 'CANCELLATION' }));
+    assert.equal(res.status, 500);
+    assert.deepEqual(await res.json(), { error: 'internal' });
+    assert.equal(calls.filter((c) => c.name === 'webhook_events' && c.method === 'PATCH').length, 0);
 });
 
 test('the customer id route is off, authenticated, and returns only the caller\'s own id', async () => {
@@ -223,6 +237,14 @@ test('never applies a sandbox subscription in production', async () => {
     handlers.apply_store_publish_event = json({ ok: true });
     assert.equal((await (await send(sub('RENEWAL', { environment: 'SANDBOX' }))).json()).ignored, true);
     assert.equal(rpcCalls('apply_store_publish_event').length, 0);
+});
+
+test('does not finalize a subscription event that arrived before its subscription', async () => {
+    handlers.apply_store_publish_event = json({ ok: false, code: 'SUBSCRIPTION_NOT_FOUND' });
+    const res = await send(sub('CANCELLATION', { cancel_reason: 'CUSTOMER_SUPPORT' }));
+    assert.equal(res.status, 500);
+    assert.deepEqual(await res.json(), { error: 'internal' });
+    assert.equal(calls.filter((c) => c.name === 'webhook_events' && c.method === 'PATCH').length, 0);
 });
 
 test('warns on a flagged subscription and on final verdicts, and retries on a database error', async () => {

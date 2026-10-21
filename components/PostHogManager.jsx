@@ -3,7 +3,6 @@ import LegalLink from './LegalLink';
 import { rich } from '../lib/i18n/rich';
 import { useI18n } from './I18nProvider';
 
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { usePostHog } from '@posthog/next';
@@ -22,16 +21,8 @@ import {
 const forceConsentedReplay = normaliseReplaySampleRate(process.env.NEXT_PUBLIC_POSTHOG_REPLAY_SAMPLE_RATE) === 1;
 const signedInAccount = () => getSession()?.user?.id || null;
 const signedOutAccount = () => null;
-
-// The "Privacy choices" button hides once the visitor has answered, for the rest
-// of this browser session. It is keyed to the account, so signing in or out
-// brings it back. The choice itself stays in localStorage.
-const DISMISSED_KEY = 'veyrnox_privacy_choices_dismissed';
-const readDismissedFor = () => {
-  try { return window.sessionStorage.getItem(DISMISSED_KEY); } catch { return null; }
-};
-const writeDismissedFor = (account) => {
-  try { window.sessionStorage.setItem(DISMISSED_KEY, account); } catch { /* private mode: button just stays visible */ }
+const preferenceStorage = () => {
+  try { return window.localStorage; } catch { return undefined; }
 };
 
 export default function PostHogManager() {
@@ -41,12 +32,11 @@ export default function PostHogManager() {
   const accountId = useSyncExternalStore(onSessionChange, signedInAccount, signedOutAccount);
   const [preference, setPreference] = useState(undefined);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [dismissedFor, setDismissedFor] = useState(null);
   const previousAccount = useRef(null);
 
   useEffect(() => {
     const explicit = posthog.get_explicit_consent_status();
-    const saved = readAnalyticsPreference(window.localStorage);
+    const saved = readAnalyticsPreference(preferenceStorage());
     if (saved && ((explicit === 'granted') === saved.analytics)) setPreference(saved);
     else if (explicit === 'granted') setPreference({ analytics: true, replay: false });
     else if (explicit === 'denied') setPreference({ analytics: false, replay: false });
@@ -54,10 +44,9 @@ export default function PostHogManager() {
 
     const onStorage = (event) => {
       if (event.key !== ANALYTICS_PREFERENCE_KEY && event.key !== null) return;
-      const next = readAnalyticsPreference(window.localStorage);
+      const next = readAnalyticsPreference(preferenceStorage());
       if (next) setPreference(next);
     };
-    setDismissedFor(readDismissedFor());
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
   }, [posthog]);
@@ -139,7 +128,7 @@ export default function PostHogManager() {
   }, [posthog, preference?.analytics]);
 
   function choose(next) {
-    const saved = writeAnalyticsPreference(window.localStorage, next);
+    const saved = writeAnalyticsPreference(preferenceStorage(), next);
     if (saved.analytics) posthog.opt_in_capturing({ captureEventName: false });
     else {
       posthog.stopSessionRecording();
@@ -147,12 +136,9 @@ export default function PostHogManager() {
     }
     setPreference(saved);
     setSettingsOpen(false);
-    writeDismissedFor(accountId || '');
-    setDismissedFor(accountId || '');
   }
 
   const bannerOpen = preference === null || settingsOpen;
-  const buttonHidden = dismissedFor !== null && dismissedFor === (accountId || '');
   if (preference === undefined) return null;
 
   return (
@@ -184,7 +170,7 @@ export default function PostHogManager() {
             </div>
           </div>
         </section>
-      ) : buttonHidden ? null : (
+      ) : (
         <button
           data-print="hide"
           type="button"

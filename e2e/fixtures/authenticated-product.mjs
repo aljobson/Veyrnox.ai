@@ -52,7 +52,12 @@ export async function installProductFixtures(page, options = {}) {
   const target = new URL(origin);
   if (target.protocol !== 'http:' || !['localhost', '127.0.0.1', '[::1]'].includes(target.hostname) || target.username || target.password) throw new Error('Synthetic product fixture requires loopback HTTP');
   const state = { balance: 1000, user: options.user === undefined ? { ...SYNTHETIC_USER } : options.user, ...options.state };
-  const fixture = { state, requests: [], unhandled: [], blocked: [], errors: [] };
+  const fixture = { state, requests: [], analyticsRequests: [], unhandled: [], blocked: [], errors: [] };
+  // The dedicated CI build enables only a made-up analytics key. Fulfill its
+  // SDK bootstrap locally; never let the local ingest proxy reach a vendor.
+  const analyticsScripts = new Set(['/ingest/array/phc_synthetic_privacy_qa/config.js',
+    '/ingest/static/1.438.10/exception-autocapture.js', '/ingest/static/exception-autocapture.js']);
+  const analyticsCaptures = new Set(['/ingest/e/', '/ingest/i/v0/e/', '/ingest/batch/']);
   const context = page.context();
   const pendingRoutes = new Set(), pendingPreparations = new Set();
   const preparedPages = new WeakSet();
@@ -98,6 +103,18 @@ export async function installProductFixtures(page, options = {}) {
       fixture.blocked.push(unexpected);
       fixture.unhandled.push(unexpected);
       return route.abort('blockedbyclient');
+    }
+    if (method === 'GET' && analyticsScripts.has(url.pathname)) {
+      fixture.analyticsRequests.push(entry);
+      return route.fulfill({ status: 200, contentType: 'application/javascript', body: '' });
+    }
+    if (method === 'GET' && url.pathname === '/ingest/array/phc_synthetic_privacy_qa/config') {
+      fixture.analyticsRequests.push(entry);
+      return json({ featureFlags: {}, featureFlagPayloads: {}, sessionRecording: false });
+    }
+    if (method === 'POST' && analyticsCaptures.has(url.pathname)) {
+      fixture.analyticsRequests.push(entry);
+      return json({ status: 1 });
     }
     if (url.pathname.startsWith('/api/')) {
       fixture.requests.push(entry);

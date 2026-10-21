@@ -33,8 +33,10 @@ jobs:
           npm install --no-save --no-audit --no-fund @playwright/test@1.63.0
           npx playwright install --with-deps chromium
       - name: Lint isolated browser fixtures
-        run: npx eslint e2e/fixtures/authenticated-product.mjs tests/authenticatedFixtureSafety.test.mjs tests/authenticatedFeatureQaWorkflow.test.mjs --max-warnings=0
+        run: npx eslint e2e/fixtures/authenticated-product.mjs e2e/authenticated-privacy-choices.spec.mjs tests/authenticatedFixtureSafety.test.mjs tests/authenticatedFeatureQaWorkflow.test.mjs --max-warnings=0
       - name: Build owned local application
+        env:
+          NEXT_PUBLIC_POSTHOG_KEY: phc_synthetic_privacy_qa
         run: npm run build -- --webpack
       - name: Exercise all isolated authenticated features
         env:
