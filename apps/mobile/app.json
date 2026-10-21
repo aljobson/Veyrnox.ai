@@ -14,7 +14,9 @@
         "ITSAppUsesNonExemptEncryption": false
       },
       "associatedDomains": [
-        "applinks:veyrnox.ai"
+        "applinks:veyrnox.ai",
+        "webcredentials:veyrnox.ai",
+        "webcredentials:veyrnox-ai-staging.al-jobson.workers.dev"
       ],
       "privacyManifests": {
         "NSPrivacyTracking": false,
@@ -158,6 +160,11 @@
               "scheme": "https",
               "host": "veyrnox.ai",
               "pathPrefix": "/app/publish"
+            },
+            {
+              "scheme": "https",
+              "host": "veyrnox.ai",
+              "pathPrefix": "/social/team/invite/"
             }
           ],
           "category": [
@@ -183,8 +190,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Veyrnox.ai reads the photo or video you choose to use as a starting point for a creation.",
-          "cameraPermission": false,
+          "photosPermission": "Veyrnox.ai reads the photo or video you choose, to use as a starting point for a creation or to post with Publish.",
+          "cameraPermission": "Veyrnox.ai uses the camera when you take a photo to post with Publish.",
           "microphonePermission": false
         }
       ],

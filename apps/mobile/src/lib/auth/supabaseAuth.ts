@@ -35,7 +35,7 @@ export function toSession(body: TokenResponse, now: number): Session {
     };
 }
 
-async function authPost(path: string, payload: Record<string, unknown>): Promise<TokenResponse> {
+async function authPost<T = TokenResponse>(path: string, payload: Record<string, unknown>): Promise<T> {
     let res: Response;
     try {
         res = await fetch(`${config.supabaseUrl}${path}`, {
@@ -48,7 +48,7 @@ async function authPost(path: string, payload: Record<string, unknown>): Promise
     }
     const body = (await res.json().catch(() => ({}))) as TokenResponse;
     if (!res.ok) throw new AuthError(res.status, body.error_code || body.error || 'rejected');
-    return body;
+    return body as T;
 }
 
 async function tokenRequest(grantType: string, payload: Record<string, unknown>, now = Date.now()): Promise<Session> {
@@ -107,4 +107,12 @@ export async function revokeSession(accessToken: string): Promise<void> {
     } catch {
         // Offline sign-out still clears the device.
     }
+}
+
+export function passkeySignInOptions(captchaToken: string): Promise<unknown> {
+    return authPost<unknown>('/auth/v1/passkeys/authentication/options', withCaptcha({}, captchaToken));
+}
+
+export async function passkeySignInVerify(challengeId: string, credential: Record<string, unknown>, now = Date.now()): Promise<Session> {
+    return toSession(await authPost('/auth/v1/passkeys/authentication/verify', { challenge_id: challengeId, credential }), now);
 }

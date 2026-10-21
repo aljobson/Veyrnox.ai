@@ -191,3 +191,47 @@ test('the default session fixture permits only POST refresh and fails unexpected
   assert.equal(await request(url, 'POST', 200, { action: 'refresh' }), 'fulfill');
   assert.equal(response().status, 401);
 });
+
+test('actual fixture fulfills only the pinned synthetic analytics config/scripts without a proxy or network request', async () => {
+  const { fixture, request, response } = await installedRouting();
+  const scriptPaths = ['/ingest/array/phc_synthetic_privacy_qa/config.js',
+    '/ingest/static/1.438.10/exception-autocapture.js', '/ingest/static/exception-autocapture.js'];
+  for (const path of [...scriptPaths, '/ingest/array/phc_synthetic_privacy_qa/config']) {
+    assert.equal(await request(`http://localhost:3100${path}`, 'GET', 200, null, {
+      fetch() { assert.fail('SDK fixtures must never call the ingest proxy or network'); },
+    }), 'fulfill');
+    if (scriptPaths.includes(path)) {
+      assert.equal(response().contentType, 'application/javascript');
+      assert.equal(response().body, '');
+    } else assert.deepEqual(JSON.parse(response().body), { featureFlags: {}, featureFlagPayloads: {}, sessionRecording: false });
+  }
+  assert.equal(fixture.unhandled.length, 0);
+  assert.equal(fixture.requests.length, 0, 'analytics fixtures are not product API writes');
+  assert.equal(fixture.analyticsRequests.length, 4, 'synthetic analytics handling remains separately observable');
+});
+
+test('actual fixture captures known analytics transport locally while preserving unknown-path/method and origin refusals', async () => {
+  const { fixture, request, response } = await installedRouting();
+  for (const path of ['/ingest/e/', '/ingest/i/v0/e/', '/ingest/batch/']) {
+    assert.equal(await request(`http://localhost:3100${path}`, 'POST', 200, { event: 'synthetic-event' }, {
+      fetch() { assert.fail('No analytics payload may leave the fixture'); },
+    }), 'fulfill');
+    assert.deepEqual(JSON.parse(response().body), { status: 1 });
+  }
+  assert.equal(fixture.analyticsRequests.length, 3);
+  for (const [url, method] of [
+    ['http://localhost:3100/ingest/array/phc_real_project/config', 'GET'],
+    ['http://localhost:3100/ingest/static/unknown.js', 'GET'],
+    ['http://localhost:3100/ingest/static/1.438.11/exception-autocapture.js', 'GET'],
+    ['http://localhost:3100/ingest/array/phc_synthetic_privacy_qa/config', 'POST'],
+    ['http://localhost:3100/ingest/e/', 'GET'],
+    ['http://localhost:3100/ingest/i/v0/e/', 'PUT'],
+    ['http://localhost:3100/ingest/unknown', 'POST'],
+    ['https://eu.i.posthog.com/ingest/e/', 'POST'],
+    ['http://localhost:3100/api/v1/generations', 'POST'],
+    ['http://localhost:3100/api/auth/session', 'POST'],
+  ]) assert.equal(await request(url, method), 'abort');
+  assert.equal(fixture.unhandled.length, 10);
+  assert.equal(fixture.blocked.length, 1, 'even known analytics endpoints on a vendor origin are refused');
+  assert.equal(fixture.analyticsRequests.length, 3, 'refused transports do not enter the synthetic analytics acceptance list');
+});

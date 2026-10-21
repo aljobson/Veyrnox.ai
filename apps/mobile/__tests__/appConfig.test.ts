@@ -40,12 +40,21 @@ describe('iOS privacy manifest', () => {
 describe('permissions', () => {
     const plugin = (name: string) => (expo.plugins as unknown[]).find((p) => p === name || (Array.isArray(p) && p[0] === name));
 
-    test('camera and microphone are off in the picker, and Face ID is not requested', () => {
-        expect(plugin('expo-image-picker')).toEqual(['expo-image-picker', expect.objectContaining({ cameraPermission: false, microphonePermission: false })]);
+    test('Publish camera and photo wording is explicit; microphone and Face ID remain off', () => {
+        expect(plugin('expo-image-picker')).toEqual(['expo-image-picker', { cameraPermission: 'Veyrnox.ai uses the camera when you take a photo to post with Publish.', photosPermission: 'Veyrnox.ai reads the photo or video you choose, to use as a starting point for a creation or to post with Publish.', microphonePermission: false }]);
         expect(plugin('expo-secure-store')).toEqual(['expo-secure-store', { faceIDPermission: false }]);
     });
 
     test('no other usage strings are set by hand', () => {
         expect(Object.keys(expo.ios.infoPlist)).toEqual(['ITSAppUsesNonExemptEncryption']);
     });
+});
+
+test('passkey relying parties are associated without extra native permissions or plugin', () => {
+    expect(expo.ios.associatedDomains).toEqual([
+        'applinks:veyrnox.ai',
+        'webcredentials:veyrnox.ai',
+        'webcredentials:veyrnox-ai-staging.al-jobson.workers.dev',
+    ]);
+    expect(expo.plugins).not.toContain('react-native-passkeys');
 });

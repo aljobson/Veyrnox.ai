@@ -54,7 +54,7 @@ export async function FeaturedHeroCards({ catalog }) {
   const { t } = await getT();
   const rowOf = (id) => catalog.find((m) => m.id === id);
   return (
-    <section id="explore" aria-labelledby="featured-title" className="px-4 sm:px-6 max-w-[1300px] mx-auto">
+    <section id="explore" aria-labelledby="featured-title" data-vey-perch className="px-4 sm:px-6 max-w-[1300px] mx-auto">
       <h2 id="featured-title" className="sr-only">{t('home.cards.heading')}</h2>
       <p id="featured-scroll-hint" className="sr-only">{t('home.cards.hint')}</p>
       {/* Below sm the five tiles are one swipe row, not a stack. It runs to

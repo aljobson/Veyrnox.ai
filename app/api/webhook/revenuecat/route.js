@@ -12,7 +12,7 @@
  *   5. A purchase goes to credit_store_purchase, which resolves the secret
  *      RevenueCat customer id to its account (store_customers) and grants once on
  *      the store transaction. The payload never names an account. A refund goes to
- *      apply_store_refund, found by the transaction we credited.
+ *      apply_store_refund, which durably records refunds even before the purchase arrives.
  *   6. Transient failure -> 5xx so RevenueCat retries (about 80 minutes).
  *
  * Response bodies stay generic; details go to server logs only.
@@ -29,7 +29,9 @@ import { storeBillingEnabled, storeSandboxAllowed } from '../../../../lib/storeB
 const SOURCE = 'billing:revenuecat';
 const LOG = '[revenuecat-webhook]';
 // Verdicts that will never change on retry: record them and answer 200.
-const FINAL_SUBSCRIPTION = new Set(['CUSTOMER_NOT_FOUND', 'PLAN_NOT_FOUND', 'SUBSCRIPTION_NOT_FOUND', 'SUBSCRIPTION_OWNED_BY_OTHER', 'INVALID_EVENT']);
+// A missing subscription can be an earlier event still in flight, not a final
+// refusal. Keep it retryable; store subscription activation remains gated.
+const FINAL_SUBSCRIPTION = new Set(['CUSTOMER_NOT_FOUND', 'PLAN_NOT_FOUND', 'SUBSCRIPTION_OWNED_BY_OTHER', 'INVALID_EVENT']);
 const FINAL_PURCHASE = new Set(['CUSTOMER_NOT_FOUND', 'PACK_NOT_FOUND', 'ORDER_ALREADY_USED', 'BAD_CHANNEL', 'INVALID_TRANSACTION_ID', 'INVALID_PRODUCT']);
 
 async function handler(req) {
@@ -140,11 +142,9 @@ async function applyRefund(cfg, p) {
         await markProcessed(cfg, SOURCE, p.eventId);
         return NextResponse.json({ ok: true, ...(res.flagged ? { warn: 'flagged' } : {}) });
     }
-    if (res && res.code === 'ORDER_NOT_FOUND') {
-        // A cancellation of something we never credited (not a Credit Pack).
-        await markProcessed(cfg, SOURCE, p.eventId);
-        return NextResponse.json({ ok: true, ignored: true });
-    }
+    // Older database releases can return ORDER_NOT_FOUND while the purchase is
+    // still in flight. Never finalize that event: ask for retry until the
+    // durable refund-ordering migration is available.
     console.error(LOG, 'apply_store_refund gave no usable verdict:', p.eventId, res && res.code);
     return NextResponse.json({ error: 'internal' }, { status: 500 });
 }

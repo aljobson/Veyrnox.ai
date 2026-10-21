@@ -10,6 +10,7 @@ import { Button } from '../../../_components/Button';
 import { Modal } from '../../../_components/Modal';
 import { useProjectsEnabled } from '../../../_components/ProjectsFlag';
 import { gatewayFetch, makeIdempotencyKey } from '../../../_lib/gateway';
+import { isOddlingsDocument } from '../../../../../lib/projectOddlingsDocument.js';
 import { equalProjectDocuments as same } from '../../../../../lib/projectDocument';
 
 const field='w-full rounded-xl border border-vx-border bg-vx-base px-4 py-3 text-sm focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vx-accent disabled:opacity-50';
@@ -57,6 +58,7 @@ function DocumentEditor({id}){
       try{
         const [p,d]=await Promise.all([gatewayFetch(endpoint),gatewayFetch(`${endpoint}/document`)]);
         if(cancelled)return;
+        if(isOddlingsDocument(d.document)){setLoadError(t("app.editor.project.unavailable"));return;}
         setProject(p.project);setDraft(d.document);setSaved(d.document);setRevision(d.revision);setSavedAt(d.created_at);
         readHistory();
       }catch(e){if(!cancelled)setLoadError(e.status===404?t("app.projects.gone"):t("app.projects.loadFailed"));}
@@ -71,7 +73,7 @@ function DocumentEditor({id}){
   },[dirty,busy]);
 
   const save=useCallback(async({restore=null,against=revision}={})=>{
-    if(writing.current||!draftRef.current)return;
+    if(loadError||writing.current||!draftRef.current)return;
     writing.current=true;setBusy(true);setError('');
     const snapshot=draftRef.current;
     const body=JSON.stringify({expected_revision:against,...(restore?{restore_revision:restore}:{document:snapshot})});
@@ -84,16 +86,16 @@ function DocumentEditor({id}){
       readHistory();
     }catch(e){if(alive.current){setError(message(e, t));setConflict(e.status===409&&e.code!=='account_changed');}}
     finally{writing.current=false;if(alive.current)setBusy(false);}
-  },[endpoint,revision,readHistory,t]);
+  },[endpoint,revision,readHistory,t,loadError]);
   useEffect(()=>{
-    if(!dirty||busy||error||conflict||preview)return;
+    if(loadError||!dirty||busy||error||conflict||preview)return;
     const timer=setTimeout(()=>save(),3000);
     return()=>clearTimeout(timer);
-  },[draft,dirty,busy,error,conflict,preview,save]);
+  },[draft,dirty,busy,error,conflict,preview,save,loadError]);
   async function reviewLatest(){
     if(writing.current)return;
     setBusy(true);writing.current=true;
-    try{const r=await gatewayFetch(`${endpoint}/document`,{signal:AbortSignal.timeout(15000)});if(alive.current)setRemote(r);}
+    try{const r=await gatewayFetch(`${endpoint}/document`,{signal:AbortSignal.timeout(15000)});if(alive.current){if(isOddlingsDocument(r.document)){setLoadError(t("app.editor.project.unavailable"));return;}setRemote(r);}}
     catch(e){if(alive.current)setError(message(e, t));}
     finally{writing.current=false;if(alive.current)setBusy(false);}
   }
@@ -107,6 +109,7 @@ function DocumentEditor({id}){
     if((dirty||busy)&&event.target.closest('a[href]')&&!window.confirm(t("app.projects.leave")))event.preventDefault();
   }
   function acceptRemote(){
+    if(isOddlingsDocument(remote.document)){setLoadError(t("app.editor.project.unavailable"));return;}
     setDraft(remote.document);setSaved(remote.document);setRevision(remote.revision);setSavedAt(remote.created_at);
     setRemote(null);setConflict(false);setError('');pending.current=null;readHistory();
   }

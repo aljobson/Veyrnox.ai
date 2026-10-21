@@ -26,6 +26,7 @@ import area_cinema from './en/cinema';
 import area_cinemaBrowse from './en/cinemaBrowse';
 import area_cinemaCreator from './en/cinemaCreator';
 import area_cinemaPass from './en/cinemaPass';
+import area_cinemaSeries from './en/cinemaSeries';
 import area_cinemaSocial from './en/cinemaSocial';
 import area_cinemaUpload from './en/cinemaUpload';
 import area_comments from './en/comments';
@@ -39,6 +40,7 @@ import area_credits from './en/credits';
 import area_dev from './en/dev';
 import area_drafts from './en/drafts';
 import area_edit from './en/edit';
+import area_editor from './en/editor';
 import area_email from './en/email';
 import area_empty from './en/empty';
 import area_explore from './en/explore';
@@ -50,6 +52,7 @@ import area_home from './en/home';
 import area_inbox from './en/inbox';
 import area_insights from './en/insights';
 import area_job from './en/job';
+import area_jobCancel from './en/jobCancel';
 import area_label from './en/label';
 import area_library from './en/library';
 import area_libsrc from './en/libsrc';
@@ -63,6 +66,7 @@ import area_oac from './en/oac';
 import area_oauth from './en/oauth';
 import area_oddlings from './en/oddlings';
 import area_opt from './en/opt';
+import area_passkey from './en/passkey';
 import area_pk from './en/pk';
 import area_plan from './en/plan';
 import area_prc from './en/prc';
@@ -71,6 +75,8 @@ import area_pricing from './en/pricing';
 import area_prov from './en/prov';
 import area_public from './en/public';
 import area_publish from './en/publish';
+import area_publishLinks from './en/publishLinks';
+import area_publishUploads from './en/publishUploads';
 import area_publishWorkflows from './en/publishWorkflows';
 import area_queue from './en/queue';
 import area_queues from './en/queues';
@@ -117,6 +123,7 @@ const catalog = {
     ...area_cinemaBrowse,
     ...area_cinemaCreator,
     ...area_cinemaPass,
+    ...area_cinemaSeries,
     ...area_cinemaSocial,
     ...area_cinemaUpload,
     ...area_comments,
@@ -130,6 +137,7 @@ const catalog = {
     ...area_dev,
     ...area_drafts,
     ...area_edit,
+    ...area_editor,
     ...area_email,
     ...area_empty,
     ...area_explore,
@@ -141,6 +149,7 @@ const catalog = {
     ...area_inbox,
     ...area_insights,
     ...area_job,
+    ...area_jobCancel,
     ...area_label,
     ...area_library,
     ...area_libsrc,
@@ -154,6 +163,7 @@ const catalog = {
     ...area_oauth,
     ...area_oddlings,
     ...area_opt,
+    ...area_passkey,
     ...area_pk,
     ...area_plan,
     ...area_prc,
@@ -162,6 +172,8 @@ const catalog = {
     ...area_prov,
     ...area_public,
     ...area_publish,
+    ...area_publishLinks,
+    ...area_publishUploads,
     ...area_publishWorkflows,
     ...area_queue,
     ...area_queues,

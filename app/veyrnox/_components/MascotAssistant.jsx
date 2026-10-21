@@ -30,6 +30,7 @@ import { physicalVeyPanelSide } from '../../../lib/veyPlacement';
 import useVeyPlacement from '../_lib/useVeyPlacement';
 import useVeyWorkspaceSession from '../_lib/useVeyWorkspaceSession';
 import useVeyMobileLayout from '../_lib/useVeyMobileLayout';
+import useVeyMotion from '../_lib/useVeyMotion';
 import useEditorHelperHost from '../_lib/useEditorHelperHost';
 import { EditorHelperLauncher } from './editor/EditorHelperLauncher';
 import { splitLocalePath } from '../../../lib/i18n/locales.mjs';
@@ -134,17 +135,26 @@ export default function MascotAssistant() {
   const { activeTarget, highlight, hand, point, locate: locateTarget, clear: clearPointer } = useVeyPointer({ reduceMotion, moveMascot, setFacing, activateTarget, clearAction, manualPosition });
   const mobileLayout = useVeyMobileLayout({ open, pathname, position, manualPosition, panelSide: physicalVeyPanelSide(panelSide, locale), highlight, hand, facing, pointRequest: mobilePointRequest, activeTarget, rtl: locale === 'ar' });
   const editorHelperHost = useEditorHelperHost(pathname);
+  const { reaction, landing, cheer } = useVeyMotion({
+    paused: reduceMotion || !!manualPosition || drag.dragging || !!activeTarget || travelling || actionPhase !== 'none' || journeyActive || !!editorHelperHost,
+    stationary: open,
+    rtl: locale === 'ar',
+    pathname,
+  });
   const clearTarget = useCallback(() => {
     window.clearTimeout(timerRef.current);
     clearAction(); clearPointer(); setPendingTarget(null);
   }, [clearAction, clearPointer]);
 
   useEffect(() => {
-    const update = () => { if (!activeTarget) setPosition(manualPosition ? clampVeyPosition(manualPosition, { width: innerWidth, height: innerHeight }) : open ? perchPosition() : homePosition()); };
+    const update = () => { if (!activeTarget) setPosition(manualPosition ? clampVeyPosition(manualPosition, { width: innerWidth, height: innerHeight }) : open ? perchPosition() : landing ? landing.position : homePosition()); };
     const frame = requestAnimationFrame(update);
     window.addEventListener('resize', update);
     return () => { cancelAnimationFrame(frame); window.removeEventListener('resize', update); };
-  }, [activeTarget, homePosition, open, perchPosition, manualPosition]);
+  }, [activeTarget, homePosition, open, perchPosition, manualPosition, landing]);
+
+  // Landing beside a section turns Vey to face it; leaving the gutter turns it back.
+  useEffect(() => { if (!activeTarget) setFacing(landing ? landing.facing : 1); }, [activeTarget, landing]);
 
   const showTarget = useCallback((id, options = {}) => {
     if (window.innerWidth < 640 && !options.explicit) return;
@@ -315,9 +325,11 @@ export default function MascotAssistant() {
         ? 'thinking'
         : activeTarget
           ? 'guiding'
-          : open
-            ? 'listening'
-            : 'idle';
+          : reaction === 'cheer'
+            ? 'cheer'
+            : open
+              ? 'listening'
+              : reaction || 'idle';
 
   const resetConversation = useCallback(() => {
     savedSubjectRef.current = null;
@@ -396,7 +408,7 @@ export default function MascotAssistant() {
           aria-expanded={open}
           aria-describedby="vey-position-help"
           {...drag.handlers}
-          onClick={toggleHelper}
+          onClick={() => { cheer(); toggleHelper(); }}
           className="pointer-events-auto touch-none select-none cursor-grab active:cursor-grabbing group relative block rounded-[17px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-accent"
           animate={mobileLayout.docked || activeTarget || manualPosition || reduceMotion ? { y: 0 } : travelling
             ? { y: [0, -5, 0] }

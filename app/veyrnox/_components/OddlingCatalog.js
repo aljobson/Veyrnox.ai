@@ -2,7 +2,7 @@
 import { useI18n } from '../../../components/I18nProvider';
 
 import { localeTag } from '../../../lib/i18n/locales.mjs';
-import { pluralKey } from '../../../lib/i18n/translate.mjs';
+import { pluralKey, tOr } from '../../../lib/i18n/translate.mjs';
 import { useState } from 'react';
 import { CATALOG_CATEGORIES, CATEGORY_FOCUS, CATEGORY_ICONS, categoryById, categoryGroups, categoryProgress, controlKind } from '../_lib/oddlingCatalog';
 import { CHARACTER_GROUPS } from '../_lib/character';
@@ -50,18 +50,18 @@ export function OddlingCatalog({ picks, onPick, onClear }) {
             {CATALOG_CATEGORIES.map((item) => {
               const on = item.id === categoryId, { picked } = categoryProgress(item, picks);
               return (
-                <button key={item.id} type="button" role="tab" aria-selected={on} onClick={() => setCategoryId(item.id)} title={item.hint}
+                <button key={item.id} type="button" role="tab" aria-selected={on} onClick={() => setCategoryId(item.id)} title={tOr(t, `app.data.oddling.${item.id}`, item.hint)}
                   className={`relative flex min-w-[64px] shrink-0 flex-col items-center gap-1 rounded-lg px-2 py-2 text-[10px] font-bold lg:min-w-[84px] lg:py-3 lg:text-xs ${on ? 'bg-vx-accent/[0.1] text-vx-accent' : 'text-vx-fg-muted hover:text-vx-fg'}`}>
                   <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={CATEGORY_ICONS[item.id]} /></svg>
-                  <span>{item.label}</span>
+                  <span>{tOr(t, `app.data.oddlingLabel.${item.id}`, item.label)}</span>
                   {picked > 0 && <span className="absolute end-1 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-vx-accent px-1 font-vx-mono text-[8px] font-bold text-vx-accent-ink" aria-label={t(pluralKey(t, locale, 'app.oddlings.catalog.chosen', picked), {count:number(picked)})}>{number(picked)}</span>}
                 </button>
               );
             })}
           </div>
 
-          <div role="tabpanel" aria-label={category.label} className="space-y-6 p-3 lg:p-6">
-            <p className="text-[11px] text-vx-fg-faint lg:text-xs">{category.hint}</p>
+          <div role="tabpanel" aria-label={tOr(t, `app.data.oddlingLabel.${category.id}`, category.label)} className="space-y-6 p-3 lg:p-6">
+            <p className="text-[11px] text-vx-fg-faint lg:text-xs">{tOr(t, `app.data.oddling.${category.id}`, category.hint)}</p>
             {groups.map((group) => {
               const kind = controlKind(group.id);
               if (kind === 'swatch') return <SwatchGroup key={group.id} group={group} value={picks?.[group.id]} onChange={onPick} />;

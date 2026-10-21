@@ -1,3 +1,4 @@
+import { passkeyGate } from '../lib/passkeys';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
@@ -83,6 +84,14 @@ export default function SignIn() {
             >
                 <Text style={styles.buttonText}>{t('authGate.continueWithGoogle')}</Text>
             </Pressable>
+            {passkeyGate() ? (
+                <Link href="/passkey" asChild>
+                    <Pressable accessibilityRole="button" accessibilityLabel={t('passkey.signIn')} accessibilityState={{ disabled: blocked }}
+                        disabled={blocked} style={StyleSheet.flatten([styles.button, { minHeight: MIN_TARGET }, blocked && styles.off])}>
+                        <Text style={styles.buttonText}>{t('passkey.signIn')}</Text>
+                    </Pressable>
+                </Link>
+            ) : null}
             <Link href="/email" asChild>
                 <Pressable accessibilityRole="button" disabled={blocked} style={StyleSheet.flatten([styles.button, blocked && styles.off])}>
                     <Text style={styles.buttonText}>{t('signIn.email')}</Text>

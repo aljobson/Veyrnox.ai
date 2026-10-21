@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { register } from 'node:module';
-import { localeFromCookie, localeCookie, rememberLocale, isAppLocalePath } from '../lib/i18n/localeCookie.mjs';
+import { localeFromCookie, localeCookie, rememberLocale, isAppLocalePath, isSmartLinkLocalePath } from '../lib/i18n/localeCookie.mjs';
 import { LOCALES, switchLanguageHref } from '../lib/i18n/locales.mjs';
 
 register('data:text/javascript,' + encodeURIComponent(`export async function resolve(s,c,next){return next(s==='next/server'?'next/server.js':s,c);}`));
@@ -50,15 +50,15 @@ test('middleware overwrites forged page headers, using cookies only for enabled 
   try {
     for (const enabled of ['true', 'false']) {
       process.env.LOCALES_ENABLED = enabled;
-      for (const route of ['/app', '/app/create', '/app/library', '/app/account', '/app/chat', '/app/admin', '/app/admin/users', '/', '/pricing', '/legal/privacy', '/application']) {
+      for (const route of ['/app', '/app/create', '/app/library', '/app/account', '/app/chat', '/app/admin', '/app/admin/users', '/', '/pricing', '/legal/privacy', '/application', '/s/test', '/s/test/', '/s/test/go/item', '/s', '/s/test/extra']) {
         for (const cookie of ['', 'veyrnox_locale=ar', 'veyrnox_locale=DE', 'veyrnox_locale=garbage']) {
           const request = new Request(`https://veyrnox.test${route}`, { headers: { cookie, 'x-site-locale': 'ja', 'x-site-path': '/app/create' } });
           const response = await middleware(request);
           // OpenNext overlays headers set by middleware; deleting is insufficient.
           const forwarded = new Headers(request.headers);
           response.headers.forEach((value, key) => { if (key.startsWith('x-middleware-request-')) forwarded.set(key.slice(21), value); });
-          assert.equal(forwarded.get('x-site-locale'), enabled === 'true' && isAppLocalePath(route) && cookie === 'veyrnox_locale=ar' ? 'ar' : 'en', `${enabled} ${route} ${cookie}`);
-          assert.equal(forwarded.get('x-site-path'), route);
+          assert.equal(forwarded.get('x-site-locale'), enabled === 'true' && (isAppLocalePath(route) || isSmartLinkLocalePath(route)) && cookie === 'veyrnox_locale=ar' ? 'ar' : 'en', `${enabled} ${route} ${cookie}`);
+          assert.equal(forwarded.get('x-site-path'), route === '/' ? route : route.replace(/\/$/, ''));
         }
       }
     }

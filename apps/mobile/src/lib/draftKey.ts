@@ -17,7 +17,7 @@ interface Saved {
 
 // What would be posted: the creation, the accounts (in any order), the text and the time.
 export function draftSignature(draft: Draft): string {
-    return JSON.stringify([draft.jobId, draft.mediaType, [...draft.accountIds].sort(), draft.text.trim(), draft.queue ? `queue:${draft.queue.id}` : draft.when.kind === 'now' ? 'now' : draft.when.at.toISOString(), Object.entries(draft.networkText ?? {}).sort(([a], [b]) => (a < b ? -1 : 1)), draft.youtubeVisibility ?? null]);
+    return JSON.stringify([draft.uploadId ? `upload:${draft.uploadId}` : draft.jobId, draft.mediaType, [...draft.accountIds].sort(), draft.text.trim(), draft.queue ? `queue:${draft.queue.id}` : draft.when.kind === 'now' ? 'now' : draft.when.at.toISOString(), Object.entries(draft.networkText ?? {}).sort(([a], [b]) => (a < b ? -1 : 1)), draft.youtubeVisibility ?? null]);
 }
 
 // A 4xx the server decided on means nothing was created, so the key is finished. A lost connection, a timeout, a rate
