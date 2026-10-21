@@ -19,6 +19,10 @@ export const MENU_ICONS = {
     caretRight: require('../../assets/icons/caret-right.png'),
     caretDown: require('../../assets/icons/caret-down.png'),
     close: require('../../assets/icons/x.png'),
+    video: require('../../assets/icons/video-camera.png'),
+    audio: require('../../assets/icons/music-notes.png'),
+    wrench: require('../../assets/icons/wrench.png'),
+    smiley: require('../../assets/icons/smiley.png'),
 } as const;
 
 export type MenuIcon = keyof typeof MENU_ICONS;

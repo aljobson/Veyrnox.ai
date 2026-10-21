@@ -6,3 +6,5 @@ package is installed. Source files are not kept here. To add one: take the SVG f
 with `#ffffff`, and render it the same way.
 
 MIT License. Copyright (c) 2023 Phosphor Icons.
+
+Create screen additions: video-camera, music-notes, wrench, smiley (Phosphor regular, same render steps).
