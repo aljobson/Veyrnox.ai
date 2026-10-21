@@ -7,6 +7,7 @@ import { useAuth } from '../../../auth/AuthProvider';
 import { JobProvenance } from '../../../components/JobProvenance';
 import { StemList } from '../../../components/StemList';
 import { CONFIRM_MESSAGE, CONFIRM_TITLE, deleteCreation, deleteMessage, isAlreadyGone } from '../../../lib/deleteCreation';
+import { playSuccess } from '../../../lib/haptics';
 import { mediaApi, waitForJob, type JobState } from '../../../lib/media';
 import { editHref, makeAnotherHref, nextStepsFor, publishHref } from '../../../lib/nextSteps';
 import { saveOutput, shareOutput } from '../../../lib/output';
@@ -56,8 +57,11 @@ export default function JobScreen() {
         setCancelStatus(null);
         const controller = new AbortController();
         const media = mediaApi(api);
+        // Only a creation you waited for gets the buzz; opening a finished one from the library does not.
+        let waited = false;
         waitForJob(media, id, (nextState) => {
             if (controller.signal.aborted) return;
+            if (nextState === 'queued' || nextState === 'running') waited = true;
             setState(nextState);
             const version = ++statusVersion.current;
             if (nextState !== 'queued') { setCancelStatus(null); return; }
@@ -79,6 +83,7 @@ export default function JobScreen() {
                     }
                 }
                 if (final !== 'succeeded') return;
+                if (waited) void playSuccess();
                 const a = await media.getAsset(id);
                 setAsset({ url: a.url, mime: a.mime_type });
                 setStems(a.output_stems ?? []);
