@@ -1,5 +1,5 @@
 import { Stack, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { ApiError } from '../../../lib/api';
@@ -18,11 +18,23 @@ export default function NewChat() {
     const [error, setError] = useState<string | null>(null);
     const [creating, setCreating] = useState(false);
     const [personas, setPersonas] = useState<Persona[]>([]);
+    const autoStart = useRef(false);
 
     useEffect(() => {
         chatApi(api)
             .listModels()
-            .then(setModels)
+            .then((list) => {
+                setModels(list);
+                // One screen, like the web: open a chat on the default model straight away. The model, Thinking and Web
+                // are changed inside the chat, each priced before anything is sent.
+                if (autoStart.current) return;
+                const open = list.filter((m) => !m.gated);
+                const model = open.find((m) => m.id === SKILL_MODEL) ?? open[0];
+                if (model) {
+                    autoStart.current = true;
+                    void pick(model);
+                }
+            })
             .catch(() => setError('Could not load models.'));
         // Personas are an extra: off, or failing, shows nothing.
         fetchPersonas(api).then((r) => setPersonas(r.personas), () => undefined);
@@ -78,7 +90,7 @@ export default function NewChat() {
 
     return (
         <View style={styles.screen}>
-            <Stack.Screen options={{ title: 'Choose a model' }} />
+            <Stack.Screen options={{ title: 'New chat' }} />
             {error ? <Text style={styles.error}>{error}</Text> : null}
             {personas.length > 0 ? (
                 <View style={styles.personas}>
@@ -91,7 +103,7 @@ export default function NewChat() {
                     ))}
                 </View>
             ) : null}
-            {models === null && !error ? (
+            {(models === null && !error) || (creating && !error) ? (
                 <ActivityIndicator color={colors.accent} />
             ) : (
                 <FlatList
