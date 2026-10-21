@@ -19,7 +19,7 @@ test('typing then flush within 100ms returns the latest brief, counts and assets
     const posts: Record<string, any>[] = [];
     const window = { ReactNativeWebView: { postMessage: (raw: string) => posts.push(JSON.parse(raw)) }, addEventListener: (type: string, fn: typeof listeners[string]) => { listeners[type] = fn; } };
     const document = { getElementById: (id: string) => nodes[id], addEventListener: jest.fn(), createElement: () => ({ textContent: '' }) };
-    const script = stubEngineHtml().match(/<script>([\s\S]*)<\/script>/)![1];
+    const script = stubEngineHtml().match(/<script>([\s\S]*)<\/script>/i)![1];
     // Execute the shipped stub, using just its DOM surface; no browser dependency.
     new Function('window', 'document', script)(window, document);
     expect(posts[0]).toMatchObject({ v: PROTOCOL, type: 'hello', engine: { kind: 'stub' } });
