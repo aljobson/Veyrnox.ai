@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
     grid: { flexDirection: 'row', flexWrap: 'wrap' },
     row: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: MIN_TARGET, paddingHorizontal: 12, borderRadius: 14 },
     half: { width: '50%' },
-    rowActive: { backgroundColor: 'rgba(62, 230, 196, 0.14)' },
+    rowActive: { backgroundColor: colors.accentSoft },
     pressed: { backgroundColor: colors.surface },
     rowText: { flexShrink: 1, color: colors.body, fontSize: 16, fontWeight: '600' },
     rowTextActive: { color: colors.accent },

@@ -93,4 +93,10 @@ export default {
     'acct.pricing': 'What things cost',
     'acct.brandKit': 'Brand kit',
     'acct.about': 'About Veyrnox.ai',
+    // App-only: light and dark appearance.
+    'acct.appearance': 'Appearance',
+    'acct.appearance.system': 'System',
+    'acct.appearance.light': 'Light',
+    'acct.appearance.dark': 'Dark',
+    'acct.appearance.restart': 'Close the app and open it again to see the change.',
 } as const;

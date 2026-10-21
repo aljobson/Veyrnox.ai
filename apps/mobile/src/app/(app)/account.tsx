@@ -10,7 +10,7 @@ import { signInMethodKey } from '../../lib/accountSecurity';
 import { LEGAL_LINKS, PRIVACY_EMAIL, SUPPORT_EMAIL } from '../../lib/account';
 import { usePush } from '../../push/pushContext';
 import { VEY_CLEARANCE } from '../../components/VeyMascot';
-import { colors } from '../../theme';
+import { colors, saveThemePreference, themePreference, THEME_PREFERENCES, type ThemePreference } from '../../theme';
 import { t } from '../../lib/i18n';
 
 export default function Account() {
@@ -21,6 +21,8 @@ export default function Account() {
     const router = useRouter();
     const { status: billing, canPurchase, restore } = useBilling();
     const [restoreNote, setRestoreNote] = useState<string | null>(null);
+    // The look is read when the app opens, so a change is saved now and shown after the app is closed and opened again.
+    const [appearance, setAppearance] = useState<ThemePreference>(themePreference);
 
     // Best effort: when it fails the section simply shows no details.
     useEffect(() => {
@@ -70,6 +72,23 @@ export default function Account() {
                 <Link href="/security" asChild>
                     <Row label={t('acct.securityRow')} />
                 </Link>
+            </Section>
+
+            <Section title={t('acct.appearance')}>
+                <View style={styles.chips} accessibilityRole="radiogroup" accessibilityLabel={t('acct.appearance')}>
+                    {THEME_PREFERENCES.map((p) => (
+                        <Pressable
+                            key={p}
+                            accessibilityRole="radio"
+                            accessibilityState={{ selected: appearance === p }}
+                            style={[styles.chip, appearance === p && styles.chipOn]}
+                            onPress={() => { setAppearance(p); saveThemePreference(p); }}
+                        >
+                            <Text style={[styles.chipText, appearance === p && styles.chipTextOn]}>{t(`acct.appearance.${p}`)}</Text>
+                        </Pressable>
+                    ))}
+                </View>
+                {appearance !== themePreference ? <Text style={styles.note} accessibilityRole="alert">{t('acct.appearance.restart')}</Text> : null}
             </Section>
 
             {billing !== 'off' ? (
@@ -212,4 +231,9 @@ const styles = StyleSheet.create({
     note: { color: colors.muted, fontSize: 13 },
     signOut: { paddingVertical: 12, minHeight: 44, justifyContent: 'center' },
     signOutText: { color: colors.accent, fontSize: 16 },
+    chips: { flexDirection: 'row', gap: 8 },
+    chip: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
+    chipOn: { backgroundColor: colors.accent, borderColor: colors.accent },
+    chipText: { color: colors.body, fontWeight: '600' },
+    chipTextOn: { color: colors.accentInk },
 });
