@@ -163,3 +163,7 @@ describe('composeErrorMessage', () => {
         expect(composeErrorMessage(new Error('x'))).toMatch(/Nothing was posted/);
     });
 });
+
+test('over-limit variant preserves the composer message exactly', () => {
+    expect(validateDraft(draft({ networkText: { twitter: '😀'.repeat(281) } }), [acct()], now)).toBe('X allows 280 characters; this is 281.');
+});

@@ -35,7 +35,7 @@ describe('invitation', () => {
     });
     test('accepting posts the token and returns the brand', async () => {
         const request = jest.fn(async () => ({ ok: true, brand_id: 'b1', role: 'editor' }));
-        expect(await acceptInvite({ request } as never, TOKEN)).toEqual({ brandId: 'b1', role: 'editor' });
+        expect(await acceptInvite({ request } as never, TOKEN)).toEqual({ brandId: 'b1', role: 'editor', idempotent: false });
         const [path, init] = request.mock.calls[0] as unknown as [string, RequestInit];
         expect(path).toBe('/api/v1/social/team/accept');
         expect(JSON.parse(String(init.body))).toEqual({ token: TOKEN });

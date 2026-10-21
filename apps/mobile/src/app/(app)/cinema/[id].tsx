@@ -1,7 +1,7 @@
 import * as Crypto from 'expo-crypto';
 import { Image } from 'expo-image';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { recordShare } from '../../../lib/cinemaSocial';
 import { SaveFollow } from '../../../components/cinema/SaveFollow';
@@ -11,6 +11,7 @@ import { blockMember, blocksErrorKey } from '../../../lib/cinemaBlocks';
 import { plural, t } from '../../../lib/i18n';
 import { formatDuration, parseTitleDetail, posterUrl, type TitleDetail } from '../../../lib/cinema';
 import { categoryKey, fetchEntitlement, firstEpisode, firstWatchable, lockMessageKey, titleShareUrl, type LockReason } from '../../../lib/cinemaBrowse';
+import { parseEpisodeLocks } from '../../../lib/cinemaSeries';
 import { colors } from '../../../theme';
 
 export default function CinemaTitlePage() {
@@ -18,6 +19,8 @@ export default function CinemaTitlePage() {
     const { api } = useAuth();
     const router = useRouter();
     const [detail, setDetail] = useState<TitleDetail | null>(null);
+    const [detailLocks, setDetailLocks] = useState<ReadonlyMap<string, LockReason | null>>(new Map());
+    const [episodeLocks, setEpisodeLocks] = useState<ReadonlyMap<string, LockReason | null>>(new Map());
     const [failed, setFailed] = useState(false);
 
     useEffect(() => {
@@ -26,32 +29,61 @@ export default function CinemaTitlePage() {
             .then((body) => {
                 const parsed = parseTitleDetail(body);
                 if (!live) return;
-                if (parsed) setDetail(parsed);
+                if (parsed) { setDetailLocks(parseEpisodeLocks(body)); setDetail(parsed); }
                 else setFailed(true);
             })
             .catch(() => live && setFailed(true));
         return () => { live = false; };
     }, [api, id]);
 
-    // What the entitlement read says when the detail did not already mark something watchable. The target is the
-    // film, short or trailer itself, or a series' first episode.
+    // Detail's free access is unmetered. Check only free candidates, serially:
+    // entitlement shares the account's read quota with Play and other requests.
+    // Keep completed screen state across unchanged focus cycles; playback invalidates it.
+    const checked = useRef<{ api: typeof api; detail: TitleDetail; detailLocks: typeof detailLocks } | null>(null);
+    const entitlementQueue = useRef(Promise.resolve());
     const [lock, setLock] = useState<LockReason | 'checking' | null>(null);
     const [entOpen, setEntOpen] = useState(false);
+    useFocusEffect(useCallback(() => {
+        if (!detail || detail.title.contentType !== 'SERIES') return;
+        if (checked.current?.api === api && checked.current.detail === detail && checked.current.detailLocks === detailLocks) return;
+        let live = true;
+        setEpisodeLocks(new Map());
+        setLock(detail.episodes.length ? 'checking' : null);
+        // A rapid blur/refocus must not overlap the still-pending request from the old batch.
+        const run = entitlementQueue.current.then(async () => {
+            const locks = new Map(detailLocks);
+            const freeEpisodes = detail.episodes.filter(e => detailLocks.get(e.id) === null)
+                .sort((a, b) => a.season - b.season || a.position - b.position);
+            for (const episode of freeEpisodes) {
+                if (!live) return;
+                const entitlement = await fetchEntitlement(api, episode.id);
+                if (!live) return;
+                locks.set(episode.id, entitlement.kind === 'locked' ? entitlement.reason : null);
+            }
+            if (!live) return;
+            checked.current = { api, detail, detailLocks };
+            setEpisodeLocks(locks);
+            const eligible = detail.episodes.filter(e => locks.get(e.id) === null);
+            const first = firstEpisode(detail.episodes);
+            setLock(eligible.length ? null : first ? locks.get(first.id) ?? 'locked' : null);
+        });
+        entitlementQueue.current = run;
+        return () => { live = false; };
+    }, [api, detail, detailLocks]));
+
     useEffect(() => {
-        if (!detail) return;
-        const first = firstWatchable(detail.episodes);
-        const series = detail.title.contentType === 'SERIES';
-        if (series ? first !== null : detail.watchable) { setLock(null); return; }
-        const target = series ? firstEpisode(detail.episodes)?.id : detail.title.id;
-        if (!target) { setLock(null); return; }
+        // Preserve the existing film/short eligibility and Play behavior.
+        if (!detail || detail.title.contentType === 'SERIES') return;
+        if (detail.watchable) { setLock(null); return; }
         let live = true;
         setLock('checking');
-        fetchEntitlement(api, target).then((e) => {
+        fetchEntitlement(api, detail.title.id).then(e => {
             if (!live) return;
             if (e.kind === 'open') { setEntOpen(true); setLock(null); } else setLock(e.reason);
         });
         return () => { live = false; };
     }, [api, detail]);
+    const episodes = detail?.episodes.map(e => ({ ...e, watchable: episodeLocks.has(e.id) && episodeLocks.get(e.id) === null })) ?? [];
 
     const share = () => {
         const url = titleShareUrl(id);
@@ -61,7 +93,10 @@ export default function CinemaTitlePage() {
             .then((r) => { if (r.action === Share.sharedAction) void recordShare(api, id, Crypto.randomUUID()); })
             .catch(() => undefined);
     };
-    const watch = (contentId: string, title: string) => router.push({ pathname: '/cinema/watch/[id]', params: { id: contentId, title } });
+    const watch = (contentId: string, title: string, series?: string) => {
+        if (series) checked.current = null;
+        router.push({ pathname: '/cinema/watch/[id]', params: { id: contentId, title, ...(series ? { series } : {}) } });
+    };
     const report = () => router.push({ pathname: '/report', params: { kind: 'cinema_title', id } });
     const [blocking, setBlocking] = useState(false);
     const [blockNote, setBlockNote] = useState<string | null>(null);
@@ -103,8 +138,8 @@ export default function CinemaTitlePage() {
             {title.categories.length ? <Text style={styles.muted}>{title.categories.map((c) => t(categoryKey(c))).join(' · ')}</Text> : null}
             {title.contentType === 'SERIES' ? <Text style={styles.muted}>{plural('cinemaBrowse.episodes', title.episodeCount || detail.episodes.length)}</Text> : null}
             {title.synopsis ? <Text style={styles.body}>{title.synopsis}</Text> : null}
-            {title.contentType === 'SERIES' && (firstWatchable(detail.episodes) || entOpen) ? (
-                <Pressable accessibilityRole="button" style={styles.play} onPress={() => { const e = firstWatchable(detail.episodes) ?? firstEpisode(detail.episodes); if (e) watch(e.id, e.title); }}>
+            {title.contentType === 'SERIES' && firstWatchable(episodes) ? (
+                <Pressable accessibilityRole="button" style={styles.play} onPress={() => { const e = firstWatchable(episodes); if (e) watch(e.id, e.title, title.id); }}>
                     <Text style={styles.playText}>{t('cinemaBrowse.watch')}</Text>
                 </Pressable>
             ) : null}
@@ -123,17 +158,17 @@ export default function CinemaTitlePage() {
                     <Text style={styles.muted}>This title is not available to watch in the app yet.</Text>
                 )
             ) : (
-                detail.episodes.map((e) => (
+                episodes.map((e) => (
                     <Pressable
                         key={e.id}
                         accessibilityRole="button"
                         accessibilityState={{ disabled: !e.watchable }}
                         disabled={!e.watchable}
                         style={[styles.row, !e.watchable && styles.rowOff]}
-                        onPress={() => watch(e.id, e.title)}
+                        onPress={() => watch(e.id, e.title, title.id)}
                     >
                         <Text style={styles.rowTitle} numberOfLines={1}>S{e.season} E{e.position} · {e.title}</Text>
-                        <Text style={styles.muted}>{e.watchable ? formatDuration(e.durationSeconds) : 'Not available yet'}</Text>
+                        <Text style={styles.muted}>{e.watchable ? formatDuration(e.durationSeconds) : t(episodeLocks.get(e.id) === 'free_ceiling' ? 'cinemaSeries.state.free_ceiling' : (episodeLocks.get(e.id) ?? detailLocks.get(e.id)) === 'paid' ? 'cinemaSeries.state.paid' : 'cinemaSeries.state.locked')}</Text>
                     </Pressable>
                 ))
             )}

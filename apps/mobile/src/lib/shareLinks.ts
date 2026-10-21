@@ -7,6 +7,21 @@ const TOKEN_RE = /^[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+){1,3}$/;
 const MAX_TOKEN = 2048;
 export const validToken = (value: unknown): value is string => typeof value === 'string' && value.length <= MAX_TOKEN && TOKEN_RE.test(value);
 
+export function inviteTokenFromLink(text: unknown): string | null {
+    if (typeof text !== 'string') return null;
+    const trimmed = text.trim();
+    if (trimmed.length > 2100) return null;
+    try {
+        const url = new URL(trimmed);
+        if (url.protocol !== 'https:' || url.username || url.password || url.port) return null;
+        if (!['https://veyrnox.ai', 'https://www.veyrnox.ai', new URL(API_BASE).origin].includes(url.origin)) return null;
+        const parts = url.pathname.split('/');
+        return parts.length === 5 && parts[0] === '' && parts[1] === 'social' && parts[2] === 'team' && parts[3] === 'invite' && validToken(parts[4]) ? parts[4] : null;
+    } catch {
+        return null;
+    }
+}
+
 const rec = (v: unknown): Record<string, unknown> => (v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : {});
 const str = (v: unknown): string | null => (typeof v === 'string' && v ? v : null);
 
@@ -44,19 +59,30 @@ export async function fetchInvite(token: string): Promise<Invite> {
 // An invitation can be accepted only while it is waiting; the server decides, this just avoids a pointless call.
 export const inviteOpen = (i: Invite): boolean => i.status === '' || i.status === 'pending';
 
-export async function acceptInvite(api: Pick<ApiClient, 'request'>, token: string): Promise<{ brandId: string | null; role: string | null }> {
-    if (!validToken(token)) throw new ApiError(404, 'invalid_or_expired_link');
-    const out = rec(await api.request('/api/v1/social/team/accept', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) }));
-    return { brandId: str(out.brand_id), role: str(out.role) };
+export function inviteState(i: Invite, now: Date): 'open' | 'accepted' | 'revoked' | 'expired' | 'closed' {
+    if (i.status === 'accepted' || i.status === 'revoked' || i.status === 'expired') return i.status;
+    if (i.status === '' || i.status === 'pending') {
+        return i.expiresAt && Date.parse(i.expiresAt) <= now.getTime() ? 'expired' : 'open';
+    }
+    return 'closed';
 }
 
-export type InviteErrorKey = 'share.invite.err.email' | 'share.invite.err.gone' | 'share.invite.err.off' | 'share.err.network' | 'share.invite.err.failed';
+export async function acceptInvite(api: Pick<ApiClient, 'request'>, token: string): Promise<{ brandId: string | null; role: string | null; idempotent: boolean }> {
+    if (!validToken(token)) throw new ApiError(404, 'invalid_or_expired_link');
+    const out = rec(await api.request('/api/v1/social/team/accept', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) }));
+    return { brandId: str(out.brand_id), role: str(out.role), idempotent: out.idempotent === true };
+}
+
+export type InviteErrorKey = 'share.invite.err.email' | 'share.invite.err.gone' | 'share.invite.err.off' | 'share.err.network' | 'share.invite.err.failed' | 'publishLinks.teamJoin.err.unavailable' | 'publishLinks.teamJoin.err.rate';
 
 export function inviteErrorKey(err: unknown): InviteErrorKey {
     if (err instanceof ApiError) {
         if (err.status === 0) return 'share.err.network';
         if (err.status === 403 || err.code === 'EMAIL_MISMATCH') return 'share.invite.err.email';
         if (err.status === 404) return err.code === 'teams_not_open' || err.code === 'not_found' ? 'share.invite.err.off' : 'share.invite.err.gone';
+        if (err.status === 400 && err.code === 'INVITE_UNAVAILABLE') return 'publishLinks.teamJoin.err.unavailable';
+        if (err.status === 429) return 'publishLinks.teamJoin.err.rate';
+        if (err.status === 503) return 'share.invite.err.off';
     }
     return 'share.invite.err.failed';
 }
