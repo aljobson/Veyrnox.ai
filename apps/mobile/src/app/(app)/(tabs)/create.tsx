@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -7,10 +8,24 @@ import { GOALS, TIERS, filterByTier, freeLeftFor, modelsForGoal, type Goal, type
 import { useFreeLeft } from '../../../lib/useFreeLeft';
 import { selectedState, touchTarget } from '../../../lib/a11y';
 import { fetchAgentListing } from '../../../lib/montage';
+import { MENU_ICONS, type MenuIcon } from '../../../lib/menuIcons';
 import { VEY_CLEARANCE } from '../../../components/VeyMascot';
 import { colors } from '../../../theme';
 import { plural, t } from '../../../lib/i18n';
 import { useVeyScroll } from '../../../lib/useVeyScroll';
+
+// One word per goal; the full "Make an image" wording stays as the accessibility label.
+const SHORT_GOAL: Record<Goal, string> = { image: 'library.type.image', video: 'library.type.video', audio: 'library.type.audio', all: 'library.type.all' };
+const GOAL_ICON: Record<Goal, MenuIcon> = { image: 'image', video: 'video', audio: 'audio', all: 'squares' };
+
+function EntryTile({ icon, label, accessibilityLabel, onPress }: { readonly icon: MenuIcon; readonly label: string; readonly accessibilityLabel?: string; readonly onPress: () => void }) {
+    return (
+        <Pressable accessibilityRole="button" accessibilityLabel={accessibilityLabel ?? label} style={({ pressed }) => [styles.entry, touchTarget, pressed && styles.entryPressed]} onPress={onPress}>
+            <Image source={MENU_ICONS[icon]} style={styles.entryIcon} tintColor={colors.accent} contentFit="contain" accessibilityElementsHidden />
+            <Text style={styles.entryText} numberOfLines={1}>{label}</Text>
+        </Pressable>
+    );
+}
 
 export default function Create() {
     const onScroll = useVeyScroll();
@@ -36,24 +51,18 @@ export default function Create() {
     return (
         <View style={styles.screen}>
             <Stack.Screen options={{ title: t('label.Create') }} />
-            <Pressable accessibilityRole="button" style={styles.templates} onPress={() => router.push('/create/presets')}>
-                <Text style={styles.name}>{t('label.Templates')}</Text>
-                <Text style={styles.muted}>{t('create.templatesHint')}</Text>
-            </Pressable>
-            <Pressable accessibilityRole="button" style={styles.templates} onPress={() => router.push('/create/tools')}>
-                <Text style={styles.name}>{t('toolsDir.entry')}</Text>
-                <Text style={styles.muted}>{t('toolsDir.entryHint')}</Text>
-            </Pressable>
-            <Pressable accessibilityRole="button" accessibilityLabel={t('faceFilters.title')} style={styles.templates} onPress={() => router.push('/face-filters')}>
-                <Text style={styles.name}>{t('faceFilters.title')}</Text>
-                <Text style={styles.muted}>{t('faceFilters.lead')}</Text>
-            </Pressable>
+            <View style={styles.entries}>
+                <EntryTile icon="squares" label={t('label.Templates')} onPress={() => router.push('/create/presets')} />
+                <EntryTile icon="wrench" label={t('menu.tools')} accessibilityLabel={t('toolsDir.entry')} onPress={() => router.push('/create/tools')} />
+                <EntryTile icon="smiley" label={t('faceFilters.title')} onPress={() => router.push('/face-filters')} />
+            </View>
             {models ? <FreeAllowanceCard models={models} left={freeLeft} /> : null}
             <View style={styles.tabs} accessibilityLabel={t('create.goalLabel')}>
                 {GOALS.map((g) => (
                     <Pressable
                         key={g.goal}
                         accessibilityRole="tab"
+                        accessibilityLabel={t(g.label)}
                         accessibilityState={selectedState(goal === g.goal)}
                         style={[styles.tab, goal === g.goal && styles.tabOn]}
                         onPress={() => {
@@ -61,7 +70,8 @@ export default function Create() {
                             setTier(null);
                         }}
                     >
-                        <Text style={[styles.tabText, goal === g.goal && styles.tabTextOn]}>{t(g.label)}</Text>
+                        <Image source={MENU_ICONS[GOAL_ICON[g.goal]]} style={styles.tabIcon} tintColor={goal === g.goal ? colors.accentInk : colors.body} contentFit="contain" accessibilityElementsHidden />
+                        <Text style={[styles.tabText, goal === g.goal && styles.tabTextOn]} numberOfLines={1}>{t(SHORT_GOAL[g.goal])}</Text>
                     </Pressable>
                 ))}
             </View>
@@ -117,9 +127,14 @@ const styles = StyleSheet.create({
     // The mascot sits in the bottom corner of every tab; the last row scrolls clear of it.
     list: { paddingBottom: VEY_CLEARANCE },
     screen: { flex: 1, backgroundColor: colors.background, padding: 16, gap: 12 },
-    templates: { minHeight: 44, padding: 14, borderRadius: 12, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, gap: 2 },
-    tabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-    tab: { flexGrow: 1, flexBasis: '45%', minHeight: 44, justifyContent: 'center', paddingVertical: 10, borderRadius: 10, alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
+    entries: { flexDirection: 'row', gap: 8 },
+    entry: { flex: 1, alignItems: 'center', gap: 6, paddingVertical: 14, paddingHorizontal: 4, borderRadius: 12, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
+    entryPressed: { opacity: 0.7 },
+    entryIcon: { width: 28, height: 28 },
+    entryText: { color: colors.text, fontSize: 14, fontWeight: '600' },
+    tabIcon: { width: 20, height: 20 },
+    tabs: { flexDirection: 'row', gap: 8 },
+    tab: { flex: 1, minHeight: 44, gap: 4, justifyContent: 'center', paddingVertical: 10, paddingHorizontal: 2, borderRadius: 10, alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
     tabOn: { backgroundColor: colors.accent, borderColor: colors.accent },
     tiers: { flexDirection: 'row', gap: 8 },
     tierChip: { flex: 1, paddingHorizontal: 8, borderRadius: 10, alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
