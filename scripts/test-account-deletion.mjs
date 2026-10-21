@@ -203,7 +203,7 @@ try {
     const RETAINED = new Set([
         // money and its audit trail
         'credit_balances', 'ledger_entries', 'top_ups', 'top_up_flagged_orders', 'account_actions', 'referral_rewards', 'referrals',
-        'store_customers', 'provider_spend_reservations', 'model_free_allowance_claims', 'account_deletions',
+        'store_customers', 'provider_spend_reservations', 'model_free_allowance_claims', 'account_deletions', 'privacy_export_requests',
         // safety and moderation records
         'content_appeals', 'content_reports', 'cinema_unlocks', 'cinema_passes', 'cinema_pass_plays', 'cinema_free_plays',
         'cinema_watch_sessions', 'cinema_audience_clock', 'cinema_share_actions', 'cinema_ranking_snapshots', 'cinema_ranking_decisions',

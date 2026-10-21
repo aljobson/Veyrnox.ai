@@ -1,5 +1,5 @@
 import { Directory, Paths } from 'expo-file-system';
-import { bindCacheUser, createFileStorage, resetCacheUser, userIdFromToken, wipeCache } from '../src/lib/appCache';
+import { bindCacheUser, clearExportFiles, createFileStorage, exportDirectory, resetCacheUser, userIdFromToken, wipeCache } from '../src/lib/appCache';
 import { POLICIES, createCache, createMemoryStorage } from '../src/lib/cache';
 
 const b64 = (o: object) => btoa(JSON.stringify(o)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -50,6 +50,28 @@ describe('wiping', () => {
         resetCacheUser();
         await bindCacheUser('u2', cache, storage);
         expect(await cache.read(POLICIES.library, 'u1')).toBeNull();
+    });
+});
+
+describe('export file cleanup', () => {
+    test('a delete that throws is ignored, and the cache is still cleared', async () => {
+        exportDirectory().create({ intermediates: true, idempotent: true });
+        const failing = jest.spyOn(Directory.prototype, 'delete').mockImplementation(() => { throw new Error('io'); });
+        try {
+            expect(() => clearExportFiles()).not.toThrow();
+            const storage = createMemoryStorage(), cache = createCache(storage);
+            await cache.write(POLICIES.library, ['mine'], 'u1');
+            await wipeCache(cache);
+            expect(await storage.keys()).toEqual([]);
+            await bindCacheUser('u1', cache, storage);
+            await cache.write(POLICIES.library, ['mine'], 'u1');
+            await bindCacheUser('u2', cache, storage);
+            expect(await cache.read(POLICIES.library, 'u1')).toBeNull();
+            expect(failing).toHaveBeenCalled();
+        } finally {
+            failing.mockRestore();
+            clearExportFiles();
+        }
     });
 });
 
