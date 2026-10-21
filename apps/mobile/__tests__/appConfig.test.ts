@@ -49,3 +49,12 @@ describe('permissions', () => {
         expect(Object.keys(expo.ios.infoPlist)).toEqual(['ITSAppUsesNonExemptEncryption']);
     });
 });
+
+test('passkey relying parties are associated without extra native permissions or plugin', () => {
+    expect(expo.ios.associatedDomains).toEqual([
+        'applinks:veyrnox.ai',
+        'webcredentials:veyrnox.ai',
+        'webcredentials:veyrnox-ai-staging.al-jobson.workers.dev',
+    ]);
+    expect(expo.plugins).not.toContain('react-native-passkeys');
+});

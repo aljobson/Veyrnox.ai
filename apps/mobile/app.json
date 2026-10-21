@@ -14,7 +14,9 @@
         "ITSAppUsesNonExemptEncryption": false
       },
       "associatedDomains": [
-        "applinks:veyrnox.ai"
+        "applinks:veyrnox.ai",
+        "webcredentials:veyrnox.ai",
+        "webcredentials:veyrnox-ai-staging.al-jobson.workers.dev"
       ],
       "privacyManifests": {
         "NSPrivacyTracking": false,
