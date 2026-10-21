@@ -5,10 +5,11 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, 
 import { useAuth } from '../../../auth/AuthProvider';
 import { VEY_CLEARANCE } from '../../../components/VeyMascot';
 import { selectedState, touchTarget } from '../../../lib/a11y';
-import { ALL_CATEGORIES, ALL_TYPES, categoriesFor, filterPresets, firstModelFor, pickUp, presetKind, promptHref, recentCreations, splitColumns, type TypeFilter } from '../../../lib/explore';
+import { ALL_CATEGORIES, ALL_TYPES, categoriesFor, filterPresets, firstModelFor, pickUp, presetKind, promptHref, recentCreations, type TypeFilter } from '../../../lib/explore';
 import { t } from '../../../lib/i18n';
 import { fetchCatalogCached, mediaApi, type CatalogModel, type Job, type Kind } from '../../../lib/media';
 import { LowBalanceNote } from '../../../components/LowBalanceNote';
+import { TemplateCollage } from '../../../components/TemplateCollage';
 import { cheapestCredits, isLowBalance } from '../../../lib/lowBalance';
 import { useBalance } from '../../../lib/useBalance';
 import { fetchPresets, presetHref, presetPrice, type Preset } from '../../../lib/presets';
@@ -61,7 +62,6 @@ export default function Explore() {
 
     const categories = useMemo(() => categoriesFor(presets ?? [], type), [presets, type]);
     const shown = useMemo(() => filterPresets(presets ?? [], { type, category, query }).slice(0, SHOWN), [presets, type, category, query]);
-    const columns = useMemo(() => splitColumns(shown), [shown]);
 
     function pickType(next: TypeFilter) {
         setType(next);
@@ -149,20 +149,7 @@ export default function Explore() {
                     {shown.length === 0 ? (
                         <Text style={styles.empty} accessibilityLiveRegion="polite">{type === 'audio' && !query.trim() ? t('explore.audioSoon') : t('explore.noMatch')}</Text>
                     ) : (
-                        <View style={styles.grid}>
-                            {columns.map((column, i) => (
-                                <View key={i} style={styles.column}>
-                                    {column.map((p) => (
-                                        <Pressable key={p.id} accessibilityRole="button" accessibilityLabel={`${p.title}, ${p.modelName}, ${presetPrice(p)}${p.isNew ? `, ${t('explore.new')}` : ''}`} style={styles.card} onPress={() => router.push(presetHref(p))}>
-                                            {p.posterUrl ? <Image source={{ uri: p.posterUrl }} style={[styles.poster, presetKind(p) === 'video' && styles.posterTall]} contentFit="cover" accessibilityIgnoresInvertColors /> : <View style={[styles.poster, presetKind(p) === 'video' && styles.posterTall]} />}
-                                            <Text style={styles.cardTitle} numberOfLines={2}>{p.title}{p.isNew ? `  ${t('explore.new')}` : ''}</Text>
-                                            <Text style={styles.cardModel} numberOfLines={1}>{p.modelName}</Text>
-                                            <Text style={styles.cardPrice}>{presetPrice(p)}</Text>
-                                        </Pressable>
-                                    ))}
-                                </View>
-                            ))}
-                        </View>
+                        <TemplateCollage presets={shown} isTall={(p) => presetKind(p) === 'video'} onOpen={(p) => router.push(presetHref(p))} />
                     )}
                 </>
             )}
@@ -234,16 +221,8 @@ const styles = StyleSheet.create({
     chipOn: { backgroundColor: colors.accent, borderColor: colors.accent },
     chipText: { color: colors.body },
     chipTextOn: { color: colors.accentInk, fontWeight: '600' },
-    grid: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
-    column: { flex: 1, gap: 10 },
     search: { minHeight: 44, color: colors.text, fontSize: 16, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14 },
     empty: { color: colors.muted, paddingVertical: 12 },
-    cardModel: { color: colors.muted, fontSize: 13, paddingHorizontal: 10 },
-    posterTall: { aspectRatio: 0.8 },
-    card: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, overflow: 'hidden', paddingBottom: 10, gap: 4 },
-    poster: { width: '100%', aspectRatio: 1, backgroundColor: colors.border },
-    cardTitle: { color: colors.text, fontWeight: '600', paddingHorizontal: 10, paddingTop: 6 },
-    cardPrice: { color: colors.money, paddingHorizontal: 10 },
     recent: { paddingHorizontal: 14, borderRadius: 10, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, justifyContent: 'center', maxWidth: 220 },
     recentText: { color: colors.text },
     secondary: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, paddingVertical: 16, alignItems: 'center' },
