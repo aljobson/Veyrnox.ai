@@ -1,13 +1,13 @@
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { LibraryItem } from '../../../components/LibraryItem';
 import { StaleNote } from '../../../components/StaleNote';
 import { appCache, getCacheUser } from '../../../lib/appCache';
 import { POLICIES, type CacheMeta } from '../../../lib/cache';
 import { observe } from '../../../lib/network';
-import { KIND_FILTERS, STATE_FILTERS, VIEWS, canSchedule, filterJobs, kindMap, readFavourites, toggled, writeFavourites, type KindFilter, type StateFilter, type View as LayoutView } from '../../../lib/libraryView';
+import { KIND_FILTERS, STATE_FILTERS, canSchedule, filterJobs, kindMap, readFavourites, toggled, writeFavourites, type KindFilter, type StateFilter, type View as LayoutView } from '../../../lib/libraryView';
 import { fetchCatalogCached, mediaApi, type CatalogModel, type Job, type JobPage } from '../../../lib/media';
 import { publishHref } from '../../../lib/nextSteps';
 import { VEY_CLEARANCE } from '../../../components/VeyMascot';
@@ -90,22 +90,16 @@ export default function Library() {
             <Pressable accessibilityRole="button" accessibilityLabel={t('library.videoFilesLabel')} style={[styles.filesLink, touchTarget]} onPress={() => router.push('/library/files')}>
                 <Text style={styles.filesText}>{t('library.videoFiles')}</Text>
             </Pressable>
-            <View style={styles.bar} accessibilityLabel={t('library.filter.state')}>
-                {STATE_FILTERS.map((f) => (
-                    <Chip key={f} label={t(`library.state.${f}`)} on={stateFilter === f} onPress={() => setStateFilter(f)} />
-                ))}
-            </View>
-            <View style={styles.bar} accessibilityLabel={t('library.filter.type')}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.barScroll} contentContainerStyle={styles.bar} accessibilityLabel={t('library.filter.type')}>
                 {KIND_FILTERS.map((f) => (
                     <Chip key={f} label={t(`library.type.${f}`)} on={kindFilter === f} onPress={() => setKindFilter(f)} />
                 ))}
                 <Chip label={t('library.type.favourites')} on={favOnly} onPress={() => setFavOnly(!favOnly)} />
-            </View>
-            <View style={styles.bar} accessibilityLabel={t('library.view.label')}>
-                {VIEWS.map((v) => (
-                    <Chip key={v} label={t(`library.view.${v}`)} on={view === v} onPress={() => setView(v)} />
+                {STATE_FILTERS.filter((f) => f !== 'all').map((f) => (
+                    <Chip key={f} label={t(`library.state.${f}`)} on={stateFilter === f} onPress={() => setStateFilter(stateFilter === f ? 'all' : f)} />
                 ))}
-            </View>
+                <Chip label={t(`library.view.${view === 'grid' ? 'list' : 'grid'}`)} on={false} onPress={() => setView(view === 'grid' ? 'list' : 'grid')} />
+            </ScrollView>
             {failed ? (
                 <Pressable accessibilityRole="button" style={touchTarget} onPress={load}>
                     <Text style={styles.error}>{t('library.loadError')}</Text>
@@ -169,7 +163,8 @@ function Chip({ label, on, onPress }: { readonly label: string; readonly on: boo
 const styles = StyleSheet.create({
     // The mascot sits in the bottom corner of every tab; the last row scrolls clear of it.
     list: { paddingBottom: VEY_CLEARANCE },
-    bar: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingBottom: 8 },
+    barScroll: { flexGrow: 0, marginBottom: 8 },
+    bar: { flexDirection: 'row', gap: 6 },
     chip: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 12, borderRadius: 10, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
     chipOn: { backgroundColor: colors.accent, borderColor: colors.accent },
     chipText: { color: colors.body, fontWeight: '600' },
