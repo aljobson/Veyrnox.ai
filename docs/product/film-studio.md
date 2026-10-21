@@ -14,9 +14,9 @@ Seven matching LLM Chat assistants appear in the Film skills group. They help wr
 
 ## Persistence and export
 
-This first version saves one studio per signed-in account in browser storage, scoped by user ID. It does not use the still-preview tenant Projects API. There is no migration or additional server access path. Browser drafts are cleared on sign-out or account change, like existing chat drafts; the interface asks users to export before signing out. Signed-out work stays in memory and can be exported.
+Film Studio keeps one browser studio per signed-in user. Optional account saves use an owner-only API (20 films, 1 MB each), gated by `TENANT_PROJECTS_ENABLED` and `FILM_STUDIO_CLOUD_ENABLED` (ADR-0245). Web save/open/remove and phone list/open controls follow separately. Browser edits never upload automatically. Browser drafts are cleared on sign-out or account change; export before signing out. Signed-out work stays in memory and can be exported.
 
-JSON import validates the schema, size, bounds and identifiers, then asks before replacing the current workspace. The ZIP export contains the entire folder structure, passports, tests, all prompt versions, generation log, separate text tasks and accepted-take manifests in `selects`. Media files stay in the Library or the external workflow and are referenced by stable identifiers. The export does not download media.
+JSON import validates schema, size, bounds and identifiers, then asks before replacing the workspace. ZIP exports contain the folder structure, passports, tests, prompt versions, generation log, separate text tasks and accepted-take manifests in `selects`. Media stays in the Library or external workflow, referenced by stable identifiers; exports do not download it.
 
 ## Generation handoff
 

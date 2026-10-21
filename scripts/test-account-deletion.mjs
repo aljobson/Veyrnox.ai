@@ -197,7 +197,7 @@ try {
         'social_brands', 'social_api_keys', 'social_webhook_endpoints', 'social_posts', 'jobs',
         'push_tokens', 'push_outbox', 'push_token_writes', 'user_blocks']);
     const WITH_AUTH_USER = new Set(['organisation_members', 'workspace_members', 'project_members', 'api_requests', 'editor_requests',
-        'social_connection_selections', 'social_oauth_states']);
+        'social_connection_selections', 'social_oauth_states', 'film_studio_projects', 'film_studio_save_windows']);
     const REFUSED_UNTIL_CLEARED = new Set(['cinema_submissions', 'cinema_competitions', 'cinema_story_polls', 'credit_subscriptions',
         'social_publish_subscriptions', 'social_brand_members', 'social_brand_invitations']);
     const RETAINED = new Set([
