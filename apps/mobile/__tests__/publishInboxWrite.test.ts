@@ -18,10 +18,10 @@ describe('inbox replies', () => {
     });
     test('sends the body with an idempotency key', async () => {
         const { api, calls } = fakeApi();
-        await replyToThread(api, ID, 'Thanks!', 'key-12345678');
+        await replyToThread(api, ID, 'Thanks!', 'retry-once-attempt');
         expect(calls[0].path).toBe(`/api/v1/social/inbox/${ID}/reply`);
         expect(calls[0].init?.method).toBe('POST');
-        expect(JSON.parse(String(calls[0].init?.body))).toEqual({ body: 'Thanks!', idempotencyKey: 'key-12345678' });
+        expect(JSON.parse(String(calls[0].init?.body))).toEqual({ body: 'Thanks!', idempotencyKey: 'retry-once-attempt' });
     });
 });
 
