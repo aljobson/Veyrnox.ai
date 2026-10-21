@@ -156,7 +156,7 @@ export const mediaApi = (api: ApiClient) => ({
         });
     },
     getJob: (id: string) =>
-        api.request<{ state: JobState; credits: number; model_id: string; error_code?: string }>(`/api/v1/jobs/${encodeURIComponent(id)}`),
+        api.request<{ state: JobState; credits: number; model_id: string; error_code?: string; refunded?: boolean }>(`/api/v1/jobs/${encodeURIComponent(id)}`),
     listJobs: (cursor?: JobPage['next']) => {
         const q = new URLSearchParams({ limit: '24' });
         if (cursor) {

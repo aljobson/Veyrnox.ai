@@ -5,8 +5,8 @@
 // a bad row stops the whole import so a catalog is never left half-changed.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { checkCatalog } from '../lib/i18n/check.mjs';
-import en from '../lib/i18n/messages/en.mjs';
 import { CATALOGS } from '../lib/i18n/translate.mjs';
+const en = CATALOGS.en;
 import { LOCALES } from '../lib/i18n/locales.mjs';
 
 const [file, flag] = process.argv.slice(2);
@@ -65,14 +65,21 @@ if (dry) { console.log(`${code}: ${changed} correction(s) would be applied (dry 
 const q = (s) => `'${String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n')}'`;
 // Replace only the corrected lines, so the diff shows exactly what a reviewer
 // changed (one entry per line in every catalog).
-const path = new URL(`../lib/i18n/messages/${code}.mjs`, import.meta.url);
-let source = readFileSync(path, 'utf8');
+// Preset recipe copy lives in its own per-language files; every other key is in the catalog file.
+const fileFor = (key) => (key.startsWith('presets.needs.') ? `presets/${code}/needs.mjs`
+  : key.startsWith('presets.steps.') ? `presets/${code}/steps.mjs` : `${code}.mjs`);
 const escapeRe = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const sources = new Map();
 for (const key of Object.keys(next)) {
   if (next[key] === CATALOGS[code][key]) continue;
+  const name = fileFor(key);
+  const path = new URL(`../lib/i18n/messages/${name}`, import.meta.url);
+  let source = sources.get(name)?.source ?? readFileSync(path, 'utf8');
   const line = new RegExp(`^(\\s*)(['"])${escapeRe(key)}\\2:.*$`, 'm');
   if (!line.test(source)) { console.error(`${code}: "${key}" has no single-line entry to replace`); process.exit(1); }
-  source = source.replace(line, (_, indent) => `${indent}${q(key)}: ${q(next[key])},`);
+  const trailing = /,\s*$/.test(source.match(line)[0]) ? ',' : '';
+  source = source.replace(line, (_, indent) => `${indent}${q(key)}: ${q(next[key])}${trailing}`);
+  sources.set(name, { path, source });
 }
-writeFileSync(path, source);
+for (const { path, source } of sources.values()) writeFileSync(path, source);
 console.log(`${code}: applied ${changed} correction(s)`);

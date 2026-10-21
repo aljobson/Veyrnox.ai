@@ -488,3 +488,66 @@ translate retrieved/canned server text. Public page language remains URL-selecte
 This amendment supersedes earlier exclusions only for the account preference,
 these system emails and the model reply instruction. No billing, credit, ledger,
 webhook or generation-job behavior changes.
+
+## Amendment 2026-10-21 — phase D: display copy stored in data
+
+Preset needs and recipe steps now translate in all ten languages. The 148 needs
+entries use template IDs; the 15 distinct step sentences have stable named keys.
+They live in small public catalog areas, imported once by the existing public
+catalogs. Detail pages, TemplateRecipe and the Create screen translate only at
+render time with English fallbacks. The original template objects remain intact:
+prompts, negative prompts, provenance, model names, presetTitle output, API
+projections, search records, sitemap IDs and creation handoffs do not change.
+Gallery cards do not render needs or steps. No app catalogs enter the public
+import graph and no per-render catalog JSON parsing is added.
+
+The data inventory follows public and app imports into `_lib`, `lib` and
+`components`, including re-exports. It inspects exported constant object/array
+prose and local constants used through factories, spreads, maps and export lists.
+Its general threshold is four words plus initial capitalization or final
+punctuation; known template needs and steps are checked even below that threshold.
+Tuple-based recipe input and action fields are classified separately. A missing
+or stale template key is unresolved. Existing catalog matches and helper diagnostic
+mappings are identified separately from reasoned exceptions. This is a static
+inventory, not full JavaScript data-flow analysis or proof that arbitrary provider,
+server-generated or user-authored text is translated. Render, catalog and contract
+tests accompany it; a new English catalog match alone still needs consumer review.
+
+The scan also found and translated filter and animation descriptions, Oddling
+category hints/labels and two long character group labels, Film prompt-field
+labels and acceptance checklists, chat/Film starter questions, Create error tables
+and slow-model wait guidance. App data messages remain in app-only area catalogs.
+Film checklist values, character choices, error codes, prompts and stored IDs stay
+English/canonical. Failed-job display distinguishes returned Credits from Credits
+still being returned; translation does not change the refund flag or billing logic.
+Existing tools/guides, onboarding, Cinema and Publish display mappings remain.
+
+Narrow data exceptions retain provider and sample prompts, camera directions and
+camera descriptors used in prompts, assistant system instructions, model and film
+titles, SVG geometry, and existing Oddling collection names. Oddling section hints
+used only by assistant knowledge retrieval remain English under the C2 response
+contract. Unused FEATURE_CARDS bodies and effect descriptions discarded by the
+recipe factory are recorded as unused, not counted as translated. The lip-sync
+tool blurb already maps to its catalog; its source differs only in apostrophe
+style. These exceptions identify owners/fields or exact strings, not entire data
+files. Short canonical trait descriptors and provider-generated content retain
+the previously documented exclusions.
+
+Terms sections 3A and 7B and the corresponding Refund headings now translate;
+section identifiers remain exact. The Terms jurisdiction slot translates England
+and Wales, while the registered address stays verbatim. The six-document equality
+scan also corrected the Russian Cookies heading. Proper product/policy names,
+ratings, placeholders, German Credits, French Contact/Rectification and the usual
+Cookies loanword in es/fr/pt/de remain intentional identical strings. English legal
+content, facts, binding statements and dates are unchanged. The legal source-hash
+update/check is run; unchanged English produces an unchanged manifest.
+
+The dynamic smart-link HTML page `/s/[slug]` now honors the validated
+`veyrnox_locale` cookie when languages are enabled. Middleware overwrites the locale
+header for this exact route family, so the root document, chrome and metadata agree.
+Missing, invalid or duplicate cookies and languages disabled still mean English.
+No Accept-Language reader is added. The creator's title, bio, link labels, theme,
+slug and destinations remain untouched. `/s/[slug]/go/*` redirects and their RPC
+payloads do not read locale. There are no new prefixed smart-link URLs, account
+writes, locale-bearing API payloads, or changes to click/view accounting. Existing
+private/no-store page responses prevent cross-locale HTML caching.
