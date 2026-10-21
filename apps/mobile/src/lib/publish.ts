@@ -21,7 +21,7 @@ export interface PublishAccount {
     readonly supportedMedia: string[];
 }
 
-export function parseAccounts(body: unknown): { accountLimit: number; accounts: PublishAccount[] } {
+export function parseAccounts(body: unknown): { accountLimit: number; accounts: PublishAccount[]; uploadsEnabled: boolean } {
     const b = isObject(body) ? body : {};
     const accounts: PublishAccount[] = [];
     for (const raw of list(b.accounts)) {
@@ -42,7 +42,7 @@ export function parseAccounts(body: unknown): { accountLimit: number; accounts: 
         });
     }
     const limit = typeof b.accountLimit === 'number' && Number.isInteger(b.accountLimit) && b.accountLimit > 0 ? b.accountLimit : 1;
-    return { accountLimit: limit, accounts };
+    return { accountLimit: limit, accounts, uploadsEnabled: b.uploadsEnabled === true };
 }
 
 export interface PostTarget {

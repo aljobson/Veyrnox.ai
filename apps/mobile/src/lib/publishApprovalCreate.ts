@@ -16,6 +16,7 @@ const MIN_LEAD_MS = 60_000;
 
 export interface ApprovalDraft {
     readonly jobId: string;
+    readonly uploadId?: string;
     readonly mediaType: MediaType;
     readonly accountIds: readonly string[];
     readonly text: string;
@@ -41,7 +42,7 @@ export function parseReviewers(text: string): { emails: string[]; rejected: stri
 
 // A key into the catalog for what is wrong, or null.
 export function validateApproval(d: ApprovalDraft, now: Date): string | null {
-    if (!d.jobId) return 'approvals.err.creation';
+    if (!!d.jobId === !!d.uploadId) return 'approvals.err.creation';
     if (d.accountIds.length === 0) return 'approvals.err.accounts';
     if (d.text.length > MAX_TEXT) return 'approvals.err.text';
     if (networkTextProblem(d.networkText)) return 'publishLinks.err.variantTooLong';
@@ -51,7 +52,7 @@ export function validateApproval(d: ApprovalDraft, now: Date): string | null {
 }
 
 export const signatureOf = (d: ApprovalDraft): string =>
-    JSON.stringify(['approval', d.jobId, d.mediaType, [...d.accountIds].sort(), d.text.trim(), d.scheduledAt.toISOString(), [...d.reviewers].sort(), d.policy,
+    JSON.stringify(['approval', d.uploadId ? `upload:${d.uploadId}` : d.jobId, d.mediaType, [...d.accountIds].sort(), d.text.trim(), d.scheduledAt.toISOString(), [...d.reviewers].sort(), d.policy,
         ...(Object.keys(d.networkText ?? {}).length > 0 || d.youtubeVisibility ? [Object.entries(d.networkText ?? {}).sort(([a], [b]) => a.localeCompare(b)), d.youtubeVisibility ?? null] : []),
     ]);
 
@@ -61,7 +62,7 @@ export function approvalBody(d: ApprovalDraft, idempotencyKey: string): Record<s
         globalText: d.text.trim(),
         idempotencyKey,
         accountIds: [...d.accountIds],
-        media: [{ mediaType: d.mediaType, jobId: d.jobId }],
+        media: [{ mediaType: d.mediaType, ...(d.uploadId ? { uploadId: d.uploadId } : { jobId: d.jobId }) }],
         reviewers: [...d.reviewers],
         policy: d.policy,
         ...(d.networkText && Object.keys(d.networkText).length > 0 ? { networkText: d.networkText } : {}),
@@ -119,9 +120,10 @@ export function variantsUnavailable(err: unknown): boolean {
         || (err.status === 503 && err.code === 'variants_not_configured');
 }
 
-export function approvalCreateErrorKey(err: unknown): string {
+export function approvalCreateErrorKey(err: unknown, isUpload = false): string {
     if (variantsUnavailable(err)) return 'publishLinks.err.variantsOff';
     if (!(err instanceof ApiError)) return 'approvals.err.later';
+    if (isUpload && (err.code === 'MEDIA_NOT_FOUND' || (err.status === 400 && err.code === 'invalid_media'))) return 'publishUploads.unavailable';
     if (err.status === 0) return 'approvals.err.createNetwork';
     if (err.status === 402) return 'approvals.err.plan';
     if (err.status === 403) return 'approvals.err.role';

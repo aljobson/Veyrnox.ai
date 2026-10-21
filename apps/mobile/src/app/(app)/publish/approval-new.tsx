@@ -1,5 +1,5 @@
 import { Stack, useRouter } from 'expo-router';
-import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from 'react-native';
 import { NetworkTextFields, YoutubeVisibilityChips } from '../../../components/ComposeExtras';
 import { WhenPicker, whenFrom } from '../../../components/WhenPicker';
@@ -8,30 +8,26 @@ import { touchTarget } from '../../../lib/a11y';
 import { appStorage, getCacheUser } from '../../../lib/appCache';
 import { createDraftKeys, isDefiniteRefusal } from '../../../lib/draftKey';
 import { t } from '../../../lib/i18n';
-import { fetchCatalog, mediaApi, type CatalogModel, type Job } from '../../../lib/media';
+import { fetchCatalog, mediaApi, type CatalogModel } from '../../../lib/media';
 import { fetchAccounts, publishErrorMessage, type PublishAccount } from '../../../lib/publish';
 import { MAX_REVIEWERS, approvalConfirmExtra, approvalCreateErrorKey, variantsUnavailable, createApproval, parseReviewers, signatureOf, validateApproval, type ApprovalDraft, type Created, type Policy } from '../../../lib/publishApprovalCreate';
-import { MAX_TEXT, cleanNetworkText, eligibleAccounts, mediaTypeOf, type MediaType, type YoutubeVisibility } from '../../../lib/publishCompose';
+import { MAX_TEXT, cleanNetworkText, eligibleAccounts, mediaTypeOf, type YoutubeVisibility } from '../../../lib/publishCompose';
 import { brandStore } from '../../../lib/publishBrand';
 import { useBrandScopedVariants } from '../../../lib/useBrandScopedVariants';
 import { usePublishApi } from '../../../lib/usePublishApi';
+import { PublishUploadPanel } from '../../../components/PublishUploadPanel';
+import { choose, clearUpload, type CreationPick, type MediaChoice } from '../../../lib/publishMediaChoice';
 import { colors } from '../../../theme';
 
 const draftKeys = createDraftKeys(appStorage);
 
-interface Pick {
-    readonly job: Job;
-    readonly mediaType: MediaType;
-    readonly name: string;
-}
-
 export default function ApprovalNew() {
     const api = usePublishApi();
     const router = useRouter();
-    const [picks, setPicks] = useState<Pick[] | null>(null);
+    const [picks, setPicks] = useState<CreationPick[] | null>(null);
     const [accounts, setAccounts] = useState<PublishAccount[] | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [chosen, setChosen] = useState<Pick | null>(null);
+    const [chosen, setChosen] = useState<MediaChoice | null>(null);
     const [accountIds, setAccountIds] = useState<string[]>([]);
     const [text, setText] = useState('');
     const { off: variantsOff, networkText, setNetworkText, markOff } = useBrandScopedVariants();
@@ -46,6 +42,9 @@ export default function ApprovalNew() {
     const [time, setTime] = useState('');
     const [reviewerText, setReviewerText] = useState('');
     const [policy, setPolicy] = useState<Policy>('any');
+    const [uploadsEnabled, setUploadsEnabled] = useState(false);
+    const [preparing, setPreparing] = useState(false);
+    const preparingRef = useRef(false);
     const [busy, setBusy] = useState(false);
     const [problem, setProblem] = useState<string | null>(null);
     const [created, setCreated] = useState<Created | null>(null);
@@ -56,14 +55,15 @@ export default function ApprovalNew() {
             .then(([page, catalog, acc]) => {
                 if (cancelled) return;
                 const byId = new Map<string, CatalogModel>(catalog.map((m) => [m.id, m]));
-                const list: Pick[] = [];
+                const list: CreationPick[] = [];
                 for (const job of page.jobs) {
                     const model = byId.get(job.model_id);
                     const mediaType = model ? mediaTypeOf(model.modality) : null;
-                    if (job.state === 'succeeded' && job.has_asset && model && mediaType) list.push({ job, mediaType, name: job.label || model.name });
+                    if (job.state === 'succeeded' && job.has_asset && model && mediaType) list.push({ kind: 'job', job, mediaType, name: job.label || model.name });
                 }
                 setPicks(list);
                 setAccounts(acc.accounts);
+                setUploadsEnabled(acc.uploadsEnabled);
             })
             .catch((err) => !cancelled && setError(publishErrorMessage(err)));
         return () => {
@@ -76,7 +76,7 @@ export default function ApprovalNew() {
     const reviewers = parseReviewers(reviewerText);
 
     function submit() {
-        if (!chosen || busy) return;
+        if (!chosen || busy || preparingRef.current) return;
         const at = whenFrom(date, time);
         if (!at) {
             setProblem(t('approvals.err.timeFormat'));
@@ -86,7 +86,7 @@ export default function ApprovalNew() {
             setProblem(t('approvals.err.badReviewer', { value: reviewers.rejected[0] }));
             return;
         }
-        const draft: ApprovalDraft = { jobId: chosen.job.job_id, mediaType: chosen.mediaType, accountIds, text, scheduledAt: at, reviewers: reviewers.emails, policy, networkText: cleanNetworkText(networkText, networks), ...(networks.includes('youtube') ? { youtubeVisibility } : {}) };
+        const draft: ApprovalDraft = { jobId: chosen.kind === 'job' ? chosen.job.job_id : '', ...(chosen.kind === 'upload' ? { uploadId: chosen.uploadId } : {}), mediaType: chosen.mediaType, accountIds, text, scheduledAt: at, reviewers: reviewers.emails, policy, networkText: cleanNetworkText(networkText, networks), ...(networks.includes('youtube') ? { youtubeVisibility } : {}) };
         const invalid = validateApproval(draft, new Date());
         if (invalid) {
             setProblem(t(invalid));
@@ -98,13 +98,15 @@ export default function ApprovalNew() {
         const confirmation = t('approvals.confirmBody', { reviewers: reviewers.emails.join(', '), where, when: at.toLocaleString(), policy: t(`approvals.policy.${policy}`) });
         Alert.alert(t('approvals.confirmTitle'), confirmation + (extra.length ? '\n\n' + extra.join('\n') : ''), [
             { text: t('approvals.cancel'), style: 'cancel' },
-            { text: t('approvals.send'), onPress: () => void send(draft) },
+            { text: t('approvals.send'), onPress: () => { if (!preparingRef.current) void send(draft); } },
         ]);
     }
 
     async function send(draft: ApprovalDraft) {
+        if (preparingRef.current) return;
         const user = getCacheUser();
         const key = await draftKeys.keyFor(user, signatureOf(draft));
+        if (preparingRef.current) return;
         setBusy(true);
         const sentBrand = brandStore.get();
         try {
@@ -113,7 +115,7 @@ export default function ApprovalNew() {
         } catch (err) {
             if (variantsUnavailable(err)) markOff(sentBrand);
             if (isDefiniteRefusal(err)) await draftKeys.drop(user);
-            setProblem(t(approvalCreateErrorKey(err)));
+            setProblem(t(approvalCreateErrorKey(err, !!draft.uploadId)));
         } finally {
             setBusy(false);
         }
@@ -162,11 +164,14 @@ export default function ApprovalNew() {
                 <Text style={styles.heading} accessibilityRole="header">{t('approvals.step.creation')}</Text>
                 {picks.length === 0 ? <Text style={styles.muted}>{t('approvals.noCreations')}</Text> : null}
                 {picks.slice(0, 30).map((p) => (
-                    <Pressable key={p.job.job_id} accessibilityRole="button" accessibilityState={{ selected: chosen?.job.job_id === p.job.job_id }} style={[styles.row, touchTarget, chosen?.job.job_id === p.job.job_id && styles.rowOn]} onPress={() => { setChosen(p); setAccountIds([]); }}>
+                    <Pressable key={p.job.job_id} accessibilityRole="button" disabled={preparing} accessibilityState={{ disabled: preparing, selected: (chosen?.kind === 'job' && chosen.job.job_id === p.job.job_id) }} style={[styles.row, touchTarget, (chosen?.kind === 'job' && chosen.job.job_id === p.job.job_id) && styles.rowOn]} onPress={() => { if (preparingRef.current) return; setChosen(old => choose(old, p)); setAccountIds([]); }}>
                         <Text style={styles.name}>{p.name}</Text>
                         <Text style={styles.muted}>{p.mediaType} · {new Date(p.job.created_at).toLocaleDateString()}</Text>
                     </Pressable>
                 ))}
+                <PublishUploadPanel api={api} enabled={uploadsEnabled} selectedUploadId={chosen?.kind === 'upload' ? chosen.uploadId : null}
+                    onSelect={pick => { setChosen(old => pick ? choose(old, { kind: 'upload', ...pick }) : clearUpload(old, chosen?.kind === 'upload' ? chosen.uploadId : null)); if (pick) setAccountIds([]); }}
+                    onBusyChange={value => { preparingRef.current = value; setPreparing(value); }} />
                 {chosen ? (
                     <>
                         <Text style={styles.heading} accessibilityRole="header">{t('approvals.step.accounts')}</Text>
@@ -199,7 +204,7 @@ export default function ApprovalNew() {
                             ))}
                         </View>
                         {problem ? <Text style={styles.error} accessibilityRole="alert">{problem}</Text> : null}
-                        <Pressable accessibilityRole="button" disabled={busy || accountIds.length === 0} accessibilityState={{ disabled: busy || accountIds.length === 0 }} style={[styles.button, touchTarget, (busy || accountIds.length === 0) && styles.off]} onPress={submit}>
+                        <Pressable accessibilityRole="button" disabled={busy || preparing || accountIds.length === 0} accessibilityState={{ disabled: busy || preparing || accountIds.length === 0 }} style={[styles.button, touchTarget, (busy || preparing || accountIds.length === 0) && styles.off]} onPress={submit}>
                             {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>{t('approvals.send')}</Text>}
                         </Pressable>
                     </>

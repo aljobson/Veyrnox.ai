@@ -1,4 +1,5 @@
 import type { ApiClient } from './api';
+import { t } from './i18n';
 import { kindOf } from './media';
 import type { PublishAccount } from './publish';
 
@@ -30,6 +31,7 @@ export const YOUTUBE_VISIBILITIES: readonly YoutubeVisibility[] = ['private', 'u
 
 export interface Draft {
     readonly jobId: string;
+    readonly uploadId?: string;
     readonly mediaType: MediaType;
     readonly accountIds: readonly string[];
     readonly text: string;
@@ -100,7 +102,7 @@ export function quickTimes(now: Date): { label: string; date: Date }[] {
 }
 
 export function validateDraft(draft: Draft, accounts: readonly PublishAccount[], now: Date): string | null {
-    if (!draft.jobId) return 'Choose a creation to post.';
+    if (!!draft.jobId === !!draft.uploadId) return 'Choose a creation to post.';
     if (draft.accountIds.length === 0) return 'Choose at least one account.';
     if (draft.text.length > MAX_TEXT) return `The text can be at most ${MAX_TEXT} characters.`;
     for (const id of draft.accountIds) {
@@ -122,7 +124,7 @@ export function createBody(draft: Draft, idempotencyKey: string, _now: Date): Re
         ...(draft.youtubeVisibility ? { youtubeVisibility: draft.youtubeVisibility } : {}),
         idempotencyKey,
         accountIds: [...draft.accountIds],
-        media: [{ mediaType: draft.mediaType, jobId: draft.jobId }],
+        media: [{ mediaType: draft.mediaType, ...(draft.uploadId ? { uploadId: draft.uploadId } : { jobId: draft.jobId }) }],
     };
 }
 
@@ -143,10 +145,11 @@ export const cancelPost = (api: ApiClient, id: string, expectedUpdatedAt: string
 export const restorePost = (api: ApiClient, id: string, expectedUpdatedAt: string, scheduledAt: Date) =>
     api.request<{ updated_at?: string; scheduled_at?: string }>(postPath(id), json('PATCH', { action: 'restore', expectedUpdatedAt, scheduledAt: scheduledAt.toISOString() }));
 
-export function composeErrorMessage(err: unknown): string {
+export function composeErrorMessage(err: unknown, isUpload = false): string {
     const e = err as { status?: number; code?: string; body?: Record<string, unknown> } | null;
     const status = typeof e?.status === 'number' ? e.status : -1;
     const code = String(e?.code ?? '');
+    if (isUpload && (code === 'MEDIA_NOT_FOUND' || (status === 400 && code === 'invalid_media'))) return t('publishUploads.unavailable');
     if (status === 0) return 'No connection. Nothing was posted. Check your internet and try again.';
     if (status === 402) {
         const feature = e?.body?.feature;
