@@ -1,4 +1,5 @@
 'use client';
+import { tOr } from '../../../lib/i18n/translate.mjs';
 import { useI18n } from '../../../components/I18nProvider';
 
 
@@ -14,15 +15,16 @@ const tileTone = (on) => (on ? 'border-vx-accent bg-vx-accent/[0.07]' : 'border-
 /** Colour groups: a swatch per option, plus Any. */
 export function SwatchGroup({ group, value, onChange }) {
   const { t } = useI18n();
+  const groupLabel = tOr(t, `app.data.character.${group.id}`, group.label);
   const table = SWATCHES[group.id];
   return (
     <fieldset className="space-y-2">
-      <legend className={legend}>{group.label}<span className="ms-2 normal-case tracking-normal text-vx-fg">{value ? characterOptionLabel(group.id, value) : t("app.create.character.any")}</span></legend>
+      <legend className={legend}>{groupLabel}<span className="ms-2 normal-case tracking-normal text-vx-fg">{value ? characterOptionLabel(group.id, value) : t("app.create.character.any")}</span></legend>
       <div className="flex flex-wrap gap-2">
-        <button type="button" onClick={() => onChange(group.id, '')} aria-pressed={!value} aria-label={t('app.oddlings.catalog.anyLabel', { label: group.label })}
+        <button type="button" onClick={() => onChange(group.id, '')} aria-pressed={!value} aria-label={t('app.oddlings.catalog.anyLabel', { label: groupLabel })}
           className={`grid h-9 w-9 place-items-center rounded-full border font-vx-mono text-[9px] font-bold ${!value ? 'border-vx-accent text-vx-accent' : 'border-vx-border text-vx-fg-muted'}`}>{t("app.create.character.any")}</button>
         {group.options.map(([name]) => (
-          <button key={name} type="button" onClick={() => onChange(group.id, name)} aria-pressed={value === name} aria-label={`${group.label}: ${characterOptionLabel(group.id, name)}`} title={characterOptionLabel(group.id, name)}
+          <button key={name} type="button" onClick={() => onChange(group.id, name)} aria-pressed={value === name} aria-label={`${groupLabel}: ${characterOptionLabel(group.id, name)}`} title={characterOptionLabel(group.id, name)}
             className={`h-9 w-9 rounded-full border-2 ${value === name ? 'border-vx-accent ring-2 ring-vx-accent/40' : 'border-vx-border'}`} style={{ background: table[name]?.swatch }} />
         ))}
       </div>
@@ -33,6 +35,7 @@ export function SwatchGroup({ group, value, onChange }) {
 /** Ordered groups: one slider. Position 0 is Any. */
 export function SliderGroup({ group, picks, onChange }) {
   const { t } = useI18n();
+  const groupLabel = tOr(t, `app.data.character.${group.id}`, group.label);
   const scale = SLIDER_SCALES[group.id];
   const position = sliderPosition(group.id, picks);
   const value = picks?.[group.id];
@@ -40,7 +43,7 @@ export function SliderGroup({ group, picks, onChange }) {
   return (
     <div className="space-y-1.5">
       <div className="flex items-baseline justify-between gap-3">
-        <label htmlFor={`catalog-${group.id}`} className={legend}>{group.label}</label>
+        <label htmlFor={`catalog-${group.id}`} className={legend}>{groupLabel}</label>
         <span className="font-vx-mono text-[11px] font-bold text-vx-fg">{text}</span>
       </div>
       <input id={`catalog-${group.id}`} type="range" min={0} max={scale.length} step={1} value={position} aria-valuetext={text}
@@ -53,12 +56,13 @@ export function SliderGroup({ group, picks, onChange }) {
 /** Everything else: a grid of tiles. Hair shows a picture of the style when it has one; hair without a picture, outfit, body and headwear draw the option on the figure; the rest show a plain icon tile. */
 export function TileGroup({ group, picks, value, onChange, categoryId }) {
   const { t } = useI18n();
+  const groupLabel = tOr(t, `app.data.character.${group.id}`, group.label);
   const drawn = tileKind(group.id) === 'mannequin';
   const focus = tileFocus(group.id);
   const icon = CATEGORY_ICONS[categoryId];
   return (
     <fieldset className="space-y-2">
-      <legend className={legend}>{group.label}<span className="ms-2 normal-case tracking-normal text-vx-fg">{value ? characterOptionLabel(group.id, value) : t("app.create.character.any")}</span></legend>
+      <legend className={legend}>{groupLabel}<span className="ms-2 normal-case tracking-normal text-vx-fg">{value ? characterOptionLabel(group.id, value) : t("app.create.character.any")}</span></legend>
       <div className="grid grid-cols-[repeat(auto-fill,minmax(104px,1fr))] gap-2 lg:grid-cols-[repeat(auto-fill,minmax(132px,1fr))] lg:gap-3">
         <button type="button" onClick={() => onChange(group.id, '')} aria-pressed={!value} className={`${tileBase} ${tileTone(!value)} justify-center px-1 py-3`}>
           <span className="grid h-10 w-10 place-items-center rounded-full border border-dashed border-vx-border font-vx-mono text-[9px] text-vx-fg-muted" aria-hidden="true">{t("app.create.character.any")}</span>

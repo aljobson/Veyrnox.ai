@@ -21,7 +21,7 @@ export const JPEG_QUALITY = 0.9;
 
 // Loaded on first use, so a JavaScript update that reaches a build made before the native module was added reads as "resize
 // unavailable" (the photo is refused with the same words) instead of crashing.
-function loadManipulator(): ManipulatorLib {
+export function loadManipulator(): ManipulatorLib {
     try {
         // eslint-disable-next-line @typescript-eslint/no-require-imports -- loaded lazily; see above
         return require('expo-image-manipulator') as ManipulatorLib;

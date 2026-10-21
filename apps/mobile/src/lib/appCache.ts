@@ -41,6 +41,7 @@ export function createFileStorage(dir: () => Directory): CacheStorage {
 }
 
 export const appStorage: CacheStorage = createFileStorage(() => new Directory(Paths.cache, 'veyrnox-cache'));
+export const userDocStorage: CacheStorage = createFileStorage(() => new Directory(Paths.document, 'veyrnox-user-docs'));
 export const appCache: Cache = createCache(appStorage);
 
 // The user id is the `sub` claim of the access token. Read only to key the cache; the token is not checked here.
@@ -73,22 +74,35 @@ export const getCacheUser = (): string | undefined => activeUser ?? undefined;
 
 // Called when a session is adopted. A different user than last time (including one from a previous launch) wipes
 // everything first.
-export async function bindCacheUser(userId: string | null, cache: Cache = appCache, storage: CacheStorage = appStorage): Promise<void> {
+export async function bindCacheUser(userId: string | null, cache: Cache = appCache, storage: CacheStorage = appStorage, docs: CacheStorage = userDocStorage): Promise<void> {
     if (!userId) return;
     if (activeUser === userId) return;
     const last = activeUser ?? (await storage.get(USER_KEY).catch(() => null));
     setCacheUser(userId);
     if (last !== userId) await cache.clear();
+    await sweepUserDocs(userId, docs).catch(() => undefined);
     await storage.set(USER_KEY, userId).catch(() => undefined);
 }
 
 // Called when the session is dropped: sign-out, a lost session, or account deletion (which signs out).
-export async function wipeCache(cache: Cache = appCache): Promise<void> {
+export async function wipeCache(cache: Cache = appCache, docs: CacheStorage = userDocStorage): Promise<void> {
     setCacheUser(null);
-    await cache.clear();
+    await Promise.all([cache.clear(), docs.keys().then(keys => Promise.all(keys.map(key => docs.remove(key))))]);
 }
 
 // For tests.
 export function resetCacheUser() {
     setCacheUser(null);
+}
+
+// Durable ownership is independent of the purgeable cache's user marker.
+export async function sweepUserDocs(userId: string, storage: CacheStorage = userDocStorage): Promise<void> {
+    for (const key of await storage.keys()) {
+        let value: string | null;
+        try { value = await storage.get(key); }
+        catch { continue; } // A failed read says nothing about the record's owner.
+        let owner: unknown;
+        try { owner = JSON.parse(value ?? 'null')?.owner; } catch { owner = null; }
+        if (typeof owner !== 'string' || !owner.trim() || owner !== userId) await storage.remove(key);
+    }
 }

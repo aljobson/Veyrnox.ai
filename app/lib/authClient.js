@@ -354,7 +354,12 @@ export async function signInWithPassword(email, password, captchaToken) {
  * @returns {Promise<{session: VeyrnoxSession|null, needsConfirmation: boolean}>}
  */
 export async function signUp(email, password, captchaToken) {
-    const data = await post("/auth/v1/signup", withCaptcha({ email, password }, captchaToken));
+    const verifier = randomVerifier();
+    keepMagicVerifier(verifier);
+    const redirect = `${window.location.origin}/auth/callback`;
+    const data = await post(`/auth/v1/signup?redirect_to=${encodeURIComponent(redirect)}`, withCaptcha({
+        email, password, code_challenge: await s256(verifier), code_challenge_method: 's256',
+    }, captchaToken));
     if (data?.access_token) {
         const s = adoptSession(data);
         return { session: s, needsConfirmation: false };
@@ -452,42 +457,26 @@ export async function completeOAuthFromCode() {
     return adoptSession(data);
 }
 /**
- * Finish a flow that returned tokens in the URL fragment (`#access_token=…`):
- * the email-confirmation link, which is sent without a PKCE challenge, and any
- * provider still on the implicit flow. The fragment never reaches a server,
- * but it stays in the tab's history and in whatever reads the URL, so it is
- * taken into the session and cleared from the address bar in the same step
- * (audit 2026-10-09, A-05). Returns null when the fragment holds no tokens.
- * Never overwrites a still-valid session; the fragment is cleared either way.
- * @returns {Promise<VeyrnoxSession|null>}
+ * Scrub and refuse implicit credentials before any callback error or code
+ * branch. URL fragments prove no browser login intent; even valid credentials
+ * could belong to an attacker. Signup, emailed links and OAuth all use PKCE.
  */
-export async function completeFromFragment() {
-    if (typeof window === "undefined") return null;
-    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-    const accessToken = hash.get("access_token");
-    if (!accessToken) return null;
+export function rejectImplicitCallbackFragment() {
+    if (typeof window === 'undefined') return false;
+    const hash = new URLSearchParams(window.location.hash.replace(/^#[#?/]*/, ''));
+    if (![...hash.keys()].some(key => /^(access_token|refresh_token|id_token)$/i.test(key))) return false;
     const clean = new URL(window.location.href);
-    clean.hash = "";
-    try { window.history.replaceState(null, "", clean.toString()); } catch { /* nothing to clear from */ }
-    const live = getSession();
-    if (live) return live;
-    const epoch = sessionEpoch;
-    const expiresIn = Number(hash.get("expires_in"));
-    const expiresAt = Number(hash.get("expires_at"));
-    const s = normalise({
-        access_token: accessToken,
-        refresh_token: hash.get("refresh_token") || null,
-        ...(Number.isFinite(expiresAt) && expiresAt > 0 ? { expires_at: expiresAt } : {}),
-        ...(Number.isFinite(expiresIn) && expiresIn > 0 ? { expires_in: expiresIn } : {}),
-    });
-    // The fragment carries no user; ask who the token belongs to, so the account
-    // menu has a name. A failure here leaves user null, which every reader allows.
-    try {
-        const { url, anonKey } = ensureCfg();
-        const res = await fetch(new URL("/auth/v1/user", url), { headers: { apikey: anonKey, Authorization: `Bearer ${accessToken}` } });
-        if (res.ok) s.user = await res.json();
-    } catch { /* user stays null */ }
-    return adoptSession(await persistTokenResponse(s, epoch));
+    clean.hash = '';
+    try { window.history.replaceState(null, '', clean.toString()); } catch { /* still refuse credentials if history is blocked */ }
+    return true;
+}
+
+/** Compatibility entry point: implicit flows never establish or change a session. */
+export async function completeFromFragment() {
+    if (rejectImplicitCallbackFragment()) {
+        throw Object.assign(new Error('Start sign-in again in this browser.'), { code: 'implicit_flow_unsupported' });
+    }
+    return null;
 }
 /** Drop local state immediately and expire the HttpOnly credential. */
 export function clearSession() {

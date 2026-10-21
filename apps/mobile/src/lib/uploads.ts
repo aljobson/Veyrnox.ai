@@ -71,3 +71,26 @@ export function uploadMessage(err: unknown): string {
             return 'Could not upload that file. Try again.';
     }
 }
+
+// Publish uploads stream from disk; the existing generation upload path above is unchanged.
+export const putFromDisk: PutFile = async (url, headers, uri, onProgress, signal) => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- keep generation imports unchanged
+    const { File, UploadTask, UploadType } = require('expo-file-system') as typeof import('expo-file-system');
+    const safeHeaders = Object.fromEntries(Object.entries(headers).filter(([key]) => key.toLowerCase() !== 'content-length'));
+    let task: InstanceType<typeof UploadTask> | undefined;
+    try {
+        if (signal.aborted) throw new ApiError(0, 'upload_cancelled');
+        task = new UploadTask(new File(uri), url, {
+            httpMethod: 'PUT', uploadType: UploadType.BINARY_CONTENT, headers: safeHeaders,
+            onProgress: ({ bytesSent, totalBytes }) => { if (totalBytes > 0) onProgress(bytesSent / totalBytes); },
+            signal, sessionType: 'background',
+        });
+        const result = await task.uploadAsync();
+        if (signal.aborted) throw new ApiError(0, 'upload_cancelled');
+        if (result.status < 200 || result.status >= 300) throw new ApiError(result.status, result.status === 403 ? 'upload_url_expired' : 'upload_failed');
+    } catch (err) {
+        if (signal.aborted || (err as Error)?.name === 'AbortError') throw new ApiError(0, 'upload_cancelled');
+        if (err instanceof ApiError) throw err;
+        throw new ApiError(0, 'upload_failed');
+    } finally { task?.release(); }
+};
