@@ -195,3 +195,9 @@ fd087777e79b8a1e33774074af9d1f32e18fff05:tests/veyrnoxMcp.test.mjs:generic-api-k
 556c869d32e45c610543ec68202a7ce6b26156ea:tests/supabaseOutageAlert.test.mjs:generic-api-key:54
 # Synthetic idempotency-key fixture in a unit test ('key-12345678'), not a credential; the line was reworded in the next commit.
 5209716b988f5214a2a68d9a468c396ec3f0c4bd:apps/mobile/__tests__/publishInboxWrite.test.ts:generic-api-key:24
+# Mobile test fixtures: idempotency keys like 'plan_test_one' and 'key-123456', not credentials.
+fba919db8f208990f88a0e2718f2900cb04f850b:apps/mobile/__tests__/clipEdit.test.ts:generic-api-key:115
+b922536c6aa55c15e8b574e35e8fd3593f28f851:apps/mobile/__tests__/montage.test.ts:generic-api-key:14
+b922536c6aa55c15e8b574e35e8fd3593f28f851:apps/mobile/__tests__/montage.test.ts:generic-api-key:41
+b922536c6aa55c15e8b574e35e8fd3593f28f851:apps/mobile/__tests__/montage.test.ts:generic-api-key:48
+b922536c6aa55c15e8b574e35e8fd3593f28f851:apps/mobile/__tests__/montage.test.ts:generic-api-key:76

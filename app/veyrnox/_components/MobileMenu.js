@@ -53,10 +53,10 @@ export function MobileMenu({ items, className = '', buttonLabel = 'Menu', button
           aria-current={href === activeHref ? 'page' : undefined}
           className={`flex items-center gap-2 rounded-xl border px-3 py-3 text-[15px] font-bold transition-colors ${
             href === activeHref
-              ? it.featured ? 'border-vx-accent bg-vx-accent text-vx-accent-ink' : 'border-transparent bg-vx-panel text-vx-fg'
+              ? it.featured ? 'border-vx-accent bg-vx-accent text-vx-accent-ink' : 'vx-side-row border-transparent'
               : it.featured
                 ? 'border-vx-accent/50 bg-vx-accent/10 text-vx-accent hover:bg-vx-accent/20'
-                : 'border-transparent text-vx-fg-body hover:bg-vx-panel hover:text-vx-fg'
+                : 'vx-side-row border-transparent text-vx-fg-body'
           }`}
         >
           <span className="inline-flex items-center gap-2">
