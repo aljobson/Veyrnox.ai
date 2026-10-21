@@ -20,6 +20,11 @@ const BROWSER_CALLABLE = new Set([
     'public.catalog_watch()',                   // 0030, anon: fal-catalog-watch; active fal rows only since 0256
     'public.reconcile_status()',                // 0128, anon: reconcile-watch
     'public.recovery_status()',                 // 0131, anon: recovery-health
+    // ADR-0245 film studio cloud
+    'public.save_film_studio(uuid,integer,text,text,text)',
+    'public.remove_film_studio(uuid,integer)',
+    'private.save_film_studio(uuid,integer,text,text,text)',
+    'private.remove_film_studio(uuid,integer)',
     'public.create_project(uuid,text,text)',    // 0135+, authenticated: tenant wrappers (ADR-0051)
     'public.mutate_project(uuid,integer,text,boolean)',
     'public.save_project_document(uuid,integer,jsonb,text,integer)',

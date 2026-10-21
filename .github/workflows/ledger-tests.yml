@@ -18,6 +18,7 @@ on:
       - "scripts/test-cinema-creators.mjs"
       - "scripts/test-tenant-foundation.mjs"
       - "scripts/test-project-documents.mjs"
+      - "scripts/test-film-studio-cloud.mjs"
       - "scripts/test-project-document-timeline.mjs"
       - "scripts/test-project-document-multitrack.mjs"
       - "scripts/test-editor-shared-storage.mjs"
@@ -202,6 +203,7 @@ jobs:
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-creators.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-tenant-foundation.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-project-documents.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-film-studio-cloud.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-project-document-timeline.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-project-document-multitrack.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-editor-shared-storage.mjs

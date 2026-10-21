@@ -43,6 +43,7 @@ If a build starts failing after a dependency change, bisect these three first.
   `private` schema must stay out of the API's exposed schemas — the wrappers
   exist so it never has to be exposed. Anything added to this surface goes on
   the allowlist in `scripts/test-default-privileges.mjs` on purpose.
+  Film Studio (ADR-0245) adds owner-only SELECT on `film_studio_projects` and the `save_film_studio` / `remove_film_studio` invoker wrappers to this user-JWT surface.
 - **Ledger is append-only** — enforced by trigger `ledger_entries_append_only`.
   Never `UPDATE` or `DELETE` a ledger row. Corrections are compensating rows
   (positive delta = refund/grant, negative = debit).
