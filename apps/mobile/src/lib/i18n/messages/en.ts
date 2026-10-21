@@ -62,6 +62,7 @@ import area_oac from './en/oac';
 import area_oauth from './en/oauth';
 import area_oddlings from './en/oddlings';
 import area_opt from './en/opt';
+import area_passkey from './en/passkey';
 import area_pk from './en/pk';
 import area_plan from './en/plan';
 import area_prc from './en/prc';
@@ -152,6 +153,7 @@ const catalog = {
     ...area_oauth,
     ...area_oddlings,
     ...area_opt,
+    ...area_passkey,
     ...area_pk,
     ...area_plan,
     ...area_prc,
