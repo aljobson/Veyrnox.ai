@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import * as WebBrowser from 'expo-web-browser';
 import { Link, Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { JobProvenance } from '../../../components/JobProvenance';
@@ -11,7 +11,9 @@ import { mediaApi, waitForJob, type JobState } from '../../../lib/media';
 import { editHref, makeAnotherHref, nextStepsFor, publishHref } from '../../../lib/nextSteps';
 import { saveOutput, shareOutput } from '../../../lib/output';
 import { colors } from '../../../theme';
-import { t } from '../../../lib/i18n';
+import { plural, t } from '../../../lib/i18n';
+import { touchTarget } from '../../../lib/a11y';
+import { cancelErrorKey, cancelJob, getCancelStatus, type CancelStatus } from '../../../lib/cancelJob';
 
 // Catalog keys, looked up when shown.
 const LABEL: Record<JobState, string> = {
@@ -42,16 +44,40 @@ export default function JobScreen() {
     const [acting, setActing] = useState<'save' | 'share' | null>(null);
     const [deleting, setDeleting] = useState(false);
 
+    const [cancelStatus, setCancelStatus] = useState<CancelStatus | null>(null);
+    const [cancelNote, setCancelNote] = useState<string | null>(null);
+    const [cancelling, setCancelling] = useState(false);
+    const [cancelledCredits, setCancelledCredits] = useState<number | null>(null);
+    const cancelBusy = useRef(false);
+    const statusVersion = useRef(0);
+
     useEffect(() => {
         setError(false);
+        setCancelStatus(null);
         const controller = new AbortController();
         const media = mediaApi(api);
-        waitForJob(media, id, setState, controller.signal)
+        waitForJob(media, id, (nextState) => {
+            if (controller.signal.aborted) return;
+            setState(nextState);
+            const version = ++statusVersion.current;
+            if (nextState !== 'queued') { setCancelStatus(null); return; }
+            if (cancelBusy.current) return;
+            void getCancelStatus(api, id).then((status) => {
+                if (!controller.signal.aborted && version === statusVersion.current) setCancelStatus(status);
+            });
+        }, controller.signal)
             .then(async (final) => {
                 if (controller.signal.aborted) return;
                 // The model lets a failed job offer "Try again" on the same model.
                 const job = await media.getJob(id).catch(() => null);
-                if (job) setModelId(job.model_id);
+                if (controller.signal.aborted) return;
+                if (job) {
+                    setModelId(job.model_id);
+                    if (job.error_code === 'user_cancelled' && job.refunded === true) {
+                        setCancelledCredits(job.credits);
+                        setCancelNote(null);
+                    }
+                }
                 if (final !== 'succeeded') return;
                 const a = await media.getAsset(id);
                 setAsset({ url: a.url, mime: a.mime_type });
@@ -110,6 +136,39 @@ export default function JobScreen() {
         ]);
     }
 
+    async function doCancel() {
+        if (cancelBusy.current) return;
+        cancelBusy.current = true;
+        ++statusVersion.current;
+        setCancelling(true);
+        setCancelNote(null);
+        try {
+            await cancelJob(api, id);
+            setCancelNote(t('jobCancel.done'));
+            setCancelStatus(null);
+            setAttempt((n) => n + 1);
+        } catch (err) {
+            const key = cancelErrorKey(err);
+            setCancelNote(t(key));
+            if (['jobCancel.started', 'jobCancel.finished', 'jobCancel.unavailable', 'jobCancel.unsure'].includes(key)) {
+                setCancelStatus(null);
+            }
+            if (key === 'jobCancel.unsure') setAttempt((n) => n + 1);
+        } finally {
+            cancelBusy.current = false;
+            setCancelling(false);
+        }
+    }
+
+    function confirmCancel() {
+        if (cancelBusy.current || !cancelStatus?.cancellable) return;
+        Alert.alert(t('jobCancel.confirmTitle'), cancelStatus.credits > 0
+            ? plural('jobCancel.confirmPaid', cancelStatus.credits) : t('jobCancel.confirmFree'), [
+            { text: t('jobCancel.keep'), style: 'cancel' },
+            { text: t('jobCancel.confirm'), style: 'destructive', onPress: doCancel },
+        ]);
+    }
+
     const canSave = !!asset && (asset.mime.startsWith('image/') || asset.mime.startsWith('video/'));
 
     const next = asset ? nextStepsFor(asset.mime, modelId) : { edit: false, publish: false, makeAnother: false };
@@ -139,7 +198,17 @@ export default function JobScreen() {
             ) : (
                 <View style={styles.center}>
                     {waiting ? <ActivityIndicator color={colors.accent} /> : null}
-                    <Text style={state === 'failed' ? styles.error : styles.status}>{t(LABEL[state])}</Text>
+                    <Text style={state === 'failed' ? styles.error : styles.status}>{cancelledCredits !== null
+                        ? cancelledCredits > 0 ? plural('jobCancel.cancelled', cancelledCredits) : t('jobCancel.cancelledFree')
+                        : t(LABEL[state])}</Text>
+                    {cancelNote ? <Text style={styles.note} accessibilityLiveRegion="polite">{cancelNote}</Text> : null}
+                    {waiting && state === 'queued' && cancelStatus?.cancellable ? (
+                        <Pressable accessibilityRole="button" accessibilityLabel={t(cancelling ? 'jobCancel.cancelling' : 'jobCancel.confirm')}
+                            accessibilityState={{ busy: cancelling, disabled: cancelling }} disabled={cancelling}
+                            style={[styles.secondary, touchTarget, cancelling && styles.off]} onPress={confirmCancel}>
+                            <Text style={styles.secondaryText}>{t(cancelling ? 'jobCancel.cancelling' : 'jobCancel.confirm')}</Text>
+                        </Pressable>
+                    ) : null}
                     {waiting ? (
                         <Text style={styles.hint}>
                             {t('job.waiting', { elapsed: elapsed(seconds) })}
