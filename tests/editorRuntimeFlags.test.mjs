@@ -55,3 +55,10 @@ test('public catalog cache partitions the resolved paid gate so stale entries ca
         for(const [key,value] of [['EDITOR_RUNTIME_FLAGS',old.group],['EDITOR_AUDIO_STEMS_ENABLED',old.legacy]])if(value===undefined)delete process.env[key];else process.env[key]=value;
     }
 });
+
+test('Oddlings stays off in production and staging and requires its grouped opt-in', () => {
+    const config = parseJsonc(readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8'));
+    for (const vars of [config.vars, config.env.staging.vars, env({}), env({oddlings:'false'}), env({oddlings:true})])
+        assert.equal(editorFeatureEnabled('PROJECT_ODDLINGS_ENABLED', vars), false);
+    assert.equal(editorFeatureEnabled('PROJECT_ODDLINGS_ENABLED', env({oddlings:'true'})), true);
+});
