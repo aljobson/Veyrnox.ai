@@ -1,6 +1,6 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { VeyCharacter } from '../../components/VeyCharacter';
 import { selectedState, touchTarget } from '../../lib/a11y';
@@ -92,9 +92,10 @@ export default function Vibe() {
     );
 
     return (
-        <View style={styles.screen}>
+        <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <Stack.Screen options={{ headerShown: false, gestureEnabled: false }} />
-            <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+            {/* Questions start at the top so the first choice is where the thumb expects it on every screen; the intro, the skip note and the card sit in the middle. */}
+            <ScrollView contentContainerStyle={key ? styles.bodyTop : styles.body} keyboardShouldPersistTaps="handled">
                 {step === 0 ? (
                     <View style={styles.center}>
                         <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><VeyCharacter width={140} /></View>
@@ -222,7 +223,7 @@ export default function Vibe() {
                     </>
                 ) : null}
             </View>
-        </View>
+        </KeyboardAvoidingView>
     );
 }
 
@@ -263,6 +264,7 @@ function Card({ answers, synced }: { answers: CreatorAnswers; synced: boolean })
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
     body: { flexGrow: 1, justifyContent: 'center', padding: 24 },
+    bodyTop: { flexGrow: 1, justifyContent: 'flex-start', padding: 24, paddingTop: 72 },
     center: { alignItems: 'center', gap: 16 },
     question: { gap: 16 },
     step: { color: colors.muted, fontSize: 14 },
