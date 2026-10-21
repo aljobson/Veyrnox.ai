@@ -1,4 +1,4 @@
-# ADR-0240 — Product strategy: MuAPI-replacer vs MuAPI-reseller
+# ADR-0000 — Product strategy: MuAPI-replacer vs MuAPI-reseller
 
 - **Status**: Accepted (2026-09-10) — Option A (Replacer)
 - **Date**: 2026-09-10

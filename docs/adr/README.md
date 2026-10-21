@@ -91,7 +91,7 @@ The historical index below is frozen at the exact filenames in `index-baseline.t
 | [ADR-0103 — Vey explains the signed-in user's own charges](0103-vey-account-helper.md) | **Accepted 2026-10-16, built behind `VEY_ACCOUNT_ENABLED`, on in staging 2026-10-16 and production 2026-10-17** | Read-only: the help route reads the caller's own balance and last 10 ledger entries (kinds only, never operator reasons) and answers with a template. No account data goes to a model; no tool calls; `VEY_ACCOUNT_ENABLED` ships false. | — |
 | [ADR-0096 — Admin credit grant for the landing-page robot revision](0096-robot-landing-credit-grant.md) | **Accepted 2026-10-11** | One-time 100-Credit admin grant to the owner through keyed `ledger_grant` for the phone and desktop robot assets, explicitly authorized by Al Jobson in chat. | — |
 | [ADR-0065 — Video Enhance production runtime and asset delivery](0065-video-enhance-production-runtime.md) | **Proposed 2026-09-28** | Browser-local desktop release; versioned model/WASM assets; document-scoped WASM permission and default-off server flag. | Production Video Enhance activation |
-| [ADR-0240 — Product strategy: Replacer vs Reseller](0000-product-strategy.md) | **Accepted 2026-09-10 — Option A (Replacer)** | The meta-decision. Product owner picked full-stack rebuild over MuAPI reseller. Timeline 20-24 wk to first paying customer. | — |
+| [ADR-0000 — Product strategy: Replacer vs Reseller](0000-product-strategy.md) | **Accepted 2026-09-10 — Option A (Replacer)** | The meta-decision. Product owner picked full-stack rebuild over MuAPI reseller. Timeline 20-24 wk to first paying customer. | — |
 | [ADR-0001 — Authentication provider](0001-auth-provider.md) | Superseded by 0004 | Original single-vendor auth ADR. Circular with 0002. | — |
 | [ADR-0002 — Postgres host & serverless driver](0002-postgres-host.md) | Superseded by 0004 | Original single-vendor DB ADR. Circular with 0001. | — |
 | [ADR-0003 — Billing / merchant-of-record](0003-billing-provider.md) | Superseded by 0031 (was Accepted 2026-09-10, LemonSqueezy at launch) | Migrate to Stripe Direct at ~$20k MRR sustained 3 months. | — |
@@ -179,7 +179,7 @@ There is no ADR-0065: the number was never used.
 ## Decision graph
 
 ```
-ADR-0240 (strategy) ── outcome shapes everything below
+ADR-0000 (strategy) ── outcome shapes everything below
    │
    ├── If Reseller/Hybrid → ADR-0004 recommends Clerk + Cloudflare D1
    ├── If Replacer        → ADR-0004 recommends Clerk + Neon

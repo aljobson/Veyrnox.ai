@@ -3,11 +3,11 @@
 - **Status**: Accepted (2026-09-10)
 - **Deciders**: Product owner
 - **Blocks**: (none — this unblocks Phase 1 slice 3 vendor onboarding)
-- **Related**: ADR-0240 (open questions), ADR-0003, ADR-0004, docs/PHASE-1.md
+- **Related**: ADR-0000 (open questions), ADR-0003, ADR-0004, docs/PHASE-1.md
 
 ## Context
 
-ADR-0240 (product strategy) surfaced six business preconditions that had to be resolved before engineering could onboard vendors for Phase 1. Recording them here as a single ADR rather than six one-liners — they are all "settings" of the same weight, and grouping keeps the ADR series readable.
+ADR-0000 (product strategy) surfaced six business preconditions that had to be resolved before engineering could onboard vendors for Phase 1. Recording them here as a single ADR rather than six one-liners — they are all "settings" of the same weight, and grouping keeps the ADR series readable.
 
 ## The six resolutions
 
