@@ -6,6 +6,10 @@ const source = (path: string) => readFileSync(resolve(__dirname, '../../..', pat
 const quoted = (text: string) => [...text.matchAll(/'([^']*)'/g)].map(x => x[1]);
 const array = (text: string, name: string) => text.match(new RegExp(`${name} = Object.freeze\\(\\[([\\s\\S]*?)\\]\\);`))![1];
 const literal = (text: string, name: string) => text.match(new RegExp(`${name} = '([^']*)'`))![1];
+const withoutPolicyLink = (text: string) => {
+    const open = text.indexOf('<a '), content = text.indexOf('>', open), close = text.indexOf('</a>', content);
+    return open < 0 || content < 0 || close < 0 ? text : text.slice(0, open) + text.slice(content + 1, close) + text.slice(close + 4);
+};
 
 test('pinned declarations, vocabulary and byte limits drift against source text', () => {
     const publish = source('lib/cinema/publishApi.js'), safety = source('lib/cinema/safetyPolicy.js');
@@ -16,7 +20,7 @@ test('pinned declarations, vocabulary and byte limits drift against source text'
     expect(CINEMA_WARNING_CODES.flat()).toEqual(quoted(array(safety, 'CINEMA_WARNING_CODES')));
     expect(AI_DISCLOSURES).toEqual(quoted(array(source('lib/cinema/domain.js'), 'AI_DISCLOSURES')));
     expect(RIGHTS_TEXT).toBe(literal(workspace, 'RIGHTS_TEXT'));
-    const declarations = [...workspace.matchAll(/<span lang="en" dir="ltr">([\s\S]*?)<\/span>/g)].map(x => x[1].replace(/<[^>]+>/g, ''));
+    const declarations = [...workspace.matchAll(/<span lang="en" dir="ltr">([\s\S]*?)<\/span>/g)].map(x => withoutPolicyLink(x[1]));
     expect(declarations).toContain(SAFETY_TEXT); expect(declarations).toContain(MALWARE_TEXT);
     const policy = source('lib/cinema/uploadPolicy.js');
     for (const [name, value] of Object.entries({ MAX_UPLOAD_BYTES, UPLOAD_CHUNK_BYTES })) expect(value).toBe(Number(policy.match(new RegExp(`${name}=(\\d+)`))![1]));

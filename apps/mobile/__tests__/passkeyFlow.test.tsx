@@ -28,7 +28,14 @@ jest.mock('../src/lib/auth/pkce', () => ({}));
 jest.mock('../src/components/MascotWordmark', () => ({ MascotWordmark: () => null }));
 jest.mock('../src/auth/TurnstileView', () => ({ TurnstileView: jest.fn(() => null) }));
 jest.mock('../src/lib/api', () => ({ createApiClient: () => ({}) }));
-jest.mock('../src/lib/appCache', () => ({ bindCacheUser: jest.fn(), userIdFromToken: () => 'passkey-user', wipeCache: jest.fn() }));
+jest.mock('../src/lib/appCache', () => ({
+    appStorage: { get: jest.fn(), set: jest.fn(), remove: jest.fn(), keys: jest.fn(async () => []) },
+    bindCacheUser: jest.fn(),
+    getCacheUser: jest.fn(() => null),
+    subscribeCacheUser: jest.fn(() => jest.fn()),
+    userIdFromToken: () => 'passkey-user',
+    wipeCache: jest.fn(),
+}));
 jest.mock('../src/lib/cinemaProgress', () => ({ cinemaProgressIdentity: { setUser: jest.fn() } }));
 jest.mock('../src/lib/aiConsentStore', () => ({ aiConsent: { setUser: jest.fn(), forget: jest.fn(), ensure: jest.fn() } }));
 jest.mock('../src/lib/auth/sessionStore', () => ({ writeRefreshToken: jest.fn(), readRefreshToken: jest.fn(), clearRefreshToken: jest.fn() }));
