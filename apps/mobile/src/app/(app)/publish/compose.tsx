@@ -1,34 +1,30 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { fetchCatalog, mediaApi, type CatalogModel, type Job } from '../../../lib/media';
+import { fetchCatalog, mediaApi, type CatalogModel } from '../../../lib/media';
 import { fetchAccounts, publishErrorMessage, type PublishAccount } from '../../../lib/publish';
-import { MAX_TEXT, captionWarning, cleanNetworkText, composeErrorMessage, createBody, createPost, eligibleAccounts, mediaTypeOf, validateDraft, type Draft, type MediaType, type When, type YoutubeVisibility } from '../../../lib/publishCompose';
+import { MAX_TEXT, captionWarning, cleanNetworkText, composeErrorMessage, createBody, createPost, eligibleAccounts, mediaTypeOf, validateDraft, type Draft, type When, type YoutubeVisibility } from '../../../lib/publishCompose';
 import { confirmSlot, fetchQueues, queueErrorKey, reserveSlot, type PublishQueue } from '../../../lib/publishQueues';
 import { NetworkTextFields, QueuePicker, YoutubeVisibilityChips } from '../../../components/ComposeExtras';
 import { t } from '../../../lib/i18n';
 import { WhenPicker, whenFrom } from '../../../components/WhenPicker';
 import { appStorage, getCacheUser } from '../../../lib/appCache';
 import { createDraftKeys, draftSignature, isDefiniteRefusal } from '../../../lib/draftKey';
+import { PublishUploadPanel } from '../../../components/PublishUploadPanel';
+import { choose, clearUpload, type CreationPick, type MediaChoice } from '../../../lib/publishMediaChoice';
 import { colors } from '../../../theme';
 import { usePublishApi } from '../../../lib/usePublishApi';
 
 const draftKeys = createDraftKeys(appStorage);
 
-interface Pick {
-    readonly job: Job;
-    readonly mediaType: MediaType;
-    readonly name: string;
-}
-
 export default function Compose() {
     const api = usePublishApi();
     const router = useRouter();
     const { jobId: presetJob } = useLocalSearchParams<{ jobId?: string }>();
-    const [picks, setPicks] = useState<Pick[] | null>(null);
+    const [picks, setPicks] = useState<CreationPick[] | null>(null);
     const [accounts, setAccounts] = useState<PublishAccount[] | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [chosen, setChosen] = useState<Pick | null>(null);
+    const [chosen, setChosen] = useState<MediaChoice | null>(null);
     const [accountIds, setAccountIds] = useState<string[]>([]);
     const [text, setText] = useState('');
     const [mode, setMode] = useState<'now' | 'schedule' | 'queue'>('schedule');
@@ -38,6 +34,9 @@ export default function Compose() {
     const [queueId, setQueueId] = useState<string | null>(null);
     const [date, setDate] = useState('');
     const [time, setTime] = useState('');
+    const [uploadsEnabled, setUploadsEnabled] = useState(false);
+    const [preparing, setPreparing] = useState(false);
+    const preparingRef = useRef(false);
     const [busy, setBusy] = useState(false);
     const [problem, setProblem] = useState<string | null>(null);
 
@@ -48,14 +47,15 @@ export default function Compose() {
                 if (cancelled) return;
                 setQueues(queueList.filter((q) => q.enabled));
                 const byId = new Map<string, CatalogModel>(catalog.map((m) => [m.id, m]));
-                const list: Pick[] = [];
+                const list: CreationPick[] = [];
                 for (const job of page.jobs) {
                     const model = byId.get(job.model_id);
                     const mediaType = model ? mediaTypeOf(model.modality) : null;
-                    if (job.state === 'succeeded' && job.has_asset && model && mediaType) list.push({ job, mediaType, name: job.label || model.name });
+                    if (job.state === 'succeeded' && job.has_asset && model && mediaType) list.push({ kind: 'job', job, mediaType, name: job.label || model.name });
                 }
                 setPicks(list);
                 setAccounts(acc.accounts);
+                setUploadsEnabled(acc.uploadsEnabled);
                 if (presetJob) setChosen(list.find((p) => p.job.job_id === presetJob) ?? null);
             })
             .catch((err) => !cancelled && setError(publishErrorMessage(err)));
@@ -79,7 +79,7 @@ export default function Compose() {
     }
 
     function submit() {
-        if (!chosen || busy) return;
+        if (!chosen || busy || preparingRef.current) return;
         if (!when) {
             setProblem('Enter the date as YYYY-MM-DD and the time as HH:MM.');
             return;
@@ -88,7 +88,7 @@ export default function Compose() {
             setProblem(queue ? t('compose.queueNoMatch') : t('compose.queuePick'));
             return;
         }
-        const draft: Draft = { jobId: chosen.job.job_id, mediaType: chosen.mediaType, accountIds: selected.map((a) => a.id), text, when, networkText: cleanNetworkText(networkText, networks), ...(showYoutube ? { youtubeVisibility: ytVisibility } : {}), ...(queue ? { queue: { id: queue.id, name: queue.name } } : {}) };
+        const draft: Draft = { jobId: chosen.kind === 'job' ? chosen.job.job_id : '', ...(chosen.kind === 'upload' ? { uploadId: chosen.uploadId } : {}), mediaType: chosen.mediaType, accountIds: selected.map((a) => a.id), text, when, networkText: cleanNetworkText(networkText, networks), ...(showYoutube ? { youtubeVisibility: ytVisibility } : {}), ...(queue ? { queue: { id: queue.id, name: queue.name } } : {}) };
         const now = new Date();
         const invalid = validateDraft(draft, accounts ?? [], now);
         if (invalid) {
@@ -100,22 +100,24 @@ export default function Compose() {
         if (queue) {
             Alert.alert(t('compose.queueTitle'), t('compose.queueConfirm', { queue: queue.name, where }), [
                 { text: t('publish.cancel'), style: 'cancel' },
-                { text: t('compose.queueAction'), onPress: () => void send(draft, now) },
+                { text: t('compose.queueAction'), onPress: () => { if (!preparingRef.current) void send(draft, now); } },
             ]);
             return;
         }
         const answer = when.kind === 'now' ? `This posts to ${where} now and is public. It cannot be undone from here.` : `This schedules a post to ${where} for ${when.at.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}. You can change or cancel it until it starts.`;
         Alert.alert(when.kind === 'now' ? 'Post now?' : 'Schedule this post?', answer, [
             { text: 'Cancel', style: 'cancel' },
-            { text: when.kind === 'now' ? 'Post now' : 'Schedule', onPress: () => void send(draft, now) },
+            { text: when.kind === 'now' ? 'Post now' : 'Schedule', onPress: () => { if (!preparingRef.current) void send(draft, now); } },
         ]);
     }
 
     async function send(draft: Draft, now: Date) {
         // The key is saved before the send and kept until the server answers, so a retry after a dropped connection,
         // or after the app was closed in the middle, is the same post and cannot be published twice (ADR-0122).
+        if (preparingRef.current) return;
         const user = getCacheUser();
         const key = await draftKeys.keyFor(user, draftSignature(draft));
+        if (preparingRef.current) return;
         setBusy(true);
         let stage: 'reserve' | 'post' | 'confirm' = 'post';
         try {
@@ -134,7 +136,7 @@ export default function Compose() {
             router.replace({ pathname: '/publish/posts', params: { done: draft.queue ? 'queued' : draft.when.kind === 'at' ? 'scheduled' : 'posted' } });
         } catch (err) {
             if (stage !== 'confirm' && isDefiniteRefusal(err)) await draftKeys.drop(user);
-            setProblem(stage === 'post' ? composeErrorMessage(err) : t(queueErrorKey(err)));
+            setProblem(stage === 'post' ? composeErrorMessage(err, !!draft.uploadId) : t(queueErrorKey(err)));
         } finally {
             setBusy(false);
         }
@@ -150,12 +152,15 @@ export default function Compose() {
                 <Text style={styles.heading} accessibilityRole="header">1. Creation</Text>
                 {picks.length === 0 ? <Text style={styles.muted}>No finished images or videos yet. Make one in Create first.</Text> : null}
                 {picks.slice(0, 30).map((p) => (
-                    <Pressable key={p.job.job_id} accessibilityRole="button" accessibilityState={{ selected: chosen?.job.job_id === p.job.job_id }} style={[styles.row, chosen?.job.job_id === p.job.job_id && styles.rowOn]} onPress={() => { setChosen(p); setAccountIds([]); }}>
+                    <Pressable key={p.job.job_id} accessibilityRole="button" disabled={preparing} accessibilityState={{ disabled: preparing, selected: (chosen?.kind === 'job' && chosen.job.job_id === p.job.job_id) }} style={[styles.row, (chosen?.kind === 'job' && chosen.job.job_id === p.job.job_id) && styles.rowOn]} onPress={() => { if (preparingRef.current) return; setChosen(old => choose(old, p)); setAccountIds([]); }}>
                         <Text style={styles.rowText}>{p.name}</Text>
                         <Text style={styles.muted}>{p.mediaType} · {new Date(p.job.created_at).toLocaleDateString()}</Text>
                     </Pressable>
                 ))}
 
+                <PublishUploadPanel api={api} enabled={uploadsEnabled} selectedUploadId={chosen?.kind === 'upload' ? chosen.uploadId : null}
+                    onSelect={pick => { setChosen(old => pick ? choose(old, { kind: 'upload', ...pick }) : clearUpload(old, chosen?.kind === 'upload' ? chosen.uploadId : null)); if (pick) setAccountIds([]); }}
+                    onBusyChange={value => { preparingRef.current = value; setPreparing(value); }} />
                 {chosen ? (
                     <>
                         <Text style={styles.heading} accessibilityRole="header">2. Accounts</Text>
@@ -189,7 +194,7 @@ export default function Compose() {
 
                         {problem ? <Text style={styles.error}>{problem}</Text> : null}
                         {selected.length === 0 ? <Text style={styles.muted}>{t('compose.pickAccount')}</Text> : null}
-                        <Pressable accessibilityRole="button" disabled={busy || selected.length === 0} accessibilityState={{ disabled: busy || selected.length === 0 }} style={[styles.button, (busy || selected.length === 0) && styles.off]} onPress={submit}>
+                        <Pressable accessibilityRole="button" disabled={busy || preparing || selected.length === 0} accessibilityState={{ disabled: busy || preparing || selected.length === 0 }} style={[styles.button, (busy || preparing || selected.length === 0) && styles.off]} onPress={submit}>
                             {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>{mode === 'queue' ? t('compose.queueAction') : mode === 'schedule' ? 'Schedule' : 'Post now'}</Text>}
                         </Pressable>
                     </>

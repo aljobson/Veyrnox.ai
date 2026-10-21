@@ -1,14 +1,17 @@
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { touchTarget } from '../../../lib/a11y';
 import { fetchHistory, fetchProject, mergeVersions, projectsErrorMessage, versionLabel, type Project, type Version } from '../../../lib/projects';
+import { EDITOR_ENABLED } from '../../../lib/editorFlag';
+import { t } from '../../../lib/i18n';
 import { colors } from '../../../theme';
 
 export default function ProjectDetail() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const { api } = useAuth();
+    const router = useRouter();
     const [project, setProject] = useState<Project | null>(null);
     const [versions, setVersions] = useState<Version[] | null>(null);
     const [next, setNext] = useState<number | null>(null);
@@ -53,6 +56,7 @@ export default function ProjectDetail() {
     return (
         <View style={styles.screen}>
             <Stack.Screen options={{ title: project.name }} />
+            {EDITOR_ENABLED && <Pressable accessibilityRole="button" accessibilityLabel={t('editor.open')} style={touchTarget} onPress={() => router.push({ pathname: '/editor/[projectId]', params: { projectId: project.id } })}><Text style={styles.name}>{t('editor.open')}</Text></Pressable>}
             <Text style={styles.meta}>Version {project.version}{project.createdAt ? ` · created ${new Date(project.createdAt).toLocaleDateString()}` : ''}{project.updatedAt ? ` · updated ${new Date(project.updatedAt).toLocaleString()}` : ''}</Text>
             <Text style={styles.heading} accessibilityRole="header">Saved versions</Text>
             <FlatList

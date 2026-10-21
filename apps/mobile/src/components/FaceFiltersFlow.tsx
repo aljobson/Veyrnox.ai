@@ -1,4 +1,4 @@
-import { File, Paths } from 'expo-file-system';
+import { discardCacheCopy } from '../lib/cacheFiles';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { Stack, useRouter } from 'expo-router';
@@ -39,10 +39,7 @@ export function FaceFiltersFlow({ api, owner }: { api: ApiClient; owner: string 
 
     // Delete only the picker's temporary copy, never a user's original photo.
     function discardFile(file: PickedFile | null) {
-        const uri = file?.uri;
-        if (uri?.startsWith(Paths.cache.uri)) {
-            try { const file = new File(uri); if (file.exists) file.delete(); } catch { /* OS may already have reclaimed it. */ }
-        }
+        discardCacheCopy(file?.uri);
     }
     function discardPhoto() { discardFile(local.current); local.current = null; }
     useEffect(() => {

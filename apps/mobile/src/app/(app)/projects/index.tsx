@@ -1,9 +1,12 @@
 import { Stack, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { HeaderAction } from '../../../components/HeaderAction';
 import { useAuth } from '../../../auth/AuthProvider';
 import { touchTarget } from '../../../lib/a11y';
 import { fetchProjects, fetchWorkspaces, projectsErrorMessage, type Project, type Workspace } from '../../../lib/projects';
+import { EDITOR_ENABLED } from '../../../lib/editorFlag';
+import { t } from '../../../lib/i18n';
 import { colors } from '../../../theme';
 
 export default function Projects() {
@@ -44,7 +47,7 @@ export default function Projects() {
 
     return (
         <View style={styles.screen}>
-            <Stack.Screen options={{ title: 'Projects' }} />
+            <Stack.Screen options={{ title: 'Projects', ...(EDITOR_ENABLED ? { headerRight: () => <HeaderAction label={t('editor.new')} onPress={() => router.push('/editor/new')} /> } : {}) }} />
             {problem ? (
                 <Pressable accessibilityRole="button" style={touchTarget} onPress={loadWorkspaces}>
                     <Text style={styles.error}>{problem} Tap to retry.</Text>

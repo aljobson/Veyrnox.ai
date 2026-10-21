@@ -49,7 +49,7 @@ describe('parseAccounts', () => {
         expect(r.accounts[0].avatarUrl).toBeNull();
     });
     test('an unusable body gives an empty list and a limit of one', () => {
-        expect(parseAccounts(null)).toEqual({ accountLimit: 1, accounts: [] });
+        expect(parseAccounts(null)).toEqual({ accountLimit: 1, accounts: [], uploadsEnabled: false });
     });
 });
 
@@ -209,4 +209,13 @@ describe('parsePost and fetchPost', () => {
         expect(await fetchPost(apiWith({}).api, 'p1')).toBeNull();
         await expect(fetchPost(apiWith(new ApiError(404, 'not_found')).api, 'p1')).rejects.toBeInstanceOf(ApiError);
     });
+});
+
+
+test('uploads flag is strictly true; all existing account fields are unchanged', () => {
+    const body = { accountLimit: 5, accounts: [account] };
+    for (const flag of [undefined, null, false, 'true', 1]) expect(parseAccounts({ ...body, uploadsEnabled: flag }).uploadsEnabled).toBe(false);
+    const { uploadsEnabled, ...rest } = parseAccounts({ ...body, uploadsEnabled: true });
+    expect(uploadsEnabled).toBe(true);
+    expect(rest).toEqual({ accountLimit: 5, accounts: [{ id: 'a1', network: 'instagram', displayName: 'Studio', avatarUrl: 'https://cdn.example/a.jpg', status: 'active', connectedAt: '2026-10-01T10:00:00Z', tokenExpiresAt: '2026-12-01T10:00:00Z', publishingEnabled: false, supportedMedia: [] }] });
 });

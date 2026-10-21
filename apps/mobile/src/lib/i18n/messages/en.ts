@@ -39,6 +39,7 @@ import area_credits from './en/credits';
 import area_dev from './en/dev';
 import area_drafts from './en/drafts';
 import area_edit from './en/edit';
+import area_editor from './en/editor';
 import area_email from './en/email';
 import area_empty from './en/empty';
 import area_explore from './en/explore';
@@ -73,6 +74,7 @@ import area_pricing from './en/pricing';
 import area_prov from './en/prov';
 import area_public from './en/public';
 import area_publish from './en/publish';
+import area_publishUploads from './en/publishUploads';
 import area_publishLinks from './en/publishLinks';
 import area_publishWorkflows from './en/publishWorkflows';
 import area_queue from './en/queue';
@@ -133,6 +135,7 @@ const catalog = {
     ...area_dev,
     ...area_drafts,
     ...area_edit,
+    ...area_editor,
     ...area_email,
     ...area_empty,
     ...area_explore,
@@ -167,6 +170,7 @@ const catalog = {
     ...area_prov,
     ...area_public,
     ...area_publish,
+    ...area_publishUploads,
     ...area_publishLinks,
     ...area_publishWorkflows,
     ...area_queue,

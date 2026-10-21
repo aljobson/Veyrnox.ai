@@ -7,6 +7,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { Platform } from 'react-native';
 import { createApiClient, API_BASE, type ApiClient } from '../lib/api';
 import { AUTH_REDIRECT_URL, OAUTH_BRIDGE_URL } from '../lib/config';
+import { apiTokenSource, isTransientRefreshFailure } from '../lib/auth/apiToken';
 import { createAppleNonce, createPkce } from '../lib/auth/pkce';
 import { aiConsent } from '../lib/aiConsentStore';
 import { bindCacheUser, userIdFromToken, wipeCache } from '../lib/appCache';
@@ -64,10 +65,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [status, setStatus] = useState<Status>('loading');
     const [appleNativeAvailable, setAppleNativeAvailable] = useState(false);
     const sessionRef = useRef<Session | null>(null);
+    const transientFailure = useRef(false);
+    const dropped = useRef(false);
     const refreshInFlight = useRef<Promise<Session | null> | null>(null);
 
     const adopt = useCallback(async (session: Session) => {
         sessionRef.current = session;
+        dropped.current = false;
+        transientFailure.current = false;
         const userId = userIdFromToken(session.accessToken);
         cinemaProgressIdentity.setUser(userId);
         aiConsent.setUser(userId);
@@ -77,7 +82,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, []);
 
     const drop = useCallback(async () => {
+        // A refresh rejection and the request's session-loss callback can both arrive.
+        if (dropped.current) return;
+        dropped.current = true;
         sessionRef.current = null;
+        transientFailure.current = false;
         cinemaProgressIdentity.setUser(null);
         await aiConsent.forget();
         await wipeCache().catch(() => undefined);
@@ -91,12 +100,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (refreshInFlight.current) return refreshInFlight.current;
         const run = (async () => {
             const stored = sessionRef.current?.refreshToken ?? (await readRefreshToken());
-            if (!stored) return null;
+            if (!stored) { transientFailure.current = false; return null; }
             try {
                 const next = await refreshSession(stored);
                 await adopt(next);
                 return next;
             } catch (err) {
+                transientFailure.current = isTransientRefreshFailure(err);
                 // A rejected token is final; a network error keeps the stored token for next launch.
                 if (err instanceof Error && 'status' in err && (err as { status: number }).status !== 0) await drop();
                 return null;
@@ -123,7 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const api = useMemo(
         () => createApiClient({
                 baseUrl: API_BASE,
-                getAccessToken,
+                getAccessToken: apiTokenSource(getAccessToken, () => transientFailure.current),
                 onSessionLost,
                 streamFetch: expoFetch as unknown as typeof fetch,
                 beforeSend: aiConsent.ensure,
