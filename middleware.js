@@ -28,7 +28,7 @@ import { isPublishApiPath, publishShellAvailable, publishAllowed } from './lib/s
 import { isUnknownStaticPage } from './lib/unknownStaticPage.js';
 import { isLocalizedPath, localesEnabled, localizedPathKey, splitLocalePath } from './lib/i18n/locales.mjs';
 import { LOCALE_HEADER, PATH_HEADER } from './lib/i18n/headerNames.mjs';
-import { isAppLocalePath, localeFromCookie } from './lib/i18n/localeCookie.mjs';
+import { isAppLocalePath, isSmartLinkLocalePath, localeFromCookie } from './lib/i18n/localeCookie.mjs';
 import { recordSecurityEvent } from './lib/securityEvents.js';
 const POSTHOG_INGEST_PATH = '/ingest';
 const POSTHOG_INGEST_ORIGIN = 'https://eu.i.posthog.com';
@@ -136,7 +136,7 @@ export async function middleware(req, event) {
         let pagePath = pathname;
         let locale = 'en';
         if (localesEnabled()) {
-            if (isAppLocalePath(pathname)) locale = localeFromCookie(req.headers.get('cookie'));
+            if (isAppLocalePath(pathname) || isSmartLinkLocalePath(pathname)) locale = localeFromCookie(req.headers.get('cookie'));
             const split = splitLocalePath(pathname);
             if (split.locale) {
                 if (!isLocalizedPath(split.rest)) {

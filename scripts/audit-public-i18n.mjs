@@ -7,6 +7,7 @@ import ts from 'typescript';
 import { helperExceptions } from './lib/helper-i18n-exceptions.mjs';
 import { appMetadataFile, isMetadataExport, inventoryMetadata } from './lib/app-metadata-i18n.mjs';
 import { bindingInventory } from './lib/legal-i18n.mjs';
+import { dataInventory } from './lib/data-i18n.mjs';
 import { checkSources } from './legal-source-hashes.mjs';
 import publicEnglish from '../lib/i18n/messages/en.mjs';
 import appEnglish from '../lib/i18n/messages/app/en.mjs';
@@ -25,6 +26,7 @@ const privateFunctions = {
 // Exact public exceptions. Do not add blanket file exclusions for UI code.
 const exceptions = [
   ...helperExceptions,
+  { file: /^app\/s\/\[slug\]\/page\.js$/, pattern: /^(?:— Veyrnox|bg-\[#080b14\] text-white|bg-\[#f5f5f2\] text-\[#171717\]|bg-gradient-to-br from-\[#35133d\] via-\[#9d3155\] to-\[#f49b55\] text-white)$/, reason: 'Brand suffix and the three exact theme CSS class lists; no visitor prose.' },
   { file: /\/_lib\/(?:showcase|sourceTemplateExpansion\d*|character|characterOptions|oddlingCatalog)\.js$/, pattern: /./, reason: 'source catalog names, descriptors and prompts remain unchanged (ADR-0107)' },
   { file: /\/_lib\/(?:studioSkills|filmStudioAssistants)\.js$/, pattern: /^(?:Skill:|Film stage)/, reason: 'canonical assistant instructions, not UI copy (ADR-0107)' },
   { file: /\/_lib\/filmStudio\.js$/, pattern: /^Neutral grey background/, reason: 'generated reference-sheet prompt, not UI copy (ADR-0107)' },
@@ -58,14 +60,14 @@ function walk(directory, exclude = excluded) {
 }
 export function publicFiles({ app = false } = {}) {
   const exclude = app ? /^app\/veyrnox\/app\/admin(?:\/|$)/ : excluded;
-  const roots = (app ? ['app/veyrnox/app'] : ['app/veyrnox', 'app/social', 'app/auth/callback', 'app/legal']).flatMap(directory => walk(directory, exclude))
+  const roots = (app ? ['app/veyrnox/app'] : ['app/veyrnox', 'app/social', 'app/auth/callback', 'app/legal', 'app/s']).flatMap(directory => walk(directory, exclude))
     .filter(file => /\/(?:page|layout|template|error|loading|not-found)\.[jt]sx?$/.test(file));
   roots.push('app/layout.js', 'app/not-found.js', 'app/error.js', 'app/global-error.js');
   const files = new Set();
   function visit(file) {
     if (files.has(file) || exclude.test(file) || (!app && privateFiles.test(file)) || !existsSync(file)) return;
     if (/^lib\/i18n\//.test(file)) return;
-    if (!/^(?:app\/(?:veyrnox|social|legal|auth\/callback)\/|components\/|app\/(?:layout|not-found|error|global-error)\.js$|lib\/)/.test(file)) return;
+    if (!/^(?:app\/(?:veyrnox|social|legal|s|auth\/callback)\/|components\/|app\/(?:layout|not-found|error|global-error)\.js$|lib\/)/.test(file)) return;
     files.add(file);
     const tree = ts.createSourceFile(file, readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.JSX);
     for (const node of tree.statements) {
@@ -83,7 +85,7 @@ export function publicFiles({ app = false } = {}) {
     const tree = ts.createSourceFile(file, readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.JSX);
     let jsx = false;
     function scan(node) { if (ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node) || ts.isJsxFragment(node)) jsx = true; else ts.forEachChild(node, scan); }
-    scan(tree); return jsx || /^app\/legal\/[^/]+\/page\.js$/.test(file) || (app && (/(?:^lib\/|\/_lib\/)/.test(file) || (appMetadataFile(file) && tree.statements.some(isMetadataExport))));
+    scan(tree); return jsx || /^(?:app\/veyrnox\/_lib\/|lib\/|components\/)/.test(file) || /^app\/legal\/[^/]+\/page\.js$/.test(file) || (app && (/(?:^lib\/|\/_lib\/)/.test(file) || (appMetadataFile(file) && tree.statements.some(isMetadataExport))));
   }).sort();
 }
 export const appFiles = () => publicFiles({ app: true });
@@ -218,7 +220,15 @@ export function candidates(file, source, { app = false } = {}) {
     }
     ts.forEachChild(node, visit);
   }
-  visit(tree);
+  // Public non-JSX imports contribute exported data, not arbitrary helper internals.
+  if (app || !helper || /<[A-Za-z]/.test(source)) visit(tree);
+  for (const row of dataInventory(tree, file, english)) {
+    // One diagnostic per literal, even when the helper scanner also sees it.
+    const line = tree.getLineAndCharacterOfPosition(row.node.getStart()).line + 1;
+    const existing = output.findIndex(item => item.line === line && item.text === row.text.replace(/\s+/g, ' ').trim());
+    if (existing !== -1) output.splice(existing, 1);
+    add(row.node, `data:${row.owner}.${row.field}`, row.text, row.status, row.reason);
+  }
   return output;
 }
 

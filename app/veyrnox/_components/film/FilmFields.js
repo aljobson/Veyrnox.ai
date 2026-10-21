@@ -6,9 +6,9 @@ import { localeTag } from '../../../../lib/i18n/locales.mjs';
 import { useId } from 'react';
 import englishFields from '../../../../lib/i18n/messages/app/en/film-setup.mjs';
 export const fieldClass = 'mt-2 w-full rounded-xl border border-vx-field bg-vx-panel px-3 py-2 text-sm text-vx-fg focus:border-vx-accent focus:outline-none';
-export function FilmField({ label, value, onChange, multiline = false, hint, ...props }) {
+export function FilmField({ label, labelKey, value, onChange, multiline = false, hint, ...props }) {
   const { t } = useI18n();
-  const displayLabel = tOr(t, `app.film.field.${label}`, label);
+  const displayLabel = tOr(t, labelKey || `app.film.field.${label}`, label);
   const Tag = multiline ? 'textarea' : 'input';
   const hintId=useId();
   return <label className="block text-sm font-semibold">{displayLabel}
