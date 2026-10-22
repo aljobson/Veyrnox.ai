@@ -8,6 +8,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { gatewayFetch } from '../../_lib/gateway';
 import { getStoredUserId } from '../../../lib/authClient';
 import { chatApi, chatErrorCopy } from '../../_lib/chatApi';
+import { takeTemplateChatDraft } from '../../_lib/chatTemplateDraft';
 import { attachmentLabel } from '../../_lib/chatImages';
 import { NEW_CHAT, addToDraft, clearNotice, readCreditsWarning, readDraft, readNotice, writeDraft, writeNotice, readStars, toggleStar } from '../../_lib/chatLocal';
 import { useFreeAllowance } from '../../_lib/useFreeAllowance';
@@ -152,6 +153,15 @@ export function ChatWorkspace() {
   useEffect(() => { endRef.current?.scrollIntoView({ block: 'end' }); }, [messages]);
   // The unsent text follows the chat it was typed in, for the user who typed it; sending or clearing it forgets it.
   useEffect(() => { saveDraft(active?.id ?? NEW_CHAT, text); }, [text, active?.id]);
+  const templateDraftHandoff = useRef(false);
+  useEffect(() => {
+    // Keep the handoff queued while authentication is required; signing in may reload this page.
+    if (templateDraftHandoff.current || active || !ready || signedOut) return;
+    templateDraftHandoff.current = true;
+    let draft = null;
+    try { draft = takeTemplateChatDraft(window.sessionStorage); } catch { /* Browser storage can be unavailable. */ }
+    if (draft) setText(draft.prompt);
+  }, [active, ready, signedOut]);
 
   const model = models.find((x) => x.id === (active?.model_id ?? draftModel)) || defaultModel(models) || models[0];
   // An option counts only if the chosen model offers it; the price is the model's base plus each extra chosen.

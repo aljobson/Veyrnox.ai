@@ -1,8 +1,10 @@
 'use client';
 import { rich } from '../../../lib/i18n/rich';
 import { useI18n } from '../../../components/I18nProvider.jsx';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { writeTemplateChatDraft } from '../_lib/chatTemplateDraft';
 import { useCatalog } from '../_lib/useCatalog';
 import { writeFilmStarter } from '../_lib/filmTemplateDraft';
 import { writeStudioDraft } from '../_lib/landingDraft';
@@ -27,14 +29,14 @@ export function UseTemplate({ preset, prompt = preset.prompt }) {
   const [durationSeconds, setDurationSeconds] = useState(preset.durationSeconds || 10);
   const [targetSeconds, setTargetSeconds] = useState(60);
   const credits = presetCredits(preset, models, durationSeconds);
-  const [handoffError, setHandoffError] = useState(false);
+  const [handoffError, setHandoffError] = useState('');
 
   function use() {
     // The URL restores the recipe if storage is blocked; preserve edited text.
     if (modelId) {
       let saved = false;
       try { saved = writeStudioDraft(window.sessionStorage, { prompt, model: modelId, aspect, durationSeconds, negativePrompt: preset.negativePrompt, templateId: preset.id }); } catch { /* The unedited URL recipe still works. */ }
-      if (!saved && prompt !== preset.prompt) { setHandoffError(true); return; }
+      if (!saved && prompt !== preset.prompt) { setHandoffError('studio'); return; }
     }
     router.push(presetHref(preset, durationSeconds));
   }
@@ -44,8 +46,16 @@ export function UseTemplate({ preset, prompt = preset.prompt }) {
       if (!writeFilmStarter(window.sessionStorage, preset, prompt, targetSeconds)) throw new Error('not saved');
       router.push('/app/film-studio');
     } catch {
-      setHandoffError(true);
+      setHandoffError('studio');
     }
+  }
+
+  function handToChat(event) {
+    let saved = false;
+    try { saved = writeTemplateChatDraft(window.sessionStorage, preset, prompt); } catch { /* Browser storage can be unavailable. */ }
+    if (saved) return;
+    event.preventDefault();
+    setHandoffError('chat');
   }
 
   return (
@@ -74,8 +84,16 @@ export function UseTemplate({ preset, prompt = preset.prompt }) {
           <button type="button" onClick={buildFilm} disabled={!prompt.trim()} className="vx-press rounded-full border border-vx-accent px-5 py-2 text-sm font-extrabold text-vx-accent disabled:opacity-50">{t("presets.use.build")}</button>
         </div>
       </div>
+      <div className="mt-3 rounded-xl border border-vx-border bg-vx-panel/40 p-4">
+        <p className="font-bold">{t("presets.use.chatTitle")}</p>
+        <p className="mt-1 text-[13px] text-vx-fg-muted">{t("presets.use.chatPlan")}</p>
+        <Link href="/app/chat?skill=prompt-writer" onClick={handToChat} className="vx-press mt-3 inline-flex rounded-full border border-vx-accent px-5 py-2 text-sm font-extrabold text-vx-accent">
+          {t("presets.use.openChat")}
+        </Link>
+      </div>
       <p className="mt-3 text-[13px] text-vx-fg-muted">{t("presets.use.refunds")}</p>
-      {handoffError && <p role="alert" className="mt-3 text-[13px] text-vx-danger">{rich(t('presets.use.handoff'), { studio: <a href={presetHref(preset, durationSeconds)} className="underline">{t('presets.use.openStudio')}</a> })}</p>}
+      {handoffError === 'studio' && <p role="alert" className="mt-3 text-[13px] text-vx-danger">{rich(t('presets.use.handoff'), { studio: <a href={presetHref(preset, durationSeconds)} className="underline">{t('presets.use.openStudio')}</a> })}</p>}
+      {handoffError === 'chat' && <p role="alert" className="mt-3 text-[13px] text-vx-danger">{rich(t('presets.use.chatHandoff'), { chat: <a href="/app/chat?skill=prompt-writer" className="underline">{t('label.LLM Chat')}</a> })}</p>}
     </div>
   );
 }
