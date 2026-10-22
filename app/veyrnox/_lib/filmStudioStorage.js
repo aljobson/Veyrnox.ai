@@ -4,6 +4,8 @@ export const MAX_FILM_BYTES = 1_000_000;
 const object = v => v && typeof v === 'object' && !Array.isArray(v);
 const strings = (v, keys) => object(v) && keys.every(k => typeof v[k] === 'string' && v[k].length <= (k==='context'?MAX_FILM_BYTES:24000) && !v[k].includes('\0'));
 const list = (v, limit, valid) => Array.isArray(v) && v.length <= limit && v.every(valid);
+export const isUuid = value => typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+export const validCloudLink = (link, userId) => !!key(userId) && link?.userId === userId && isUuid(link.id) && Number.isSafeInteger(link.revision) && link.revision > 0;
 const key = userId => userId && /^[a-zA-Z0-9_-]{1,64}$/.test(userId) ? `${PREFIX}${userId}` : null;
 
 export function parseFilm(raw) {
@@ -13,7 +15,7 @@ export function parseFilm(raw) {
   if (object(f) && f.targetSeconds === undefined) f = { ...f, targetSeconds: 60 };
   if (object(f) && f.templateId === undefined) f = { ...f, templateId: '' };
   const template = emptyFilm();
-  if (!object(f) || f.schema !== 1 || !strings(f, ['name', 'script', 'templateId']) || !/^(?:|[a-z0-9][a-z0-9-]{0,99})$/.test(f.templateId) || ![30, 60, 90, 120].includes(f.targetSeconds) || !strings(f.stack, Object.keys(template.stack))
+  if (!object(f) || Object.hasOwn(f, 'cloudLink') || f.schema !== 1 || !strings(f, ['name', 'script', 'templateId']) || !/^(?:|[a-z0-9][a-z0-9-]{0,99})$/.test(f.templateId) || ![30, 60, 90, 120].includes(f.targetSeconds) || !strings(f.stack, Object.keys(template.stack))
     || !['16:9', '9:16', '1:1'].includes(f.stack.aspect)
     || !list(f.shots, 200, s => strings(s, SHOT_LANES.flatMap(([,fields]) => fields.map(([k]) => k))) && /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,60}$/.test(s.id) && typeof s.oneAction === 'boolean')
     || !list(f.boards, 300, b => strings(b, ['id', 'name', 'type', 'decision']) && ['character', 'location', 'prop', 'style'].includes(b.type)
@@ -30,22 +32,34 @@ export function parseFilm(raw) {
     if(new Set(items.map(id)).size!==items.length) throw new Error('The studio file contains duplicate identifiers.');
   return f;
 }
+// Strip only the exact writer prefix; never parse/stringify the film to extract it.
+export function splitRecord(raw, userId) {
+  if (!raw.startsWith('{"cloudLink":')) return { text: raw, cloud: null };
+  const match = /^\{"cloudLink":\{"userId":"([A-Za-z0-9_-]{1,64})","id":"([0-9a-f-]{36})","revision":([1-9][0-9]*)\},/.exec(raw);
+  const cloud = match && { userId: match[1], id: match[2], revision: Number(match[3]) };
+  if (!validCloudLink(cloud, userId)) throw new Error('Invalid saved studio record.');
+  return { text: '{' + raw.slice(match[0].length), cloud };
+}
 export function readFilm(storage, userId) {
   const k = key(userId);
-  if (!k) return { film: emptyFilm(), error: null };
+  if (!k) return { film: emptyFilm(), cloud: null, error: null };
   try {
     const raw = storage.getItem(k);
-    return { film: raw ? parseFilm(raw) : emptyFilm(), error: null };
-  } catch { return { film: emptyFilm(), error: 'The saved studio could not be read. Export your current work before replacing it.' }; }
+    const record = raw ? splitRecord(raw, userId) : null;
+    return { film: record ? parseFilm(record.text) : emptyFilm(), cloud: record?.cloud || null, error: null };
+  } catch { return { film: emptyFilm(), cloud: null, error: 'The saved studio could not be read. Export your current work before replacing it.' }; }
 }
-export function writeFilm(storage, userId, film) {
+export function writeFilm(storage, userId, film, cloud = null) {
   const k = key(userId);
   if (!k) return false;
   const raw = JSON.stringify(film);
   parseFilm(raw);
-  storage.setItem(k, raw);
+  if (cloud && !validCloudLink(cloud, userId)) throw new Error('Invalid saved studio record.');
+  const prefix = cloud ? '{"cloudLink":' + JSON.stringify({ userId, id: cloud.id.toLowerCase(), revision: cloud.revision }) + ',' : '';
+  storage.setItem(k, cloud ? prefix + raw.slice(1) : raw);
   return true;
 }
+export const writeWorkspace = writeFilm;
 export function clearFilmLocal(storage) {
   try {
     for (const k of Object.keys(storage)) if (k.startsWith(PREFIX)) storage.removeItem(k);
