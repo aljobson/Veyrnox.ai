@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import * as WebBrowser from 'expo-web-browser';
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -7,6 +8,7 @@ import { useBilling } from '../../../billing/BillingProvider';
 import { API_BASE } from '../../../lib/api';
 import { renewalTerms, toDisplayPackages, type Interval } from '../../../lib/billing';
 import { t } from '../../../lib/i18n';
+import { MENU_ICONS } from '../../../lib/menuIcons';
 import { VEY_CLEARANCE } from '../../../components/VeyMascot';
 import { fetchPublishPlan, paywallState, type PlanSource, type PublishTier } from '../../../lib/publishPlan';
 import { colors, fonts } from '../../../theme';
@@ -75,7 +77,7 @@ export default function Publish() {
             <Stack.Screen options={{ title: t('plan.navTitle') }} />
             <Text style={styles.title} accessibilityRole="header">{t('plan.headline')}</Text>
             {BENEFITS.map((b) => (
-                <Text key={b} style={styles.benefit}>✓  {t(b)}</Text>
+                <Text key={b} style={styles.benefit}><Text style={styles.tick}>✓  </Text>{t(b)}</Text>
             ))}
             {gate === 'checking' || status === 'loading' ? (
                 <ActivityIndicator color={colors.accent} />
@@ -108,6 +110,7 @@ export default function Publish() {
                     {([[t('plan.menu.accounts'), '/publish/accounts'], [t('plan.menu.posts'), '/publish/posts'], [t('analytics.title'), '/publish/analytics'], [t('calendar.title'), '/publish/calendar'], [t('plan.menu.bestTime'), '/publish/best-time'], [t('drafts.title'), '/publish/drafts'], [t('approvals.title'), '/publish/approvals'], [t('brands.title'), '/publish/brands'], [t('commerce.title'), '/publish/commerce'], [t('ads.title'), '/publish/ads'], [t('reports.title'), '/publish/reports'], [t('inbox.title'), '/publish/inbox'], [t('publishWorkflows.title'), '/publish/workflows'], [t('smartlink.title'), '/publish/smartlink'], [t('contacts.title'), '/publish/contacts'], [t('queues.title'), '/publish/queues'], [t('autolists.title'), '/publish/autolists'], [t('team.title'), '/publish/team'], [t('publishLinks.teamJoin.menu'), '/team-invite'], [t('activity.title'), '/publish/activity']] as const).map(([label, path]) => (
                         <Pressable key={path} accessibilityRole="button" style={styles.menuRow} onPress={() => router.push(path)}>
                             <Text style={styles.menuText}>{label}</Text>
+                            <Image source={MENU_ICONS.caretRight} style={styles.menuCaret} tintColor={colors.muted} contentFit="contain" accessibilityElementsHidden />
                         </Pressable>
                     ))}
                 </View>
@@ -139,8 +142,10 @@ const styles = StyleSheet.create({
     muted: { color: colors.muted },
     ok: { color: colors.accent },
     menu: { marginTop: 8, borderTopColor: colors.border, borderTopWidth: StyleSheet.hairlineWidth },
-    menuRow: { paddingVertical: 16, borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth },
-    menuText: { color: colors.text, fontSize: 16 },
+    menuRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 56, paddingVertical: 12, borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth },
+    menuText: { color: colors.text, fontSize: 16, flex: 1 },
+    menuCaret: { width: 14, height: 14 },
+    tick: { color: colors.accent, fontWeight: '700' },
     links: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 16 },
     link: { color: colors.muted, textDecorationLine: 'underline' },
 });
