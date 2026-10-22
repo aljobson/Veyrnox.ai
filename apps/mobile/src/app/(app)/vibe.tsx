@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { VeyCharacter } from '../../components/VeyCharacter';
@@ -10,7 +10,9 @@ import { saveVibe, skipVibe } from '../../lib/creatorProfile';
 import { loadVibe, storeVibe } from '../../lib/creatorProfileStore';
 import { rankPresets, tastePicks } from '../../lib/creatorTaste';
 import { presetKind } from '../../lib/explore';
-import { t } from '../../lib/i18n';
+import { chooseLocale, getLocale, t } from '../../lib/i18n';
+import { LANGUAGES } from '../../lib/language';
+import { loadLanguage, saveAccountLanguage, storeLanguage } from '../../lib/languageStore';
 import { fetchPresets, presetHref } from '../../lib/presets';
 import { colors } from '../../theme';
 
@@ -34,6 +36,31 @@ export default function Vibe() {
     const [failed, setFailed] = useState(false);
     const [synced, setSynced] = useState(true);
     const [saved, setSaved] = useState<CreatorAnswers | null>(null);
+    // The language comes first (not on a retake): every language the site offers, each by its own name and flag. The choice is
+    // saved on the phone and on the account; the app shows it as soon as that language is switched on (ADR-0132).
+    const [language, setLanguage] = useState<'ask' | 'done'>(retake === '1' ? 'done' : 'ask');
+    const [picked, setPicked] = useState<string>(getLocale());
+    const [languageNote, setLanguageNote] = useState(false);
+    useEffect(() => {
+        let alive = true;
+        void loadLanguage().then((stored) => alive && stored && setPicked(stored));
+        return () => {
+            alive = false;
+        };
+    }, []);
+
+    async function continueLanguage() {
+        if (picked !== getLocale()) {
+            await storeLanguage(picked);
+            void saveAccountLanguage(api, picked);
+            if (!chooseLocale(picked)) {
+                // Saved, not shown yet: say so, then go on in English.
+                setLanguageNote(true);
+                return;
+            }
+        }
+        setLanguage('done');
+    }
 
     function choose(key: ChoiceKey, value: string) {
         setDraft((d) => ({ ...d, [key]: value }));
@@ -96,7 +123,34 @@ export default function Vibe() {
             <Stack.Screen options={{ headerShown: false, gestureEnabled: false }} />
             {/* Questions start at the top so the first choice is where the thumb expects it on every screen; the intro, the skip note and the card sit in the middle. */}
             <ScrollView contentContainerStyle={key ? styles.bodyTop : styles.body} keyboardShouldPersistTaps="handled">
-                {step === 0 ? (
+                {step === 0 && language === 'ask' ? (
+                    <View style={styles.question}>
+                        <Text style={styles.title} accessibilityRole="header">{t('vibe.language.title')}</Text>
+                        <Text style={styles.text}>{t('vibe.language.hint')}</Text>
+                        <View style={styles.options}>
+                            {LANGUAGES.map((l) => (
+                                <Pressable
+                                    key={l.code}
+                                    accessibilityRole="button"
+                                    accessibilityLabel={l.name}
+                                    accessibilityLanguage={l.tag}
+                                    accessibilityState={selectedState(picked === l.code)}
+                                    style={({ pressed }) => [touchTarget, styles.choice, styles.languageRow, picked === l.code && styles.choiceOn, pressed && styles.pressed]}
+                                    onPress={() => {
+                                        setPicked(l.code);
+                                        setLanguageNote(false);
+                                    }}
+                                >
+                                    <Text style={styles.flag} accessibilityElementsHidden importantForAccessibility="no">{l.flag}</Text>
+                                    <Text style={styles.choiceLabel}>{l.name}</Text>
+                                </Pressable>
+                            ))}
+                        </View>
+                        {languageNote ? <Text style={styles.text} accessibilityLiveRegion="polite">{t('vibe.language.later')}</Text> : null}
+                    </View>
+                ) : null}
+
+                {step === 0 && language === 'done' ? (
                     <View style={styles.center}>
                         <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><VeyCharacter width={140} /></View>
                         <Text style={styles.title} accessibilityRole="header">{t('vibe.intro.title')}</Text>
@@ -173,7 +227,12 @@ export default function Vibe() {
             </ScrollView>
 
             <View style={styles.footer}>
-                {step === 0 ? (
+                {step === 0 && language === 'ask' ? (
+                    <Pressable accessibilityRole="button" style={[touchTarget, styles.primary]} onPress={() => (languageNote ? setLanguage('done') : void continueLanguage())}>
+                        <Text style={styles.primaryText}>{t('vibe.language.continue')}</Text>
+                    </Pressable>
+                ) : null}
+                {step === 0 && language === 'done' ? (
                     <>
                         <Pressable accessibilityRole="button" style={[touchTarget, styles.primary]} onPress={() => setStep(1)}>
                             <Text style={styles.primaryText}>{t('vibe.start')}</Text>
@@ -274,6 +333,8 @@ const styles = StyleSheet.create({
     choice: { borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.surface, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, gap: 2 },
     choiceOn: { borderColor: colors.accent, backgroundColor: colors.accentSoft },
     pressed: { opacity: 0.85 },
+    languageRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    flag: { fontSize: 24 },
     choiceLabel: { color: colors.text, fontSize: 17, fontWeight: '600' },
     choiceSub: { color: colors.muted, fontSize: 14 },
     readout: { color: colors.text, fontSize: 22, fontWeight: '700', textAlign: 'center', minHeight: 30 },

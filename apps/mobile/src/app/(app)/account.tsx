@@ -31,7 +31,7 @@ export default function Account() {
     // Best effort: when it fails the section simply shows no details.
     useEffect(() => {
         let live = true;
-        fetchProfile(getAccessToken).then((p) => live && setProfile(p), () => undefined);
+        fetchProfile(getAccessToken, 'account').then((p) => live && setProfile(p), () => undefined);
         return () => {
             live = false;
         };
