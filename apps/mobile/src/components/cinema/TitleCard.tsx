@@ -43,7 +43,7 @@ export function TitleCard({ item, height, playing, onPlay, onOpen, onReport }: P
                         </Pressable>
                     ) : null}
                     <Pressable accessibilityRole="button" accessibilityLabel={`Report ${item.title}`} style={styles.report} onPress={onReport}>
-                        <Image source={MENU_ICONS.flag} style={styles.reportIcon} tintColor={colors.muted} contentFit="contain" accessibilityElementsHidden />
+                        <Image source={MENU_ICONS.flag} style={styles.reportIcon} tintColor={ON_POSTER_SOFT} contentFit="contain" accessibilityElementsHidden />
                     </Pressable>
                 </View>
             </View>
@@ -51,13 +51,17 @@ export function TitleCard({ item, height, playing, onPlay, onOpen, onReport }: P
     );
 }
 
+// Text sits on the poster under a dark shade, so it stays light in both themes (the theme colours turn dark in Light and vanish).
+const ON_POSTER = '#f2f2f3';
+const ON_POSTER_SOFT = '#d4d4d8';
+
 const styles = StyleSheet.create({
     page: { backgroundColor: colors.background, justifyContent: 'flex-end' },
-    shade: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(10,10,11,0.45)' },
+    shade: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(10,10,11,0.55)' },
     info: { padding: 16, paddingBottom: 28, gap: 12 },
-    title: { color: colors.text, fontSize: 22, fontWeight: '700' },
-    meta: { color: colors.body, marginTop: 2 },
-    synopsis: { color: colors.body, marginTop: 6 },
+    title: { color: ON_POSTER, fontSize: 22, fontWeight: '700' },
+    meta: { color: ON_POSTER_SOFT, marginTop: 2 },
+    synopsis: { color: ON_POSTER_SOFT, marginTop: 6 },
     actions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     play: { backgroundColor: colors.accent, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 28 },
     playText: { color: colors.accentInk, fontSize: 16, fontWeight: '700' },
