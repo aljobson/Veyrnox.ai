@@ -13,6 +13,8 @@ export async function generateMetadata() {
     robots: { index: false, follow: false },
   };
 }
+export const dynamic = 'force-dynamic';
 export default function FilmStudioPage() {
-  return <div className="min-h-screen bg-vx-base text-vx-fg"><AppNav active="film"/><Main><FilmWorkspace/></Main></div>;
+  const cloud = process.env.TENANT_PROJECTS_ENABLED === 'true' && process.env.FILM_STUDIO_CLOUD_ENABLED === 'true';
+  return <div className="min-h-screen bg-vx-base text-vx-fg"><AppNav active="film"/><Main><FilmWorkspace cloud={cloud}/></Main></div>;
 }
