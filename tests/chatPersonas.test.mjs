@@ -115,12 +115,13 @@ test('the screen: personas fill the draft of a new chat and never touch one that
     const ws = src('../app/veyrnox/_components/chat/ChatWorkspace.js');
     const panel = src('../app/veyrnox/_components/chat/SettingsPanel.js');
     // Selecting only fills local draft state; it never calls the API to change a thread.
-    const pick = ws.slice(ws.indexOf('const pickPersona'), ws.indexOf('const changePersonas'));
+    const pickStart = ws.indexOf('const pickPersona');
+    const pick = ws.slice(pickStart, ws.indexOf('const oddlingGeneration =', pickStart));
     assert.match(pick, /setInstr\(p\.instructions\)/);
     assert.match(pick, /setOpts\(\{ thinking: p\.thinking, web: p\.web, research: false \}\)/);
     assert.doesNotMatch(pick, /chatApi\./, 'choosing a persona never calls the server');
     // The picker is off for an existing chat, and the section appears only when the feature answered "on".
-    assert.match(panel, /disabled=\{busy \|\| hasThread\}/);
+    assert.match(panel, /selectionDisabled=\{busy \|\| hasThread \|\| instructionsLocked\}/);
     assert.match(panel, /\{personasOn && \(/);
     assert.match(ws, /if \(r && r\.enabled\) \{ setPersonasOn\(true\)/);
     assert.match(ws, /setPersonaId\(''\); setActive\(r\.thread\)/);

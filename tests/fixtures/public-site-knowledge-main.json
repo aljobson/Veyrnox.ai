@@ -84,7 +84,7 @@
     "Copy code", "Model filter", "Capabilities", "Tools",
     "System prompt", "Every reply shows its price before you send. If a reply fails, the Credits come back.", "No starred replies in this chat.", "Plans a few searches, reads what the web returns, then writes a cited answer. It can take up to about a minute and works on text only. If it fails before the answer starts, the Credits come back.",
     "A persona is saved instructions, a default model and options. It starts a new chat and never changes one you already have. It costs nothing to keep.", "You have 20, the most you can keep. Delete one to make another.", "Thinking and Web search cost extra Credits on a model that offers them, as in any chat. You see the price before you send.", "Your library could not be loaded. Try again; the images already shown are unchanged.",
-    "Pick one to get help making or editing something. It prepares the job; you press Generate in the Studio.", "/app/create", "/app/film-studio", "Create",
+    "Pick up to four to work together. They prepare the job; you press Generate in the Studio.", "/app/create", "/app/film-studio", "Create",
     "Make a creator nobody has met", "Retry draft recovery", "Generation model", "DURATION",
     "Remix one", "Use drawing", "SETTINGS", "Seed",
     "Leave out", "VOICE · REQUIRED", "Price tier", "Audio duration in seconds",
