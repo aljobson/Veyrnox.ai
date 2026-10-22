@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { MarketingNav } from '../_components/NavBar';
 import { Main } from '../_components/Main';
 import { CreditSubscriptionOffer } from '../_components/CreditSubscriptions';
+import { PricingCards } from '../_components/PricingCards';
 import { PremiumTag } from '../_components/PremiumTag';
-import { CopyButton } from '../_components/CopyButton';
 import { MODELS as MODELS_FALLBACK, SITE_UPDATED, isShelfModel, kindOf } from '../_lib/tokens';
 import { creditValueRange, formatUsdRange } from '../_lib/creditValue';
 import { modelPriceUnit } from '../_lib/modelPricing';
@@ -82,27 +82,28 @@ function useCreditPacks() {
   return packState;
 }
 
-// "$10", not "$10.00": the approved wording (#99 item 1).
-const usd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', trailingZeroDisplay: 'stripIfInteger' });
-const num = new Intl.NumberFormat('en-US');
-// Per credit a pack costs fractions of a cent, so the rate keeps three places.
-const rateFormat = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 3, maximumFractionDigits: 3 });
-const perCredit = (pack) => pack.price_usd_cents / 100 / pack.credits;
+
+// Median credit price of the open image and video models, from the live
+// catalog only (the bundled list is never presented as a price). Gated rows,
+// plan-priced workflows, Auto Short and the Clip Editor are not a per-clip price.
+function median(values) {
+  if (!values.length) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted[Math.floor(sorted.length / 2)];
+}
+function typicalCosts(models) {
+  const open = models.filter((m) => !m.gated && m.credits > 0 && !m.capabilities?.inputs?.plan_id && !m.capabilities?.inputs?.topic && !m.capabilities?.inputs?.clips);
+  const image = median(open.filter((m) => kindOf(m.modality) === 'image').map((m) => m.credits));
+  const video = median(open.filter((m) => kindOf(m.modality) === 'video').map((m) => m.credits));
+  return image || video ? { image, video } : null;
+}
 
 export default function Pricing() {
   const { locale, t } = useI18n();
   const catalogState = useLiveCatalog();
   const liveModels = catalogState.models;
   const packState = useCreditPacks();
-  // Derived from the live packs, never typed: the saving is measured against
-  // the dearest pack, and only a pack that really is cheapest per credit is
-  // marked best value.
-  const rates = packState.packs.length
-    ? (() => {
-        const all = packState.packs.map(perCredit).filter((r) => Number.isFinite(r) && r > 0);
-        return { min: Math.min(...all), max: Math.max(...all), best: all.length };
-      })()
-    : { min: 0, max: 0, best: 0 };
+  const typical = catalogState.status === 'live' ? typicalCosts(liveModels) : null;
   const groups = ['video', 'image', 'audio']
     .map((kind) => ({ kind, rows: liveModels.filter((m) => kindOf(m.modality) === kind) }))
     .filter((g) => g.rows.length);
@@ -153,45 +154,10 @@ export default function Pricing() {
         )}
         {packState.status === 'success' && packState.packs.length > 0 && (
           <>
-          <ul className="mt-10 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
-            {packState.packs.map((p) => {
-              const rate = perCredit(p);
-              const saving = Math.floor((1 - rate / rates.max) * 100);
-              const best = rates.best > 0 && rate === rates.min && rates.min < rates.max;
-              return (
-                <li key={p.id} className="vx-paper-shadow">
-                  {/* h-full: the slips share a row, and a line that wraps on one
-                      (the longest price line does at four across) must not leave
-                      it taller than its neighbours. Every slip keeps the same
-                      top row, so the best-value pill never shifts the figures. */}
-                  <div className="vx-paper h-full px-6 pt-9 pb-10">
-                    <div className="flex h-6 items-center justify-between gap-2 font-vx-mono text-[11px] font-bold">
-                      <span className={best ? 'rounded-full bg-vx-accent px-2.5 py-1 text-vx-accent-ink' : ''}>{best ? t('pricing.packs.best') : ''}</span>
-                      {saving >= 1 && <span className="text-vx-accent">{t('pricing.packs.save', { pct: saving })}</span>}
-                    </div>
-                    <div className="mt-3 font-vx-mono text-[40px] font-bold leading-none text-vx-money vx-num">{num.format(p.credits)} cr</div>
-                    <div className="vx-perf mt-6" aria-hidden />
-                    {/* #99 item 1, approved v1: keep verbatim. */}
-                    <div className="mt-4 text-[15px] text-vx-fg-body">
-                      {t('pricing.packs.line', { credits: num.format(p.credits), price: usd.format(p.price_usd_cents / 100) })}
-                    </div>
-                    <div className="mt-1 font-vx-mono text-[12px] text-vx-fg-muted vx-num">
-                      {t('pricing.packs.rate', { rate: rateFormat.format(rate) })}
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+          <PricingCards packs={packState.packs} typical={typical} />
           <p className="mt-8 text-[13px] text-vx-fg-muted max-w-[640px] leading-[1.6]">
             {t('pricing.packs.tax')}
           </p>
-          <Link
-            href="/app/credits"
-            className="vx-press inline-block mt-6 rounded-full bg-vx-accent text-vx-accent-ink px-7 py-3.5 text-[15px] font-extrabold hover:bg-vx-accent-hover"
-          >
-            {t('pricing.packs.buy')}
-          </Link>
           </>
         )}
       </section>
@@ -227,7 +193,6 @@ export default function Pricing() {
                 <thead className="sr-only">
                   <tr>
                     <th scope="col">{t('pricing.col.model')}</th>
-                    <th scope="col">{t('pricing.col.id')}</th>
                     <th scope="col">{t('pricing.col.credits')}</th>
                     <th scope="col">{t('pricing.col.pack')}</th>
                   </tr>
@@ -239,13 +204,7 @@ export default function Pricing() {
                         <span className="text-[15px] font-bold">{m.name}</span>
                         {m.gated && <PremiumTag className="ml-2" />}
                         <span className="block mt-1 text-[12px] text-vx-fg-muted">{modelPriceUnit(m, t)}</span>
-                        <span className="block sm:hidden mt-1"><CopyButton value={m.id} label={m.id} copiedLabel={t('pricing.copied')} /></span>
                       </th>
-                      {/* The model id is what goes in an API call: the one
-                          string on this page somebody retypes by hand. */}
-                      <td className="hidden sm:table-cell py-3 pr-3 text-left">
-                        <CopyButton value={m.id} label={m.id} copiedLabel={t('pricing.copied')} />
-                      </td>
                       <td className="py-3 text-right font-vx-mono text-[16px] font-bold text-vx-money vx-num whitespace-nowrap">
                         {m.credits} cr
                       </td>

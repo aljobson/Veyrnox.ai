@@ -23,3 +23,9 @@ export function initCrashReporting(): boolean {
 }
 
 export const withCrashReporting = Sentry.wrap;
+
+// A named warning from our own guards (a request loop was stopped), with only the tags given: nothing about the person.
+export function captureIssue(message: string, tags: Record<string, string>): void {
+    if (!started) return;
+    Sentry.captureMessage(message, { level: 'warning', tags });
+}

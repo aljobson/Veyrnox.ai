@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors } from '../theme';
+import { colors, fonts } from '../theme';
 
 // The Veyrnox.ai mark (the aqua V from the web app's icon) with the VEYRNOX.ai wordmark.
 export function Logo({ size = 28, wordmark = true }: { size?: number; wordmark?: boolean }) {
@@ -20,6 +20,6 @@ export function Logo({ size = 28, wordmark = true }: { size?: number; wordmark?:
 
 const styles = StyleSheet.create({
     row: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-    word: { color: colors.text, fontWeight: '800', letterSpacing: -0.2 },
+    word: { color: colors.text, fontFamily: fonts.displayHeavy, letterSpacing: -0.2 },
     ai: { color: colors.accent },
 });

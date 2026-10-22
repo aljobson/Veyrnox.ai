@@ -84,7 +84,7 @@ export default function PrivacyExportScreen() {
     async function verify() {
         setVerifying(true); setCodeError(false);
         try {
-            const profile = await fetchProfile(getAccessToken);
+            const profile = await fetchProfile(getAccessToken, 'privacy-export');
             const factor = verifiedFactors(profile.factors)[0];
             if (!factor) throw new Error('factor_missing');
             const session = toSession(await verifyFactor(getAccessToken, factor.id, code), Date.now());

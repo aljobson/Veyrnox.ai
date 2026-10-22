@@ -11,7 +11,7 @@ import { KIND_FILTERS, STATE_FILTERS, canSchedule, filterJobs, kindMap, readFavo
 import { fetchCatalogCached, mediaApi, type CatalogModel, type Job, type JobPage } from '../../../lib/media';
 import { publishHref } from '../../../lib/nextSteps';
 import { VEY_CLEARANCE } from '../../../components/VeyMascot';
-import { colors } from '../../../theme';
+import { colors, fonts } from '../../../theme';
 import { t } from '../../../lib/i18n';
 import { selectedState, touchTarget } from '../../../lib/a11y';
 import { EmptyState } from '../../../components/EmptyState';
@@ -87,6 +87,7 @@ export default function Library() {
     return (
         <View style={styles.screen}>
             <Stack.Screen options={{ title: t('label.Library') }} />
+            <Text style={styles.heading} accessibilityRole="header">{t('label.Library')}</Text>
             <Pressable accessibilityRole="button" accessibilityLabel={t('library.videoFilesLabel')} style={[styles.filesLink, touchTarget]} onPress={() => router.push('/library/files')}>
                 <Text style={styles.filesText}>{t('library.videoFiles')}</Text>
             </Pressable>
@@ -173,6 +174,7 @@ const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background, padding: 16 },
     filesLink: { alignSelf: 'flex-start', paddingBottom: 8 },
     filesText: { color: colors.accent, fontSize: 16 },
+    heading: { color: colors.text, fontFamily: fonts.display, fontSize: 26, marginBottom: 4 },
     muted: { color: colors.muted },
     error: { color: colors.danger },
 });

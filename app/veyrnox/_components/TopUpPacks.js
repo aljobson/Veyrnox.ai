@@ -219,6 +219,8 @@ export function TopUpPacks({ signedIn, welcome = null }) {
               const on = selected === p.id;
               // Best value: strictly the lowest catalog rate, and only when packs differ.
               const best = packs.length > 1 && packs.every((o) => o === p || rate(p) < rate(o));
+              // Measured against the dearest pack in the list; never a typed list price.
+              const saving = Math.floor((1 - rate(p) / Math.max(...packs.map(rate))) * 100);
               const videos = typical?.video && Math.floor(p.credits / typical.video);
               const images = typical?.image && Math.floor(p.credits / typical.image);
               return (
@@ -227,7 +229,7 @@ export function TopUpPacks({ signedIn, welcome = null }) {
                   data-credit-pack={p.id}
                   onPointerEnter={(e) => { if (e.pointerType === 'mouse') notify('hover'); }}
                   onPointerLeave={(e) => { if (e.pointerType === 'mouse') notify('leave'); }}
-                  className={`flex flex-col items-stretch rounded-2xl border px-5 py-5 cursor-pointer transition-[border-color,background-color,box-shadow] duration-150 has-focus-visible:outline-solid has-focus-visible:outline-2 has-focus-visible:outline-vx-accent ${on ? 'border-vx-money bg-vx-money/[0.07] shadow-[inset_0_0_0_1px_rgb(var(--vx-money)),0_8px_28px_-12px_rgb(var(--vx-money)/0.55)]' : 'border-vx-border bg-vx-base/60 hover:border-vx-money/60'}`}
+                  className={`flex flex-col items-stretch rounded-2xl border px-5 py-6 cursor-pointer transition-[border-color,background-color,box-shadow] duration-150 has-focus-visible:outline-solid has-focus-visible:outline-2 has-focus-visible:outline-vx-accent ${on ? 'border-vx-money bg-vx-money/[0.07] shadow-[inset_0_0_0_1px_rgb(var(--vx-money)),0_8px_28px_-12px_rgb(var(--vx-money)/0.55)]' : 'border-vx-border bg-vx-base/60 hover:border-vx-money/60'}`}
                 >
                   <input type="radio" name="credit-pack" value={p.id} checked={on} onChange={() => { setSelected(p.id); setIdempotencyKey(makeIdempotencyKey()); notify('select'); }} className="sr-only" />
                   <span className="flex w-full items-center justify-between gap-3 font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">{t("app.credits.packs.pack")}{best && <span className="rounded-full bg-vx-money px-2 py-0.5 text-[9px] font-bold tracking-[0.1em] text-vx-base">{t("app.credits.packs.bestValue")}</span>}{on && <span aria-hidden="true" className="flex h-5 w-5 items-center justify-center rounded-full bg-vx-money text-[11px] font-bold text-vx-base">✓</span>}</span>
@@ -238,7 +240,7 @@ export function TopUpPacks({ signedIn, welcome = null }) {
                   <span className="mt-4 text-[17px] font-semibold leading-snug text-vx-fg">
                     {t(pluralKey(t, locale, 'app.credits.packs.price', p.credits), { count: number.format(p.credits), price: usd.format(p.price_usd_cents / 100) })} <span className="text-[12px] font-normal text-vx-fg-muted">{t("app.credits.packs.tax")}</span>
                   </span>
-                  <span className="mt-1 text-[12px] text-vx-fg-muted">{t("app.credits.packs.perCredit", { price: perCredit.format(rate(p)) })}</span>
+                  <span className="mt-1 flex items-center gap-2 text-[12px] text-vx-fg-muted">{t("app.credits.packs.perCredit", { price: perCredit.format(rate(p)) })}{saving >= 1 && <span className="font-vx-mono font-bold text-vx-money">{t('pricing.packs.save', { pct: saving })}</span>}</span>
                   <span className="mt-4 flex flex-col gap-2 border-t border-vx-border pt-4 text-[13px] text-vx-fg-body">
                     <span className="flex items-start gap-2"><Check />{t("app.credits.packs.neverExpire")}</span>
                     {typical && (

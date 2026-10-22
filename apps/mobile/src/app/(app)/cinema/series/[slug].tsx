@@ -7,7 +7,7 @@ import { touchTarget } from '../../../../lib/a11y';
 import { formatDuration } from '../../../../lib/cinema';
 import { editorialEpisodeWebUrl, editorialSeriesBySlug } from '../../../../lib/cinemaSeries';
 import { plural, t } from '../../../../lib/i18n';
-import { colors } from '../../../../theme';
+import { colors, fonts } from '../../../../theme';
 
 export default function EditorialSeriesPage() {
     const { slug } = useLocalSearchParams<{ slug: string }>();
@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
     content: { padding: 16, gap: 12 },
     poster: { width: '100%', aspectRatio: 16 / 9, borderRadius: 12, backgroundColor: colors.surface },
-    title: { color: colors.text, fontSize: 24, fontWeight: '700' },
+    title: { color: colors.text, fontFamily: fonts.display, fontSize: 24 },
     body: { color: colors.body, fontSize: 16 },
     muted: { color: colors.muted },
     link: { color: colors.accent },
