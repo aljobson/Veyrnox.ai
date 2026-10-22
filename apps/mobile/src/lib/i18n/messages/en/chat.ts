@@ -123,4 +123,9 @@ export default {
     'chat.settings.save': 'Save',
     'chat.settings.failed': 'Could not save. Try again.',
     'chat.settings.close': 'Close',
+    'chat.settings.back': 'Back to chat',
+    'chat.model.title': 'Choose a model',
+    'chat.model.change': 'Change model',
+    'chat.model.close': 'Close model list',
+    'chat.model.failed': 'Could not switch the model. Try again.',
 } as const;

@@ -1,5 +1,5 @@
 import { createSseParser } from '../src/lib/sse';
-import { MAX_SYSTEM_PROMPT, searchThreads, settingsPatch, switchableModels, chatApi, cleanOptions, cleanTitle, NO_OPTIONS, pinnedFirst, optionsKey, replyPrice, sendKeyFor, toTurnEvent, type ChatModel } from '../src/lib/chat';
+import { isModelSwitch, MAX_SYSTEM_PROMPT, searchThreads, settingsPatch, switchableModels, chatApi, cleanOptions, cleanTitle, NO_OPTIONS, pinnedFirst, optionsKey, replyPrice, sendKeyFor, toTurnEvent, type ChatModel } from '../src/lib/chat';
 import type { ApiClient } from '../src/lib/api';
 
 describe('sse parser', () => {
@@ -178,6 +178,14 @@ describe('chat settings', () => {
     test('only open models are offered, cheapest first', () => {
         const m = (id: string, c: number, gated = false): ChatModel => ({ id, name: id, maker_label: 'X', credits_per_reply: c, gated });
         expect(switchableModels([m('c', 3), m('g', 1, true), m('a', 1), m('b', 2)]).map((x) => x.id)).toEqual(['a', 'b', 'c']);
+    });
+    test('a pick from the in-chat list saves only a different, open model', () => {
+        const m = (id: string, gated = false): ChatModel => ({ id, name: id, maker_label: 'X', credits_per_reply: 1, gated });
+        const models = [m('a'), m('b'), m('g', true)];
+        expect(isModelSwitch('a', 'b', models)).toBe(true);
+        expect(isModelSwitch('a', 'a', models)).toBe(false);
+        expect(isModelSwitch('a', 'g', models)).toBe(false);
+        expect(isModelSwitch('a', 'zzz', models)).toBe(false);
     });
 });
 
