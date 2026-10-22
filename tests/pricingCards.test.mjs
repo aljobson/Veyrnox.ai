@@ -5,9 +5,9 @@ import { fixture } from './helpers/publicSiteRender.mjs';
 
 const file = 'app/veyrnox/_components/PricingCards.js';
 const PACKS = [
-  { id: 'web-100', credits: 100, price_usd_cents: 1000 },
-  { id: 'web-270', credits: 270, price_usd_cents: 1900 },
-  { id: 'web-1200', credits: 1200, price_usd_cents: 5900 },
+  { id: 'web-160', credits: 160, price_usd_cents: 1000 },
+  { id: 'web-330', credits: 330, price_usd_cents: 1900 },
+  { id: 'web-1300', credits: 1300, price_usd_cents: 5900 },
   { id: 'web-3000', credits: 3000, price_usd_cents: 12900 },
 ];
 
@@ -25,7 +25,7 @@ test('every live pack is a card in the same row, and only the cheapest pack per 
   const cards = Object.fromEntries(html.split('data-pack="').slice(1).map((chunk) => [chunk.slice(0, chunk.indexOf('"')), chunk]));
   assert.match(cards['web-3000'], /Best value/);
   assert.match(cards['web-3000'], /\$0\.043 per credit/);
-  for (const [id, price] of [['web-100', '$10'], ['web-270', '$19'], ['web-1200', '$59'], ['web-3000', '$129']]) {
+  for (const [id, price] of [['web-160', '$10'], ['web-330', '$19'], ['web-1300', '$59'], ['web-3000', '$129']]) {
     assert.ok(cards[id].includes(price), `${id} shows ${price}`);
     if (id !== 'web-3000') assert.doesNotMatch(cards[id], /Best value/);
   }
@@ -33,8 +33,8 @@ test('every live pack is a card in the same row, and only the cheapest pack per 
 
 test('the saving is measured against the dearest pack, never against a typed list price', () => {
   const html = render(PACKS, null);
-  // 0.043 against 0.100 a credit: 57% off the entry rate.
-  assert.match(html, /Save 57%/);
+  // 0.043 against 0.0625 a credit (the dearest pack): 31% off the entry rate.
+  assert.match(html, /Save 31%/);
   assert.doesNotMatch(html, /<s[ >]|<del[ >]|line-through/);
 });
 
@@ -42,8 +42,8 @@ test('what a pack buys comes from the live typical prices and is left out withou
   const withCosts = render(PACKS, { image: 2, video: 19 });
   assert.match(withCosts, /Images, about 1,500/);
   assert.match(withCosts, /Five-second clips, about 157/);
-  assert.match(withCosts, /Images, about 50</);
-  assert.match(withCosts, /Five-second clips, about 5</);
+  assert.match(withCosts, /Images, about 80</);
+  assert.match(withCosts, /Five-second clips, about 8</);
   const without = render(PACKS, null);
   assert.doesNotMatch(without, /about \d/);
   assert.doesNotMatch(without, /Images, about/);
