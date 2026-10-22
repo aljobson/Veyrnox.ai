@@ -39,6 +39,7 @@ export function ChatSettings({ visible, thread, models, onSave, onClose }: Props
     return (
         <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
             <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+                <Pressable accessibilityRole="button" accessibilityLabel={t('chat.settings.back')} style={styles.back} onPress={onClose}><Text style={styles.closeText}>‹ {t('chat.settings.back')}</Text></Pressable>
                 <Text style={styles.title} accessibilityRole="header">{t('chat.settings.title')}</Text>
                 <Text style={styles.heading} accessibilityRole="header">{t('chat.settings.model')}</Text>
                 {switchableModels(models).map((m) => (
@@ -74,6 +75,7 @@ const styles = StyleSheet.create({
     save: { minHeight: MIN_TARGET, borderRadius: 12, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center', marginTop: 8 },
     saveText: { color: colors.accentInk, fontWeight: '600' },
     off: { opacity: 0.4 },
+    back: { minHeight: MIN_TARGET, justifyContent: 'center', alignSelf: 'flex-start' },
     close: { minHeight: MIN_TARGET, alignItems: 'center', justifyContent: 'center' },
     closeText: { color: colors.accent },
 });

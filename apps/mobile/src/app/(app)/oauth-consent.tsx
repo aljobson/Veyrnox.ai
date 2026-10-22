@@ -6,7 +6,7 @@ import { Action, Card, Status, styles as shared } from '../../components/account
 import { VEY_CLEARANCE } from '../../components/VeyMascot';
 import { t } from '../../lib/i18n';
 import { consentErrorKey, decide, fetchRequest, validAuthorizationId, type Request } from '../../lib/oauthConsent';
-import { colors } from '../../theme';
+import { colors, fonts } from '../../theme';
 
 // An assistant asks to connect to the account. The person reads who and what, then approves or denies; the answer
 // sends them back to the assistant. Reached from a link of the form /oauth/consent?authorization_id=...
@@ -87,5 +87,5 @@ export default function OAuthConsent() {
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
     content: { padding: 16, gap: 16, paddingBottom: 16 + VEY_CLEARANCE },
-    title: { color: colors.text, fontSize: 24, fontWeight: '700' },
+    title: { color: colors.text, fontFamily: fonts.display, fontSize: 24 },
 });

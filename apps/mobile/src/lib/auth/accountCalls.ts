@@ -1,4 +1,5 @@
 import { config } from '../config';
+import { createRateGuard, reportIssue } from '../requestGuard';
 import { AuthError, type TokenResponse } from './supabaseAuth';
 
 // Account calls that go straight to Supabase Auth with the user's own access token, as the web does
@@ -76,7 +77,27 @@ function toFactors(raw: unknown): Factor[] {
         }));
 }
 
-export async function fetchProfile(getToken: TokenSource): Promise<Profile> {
+// At most this many profile reads in the window. Real use is a handful at launch; more means something is looping.
+export const PROFILE_LIMIT = 6;
+export const PROFILE_WINDOW_MS = 10_000;
+let profileGuard = createRateGuard(PROFILE_LIMIT, PROFILE_WINDOW_MS);
+let profileStormReported = false;
+
+// For tests.
+export function resetProfileGuard(): void {
+    profileGuard = createRateGuard(PROFILE_LIMIT, PROFILE_WINDOW_MS);
+    profileStormReported = false;
+}
+
+// `caller` names the screen asking, so a storm says where it came from.
+export async function fetchProfile(getToken: TokenSource, caller = 'unknown'): Promise<Profile> {
+    if (!profileGuard.allow()) {
+        if (!profileStormReported) {
+            profileStormReported = true;
+            reportIssue('profile_request_storm', { caller });
+        }
+        throw new AuthError(429, 'too_many_requests');
+    }
     const user = await authedCall<RawUser>(getToken, '/auth/v1/user', { method: 'GET' });
     return {
         email: typeof user.email === 'string' && user.email ? user.email : null,

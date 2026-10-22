@@ -12,6 +12,7 @@ import { AUTH_REDIRECT_URL, OAUTH_BRIDGE_URL } from '../lib/config';
 import { apiTokenSource, isTransientRefreshFailure } from '../lib/auth/apiToken';
 import { createAppleNonce, createPkce } from '../lib/auth/pkce';
 import { aiConsent } from '../lib/aiConsentStore';
+import { forgetMfaCleared } from '../lib/mfaCheck';
 import { bindCacheUser, clearExportFiles, userIdFromToken, wipeCache } from '../lib/appCache';
 import { cinemaProgressIdentity } from '../lib/cinemaProgress';
 import { clearRefreshToken, readRefreshToken, writeRefreshToken } from '../lib/auth/sessionStore';
@@ -93,6 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         sessionRef.current = null;
         transientFailure.current = false;
         cinemaProgressIdentity.setUser(null);
+        forgetMfaCleared();
         await aiConsent.forget();
         await wipeCache().catch(() => undefined);
         await setCinemaUploadOwner(null).catch(() => undefined);

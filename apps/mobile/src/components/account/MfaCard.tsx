@@ -26,7 +26,7 @@ export function MfaCard() {
     const load = useCallback(async () => {
         setFailed(false);
         try {
-            const p = await fetchProfile(getAccessToken);
+            const p = await fetchProfile(getAccessToken, 'mfa-card');
             setAal(aalFromToken(await getAccessToken()));
             setProfile(p);
         } catch {

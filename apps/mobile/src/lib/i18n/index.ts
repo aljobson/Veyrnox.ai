@@ -1,4 +1,4 @@
-import { DEFAULT_LOCALE, isRtl, resolveLocale, type LocaleCode } from './locales';
+import { DEFAULT_LOCALE, isRtl, matchTag, resolveLocale, type LocaleCode } from './locales';
 import { createTranslator, type Catalogs, type Translator, type Vars } from './translate';
 import en from './messages/en';
 import es from './messages/es';
@@ -34,6 +34,15 @@ export function applyDeviceLocale(): LocaleCode {
 export function setLocaleFromDevice(tags: readonly string[]): LocaleCode {
     current = createTranslator(resolveLocale(tags), CATALOGS);
     return current.locale;
+}
+
+// A language the person picked on purpose. It shows at once if that language is switched on, otherwise the app stays as it
+// is (ADR-0132: no mixed-language screens) and this answers false so the caller can say the choice is saved for later.
+export function chooseLocale(code: string): boolean {
+    const match = matchTag(code);
+    if (!match || !ACTIVE_LOCALES.includes(match)) return false;
+    current = createTranslator(match, CATALOGS);
+    return true;
 }
 
 export const getLocale = (): LocaleCode => current.locale;

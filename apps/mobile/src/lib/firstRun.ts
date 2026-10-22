@@ -17,6 +17,21 @@ export function hasSeenWelcome(raw: string | null | undefined): boolean {
 
 export const serializeSeen = (): string => JSON.stringify({ version: 1, seen: true });
 
+// The redirect to the welcome is sent at most once per launch, however many times its gate mounts: a screen that
+// remounts in a loop must not send the person there again and again.
+let welcomeRedirectSent = false;
+
+export function claimWelcomeRedirect(): boolean {
+    if (welcomeRedirectSent) return false;
+    welcomeRedirectSent = true;
+    return true;
+}
+
+// For tests.
+export function resetWelcomeRedirect(): void {
+    welcomeRedirectSent = false;
+}
+
 // The credits card quotes the free credits the server says this account holds (GET /api/v1/balance, free_credits). When
 // there are none, or the number is unreadable, it explains credits without a number rather than promising one.
 export function creditsCardKeys(free: number | null | undefined): { title: string; body: string; count: number | null } {

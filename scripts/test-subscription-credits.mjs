@@ -125,7 +125,10 @@ try {
 
     // ── A Pack clawback takes Pack Credits only. ──
     const buyer = await user();
-    const start = await rpc(`public.create_pending_top_up($1, 'web-270', $2, 'supply-consent-v1', 10, 600)`, [buyer.auth, `test-${randomUUID()}`]);
+    // web-270 was retired by 0365; a fixture pack with the same shape keeps the numbers below.
+    await q(`INSERT INTO public.credit_packs (id, sales_channel, credits, price_usd_cents, active)
+             VALUES ('test-270', 'web', 270, 1900, true) ON CONFLICT (id) DO UPDATE SET active = true`);
+    const start = await rpc(`public.create_pending_top_up($1, 'test-270', $2, 'supply-consent-v1', 10, 600)`, [buyer.auth, `test-${randomUUID()}`]);
     assert.equal(start.ok, true, JSON.stringify(start));
     const order = `pi_3Q${randomUUID().replace(/-/g, '')}`;
     const credited = await rpc(`public.credit_top_up($1, $2, $3, 'USD', NULL)`, [start.top_up_id, order, start.price_usd_cents]);

@@ -27,7 +27,7 @@ test('the Credit Pack section stays visible in loading, unavailable, empty and p
   assert.match(pricing, /Loading Credit Packs/);
   assert.match(pricing, /Credit Packs are temporarily unavailable/);
   assert.match(pricing, /No Credit Packs are available right now/);
-  assert.match(pricing, /packState\.packs\.map/);
+  assert.match(pricing, /<PricingCards packs=\{packState\.packs\}/);
 });
 
 test('model rows translate credits into a clearly qualified live pack-value range', () => {

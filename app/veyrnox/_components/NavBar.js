@@ -16,6 +16,7 @@ import { useVideoEnhancePreview } from '../_lib/useVideoEnhancePreview';
 import { useEditorEnabled } from './EditorFlag';
 import { NAV_CATEGORIES, PRIMARY_NAV_CATEGORIES } from '../_lib/tokens';
 import { AnnouncementBar } from './AnnouncementBar';
+import { ModelsMenu } from './ModelsMenu';
 import { PaywallPrompt } from './PaywallPrompt';
 import { LanguageMenu } from './LanguageMenu';
 import { useI18n } from '../../../components/I18nProvider';
@@ -55,6 +56,9 @@ export function MarketingNav({ hideAnnouncementOnMobile = false }) {
           const active = !section && path.startsWith(destination);
           const featured = it.featured === true;
           const Item = section ? 'a' : Link;
+          if (it.href === '/models') {
+            return <ModelsMenu key={it.href} active={active} />;
+          }
           return (
             <Item
               key={it.href}
@@ -355,6 +359,7 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
     { key: 'create',  href: '/app/create',  label: t("label.Create") },
     // Video agent (ADR-0074): bought from a plan on its own page, so it has its own tab and is not in the Create picker.
     { key: 'agent', href: '/app/video-agent', label: t("app.nav.videoAgent") },
+    { key: 'skills', href: '/app/skills', label: t('label.Studio skills') },
     { key: 'chat', href: '/app/chat', label: t("label.LLM Chat") },
     { key: 'film', href: '/app/film-studio', label: t("label.Film Studio") },
     { key: 'library', href: '/app/library', label: t("label.Library") },
@@ -369,6 +374,7 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
   ];
   const sidebarSections = [
     { id: 'agents', label: t('app.nav.side.agents'), items: [
+      { key: 'skills', href: '/app/skills', label: t('label.Studio skills'), icon: 'wand' },
       { key: 'chat', href: '/app/chat', label: t('label.LLM Chat'), icon: 'chat' },
       { key: 'agent', href: '/app/video-agent', label: t('app.nav.videoAgent'), icon: 'agent' },
     ] },

@@ -6,16 +6,20 @@ import { useAuth } from '../../../auth/AuthProvider';
 import { VEY_CLEARANCE } from '../../../components/VeyMascot';
 import { selectedState, touchTarget } from '../../../lib/a11y';
 import { celebrateFinished } from '../../../lib/celebrate';
-import { ALL_CATEGORIES, ALL_TYPES, categoriesFor, filterPresets, firstModelFor, heroPicks, pickUp, presetKind, promptHref, recentCreations, type TypeFilter } from '../../../lib/explore';
+import { ALL_CATEGORIES, ALL_TYPES, categoriesFor, filterPresets, firstModelFor, pickUp, presetKind, promptHref, recentCreations, type TypeFilter } from '../../../lib/explore';
 import { t } from '../../../lib/i18n';
 import { fetchCatalogCached, mediaApi, type CatalogModel, type Job, type Kind } from '../../../lib/media';
 import { LowBalanceNote } from '../../../components/LowBalanceNote';
 import { TemplateCollage } from '../../../components/TemplateCollage';
 import { TryThisRow } from '../../../components/TryThisRow';
+import { CREATOR_PROFILE_ENABLED, syncVibe } from '../../../lib/creatorProfile';
+import { loadVibe, storeVibe } from '../../../lib/creatorProfileStore';
+import type { CreatorAnswers } from '../../../lib/creatorAnswers';
+import { rankPresets, tastePicks } from '../../../lib/creatorTaste';
 import { cheapestCredits, isLowBalance } from '../../../lib/lowBalance';
 import { useBalance } from '../../../lib/useBalance';
 import { fetchPresets, presetHref, presetPrice, type Preset } from '../../../lib/presets';
-import { colors } from '../../../theme';
+import { colors, fonts } from '../../../theme';
 import { useVeyScroll } from '../../../lib/useVeyScroll';
 
 // How many templates the home shows; the rest are on the Templates screen.
@@ -55,6 +59,23 @@ export default function Explore() {
     }, []);
     useEffect(loadPresets, [loadPresets]);
 
+    // The vibe check answers on this phone steer the order of templates. A choice the server has not seen yet is sent now.
+    const [vibe, setVibe] = useState<CreatorAnswers | null>(null);
+    useEffect(() => {
+        let alive = true;
+        void loadVibe().then(async (stored) => {
+            if (!alive || !stored) return;
+            setVibe(stored.answers);
+            if (CREATOR_PROFILE_ENABLED && !stored.synced) {
+                const next = await syncVibe(api, stored);
+                if (next.synced) await storeVibe(next);
+            }
+        });
+        return () => {
+            alive = false;
+        };
+    }, [api]);
+
     // On every return, so a creation started elsewhere shows at once.
     useFocusEffect(
         useCallback(() => {
@@ -70,8 +91,8 @@ export default function Explore() {
     );
 
     const categories = useMemo(() => categoriesFor(presets ?? [], type), [presets, type]);
-    const shown = useMemo(() => filterPresets(presets ?? [], { type, category, query }).slice(0, SHOWN), [presets, type, category, query]);
-    const hero = useMemo(() => heroPicks(presets ?? []), [presets]);
+    const shown = useMemo(() => rankPresets(filterPresets(presets ?? [], { type, category, query }), vibe).slice(0, SHOWN), [presets, type, category, query, vibe]);
+    const hero = useMemo(() => tastePicks(presets ?? [], vibe), [presets, vibe]);
 
     function pickType(next: TypeFilter) {
         setType(next);
@@ -256,7 +277,7 @@ const styles = StyleSheet.create({
     resumeText: { color: colors.text, fontWeight: '600' },
     headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
     headerLinks: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    heading: { color: colors.text, fontSize: 26, fontWeight: '700', letterSpacing: -0.5 },
+    heading: { color: colors.text, fontFamily: fonts.display, fontSize: 26, letterSpacing: -0.5 },
     subheading: { color: colors.muted, fontSize: 15, fontWeight: '600', marginTop: 8 },
     link: { color: colors.body, fontSize: 15, fontWeight: '600' },
     error: { color: colors.danger },

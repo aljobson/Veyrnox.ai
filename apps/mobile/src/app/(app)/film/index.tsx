@@ -1,63 +1,109 @@
 import * as DocumentPicker from 'expo-document-picker';
 import { File } from 'expo-file-system';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { API_BASE } from '../../../lib/api';
 import { touchTarget } from '../../../lib/a11y';
 import { FILM_STUDIO_WEB_PATH, MAX_FILM_BYTES, shotRows, stageStatuses, summarize, type Film } from '../../../lib/filmStudio';
-import { clearStudio, loadStudio, saveStudio } from '../../../lib/filmStudioStore';
+import { clearStudio, saveStudio } from '../../../lib/filmStudioStore';
+import { useAuth } from '../../../auth/AuthProvider';
+import { getCacheUser, subscribeCacheUser } from '../../../lib/appCache';
+import { clearOpenedFilm, fetchCloudFilms, loadActiveStudio } from '../../../lib/filmCloud';
+import { plural, t } from '../../../lib/i18n';
 import { colors } from '../../../theme';
 
-// ADR-0210: Film Studio on the phone, first slice. The web keeps no copy of a studio on the server, so a person exports
-// it there (Film Studio → export JSON) and opens the file here. This screen only reads it.
+// ADR-0210 and ADR-0252: read a file import or a film opened from the account.
 export default function FilmStudio() {
     const router = useRouter();
+    const { api } = useAuth();
+    const [cloudCount, setCloudCount] = useState<number | null>(null);
+    const generation = useRef(0);
+    const loadToken = useRef(0);
     const [film, setFilm] = useState<Film | null>(null);
     const [loading, setLoading] = useState(true);
     const [savedAt, setSavedAt] = useState<number | null>(null);
     const [problem, setProblem] = useState<string | null>(null);
     const [busy, setBusy] = useState(false);
 
-    useEffect(() => {
-        let live = true;
-        loadStudio().then(
+    const reload = useCallback(() => {
+        const token = ++loadToken.current;
+        const session = generation.current;
+        const owner = getCacheUser();
+        loadActiveStudio().then(
             (s) => {
-                if (!live) return;
+                if (token !== loadToken.current || session !== generation.current || owner !== getCacheUser()) return;
                 setFilm(s?.film ?? null);
                 setSavedAt(s?.savedAt ?? null);
                 setLoading(false);
             },
-            () => live && setLoading(false),
+            () => { if (token === loadToken.current && session === generation.current) setLoading(false); },
         );
-        return () => {
-            live = false;
-        };
     }, []);
+
+    useFocusEffect(useCallback(() => {
+        reload();
+        return () => { ++loadToken.current; };
+    }, [reload]));
+
+    useEffect(() => {
+        const fetchCount = async () => {
+            const session = generation.current;
+            const owner = getCacheUser();
+            if (!owner) return;
+            try {
+                const rows = await fetchCloudFilms(api);
+                if (session === generation.current && owner === getCacheUser()) setCloudCount(rows.length);
+            } catch { /* The optional row stays absent on every failure. */ }
+        };
+        const unsubscribe = subscribeCacheUser(() => {
+            ++generation.current;
+            setFilm(null);
+            setSavedAt(null);
+            setProblem(null);
+            setBusy(false);
+            setCloudCount(null);
+            setLoading(true);
+            reload();
+            void fetchCount();
+        });
+        void fetchCount();
+        return () => { unsubscribe(); ++generation.current; ++loadToken.current; };
+    }, [api, reload]);
 
     const pick = useCallback(async () => {
         if (busy) return;
+        const session = generation.current;
         setBusy(true);
         setProblem(null);
         try {
             const res = await DocumentPicker.getDocumentAsync({ type: ['application/json', 'text/plain', '*/*'], copyToCacheDirectory: true, multiple: false });
+            if (session !== generation.current) return;
             if (res.canceled || !res.assets[0]) return;
             const asset = res.assets[0];
             if (typeof asset.size === 'number' && asset.size > MAX_FILM_BYTES) return setProblem('The studio file must be smaller than 1 MB.');
-            const saved = await saveStudio(await new File(asset.uri).text());
+            const raw = await new File(asset.uri).text();
+            if (session !== generation.current) return;
+            const saved = await saveStudio(raw);
+            if (session !== generation.current) return;
             if (!saved.ok) return setProblem(saved.error);
+            clearOpenedFilm();
             setFilm(saved.film);
             setSavedAt(Date.now());
         } catch {
+            if (session !== generation.current) return;
             setProblem('That file could not be read. Try exporting it again from the web.');
         } finally {
-            setBusy(false);
+            if (session === generation.current) setBusy(false);
         }
     }, [busy]);
 
     const remove = useCallback(async () => {
+        const session = generation.current;
         await clearStudio();
+        if (session !== generation.current) return;
+        clearOpenedFilm();
         setFilm(null);
         setSavedAt(null);
     }, []);
@@ -69,7 +115,7 @@ export default function FilmStudio() {
             <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
                 <Stack.Screen options={{ title: 'Film Studio' }} />
                 <Text style={styles.title} accessibilityRole="header">Open your film on the phone</Text>
-                <Text style={styles.body}>Film Studio plans a film in seven stages. It is saved in the browser on veyrnox.ai, not on our servers, so the phone opens a copy of it.</Text>
+                <Text style={styles.body}>{t('filmCloud.intro')}</Text>
                 <Text style={styles.step}>1. On veyrnox.ai open Film Studio and export your studio as JSON.</Text>
                 <Text style={styles.step}>2. Put the file in Files, iCloud Drive or an email to yourself.</Text>
                 <Text style={styles.step}>3. Choose it here.</Text>
@@ -77,7 +123,7 @@ export default function FilmStudio() {
                 <Pressable accessibilityRole="button" disabled={busy} style={[styles.primary, busy && styles.off]} onPress={pick}>
                     <Text style={styles.primaryText}>{busy ? 'Opening…' : 'Choose a studio file'}</Text>
                 </Pressable>
-                <Links router={router} />
+                <Links router={router} cloudCount={cloudCount} />
             </ScrollView>
         );
     }
@@ -92,6 +138,7 @@ export default function FilmStudio() {
             <Text style={styles.muted}>
                 {sum.aspect} · {sum.shots} {sum.shots === 1 ? 'shot' : 'shots'} · {sum.lockedAssets} of {sum.assets} assets locked · {sum.acceptedShots} takes accepted
             </Text>
+            <Text style={styles.body}>{t('filmCloud.intro')}</Text>
             <Text style={styles.muted}>A copy from {savedAt ? new Date(savedAt).toLocaleDateString() : 'the web'}. Changes are made on the web; open a newer export to update it.</Text>
 
             <Text style={styles.heading} accessibilityRole="header">Stages</Text>
@@ -126,14 +173,20 @@ export default function FilmStudio() {
             <Pressable accessibilityRole="button" style={[styles.secondary, touchTarget]} onPress={remove}>
                 <Text style={styles.secondaryText}>Remove from this phone</Text>
             </Pressable>
-            <Links router={router} />
+            <Links router={router} cloudCount={cloudCount} />
         </ScrollView>
     );
 }
 
-function Links({ router }: { router: ReturnType<typeof useRouter> }) {
+function Links({ router, cloudCount }: { router: ReturnType<typeof useRouter>; cloudCount: number | null }) {
     return (
         <View style={styles.links}>
+            {cloudCount !== null && cloudCount >= 1 ? (
+                <Pressable accessibilityRole="button" accessibilityLabel={`${t('filmCloud.linkTitle')}, ${plural('filmCloud.linkCount', cloudCount)}`} style={[styles.row, touchTarget]} onPress={() => router.push('/film/cloud')}>
+                    <Text style={styles.name}>{t('filmCloud.linkTitle')}</Text>
+                    <Text style={styles.muted}>{plural('filmCloud.linkCount', cloudCount)}</Text>
+                </Pressable>
+            ) : null}
             <Pressable accessibilityRole="button" style={[styles.row, touchTarget]} onPress={() => router.push('/library/files')}>
                 <Text style={styles.name}>Film masters</Text>
                 <Text style={styles.muted}>Your saved 16:9 masters. Share one or save it to Photos.</Text>

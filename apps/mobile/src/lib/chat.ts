@@ -224,6 +224,10 @@ export const MAX_SYSTEM_PROMPT = 4000;
 export const switchableModels = (models: readonly ChatModel[]): ChatModel[] =>
     models.filter((m) => !m.gated).sort((a, b) => a.credits_per_reply - b.credits_per_reply || a.name.localeCompare(b.name));
 
+// A pick from the in-chat model list is saved only when it names a different, open model; anything else changes nothing.
+export const isModelSwitch = (currentId: string, pickedId: string, models: readonly ChatModel[]): boolean =>
+    pickedId !== currentId && switchableModels(models).some((m) => m.id === pickedId);
+
 // What a settings save sends: only what changed, so an untouched field is never rewritten.
 export function settingsPatch(
     current: { readonly model_id: string; readonly system_prompt?: string | null },

@@ -15,8 +15,8 @@ export default function AppLayout() {
     return (
         <>
             <AiConsentHost />
-            <FirstRunGate />
             <MfaGate>
+            <FirstRunGate />
             <Stack
                 screenLayout={({ children }) => (
                     <>
