@@ -1,4 +1,4 @@
-import { TOOL_TASKS, isTool, toolGroups, toolNeeds } from '../src/lib/toolDirectory';
+import { TOOL_TASKS, isTool, requiresSource, toolGroups, toolNeeds } from '../src/lib/toolDirectory';
 import type { CatalogModel } from '../src/lib/media';
 
 declare const require: (id: string) => any;
@@ -28,6 +28,11 @@ describe('tool groups', () => {
         expect(isTool(model('a', media))).toBe(true);
         expect(isTool(model('b', { image: { required: false } }))).toBe(false);
         expect(isTool(model('c'))).toBe(false);
+    });
+    test('input-first paths only include tools that require the chosen source', () => {
+        expect(requiresSource(model('photo', { image: { required: true } }), 'image')).toBe(true);
+        expect(requiresSource(model('photo', { image: { required: true } }), 'video')).toBe(false);
+        expect(requiresSource(model('clip', { video: { required: true } }), 'video')).toBe(true);
     });
     test('says what a tool needs in words', () => {
         expect(toolNeeds(model('a', media))).toBe('an image');

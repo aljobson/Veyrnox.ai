@@ -36,6 +36,9 @@ const mediaOf = (m: CatalogModel): Media => (m.capabilities?.media ?? {}) as Med
 // True for a model that cannot run without an upload.
 export const isTool = (m: CatalogModel): boolean => Object.values(mediaOf(m)).some((spec) => spec?.required);
 
+// Input-first entry points use this to show only tools that accept the file the person chose to start with.
+export const requiresSource = (m: CatalogModel, source: 'image' | 'video'): boolean => mediaOf(m)[source]?.required === true;
+
 // "an image and audio": the uploads a tool requires, in words.
 export function toolNeeds(m: CatalogModel): string {
     const slots = Object.entries(mediaOf(m))

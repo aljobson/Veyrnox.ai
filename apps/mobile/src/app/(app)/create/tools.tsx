@@ -1,17 +1,18 @@
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { VEY_CLEARANCE } from '../../../components/VeyMascot';
 import { touchTarget } from '../../../lib/a11y';
 import { plural, t } from '../../../lib/i18n';
 import { fetchCatalogCached, type CatalogModel } from '../../../lib/media';
-import { toolGroups, toolNeeds } from '../../../lib/toolDirectory';
+import { requiresSource, toolGroups, toolNeeds } from '../../../lib/toolDirectory';
 import { colors } from '../../../theme';
 
 // Models that work on a file you already have, grouped by the job they do (the web's /tools page). Each opens the same
 // Create form as any other model, where the file is chosen and the price is shown before Generate.
 export default function CreateTools() {
     const router = useRouter();
+    const params = useLocalSearchParams<{ source?: string; mode?: string }>();
     const [models, setModels] = useState<CatalogModel[] | null>(null);
     const [failed, setFailed] = useState(false);
 
@@ -19,16 +20,26 @@ export default function CreateTools() {
         fetchCatalogCached((list) => setModels(list)).catch(() => setFailed(true));
     }, []);
 
-    const groups = useMemo(() => toolGroups(models ?? []), [models]);
+    const source = params.source === 'image' || params.source === 'video' ? params.source : null;
+    const groups = useMemo(() => toolGroups(source ? (models ?? []).filter((model) => requiresSource(model, source)) : (models ?? [])), [models, source]);
+    const lead = params.mode === 'reference'
+        ? 'Choose what your reference should guide. You will pick the actual image on the next screen.'
+        : source === 'image'
+            ? 'Choose what to do with your photo. You will pick the actual image on the next screen.'
+            : source === 'video'
+                ? 'Choose what to do with your video. You will pick the actual clip on the next screen.'
+                : t('toolsDir.lead');
 
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.body}>
             <Stack.Screen options={{ title: t('toolsDir.title') }} />
-            <Text style={styles.lead}>{t('toolsDir.lead')}</Text>
-            <Pressable accessibilityRole="button" accessibilityLabel={t('faceFilters.title')} style={[styles.row, touchTarget]} onPress={() => router.push('/face-filters')}>
-                <Text style={styles.name}>{t('faceFilters.title')}</Text>
-                <Text style={styles.muted}>{t('faceFilters.lead')}</Text>
-            </Pressable>
+            <Text style={styles.lead}>{lead}</Text>
+            {source !== 'video' ? (
+                <Pressable accessibilityRole="button" accessibilityLabel={t('faceFilters.title')} style={[styles.row, touchTarget]} onPress={() => router.push('/face-filters')}>
+                    <Text style={styles.name}>{t('faceFilters.title')}</Text>
+                    <Text style={styles.muted}>{t('faceFilters.lead')}</Text>
+                </Pressable>
+            ) : null}
             {failed && !models ? (
                 <Text style={styles.error}>{t('create.loadError')}</Text>
             ) : models === null ? (

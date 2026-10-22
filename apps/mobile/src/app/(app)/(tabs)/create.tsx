@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { FreeAllowanceCard } from '../../../components/FreeAllowanceCard';
@@ -30,9 +30,10 @@ function EntryTile({ icon, label, accessibilityLabel, onPress }: { readonly icon
 export default function Create() {
     const onScroll = useVeyScroll();
     const router = useRouter();
+    const params = useLocalSearchParams<{ goal?: string }>();
     const [models, setModels] = useState<CatalogModel[] | null>(null);
     const [failed, setFailed] = useState(false);
-    const [goal, setGoal] = useState<Goal>('image');
+    const [goal, setGoal] = useState<Goal>(params.goal === 'video' || params.goal === 'audio' ? params.goal : 'image');
     const [tier, setTier] = useState<Tier | null>(null);
     const freeLeft = useFreeLeft();
     const [agent, setAgent] = useState<{ readonly credits: number } | null>(null);
