@@ -4,6 +4,9 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useI18n } from '../../../components/I18nProvider';
 import { getSession } from '../../lib/authClient.js';
+import { saveAccountLanguage } from '../../lib/accountLanguageClient.js';
+import { LOCALES } from '../../../lib/i18n/locales.mjs';
+import { rememberLocale } from '../../../lib/i18n/localeCookie.mjs';
 import { CREATOR_ANSWERS, fetchVibe, saveVibe, skipVibe } from '../_lib/creatorProfile';
 import { PRESETS, templateHref } from '../_lib/tokens';
 import { archetypeParts } from '../../../lib/creatorArchetype.js';
@@ -24,6 +27,9 @@ const LOOK_SWATCH = {
   glossy_product: 'linear-gradient(135deg,#6b7280,#1f2937)',
   doc_grit: 'linear-gradient(135deg,#6b5b45,#1f1a14)',
 };
+
+// Set just before the page reloads in a newly chosen language, so the language card is not asked a second time.
+const LANGUAGE_DONE_KEY = 'veyrnox_vibe_language';
 
 const primary = 'vx-press rounded-full bg-vx-accent px-6 py-3 text-center font-bold text-vx-base disabled:opacity-40';
 const quiet = 'vx-press rounded-full px-3 py-2 text-sm font-semibold text-vx-fg-muted hover:text-vx-fg';
@@ -46,9 +52,13 @@ function Choice({ label, sub, on, onPick, swatch }) {
 }
 
 export function VibeCheck({ retake = false }) {
-  const { t } = useI18n();
+  const { t, locale, languagesEnabled } = useI18n();
   const router = useRouter();
   const heading = useRef(null);
+  // The language comes first, in the language the page is showing, with every language listed by its own name and flag.
+  // Choosing another one saves it (cookie and account) and reloads the page so the whole experience, this interview
+  // included, is in that language. Not asked on a retake, or while languages are off.
+  const [language, setLanguage] = useState(retake || !languagesEnabled ? 'done' : 'ask');
   // 0 = intro, 1..7 = questions, 8 = card, -1 = skipped, -2 = needs sign-in, -3 = off.
   const [step, setStep] = useState(0);
   const [draft, setDraft] = useState({ chaos: 2 });
@@ -58,6 +68,9 @@ export function VibeCheck({ retake = false }) {
   const [saved, setSaved] = useState(null);
 
   useEffect(() => { if (!getSession()) setStep(-2); }, []);
+  useEffect(() => {
+    try { if (sessionStorage.getItem(LANGUAGE_DONE_KEY)) { sessionStorage.removeItem(LANGUAGE_DONE_KEY); setLanguage('done'); } } catch { /* ask again */ }
+  }, []);
   // A new screen starts at its heading, for keyboard and screen-reader users.
   useEffect(() => { heading.current?.focus(); }, [step]);
 
@@ -85,6 +98,14 @@ export function VibeCheck({ retake = false }) {
     setStep(TOTAL + 1);
   }
 
+  function chooseLanguage(code) {
+    if (code === locale) { setLanguage('done'); return; }
+    rememberLocale(code);
+    saveAccountLanguage(code);
+    try { sessionStorage.setItem(LANGUAGE_DONE_KEY, '1'); } catch { /* it will be asked again */ }
+    window.location.reload();
+  }
+
   function makeFirst() {
     const ranked = rankByTaste(PRESETS, saved, (p) => `${p.name} ${p.category} ${p.prompt}`);
     router.push(ranked[0] ? templateHref(ranked[0]) : '/app');
@@ -101,6 +122,34 @@ export function VibeCheck({ retake = false }) {
   if (step === -3) return <div>{title(t('app.vibe.page.title'))}<p className="mt-3 text-vx-fg-body" role="status">{t('app.vibe.unavailable')}</p><Link href="/app" className={`${primary} mt-6 inline-block`}>{t('app.vibe.card.home')}</Link></div>;
   if (step === -1) {
     return <div>{title(t('app.vibe.skipped.title'))}<p className="mt-3 text-vx-fg-body">{t('app.vibe.skipped.body')}</p><Link href="/app" className={`${primary} mt-6 inline-block`}>{t('app.vibe.skipped.go')}</Link></div>;
+  }
+  if (step === 0 && language === 'ask') {
+    return (
+      <div>
+        {title(t('app.vibe.language.title'))}
+        <p className="mt-3 max-w-[46ch] text-vx-fg-body">{t('app.vibe.language.hint')}</p>
+        <ul className="mt-6 grid gap-2 sm:grid-cols-2">
+          {LOCALES.map((l) => (
+            <li key={l.code}>
+              <button
+                type="button"
+                lang={l.hreflang}
+                aria-pressed={l.code === locale}
+                data-locale={l.code}
+                onClick={() => chooseLanguage(l.code)}
+                className="vx-press flex min-h-12 w-full items-center gap-3 rounded-2xl border-2 border-vx-border bg-vx-panel px-4 py-2 text-start font-semibold hover:border-vx-fg-muted aria-pressed:border-vx-accent"
+              >
+                <span aria-hidden="true" className="text-[22px] leading-none">{l.flag}</span>
+                <span>{l.name}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+        <div className="mt-6">
+          <button type="button" className={primary} onClick={() => setLanguage('done')}>{t('app.vibe.language.continue')}</button>
+        </div>
+      </div>
+    );
   }
   if (step === 0) {
     return (
