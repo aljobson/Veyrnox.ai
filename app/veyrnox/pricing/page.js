@@ -6,7 +6,6 @@ import { Main } from '../_components/Main';
 import { CreditSubscriptionOffer } from '../_components/CreditSubscriptions';
 import { PricingCards } from '../_components/PricingCards';
 import { PremiumTag } from '../_components/PremiumTag';
-import { CopyButton } from '../_components/CopyButton';
 import { MODELS as MODELS_FALLBACK, SITE_UPDATED, isShelfModel, kindOf } from '../_lib/tokens';
 import { creditValueRange, formatUsdRange } from '../_lib/creditValue';
 import { modelPriceUnit } from '../_lib/modelPricing';
@@ -194,7 +193,6 @@ export default function Pricing() {
                 <thead className="sr-only">
                   <tr>
                     <th scope="col">{t('pricing.col.model')}</th>
-                    <th scope="col">{t('pricing.col.id')}</th>
                     <th scope="col">{t('pricing.col.credits')}</th>
                     <th scope="col">{t('pricing.col.pack')}</th>
                   </tr>
@@ -206,13 +204,7 @@ export default function Pricing() {
                         <span className="text-[15px] font-bold">{m.name}</span>
                         {m.gated && <PremiumTag className="ml-2" />}
                         <span className="block mt-1 text-[12px] text-vx-fg-muted">{modelPriceUnit(m, t)}</span>
-                        <span className="block sm:hidden mt-1"><CopyButton value={m.id} label={m.id} copiedLabel={t('pricing.copied')} /></span>
                       </th>
-                      {/* The model id is what goes in an API call: the one
-                          string on this page somebody retypes by hand. */}
-                      <td className="hidden sm:table-cell py-3 pr-3 text-left">
-                        <CopyButton value={m.id} label={m.id} copiedLabel={t('pricing.copied')} />
-                      </td>
                       <td className="py-3 text-right font-vx-mono text-[16px] font-bold text-vx-money vx-num whitespace-nowrap">
                         {m.credits} cr
                       </td>
