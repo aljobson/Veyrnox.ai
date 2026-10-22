@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { needsPhoto } from '../lib/explore';
 import { t } from '../lib/i18n';
 import { presetPrice, type Preset } from '../lib/presets';
-import { colors } from '../theme';
+import { colors, fonts } from '../theme';
 
 type Props = {
     // Null while the templates load: three empty tiles hold the space so the page does not jump when they arrive.
@@ -42,7 +42,7 @@ export function TryThisRow({ presets, onOpen }: Props) {
 
 const styles = StyleSheet.create({
     wrap: { gap: 10 },
-    heading: { color: colors.text, fontSize: 26, fontWeight: '700', letterSpacing: -0.5 },
+    heading: { color: colors.text, fontFamily: fonts.display, fontSize: 26, letterSpacing: -0.5 },
     row: { flexDirection: 'row', gap: 10 },
     card: { flex: 1, aspectRatio: 3 / 4, borderRadius: 16, overflow: 'hidden', backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
     empty: { opacity: 0.5 },

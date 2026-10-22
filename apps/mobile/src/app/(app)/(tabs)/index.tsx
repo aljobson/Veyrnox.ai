@@ -19,7 +19,7 @@ import { rankPresets, tastePicks } from '../../../lib/creatorTaste';
 import { cheapestCredits, isLowBalance } from '../../../lib/lowBalance';
 import { useBalance } from '../../../lib/useBalance';
 import { fetchPresets, presetHref, presetPrice, type Preset } from '../../../lib/presets';
-import { colors } from '../../../theme';
+import { colors, fonts } from '../../../theme';
 import { useVeyScroll } from '../../../lib/useVeyScroll';
 
 // How many templates the home shows; the rest are on the Templates screen.
@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
     resumeText: { color: colors.text, fontWeight: '600' },
     headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
     headerLinks: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    heading: { color: colors.text, fontSize: 26, fontWeight: '700', letterSpacing: -0.5 },
+    heading: { color: colors.text, fontFamily: fonts.display, fontSize: 26, letterSpacing: -0.5 },
     subheading: { color: colors.muted, fontSize: 15, fontWeight: '600', marginTop: 8 },
     link: { color: colors.body, fontSize: 15, fontWeight: '600' },
     error: { color: colors.danger },

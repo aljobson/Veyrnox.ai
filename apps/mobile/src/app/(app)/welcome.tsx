@@ -8,7 +8,7 @@ import { touchTarget } from '../../lib/a11y';
 import { FIRST_RUN_SLOT, WELCOME_CARDS, creditsCardKeys, serializeSeen } from '../../lib/firstRun';
 import { vibeOffered } from '../../lib/creatorProfileStore';
 import { plural, t } from '../../lib/i18n';
-import { colors } from '../../theme';
+import { colors, fonts } from '../../theme';
 
 // Records that the welcome was shown (or skipped). A failure to save only means it may show once more.
 export async function markWelcomeSeen(): Promise<void> {
@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
     body: { flexGrow: 1, justifyContent: 'center', padding: 24 },
     card: { alignItems: 'center', gap: 16 },
     hero: { marginBottom: 8 },
-    title: { color: colors.text, fontSize: 26, fontWeight: '700', textAlign: 'center' },
+    title: { color: colors.text, fontFamily: fonts.display, fontSize: 26, textAlign: 'center' },
     text: { color: colors.body, fontSize: 17, lineHeight: 24, textAlign: 'center' },
     footer: { padding: 24, gap: 8, alignItems: 'stretch' },
     step: { color: colors.muted, fontSize: 14, textAlign: 'center' },
