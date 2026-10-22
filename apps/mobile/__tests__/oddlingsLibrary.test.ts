@@ -24,12 +24,15 @@ describe('saved passports', () => {
         expect(doc.items[0].name).toBe('Ada B');
     });
 
-    test('newest first, and the list is capped', async () => {
+    test('newest first, a new item at the limit is refused without dropping anything', async () => {
         const store = memory();
-        for (let i = 0; i < PASSPORT_LIMIT + 3; i += 1) await savePassport(store, { oddling_name: `N${i}` }, 1000 + i);
+        for (let i = 0; i < PASSPORT_LIMIT + 3; i += 1) {
+            const saved = await savePassport(store, { oddling_name: `N${i}` }, 1000 + i);
+            if (i === PASSPORT_LIMIT) expect(saved).toMatchObject({ ok: false, item: null });
+        }
         const { items } = await loadDoc(store);
         expect(items).toHaveLength(PASSPORT_LIMIT);
-        expect(items[0].name).toBe(`N${PASSPORT_LIMIT + 2}`);
+        expect(items[0].name).toBe(`N${PASSPORT_LIMIT - 1}`);
     });
 
     test('a damaged or foreign file reads as empty, and picks are cleaned on the way in', () => {
@@ -67,4 +70,14 @@ describe('opening move in a passport', () => {
         await savePassport(store, { oddling_name: 'B' }, 2, null, 'not-a-move');
         expect((await loadDoc(store)).items[0].motionId).toBe('');
     });
+});
+
+test('removing a passport preserves the draft', async () => {
+    const store = memory(); const result = await savePassport(store, { oddling_name: 'Pip' }, 1);
+    const before = await loadDoc(store); await removePassport(store, result.item!.id);
+    expect((await loadDoc(store)).draft).toEqual(before.draft);
+});
+test('repairs bad legacy ids, fractional timestamps and lone surrogates', () => {
+    const doc = parseDoc(JSON.stringify({ version: 1, items: [{ id: 'bad/id', savedAt: -2.5, picks: { oddling_name: 'Pip\uD800' } }] }));
+    expect(doc.items[0]).toMatchObject({ id: 'bad-id', savedAt: 0, name: 'Pip\uFFFD' });
 });

@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { VEY_CLEARANCE } from '../../../components/VeyMascot';
@@ -11,7 +11,10 @@ import { MIN_TARGET } from '../../../lib/a11y';
 import { plural, t } from '../../../lib/i18n';
 import { findOddling } from '../../../lib/oddlings';
 import { CATEGORIES, CATEGORY_FOCUS, GROUPS, MOTIONS, SCENES, SHOWS, TONES, buildStudioPrompt, changePick, groupById, randomizeAll, randomizeStyle, sanitizePicks, swatchOf, type Picks } from '../../../lib/oddlingsBuilder';
-import { fileStore, loadDoc, saveDraft, savePassport } from '../../../lib/oddlingsLibrary';
+import { useAuth } from '../../../auth/AuthProvider';
+import { getCacheUser, subscribeCacheUser } from '../../../lib/appCache';
+import { oddlingsStore } from '../../../lib/oddlingsAccountStore';
+import { createOddlingsProjects } from '../../../lib/oddlingsProjects';
 import { colors } from '../../../theme';
 
 const START: Picks = { character_type: 'Human' };
@@ -19,6 +22,13 @@ const DRAFT_DELAY_MS = 600;
 
 export default function OddlingBuilder() {
     const router = useRouter();
+    const { api } = useAuth();
+    const engine = useMemo(() => createOddlingsProjects(api), [api]);
+    const [owner, setOwner] = useState(getCacheUser());
+    const [choose, setChoose] = useState(false);
+    const latest = useRef<Picks>(START);
+    const initial = useRef('');
+    const left = useRef(false);
     const { from, passport } = useLocalSearchParams<{ from?: string; passport?: string }>();
     const [picks, setPicks] = useState<Picks>(START);
     const [scene, setScene] = useState(SCENES[0]);
@@ -31,23 +41,44 @@ export default function OddlingBuilder() {
     const [ready, setReady] = useState(false);
     const lastSeen = useRef<string>('');
 
+    latest.current = picks;
+    useEffect(() => subscribeCacheUser(() => {
+        setOwner(getCacheUser()); setPicks(START); setLoadedId(null); setNotice(null); setReady(false);
+        setScene(SCENES[0]); setMotionId(MOTIONS[0].id); setCategoryId(CATEGORIES[0].id);
+        setOpen(null); setShowPrompt(false); setChoose(false); lastSeen.current = ''; initial.current = ''; left.current = true;
+    }), []);
+    useFocusEffect(useCallback(() => {
+        left.current = false;
+        void engine.syncNow(false).then(async state => {
+            const record = await oddlingsStore.read();
+            if (owner === getCacheUser()) { setChoose(!record?.projectId && state !== 'unavailable');
+                if (state === 'unavailable') setNotice(t('oddlingsProjects.unavailable')); }
+        });
+        return () => {
+            if (left.current || owner !== getCacheUser() || !initial.current || JSON.stringify(latest.current) === initial.current) return;
+            left.current = true;
+            void oddlingsStore.draft(latest.current, Date.now(), owner).then(() => engine.syncNow(true));
+        };
+    }, [engine, owner]));
+
     // Start from, in order: a cast character, a saved passport, the last draft.
     useEffect(() => {
         let live = true;
         (async () => {
             const cast = findOddling(typeof from === 'string' ? from : undefined);
             if (cast) {
-                if (live) { setPicks(sanitizePicks(cast.picks)); setNotice(t('oddlings.build.loaded', { name: cast.name })); }
+                if (live) { initial.current = JSON.stringify(sanitizePicks(cast.picks)); setPicks(sanitizePicks(cast.picks)); setNotice(t('oddlings.build.loaded', { name: cast.name })); }
             } else {
-                const doc = await loadDoc(fileStore);
+                const doc = (await oddlingsStore.read())?.local ?? { items: [], draft: null };
+                if (owner !== getCacheUser()) return;
                 const item = typeof passport === 'string' ? doc.items.find((i) => i.id === passport) : undefined;
-                if (live && item) { setPicks(item.picks); setLoadedId(item.id); setMotionId(item.motionId || MOTIONS[0].id); setNotice(t('oddlings.build.loaded', { name: item.name })); }
-                else if (live && doc.draft && Object.keys(doc.draft.picks).length) setPicks(doc.draft.picks);
+                if (live && item) { initial.current = JSON.stringify(item.picks); setPicks(item.picks); setLoadedId(item.id); setMotionId(item.motionId || MOTIONS[0].id); setNotice(t('oddlings.build.loaded', { name: item.name })); }
+                else if (live && doc.draft && Object.keys(doc.draft.picks).length) { initial.current = JSON.stringify(doc.draft.picks); setPicks(doc.draft.picks); }
             }
-            if (live) setReady(true);
+            if (live && owner === getCacheUser()) { if (!initial.current) initial.current = JSON.stringify(START); setReady(true); }
         })();
         return () => { live = false; };
-    }, [from, passport]);
+    }, [from, passport, owner]);
 
     // The draft is kept as the person works, so leaving the screen loses nothing.
     useEffect(() => {
@@ -55,9 +86,9 @@ export default function OddlingBuilder() {
         const key = JSON.stringify(picks);
         if (key === lastSeen.current) return;
         lastSeen.current = key;
-        const timer = setTimeout(() => { void saveDraft(fileStore, picks, Date.now()); }, DRAFT_DELAY_MS);
+        const timer = setTimeout(() => { void oddlingsStore.draft(picks, Date.now(), owner).catch(() => undefined); }, DRAFT_DELAY_MS);
         return () => clearTimeout(timer);
-    }, [picks, ready]);
+    }, [picks, ready, owner]);
 
     const setPick = useCallback((key: string, value: string) => { setPicks((current) => changePick(current, key, value)); setNotice(null); }, []);
     const prompt = useMemo(() => buildStudioPrompt({ picks, scene }), [picks, scene]);
@@ -76,9 +107,17 @@ export default function OddlingBuilder() {
     }, [open]);
 
     async function save() {
-        const result = await savePassport(fileStore, picks, Date.now(), loadedId, motionId);
-        if (result.ok && result.item) { setLoadedId(result.item.id); setNotice(t(loadedId ? 'oddlings.build.updated' : 'oddlings.build.savedOk')); }
-        else setNotice(t('oddlings.build.saveFailed'));
+        try {
+            const result = await oddlingsStore.save(picks, Date.now(), loadedId, motionId, owner);
+            if (owner !== getCacheUser()) return;
+            if (result.ok && result.item) {
+                setLoadedId(result.item.id); setNotice(t('oddlingsProjects.local'));
+                setChoose(!result.record?.projectId && engine.getState() !== 'unavailable');
+                void engine.syncNow(false).then(state => { if (owner === getCacheUser()) {
+                    setNotice(t(`oddlingsProjects.${state}`)); if (state === 'unavailable') setChoose(false);
+                } });
+            } else setNotice(t(result.record?.blocked ? 'oddlingsProjects.full' : 'oddlings.build.saveFailed'));
+        } catch { if (owner === getCacheUser()) setNotice(t('oddlings.build.saveFailed')); }
     }
 
     // Clears the look (every character choice) and keeps the name, voice and show that were typed.
@@ -101,6 +140,7 @@ export default function OddlingBuilder() {
                     <Action label={t('oddlings.build.clear')} disabled={!chosen} onPress={clearLook} />
                 </View>
                 {notice ? <Text style={styles.notice} accessibilityLiveRegion="polite">{notice}</Text> : null}
+                {choose ? <Action label={t('oddlingsProjects.choose')} onPress={() => router.push('/oddlings/saved')} /> : null}
                 <Section>
                     <CategoryList categoryId={categoryId} picks={picks} onCategory={setCategoryId} onOpen={setOpen} />
                 </Section>
@@ -111,7 +151,7 @@ export default function OddlingBuilder() {
                     <Text style={styles.link}>{showPrompt ? t('oddlings.build.promptHide') : t('oddlings.build.prompt')}</Text>
                 </Pressable>
                 {showPrompt ? <Text style={styles.prompt} selectable>{prompt}</Text> : null}
-                <HandoffCard picks={picks} scene={scene} motionId={motionId} onLeave={async () => { await savePassport(fileStore, picks, Date.now(), loadedId, motionId).then((r) => { if (r.item) setLoadedId(r.item.id); }); }} />
+                <HandoffCard picks={picks} scene={scene} motionId={motionId} onLeave={save} />
                 <Pressable accessibilityRole="button" style={styles.save} onPress={save}>
                     <Text style={styles.saveText}>{t('oddlings.build.save')}</Text>
                 </Pressable>

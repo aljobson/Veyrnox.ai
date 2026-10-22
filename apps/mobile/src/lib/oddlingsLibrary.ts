@@ -1,6 +1,3 @@
-// Saved passports and the builder's draft. They live in one small file in the app's document folder (kept, unlike the
-// cache folder) and never leave the phone: there is no server route for Oddlings. The file is injected so the logic is
-// tested without a device.
 import { Directory, File, Paths } from 'expo-file-system';
 import { MOTIONS, sanitizePicks, type Picks } from './oddlingsBuilder';
 
@@ -14,14 +11,15 @@ export interface DocStore { read(): Promise<string | null>; write(text: string):
 
 const EMPTY: PassportDoc = { items: [], draft: null };
 
-function cleanItem(raw: unknown): Passport | null {
+export function cleanItem(raw: unknown): Passport | null {
     if (!raw || typeof raw !== 'object') return null;
     const item = raw as Record<string, unknown>;
-    const savedAt = Number(item.savedAt);
-    if (!Number.isFinite(savedAt)) return null;
+    const number = Number(item.savedAt);
+    const savedAt = Math.min(1e14, Math.max(0, Math.trunc(number)));
+    if (!Number.isFinite(number)) return null;
     const picks = sanitizePicks(item.picks);
     return {
-        id: String(item.id || `oddling-${savedAt}`).slice(0, 80),
+        id: (String(item.id || '').replace(/[^A-Za-z0-9._-]/g, '-').slice(0, 80) || `oddling-${savedAt}`),
         savedAt,
         name: picks.oddling_name || 'Untitled Oddling',
         picks,
@@ -33,9 +31,15 @@ export function parseDoc(text: string | null): PassportDoc {
     try {
         const parsed = JSON.parse(text ?? '') as { version?: number; items?: unknown; draft?: { savedAt?: unknown; picks?: unknown } | null };
         if (!parsed || parsed.version !== VERSION) return EMPTY;
-        const items = (Array.isArray(parsed.items) ? parsed.items : []).map(cleanItem).filter((i): i is Passport => i !== null).sort((a, b) => b.savedAt - a.savedAt).slice(0, PASSPORT_LIMIT);
+        const items = (Array.isArray(parsed.items) ? parsed.items : []).map(cleanItem).filter((i): i is Passport => i !== null).sort((a, b) => b.savedAt - a.savedAt);
+        const seen = new Set<string>();
+        items.forEach((item, index) => {
+            let id = item.id, counter = 1;
+            while (seen.has(id)) { const suffix = `-${counter++}`; id = item.id.slice(0, 80 - suffix.length) + suffix; }
+            seen.add(id); items[index] = { ...item, id };
+        });
         const draftAt = Number(parsed.draft?.savedAt);
-        const draft = parsed.draft && Number.isFinite(draftAt) ? { savedAt: draftAt, picks: sanitizePicks(parsed.draft.picks) } : null;
+        const draft = parsed.draft && Number.isFinite(draftAt) ? { savedAt: Math.min(1e14, Math.max(0, Math.trunc(draftAt))), picks: sanitizePicks(parsed.draft.picks) } : null;
         return { items, draft };
     } catch {
         return EMPTY;
@@ -44,6 +48,7 @@ export function parseDoc(text: string | null): PassportDoc {
 
 const serialize = (doc: PassportDoc): string => JSON.stringify({ version: VERSION, items: doc.items, draft: doc.draft });
 
+// Retired document helpers: kept only for the legacy file reader and tests; screens use oddlingsAccountStore.
 export async function loadDoc(store: DocStore): Promise<PassportDoc> {
     try {
         return parseDoc(await store.read());
@@ -57,8 +62,8 @@ export async function savePassport(store: DocStore, picks: Picks, now: number, e
     const doc = await loadDoc(store);
     const clean = sanitizePicks(picks);
     const item = cleanItem({ id: existingId && doc.items.some((i) => i.id === existingId) ? existingId : `oddling-${now}-${Math.random().toString(36).slice(2, 8)}`, savedAt: now, picks: clean, motionId });
-    if (!item) return { ok: false, doc, item: null };
-    const next: PassportDoc = { items: [item, ...doc.items.filter((i) => i.id !== item.id)].slice(0, PASSPORT_LIMIT), draft: { savedAt: now, picks: clean } };
+    if (!item || (doc.items.length >= PASSPORT_LIMIT && !doc.items.some(i => i.id === item.id))) return { ok: false, doc, item: null };
+    const next: PassportDoc = { items: [item, ...doc.items.filter((i) => i.id !== item.id)], draft: { savedAt: now, picks: clean } };
     try {
         await store.write(serialize(next));
         return { ok: true, doc: next, item };
@@ -87,16 +92,15 @@ export async function saveDraft(store: DocStore, picks: Picks, now: number): Pro
     }
 }
 
-export const fileStore: DocStore = {
+// Only claimLegacyOddlings may read this retired install-wide file. Never write it again.
+export const legacyFileStore = {
+    exists() { return new File(new Directory(Paths.document, 'veyrnox-oddlings'), 'passports.json').exists; },
     async read() {
         const file = new File(new Directory(Paths.document, 'veyrnox-oddlings'), 'passports.json');
         return file.exists ? file.text() : null;
     },
-    async write(text) {
-        const dir = new Directory(Paths.document, 'veyrnox-oddlings');
-        if (!dir.exists) dir.create({ intermediates: true, idempotent: true });
-        const file = new File(dir, 'passports.json');
-        if (!file.exists) file.create();
-        file.write(text);
+    async remove() {
+        const file = new File(new Directory(Paths.document, 'veyrnox-oddlings'), 'passports.json');
+        if (file.exists) file.delete();
     },
 };
