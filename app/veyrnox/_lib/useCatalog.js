@@ -1,20 +1,37 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { MODELS, kindOf } from './tokens';
+import { MODELS, kindOf } from './tokens.js';
+import { fallbackCapabilitiesFor } from '../../../lib/fallbackModelCapabilities.js';
 
 // Normalised shape shared by every consumer:
 // { id, name, kind ('video'|'image'|'audio'), credits, gated, durations, media? }
 const FALLBACK_DURATIONS = [5];
 
-function fromFallback() {
-  return MODELS.map((m) => ({
+export function fromFallback() {
+  return MODELS.map((m) => {
+    const capabilities = fallbackCapabilitiesFor(m.id);
+    const inputs = capabilities?.inputs || {};
+    return ({
     id: m.id, name: m.name, kind: m.kind, credits: m.credits, gated: !!m.gated || !!m.premium,
-    durations: m.durations || FALLBACK_DURATIONS,
-    media: m.media || {},
-    presentation: m.presentation || {},
-    durationInput: m.durationInput || null,
-    isSpeech: !!m.speech,
-  }));
+    durations: capabilities?.lengths || m.durations || FALLBACK_DURATIONS,
+    media: capabilities?.media || {},
+    outputStems: capabilities?.outputStems || null,
+    aspects: inputs.aspect_ratio?.values || null,
+    presentation: capabilities?.presentation || {},
+    durationInput: inputs.duration || null,
+    resolutions: inputs.output_resolution?.values || [],
+    audioOptions: inputs.audio_enabled?.values || [],
+    takesTopic: !!inputs.topic,
+    isEdit: !!inputs.clips,
+    takesPlan: !!inputs.plan_id,
+    takesSeed: !!inputs.seed,
+    takesNegative: !!inputs.negative_prompt,
+    takesVoice: !!inputs.voice_description,
+    takesPrompt: !!inputs.prompt,
+    promptMax: inputs.prompt?.max || 2000,
+    isSpeech: capabilities?.kind === 'speech',
+  });
+  });
 }
 
 function fromApi(models) {

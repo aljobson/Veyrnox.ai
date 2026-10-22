@@ -13,9 +13,10 @@ import { StudioSkillIcon } from './StudioSkillIcon';
  * that skill's instructions; it never makes anything and never spends Credits (its draft opens in the Studio, where the
  * person presses Generate).
  */
-export function SkillsPanel({ selectedIds = null, selectedId = '', onPick, disabled = false, linkToChat = false }) {
+export function SkillsPanel({ selectedIds = null, selectedId = '', lockedIds = [], onPick, disabled = false, linkToChat = false }) {
   const { t } = useI18n();
   const selected = new Set(Array.isArray(selectedIds) ? selectedIds : selectedId ? [selectedId] : []);
+  const locked = new Set(lockedIds);
   const [detailSkill, setDetailSkill] = useState(null);
   useEffect(() => {
     if (!linkToChat) return;
@@ -36,7 +37,7 @@ export function SkillsPanel({ selectedIds = null, selectedId = '', onPick, disab
           <ul className="mt-2 grid gap-2 sm:grid-cols-2">
             {SKILLS.filter((s) => s.group === group).map((s) => (
               <li key={s.id}>
-                <button type="button" disabled={disabled || (!selected.has(s.id) && selected.size >= MAX_SELECTED_SKILLS)} aria-pressed={selected.has(s.id)}
+                <button type="button" disabled={disabled || (selected.has(s.id) && locked.has(s.id)) || (!selected.has(s.id) && selected.size >= MAX_SELECTED_SKILLS)} aria-pressed={selected.has(s.id)}
                   onClick={() => linkToChat ? setDetailSkill(s) : onPick?.(s.id)}
                   className={`flex h-full w-full items-center gap-3 rounded-2xl border p-3 text-start transition-colors disabled:opacity-40 ${selected.has(s.id) ? 'border-vx-accent bg-vx-panel shadow-[inset_0_0_0_1px_var(--color-vx-accent)]' : 'border-vx-border bg-vx-panel hover:border-vx-accent'}`}>
                   <StudioSkillIcon skillId={s.id} />

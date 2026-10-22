@@ -263,7 +263,7 @@ test('deleting a chat forgets it and its notice, and clears the screen only when
     assert.ok(remove, 'the screen has remove()');
     // The notice does not move to New chat: it was about a chat the person chose to delete. It is forgotten only once
     // the server has deleted the chat: a delete that failed leaves the chat, and its notice, where they were.
-    assert.match(remove[1], /await chatApi\.remove\(id\); dropNotice\(id\); setThreads\([^\n]*\); if \(forget\(chatView\.current, id\)\) clear\(\);/);
+    assert.match(remove[1], /await chatApi\.remove\(id\); dropNotice\(id\); removeOddlingThreadContext\(store\(\), getStoredUserId\(\), id\); setThreads\([^\n]*\); if \(forget\(chatView\.current, id\)\) clear\(\);/);
     assert.doesNotMatch(remove[1], /blank\(\)/, 'a delete is not a press on New chat: a chat pressed meanwhile still opens');
 });
 
@@ -397,7 +397,7 @@ test('given-back text always goes into its chat\'s stored draft, and into the bo
 
 test('a chat made for the message and deleted closes the screen only when it was the one shown', () => {
     const give = /\n {4}const giveBack = \(over\) => \{\n([\s\S]*?)\n {4}\};\n/.exec(send);
-    assert.match(give[1], /if \(over && created\) \{ chatApi\.remove\(thread\.id\)\.catch\(\(\) => \{\}\); setThreads\(\(ts\) => ts\.filter\(\(t\) => t\.id !== thread\.id\)\); if \(forget\(v, thread\.id\)\) setActive\(null\); \}/);
+    assert.match(give[1], /if \(over && created && !\(requiredInstructions && requiredReady\)\) \{ chatApi\.remove\(thread\.id\)\.catch\(\(\) => \{\}\); setThreads\(\(ts\) => ts\.filter\(\(t\) => t\.id !== thread\.id\)\); if \(forget\(v, thread\.id\)\) setActive\(null\); \}/);
     assert.equal(send.split('setActive(null)').length - 1, 1);
 });
 
@@ -443,7 +443,7 @@ test('what waits for a chat that is not on screen is what the person would have 
 });
 
 test('one send at a time, and the lock is let go when the send ends', () => {
-    assert.match(send, /\n {4}if \(!content \|\| busy \|\| sendingRef\.current \|\| !model \|\| imagesBlocked\) return;\n {4}sendingRef\.current = true;/);
+    assert.match(send, /\n {4}if \(!content \|\| busy \|\| sendingRef\.current \|\| !model \|\| imagesBlocked \|\| sendBlocked\) return;\n {4}sendingRef\.current = true;/);
     assert.match(send, /\n {4}\} finally \{ setBusy\(false\); setProgress\(null\); setStopping\(false\); setChecking\(false\); sendingRef\.current = false; abortRef\.current = null; \}\n/);
     // The images were sent with a reply that is still being saved: they are not offered again.
     assert.match(send, /\n {10}att\.clear\(\); tell\('stop_saving'\);\n/);

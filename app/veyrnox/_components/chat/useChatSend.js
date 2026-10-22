@@ -19,7 +19,7 @@ import { ask, forget, land, onScreen, sendHome } from '../../_lib/chatSendHome';
  * and the warning this one takes the place of.
  * @returns {{send: () => Promise<void>, stop: () => void, busy: boolean, stopping: boolean, checking: boolean, progress: object|null}}
  */
-export function useChatSend({ text, setText, model, imagesBlocked, chosen, price, active, setActive, messages, setMessages, setThreads, setError, att, limits, draftModel, folders, folder, instr, open, refreshThreads, fail, chatView, saveDraft, addDraft, keepNotice, dropNotice, heldWarning, errorCopy = chatErrorCopy, unchargedCopy = chatUnchargedCopy }) {
+export function useChatSend({ text, setText, model, imagesBlocked, sendBlocked = false, chosen, price, active, setActive, messages, setMessages, setThreads, setError, att, limits, draftModel, folders, folder, instr, requiredInstructions = false, lockedInstructions = '', expectedSystemPrompt = '', onInstructionsReady = () => true, onThreadValidated = () => true, open, refreshThreads, fail, chatView, saveDraft, addDraft, keepNotice, dropNotice, heldWarning, errorCopy = chatErrorCopy, unchargedCopy = chatUnchargedCopy }) {
   const [busy, setBusy] = useState(false);
   const [stopping, setStopping] = useState(false); // Stop was pressed and the stopped turn is being looked for
   const [checking, setChecking] = useState(false); // the connection dropped mid-reply and the turn is being looked for
@@ -29,9 +29,9 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
 
   async function send() {
     const content = text.trim();
-    if (!content || busy || sendingRef.current || !model || imagesBlocked) return;
+    if (!content || busy || sendingRef.current || !model || imagesBlocked || sendBlocked) return;
     sendingRef.current = true; setBusy(true); setError(null); setText('');
-    let thread = active; let created = false; const pending = `pending-${Date.now()}`;
+    let thread = active; let created = false; let requiredReady = false; const pending = `pending-${Date.now()}`;
     const knownIds = new Set(messages.map((x) => x.id)); let jobId = null; // to tell this turn from the ones already on screen
     let key = null; // this send's idempotency key, made below before any request: with no job id (Stop before `start`), the server is asked about the send by it
     // The notice kept for the chat this message is sent from is about the message before it, and goes at the press. Unless it warns
@@ -74,7 +74,9 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
     // only when the turn is known to be over. A turn that may still be saved needs its chat.
     const giveBack = (over) => {
       setMessages((m) => m.filter((x) => x.id !== pending && x.id !== `u-${pending}`));
-      if (over && created) { chatApi.remove(thread.id).catch(() => {}); setThreads((ts) => ts.filter((t) => t.id !== thread.id)); if (forget(v, thread.id)) setActive(null); }
+      // Keep a newly bound Oddling thread after a no-charge refusal. Its server prompt and durable passport make the
+      // returned draft safe to retry after a reload; deleting it would strand the canon under a removed thread id.
+      if (over && created && !(requiredInstructions && requiredReady)) { chatApi.remove(thread.id).catch(() => {}); setThreads((ts) => ts.filter((t) => t.id !== thread.id)); if (forget(v, thread.id)) setActive(null); }
       const { home, here, showing, left } = at();
       if (left && !over) return;        // the chat page was left and this turn may still be saved: the text is not offered again. Its notice is kept, for when the chat is next opened
       // Straight into its chat's stored draft (New chat's, when its chat is gone), where it waits. In the box too when that
@@ -88,6 +90,7 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
     let started = false; // the `start` event arrived, or the server named this send's job and the turn has settled: the Credits have been debited
     try {
       key = makeIdempotencyKey(); // in here: a browser that cannot make one ends like any message that never started
+      if (thread && !await onThreadValidated(thread.id)) throw new GatewayError('instructions_unavailable', { status: 409, code: 'instructions_unavailable' });
       // Images go to storage first, before anything is charged: a failed upload costs nothing.
       // A Library image is already in storage; the server checks it is the caller's own, so it is sent by id.
       const refs = [];
@@ -98,9 +101,16 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
         if (folders && folders.some((f) => f.id === folder)) {
           try { await chatApi.move(thread.id, folder); thread = { ...thread, folder_id: folder }; } catch { /* stays unfiled */ }
         }
-        // Instructions typed before the first message belong to the new chat. If saving fails, the chat still starts without them.
-        if (instr.trim()) {
-          try { const r = await chatApi.patch(thread.id, { system_prompt: instr }); thread = { ...thread, ...r.thread }; } catch { /* starts without */ }
+        // Instructions typed before the first message belong to the new chat. An ordinary free-form instruction keeps the
+        // historical fallback. A passport launch uses the immutable, freshly composed canon rather than editable UI state.
+        const instructionText = requiredInstructions ? lockedInstructions.trim() : instr.trim();
+        if (instructionText) {
+          try { const r = await chatApi.patch(thread.id, { system_prompt: instructionText }); thread = { ...thread, ...r.thread }; }
+          catch (e) { if (requiredInstructions) throw new GatewayError('instructions_unavailable', { status: e?.status || 502, code: 'instructions_unavailable' }); }
+        }
+        if (requiredInstructions) {
+          if (!instructionText || !await onInstructionsReady(thread.id)) throw new GatewayError('instructions_unavailable', { status: 502, code: 'instructions_unavailable' });
+          requiredReady = true;
         }
         // Still on the chat that had not started: it becomes this one. If another chat was opened meanwhile, this one only joins the list.
         if (onScreen(v, NEW_CHAT)) { ask(v, thread.id); land(v, thread.id); setActive(thread); }
@@ -114,7 +124,7 @@ export function useChatSend({ text, setText, model, imagesBlocked, chosen, price
       // the send stays `unsure`, and its warning is kept with the send's key, which finds the same job when the chat is opened.
       const lookFor = async (job) => { looked = await chatApi.settleStop({ threadId: thread.id, jobId: job, text: content, knownIds }); if (looked === 'pending') looked = null; else { started = true; jobId = job; } };
       const r = await sendTurn({
-        threadId: thread.id, text: content, key, options: chosen, attachments: refs, signal: ac.signal,
+        threadId: thread.id, text: content, key, options: chosen, attachments: refs, expectedSystemPrompt, signal: ac.signal,
         onEvent: (ev, d) => {
           if (ev === 'start') { started = true; jobId = d.job_id; setProgress(null); }
           if (ev === 'progress') setProgress(d);

@@ -7,11 +7,19 @@ import { CopyButton } from '../CopyButton';
 import { Modal } from '../Modal';
 import { skillOverview } from '../../_lib/studioSkills';
 import { StudioSkillIcon } from './StudioSkillIcon';
+import { tOr } from '../../../../lib/i18n/translate.mjs';
 
 export function SkillDetailsDialog({ skill, onClose }) {
   const { t } = useI18n();
   const closeRef = useRef(null);
   const overview = skillOverview(skill);
+  const title = tOr(t, `app.chat.skill.${skill.id}.name`, skill.name);
+  const introduction = tOr(t, `app.chat.skill.${skill.id}.blurb`, overview.introduction);
+  const bestFor = tOr(t, `app.chat.skill.${skill.id}.bestFor`, overview.bestFor);
+  const output = tOr(t, `app.chat.skill.${skill.id}.output`, overview.output);
+  const howTo = overview.howTo.map((step, index) => index === 0
+    ? tOr(t, `app.chat.skill.${skill.id}.starter`, step)
+    : tOr(t, index === 1 ? 'app.chat.skillDetails.howMissing' : skill.group === 'Film' ? 'app.chat.skillDetails.howFilm' : 'app.chat.skillDetails.howStudio', step));
   const relativeHref = `/app/skills?skill=${encodeURIComponent(skill.id)}`;
   const [shareHref, setShareHref] = useState(relativeHref);
 
@@ -40,8 +48,8 @@ export function SkillDetailsDialog({ skill, onClose }) {
             <StudioSkillIcon skillId={skill.id} size="detail" className="mt-0.5" />
             <div className="min-w-0">
             <p className="font-vx-mono text-[10px] font-bold tracking-[0.14em] text-vx-accent">{t('app.chat.skills.title')}</p>
-            <h2 id="skill-detail-title" className="vx-display mt-2 text-[34px] leading-none sm:text-[44px]">{skill.name}</h2>
-            <p className="mt-3 max-w-[50ch] text-sm leading-6 text-vx-fg-muted">{overview.introduction}</p>
+            <h2 id="skill-detail-title" className="vx-display mt-2 text-[34px] leading-none sm:text-[44px]">{title}</h2>
+            <p className="mt-3 max-w-[50ch] text-sm leading-6 text-vx-fg-muted">{introduction}</p>
             </div>
           </div>
           <button ref={closeRef} type="button" onClick={onClose} aria-label={t('authGate.close')} className="grid size-10 shrink-0 place-items-center rounded-full border border-vx-border text-lg hover:border-vx-accent">×</button>
@@ -50,18 +58,18 @@ export function SkillDetailsDialog({ skill, onClose }) {
         <div className="grid gap-6 py-6 sm:grid-cols-2">
           <section>
             <h3 className="font-vx-mono text-[10px] font-bold tracking-[0.12em] text-vx-fg-faint">{t('app.chat.skillDetails.bestFor')}</h3>
-            <p className="mt-2 text-sm leading-6 text-vx-fg-body">{overview.bestFor}</p>
+            <p className="mt-2 text-sm leading-6 text-vx-fg-body">{bestFor}</p>
           </section>
           <section>
             <h3 className="font-vx-mono text-[10px] font-bold tracking-[0.12em] text-vx-fg-faint">{t('app.chat.skillDetails.output')}</h3>
-            <p className="mt-2 text-sm leading-6 text-vx-fg-body">{overview.output}</p>
+            <p className="mt-2 text-sm leading-6 text-vx-fg-body">{output}</p>
           </section>
         </div>
 
         <section className="rounded-2xl border border-vx-border bg-vx-panel p-5">
           <h3 className="font-vx-mono text-[10px] font-bold tracking-[0.12em] text-vx-accent">{t('app.film.workspace.how')}</h3>
           <ol className="mt-4 space-y-4">
-            {overview.howTo.map((step, index) => (
+            {howTo.map((step, index) => (
               <li key={step} className="flex gap-3 text-sm leading-6 text-vx-fg-body">
                 <span className="grid size-6 shrink-0 place-items-center rounded-full border border-vx-border font-vx-mono text-[10px] font-bold text-vx-accent">{index + 1}</span>
                 <span>{step}</span>

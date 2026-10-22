@@ -1,0 +1,86 @@
+{
+  "intents": {
+    "inline:a-guided-workflow-launches-llm-chat-with-all-fou-cd2719dc": {
+      "binding": {
+        "kind": "allOf",
+        "predicates": [
+          {
+            "contains": "skill=prompt-writer&skill=storyboard&skill=bring-to-life&skill=add-sound",
+            "kind": "route"
+          },
+          {
+            "kind": "net",
+            "method": "POST",
+            "status": 401,
+            "urlContains": "/api/auth/session"
+          },
+          {
+            "kind": "net",
+            "method": "GET",
+            "status": 503,
+            "urlContains": "/api/catalog"
+          },
+          {
+            "kind": "settled",
+            "quietMs": 250
+          }
+        ]
+      },
+      "declaredAt": 1792690684916,
+      "id": "inline:a-guided-workflow-launches-llm-chat-with-all-fou-cd2719dc",
+      "provenBy": {
+        "at": 1792690689931,
+        "grade": "net",
+        "runId": "drive-lease-6fe2f849-8ff9-4a92-9aff-d7be59c7303d",
+        "verdictId": "reticle_act_and_wait:1792690689931"
+      },
+      "state": "proved",
+      "statement": "A guided workflow launches LLM Chat with all four ordered skills in the URL; in the unconfigured signed-out local environment, the normal auth gate and complete registry fallback remain explicit.",
+      "status": "proved",
+      "subject": "api",
+      "surface": {
+        "files": [
+          "app/veyrnox/_components/chat/WorkflowDetailsDialog.js"
+        ],
+        "route": "/app/chat"
+      },
+      "updatedAt": 1792690689969
+    },
+    "inline:develop-story-in-chat-carries-an-oddling-through-c52a9113": {
+      "binding": {
+        "kind": "allOf",
+        "predicates": [
+          {
+            "contains": "skill=oddling-continuity&skill=storyboard&skill=prompt-writer&skill=bring-to-life&oddling=",
+            "kind": "route"
+          },
+          {
+            "kind": "net",
+            "method": "POST",
+            "status": 401,
+            "urlContains": "/api/auth/session"
+          },
+          {
+            "kind": "net",
+            "method": "GET",
+            "status": 503,
+            "urlContains": "/api/catalog"
+          },
+          {
+            "kind": "settled",
+            "quietMs": 250
+          }
+        ]
+      },
+      "declaredAt": 1792690726685,
+      "id": "inline:develop-story-in-chat-carries-an-oddling-through-c52a9113",
+      "state": "bound",
+      "statement": "Develop story in Chat carries an Oddling through an opaque one-time launch together with continuity, storyboard, prompt, and animation skills; it does not generate or spend credits.",
+      "status": "proposed",
+      "subject": "api",
+      "updatedAt": 1792690727214
+    }
+  },
+  "subject": "api",
+  "version": 1
+}

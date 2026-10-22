@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { REGISTRY, capabilityFor, lengthsFor, declaredInputs, checkInputs, checkSource, expandCanvas, shapePayload, publicCapabilities } from '../lib/modelCapabilities.js';
 import { MODELS } from '../app/veyrnox/_lib/tokens.js';
+import { FALLBACK_MODEL_ENDPOINTS, fallbackCapabilitiesFor } from '../lib/fallbackModelCapabilities.js';
 
 // Payloads the pre-registry builder (lib/providerDuration.js, removed in
 // step 2) produced for every fal row, captured just before it was deleted.
@@ -214,6 +215,16 @@ test('the tokens.js fallback offers the lengths the live catalog does', () => {
         assert.ok(Array.isArray(m.durations) && m.durations.includes(5), `${m.id} must offer the 5s unit`);
         const ep = endpointById[m.id];
         if (ep) assert.deepEqual(m.durations, lengthsFor(capabilityFor(ep)), `${m.id} fallback durations`);
+    }
+});
+
+test('every fallback model derives all public capabilities from the gateway registry', () => {
+    assert.deepEqual(Object.keys(FALLBACK_MODEL_ENDPOINTS).sort(), MODELS.map((model) => model.id).sort(),
+        'each fallback row has exactly one registry join');
+    for (const model of MODELS) {
+        const endpoint = FALLBACK_MODEL_ENDPOINTS[model.id];
+        assert.ok(capabilityFor(endpoint), `${model.id} has a registered endpoint`);
+        assert.deepEqual(fallbackCapabilitiesFor(model.id), publicCapabilities(capabilityFor(endpoint)), model.id);
     }
 });
 

@@ -6,7 +6,7 @@ import { fixture } from './helpers/publicSiteRender.mjs';
 import { appMessagesFor } from '../lib/i18n/appMessages.mjs';
 import { localeInfo } from '../lib/i18n/locales.mjs';
 
-const chatState = () => [[{ id: 'fixture-model', name: 'Fixture Model', maker: 'openai', credits_per_reply: 1, max_reply_tokens: 1024, options: {} }], [], null, 'all', null, [], 'fixture-model', '', [], false, { thinking: false, web: false, research: false }, { maxAttachments: 4, maxEdge: 2048 }, false, [], 'chat', '', null, false, false, false, 0, true];
+const chatState = () => [[{ id: 'fixture-model', name: 'Fixture Model', maker: 'openai', credits_per_reply: 1, max_reply_tokens: 1024, options: {} }], [], null, 'all', null, [], 'fixture-model', '', [], false, { thinking: false, web: false, research: false }, { maxAttachments: 4, maxEdge: 2048 }, false, [], null, false, '', false, 'chat', '', null, false, false, false, 0, true];
 const escape = value => value.replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll("'", '&#x27;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 
 for (const locale of ['de', 'ja', 'ar']) for (const area of ['create', 'library', 'publish', 'account', 'chat']) {

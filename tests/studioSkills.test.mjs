@@ -1,10 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  SKILLS, SKILL_GROUPS, MAX_INSTRUCTIONS, MAX_DRAFTS, MAX_DRAFT_PROMPT, MAX_SKILL_IDEA, MAX_SELECTED_SKILLS, skillById, skillIdsFromSearch, skillOverview, skillLaunchFromSearch, personalSkillLaunchFromSearch, catalogLines, skillInstructions, skillsInstructions, parseStudioDrafts,
+  SKILLS, SKILL_GROUPS, MAX_INSTRUCTIONS, MAX_INSTRUCTION_TOKENS, MAX_DRAFTS, MAX_DRAFT_PROMPT, MAX_SKILL_IDEA, MAX_SELECTED_SKILLS, estimateInstructionTokens, fittingSkills, fittingSkillsWithRequired, skillById, skillIdsFromSearch, skillOverview, skillLaunchFromSearch, personalSkillLaunchFromSearch, catalogLines, skillInstructions, skillsInstructions, parseStudioDrafts,
 } from '../app/veyrnox/_lib/studioSkills.js';
 import { STUDIO_SKILL_ICONS, studioSkillIcon } from '../app/veyrnox/_lib/studioSkillIcons.js';
 import { STUDIO_WORKFLOWS, workflowById, workflowStartHref, workflowSteps } from '../app/veyrnox/_lib/studioWorkflows.js';
+import { CHARACTER_GROUPS, ODDLING_ARCHETYPES } from '../app/veyrnox/_lib/character.js';
+import { oddlingCanonInstructions } from '../app/veyrnox/_lib/oddlingChatHandoff.js';
 
 test('skill launches accept one known skill and one bounded idea', () => {
   const launch = skillLaunchFromSearch('?skill=prompt-writer&prompt=%20A+quiet+train+film%20');
@@ -60,6 +62,13 @@ test('skills: unique ids, a known group, a 1-Credit chat model, and a starter an
   assert.equal(skillById('nope'), null);
 });
 
+test('Bring it to life works with either an attached image or an Oddling passport', () => {
+  const body = skillById('bring-to-life').body;
+  assert.match(body, /attached image/i);
+  assert.match(body, /locked passport/i);
+  assert.match(body, /ask for a source/i);
+});
+
 test('every Studio skill has one distinctive icon and no orphan icon remains', () => {
   assert.deepEqual(Object.keys(STUDIO_SKILL_ICONS).sort(), SKILLS.map((skill) => skill.id).sort());
   assert.equal(new Set(Object.values(STUDIO_SKILL_ICONS).map((icon) => icon.path)).size, SKILLS.length);
@@ -77,10 +86,11 @@ test('guided workflows use only real skills and lead to a working first step', (
     assert.ok(workflow.name && workflow.blurb && workflow.outcome && workflow.path, workflow.id);
     assert.ok(workflow.steps.length >= 3, `${workflow.id} has a useful sequence`);
     assert.equal(workflowSteps(workflow).length, workflow.steps.length, `${workflow.id} has no missing skills`);
-    assert.match(workflowStartHref(workflow), /^\/app\/(chat\?skill=|film-studio)/, workflow.id);
+    assert.match(workflowStartHref(workflow), /^\/app\/(chat\?skill=|film-studio|oddlings)/, workflow.id);
     if (!workflow.href) assert.equal(new URL(`https://veyrnox.test${workflowStartHref(workflow)}`).searchParams.getAll('skill').length, Math.min(MAX_SELECTED_SKILLS, workflow.steps.length));
     assert.equal(workflowById(workflow.id), workflow);
   }
+  assert.equal(workflowStartHref(workflowById('oddling-series')), '/app/oddlings', 'the public workflow starts where a passport can be selected');
   assert.equal(workflowById('not-a-workflow'), null);
   assert.equal(workflowStartHref(null), '/app/skills');
 });
@@ -117,11 +127,83 @@ test('instructions: preamble, skill and live list, and never over the chat limit
 test('multiple skills share one preamble and one model list while keeping every selected specialist complete', () => {
   const selected = [skillById('prompt-writer'), skillById('storyboard'), skillById('bring-to-life'), skillById('add-sound')];
   const text = skillsInstructions(selected, CATALOG);
-  assert.equal(text.match(/You are a Studio assistant/g)?.length, 1);
+  assert.equal(text.match(/You are Veyrnox\.ai's Studio assistant/g)?.length, 1);
   assert.equal(text.match(/Models \(id\|kind\|Credits per generation\):/g)?.length, 1);
   for (const skill of selected) assert.ok(text.includes(skill.body), skill.id);
   assert.ok(text.length <= MAX_INSTRUCTIONS);
   assert.equal(skillsInstructions([], CATALOG), '');
+});
+
+test('Oddling continuity composes locked canon without exceeding the Chat instruction limit', () => {
+  const selected = ['oddling-continuity', 'storyboard', 'prompt-writer', 'bring-to-life'].map(skillById);
+  const picks = Object.fromEntries(CHARACTER_GROUPS.map((group) => [group.id, group.options.at(-1)[0]]));
+  Object.assign(picks, {
+    oddling_name: 'N'.repeat(40), oddling_obsession: 'P'.repeat(140), oddling_rule: 'C'.repeat(160),
+    oddling_voice: ODDLING_ARCHETYPES[0].picks.oddling_voice, oddling_show: ODDLING_ARCHETYPES[0].picks.oddling_show,
+  });
+  const context = oddlingCanonInstructions({ version: 2, savedAt: 1, ownerId: 'user-a', picks, mode: 'motion', scene: 'S'.repeat(300), referenceNote: 'R'.repeat(180) });
+  const text = skillsInstructions(selected, CATALOG, context);
+  for (const skill of selected) assert.ok(text.includes(skill.body), skill.id);
+  assert.ok(text.includes(context));
+  assert.match(text, /flux-2-pro\|image\|4/, 'the maximum passport still leaves a live model choice');
+  assert.match(text, /kling-3\.0-i2v\|video\|34/, 'a motion model is reserved before extra image rows');
+  assert.ok(text.length <= MAX_INSTRUCTIONS);
+});
+
+test('maximum multilingual canon is preserved and blocks instead of silently dropping scene or reference', () => {
+  const selected = ['oddling-continuity', 'storyboard', 'prompt-writer', 'bring-to-life'].map(skillById);
+  const picks = Object.fromEntries(CHARACTER_GROUPS.map((group) => [group.id, group.options.at(-1)[0]]));
+  Object.assign(picks, {
+    oddling_name: '界'.repeat(40), oddling_obsession: '界'.repeat(140), oddling_rule: '界'.repeat(160),
+    oddling_voice: ODDLING_ARCHETYPES[0].picks.oddling_voice, oddling_show: ODDLING_ARCHETYPES[0].picks.oddling_show,
+  });
+  const context = oddlingCanonInstructions({ version: 2, savedAt: 1, ownerId: 'user-a', picks, mode: 'motion', motionId: 'micro-dance', scene: '界'.repeat(300), referenceNote: '界'.repeat(180) });
+  const text = skillsInstructions(selected, CATALOG, context);
+  assert.match(context, new RegExp(`Scene:${'界'.repeat(300)}`));
+  assert.match(context, new RegExp(`Reference:${'界'.repeat(180)}`));
+  assert.equal(text, '', 'a prompt that cannot retain the complete context is not saved or sent');
+  assert.deepEqual(fittingSkills(selected, CATALOG, context), []);
+});
+
+test('a locked Oddling launch never keeps optional skills after continuity exceeds the budget', () => {
+  const selected = ['oddling-continuity', 'bring-to-life', 'prompt-writer'].map(skillById);
+  let boundary = '';
+  for (let length = 1; length <= 2200; length += 1) {
+    const context = '界'.repeat(length);
+    const loose = fittingSkills(selected, CATALOG, context);
+    if (loose.length && !loose.some((skill) => skill.id === 'oddling-continuity')) {
+      boundary = context;
+      break;
+    }
+  }
+  assert.ok(boundary, 'the regression fixture reaches the mixed-fit token boundary');
+  assert.deepEqual(fittingSkillsWithRequired(selected, CATALOG, boundary, 'oddling-continuity'), []);
+});
+
+test('multilingual canon that fits retains scene and reference in the saved prompt', () => {
+  const picks = { ...ODDLING_ARCHETYPES[0].picks, oddling_name: '星の子', oddling_obsession: '夜の市場', oddling_rule: '青い帽子を変えない' };
+  const context = oddlingCanonInstructions({ version: 2, savedAt: 1, ownerId: 'user-a', picks, mode: 'motion', motionId: 'micro-dance', scene: '月明かりの駅で踊る', referenceNote: '青と金の配色を守る' });
+  const text = skillsInstructions([skillById('oddling-continuity')], CATALOG, context);
+  assert.match(text, /Scene:月明かりの駅で踊る/);
+  assert.match(text, /Reference:青と金の配色を守る/);
+  assert.ok(estimateInstructionTokens(text) <= MAX_INSTRUCTION_TOKENS);
+});
+
+test('every allowed four-skill combination is whole, bounded, and reserves each available media kind', () => {
+  const manyImages = Array.from({ length: 30 }, (_, index) => M({ id: `image-${index}`, credits: index + 1 }));
+  const models = [...manyImages, ...CATALOG.filter((model) => ['video', 'audio'].includes(model.kind))];
+  const context = 'x'.repeat(1850);
+  for (let a = 0; a < SKILLS.length; a += 1) for (let b = a + 1; b < SKILLS.length; b += 1) {
+    for (let c = b + 1; c < SKILLS.length; c += 1) for (let d = c + 1; d < SKILLS.length; d += 1) {
+      const requested = [SKILLS[a], SKILLS[b], SKILLS[c], SKILLS[d]];
+      const fitted = fittingSkills(requested, models, context);
+      const text = skillsInstructions(requested, models, context);
+      assert.ok(text.length <= MAX_INSTRUCTIONS, requested.map((skill) => skill.id).join(','));
+      assert.ok(estimateInstructionTokens(text) <= MAX_INSTRUCTION_TOKENS, requested.map((skill) => skill.id).join(','));
+      for (const skill of fitted) assert.ok(text.includes(skill.body), skill.id);
+      for (const kind of ['image', 'video', 'audio']) assert.match(text, new RegExp(`\\|${kind}\\|`), `${kind}: ${requested.map((skill) => skill.id).join(',')}`);
+    }
+  }
 });
 
 test('drafts: a valid block becomes a draft priced from the catalog, never from the text', () => {
@@ -144,9 +226,9 @@ test('drafts: an unknown, gated or editor-only model, a bad block or an empty pr
   assert.deepEqual(parseStudioDrafts(undefined, CATALOG), []);
 });
 
-test('drafts: an aspect is kept only when the model takes it; a long prompt is cut; extra fields are ignored', () => {
+test('drafts: an aspect is kept only when Create offers it; a long prompt is cut; extra fields are ignored', () => {
   assert.equal(parseStudioDrafts(fence({ model: 'flux-2-pro', prompt: 'x', aspect: '9:16' }), CATALOG)[0].aspect, null, 'not an aspect this model takes');
-  assert.equal(parseStudioDrafts(fence({ model: 'kling-3.0-i2v', prompt: 'x', aspect: '16:9' }), CATALOG)[0].aspect, null, 'a model with no aspects takes none');
+  assert.equal(parseStudioDrafts(fence({ model: 'kling-3.0-i2v', prompt: 'x', aspect: '9:16' }), CATALOG)[0].aspect, null, 'a live model with no aspect input cannot promise one');
   assert.equal(parseStudioDrafts(fence({ model: 'flux-2-pro', prompt: 'x', aspect: 16 }), CATALOG)[0].aspect, null);
   const long = parseStudioDrafts(fence({ model: 'flux-2-pro', prompt: 'y'.repeat(5000) }), CATALOG)[0];
   assert.equal(long.prompt.length, MAX_DRAFT_PROMPT);

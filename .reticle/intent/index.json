@@ -1,10 +1,58 @@
 {
   "entries": [
     {
+      "id": "inline:a-guided-workflow-launches-llm-chat-with-all-fou-cd2719dc",
+      "statement": "A guided workflow launches LLM Chat with all four ordered skills in the…",
+      "status": "proved",
+      "subject": "api"
+    },
+    {
+      "id": "inline:develop-story-in-chat-carries-an-oddling-through-c52a9113",
+      "statement": "Develop story in Chat carries an Oddling through an opaque one-time lau…",
+      "status": "proposed",
+      "subject": "api"
+    },
+    {
+      "id": "inline:a-compatible-create-goal-filter-keeps-the-exact-434e3730",
+      "statement": "A compatible Create goal filter keeps the exact linked template, its vi…",
+      "status": "proved",
+      "subject": "app"
+    },
+    {
+      "id": "inline:closing-the-expected-signed-out-gate-reveals-the-e29425b4",
+      "statement": "Closing the expected signed-out gate reveals the already staged Create…",
+      "status": "proved",
+      "subject": "app"
+    },
+    {
+      "id": "inline:generate-similar-carries-the-selected-template-f-636338c5",
+      "statement": "Generate similar carries the selected template from its detail page int…",
+      "status": "proved",
+      "subject": "app"
+    },
+    {
       "id": "inline:guided-workflows-bdf2b5ec",
       "statement": "guided-workflows",
       "status": "agreed",
       "subject": "app"
+    },
+    {
+      "id": "inline:starting-a-guided-workflow-carries-its-bounded-s-7abc0877",
+      "statement": "Starting a guided workflow carries its bounded set of multiple skills i…",
+      "status": "proposed",
+      "subject": "app"
+    },
+    {
+      "id": "flow:drive-a-guided-workflow-launches-llm-chat-with-all-fou",
+      "statement": "A guided workflow launches LLM Chat with all four ordered skills in the…",
+      "status": "proposed",
+      "subject": "drive-a-guided-workflow-launches-llm-cha"
+    },
+    {
+      "id": "flow:drive-generate-similar-carries-the-selected-template-f",
+      "statement": "Generate similar carries the selected template from its detail page int…",
+      "status": "proposed",
+      "subject": "drive-generate-similar-carries-the-selec"
     },
     {
       "id": "flow:drive-guided-workflows",
@@ -47,6 +95,18 @@
       "statement": "A publisher can select Veyrnox Publish weekly billing, review the exact…",
       "status": "proposed",
       "subject": "publish-weekly-plan-option"
+    },
+    {
+      "id": "inline:a-signed-out-visitor-can-dismiss-the-normal-sign-d5028607",
+      "statement": "A signed-out visitor can dismiss the normal sign-in gate and continue i…",
+      "status": "proposed",
+      "subject": "unsorted"
+    },
+    {
+      "id": "inline:oddling-story-development-is-available-from-the-2557c9fe",
+      "statement": "Oddling story development is available from the completed passport, but…",
+      "status": "proposed",
+      "subject": "unsorted"
     },
     {
       "id": "inline:publish-analytics-x-194b806a",

@@ -1,0 +1,65 @@
+{
+  "version": 2,
+  "name": "drive-a-guided-workflow-launches-llm-chat-with-all-fou",
+  "projectId": "veyrnox-ai-05603de1",
+  "createdAt": 1792690724428,
+  "steps": [
+    {
+      "tool": "reticle_act",
+      "anchor": {
+        "kind": "role",
+        "role": "link",
+        "name": "Start workflow →"
+      },
+      "args": {},
+      "action": "click",
+      "expect": {
+        "kind": "allOf",
+        "predicates": [
+          {
+            "kind": "route",
+            "contains": "skill=prompt-writer&skill=storyboard&skill=bring-to-life&skill=add-sound"
+          },
+          {
+            "kind": "net",
+            "method": "POST",
+            "urlContains": "/api/auth/session",
+            "status": 401
+          },
+          {
+            "kind": "net",
+            "method": "GET",
+            "urlContains": "/api/catalog",
+            "status": 503
+          },
+          {
+            "kind": "settled",
+            "quietMs": 250
+          }
+        ]
+      },
+      "timeoutMs": 30000,
+      "page": "/app/skills",
+      "endPage": "/app/chat"
+    }
+  ],
+  "startPath": "/app/skills",
+  "intent": "A guided workflow launches LLM Chat with all four ordered skills in the URL; in the unconfigured signed-out local environment, the normal auth gate and complete registry fallback remain explicit.",
+  "requires": [
+    {
+      "kind": "route",
+      "pathname": "/app/skills"
+    }
+  ],
+  "ensures": [
+    {
+      "kind": "route",
+      "pathname": "/app/chat"
+    }
+  ],
+  "author": {
+    "agent": "codex-mcp-client",
+    "person": "al.jobson@21stclick.co.uk"
+  },
+  "intentId": "flow:drive-a-guided-workflow-launches-llm-chat-with-all-fou"
+}

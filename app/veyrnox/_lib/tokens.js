@@ -11,10 +11,10 @@ import { templateById } from './templates.js';
 // lib/modelCapabilities.js — the fallback renders the same picker the live
 // catalog does (tests/modelCapabilities.test.mjs checks it).
 export const MODELS = [
-  { id: 'wan-2.5-kie',        name: 'Wan 2.5',             credits: 19,  tag: 'RECOMMENDED', preselected: true, kind: 'video', durations: [5, 10] },
-  { id: 'kling-2.6-pro-kie',  name: 'Kling 2.6 Pro',       credits: 17,                                         kind: 'video', durations: [5, 10] },
-  { id: 'kling-3.0-i2v',      name: 'Kling 3.0 · I2V',     credits: 32,                                         kind: 'video', durations: [5, 10] },
-  { id: 'seedance-2.0-fast',  name: 'Seedance 2.0 Fast',   credits: 28,                                         kind: 'video', durations: [5, 10] },
+  { id: 'wan-2.5-kie',        name: 'Wan 2.5',             credits: 19,  tag: 'RECOMMENDED', preselected: true, kind: 'video', durations: [5, 10], aspects: ['16:9', '9:16', '1:1'] },
+  { id: 'kling-2.6-pro-kie',  name: 'Kling 2.6 Pro',       credits: 17,                                         kind: 'video', durations: [5, 10], aspects: ['16:9', '9:16', '1:1'] },
+  { id: 'kling-3.0-i2v',      name: 'Kling 3.0 · I2V',     credits: 32,                                         kind: 'video', durations: [5, 10], media: { image: { required: true }, endImage: { required: false } } },
+  { id: 'seedance-2.0-fast',  name: 'Seedance 2.0 Fast',   credits: 28,                                         kind: 'video', durations: [5, 10], aspects: ['16:9', '9:16'], media: { image: { required: false } } },
   { id: 'kling-avatar-v2',    name: 'Kling AI Avatar',     credits: 32,  tag: 'NEW',                            kind: 'video', durations: [5], media: { image: { required: true }, audio: { required: true, maxSeconds: 10 } } },
   { id: 'latentsync',         name: 'LatentSync',          credits: 12,  tag: 'NEW',                            kind: 'video', durations: [5], media: { video: { required: true, maxSeconds: 40 }, audio: { required: true, maxSeconds: 40 } } },
   { id: 'hailuo-02-kie',      name: 'MiniMax Hailuo 02',   credits: 9,                                         kind: 'video', durations: [5], presentation: { durationByOption: { 5: '6' } } },
@@ -132,6 +132,12 @@ export function presetCredits(preset, catalog, durationSeconds = preset.duration
 }
 
 export const ASPECT_RATIOS = ['16:9', '9:16', '1:1', '4:5', '21:9'];
+
+/** The same aspect choices Create exposes: only values declared by the provider contract. */
+export function modelAspectRatios(model) {
+  if (!model) return [];
+  return Array.isArray(model.aspects) ? ASPECT_RATIOS.filter((aspect) => model.aspects.includes(aspect)) : [];
+}
 export const RESOLUTIONS = ['1K', '2K', '4K'];
 
 // ─── Landing-page content ────────────────────────────────────────────────

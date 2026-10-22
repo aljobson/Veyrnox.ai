@@ -39,7 +39,7 @@ test('all 32 remainder files have no unresolved copy, parse errors or translator
   }
 });
 
-test('remainder English visible text and accessible copy match origin/main 1675cf4d', async () => {
+test('remainder English visible text and accessible copy match the approved baseline', async () => {
   const baseline = JSON.parse(readFileSync('tests/fixtures/app-remainder-english-main.json', 'utf8'));
   const messages = await appMessagesFor('en');
   assert.equal(baseline.length, scenarios.length);

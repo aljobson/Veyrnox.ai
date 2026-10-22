@@ -73,6 +73,7 @@ export function chatErrorCopy(code, { credits } = {}) {
     case 'upload_failed': case 'image_unreadable': return 'The image did not upload. Try again, or pick another. No Credits were used.';
     case 'invalid_text': return 'Messages can be up to 8,000 characters.';
     case 'turn_not_saved': return 'We could not save that reply, so you will not be charged.';
+    case 'instructions_unavailable': return 'We could not lock the Oddling canon to this chat. Your message was not sent and no Credits were used. Try again.';
     case 'reply_not_saved': return 'We could not save that reply to the chat. You received it, so its Credits were used.';
     case 'provider_cut_off': case 'provider_dropped': return 'The reply was cut off. No Credits were used.';
     case 'reply_time_limit': return 'The reply reached its time limit and was stopped there. It counts as a stopped reply and is charged.';
@@ -120,7 +121,7 @@ const unanswered = (e, status = 0) => (e?.name === 'AbortError' ? e : new Gatewa
  * Throws GatewayError for a refusal before the stream, and with the code `send_unanswered` when the request went out
  * and what came back does not say how the send ended (above). Aborting `signal` is the Stop button.
  */
-export async function sendTurn({ threadId, text, key, options, attachments = [], signal, onEvent }) {
+export async function sendTurn({ threadId, text, key, options, attachments = [], expectedSystemPrompt = '', signal, onEvent }) {
   const token = await getFreshAccessToken();
   if (!token) {
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('veyrnox:auth-required'));
@@ -133,6 +134,7 @@ export async function sendTurn({ threadId, text, key, options, attachments = [],
       headers: { Authorization: `Bearer ${token}`, 'content-type': 'application/json' },
       body: json({
         text, idempotency_key: key, options: turnOptions(options),
+        ...(expectedSystemPrompt ? { expected_system_prompt: expectedSystemPrompt } : {}),
         ...(attachments.length ? { attachments: attachments.map((a) => (typeof a === 'string' ? { source_key: a } : a)) } : {}),
       }),
     });

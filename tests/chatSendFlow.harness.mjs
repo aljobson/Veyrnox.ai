@@ -46,10 +46,10 @@ export const afterReload = (storage, chat) => ({ box: readDraft(storage, ME, cha
 // `closeSend` is also handed the log so far. `settle` may be a function, for a look that throws; it is handed the
 // `person` and the log so far, to see the screen while the turn is looked for. `openDown`: the chat cannot be read again.
 // `log.lookedIn` is what each look was handed: the chat, the text, and the ids of the messages on screen before the send (`shown`). `log.checking` is what the hook's `checking` state was set to, in order.
-export async function run({ active = null, turn, settle = 'pending', listDown = false, listFails = false, images = [], whileMaking = () => {}, kept = {}, text = TEXT, storage = null, making = null, upload = async () => 'k', prepare = async (f) => f, key = 'key', closeSend = notOpen, askLimitMs = null, openDown = false, shown = [] }) {
+export async function run({ active = null, turn, settle = 'pending', listDown = false, listFails = false, images = [], whileMaking = () => {}, kept = {}, text = TEXT, storage = null, making = null, upload = async () => 'k', prepare = async (f) => f, key = 'key', closeSend = notOpen, askLimitMs = null, openDown = false, shown = [], instr = '', requiredInstructions = false, lockedInstructions = '', expectedSystemPrompt = '', sendBlocked = false, patchThread = async () => ({ thread: {} }), onInstructionsReady = async () => true, onThreadValidated = async () => true }) {
     const view = newChatView();
     if (active) { ask(view, active.id); land(view, active.id); }
-    const log = { notices: [], box: [], saved: {}, added: {}, opened: [], shownOnOpen: [], deleted: [], activeSet: [], imagesCleared: 0, refreshed: 0, quietReads: 0, failures: [], kept: { ...kept }, keptWith: {}, dropped: [], closes: [], looks: [], lookedIn: [], checking: [] };
+    const log = { notices: [], box: [], saved: {}, added: {}, opened: [], shownOnOpen: [], deleted: [], activeSet: [], imagesCleared: 0, refreshed: 0, quietReads: 0, failures: [], kept: { ...kept }, keptWith: {}, dropped: [], closes: [], looks: [], lookedIn: [], checking: [], patched: [], instructionsReady: [] };
     let onScreenMessages = []; let states = 0;
     const person = {
         press: (id) => ask(view, id),
@@ -68,7 +68,7 @@ export async function run({ active = null, turn, settle = 'pending', listDown = 
         makeIdempotencyKey: () => (typeof key === 'function' ? key() : key), uploadChatImage: upload, prepareImage: prepare,
         sendTurn: (args) => turn(args, person),
         chatApi: {
-            create: making || (async () => { whileMaking(person); return { thread: { id: 'made', model_id: 'm' } }; }), move: async () => ({}), patch: async () => ({ thread: {} }),
+            create: making || (async () => { whileMaking(person); return { thread: { id: 'made', model_id: 'm' } }; }), move: async () => ({}), patch: async (id, body) => { log.patched.push({ id, body }); return patchThread(id, body); },
             remove: (id) => { log.deleted.push(id); return Promise.resolve(); },
             threads: async () => { log.quietReads += 1; if (listDown) throw new Error('offline'); return { threads: [] }; },
             settleStop: async ({ threadId, jobId, text: sent, knownIds }) => { log.looks.push(jobId ?? null); log.lookedIn.push({ chat: threadId, text: sent, known: [...knownIds] }); if (typeof settle === 'function') return settle(person, log); return settle; },
@@ -80,11 +80,13 @@ export async function run({ active = null, turn, settle = 'pending', listDown = 
     const useChatSend = new Function('deps', `const { ${imported.join(', ')} } = deps;\n${body}`)(deps);
     const { send } = useChatSend({
         // With `storage`, the box is stored under the chat on screen as it changes, as the screen's draft effect does.
-        text, setText: (t) => { log.box.push(t); if (storage) writeDraft(storage, ME, view.shown, t); }, model: { id: 'm' }, imagesBlocked: false, chosen: {}, price: 2,
+        text, setText: (t) => { log.box.push(t); if (storage) writeDraft(storage, ME, view.shown, t); }, model: { id: 'm' }, imagesBlocked: false, sendBlocked, chosen: {}, price: 2,
         active, setActive: (t) => log.activeSet.push(t ? t.id : null), messages: shown.map((id) => ({ id })),
         setMessages: (f) => { onScreenMessages = typeof f === 'function' ? f(onScreenMessages) : f; },
         setThreads: () => {}, setError: (n) => log.notices.push(n),
-        att: { items: images, clear: () => { log.imagesCleared += 1; } }, limits: { maxEdge: 2048 }, draftModel: 'm', folders: null, folder: 'all', instr: '',
+        att: { items: images, clear: () => { log.imagesCleared += 1; } }, limits: { maxEdge: 2048 }, draftModel: 'm', folders: null, folder: 'all', instr, requiredInstructions, lockedInstructions, expectedSystemPrompt,
+        onInstructionsReady: async (id) => { log.instructionsReady.push(id); return onInstructionsReady(id); },
+        onThreadValidated,
         // The screen's open(): here it only records the call, and the notice the real one would show with the chat, and says the chat was read.
         // `openDown`: the chat could not be read (still offline), which the real open() says by returning false.
         open: async (id) => { log.opened.push(id); if (openDown) return false; log.shownOnOpen.push(storage ? readNotice(storage, ME, id) : (log.kept[id] ?? null)); ask(view, id); land(view, id); return true; },

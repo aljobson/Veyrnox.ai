@@ -30,6 +30,10 @@ export const STUDIO_SKILL_ICONS = {
     color: '#ffd66e',
     path: 'M3.5 5h17v14h-17zM9 5v14M15 5v14M3.5 10h17M3.5 15h17',
   },
+  'oddling-continuity': {
+    color: '#f1c75b',
+    path: 'M7 8a5 5 0 0 1 10 0v3a5 5 0 0 1-10 0zM9 9h.01M15 9h.01M10 13c1.2 1 2.8 1 4 0M5 20c1-3 13-3 14 0',
+  },
   'fix-my-prompt': {
     color: '#69e9c6',
     path: 'M4 6h11M4 10h8M4 14h5M14 15l2 2 4-5M17.5 4.5v3M16 6h3',
