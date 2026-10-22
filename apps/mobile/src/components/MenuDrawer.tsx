@@ -72,7 +72,7 @@ function MenuDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
     useEffect(() => {
         if (!open || profile) return;
         let live = true;
-        fetchProfile(getAccessToken).then((p) => live && setProfile(p), () => undefined);
+        fetchProfile(getAccessToken, 'menu-drawer').then((p) => live && setProfile(p), () => undefined);
         return () => {
             live = false;
         };

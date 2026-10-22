@@ -5,11 +5,13 @@ import { StatusBar } from 'expo-status-bar';
 import { AuthProvider } from '../auth/AuthProvider';
 import { BillingProvider } from '../billing/BillingProvider';
 import { PushProvider } from '../push/PushProvider';
-import { initCrashReporting, withCrashReporting } from '../lib/crash';
+import { captureIssue, initCrashReporting, withCrashReporting } from '../lib/crash';
 import { applyDeviceLocale } from '../lib/i18n';
+import { setIssueReporter } from '../lib/requestGuard';
 import { isDark } from '../theme';
 
 initCrashReporting();
+setIssueReporter(captureIssue);
 // Reads the device language once; only languages switched on in ACTIVE_LOCALES are used (English today).
 applyDeviceLocale();
 
