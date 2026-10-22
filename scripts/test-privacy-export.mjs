@@ -263,8 +263,10 @@ try {
         'ledger_entries', 'push_tokens', 'referral_codes', 'referrals', 'social_brands',
         'social_posts', 'social_publish_subscriptions', 'top_ups', 'user_blocks',
     ]);
+    // creator_profiles (ADR-0251) is the person's own Vibe Check answers. It is deliberately not in the export yet: it needs a
+    // section in read_privacy_export_page (0362), which is its own migration. Move it to EXPORTED when that lands.
     const NOT_EXPORTED = new Set([
-        'account_deletions', 'account_read_rate_limits', 'api_requests', 'asset_link_rate_limits', 'chat_closed_sends',
+        'account_deletions', 'account_read_rate_limits', 'creator_profiles', 'api_requests', 'asset_link_rate_limits', 'chat_closed_sends',
         'cinema_audience_clock', 'cinema_competitions', 'cinema_creator_applications', 'cinema_free_plays', 'cinema_pass_plays',
         'cinema_passes', 'cinema_ranking_decisions', 'cinema_ranking_snapshots', 'cinema_retention_requests', 'cinema_share_actions',
         'cinema_story_polls', 'cinema_submissions', 'cinema_unlock_rate_limits', 'cinema_unlocks', 'cinema_watch_sessions',
