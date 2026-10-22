@@ -1,5 +1,14 @@
 // English strings for explore. Add keys here; keep their original wording and placeholders.
 export default {
+    'explore.presetsTitle': 'Explore presets',
+    'explore.presetsIntro': 'Each one opens Create on its model and prompt, priced before you press Generate.',
+    'explore.templateCount': '{templates} templates on {models} models',
+    'explore.heroKicker': 'NEW · ODDLINGS',
+    'explore.heroTitle': 'Make the silhouette impossible to ignore.',
+    'explore.heroBody': 'Explore expressive silhouettes, sculptural hair and imaginative costumes. Give your fictional creator a distinctive personality, visual style and recurring show.',
+    'explore.heroAction': 'Open the full Oddling Studio →',
+    'explore.chatAction': 'Open chat →',
+    'explore.ideaTitle': 'Start with your own idea',
     'explore.promptLabel': 'What do you want to make?',
     'explore.promptPlaceholder': 'Describe what to make',
     'explore.makeImage': 'Make an image',

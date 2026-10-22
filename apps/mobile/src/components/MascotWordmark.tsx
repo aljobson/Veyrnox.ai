@@ -11,7 +11,6 @@ import {
     FALLBACK_STEM_TOP,
     I_INDEX,
     JUMP_MS,
-    PRESS_MS,
     SINK_RATIO,
     STRIDE_MS,
     WORD,
@@ -101,28 +100,29 @@ export function MascotWordmark({ fontSize = 36 }: { fontSize?: number }) {
             return;
         }
         const native = { useNativeDriver: true };
-        shown.setValue(1);
+        shown.setValue(0);
         const run = Animated.sequence([
-            // The run along the capitals and onto the a, leaning forward, with no stop at any letter.
+            // A grounded run across the word: constant travel, a restrained forward posture and a short fade-in.
             Animated.parallel([
                 Animated.timing(along, { toValue: 1, duration: track.total, easing: Easing.linear, ...native }),
-                Animated.timing(tilt, { toValue: 1, duration: 200, easing: Easing.out(Easing.quad), ...native }),
+                Animated.timing(tilt, { toValue: 1, duration: 180, easing: Easing.out(Easing.quad), ...native }),
+                Animated.timing(shown, { toValue: 1, duration: 160, easing: Easing.out(Easing.quad), ...native }),
             ]),
-            // The big jump from the a onto the i, then it squashes and shrinks into the dot.
+            // A clean final take-off and landing, followed by a controlled lock-up into the i dot.
             Animated.parallel([
-                Animated.timing(jumpX, { toValue: path.jump.x - last.x, duration: JUMP_MS, easing: Easing.linear, ...native }),
+                Animated.timing(jumpX, { toValue: path.jump.x - last.x, duration: JUMP_MS, easing: Easing.inOut(Easing.cubic), ...native }),
                 Animated.sequence([
                     Animated.timing(jumpY, { toValue: path.jump.apexY - last.y, duration: JUMP_MS * 0.5, easing: Easing.out(Easing.cubic), ...native }),
                     Animated.timing(jumpY, { toValue: path.jump.dotY - last.y, duration: JUMP_MS * 0.5, easing: Easing.in(Easing.cubic), ...native }),
                 ]),
                 Animated.timing(tilt, { toValue: 0, duration: JUMP_MS, ...native }),
-                Animated.timing(release, { toValue: 0, duration: 140, ...native }),
+                Animated.timing(release, { toValue: 0, duration: 180, ...native }),
             ]),
             Animated.sequence([
-                Animated.timing(squash, { toValue: 1, duration: 90, easing: Easing.out(Easing.quad), ...native }),
+                Animated.timing(squash, { toValue: 1, duration: 70, easing: Easing.out(Easing.quad), ...native }),
                 Animated.parallel([
-                    Animated.spring(squash, { toValue: 0, friction: 4, tension: 200, ...native }),
-                    Animated.spring(shrink, { toValue: 1, friction: 6, tension: 190, ...native }),
+                    Animated.timing(squash, { toValue: 0, duration: 190, easing: Easing.out(Easing.cubic), ...native }),
+                    Animated.timing(shrink, { toValue: 1, duration: 220, easing: Easing.out(Easing.cubic), ...native }),
                 ]),
             ]),
         ]);
@@ -141,9 +141,9 @@ export function MascotWordmark({ fontSize = 36 }: { fontSize?: number }) {
     }, [path, track, reduceMotion, along, jumpX, jumpY, release, tilt, squash, shrink, shown, stride]);
 
     const scale = shrink.interpolate({ inputRange: [0, 1], outputRange: [1, DOT_SCALE] });
-    const sx = Animated.multiply(scale, squash.interpolate({ inputRange: [0, 1], outputRange: [1, 1.18] }));
-    const sy = Animated.multiply(scale, squash.interpolate({ inputRange: [0, 1], outputRange: [1, 0.78] }));
-    const rotate = tilt.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '11deg'] });
+    const sx = Animated.multiply(scale, squash.interpolate({ inputRange: [0, 1], outputRange: [1, 1.06] }));
+    const sy = Animated.multiply(scale, squash.interpolate({ inputRange: [0, 1], outputRange: [1, 0.92] }));
+    const rotate = tilt.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '5deg'] });
 
     const word = [styles.word, { fontSize, lineHeight: fontSize * 1.2 }];
     const sink = fontSize * SINK_RATIO;
@@ -176,7 +176,7 @@ export function MascotWordmark({ fontSize = 36 }: { fontSize?: number }) {
                             transformOrigin: 'bottom',
                             transform: [
                                 { translateY: (track?.press.get(i) ?? zero).interpolate({ inputRange: [0, 1], outputRange: [0, sink] }) },
-                                { scaleY: (track?.press.get(i) ?? zero).interpolate({ inputRange: [0, 1], outputRange: [1, 0.93] }) },
+                                { scaleY: (track?.press.get(i) ?? zero).interpolate({ inputRange: [0, 1], outputRange: [1, 0.9] }) },
                             ],
                         }}
                     >

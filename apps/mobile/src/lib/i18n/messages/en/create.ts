@@ -1,5 +1,16 @@
 // English strings for create. Add keys here; keep their original wording and placeholders.
 export default {
+    'create.eyebrow': 'STUDIO · NEW CREATION',
+    'create.intro': 'Choose what to make and a model. Every price is shown before you generate.',
+    'create.startFrom': 'START FROM',
+    'create.pickPreset': 'REFERENCE, FILE OR IDEA',
+    'create.what': 'WHAT DO YOU WANT TO MAKE?',
+    'create.freeChoice': 'FREE TO CHOOSE',
+    'create.goalExplainer': 'This only narrows the model list. It does not spend credits.',
+    'create.model': 'MODEL',
+    'create.livePrices': 'LIVE PRICES',
+    'create.priceExplainer': 'Choose a model to add your prompt, references and settings. The exact cost stays visible before Generate.',
+    'create.videoAgent': 'PLANNED VIDEO',
     'create.templatesHint': 'Start from a ready-made idea',
     'create.template.label': 'Template',
     'create.template.format': 'Opens in {aspect}, like the template.',

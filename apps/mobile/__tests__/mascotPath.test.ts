@@ -1,4 +1,4 @@
-import { A_INDEX, DOT_SCALE, HOP_MS, I_INDEX, LEAP_IN_MS, MASCOT_ASPECT, WORD, mascotPath } from '../src/lib/mascotPath';
+import { A_INDEX, DOT_SCALE, HOP_MS, I_INDEX, LEAP_IN_MS, MASCOT_ASPECT, RUN, STRIDE_MS, WORD, mascotPath } from '../src/lib/mascotPath';
 
 // One 28-wide box per letter, side by side.
 const letters = WORD.map((_, i) => ({ x: 60 + i * 28, width: 28 }));
@@ -25,9 +25,17 @@ test('it hops on each capital in turn, then on the a', () => {
 test('a letter sinks a little and the last jump lands over the i stem', () => {
     const p = mascotPath(layout, 40, 36);
     expect(p.sink).toBeGreaterThan(0);
+    expect(p.sink).toBeGreaterThan(36 * 0.05);
     expect(p.sink).toBeLessThan(36 * 0.2);
     expect(p.jump.x).toBe(letters[I_INDEX].x + 14);
     expect(p.jump.dotY).toBeLessThan(layout.stemTop);
     expect(p.jump.apexY).toBeLessThan(p.jump.dotY);
     expect(DOT_SCALE).toBeLessThan(1);
+});
+
+test('the run cycle stays restrained at wordmark size', () => {
+    expect(STRIDE_MS).toBeGreaterThanOrEqual(500);
+    expect(RUN.armSwing).toBeLessThanOrEqual(30);
+    expect(RUN.bob).toBeLessThan(10);
+    expect(RUN.lift).toBeLessThan(40);
 });

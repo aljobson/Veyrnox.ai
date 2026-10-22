@@ -1,16 +1,17 @@
 import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { FreeAllowanceCard } from '../../../components/FreeAllowanceCard';
-import { fetchCatalogCached, type CatalogModel } from '../../../lib/media';
+import { fetchCatalogCached, kindOf, type CatalogModel } from '../../../lib/media';
 import { GOALS, TIERS, filterByTier, freeLeftFor, modelsForGoal, type Goal, type Tier } from '../../../lib/createOptions';
 import { useFreeLeft } from '../../../lib/useFreeLeft';
 import { selectedState, touchTarget } from '../../../lib/a11y';
 import { fetchAgentListing } from '../../../lib/montage';
 import { MENU_ICONS, type MenuIcon } from '../../../lib/menuIcons';
 import { VEY_CLEARANCE } from '../../../components/VeyMascot';
-import { colors, fonts } from '../../../theme';
+import { fonts, studioColors as colors } from '../../../theme';
 import { plural, t } from '../../../lib/i18n';
 import { useVeyScroll } from '../../../lib/useVeyScroll';
 
@@ -21,8 +22,11 @@ const GOAL_ICON: Record<Goal, MenuIcon> = { image: 'image', video: 'video', audi
 function EntryTile({ icon, label, accessibilityLabel, onPress }: { readonly icon: MenuIcon; readonly label: string; readonly accessibilityLabel?: string; readonly onPress: () => void }) {
     return (
         <Pressable accessibilityRole="button" accessibilityLabel={accessibilityLabel ?? label} style={({ pressed }) => [styles.entry, touchTarget, pressed && styles.entryPressed]} onPress={onPress}>
-            <Image source={MENU_ICONS[icon]} style={styles.entryIcon} tintColor={colors.accent} contentFit="contain" accessibilityElementsHidden />
+            <View style={styles.entryIconBox}>
+                <Image source={MENU_ICONS[icon]} style={styles.entryIcon} tintColor={colors.accent} contentFit="contain" accessibilityElementsHidden />
+            </View>
             <Text style={styles.entryText} numberOfLines={2}>{label}</Text>
+            <Text style={styles.entryArrow} accessibilityElementsHidden>›</Text>
         </Pressable>
     );
 }
@@ -51,42 +55,10 @@ export default function Create() {
 
     return (
         <View style={styles.screen}>
+            <StatusBar style="light" />
             <Stack.Screen options={{ title: t('label.Create') }} />
-            <Text style={styles.heading} accessibilityRole="header">{t('label.Create')}</Text>
-            <View style={styles.entries}>
-                <EntryTile icon="squares" label={t('label.Templates')} onPress={() => router.push('/create/presets')} />
-                <EntryTile icon="wrench" label={t('menu.tools')} accessibilityLabel={t('toolsDir.entry')} onPress={() => router.push('/create/tools')} />
-                <EntryTile icon="smiley" label={t('faceFilters.title')} onPress={() => router.push('/face-filters')} />
-                <EntryTile icon="chat" label={t('chat.skills.title')} onPress={() => router.push('/chat/skills')} />
-            </View>
-            {models ? <FreeAllowanceCard models={models} left={freeLeft} /> : null}
-            <View style={styles.tabs} accessibilityLabel={t('create.goalLabel')}>
-                {GOALS.map((g) => (
-                    <Pressable
-                        key={g.goal}
-                        accessibilityRole="tab"
-                        accessibilityLabel={t(g.label)}
-                        accessibilityState={selectedState(goal === g.goal)}
-                        style={[styles.tab, goal === g.goal && styles.tabOn]}
-                        onPress={() => {
-                            setGoal(g.goal);
-                            setTier(null);
-                        }}
-                    >
-                        <Image source={MENU_ICONS[GOAL_ICON[g.goal]]} style={styles.tabIcon} tintColor={goal === g.goal ? colors.accentInk : colors.body} contentFit="contain" accessibilityElementsHidden />
-                        <Text style={[styles.tabText, goal === g.goal && styles.tabTextOn]} numberOfLines={1}>{t(SHORT_GOAL[g.goal])}</Text>
-                    </Pressable>
-                ))}
-            </View>
-            <View style={styles.tiers} accessibilityLabel={t('create.tierLabel')}>
-                {[null, ...TIERS].map((x) => (
-                    <Pressable key={x ?? 'all'} accessibilityRole="button" accessibilityState={selectedState(tier === x)} style={[styles.tierChip, touchTarget, tier === x && styles.tabOn]} onPress={() => setTier(x)}>
-                        <Text style={[styles.tabText, tier === x && styles.tabTextOn]}>{t(`create.tier.${x ?? 'all'}`)}</Text>
-                    </Pressable>
-                ))}
-            </View>
             {failed ? (
-                <Text style={styles.error}>{t('create.loadError')}</Text>
+                <View style={styles.body}><Text style={styles.error}>{t('create.loadError')}</Text></View>
             ) : models === null ? (
                 <ActivityIndicator color={colors.accent} />
             ) : (
@@ -96,22 +68,84 @@ export default function Create() {
                     scrollEventThrottle={64}
                     data={shown}
                     ListHeaderComponent={
-                        (goal === 'video' || goal === 'all') && agent ? (
-                            <Pressable accessibilityRole="button" style={styles.row} onPress={() => router.push('/create/agent')}>
-                                <View style={styles.agentText}>
-                                    <Text style={styles.name}>{t('create.agentTitle')}</Text>
-                                    <Text style={styles.muted}>{t('create.agentHint')}</Text>
-                                </View>
-                                <Text style={styles.price}>{plural('create.agentFrom', agent.credits)}</Text>
-                                <Image source={MENU_ICONS.caretRight} style={styles.caret} tintColor={colors.muted} contentFit="contain" accessibilityElementsHidden />
-                            </Pressable>
-                        ) : undefined
+                        <View style={styles.header}>
+                            <View style={styles.intro}>
+                                <Text style={styles.eyebrow}>{t('create.eyebrow')}</Text>
+                                <Text style={styles.heading} accessibilityRole="header">{t('label.Create')}</Text>
+                                <Text style={styles.introText}>{t('create.intro')}</Text>
+                            </View>
+
+                            <View style={styles.sectionTop}>
+                                <Text style={styles.sectionLabel}>{t('create.startFrom')}</Text>
+                                <Text style={styles.sectionMeta}>{t('create.pickPreset')}</Text>
+                            </View>
+                            <View style={styles.entries}>
+                                <EntryTile icon="squares" label={t('label.Templates')} onPress={() => router.push('/create/presets')} />
+                                <EntryTile icon="wrench" label={t('menu.tools')} accessibilityLabel={t('toolsDir.entry')} onPress={() => router.push('/create/tools')} />
+                                <EntryTile icon="smiley" label={t('faceFilters.title')} onPress={() => router.push('/face-filters')} />
+                                <EntryTile icon="chat" label={t('chat.skills.title')} onPress={() => router.push('/chat/skills')} />
+                            </View>
+
+                            <View style={styles.sectionTop}>
+                                <Text style={styles.sectionLabel}>{t('create.what')}</Text>
+                                <Text style={styles.sectionMeta}>{t('create.freeChoice')}</Text>
+                            </View>
+                            <View style={styles.tabs} accessibilityLabel={t('create.goalLabel')}>
+                                {GOALS.map((g) => (
+                                    <Pressable
+                                        key={g.goal}
+                                        accessibilityRole="tab"
+                                        accessibilityLabel={t(g.label)}
+                                        accessibilityState={selectedState(goal === g.goal)}
+                                        style={[styles.tab, goal === g.goal && styles.tabOn]}
+                                        onPress={() => {
+                                            setGoal(g.goal);
+                                            setTier(null);
+                                        }}
+                                    >
+                                        <Image source={MENU_ICONS[GOAL_ICON[g.goal]]} style={styles.tabIcon} tintColor={goal === g.goal ? colors.accentInk : colors.body} contentFit="contain" accessibilityElementsHidden />
+                                        <Text style={[styles.tabText, goal === g.goal && styles.tabTextOn]} numberOfLines={1}>{t(SHORT_GOAL[g.goal])}</Text>
+                                    </Pressable>
+                                ))}
+                            </View>
+                            <Text style={styles.explainer}>{t('create.goalExplainer')}</Text>
+
+                            <View style={styles.sectionTop}>
+                                <Text style={styles.sectionLabel}>{t('create.model')}</Text>
+                                <View style={styles.live}><View style={styles.liveDot} /><Text style={styles.liveText}>{t('create.livePrices')}</Text></View>
+                            </View>
+                            <View style={styles.tiers} accessibilityLabel={t('create.tierLabel')}>
+                                {[null, ...TIERS].map((x) => (
+                                    <Pressable key={x ?? 'all'} accessibilityRole="button" accessibilityState={selectedState(tier === x)} style={[styles.tierChip, touchTarget, tier === x && styles.tabOn]} onPress={() => setTier(x)}>
+                                        <Text style={[styles.tabText, tier === x && styles.tabTextOn]}>{t(`create.tier.${x ?? 'all'}`)}</Text>
+                                    </Pressable>
+                                ))}
+                            </View>
+                            <Text style={styles.explainer}>{t('create.priceExplainer')}</Text>
+                            <FreeAllowanceCard models={models} left={freeLeft} />
+                            {(goal === 'video' || goal === 'all') && agent ? (
+                                <Pressable accessibilityRole="button" style={({ pressed }) => [styles.row, styles.agentRow, pressed && styles.entryPressed]} onPress={() => router.push('/create/agent')}>
+                                    <View style={styles.agentText}>
+                                        <Text style={styles.modality}>{t('create.videoAgent')}</Text>
+                                        <Text style={styles.name}>{t('create.agentTitle')}</Text>
+                                        <Text style={styles.muted}>{t('create.agentHint')}</Text>
+                                    </View>
+                                    <Text style={styles.price}>{plural('create.agentFrom', agent.credits)}</Text>
+                                    <Image source={MENU_ICONS.caretRight} style={styles.caret} tintColor={colors.muted} contentFit="contain" accessibilityElementsHidden />
+                                </Pressable>
+                            ) : null}
+                        </View>
                     }
                     keyExtractor={(m) => m.id}
                     ListEmptyComponent={<Text style={styles.muted}>{t('create.noModels', { kind: kindWord })}</Text>}
-                    renderItem={({ item }) => (
-                        <Pressable accessibilityRole="button" style={styles.row} onPress={() => router.push({ pathname: '/create/[modelId]', params: { modelId: item.id } })}>
-                            <Text style={styles.name}>{item.name}</Text>
+                    renderItem={({ item }) => {
+                        const kind = kindOf(item.modality);
+                        return (
+                        <Pressable accessibilityRole="button" style={({ pressed }) => [styles.row, pressed && styles.entryPressed]} onPress={() => router.push({ pathname: '/create/[modelId]', params: { modelId: item.id } })}>
+                            <View style={styles.modelText}>
+                                <Text style={styles.modality}>{kind ? t(SHORT_GOAL[kind]).toUpperCase() : item.modality.toUpperCase()}</Text>
+                                <Text style={styles.name}>{item.name}</Text>
+                            </View>
                             {freeLeftFor(freeLeft, item.id) > 0 ? (
                                 <Text style={styles.free} accessibilityLabel={t('create.freeLeftLabel', { name: item.name, count: String(freeLeftFor(freeLeft, item.id)) })}>
                                     {plural('create.freeLeft', freeLeftFor(freeLeft, item.id))}
@@ -121,7 +155,7 @@ export default function Create() {
                             )}
                             <Image source={MENU_ICONS.caretRight} style={styles.caret} tintColor={colors.muted} contentFit="contain" accessibilityElementsHidden />
                         </Pressable>
-                    )}
+                    );}}
                 />
             )}
         </View>
@@ -130,27 +164,44 @@ export default function Create() {
 
 const styles = StyleSheet.create({
     // The mascot sits in the bottom corner of every tab; the last row scrolls clear of it.
-    list: { paddingBottom: VEY_CLEARANCE },
-    screen: { flex: 1, backgroundColor: colors.background, padding: 16, gap: 12 },
-    entries: { flexDirection: 'row', gap: 8 },
-    entry: { flex: 1, alignItems: 'center', gap: 6, paddingVertical: 14, paddingHorizontal: 4, borderRadius: 12, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
-    entryPressed: { opacity: 0.7 },
-    entryIcon: { width: 28, height: 28 },
-    entryText: { color: colors.text, fontSize: 12, fontWeight: '600', textAlign: 'center' },
+    list: { padding: 16, paddingTop: 24, paddingBottom: VEY_CLEARANCE, gap: 10 },
+    body: { padding: 16 },
+    screen: { flex: 1, backgroundColor: colors.background },
+    header: { gap: 12, marginBottom: 4 },
+    intro: { gap: 6, marginBottom: 8 },
+    eyebrow: { color: colors.muted, fontSize: 10, fontWeight: '800', letterSpacing: 1.6 },
+    heading: { color: colors.text, fontFamily: fonts.displayHeavy, fontSize: 40, lineHeight: 42, letterSpacing: -1.2 },
+    introText: { color: colors.body, fontSize: 16, lineHeight: 24, maxWidth: 520 },
+    sectionTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
+    sectionLabel: { color: colors.text, fontSize: 11, fontWeight: '800', letterSpacing: 1.4 },
+    sectionMeta: { color: colors.muted, fontSize: 11, fontWeight: '700' },
+    entries: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 8 },
+    entry: { width: '48.7%', minHeight: 58, flexDirection: 'row', alignItems: 'center', gap: 9, padding: 10, borderRadius: 13, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
+    entryPressed: { opacity: 0.76, transform: [{ scale: 0.992 }] },
+    entryIconBox: { width: 34, height: 34, borderRadius: 10, backgroundColor: colors.accentSoft, alignItems: 'center', justifyContent: 'center' },
+    entryIcon: { width: 19, height: 19 },
+    entryText: { color: colors.text, fontSize: 13, fontWeight: '700', flex: 1 },
+    entryArrow: { color: colors.muted, fontSize: 20 },
     tabIcon: { width: 20, height: 20 },
     tabs: { flexDirection: 'row', gap: 8 },
-    tab: { flex: 1, minHeight: 44, gap: 4, justifyContent: 'center', paddingVertical: 10, paddingHorizontal: 2, borderRadius: 10, alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
+    tab: { flex: 1, minHeight: 58, gap: 4, justifyContent: 'center', paddingVertical: 8, paddingHorizontal: 2, borderRadius: 12, alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
     tabOn: { backgroundColor: colors.accent, borderColor: colors.accent },
     tiers: { flexDirection: 'row', gap: 8 },
-    tierChip: { flex: 1, paddingHorizontal: 8, borderRadius: 10, alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
+    tierChip: { flex: 1, minHeight: 40, paddingHorizontal: 8, borderRadius: 999, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
+    live: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.accent },
+    liveText: { color: colors.accent, fontSize: 10, fontWeight: '800', letterSpacing: 1.1 },
+    explainer: { color: colors.muted, fontSize: 12, lineHeight: 18 },
     free: { color: colors.accent, fontWeight: '700' },
     tabText: { color: colors.body, fontWeight: '600' },
     tabTextOn: { color: colors.accentInk },
-    row: { alignItems: 'center', paddingVertical: 16, borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
-    name: { color: colors.text, fontSize: 16, flexShrink: 1, flex: 1 },
+    row: { minHeight: 76, alignItems: 'center', padding: 14, borderRadius: 14, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, flexDirection: 'row', justifyContent: 'space-between', gap: 12, marginTop: 2 },
+    agentRow: { borderColor: colors.accent },
+    modelText: { flex: 1, gap: 4 },
+    modality: { color: colors.muted, fontSize: 9, fontWeight: '800', letterSpacing: 1.2 },
+    name: { color: colors.text, fontSize: 16, fontWeight: '700', flexShrink: 1 },
     price: { color: colors.money, fontSize: 14, fontWeight: '600', backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, overflow: 'hidden' },
     caret: { width: 14, height: 14 },
-    heading: { color: colors.text, fontFamily: fonts.display, fontSize: 26 },
     muted: { color: colors.muted },
     agentText: { flexShrink: 1, gap: 2 },
     error: { color: colors.danger },

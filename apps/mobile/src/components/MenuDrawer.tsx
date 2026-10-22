@@ -9,7 +9,7 @@ import { HEADER_MAX_FONT_SCALE, MIN_TARGET } from '../lib/a11y';
 import { t } from '../lib/i18n';
 import { HOME_ICON, MENU_SECTIONS, activeItemKey } from '../lib/menu';
 import { MENU_ICONS, type MenuIcon } from '../lib/menuIcons';
-import { colors } from '../theme';
+import { colors, type Palette } from '../theme';
 import { Logo } from './Logo';
 
 const DRAWER_MAX = 320;
@@ -17,15 +17,15 @@ const DRAWER_MAX = 320;
 // The hamburger in the tab header. It opens a left drawer shaped like the web app's sidebar: your account on top, then
 // the grouped menu with an icon on every row and the current screen lit. Plain React Native (Modal and Animated) and
 // image assets, so it needs no native module and no rebuild.
-export function MenuButton() {
+export function MenuButton({ palette = colors }: { palette?: Palette }) {
     const [open, setOpen] = useState(false);
     return (
         <>
             <Pressable accessibilityRole="button" accessibilityLabel={t('menu.open')} style={styles.hit} onPress={() => setOpen(true)}>
                 <View style={styles.bars}>
-                    <View style={styles.bar} />
-                    <View style={styles.bar} />
-                    <View style={styles.bar} />
+                    <View style={[styles.bar, { backgroundColor: palette.text }]} />
+                    <View style={[styles.bar, { backgroundColor: palette.text }]} />
+                    <View style={[styles.bar, { backgroundColor: palette.text }]} />
                 </View>
             </Pressable>
             <MenuDrawer open={open} onClose={() => setOpen(false)} />
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
     list: { paddingHorizontal: 8, paddingTop: 8, paddingBottom: 24 },
     hit: { minWidth: MIN_TARGET, minHeight: MIN_TARGET, alignItems: 'center', justifyContent: 'center' },
     bars: { gap: 4 },
-    bar: { width: 20, height: 2, borderRadius: 1, backgroundColor: colors.text },
+    bar: { width: 20, height: 2, borderRadius: 1 },
     heading: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: MIN_TARGET, paddingHorizontal: 12, marginTop: 8 },
     headingText: { color: colors.muted, fontSize: 11, fontWeight: '700', letterSpacing: 1.6 },
     grid: { flexDirection: 'row', flexWrap: 'wrap' },

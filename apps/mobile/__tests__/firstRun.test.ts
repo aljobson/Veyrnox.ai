@@ -45,6 +45,36 @@ describe('the cards', () => {
 });
 
 describe('where the welcome shows', () => {
+    test('the colorful creation promise begins on sign-in and continues through first run', () => {
+        const signIn = read('app', 'sign-in.tsx');
+        const copy = read('lib', 'i18n', 'messages', 'en', 'signIn.ts');
+        expect(signIn).toContain('styles.promisePhoto');
+        expect(signIn).toContain('styles.promiseVideo');
+        expect(signIn).toContain('styles.promiseIdea');
+        expect(signIn).toContain('agreed && styles.agreeOn');
+        expect(copy).toContain("'signIn.title': 'Start with something real.'");
+        expect(copy).toContain('photo, video, reference or idea');
+    });
+
+    test('email authentication keeps the same visual momentum', () => {
+        const email = read('app', 'email.tsx');
+        const copy = read('lib', 'i18n', 'messages', 'en', 'email.ts');
+        expect(email).toContain('styles.modeSignIn');
+        expect(email).toContain('styles.modeSignUp');
+        expect(email).toContain("focused === 'email' && styles.emailShellOn");
+        expect(email).toContain("focused === 'password' && styles.passwordShellOn");
+        expect(email).toContain('styles.securityReady');
+        expect(email).toContain('retrySecurityCheck');
+        expect(email).toContain('passwordVisible');
+        expect(email).toContain('keyboardDismissMode="interactive"');
+        expect(email).toContain("signInWithOAuth('google')");
+        expect(email).toContain('signInWithApple()');
+        expect(email).toContain('styles.providerApple');
+        expect(copy).toContain("'email.orUseEmail': 'Or continue with email'");
+        expect(copy).toContain("'email.signInCta': 'Sign in and start creating'");
+        expect(copy).toContain("'email.signUpCta': 'Create account and continue'");
+    });
+
     test('the signed-in layout sends a first-time person to it, and the screen records it was seen', () => {
         expect(read('app', '(app)', '_layout.tsx')).toContain('FirstRunGate');
         const gate = read('components', 'FirstRunGate.tsx');

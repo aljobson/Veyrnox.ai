@@ -15,9 +15,7 @@ describe('the Oddlings banner on Explore', () => {
 
     test('reads as a button with a name and a hint, not a bare image', () => {
         expect(explore).toContain("t('explore.oddlings.title')");
-        // The row component turns `hint` into the accessibilityHint of one button, with the title as its label.
-        expect(explore).toContain("hint={t('explore.oddlings.hint')}");
-        expect(explore).toContain('accessibilityHint={hint}');
-        expect(explore).toContain('accessibilityLabel={title}');
+        expect(explore).toContain("accessibilityHint={t('explore.oddlings.hint')}");
+        expect(explore).toContain("accessibilityLabel={t('explore.oddlings.title')}");
     });
 });
