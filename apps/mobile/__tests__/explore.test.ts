@@ -113,9 +113,9 @@ describe('a template tap', () => {
     test('opens Create on its model with the prompt, and the length when it has one', () => {
         expect(presetHref({ ...preset('a', 'X'), modelId: 'kling-3', prompt: 'orbit', durationSeconds: 10 })).toEqual({
             pathname: '/create/[modelId]',
-            params: { modelId: 'kling-3', prompt: 'orbit', duration: '10' },
+            params: { modelId: 'kling-3', prompt: 'orbit', duration: '10', tpl: 'a' },
         });
-        expect(presetHref({ ...preset('a', 'X'), modelId: 'nano-banana', prompt: 'fox' }).params).toEqual({ modelId: 'nano-banana', prompt: 'fox' });
+        expect(presetHref({ ...preset('a', 'X'), modelId: 'nano-banana', prompt: 'fox' }).params).toEqual({ modelId: 'nano-banana', prompt: 'fox', tpl: 'a' });
     });
 
     test('routes an unavailable template to the clear unavailable state', () => {

@@ -100,3 +100,9 @@ describe('the builder', () => {
         expect(oddlingIdentity({ oddling_name: 'Ada' })).toEqual(['fictional creator named Ada']);
     });
 });
+
+// Deliberate phone-only exception: lone surrogates are repaired until web parity.
+// All 72 reference cases and every non-surrogate messy case above remain unchanged.
+test('phone repairs lone-surrogate input instead of preserving the web code unit', () => {
+    expect(sanitizePicks({ oddling_name: 'Pip\uD800' }).oddling_name).toBe('Pip\uFFFD');
+});

@@ -3,8 +3,11 @@ import { OPEN_GRAPH_BASE } from '../../seo';
 import { MarketingNav } from '../_components/NavBar';
 import { Main } from '../_components/Main';
 import { getT } from '../../../lib/i18n/server';
+import { appMessagesFor } from '../../../lib/i18n/appMessages.mjs';
+import { localeTag } from '../../../lib/i18n/locales.mjs';
 import { pageAlternates, openGraphLocale } from '../../../lib/i18n/metadata.mjs';
 import { rich } from '../../../lib/i18n/rich';
+import { translator } from '../../../lib/i18n/translate.mjs';
 
 export async function generateMetadata() {
   const { locale, t } = await getT();
@@ -22,20 +25,21 @@ export async function generateMetadata() {
 const MONDAY_TIMES = ['09:00', '09:01', '09:02', '09:02'];
 const FEATURE_COUNT = 10;
 const FAQ_COUNT = 5;
-const PLAN_ROWS = ['rowPrice', 'rowAccounts', 'rowPostNow', 'rowScheduling', 'rowAnalytics'];
+const PUBLISH_PLAN_FEATURES = ['accountsFeature', 'multiFeature', 'fairFeature', 'calendarFeature', 'historyFeature', 'csvFeature', 'recommendFeature', 'inboxFeature', 'commentsFeature'];
+const PUBLISH_PLANS = [
+  { id: 'publish-weekly', billingInterval: 'week', priceUsdCents: 499 },
+  { id: 'publish', billingInterval: 'month', priceUsdCents: 1500 },
+  { id: 'publish-annual', billingInterval: 'year', priceUsdCents: 12600, bestValue: true },
+];
 const link = 'font-bold underline underline-offset-4 hover:text-vx-accent';
 const button = 'inline-block border-2 border-vx-fg px-6 py-3 font-black hover:text-vx-accent';
+const planButton = 'mt-auto block w-full border-2 border-vx-fg px-4 py-3 text-center text-sm font-black hover:border-vx-accent hover:text-vx-accent';
 
 export default async function PublishPage() {
-  const { t } = await getT();
+  const { locale, t: publicT } = await getT();
+  const t = translator(locale, { ...publicT.messages, ...await appMessagesFor(locale) });
+  const money = new Intl.NumberFormat(localeTag(locale, 'en-US'), { style: 'currency', currency: 'USD' });
   const range = (count) => Array.from({ length: count }, (_, i) => i + 1);
-  const planCells = {
-    rowPrice: ['$0', `$15 ${t('publish.plan.perMonth')}`],
-    rowAccounts: ['1', '5'],
-    rowPostNow: [t('publish.plan.yes'), t('publish.plan.yes')],
-    rowScheduling: [t('publish.plan.no'), t('publish.plan.yes')],
-    rowAnalytics: [t('publish.plan.basic'), t('publish.plan.analyticsPaid')],
-  };
   return (
     <div className="min-h-dvh">
       <MarketingNav />
@@ -82,26 +86,37 @@ export default async function PublishPage() {
 
           <section className="mt-20 border-t-2 border-vx-fg pt-6" aria-labelledby="plans">
             <h2 id="plans" className="text-2xl font-black">{t('publish.plan.title')}</h2>
-            <div className="mt-6 overflow-x-auto">
-              <table className="w-full min-w-[480px] border-t border-vx-border text-start">
-                <thead>
-                  <tr className="border-b border-vx-border">
-                    <th scope="col" className="py-3 pe-4"><span className="sr-only">{t('publish.plan.title')}</span></th>
-                    <th scope="col" className="py-3 pe-4 text-start font-black">{t('publish.plan.colFree')}</th>
-                    <th scope="col" className="py-3 text-start font-black">{t('publish.plan.colPlan')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {PLAN_ROWS.map((row) => (
-                    <tr key={row} className="border-b border-vx-border">
-                      <th scope="row" className="py-3 pe-4 text-start font-normal text-vx-fg-muted">{t(`publish.plan.${row}`)}</th>
-                      <td className="py-3 pe-4 text-vx-fg-body">{planCells[row][0]}</td>
-                      <td className="py-3 text-vx-fg-body">{planCells[row][1]}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <ul className="mt-6 grid gap-4 md:grid-cols-2">
+              <li className="flex flex-col border border-vx-border p-6">
+                <p className="font-vx-mono text-[12px] font-bold uppercase tracking-[0.16em] text-vx-fg-muted">{t('publish.plan.colFree')}</p>
+                <h3 className="mt-3 text-[44px] font-black leading-none">{money.format(0)}</h3>
+                <p className="mt-3 text-sm text-vx-fg-muted">{t('app.publish.plan.freeIncluded')}</p>
+                <ul className="my-6 space-y-3 border-t border-vx-border pt-5 text-sm text-vx-fg-body">
+                  <li><strong className="text-vx-fg">{t('publish.plan.rowAccounts')}:</strong> 1</li>
+                  <li><strong className="text-vx-fg">{t('publish.plan.rowPostNow')}:</strong> {t('publish.plan.yes')}</li>
+                  <li><strong className="text-vx-fg">{t('publish.plan.rowScheduling')}:</strong> {t('publish.plan.no')}</li>
+                  <li><strong className="text-vx-fg">{t('publish.plan.rowAnalytics')}:</strong> {t('publish.plan.basic')}</li>
+                </ul>
+                <Link href="/app/publish" className={planButton}>{t('publish.cta')}</Link>
+              </li>
+              {PUBLISH_PLANS.map((plan) => (
+                <li key={plan.id} className={`flex flex-col border p-6 ${plan.bestValue ? 'border-vx-accent' : 'border-vx-border'}`}>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-vx-mono text-[12px] font-bold uppercase tracking-[0.16em] text-vx-accent">{t(`app.publish.plan.cadence.${plan.billingInterval}`)}</p>
+                    {plan.bestValue && <span className="bg-vx-accent px-2.5 py-1 text-[0.65rem] font-black uppercase tracking-wide text-black">{t('app.publish.plan.save')}</span>}
+                  </div>
+                  <h3 className="mt-3 text-[44px] font-black leading-none">{money.format(plan.priceUsdCents / 100)}<span className="text-base font-normal text-vx-fg-muted"> / {t(`app.publish.plan.interval.${plan.billingInterval}`)}</span></h3>
+                  {plan.bestValue
+                    ? <p className="mt-3 text-xs text-vx-fg-muted">{t('app.publish.plan.equivalent', { price: money.format(plan.priceUsdCents / 1200) })}</p>
+                    : <p className="mt-3 text-xs text-vx-fg-muted">{t('app.publish.plan.billing')}</p>}
+                  <ul className="my-6 space-y-2.5 border-t border-vx-border pt-5 text-[13px] text-vx-fg-body">
+                    {PUBLISH_PLAN_FEATURES.map((feature) => <li key={feature}>{t(`app.publish.plan.${feature}`)}</li>)}
+                  </ul>
+                  <Link href="/app/publish/plan" className={planButton}>{t('app.publish.plan.choose', { interval: t(`app.publish.plan.cadence.${plan.billingInterval}`) })}</Link>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-5 text-sm text-vx-fg-muted">{t('app.publish.plan.billing')}</p>
             <p className="mt-4 text-vx-fg-body leading-[1.65]">
               {rich(t('publish.plan.note'), { pricing: <Link className={link} href="/pricing">{t('publish.plan.noteLink')}</Link> })}
             </p>

@@ -2,11 +2,11 @@
 import { tOr } from '../../../../lib/i18n/translate.mjs';
 import { localeTag } from '../../../../lib/i18n/locales.mjs';
 import { useI18n } from '../../../../components/I18nProvider';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { getStoredUserId, onSessionChange } from '../../../lib/authClient';
 import { FILM_STAGES, accessibleStage, emptyFilm, filmFromTemplate, stageIssues } from '../../_lib/filmStudio';
-import { readFilm, writeFilm } from '../../_lib/filmStudioStorage';
+import { writeWorkspace } from '../../_lib/filmStudioStorage';
 import { useCatalog } from '../../_lib/useCatalog';
 import { FilmIssues } from './FilmFields';
 import { FilmInit, FilmSetup } from './FilmSetup';
@@ -14,6 +14,8 @@ import { FilmBreakdown } from './FilmBreakdown';
 import { FilmBoards } from './FilmBoards';
 import { FilmPassports } from './FilmPassports';
 import { FilmFiles } from './FilmFiles';
+import { FilmCloud } from './FilmCloud';
+import { sessionLoadPatch, replaceWorkspaceFilm, pendingVisible, persistenceFailurePatch } from '../../_lib/filmStudioCloud';
 import { FilmTests } from './FilmTests';
 import { FilmPrompts } from './FilmPrompts';
 import { filmStudioStore } from '../../_lib/filmStudioStore';
@@ -22,7 +24,7 @@ import { modelIdForName, presetTitle, templateById, templateHref } from '../../_
 import { SHOWCASE_CLIPS } from '../../_lib/showcase';
 
 const storage = () => { try { return window.localStorage; } catch { return null; } };
-const serverState={film:emptyFilm(),stage:0,ready:false,userId:null,error:null,saved:false};
+const serverState={film:emptyFilm(),stage:0,ready:false,userId:null,error:null,saved:false,cloud:null,generation:0,pending:null};
 const seededFilm = starter => filmFromTemplate(starter, modelIdForName(starter.model) || '');
 
 function SelectedTemplate({ templateId, targetSeconds, pending = false }) {
@@ -42,36 +44,56 @@ function SelectedTemplate({ templateId, targetSeconds, pending = false }) {
     </div>
   </div>;
 }
-export function FilmWorkspace() {
+export function FilmWorkspace({cloud=false}) {
   const { t, locale } = useI18n();
   const number = n => locale === 'en' ? String(n) : Number(n).toLocaleString(localeTag(locale));
   const [state,setState]=useState(serverState);
-  const [pendingStarter,setPendingStarter]=useState(null);
-  const {film,stage,ready,userId,error,saved}=state;
+  const {film,stage,ready,userId,error,saved,generation}=state;
+  const pendingStarter=pendingVisible(state)?state.pending.starter:null;
   useEffect(()=>{
     const sync=()=>setState(filmStudioStore.getState());
     const stop=filmStudioStore.subscribe(sync);sync();return stop;
   },[]);
   const setStage=stage=>filmStudioStore.set({stage});
   const {models,live} = useCatalog();
+  const persist = useCallback(({linkOnly=false}={}) => {
+    const current=filmStudioStore.getState();
+    try {
+      const saved=writeWorkspace(storage(),current.userId,current.film,cloud?current.cloud:null);
+      if(!linkOnly) filmStudioStore.set({saved,error:null});
+      return saved;
+    }
+    catch { filmStudioStore.set({...persistenceFailurePatch(),error:t("app.film.workspace.saveFailed")}); return false; }
+  },[cloud,t]);
+  const replaceFilm = useCallback((next,link=null) => {
+    filmStudioStore.set(replaceWorkspaceFilm(filmStudioStore.getState(),next,link));
+    persist();
+  },[persist]);
   useEffect(()=>{
     const load = (force=false) => {
-      const id=getStoredUserId(); const loaded=readFilm(storage(),id);
+      const id=getStoredUserId(); const prev=filmStudioStore.getState();
+      if(cloud&&force&&prev.ready&&prev.userId===id) return;
+      const patch=sessionLoadPatch(storage(),id,prev,cloud);
       const starter=takeFilmStarter(window.sessionStorage);
+      if(!force&&prev.ready&&prev.userId===id) {
+        if(starter) {
+          const blank=!prev.film.name&&!prev.film.script&&!prev.film.shots.length;
+          if(blank) replaceFilm(seededFilm(starter),null);
+          else filmStudioStore.set({pending:{userId:id,generation:prev.generation,starter}});
+        }
+        return;
+      }
+      filmStudioStore.set(patch);
+      const loaded=filmStudioStore.getState();
       const blank=!loaded.film.name&&!loaded.film.script&&!loaded.film.shots.length;
-      if(starter&&blank){
-        loaded.film=seededFilm(starter);
-        try { if(id) writeFilm(storage(),id,loaded.film); } catch { /* The seeded project still works in memory. */ }
-      } else if(starter) setPendingStarter(starter);
-      if(!force&&filmStudioStore.getState().ready&&filmStudioStore.getState().userId===id) {filmStudioStore.set({ready:true});return;}
-      filmStudioStore.set({userId:id,film:loaded.film,error:loaded.error,saved:!!id&&!loaded.error,stage:accessibleStage(loaded.film),ready:true});
+      if(starter&&blank) replaceFilm(seededFilm(starter),null);
+      else if(starter) filmStudioStore.set({pending:{userId:id,generation:loaded.generation,starter}});
     };
     load(); return onSessionChange(()=>load(true));
-  },[]);
+  },[cloud,replaceFilm]);
   const update = next => {
     filmStudioStore.set({film:next,saved:false,error:null});
-    try { filmStudioStore.set({saved:writeFilm(storage(),userId,next)}); }
-    catch { filmStudioStore.set({error:t("app.film.workspace.saveFailed")}); }
+    persist();
   };
   const available=accessibleStage(film), current=Math.min(stage,available);
   const issues=stageIssues(film,current);
@@ -92,17 +114,18 @@ export function FilmWorkspace() {
         </ol>
       </section>
       <p role="status" className="mt-3 text-xs text-vx-fg-muted">{saved?t("app.film.workspace.saved"):userId?t("app.film.workspace.unsaved"):t("app.film.workspace.signIn")}</p>
-      <FilmFiles film={film} onImport={next=>{update(next);setStage(accessibleStage(next));}}/>
+      {cloud&&userId&&<FilmCloud key={userId} state={state} replaceFilm={replaceFilm} persist={persist}/>}
+      <FilmFiles key={generation} film={film} onImport={next=>replaceFilm(next,null)}/>
     </header>
     {error&&<p role="alert" className="mb-5 text-sm text-vx-danger">{error}</p>}
     {film.templateId&&<SelectedTemplate templateId={film.templateId} targetSeconds={film.targetSeconds}/>}
-    {pendingStarter&&<div className="mb-5 rounded-xl border border-vx-accent p-4 text-sm"><p className="font-bold">{t('app.film.workspace.pending', { count: number(pendingStarter.targetSeconds) })}</p><p className="mt-1 text-vx-fg-muted">{t("app.film.workspace.keepCopy")}</p><SelectedTemplate templateId={pendingStarter.templateId} targetSeconds={pendingStarter.targetSeconds} pending/><button type="button" className="mt-3 rounded-full bg-vx-accent px-4 py-2 font-bold text-vx-accent-ink" onClick={()=>{update(seededFilm(pendingStarter));setStage(0);setPendingStarter(null);}}>{t("app.film.workspace.start")}</button></div>}
+    {pendingStarter&&<div className="mb-5 rounded-xl border border-vx-accent p-4 text-sm"><p className="font-bold">{t('app.film.workspace.pending', { count: number(pendingStarter.targetSeconds) })}</p><p className="mt-1 text-vx-fg-muted">{t("app.film.workspace.keepCopy")}</p><SelectedTemplate templateId={pendingStarter.templateId} targetSeconds={pendingStarter.targetSeconds} pending/><button type="button" className="mt-3 rounded-full bg-vx-accent px-4 py-2 font-bold text-vx-accent-ink" onClick={()=>{replaceFilm(seededFilm(pendingStarter),null);setStage(0);}}>{t("app.film.workspace.start")}</button></div>}
     <div className="grid items-start gap-7 lg:grid-cols-[240px_minmax(0,1fr)]">
       <nav data-assistant-target="film.stages" aria-label={t("label.Film Studio stages")}><ol className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">{FILM_STAGES.map(([id,title],i)=><li key={id}>
         <button type="button" onClick={()=>setStage(i)} disabled={i>available} aria-current={i===current?'step':undefined} className={`w-full rounded-xl border p-3 text-start text-sm disabled:opacity-40 ${i===current?'border-vx-accent bg-vx-panel':'border-vx-border'}`}>
           <span className="me-2 font-vx-mono">{number(i+1)}.</span>{tOr(t, `app.film.workspace.stage.${id}`, title)}<span className="mt-1 block text-xs text-vx-fg-muted">{i<available?t("app.film.workspace.ready"):i===available?t("app.film.workspace.progress"):t("app.film.workspace.earlier")}</span>
         </button></li>)}</ol></nav>
-      <section aria-label={tOr(t, `app.film.workspace.stage.${FILM_STAGES[current][0]}`, FILM_STAGES[current][1])} className="min-w-0 rounded-2xl border border-vx-border p-5 sm:p-7">
+      <section key={generation} aria-label={tOr(t, `app.film.workspace.stage.${FILM_STAGES[current][0]}`, FILM_STAGES[current][1])} className="min-w-0 rounded-2xl border border-vx-border p-5 sm:p-7">
         <h2 className="mb-5 text-xl font-bold">{number(current+1)}. {tOr(t, `app.film.workspace.stage.${FILM_STAGES[current][0]}`, FILM_STAGES[current][1])}</h2>
         <Link href={`/app/chat?skill=${['film-setup','film-studio-init','film-breakdown','film-reference-board','film-asset-passport','film-stress-test','film-shot-prompt'][current]}`} className="mb-5 inline-block text-sm font-semibold text-vx-accent">{t("app.film.workspace.help")}</Link>
         {current===0&&<FilmSetup film={film} update={update} models={models}/>}

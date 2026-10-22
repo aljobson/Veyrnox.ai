@@ -92,6 +92,27 @@ export async function gatewayFetch(path, init = {}, brandRetried = false, brandS
   }
   if (res.status === 429) {
     const retryAfter = Math.max(1, Number(res.headers.get('retry-after')) || 60);
+    let limitReached = false;
+    try {
+      const reader = res.clone().body?.getReader();
+      if (reader) {
+        const decoder = new TextDecoder();
+        let text = '';
+        try {
+          while (text.length <= 4096) {
+            const { value, done } = await reader.read();
+            text += done ? decoder.decode() : decoder.decode(value, { stream: true });
+            if (done) {
+              limitReached = text.length <= 4096 && JSON.parse(text)?.error?.code === 'LIMIT_REACHED';
+              break;
+            }
+          }
+        } finally { void reader.cancel().catch(() => {}); reader.releaseLock(); }
+      }
+    } catch { /* Preserve the existing throttle response for unreadable bodies. */ }
+    assertCurrentAccount();
+    assertCurrentBrand();
+    if (limitReached) throw new GatewayError('limit_reached', { status: 429, code: 'limit_reached', retryAfter });
     throw new GatewayError('rate_limited', { status: 429, code: 'rate_limited', retryAfter });
   }
 
