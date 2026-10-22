@@ -245,7 +245,6 @@ export default function CreateWithModel() {
                 {hasAnyOption(options) || takesImageCount(model) ? <CreateOptions options={options} values={opts} showCount={takesImageCount(model)} resolution={resolution} audio={audio} outputPrice={plural('opt.outputPriceSame', unit)} onChange={setOpts} /> : null}
                 {takesCharacter ? <CharacterPanel on={characterOn} picks={character} onToggle={setCharacterOn} onChange={setCharacter} /> : null}
                 {takesCamera ? <CameraPanel on={cameraOn} value={cinema} onToggle={setCameraOn} onChange={setCinema} /> : null}
-                <Text style={styles.price} accessibilityLiveRegion="polite">{costLine(price, n, freeLeft, unit)}</Text>
                 {missing > 0 ? (
                     <View style={styles.short} accessibilityLiveRegion="polite">
                         <Text style={styles.shortText}>{plural('create.short', missing, { have: String(balance ?? 0), need: String(price) })}</Text>
@@ -259,6 +258,7 @@ export default function CreateWithModel() {
                 <Pressable accessibilityRole="button" accessibilityLabel={generateLabel} accessibilityState={{ busy, disabled: !ready || busy || missing > 0 }} disabled={!ready || busy || missing > 0} style={[styles.button, (!ready || busy || missing > 0) && styles.off]} onPress={generate}>
                     {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>{n > 1 ? t('opt.generateCount', { count: String(n) }) : t('slip.generate')}</Text>}
                 </Pressable>
+                <Text style={styles.price} accessibilityLiveRegion="polite">{costLine(price, n, freeLeft, unit)}</Text>
             </ScrollView>
         </KeyboardAvoidingView>
     );
@@ -276,13 +276,13 @@ const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
     body: { padding: 16, gap: 14 },
     topic: { minHeight: 90 },
-    prompt: { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 14, fontSize: 16, minHeight: 140, textAlignVertical: 'top' },
+    prompt: { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 14, fontSize: 16, minHeight: 120, textAlignVertical: 'top' },
     chips: { flexDirection: 'row', gap: 8 },
     chip: { minHeight: 44, justifyContent: 'center', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 10, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
     chipOn: { backgroundColor: colors.accent, borderColor: colors.accent },
     chipText: { color: colors.body, fontWeight: '600' },
     chipTextOn: { color: colors.accentInk },
-    price: { color: colors.money },
+    price: { color: colors.muted, fontSize: 13, textAlign: 'center' },
     short: { backgroundColor: colors.surface, borderColor: colors.money, borderWidth: 1, borderRadius: 12, padding: 14, gap: 4 },
     shortText: { color: colors.body, fontSize: 15, lineHeight: 22 },
     shortBuy: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },

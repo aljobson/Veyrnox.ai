@@ -61,10 +61,10 @@ function Action({ label, onPress, disabled }: { readonly label: string; readonly
 }
 
 const styles = StyleSheet.create({
-    box: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 14, gap: 10 },
+    box: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 8, gap: 8 },
     head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', minHeight: MIN_TARGET },
     title: { color: colors.text, fontWeight: '600', fontSize: 16 },
-    muted: { color: colors.muted, fontSize: 12 },
+    muted: { color: colors.muted, fontSize: 12, marginTop: -6, paddingBottom: 6 },
     count: { color: colors.body, fontSize: 14 },
     actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     action: { minHeight: MIN_TARGET, justifyContent: 'center', paddingHorizontal: 14, borderRadius: 22, borderWidth: 1, borderColor: colors.borderStrong, backgroundColor: colors.background },
