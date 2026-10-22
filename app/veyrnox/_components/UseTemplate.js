@@ -8,13 +8,13 @@ import { writeTemplateChatDraft } from '../_lib/chatTemplateDraft';
 import { useCatalog } from '../_lib/useCatalog';
 import { writeFilmStarter } from '../_lib/filmTemplateDraft';
 import { writeStudioDraft } from '../_lib/landingDraft';
-import { ASPECT_RATIOS, modelIdForName, presetCredits, presetHref } from '../_lib/tokens';
+import { modelAspectRatios, modelIdForName, presetCredits, presetHref } from '../_lib/tokens';
 
 // The aspect the studio will actually use: the template's, when its model
 // takes it (same rule as app/create), otherwise none is shown or sent.
 function usableAspect(preset, model) {
   if (!preset.aspect || !model) return null;
-  const options = model.aspects ? ASPECT_RATIOS.filter((a) => model.aspects.includes(a)) : [];
+  const options = modelAspectRatios(model);
   return options.includes(preset.aspect) ? preset.aspect : null;
 }
 

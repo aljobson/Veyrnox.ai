@@ -35,7 +35,7 @@ function harness(initialJobs, selected = audio) {
     '../../_lib/useCreateDraftRecovery': { __esModule: true, default: () => ({ restoring: false, blocked: false, failed: false, saved: false, status: '', retry() {}, sourceEdited() {} }) },
     '../../_lib/useFreeAllowance': { useFreeAllowance: () => ({}) },
     '../../_lib/useStudioJobs': { useStudioJobs: () => ({ jobs, generating: jobs.some(job => ['queued', 'running'].includes(job.state)), clearJobs: () => { cleared++; jobs = []; } }) },
-    '../../_lib/tokens': { ASPECT_RATIOS: ['16:9', '9:16'] },
+    '../../_lib/tokens': { ASPECT_RATIOS: ['16:9', '9:16'], modelAspectRatios: model => model?.aspects || [] },
     '../../_lib/starterModels': { starterModel: () => image, modelsForGoal: models => models },
     '../../_lib/modelTiers': { TIERS: [], filterByTier: models => models },
     '../../_lib/imageBatch': { imageCount: () => 1, totalCost: cost => cost, takesImageCount: () => false, IMAGE_COUNTS: [] },
@@ -114,7 +114,7 @@ test('New generation remains a non-billable reset if the job finishes before the
 test('every accepted job snapshots submitted presentation before any upload or request', () => {
   const source = readFileSync(new URL('../app/veyrnox/app/create/page.js', import.meta.url), 'utf8');
   const submit = source.slice(source.indexOf('async function onSubmit()'), source.indexOf('function cancel()'));
-  assert.match(submit, /const submittedPresentation = \{ model_name: model\.name, aspect_ratio: isShort \? '9:16' : aspect \};/);
+  assert.match(submit, /const submittedPresentation = \{\s*model_name: model\.name,\s*\.\.\.\(isShort \? \{ aspect_ratio: '9:16' \} : aspectOptions\.length \? \{ aspect_ratio: aspect \} : \{\}\),\s*\};/);
   assert.ok(submit.indexOf('const submittedPresentation') < submit.indexOf('await mediaGenerationSources'));
   assert.match(submit, /model_id: modelId, \.\.\.submittedPresentation/);
 });

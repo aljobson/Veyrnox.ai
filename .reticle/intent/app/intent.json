@@ -1,5 +1,129 @@
 {
   "intents": {
+    "inline:a-compatible-create-goal-filter-keeps-the-exact-434e3730": {
+      "binding": {
+        "kind": "allOf",
+        "predicates": [
+          {
+            "kind": "element",
+            "query": {
+              "testid": "create-goal-video"
+            },
+            "state": "pressed"
+          },
+          {
+            "contains": "TEMPLATE LINKED",
+            "kind": "text"
+          },
+          {
+            "contains": "Studio Slide",
+            "kind": "text"
+          },
+          {
+            "contains": "This preview stays linked as a visual reference; it is not used as your generation source.",
+            "kind": "text"
+          },
+          {
+            "contains": "A clear starting photo showing the subject and setting you want to animate",
+            "kind": "text"
+          },
+          {
+            "kind": "element",
+            "query": {
+              "name": "Kling 3.0 · I2V video 32 cr",
+              "role": "button"
+            },
+            "state": "pressed"
+          },
+          {
+            "kind": "settled",
+            "quietMs": 250
+          }
+        ]
+      },
+      "declaredAt": 1792690489448,
+      "id": "inline:a-compatible-create-goal-filter-keeps-the-exact-434e3730",
+      "provenBy": {
+        "at": 1792690491166,
+        "grade": "presence",
+        "runId": "drive-lease-6fe2f849-8ff9-4a92-9aff-d7be59c7303d",
+        "verdictId": "reticle_act_and_wait:1792690491166"
+      },
+      "state": "proved",
+      "statement": "A compatible Create goal filter keeps the exact linked template, its visual reference, source guidance, and template model instead of silently replacing them.",
+      "status": "proved",
+      "subject": "app",
+      "surface": {
+        "files": [
+          "app/veyrnox/_components/CreateGoalPicker.js"
+        ],
+        "route": "/app/create"
+      },
+      "updatedAt": 1792690491332
+    },
+    "inline:closing-the-expected-signed-out-gate-reveals-the-e29425b4": {
+      "binding": {
+        "absent": true,
+        "kind": "element",
+        "query": {
+          "name": "Sign in to Veyrnox",
+          "role": "dialog"
+        }
+      },
+      "declaredAt": 1792690469815,
+      "id": "inline:closing-the-expected-signed-out-gate-reveals-the-e29425b4",
+      "provenBy": {
+        "at": 1792690473631,
+        "grade": "presence",
+        "runId": "drive-lease-6fe2f849-8ff9-4a92-9aff-d7be59c7303d",
+        "verdictId": "reticle_act_and_wait:1792690473631"
+      },
+      "state": "proved",
+      "statement": "Closing the expected signed-out gate reveals the already staged Create draft without discarding it.",
+      "status": "proved",
+      "subject": "app",
+      "surface": {
+        "files": [
+          "components/AuthGate.jsx"
+        ],
+        "route": "/app/create"
+      },
+      "updatedAt": 1792690474402
+    },
+    "inline:generate-similar-carries-the-selected-template-f-636338c5": {
+      "binding": {
+        "kind": "allOf",
+        "predicates": [
+          {
+            "kind": "route",
+            "pathname": "/app/create"
+          },
+          {
+            "kind": "settled",
+            "quietMs": 250
+          }
+        ]
+      },
+      "declaredAt": 1792690413204,
+      "id": "inline:generate-similar-carries-the-selected-template-f-636338c5",
+      "provenBy": {
+        "at": 1792690416633,
+        "grade": "presence",
+        "runId": "drive-lease-6fe2f849-8ff9-4a92-9aff-d7be59c7303d",
+        "verdictId": "reticle_act_and_wait:1792690416633"
+      },
+      "state": "proved",
+      "statement": "Generate similar carries the selected template from its detail page into Create before any generation.",
+      "status": "proved",
+      "subject": "app",
+      "surface": {
+        "files": [
+          "app/veyrnox/_components/UseTemplate.js"
+        ],
+        "route": "/app/create"
+      },
+      "updatedAt": 1792690416885
+    },
     "inline:guided-workflows-bdf2b5ec": {
       "binding": {
         "contains": "You approve every generation.",
@@ -24,6 +148,28 @@
         "route": "/app/skills"
       },
       "updatedAt": 1792662824574
+    },
+    "inline:starting-a-guided-workflow-carries-its-bounded-s-7abc0877": {
+      "binding": {
+        "kind": "allOf",
+        "predicates": [
+          {
+            "kind": "route",
+            "pathname": "/app/chat"
+          },
+          {
+            "kind": "settled",
+            "quietMs": 250
+          }
+        ]
+      },
+      "declaredAt": 1792690532083,
+      "id": "inline:starting-a-guided-workflow-carries-its-bounded-s-7abc0877",
+      "state": "bound",
+      "statement": "Starting a guided workflow carries its bounded set of multiple skills into LLM Chat without running a generation.",
+      "status": "proposed",
+      "subject": "app",
+      "updatedAt": 1792690532402
     }
   },
   "subject": "app",

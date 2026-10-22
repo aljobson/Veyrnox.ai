@@ -1,6 +1,7 @@
 /**
  * POST /api/v1/chat/threads/:id/messages — send a message, stream the reply (server-sent events).
- * Body: { text, idempotency_key }. The turn itself lives in lib/chatTurn.js (ADR-0067): one job per reply,
+ * Body: { text, idempotency_key, expected_system_prompt? }. The optional prompt is a compare-and-send
+ * guard for a canon-bound chat. The turn itself lives in lib/chatTurn.js (ADR-0067): one job per reply,
  * priced per reply from model_catalog, refunded when it fails.
  *
  * Events: start {job_id, credits, balance_after} · delta {text} · error {error} ·

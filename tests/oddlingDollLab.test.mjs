@@ -28,6 +28,9 @@ test('Create visibly confirms the exact edited Oddling handoff', async () => {
   assert.match(create, /ODDLING LOADED/);
   assert.match(create, /is linked to this generation/);
   assert.match(create, /Review character/);
+  assert.match(create, /\{oddlingTransfer && \(/, 'motion drafts keep a visible read-only passport summary');
+  assert.doesNotMatch(create, /\{oddlingTransfer && model\?\.kind === 'image'/);
+  assert.match(create, /\{model\?\.kind === 'image' && <button/, 'only image drafts offer the editable character-panel jump');
 });
 
 test('balance lookup is gated by a stored session and warns before Create', () => {

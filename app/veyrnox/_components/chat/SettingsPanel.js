@@ -43,7 +43,7 @@ function Toggle({ label, extra, checked, disabled, onChange, hint }) {
 
 // Everything that shapes the next reply, in one place: which model, what it may do, and its instructions. Nothing here is
 // sent until the person sends a message, and the price of the choices always shows under the message box.
-export function SettingsPanel({ models, model, busy, onSelectModel, tiers, onTiers, offer, opts, onOpts, researchOn = false, canSaveInstr, instr, onInstr, instrSaved, onSaveInstr, saved, maxPrompt, hasThread, personasOn = false, personas = [], personaId = '', onPersona, onManagePersonas }) {
+export function SettingsPanel({ models, model, busy, onSelectModel, tiers, onTiers, offer, opts, onOpts, researchOn = false, canSaveInstr, instr, onInstr, instrSaved, onSaveInstr, saved, maxPrompt, hasThread, instructionsLocked = false, personasOn = false, personas = [], personaId = '', onPersona, onManagePersonas }) {
   const { t, locale } = useI18n();
   const [open, setOpen] = useState({ persona: true, filter: false, model: true, caps: true, tools: true, prompt: false, about: false });
   const toggle = (id) => setOpen((o) => ({ ...o, [id]: !o[id] }));
@@ -55,7 +55,7 @@ export function SettingsPanel({ models, model, busy, onSelectModel, tiers, onTie
       {personasOn && (
         <Section id="persona" title={t("app.chat.settings.persona")} open={open.persona} onToggle={toggle}>
           <p className="text-vx-fg-muted">{hasThread ? t("app.chat.settings.personaExisting") : t("app.chat.settings.personaNew")}</p>
-          <PersonaPicker personas={personas} value={personaId} disabled={busy || hasThread} onSelect={onPersona} onManage={onManagePersonas} />
+          <PersonaPicker personas={personas} value={personaId} selectionDisabled={busy || hasThread || instructionsLocked} manageDisabled={busy} onSelect={onPersona} onManage={onManagePersonas} />
         </Section>
       )}
 
@@ -96,9 +96,10 @@ export function SettingsPanel({ models, model, busy, onSelectModel, tiers, onTie
 
       <Section id="prompt" title={t("app.chat.settings.prompt")} open={open.prompt} onToggle={toggle}>
         <label htmlFor="chat-instr" className="sr-only">{t("app.chat.settings.instructions")}</label>
-        <textarea id="chat-instr" value={instr} maxLength={maxPrompt} onChange={(e) => onInstr(e.target.value)}
+        <textarea id="chat-instr" value={instr} maxLength={maxPrompt} readOnly={instructionsLocked} aria-readonly={instructionsLocked} onChange={(e) => onInstr(e.target.value)}
           placeholder={t("app.chat.settings.example")}
-          className="min-h-28 w-full rounded-lg border border-vx-border bg-vx-base px-3 py-2 text-vx-fg placeholder:text-vx-fg-faint" />
+          className="min-h-28 w-full rounded-lg border border-vx-border bg-vx-base px-3 py-2 text-vx-fg placeholder:text-vx-fg-faint read-only:cursor-not-allowed read-only:opacity-80" />
+        {instructionsLocked && <p className="text-xs leading-5 text-vx-accent">{t('app.chat.oddlingCanon.help')}</p>}
         <div className="flex items-center gap-3">
           {hasThread ? (
             <button type="button" disabled={!canSaveInstr} onClick={onSaveInstr}

@@ -30,6 +30,80 @@ async function stoppedUnsure() {
     return storage;
 }
 
+test('a required Oddling canon must be saved and bound before a paid turn can start', async () => {
+    let sends = 0;
+    const turn = async () => { sends += 1; return { replay: false }; };
+    const patchFailed = await run({
+        active: null, turn, instr: 'editable text', requiredInstructions: true, lockedInstructions: 'locked Oddling canon',
+        patchThread: async () => { throw new GatewayError('down', { status: 503, code: 'gateway_error' }); },
+    });
+    assert.equal(sends, 0);
+    assert.deepEqual([patchFailed.log.deleted, patchFailed.log.box, patchFailed.log.notices], [['made'], ['', TEXT], [null, 'instructions_unavailable']]);
+    assert.equal(patchFailed.log.instructionsReady.length, 0);
+
+    const bindFailed = await run({
+        active: null, turn, instr: '', requiredInstructions: true, lockedInstructions: 'locked Oddling canon',
+        onInstructionsReady: async () => false,
+    });
+    assert.equal(sends, 0);
+    assert.deepEqual([bindFailed.log.patched, bindFailed.log.instructionsReady, bindFailed.log.deleted], [
+        [{ id: 'made', body: { system_prompt: 'locked Oddling canon' } }], ['made'], ['made'],
+    ]);
+    assert.deepEqual([bindFailed.log.box, bindFailed.log.notices], [['', TEXT], [null, 'instructions_unavailable']]);
+});
+
+test('a no-charge first-turn refusal keeps the canon-bound thread recoverable after reload', async () => {
+    const storage = memory();
+    const refusedFirst = await run({
+        active: null, storage, turn: refused(noCredits()), requiredInstructions: true, lockedInstructions: 'locked Oddling canon',
+    });
+    assert.deepEqual(refusedFirst.log.deleted, []);
+    assert.deepEqual(refusedFirst.log.activeSet, ['made']);
+    assert.deepEqual(afterReload(storage, 'made'), { box: TEXT, notice: { code: 'insufficient_balance', credits: 2 } });
+
+    let retried = 0;
+    const retry = await run({ active: { id: 'made', model_id: 'm' }, storage, text: TEXT, turn: async (...args) => { retried += 1; return reply()(...args); } });
+    assert.equal(retried, 1);
+    assert.deepEqual(retry.log.deleted, []);
+});
+
+test('an active Oddling thread revalidates its server prompt before any paid send', async () => {
+    let sends = 0; let uploads = 0;
+    const result = await run({
+        active: A,
+        images: [{ file: {} }],
+        onThreadValidated: async () => false,
+        upload: async () => { uploads += 1; return 'never'; },
+        turn: async () => { sends += 1; return { replay: false }; },
+    });
+    assert.equal(sends, 0);
+    assert.equal(uploads, 0);
+    assert.deepEqual(result.log.box, ['', TEXT]);
+    assert.deepEqual(result.log.notices, [null, 'instructions_unavailable']);
+});
+
+test('a canon-bound send carries the exact expected prompt into the atomic server request', async () => {
+    let request = null;
+    await run({
+        active: A,
+        expectedSystemPrompt: 'LOCKED ODDLING PASSPORT\nCore:name=Mossbyte',
+        turn: async (args) => { request = args; return reply()(args, { }); },
+    });
+    assert.equal(request.expectedSystemPrompt, 'LOCKED ODDLING PASSPORT\nCore:name=Mossbyte');
+});
+
+test('an unresolved Oddling URL cannot create a thread or start a paid turn', async () => {
+    let creates = 0; let sends = 0;
+    const result = await run({
+        active: null, sendBlocked: true,
+        making: async () => { creates += 1; return { thread: { id: 'made', model_id: 'm' } }; },
+        turn: async () => { sends += 1; return { replay: false }; },
+    });
+    assert.equal(creates, 0);
+    assert.equal(sends, 0);
+    assert.deepEqual(result.log.box, []);
+});
+
 test('Stop before any text, sent again and refused: the warning is still kept with the text, and both are said', async () => {
     const refusals = [
         ['insufficient_balance', { turn: refused(noCredits()) }],

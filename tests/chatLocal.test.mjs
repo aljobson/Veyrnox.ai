@@ -125,6 +125,7 @@ test('clearing removes every draft, star and notice, the unscoped v1 keys includ
   writeNotice(s, 'user-b', NEW_CHAT, 'connection_refunded');
   s.setItem('veyrnox_chat_draft_v1:new', 'left by the unscoped version');
   s.setItem('veyrnox_chat_stars_v1:t1', '["m1"]');
+  s.setItem('veyrnox_oddling_chat_thread_v2:user-a:thread-1', '{"version":2}');
   s.setItem('veyrnox_supabase_session', '{}');
   s.setItem('veyrnox_theme', 'dark');
   clearChatLocal(s);

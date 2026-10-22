@@ -1,0 +1,18 @@
+{
+  "intents": {
+    "flow:drive-generate-similar-carries-the-selected-template-f": {
+      "declaredAt": 1792690724336,
+      "id": "flow:drive-generate-similar-carries-the-selected-template-f",
+      "state": "declared",
+      "statement": "Generate similar carries the selected template from its detail page into Create before any generation.",
+      "status": "proposed",
+      "subject": "drive-generate-similar-carries-the-selec",
+      "surface": {
+        "flow": "drive-generate-similar-carries-the-selected-template-f"
+      },
+      "updatedAt": 1792690724378
+    }
+  },
+  "subject": "drive-generate-similar-carries-the-selec",
+  "version": 1
+}

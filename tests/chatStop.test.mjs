@@ -356,7 +356,8 @@ test('giving the text back deletes a chat made for the message only when the tur
     const give = /\n {4}const giveBack = \(over\) => \{\n([\s\S]*?)\n {4}\};\n/.exec(sender);
     assert.ok(give, 'send() has one place that gives the text back');
     assert.match(give[1], /setText\(content\)/);
-    assert.match(give[1], /if \(over && created\) \{ chatApi\.remove\(thread\.id\)\.catch\(\(\) => \{\}\);/);
+    assert.match(give[1], /if \(over && created && !\(requiredInstructions && requiredReady\)\) \{ chatApi\.remove\(thread\.id\)\.catch\(\(\) => \{\}\);/);
+    assert.match(give[1], /Keep a newly bound Oddling thread after a no-charge refusal/);
     // The same path as a `done` event that says nothing came back. Its notice was told with tell(); it is told as a
     // message that used no Credits, and with no error named it is this Stop's words beside a kept warning.
     assert.match(sender, /\n {8}giveBack\(true\);\n {8}if \(streamError\) tellUncharged\(streamError\); else besideWarning\('stop_refunded'\);/);

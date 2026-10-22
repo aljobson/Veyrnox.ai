@@ -41,6 +41,16 @@ export const STUDIO_WORKFLOWS = [
     steps: ['film-setup', 'film-studio-init', 'film-breakdown', 'film-reference-board', 'film-asset-passport', 'film-stress-test', 'film-shot-prompt'],
     href: '/app/film-studio',
   },
+  {
+    id: 'oddling-series',
+    name: 'Oddling series',
+    blurb: 'Lock the character passport, shape the next story and prepare matching portrait or motion prompts.',
+    outcome: 'A repeatable Oddling story with the same identity, show, visual theme and scene state in every draft.',
+    accent: '#f1c75b',
+    path: 'M7 8a5 5 0 0 1 10 0v3a5 5 0 0 1-10 0zM9 9h.01M15 9h.01M10 13c1.2 1 2.8 1 4 0M5 20c1-3 13-3 14 0',
+    steps: ['oddling-continuity', 'storyboard', 'prompt-writer', 'bring-to-life'],
+    href: '/app/oddlings',
+  },
 ];
 
 export function workflowById(id) {

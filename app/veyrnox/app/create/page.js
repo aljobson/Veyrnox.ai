@@ -10,7 +10,7 @@ import Link from 'next/link';
 import { AppNav } from '../../_components/NavBar';
 import { Main } from '../../_components/Main';
 import { Chip } from '../../_components/Chip';
-import { ASPECT_RATIOS, modelIdForName } from '../../_lib/tokens';
+import { modelAspectRatios, modelIdForName } from '../../_lib/tokens';
 import { gatewayFetch, makeIdempotencyKey, notifyBalanceChanged, GatewayError } from '../../_lib/gateway';
 import { failedCreationCopy } from '../../../../lib/i18n/createCopy.mjs';
 import { ERROR_COPY, failedJobCopy } from '../../_lib/createErrors';
@@ -40,6 +40,7 @@ import { LibraryPicker } from '../../_components/LibraryPicker';
 import { GenerationSettings } from '../../_components/GenerationSettings';
 import { VoiceDescription } from '../../_components/VoiceDescription';
 import { ControlRow } from '../../_components/ControlRow';
+import { TemplateHandoffCard } from '../../_components/TemplateHandoffCard';
 import { CreateGoalPicker } from '../../_components/CreateGoalPicker';
 import { TIERS, TIER_LABEL, filterByTier } from '../../_lib/modelTiers';
 import { modelsForGoal, starterModel } from '../../_lib/starterModels';
@@ -119,6 +120,9 @@ export default function CreateStudio() {
   // True while a batch is still being sent, so New generation cannot clear it halfway.
   const [sending, setSending] = useState(false);
   const incomingDraft = useRef(false);
+  // Keep the requested ratio until the live catalog (or the complete registry-derived
+  // fallback after a failed read) resolves the selected model's real capabilities.
+  const incomingAspect = useRef('');
 
   // ?model=<id> from landing tiles / hero cards. Read once on mount —
   // avoids the Suspense boundary useSearchParams demands on client pages.
@@ -142,7 +146,7 @@ export default function CreateStudio() {
       || (portrait ? { prompt: buildOddlingAnimationPrompt(portrait.id, params.get('motion')), durationSeconds: 5 } : null);
     incomingDraft.current = !!draft;
     if (draft) setPrompt(draft.prompt);
-    if (draft?.aspect) setAspect(draft.aspect);
+    if (draft?.aspect) incomingAspect.current = draft.aspect;
     if (draft?.durationSeconds) setDuration(`${draft.durationSeconds}s`);
     if (draft?.negativePrompt) setNegative(draft.negativePrompt);
     if (params.get('passport') === '1' && storedDraft?.oddlingPicks) {
@@ -237,11 +241,8 @@ export default function CreateStudio() {
   const isShort = !!model?.takesTopic;
   const resultAspect = jobs[0]?.aspect_ratio || (hasJobs ? '16:9' : isShort ? '9:16' : aspect);
   const takesCamera = !isShort && (model?.kind === 'image' || model?.kind === 'video');
-  // The model's own aspect list when the catalog has one; every video takes the default set.
-  const aspectOptions = isShort ? []
-    : catalogLive ? ASPECT_RATIOS.filter((a) => model?.aspects?.includes(a))
-    : model?.aspects ? ASPECT_RATIOS.filter((a) => model.aspects.includes(a))
-    : model?.kind === 'video' ? ASPECT_RATIOS : [];
+  // Only offer aspect ratios explicitly declared by this model's provider contract.
+  const aspectOptions = isShort ? [] : modelAspectRatios(model);
   const unitCost = model ? model.credits * (duration === '10s' && model.kind === 'video' ? 2 : 1) : 0;
   // Other models always send one; the count control is image-only.
   const n = imageCount(model, count);
@@ -310,9 +311,17 @@ export default function CreateStudio() {
   }
 
   useEffect(() => {
+    if (catalogLoading || !model) return;
+    const requested = incomingAspect.current;
+    if (requested) {
+      incomingAspect.current = '';
+      if (aspectOptions.includes(requested)) setAspect(requested);
+      else if (aspectOptions.length) setAspect(aspectOptions[0]);
+      return;
+    }
     if (aspectOptions.length && !aspectOptions.includes(aspect)) setAspect(aspectOptions[0]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [aspectOptions.join(',')]);
+  }, [catalogLoading, model?.id, aspectOptions.join(',')]);
 
   // ── balance fetch + focus revalidation ────────────────────────────
   const loadBalance = useCallback(async () => {
@@ -365,7 +374,10 @@ export default function CreateStudio() {
     setError(null);
     setSending(true);
     const submittedTask = getJourney().task;
-    const submittedPresentation = { model_name: model.name, aspect_ratio: isShort ? '9:16' : aspect };
+    const submittedPresentation = {
+      model_name: model.name,
+      ...(isShort ? { aspect_ratio: '9:16' } : aspectOptions.length ? { aspect_ratio: aspect } : {}),
+    };
     const keys = Array.from({ length: n }, () => makeIdempotencyKey());
     // An Auto Short takes only its topic; the pipeline picks the format.
     const inputs = isShort ? { topic: prompt.trim() } : {
@@ -432,6 +444,11 @@ export default function CreateStudio() {
     const next = starterModel(models, nextGoal);
     setGoal(nextGoal);
     setTier(null);
+    // A goal chip is a browsing filter, not a request to discard a linked
+    // template. If that template's model already satisfies the chosen goal,
+    // keep the exact model/reference pair intact. Switching to another media
+    // kind is the deliberate replacement path and clears the attribution.
+    if (activeTemplate && model && (nextGoal === 'all' || model.kind === nextGoal)) return;
     setPresetParam(null);
     setModelId(next?.id || '');
   }
@@ -509,7 +526,7 @@ export default function CreateStudio() {
             {draftRecovery.restoring ? t("app.create.restoring") : draftRecovery.status}
             {draftRecovery.failed && <button type="button" onClick={draftRecovery.retry} className="ms-2 min-h-8 underline text-vx-accent">{t("app.create.retryDraft")}</button>}
           </div>}
-          {oddlingTransfer && model?.kind === 'image' && (
+          {oddlingTransfer && (
             <section role="status" data-assistant-target="create.oddling-handoff" className="mt-3 flex flex-col gap-3 rounded-xl border border-vx-accent/40 bg-vx-accent/[0.07] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <div className="font-vx-mono text-[9px] font-bold tracking-[0.14em] text-vx-accent">{t("app.create.oddlingLoaded")}</div>
@@ -518,14 +535,15 @@ export default function CreateStudio() {
                   {[oddlingTransfer.body_type, oddlingTransfer.wardrobe_style, oddlingTransfer.hair].filter(Boolean).join(' · ')}
                 </p>
               </div>
-              <button type="button" onClick={() => document.querySelector('[data-assistant-target="create.character"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="shrink-0 rounded-full border border-vx-accent/50 px-3 py-2 text-xs font-extrabold text-vx-accent hover:bg-vx-accent/10">
-                {t("app.create.reviewCharacter")}</button>
+              {model?.kind === 'image' && <button type="button" onClick={() => document.querySelector('[data-assistant-target="create.character"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="shrink-0 rounded-full border border-vx-accent/50 px-3 py-2 text-xs font-extrabold text-vx-accent hover:bg-vx-accent/10">
+                {t("app.create.reviewCharacter")}</button>}
             </section>
           )}
-          {activeTemplate?.inspired && (
-            <p className="mt-2 text-sm text-vx-fg-body">
-              {tOr(t, `presets.needs.${activeTemplate.id}`, activeTemplate.needs)}{t("app.create.similarScene")}</p>
-          )}
+          {activeTemplate && <TemplateHandoffCard
+            preset={activeTemplate}
+            canChooseSource={Boolean(activeTemplate.needs && Object.keys(media).length)}
+            onChooseSource={() => document.querySelector('[data-assistant-target="create.upload"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+          />}
           {model?.takesVoice && <VoiceDescription value={voice} onChange={setVoice} />}
 
           {animationPortrait && <div role="status" className="mt-4 rounded-xl border border-vx-accent/30 bg-vx-panel p-4 text-sm text-vx-fg-body">{portraitStatus}{animationMismatch && <p className="mt-2 text-vx-danger">{t("app.create.animationModel")}</p>}</div>}

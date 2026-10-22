@@ -138,7 +138,7 @@ const catalog = read('../app/veyrnox/_lib/useCatalog.js');
 
 test('the catalog marks speech by its capability record, not by a list of ids', () => {
     assert.match(catalog, /isSpeech: m\.capabilities\?\.kind === 'speech',/);
-    assert.match(catalog, /isSpeech: !!m\.speech,/);
+    assert.match(catalog, /isSpeech: capabilities\?\.kind === 'speech',/);
     assert.doesNotMatch(catalog, /inworld|elevenlabs|minimax|qwen/);
 });
 

@@ -13,7 +13,7 @@ const STAR_PREFIX = 'veyrnox_chat_stars_v2:';
 const NOTICE_PREFIX = 'veyrnox_chat_notice_v1:';
 const TURNS_PREFIX = 'veyrnox_chat_turns_v1:'; // beside a chat's notice: the turns of a warning that stands for several messages
 // The v1 draft and star keys had no user id in them. They are never read, only removed.
-const ALL_PREFIXES = [DRAFT_PREFIX, STAR_PREFIX, NOTICE_PREFIX, TURNS_PREFIX, 'veyrnox_chat_draft_v1:', 'veyrnox_chat_stars_v1:'];
+const ALL_PREFIXES = [DRAFT_PREFIX, STAR_PREFIX, NOTICE_PREFIX, TURNS_PREFIX, 'veyrnox_oddling_chat_thread_v2:', 'veyrnox_chat_draft_v1:', 'veyrnox_chat_stars_v1:'];
 export const NEW_CHAT = 'new';
 export const MAX_DRAFT = 8000;
 export const MAX_STARS = 200;

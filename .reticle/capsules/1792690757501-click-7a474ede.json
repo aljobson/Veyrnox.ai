@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "origin": "failed-assert",
+  "expected": "route skill=oddling-continuity&skill=storyboard&skill=prompt-writer&skill=bring-to-life&oddling= AND POST /api/auth/session → 401 AND GET /api/catalog → 503 AND settled",
+  "observed": "no surviving event shows a request to /api/auth/session — capture truncated, so this is not evidence there was none",
+  "steps": [
+    {
+      "tool": "reticle_act",
+      "anchor": {
+        "kind": "testid",
+        "value": "e523",
+        "source": {
+          "file": "app/veyrnox/_components/OddlingStudio.js",
+          "line": 403,
+          "column": 16
+        }
+      },
+      "action": "click"
+    }
+  ],
+  "id": "1792690757501-click-7a474ede",
+  "createdAt": 1792690757512,
+  "seen": 1,
+  "lastSeenAt": 1792690757512
+}

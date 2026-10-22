@@ -1,0 +1,129 @@
+{
+  "version": 2,
+  "name": "drive-generate-similar-carries-the-selected-template-f",
+  "projectId": "veyrnox-ai-05603de1",
+  "createdAt": 1792690724286,
+  "steps": [
+    {
+      "tool": "reticle_act",
+      "anchor": {
+        "kind": "role",
+        "role": "button",
+        "name": "Create a similar video 64 cr"
+      },
+      "args": {},
+      "action": "click",
+      "expect": {
+        "kind": "allOf",
+        "predicates": [
+          {
+            "kind": "route",
+            "pathname": "/app/create"
+          },
+          {
+            "kind": "settled",
+            "quietMs": 250
+          }
+        ]
+      },
+      "timeoutMs": 30000,
+      "page": "/presets/studio-slide",
+      "endPage": "/app/create"
+    },
+    {
+      "tool": "reticle_act",
+      "anchor": {
+        "kind": "role",
+        "role": "button",
+        "name": "Close"
+      },
+      "args": {},
+      "action": "click",
+      "expect": {
+        "kind": "element",
+        "query": {
+          "role": "dialog",
+          "name": "Sign in to Veyrnox"
+        },
+        "absent": true
+      },
+      "timeoutMs": 10000,
+      "page": "/app/create"
+    },
+    {
+      "tool": "reticle_act",
+      "anchor": {
+        "kind": "testid",
+        "value": "create-goal-video",
+        "source": {
+          "file": "app/veyrnox/_components/CreateGoalPicker.js",
+          "line": 15,
+          "column": 10
+        }
+      },
+      "args": {},
+      "action": "click",
+      "expect": {
+        "kind": "allOf",
+        "predicates": [
+          {
+            "kind": "element",
+            "query": {
+              "testid": "create-goal-video"
+            },
+            "state": "pressed"
+          },
+          {
+            "kind": "text",
+            "contains": "TEMPLATE LINKED"
+          },
+          {
+            "kind": "text",
+            "contains": "Studio Slide"
+          },
+          {
+            "kind": "text",
+            "contains": "This preview stays linked as a visual reference; it is not used as your generation source."
+          },
+          {
+            "kind": "text",
+            "contains": "A clear starting photo showing the subject and setting you want to animate"
+          },
+          {
+            "kind": "element",
+            "query": {
+              "role": "button",
+              "name": "Kling 3.0 · I2V video 32 cr"
+            },
+            "state": "pressed"
+          },
+          {
+            "kind": "settled",
+            "quietMs": 250
+          }
+        ]
+      },
+      "timeoutMs": 30000,
+      "page": "/app/create"
+    }
+  ],
+  "startPath": "/presets/studio-slide",
+  "intent": "Generate similar carries the selected template from its detail page into Create before any generation.",
+  "requires": [
+    {
+      "kind": "route",
+      "pathname": "/presets/studio-slide"
+    }
+  ],
+  "ensures": [
+    {
+      "kind": "route",
+      "pathname": "/app/create"
+    }
+  ],
+  "author": {
+    "agent": "codex-mcp-client",
+    "person": "al.jobson@21stclick.co.uk"
+  },
+  "intentId": "flow:drive-generate-similar-carries-the-selected-template-f"
+}

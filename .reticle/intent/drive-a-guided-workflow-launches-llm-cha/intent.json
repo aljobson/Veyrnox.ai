@@ -1,0 +1,21 @@
+{
+  "intents": {
+    "flow:drive-a-guided-workflow-launches-llm-chat-with-all-fou": {
+      "binding": {
+        "flow": "drive-a-guided-workflow-launches-llm-chat-with-all-fou"
+      },
+      "declaredAt": 1792690724533,
+      "id": "flow:drive-a-guided-workflow-launches-llm-chat-with-all-fou",
+      "state": "bound",
+      "statement": "A guided workflow launches LLM Chat with all four ordered skills in the URL; in the unconfigured signed-out local environment, the normal auth gate and complete registry fallback remain explicit.",
+      "status": "proposed",
+      "subject": "drive-a-guided-workflow-launches-llm-cha",
+      "surface": {
+        "flow": "drive-a-guided-workflow-launches-llm-chat-with-all-fou"
+      },
+      "updatedAt": 1792690724617
+    }
+  },
+  "subject": "drive-a-guided-workflow-launches-llm-cha",
+  "version": 1
+}

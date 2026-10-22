@@ -1,5 +1,38 @@
 {
   "intents": {
+    "inline:a-signed-out-visitor-can-dismiss-the-normal-sign-d5028607": {
+      "binding": {
+        "absent": true,
+        "kind": "element",
+        "query": {
+          "name": "Sign in to Veyrnox",
+          "role": "dialog"
+        }
+      },
+      "declaredAt": 1792690797930,
+      "id": "inline:a-signed-out-visitor-can-dismiss-the-normal-sign-d5028607",
+      "state": "bound",
+      "statement": "A signed-out visitor can dismiss the normal sign-in gate and continue inspecting the prepared Oddling before deciding to authenticate.",
+      "status": "proposed",
+      "subject": "unsorted",
+      "updatedAt": 1792690798562
+    },
+    "inline:oddling-story-development-is-available-from-the-2557c9fe": {
+      "binding": {
+        "kind": "element",
+        "query": {
+          "name": "Sign in to Veyrnox",
+          "role": "dialog"
+        }
+      },
+      "declaredAt": 1792690835301,
+      "id": "inline:oddling-story-development-is-available-from-the-2557c9fe",
+      "state": "bound",
+      "statement": "Oddling story development is available from the completed passport, but a signed-out visitor must authenticate before private character canon is handed to Chat.",
+      "status": "proposed",
+      "subject": "unsorted",
+      "updatedAt": 1792690835348
+    },
     "inline:publish-analytics-x-194b806a": {
       "binding": {
         "kind": "allOf",

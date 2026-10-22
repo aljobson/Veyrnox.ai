@@ -93,6 +93,20 @@ test('thread and model gates', async () => {
     assert.equal((await run(fakes({ model: { ...MODEL, gated_flag: true } }))).status, 402);
 });
 
+test('a canon-bound turn compares the exact prompt snapshot before search, attachments or money', async () => {
+    const f = fakes();
+    const res = await run(f, { body: body({ expected_system_prompt: 'Different canon' }) });
+    assert.equal(res.status, 409);
+    assert.deepEqual(await res.json(), { error: 'instructions_unavailable' });
+    assert.equal(called(f, 'ledger_debit').length, 0);
+    assert.equal(f.streamCalls.length, 0);
+
+    const matching = fakes();
+    const ok = await run(matching, { body: body({ expected_system_prompt: 'Be brief.' }) });
+    await events(ok);
+    assert.equal(called(matching, 'ledger_debit').length, 1);
+});
+
 test('the debit: price from the catalog, never the client; no message text on the job', async () => {
     const f = fakes();
     const res = await run(f, { body: body({ credits: 0, price: 0, model_id: 'other' }) });

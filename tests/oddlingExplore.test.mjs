@@ -183,6 +183,52 @@ test('builder wiring: Surprise me beside Generate, one catalog builder, motion c
     assert.match(motion, /aria-describedby=/);
     assert.doesNotMatch(motion, /truncate|line-clamp|text-ellipsis|whitespace-nowrap/, 'a caption wraps so a keyboard or touch user can read the whole phrase');
     assert.match(motion, /break-words/);
+    assert.match(studio, /ms-auto grid w-full gap-2 sm:flex sm:w-auto/, 'mobile footer actions stack before the wider flex layout');
+    assert.match(studio, /data-assistant-target="oddlings\.chat"[\s\S]*w-full whitespace-normal/, 'the longest localized Chat label wraps at narrow widths');
+    assert.match(studio, /data-assistant-target="oddlings\.continue"[\s\S]*w-full min-w-0 justify-between sm:w-auto/, 'Create stays a full-width direct path on mobile');
+});
+
+test('builder can carry the locked passport into multi-skill Chat without generating', async () => {
+    const studio = await component('OddlingStudio.js');
+    const chat = await component('chat/ChatWorkspace.js');
+    const cards = await component('chat/StudioDraftCards.js');
+    assert.match(studio, /writeOddlingChatHandoff\(window\.sessionStorage/);
+    assert.match(studio, /skill=oddling-continuity&skill=storyboard&skill=prompt-writer&skill=bring-to-life&oddling=\$\{encodeURIComponent\(launchId\)\}/);
+    assert.match(studio, /data-assistant-target="oddlings\.chat"/);
+    assert.match(chat, /readOddlingChatHandoff\(window\.sessionStorage, launchId, getStoredUserId\(\)\)/);
+    assert.match(chat, /removeOddlingChatHandoff\(window\.sessionStorage, launchId\)/, 'a rejected URL can remove only its own exact launch');
+    assert.match(chat, /onSessionChange\(\(session\) => \{/);
+    assert.match(chat, /removeOddlingChatHandoff\(window\.sessionStorage\)/, 'an account change clears pending private passport data');
+    assert.match(chat, /setOddlingLaunchResolved\(true\)/, 'send stays blocked until the URL handoff has been resolved');
+    assert.match(chat, /sendBlocked: oddlingSendPending/);
+    assert.match(chat, /oddlingContextBlocked/);
+    assert.match(chat, /app\.chat\.oddlingCanon\.tooLong/);
+    assert.match(chat, /const oddlingSendPending = oddlingCanonBlocked \|\|/, 'a restored Oddling thread with changed canon stays explicitly blocked');
+    assert.match(chat, /writeOddlingThreadContext\(store\(\), getStoredUserId\(\), threadId, oddlingContext, lockedOddlingInstructions\)/, 'the verified in-memory passport binds even if the launch timestamp expires while the tab is open');
+    assert.match(chat, /removeOddlingChatHandoff\(window\.sessionStorage, oddlingLaunchId\)/, 'a successful bind consumes the exact launch');
+    assert.match(chat, /fittingSkillsWithRequired\([\s\S]*'oddling-continuity'\)/, 'continuity is an all-or-nothing prerequisite for an Oddling launch');
+    assert.match(chat, /readOddlingThreadContext\(store\(\), getStoredUserId\(\), id\)/);
+    assert.match(chat, /expectedSystemPrompt: oddlingContext \? lockedOddlingInstructions : ''/, 'the exact canon reaches the atomic server send guard');
+    assert.match(chat, /onThreadValidated: validateOddlingThread/, 'an already-open canon chat rechecks the server prompt before every send');
+    assert.match(chat, /canFinishOddlingLaunch\(/, 'a late bind must still belong to the current Chat launch');
+    assert.match(chat, /left: chatView\.current\.left/);
+    assert.match(chat, /pathname: window\.location\.pathname/);
+    assert.match(chat, /window\.history\.replaceState\(window\.history\.state/, 'finishing the launch preserves the destination history state');
+    assert.match(chat, /lockedInstructions: lockedOddlingInstructions/, 'the immutable canon, not editable text, is patched before a paid send');
+    assert.match(chat, /\? \(active \? oddlingContext\.instructions : instructionsFor\(/, 'a restored Oddling thread keeps the exact bound prompt even when the server copy differs');
+    assert.match(chat, /if \(oddlingContext\) return;/, 'a persona cannot replace locked canon');
+    const settings = await component('chat/SettingsPanel.js');
+    assert.match(settings, /selectionDisabled=\{busy \|\| hasThread \|\| instructionsLocked\} manageDisabled=\{busy\}/);
+    const persona = await component('chat/PersonaPicker.js');
+    assert.match(persona, /disabled=\{selectionDisabled \|\| personas\.length === 0\}/);
+    assert.match(persona, /disabled=\{manageDisabled\} onClick=\{onManage\}/, 'existing chats can still open persona management');
+    assert.match(chat, /data-testid="oddling-canon-banner"/);
+    assert.match(chat, /oddlingHandoff=\{oddlingContext\}/);
+    assert.match(cards, /stageChatStudioDraft\(window\.sessionStorage, d, oddlingHandoff\)/);
+    assert.match(cards, /if \(!destination\)/);
+    assert.match(studio, /PORTRAIT_INVALIDATING_KEYS = new Set\(\[\.\.\.CHARACTER_GROUPS\.map\(\(group\) => group\.id\), 'oddling_rule'\]\)/, 'free-form visual canon is a portrait-defining value');
+    assert.match(studio, /if \(PORTRAIT_INVALIDATING_KEYS\.has\(key\)\) setPortraitId\(''\)/, 'editing any visual source detaches the preset portrait');
+    assert.match(studio, /if \(mode === 'motion' && portraitId\)/, 'a detached portrait is never silently handed to Create');
 });
 
 test('deep link loads the character once, then takes the parameter out of the address', async () => {

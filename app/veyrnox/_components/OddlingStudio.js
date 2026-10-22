@@ -6,7 +6,7 @@ import { useI18n } from '../../../components/I18nProvider';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getStoredSession, onSessionChange } from '../../lib/authClient';
+import { getStoredSession, getStoredUserId, onSessionChange } from '../../lib/authClient';
 import { useCatalog } from '../_lib/useCatalog';
 import { gatewayFetch } from '../_lib/gateway';
 import { REVEAL_SAVED_ODDLING } from '../../../lib/savedOddlingHelp.js';
@@ -25,6 +25,7 @@ import {
   writeOddlingDraft,
 } from '../_lib/character';
 import { writeStudioDraft } from '../_lib/landingDraft';
+import { writeOddlingChatHandoff } from '../_lib/oddlingChatHandoff';
 import { changeCharacterPick } from '../_lib/characterOptions';
 import { parseOddlingDeepLink, withoutDeepLink } from '../_lib/oddlingExplore';
 import { blobUrl } from '../_lib/blobUrl';
@@ -42,6 +43,8 @@ import {
   readOddlingLibrary,
   saveOddlingToLibrary,
 } from '../_lib/oddlingStudio';
+
+const PORTRAIT_INVALIDATING_KEYS = new Set([...CHARACTER_GROUPS.map((group) => group.id), 'oddling_rule']);
 
 export default function OddlingStudio() {
   const { t, locale } = useI18n();
@@ -68,7 +71,7 @@ export default function OddlingStudio() {
   const [loadedPassportId, setLoadedPassportId] = useState(null);
   const [session, setSession] = useState(null);
   const [balance, setBalance] = useState(null);
-  const [handingOff, setHandingOff] = useState(false);
+  const [handingOff, setHandingOff] = useState(null);
   useEffect(() => { publishJourneyView({ route: '/app/oddlings', loadedId: loadedPassportId }); }, [loadedPassportId]);
 
   useEffect(() => {
@@ -145,6 +148,7 @@ export default function OddlingStudio() {
 
   function setPick(key, value) {
     setPicks((current) => changeCharacterPick(current, key, value));
+    if (PORTRAIT_INVALIDATING_KEYS.has(key)) setPortraitId('');
     setNotice('');
   }
 
@@ -152,6 +156,7 @@ export default function OddlingStudio() {
   function clearLook() {
     const ids = new Set(CHARACTER_GROUPS.map((group) => group.id));
     setPicks((current) => Object.fromEntries(Object.entries(current).filter(([key]) => !ids.has(key))));
+    setPortraitId('');
     setNotice('');
   }
 
@@ -174,11 +179,13 @@ export default function OddlingStudio() {
 
   function randomize() {
     setPicks((current) => randomizeOddlingStyle(current));
+    setPortraitId('');
     setNotice(t("app.oddlings.remixed"));
   }
 
   function surprise() {
     setPicks((current) => randomizeOddlingAll(current));
+    setPortraitId('');
     setNotice(t("app.oddlings.randomized"));
   }
 
@@ -223,10 +230,24 @@ export default function OddlingStudio() {
     });
     if (!written) { setNotice(t("app.oddlings.handoffFailed")); return; }
     if (mode !== 'motion') journeyHandoff(loadedPassportId);
-    setHandingOff(true);
+    setHandingOff('create');
     let destination = `/app/create?model=${encodeURIComponent(model)}&oddling=1&passport=1`;
-    if (mode === 'motion') destination += '&oddlingPhoto=' + encodeURIComponent(portraitId) + '&motion=' + encodeURIComponent(motionId);
+    if (mode === 'motion' && portraitId) destination += '&oddlingPhoto=' + encodeURIComponent(portraitId) + '&motion=' + encodeURIComponent(motionId);
     router.push(destination);
+  }
+
+  function continueToChat() {
+    const ownerId = getStoredUserId();
+    if (!ownerId) { window.dispatchEvent(new CustomEvent('veyrnox:auth-required')); return; }
+    writeOddlingDraft(window.localStorage, picks);
+    const result = saveOddlingToLibrary(window.localStorage, picks, motionId);
+    if (result.ok) setLibrary(result.items);
+    const launchId = writeOddlingChatHandoff(window.sessionStorage, {
+      ownerId, picks, mode, scene, referenceNote, portraitId, motionId,
+    });
+    if (!launchId) { setNotice(t('app.oddlings.chatHandoffFailed')); return; }
+    setHandingOff('chat');
+    router.push(`/app/chat?skill=oddling-continuity&skill=storyboard&skill=prompt-writer&skill=bring-to-life&oddling=${encodeURIComponent(launchId)}`);
   }
 
   return (
@@ -375,12 +396,15 @@ export default function OddlingStudio() {
                 </div>
               )}
               {!lowCredits && <p className="hidden min-w-0 flex-1 font-vx-mono text-[10px] text-vx-fg-faint sm:block">{t("app.oddlings.opensCreate")}{generationCost != null && <> · <span className="font-bold text-vx-money">{t('app.oddlings.livePrice',{count:number(generationCost)})}</span></>}</p>}
-              <div className="ms-auto flex w-full items-center justify-end gap-2 sm:w-auto">
+              <div className="ms-auto grid w-full gap-2 sm:flex sm:w-auto sm:items-center sm:justify-end">
                 {mode === 'portrait' && (
-                  <button type="button" onClick={surprise} className="shrink-0 rounded-full border border-vx-border bg-vx-base px-4 py-2 text-xs font-extrabold text-vx-fg transition-colors hover:border-vx-accent">{t("app.oddlings.surprise")}</button>
+                  <button type="button" onClick={surprise} className="w-full rounded-full border border-vx-border bg-vx-base px-4 py-2 text-xs font-extrabold text-vx-fg transition-colors hover:border-vx-accent sm:w-auto">{t("app.oddlings.surprise")}</button>
                 )}
-                <Button type="button" size="md" cost={generationCost} disabled={generationCost == null || handingOff} aria-busy={handingOff} data-assistant-target="oddlings.continue" onClick={continueToCreate} className="min-w-0 max-sm:flex-1 max-sm:justify-between">
-                  {handingOff ? t("app.oddlings.opening") : generationCost == null ? t("app.oddlings.checkingPrice") : mode === 'motion' ? t("app.oddlings.animate") : t("app.oddlings.generatePortrait")}
+                <button type="button" disabled={!!handingOff} data-assistant-target="oddlings.chat" onClick={continueToChat} className="w-full whitespace-normal rounded-full border border-vx-accent px-4 py-2 text-xs font-extrabold text-vx-accent transition-colors hover:bg-vx-accent/10 disabled:opacity-50 sm:w-auto">
+                  {handingOff === 'chat' ? t('app.oddlings.openingChat') : t('app.oddlings.refineChat')}
+                </button>
+                <Button type="button" size="md" cost={generationCost} disabled={generationCost == null || !!handingOff} aria-busy={!!handingOff} data-assistant-target="oddlings.continue" onClick={continueToCreate} className="w-full min-w-0 justify-between sm:w-auto">
+                  {handingOff === 'create' ? t("app.oddlings.opening") : generationCost == null ? t("app.oddlings.checkingPrice") : mode === 'motion' ? t("app.oddlings.animate") : t("app.oddlings.generatePortrait")}
                 </Button>
               </div>
               {notice && <p data-testid="oddling-notice" role="status" className="basis-full rounded-lg border border-vx-accent/30 bg-vx-accent/[0.06] px-3 py-1.5 text-xs text-vx-accent">{notice}</p>}

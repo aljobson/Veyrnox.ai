@@ -51,7 +51,8 @@ test('bundled upload limits remain visible before the live catalog arrives', () 
   }
   const source = read('app/veyrnox/_lib/useCatalog.js');
   const fallback = source.slice(source.indexOf('function fromFallback()'), source.indexOf('function fromApi('));
-  assert.match(fallback, /media: m\.media \|\| \{\}/);
+  assert.match(fallback, /media: capabilities\?\.media \|\| \{\}/);
+  assert.match(fallback, /const capabilities = fallbackCapabilitiesFor\(m\.id\)/);
 });
 
 test('LatentSync explains the conservative speech coverage requirement, not automatic looping', () => {

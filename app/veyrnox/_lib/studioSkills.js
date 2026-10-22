@@ -4,8 +4,10 @@
 // turns into an Open in Studio button, and only the person's own press of Generate charges anything.
 
 import { FILM_ASSISTANTS } from './filmStudioAssistants.js';
+import { modelAspectRatios } from './tokens.js';
 
 export const MAX_INSTRUCTIONS = 4000; // the chat's own Instructions limit (ADR-0067)
+export const MAX_INSTRUCTION_TOKENS = 1000; // same conservative server limit: ASCII / 4, every other code point / 1
 export const MAX_DRAFTS = 6;          // cards for one reply (a storyboard is the most that needs several)
 export const MAX_DRAFT_PROMPT = 2000;
 export const MAX_SKILL_IDEA = 500;     // short enough for a shareable GET launch URL
@@ -17,14 +19,13 @@ export const SKILL_GROUPS = ['Make', 'Edit', 'Plan', 'Film'];
 const SKILL_MODEL = 'chat-gpt-6-luna';
 
 const PREAMBLE = [
-  'You are a Studio assistant inside Veyrnox.ai, which makes images, video and audio with credit-metered models.',
-  'You help the person prepare ONE thing to make. You never make anything yourself and never spend Credits.',
-  'When a Studio job is ready, end your reply with a draft block, exactly like this, using only an id from the model list below:',
+  "You are Veyrnox.ai's Studio assistant. Plan ONE image/video/audio job; never generate or spend Credits.",
+  'End with this exact block using a listed model id:',
   '```studio',
   '{"model":"<id>","prompt":"<the prompt>"}',
   '```',
-  'You may add "aspect":"16:9" (or 9:16, 1:1). Quote Credits only from the list (per generation); the Studio shows the exact price before anything is charged.',
-  'Keep replies short and plain. If something essential is missing, ask one question first.',
+  'Optional: "aspect":"16:9" (or 9:16, 1:1). Studio confirms listed Credits before charging.',
+  'Be brief. Ask one question only when essential.',
 ].join('\n');
 
 /** @type {{id:string, name:string, blurb:string, group:'Make'|'Edit'|'Plan'|'Film', model:string, starter:string, body:string}[]} */
@@ -33,7 +34,7 @@ export const SKILLS = [
     id: 'prompt-writer', name: 'Prompt writer', group: 'Make', model: SKILL_MODEL,
     blurb: 'Turn a rough idea into a strong prompt and the right model.',
     starter: 'Describe what you want to make',
-    body: 'Skill: Prompt writer. If the idea is vague, ask what the subject, mood and style are. Pick the best-fitting model from the list for an image, video or audio and say why in one line. Write one strong prompt: a concrete subject and setting, the light, the camera or composition, the style, and for video one clear action. Plain language, not a pile of keywords. Offer one variation they can ask for.',
+    body: 'Skill: Prompt writer. If needed, ask for subject, mood and style. Pick a listed image, video or audio model and say why. Write one plain-language prompt with subject, setting, light, composition, style and one clear video action. Offer one variation.',
   },
   {
     id: 'model-picker', name: 'Model picker', group: 'Plan', model: SKILL_MODEL,
@@ -57,7 +58,7 @@ export const SKILLS = [
     id: 'bring-to-life', name: 'Bring it to life', group: 'Make', model: SKILL_MODEL,
     blurb: 'Turn a still photo into a short moving clip.',
     starter: 'Attach a photo to animate',
-    body: 'Skill: Bring it to life. If they attached an image, look at it. Write a motion prompt: what moves, how the camera moves, how fast, and what stays still. Simple movement works best in a short clip. Use an image-to-video model from the list. Remind them to choose the image in the Studio with From library.',
+    body: 'Skill: Bring it to life. Inspect an attached image; otherwise use the locked passport, or ask for a source. Write simple subject/camera motion, speed and what stays still. Use image-to-video; choose the source in Studio.',
   },
   {
     id: 'add-sound', name: 'Add sound', group: 'Edit', model: SKILL_MODEL,
@@ -69,7 +70,13 @@ export const SKILLS = [
     id: 'storyboard', name: 'Storyboard', group: 'Plan', model: SKILL_MODEL,
     blurb: 'Plan a short sequence of shots with a consistent look.',
     starter: 'What is the idea, and how long should it be?',
-    body: 'Skill: Storyboard. Ask for the idea, the length and the platform if not given. Plan 3 to 6 short shots, one line each: what we see, the camera, the mood. Keep the characters and style consistent. Then give one draft block per shot in order, using the same model for all so the look matches. Models do not remember earlier shots, so every prompt repeats the character and style description in full.',
+    body: 'Skill: Storyboard. If needed, ask for idea, length and platform. Plan 3-6 shots with subject, camera and mood. Keep character and style consistent. Give one ordered draft per shot with the same model; repeat the complete character and style because models have no memory.',
+  },
+  {
+    id: 'oddling-continuity', name: 'Oddling continuity', group: 'Plan', model: SKILL_MODEL,
+    blurb: 'Keep one Oddling, story and visual theme consistent across every shot.',
+    starter: 'What should happen next in this Oddling story?',
+    body: 'Skill: Oddling continuity. Preserve the locked passport: name, premise, voice, show and visual canon. Develop the scene without identity changes. Every draft repeats the complete character and visual canon; models have no memory. Without a passport, start in Oddling Studio.',
   },
   {
     id: 'fix-my-prompt', name: 'Fix my prompt', group: 'Make', model: SKILL_MODEL,
@@ -165,21 +172,82 @@ export function catalogLines(models) {
     .map((m) => `${m.id}|${m.kind}|${m.credits}${needsOf(m) ? `|needs ${needsOf(m)}` : ''}`);
 }
 
+/** Put one cheapest model of every available media kind first, then the remaining price-sorted catalog. */
+export function prioritizedCatalogLines(models) {
+  const lines = catalogLines(models);
+  const first = [];
+  for (const kind of ['image', 'video', 'audio']) {
+    const line = lines.find((item) => item.includes(`|${kind}|`));
+    if (line) first.push(line);
+  }
+  const reserved = new Set(first);
+  return [...first, ...lines.filter((line) => !reserved.has(line))];
+}
+
+const uniqueSkills = (skills) => [...new Map((skills || []).filter(Boolean).map((skill) => [skill.id, skill])).values()].slice(0, MAX_SELECTED_SKILLS);
+const boundedContext = (context) => String(context || '').trim().slice(0, 2200);
+export function estimateInstructionTokens(text) {
+  let ascii = 0; let other = 0;
+  for (const ch of String(text || '')) {
+    if (ch.codePointAt(0) < 0x80) ascii += 1;
+    else other += 1;
+  }
+  return Math.ceil(ascii / 4) + other;
+}
+const withinInstructionLimits = (text) => text.length <= MAX_INSTRUCTIONS && estimateInstructionTokens(text) <= MAX_INSTRUCTION_TOKENS;
+const contextCandidates = (context) => {
+  const full = boundedContext(context);
+  return [full];
+};
+const skillText = (skills) => skills.length === 1
+  ? skills[0].body
+  : `Active skills — use them together for one result:\n\n${skills.map((skill, index) => `${index + 1}. ${skill.body}`).join('\n\n')}`;
+const instructionHead = (skills, context) => {
+  const project = String(context || '').trim();
+  return `${PREAMBLE}\n\n${skillText(skills)}${project ? `\n\nProject context — preserve it in every result:\n${project}` : ''}\n\nModels (id|kind|Credits per generation):\n`;
+};
+
+function fittingContext(skills, models, context) {
+  const reserve = prioritizedCatalogLines(models).slice(0, 3).join('\n');
+  return contextCandidates(context).find((project) => withinInstructionLimits(`${instructionHead(skills, project)}${reserve}${reserve ? '\n' : ''}`)) ?? null;
+}
+
+/** Keep only whole specialists that leave room for one live model of every available media kind. */
+export function fittingSkills(skills, models, context = '') {
+  const kept = [];
+  for (const skill of uniqueSkills(skills)) {
+    const candidate = [...kept, skill];
+    if (fittingContext(candidate, models, context) !== null) kept.push(skill);
+  }
+  return kept;
+}
+
+/** A locked workflow may name one specialist that must survive the instruction budget.
+ * If it cannot fit, return nothing rather than silently keeping shorter optional skills. */
+export function fittingSkillsWithRequired(skills, models, context = '', requiredId = '') {
+  const selected = uniqueSkills(skills);
+  const required = selected.find((skill) => skill.id === requiredId);
+  if (!required) return [];
+  const ordered = [required, ...selected.filter((skill) => skill.id !== requiredId)];
+  const kept = fittingSkills(ordered, models, context);
+  return kept[0]?.id === requiredId ? kept : [];
+}
+
 /**
  * The text copied onto a new chat when a skill is chosen: the shared preamble, the skill, then the live model list. Never
  * longer than the chat allows; if the list does not fit, whole lines are dropped from the end, never cut mid-line.
  */
-export function skillsInstructions(skills, models) {
-  const unique = [...new Map((skills || []).filter(Boolean).map((skill) => [skill.id, skill])).values()].slice(0, MAX_SELECTED_SKILLS);
-  if (!unique.length) return '';
-  const skillText = unique.length === 1
-    ? unique[0].body
-    : `Active skills — use them together for one result:\n\n${unique.map((skill, index) => `${index + 1}. ${skill.body}`).join('\n\n')}`;
-  const head = `${PREAMBLE}\n\n${skillText}\n\nModels (id|kind|Credits per generation):\n`;
+export function skillsInstructions(skills, models, context = '') {
+  const selected = fittingSkills(skills, models, context);
+  if (!selected.length) return '';
+  const project = fittingContext(selected, models, context);
+  if (project === null) return '';
+  const head = instructionHead(selected, project);
   let out = head;
-  for (const line of catalogLines(models)) {
-    if (out.length + line.length + 1 > MAX_INSTRUCTIONS) break;
-    out += `${line}\n`;
+  for (const line of prioritizedCatalogLines(models)) {
+    const next = `${out}${line}\n`;
+    if (!withinInstructionLimits(next)) break;
+    out = next;
   }
   return out.trimEnd();
 }
@@ -209,7 +277,7 @@ export function parseStudioDrafts(text, models) {
     const m = typeof raw.model === 'string' ? byId.get(raw.model) : null;
     const prompt = typeof raw.prompt === 'string' ? raw.prompt.trim().slice(0, MAX_DRAFT_PROMPT) : '';
     if (!m || !prompt) continue;
-    const aspect = typeof raw.aspect === 'string' && Array.isArray(m.aspects) && m.aspects.includes(raw.aspect) ? raw.aspect : null;
+    const aspect = typeof raw.aspect === 'string' && modelAspectRatios(m).includes(raw.aspect) ? raw.aspect : null;
     drafts.push({
       model: m.id, name: m.name, kind: m.kind, credits: m.credits, prompt, aspect,
       needs: Object.entries(m.media || {}).filter(([, spec]) => spec && spec.required).map(([slot]) => slot),

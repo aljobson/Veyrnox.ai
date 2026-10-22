@@ -4,8 +4,10 @@ import { useI18n } from '../../../../components/I18nProvider';
 import { localeTag } from '../../../../lib/i18n/locales.mjs';
 
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { parseStudioDrafts } from '../../_lib/studioSkills';
-import { writeStudioDraft } from '../../_lib/landingDraft';
+import { stageChatStudioDraft } from '../../_lib/chatStudioDraft';
+import { CopyButton } from '../CopyButton';
 
 
 
@@ -14,15 +16,18 @@ import { writeStudioDraft } from '../../_lib/landingDraft';
  * first, so only a model the Studio sells can be offered, and its price is the catalog's. Opening it fills the Studio's prompt
  * through the same sessionStorage hand-off the landing page uses; nothing is charged until the person presses Generate there.
  */
-export function StudioDraftCards({ text, models }) {
+export function StudioDraftCards({ text, models, oddlingHandoff = null }) {
   const { t, locale } = useI18n();
   const credits = count => t(pluralKey(t, locale, 'app.chat.price', count), { count: locale === 'en' ? count : count.toLocaleString(localeTag(locale)) });
   const router = useRouter();
+  const [failedDraft, setFailedDraft] = useState(-1);
   const drafts = parseStudioDrafts(text, models);
   if (drafts.length === 0) return null;
-  const open = (d) => {
-    writeStudioDraft(window.sessionStorage, { prompt: d.prompt, model: d.model, aspect: d.aspect });
-    router.push(`/app/create?model=${encodeURIComponent(d.model)}`);
+  const open = (d, index) => {
+    const destination = stageChatStudioDraft(window.sessionStorage, d, oddlingHandoff);
+    if (!destination) { setFailedDraft(index); return; }
+    setFailedDraft(-1);
+    router.push(destination);
   };
   return (
     <ul className="mt-3 grid gap-2" aria-label={t("app.chat.drafts.label")}>
@@ -33,7 +38,15 @@ export function StudioDraftCards({ text, models }) {
             <span className="block truncate text-vx-fg-muted">{d.prompt}</span>
             {d.needs.length > 0 && <span className="block text-xs text-vx-fg-muted">{t('app.chat.drafts.needs', { needs: d.needs.map(slot => tOr(t, `public.library.${slot}`, slot)).join(t('app.chat.drafts.and')) })}</span>}
           </span>
-          <button type="button" onClick={() => open(d)} className="shrink-0 rounded-full bg-vx-accent px-4 py-2 text-sm font-semibold text-vx-accent-ink">{t("app.film.output.open")}</button>
+          <span className="flex shrink-0 flex-col items-end gap-2">
+            <button type="button" onClick={() => open(d, i)} className="rounded-full bg-vx-accent px-4 py-2 text-sm font-semibold text-vx-accent-ink">{t("app.film.output.open")}</button>
+            {failedDraft === i && (
+              <span role="alert" className="max-w-64 text-end text-xs leading-5 text-vx-danger">
+                {t('app.chat.drafts.handoffFailed')}{' '}
+                <CopyButton value={d.prompt} label={t('app.chat.drafts.copyPrompt')} className="ms-1" />
+              </span>
+            )}
+          </span>
         </li>
       ))}
     </ul>

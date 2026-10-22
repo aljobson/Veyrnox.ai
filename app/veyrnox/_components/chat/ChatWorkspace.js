@@ -6,7 +6,7 @@ import { pluralKey, tOr } from '../../../../lib/i18n/translate.mjs';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { gatewayFetch } from '../../_lib/gateway';
-import { getStoredUserId } from '../../../lib/authClient';
+import { getStoredUserId, onSessionChange } from '../../../lib/authClient';
 import { chatApi, chatErrorCopy } from '../../_lib/chatApi';
 import { takeTemplateChatDraft } from '../../_lib/chatTemplateDraft';
 import { attachmentLabel } from '../../_lib/chatImages';
@@ -21,7 +21,8 @@ import { SkillsPanel } from './SkillsPanel';
 import { StudioSkillIcon } from './StudioSkillIcon';
 import { StudioDraftCards } from './StudioDraftCards';
 import { useCatalog } from '../../_lib/useCatalog';
-import { MAX_SELECTED_SKILLS, skillById, skillIdsFromSearch, skillsInstructions } from '../../_lib/studioSkills';
+import { MAX_SELECTED_SKILLS, fittingSkills, fittingSkillsWithRequired, skillById, skillIdsFromSearch, skillsInstructions } from '../../_lib/studioSkills';
+import { canFinishOddlingLaunch, oddlingCanonInstructions, oddlingHandoffName, oddlingThreadPromptMatches, readOddlingChatHandoff, readOddlingThreadContext, removeOddlingChatHandoff, removeOddlingThreadContext, writeOddlingThreadContext } from '../../_lib/oddlingChatHandoff';
 import { ChatText } from './ChatText';
 import { SettingsPanel } from './SettingsPanel';
 import { ComposerControls, ComposerTypeTabs } from './ComposerControls';
@@ -103,6 +104,13 @@ export function ChatWorkspace() {
   const att = useAttachments(limits.maxAttachments);
   const [pickingLibrary, setPickingLibrary] = useState(false);
   const [skillIds, setSkillIds] = useState([]); // Studio skills composed for a chat that has not started (ADR-0073)
+  const [oddlingContext, setOddlingContext] = useState(null);
+  const [oddlingCanonBlocked, setOddlingCanonBlocked] = useState(false);
+  const [oddlingLaunchId, setOddlingLaunchId] = useState('');
+  const [oddlingLaunchResolved, setOddlingLaunchResolved] = useState(false);
+  const oddlingLaunchRef = useRef('');
+  const oddlingGenerationRef = useRef(0);
+  const oddlingOwnerRef = useRef(getStoredUserId());
   const { models: studioModels, live: studioCatalogLive, loading: studioLoading } = useCatalog();
   const [composerKind, setComposerKind] = useState(COMPOSER_KINDS.CHAT);
   const [mediaPrompt, setMediaPrompt] = useState('');
@@ -128,6 +136,14 @@ export function ChatWorkspace() {
   const chatView = useRef(null);
   if (chatView.current === null) chatView.current = newChatView();
   useEffect(() => { const v = chatView.current; enter(v); return () => leave(v); }, []);
+  useEffect(() => onSessionChange((session) => {
+    const nextOwner = session?.user?.id || '';
+    if (nextOwner === oddlingOwnerRef.current) return;
+    oddlingOwnerRef.current = nextOwner;
+    removeOddlingChatHandoff(window.sessionStorage);
+    oddlingLaunchRef.current = ''; oddlingGenerationRef.current += 1;
+    setOddlingContext(null); setOddlingCanonBlocked(false); setOddlingLaunchId(''); setOddlingLaunchResolved(true);
+  }), []);
 
   const fail = useCallback((e) => {
     const why = loadFailure(e);
@@ -186,7 +202,11 @@ export function ChatWorkspace() {
       // Another chat was pressed while this one was read: that one is the one to show. A re-read of the chat still on screen refreshes it in place.
       if (chatView.current.asked !== id) { if (chatView.current.shown === id) setMessages(r.messages); return false; }
       settleKept(id, asked); // in the store, so the notice and the box read from it below are what the server now says
-      setPersonaId(''); setActive(r.thread); setSkillIds([]); setMessages(r.messages); setInstr(r.thread.system_prompt || ''); land(chatView.current, id); setError(waiting(id)); setDrawer(false);
+      oddlingLaunchRef.current = ''; oddlingGenerationRef.current += 1;
+      const boundOddling = readOddlingThreadContext(store(), getStoredUserId(), id);
+      setPersonaId(''); setActive(r.thread); setSkillIds([]); setOddlingLaunchId(''); setOddlingContext(boundOddling);
+      setOddlingCanonBlocked(!!boundOddling && !oddlingThreadPromptMatches(boundOddling, r.thread.system_prompt || ''));
+      setMessages(r.messages); setInstr(r.thread.system_prompt || ''); land(chatView.current, id); setError(waiting(id)); setDrawer(false);
       setText(readDraft(store(), getStoredUserId(), r.thread.id)); setStars(readStars(store(), getStoredUserId(), r.thread.id)); setStarredOnly(false); return true;
     } catch (e) { fail(e); if (giveUp(chatView.current, id)) { const kept = waiting(chatView.current.shown); if (kept) setError((was) => (was && was.code !== kept.code ? { ...was, following: kept } : kept)); } return false; }
   };
@@ -200,7 +220,7 @@ export function ChatWorkspace() {
   };
   useEffect(() => { settleNew(); }, []); // once: a page that has just loaded shows New chat
   // A chat that has not started. A notice waits for it too: one about a message that was sent before a chat was made, or whose chat no longer exists.
-  const clear = () => { setPersonaId(''); setActive(null); setSkillIds([]); setMessages([]); setInstr(''); land(chatView.current, NEW_CHAT); setError(waiting(NEW_CHAT)); setDrawer(false); setText(readDraft(store(), getStoredUserId(), NEW_CHAT)); setStars([]); setStarredOnly(false); settleNew(); };
+  const clear = () => { oddlingLaunchRef.current = ''; oddlingGenerationRef.current += 1; setPersonaId(''); setActive(null); setSkillIds([]); setOddlingContext(null); setOddlingCanonBlocked(false); setOddlingLaunchId(''); setMessages([]); setInstr(''); land(chatView.current, NEW_CHAT); setError(waiting(NEW_CHAT)); setDrawer(false); setText(readDraft(store(), getStoredUserId(), NEW_CHAT)); setStars([]); setStarredOnly(false); settleNew(); };
   const blank = () => { ask(chatView.current, NEW_CHAT); clear(); };
   const star = (id) => { if (active) setStars(toggleStar(store(), getStoredUserId(), active.id, id)); };
   const shown = starredOnly ? messages.filter((x) => x.role === 'assistant' && stars.includes(x.id)) : messages;
@@ -213,27 +233,44 @@ export function ChatWorkspace() {
     } catch (e) { fail(e); return false; }
   };
   const remove = async (id) => {
-    try { await chatApi.remove(id); dropNotice(id); setThreads((ts) => ts.filter((thread) => thread.id !== id)); if (forget(chatView.current, id)) clear(); } catch (e) { fail(e); }
+    try { await chatApi.remove(id); dropNotice(id); removeOddlingThreadContext(store(), getStoredUserId(), id); setThreads((ts) => ts.filter((thread) => thread.id !== id)); if (forget(chatView.current, id)) clear(); } catch (e) { fail(e); }
   };
   const selectModel = (id) => (active ? patch(active.id, { model_id: id }) : setDraftModel(id));
   // Choosing a persona fills the draft of a chat that has not started: its instructions, its model if still offered, and its options.
   // It never touches an existing chat. Options the model does not offer are ignored at send time, as for any model.
   // Skills compose for a chat that has not started. Their instructions share one preamble and one bounded live model list.
+  const instructionsFor = (ids, context = oddlingContext) => {
+    const canon = context ? oddlingCanonInstructions(context) : '';
+    if (context && !canon) return '';
+    return skillsInstructions(ids.map(skillById), studioModels, canon);
+  };
+  const fittingSkillIds = (ids, context = oddlingContext) => {
+    const canon = context ? oddlingCanonInstructions(context) : '';
+    if (context && !canon) return [];
+    const skills = ids.map(skillById);
+    return (context
+      ? fittingSkillsWithRequired(skills, studioModels, canon, 'oddling-continuity')
+      : fittingSkills(skills, studioModels, canon)).map((skill) => skill.id);
+  };
   const pickSkill = (id) => {
     const s = skillById(id);
     if (!s) return;
+    if (oddlingContext && id === 'oddling-continuity' && skillIds.includes(id)) return;
     if (!skillIds.includes(id) && skillIds.length >= MAX_SELECTED_SKILLS) return;
-    const next = skillIds.includes(id) ? skillIds.filter((skillId) => skillId !== id) : [...skillIds, id];
+    const requested = skillIds.includes(id) ? skillIds.filter((skillId) => skillId !== id) : [...skillIds, id];
+    const next = fittingSkillIds(requested);
+    if (!skillIds.includes(id) && !next.includes(id)) return;
     setSkillIds(next); setPersonaId('');
-    setInstr(skillsInstructions(next.map(skillById), studioModels));
+    setInstr(instructionsFor(next));
     if (models.some((m) => m.id === s.model)) setDraftModel(s.model);
     setOpts({ thinking: false, web: false, research: false });
     setTimeout(() => document.getElementById('chat-msg')?.focus(), 0);
   };
   const clearSkill = (id) => {
+    if (oddlingContext && id === 'oddling-continuity') return;
     const next = skillIds.filter((skillId) => skillId !== id);
     setSkillIds(next);
-    setInstr(skillsInstructions(next.map(skillById), studioModels));
+    setInstr(instructionsFor(next));
   };
   // ?asset=<job id>, from the Library's Ask about this: that image is attached to a chat that has not started, once. The same
   // checks as From library apply (the server confirms it is the person's own, and the size cap is said up front).
@@ -257,22 +294,40 @@ export function ChatWorkspace() {
   }, [models.length, active]);
   const skillFromUrl = useRef(false);
   useEffect(() => {
-    if (skillFromUrl.current || studioLoading || !models.length || active) return;
+    const params = new URLSearchParams(window.location.search);
+    const launchId = params.get('oddling') || '';
+    const oddling = launchId ? readOddlingChatHandoff(window.sessionStorage, launchId, getStoredUserId()) : null;
+    if (oddling) {
+      oddlingLaunchRef.current = launchId; oddlingGenerationRef.current += 1;
+      setOddlingContext(oddling); setOddlingCanonBlocked(false); setOddlingLaunchId(launchId);
+    } else if (launchId) removeOddlingChatHandoff(window.sessionStorage, launchId);
+    setOddlingLaunchResolved(true);
+  }, []);
+  useEffect(() => {
+    if (skillFromUrl.current || !oddlingLaunchResolved || studioLoading || !models.length || active) return;
     skillFromUrl.current = true;
-    const wanted = skillIdsFromSearch(window.location.search);
-    if (!wanted.length) return;
+    const params = new URLSearchParams(window.location.search);
+    const requested = skillIdsFromSearch(params);
+    const wanted = fittingSkillIds(requested.length ? requested : oddlingContext ? ['oddling-continuity'] : [], oddlingContext);
+    if (!wanted.length && !oddlingContext) return;
     const frame = window.requestAnimationFrame(() => {
+      if (!wanted.length) return;
       setSkillIds(wanted); setPersonaId('');
-      setInstr(skillsInstructions(wanted.map(skillById), studioModels));
+      setInstr(instructionsFor(wanted, oddlingContext));
       const first = skillById(wanted[0]);
       if (first && models.some((m) => m.id === first.model)) setDraftModel(first.model);
       setOpts({ thinking: false, web: false, research: false });
     });
     return () => window.cancelAnimationFrame(frame);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studioLoading, models.length, active]);
+  }, [oddlingLaunchResolved, oddlingContext, studioLoading, models.length, active]);
   const pickPersona = (id) => {
+    if (oddlingContext) return;
     setSkillIds([]);
+    oddlingLaunchRef.current = '';
+    oddlingGenerationRef.current += 1;
+    setOddlingContext(null); setOddlingCanonBlocked(false);
+    setOddlingLaunchId('');
     setPersonaId(id);
     const p = personas.find((x) => x.id === id);
     if (!p) return;
@@ -280,8 +335,58 @@ export function ChatWorkspace() {
     if (p.model_id && models.some((m) => m.id === p.model_id)) setDraftModel(p.model_id);
     setOpts({ thinking: p.thinking, web: p.web, research: false });
   };
+  const oddlingGeneration = oddlingGenerationRef.current;
+  const bindOddlingToThread = (threadId) => {
+    if (!oddlingContext) return false;
+    const launchId = oddlingLaunchId;
+    // The launch was owner/age/id checked on mount. Bind from that verified in-memory
+    // passport so a tab left open for 30 minutes cannot become an unrecoverable retry loop.
+    const bound = writeOddlingThreadContext(store(), getStoredUserId(), threadId, oddlingContext, lockedOddlingInstructions)
+      && { ...oddlingContext, instructions: lockedOddlingInstructions };
+    if (!bound) return false;
+    if (oddlingLaunchId) removeOddlingChatHandoff(window.sessionStorage, oddlingLaunchId);
+    const url = new URL(window.location.href);
+    const stillHere = canFinishOddlingLaunch({
+      left: chatView.current.left, atNewChat: onScreen(chatView.current, NEW_CHAT), pathname: window.location.pathname,
+      urlLaunchId: url.searchParams.get('oddling'), refLaunchId: oddlingLaunchRef.current, expectedLaunchId: launchId,
+      generation: oddlingGenerationRef.current, expectedGeneration: oddlingGeneration,
+    });
+    if (stillHere) {
+      oddlingLaunchRef.current = '';
+      setOddlingContext(bound); setOddlingCanonBlocked(false); setOddlingLaunchId('');
+      url.searchParams.delete('oddling'); window.history.replaceState(window.history.state, '', url);
+    }
+    return true;
+  };
+  const lockedOddlingInstructions = oddlingContext
+    ? (active ? oddlingContext.instructions : instructionsFor(skillIds.length ? skillIds : ['oddling-continuity'], oddlingContext))
+    : '';
+  const validateOddlingThread = async (threadId) => {
+    if (!oddlingContext) return true;
+    try {
+      const latest = await chatApi.get(threadId);
+      const bound = readOddlingThreadContext(store(), getStoredUserId(), threadId);
+      if (bound && oddlingThreadPromptMatches(bound, latest.thread.system_prompt || '')) {
+        setOddlingCanonBlocked(false);
+        return true;
+      }
+      if (active?.id === threadId) {
+        setOddlingContext(bound || oddlingContext);
+        setOddlingCanonBlocked(true);
+        setActive(latest.thread);
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  };
+  const oddlingContextBlocked = !active && !!oddlingContext && oddlingLaunchResolved && !studioLoading
+    && studioModels.length > 0 && !instructionsFor(['oddling-continuity'], oddlingContext);
+  const oddlingSendPending = oddlingCanonBlocked || (!!oddlingContext && !skillIds.includes('oddling-continuity') && !active)
+    || (!active && (!oddlingLaunchResolved || (!!oddlingContext
+    && (studioLoading || !studioModels.length || !skillIds.length || !lockedOddlingInstructions))));
   const changePersonas = (next) => { setPersonas(next); if (!next.some((x) => x.id === personaId)) setPersonaId(''); };
-  const saveInstr = async () => { if (active && await patch(active.id, { system_prompt: instr })) { setSaved(true); setTimeout(() => setSaved(false), 1500); } };
+  const saveInstr = async () => { if (!oddlingContext && active && await patch(active.id, { system_prompt: instr })) { setSaved(true); setTimeout(() => setSaved(false), 1500); } };
   const byName = (a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase());
   const newFolder = async (name) => {
     try { const { folder: f } = await chatApi.createFolder(name); setFolders((fs) => [...fs, f].sort(byName)); setFolder(f.id); return true; } catch (e) { fail(e); return false; }
@@ -320,8 +425,10 @@ export function ChatWorkspace() {
 
   // Sending, and every way a send can end, is its own hook (useChatSend.js): this file is kept under 500 lines.
   const { send, stop, busy, stopping, checking, progress } = useChatSend({
-    text, setText, model, imagesBlocked, chosen, price, active, setActive, messages, setMessages, setThreads, setError,
-    att, limits, draftModel, folders, folder, instr, open, refreshThreads, fail, chatView, saveDraft, addDraft, keepNotice, dropNotice, heldWarning,
+    text, setText, model, imagesBlocked, sendBlocked: oddlingSendPending, chosen, price, active, setActive, messages, setMessages, setThreads, setError,
+    att, limits, draftModel, folders, folder, instr, requiredInstructions: !active && !!oddlingContext, lockedInstructions: lockedOddlingInstructions,
+    expectedSystemPrompt: oddlingContext ? lockedOddlingInstructions : '',
+    onInstructionsReady: bindOddlingToThread, onThreadValidated: validateOddlingThread, open, refreshThreads, fail, chatView, saveDraft, addDraft, keepNotice, dropNotice, heldWarning,
     errorCopy: (code, extra) => ({ code, extra }),
     unchargedCopy: (code, extra, warning) => ({ code, extra, before: { code: warning.code, extra: warning } }),
   });
@@ -352,7 +459,8 @@ export function ChatWorkspace() {
   const settings = (
     <SettingsPanel models={models} model={model} busy={busy} onSelectModel={selectModel} tiers={tiers} onTiers={setTiers} offer={offer} opts={opts} onOpts={setOpts} researchOn={researchOn}
       personasOn={personasOn} personas={personas} personaId={personaId} onPersona={pickPersona} onManagePersonas={() => setManagingPersonas(true)}
-      instr={instr} onInstr={setInstr} hasThread={!!active} canSaveInstr={!!active && instr !== (active.system_prompt || '')} onSaveInstr={saveInstr} saved={saved} maxPrompt={MAX_PROMPT} />
+      instr={oddlingContext ? lockedOddlingInstructions : instr} onInstr={setInstr} instructionsLocked={!!oddlingContext}
+      hasThread={!!active} canSaveInstr={!oddlingContext && !!active && instr !== (active.system_prompt || '')} onSaveInstr={saveInstr} saved={saved} maxPrompt={MAX_PROMPT} />
   );
   return (
     <div className="mx-auto flex h-[calc(100dvh-64px)] max-w-[1500px]">
@@ -383,7 +491,19 @@ export function ChatWorkspace() {
               <div className="py-16 text-center">
                 <h1 data-testid="chat-title" className="vx-display text-[32px]">{t("app.chat.workOn")}</h1>
                 <p className="mt-2 text-vx-fg-muted">{t("app.chat.priceHelp")}</p>
-                {!active && <SkillsPanel selectedIds={skillIds} onPick={pickSkill} disabled={busy} />}
+                {oddlingContext && (
+                  <div data-testid="oddling-canon-banner" className="mx-auto mt-4 max-w-xl rounded-2xl border border-vx-accent/40 bg-vx-accent/[0.07] px-4 py-3 text-start">
+                    <p className="font-vx-mono text-[10px] font-bold tracking-[0.12em] text-vx-accent">{t('app.chat.oddlingCanon.label', { name: oddlingHandoffName(oddlingContext) })}</p>
+                    <p className="mt-1 text-xs leading-relaxed text-vx-fg-body">{t('app.chat.oddlingCanon.help')}</p>
+                  </div>
+                )}
+                {oddlingContextBlocked && (
+                  <p role="alert" className="mx-auto mt-3 max-w-xl rounded-xl border border-vx-danger/40 bg-vx-danger/[0.07] px-4 py-3 text-start text-sm text-vx-danger">
+                    {t('app.chat.oddlingCanon.tooLong')} <Link className="underline" href="/app/oddlings">{t('app.chat.oddlingCanon.back')}</Link>
+                  </p>
+                )}
+                {!active && <SkillsPanel selectedIds={skillIds} lockedIds={oddlingContext ? ['oddling-continuity'] : []} onPick={pickSkill} disabled={busy} />}
+                {!active && oddlingContext && <p role="status" className="mx-auto mt-3 max-w-xl text-start text-xs text-vx-fg-muted">{t('app.chat.skills.canonLocked')}</p>}
               </div>
             )}
             {starredOnly && shown.length === 0 && <p className="py-8 text-center text-vx-fg-muted">{t("app.chat.workspace.noStars")}</p>}
@@ -402,7 +522,7 @@ export function ChatWorkspace() {
                   )
                     : <div aria-live={m.status === 'streaming' ? 'polite' : undefined}>{m.content ? <ChatText text={m.content} /> : <p className="text-vx-fg-muted">{m.status === 'saving' ? t("app.chat.workspace.stopping") : m.status === 'lost' ? t("app.chat.workspace.connectionChecking") : helperCopy(t, locale, researchProgressLabel(progress)) || t("app.chat.settings.thinking")}</p>}</div>}
                   {(m.status === 'saving' || m.status === 'lost') && m.content && <p role="status" className="mt-2 font-vx-mono text-xs text-vx-fg-muted">{m.status === 'saving' ? t("app.chat.workspace.savingStopped") : t("app.chat.workspace.connectionLost")}</p>}
-                  {m.role === 'assistant' && !isLive(m) && <StudioDraftCards text={m.content} models={studioModels} />}
+                  {m.role === 'assistant' && !isLive(m) && !oddlingCanonBlocked && <StudioDraftCards text={m.content} models={studioModels} oddlingHandoff={oddlingContext} />}
                   {m.role === 'assistant' && !isLive(m) && <Footer m={m} starred={stars.includes(m.id)} onStar={() => star(m.id)} />}
                 </div>
               </article>
@@ -413,6 +533,12 @@ export function ChatWorkspace() {
 
         <div className="border-t border-vx-border px-4 py-3">
           <div className="mx-auto max-w-[820px]">
+            {composerKind === COMPOSER_KINDS.CHAT && oddlingCanonBlocked && (
+              <div role="alert" data-testid="oddling-canon-blocked" className="mb-2 rounded-lg border border-vx-danger/40 bg-vx-danger/[0.07] px-4 py-3 text-sm text-vx-danger">
+                {t('app.chat.oddlingCanon.changed')}{' '}
+                <button type="button" onClick={blank} className="font-semibold underline">{t('app.chat.oddlingCanon.newChat')}</button>
+              </div>
+            )}
             {composerKind === COMPOSER_KINDS.CHAT && error && (
               <div role="alert" className="mb-2 rounded-lg border border-vx-danger/40 bg-vx-danger/[0.07] px-4 py-3 text-sm text-vx-danger">
                 {errorText(t, error)} {error.code === 'insufficient_balance' && <Link className="underline" href="/app/credits">{t("mobile.topUp")}</Link>}
@@ -439,10 +565,10 @@ export function ChatWorkspace() {
             {composerKind === COMPOSER_KINDS.CHAT && skillIds.length > 0 && !active && (
               <div className="mb-2 flex flex-wrap gap-2">
                 {skillIds.map((skillId) => (
-                  <button key={skillId} type="button" onClick={() => clearSkill(skillId)} disabled={busy} aria-label={t('app.chat.workspace.removeSkill', { name: tOr(t, `app.chat.skill.${skillId}.name`, skillById(skillId)?.name || '') })}
+                  <button key={skillId} type="button" onClick={() => clearSkill(skillId)} disabled={busy || (!!oddlingContext && skillId === 'oddling-continuity')} aria-label={t('app.chat.workspace.removeSkill', { name: tOr(t, `app.chat.skill.${skillId}.name`, skillById(skillId)?.name || '') })}
                     className="inline-flex items-center gap-2 rounded-full border border-vx-accent py-1 pe-3 ps-1 text-xs font-semibold text-vx-fg disabled:opacity-50">
                     <StudioSkillIcon skillId={skillId} size="chip" />
-                    {tOr(t, `app.chat.skill.${skillId}.name`, skillById(skillId)?.name || '')} <span aria-hidden="true">×</span>
+                    {tOr(t, `app.chat.skill.${skillId}.name`, skillById(skillId)?.name || '')} {(!oddlingContext || skillId !== 'oddling-continuity') && <span aria-hidden="true">×</span>}
                   </button>
                 ))}
               </div>
@@ -464,11 +590,11 @@ export function ChatWorkspace() {
                 {offer.images && <AttachButton onPick={att.add} disabled={busy} full={att.items.length >= limits.maxAttachments} />}
                 <label className="sr-only" htmlFor="chat-msg">{t("app.chat.message")}</label>
                 <textarea id="chat-msg" rows={1} value={text} maxLength={MAX_TEXT} placeholder={skillIds.length ? tOr(t, `app.chat.skill.${skillIds[0]}.starter`, skillById(skillIds[0])?.starter || t('app.chat.ask')) : t('app.chat.ask')} onChange={(e) => setText(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (!oddlingSendPending) send(); } }}
                   className="max-h-48 min-h-14 min-w-0 flex-1 resize-none bg-transparent px-2 py-3 text-[15px] text-vx-fg outline-hidden placeholder:text-vx-fg-faint" />
                 {busy
                   ? <button type="button" onClick={stop} disabled={stopping || checking} className="mb-1 rounded-full border border-vx-border px-5 py-2.5 text-sm font-semibold disabled:opacity-50">{stopping ? t("app.chat.workspace.stopping") : checking ? t("app.chat.workspace.checking") : t("app.chat.workspace.stop")}</button>
-                  : <button type="button" onClick={send} disabled={!text.trim() || imagesBlocked} className="mb-1 min-w-28 rounded-full bg-vx-accent px-5 py-2.5 text-sm font-semibold text-vx-accent-ink transition-colors hover:bg-vx-accent-hover disabled:opacity-50">{isFree ? t("app.chat.workspace.sendFree") : t('app.chat.workspace.send', { price: credits(t, locale, price) })}</button>}
+                  : <button type="button" onClick={send} disabled={!text.trim() || imagesBlocked || oddlingSendPending} className="mb-1 min-w-28 rounded-full bg-vx-accent px-5 py-2.5 text-sm font-semibold text-vx-accent-ink transition-colors hover:bg-vx-accent-hover disabled:opacity-50">{isFree ? t("app.chat.workspace.sendFree") : t('app.chat.workspace.send', { price: credits(t, locale, price) })}</button>}
               </div>
               </> : <MediaComposer kind={composerKind} media={mediaGeneration} prompt={mediaPrompt} onPrompt={setMediaPrompt} />}
             </div>

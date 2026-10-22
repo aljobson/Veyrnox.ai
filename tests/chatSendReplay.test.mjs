@@ -287,8 +287,9 @@ test('sendTurn resolves only for a replay or a `done`, and the words are the one
     assert.match(apiSource, /try \{ const d = JSON\.parse\(data\); onEvent\(event, d\); if \(event === 'done'\) ended = true; \} catch \{/);
     assert.match(apiSource, /\n {2}if \(!ended\) throw unanswered\(\);[^\n]*\n {2}notifyBalanceChanged\(\);\n {2}return \{ replay: false \};\n\}/);
     assert.equal(apiSource.split('return { replay: ').length - 1, 2);
-    // Nothing added to what the screen can say (tests/chatBrokenStream.test.mjs pins what these three promise).
+    // Keep the deliberately supported vocabulary pinned. Oddling continuity adds instructions_unavailable so a
+    // required passport cannot silently start a paid turn without its canon.
     const codes = [...apiSource.matchAll(/case '([a-z_]+)':/g)].map((m) => m[1]);
-    assert.equal(codes.length, 48, 'no new words (reply_time_limit and stop_limit were added by the 2026-10-09 audit; account_on_hold by ADR-0083)');
-    for (const code of ['connection_lost', 'connection_saved', 'connection_refunded', 'reply_not_saved']) assert.ok(codes.includes(code), code);
+    assert.equal(codes.length, 49, 'only the reviewed instructions_unavailable state extends the pinned vocabulary');
+    for (const code of ['connection_lost', 'connection_saved', 'connection_refunded', 'reply_not_saved', 'instructions_unavailable']) assert.ok(codes.includes(code), code);
 });
