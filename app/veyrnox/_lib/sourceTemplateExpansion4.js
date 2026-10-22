@@ -1,5 +1,5 @@
 const base = {
-  credits: 34,
+  credits: 32,
   durationSeconds: 10,
   isNew: true,
   inspired: true,
@@ -70,7 +70,7 @@ const films = [
 ];
 
 function template([id, name, category, previewAspect, aspect, needs, action], model = 'Kling 3.0 · I2V') {
-  const credits = model === 'Seedance 2.0 Fast' ? 28 : 34;
+  const credits = model === 'Seedance 2.0 Fast' ? 28 : 32;
   const bg = category === 'FANTASY' ? 'linear-gradient(155deg,#071525 0%,#31556e 55%,#cf9e63 100%)'
     : category === 'CARTOONS' ? 'linear-gradient(155deg,#201029 0%,#7a356f 55%,#f0b85f 100%)'
       : category === 'FASHION' ? 'linear-gradient(155deg,#171319 0%,#624d68 55%,#d6ad96 100%)'

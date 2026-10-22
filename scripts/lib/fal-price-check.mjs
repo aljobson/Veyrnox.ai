@@ -2,7 +2,13 @@
 // page against one catalog row. No network here, so `npm test` covers it
 // (tests/falPriceCheck.test.mjs, tests/falBasePrice.test.mjs).
 
-export const REFERENCE_DOLLARS_PER_CREDIT = 0.033;
+// The credit price the 50% floor is measured at. ADR-0037 (amendment 2): after
+// an 8% + $0.30 fee a credit sold at the $129/3000 pack leaves $0.03946, and
+// half of its gross ($0.0215) must stay, so a credit may carry $0.01796 of
+// provider cost. Measured against a reference of 2 * 0.01796, "margin >= 50%"
+// is exactly "cost <= credits * 0.01796", the rule migration 0366 enforces on
+// every active catalog row. (ADR-0014 used $0.033, which asked for $0.0165.)
+export const REFERENCE_DOLLARS_PER_CREDIT = 0.03592;
 export const MARGIN_FLOOR = 0.5;
 // fal rounds and re-tiers often; only shout when the move is real.
 const RELATIVE_TOLERANCE = 0.05;
@@ -59,7 +65,7 @@ export function marginAt(costUsd, credits) {
 
 /** Smallest credit count that still clears the floor at the given cost. */
 export function creditsForFloor(costUsd) {
-    return Math.ceil((costUsd / (1 - MARGIN_FLOOR)) / REFERENCE_DOLLARS_PER_CREDIT);
+    return Math.ceil((costUsd / (1 - MARGIN_FLOOR)) / REFERENCE_DOLLARS_PER_CREDIT - 1e-9);
 }
 
 const near = (value, target, allowance) => Math.abs(value - target) <= Math.max(allowance, target * RELATIVE_TOLERANCE);

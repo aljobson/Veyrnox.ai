@@ -42,8 +42,8 @@ test('the production catalog is named on the first line and every row is compare
     assert.equal(out.status, 0, out.all);
     assert.deepEqual(out.lines, [
         `catalog: production (${new URL(PRODUCTION).host})`,
-        'ok    bria-expand          $0.0400 per generation 3cr  margin 59.6%',
-        'ok    seedream-4           $0.0300 per generation 2cr  margin 54.5%',
+        'ok    bria-expand          $0.0400 per generation 3cr  margin 62.9%',
+        'ok    seedream-4           $0.0300 per generation 2cr  margin 58.2%',
         '',
         "base prices: 2 of 2 match fal's billing",
         '',
@@ -86,7 +86,7 @@ test('without the flag another catalog is still read, and the first line says it
     const out = run({ url: 'https://some-other-project.supabase.co', args: [] });
     assert.equal(out.status, 0, out.all);
     assert.match(out.lines[0], /^catalog: NOT production \(SUPABASE_URL is not /);
-    assert.equal(out.lines[1], 'ok    bria-expand          $0.0400 per generation 3cr  margin 59.6%');
+    assert.equal(out.lines[1], 'ok    bria-expand          $0.0400 per generation 3cr  margin 62.9%');
     assert.equal(out.lines.at(-1), 'clean (0 drift notes, 0 cost notes)');
     assert.ok(!out.all.includes('some-other-project'), 'the value it was given is printed');
 });

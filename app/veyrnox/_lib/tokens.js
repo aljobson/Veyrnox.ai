@@ -13,16 +13,16 @@ import { templateById } from './templates.js';
 export const MODELS = [
   { id: 'wan-2.5-kie',        name: 'Wan 2.5',             credits: 19,  tag: 'RECOMMENDED', preselected: true, kind: 'video', durations: [5, 10] },
   { id: 'kling-2.6-pro-kie',  name: 'Kling 2.6 Pro',       credits: 17,                                         kind: 'video', durations: [5, 10] },
-  { id: 'kling-3.0-i2v',      name: 'Kling 3.0 · I2V',     credits: 34,                                         kind: 'video', durations: [5, 10] },
+  { id: 'kling-3.0-i2v',      name: 'Kling 3.0 · I2V',     credits: 32,                                         kind: 'video', durations: [5, 10] },
   { id: 'seedance-2.0-fast',  name: 'Seedance 2.0 Fast',   credits: 28,                                         kind: 'video', durations: [5, 10] },
-  { id: 'kling-avatar-v2',    name: 'Kling AI Avatar',     credits: 35,  tag: 'NEW',                            kind: 'video', durations: [5], media: { image: { required: true }, audio: { required: true, maxSeconds: 10 } } },
-  { id: 'latentsync',         name: 'LatentSync',          credits: 13,  tag: 'NEW',                            kind: 'video', durations: [5], media: { video: { required: true, maxSeconds: 40 }, audio: { required: true, maxSeconds: 40 } } },
+  { id: 'kling-avatar-v2',    name: 'Kling AI Avatar',     credits: 32,  tag: 'NEW',                            kind: 'video', durations: [5], media: { image: { required: true }, audio: { required: true, maxSeconds: 10 } } },
+  { id: 'latentsync',         name: 'LatentSync',          credits: 12,  tag: 'NEW',                            kind: 'video', durations: [5], media: { video: { required: true, maxSeconds: 40 }, audio: { required: true, maxSeconds: 40 } } },
   { id: 'hailuo-02-kie',      name: 'MiniMax Hailuo 02',   credits: 9,                                         kind: 'video', durations: [5], presentation: { durationByOption: { 5: '6' } } },
-  { id: 'veo-3.1-kie',        name: 'Veo 3.1',             credits: 76,  tag: 'PREMIUM',    premium: true, gated: true, kind: 'video', durations: [5], presentation: { fixedDurationLabel: '8s', resolutionLabel: '720p' } },
+  { id: 'veo-3.1-kie',        name: 'Veo 3.1',             credits: 70,  tag: 'PREMIUM',    premium: true, gated: true, kind: 'video', durations: [5], presentation: { fixedDurationLabel: '8s', resolutionLabel: '720p' } },
   { id: 'veo-3.1-fast-kie',   name: 'Veo 3.1 Fast',        credits: 19,                                         kind: 'video', durations: [5], presentation: { fixedDurationLabel: '8s', resolutionLabel: '720p' } },
   { id: 'veo-3.1-lite-kie',   name: 'Veo 3.1 Lite',        credits: 10,                                         kind: 'video', durations: [5], presentation: { fixedDurationLabel: '8s', resolutionLabel: '720p' } },
   { id: 'nano-banana-pro-grsai', name: 'Nano Banana Pro',    credits: 2,   tag: 'NEW',                            kind: 'image', durations: [5] },
-  { id: 'nano-banana-pro-edit', name: 'Nano Banana Pro Edit', credits: 10,                                      kind: 'image', durations: [5] },
+  { id: 'nano-banana-pro-edit', name: 'Nano Banana Pro Edit', credits: 9,                                      kind: 'image', durations: [5] },
   { id: 'nano-banana-kie',    name: 'Nano Banana',         credits: 2,                                         kind: 'image', durations: [5] },
   { id: 'sana-1.5-4.8b',     name: 'Sana v1.5 4.8B',      credits: 1,   tag: 'NEW',                            kind: 'image', durations: [5] },
   { id: 'flux-2-pro',         name: 'Flux.2 [pro]',        credits: 2,                                          kind: 'image', durations: [5] },
@@ -35,9 +35,9 @@ export const MODELS = [
   { id: 'elevenlabs-sfx-v2',  name: 'ElevenLabs Sound Effects', credits: 2,                                     kind: 'audio', durations: [5], presentation: { fixedDurationLabel: '10s' } },
   { id: 'mmaudio-v2',         name: 'MMAudio v2',          credits: 1,                                          kind: 'audio', durations: [5], presentation: { fixedDurationLabel: '8s' } },
   { id: 'elevenlabs-tts-turbo', name: 'ElevenLabs TTS Turbo', credits: 4,                                       kind: 'audio', speech: true, promptMax: 1000, durations: [5] },
-  { id: 'minimax-speech-2.6-hd', name: 'MiniMax Speech 2.6 HD', credits: 7,                                     kind: 'audio', speech: true, promptMax: 1000, durations: [5] },
+  { id: 'minimax-speech-2.6-hd', name: 'MiniMax Speech 2.6 HD', credits: 6,                                     kind: 'audio', speech: true, promptMax: 1000, durations: [5] },
   { id: 'inworld-tts',        name: 'Inworld TTS',         credits: 2,                                          kind: 'audio', speech: true, promptMax: 2000, durations: [5] },
-  { id: 'elevenlabs-dialogue', name: 'ElevenLabs Dialogue', credits: 7,  tag: 'NEW',                            kind: 'audio', speech: true, promptMax: 1000, durations: [5] },
+  { id: 'elevenlabs-dialogue', name: 'ElevenLabs Dialogue', credits: 6,  tag: 'NEW',                            kind: 'audio', speech: true, promptMax: 1000, durations: [5] },
 ];
 
 // 10s video = exactly 2x credits. Non-negotiable.
