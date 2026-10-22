@@ -186,7 +186,7 @@ test('new data areas are loaded only through app catalogs', () => {
   for (const file of ['app/veyrnox/_components/TemplateRecipe.js','app/veyrnox/presets/[id]/page.js']) assert.ok(!candidates(file, readFileSync(file,'utf8')).some(r => r.status === 'unresolved'));
 });
 
-test('English recipe and detail markup remain byte-identical to the pre-change checkout', async () => {
+test('English recipe and detail markup match the reviewed baseline', async () => {
   const { createHash } = await import('node:crypto');
   const baseline = JSON.parse(readFileSync('tests/fixtures/data-copy-english-main.json', 'utf8'));
   const hash = value => createHash('sha256').update(value).digest('hex');
