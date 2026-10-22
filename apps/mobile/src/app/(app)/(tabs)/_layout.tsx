@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import { Tabs } from 'expo-router';
 import { Text, View, type ColorValue } from 'react-native';
 import { HeaderRight } from '../../../components/HeaderChips';
@@ -6,6 +7,7 @@ import { MenuButton } from '../../../components/MenuDrawer';
 import { VeyMascot } from '../../../components/VeyMascot';
 import { HEADER_MAX_FONT_SCALE, MIN_TARGET } from '../../../lib/a11y';
 import { t } from '../../../lib/i18n';
+import { MENU_ICONS, type MenuIcon } from '../../../lib/menuIcons';
 import { colors } from '../../../theme';
 
 // The tab bar has a fixed height, so its labels stop growing at the same limit as the header; everything else follows the system text size.
@@ -16,6 +18,13 @@ function tabLabel(key: string) {
                 {t(key)}
             </Text>
         );
+    };
+}
+
+// One icon per tab, tinted by the tab bar (accent when selected, muted otherwise); the label stays for screen readers.
+function tabIcon(name: MenuIcon) {
+    return function TabIcon({ color }: { color: ColorValue }) {
+        return <Image source={MENU_ICONS[name]} style={{ width: 24, height: 24 }} tintColor={typeof color === 'string' ? color : colors.muted} contentFit="contain" accessibilityElementsHidden />;
     };
 }
 
@@ -42,15 +51,14 @@ export default function TabsLayout() {
                 tabBarStyle: { backgroundColor: colors.background, borderTopColor: colors.border },
                 tabBarActiveTintColor: colors.accent,
                 tabBarInactiveTintColor: colors.muted,
-                tabBarIcon: () => null,
                 tabBarItemStyle: { minHeight: MIN_TARGET, justifyContent: 'center' },
             }}
         >
-            <Tabs.Screen name="index" options={{ title: t('tabs.explore'), tabBarLabel: tabLabel('tabs.explore'), tabBarAccessibilityLabel: t('tabs.explore') }} />
-            <Tabs.Screen name="create" options={{ title: t('tabs.create'), tabBarLabel: tabLabel('tabs.create'), tabBarAccessibilityLabel: t('tabs.create') }} />
-            <Tabs.Screen name="cinema" options={{ title: t('tabs.cinema'), tabBarLabel: tabLabel('tabs.cinema'), tabBarAccessibilityLabel: t('tabs.cinema') }} />
-            <Tabs.Screen name="library" options={{ title: t('tabs.library'), tabBarLabel: tabLabel('tabs.library'), tabBarAccessibilityLabel: t('tabs.library') }} />
-            <Tabs.Screen name="publish" options={{ title: t('tabs.publish'), tabBarLabel: tabLabel('tabs.publish'), tabBarAccessibilityLabel: t('tabs.publish') }} />
+            <Tabs.Screen name="index" options={{ tabBarIcon: tabIcon('house'), title: t('tabs.explore'), tabBarLabel: tabLabel('tabs.explore'), tabBarAccessibilityLabel: t('tabs.explore') }} />
+            <Tabs.Screen name="create" options={{ tabBarIcon: tabIcon('sparkle'), title: t('tabs.create'), tabBarLabel: tabLabel('tabs.create'), tabBarAccessibilityLabel: t('tabs.create') }} />
+            <Tabs.Screen name="cinema" options={{ tabBarIcon: tabIcon('film'), title: t('tabs.cinema'), tabBarLabel: tabLabel('tabs.cinema'), tabBarAccessibilityLabel: t('tabs.cinema') }} />
+            <Tabs.Screen name="library" options={{ tabBarIcon: tabIcon('image'), title: t('tabs.library'), tabBarLabel: tabLabel('tabs.library'), tabBarAccessibilityLabel: t('tabs.library') }} />
+            <Tabs.Screen name="publish" options={{ tabBarIcon: tabIcon('send'), title: t('tabs.publish'), tabBarLabel: tabLabel('tabs.publish'), tabBarAccessibilityLabel: t('tabs.publish') }} />
         </Tabs>
     );
 }
