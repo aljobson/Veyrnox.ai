@@ -16,13 +16,19 @@ function render(packs, typical, locale = 'en') {
   return f.render(React.createElement(f.load(file).PricingCards, { packs, typical }));
 }
 
-test('one tab per live pack, and the cheapest pack per credit is the one shown and marked best value', () => {
+test('every live pack is a card in the same row, and only the cheapest pack per credit is marked best value', () => {
   const html = render(PACKS, { image: 2, video: 19 });
-  assert.equal((html.match(/role="tab"/g) || []).length, PACKS.length);
-  assert.match(html, /aria-selected="true"[^>]*>3,000</);
-  assert.match(html, /Best value/);
-  assert.match(html, /\$129/);
-  assert.match(html, /\$0\.043 per credit/);
+  assert.equal((html.match(/data-pack=/g) || []).length, PACKS.length);
+  assert.doesNotMatch(html, /role="tab/);
+  assert.match(html, /xl:grid-cols-4/);
+  assert.equal((html.match(/Best value/g) || []).length, 1);
+  const cards = Object.fromEntries(html.split('data-pack="').slice(1).map((chunk) => [chunk.slice(0, chunk.indexOf('"')), chunk]));
+  assert.match(cards['web-3000'], /Best value/);
+  assert.match(cards['web-3000'], /\$0\.043 per credit/);
+  for (const [id, price] of [['web-100', '$10'], ['web-270', '$19'], ['web-1200', '$59'], ['web-3000', '$129']]) {
+    assert.ok(cards[id].includes(price), `${id} shows ${price}`);
+    if (id !== 'web-3000') assert.doesNotMatch(cards[id], /Best value/);
+  }
 });
 
 test('the saving is measured against the dearest pack, never against a typed list price', () => {
@@ -36,6 +42,8 @@ test('what a pack buys comes from the live typical prices and is left out withou
   const withCosts = render(PACKS, { image: 2, video: 19 });
   assert.match(withCosts, /Images, about 1,500/);
   assert.match(withCosts, /Five-second clips, about 157/);
+  assert.match(withCosts, /Images, about 50</);
+  assert.match(withCosts, /Five-second clips, about 5</);
   const without = render(PACKS, null);
   assert.doesNotMatch(without, /about \d/);
   assert.doesNotMatch(without, /Images, about/);
@@ -51,7 +59,7 @@ test('promises on the card are the real ones and a translation is used when one 
   const html = render(PACKS, null);
   assert.match(html, /Credits never expire/);
   assert.match(html, /Failed jobs refund automatically/);
-  assert.match(html, /href="\/app\/credits"/);
+  assert.equal((html.match(/href="\/app\/credits"/g) || []).length, PACKS.length);
   const de = render(PACKS, null, 'de');
   assert.match(de, /Credits verfallen nie/);
   assert.match(de, /Bester Preis/);
