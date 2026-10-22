@@ -1,8 +1,10 @@
-// Data for the public /models pages and the sitemap. Every fact shown is
-// read from the live catalog (lib/publicCatalog.js); nothing here sets a
-// price or describes a model in words the catalog does not hold.
+// Data for the public /models pages and the sitemap. The live catalog is
+// authoritative; public pages use the checked-in fallback only when that
+// catalog cannot be reached.
 import { readPublicCatalog } from '../../../lib/publicCatalog.js';
-import { isShelfModel, kindOf, distinctShelfNames } from './tokens.js';
+import { PRESETS } from './templates.js';
+import { modelBadges, modelSummary } from './modelSummaries.js';
+import { MODELS, distinctShelfNames, isShelfModel, kindOf, modelIdForName, shelfName } from './tokens.js';
 import { outputDurationLabel } from './chatMedia.js';
 import { audioDurationLabel, sourceDurationLimit } from './modelPricing.js';
 import { translator } from '../../../lib/i18n/translate.mjs';
@@ -24,10 +26,31 @@ function namedModels(rows) {
   return rows.map((m) => ({ ...m, kind: kindOf(m.modality), title: titleOf(m) }));
 }
 
+// Public pages must remain useful when the live catalog is unavailable (local
+// development, a transient database outage, or a missing Worker binding). The
+// bundled list deliberately carries fewer facts than the catalog; do not
+// invent provider capabilities just to make the fallback look richer.
+export function fallbackModels() {
+  return MODELS.map((model) => ({
+    ...model,
+    modality: model.kind,
+    capabilities: { inputs: {}, media: {} },
+    title: shelfName(model.name),
+  }));
+}
+
 // `options` reaches readPublicCatalog; the cron passes its own cfg, since
 // process.env is not the Worker env outside a request.
 export async function listModels(options) {
-  return shelfModels(await readPublicCatalog(options));
+  try {
+    return shelfModels(await readPublicCatalog(options));
+  } catch (error) {
+    // Explicit options are supplied by trusted background work that must know
+    // whether its catalog read failed. Browser pages call with no options and
+    // may safely render the bundled public fallback.
+    if (options !== undefined) throw error;
+    return fallbackModels();
+  }
 }
 
 // File transformations have reference pages too, without adding editor-only
@@ -80,4 +103,47 @@ export function modelFacts(model, t = ENGLISH) {
     }
   }
   return facts;
+}
+
+const USE_CASES = {
+  video: ['Short cinematic shots', 'Social video concepts', 'Storyboards and visual tests'],
+  image: ['Campaign concepts', 'Thumbnails and key art', 'Fast visual exploration'],
+  audio: ['Soundtracks and effects', 'Voice and dialogue', 'Audio ideas before production'],
+};
+
+/** Plain-language, product-backed content for one model page. */
+export function modelDetail(model) {
+  if (!model) return null;
+  const facts = modelFacts(model);
+  const badges = modelBadges({ ...model, kind: model.kind || kindOf(model.modality) });
+  const required = facts.filter((fact) => /input$/i.test(fact.label) && /^Required/.test(fact.value));
+  const inferredRequired = badges.includes('IMAGE + AUDIO') ? 'image and audio'
+    : badges.includes('VIDEO + AUDIO') ? 'video and audio'
+      : badges.includes('IMAGE REF') ? 'image'
+        : badges.includes('VIDEO REF') ? 'video'
+          : null;
+  const requiredText = required.length
+    ? `Add the required ${required.map((fact) => fact.label.replace(/ input$/i, '').toLowerCase()).join(' and ')}.`
+    : inferredRequired ? `Add the required ${inferredRequired}.` : 'Write a clear brief describing the result you want.';
+  const kind = model.kind || kindOf(model.modality);
+  return {
+    summary: modelSummary({ ...model, kind }),
+    badges,
+    useCases: USE_CASES[kind] || USE_CASES.image,
+    steps: [
+      { title: 'Set the brief', body: requiredText },
+      { title: 'Choose the format', body: kind === 'video' ? 'Choose an available clip length and format.' : 'Choose the format that fits where the result will be used.' },
+      { title: 'Check, then generate', body: `Studio shows the exact ${model.credits}-credit starting price before you run it. Failed generations refund automatically.` },
+    ],
+    faq: [
+      { question: `What is ${model.title || model.name} best for?`, answer: modelSummary({ ...model, kind }) },
+      { question: 'What will it cost?', answer: `${model.credits} credits at the listed base setting. Studio shows the final total before generation.` },
+      { question: 'What happens if it fails?', answer: 'A failed generation refunds its credits automatically and remains visible in your Library.' },
+    ],
+  };
+}
+
+/** Templates wired to this exact model id, not fuzzy name matching. */
+export function templatesForModel(modelId, limit = 6) {
+  return PRESETS.filter((preset) => modelIdForName(preset.model) === modelId).slice(0, limit);
 }

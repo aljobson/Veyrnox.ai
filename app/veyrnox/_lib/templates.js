@@ -8,7 +8,6 @@
 // modelIdForName; `credits` must equal that model's 5s price
 // (tests/presetLinking.test.mjs). Prices shown come from the live catalog.
 
-// CARTOONS, MOVIES, FANTASY and REALISTIC are the Trends categories (ADR-0072); each has at least one template, or its filter would show an empty page.
 import { SOURCE_TEMPLATES } from './sourceTemplates.js';
 import { SOURCE_TEMPLATE_EXPANSION_4 } from './sourceTemplateExpansion4.js';
 import { SOURCE_TEMPLATE_EXPANSION_5 } from './sourceTemplateExpansion5.js';
@@ -149,10 +148,10 @@ const WALL_CLIP_KEYS = [
   'wall-event-character-swap',
 ];
 export const PRESETS = [
-  ...GALLERY_CLIP_KEYS.map((key) => SOURCE_TEMPLATES.find((p) => p.clipKey === key)),
+  ...GALLERY_CLIP_KEYS.map((key) => SOURCE_TEMPLATES.find((p) => p.clipKey === key)).filter(Boolean),
   ...VEYRNOX_ORIGINALS,
 ];
-export const WALL_PRESETS = WALL_CLIP_KEYS.map((key) => SOURCE_TEMPLATES.find((p) => p.clipKey === key));
+export const WALL_PRESETS = WALL_CLIP_KEYS.map((key) => SOURCE_TEMPLATES.find((p) => p.clipKey === key)).filter(Boolean);
 // Old bookmarks retain their original prompt, without an unrelated demo clip.
 export const ALL_TEMPLATES = [...SOURCE_TEMPLATES, ...LEGACY_PRESETS, ...VEYRNOX_ORIGINALS];
 export const PRESET_CATEGORIES = ['ALL', 'NEW', ...CATEGORY_ORDER.filter((category) => PRESETS.some((p) => p.category === category))];
@@ -162,6 +161,26 @@ export function templatesIn(category) {
   if (category === 'ALL') return PRESETS;
   if (category === 'NEW') return PRESETS.filter((p) => p.isNew);
   return PRESETS.filter((p) => p.category === category);
+}
+
+// Template search stays local: the gallery is a small static list and every
+// useful matching field is already in the browser. Keep this separate from the
+// site-wide search so choosing a category and narrowing within it compose.
+export function searchTemplates(templates, query) {
+  const needle = String(query || '').trim().toLocaleLowerCase();
+  if (!needle) return templates;
+  const terms = needle.split(/\s+/);
+  return templates.filter((template) => {
+    const haystack = [
+      template.name,
+      template.id.replaceAll('-', ' '),
+      template.model,
+      template.category,
+      template.prompt,
+      template.needs,
+    ].filter(Boolean).join(' ').toLocaleLowerCase();
+    return terms.every((term) => haystack.includes(term));
+  });
 }
 
 export function templateById(id) {

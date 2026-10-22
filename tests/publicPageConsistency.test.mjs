@@ -47,7 +47,7 @@ test('there is one public nav, in one order', () => {
     assert.match(marketing, /const Item = section \? 'a' : Link;/);
     assert.match(read('app/veyrnox/_components/MobileMenu.js'), /const Item = it\.href\.includes\('#'\) \|\| isAppLocalePath\(pathname\) !== isAppLocalePath\(href\) \? 'a' : Link;/);
     assert.deepEqual(PRIMARY_NAV_CATEGORIES.map((c) => c.label),
-        ['Create', 'Edit', 'Make a film', 'Publish', 'Pricing']);
+        ['Models', 'Create', 'Edit', 'Make a film', 'Publish', 'Pricing']);
     assert.deepEqual(NAV_CATEGORIES, [...PRIMARY_NAV_CATEGORIES, ...SECONDARY_NAV_CATEGORIES]);
     // The public gallery once ODDLINGS_PUBLIC_ENABLED is on; the studio until then (navHref).
     assert.ok(SECONDARY_NAV_CATEGORIES.some((item) => item.href === '/oddlings' && item.studioHref === '/app/oddlings'),
