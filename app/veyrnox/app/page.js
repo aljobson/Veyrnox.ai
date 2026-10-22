@@ -5,9 +5,13 @@ import Image from 'next/image';
 import { AppNav } from '../_components/NavBar';
 import { Main } from '../_components/Main';
 import { PresetGallery } from '../_components/PresetGallery';
+import { VibeOffer } from '../_components/VibeOffer';
+import { useVibe } from '../_lib/creatorProfile';
 
 export default function Explore() {
   const { t } = useI18n();
+  // The vibe check (ADR-0251): an invitation while no choice is on record, and the order of templates once there is one.
+  const vibe = useVibe();
   return (
     <div className="min-h-dvh">
       {/* No balance prop: AppNav reads the signed-in balance itself. This
@@ -17,6 +21,7 @@ export default function Explore() {
       <Main className="max-w-[1400px] mx-auto px-4 sm:px-8 pt-10 pb-16">
         <h1 className="vx-display text-[40px] sm:text-[56px]">{t("app.explore.presets")}</h1>
         <p className="mt-3 mb-8 text-vx-fg-body max-w-[52ch] leading-[1.6]">{t("app.explore.intro")}</p>
+        <VibeOffer status={vibe.status} onSkipped={vibe.reload} />
         <Link href="/app/oddlings" className="group mb-4 grid overflow-hidden rounded-2xl border border-vx-border bg-vx-panel transition-colors hover:border-vx-accent lg:grid-cols-[1.15fr_.85fr]">
           <div className="relative min-h-56 overflow-hidden bg-vx-base">
             <Image
@@ -45,7 +50,7 @@ export default function Explore() {
           </span>
           <span aria-hidden="true" className="font-semibold text-vx-accent">{t("app.explore.openChat")}</span>
         </Link>
-        <PresetGallery size="md" columns="lg:columns-4" />
+        <PresetGallery size="md" columns="lg:columns-4" taste={vibe.answers} />
       </Main>
     </div>
   );

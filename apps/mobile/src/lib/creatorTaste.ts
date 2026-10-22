@@ -1,4 +1,5 @@
 import type { CreatorAnswers } from './creatorAnswers';
+import { tasteScoreText } from './creatorWords';
 import { heroPicks, needsPhoto, presetKind } from './explore';
 import type { Preset } from './presets';
 
@@ -6,37 +7,8 @@ import type { Preset } from './presets';
 // return their input unchanged, so a person who skipped sees exactly what everyone else sees. Nothing here touches
 // credits, price or what a template does; it only reorders and picks a default.
 
-// Words that mark a template as fitting a goal or a look. Matched against the title, category and prompt, lower-cased.
-const GOAL_WORDS: Readonly<Record<string, readonly string[]>> = {
-    sell: ['product', ' ad ', 'advert', 'unbox', 'brand', 'sale', 'shop', 'commercial'],
-    story: ['story', 'film', 'cinematic', 'scene', 'trailer', 'short'],
-    music_video: ['music', 'lyric', 'dance', 'song', 'band', 'concert'],
-    meme: ['meme', 'funny', 'reaction', 'viral', 'joke', 'parody'],
-    character: ['character', 'portrait', 'avatar', 'mascot', 'persona'],
-    bedtime: ['bedtime', 'lullaby', 'kids', 'children', 'fairy', 'storybook', 'sleep'],
-};
-const LOOK_WORDS: Readonly<Record<string, readonly string[]>> = {
-    neon_rain: ['neon', 'rain', 'cyber', 'night'],
-    sunlit_kitchen: ['kitchen', 'sunlit', 'warm', 'cozy', 'food'],
-    retro_vhs: ['vhs', 'retro', 'vintage', '80s', '90s', 'analog'],
-    dream_anime: ['anime', 'dream', 'manga', 'pastel'],
-    glossy_product: ['product', 'glossy', 'studio', 'packshot', 'luxury'],
-    doc_grit: ['documentary', 'gritty', 'handheld', 'raw', 'street'],
-};
-
-const GOAL_WEIGHT = 3;
-const LOOK_WEIGHT = 1;
-
-function hits(text: string, words: readonly string[] | undefined): number {
-    if (!words) return 0;
-    let n = 0;
-    for (const w of words) if (text.includes(w)) n += 1;
-    return n;
-}
-
 export function tasteScore(p: Pick<Preset, 'title' | 'category' | 'prompt'>, a: Pick<CreatorAnswers, 'goal' | 'look'>): number {
-    const text = ` ${p.title} ${p.category} ${p.prompt} `.toLowerCase();
-    return GOAL_WEIGHT * Math.min(hits(text, GOAL_WORDS[a.goal]), 2) + LOOK_WEIGHT * Math.min(hits(text, LOOK_WORDS[a.look]), 2);
+    return tasteScoreText(`${p.title} ${p.category} ${p.prompt}`, a);
 }
 
 // Templates that match the person's goal and look first; everything else keeps the order the server sent it in.
