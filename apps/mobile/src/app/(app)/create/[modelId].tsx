@@ -12,6 +12,8 @@ import { SourcePicker } from '../../../components/SourcePicker';
 import { DEFAULT_CINEMA, buildCinemaPrompt, sanitizeCinema, type Cinema } from '../../../lib/cinemaCamera';
 import { clearDraft, loadDraft, saveDraft } from '../../../lib/createDraftStore';
 import { SAVED_DRAFT_VERSION, type CreateDraft, audioLengthInvalid, batchCost, freeLeftFor, hasAnyOption, imageCount, optionsFor, resolveAudio, resolveResolution, seedIsInvalid, settingsInputs, takesImageCount, voiceIsMissing } from '../../../lib/createOptions';
+import { loadVibe } from '../../../lib/creatorProfileStore';
+import { defaultAspect } from '../../../lib/creatorTaste';
 import { buildCharacterPrompt, sanitizePicks, type Picks } from '../../../lib/oddlingsBuilder';
 import { useBalance } from '../../../lib/useBalance';
 import { shortfall } from '../../../lib/lowBalance';
@@ -63,7 +65,7 @@ export default function CreateWithModel() {
 
     useEffect(() => {
         fetchCatalog()
-            .then((all) => {
+            .then(async (all) => {
                 const found = all.find((m) => m.id === modelId) ?? null;
                 setModel(found);
                 if (found && kindOf(found.modality) === 'video') {
@@ -73,7 +75,9 @@ export default function CreateWithModel() {
                 if (!found) setError(t('form.modelGone'));
                 if (!found) return;
                 const o = optionsFor(found);
-                const base: OptionValues = { aspect: o.aspects.includes('16:9') ? '16:9' : (o.aspects[0] ?? null), count: 1, seed: '', negative: '', voice: '', audioSeconds: '' };
+                // Where the person said the result will land (the vibe check) picks the opening ratio; no answer keeps 16:9.
+                const vibe = await loadVibe();
+                const base: OptionValues = { aspect: defaultAspect(o.aspects, vibe?.answers ?? null), count: 1, seed: '', negative: '', voice: '', audioSeconds: '' };
                 // A template brings its own words; only a form opened bare gets the unsent draft back.
                 if (typeof presetPrompt === 'string') {
                     setOpts(base);
