@@ -53,4 +53,15 @@ describe('where the welcome shows', () => {
         expect(screen).toContain('markWelcomeSeen');
         expect(screen).toContain("t('welcome.skip')");
     });
+
+    test('the Mobbin-inspired creation goal is the first personalization choice', () => {
+        const screen = read('app', '(app)', 'vibe.tsx');
+        const copy = read('lib', 'i18n', 'messages', 'en', 'vibe.ts');
+        expect(screen).toContain("const STEPS = ['goal', 'look', 'pace', 'chaos', 'destination', 'audience', 'voice']");
+        expect(copy).toContain("'vibe.goal.title': 'What do you want to make first?'");
+        expect(copy).toContain("'vibe.goal.sell': 'Promote a product'");
+        expect(copy).toContain("'vibe.goal.meme': 'Make a social ad'");
+        expect(copy).toContain("'vibe.goal.character': 'Animate my photo'");
+        expect(copy).toContain("'vibe.goal.story': 'Tell a story'");
+    });
 });

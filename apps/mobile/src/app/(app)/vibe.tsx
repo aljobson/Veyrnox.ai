@@ -20,7 +20,9 @@ import { colors, fonts } from '../../theme';
 // skip never throws away answers already saved. Everything chosen here only reorders templates and sets a default.
 type Draft = Partial<CreatorAnswers>;
 type ChoiceKey = 'look' | 'goal' | 'pace' | 'destination' | 'audience';
-const STEPS = ['look', 'goal', 'pace', 'chaos', 'destination', 'audience', 'voice'] as const;
+// Lead with intent: the Mobbin-inspired first choice immediately makes the feed useful, then the remaining
+// questions refine the look and working style without introducing a second onboarding system.
+const STEPS = ['goal', 'look', 'pace', 'chaos', 'destination', 'audience', 'voice'] as const;
 const TOTAL = STEPS.length;
 const SUBTITLED: ReadonlySet<string> = new Set(['pace', 'voice']);
 
