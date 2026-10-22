@@ -5,7 +5,9 @@ import { touchTarget } from '../../lib/a11y';
 import { fetchProfile, verifyFactor } from '../../lib/auth/accountCalls';
 import { toSession } from '../../lib/auth/supabaseAuth';
 import { t } from '../../lib/i18n';
+import { userIdFromToken } from '../../lib/appCache';
 import { aalFromToken, mfaErrorKey, needsChallenge, validCode, verifiedFactors } from '../../lib/mfa';
+import { markMfaCleared, mfaClearedFor } from '../../lib/mfaCheck';
 import { colors } from '../../theme';
 import { CodeField } from './CodeField';
 import { Action, Status } from './shared';
@@ -33,13 +35,23 @@ export function MfaGate({ children }: { children: ReactNode }) {
         const timer = setTimeout(() => live && setPhase((p) => (p === 'checking' ? 'clear' : p)), GATE_TIMEOUT_MS);
         (async () => {
             try {
-                const profile = await fetchProfile(getAccessToken);
+                const token = await getAccessToken();
+                const userId = token ? userIdFromToken(token) : null;
+                // Already passed in this launch: a remount of this gate must not ask the server again.
+                if (mfaClearedFor(userId)) {
+                    if (live) setPhase('clear');
+                    return;
+                }
+                const profile = await fetchProfile(getAccessToken, 'mfa-gate');
                 const aal = aalFromToken(await getAccessToken());
                 if (!live) return;
                 if (needsChallenge(profile, aal)) {
                     setFactorId(verifiedFactors(profile.factors)[0].id);
                     setPhase('challenge');
-                } else setPhase('clear');
+                } else {
+                    markMfaCleared(userId);
+                    setPhase('clear');
+                }
             } catch {
                 if (live) setPhase('clear');
             }
@@ -55,7 +67,9 @@ export function MfaGate({ children }: { children: ReactNode }) {
         setBusy(true);
         setError(null);
         try {
-            await adoptSession(toSession(await verifyFactor(getAccessToken, factorId, code), Date.now()));
+            const session = toSession(await verifyFactor(getAccessToken, factorId, code), Date.now());
+            await adoptSession(session);
+            markMfaCleared(userIdFromToken(session.accessToken));
             setCode('');
             setPhase('clear');
         } catch (err) {
