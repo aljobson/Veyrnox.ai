@@ -16,6 +16,8 @@ Alternatives rejected: inferring preferences from behaviour only (slow, nothing 
 
 The profile is part of the privacy export (ADR-0250): migration 0364 redefines `read_privacy_export_page` with a `creator_profile` key in the `profile` section (status, answers including the studio name, and its times), bounded by `as_of` like the rest, and the export drift guard lists `creator_profiles` as exported.
 
-Not in this change: Vey's tone from the voice answer (a line in the chat system prompt), a shareable card image, translation of the copy beyond English, and enabling the flag on staging (staging is at the 128-binding limit, so a variable must be freed first).
+Language comes first. The interview opens with a card listing the website's eleven languages (English and the ten others), each by its own name with its flag. On the web, choosing another language writes the locale cookie and the account language (the same calls as the language menu) and reloads, so the interview and the whole app continue in it; the ten translations of the interview copy are machine-grade and flagged for native review. On the phone the choice is saved on the device and on the account, but only English is switched on in the app (ADR-0132), so the app stays English and says so until that language goes live; the phone's interview strings join the app-only list for the localization process. The card is skipped on a retake.
+
+Not in this change: Vey's tone from the voice answer (a line in the chat system prompt), a shareable card image, translation of the phone's interview copy (the web copy is translated), and enabling the flag on staging (staging is at the 128-binding limit, so a variable must be freed first).
 
 Open questions for the owner: is the shareable card image in v1; may the interview run before sign-up or only after; is the first creation free for everyone who completes it, or only within the existing free allowance.

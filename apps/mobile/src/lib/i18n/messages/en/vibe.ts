@@ -1,5 +1,9 @@
 // English strings for the Vibe Check, the first-run interview (server ADR-0251).
 export default {
+    'vibe.language.title': 'Which language do you prefer?',
+    'vibe.language.hint': 'Pick one and I will remember it.',
+    'vibe.language.continue': 'Continue',
+    'vibe.language.later': 'Saved. The app will switch to it as soon as that language is available; for now it stays in English.',
     'vibe.intro.title': 'Quick vibe check?',
     'vibe.intro.body': 'Seven taps. I tune Veyrnox.ai to how you make things, then we build your first one together.',
     'vibe.start': 'Start',
