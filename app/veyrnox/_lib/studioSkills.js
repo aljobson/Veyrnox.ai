@@ -8,6 +8,7 @@ import { FILM_ASSISTANTS } from './filmStudioAssistants.js';
 export const MAX_INSTRUCTIONS = 4000; // the chat's own Instructions limit (ADR-0067)
 export const MAX_DRAFTS = 6;          // cards for one reply (a storyboard is the most that needs several)
 export const MAX_DRAFT_PROMPT = 2000;
+export const MAX_SKILL_IDEA = 500;     // short enough for a shareable GET launch URL
 
 export const SKILL_GROUPS = ['Make', 'Edit', 'Plan', 'Film'];
 
@@ -80,6 +81,61 @@ export const SKILLS = [
 
 export function skillById(id) {
   return SKILLS.find((s) => s.id === id) || null;
+}
+
+const GROUP_OVERVIEW = {
+  Make: {
+    bestFor: 'Turning a rough idea into one generation-ready creative brief.',
+    output: 'A checked Studio draft with a compatible model and prompt.',
+  },
+  Edit: {
+    bestFor: 'Planning one clear change to a file you already have.',
+    output: 'An edit-ready Studio draft plus the source file you need to choose.',
+  },
+  Plan: {
+    bestFor: 'Making the model, budget or shot decisions before spending credits.',
+    output: 'A concise plan and, when ready, one or more checked Studio drafts.',
+  },
+  Film: {
+    bestFor: 'Working through one stage of the structured Film Studio workflow.',
+    output: 'A stage-specific draft to review and save in Film Studio.',
+  },
+};
+
+/** Public skill-page copy derived from the instructions the assistant actually follows. */
+export function skillOverview(skill) {
+  if (!skill) return null;
+  const group = GROUP_OVERVIEW[skill.group] || GROUP_OVERVIEW.Make;
+  return {
+    introduction: skill.blurb,
+    bestFor: group.bestFor,
+    howTo: [
+      skill.starter,
+      'Answer one focused question if the specialist needs a missing detail.',
+      skill.group === 'Film' ? 'Review and save the result in Film Studio.' : 'Review the prepared draft, then open it in Studio when you are ready.',
+    ],
+    output: group.output,
+  };
+}
+
+/**
+ * A Skills-library launch may carry one short idea into a new chat. Ignore the
+ * idea unless its skill is known, and bound it before it reaches the composer.
+ */
+export function skillLaunchFromSearch(search) {
+  const params = new URLSearchParams(String(search || ''));
+  const skill = skillById(params.get('skill'));
+  if (!skill) return { skillId: '', idea: '' };
+  return {
+    skillId: skill.id,
+    idea: String(params.get('prompt') || '').trim().slice(0, MAX_SKILL_IDEA),
+  };
+}
+
+/** A feature-gated personal-skill link may open the saved list or the new-skill form. */
+export function personalSkillLaunchFromSearch(search) {
+  const mode = new URLSearchParams(String(search || '')).get('personas');
+  return mode === 'new' || mode === 'manage' ? mode : '';
 }
 
 /** Studio models a draft may name: open (not gated), and not the Library-only editors, Auto Short or the video agent, which take no prompt. */

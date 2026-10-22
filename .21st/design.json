@@ -88,39 +88,59 @@
   },
   "decisions": [
     {
-      "id": "vey-compact-bottom-question-dock",
-      "decision": "Use a 280px maximum width, 164–200px fixed-height bottom question dock with 11–12px text, single-line composer and collapsed examples. Reserve separate mascot and page clearance; retain the mobile guide above chat.",
-      "source": "User screenshot showed an oversized desktop chat with Vey overlapping the input. User requested smaller text and a smaller chat in empty bottom space."
+      "id": "skills-library-density",
+      "choice": "Use a compact, searchable specialist library with horizontal category pills, concise landscape cards and one persistent action per card.",
+      "reason": "The Buzzy reference made a large catalogue easy to scan; Veyrnox keeps that hierarchy while retaining its own tokens, typography, accessibility and explicit control over generation spend."
     },
     {
-      "id": "vey-mobile-visible-guide-with-chat",
-      "decision": "On mobile retain the current walkthrough above the compact question panel, with a separate right-side mascot lane and Back to walkthrough control. Preserve task state and measured page clearance while chatting.",
-      "source": "User requested the Max Rep walkthrough remain visible while asking questions, with Vey docked and no Credits spent."
+      "id": "model-picker-summaries",
+      "choice": "Use a compact dropdown that gives every model a plain-language job summary, input/output badges, availability signal and live credit price.",
+      "reason": "The Buzzy reference makes model choice scannable; Veyrnox adds the operational facts people need before spending credits."
     },
     {
-      "id": "vey-stable-mobile-dock",
-      "decision": "Below 640px keep Vey in a reserved lane beside the walkthrough, or above the left of chat. Scrolling never chooses a new body position. Only an explicit Show action makes a brief fixed-destination pointing gesture before returning to dock. Desktop manual placement remains available.",
-      "source": "User requested a calm mobile dock because avoidance-based repositioning jumped around during scrolling."
+      "id": "studio-creation-modes",
+      "choice": "Separate the Studio's Video, Image and Audio entry points before model and price-tier selection, while keeping the chosen model as the source of truth.",
+      "reason": "A short mode switch reduces a mixed catalog to the relevant models without introducing separate generation screens or hiding Veyrnox's price-before-submit controls."
     },
     {
-      "id": "vey-mobile-chat-compact",
-      "decision": "The mobile question panel uses 34dvh, bounded to 220–280px so the fixed composer fits on short screens; conversation scrolls internally. The Resume walkthrough action sits above, not over, the composer. Keep desktop chat sizing unchanged.",
-      "source": "User request: the question guide takes up the whole screen and needs to be much smaller."
+      "id": "studio-edit-entry",
+      "choice": "Treat AI Edit as a fourth Studio entry that opens the task-led file tools hub, rather than mixing transform tools into generation model lists.",
+      "reason": "People can begin with the job they want to do to an existing file, while the Studio keeps generation modes and pricing easy to understand."
     },
     {
-      "id": "vey-manual-position",
-      "decision": "Drag the existing touch-sized Vey launcher to position the mascot. Taps still toggle help; keyboard Alt+arrows move and Escape resets. Manual placement lasts until reset or reload, with precise pointing retained. No floating text badges or tooltips around the mascot; retain screen-reader labels and the separate walkthrough card.",
-      "source": "User request to position Vey around the screen during the mobile Max Rep walkthrough."
+      "id": "skill-quick-start",
+      "choice": "Place a compact idea-and-specialist composer above the skill catalogue, then carry both selections into a new Chat draft.",
+      "reason": "This preserves browseable skill cards while removing the extra step between having an idea and beginning focused help; the price remains visible before the user starts."
     },
     {
-      "id": "vey-mobile-guide-compact",
-      "decision": "Below 640px, Vey uses a compact step card with two-line guidance and primary actions. More reveals secondary controls and full guidance; desktop remains expanded. Keep highlighted controls above the panel and preserve touch-sized actions.",
-      "source": "User request: make the mobile guidance panel smaller so it does not cover controls or the image."
+      "id": "personal-skills-bridge",
+      "choice": "Expose feature-gated Chat personas as My skills and Create skill actions in the Skills library, reusing the existing authenticated manager and storage.",
+      "reason": "People gain the personal-library workflow seen in the reference without creating a competing local-only skill format or showing controls when the server capability is disabled."
     },
     {
-      "id": "oddling-doll-lab-price-forward",
-      "decision": "Oddling Studio starts with a token-based dress-up doll for fast body, hair and outfit selection, followed by the full detailed trait controls. Its sticky aqua action shows the live catalog cost prominently, reserves amber for credit information, and warns signed-in users when their balance is low without charging before Create confirmation.",
-      "source": "User selected a visual doll-mockup workflow and a large bright generation action with visible cost and low-credit prompting."
+      "id": "template-direct-use",
+      "choice": "Give each template card separate Details and Use template actions, with the direct action restoring its validated prompt, model and aspect in Studio even when session storage is blocked.",
+      "reason": "The gallery remains useful for considered browsing while supporting the one-tap template start shown in the reference, without bypassing Veyrnox's visible price and Generate confirmation."
+    },
+    {
+      "id": "template-launch-summary",
+      "choice": "Put a compact model, capability, required-input, format and live-price summary above each template's full prompt, followed by one full-width Studio action.",
+      "reason": "The reference makes model choice understandable at a glance; applying that hierarchy to template details lets people decide before reading a long prompt while preserving price-before-generation."
+    },
+    {
+      "id": "model-evidence-page",
+      "choice": "Give every model a plain-language hero, best-for cards, a price-first Studio panel, capability facts, exact matching templates and concise FAQs.",
+      "reason": "A model page should resolve fit, required inputs and cost before asking someone to enter Studio; every claim is derived from the catalogue, capability metadata or the existing model summary map."
+    },
+    {
+      "id": "skill-detail-sheet",
+      "choice": "Keep skill cards dense, then reveal introduction, best fit, three use steps and expected output in a shareable bottom sheet with a single Chat action.",
+      "reason": "This brings the reference site's useful skill overview pattern into Veyrnox without duplicating the actual specialist instructions or obscuring the boundary between Chat preparation and paid generation."
+    },
+    {
+      "id": "editorial-support-pages",
+      "choice": "Use one featured guide, structured guide contents, example MCP prompts and native FAQ disclosures rather than promotional urgency patterns.",
+      "reason": "The supporting pages become easier to scan and answer common questions while retaining Veyrnox's quieter, evidence-first visual language."
     }
   ],
   "evidence": [

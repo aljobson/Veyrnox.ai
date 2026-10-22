@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { REGISTRY } from '../lib/modelCapabilities.js';
 import { readPublicCatalog, toPublicModels } from '../lib/publicCatalog.js';
-import { MODEL_ID_RE, findModel, modelFacts, shelfModels } from '../app/veyrnox/_lib/modelPages.js';
+import { MODEL_ID_RE, fallbackModels, findModel, modelDetail, modelFacts, shelfModels, templatesForModel } from '../app/veyrnox/_lib/modelPages.js';
+import { MODELS } from '../app/veyrnox/_lib/tokens.js';
 
 const endpoints = Object.keys(REGISTRY);
 const shelfEndpoint = endpoints.find((e) => !REGISTRY[e].edit && !REGISTRY[e].inputs.clips && !REGISTRY[e].inputs.topic);
@@ -108,4 +109,30 @@ test('two shelf models never share a title', () => {
     assert.deepEqual(shelfModels(rows).map((m) => m.title), ['Nano Banana Pro Edit', 'Nano Banana Pro Edit (GrsAI, no seed)']);
     const lone = toPublicModels([row('c', shelfEndpoint)]).map((m) => ({ ...m, name: 'Kling 3.0 (image-to-video)' }));
     assert.deepEqual(shelfModels(lone).map((m) => m.title), ['Kling 3.0'], 'a name with no twin stays short');
+});
+
+test('model pages have a complete bundled fallback when the live catalog is unavailable', () => {
+    const fallback = fallbackModels();
+    assert.equal(fallback.length, MODELS.length);
+    assert.ok(fallback.every((model) => model.id && model.title && model.modality && model.capabilities));
+});
+
+test('model details explain the real inputs, price, workflow and failure refund', () => {
+    const model = {
+        id: 'kling-3.0-i2v', title: 'Kling 3.0', modality: 'image-to-video', kind: 'video', credits: 34, durations: [5, 10],
+        capabilities: { inputs: { prompt: { type: 'string' } }, media: { image: { required: true } } },
+    };
+    const detail = modelDetail(model);
+    assert.match(detail.summary, /Animate a source image/);
+    assert.match(detail.steps[0].body, /required image/);
+    assert.match(detail.steps[2].body, /34-credit/);
+    assert.match(detail.faq.at(-1).answer, /refunds/i);
+    assert.ok(detail.badges.includes('IMAGE REF'));
+});
+
+test('model template matches use exact model ids and respect the limit', () => {
+    const kling = templatesForModel('kling-3.0-i2v', 2);
+    assert.ok(kling.length > 0 && kling.length <= 2);
+    assert.ok(kling.every((preset) => preset.model === 'Kling 3.0 · I2V'));
+    assert.deepEqual(templatesForModel('not-a-model'), []);
 });
