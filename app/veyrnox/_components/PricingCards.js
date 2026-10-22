@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { useI18n } from '../../../components/I18nProvider';
 import { localeTag } from '../../../lib/i18n/locales.mjs';
+import { NumberTicker } from '../../../components/number-ticker';
 
 // Every pack as a card in one row so visitors can compare them at a glance.
 // Every figure comes from the live packs and live catalog this page already
@@ -10,6 +11,10 @@ import { localeTag } from '../../../lib/i18n/locales.mjs';
 // really is cheapest per credit is marked best value.
 
 const rate = (pack) => pack.price_usd_cents / 100 / pack.credits;
+
+// The translated sentence decides where the number sits, so the slot gets a
+// marker and the ticker takes its place.
+const SLOT = '\u0000';
 
 function Tick() {
   return (
@@ -55,7 +60,9 @@ export function PricingCards({ packs, typical }) {
 
                 <div className="mt-4 rounded-2xl border border-vx-accent/40 bg-vx-accent/[0.06] p-4">
                   <div className="font-vx-mono text-[24px] font-bold leading-tight text-vx-money vx-num">
-                    {t('pricing.cards.credits', { credits: num.format(pack.credits) })}
+                    {t('pricing.cards.credits', { credits: SLOT }).split(SLOT).flatMap((part, i, all) => (
+                      i < all.length - 1 ? [part, <NumberTicker key={i} value={pack.credits} locale={tag} />] : [part]
+                    ))}
                   </div>
                   {(images !== null || clips !== null) && (
                     <ul className="mt-2 space-y-1 text-[14px] text-vx-fg-body">
