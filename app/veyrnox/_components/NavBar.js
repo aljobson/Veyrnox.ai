@@ -355,7 +355,7 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
   const editorEnabled = useEditorEnabled();
   const items = [
     { key: 'explore', href: '/app',         label: t("label.Explore") },
-    { key: 'oddlings', href: '/app/oddlings', label: t("label.Oddlings"), featured: true },
+    { key: 'oddlings', href: '/app/oddlings', label: t("label.Oddlings") },
     { key: 'create',  href: '/app/create',  label: t("label.Create") },
     // Video agent (ADR-0074): bought from a plan on its own page, so it has its own tab and is not in the Create picker.
     { key: 'agent', href: '/app/video-agent', label: t("app.nav.videoAgent") },
@@ -381,7 +381,7 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
     { id: 'tools', label: t('app.nav.side.tools'), grid: true, items: [
       { key: 'create', href: '/app/create', label: t('label.Create'), icon: 'image' },
       { key: 'film', href: '/app/film-studio', label: t('label.Film Studio'), icon: 'film' },
-      { key: 'oddlings', href: '/app/oddlings', label: t('label.Oddlings'), icon: 'character', featured: true },
+      { key: 'oddlings', href: '/app/oddlings', label: t('label.Oddlings'), icon: 'character' },
       ...(enhanceEnabled ? [{ key: 'enhance', href: '/app/enhance', label: t('label.Enhance'), icon: 'wand' }] : []),
       ...(editorEnabled ? [{ key: 'editor', href: '/app/editor', label: t('label.Video editor'), icon: 'scissors' }] : []),
       { href: '/mcp', label: t('label.MCP'), icon: 'plug' },

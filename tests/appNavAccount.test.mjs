@@ -166,14 +166,16 @@ test('the whole nav still fits without a hidden horizontal rail', () => {
         'the nav no longer hides destinations in a horizontal scroller');
 });
 
-test('Oddlings is prominent without crowding the phone bar', () => {
-    assert.match(appNav, /\{ key: 'oddlings', href: '\/app\/oddlings', label: t\("label.Oddlings"\), featured: true \}/,
-        'the desktop tab and phone menu share the featured destination');
+test('Oddlings is available without looking permanently selected', () => {
+    const oddlingEntries = appNav.split('\n').filter((line) => line.includes("key: 'oddlings'"));
+    assert.equal(oddlingEntries.length, 2, 'Oddlings remains in the app destinations and desktop sidebar');
+    assert.ok(oddlingEntries.every((line) => !line.includes('featured')),
+        'Oddlings uses the same neutral resting style as other destinations');
     assert.ok(appNav.indexOf("key: 'oddlings'") < appNav.indexOf("key: 'create'"),
         'Oddlings appears before Create in the studio destination list');
     const compactBar = appNav.slice(appNav.indexOf('<MobileMenu'), appNav.indexOf('<span aria-hidden="true" className="flex-1"'));
     assert.doesNotMatch(compactBar, /href="\/app\/oddlings"/,
-        'the compact bar does not duplicate the highlighted Oddlings menu item');
+        'the compact bar does not duplicate the Oddlings menu item');
 });
 
 test('marketing auth controls reserve their space until the client session is readable', () => {
