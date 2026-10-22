@@ -8,7 +8,7 @@ import { AuthError } from '../lib/auth/supabaseAuth';
 import { emailAuthMessage, validateEmailForm } from '../lib/auth/emailForm';
 import type { TurnstileMessage } from '../lib/auth/turnstile';
 import { touchTarget } from '../lib/a11y';
-import { colors } from '../theme';
+import { colors, fonts } from '../theme';
 import { t } from '../lib/i18n';
 
 type Mode = 'signIn' | 'signUp';
@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
     submit: { backgroundColor: colors.accent, borderRadius: 12, paddingVertical: 16, alignItems: 'center' },
     off: { opacity: 0.4 },
     submitText: { color: colors.accentInk, fontWeight: '600', fontSize: 16 },
-    heading: { color: colors.text, fontSize: 28, fontWeight: '700' },
+    heading: { color: colors.text, fontFamily: fonts.display, fontSize: 28 },
     message: { color: colors.muted },
     error: { color: colors.danger },
     switchRow: { alignItems: 'center', marginTop: 8 },

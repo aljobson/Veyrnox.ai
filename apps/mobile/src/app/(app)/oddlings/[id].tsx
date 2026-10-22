@@ -6,7 +6,7 @@ import { VEY_CLEARANCE } from '../../../components/VeyMascot';
 import { MIN_TARGET } from '../../../lib/a11y';
 import { t } from '../../../lib/i18n';
 import { findOddling, shareMessage, shareUrl } from '../../../lib/oddlings';
-import { colors } from '../../../theme';
+import { colors, fonts } from '../../../theme';
 
 export default function OddlingSheet() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
     content: { padding: 16, paddingBottom: VEY_CLEARANCE + 32 },
     muted: { color: colors.muted, padding: 24 },
     kicker: { color: colors.accent, fontSize: 11, fontWeight: '700', letterSpacing: 1.5, marginTop: 16 },
-    name: { color: colors.text, fontSize: 30, fontWeight: '800', marginTop: 4 },
+    name: { color: colors.text, fontFamily: fonts.displayHeavy, fontSize: 30, marginTop: 4 },
     hook: { color: colors.body, fontSize: 16, lineHeight: 22, marginTop: 8 },
     section: { color: colors.muted, fontSize: 12, fontWeight: '700', letterSpacing: 1, marginTop: 24, marginBottom: 8, textTransform: 'uppercase' },
     line: { color: colors.body, fontSize: 15, lineHeight: 22, marginBottom: 4 },
