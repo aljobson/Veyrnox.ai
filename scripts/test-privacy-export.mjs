@@ -21,7 +21,7 @@ const start = async (auth, aal = 'aal1') => (await one('SELECT public.start_priv
 const read = async (auth, id, section, cursor = null, size = null, thread = null, aal = 'aal1') =>
     (await one('SELECT public.read_privacy_export_page($1,$2,$3,$4,$5,$6,$7,$8) AS r', [auth, aal, id, section, thread, cursor?.after ?? null, cursor?.key ?? null, size])).r;
 const ALLOW = {
-    profile: 'id email created_at preferred_locale rights_attested_at rights_attestation_version balance free_balance subscription_balance subscription_expires_at cinema_profile cinema_membership referral_code referred_at referrals_made push_devices sanctions_hold_until frozen',
+    profile: 'id email created_at preferred_locale rights_attested_at rights_attestation_version balance free_balance subscription_balance subscription_expires_at cinema_profile cinema_membership referral_code referred_at referrals_made creator_profile push_devices sanctions_hold_until frozen',
     credit_history: 'id delta free_delta subscription_delta job_id created_at reason',
     top_ups: 'id pack_id sales_channel credits price_usd_cents status consent_at consent_version created_at credited_at refunded_cents clawed_back_credits returned_at',
     credit_subscriptions: 'id plan_id status price_usd_cents consent_version consent_at started_at current_period_end cancel_at_period_end ended_at end_reason created_at credits',
@@ -125,6 +125,9 @@ try {
     await q('CREATE TABLE IF NOT EXISTS auth.mfa_factors(user_id uuid,factor_type text,status text)');
     const migration = await readFile(new URL('../packages/db/schema/supabase/0362_privacy_export.sql', import.meta.url), 'utf8');
     await q(migration); await q(migration);
+    // Re-applying 0362 reinstates its function body, so the later redefinition (ADR-0251, 0364) is applied after it, twice.
+    const withProfile = await readFile(new URL('../packages/db/schema/supabase/0364_creator_profile_export.sql', import.meta.url), 'utf8');
+    await q(withProfile); await q(withProfile);
     await q('ALTER TABLE public.chat_messages ALTER COLUMN seq RESTART WITH 3000000000');
     const alice = await person('alice'), bob = await person('bob-private');
     otherIds.push(bob.id, bob.auth); secrets.push(bob.email);
@@ -136,6 +139,10 @@ try {
     await q("UPDATE public.jobs SET inputs=jsonb_build_object('prompt','bob-private') WHERE user_id=$1", [bob.id]);
     await q("INSERT INTO public.referral_codes(user_id,code) VALUES($1,'ABCDEFGH23'),($2,'ABCDEFGH24')", [alice.id, bob.id]);
     await q("INSERT INTO public.referrals(referee_user_id,referrer_user_id,code) VALUES($1,$2,'ABCDEFGH24')", [alice.id, bob.id]);
+    // ADR-0251: Alice has a Vibe Check profile (with a studio name); Bob has a different one that must never reach her export.
+    const vibe = { look: 'neon_rain', goal: 'sell', pace: 'fox', chaos: 3, destination: 'tiktok', audience: 'customers', voice: 'calm' };
+    assert.equal((await one('SELECT public.save_creator_profile($1,$2::jsonb) AS r', [alice.auth, JSON.stringify({ ...vibe, studio_name: 'Night Owl Films' })])).r.ok, true);
+    assert.equal((await one('SELECT public.save_creator_profile($1,$2::jsonb) AS r', [bob.auth, JSON.stringify({ ...vibe, goal: 'meme', studio_name: 'bob-private-studio' })])).r.ok, true);
     for (let i = 0; i < 204; i++) {
         const who = await person('public-handle', false); otherIds.push(who.id, who.auth);
         await q('INSERT INTO public.cinema_creator_follows(user_id,creator_id,created_at) VALUES($1,$2,now())', [alice.id, who.id]);
@@ -172,6 +179,8 @@ try {
     assert.ok(BigInt(all.chat_messages[0].seq) >= 3000000000n);
     const profile = all.profile[0];
     keys(profile.cinema_profile, 'username display_name bio created_at'); keys(profile.cinema_membership, 'role account_status');
+    keys(profile.creator_profile, 'status answers completed_at skipped_at created_at');
+    assert.equal(profile.creator_profile.status, 'completed'); assert.equal(profile.creator_profile.answers.studio_name, 'Night Owl Films'); assert.equal(profile.creator_profile.answers.goal, 'sell');
     keys(profile.referral_code, 'code created_at'); for (const device of profile.push_devices) keys(device, 'platform notify_jobs created_at last_seen_at disabled_at');
     assert.equal(profile.push_devices.length, 100, 'push_devices is capped at 100');
     const seen = profile.push_devices.map(d => Date.parse(d.last_seen_at));
@@ -260,13 +269,11 @@ try {
         'account_actions', 'chat_folders', 'chat_personas', 'chat_threads', 'cinema_creator_follows',
         'cinema_memberships', 'cinema_profiles', 'cinema_saved_titles', 'cinema_series_follows', 'cinema_watch_resume',
         'content_appeals', 'content_reports', 'credit_balances', 'credit_subscriptions', 'jobs',
-        'ledger_entries', 'push_tokens', 'referral_codes', 'referrals', 'social_brands',
+        'creator_profiles', 'ledger_entries', 'push_tokens', 'referral_codes', 'referrals', 'social_brands',
         'social_posts', 'social_publish_subscriptions', 'top_ups', 'user_blocks',
     ]);
-    // creator_profiles (ADR-0251) is the person's own Vibe Check answers. It is deliberately not in the export yet: it needs a
-    // section in read_privacy_export_page (0362), which is its own migration. Move it to EXPORTED when that lands.
     const NOT_EXPORTED = new Set([
-        'account_deletions', 'account_read_rate_limits', 'creator_profiles', 'api_requests', 'asset_link_rate_limits', 'chat_closed_sends',
+        'account_deletions', 'account_read_rate_limits', 'api_requests', 'asset_link_rate_limits', 'chat_closed_sends',
         'cinema_audience_clock', 'cinema_competitions', 'cinema_creator_applications', 'cinema_free_plays', 'cinema_pass_plays',
         'cinema_passes', 'cinema_ranking_decisions', 'cinema_ranking_snapshots', 'cinema_retention_requests', 'cinema_share_actions',
         'cinema_story_polls', 'cinema_submissions', 'cinema_unlock_rate_limits', 'cinema_unlocks', 'cinema_watch_sessions',
