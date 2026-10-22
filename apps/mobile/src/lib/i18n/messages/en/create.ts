@@ -1,6 +1,9 @@
 // English strings for create. Add keys here; keep their original wording and placeholders.
 export default {
     'create.templatesHint': 'Start from a ready-made idea',
+    'create.template.label': 'Template',
+    'create.template.format': 'Opens in {aspect}, like the template.',
+    'create.template.needs': 'This template needs: {what}',
     'create.loadError': 'Could not load models. Check your connection.',
     'create.agentTitle': 'Video from a brief',
     'create.agentHint': 'See a plan and the price first',

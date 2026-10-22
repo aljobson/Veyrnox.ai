@@ -27,6 +27,8 @@ interface SourcePickerProps {
     // upload as a picked file, once, as soon as it is given.
     readonly initial?: PickedFile | null;
     readonly drawable?: boolean;
+    // A line under the slot's name saying what it is for (the photo a template needs).
+    readonly hint?: string;
 }
 
 type Status = { readonly step: 'empty' } | { readonly step: 'uploading'; readonly fraction: number } | { readonly step: 'ready' };
@@ -50,7 +52,7 @@ async function choose(kind: Slot['kind']): Promise<PickedFile | null> {
     return { uri: a.uri, mimeType: a.mimeType, size: a.fileSize, durationSeconds: typeof a.duration === 'number' ? a.duration / 1000 : undefined };
 }
 
-export function SourcePicker({ slot, api, onChange, onLibrary, onBusy, initial, drawable = false }: SourcePickerProps) {
+export function SourcePicker({ slot, api, onChange, onLibrary, onBusy, initial, drawable = false, hint }: SourcePickerProps) {
     const [status, setStatus] = useState<Status>({ step: 'empty' });
     const [preview, setPreview] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -181,6 +183,7 @@ export function SourcePicker({ slot, api, onChange, onLibrary, onBusy, initial, 
                 {slot.label}
                 {slot.required ? '' : ' (optional)'}
             </Text>
+            {hint ? <Text style={styles.slotHint}>{hint}</Text> : null}
             {status.step === 'empty' ? (
                 <Pressable accessibilityRole="button" accessibilityLabel={`Choose ${NOUN[slot.kind]} for ${slot.label}`} style={styles.pick} onPress={pick}>
                     <Text style={styles.pickText}>Choose {NOUN[slot.kind]}</Text>
@@ -229,6 +232,7 @@ export function SourcePicker({ slot, api, onChange, onLibrary, onBusy, initial, 
 const styles = StyleSheet.create({
     box: { gap: 8 },
     label: { color: colors.text, fontWeight: '600' },
+    slotHint: { color: colors.muted, fontSize: 13 },
     pick: { borderColor: colors.border, borderWidth: 1, borderStyle: 'dashed', borderRadius: 12, paddingVertical: 22, alignItems: 'center', backgroundColor: colors.surface },
     pickText: { color: colors.accent, fontWeight: '600' },
     library: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },

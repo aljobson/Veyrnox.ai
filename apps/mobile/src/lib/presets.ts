@@ -1,4 +1,5 @@
 import { ApiError, API_BASE } from './api';
+import { templateParams } from './templateHandoff';
 
 // ADR-0120: the template gallery, read from the anonymous GET /api/presets. The price is the server's
 // number for the template's own length; the app never computes one.
@@ -17,6 +18,8 @@ export interface Preset {
     readonly isNew: boolean;
     readonly previewUrl: string | null;
     readonly posterUrl: string | null;
+    // The shape of the template's own preview ("9 / 16"), so Create can open in the same shape. Absent on older feeds.
+    readonly previewAspect?: string | null;
 }
 
 const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v : null);
@@ -46,6 +49,7 @@ function parseOne(raw: unknown): Preset | null {
         isNew: r.isNew === true,
         previewUrl: https(r.previewUrl),
         posterUrl: https(r.posterUrl),
+        previewAspect: str(r.previewAspect),
     };
 }
 
@@ -66,9 +70,9 @@ export function groupByCategory(items: readonly Preset[]): PresetGroup[] {
     return [...groups].map(([category, list]) => ({ category, items: list }));
 }
 
-// Opens Create on the template's model with its prompt and length filled in.
+// Opens Create on the template's model with its prompt, length, shape, name and picture carried over.
 export function presetHref(p: Preset) {
-    return { pathname: '/create/[modelId]', params: { modelId: p.modelId, prompt: p.prompt, ...(p.durationSeconds ? { duration: String(p.durationSeconds) } : {}) } } as const;
+    return { pathname: '/create/[modelId]', params: { modelId: p.modelId, prompt: p.prompt, ...(p.durationSeconds ? { duration: String(p.durationSeconds) } : {}), ...templateParams(p) } } as const;
 }
 
 export function presetPrice(p: Preset): string {

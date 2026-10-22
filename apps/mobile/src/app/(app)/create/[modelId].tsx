@@ -1,19 +1,21 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
-import { ApiError } from '../../../lib/api';
+import { API_BASE, ApiError } from '../../../lib/api';
 import { canDraw } from '../../../lib/drawOnImage';
 import { createGenerationSubmit, generationMessage } from '../../../lib/generationSubmit';
 import { CameraPanel } from '../../../components/CameraPanel';
 import { CharacterPanel } from '../../../components/CharacterPanel';
 import { CreateOptions, type OptionValues } from '../../../components/CreateOptions';
 import { SourcePicker } from '../../../components/SourcePicker';
+import { TemplateBanner } from '../../../components/TemplateBanner';
 import { DEFAULT_CINEMA, buildCinemaPrompt, sanitizeCinema, type Cinema } from '../../../lib/cinemaCamera';
 import { clearDraft, loadDraft, saveDraft } from '../../../lib/createDraftStore';
 import { SAVED_DRAFT_VERSION, type CreateDraft, audioLengthInvalid, batchCost, freeLeftFor, hasAnyOption, imageCount, optionsFor, resolveAudio, resolveResolution, seedIsInvalid, settingsInputs, takesImageCount, voiceIsMissing } from '../../../lib/createOptions';
 import { loadVibe } from '../../../lib/creatorProfileStore';
 import { defaultAspect } from '../../../lib/creatorTaste';
+import { nearestAspect, readTemplate } from '../../../lib/templateHandoff';
 import { buildCharacterPrompt, sanitizePicks, type Picks } from '../../../lib/oddlingsBuilder';
 import { useBalance } from '../../../lib/useBalance';
 import { shortfall } from '../../../lib/lowBalance';
@@ -29,8 +31,19 @@ import { plural, t } from '../../../lib/i18n';
 
 const PLACEHOLDER: Record<string, string> = { topic: 'form.topicPlaceholder' };
 
+// The host part of an address, or '' when it is not one.
+function hostOf(url: string): string {
+    try {
+        return new URL(url).hostname;
+    } catch {
+        return '';
+    }
+}
+
 export default function CreateWithModel() {
-    const { modelId, prompt: presetPrompt, duration: presetDuration, startOddling } = useLocalSearchParams<{ modelId: string; prompt?: string; duration?: string; startOddling?: string }>();
+    const { modelId, prompt: presetPrompt, duration: presetDuration, startOddling, tpl, tneeds, tratio, tposter } = useLocalSearchParams<{ modelId: string; prompt?: string; duration?: string; startOddling?: string; tpl?: string; tneeds?: string; tratio?: string; tposter?: string }>();
+    // A template also brings its name, picture, shape and what it needs; each is checked before it is used.
+    const template = useMemo(() => readTemplate({ tpl, tneeds, tratio, tposter }, ['veyrnox.ai', hostOf(API_BASE)]), [tpl, tneeds, tratio, tposter]);
     const { api } = useAuth();
     const router = useRouter();
     const [model, setModel] = useState<CatalogModel | null>(null);
@@ -77,7 +90,9 @@ export default function CreateWithModel() {
                 const o = optionsFor(found);
                 // Where the person said the result will land (the vibe check) picks the opening ratio; no answer keeps 16:9.
                 const vibe = await loadVibe();
-                const base: OptionValues = { aspect: defaultAspect(o.aspects, vibe?.answers ?? null), count: 1, seed: '', negative: '', voice: '', audioSeconds: '' };
+                // A template that has a shape of its own opens in the model's nearest one; otherwise the usual default.
+                const aspect = nearestAspect(template?.ratio ?? null, o.aspects) ?? defaultAspect(o.aspects, vibe?.answers ?? null);
+                const base: OptionValues = { aspect, count: 1, seed: '', negative: '', voice: '', audioSeconds: '' };
                 // A template brings its own words; only a form opened bare gets the unsent draft back.
                 if (typeof presetPrompt === 'string') {
                     setOpts(base);
@@ -199,6 +214,7 @@ export default function CreateWithModel() {
         <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
             <Stack.Screen options={{ title: model.name }} />
             <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+                {template ? <TemplateBanner template={template} aspect={options.aspects.length ? opts.aspect : null} /> : null}
                 {startId && takesStartImage ? <Text style={styles.consent} accessibilityLiveRegion="polite">{startProblem ?? t('oddlings.animate.startNote')}</Text> : null}
                 {slots.map((s) => (
                     <SourcePicker
@@ -210,6 +226,7 @@ export default function CreateWithModel() {
                         onLibrary={(jobId) => setFromLibrary((l) => ({ ...l, [s.slot]: jobId }))}
                         onBusy={(b) => setSending((x) => ({ ...x, [s.slot]: b }))}
                         initial={s.slot === 'image' ? startFile : null}
+                        hint={s.slot === 'image' && template?.needs ? t('create.template.needs', { what: template.needs }) : undefined}
                     />
                 ))}
                 {text_ ? (
