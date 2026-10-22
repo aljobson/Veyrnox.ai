@@ -22,7 +22,7 @@ function EntryTile({ icon, label, accessibilityLabel, onPress }: { readonly icon
     return (
         <Pressable accessibilityRole="button" accessibilityLabel={accessibilityLabel ?? label} style={({ pressed }) => [styles.entry, touchTarget, pressed && styles.entryPressed]} onPress={onPress}>
             <Image source={MENU_ICONS[icon]} style={styles.entryIcon} tintColor={colors.accent} contentFit="contain" accessibilityElementsHidden />
-            <Text style={styles.entryText} numberOfLines={1}>{label}</Text>
+            <Text style={styles.entryText} numberOfLines={2}>{label}</Text>
         </Pressable>
     );
 }
@@ -56,6 +56,7 @@ export default function Create() {
                 <EntryTile icon="squares" label={t('label.Templates')} onPress={() => router.push('/create/presets')} />
                 <EntryTile icon="wrench" label={t('menu.tools')} accessibilityLabel={t('toolsDir.entry')} onPress={() => router.push('/create/tools')} />
                 <EntryTile icon="smiley" label={t('faceFilters.title')} onPress={() => router.push('/face-filters')} />
+                <EntryTile icon="chat" label={t('chat.skills.title')} onPress={() => router.push('/chat/skills')} />
             </View>
             {models ? <FreeAllowanceCard models={models} left={freeLeft} /> : null}
             <View style={styles.tabs} accessibilityLabel={t('create.goalLabel')}>
@@ -134,7 +135,7 @@ const styles = StyleSheet.create({
     entry: { flex: 1, alignItems: 'center', gap: 6, paddingVertical: 14, paddingHorizontal: 4, borderRadius: 12, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
     entryPressed: { opacity: 0.7 },
     entryIcon: { width: 28, height: 28 },
-    entryText: { color: colors.text, fontSize: 14, fontWeight: '600' },
+    entryText: { color: colors.text, fontSize: 12, fontWeight: '600', textAlign: 'center' },
     tabIcon: { width: 20, height: 20 },
     tabs: { flexDirection: 'row', gap: 8 },
     tab: { flex: 1, minHeight: 44, gap: 4, justifyContent: 'center', paddingVertical: 10, paddingHorizontal: 2, borderRadius: 10, alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },

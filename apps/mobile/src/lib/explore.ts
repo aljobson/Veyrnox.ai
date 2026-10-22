@@ -56,7 +56,7 @@ export const needsPhoto = (p: Preset): boolean => p.modality.startsWith('image-t
 // from words alone before ones that first ask for a photo, so "Try it" is one tap where it can be. New ones first
 // within each, a different category each where there are enough. Order otherwise stays as the server sent it.
 export function heroPicks(presets: readonly Preset[], count = 3): Preset[] {
-    const shown = presets.filter((p) => p.posterUrl && presetKind(p) !== 'audio');
+    const shown = presets.filter((p) => p.available && p.posterUrl && presetKind(p) !== 'audio');
     const ready = shown.filter((p) => !needsPhoto(p));
     const upload = shown.filter(needsPhoto);
     const ordered = [...ready.filter((p) => p.isNew), ...ready.filter((p) => !p.isNew), ...upload.filter((p) => p.isNew), ...upload.filter((p) => !p.isNew)];

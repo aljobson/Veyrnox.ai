@@ -18,6 +18,7 @@ const preset = (id: string, over: Partial<Preset> = {}): Preset => ({
     needs: null,
     durationSeconds: 5,
     credits: 10,
+    available: true,
     isNew: false,
     previewUrl: null,
     posterUrl: `https://img.test/${id}.jpg`,
@@ -28,7 +29,7 @@ const job = (id: string, state: Job['state']): Job => ({ job_id: id, state, cred
 
 describe('the templates the home leads with', () => {
     test('only ones with a picture, and never audio', () => {
-        const picks = heroPicks([preset('a', { posterUrl: null }), preset('b', { modality: 'audio' }), preset('c'), preset('d')]);
+        const picks = heroPicks([preset('a', { posterUrl: null }), preset('b', { modality: 'audio' }), preset('off', { available: false }), preset('c'), preset('d')]);
         expect(picks.map((p) => p.id)).toEqual(['c', 'd']);
     });
 

@@ -1,4 +1,4 @@
-import { BAND_HEIGHT, STEP, TILE_CURVE, centredIndex, offsetsFor, stackOrder, tileShape } from '../src/lib/templateCollage';
+import { BAND_HEIGHT, STEP, TILE_CURVE, centredIndex, offsetsFor, posterOpacity, stackOrder, tileShape } from '../src/lib/templateCollage';
 
 describe('template collage layout', () => {
     test('tiles are wider than one swipe step, so neighbours overlap', () => {
@@ -26,6 +26,11 @@ describe('template collage layout', () => {
     test('the shapes repeat in a cycle and never run out', () => {
         expect(tileShape(0, false)).toEqual(tileShape(3, false));
         expect(tileShape(-1, false)).toEqual(tileShape(2, false));
+    });
+
+    test('an unavailable template keeps its tile but subdues its poster', () => {
+        expect(posterOpacity(true)).toBe(1);
+        expect(posterOpacity(false)).toBeLessThan(1);
     });
 
     test('the middle tile is full size, facing you and opaque; the sides shrink, fade and turn away', () => {

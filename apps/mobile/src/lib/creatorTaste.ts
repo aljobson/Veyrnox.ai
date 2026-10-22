@@ -11,12 +11,11 @@ export function tasteScore(p: Pick<Preset, 'title' | 'category' | 'prompt'>, a: 
     return tasteScoreText(`${p.title} ${p.category} ${p.prompt}`, a);
 }
 
-// Templates that match the person's goal and look first; everything else keeps the order the server sent it in.
+// Available templates lead unavailable ones; within each group, matches lead and ties keep the server order.
 export function rankPresets(presets: readonly Preset[], answers: CreatorAnswers | null): Preset[] {
-    if (!answers) return [...presets];
     return presets
-        .map((p, i) => ({ p, i, s: tasteScore(p, answers) }))
-        .sort((x, y) => y.s - x.s || x.i - y.i)
+        .map((p, i) => ({ p, i, s: answers ? tasteScore(p, answers) : 0 }))
+        .sort((x, y) => Number(y.p.available) - Number(x.p.available) || y.s - x.s || x.i - y.i)
         .map((x) => x.p);
 }
 
@@ -38,7 +37,7 @@ export function tastePicks(presets: readonly Preset[], answers: CreatorAnswers |
     if (!answers) return usual;
     const fits = presets
         .map((p, i) => ({ p, i, s: tasteScore(p, answers) }))
-        .filter((x) => x.s > 0 && x.p.posterUrl && presetKind(x.p) !== 'audio')
+        .filter((x) => x.p.available && x.s > 0 && x.p.posterUrl && presetKind(x.p) !== 'audio')
         .sort((x, y) => y.s - x.s || Number(needsPhoto(x.p)) - Number(needsPhoto(y.p)) || Number(y.p.isNew) - Number(x.p.isNew) || x.i - y.i)
         .map((x) => x.p);
     const picks: Preset[] = [];

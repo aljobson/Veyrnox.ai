@@ -58,6 +58,7 @@ describe('the current screen in the menu', () => {
         expect(activeItemKey('/create')).toBe('create');
         expect(activeItemKey('/create/agent')).toBe('videoAgent');
         expect(activeItemKey('/create/presets')).toBe('templates');
+        expect(activeItemKey('/chat/skills')).toBe('skills');
     });
 
     test('a deeper screen lights the item it belongs to', () => {

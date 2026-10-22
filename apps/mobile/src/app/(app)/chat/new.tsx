@@ -5,10 +5,7 @@ import { useAuth } from '../../../auth/AuthProvider';
 import { ApiError } from '../../../lib/api';
 import { chatApi, type ChatModel } from '../../../lib/chat';
 import { chatLibraryErrorMessage, fetchPersonas, startFromPersona, type Persona } from '../../../lib/chatLibrary';
-import { t } from '../../../lib/i18n';
-import { fetchCatalog } from '../../../lib/media';
-import { SKILL_GROUPS, SKILL_MODEL, SKILLS, skillInstructions, type Skill } from '../../../lib/studioSkills';
-import { MIN_TARGET } from '../../../lib/a11y';
+import { SKILL_MODEL } from '../../../lib/studioSkills';
 import { colors } from '../../../theme';
 
 export default function NewChat() {
@@ -53,26 +50,6 @@ export default function NewChat() {
         }
     }
 
-    // A skill is only instructions copied onto a new chat (like a persona). It costs nothing to start; each reply is priced
-    // as in any chat, and making the thing is a separate step in Create.
-    async function pickSkill(skill: Skill) {
-        if (creating) return;
-        setCreating(true);
-        setError(null);
-        try {
-            const open = (models ?? []).filter((m) => !m.gated);
-            const model = open.find((m) => m.id === SKILL_MODEL) ?? open[0];
-            if (!model) throw new Error('no_model');
-            const catalog = await fetchCatalog().catch(() => []);
-            const thread = await chatApi(api).createThread(model.id);
-            await chatApi(api).updateThread(thread.id, { system_prompt: skillInstructions(skill, catalog) });
-            router.replace({ pathname: '/chat/[id]', params: { id: thread.id, starter: skill.starter } });
-        } catch {
-            setError(t('chat.skills.failed'));
-            setCreating(false);
-        }
-    }
-
     async function pickPersona(persona: Persona) {
         if (creating) return;
         const fallback = (models ?? []).find((m) => !m.gated);
@@ -109,22 +86,6 @@ export default function NewChat() {
                 <FlatList
                     ListHeaderComponent={
                         <>
-                <View style={styles.personas}>
-                    <Text style={styles.heading} accessibilityRole="header">{t('chat.skills.title')}</Text>
-                    <Text style={styles.muted}>{t('chat.skills.help')}</Text>
-                    {SKILL_GROUPS.map((g) => (
-                        <View key={g}>
-                            <Text style={styles.heading} accessibilityRole="header">{t(`chat.skills.group.${g}`)}</Text>
-                            {g === 'Film' ? <Text style={styles.muted}>{t('chat.skills.filmNote')}</Text> : null}
-                            {SKILLS.filter((s) => s.group === g).map((s) => (
-                                <Pressable key={s.id} accessibilityRole="button" accessibilityLabel={`${t('chat.skills.start', { name: s.name })}. ${s.blurb}`} disabled={creating} style={[styles.row, { minHeight: MIN_TARGET }]} onPress={() => pickSkill(s)}>
-                                    <Text style={styles.name}>{s.name}</Text>
-                                    <Text style={styles.muted}>{s.blurb}</Text>
-                                </Pressable>
-                            ))}
-                        </View>
-                    ))}
-                </View>
                             <Text style={styles.heading} accessibilityRole="header">Or choose a model</Text>
                         </>
                     }

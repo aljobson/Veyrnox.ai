@@ -15,6 +15,8 @@ export interface Preset {
     readonly needs: string | null;
     readonly durationSeconds: number | null;
     readonly credits: number;
+    // False when the template's model has no active catalog row (an older server omits the field; everything it lists is active). The card stays visible, but it must not open Create.
+    readonly available: boolean;
     readonly isNew: boolean;
     readonly previewUrl: string | null;
     readonly posterUrl: string | null;
@@ -46,6 +48,7 @@ function parseOne(raw: unknown): Preset | null {
         needs: str(r.needs),
         durationSeconds: typeof r.durationSeconds === 'number' && r.durationSeconds > 0 ? r.durationSeconds : null,
         credits: r.credits,
+        available: r.available !== false,
         isNew: r.isNew === true,
         previewUrl: https(r.previewUrl),
         posterUrl: https(r.posterUrl),
@@ -70,8 +73,10 @@ export function groupByCategory(items: readonly Preset[]): PresetGroup[] {
     return [...groups].map(([category, list]) => ({ category, items: list }));
 }
 
-// Opens Create on the template's model with its prompt, length, shape, name and picture carried over.
+// Opens Create on the template's model with its prompt, length, shape, name and picture carried over; an inactive model
+// returns to Templates with an explicit unavailable state.
 export function presetHref(p: Preset) {
+    if (!p.available) return { pathname: '/create/presets', params: { unavailable: p.id } } as const;
     return { pathname: '/create/[modelId]', params: { modelId: p.modelId, prompt: p.prompt, ...(p.durationSeconds ? { duration: String(p.durationSeconds) } : {}), ...templateParams(p) } } as const;
 }
 

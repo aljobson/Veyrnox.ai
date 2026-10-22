@@ -1,5 +1,5 @@
 import { ApiError } from '../src/lib/api';
-import { fetchPresets, groupByCategory, parsePresets, presetPrice } from '../src/lib/presets';
+import { fetchPresets, groupByCategory, parsePresets, presetHref, presetPrice } from '../src/lib/presets';
 
 const base = {
     id: 'a',
@@ -13,6 +13,7 @@ const base = {
     durationSeconds: 10,
     credits: 68,
     gated: false,
+    available: true,
     isNew: true,
     previewUrl: 'https://veyrnox.ai/showcase/a.mp4',
     posterUrl: 'https://veyrnox.ai/showcase/a.jpg',
@@ -22,7 +23,7 @@ const base = {
 describe('parsePresets', () => {
     test('keeps well-formed presets and reads the price from the response', () => {
         const [p] = parsePresets({ presets: [base] });
-        expect(p).toMatchObject({ id: 'a', title: 'Product Hero', modelId: 'kling-3.0-i2v', credits: 68, durationSeconds: 10, needs: 'A clean product image' });
+        expect(p).toMatchObject({ id: 'a', title: 'Product Hero', modelId: 'kling-3.0-i2v', credits: 68, durationSeconds: 10, needs: 'A clean product image', available: true });
     });
 
     test('drops gated presets, since the app does not offer those models', () => {
@@ -44,6 +45,11 @@ describe('parsePresets', () => {
         const [p] = parsePresets({ presets: [{ ...base, durationSeconds: undefined, needs: null }] });
         expect(p.durationSeconds).toBeNull();
         expect(p.needs).toBeNull();
+    });
+
+    test('keeps an inactive template; an older server that omits the field means every template is active', () => {
+        expect(parsePresets({ presets: [{ ...base, available: false }] })[0]).toMatchObject({ id: 'a', available: false });
+        expect(parsePresets({ presets: [{ ...base, available: undefined }] })[0]).toMatchObject({ id: 'a', available: true });
     });
 
     test('gives an empty list for anything that is not a presets list', () => {
@@ -69,6 +75,15 @@ describe('presetPrice', () => {
     test('has no length when the server gave none', () => {
         const [p] = parsePresets({ presets: [{ ...base, durationSeconds: undefined }] });
         expect(presetPrice(p)).toBe('68 credits');
+    });
+});
+
+describe('presetHref', () => {
+    test('opens Create only for an available template', () => {
+        const [available] = parsePresets({ presets: [base] });
+        const [unavailable] = parsePresets({ presets: [{ ...base, available: false }] });
+        expect(presetHref(available).pathname).toBe('/create/[modelId]');
+        expect(presetHref(unavailable)).toEqual({ pathname: '/create/presets', params: { unavailable: 'a' } });
     });
 });
 
