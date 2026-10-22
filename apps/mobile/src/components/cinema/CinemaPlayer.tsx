@@ -5,7 +5,6 @@ import { ActivityIndicator, AppState, Pressable, StyleSheet, Text, View } from '
 import { useAuth } from '../../auth/AuthProvider';
 import { BLOCK_COPY, createPlaybackSession, type PlaybackSession, type SessionState } from '../../lib/cinemaPlayback';
 import { getCinemaProgress } from '../../lib/cinemaProgress';
-import { colors } from '../../theme';
 
 // Plays one title. It mints a token when it mounts (the viewer pressed Play), never before.
 export function CinemaPlayer({ contentId, resumePosition = 0 }: { readonly contentId: string; readonly resumePosition?: number }) {
@@ -53,7 +52,7 @@ export function CinemaPlayer({ contentId, resumePosition = 0 }: { readonly conte
             />
             {state.kind === 'loading' ? (
                 <View style={styles.overlay} pointerEvents="none">
-                    <ActivityIndicator color={colors.accent} />
+                    <ActivityIndicator color={ON_VIDEO_ACCENT} />
                 </View>
             ) : null}
             {state.kind === 'blocked' ? (
@@ -68,9 +67,13 @@ export function CinemaPlayer({ contentId, resumePosition = 0 }: { readonly conte
     );
 }
 
+// The player is always black, so its text keeps the dark theme's colours in Light mode too.
+const ON_VIDEO = '#f2f2f3';
+const ON_VIDEO_ACCENT = '#3ee6c4';
+
 const styles = StyleSheet.create({
     box: { flex: 1, backgroundColor: '#000' },
     overlay: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12, backgroundColor: 'rgba(0,0,0,0.7)' },
-    copy: { color: colors.text, fontSize: 16, textAlign: 'center' },
-    link: { color: colors.accent, fontSize: 16, fontWeight: '600' },
+    copy: { color: ON_VIDEO, fontSize: 16, textAlign: 'center' },
+    link: { color: ON_VIDEO_ACCENT, fontSize: 16, fontWeight: '600' },
 });
