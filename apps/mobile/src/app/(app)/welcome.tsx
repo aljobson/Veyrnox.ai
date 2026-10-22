@@ -6,7 +6,6 @@ import { useAuth } from '../../auth/AuthProvider';
 import { VeyCharacter } from '../../components/VeyCharacter';
 import { touchTarget } from '../../lib/a11y';
 import { FIRST_RUN_SLOT, WELCOME_CARDS, creditsCardKeys, serializeSeen } from '../../lib/firstRun';
-import { vibeOffered } from '../../lib/creatorProfileStore';
 import { plural, t } from '../../lib/i18n';
 import { colors, fonts } from '../../theme';
 
@@ -42,8 +41,8 @@ export default function Welcome() {
 
     async function done() {
         await markWelcomeSeen();
-        // The vibe check follows the welcome once, when this build ships it and nothing is on record yet.
-        router.replace((await vibeOffered(api)) ? '/vibe' : '/');
+        // Start with the person's actual material. The optional preference quiz remains available from Account.
+        router.replace('/start');
     }
 
     return (

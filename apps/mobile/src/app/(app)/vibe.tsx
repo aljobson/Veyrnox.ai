@@ -4,7 +4,7 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text
 import { useAuth } from '../../auth/AuthProvider';
 import { VeyCharacter } from '../../components/VeyCharacter';
 import { selectedState, touchTarget } from '../../lib/a11y';
-import { CHAOS_MAX, CREATOR_ANSWERS, STUDIO_NAME_MAX, isCreatorAnswers, type CreatorAnswers } from '../../lib/creatorAnswers';
+import { CHAOS_MAX, CREATOR_ANSWERS, STUDIO_NAME_MAX, isCreatorAnswers, type CreatorAnswers, type Goal } from '../../lib/creatorAnswers';
 import { creatorCard } from '../../lib/creatorArchetype';
 import { saveVibe, skipVibe } from '../../lib/creatorProfile';
 import { loadVibe, storeVibe } from '../../lib/creatorProfileStore';
@@ -25,6 +25,14 @@ type ChoiceKey = 'look' | 'goal' | 'pace' | 'destination' | 'audience';
 const STEPS = ['goal', 'look', 'pace', 'chaos', 'destination', 'audience', 'voice'] as const;
 const TOTAL = STEPS.length;
 const SUBTITLED: ReadonlySet<string> = new Set(['pace', 'voice']);
+const GOAL_PRESENTATION: Record<Goal, { emoji: string; tint: string; selected: string; border: string }> = {
+    sell: { emoji: '🛒', tint: '#FFF2C7', selected: '#FFD65A', border: '#E4A900' },
+    story: { emoji: '🎬', tint: '#EEE4FF', selected: '#C8A7FF', border: '#8752DB' },
+    music_video: { emoji: '🎵', tint: '#FFE0F0', selected: '#FF9DCC', border: '#DC3988' },
+    meme: { emoji: '📱', tint: '#DDF5FF', selected: '#82D8FF', border: '#168BC0' },
+    character: { emoji: '✨', tint: '#DDF9F1', selected: '#80E3CA', border: '#168E73' },
+    bedtime: { emoji: '🌙', tint: '#E5E8FF', selected: '#AEB8FF', border: '#5865D8' },
+};
 
 export default function Vibe() {
     const router = useRouter();
@@ -176,7 +184,40 @@ export default function Vibe() {
                         </View>
                         <Text style={styles.step} accessibilityLabel={t('vibe.step', { n: step, total: TOTAL })}>{t('vibe.step', { n: step, total: TOTAL })}</Text>
                         <Text style={styles.title} accessibilityRole="header">{t(`vibe.${key}.title`)}</Text>
-                        {key === 'chaos' ? (
+                        {key === 'goal' ? (
+                            <View style={styles.goalGrid}>
+                                {CREATOR_ANSWERS.goal.map((goal) => {
+                                    const presentation = GOAL_PRESENTATION[goal];
+                                    const isSelected = draft.goal === goal;
+                                    return (
+                                        <Pressable
+                                            key={goal}
+                                            accessibilityRole="button"
+                                            accessibilityLabel={t(`vibe.goal.${goal}`)}
+                                            accessibilityState={selectedState(isSelected)}
+                                            style={({ pressed }) => [
+                                                touchTarget,
+                                                styles.goalChoice,
+                                                { backgroundColor: isSelected ? presentation.selected : presentation.tint, borderColor: isSelected ? presentation.border : presentation.tint },
+                                                isSelected && styles.goalChoiceOn,
+                                                pressed && styles.goalChoicePressed,
+                                            ]}
+                                            onPress={() => setDraft((d) => ({ ...d, goal }))}
+                                        >
+                                            <View style={styles.goalChoiceTop}>
+                                                <Text style={styles.goalEmoji} accessibilityElementsHidden importantForAccessibility="no">{presentation.emoji}</Text>
+                                                {isSelected ? (
+                                                    <View style={[styles.goalCheck, { backgroundColor: presentation.border }]} accessibilityElementsHidden importantForAccessibility="no">
+                                                        <Text style={styles.goalCheckText}>✓</Text>
+                                                    </View>
+                                                ) : null}
+                                            </View>
+                                            <Text style={styles.goalLabel}>{t(`vibe.goal.${goal}`)}</Text>
+                                        </Pressable>
+                                    );
+                                })}
+                            </View>
+                        ) : key === 'chaos' ? (
                             <View style={styles.options}>
                                 <Text style={styles.readout} accessibilityLiveRegion="polite">{t(`vibe.chaos.${draft.chaos ?? 2}`)}</Text>
                                 <View style={styles.dial}>
@@ -254,6 +295,17 @@ export default function Vibe() {
                 ) : null}
                 {key === 'chaos' ? (
                     <Pressable accessibilityRole="button" style={[touchTarget, styles.primary]} onPress={() => setStep(step + 1)}>
+                        <Text style={styles.primaryText}>{t('vibe.next')}</Text>
+                    </Pressable>
+                ) : null}
+                {key === 'goal' ? (
+                    <Pressable
+                        accessibilityRole="button"
+                        accessibilityState={{ disabled: !draft.goal }}
+                        disabled={!draft.goal}
+                        style={[touchTarget, styles.primary, !draft.goal && styles.disabled]}
+                        onPress={() => setStep(step + 1)}
+                    >
                         <Text style={styles.primaryText}>{t('vibe.next')}</Text>
                     </Pressable>
                 ) : null}
@@ -340,6 +392,15 @@ const styles = StyleSheet.create({
     title: { color: colors.text, fontFamily: fonts.display, fontSize: 26, lineHeight: 32 },
     text: { color: colors.body, fontSize: 17, lineHeight: 24 },
     options: { gap: 10 },
+    goalGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 12 },
+    goalChoice: { width: '48%', minHeight: 112, borderWidth: 2, borderRadius: 20, padding: 14, justifyContent: 'space-between', shadowColor: '#000000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 2 },
+    goalChoiceOn: { borderWidth: 3, transform: [{ scale: 1.025 }], shadowOpacity: 0.2, shadowRadius: 10, elevation: 5 },
+    goalChoicePressed: { opacity: 0.82, transform: [{ scale: 0.97 }] },
+    goalChoiceTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
+    goalEmoji: { fontSize: 30, lineHeight: 36 },
+    goalCheck: { width: 25, height: 25, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+    goalCheckText: { color: '#FFFFFF', fontSize: 15, lineHeight: 18, fontWeight: '800' },
+    goalLabel: { color: '#17171A', fontSize: 16, lineHeight: 20, fontWeight: '800' },
     choice: { borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.surface, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, gap: 2 },
     choiceOn: { borderColor: colors.accent, backgroundColor: colors.accentSoft },
     pressed: { opacity: 0.85 },

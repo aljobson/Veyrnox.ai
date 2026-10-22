@@ -54,6 +54,18 @@ describe('where the welcome shows', () => {
         expect(screen).toContain("t('welcome.skip')");
     });
 
+    test('welcome opens the Mobbin-inspired, input-first creation screen instead of the preference quiz', () => {
+        const welcome = read('app', '(app)', 'welcome.tsx');
+        const start = read('app', '(app)', 'start.tsx');
+        expect(welcome).toContain("router.replace('/start')");
+        for (const label of ['My photo', 'My video', 'A reference', 'Just an idea']) {
+            expect(start).toContain(`label: '${label}'`);
+        }
+        expect(start).toContain('on && styles.sourceOn');
+        expect(start).toContain('Or try a template');
+        expect(start).toContain('presetHref(template)');
+    });
+
     test('the Mobbin-inspired creation goal is the first personalization choice', () => {
         const screen = read('app', '(app)', 'vibe.tsx');
         const copy = read('lib', 'i18n', 'messages', 'en', 'vibe.ts');
@@ -63,5 +75,13 @@ describe('where the welcome shows', () => {
         expect(copy).toContain("'vibe.goal.meme': 'Make a social ad'");
         expect(copy).toContain("'vibe.goal.character': 'Animate my photo'");
         expect(copy).toContain("'vibe.goal.story': 'Tell a story'");
+    });
+
+    test('goal choices stay selected as colorful cards until Continue', () => {
+        const screen = read('app', '(app)', 'vibe.tsx');
+        expect(screen).toContain('const GOAL_PRESENTATION');
+        expect(screen).toContain('isSelected && styles.goalChoiceOn');
+        expect(screen).toContain("onPress={() => setDraft((d) => ({ ...d, goal }))}");
+        expect(screen).toContain("disabled={!draft.goal}");
     });
 });
