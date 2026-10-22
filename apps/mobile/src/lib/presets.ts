@@ -15,7 +15,7 @@ export interface Preset {
     readonly needs: string | null;
     readonly durationSeconds: number | null;
     readonly credits: number;
-    // False when the template's model has no active catalog row. The card stays visible, but it must not open Create.
+    // False when the template's model has no active catalog row (an older server omits the field; everything it lists is active). The card stays visible, but it must not open Create.
     readonly available: boolean;
     readonly isNew: boolean;
     readonly previewUrl: string | null;
@@ -48,7 +48,7 @@ function parseOne(raw: unknown): Preset | null {
         needs: str(r.needs),
         durationSeconds: typeof r.durationSeconds === 'number' && r.durationSeconds > 0 ? r.durationSeconds : null,
         credits: r.credits,
-        available: r.available === true,
+        available: r.available !== false,
         isNew: r.isNew === true,
         previewUrl: https(r.previewUrl),
         posterUrl: https(r.posterUrl),

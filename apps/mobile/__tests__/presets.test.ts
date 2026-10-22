@@ -47,9 +47,9 @@ describe('parsePresets', () => {
         expect(p.needs).toBeNull();
     });
 
-    test('keeps an inactive template but defaults a missing availability field to unavailable', () => {
+    test('keeps an inactive template; an older server that omits the field means every template is active', () => {
         expect(parsePresets({ presets: [{ ...base, available: false }] })[0]).toMatchObject({ id: 'a', available: false });
-        expect(parsePresets({ presets: [{ ...base, available: undefined }] })[0]).toMatchObject({ id: 'a', available: false });
+        expect(parsePresets({ presets: [{ ...base, available: undefined }] })[0]).toMatchObject({ id: 'a', available: true });
     });
 
     test('gives an empty list for anything that is not a presets list', () => {
