@@ -83,7 +83,13 @@ export function changePick(picks: Picks, key: string, value: string): Picks {
     return next;
 }
 
-const oneLine = (value: unknown, max: number): string => String(value || '').replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
+export function oneLine(value: unknown, max: number): string {
+    const text = String(value || '').replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim();
+    const end = /[\uD800-\uDBFF]/.test(text[max - 1] ?? '') ? max - 1 : max;
+    // Preserve pairs, repair lone code units; Hermes need not implement toWellFormed.
+    return text.slice(0, end).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]|[\uD800-\uDFFF]/g,
+        unit => unit.length === 2 ? unit : '\uFFFD');
+}
 const optionPhrase = (table: readonly Pair[], value: string | undefined): string => table.find(([label]) => label === value)?.[1] ?? '';
 
 // The phrases for the chosen options. Unknown picks add nothing.

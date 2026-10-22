@@ -1,3 +1,4 @@
+import { claimLegacyOddlings } from '../lib/oddlingsAccountStore';
 import { setOwner as setCinemaUploadOwner } from '../lib/cinemaUploadStore';
 import { passkeyGate, toGoTrueCredential, validatePasskeyOptions } from '../lib/passkeys';
 import { getCredential } from '../lib/auth/passkeyNative';
@@ -81,6 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         aiConsent.setUser(userId);
         await bindCacheUser(userId);
         await setCinemaUploadOwner(userId).catch(() => undefined);
+        await claimLegacyOddlings(userId).catch(() => undefined);
         await writeRefreshToken(session.refreshToken);
         setStatus('signedIn');
     }, []);
