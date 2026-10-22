@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import * as WebBrowser from 'expo-web-browser';
 import { Link, Stack, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -14,6 +15,7 @@ import { colors, saveThemePreference, themePreference, THEME_PREFERENCES, type T
 import { CREATOR_PROFILE_ENABLED, resetVibe } from '../../lib/creatorProfile';
 import { clearVibe } from '../../lib/creatorProfileStore';
 import { t } from '../../lib/i18n';
+import { MENU_ICONS, type MenuIcon } from '../../lib/menuIcons';
 
 export default function Account() {
     const { api, signOut, getAccessToken } = useAuth();
@@ -85,7 +87,7 @@ export default function Account() {
                     <Text style={styles.signOutText}>{t('public.account.signOut')}</Text>
                 </Pressable>
                 <Link href="/security" asChild>
-                    <Row label={t('acct.securityRow')} />
+                    <Row icon="user" label={t('acct.securityRow')} />
                 </Link>
             </Section>
 
@@ -108,7 +110,7 @@ export default function Account() {
 
             {billing !== 'off' ? (
                 <Section title={t('account.purchases')}>
-                    <Row label={t('account.restore')} onPress={onRestore} disabled={!canPurchase} />
+                    <Row icon="coins" label={t('account.restore')} onPress={onRestore} disabled={!canPurchase} />
                     {restoreNote ? <Text style={styles.note}>{restoreNote}</Text> : null}
                     <Text style={styles.note}>{t('account.packsNote')}</Text>
                 </Section>
@@ -140,66 +142,66 @@ export default function Account() {
 
             <Section title={t('label.Credits')}>
                 <Link href="/history" asChild>
-                    <Row label={t('account.history')} />
+                    <Row icon="bookmark" label={t('account.history')} />
                 </Link>
                 <Link href="/topups" asChild>
-                    <Row label={t('topup.row')} />
+                    <Row icon="coins" label={t('topup.row')} />
                 </Link>
             </Section>
 
             <Section title={t('account.referSection')}>
                 <Link href="/referrals" asChild>
-                    <Row label={t('account.refer')} />
+                    <Row icon="heart" label={t('account.refer')} />
                 </Link>
             </Section>
 
             <Section title={t('acct.exploreSection')}>
                 <Link href="/search" asChild>
-                    <Row label={t('acct.search')} />
+                    <Row icon="sparkle" label={t('acct.search')} />
                 </Link>
                 <Link href="/models" asChild>
-                    <Row label={t('acct.models')} />
+                    <Row icon="cube" label={t('acct.models')} />
                 </Link>
                 <Link href="/pricing" asChild>
-                    <Row label={t('acct.pricing')} />
+                    <Row icon="coins" label={t('acct.pricing')} />
                 </Link>
                 <Link href="/brand-kit" asChild>
-                    <Row label={t('acct.brandKit')} />
+                    <Row icon="palette" label={t('acct.brandKit')} />
                 </Link>
                 <Link href="/publish/developer" asChild>
-                    <Row label={t('dev.row')} />
+                    <Row icon="wrench" label={t('dev.row')} />
                 </Link>
             </Section>
 
             <Section title={t('account.helpSection')}>
                 <Link href="/help" asChild>
-                    <Row label={t('account.help')} />
+                    <Row icon="help" label={t('account.help')} />
                 </Link>
             </Section>
 
             <Section title={t('account.safetySection')}>
                 <Link href="/report" asChild>
-                    <Row label={t('account.report')} />
+                    <Row icon="flag" label={t('account.report')} />
                 </Link>
                 <Link href="/blocked" asChild>
-                    <Row label={t('blocks.title')} />
+                    <Row icon="close" label={t('blocks.title')} />
                 </Link>
                 <Text style={styles.note}>{t('account.reportNote')}</Text>
             </Section>
 
             <Section title={t('account.aboutSection')}>
                 <Link href="/about" asChild>
-                    <Row label={t('acct.about')} />
+                    <Row icon="squares" label={t('acct.about')} />
                 </Link>
                 {LEGAL_LINKS.map((l) => (
-                    <Row key={l.url} label={t(l.labelKey)} onPress={() => WebBrowser.openBrowserAsync(l.url)} />
+                    <Row icon="bookmark" key={l.url} label={t(l.labelKey)} onPress={() => WebBrowser.openBrowserAsync(l.url)} />
                 ))}
-                <Row label={t('account.contact', { email: SUPPORT_EMAIL })} onPress={() => Linking.openURL(`mailto:${SUPPORT_EMAIL}`)} />
+                <Row icon="chat" label={t('account.contact', { email: SUPPORT_EMAIL })} onPress={() => Linking.openURL(`mailto:${SUPPORT_EMAIL}`)} />
             </Section>
 
             <Section title={t('account.dataSection')}>
-                <Row label={t('privacyExport.title')} onPress={() => router.push('/privacy-export')} />
-                <Row label={t('account.deleteAccount')} danger disabled={!ACCOUNT_DELETION_ENABLED} onPress={() => router.push('/delete-account')} />
+                <Row icon="folder" label={t('privacyExport.title')} onPress={() => router.push('/privacy-export')} />
+                <Row icon="close" label={t('account.deleteAccount')} danger disabled={!ACCOUNT_DELETION_ENABLED} onPress={() => router.push('/delete-account')} />
                 {ACCOUNT_DELETION_ENABLED ? null : (
                     <Text style={styles.note}>
                         {t('account.deleteSoon', { email: PRIVACY_EMAIL })}
@@ -222,22 +224,25 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 interface RowProps {
     readonly label: string;
+    readonly icon?: MenuIcon;
     readonly onPress?: () => void;
     readonly disabled?: boolean;
     readonly danger?: boolean;
 }
 
 // Forwards the ref and any props a parent Link adds, so it also works as a Link child.
-const Row = ({ label, onPress, disabled, danger, ...rest }: RowProps) => (
+const Row = ({ label, icon, onPress, disabled, danger, ...rest }: RowProps) => (
     <Pressable
         {...rest}
         accessibilityRole="button"
         accessibilityState={{ disabled: Boolean(disabled) }}
         disabled={disabled}
-        style={[styles.row, disabled && styles.off]}
+        style={[styles.row, styles.rowLine, disabled && styles.off]}
         onPress={onPress}
     >
-        <Text style={[styles.rowText, danger && styles.danger]}>{label}</Text>
+        {icon ? <Image source={MENU_ICONS[icon]} style={styles.rowIcon} tintColor={danger ? colors.danger : colors.accent} contentFit="contain" accessibilityElementsHidden /> : null}
+        <Text style={[styles.rowText, styles.rowLabel, danger && styles.danger]}>{label}</Text>
+        <Image source={MENU_ICONS.caretRight} style={styles.rowCaret} tintColor={colors.muted} contentFit="contain" accessibilityElementsHidden />
     </Pressable>
 );
 
@@ -247,6 +252,10 @@ const styles = StyleSheet.create({
     section: { gap: 8 },
     sectionTitle: { color: colors.muted, fontSize: 14, textTransform: 'uppercase' },
     row: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 16 },
+    rowLine: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56, paddingVertical: 12 },
+    rowIcon: { width: 22, height: 22 },
+    rowLabel: { flex: 1 },
+    rowCaret: { width: 16, height: 16 },
     rowText: { color: colors.text, fontSize: 16, flexShrink: 1 },
     switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 16 },
     danger: { color: colors.danger },
