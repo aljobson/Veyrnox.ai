@@ -1,0 +1,31 @@
+{
+  "intents": {
+    "inline:guided-workflows-bdf2b5ec": {
+      "binding": {
+        "contains": "You approve every generation.",
+        "kind": "text"
+      },
+      "declaredAt": 1792661900567,
+      "id": "inline:guided-workflows-bdf2b5ec",
+      "provenBy": {
+        "at": 1792661901693,
+        "grade": "presence",
+        "runId": "drive-lease-67b66dc4-8fca-4825-8be0-6f713e372005",
+        "verdictId": "reticle_act_and_wait:1792661901693"
+      },
+      "state": "bound",
+      "statement": "guided-workflows",
+      "status": "agreed",
+      "subject": "app",
+      "surface": {
+        "files": [
+          "app/veyrnox/_components/chat/WorkflowsPanel.js"
+        ],
+        "route": "/app/skills"
+      },
+      "updatedAt": 1792662824574
+    }
+  },
+  "subject": "app",
+  "version": 1
+}

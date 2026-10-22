@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import ts from 'typescript';
+import * as React from 'react';
 import { appMessagesFor } from '../lib/i18n/appMessages.mjs';
 import { LOCALES, localeTag } from '../lib/i18n/locales.mjs';
 import { translator, pluralKey } from '../lib/i18n/translate.mjs';
@@ -10,6 +11,15 @@ import { files, metadataFiles, scenarios, renderScenario, makeFixture, visibleTe
 import { SAVE_ERRORS } from '../app/veyrnox/_lib/filmMasterSave.mjs';
 import { emptyFilm, stageIssues, boardIssues, shotIssues } from '../app/veyrnox/_lib/filmStudio.js';
 process.env.TZ = 'UTC';
+
+test('Studio skills render several independent selected controls', async () => {
+  const messages = await appMessagesFor('en');
+  const f = makeFixture('en', messages);
+  const SkillsPanel = f.load(files.skills).SkillsPanel;
+  const html = f.render(React.createElement(SkillsPanel, { selectedIds: ['prompt-writer', 'storyboard'], onPick() {} }));
+  assert.equal((html.match(/aria-pressed="true"/g) || []).length, 2);
+  assert.match(html, /2\/4 selected · combine up to 4/i);
+});
 
 test('all 32 remainder files have no unresolved copy, parse errors or translator shadowing', () => {
   const all = [...Object.values(files), ...metadataFiles];

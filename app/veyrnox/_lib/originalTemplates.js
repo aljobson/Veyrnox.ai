@@ -95,7 +95,4 @@ export const VEYRNOX_ORIGINALS = [
   { id: 'magazine-cover-edit', name: 'MAGAZINE COVER EDIT', model: 'Nano Banana Pro Edit', credits: 10, category: 'YOUR PHOTO', aspect: '4:5', previewAspect: '4 / 5', isNew: true, original: true, promptOrigin: 'veyrnox-original',
     bg: 'linear-gradient(160deg,#120d13 0%,#542f53 55%,#d4a2c6 100%)', needs: 'A well-lit portrait of yourself',
     prompt: 'Turn the uploaded portrait into a refined editorial cover photograph. Keep the person\'s identity, face, hair and natural skin texture unchanged. Replace the background with a seamless deep plum studio, add a soft key light and subtle rim light, crop at mid-torso with confident posture, premium magazine colour grade, leave clear space for a masthead, add no text.' },
-  { id: 'slow-cinema-turn', name: 'SLOW CINEMA TURN', model: 'Kling 3.0 · I2V', credits: 34, category: 'YOUR PHOTO', aspect: '9:16', previewAspect: '9 / 16', durationSeconds: 10, isNew: true, original: true, promptOrigin: 'veyrnox-original',
-    bg: 'linear-gradient(170deg,#10151a 0%,#354b5c 55%,#c2d1d8 100%)', needs: 'A full-body photo with the subject clearly separated from the background',
-    prompt: 'Animate the person with a slow natural turn toward camera while preserving their identity, clothing, proportions and surroundings. A light breeze moves loose fabric and hair, the camera makes a gentle five-percent push-in, posture remains relaxed, realistic weight shift and blinking, soft cinematic motion, no change of outfit or location.' },
 ];

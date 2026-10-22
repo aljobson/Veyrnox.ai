@@ -6,6 +6,7 @@ import { useI18n } from '../../../../components/I18nProvider';
 import { CopyButton } from '../CopyButton';
 import { Modal } from '../Modal';
 import { skillOverview } from '../../_lib/studioSkills';
+import { StudioSkillIcon } from './StudioSkillIcon';
 
 export function SkillDetailsDialog({ skill, onClose }) {
   const { t } = useI18n();
@@ -35,10 +36,13 @@ export function SkillDetailsDialog({ skill, onClose }) {
     <Modal onCancel={onClose} initialFocusRef={closeRef} aria-labelledby="skill-detail-title" className="items-end justify-center p-0 sm:items-center sm:p-6">
       <article className="max-h-[92dvh] w-full max-w-2xl overflow-y-auto rounded-t-2xl border border-vx-border bg-vx-base p-5 shadow-2xl sm:rounded-2xl sm:p-7">
         <header className="flex items-start justify-between gap-5 border-b border-vx-border pb-5">
-          <div>
+          <div className="flex min-w-0 items-start gap-4 sm:gap-5">
+            <StudioSkillIcon skillId={skill.id} size="detail" className="mt-0.5" />
+            <div className="min-w-0">
             <p className="font-vx-mono text-[10px] font-bold tracking-[0.14em] text-vx-accent">{t('app.chat.skills.title')}</p>
             <h2 id="skill-detail-title" className="vx-display mt-2 text-[34px] leading-none sm:text-[44px]">{skill.name}</h2>
             <p className="mt-3 max-w-[50ch] text-sm leading-6 text-vx-fg-muted">{overview.introduction}</p>
+            </div>
           </div>
           <button ref={closeRef} type="button" onClick={onClose} aria-label={t('authGate.close')} className="grid size-10 shrink-0 place-items-center rounded-full border border-vx-border text-lg hover:border-vx-accent">×</button>
         </header>

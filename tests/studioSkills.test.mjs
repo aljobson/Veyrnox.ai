@@ -1,14 +1,22 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  SKILLS, SKILL_GROUPS, MAX_INSTRUCTIONS, MAX_DRAFTS, MAX_DRAFT_PROMPT, MAX_SKILL_IDEA, skillById, skillOverview, skillLaunchFromSearch, personalSkillLaunchFromSearch, catalogLines, skillInstructions, parseStudioDrafts,
+  SKILLS, SKILL_GROUPS, MAX_INSTRUCTIONS, MAX_DRAFTS, MAX_DRAFT_PROMPT, MAX_SKILL_IDEA, MAX_SELECTED_SKILLS, skillById, skillIdsFromSearch, skillOverview, skillLaunchFromSearch, personalSkillLaunchFromSearch, catalogLines, skillInstructions, skillsInstructions, parseStudioDrafts,
 } from '../app/veyrnox/_lib/studioSkills.js';
+import { STUDIO_SKILL_ICONS, studioSkillIcon } from '../app/veyrnox/_lib/studioSkillIcons.js';
+import { STUDIO_WORKFLOWS, workflowById, workflowStartHref, workflowSteps } from '../app/veyrnox/_lib/studioWorkflows.js';
 
 test('skill launches accept one known skill and one bounded idea', () => {
   const launch = skillLaunchFromSearch('?skill=prompt-writer&prompt=%20A+quiet+train+film%20');
   assert.deepEqual(launch, { skillId: 'prompt-writer', idea: 'A quiet train film' });
   assert.deepEqual(skillLaunchFromSearch('?skill=not-real&prompt=ignore+me'), { skillId: '', idea: '' });
   assert.equal(skillLaunchFromSearch(`?skill=prompt-writer&prompt=${'x'.repeat(MAX_SKILL_IDEA + 20)}`).idea.length, MAX_SKILL_IDEA);
+});
+
+test('multi-skill launches keep known unique skills in order and stay bounded', () => {
+  assert.deepEqual(skillIdsFromSearch('?skill=prompt-writer&skill=storyboard&skill=prompt-writer'), ['prompt-writer', 'storyboard']);
+  assert.deepEqual(skillIdsFromSearch('?skill=prompt-writer,add-sound,not-real'), ['prompt-writer', 'add-sound']);
+  assert.equal(skillIdsFromSearch(`?${SKILLS.map((skill) => `skill=${skill.id}`).join('&')}`).length, MAX_SELECTED_SKILLS);
 });
 
 test('personal skill links open only the supported manager views', () => {
@@ -52,6 +60,31 @@ test('skills: unique ids, a known group, a 1-Credit chat model, and a starter an
   assert.equal(skillById('nope'), null);
 });
 
+test('every Studio skill has one distinctive icon and no orphan icon remains', () => {
+  assert.deepEqual(Object.keys(STUDIO_SKILL_ICONS).sort(), SKILLS.map((skill) => skill.id).sort());
+  assert.equal(new Set(Object.values(STUDIO_SKILL_ICONS).map((icon) => icon.path)).size, SKILLS.length);
+  for (const skill of SKILLS) {
+    const icon = studioSkillIcon(skill.id);
+    assert.match(icon.color, /^#[0-9a-f]{6}$/i, skill.id);
+    assert.ok(icon.path.length > 12, skill.id);
+  }
+  assert.equal(studioSkillIcon('not-a-skill'), null);
+});
+
+test('guided workflows use only real skills and lead to a working first step', () => {
+  assert.equal(new Set(STUDIO_WORKFLOWS.map((workflow) => workflow.id)).size, STUDIO_WORKFLOWS.length);
+  for (const workflow of STUDIO_WORKFLOWS) {
+    assert.ok(workflow.name && workflow.blurb && workflow.outcome && workflow.path, workflow.id);
+    assert.ok(workflow.steps.length >= 3, `${workflow.id} has a useful sequence`);
+    assert.equal(workflowSteps(workflow).length, workflow.steps.length, `${workflow.id} has no missing skills`);
+    assert.match(workflowStartHref(workflow), /^\/app\/(chat\?skill=|film-studio)/, workflow.id);
+    if (!workflow.href) assert.equal(new URL(`https://veyrnox.test${workflowStartHref(workflow)}`).searchParams.getAll('skill').length, Math.min(MAX_SELECTED_SKILLS, workflow.steps.length));
+    assert.equal(workflowById(workflow.id), workflow);
+  }
+  assert.equal(workflowById('not-a-workflow'), null);
+  assert.equal(workflowStartHref(null), '/app/skills');
+});
+
 test('skills: no skill text states a Credit price, because the model list and the Studio carry the live ones', () => {
   for (const s of SKILLS) assert.doesNotMatch(s.body, /\d+\s*(credits?|cr)\b/i, `${s.id} hard-codes a price`);
 });
@@ -79,6 +112,16 @@ test('instructions: preamble, skill and live list, and never over the chat limit
     const text = skillInstructions(s, realistic);
     assert.equal(text.split('\n').filter((l) => /^\S+\|(image|video|audio)\|\d+/.test(l)).length, 33, `${s.id}: all 33 models fit`);
   }
+});
+
+test('multiple skills share one preamble and one model list while keeping every selected specialist complete', () => {
+  const selected = [skillById('prompt-writer'), skillById('storyboard'), skillById('bring-to-life'), skillById('add-sound')];
+  const text = skillsInstructions(selected, CATALOG);
+  assert.equal(text.match(/You are a Studio assistant/g)?.length, 1);
+  assert.equal(text.match(/Models \(id\|kind\|Credits per generation\):/g)?.length, 1);
+  for (const skill of selected) assert.ok(text.includes(skill.body), skill.id);
+  assert.ok(text.length <= MAX_INSTRUCTIONS);
+  assert.equal(skillsInstructions([], CATALOG), '');
 });
 
 test('drafts: a valid block becomes a draft priced from the catalog, never from the text', () => {

@@ -19,5 +19,6 @@ export function dataException({ file, owner, field, text, templateFile }) {
   if (/\/_lib\/oddlingStudio\.js$/.test(file) && owner === 'ODDLING_STUDIO_SECTIONS' && field === 'hint') return 'No UI consumer: lib/oddlingKnowledge.js embeds these in canonical assistant retrieval data (ADR-0107 C2).';
   if (/\/_lib\/oddlingFeatureCharacters\.js$/.test(file) && owner === 'ODDLING_FEATURE_SOURCES' && field === 'label') return 'Canonical preset collection titles retained under ADR-0107; not the translated category hints.';
   if (/\/_lib\/oddlingCatalog\.js$/.test(file) && owner === 'CATEGORY_ICONS' && /^[Mm][MmZzLlHhVvCcSsQqTtAaEe\d., +\-]+$/.test(text)) return 'Validated SVG path geometry.';
+  if (/\/_lib\/(?:studioSkillIcons|studioWorkflows)\.js$/.test(file) && field === 'path' && /^[Mm][MmZzLlHhVvCcSsQqTtAaEe\d., +\-]+$/.test(text)) return 'Validated SVG path geometry.';
   return helperExceptions.find(rule => (!rule.file || rule.file.test(file)) && rule.pattern.test(text))?.reason;
 }
