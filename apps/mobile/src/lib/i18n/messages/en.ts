@@ -98,6 +98,7 @@ import area_toolsDir from './en/toolsDir';
 import area_topup from './en/topup';
 import area_unlock from './en/unlock';
 import area_vey from './en/vey';
+import area_vibe from './en/vibe';
 import area_welcome from './en/welcome';
 
 const catalog = {
@@ -197,6 +198,7 @@ const catalog = {
     ...area_topup,
     ...area_unlock,
     ...area_vey,
+    ...area_vibe,
     ...area_welcome,
 } as const;
 

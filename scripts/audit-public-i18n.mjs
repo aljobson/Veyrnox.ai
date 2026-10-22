@@ -37,6 +37,7 @@ const exceptions = [
   { file: /\/_components\/editor\/(?:OriginalAudioPanel|PersonProcessingControls|MotionProcessingControls)\.js$/, pattern: /^(?:Processed video|Original audio\/|Veyrnox procedural synthesizer|Generated locally; version 1 preset\.)$/, reason: 'canonical persisted folder/attribution metadata; display translation is separate' },
   { file: /\/publish\/ads\/page\.js$/, pattern: /^United Kingdom$/, reason: 'canonical stored campaign targeting value, not a translated display label' },
 
+  { file: /\/lib\/creatorArchetype\.js$/, pattern: /^The$/, reason: 'English source of the creator card name for the phone and the server; the web words the card from app.vibe.card.* so it reads right in every language' },
   { file: /\/editor\/AgentPanel\.js$/, pattern: /^(?:split the first clip at 2 seconds|remove the last clip|set the volume of the first clip to 40%|add the title "Day one")$/, reason: 'literal command prompts accepted by the existing English-only local parser; no localized parser exists' },
   { file: /\/editor\/MultitrackWorkspace\.js$/, pattern: /^(?:Veyrnox\.ai Cut|Cut)$/, reason: 'Cut is the editor product name in the branded header' },
   { file: /\/publish\/smartlink\/page\.js$/, pattern: /^(?:veyrnox\.ai\/s\/|https:\/\/)$/, reason: 'literal branded address or URL protocol required by the link editor' },

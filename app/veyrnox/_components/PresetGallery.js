@@ -5,11 +5,13 @@ import { PRESETS, PRESET_CATEGORIES, templatesIn } from '../_lib/tokens';
 import { useCatalog } from '../_lib/useCatalog';
 import { usePopularTemplates } from '../_lib/usePopularTemplates';
 import { useI18n } from '../../../components/I18nProvider';
+import { rankByTaste } from '../../../lib/creatorWords.js';
 
 
 // The preset filter and grid, shared by the public /presets page and the
 // studio's Explore tab so the two never drift apart.
-export function PresetGallery({ size = 'lg', columns = 'lg:columns-3' }) {
+// `taste` is the person's vibe check answers (ADR-0251), or null: templates that fit come first and nothing else changes.
+export function PresetGallery({ size = 'lg', columns = 'lg:columns-3', taste = null }) {
   const { t } = useI18n();
   const [cat, setCat] = useState('ALL');
   const [visibleCount, setVisibleCount] = useState(12);
@@ -19,6 +21,7 @@ export function PresetGallery({ size = 'lg', columns = 'lg:columns-3' }) {
   const popular = popularIds.map((id) => PRESETS.find((preset) => preset.id === id)).filter(Boolean);
   const categories = popular.length ? ['ALL', 'NEW', 'POPULAR', ...PRESET_CATEGORIES.slice(2)] : PRESET_CATEGORIES;
   const list = cat === 'POPULAR' ? popular : templatesIn(cat);
+  const ordered = rankByTaste(list, taste, (p) => `${p.name} ${p.category} ${p.prompt}`);
   const modelCount = new Set(list.map((preset) => preset.model)).size;
   return (
     <>
@@ -45,7 +48,7 @@ export function PresetGallery({ size = 'lg', columns = 'lg:columns-3' }) {
         })}
       </p>
       <div id="preset-gallery-results" className={`columns-1 sm:columns-2 ${columns} gap-6 [&>a]:mb-10 [&>a]:break-inside-avoid`}>
-        {list.slice(0, visibleCount).map((p) => (
+        {ordered.slice(0, visibleCount).map((p) => (
           <PresetCard key={p.id} preset={p} catalog={models} size={size} />
         ))}
       </div>

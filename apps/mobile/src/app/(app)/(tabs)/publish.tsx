@@ -9,7 +9,7 @@ import { renewalTerms, toDisplayPackages, type Interval } from '../../../lib/bil
 import { t } from '../../../lib/i18n';
 import { VEY_CLEARANCE } from '../../../components/VeyMascot';
 import { fetchPublishPlan, paywallState, type PlanSource, type PublishTier } from '../../../lib/publishPlan';
-import { colors } from '../../../theme';
+import { colors, fonts } from '../../../theme';
 
 const BENEFITS = ['plan.benefit.accounts', 'plan.benefit.schedule', 'plan.benefit.analytics', 'plan.benefit.bestTime'] as const;
 const LABEL: Record<Interval, string> = { week: 'unlock.plan.week', month: 'unlock.plan.month', year: 'unlock.plan.year' };
@@ -124,7 +124,7 @@ export default function Publish() {
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
     body: { padding: 20, paddingBottom: VEY_CLEARANCE, gap: 12 },
-    title: { color: colors.text, fontSize: 26, fontWeight: '700', marginBottom: 4 },
+    title: { color: colors.text, fontFamily: fonts.display, fontSize: 26, marginBottom: 4 },
     benefit: { color: colors.body, fontSize: 16 },
     plans: { gap: 10, marginTop: 8 },
     plan: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 16 },

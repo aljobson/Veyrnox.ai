@@ -4,7 +4,7 @@ import { VEY_CLEARANCE } from '../../../components/VeyMascot';
 import { touchTarget } from '../../../lib/a11y';
 import { HELP_GUIDES } from '../../../lib/helpGuidesData';
 import { t } from '../../../lib/i18n';
-import { colors } from '../../../theme';
+import { colors, fonts } from '../../../theme';
 
 export default function HelpGuides() {
     const router = useRouter();
@@ -32,7 +32,7 @@ export default function HelpGuides() {
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
     content: { padding: 16, paddingBottom: 16 + VEY_CLEARANCE, gap: 16 },
-    heading: { color: colors.text, fontSize: 24, fontWeight: '700' },
+    heading: { color: colors.text, fontFamily: fonts.display, fontSize: 24 },
     row: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 16, gap: 8 },
     name: { color: colors.text, fontSize: 17, fontWeight: '600' },
     note: { color: colors.muted, fontSize: 15, lineHeight: 22 },

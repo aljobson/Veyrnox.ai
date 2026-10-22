@@ -8,7 +8,7 @@ import type { TurnstileMessage } from '../lib/auth/turnstile';
 import { passkeyGate, passkeysServerAvailable, passkeySignInErrorKey } from '../lib/passkeys';
 import { touchTarget } from '../lib/a11y';
 import { t } from '../lib/i18n';
-import { colors } from '../theme';
+import { colors, fonts } from '../theme';
 
 export default function PasskeyAuth() {
     const { status } = useAuth();
@@ -95,7 +95,7 @@ function PasskeyAttempt() {
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
     body: { padding: 24, gap: 12 },
-    heading: { color: colors.text, fontSize: 28, fontWeight: '700' },
+    heading: { color: colors.text, fontFamily: fonts.display, fontSize: 28 },
     back: { color: colors.accent },
     message: { color: colors.muted },
     error: { color: colors.danger },
