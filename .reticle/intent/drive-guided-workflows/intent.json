@@ -1,0 +1,18 @@
+{
+  "intents": {
+    "flow:drive-guided-workflows": {
+      "declaredAt": 1792662023157,
+      "id": "flow:drive-guided-workflows",
+      "state": "declared",
+      "statement": "guided-workflows",
+      "status": "proposed",
+      "subject": "drive-guided-workflows",
+      "surface": {
+        "flow": "drive-guided-workflows"
+      },
+      "updatedAt": 1792662023164
+    }
+  },
+  "subject": "drive-guided-workflows",
+  "version": 1
+}

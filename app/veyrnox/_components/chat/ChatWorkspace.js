@@ -17,9 +17,10 @@ import { PersonaManager } from './PersonaManager';
 import { AttachButton, AttachChips, useAttachments } from './AttachBar';
 import { LibraryPicker } from '../LibraryPicker';
 import { SkillsPanel } from './SkillsPanel';
+import { StudioSkillIcon } from './StudioSkillIcon';
 import { StudioDraftCards } from './StudioDraftCards';
 import { useCatalog } from '../../_lib/useCatalog';
-import { skillById, skillInstructions } from '../../_lib/studioSkills';
+import { MAX_SELECTED_SKILLS, skillById, skillIdsFromSearch, skillsInstructions } from '../../_lib/studioSkills';
 import { ChatText } from './ChatText';
 import { SettingsPanel } from './SettingsPanel';
 import { ComposerControls, ComposerTypeTabs } from './ComposerControls';
@@ -100,7 +101,7 @@ export function ChatWorkspace() {
   const [limits, setLimits] = useState({ maxAttachments: 4, maxEdge: 2048 });
   const att = useAttachments(limits.maxAttachments);
   const [pickingLibrary, setPickingLibrary] = useState(false);
-  const [skillId, setSkillId] = useState(''); // a Studio skill chosen for a chat that has not started (ADR-0073)
+  const [skillIds, setSkillIds] = useState([]); // Studio skills composed for a chat that has not started (ADR-0073)
   const { models: studioModels, live: studioCatalogLive, loading: studioLoading } = useCatalog();
   const [composerKind, setComposerKind] = useState(COMPOSER_KINDS.CHAT);
   const [mediaPrompt, setMediaPrompt] = useState('');
@@ -175,7 +176,7 @@ export function ChatWorkspace() {
       // Another chat was pressed while this one was read: that one is the one to show. A re-read of the chat still on screen refreshes it in place.
       if (chatView.current.asked !== id) { if (chatView.current.shown === id) setMessages(r.messages); return false; }
       settleKept(id, asked); // in the store, so the notice and the box read from it below are what the server now says
-      setPersonaId(''); setActive(r.thread); setSkillId(''); setMessages(r.messages); setInstr(r.thread.system_prompt || ''); land(chatView.current, id); setError(waiting(id)); setDrawer(false);
+      setPersonaId(''); setActive(r.thread); setSkillIds([]); setMessages(r.messages); setInstr(r.thread.system_prompt || ''); land(chatView.current, id); setError(waiting(id)); setDrawer(false);
       setText(readDraft(store(), getStoredUserId(), r.thread.id)); setStars(readStars(store(), getStoredUserId(), r.thread.id)); setStarredOnly(false); return true;
     } catch (e) { fail(e); if (giveUp(chatView.current, id)) { const kept = waiting(chatView.current.shown); if (kept) setError((was) => (was && was.code !== kept.code ? { ...was, following: kept } : kept)); } return false; }
   };
@@ -189,7 +190,7 @@ export function ChatWorkspace() {
   };
   useEffect(() => { settleNew(); }, []); // once: a page that has just loaded shows New chat
   // A chat that has not started. A notice waits for it too: one about a message that was sent before a chat was made, or whose chat no longer exists.
-  const clear = () => { setPersonaId(''); setActive(null); setSkillId(''); setMessages([]); setInstr(''); land(chatView.current, NEW_CHAT); setError(waiting(NEW_CHAT)); setDrawer(false); setText(readDraft(store(), getStoredUserId(), NEW_CHAT)); setStars([]); setStarredOnly(false); settleNew(); };
+  const clear = () => { setPersonaId(''); setActive(null); setSkillIds([]); setMessages([]); setInstr(''); land(chatView.current, NEW_CHAT); setError(waiting(NEW_CHAT)); setDrawer(false); setText(readDraft(store(), getStoredUserId(), NEW_CHAT)); setStars([]); setStarredOnly(false); settleNew(); };
   const blank = () => { ask(chatView.current, NEW_CHAT); clear(); };
   const star = (id) => { if (active) setStars(toggleStar(store(), getStoredUserId(), active.id, id)); };
   const shown = starredOnly ? messages.filter((x) => x.role === 'assistant' && stars.includes(x.id)) : messages;
@@ -207,17 +208,23 @@ export function ChatWorkspace() {
   const selectModel = (id) => (active ? patch(active.id, { model_id: id }) : setDraftModel(id));
   // Choosing a persona fills the draft of a chat that has not started: its instructions, its model if still offered, and its options.
   // It never touches an existing chat. Options the model does not offer are ignored at send time, as for any model.
-  // Choosing a skill does the same for a chat that has not started, with built-in instructions that include the live Studio model list.
+  // Skills compose for a chat that has not started. Their instructions share one preamble and one bounded live model list.
   const pickSkill = (id) => {
     const s = skillById(id);
     if (!s) return;
-    setSkillId(id); setPersonaId('');
-    setInstr(skillInstructions(s, studioModels));
+    if (!skillIds.includes(id) && skillIds.length >= MAX_SELECTED_SKILLS) return;
+    const next = skillIds.includes(id) ? skillIds.filter((skillId) => skillId !== id) : [...skillIds, id];
+    setSkillIds(next); setPersonaId('');
+    setInstr(skillsInstructions(next.map(skillById), studioModels));
     if (models.some((m) => m.id === s.model)) setDraftModel(s.model);
     setOpts({ thinking: false, web: false, research: false });
     setTimeout(() => document.getElementById('chat-msg')?.focus(), 0);
   };
-  const clearSkill = () => { setSkillId(''); setInstr(''); };
+  const clearSkill = (id) => {
+    const next = skillIds.filter((skillId) => skillId !== id);
+    setSkillIds(next);
+    setInstr(skillsInstructions(next.map(skillById), studioModels));
+  };
   // ?asset=<job id>, from the Library's Ask about this: that image is attached to a chat that has not started, once. The same
   // checks as From library apply (the server confirms it is the person's own, and the size cap is said up front).
   const assetFromUrl = useRef(false);
@@ -242,12 +249,20 @@ export function ChatWorkspace() {
   useEffect(() => {
     if (skillFromUrl.current || studioLoading || !models.length || active) return;
     skillFromUrl.current = true;
-    const wanted = new URLSearchParams(window.location.search).get('skill');
-    if (wanted && skillById(wanted)) pickSkill(wanted);
+    const wanted = skillIdsFromSearch(window.location.search);
+    if (!wanted.length) return;
+    const frame = window.requestAnimationFrame(() => {
+      setSkillIds(wanted); setPersonaId('');
+      setInstr(skillsInstructions(wanted.map(skillById), studioModels));
+      const first = skillById(wanted[0]);
+      if (first && models.some((m) => m.id === first.model)) setDraftModel(first.model);
+      setOpts({ thinking: false, web: false, research: false });
+    });
+    return () => window.cancelAnimationFrame(frame);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studioLoading, models.length, active]);
   const pickPersona = (id) => {
-    setSkillId('');
+    setSkillIds([]);
     setPersonaId(id);
     const p = personas.find((x) => x.id === id);
     if (!p) return;
@@ -358,7 +373,7 @@ export function ChatWorkspace() {
               <div className="py-16 text-center">
                 <h1 data-testid="chat-title" className="vx-display text-[32px]">{t("app.chat.workOn")}</h1>
                 <p className="mt-2 text-vx-fg-muted">{t("app.chat.priceHelp")}</p>
-                {!active && <SkillsPanel selectedId={skillId} onPick={pickSkill} disabled={busy} />}
+                {!active && <SkillsPanel selectedIds={skillIds} onPick={pickSkill} disabled={busy} />}
               </div>
             )}
             {starredOnly && shown.length === 0 && <p className="py-8 text-center text-vx-fg-muted">{t("app.chat.workspace.noStars")}</p>}
@@ -411,12 +426,15 @@ export function ChatWorkspace() {
                 {imagesBlocked ? (researchOn ? t("app.chat.workspace.researchImages") : t("app.chat.workspace.modelImages")) : att.notice}
               </p>
             )}
-            {composerKind === COMPOSER_KINDS.CHAT && skillId && !active && (
+            {composerKind === COMPOSER_KINDS.CHAT && skillIds.length > 0 && !active && (
               <div className="mb-2 flex flex-wrap gap-2">
-                <button type="button" onClick={clearSkill} disabled={busy} aria-label={t('app.chat.workspace.removeSkill', { name: tOr(t, `app.chat.skill.${skillId}.name`, skillById(skillId)?.name || '') })}
-                  className="rounded-full border border-vx-accent px-3 py-1.5 text-xs font-semibold text-vx-fg disabled:opacity-50">
-                  {t("app.chat.workspace.skill")}{' '}{tOr(t, `app.chat.skill.${skillId}.name`, skillById(skillId)?.name || '')} <span aria-hidden="true">×</span>
-                </button>
+                {skillIds.map((skillId) => (
+                  <button key={skillId} type="button" onClick={() => clearSkill(skillId)} disabled={busy} aria-label={t('app.chat.workspace.removeSkill', { name: tOr(t, `app.chat.skill.${skillId}.name`, skillById(skillId)?.name || '') })}
+                    className="inline-flex items-center gap-2 rounded-full border border-vx-accent py-1 pe-3 ps-1 text-xs font-semibold text-vx-fg disabled:opacity-50">
+                    <StudioSkillIcon skillId={skillId} size="chip" />
+                    {tOr(t, `app.chat.skill.${skillId}.name`, skillById(skillId)?.name || '')} <span aria-hidden="true">×</span>
+                  </button>
+                ))}
               </div>
             )}
             <div className="overflow-hidden rounded-[28px] border border-vx-border bg-vx-panel shadow-[0_18px_50px_rgba(0,0,0,0.18)] focus-within:border-vx-accent">
@@ -435,7 +453,7 @@ export function ChatWorkspace() {
               <div className="flex items-end gap-2 px-2 pb-2">
                 {offer.images && <AttachButton onPick={att.add} disabled={busy} full={att.items.length >= limits.maxAttachments} />}
                 <label className="sr-only" htmlFor="chat-msg">{t("app.chat.message")}</label>
-                <textarea id="chat-msg" rows={1} value={text} maxLength={MAX_TEXT} placeholder={skillId ? tOr(t, `app.chat.skill.${skillId}.starter`, skillById(skillId)?.starter || t('app.chat.ask')) : t('app.chat.ask')} onChange={(e) => setText(e.target.value)}
+                <textarea id="chat-msg" rows={1} value={text} maxLength={MAX_TEXT} placeholder={skillIds.length ? tOr(t, `app.chat.skill.${skillIds[0]}.starter`, skillById(skillIds[0])?.starter || t('app.chat.ask')) : t('app.chat.ask')} onChange={(e) => setText(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
                   className="max-h-48 min-h-14 min-w-0 flex-1 resize-none bg-transparent px-2 py-3 text-[15px] text-vx-fg outline-hidden placeholder:text-vx-fg-faint" />
                 {busy

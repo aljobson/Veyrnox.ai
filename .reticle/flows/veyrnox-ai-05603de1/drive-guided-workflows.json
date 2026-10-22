@@ -1,0 +1,44 @@
+{
+  "version": 2,
+  "name": "drive-guided-workflows",
+  "projectId": "veyrnox-ai-05603de1",
+  "createdAt": 1792662023102,
+  "steps": [
+    {
+      "tool": "reticle_act",
+      "anchor": {
+        "kind": "role",
+        "role": "button",
+        "name": "Viral short 4 STEPS Shape a hook, plan the beats, animate the hero shot and finish with sound. View workflow →"
+      },
+      "args": {},
+      "action": "click",
+      "expect": {
+        "kind": "text",
+        "contains": "You approve every generation.",
+        "visible": true
+      },
+      "timeoutMs": 8000,
+      "page": "/app/skills"
+    }
+  ],
+  "startPath": "/app/skills",
+  "intent": "guided-workflows",
+  "requires": [
+    {
+      "kind": "route",
+      "pathname": "/app/skills"
+    }
+  ],
+  "ensures": [
+    {
+      "kind": "route",
+      "pathname": "/app/skills"
+    }
+  ],
+  "author": {
+    "agent": "codex-mcp-client",
+    "person": "al.jobson@21stclick.co.uk"
+  },
+  "intentId": "flow:drive-guided-workflows"
+}

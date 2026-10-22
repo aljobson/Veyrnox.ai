@@ -1,6 +1,7 @@
 import { AppNav } from '../../_components/NavBar';
 import { Main } from '../../_components/Main';
 import { SkillsPanel } from '../../_components/chat/SkillsPanel';
+import { WorkflowsPanel } from '../../_components/chat/WorkflowsPanel';
 import { getT } from '../../../../lib/i18n/server';
 
 export async function generateMetadata() {
@@ -25,6 +26,7 @@ export default async function SkillsPage() {
             {t('app.chat.skills.help')}
           </p>
         </header>
+        <WorkflowsPanel />
         <SkillsPanel linkToChat />
       </Main>
     </div>

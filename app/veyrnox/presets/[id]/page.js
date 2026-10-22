@@ -10,6 +10,7 @@ import { Main } from '../../_components/Main';
 import { TemplateRecipe } from '../../_components/TemplateRecipe';
 import { FilmPlayer } from '../../_components/FilmPlayer';
 import { ClipBadge } from '../../_components/ClipBadge';
+import { OriginalTemplateArtwork } from '../../_components/OriginalTemplateArtwork';
 import { SHOWCASE_CLIPS } from '../../_lib/showcase';
 import { ALL_TEMPLATES, templateById, presetTitle, modelIdForName } from '../../_lib/tokens';
 import { OPEN_GRAPH_BASE } from '../../../seo';
@@ -80,10 +81,7 @@ export default async function TemplatePage({ params }) {
               </div>
             ) : template.original ? (
               <div className="relative min-h-[280px] overflow-hidden rounded-2xl lg:min-h-[480px]" style={{ background: template.bg }}>
-                <div className="absolute inset-0 flex flex-col justify-between p-7 text-white sm:p-10">
-                  <span className="font-vx-mono text-[11px] font-bold tracking-[0.16em] text-white/75">{t('presets.original')}</span>
-                  <span className="max-w-[12ch] text-[40px] font-extrabold leading-[0.92] tracking-tight sm:text-[52px]">{presetTitle(template.name)}</span>
-                </div>
+                <OriginalTemplateArtwork preset={template} eyebrow={t('presets.original')} title={presetTitle(template.name)} />
               </div>
             ) : <div className="min-h-[280px] rounded-2xl lg:min-h-[480px]" style={{ background: template.bg }} aria-hidden />}
           </div>

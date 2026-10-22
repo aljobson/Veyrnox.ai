@@ -32,7 +32,7 @@ test('every imported clip has its own matching recipe and a supported video mode
 });
 
 test('gallery and homepage templates have reachable recipe URLs', () => {
-  assert.equal(PRESETS.length, 142);
+  assert.equal(PRESETS.length, 141);
   assert.equal(WALL_PRESETS.length, 24);
   const visible = [...PRESETS, ...WALL_PRESETS];
   assert.equal(new Set(visible.map((p) => p.clipKey).filter(Boolean)).size, 134);
@@ -44,8 +44,8 @@ test('gallery and homepage templates have reachable recipe URLs', () => {
 });
 
 test('Veyrnox originals are complete, supported and free of imported attribution', () => {
-  assert.equal(VEYRNOX_ORIGINALS.length, 32);
-  assert.equal(new Set(VEYRNOX_ORIGINALS.map((preset) => preset.id)).size, 32);
+  assert.equal(VEYRNOX_ORIGINALS.length, 31);
+  assert.equal(new Set(VEYRNOX_ORIGINALS.map((preset) => preset.id)).size, 31);
   for (const preset of VEYRNOX_ORIGINALS) {
     assert.equal(preset.original, true, preset.id);
     assert.equal(preset.promptOrigin, 'veyrnox-original', preset.id);
@@ -63,6 +63,8 @@ test('Veyrnox originals are complete, supported and free of imported attribution
     if (preset.durationSeconds) assert.ok(model.durations?.includes(preset.durationSeconds), `${preset.id} uses unsupported duration`);
     assert.equal(templateById(preset.id), preset);
   }
+  assert.equal(templateById('slow-cinema-turn'), null);
+  assert.equal(isUnknownStaticPage('/presets/slow-cinema-turn'), true);
 });
 
 test('old template bookmarks retain their original recipe without unrelated video', () => {

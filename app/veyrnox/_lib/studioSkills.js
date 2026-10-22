@@ -9,6 +9,7 @@ export const MAX_INSTRUCTIONS = 4000; // the chat's own Instructions limit (ADR-
 export const MAX_DRAFTS = 6;          // cards for one reply (a storyboard is the most that needs several)
 export const MAX_DRAFT_PROMPT = 2000;
 export const MAX_SKILL_IDEA = 500;     // short enough for a shareable GET launch URL
+export const MAX_SELECTED_SKILLS = 4;  // keeps every chosen specialist complete inside the 4,000-character system prompt
 
 export const SKILL_GROUPS = ['Make', 'Edit', 'Plan', 'Film'];
 
@@ -83,6 +84,13 @@ export function skillById(id) {
   return SKILLS.find((s) => s.id === id) || null;
 }
 
+/** Known, unique skill ids from a launch URL. Repeated and comma-separated links both remain shareable. */
+export function skillIdsFromSearch(search) {
+  const params = new URLSearchParams(String(search || ''));
+  const ids = params.getAll('skill').flatMap((value) => value.split(','));
+  return [...new Set(ids.map((id) => id.trim()).filter((id) => skillById(id)))].slice(0, MAX_SELECTED_SKILLS);
+}
+
 const GROUP_OVERVIEW = {
   Make: {
     bestFor: 'Turning a rough idea into one generation-ready creative brief.',
@@ -124,7 +132,7 @@ export function skillOverview(skill) {
  */
 export function skillLaunchFromSearch(search) {
   const params = new URLSearchParams(String(search || ''));
-  const skill = skillById(params.get('skill'));
+  const skill = skillById(skillIdsFromSearch(search)[0]);
   if (!skill) return { skillId: '', idea: '' };
   return {
     skillId: skill.id,
@@ -161,14 +169,23 @@ export function catalogLines(models) {
  * The text copied onto a new chat when a skill is chosen: the shared preamble, the skill, then the live model list. Never
  * longer than the chat allows; if the list does not fit, whole lines are dropped from the end, never cut mid-line.
  */
-export function skillInstructions(skill, models) {
-  const head = `${PREAMBLE}\n\n${skill.body}\n\nModels (id|kind|Credits per generation):\n`;
+export function skillsInstructions(skills, models) {
+  const unique = [...new Map((skills || []).filter(Boolean).map((skill) => [skill.id, skill])).values()].slice(0, MAX_SELECTED_SKILLS);
+  if (!unique.length) return '';
+  const skillText = unique.length === 1
+    ? unique[0].body
+    : `Active skills — use them together for one result:\n\n${unique.map((skill, index) => `${index + 1}. ${skill.body}`).join('\n\n')}`;
+  const head = `${PREAMBLE}\n\n${skillText}\n\nModels (id|kind|Credits per generation):\n`;
   let out = head;
   for (const line of catalogLines(models)) {
     if (out.length + line.length + 1 > MAX_INSTRUCTIONS) break;
     out += `${line}\n`;
   }
   return out.trimEnd();
+}
+
+export function skillInstructions(skill, models) {
+  return skillsInstructions(skill ? [skill] : [], models);
 }
 
 const FENCE = /```studio[ \t]*\r?\n([\s\S]*?)```/g;
