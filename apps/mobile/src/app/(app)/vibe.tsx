@@ -14,7 +14,7 @@ import { chooseLocale, getLocale, t } from '../../lib/i18n';
 import { LANGUAGES } from '../../lib/language';
 import { loadLanguage, saveAccountLanguage, storeLanguage } from '../../lib/languageStore';
 import { fetchPresets, presetHref } from '../../lib/presets';
-import { colors } from '../../theme';
+import { colors, fonts } from '../../theme';
 
 // The Vibe Check (server ADR-0251): seven taps, one question each, then a creator card. Skippable on every screen, and a
 // skip never throws away answers already saved. Everything chosen here only reorders templates and sets a default.
@@ -167,6 +167,11 @@ export default function Vibe() {
 
                 {key ? (
                     <View style={styles.question}>
+                        <View style={styles.progress} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+                            {STEPS.map((s, i) => (
+                                <View key={s} style={[styles.progressStep, i < step && styles.progressStepOn]} />
+                            ))}
+                        </View>
                         <Text style={styles.step} accessibilityLabel={t('vibe.step', { n: step, total: TOTAL })}>{t('vibe.step', { n: step, total: TOTAL })}</Text>
                         <Text style={styles.title} accessibilityRole="header">{t(`vibe.${key}.title`)}</Text>
                         {key === 'chaos' ? (
@@ -326,8 +331,11 @@ const styles = StyleSheet.create({
     bodyTop: { flexGrow: 1, justifyContent: 'flex-start', padding: 24, paddingTop: 72 },
     center: { alignItems: 'center', gap: 16 },
     question: { gap: 16 },
+    progress: { flexDirection: 'row', gap: 6 },
+    progressStep: { flex: 1, height: 4, borderRadius: 2, backgroundColor: colors.border },
+    progressStepOn: { backgroundColor: colors.accent },
     step: { color: colors.muted, fontSize: 14 },
-    title: { color: colors.text, fontSize: 26, fontWeight: '700' },
+    title: { color: colors.text, fontFamily: fonts.display, fontSize: 26, lineHeight: 32 },
     text: { color: colors.body, fontSize: 17, lineHeight: 24 },
     options: { gap: 10 },
     choice: { borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.surface, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, gap: 2 },
@@ -355,7 +363,7 @@ const styles = StyleSheet.create({
     cardWrap: { gap: 16 },
     card: { backgroundColor: colors.accent, borderRadius: 20, padding: 22, minHeight: 200, justifyContent: 'flex-end', gap: 10 },
     cardKicker: { color: colors.accentInk, fontSize: 12, letterSpacing: 1.6, textTransform: 'uppercase', opacity: 0.85 },
-    cardName: { color: colors.accentInk, fontSize: 30, fontWeight: '800' },
+    cardName: { color: colors.accentInk, fontFamily: fonts.displayHeavy, fontSize: 32, lineHeight: 38 },
     chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
     chip: { color: colors.accentInk, backgroundColor: 'rgba(0,0,0,0.18)', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, fontSize: 13, fontWeight: '600', overflow: 'hidden' },
 });
