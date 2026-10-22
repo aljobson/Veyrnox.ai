@@ -1,8 +1,34 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  SKILLS, SKILL_GROUPS, MAX_INSTRUCTIONS, MAX_DRAFTS, MAX_DRAFT_PROMPT, skillById, catalogLines, skillInstructions, parseStudioDrafts,
+  SKILLS, SKILL_GROUPS, MAX_INSTRUCTIONS, MAX_DRAFTS, MAX_DRAFT_PROMPT, MAX_SKILL_IDEA, skillById, skillOverview, skillLaunchFromSearch, personalSkillLaunchFromSearch, catalogLines, skillInstructions, parseStudioDrafts,
 } from '../app/veyrnox/_lib/studioSkills.js';
+
+test('skill launches accept one known skill and one bounded idea', () => {
+  const launch = skillLaunchFromSearch('?skill=prompt-writer&prompt=%20A+quiet+train+film%20');
+  assert.deepEqual(launch, { skillId: 'prompt-writer', idea: 'A quiet train film' });
+  assert.deepEqual(skillLaunchFromSearch('?skill=not-real&prompt=ignore+me'), { skillId: '', idea: '' });
+  assert.equal(skillLaunchFromSearch(`?skill=prompt-writer&prompt=${'x'.repeat(MAX_SKILL_IDEA + 20)}`).idea.length, MAX_SKILL_IDEA);
+});
+
+test('personal skill links open only the supported manager views', () => {
+  assert.equal(personalSkillLaunchFromSearch('?personas=manage'), 'manage');
+  assert.equal(personalSkillLaunchFromSearch('?personas=new'), 'new');
+  assert.equal(personalSkillLaunchFromSearch('?personas=delete'), '');
+  assert.equal(personalSkillLaunchFromSearch(''), '');
+});
+
+test('skill overviews describe the real start, review step and output', () => {
+  const edit = skillOverview(skillById('edit-with-words'));
+  assert.match(edit.introduction, /photo/i);
+  assert.match(edit.howTo[0], /Attach/);
+  assert.match(edit.howTo.at(-1), /Studio/);
+  assert.match(edit.output, /source file/i);
+  const film = skillOverview(skillById('film-shot-prompt'));
+  assert.match(film.bestFor, /Film Studio/);
+  assert.match(film.output, /stage-specific/);
+  assert.equal(skillOverview(null), null);
+});
 
 const M = (over = {}) => ({ id: 'flux-2-pro', name: 'Flux 2 Pro', kind: 'image', credits: 4, gated: false, aspects: ['1:1', '16:9'], media: {}, ...over });
 const CATALOG = [

@@ -1,6 +1,8 @@
 // Veyrnox.ai data constants — source of truth: platform_model.xlsx / handoff README
 // Do not drift these numbers. Credit costs & plan prices are contractual.
 
+import { templateById } from './templates.js';
+
 // Active gateway catalog — kept in lockstep with fal rows exposed by
 // /api/v1/generations and (once shipped) GET /api/v1/catalog.
 // `durations` mirrors what GET /api/catalog derives from each model's
@@ -65,7 +67,8 @@ export function kindOf(modality) {
 
 
 // Templates live in templates.js; re-exported so existing imports keep working.
-export { PRESETS, PRESET_CATEGORIES, WALL_PRESETS, ALL_TEMPLATES, templatesIn, templateById, templateHref } from './templates.js';
+export { PRESETS, PRESET_CATEGORIES, WALL_PRESETS, ALL_TEMPLATES, templatesIn, searchTemplates, templateHref } from './templates.js';
+export { templateById };
 
 // Preset names are stored upper-case for the studio's chips. Shown as a title
 // they read better in title case, except for the acronyms they contain.
@@ -91,6 +94,15 @@ export function modelIdForName(name) {
   const want = String(name).trim().toLowerCase();
   const hit = MODELS.find((m) => m.name.toLowerCase() === want);
   return hit ? hit.id : null;
+}
+
+export function presetDraftForModel(presetId, modelId) {
+  const preset = templateById(presetId);
+  if (!preset || !modelId || modelIdForName(preset.model) !== modelId) return null;
+  return {
+    prompt: preset.prompt,
+    aspect: typeof preset.aspect === 'string' ? preset.aspect : null,
+  };
 }
 
 /**
@@ -136,6 +148,7 @@ export const SUPPORT_EMAIL = 'legal@veyrnox.com';
 // The logo is the Home link. A `/#…` entry is a section of the home page;
 // from any other page it opens the home page at that section.
 export const PRIMARY_NAV_CATEGORIES = [
+  { href: '/models', label: 'Models', group: 'Discover' },
   { href: '/app/create?model=nano-banana-kie', label: 'Create', group: 'Product' },
   { href: '/tools', label: 'Edit', group: 'Product' },
   { href: '/app/film-studio', label: 'Make a film', group: 'Product' },
@@ -160,6 +173,7 @@ export const SECONDARY_NAV_CATEGORIES = [
   { href: '/mcp',       label: 'MCP', group: 'Build' },
   { href: '/developers', label: 'Developers', group: 'Build' },
   { href: '/app/chat',  label: 'LLM Chat', group: 'Build' },
+  { href: '/app/skills', label: 'Studio skills', group: 'Build' },
   { href: '/#faq',       label: 'FAQ', group: 'Learn' },
   { href: '/social-cinema', label: 'Social Cinema', group: 'Discover' },
 ];

@@ -136,3 +136,46 @@ Production remains inactive until the owner-approved migration workflow applies
 and check production reconciliation. Rollback requires a new guarded migration
 setting only Sana inactive and removing it from the fallback list. Do not rewrite
 0122 or 0126 or modify balances. No credentials are committed.
+
+## Amendment 1 — 2026-10-22: flatten the pack price curve (migration 0365)
+
+The entry pack cost $0.100 a credit against $0.043 at the top pack, which left
+the small packs far above the margin target and made the entry price per item
+about 2.3 times the top-pack price. The 50% target is set by the worst-costed
+credit ($0.01796) after the 8% + $0.30 fee, and it is tightest at $129/3000.
+Each smaller pack carries a fixed-fee share, so its own floor is a little
+higher than $0.043 a credit, but well under today's rates.
+
+| Pack | Before | After | Worst-case margin before to after |
+|---|---|---|---|
+| Entry | `web-100` $10 / 100 ($0.100) | `web-160` $10 / 160 ($0.0625) | 71% to 60% |
+| Small | `web-270` $19 / 270 ($0.070) | `web-330` $19 / 330 ($0.058) | 65% to 59% |
+| Mid | `web-1200` $59 / 1200 ($0.049) | `web-1300` $59 / 1300 ($0.045) | 55% to 52% |
+| Top | `web-3000` $129 / 3000 ($0.043) | unchanged | 50% |
+
+Worst case means every credit is spent at the cost cap. With recorded catalog
+costs, image-heavy spending stays at 70% or more on every pack and video-heavy
+spending at 55% or more. The extra sales needed to keep the same worst-case
+profit are about 18% on the entry pack, 10% on the small pack and 6% on the mid
+pack. Figures use recorded catalog costs, not an invoice audit.
+
+Decision: option B of the three considered (at the floor, B, gentle). At the
+floor leaves no buffer for a supplier price rise; gentle gives away less than the
+gap warrants. Rules kept from 0121: new ids carry the new credit counts, the old
+packs are deactivated by exact shape (never deleted or rewritten), and pending
+top-ups keep their snapshot. The migration adds a per-pack margin guard
+(`price*420 - 30000 >= credits*1796`, in cents) and asserts the active set, and
+`tests/creditPackCurve.test.mjs` checks the same inequality plus the database
+floors. Model credit prices are unchanged.
+
+Not changed here: the subscription plan rows (`starter-monthly` $19/270 and the
+rest) still equal the old pack rates, so a pack is now better value per credit
+than the matching plan. The plans are closed in production; re-price them before
+opening, which also means telling Stripe, whose approval named the current prices.
+Mobile store packs keep their own price points.
+
+Rollout: owner-approved `apply-migrations` run, a Stripe test-mode purchase on
+staging first; the public pack list follows within the five-minute cache.
+Rollback: a forward migration reactivating `web-100`, `web-270` and `web-1200`
+and deactivating `web-160`, `web-330` and `web-1300`. Research and the other
+options: `docs/pricing/matching-buzzy-prices-2026-10-22.md`.

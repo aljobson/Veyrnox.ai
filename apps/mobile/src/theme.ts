@@ -89,7 +89,9 @@ export const type = {
     footnote: { fontSize: 14 },
     callout: { fontSize: 15 },
     body: { fontSize: 16 },
-    titleLarge: { fontSize: 32, fontWeight: '700' },
+    titleLarge: { fontFamily: 'Archivo_700Bold', fontSize: 32 },
     label: { fontSize: 16, fontWeight: '600' },
 } as const;
+// Archivo (the site's display face), loaded in the root layout; headings only, body text stays on the system font.
+export const fonts = { display: 'Archivo_700Bold', displayHeavy: 'Archivo_800ExtraBold' } as const;
 export const disabledOpacity = 0.4;

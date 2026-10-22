@@ -7,13 +7,14 @@ import { useAuth } from '../../../auth/AuthProvider';
 import { AttachStrip } from '../../../components/chat/AttachStrip';
 import { DraftCards } from '../../../components/chat/DraftCards';
 import { ChatSettings } from '../../../components/chat/ChatSettings';
+import { ModelPicker } from '../../../components/chat/ModelPicker';
 import { MakePanel } from '../../../components/chat/MakePanel';
 import { LibraryImagePicker } from '../../../components/chat/LibraryImagePicker';
 import { ReplyOptionsBar } from '../../../components/chat/ReplyOptionsBar';
 import { HeaderAction } from '../../../components/HeaderAction';
 import { ApiError } from '../../../lib/api';
 import { MIN_TARGET } from '../../../lib/a11y';
-import { chatApi, cleanOptions, cleanTitle, imagesExtra, NO_OPTIONS, replyPrice, sendKeyFor, type ChatMessage, type ChatModel, type PendingSend, type ReplyOptions } from '../../../lib/chat';
+import { chatApi, cleanOptions, cleanTitle, imagesExtra, isModelSwitch, NO_OPTIONS, replyPrice, sendKeyFor, type ChatMessage, type ChatModel, type PendingSend, type ReplyOptions } from '../../../lib/chat';
 import { attachmentRefs, MAX_ATTACHMENTS, roomFor, type ChatImage } from '../../../lib/chatAttach';
 import { pickPhotos, uploadChatImages } from '../../../lib/chatPhotos';
 import { fetchCatalog, type CatalogModel } from '../../../lib/media';
@@ -52,6 +53,7 @@ export default function Conversation() {
     const [images, setImages] = useState<ChatImage[]>([]);
     const [pickerOpen, setPickerOpen] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
+    const [pickerModelsOpen, setPickerModelsOpen] = useState(false);
     const [allModels, setAllModels] = useState<ChatModel[]>([]);
     const [thread, setThread] = useState<{ model_id: string; system_prompt: string | null } | null>(null);
     const [makeOpen, setMakeOpen] = useState(false);
@@ -257,6 +259,18 @@ export default function Conversation() {
         }
     }
 
+    // Two taps from the chat: the model name, then a model. A same-model tap just closes; a failed save keeps the old model.
+    async function pickModel(modelId: string) {
+        setPickerModelsOpen(false);
+        if (!thread || !isModelSwitch(thread.model_id, modelId, allModels)) return;
+        try {
+            await saveSettings({ model_id: modelId });
+            setError(null);
+        } catch {
+            setError(t('chat.model.failed'));
+        }
+    }
+
     async function togglePin() {
         const next = !pinned;
         setPinned(next);
@@ -367,15 +381,16 @@ export default function Conversation() {
             {error ? <Text style={styles.error} accessibilityRole="alert">{error}</Text> : null}
             {model ? (
                 <>
-                    <Text style={styles.modelLine} accessibilityLabel={`${model.name}, ${plural('chat.perReply', model.credits_per_reply)}`}>
-                        {model.name} · {plural('chat.perReply', model.credits_per_reply)}
-                    </Text>
+                    <Pressable accessibilityRole="button" accessibilityLabel={`${t('chat.model.change')}: ${model.name}, ${plural('chat.perReply', model.credits_per_reply)}`} disabled={!thread || sending} style={styles.modelLine} onPress={() => setPickerModelsOpen(true)}>
+                        <Text style={styles.modelText}>{model.name} · {plural('chat.perReply', model.credits_per_reply)} ▾</Text>
+                    </Pressable>
                     <ReplyOptionsBar model={model} options={cleanOptions(model, options)} disabled={sending} onChange={setOptions} />
                 </>
             ) : null}
             {model && imageExtra !== null ? (
                 <AttachStrip items={images} extra={imageExtra} max={maxImages} disabled={sending} onLibrary={() => setPickerOpen(true)} onPhotos={() => void addPhotos()} onRemove={(rid) => setImages((cur) => cur.filter((x) => x.id !== rid))} />
             ) : null}
+            {thread && pickerModelsOpen ? <ModelPicker visible currentId={thread.model_id} models={allModels} onPick={(mid) => void pickModel(mid)} onClose={() => setPickerModelsOpen(false)} /> : null}
             {thread && settingsOpen ? <ChatSettings visible thread={thread} models={allModels} onSave={saveSettings} onClose={() => setSettingsOpen(false)} /> : null}
             <MakePanel visible={makeOpen} initialPrompt={draft.trim().slice(0, 2000)} onClose={() => setMakeOpen(false)} />
             <LibraryImagePicker visible={pickerOpen} chosen={images} max={maxImages} onClose={() => setPickerOpen(false)} onPick={(img) => setImages((cur) => (cur.length < maxImages && !cur.some((c) => c.assetId === img.assetId) ? [...cur, img] : cur))} />
@@ -439,5 +454,6 @@ const styles = StyleSheet.create({
     starterOn: { borderColor: colors.accent },
     starterName: { color: colors.text, fontSize: 16, fontWeight: '600' },
     starterBlurb: { color: colors.muted, fontSize: 14 },
-    modelLine: { color: colors.muted, fontSize: 13, paddingHorizontal: 16, paddingTop: 8 },
+    modelLine: { minHeight: MIN_TARGET, justifyContent: 'center', paddingHorizontal: 16 },
+    modelText: { color: colors.accent, fontSize: 13, fontWeight: '600' },
 });

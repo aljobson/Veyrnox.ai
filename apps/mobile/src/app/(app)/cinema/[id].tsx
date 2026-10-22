@@ -12,7 +12,7 @@ import { plural, t } from '../../../lib/i18n';
 import { formatDuration, parseTitleDetail, posterUrl, type TitleDetail } from '../../../lib/cinema';
 import { categoryKey, fetchEntitlement, firstEpisode, firstWatchable, lockMessageKey, titleShareUrl, type LockReason } from '../../../lib/cinemaBrowse';
 import { parseEpisodeLocks } from '../../../lib/cinemaSeries';
-import { colors } from '../../../theme';
+import { colors, fonts } from '../../../theme';
 
 export default function CinemaTitlePage() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
     content: { padding: 16, gap: 10 },
     center: { flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
     poster: { width: '100%', aspectRatio: 9 / 16, maxHeight: 420, borderRadius: 12, backgroundColor: colors.surface },
-    title: { color: colors.text, fontSize: 24, fontWeight: '700' },
+    title: { color: colors.text, fontFamily: fonts.display, fontSize: 24 },
     body: { color: colors.body, fontSize: 16 },
     muted: { color: colors.muted },
     play: { backgroundColor: colors.accent, borderRadius: 12, paddingVertical: 16, alignItems: 'center' },

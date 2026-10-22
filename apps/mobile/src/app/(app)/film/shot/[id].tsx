@@ -1,10 +1,11 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { touchTarget } from '../../../../lib/a11y';
 import { FILM_STUDIO_WEB_PATH, SHOT_LANES, handoffFor, latestPrompt, shotRow, type Film } from '../../../../lib/filmStudio';
-import { loadStudio } from '../../../../lib/filmStudioStore';
+import { loadActiveStudio } from '../../../../lib/filmCloud';
+import { getCacheUser, subscribeCacheUser } from '../../../../lib/appCache';
 import { fetchCatalogCached, type CatalogModel } from '../../../../lib/media';
 import { colors } from '../../../../theme';
 import { API_BASE } from '../../../../lib/api';
@@ -18,12 +19,26 @@ export default function FilmShot() {
     const [film, setFilm] = useState<Film | null | undefined>(undefined);
     const [catalog, setCatalog] = useState<CatalogModel[] | null>(null);
 
+    const generation = useRef(0);
+
     useEffect(() => {
         let live = true;
-        loadStudio().then((s) => live && setFilm(s?.film ?? null), () => live && setFilm(null));
+        const reload = () => {
+            const token = ++generation.current;
+            const owner = getCacheUser();
+            setFilm(undefined);
+            loadActiveStudio().then(
+                s => { if (live && token === generation.current && owner === getCacheUser()) setFilm(s?.film ?? null); },
+                () => { if (live && token === generation.current) setFilm(null); },
+            );
+        };
+        const unsubscribe = subscribeCacheUser(reload);
+        reload();
         fetchCatalogCached((models) => live && setCatalog(models)).catch(() => live && setCatalog([]));
         return () => {
             live = false;
+            ++generation.current;
+            unsubscribe();
         };
     }, []);
 
@@ -42,6 +57,10 @@ export default function FilmShot() {
     const prompt = latestPrompt(film, shot.id);
     const attempts = film.attempts.filter((a) => a.shot === shot.id);
     const offer = catalog ? handoffFor(film, shot, catalog) : null;
+    const session = generation.current;
+    const owner = getCacheUser();
+    // A queued press from the previous render must not use a revoked film.
+    const current = () => session === generation.current && owner === getCacheUser();
 
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
@@ -64,7 +83,7 @@ export default function FilmShot() {
                 <>
                     <Text style={styles.money}>{offer.credits} credits · {offer.model.name} · {offer.seconds} seconds</Text>
                     <Text style={styles.muted}>This opens Create with the prompt filled in. You see the price there too, and nothing is charged until you press Generate.</Text>
-                    <Pressable accessibilityRole="button" style={styles.primary} onPress={() => router.push({ pathname: '/create/[modelId]', params: { modelId: offer.model.id, prompt: offer.prompt, duration: String(offer.seconds) } })}>
+                    <Pressable accessibilityRole="button" style={styles.primary} onPress={() => { if (current()) router.push({ pathname: '/create/[modelId]', params: { modelId: offer.model.id, prompt: offer.prompt, duration: String(offer.seconds) } }); }}>
                         <Text style={styles.primaryText}>Open in Create</Text>
                     </Pressable>
                 </>
@@ -72,7 +91,7 @@ export default function FilmShot() {
                 <Text style={styles.muted}>{offer.reason}</Text>
             ) : null}
             {prompt ? (
-                <Pressable accessibilityRole="button" style={[styles.secondary, touchTarget]} onPress={() => Share.share({ message: prompt.content })}>
+                <Pressable accessibilityRole="button" style={[styles.secondary, touchTarget]} onPress={() => { if (current()) void Share.share({ message: prompt.content }); }}>
                     <Text style={styles.secondaryText}>Share the full prompt</Text>
                 </Pressable>
             ) : null}

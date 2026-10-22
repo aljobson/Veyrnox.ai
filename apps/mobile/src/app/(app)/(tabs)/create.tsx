@@ -10,7 +10,7 @@ import { selectedState, touchTarget } from '../../../lib/a11y';
 import { fetchAgentListing } from '../../../lib/montage';
 import { MENU_ICONS, type MenuIcon } from '../../../lib/menuIcons';
 import { VEY_CLEARANCE } from '../../../components/VeyMascot';
-import { colors } from '../../../theme';
+import { colors, fonts } from '../../../theme';
 import { plural, t } from '../../../lib/i18n';
 import { useVeyScroll } from '../../../lib/useVeyScroll';
 
@@ -51,6 +51,7 @@ export default function Create() {
     return (
         <View style={styles.screen}>
             <Stack.Screen options={{ title: t('label.Create') }} />
+            <Text style={styles.heading} accessibilityRole="header">{t('label.Create')}</Text>
             <View style={styles.entries}>
                 <EntryTile icon="squares" label={t('label.Templates')} onPress={() => router.push('/create/presets')} />
                 <EntryTile icon="wrench" label={t('menu.tools')} accessibilityLabel={t('toolsDir.entry')} onPress={() => router.push('/create/tools')} />
@@ -100,6 +101,7 @@ export default function Create() {
                                     <Text style={styles.muted}>{t('create.agentHint')}</Text>
                                 </View>
                                 <Text style={styles.price}>{plural('create.agentFrom', agent.credits)}</Text>
+                                <Image source={MENU_ICONS.caretRight} style={styles.caret} tintColor={colors.muted} contentFit="contain" accessibilityElementsHidden />
                             </Pressable>
                         ) : undefined
                     }
@@ -115,6 +117,7 @@ export default function Create() {
                             ) : (
                                 <Text style={styles.price}>{plural('create.from', item.credits)}</Text>
                             )}
+                            <Image source={MENU_ICONS.caretRight} style={styles.caret} tintColor={colors.muted} contentFit="contain" accessibilityElementsHidden />
                         </Pressable>
                     )}
                 />
@@ -141,9 +144,11 @@ const styles = StyleSheet.create({
     free: { color: colors.accent, fontWeight: '700' },
     tabText: { color: colors.body, fontWeight: '600' },
     tabTextOn: { color: colors.accentInk },
-    row: { paddingVertical: 14, borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
-    name: { color: colors.text, fontSize: 16, flexShrink: 1 },
-    price: { color: colors.money },
+    row: { alignItems: 'center', paddingVertical: 16, borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
+    name: { color: colors.text, fontSize: 16, flexShrink: 1, flex: 1 },
+    price: { color: colors.money, fontSize: 14, fontWeight: '600', backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, overflow: 'hidden' },
+    caret: { width: 14, height: 14 },
+    heading: { color: colors.text, fontFamily: fonts.display, fontSize: 26 },
     muted: { color: colors.muted },
     agentText: { flexShrink: 1, gap: 2 },
     error: { color: colors.danger },

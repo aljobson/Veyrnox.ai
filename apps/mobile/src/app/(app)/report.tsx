@@ -10,7 +10,7 @@ import {
     type ReportCategory,
     type ReportSubject,
 } from '../../lib/account';
-import { colors } from '../../theme';
+import { colors, fonts } from '../../theme';
 
 // Opened from a creation (kind=job&id=...) or from Account (no params: a general report).
 export default function ReportScreen() {
@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
     content: { padding: 16, gap: 8 },
     done: { flex: 1, backgroundColor: colors.background, padding: 24, justifyContent: 'center', gap: 12 },
-    doneTitle: { color: colors.text, fontSize: 24, fontWeight: '700' },
+    doneTitle: { color: colors.text, fontFamily: fonts.display, fontSize: 24 },
     body: { color: colors.body, fontSize: 16, marginBottom: 4 },
     option: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 14 },
     optionOn: { borderColor: colors.accent },

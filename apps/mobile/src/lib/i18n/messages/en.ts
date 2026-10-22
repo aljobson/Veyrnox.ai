@@ -46,6 +46,7 @@ import area_email from './en/email';
 import area_empty from './en/empty';
 import area_explore from './en/explore';
 import area_faceFilters from './en/faceFilters';
+import area_filmCloud from './en/filmCloud';
 import area_form from './en/form';
 import area_help from './en/help';
 import area_helpGuides from './en/helpGuides';
@@ -98,6 +99,7 @@ import area_toolsDir from './en/toolsDir';
 import area_topup from './en/topup';
 import area_unlock from './en/unlock';
 import area_vey from './en/vey';
+import area_vibe from './en/vibe';
 import area_welcome from './en/welcome';
 
 const catalog = {
@@ -145,6 +147,7 @@ const catalog = {
     ...area_empty,
     ...area_explore,
     ...area_faceFilters,
+    ...area_filmCloud,
     ...area_form,
     ...area_help,
     ...area_helpGuides,
@@ -197,6 +200,7 @@ const catalog = {
     ...area_topup,
     ...area_unlock,
     ...area_vey,
+    ...area_vibe,
     ...area_welcome,
 } as const;
 

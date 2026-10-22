@@ -4,7 +4,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, 
 import { useAuth } from '../../auth/AuthProvider';
 import { PRIVACY_EMAIL } from '../../lib/account';
 import { blockerText, confirmDeletion, prepareDeletion, type Forfeit, type Prepared } from '../../lib/accountDeletion';
-import { colors } from '../../theme';
+import { colors, fonts } from '../../theme';
 
 const CONFIRM_WORD = 'DELETE';
 
@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
     content: { padding: 16, gap: 12 },
     center: { alignItems: 'center', gap: 12, paddingTop: 48 },
-    title: { color: colors.text, fontSize: 24, fontWeight: '700' },
+    title: { color: colors.text, fontFamily: fonts.display, fontSize: 24 },
     body: { color: colors.body, fontSize: 16 },
     small: { color: colors.muted, fontSize: 13 },
     label: { color: colors.muted, fontSize: 14, marginTop: 8 },
