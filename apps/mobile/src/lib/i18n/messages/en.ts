@@ -46,6 +46,7 @@ import area_email from './en/email';
 import area_empty from './en/empty';
 import area_explore from './en/explore';
 import area_faceFilters from './en/faceFilters';
+import area_filmCloud from './en/filmCloud';
 import area_form from './en/form';
 import area_help from './en/help';
 import area_helpGuides from './en/helpGuides';
@@ -146,6 +147,7 @@ const catalog = {
     ...area_empty,
     ...area_explore,
     ...area_faceFilters,
+    ...area_filmCloud,
     ...area_form,
     ...area_help,
     ...area_helpGuides,
