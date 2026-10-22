@@ -15,12 +15,13 @@ const route = await import('../app/api/presets/route.js');
 // A catalog that prices every web model one credit above the template's own figure, so a price copied from the template is caught.
 const catalog = MODELS.map((m) => ({ id: m.id, name: m.name, modality: m.kind, credits: m.credits + 1, gated: !!m.gated }));
 
-test('every listed preset names an active catalog model and is priced from that row', () => {
+test('every web preset is listed, available, and priced from its active catalog row', () => {
     const list = toPublicPresets(catalog);
-    assert.ok(list.length > 0);
+    assert.equal(list.length, PRESETS.length);
     for (const p of list) {
         const row = catalog.find((m) => m.id === p.modelId);
         assert.ok(row, `${p.id}: model ${p.modelId} is not in the catalog`);
+        assert.equal(p.available, true);
         const unit = row.credits * (p.durationSeconds === 10 ? 2 : 1);
         assert.equal(p.credits, unit, `${p.id} must be priced from the catalog row`);
         assert.equal(p.modality, row.modality);
@@ -29,12 +30,19 @@ test('every listed preset names an active catalog model and is priced from that 
     }
 });
 
-test('a preset whose model is not active in the catalog is not listed', () => {
-    const some = PRESETS.find((p) => modelIdForName(p.model));
+test('a preset whose model is not active stays listed with the web fallback price and is unavailable', () => {
+    const some = PRESETS.find((p) => p.durationSeconds === 10 && modelIdForName(p.model));
     const without = catalog.filter((m) => m.id !== modelIdForName(some.model));
-    assert.ok(!toPublicPresets(without).some((p) => p.id === some.id));
-    assert.deepEqual(toPublicPresets([]), []);
-    assert.deepEqual(toPublicPresets(undefined), []);
+    const fallback = toPublicPresets(without).find((p) => p.id === some.id);
+    assert.equal(toPublicPresets(without).length, PRESETS.length);
+    assert.equal(fallback.available, false);
+    assert.equal(fallback.credits, some.credits * (some.durationSeconds === 10 ? 2 : 1));
+
+    for (const list of [toPublicPresets([]), toPublicPresets(undefined)]) {
+        assert.equal(list.length, PRESETS.length);
+        assert.ok(list.every((p) => p.available === false));
+        assert.ok(list.every((p) => p.modality));
+    }
 });
 
 test('preview and poster addresses are absolute https on our own host', () => {
@@ -45,7 +53,7 @@ test('preview and poster addresses are absolute https on our own host', () => {
 });
 
 test('the payload carries no per-user or internal field', () => {
-    const allowed = new Set(['id', 'title', 'category', 'modelId', 'modelName', 'modality', 'prompt', 'needs', 'durationSeconds', 'credits', 'gated', 'isNew', 'previewUrl', 'posterUrl', 'previewAspect']);
+    const allowed = new Set(['id', 'title', 'category', 'modelId', 'modelName', 'modality', 'prompt', 'needs', 'durationSeconds', 'credits', 'gated', 'available', 'isNew', 'previewUrl', 'posterUrl', 'previewAspect']);
     for (const p of toPublicPresets(catalog)) for (const k of Object.keys(p)) assert.ok(allowed.has(k), `unexpected field ${k}`);
 });
 
@@ -65,7 +73,10 @@ test('the route answers 200 with cached public headers and ignores identity head
         const res = await route.GET(new Request('https://veyrnox.test/api/presets', { headers: { 'x-veyrnox-auth-id': '11111111-1111-4111-8111-111111111111' } }));
         assert.equal(res.status, 200);
         assert.match(res.headers.get('cache-control'), /^public,/);
-        assert.deepEqual(Object.keys(await res.json()), ['presets']);
+        const body = await res.json();
+        assert.deepEqual(Object.keys(body), ['presets']);
+        assert.equal(body.presets.length, PRESETS.length);
+        assert.ok(body.presets.every((p) => p.available === false));
     } finally { restore(); }
 });
 

@@ -18,6 +18,7 @@ const preset = (id: string, category: string, modality = 'image-to-video'): Pres
     needs: null,
     durationSeconds: null,
     credits: 3,
+    available: true,
     isNew: false,
     previewUrl: null,
     posterUrl: null,
@@ -115,6 +116,10 @@ describe('a template tap', () => {
             params: { modelId: 'kling-3', prompt: 'orbit', duration: '10' },
         });
         expect(presetHref({ ...preset('a', 'X'), modelId: 'nano-banana', prompt: 'fox' }).params).toEqual({ modelId: 'nano-banana', prompt: 'fox' });
+    });
+
+    test('routes an unavailable template to the clear unavailable state', () => {
+        expect(presetHref({ ...preset('a', 'X'), available: false })).toEqual({ pathname: '/create/presets', params: { unavailable: 'a' } });
     });
 });
 

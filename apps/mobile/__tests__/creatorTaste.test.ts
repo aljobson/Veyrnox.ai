@@ -5,7 +5,7 @@ import type { Preset } from '../src/lib/presets';
 const answers: CreatorAnswers = { look: 'neon_rain', goal: 'sell', pace: 'fox', chaos: 2, destination: 'tiktok', audience: 'customers', voice: 'calm' };
 const preset = (id: string, title: string, over: Partial<Preset> = {}): Preset => ({
     id, title, category: 'GENERAL', modelId: 'm', modelName: 'M', modality: 'text-to-video', prompt: 'a scene', needs: null,
-    durationSeconds: 5, credits: 10, isNew: false, previewUrl: null, posterUrl: 'https://x.test/p.jpg', ...over,
+    durationSeconds: 5, credits: 10, available: true, isNew: false, previewUrl: null, posterUrl: 'https://x.test/p.jpg', ...over,
 });
 
 describe('ranking templates for the vibe check answers', () => {
@@ -26,6 +26,11 @@ describe('ranking templates for the vibe check answers', () => {
         expect(ranked).toHaveLength(list.length);
         expect(new Set(ranked)).toEqual(new Set(list));
         expect(list.map((p) => p.id)).toEqual(['a', 'b', 'c', 'd']);
+    });
+
+    test('available templates lead unavailable matches without removing them', () => {
+        const ranked = rankPresets([preset('off', 'Neon product ad', { available: false }), preset('on', 'Quiet lake')], answers);
+        expect(ranked.map((p) => p.id)).toEqual(['on', 'off']);
     });
 
     test('score counts a few words, not a flood of them', () => {
@@ -50,7 +55,7 @@ describe('the lead templates on home', () => {
     });
 
     test('a template with no picture, and audio, are never led with', () => {
-        const list = [preset('a', 'Product jingle', { modality: 'text-to-audio' }), preset('b', 'Product shot', { posterUrl: null }), preset('c', 'Quiet lake')];
+        const list = [preset('a', 'Product jingle', { modality: 'text-to-audio' }), preset('b', 'Product shot', { posterUrl: null }), preset('off', 'Neon product ad', { available: false }), preset('c', 'Quiet lake')];
         expect(tastePicks(list, answers, 3).map((p) => p.id)).toEqual(['c']);
     });
 });

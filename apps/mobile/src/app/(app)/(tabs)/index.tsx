@@ -137,7 +137,7 @@ export default function Explore() {
                 </View>
             </View>
             <EntryRow href="/chat" title={t('explore.chat.title')} body={t('explore.chat.body')} hint={t('explore.chat.hint')} />
-            {balance !== null && isLowBalance(balance, cheapestCredits(presets)) ? <LowBalanceNote balance={balance} /> : null}
+            {balance !== null && isLowBalance(balance, cheapestCredits(presets?.filter((p) => p.available))) ? <LowBalanceNote balance={balance} /> : null}
             {note ? <Text style={styles.note} accessibilityLiveRegion="polite">{note}</Text> : null}
 
             <View style={styles.headerRow}>

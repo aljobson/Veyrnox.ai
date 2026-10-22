@@ -104,7 +104,7 @@ export default function Vibe() {
         try {
             const all = await fetchPresets();
             // A template with a picture that fits comes first; with none, the best fit that is not audio (a still cannot show it).
-            const pick = tastePicks(all, saved, 1)[0] ?? rankPresets(all, saved).find((p) => presetKind(p) !== 'audio');
+            const pick = tastePicks(all, saved, 1)[0] ?? rankPresets(all, saved).find((p) => p.available && presetKind(p) !== 'audio');
             router.replace(pick ? presetHref(pick) : '/');
         } catch {
             router.replace('/');

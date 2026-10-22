@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, SectionList, StyleSheet, Text, View } from 'react-native';
 import { fetchPresets, groupByCategory, presetHref, presetPrice, type Preset } from '../../../lib/presets';
@@ -7,6 +7,7 @@ import { colors } from '../../../theme';
 
 export default function Templates() {
     const router = useRouter();
+    const params = useLocalSearchParams<{ unavailable?: string | string[] }>();
     const [presets, setPresets] = useState<Preset[] | null>(null);
     const [failed, setFailed] = useState(false);
 
@@ -15,6 +16,8 @@ export default function Templates() {
     }, []);
 
     const sections = useMemo(() => groupByCategory(presets ?? []).map((g) => ({ title: g.category, data: g.items })), [presets]);
+    const unavailableId = Array.isArray(params.unavailable) ? params.unavailable[0] : params.unavailable;
+    const unavailablePreset = presets?.find((p) => p.id === unavailableId);
 
     function open(p: Preset) {
         router.push(presetHref(p));
@@ -23,6 +26,11 @@ export default function Templates() {
     return (
         <View style={styles.screen}>
             <Stack.Screen options={{ title: 'Templates' }} />
+            {unavailableId ? (
+                <Text style={styles.unavailable} accessibilityLiveRegion="assertive">
+                    {unavailablePreset ? `${unavailablePreset.title} is not available right now.` : 'That template is not available right now.'}
+                </Text>
+            ) : null}
             {failed ? (
                 <Text style={styles.error}>Could not load templates. Check your connection.</Text>
             ) : presets === null ? (
@@ -35,7 +43,12 @@ export default function Templates() {
                     ListEmptyComponent={<Text style={styles.muted}>No templates available right now.</Text>}
                     renderSectionHeader={({ section }) => <Text style={styles.header} accessibilityRole="header">{section.title}</Text>}
                     renderItem={({ item }) => (
-                        <Pressable accessibilityRole="button" accessibilityLabel={`${item.title}, ${presetPrice(item)}`} style={styles.row} onPress={() => open(item)}>
+                        <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={`${item.title}, ${presetPrice(item)}${item.available ? '' : ', not available right now'}`}
+                            style={styles.row}
+                            onPress={() => open(item)}
+                        >
                             {item.posterUrl ? <Image source={{ uri: item.posterUrl }} style={styles.poster} contentFit="cover" /> : <View style={styles.poster} />}
                             <View style={styles.text}>
                                 <Text style={styles.name}>
@@ -43,6 +56,7 @@ export default function Templates() {
                                     {item.isNew ? '  NEW' : ''}
                                 </Text>
                                 <Text style={styles.price}>{presetPrice(item)}</Text>
+                                {!item.available ? <Text style={styles.unavailableText}>Not available right now</Text> : null}
                                 {item.needs ? <Text style={styles.muted}>Needs: {item.needs}</Text> : null}
                             </View>
                         </Pressable>
@@ -61,6 +75,8 @@ const styles = StyleSheet.create({
     text: { flex: 1, gap: 3 },
     name: { color: colors.text, fontSize: 16 },
     price: { color: colors.money },
+    unavailable: { color: colors.body, paddingTop: 16 },
+    unavailableText: { color: colors.muted, fontSize: 13, fontWeight: '600' },
     muted: { color: colors.muted, fontSize: 13 },
     error: { color: colors.danger, paddingTop: 16 },
 });

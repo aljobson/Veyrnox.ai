@@ -9,6 +9,9 @@ export const BAND_HEIGHT = 372;
 
 export type TileShape = { readonly width: number; readonly height: number; readonly top: number };
 
+// An unavailable template stays in the collage, but its preview is subdued before the card explains why it cannot open Create.
+export const posterOpacity = (available: boolean): number => (available ? 1 : 0.55);
+
 // A few shapes, cycled by position so the row looks like a collage and not a strip. A video is always one of the tall
 // shapes, because it is shown in portrait.
 const WIDE: readonly TileShape[] = [

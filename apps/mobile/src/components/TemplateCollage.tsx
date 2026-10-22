@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Pressable, StyleSheet, Text, View, useWindowDimensions, type ViewProps } from 'react-native';
 import { t } from '../lib/i18n';
 import { presetPrice, type Preset } from '../lib/presets';
-import { BAND_HEIGHT, STEP, TILE_CURVE, centredIndex, offsetsFor, stackOrder, tileShape } from '../lib/templateCollage';
+import { BAND_HEIGHT, STEP, TILE_CURVE, centredIndex, offsetsFor, posterOpacity, stackOrder, tileShape } from '../lib/templateCollage';
 import { colors } from '../theme';
 
 type Props = {
@@ -98,12 +98,12 @@ function Tile({ preset, index, tall, scrollX, still, onOpen }: { preset: Preset;
               opacity: curve(TILE_CURVE.opacity),
               transform: [{ perspective: 700 }, { translateY: curve(TILE_CURVE.lift) }, { rotateY: turn }, { scale: curve(TILE_CURVE.scale) }],
           };
-    const label = `${preset.title}, ${preset.modelName}, ${presetPrice(preset)}${preset.isNew ? `, ${t('explore.new')}` : ''}`;
+    const label = `${preset.title}, ${preset.modelName}, ${presetPrice(preset)}${preset.isNew ? `, ${t('explore.new')}` : ''}${preset.available ? '' : ', not available right now'}`;
     return (
         <View style={styles.slot}>
             <Animated.View style={[styles.tile, { width: shape.width, height: shape.height, top: shape.top, left: (STEP - shape.width) / 2 }, motion]}>
                 <Pressable accessibilityRole="button" accessibilityLabel={label} style={styles.press} onPress={() => onOpen(preset)}>
-                    {preset.posterUrl ? <Image source={{ uri: preset.posterUrl }} style={styles.poster} contentFit="cover" accessibilityIgnoresInvertColors /> : <View style={styles.poster} />}
+                    {preset.posterUrl ? <Image source={{ uri: preset.posterUrl }} style={[styles.poster, { opacity: posterOpacity(preset.available) }]} contentFit="cover" accessibilityIgnoresInvertColors /> : <View style={[styles.poster, { opacity: posterOpacity(preset.available) }]} />}
                     {preset.isNew ? (
                         <View style={styles.badge}>
                             <Text style={styles.badgeText}>{t('explore.new')}</Text>
@@ -113,6 +113,7 @@ function Tile({ preset, index, tall, scrollX, still, onOpen }: { preset: Preset;
                         <Text style={styles.tileName} numberOfLines={1}>{preset.title}</Text>
                         <Text style={styles.model} numberOfLines={1}>{preset.modelName}</Text>
                         <Text style={styles.price}>{presetPrice(preset)}</Text>
+                        {!preset.available ? <Text style={styles.unavailable}>Not available right now</Text> : null}
                     </View>
                 </Pressable>
             </Animated.View>
@@ -145,5 +146,6 @@ const styles = StyleSheet.create({
     tileName: { color: colors.text, fontWeight: '600', fontSize: 14 },
     model: { color: colors.muted, fontSize: 12 },
     price: { color: colors.money, fontSize: 12 },
+    unavailable: { color: colors.muted, fontSize: 11, fontWeight: '600' },
     hint: { color: colors.muted, fontSize: 13, textAlign: 'center', marginTop: 4 },
 });

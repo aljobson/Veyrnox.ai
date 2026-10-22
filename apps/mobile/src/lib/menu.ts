@@ -13,6 +13,7 @@ export const MENU_SECTIONS: MenuSection[] = [
         label: 'menu.agents',
         items: [
             { key: 'chat', label: 'menu.chat', href: '/chat', icon: 'chat' },
+            { key: 'skills', label: 'chat.skills.title', href: '/chat/skills', icon: 'sparkle' },
             { key: 'videoAgent', label: 'menu.videoAgent', href: '/create/agent', icon: 'sparkle' },
         ],
     },
