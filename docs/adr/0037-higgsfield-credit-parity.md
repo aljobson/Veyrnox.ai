@@ -179,3 +179,59 @@ staging first; the public pack list follows within the five-minute cache.
 Rollback: a forward migration reactivating `web-100`, `web-270` and `web-1200`
 and deactivating `web-160`, `web-330` and `web-1300`. Research and the other
 options: `docs/pricing/matching-buzzy-prices-2026-10-22.md`.
+
+## Amendment 2 — 2026-10-22: whole-credit floor for fourteen rows, and a standing per-row rule (migration 0366)
+
+Two margin rules had drifted apart. 0121 set the cap from this ADR: $0.01796 of
+provider cost per credit (the $129/3000 pack, 8% + $0.30 fee, half of gross
+kept). The weekly fal watcher (`scripts/lib/fal-price-check.mjs`) and most
+older rows still used ADR-0014's reference of $0.033, which asks for $0.0165.
+The difference left fourteen rows one to six credits above their floor:
+
+| Row | Cost | Credits before to after | Price at $0.043 |
+|---|---|---|---|
+| `elevenlabs-tts-turbo` | $0.0500 | 4 to 3 | $0.172 to $0.129 |
+| `elevenlabs-dialogue`, `minimax-speech-2.6-hd` | $0.1000 | 7 to 6 | $0.301 to $0.258 |
+| `nano-banana-pro-edit`, `veo-3.1-lite-kie` | $0.1500 | 10 to 9 | $0.430 to $0.387 |
+| `latentsync` | $0.2000 | 13 to 12 | $0.559 to $0.516 |
+| `kling-2.6-pro-kie` | $0.2750 | 17 to 16 | $0.731 to $0.688 |
+| `veo-3.1-fast-kie`, `wan-2.5-kie` | $0.3000 | 19 to 17 | $0.817 to $0.731 |
+| `kling-3.0-i2v-kie` | $0.4500 | 28 to 26 | $1.204 to $1.118 |
+| `seedance-2.0-fast` | $0.4536 | 28 to 26 | $1.204 to $1.118 |
+| `kling-3.0-i2v` | $0.5600 | 34 to 32 | $1.462 to $1.376 |
+| `kling-avatar-v2` | $0.5620 | 35 to 32 | $1.505 to $1.376 |
+| `veo-3.1-kie` | $1.2500 | 76 to 70 | $3.268 to $3.010 |
+
+Each new value is `ceil(cost / 0.01796)`. Worst-case margin at the top pack is
+50% to 53% on these rows and higher at the smaller packs. Costs were checked on
+2026-10-22: the fal rows against the weekly watcher's 2026-10-19 run ("20 of 20
+match fal's billing"), the kie rows against kie's public rate card, and
+Seedance 2.0 Fast against OpenRouter's $4.20 per million video tokens (a 5 s
+720p clip is 1280 x 720 x 24 x 5 / 1024 = 108,000 tokens, $0.4536).
+
+Changes:
+
+- 0366 reprices the fourteen rows by exact identity (provider, endpoint,
+  recorded cost, unit), accepting the old or new price, with a row-count check
+  after each UPDATE.
+- 0366 adds a trigger on `model_catalog`: an active row cannot be written with a
+  cost above `credits * 0.01796` (clip-edit's per-second cost counts for five).
+  Every active row is checked once when it runs.
+- The watcher's reference rate becomes $0.03592 (twice $0.01796), so
+  "margin >= 50%" there is exactly the database rule. Its printed margins move
+  with it; `tests/falPriceCheck.test.mjs` and `tests/falBasePrice.test.mjs` are
+  updated, and `tests/catalogPriceFloor.test.mjs` pins the agreement.
+- Hailuo 02 and every row already at its whole-credit floor are unchanged.
+
+There is now no buffer on these rows: a supplier price rise breaches the floor,
+and the watcher (fal) or the trigger (any cost edit) will say so. kie and
+OpenRouter rows have no weekly price watcher yet.
+
+Not done here: the landing film bakes in six of these prices (Wan 2.5, Kling
+2.6, Seedance 2.0 Fast, Veo 3.1 Fast, Veo 3.1 Lite, ElevenLabs TTS Turbo), and
+`tests/landingFilm.test.mjs` ties them to the bundled fallback list in
+`app/veyrnox/_lib/tokens.js`. Those six fallback rows keep their old price until
+the film is rendered again; the other eight are updated. Also not done: the
+finer credit unit that would let cheap images and audio go lower (plan only), and
+Demucs (6 credits, floor 5) and the composite rows (Auto Short, Video Agent).
+Rollback: a forward migration setting the old credits back; the trigger stays.

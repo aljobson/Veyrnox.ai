@@ -92,7 +92,7 @@ export const VEYRNOX_ORIGINALS = [
   { id: 'workflow-blocks', name: 'WORKFLOW BLOCKS', model: 'Flux.2 [pro]', credits: 2, category: 'ADS', aspect: '16:9', previewAspect: '16 / 9', isNew: true, original: true, promptOrigin: 'veyrnox-original',
     bg: 'linear-gradient(150deg,#0c1117 0%,#30485c 55%,#8fc3c9 100%)',
     prompt: 'Isometric editorial illustration explaining a three-step creative workflow: an idea card enters a model block, becomes a set of visual options, then the selected result moves into a publishing tray. Clear left-to-right hierarchy, modular shapes, restrained aqua accents on charcoal, generous whitespace, polished SaaS visual language, no text.' },
-  { id: 'magazine-cover-edit', name: 'MAGAZINE COVER EDIT', model: 'Nano Banana Pro Edit', credits: 10, category: 'YOUR PHOTO', aspect: '4:5', previewAspect: '4 / 5', isNew: true, original: true, promptOrigin: 'veyrnox-original',
+  { id: 'magazine-cover-edit', name: 'MAGAZINE COVER EDIT', model: 'Nano Banana Pro Edit', credits: 9, category: 'YOUR PHOTO', aspect: '4:5', previewAspect: '4 / 5', isNew: true, original: true, promptOrigin: 'veyrnox-original',
     bg: 'linear-gradient(160deg,#120d13 0%,#542f53 55%,#d4a2c6 100%)', needs: 'A well-lit portrait of yourself',
     prompt: 'Turn the uploaded portrait into a refined editorial cover photograph. Keep the person\'s identity, face, hair and natural skin texture unchanged. Replace the background with a seamless deep plum studio, add a soft key light and subtle rim light, crop at mid-torso with confident posture, premium magazine colour grade, leave clear space for a masthead, add no text.' },
 ];

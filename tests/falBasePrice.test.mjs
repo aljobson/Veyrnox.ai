@@ -97,7 +97,7 @@ test('a row whose base price matches prints the line it always printed', () => {
         assert.equal(checked.base.status, 'ok');
         assert.deepEqual(rowLines(checked), rowLines(checkRow(r, extractPrices(html), UNIT_RATES)));
     }
-    assert.deepEqual(rowLines(page(SEEDREAM_ROW, SEEDREAM_PAGE)), ['ok    seedream-4           $0.0300 per generation 2cr  margin 54.5%']);
+    assert.deepEqual(rowLines(page(SEEDREAM_ROW, SEEDREAM_PAGE)), ['ok    seedream-4           $0.0300 per generation 2cr  margin 58.2%']);
 });
 
 test('an exact billing payload stands in only when a listed page has no price text', () => {
@@ -105,7 +105,7 @@ test('an exact billing payload stands in only when a listed page has no price te
     const omitted = page(ace, ACE_BILLING_ONLY_PAGE);
     assert.equal(omitted.verdict, 'ok');
     assert.deepEqual(omitted.seen, [0.0002]);
-    assert.deepEqual(rowLines(omitted), ['ok    ace-step             $0.0002 /s x 60        1cr  margin 63.6%']);
+    assert.deepEqual(rowLines(omitted), ['ok    ace-step             $0.0002 /s x 60        1cr  margin 66.6%']);
 
     // The fallback must not mask a rendered rate that disagrees with billing.
     const conflicting = page(ace, `<p>Your request will cost $0.0004 per second.</p>${payload('fal-ai/ace-step', 'seconds', 0.0002)}`);
@@ -159,13 +159,13 @@ test('the price sentence and the base price are checked separately', () => {
 test('a moved base price is reported beside a breach and beside a cost note', () => {
     const moved = SEEDREAM_PAGE.replaceAll('\\"price\\":0.03,', '\\"price\\":0.05,');
     assert.deepEqual(rowLines(page({ ...SEEDREAM_ROW, credits_5s: 1 }, moved)), [
-        'BREACH seedream-4           margin 9.1% < 50%',
+        'BREACH seedream-4           margin 16.5% < 50%',
         "DRIFT? seedream-4           expect base price $0.03/images  fal's billing: $0.05/images",
     ]);
     const ace = row({ id: 'ace-step', provider_endpoint: 'fal-ai/ace-step', credits_5s: 1, provider_cost_per_unit: 0.01 });
     assert.deepEqual(rowLines(page(ace, ACE_PAGE.replaceAll('\\"seconds\\"', '\\"units\\"'))), [
         "DRIFT? ace-step             expect base price $0.0002/seconds  fal's billing: $0.0002/units",
-        'COST?  ace-step             records $0.0100, $0.0002 /s x 60 = $0.0120  1cr  margin 63.6% at that cost',
+        'COST?  ace-step             records $0.0100, $0.0002 /s x 60 = $0.0120  1cr  margin 66.6% at that cost',
     ]);
 });
 
@@ -174,11 +174,11 @@ test('a row with no base price recorded says so in its line', () => {
     const html = `Your request will cost **$0.04** per image.${payload('fal-ai/new-model', 'images', 0.04)}`;
     const checked = page(fresh, html);
     assert.equal(checked.base.status, 'unlisted');
-    assert.deepEqual(rowLines(checked), ["ok    new-model            $0.0400 per generation 3cr  margin 59.6%  no base price recorded (fal's billing: $0.04/images)"]);
+    assert.deepEqual(rowLines(checked), ["ok    new-model            $0.0400 per generation 3cr  margin 62.9%  no base price recorded (fal's billing: $0.04/images)"]);
     assert.deepEqual(driftSummary(checked), []);
     // Whatever the row's last line is carries it.
-    assert.deepEqual(rowLines(page({ ...fresh, credits_5s: 2 }, html)), ["BREACH new-model            margin 39.4% < 50%  no base price recorded (fal's billing: $0.04/images)"]);
-    assert.deepEqual(rowLines(page(fresh, '<p>nothing</p>')), ["ok    new-model            $0.0400 per generation 3cr  margin 59.6%  no base price recorded (fal's billing: none read from the page)"]);
+    assert.deepEqual(rowLines(page({ ...fresh, credits_5s: 2 }, html)), ["BREACH new-model            margin 44.3% < 50%  no base price recorded (fal's billing: $0.04/images)"]);
+    assert.deepEqual(rowLines(page(fresh, '<p>nothing</p>')), ["ok    new-model            $0.0400 per generation 3cr  margin 62.9%  no base price recorded (fal's billing: none read from the page)"]);
 });
 
 test('the report says how many rows had a base price to compare', () => {

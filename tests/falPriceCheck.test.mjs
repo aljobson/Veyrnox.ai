@@ -21,7 +21,7 @@ const AVATAR_PAGE = `<meta content="Kling AI Avatar v2. $0.0562/second. Free pre
 const row = (over) => ({ id: 'row', provider: 'fal', credits_5s: 3, provider_cost_per_unit: 0.04, cost_unit: 'per_generation', billing_seconds: null, active: true, ...over });
 const ACE = row({ id: 'ace-step', credits_5s: 1, provider_cost_per_unit: 0.012 });
 const ACE_15 = row({ id: 'ace-step-1.5', credits_5s: 3, provider_cost_per_unit: 0.036 });
-const AVATAR = row({ id: 'kling-avatar-v2', credits_5s: 35, provider_cost_per_unit: 0.562 });
+const AVATAR = row({ id: 'kling-avatar-v2', credits_5s: 32, provider_cost_per_unit: 0.562 });
 const check = (r, html, rates = UNIT_RATES) => checkRow(r, extractPrices(html), rates);
 
 test('prices are read from the page; whole dollars and script references are not', () => {
@@ -33,20 +33,28 @@ test('prices are read from the page; whole dollars and script references are not
 });
 
 test('the margin sums are the ones the catalog is priced by', () => {
-    // 34 Credits at $0.033 against $0.56: the Kling 3.0 row.
-    assert.equal((marginAt(0.56, 34) * 100).toFixed(1), '50.1');
+    // ADR-0037 amendment 2: a credit carries at most $0.01796 of provider
+    // cost. 32 Credits against $0.56 is the Kling 3.0 row (migration 0366).
+    assert.equal((marginAt(0.56, 32) * 100).toFixed(1), '51.3');
     assert.equal(marginAt(0.04, 0), -1);
-    assert.equal(creditsForFloor(0.56), 34);
+    assert.equal(creditsForFloor(0.56), 32);
     assert.equal(creditsForFloor(0.01), 1);
-    assert.equal(creditsForFloor(0.0166), 2);
+    assert.equal(creditsForFloor(0.01796), 1);
+    assert.equal(creditsForFloor(0.0181), 2);
     assert.equal(MARGIN_FLOOR, 0.5);
+    // The floor is cost <= credits * 0.01796, the rule the catalog trigger enforces.
+    for (const cost of [0.0166, 0.05, 0.1, 0.275, 0.45, 0.56, 1.25]) {
+        const credits = creditsForFloor(cost);
+        assert.ok(marginAt(cost, credits) >= MARGIN_FLOOR, `${cost} at ${credits}`);
+        assert.ok(marginAt(cost, credits - 1) < MARGIN_FLOOR || credits === 1, `${cost} at ${credits - 1}`);
+    }
 });
 
 test('a unit-priced row whose page shows its rate is ok', () => {
     const r = check(ACE_15, ACE_15_PAGE);
     assert.equal(r.verdict, 'ok');
     assert.equal(r.cost, null);
-    assert.deepEqual(rowLines(r), ['ok    ace-step-1.5         $0.0003 /s x 60 x 2    3cr  margin 63.6%']);
+    assert.deepEqual(rowLines(r), ['ok    ace-step-1.5         $0.0003 /s x 60 x 2    3cr  margin 66.6%']);
     assert.equal(check(AVATAR, AVATAR_PAGE).verdict, 'ok');
 });
 
@@ -65,7 +73,7 @@ test('a sub-cent rate that doubles is flagged', () => {
 });
 
 // The rate is copied from the page, so only that figure will do. Kling
-// Avatar clears the floor by 2.8% of its cost: a 3% rise is a breach.
+// Avatar clears the floor by 2.3% of its cost: a 3% rise is a breach.
 test('a listed rate has no tolerance', () => {
     assert.equal(check(AVATAR, AVATAR_PAGE.replaceAll('$0.0562', '$0.0579')).verdict, 'drift');
     assert.equal(check(AVATAR, AVATAR_PAGE.replaceAll('$0.0562', '$0.0561')).verdict, 'drift');
@@ -82,7 +90,7 @@ test('a recorded cost that is not rate x quantity is reported as its own line', 
     const r = check({ ...ACE, provider_cost_per_unit: 0.01 }, ACE_PAGE);
     assert.equal(r.verdict, 'ok');
     assert.equal(r.cost.built.toFixed(4), '0.0120');
-    assert.deepEqual(rowLines(r), ['COST?  ace-step             records $0.0100, $0.0002 /s x 60 = $0.0120  1cr  margin 63.6% at that cost']);
+    assert.deepEqual(rowLines(r), ['COST?  ace-step             records $0.0100, $0.0002 /s x 60 = $0.0120  1cr  margin 66.6% at that cost']);
 });
 
 test('a recorded cost under what the rate comes to says so when that is under the floor', () => {
@@ -91,7 +99,7 @@ test('a recorded cost under what the rate comes to says so when that is under th
     const r = check(AVATAR, AVATAR_PAGE.replaceAll('$0.0562', '$0.07'), rates);
     assert.equal(r.verdict, 'ok');
     assert.ok(r.cost.margin < MARGIN_FLOOR);
-    assert.deepEqual(rowLines(r), ['COST?  kling-avatar-v2      records $0.5620, $0.0700 /s x 10 = $0.7000  35cr  margin 39.4% at that cost < 50%']);
+    assert.deepEqual(rowLines(r), ['COST?  kling-avatar-v2      records $0.5620, $0.0700 /s x 10 = $0.7000  32cr  margin 39.1% at that cost < 50%']);
 });
 
 test('a row under the floor at the rate is reported even when its recorded cost is close', () => {
@@ -100,11 +108,11 @@ test('a row under the floor at the rate is reported even when its recorded cost 
     const r = check(AVATAR, AVATAR_PAGE.replaceAll('$0.0562', '$0.0585'), rates);
     assert.equal(r.verdict, 'ok');
     assert.ok(r.margin >= MARGIN_FLOOR && r.cost.margin < MARGIN_FLOOR);
-    assert.deepEqual(rowLines(r), ['COST?  kling-avatar-v2      records $0.5620, $0.0585 /s x 10 = $0.5850  35cr  margin 49.4% at that cost < 50%']);
+    assert.deepEqual(rowLines(r), ['COST?  kling-avatar-v2      records $0.5620, $0.0585 /s x 10 = $0.5850  32cr  margin 49.1% at that cost < 50%']);
     // As close, and still over the floor: nothing to report.
     const near = check(AVATAR, AVATAR_PAGE.replaceAll('$0.0562', '$0.057'), { 'kling-avatar-v2': { rate: 0.057, per: 's', quantity: 10 } });
     assert.equal(near.cost, null);
-    assert.deepEqual(rowLines(near), ['ok    kling-avatar-v2      $0.0570 /s x 10        35cr  margin 51.3%']);
+    assert.deepEqual(rowLines(near), ['ok    kling-avatar-v2      $0.0570 /s x 10        32cr  margin 51.1%']);
 });
 
 test('a moved rate and a wrong recorded cost are both reported', () => {
@@ -113,10 +121,10 @@ test('a moved rate and a wrong recorded cost are both reported', () => {
 });
 
 test('a per_second row is matched on its rate, as before', () => {
-    const kling = row({ id: 'kling-3.0-i2v', credits_5s: 34, provider_cost_per_unit: 0.56, cost_unit: 'per_second', billing_seconds: 5 });
+    const kling = row({ id: 'kling-3.0-i2v', credits_5s: 32, provider_cost_per_unit: 0.56, cost_unit: 'per_second', billing_seconds: 5 });
     assert.deepEqual(comparisonRate(kling), { rate: 0.56 / 5, unit: '/s x 5s', total: 0.56 });
     const ok = check(kling, 'you will be charged **$0.112** (audio off) or **$0.168** (audio on)');
-    assert.deepEqual(rowLines(ok), ['ok    kling-3.0-i2v        $0.1120 /s x 5s        34cr  margin 50.1%']);
+    assert.deepEqual(rowLines(ok), ['ok    kling-3.0-i2v        $0.1120 /s x 5s        32cr  margin 51.3%']);
     const moved = check(kling, 'you will be charged **$0.14** (audio off) or **$0.168** (audio on)');
     assert.deepEqual(rowLines(moved), ['DRIFT? kling-3.0-i2v        expect $0.1120 /s x 5s  page: $0.14 $0.168']);
     // No billing_seconds means the five-second unit.
@@ -127,7 +135,7 @@ test('a plain per_generation row is matched on its cost, as before', () => {
     const bria = row({ id: 'bria-expand' });
     assert.deepEqual(comparisonRate(bria), { rate: 0.04, unit: 'per generation', total: 0.04 });
     assert.deepEqual(rowLines(check(bria, 'Your request will cost **$0.04** per image. $0.14')),
-        ['ok    bria-expand          $0.0400 per generation 3cr  margin 59.6%']);
+        ['ok    bria-expand          $0.0400 per generation 3cr  margin 62.9%']);
     assert.deepEqual(rowLines(check(bria, 'Your request will cost **$0.06** per image.')),
         ['DRIFT? bria-expand          expect $0.0400 per generation  page: $0.06']);
     // Within a twentieth, or half a tenth of a cent: fal rounds.
@@ -142,7 +150,7 @@ test('a plain per_generation row is matched on its cost, as before', () => {
 test('a recorded cost under the floor is a breach, whatever the page shows', () => {
     const thin = row({ id: 'thin', credits_5s: 2, provider_cost_per_unit: 0.04 });
     for (const html of ['$0.04', '$0.09', '']) {
-        assert.deepEqual(rowLines(check(thin, html)), ['BREACH thin                 margin 39.4% < 50%']);
+        assert.deepEqual(rowLines(check(thin, html)), ['BREACH thin                 margin 44.3% < 50%']);
     }
     assert.equal(check({ ...ACE_15, credits_5s: 2 }, ACE_15_PAGE).verdict, 'breach');
 });

@@ -1,6 +1,6 @@
 const base = {
   model: 'Kling 3.0 · I2V',
-  credits: 34,
+  credits: 32,
   durationSeconds: 10,
   category: 'KIDS BIRTHDAY',
   aspect: '16:9',

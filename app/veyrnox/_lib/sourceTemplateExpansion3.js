@@ -1,5 +1,5 @@
 const base = {
-  credits: 34,
+  credits: 32,
   durationSeconds: 10,
   isNew: true,
   inspired: true,
@@ -14,7 +14,7 @@ const steps = [
 ];
 
 function template({ id, clipKey = id, name, category, aspect, generationAspect, needs, prompt, bg, model = 'Kling 3.0 · I2V' }) {
-  return { ...base, id, clipKey, name, category, previewAspect: aspect, aspect: generationAspect, needs, prompt, bg, model, credits: model === 'Seedance 2.0 Fast' ? 28 : 34, steps };
+  return { ...base, id, clipKey, name, category, previewAspect: aspect, aspect: generationAspect, needs, prompt, bg, model, credits: model === 'Seedance 2.0 Fast' ? 28 : 32, steps };
 }
 
 export const SOURCE_TEMPLATE_EXPANSION_3 = [
