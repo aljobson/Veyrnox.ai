@@ -50,8 +50,8 @@ function Row({ label, options, selected, suffix = '', onPick }: { readonly label
 }
 
 const styles = StyleSheet.create({
-    box: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 14, gap: 10 },
-    head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', minHeight: 44 },
+    box: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 8, gap: 8 },
+    head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', minHeight: 48 },
     title: { color: colors.text, fontWeight: '600', fontSize: 16 },
     row: { gap: 6 },
     label: { color: colors.body, fontSize: 13 },
@@ -60,5 +60,5 @@ const styles = StyleSheet.create({
     chipOn: { backgroundColor: colors.accent, borderColor: colors.accent },
     chipText: { color: colors.body },
     chipTextOn: { color: colors.accentInk, fontWeight: '600' },
-    muted: { color: colors.muted, fontSize: 12 },
+    muted: { color: colors.muted, fontSize: 12, marginTop: -6, paddingBottom: 6 },
 });
