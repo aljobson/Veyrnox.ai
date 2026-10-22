@@ -22,6 +22,9 @@ const DARK = {
     money: '#e4a93c',
     danger: '#ff5c47',
 };
+// The signed-in website is dark by default. Screens that intentionally mirror the Studio can use this palette even
+// when the phone itself is in light mode; the user's general app theme remains unchanged everywhere else.
+export const studioColors: Palette = DARK;
 const LIGHT: Palette = {
     background: '#ffffff',
     surface: '#f6f6f7',

@@ -141,6 +141,21 @@
       "id": "editorial-support-pages",
       "choice": "Use one featured guide, structured guide contents, example MCP prompts and native FAQ disclosures rather than promotional urgency patterns.",
       "reason": "The supporting pages become easier to scan and answer common questions while retaining Veyrnox's quieter, evidence-first visual language."
+    },
+    {
+      "id": "mobile-auth-onboarding",
+      "choice": "Use a playful, input-first mobile authentication journey with pastel creation promises, strongly highlighted consent, distinct provider buttons and colourful sign-in/create-account states.",
+      "reason": "The selected Mobbin-inspired direction makes every choice feel interactive while clearly connecting authentication to creating from a photo, video, reference or idea."
+    },
+    {
+      "id": "mobile-dashboard-website-parity",
+      "choice": "Make the native Explore dashboard use the signed-in website's dark editorial shell, featured Oddlings story, compact chat card, aqua selection states and price-forward preset grid.",
+      "reason": "The website is the established product surface; matching its hierarchy and visual language makes the mobile app feel like the same studio while keeping native navigation and touch behaviour."
+    },
+    {
+      "id": "mobile-create-website-parity",
+      "choice": "Structure native Create like the website Studio: source shortcuts, creation goal, free price filtering, live-priced model cards and clear disclosure that the final price appears before Generate.",
+      "reason": "The person should understand what they are creating, what can be used as a reference and what it will cost before entering a generation form."
     }
   ],
   "evidence": [

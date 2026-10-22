@@ -8,7 +8,7 @@ import { VeyMascot } from '../../../components/VeyMascot';
 import { HEADER_MAX_FONT_SCALE, MIN_TARGET } from '../../../lib/a11y';
 import { t } from '../../../lib/i18n';
 import { MENU_ICONS, type MenuIcon } from '../../../lib/menuIcons';
-import { colors } from '../../../theme';
+import { colors, studioColors } from '../../../theme';
 
 // The tab bar has a fixed height, so its labels stop growing at the same limit as the header; everything else follows the system text size.
 function tabLabel(key: string) {
@@ -41,17 +41,20 @@ export default function TabsLayout() {
                     {route.name === 'cinema' ? null : <VeyMascot />}
                 </View>
             )}
-            screenOptions={{
-                headerStyle: { backgroundColor: colors.background },
-                headerTintColor: colors.text,
-                headerTitle: () => <Logo size={24} />,
-                headerLeft: () => <MenuButton />,
-                headerRight: () => <HeaderRight />,
-                sceneStyle: { backgroundColor: colors.background },
-                tabBarStyle: { backgroundColor: colors.background, borderTopColor: colors.border },
-                tabBarActiveTintColor: colors.accent,
-                tabBarInactiveTintColor: colors.muted,
-                tabBarItemStyle: { minHeight: MIN_TARGET, justifyContent: 'center' },
+            screenOptions={({ route }) => {
+                const palette = route.name === 'index' || route.name === 'create' ? studioColors : colors;
+                return {
+                    headerStyle: { backgroundColor: palette.background },
+                    headerTintColor: palette.text,
+                    headerTitle: () => <Logo size={24} palette={palette} />,
+                    headerLeft: () => <MenuButton palette={palette} />,
+                    headerRight: () => <HeaderRight palette={palette} />,
+                    sceneStyle: { backgroundColor: palette.background },
+                    tabBarStyle: { backgroundColor: palette.background, borderTopColor: palette.border },
+                    tabBarActiveTintColor: palette.accent,
+                    tabBarInactiveTintColor: palette.muted,
+                    tabBarItemStyle: { minHeight: MIN_TARGET, justifyContent: 'center' },
+                };
             }}
         >
             <Tabs.Screen name="index" options={{ tabBarIcon: tabIcon('house'), title: t('tabs.explore'), tabBarLabel: tabLabel('tabs.explore'), tabBarAccessibilityLabel: t('tabs.explore') }} />
