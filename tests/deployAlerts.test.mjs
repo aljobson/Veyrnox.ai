@@ -3,6 +3,16 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const deploy = readFileSync(new URL('../.github/workflows/deploy-production.yml', import.meta.url), 'utf8');
+const ci = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
+
+test('the production gate waits longer than the CI build-test budget', () => {
+    const buildMinutes = Number(ci.match(/build-test:\n[\s\S]*?timeout-minutes: (\d+)/)?.[1]);
+    const gateMinutes = Number(deploy.match(/ci-green:\n[\s\S]*?timeout-minutes: (\d+)/)?.[1]);
+    const polls = Number(deploy.match(/for _ in \$\(seq 1 (\d+)\)/)?.[1]);
+    assert.equal(buildMinutes, 30, 'CI needs headroom for slow Ubuntu package mirrors');
+    assert.equal(gateMinutes, 45, 'the deployment gate needs slack beyond CI');
+    assert.equal(polls * 30 / 60, gateMinutes, 'the polling window matches the job timeout');
+});
 
 // 2026-10-03: ci went red on main, ci-green refused the deploy of #448, and
 // no issue was opened because report-failure only watched the deploy job.
