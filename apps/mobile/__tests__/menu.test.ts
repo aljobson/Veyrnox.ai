@@ -45,6 +45,12 @@ describe('grouped menu', () => {
         );
     });
 
+    test('the full Editor is directly available from the left Tools navigation', () => {
+        expect(MENU_SECTIONS.find((section) => section.id === 'tools')?.items).toContainEqual(
+            expect.objectContaining({ key: 'editor', href: '/editor', icon: 'slate' }),
+        );
+    });
+
     test('the previously hidden tools, face filters and MCP surfaces are direct destinations', () => {
         const tools = MENU_SECTIONS.find((section) => section.id === 'tools')?.items ?? [];
         expect(tools).toEqual(expect.arrayContaining([

@@ -55,7 +55,9 @@ export default {
     'chat.updateFailed': 'Could not update this chat. Try again.',
     // Chat image attachments and Studio skills (ADR-0167)
     'chat.attach.library': 'Library',
+    'chat.attach.libraryLabel': 'Choose an image from your Veyrnox Library',
     'chat.attach.photos': 'Photos',
+    'chat.attach.photosLabel': 'Attach photos from this device',
     'chat.attach.extra.one': 'Images add {count} credit',
     'chat.attach.extra.other': 'Images add {count} credits',
     'chat.attach.hint.one': 'Attach images: adds {count} credit',

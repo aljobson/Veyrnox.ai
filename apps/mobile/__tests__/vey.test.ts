@@ -44,10 +44,11 @@ describe('Vey placement (mirrors the web: left by default, versioned, nothing el
 describe('where Vey shows (N8)', () => {
     const read = (...p: string[]) => fs.readFileSync(path.join(__dirname, '..', 'src', ...p), 'utf8');
 
-    test('every tab offers Vey on demand, except the Cinema feed where the actions sit at the bottom', () => {
+    test('Vey stays clear of the Editor and Publish work surfaces', () => {
         const layout = read('app', '(app)', '(tabs)', '_layout.tsx');
         expect(layout).toContain('<VeyMascot');
-        expect(layout).toMatch(/route\.name === 'cinema'/);
+        expect(layout).toMatch(/route\.name === 'editor'/);
+        expect(layout).toMatch(/route\.name === 'publish'/);
     });
 
     test('the mascot is hidden by default, can be summoned and dismissed, then opens chat', () => {

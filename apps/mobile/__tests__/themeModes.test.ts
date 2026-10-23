@@ -1,4 +1,4 @@
-import { resolveScheme, THEME_PREFERENCES, toggledTheme } from '../src/theme';
+import { paletteForScheme, resolveScheme, THEME_PREFERENCES, toggledTheme } from '../src/theme';
 
 const light = { background: '#ffffff', surface: '#f6f6f7', text: '#0a0a0b', body: '#3f3f46', muted: '#52525b', accent: '#0b7a66', accentInk: '#ffffff', money: '#8a5a00', danger: '#c4241a' };
 const lum = (hex: string): number => {
@@ -10,6 +10,13 @@ const ratio = (a: string, b: string): number => (Math.max(lum(a), lum(b)) + 0.05
 describe('light and dark', () => {
     test('offers System, Light and Dark', () => {
         expect(THEME_PREFERENCES).toEqual(['system', 'light', 'dark']);
+    });
+
+    test('provides concrete navigation colours for both resolved appearances', () => {
+        expect(paletteForScheme('light').background).toBe('#ffffff');
+        expect(paletteForScheme('light').text).toBe('#0a0a0b');
+        expect(paletteForScheme('dark').background).toBe('#0a0a0b');
+        expect(paletteForScheme('dark').text).toBe('#f2f2f3');
     });
     test('an explicit choice wins; System follows the phone and falls back to dark', () => {
         expect(resolveScheme('light', 'dark')).toBe('light');
