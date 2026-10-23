@@ -39,7 +39,8 @@ describe('tab shell', () => {
 
     test('Editor is a direct destination and recent projects open in the native editor', () => {
         const editor = read(path.join(TABS, 'editor.tsx'));
-        expect(editor).toContain("router.push('/editor/new')");
+        expect(editor).toContain("pathname: '/editor/new'");
+        expect(editor).toContain("params: { blank: '1' }");
         expect(editor).toContain("pathname: '/editor/[projectId]'");
         expect(editor).toContain("router.push('/projects')");
         // Cinema remains available from the drawer after giving its tab slot to Editor.
