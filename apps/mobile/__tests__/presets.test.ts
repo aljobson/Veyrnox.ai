@@ -5,7 +5,7 @@ const base = {
     id: 'a',
     title: 'Product Hero',
     category: 'PRODUCTS',
-    theme: 'BRAND',
+    theme: 'E-COMMERCE',
     modelId: 'kling-3.0-i2v',
     modelName: 'Kling 3.0',
     modality: 'image-to-video',
@@ -70,11 +70,12 @@ describe('groupByCategory', () => {
 
 describe('groupByTheme', () => {
     test('groups by the shared web theme and falls back to category for older servers', () => {
-        const items = parsePresets({ presets: [base, { ...base, id: 'b', theme: 'ACTION' }, { ...base, id: 'c', theme: undefined, category: 'UGC' }] });
+        const items = parsePresets({ presets: [base, { ...base, id: 'b', theme: 'SOCCER FEVER' }, { ...base, id: 'c', theme: undefined, category: 'UGC' }] });
         const groups = groupByTheme(items);
-        expect(groups.map((g) => g.category)).toEqual(['ACTION', 'BRAND', 'UGC']);
+        expect(groups.map((g) => g.category)).toEqual(['SOCCER FEVER', 'E-COMMERCE', 'UGC']);
         expect(groups[1].items.map((i) => i.id)).toEqual(['a']);
-        expect(themeTitle('ART STYLES')).toBe('Art Styles');
+        expect(themeTitle('AI DANCE')).toBe('AI Dance');
+        expect(themeTitle('E-COMMERCE')).toBe('E-commerce');
     });
 });
 

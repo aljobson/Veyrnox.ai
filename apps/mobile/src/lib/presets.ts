@@ -72,9 +72,23 @@ export interface PresetGroup {
 }
 
 const THEME_ORDER = [
-    'CREATURES', 'TRANSFORM', 'DANCE', 'ACTION', 'POWERS',
-    'CAMERA', 'ART STYLES', 'BRAND', 'CELEBRATE', 'STORY',
+    'PET', 'STYLE', 'QUIRK LAB', 'MORPH ME', 'AI DANCE', 'SOCCER FEVER',
+    'SUPER POWER', 'E-COMMERCE', 'SHOT LANGUAGE', 'AI GIFT', 'FESTIVAL',
 ] as const;
+
+const THEME_TITLES: Readonly<Record<string, string>> = Object.freeze({
+    PET: 'Pet',
+    STYLE: 'Style',
+    'QUIRK LAB': 'Quirk Lab',
+    'MORPH ME': 'Morph Me',
+    'AI DANCE': 'AI Dance',
+    'SOCCER FEVER': 'Soccer Fever',
+    'SUPER POWER': 'Super Power',
+    'E-COMMERCE': 'E-commerce',
+    'SHOT LANGUAGE': 'Shot Language',
+    'AI GIFT': 'AI Gift',
+    FESTIVAL: 'Festival',
+});
 
 export function groupByCategory(items: readonly Preset[]): PresetGroup[] {
     const groups = new Map<string, Preset[]>();
@@ -95,7 +109,7 @@ export function groupByTheme(items: readonly Preset[]): PresetGroup[] {
 }
 
 export function themeTitle(value: string): string {
-    return value.toLocaleLowerCase().replace(/(^|\s)\S/g, (letter) => letter.toLocaleUpperCase());
+    return THEME_TITLES[value] ?? value.toLocaleLowerCase().replace(/(^|\s)\S/g, (letter) => letter.toLocaleUpperCase());
 }
 
 // Opens Create on the template's model with its prompt, length, shape, name and picture carried over; an inactive model
