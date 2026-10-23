@@ -52,10 +52,12 @@ async function render() {
 test('opens a native project workspace without loading a website', async () => {
     await render();
     expect(visible('Native cut')).toBe(true);
-    expect(visible('This is the native mobile editor. Your project stays in the app and saves to the same Veyrnox project as the web editor.')).toBe(true);
     expect(visible('Saved · v4')).toBe(true);
+    expect(visible('PREVIEW')).toBe(true);
+    expect(visible('TIMELINE')).toBe(true);
     expect(root.container.queryAll((node) => node.type === 'WebView')).toHaveLength(0);
-    for (const label of ['Media', 'Preview', 'Timeline', 'Adjust']) expect(root.container.queryAll((node) => node.props.accessibilityLabel === label).length).toBeGreaterThan(0);
+    for (const label of ['Media', 'Audio', 'Text', 'Captions', 'Adjust']) expect(root.container.queryAll((node) => node.props.accessibilityLabel === label).length).toBeGreaterThan(0);
+    for (const label of ['Undo', 'Redo', 'Duplicate', 'Add text', 'Delete']) expect(root.container.queryAll((node) => node.props.accessibilityLabel === label).length).toBeGreaterThan(0);
 });
 
 test('adds a native text layer and autosaves it to the shared project document', async () => {
