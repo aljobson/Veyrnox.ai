@@ -82,6 +82,10 @@ export function authorizeUrl(provider: OAuthProvider, challenge: string, redirec
         code_challenge: challenge,
         code_challenge_method: 's256',
     });
+    // The system authentication session deliberately shares browser cookies.
+    // Without this provider hint, Google silently reuses the last active
+    // account instead of letting a person choose among their signed-in accounts.
+    if (provider === 'google') params.set('prompt', 'select_account');
     return `${config.supabaseUrl}/auth/v1/authorize?${params.toString()}`;
 }
 

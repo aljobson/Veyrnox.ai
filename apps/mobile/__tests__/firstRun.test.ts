@@ -4,7 +4,7 @@ const fs = require('fs') as { readFileSync: (p: string, e: 'utf8') => string };
 const path = require('path') as { join: (...p: string[]) => string };
 const read = (...p: string[]) => fs.readFileSync(path.join(__dirname, '..', 'src', ...p), 'utf8');
 
-import { FIRST_RUN_SLOT, WELCOME_CARDS, creditsCardKeys, hasSeenWelcome, serializeSeen } from '../src/lib/firstRun';
+import { FIRST_RUN_SLOT, FIRST_RUN_VERSION, WELCOME_CARDS, creditsCardKeys, hasSeenWelcome, serializeSeen } from '../src/lib/firstRun';
 
 describe('the first-run record (N3)', () => {
     test('nothing stored means the welcome has not been seen', () => {
@@ -15,7 +15,10 @@ describe('the first-run record (N3)', () => {
 
     test('only our own versioned record counts as seen', () => {
         expect(hasSeenWelcome(serializeSeen())).toBe(true);
-        expect(hasSeenWelcome('{"version":2,"seen":true}')).toBe(false);
+        expect(FIRST_RUN_VERSION).toBe(2);
+        expect(FIRST_RUN_SLOT).toBe('veyrnox.welcome.seen.v2');
+        expect(hasSeenWelcome('{"version":1,"seen":true}')).toBe(false);
+        expect(hasSeenWelcome('{"version":3,"seen":true}')).toBe(false);
         expect(hasSeenWelcome('{"version":1,"seen":false}')).toBe(false);
         expect(hasSeenWelcome('true')).toBe(false);
         expect(hasSeenWelcome('not json')).toBe(false);
