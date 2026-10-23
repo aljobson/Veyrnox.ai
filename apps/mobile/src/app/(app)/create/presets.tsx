@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, SectionList, StyleSheet, Text, View } from 'react-native';
-import { fetchPresets, groupByCategory, presetHref, presetPrice, type Preset } from '../../../lib/presets';
+import { fetchPresets, groupByTheme, presetHref, presetPrice, themeTitle, type Preset } from '../../../lib/presets';
 import { colors } from '../../../theme';
 
 export default function Templates() {
@@ -15,7 +15,7 @@ export default function Templates() {
         fetchPresets().then(setPresets).catch(() => setFailed(true));
     }, []);
 
-    const sections = useMemo(() => groupByCategory(presets ?? []).map((g) => ({ title: g.category, data: g.items })), [presets]);
+    const sections = useMemo(() => groupByTheme(presets ?? []).map((g) => ({ title: themeTitle(g.category), data: g.items })), [presets]);
     const unavailableId = Array.isArray(params.unavailable) ? params.unavailable[0] : params.unavailable;
     const unavailablePreset = presets?.find((p) => p.id === unavailableId);
 

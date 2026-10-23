@@ -1,10 +1,11 @@
 import { ApiError } from '../src/lib/api';
-import { fetchPresets, groupByCategory, parsePresets, presetHref, presetPrice } from '../src/lib/presets';
+import { fetchPresets, groupByCategory, groupByTheme, parsePresets, presetHref, presetPrice, themeTitle } from '../src/lib/presets';
 
 const base = {
     id: 'a',
     title: 'Product Hero',
     category: 'PRODUCTS',
+    theme: 'BRAND',
     modelId: 'kling-3.0-i2v',
     modelName: 'Kling 3.0',
     modality: 'image-to-video',
@@ -64,6 +65,16 @@ describe('groupByCategory', () => {
         const groups = groupByCategory(items);
         expect(groups.map((g) => g.category)).toEqual(['PRODUCTS', 'UGC']);
         expect(groups[0].items.map((i) => i.id)).toEqual(['a', 'c']);
+    });
+});
+
+describe('groupByTheme', () => {
+    test('groups by the shared web theme and falls back to category for older servers', () => {
+        const items = parsePresets({ presets: [base, { ...base, id: 'b', theme: 'ACTION' }, { ...base, id: 'c', theme: undefined, category: 'UGC' }] });
+        const groups = groupByTheme(items);
+        expect(groups.map((g) => g.category)).toEqual(['ACTION', 'BRAND', 'UGC']);
+        expect(groups[1].items.map((i) => i.id)).toEqual(['a']);
+        expect(themeTitle('ART STYLES')).toBe('Art Styles');
     });
 });
 
