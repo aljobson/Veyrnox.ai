@@ -12,6 +12,7 @@ describe('development mock parity', () => {
         '/auth/v1/user',
         '/auth/v1/passkeys',
         '/auth/v1/user/oauth/grants',
+        '/api/v1/checkin',
         '/api/v1/ledger',
         '/api/v1/ledger/usage',
         '/api/v1/top-ups',

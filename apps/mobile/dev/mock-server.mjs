@@ -2,6 +2,7 @@
 // Local stand-in for Supabase Auth and the /api/v1 routes the app uses, so every signed-in screen can be
 // previewed in the simulator without an account. Development only: `node dev/mock-server.mjs` (port 8799).
 import { mockSocialUploads, uploadsEnabled, validateUploadMedia } from './mockSocialUploads.mjs';
+import { mockCheckin } from './mockCheckin.mjs';
 import { createServer } from 'node:http';
 import { deflateSync } from 'node:zlib';
 import { createHash, randomUUID } from 'node:crypto';
@@ -513,6 +514,10 @@ createServer(async (req, res) => {
         });
 
     if (!req.headers.authorization?.startsWith('Bearer ')) return send(res, 401, { error: 'not_authenticated' });
+    if (path === '/api/v1/checkin') {
+        const result = mockCheckin(req.method, req.headers.authorization || 'dev', state, process.env.CHECKIN_ENABLED === 'true');
+        return send(res, result.status, result.body);
+    }
     if (path === '/api/v1/balance') return send(res, 200, { balance: state.balance, free_credits: state.free, free_expires_at: null });
     if (path === '/api/v1/ledger' && req.method === 'GET') return send(res, 200, {
         entries: [

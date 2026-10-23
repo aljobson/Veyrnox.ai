@@ -135,6 +135,23 @@ test('an account with no movements says so', () => {
     assert.ok(plan.message.length <= 700);
 });
 
+test('every category ledgerKind can return has an explicit Vey label', () => {
+    const labels = {
+        generation: 'a generation', generation_refund: 'a refund for a failed generation',
+        top_up: 'a Credit Pack purchase', signup_grant: 'your sign-up Credits',
+        free_credit_expiry: 'free Credits expiring', referral_reward: 'a referral reward',
+        checkin_reward: 'a daily check-in reward', referral_reward_reversed: 'a referral reward reversed',
+        payment_adjustment: 'a payment adjustment', adjustment: 'an adjustment',
+    };
+    const source = readFileSync(new URL('../lib/ledgerKind.js', import.meta.url), 'utf8');
+    const kinds = [...new Set([...source.matchAll(/return '([a-z_]+)'/g)].map(m => m[1]))];
+    assert.deepEqual(kinds.sort(), Object.keys(labels).sort(), 'a new ledger category needs a Vey label and proof');
+    for (const kind of kinds) {
+        const plan = accountAnswerPlan({ balance: 1, freeCredits: 0, entries: [{ kind, delta: 1 }] });
+        assert.ok(plan.message.includes(`1 Credit added for ${labels[kind]}.`), kind);
+    }
+});
+
 test('the account path has no writer and names no mutating function', () => {
     const source = readFileSync(new URL('../lib/veyAccount.js', import.meta.url), 'utf8');
     const rpcs = [...source.matchAll(/rpcImpl\('([a-z_]+)'/g)].map((m) => m[1]);

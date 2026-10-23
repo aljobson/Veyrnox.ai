@@ -32,6 +32,7 @@ export interface Usage {
 // Plain-English wording for lib/ledgerKind.js. An unknown kind reads as an adjustment, never as raw text.
 const KIND_LABEL: Record<string, string> = {
     signup_grant: 'Welcome credits',
+    checkin_reward: 'Daily check-in reward',
     free_credit_expiry: 'Free credits expired',
     generation_refund: 'Refund for a creation that did not finish',
     generation: 'Creation',

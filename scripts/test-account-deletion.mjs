@@ -46,6 +46,7 @@ try {
     assert.equal((await prepare(randomUUID())).error, 'account_not_found');
     const alice = await signUp();
     const bob = await signUp();
+    assert.equal((await call('daily_checkin', alice.authId)).ok, true);
     assert.equal((await erase(alice.authId, 'x')).error, 'confirmation_invalid', 'a malformed token');
     assert.equal((await erase(alice.authId, 'a'.repeat(64))).error, 'confirmation_invalid', 'an unknown token');
     const bobToken = await token(bob.authId);
@@ -87,6 +88,7 @@ try {
     const tomb = await one('SELECT email, auth_id, deleted_at FROM public.users WHERE id = $1', [alice.userId]);
     assert.ok(tomb.deleted_at);
     assert.equal(tomb.email, `deleted-${alice.userId}@erased.invalid`);
+    assert.equal((await one('SELECT count(*)::int AS n FROM public.checkin_streaks WHERE user_id=$1', [alice.userId])).n, 0);
     assert.equal(tomb.auth_id, `erased:${alice.userId}`);
     assert.equal((await one('SELECT count(*)::int AS n FROM public.assets WHERE job_id = $1', [stored.id])).n, 0, 'asset row gone');
     for (const key of [assetKey, reserve]) {
@@ -195,7 +197,7 @@ try {
         'cinema_creator_applications', 'cinema_creator_follows', 'cinema_series_follows', 'cinema_saved_titles', 'cinema_retention_requests', 'cinema_watch_resume',
         'referral_codes', 'upload_reservations', 'social_uploads', 'film_library_masters', 'editor_library_renders',
         'social_brands', 'social_api_keys', 'social_webhook_endpoints', 'social_posts', 'jobs',
-        'push_tokens', 'push_outbox', 'push_token_writes', 'user_blocks', 'creator_profiles']);
+        'push_tokens', 'push_outbox', 'push_token_writes', 'user_blocks', 'creator_profiles', 'checkin_streaks']);
     const WITH_AUTH_USER = new Set(['organisation_members', 'workspace_members', 'project_members', 'api_requests', 'editor_requests',
         'social_connection_selections', 'social_oauth_states', 'film_studio_projects', 'film_studio_save_windows']);
     const REFUSED_UNTIL_CLEARED = new Set(['cinema_submissions', 'cinema_competitions', 'cinema_story_polls', 'credit_subscriptions',

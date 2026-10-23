@@ -24,3 +24,10 @@ test('production public variables retain Cloudflare text-binding headroom', () =
     // Cinema flag goes into that JSON object, not into a new var.
     assert.ok(Object.keys(config.vars).length <= 60, 'production vars must stay at or below 60');
 });
+
+test('daily check-in accepts explicit boolean strings and stays disabled in repository production vars', () => {
+    for (const vars of [config.vars, config.env.staging.vars]) {
+        if (Object.hasOwn(vars, 'CHECKIN_ENABLED')) assert.ok(['true', 'false'].includes(vars.CHECKIN_ENABLED));
+    }
+    assert.notEqual(config.vars.CHECKIN_ENABLED, 'true', 'production enablement belongs to the owner rollout');
+});

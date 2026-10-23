@@ -56,6 +56,8 @@ on:
       - "scripts/test-creator-profile.mjs"
       - "scripts/test-fk-indexes.mjs"
       - "scripts/test-append-only.mjs"
+      - "scripts/test-checkin.mjs"
+      - "scripts/lib/test-checkin-concurrency.mjs"
       - "scripts/test-subscription-credits.mjs"
       - "scripts/test-credit-subscriptions.mjs"
       - "scripts/test-subscription-renewal.mjs"
@@ -253,6 +255,7 @@ jobs:
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-creator-profile.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-fk-indexes.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-append-only.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-checkin.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-subscription-credits.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-credit-subscriptions.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-subscription-renewal.mjs

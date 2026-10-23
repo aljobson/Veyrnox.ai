@@ -21,7 +21,7 @@ const start = async (auth, aal = 'aal1') => (await one('SELECT public.start_priv
 const read = async (auth, id, section, cursor = null, size = null, thread = null, aal = 'aal1') =>
     (await one('SELECT public.read_privacy_export_page($1,$2,$3,$4,$5,$6,$7,$8) AS r', [auth, aal, id, section, thread, cursor?.after ?? null, cursor?.key ?? null, size])).r;
 const ALLOW = {
-    profile: 'id email created_at preferred_locale rights_attested_at rights_attestation_version balance free_balance subscription_balance subscription_expires_at cinema_profile cinema_membership referral_code referred_at referrals_made creator_profile push_devices sanctions_hold_until frozen',
+    profile: 'id email created_at preferred_locale rights_attested_at rights_attestation_version balance free_balance subscription_balance subscription_expires_at cinema_profile cinema_membership referral_code referred_at referrals_made creator_profile checkin_streak push_devices sanctions_hold_until frozen',
     credit_history: 'id delta free_delta subscription_delta job_id created_at reason',
     top_ups: 'id pack_id sales_channel credits price_usd_cents status consent_at consent_version created_at credited_at refunded_cents clawed_back_credits returned_at',
     credit_subscriptions: 'id plan_id status price_usd_cents consent_version consent_at started_at current_period_end cancel_at_period_end ended_at end_reason created_at credits',
@@ -128,10 +128,13 @@ try {
     // Re-applying 0362 reinstates its function body, so the later redefinition (ADR-0251, 0364) is applied after it, twice.
     const withProfile = await readFile(new URL('../packages/db/schema/supabase/0364_creator_profile_export.sql', import.meta.url), 'utf8');
     await q(withProfile); await q(withProfile);
+    const withCheckin = await readFile(new URL('../packages/db/schema/supabase/0368_daily_checkin.sql', import.meta.url), 'utf8');
+    await q(withCheckin); await q(withCheckin);
     await q('ALTER TABLE public.chat_messages ALTER COLUMN seq RESTART WITH 3000000000');
     const alice = await person('alice'), bob = await person('bob-private');
     otherIds.push(bob.id, bob.auth); secrets.push(bob.email);
     const af = await fixture(alice, bob);
+    assert.equal((await one('SELECT public.daily_checkin($1) AS r', [alice.auth])).r.ok, true);
     // Bob fixtures use the same projection sources, but never appear in Alice's export.
     const bf = await fixture(bob, alice);
     // Bob's teammate post in his brand is Alice's: remove that fixture's forbidden text.
@@ -179,6 +182,8 @@ try {
     assert.ok(BigInt(all.chat_messages[0].seq) >= 3000000000n);
     const profile = all.profile[0];
     keys(profile.cinema_profile, 'username display_name bio created_at'); keys(profile.cinema_membership, 'role account_status');
+    keys(profile.checkin_streak, 'streak last_checkin_date updated_at');
+    assert.equal(profile.checkin_streak.streak, 1);
     keys(profile.creator_profile, 'status answers completed_at skipped_at created_at');
     assert.equal(profile.creator_profile.status, 'completed'); assert.equal(profile.creator_profile.answers.studio_name, 'Night Owl Films'); assert.equal(profile.creator_profile.answers.goal, 'sell');
     keys(profile.referral_code, 'code created_at'); for (const device of profile.push_devices) keys(device, 'platform notify_jobs created_at last_seen_at disabled_at');
@@ -269,7 +274,7 @@ try {
         'account_actions', 'chat_folders', 'chat_personas', 'chat_threads', 'cinema_creator_follows',
         'cinema_memberships', 'cinema_profiles', 'cinema_saved_titles', 'cinema_series_follows', 'cinema_watch_resume',
         'content_appeals', 'content_reports', 'credit_balances', 'credit_subscriptions', 'jobs',
-        'creator_profiles', 'ledger_entries', 'push_tokens', 'referral_codes', 'referrals', 'social_brands',
+        'checkin_streaks', 'creator_profiles', 'ledger_entries', 'push_tokens', 'referral_codes', 'referrals', 'social_brands',
         'social_posts', 'social_publish_subscriptions', 'top_ups', 'user_blocks',
     ]);
     const NOT_EXPORTED = new Set([
@@ -311,7 +316,7 @@ try {
     await a.connect(); await b.connect();
     await a.query('CREATE TABLE IF NOT EXISTS auth.mfa_factors(user_id uuid,factor_type text,status text)');
     const auth = randomUUID();
-    await a.query('INSERT INTO auth.users(id,email) VALUES($1,$2)', [auth, `${auth}@example.invalid`]);
+    await a.query('INSERT INTO auth.users(id,email,email_confirmed_at) VALUES($1,$2,now())', [auth, `${auth}@example.invalid`]);
     const moneyBefore = await a.query('SELECT count(*) AS n FROM public.ledger_entries');
     await a.query('BEGIN');
     const first = (await a.query("SELECT public.start_privacy_export($1,'aal1') AS r", [auth])).rows[0].r;
@@ -322,7 +327,21 @@ try {
     const second = (await b.query("SELECT public.start_privacy_export($1,'aal1') AS r", [auth])).rows[0].r;
     assert.equal(second.export_id, first.export_id); assert.equal(second.resumed, true);
     assert.deepEqual((await a.query('SELECT count(*) AS n FROM public.ledger_entries')).rows, moneyBefore.rows);
-    console.log('Privacy export: two-client lock check passed');
+    // Separate committed RPC transactions give a real post-as_of claim timestamp.
+    const profileRead = async () => (await a.query(
+        "SELECT public.read_privacy_export_page($1,'aal1',$2,'profile',NULL,NULL,NULL,NULL) AS r",
+        [auth, first.export_id],
+    )).rows[0].r;
+    assert.equal((await profileRead()).rows[0].checkin_streak, null);
+    const claim = (await a.query('SELECT public.daily_checkin($1) AS r', [auth])).rows[0].r;
+    assert.equal(claim.ok, true); assert.equal(claim.credits, 1);
+    const afterClaim = (await a.query('SELECT count(*) AS n FROM public.ledger_entries')).rows;
+    const streak = (await profileRead()).rows[0].checkin_streak;
+    keys(streak, 'streak last_checkin_date updated_at');
+    assert.equal(streak.streak, 1);
+    assert.ok(Date.parse(streak.updated_at) > Date.parse(first.as_of), 'current streak remains visible after export start');
+    assert.deepEqual((await a.query('SELECT count(*) AS n FROM public.ledger_entries')).rows, afterClaim);
+    console.log('Privacy export: two-client lock and post-start check-in visibility passed');
 } finally {
     await a?.end(); await b?.end();
     if (created) await admin.query('DROP DATABASE privacy_export_lock_check');
