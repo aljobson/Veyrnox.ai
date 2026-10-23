@@ -9,6 +9,7 @@
 // (tests/presetLinking.test.mjs). Prices shown come from the live catalog.
 
 import { SOURCE_TEMPLATES } from './sourceTemplates.js';
+import { EFFECT_THEMES, effectThemeId, themedTemplates } from './effectThemes.js';
 
 const CATEGORY_ORDER = ['YOUR PHOTO', 'KIDS BIRTHDAY', 'CINEMATIC', 'ANIME', 'CARTOONS', 'MOVIES', 'FANTASY', 'REALISTIC', 'FASHION', 'PRODUCTS', 'VFX', 'UGC', 'ADS'];
 
@@ -119,12 +120,17 @@ export const WALL_PRESETS = WALL_CLIP_KEYS.map((key) => SOURCE_TEMPLATES.find((p
 // Old bookmarks retain their original prompt, without an unrelated demo clip.
 export const ALL_TEMPLATES = [...SOURCE_TEMPLATES, ...LEGACY_PRESETS];
 export const PRESET_CATEGORIES = ['ALL', 'NEW', ...CATEGORY_ORDER.filter((category) => PRESETS.some((p) => p.category === category))];
+export { EFFECT_THEMES, effectThemeId };
 
 // "New" is a flag, not a home category: a new template also sits in its own.
 export function templatesIn(category) {
   if (category === 'ALL') return PRESETS;
   if (category === 'NEW') return PRESETS.filter((p) => p.isNew);
   return PRESETS.filter((p) => p.category === category);
+}
+
+export function templatesInTheme(theme) {
+  return themedTemplates(theme, PRESETS);
 }
 
 // Template search stays local: the gallery is a small static list and every

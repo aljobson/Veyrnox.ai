@@ -67,7 +67,17 @@ export function kindOf(modality) {
 
 
 // Templates live in templates.js; re-exported so existing imports keep working.
-export { PRESETS, PRESET_CATEGORIES, WALL_PRESETS, ALL_TEMPLATES, templatesIn, searchTemplates, templateHref } from './templates.js';
+export {
+  EFFECT_THEMES,
+  PRESETS,
+  PRESET_CATEGORIES,
+  WALL_PRESETS,
+  ALL_TEMPLATES,
+  templatesIn,
+  templatesInTheme,
+  searchTemplates,
+  templateHref,
+} from './templates.js';
 export { templateById };
 
 // Preset names are stored upper-case for the studio's chips. Shown as a title

@@ -26,7 +26,7 @@ test('every web preset is listed, available, and priced from its active catalog 
         assert.equal(p.credits, unit, `${p.id} must be priced from the catalog row`);
         assert.equal(p.modality, row.modality);
         assert.match(p.id, /^[a-z0-9-]+$/);
-        assert.ok(p.prompt.length > 10 && p.title && p.category);
+        assert.ok(p.prompt.length > 10 && p.title && p.category && p.theme);
     }
 });
 
@@ -53,7 +53,7 @@ test('preview and poster addresses are absolute https on our own host', () => {
 });
 
 test('the payload carries no per-user or internal field', () => {
-    const allowed = new Set(['id', 'title', 'category', 'modelId', 'modelName', 'modality', 'prompt', 'needs', 'durationSeconds', 'credits', 'gated', 'available', 'isNew', 'previewUrl', 'posterUrl', 'previewAspect']);
+    const allowed = new Set(['id', 'title', 'category', 'theme', 'modelId', 'modelName', 'modality', 'prompt', 'needs', 'durationSeconds', 'credits', 'gated', 'available', 'isNew', 'previewUrl', 'posterUrl', 'previewAspect']);
     for (const p of toPublicPresets(catalog)) for (const k of Object.keys(p)) assert.ok(allowed.has(k), `unexpected field ${k}`);
 });
 
