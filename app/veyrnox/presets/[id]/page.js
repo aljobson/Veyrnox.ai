@@ -10,7 +10,6 @@ import { Main } from '../../_components/Main';
 import { TemplateRecipe } from '../../_components/TemplateRecipe';
 import { FilmPlayer } from '../../_components/FilmPlayer';
 import { ClipBadge } from '../../_components/ClipBadge';
-import { OriginalTemplateArtwork } from '../../_components/OriginalTemplateArtwork';
 import { SHOWCASE_CLIPS } from '../../_lib/showcase';
 import { ALL_TEMPLATES, templateById, presetTitle, modelIdForName } from '../../_lib/tokens';
 import { OPEN_GRAPH_BASE } from '../../../seo';
@@ -78,10 +77,6 @@ export default async function TemplatePage({ params }) {
                 <FilmPlayer key={template.id} film={clip} label={t('presets.detail.preview', { title: presetTitle(template.name) })} aspectRatio={clip.aspectRatio || template.previewAspect || '9 / 16'} />
                 <ClipBadge clip={clip} />
                 <p className="mt-3 text-sm text-vx-fg-muted">{clip.generatedOnVeyrnox ? t("presets.detail.highQualityFiveSecondPreviewGenerated") : t("presets.detail.highQualityFiveSecondInspirationPreview")}</p>
-              </div>
-            ) : template.original ? (
-              <div className="relative min-h-[280px] overflow-hidden rounded-2xl lg:min-h-[480px]" style={{ background: template.bg }}>
-                <OriginalTemplateArtwork preset={template} eyebrow={t('presets.original')} title={presetTitle(template.name)} />
               </div>
             ) : <div className="min-h-[280px] rounded-2xl lg:min-h-[480px]" style={{ background: template.bg }} aria-hidden />}
           </div>

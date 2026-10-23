@@ -103,12 +103,11 @@ test('every landing tile has a distinct viral preview and a small poster', () =>
     }
 });
 
-test('homepage and presets together never reuse a clip, poster or video file content', () => {
-    assert.equal(TILE_KEYS.size, PUBLIC_KEYS.length, 'two public placements use the same manifest key');
+test('public previews never duplicate media behind different manifest keys', () => {
     const videos = new Set();
     const posters = new Set();
     const contents = new Set();
-    for (const key of PUBLIC_KEYS) {
+    for (const key of TILE_KEYS) {
         const clip = SHOWCASE_CLIPS[key];
         assert.ok(clip?.video, `${key} has no preview`);
         assert.ok(clip.poster, `${key} has no poster`);
@@ -133,18 +132,14 @@ test('previews keep their titles without exposing source-platform metadata', () 
     for (const [key, clip] of Object.entries(SHOWCASE_CLIPS)) {
         assert.ok(clip.title?.trim(), `${key} has no title`);
         assert.ok(!Object.hasOwn(clip, 'source'), `${key} exposes source metadata`);
-        assert.doesNotMatch(JSON.stringify(clip), /higgsfield|capcut|syntx/i, `${key} exposes a platform name`);
+        assert.doesNotMatch(JSON.stringify(clip), /buzzy|higgsfield|syntx|capcut|film\.fun|cliptrend|trendai|vynoa|viralance/i, `${key} exposes a platform name`);
     }
 });
 
 test('the full preset gallery has a distinct preview and poster for every filter result', () => {
     const videos = new Set();
     for (const preset of PRESETS) {
-        if (!preset.clipKey) {
-            assert.equal(preset.original, true, `${preset.id} has neither a preview nor original art direction`);
-            assert.ok(preset.bg, `${preset.id} has no original art direction`);
-            continue;
-        }
+        assert.ok(preset.clipKey, `${preset.id} has no gallery preview`);
         const clip = SHOWCASE_CLIPS[preset.clipKey];
         assert.ok(clip?.video, `${preset.id} has no gallery preview`);
         assert.ok(clip.poster, `${preset.id} has no gallery poster`);

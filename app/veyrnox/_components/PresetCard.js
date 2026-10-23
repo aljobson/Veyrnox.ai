@@ -3,7 +3,6 @@ import { useI18n } from '../../../components/I18nProvider';
 import { MediaTile } from './MediaTile';
 import { SHOWCASE_CLIPS } from '../_lib/showcase';
 import { templateHref, presetCredits, presetTitle } from '../_lib/tokens.js';
-import { OriginalTemplateArtwork } from './OriginalTemplateArtwork';
 
 // Preset card: credited viral preview, monochrome chrome around it.
 //
@@ -45,9 +44,6 @@ export function PresetCard({ preset, size = 'md', onClick, catalog }) {
         </div>
       }
     >
-      {preset.original && !clip && (
-        <OriginalTemplateArtwork preset={preset} eyebrow={t('presets.original')} title={presetTitle(preset.name)} compact />
-      )}
       {preset.isNew && <span className="absolute end-3 top-3 rounded-full bg-vx-base/80 px-2 py-0.5 font-vx-mono text-[10px] font-bold tracking-[0.12em]">{t('mobile.new')}</span>}
     </MediaTile>
   );

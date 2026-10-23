@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useI18n } from '../../../components/I18nProvider.jsx';
 import { tOr } from '../../../lib/i18n/translate.mjs';
-import { OriginalTemplateArtwork } from './OriginalTemplateArtwork';
+import { TemplateArtwork } from './TemplateArtwork';
 import { presetTitle } from '../_lib/tokens.js';
 import { templateHandoffVisual, templateNeedsSource } from '../_lib/templateHandoff.js';
 
@@ -29,7 +29,7 @@ export function TemplateHandoffCard({ preset, canChooseSource = false, onChooseS
             className="absolute inset-0 h-full w-full object-contain"
           />
         ) : (
-          <OriginalTemplateArtwork preset={preset} eyebrow={t('app.create.templateReference')} title={title} compact />
+          <TemplateArtwork preset={preset} eyebrow={t('app.create.templateReference')} title={title} compact />
         )}
       </div>
       <div className="min-w-0">
