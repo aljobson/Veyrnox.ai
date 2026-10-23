@@ -26,6 +26,18 @@ test('a deploy refused by red ci opens a deploy-failure issue, as a failed deplo
     assert.match(job, /issues: write/);
 });
 
+test('a verified production deploy closes every resolved deploy-failure incident', () => {
+    assert.match(deploy, /deployed: \$\{\{ steps\.deploy\.outcome == 'success' && 'true' \|\| 'false' \}\}/);
+    const job = deploy.slice(deploy.indexOf('\n  resolve-failure:'));
+    assert.match(job, /needs: \[deploy, report-failure, report-workers-dev\]/);
+    assert.match(job, /needs\.deploy\.result == 'success'/);
+    assert.match(job, /needs\.deploy\.outputs\.deployed == 'true'/);
+    assert.match(job, /needs\.deploy\.outputs\.workers_dev == 'closed'/);
+    assert.match(job, /gh issue list --label deploy-failure --state open --limit 100/);
+    assert.match(job, /gh issue close "\$number" --reason completed/);
+    assert.match(job, /Resolved by verified production deploy/);
+});
+
 // 2026-10-09 (#753): one 504 from the Cloudflare API, 55 s into the read that
 // records the rollback target, failed a deploy. The rollback is the same kind
 // of single request, and the one that matters most.
