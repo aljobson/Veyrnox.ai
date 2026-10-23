@@ -21,6 +21,7 @@ import area_cam from './en/cam';
 import area_catalog from './en/catalog';
 import area_char from './en/char';
 import area_chat from './en/chat';
+import area_checkin from './en/checkin';
 import area_chrome from './en/chrome';
 import area_cinema from './en/cinema';
 import area_cinemaBrowse from './en/cinemaBrowse';
@@ -127,6 +128,7 @@ const catalog = {
     ...area_catalog,
     ...area_char,
     ...area_chat,
+    ...area_checkin,
     ...area_chrome,
     ...area_cinema,
     ...area_cinemaBrowse,

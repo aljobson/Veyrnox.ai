@@ -24,13 +24,8 @@ const BLOCKING = new Set(['high', 'critical']);
 // Add an entry only when there is no fixed version to move to, and say where
 // the package sits and why that is tolerable. Remove it when the gate says so.
 export const ALLOWED = [
-  {
-    id: 'GHSA-vfj7-8cjw-p6xm',
-    reason: 'braces <= 3.0.3 (every published version): stack exhaustion on deeply nested brace patterns. '
-      + 'It reaches us only through devDependencies ('
-      + 'eslint-config-next via fast-glob), which expand globs from our own config at build and lint time. '
-      + 'Nothing on the Worker\'s request path loads it; `npm audit --omit=dev` is clean. Added 2026-10-03; Tailwind path removed by the v4 migration.',
-  },
+  // Empty on 2026-10-23: GHSA-vfj7-8cjw-p6xm (braces, devDependencies only) stopped being reported as high or
+  // critical, and the gate asked for its entry to go.
 ];
 
 const advisoryId = (via) => /\/(GHSA(?:-[0-9a-z]{4}){3})$/i.exec(via.url || '')?.[1] ?? null;

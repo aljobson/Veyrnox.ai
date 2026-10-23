@@ -1,10 +1,6 @@
-import { useCallback, useState } from 'react';
+import { useBalance } from '../lib/useBalance';
 import { Pressable, StyleSheet, Text, View, useColorScheme } from 'react-native';
-import { useFocusEffect, usePathname, useRouter } from 'expo-router';
-import { useAuth } from '../auth/AuthProvider';
-import { appCache, getCacheUser } from '../lib/appCache';
-import { POLICIES } from '../lib/cache';
-import { observe } from '../lib/network';
+import { usePathname, useRouter } from 'expo-router';
 import { HEADER_MAX_FONT_SCALE, MIN_TARGET } from '../lib/a11y';
 import { plural, t } from '../lib/i18n';
 import { applyThemePreference, colors, getThemePreference, resolveScheme, toggledTheme, type Palette } from '../theme';
@@ -24,22 +20,8 @@ function SunIcon({ color }: { color: string }) {
 
 // The credits balance in the header of every tab. It opens Buy credits and Credit history, so purchases stay one tap away.
 export function CreditsChip({ palette = colors }: { palette?: Palette }) {
-    const { api } = useAuth();
     const router = useRouter();
-    const [balance, setBalance] = useState<number | null>(null);
-
-    useFocusEffect(
-        useCallback(() => {
-            void appCache
-                .swr({
-                    policy: POLICIES.balance,
-                    userId: getCacheUser(),
-                    fetcher: () => observe(api.getBalance()),
-                    onData: (value) => setBalance(value.balance),
-                })
-                .catch(() => {});
-        }, [api]),
-    );
+    const balance = useBalance();
 
     const label = balance === null ? t('tabs.creditsUnknown') : plural('home.credits', balance);
     return (

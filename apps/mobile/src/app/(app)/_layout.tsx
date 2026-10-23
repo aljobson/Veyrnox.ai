@@ -1,3 +1,4 @@
+import { CheckInModal } from '../../components/CheckInModal';
 import { Redirect, Stack } from 'expo-router';
 import { useColorScheme } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
@@ -20,6 +21,7 @@ export default function AppLayout() {
             <AiConsentHost />
             <MfaGate>
             <FirstRunGate />
+            <CheckInModal />
             <Stack
                 screenLayout={({ children }) => (
                     <>

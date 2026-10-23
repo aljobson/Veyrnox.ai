@@ -7,6 +7,9 @@ export interface Preset {
     readonly id: string;
     readonly title: string;
     readonly category: string;
+    // Newer servers provide the shared discovery theme. Keep this optional so
+    // cached and test fixtures from the older category-only contract remain valid.
+    readonly theme?: string;
     readonly modelId: string;
     readonly modelName: string;
     // What the model makes, from the catalog: an image, video or audio family (empty when the server did not say).
@@ -41,6 +44,7 @@ function parseOne(raw: unknown): Preset | null {
         id,
         title,
         category: str(r.category) ?? 'OTHER',
+        theme: str(r.theme) ?? str(r.category) ?? 'OTHER',
         modelId,
         modelName: str(r.modelName) ?? modelId,
         modality: str(r.modality) ?? '',
@@ -67,10 +71,45 @@ export interface PresetGroup {
     readonly items: Preset[];
 }
 
+const THEME_ORDER = [
+    'PET', 'STYLE', 'QUIRK LAB', 'MORPH ME', 'AI DANCE', 'SOCCER FEVER',
+    'SUPER POWER', 'E-COMMERCE', 'SHOT LANGUAGE', 'AI GIFT', 'FESTIVAL',
+] as const;
+
+const THEME_TITLES: Readonly<Record<string, string>> = Object.freeze({
+    PET: 'Pet',
+    STYLE: 'Style',
+    'QUIRK LAB': 'Quirk Lab',
+    'MORPH ME': 'Morph Me',
+    'AI DANCE': 'AI Dance',
+    'SOCCER FEVER': 'Soccer Fever',
+    'SUPER POWER': 'Super Power',
+    'E-COMMERCE': 'E-commerce',
+    'SHOT LANGUAGE': 'Shot Language',
+    'AI GIFT': 'AI Gift',
+    FESTIVAL: 'Festival',
+});
+
 export function groupByCategory(items: readonly Preset[]): PresetGroup[] {
     const groups = new Map<string, Preset[]>();
     for (const p of items) groups.set(p.category, [...(groups.get(p.category) ?? []), p]);
     return [...groups].map(([category, list]) => ({ category, items: list }));
+}
+
+export function groupByTheme(items: readonly Preset[]): PresetGroup[] {
+    const groups = new Map<string, Preset[]>();
+    for (const p of items) {
+        const theme = p.theme ?? p.category;
+        groups.set(theme, [...(groups.get(theme) ?? []), p]);
+    }
+    const order = new Map<string, number>(THEME_ORDER.map((theme, index) => [theme, index]));
+    return [...groups]
+        .map(([category, list]) => ({ category, items: list }))
+        .sort((a, b) => (order.get(a.category) ?? Number.MAX_SAFE_INTEGER) - (order.get(b.category) ?? Number.MAX_SAFE_INTEGER));
+}
+
+export function themeTitle(value: string): string {
+    return THEME_TITLES[value] ?? value.toLocaleLowerCase().replace(/(^|\s)\S/g, (letter) => letter.toLocaleUpperCase());
 }
 
 // Opens Create on the template's model with its prompt, length, shape, name and picture carried over; an inactive model
