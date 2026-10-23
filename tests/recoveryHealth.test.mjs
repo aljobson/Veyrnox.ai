@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { observeRecovery } from '../lib/recoveryHealth.js';
-import { assessRecovery } from '../scripts/check-recovery-health.mjs';
+import { assessRecovery, fetchRecoveryStatus } from '../scripts/check-recovery-health.mjs';
 const env={RECOVERY_HEALTH_ENABLED:'true'};
 test('empty successful recovery runs still record freshness',async()=>{
  const reports=[];await observeRecovery('asset_reap',async()=>({ok:true,processed:0}),env,async(_name,args)=>reports.push(args));
@@ -49,4 +49,32 @@ test('a failing scanner heartbeat records failure and renders overdue plus unhea
  const snapshot={unhealthy_tasks:['content_scan'],content_scan_overdue:1,content_scan_backlogged:0,content_scan_exhausted:0,
   reap_exhausted:0,reap_overdue:0,stale_jobs:0,stale_top_up_returns:0,unreviewed_flagged_orders:0,unreviewed_order_collisions:0};
  assert.deepEqual(assessRecovery(snapshot),['unhealthy task: content_scan','content_scan_overdue: 1']);
+});
+
+test('the watcher retries one transient timeout before declaring monitoring unreadable', async () => {
+ const waits=[];let calls=0;
+ const snapshot={unhealthy_tasks:[],reap_exhausted:0,reap_overdue:0,stale_jobs:0,stale_top_up_returns:0,unreviewed_flagged_orders:0,unreviewed_order_collisions:0};
+ const value=await fetchRecoveryStatus({url:'https://example.test',key:'public-test-key',wait:async ms=>waits.push(ms),fetchImpl:async(_url,options)=>{
+  calls+=1;
+  assert.equal(options.headers.Authorization,'Bearer public-test-key');
+  if(calls===1) throw Error('The operation was aborted due to timeout');
+  return {ok:true,status:200,json:async()=>snapshot};
+ }});
+ assert.equal(calls,2);
+ assert.deepEqual(waits,[250]);
+ assert.equal(value,snapshot);
+});
+
+test('the watcher retries retryable responses but not an authorization failure', async () => {
+ let transientCalls=0;
+ const value=await fetchRecoveryStatus({url:'https://example.test',key:'test',wait:async()=>{},fetchImpl:async()=>{
+  transientCalls+=1;
+  return transientCalls===1?{ok:false,status:503}:{ok:true,status:200,json:async()=>({healthy:true})};
+ }});
+ assert.deepEqual(value,{healthy:true});
+ let authCalls=0;
+ await assert.rejects(fetchRecoveryStatus({url:'https://example.test',key:'test',wait:async()=>{},fetchImpl:async()=>{
+  authCalls+=1;return {ok:false,status:401};
+ }}),/unreadable \(401\)/);
+ assert.equal(authCalls,1);
 });
