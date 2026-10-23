@@ -6,13 +6,13 @@ import { appMessagesFor } from '../lib/i18n/appMessages.mjs';
 const page = await readFile(new URL('../app/veyrnox/app/page.js', import.meta.url), 'utf8');
 
 test('Explore starts with the three core creation workspaces', () => {
-  const launchpad = page.slice(page.indexOf('const starters'), page.indexOf('// The vibe check'));
-  assert.match(launchpad, /href: '\/app\/create'/);
-  assert.match(launchpad, /href: '\/app\/chat'/);
-  assert.match(launchpad, /href: '\/app\/film-studio'/);
+  const launchpad = page.slice(page.indexOf('<section aria-label={t(\'app.explore.start\')}'), page.indexOf('<VibeOffer'));
+  assert.match(launchpad, /<StarterCard href="\/app\/create"/);
+  assert.match(launchpad, /<StarterCard href="\/app\/chat"/);
+  assert.match(launchpad, /<StarterCard href="\/app\/film-studio"/);
   assert.equal((page.match(/data-testid=\{`explore-starter-/g) || []).length, 1,
     'the shared card template gives every starter a stable test id');
-  assert.ok(page.indexOf('starters.map') < page.indexOf('href="/app/oddlings"'),
+  assert.ok(page.indexOf('<StarterCard href="/app/create"') < page.indexOf('href="/app/oddlings"'),
     'creation choices come before the featured Oddlings promotion');
 });
 
