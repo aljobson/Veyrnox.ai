@@ -54,7 +54,7 @@ test('privacy choice acceptance is built with an explicitly synthetic analytics 
   assert.doesNotMatch(runtimeStep(), /NEXT_PUBLIC_POSTHOG_KEY|POSTHOG_API_KEY/);
   const privacy = readFileSync(new URL('../e2e/authenticated-privacy-choices.spec.mjs', import.meta.url), 'utf8');
   assert.match(privacy, /from '@playwright\/test'/, 'privacy suite must not inherit the automatic Decline fixture');
-  for (const choice of ['Allow analytics & replay', 'Analytics only', 'Decline']) assert.ok(privacy.includes(choice));
+  for (const choice of ['Allow analytics', 'Don’t allow']) assert.ok(privacy.includes(choice));
   assert.match(privacy, /url\.origin !== target\.origin/);
   assert.match(privacy, /url\.pathname\.startsWith\('\/ingest\/'\)/);
   assert.match(privacy, /route\.fulfill/);

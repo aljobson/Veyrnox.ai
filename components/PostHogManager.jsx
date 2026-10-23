@@ -10,15 +10,12 @@ import { getSession, onSessionChange } from '../app/lib/authClient.js';
 import { ANALYTICS_ERROR, ANALYTICS_EVENT } from '../app/lib/analyticsClient.js';
 import {
   ANALYTICS_PREFERENCE_KEY,
-  normaliseReplaySampleRate,
   readAnalyticsPreference,
-  replayAllowedOnPath,
   sanitisePostHogEvent,
   setReplayCapture,
   writeAnalyticsPreference,
 } from '../app/lib/analyticsPrivacy.js';
 
-const forceConsentedReplay = normaliseReplaySampleRate(process.env.NEXT_PUBLIC_POSTHOG_REPLAY_SAMPLE_RATE) === 1;
 const signedInAccount = () => getSession()?.user?.id || null;
 const signedOutAccount = () => null;
 const preferenceStorage = () => {
@@ -36,11 +33,22 @@ export default function PostHogManager() {
 
   useEffect(() => {
     const explicit = posthog.get_explicit_consent_status();
-    const saved = readAnalyticsPreference(preferenceStorage());
-    if (saved && ((explicit === 'granted') === saved.analytics)) setPreference(saved);
-    else if (explicit === 'granted') setPreference({ analytics: true, replay: false });
-    else if (explicit === 'denied') setPreference({ analytics: false, replay: false });
-    else setPreference(null);
+    const stored = readAnalyticsPreference(preferenceStorage());
+    // The compact two-choice panel grants analytics only. Retire any older
+    // replay choice so reopening the site never resumes screen recording.
+    const saved = stored?.replay
+      ? writeAnalyticsPreference(preferenceStorage(), { analytics: stored.analytics, replay: false })
+      : stored;
+    const next = saved && ((explicit === 'granted') === saved.analytics)
+      ? saved
+      : explicit === 'granted'
+        ? { analytics: true, replay: false }
+        : explicit === 'denied'
+          ? { analytics: false, replay: false }
+          : null;
+    // This effect reads the external PostHog/localStorage preference after hydration.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPreference(next);
 
     const onStorage = (event) => {
       if (event.key !== ANALYTICS_PREFERENCE_KEY && event.key !== null) return;
@@ -104,9 +112,8 @@ export default function PostHogManager() {
   }, [pathname, posthog, preference?.analytics]);
 
   useEffect(() => {
-    const shouldRecord = Boolean(preference?.analytics && preference?.replay && replayAllowedOnPath(pathname));
-    setReplayCapture(posthog, { enabled: shouldRecord, forceSampling: forceConsentedReplay });
-  }, [pathname, posthog, preference?.analytics, preference?.replay]);
+    setReplayCapture(posthog, { enabled: false });
+  }, [posthog]);
 
   useEffect(() => {
     const captureEvent = (event) => {
@@ -160,12 +167,10 @@ export default function PostHogManager() {
                 })}
               </p>
             </div>
-            <div className="flex flex-wrap gap-2 lg:max-w-[390px] lg:justify-end">
-              <button type="button" onClick={() => choose({ analytics: true, replay: true })} className="rounded-full bg-vx-accent px-4 py-2 text-[13px] font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover">
-                {t('privacy.allow')}</button>
-              <button type="button" onClick={() => choose({ analytics: true, replay: false })} className="rounded-full border border-vx-border bg-vx-base px-4 py-2 text-[13px] font-bold text-vx-fg hover:border-vx-accent">
+            <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap lg:max-w-[390px] lg:justify-end">
+              <button type="button" onClick={() => choose({ analytics: true, replay: false })} className="min-h-12 rounded-full bg-vx-accent px-5 py-2.5 text-[14px] font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover">
                 {t('privacy.analytics')}</button>
-              <button type="button" data-storage-decline onClick={() => choose({ analytics: false, replay: false })} className="rounded-full border border-vx-border bg-vx-base px-4 py-2 text-[13px] font-bold text-vx-fg hover:border-vx-accent">
+              <button type="button" data-storage-decline onClick={() => choose({ analytics: false, replay: false })} className="min-h-12 rounded-full border border-vx-border bg-vx-base px-5 py-2.5 text-[14px] font-bold text-vx-fg hover:border-vx-accent">
                 {t('privacy.decline')}</button>
             </div>
           </div>

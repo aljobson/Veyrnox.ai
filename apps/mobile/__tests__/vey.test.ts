@@ -44,14 +44,17 @@ describe('Vey placement (mirrors the web: left by default, versioned, nothing el
 describe('where Vey shows (N8)', () => {
     const read = (...p: string[]) => fs.readFileSync(path.join(__dirname, '..', 'src', ...p), 'utf8');
 
-    test('every tab shows it, except the Cinema feed where the actions sit at the bottom', () => {
+    test('every tab offers Vey on demand, except the Cinema feed where the actions sit at the bottom', () => {
         const layout = read('app', '(app)', '(tabs)', '_layout.tsx');
         expect(layout).toContain('<VeyMascot');
         expect(layout).toMatch(/route\.name === 'cinema'/);
     });
 
-    test('it opens the chat and offers the move as a screen-reader action as well as a long press', () => {
+    test('the mascot is hidden by default, can be summoned and dismissed, then opens chat', () => {
         const mascot = read('components', 'VeyMascot.tsx');
+        expect(mascot).toContain('const [shown, setShown] = useState(false)');
+        expect(mascot).toContain('onPress={() => setShown(true)}');
+        expect(mascot).toContain('onPress={() => setShown(false)}');
         expect(mascot).toContain("router.push('/chat')");
         expect(mascot).toContain('accessibilityActions');
         expect(mascot).toContain('onLongPress');

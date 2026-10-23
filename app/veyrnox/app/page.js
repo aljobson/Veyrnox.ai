@@ -18,13 +18,25 @@ function StarterIcon({ name }) {
   );
 }
 
+function StarterCard({ href, label, description, icon }) {
+  return (
+    <Link
+      href={href}
+      data-testid={`explore-starter-${icon}`}
+      className="group flex min-h-48 flex-col rounded-[20px] border border-vx-border bg-vx-panel p-5 transition-[border-color,background-color,scale] duration-150 ease-(--vx-ease-out) hover:border-vx-accent hover:bg-vx-base active:scale-[0.96]"
+    >
+      <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-vx-accent/10 text-vx-accent">
+        <StarterIcon name={icon} />
+      </span>
+      <span className="mt-5 text-xl font-bold tracking-[-0.02em]">{label}</span>
+      <span className="mt-2 text-pretty text-sm leading-6 text-vx-fg-body">{description}</span>
+      <span aria-hidden="true" className="mt-auto pt-5 text-lg leading-none text-vx-accent transition-transform duration-150 ease-(--vx-ease-out) group-hover:translate-x-1 rtl:group-hover:-translate-x-1">→</span>
+    </Link>
+  );
+}
+
 export default function Explore() {
   const { t } = useI18n();
-  const starters = [
-    { href: '/app/create', label: t('label.Create'), description: t('app.explore.createStart'), icon: 'create' },
-    { href: '/app/chat', label: t('label.LLM Chat'), description: t('app.explore.chat'), icon: 'chat' },
-    { href: '/app/film-studio', label: t('label.Film Studio'), description: t('app.explore.filmStart'), icon: 'film' },
-  ];
   // The vibe check (ADR-0251): an invitation while no choice is on record, and the order of templates once there is one.
   const vibe = useVibe();
   return (
@@ -40,21 +52,9 @@ export default function Explore() {
         </header>
 
         <section aria-label={t('app.explore.start')} className="my-8 grid gap-3 md:grid-cols-3">
-          {starters.map((starter) => (
-            <Link
-              key={starter.href}
-              href={starter.href}
-              data-testid={`explore-starter-${starter.icon}`}
-              className="group flex min-h-48 flex-col rounded-[20px] border border-vx-border bg-vx-panel p-5 transition-[border-color,background-color,scale] duration-150 ease-(--vx-ease-out) hover:border-vx-accent hover:bg-vx-base active:scale-[0.96]"
-            >
-              <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-vx-accent/10 text-vx-accent">
-                <StarterIcon name={starter.icon} />
-              </span>
-              <span className="mt-5 text-xl font-bold tracking-[-0.02em]">{starter.label}</span>
-              <span className="mt-2 text-pretty text-sm leading-6 text-vx-fg-body">{starter.description}</span>
-              <span aria-hidden="true" className="mt-auto pt-5 text-lg leading-none text-vx-accent transition-transform duration-150 ease-(--vx-ease-out) group-hover:translate-x-1 rtl:group-hover:-translate-x-1">→</span>
-            </Link>
-          ))}
+          <StarterCard href="/app/create" label={t('label.Create')} description={t('app.explore.createStart')} icon="create" />
+          <StarterCard href="/app/chat" label={t('label.LLM Chat')} description={t('app.explore.chat')} icon="chat" />
+          <StarterCard href="/app/film-studio" label={t('label.Film Studio')} description={t('app.explore.filmStart')} icon="film" />
         </section>
 
         <VibeOffer status={vibe.status} onSkipped={vibe.reload} />
