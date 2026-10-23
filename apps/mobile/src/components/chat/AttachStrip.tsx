@@ -10,22 +10,23 @@ interface Props {
     readonly extra: number;
     readonly max?: number;
     readonly disabled?: boolean;
+    readonly embedded?: boolean;
     readonly onLibrary: () => void;
     readonly onPhotos: () => void;
     readonly onRemove: (id: string) => void;
 }
 
 // The images for the next reply, and how to add more. The extra credits are shown here, before anything is sent.
-export function AttachStrip({ items, extra, max = MAX_ATTACHMENTS, disabled, onLibrary, onPhotos, onRemove }: Props) {
+export function AttachStrip({ items, extra, max = MAX_ATTACHMENTS, disabled, embedded = false, onLibrary, onPhotos, onRemove }: Props) {
     const full = roomFor(items.length, max) === 0;
     return (
-        <View style={styles.wrap}>
+        <View style={[styles.wrap, embedded && styles.embedded]}>
             <View style={styles.row}>
                 <Pressable accessibilityRole="button" disabled={disabled || full} style={[styles.btn, (disabled || full) && styles.off]} onPress={onLibrary}>
-                    <Text style={styles.btnText}>{t('chat.attach.library')}</Text>
+                    <Text style={styles.btnText}>▧ {t('chat.attach.library')}</Text>
                 </Pressable>
                 <Pressable accessibilityRole="button" disabled={disabled || full} style={[styles.btn, (disabled || full) && styles.off]} onPress={onPhotos}>
-                    <Text style={styles.btnText}>{t('chat.attach.photos')}</Text>
+                    <Text style={styles.btnText}>＋ {t('chat.attach.photos')}</Text>
                 </Pressable>
                 <Text style={styles.note}>{items.length > 0 ? `${plural('chat.attach.extra', extra)} · ${items.length}/${max}` : plural('chat.attach.hint', extra)}</Text>
             </View>
@@ -47,9 +48,10 @@ export function AttachStrip({ items, extra, max = MAX_ATTACHMENTS, disabled, onL
 
 const styles = StyleSheet.create({
     wrap: { paddingHorizontal: 12, paddingTop: 4 },
+    embedded: { borderBottomWidth: 1, borderBottomColor: colors.border, paddingTop: 2, paddingBottom: 2 },
     row: { flexDirection: 'row', alignItems: 'center', gap: 4, flexWrap: 'wrap' },
     btn: { minHeight: MIN_TARGET, justifyContent: 'center', paddingHorizontal: 10 },
-    btnText: { color: colors.accent, fontSize: 15 },
+    btnText: { color: colors.text, fontSize: 13, fontWeight: '600' },
     off: { opacity: 0.4 },
     note: { color: colors.muted, fontSize: 12, flexShrink: 1 },
     thumbs: { gap: 8, paddingVertical: 4 },

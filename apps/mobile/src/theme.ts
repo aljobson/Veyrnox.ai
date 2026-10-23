@@ -6,6 +6,9 @@ const secureStore = (): { getItem(k: string): string | null; setItem(k: string, 
 const appearance = (): { getColorScheme(): string | null | undefined; setColorScheme(s: 'light' | 'dark' | null): void } | null => {
     try { return require('react-native').Appearance ?? null; } catch { return null; }
 };
+const expoRuntime = (): { reloadAppAsync(reason?: string): Promise<void> } | null => {
+    try { return require('expo'); } catch { return null; }
+};
 
 // The Veyrnox.ai palettes: the --vx-* tokens in app/globals.css (dark by default, and the light set under data-theme='light'), as hex.
 const DARK = {
@@ -60,6 +63,23 @@ export function saveThemePreference(preference: ThemePreference): void {
         secureStore()?.setItem(THEME_KEY, preference);
     } catch {
         // The choice just does not stick; the app keeps its current look.
+    }
+}
+export const toggledTheme = (current: 'light' | 'dark'): ThemePreference => current === 'dark' ? 'light' : 'dark';
+
+// Most screens build their StyleSheets once when the JavaScript bundle loads. Persist the choice, update native chrome,
+// then reload the same bundle so every screen changes together instead of leaving a half-light, half-dark app.
+export async function applyThemePreference(preference: ThemePreference): Promise<void> {
+    saveThemePreference(preference);
+    try {
+        appearance()?.setColorScheme(preference === 'system' ? null : preference);
+    } catch {
+        // The app palette still changes on reload even when native chrome cannot be overridden.
+    }
+    try {
+        await expoRuntime()?.reloadAppAsync('Veyrnox appearance changed');
+    } catch {
+        // The choice remains saved and will apply the next time the app opens.
     }
 }
 // System follows the phone; when the phone does not say, the app keeps its original dark look.

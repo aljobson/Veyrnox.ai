@@ -22,6 +22,7 @@ export const MENU_SECTIONS: MenuSection[] = [
         label: 'menu.tools',
         items: [
             { key: 'create', label: 'menu.create', href: '/create', icon: 'image' },
+            { key: 'quickEdit', label: 'edit.title', href: '/edit', icon: 'film' },
             { key: 'film', label: 'menu.film', href: '/film', icon: 'film' },
             { key: 'oddlings', label: 'menu.oddlings', href: '/oddlings', icon: 'user' },
             { key: 'publish', label: 'menu.publish', href: '/publish', icon: 'send' },

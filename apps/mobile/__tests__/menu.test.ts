@@ -39,6 +39,12 @@ describe('grouped menu', () => {
         expect(new Set(hrefs).size).toBe(hrefs.length);
     });
 
+    test('Quick edit is directly available from Tools', () => {
+        expect(MENU_SECTIONS.find((section) => section.id === 'tools')?.items).toContainEqual(
+            expect.objectContaining({ key: 'quickEdit', href: '/edit' }),
+        );
+    });
+
     test('the tab header carries the menu button on the left', () => {
         const layout = fs.readFileSync(path.join(APP, '(tabs)', '_layout.tsx'), 'utf8');
         expect(layout).toMatch(/headerLeft:\s*\(\)\s*=>\s*<MenuButton/);

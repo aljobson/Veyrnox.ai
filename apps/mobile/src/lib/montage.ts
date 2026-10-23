@@ -6,11 +6,14 @@ import { OFFLINE_PAID_MESSAGE, OfflineError, ensureOnline } from './network';
 export const AGENT_MODEL_ID = 'video-agent';
 export const ASPECTS = ['9:16', '16:9', '1:1'] as const;
 export type Aspect = (typeof ASPECTS)[number];
+export const MAX_NARRATION_LENGTH = 300;
 
 const BRIEF_MIN = 3;
 const BRIEF_MAX = 500;
 // Mirrors BRIEF_RE in lib/montagePlan.js: tab, newline and carriage return are allowed, other control characters are not.
 const CONTROL = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/;
+const NARRATION_CONTROL = /[\u0000-\u001F\u007F-\u009F]/;
+const UNPAIRED_SURROGATE = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
 
 export interface Plan {
     readonly planId: string;
@@ -20,6 +23,8 @@ export interface Plan {
     readonly summary: string;
     readonly credits: number;
     readonly aspect: Aspect;
+    // Exact words bypass the planner and are sent unchanged, apart from outer whitespace, to the speech model.
+    readonly narrationText: string;
     // Epoch seconds; a plan lasts 30 minutes.
     readonly expiresAt: number;
 }
@@ -33,24 +38,35 @@ export function briefProblem(raw: string): BriefProblem | null {
     return CONTROL.test(brief) ? 'invalid' : null;
 }
 
+export type NarrationResult = { readonly ok: true; readonly text: string } | { readonly ok: false };
+
+export function normaliseNarration(value: unknown): NarrationResult {
+    if (value === undefined) return { ok: true, text: '' };
+    if (typeof value !== 'string' || value.length > MAX_NARRATION_LENGTH || NARRATION_CONTROL.test(value) || UNPAIRED_SURROGATE.test(value)) return { ok: false };
+    return { ok: true, text: value.trim() };
+}
+
 interface PlanResponse {
     plan_id?: unknown;
     idempotency_key?: unknown;
-    plan?: { seconds?: unknown; summary?: unknown } | null;
+    plan?: { seconds?: unknown; summary?: unknown; narration_supported?: unknown } | null;
     credits?: unknown;
     aspect_ratio?: unknown;
     expires_at?: unknown;
+    narration_text?: unknown;
 }
 
 // One call, never retried here: planning can cost the server a model call and shares the generation rate limit.
-export async function requestPlan(api: ApiClient, rawBrief: string, aspect: Aspect): Promise<Plan> {
+export async function requestPlan(api: ApiClient, rawBrief: string, aspect: Aspect, rawNarration: string = ''): Promise<Plan> {
     const problem = briefProblem(rawBrief);
     if (problem) throw new ApiError(400, 'inputs_invalid:brief');
+    const narration = normaliseNarration(rawNarration);
+    if (!narration.ok) throw new ApiError(400, 'inputs_invalid:narration_text');
     const brief = rawBrief.trim();
     const r = await api.request<PlanResponse>('/api/v1/montage/plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ brief, aspect_ratio: aspect }),
+        body: JSON.stringify({ brief, aspect_ratio: aspect, ...(narration.text ? { narration_text: narration.text } : {}) }),
     });
     const usable =
         typeof r.plan_id === 'string' &&
@@ -60,7 +76,8 @@ export async function requestPlan(api: ApiClient, rawBrief: string, aspect: Aspe
         typeof r.expires_at === 'number' &&
         ASPECTS.includes(r.aspect_ratio as Aspect) &&
         !!r.plan &&
-        typeof r.plan.summary === 'string';
+        typeof r.plan.summary === 'string' &&
+        (!narration.text || (r.narration_text === narration.text && r.plan.narration_supported === true));
     if (!usable) throw new ApiError(502, 'plan_unavailable');
     const seconds = r.plan && Number.isInteger(r.plan.seconds) && (r.plan.seconds as number) > 0 ? (r.plan.seconds as number) : null;
     return {
@@ -70,6 +87,7 @@ export async function requestPlan(api: ApiClient, rawBrief: string, aspect: Aspe
         summary: (r.plan as { summary: string }).summary,
         credits: r.credits as number,
         aspect: r.aspect_ratio as Aspect,
+        narrationText: narration.text,
         expiresAt: r.expires_at as number,
     };
 }
@@ -85,7 +103,7 @@ export async function approvePlan(api: ApiClient, plan: Plan, rawBrief: string):
             model_id: AGENT_MODEL_ID,
             idempotency_key: plan.idempotencyKey,
             confirmed_credits: plan.credits,
-            inputs: { brief: rawBrief.trim(), plan_id: plan.planId, aspect_ratio: plan.aspect },
+            inputs: { brief: rawBrief.trim(), plan_id: plan.planId, aspect_ratio: plan.aspect, ...(plan.narrationText ? { narration_text: plan.narrationText } : {}) },
         }),
     });
     if (typeof r.job_id !== 'string') throw new ApiError(502, 'unknown');
@@ -123,6 +141,8 @@ export function planMessage(err: unknown): string {
             return 'That plan no longer matches. Plan again; you were not charged.';
         case 'inputs_invalid:brief':
             return 'Describe the video in 3 to 500 characters.';
+        case 'inputs_invalid:narration_text':
+            return `Keep the exact narration to ${MAX_NARRATION_LENGTH} characters and remove line breaks.`;
         case 'rate_limited':
             return 'Too many requests. Wait a minute before you plan again.';
         case 'insufficient_credits':

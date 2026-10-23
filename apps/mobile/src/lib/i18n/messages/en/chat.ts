@@ -16,6 +16,18 @@ export default {
     'chat.sendPrice.other': 'Send, {count} credits',
     'chat.sendPriceShort.one': '{count} credit',
     'chat.sendPriceShort.other': '{count} credits',
+    'chat.composer.label': 'Create with Veyrnox',
+    'chat.composer.setup': 'Reply setup',
+    'chat.composer.chat': 'Chat',
+    'chat.composer.message': 'Message',
+    'chat.composer.ask': 'Ask anything…',
+    'chat.composer.policy': 'for this reply. Stop after text appears and you keep it and the price. If nothing arrives, the Credits come back.',
+    'chat.workspace.title': 'What do you want to work on?',
+    'chat.workspace.priceHelp': 'Every reply shows its price before you send. If a reply fails, the Credits come back.',
+    'chat.workspace.skillsEyebrow': 'STUDIO SKILLS',
+    'chat.workspace.skillsHelp': 'Pick a specialist to prepare the job. You press Generate in the Studio.',
+    'chat.workspace.manage': 'More chat actions',
+    'chat.workspace.folder': 'Move to folder',
 
     // Chat stop, ask again, rename and pin (ADR-0155)
     'chat.stop': 'Stop',

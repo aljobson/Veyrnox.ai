@@ -29,6 +29,9 @@ describe('grant and manifest', () => {
     test('builds the Stream manifest address', () => {
         expect(manifestUrl({ customerCode: 'abc123', token: 'T.T.T' }, undefined)).toBe('https://customer-abc123.cloudflarestream.com/T.T.T/manifest/video.m3u8');
     });
+    test('uses an explicit development media address when supplied', () => {
+        expect(manifestUrl({ customerCode: 'abc123', token: 'T.T.T' }, 'http://localhost:8799/clip.mp4')).toBe('http://localhost:8799/clip.mp4');
+    });
     test('renews 3 minutes before expiry', () => {
         expect(msUntilRenewal(1_000_000, 1_000_000 - RENEW_BEFORE_MS)).toBe(0);
         expect(msUntilRenewal(1_000_000, 0)).toBeGreaterThan(0);

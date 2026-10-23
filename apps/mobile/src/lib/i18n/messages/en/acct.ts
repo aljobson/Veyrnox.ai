@@ -98,5 +98,5 @@ export default {
     'acct.appearance.system': 'System',
     'acct.appearance.light': 'Light',
     'acct.appearance.dark': 'Dark',
-    'acct.appearance.restart': 'Close the app and open it again to see the change.',
+    'acct.appearance.help': 'Applies across the whole app. System follows your phone.',
 } as const;

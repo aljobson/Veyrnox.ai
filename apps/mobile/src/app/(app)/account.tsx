@@ -11,7 +11,7 @@ import { signInMethodKey } from '../../lib/accountSecurity';
 import { LEGAL_LINKS, PRIVACY_EMAIL, SUPPORT_EMAIL } from '../../lib/account';
 import { usePush } from '../../push/pushContext';
 import { VEY_CLEARANCE } from '../../components/VeyMascot';
-import { colors, saveThemePreference, themePreference, THEME_PREFERENCES, type ThemePreference } from '../../theme';
+import { applyThemePreference, colors, themePreference, THEME_PREFERENCES, type ThemePreference } from '../../theme';
 import { CREATOR_PROFILE_ENABLED, resetVibe } from '../../lib/creatorProfile';
 import { clearVibe } from '../../lib/creatorProfileStore';
 import { t } from '../../lib/i18n';
@@ -25,7 +25,6 @@ export default function Account() {
     const router = useRouter();
     const { status: billing, canPurchase, restore } = useBilling();
     const [restoreNote, setRestoreNote] = useState<string | null>(null);
-    // The look is read when the app opens, so a change is saved now and shown after the app is closed and opened again.
     const [appearance, setAppearance] = useState<ThemePreference>(themePreference);
 
     // Best effort: when it fails the section simply shows no details.
@@ -99,13 +98,17 @@ export default function Account() {
                             accessibilityRole="radio"
                             accessibilityState={{ selected: appearance === p }}
                             style={[styles.chip, appearance === p && styles.chipOn]}
-                            onPress={() => { setAppearance(p); saveThemePreference(p); }}
+                            onPress={() => {
+                                if (p === appearance) return;
+                                setAppearance(p);
+                                void applyThemePreference(p);
+                            }}
                         >
                             <Text style={[styles.chipText, appearance === p && styles.chipTextOn]}>{t(`acct.appearance.${p}`)}</Text>
                         </Pressable>
                     ))}
                 </View>
-                {appearance !== themePreference ? <Text style={styles.note} accessibilityRole="alert">{t('acct.appearance.restart')}</Text> : null}
+                <Text style={styles.note}>{t('acct.appearance.help')}</Text>
             </Section>
 
             {billing !== 'off' ? (

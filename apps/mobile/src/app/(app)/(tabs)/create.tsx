@@ -11,7 +11,7 @@ import { selectedState, touchTarget } from '../../../lib/a11y';
 import { fetchAgentListing } from '../../../lib/montage';
 import { MENU_ICONS, type MenuIcon } from '../../../lib/menuIcons';
 import { VEY_CLEARANCE } from '../../../components/VeyMascot';
-import { fonts, studioColors as colors } from '../../../theme';
+import { colors, fonts, isDark } from '../../../theme';
 import { plural, t } from '../../../lib/i18n';
 import { useVeyScroll } from '../../../lib/useVeyScroll';
 
@@ -55,7 +55,7 @@ export default function Create() {
 
     return (
         <View style={styles.screen}>
-            <StatusBar style="light" />
+            <StatusBar style={isDark ? 'light' : 'dark'} />
             <Stack.Screen options={{ title: t('label.Create') }} />
             {failed ? (
                 <View style={styles.body}><Text style={styles.error}>{t('create.loadError')}</Text></View>

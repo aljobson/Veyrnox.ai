@@ -11,6 +11,7 @@ describe('mapAppLink', () => {
             ['/app/credits', '/credits'],
             ['/app/account', '/account'],
             ['/app/publish', '/publish'],
+            ['/app/video-agent', '/create/agent'],
         ]) {
             expect(mapAppLink(`https://veyrnox.ai${web}`)).toBe(app);
         }
@@ -24,6 +25,13 @@ describe('mapAppLink', () => {
         expect(mapAppLink('https://veyrnox.ai/app/create/..%2Fadmin')).toBe('/create');
         expect(mapAppLink('https://veyrnox.ai/app/library/not-a-uuid')).toBe('/library');
         expect(mapAppLink('https://veyrnox.ai/app/chat/new')).toBe('/chat');
+    });
+    test('keeps known Publish destinations instead of collapsing them to the dashboard', () => {
+        for (const section of ['accounts', 'posts', 'analytics', 'calendar', 'best-time', 'drafts', 'approvals', 'brands', 'commerce', 'ads', 'reports', 'inbox', 'workflows', 'smartlink', 'contacts', 'queues', 'autolists', 'team', 'activity', 'developer']) {
+            expect(mapAppLink(`https://veyrnox.ai/app/publish/${section}`)).toBe(`/publish/${section}`);
+        }
+        expect(mapAppLink('https://veyrnox.ai/app/publish/admin')).toBe('/publish');
+        expect(mapAppLink('https://veyrnox.ai/app/publish/posts/extra')).toBe('/publish');
     });
     test('ignores the query string and fragment, and accepts www', () => {
         expect(mapAppLink('https://www.veyrnox.ai/app/credits?utm=x#top')).toBe('/credits');

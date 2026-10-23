@@ -18,7 +18,7 @@ import { rankPresets } from '../../../lib/creatorTaste';
 import { cheapestCredits, isLowBalance } from '../../../lib/lowBalance';
 import { useBalance } from '../../../lib/useBalance';
 import { fetchPresets, presetHref, presetPrice, type Preset } from '../../../lib/presets';
-import { fonts, studioColors as colors } from '../../../theme';
+import { colors, fonts, isDark } from '../../../theme';
 import { useVeyScroll } from '../../../lib/useVeyScroll';
 
 // How many templates the home shows; the rest are on the Templates screen.
@@ -115,7 +115,7 @@ export default function Explore() {
 
     return (
         <>
-            <StatusBar style="light" />
+            <StatusBar style={isDark ? 'light' : 'dark'} />
             <ScrollView style={styles.scroll} contentContainerStyle={styles.screen} keyboardShouldPersistTaps="handled" onScroll={onScroll} scrollEventThrottle={64}>
             <View style={styles.intro}>
                 <Text style={styles.pageTitle} accessibilityRole="header">{t('explore.presetsTitle')}</Text>

@@ -7,10 +7,11 @@ describe('the native Explore dashboard mirrors the signed-in website', () => {
     const read = (...p: string[]) => fs.readFileSync(path.join(__dirname, '..', 'src', ...p), 'utf8');
     const explore = read('app', '(app)', '(tabs)', 'index.tsx');
 
-    test('uses the website Studio palette from header through tab bar', () => {
+    test('keeps one selected app palette from the page through the header and tab bar', () => {
         const tabs = read('app', '(app)', '(tabs)', '_layout.tsx');
-        expect(explore).toContain('studioColors as colors');
-        expect(tabs).toContain("route.name === 'index' || route.name === 'create' ? studioColors : colors");
+        expect(explore).toContain('colors, fonts, isDark');
+        expect(explore).toContain("<StatusBar style={isDark ? 'light' : 'dark'}");
+        expect(tabs).toContain('const palette = colors');
         expect(tabs).toContain('headerStyle: { backgroundColor: palette.background }');
         expect(tabs).toContain('tabBarStyle: { backgroundColor: palette.background');
     });
@@ -29,10 +30,11 @@ describe('the native Create dashboard mirrors the website Studio', () => {
     const read = (...p: string[]) => fs.readFileSync(path.join(__dirname, '..', 'src', ...p), 'utf8');
     const create = read('app', '(app)', '(tabs)', 'create.tsx');
 
-    test('carries the dark Studio shell onto the Create tab', () => {
+    test('carries the selected light or dark shell onto the Create tab', () => {
         const tabs = read('app', '(app)', '(tabs)', '_layout.tsx');
-        expect(create).toContain('studioColors as colors');
-        expect(tabs).toContain("route.name === 'index' || route.name === 'create'");
+        expect(create).toContain('colors, fonts, isDark');
+        expect(create).toContain("<StatusBar style={isDark ? 'light' : 'dark'}");
+        expect(tabs).toContain('const palette = colors');
     });
 
     test('orders sources, goal, price tier and live-priced models before navigation', () => {

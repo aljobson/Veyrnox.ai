@@ -1,5 +1,5 @@
 import { ApiError, type ApiClient } from '../src/lib/api';
-import { approvePlan, briefProblem, fetchAgentListing, minutesLeft, planMessage, requestPlan, type Plan } from '../src/lib/montage';
+import { approvePlan, briefProblem, fetchAgentListing, MAX_NARRATION_LENGTH, minutesLeft, normaliseNarration, planMessage, requestPlan, type Plan } from '../src/lib/montage';
 
 const apiWith = (result: unknown) => {
     const request = jest.fn(async () => {
@@ -16,6 +16,7 @@ const plan: Plan = {
     summary: 'A short about bees: 6 scenes with voiceover.',
     credits: 165,
     aspect: '9:16',
+    narrationText: '',
     expiresAt: 2_000_000_000,
 };
 
@@ -45,7 +46,7 @@ describe('requestPlan', () => {
         const [path, init] = request.mock.calls[0] as unknown as [string, RequestInit];
         expect(path).toBe('/api/v1/montage/plan');
         expect(JSON.parse(init.body as string)).toEqual({ brief: 'how bees make honey', aspect_ratio: '16:9' });
-        expect(out).toEqual({ planId: 'tok.sig', idempotencyKey: 'plan_test_one', seconds: 32, summary: 'A short about bees.', credits: 165, aspect: '16:9', expiresAt: 2_000_000_000 });
+        expect(out).toEqual({ planId: 'tok.sig', idempotencyKey: 'plan_test_one', seconds: 32, summary: 'A short about bees.', credits: 165, aspect: '16:9', narrationText: '', expiresAt: 2_000_000_000 });
     });
 
     test('does not call the server for a brief that is too short', async () => {
@@ -62,6 +63,28 @@ describe('requestPlan', () => {
     test('keeps a missing length as null so the screen can leave it out', async () => {
         const out = await requestPlan(apiWith({ plan_id: 'x', idempotency_key: 'plan_k', plan: { summary: 's' }, credits: 165, aspect_ratio: '9:16', expires_at: 5 }).api, 'how bees make honey', '9:16');
         expect(out.seconds).toBeNull();
+    });
+
+    test('sends exact narration separately and only accepts a plan that preserves it', async () => {
+        const exact = 'Make every frame matter.';
+        const { api, request } = apiWith({
+            plan_id: 'tok.sig', idempotency_key: 'plan_test_two', plan: { seconds: 30, summary: 'A launch film.', narration_supported: true },
+            credits: 165, aspect_ratio: '9:16', expires_at: 2_000_000_000, narration_text: exact,
+        });
+        const out = await requestPlan(api, ' launch a new camera ', '9:16', `  ${exact}  `);
+        expect(JSON.parse((request.mock.calls[0] as unknown as [string, RequestInit])[1].body as string)).toEqual({ brief: 'launch a new camera', aspect_ratio: '9:16', narration_text: exact });
+        expect(out.narrationText).toBe(exact);
+        await expect(requestPlan(apiWith({ plan_id: 'x', idempotency_key: 'k', plan: { summary: 's' }, credits: 165, aspect_ratio: '9:16', expires_at: 5 }).api, 'a valid brief', '9:16', exact)).rejects.toMatchObject({ code: 'plan_unavailable' });
+    });
+});
+
+describe('normaliseNarration', () => {
+    test('trims valid exact words and refuses unsafe or overlong text', () => {
+        expect(normaliseNarration('  Speak this exactly.  ')).toEqual({ ok: true, text: 'Speak this exactly.' });
+        expect(normaliseNarration('x'.repeat(MAX_NARRATION_LENGTH))).toEqual({ ok: true, text: 'x'.repeat(MAX_NARRATION_LENGTH) });
+        expect(normaliseNarration('x'.repeat(MAX_NARRATION_LENGTH + 1))).toEqual({ ok: false });
+        expect(normaliseNarration('two\nlines')).toEqual({ ok: false });
+        expect(normaliseNarration('\uD800')).toEqual({ ok: false });
     });
 });
 
@@ -84,6 +107,12 @@ describe('approvePlan', () => {
         const { api, request } = apiWith({ job_id: 'job-1' });
         await approvePlan(api, plan, 'how bees make honey');
         expect(JSON.parse((request.mock.calls[0] as unknown as [string, RequestInit])[1].body as string)).not.toHaveProperty('consent');
+    });
+
+    test('approves with the exact narration shown in the plan', async () => {
+        const { api, request } = apiWith({ job_id: 'job-2' });
+        await approvePlan(api, { ...plan, narrationText: 'Make every frame matter.' }, 'how bees make honey');
+        expect(JSON.parse((request.mock.calls[0] as unknown as [string, RequestInit])[1].body as string).inputs.narration_text).toBe('Make every frame matter.');
     });
 
     test('a second approve of the same plan sends the same key, so it is charged once', async () => {

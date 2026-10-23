@@ -8,7 +8,7 @@ import { VeyMascot } from '../../../components/VeyMascot';
 import { HEADER_MAX_FONT_SCALE, MIN_TARGET } from '../../../lib/a11y';
 import { t } from '../../../lib/i18n';
 import { MENU_ICONS, type MenuIcon } from '../../../lib/menuIcons';
-import { colors, studioColors } from '../../../theme';
+import { colors } from '../../../theme';
 
 // The tab bar has a fixed height, so its labels stop growing at the same limit as the header; everything else follows the system text size.
 function tabLabel(key: string) {
@@ -38,11 +38,11 @@ export default function TabsLayout() {
             screenLayout={({ children, route }) => (
                 <View style={{ flex: 1 }}>
                     {children}
-                    {route.name === 'cinema' ? null : <VeyMascot />}
+                    {route.name === 'cinema' || route.name === 'publish' ? null : <VeyMascot />}
                 </View>
             )}
             screenOptions={({ route }) => {
-                const palette = route.name === 'index' || route.name === 'create' ? studioColors : colors;
+                const palette = colors;
                 return {
                     headerStyle: { backgroundColor: palette.background },
                     headerTintColor: palette.text,

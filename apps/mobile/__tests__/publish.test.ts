@@ -49,7 +49,7 @@ describe('parseAccounts', () => {
         expect(r.accounts[0].avatarUrl).toBeNull();
     });
     test('an unusable body gives an empty list and a limit of one', () => {
-        expect(parseAccounts(null)).toEqual({ accountLimit: 1, accounts: [], uploadsEnabled: false });
+        expect(parseAccounts(null)).toMatchObject({ accountLimit: 1, accounts: [], uploadsEnabled: false, brandId: null, brandRole: 'viewer', planTier: 'free' });
     });
 });
 
@@ -217,5 +217,14 @@ test('uploads flag is strictly true; all existing account fields are unchanged',
     for (const flag of [undefined, null, false, 'true', 1]) expect(parseAccounts({ ...body, uploadsEnabled: flag }).uploadsEnabled).toBe(false);
     const { uploadsEnabled, ...rest } = parseAccounts({ ...body, uploadsEnabled: true });
     expect(uploadsEnabled).toBe(true);
-    expect(rest).toEqual({ accountLimit: 5, accounts: [{ id: 'a1', network: 'instagram', displayName: 'Studio', avatarUrl: 'https://cdn.example/a.jpg', status: 'active', connectedAt: '2026-10-01T10:00:00Z', tokenExpiresAt: '2026-12-01T10:00:00Z', publishingEnabled: false, supportedMedia: [] }] });
+    expect(rest).toMatchObject({ accountLimit: 5, accounts: [{ id: 'a1', network: 'instagram', displayName: 'Studio', avatarUrl: 'https://cdn.example/a.jpg', status: 'active', connectedAt: '2026-10-01T10:00:00Z', tokenExpiresAt: '2026-12-01T10:00:00Z', publishingEnabled: false, supportedMedia: [] }] });
+});
+
+test('account capability, plan and role fields are parsed strictly for the dashboard', () => {
+    const parsed = parseAccounts({
+        brand_id: 'brand-1', brandRole: 'reviewer', planTier: 'publish', plansEnabled: true,
+        inboxEnabled: true, approvalsEnabled: true, teamsEnabled: 'true', customerApiEnabled: 1,
+    });
+    expect(parsed).toMatchObject({ brandId: 'brand-1', brandRole: 'reviewer', planTier: 'publish', plansEnabled: true });
+    expect(parsed.features).toMatchObject({ inbox: true, approvals: true, teams: false, customerApi: false });
 });
