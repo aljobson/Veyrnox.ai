@@ -15,11 +15,14 @@ describe('the native Explore dashboard mirrors the signed-in website', () => {
         expect(tabs).toContain('tabBarStyle: { backgroundColor: palette.background');
     });
 
-    test('keeps the website hierarchy and price-forward preset cards', () => {
-        expect(explore).toContain("t('explore.presetsTitle')");
+    test('keeps the creator-first website hierarchy and price-forward preset cards', () => {
+        expect(explore).toContain("t('explore.start.title')");
+        expect(explore).toContain('<StartOption href="/create"');
+        expect(explore).toContain('<StartOption href="/chat"');
+        expect(explore).toContain('<StartOption href="/film"');
         expect(explore).toContain('oddling-body-chaos.webp');
         expect(explore).toContain("t('explore.heroTitle')");
-        expect(explore).toContain('<FeatureRow href="/chat"');
+        expect(explore.indexOf('<StartOption href="/chat"')).toBeLessThan(explore.indexOf('oddling-body-chaos.webp'));
         expect(explore).toContain('presetPrice(preset)');
         expect(explore).toContain('styles.grid');
     });

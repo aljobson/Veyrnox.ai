@@ -58,13 +58,13 @@ describe('where Vey shows (N8)', () => {
         expect(mascot).toContain('Keyboard.addListener');
     });
 
-    // N8 took the plain Chat button off the home because Vey opens the chat. The owner then asked for a "Chat with Vey" card
-    // right under the Make buttons (2026-10-21), so the home has one, and Vey still opens the same chat.
-    test('the home has one Chat with Vey card, right under the Make buttons', () => {
+    // The launchpad keeps one explicit LLM Chat choice alongside Create and Film Studio,
+    // while Vey still opens the same conversation from every tab.
+    test('the home has one LLM Chat choice in the primary launchpad', () => {
         const home = read('app', '(app)', '(tabs)', 'index.tsx');
         expect(home.split('href="/chat"').length - 1).toBe(1);
-        expect(home).toContain("t('explore.chat.title')");
-        expect(home.indexOf("t('explore.makeVideo')")).toBeLessThan(home.indexOf('href="/chat"'));
-        expect(home.indexOf('href="/chat"')).toBeLessThan(home.indexOf("t('explore.templates')"));
+        expect(home).toContain("title={t('menu.chat')}");
+        expect(home.indexOf('href="/create"')).toBeLessThan(home.indexOf('href="/chat"'));
+        expect(home.indexOf('href="/chat"')).toBeLessThan(home.indexOf('href="/oddlings"'));
     });
 });
