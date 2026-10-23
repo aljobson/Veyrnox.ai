@@ -23,7 +23,7 @@ void [RN.ScrollView, RN.Text, RN.Pressable, RN.StyleSheet, RN.View, RN.ActivityI
 const id = '11111111-1111-4111-8111-111111111111';
 const row = { id, name: 'Film B', revision: 1 };
 const raw = (name: string) => JSON.stringify({ ...emptyFilm(), name });
-const intro = 'Film Studio plans a film in seven stages on veyrnox.ai. The phone opens a copy of it: choose a file you exported, or a film saved to your account.';
+const intro = 'Build all seven Film Studio stages on your phone, or open an existing studio from your account or a JSON export.';
 let root: Root;
 const has = (text: string) => root.container.queryAll(n => n.children.some(c => typeof c === 'string' && c.includes(text))).length > 0;
 async function press(text: string) {
@@ -92,7 +92,7 @@ test.each(['bob', 'alice'])('session reset drops mounted film and cloud count (%
     expect(has('Alice private film')).toBe(true); expect(has('Films saved to your account')).toBe(true);
     mockRequest.mockResolvedValue({ projects: [] });
     await act(async () => { await wipeCache(); await bindCacheUser(user); });
-    expect(has('Alice private film')).toBe(false); expect(has('Films saved to your account')).toBe(false); expect(has('Open your film on the phone')).toBe(true);
+    expect(has('Alice private film')).toBe(false); expect(has('Films saved to your account')).toBe(false); expect(has('Start or open a film')).toBe(true);
 });
 test('stale list response is ignored after switching accounts', async () => {
     let resolve!: (value: unknown) => void; mockRequest.mockReturnValueOnce(new Promise(r => { resolve = r; })); await mount();

@@ -59,6 +59,7 @@ import area_label from './en/label';
 import area_library from './en/library';
 import area_libsrc from './en/libsrc';
 import area_lowBalance from './en/lowBalance';
+import area_mcp from './en/mcp';
 import area_mdl from './en/mdl';
 import area_menu from './en/menu';
 import area_mobile from './en/mobile';
@@ -164,6 +165,7 @@ const catalog = {
     ...area_library,
     ...area_libsrc,
     ...area_lowBalance,
+    ...area_mcp,
     ...area_mdl,
     ...area_menu,
     ...area_mobile,

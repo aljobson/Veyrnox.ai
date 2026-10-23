@@ -45,6 +45,15 @@ describe('grouped menu', () => {
         );
     });
 
+    test('the previously hidden tools, face filters and MCP surfaces are direct destinations', () => {
+        const tools = MENU_SECTIONS.find((section) => section.id === 'tools')?.items ?? [];
+        expect(tools).toEqual(expect.arrayContaining([
+            expect.objectContaining({ key: 'tools', href: '/create/tools' }),
+            expect.objectContaining({ key: 'faceFilters', href: '/face-filters' }),
+            expect.objectContaining({ key: 'mcp', href: '/mcp' }),
+        ]));
+    });
+
     test('the tab header carries the menu button on the left', () => {
         const layout = fs.readFileSync(path.join(APP, '(tabs)', '_layout.tsx'), 'utf8');
         expect(layout).toMatch(/headerLeft:\s*\(\)\s*=>\s*<MenuButton/);

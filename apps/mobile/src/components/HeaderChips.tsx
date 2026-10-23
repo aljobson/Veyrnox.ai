@@ -1,13 +1,13 @@
 import { useCallback, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { Pressable, StyleSheet, Text, View, useColorScheme } from 'react-native';
+import { useFocusEffect, usePathname, useRouter } from 'expo-router';
 import { useAuth } from '../auth/AuthProvider';
 import { appCache, getCacheUser } from '../lib/appCache';
 import { POLICIES } from '../lib/cache';
 import { observe } from '../lib/network';
 import { HEADER_MAX_FONT_SCALE, MIN_TARGET } from '../lib/a11y';
 import { plural, t } from '../lib/i18n';
-import { applyThemePreference, colors, isDark, toggledTheme, type Palette } from '../theme';
+import { applyThemePreference, colors, getThemePreference, resolveScheme, toggledTheme, type Palette } from '../theme';
 
 const SUN_RAYS = [0, 45, 90, 135] as const;
 
@@ -67,10 +67,13 @@ export function AvatarButton({ palette = colors }: { palette?: Palette }) {
 // The website keeps this beside the account controls. The mobile app does the same so appearance is not buried in
 // Account; System remains available on the full Account screen.
 export function ThemeButton({ palette = colors }: { palette?: Palette }) {
-    const label = isDark ? t('ui.themeToLight') : t('ui.themeToDark');
+    const pathname = usePathname();
+    const system = useColorScheme();
+    const dark = resolveScheme(getThemePreference(), system) === 'dark';
+    const label = dark ? t('ui.themeToLight') : t('ui.themeToDark');
     return (
-        <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityHint={t('ui.themeHint')} style={[styles.themeHit, { backgroundColor: palette.surface, borderColor: palette.border }]} onPress={() => void applyThemePreference(toggledTheme(isDark ? 'dark' : 'light'))}>
-            {isDark ? (
+        <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityHint={t('ui.themeHint')} style={[styles.themeHit, { backgroundColor: palette.surface, borderColor: palette.border }]} onPress={() => void applyThemePreference(toggledTheme(dark ? 'dark' : 'light'), pathname)}>
+            {dark ? (
                 <SunIcon color={palette.text} />
             ) : (
                 <Text style={[styles.themeGlyph, { color: palette.text }]} maxFontSizeMultiplier={1} accessibilityElementsHidden>☾</Text>

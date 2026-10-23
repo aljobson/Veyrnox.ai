@@ -23,6 +23,11 @@ export interface ScreenDef {
 export const SCREENS: readonly ScreenDef[] = [
     { id: 'explore', titleKey: 'srch.s.explore', href: '/', keywords: 'home templates start' },
     { id: 'create', titleKey: 'srch.s.create', href: '/create', keywords: 'generate image video audio make' },
+    { id: 'tools', titleKey: 'srch.s.tools', href: '/create/tools', keywords: 'upscale remove background face filters edit photo video' },
+    { id: 'face-filters', titleKey: 'srch.s.faceFilters', href: '/face-filters', keywords: 'age style relight expression face photo' },
+    { id: 'film', titleKey: 'srch.s.film', href: '/film', keywords: 'studio shots script references assets prompts movie' },
+    { id: 'mcp', titleKey: 'srch.s.mcp', href: '/mcp', keywords: 'connector assistant oauth endpoint integrations' },
+    { id: 'oddlings', titleKey: 'srch.s.oddlings', href: '/oddlings', keywords: 'characters creator mascot animate' },
     { id: 'templates', titleKey: 'srch.s.templates', href: '/create/presets', keywords: 'presets gallery' },
     { id: 'library', titleKey: 'srch.s.library', href: '/library', keywords: 'creations files downloads saved' },
     { id: 'chat', titleKey: 'srch.s.chat', href: '/chat', keywords: 'vey assistant talk' },

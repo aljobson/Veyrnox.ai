@@ -1,4 +1,4 @@
-import { FILM_STAGES, handoffFor, isLocked, parseFilm, promptContext, shotRow, shotRows, stageIssues, stageStatuses, summarize, type Film } from '../src/lib/filmStudio';
+import { buildShotPrompt, emptyFilm, FILM_STAGES, handoffFor, isLocked, lockAsset, nextPromptVersion, parseFilm, PROMPT_DETAILS, promptContext, shotRow, shotRows, stageIssues, stageStatuses, summarize, type Film } from '../src/lib/filmStudio';
 import { loadStudio, saveStudio } from '../src/lib/filmStudioStore';
 import { createCache, createMemoryStorage } from '../src/lib/cache';
 import type { CatalogModel } from '../src/lib/media';
@@ -61,6 +61,9 @@ function withPrompt(film: any): any {
 const catalogModel = (over: Partial<CatalogModel> = {}): CatalogModel => ({ id: 'test-video', name: 'Test Video', modality: 'text-to-video', credits: 12, gated: false, durations: [5, 10, 15], capabilities: { inputs: { prompt: { max: 4000 } } }, ...over });
 
 describe('the phone copy of the web rules', () => {
+    test('a new native workspace starts with the exact web schema', () => {
+        expect(emptyFilm()).toEqual(web.emptyFilm());
+    });
     test('stage checks agree on an empty, a half-built, a locked and a prompted studio', () => {
         const stages: any[] = [web.emptyFilm(), baseFilm(), passing(baseFilm()), lockedFilm(), withPrompt(lockedFilm())];
         stages.forEach((film, n) => {
@@ -81,6 +84,21 @@ describe('the phone copy of the web rules', () => {
         const film = withPrompt(lockedFilm());
         expect(promptContext(film, film.shots[0])).toBe(web.promptContext(film, film.shots[0]));
         expect(shotRow(film, film.shots[0]).state).toBe('prompt-ready');
+    });
+
+    test('native lock and prompt actions produce the same state as the web', () => {
+        const tested = passing(baseFilm());
+        let mobile = tested as Film;
+        let browser = tested;
+        for (const asset of tested.assets) {
+            mobile = lockAsset(mobile, `${asset.tag}:v${asset.version}`);
+            browser = web.lockAsset(browser, `${asset.tag}:v${asset.version}`);
+        }
+        expect(mobile.assets.map((asset) => Boolean(asset.lock))).toEqual(browser.assets.map((asset: any) => Boolean(asset.lock)));
+        const details = Object.fromEntries(PROMPT_DETAILS.map(([key]) => [key, `detail ${key}`]));
+        const content = buildShotPrompt(mobile, mobile.shots[0], details);
+        expect(content).toBe(web.buildShotPrompt(browser, browser.shots[0], details));
+        expect(nextPromptVersion(mobile, mobile.shots[0], content)).toMatchObject({ shot: 'S1', version: 1, content });
     });
 
     test('the stage names and the shot fields are the web’s', () => {

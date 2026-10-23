@@ -19,12 +19,14 @@ export const FILM_STAGES: readonly (readonly [string, string])[] = [
     ['shot-prompt', 'Write shot prompts'],
 ];
 export const STYLE_BOARDS = ['light', 'color', 'optics', 'camera movement', 'texture', 'cutting tempo', 'sound'];
+export const PROMPT_BLOCKS = ['Scene context', 'Active references', 'Location map', 'First-frame blocking', 'Format mode', 'Optics', 'Camera body', 'Action timing', 'Physics', 'Lighting', 'Audio', 'Character acting', 'Style prefix', 'Quality bar', 'Positive constraints'];
+export const PROMPT_DETAILS = [['map', 'Positions, distances in metres and camera axis'], ['camera', 'Camera height, support, path and stopping point'], ['timing', 'Action beats of 0.3–0.8 seconds'], ['physics', 'Persistent physical consequences'], ['lighting', 'Light sources and palette from the location passport'], ['audio', 'Ambience and in-frame sound'], ['palette', '60:30:10 dominant, secondary and accent colours'], ['quality', 'Reference match and quality requirements'], ['constraints', 'Visible positive constraints and the failure condition']] as const;
 export const SHOT_LANES: readonly (readonly [string, readonly (readonly [string, string])[]])[] = [
     ['Identity', [['id', 'Scene / shot ID'], ['location', 'Location asset'], ['time', 'Time of day'], ['characters', 'Character assets'], ['props', 'Prop assets'], ['description', 'Description'], ['dialogue', 'Verbatim dialogue'], ['seconds', 'Running time'], ['complexity', 'Complexity']]],
     ['Direction', [['goal', 'Shot goal'], ['action', 'Task as a verb'], ['dramaturgy', 'Dramaturgy'], ['blocking', 'Blocking'], ['acting', 'Acting'], ['style', 'Style device']]],
     ['Camera / edit', [['size', 'Shot size'], ['movement', 'Camera movement'], ['lens', 'Lens'], ['angle', 'Angle'], ['cut', 'Cut type'], ['pace', 'Pace'], ['transition', 'Transition']]],
 ];
-const ACCEPTANCE_CHECKS = ['References match', 'Anatomy and surfaces are clean', 'Camera follows the card', 'Performance and lip-sync hold', 'Continuity matches adjacent shots', 'Palette matches'];
+export const ACCEPTANCE_CHECKS = ['References match', 'Anatomy and surfaces are clean', 'Camera follows the card', 'Performance and lip-sync hold', 'Continuity matches adjacent shots', 'Palette matches'];
 
 export interface Shot { [field: string]: string | boolean; id: string; oneAction: boolean }
 export interface Board { id: string; name: string; type: string; decision: string; references: { source: string; caption: string; kind: string }[] }
@@ -43,6 +45,14 @@ export interface Film {
     assets: Asset[];
     prompts: Prompt[];
     attempts: Attempt[];
+}
+
+export function emptyFilm(): Film {
+    return {
+        schema: 1, name: '', templateId: '', targetSeconds: 60,
+        stack: { image: '', video: '', imageAccess: 'Studio', videoAccess: 'Studio', seconds: '10', aspect: '16:9' },
+        script: '', shots: [], boards: [], assets: [], prompts: [], attempts: [],
+    };
 }
 
 type Obj = Record<string, unknown>;
@@ -102,9 +112,9 @@ const present = (v: unknown): boolean => typeof v === 'string' && v.trim().lengt
 export const assetKey = (a: { tag: string; version: number }): string => `${a.tag}:v${a.version}`;
 export const assetTags = (value: unknown): string[] => String(value || '').split(',').map((s) => s.trim()).filter((s) => s && s !== 'none');
 export const shotAssets = (s: Shot): string[] => [...new Set([s.location as string, ...assetTags(s.characters), ...assetTags(s.props)].filter(present))];
-const validAssetKey = (k: unknown): boolean => /^@[a-zA-Z][a-zA-Z0-9_]{0,39}:v[1-9]\d{0,3}$/.test(String(k));
+export const validAssetKey = (k: unknown): boolean => /^@[a-zA-Z][a-zA-Z0-9_]{0,39}:v[1-9]\d{0,3}$/.test(String(k));
 
-function assetType(film: Film, key: string): string {
+export function assetType(film: Film, key: string): string {
     if (film.shots.some((s) => s.location === key)) return 'location';
     return film.shots.some((s) => assetTags(s.characters).includes(key)) ? 'character' : 'prop';
 }
@@ -146,7 +156,7 @@ export function testMatrix(film: Film, asset: Asset): MatrixRow[] {
     return rows;
 }
 
-function lockContext(film: Film, asset: Asset | undefined): string {
+export function lockContext(film: Film, asset: Asset | undefined): string {
     if (!asset) return '';
     const matrix = testMatrix(film, asset);
     return JSON.stringify({
@@ -161,11 +171,79 @@ export function isLocked(film: Film, asset: Asset | undefined): boolean {
     return rows.every((row) => asset.tests?.[row.id]?.verdict === 'pass' && present(asset.tests[row.id].result)) && new Set(rows.map((r) => asset.tests[r.id].result.trim())).size === rows.length;
 }
 
+export function lockAsset(film: Film, key: string): Film {
+    for (let stage = 0; stage < 5; stage += 1) {
+        const issue = stageIssues(film, stage)[0];
+        if (issue) throw new Error(issue);
+    }
+    const asset = film.assets.find((item) => assetKey(item) === key);
+    if (!asset) throw new Error('The asset passport is missing.');
+    const rows = testMatrix(film, asset);
+    if (!rows.every((row) => asset.tests?.[row.id]?.verdict === 'pass' && present(asset.tests[row.id].result))) throw new Error('Every test needs an output reference and a pass.');
+    if (new Set(rows.map((row) => asset.tests[row.id].result.trim())).size !== rows.length) throw new Error('Every test needs its own distinct output.');
+    return { ...film, assets: film.assets.map((item) => item === asset ? { ...item, lock: { context: lockContext(film, item), at: new Date().toISOString() } } : item) };
+}
+
+export function referenceSheet(asset: Asset): string {
+    return `${asset.descriptor}\nNeutral grey background. Five views of the same asset: front, three-quarter, profile, back and close detail. Identity, materials and the variant state match across every view. References: ${asset.references.join(', ')}.`;
+}
+
+export function testPrompt(film: Film, asset: Asset, row: MatrixRow): string {
+    const paired = film.assets.find((item) => assetKey(item) === row.pair);
+    return [asset.descriptor, `References: ${asset.references.join(', ')}.`, `${row.angle}, ${row.size}. Static image. Scene ${row.shot}, light: ${row.light}.`, paired?.descriptor, paired && `Paired references: ${paired.references.join(', ')}. Both identities match their references.`].filter(Boolean).join('\n');
+}
+
 export function promptContext(film: Film, shot: Shot): string {
     return JSON.stringify([film.stack, shot, film.boards, shotAssets(shot).map((k) => {
         const a = film.assets.find((x) => assetKey(x) === k);
         return a && [k, a.descriptor, a.references, a.lock];
     })]);
+}
+
+export function buildShotPrompt(film: Film, shot: Shot, details: Record<string, string>): string {
+    for (let stage = 0; stage < 6; stage += 1) {
+        const issue = stageIssues(film, stage)[0];
+        if (issue) throw new Error(issue);
+    }
+    if (PROMPT_DETAILS.some(([key]) => !present(details[key]))) throw new Error('Complete every prompt detail.');
+    const assets = shotAssets(shot).map((key) => film.assets.find((item) => assetKey(item) === key) as Asset);
+    const characters = assetTags(shot.characters).length;
+    const values = [
+        `EXACT ${characters} CHARACTERS — NO DUPLICATES. ${shot.id}. ${shot.goal}. ${shot.action}. ${shot.description}`,
+        assets.map((asset) => `${assetKey(asset)}\n${asset.descriptor}\nReference files: ${asset.references.join(', ')}`).join('\n\n'),
+        details.map, String(shot.blocking), `${film.stack.aspect}. ${film.stack.video}. ${film.stack.videoAccess}. ${shot.seconds} seconds.`,
+        `${shot.lens}. Field of view changes on a hard cut.`, `${shot.angle}. ${shot.movement}. ${details.camera}`,
+        details.timing, details.physics, details.lighting,
+        `${details.audio}${shot.dialogue === 'none' ? '' : `\nDialogue, verbatim: ${shot.dialogue}`}`, String(shot.acting),
+        `${shot.style}. ${details.palette}.`, details.quality, details.constraints,
+    ];
+    return PROMPT_BLOCKS.map((label, index) => `${index + 1}. ${label}\n${values[index]}`).join('\n\n');
+}
+
+export function nextPromptVersion(film: Film, shot: Shot, content: string): Prompt {
+    const headings = content.split('\n').filter((line) => /^\d+\. /.test(line));
+    if (headings.length !== 15 || PROMPT_BLOCKS.some((title, index) => headings[index] !== `${index + 1}. ${title}`)) throw new Error('Preserve all fifteen prompt blocks in their original order.');
+    const previous = film.prompts.filter((prompt) => prompt.shot === shot.id).sort((a, b) => a.version - b.version);
+    const last = previous.at(-1);
+    if (last && !film.attempts.some((attempt) => attempt.shot === shot.id && attempt.version === last.version)) throw new Error('Log the previous generation result and verdict before revising.');
+    if (last && last.context === promptContext(film, shot)) {
+        const before = last.content.split('\n');
+        const after = content.split('\n');
+        if (before.length !== after.length || before.filter((line, index) => line !== after[index]).length !== 1) throw new Error('Change exactly one line. Keep all other lines verbatim.');
+        const descriptors = shotAssets(shot).map((key) => film.assets.find((asset) => assetKey(asset) === key)?.descriptor ?? '');
+        if (descriptors.some((descriptor) => !content.includes(descriptor))) throw new Error('Canonical descriptors must stay verbatim.');
+        if (shot.dialogue !== 'none' && !content.includes(String(shot.dialogue))) throw new Error('Keep the supplied dialogue verbatim.');
+    }
+    return { shot: shot.id, version: (last?.version ?? 0) + 1, content, context: promptContext(film, shot), at: new Date().toISOString() };
+}
+
+export function logFilmAttempt(film: Film, prompt: Prompt, entry: { result: string; changed: string; verdict: 'accepted' | 'rejected'; checks?: string[] }): Film {
+    if (!film.prompts.includes(prompt) || !present(entry.result) || !present(entry.changed)) throw new Error('Record the result and what changed.');
+    if (film.attempts.some((attempt) => attempt.shot === prompt.shot && attempt.version === prompt.version)) throw new Error('This prompt version already has a result.');
+    const shot = film.shots.find((item) => item.id === prompt.shot);
+    if (!shot || prompt.context !== promptContext(film, shot) || Array.from({ length: 6 }, (_, index) => index).some((stage) => stageIssues(film, stage).length)) throw new Error('Rebuild the prompt from the current locked passports before recording an attempt.');
+    if (entry.verdict === 'accepted' && !ACCEPTANCE_CHECKS.every((check) => entry.checks?.includes(check))) throw new Error('An accepted take needs all six quality checks.');
+    return { ...film, attempts: [...film.attempts, { shot: prompt.shot, version: prompt.version, result: entry.result, changed: entry.changed, verdict: entry.verdict, checks: entry.checks ?? [], at: new Date().toISOString() }] };
 }
 
 export function stageIssues(film: Film, stage: number): string[] {

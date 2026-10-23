@@ -1,14 +1,13 @@
 import { Image } from 'expo-image';
 import * as WebBrowser from 'expo-web-browser';
-import { Link, Stack, useRouter } from 'expo-router';
+import { Link, Stack, usePathname, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { useBilling } from '../../billing/BillingProvider';
-import { ACCOUNT_DELETION_ENABLED } from '../../lib/accountDeletion';
 import { fetchProfile, type Profile } from '../../lib/auth/accountCalls';
 import { signInMethodKey } from '../../lib/accountSecurity';
-import { LEGAL_LINKS, PRIVACY_EMAIL, SUPPORT_EMAIL } from '../../lib/account';
+import { LEGAL_LINKS, SUPPORT_EMAIL } from '../../lib/account';
 import { usePush } from '../../push/pushContext';
 import { VEY_CLEARANCE } from '../../components/VeyMascot';
 import { applyThemePreference, colors, themePreference, THEME_PREFERENCES, type ThemePreference } from '../../theme';
@@ -23,6 +22,7 @@ export default function Account() {
     const push = usePush();
     const [pushNote, setPushNote] = useState<string | null>(null);
     const router = useRouter();
+    const pathname = usePathname();
     const { status: billing, canPurchase, restore } = useBilling();
     const [restoreNote, setRestoreNote] = useState<string | null>(null);
     const [appearance, setAppearance] = useState<ThemePreference>(themePreference);
@@ -101,7 +101,7 @@ export default function Account() {
                             onPress={() => {
                                 if (p === appearance) return;
                                 setAppearance(p);
-                                void applyThemePreference(p);
+                                void applyThemePreference(p, pathname);
                             }}
                         >
                             <Text style={[styles.chipText, appearance === p && styles.chipTextOn]}>{t(`acct.appearance.${p}`)}</Text>
@@ -204,12 +204,7 @@ export default function Account() {
 
             <Section title={t('account.dataSection')}>
                 <Row icon="folder" label={t('privacyExport.title')} onPress={() => router.push('/privacy-export')} />
-                <Row icon="close" label={t('account.deleteAccount')} danger disabled={!ACCOUNT_DELETION_ENABLED} onPress={() => router.push('/delete-account')} />
-                {ACCOUNT_DELETION_ENABLED ? null : (
-                    <Text style={styles.note}>
-                        {t('account.deleteSoon', { email: PRIVACY_EMAIL })}
-                    </Text>
-                )}
+                <Row icon="close" label={t('account.deleteAccount')} danger onPress={() => router.push('/delete-account')} />
             </Section>
 
         </ScrollView>

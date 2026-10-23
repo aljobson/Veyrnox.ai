@@ -119,4 +119,9 @@ describe('search', () => {
         expect(searchEntries('same', many)).toHaveLength(MAX_RESULTS);
         expect(SCREENS.every((s) => s.href.startsWith('/'))).toBe(true);
     });
+    test('Film Studio, Tools, Face Filters and MCP are searchable native screens', () => {
+        for (const [query, href] of [['studio', '/film'], ['upscale', '/create/tools'], ['relight', '/face-filters'], ['connector', '/mcp']]) {
+            expect(searchEntries(query, entries).map((entry) => entry.href)).toContain(href);
+        }
+    });
 });

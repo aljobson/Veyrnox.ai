@@ -2,7 +2,7 @@ import type { ApiClient } from './api';
 import { appCache, getCacheUser, subscribeCacheUser } from './appCache';
 import type { Cache } from './cache';
 import { parseFilm, type Film } from './filmStudio';
-import { loadStudio } from './filmStudioStore';
+import { loadStudio, saveStudio } from './filmStudioStore';
 
 export const CLOUD_FILMS_PATH = '/api/v1/film-studio';
 export const CLOUD_FILM_LIMIT = 20;
@@ -52,10 +52,44 @@ export function cloudStatus(err: unknown): 'offline' | 'unavailable' | 'busy' | 
     }
 }
 
-let opened: { owner: string; raw: string; film: Film; openedAt: number } | null = null;
+export interface ActiveCloudLink { readonly id: string; readonly revision: number }
+let opened: { owner: string; raw: string; film: Film; openedAt: number; cloud: ActiveCloudLink | null } | null = null;
 subscribeCacheUser(() => { opened = null; });
 export const getOpenedFilm = () => opened?.owner === getCacheUser() ? opened : null;
+export const getActiveCloudLink = (): ActiveCloudLink | null => getOpenedFilm()?.cloud ?? null;
 export function clearOpenedFilm(): void { opened = null; }
+
+export async function replaceActiveStudio(film: Film, cache: Cache = appCache): Promise<void> {
+    const owner = getCacheUser();
+    if (!owner) throw new Error('Sign in to keep a studio on this phone.');
+    const raw = JSON.stringify(film);
+    const active = getOpenedFilm();
+    if (active) {
+        opened = { ...active, raw, film, openedAt: Date.now() };
+        return;
+    }
+    const saved = await saveStudio(raw, cache, owner);
+    if (!saved.ok) throw new Error(saved.error);
+}
+
+export async function saveActiveStudioToCloud(api: Reader, film: Film, idempotencyKey: string): Promise<CloudFilm> {
+    const owner = getCacheUser();
+    if (!owner) throw new Error('not_authenticated');
+    const raw = JSON.stringify(film);
+    const parsed = parseFilm(raw);
+    if (!parsed.ok) throw new Error(parsed.error);
+    const link = getActiveCloudLink();
+    const body = link ? { expected_revision: link.revision, studio_json: raw } : { studio_json: raw };
+    const response = record(await api.request(link ? cloudFilmPath(link.id) : CLOUD_FILMS_PATH, {
+        method: link ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json', 'Idempotency-Key': idempotencyKey },
+        body: JSON.stringify(body),
+    }));
+    const [project] = parseCloudFilms({ projects: [response.project] });
+    if (!project) throw new Error('invalid_cloud_response');
+    opened = { owner, raw, film: parsed.film, openedAt: Date.now(), cloud: { id: project.id, revision: project.revision } };
+    return project;
+}
 
 export async function loadActiveStudio(cache: Cache = appCache): Promise<{ film: Film; savedAt: number } | null> {
     const active = getOpenedFilm();
@@ -78,7 +112,7 @@ export async function openCloudFilm(api: Reader, id: string, _cache: Cache = app
         if (!parsed.ok) return { ok: false, reason: 'invalid' };
         // Ownership check and assignment are synchronous: no disk write can outlive a session.
         if (switched()) return { ok: false, reason: 'switched' };
-        opened = { owner, raw: result.raw, film: parsed.film, openedAt: Date.now() };
+        opened = { owner, raw: result.raw, film: parsed.film, openedAt: Date.now(), cloud: { id: result.film.id, revision: result.film.revision } };
         return { ok: true, film: parsed.film };
     } catch (err) {
         return { ok: false, reason: switched() ? 'switched' : cloudStatus(err) };

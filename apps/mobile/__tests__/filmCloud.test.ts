@@ -1,4 +1,4 @@
-import { CLOUD_FILMS_PATH, cloudFilmPath, cloudStatus, fetchCloudFilm, fetchCloudFilms, getOpenedFilm, loadActiveStudio, openCloudFilm, parseCloudFilms } from '../src/lib/filmCloud';
+import { CLOUD_FILMS_PATH, cloudFilmPath, cloudStatus, fetchCloudFilm, fetchCloudFilms, getOpenedFilm, loadActiveStudio, openCloudFilm, parseCloudFilms, replaceActiveStudio, saveActiveStudioToCloud } from '../src/lib/filmCloud';
 import { bindCacheUser, resetCacheUser, wipeCache } from '../src/lib/appCache';
 import { createCache, createMemoryStorage } from '../src/lib/cache';
 import { loadStudio, saveStudio } from '../src/lib/filmStudioStore';
@@ -56,6 +56,23 @@ test('requests the exact GET paths and parses the list', async () => {
     const client = api({ projects: [row()] });
     expect(await fetchCloudFilms(client)).toEqual(parseCloudFilms({ projects: [row()] }));
     expect(client.request).toHaveBeenCalledWith(CLOUD_FILMS_PATH);
+});
+test('a native studio saves as new, then updates the linked account copy with its revision', async () => {
+    const request = jest.fn()
+        .mockResolvedValueOnce({ project: row() })
+        .mockResolvedValueOnce({ project: row({ revision: 2 }) });
+    const film = baseFilm();
+    await replaceActiveStudio(film);
+    await saveActiveStudioToCloud({ request }, film, '11111111-1111-4111-8111-111111111111');
+    const [, first] = request.mock.calls[0] as [string, RequestInit];
+    expect(request.mock.calls[0][0]).toBe(CLOUD_FILMS_PATH);
+    expect(first.method).toBe('POST');
+    expect((first.headers as Record<string, string>)['Idempotency-Key']).toBe('11111111-1111-4111-8111-111111111111');
+    await saveActiveStudioToCloud({ request }, { ...film, name: 'Changed' }, '22222222-2222-4222-8222-222222222222');
+    expect(request.mock.calls[1][0]).toBe(cloudFilmPath(id));
+    expect(JSON.parse(String((request.mock.calls[1][1] as RequestInit).body))).toMatchObject({ expected_revision: 1, studio_json: expect.any(String) });
+    expect(getOpenedFilm()?.cloud).toEqual({ id, revision: 2 });
+    expect(getOpenedFilm()?.film.name).toBe('Changed');
 });
 test.each([{ project: row({ id: '22222222-2222-4222-8222-222222222222' }), studio_json: raw() },
     { project: row(), studio_json: {} }, { project: row(), studio_json: '{}' }])('rejects invalid detail %p', async body => {
