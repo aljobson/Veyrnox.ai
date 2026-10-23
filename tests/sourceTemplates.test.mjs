@@ -41,7 +41,7 @@ test('every imported clip has its own matching recipe and a supported video mode
 });
 
 test('gallery and homepage templates have reachable recipe URLs', () => {
-  assert.equal(PRESETS.length, 142);
+  assert.equal(PRESETS.length, 1178);
   assert.equal(WALL_PRESETS.length, 24);
   const visible = [...PRESETS, ...WALL_PRESETS];
   assert.equal(new Set(visible.map((p) => p.clipKey).filter(Boolean)).size, 142);

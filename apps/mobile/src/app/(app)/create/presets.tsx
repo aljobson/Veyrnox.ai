@@ -1,8 +1,8 @@
 import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, SectionList, StyleSheet, Text, View } from 'react-native';
-import { fetchPresets, groupByTheme, presetHref, presetPrice, themeTitle, type Preset } from '../../../lib/presets';
+import { ActivityIndicator, Pressable, SectionList, StyleSheet, Text, TextInput, View } from 'react-native';
+import { fetchPresets, groupByTheme, presetHref, presetPrice, searchPresets, themeTitle, type Preset } from '../../../lib/presets';
 import { colors } from '../../../theme';
 
 export default function Templates() {
@@ -10,12 +10,13 @@ export default function Templates() {
     const params = useLocalSearchParams<{ unavailable?: string | string[] }>();
     const [presets, setPresets] = useState<Preset[] | null>(null);
     const [failed, setFailed] = useState(false);
+    const [query, setQuery] = useState('');
 
     useEffect(() => {
         fetchPresets().then(setPresets).catch(() => setFailed(true));
     }, []);
 
-    const sections = useMemo(() => groupByTheme(presets ?? []).map((g) => ({ title: themeTitle(g.category), data: g.items })), [presets]);
+    const sections = useMemo(() => groupByTheme(searchPresets(presets ?? [], query)).map((g) => ({ title: themeTitle(g.category), data: g.items })), [presets, query]);
     const unavailableId = Array.isArray(params.unavailable) ? params.unavailable[0] : params.unavailable;
     const unavailablePreset = presets?.find((p) => p.id === unavailableId);
 
@@ -40,7 +41,20 @@ export default function Templates() {
                     sections={sections}
                     keyExtractor={(p) => p.id}
                     stickySectionHeadersEnabled={false}
-                    ListEmptyComponent={<Text style={styles.muted}>No templates available right now.</Text>}
+                    ListHeaderComponent={(
+                        <TextInput
+                            accessibilityLabel="Search effects"
+                            value={query}
+                            onChangeText={setQuery}
+                            placeholder="Search 1,000+ effects"
+                            placeholderTextColor={colors.muted}
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                            returnKeyType="search"
+                            style={styles.search}
+                        />
+                    )}
+                    ListEmptyComponent={<Text style={styles.muted}>{query ? 'No matching effects.' : 'No templates available right now.'}</Text>}
                     renderSectionHeader={({ section }) => <Text style={styles.header} accessibilityRole="header">{section.title}</Text>}
                     renderItem={({ item }) => (
                         <Pressable
@@ -70,6 +84,7 @@ export default function Templates() {
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 16 },
     header: { color: colors.muted, fontSize: 12, fontWeight: '700', letterSpacing: 1, paddingTop: 20, paddingBottom: 6 },
+    search: { minHeight: 48, marginTop: 12, marginBottom: 4, borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, backgroundColor: colors.surface, color: colors.text, paddingHorizontal: 14, fontSize: 16 },
     row: { flexDirection: 'row', gap: 12, paddingVertical: 10, borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth },
     poster: { width: 64, height: 96, borderRadius: 8, backgroundColor: colors.surface },
     text: { flex: 1, gap: 3 },

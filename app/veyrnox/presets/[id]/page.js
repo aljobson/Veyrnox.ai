@@ -17,9 +17,12 @@ import { OPEN_GRAPH_BASE } from '../../../seo';
 // Templates are static data, so each page is built once; the price is read
 // from the live catalog in the browser (UseTemplate), never from here.
 export function generateStaticParams() {
-  return ALL_TEMPLATES.map((p) => ({ id: p.id }));
+  // Keep the 142 media-backed recipes and legacy bookmarks pre-rendered.
+  // The much larger inspiration catalog renders on demand so adding ideas
+  // does not multiply build time and deploy storage.
+  return ALL_TEMPLATES.filter((p) => !p.id.startsWith('effect-')).map((p) => ({ id: p.id }));
 }
-export const dynamicParams = false;
+export const dynamicParams = true;
 
 export async function generateMetadata({ params }) {
   const { locale, t } = await getT();

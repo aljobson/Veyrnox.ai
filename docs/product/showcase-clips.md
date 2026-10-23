@@ -1,7 +1,7 @@
 # Landing showcase clips
 
 Every landing feature card, every tile in the 24-template wall, all 110
-public preset cards and the three model-category cards have viral previews. The owner requested footage and prompts from [SYNTX Trends](https://syntx.ai/trends),
+media-backed public preset cards and the three model-category cards have viral previews. The owner requested footage and prompts from [SYNTX Trends](https://syntx.ai/trends),
 [Higgsfield](https://higgsfield.ai/) and [CapCut](https://www.capcut.com/my-edit?start_tab=video) on 14 October 2026. This replaces the
 previous requirement to use only clips generated on Veyrnox.
 
@@ -15,12 +15,17 @@ links or credits. Internal provenance remains recorded in this document only.
 Model-category and feature cards remain inspiration; template pages show only
 the supported Veyrnox adaptation. Live credit prices come from the catalog.
 
-On 23 October 2026 the gallery's discovery layer was aligned to the 11 generic
-theme concepts visible on Crun's public AI Effects page: Pet, Style, Quirk Lab,
-Morph Me, AI Dance, Soccer Fever, Super Power, E-commerce, Shot Language,
-AI Gift and Festival. Only those short navigation concepts were referenced.
-No Crun prompt, code, image, video, branding or hosted asset is shipped by
-Veyrnox; every card still resolves to the existing Veyrnox recipe and media.
+On 23 October 2026 the gallery's discovery layer was aligned to the public AI
+Effects catalog on Crun. The source exposed 1,122 listings: 226 Kling, 375
+ByteDance and 521 Vidu. Removing provider duplicates, aspect-ratio, resolution
+and media-label variants, plus three exact concepts already represented by
+Veyrnox, produced 1,036 additional effect ideas. They sit under the 11 public navigation themes: Pet, Style, Quirk
+Lab, Morph Me, AI Dance, Soccer Fever, Super Power, E-commerce, Shot Language,
+AI Gift and Festival. Each new card has an original Veyrnox prompt, safe input
+guidance and a generated colour treatment. No Crun prompt, code, image, video,
+branding or hosted asset is shipped by Veyrnox. The 142 media-backed recipes
+remain curated separately; the complete public gallery now contains 1,178
+templates.
 
 `app/veyrnox/_lib/showcase.js` maps all five `FEATURE_CARDS` keys and all
 `PRESETS` clip keys to local videos, posters and neutral titles.

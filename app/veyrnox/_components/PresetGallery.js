@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { PresetCard } from './PresetCard';
-import { EFFECT_THEMES, PRESETS, PRESET_CATEGORIES, templatesIn, templatesInTheme } from '../_lib/tokens';
+import { EFFECT_THEMES, PRESETS, PRESET_CATEGORIES, searchTemplates, templatesIn, templatesInTheme } from '../_lib/tokens';
 import { useCatalog } from '../_lib/useCatalog';
 import { usePopularTemplates } from '../_lib/usePopularTemplates';
 import { useI18n } from '../../../components/I18nProvider';
@@ -15,6 +15,7 @@ export function PresetGallery({ size = 'lg', columns = 'lg:columns-3', taste = n
   const { t } = useI18n();
   const [cat, setCat] = useState('ALL');
   const [theme, setTheme] = useState(null);
+  const [query, setQuery] = useState('');
   const [visibleCount, setVisibleCount] = useState(12);
   const { models } = useCatalog();
   const popularIds = usePopularTemplates();
@@ -22,8 +23,9 @@ export function PresetGallery({ size = 'lg', columns = 'lg:columns-3', taste = n
   const popular = popularIds.map((id) => PRESETS.find((preset) => preset.id === id)).filter(Boolean);
   const categories = popular.length ? ['ALL', 'NEW', 'POPULAR', ...PRESET_CATEGORIES.slice(2)] : PRESET_CATEGORIES;
   const list = theme ? templatesInTheme(theme) : cat === 'POPULAR' ? popular : templatesIn(cat);
-  const ordered = rankByTaste(list, taste, (p) => `${p.name} ${p.category} ${p.prompt}`);
-  const modelCount = new Set(list.map((preset) => preset.model)).size;
+  const matches = searchTemplates(list, query);
+  const ordered = rankByTaste(matches, taste, (p) => `${p.name} ${p.category} ${p.prompt}`);
+  const modelCount = new Set(matches.map((preset) => preset.model)).size;
   return (
     <>
       <section aria-labelledby="preset-theme-title">
@@ -50,6 +52,16 @@ export function PresetGallery({ size = 'lg', columns = 'lg:columns-3', taste = n
           })}
         </div>
       </section>
+      <label className="mt-7 block max-w-xl">
+        <span className="text-[15px] font-bold tracking-tight">{t('presets.search.label')}</span>
+        <input
+          type="search"
+          value={query}
+          onChange={(event) => { setQuery(event.target.value); setVisibleCount(12); }}
+          placeholder={t('presets.search.placeholder')}
+          className="mt-3 w-full rounded-xl border border-vx-border bg-vx-panel px-4 py-3 text-[16px] text-vx-fg outline-none placeholder:text-vx-fg-muted focus:border-vx-accent focus:ring-2 focus:ring-vx-accent/30"
+        />
+      </label>
       <h2 className="mt-7 mb-3 text-[15px] font-bold tracking-tight">{t('presets.categories.title')}</h2>
       {/* One scrolling row below sm (thirteen chips wrapped to four rows on a
           phone); it wraps again from sm. The vertical padding keeps a chip's
@@ -69,7 +81,7 @@ export function PresetGallery({ size = 'lg', columns = 'lg:columns-3', taste = n
       </div>
       <p className="mt-8 mb-6 text-[14px] text-vx-fg-muted" aria-live="polite">
         {t('presets.count', {
-          templates: t(list.length === 1 ? 'presets.templates.one' : 'presets.templates.other', { n: list.length }),
+          templates: t(matches.length === 1 ? 'presets.templates.one' : 'presets.templates.other', { n: matches.length }),
           models: t(modelCount === 1 ? 'presets.models.one' : 'presets.models.other', { n: modelCount }),
         })}
       </p>
@@ -78,8 +90,8 @@ export function PresetGallery({ size = 'lg', columns = 'lg:columns-3', taste = n
           <PresetCard key={p.id} preset={p} catalog={models} size={size} />
         ))}
       </div>
-      {visibleCount < list.length && <div className="mt-4 text-center">
-        <p className="mb-3 text-sm text-vx-fg-muted" aria-live="polite">{t('presets.showing', { shown: Math.min(visibleCount, list.length), total: list.length })}</p>
+      {visibleCount < matches.length && <div className="mt-4 text-center">
+        <p className="mb-3 text-sm text-vx-fg-muted" aria-live="polite">{t('presets.showing', { shown: Math.min(visibleCount, matches.length), total: matches.length })}</p>
         <button type="button" aria-controls="preset-gallery-results" onClick={() => setVisibleCount((count) => count + 12)} className="rounded-full border border-vx-border px-6 py-3 font-semibold hover:border-vx-accent">{t('presets.more')}</button>
       </div>}
     </>
