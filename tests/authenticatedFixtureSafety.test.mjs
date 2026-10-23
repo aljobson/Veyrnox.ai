@@ -160,6 +160,23 @@ test('actual fixture routing permits only owned pages/static reads and protects 
   assert.equal(fixture.unhandled.length, 2);
 });
 
+test('actual fixture explicitly returns a claimed daily check-in without opening the reward prompt', async () => {
+  const { fixture, request, response } = await installedRouting();
+  assert.equal(await request('http://localhost:3100/api/v1/checkin'), 'fulfill');
+  assert.deepEqual(JSON.parse(response().body), {
+    ok: true,
+    claimed_today: true,
+    streak: 3,
+    next_day: 4,
+    next_credits: 4,
+    rewards: [1, 2, 3, 4, 5, 5],
+  });
+  assert.equal(fixture.unhandled.length, 0);
+  fixture.state.user = null;
+  assert.equal(await request('http://localhost:3100/api/v1/checkin'), 'fulfill');
+  assert.equal(response().status, 401);
+});
+
 test('actual fixture routing never follows redirects from owned pages or static assets', async () => {
   const { fixture, request } = await installedRouting();
   assert.equal(await request('http://localhost:3100/app/create', 'GET', 307), 'abort');

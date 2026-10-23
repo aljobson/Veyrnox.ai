@@ -129,6 +129,9 @@ export async function installProductFixtures(page, options = {}) {
         if (url.pathname === '/api/v1/account') return state.user ? json({ email: state.user.email, credits: state.balance, balance: state.balance, assets: 0 }) : json({ error: 'not_authenticated' }, 401);
         if (url.pathname === '/api/v1/account/language') return state.user ? json({ locale: null }) : json({ error: 'not_authenticated' }, 401);
         if (url.pathname === '/api/v1/balance') return state.user ? json({ balance: state.balance }) : json({ error: 'not_authenticated' }, 401);
+        if (url.pathname === '/api/v1/checkin') return state.user
+          ? json({ ok: true, claimed_today: true, streak: 3, next_day: 4, next_credits: 4, rewards: [1, 2, 3, 4, 5, 5] })
+          : json({ error: 'not_authenticated' }, 401);
         if (url.pathname === '/api/v1/free-allowance') return json({ enabled: false, left: {} });
         if (url.pathname === '/api/v1/jobs') return json({ jobs: [], next: null });
         if (url.pathname === '/api/v1/library/masters') return json({ masters: [], next: null });
