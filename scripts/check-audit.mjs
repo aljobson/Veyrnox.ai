@@ -24,8 +24,10 @@ const BLOCKING = new Set(['high', 'critical']);
 // Add an entry only when there is no fixed version to move to, and say where
 // the package sits and why that is tolerable. Remove it when the gate says so.
 export const ALLOWED = [
-  // Empty on 2026-10-23: GHSA-vfj7-8cjw-p6xm (braces, devDependencies only) stopped being reported as high or
-  // critical, and the gate asked for its entry to go.
+  {
+    id: 'GHSA-mrhx-c7xc-m3w5',
+    reason: 'Reticle development tooling requires Zod 3; npm offers only a SemVer-major Reticle change, and the production dependency audit does not include it.',
+  },
 ];
 
 const advisoryId = (via) => /\/(GHSA(?:-[0-9a-z]{4}){3})$/i.exec(via.url || '')?.[1] ?? null;
