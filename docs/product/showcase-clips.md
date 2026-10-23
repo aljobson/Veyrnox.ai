@@ -15,6 +15,13 @@ links or credits. Internal provenance remains recorded in this document only.
 Model-category and feature cards remain inspiration; template pages show only
 the supported Veyrnox adaptation. Live credit prices come from the catalog.
 
+On 23 October 2026 the gallery's discovery layer was aligned to the 11 generic
+theme concepts visible on Crun's public AI Effects page: Pet, Style, Quirk Lab,
+Morph Me, AI Dance, Soccer Fever, Super Power, E-commerce, Shot Language,
+AI Gift and Festival. Only those short navigation concepts were referenced.
+No Crun prompt, code, image, video, branding or hosted asset is shipped by
+Veyrnox; every card still resolves to the existing Veyrnox recipe and media.
+
 `app/veyrnox/_lib/showcase.js` maps all five `FEATURE_CARDS` keys and all
 `PRESETS` clip keys to local videos, posters and neutral titles.
 `MODEL_SHOWCASE_KEYS` selects three dedicated clips for the Video, Image and
