@@ -5,6 +5,7 @@ import { Alert, AppState, Modal, Pressable, Text, View } from 'react-native';
 import type { WebViewMessageEvent } from 'react-native-webview';
 import { useAuth } from '../../../auth/AuthProvider';
 import { EngineView, type EngineHandle } from '../../../components/editor/EngineView';
+import { FullEditorScreen } from '../../../components/editor/FullEditorScreen';
 import { useEditorLeaveGuard } from '../../../components/editor/useEditorLeaveGuard';
 import { touchTarget } from '../../../lib/a11y';
 import { ApiError } from '../../../lib/api';
@@ -12,7 +13,7 @@ import { getCacheUser, subscribeCacheUser } from '../../../lib/appCache';
 import { config } from '../../../lib/config';
 import { documentIdentity, MEDIA_ID, parsePageMessage, PROTOCOL, type ProjectDocument, type EngineImport } from '../../../lib/editorBridge';
 import { readDraft, removeDraft, writeDraft } from '../../../lib/editorDrafts';
-import { EDITOR_ENABLED } from '../../../lib/editorFlag';
+import { EDITOR_ENABLED, FULL_EDITOR_ENABLED } from '../../../lib/editorFlag';
 import { AssetResolutionError, conflictCopyName, createProject, editorErrorKey, getDocument, putDocument, resolveAsset, type DocumentHead } from '../../../lib/editorProjects';
 import { editorReducer, initialSession, nextAction, type SessionEvent } from '../../../lib/editorSession';
 import { stubEngineHtml } from '../../../lib/editorStubEngine';
@@ -34,6 +35,7 @@ function Button({ label, onPress, disabled = false }: { label: string; onPress()
 export default function EditorRoute() {
     const { projectId, jobId } = useLocalSearchParams<{ projectId: string; jobId?: string }>();
     if (!EDITOR_ENABLED) return <View><Stack.Screen options={{ title: t('editor.title') }} /><Text>{t('editor.unavailable')}</Text></View>;
+    if (FULL_EDITOR_ENABLED) return <FullEditorScreen key={projectId} projectId={projectId} />;
     return <Editor key={projectId} projectId={projectId} jobId={jobId} />;
 }
 function Editor({ projectId, jobId }: { projectId: string; jobId?: string }) {
