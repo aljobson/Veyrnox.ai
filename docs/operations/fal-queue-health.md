@@ -88,6 +88,8 @@ issue gate is enabled; a run that never starts cannot report its own absence.
 
 Issue notification keeps one open `fal-queue-staging` incident and changes its
 body only when the redacted report changes. An unchanged failure stays quiet.
+If historical races or manual reopening leave more than one matching incident,
+the next alert keeps the oldest as canonical and closes the others as duplicates.
 The incident remains open after a clean run: the owner checks the latest Actions
 report and resolves it after investigation. Changed count/age values can update
 the report, so this does not promise a single notification for an entire outage.

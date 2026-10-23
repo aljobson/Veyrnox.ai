@@ -31,7 +31,13 @@ const dir = process.env.GH_MOCK_DIR;
 fs.appendFileSync(path.join(dir, 'calls'), JSON.stringify(args) + '\\n');
 const body = path.join(dir, 'body');
 if (args[0] === 'label') process.exit(0);
-if (args[1] === 'list') { process.stdout.write(fs.existsSync(body) ? '12\\n' : '\\n'); process.exit(0); }
+if (args[1] === 'list') {
+  const duplicates = path.join(dir, 'duplicates');
+  process.stdout.write(fs.existsSync(duplicates) ? fs.readFileSync(duplicates, 'utf8') : fs.existsSync(body)
+    ? JSON.stringify([{number:12,createdAt:'2026-10-21T00:00:00Z',title:'Staging fal queue health needs attention'}])
+    : '[]');
+  process.exit(0);
+}
 if (args[1] === 'view') {
   if (args.includes('--template') && !args.includes('--json')) process.exit(98);
   process.stdout.write(fs.readFileSync(body, 'utf8')); process.exit(0);
@@ -39,6 +45,10 @@ if (args[1] === 'view') {
 if (args[1] === 'create' || args[1] === 'edit') {
   fs.copyFileSync(args[args.indexOf('--body-file') + 1], body);
   fs.appendFileSync(path.join(dir, 'writes'), args[1] + '\\n');
+  process.exit(0);
+}
+if (args[1] === 'close') {
+  fs.appendFileSync(path.join(dir, 'closes'), args[2] + '\\n');
   process.exit(0);
 }
 process.exit(99);
@@ -62,6 +72,18 @@ process.exit(99);
         assert.match(readFileSync(join(dir, 'body'), 'utf8'), /failed before it produced a report/);
         run('');
         assert.equal(readFileSync(join(dir, 'writes'), 'utf8'), 'create\nedit\nedit\n');
+        writeFileSync(join(dir, 'duplicates'), JSON.stringify([
+            {number:34,createdAt:'2026-10-22T00:00:00Z',title:'Staging fal queue health needs attention'},
+            {number:56,createdAt:'2026-10-23T00:00:00Z',title:'Staging fal queue health needs attention'},
+            {number:12,createdAt:'2026-10-21T00:00:00Z',title:'Staging fal queue health needs attention'},
+            {number:99,createdAt:'2026-10-20T00:00:00Z',title:'Another incident'},
+        ]));
+        run('Monitoring still red');
+        assert.equal(readFileSync(join(dir, 'closes'), 'utf8'), '34\n56\n');
+        const closeCalls = readFileSync(join(dir, 'calls'), 'utf8').trim().split('\n').map(JSON.parse)
+            .filter(args => args[0] === 'issue' && args[1] === 'close');
+        assert.ok(closeCalls.every(args => args.some(value => value.includes('Duplicate of the canonical open incident #12.'))));
+        rmSync(join(dir, 'duplicates'));
         rmSync(join(dir, 'body'));
         run('TEST ONLY: delivery exercise', 'true');
         const calls = readFileSync(join(dir, 'calls'), 'utf8').trim().split('\n').map(JSON.parse);
@@ -69,6 +91,15 @@ process.exit(99);
         assert.equal(lastCreate[lastCreate.indexOf('--label') + 1], 'fal-queue-staging-test');
         assert.equal(lastCreate[lastCreate.indexOf('--title') + 1], 'TEST: staging fal queue alert delivery');
     } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('incident selection is exact, oldest-first and closes every duplicate', () => {
+    assert.match(script, /incidents=\(\)/);
+    assert.match(script, /--json number,createdAt,title \| jq -r --arg title "\$title"/);
+    assert.match(script, /select\(\.title == \$title\)/);
+    assert.match(script, /sort_by\(\.createdAt\)/);
+    assert.match(script, /for duplicate in "\$\{incidents\[@\]:1\}"/);
+    assert.match(script, /gh issue close "\$duplicate" --reason "not planned"/);
 });
 
 test('synthetic failure requires a clean live check and leaves genuine failures on the incident path', () => {
