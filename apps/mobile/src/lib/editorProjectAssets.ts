@@ -11,7 +11,7 @@ interface ProjectAssetRow {
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export async function listEditorProjectAssets(api: ApiClient, projectId: string): Promise<Media[]> {
+export async function listEditorProjectAssets(api: Pick<ApiClient, 'request'>, projectId: string): Promise<Media[]> {
     try {
         const result = await api.request<{ assets?: ProjectAssetRow[] }>(`/api/v1/projects/${encodeURIComponent(projectId)}/assets`);
         if (!Array.isArray(result?.assets)) return [];
