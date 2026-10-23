@@ -7,7 +7,7 @@ import { templateHandoffVisual, templateNeedsSource } from '../app/veyrnox/_lib/
 import { modelIdForName, presetHref } from '../app/veyrnox/_lib/tokens.js';
 
 test('every template remains visibly linked from its recipe page into Create', () => {
-  assert.equal(ALL_TEMPLATES.length, 195, 'audit every current template, not only gallery examples');
+  assert.equal(ALL_TEMPLATES.length, 164, 'audit every current template, not only gallery examples');
   for (const preset of ALL_TEMPLATES) {
     assert.match(presetHref(preset), new RegExp(`[?&]preset=${preset.id}(?:&|$)`), preset.id);
     assert.ok(modelIdForName(preset.model), `${preset.id} opens a known model`);
@@ -33,6 +33,8 @@ test('template preview is reference-only and source requirements stay explicit',
   assert.match(component, /<video[\s\S]*controls/);
   assert.match(component, /app\.create\.templateReferenceOnly/);
   assert.match(component, /app\.create\.chooseTemplateSource/);
+  assert.match(component, /TemplateArtwork/);
+  assert.doesNotMatch(component, /OriginalTemplateArtwork/);
   assert.doesNotMatch(component, /setSources|writeStudioDraft|Generate/);
 });
 

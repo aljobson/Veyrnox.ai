@@ -9,9 +9,6 @@
 // (tests/presetLinking.test.mjs). Prices shown come from the live catalog.
 
 import { SOURCE_TEMPLATES } from './sourceTemplates.js';
-import { SOURCE_TEMPLATE_EXPANSION_4 } from './sourceTemplateExpansion4.js';
-import { SOURCE_TEMPLATE_EXPANSION_5 } from './sourceTemplateExpansion5.js';
-import { VEYRNOX_ORIGINALS } from './originalTemplates.js';
 
 const CATEGORY_ORDER = ['YOUR PHOTO', 'KIDS BIRTHDAY', 'CINEMATIC', 'ANIME', 'CARTOONS', 'MOVIES', 'FANTASY', 'REALISTIC', 'FASHION', 'PRODUCTS', 'VFX', 'UGC', 'ADS'];
 
@@ -88,39 +85,6 @@ export const LEGACY_PRESETS = [
     prompt: 'Tilt-shift timelapse of a busy city crossroads that looks like a toy model, tiny cars and people streaming past, saturated colours, high vantage point' },
 ];
 
-// Public placements are intentionally disjoint: a source video appears in the
-// gallery or on the landing wall, never both.
-const GALLERY_CLIP_KEYS = [
-  'product-hero-360',
-  ...LEGACY_PRESETS.map((p) => p.id),
-  'jellyfish-airlines',
-  'dandelion-ball',
-  'sm-brand-new-day',
-  'who-was-that-business',
-  'scrapbook-collage',
-  'stop-world',
-  'earth-zoom',
-  'comic',
-  'enchanted-forest-selfie',
-  'pumpkin-lings',
-  'dont-blow-out-the-pumpkin',
-  'rap-takeover',
-  'urban-broomstick-flight',
-  'hotel-window-watch',
-  'broomstick-flight',
-  'money-flex',
-  'epic-slap-knockout',
-  'city-trailer',
-  'city-vlog',
-  'floral-pool-portrait',
-  'paper-fragments',
-  'ink-sprint',
-  'motorcycle-double',
-  'laundromat-monster',
-  'curtain-reveal',
-  ...SOURCE_TEMPLATE_EXPANSION_4.map((template) => template.clipKey),
-  ...SOURCE_TEMPLATE_EXPANSION_5.map((template) => template.clipKey),
-];
 const WALL_CLIP_KEYS = [
   'wall-product-hero-360',
   'wall-cctv-night',
@@ -147,13 +111,13 @@ const WALL_CLIP_KEYS = [
   'wall-dolphin-surf-ride',
   'wall-event-character-swap',
 ];
-export const PRESETS = [
-  ...GALLERY_CLIP_KEYS.map((key) => SOURCE_TEMPLATES.find((p) => p.clipKey === key)).filter(Boolean),
-  ...VEYRNOX_ORIGINALS,
-];
+// The library is the complete set of production-ready recipes. The landing
+// wall remains a curated preview of the same library, while every template is
+// searchable and usable from the web and mobile gallery.
+export const PRESETS = SOURCE_TEMPLATES;
 export const WALL_PRESETS = WALL_CLIP_KEYS.map((key) => SOURCE_TEMPLATES.find((p) => p.clipKey === key)).filter(Boolean);
 // Old bookmarks retain their original prompt, without an unrelated demo clip.
-export const ALL_TEMPLATES = [...SOURCE_TEMPLATES, ...LEGACY_PRESETS, ...VEYRNOX_ORIGINALS];
+export const ALL_TEMPLATES = [...SOURCE_TEMPLATES, ...LEGACY_PRESETS];
 export const PRESET_CATEGORIES = ['ALL', 'NEW', ...CATEGORY_ORDER.filter((category) => PRESETS.some((p) => p.category === category))];
 
 // "New" is a flag, not a home category: a new template also sits in its own.

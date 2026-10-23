@@ -1,9 +1,8 @@
 const hash = (value) => [...value].reduce((total, char) => ((total * 31) + char.charCodeAt(0)) >>> 0, 17);
 
-// Veyrnox originals do not pretend to have a generated preview. Give each one
-// a distinctive, deterministic art card instead of the old empty gradient so
-// the gallery and recipe page still communicate a real visual direction.
-export function OriginalTemplateArtwork({ preset, eyebrow, title, compact = false }) {
+// Legacy bookmarked recipes predate the generated preview library. Give their
+// Create handoff a labelled visual reference without pretending it is a video.
+export function TemplateArtwork({ preset, eyebrow, title, compact = false }) {
   const seed = hash(preset.id);
   const glowX = 18 + (seed % 65);
   const glowY = 12 + ((seed >>> 5) % 58);
@@ -14,7 +13,7 @@ export function OriginalTemplateArtwork({ preset, eyebrow, title, compact = fals
 
   return (
     <div
-      data-original-art={preset.id}
+      data-template-art={preset.id}
       className="absolute inset-0 isolate overflow-hidden text-white"
       style={{ background: preset.bg }}
     >
