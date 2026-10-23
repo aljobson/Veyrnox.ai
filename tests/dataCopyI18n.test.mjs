@@ -17,16 +17,17 @@ const codes = Object.keys(CATALOGS);
 const digits = value => (value.match(/\d+(?:[.:–]\d+)*/g) || []).sort();
 const tree = (file, source) => ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JSX);
 
-test('all 146 needs and 15 distinct steps have exact English and ten translated display entries', () => {
+test('all template needs and 15 distinct steps have exact English and ten translated display entries', () => {
   const original = JSON.stringify(ALL_TEMPLATES);
-  assert.equal(ALL_TEMPLATES.filter(p => p.needs).length, 146);
+  assert.equal(ALL_TEMPLATES.filter(p => p.needs).length, 1182);
   assert.equal(Object.keys(PRESET_STEP_KEYS).length, 15);
   for (const code of codes) {
     const t = translator(code);
     for (const preset of ALL_TEMPLATES) {
       if (preset.needs) {
-        const value = tOr(t, `presets.needs.${preset.id}`, preset.needs);
-        assert.ok(value && value !== `presets.needs.${preset.id}`);
+        const needsKey = preset.needsKey || preset.id;
+        const value = tOr(t, `presets.needs.${needsKey}`, preset.needs);
+        assert.ok(value && value !== `presets.needs.${needsKey}`);
         assert.equal(value === preset.needs, code === 'en', `${code}/${preset.id}`);
         assert.deepEqual(digits(value), digits(preset.needs), `${code}/${preset.id} facts`);
       }

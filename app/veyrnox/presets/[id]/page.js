@@ -70,7 +70,7 @@ export default async function TemplatePage({ params }) {
             </p>
             {template.needs && (
               <p className="mt-4 rounded-xl border border-vx-border px-4 py-3 text-[14px] text-vx-fg-body">
-                {t('presets.detail.inputs', { inputs: tOr(t, `presets.needs.${template.id}`, template.needs) })}
+                {t('presets.detail.inputs', { inputs: tOr(t, `presets.needs.${template.needsKey || template.id}`, template.needs) })}
               </p>
             )}
           </div>
