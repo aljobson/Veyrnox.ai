@@ -12,6 +12,7 @@ import { documentIdentity, type ProjectDocument } from '../../lib/editorBridge';
 import { getDocument, putDocument } from '../../lib/editorProjects';
 import { listEditorProjectAssets } from '../../lib/editorProjectAssets';
 import { t } from '../../lib/i18n';
+import { activeEditorMedia } from '../../lib/editorPreview';
 import type { LibraryChoice } from '../../lib/librarySource';
 import {
     addMarker, addTrack, canvasOf, clipAt, copySelections, duplicateSelections, emptyTimeline, framesIn, groupSelections,
@@ -23,6 +24,7 @@ import type { SlotKind } from '../../lib/sources';
 import { colors, fonts } from '../../theme';
 import { HeaderAction } from '../HeaderAction';
 import { LibraryChooser } from '../LibraryChooser';
+import { EditorMediaPreview } from './EditorMediaPreview';
 
 type Tool = 'media' | 'audio' | 'generate' | 'templates' | 'elements' | 'text' | 'captions' | 'transcript' | 'scenes' | 'clips' | 'assistant' | 'effects' | 'transitions' | 'filters' | 'animation' | 'plugins' | 'brand' | 'review' | 'adjust';
 type Ripple = 'none' | 'lane' | 'all';
@@ -84,6 +86,7 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
     const [frame, setFrame] = useState(0);
     const [playing, setPlaying] = useState(false);
     const [projectAssets, setProjectAssets] = useState<Media[]>([]);
+    const [localMediaUris, setLocalMediaUris] = useState<Record<string, string>>({});
     const [libraryKind, setLibraryKind] = useState<SlotKind | null>(null);
     const initialImport = useRef(false);
 
@@ -230,6 +233,7 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
     const selectedGroup = selected?.groupId;
     const selectedTrack = selection ? timeline.tracks.find((track) => track.id === selected?.trackId) : undefined;
     const availableMedia = [...Object.values(timeline.media), ...projectAssets.filter((asset) => !Object.values(timeline.media).some((item) => item.assetSource?.assetId === asset.assetSource?.assetId))];
+    const activePreview = activeEditorMedia(timeline, frame);
 
     const applyTimeline = (next: Timeline) => markDocument({ ...document, schema_version: 3, timeline: next });
     const updateCanvas = (patch: Partial<Canvas>) => {
@@ -344,12 +348,14 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
         const kind = mime.startsWith('audio/') ? 'audio' : mime.startsWith('image/') ? 'image' : mime.startsWith('video/') ? 'video' : null;
         if (!kind) { setProblem('Choose a video, image or audio file.'); return; }
         const durationSeconds = typeof asset.duration === 'number' && asset.duration > 0 ? asset.duration / 1000 : kind === 'image' ? 3 : 10;
+        const id = `l-${randomUUID()}`;
         const media: Media = {
-            id: `l-${randomUUID()}`,
+            id,
             name: String(asset.fileName || asset.name || `Device ${kind}`).slice(0, 120),
             kind, frames: Math.max(1, Math.floor(durationSeconds * timeline.fps)), hasAudio: kind !== 'image',
             width: Math.max(0, Math.round(asset.width || 0)), height: Math.max(0, Math.round(asset.height || 0)),
         };
+        setLocalMediaUris((current) => ({ ...current, [id]: asset.uri }));
         addMediaToTimeline(media);
     };
     const choosePhotos = async () => {
@@ -424,9 +430,9 @@ export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobI
             </View>
             <View style={styles.previewFrame}>
                 <View style={[styles.canvas, { aspectRatio: canvas.aspect_ratio === '9:16' ? 9 / 16 : canvas.aspect_ratio === '1:1' ? 1 : 16 / 9 }]}>
+                    {activePreview ? <EditorMediaPreview api={api} clip={activePreview.clip} media={activePreview.media} frame={frame} fps={timeline.fps} playing={playing} localUri={localMediaUris[activePreview.media.id]} /> : null}
                     <View style={styles.safeFrame} />
-                    <Text style={styles.previewMark}>V</Text>
-                    <Text style={styles.previewLabel}>{timeline.video.length ? `${timeline.video.length} ${t('editor.videoClips')}` : t('editor.previewEmpty')}</Text>
+                    {!activePreview ? <><Text style={styles.previewMark}>V</Text><Text style={styles.previewLabel}>{timeline.video.length ? 'Move the playhead onto a visual clip' : t('editor.previewEmpty')}</Text></> : null}
                     {previewText ? <Text style={styles.previewCaption}>{previewText}</Text> : null}
                 </View>
             </View>

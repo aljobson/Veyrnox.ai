@@ -19,6 +19,7 @@ jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: jest.fn(), UIIm
 jest.mock('expo-document-picker', () => ({ getDocumentAsync: jest.fn() }));
 jest.mock('expo-router', () => ({ Stack: { Screen: ({ options }: any) => options?.headerRight?.() ?? null }, useRouter: () => mockRouter }));
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi }) }));
+jest.mock('../src/components/editor/EditorMediaPreview', () => ({ EditorMediaPreview: ({ media, localUri }: any) => require('react').createElement(require('react-native').View, { accessibilityLabel: `Real preview ${media.name}`, testID: localUri }) }));
 jest.mock('../src/components/LibraryChooser', () => ({ LibraryChooser: ({ onPick }: any) => require('react').createElement(require('react-native').Pressable, { accessibilityRole: 'button', accessibilityLabel: 'Choose Library item', onPress: () => onPick({ jobId: '22222222-2222-2222-2222-222222222222', name: 'Library shot', createdAt: '2026-10-23T00:00:00Z' }) }) }));
 
 let root: Root;
@@ -153,6 +154,7 @@ test('chooses device media and adds it to the project without leaving the editor
     const saved = JSON.parse(puts().at(-1)![1].body).document.timeline;
     expect(Object.values(saved.media)).toContainEqual(expect.objectContaining({ name: 'Device shot.mp4', kind: 'video', frames: 60, width: 1080, height: 1920 }));
     expect(saved.video).toHaveLength(1);
+    expect(root.container.queryAll((node) => node.props.accessibilityLabel === 'Real preview Device shot.mp4' && node.props.testID === 'file:///device/shot.mp4')).toHaveLength(1);
 });
 
 test('keeps the Library item selected while a new project opens in the full native editor', async () => {
