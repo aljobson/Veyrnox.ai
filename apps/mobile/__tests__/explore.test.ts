@@ -134,7 +134,16 @@ describe('the Explore screen', () => {
     test('nothing the old Home linked to became unreachable: the tabs, the chip and avatar, Vey, and the More row cover it', () => {
         const text = screen();
         // Quick edit and Projects have no tab yet, so they stay one tap from the home. Chat is Vey, on every tab (N8).
-        for (const href of ['/edit', '/projects', '/create/presets']) expect(text).toContain(`href="${href}"`);
+        for (const href of ['/create', '/chat', '/film', '/edit', '/projects', '/create/presets']) expect(text).toContain(`href="${href}"`);
+    });
+
+    test('puts the three primary creation paths before the featured Oddlings destination', () => {
+        const text = screen();
+        expect(text).toContain("t('explore.start.title')");
+        expect(text.indexOf('href="/create"')).toBeLessThan(text.indexOf('href="/oddlings"'));
+        expect(text.indexOf('href="/chat"')).toBeLessThan(text.indexOf('href="/oddlings"'));
+        expect(text.indexOf('href="/film"')).toBeLessThan(text.indexOf('href="/oddlings"'));
+        expect(text).toContain('minHeight: 80');
     });
 });
 

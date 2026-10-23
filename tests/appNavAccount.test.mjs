@@ -95,8 +95,8 @@ test('public app pages do not open sign-in merely to draw their nav', () => {
 test('the studio nav exposes the rest of the public site on desktop and mobile', () => {
     assert.match(src, /const APP_BROWSE_CATEGORIES = NAV_CATEGORIES\.filter/,
         'the public destination list stays derived from the shared site nav');
-    assert.match(appNav, /const menuItems = \[[\s\S]*\.\.\.items,[\s\S]*\.\.\.APP_BROWSE_CATEGORIES\.filter/,
-        'the phone menu combines studio tools with the public site');
+    assert.match(appNav, /const menuItems = \[\.\.\.new Map\(\[[\s\S]*\.\.\.items,[\s\S]*\.\.\.APP_BROWSE_CATEGORIES,[\s\S]*\.map\(\(item\) => \[item\.href, item\]\)\)\.values\(\)\];/,
+        'the phone menu combines studio tools with the public site and de-duplicates repeated routes');
     assert.match(appNav, /id: 'inspire'[\s\S]*href: '\/presets'[\s\S]*href: '\/models'[\s\S]*href: '\/guides'/,
         'the desktop sidebar carries the public Inspire destinations');
 });
@@ -164,6 +164,10 @@ test('the whole nav still fits without a hidden horizontal rail', () => {
         'the sidebar groups Agents, Tools, Assets and Inspire');
     assert.doesNotMatch(appNav, /<nav[^>]*overflow-x-auto/,
         'the nav no longer hides destinations in a horizontal scroller');
+    assert.doesNotMatch(appNav, /grid: true|grid-cols-2/,
+        'long and translated tool names keep a full-width row instead of colliding in a two-column grid');
+    assert.match(src, /flex min-h-10 items-center rounded-xl/,
+        'desktop sidebar destinations keep at least a 40px target');
 });
 
 test('Oddlings is available without looking permanently selected', () => {

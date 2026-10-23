@@ -207,7 +207,7 @@ function SectionHeading({ id, label, open, onToggle, rail }) {
       onClick={onToggle}
       aria-expanded={open}
       aria-controls={`vx-side-${id}`}
-      className="flex w-full items-center gap-2 px-3 pb-1.5 pt-4 text-start font-vx-mono text-[10px] font-bold uppercase tracking-[0.14em] text-vx-fg-muted transition-colors duration-150 hover:text-vx-fg"
+      className="flex min-h-10 w-full items-center gap-2 px-2.5 pt-3 text-start text-[11px] font-semibold text-vx-fg-muted transition-colors duration-150 hover:text-vx-fg"
     >
       <Icon name={open ? 'chevronDown' : 'chevronRight'} size={10} className="rtl:-scale-x-100" />
       {label}
@@ -268,7 +268,7 @@ function AppSidebar({ sections, homeLabel, logoLabel, accountLabel, accountHref,
           onClick={toggleRail}
           aria-label={rail ? expandLabel : collapseLabel}
           aria-pressed={rail}
-          className="vx-side-row inline-flex h-9 w-9 items-center justify-center rounded-lg text-vx-fg-muted"
+          className="vx-side-row inline-flex h-10 w-10 items-center justify-center rounded-xl text-vx-fg-muted"
         >
           <Icon name="panel" size={18} className="rtl:-scale-x-100" />
         </button>
@@ -293,7 +293,7 @@ function AppSidebar({ sections, homeLabel, logoLabel, accountLabel, accountHref,
           href="/app"
           title={homeLabel}
           aria-current={activeKey === 'explore' ? 'page' : undefined}
-          className={`vx-side-row flex items-center gap-2.5 rounded-lg py-2 text-[13px] font-medium text-vx-fg-body ${rail ? 'justify-center px-0' : 'px-2.5'}`}
+          className={`vx-side-row flex min-h-10 items-center gap-2.5 rounded-xl text-[13px] font-medium text-vx-fg-body ${rail ? 'justify-center px-0' : 'px-2.5'}`}
         >
           <Icon name="home" size={16} />
           {!rail && homeLabel}
@@ -307,19 +307,18 @@ function AppSidebar({ sections, homeLabel, logoLabel, accountLabel, accountHref,
               {(open || rail) && (
                 <ul
                   id={`vx-side-${section.id}`}
-                  className={section.grid && !rail ? 'grid grid-cols-2 gap-1.5' : 'flex flex-col gap-1'}
+                  className="flex flex-col gap-1"
                 >
                   {section.items.map((item) => {
                     const current = isCurrent(item);
-                    const tile = section.grid && !rail;
                     return (
                       <li key={item.href}>
                         <Link
                           href={item.href}
                           title={item.label}
                           aria-current={current ? 'page' : undefined}
-                          className={`flex items-center rounded-lg text-[13px] font-medium ${
-                            rail ? 'justify-center px-0 py-2' : tile ? 'gap-1.5 px-2 py-2' : 'gap-2.5 px-2.5 py-2'
+                          className={`flex min-h-10 items-center rounded-xl text-[13px] font-medium ${
+                            rail ? 'justify-center px-0' : 'gap-2.5 px-2.5'
                           } ${
                             item.featured && !rail
                               ? `transition-colors duration-150 ${featuredClasses(current)}`
@@ -368,17 +367,20 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
     ...(publishEnabled ? [{ key: 'publish', href: '/app/publish', label: t("app.nav.publish") }] : []),
     ...(enhanceEnabled ? [{ key: 'enhance', href: '/app/enhance', label: t("label.Enhance") }] : []),
   ];
-  const menuItems = [
+  // The public taxonomy intentionally mentions some destinations in more
+  // than one group. The compact app menu is one flat list, so keep the first
+  // useful occurrence of each route instead of rendering duplicate links.
+  const menuItems = [...new Map([
     ...items,
-    ...APP_BROWSE_CATEGORIES.filter((browse) => !items.some((item) => item.href === browse.href)),
-  ];
+    ...APP_BROWSE_CATEGORIES,
+  ].map((item) => [item.href, item])).values()];
   const sidebarSections = [
     { id: 'agents', label: t('app.nav.side.agents'), items: [
       { key: 'skills', href: '/app/skills', label: t('label.Studio skills'), icon: 'wand' },
       { key: 'chat', href: '/app/chat', label: t('label.LLM Chat'), icon: 'chat' },
       { key: 'agent', href: '/app/video-agent', label: t('app.nav.videoAgent'), icon: 'agent' },
     ] },
-    { id: 'tools', label: t('app.nav.side.tools'), grid: true, items: [
+    { id: 'tools', label: t('app.nav.side.tools'), items: [
       { key: 'create', href: '/app/create', label: t('label.Create'), icon: 'image' },
       { key: 'film', href: '/app/film-studio', label: t('label.Film Studio'), icon: 'film' },
       { key: 'oddlings', href: '/app/oddlings', label: t('label.Oddlings'), icon: 'character' },
