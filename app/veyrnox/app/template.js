@@ -1,3 +1,4 @@
+import { CheckInHost } from '../_components/CheckInHost';
 import { I18nProvider } from '../../../components/I18nProvider';
 import { getT } from '../../../lib/i18n/server';
 import { localeInfo, localesEnabled } from '../../../lib/i18n/locales.mjs';
@@ -9,7 +10,7 @@ export default async function AppTemplate({ children }) {
   const info = localeInfo(locale);
   return (
     <I18nProvider locale={locale} enabled={localesEnabled()} messages={messages}>
-      <div lang={info.hreflang} dir={info.dir} data-app-locale={locale}>{children}</div>
+      <div lang={info.hreflang} dir={info.dir} data-app-locale={locale}>{children}<CheckInHost /></div>
     </I18nProvider>
   );
 }

@@ -9,10 +9,11 @@ const apiWith = (result: unknown) => {
 
 describe('wording', () => {
     test('every server kind has plain wording and an unknown one reads as an adjustment', () => {
-        for (const kind of ['signup_grant', 'free_credit_expiry', 'generation_refund', 'generation', 'top_up', 'referral_reward', 'referral_reward_reversed', 'payment_adjustment', 'adjustment']) {
+        for (const kind of ['checkin_reward', 'signup_grant', 'free_credit_expiry', 'generation_refund', 'generation', 'top_up', 'referral_reward', 'referral_reward_reversed', 'payment_adjustment', 'adjustment']) {
             expect(kindLabel(kind)).not.toBe('');
             expect(kindLabel(kind)).not.toContain('_');
         }
+        expect(kindLabel('checkin_reward')).toBe('Daily check-in reward');
         expect(kindLabel('debit:secret-operator-text')).toBe('Adjustment');
     });
 

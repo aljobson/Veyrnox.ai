@@ -1,3 +1,4 @@
+import { CheckInModal } from '../../components/CheckInModal';
 import { Redirect, Stack } from 'expo-router';
 import { useAuth } from '../../auth/AuthProvider';
 import { Logo } from '../../components/Logo';
@@ -17,6 +18,7 @@ export default function AppLayout() {
             <AiConsentHost />
             <MfaGate>
             <FirstRunGate />
+            <CheckInModal />
             <Stack
                 screenLayout={({ children }) => (
                     <>

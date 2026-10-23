@@ -74,3 +74,20 @@ test('referral rewards and their reversals get their own labels, and the raw rea
     assert.deepEqual(body.entries.map((e) => [e.delta, e.kind]), [[27, 'referral_reward'], [-9, 'referral_reward_reversed'], [-3, 'payment_adjustment'], [5, 'adjustment']]);
     assert.equal(JSON.stringify(body).includes(friend), false, 'the friend id inside the reason never leaves the server');
 });
+
+test('daily check-in grants have a public category without exposing their date key', async () => {
+    const reasons = ['grant:checkin', 'grant:checkin#2026-10-23', 'grant:checkin-lookalike'];
+    globalThis.fetch = async (url) => {
+        const path = new URL(url).pathname;
+        if (path.endsWith('/consume_account_read_request')) return Response.json({ ok: true });
+        if (path.endsWith('/users')) return Response.json([{ id: owner }]);
+        return Response.json(reasons.map((reason, i) => ({ id: String(i), delta: 1, free_delta: 0, reason, created_at: '2026-10-23T12:00:00Z' })));
+    };
+    const body = await (await GET(req())).json();
+    assert.deepEqual(body.entries.map(e => e.kind), ['checkin_reward', 'checkin_reward', 'adjustment']);
+    assert.equal(JSON.stringify(body).includes('grant:checkin'), false);
+    for (const locale of ['en', 'es', 'fr', 'de', 'pt', 'zh', 'ja', 'ko', 'ru', 'hi', 'ar']) {
+        const { default: messages } = await import(`../lib/i18n/messages/app/${locale}/credits-statement.mjs`);
+        assert.ok(messages['app.credits.statement.checkin_reward'], locale);
+    }
+});
