@@ -16,6 +16,7 @@ import { loadVibe, storeVibe } from '../../../lib/creatorProfileStore';
 import type { CreatorAnswers } from '../../../lib/creatorAnswers';
 import { rankPresets } from '../../../lib/creatorTaste';
 import { cheapestCredits, isLowBalance } from '../../../lib/lowBalance';
+import { MENU_ICONS, type MenuIcon } from '../../../lib/menuIcons';
 import { useBalance } from '../../../lib/useBalance';
 import { fetchPresets, presetHref, presetPrice, type Preset } from '../../../lib/presets';
 import { colors, fonts, isDark } from '../../../theme';
@@ -118,30 +119,15 @@ export default function Explore() {
             <StatusBar style={isDark ? 'light' : 'dark'} />
             <ScrollView style={styles.scroll} contentContainerStyle={styles.screen} keyboardShouldPersistTaps="handled" onScroll={onScroll} scrollEventThrottle={64}>
             <View style={styles.intro}>
-                <Text style={styles.pageTitle} accessibilityRole="header">{t('explore.presetsTitle')}</Text>
-                <Text style={styles.pageIntro}>{t('explore.presetsIntro')}</Text>
+                <Text style={styles.pageTitle} accessibilityRole="header">{t('explore.start.title')}</Text>
+                <Text style={styles.pageIntro}>{t('explore.start.body')}</Text>
             </View>
 
-            <Link href="/oddlings" asChild>
-                <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={t('explore.oddlings.title')}
-                    accessibilityHint={t('explore.oddlings.hint')}
-                    style={({ pressed }) => [styles.heroCard, pressed && styles.pressed]}
-                >
-                    <View style={styles.heroMedia}>
-                        <Image source={{ uri: 'https://veyrnox.ai/oddlings/oddling-body-chaos.webp' }} style={StyleSheet.absoluteFill} contentFit="cover" accessibilityIgnoresInvertColors />
-                        <View style={styles.heroShade} />
-                        <View style={styles.heroLabel}><Text style={styles.heroLabelText}>ORIGINAL FICTIONAL CAST</Text></View>
-                    </View>
-                    <View style={styles.heroCopy}>
-                        <Text style={styles.kicker}>{t('explore.heroKicker')}</Text>
-                        <Text style={styles.heroTitle}>{t('explore.heroTitle')}</Text>
-                        <Text style={styles.heroBody}>{t('explore.heroBody')}</Text>
-                        <Text style={styles.heroAction}>{t('explore.heroAction')}</Text>
-                    </View>
-                </Pressable>
-            </Link>
+            <View style={styles.startGroup} accessibilityLabel={t('explore.start.title')}>
+                <StartOption href="/create" icon="sparkle" title={t('menu.create')} body={t('explore.start.create.body')} hint={t('explore.start.create.hint')} />
+                <StartOption href="/chat" icon="chat" title={t('menu.chat')} body={t('explore.start.chat.body')} hint={t('explore.chat.hint')} divided />
+                <StartOption href="/film" icon="slate" title={t('menu.film')} body={t('explore.start.film.body')} hint={t('explore.start.film.hint')} divided />
+            </View>
 
             <View style={styles.composer}>
                 <Text style={styles.composerTitle}>{t('explore.ideaTitle')}</Text>
@@ -163,7 +149,27 @@ export default function Explore() {
                     </Pressable>
                 </View>
             </View>
-            <FeatureRow href="/chat" title={t('explore.chat.title')} body={t('explore.chat.body')} action={t('explore.chatAction')} hint={t('explore.chat.hint')} />
+
+            <Link href="/oddlings" asChild>
+                <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={t('explore.oddlings.title')}
+                    accessibilityHint={t('explore.oddlings.hint')}
+                    style={({ pressed }) => [styles.heroCard, pressed && styles.pressed]}
+                >
+                    <View style={styles.heroMedia}>
+                        <Image source={{ uri: 'https://veyrnox.ai/oddlings/oddling-body-chaos.webp' }} style={StyleSheet.absoluteFill} contentFit="cover" alt="" accessibilityIgnoresInvertColors />
+                        <View style={styles.heroShade} />
+                        <View style={styles.heroLabel}><Text style={styles.heroLabelText}>ORIGINAL FICTIONAL CAST</Text></View>
+                    </View>
+                    <View style={styles.heroCopy}>
+                        <Text style={styles.kicker}>{t('explore.heroKicker')}</Text>
+                        <Text style={styles.heroTitle}>{t('explore.heroTitle')}</Text>
+                        <Text style={styles.heroBody}>{t('explore.heroBody')}</Text>
+                        <Text style={styles.heroAction}>{t('explore.heroAction')}</Text>
+                    </View>
+                </Pressable>
+            </Link>
             {balance !== null && isLowBalance(balance, cheapestCredits(presets?.filter((p) => p.available))) ? <LowBalanceNote balance={balance} /> : null}
             {note ? <Text style={styles.note} accessibilityLiveRegion="polite">{note}</Text> : null}
 
@@ -276,7 +282,7 @@ function PresetCard({ preset, onOpen }: { preset: Preset; onOpen: () => void }) 
     return (
         <Pressable accessibilityRole="button" accessibilityLabel={label} style={({ pressed }) => [styles.presetCard, pressed && styles.pressed]} onPress={onOpen}>
             <View style={styles.presetMedia}>
-                {preset.posterUrl ? <Image source={{ uri: preset.posterUrl }} style={StyleSheet.absoluteFill} contentFit="cover" accessibilityIgnoresInvertColors /> : <View style={styles.posterEmpty} />}
+                {preset.posterUrl ? <Image source={{ uri: preset.posterUrl }} style={StyleSheet.absoluteFill} contentFit="cover" alt="" accessibilityIgnoresInvertColors /> : <View style={styles.posterEmpty} />}
                 {preset.isNew ? <View style={styles.newBadge}><Text style={styles.newBadgeText}>{t('explore.new')}</Text></View> : null}
             </View>
             <View style={styles.presetCopy}>
@@ -288,15 +294,18 @@ function PresetCard({ preset, onOpen }: { preset: Preset; onOpen: () => void }) 
     );
 }
 
-function FeatureRow({ href, title, body, action, hint }: { href: Href; title: string; body: string; action: string; hint: string }) {
+function StartOption({ href, icon, title, body, hint, divided = false }: { href: Href; icon: MenuIcon; title: string; body: string; hint: string; divided?: boolean }) {
     return (
         <Link href={href} asChild>
-            <Pressable accessibilityRole="button" accessibilityLabel={title} accessibilityHint={hint} style={({ pressed }) => [styles.featureRow, pressed && styles.pressed]}>
-                <View style={styles.featureText}>
-                    <Text style={styles.featureTitle}>{title}</Text>
-                    <Text style={styles.featureBody}>{body}</Text>
+            <Pressable accessibilityRole="button" accessibilityLabel={title} accessibilityHint={hint} style={({ pressed }) => [styles.startOption, divided && styles.startOptionDivided, pressed && styles.startOptionPressed]}>
+                <View style={styles.startIcon}>
+                    <Image source={MENU_ICONS[icon]} style={styles.startIconImage} tintColor={colors.accent} contentFit="contain" alt="" accessibilityElementsHidden />
                 </View>
-                <Text style={styles.featureAction}>{action}</Text>
+                <View style={styles.startText}>
+                    <Text style={styles.startTitle}>{title}</Text>
+                    <Text style={styles.startBody}>{body}</Text>
+                </View>
+                <Image source={MENU_ICONS.caretRight} style={styles.startChevron} tintColor={colors.muted} contentFit="contain" alt="" accessibilityElementsHidden />
             </Pressable>
         </Link>
     );
@@ -324,6 +333,16 @@ const styles = StyleSheet.create({
     intro: { gap: 8, marginBottom: 4 },
     pageTitle: { color: colors.text, fontFamily: fonts.displayHeavy, fontSize: 40, lineHeight: 42, letterSpacing: -1.3 },
     pageIntro: { color: colors.body, fontSize: 16, lineHeight: 25, maxWidth: 520 },
+    startGroup: { overflow: 'hidden', borderRadius: 18, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
+    startOption: { minHeight: 80, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 12 },
+    startOptionDivided: { borderTopColor: colors.border, borderTopWidth: StyleSheet.hairlineWidth },
+    startOptionPressed: { backgroundColor: colors.accentSoft },
+    startIcon: { width: 42, height: 42, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accentSoft },
+    startIconImage: { width: 22, height: 22 },
+    startText: { flex: 1, gap: 3 },
+    startTitle: { color: colors.text, fontSize: 17, fontWeight: '700' },
+    startBody: { color: colors.body, fontSize: 14, lineHeight: 20 },
+    startChevron: { width: 18, height: 18 },
     heroCard: { overflow: 'hidden', borderRadius: 18, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
     heroMedia: { height: 205, backgroundColor: colors.border },
     heroShade: { position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.20)' },
@@ -344,11 +363,6 @@ const styles = StyleSheet.create({
     makeGhost: { minHeight: 44, justifyContent: 'center', alignItems: 'center', borderColor: colors.borderStrong, borderWidth: 1, borderRadius: 12, paddingHorizontal: 16 },
     makeGhostText: { color: colors.text, fontWeight: '600', fontSize: 16 },
     off: { opacity: 0.4 },
-    featureRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 17, borderRadius: 16, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
-    featureText: { flex: 1, gap: 4 },
-    featureTitle: { color: colors.text, fontSize: 18, fontWeight: '700' },
-    featureBody: { color: colors.body, fontSize: 14, lineHeight: 20 },
-    featureAction: { color: colors.accent, fontSize: 14, fontWeight: '800' },
     entry: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 52, paddingVertical: 10, borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
     entryText: { flex: 1, gap: 2 },
     entryName: { color: colors.text, fontSize: 16, fontWeight: '600' },

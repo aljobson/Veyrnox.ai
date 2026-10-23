@@ -110,9 +110,8 @@ const banner = page => page.getByRole('region', { name: 'Privacy choices', exact
 const choices = page => page.getByRole('button', { name: 'Privacy choices', exact: true });
 
 for (const [label, selected] of [
-  ['Allow analytics & replay', { version: 1, analytics: true, replay: true }],
-  ['Analytics only', { version: 1, analytics: true, replay: false }],
-  ['Decline', { version: 1, analytics: false, replay: false }],
+  ['Allow analytics', { version: 1, analytics: true, replay: false }],
+  ['Don’t allow', { version: 1, analytics: false, replay: false }],
 ]) {
   test(`${label}: choices survive client navigation/reload and can be withdrawn and reopened`, async ({ page, baseURL }) => {
     const fixture = await installPrivacyFixtures(page, baseURL);
@@ -136,7 +135,7 @@ for (const [label, selected] of [
 
       await choices(page).click();
       await expect(banner(page)).toBeVisible();
-      await banner(page).getByRole('button', { name: 'Decline', exact: true }).click();
+      await banner(page).getByRole('button', { name: 'Don’t allow', exact: true }).click();
       await expect(choices(page)).toBeVisible();
       expect(await preference(page)).toEqual({ version: 1, analytics: false, replay: false });
       await page.reload();
@@ -153,7 +152,7 @@ test('browser telemetry redacts the synthetic capability bearer on the review ro
   const marker = 'synthetic-capability-never-a-real-token';
   try {
     await page.goto(`/social/review/${marker}?synthetic_query=never-capture#synthetic-fragment`);
-    await banner(page).getByRole('button', { name: 'Analytics only', exact: true }).click();
+    await banner(page).getByRole('button', { name: 'Allow analytics', exact: true }).click();
     await expect.poll(() => fixture.events.filter(event => event.event === '$pageview').length, { timeout: 15_000 }).toBeGreaterThan(0);
     const views = fixture.events.filter(event => event.event === '$pageview');
     expect(JSON.stringify(fixture.events)).not.toContain(marker);

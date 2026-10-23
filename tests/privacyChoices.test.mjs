@@ -62,7 +62,7 @@ function manager(window, posthog) {
   return { render, click };
 }
 
-for (const choice of ['allow', 'analytics', 'decline']) test(`privacy choices remain available after ${choice}, reload and account changes`, () => {
+for (const choice of ['analytics', 'decline']) test(`privacy choices remain available after ${choice}, reload and account changes`, () => {
   const prior = global.window;
   const events = new EventTarget();
   global.window = { localStorage: storage(), sessionStorage: storage(), location: { origin: 'https://example.test' },

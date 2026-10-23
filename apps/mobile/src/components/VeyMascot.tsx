@@ -1,13 +1,14 @@
 import * as SecureStore from 'expo-secure-store';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Keyboard, Pressable, StyleSheet } from 'react-native';
+import { Keyboard, Pressable, StyleSheet, Text, View } from 'react-native';
 import { MIN_TARGET } from '../lib/a11y';
 import { t } from '../lib/i18n';
 import { DEFAULT_SIDE, VEY_PLACEMENT_SLOT, otherSide, parseSide, serializeSide, type VeySide } from '../lib/veyPlacement';
 import { CHEER_MS, onVeyReaction, reactVey, type VeyMood } from '../lib/veyMotion';
 import { VeyCharacter } from './VeyCharacter';
 import { heightFor } from '../lib/veyCharacter';
+import { colors } from '../theme';
 
 // The character is drawn as wide as the old round button was tall, plus room for its arms.
 const WIDTH = 56;
@@ -22,6 +23,7 @@ export const VEY_CLEARANCE = Math.ceil(HEIGHT) + EDGE * 2;
 export function VeyMascot() {
     const router = useRouter();
     const [side, setSide] = useState<VeySide>(DEFAULT_SIDE);
+    const [shown, setShown] = useState(false);
     const [typing, setTyping] = useState(false);
     const [mood, setMood] = useState<VeyMood>('idle');
     const settle = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -59,26 +61,48 @@ export function VeyMascot() {
     }
 
     if (typing) return null;
+    if (!shown) {
+        return (
+            <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t('vey.show')}
+                accessibilityHint={t('vey.showHint')}
+                style={({ pressed }) => [styles.summon, side === 'left' ? styles.left : styles.right, pressed && styles.pressed]}
+                onPress={() => setShown(true)}
+            >
+                <Text style={styles.summonText}>Vey</Text>
+            </Pressable>
+        );
+    }
     return (
-        <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('vey.open')}
-            accessibilityHint={t('vey.hint')}
-            accessibilityActions={[{ name: 'moveSide', label: t('vey.move') }]}
-            onAccessibilityAction={(e) => e.nativeEvent.actionName === 'moveSide' && move()}
-            hitSlop={Math.max(0, (MIN_TARGET - Math.min(WIDTH, HEIGHT)) / 2)}
-            style={[styles.vey, side === 'left' ? styles.left : styles.right]}
-            onPressIn={() => reactVey('cheer', CHEER_MS)}
-            onPress={() => router.push('/chat')}
-            onLongPress={move}
-        >
-            <VeyCharacter width={WIDTH} mood={mood} />
-        </Pressable>
+        <View style={[styles.vey, side === 'left' ? styles.left : styles.right]}>
+            <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t('vey.open')}
+                accessibilityHint={t('vey.hint')}
+                accessibilityActions={[{ name: 'moveSide', label: t('vey.move') }]}
+                onAccessibilityAction={(e) => e.nativeEvent.actionName === 'moveSide' && move()}
+                hitSlop={Math.max(0, (MIN_TARGET - Math.min(WIDTH, HEIGHT)) / 2)}
+                onPressIn={() => reactVey('cheer', CHEER_MS)}
+                onPress={() => router.push('/chat')}
+                onLongPress={move}
+            >
+                <VeyCharacter width={WIDTH} mood={mood} />
+            </Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel={t('vey.dismiss')} style={styles.dismiss} onPress={() => setShown(false)}>
+                <Text style={styles.dismissText}>×</Text>
+            </Pressable>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
     vey: { position: 'absolute', bottom: EDGE, width: WIDTH, height: HEIGHT },
+    summon: { position: 'absolute', bottom: EDGE, minWidth: MIN_TARGET, minHeight: MIN_TARGET, paddingHorizontal: 12, borderRadius: 999, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface, borderColor: colors.borderStrong, borderWidth: 1 },
+    summonText: { color: colors.accent, fontSize: 14, fontWeight: '800' },
+    pressed: { opacity: 0.78, transform: [{ scale: 0.96 }] },
+    dismiss: { position: 'absolute', top: -18, right: -18, width: MIN_TARGET, height: MIN_TARGET, borderRadius: MIN_TARGET / 2, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface, borderColor: colors.borderStrong, borderWidth: 1 },
+    dismissText: { color: colors.text, fontSize: 22, lineHeight: 24, fontWeight: '600' },
     left: { left: EDGE },
     right: { right: EDGE },
 });

@@ -172,7 +172,7 @@ export function navHref(item, publicPageOpen) {
 
 export const SECONDARY_NAV_CATEGORIES = [
   { href: '/#explore',   label: 'Explore', group: 'Discover' },
-  { href: '/oddlings', studioHref: '/app/oddlings', label: 'Oddlings', featured: true, group: 'Discover' },
+  { href: '/oddlings', studioHref: '/app/oddlings', label: 'Oddlings', group: 'Discover' },
   { href: '/models',     label: 'Models', group: 'Discover' },
   { href: '/presets',   label: 'Templates', group: 'Discover' },
   { href: '/guides',    label: 'Guides', group: 'Learn' },

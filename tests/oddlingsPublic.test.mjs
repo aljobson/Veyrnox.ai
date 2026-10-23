@@ -232,7 +232,7 @@ test('the More menu and site pages point at the public gallery, and fall back to
         assert.equal(navHref(item, true), '/oddlings');
         assert.equal(navHref(item, false), '/app/oddlings', 'a closed gallery must not leave a dead link in the nav');
     }
-    assert.equal(more.featured, true);
+    assert.equal(more.featured, undefined, 'Oddlings is not permanently highlighted when another page is active');
     assert.equal(navHref({ href: '/models' }, false), '/models');
     assert.ok(NAV_CATEGORIES.includes(more));
 });

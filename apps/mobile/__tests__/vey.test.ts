@@ -44,27 +44,30 @@ describe('Vey placement (mirrors the web: left by default, versioned, nothing el
 describe('where Vey shows (N8)', () => {
     const read = (...p: string[]) => fs.readFileSync(path.join(__dirname, '..', 'src', ...p), 'utf8');
 
-    test('every tab shows it, except the Cinema feed where the actions sit at the bottom', () => {
+    test('every tab offers Vey on demand, except the Cinema feed where the actions sit at the bottom', () => {
         const layout = read('app', '(app)', '(tabs)', '_layout.tsx');
         expect(layout).toContain('<VeyMascot');
         expect(layout).toMatch(/route\.name === 'cinema'/);
     });
 
-    test('it opens the chat and offers the move as a screen-reader action as well as a long press', () => {
+    test('the mascot is hidden by default, can be summoned and dismissed, then opens chat', () => {
         const mascot = read('components', 'VeyMascot.tsx');
+        expect(mascot).toContain('const [shown, setShown] = useState(false)');
+        expect(mascot).toContain('onPress={() => setShown(true)}');
+        expect(mascot).toContain('onPress={() => setShown(false)}');
         expect(mascot).toContain("router.push('/chat')");
         expect(mascot).toContain('accessibilityActions');
         expect(mascot).toContain('onLongPress');
         expect(mascot).toContain('Keyboard.addListener');
     });
 
-    // N8 took the plain Chat button off the home because Vey opens the chat. The owner then asked for a "Chat with Vey" card
-    // right under the Make buttons (2026-10-21), so the home has one, and Vey still opens the same chat.
-    test('the home has one Chat with Vey card, right under the Make buttons', () => {
+    // The launchpad keeps one explicit LLM Chat choice alongside Create and Film Studio,
+    // while Vey still opens the same conversation from every tab.
+    test('the home has one LLM Chat choice in the primary launchpad', () => {
         const home = read('app', '(app)', '(tabs)', 'index.tsx');
         expect(home.split('href="/chat"').length - 1).toBe(1);
-        expect(home).toContain("t('explore.chat.title')");
-        expect(home.indexOf("t('explore.makeVideo')")).toBeLessThan(home.indexOf('href="/chat"'));
-        expect(home.indexOf('href="/chat"')).toBeLessThan(home.indexOf("t('explore.templates')"));
+        expect(home).toContain("title={t('menu.chat')}");
+        expect(home.indexOf('href="/create"')).toBeLessThan(home.indexOf('href="/chat"'));
+        expect(home.indexOf('href="/chat"')).toBeLessThan(home.indexOf('href="/oddlings"'));
     });
 });
