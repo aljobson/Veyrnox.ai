@@ -10,7 +10,7 @@ const APP = path.join(__dirname, '..', 'src', 'app');
 const TABS = path.join(APP, '(app)', '(tabs)');
 const read = (f: string) => fs.readFileSync(f, 'utf8');
 
-const ORDER = ['index', 'create', 'cinema', 'library', 'publish'];
+const ORDER = ['index', 'create', 'editor', 'library', 'publish'];
 
 describe('tab shell', () => {
     test('the five tab screens live in the (tabs) group, and nowhere else', () => {
@@ -29,12 +29,22 @@ describe('tab shell', () => {
         const layout = read(path.join(TABS, '_layout.tsx'));
         const named = [...layout.matchAll(/<Tabs\.Screen name="(\w+)"/g)].map((m) => m[1]);
         expect(named).toEqual(ORDER);
-        for (const key of ['explore', 'create', 'cinema', 'library', 'publish', 'account']) {
+        for (const key of ['explore', 'create', 'editor', 'cinema', 'library', 'publish', 'account']) {
             expect((en as Record<string, string>)[`tabs.${key}`]).toEqual(expect.any(String));
         }
         // Every tab has its own spoken label and its label growth is capped like the header's.
         expect(layout.match(/tabBarAccessibilityLabel/g)?.length).toBe(ORDER.length);
         expect(layout).toContain('maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE}');
+    });
+
+    test('Editor is a direct destination and recent projects open in the native editor', () => {
+        const editor = read(path.join(TABS, 'editor.tsx'));
+        expect(editor).toContain("pathname: '/editor/new'");
+        expect(editor).toContain("params: { blank: '1' }");
+        expect(editor).toContain("pathname: '/editor/[projectId]'");
+        expect(editor).toContain("router.push('/projects')");
+        // Cinema remains available from the drawer after giving its tab slot to Editor.
+        expect(read(path.join(__dirname, '..', 'src', 'lib', 'menu.ts'))).toContain("href: '/cinema'");
     });
 
     test('the tab header carries the credits chip and the avatar', () => {

@@ -3,6 +3,7 @@ import {
     buildSessionSeed,
     hostedEditorUrl,
     HOSTED_EDITOR_INJECTION,
+    nativeEditorSessionInjection,
     parseHostedEditorMessage,
     seedSecondsLeft,
     sessionInjection,
@@ -43,6 +44,17 @@ test('hands only a short-lived access session to the intended origin', () => {
     expect(buildSessionSeed('bad')).toBeNull();
 });
 
+test.each(['light', 'dark'] as const)('opts analytics out and applies the mobile %s theme before the page starts', (theme) => {
+    const seed = buildSessionSeed(token({ sub: 'user-1', exp: 3600 }))!;
+    const script = nativeEditorSessionInjection(seed, 'https://veyrnox.ai', theme);
+    expect(script).toContain('veyrnox_analytics_preference_v1');
+    expect(script).toContain('\\"analytics\\":false');
+    expect(script).toContain('\\"replay\\":false');
+    expect(script).toContain('window.__veyrnoxNativeEditor=1');
+    expect(script).toContain(`localStorage.setItem('veyrnox_theme',"${theme}")`);
+    expect(script).toContain(`document.documentElement.setAttribute('data-theme',"${theme}")`);
+});
+
 test('parses only bounded messages from the page', () => {
     expect(parseHostedEditorMessage('{"type":"ready"}')).toEqual({ type: 'ready' });
     expect(parseHostedEditorMessage('{"type":"open-credits"}')).toEqual({ type: 'open-credits' });
@@ -52,7 +64,10 @@ test('parses only bounded messages from the page', () => {
     expect(parseHostedEditorMessage('x'.repeat(1001))).toBeNull();
 });
 
-test('production instrumentation captures Credits before the website purchase flow', () => {
+test('production instrumentation keeps embedded editor chrome usable and captures Credits before the website purchase flow', () => {
+    expect(HOSTED_EDITOR_INJECTION).toContain('[data-storage-notice]');
+    expect(HOSTED_EDITOR_INJECTION).toContain('body>button[data-print="hide"]');
+    expect(HOSTED_EDITOR_INJECTION).toContain('veyrnox-native-editor-style');
     expect(HOSTED_EDITOR_INJECTION).toContain("post({type:'open-credits'})");
     expect(HOSTED_EDITOR_INJECTION).toContain('stopImmediatePropagation');
     expect(HOSTED_EDITOR_INJECTION).not.toContain('access_token');

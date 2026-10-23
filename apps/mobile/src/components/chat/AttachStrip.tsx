@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { MIN_TARGET } from '../../lib/a11y';
 import { MAX_ATTACHMENTS, roomFor, type ChatImage } from '../../lib/chatAttach';
 import { plural, t } from '../../lib/i18n';
+import { MENU_ICONS } from '../../lib/menuIcons';
 import { colors } from '../../theme';
 
 interface Props {
@@ -22,11 +23,13 @@ export function AttachStrip({ items, extra, max = MAX_ATTACHMENTS, disabled, emb
     return (
         <View style={[styles.wrap, embedded && styles.embedded]}>
             <View style={styles.row}>
-                <Pressable accessibilityRole="button" disabled={disabled || full} style={[styles.btn, (disabled || full) && styles.off]} onPress={onLibrary}>
-                    <Text style={styles.btnText}>▧ {t('chat.attach.library')}</Text>
+                <Pressable accessibilityRole="button" accessibilityLabel={t('chat.attach.libraryLabel')} disabled={disabled || full} style={[styles.btn, (disabled || full) && styles.off]} onPress={onLibrary}>
+                    <Image source={MENU_ICONS.image} style={styles.btnIcon} tintColor={colors.text} contentFit="contain" accessibilityElementsHidden />
+                    <Text style={styles.btnText}>{t('chat.attach.library')}</Text>
                 </Pressable>
-                <Pressable accessibilityRole="button" disabled={disabled || full} style={[styles.btn, (disabled || full) && styles.off]} onPress={onPhotos}>
-                    <Text style={styles.btnText}>＋ {t('chat.attach.photos')}</Text>
+                <Pressable accessibilityRole="button" accessibilityLabel={t('chat.attach.photosLabel')} disabled={disabled || full} style={[styles.btn, (disabled || full) && styles.off]} onPress={onPhotos}>
+                    <Image source={MENU_ICONS.paperclip} style={styles.btnIcon} tintColor={colors.text} contentFit="contain" accessibilityElementsHidden />
+                    <Text style={styles.btnText}>{t('chat.attach.photos')}</Text>
                 </Pressable>
                 <Text style={styles.note}>{items.length > 0 ? `${plural('chat.attach.extra', extra)} · ${items.length}/${max}` : plural('chat.attach.hint', extra)}</Text>
             </View>
@@ -50,7 +53,8 @@ const styles = StyleSheet.create({
     wrap: { paddingHorizontal: 12, paddingTop: 4 },
     embedded: { borderBottomWidth: 1, borderBottomColor: colors.border, paddingTop: 2, paddingBottom: 2 },
     row: { flexDirection: 'row', alignItems: 'center', gap: 4, flexWrap: 'wrap' },
-    btn: { minHeight: MIN_TARGET, justifyContent: 'center', paddingHorizontal: 10 },
+    btn: { minHeight: MIN_TARGET, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 10 },
+    btnIcon: { width: 18, height: 18 },
     btnText: { color: colors.text, fontSize: 13, fontWeight: '600' },
     off: { opacity: 0.4 },
     note: { color: colors.muted, fontSize: 12, flexShrink: 1 },

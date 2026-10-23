@@ -24,21 +24,20 @@ function tabLabel(key: string) {
 // One icon per tab, tinted by the tab bar (accent when selected, muted otherwise); the label stays for screen readers.
 function tabIcon(name: MenuIcon) {
     return function TabIcon({ color }: { color: ColorValue }) {
-        return <Image source={MENU_ICONS[name]} style={{ width: 24, height: 24 }} tintColor={typeof color === 'string' ? color : colors.muted} contentFit="contain" accessibilityElementsHidden />;
+        return <Image source={MENU_ICONS[name]} style={{ width: 24, height: 24 }} tintColor={typeof color === 'string' ? color : colors.muted} contentFit="contain" alt="" accessibilityElementsHidden />;
     };
 }
 
-// Five bottom tabs. Every URL is unchanged: the (tabs) folder is a group, so /create, /cinema, /library and /publish
-// still open the same screens, and every other screen opens above the tabs as before.
+// Five bottom tabs. Editor is a top-level destination; Cinema remains available from the main menu without
+// crowding the bar with a sixth item. The (tabs) folder is a group, so each tab keeps its short public URL.
 export default function TabsLayout() {
     return (
         <Tabs
-            // Vey sits inside each tab's scene, so it is always above the tab bar. The Cinema feed keeps its actions at the
-            // bottom, so Vey stays off it.
+            // Editor and Publish keep controls close to the bottom edge, so Vey stays off those work surfaces.
             screenLayout={({ children, route }) => (
                 <View style={{ flex: 1 }}>
                     {children}
-                    {route.name === 'cinema' || route.name === 'publish' ? null : <VeyMascot />}
+                    {route.name === 'editor' || route.name === 'publish' ? null : <VeyMascot />}
                 </View>
             )}
             screenOptions={({ route }) => {
@@ -60,7 +59,7 @@ export default function TabsLayout() {
         >
             <Tabs.Screen name="index" options={{ tabBarIcon: tabIcon('house'), title: t('tabs.explore'), tabBarLabel: tabLabel('tabs.explore'), tabBarAccessibilityLabel: t('tabs.explore') }} />
             <Tabs.Screen name="create" options={{ tabBarIcon: tabIcon('sparkle'), title: t('tabs.create'), tabBarLabel: tabLabel('tabs.create'), tabBarAccessibilityLabel: t('tabs.create') }} />
-            <Tabs.Screen name="cinema" options={{ tabBarIcon: tabIcon('film'), title: t('tabs.cinema'), tabBarLabel: tabLabel('tabs.cinema'), tabBarAccessibilityLabel: t('tabs.cinema') }} />
+            <Tabs.Screen name="editor" options={{ tabBarIcon: tabIcon('slate'), title: t('tabs.editor'), tabBarLabel: tabLabel('tabs.editor'), tabBarAccessibilityLabel: t('tabs.editor') }} />
             <Tabs.Screen name="library" options={{ tabBarIcon: tabIcon('image'), title: t('tabs.library'), tabBarLabel: tabLabel('tabs.library'), tabBarAccessibilityLabel: t('tabs.library') }} />
             <Tabs.Screen name="publish" options={{ tabBarIcon: tabIcon('send'), title: t('tabs.publish'), tabBarLabel: tabLabel('tabs.publish'), tabBarAccessibilityLabel: t('tabs.publish') }} />
         </Tabs>

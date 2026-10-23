@@ -1,5 +1,6 @@
 import { CheckInModal } from '../../components/CheckInModal';
 import { Redirect, Stack } from 'expo-router';
+import { useColorScheme } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { Logo } from '../../components/Logo';
 import { AiConsentHost } from '../../components/AiConsentHost';
@@ -8,10 +9,12 @@ import { OfflineBanner } from '../../components/OfflineBanner';
 import { MfaGate } from '../../components/account/MfaGate';
 import { HomeBackButton } from '../../components/HomeBackButton';
 import { ServiceBanner } from '../../components/ServiceBanner';
-import { colors } from '../../theme';
+import { getThemePreference, paletteForScheme, resolveScheme } from '../../theme';
 
 export default function AppLayout() {
     const { status } = useAuth();
+    const systemScheme = useColorScheme();
+    const palette = paletteForScheme(resolveScheme(getThemePreference(), systemScheme));
     if (status === 'signedOut') return <Redirect href="/sign-in" />;
     return (
         <>
@@ -28,10 +31,10 @@ export default function AppLayout() {
                     </>
                 )}
                 screenOptions={({ navigation }) => ({
-                    headerStyle: { backgroundColor: colors.background },
-                    headerTintColor: colors.text,
+                    headerStyle: { backgroundColor: palette.background },
+                    headerTintColor: palette.text,
                     headerBackButtonDisplayMode: 'minimal',
-                    contentStyle: { backgroundColor: colors.background },
+                    contentStyle: { backgroundColor: palette.background },
                     // Every screen has a way back: the native back when there is history, otherwise a button to Explore.
                     ...(navigation.canGoBack() ? {} : { headerLeft: () => <HomeBackButton /> }),
                 })}
