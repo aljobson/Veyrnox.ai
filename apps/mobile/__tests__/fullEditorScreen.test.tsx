@@ -2,6 +2,7 @@ import { act } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { createRoot, type Root } from 'test-renderer';
 import { FullEditorScreen } from '../src/components/editor/FullEditorScreen';
+import * as ImagePicker from 'expo-image-picker';
 
 void [ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View];
 
@@ -14,8 +15,11 @@ const mockApi = { request: mockRequest };
 
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'native-save-key' }));
 jest.mock('expo-secure-store', () => ({ getItemAsync: jest.fn().mockResolvedValue('seen'), setItemAsync: jest.fn().mockResolvedValue(undefined) }));
+jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: jest.fn(), UIImagePickerPreferredAssetRepresentationMode: { Compatible: 'compatible' } }));
+jest.mock('expo-document-picker', () => ({ getDocumentAsync: jest.fn() }));
 jest.mock('expo-router', () => ({ Stack: { Screen: ({ options }: any) => options?.headerRight?.() ?? null }, useRouter: () => mockRouter }));
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi }) }));
+jest.mock('../src/components/LibraryChooser', () => ({ LibraryChooser: ({ onPick }: any) => require('react').createElement(require('react-native').Pressable, { accessibilityRole: 'button', accessibilityLabel: 'Choose Library item', onPress: () => onPick({ jobId: '22222222-2222-2222-2222-222222222222', name: 'Library shot', createdAt: '2026-10-23T00:00:00Z' }) }) }));
 
 let root: Root;
 const visible = (text: string) => root.container.queryAll((node) => node.children.includes(text)).length > 0;
@@ -44,8 +48,8 @@ afterEach(async () => {
     jest.useRealTimers();
 });
 
-async function render() {
-    await act(async () => root.render(<FullEditorScreen projectId={projectId} />));
+async function render(jobId?: string) {
+    await act(async () => root.render(<FullEditorScreen projectId={projectId} jobId={jobId} />));
     await act(async () => Promise.resolve());
 }
 
@@ -118,4 +122,43 @@ test('keeps the user in the editor when saving fails', async () => {
     await press('Done');
     expect(mockRouter.back).not.toHaveBeenCalled();
     expect(visible('Not saved yet, will retry')).toBe(true);
+});
+
+test('adds existing project media to the timeline and selects the new clip', async () => {
+    serverDocument = { ...document, schema_version: 3, timeline: { schemaVersion: 3, fps: 30, seq: 0, aspect: '16:9', background: '#000000', media: { media1: { id: 'media1', kind: 'video', name: 'Existing shot', frames: 60, hasAudio: true, width: 1920, height: 1080 } }, video: [], audio: [], text: [], tracks: [], markers: [] } };
+    await render();
+    await press('Add Existing shot to timeline');
+    await act(async () => jest.advanceTimersByTimeAsync(900));
+    const saved = JSON.parse(puts().at(-1)![1].body).document.timeline;
+    expect(saved.video).toEqual([expect.objectContaining({ id: 'v1', mediaId: 'media1', trackId: 'video-0' })]);
+    expect(root.container.queryAll((node) => node.props.accessibilityLabel === 'video Existing shot' && node.props.accessibilityState?.selected)).toHaveLength(1);
+});
+
+test('chooses a Library asset inside the editor and adds it to the project', async () => {
+    await render();
+    await press('Library video');
+    await press('Choose Library item');
+    await act(async () => jest.advanceTimersByTimeAsync(900));
+    const saved = JSON.parse(puts().at(-1)![1].body).document.timeline;
+    expect(saved.media['j-22222222-2222-2222-2222-222222222222']).toMatchObject({ name: 'Library shot', kind: 'video' });
+    expect(saved.video).toEqual([expect.objectContaining({ mediaId: 'j-22222222-2222-2222-2222-222222222222' })]);
+});
+
+test('chooses device media and adds it to the project without leaving the editor', async () => {
+    jest.mocked(ImagePicker.launchImageLibraryAsync).mockResolvedValueOnce({ canceled: false, assets: [{ uri: 'file:///device/shot.mp4', fileName: 'Device shot.mp4', mimeType: 'video/mp4', duration: 2000, width: 1080, height: 1920 }] });
+    await render();
+    await press('Photos & videos');
+    await act(async () => Promise.resolve());
+    await act(async () => jest.advanceTimersByTimeAsync(900));
+    const saved = JSON.parse(puts().at(-1)![1].body).document.timeline;
+    expect(Object.values(saved.media)).toContainEqual(expect.objectContaining({ name: 'Device shot.mp4', kind: 'video', frames: 60, width: 1080, height: 1920 }));
+    expect(saved.video).toHaveLength(1);
+});
+
+test('keeps the Library item selected while a new project opens in the full native editor', async () => {
+    await render('33333333-3333-3333-3333-333333333333');
+    await act(async () => jest.advanceTimersByTimeAsync(900));
+    const saved = JSON.parse(puts().at(-1)![1].body).document.timeline;
+    expect(saved.media['j-33333333-3333-3333-3333-333333333333']).toBeDefined();
+    expect(saved.video).toEqual([expect.objectContaining({ mediaId: 'j-33333333-3333-3333-3333-333333333333' })]);
 });

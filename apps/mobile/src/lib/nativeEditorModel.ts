@@ -1,7 +1,10 @@
 export type TrackKind = 'video' | 'audio' | 'text';
 export type Selection = { track: TrackKind; id: string };
 export type Canvas = { aspect_ratio: '16:9' | '9:16' | '1:1'; frame_rate: 24 | 25 | 30 | 60 };
-export type Media = { id: string; name?: string; kind?: string; frames?: number; hasAudio?: boolean; width?: number; height?: number };
+export type Media = {
+    id: string; name?: string; kind?: string; frames?: number; hasAudio?: boolean; width?: number; height?: number;
+    assetSource?: { projectId: string; assetId: string };
+};
 export type Clip = {
     id: string; mediaId?: string; start: number; in?: number; len: number; trackId?: string;
     volume?: number; transition?: number; transitionType?: string; rate?: number; reverse?: boolean;

@@ -1,4 +1,6 @@
 import { randomUUID } from 'expo-crypto';
+import * as DocumentPicker from 'expo-document-picker';
+import * as ImagePicker from 'expo-image-picker';
 import * as SecureStore from 'expo-secure-store';
 import { Stack, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -8,15 +10,19 @@ import { touchTarget } from '../../lib/a11y';
 import { ApiError } from '../../lib/api';
 import { documentIdentity, type ProjectDocument } from '../../lib/editorBridge';
 import { getDocument, putDocument } from '../../lib/editorProjects';
+import { listEditorProjectAssets } from '../../lib/editorProjectAssets';
 import { t } from '../../lib/i18n';
+import type { LibraryChoice } from '../../lib/librarySource';
 import {
     addMarker, addTrack, canvasOf, clipAt, copySelections, duplicateSelections, emptyTimeline, framesIn, groupSelections,
     pasteClipboard, removeSelections, selectionItems, splitClip, timelineOf, updateClip,
     type Canvas, type Clip, type Clipboard, type EditorTrack, type Media, type Selection, type TextClip, type Timeline, type TrackKind,
 } from '../../lib/nativeEditorModel';
 import { fetchProject } from '../../lib/projects';
+import type { SlotKind } from '../../lib/sources';
 import { colors, fonts } from '../../theme';
 import { HeaderAction } from '../HeaderAction';
+import { LibraryChooser } from '../LibraryChooser';
 
 type Tool = 'media' | 'audio' | 'generate' | 'templates' | 'elements' | 'text' | 'captions' | 'transcript' | 'scenes' | 'clips' | 'assistant' | 'effects' | 'transitions' | 'filters' | 'animation' | 'plugins' | 'brand' | 'review' | 'adjust';
 type Ripple = 'none' | 'lane' | 'all';
@@ -48,7 +54,7 @@ const timecode = (frames = 0, fps = 30) => {
     return `00:${String(Math.floor(whole / 60)).padStart(2, '0')}:${String(whole % 60).padStart(2, '0')}:${String(Math.max(0, frames % fps)).padStart(2, '0')}`;
 };
 
-export function FullEditorScreen({ projectId }: { projectId: string }) {
+export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobId?: string }) {
     const { api } = useAuth();
     const router = useRouter();
     const mounted = useRef(true);
@@ -77,6 +83,9 @@ export function FullEditorScreen({ projectId }: { projectId: string }) {
     const [history, setHistory] = useState({ canUndo: false, canRedo: false });
     const [frame, setFrame] = useState(0);
     const [playing, setPlaying] = useState(false);
+    const [projectAssets, setProjectAssets] = useState<Media[]>([]);
+    const [libraryKind, setLibraryKind] = useState<SlotKind | null>(null);
+    const initialImport = useRef(false);
 
     const playbackTimeline = timelineOf(document?.timeline);
     const playbackTotal = framesIn(playbackTimeline);
@@ -128,11 +137,28 @@ export function FullEditorScreen({ projectId }: { projectId: string }) {
 
     useEffect(() => {
         mounted.current = true;
-        void Promise.all([fetchProject(api, projectId), getDocument(api, projectId)])
-            .then(([project, head]) => {
+        void Promise.all([fetchProject(api, projectId), getDocument(api, projectId), listEditorProjectAssets(api, projectId)])
+            .then(([project, head, assets]) => {
                 if (!mounted.current) return;
                 if (project) setName(project.name);
-                documentRef.current = head.document;
+                let loaded = head.document;
+                if (jobId && !initialImport.current) {
+                    initialImport.current = true;
+                    const base = timelineOf(loaded.timeline);
+                    const mediaId = `j-${jobId}`;
+                    if (!base.media[mediaId]) {
+                        const media: Media = { id: mediaId, name: project?.name || 'Library video', kind: 'video', frames: 300, hasAudio: true, width: 0, height: 0 };
+                        const trackId = base.tracks.find((track) => track.kind === 'video' && !track.locked)?.id;
+                        if (trackId) {
+                            const seq = base.seq + 1;
+                            const timeline: Timeline = { ...base, seq, media: { ...base.media, [mediaId]: media }, video: [...base.video, { id: `v${seq}`, mediaId, start: 0, in: 0, len: media.frames!, trackId, volume: 1, transition: 0, rate: 1 }] };
+                            loaded = { ...loaded, schema_version: 3, timeline };
+                            dirtyRef.current = true;
+                            setDirty(true);
+                        }
+                    }
+                }
+                documentRef.current = loaded;
                 revisionRef.current = head.revision;
                 pastRef.current = [];
                 futureRef.current = [];
@@ -140,7 +166,8 @@ export function FullEditorScreen({ projectId }: { projectId: string }) {
                 setSelections([]);
                 setClipboard(null);
                 setHistory({ canUndo: false, canRedo: false });
-                setDocument(head.document);
+                setProjectAssets(assets);
+                setDocument(loaded);
                 setRevision(head.revision);
             })
             .catch(() => { if (mounted.current) setProblem(t('editor.fullFailed')); });
@@ -148,7 +175,7 @@ export function FullEditorScreen({ projectId }: { projectId: string }) {
             .then((value) => { if (mounted.current && value !== 'seen') setPrivacyNotice(true); })
             .catch(() => { if (mounted.current) setPrivacyNotice(true); });
         return () => { mounted.current = false; };
-    }, [api, projectId]);
+    }, [api, jobId, projectId]);
 
     useEffect(() => {
         if (!dirty) return;
@@ -202,6 +229,7 @@ export function FullEditorScreen({ projectId }: { projectId: string }) {
     const clipCount = timeline.video.length + timeline.audio.length + timeline.text.length;
     const selectedGroup = selected?.groupId;
     const selectedTrack = selection ? timeline.tracks.find((track) => track.id === selected?.trackId) : undefined;
+    const availableMedia = [...Object.values(timeline.media), ...projectAssets.filter((asset) => !Object.values(timeline.media).some((item) => item.assetSource?.assetId === asset.assetSource?.assetId))];
 
     const applyTimeline = (next: Timeline) => markDocument({ ...document, schema_version: 3, timeline: next });
     const updateCanvas = (patch: Partial<Canvas>) => {
@@ -295,16 +323,48 @@ export function FullEditorScreen({ projectId }: { projectId: string }) {
     const addTimelineTrack = (kind: TrackKind) => applyTimeline(addTrack(timeline, kind));
     const addTimelineMarker = () => applyTimeline(addMarker(timeline, frame));
     const updateTrack = (track: EditorTrack, patch: Partial<EditorTrack>) => applyTimeline({ ...timeline, tracks: timeline.tracks.map((item) => item.id === track.id ? { ...item, ...patch, id: item.id, kind: item.kind } : item) });
-    const addMediaToTimeline = (media: Media) => {
+    const addMediaToTimeline = (media: Media, sourceTimeline = timeline) => {
         const kind: TrackKind = media.kind === 'audio' ? 'audio' : 'video';
-        const trackId = timeline.tracks.find((track) => track.kind === kind && !track.locked)?.id;
+        const trackId = sourceTimeline.tracks.find((track) => track.kind === kind && !track.locked)?.id;
         if (!trackId) { setProblem(`Unlock or add a ${kind} track first.`); return; }
-        const seq = timeline.seq + 1;
+        const seq = sourceTimeline.seq + 1;
         const item: Clip = { id: `${kind[0]}${seq}`, mediaId: media.id, start: snap ? Math.round(frame) : frame, in: 0, len: Math.max(1, Math.min(media.frames || 90, 18_000 - frame)), trackId, volume: 1, transition: 0, rate: 1 };
-        applyTimeline({ ...timeline, seq, [kind]: [...timeline[kind], item] } as Timeline);
+        applyTimeline({ ...sourceTimeline, seq, media: { ...sourceTimeline.media, [media.id]: media }, [kind]: [...sourceTimeline[kind], item] } as Timeline);
         const nextSelection = { track: kind, id: item.id };
         setSelection(nextSelection);
         setSelections([nextSelection]);
+    };
+    const importLibrary = (choice: LibraryChoice, kind: SlotKind) => {
+        const id = `j-${choice.jobId}`;
+        addMediaToTimeline({ id, name: choice.name, kind, frames: kind === 'image' ? 90 : 300, hasAudio: kind !== 'image', width: 0, height: 0 });
+        setLibraryKind(null);
+    };
+    const importPicked = (asset: { uri: string; fileName?: string | null; name?: string; mimeType?: string | null; duration?: number | null; width?: number; height?: number }) => {
+        const mime = String(asset.mimeType || '').toLowerCase();
+        const kind = mime.startsWith('audio/') ? 'audio' : mime.startsWith('image/') ? 'image' : mime.startsWith('video/') ? 'video' : null;
+        if (!kind) { setProblem('Choose a video, image or audio file.'); return; }
+        const durationSeconds = typeof asset.duration === 'number' && asset.duration > 0 ? asset.duration / 1000 : kind === 'image' ? 3 : 10;
+        const media: Media = {
+            id: `l-${randomUUID()}`,
+            name: String(asset.fileName || asset.name || `Device ${kind}`).slice(0, 120),
+            kind, frames: Math.max(1, Math.floor(durationSeconds * timeline.fps)), hasAudio: kind !== 'image',
+            width: Math.max(0, Math.round(asset.width || 0)), height: Math.max(0, Math.round(asset.height || 0)),
+        };
+        addMediaToTimeline(media);
+    };
+    const choosePhotos = async () => {
+        setProblem(null);
+        try {
+            const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images', 'videos'], allowsMultipleSelection: false, quality: 1, preferredAssetRepresentationMode: ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible });
+            if (!result.canceled && result.assets[0]) importPicked(result.assets[0]);
+        } catch { setProblem('Could not open Photos. Check Veyrnox access in Settings.'); }
+    };
+    const chooseFiles = async () => {
+        setProblem(null);
+        try {
+            const result = await DocumentPicker.getDocumentAsync({ type: ['video/*', 'audio/*', 'image/jpeg', 'image/png', 'image/webp'], copyToCacheDirectory: true });
+            if (!result.canceled && result.assets[0]) importPicked(result.assets[0]);
+        } catch { setProblem('Could not open Files. Try again.'); }
     };
     const openWorkflow = async (path: string) => {
         const saved = await save();
@@ -400,9 +460,9 @@ export function FullEditorScreen({ projectId }: { projectId: string }) {
 
         <ScrollView style={styles.inspector} contentContainerStyle={styles.inspectorContent} keyboardShouldPersistTaps="handled">
             {tool === 'media' ? <>
-                <PanelHeading title="Project media" detail={`${Object.values(timeline.media).length} items`} />
-                {Object.values(timeline.media).length ? Object.values(timeline.media).map((item) => <ProjectMediaRow key={item.id} item={item} fps={timeline.fps} onAdd={addMediaToTimeline} />) : <EmptyPanel title="No media yet" body="Generate or choose a creation, then return to add it to this Cut project." />}
-                <Action label="Open Library" onPress={() => void openWorkflow('/library')} />
+                <PanelHeading title="Project media" detail={`${availableMedia.length} items`} />
+                {availableMedia.length ? availableMedia.map((item) => <ProjectMediaRow key={item.id} item={item} fps={timeline.fps} onAdd={addMediaToTimeline} />) : <EmptyPanel title="No media yet" body="Choose an existing Veyrnox creation, a project asset, or something from this device." />}
+                <View style={styles.quickActions}><Action label="Library video" onPress={() => setLibraryKind('video')} /><Action label="Library image" onPress={() => setLibraryKind('image')} /><Action label="Library audio" onPress={() => setLibraryKind('audio')} /><Action label="Photos & videos" onPress={() => void choosePhotos()} /><Action label="Files" onPress={() => void chooseFiles()} /></View>
             </> : null}
             {tool === 'audio' ? <>
                 <PanelHeading title="Audio" detail={`${timeline.audio.length} clips`} />
@@ -484,6 +544,7 @@ export function FullEditorScreen({ projectId }: { projectId: string }) {
                 {timeline.tracks.map((track) => <View key={track.id} style={styles.trackControl}><View style={styles.rowCopy}><Text style={styles.rowTitle}>{track.name}</Text><Text style={styles.muted}>{track.kind}</Text></View><Choice label="Lock" selected={track.locked} onPress={() => updateTrack(track, { locked: !track.locked })} compact /><Choice label="Mute" selected={track.muted} onPress={() => updateTrack(track, { muted: !track.muted })} compact /><Choice label="Hide" selected={track.hidden} onPress={() => updateTrack(track, { hidden: !track.hidden })} compact /></View>)}
             </> : null}
         </ScrollView>
+        {libraryKind ? <LibraryChooser api={api} kind={libraryKind} onClose={() => setLibraryKind(null)} onPick={(choice) => importLibrary(choice, libraryKind)} /> : null}
         <Modal visible={privacyNotice} transparent animationType="fade" onRequestClose={acknowledgePrivacy} accessibilityViewIsModal><View style={styles.noticeBackdrop}><View style={styles.noticeCard}><Text accessibilityRole="header" style={styles.noticeTitle}>{t('editor.privacyTitle')}</Text><Text style={styles.body}>{t('editor.privacySummary')}</Text><Pressable accessibilityRole="button" accessibilityLabel={t('editor.privacyConfirm')} style={[styles.primary, touchTarget]} onPress={acknowledgePrivacy}><Text style={styles.primaryText}>{t('editor.privacyConfirm')}</Text></Pressable></View></View></Modal>
     </View>;
 }
@@ -508,8 +569,10 @@ function TimelineTrack({ track, items, timeline, selections, zoom, onSelect }: {
 function PanelHeading({ title, detail }: { title: string; detail: string }) { return <View style={styles.panelHeading}><Text accessibilityRole="header" style={styles.sectionTitle}>{title}</Text><Text style={styles.panelDetail}>{detail}</Text></View>; }
 function EmptyPanel({ title, body }: { title: string; body: string }) { return <View style={styles.emptyPanel}><Text style={styles.emptyTitle}>{title}</Text><Text style={styles.emptyBody}>{body}</Text></View>; }
 function ProjectMediaRow({ item, fps, onAdd }: { item: Media; fps: number; onAdd(item: Media): void }) {
-    const label = `Add ${item.kind === 'audio' ? 'audio' : 'video'}`;
-    return <View style={styles.mediaRow}><View style={styles.mediaThumb}><Text style={styles.mediaThumbText}>{item.kind === 'audio' ? '♫' : '▶'}</Text></View><View style={styles.rowCopy}><Text style={styles.rowTitle} numberOfLines={1}>{item.name || t('editor.untitledMedia')}</Text><Text style={styles.muted}>{item.kind || t('editor.media')} · {seconds(item.frames, fps)}</Text></View><Pressable accessibilityRole="button" accessibilityLabel={label} onPress={() => onAdd(item)} style={({ pressed }) => [styles.action, styles.compactControl, touchTarget, pressed && styles.pressed]}><Text style={styles.actionText}>Add</Text></Pressable></View>;
+    const name = item.name || t('editor.untitledMedia');
+    const label = `Add ${name} to timeline`;
+    const source = item.assetSource ? 'Project' : item.id.startsWith('j-') ? 'Library' : item.id.startsWith('l-') ? 'This device' : 'Project';
+    return <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={() => onAdd(item)} style={({ pressed }) => [styles.mediaRow, pressed && styles.pressed]}><View style={styles.mediaThumb}><Text style={styles.mediaThumbText}>{item.kind === 'audio' ? '♫' : item.kind === 'image' ? '▧' : '▶'}</Text></View><View style={styles.rowCopy}><Text style={styles.rowTitle} numberOfLines={1}>{name}</Text><Text style={styles.muted}>{source} · {item.kind || t('editor.media')} · {seconds(item.frames, fps)}</Text></View><View style={[styles.action, styles.compactControl]}><Text style={styles.actionText}>Add</Text></View></Pressable>;
 }
 function InspectorClip({ track, item, timeline, selected, onPress }: { track: TrackKind; item: Clip; timeline: Timeline; selected: boolean; onPress(): void }) {
     return <Pressable accessibilityRole="button" accessibilityLabel={timeline.media[item.mediaId || '']?.name || item.id} accessibilityState={{ selected }} onPress={onPress} style={[styles.mediaRow, selected && styles.mediaRowSelected]}><View style={styles.mediaThumb}><Text style={styles.mediaThumbText}>♫</Text></View><View style={styles.rowCopy}><Text style={styles.rowTitle}>{timeline.media[item.mediaId || '']?.name || `${track} clip`}</Text><Text style={styles.muted}>{seconds(item.len, timeline.fps)}</Text></View></Pressable>;
