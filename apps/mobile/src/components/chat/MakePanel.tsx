@@ -15,11 +15,12 @@ import { colors } from '../../theme';
 interface Props {
     readonly visible: boolean;
     readonly initialPrompt?: string;
+    readonly initialKind?: Kind;
     readonly onClose: () => void;
 }
 
 // A compact Create inside the chat. The price is on the button before anything starts, and nothing starts offline.
-export function MakePanel({ visible, initialPrompt = '', onClose }: Props) {
+export function MakePanel({ visible, initialPrompt = '', initialKind = 'image', onClose }: Props) {
     const { api } = useAuth();
     const router = useRouter();
     const [catalog, setCatalog] = useState<CatalogModel[] | null>(null);
@@ -35,8 +36,12 @@ export function MakePanel({ visible, initialPrompt = '', onClose }: Props) {
         if (visible && !catalog) fetchCatalog().then(setCatalog, () => setError(t('chat.make.loadFailed')));
     }, [visible, catalog]);
     useEffect(() => {
-        if (visible && initialPrompt) setPrompt(initialPrompt);
-    }, [visible, initialPrompt]);
+        if (!visible) return;
+        setKind(initialKind);
+        setModelId(null);
+        setDuration(null);
+        setPrompt(initialPrompt);
+    }, [visible, initialPrompt, initialKind]);
 
     const models = catalog ? byPrice(chatMediaModels(catalog, kind)) : [];
     const model = models.find((m) => m.id === modelId) ?? models[0] ?? null;

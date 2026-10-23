@@ -17,10 +17,14 @@ const state = {
     messages: new Map(),
     personas: [{ id: randomUUID(), name: 'Editor', instructions: 'Be concise. Tighten every sentence and keep the brand voice.', model_id: 'claude-sonnet', thinking: false, web: false }],
     folders: [{ id: randomUUID(), name: 'Launch' }],
-    jobs: [],
+    jobs: [
+        { id: '99999999-9999-4999-8999-999999999991', model_id: 'nano-banana', credits: 4, created: Date.now() - 20_000, label: 'A glossy product portrait in soft studio light', kind: 'text-to-image' },
+        { id: '99999999-9999-4999-8999-999999999992', model_id: 'kling-3', credits: 9, created: Date.now() - 20_000, label: 'A cinematic product reveal with a slow camera move', kind: 'text-to-video' },
+    ],
+    agentPlans: new Map(),
     socialPlan: process.env.MOCK_SOCIAL_PLAN === 'free' ? 'free' : 'publish',
     socialPosts: [
-        { id: 'post-1', key: 'seed-1', status: 'scheduled', scheduled_at: '2026-10-20T09:00:00Z', global_text: 'Spring launch teaser: the product turns in soft light.', created_at: '2026-10-18T10:00:00Z', updated_at: '2026-10-18T10:00:00Z', targets: [{ id: 't1', network: 'instagram', publish_status: 'pending', platform_post_url: null, last_error: null }] },
+        { id: 'post-1', key: 'seed-1', status: 'scheduled', scheduled_at: new Date(Date.now() + 2 * 86_400_000).toISOString(), global_text: 'Spring launch teaser: the product turns in soft light.', created_at: '2026-10-18T10:00:00Z', updated_at: '2026-10-18T10:00:00Z', targets: [{ id: 't1', network: 'instagram', publish_status: 'pending', platform_post_url: null, last_error: null }] },
         { id: 'post-2', key: 'seed-2', status: 'failed', scheduled_at: '2026-10-17T09:00:00Z', global_text: 'Behind the scenes cut.', created_at: '2026-10-17T08:00:00Z', updated_at: '2026-10-17T09:05:00Z', targets: [{ id: 't2', network: 'tiktok', publish_status: 'failed', platform_post_url: null, last_error: 'The account access token expired. <b>Reconnect</b> the account.' }, { id: 't3', network: 'instagram', publish_status: 'published', platform_post_url: 'https://www.instagram.com/p/mock/', last_error: null }] },
     ],
     deleted: new Set(),
@@ -36,6 +40,9 @@ const state = {
     referral: { code: 'K7M2PQ9XWD', referred: 2, attached: false },
     // The Vibe Check (server ADR-0251): none | skipped | completed, with the answers the app sent.
     vibe: { status: 'none', answers: {} },
+    brandKits: new Map(),
+    retention: new Map(),
+    progress: new Map([['11111111-1111-4111-8111-111111111111', 24]]),
 };
 state.messages.set(state.threads[0].id, [
     { id: randomUUID(), role: 'user', content: 'Give me three angles for a spring launch video.' },
@@ -58,6 +65,26 @@ const episodes = (id) => [1, 2, 3].map((n) => ({ id: randomUUID(), position: n, 
 const PLAY_TTL = Number(process.env.MOCK_PLAY_TTL || 900);
 const plays = new Map();
 
+// Keep the development dashboard faithful to the real accounts response so capability and role gates can be previewed.
+const publishDashboardFlags = (role) => ({
+    brandRole: role,
+    plansEnabled: true,
+    inboxEnabled: true,
+    inboxWorkflowsEnabled: true,
+    smartlinksEnabled: true,
+    contentPresetsEnabled: true,
+    queuesEnabled: true,
+    approvalsEnabled: true,
+    teamsEnabled: true,
+    variantsEnabled: true,
+    reportsEnabled: true,
+    customerApiEnabled: true,
+    customerWebhooksEnabled: true,
+    adsEnabled: true,
+    commerceEnabled: true,
+    rssAutolistsEnabled: true,
+});
+
 // A real 8 second video for the quick-edit length probe, made once with ffmpeg when it is installed.
 const CLIP_LENGTH_S = 8;
 let clipFile = null;
@@ -73,6 +100,7 @@ function ensureClip() {
 }
 
 const CATALOG = [
+    { id: 'video-agent', name: 'Video Agent', modality: 'brief-to-video', credits: 165, gated: false, durations: [], capabilities: { inputs: { brief: { type: 'string' } }, media: {} } },
     { id: 'nano-banana', name: 'Nano Banana', modality: 'text-to-image', credits: 4, gated: false, durations: [5], capabilities: { inputs: { prompt: { type: 'string' } }, media: {} } },
     { id: 'seedream-4', name: 'Seedream 4', modality: 'text-to-image', credits: 3, gated: false, durations: [5], capabilities: { inputs: { prompt: { type: 'string' } }, media: {} } },
     { id: 'veo-fast', name: 'Veo 3.1 Fast', modality: 'text-to-video', credits: 12, gated: false, durations: [5, 10], capabilities: { inputs: { prompt: { type: 'string' } }, media: {} } },
@@ -123,6 +151,18 @@ createServer(async (req, res) => {
 
     if (path.startsWith('/auth/v1/token') || path === '/auth/v1/signup') return send(res, 200, tokens());
     if (path === '/auth/v1/logout') { res.writeHead(204); return res.end(); }
+    if (path === '/auth/v1/settings' && req.method === 'GET') return send(res, 200, { passkeys_enabled: false });
+    if (path === '/auth/v1/user' && req.method === 'GET') return send(res, 200, {
+        id: '00000000-0000-4000-8000-000000000001',
+        email: 'creator@veyrnox.local',
+        app_metadata: { provider: 'email' },
+        factors: [],
+    });
+    if (path === '/auth/v1/user' && req.method === 'PUT') return send(res, 200, { user: { email: 'creator@veyrnox.local' } });
+    if (path === '/auth/v1/reauthenticate' && req.method === 'GET') return send(res, 200, { ok: true });
+    if (path === '/auth/v1/passkeys' && req.method === 'GET') return send(res, 200, { passkeys: [] });
+    if (path === '/auth/v1/user/oauth/grants' && req.method === 'GET') return send(res, 200, { grants: [] });
+    if (path === '/auth/v1/user/oauth/grants' && req.method === 'DELETE') return send(res, 200, { revoked: true });
     if (path === '/clip.mp4') {
         const file = ensureClip();
         if (!file) { res.writeHead(404); return res.end(); }
@@ -185,10 +225,10 @@ createServer(async (req, res) => {
     const disc = path.match(/^\/api\/v1\/social\/accounts\/(acc-[a-z0-9]+)$/);
     if (disc && req.method === 'DELETE') { (state.goneAccounts ??= new Set()).add(disc[1]); return send(res, 200, { ok: true }); }
     if (path === '/api/v1/social/accounts' && brandHeader === BRAND_CLIENT) {
-        return send(res, 200, { brand_id: BRAND_CLIENT, accountLimit: 5, planTier: 'publish', ...(uploadsEnabled ? { uploadsEnabled: true } : {}), accounts: [
+        return send(res, 200, { brand_id: BRAND_CLIENT, accountLimit: 5, planTier: 'publish', ...publishDashboardFlags('editor'), ...(uploadsEnabled ? { uploadsEnabled: true } : {}), accounts: [
             { id: 'acc-c1', network: 'linkedin', display_name: 'Acme Corp Page', avatar_url: null, status: 'active', connected_at: '2026-10-02T10:00:00Z', token_expires_at: '2026-12-02T10:00:00Z', publishingEnabled: true, supportedMedia: ['image'] } ] });
     }
-    if (path === '/api/v1/social/accounts') return send(res, 200, { brand_id: 'b1', accountLimit: 5, planTier: 'publish', ...(uploadsEnabled ? { uploadsEnabled: true } : {}), accounts: ([
+    if (path === '/api/v1/social/accounts') return send(res, 200, { brand_id: 'b1', accountLimit: 5, planTier: 'publish', ...publishDashboardFlags('owner'), ...(uploadsEnabled ? { uploadsEnabled: true } : {}), accounts: ([
         { id: 'acc-1', network: 'instagram', display_name: 'Veyrnox Studio', avatar_url: null, status: 'active', connected_at: '2026-10-01T10:00:00Z', token_expires_at: '2026-12-01T10:00:00Z', publishingEnabled: true, supportedMedia: ['image', 'video'] },
         { id: 'acc-2', network: 'tiktok', display_name: 'veyrnox.ai', avatar_url: null, status: 'expired', connected_at: '2026-09-01T10:00:00Z', token_expires_at: '2026-10-01T10:00:00Z', publishingEnabled: true, supportedMedia: ['image', 'video'] } ]).filter((a) => !state.goneAccounts?.has(a.id)) });
     // Publish posts (stateful): create, reschedule, cancel and restore, with the version stamp the real routes require.
@@ -376,14 +416,31 @@ createServer(async (req, res) => {
     }
     // Workspaces and projects (create, rename, delete and restore keep their state while the mock runs). The real routes answer errors as {error:{code,message}}, an object.
     const PROJECTS = (globalThis.__MOCK_PROJECTS ??= [
-        { id: 'c1111111-1111-4111-8111-111111111111', workspace_id: 'w1111111-1111-4111-8111-111111111111', owner_id: 'u1', name: 'Spring launch reel', version: 54, created_at: '2026-10-01T10:00:00Z', updated_at: '2026-10-18T09:00:00Z' },
-        { id: 'c2222222-2222-4222-8222-222222222222', workspace_id: 'w1111111-1111-4111-8111-111111111111', owner_id: 'u1', name: 'Product teaser', version: 3, created_at: '2026-10-10T10:00:00Z', updated_at: '2026-10-12T09:00:00Z' },
+        { id: 'c1111111-1111-4111-8111-111111111111', workspace_id: 'a1111111-1111-4111-8111-111111111111', owner_id: 'u1', name: 'Spring launch reel', version: 54, created_at: '2026-10-01T10:00:00Z', updated_at: '2026-10-18T09:00:00Z' },
+        { id: 'c2222222-2222-4222-8222-222222222222', workspace_id: 'a1111111-1111-4111-8111-111111111111', owner_id: 'u1', name: 'Product teaser', version: 3, created_at: '2026-10-10T10:00:00Z', updated_at: '2026-10-12T09:00:00Z' },
     ]);
     const WORKSPACES = [
-        { id: 'w1111111-1111-4111-8111-111111111111', organisation_id: 'o1', name: 'Studio', is_default: true },
-        { id: 'w2222222-2222-4222-8222-222222222222', organisation_id: 'o1', name: 'Client work', is_default: false },
+        { id: 'a1111111-1111-4111-8111-111111111111', organisation_id: 'o1', name: 'Studio', is_default: true },
+        { id: 'a2222222-2222-4222-8222-222222222222', organisation_id: 'o1', name: 'Client work', is_default: false },
     ];
     if (path === '/api/v1/workspaces' && req.method === 'GET') return send(res, 200, { workspaces: WORKSPACES });
+    m = path.match(/^\/api\/v1\/workspaces\/([^/]+)\/brand-kit$/);
+    if (m) {
+        if (!WORKSPACES.some((workspace) => workspace.id === m[1])) return send(res, 404, { error: { code: 'NOT_FOUND', message: 'Workspace not found.' } });
+        const saved = state.brandKits.get(m[1]) ?? { kit: null, version: 0 };
+        if (req.method === 'GET') return send(res, 200, { ...saved, canEdit: true });
+        if (req.method === 'PUT') {
+            if (body.expected_version !== saved.version) return send(res, 409, { error: { code: 'REVISION_CONFLICT', message: 'The brand kit changed.' } });
+            const next = { kit: body.kit, version: saved.version + 1 };
+            state.brandKits.set(m[1], next);
+            return send(res, 200, { ...next, canEdit: true });
+        }
+    }
+    m = path.match(/^\/api\/v1\/workspaces\/([^/]+)\/brand-assets$/);
+    if (m && req.method === 'GET') return send(res, 200, { assets: [
+        { id: 'brand-asset-image', project_id: PROJECTS[0].id, sniffed_type: 'image/png', byte_size: PNG.length, width: 256, height: 256, duration_ms: null },
+        { id: 'brand-asset-video', project_id: PROJECTS[1].id, sniffed_type: 'video/mp4', byte_size: 40099, width: 320, height: 568, duration_ms: CLIP_LENGTH_S * 1000 },
+    ], truncated: false });
     if (path === '/api/v1/projects' && req.method === 'GET') {
         const w = new URL(req.url, 'http://x').searchParams.get('workspace_id');
         return send(res, 200, { projects: PROJECTS.filter((p) => p.workspace_id === w) });
@@ -457,6 +514,18 @@ createServer(async (req, res) => {
 
     if (!req.headers.authorization?.startsWith('Bearer ')) return send(res, 401, { error: 'not_authenticated' });
     if (path === '/api/v1/balance') return send(res, 200, { balance: state.balance, free_credits: state.free, free_expires_at: null });
+    if (path === '/api/v1/ledger' && req.method === 'GET') return send(res, 200, {
+        entries: [
+            { id: '77777777-7777-4777-8777-777777777771', delta: -9, free_delta: 0, kind: 'generation', created_at: '2026-10-22T19:10:00Z' },
+            { id: '77777777-7777-4777-8777-777777777772', delta: 250, free_delta: 10, kind: 'signup_grant', created_at: '2026-10-18T09:00:00Z' },
+        ],
+        next: null,
+    });
+    if (path === '/api/v1/ledger/usage' && req.method === 'GET') return send(res, 200, { spent: { day: 11, week: 26, month: 43 }, truncated: false });
+    if (path === '/api/v1/top-ups' && req.method === 'GET') return send(res, 200, {
+        top_ups: [{ id: '88888888-8888-4888-8888-888888888881', credits: 250, price_usd_cents: 1999, status: 'credited', created_at: '2026-10-18T09:00:00Z' }],
+        next: null,
+    });
     if (path === '/api/v1/creator-profile') {
         if (req.method === 'GET') return send(res, 200, state.vibe.status === 'none' ? { status: 'none' } : { status: state.vibe.status, answers: state.vibe.answers });
         if (req.method === 'PUT') { state.vibe = { status: 'completed', answers: body }; return send(res, 200, { status: 'completed', answers: body, changed: true }); }
@@ -531,6 +600,52 @@ createServer(async (req, res) => {
         const head = { ...t, creator: { username: t.username, display_name: t.display_name } };
         if (t.content_type === 'SERIES') return send(res, 200, { title: { ...head, seasons: [{ id: randomUUID(), position: 1, title: 'Season 1', episodes: episodes(t.id) }] } });
         return send(res, 200, { title: { ...head, access: t.id === CINEMA[1].id ? 'locked' : 'free', credits: 0 } });
+    }
+    if (path === '/api/v1/cinema/entitlement' && req.method === 'GET') {
+        const id = url.searchParams.get('content_id');
+        if (!CINEMA.some((title) => title.id === id)) return send(res, 404, { error: 'content_not_found' });
+        return send(res, 200, id === CINEMA[1].id ? { access: 'locked', reason: 'locked', credits: 5 } : { access: 'free', credits: 0 });
+    }
+    if (path === '/api/v1/cinema/retention' && req.method === 'GET') {
+        const contentId = url.searchParams.get('content_id');
+        if (contentId) return send(res, 200, {
+            saved: state.retention.get(`saved:${contentId}`) === true,
+            following_creator: state.retention.get(`creator:${FILM_ID}`) === true,
+            following_series: state.retention.get(`series:${FILM_ID}`) === true,
+            own_creator: false,
+            creator_id: FILM_ID,
+            series_id: FILM_ID,
+        });
+        const kind = url.searchParams.get('kind');
+        const items = [...state.retention.entries()].filter(([key, active]) => active && key.startsWith(`${kind}:`)).map(([key]) => {
+            const target = key.slice(String(kind).length + 1);
+            const title = CINEMA.find((candidate) => candidate.id === target) ?? CINEMA[0];
+            return { target_id: target, content_id: title.id, title: title.title, username: title.username, display_name: title.display_name };
+        });
+        return send(res, 200, { items, next: null });
+    }
+    if (path === '/api/v1/cinema/retention' && req.method === 'POST') {
+        state.retention.set(`${body.kind}:${body.target_id}`, body.active === true);
+        return send(res, 200, { active: body.active === true });
+    }
+    if (path === '/api/v1/cinema/voting' && req.method === 'GET') return send(res, 200, { competitions: [] });
+    if (path === '/api/v1/cinema/story-polls' && req.method === 'GET') return send(res, 200, { polls: [] });
+    if (path === '/api/v1/cinema/progress' && req.method === 'GET') {
+        const items = [...state.progress.entries()].map(([contentId, position]) => {
+            const title = CINEMA.find((candidate) => candidate.id === contentId) ?? CINEMA[0];
+            return { content_id: contentId, title: title.title, username: title.username, display_name: title.display_name, position_seconds: position, duration_seconds: title.duration_seconds ?? 94 };
+        });
+        return send(res, 200, { items, next: null });
+    }
+    if (path === '/api/v1/cinema/progress' && req.method === 'PUT') {
+        const position = Math.max(0, Math.floor(Number(body.position_seconds) || 0));
+        const completed = position >= 84;
+        if (completed) state.progress.delete(body.content_id); else state.progress.set(body.content_id, position);
+        return send(res, 200, { recorded: true, completed });
+    }
+    if (path === '/api/v1/cinema/progress' && req.method === 'DELETE') {
+        state.progress.delete(url.searchParams.get('content_id'));
+        return send(res, 200, { removed: true });
     }
     if (path === '/api/v1/cinema/play' && req.method === 'POST') {
         if (body.content_id === CINEMA[1].id) return send(res, 503, { error: 'unlocks_not_open' });
@@ -655,6 +770,40 @@ createServer(async (req, res) => {
         return;
     }
 
+    if (path === '/api/v1/montage/plan' && req.method === 'POST') {
+        const brief = typeof body.brief === 'string' ? body.brief.trim() : '';
+        const narration = typeof body.narration_text === 'string' ? body.narration_text.trim() : '';
+        const aspect = ['9:16', '16:9', '1:1'].includes(body.aspect_ratio) ? body.aspect_ratio : '9:16';
+        if (brief.length < 3 || brief.length > 500) return send(res, 400, { error: 'inputs_invalid:brief' });
+        if (narration.length > 300 || /[\u0000-\u001F\u007F-\u009F]/.test(narration)) return send(res, 400, { error: 'inputs_invalid:narration_text' });
+        const planId = `mock-agent-plan-${randomUUID()}`;
+        const idempotencyKey = `agent_${randomUUID()}`;
+        const plan = { brief, narration, aspect, credits: 165, idempotencyKey, expiresAt: Math.floor(Date.now() / 1000) + 1800 };
+        state.agentPlans.set(planId, plan);
+        return send(res, 200, {
+            plan_id: planId,
+            idempotency_key: idempotencyKey,
+            plan: { seconds: 30, summary: `A polished 30-second video built around “${brief.slice(0, 90)}”.`, narration_supported: true },
+            credits: plan.credits,
+            aspect_ratio: aspect,
+            expires_at: plan.expiresAt,
+            ...(narration ? { narration_text: narration } : {}),
+        });
+    }
+    if (path === '/api/v1/generations' && req.method === 'POST' && body.model_id === 'video-agent') {
+        const plan = state.agentPlans.get(body.inputs?.plan_id);
+        if (!plan) return send(res, 400, { error: 'plan_invalid' });
+        if (plan.expiresAt <= Math.floor(Date.now() / 1000)) return send(res, 409, { error: 'plan_expired' });
+        if (body.idempotency_key !== plan.idempotencyKey) return send(res, 400, { error: 'plan_key_mismatch' });
+        if (body.confirmed_credits !== plan.credits) return send(res, 409, { error: 'plan_price_changed' });
+        if (body.inputs?.brief !== plan.brief || body.inputs?.aspect_ratio !== plan.aspect || String(body.inputs?.narration_text || '') !== plan.narration) return send(res, 400, { error: 'plan_mismatch' });
+        if (state.balance < plan.credits) return send(res, 402, { error: 'insufficient_credits' });
+        state.balance -= plan.credits;
+        state.agentPlans.delete(body.inputs.plan_id);
+        const job = { id: randomUUID(), model_id: 'video-agent', credits: plan.credits, created: Date.now(), label: plan.brief.slice(0, 60), kind: 'brief-to-video' };
+        state.jobs.unshift(job);
+        return send(res, 200, { job_id: job.id, state: 'SUBMITTED', balance_after: state.balance });
+    }
     if (path === '/api/v1/generations' && req.method === 'POST' && body.model_id === 'clip-edit') {
         // Quick edit (ADR-0134): checks the clips like the server does, quotes 3 credits per started 10 s plus 4 for captions,
         // and a confirmed price of 0 is refused with the real price and charges nothing.

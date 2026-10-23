@@ -59,6 +59,7 @@ import area_label from './en/label';
 import area_library from './en/library';
 import area_libsrc from './en/libsrc';
 import area_lowBalance from './en/lowBalance';
+import area_mcp from './en/mcp';
 import area_mdl from './en/mdl';
 import area_menu from './en/menu';
 import area_mobile from './en/mobile';
@@ -79,6 +80,7 @@ import area_privacyExport from './en/privacyExport';
 import area_prov from './en/prov';
 import area_public from './en/public';
 import area_publish from './en/publish';
+import area_publishHome from './en/publishHome';
 import area_publishLinks from './en/publishLinks';
 import area_publishUploads from './en/publishUploads';
 import area_publishWorkflows from './en/publishWorkflows';
@@ -98,9 +100,11 @@ import area_tabs from './en/tabs';
 import area_team from './en/team';
 import area_toolsDir from './en/toolsDir';
 import area_topup from './en/topup';
+import area_ui from './en/ui';
 import area_unlock from './en/unlock';
 import area_vey from './en/vey';
 import area_vibe from './en/vibe';
+import area_videoAgent from './en/videoAgent';
 import area_welcome from './en/welcome';
 
 const catalog = {
@@ -161,6 +165,7 @@ const catalog = {
     ...area_library,
     ...area_libsrc,
     ...area_lowBalance,
+    ...area_mcp,
     ...area_mdl,
     ...area_menu,
     ...area_mobile,
@@ -181,6 +186,7 @@ const catalog = {
     ...area_prov,
     ...area_public,
     ...area_publish,
+    ...area_publishHome,
     ...area_publishLinks,
     ...area_publishUploads,
     ...area_publishWorkflows,
@@ -200,9 +206,11 @@ const catalog = {
     ...area_team,
     ...area_toolsDir,
     ...area_topup,
+    ...area_ui,
     ...area_unlock,
     ...area_vey,
     ...area_vibe,
+    ...area_videoAgent,
     ...area_welcome,
 } as const;
 

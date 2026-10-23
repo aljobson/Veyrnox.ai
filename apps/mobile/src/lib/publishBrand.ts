@@ -9,7 +9,7 @@ import { ApiError } from './api';
 
 export const BRAND_HEADER = 'x-publish-brand-id';
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const ROLES = ['owner', 'manager', 'editor', 'viewer', 'analyst'] as const;
+const ROLES = ['owner', 'manager', 'editor', 'reviewer', 'viewer', 'analyst'] as const;
 export type BrandRole = (typeof ROLES)[number];
 const LABEL_MAX = 60;
 

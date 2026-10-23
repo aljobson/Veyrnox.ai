@@ -1,4 +1,4 @@
-import { resolveScheme, THEME_PREFERENCES } from '../src/theme';
+import { resolveScheme, THEME_PREFERENCES, toggledTheme } from '../src/theme';
 
 const light = { background: '#ffffff', surface: '#f6f6f7', text: '#0a0a0b', body: '#3f3f46', muted: '#52525b', accent: '#0b7a66', accentInk: '#ffffff', money: '#8a5a00', danger: '#c4241a' };
 const lum = (hex: string): number => {
@@ -17,6 +17,10 @@ describe('light and dark', () => {
         expect(resolveScheme('system', 'light')).toBe('light');
         expect(resolveScheme('system', 'dark')).toBe('dark');
         expect(resolveScheme('system', null)).toBe('dark');
+    });
+    test('the header toggle always changes to the opposite explicit theme', () => {
+        expect(toggledTheme('dark')).toBe('light');
+        expect(toggledTheme('light')).toBe('dark');
     });
     test('the light palette keeps text readable (WCAG AA, 4.5:1) on both surfaces', () => {
         for (const text of [light.text, light.body, light.muted, light.accent, light.money, light.danger]) {

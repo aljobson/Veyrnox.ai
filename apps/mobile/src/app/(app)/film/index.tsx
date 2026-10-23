@@ -114,8 +114,12 @@ export default function FilmStudio() {
         return (
             <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
                 <Stack.Screen options={{ title: 'Film Studio' }} />
-                <Text style={styles.title} accessibilityRole="header">Open your film on the phone</Text>
+                <Text style={styles.title} accessibilityRole="header">Start or open a film</Text>
                 <Text style={styles.body}>{t('filmCloud.intro')}</Text>
+                <Pressable accessibilityRole="button" style={styles.primary} onPress={() => router.push('/film/workspace')}>
+                    <Text style={styles.primaryText}>Start a new film</Text>
+                </Pressable>
+                <Text style={styles.heading} accessibilityRole="header">Open an export</Text>
                 <Text style={styles.step}>1. On veyrnox.ai open Film Studio and export your studio as JSON.</Text>
                 <Text style={styles.step}>2. Put the file in Files, iCloud Drive or an email to yourself.</Text>
                 <Text style={styles.step}>3. Choose it here.</Text>
@@ -139,7 +143,11 @@ export default function FilmStudio() {
                 {sum.aspect} · {sum.shots} {sum.shots === 1 ? 'shot' : 'shots'} · {sum.lockedAssets} of {sum.assets} assets locked · {sum.acceptedShots} takes accepted
             </Text>
             <Text style={styles.body}>{t('filmCloud.intro')}</Text>
-            <Text style={styles.muted}>A copy from {savedAt ? new Date(savedAt).toLocaleDateString() : 'the web'}. Changes are made on the web; open a newer export to update it.</Text>
+            <Text style={styles.muted}>Opened {savedAt ? new Date(savedAt).toLocaleDateString() : 'from your account'}. You can edit every stage on this phone and save it back to your account.</Text>
+
+            <Pressable accessibilityRole="button" style={styles.primary} onPress={() => router.push('/film/workspace')}>
+                <Text style={styles.primaryText}>Edit in Film Studio</Text>
+            </Pressable>
 
             <Text style={styles.heading} accessibilityRole="header">Stages</Text>
             {stages.map((s, i) => (
@@ -150,7 +158,7 @@ export default function FilmStudio() {
                     {s.done ? null : (
                         <>
                             <Text style={styles.muted}>{s.open} to fix. {s.first}</Text>
-                            <Text style={styles.web}>Continue on web</Text>
+                            <Text style={styles.web}>Open the native workspace</Text>
                         </>
                     )}
                 </View>
@@ -193,11 +201,11 @@ function Links({ router, cloudCount }: { router: ReturnType<typeof useRouter>; c
             </Pressable>
             <Pressable accessibilityRole="button" style={[styles.row, touchTarget]} onPress={() => router.push('/chat/new')}>
                 <Text style={styles.name}>Film chats</Text>
-                <Text style={styles.muted}>Seven helpers in a new chat: setup, breakdown, references, passports, stress tests and prompts. They write; they never lock anything.</Text>
+                <Text style={styles.muted}>Seven helpers for setup, breakdown, references, passports, stress tests and prompts.</Text>
             </Pressable>
             <Pressable accessibilityRole="link" style={[styles.row, touchTarget]} onPress={() => WebBrowser.openBrowserAsync(`${API_BASE}${FILM_STUDIO_WEB_PATH}`)}>
                 <Text style={styles.name}>Continue on web</Text>
-                <Text style={styles.muted}>Reference boards, asset passports, stress tests, locking, prompt writing and the 16:9 master are on the web for now.</Text>
+                <Text style={styles.muted}>Open the desktop workspace when you want more room, while the native workspace remains fully editable.</Text>
             </Pressable>
         </View>
     );

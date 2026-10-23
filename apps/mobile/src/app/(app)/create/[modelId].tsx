@@ -1,4 +1,6 @@
+import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
@@ -21,12 +23,13 @@ import { useBalance } from '../../../lib/useBalance';
 import { shortfall } from '../../../lib/lowBalance';
 import { useFreeLeft } from '../../../lib/useFreeLeft';
 import { estimateCredits, fetchCatalog, kindOf, promptRequired, textInput, type CatalogModel } from '../../../lib/media';
-import { selectedState } from '../../../lib/a11y';
+import { MIN_TARGET, selectedState } from '../../../lib/a11y';
 import { toSourceAssets } from '../../../lib/librarySource';
 import { portraitAsPickedFile, startOddlingId } from '../../../lib/oddlingsAnimate';
 import type { PickedFile } from '../../../lib/sources';
 import { SLOT_ORDER, missingRequired, slotsFor, toSourceKeys, type SlotName } from '../../../lib/sources';
-import { colors } from '../../../theme';
+import { MENU_ICONS } from '../../../lib/menuIcons';
+import { colors, fonts, radius } from '../../../theme';
 import { plural, t } from '../../../lib/i18n';
 
 const PLACEHOLDER: Record<string, string> = { topic: 'form.topicPlaceholder' };
@@ -185,6 +188,12 @@ export default function CreateWithModel() {
     const waiting = Object.values(sending).some(Boolean);
     const ready = !waiting && missingRequired(slots, { ...uploaded, ...fromLibrary }).length === 0 && (!promptRequired(model) || !!text) && !seedIsInvalid(opts.seed) && !voiceIsMissing(options, opts.voice) && !audioLengthInvalid(options, opts.audioSeconds);
     const text_ = textInput(model);
+    const hasReference = sources.length > 0 || assets.length > 0 || !!startFile;
+    const stageLine = template
+        ? t('create.workspace.stageTemplate', { name: template.title })
+        : hasReference
+            ? t('create.workspace.stageReference')
+            : t('create.workspace.stageEmpty');
 
     async function generate() {
         if (!model || !ready || busy) return;
@@ -212,34 +221,83 @@ export default function CreateWithModel() {
 
     return (
         <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
-            <Stack.Screen options={{ title: model.name }} />
+            <Stack.Screen options={{ title: t('label.Create') }} />
             <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+                <View style={styles.hero}>
+                    <View style={styles.heroTop}>
+                        <View style={styles.heroCopy}>
+                            <Text style={styles.eyebrow}>{t('create.workspace.eyebrow')}</Text>
+                            <Text style={styles.title} accessibilityRole="header">{t('label.Create')}</Text>
+                        </View>
+                        <View style={styles.savedPill} accessibilityLabel={t('create.workspace.savedHelp')}>
+                            <View style={styles.savedDot} />
+                            <Text style={styles.savedText}>{t('create.workspace.saved')}</Text>
+                        </View>
+                    </View>
+                    <View style={styles.modelPill} accessibilityLabel={t('create.workspace.modelLabel', { name: model.name })}>
+                        <Text style={styles.modelLive}>{t('create.livePrices')}</Text>
+                        <Text style={styles.modelName}>{model.name}</Text>
+                        <Text style={styles.modelKind}>{(kindOf(model.modality) ?? model.modality).toUpperCase()}</Text>
+                    </View>
+                </View>
+
+                <View style={styles.stage} accessibilityLabel={stageLine}>
+                    <View style={styles.stageIconBox}>
+                        <Image source={MENU_ICONS.play} style={styles.stageIcon} tintColor={colors.accent} contentFit="contain" accessibilityElementsHidden />
+                    </View>
+                    <Text style={styles.stageTitle}>{stageLine}</Text>
+                    <Text style={styles.stageBody}>{t('create.workspace.stageHelp')}</Text>
+                </View>
+
                 {template ? <TemplateBanner template={template} aspect={options.aspects.length ? opts.aspect : null} /> : null}
                 {startId && takesStartImage ? <Text style={styles.consent} accessibilityLiveRegion="polite">{startProblem ?? t('oddlings.animate.startNote')}</Text> : null}
-                {slots.map((s) => (
-                    <SourcePicker
-                        key={s.slot}
-                        slot={s}
-                        drawable={canDraw(model) && s.slot === 'image'}
-                        api={api}
-                        onChange={(key) => setUploaded((u) => ({ ...u, [s.slot]: key }))}
-                        onLibrary={(jobId) => setFromLibrary((l) => ({ ...l, [s.slot]: jobId }))}
-                        onBusy={(b) => setSending((x) => ({ ...x, [s.slot]: b }))}
-                        initial={s.slot === 'image' ? startFile : null}
-                        hint={s.slot === 'image' && template?.needs ? t('create.template.needs', { what: template.needs }) : undefined}
-                    />
-                ))}
+                {slots.length ? (
+                    <View style={styles.section}>
+                        <View style={styles.sectionTop}>
+                            <Text style={styles.sectionLabel}>{t('create.workspace.references')}</Text>
+                            <Text style={styles.sectionMeta}>{t('create.workspace.referencesMeta')}</Text>
+                        </View>
+                        {slots.map((s) => (
+                            <SourcePicker
+                                key={s.slot}
+                                slot={s}
+                                drawable={canDraw(model) && s.slot === 'image'}
+                                api={api}
+                                onChange={(key) => setUploaded((u) => ({ ...u, [s.slot]: key }))}
+                                onLibrary={(jobId) => setFromLibrary((l) => ({ ...l, [s.slot]: jobId }))}
+                                onBusy={(b) => setSending((x) => ({ ...x, [s.slot]: b }))}
+                                initial={s.slot === 'image' ? startFile : null}
+                                hint={s.slot === 'image' && template?.needs ? t('create.template.needs', { what: template.needs }) : undefined}
+                            />
+                        ))}
+                    </View>
+                ) : null}
                 {text_ ? (
-                    <TextInput
-                        style={[styles.prompt, text_.key === 'topic' && styles.topic]}
-                        value={prompt}
-                        onChangeText={setPrompt}
-                        placeholder={t(PLACEHOLDER[text_.key] ?? (promptRequired(model) ? 'form.describeCreate' : 'form.describeChange'))}
-                        placeholderTextColor={colors.muted}
-                        accessibilityLabel={text_.key === 'topic' ? t('form.topic') : t('mobile.prompt')}
-                        multiline
-                        maxLength={text_.max}
-                    />
+                    <View style={styles.section}>
+                        <View style={styles.sectionTop}>
+                            <Text style={styles.sectionLabel}>{text_.key === 'topic' ? t('form.topic').toUpperCase() : t('create.workspace.prompt')}</Text>
+                            <Text style={styles.sectionMeta}>{prompt.length}/{text_.max}</Text>
+                        </View>
+                        <TextInput
+                            style={[styles.prompt, text_.key === 'topic' && styles.topic]}
+                            value={prompt}
+                            onChangeText={setPrompt}
+                            placeholder={t(PLACEHOLDER[text_.key] ?? (promptRequired(model) ? 'form.describeCreate' : 'form.describeChange'))}
+                            placeholderTextColor={colors.muted}
+                            accessibilityLabel={text_.key === 'topic' ? t('form.topic') : t('mobile.prompt')}
+                            multiline
+                            maxLength={text_.max}
+                        />
+                        <View style={styles.skillsRow}>
+                            <Text style={styles.skillsIntro}>{t('create.workspace.skills')}</Text>
+                            <Pressable accessibilityRole="link" style={styles.skillLink} onPress={() => router.push('/chat/skills')}>
+                                <Text style={styles.skillLinkText}>{t('create.workspace.promptWriter')}</Text>
+                            </Pressable>
+                            <Pressable accessibilityRole="link" style={styles.skillLink} onPress={() => router.push('/chat/skills')}>
+                                <Text style={styles.skillLinkText}>{t('create.workspace.fixPrompt')}</Text>
+                            </Pressable>
+                        </View>
+                    </View>
                 ) : null}
                 {restored ? (
                     <View style={styles.restored} accessibilityLiveRegion="polite">
@@ -250,18 +308,26 @@ export default function CreateWithModel() {
                     </View>
                 ) : null}
                 {sources.length || assets.length ? <Text style={styles.consent}>{t('form.consent')}</Text> : null}
-                {isVideo && model.durations.length > 1 ? (
-                    <View style={styles.chips}>
-                        {model.durations.map((d) => (
-                            <Pressable key={d} accessibilityRole="button" accessibilityLabel={plural('form.seconds', d)} accessibilityState={selectedState(duration === d)} style={[styles.chip, duration === d && styles.chipOn]} onPress={() => setDuration(d)}>
-                                <Text style={[styles.chipText, duration === d && styles.chipTextOn]}>{d}s</Text>
-                            </Pressable>
-                        ))}
+                {((isVideo && model.durations.length > 1) || hasAnyOption(options) || takesImageCount(model) || takesCharacter || takesCamera) ? (
+                    <View style={styles.settingsSection}>
+                        <View style={styles.sectionTop}>
+                            <Text style={styles.sectionLabel}>{t('create.workspace.settings')}</Text>
+                            <Text style={styles.sectionMeta}>{t('create.workspace.settingsMeta')}</Text>
+                        </View>
+                        {isVideo && model.durations.length > 1 ? (
+                            <View style={styles.chips}>
+                                {model.durations.map((d) => (
+                                    <Pressable key={d} accessibilityRole="button" accessibilityLabel={plural('form.seconds', d)} accessibilityState={selectedState(duration === d)} style={[styles.chip, duration === d && styles.chipOn]} onPress={() => setDuration(d)}>
+                                        <Text style={[styles.chipText, duration === d && styles.chipTextOn]}>{d}s</Text>
+                                    </Pressable>
+                                ))}
+                            </View>
+                        ) : null}
+                        {hasAnyOption(options) || takesImageCount(model) ? <CreateOptions options={options} values={opts} showCount={takesImageCount(model)} resolution={resolution} audio={audio} outputPrice={plural('opt.outputPriceSame', unit)} onChange={setOpts} /> : null}
+                        {takesCharacter ? <CharacterPanel on={characterOn} picks={character} onToggle={setCharacterOn} onChange={setCharacter} /> : null}
+                        {takesCamera ? <CameraPanel on={cameraOn} value={cinema} onToggle={setCameraOn} onChange={setCinema} /> : null}
                     </View>
                 ) : null}
-                {hasAnyOption(options) || takesImageCount(model) ? <CreateOptions options={options} values={opts} showCount={takesImageCount(model)} resolution={resolution} audio={audio} outputPrice={plural('opt.outputPriceSame', unit)} onChange={setOpts} /> : null}
-                {takesCharacter ? <CharacterPanel on={characterOn} picks={character} onToggle={setCharacterOn} onChange={setCharacter} /> : null}
-                {takesCamera ? <CameraPanel on={cameraOn} value={cinema} onToggle={setCameraOn} onChange={setCinema} /> : null}
                 {missing > 0 ? (
                     <View style={styles.short} accessibilityLiveRegion="polite">
                         <Text style={styles.shortText}>{plural('create.short', missing, { have: String(balance ?? 0), need: String(price) })}</Text>
@@ -272,10 +338,23 @@ export default function CreateWithModel() {
                 ) : null}
                 {error ? <Text style={styles.error}>{error}</Text> : null}
                 {note ? <Text style={styles.consent}>{note}</Text> : null}
-                <Pressable accessibilityRole="button" accessibilityLabel={generateLabel} accessibilityState={{ busy, disabled: !ready || busy || missing > 0 }} disabled={!ready || busy || missing > 0} style={[styles.button, (!ready || busy || missing > 0) && styles.off]} onPress={generate}>
-                    {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>{n > 1 ? t('opt.generateCount', { count: String(n) }) : t('slip.generate')}</Text>}
-                </Pressable>
-                <Text style={styles.price} accessibilityLiveRegion="polite">{costLine(price, n, freeLeft, unit)}</Text>
+                <View style={styles.costCard}>
+                    <View style={styles.costTop}>
+                        <View>
+                            <Text style={styles.sectionLabel}>{t('create.workspace.total')}</Text>
+                            <Text style={styles.cost} accessibilityLiveRegion="polite">{price === 0 ? t('opt.costFree') : t('create.workspace.cost', { credits: String(price) })}</Text>
+                        </View>
+                        <Text style={styles.balance}>{t('create.workspace.balance', { credits: balance === null ? '—' : String(balance) })}</Text>
+                    </View>
+                    <Pressable accessibilityRole="button" accessibilityLabel={generateLabel} accessibilityState={{ busy, disabled: !ready || busy || missing > 0 }} disabled={!ready || busy || missing > 0} style={[styles.button, (!ready || busy || missing > 0) && styles.off]} onPress={generate}>
+                        {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>{price === 0 ? t('create.workspace.generateFree') : t('create.workspace.generate', { credits: String(price) })}</Text>}
+                    </Pressable>
+                    <Text style={styles.refund}>{t('create.workspace.refund')}</Text>
+                    <Text style={styles.terms}>
+                        {t('create.workspace.terms')}{' '}
+                        <Text accessibilityRole="link" style={styles.inlineLink} onPress={() => void WebBrowser.openBrowserAsync(`${API_BASE}/legal/terms`)}>{t('create.workspace.termsLink')}</Text>
+                    </Text>
+                </View>
             </ScrollView>
         </KeyboardAvoidingView>
     );
@@ -291,15 +370,40 @@ function costLine(price: number, n: number, freeLeft: number, unit: number): str
 
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
-    body: { padding: 16, gap: 14 },
+    body: { padding: 16, paddingBottom: 48, gap: 14 },
+    hero: { gap: 12, marginBottom: 2 },
+    heroTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 },
+    heroCopy: { flex: 1, gap: 4 },
+    eyebrow: { color: colors.muted, fontSize: 10, lineHeight: 15, fontWeight: '800', letterSpacing: 1.6 },
+    title: { color: colors.text, fontFamily: fonts.displayHeavy, fontSize: 36, lineHeight: 39, letterSpacing: -1.1 },
+    savedPill: { minHeight: MIN_TARGET, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 11, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+    savedDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.accent },
+    savedText: { color: colors.muted, fontSize: 9, fontWeight: '800', letterSpacing: 1 },
+    modelPill: { minHeight: MIN_TARGET, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+    modelLive: { color: colors.accent, fontSize: 9, fontWeight: '800', letterSpacing: 1 },
+    modelName: { color: colors.text, fontSize: 14, fontWeight: '700', flex: 1 },
+    modelKind: { color: colors.muted, fontSize: 9, fontWeight: '800', letterSpacing: 1 },
+    stage: { minHeight: 210, alignItems: 'center', justifyContent: 'center', padding: 24, borderRadius: 22, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+    stageIconBox: { width: 66, height: 66, borderRadius: 33, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.borderStrong, backgroundColor: colors.background },
+    stageIcon: { width: 30, height: 30 },
+    stageTitle: { color: colors.text, fontSize: 17, lineHeight: 22, fontWeight: '700', textAlign: 'center', marginTop: 16 },
+    stageBody: { color: colors.muted, fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 6, maxWidth: 300 },
+    section: { gap: 9 },
+    settingsSection: { gap: 12, marginTop: 2 },
+    sectionTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+    sectionLabel: { color: colors.muted, fontSize: 10, lineHeight: 15, fontWeight: '800', letterSpacing: 1.35 },
+    sectionMeta: { color: colors.muted, fontSize: 11, lineHeight: 16 },
     topic: { minHeight: 90 },
-    prompt: { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 14, fontSize: 16, minHeight: 120, textAlignVertical: 'top' },
+    prompt: { color: colors.text, backgroundColor: colors.surface, borderColor: colors.borderStrong, borderWidth: 1, borderRadius: radius.lg, padding: 14, fontSize: 16, lineHeight: 23, minHeight: 126, textAlignVertical: 'top' },
+    skillsRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 4 },
+    skillsIntro: { color: colors.muted, fontSize: 12, lineHeight: 18 },
+    skillLink: { minHeight: MIN_TARGET, justifyContent: 'center', paddingHorizontal: 7 },
+    skillLinkText: { color: colors.accent, fontSize: 12, fontWeight: '700', textDecorationLine: 'underline' },
     chips: { flexDirection: 'row', gap: 8 },
-    chip: { minHeight: 44, justifyContent: 'center', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 10, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
+    chip: { minHeight: MIN_TARGET, justifyContent: 'center', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 10, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
     chipOn: { backgroundColor: colors.accent, borderColor: colors.accent },
     chipText: { color: colors.body, fontWeight: '600' },
     chipTextOn: { color: colors.accentInk },
-    price: { color: colors.muted, fontSize: 13, textAlign: 'center' },
     short: { backgroundColor: colors.surface, borderColor: colors.money, borderWidth: 1, borderRadius: 12, padding: 14, gap: 4 },
     shortText: { color: colors.body, fontSize: 15, lineHeight: 22 },
     shortBuy: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
@@ -309,8 +413,15 @@ const styles = StyleSheet.create({
     clear: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 14 },
     clearText: { color: colors.accent, fontWeight: '600' },
     consent: { color: colors.muted, fontSize: 12 },
-    button: { backgroundColor: colors.accent, borderRadius: 12, paddingVertical: 16, alignItems: 'center' },
+    costCard: { gap: 11, padding: 16, borderRadius: 20, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+    costTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 },
+    cost: { color: colors.money, fontFamily: fonts.displayHeavy, fontSize: 30, lineHeight: 34, marginTop: 4 },
+    balance: { color: colors.muted, fontSize: 12, lineHeight: 18 },
+    button: { minHeight: MIN_TARGET, backgroundColor: colors.accent, borderRadius: radius.lg, paddingVertical: 14, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
     off: { opacity: 0.4 },
     buttonText: { color: colors.accentInk, fontWeight: '700', fontSize: 16 },
+    refund: { color: colors.accent, fontSize: 10, lineHeight: 15, fontWeight: '800', letterSpacing: 1.1, textAlign: 'center' },
+    terms: { color: colors.muted, fontSize: 11, lineHeight: 17, textAlign: 'center' },
+    inlineLink: { color: colors.accent, textDecorationLine: 'underline', fontWeight: '700' },
     error: { color: colors.danger },
 });

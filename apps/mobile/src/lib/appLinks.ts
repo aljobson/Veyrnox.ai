@@ -18,10 +18,34 @@ const SECTIONS: Record<string, string> = {
     credits: '/credits',
     account: '/account',
     publish: '/publish',
+    'video-agent': '/create/agent',
+};
+
+const PUBLISH_SECTIONS: Record<string, string> = {
+    accounts: '/publish/accounts',
+    posts: '/publish/posts',
+    analytics: '/publish/analytics',
+    calendar: '/publish/calendar',
+    'best-time': '/publish/best-time',
+    drafts: '/publish/drafts',
+    approvals: '/publish/approvals',
+    brands: '/publish/brands',
+    commerce: '/publish/commerce',
+    ads: '/publish/ads',
+    reports: '/publish/reports',
+    inbox: '/publish/inbox',
+    workflows: '/publish/workflows',
+    smartlink: '/publish/smartlink',
+    contacts: '/publish/contacts',
+    queues: '/publish/queues',
+    autolists: '/publish/autolists',
+    team: '/publish/team',
+    activity: '/publish/activity',
+    developer: '/publish/developer',
 };
 
 function opened(segments: string[]): string {
-    const [section, id] = segments;
+    const [section, id, extra] = segments;
     const root = section ? SECTIONS[section] : undefined;
     if (!root) return '/';
     if (id === undefined) return root;
@@ -29,6 +53,7 @@ function opened(segments: string[]): string {
     if (section === 'library' && UUID_RE.test(id)) return `/job/${id}`;
     if (section === 'chat' && UUID_RE.test(id)) return `/chat/${id}`;
     if (section === 'create' && MODEL_ID_RE.test(id)) return `/create/${id}`;
+    if (section === 'publish' && !extra && PUBLISH_SECTIONS[id]) return PUBLISH_SECTIONS[id];
     return root;
 }
 

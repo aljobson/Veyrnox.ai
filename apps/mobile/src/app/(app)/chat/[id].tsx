@@ -1,28 +1,26 @@
 import * as Crypto from 'expo-crypto';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, AppState, FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActionSheetIOS, ActivityIndicator, Alert, AppState, FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../../auth/AuthProvider';
-import { AttachStrip } from '../../../components/chat/AttachStrip';
+import { ChatComposerDeck } from '../../../components/chat/ChatComposerDeck';
 import { DraftCards } from '../../../components/chat/DraftCards';
 import { ChatSettings } from '../../../components/chat/ChatSettings';
 import { ModelPicker } from '../../../components/chat/ModelPicker';
 import { MakePanel } from '../../../components/chat/MakePanel';
 import { LibraryImagePicker } from '../../../components/chat/LibraryImagePicker';
-import { ReplyOptionsBar } from '../../../components/chat/ReplyOptionsBar';
-import { HeaderAction } from '../../../components/HeaderAction';
 import { ApiError } from '../../../lib/api';
 import { MIN_TARGET } from '../../../lib/a11y';
 import { chatApi, cleanOptions, cleanTitle, imagesExtra, isModelSwitch, NO_OPTIONS, replyPrice, sendKeyFor, type ChatMessage, type ChatModel, type PendingSend, type ReplyOptions } from '../../../lib/chat';
 import { attachmentRefs, MAX_ATTACHMENTS, roomFor, type ChatImage } from '../../../lib/chatAttach';
 import { pickPhotos, uploadChatImages } from '../../../lib/chatPhotos';
-import { fetchCatalog, type CatalogModel } from '../../../lib/media';
-import { parseStudioDrafts, skillById, skillInstructions, withoutDrafts, type Skill } from '../../../lib/studioSkills';
+import { fetchCatalog, type CatalogModel, type Kind } from '../../../lib/media';
+import { parseStudioDrafts, SKILL_GROUPS, SKILLS, skillInstructions, withoutDrafts, type Skill } from '../../../lib/studioSkills';
 import { isQuiet, makeSendKey, resolveResumedSend, resolveStoppedSend, RESUME_QUIET_MS, resumeNoticeKey, stopNoticeKey, type StopOutcome } from '../../../lib/chatStop';
 import { plural, t } from '../../../lib/i18n';
 import { ensureOnline, OFFLINE_PAID_MESSAGE, OfflineError } from '../../../lib/network';
-import { colors, radius } from '../../../theme';
+import { colors, fonts, radius } from '../../../theme';
 
 const ERROR_TEXT: Record<string, string> = {
     insufficient_credits: 'Not enough credits for this reply.',
@@ -57,6 +55,7 @@ export default function Conversation() {
     const [allModels, setAllModels] = useState<ChatModel[]>([]);
     const [thread, setThread] = useState<{ model_id: string; system_prompt: string | null } | null>(null);
     const [makeOpen, setMakeOpen] = useState(false);
+    const [makeKind, setMakeKind] = useState<Kind>('image');
     const [maxImages, setMaxImages] = useState(MAX_ATTACHMENTS);
     const [catalog, setCatalog] = useState<CatalogModel[] | null>(null);
     const [skillNote, setSkillNote] = useState<string | null>(null);
@@ -295,6 +294,35 @@ export default function Conversation() {
         }
     }
 
+    function openMake(kind: Kind) {
+        setMakeKind(kind);
+        setMakeOpen(true);
+    }
+
+    // The web keeps thread management in the chat rail. On a phone the rail is the previous screen, so these less-frequent
+    // actions live behind one compact menu instead of taking a full row above every conversation.
+    function showManage() {
+        const rename = () => setRenaming(title === 'Chat' ? '' : title);
+        const move = () => router.push({ pathname: '/chat/move', params: { threadId: String(id) } });
+        if (Platform.OS === 'ios') {
+            ActionSheetIOS.showActionSheetWithOptions(
+                { options: [pinned ? t('chat.unpin') : t('chat.pin'), t('chat.rename'), t('chat.workspace.folder'), t('chat.renameCancel')], cancelButtonIndex: 3 },
+                (index) => {
+                    if (index === 0) void togglePin();
+                    else if (index === 1) rename();
+                    else if (index === 2) move();
+                },
+            );
+            return;
+        }
+        Alert.alert(t('chat.workspace.manage'), undefined, [
+            { text: pinned ? t('chat.unpin') : t('chat.pin'), onPress: () => void togglePin() },
+            { text: t('chat.rename'), onPress: rename },
+            { text: t('chat.workspace.folder'), onPress: move },
+            { text: t('chat.renameCancel'), style: 'cancel' },
+        ]);
+    }
+
     const imageExtra = model ? imagesExtra(model) : null;
     const price = model ? replyPrice(model, options, imageExtra !== null ? images.length : 0) : null;
     async function addPhotos() {
@@ -307,50 +335,70 @@ export default function Conversation() {
     const lastUser = last?.role === 'assistant' && last.content ? messages![messages!.length - 2] : null;
 
     return (
-        <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
-            <Stack.Screen options={{ title, headerRight: () => <HeaderAction label="Folder" accessibilityLabel="Move to folder" onPress={() => router.push({ pathname: '/chat/move', params: { threadId: String(id) } })} /> }} />
+        <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={88}>
+            <Stack.Screen options={{ title: 'LLM Chat' }} />
+            <View style={styles.conversationBar}>
+                <View style={styles.conversationTitle}>
+                    <Text numberOfLines={1} style={styles.threadTitle}>{title}</Text>
+                    {model ? <Text numberOfLines={1} style={styles.modelMeta}>{model.name} · {plural('chat.perReply', model.credits_per_reply)}</Text> : null}
+                </View>
+                <Pressable accessibilityRole="button" accessibilityLabel={t('chat.settings.open')} disabled={!thread || sending} style={styles.headerControl} onPress={() => setSettingsOpen(true)}>
+                    <Text style={styles.headerControlText}>{t('chat.settings.open')}</Text>
+                </Pressable>
+                <Pressable accessibilityRole="button" accessibilityLabel={t('chat.workspace.manage')} style={styles.moreControl} onPress={showManage}>
+                    <Text style={styles.moreText}>•••</Text>
+                </Pressable>
+            </View>
             {renaming !== null ? (
-                <View style={styles.toolbar}>
-                    <TextInput style={[styles.input, styles.renameInput]} value={renaming} onChangeText={setRenaming} placeholder={t('chat.renamePlaceholder')} accessibilityLabel={t('chat.rename')} placeholderTextColor={colors.muted} maxLength={120} autoFocus />
-                    <Pressable accessibilityRole="button" style={styles.tool} onPress={saveRename}><Text style={styles.toolText}>{t('chat.renameSave')}</Text></Pressable>
-                    <Pressable accessibilityRole="button" style={styles.tool} onPress={() => setRenaming(null)}><Text style={styles.toolText}>{t('chat.renameCancel')}</Text></Pressable>
+                <View style={styles.renameBar}>
+                    <TextInput style={styles.renameInput} value={renaming} onChangeText={setRenaming} placeholder={t('chat.renamePlaceholder')} accessibilityLabel={t('chat.rename')} placeholderTextColor={colors.muted} maxLength={120} autoFocus />
+                    <Pressable accessibilityRole="button" style={styles.headerControl} onPress={() => void saveRename()}><Text style={styles.headerControlText}>{t('chat.renameSave')}</Text></Pressable>
+                    <Pressable accessibilityRole="button" style={styles.headerControl} onPress={() => setRenaming(null)}><Text style={styles.headerControlText}>{t('chat.renameCancel')}</Text></Pressable>
                 </View>
-            ) : (
-                <View style={styles.toolbar}>
-                    <Pressable accessibilityRole="button" accessibilityState={{ selected: pinned }} style={styles.tool} onPress={togglePin}>
-                        <Text style={styles.toolText}>{pinned ? t('chat.unpin') : t('chat.pin')}</Text>
-                    </Pressable>
-                    <Pressable accessibilityRole="button" style={styles.tool} onPress={() => setRenaming(title === 'Chat' ? '' : title)}>
-                        <Text style={styles.toolText}>{t('chat.rename')}</Text>
-                    </Pressable>
-                    <Pressable accessibilityRole="button" disabled={!thread || sending} style={styles.tool} onPress={() => setSettingsOpen(true)}>
-                        <Text style={styles.toolText}>{t('chat.settings.open')}</Text>
-                    </Pressable>
-                    <Pressable accessibilityRole="button" style={styles.tool} onPress={() => setMakeOpen(true)}>
-                        <Text style={styles.toolText}>{t('chat.make.open')}</Text>
-                    </Pressable>
-                </View>
-            )}
+            ) : null}
             {messages === null && !error ? (
                 <ActivityIndicator color={colors.accent} style={styles.center} />
             ) : (
                 <FlatList
+                    style={styles.messageList}
                     data={messages ?? []}
                     keyExtractor={(m) => m.id}
-                    contentContainerStyle={styles.list}
+                    contentContainerStyle={[styles.list, (messages?.length ?? 0) === 0 && styles.emptyList]}
+                    keyboardShouldPersistTaps="handled"
                     ListEmptyComponent={
-                        <View style={styles.starters}>
-                            {(['prompt-writer', 'bring-to-life'] as const).map((sid) => {
-                                const sk = skillById(sid);
-                                if (!sk) return null;
-                                const on = skillNote === sk.name;
-                                return (
-                                    <Pressable key={sid} accessibilityRole="button" accessibilityLabel={`${sk.name}. ${sk.blurb}`} accessibilityState={{ selected: on }} style={[styles.starter, on && styles.starterOn]} onPress={() => void useStarter(sk)}>
-                                        <Text style={styles.starterName}>{sk.name}</Text>
-                                        <Text style={styles.starterBlurb}>{sk.blurb}</Text>
-                                    </Pressable>
-                                );
-                            })}
+                        <View style={styles.empty}>
+                            <Text style={styles.hero}>{t('chat.workspace.title')}</Text>
+                            <Text style={styles.heroHelp}>{t('chat.workspace.priceHelp')}</Text>
+                            <View style={styles.skillsBlock}>
+                                <Text style={styles.eyebrow}>{t('chat.workspace.skillsEyebrow')}</Text>
+                                <Text style={styles.skillsHelp}>{t('chat.workspace.skillsHelp')}</Text>
+                                {SKILL_GROUPS.filter((group) => group !== 'Film').map((group) => (
+                                    <View key={group} style={styles.skillGroup}>
+                                        <Text style={styles.skillGroupLabel}>{group}</Text>
+                                        <View style={styles.skillGrid}>
+                                            {SKILLS.filter((skill) => skill.group === group).map((skill) => {
+                                                const selected = skillNote === skill.name;
+                                                return (
+                                                    <Pressable
+                                                        key={skill.id}
+                                                        accessibilityRole="button"
+                                                        accessibilityLabel={`${skill.name}. ${skill.blurb}`}
+                                                        accessibilityState={{ selected }}
+                                                        style={[styles.starter, selected && styles.starterOn]}
+                                                        onPress={() => void useStarter(skill)}
+                                                    >
+                                                        <Text style={styles.starterName}>{skill.name}</Text>
+                                                        <Text style={styles.starterBlurb}>{skill.blurb}</Text>
+                                                    </Pressable>
+                                                );
+                                            })}
+                                        </View>
+                                    </View>
+                                ))}
+                                <Pressable accessibilityRole="button" style={styles.filmLink} onPress={() => router.push('/film')}>
+                                    <Text style={styles.filmLinkText}>Open Film Studio →</Text>
+                                </Pressable>
+                            </View>
                         </View>
                     }
                     ListFooterComponent={
@@ -379,49 +427,36 @@ export default function Conversation() {
             )}
             {notice ? <Text style={styles.notice} accessibilityRole="alert">{notice}</Text> : null}
             {error ? <Text style={styles.error} accessibilityRole="alert">{error}</Text> : null}
-            {model ? (
-                <>
-                    <Pressable accessibilityRole="button" accessibilityLabel={`${t('chat.model.change')}: ${model.name}, ${plural('chat.perReply', model.credits_per_reply)}`} disabled={!thread || sending} style={styles.modelLine} onPress={() => setPickerModelsOpen(true)}>
-                        <Text style={styles.modelText}>{model.name} · {plural('chat.perReply', model.credits_per_reply)} ▾</Text>
-                    </Pressable>
-                    <ReplyOptionsBar model={model} options={cleanOptions(model, options)} disabled={sending} onChange={setOptions} />
-                </>
-            ) : null}
-            {model && imageExtra !== null ? (
-                <AttachStrip items={images} extra={imageExtra} max={maxImages} disabled={sending} onLibrary={() => setPickerOpen(true)} onPhotos={() => void addPhotos()} onRemove={(rid) => setImages((cur) => cur.filter((x) => x.id !== rid))} />
-            ) : null}
             {thread && pickerModelsOpen ? <ModelPicker visible currentId={thread.model_id} models={allModels} onPick={(mid) => void pickModel(mid)} onClose={() => setPickerModelsOpen(false)} /> : null}
             {thread && settingsOpen ? <ChatSettings visible thread={thread} models={allModels} onSave={saveSettings} onClose={() => setSettingsOpen(false)} /> : null}
-            <MakePanel visible={makeOpen} initialPrompt={draft.trim().slice(0, 2000)} onClose={() => setMakeOpen(false)} />
+            <MakePanel visible={makeOpen} initialKind={makeKind} initialPrompt={draft.trim().slice(0, 2000)} onClose={() => setMakeOpen(false)} />
             <LibraryImagePicker visible={pickerOpen} chosen={images} max={maxImages} onClose={() => setPickerOpen(false)} onPick={(img) => setImages((cur) => (cur.length < maxImages && !cur.some((c) => c.assetId === img.assetId) ? [...cur, img] : cur))} />
-            <View style={[styles.composer, { marginBottom: Math.max(insets.bottom, 12) }]}>
-                <TextInput
-                    style={styles.input}
-                    value={draft}
-                    onChangeText={setDraft}
-                    placeholder={typeof starter === 'string' && starter ? starter.slice(0, 200) : 'Message Vey'}
-                    accessibilityLabel="Message Vey"
-                    placeholderTextColor={colors.muted}
-                    multiline
-                    maxLength={8000}
-                />
-                {sending ? (
-                    <Pressable accessibilityRole="button" accessibilityLabel={stopping ? t('chat.stopping') : t('chat.stopLabel')} disabled={stopping} style={[styles.send, stopping && styles.sendOff]} onPress={() => abort.current?.abort()}>
-                        <Text style={styles.sendText}>{stopping ? '…' : t('chat.stop')}</Text>
-                    </Pressable>
-                ) : (
-                    <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={price !== null ? plural('chat.sendPrice', price) : t('chat.send')}
-                        disabled={!canSend}
-                        style={[styles.send, !canSend && styles.sendOff]}
-                        onPress={() => void send()}
-                    >
-                        <Text style={styles.sendText}>{t('chat.send')}</Text>
-                        {price !== null ? <Text style={styles.sendPrice}>{plural('chat.sendPriceShort', price)}</Text> : null}
-                    </Pressable>
-                )}
-            </View>
+            {model && price !== null ? (
+                <View style={[styles.composerDock, { paddingBottom: Math.max(insets.bottom, 8) }]}>
+                    <ChatComposerDeck
+                        model={model}
+                        options={cleanOptions(model, options)}
+                        draft={draft}
+                        price={price}
+                        canSend={canSend}
+                        sending={sending}
+                        stopping={stopping}
+                        images={images}
+                        imageExtra={imageExtra}
+                        maxImages={maxImages}
+                        placeholder={typeof starter === 'string' && starter ? starter.slice(0, 200) : t('chat.composer.ask')}
+                        onDraft={setDraft}
+                        onModel={() => setPickerModelsOpen(true)}
+                        onOptions={setOptions}
+                        onLibrary={() => setPickerOpen(true)}
+                        onPhotos={() => void addPhotos()}
+                        onRemoveImage={(rid) => setImages((cur) => cur.filter((x) => x.id !== rid))}
+                        onMake={openMake}
+                        onSend={() => void send()}
+                        onStop={() => abort.current?.abort()}
+                    />
+                </View>
+            ) : null}
         </KeyboardAvoidingView>
     );
 }
@@ -429,31 +464,43 @@ export default function Conversation() {
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
     center: { flex: 1 },
-    list: { padding: 16, gap: 16 },
+    messageList: { flex: 1 },
+    conversationBar: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.background },
+    conversationTitle: { flex: 1, minWidth: 0 },
+    threadTitle: { color: colors.text, fontSize: 15, fontWeight: '700' },
+    modelMeta: { color: colors.money, fontSize: 11, lineHeight: 16, fontWeight: '600' },
+    headerControl: { minHeight: MIN_TARGET, justifyContent: 'center', paddingHorizontal: 12, borderRadius: radius.pill, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
+    headerControlText: { color: colors.text, fontSize: 13, fontWeight: '600' },
+    moreControl: { width: MIN_TARGET, height: MIN_TARGET, alignItems: 'center', justifyContent: 'center', borderRadius: radius.pill, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
+    moreText: { color: colors.text, fontSize: 17, fontWeight: '700', letterSpacing: 1 },
+    renameBar: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.border },
+    renameInput: { flex: 1, minHeight: MIN_TARGET, color: colors.text, fontSize: 15, paddingHorizontal: 12, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+    list: { flexGrow: 1, paddingHorizontal: 16, paddingVertical: 18, gap: 20 },
+    emptyList: { justifyContent: 'flex-start' },
+    empty: { paddingTop: 24, paddingBottom: 20 },
+    hero: { color: colors.text, fontFamily: fonts.displayHeavy, fontSize: 32, lineHeight: 35, letterSpacing: -1.1, textAlign: 'center' },
+    heroHelp: { color: colors.muted, fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 10, paddingHorizontal: 18 },
+    skillsBlock: { marginTop: 28 },
+    eyebrow: { color: colors.accent, fontSize: 11, lineHeight: 16, fontWeight: '800', letterSpacing: 1.3 },
+    skillsHelp: { color: colors.body, fontSize: 14, lineHeight: 20, marginTop: 4, marginBottom: 18 },
+    skillGroup: { marginBottom: 18 },
+    skillGroupLabel: { color: colors.text, fontSize: 13, fontWeight: '700', marginBottom: 8 },
+    skillGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     bubble: { maxWidth: '88%', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 12 },
     user: { alignSelf: 'flex-end', backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
-    assistant: { alignSelf: 'stretch', maxWidth: '100%', paddingHorizontal: 4 },
+    assistant: { alignSelf: 'stretch', maxWidth: '100%', paddingHorizontal: 2 },
     text: { color: colors.text, fontSize: 16, lineHeight: 24 },
     userText: { color: colors.text },
-    cost: { color: colors.muted, fontSize: 12, marginTop: 4 },
+    cost: { color: colors.money, fontSize: 12, marginTop: 6, fontWeight: '600' },
     error: { color: colors.danger, paddingHorizontal: 16, paddingBottom: 4 },
     notice: { color: colors.body, paddingHorizontal: 16, paddingBottom: 4 },
-    toolbar: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 6 },
-    tool: { minHeight: MIN_TARGET, justifyContent: 'center', paddingHorizontal: 14, borderRadius: radius.pill, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
     toolText: { color: colors.text, fontSize: 14, fontWeight: '600' },
-    renameInput: { flex: 1 },
     again: { alignSelf: 'flex-start', minHeight: MIN_TARGET, justifyContent: 'center', paddingHorizontal: 4 },
-    composer: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginHorizontal: 12, marginTop: 8, paddingLeft: 16, paddingRight: 6, paddingVertical: 6, borderRadius: 28, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
-    input: { flex: 1, color: colors.text, paddingVertical: 10, maxHeight: 120, fontSize: 16 },
-    send: { backgroundColor: colors.accent, borderRadius: radius.pill, paddingHorizontal: 18, minHeight: MIN_TARGET, justifyContent: 'center' },
-    sendOff: { opacity: 0.4 },
-    sendText: { color: colors.accentInk, fontWeight: '600', textAlign: 'center' },
-    sendPrice: { color: colors.accentInk, fontSize: 12, textAlign: 'center' },
-    starters: { gap: 10 },
-    starter: { borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 14, gap: 4 },
-    starterOn: { borderColor: colors.accent },
-    starterName: { color: colors.text, fontSize: 16, fontWeight: '600' },
-    starterBlurb: { color: colors.muted, fontSize: 14 },
-    modelLine: { minHeight: MIN_TARGET, justifyContent: 'center', paddingHorizontal: 16 },
-    modelText: { color: colors.accent, fontSize: 13, fontWeight: '600' },
+    starter: { width: '48.7%', minHeight: 108, borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 13, gap: 5 },
+    starterOn: { borderColor: colors.accent, backgroundColor: colors.accentSoft },
+    starterName: { color: colors.text, fontSize: 15, lineHeight: 19, fontWeight: '700' },
+    starterBlurb: { color: colors.muted, fontSize: 12, lineHeight: 17 },
+    filmLink: { minHeight: MIN_TARGET, alignSelf: 'flex-start', justifyContent: 'center', borderRadius: radius.pill, borderWidth: 1, borderColor: colors.borderStrong, paddingHorizontal: 15 },
+    filmLinkText: { color: colors.text, fontSize: 13, fontWeight: '700' },
+    composerDock: { paddingHorizontal: 12, paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.background },
 });

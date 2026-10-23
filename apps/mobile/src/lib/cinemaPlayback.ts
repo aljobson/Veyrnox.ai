@@ -1,5 +1,5 @@
 import * as Crypto from 'expo-crypto';
-import { ApiError, type ApiClient } from './api';
+import { API_BASE, ApiError, type ApiClient } from './api';
 import { DEV_MOCK } from './config';
 
 // Playback of one Cinema title: mint a short-lived token, play Stream's HLS manifest, renew the token before
@@ -30,7 +30,7 @@ export function parseGrant(body: unknown): PlayGrant | null {
 }
 
 // Development only: the mock server cannot mint a Stream token, so a public HLS stream stands in for it.
-const DEV_HLS = DEV_MOCK ? process.env.EXPO_PUBLIC_DEV_HLS_URL : undefined;
+const DEV_HLS = DEV_MOCK ? (process.env.EXPO_PUBLIC_DEV_HLS_URL ?? `${API_BASE}/clip.mp4`) : undefined;
 
 // Only Stream's own host, built from the server's customer code and the token, ever reaches the player.
 export function manifestUrl(grant: Pick<PlayGrant, 'token' | 'customerCode'>, devOverride: string | undefined = DEV_HLS): string {

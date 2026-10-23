@@ -21,7 +21,39 @@ export interface PublishAccount {
     readonly supportedMedia: string[];
 }
 
-export function parseAccounts(body: unknown): { accountLimit: number; accounts: PublishAccount[]; uploadsEnabled: boolean } {
+export type PublishRole = 'owner' | 'manager' | 'editor' | 'reviewer' | 'analyst' | 'viewer';
+export type PublishTier = 'free' | 'publish';
+export interface PublishFeatures {
+    readonly inbox: boolean;
+    readonly inboxWorkflows: boolean;
+    readonly smartlinks: boolean;
+    readonly contentPresets: boolean;
+    readonly queues: boolean;
+    readonly approvals: boolean;
+    readonly teams: boolean;
+    readonly variants: boolean;
+    readonly reports: boolean;
+    readonly customerApi: boolean;
+    readonly customerWebhooks: boolean;
+    readonly ads: boolean;
+    readonly commerce: boolean;
+    readonly rssAutolists: boolean;
+}
+export interface PublishAccountsState {
+    readonly brandId: string | null;
+    readonly brandRole: PublishRole;
+    readonly accountLimit: number;
+    readonly planTier: PublishTier;
+    readonly plansEnabled: boolean;
+    readonly accounts: PublishAccount[];
+    readonly uploadsEnabled: boolean;
+    readonly features: PublishFeatures;
+}
+
+const ROLES: readonly PublishRole[] = ['owner', 'manager', 'editor', 'reviewer', 'analyst', 'viewer'];
+const flag = (body: Record<string, unknown>, key: string): boolean => body[key] === true;
+
+export function parseAccounts(body: unknown): PublishAccountsState {
     const b = isObject(body) ? body : {};
     const accounts: PublishAccount[] = [];
     for (const raw of list(b.accounts)) {
@@ -42,7 +74,31 @@ export function parseAccounts(body: unknown): { accountLimit: number; accounts: 
         });
     }
     const limit = typeof b.accountLimit === 'number' && Number.isInteger(b.accountLimit) && b.accountLimit > 0 ? b.accountLimit : 1;
-    return { accountLimit: limit, accounts, uploadsEnabled: b.uploadsEnabled === true };
+    return {
+        brandId: str(b.brand_id),
+        brandRole: ROLES.find((role) => role === b.brandRole) ?? 'viewer',
+        accountLimit: limit,
+        planTier: b.planTier === 'publish' ? 'publish' : 'free',
+        plansEnabled: flag(b, 'plansEnabled'),
+        accounts,
+        uploadsEnabled: flag(b, 'uploadsEnabled'),
+        features: {
+            inbox: flag(b, 'inboxEnabled'),
+            inboxWorkflows: flag(b, 'inboxWorkflowsEnabled'),
+            smartlinks: flag(b, 'smartlinksEnabled'),
+            contentPresets: flag(b, 'contentPresetsEnabled'),
+            queues: flag(b, 'queuesEnabled'),
+            approvals: flag(b, 'approvalsEnabled'),
+            teams: flag(b, 'teamsEnabled'),
+            variants: flag(b, 'variantsEnabled'),
+            reports: flag(b, 'reportsEnabled'),
+            customerApi: flag(b, 'customerApiEnabled'),
+            customerWebhooks: flag(b, 'customerWebhooksEnabled'),
+            ads: flag(b, 'adsEnabled'),
+            commerce: flag(b, 'commerceEnabled'),
+            rssAutolists: flag(b, 'rssAutolistsEnabled'),
+        },
+    };
 }
 
 export interface PostTarget {

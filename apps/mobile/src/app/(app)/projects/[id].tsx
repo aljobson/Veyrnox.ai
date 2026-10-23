@@ -142,7 +142,7 @@ export default function ProjectDetail() {
                 ListEmptyComponent={<Text style={styles.muted}>No saved versions yet.</Text>}
                 ListFooterComponent={<Text style={styles.note}>The timeline is edited in the editor.</Text>}
                 renderItem={({ item }) => (
-                    <View style={styles.row} accessible accessibilityLabel={versionLabel(item)}>
+                    <View style={styles.row}>
                         <View style={styles.rowText}>
                             <Text style={styles.name}>{versionLabel(item)}</Text>
                             {item.createdAt ? <Text style={styles.muted}>{new Date(item.createdAt).toLocaleString()}</Text> : null}
