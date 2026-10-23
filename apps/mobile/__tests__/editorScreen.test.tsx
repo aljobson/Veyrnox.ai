@@ -234,6 +234,15 @@ test('new empty project creates in default workspace with a stable key and route
     expect(mockRouter.replace).toHaveBeenCalledWith({ pathname: '/editor/[projectId]', params: { projectId: copyId } });
 });
 
+test('direct New edit creates a blank project and opens the editor without an intermediate choice', async () => {
+    mockParams = { blank: '1' };
+    await act(async () => root.render(<NewEditor />));
+    const post = mockRequest.mock.calls.find(([, init]) => init?.method === 'POST')!;
+    expect(JSON.parse(post[1].body)).toEqual({ workspace_id: 'w', name: 'Untitled edit' });
+    expect(mockRouter.replace).toHaveBeenCalledWith({ pathname: '/editor/[projectId]', params: { projectId: copyId } });
+    expect(root.container.queryAll(n => n.props.accessibilityLabel === 'Empty project')).toHaveLength(0);
+});
+
 test('initial network failure cannot promise an unverified durable copy', async () => {
     mockRequest.mockRejectedValueOnce(new ApiError(0, 'network'));
     await render();

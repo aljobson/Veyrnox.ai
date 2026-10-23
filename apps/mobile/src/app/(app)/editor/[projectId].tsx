@@ -35,7 +35,7 @@ function Button({ label, onPress, disabled = false }: { label: string; onPress()
 export default function EditorRoute() {
     const { projectId, jobId } = useLocalSearchParams<{ projectId: string; jobId?: string }>();
     if (!EDITOR_ENABLED) return <View><Stack.Screen options={{ title: t('editor.title') }} /><Text>{t('editor.unavailable')}</Text></View>;
-    if (FULL_EDITOR_ENABLED) return <FullEditorScreen key={projectId} projectId={projectId} />;
+    if (FULL_EDITOR_ENABLED) return <FullEditorScreen key={projectId} projectId={projectId} jobId={jobId} />;
     return <Editor key={projectId} projectId={projectId} jobId={jobId} />;
 }
 function Editor({ projectId, jobId }: { projectId: string; jobId?: string }) {

@@ -1,146 +1,68 @@
-import { Link, Stack, useFocusEffect, useRouter } from 'expo-router';
-import { Image } from 'expo-image';
-import { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Stack, useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useRef, useState } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
-import { chatApi, pinnedFirst, searchThreads, type ChatThread } from '../../../lib/chat';
-import { fetchFolders, type Folder } from '../../../lib/chatLibrary';
-import { t } from '../../../lib/i18n';
-import { MENU_ICONS } from '../../../lib/menuIcons';
-import { colors, radius } from '../../../theme';
+import { chatApi, pinnedFirst } from '../../../lib/chat';
+import { colors, fonts, radius } from '../../../theme';
 
-export default function Threads() {
+// The website opens on the working conversation, with its thread rail beside it. A phone cannot keep that rail open
+// without squeezing the composer, so this route opens the conversation and the Chats button reveals the rail on demand.
+export default function ChatWorkspaceEntry() {
     const { api } = useAuth();
     const router = useRouter();
-    const [threads, setThreads] = useState<ChatThread[] | null>(null);
-    const [failed, setFailed] = useState(false);
-    const [folders, setFolders] = useState<Folder[]>([]);
-    const [query, setQuery] = useState('');
-    // undefined shows every chat; null shows chats in no folder; an id shows that folder.
-    const [filter, setFilter] = useState<string | null | undefined>(undefined);
+    const opening = useRef(false);
+    const [error, setError] = useState(false);
 
-    const load = useCallback(async () => {
-        setFailed(false);
+    const openWorkspace = useCallback(async () => {
+        if (opening.current) return;
+        opening.current = true;
+        setError(false);
         try {
-            setThreads(await chatApi(api).listThreads());
-            // Folders are an extra: a failure here never hides the chats.
-            fetchFolders(api).then(setFolders, () => undefined);
+            const threads = pinnedFirst(await chatApi(api).listThreads());
+            if (threads[0]) {
+                router.replace({ pathname: '/chat/[id]', params: { id: threads[0].id } });
+            } else {
+                router.replace('/chat/new');
+            }
         } catch {
-            setFailed(true);
+            opening.current = false;
+            setError(true);
         }
-    }, [api]);
-
-    const shown = useMemo(() => searchThreads(pinnedFirst(threads ?? []).filter((t) => filter === undefined || (t.folder_id ?? null) === filter), query), [threads, filter, query]);
-
-    // Deleting a chat removes it and its messages; the credits it used stay spent (ADR-0067). It asks first.
-    function confirmDelete(thread: ChatThread) {
-        Alert.alert(t('chat.delete.title'), t('chat.delete.body'), [
-            { text: t('chat.delete.keep'), style: 'cancel' },
-            {
-                text: t('chat.delete.confirm'),
-                style: 'destructive',
-                onPress: async () => {
-                    try {
-                        await chatApi(api).deleteThread(thread.id);
-                        setThreads((cur) => (cur ?? []).filter((x) => x.id !== thread.id));
-                    } catch {
-                        Alert.alert(t('chat.delete.failed'));
-                    }
-                },
-            },
-        ]);
-    }
+    }, [api, router]);
 
     useFocusEffect(
         useCallback(() => {
-            void load();
-        }, [load]),
+            void openWorkspace();
+            return () => {
+                opening.current = false;
+            };
+        }, [openWorkspace]),
     );
 
     return (
         <View style={styles.screen}>
-            <Stack.Screen options={{ title: 'Chats' }} />
-            <Link href="/chat/new" asChild>
-                <Pressable accessibilityRole="button" style={styles.newButton}>
-                    <Text style={styles.newText}>New chat</Text>
+            <Stack.Screen options={{ title: 'LLM Chat' }} />
+            <View style={styles.brandMark}><Text style={styles.brandMarkText}>V</Text></View>
+            <Text style={styles.eyebrow}>LLM CHAT</Text>
+            <Text accessibilityRole="header" style={styles.hero}>Opening your workspace</Text>
+            <Text style={styles.help}>Your latest conversation, tools and creative skills are being prepared.</Text>
+            {error ? (
+                <Pressable accessibilityRole="button" style={styles.retry} onPress={() => void openWorkspace()}>
+                    <Text style={styles.retryText}>Try again</Text>
                 </Pressable>
-            </Link>
-            <View style={styles.links}>
-                <Pressable accessibilityRole="button" style={styles.linkBox} onPress={() => router.push('/chat/personas')}><Text style={styles.link}>Personas</Text></Pressable>
-                <Pressable accessibilityRole="button" style={styles.linkBox} onPress={() => router.push('/chat/folders')}><Text style={styles.link}>Folders</Text></Pressable>
-            </View>
-            <TextInput style={styles.search} value={query} onChangeText={setQuery} placeholder={t('chat.search.placeholder')} accessibilityLabel={t('chat.search.label')} placeholderTextColor={colors.muted} autoCorrect={false} clearButtonMode="while-editing" />
-            {folders.length > 0 ? (
-                <View style={styles.chips}>
-                    {[{ id: undefined, name: 'All' }, { id: null, name: 'No folder' }, ...folders.map((f) => ({ id: f.id as string | null | undefined, name: f.name }))].map((c) => (
-                        <Pressable key={String(c.id ?? c.name)} accessibilityRole="button" accessibilityState={{ selected: filter === c.id }} style={[styles.chip, filter === c.id && styles.chipOn]} onPress={() => setFilter(c.id)}>
-                            <Text style={[styles.chipText, filter === c.id && styles.chipTextOn]}>{c.name}</Text>
-                        </Pressable>
-                    ))}
-                </View>
-            ) : null}
-            {failed ? (
-                <Pressable accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }} onPress={load}>
-                    <Text style={styles.error}>Could not load your chats. Tap to retry.</Text>
-                </Pressable>
-            ) : threads === null ? (
-                <ActivityIndicator color={colors.accent} />
-            ) : (
-                <FlatList
-                    data={shown}
-                    keyExtractor={(t) => t.id}
-                    ListEmptyComponent={<Text style={styles.muted}>{query.trim() && (threads ?? []).length > 0 ? t('chat.search.none') : 'No chats yet.'}</Text>}
-                    renderItem={({ item }) => (
-                        <View style={styles.itemRow}>
-                            <Pressable
-                                accessibilityRole="button"
-                                style={[styles.row, styles.rowMain]}
-                                onPress={() => router.push({ pathname: '/chat/[id]', params: { id: item.id } })}
-                            >
-                                <View style={styles.badge}>
-                                    <Image source={MENU_ICONS.chat} style={styles.badgeIcon} tintColor={colors.accent} contentFit="contain" accessibilityElementsHidden />
-                                </View>
-                                <View style={styles.rowText}>
-                                    <Text style={styles.rowTitle} numberOfLines={1}>
-                                        {item.pinned ? `${t('chat.pinned')} · ` : ''}
-                                        {item.title || 'New chat'}
-                                    </Text>
-                                    <Text style={styles.muted} numberOfLines={1}>{item.model_id}</Text>
-                                </View>
-                            </Pressable>
-                            <Pressable accessibilityRole="button" accessibilityLabel={t('chat.delete.label', { name: item.title || 'New chat' })} style={styles.del} onPress={() => confirmDelete(item)}>
-                                <Text style={styles.delText}>{t('chat.delete.button')}</Text>
-                            </Pressable>
-                        </View>
-                    )}
-                />
-            )}
+            ) : <ActivityIndicator color={colors.accent} size="small" style={styles.spinner} />}
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: colors.background, padding: 16, gap: 12 },
-    newButton: { backgroundColor: colors.accent, borderRadius: radius.pill, paddingVertical: 14, alignItems: 'center' },
-    newText: { color: colors.accentInk, fontWeight: '600', fontSize: 16 },
-    row: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 16, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
-    badge: { width: 44, height: 44, borderRadius: radius.pill, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
-    badgeIcon: { width: 22, height: 22 },
-    rowText: { flex: 1, gap: 2 },
-    rowTitle: { color: colors.text, fontSize: 16, fontWeight: '600' },
-    muted: { color: colors.muted },
-    search: { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: 12, minHeight: 44 },
-    itemRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 8 },
-    rowMain: { flex: 1 },
-    del: { minHeight: 44, minWidth: 44, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 8 },
-    delText: { color: colors.danger },
-    error: { color: colors.danger },
-    links: { flexDirection: 'row', gap: 16 },
-    linkBox: { minHeight: 44, justifyContent: 'center' },
-    link: { color: colors.accent, fontSize: 16 },
-    chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-    chip: { minHeight: 40, justifyContent: 'center', paddingHorizontal: 14, borderRadius: radius.pill, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
-    chipOn: { backgroundColor: colors.accent, borderColor: colors.accent },
-    chipText: { color: colors.body },
-    chipTextOn: { color: colors.accentInk, fontWeight: '600' },
+    screen: { flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 30 },
+    brandMark: { width: 56, height: 56, borderRadius: 18, backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accent, alignItems: 'center', justifyContent: 'center', marginBottom: 22 },
+    brandMarkText: { color: colors.accent, fontFamily: fonts.displayHeavy, fontSize: 28 },
+    eyebrow: { color: colors.accent, fontSize: 11, lineHeight: 16, fontWeight: '800', letterSpacing: 1.4 },
+    hero: { color: colors.text, fontFamily: fonts.displayHeavy, fontSize: 30, lineHeight: 34, letterSpacing: -1, textAlign: 'center', marginTop: 6 },
+    help: { color: colors.muted, fontSize: 14, lineHeight: 21, textAlign: 'center', marginTop: 10, maxWidth: 320 },
+    spinner: { marginTop: 26 },
+    retry: { minHeight: 48, minWidth: 132, marginTop: 24, paddingHorizontal: 20, borderRadius: radius.pill, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
+    retryText: { color: colors.accentInk, fontSize: 15, fontWeight: '700' },
 });

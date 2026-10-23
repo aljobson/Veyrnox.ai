@@ -2,6 +2,7 @@
 export default {
     'tabs.explore': 'Explore',
     'tabs.create': 'Create',
+    'tabs.editor': 'Editor',
     'tabs.cinema': 'Cinema',
     'tabs.library': 'Library',
     'tabs.publish': 'Publish',

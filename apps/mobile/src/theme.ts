@@ -120,6 +120,7 @@ export async function applyThemePreference(preference: ThemePreference, returnPa
 // System follows the phone; when the phone does not say, the app keeps its original dark look.
 export const resolveScheme = (preference: ThemePreference, system: string | null | undefined): 'light' | 'dark' =>
     preference === 'light' || preference === 'dark' ? preference : system === 'light' ? 'light' : 'dark';
+export const paletteForScheme = (value: 'light' | 'dark'): Palette => value === 'dark' ? DARK : LIGHT;
 
 const safeSystemScheme = (): string | null | undefined => {
     try { return appearance()?.getColorScheme(); } catch { return null; }
