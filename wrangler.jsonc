@@ -18,6 +18,10 @@
   // Keep Worker logs (console.error on provider rejects, webhook signature
   // failures) in the dashboard instead of needing a live `wrangler tail`.
   "observability": { "enabled": true },
+  // The generated OpenNext bundle now produces more than Cloudflare's 60 MiB
+  // encoded source-map upload limit. Keep runtime logs enabled, but omit build
+  // source maps so a valid production release is not rejected at cutover.
+  "upload_source_maps": false,
   // General API screening: 1200/minute per IP (/64 for IPv6) leaves room for
   // concurrent job polling; session authentication has a separate 60/minute
   // quota. Provider callbacks use a separate general bucket so client traffic
