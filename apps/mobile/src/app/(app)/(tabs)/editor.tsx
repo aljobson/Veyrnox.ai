@@ -120,7 +120,7 @@ export default function EditorHome() {
                             </View>
                         ) : null}
                         <View style={styles.sectionTop}>
-                            <Text style={styles.sectionTitle}>{t('editor.home.recent')}</Text>
+                            <Text accessibilityRole="header" style={styles.sectionTitle}>{t('editor.home.recent')}</Text>
                             <Pressable accessibilityRole="button" style={touchTarget} onPress={() => router.push('/projects')}>
                                 <Text style={styles.allProjects}>{t('editor.home.allProjects')}</Text>
                             </Pressable>

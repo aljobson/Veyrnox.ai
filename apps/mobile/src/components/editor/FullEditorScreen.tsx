@@ -505,7 +505,7 @@ function TimelineTrack({ track, items, timeline, selections, zoom, onSelect }: {
         </ScrollView>
     </View>;
 }
-function PanelHeading({ title, detail }: { title: string; detail: string }) { return <View style={styles.panelHeading}><Text style={styles.sectionTitle}>{title}</Text><Text style={styles.panelDetail}>{detail}</Text></View>; }
+function PanelHeading({ title, detail }: { title: string; detail: string }) { return <View style={styles.panelHeading}><Text accessibilityRole="header" style={styles.sectionTitle}>{title}</Text><Text style={styles.panelDetail}>{detail}</Text></View>; }
 function EmptyPanel({ title, body }: { title: string; body: string }) { return <View style={styles.emptyPanel}><Text style={styles.emptyTitle}>{title}</Text><Text style={styles.emptyBody}>{body}</Text></View>; }
 function ProjectMediaRow({ item, fps, onAdd }: { item: Media; fps: number; onAdd(item: Media): void }) {
     const label = `Add ${item.kind === 'audio' ? 'audio' : 'video'}`;
