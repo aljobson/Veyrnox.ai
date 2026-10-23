@@ -75,7 +75,7 @@ const THEME_BY_CATEGORY = {
 };
 
 export function effectThemeId(template) {
-  return THEME_BY_ID[template?.id] || THEME_BY_CATEGORY[template?.category] || 'SHOT LANGUAGE';
+  return template?.theme || THEME_BY_ID[template?.id] || THEME_BY_CATEGORY[template?.category] || 'SHOT LANGUAGE';
 }
 
 export function themedTemplates(theme, templates) {

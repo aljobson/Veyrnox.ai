@@ -1,5 +1,5 @@
 import { ApiError } from '../src/lib/api';
-import { fetchPresets, groupByCategory, groupByTheme, parsePresets, presetHref, presetPrice, themeTitle } from '../src/lib/presets';
+import { fetchPresets, groupByCategory, groupByTheme, parsePresets, presetHref, presetPrice, searchPresets, themeTitle } from '../src/lib/presets';
 
 const base = {
     id: 'a',
@@ -76,6 +76,14 @@ describe('groupByTheme', () => {
         expect(groups[1].items.map((i) => i.id)).toEqual(['a']);
         expect(themeTitle('AI DANCE')).toBe('AI Dance');
         expect(themeTitle('E-COMMERCE')).toBe('E-commerce');
+    });
+});
+
+describe('searchPresets', () => {
+    test('matches all words across title, theme and prompt', () => {
+        const items = parsePresets({ presets: [base, { ...base, id: 'b', title: 'Pet Press Conference', theme: 'PET', prompt: 'A playful animal interview.' }] });
+        expect(searchPresets(items, 'pet interview').map((p) => p.id)).toEqual(['b']);
+        expect(searchPresets(items, '  ')).toHaveLength(2);
     });
 });
 

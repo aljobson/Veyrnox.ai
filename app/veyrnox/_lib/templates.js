@@ -9,6 +9,7 @@
 // (tests/presetLinking.test.mjs). Prices shown come from the live catalog.
 
 import { SOURCE_TEMPLATES } from './sourceTemplates.js';
+import { EFFECT_CONCEPT_TEMPLATES } from './effectConceptTemplates.js';
 import { EFFECT_THEMES, effectThemeId, themedTemplates } from './effectThemes.js';
 
 const CATEGORY_ORDER = ['YOUR PHOTO', 'KIDS BIRTHDAY', 'CINEMATIC', 'ANIME', 'CARTOONS', 'MOVIES', 'FANTASY', 'REALISTIC', 'FASHION', 'PRODUCTS', 'VFX', 'UGC', 'ADS'];
@@ -115,10 +116,10 @@ const WALL_CLIP_KEYS = [
 // The library is the complete set of production-ready recipes. The landing
 // wall remains a curated preview of the same library, while every template is
 // searchable and usable from the web and mobile gallery.
-export const PRESETS = SOURCE_TEMPLATES;
+export const PRESETS = [...SOURCE_TEMPLATES, ...EFFECT_CONCEPT_TEMPLATES];
 export const WALL_PRESETS = WALL_CLIP_KEYS.map((key) => SOURCE_TEMPLATES.find((p) => p.clipKey === key)).filter(Boolean);
 // Old bookmarks retain their original prompt, without an unrelated demo clip.
-export const ALL_TEMPLATES = [...SOURCE_TEMPLATES, ...LEGACY_PRESETS];
+export const ALL_TEMPLATES = [...PRESETS, ...LEGACY_PRESETS];
 export const PRESET_CATEGORIES = ['ALL', 'NEW', ...CATEGORY_ORDER.filter((category) => PRESETS.some((p) => p.category === category))];
 export { EFFECT_THEMES, effectThemeId };
 

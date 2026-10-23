@@ -136,9 +136,9 @@ test('previews keep their titles without exposing source-platform metadata', () 
     }
 });
 
-test('the full preset gallery has a distinct preview and poster for every filter result', () => {
+test('every media-backed preset has a distinct preview and poster', () => {
     const videos = new Set();
-    for (const preset of PRESETS) {
+    for (const preset of PRESETS.filter((item) => item.clipKey)) {
         assert.ok(preset.clipKey, `${preset.id} has no gallery preview`);
         const clip = SHOWCASE_CLIPS[preset.clipKey];
         assert.ok(clip?.video, `${preset.id} has no gallery preview`);
@@ -146,6 +146,15 @@ test('the full preset gallery has a distinct preview and poster for every filter
         assert.ok(statSync(`${PUBLIC}${clip.poster}`).size <= 80 * 1024, `${preset.id} poster exceeds 80 KB`);
         assert.ok(!videos.has(clip.video), `${preset.id} repeats another preset's preview`);
         videos.add(clip.video);
+    }
+});
+
+test('generated effect concepts use a complete local colour treatment instead of a missing media preview', () => {
+    const concepts = PRESETS.filter((preset) => preset.id.startsWith('effect-'));
+    assert.equal(concepts.length, 1036);
+    for (const preset of concepts) {
+        assert.equal(preset.clipKey, undefined, `${preset.id} should not claim an absent media preview`);
+        assert.match(preset.bg, /^linear-gradient\(/, `${preset.id} has no colour treatment`);
     }
 });
 

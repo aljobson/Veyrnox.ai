@@ -112,6 +112,18 @@ export function themeTitle(value: string): string {
     return THEME_TITLES[value] ?? value.toLocaleLowerCase().replace(/(^|\s)\S/g, (letter) => letter.toLocaleUpperCase());
 }
 
+export function searchPresets(items: readonly Preset[], query: string): Preset[] {
+    const terms = query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
+    if (!terms.length) return [...items];
+    return items.filter((preset) => {
+        const haystack = [preset.title, preset.category, preset.theme, preset.modelName, preset.prompt, preset.needs]
+            .filter(Boolean)
+            .join(' ')
+            .toLocaleLowerCase();
+        return terms.every((term) => haystack.includes(term));
+    });
+}
+
 // Opens Create on the template's model with its prompt, length, shape, name and picture carried over; an inactive model
 // returns to Templates with an explicit unavailable state.
 export function presetHref(p: Preset) {
