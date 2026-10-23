@@ -46,7 +46,8 @@ export default function TabsLayout() {
                 return {
                     headerStyle: { backgroundColor: palette.background },
                     headerTintColor: palette.text,
-                    headerTitle: () => <Logo size={24} palette={palette} />,
+                    // Keep the complete VEYRNOX.ai wordmark clear of the three fixed-width actions on compact phones.
+                    headerTitle: () => <Logo size={20} palette={palette} />,
                     headerLeft: () => <MenuButton palette={palette} />,
                     headerRight: () => <HeaderRight palette={palette} />,
                     sceneStyle: { backgroundColor: palette.background },

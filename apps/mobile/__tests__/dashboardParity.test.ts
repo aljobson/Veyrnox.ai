@@ -13,6 +13,7 @@ describe('the native Explore dashboard mirrors the signed-in website', () => {
         expect(explore).toContain("<StatusBar style={isDark ? 'light' : 'dark'}");
         expect(tabs).toContain('const palette = colors');
         expect(tabs).toContain('headerStyle: { backgroundColor: palette.background }');
+        expect(tabs).toContain('<Logo size={20} palette={palette} />');
         expect(tabs).toContain('tabBarStyle: { backgroundColor: palette.background');
     });
 

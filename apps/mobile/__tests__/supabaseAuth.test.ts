@@ -20,13 +20,20 @@ describe('supabase auth', () => {
         globalThis.fetch = fetchMock as unknown as typeof fetch;
     });
 
-    test('authorize url carries the PKCE challenge and our redirect', () => {
+    test('Google authorize url carries PKCE and always asks which account to use', () => {
         const url = new URL(authorizeUrl('google', 'chal', 'ai.veyrnox.app://auth/callback'));
         expect(url.pathname).toBe('/auth/v1/authorize');
         expect(url.searchParams.get('provider')).toBe('google');
+        expect(url.searchParams.get('prompt')).toBe('select_account');
         expect(url.searchParams.get('code_challenge')).toBe('chal');
         expect(url.searchParams.get('code_challenge_method')).toBe('s256');
         expect(url.searchParams.get('redirect_to')).toBe('ai.veyrnox.app://auth/callback');
+    });
+
+    test('Apple authorize url does not receive Google-only prompt parameters', () => {
+        const url = new URL(authorizeUrl('apple', 'chal', 'ai.veyrnox.app://auth/callback'));
+        expect(url.searchParams.get('provider')).toBe('apple');
+        expect(url.searchParams.has('prompt')).toBe(false);
     });
 
     test('exchanges a PKCE code for a session with an absolute expiry', async () => {

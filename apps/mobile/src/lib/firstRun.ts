@@ -1,6 +1,8 @@
 // First run (N3): a short welcome shown once, then never again on this phone. The only thing stored is a versioned
-// "seen" flag; nothing about the person. A new version number would show the welcome again.
-export const FIRST_RUN_SLOT = 'veyrnox.welcome.seen.v1';
+// "seen" flag; nothing about the person. Version 2 introduces the Mobbin-inspired, input-first journey, so it must
+// not inherit the completed flag from the older generic welcome.
+export const FIRST_RUN_VERSION = 2;
+export const FIRST_RUN_SLOT = `veyrnox.welcome.seen.v${FIRST_RUN_VERSION}`;
 
 export const WELCOME_CARDS = ['hello', 'credits', 'start'] as const;
 export type WelcomeCard = (typeof WELCOME_CARDS)[number];
@@ -9,13 +11,13 @@ export function hasSeenWelcome(raw: string | null | undefined): boolean {
     if (!raw) return false;
     try {
         const value = JSON.parse(raw) as { version?: unknown; seen?: unknown } | null;
-        return !!value && !Array.isArray(value) && value.version === 1 && value.seen === true;
+        return !!value && !Array.isArray(value) && value.version === FIRST_RUN_VERSION && value.seen === true;
     } catch {
         return false;
     }
 }
 
-export const serializeSeen = (): string => JSON.stringify({ version: 1, seen: true });
+export const serializeSeen = (): string => JSON.stringify({ version: FIRST_RUN_VERSION, seen: true });
 
 // The redirect to the welcome is sent at most once per launch, however many times its gate mounts: a screen that
 // remounts in a loop must not send the person there again and again.
