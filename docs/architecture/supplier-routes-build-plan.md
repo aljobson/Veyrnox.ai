@@ -54,6 +54,12 @@ exclude waiting for owner decisions and paid probes.
 - ADR accepted; privacy and supplier lists reviewed.
 - **Done when:** replay passes on a fresh database, shadow logs show every
   dispatch matches `chooseRoute`, and nothing in production changed.
+- **Status (2026-10-23):** migration 0367 (both tables, 36 backfilled routes,
+  service-role only), `lib/supplierRoutes.js` (`chooseRoute`, `routeFloor`,
+  `shadowMatches`) and `tests/supplierRoutes.test.mjs` are written. Not yet
+  done: the shadow log inside the generation route, and the owner review of the
+  placeholder provenance values (fal, openrouter, byteplus `official`; kie,
+  grsai `licensed_reseller`).
 
 ### Phase 1: dispatch through routes, one route per offer (4 to 6 days)
 
