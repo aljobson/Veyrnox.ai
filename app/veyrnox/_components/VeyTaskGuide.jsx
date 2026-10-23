@@ -70,7 +70,7 @@ export default function VeyTaskGuide({ visible, pathname, onPoint, onStop, onAct
     return () => clearTimeout(timer);
   }, [visible, step?.key, pathname, task?.passportId, onPoint]);
   if (!visible) return null;
-  if (!task && !choosing) return <button type="button" onClick={() => { setLibrary(readOddlingLibrary(localStorage)); setChatting(false); setChoosing(true); }}
+  if (!task && !choosing) return chatting ? null : <button type="button" onClick={() => { setLibrary(readOddlingLibrary(localStorage)); setChatting(false); setChoosing(true); }}
     className="fixed end-4 top-24 z-[62] rounded-xl border border-vx-accent/40 bg-vx-panel px-4 py-3 text-sm font-bold text-vx-accent shadow-xl">{t("public.vey.savedToVideo")}</button>;
   const prepare = () => {
     if (pathname !== '/app/create') { router.push('/app/create'); return; }

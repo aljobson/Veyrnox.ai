@@ -51,3 +51,8 @@ test('guide cleanup does not cancel ordinary cross-page help when no task is act
     assert.match(source, /else if \(!visible \|\| chatting \|\| \['recover', 'waiting'\]\.includes\(step\?\.key\)\) onStop\(\)/);
     assert.doesNotMatch(source, /else onStop\(\)/);
 });
+
+test('saved Oddling shortcut does not cover an active Vey conversation', async () => {
+    const source = await readFile(new URL('app/veyrnox/_components/VeyTaskGuide.jsx', root), 'utf8');
+    assert.match(source, /if \(!task && !choosing\) return chatting \? null : <button/);
+});

@@ -67,7 +67,7 @@ export default function Conversation() {
     const busy = useRef(false); // synchronous: a second tap must not start a second turn
 
     // A starter card is only instructions copied onto this chat; it costs nothing until a reply is sent.
-    async function useStarter(skill: Skill) {
+    async function applyStarter(skill: Skill) {
         try {
             const list = catalog ?? (await fetchCatalog().catch(() => []));
             await chatApi(api).updateThread(id, { system_prompt: skillInstructions(skill, list) });
@@ -338,6 +338,9 @@ export default function Conversation() {
         <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={88}>
             <Stack.Screen options={{ title: 'LLM Chat' }} />
             <View style={styles.conversationBar}>
+                <Pressable accessibilityRole="button" accessibilityLabel="Open chats" style={styles.headerControl} onPress={() => router.push('/chat/library')}>
+                    <Text style={styles.headerControlText}>Chats</Text>
+                </Pressable>
                 <View style={styles.conversationTitle}>
                     <Text numberOfLines={1} style={styles.threadTitle}>{title}</Text>
                     {model ? <Text numberOfLines={1} style={styles.modelMeta}>{model.name} · {plural('chat.perReply', model.credits_per_reply)}</Text> : null}
@@ -385,7 +388,7 @@ export default function Conversation() {
                                                         accessibilityLabel={`${skill.name}. ${skill.blurb}`}
                                                         accessibilityState={{ selected }}
                                                         style={[styles.starter, selected && styles.starterOn]}
-                                                        onPress={() => void useStarter(skill)}
+                                                        onPress={() => void applyStarter(skill)}
                                                     >
                                                         <Text style={styles.starterName}>{skill.name}</Text>
                                                         <Text style={styles.starterBlurb}>{skill.blurb}</Text>
