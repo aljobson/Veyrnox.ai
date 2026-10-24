@@ -24,7 +24,7 @@ test('every monthly subscription beats the best one-off pack rate', () => {
 });
 
 test('the catalog migration retires parity packs and guards the final offers', () => {
-  const migration = readFileSync(new URL('../packages/db/schema/supabase/0378_restore_subscription_value_separation.sql', import.meta.url), 'utf8');
+  const migration = readFileSync(new URL('../packages/db/schema/supabase/0382_restore_subscription_value_separation.sql', import.meta.url), 'utf8');
   assert.match(migration, /SET active = false[\s\S]*id = 'web-160'/);
   assert.match(migration, /SET active = true[\s\S]*id = 'web-300'/);
   assert.match(migration, /web-100:100:1000,web-300:300:2500,web-1000:1000:7500/);

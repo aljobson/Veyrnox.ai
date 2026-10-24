@@ -11,7 +11,7 @@
 - **Date**: 2026-09-28
 - **Correction, 2026-10-24**: migration 0365 flattened one-off Pack prices until
   Starter and Plus were worse per Credit than Packs and Ultra was equal. That
-  contradicted this ADR's accepted value exchange. Migration 0378 restores the
+  contradicted this ADR's accepted value exchange. Migration 0382 restores the
   100/$10, 300/$25 and 1,000/$75 flexible Pack tiers, so each recurring plan
   is again strictly cheaper per Credit than the best one-off Pack.
 - **Deciders**: Product owner (sole) — accepted; Finance/Legal for tax/consent

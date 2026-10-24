@@ -226,7 +226,7 @@ only (ADR-0067).
 ### 3.4 Paying
 - **Credit Packs** via **Stripe Checkout**, Stripe Managed Payments as
   Merchant of Record with Stripe-managed tax (ADR-0031): **100 for $10, 300 for
-  $25, 1,000 for $75**, plus tax (0378, ADR-0037/0064). Purchased Credits never
+  $25, 1,000 for $75**, plus tax (0382, ADR-0037/0064). Purchased Credits never
   expire. Supply-consent checkbox before purchase. Packs cost more per Credit
   than every active monthly subscription in exchange for that flexibility.
 - Lost-webhook recovery: return URL + 5-minute backfill (ADR-0033, accepted

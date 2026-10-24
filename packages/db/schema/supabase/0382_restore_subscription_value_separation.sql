@@ -1,4 +1,4 @@
--- 0378 — Restore the value separation accepted in ADR-0064.
+-- 0382 (renumbered from 0378, which sat below production's latest and blocked apply-migrations) — Restore the value separation accepted in ADR-0064.
 --
 -- 0365 made one-off packs cheaper than Starter and Plus subscriptions and
 -- equal to Ultra. That reversed the product contract: recurring, expiring
