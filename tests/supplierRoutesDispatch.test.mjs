@@ -58,3 +58,32 @@ test('migration 0370 only inserts, checks the job and route, and is service-role
   assert.match(sql, /GRANT EXECUTE ON FUNCTION public\.record_job_attempt\(uuid, uuid, text\) TO service_role/);
   assert.doesNotMatch(sql, /UPDATE |DELETE FROM|ledger|credit_balances/);
 });
+
+test('outcome marking is off without the flag and never throws', async () => {
+  const { markAttemptOutcome } = await import('../lib/supplierRoutesDispatch.js');
+  const sent = [];
+  const call = async (n, a) => { sent.push([n, a]); return { ok: true, updated: 1 }; };
+  assert.equal(await markAttemptOutcome({ provider: 'kie', providerJobId: 't1', outcome: 'completed' }, {}, { env: {}, call }), false);
+  assert.deepEqual(sent, []);
+  assert.equal(await markAttemptOutcome({ provider: 'kie', providerJobId: 't1', outcome: 'completed' }, {}, { env: on, call }), true);
+  assert.deepEqual(sent[0], ['mark_job_attempt_outcome', { p_provider: 'kie', p_supplier_job_id: 't1', p_outcome: 'completed' }]);
+  assert.equal(await markAttemptOutcome({ provider: 'kie', providerJobId: 't1', outcome: 'failed' }, {}, { env: on, call: async () => { throw new Error('boom'); }, log: () => {} }), false);
+  assert.equal(await markAttemptOutcome({ provider: 'kie', providerJobId: 't1', outcome: 'failed' }, {}, { env: on, call: async () => ({ ok: false, code: 'invalid_outcome' }), log: () => {} }), false);
+});
+
+test('the completion paths mark an outcome only after their own state RPC returned ok', () => {
+  for (const [file, ok] of [['../lib/providerCompletion.js', ['succeeded', 'failed']], ['../lib/falWebhookHandler.js', ['succeededRes', 'failRes']]]) {
+    const src = readFileSync(new URL(file, import.meta.url), 'utf8');
+    for (const v of ok) assert.match(src, new RegExp(`if \\(${v} && ${v}\\.ok === true\\) await markAttemptOutcome`), `${file} ${v}`);
+  }
+});
+
+test('migration 0372 only updates job_attempts forward from submitted and is service-role only', () => {
+  const sql = readFileSync(new URL('../packages/db/schema/supabase/0372_mark_job_attempt_outcome.sql', import.meta.url), 'utf8');
+  assert.match(sql, /UPDATE public\.job_attempts a/);
+  assert.match(sql, /a\.outcome = 'submitted'/);
+  assert.match(sql, /REVOKE ALL ON FUNCTION public\.mark_job_attempt_outcome\(text, text, text\) FROM PUBLIC, anon, authenticated/);
+  assert.match(sql, /GRANT EXECUTE ON FUNCTION public\.mark_job_attempt_outcome\(text, text, text\) TO service_role/);
+  const code = sql.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n');
+  assert.doesNotMatch(code, /UPDATE public\.jobs|ledger|credit_balances|DELETE FROM/);
+});
