@@ -19,7 +19,7 @@ import {
   subscriptionCheckoutUrl,
   subscriptionReturnFrom,
 } from '../_lib/creditSubscriptionUi';
-import { subscriptionSavingPercent } from '../_lib/subscriptionPlans';
+import { subscriptionSavingPercent, yearlySaving } from '../_lib/subscriptionPlans';
 const usd = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
@@ -34,7 +34,7 @@ const names = {
   'ultra-monthly': 'Ultra',
   'ultra-weekly': 'Ultra',
 };
-const intervalName = (value) => (value === 'week' ? 'week' : 'month');
+const intervalName = (value) => (value === 'week' ? 'week' : value === 'year' ? 'year' : 'month');
 const identity = () => getSession()?.user?.id || '',
   noIdentity = () => '';
 function message(code, t) { return tOr(t, `app.credits.subscription.error.${code}`, t('app.credits.subscription.errorFallback')); }
@@ -70,50 +70,91 @@ async function publicOfferState() {
     };
   }
 }
-function Plans({ plans, packs, selected, onSelect, publicOnly = false }) {
+const CADENCES = ['month', 'year'];
+export function Plans({ plans, packs, selected, onSelect, publicOnly = false, initialCadence = 'month' }) {
   const { t, locale } = useI18n();
+  const hasYearly = plans.some((p) => p.billing_interval === 'year') && plans.some((p) => p.billing_interval === 'month');
+  const [cadence, setCadence] = useState(initialCadence);
+  const shown = hasYearly ? plans.filter((p) => p.billing_interval === cadence) : plans;
+  const money = (cents) => (publicOnly ? usd.format(cents / 100) : formatUsd(cents / 100, locale));
   return (
-    <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {plans.map((p) => {
-        const saving = subscriptionSavingPercent(p, packs);
-        return <li key={p.id} className="rounded-xl border border-vx-border p-5">
-          {saving && (
-            <p className="mb-2 font-vx-mono text-[10px] font-bold uppercase tracking-[0.1em] text-vx-accent">
-              {t('pricing.subs.saving', { pct: saving })}
-            </p>
-          )}
-          <h3 className="text-xl font-bold">{tOr(t, `app.credits.subscription.plan.${p.id}`, names[p.id] || p.id)}</h3>
-          <p className="mt-1 text-xs font-bold uppercase tracking-widest text-vx-accent">
-            {tOr(t, `cinema.pass.${p.billing_interval}ly`, p.billing_interval)}
-          </p>
-          <p className="mt-3 font-vx-mono text-2xl">
-            {publicOnly ? usd.format(p.price_usd_cents / 100) : formatUsd(p.price_usd_cents / 100, locale)} / {tOr(t, `cinema.pass.${p.billing_interval}`, p.billing_interval)}
-          </p>
-          <p className="mt-2">
-            {t('public.subscription.cycle', { credits: p.credits.toLocaleString(localeTag(locale)), interval: tOr(t, `cinema.pass.${p.billing_interval}`, p.billing_interval) })}
-          </p>
-          <p className="mt-2 text-sm text-vx-fg-muted">
-            {t('public.subscription.expiry')}
-          </p>
-          {publicOnly ? (
-            <Link
-              href="/app/credits#credit-subscriptions"
-              className="mt-4 inline-block underline"
-            >
-              {t('public.subscription.choose', { plan: tOr(t, `app.credits.subscription.plan.${p.id}`, names[p.id] || p.id) })}
-            </Link>
-          ) : (
+    <>
+      {hasYearly && (
+        <div role="group" aria-label={t('public.subscription.cadence.label')} className="mt-6 inline-flex rounded-full border border-vx-border p-1">
+          {CADENCES.map((value) => (
             <button
-              className="mt-4 rounded-full border border-vx-border px-4 py-2 font-bold"
-              aria-pressed={selected === p.id}
-              onClick={() => onSelect(p.id)}
+              key={value}
+              type="button"
+              aria-pressed={cadence === value}
+              className={`rounded-full px-4 py-1.5 text-sm font-bold ${cadence === value ? 'bg-vx-accent text-vx-accent-ink' : ''}`}
+              onClick={() => { setCadence(value); if (onSelect) onSelect(null); }}
             >
-              {selected === p.id ? t('public.subscription.selected') : t('public.subscription.choose', { plan: tOr(t, `app.credits.subscription.plan.${p.id}`, names[p.id] || p.id) })}
+              {value === CADENCES[1] ? t('public.subscription.cadence.year') : t('public.subscription.cadence.month')}
             </button>
-          )}
-        </li>;
-      })}
-    </ul>
+          ))}
+        </div>
+      )}
+      <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {shown.map((p) => {
+          // A yearly plan holds a month of credits: its rate per credit is the yearly price over twelve months.
+          const saving = subscriptionSavingPercent(p.billing_interval === 'year' ? { ...p, credits: p.credits * 12 } : p, packs);
+          const yearly = p.billing_interval === 'year' ? yearlySaving(p, plans) : null;
+          const planName = tOr(t, `app.credits.subscription.plan.${p.id}`, names[p.id] || p.id);
+          return <li key={p.id} className="rounded-xl border border-vx-border p-5">
+            {saving && (
+              <p className="mb-2 font-vx-mono text-[10px] font-bold uppercase tracking-[0.1em] text-vx-accent">
+                {t('pricing.subs.saving', { pct: saving })}
+              </p>
+            )}
+            <h3 className="text-xl font-bold">{planName}</h3>
+            <p className="mt-1 text-xs font-bold uppercase tracking-widest text-vx-accent">
+              {tOr(t, `cinema.pass.${p.billing_interval}ly`, p.billing_interval)}
+            </p>
+            <p className="mt-3 font-vx-mono text-2xl">
+              {money(p.price_usd_cents)} / {tOr(t, `cinema.pass.${p.billing_interval}`, p.billing_interval)}
+            </p>
+            {p.billing_interval === 'year' ? (
+              <>
+                <p className="mt-1 text-sm text-vx-fg-muted">
+                  {t('public.subscription.yearly.perMonth', { amount: money(Math.round(p.price_usd_cents / 12)) })}
+                </p>
+                {yearly && (
+                  <p className="mt-1 text-sm font-bold text-vx-accent">
+                    {t('public.subscription.yearly.save', { amount: money(yearly.amountCents), pct: yearly.pct })}
+                  </p>
+                )}
+                <p className="mt-2">
+                  {t('public.subscription.yearly.grant', { credits: p.credits.toLocaleString(localeTag(locale)) })}
+                </p>
+              </>
+            ) : (
+              <p className="mt-2">
+                {t('public.subscription.cycle', { credits: p.credits.toLocaleString(localeTag(locale)), interval: tOr(t, `cinema.pass.${p.billing_interval}`, p.billing_interval) })}
+              </p>
+            )}
+            <p className="mt-2 text-sm text-vx-fg-muted">
+              {t('public.subscription.expiry')}
+            </p>
+            {publicOnly ? (
+              <Link
+                href="/app/credits#credit-subscriptions"
+                className="mt-4 inline-block underline"
+              >
+                {t('public.subscription.choose', { plan: planName })}
+              </Link>
+            ) : (
+              <button
+                className="mt-4 rounded-full border border-vx-border px-4 py-2 font-bold"
+                aria-pressed={selected === p.id}
+                onClick={() => onSelect(p.id)}
+              >
+                {selected === p.id ? t('public.subscription.selected') : t('public.subscription.choose', { plan: planName })}
+              </button>
+            )}
+          </li>;
+        })}
+      </ul>
+    </>
   );
 }
 export function CreditSubscriptionOffer() {
@@ -330,7 +371,7 @@ function Billing({ account, recovery, setRecovery }) {
     const base = {
       plan_id: plan.id,
       consent: true,
-      consent_version: catalog.consent_version,
+      consent_version: plan.billing_interval === 'year' ? catalog.consent_version_yearly : catalog.consent_version,
     };
     const signature = JSON.stringify(base);
     if (attempt.current?.signature !== signature)
@@ -558,7 +599,21 @@ function Billing({ account, recovery, setRecovery }) {
           ) : (
             plan && (
               <div className="mt-5">
-                <BindingText id="subscription" values={{ plan: names[plan.id] || plan.id, price: usd.format(plan.price_usd_cents / 100), interval: intervalName(plan.billing_interval), credits: plan.credits }} ><label lang="en" dir="ltr" className="flex items-start gap-3">
+                {plan.billing_interval === 'year' ? (
+                  <BindingText id="subscriptionYearly" values={{ plan: names[plan.id] || plan.id, price: usd.format(plan.price_usd_cents / 100), interval: intervalName(plan.billing_interval), credits: plan.credits }} ><label lang="en" dir="ltr" className="flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      checked={agreed}
+                      onChange={(e) => setAgreed(e.target.checked)}
+                    />
+                    <span>
+                      I agree to {names[plan.id] || plan.id} at{' '}
+                      {usd.format(plan.price_usd_cents / 100)} plus applicable tax
+                      every {intervalName(plan.billing_interval)} until I cancel. After the yearly payment is confirmed I receive {plan.credits} Credits at
+                      the start of each month of that year; unused monthly Credits expire without rollover.
+                    </span>
+                  </label></BindingText>
+                ) : (                <BindingText id="subscription" values={{ plan: names[plan.id] || plan.id, price: usd.format(plan.price_usd_cents / 100), interval: intervalName(plan.billing_interval), credits: plan.credits }} ><label lang="en" dir="ltr" className="flex items-start gap-3">
                   <input
                     type="checkbox"
                     checked={agreed}
@@ -571,7 +626,7 @@ function Billing({ account, recovery, setRecovery }) {
                     after each confirmed {intervalName(plan.billing_interval)}ly payment; unused cycle Credits
                     expire without rollover.
                   </span>
-                </label></BindingText>
+                </label></BindingText>)}
                 <p className="mt-3 text-sm">
                   {t("app.credits.subscription.renewalHelp")}{' '}
                   <LegalLink element="Link" href="/legal/terms" className="underline">
