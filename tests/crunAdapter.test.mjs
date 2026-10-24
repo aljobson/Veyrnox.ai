@@ -87,5 +87,6 @@ test('0377 writes the Veo Lite parity record only, and never activates the route
   assert.match(code, /endpoint = 'crun:google\/veo3-1-lite-t2v' AND state = 'standby'/);
   assert.match(code, /IF affected <> 1 THEN/);
   assert.doesNotMatch(code, /state\s*=\s*'active'|SET state|provenance/);
-  assert.match(code, /charge and model identity not yet confirmed by the owner/);
+  assert.match(code, /charge 15 credits per clip confirmed by the owner/);
+  assert.match(code, /model identity rests on Crun id/);
 });

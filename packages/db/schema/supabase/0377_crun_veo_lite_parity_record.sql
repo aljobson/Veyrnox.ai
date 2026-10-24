@@ -9,10 +9,11 @@
 -- The capability pins (lib/additionalModelCapabilities.js) match the kie route it would back up: text in,
 -- 720p, one 8 s unit, no media in. Output host tempfile.mediaoss.bar is on the R2 copy allowlist.
 --
--- NOT established, and left to the owner before the route is made active: the charge (expected 15 credits,
--- about $0.067 per clip, from crun.ai/logs) and that the model behind Crun's id is the one named. The clip
--- cannot prove its model. This migration records the evidence only. It does not set the route active:
--- state stays `standby`, so chooseRoute still never picks it.
+-- Charge: the owner read crun.ai/logs and confirmed 15 credits per clip, as expected (2026-10-24), about
+-- $0.067 each at the top tier.
+-- NOT established: that the model behind Crun's id is the one named. A clip cannot prove its model; that
+-- rests on Crun's model id and its written answers. This migration records the evidence only. It does not
+-- set the route active: state stays `standby`, so chooseRoute still never picks it.
 --
 -- Idempotent: a route with no record, or this record, is updated to this record. Asserts exactly one row.
 -- Rollback: a forward migration setting parity_record back to NULL.
@@ -21,7 +22,7 @@ DO $$
 DECLARE affected BIGINT;
 BEGIN
     UPDATE public.model_routes
-       SET parity_record = 'probe 2026-10-24 (owner): google/veo3-1-lite-t2v, 8 s 720p h264 with audio, no watermark seen, tasks 415943ad-66b2-4de7-88ef-61df9e8fc7bd and 8744e6dc-db4d-4a72-b945-34a43e8b7f37; charge and model identity not yet confirmed by the owner',
+       SET parity_record = 'probe 2026-10-24 (owner): google/veo3-1-lite-t2v, 8 s 720p h264 with audio, no watermark seen, tasks 415943ad-66b2-4de7-88ef-61df9e8fc7bd and 8744e6dc-db4d-4a72-b945-34a43e8b7f37; charge 15 credits per clip confirmed by the owner; model identity rests on Crun id and its written answers',
            updated_at = now()
      WHERE supplier = 'crun' AND endpoint = 'crun:google/veo3-1-lite-t2v' AND state = 'standby'
        AND (parity_record IS NULL OR parity_record LIKE 'probe 2026-10-24 (owner): google/veo3-1-lite-t2v%');
