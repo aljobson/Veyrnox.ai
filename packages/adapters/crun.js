@@ -52,8 +52,9 @@ export function buildRequest(target, inputs) {
     if (!spec) return { ok: false, error: 'provider_unsupported' };
     const prompt = typeof inputs.prompt === 'string' ? inputs.prompt.trim() : '';
     if (!prompt) return { ok: false, error: 'prompt_required' };
-    const seconds = inputs.duration_seconds === undefined ? [...spec.seconds][0] : inputs.duration_seconds;
-    if (!spec.seconds.has(seconds)) return { ok: false, error: 'duration_unsupported' };
+    // One priced unit per request: the catalog row is costed at this length, so it is pinned and the page's
+    // default duration_seconds is ignored, exactly as the kie Veo builder does (the studio sends 5 for every video).
+    const seconds = [...spec.seconds][0];
     const aspect = inputs.aspect_ratio === undefined ? '16:9' : inputs.aspect_ratio;
     if (!spec.aspects.has(aspect)) return { ok: false, error: 'aspect_ratio_unsupported' };
     if (inputs.image_url || inputs.reference_urls) return { ok: false, error: 'input_media_unsupported' };
