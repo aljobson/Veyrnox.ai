@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { chooseProbe, summariseStreams } from '../scripts/probe-crun.mjs';
+import { chooseProbe, summariseStreams, isMp4 } from '../scripts/probe-crun.mjs';
 import { parseEndpoint } from '../packages/adapters/crun.js';
 
 test('every probe maps to an endpoint the adapter parses', () => {
@@ -27,4 +27,10 @@ test('the clip summary reports duration, size, codec and audio from ffprobe JSON
   const info = summariseStreams({ format: { duration: '8.041' }, streams: [{ codec_type: 'video', width: 1280, height: 720, codec_name: 'h264' }, { codec_type: 'audio' }] });
   assert.deepEqual(info, { durationSeconds: 8.041, width: 1280, height: 720, videoCodec: 'h264', hasAudio: true });
   assert.deepEqual(summariseStreams(null), { durationSeconds: 0, width: null, height: null, videoCodec: null, hasAudio: false });
+});
+
+test('only bytes that start like an MP4 are ever written', () => {
+  assert.equal(isMp4(Buffer.from('00000020667479706d703432000000006d70343269736f6d', 'hex')), true);
+  assert.equal(isMp4(Buffer.from('<html>not a video</html>')), false);
+  assert.equal(isMp4(Buffer.alloc(4)), false);
 });

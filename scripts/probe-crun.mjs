@@ -59,12 +59,19 @@ export function summariseStreams(probe) {
     };
 }
 
+/** True when the bytes start like an MP4: an 'ftyp' box at offset 4. */
+export function isMp4(bytes) {
+    return bytes.length > 12 && bytes.subarray(4, 8).toString('latin1') === 'ftyp';
+}
+
 async function keepClip(outputUrl, dir) {
     if (!/^https:\/\//.test(outputUrl)) throw new Error('output is not https');
     const res = await fetch(outputUrl);
     if (!res.ok) throw new Error(`download ${res.status}`);
     const bytes = Buffer.from(await res.arrayBuffer());
     if (bytes.length > KEEP_MAX_BYTES) throw new Error('clip is over 60 MB');
+    // Only an MP4 is written: the ISO base media 'ftyp' box sits at bytes 4 to 8. Anything else is refused, not saved.
+    if (!isMp4(bytes)) throw new Error('the download is not an MP4; nothing was written');
     await mkdir(dir, { recursive: true });
     const file = join(dir, 'probe.mp4');
     await writeFile(file, bytes);
