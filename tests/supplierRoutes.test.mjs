@@ -64,3 +64,15 @@ test('the migration is service-role only and backfills one active route, mirrori
   assert.match(migration, /c\.modality <> 'text'/);
   assert.doesNotMatch(migration, /UPDATE public\.model_catalog|DELETE FROM|TRUNCATE/);
 });
+
+test('a tripped route is skipped during the ten-minute cooldown and is a probe after it', async () => {
+  const { breakerOpen, BREAKER_COOLDOWN_MS } = await import('../lib/supplierRoutes.js');
+  const now = Date.parse('2026-10-24T15:00:00Z');
+  const tripped = (minutesAgo) => route({ supplier: 'kie', priority: 1, breaker_opened_at: new Date(now - minutesAgo * 60000).toISOString() });
+  assert.equal(BREAKER_COOLDOWN_MS, 600000);
+  assert.equal(breakerOpen(tripped(2), now), true);
+  assert.equal(breakerOpen(tripped(11), now), false);
+  assert.equal(breakerOpen(route({ supplier: 'kie' }), now), false);
+  assert.deepEqual(chooseRoute([tripped(2), route({ supplier: 'fal', priority: 2 })], { now }).map((r) => r.supplier), ['fal']);
+  assert.deepEqual(chooseRoute([tripped(11), route({ supplier: 'fal', priority: 2 })], { now }).map((r) => r.supplier), ['kie', 'fal']);
+});
