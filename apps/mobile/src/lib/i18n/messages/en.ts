@@ -87,6 +87,7 @@ import area_publishUploads from './en/publishUploads';
 import area_publishWorkflows from './en/publishWorkflows';
 import area_queue from './en/queue';
 import area_queues from './en/queues';
+import area_rate from './en/rate';
 import area_recovery from './en/recovery';
 import area_reports from './en/reports';
 import area_share from './en/share';
@@ -194,6 +195,7 @@ const catalog = {
     ...area_publishWorkflows,
     ...area_queue,
     ...area_queues,
+    ...area_rate,
     ...area_recovery,
     ...area_reports,
     ...area_share,

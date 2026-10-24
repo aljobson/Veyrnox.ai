@@ -8,6 +8,8 @@ import { JobProvenance } from '../../../components/JobProvenance';
 import { StemList } from '../../../components/StemList';
 import { CONFIRM_MESSAGE, CONFIRM_TITLE, deleteCreation, deleteMessage, isAlreadyGone } from '../../../lib/deleteCreation';
 import { playSuccess } from '../../../lib/haptics';
+import { REVIEW_ASK_DELAY_MS, claimReviewAsk, shouldAskForReview } from '../../../lib/reviewAsk';
+import { loadReviewAsk } from '../../../lib/storeReview';
 import { mediaApi, waitForJob, type JobState } from '../../../lib/media';
 import { editHref, makeAnotherHref, nextStepsFor, publishHref } from '../../../lib/nextSteps';
 import { saveOutput, shareOutput } from '../../../lib/output';
@@ -87,10 +89,16 @@ export default function JobScreen() {
                 const a = await media.getAsset(id);
                 setAsset({ url: a.url, mime: a.mime_type });
                 setStems(a.output_stems ?? []);
+                // The first creation you waited for and now see: after a beat, the one-time rating ask.
+                const asked = await loadReviewAsk();
+                if (controller.signal.aborted || !shouldAskForReview(asked, { waited, hasOutput: true }) || !claimReviewAsk()) return;
+                setTimeout(() => {
+                    if (!controller.signal.aborted) router.push('/rate');
+                }, REVIEW_ASK_DELAY_MS);
             })
             .catch(() => !controller.signal.aborted && setError(true));
         return () => controller.abort();
-    }, [api, id, attempt]);
+    }, [api, id, attempt, router]);
 
     const waiting = !asset && !error && (state === 'queued' || state === 'running');
     useEffect(() => {
