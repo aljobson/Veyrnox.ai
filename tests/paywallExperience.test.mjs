@@ -24,7 +24,7 @@ test('account exposes billing management and Cinema cancellation uses an accessi
   assert.doesNotMatch(pass, /window\.confirm/);
 });
 
-test('subscription launches have versioned consent, complete legal disclosures and staging-only sales', () => {
+test('subscription launches have versioned consent, complete legal disclosures and approved monthly sales', () => {
   const config = read('wrangler.jsonc');
   const subscriptions = read('lib/subscriptions/api.js');
   const passApi = read('lib/cinema/passApi.js');
@@ -41,8 +41,10 @@ test('subscription launches have versioned consent, complete legal disclosures a
   assert.match(refunds, /refund the unused share of that paid period/);
   assert.match(refunds, /How to cancel/);
 
-  assert.match(config, /"SUBSCRIPTIONS_ENABLED": "false"[\s\S]*"SUBSCRIPTIONS_ENABLED": "true"/);
-  // ADR-0145: the Cinema switches are grouped; production keeps subscriptions "false", staging "true".
+  // The owner-approved launch enables the same monthly-only subscription flow
+  // in both production and sandbox staging. Cinema remains independently off.
+  assert.match(config, /"SUBSCRIPTIONS_ENABLED": "true"[\s\S]*"SUBSCRIPTIONS_ENABLED": "true"/);
+  // ADR-0145: the Cinema switches are grouped and remain independently off.
   assert.ok(config.indexOf('\\"subscriptions\\":\\"false\\"') > -1 && config.indexOf('\\"subscriptions\\":\\"false\\"') < config.indexOf('\\"subscriptions\\":\\"true\\"'));
   assert.match(config, /"VIOLATION_EMAIL_REPLY_TO": "support@veyrnox\.com"/);
   assert.doesNotMatch(config, /"SUBSCRIPTION_ALERT_EMAIL"/);
