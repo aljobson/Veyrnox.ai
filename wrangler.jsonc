@@ -133,10 +133,10 @@
     // The public Oddlings gallery at /oddlings and /oddlings/<id> (ADR-0103 follow-up, PR 1114). On in production on 2026-10-17 at the owner's
     // request ("I want it LIVE"). Rollback: set "false" (or remove the line) and deploy; the routes then answer not-found and the sitemap omits them.
     "ODDLINGS_PUBLIC_ENABLED": "true",
-    // ADR-0064: production checkout stays closed until staging acceptance and
-    // the external approval record are complete. Existing-customer reads,
-    // cancellation and paid-checkout recovery remain available while off.
-    "SUBSCRIPTIONS_ENABLED": "false",
+    // ADR-0064: production checkout is open after verified sandbox acceptance
+    // and owner authorization on 2026-10-24. Existing-customer reads,
+    // cancellation and paid-checkout recovery remain available while enabled.
+    "SUBSCRIPTIONS_ENABLED": "true",
     // Cinema first activation. Paid access and monetisation remain closed.
     // Merge only after the documented production cutover gates pass.
     // ADR-0145: the nine Cinema and creator switches that cinemaFeatures() reads live in this one JSON binding
