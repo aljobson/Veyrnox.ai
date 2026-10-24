@@ -21,10 +21,16 @@ test('the request body matches the documented CreateTask shape and never sends a
 
 test('a request the model cannot take is refused before any spend', () => {
   const t = { model: 'google/veo3-1-lite-t2v' };
-  assert.equal(buildRequest(t, { prompt: 'x', duration_seconds: 5 }).error, 'duration_unsupported');
   assert.equal(buildRequest(t, { prompt: 'x', aspect_ratio: '1:1' }).error, 'aspect_ratio_unsupported');
   assert.equal(buildRequest(t, { prompt: 'x', image_url: 'https://a/b.png' }).error, 'input_media_unsupported');
   assert.equal(buildRequest(t, { prompt: '  ' }).error, 'prompt_required');
+});
+
+test('the studio default duration_seconds is ignored: the pinned length is always sent', () => {
+  const veo = buildRequest({ model: 'google/veo3-1-lite-t2v' }, { prompt: 'x', duration_seconds: 5 });
+  assert.equal(veo.ok, true);
+  assert.equal(veo.body.input.duration, 8);
+  assert.equal(buildRequest({ model: 'bytedance/seedance2-0-fast-t2v' }, { prompt: 'x', duration_seconds: 8 }).body.input.duration, 5);
 });
 
 test('submit sends the key header and returns the task id', async (t) => {
