@@ -395,6 +395,7 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
       { key: 'credits', href: '/app/credits', label: t('label.Credits'), icon: 'coins' },
     ] },
     { id: 'inspire', label: t('app.nav.side.inspire'), items: [
+      { key: 'cinema', href: '/social-cinema', label: t.label('Social Cinema'), icon: 'film' },
       { href: '/presets', label: t('label.Templates'), icon: 'template' },
       { href: '/models', label: t('label.Models'), icon: 'cube' },
       { href: '/guides', label: t('label.Guides'), icon: 'book' },
