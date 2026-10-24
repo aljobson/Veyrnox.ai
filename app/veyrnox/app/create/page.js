@@ -7,6 +7,7 @@ import { localeTag } from '../../../../lib/i18n/locales.mjs';
 import { useI18n } from '../../../../components/I18nProvider';
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { AppNav } from '../../_components/NavBar';
 import { Main } from '../../_components/Main';
 import { Chip } from '../../_components/Chip';
@@ -25,6 +26,7 @@ import { freeCost, freeLeftFor } from '../../_lib/freeAllowance';
 import { sourceDurationLimit } from '../../_lib/modelPricing';
 import { SourceDurationCard } from '../../_components/SourceDurationCard';
 import { takeStudioDraft } from '../../_lib/landingDraft';
+import { takeVideoSoundContinuation, writeVideoSoundContinuation } from '../../_lib/resultContinuation';
 import { oddlingPortrait, buildOddlingAnimationPrompt } from '../../_lib/oddlingStudio';
 import { templateById } from '../../_lib/templates';
 import { resolveTemplateDraft } from '../../_lib/templateDraft';
@@ -73,6 +75,7 @@ const autoShortFlag = () => readFlag(AUTO_SHORT_FLAG);
 const off = () => false;
 
 export default function CreateStudio() {
+  const router = useRouter();
   const { t, locale } = useI18n();
   const translation = useRef(t);
   translation.current = t;
@@ -111,6 +114,9 @@ export default function CreateStudio() {
   const [character, setCharacter] = useState({});
   const [oddlingTransfer, setOddlingTransfer] = useState(null);
   const [count, setCount] = useState(1);
+  const [recipeId] = useState(() => typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('recipe'));
+  const [plannedFollowup, setPlannedFollowup] = useState(null);
+  const [continuationError, setContinuationError] = useState('');
 
   const [balance, setBalance] = useState(null);
   const [error, setError] = useState(null);
@@ -139,13 +145,21 @@ export default function CreateStudio() {
     }
     setPresetParam(params.get('preset')); // a template's id, from its studio link; sent only while its own model is selected
     if (params.get('duration') === '10s') setDuration('10s');
+    const videoSoundDraft = params.get('continue') === 'faceless-sound' && wanted === 'mmaudio-v2-video'
+      ? takeVideoSoundContinuation(window.sessionStorage)
+      : null;
     let storedDraft = null;
     try { storedDraft = takeStudioDraft(window.sessionStorage, wanted); } catch { /* The URL recipe still works. */ }
     const portrait = oddlingPortrait(params.get('oddlingPhoto'));
     const draft = resolveTemplateDraft(preset, wanted, storedDraft)
       || (portrait ? { prompt: buildOddlingAnimationPrompt(portrait.id, params.get('motion')), durationSeconds: 5 } : null);
-    incomingDraft.current = !!draft;
-    if (draft) setPrompt(draft.prompt);
+    incomingDraft.current = Boolean(draft || videoSoundDraft);
+    if (videoSoundDraft) {
+      setPrompt(videoSoundDraft.prompt);
+      setSources({ video: { assetId: videoSoundDraft.jobId, previewUrl: videoSoundDraft.assetUrl, label: videoSoundDraft.label } });
+      setConsent(false);
+    } else if (draft) setPrompt(draft.prompt);
+    if (storedDraft?.followup) setPlannedFollowup(storedDraft.followup);
     if (draft?.aspect) incomingAspect.current = draft.aspect;
     if (draft?.durationSeconds) setDuration(`${draft.durationSeconds}s`);
     if (draft?.negativePrompt) setNegative(draft.negativePrompt);
@@ -211,6 +225,8 @@ export default function CreateStudio() {
   // Keep the result attached to its own model even while the user browses.
   const resultModel = job ? catalogModels.find((m) => m.id === job.model_id) : null;
   const resultModelName = job?.model_name || resultModel?.name || job?.model_id || 'Generation';
+  const soundRequested = recipeId === 'faceless-reel' && plannedFollowup === 'generated-sound' && job?.model_id === 'wan-2.5-kie';
+  const soundEligible = soundRequested && job?.state === 'succeeded' && Boolean(job.asset_url) && Number(job.duration_seconds) <= 8;
   // Completion must not turn an imminent reset click into a charged submission.
   const hasJobs = jobs.length > 0;
   const catalogStatus = catalogLoading ? 'loading' : catalogLive ? 'live' : 'unavailable';
@@ -376,6 +392,7 @@ export default function CreateStudio() {
     const submittedTask = getJourney().task;
     const submittedPresentation = {
       model_name: model.name,
+      duration_seconds: model.kind === 'video' ? Number(duration.replace('s', '')) : undefined,
       ...(isShort ? { aspect_ratio: '9:16' } : aspectOptions.length ? { aspect_ratio: aspect } : {}),
     };
     const keys = Array.from({ length: n }, () => makeIdempotencyKey());
@@ -438,6 +455,20 @@ export default function CreateStudio() {
   function cancel() {
     clearJobs();
     setError(null);
+  }
+
+  function continueWithGeneratedSound() {
+    setContinuationError('');
+    const saved = writeVideoSoundContinuation(window.sessionStorage, {
+      jobId: job?.job_id,
+      assetUrl: job?.asset_url,
+      duration: Number(job?.duration_seconds),
+    });
+    if (!saved) {
+      setContinuationError(t('app.create.soundHandoffError'));
+      return;
+    }
+    router.push('/app/create?model=mmaudio-v2-video&continue=faceless-sound');
   }
 
   function pickGoal(nextGoal) {
@@ -511,6 +542,15 @@ export default function CreateStudio() {
             </div>
           )}
           </div>
+
+          {soundEligible && (
+            <section className="mt-3 rounded-2xl border border-vx-accent/35 bg-vx-accent/[0.06] p-4 sm:flex sm:items-center sm:justify-between sm:gap-5">
+              <div><p className="font-vx-mono text-[9px] font-bold tracking-[0.14em] text-vx-accent">{t('app.create.soundPassEyebrow')}</p><p className="mt-1 text-sm font-extrabold text-vx-fg">{t('app.create.soundPassTitle')}</p><p className="mt-1 text-xs leading-5 text-vx-fg-muted">{t('app.create.soundPassHelp')}</p></div>
+              <button type="button" onClick={continueWithGeneratedSound} className="mt-3 min-h-11 shrink-0 rounded-full bg-vx-accent px-5 py-2.5 text-sm font-extrabold text-vx-accent-ink sm:mt-0">{t('app.create.soundPassAction')}</button>
+            </section>
+          )}
+          {soundRequested && job?.state === 'succeeded' && !soundEligible && <p className="mt-3 text-xs leading-5 text-vx-fg-muted">{t('app.create.soundPassDuration')}</p>}
+          {continuationError && <p role="alert" className="mt-3 text-xs text-vx-danger">{continuationError}</p>}
 
           <textarea
             data-assistant-target="create.prompt"

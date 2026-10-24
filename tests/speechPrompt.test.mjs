@@ -147,7 +147,7 @@ test('the create page keeps the starter out of state, so a speech model cannot s
     assert.match(page, /const \[typed, setPrompt\] = useState\(null\);/);
     assert.match(page, /const prompt = promptText\(typed, model\);/);
     assert.doesNotMatch(page, /neon-lit/);
-    assert.equal((page.match(/\bsetPrompt\(/g) || []).length, 4, 'typing, incoming draft, recovered draft and account reset are the only text setters');
+    assert.equal((page.match(/\bsetPrompt\(/g) || []).length, 5, 'typing, incoming drafts, recovered draft and account reset are the only text setters');
     assert.match(page, /setPrompt\(saved\.prompt\)/);
     assert.match(page, /setPrompt\(null\); setSources/);
     assert.match(page, /if \(draft\) setPrompt\(draft\.prompt\);/);

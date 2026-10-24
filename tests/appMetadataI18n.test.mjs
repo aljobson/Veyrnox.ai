@@ -90,7 +90,7 @@ test('all metadata keys resolve in every catalog and English fallbacks never exp
   environment(context);
   for (const locale of ['en', 'es', 'zh', 'hi', 'ar', 'fr', 'pt', 'ru', 'ja', 'de', 'ko']) {
     const messages = await appMessagesFor(locale);
-    assert.equal(Object.keys(messages).filter(key => key.startsWith('app.meta.')).length, 26);
+    assert.equal(Object.keys(messages).filter(key => key.startsWith('app.meta.')).length, 28);
     for (const file of files.filter(file => !file.includes('/admin/'))) {
       const headers = await requestHeaders('/app', `veyrnox_locale=${locale}`);
       const metadata = await metadataModule(file, headers).generateMetadata();
