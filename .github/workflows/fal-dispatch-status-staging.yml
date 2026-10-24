@@ -1,0 +1,41 @@
+name: fal-dispatch-status-staging
+
+on:
+  workflow_dispatch:
+    inputs:
+      job_id:
+        description: 'FAL dispatch job UUID to inspect (states only; no content or mutation)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fal-dispatch-status-staging
+  cancel-in-progress: false
+
+jobs:
+  inspect:
+    if: github.ref == 'refs/heads/main'
+    environment: fal-dispatch-staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Require the current main revision
+        run: |
+          git fetch --quiet origin main
+          test "$(git rev-parse origin/main)" = "$GITHUB_SHA"
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+      - name: Read dispatch lifecycle state only
+        env:
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          FAL_DISPATCH_STATUS_JOB_ID: ${{ inputs.job_id }}
+        run: |
+          set -euo pipefail
+          node --input-type=module -e "import { readFalDispatchStatus } from './scripts/check-fal-dispatch-staging.mjs'; const status = await readFalDispatchStatus(process.env.FAL_DISPATCH_STATUS_JOB_ID); console.log(JSON.stringify(status));"
