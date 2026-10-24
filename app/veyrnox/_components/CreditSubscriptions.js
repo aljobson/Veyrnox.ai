@@ -19,6 +19,7 @@ import {
   subscriptionCheckoutUrl,
   subscriptionReturnFrom,
 } from '../_lib/creditSubscriptionUi';
+import { subscriptionSavingPercent } from '../_lib/subscriptionPlans';
 const usd = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
@@ -45,11 +46,20 @@ async function publicPlans() {
   if (!r.ok) throw Object.assign(Error('plans unavailable'), { code: b.error });
   return b;
 }
+async function publicPacks() {
+  const r = await fetch('/api/credit-packs', { cache: 'no-store' }),
+    b = await r.json();
+  if (!r.ok || !Array.isArray(b?.packs)) throw Error();
+  return b.packs;
+}
 async function publicOfferState() {
   try {
-    const catalog = await publicPlans();
+    const [catalog, packs] = await Promise.all([
+      publicPlans(),
+      publicPacks().catch(() => null),
+    ]);
     return catalog?.plans?.length
-      ? { phase: 'open', catalog }
+      ? { phase: 'open', catalog, packs }
       : { phase: 'unavailable', catalog: null };
   } catch (error) {
     return {
@@ -59,12 +69,18 @@ async function publicOfferState() {
     };
   }
 }
-function Plans({ plans, selected, onSelect, publicOnly = false }) {
+function Plans({ plans, packs, selected, onSelect, publicOnly = false }) {
   const { t, locale } = useI18n();
   return (
     <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {plans.map((p) => (
-        <li key={p.id} className="rounded-xl border border-vx-border p-5">
+      {plans.map((p) => {
+        const saving = subscriptionSavingPercent(p, packs);
+        return <li key={p.id} className="rounded-xl border border-vx-border p-5">
+          {saving && (
+            <p className="mb-2 font-vx-mono text-[10px] font-bold uppercase tracking-[0.1em] text-vx-accent">
+              {t('pricing.subs.saving', { pct: saving })}
+            </p>
+          )}
           <h3 className="text-xl font-bold">{tOr(t, `app.credits.subscription.plan.${p.id}`, names[p.id] || p.id)}</h3>
           <p className="mt-1 text-xs font-bold uppercase tracking-widest text-vx-accent">
             {tOr(t, `cinema.pass.${p.billing_interval}ly`, p.billing_interval)}
@@ -94,8 +110,8 @@ function Plans({ plans, selected, onSelect, publicOnly = false }) {
               {selected === p.id ? t('public.subscription.selected') : t('public.subscription.choose', { plan: tOr(t, `app.credits.subscription.plan.${p.id}`, names[p.id] || p.id) })}
             </button>
           )}
-        </li>
-      ))}
+        </li>;
+      })}
     </ul>
   );
 }
@@ -123,6 +139,8 @@ export function CreditSubscriptionOffer() {
   const catalog = offerState.catalog;
   return (
     <section
+      data-vey-perch
+      data-assistant-target="pricing.subscriptions"
       className="mx-auto max-w-[1300px] px-4 pt-24 sm:px-6"
       aria-labelledby="credit-subscription-offer"
     >
@@ -132,6 +150,9 @@ export function CreditSubscriptionOffer() {
       >
         {t('pricing.subs.title')}
       </h2>
+      <p className="mt-4 max-w-[58ch] leading-[1.6] text-vx-fg-body">
+        {t('pricing.subs.valueLead')}
+      </p>
       {offerState.phase === 'loading' && (
         <p role="status" aria-live="polite" className="mt-4">
           {t('pricing.subs.loading')}
@@ -164,7 +185,7 @@ export function CreditSubscriptionOffer() {
           <p className="mt-4">
             {t('public.subscription.terms')}
           </p>
-          <Plans plans={catalog.plans} publicOnly />
+          <Plans plans={catalog.plans} packs={offerState.packs} publicOnly />
           <button className="mt-5 text-sm underline" onClick={load}>
             {t('public.subscription.refresh')}
           </button>
@@ -222,17 +243,20 @@ function Billing({ account, recovery, setRecovery }) {
     const seq = ++generation.current;
     const results = await Promise.allSettled([
       publicPlans(),
+      publicPacks(),
       account
         ? gatewayFetch('/subscriptions')
         : Promise.resolve({ subscription: null }),
     ]);
     if (seq !== generation.current) return;
-    const [plans, own] = results;
+    const [plans, packCatalog, own] = results;
     setClosed(
       plans.status === 'rejected' &&
         plans.reason.code === 'subscriptions_not_open',
     );
-    setCatalog(plans.status === 'fulfilled' ? plans.value : null);
+    setCatalog(plans.status === 'fulfilled'
+      ? { ...plans.value, packs: packCatalog.status === 'fulfilled' ? packCatalog.value : null }
+      : null);
     if (own.status === 'fulfilled') setSub(own.value.subscription);
     else {
       setSub(null);
@@ -377,11 +401,15 @@ function Billing({ account, recovery, setRecovery }) {
   return (
     <section
       id="credit-subscriptions"
+      data-assistant-target="credits.subscriptions"
       className="mx-auto max-w-[1200px] px-4 py-8 sm:px-8"
       aria-labelledby="credit-subscriptions-heading"
     >
       <h2 id="credit-subscriptions-heading" className="text-3xl font-black">
         {t("app.credits.subscription.title")}</h2>
+      <p className="mt-3 max-w-2xl text-sm leading-[1.6] text-vx-fg-body">
+        {t('pricing.subs.valueLead')}
+      </p>
       {!loaded && (
         <p role="status" className="mt-4">
           {t("app.credits.subscription.loading")}</p>
@@ -511,6 +539,7 @@ function Billing({ account, recovery, setRecovery }) {
             {t("app.credits.subscription.intro")}</p>
           <Plans
             plans={catalog.plans}
+            packs={catalog.packs}
             selected={selected}
             onSelect={(id) => {
               setSelected(id);

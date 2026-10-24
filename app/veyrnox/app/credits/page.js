@@ -136,10 +136,6 @@ export default function Credits() {
 
             <TopUpReturn />
 
-            {/* Wait for balance to settle before loading the purchase controls. */}
-            <div id="credit-packs">
-              {(error === 'sign_in_required' || balance != null) && <TopUpPacks signedIn={error !== 'sign_in_required'} />}
-            </div>
           </div>
 
           <div className="md:pt-2">
@@ -155,6 +151,22 @@ export default function Credits() {
       </section>
 
       <CreditSubscriptions />
+
+      <section
+        id="credit-packs"
+        aria-labelledby="credit-packs-heading"
+        className="mx-auto max-w-[1200px] border-t border-vx-border px-4 py-12 sm:px-8"
+      >
+        <h2 id="credit-packs-heading" className="text-3xl font-black">
+          {t('pricing.packs.title')}
+        </h2>
+        <p className="mt-3 max-w-2xl text-sm leading-[1.6] text-vx-fg-body">
+          {t('pricing.packs.lead')} {t('pricing.packs.valueLead')}
+        </p>
+        {/* Wait for balance to settle before loading the purchase controls. */}
+        {(error === 'sign_in_required' || balance != null) && <TopUpPacks signedIn={error !== 'sign_in_required'} />}
+      </section>
+
       {balance != null && <UsageMeters />}
       {balance != null && <CreditStatement />}
       {balance != null && <TopUpHistory />}

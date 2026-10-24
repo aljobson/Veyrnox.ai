@@ -72,12 +72,12 @@
   {
     "area": "billing",
     "name": "Billing",
-    "text": "Credit SubscriptionsChoose an optional monthly subscription. It renews automatically every month until cancelled. Credits expire at each cycle end and do not roll over. Tax and the final total are shown at checkout.StarterMonthly$10 / month1,200 Credits each paid monthPlus applicable tax. Cycle Credits expire and do not roll over.SelectedI agree to Starter at $10 plus applicable tax every month until I cancel. I receive 1200 Credits after each confirmed monthly payment; unused cycle Credits expire without rollover.You can stop renewal here. An unused initial cycle may qualify for a full cooling-off refund within fourteen days. Terms · PrivacyContinue to secure checkout"
+    "text": "Credit SubscriptionsMonthly subscriptions have the lowest live price per credit. Credits refresh after each paid month and expire at the end of that billing period.Choose an optional monthly subscription. It renews automatically every month until cancelled. Credits expire at each cycle end and do not roll over. Tax and the final total are shown at checkout.StarterMonthly$10 / month1,200 Credits each paid monthPlus applicable tax. Cycle Credits expire and do not roll over.SelectedI agree to Starter at $10 plus applicable tax every month until I cancel. I receive 1200 Credits after each confirmed monthly payment; unused cycle Credits expire without rollover.You can stop renewal here. An unused initial cycle may qualify for a full cooling-off refund within fourteen days. Terms · PrivacyContinue to secure checkout"
   },
   {
     "area": "billing",
     "name": "Billing",
-    "text": "Credit SubscriptionsStarterStatus: active$10 / month · 1200 Credits per paid cyclePaid period ends 10/18/2026, 12:00:00 PMStop renewal at period endCancel unused subscription within 14 daysRequest cancellation and a full refund within fourteen days of the initial paid cycle, only if this cycle’s Credits are unspent. The server checks eligibility; pending refunds are not complete.I confirm this cancellation request.Confirm cancellation Keep subscription"
+    "text": "Credit SubscriptionsMonthly subscriptions have the lowest live price per credit. Credits refresh after each paid month and expire at the end of that billing period.StarterStatus: active$10 / month · 1200 Credits per paid cyclePaid period ends 10/18/2026, 12:00:00 PMStop renewal at period endCancel unused subscription within 14 daysRequest cancellation and a full refund within fourteen days of the initial paid cycle, only if this cycle’s Credits are unspent. The server checks eligibility; pending refunds are not complete.I confirm this cancellation request.Confirm cancellation Keep subscription"
   },
   {
     "area": "video",

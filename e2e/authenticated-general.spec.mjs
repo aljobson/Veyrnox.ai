@@ -13,7 +13,7 @@ async function fixtureFor(page, options = {}) {
     if (url.pathname === '/api/popular-templates') return json({ templates: [] });
     if (url.pathname === '/api/credit-subscription-plans') return json({ error: 'subscriptions_not_open' }, 403);
     if (url.pathname === '/api/v1/subscriptions') return json({ subscription: null });
-    if (url.pathname === '/api/v1/credit-packs') return json({ packs: [
+    if (url.pathname === '/api/credit-packs' || url.pathname === '/api/v1/credit-packs') return json({ packs: [
       { id: 'synthetic-small', credits: 100, price_usd_cents: 1000 },
       { id: 'synthetic-large', credits: 1200, price_usd_cents: 10000 },
     ] });

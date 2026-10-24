@@ -351,7 +351,7 @@ export function footerStamp() {
 // Stamped on the pages that make claims about prices and policy, so a
 // visitor can tell how fresh what they are reading is. Bump it when the
 // marketing copy or the pricing story changes.
-export const SITE_UPDATED = '2026-10-16';
+export const SITE_UPDATED = '2026-10-24';
 
 
 // Shelf cards print the modality underneath the name, so the parenthetical in

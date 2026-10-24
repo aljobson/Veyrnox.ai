@@ -212,7 +212,7 @@ export function TopUpPacks({ signedIn, welcome = null }) {
         <div className="text-sm text-vx-fg-muted">{t("app.credits.packs.empty")}</div>
       )}
       {packs && packs.length > 0 && (
-        <fieldset data-testid="credit-packs">
+        <fieldset data-testid="credit-packs" data-assistant-target="credits.packs">
           <legend className="sr-only">{t("app.credits.packs.choose")}</legend>
           <div className="grid grid-cols-[repeat(auto-fit,minmax(13rem,1fr))] gap-3">
             {packs.map((p) => {
