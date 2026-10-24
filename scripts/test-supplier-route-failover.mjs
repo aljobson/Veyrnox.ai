@@ -98,5 +98,25 @@ await scenario('a hop past a supplier spend limit is refused and writes no attem
     assert.equal((await one(`SELECT count(*)::int AS n FROM public.job_attempts WHERE job_id = $1 AND attempt_no = 2`, [jobId])).n, 0);
 });
 
+
+// Migration 0379: the real Crun route of Veo 3.1 Lite is active and can take a job kie refused.
+await c.query('BEGIN');
+try {
+    const { id: userId } = await one(`INSERT INTO public.users (id, auth_id, email) VALUES (gen_random_uuid(), gen_random_uuid()::text, 'crun-hop@example.test') RETURNING id`);
+    const kie = (await one(`SELECT id FROM public.model_routes WHERE model_id = 'veo-3.1-lite-kie' AND supplier = 'kie'`)).id;
+    const crun = (await one(`SELECT id, state FROM public.model_routes WHERE model_id = 'veo-3.1-lite-kie' AND supplier = 'crun'`));
+    assert.equal(crun.state, 'active', 'migration 0379 activated the proven Crun route');
+    const { id: jobId } = await one(`INSERT INTO public.jobs (user_id, idempotency_key, model_id, credits, inputs, state) VALUES ($1, 'crun-hop-test-0001', 'veo-3.1-lite-kie', 9, '{}', 'DEBITED') RETURNING id`, [userId]);
+    const r = (await one(`SELECT public.job_route_failover($1, $2, $3) AS r`, [jobId, kie, crun.id])).r;
+    assert.equal(r.ok, true);
+    assert.equal(r.route.supplier, 'crun');
+    assert.equal(r.route.endpoint, 'crun:google/veo3-1-lite-t2v');
+    const other = await one(`SELECT count(*)::int AS n FROM public.model_routes WHERE supplier = 'crun' AND state = 'active'`);
+    assert.equal(other.n, 1, 'only the proven route is active');
+    console.log('ok - the proven Crun Veo Lite route takes a job kie refused');
+} finally {
+    await c.query('ROLLBACK');
+}
+
 await c.end();
 console.log('supplier route failover: all scenarios passed');

@@ -90,3 +90,14 @@ test('0377 writes the Veo Lite parity record only, and never activates the route
   assert.match(code, /charge 15 credits per clip confirmed by the owner/);
   assert.match(code, /model identity rests on Crun id/);
 });
+
+test('0379 activates only the proven Veo Lite route, as a second route, and touches no catalog row', () => {
+  const sql = readFileSync(new URL('../packages/db/schema/supabase/0379_crun_veo_lite_route_active.sql', import.meta.url), 'utf8');
+  const code = sql.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n');
+  assert.match(code, /SET state = 'active'/);
+  assert.match(code, /endpoint = 'crun:google\/veo3-1-lite-t2v'/);
+  assert.match(code, /model_id = 'veo-3\.1-lite-kie'/);
+  assert.match(code, /parity_record IS NOT NULL/);
+  assert.match(code, /IF affected <> 1 THEN/);
+  assert.doesNotMatch(code, /model_catalog|priority|provider_endpoint/);
+});
