@@ -38,7 +38,11 @@ await scenario('a reorder renumbers the routes, points the catalog at the new fi
     const log = await one(`SELECT old_order, new_order, note FROM public.model_route_order_changes WHERE model_id = $1`, [MODEL]);
     assert.deepEqual(log.old_order, [own, second, standby]);
     assert.deepEqual(log.new_order, [second, own, standby]);
-    await assert.rejects(() => c.query(`UPDATE public.model_route_order_changes SET note = 'edited'`), /append-only/);
+    for (const statement of [`UPDATE public.model_route_order_changes SET note = 'edited'`, 'DELETE FROM public.model_route_order_changes', 'TRUNCATE public.model_route_order_changes']) {
+        await c.query('SAVEPOINT guard');
+        await assert.rejects(() => c.query(statement), /append-only/, statement);
+        await c.query('ROLLBACK TO SAVEPOINT guard');
+    }
 });
 
 await scenario('the order must name every active route, once, with a note', async ({ own, add, reorder }) => {

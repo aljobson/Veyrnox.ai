@@ -47,6 +47,12 @@ DROP TRIGGER IF EXISTS model_route_order_changes_append_only ON public.model_rou
 CREATE TRIGGER model_route_order_changes_append_only
     BEFORE UPDATE OR DELETE ON public.model_route_order_changes
     FOR EACH ROW EXECUTE FUNCTION private.model_route_order_changes_append_only();
+-- RLS does not cover TRUNCATE, and test-append-only.mjs requires every append-only table to refuse it
+-- with the shared guard from 0177.
+DROP TRIGGER IF EXISTS model_route_order_changes_no_truncate ON public.model_route_order_changes;
+CREATE TRIGGER model_route_order_changes_no_truncate
+    BEFORE TRUNCATE ON public.model_route_order_changes
+    FOR EACH STATEMENT EXECUTE FUNCTION public.append_only_no_truncate();
 
 ALTER TABLE public.model_routes DROP CONSTRAINT IF EXISTS model_routes_priority_check;
 ALTER TABLE public.model_routes ADD CONSTRAINT model_routes_priority_check CHECK (priority BETWEEN 1 AND 9);
