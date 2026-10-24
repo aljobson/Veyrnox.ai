@@ -5,7 +5,7 @@ import { PAGE_TEMPLATES, templateMatches } from './page-manifest.mjs';
 import { installInteractiveAnalyticsNavigator } from './fixtures/interactive-analytics.mjs';
 
 // Independent from authenticated-product: its automatic Decline handler would
-// conceal the exact consent/reopen regression being exercised here.
+// conceal the exact consent/dismissal regression being exercised here.
 const PREFERENCE = 'veyrnox_analytics_preference_v1';
 const USER = Object.freeze({ id: '00000000-0000-4000-8000-000000000031', email: 'synthetic-privacy@example.invalid' });
 const publicFiles = new Set();
@@ -113,7 +113,7 @@ for (const [label, selected] of [
   ['Allow analytics', { version: 1, analytics: true, replay: false }],
   ['Don’t allow', { version: 1, analytics: false, replay: false }],
 ]) {
-  test(`${label}: choices survive client navigation/reload and can be withdrawn and reopened`, async ({ page, baseURL }) => {
+  test(`${label}: the privacy prompt stays dismissed across client navigation and reload`, async ({ page, baseURL }) => {
     const fixture = await installPrivacyFixtures(page, baseURL);
     try {
       const response = await page.goto('/legal/privacy');
@@ -121,28 +121,19 @@ for (const [label, selected] of [
       await expect(banner(page)).toBeVisible();
       await banner(page).getByRole('button', { name: label, exact: true }).click();
       await expect(banner(page)).toHaveCount(0);
-      await expect(choices(page)).toBeVisible();
+      await expect(choices(page)).toHaveCount(0);
       expect(await preference(page)).toEqual(selected);
 
       await page.evaluate(() => { window.__syntheticPrivacyClientNavigation = true; });
       await page.locator('a[href="/legal/terms"]').first().click();
       await expect(page).toHaveURL(/\/legal\/terms$/);
       expect(await page.evaluate(() => window.__syntheticPrivacyClientNavigation)).toBe(true);
-      await expect(choices(page)).toBeVisible();
+      await expect(banner(page)).toHaveCount(0);
+      await expect(choices(page)).toHaveCount(0);
       await page.reload();
-      await expect(choices(page)).toBeVisible();
+      await expect(banner(page)).toHaveCount(0);
+      await expect(choices(page)).toHaveCount(0);
       expect(await preference(page)).toEqual(selected);
-
-      await choices(page).click();
-      await expect(banner(page)).toBeVisible();
-      await banner(page).getByRole('button', { name: 'Don’t allow', exact: true }).click();
-      await expect(choices(page)).toBeVisible();
-      expect(await preference(page)).toEqual({ version: 1, analytics: false, replay: false });
-      await page.reload();
-      await expect(choices(page)).toBeVisible();
-      await choices(page).click();
-      await expect(banner(page)).toBeVisible();
-      expect(await preference(page)).toEqual({ version: 1, analytics: false, replay: false });
     } finally { await fixture.finish(); }
   });
 }
