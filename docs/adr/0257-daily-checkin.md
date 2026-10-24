@@ -59,8 +59,9 @@ answer 404. Both production and staging omit the CHECKIN_ENABLED text binding;
 absent means off. At rollout the owner makes binding room as needed, applies
 the migration via the approved workflow, observes reconciliation clean for
 24 hours, and only then adds CHECKIN_ENABLED="true" in the deployed environment.
-Repository production vars remain off; tests allow optional boolean-string
-bindings and retain the production binding headroom guard. The development mock also
+Amendment 2026-10-24: the owner enabled check-in in production (CHECKIN_ENABLED="true" in the
+repository production vars, 59 of the 60 allowed). Staging stays off. Rollback is removing the
+line. Tests allow optional boolean-string bindings and retain the production binding headroom guard. The development mock also
 defaults off and requires this explicit flag.
 
 Known accepted risk: multi-account farming. Email confirmation and Turnstile
