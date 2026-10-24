@@ -1,0 +1,15 @@
+{
+  "projectId": "veyrnox-ai-05603de1",
+  "projectName": "veyrnox-ai",
+  "orgId": "org_e6f47cc825c3456d96c441a7e0eccfb0",
+  "url": "https://app.reticle.sh",
+  "dashboardUrl": "https://app.reticle.sh/overview?project=veyrnox-ai-05603de1",
+  "repo": "e8eb0f4e63f2bb87",
+  "workspace": "Veyrnox",
+  "sync": {
+    "runs": true,
+    "memory": true,
+    "flows": true
+  },
+  "verify": "local"
+}
