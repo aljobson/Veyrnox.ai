@@ -35,6 +35,9 @@ export default function JobScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const { api } = useAuth();
     const router = useRouter();
+    // Read by the delayed rating ask; kept out of the effect's dependencies so a new router object cannot restart the poll.
+    const routerRef = useRef(router);
+    routerRef.current = router;
     const [state, setState] = useState<JobState>('queued');
     const [asset, setAsset] = useState<{ url: string; mime: string } | null>(null);
     // A stem-splitting job has six tracks instead of one file.
@@ -93,12 +96,12 @@ export default function JobScreen() {
                 const asked = await loadReviewAsk();
                 if (controller.signal.aborted || !shouldAskForReview(asked, { waited, hasOutput: true }) || !claimReviewAsk()) return;
                 setTimeout(() => {
-                    if (!controller.signal.aborted) router.push('/rate');
+                    if (!controller.signal.aborted) routerRef.current.push('/rate');
                 }, REVIEW_ASK_DELAY_MS);
             })
             .catch(() => !controller.signal.aborted && setError(true));
         return () => controller.abort();
-    }, [api, id, attempt, router]);
+    }, [api, id, attempt]);
 
     const waiting = !asset && !error && (state === 'queued' || state === 'running');
     useEffect(() => {
