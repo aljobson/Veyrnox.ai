@@ -21,7 +21,8 @@ const end = (days) => new Date(Date.now() + days * 86400000).toISOString();
 
 try {
   await c.query('BEGIN');
-  const plans = await rpc('public.list_credit_subscription_plans()');
+  // Yearly plans renew once a year and are covered by test-credit-subscriptions-yearly.mjs.
+  const plans = (await rpc('public.list_credit_subscription_plans()')).filter((plan) => plan.billing_interval === 'month');
   assert.deepEqual(plans.map((plan) => plan.id), ['lite-monthly', 'starter-monthly', 'plus-monthly', 'ultra-monthly']);
   for (const plan of plans) {
     await c.query('SAVEPOINT tier');

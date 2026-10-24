@@ -8,7 +8,7 @@ import { createCreditSubscriptionCheckout, creditInvoice } from '../packages/ada
 import { subscriptionHandler, SUBSCRIPTION_CONSENT_VERSION, SUBSCRIPTION_CONSENT_VERSION_YEARLY } from '../lib/subscriptions/api.js';
 
 const ID = '0b6f3c1e-8d2a-4f5b-9c7e-1a2b3c4d5e6f';
-const AUTH = '1b6f3c1e-8d2a-4f5b-9c7e-1a2b3c4d5e6f';
+const CALLER_ID = '1b6f3c1e-8d2a-4f5b-9c7e-1a2b3c4d5e6f';
 const NOW = Math.floor(Date.now() / 1000);
 const SECRET = 'whsec_credit_subscription_test';
 const cfg = { apiKey: 'sk_test_x', signingSecret: SECRET, publicHost: 'https://veyrnox.test', idempotencyKey: 'checkout_test' };
@@ -17,7 +17,7 @@ const invoice = (days = 365) => ({ id: 'in_1', object: 'invoice', subscription: 
   billing_reason: 'subscription_create', amount_paid: 20520, discounts: [], lines: { has_more: false, data: [{ subscription: 'sub_1', quantity: 1,
     amount: 20520, currency: 'usd', proration: false, period: { start: NOW - 60, end: NOW - 60 + days * 86400 },
     price: { unit_amount: 20520, currency: 'usd', recurring: { interval: 'year', interval_count: 1 } }, discount_amounts: [] }] } });
-const request = (body, auth = AUTH) => new Request('https://veyrnox.test/api/v1/subscriptions', {
+const request = (body, auth = CALLER_ID) => new Request('https://veyrnox.test/api/v1/subscriptions', {
   method: body === undefined ? 'GET' : 'POST', headers: { ...(auth ? { 'x-veyrnox-auth-id': auth } : {}), 'content-type': 'application/json' },
   ...(body === undefined ? {} : { body: JSON.stringify(body) }),
 });
