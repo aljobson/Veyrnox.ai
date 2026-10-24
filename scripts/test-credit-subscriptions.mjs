@@ -66,13 +66,17 @@ try {
 
     await c.query('BEGIN');
 
-    // ── Plans: the three owner-approved monthly tiers, cheapest first. ──
+    // ── Plans: the four monthly tiers and their four yearly twins (0383, activated by 0385), cheapest first. ──
     assert.deepEqual((await rpc('public.list_credit_subscription_plans()')).map((p) => [p.id, p.price_usd_cents, p.credits]),
         [
             ['lite-monthly', 1000, 209],
             ['starter-monthly', 1900, S],
             ['plus-monthly', 5900, P],
+            ['lite-yearly', 10800, 209],
             ['ultra-monthly', 12900, 2411],
+            ['starter-yearly', 20520, S],
+            ['plus-yearly', 60180, P],
+            ['ultra-yearly', 123840, 2411],
         ]);
 
     // ── Start: idempotent on its key; the key cannot be moved to another plan. ──
