@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { chooseProbe, summariseStreams, isMp4 } from '../scripts/probe-crun.mjs';
+import { chooseProbe, summariseStreams, isMp4, imageKind } from '../scripts/probe-crun.mjs';
 import { parseEndpoint } from '../packages/adapters/crun.js';
 
 test('every probe maps to an endpoint the adapter parses', () => {
-  for (const name of ['veo-lite', 'veo-fast', 'seedance-fast']) {
+  for (const name of ['veo-lite', 'veo-fast', 'seedance-fast', 'nano-banana', 'seedream']) {
     const r = chooseProbe([name]);
     assert.equal(r.ok, true);
     assert.ok(parseEndpoint(r.probe.endpoint), name);
@@ -33,4 +33,13 @@ test('only bytes that start like an MP4 are ever written', () => {
   assert.equal(isMp4(Buffer.from('00000020667479706d703432000000006d70343269736f6d', 'hex')), true);
   assert.equal(isMp4(Buffer.from('<html>not a video</html>')), false);
   assert.equal(isMp4(Buffer.alloc(4)), false);
+});
+
+test('image probes are kept only when the bytes are a PNG, JPEG or WebP', () => {
+  assert.equal(chooseProbe(['nano-banana']).probe.image, true);
+  assert.equal(imageKind(Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(8)])), 'png');
+  assert.equal(imageKind(Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(12)])), 'jpg');
+  assert.equal(imageKind(Buffer.concat([Buffer.from('RIFF'), Buffer.alloc(4), Buffer.from('WEBP'), Buffer.alloc(4)])), 'webp');
+  assert.equal(imageKind(Buffer.from('<html>not an image at all</html>')), null);
+  assert.equal(imageKind(Buffer.alloc(4)), null);
 });

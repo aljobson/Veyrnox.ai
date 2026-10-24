@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { parseEndpoint, buildRequest, submitTask, interpretTask } from '../packages/adapters/crun.js';
+import { parseEndpoint, endpointKind, buildRequest, submitTask, interpretTask } from '../packages/adapters/crun.js';
 
 const job = (over = {}) => ({ job_id: 'job_1', provider_endpoint: 'crun:google/veo3-1-lite-t2v', inputs: { prompt: 'a city at dusk' }, ...over });
 const reply = (status, body) => async () => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
@@ -107,4 +107,27 @@ test('0379 activates only the proven Veo Lite route, as a second route, and touc
   assert.match(code, /parity_record IS NOT NULL/);
   assert.match(code, /IF affected <> 1 THEN/);
   assert.doesNotMatch(code, /model_catalog|priority|provider_endpoint/);
+});
+
+test('image models: the documented body, a square default, no callback, no reference images', () => {
+  const nb = buildRequest({ model: 'google/nano-banana' }, { prompt: ' a fox ', seed: 7 });
+  assert.deepEqual(nb.body, { model: 'google/nano-banana', input: { prompt: 'a fox', aspect_ratio: '1:1', output_format: 'png' } });
+  assert.equal(buildRequest({ model: 'google/nano-banana' }, { prompt: 'x', aspect_ratio: '21:9' }).ok, true);
+  const sd = buildRequest({ model: 'bytedance/seedream-4' }, { prompt: 'x' });
+  assert.deepEqual(sd.body, { model: 'bytedance/seedream-4', input: { prompt: 'x', aspect_ratio: '1:1', resolution: '2K', num_outputs: 1 } });
+  assert.equal(buildRequest({ model: 'bytedance/seedream-4' }, { prompt: 'x', aspect_ratio: '16:9' }).error, 'aspect_ratio_unsupported', 'the fal row it backs is a fixed square');
+  for (const model of ['google/nano-banana', 'bytedance/seedream-4']) {
+    assert.equal(buildRequest({ model }, { prompt: 'x', image_url: 'https://a/b.png' }).error, 'input_media_unsupported');
+    assert.equal(buildRequest({ model }, { prompt: 'x', img_urls: ['https://a/b.png'] }).error, 'input_media_unsupported');
+    assert.equal(buildRequest({ model }, { prompt: ' ' }).error, 'prompt_required');
+    assert.equal('callback_url' in buildRequest({ model }, { prompt: 'x' }).body, false);
+  }
+});
+
+test('endpointKind tells the sweep a picture from a clip, and refuses what the adapter does not own', () => {
+  assert.equal(endpointKind('crun:google/nano-banana'), 'image');
+  assert.equal(endpointKind('crun:bytedance/seedream-4'), 'image');
+  assert.equal(endpointKind('crun:google/veo3-1-lite-t2v'), 'video');
+  assert.equal(endpointKind('crun:google/unknown'), null);
+  assert.equal(endpointKind('kie:veo3_lite'), null);
 });
