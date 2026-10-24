@@ -1,0 +1,56 @@
+name: route-price-watch
+
+# ADR-0256 phase 4c. Compares OpenRouter's published video price (a public, keyless list)
+# with the recorded cost of the routes that use it. fal has its own watch (fal-catalog-watch);
+# kie has no machine-readable price list and is checked by hand against kie.ai/pricing.
+on:
+  schedule:
+    - cron: '41 6 * * 1'   # Mondays 06:41 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  watch:
+    # Only main, as fal-catalog-watch: a dispatch on another branch would run that branch's script.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+
+      # No secrets: one public GET and the recorded cost the catalog carried when the script was written.
+      - name: Check OpenRouter's price against the recorded cost
+        id: check
+        run: |
+          set +e
+          node scripts/check-openrouter-route-prices.mjs > report.txt 2>&1
+          echo "exit=$?" >> "$GITHUB_OUTPUT"
+          cat report.txt
+
+      - name: Open issue on drift
+        if: steps.check.outputs.exit != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="Route price drift — $(date -u +%Y-%m-%d)"
+          gh label create route-price-drift --color B60205 --description 'a supplier price moved away from the recorded route cost' 2>/dev/null || true
+          existing=$(gh issue list --label route-price-drift --state open --json number --jq '.[0].number // empty')
+          body=$(printf '%s\n\n```\n%s\n```\n' \
+            "The weekly route price check found an OpenRouter price that moved more than 1 percent from the recorded cost, or a price it could not read. Floor pricing (ADR-0037) leaves little headroom: a rise can breach the 50 percent rule. Review the row, then update the recorded cost in a catalog migration and, if the rule needs it, the credit price." \
+            "$(cat report.txt)")
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "$body"
+          else
+            gh issue create --title "$title" --label route-price-drift --body "$body"
+          fi
+
+      # A failing check must still turn the run red once the issue is filed.
+      - name: Fail the run on drift
+        if: steps.check.outputs.exit != '0'
+        run: exit 1
