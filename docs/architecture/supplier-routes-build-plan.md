@@ -133,7 +133,12 @@ exclude waiting for owner decisions and paid probes.
   route anywhere but last, and any first route the catalog's margin and free-allowance checks
   reject. It cannot know whether code exists for the new first route: the script in 4b must
   check `providerFor` and `capabilityFor` first, or the offer answers 501 until reordered back.
-  Not yet done (4b): price observations per supplier and the weekly proposal script.
+  Phase 4b: `lib/supplierRoutesPropose.js` and the owner-run `scripts/propose-route-order.mjs`
+  (dry run by default; `--apply --note` calls the RPC) propose the cheapest order: dispatchable
+  routes first by cost, routes the Worker cannot dispatch after them, an `unverified` route last,
+  nothing proposed for an offer with fewer than two proven routes. Today no offer has two active
+  routes, so it proposes nothing. Not yet done: price observations per supplier (kie rate card,
+  OpenRouter models list) and a scheduled weekly run; today the recorded cost is the input.
 - **Done when:** the report runs for all suppliers and a reorder is applied once
   end to end on staging.
 
