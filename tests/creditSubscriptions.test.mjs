@@ -123,6 +123,8 @@ test('checkout uses the RPC snapshot and refuses client prices, absent consent a
   assert.deepEqual([supplied.priceUsdCents, supplied.credits, supplied.subscriptionId], [1900, 270, ID]);
   const blocked = subscriptionHandler({ action: 'start', rpcCall: async (fn) => fn === 'consume_account_read_request' ? { ok: true } : { ok: false, code: 'SUBSCRIPTION_ALREADY_ACTIVE' } });
   assert.equal((await blocked(request(body))).status, 409);
+  const weekly = { ...body, plan_id: 'starter-weekly', idempotency_key: 'checkout-key-weekly' };
+  assert.equal((await handler(request(weekly))).status, 400, 'monthly-only launch refuses a weekly checkout before database access');
 });
 
 test('cooling-off credits are removed before money moves; failed eligibility never calls Stripe', async () => {
@@ -247,8 +249,13 @@ test('return recovery stops an owned unbound duplicate after session or subscrip
 
 test('public plan discovery strips private provider fields, rejects invalid prices, and never trusts spoofed identity', async () => {
   env(); const calls=[];
-  const handler=subscriptionHandler({action:'plans',authed:false,rpcCall:async(fn,args)=>{calls.push({fn,args});return [{id:'starter-monthly',billing_interval:'month',price_usd_cents:1900,credits:270,stripe_price_id:'private'}];}});
-  const r=await handler(request(undefined,null)); assert.equal(r.status,200);assert.ok(!(await r.text()).includes('private'));assert.deepEqual(calls,[{fn:'list_credit_subscription_plans',args:{}}]);
+  const handler=subscriptionHandler({action:'plans',authed:false,rpcCall:async(fn,args)=>{calls.push({fn,args});return [
+    {id:'starter-monthly',billing_interval:'month',price_usd_cents:1900,credits:270,stripe_price_id:'private'},
+    {id:'starter-weekly',billing_interval:'week',price_usd_cents:499,credits:60,stripe_price_id:'private-weekly'},
+  ];}});
+  const r=await handler(request(undefined,null)); assert.equal(r.status,200);
+  const projected=await r.json();assert.deepEqual(projected.plans,[{id:'starter-monthly',billing_interval:'month',price_usd_cents:1900,credits:270}]);
+  assert.ok(!JSON.stringify(projected).includes('private'));assert.deepEqual(calls,[{fn:'list_credit_subscription_plans',args:{}}]);
   assert.throws(()=>subscriptionHandler({action:'cancel',authed:false}));
   const broken=subscriptionHandler({action:'plans',authed:false,rpcCall:async()=>[{id:'starter-monthly',billing_interval:'month',price_usd_cents:-1,credits:270}]});assert.equal((await broken(request(undefined,null))).status,503);
 });

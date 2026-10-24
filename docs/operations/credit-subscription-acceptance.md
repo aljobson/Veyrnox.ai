@@ -190,3 +190,20 @@ above. Real test-account purchase, return, renewal, both cancellation modes,
 pending/refused refund, dispute, alert and account-switch acceptance remain
 production launch requirements. See
 [the approval pack](subscription-approval-pack-2026-10-16.md).
+
+## Monthly-only owner decision and authenticated check — 24 October 2026
+
+Owner Al Jobson approved the Finance/Legal terms in issue #1575 and authorised
+a monthly-only Credit Subscription launch. The public plan projection was
+re-read from staging and returned only Starter $19/month for 270 Credits, Plus
+$59/month for 1,200 Credits and Ultra $129/month for 3,000 Credits, using
+consent version `credit-subscription-2026-10-17` and a 14-day cooling-off
+window.
+
+An owner-authenticated staging browser session showed an active Starter monthly
+subscription, an 832-Credit balance, a paid-period end of 4 November 2026 and
+both self-service cancellation controls on desktop. This proves authenticated
+read access and the desktop cancellation entry points; it does not prove a new
+checkout, mobile cancellation, renewal, failure-path handling, alert delivery
+or clean post-drill reconciliation. Those unchecked staging gates remain
+required before production activation.

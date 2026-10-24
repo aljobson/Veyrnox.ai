@@ -72,7 +72,7 @@
   {
     "area": "billing",
     "name": "Billing",
-    "text": "Credit SubscriptionsChoose an optional weekly or monthly subscription. It renews automatically until cancelled. Credits expire at each cycle end and do not roll over. Tax and the final total are shown at checkout.StarterMonthly$10 / month1,200 Credits each paid monthPlus applicable tax. Cycle Credits expire and do not roll over.SelectedI agree to Starter at $10 plus applicable tax every month until I cancel. I receive 1200 Credits after each confirmed monthly payment; unused cycle Credits expire without rollover.You can stop renewal here. An unused initial cycle may qualify for a full cooling-off refund within fourteen days. Terms · PrivacyContinue to secure checkout"
+    "text": "Credit SubscriptionsChoose an optional monthly subscription. It renews automatically every month until cancelled. Credits expire at each cycle end and do not roll over. Tax and the final total are shown at checkout.StarterMonthly$10 / month1,200 Credits each paid monthPlus applicable tax. Cycle Credits expire and do not roll over.SelectedI agree to Starter at $10 plus applicable tax every month until I cancel. I receive 1200 Credits after each confirmed monthly payment; unused cycle Credits expire without rollover.You can stop renewal here. An unused initial cycle may qualify for a full cooling-off refund within fourteen days. Terms · PrivacyContinue to secure checkout"
   },
   {
     "area": "billing",

@@ -6,8 +6,9 @@ import { readFileSync } from 'node:fs';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('weekly plans are defined for Credits, Cinema Pass and Veyrnox.ai Publish', () => {
+test('monthly launch deactivates weekly Credit plans while Cinema Pass and Publish keep their approved intervals', () => {
   const credits = read('packages/db/schema/supabase/0338_weekly_credit_subscriptions.sql');
+  const monthlyOnly = read('packages/db/schema/supabase/0370_monthly_only_credit_subscriptions.sql');
   const cinema = read('packages/db/schema/supabase/0339_weekly_cinema_pass.sql');
   const publish = read('packages/db/schema/supabase/0340_weekly_social_publish_plan.sql');
 
@@ -15,6 +16,9 @@ test('weekly plans are defined for Credits, Cinema Pass and Veyrnox.ai Publish',
   assert.match(credits, /'plus-weekly', 'week', 1499, 275/);
   assert.match(credits, /'ultra-weekly', 'week', 3299, 700/);
   assert.match(credits, /'billing_interval', p\.billing_interval/);
+  assert.match(monthlyOnly, /'starter-weekly', 'plus-weekly', 'ultra-weekly'/);
+  assert.match(monthlyOnly, /SET active = false/);
+  assert.match(monthlyOnly, /billing_interval = 'week'[\s\S]*AND active/);
   assert.match(cinema, /price_usd_cents = 299/);
   assert.match(cinema, /active = true/);
   assert.match(publish, /'publish-weekly', 'Publish Plan', 'week', 499/);
@@ -32,13 +36,13 @@ test('Veyrnox.ai Publish offers an annual plan at exactly 30% off monthly', () =
   assert.equal(appEnglish['app.publish.plan.equivalent'], '{price} per month equivalent');
 });
 
-test('all three paywalls disclose and render weekly billing', () => {
+test('Credit subscriptions disclose monthly-only billing while Cinema Pass and Publish retain interval-aware copy', () => {
   // The offer's words are in the English catalog (ADR-0107).
   const credits = read('app/veyrnox/_components/CreditSubscriptions.js') + read('lib/i18n/messages/en.mjs');
   const cinema = read('app/veyrnox/social-cinema/pass/PassPanel.js');
   const publish = read('app/veyrnox/app/publish/plan/PublishPlanPanel.js');
 
-  assert.match(credits, /Credits every week or month/);
+  assert.match(credits, /Credits every month/);
   assert.match(credits, /every \{intervalName\(plan\.billing_interval\)\}/);
   assert.match(cinema, /tOr\(t, `cinema.pass.\$\{p.billing_interval\}`, p.billing_interval\)/);
   for (const interval of ['week', 'month', 'year']) assert.equal(english[`cinema.pass.${interval}`], interval);
