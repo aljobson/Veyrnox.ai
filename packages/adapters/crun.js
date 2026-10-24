@@ -31,7 +31,9 @@ const MODELS = {
     'google/veo3-1-lite-t2v': { seconds: new Set([8]), resolutions: new Set(['720p']), aspects: new Set(['16:9', '9:16']) },
     'google/veo3-1-fast-t2v': { seconds: new Set([8]), resolutions: new Set(['720p']), aspects: new Set(['16:9', '9:16']) },
     'google/veo3-1-t2v': { seconds: new Set([8]), resolutions: new Set(['720p']), aspects: new Set(['16:9', '9:16']) },
-    'bytedance/seedance2-0-fast-t2v': { seconds: new Set([5]), resolutions: new Set(['720p']), aspects: new Set(['16:9', '9:16', '1:1']) },
+    // Seedance has an `audio` switch that defaults to off (the 2026-10-24 probe clip was silent). The offer it backs
+    // asks for synchronized audio by default, so the request always sends it. Veo makes its own audio.
+    'bytedance/seedance2-0-fast-t2v': { seconds: new Set([5]), resolutions: new Set(['720p']), aspects: new Set(['16:9', '9:16', '1:1']), audio: true },
 };
 const ENDPOINT_RE = /^crun:([a-z0-9][a-z0-9./_-]{1,80})$/i;
 const TASK_ID_RE = /^[A-Za-z0-9._-]{1,128}$/;
@@ -60,7 +62,7 @@ export function buildRequest(target, inputs) {
     if (inputs.image_url || inputs.reference_urls) return { ok: false, error: 'input_media_unsupported' };
     return {
         ok: true,
-        body: { model: target.model, input: { prompt, duration: seconds, resolution: [...spec.resolutions][0], aspect_ratio: aspect } },
+        body: { model: target.model, input: { prompt, duration: seconds, resolution: [...spec.resolutions][0], aspect_ratio: aspect, ...(spec.audio ? { audio: true } : {}) } },
     };
 }
 
