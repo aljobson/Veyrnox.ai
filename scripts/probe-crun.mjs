@@ -34,6 +34,8 @@ const PROBES = {
     'veo-lite': { endpoint: 'crun:google/veo3-1-lite-t2v', usd: 0.067, inputs: { duration_seconds: 8 } },
     'veo-fast': { endpoint: 'crun:google/veo3-1-fast-t2v', usd: 0.134, inputs: { duration_seconds: 8 } },
     'seedance-fast': { endpoint: 'crun:bytedance/seedance2-0-fast-t2v', usd: 0.29, inputs: { duration_seconds: 5 } },
+    'nano-banana': { endpoint: 'crun:google/nano-banana', usd: 0.015, image: true, inputs: {} },
+    seedream: { endpoint: 'crun:bytedance/seedream-4', usd: 0.015, image: true, inputs: {} },
     veo: { endpoint: 'crun:google/veo3-1-t2v', usd: 1.0, inputs: { duration_seconds: 8 }, needsYes: true },
 };
 const POLL_MS = 5000;
@@ -62,6 +64,31 @@ export function summariseStreams(probe) {
 /** True when the bytes start like an MP4: an 'ftyp' box at offset 4. */
 export function isMp4(bytes) {
     return bytes.length > 12 && bytes.subarray(4, 8).toString('latin1') === 'ftyp';
+}
+
+/** 'png', 'jpg' or 'webp' when the bytes start like one of those, else null. */
+export function imageKind(bytes) {
+    if (bytes.length > 12 && bytes.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return 'png';
+    if (bytes.length > 12 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return 'jpg';
+    if (bytes.length > 12 && bytes.subarray(0, 4).toString('latin1') === 'RIFF' && bytes.subarray(8, 12).toString('latin1') === 'WEBP') return 'webp';
+    return null;
+}
+
+async function keepImage(outputUrl, dir) {
+    if (!/^https:\/\//.test(outputUrl)) throw new Error('output is not https');
+    const res = await fetch(outputUrl);
+    if (!res.ok) throw new Error(`download ${res.status}`);
+    const bytes = Buffer.from(await res.arrayBuffer());
+    if (bytes.length > 20 * 1024 * 1024) throw new Error('image is over 20 MB');
+    const kind = imageKind(bytes);
+    if (!kind) throw new Error('the download is not a PNG, JPEG or WebP; nothing was written');
+    await mkdir(dir, { recursive: true });
+    const file = join(dir, `probe.${kind}`);
+    await writeFile(file, bytes);
+    const { stdout } = await run('ffprobe', ['-v', 'error', '-print_format', 'json', '-show_streams', file]);
+    const v = (JSON.parse(stdout).streams || [])[0] || {};
+    console.log('image:', JSON.stringify({ kind, bytes: bytes.length, width: v.width, height: v.height }));
+    console.log('saved:', file);
 }
 
 async function keepClip(outputUrl, dir) {
@@ -113,7 +140,7 @@ async function main() {
             console.log('output type:', head && head.headers.get('content-type'), 'bytes:', head && head.headers.get('content-length'));
             const keepAt = process.argv.indexOf('--keep');
             if (keepAt > 0) {
-                try { await keepClip(t.outputUrl, process.argv[keepAt + 1]); }
+                try { await (probe.image ? keepImage : keepClip)(t.outputUrl, process.argv[keepAt + 1]); }
                 catch (err) { console.error('could not keep or measure the clip:', err && err.message); }
             }
             console.log(`total ${Math.round((Date.now() - started) / 1000)} s. Now read the charge in crun.ai/logs and compare it with the table.`);

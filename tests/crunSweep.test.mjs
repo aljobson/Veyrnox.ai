@@ -128,3 +128,20 @@ test('the R2 copy accepts only Crun\'s two exact output hosts and refuses lookal
     }
   } finally { globalThis.fetch = real; console.error = quiet; }
 });
+
+test('an image offer completes as a picture: its own extension and no MP4 rule', async () => {
+  const calls = [];
+  const routes = [...ROUTES, { model_id: 'nano-banana-kie', endpoint: 'crun:google/nano-banana' }];
+  await withRows([{ ...job('i'), model_id: 'nano-banana-kie' }, { ...job('v'), model_id: 'veo-3.1-lite-kie' }], async () => {
+    const out = await sweepCrun({ ...args,
+      read: async (id) => ({ ok: true, state: 'success', outputUrl: id === 'task-i' ? 'https://static.mediaoss.bar/x/y.jpeg' : 'https://tempfile.mediaoss.bar/v.mp4' }),
+      complete: async (x) => { calls.push(x); return { status: 200, body: { ok: true } }; } });
+    assert.deepEqual(out, { checked: 2, applied: 2, pending: 0, errors: 0 });
+  }, routes);
+  const image = calls.find((c) => c.job.id === 'i'), video = calls.find((c) => c.job.id === 'v');
+  assert.equal(image.ext, '.jpeg');
+  assert.equal(image.copyOptions.expectMp4, undefined);
+  assert.equal(image.copyOptions.maxBytes, 20 * 1024 * 1024);
+  assert.equal(video.ext, '.mp4');
+  assert.equal(video.copyOptions.expectMp4, true);
+});

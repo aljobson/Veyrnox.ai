@@ -97,8 +97,8 @@ test('the studio nav exposes the rest of the public site on desktop and mobile',
         'the public destination list stays derived from the shared site nav');
     assert.match(appNav, /const menuItems = \[\.\.\.new Map\(\[[\s\S]*\.\.\.items,[\s\S]*\.\.\.APP_BROWSE_CATEGORIES,[\s\S]*\.map\(\(item\) => \[item\.href, item\]\)\)\.values\(\)\];/,
         'the phone menu combines studio tools with the public site and de-duplicates repeated routes');
-    assert.match(appNav, /id: 'inspire'[\s\S]*href: '\/presets'[\s\S]*href: '\/models'[\s\S]*href: '\/guides'/,
-        'the desktop sidebar carries the public Inspire destinations');
+    assert.match(appNav, /id: 'inspire'[\s\S]*href: '\/social-cinema'[\s\S]*href: '\/presets'[\s\S]*href: '\/models'[\s\S]*href: '\/guides'/,
+        'the desktop sidebar carries Social Cinema and the public Inspire destinations');
 });
 
 test('credits and assets come from the endpoint, the name from the session', () => {
