@@ -4,9 +4,11 @@
 -- google/veo3-1-fast-t2v): task 492debcb-36c1-4cf5-9a16-5c378364851c succeeded after 70 s. Crun's log shows
 -- 30 Crun credits for it, as expected. The owner's top-up rate is 206 Crun credits per $1 ($50 for 10,300), so
 -- a clip costs 30 / 206 = $0.1456 (the earlier $0.134 assumed the $1,250 tier the owner does not buy).
--- NOT established: what the clip looks like. The probe script could not download it (the owner's router DNS
--- does not resolve tempfile.mediaoss.bar) and Claude did not view it; the owner is asked to open it. A clip
--- also cannot prove which model made it: that rests on Crun's model id and its written answers.
+-- The clip was fetched afterwards (the probe script's own download failed on the owner's router DNS, fixed
+-- the same evening) and measured with ffprobe: 8.0 s, 1280x720, h264, with an AAC audio stream; two frames read
+-- by Claude Code: a red paper boat on calm water at sunrise, sharp and coherent, no watermark or overlay.
+-- NOT established: which model made it. A clip cannot prove that; it rests on Crun's model id and its written
+-- answers.
 --
 -- What this does, in order, so every database reaches one state:
 --   1. records the parity evidence above on the Crun route and sets its cost to $0.1456;
@@ -27,7 +29,7 @@ DO $$
 DECLARE affected BIGINT;
 BEGIN
     UPDATE public.model_routes
-       SET parity_record = 'probe 2026-10-24 (owner): google/veo3-1-fast-t2v, task 492debcb-36c1-4cf5-9a16-5c378364851c success after 70 s; charge 30 credits confirmed in Crun log; clip not viewed by Claude (probe download failed on the owner network); model identity rests on Crun id and its written answers',
+       SET parity_record = 'probe 2026-10-24 (owner): google/veo3-1-fast-t2v, task 492debcb-36c1-4cf5-9a16-5c378364851c success after 70 s; charge 30 credits confirmed in Crun log; clip fetched and viewed by Claude (8.0 s 1280x720 h264 + aac, red paper boat at sunrise, no watermark); model identity rests on Crun id and its written answers',
            cost_per_unit = 0.1456, state = 'active', updated_at = now()
      WHERE supplier = 'crun' AND endpoint = 'crun:google/veo3-1-fast-t2v' AND model_id = 'veo-3.1-fast-kie'
        AND provenance = 'licensed_reseller' AND cost_unit = 'per_generation'

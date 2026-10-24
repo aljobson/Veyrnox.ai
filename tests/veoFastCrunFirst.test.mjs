@@ -16,7 +16,8 @@ test('the Veo Fast cost is 30 Crun credits at the owner top-up rate, and 9 credi
 test('the migration names the Crun Veo Fast route, records only what was verified, and asserts each step', () => {
   assert.match(sql, /crun:google\/veo3-1-fast-t2v/);
   assert.match(sql, /492debcb-36c1-4cf5-9a16-5c378364851c/);
-  assert.match(sql, /clip not viewed by Claude/, 'the record does not claim a visual check that was not made');
+  assert.match(sql, /clip fetched and viewed by Claude \(8\.0 s 1280x720 h264 \+ aac/, 'the record states what was actually checked');
+  assert.match(sql, /model identity rests on Crun id/, 'and what a clip cannot prove');
   assert.match(sql, /cost_per_unit = 0\.1456/);
   assert.match(sql, /credits_5s = 9/);
   assert.match(sql, /credits_5s IN \(17, 9\)/);
