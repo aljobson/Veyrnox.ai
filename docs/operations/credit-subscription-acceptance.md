@@ -2,9 +2,9 @@
 
 This slice adds monthly checkout, read/plans, checkout return recovery,
 explicit period-end or cooling-off cancellation, and the Stripe webhook.
-`SUBSCRIPTIONS_ENABLED` is **true in staging for sandbox acceptance** and
-**false in production**. Public Pricing and Credits & billing expose the
-staging offer, explicit consent, checkout-return recovery and owned
+`SUBSCRIPTIONS_ENABLED` is **true in staging for sandbox acceptance** and in
+**production for the owner-approved monthly-only launch**. Public Pricing and
+Credits & billing expose explicit consent, checkout-return recovery and owned
 cancellation controls. Upgrades, downgrades, resume, annual billing and the
 Customer Portal are not offered by these endpoints.
 
@@ -12,7 +12,8 @@ Customer Portal are not offered by these endpoints.
 
 - Staging Worker version `f845e6d5-e2b2-4453-84b0-73da96268e03` exposes the
   three monthly plans through the public projection and has
-  `SUBSCRIPTIONS_ENABLED=true`. Production remains false.
+  `SUBSCRIPTIONS_ENABLED=true`. Production was later authorized for the same
+  monthly-only product after the recorded sandbox recovery evidence.
 - Apply corrected 0186/0187 through the owner-approved migration workflow;
   merge and apply 0189 only after its independent reviews and CI pass.
 - Reconcile all five counts and check the migration ledger.
