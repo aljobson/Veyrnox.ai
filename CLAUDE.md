@@ -76,8 +76,8 @@ If a build starts failing after a dependency change, bisect these three first.
   `PUSH_NOTIFICATIONS_ENABLED` is `"true"` (staging only; not in production `wrangler.jsonc`).
 - **Daily check-in** (ADR-0257): `daily_checkin` is the only reward writer, grants
   only through `ledger_grant`; ordinary non-expiring Pack credits. Off unless
-  `CHECKIN_ENABLED` is exactly `"true"`. Absent means off; the owner adds
-  `CHECKIN_ENABLED="true"` at rollout after migration proof and reconciliation.
+  `CHECKIN_ENABLED` is exactly `"true"`. Absent means off. On in production since
+  2026-10-24 (owner); remove the var to turn it off.
 - **Free Credits** (ADR-0013): only `grant:signup` credits are free. Every
   ledger row sets `free_delta` (the part of `delta` that moved Free Credits;
   0 for anything else) and `credit_balances.free_balance` moves with it,
