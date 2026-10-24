@@ -41,8 +41,8 @@ test('recording attempt 1 sends the job, route and supplier job id, and never th
 
 test('the route resolves before dispatch and records only after job_submitted succeeded', () => {
   const src = readFileSync(new URL('../app/api/v1/generations/route.js', import.meta.url), 'utf8');
-  const resolve = src.indexOf('await resolveOwnRoute(modelRow, cfg)');
-  const submit = src.indexOf('await provider.submit(');
+  const resolve = src.indexOf('await resolveRouteSet(modelRow, cfg)');
+  const submit = src.indexOf('await submitWithFailover({');
   const record = src.indexOf('if (recorded) await recordFirstAttempt(');
   assert.ok(resolve > 0 && resolve < submit && submit < record);
   assert.match(src, /const recorded = await recordSubmittedJob/);
@@ -86,4 +86,11 @@ test('migration 0372 only updates job_attempts forward from submitted and is ser
   assert.match(sql, /GRANT EXECUTE ON FUNCTION public\.mark_job_attempt_outcome\(text, text, text\) TO service_role/);
   const code = sql.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n');
   assert.doesNotMatch(code, /UPDATE public\.jobs|ledger|credit_balances|DELETE FROM/);
+});
+
+test('a failover attempt (2 or 3) records its supplier id through record_attempt_supplier', async () => {
+  const sent = [];
+  const call = async (n, a) => { sent.push([n, a]); return { ok: true, updated: 1 }; };
+  assert.equal(await recordFirstAttempt({ jobId: 'j1', route: own, attemptNo: 2, providerJobId: 'task_5' }, {}, { call }), true);
+  assert.deepEqual(sent, [['record_attempt_supplier', { p_job_id: 'j1', p_attempt_no: 2, p_supplier_job_id: 'task_5' }]]);
 });

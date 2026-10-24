@@ -92,6 +92,17 @@ exclude waiting for owner decisions and paid probes.
 - First pairs: Nano Banana (kie, GrsAI), Kling 3.0 (fal, kie), Hailuo (kie, fal).
   Each pair needs a parity record: capability pins compared and one paid probe
   per route.
+- **Status (2026-10-24):** 0373 (`job_route_failover`, `record_attempt_supplier`),
+  `lib/supplierRoutesFailover.js` and the generation route's `submitWithFailover` are
+  written, flag-gated and inert until an offer has a second `active`, proven route (0369
+  left Crun on standby). Only a provable refusal hops: kie 401, 402, 403, 429 and fal 401,
+  403, 429 with outcome `rejected`; never an ambiguous answer, a refused prompt, a job
+  with media inputs, a Clip Editor job or fal's durable-dispatch images. The ADR's "5xx
+  without a task id" is not used: the adapters report every 5xx as ambiguous. A hop
+  reserves the new supplier's budget and leaves the first supplier's reservation in
+  place (conservative). Not yet done: parity records and paid probes per route, the ADR's
+  open decisions, and the adapters for classifying GrsAI refusals (its error text carries
+  no status).
 - **Done when:** the invariants hold across the failure matrix (one debit, one
   refund at most, one stored output, abandoned attempts inert), and reconcile
   jobs read zero.
