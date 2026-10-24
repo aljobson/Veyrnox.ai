@@ -37,7 +37,7 @@ try {
     // Exercise the historical 0222/0262 contract even after later migrations
     // move this stable public product to a different wholesale supplier.
     await db.query(`UPDATE public.model_catalog
-        SET provider='kie', provider_endpoint='market:google/nano-banana', provider_cost_per_unit=0.0200
+        SET provider='kie', provider_endpoint='market:google/nano-banana', provider_cost_per_unit=0.0200, credits_5s=2
         WHERE id='nano-banana-kie'`);
     await check('0222 rejects its own already-applied target; 0262 repeats without changing it', async () => {
         assert.deepEqual(await state(), expected);
