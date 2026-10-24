@@ -142,7 +142,9 @@ exclude waiting for owner decisions and paid probes.
   keyless list) with the recorded cost of the one routed OpenRouter row, Seedance 2.0 Fast (108,000
   tokens at $4.20 per million = $0.4536, within 1% today). Exit 1 on drift or a missing price.
   Not yet done: kie (its rate card is only in the rendered page, not in a machine-readable list, so
-  a scrape would be brittle; it is checked by hand against kie.ai/pricing) and a scheduled run.
+  a scrape would be brittle; it is checked by hand against kie.ai/pricing). A weekly run
+  (`route-price-watch.yml`, Mondays 06:41 UTC, main only, no secrets) files a `route-price-drift`
+  issue when the OpenRouter price moves.
 - **Done when:** the report runs for all suppliers and a reorder is applied once
   end to end on staging.
 
