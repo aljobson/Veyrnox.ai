@@ -63,6 +63,7 @@ on:
       - "scripts/lib/test-checkin-concurrency.mjs"
       - "scripts/test-subscription-credits.mjs"
       - "scripts/test-credit-subscriptions.mjs"
+      - "scripts/test-credit-subscriptions-yearly.mjs"
       - "scripts/test-subscription-renewal.mjs"
       - "scripts/test-chat-turns.mjs"
       - "scripts/test-chat-close-send.mjs"
@@ -264,6 +265,7 @@ jobs:
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-checkin.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-subscription-credits.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-credit-subscriptions.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-credit-subscriptions-yearly.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-subscription-renewal.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-subscription-webhook-ordering.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-chat-turns.mjs

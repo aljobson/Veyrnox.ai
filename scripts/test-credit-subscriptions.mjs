@@ -72,7 +72,7 @@ try {
             ['lite-monthly', 1000, 209],
             ['starter-monthly', 1900, S],
             ['plus-monthly', 5900, P],
-            ['ultra-monthly', 12900, 2412],
+            ['ultra-monthly', 12900, 2411],
         ]);
 
     // ── Start: idempotent on its key; the key cannot be moved to another plan. ──

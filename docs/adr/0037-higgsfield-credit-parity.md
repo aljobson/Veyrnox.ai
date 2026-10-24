@@ -245,3 +245,7 @@ same with the yearly price / 12 and a fixed fee of 0.30 / 12 for a yearly plan (
 10%, 10%, 15%, 20%). Every plan stays under the 7.5 cent best-Pack rule of 0378. No subscription is live.
 Yearly billing itself (an interval column value, monthly credit grants over a paid year, and the
 Stripe recurring interval) is a later migration.
+
+Correction (0383): Ultra's yearly limit is 2,411.99 credits a month, so 2,411 is the most that keeps 50%.
+0383 sets both Ultra plans to 2,411 and adds the yearly plans, which grant credits one month at a time
+through an hourly sweep (grant_due_yearly_cycles).
