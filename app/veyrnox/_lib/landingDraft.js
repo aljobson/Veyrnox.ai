@@ -26,6 +26,7 @@ export function takeStudioDraft(storage, modelId, now = Date.now()) {
       ...(Number.isInteger(draft.durationSeconds) && draft.durationSeconds >= 1 && draft.durationSeconds <= 60 ? { durationSeconds: draft.durationSeconds } : {}),
       ...(typeof draft.negativePrompt === 'string' ? { negativePrompt: draft.negativePrompt } : {}),
       ...(typeof draft.templateId === 'string' ? { templateId: draft.templateId } : {}),
+      ...(draft.followup === 'generated-sound' ? { followup: draft.followup } : {}),
       ...(draft.oddlingPicks && typeof draft.oddlingPicks === 'object'
         ? { oddlingPicks: draft.oddlingPicks }
         : {}),
@@ -41,11 +42,12 @@ export function takeLandingDraft(storage, modelId, now = Date.now()) {
 }
 
 /** Hand a prompt (and optional aspect) to the studio. False if storage is blocked. */
-export function writeStudioDraft(storage, { prompt, model, aspect = null, durationSeconds, negativePrompt, templateId, oddlingPicks }, now = Date.now()) {
+export function writeStudioDraft(storage, { prompt, model, aspect = null, durationSeconds, negativePrompt, templateId, oddlingPicks, followup }, now = Date.now()) {
   try {
     storage.setItem(LANDING_DRAFT_KEY, JSON.stringify({
       prompt, model, aspect, durationSeconds, negativePrompt, templateId, at: now,
       ...(oddlingPicks && typeof oddlingPicks === 'object' ? { oddlingPicks } : {}),
+      ...(followup === 'generated-sound' ? { followup } : {}),
     }));
     return true;
   } catch {

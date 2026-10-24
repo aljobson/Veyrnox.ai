@@ -56,6 +56,16 @@ test('a Film Studio draft carries its clip length without changing older drafts'
     assert.deepEqual(takeStudioDraft(s,'wan',NOW),{prompt:'a room',aspect:null});
 });
 
+test('studio drafts preserve only the known generated-sound continuation', async () => {
+    const { takeStudioDraft, writeStudioDraft } = await import('../app/veyrnox/_lib/landingDraft.js');
+    const map = new Map();
+    const s = { getItem: (k) => map.get(k) ?? null, setItem: (k, v) => map.set(k, v), removeItem: (k) => map.delete(k) };
+    writeStudioDraft(s, { prompt: 'an original reel', model: 'wan-2.5-kie', followup: 'generated-sound' }, NOW);
+    assert.deepEqual(takeStudioDraft(s, 'wan-2.5-kie', NOW), { prompt: 'an original reel', aspect: null, followup: 'generated-sound' });
+    writeStudioDraft(s, { prompt: 'an original reel', model: 'wan-2.5-kie', followup: 'unknown' }, NOW);
+    assert.deepEqual(takeStudioDraft(s, 'wan-2.5-kie', NOW), { prompt: 'an original reel', aspect: null });
+});
+
 test('an Oddling handoff carries a one-time character snapshot that Create can sanitize', async () => {
     const { takeStudioDraft, writeStudioDraft } = await import('../app/veyrnox/_lib/landingDraft.js');
     const { sanitizeOddlingPicks } = await import('../app/veyrnox/_lib/character.js');
