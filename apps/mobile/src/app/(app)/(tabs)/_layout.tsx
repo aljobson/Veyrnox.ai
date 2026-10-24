@@ -45,7 +45,9 @@ export default function TabsLayout() {
                 return {
                     headerStyle: { backgroundColor: palette.background },
                     headerTintColor: palette.text,
-                    // Keep the complete VEYRNOX.ai wordmark clear of the three fixed-width actions on compact phones.
+                    // The action group is much wider than the menu button. Leading alignment keeps the complete
+                    // VEYRNOX.ai wordmark clear of credits, theme and account on compact phones.
+                    headerTitleAlign: 'left',
                     headerTitle: () => <Logo size={20} palette={palette} />,
                     headerLeft: () => <MenuButton palette={palette} />,
                     headerRight: () => <HeaderRight palette={palette} />,

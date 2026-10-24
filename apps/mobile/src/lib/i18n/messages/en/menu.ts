@@ -23,7 +23,7 @@ export default {
     'menu.credits': 'Credits',
     'menu.templates': 'Templates',
     'menu.models': 'Models',
-    'menu.cinema': 'Cinema',
+    'menu.cinema': 'Social Cinema',
     'menu.help': 'Help',
     'menu.sectionOpen': '{name}, expanded',
     'menu.sectionClosed': '{name}, collapsed',
