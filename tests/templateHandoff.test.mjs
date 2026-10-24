@@ -7,15 +7,19 @@ import { templateHandoffVisual, templateNeedsSource } from '../app/veyrnox/_lib/
 import { modelIdForName, presetHref } from '../app/veyrnox/_lib/tokens.js';
 
 test('every template remains visibly linked from its recipe page into Create', () => {
-  assert.equal(ALL_TEMPLATES.length, 142, 'audit every public video-backed template');
+  assert.equal(ALL_TEMPLATES.length, 1178, 'audit every public template');
   for (const preset of ALL_TEMPLATES) {
     assert.match(presetHref(preset), new RegExp(`[?&]preset=${preset.id}(?:&|$)`), preset.id);
     assert.ok(modelIdForName(preset.model), `${preset.id} opens a known model`);
     const visual = templateHandoffVisual(preset);
     assert.ok(visual, `${preset.id} has a Create handoff visual`);
-    assert.equal(visual.kind, 'video', `${preset.id} keeps its exact preview`);
-    assert.equal(visual.video, SHOWCASE_CLIPS[preset.clipKey].video);
-    assert.equal(visual.poster, SHOWCASE_CLIPS[preset.clipKey].poster);
+    if (preset.clipKey) {
+      assert.equal(visual.kind, 'video', `${preset.id} keeps its exact preview`);
+      assert.equal(visual.video, SHOWCASE_CLIPS[preset.clipKey].video);
+      assert.equal(visual.poster, SHOWCASE_CLIPS[preset.clipKey].poster);
+    } else {
+      assert.equal(visual.kind, 'artwork', `${preset.id} gets an artwork reference`);
+    }
   }
 });
 

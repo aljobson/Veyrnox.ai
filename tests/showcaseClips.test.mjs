@@ -149,9 +149,10 @@ test('every media-backed preset has a distinct preview and poster', () => {
     }
 });
 
-test('every public template has a real local video and poster', () => {
-    assert.equal(PRESETS.length, 142);
-    for (const preset of PRESETS) {
+test('every preview-backed template has a real local video and poster', () => {
+    const previewBacked = PRESETS.filter((preset) => preset.clipKey);
+    assert.equal(previewBacked.length, 142);
+    for (const preset of previewBacked) {
         const clip = SHOWCASE_CLIPS[preset.clipKey];
         assert.ok(clip?.video, `${preset.id} has no video`);
         assert.ok(clip?.poster, `${preset.id} has no poster`);

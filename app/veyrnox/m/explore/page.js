@@ -12,8 +12,10 @@ import { useCatalog } from '../../_lib/useCatalog';
 export default function MobileExplore() {
   const { t } = useI18n();
   const [cat, setCat] = useState('ALL');
+  const [visibleCount, setVisibleCount] = useState(24);
   const { models } = useCatalog();
   const list = templatesIn(cat);
+  const rollerPresets = list.filter((preset) => preset.clipKey).slice(0, 48);
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
@@ -27,7 +29,7 @@ export default function MobileExplore() {
           {PRESET_CATEGORIES.map((c) => (
             <button
               key={c}
-              onClick={() => setCat(c)}
+              onClick={() => { setCat(c); setVisibleCount(24); }}
               aria-pressed={cat === c}
               className={`shrink-0 font-vx-mono text-[10px] tracking-[0.12em] font-bold rounded-full px-3.5 py-1.5 border ${
                 cat === c
@@ -40,11 +42,15 @@ export default function MobileExplore() {
           ))}
         </div>
 
-        <TemplateRoller presets={list} catalog={models} className="mb-5" />
+        <TemplateRoller presets={rollerPresets} catalog={models} className="mb-5" />
 
         <div className="grid grid-cols-2 gap-2.5">
-          {list.map((p) => <PresetCard key={p.id} preset={p} catalog={models} size="sm" />)}
+          {list.slice(0, visibleCount).map((p) => <PresetCard key={p.id} preset={p} catalog={models} size="sm" />)}
         </div>
+        {visibleCount < list.length && <div className="mt-5 text-center">
+          <p className="mb-3 text-sm text-vx-fg-muted" aria-live="polite">{t('presets.showing', { shown: Math.min(visibleCount, list.length), total: list.length })}</p>
+          <button type="button" onClick={() => setVisibleCount((count) => count + 24)} className="rounded-full border border-vx-border px-6 py-3 font-semibold hover:border-vx-accent">{t('presets.more')}</button>
+        </div>}
       </div>
       <MobileTabs />
     </div>

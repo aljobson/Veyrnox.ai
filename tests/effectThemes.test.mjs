@@ -1,15 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { EFFECT_THEMES } from '../app/veyrnox/_lib/effectThemes.js';
-import { PRESETS } from '../app/veyrnox/_lib/templates.js';
+import { EFFECT_THEMES, PRESETS, effectThemeId, templatesInTheme } from '../app/veyrnox/_lib/templates.js';
 
-test('the public gallery no longer exposes media-less effect-theme collections', () => {
-  assert.equal(PRESETS.some((template) => template.theme), false);
-  const gallery = readFileSync(new URL('../app/veyrnox/_components/PresetGallery.js', import.meta.url), 'utf8');
-  assert.doesNotMatch(gallery, /EFFECT_THEMES|templatesInTheme|preset-theme-title/);
+test('every public template belongs to one effect theme', () => {
+  assert.equal(EFFECT_THEMES.length, 11);
+  for (const template of PRESETS) {
+    const theme = effectThemeId(template);
+    assert.ok(EFFECT_THEMES.some((entry) => entry.id === theme), `${template.id}: ${theme}`);
+    assert.ok(templatesInTheme(theme).includes(template), template.id);
+  }
 });
 
-test('retained internal theme metadata contains no source branding or media', () => {
+test('every theme is useful and contains no source branding or media', () => {
+  for (const theme of EFFECT_THEMES) assert.ok(templatesInTheme(theme.id).length >= 5, theme.id);
+  assert.deepEqual(templatesInTheme('NOT A THEME'), []);
   assert.doesNotMatch(JSON.stringify(EFFECT_THEMES), /crun|kling|vidu|bytedance|https?:/i);
 });
