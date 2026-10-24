@@ -121,6 +121,11 @@ exclude waiting for owner decisions and paid probes.
   cron runs the sweep only under the flag (not a recovery task). Still needed to go live: the Veo charge confirmed
   in crun.ai/logs, a clip review for parity, the `CRUN_API_KEY` secret, a privacy-page entry, then `CRUN_ENABLED`,
   a parity record and a route set `active`, each with the owner's approval.
+- **Status (2026-10-24), Crun live as a second route:** the owner skipped the privacy entry, set `CRUN_API_KEY`
+  and `CRUN_ENABLED`, and confirmed the 15-credit charge. Migration 0379 sets the Crun route of Veo 3.1 Lite
+  (the only one with a parity record, 0377) `active` as priority 2 behind kie, so a provable kie refusal
+  (401, 402, 403, 429) hops to it. No job goes to Crun first: that is `model_route_reorder`, an owner step, and
+  the customer price does not change. Veo Fast, Veo Quality and Seedance Fast stay `standby` until each has a probe.
 - **Status (2026-10-24), phase 3a, the circuit breaker:** migration 0376. After five failures
   in a row a route's breaker opens and blocks a hop for ten minutes; after that it is a probe, where a
   success closes it and a failure re-opens it. A failure is a provable refusal at submit (counted when
