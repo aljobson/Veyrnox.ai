@@ -235,3 +235,13 @@ the film is rendered again; the other eight are updated. Also not done: the
 finer credit unit that would let cheap images and audio go lower (plan only), and
 Demucs (6 credits, floor 5) and the composite rows (Auto Short, Video Agent).
 Rollback: a forward migration setting the old credits back; the trigger stays.
+
+## Amendment 2026-10-24: plan credits at the 50% worst-case limit (0381)
+
+A Lite monthly plan ($10) is added and every monthly plan's credits are set to the most that keeps 50%
+in the worst case on both monthly and yearly billing: Lite 209, Starter 398 (was 270), Plus 1,171 (was
+1,200), Ultra 2,412 (was 3,000). The limit is credits <= (0.42 x price - 0.30) / 0.01796 monthly, and the
+same with the yearly price / 12 and a fixed fee of 0.30 / 12 for a yearly plan (planned yearly discounts
+10%, 10%, 15%, 20%). Every plan stays under the 7.5 cent best-Pack rule of 0378. No subscription is live.
+Yearly billing itself (an interval column value, monthly credit grants over a paid year, and the
+Stripe recurring interval) is a later migration.
