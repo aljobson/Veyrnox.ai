@@ -9,6 +9,11 @@
   may now proceed under this ADR's design; Finance/Legal still owes tax/consent
   wording per ADR-0018's own precedent before launch.
 - **Date**: 2026-09-28
+- **Correction, 2026-10-24**: migration 0365 flattened one-off Pack prices until
+  Starter and Plus were worse per Credit than Packs and Ultra was equal. That
+  contradicted this ADR's accepted value exchange. Migration 0378 restores the
+  100/$10, 300/$25 and 1,000/$75 flexible Pack tiers, so each recurring plan
+  is again strictly cheaper per Credit than the best one-off Pack.
 - **Deciders**: Product owner (sole) — accepted; Finance/Legal for tax/consent
   wording, per ADR-0018's own precedent
 - **Related**: [ADR-0018 — Credit Pack Top-ups before Subscriptions](0018-credit-pack-top-ups.md)
@@ -32,8 +37,9 @@ be confused with each other.
 **What ADR-0018 already decided, two weeks ago, and why this ADR doesn't re-litigate it:**
 
 - Credit Packs ship first, which they now have (100cr/$10, 300cr/$25, 1000cr/$75, live).
-  > Note, 2026-10-03: the packs on sale today are 100/$10, 270/$19, 1,200/$59
-  > and 3,000/$129. The 300 and 1,000 packs were retired.
+  > Corrected 2026-10-24: the approved live Pack set is 100/$10, 300/$25 and
+  > 1,000/$75. Packs remain the flexible, non-expiring option; subscriptions
+  > provide the lower per-Credit rate for a recurring commitment.
 - Subscriptions are "the target end state... the next slice... deferred, not rejected."
 - Two pricing floors already fixed: every Sales Channel must net ≥ $0.033/credit after fees
   (ADR-0014's margin), and **a Credit Pack must cost more per credit than every Subscription,

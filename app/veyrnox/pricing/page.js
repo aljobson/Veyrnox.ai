@@ -130,6 +130,8 @@ export default function Pricing() {
         </div>
       </section>
 
+      <CreditSubscriptionOffer />
+
       <section data-vey-perch
         id="credit-packs"
         className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-24 sm:pt-32"
@@ -162,7 +164,6 @@ export default function Pricing() {
         )}
       </section>
 
-      <CreditSubscriptionOffer />
       <section data-vey-perch className="max-w-[1300px] mx-auto px-4 sm:px-6 pt-24 sm:pt-32 pb-8">
         <div className="flex items-end justify-between flex-wrap gap-4">
           <h2 className="vx-display text-[40px] sm:text-[56px]">{t('pricing.models.title')}</h2>

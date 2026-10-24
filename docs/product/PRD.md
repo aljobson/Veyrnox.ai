@@ -225,10 +225,10 @@ only (ADR-0067).
 
 ### 3.4 Paying
 - **Credit Packs** via **Stripe Checkout**, Stripe Managed Payments as
-  Merchant of Record with Stripe-managed tax (ADR-0031): **100 for $10, 270 for $19,
-  1,200 for $59, 3,000 for $129**, plus tax (0121, ADR-0037). Purchased
-  Credits never expire. Supply-consent checkbox before purchase. Whether the
-  100-credit pack stays on sale is an open owner decision (ISSUES P11).
+  Merchant of Record with Stripe-managed tax (ADR-0031): **100 for $10, 300 for
+  $25, 1,000 for $75**, plus tax (0378, ADR-0037/0064). Purchased Credits never
+  expire. Supply-consent checkbox before purchase. Packs cost more per Credit
+  than every active monthly subscription in exchange for that flexibility.
 - Lost-webhook recovery: return URL + 5-minute backfill (ADR-0033, accepted
   2026-10-03).
 - **Refunds**: any failed generation refunds its exact debit to the source it
@@ -388,13 +388,12 @@ use are recorded as the owner's statement in the ADR, not as counsel's.
 
 ## 9. Open questions
 
-1. Keep or retire the 100-credit pack?
-2. Subscription plan changes: monthly-to-annual on the same tier is undecided
+1. Subscription plan changes: monthly-to-annual on the same tier is undecided
    (ADR-0064); any-refund-ends-the-subscription and no-coupons defaults await
    the owner's confirmation.
-3. Which CSAM hash-matching service?
-4. Does Track B (media authenticity) have a named customer (ADR-0025 §9.1)?
-5. Video agent: allow GET-only stock-footage hosts on the runner, or stay
+2. Which CSAM hash-matching service?
+3. Does Track B (media authenticity) have a named customer (ADR-0025 §9.1)?
+4. Video agent: allow GET-only stock-footage hosts on the runner, or stay
    generate-only; fix the output resolution (720p or 1080p).
 6. Record the text-to-speech provider decision in ADR-0012 (four speech models
    are live with none written down).

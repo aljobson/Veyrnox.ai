@@ -54,6 +54,7 @@
   "app/veyrnox/_components/CreditSubscriptions.js": {
     "calls": [
       "fetch('/api/credit-subscription-plans', {\n      cache: 'no-store',\n    })",
+      "fetch('/api/credit-packs', { cache: 'no-store' })",
       "gatewayFetch('/subscriptions')",
       "gatewayFetch('/subscriptions/return', {\n          method: 'POST',\n          body: JSON.stringify(info),\n        })",
       "gatewayFetch('/subscriptions/checkout', {\n        method: 'POST',\n        body: JSON.stringify({ ...base, idempotency_key: attempt.current.key }),\n      })",

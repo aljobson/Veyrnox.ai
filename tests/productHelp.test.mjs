@@ -28,6 +28,8 @@ test('help plans reject model-invented targets and actions', () => {
     assert.equal(normaliseHelpPlan({ message: 'Change it', target: 'create.duration', action: 'activate_target' }).action, 'show_target');
     assert.equal(normaliseHelpPlan({ message: 'Go', target: null, action: 'show_target' }).action, 'none');
     assert.ok(HELP_TARGET_IDS.includes('create.prompt'));
+    assert.ok(HELP_TARGET_IDS.includes('credits.subscriptions'));
+    assert.ok(HELP_TARGET_IDS.includes('pricing.subscriptions'));
     assert.ok(!HELP_ACTION_IDS.includes('generate'));
     assert.ok(!HELP_ACTION_IDS.includes('publish'));
     assert.ok(!HELP_ACTION_IDS.includes('delete'));
@@ -39,6 +41,8 @@ test('fallback guidance maps common questions to reviewed controls', () => {
     assert.equal(fallbackHelpPlan('Can you generate it for me?', '/app/create').target, 'create.generate');
     assert.equal(fallbackHelpPlan('Can you generate it for me?', '/app/create').action, 'none');
     assert.match(fallbackHelpPlan('Can it spend my Credits?', '/mcp', [{ role: 'user', content: 'What can MCP do?' }]).message, /MCP connector/);
+    assert.equal(fallbackHelpPlan('Which monthly plan is the best value?', '/app/credits').target, 'credits.subscriptions');
+    assert.equal(fallbackHelpPlan('How do subscriptions compare with Credit Packs?', '/pricing').target, 'pricing.subscriptions');
 });
 
 test('reviewed knowledge covers every main product workspace', () => {
