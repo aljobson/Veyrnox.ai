@@ -30,7 +30,7 @@ export const scenarios=[
  {area:'motion',name:'OddlingMotionPanel',props:{portrait:{name:'User character',image:'/portrait.webp'},priceLine:'Provider price',motionId:'',onMotion:noop}},
  {area:'portrait',name:'CharacterPortrait',props:{oddling}},
  {area:'sheet',name:'OddlingSheet',props:{oddling,onClose:noop,onRecreate:noop,onAnimate:noop}},
- ...['first','low'].map(reason=>({area:'paywall',name:'PaywallPrompt',props:{credits:0},states:[reason]})),
+ ...['first','low','depleted'].map(reason=>({area:'paywall',name:'PaywallOffer',props:{reason,onClose:noop,subscriptionsOpen:reason==='depleted'}})),
  ...[0,1,2,11,21].map(referred=>({area:'referral',name:'ReferralPanel',states:[{code:'user-code',referred}]})),
  {area:'duration',name:'SourceDurationCard',props:{model:{id:'latentsync',media:{video:{maxSeconds:30,required:true}}}}},
  ...[false,true].map(confirmed=>({area:'rights',name:'default',props:{confirmed,onChange:noop}})),
