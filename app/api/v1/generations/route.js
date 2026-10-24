@@ -3,6 +3,7 @@ import { falDispatchEnabled, admitFalDispatch } from '../../../../lib/falDispatc
 import { publishFalDispatchWakeup } from '../../../../lib/falDispatchWakeup.js';
 import { providerFor } from '../../../../packages/provider-sdk/registry.js';
 import { logShadowRoute } from '../../../../lib/supplierRoutesShadow.js';
+import { resolveOwnRoute, recordFirstAttempt } from '../../../../lib/supplierRoutesDispatch.js';
 import { NextResponse } from 'next/server';
 import { rpc, select, envConfig, SupabaseError } from '../../../../packages/db/supabase-client.js';
 import { capabilityFor, declaredInputs, checkSource } from '../../../../lib/modelCapabilities.js';
@@ -245,6 +246,8 @@ export async function POST(req) {
     if (!provider) return NextResponse.json({ error: 'provider_unsupported' }, { status: 501 });
     // ADR-0256 shadow mode: log the route chooseRoute would pick. Never awaited, never throws, off unless SUPPLIER_ROUTES_SHADOW is "true".
     void logShadowRoute(modelRow, cfg);
+    // ADR-0256 phase 1: the offer's own route when SUPPLIER_ROUTES_ENABLED is "true", else null. Never changes where the job goes.
+    const ownRoute = await resolveOwnRoute(modelRow, cfg);
     // No capability record = no known contract for this endpoint: refuse rather
     // than forward inputs the provider may bill differently for.
     const record = capabilityFor(modelRow.provider_endpoint);
@@ -507,6 +510,7 @@ export async function POST(req) {
     // 5. Move state to SUBMITTED and record provider job id.
     const recorded = await recordSubmittedJob({ jobId, provider: modelRow.provider, providerJobId: submitResult.providerJobId }, cfg);
     if (guardedSubmit && !recorded) return unknownSubmitResponse(jobId, cfg);
+    if (recorded) await recordFirstAttempt({ jobId, route: ownRoute, providerJobId: submitResult.providerJobId }, cfg);
 
     return NextResponse.json({
         job_id: jobId,
