@@ -61,8 +61,8 @@ test('the adapter is not registered and no catalog migration points a row at it'
   assert.doesNotMatch(readFileSync(new URL('../packages/provider-sdk/registry.js', import.meta.url), 'utf8'), /crun/i);
 });
 
-test('0368 records Crun only as standby, unverified, with no parity record', () => {
-  const sql = readFileSync(new URL('../packages/db/schema/supabase/0368_crun_standby_routes.sql', import.meta.url), 'utf8');
+test('0369 records Crun only as standby, unverified, with no parity record', () => {
+  const sql = readFileSync(new URL('../packages/db/schema/supabase/0369_crun_standby_routes.sql', import.meta.url), 'utf8');
   assert.match(sql, /2, 'standby', 'unverified'/);
   assert.doesNotMatch(sql, /'active'|parity_record\s*=|UPDATE public\.model_catalog/);
   for (const model of ['google/veo3-1-lite-t2v', 'google/veo3-1-fast-t2v', 'google/veo3-1-t2v', 'bytedance/seedance2-0-fast-t2v']) {

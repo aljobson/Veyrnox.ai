@@ -1,4 +1,4 @@
--- 0368 — Crun as a known supplier, and four standby routes (ADR-0256, phase 5).
+-- 0369 — Crun as a known supplier, and four standby routes (ADR-0256, phase 5).
 --
 -- Adds 'crun' to the supplier list on model_routes, then records four routes
 -- as `standby`, priority 2, provenance `unverified`, with no parity record:
