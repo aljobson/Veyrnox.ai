@@ -68,6 +68,9 @@
     // attempt 1 of each accepted job in job_attempts (migration 0370). Neither changes where a job goes; both fail soft. Tables are applied in production.
     "SUPPLIER_ROUTES_SHADOW": "true",
     "SUPPLIER_ROUTES_ENABLED": "true",
+    // ADR-0256 phase 5: Crun, the second supplier. Switches on the Crun adapter key and the five-minute sweep that completes its jobs.
+    // A Crun route still serves nothing until one is `active` (a migration) and, to be first, reordered by the owner. Remove the line to turn it off.
+    "CRUN_ENABLED": "true",
     "TENANT_PROJECTS_ENABLED": "true",
     // Cloud documents do not enable device-media uploads (ADR-0056 / roadmap D1).
     "PROJECT_MEDIA_UPLOADS_ENABLED": "false",
