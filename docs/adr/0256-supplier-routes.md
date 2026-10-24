@@ -181,3 +181,12 @@ The owner took the recommended answer to each of the five questions this ADR lef
    lowers the fal row's customers' price by six credits. No other pair is merged: the Veo
    offers stay separate and gain Crun as a second route later.
 
+
+## Amendment 2026-10-24: Veo 3.1 Lite priced at its Crun floor (0380)
+
+Crun became the first route for `veo-3.1-lite-kie` on 2026-10-24 (cost $0.0670 a clip). Migration 0380
+cuts the offer from 9 to 4 credits, the smallest whole-credit price that keeps 50% at that cost
+(ceil(0.0670 / 0.01796) = 4; $0.172 at the $129/3000 pack, $0.25 at the entry pack). The kie route
+($0.15) stays second but is above the floor at 4 credits, so a failover hop onto it is refused unless
+a margin waiver is recorded (decision 3); a job Crun refuses outright refunds. The fallback price list
+in `tokens.js` and the landing film keep the old price until the next film render.
