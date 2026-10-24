@@ -184,9 +184,12 @@ The owner took the recommended answer to each of the five questions this ADR lef
 
 ## Amendment 2026-10-24: Veo 3.1 Lite priced at its Crun floor (0380)
 
-Crun became the first route for `veo-3.1-lite-kie` on 2026-10-24 (cost $0.0670 a clip). Migration 0380
-cuts the offer from 9 to 4 credits, the smallest whole-credit price that keeps 50% at that cost
-(ceil(0.0670 / 0.01796) = 4; $0.172 at the $129/3000 pack, $0.25 at the entry pack). The kie route
-($0.15) stays second but is above the floor at 4 credits, so a failover hop onto it is refused unless
-a margin waiver is recorded (decision 3); a job Crun refuses outright refunds. The fallback price list
-in `tokens.js` and the landing film keep the old price until the next film render.
+Crun became the first route for `veo-3.1-lite-kie` on 2026-10-24. A clip is 15 Crun credits; at the
+owner's $50 top-up (10,300 credits, 206 per $1) that is $0.0728, which both the route and the catalog row
+now record. Migration 0380 cuts the offer from 9 to 5 credits, the smallest whole-credit price that keeps
+50% at that cost (ceil(0.0728 / 0.01796) = 5; $0.215 at the $129/3000 pack, $0.31 at the entry pack).
+Four credits would cover only $0.0718. The kie route ($0.15) stays second but is above the floor, so a
+failover hop onto it is refused unless a margin waiver is recorded (decision 3); a job Crun refuses
+outright refunds. The fallback price list in `tokens.js` and the landing film keep the old price until
+the next film render. The cost moves with the top-up tier: at the $500 tier (212 per $1) a clip costs
+$0.0708 and 4 credits would hold.

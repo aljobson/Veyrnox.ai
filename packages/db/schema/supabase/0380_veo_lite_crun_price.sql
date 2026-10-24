@@ -1,21 +1,26 @@
--- 0380 — Price Veo 3.1 Lite at its Crun floor: 9 -> 4 credits (ADR-0037 amendment 2, ADR-0256).
+-- 0380 — Price Veo 3.1 Lite at its Crun floor: 9 -> 5 credits (ADR-0037 amendment 2, ADR-0256).
 --
--- The offer's first route is now Crun at $0.0670 a clip (reorder 2026-10-24, parity recorded in 0377,
--- Crun second-route activation in 0379). The catalog row carries that route's cost, so the whole-credit
--- floor moves with it: ceil(0.0670 / 0.01796) = 4 credits, i.e. $0.172 at the $129/3000 pack ($0.043)
--- and $0.25 at the entry pack. The standing per-row rule (0366) checks cost <= credits * 0.01796:
--- 0.0670 <= 0.0718.
+-- The offer's first route is now Crun (reorder 2026-10-24, parity recorded in 0377, Crun second-route
+-- activation in 0379). A Veo Lite clip is 15 Crun credits, confirmed in Crun's log for three clips. The
+-- owner's top-up was $50 for 10,300 credits (206 per $1), so a clip costs 15 / 206 = $0.0728 (the earlier
+-- $0.0670 assumed the $1,250 prepay tier at 224 per $1, which the owner does not buy). The route and the
+-- catalog row both carry $0.0728.
 --
--- The kie route ($0.15) stays the second route. At 4 credits it is above the floor, so the database
--- refuses a failover hop onto it unless a margin waiver is recorded (ADR-0256 decision 3). Without
--- that, a job Crun refuses outright refunds instead of hopping to kie.
+-- The whole-credit floor at that cost is ceil(0.0728 / 0.01796) = 5 credits: $0.215 at the $129/3000
+-- pack ($0.043) and $0.31 at the entry pack. The standing per-row rule (0366) checks
+-- cost <= credits * 0.01796: 0.0728 <= 0.0898. At 4 credits it would fail (0.0718).
 --
--- The UPDATE names the row's exact identity (provider, endpoint, recorded cost, unit) and accepts the
--- old or the new price, so a replay is a no-op and a row that was reordered back to kie stops the
--- migration instead of repricing a different offer. Existing jobs keep the credits they were debited.
+-- The kie route ($0.15) stays second. At 5 credits it is above the floor, so the database refuses a
+-- failover hop onto it unless a margin waiver is recorded (ADR-0256 decision 3); a job Crun refuses
+-- outright refunds.
 --
--- Idempotent: an absolute assignment guarded by the row identity.
--- Rollback: a forward migration setting credits_5s back to 9 (or to the kie floor if kie is first again).
+-- Each UPDATE names the row's exact identity and accepts the old or the new value, so a replay is a no-op
+-- and a row that was reordered back to kie stops the migration instead of repricing a different offer.
+-- Existing jobs keep the credits they were debited.
+--
+-- Idempotent: absolute assignments guarded by the row identity.
+-- Rollback: a forward migration setting credits_5s back to 9 and the costs back (or to the kie floor if
+-- kie is first again).
 
 BEGIN;
 
@@ -41,13 +46,25 @@ END $$;
 DO $$
 DECLARE affected BIGINT;
 BEGIN
-    UPDATE public.model_catalog SET credits_5s = 4, updated_at = now()
-     WHERE id = 'veo-3.1-lite-kie' AND provider = 'crun' AND provider_endpoint = 'crun:google/veo3-1-lite-t2v'
-       AND provider_cost_per_unit = 0.0670 AND cost_unit = 'per_generation' AND billing_seconds IS NULL
-       AND active AND credits_5s IN (9, 4);
+    UPDATE public.model_routes SET cost_per_unit = 0.0728, updated_at = now()
+     WHERE model_id = 'veo-3.1-lite-kie' AND supplier = 'crun' AND endpoint = 'crun:google/veo3-1-lite-t2v'
+       AND cost_unit = 'per_generation' AND cost_per_unit IN (0.0670, 0.0728);
     GET DIAGNOSTICS affected = ROW_COUNT;
     IF affected <> 1 THEN
-        RAISE EXCEPTION 'Expected one veo-3.1-lite-kie row on Crun at $0.067, updated %', affected;
+        RAISE EXCEPTION 'Expected one Crun route of veo-3.1-lite-kie, updated %', affected;
+    END IF;
+END $$;
+
+DO $$
+DECLARE affected BIGINT;
+BEGIN
+    UPDATE public.model_catalog SET credits_5s = 5, provider_cost_per_unit = 0.0728, updated_at = now()
+     WHERE id = 'veo-3.1-lite-kie' AND provider = 'crun' AND provider_endpoint = 'crun:google/veo3-1-lite-t2v'
+       AND provider_cost_per_unit IN (0.0670, 0.0728) AND cost_unit = 'per_generation' AND billing_seconds IS NULL
+       AND active AND credits_5s IN (9, 5);
+    GET DIAGNOSTICS affected = ROW_COUNT;
+    IF affected <> 1 THEN
+        RAISE EXCEPTION 'Expected one veo-3.1-lite-kie row on Crun, updated %', affected;
     END IF;
 END $$;
 
