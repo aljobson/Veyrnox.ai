@@ -149,12 +149,14 @@ test('every media-backed preset has a distinct preview and poster', () => {
     }
 });
 
-test('generated effect concepts use a complete local colour treatment instead of a missing media preview', () => {
-    const concepts = PRESETS.filter((preset) => preset.id.startsWith('effect-'));
-    assert.equal(concepts.length, 1036);
-    for (const preset of concepts) {
-        assert.equal(preset.clipKey, undefined, `${preset.id} should not claim an absent media preview`);
-        assert.match(preset.bg, /^linear-gradient\(/, `${preset.id} has no colour treatment`);
+test('every public template has a real local video and poster', () => {
+    assert.equal(PRESETS.length, 142);
+    for (const preset of PRESETS) {
+        const clip = SHOWCASE_CLIPS[preset.clipKey];
+        assert.ok(clip?.video, `${preset.id} has no video`);
+        assert.ok(clip?.poster, `${preset.id} has no poster`);
+        assert.ok(existsSync(`${PUBLIC}${clip.video}`), `${preset.id} video is missing`);
+        assert.ok(existsSync(`${PUBLIC}${clip.poster}`), `${preset.id} poster is missing`);
     }
 });
 

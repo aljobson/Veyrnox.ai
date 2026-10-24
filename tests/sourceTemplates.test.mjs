@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { SOURCE_TEMPLATES } from '../app/veyrnox/_lib/sourceTemplates.js';
-import { ALL_TEMPLATES, LEGACY_PRESETS, PRESETS, WALL_PRESETS, templateById } from '../app/veyrnox/_lib/templates.js';
+import { ALL_TEMPLATES, PRESETS, WALL_PRESETS, templateById } from '../app/veyrnox/_lib/templates.js';
 import { MODELS, modelIdForName, presetCredits, presetHref } from '../app/veyrnox/_lib/tokens.js';
 import { SHOWCASE_CLIPS } from '../app/veyrnox/_lib/showcase.js';
 import { isUnknownStaticPage } from '../lib/unknownStaticPage.js';
@@ -41,7 +41,7 @@ test('every imported clip has its own matching recipe and a supported video mode
 });
 
 test('gallery and homepage templates have reachable recipe URLs', () => {
-  assert.equal(PRESETS.length, 1178);
+  assert.equal(PRESETS.length, 142);
   assert.equal(WALL_PRESETS.length, 24);
   const visible = [...PRESETS, ...WALL_PRESETS];
   assert.equal(new Set(visible.map((p) => p.clipKey).filter(Boolean)).size, 142);
@@ -62,14 +62,11 @@ test('removed Veyrnox Originals are no longer addressable', () => {
   assert.ok(ALL_TEMPLATES.every((preset) => preset.promptOrigin !== 'veyrnox-original'));
 });
 
-test('old template bookmarks retain their original recipe without unrelated video', () => {
+test('templates without videos are no longer addressable', () => {
   assert.equal(new Set(ALL_TEMPLATES.map((p) => p.id)).size, ALL_TEMPLATES.length);
-  assert.equal(LEGACY_PRESETS.length, 22);
-  assert.match(templateById('cctv-night').prompt, /security camera/);
-  for (const preset of LEGACY_PRESETS) {
-    assert.equal(templateById(preset.id), preset);
-    assert.equal(preset.clipKey, undefined);
-    assert.equal(isUnknownStaticPage(`/presets/${preset.id}`), false);
+  for (const id of ['cctv-night', 'warm-portrait', 'effect-pet-press-conference', 'effect-voxel-world']) {
+    assert.equal(templateById(id), null, id);
+    assert.equal(isUnknownStaticPage(`/presets/${id}`), true, id);
   }
 });
 

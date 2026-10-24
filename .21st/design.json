@@ -123,6 +123,11 @@
       "reason": "The gallery remains useful for considered browsing while supporting the one-tap template start shown in the reference, without bypassing Veyrnox's visible price and Generate confirmation."
     },
     {
+      "id": "template-collage-roller",
+      "choice": "Place a compact two-row horizontal collage roller above every existing template grid, using the same video-backed cards and live prices in both views.",
+      "reason": "People can scan many moving previews quickly without losing the fuller browsing layout, while keeping empty or poster-only concepts out of the public catalogue."
+    },
+    {
       "id": "template-launch-summary",
       "choice": "Put a compact model, capability, required-input, format and live-price summary above each template's full prompt, followed by one full-width Studio action.",
       "reason": "The reference makes model choice understandable at a glance; applying that hierarchy to template details lets people decide before reading a long prompt while preserving price-before-generation."
