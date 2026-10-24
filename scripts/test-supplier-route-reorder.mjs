@@ -13,6 +13,9 @@ const MODEL = 'nano-banana-kie';
 
 async function scenario(name, run) {
     await c.query('BEGIN');
+    // 0388 puts a real standby Crun route on this scratch offer at priority 2: clear the non-primary rows so each scenario
+    // builds its own, inside the transaction that is rolled back.
+    await c.query(`DELETE FROM public.model_routes WHERE model_id = 'nano-banana-kie' AND priority > 1`);
     try {
         const { id: own } = await one(`SELECT id FROM public.model_routes WHERE model_id = $1 AND priority = 1`, [MODEL]);
         const add = async (priority, { supplier = 'grsai', cost = 0.015, state = 'active', provenance = 'licensed_reseller', parity = 'probe', breaker = null } = {}) =>
