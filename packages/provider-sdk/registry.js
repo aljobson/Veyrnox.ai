@@ -3,6 +3,7 @@ import { submitJob } from '../adapters/fal.js';
 import * as grsai from '../adapters/grsai.js';
 import * as byteplus from '../adapters/byteplus.js';
 import * as kie from '../adapters/kie.js';
+import * as crun from '../adapters/crun.js';
 import * as openrouter from '../adapters/openrouter.js';
 import { checkInputs, shapePayload } from '../../lib/modelCapabilities.js';
 import { envConfig } from '../db/supabase-client.js';
@@ -46,6 +47,18 @@ const PROVIDERS = {
         key: () => r2IsConfigured(r2EnvConfig()) ? process.env.BYTEPLUS_API_KEY : null,
         check: (_record, modelRow, inputs) => byteplus.buildRequest(modelRow.provider_endpoint, inputs),
         submit: (job, _record, apiKey) => byteplus.submitTask(job, { apiKey }),
+    },
+    // Crun (ADR-0256 phase 5): polling only (no signed callback), so a job is accepted only when R2 is
+    // configured for the sweep to copy the 14-day output into. Off unless CRUN_ENABLED is exactly "true"
+    // (absent is off): with the flag off key() is null, so a hop never builds a Crun request and a
+    // primary Crun route answers gateway_not_configured.
+    crun: {
+        key: () => (process.env.CRUN_ENABLED === 'true' && r2IsConfigured(r2EnvConfig()) ? process.env.CRUN_API_KEY : null),
+        check: (_record, modelRow, inputs) => {
+            const target = crun.parseEndpoint(modelRow.provider_endpoint);
+            return target ? crun.buildRequest(target, inputs) : { ok: false, error: 'provider_unsupported' };
+        },
+        submit: (job, _record, apiKey) => crun.submitTask(job, { apiKey }),
     },
     openrouter: {
         key: () => process.env.OPENROUTER_API_KEY,

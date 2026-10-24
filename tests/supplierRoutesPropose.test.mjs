@@ -42,9 +42,16 @@ test('cost is per generation unit times the units the job is priced at', () => {
   assert.equal(generationCost({ cost_per_unit: 0.5 }, { credits: 18, credits_5s: 9 }), 1);
 });
 
-test('the script treats registered suppliers with a capability record as dispatchable and Crun as not', async () => {
+test('the script treats a registered supplier with a record as dispatchable, and Crun only when its flag is on in this shell', async () => {
   const { canDispatch } = await import('../scripts/propose-route-order.mjs');
-  assert.equal(canDispatch({ supplier: 'kie', endpoint: 'market:google/nano-banana' }), true);
-  assert.equal(canDispatch({ supplier: 'crun', endpoint: 'crun:google/veo3-1-lite-t2v' }), false);
-  assert.equal(canDispatch({ supplier: 'kie', endpoint: 'market:not-a-model' }), false);
+  const crun = { supplier: 'crun', endpoint: 'crun:google/veo3-1-lite-t2v' };
+  const keep = process.env.CRUN_ENABLED;
+  try {
+    assert.equal(canDispatch({ supplier: 'kie', endpoint: 'market:google/nano-banana' }), true);
+    assert.equal(canDispatch({ supplier: 'kie', endpoint: 'market:not-a-model' }), false);
+    delete process.env.CRUN_ENABLED;
+    assert.equal(canDispatch(crun), false);
+    process.env.CRUN_ENABLED = 'true';
+    assert.equal(canDispatch(crun), true);
+  } finally { if (keep === undefined) delete process.env.CRUN_ENABLED; else process.env.CRUN_ENABLED = keep; }
 });
