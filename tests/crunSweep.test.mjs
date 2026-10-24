@@ -94,15 +94,37 @@ test('every Crun endpoint has a capability record and the gateway check accepts 
   assert.equal(providerFor('crun').check({}, { provider_endpoint: 'crun:google/unknown' }, { prompt: 'x' }).error, 'provider_unsupported');
 });
 
-test('the cron runs the sweep only when CRUN_ENABLED is "true", and R2 copies only from the observed host', () => {
+test('the cron runs the sweep only when CRUN_ENABLED is "true", and R2 copies only from the observed hosts', () => {
   const worker = readFileSync(new URL('../worker.js', import.meta.url), 'utf8');
   assert.match(worker, /env\.CRUN_ENABLED === 'true' \? \[sweepCrun\(/);
   assert.doesNotMatch(worker, /observeRecovery\('crun'/);
   const r2 = readFileSync(new URL('../packages/adapters/r2Copy.js', import.meta.url), 'utf8');
-  assert.match(r2, /crun: \{ hosts: \['tempfile\.mediaoss\.bar'\], suffixes: \[\] \}/);
+  assert.match(r2, /crun: \{ hosts: \['tempfile\.mediaoss\.bar', 'static\.mediaoss\.bar'\], suffixes: \[\] \}/);
 });
 
 test('an ambiguous Crun submit is held, never refunded: crun is in the guarded list', () => {
   const route = readFileSync(new URL('../app/api/v1/generations/route.js', import.meta.url), 'utf8');
   assert.match(route, /\['fal', 'kie', 'grsai', 'openrouter', 'crun'\]\.includes\(servedBy\)/);
+});
+
+test('the R2 copy accepts only Crun\'s two exact output hosts and refuses lookalikes, before any fetch', async () => {
+  const { copyUrlToR2 } = await import('../packages/adapters/r2Copy.js');
+  const real = globalThis.fetch;
+  let fetched = [];
+  globalThis.fetch = async (url) => { fetched.push(String(url)); return new Response('x', { status: 403 }); };
+  const quiet = console.error; console.error = () => {};
+  try {
+    for (const host of ['tempfile.mediaoss.bar', 'static.mediaoss.bar']) {
+      fetched = [];
+      const r = await copyUrlToR2(`https://${host}/v/a.mp4`, 'k', {}, { provider: 'crun' });
+      assert.notEqual(r.error, 'source host not allowed', host);
+      assert.equal(fetched.length, 1, `${host} is fetched`);
+    }
+    for (const host of ['mediaoss.bar', 'evil.mediaoss.bar', 'static.mediaoss.bar.evil.test', 'tempfile.mediaoss.bar.example']) {
+      fetched = [];
+      const r = await copyUrlToR2(`https://${host}/v/a.mp4`, 'k', {}, { provider: 'crun' });
+      assert.equal(r.error, 'source host not allowed', host);
+      assert.equal(fetched.length, 0, `${host} is never fetched`);
+    }
+  } finally { globalThis.fetch = real; console.error = quiet; }
 });
