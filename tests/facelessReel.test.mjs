@@ -53,10 +53,10 @@ test('the planner refuses thin briefs, unsupported lengths and a long sound pass
 
 test('the dedicated page exposes the non-spending provider boundary', () => {
   const component = readFileSync(new URL('../app/veyrnox/_components/FacelessReelStudio.js', import.meta.url), 'utf8');
-  assert.match(component, /Build the story\. Skip the presenter\./);
-  assert.match(component, /Plan generated sound/);
-  assert.match(component, /one-credit video-to-audio tool/);
+  assert.match(component, /app\.facelessReel\.title/);
+  assert.match(component, /app\.facelessReel\.soundTitle/);
+  assert.match(component, /app\.facelessReel\.soundHelp/);
   assert.match(component, /writeStudioDraft\(window\.sessionStorage/);
   assert.match(component, /model=wan-2\.5-kie&recipe=faceless-reel/);
-  assert.match(component, /Narration, captions, music and publishing stay separate/);
+  assert.match(component, /app\.facelessReel\.transfer\.separate/);
 });

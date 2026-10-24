@@ -1,8 +1,10 @@
+import facelessMessages from '../../../lib/i18n/messages/app/en/faceless-reel.mjs';
+
 const VIDEO_SOUND_KEY = 'veyrnox.video-sound-continuation.v1';
 const MAX_AGE_MS = 10 * 60 * 1000;
 const JOB_ID = /^[A-Za-z0-9_-]{8,128}$/;
 
-export const DEFAULT_FACELESS_REEL_SOUND_PROMPT = 'Natural sound design precisely synchronized to the visible motion and setting. Build a clean, restrained ambience with believable object and environmental sounds. No speech, narration, music, branded sonic logo or exaggerated impact.';
+export const DEFAULT_FACELESS_REEL_SOUND_PROMPT = facelessMessages['app.facelessReel.soundPrompt'];
 
 export function normalizeVideoSoundContinuation(value, now = Date.now()) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
@@ -12,7 +14,7 @@ export function normalizeVideoSoundContinuation(value, now = Date.now()) {
   const at = Number(value.at);
   if (!jobId || !assetUrl || !Number.isFinite(duration) || duration < 1 || duration > 8) return null;
   if (!Number.isFinite(at) || now - at < 0 || now - at > MAX_AGE_MS) return null;
-  return { jobId, assetUrl, duration, prompt: DEFAULT_FACELESS_REEL_SOUND_PROMPT, label: 'Faceless reel result' };
+  return { jobId, assetUrl, duration, prompt: DEFAULT_FACELESS_REEL_SOUND_PROMPT, label: facelessMessages['app.facelessReel.resultLabel'] };
 }
 
 export function writeVideoSoundContinuation(storage, value, now = Date.now()) {

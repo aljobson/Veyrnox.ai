@@ -465,7 +465,7 @@ export default function CreateStudio() {
       duration: Number(job?.duration_seconds),
     });
     if (!saved) {
-      setContinuationError('The sound handoff could not be prepared. Download the reel and open the video-to-audio tool instead.');
+      setContinuationError(t('app.create.soundHandoffError'));
       return;
     }
     router.push('/app/create?model=mmaudio-v2-video&continue=faceless-sound');
@@ -545,11 +545,11 @@ export default function CreateStudio() {
 
           {soundEligible && (
             <section className="mt-3 rounded-2xl border border-vx-accent/35 bg-vx-accent/[0.06] p-4 sm:flex sm:items-center sm:justify-between sm:gap-5">
-              <div><p className="font-vx-mono text-[9px] font-bold tracking-[0.14em] text-vx-accent">OPTIONAL FINISHING PASS</p><p className="mt-1 text-sm font-extrabold text-vx-fg">Add synchronized environmental sound</p><p className="mt-1 text-xs leading-5 text-vx-fg-muted">The completed reel becomes the owned video source. The next screen requires fresh consent and shows the live one-credit quote.</p></div>
-              <button type="button" onClick={continueWithGeneratedSound} className="mt-3 min-h-11 shrink-0 rounded-full bg-vx-accent px-5 py-2.5 text-sm font-extrabold text-vx-accent-ink sm:mt-0">Add generated sound</button>
+              <div><p className="font-vx-mono text-[9px] font-bold tracking-[0.14em] text-vx-accent">{t('app.create.soundPassEyebrow')}</p><p className="mt-1 text-sm font-extrabold text-vx-fg">{t('app.create.soundPassTitle')}</p><p className="mt-1 text-xs leading-5 text-vx-fg-muted">{t('app.create.soundPassHelp')}</p></div>
+              <button type="button" onClick={continueWithGeneratedSound} className="mt-3 min-h-11 shrink-0 rounded-full bg-vx-accent px-5 py-2.5 text-sm font-extrabold text-vx-accent-ink sm:mt-0">{t('app.create.soundPassAction')}</button>
             </section>
           )}
-          {soundRequested && job?.state === 'succeeded' && !soundEligible && <p className="mt-3 text-xs leading-5 text-vx-fg-muted">Generated sound accepts video up to 8 seconds. Create a 5-second reel or finish the longer download separately.</p>}
+          {soundRequested && job?.state === 'succeeded' && !soundEligible && <p className="mt-3 text-xs leading-5 text-vx-fg-muted">{t('app.create.soundPassDuration')}</p>}
           {continuationError && <p role="alert" className="mt-3 text-xs text-vx-danger">{continuationError}</p>}
 
           <textarea
