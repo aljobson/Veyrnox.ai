@@ -137,8 +137,12 @@ exclude waiting for owner decisions and paid probes.
   (dry run by default; `--apply --note` calls the RPC) propose the cheapest order: dispatchable
   routes first by cost, routes the Worker cannot dispatch after them, an `unverified` route last,
   nothing proposed for an offer with fewer than two proven routes. Today no offer has two active
-  routes, so it proposes nothing. Not yet done: price observations per supplier (kie rate card,
-  OpenRouter models list) and a scheduled weekly run; today the recorded cost is the input.
+  routes, so it proposes nothing. Phase 4c: `lib/openrouterPriceCheck.js` and
+  `scripts/check-openrouter-route-prices.mjs` compare OpenRouter's published video price (a public,
+  keyless list) with the recorded cost of the one routed OpenRouter row, Seedance 2.0 Fast (108,000
+  tokens at $4.20 per million = $0.4536, within 1% today). Exit 1 on drift or a missing price.
+  Not yet done: kie (its rate card is only in the rendered page, not in a machine-readable list, so
+  a scrape would be brittle; it is checked by hand against kie.ai/pricing) and a scheduled run.
 - **Done when:** the report runs for all suppliers and a reorder is applied once
   end to end on staging.
 
