@@ -304,6 +304,9 @@
         "PROJECT_MEDIA_UPLOADS_ENABLED": "true",
         "FAL_DISPATCH_SCHEMA_ENABLED": "true",
         "RECOVERY_HEALTH_ENABLED": "true",
+        // ADR-0256 phase 0: log the supplier route chooseRoute would pick next to the real dispatch. Log only; staging only.
+        // Needs migration 0367 applied on the staging database to find anything; without it the log says so and nothing else happens.
+        "SUPPLIER_ROUTES_SHADOW": "true",
         // Production controls, named here because vars are not inherited (audit 2026-10-09, S-02;
         // tests/stagingControlVars.test.mjs keeps the two blocks aligned). The six limits need
         // migrations 0110 to 0125, which staging has. The second-factor gate locks out an admin
