@@ -107,8 +107,8 @@ try {
     const crun = (await one(`SELECT id, priority, state FROM public.model_routes WHERE model_id = 'veo-3.1-lite-kie' AND supplier = 'crun'`));
     assert.deepEqual([crun.priority, crun.state, kie.priority, kie.state], [1, 'active', 2, 'active'], 'Crun first, kie second, both active');
     assert.equal((await one(`SELECT credits_5s FROM public.model_catalog WHERE id = 'veo-3.1-lite-kie'`)).credits_5s, 5);
-    const other = await one(`SELECT count(*)::int AS n FROM public.model_routes WHERE supplier = 'crun' AND state = 'active'`);
-    assert.equal(other.n, 1, 'only the proven route is active');
+    const active = (await c.query(`SELECT endpoint FROM public.model_routes WHERE supplier = 'crun' AND state = 'active' ORDER BY endpoint`)).rows.map((r) => r.endpoint);
+    assert.deepEqual(active, ['crun:google/veo3-1-fast-t2v', 'crun:google/veo3-1-lite-t2v'], 'only the proven routes are active (Veo Lite 0379, Veo Fast 0386)');
     // A job debited at the new 5 credits cannot hop onto kie ($0.15 is above 5 x 0.01796) without a waiver,
     // so a job Crun refuses outright refunds instead of selling below the floor.
     const fresh = (await one(`INSERT INTO public.jobs (user_id, idempotency_key, model_id, credits, inputs, state) VALUES ($1, 'crun-hop-test-0001', 'veo-3.1-lite-kie', 5, '{}', 'DEBITED') RETURNING id`, [userId])).id;
