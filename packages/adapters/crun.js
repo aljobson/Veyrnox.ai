@@ -10,7 +10,7 @@
  *   fetchTask(taskId, cfg) GET  /api/v1/client/job/TaskInfo
  *
  * Request shapes are copied from docs.crun.ai (read 2026-10-24) for the
- * text-to-video models only. The TaskInfo query parameter name (`task_id`) and
+ * text-to-video models, and (2026-10-25) for two text-to-image models. The TaskInfo query parameter name (`task_id`) and
  * any status word beyond running / success / failed are unconfirmed until one
  * live probe; an unknown status is treated as still running, never as success.
  * Crun documents no signed callback, so the route is poll-only: callback_url
@@ -35,13 +35,27 @@ const MODELS = {
     // asks for synchronized audio by default, so the request always sends it. Veo makes its own audio.
     'bytedance/seedance2-0-fast-t2v': { seconds: new Set([5]), resolutions: new Set(['720p']), aspects: new Set(['16:9', '9:16', '1:1']), audio: true },
 };
+// Text-to-image (docs.crun.ai/models/google/nano-banana.json and /seedream/seedream-4.0.json, read 2026-10-25).
+// One image per request, no reference images: the offers they back take a prompt and an aspect ratio only.
+// `fixed` is sent as-is. Seedream's resolution is pinned to 2K (the fal row it would back renders 2048 x 2048)
+// and its aspect set is the square only, because that row has no aspect input.
+const IMAGE_MODELS = {
+    'google/nano-banana': { kind: 'image', aspects: new Set(['1:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9']), fixed: { output_format: 'png' } },
+    'bytedance/seedream-4': { kind: 'image', aspects: new Set(['1:1']), fixed: { resolution: '2K', num_outputs: 1 } },
+};
 const ENDPOINT_RE = /^crun:([a-z0-9][a-z0-9./_-]{1,80})$/i;
 const TASK_ID_RE = /^[A-Za-z0-9._-]{1,128}$/;
 
 /** @returns {{model:string}|null} */
 export function parseEndpoint(endpoint) {
     const m = ENDPOINT_RE.exec(String(endpoint || ''));
-    return m && !m[1].includes('..') && MODELS[m[1]] ? { model: m[1] } : null;
+    return m && !m[1].includes('..') && (MODELS[m[1]] || IMAGE_MODELS[m[1]]) ? { model: m[1] } : null;
+}
+
+/** 'video' or 'image' for a Crun endpoint this adapter owns, else null. The sweep picks the file type from it. */
+export function endpointKind(endpoint) {
+    const target = parseEndpoint(endpoint);
+    return target ? (IMAGE_MODELS[target.model] ? 'image' : 'video') : null;
 }
 
 /**
@@ -50,6 +64,8 @@ export function parseEndpoint(endpoint) {
  * @returns {{ok:true, body:object}|{ok:false, error:string}}
  */
 export function buildRequest(target, inputs) {
+    const image = IMAGE_MODELS[target.model];
+    if (image) return buildImageRequest(target, image, inputs);
     const spec = MODELS[target.model];
     if (!spec) return { ok: false, error: 'provider_unsupported' };
     const prompt = typeof inputs.prompt === 'string' ? inputs.prompt.trim() : '';
@@ -64,6 +80,15 @@ export function buildRequest(target, inputs) {
         ok: true,
         body: { model: target.model, input: { prompt, duration: seconds, resolution: [...spec.resolutions][0], aspect_ratio: aspect, ...(spec.audio ? { audio: true } : {}) } },
     };
+}
+
+function buildImageRequest(target, spec, inputs) {
+    const prompt = typeof inputs.prompt === 'string' ? inputs.prompt.trim() : '';
+    if (!prompt) return { ok: false, error: 'prompt_required' };
+    const aspect = inputs.aspect_ratio === undefined ? '1:1' : inputs.aspect_ratio;
+    if (!spec.aspects.has(aspect)) return { ok: false, error: 'aspect_ratio_unsupported' };
+    if (inputs.image_url || inputs.reference_urls || inputs.img_urls) return { ok: false, error: 'input_media_unsupported' };
+    return { ok: true, body: { model: target.model, input: { prompt, aspect_ratio: aspect, ...spec.fixed } } };
 }
 
 /**
