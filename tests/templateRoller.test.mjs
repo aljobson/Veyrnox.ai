@@ -6,9 +6,11 @@ import { SHOWCASE_CLIPS } from '../app/veyrnox/_lib/showcase.js';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('the public catalog contains only templates with unique local videos', () => {
+test('preview-backed templates contain unique local videos', () => {
   const videos = new Set();
-  for (const preset of PRESETS) {
+  const previewBacked = PRESETS.filter((preset) => preset.clipKey);
+  assert.equal(previewBacked.length, 142);
+  for (const preset of previewBacked) {
     const clip = SHOWCASE_CLIPS[preset.clipKey];
     assert.ok(clip?.video, preset.id);
     assert.ok(existsSync(new URL(`../public${clip.video}`, import.meta.url)), preset.id);
@@ -31,6 +33,13 @@ test('the collage roller supplements every template browsing surface', () => {
   ]) {
     assert.match(read(path), /<TemplateRoller\b/, path);
   }
+
+  const gallery = read('app/veyrnox/_components/PresetGallery.js');
+  const mobile = read('app/veyrnox/m/explore/page.js');
+  assert.match(gallery, /ordered\.filter\(\(preset\) => preset\.clipKey\)\.slice\(0, 48\)/);
+  assert.match(gallery, /<TemplateRoller presets=\{rollerPresets\}/);
+  assert.match(mobile, /list\.filter\(\(preset\) => preset\.clipKey\)\.slice\(0, 48\)/);
+  assert.match(mobile, /<TemplateRoller presets=\{rollerPresets\}/);
 });
 
 test('the roller keeps the existing full card layouts', () => {

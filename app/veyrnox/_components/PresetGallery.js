@@ -25,6 +25,9 @@ export function PresetGallery({ size = 'lg', columns = 'lg:columns-3', taste = n
   const list = cat === 'POPULAR' ? popular : templatesIn(cat);
   const matches = searchTemplates(list, query);
   const ordered = rankByTaste(matches, taste, (p) => `${p.name} ${p.category} ${p.prompt}`);
+  // The roller is for instantly playable previews. Recipes without preview
+  // media still appear in the complete searchable grid below it.
+  const rollerPresets = ordered.filter((preset) => preset.clipKey).slice(0, 48);
   const modelCount = new Set(matches.map((preset) => preset.model)).size;
   return (
     <>
@@ -61,7 +64,7 @@ export function PresetGallery({ size = 'lg', columns = 'lg:columns-3', taste = n
           models: t(modelCount === 1 ? 'presets.models.one' : 'presets.models.other', { n: modelCount }),
         })}
       </p>
-      <TemplateRoller presets={ordered} catalog={models} className="mb-10" />
+      <TemplateRoller presets={rollerPresets} catalog={models} className="mb-10" />
       <div id="preset-gallery-results" className={`columns-1 sm:columns-2 ${columns} gap-6 [&>a]:mb-10 [&>a]:break-inside-avoid`}>
         {ordered.slice(0, visibleCount).map((p) => (
           <PresetCard key={p.id} preset={p} catalog={models} size={size} />

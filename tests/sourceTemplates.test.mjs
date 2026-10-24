@@ -41,7 +41,7 @@ test('every imported clip has its own matching recipe and a supported video mode
 });
 
 test('gallery and homepage templates have reachable recipe URLs', () => {
-  assert.equal(PRESETS.length, 142);
+  assert.equal(PRESETS.length, 1178);
   assert.equal(WALL_PRESETS.length, 24);
   const visible = [...PRESETS, ...WALL_PRESETS];
   assert.equal(new Set(visible.map((p) => p.clipKey).filter(Boolean)).size, 142);
@@ -62,11 +62,15 @@ test('removed Veyrnox Originals are no longer addressable', () => {
   assert.ok(ALL_TEMPLATES.every((preset) => preset.promptOrigin !== 'veyrnox-original'));
 });
 
-test('templates without videos are no longer addressable', () => {
+test('removed legacy recipes stay unavailable while effect recipes are addressable', () => {
   assert.equal(new Set(ALL_TEMPLATES.map((p) => p.id)).size, ALL_TEMPLATES.length);
-  for (const id of ['cctv-night', 'warm-portrait', 'effect-pet-press-conference', 'effect-voxel-world']) {
+  for (const id of ['cctv-night', 'warm-portrait']) {
     assert.equal(templateById(id), null, id);
     assert.equal(isUnknownStaticPage(`/presets/${id}`), true, id);
+  }
+  for (const id of ['effect-pet-press-conference', 'effect-voxel-world']) {
+    assert.ok(templateById(id), id);
+    assert.equal(isUnknownStaticPage(`/presets/${id}`), false, id);
   }
 });
 
