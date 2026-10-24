@@ -99,21 +99,21 @@ await scenario('a hop past a supplier spend limit is refused and writes no attem
 });
 
 
-// Migration 0379: the real Crun route of Veo 3.1 Lite is active and can take a job kie refused.
+// Migrations 0379 and 0380: Veo 3.1 Lite has Crun first at 4 credits and kie as the active second route.
 await c.query('BEGIN');
 try {
     const { id: userId } = await one(`INSERT INTO public.users (id, auth_id, email) VALUES (gen_random_uuid(), gen_random_uuid()::text, 'crun-hop@example.test') RETURNING id`);
-    const kie = (await one(`SELECT id FROM public.model_routes WHERE model_id = 'veo-3.1-lite-kie' AND supplier = 'kie'`)).id;
-    const crun = (await one(`SELECT id, state FROM public.model_routes WHERE model_id = 'veo-3.1-lite-kie' AND supplier = 'crun'`));
-    assert.equal(crun.state, 'active', 'migration 0379 activated the proven Crun route');
-    const { id: jobId } = await one(`INSERT INTO public.jobs (user_id, idempotency_key, model_id, credits, inputs, state) VALUES ($1, 'crun-hop-test-0001', 'veo-3.1-lite-kie', 9, '{}', 'DEBITED') RETURNING id`, [userId]);
-    const r = (await one(`SELECT public.job_route_failover($1, $2, $3) AS r`, [jobId, kie, crun.id])).r;
-    assert.equal(r.ok, true);
-    assert.equal(r.route.supplier, 'crun');
-    assert.equal(r.route.endpoint, 'crun:google/veo3-1-lite-t2v');
+    const kie = (await one(`SELECT id, priority, state FROM public.model_routes WHERE model_id = 'veo-3.1-lite-kie' AND supplier = 'kie'`));
+    const crun = (await one(`SELECT id, priority, state FROM public.model_routes WHERE model_id = 'veo-3.1-lite-kie' AND supplier = 'crun'`));
+    assert.deepEqual([crun.priority, crun.state, kie.priority, kie.state], [1, 'active', 2, 'active'], 'Crun first, kie second, both active');
+    assert.equal((await one(`SELECT credits_5s FROM public.model_catalog WHERE id = 'veo-3.1-lite-kie'`)).credits_5s, 4);
     const other = await one(`SELECT count(*)::int AS n FROM public.model_routes WHERE supplier = 'crun' AND state = 'active'`);
     assert.equal(other.n, 1, 'only the proven route is active');
-    console.log('ok - the proven Crun Veo Lite route takes a job kie refused');
+    // A job debited at the new 4 credits cannot hop onto kie ($0.15 is above 4 x 0.01796) without a waiver,
+    // so a job Crun refuses outright refunds instead of selling below the floor.
+    const fresh = (await one(`INSERT INTO public.jobs (user_id, idempotency_key, model_id, credits, inputs, state) VALUES ($1, 'crun-hop-test-0001', 'veo-3.1-lite-kie', 4, '{}', 'DEBITED') RETURNING id`, [userId])).id;
+    assert.equal((await one(`SELECT public.job_route_failover($1, $2, $3) AS r`, [fresh, crun.id, kie.id])).r.code, 'route_below_margin_floor');
+    console.log('ok - Crun is first for Veo Lite at 4 credits; a hop onto kie needs a margin waiver');
 } finally {
     await c.query('ROLLBACK');
 }
