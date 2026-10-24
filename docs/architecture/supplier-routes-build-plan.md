@@ -56,8 +56,11 @@ exclude waiting for owner decisions and paid probes.
   dispatch matches `chooseRoute`, and nothing in production changed.
 - **Status (2026-10-23):** migration 0367 (both tables, 36 backfilled routes,
   service-role only), `lib/supplierRoutes.js` (`chooseRoute`, `routeFloor`,
-  `shadowMatches`) and `tests/supplierRoutes.test.mjs` are written. Not yet
-  done: the shadow log inside the generation route, and the owner review of the
+  `shadowMatches`) and `tests/supplierRoutes.test.mjs` are written, and
+  `lib/supplierRoutesShadow.js` logs the route `chooseRoute` would pick next to
+  the real dispatch when `SUPPLIER_ROUTES_SHADOW` is `"true"` (off by default,
+  never awaited, never throws). Not yet done: applying 0367 and turning the
+  shadow flag on in staging to read the logs, and the owner review of the
   placeholder provenance values (fal, openrouter, byteplus `official`; kie,
   grsai `licensed_reseller`).
 
