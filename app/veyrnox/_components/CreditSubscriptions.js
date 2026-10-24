@@ -26,6 +26,7 @@ const usd = new Intl.NumberFormat('en-US', {
   trailingZeroDisplay: 'stripIfInteger',
 });
 const names = {
+  'lite-monthly': 'Lite',
   'starter-monthly': 'Starter',
   'starter-weekly': 'Starter',
   'plus-monthly': 'Plus',

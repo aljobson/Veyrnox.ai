@@ -7,6 +7,8 @@ import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import pg from 'pg';
 
+// Plan credits set by 0381 (Starter and Plus change with the yearly limits, ADR-0037 amendment 2).
+const S = 398, P = 1171;
 const url = process.env.DATABASE_URL;
 if (!url) throw new Error('DATABASE_URL is required');
 const c = new pg.Client({ connectionString: url });
@@ -67,16 +69,17 @@ try {
     // ── Plans: the three owner-approved monthly tiers, cheapest first. ──
     assert.deepEqual((await rpc('public.list_credit_subscription_plans()')).map((p) => [p.id, p.price_usd_cents, p.credits]),
         [
-            ['starter-monthly', 1900, 270],
-            ['plus-monthly', 5900, 1200],
-            ['ultra-monthly', 12900, 3000],
+            ['lite-monthly', 1000, 209],
+            ['starter-monthly', 1900, S],
+            ['plus-monthly', 5900, P],
+            ['ultra-monthly', 12900, 2412],
         ]);
 
     // ── Start: idempotent on its key; the key cannot be moved to another plan. ──
     const a = await user();
     const k = `k-${hex()}`;
     const s1 = await start(a, 'starter-monthly', k);
-    assert.deepEqual([s1.ok, s1.idempotent, s1.status, s1.price_usd_cents, s1.credits], [true, false, 'pending', 1900, 270]);
+    assert.deepEqual([s1.ok, s1.idempotent, s1.status, s1.price_usd_cents, s1.credits], [true, false, 'pending', 1900, S]);
     const s1again = await start(a, 'starter-monthly', k);
     assert.deepEqual([s1again.idempotent, s1again.subscription_id], [true, s1.subscription_id]);
     assert.equal((await start(a, 'plus-monthly', k)).code, 'IDEMPOTENCY_KEY_REUSED');
@@ -100,20 +103,20 @@ try {
     assert.equal((await apply(null, subA, 'active')).status, 'active');
     assert.deepEqual(await buckets(a), [10, 10, 0], 'activation alone grants nothing');
     const g1 = await paid(subA, inA, { event: early });
-    assert.deepEqual([g1.ok, g1.idempotent, g1.granted, g1.balance_after], [true, false, 270, 280]);
-    assert.deepEqual(await buckets(a), [280, 10, 270]);
+    assert.deepEqual([g1.ok, g1.idempotent, g1.granted, g1.balance_after], [true, false, S, S + 10]);
+    assert.deepEqual(await buckets(a), [S + 10, 10, S]);
     const g1replay = await paid(subA, inA, { event: early });
     assert.deepEqual([g1replay.ok, g1replay.idempotent, g1replay.granted], [true, true, 0]);
     // A second event for the same invoice (Stripe sends more than one) grants nothing more.
     const g1other = await paid(subA, inA);
     assert.deepEqual([g1other.ok, g1other.idempotent, g1other.granted], [true, true, 0]);
-    assert.deepEqual(await buckets(a), [280, 10, 270]);
+    assert.deepEqual(await buckets(a), [S + 10, 10, S]);
     assert.equal((await start(a)).code, 'SUBSCRIPTION_ALREADY_ACTIVE');
 
     // Webhooks read the durable binding without gaining raw table access.
     const binding = await rpc('public.read_credit_subscription_binding($1)', [subA]);
     assert.deepEqual([binding.id, binding.plan_id, binding.price_usd_cents, binding.credits, binding.status],
-        [s1.subscription_id, 'starter-monthly', 1900, 270, 'active']);
+        [s1.subscription_id, 'starter-monthly', 1900, S, 'active']);
     assert.equal(binding.stripe_subscription_id, subA);
     assert.equal((await rpc('public.read_own_credit_subscription_by_id($1,$2)', [a.auth, s1.subscription_id])).subscription.id, s1.subscription_id);
     assert.equal(await rpc('public.read_own_credit_subscription_by_id($1,$2)', [randomUUID(), s1.subscription_id]), null);
@@ -128,10 +131,10 @@ try {
 
     // ── Renewal: the leftover expires, the new cycle is granted (no rollover). ──
     assert.equal((await debit(a, 100)).ok, true);
-    assert.deepEqual(await buckets(a), [180, 10, 170]);
+    assert.deepEqual(await buckets(a), [S + 10 - 100, 10, S - 100]);
     const g2 = await paid(subA, `in_${hex()}`, { end: inDays(60) });
-    assert.deepEqual([g2.ok, g2.granted, g2.expired], [true, 270, 170]);
-    assert.deepEqual(await buckets(a), [280, 10, 270]);
+    assert.deepEqual([g2.ok, g2.granted, g2.expired], [true, S, S - 100]);
+    assert.deepEqual(await buckets(a), [S + 10, 10, S]);
 
     // ── An invoice the ledger refuses is recorded for an Operator, and stays refused. ──
     const refusedEvent = `evt_${hex()}`;
@@ -140,15 +143,15 @@ try {
     const r1again = await paid(subA, `in_${hex()}`, { event: refusedEvent, end: inDays(90) });
     assert.deepEqual([r1again.ok, r1again.code, r1again.refused, r1again.idempotent], [false, 'PERIOD_NOT_NEWER', true, true]);
     assert.equal((await paid(subA, `in_${hex()}`, { cents: 0, end: inDays(90) })).code, 'INVOICE_NOT_PAID');
-    assert.deepEqual(await buckets(a), [280, 10, 270]);
+    assert.deepEqual(await buckets(a), [S + 10, 10, S]);
     assert.equal((await paid(subA, 'not-an-invoice')).code, 'INVALID_INVOICE');
 
     // ── Cancel at period end: it stops renewing, the credits stay. ──
     const cancel = await rpc('public.mark_credit_subscription_cancelled($1, $2)', [a.auth, s1.subscription_id]);
     assert.equal(cancel.ok, true);
     const read = (await rpc('public.read_own_credit_subscription($1)', [a.auth])).subscription;
-    assert.deepEqual([read.status, read.cancel_at_period_end, read.credits, read.stripe_subscription_id], ['active', true, 270, subA]);
-    assert.deepEqual(await buckets(a), [280, 10, 270]);
+    assert.deepEqual([read.status, read.cancel_at_period_end, read.credits, read.stripe_subscription_id], ['active', true, S, subA]);
+    assert.deepEqual(await buckets(a), [S + 10, 10, S]);
     assert.equal((await rpc('public.mark_credit_subscription_cancelled($1, $2)', [(await user()).auth, s1.subscription_id])).code, 'SUBSCRIPTION_NOT_FOUND');
     // Ended at Stripe: terminal, and a late invoice for it is refused.
     assert.equal((await apply(null, subA, 'ended', { type: 'customer.subscription.deleted' })).status, 'ended');
@@ -186,7 +189,7 @@ try {
         [shared, 'invoice.paid', null, twinSub, `cus_${hex()}`, 'active', inDays(30), false]);
     const clash = await paid(twinSub, `in_${hex()}`, { event: shared });
     assert.deepEqual([clash.ok, clash.code], [false, 'EVENT_ID_ALREADY_USED']);
-    assert.equal((await paid(twinSub, `in_${hex()}`)).granted, 270);
+    assert.equal((await paid(twinSub, `in_${hex()}`)).granted, S);
 
     // No plan below ADR-0014's 3.3 cents a credit.
     await c.query('SAVEPOINT floor');
@@ -197,23 +200,23 @@ try {
     // ── A second subscription paid while one is live is flagged and never grants. ──
     const second = await one(
         `INSERT INTO public.credit_subscriptions (user_id, plan_id, idempotency_key, price_usd_cents, credits, consent_version)
-         VALUES ($1, 'plus-monthly', $2, 5900, 1200, 'subscription-test-1') RETURNING id`, [o.u.id, `k-${hex()}`]);
+         VALUES ($1, 'plus-monthly', $2, 5900, ${P}, 'subscription-test-1') RETURNING id`, [o.u.id, `k-${hex()}`]);
     const sub2 = `sub_${hex()}`;
     const flagged = await apply(second.id, sub2, 'active');
     assert.deepEqual([flagged.status, flagged.flagged], ['flagged', true]);
     assert.equal((await paid(sub2, `in_${hex()}`, { cents: 5900, end: inDays(90) })).code, 'SUBSCRIPTION_NOT_LIVE');
-    assert.deepEqual(await buckets(o.u), [280, 10, 270]);
+    assert.deepEqual(await buckets(o.u), [S + 10, 10, S]);
 
     // ── Refund: what is left of that cycle goes; Free and Pack Credits stay. ──
     const f = await subscribed();
     assert.equal((await rpc(`public.ledger_grant($1, 50, 'grant:test')`, [f.u.id])).ok, true);
     const job = await debit(f.u, 70);
-    assert.deepEqual(await buckets(f.u), [260, 10, 200]);
+    assert.deepEqual(await buckets(f.u), [S + 60 - 70, 10, S - 70]);
     assert.equal((await reverse(f.sub, f.invoice, 'partially_refunded')).taken, 0);
-    assert.deepEqual(await buckets(f.u), [260, 10, 200]);
+    assert.deepEqual(await buckets(f.u), [S + 60 - 70, 10, S - 70]);
     const refundEvent = `evt_${hex()}`;
     const rv = await reverse(f.sub, f.invoice, 'refunded', refundEvent);
-    assert.deepEqual([rv.ok, rv.taken, rv.frozen], [true, 200, false]);
+    assert.deepEqual([rv.ok, rv.taken, rv.frozen], [true, S - 70, false]);
     assert.deepEqual(await buckets(f.u), [60, 10, 0]);
     assert.equal((await reverse(f.sub, f.invoice, 'refunded', refundEvent)).idempotent, true);
     assert.equal((await reverse(f.sub, f.invoice, 'refunded')).taken, 0, 'a second refund event takes nothing more');
@@ -228,11 +231,11 @@ try {
     const replacement = await start(f.u);
     const replacementSub = `sub_${hex()}`;
     assert.equal((await apply(replacement.subscription_id, replacementSub, 'active')).status, 'active');
-    assert.equal((await paid(replacementSub, `in_${hex()}`, { end: inDays(60) })).granted, 270);
-    assert.deepEqual(await buckets(f.u), [330, 10, 270]);
+    assert.equal((await paid(replacementSub, `in_${hex()}`, { end: inDays(60) })).granted, S);
+    assert.deepEqual(await buckets(f.u), [S + 60, 10, S]);
     // A refund of the OLD invoice now touches nothing: its cycle was replaced.
     assert.equal((await reverse(f.sub, f.invoice, 'refunded')).taken, 0);
-    assert.deepEqual(await buckets(f.u), [330, 10, 270]);
+    assert.deepEqual(await buckets(f.u), [S + 60, 10, S]);
     await reconciles(f.u);
 
     // A refund can beat invoice.paid. It still ends the row, so the late
@@ -249,7 +252,7 @@ try {
     // ── Dispute: credits go, the subscription ends, the account is Frozen. ──
     const d = await subscribed('plus-monthly');
     const dv = await reverse(d.sub, d.invoice, 'disputed');
-    assert.deepEqual([dv.taken, dv.frozen], [1200, true]);
+    assert.deepEqual([dv.taken, dv.frozen], [P, true]);
     assert.deepEqual(await buckets(d.u), [10, 10, 0]);
     const dRow = await one('SELECT status, end_reason FROM public.credit_subscriptions WHERE id = $1', [d.id]);
     assert.deepEqual([dRow.status, dRow.end_reason], ['ended', 'disputed']);
@@ -262,7 +265,7 @@ try {
     // ── Cooling-off: full while nothing is spent, refused once anything is. ──
     const w = await subscribed();
     const co = await rpc('public.cancel_credit_subscription_cooling_off($1, $2)', [w.u.auth, w.id]);
-    assert.deepEqual([co.ok, co.idempotent, co.taken, co.invoice_id, co.stripe_subscription_id], [true, false, 270, w.invoice, w.sub]);
+    assert.deepEqual([co.ok, co.idempotent, co.taken, co.invoice_id, co.stripe_subscription_id], [true, false, S, w.invoice, w.sub]);
     assert.deepEqual(await buckets(w.u), [10, 10, 0]);
     const coAgain = await rpc('public.cancel_credit_subscription_cooling_off($1, $2)', [w.u.auth, w.id]);
     assert.deepEqual([coAgain.ok, coAgain.idempotent, coAgain.invoice_id], [true, true, w.invoice]);
@@ -272,7 +275,7 @@ try {
     const spent = await subscribed();
     await debit(spent.u, 1);
     assert.equal((await rpc('public.cancel_credit_subscription_cooling_off($1, $2)', [spent.u.auth, spent.id])).code, 'CREDITS_SPENT');
-    assert.deepEqual(await buckets(spent.u), [279, 10, 269]);
+    assert.deepEqual(await buckets(spent.u), [S + 9, 10, S - 1]);
 
     const late = await subscribed();
     await q(`UPDATE public.credit_subscriptions SET started_at = now() - interval '15 days' WHERE id = $1`, [late.id]);
