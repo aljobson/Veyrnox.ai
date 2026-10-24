@@ -2,6 +2,8 @@
 # Cloudflare Access audience IDs, operator/project UUIDs, documented placeholder
 # keys and synthetic idempotency/Stripe fixtures. No path or rule is exempted.
 # Each fingerprint is tied to one existing commit/path/rule/line; new findings fail.
+# Synthetic x-veyrnox-auth-id fixture in the yearly subscription test, not a credential.
+35ff5aea8720489450399bc1fff4aee69fc52aea:tests/yearlyCreditSubscriptions.test.mjs:generic-api-key:11
 # Public localStorage preference name "veyrnox.vey.placement.v1", not an API credential.
 f44961885d2b5297e8d92406ccf9821265844226:lib/veyPlacement.js:generic-api-key:1
 1da6dd9576daa3c7fb2807b10cc382469d8af8ae:lib/veyPlacement.js:generic-api-key:1
