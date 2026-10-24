@@ -113,6 +113,16 @@ exclude waiting for owner decisions and paid probes.
   15-minute budget; late answers from abandoned attempts are logged as leakage.
 - Circuit breaker per route, cooldown and probe; route health in the recovery
   health snapshot and the operator alerts.
+- **Status (2026-10-24), phase 3a, the circuit breaker:** migration 0376. After five failures
+  in a row a route's breaker opens and blocks a hop for ten minutes; after that it is a probe, where a
+  success closes it and a failure re-opens it. A failure is a provable refusal at submit (counted when
+  `job_route_failover` closes the attempt) or a supplier-reported failed job
+  (`mark_job_attempt_outcome`), once per attempt; a completed job resets it. Ambiguous answers and
+  refused prompts never count. `chooseRoute` skips a route inside its cooldown. Not yet built (3b),
+  deliberately: failover after a supplier has accepted a job. It needs a design pass first: the job
+  leaves SUBMITTED, a late answer from the abandoned attempt must never store a second output or bill
+  twice, the original inputs (and signed media) must be resubmittable, and a refund must still be
+  exactly one. It adds nothing until an offer has a second live route.
 - **Done when:** a staged supplier outage (the harness, then a real key
   disabled on staging) fails over with no customer-visible error and a correct
   ledger.
