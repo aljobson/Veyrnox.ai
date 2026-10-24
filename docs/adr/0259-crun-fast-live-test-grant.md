@@ -1,6 +1,6 @@
 # ADR-0259: One manual credit grant for the Veo Fast and Seedance Fast live tests
 
-Status: Proposed (owner approval pending)
+Status: Accepted (owner approved in chat, 2026-10-24)
 Date: 2026-10-24
 Decision-maker: Al Jobson (owner), who asked in chat on 2026-10-24 to go with the recommendation of running both
 models on the live site.
