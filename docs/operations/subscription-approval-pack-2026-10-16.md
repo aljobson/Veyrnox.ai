@@ -68,6 +68,25 @@ Record written approval for:
 - Cinema creator terms, including that no creator revenue share is currently
   promised.
 
+### Recorded owner approval — 24 October 2026
+
+Owner Al Jobson approved the Finance/Legal terms listed in issue #1575 and
+authorised a **monthly-only Credit Subscription launch**. For that launch:
+
+- Stripe remains the Merchant of Record and handles location-specific tax;
+- the three approved offers are Starter $19/month for 270 Credits, Plus
+  $59/month for 1,200 Credits and Ultra $129/month for 3,000 Credits;
+- automatic monthly renewal, cycle-end expiry without rollover, self-service
+  cancellation, the 14-day unused-cycle cooling-off refund and immediate-
+  supply consent use the customer wording versioned 16 October 2026;
+- Stripe's receipt plus its hosted payment record is accepted as the durable-
+  medium purchase confirmation for this launch; and
+- no weekly Credit Subscription or additional launch-market restriction was
+  approved.
+
+This owner approval clears the Finance/Legal decision. It does not waive the
+remaining Stripe staging acceptance or production cutover evidence below.
+
 ## Staging acceptance
 
 Attach evidence for the full checklist in

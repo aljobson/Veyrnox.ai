@@ -64,13 +64,10 @@ try {
 
     await c.query('BEGIN');
 
-    // ── Plans: the three accepted tiers on weekly and monthly billing, cheapest first. ──
+    // ── Plans: the three owner-approved monthly tiers, cheapest first. ──
     assert.deepEqual((await rpc('public.list_credit_subscription_plans()')).map((p) => [p.id, p.price_usd_cents, p.credits]),
         [
-            ['starter-weekly', 499, 60],
-            ['plus-weekly', 1499, 275],
             ['starter-monthly', 1900, 270],
-            ['ultra-weekly', 3299, 700],
             ['plus-monthly', 5900, 1200],
             ['ultra-monthly', 12900, 3000],
         ]);
