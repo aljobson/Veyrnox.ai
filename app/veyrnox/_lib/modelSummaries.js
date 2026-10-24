@@ -71,7 +71,7 @@ export function modelSummary(model) {
 
 export function modelTag(model) {
   if (!model) return null;
-  return model.tag || fallbackById.get(model.id)?.tag || null;
+  return model.tag || fallbackById.get(model.id)?.tag || (model.bestValue ? 'BEST VALUE' : null);
 }
 
 export function modelBadges(model) {

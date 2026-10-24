@@ -36,7 +36,7 @@ export function fromFallback() {
 
 function fromApi(models) {
   return models.map((m) => ({
-    id: m.id, name: m.name, kind: kindOf(m.modality), credits: m.credits, gated: !!m.gated,
+    id: m.id, name: m.name, kind: kindOf(m.modality), credits: m.credits, gated: !!m.gated, bestValue: !!m.bestValue,
     // An older Worker that predates `durations` omits it; 5s only is the
     // safe read, and it is what the gateway accepts everywhere.
     durations: Array.isArray(m.durations) && m.durations.length ? m.durations : FALLBACK_DURATIONS,

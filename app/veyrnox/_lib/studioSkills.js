@@ -40,7 +40,7 @@ export const SKILLS = [
     id: 'model-picker', name: 'Model picker', group: 'Plan', model: SKILL_MODEL,
     blurb: 'Find the cheapest model that does the job for your budget.',
     starter: 'What do you want to make, and how many Credits can you spend?',
-    body: 'Skill: Model picker. Ask the goal and the budget in Credits if not given. Recommend up to three models from the list, the cheapest that does the job first, one line each: what it is good at and its Credits. Say plainly when a cheaper model will do. If they choose one, write a starter prompt for it.',
+    body: 'Skill: Model picker. Ask the goal and the budget in Credits if not given. Recommend up to three models from the list, the cheapest that does the job first, preferring ones marked best value when they fit, one line each: what it is good at and its Credits. Say plainly when a cheaper model will do. If they choose one, write a starter prompt for it.',
   },
   {
     id: 'fix-my-photo', name: 'Fix this photo', group: 'Edit', model: SKILL_MODEL,
@@ -163,13 +163,13 @@ function needsOf(m) {
   return slots.length ? slots.join('+') : '';
 }
 
-/** `id|kind|Credits` per model, plus `|needs image` where a source file is required. Cheapest first within a kind. */
+/** `id|kind|Credits` per model, plus `|needs image` where a source file is required and `|best value` for our lowest-cost supply. Cheapest first within a kind. */
 export function catalogLines(models) {
   const order = { image: 0, video: 1, audio: 2 };
   return draftable(models)
     .slice()
     .sort((a, b) => (order[a.kind] ?? 3) - (order[b.kind] ?? 3) || (a.credits ?? 0) - (b.credits ?? 0) || a.id.localeCompare(b.id))
-    .map((m) => `${m.id}|${m.kind}|${m.credits}${needsOf(m) ? `|needs ${needsOf(m)}` : ''}`);
+    .map((m) => `${m.id}|${m.kind}|${m.credits}${needsOf(m) ? `|needs ${needsOf(m)}` : ''}${m.bestValue ? '|best value' : ''}`);
 }
 
 /** Put one cheapest model of every available media kind first, then the remaining price-sorted catalog. */

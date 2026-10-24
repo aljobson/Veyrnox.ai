@@ -41,7 +41,7 @@ test('the catalog read selects only the safe columns of active rows', async () =
     let query;
     await readPublicCatalog({ cfg, selectRows: async (table, q) => { query = { table, ...q }; return []; } });
     assert.equal(query.table, 'model_catalog');
-    assert.equal(query.columns, 'id,name,modality,credits_5s,gated_flag,provider_endpoint,updated_at');
+    assert.equal(query.columns, 'id,name,modality,credits_5s,gated_flag,provider,provider_endpoint,updated_at');
     assert.match(query.filter, /^active=eq\.true&/);
 });
 
