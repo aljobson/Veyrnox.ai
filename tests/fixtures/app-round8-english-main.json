@@ -280,24 +280,8 @@
   },
   {
     "area": "filmFiles",
-    "text": "Export studio JSONDownload studio folderImport studio JSON",
-    "labels": [
-      "aria-label=\"Import studio JSON\""
-    ]
-  },
-  {
-    "area": "filmFiles",
-    "text": "Export studio JSONDownload studio folderImport studio JSONReplace the current workspace with Imported user film? Export your current work first to keep it.Use imported studioKeep current studio",
-    "labels": [
-      "aria-label=\"Import studio JSON\""
-    ]
-  },
-  {
-    "area": "filmFiles",
-    "text": "Export studio JSONDownload studio folderImport studio JSONReplace the current workspace with this studio? Export your current work first to keep it.Use imported studioKeep current studio",
-    "labels": [
-      "aria-label=\"Import studio JSON\""
-    ]
+    "text": "Download project",
+    "labels": []
   },
   {
     "area": "master",

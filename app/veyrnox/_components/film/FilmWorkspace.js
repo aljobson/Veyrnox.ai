@@ -115,7 +115,7 @@ export function FilmWorkspace({cloud=false}) {
       </section>
       <p role="status" className="mt-3 text-xs text-vx-fg-muted">{saved?t("app.film.workspace.saved"):userId?t("app.film.workspace.unsaved"):t("app.film.workspace.signIn")}</p>
       {cloud&&userId&&<FilmCloud key={userId} state={state} replaceFilm={replaceFilm} persist={persist}/>}
-      <FilmFiles key={generation} film={film} onImport={next=>replaceFilm(next,null)}/>
+      <FilmFiles key={generation} film={film}/>
     </header>
     {error&&<p role="alert" className="mb-5 text-sm text-vx-danger">{error}</p>}
     {film.templateId&&<SelectedTemplate templateId={film.templateId} targetSeconds={film.targetSeconds}/>}

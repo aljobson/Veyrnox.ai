@@ -170,6 +170,18 @@
       "status": "proposed",
       "subject": "app",
       "updatedAt": 1792690532402
+    },
+    "film-studio-simple-project-download": {
+      "declaredAt": 1792850664206,
+      "id": "film-studio-simple-project-download",
+      "state": "declared",
+      "statement": "Film Studio gives users one clear project download action and does not expose JSON import or export controls.",
+      "status": "proposed",
+      "subject": "app",
+      "surface": {
+        "route": "/app/film-studio"
+      },
+      "updatedAt": 1792850668696
     }
   },
   "subject": "app",

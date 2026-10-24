@@ -35,10 +35,10 @@ test('all cloud controls are real, labelled, busy-disabled 44px buttons; dialogs
   assert.match(panel, /<ConfirmDialog/); assert.match(panel, /tone=\{dialog.kind === 'remove' \? 'danger'/);
   assert.match(panel, /role="status"/); assert.match(panel, /'alert' : 'status'/);
 });
-test('replacement keys reset editors and pending import; pending starter belongs to the store', () => {
+test('replacement keys reset editors; pending starter belongs to the store', () => {
   assert.match(workspace, /const \{film,stage,ready,userId,error,saved,generation\}=state/);
   assert.match(workspace, /<FilmFiles key=\{generation\}/); assert.match(workspace, /<section key=\{generation\}/);
-  assert.match(workspace, /onImport=\{next=>replaceFilm\(next,null\)\}/);
+  assert.doesNotMatch(workspace, /onImport=/);
   assert.doesNotMatch(workspace, /setPendingStarter/); assert.match(workspace, /pendingVisible\(state\)/);
   const store=read('app/veyrnox/_lib/filmStudioStore.js');
   assert.match(store,/if \(typeof window !== 'undefined'\) onSessionChange/); assert.match(store,/boundaryPatch\(state, getStoredUserId\(\)\)/);

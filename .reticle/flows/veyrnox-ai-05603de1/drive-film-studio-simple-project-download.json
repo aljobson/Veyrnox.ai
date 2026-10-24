@@ -1,0 +1,78 @@
+{
+  "version": 2,
+  "name": "drive-film-studio-simple-project-download",
+  "projectId": "veyrnox-ai-05603de1",
+  "createdAt": 1792851053911,
+  "steps": [
+    {
+      "tool": "reticle_act",
+      "anchor": {
+        "kind": "testid",
+        "value": "film-download-project",
+        "source": {
+          "file": "app/veyrnox/_components/film/FilmFiles.js",
+          "line": 15,
+          "column": 2
+        }
+      },
+      "args": {},
+      "action": "click",
+      "expect": {
+        "kind": "allOf",
+        "predicates": [
+          {
+            "kind": "text",
+            "contains": "Project ready to download.",
+            "visible": true
+          },
+          {
+            "kind": "element",
+            "query": {
+              "testid": "film-export-json"
+            },
+            "absent": true
+          },
+          {
+            "kind": "element",
+            "query": {
+              "testid": "film-import-json"
+            },
+            "absent": true
+          },
+          {
+            "kind": "text",
+            "contains": "JSON",
+            "visible": true,
+            "absent": true
+          },
+          {
+            "kind": "console",
+            "level": "error",
+            "absent": true
+          }
+        ]
+      },
+      "timeoutMs": 10000,
+      "page": "/app/film-studio"
+    }
+  ],
+  "startPath": "/app/film-studio",
+  "intent": "film-studio-simple-project-download",
+  "requires": [
+    {
+      "kind": "route",
+      "pathname": "/app/film-studio"
+    }
+  ],
+  "ensures": [
+    {
+      "kind": "route",
+      "pathname": "/app/film-studio"
+    }
+  ],
+  "author": {
+    "agent": "codex-reticle-http",
+    "person": "al.jobson@21stclick.co.uk"
+  },
+  "intentId": "flow:drive-film-studio-simple-project-download"
+}

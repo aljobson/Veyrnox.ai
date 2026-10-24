@@ -1,0 +1,18 @@
+{
+  "intents": {
+    "flow:drive-film-studio-simple-project-download": {
+      "declaredAt": 1792851054048,
+      "id": "flow:drive-film-studio-simple-project-download",
+      "state": "declared",
+      "statement": "film-studio-simple-project-download",
+      "status": "proposed",
+      "subject": "drive-film-studio-simple-project-downloa",
+      "surface": {
+        "flow": "drive-film-studio-simple-project-download"
+      },
+      "updatedAt": 1792851054068
+    }
+  },
+  "subject": "drive-film-studio-simple-project-downloa",
+  "version": 1
+}
