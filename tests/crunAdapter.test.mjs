@@ -70,3 +70,12 @@ test('0369 records Crun only as standby, unverified, with no parity record', () 
     assert.ok(parseEndpoint(`crun:${model}`), `${model} parses`);
   }
 });
+
+test('0375 reclassifies the four Crun standby routes and never activates one', () => {
+  const sql = readFileSync(new URL('../packages/db/schema/supabase/0375_crun_licensed_reseller.sql', import.meta.url), 'utf8');
+  const code = sql.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n');
+  assert.match(code, /SET provenance = 'licensed_reseller'/);
+  assert.match(code, /supplier = 'crun' AND state = 'standby'/);
+  assert.match(code, /IF affected <> 4 THEN/);
+  assert.doesNotMatch(code, /state\s*=\s*'active'|parity_record/);
+});

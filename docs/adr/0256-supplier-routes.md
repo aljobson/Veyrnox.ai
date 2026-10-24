@@ -165,6 +165,9 @@ The owner took the recommended answer to each of the five questions this ADR lef
    and only once it has a parity record. Crun is the only such supplier today; its routes stay
    `standby` until its written answers (resale, upstream, credit expiry, refunds) are in hand
    and a paid probe has passed. With those answers it can be reclassified `licensed_reseller`.
+   **2026-10-24:** the owner confirmed the written answers are in hand (this session did not read
+   them) and migration 0375 reclassifies the four Crun routes. They stay `standby` until a paid
+   parity probe passes and the owner approves.
 2. **Time budgets.** Keep 90 seconds for a submit-phase hop and 15 minutes after acceptance.
    Phase 2 hops on an immediate, provable refusal and uses no timer; the 90 seconds binds only
    if a later phase adds slow submits, and the 15 minutes belongs to phase 3.
