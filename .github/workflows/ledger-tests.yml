@@ -53,6 +53,7 @@ on:
       - "scripts/test-job-deletion.mjs"
       - "scripts/test-job-cancel.mjs"
       - "scripts/test-supplier-route-failover.mjs"
+      - "scripts/test-supplier-route-reorder.mjs"
       - "scripts/test-push-tokens.mjs"
       - "scripts/test-creator-profile.mjs"
       - "scripts/test-fk-indexes.mjs"
@@ -253,6 +254,7 @@ jobs:
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-job-deletion.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-job-cancel.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-supplier-route-failover.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-supplier-route-reorder.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-push-tokens.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-creator-profile.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-fk-indexes.mjs

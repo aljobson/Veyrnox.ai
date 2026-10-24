@@ -125,6 +125,15 @@ exclude waiting for owner decisions and paid probes.
   row-count check.
 - The floor trigger becomes `max(cost of active routes)`; routes dearer than the
   floor need the recorded margin waiver and a spend cap.
+- **Status (2026-10-24), phase 4a:** migration 0374 adds `model_route_reorder`: the owner's
+  approved full order of an offer's active routes renumbers them, points the catalog row's
+  supplier, endpoint and cost at the new first route (the catalog is still what dispatch
+  reads) and logs the change in the append-only `model_route_order_changes`. It refuses an
+  incomplete order, a route without a parity record or with an open breaker, an `unverified`
+  route anywhere but last, and any first route the catalog's margin and free-allowance checks
+  reject. It cannot know whether code exists for the new first route: the script in 4b must
+  check `providerFor` and `capabilityFor` first, or the offer answers 501 until reordered back.
+  Not yet done (4b): price observations per supplier and the weekly proposal script.
 - **Done when:** the report runs for all suppliers and a reorder is applied once
   end to end on staging.
 
