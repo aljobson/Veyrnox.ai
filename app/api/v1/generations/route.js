@@ -2,7 +2,8 @@ import { editorFeatureEnabled } from '../../../../lib/editorRuntimeFlags.mjs';
 import { falDispatchEnabled, admitFalDispatch } from '../../../../lib/falDispatch.js';
 import { publishFalDispatchWakeup } from '../../../../lib/falDispatchWakeup.js';
 import { providerFor } from '../../../../packages/provider-sdk/registry.js';
-import { logShadowRoute } from '../../../../lib/supplierRoutesShadow.js';
+import { logShadowRoute, shadowEnabled } from '../../../../lib/supplierRoutesShadow.js';
+import { requestWaitUntil } from '../../../../lib/requestWaitUntil.js';
 import { resolveOwnRoute, recordFirstAttempt } from '../../../../lib/supplierRoutesDispatch.js';
 import { NextResponse } from 'next/server';
 import { rpc, select, envConfig, SupabaseError } from '../../../../packages/db/supabase-client.js';
@@ -244,8 +245,10 @@ export async function POST(req) {
     }
     const provider = providerFor(modelRow.provider);
     if (!provider) return NextResponse.json({ error: 'provider_unsupported' }, { status: 501 });
-    // ADR-0256 shadow mode: log the route chooseRoute would pick. Never awaited, never throws, off unless SUPPLIER_ROUTES_SHADOW is "true".
-    void logShadowRoute(modelRow, cfg);
+    // ADR-0256 shadow mode: log the route chooseRoute would pick. Never awaited and never throws; waitUntil lets the read and the log finish after an early response. Off unless SUPPLIER_ROUTES_SHADOW is "true".
+    const shadowDone = shadowEnabled() ? logShadowRoute(modelRow, cfg) : null;
+    const keepAlive = shadowDone && requestWaitUntil();
+    if (keepAlive) keepAlive(shadowDone);
     // ADR-0256 phase 1: the offer's own route when SUPPLIER_ROUTES_ENABLED is "true", else null. Never changes where the job goes.
     const ownRoute = await resolveOwnRoute(modelRow, cfg);
     // No capability record = no known contract for this endpoint: refuse rather
