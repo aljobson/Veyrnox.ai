@@ -14,9 +14,13 @@ let scenarioNo = 0;
 async function scenario(name, run) {
     const tag = `s${++scenarioNo}`;
     await c.query('BEGIN');
-    // 0388 puts a real standby Crun route on this scratch offer at priority 2: clear the non-primary rows so each scenario
-    // builds its own, inside the transaction that is rolled back.
-    await c.query(`DELETE FROM public.model_routes WHERE model_id = 'nano-banana-kie' AND priority > 1`);
+    // Migrations 0388 and 0389 gave this scratch offer a Crun route, put Crun first and cut it to 1 credit. Each scenario starts
+    // from the original kie-first, 2-credit shape and builds its own routes, inside the transaction that is rolled back.
+    await c.query(`DELETE FROM public.model_routes WHERE model_id = 'nano-banana-kie' AND supplier = 'crun';
+        UPDATE public.model_routes SET priority = 1 WHERE model_id = 'nano-banana-kie' AND supplier = 'kie';
+        UPDATE public.model_catalog SET provider = 'kie', provider_endpoint = 'market:google/nano-banana', provider_cost_per_unit = 0.0200, credits_5s = 2
+         WHERE id = 'nano-banana-kie';
+        DELETE FROM public.model_routes WHERE model_id = 'nano-banana-kie' AND priority > 1;`);
     try {
         const { id: userId } = await one(`INSERT INTO public.users (id, auth_id, email) VALUES (gen_random_uuid(), gen_random_uuid()::text, 'route-test@example.test') RETURNING id`);
         const { id: own } = await one(`SELECT id FROM public.model_routes WHERE model_id = 'nano-banana-kie' AND priority = 1`);
@@ -111,7 +115,7 @@ try {
     assert.deepEqual([crun.priority, crun.state, kie.priority, kie.state], [1, 'active', 2, 'active'], 'Crun first, kie second, both active');
     assert.equal((await one(`SELECT credits_5s FROM public.model_catalog WHERE id = 'veo-3.1-lite-kie'`)).credits_5s, 5);
     const active = (await c.query(`SELECT endpoint FROM public.model_routes WHERE supplier = 'crun' AND state = 'active' ORDER BY endpoint`)).rows.map((r) => r.endpoint);
-    assert.deepEqual(active, ['crun:bytedance/seedance2-0-fast-t2v', 'crun:google/veo3-1-fast-t2v', 'crun:google/veo3-1-lite-t2v'], 'only the proven routes are active (Veo Lite 0379, Veo Fast 0386, Seedance Fast 0387)');
+    assert.deepEqual(active, ['crun:bytedance/seedance2-0-fast-t2v', 'crun:bytedance/seedream-4', 'crun:google/nano-banana', 'crun:google/veo3-1-fast-t2v', 'crun:google/veo3-1-lite-t2v'], 'only the proven routes are active (Veo Lite 0379, Veo Fast 0386, Seedance Fast 0387, Nano Banana and Seedream 0389)');
     // A job debited at the new 5 credits cannot hop onto kie ($0.15 is above 5 x 0.01796) without a waiver,
     // so a job Crun refuses outright refunds instead of selling below the floor.
     const fresh = (await one(`INSERT INTO public.jobs (user_id, idempotency_key, model_id, credits, inputs, state) VALUES ($1, 'crun-hop-test-0001', 'veo-3.1-lite-kie', 5, '{}', 'DEBITED') RETURNING id`, [userId])).id;

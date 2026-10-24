@@ -13,9 +13,13 @@ const MODEL = 'nano-banana-kie';
 
 async function scenario(name, run) {
     await c.query('BEGIN');
-    // 0388 puts a real standby Crun route on this scratch offer at priority 2: clear the non-primary rows so each scenario
-    // builds its own, inside the transaction that is rolled back.
-    await c.query(`DELETE FROM public.model_routes WHERE model_id = 'nano-banana-kie' AND priority > 1`);
+    // Migrations 0388 and 0389 gave this scratch offer a Crun route, put Crun first and cut it to 1 credit. Each scenario starts
+    // from the original kie-first, 2-credit shape and builds its own routes, inside the transaction that is rolled back.
+    await c.query(`DELETE FROM public.model_routes WHERE model_id = 'nano-banana-kie' AND supplier = 'crun';
+        UPDATE public.model_routes SET priority = 1 WHERE model_id = 'nano-banana-kie' AND supplier = 'kie';
+        UPDATE public.model_catalog SET provider = 'kie', provider_endpoint = 'market:google/nano-banana', provider_cost_per_unit = 0.0200, credits_5s = 2
+         WHERE id = 'nano-banana-kie';
+        DELETE FROM public.model_routes WHERE model_id = 'nano-banana-kie' AND priority > 1;`);
     try {
         const { id: userId } = await one(`INSERT INTO public.users (id, auth_id, email) VALUES (gen_random_uuid(), gen_random_uuid()::text, 'breaker-test@example.test') RETURNING id`);
         const { id: own } = await one(`SELECT id FROM public.model_routes WHERE model_id = $1 AND priority = 1`, [MODEL]);

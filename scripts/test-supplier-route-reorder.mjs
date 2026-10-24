@@ -13,9 +13,13 @@ const MODEL = 'nano-banana-kie';
 
 async function scenario(name, run) {
     await c.query('BEGIN');
-    // 0388 puts a real standby Crun route on this scratch offer at priority 2: clear the non-primary rows so each scenario
-    // builds its own, inside the transaction that is rolled back.
-    await c.query(`DELETE FROM public.model_routes WHERE model_id = 'nano-banana-kie' AND priority > 1`);
+    // Migrations 0388 and 0389 gave this scratch offer a Crun route, put Crun first and cut it to 1 credit. Each scenario starts
+    // from the original kie-first, 2-credit shape and builds its own routes, inside the transaction that is rolled back.
+    await c.query(`DELETE FROM public.model_routes WHERE model_id = 'nano-banana-kie' AND supplier = 'crun';
+        UPDATE public.model_routes SET priority = 1 WHERE model_id = 'nano-banana-kie' AND supplier = 'kie';
+        UPDATE public.model_catalog SET provider = 'kie', provider_endpoint = 'market:google/nano-banana', provider_cost_per_unit = 0.0200, credits_5s = 2
+         WHERE id = 'nano-banana-kie';
+        DELETE FROM public.model_routes WHERE model_id = 'nano-banana-kie' AND priority > 1;`);
     try {
         const { id: own } = await one(`SELECT id FROM public.model_routes WHERE model_id = $1 AND priority = 1`, [MODEL]);
         const add = async (priority, { supplier = 'grsai', cost = 0.015, state = 'active', provenance = 'licensed_reseller', parity = 'probe', breaker = null } = {}) =>
@@ -38,7 +42,7 @@ await scenario('a reorder renumbers the routes, points the catalog at the new fi
     assert.deepEqual((await order()).map((x) => x.id), [second, own, standby]);
     const cat = await one(`SELECT provider, provider_endpoint, provider_cost_per_unit::float AS cost FROM public.model_catalog WHERE id = $1`, [MODEL]);
     assert.deepEqual(cat, { provider: 'grsai', provider_endpoint: 'test:grsai:2', cost: 0.015 });
-    const log = await one(`SELECT old_order, new_order, note FROM public.model_route_order_changes WHERE model_id = $1`, [MODEL]);
+    const log = await one(`SELECT old_order, new_order, note FROM public.model_route_order_changes WHERE model_id = $1 ORDER BY changed_at DESC, id DESC LIMIT 1`, [MODEL]); // 0389 logged a real reorder for this offer
     assert.deepEqual(log.old_order, [own, second, standby]);
     assert.deepEqual(log.new_order, [second, own, standby]);
     for (const statement of [`UPDATE public.model_route_order_changes SET note = 'edited'`, 'DELETE FROM public.model_route_order_changes', 'TRUNCATE public.model_route_order_changes']) {
