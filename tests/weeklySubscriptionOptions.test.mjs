@@ -8,7 +8,7 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf
 
 test('monthly launch deactivates weekly Credit plans while Cinema Pass and Publish keep their approved intervals', () => {
   const credits = read('packages/db/schema/supabase/0338_weekly_credit_subscriptions.sql');
-  const monthlyOnly = read('packages/db/schema/supabase/0370_monthly_only_credit_subscriptions.sql');
+  const monthlyOnly = read('packages/db/schema/supabase/0371_monthly_only_credit_subscriptions.sql');
   const cinema = read('packages/db/schema/supabase/0339_weekly_cinema_pass.sql');
   const publish = read('packages/db/schema/supabase/0340_weekly_social_publish_plan.sql');
 
