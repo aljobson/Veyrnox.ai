@@ -15,7 +15,8 @@ test('only known Crun models parse, and path tricks are refused', () => {
 
 test('the request body matches the documented CreateTask shape and never sends a callback', () => {
   const r = buildRequest({ model: 'bytedance/seedance2-0-fast-t2v' }, { prompt: 'x' });
-  assert.deepEqual(r.body, { model: 'bytedance/seedance2-0-fast-t2v', input: { prompt: 'x', duration: 5, resolution: '720p', aspect_ratio: '16:9' } });
+  assert.deepEqual(r.body, { model: 'bytedance/seedance2-0-fast-t2v', input: { prompt: 'x', duration: 5, resolution: '720p', aspect_ratio: '16:9', audio: true } });
+  assert.equal('audio' in buildRequest({ model: 'google/veo3-1-lite-t2v' }, { prompt: 'x' }).body.input, false, 'Veo has no audio switch');
   assert.equal('callback_url' in r.body, false);
 });
 
