@@ -28,7 +28,6 @@ export default function PostHogManager() {
   const pathname = usePathname() || '/';
   const accountId = useSyncExternalStore(onSessionChange, signedInAccount, signedOutAccount);
   const [preference, setPreference] = useState(undefined);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const previousAccount = useRef(null);
 
   useEffect(() => {
@@ -142,48 +141,36 @@ export default function PostHogManager() {
       posthog.opt_out_capturing();
     }
     setPreference(saved);
-    setSettingsOpen(false);
   }
 
-  const bannerOpen = preference === null || settingsOpen;
-  if (preference === undefined) return null;
+  // A recorded answer is final for this prompt. Do not replace the consent
+  // banner with another fixed control after either choice.
+  if (preference !== null) return null;
 
   return (
-    <>
-      {bannerOpen ? (
-        <section
-          data-print="hide"
-          role="region"
-          data-storage-notice="analytics"
-          aria-label={t('privacy.choices')}
-          className="fixed inset-x-0 bottom-0 z-[70] border-t border-vx-border bg-vx-panel/95 px-4 py-4 shadow-2xl backdrop-blur-sm sm:px-6"
-        >
-          <div className="mx-auto grid max-w-[1100px] gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
-            <div>
-              <p className="text-sm font-extrabold text-vx-fg">{t('privacy.title')}</p>
-              <p className="mt-1 max-w-3xl text-[13px] leading-[1.55] text-vx-fg-body">
-                {rich(t('privacy.body'), {
-                  privacy: <LegalLink element="Link" href="/legal/privacy" className="text-vx-accent underline underline-offset-4">{t('chrome.privacyPolicy')}</LegalLink>,
-                })}
-              </p>
-            </div>
-            <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap lg:max-w-[390px] lg:justify-end">
-              <button type="button" onClick={() => choose({ analytics: true, replay: false })} className="min-h-12 rounded-full bg-vx-accent px-5 py-2.5 text-[14px] font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover">
-                {t('privacy.analytics')}</button>
-              <button type="button" data-storage-decline onClick={() => choose({ analytics: false, replay: false })} className="min-h-12 rounded-full border border-vx-border bg-vx-base px-5 py-2.5 text-[14px] font-bold text-vx-fg hover:border-vx-accent">
-                {t('privacy.decline')}</button>
-            </div>
+    <section
+      data-print="hide"
+      role="region"
+      data-storage-notice="analytics"
+      aria-label={t('privacy.choices')}
+      className="fixed inset-x-0 bottom-0 z-[70] border-t border-vx-border bg-vx-panel/95 px-4 py-4 shadow-2xl backdrop-blur-sm sm:px-6"
+    >
+      <div className="mx-auto grid max-w-[1100px] gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
+        <div>
+          <p className="text-sm font-extrabold text-vx-fg">{t('privacy.title')}</p>
+          <p className="mt-1 max-w-3xl text-[13px] leading-[1.55] text-vx-fg-body">
+            {rich(t('privacy.body'), {
+              privacy: <LegalLink element="Link" href="/legal/privacy" className="text-vx-accent underline underline-offset-4">{t('chrome.privacyPolicy')}</LegalLink>,
+            })}
+          </p>
+        </div>
+        <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap lg:max-w-[390px] lg:justify-end">
+          <button type="button" onClick={() => choose({ analytics: true, replay: false })} className="min-h-12 rounded-full bg-vx-accent px-5 py-2.5 text-[14px] font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover">
+            {t('privacy.analytics')}</button>
+          <button type="button" data-storage-decline onClick={() => choose({ analytics: false, replay: false })} className="min-h-12 rounded-full border border-vx-border bg-vx-base px-5 py-2.5 text-[14px] font-bold text-vx-fg hover:border-vx-accent">
+            {t('privacy.decline')}</button>
           </div>
-        </section>
-      ) : (
-        <button
-          data-print="hide"
-          type="button"
-          onClick={() => setSettingsOpen(true)}
-          className="fixed bottom-4 start-4 z-50 rounded-full border border-vx-border bg-vx-panel px-3 py-2 text-xs font-bold text-vx-fg-body shadow-lg hover:border-vx-accent hover:text-vx-fg sm:bottom-6 sm:start-6"
-        >
-          {t('privacy.choices')}</button>
-      )}
-    </>
+      </div>
+    </section>
   );
 }
