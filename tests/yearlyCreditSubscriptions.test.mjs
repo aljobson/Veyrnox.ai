@@ -105,3 +105,20 @@ test('the hourly sweep is scheduled and the yearly plans stay inactive in this c
   assert.match(sql, /grant_due_yearly_cycles\(\)/);
   assert.doesNotMatch(sql, /UPDATE public\.credit_subscription_plans/i, 'activation is a separate, deliberate step');
 });
+
+test('Vey beside the plans: the peek mood keeps the bottom edge clipped and the character cheering over the card', () => {
+  const f = fixture('en', '/app/credits');
+  const { VeyPaywallBuddy } = f.load('app/veyrnox/_components/VeyPaywallBuddy.jsx');
+  const html = f.render(React.createElement(VeyPaywallBuddy, { mood: 'peek' }));
+  assert.match(html, /data-testid="paywall-vey"/);
+  assert.match(html, /data-mood="peek"/);
+  assert.match(html, /data-vey-pose="cheer"/);
+  assert.match(html, /clip-path:inset\(-300% -50% 0 -50%\)/, 'only the card edge crops Vey');
+  assert.match(html, /aria-hidden="true"/, 'decoration only');
+});
+
+test('the subscription plans notify Vey on hover, select, consent, checkout and error, like the credit packs', async () => {
+  const src = readFileSync('app/veyrnox/_components/CreditSubscriptions.js', 'utf8');
+  for (const event of ['hover', 'leave', 'select', 'consent', 'checkout', 'error']) assert.match(src, new RegExp(`notify\\('${event}'\\)`), event);
+  assert.match(src, /<VeyPaywallBuddy mood=\{mood\} \/>/);
+});

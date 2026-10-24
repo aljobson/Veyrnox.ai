@@ -1,7 +1,7 @@
 'use client';
-import { useReducedMotion } from 'motion/react';
+import { motion, useReducedMotion } from 'motion/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AMBIENT_HOP_MS, paywallMoodFor } from '../../../lib/veyMotion';
+import { AMBIENT_HOP_MS, PEEK_MS, PEEK_ROTATE, PEEK_TIMES, PEEK_Y, paywallMoodFor } from '../../../lib/veyMotion';
 import VeyCharacter from './VeyCharacter';
 
 /**
@@ -52,16 +52,27 @@ export function useVeyPaywallMood(welcome = null) {
 // so it is hidden from assistive technology and takes no clicks, and it holds still for anyone who asked for less motion.
 export function VeyPaywallBuddy({ mood }) {
   const reduceMotion = useReducedMotion();
+  const peeking = mood === 'peek' && !reduceMotion;
+  // Choosing a pack or plan: Vey climbs up from behind the card, peeks its head over the edge, looks around, then
+  // climbs over and stands on top. Cropped at the card's top edge only (negative insets leave the other sides open),
+  // so the hops and cheers above the edge are never clipped.
   return (
     <div
       aria-hidden="true"
       data-testid="paywall-vey"
       data-mood={mood}
       className="pointer-events-none -mb-[3px] flex justify-end pe-3 sm:pe-6"
+      style={{ clipPath: 'inset(-300% -50% 0 -50%)' }}
     >
-      <div className="h-[72px] w-[69px] sm:h-[88px] sm:w-[84px]">
-        <VeyCharacter pose={mood} reducedMotion={reduceMotion} />
-      </div>
+      <motion.div
+        className="h-[72px] w-[69px] sm:h-[88px] sm:w-[84px]"
+        initial={false}
+        animate={peeking ? { y: PEEK_Y, rotate: PEEK_ROTATE } : { y: 0, rotate: 0 }}
+        transition={peeking ? { duration: PEEK_MS / 1000, times: PEEK_TIMES, ease: 'easeInOut' } : { duration: 0.2 }}
+        style={{ transformOrigin: '50% 100%' }}
+      >
+        <VeyCharacter pose={mood === 'peek' ? 'cheer' : mood} reducedMotion={reduceMotion} />
+      </motion.div>
     </div>
   );
 }
