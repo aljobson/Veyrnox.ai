@@ -1,6 +1,6 @@
 # ADR-0256 — Supplier routes: one offer, an ordered list of suppliers
 
-- **Status**: Proposed (2026-10-23). Nothing is built. Phased plan: [supplier-routes-build-plan.md](../architecture/supplier-routes-build-plan.md).
+- **Status**: Accepted (2026-10-24), phases 0 to 2 built and applied; failover is inert until a route has a parity record. Phased plan: [supplier-routes-build-plan.md](../architecture/supplier-routes-build-plan.md).
 - **Date**: 2026-10-23
 - **Deciders**: Product owner (sole)
 - **Related**: [ADR-0014 — Floor pricing](0014-floor-pricing.md),
@@ -157,11 +157,24 @@ exist for resilience.
   the developer docs.
 - Rollback at any phase is the flag, plus leaving the tables in place.
 
-## Open decisions for the owner
+## Decisions (owner, 2026-10-24)
 
-1. The provenance policy: may an `unverified` route serve as position 3, or
-   never?
-2. The time budgets: 90 s and 15 minutes are proposals.
-3. Whether a margin waiver for a resilience-only route is ever acceptable.
-4. Automatic reordering: never, or after a probation period.
-5. Merging duplicate offers: which pairs, and at which customer price.
+The owner took the recommended answer to each of the five questions this ADR left open.
+
+1. **Provenance.** An `unverified` route may serve only as the last of at most three routes,
+   and only once it has a parity record. Crun is the only such supplier today; its routes stay
+   `standby` until its written answers (resale, upstream, credit expiry, refunds) are in hand
+   and a paid probe has passed. With those answers it can be reclassified `licensed_reseller`.
+2. **Time budgets.** Keep 90 seconds for a submit-phase hop and 15 minutes after acceptance.
+   Phase 2 hops on an immediate, provable refusal and uses no timer; the 90 seconds binds only
+   if a later phase adds slow submits, and the 15 minutes belongs to phase 3.
+3. **Margin waivers.** Allowed per route, with a recorded note and a daily spend cap, on the
+   owner's sign-off. The database refuses a route above the floor without them
+   (`route_below_margin_floor`, 0373), so a waiver can never be implicit.
+4. **Reordering.** Never automatic. Phase 4 proposes an order from price observations each
+   week and the owner approves a change through a guarded RPC.
+5. **Duplicate offers.** Merge Kling 3.0 only (the kie and fal rows, 26 and 32 credits), at the
+   kie price of 26 credits, and only after fal passes a parity probe as the second route. That
+   lowers the fal row's customers' price by six credits. No other pair is merged: the Veo
+   offers stay separate and gain Crun as a second route later.
+

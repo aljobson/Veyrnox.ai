@@ -170,7 +170,7 @@ an SLA in writing.
 
 ## Owner actions the plan depends on
 
-1. Answer the five open decisions in the ADR.
+1. ~~Answer the five open decisions in the ADR.~~ Done 2026-10-24: see "Decisions" in the ADR.
 2. Approve each phase's migration through `apply-migrations`.
 3. Fund and key each supplier account, and send the supplier questions (the
    Crun list is ready to draft).
