@@ -76,8 +76,11 @@ exclude waiting for owner decisions and paid probes.
 - **Status (2026-10-24), phase 1a:** `lib/supplierRoutesDispatch.js` and
   migration 0370 (`record_job_attempt`) write attempt 1 behind
   `SUPPLIER_ROUTES_ENABLED` (off by default). The route is only ever the
-  offer's own; anything else dispatches as today. Not yet done (1b): binding
-  webhooks and sweeps through `job_attempts`, and marking attempt outcomes.
+  offer's own; anything else dispatches as today. Phase 1b: migration 0372
+  (`mark_job_attempt_outcome`) closes attempt 1 as `completed` or `failed` from the
+  completion paths (fal webhook, shared kie/OpenRouter/GrsAI/BytePlus completion),
+  only after their own state RPC returned ok. Binding lookups through
+  `job_attempts` wait for phase 2, when `jobs.provider_job_id` can change.
 
 ### Phase 2: submit-phase failover (6 to 9 days)
 
