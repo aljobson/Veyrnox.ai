@@ -4,7 +4,8 @@ import { publishFalDispatchWakeup } from '../../../../lib/falDispatchWakeup.js';
 import { providerFor } from '../../../../packages/provider-sdk/registry.js';
 import { logShadowRoute, shadowEnabled } from '../../../../lib/supplierRoutesShadow.js';
 import { requestWaitUntil } from '../../../../lib/requestWaitUntil.js';
-import { resolveOwnRoute, recordFirstAttempt } from '../../../../lib/supplierRoutesDispatch.js';
+import { resolveRouteSet, recordFirstAttempt } from '../../../../lib/supplierRoutesDispatch.js';
+import { submitWithFailover } from '../../../../lib/supplierRoutesFailover.js';
 import { NextResponse } from 'next/server';
 import { rpc, select, envConfig, SupabaseError } from '../../../../packages/db/supabase-client.js';
 import { capabilityFor, declaredInputs, checkSource } from '../../../../lib/modelCapabilities.js';
@@ -250,7 +251,7 @@ export async function POST(req) {
     const keepAlive = shadowDone && requestWaitUntil();
     if (keepAlive) keepAlive(shadowDone);
     // ADR-0256 phase 1: the offer's own route when SUPPLIER_ROUTES_ENABLED is "true", else null. Never changes where the job goes.
-    const ownRoute = await resolveOwnRoute(modelRow, cfg);
+    const { own: ownRoute, routes: offerRoutes } = await resolveRouteSet(modelRow, cfg);
     // No capability record = no known contract for this endpoint: refuse rather
     // than forward inputs the provider may bill differently for.
     const record = capabilityFor(modelRow.provider_endpoint);
@@ -483,13 +484,20 @@ export async function POST(req) {
     // already have spent supplier credits, so it must never trigger an
     // automatic refund. fal's durable outbox normally owns this boundary;
     // this also protects the legacy path while rollout flags change.
-    const guardedSubmit = ['fal', 'kie', 'grsai', 'openrouter'].includes(modelRow.provider);
-
-    // 4. Submit to the provider.
-    const submitResult = await provider.submit(
-        { job_id: jobId, provider_endpoint: modelRow.provider_endpoint, inputs: record.edit ? storedInputs : modelInputs },
-        record, providerKey, publicHost, sources,
-    );
+    // 4. Submit to the provider. With SUPPLIER_ROUTES_ENABLED and a second proven route, a supplier's
+    //    provable refusal (auth, payment, capacity) may be routed to the next route (ADR-0256 phase 2);
+    //    an ambiguous answer never is. Otherwise this is one submit, exactly as before.
+    const submitted = await submitWithFailover({
+        jobId, modelRow, ownRoute, routes: offerRoutes,
+        canHop: !rawKeys.length && !rawAssets.length && !record.edit,
+        inputs: modelInputs, jobInputs: record.edit ? storedInputs : modelInputs, publicHost, sources,
+        first: { provider, record, key: providerKey },
+        deps: { providerFor, capabilityFor },
+    }, cfg);
+    const submitResult = submitted.result;
+    // The supplier that actually holds the job: route 1 unless a failover moved it.
+    const servedBy = submitted.supplier;
+    const guardedSubmit = ['fal', 'kie', 'grsai', 'openrouter'].includes(servedBy);
 
     if (!submitResult.ok) {
         if (guardedSubmit && submitResult.outcome === 'unknown') return unknownSubmitResponse(jobId, cfg);
@@ -499,7 +507,7 @@ export async function POST(req) {
         // the generic code, and the refund is the same either way.
         const errorCode = submitResult.errorCode || await classifySubmitFailure(submitResult.error, process.env);
         await refundRejectedSubmit({ jobId, userId, credits, errorCode }, cfg);
-        console.error('[generations] provider submit failed:', modelRow.provider, submitResult.error);
+        console.error('[generations] provider submit failed:', servedBy, submitResult.error);
         // A topic the script writer refused is the user's to change, not an outage.
         if (submitResult.errorCode === 'script_refused') return NextResponse.json({ error: 'topic_refused' }, { status: 422 });
         // So is a prompt the provider refused, or an input it would not take.
@@ -511,9 +519,9 @@ export async function POST(req) {
     }
 
     // 5. Move state to SUBMITTED and record provider job id.
-    const recorded = await recordSubmittedJob({ jobId, provider: modelRow.provider, providerJobId: submitResult.providerJobId }, cfg);
+    const recorded = await recordSubmittedJob({ jobId, provider: servedBy, providerJobId: submitResult.providerJobId }, cfg);
     if (guardedSubmit && !recorded) return unknownSubmitResponse(jobId, cfg);
-    if (recorded) await recordFirstAttempt({ jobId, route: ownRoute, providerJobId: submitResult.providerJobId }, cfg);
+    if (recorded) await recordFirstAttempt({ jobId, route: submitted.route, attemptNo: submitted.attemptNo, providerJobId: submitResult.providerJobId }, cfg);
 
     return NextResponse.json({
         job_id: jobId,
