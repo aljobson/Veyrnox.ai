@@ -60,9 +60,17 @@ describe('grouped menu', () => {
         ]));
     });
 
-    test('the tab header carries the menu button on the left', () => {
+    test('Social Cinema is named and directly available from Inspire', () => {
+        expect((en as Record<string, string>)['menu.cinema']).toBe('Social Cinema');
+        expect(MENU_SECTIONS.find((section) => section.id === 'inspire')?.items).toContainEqual(
+            expect.objectContaining({ key: 'cinema', href: '/cinema', label: 'menu.cinema', icon: 'slate' }),
+        );
+    });
+
+    test('the tab header keeps the menu and wordmark leading-aligned away from trailing actions', () => {
         const layout = fs.readFileSync(path.join(APP, '(tabs)', '_layout.tsx'), 'utf8');
         expect(layout).toMatch(/headerLeft:\s*\(\)\s*=>\s*<MenuButton/);
+        expect(layout).toContain("headerTitleAlign: 'left'");
     });
 });
 
