@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { MediaTile } from '../_components/MediaTile';
+import { TemplateRoller } from '../_components/TemplateRoller';
 import { PremiumTag } from '../_components/PremiumTag';
 import { SHOWCASE_CLIPS, MODEL_SHOWCASE_KEYS } from '../_lib/showcase';
 import { modelPriceUnit } from '../_lib/modelPricing';
@@ -20,6 +21,7 @@ import { localizedHref } from '../../../lib/i18n/locales.mjs';
 
 export async function PresetWall({ catalog }) {
   const { locale, t } = await getT();
+  const presets = WALL_PRESETS.slice(0, LANDING_TEMPLATE_LIMIT);
   return (
     <section data-vey-perch className="px-4 sm:px-6 pt-28 sm:pt-36 max-w-[1300px] mx-auto">
       <div className="flex items-end justify-between mb-8 flex-wrap gap-4">
@@ -28,8 +30,9 @@ export async function PresetWall({ catalog }) {
           {t('home.templates.all')}
         </Link>
       </div>
+      <TemplateRoller presets={presets} catalog={catalog} className="mb-8" />
       <div className="columns-1 sm:columns-2 lg:columns-4 gap-3 [&>a]:mb-6 [&>a]:break-inside-avoid">
-        {WALL_PRESETS.slice(0, LANDING_TEMPLATE_LIMIT).map((preset) => {
+        {presets.map((preset) => {
           const clip = SHOWCASE_CLIPS[preset.clipKey];
           return (
             <MediaTile

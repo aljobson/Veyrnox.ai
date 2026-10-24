@@ -8,10 +8,10 @@ const { isUnknownStaticPage } = await import('../lib/unknownStaticPage.js');
 const { middleware } = await import('../middleware.js');
 
 test('only an unknown guide or template address is refused', () => {
-    for (const p of ['/guides/nope', '/presets/nope', '/veyrnox/guides/nope', '/guides/credits%2F..', '/guides/%E0%A4%A', '/presets/CCTV-NIGHT']) {
+    for (const p of ['/guides/nope', '/presets/nope', '/veyrnox/guides/nope', '/guides/credits%2F..', '/guides/%E0%A4%A', '/presets/CCTV-NIGHT', '/presets/cctv-night', '/veyrnox/presets/cctv-night']) {
         assert.equal(isUnknownStaticPage(p), true, p);
     }
-    for (const p of ['/guides', '/guides/credits', '/guides/credits/', '/presets/cctv-night', '/veyrnox/presets/cctv-night',
+    for (const p of ['/guides', '/guides/credits', '/guides/credits/', '/presets/product-hero-360', '/veyrnox/presets/product-hero-360',
         '/models/nope', '/', '/pricing', '/guides/credits/extra', '/app/library', undefined]) {
         assert.equal(isUnknownStaticPage(p), false, String(p));
     }

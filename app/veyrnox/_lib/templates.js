@@ -9,83 +9,8 @@
 // (tests/presetLinking.test.mjs). Prices shown come from the live catalog.
 
 import { SOURCE_TEMPLATES } from './sourceTemplates.js';
-import { EFFECT_CONCEPT_TEMPLATES } from './effectConceptTemplates.js';
-import { EFFECT_THEMES, effectThemeId, themedTemplates } from './effectThemes.js';
 
 const CATEGORY_ORDER = ['YOUR PHOTO', 'KIDS BIRTHDAY', 'CINEMATIC', 'ANIME', 'CARTOONS', 'MOVIES', 'FANTASY', 'REALISTIC', 'FASHION', 'PRODUCTS', 'VFX', 'UGC', 'ADS'];
-
-export const LEGACY_PRESETS = [
-  { id: 'cctv-night', name: 'CCTV NIGHT', model: 'Wan 2.5', credits: 19, category: 'CINEMATIC', aspect: '16:9',
-    bg: 'linear-gradient(180deg,#08120b 0%,#0e3a1e 60%,#2ea258 100%)', cached: true, badge: 'CACHED',
-    prompt: 'Grainy night-vision security camera footage of an empty car park, a single figure crossing under a flickering sodium lamp, timestamp overlay, fixed high corner angle, faint scan lines' },
-  { id: 'sunset-drift', name: 'SUNSET DRIFT', model: 'MiniMax Hailuo 02', credits: 9, category: 'CINEMATIC', aspect: '16:9',
-    bg: 'linear-gradient(135deg,#2b1a0a 0%,#7a4a1e 60%,#f0b060 100%)',
-    prompt: 'A vintage coupe drifting slowly round a coastal hairpin at golden hour, tyre smoke catching the low sun, camera tracking alongside at bumper height, warm film tones' },
-  { id: 'neon-alley', name: 'NEON ALLEY', model: 'Kling 2.6 Pro', credits: 17, category: 'VFX', aspect: '16:9',
-    bg: 'linear-gradient(135deg,#1b0632 0%,#5a0e6a 55%,#e4318f 100%)', cached: true, badge: 'CACHED',
-    prompt: 'Rain-soaked neon alley at 3am, holographic signs glitching into new shapes as the camera glides past, reflections rippling in puddles, steam rising from a grate' },
-  { id: 'warm-portrait', name: 'WARM PORTRAIT', model: 'Nano Banana', credits: 2, category: 'UGC', aspect: '4:5',
-    bg: 'linear-gradient(160deg,#2c1a12 0%,#7a3520 60%,#c9713f 100%)',
-    prompt: 'Candid portrait of a smiling person in a sunlit kitchen, soft window light, shallow depth of field, natural skin texture, shot on a 50mm lens' },
-  { id: 'film-portrait', name: 'FILM PORTRAIT', model: 'Nano Banana Pro', credits: 2, category: 'CINEMATIC', aspect: '4:5',
-    bg: 'linear-gradient(160deg,#120d08 0%,#4a3420 60%,#d8a868 100%)',
-    prompt: 'Medium-format film portrait, subject lit by a single tungsten practical, deep shadows, visible grain, muted greens and ambers, quiet expression' },
-  { id: 'talking-head', name: 'TALKING HEAD', model: 'Kling AI Avatar', credits: 32, category: 'YOUR PHOTO', aspect: '9:16',
-    bg: 'linear-gradient(135deg,#0a1a2c 0%,#1e4a7a 55%,#60a0f0 100%)',
-    needs: 'A clear front-facing photo of the speaker and a short voice clip',
-    prompt: 'The person speaks warmly to camera, natural head movement and blinking, subtle hand gestures, soft studio background' },
-  { id: 'clean-cutout', name: 'CLEAN CUTOUT', model: 'Background Removal', credits: 3, category: 'PRODUCTS',
-    bg: 'linear-gradient(135deg,#1a1a0a 0%,#4a4a1e 55%,#c0c060 100%)',
-    needs: 'A product photo',
-    prompt: 'Remove the background' },
-  { id: 'photo-to-motion', name: 'PHOTO TO MOTION', model: 'Kling 3.0 · I2V', credits: 32, category: 'YOUR PHOTO', aspect: '9:16', isNew: true,
-    bg: 'linear-gradient(160deg,#101826 0%,#2a3e66 55%,#9db8f0 100%)',
-    needs: 'Any photo with a clear subject',
-    prompt: 'The scene comes to life: gentle wind moves hair and clothing, the camera pushes in slowly, light shifts as clouds pass' },
-  { id: 'anime-hero', name: 'ANIME HERO', model: 'Seedream 4', credits: 2, category: 'ANIME', aspect: '9:16', isNew: true,
-    bg: 'linear-gradient(170deg,#1a0f2e 0%,#3b2a7a 55%,#f08fc0 100%)',
-    prompt: 'Hand-drawn anime key art of a young swordsman on a rooftop at dusk, wind-swept coat, cel shading, painted sky with drifting petals, dramatic low angle' },
-  { id: 'anime-opening', name: 'ANIME OPENING', model: 'Seedance 2.0 Fast', credits: 28, category: 'ANIME', aspect: '16:9', isNew: true,
-    bg: 'linear-gradient(135deg,#200a24 0%,#6a1e5a 55%,#ffb86b 100%)',
-    prompt: '2D anime title sequence: a girl runs across a train platform as the train pulls away, quick cuts, speed lines, cherry blossoms swirling, bright saturated palette' },
-  { id: 'runway-walk', name: 'RUNWAY WALK', model: 'Veo 3.1 Fast', credits: 19, category: 'FASHION', aspect: '9:16', isNew: true,
-    bg: 'linear-gradient(180deg,#0d0d0d 0%,#3a3a3a 55%,#d9d0c4 100%)',
-    prompt: 'A model walks a minimalist concrete runway in an oversized cream trench coat, front tracking shot, soft overhead light, audience silhouettes, fabric moving with each step' },
-  { id: 'editorial-flatlay', name: 'EDITORIAL FLATLAY', model: 'Flux.2 [pro]', credits: 2, category: 'FASHION', aspect: '4:5',
-    bg: 'linear-gradient(150deg,#1e1712 0%,#5c4632 55%,#e6d2b5 100%)',
-    prompt: 'Top-down editorial flat lay of a capsule wardrobe on linen: knit sweater, leather loafers, gold watch, sunglasses, soft morning shadows, magazine styling' },
-  { id: 'try-the-look', name: 'TRY THE LOOK', model: 'Nano Banana Pro Edit', credits: 9, category: 'YOUR PHOTO', aspect: '4:5', isNew: true,
-    bg: 'linear-gradient(160deg,#1c1018 0%,#5a2a48 55%,#e8a0c8 100%)',
-    needs: 'A full-length photo of yourself',
-    prompt: 'Dress the person in a tailored black tuxedo with a silk lapel, keep their face, pose and the background unchanged, photoreal fabric detail' },
-  { id: 'product-hero', name: 'PRODUCT HERO', model: 'Veo 3.1 Lite', credits: 10, category: 'PRODUCTS', aspect: '1:1',
-    bg: 'linear-gradient(135deg,#0a1a1a 0%,#1e5a5a 55%,#7fe0d8 100%)',
-    prompt: 'A glass perfume bottle rotating slowly on a wet black plinth, droplets catching rim light, slow orbiting camera, clean studio, premium commercial look' },
-  { id: 'packshot-studio', name: 'PACKSHOT STUDIO', model: 'Seedream 4', credits: 2, category: 'ADS', aspect: '1:1',
-    bg: 'linear-gradient(135deg,#141414 0%,#404040 55%,#f2f2f2 100%)',
-    prompt: 'Studio packshot of a matte ceramic coffee mug on a seamless pastel backdrop, soft box lighting, gentle shadow, crisp edges, ready for an online store' },
-  { id: 'ugc-unboxing', name: 'UGC UNBOXING', model: 'Wan 2.5', credits: 19, category: 'UGC', aspect: '9:16',
-    bg: 'linear-gradient(170deg,#1a120a 0%,#5a3a1e 55%,#f0c890 100%)',
-    prompt: 'Handheld phone footage of hands opening a small gift box on a bedroom desk, natural window light, slight camera shake, the reveal of a pair of wireless earbuds' },
-  { id: 'portal-burst', name: 'PORTAL BURST', model: 'Kling 2.6 Pro', credits: 17, category: 'VFX', aspect: '16:9', isNew: true,
-    bg: 'linear-gradient(135deg,#050a1e 0%,#1a2a7a 55%,#60f0ff 100%)',
-    prompt: 'A glowing circular portal tears open in the middle of a quiet forest path, leaves and light pulled into its swirl, camera slowly dollies back, volumetric god rays' },
-  { id: 'saturday-cartoon', name: 'SATURDAY CARTOON', model: 'Seedream 4', credits: 2, category: 'CARTOONS', aspect: '4:5', isNew: true,
-    bg: 'linear-gradient(160deg,#1a0a2a 0%,#6a2a9a 55%,#ffd23f 100%)',
-    prompt: 'Bold-outlined Saturday-morning cartoon of a clumsy robot chef in a chaotic kitchen, soup flying, flat bright colours, squash-and-stretch poses, thick ink lines, retro halftone shading' },
-  { id: 'noir-one-sheet', name: 'NOIR ONE-SHEET', model: 'Flux.2 [pro]', credits: 2, category: 'MOVIES', aspect: '4:5', isNew: true,
-    bg: 'linear-gradient(180deg,#05080c 0%,#12303a 55%,#e08a3c 100%)',
-    prompt: 'Theatrical one-sheet poster for a rain-soaked noir thriller: a lone detective under a streetlight, long shadows, teal and orange grade, clear space at the top for a title, film-poster composition' },
-  { id: 'floating-castle', name: 'FLOATING CASTLE', model: 'Seedream 4', credits: 2, category: 'FANTASY', aspect: '16:9', isNew: true,
-    bg: 'linear-gradient(135deg,#0a1230 0%,#3a2a7a 55%,#f0a0ff 100%)',
-    prompt: 'Epic fantasy matte painting of a castle floating above a glowing valley at dusk, waterfalls spilling into clouds, dragons circling the towers, volumetric light, rich painterly detail' },
-  { id: 'street-portrait', name: 'STREET PORTRAIT', model: 'Nano Banana', credits: 2, category: 'REALISTIC', aspect: '4:5', isNew: true,
-    bg: 'linear-gradient(160deg,#101418 0%,#3a4650 55%,#c8d0d8 100%)',
-    prompt: 'Photorealistic documentary street portrait of an elderly market vendor at golden hour, natural skin texture and lines, shallow depth of field, 85mm lens, candid expression, unposed' },
-  { id: 'miniature-city', name: 'MINIATURE CITY', model: 'MiniMax Hailuo 02', credits: 9, category: 'VFX', aspect: '16:9',
-    bg: 'linear-gradient(135deg,#0e1a0e 0%,#3a6a2a 55%,#c8f08a 100%)',
-    prompt: 'Tilt-shift timelapse of a busy city crossroads that looks like a toy model, tiny cars and people streaming past, saturated colours, high vantage point' },
-];
 
 const WALL_CLIP_KEYS = [
   'wall-product-hero-360',
@@ -113,25 +38,19 @@ const WALL_CLIP_KEYS = [
   'wall-dolphin-surf-ride',
   'wall-event-character-swap',
 ];
-// The library is the complete set of production-ready recipes. The landing
-// wall remains a curated preview of the same library, while every template is
-// searchable and usable from the web and mobile gallery.
-export const PRESETS = [...SOURCE_TEMPLATES, ...EFFECT_CONCEPT_TEMPLATES];
+// Only recipes with an owned local video and poster are public templates.
+// Concepts without preview media stay out of browsing, search, API responses,
+// static routes and generation handoffs until their media is ready.
+export const PRESETS = [...SOURCE_TEMPLATES];
 export const WALL_PRESETS = WALL_CLIP_KEYS.map((key) => SOURCE_TEMPLATES.find((p) => p.clipKey === key)).filter(Boolean);
-// Old bookmarks retain their original prompt, without an unrelated demo clip.
-export const ALL_TEMPLATES = [...PRESETS, ...LEGACY_PRESETS];
+export const ALL_TEMPLATES = PRESETS;
 export const PRESET_CATEGORIES = ['ALL', 'NEW', ...CATEGORY_ORDER.filter((category) => PRESETS.some((p) => p.category === category))];
-export { EFFECT_THEMES, effectThemeId };
 
 // "New" is a flag, not a home category: a new template also sits in its own.
 export function templatesIn(category) {
   if (category === 'ALL') return PRESETS;
   if (category === 'NEW') return PRESETS.filter((p) => p.isNew);
   return PRESETS.filter((p) => p.category === category);
-}
-
-export function templatesInTheme(theme) {
-  return themedTemplates(theme, PRESETS);
 }
 
 // Template search stays local: the gallery is a small static list and every

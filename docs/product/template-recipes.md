@@ -4,19 +4,19 @@ On 10 October 2026 the owner requested usable recipes for the imported previews,
 including prompts and inputs, rather than unrelated footage in preset cards.
 The source template workflows were inspected with Agent Reach and the REA skill.
 
-`sourceTemplates.js` associates each of the 68 effect recipes with its own title,
+`sourceTemplates.js` associates each of the 142 public recipes with its own title,
 clip key, Veyrnox remix prompt, supported video model, duration, upload guidance
-and neutral inspiration marker. The gallery exposes 40 recipes; the homepage wall exposes
-20 different recipes. These 60 visible template placements retain distinct
-footage. The remaining source records describe the feature/model inspiration
-clips. A detail page intentionally reuses the preview of the card it describes.
+and neutral inspiration marker. The gallery exposes all 142 recipes and the
+homepage wall features 24 of them. Every public template has a distinct local
+video and poster. A detail page intentionally reuses the preview of the card it describes.
 Source-platform names, URLs and raw source recipes are not included in public
 template objects, browser payloads or media filenames.
 
-The original 22 hand-authored recipes remain in `LEGACY_PRESETS` so saved URLs
-retain their original prompts. They no longer display unrelated imported video.
-`ALL_TEMPLATES` drives static routes, lookup, middleware recognition and template
-start attribution. Homepage template links now open the matching recipe page.
+On 24 October 2026, 1,036 effect concepts and 22 legacy recipes without videos
+were removed from the public catalog and route lookup. `ALL_TEMPLATES` now
+contains only the 142 video-backed recipes and drives static routes, lookup,
+middleware recognition and template start attribution. Homepage template links
+open the matching recipe page.
 
 ## Source evidence
 
@@ -75,7 +75,7 @@ prompt carry through; unsupported aspect controls are hidden. Ten-second recipes
 quote twice the live five-second catalog price and open with that duration.
 
 Verification includes one-to-one clip/title mapping, model/type and input bounds,
-legacy URLs, global video and poster uniqueness, source-platform-neutral public data, direct-link
+removed media-less URLs, global video and poster uniqueness, source-platform-neutral public data, direct-link
 draft restoration and live-price multiplication. Browser checks confirmed the
 matching playable preview, the copy action's success status and navigation to
 the correct model/preset sign-in gate. The in-app

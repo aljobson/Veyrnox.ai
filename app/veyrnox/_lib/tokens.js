@@ -68,13 +68,11 @@ export function kindOf(modality) {
 
 // Templates live in templates.js; re-exported so existing imports keep working.
 export {
-  EFFECT_THEMES,
   PRESETS,
   PRESET_CATEGORIES,
   WALL_PRESETS,
   ALL_TEMPLATES,
   templatesIn,
-  templatesInTheme,
   searchTemplates,
   templateHref,
 } from './templates.js';
