@@ -33,7 +33,7 @@ export async function creditStripeRequest(path, cfg, fields, key) {
 
 export async function createCreditSubscriptionCheckout(input, cfg) {
   if (!UUID.test(input.subscriptionId || '') || !/^[a-z0-9-]{1,32}$/.test(input.planId || '')
-      || !['week', 'month'].includes(input.interval) || !Number.isSafeInteger(input.priceUsdCents) || input.priceUsdCents < 100
+      || !['week', 'month', 'year'].includes(input.interval) || !Number.isSafeInteger(input.priceUsdCents) || input.priceUsdCents < 100
       || input.priceUsdCents > 9999999 || !Number.isSafeInteger(input.credits) || input.credits <= 0
       || input.credits > 100000 || !cfg.signingSecret) return { ok: false, error: 'invalid_checkout' };
   let host;
@@ -48,7 +48,9 @@ export async function createCreditSubscriptionCheckout(input, cfg) {
     'line_items[0][price_data][unit_amount]': input.priceUsdCents,
     'line_items[0][price_data][recurring][interval]': input.interval,
     'line_items[0][price_data][recurring][interval_count]': 1,
-    'line_items[0][price_data][product_data][name]': `Veyrnox ${input.planId} (${input.credits} Credits per ${input.interval})`,
+    'line_items[0][price_data][product_data][name]': input.interval === 'year'
+      ? `Veyrnox ${input.planId} (${input.credits} Credits each month, billed yearly)`
+      : `Veyrnox ${input.planId} (${input.credits} Credits per ${input.interval})`,
     'line_items[0][price_data][product_data][tax_code]': TAX_CODE,
     'managed_payments[enabled]': 'true',
     allow_promotion_codes: 'false', customer_email: input.email, expires_at: input.expiresAt,
@@ -80,7 +82,9 @@ export function creditInvoice(invoice, binding, expectLiveMode, nowSeconds = Mat
     ? { min: 6, max: 8 }
     : binding?.billing_interval === 'month'
       ? { min: 27, max: 32 }
-      : null;
+      : binding?.billing_interval === 'year'
+        ? { min: 364, max: 366 }
+        : null;
   if (!binding || invoice?.object !== 'invoice' || !/^in_[A-Za-z0-9_]{1,97}$/.test(invoice.id || '')
       || invoice.livemode !== expectLiveMode || invoice.status !== 'paid' || invoice.currency !== 'usd'
       || subId !== binding.stripe_subscription_id || objectId(invoice.customer) !== binding.stripe_customer_id

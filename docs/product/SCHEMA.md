@@ -318,6 +318,7 @@ Anon-callable by design (read-only status): `catalog_watch` (returns only active
 | `veyrnox-sweep-stuck-jobs` | every 10 min | `sweep_stuck_jobs()` |
 | `veyrnox-expire-free-credits` | hourly :41 | `expire_free_credits()` |
 | `veyrnox-expire-subscription-credits` | hourly :07 | `expire_subscription_credits()` (0184) |
+| `veyrnox-grant-yearly-cycles` | hourly :12 | `grant_due_yearly_cycles()` (0383, 0384) |
 | `veyrnox-referral-sweep` | hourly :23 | `referral_sweep()` (0218) |
 | `veyrnox-reconcile-balances` | daily 03:17 | raises on any row from seven reconcilers: balances, free credits, top-ups, failed refunds, Subscription Credits, free allowance, referrals (the last two joined the snapshot in 0264; ISSUES S20) |
 | `veyrnox-reconciliation-snapshot` | every 15 min | `refresh_reconciliation_snapshot()` (seven counts since 0264; each reading is also kept in `private.reconciliation_observations`, 0290) |

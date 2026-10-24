@@ -314,6 +314,7 @@
     "generationRights": "3ef53ddf0f58a44c593c450e74955ee653eb9e3e6765285be395c0323c9d9e72",
     "mediaRights": "ddaed8e061fd31e5063159b41c86643a02fa490fd66b01800b42b1f54481c898",
     "subscription": "fabd2ed3ccea8732597c78c33c597e48838b2ed179e82c667c4fc124e37d2d22",
+    "subscriptionYearly": "61e7890a169d485b304d7411eb56407623696aa30f2623cf6a76861da936e15a",
     "supply": "69a4646c5dc69c6597434806d18fcdc006b624b1c441a0618d8e8a435795bd12",
     "interval.week": "6df37daaa46ce714fa410768b63f415dfad094df33eb34ac1af332074fd15a1c",
     "interval.month": "a5c7d1719e284f2c9485405d44f62d152cde9e6ede83e1a79a2442b65f6a8735",
@@ -337,6 +338,7 @@
     "home": "67cad7b87b980f4fd0f52ff5e90fbbb9caf2cc8feaf69103ece7a9275169f32b"
   },
   "anchors": {
+    "subscriptionYearly": [],
     "subscription": [],
     "sourceRights": [
       {
