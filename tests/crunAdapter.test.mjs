@@ -80,3 +80,13 @@ test('0375 reclassifies the four Crun standby routes and never activates one', (
   assert.match(code, /IF affected <> 4 THEN/);
   assert.doesNotMatch(code, /state\s*=\s*'active'|parity_record/);
 });
+
+test('0377 writes the Veo Lite parity record only, and never activates the route', () => {
+  const sql = readFileSync(new URL('../packages/db/schema/supabase/0377_crun_veo_lite_parity_record.sql', import.meta.url), 'utf8');
+  const code = sql.split('\n').filter((l) => !l.trim().startsWith('--')).join('\n');
+  assert.match(code, /endpoint = 'crun:google\/veo3-1-lite-t2v' AND state = 'standby'/);
+  assert.match(code, /IF affected <> 1 THEN/);
+  assert.doesNotMatch(code, /state\s*=\s*'active'|SET state|provenance/);
+  assert.match(code, /charge 15 credits per clip confirmed by the owner/);
+  assert.match(code, /model identity rests on Crun id/);
+});
