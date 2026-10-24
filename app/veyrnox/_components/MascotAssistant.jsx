@@ -35,6 +35,7 @@ import useEditorHelperHost from '../_lib/useEditorHelperHost';
 import { EditorHelperLauncher } from './editor/EditorHelperLauncher';
 import { splitLocalePath } from '../../../lib/i18n/locales.mjs';
 import { clampVeyPosition, VEY_SIZE as CHARACTER } from '../../../lib/veyPointer';
+import { shouldShowVeyCharacter } from '../../../lib/veyVisibility';
 
 const HOME = { x: 18, y: 0 };
 const WELCOME = (t) => (t("public.vey.welcome"));
@@ -146,6 +147,12 @@ export default function MascotAssistant() {
     clearAction(); clearPointer(); setPendingTarget(null);
   }, [clearAction, clearPointer]);
 
+  const closeHelper = useCallback(() => {
+    clearTarget();
+    setOpen(false);
+    window.requestAnimationFrame(() => launcherRef.current?.focus());
+  }, [clearTarget, setOpen]);
+
   useEffect(() => {
     const update = () => { if (!activeTarget) setPosition(manualPosition ? clampVeyPosition(manualPosition, { width: innerWidth, height: innerHeight }) : open ? perchPosition() : landing ? landing.position : homePosition()); };
     const frame = requestAnimationFrame(update);
@@ -202,12 +209,11 @@ export default function MascotAssistant() {
     inputRef.current?.focus();
     const escape = (event) => {
       if (event.key !== 'Escape') return;
-      setOpen(false);
-      launcherRef.current?.focus();
+      closeHelper();
     };
     window.addEventListener('keydown', escape);
     return () => window.removeEventListener('keydown', escape);
-  }, [open, setOpen]);
+  }, [closeHelper, open]);
 
   useEffect(() => {
     transcriptRef.current?.scrollTo({ top: transcriptRef.current.scrollHeight, behavior: reduceMotion ? 'auto' : 'smooth' });
@@ -350,9 +356,12 @@ export default function MascotAssistant() {
   }, [answerSource, pathname]);
 
   const toggleHelper = () => {
-    setOpen(value => !value);
+    if (open) closeHelper();
+    else setOpen(true);
     captureProductEvent('helper_toggle', { open: !open, route: pathname });
   };
+
+  const showCharacter = shouldShowVeyCharacter({ open, activeTarget, actionPhase });
 
   return (
     <>
@@ -390,7 +399,7 @@ export default function MascotAssistant() {
         )}
       </AnimatePresence>
 
-      {editorHelperHost ? <EditorHelperLauncher host={editorHelperHost} open={open} launcherRef={launcherRef} onToggle={toggleHelper} /> : <motion.div
+      {editorHelperHost ? <EditorHelperLauncher host={editorHelperHost} open={open} launcherRef={launcherRef} onToggle={toggleHelper} /> : showCharacter ? <motion.div
         data-testid="assistant-mascot"
         data-targeting={activeTarget || undefined}
         data-mood={mood}
@@ -422,7 +431,16 @@ export default function MascotAssistant() {
             <VeyCharacter pose={mood} reducedMotion={reduceMotion} hand={mobileLayout.hand} />
           </span>
         </motion.button>
-      </motion.div>}
+      </motion.div> : <button
+        ref={launcherRef}
+        type="button"
+        data-testid="assistant-launcher"
+        aria-label={t("public.vey.open")}
+        aria-expanded="false"
+        title={t("public.vey.open")}
+        onClick={toggleHelper}
+        className="fixed bottom-[max(12px,env(safe-area-inset-bottom))] start-3 z-[61] grid size-10 place-items-center rounded-full border border-vx-border bg-vx-panel/90 text-sm font-black text-vx-fg-muted shadow-md backdrop-blur-sm transition hover:border-vx-accent hover:text-vx-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-accent"
+      >?<span className="sr-only">{t("public.vey.open")}</span></button>}
 
       <AnimatePresence>
         {open && !journeyActive && (
@@ -450,7 +468,7 @@ export default function MascotAssistant() {
                   <button type="button" onClick={resetConversation} aria-label={t("public.vey.newTitle")}
                     className="min-h-8 rounded-full px-2 text-[10px] font-semibold text-vx-fg-muted hover:text-vx-fg">{t("public.vey.new")}</button>
                 )}
-                <button type="button" onClick={() => { setOpen(false); launcherRef.current?.focus(); }} aria-label={t("public.vey.closeShort")}
+                <button type="button" onClick={closeHelper} aria-label={t("public.vey.closeShort")}
                   className="min-h-8 min-w-8 rounded-full text-xs text-vx-fg-muted hover:text-vx-fg">✕</button>
               </div>
             </header>
