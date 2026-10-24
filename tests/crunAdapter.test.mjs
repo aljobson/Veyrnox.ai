@@ -57,8 +57,9 @@ test('task status: success needs an https output, failed is a failure, anything 
   assert.equal(interpretTask({ data: { status: 'queued-or-something-new' } }).state, 'pending');
 });
 
-test('the adapter is not registered and no catalog migration points a row at it', () => {
-  assert.doesNotMatch(readFileSync(new URL('../packages/provider-sdk/registry.js', import.meta.url), 'utf8'), /crun/i);
+test('the adapter is registered but gated: it needs CRUN_ENABLED and a key, and no catalog migration points a row at it', () => {
+  const registry = readFileSync(new URL('../packages/provider-sdk/registry.js', import.meta.url), 'utf8');
+  assert.match(registry, /CRUN_ENABLED === 'true'/);
 });
 
 test('0369 records Crun only as standby, unverified, with no parity record', () => {

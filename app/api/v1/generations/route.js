@@ -497,7 +497,7 @@ export async function POST(req) {
     const submitResult = submitted.result;
     // The supplier that actually holds the job: route 1 unless a failover moved it.
     const servedBy = submitted.supplier;
-    const guardedSubmit = ['fal', 'kie', 'grsai', 'openrouter'].includes(servedBy);
+    const guardedSubmit = ['fal', 'kie', 'grsai', 'openrouter', 'crun'].includes(servedBy);
 
     if (!submitResult.ok) {
         if (guardedSubmit && submitResult.outcome === 'unknown') return unknownSubmitResponse(jobId, cfg);

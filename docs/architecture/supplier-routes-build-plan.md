@@ -113,6 +113,14 @@ exclude waiting for owner decisions and paid probes.
   15-minute budget; late answers from abandoned attempts are logged as leakage.
 - Circuit breaker per route, cooldown and probe; route health in the recovery
   health snapshot and the operator alerts.
+- **Status (2026-10-24), Crun, built and dark:** one paid probe (`veo-lite`, 56 s) confirmed the adapter against
+  the real API (`task_id` lookup, statuses pending then success, an 8 s 720p MP4 at `tempfile.mediaoss.bar`).
+  `lib/crunSweep.js` (polling only: Crun has no signed callback) completes accepted jobs through the shared
+  `completeJob`; the provider is registered with a key only when `CRUN_ENABLED` is exactly `"true"` and R2 is configured;
+  four capability records exist; R2 copies only from the observed host; crun joins the ambiguous-submit guard; the
+  cron runs the sweep only under the flag (not a recovery task). Still needed to go live: the Veo charge confirmed
+  in crun.ai/logs, a clip review for parity, the `CRUN_API_KEY` secret, a privacy-page entry, then `CRUN_ENABLED`,
+  a parity record and a route set `active`, each with the owner's approval.
 - **Status (2026-10-24), phase 3a, the circuit breaker:** migration 0376. After five failures
   in a row a route's breaker opens and blocks a hop for ten minutes; after that it is a probe, where a
   success closes it and a failure re-opens it. A failure is a provable refusal at submit (counted when

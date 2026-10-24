@@ -25,6 +25,10 @@ const SOURCE_HOSTS = {
     // activating migration's header (ADR-0058). An empty list refuses every
     // copy, and the rows are inactive, so nothing can be debited against it.
     byteplus: { hosts: [], suffixes: [] },
+    // Crun's output host as seen on the first paid probe (scripts/probe-crun.mjs, 2026-10-24): an 8 s 720p MP4 at
+    // tempfile.mediaoss.bar. Crun keeps outputs 14 days, so the sweep copies at once. Exact host only. Nothing fetches
+    // from it unless CRUN_ENABLED is "true" and a Crun route is active.
+    crun: { hosts: ['tempfile.mediaoss.bar'], suffixes: [] },
 };
 // Providers whose output download carries our API key. The key may only go to
 // a host in that provider's list above, which for these is its own API host.

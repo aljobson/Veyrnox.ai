@@ -19,7 +19,12 @@ import { providerFor } from '../packages/provider-sdk/registry.js';
 import { capabilityFor } from '../lib/modelCapabilities.js';
 import { proposeOrder } from '../lib/supplierRoutesPropose.js';
 
-export const canDispatch = (route) => Boolean(providerFor(route.supplier)) && capabilityFor(route.endpoint)?.provider === route.supplier;
+// A supplier whose adapter is registered but dark until its flag is on in the Worker. The flag is read from this shell:
+// set CRUN_ENABLED=true here only when it is on in the Worker, or a Crun route would be proposed as first and answer 503.
+const GATED_BY_FLAG = { crun: 'CRUN_ENABLED' };
+export const canDispatch = (route) => Boolean(providerFor(route.supplier))
+    && capabilityFor(route.endpoint)?.provider === route.supplier
+    && (!GATED_BY_FLAG[route.supplier] || process.env[GATED_BY_FLAG[route.supplier]] === 'true');
 
 async function main() {
     const apply = process.argv.includes('--apply');

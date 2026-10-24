@@ -35,6 +35,8 @@ const CATALOG = [
     // BytePlus ModelArk rows staged inactive by migration 0145 (ADR-0058).
     'byteplus:seedance-2.0-fast', 'byteplus:seedance-2.0-mini', 'byteplus:seedance-2.0',
     'byteplus:seedance-2.5', 'byteplus:seedance-1.0-pro-fast',
+    // Crun text-to-video routes, standby since migration 0369 (ADR-0256): the records ship before any route is active.
+    'crun:google/veo3-1-lite-t2v', 'crun:google/veo3-1-fast-t2v', 'crun:google/veo3-1-t2v', 'crun:bytedance/seedance2-0-fast-t2v',
     // Qwen 3 TTS Voice Design, staged inactive by migration 0235.
     'fal-ai/qwen-3-tts/voice-design/1.7b', 'fal-ai/demucs',
     // Face Filters A1-A5, staged inactive by migration 0356.
