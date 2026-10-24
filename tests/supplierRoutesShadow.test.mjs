@@ -43,7 +43,7 @@ test('a failing read is swallowed into one log line', async () => {
 
 test('the generation route calls it without awaiting, after the provider is resolved', () => {
   const src = readFileSync(new URL('../app/api/v1/generations/route.js', import.meta.url), 'utf8');
-  assert.match(src, /const shadowDone = logShadowRoute\(modelRow, cfg\);/);
+  assert.match(src, /const shadowDone = shadowEnabled\(\) \? logShadowRoute\(modelRow, cfg\) : null;/);
   assert.match(src, /keepAlive\(shadowDone\)/);
   assert.ok(src.indexOf('providerFor(modelRow.provider)') < src.indexOf('const shadowDone'));
   assert.doesNotMatch(src, /await logShadowRoute/);
