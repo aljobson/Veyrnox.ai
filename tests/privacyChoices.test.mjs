@@ -59,10 +59,30 @@ function manager(window, posthog) {
     button.props.onClick();
     render();
   }
-  return { render, click };
+  function hasButton(label) {
+    let found = false;
+    const visit = node => {
+      if (!React.isValidElement(node)) return;
+      if (node.type === 'button' && node.props.children === label) found = true;
+      React.Children.forEach(node.props.children, visit);
+    };
+    visit(tree);
+    return found;
+  }
+  function hasNotice() {
+    let found = false;
+    const visit = node => {
+      if (!React.isValidElement(node)) return;
+      if (node.props['data-storage-notice'] === 'analytics') found = true;
+      React.Children.forEach(node.props.children, visit);
+    };
+    visit(tree);
+    return found;
+  }
+  return { render, click, hasButton, hasNotice };
 }
 
-for (const choice of ['analytics', 'decline']) test(`privacy choices remain available after ${choice}, reload and account changes`, () => {
+for (const choice of ['analytics', 'decline']) test(`privacy prompt stays gone after ${choice}, reload and account changes`, () => {
   const prior = global.window;
   const events = new EventTarget();
   global.window = { localStorage: storage(), sessionStorage: storage(), location: { origin: 'https://example.test' },
@@ -74,15 +94,25 @@ for (const choice of ['analytics', 'decline']) test(`privacy choices remain avai
     set_config() {}, stopSessionRecording() {}, startSessionRecording() {}, identify() {}, reset() {}, capture() {} };
   try {
     let ui = manager(window, posthog);
-    ui.render(); ui.click(`privacy.${choice}`); ui.click('privacy.choices'); ui.click('privacy.decline');
-    assert.equal(JSON.parse(window.localStorage.getItem(ANALYTICS_PREFERENCE_KEY)).analytics, false);
+    ui.render();
+    assert.equal(ui.hasNotice(), true);
+    ui.click(`privacy.${choice}`);
+    assert.equal(ui.hasNotice(), false);
+    assert.equal(ui.hasButton('privacy.choices'), false);
+    assert.equal(JSON.parse(window.localStorage.getItem(ANALYTICS_PREFERENCE_KEY)).analytics, choice === 'analytics');
+
     ui = manager(window, posthog);
     for (const account of [null, 'synthetic-account', null]) {
-      ui.render(account); ui.click('privacy.choices'); ui.click('privacy.decline');
+      ui.render(account);
+      assert.equal(ui.hasNotice(), false);
+      assert.equal(ui.hasButton('privacy.choices'), false);
     }
-    assert.ok(calls.length >= 4);
+
     Object.defineProperty(window, 'localStorage', { get() { throw new Error('Storage blocked'); } });
     ui = manager(window, posthog);
-    ui.render(); ui.click('privacy.choices'); ui.click('privacy.decline'); ui.click('privacy.choices');
+    ui.render();
+    assert.equal(ui.hasNotice(), false);
+    assert.equal(ui.hasButton('privacy.choices'), false);
+    if (choice === 'decline') assert.ok(calls.length >= 1);
   } finally { global.window = prior; }
 });
