@@ -73,6 +73,11 @@ exclude waiting for owner decisions and paid probes.
   the flag on, then production.
 - **Done when:** the existing acceptance scripts pass unchanged, and a week on
   staging shows no job whose attempt and job disagree.
+- **Status (2026-10-24), phase 1a:** `lib/supplierRoutesDispatch.js` and
+  migration 0370 (`record_job_attempt`) write attempt 1 behind
+  `SUPPLIER_ROUTES_ENABLED` (off by default). The route is only ever the
+  offer's own; anything else dispatches as today. Not yet done (1b): binding
+  webhooks and sweeps through `job_attempts`, and marking attempt outcomes.
 
 ### Phase 2: submit-phase failover (6 to 9 days)
 
