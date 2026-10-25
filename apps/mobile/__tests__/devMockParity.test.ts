@@ -16,6 +16,7 @@ describe('development mock parity', () => {
         '/api/v1/ledger',
         '/api/v1/ledger/usage',
         '/api/v1/top-ups',
+        '/api/v1/uploads',
         '/api/v1/cinema/entitlement',
         '/api/v1/cinema/retention',
         '/api/v1/cinema/voting',
@@ -28,6 +29,10 @@ describe('development mock parity', () => {
     test('serves workspace brand kits and assets', () => {
         expect(source).toContain('brand-kit$/);');
         expect(source).toContain('brand-assets$/);');
+    });
+
+    test('accepts the raw upload target minted for generation sources', () => {
+        expect(source).toContain("path.startsWith('/mock-upload/')");
     });
 
     test('starts with completed image and video assets for Library and Quick edit', () => {
