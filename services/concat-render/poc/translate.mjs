@@ -11,7 +11,7 @@ export async function render(call, tl, files, { location, name, output, width, h
   const path = `${location}/${name}`
   const tl0 = view.project.timelines.find((t) => t.id === view.project.activeTimelineId)
   const videoTrack = tl0.tracks[0].id
-  const audioTrack = tl0.tracks[1].id
+  const audioTrack = tl0.tracks[2].id
   const conc = {} // our media id -> concat media id
   for (const m of Object.values(tl.media)) conc[m.id] = (await call('media.import', { path, file: files[m.id] })).createdId
 
@@ -29,15 +29,16 @@ export async function render(call, tl, files, { location, name, output, width, h
     return id
   }
   let at = 0
-  for (const c of tl.video) {
-    await place(c.mediaId, videoTrack, at, c.in, c.len, c.volume)
-    if (c.transition) notes.push(`transition on ${c.id} not translated`)
+  for (const [k, c] of tl.video.entries()) {
+    const id = await place(c.mediaId, videoTrack, at, c.in, c.len, c.volume)
+    // Ours: a dissolve over the first `transition` frames of clip k, from the tail of clip k-1.
+    if (c.transition && k > 0) await apply({ op: 'updateClip', clipId: id, patch: { transitionIn: { id: 'concat.dissolve', duration: sec(c.transition) } } })
     at += c.len
   }
   for (const c of tl.audio) await place(c.mediaId, audioTrack, c.start, c.in, c.len, c.volume)
   for (const t of tl.text) {
     await apply({ op: 'addTextClip', start: sec(t.start), duration: sec(t.len), offsetY: t.y - 0.5,
-      style: { content: t.text, fontSize: t.size / 100, fontWeight: 700, color: '#ffffff', strokeWidth: 0, shadow: true } })
+      style: { content: t.text, fontSize: t.size / 100, fontFamily: 'DejaVu Sans', fontWeight: 700, italic: false, color: '#ffffff', strokeWidth: 0, shadow: true } })
   }
   await call('export.run', { path, output, ...(width ? { width, height } : {}) })
   return { path, notes }

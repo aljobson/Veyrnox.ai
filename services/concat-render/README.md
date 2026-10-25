@@ -28,9 +28,13 @@ a sample timeline and prints the time. Copy into a running container
 (`docker cp services/concat-render/poc cr:/tmp/poc`) and run
 `CONCAT_API_TOKEN=... node run.mjs` there.
 
-Checked by eye on 4 frames: trim, clip order, text timing and position were right.
-Not covered: crossfade transitions (skipped), audio clips, volume, font match
-(the server falls back to an italic face), pixel comparison with `editorRender.mjs`.
+Checked on a 3-clip sample (7 s, 1080p) on 2026-10-25: trim, clip order, text
+timing/position/font (DejaVu Sans bold, non-italic), a 0.5 s dissolve starting at
+the cut (matches our timing), per-clip volume (a 0.5 clip measured 6 dB down) and
+a separate audio clip (ends on time; its 0.3 gain adds only about 0.3 dB over
+the clip audio in this sample, so the mix is consistent but weakly tested).
+Not covered: pixel comparison with `editorRender.mjs`, dissolve when the
+previous clip has no spare source, schemaVersion 3, other transitions.
 
 ## Fly measurement (2026-10-25)
 

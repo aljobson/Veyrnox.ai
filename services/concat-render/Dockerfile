@@ -18,7 +18,7 @@ RUN cargo build --profile app -p concat-cli
 FROM debian:trixie-slim
 # mesa-vulkan-drivers ships lavapipe, the CPU Vulkan driver wgpu falls back to.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      ca-certificates tini nodejs ffmpeg mesa-vulkan-drivers libvulkan1 libasound2t64 \
+      ca-certificates tini nodejs ffmpeg fonts-dejavu-core mesa-vulkan-drivers libvulkan1 libasound2t64 \
     && rm -rf /var/lib/apt/lists/* \
     && useradd -m -d /work render
 COPY --from=build /src/src/target/app/concat-cli /usr/local/bin/concat-cli
