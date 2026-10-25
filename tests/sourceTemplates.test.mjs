@@ -21,8 +21,8 @@ const REMOVED_ORIGINAL_IDS = [
 ];
 
 test('every imported clip has its own matching recipe and a supported video model', () => {
-  assert.equal(SOURCE_TEMPLATES.length, 150);
-  assert.equal(new Set(SOURCE_TEMPLATES.map((p) => p.clipKey)).size, 150);
+  assert.equal(SOURCE_TEMPLATES.length, 155);
+  assert.equal(new Set(SOURCE_TEMPLATES.map((p) => p.clipKey)).size, 155);
   for (const preset of SOURCE_TEMPLATES) {
     const clip = SHOWCASE_CLIPS[preset.clipKey];
     assert.ok(clip, preset.id);
@@ -41,10 +41,10 @@ test('every imported clip has its own matching recipe and a supported video mode
 });
 
 test('gallery and homepage templates have reachable recipe URLs', () => {
-  assert.equal(PRESETS.length, 1186);
+  assert.equal(PRESETS.length, 1191);
   assert.equal(WALL_PRESETS.length, 24);
   const visible = [...PRESETS, ...WALL_PRESETS];
-  assert.equal(new Set(visible.map((p) => p.clipKey).filter(Boolean)).size, 150);
+  assert.equal(new Set(visible.map((p) => p.clipKey).filter(Boolean)).size, 155);
   for (const preset of visible) {
     assert.equal(templateById(preset.id), preset);
     assert.equal(isUnknownStaticPage(`/presets/${preset.id}`), false);
@@ -89,7 +89,7 @@ test('public template data and media paths are source-platform neutral', () => {
 
 test('every public video and poster is a unique local asset', () => {
   const clips = Object.values(SHOWCASE_CLIPS);
-  assert.equal(clips.length, 150);
+  assert.equal(clips.length, 155);
   for (const field of ['video', 'poster']) {
     const paths = clips.map((clip) => clip[field]);
     assert.equal(new Set(paths).size, paths.length, `${field} paths must be unique`);
