@@ -93,7 +93,7 @@ test('LinkedIn uploads each image and publishes ordered MultiImage content', asy
     let n = 0, marked = false, body;
     await linkedin('token', input, async (url, init = {}) => {
         if (url.includes('initializeUpload')) return Response.json({ value: { uploadUrl: 'https://upload.test/image', image: `urn:li:image:${++n}` } });
-        if (url.startsWith('https://media.test')) return new Response('bytes', { headers: { 'Content-Type': 'image/jpeg' } });
+        if (new URL(url).hostname === 'media.test') return new Response('bytes', { headers: { 'Content-Type': 'image/jpeg' } });
         if (url.includes('/rest/posts')) { assert.equal(marked, true); body = JSON.parse(init.body); return new Response(null, { status: 201, headers: { 'x-restli-id': 'post' } }); }
         return new Response(null, { status: 201 });
     }, async () => { marked = true; });
@@ -102,7 +102,7 @@ test('LinkedIn uploads each image and publishes ordered MultiImage content', asy
 test('X uploads each photo and publishes the ordered media ids once', async () => {
     let n = 0, marks = 0, body;
     await twitter('token', input, async (url, init = {}) => {
-        if (url.startsWith('https://media.test')) return new Response('bytes', { headers: { 'Content-Type': 'image/jpeg' } });
+        if (new URL(url).hostname === 'media.test') return new Response('bytes', { headers: { 'Content-Type': 'image/jpeg' } });
         if (url.endsWith('/initialize')) return Response.json({ data: { id: `${++n}` } });
         if (url.endsWith('/tweets')) { assert.equal(marks, 1); body = JSON.parse(init.body); return Response.json({ data: { id: 'post' } }); }
         return Response.json({ data: {} });
@@ -121,7 +121,7 @@ test('Facebook prepares unpublished photos then attaches every id to one feed po
 test('Bluesky embeds every uploaded blob and TikTok delivers every photo to the inbox', async () => {
     let n = 0, body;
     await bluesky(JSON.stringify({ jwt: 'jwt', pds: 'https://bsky.social' }), { ...input, targetId: '11111111-1111-4111-8111-111111111111' }, async (url, init = {}) => {
-        if (url.startsWith('https://media.test')) return new Response('bytes', { headers: { 'content-type': 'image/jpeg' } });
+        if (new URL(url).hostname === 'media.test') return new Response('bytes', { headers: { 'content-type': 'image/jpeg' } });
         if (url.endsWith('uploadBlob')) return Response.json({ blob: { ref: `${++n}` } });
         body = JSON.parse(init.body); return Response.json({ uri: 'post' });
     });
