@@ -34,7 +34,7 @@ export function creativeFeatureExample(slug) {
 }
 
 export function creativeFeatureExampleAssetPath(slug) {
-  return CREATIVE_FEATURE_EXAMPLES[slug] ? `/api/reference-examples/${encodeURIComponent(slug)}` : null;
+  return CREATIVE_FEATURE_EXAMPLES[slug]?.url || null;
 }
 
 export const CREATIVE_FEATURES = Object.freeze([

@@ -33,7 +33,6 @@ const OUTSIDE = {
     'app/api/cinema/titles/[id]/route.js': 'public read',
     'app/api/popular-templates/route.js': 'public read',
     'app/api/presets/route.js': 'public read',
-    'app/api/reference-examples/[slug]/route.js': 'public allowlisted reference media read',
     'app/api/webhook/fal/route.js': 'provider signature',
     'app/api/webhook/kie/route.js': 'provider signature',
     'app/api/webhook/openrouter/route.js': 'provider signature',

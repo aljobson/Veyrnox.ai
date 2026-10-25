@@ -138,8 +138,8 @@ export default function CreativeFeatureStudio({ feature }) {
             <a href={example.sourceUrl} target="_blank" rel="noreferrer" className="text-xs font-bold text-vx-accent underline underline-offset-4">{t('app.features.exampleSource')}</a>
           </div>
           {example.kind === 'video'
-            ? <video controls playsInline preload="metadata" src={exampleAsset} className="aspect-video w-full bg-black object-contain" aria-label={t('app.features.exampleAria', { title: copy.title })} />
-            : <img loading="lazy" src={exampleAsset} alt={t('app.features.exampleAria', { title: copy.title })} className="max-h-[520px] w-full bg-black object-contain" />}
+            ? <video controls playsInline preload="metadata" referrerPolicy="no-referrer" src={exampleAsset} className="aspect-video w-full bg-black object-contain" aria-label={t('app.features.exampleAria', { title: copy.title })} />
+            : <img loading="lazy" referrerPolicy="no-referrer" src={exampleAsset} alt={t('app.features.exampleAria', { title: copy.title })} className="max-h-[520px] w-full bg-black object-contain" />}
           <p className="px-5 py-3 text-[11px] leading-4 text-vx-fg-faint sm:px-6">{t('app.features.exampleNote')}</p>
         </section>}
 

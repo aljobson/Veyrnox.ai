@@ -133,9 +133,7 @@ If a build starts failing after a dependency change, bisect these three first.
 ## API gateway (`/api/v1/*`)
 
 Public routes outside the gate include `/api/developer/openapi`; it publishes
-the read-only OpenAPI contract and never reads identity headers. They also include
-`/api/reference-examples/:slug`, a read-only media proxy whose destination comes
-only from the fixed creative-feature allowlist; callers cannot supply a URL. The protected
+the read-only OpenAPI contract and never reads identity headers. The protected
 developer surface is `/api/v1/developer/*` and requires a verified OAuth
 `client_id` claim as well as the normal user identity.
 
@@ -234,10 +232,6 @@ developer surface is `/api/v1/developer/*` and requires a verified OAuth
     pages whose body is one Turnstile error code or the word `unsupported`,
     rate limited per connecting IP in `worker.js`. It logs that and nothing
     about the sender (ADR-0026 amendments 2 and 5).
-  - `/api/reference-examples/:slug` — anonymous and read-only: streams the
-    allowlisted public reference asset for a known creative workflow, including
-    bounded HTTP range requests for video. The client chooses only a known slug;
-    it can never supply an upstream host or URL.
   - `/.well-known/oauth-protected-resource/api/v1/mcp` — anonymous, read-only
     OAuth protected-resource metadata for MCP discovery. It names the public
     MCP resource and Supabase issuer only; it carries no user or secret data.
@@ -300,7 +294,8 @@ developer surface is `/api/v1/developer/*` and requires a verified OAuth
   with no `'unsafe-inline'`. `connect-src` allows `'self'`, the Supabase
   project host, our own R2 S3 endpoints (browser uploads, ADR-0028) and the
   two Cloudflare Stream upload origins (ADR-0052). `img-src` and `media-src`
-  add only those R2 endpoints; `frame-src` is Turnstile and the Stream
+  add those R2 endpoints and the exact audited LipSync reference-media host
+  (ADR-0260); `frame-src` is Turnstile and the Stream
   player. Adding a host means an ADR. `frame-ancestors 'none'`,
   `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`. The other
   headers below are set in `next.config.mjs`.
