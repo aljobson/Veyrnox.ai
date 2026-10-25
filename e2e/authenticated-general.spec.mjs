@@ -34,14 +34,14 @@ test('Dashboard authenticated balance, template pagination and filters remain re
   const fixture = await fixtureFor(page);
   await open(fixture, page, '/app', 'Explore presets');
   await expect(page.getByTestId('app-credit-balance')).toBeVisible();
-  await expect(page.locator('#preset-gallery-results > a')).toHaveCount(12);
+  await expect(page.locator('#preset-gallery-results > a')).toHaveCount(50);
   await page.getByRole('button', { name: 'Show more templates', exact: true }).click();
-  await expect(page.locator('#preset-gallery-results > a')).toHaveCount(24);
+  await expect(page.locator('#preset-gallery-results > a')).toHaveCount(100);
   const filters = page.getByRole('group', { name: 'Filter templates', exact: true });
   await filters.getByRole('button', { name: 'New', exact: true }).click();
   await expect(filters.getByRole('button', { name: 'New', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await filters.getByRole('button', { name: 'All', exact: true }).click();
-  await expect(page.locator('#preset-gallery-results > a')).toHaveCount(12);
+  await expect(page.locator('#preset-gallery-results > a')).toHaveCount(50);
   expect(writes(fixture)).toEqual([]);
 });
 
