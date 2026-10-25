@@ -4,7 +4,7 @@ import { useBilling } from '../billing/BillingProvider';
 import { touchTarget } from '../lib/a11y';
 import { renewalTerms, toDisplayPackages } from '../lib/billing';
 import { t } from '../lib/i18n';
-import { VeyCardPeek } from './VeyCardPeek';
+import { VeyCardPeek, peekRoom } from './VeyCardPeek';
 import { colors } from '../theme';
 
 export type LockedFeature = 'calendar' | 'analytics' | 'inbox' | 'ads' | 'commerce';
@@ -68,7 +68,7 @@ export function UnlockCard({ feature, onUnlocked }: { feature: LockedFeature; on
                 <>
                     <View style={styles.plans}>
                         {plans.map((p) => (
-                            <Pressable key={p.id} accessibilityRole="button" accessibilityState={{ selected: chosen?.id === p.id }} style={[styles.plan, touchTarget, chosen?.id === p.id && styles.planOn]} onPress={() => setSelected(p.id)}>
+                            <Pressable key={p.id} accessibilityRole="button" accessibilityState={{ selected: chosen?.id === p.id }} style={[styles.plan, touchTarget, chosen?.id === p.id && styles.planOn, selected === p.id && { marginTop: peekRoom(72) }]} onPress={() => setSelected(p.id)}>
                                 {selected === p.id ? <VeyCardPeek width={72} /> : null}
                                 <Text style={[styles.planName, chosen?.id === p.id && styles.planOnText]}>{p.interval ? t(`unlock.plan.${p.interval}`) : p.title}</Text>
                                 <Text style={[styles.planPrice, chosen?.id === p.id && styles.planOnText]}>{p.priceString}</Text>

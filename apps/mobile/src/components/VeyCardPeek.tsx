@@ -7,6 +7,9 @@ const eyes = require('../../assets/vey/eyes.png');
 
 const RISE_MS = 380;
 
+// The room a chosen card needs above it so Vey's head sits in the gap, not over the card or text above.
+export const peekRoom = (width = 84) => Math.ceil((PEEK_CROP * width) / CANVAS.width);
+
 // Vey peeking over the top edge of the plan or pack the reader chose: head and paws show, the chin stays behind the
 // card. Render it as the first child of the chosen card; it sits just above the card's top edge and rises from behind
 // it. Decoration: no words, no touches, hidden from screen readers, and still under Reduce Motion.

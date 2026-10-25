@@ -6,7 +6,7 @@ import { useBilling } from '../../billing/BillingProvider';
 import { toDisplayPackages, waitForBalanceChange } from '../../lib/billing';
 import { colors } from '../../theme';
 import { plural, t } from '../../lib/i18n';
-import { VeyCardPeek } from '../../components/VeyCardPeek';
+import { VeyCardPeek, peekRoom } from '../../components/VeyCardPeek';
 import { useVeyScroll } from '../../lib/useVeyScroll';
 
 type Outcome = { kind: 'credited'; balance: number } | { kind: 'pending' } | { kind: 'error' } | null;
@@ -54,7 +54,7 @@ export default function Credits() {
                     keyExtractor={(p) => p.id}
                     ListHeaderComponent={canPurchase ? undefined : <Text style={styles.muted}>{t('credits.notOpen')}</Text>}
                     renderItem={({ item }) => (
-                        <Pressable accessibilityRole="button" disabled={!canPurchase || busyId !== null} style={[styles.row, !canPurchase && styles.off]} onPress={() => buy(item.id)}>
+                        <Pressable accessibilityRole="button" disabled={!canPurchase || busyId !== null} style={[styles.row, !canPurchase && styles.off, chosenId === item.id && { marginTop: peekRoom() }]} onPress={() => buy(item.id)}>
                             {chosenId === item.id ? <VeyCardPeek /> : null}
                             <View style={styles.rowText}>
                                 <Text style={styles.name}>{plural('credits.pack', item.credits ?? 0, { count: item.credits?.toLocaleString() ?? '0' })}</Text>

@@ -41,8 +41,9 @@ describe('the companion on a paywall', () => {
     test('peeks over the chosen card only, as decoration', () => {
         expect(read('app', '(app)', 'credits.tsx')).toContain('{chosenId === item.id ? <VeyCardPeek /> : null}');
         expect(read('components', 'UnlockCard.tsx')).toContain('{selected === p.id ? <VeyCardPeek');
+        expect(read('app', '(app)', '(tabs)', 'publish.tsx')).toContain('{selectedPlan === plan.id ? <VeyCardPeek width={72} /> : null}');
         expect(read('components', 'LowBalanceNote.tsx')).not.toContain('Vey');
-        for (const file of [['app', '(app)', 'credits.tsx'], ['components', 'UnlockCard.tsx']]) {
+        for (const file of [['app', '(app)', 'credits.tsx'], ['components', 'UnlockCard.tsx'], ['app', '(app)', '(tabs)', 'publish.tsx']]) {
             const source = read(...file);
             expect((source.match(/<VeyCardPeek/g) ?? []).length).toBe(1);
             expect(source).not.toMatch(/notify\(|useVeyPaywallMood|VeyPaywallBuddy/);

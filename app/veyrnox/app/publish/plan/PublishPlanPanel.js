@@ -6,6 +6,7 @@ import { useI18n } from '../../../../../components/I18nProvider';
 
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
+import { VeyCardPeek } from '../../../_components/VeyCardPeek';
 import { getSession, onSessionChange } from '../../../../lib/authClient';
 import { cancelPublishPlan, getPublishPlan, openPublishBilling, recoverPublishPlan, startPublishPlan } from '../../../../lib/publishPlanClient';
 
@@ -139,11 +140,12 @@ function Plan() {
     {!paid && data.plans?.length > 0 && <section aria-labelledby="choose-plan" className="rounded-2xl border border-vx-accent/50 bg-vx-accent/[0.06] p-6">
       <p className="text-xs font-bold uppercase tracking-widest text-vx-accent">{t("app.publish.plan.advanced")}</p>
       <h2 id="choose-plan" className="mt-2 text-2xl font-black">{t("publish.plan.colPlan")}</h2>
-      <ul className="mt-6 grid grid-cols-[repeat(auto-fit,minmax(15rem,1fr))] gap-4">
+      <ul className="mt-[4.5rem] grid grid-cols-[repeat(auto-fit,minmax(15rem,1fr))] gap-4">
         {data.plans.map((plan) => {
           const on = selectedPlanId === plan.id;
           const best = plan.billing_interval === 'year';
-          return <li key={plan.id} className={`flex flex-col rounded-2xl border p-6 transition-[border-color,box-shadow] duration-150 ${on || best ? 'border-vx-accent' : 'border-vx-border'} ${on ? 'shadow-[inset_0_0_0_1px_rgb(var(--vx-accent))]' : ''} bg-vx-base/60`}>
+          return <li key={plan.id} className={`relative flex flex-col rounded-2xl border p-6 transition-[border-color,box-shadow] duration-150 ${on || best ? 'border-vx-accent' : 'border-vx-border'} ${on ? 'shadow-[inset_0_0_0_1px_rgb(var(--vx-accent))]' : ''} bg-vx-base/60`}>
+            {on && <VeyCardPeek />}
             <div className="flex items-center justify-between gap-3">
               <p className="text-xs font-bold uppercase tracking-widest text-vx-accent">{cadence(plan.billing_interval)}</p>
               {best && <span className="rounded-full bg-vx-accent px-2.5 py-1 text-[0.65rem] font-black uppercase tracking-wide text-black">{t("app.publish.plan.save")}</span>}

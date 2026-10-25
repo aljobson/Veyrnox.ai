@@ -13,6 +13,7 @@ import { fetchAccounts, fetchPosts, publishErrorMessage, type PublishAccountsSta
 import { brandStore, fetchBrands, reconcileBrand, roleLabel, type Brand } from '../../../lib/publishBrand';
 import { canConnectAccounts, canPublish, hasPublishPlan, publishDestinations, publishSummary, type PublishDestinationId } from '../../../lib/publishDashboard';
 import { usePublishApi } from '../../../lib/usePublishApi';
+import { VeyCardPeek, peekRoom } from '../../../components/VeyCardPeek';
 import { colors, fonts } from '../../../theme';
 
 const PLAN_LABEL: Record<Interval, string> = { week: 'unlock.plan.week', month: 'unlock.plan.month', year: 'unlock.plan.year' };
@@ -198,7 +199,8 @@ export default function Publish() {
                                 <>
                                     <View style={styles.plans}>
                                         {plans.map((plan) => (
-                                            <Pressable key={plan.id} accessibilityRole="radio" accessibilityState={{ selected: chosenPlan?.id === plan.id }} style={[styles.plan, chosenPlan?.id === plan.id && styles.planOn]} onPress={() => setSelectedPlan(plan.id)}>
+                                            <Pressable key={plan.id} accessibilityRole="radio" accessibilityState={{ selected: chosenPlan?.id === plan.id }} style={[styles.plan, chosenPlan?.id === plan.id && styles.planOn, selectedPlan === plan.id && { marginTop: peekRoom(72) }]} onPress={() => setSelectedPlan(plan.id)}>
+                                                {selectedPlan === plan.id ? <VeyCardPeek width={72} /> : null}
                                                 <Text style={[styles.planName, chosenPlan?.id === plan.id && styles.planTextOn]}>{plan.interval ? t(PLAN_LABEL[plan.interval]) : plan.title}</Text>
                                                 <Text style={[styles.planPrice, chosenPlan?.id === plan.id && styles.planTextOn]}>{plan.priceString}</Text>
                                             </Pressable>
