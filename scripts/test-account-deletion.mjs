@@ -201,7 +201,7 @@ try {
     const WITH_AUTH_USER = new Set(['organisation_members', 'workspace_members', 'project_members', 'api_requests', 'editor_requests',
         'social_connection_selections', 'social_oauth_states', 'film_studio_projects', 'film_studio_save_windows']);
     const REFUSED_UNTIL_CLEARED = new Set(['cinema_submissions', 'cinema_competitions', 'cinema_story_polls', 'credit_subscriptions',
-        'social_publish_subscriptions', 'social_brand_members', 'social_brand_invitations']);
+        'social_publish_subscriptions', 'social_brand_members', 'social_brand_invitations', 'voice_profiles']);
     const RETAINED = new Set([
         // money and its audit trail
         'credit_balances', 'ledger_entries', 'top_ups', 'top_up_flagged_orders', 'account_actions', 'referral_rewards', 'referrals',
