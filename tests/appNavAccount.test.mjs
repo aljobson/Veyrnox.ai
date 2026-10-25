@@ -202,8 +202,11 @@ test('the whole nav still fits without a hidden horizontal rail', () => {
         'long and translated tool names keep a full-width row instead of colliding in a two-column grid');
     assert.match(src, /flex min-h-10 items-center rounded-xl/,
         'desktop sidebar destinations keep at least a 40px target');
-    assert.match(signedIn, /max-\[429px\]:hidden/,
-        'account totals yield on the narrowest phones instead of squeezing navigation');
+    assert.match(signedIn, /href="\/app\/library"[\s\S]*max-\[429px\]:hidden/,
+        'only the secondary asset count yields on the narrowest phones');
+    const balanceLink = signedIn.slice(signedIn.indexOf('data-testid="app-credit-balance"'), signedIn.indexOf('</Link>', signedIn.indexOf('data-testid="app-credit-balance"')));
+    assert.doesNotMatch(balanceLink, /max-\[429px\]:hidden/,
+        'the primary credit balance remains visible on authenticated mobile layouts');
     assert.match(signedIn, /readAccount && summaryState !== 'signed-out'/,
         'pages that suppress account reads do not show misleading em-dash totals');
     assert.match(signedIn, /summaryState === 'loading' && summary !== null[\s\S]*animate-pulse/,

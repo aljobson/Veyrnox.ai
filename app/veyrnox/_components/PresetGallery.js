@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { PresetCard } from './PresetCard';
 import { TemplateRoller } from './TemplateRoller';
-import { PRESETS, PRESET_CATEGORIES, searchTemplates, templatesIn } from '../_lib/tokens';
+import { PRESETS, PRESET_CATEGORIES, QUICK_PRESET_CATEGORIES, searchTemplates, templatesIn } from '../_lib/tokens';
 import { useCatalog } from '../_lib/useCatalog';
 import { usePopularTemplates } from '../_lib/usePopularTemplates';
 import { useI18n } from '../../../components/I18nProvider';
@@ -25,8 +25,7 @@ export function PresetGallery({ size = 'lg', columns = 'lg:columns-3', taste = n
   // Popular (ADR-0072) is a ranking, not a home category: it appears only once some template has enough use to rank, in rank order.
   const popular = popularIds.map((id) => PRESETS.find((preset) => preset.id === id)).filter(Boolean);
   const categories = popular.length ? ['ALL', 'NEW', 'POPULAR', ...PRESET_CATEGORIES.slice(2)] : PRESET_CATEGORIES;
-  const preferredCategories = ['ALL', 'NEW', 'POPULAR', 'YOUR PHOTO', 'PRODUCTS', 'STORIES'];
-  const quickCategories = categories.filter((category) => preferredCategories.includes(category));
+  const quickCategories = categories.filter((category) => QUICK_PRESET_CATEGORIES.includes(category));
   const shownCategories = allCategoriesOpen
     ? categories
     : [...quickCategories, ...(quickCategories.includes(cat) ? [] : [cat])];

@@ -505,9 +505,9 @@ export function AppNav({ balance, active, readAccount = true }) {
         {account ? (
           <>
             {/* Both figures stack inside one block: side by side they need
-                459px of nav and a phone gives 328. Amber is the credit
-                figure and nothing else — the count is body text. */}
-            {readAccount && summaryState !== 'signed-out' && <span className="relative flex min-h-11 flex-col justify-center gap-px rounded-2xl border border-vx-border bg-vx-panel px-1.5 py-0.5 max-[429px]:hidden sm:px-2.5" aria-busy={summaryState === 'loading'}>
+                459px of nav and a phone gives 328. The primary credit balance
+                remains visible there; only the secondary asset count yields. */}
+            {readAccount && summaryState !== 'signed-out' && <span className="relative flex min-h-11 flex-col justify-center gap-px rounded-2xl border border-vx-border bg-vx-panel px-1.5 py-0.5 sm:px-2.5" aria-busy={summaryState === 'loading'}>
               {summaryState === 'error' && (
                 <button
                   type="button"
@@ -539,7 +539,7 @@ export function AppNav({ balance, active, readAccount = true }) {
               <Link
                 href="/app/library"
                 aria-label={t('app.nav.libraryCount', { count: assetFmt, unit: assetWord })}
-                className="flex min-h-6 items-center gap-1.5 py-1 leading-none transition-opacity hover:opacity-80"
+                className="flex min-h-6 items-center gap-1.5 py-1 leading-none transition-opacity hover:opacity-80 max-[429px]:hidden"
               >
                 {/* Keeps the count's first digit under the balance's. */}
                 <span aria-hidden="true" className="h-1.5 w-1.5" />

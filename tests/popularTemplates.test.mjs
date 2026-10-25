@@ -105,6 +105,8 @@ test('the gallery labels every category, shows Popular only when something ranke
     const english = readFileSync(new URL('../lib/i18n/messages/en.mjs', import.meta.url), 'utf8');
     for (const c of ['ALL', 'NEW', 'POPULAR', 'YOUR PHOTO', 'CINEMATIC', 'ANIME', 'CARTOONS', 'MOVIES', 'FANTASY', 'REALISTIC', 'FASHION', 'PRODUCTS', 'VFX', 'UGC', 'ADS']) assert.match(english, new RegExp(`'presets\\.cat\\.${c}': '`), `${c} has a label`);
     assert.match(gallery, /const categories = popular\.length \? \['ALL', 'NEW', 'POPULAR', \.\.\.PRESET_CATEGORIES\.slice\(2\)\] : PRESET_CATEGORIES;/);
+    assert.match(gallery, /QUICK_PRESET_CATEGORIES\.includes\(category\)/,
+        'quick choices come from the internal template catalog rather than visible component copy');
     assert.match(gallery, /const list = \(cat === 'POPULAR' \? popular : templatesIn\(cat\)\)\.filter\(hasTemplateVideo\);/);
     assert.match(gallery, /aria-controls="template-category-filters"/);
     assert.match(gallery, /shownCategories\.map/);
