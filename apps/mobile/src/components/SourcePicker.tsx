@@ -29,6 +29,9 @@ interface SourcePickerProps {
     readonly drawable?: boolean;
     // A line under the slot's name saying what it is for (the photo a template needs).
     readonly hint?: string;
+    // A source uploaded on the preceding guided-tool screen. The key itself is
+    // held by the parent; this only renders the picker in its ready state.
+    readonly initialReady?: boolean;
 }
 
 type Status = { readonly step: 'empty' } | { readonly step: 'uploading'; readonly fraction: number } | { readonly step: 'ready' };
@@ -52,8 +55,8 @@ async function choose(kind: Slot['kind']): Promise<PickedFile | null> {
     return { uri: a.uri, mimeType: a.mimeType, size: a.fileSize, durationSeconds: typeof a.duration === 'number' ? a.duration / 1000 : undefined };
 }
 
-export function SourcePicker({ slot, api, onChange, onLibrary, onBusy, initial, drawable = false, hint }: SourcePickerProps) {
-    const [status, setStatus] = useState<Status>({ step: 'empty' });
+export function SourcePicker({ slot, api, onChange, onLibrary, onBusy, initial, drawable = false, hint, initialReady = false }: SourcePickerProps) {
+    const [status, setStatus] = useState<Status>(initialReady ? { step: 'ready' } : { step: 'empty' });
     const [preview, setPreview] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [choosing, setChoosing] = useState(false);

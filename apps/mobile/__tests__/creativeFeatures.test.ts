@@ -24,15 +24,24 @@ describe('guided creative feature registry', () => {
         expect(creativeFeature('text-to-speech')?.model).toBe('inworld-tts');
     });
 
-    test('mobile routes provide the hub, detail, example, script import and Create handoff', () => {
+    test('mobile routes provide the hub, detail, example, upload, consent and Create handoff', () => {
         const root = join(__dirname, '..', 'src', 'app', '(app)', 'features');
         const hub = readFileSync(join(root, 'index.tsx'), 'utf8');
         const detail = readFileSync(join(root, '[slug].tsx'), 'utf8');
+        const create = readFileSync(join(root, '..', 'create', '[modelId].tsx'), 'utf8');
         expect(hub).toContain('CREATIVE_FEATURE_GROUPS');
         expect(detail).toContain('<Example feature={feature} />');
         expect(detail).toContain('DocumentPicker.getDocumentAsync');
         expect(detail).toContain("pathname: '/create/[modelId]'");
-        expect(detail).toContain('REQUIRED UPLOADS');
+        expect(detail).toContain('REQUIRED SOURCES');
+        expect(detail).toContain('<SourcePicker');
+        expect(detail).toContain('accessibilityRole="checkbox"');
+        expect(detail).toContain('stageCreativeSourceHandoff');
+        expect(detail).toContain("feature.kind === 'video' ? '9:16' : '1:1'");
         expect(detail).not.toContain('model.name');
+        expect(create).toContain('readCreativeSourceHandoff');
+        expect(create).toContain('sourceRights: hasReference ? sourceRights : undefined');
+        expect(create).toContain("t('form.sourceRights')");
+        expect(create).toContain('o.aspects.includes(guidedAspect)');
     });
 });

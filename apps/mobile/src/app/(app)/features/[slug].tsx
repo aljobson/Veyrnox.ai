@@ -6,8 +6,12 @@ import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { VideoView, useVideoPlayer } from 'expo-video';
+import { useAuth } from '../../../auth/AuthProvider';
+import { SourcePicker } from '../../../components/SourcePicker';
 import { creativeFeature, featurePrompt, type CreativeFeature } from '../../../lib/creativeFeatures';
+import { stageCreativeSourceHandoff } from '../../../lib/creativeSourceHandoff';
 import { fetchCatalog, type CatalogModel } from '../../../lib/media';
+import { missingRequired, requiredNamedSlots, type Slot, type SlotName } from '../../../lib/sources';
 import { colors, fonts } from '../../../theme';
 
 export default function CreativeFeatureDetail() {
@@ -19,18 +23,30 @@ export default function CreativeFeatureDetail() {
 
 function FeatureStudio({ feature }: { feature: CreativeFeature }) {
     const router = useRouter();
+    const { api } = useAuth();
     const [brief, setBrief] = useState('');
     const [script, setScript] = useState<string | null>(null);
     const [model, setModel] = useState<CatalogModel | null | undefined>(undefined);
     const [error, setError] = useState('');
+    const [uploaded, setUploaded] = useState<Partial<Record<SlotName, string>>>({});
+    const [fromLibrary, setFromLibrary] = useState<Partial<Record<SlotName, string>>>({});
+    const [sending, setSending] = useState<Partial<Record<SlotName, boolean>>>({});
+    const [rights, setRights] = useState(false);
     useEffect(() => {
         let live = true;
         fetchCatalog().then((models) => { if (live) setModel(models.find((item) => item.id === feature.model) ?? null); }, () => { if (live) setModel(null); });
         return () => { live = false; };
     }, [feature.model]);
     const required = useMemo(() => feature.media.map((slot) => slot === 'image' ? 'image' : slot === 'video' ? 'video' : 'audio recording'), [feature.media]);
+    const slots = useMemo<Slot[]>(() => {
+        if (!model) return [];
+        return requiredNamedSlots(model, feature.media);
+    }, [feature.media, model]);
+    const hasEverySlot = feature.media.every((name) => slots.some((slot) => slot.slot === name));
+    const waiting = Object.values(sending).some(Boolean);
+    const sourcesReady = missingRequired(slots, { ...uploaded, ...fromLibrary }).length === 0;
     const prompt = featurePrompt(feature, brief);
-    const canContinue = model !== undefined && model !== null && (!feature.scriptUpload || !!script) && (feature.input === 'Production note' || !!brief.trim());
+    const canContinue = model !== undefined && model !== null && hasEverySlot && !waiting && sourcesReady && (!slots.length || rights) && (!feature.scriptUpload || !!script) && (feature.input === 'Production note' || !!brief.trim());
 
     async function chooseScript() {
         setError('');
@@ -45,8 +61,12 @@ function FeatureStudio({ feature }: { feature: CreativeFeature }) {
         } catch { setScript(null); setError('Choose a TXT or Markdown file up to 128 KB.'); }
     }
     function openCreate() {
-        if (!canContinue) { setError(model === null ? 'The live model is not available right now.' : feature.scriptUpload && !script ? 'Upload a script first.' : `Complete “${feature.input}” first.`); return; }
-        router.push({ pathname: '/create/[modelId]', params: { modelId: feature.model, prompt: prompt || feature.title, ...(feature.kind === 'video' ? { duration: '5' } : {}), recipe: feature.slug } });
+        if (!canContinue) {
+            setError(model === null || !hasEverySlot ? 'The live model is not available right now.' : waiting ? 'Wait for every upload to finish.' : !sourcesReady ? 'Add every required source.' : slots.length && !rights ? 'Confirm that you have permission to use these sources.' : feature.scriptUpload && !script ? 'Upload a script first.' : `Complete “${feature.input}” first.`);
+            return;
+        }
+        const sourceHandoff = stageCreativeSourceHandoff({ recipe: feature.slug, modelId: feature.model, aspect: feature.kind === 'video' ? '9:16' : '1:1', uploaded, fromLibrary });
+        router.push({ pathname: '/create/[modelId]', params: { modelId: feature.model, prompt: prompt || feature.title, ...(feature.kind === 'video' ? { duration: '5' } : {}), recipe: feature.slug, sourceHandoff } });
     }
     return <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Stack.Screen options={{ title: feature.title }} />
@@ -57,9 +77,9 @@ function FeatureStudio({ feature }: { feature: CreativeFeature }) {
             {feature.scriptUpload ? <><Pressable accessibilityRole="button" style={styles.secondary} onPress={() => void chooseScript()}><Text style={styles.secondaryText}>{script ? 'Replace script' : 'Upload TXT or Markdown script'}</Text></Pressable>{script ? <Text style={styles.note}>{script}</Text> : null}</> : null}
             <TextInput accessibilityLabel={feature.input} value={brief} onChangeText={(value) => { setBrief(value.slice(0, 1000)); setError(''); }} placeholder={feature.placeholder} placeholderTextColor={colors.muted} style={styles.input} multiline maxLength={1000} />
         </View>
-        <View style={styles.card}><Text style={styles.kicker}>REQUIRED UPLOADS</Text><Text style={styles.cardTitle}>{required.length ? required.join(' + ') : 'No media required'}</Text><Text style={styles.note}>{required.length ? 'The next screen has native Photos, Files and Library pickers for every required source.' : 'Your script is the source for this workflow.'}</Text></View>
+        <View style={styles.card}><Text style={styles.kicker}>REQUIRED SOURCES</Text><Text style={styles.cardTitle}>{required.length ? required.join(' + ') : 'No media required'}</Text>{model && slots.length ? slots.map((slot) => <SourcePicker key={slot.slot} slot={slot} api={api} onChange={(key) => { setRights(false); setUploaded((current) => ({ ...current, [slot.slot]: key })); }} onLibrary={(jobId) => { setRights(false); setFromLibrary((current) => ({ ...current, [slot.slot]: jobId })); }} onBusy={(busy) => setSending((current) => ({ ...current, [slot.slot]: busy }))} hint={`Required for ${feature.title}`} />) : <Text style={styles.note}>{required.length ? 'Checking the live upload requirements…' : 'Your script is the source for this workflow.'}</Text>}{slots.length ? <Pressable accessibilityRole="checkbox" accessibilityLabel="I have permission to use these sources" accessibilityState={{ checked: rights, disabled: waiting }} disabled={waiting} style={[styles.rights, rights && styles.rightsOn]} onPress={() => { setRights((value) => !value); setError(''); }}><Text style={styles.rightsText}>{rights ? '☑' : '☐'} I have permission to use these sources to generate AI content.</Text></Pressable> : null}</View>
         <View style={styles.card}><Text style={styles.kicker}>WORKFLOW</Text>{feature.steps.map((step, index) => <View key={step} style={styles.step}><Text style={styles.number}>0{index + 1}</Text><Text style={styles.stepText}>{step}</Text></View>)}</View>
-        <View style={styles.card}><Text style={styles.kicker}>LIVE MODEL</Text>{model === undefined ? <ActivityIndicator color={colors.accent} /> : <Text style={styles.cardTitle}>{model ? `Veyrnox ${feature.kind} model · ${model.credits} credits` : 'Unavailable'}</Text>}{error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}<Pressable accessibilityRole="button" disabled={model === undefined} style={[styles.primary, model === undefined && styles.off]} onPress={openCreate}><Text style={styles.primaryText}>Continue to uploads and final review</Text></Pressable><Text style={styles.note}>You will see the exact price before generating. A failed generation is refunded automatically.</Text></View>
+        <View style={styles.card}><Text style={styles.kicker}>LIVE MODEL</Text>{model === undefined ? <ActivityIndicator color={colors.accent} /> : <Text style={styles.cardTitle}>{model ? `Veyrnox ${feature.kind} model · ${model.credits} credits` : 'Unavailable'}</Text>}{error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}<Pressable accessibilityRole="button" disabled={model === undefined || waiting} style={[styles.primary, (model === undefined || waiting) && styles.off]} onPress={openCreate}><Text style={styles.primaryText}>Continue to final review</Text></Pressable><Text style={styles.note}>You will see the exact price before generating. A failed generation is refunded automatically.</Text></View>
     </ScrollView>;
 }
 
@@ -79,4 +99,5 @@ const styles = StyleSheet.create({
     step: { flexDirection: 'row', gap: 12 }, number: { color: colors.accent, fontSize: 12, fontWeight: '900' }, stepText: { flex: 1, color: colors.body, fontSize: 14, lineHeight: 20 },
     example: { overflow: 'hidden', borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: '#050506' }, exampleHead: { padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.surface }, exampleMedia: { width: '100%', height: 260, backgroundColor: '#050506' }, link: { color: colors.accent, fontSize: 13, fontWeight: '800', textDecorationLine: 'underline' },
     primary: { minHeight: 50, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: colors.accent, paddingHorizontal: 16 }, primaryText: { color: colors.accentInk, fontSize: 15, fontWeight: '900', textAlign: 'center' }, secondary: { minHeight: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: colors.accent }, secondaryText: { color: colors.accent, fontSize: 14, fontWeight: '800' }, off: { opacity: 0.45 }, error: { color: colors.danger, fontSize: 13, lineHeight: 19 },
+    rights: { minHeight: 48, justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: colors.borderStrong, padding: 12 }, rightsOn: { borderColor: colors.accent, backgroundColor: colors.accentSoft }, rightsText: { color: colors.body, fontSize: 13, lineHeight: 19 },
 });

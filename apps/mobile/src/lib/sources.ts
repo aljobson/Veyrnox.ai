@@ -60,6 +60,15 @@ export function slotsFor(model: CatalogModel): Slot[] {
     }));
 }
 
+// Guided recipes name the exact primary slots they need. Do not accidentally
+// turn another slot of the same kind (notably optional endImage) into a requirement.
+export function requiredNamedSlots(model: CatalogModel, names: readonly SlotKind[]): Slot[] {
+    const wanted = new Set<SlotKind>(names);
+    return slotsFor(model)
+        .filter((slot) => slot.slot !== 'endImage' && wanted.has(slot.slot))
+        .map((slot) => ({ ...slot, required: true }));
+}
+
 export function checkPicked(kind: SlotKind, file: PickedFile, maxSeconds?: number): PickedCheck {
     const raw = (file.mimeType ?? '').trim().toLowerCase();
     const type = ALIASES[raw] ?? raw;
