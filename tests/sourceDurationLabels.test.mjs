@@ -25,6 +25,7 @@ function component(path, name) {
   const imports = {
     '../../../../components/BindingText': binding,
     '../../../../lib/generationSourceSlots.mjs': sourceSlots,
+    '../../../../lib/createAttach.mjs': { attachAccept: () => 'image/png,video/mp4,audio/mpeg' },
     '../../_lib/chatMedia': chatMedia, '../_lib/chatMedia': chatMedia,
     '../../_lib/modelPricing': pricing, '../_lib/modelPricing': pricing,
     '../../_lib/createErrors': { ERROR_COPY: {} }, '../SourcePickers': { SourcePickers: () => null },

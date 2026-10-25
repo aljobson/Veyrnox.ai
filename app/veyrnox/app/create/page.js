@@ -317,8 +317,8 @@ export default function CreateStudio() {
     if (!file) return;
     const slot = attachSlotFor(file);
     const target = slot && modelForAttachment(models, model, slot);
-    if (!target) { setAttachNotice(tOr(t, 'app.create.attach.unsupported', 'No model takes that file type. Use PNG, JPEG or WebP images, MP4 video, or MP3 or WAV audio.')); return; }
-    setAttachNotice(target.id === model?.id ? '' : tOr(t, 'app.create.attach.switched', 'Switched to {name}, which accepts your file.', { name: target.name }));
+    if (!target) { setAttachNotice(t('app.create.attach.unsupported')); return; }
+    setAttachNotice(target.id === model?.id ? '' : t('app.create.attach.switched', { name: target.name }));
     if (target.id !== model?.id) { setPresetParam(null); setGoal(target.kind); setModelId(target.id); }
     pickSource(slot, file);
   }
@@ -609,11 +609,11 @@ export default function CreateStudio() {
           {Object.keys(media).length === 0 && (
             <div className="mt-3 flex items-center gap-3">
               <label className="font-vx-mono text-[11px] font-bold rounded-full px-3.5 py-1.5 border border-vx-border text-vx-fg-muted hover:text-vx-fg cursor-pointer has-focus-visible:outline-solid has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-vx-accent">
-                {tOr(t, 'app.create.attach.button', 'Attach from device')}
+                {t('app.create.attach.button')}
                 <input data-testid="create-attach" type="file" accept={attachAccept()} className="sr-only"
                   onChange={(e) => { attachFromDevice(e.target.files); e.target.value = ''; }} />
               </label>
-              <span className="text-xs text-vx-fg-muted">{tOr(t, 'app.create.attach.hint', 'Image, video or audio as a reference')}</span>
+              <span className="text-xs text-vx-fg-muted">{t('app.create.attach.hint')}</span>
             </div>
           )}
           {attachNotice && <p role="status" className="mt-2 text-xs text-vx-fg-muted">{attachNotice}</p>}

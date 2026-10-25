@@ -124,19 +124,19 @@ export function MediaComposer({ kind, media, prompt, onPrompt }) {
           <div className="border-b border-vx-border px-3 py-3">
             <div className="flex items-center gap-3">
               <label className="shrink-0 cursor-pointer rounded-full border border-vx-border px-3.5 py-1.5 font-vx-mono text-[11px] font-bold text-vx-fg-muted hover:text-vx-fg has-focus-visible:outline-solid has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-vx-accent">
-                {tOr(t, 'app.create.attach.button', 'Attach from device')}
+                {t('app.create.attach.button')}
                 <input data-testid="chat-media-attach" type="file" accept={attachAccept()} disabled={busy} className="sr-only"
                   onChange={(e) => { attachFromDevice(e.target.files); e.target.value = ''; }} />
               </label>
-              <span className="text-xs text-vx-fg-muted">{tOr(t, 'app.create.attach.hint', 'Image, video or audio as a reference')}</span>
+              <span className="text-xs text-vx-fg-muted">{t('app.create.attach.hint')}</span>
             </div>
           </div>
         )}
         {attachNotice && (
           <p role="status" className="border-b border-vx-border px-4 py-2 text-xs text-vx-fg-muted">
             {attachNotice.code === 'switched'
-              ? tOr(t, 'app.create.attach.switched', 'Switched to {name}, which accepts your file.', { name: attachNotice.name })
-              : tOr(t, 'app.create.attach.unsupported', 'No model takes that file type. Use PNG, JPEG or WebP images, MP4 video, or MP3 or WAV audio.')}
+              ? t('app.create.attach.switched', { name: attachNotice.name })
+              : t('app.create.attach.unsupported')}
           </p>
         )}
 
