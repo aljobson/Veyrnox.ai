@@ -83,6 +83,14 @@ const zh = {
     'checkin.earned.few': '你获得了{credits}积分。',
     'checkin.earned.many': '你获得了{credits}积分。',
     'checkin.earned.other': '你获得了{credits}积分。',
+    'app.publish.carousel.limit': '已选择 {count} 个文件 · 最多 {max} 个',
+    'app.publish.carousel.item': '文件 {count}',
+    'app.publish.carousel.earlier': '向前移动',
+    'app.publish.carousel.later': '向后移动',
+    'app.publish.carousel.blocked': '{network} 不支持这种文件组合或数量。',
+    'app.publish.carousel.closed': '多文件帖子暂不可用。',
+    'app.publish.carousel.unavailable': '此附件已被暂扣或不可用。',
+    'app.publish.common.remove': '移除',
 } as const;
 
 export default zh;

@@ -17,7 +17,7 @@ test('native submission is authorized, then marked, before the public request an
     globalThis.fetch = async (url, init) => {
         const u = new URL(url), name = u.pathname.split('/').pop();
         order.push(name);
-        if (name === 'claim_due_social_post_targets') return Response.json([row]);
+        if (name === 'claim_due_social_post_targets_v2') return Response.json([row]);
         if (name === 'authorize_social_target_dispatch') return Response.json(JSON.parse(init.body).p_target_id === '00000000-0000-0000-0000-000000000000' ? { ok: false, code: 'CLAIM_LOST' } : { ok: true });
         if (name === 'mark_social_provider_submission') return Response.json({ ok: true });
         if (name === 'photos') return Response.json({ post_id: '12345_67890' });
@@ -26,17 +26,17 @@ test('native submission is authorized, then marked, before the public request an
         throw new Error(`unexpected request ${name}`);
     };
     assert.equal((await runPublishSweep(deps)).published, 0);
-    assert.deepEqual(order, ['authorize_social_target_dispatch', 'claim_due_social_post_targets', 'authorize_social_target_dispatch', 'authorize_social_target_dispatch', 'mark_social_provider_submission', 'photos', 'report_social_post_progress']);
+    assert.deepEqual(order, ['authorize_social_target_dispatch', 'claim_due_social_post_targets_v2', 'authorize_social_target_dispatch', 'authorize_social_target_dispatch', 'mark_social_provider_submission', 'photos', 'report_social_post_progress']);
     assert.equal(saved.result.platformPostId, '12345_67890');
     row.provider_state = saved; order.length = 0;
     assert.equal((await runPublishSweep(deps)).published, 1);
-    assert.deepEqual(order, ['authorize_social_target_dispatch', 'claim_due_social_post_targets', 'complete_social_post_target']);
+    assert.deepEqual(order, ['authorize_social_target_dispatch', 'claim_due_social_post_targets_v2', 'complete_social_post_target']);
 });
 test('an uncertain previous submission fails for reconciliation without another provider call', async () => {
     const row = await target({ submission_started: true });
     globalThis.fetch = async (url, init) => {
         const name = new URL(url).pathname.split('/').pop();
-        if (name === 'claim_due_social_post_targets') return Response.json([row]);
+        if (name === 'claim_due_social_post_targets_v2') return Response.json([row]);
         if (name === 'authorize_social_target_dispatch') return Response.json({ ok: false, code: 'CLAIM_LOST' });
         assert.equal(name, 'complete_social_post_target');
         assert.equal(JSON.parse(init.body).p_error, 'provider_result_unknown_reconcile_before_retry');

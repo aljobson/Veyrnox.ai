@@ -6,6 +6,8 @@ import { useI18n } from '../../../../components/I18nProvider';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import DeviceUploads from './DeviceUploads.js';
+import CarouselSelection from './CarouselSelection.js';
+import { orderedMediaSignature, selectionLimit, selectionBlocker, toggleMedia } from '../../../../lib/social/carouselSelection.js';
 import NetworkLogo from './NetworkLogo.js';
 import { gatewayFetch } from '../../_lib/gateway.js';
 import { ownedPublishUpload } from '../../_lib/editorDelivery.mjs';
@@ -107,8 +109,8 @@ function ContentPresets({ accounts, caption, selectedAccountIds, onApply }) {
     </section>;
 }
 
-/** The account's own recent library, single-select, for the composer's one media slot. */
-function MediaPicker({ selected, onSelect }) {
+/** The account's own recent library, ordered selection for the composer. */
+function MediaPicker({ selected, onSelect, disabled }) {
   const { t } = useI18n();
     const [jobs, setJobs] = useState(null);
     const [thumbs, setThumbs] = useState({});
@@ -149,10 +151,11 @@ function MediaPicker({ selected, onSelect }) {
     return (
         <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-64 overflow-y-auto">
             {jobs.map((j) => {
-                const isSelected = selected?.jobId === j.job_id;
+                const isSelected = selected.some(item => item.jobId === j.job_id);
                 return (
                     <button
                         key={j.job_id}
+                        disabled={disabled}
                         type="button"
                         aria-label={t('app.publish.composer.chooseMedia', { type: tOr(t, `app.publish.composer.media.${thumbs[j.job_id]?.mediaType}`, t('app.publish.composer.mediaFallback')), id: j.job_id.slice(0, 8) })}
                         aria-pressed={isSelected}
@@ -172,7 +175,7 @@ function MediaPicker({ selected, onSelect }) {
     );
 }
 
-export function Composer({ accounts, onScheduled, initialJobId = null, initialUploadId = null, reusablePost = null, uploadsEnabled = false, youtubeVisibilityEnabled = false, scheduleEnabled = true, multiAccountEnabled = true, presetsEnabled = false, queuesEnabled = false, approvalsEnabled = false, variantsEnabled = false }) {
+export function Composer({ accounts, onScheduled, initialJobId = null, initialUploadId = null, reusablePost = null, uploadsEnabled = false, carouselEnabled = false, youtubeVisibilityEnabled = false, scheduleEnabled = true, multiAccountEnabled = true, presetsEnabled = false, queuesEnabled = false, approvalsEnabled = false, variantsEnabled = false }) {
   const { t, locale } = useI18n();
     const number = value => locale === 'en' ? value : Number(value).toLocaleString(localeTag(locale));
     const networkName = key => tOr(t, `app.publish.network.${key}`, networkLabel(key));
@@ -184,9 +187,10 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
     const [youtubeVisibility, setYoutubeVisibility] = useState('private');
     const hasYoutube = activeAccounts.some((a) => a.network === 'youtube' && selectedAccountIds.has(a.id));
     const [scheduledAt, setScheduledAt] = useState(defaultScheduleValue);
-    const [mediaType, setMediaType] = useState('image');
-    const hasTiktokVideo = mediaType === 'video' && activeAccounts.some((a) => a.network === 'tiktok' && selectedAccountIds.has(a.id));
-    const [selectedMedia, setSelectedMedia] = useState(null);
+    const [mediaItems, setMediaItems] = useState([]);
+    const selectedMedia = mediaItems[0] || null;
+    const hasTiktokVideo = mediaItems.some(item => item.mediaType === 'video') && activeAccounts.some(a => a.network === 'tiktok' && selectedAccountIds.has(a.id));
+    const setSelectedMedia = item => setMediaItems(item ? [item] : []);
     const [loadingMedia, setLoadingMedia] = useState(!!initialJobId || !!initialUploadId);
     const [mediaError, setMediaError] = useState('');
     const [uploading, setUploading] = useState(false);
@@ -219,8 +223,7 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
                 const type = asset.mime_type?.split('/')[0];
                 if (!asset.url || !['image', 'video'].includes(type)) throw new Error('unsupported_media');
                 if (cancelled) return;
-                setMediaType(type);
-                setSelectedMedia({ jobId: initialJobId, thumbUrl: asset.url });
+                setSelectedMedia({ jobId: initialJobId, thumbUrl: asset.url, mediaType: type });
             } catch {
                 if (!cancelled) setMediaError(t("app.publish.composer.jobUnavailable"));
             } finally {
@@ -239,7 +242,7 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
             setLoadingMedia(true);
             return ownedPublishUpload(gatewayFetch, initialUploadId);
         }).then(media => {
-            if (active && media) { setSelectedMedia(media); setMediaType('video'); setMediaError(''); }
+            if (active && media) { setSelectedMedia(media); setMediaError(''); }
         }).catch(() => { if (active) setMediaError(uploadsEnabled ? t("app.publish.composer.uploadUnavailable") : t("app.publish.composer.uploadClosed")); })
             .finally(() => { if (active) setLoadingMedia(false); });
         return () => { active = false; };
@@ -250,21 +253,20 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
         let active = true;
         Promise.resolve().then(async () => {
             if (!active) return;
-            const source = reusablePost.media?.[0];
+            const sources = reusablePost.media || [];
             setCaption(reusablePost.global_text || '');
             setNetworkText(Object.fromEntries((reusablePost.targets || []).filter((target) => target.text_override).map((target) => [target.network, target.text_override])));
             setSelectedAccountIds(new Set((reusablePost.targets || []).map((target) => target.account_id).filter((id) => activeAccounts.some((account) => account.id === id))));
             setSuccess(t("app.publish.composer.reused"));
             setError(''); setMediaError(''); setSelectedMedia(null);
             idempotencyKey.current = newIdempotencyKey();
-            if (!source) { setMediaError(t("app.publish.composer.noReusableMedia")); return; }
+            if (!sources.length) { setMediaError(t("app.publish.composer.noReusableMedia")); return; }
             setLoadingMedia(true);
-            const media = source.job_id
-                ? await gatewayFetch(`/jobs/${encodeURIComponent(source.job_id)}/asset`).then((asset) => ({ jobId: source.job_id, thumbUrl: asset.url, mediaType: source.media_type }))
-                : uploadsEnabled && source.upload_id
-                    ? await ownedPublishUpload(gatewayFetch, source.upload_id)
-                    : await Promise.reject(new Error('media_unavailable'));
-            if (active) { setSelectedMedia(media); setMediaType(media.mediaType); }
+            const media = await Promise.all(sources.map(source => source.job_id
+                ? gatewayFetch(`/jobs/${encodeURIComponent(source.job_id)}/asset`).then(asset => ({ jobId: source.job_id, thumbUrl: asset.url, mediaType: source.media_type }))
+                : uploadsEnabled && source.upload_id ? ownedPublishUpload(gatewayFetch, source.upload_id)
+                    : Promise.reject(new Error('media_unavailable'))));
+            if (active) { setMediaItems(media); }
         }).catch(() => { if (active) setMediaError(t("app.publish.composer.mediaUnavailable")); })
             .finally(() => { if (active) setLoadingMedia(false); });
         return () => { active = false; };
@@ -272,6 +274,17 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [reusablePost?.reuseKey, uploadsEnabled, t]);
 
+    const selectedAccounts = activeAccounts.filter(account => selectedAccountIds.has(account.id));
+    const queueAccounts = activeAccounts.filter(account => (queues || []).find(queue => queue.id === queueId)?.account_ids.includes(account.id));
+    const previewAccounts = queueId ? queueAccounts : selectedAccounts;
+    const maxMedia = selectionLimit(previewAccounts, carouselEnabled);
+    const blocker = selectionBlocker(previewAccounts, mediaItems, carouselEnabled);
+    const blockerText = blocker ? blocker.network ? t('app.publish.carousel.blocked', { network: networkName(blocker.network) }) : t('app.publish.carousel.closed') : '';
+    const signature = useRef('');
+    function chooseMedia(item) {
+        setMediaItems(old => toggleMedia(old, item, maxMedia));
+        setMediaError('');
+    }
     const selectedNetworks = [...new Set(activeAccounts.filter((account) => selectedAccountIds.has(account.id)).map((account) => account.network))];
     const activePreviewNetwork = selectedNetworks.includes(previewNetwork) ? previewNetwork : selectedNetworks[0] || '';
 
@@ -287,17 +300,19 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
     async function onSubmit(e) {
         e.preventDefault();
         setError(''); setSuccess(''); setReviewLinks([]);
-        if (selectedAccountIds.size === 0) { setError(t("app.publish.composer.pickAccount")); return; }
+        const mode = e.nativeEvent.submitter?.value;
+        const destinations = mode === 'queue' ? queueAccounts : selectedAccounts;
+        const submitBlocker = selectionBlocker(destinations, mediaItems, carouselEnabled);
+        if (destinations.length === 0) { setError(t("app.publish.composer.pickAccount")); return; }
+        if (submitBlocker) { setError(submitBlocker.network ? t('app.publish.carousel.blocked', { network: networkName(submitBlocker.network) }) : t('app.publish.carousel.closed')); return; }
         if (!selectedMedia) { setError(t("app.publish.composer.pickMedia")); return; }
-        for (const id of selectedAccountIds) {
-            const account = activeAccounts.find((a) => a.id === id);
+        for (const account of destinations) {
             const network = NETWORKS.find((n) => n.key === account?.network);
-            if (!(account?.supportedMedia || network?.media.filter(type => type !== 'video' || account?.network === 'youtube'))?.includes(mediaType)) { setError(t('app.publish.composer.unsupported', { network: network?.key ? networkName(network.key) : t('app.publish.composer.accountFallback') })); return; }
+            if (mediaItems.some(item => !(account?.supportedMedia || network?.media.filter(type => type !== 'video' || account?.network === 'youtube'))?.includes(item.mediaType))) { setError(t('app.publish.composer.unsupported', { network: network?.key ? networkName(network.key) : t('app.publish.composer.accountFallback') })); return; }
             const effectiveCaption = networkText[network.key] || caption;
             const length = captionLength(network.key, effectiveCaption);
             if (length > network.captionLimit) { setError(t('app.publish.composer.captionLimit', { network: networkName(network.key), count: number(network.captionLimit) })); return; }
         }
-        const mode = e.nativeEvent.submitter?.value;
         const publishNow = mode === 'now';
         const useQueue = mode === 'queue';
         const useApproval = mode === 'review';
@@ -310,9 +325,19 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
         if (useApproval && (reviewers.length < 1 || reviewers.length > 10 || reviewers.some((email) => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)))) {
             setError(t("app.publish.composer.reviewersRequired")); return;
         }
+        const nextSignature = JSON.stringify([orderedMediaSignature(mediaItems), [...selectedAccountIds].sort(), caption, mode,
+            publishNow ? null : useQueue ? queueId : scheduledAt, Object.entries(networkText).sort(([a], [b]) => a.localeCompare(b)),
+            youtubeVisibility, useApproval ? [...reviewers].sort() : [], useApproval ? approvalPolicy : null]);
+        if (signature.current !== nextSignature) { signature.current = nextSignature; idempotencyKey.current = newIdempotencyKey(); }
         setSubmitting(mode);
         try {
             const reservation = useQueue ? await reserveSocialQueueSlot(queueId, idempotencyKey.current) : null;
+            if (reservation) {
+                const reserved = reservation.account_ids.map(id => activeAccounts.find(account => account.id === id));
+                if (reserved.some(account => !account)) { setError(t('app.publish.composer.pickAccount')); return; }
+                const blocked = selectionBlocker(reserved, mediaItems, carouselEnabled);
+                if (blocked) { setError(blocked.network ? t('app.publish.carousel.blocked', { network: networkName(blocked.network) }) : t('app.publish.carousel.closed')); return; }
+            }
             const payload = {
                 ...(publishNow ? { publishNow: true } : { scheduledAt: useQueue ? reservation.scheduled_at : schedule }),
                 globalText: caption,
@@ -320,7 +345,7 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
                 ...(hasYoutube && youtubeVisibilityEnabled ? { youtubeVisibility } : {}),
                 idempotencyKey: idempotencyKey.current,
                 accountIds: useQueue ? reservation.account_ids : [...selectedAccountIds],
-                media: [{ mediaType, ...(selectedMedia.uploadId ? { uploadId: selectedMedia.uploadId } : { jobId: selectedMedia.jobId }) }],
+                media: mediaItems.map(item => ({ mediaType: item.mediaType, ...(item.uploadId ? { uploadId: item.uploadId } : { jobId: item.jobId }) })),
             };
             const result = useApproval
                 ? await createSocialApproval({ ...payload, reviewers, policy: approvalPolicy })
@@ -422,7 +447,7 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
                         </div>
                         <article aria-label={t('app.publish.composer.postPreview', { network: networkName(network.key) })} className="overflow-hidden rounded-xl border border-vx-border bg-vx-panel">
                             <header className="flex items-center gap-2 border-b border-vx-border p-3 text-sm font-bold"><NetworkLogo network={activePreviewNetwork} className="h-5 w-5" /><span>{names.join(', ')}</span></header>
-                            {selectedMedia?.thumbUrl && (mediaType === 'video'
+                            {selectedMedia?.thumbUrl && (selectedMedia.mediaType === 'video'
                                 ? <video src={selectedMedia.thumbUrl} muted playsInline preload="metadata" className="aspect-video w-full object-cover" />
                                 : <img src={selectedMedia.thumbUrl} alt={t("app.publish.composer.selectedPreview")} className="aspect-video w-full object-cover" />)}
                             <p className="whitespace-pre-wrap break-words p-3 text-sm">{effective || t("app.publish.composer.captionPreview")}</p>
@@ -437,25 +462,23 @@ export function Composer({ accounts, onScheduled, initialJobId = null, initialUp
             <div>
                 <div className="text-sm font-bold mb-2">{t("app.publish.composer.media")}</div>
                 <div className="flex flex-wrap items-center gap-3 mb-2">
-                    <select aria-label={t("app.publish.composer.mediaType")} disabled={uploading || Boolean(selectedMedia?.uploadId)} value={mediaType} onChange={(e) => setMediaType(e.target.value)} className="rounded-lg border border-vx-border bg-transparent px-2 py-1 text-sm">
-                        <option value="image">{t("model.media.image")}</option>
-                        <option value="video">{t("app.library.kind.video")}</option>
-                    </select>
                     <button type="button" disabled={loadingMedia || uploading} className={button} onClick={() => setPickerOpen((v) => !v)}>
                         {selectedMedia ? t("app.publish.composer.change") : t("app.publish.composer.fromLibrary")}
                     </button>
-                    {selectedMedia?.thumbUrl && (mediaType === 'video'
+                    {selectedMedia?.thumbUrl && (selectedMedia.mediaType === 'video'
                         ? <video src={selectedMedia.thumbUrl} aria-label={t("app.publish.composer.selectedVideo")} controls playsInline className="h-24 w-40 rounded-sm object-contain" />
                         : <img src={selectedMedia.thumbUrl} alt={t("app.publish.composer.selectedImage")} className="h-10 w-10 rounded-sm object-cover" />)}
                 </div>
                 {loadingMedia && <p role="status" className="text-sm text-vx-fg-muted">{t("app.publish.composer.loadingGeneration")}</p>}
                 {mediaError && <p role="alert" className="text-sm text-vx-danger">{mediaError}</p>}
-                {selectedMedia && <p className="text-sm text-vx-fg-muted">{t("app.publish.composer.mediaSelected")}</p>}
-                {uploadsEnabled && <DeviceUploads selected={selectedMedia} onBusyChange={setUploading} onSelect={(m) => { setSelectedMedia(m); if (m) setMediaType(m.mediaType); setMediaError(''); setPickerOpen(false); }} />}
+                <CarouselSelection items={mediaItems} onChange={setMediaItems} max={maxMedia} disabled={uploading || Boolean(submitting)} />
+                {blockerText && <p role="alert" className="text-sm text-vx-danger">{blockerText}</p>}
+                {uploadsEnabled && <DeviceUploads selected={mediaItems} max={maxMedia} onBusyChange={setUploading} onSelect={(items) => { setMediaItems(items); setMediaError(''); }} />}
                 {pickerOpen && (
                     <MediaPicker
-                        selected={selectedMedia}
-                        onSelect={(m) => { setSelectedMedia(m); setMediaType(m.mediaType); setMediaError(''); setPickerOpen(false); }}
+                        selected={mediaItems}
+                        disabled={uploading || Boolean(submitting)}
+                        onSelect={chooseMedia}
                     />
                 )}
             </div>

@@ -1,6 +1,6 @@
 import * as Crypto from 'expo-crypto';
 import type { CacheStorage } from './cache';
-import type { Draft } from './publishCompose';
+import { mediaSignature, type Draft } from './publishCompose';
 
 // ADR-0122: the idempotency key of a Publish draft is saved before the post is sent, so closing or losing the app
 // in the middle of a send cannot turn a retry into a second public post. It lives under the cache prefix, so the
@@ -17,7 +17,7 @@ interface Saved {
 
 // What would be posted: the creation, the accounts (in any order), the text and the time.
 export function draftSignature(draft: Draft): string {
-    return JSON.stringify([draft.uploadId ? `upload:${draft.uploadId}` : draft.jobId, draft.mediaType, [...draft.accountIds].sort(), draft.text.trim(), draft.queue ? `queue:${draft.queue.id}` : draft.when.kind === 'now' ? 'now' : draft.when.at.toISOString(), Object.entries(draft.networkText ?? {}).sort(([a], [b]) => (a < b ? -1 : 1)), draft.youtubeVisibility ?? null]);
+    return JSON.stringify([...mediaSignature(draft), [...draft.accountIds].sort(), draft.text.trim(), draft.queue ? `queue:${draft.queue.id}` : draft.when.kind === 'now' ? 'now' : draft.when.at.toISOString(), Object.entries(draft.networkText ?? {}).sort(([a], [b]) => (a < b ? -1 : 1)), draft.youtubeVisibility ?? null]);
 }
 
 // A 4xx the server decided on means nothing was created, so the key is finished. A lost connection, a timeout, a rate

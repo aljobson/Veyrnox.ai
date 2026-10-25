@@ -1,3 +1,4 @@
+import { imageItems } from './carousel.js';
 // LinkedIn adapter (OAuth2 + OpenID Connect + Posts/Images REST APIs) —
 // ADR-0061 §2.1 "adapters, not SDKs": plain fetch, no LinkedIn SDK on the
 // SSR graph. Verified against learn.microsoft.com/en-us/linkedin (the
@@ -108,8 +109,8 @@ export async function fetchConnectedAccount(accessToken, fetcher = fetch) {
  * referencing the uploaded image. Image posts only, matching every other
  * network's v1 MVP scope. Throws UNSUPPORTED_MEDIA_TYPE for anything else
  * so the caller fails the target cleanly instead of silently dropping it. */
-export async function publishPost(accessToken, { externalAccountId, caption, mediaType, mediaUrl }, fetcher = fetch, beforePublish = async () => {}) {
-    if (mediaType !== 'image') {
+export async function publishPost(accessToken, { externalAccountId, caption, mediaType, mediaUrl, media }, fetcher = fetch, beforePublish = async () => {}) {
+    if (media === undefined && mediaType !== 'image') {
         const err = new Error(`unsupported media type: ${mediaType}`);
         err.code = 'UNSUPPORTED_MEDIA_TYPE';
         throw err;
@@ -122,33 +123,39 @@ export async function publishPost(accessToken, { externalAccountId, caption, med
         ...extra,
     });
 
-    const initRes = await fetcher(`${API_BASE}/rest/images?action=initializeUpload`, {
-        method: 'POST',
-        headers: apiHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify({ initializeUploadRequest: { owner: author } }),
-        signal: AbortSignal.timeout(15000),
-    });
-    const init = await initRes.json().catch(() => null);
-    const uploadUrl = init && init.value && init.value.uploadUrl;
-    const imageUrn = init && init.value && init.value.image;
-    if (!initRes.ok || !uploadUrl || !imageUrn) {
-        throw new Error((init && init.message) || `image_init_failed_${initRes.status}`);
+    const items = imageItems(media, mediaType, mediaUrl, 9);
+    const ids = [];
+    for (const item of items) {
+        const initRes = await fetcher(`${API_BASE}/rest/images?action=initializeUpload`, {
+            method: 'POST',
+            headers: apiHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ initializeUploadRequest: { owner: author } }),
+            signal: AbortSignal.timeout(15000),
+        });
+        const init = await initRes.json().catch(() => null);
+        const uploadUrl = init && init.value && init.value.uploadUrl;
+        const imageUrn = init && init.value && init.value.image;
+        if (!initRes.ok || !uploadUrl || !imageUrn) {
+            throw new Error((init && init.message) || `image_init_failed_${initRes.status}`);
+        }
+
+        const sourceRes = await fetcher(item.mediaUrl, { signal: AbortSignal.timeout(20000) });
+        if (!sourceRes.ok) throw new Error(`source_media_fetch_failed_${sourceRes.status}`);
+        const bytes = await sourceRes.arrayBuffer();
+        const contentType = sourceRes.headers.get('content-type') || 'application/octet-stream';
+
+        // LinkedIn's own docs: this PUT does require the OAuth token (unlike
+        // the equivalent video upload call, which must not carry one).
+        const uploadRes = await fetcher(uploadUrl, {
+            method: 'PUT',
+            headers: apiHeaders({ 'Content-Type': contentType }),
+            body: bytes,
+            signal: AbortSignal.timeout(30000),
+        });
+        if (!uploadRes.ok) throw new Error(`image_upload_failed_${uploadRes.status}`);
+
+        ids.push(imageUrn);
     }
-
-    const sourceRes = await fetcher(mediaUrl, { signal: AbortSignal.timeout(20000) });
-    if (!sourceRes.ok) throw new Error(`source_media_fetch_failed_${sourceRes.status}`);
-    const bytes = await sourceRes.arrayBuffer();
-    const contentType = sourceRes.headers.get('content-type') || 'application/octet-stream';
-
-    // LinkedIn's own docs: this PUT does require the OAuth token (unlike
-    // the equivalent video upload call, which must not carry one).
-    const uploadRes = await fetcher(uploadUrl, {
-        method: 'PUT',
-        headers: apiHeaders({ 'Content-Type': contentType }),
-        body: bytes,
-        signal: AbortSignal.timeout(30000),
-    });
-    if (!uploadRes.ok) throw new Error(`image_upload_failed_${uploadRes.status}`);
 
     await beforePublish();
     const postRes = await fetcher(`${API_BASE}/rest/posts`, {
@@ -159,7 +166,7 @@ export async function publishPost(accessToken, { externalAccountId, caption, med
             commentary: caption || '',
             visibility: 'PUBLIC',
             distribution: { feedDistribution: 'MAIN_FEED', targetEntities: [], thirdPartyDistributionChannels: [] },
-            content: { media: { id: imageUrn } },
+            content: ids.length === 1 ? { media: { id: ids[0] } } : { multiImage: { images: ids.map(id => ({ id })) } },
             lifecycleState: 'PUBLISHED',
             isReshareDisabledByAuthor: false,
         }),

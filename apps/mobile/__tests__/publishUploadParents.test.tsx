@@ -13,7 +13,7 @@ const mockJob = { job_id: 'j', model_id: 'image', state: 'succeeded', has_asset:
 jest.mock('../src/components/PublishUploadPanel', () => ({ PublishUploadPanel: (props: React.ComponentProps<typeof PublishUploadPanel>) => { mockPanel = props; return null; } }));
 jest.mock('../src/lib/usePublishApi', () => ({ usePublishApi: () => mockApi }));
 jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useRouter: () => ({ replace: jest.fn() }), useLocalSearchParams: () => ({}) }));
-jest.mock('../src/lib/appCache', () => ({ getCacheUser: () => 'owner', appStorage: { get: async () => null, set: async () => {}, remove: async () => {} } }));
+jest.mock('../src/lib/appCache', () => ({ getCacheUser: () => 'owner', subscribeCacheUser: () => () => {}, appStorage: { get: async () => null, set: async () => {}, remove: async () => {} } }));
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'idempotency-key' }));
 jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalog: async () => [{ id: 'image', name: 'Image', modality: 'text-to-image' }], mediaApi: () => ({ listJobs: async () => ({ jobs: [mockJob] }) }) }));
 jest.mock('../src/components/VeyMascot', () => ({ VEY_CLEARANCE: 10 }));
@@ -57,20 +57,20 @@ for (const approval of [false, true]) {
     const submit = async () => { await act(async () => sendButton().props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 })); };
     test(`${name}: controlled selection clears after selected removal, preserves unselected removal and deselects on creation`, async () => {
         await ready(approval);
-        await act(async () => mockPanel.onSelect({ uploadId: 'u', mediaType: 'image' }));
-        expect(mockPanel.selectedUploadId).toBe('u');
+        await act(async () => mockPanel.onSelect([{ uploadId: 'u', mediaType: 'image' }]));
+        expect(mockPanel.selectedUploads.map(item => item.uploadId)).toEqual(['u']);
         expect(sendButton().props.accessibilityState.disabled).toBe(true); // source change clears account selection
         await press('Studio'); expect(sendButton().props.accessibilityState.disabled).toBe(false);
         // A removal started under another selection must not clear the current upload.
-        await act(async () => mockPanel.onSelect({ uploadId: 'other', mediaType: 'image' }));
+        await act(async () => mockPanel.onSelect([{ uploadId: 'other', mediaType: 'image' }]));
         const removeOther = mockPanel.onSelect;
-        await act(async () => mockPanel.onSelect({ uploadId: 'u', mediaType: 'image' }));
+        await act(async () => mockPanel.onSelect([{ uploadId: 'u', mediaType: 'image' }]));
         await press('Studio');
-        await act(async () => removeOther(null));
-        expect(mockPanel.selectedUploadId).toBe('u'); expect(sendButton().props.accessibilityState.disabled).toBe(false);
-        await act(async () => mockPanel.onSelect(null)); expect(mockPanel.selectedUploadId).toBeNull();
+        await act(async () => removeOther([]));
+        expect(mockPanel.selectedUploads.map(item => item.uploadId)).toEqual(['u']); expect(sendButton().props.accessibilityState.disabled).toBe(false);
+        await act(async () => mockPanel.onSelect([])); expect(mockPanel.selectedUploads).toEqual([]);
         expect(root.container.queryAll(n => n.props.accessibilityRole === 'button' && allText(n) === send && n.props.accessibilityState?.disabled !== undefined)).toHaveLength(0);
-        await act(async () => mockPanel.onSelect({ uploadId: 'u', mediaType: 'video' })); await press('Creation A'); expect(mockPanel.selectedUploadId).toBeNull();
+        await act(async () => mockPanel.onSelect([{ uploadId: 'u', mediaType: 'video' }])); await press('Creation A'); expect(mockPanel.selectedUploads).toEqual([]);
     });
     test(`${name}: preparing prevents submit and a previously captured confirmation from making any request`, async () => {
         await ready(approval); await submit(); expect(alert).toHaveBeenCalledTimes(1);
@@ -83,3 +83,26 @@ for (const approval of [false, true]) {
         await act(async () => confirm()); expect(mockRequest).not.toHaveBeenCalled();
     });
 }
+
+test('queue reservation accounts block a carousel even when the configured queue allows it', async () => {
+    mockRequest.mockImplementation(async (path: string) => {
+        if (path.endsWith('/accounts')) return { uploadsEnabled: true, carouselEnabled: true, accounts: [
+            { id: 'a', network: 'instagram', display_name: 'Studio', status: 'active', publishingEnabled: true, supportedMedia: ['image'], carousel: { min: 2, max: 10, types: ['image'] } },
+            { id: 'b', network: 'twitter', display_name: 'X account', status: 'active', publishingEnabled: true, supportedMedia: ['image'], carousel: { min: 2, max: 4, types: ['image'] } },
+        ] };
+        if (path.endsWith('/queues')) return { queues: [{ id: 'q', name: 'Instagram queue', enabled: true, account_ids: ['a'], slots: [] }] };
+        if (path.endsWith('/queues/reserve')) return { assignment_id: 'slot', scheduled_at: new Date(Date.now() + 3600000).toISOString(), account_ids: ['b'] };
+        return {};
+    });
+    await act(async () => root.render(<Compose />));
+    await act(async () => mockPanel.onSelect(Array.from({ length: 5 }, (_, i) => ({ uploadId: `u${i}`, mediaType: 'image' }))));
+    await press(t('compose.queue')); await press('Instagram queue');
+    expect(mockPanel.max).toBe(10); expect(mockPanel.nonUploadCount).toBe(0);
+    await press(t('compose.queueAction'));
+    expect(alert).toHaveBeenCalledTimes(1);
+    const confirm = alert.mock.calls[0][2].find((b: { onPress?: () => void }) => b.onPress).onPress;
+    await act(async () => confirm());
+    expect(mockRequest.mock.calls.some(([path]) => path.endsWith('/queues/reserve'))).toBe(true);
+    expect(mockRequest.mock.calls.some(([path]) => path.endsWith('/posts'))).toBe(false);
+    expect(allText(root.container)).toContain(t('app.publish.carousel.blocked', { network: 'X' }));
+});

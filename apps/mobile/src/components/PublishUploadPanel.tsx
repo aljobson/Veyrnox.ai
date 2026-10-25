@@ -13,12 +13,20 @@ import { assertAttempt, listUploads, prepareImage, publishUploadMessage, removeU
 import { colors } from '../theme';
 
 type Props = {
-    api: ApiClient; enabled: boolean; selectedUploadId: string | null;
-    onSelect: (pick: UploadPick | null) => void; onBusyChange: (busy: boolean) => void;
+    api: ApiClient; enabled: boolean; selectedUploads: UploadPick[]; max?: number; nonUploadCount?: number;
+    onSelect: (picks: UploadPick[]) => void; onBusyChange: (busy: boolean) => void;
 };
 export function PublishUploadPanel(props: Props) {
-    const { api, enabled, selectedUploadId } = props;
+    const { api, enabled, selectedUploads, max = 1, nonUploadCount = 0 } = props;
     const callbacks = useRef(props); callbacks.current = props;
+    const limit = Math.max(0, max);
+    // A single-file pick replaces either the current upload or job choice.
+    const remaining = limit === 1 ? 1 : Math.max(0, limit - Math.max(0, nonUploadCount) - selectedUploads.length);
+    const capacity = () => {
+        const total = Math.max(0, callbacks.current.max ?? 1);
+        return total === 1 ? 1 : Math.max(0, total
+            - Math.max(0, callbacks.current.nonUploadCount ?? 0) - callbacks.current.selectedUploads.length);
+    };
     const mounted = useRef(false);
     const accountGen = useRef(0);
     const controller = useRef<AbortController | null>(null);
@@ -40,7 +48,7 @@ export function PublishUploadPanel(props: Props) {
     const discard = () => { copies.current.forEach(discardCacheCopy); copies.current.clear(); };
     function hide() {
         controller.current?.abort(); discard(); hiddenRef.current = true; setHidden(true); setChecked(false); showMessage(null); setRows([]);
-        callbacks.current.onSelect(null);
+        callbacks.current.onSelect([]);
     }
     function showError(err: unknown) {
         if (err instanceof ApiError && err.status === 503 && err.code === 'uploads_not_open') { hide(); return; }
@@ -66,7 +74,7 @@ export function PublishUploadPanel(props: Props) {
             accountGen.current++;
             controller.current?.abort(); discard();
             setRows([]); setChecked(false); showMessage(null); setProgress(null); setLoadFailed(false);
-            setBusy(false); callbacks.current.onBusyChange(false); callbacks.current.onSelect(null);
+            setBusy(false); callbacks.current.onBusyChange(false); callbacks.current.onSelect([]);
             hiddenRef.current = false; setHidden(false); void load();
         });
         return () => {
@@ -78,12 +86,12 @@ export function PublishUploadPanel(props: Props) {
         if (enabled) void load();
         else {
             controller.current?.abort(); discard(); setRows([]); setChecked(false); showMessage(null);
-            if (callbacks.current.selectedUploadId) callbacks.current.onSelect(null);
+            if (callbacks.current.selectedUploads.length) callbacks.current.onSelect([]);
         }
     }, [enabled]); // A route closure lasts until the account changes.
 
     async function pick(source: 'library' | 'files' | 'camera') {
-        if (!enabled || hidden || !checked || working.current) return;
+        if (!enabled || hidden || !checked || working.current || capacity() === 0) return;
         working.current = true;
         const live = fence(), abort = new AbortController(); controller.current = abort;
         const active = () => mounted.current && live();
@@ -91,10 +99,10 @@ export function PublishUploadPanel(props: Props) {
         const remember = (uri: string) => { attemptCopies.add(uri); copies.current.add(uri); };
         setBusy(true); callbacks.current.onBusyChange(true); setChecked(false); showMessage(null);
         try {
-            let asset: { uri: string; mimeType?: string } | undefined;
+            let assets: { uri: string; mimeType?: string }[] = [];
             if (source === 'files') {
-                const result = await DocumentPicker.getDocumentAsync({ type: [...SOCIAL_UPLOAD_TYPES], copyToCacheDirectory: true });
-                asset = result.canceled ? undefined : result.assets[0];
+                const result = await DocumentPicker.getDocumentAsync({ type: [...SOCIAL_UPLOAD_TYPES], copyToCacheDirectory: true, multiple: max > 1 });
+                assets = result.canceled ? [] : result.assets;
             } else {
                 if (source === 'camera') {
                     const permission = await ImagePicker.requestCameraPermissionsAsync();
@@ -103,22 +111,30 @@ export function PublishUploadPanel(props: Props) {
                 }
                 const result = source === 'camera'
                     ? await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 1, exif: false, base64: false })
-                    : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images', 'videos'], allowsMultipleSelection: false, allowsEditing: false, quality: 1, exif: false, base64: false });
-                asset = result.canceled ? undefined : result.assets[0];
+                    : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images', 'videos'], allowsMultipleSelection: max > 1, orderedSelection: true, selectionLimit: remaining, allowsEditing: false, quality: 1, exif: false, base64: false });
+                assets = result.canceled ? [] : result.assets;
             }
-            if (asset) remember(asset.uri);
+            assets.forEach(asset => remember(asset.uri));
             assertAttempt(live, abort.signal);
-            if (!asset) return;
-            const file = await prepareImage(asset, { accountLive: live, signal: abort.signal });
-            remember(file.uri); assertAttempt(live, abort.signal);
-            if (active()) setProgress(0);
-            const row = await uploadToPublish(api, file, { accountLive: live, signal: abort.signal,
-                onProgress: (value) => { if (active() && !abort.signal.aborted) setProgress(Math.max(0, Math.min(1, value))); },
-            });
-            assertAttempt(live, abort.signal);
-            if (!active()) return;
-            setRows(old => [row, ...old.filter(r => r.id !== row.id)]);
-            callbacks.current.onSelect({ uploadId: row.id, mediaType: row.mime_type.startsWith('video/') ? 'video' : 'image' });
+            if (!assets.length) return;
+            if (assets.length > capacity()) {
+                if (active()) showMessage(t('app.publish.carousel.limit', { count: assets.length + selectedUploads.length + nonUploadCount, max: limit }), true);
+                return;
+            }
+            let next = (callbacks.current.max ?? 1) === 1 ? [] : [...callbacks.current.selectedUploads];
+            for (const asset of assets) {
+                const file = await prepareImage(asset, { accountLive: live, signal: abort.signal });
+                remember(file.uri); assertAttempt(live, abort.signal);
+                if (active()) setProgress(0);
+                const row = await uploadToPublish(api, file, { accountLive: live, signal: abort.signal,
+                    onProgress: (value) => { if (active() && !abort.signal.aborted) setProgress(Math.max(0, Math.min(1, value))); },
+                });
+                assertAttempt(live, abort.signal);
+                if (!active()) return;
+                setRows(old => [row, ...old.filter(r => r.id !== row.id)]);
+                next = [...next, { uploadId: row.id, mediaType: row.mime_type.startsWith('video/') ? 'video' : 'image' }];
+                callbacks.current.onSelect(next);
+            }
             showMessage(t('publishUploads.selectedNotice'));
         } catch (err) { if (active()) showError(err); }
         finally {
@@ -127,6 +143,16 @@ export function PublishUploadPanel(props: Props) {
             if (active()) { setBusy(false); setProgress(null); setChecked(false); callbacks.current.onBusyChange(false); }
         }
     }
+    function select(row: UploadRow) {
+        if (working.current || !callbacks.current.enabled || hiddenRef.current) return;
+        const item: UploadPick = { uploadId: row.id, mediaType: row.mime_type.startsWith('video/') ? 'video' : 'image' };
+        const current = callbacks.current.selectedUploads;
+        if ((callbacks.current.max ?? 1) === 1) callbacks.current.onSelect([item]);
+        else if (current.some(p => p.uploadId === row.id)) callbacks.current.onSelect(current.filter(p => p.uploadId !== row.id));
+        else if (capacity() > 0) callbacks.current.onSelect([...current, item]);
+        else return;
+        showMessage(t('publishUploads.selectedNotice'));
+    }
     async function remove(row: UploadRow) {
         if (working.current || !enabled || hidden) return;
         const live = fence();
@@ -134,7 +160,7 @@ export function PublishUploadPanel(props: Props) {
             await removeUpload(api, row.id);
             if (!mounted.current || !live() || !callbacks.current.enabled) return;
             setRows(old => old.filter(r => r.id !== row.id));
-            if (callbacks.current.selectedUploadId === row.id) callbacks.current.onSelect(null);
+            if (callbacks.current.selectedUploads.some(item => item.uploadId === row.id)) callbacks.current.onSelect(callbacks.current.selectedUploads.filter(item => item.uploadId !== row.id));
             showMessage(t('publishUploads.removed'));
         } catch (err) { if (mounted.current && live() && callbacks.current.enabled) showError(err); }
     }
@@ -152,9 +178,9 @@ export function PublishUploadPanel(props: Props) {
         <Pressable accessibilityRole="checkbox" accessibilityLabel={t('publishUploads.rights')} accessibilityState={{ checked, disabled: busy }} disabled={busy} onPress={() => setChecked(v => !v)} style={touchTarget}>
             <Text style={styles.text}>{checked ? '☑ ' : '☐ '}{t('publishUploads.rights')}</Text>
         </Pressable>
-        {button('publishUploads.library', () => void pick('library'), !checked || busy)}
-        {button('publishUploads.files', () => void pick('files'), !checked || busy)}
-        {button('publishUploads.camera', () => void pick('camera'), !checked || busy)}
+        {button('publishUploads.library', () => void pick('library'), !checked || busy || remaining === 0)}
+        {button('publishUploads.files', () => void pick('files'), !checked || busy || remaining === 0)}
+        {button('publishUploads.camera', () => void pick('camera'), !checked || busy || remaining === 0)}
         {progress !== null ? <Text style={styles.text} accessibilityRole="progressbar" accessibilityLabel={t('publishUploads.progress')} accessibilityValue={{ min: 0, max: 100, now: Math.round(progress * 100) }}>
             {progress >= 1 ? t('publishUploads.checking') : t('publishUploads.uploading', { percent: Math.round(progress * 100) })}
         </Text> : null}
@@ -164,7 +190,7 @@ export function PublishUploadPanel(props: Props) {
         {rows.map(row => <View key={row.id} style={styles.row}>
             {row.mime_type.startsWith('image/') ? <Image source={{ uri: row.url }} cachePolicy="none" transition={0} style={styles.preview} /> : null}
             <Text style={styles.text}>{t(row.mime_type.startsWith('video/') ? 'publishUploads.video' : 'publishUploads.image')} · {t('publishUploads.size', { size: (row.size_bytes / 1048576).toFixed(1) })}</Text>
-            {button('publishUploads.select', () => { if (!working.current) { callbacks.current.onSelect({ uploadId: row.id, mediaType: row.mime_type.startsWith('video/') ? 'video' : 'image' }); showMessage(t('publishUploads.selectedNotice')); } }, busy, selectedUploadId === row.id, rowLabel('select', row))}
+            {button('publishUploads.select', () => select(row), busy || (remaining === 0 && !selectedUploads.some(item => item.uploadId === row.id)), selectedUploads.some(item => item.uploadId === row.id), rowLabel('select', row))}
             {button('publishUploads.remove', () => void remove(row), busy, undefined, rowLabel('remove', row))}
         </View>)}
     </View>;

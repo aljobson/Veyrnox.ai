@@ -1,3 +1,4 @@
+import { metaCarouselStep } from './carousel.js';
 import { appConfig, authorizeUrl, bearer, formToken, jsonRequest, tokenResult, requireImage } from './common.js';
 const BASE = 'https://graph.threads.net/v1.0';
 export const SCOPES = ['threads_basic', 'threads_content_publish'];
@@ -49,3 +50,6 @@ export async function publishStep(token, { externalAccountId, caption, mediaType
     if (!data.id) throw new Error('missing_post_id');
     return { inProgress: true, providerState: { ...state, post_id: data.id }, nextCheckAt: new Date(Date.now() + 5000).toISOString() };
 }
+
+export const publishCarouselStep = (token, input, fetcher = fetch, beforePublish = async () => {}) =>
+    metaCarouselStep('threads', token, input, fetcher, beforePublish);

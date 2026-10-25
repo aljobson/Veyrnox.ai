@@ -20,18 +20,22 @@ export async function GET(_req, { params }) {
     try {
         const review = await rpc('get_social_approval_review', { p_reviewer_id: ctx.reviewerId }, ctx.cfg);
         if (!review?.ok) return NextResponse.json({ error: 'review_not_found' }, { status: 404 });
-        const { media } = review;
-        let preview_url = null;
-        if (media?.r2_key && process.env.SOCIAL_MEDIA_PROXY_SECRET) {
-            const token = await createMediaProxyToken({ r2Key: media.r2_key }, process.env.SOCIAL_MEDIA_PROXY_SECRET);
-            preview_url = `/media/social/${encodeURIComponent(token)}`;
+        const sources = Array.isArray(review.attachments) ? review.attachments : review.media ? [review.media] : [];
+        const attachments = [];
+        for (const [position, media] of sources.entries()) {
+            let preview_url = null;
+            if (!media.held && media.r2_key && process.env.SOCIAL_MEDIA_PROXY_SECRET) {
+                const token = await createMediaProxyToken({ r2Key: media.r2_key }, process.env.SOCIAL_MEDIA_PROXY_SECRET);
+                preview_url = `/media/social/${encodeURIComponent(token)}`;
+            }
+            attachments.push({ position, media_type: media.media_type, mime_type: media.mime_type, preview_url, held: media.held === true });
         }
         return NextResponse.json({ reviewer_id: review.reviewer_id, decision: review.decision,
             request_status: review.request_status, policy: review.policy, scheduled_at: review.scheduled_at,
             global_text: review.global_text, brand_name: review.brand_name,
             networks: Array.isArray(review.networks) ? review.networks : [],
             targets: Array.isArray(review.targets) ? review.targets : [],
-            media: media ? { media_type: media.media_type, mime_type: media.mime_type, preview_url, held: media.held === true } : null },
+            attachments, media: attachments[0] || null },
             { headers: { 'Cache-Control': 'no-store' } });
     } catch (err) {
         console.error('[api/social/approvals:GET] failed:', err instanceof SupabaseError ? err.status : 0);

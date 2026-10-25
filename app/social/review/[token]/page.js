@@ -47,9 +47,12 @@ export default function SocialReviewPage() {
         {review && <article className="space-y-5 rounded-2xl border border-vx-border p-5">
             <div><p className="text-xs font-bold uppercase tracking-wide text-vx-fg-muted">{t('social.brand')}</p><p className="font-bold">{review.brand_name}</p></div>
             <div className="flex flex-wrap gap-2">{(review.networks || []).map((network) => <span key={network} className="inline-flex items-center gap-2 rounded-full border border-vx-border px-3 py-1 text-sm font-bold"><NetworkLogo network={network} className="h-4 w-4" />{network}</span>)}</div>
-            {review.media?.preview_url && (review.media.media_type === 'video'
-                ? <video src={review.media.preview_url} controls playsInline className="max-h-[420px] w-full rounded-xl bg-black object-contain" />
-                : <img src={review.media.preview_url} alt={t('social.preview')} className="max-h-[420px] w-full rounded-xl object-contain" />)}
+            <ol className="space-y-3">{(review.attachments || (review.media ? [review.media] : [])).map((media, index) => <li key={index}>
+                <p>{t('app.publish.carousel.item', { count: index + 1 })}</p>
+                {media.held || !media.preview_url ? <p>{t('app.publish.carousel.unavailable')}</p> : media.media_type === 'video'
+                    ? <video src={media.preview_url} controls playsInline className="max-h-[420px] w-full rounded-xl bg-black object-contain" />
+                    : <img src={media.preview_url} alt={t('social.preview')} className="max-h-[420px] w-full rounded-xl object-contain" />}
+            </li>)}</ol>
             {(review.targets || []).length > 0 ? <div className="space-y-3">{review.targets.map((target) => <section key={target.network} className="rounded-xl border border-vx-border p-3">
                 <div className="mb-2 flex items-center gap-2 text-sm font-bold"><NetworkLogo network={target.network} className="h-4 w-4" />{target.network}</div>
                 <p className="whitespace-pre-wrap text-sm text-vx-fg-body">{target.text}</p>

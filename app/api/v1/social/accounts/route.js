@@ -1,3 +1,4 @@
+import { carouselEnabled } from '../../../../../lib/social/postCapabilities.js';
 /**
  * GET /api/v1/social/accounts — the caller's connected social accounts
  * (technical spec §2.3, ADR-0061). Auto-creates the caller's default
@@ -17,7 +18,7 @@
 import { publishPlansEnabled, socialAdsEnabled, socialApprovalsEnabled, socialCommerceEnabled, socialContentPresetsEnabled, socialContentVariantsEnabled, socialCustomerApiEnabled, socialCustomerWebhooksEnabled, socialInboxEnabled, socialInboxWorkflowsEnabled, socialQueuesEnabled, socialReportsEnabled, socialRssAutolistsEnabled, socialSmartLinksEnabled, socialTeamsEnabled, youtubeVisibilityEnabled } from '../../../../../lib/social/publishFeature.js';
 import { readPublishEntitlement } from '../../../../../lib/social/publishPlanApi.js';
 import { socialUploadsEnabled } from '../../../../../lib/social/uploadPolicy.js';
-import { networkEnabled, networkMedia } from '../../../../../lib/social/networks.js';
+import { networkDetails, networkEnabled, networkMedia } from '../../../../../lib/social/networks.js';
 import { networkReadiness } from '../../../../../lib/social/networkReadiness.js';
 import { tiktokReviewAllowed } from '../../../../../lib/social/tiktokReview.js';
 import { resolveBrand } from '../../../../../lib/social/resolveBrand.js';
@@ -74,7 +75,8 @@ export async function GET(req) {
         accountLimit: entitlement?.account_limit || 1,
         ...(entitlement ? { planTier: entitlement.tier } : {}),
         accounts: (accounts.accounts || []).map((account) => ({ ...account, publishingEnabled: networkEnabled(account.network)
-            || (account.network === 'tiktok' && tiktokReviewAllowed(authId)), supportedMedia: networkMedia(account.network) })),
+            || (account.network === 'tiktok' && tiktokReviewAllowed(authId)), supportedMedia: networkMedia(account.network), carousel: carouselEnabled() ? networkDetails(account.network)?.carousel || null : null })),
+        carouselEnabled: carouselEnabled(),
         uploadsEnabled: socialUploadsEnabled(process.env, authId),
         youtubeVisibilityEnabled: youtubeVisibilityEnabled(),
         plansEnabled: publishPlansEnabled(),

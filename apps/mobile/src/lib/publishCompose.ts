@@ -29,7 +29,26 @@ export type When = { readonly kind: 'now' } | { readonly kind: 'at'; readonly at
 export type YoutubeVisibility = 'private' | 'unlisted' | 'public';
 export const YOUTUBE_VISIBILITIES: readonly YoutubeVisibility[] = ['private', 'unlisted', 'public'];
 
+export interface PostMedia { readonly jobId?: string; readonly uploadId?: string; readonly mediaType: MediaType; }
+export type MediaDraft = { readonly media?: readonly PostMedia[]; readonly jobId: string; readonly uploadId?: string; readonly mediaType: MediaType };
+export const draftMedia = (draft: MediaDraft): readonly PostMedia[] => draft.media ?? [{ mediaType: draft.mediaType, ...(draft.uploadId ? { uploadId: draft.uploadId } : { jobId: draft.jobId }) }];
+export function mediaSignature(draft: MediaDraft): unknown[] {
+    const items = draftMedia(draft);
+    const identities = items.map(item => [item.uploadId ? `upload:${item.uploadId}` : item.jobId, item.mediaType]);
+    // Preserve saved one-file retry keys across an app upgrade.
+    return items.length === 1 ? identities[0] : [identities, 'carousel'];
+}
+export function mediaBlocker(items: readonly PostMedia[], accounts: readonly PublishAccount[]): string | null {
+    for (const account of accounts) {
+        if (items.length > 1 && (!account.carousel || items.length > account.carousel.max
+            || items.some(item => !account.carousel?.types.includes(item.mediaType)))) return account.network;
+        if (items.some(item => !account.supportedMedia.includes(item.mediaType))) return account.network;
+    }
+    return null;
+}
+
 export interface Draft {
+    readonly media?: readonly PostMedia[];
     readonly jobId: string;
     readonly uploadId?: string;
     readonly mediaType: MediaType;
@@ -102,12 +121,15 @@ export function quickTimes(now: Date): { label: string; date: Date }[] {
 }
 
 export function validateDraft(draft: Draft, accounts: readonly PublishAccount[], now: Date): string | null {
-    if (!!draft.jobId === !!draft.uploadId) return 'Choose a creation to post.';
+    const media = draftMedia(draft);
+    if ((!draft.media && !!draft.jobId === !!draft.uploadId) || !media.length || media.length > 10 || media.some(item => !!item.jobId === !!item.uploadId)) return 'Choose a creation to post.';
+    const blocker = media.length > 1 && mediaBlocker(media, accounts.filter(account => draft.accountIds.includes(account.id)));
+    if (blocker) return t('app.publish.carousel.blocked', { network: networkLabel(blocker) });
     if (draft.accountIds.length === 0) return 'Choose at least one account.';
     if (draft.text.length > MAX_TEXT) return `The text can be at most ${MAX_TEXT} characters.`;
     for (const id of draft.accountIds) {
         const a = accounts.find((x) => x.id === id);
-        if (!a || !a.supportedMedia.includes(draft.mediaType)) return `${a?.displayName ?? 'That account'} cannot post a ${draft.mediaType}.`;
+        if (!a || media.some(item => !a.supportedMedia.includes(item.mediaType))) return `${a?.displayName ?? 'That account'} cannot post a ${draft.mediaType}.`;
     }
     const problem = networkTextProblem(draft.networkText);
     if (problem) return `${networkLabel(problem.network)} allows ${problem.limit} characters; this is ${problem.length}.`;
@@ -124,7 +146,7 @@ export function createBody(draft: Draft, idempotencyKey: string, _now: Date): Re
         ...(draft.youtubeVisibility ? { youtubeVisibility: draft.youtubeVisibility } : {}),
         idempotencyKey,
         accountIds: [...draft.accountIds],
-        media: [{ mediaType: draft.mediaType, ...(draft.uploadId ? { uploadId: draft.uploadId } : { jobId: draft.jobId }) }],
+        media: draftMedia(draft),
     };
 }
 
@@ -162,6 +184,8 @@ export function composeErrorMessage(err: unknown, isUpload = false): string {
     if (code === 'variants_not_open' || code === 'variants_not_configured') return 'Different text for each network is not open yet. Remove it and try again.';
     if (code === 'youtube_visibility_not_open') return 'Choosing YouTube visibility is not open yet. Remove it and try again.';
     if (code === 'caption_too_long') return 'The text is too long for one of the networks.';
+    if (code === 'carousel_not_open') return t('app.publish.carousel.closed');
+    if (code === 'media_count_not_supported') return t('app.publish.carousel.blocked', { network: networkLabel(String(e?.body?.network || '')) });
     if (code === 'unsupported_media_type') return 'One of the chosen networks cannot post this creation.';
     if (code === 'network_unavailable') return 'One of the chosen networks is not open for posting yet.';
     if (code === 'POST_NOT_FOUND') return 'That post is no longer there.';
