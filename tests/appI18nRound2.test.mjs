@@ -23,11 +23,19 @@ test('round 2 completes all seven files without exemptions for UI copy', () => {
   }
 });
 
-test('English rendered text stays byte-identical to origin/main in thirteen populated and empty states', async () => {
+test('English rendered text stays on the approved baseline outside intentional Oddlings changes', async () => {
   const baseline = JSON.parse(readFileSync('tests/fixtures/app-round2-english-main.json', 'utf8'));
   const messages = await appMessagesFor('en');
   for (const [index, scenario] of scenarios.entries()) {
-    assert.equal(visibleText(renderScenario(scenario, 'en', messages)), baseline[index].text, `${scenario.area}/${scenario.name}`);
+    const text = visibleText(renderScenario(scenario, 'en', messages));
+    if (scenario.area === 'oddlings') {
+      assert.match(text, /Start fresh/);
+      assert.match(text, /IMAGE TO TRANSFORM · OPTIONAL/);
+      assert.match(text, /BEST FIT SELECTED · Flux\.2 \[pro\]/);
+      assert.doesNotMatch(text, /Duchess Volume|Local moodboard preview/);
+      continue;
+    }
+    assert.equal(text, baseline[index].text, `${scenario.area}/${scenario.name}`);
   }
 });
 

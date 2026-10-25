@@ -17,6 +17,11 @@ const retiredFilmStudioKnowledge = {
         'Saving is free. The video stays in your Library until its source take expires, up to 90 days.',
     ]),
 };
+const retiredOddlingsKnowledge = {
+    descriptions: new Set([
+        'Local moodboard preview; describe what to borrow below.',
+    ]),
+};
 
 test('phase B retains every app route knowledge item from origin/main', async () => {
     const baseline = JSON.parse(await readFile(path.join(root, 'tests/fixtures/app-knowledge-main.json'), 'utf8'));
@@ -34,6 +39,9 @@ test('phase B retains every app route knowledge item from origin/main', async ()
                 // deliberately. Keep each removed item explicit so later
                 // knowledge loss still requires a conscious decision.
                 if (entry.route === '/app/film-studio' && retiredFilmStudioKnowledge[field]?.has(value)) continue;
+                // Oddlings now uploads a source image for the recommended edit
+                // pipeline instead of treating it as a local-only moodboard.
+                if (entry.route === '/app/oddlings' && retiredOddlingsKnowledge[field]?.has(value)) continue;
                 assert.ok(actual.has(normal(value)), `${entry.route} ${field}: ${value}`);
             }
         }
@@ -112,6 +120,7 @@ test('all main route knowledge survives localization except the retired unknown-
                 // series. Do not restore nonexistent HTTP-200 fallback copy.
                 if (route === '/social-cinema/series/[slug]' && field === 'descriptions' && expected === 'This series is not available.') continue;
                 if (route === '/app/film-studio' && retiredFilmStudioKnowledge[field]?.has(expected)) continue;
+                if (route === '/app/oddlings' && retiredOddlingsKnowledge[field]?.has(expected)) continue;
                 assert.ok(actual.has(normal(expected)), `${route} ${field}: ${expected}`);
             }
         }
