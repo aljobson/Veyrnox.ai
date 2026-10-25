@@ -2,7 +2,9 @@
 import { NextResponse } from 'next/server';
 import { envConfig as dbConfig, rpc } from '../../../../packages/db/supabase-client.js';
 import { createPvc, deleteVoice, envConfig as elevenConfig, isConfigured } from '../../../../packages/adapters/elevenlabs.js';
+import { envConfig as r2Config, isConfigured as r2Configured } from '../../../../packages/adapters/r2.js';
 import { UUID_RE, VOICE_CONSENT_VERSION, publicProfile, providerErrorStatus, recentMfa, validCreateBody } from '../../../../lib/voiceProfiles.js';
+import { voiceSpeechEnabled } from '../../../../lib/voiceSpeech.js';
 
 const NO_STORE = { 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' };
 const json = (body, status = 200, headers = {}) => NextResponse.json(body, { status, headers: { ...NO_STORE, ...headers } });
@@ -22,6 +24,7 @@ export async function GET(req) {
     if (result?.ok !== true) return json({ error: 'profiles_unavailable' }, 502);
     return json({
       available: isConfigured(elevenConfig()),
+      speech_available: voiceSpeechEnabled() && isConfigured(elevenConfig()) && r2Configured(r2Config()),
       profiles: Array.isArray(result.profiles) ? result.profiles.map(publicProfile).filter(Boolean) : [],
     });
   } catch (err) {

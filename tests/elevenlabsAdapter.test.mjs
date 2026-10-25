@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   addPvcSample, createPvc, deleteVoice, getPvcCaptcha, getVoice, isConfigured,
-  trainPvc, verifyPvcCaptcha,
+  synthesizeSpeech, trainPvc, verifyPvcCaptcha,
 } from '../packages/adapters/elevenlabs.js';
 
 const cfg = { apiKey: 'secret-test-key' };
@@ -81,4 +81,18 @@ test('deletes a voice and classifies upstream failures without returning provide
   const failed = await createPvc({ name: 'Mine', language: 'en' }, cfg, recorder(response({ detail: 'sensitive upstream text' }, { status: 429, headers: { 'retry-after': '12' } })));
   assert.deepEqual(failed, { ok: false, status: 429, code: 'provider_rate_limited', retryAfter: 12 });
   assert.equal(JSON.stringify(failed).includes('sensitive'), false);
+});
+
+test('renders bounded speech with the private PVC id and pinned output contract', async () => {
+  const seen = recorder(response(new Uint8Array([0x49, 0x44, 0x33, 1]), { contentType: 'audio/mpeg' }));
+  const result = await synthesizeSpeech({ voiceId: 'voice_123', text: '  Hello from my voice.  ' }, cfg, seen);
+  assert.equal(result.ok, true);
+  assert.deepEqual([...result.bytes], [0x49, 0x44, 0x33, 1]);
+  assert.equal(seen.calls[0].url, 'https://api.elevenlabs.io/v1/text-to-speech/voice_123?output_format=mp3_44100_128');
+  assert.deepEqual(JSON.parse(seen.calls[0].init.body), { text: 'Hello from my voice.', model_id: 'eleven_multilingual_v2' });
+  assert.equal(seen.calls[0].maxBytes, 20 * 1024 * 1024);
+  assert.equal((await synthesizeSpeech({ voiceId: 'voice_123', text: '' }, cfg, seen)).code, 'speech_text_invalid');
+  assert.equal((await synthesizeSpeech({ voiceId: 'voice_123', text: 'x'.repeat(1001) }, cfg, seen)).code, 'speech_text_invalid');
+  assert.equal((await synthesizeSpeech({ voiceId: 'voice_123', text: 'hello' }, cfg,
+    recorder(response({}, { contentType: 'application/json' })))).code, 'provider_response_invalid');
 });

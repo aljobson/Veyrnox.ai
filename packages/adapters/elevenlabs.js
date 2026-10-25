@@ -15,6 +15,8 @@ const MEDIA_TIMEOUT_MS = 60000;
 const MAX_JSON_BYTES = 512 * 1024;
 const MAX_CAPTCHA_BYTES = 2 * 1024 * 1024;
 const MAX_AUDIO_BYTES = 20 * 1024 * 1024;
+const MAX_SPEECH_BYTES = 20 * 1024 * 1024;
+const MAX_SPEECH_CHARS = 1000;
 const VOICE_ID_RE = /^[A-Za-z0-9_-]{1,128}$/;
 const LANG_RE = /^[a-z]{2,3}(?:-[A-Z]{2})?$/;
 
@@ -191,4 +193,35 @@ export async function deleteVoice(voiceId, cfg, deps) {
     : result.ok ? { ok: false, status: 502, code: 'provider_response_invalid' } : result;
 }
 
-export const limits = Object.freeze({ maxAudioBytes: MAX_AUDIO_BYTES, maxCaptchaBytes: MAX_CAPTCHA_BYTES });
+/**
+ * Render speech with a private, already verified PVC. The voice id remains a
+ * server-side value throughout; callers receive only bounded audio bytes.
+ */
+export async function synthesizeSpeech({ voiceId, text }, cfg, deps) {
+  if (typeof voiceId !== 'string' || !VOICE_ID_RE.test(voiceId)) {
+    return { ok: false, status: 400, code: 'voice_id_invalid' };
+  }
+  const cleanText = typeof text === 'string' ? text.trim() : '';
+  if (!cleanText || cleanText.length > MAX_SPEECH_CHARS) {
+    return { ok: false, status: 400, code: 'speech_text_invalid' };
+  }
+  const result = await request(`/v1/text-to-speech/${encodeURIComponent(voiceId)}?output_format=mp3_44100_128`, {
+    method: 'POST',
+    headers: { accept: 'audio/mpeg', 'content-type': 'application/json' },
+    body: JSON.stringify({ text: cleanText, model_id: 'eleven_multilingual_v2' }),
+  }, cfg, { timeout: MEDIA_TIMEOUT_MS, maxBytes: MAX_SPEECH_BYTES, ...deps });
+  if (!result.ok) return result;
+  const contentType = String(result.response.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+  const bytes = new Uint8Array(await result.response.arrayBuffer());
+  if (contentType !== 'audio/mpeg' || !bytes.byteLength || bytes.byteLength > MAX_SPEECH_BYTES) {
+    return { ok: false, status: 502, code: 'provider_response_invalid' };
+  }
+  return { ok: true, bytes, contentType: 'audio/mpeg' };
+}
+
+export const limits = Object.freeze({
+  maxAudioBytes: MAX_AUDIO_BYTES,
+  maxCaptchaBytes: MAX_CAPTCHA_BYTES,
+  maxSpeechBytes: MAX_SPEECH_BYTES,
+  maxSpeechChars: MAX_SPEECH_CHARS,
+});
