@@ -78,7 +78,7 @@ export function puppetHtml(): string {
     return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; script-src 'unsafe-inline'; style-src 'unsafe-inline'"><style>html,body{margin:0;height:100%;background:${PUPPET_BACKGROUND};overflow:hidden}#c{width:100%;height:100%;object-fit:cover;display:block}</style></head><body><canvas id="c" width="512" height="768"></canvas><script>${PUPPET_SCRIPT}\n${RUNTIME}</script></body></html>`;
 }
 
-// Starts the preview for one cast character. The id must be one of the 72, so nothing else reaches the page.
+// Starts the preview for one curated cast character, so nothing else reaches the page.
 export function puppetStart(id: string, dataUri: string, play: boolean): string | null {
     if (!findOddling(id) || !dataUri.startsWith('data:image/webp;base64,')) return null;
     return `window.start(${json(dataUri)},${json(id)},${play ? 'true' : 'false'});true;`;
