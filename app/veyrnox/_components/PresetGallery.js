@@ -8,6 +8,7 @@ import { usePopularTemplates } from '../_lib/usePopularTemplates';
 import { useI18n } from '../../../components/I18nProvider';
 import { rankByTaste } from '../../../lib/creatorWords.js';
 
+const TEMPLATE_BATCH_SIZE = 50;
 
 // The preset filter and grid, shared by the public /presets page and the
 // studio's Explore tab so the two never drift apart.
@@ -16,7 +17,7 @@ export function PresetGallery({ size = 'lg', columns = 'lg:columns-3', taste = n
   const { t } = useI18n();
   const [cat, setCat] = useState('ALL');
   const [query, setQuery] = useState('');
-  const [visibleCount, setVisibleCount] = useState(12);
+  const [visibleCount, setVisibleCount] = useState(TEMPLATE_BATCH_SIZE);
   const { models } = useCatalog();
   const popularIds = usePopularTemplates();
   // Popular (ADR-0072) is a ranking, not a home category: it appears only once some template has enough use to rank, in rank order.
@@ -36,7 +37,7 @@ export function PresetGallery({ size = 'lg', columns = 'lg:columns-3', taste = n
         <input
           type="search"
           value={query}
-          onChange={(event) => { setQuery(event.target.value); setVisibleCount(12); }}
+          onChange={(event) => { setQuery(event.target.value); setVisibleCount(TEMPLATE_BATCH_SIZE); }}
           placeholder={t('presets.search.placeholder')}
           className="mt-3 w-full rounded-xl border border-vx-border bg-vx-panel px-4 py-3 text-[16px] text-vx-fg outline-none placeholder:text-vx-fg-muted focus:border-vx-accent focus:ring-2 focus:ring-vx-accent/30"
         />
@@ -50,7 +51,7 @@ export function PresetGallery({ size = 'lg', columns = 'lg:columns-3', taste = n
           <button
             key={c}
             type="button"
-            onClick={() => { setCat(c); setVisibleCount(12); }}
+            onClick={() => { setCat(c); setVisibleCount(TEMPLATE_BATCH_SIZE); }}
             aria-pressed={cat === c}
             className="vx-press shrink-0 whitespace-nowrap rounded-full border px-4 py-2 text-[14px] font-semibold border-vx-border text-vx-fg-body hover:border-vx-fg-muted aria-pressed:border-vx-fg aria-pressed:bg-vx-fg aria-pressed:text-vx-base"
           >
@@ -72,7 +73,7 @@ export function PresetGallery({ size = 'lg', columns = 'lg:columns-3', taste = n
       </div>
       {visibleCount < matches.length && <div className="mt-4 text-center">
         <p className="mb-3 text-sm text-vx-fg-muted" aria-live="polite">{t('presets.showing', { shown: Math.min(visibleCount, matches.length), total: matches.length })}</p>
-        <button type="button" aria-controls="preset-gallery-results" onClick={() => setVisibleCount((count) => count + 12)} className="rounded-full border border-vx-border px-6 py-3 font-semibold hover:border-vx-accent">{t('presets.more')}</button>
+        <button type="button" aria-controls="preset-gallery-results" onClick={() => setVisibleCount((count) => count + TEMPLATE_BATCH_SIZE)} className="rounded-full border border-vx-border px-6 py-3 font-semibold hover:border-vx-accent">{t('presets.more')}</button>
       </div>}
     </>
   );
