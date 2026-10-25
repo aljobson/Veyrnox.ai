@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { PEEK_MS, PEEK_Y, PEEK_ROTATE, PEEK_TIMES,
-  HOP_COOLDOWN_MS, HOP_SCROLL_PX, PAYWALL_MOODS, PERCH_MIN_VIEWPORT,
-  nextScrollState, paywallMoodFor, perchPlacement, perchSide, readingSection,
+import {
+  HOP_COOLDOWN_MS, HOP_SCROLL_PX, PERCH_MIN_VIEWPORT,
+  nextScrollState, perchPlacement, perchSide, readingSection,
 } from '../lib/veyMotion.js';
 import { VEY_SIZE } from '../lib/veyPointer.js';
 
@@ -81,29 +81,4 @@ test('Vey never lands on content: no gutter, or a small window, means it stays w
 
 test('landings alternate sides', () => {
   assert.deepEqual([0, 1, 2, 3].map(perchSide), ['start', 'end', 'start', 'end']);
-});
-
-test('the paywall companion has a mood for everything the reader does, and every held mood ends', () => {
-  for (const event of ['welcomeFirst', 'welcomeLow', 'hover', 'leave', 'select', 'consent', 'checkout', 'error', 'ambient']) {
-    const { mood, holdMs } = paywallMoodFor(event);
-    assert.ok(mood && Number.isInteger(holdMs) && holdMs >= 0, event);
-  }
-  // A mood with no end is one that something else (leaving, a checkout) is waiting to clear.
-  const sticky = Object.entries(PAYWALL_MOODS).filter(([, { holdMs }]) => holdMs === 0).map(([event]) => event).sort();
-  assert.deepEqual(sticky, ['checkout', 'hover', 'leave']);
-  assert.equal(paywallMoodFor('unknown').mood, 'idle');
-  assert.equal(paywallMoodFor('error').mood, 'worried');
-  assert.equal(paywallMoodFor('select').mood, 'peek', 'choosing a pack or plan: Vey climbs up and peeks over the card');
-  assert.equal(paywallMoodFor('select').holdMs, PEEK_MS);
-});
-
-test('choosing a pack or plan: Vey starts hidden behind the card, shows only its head, looks around, then climbs over', () => {
-  assert.equal(PEEK_Y.length, PEEK_ROTATE.length);
-  assert.equal(PEEK_Y.length, PEEK_TIMES.length);
-  const SPRITE_HEIGHT = 88;
-  assert.ok(PEEK_Y[0] >= SPRITE_HEIGHT, 'starts fully below the card edge');
-  assert.ok(PEEK_Y[1] > 0 && PEEK_Y[1] < SPRITE_HEIGHT, 'then only the head shows over the edge');
-  assert.equal(PEEK_Y.at(-1), 0, 'ends standing on top of the card');
-  assert.ok(PEEK_ROTATE.some((r) => r < 0) && PEEK_ROTATE.some((r) => r > 0), 'looks left and right while peeking');
-  assert.ok(PEEK_TIMES.every((t, i) => i === 0 || t > PEEK_TIMES[i - 1]) && PEEK_TIMES[0] === 0 && PEEK_TIMES.at(-1) === 1);
 });

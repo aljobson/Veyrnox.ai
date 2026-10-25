@@ -107,7 +107,7 @@ export function PaywallOffer({ reason, subscriptionsOpen = false, onClose }) {
             {t("app.credits.paywall.subscriptions")}
           </Link>
         )}
-        <TopUpPacks signedIn welcome={reason === 'low' ? 'welcomeLow' : 'welcomeFirst'} />
+        <TopUpPacks signedIn />
         <div className="mt-5">
           <Button variant="ghost" onClick={onClose}>{t("app.credits.paywall.later")}</Button>
         </div>
