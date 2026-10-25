@@ -5,9 +5,9 @@ const base = {
 };
 
 const steps = [
-  'Upload a clear photo you have permission to use.',
-  'Adjust the scene and visual details in the prompt.',
-  'Generate a 5s or 10s shot, or build a longer multi-shot film in Film Studio.',
+  'Upload a clear starting image that matches the subject guidance.',
+  'Use this template to load its editable ten-second prompt and settings.',
+  'Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film.',
 ];
 
 const recipes = [
