@@ -40,7 +40,7 @@ export function animateLink(model: CatalogModel, oddlingId: string, motionId = '
     } as const;
 }
 
-// The `startOddling` parameter is only ever one of the 72 cast ids.
+// The `startOddling` parameter is only ever one of the curated cast ids.
 export const startOddlingId = (param: unknown): string | null => (typeof param === 'string' ? findOddling(param)?.id ?? null : null);
 
 // "RIFF", four size bytes, "WEBP".

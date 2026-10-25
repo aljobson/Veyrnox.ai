@@ -107,6 +107,12 @@ const CATALOG = [
     { id: 'veo-fast', name: 'Veo 3.1 Fast', modality: 'text-to-video', credits: 12, gated: false, durations: [5, 10], capabilities: { inputs: { prompt: { type: 'string' } }, media: {} } },
     { id: 'kling-3', name: 'Kling 3', modality: 'text-to-video', credits: 9, gated: false, durations: [5, 10], capabilities: { inputs: { prompt: { type: 'string' } }, media: {} } },
     { id: 'sfx-v2', name: 'ElevenLabs Sound Effects', modality: 'text-to-audio', credits: 2, gated: false, durations: [5], capabilities: { inputs: { prompt: { type: 'string' } }, media: {} } },
+    { id: 'nano-banana-pro-edit-grsai', name: 'Veyrnox Image Edit', modality: 'image-to-image', credits: 2, gated: false, durations: [5], capabilities: { inputs: { prompt: { type: 'string' } }, media: { image: { required: true, label: 'Image' } } } },
+    { id: 'kling-avatar-v2', name: 'Veyrnox Avatar', modality: 'image-to-video', credits: 32, gated: false, durations: [5], capabilities: { inputs: { prompt: { type: 'string' } }, media: { image: { required: true, label: 'Image' }, audio: { required: true, label: 'Audio', maxSeconds: 10 } } } },
+    { id: 'latentsync', name: 'Veyrnox Lip Sync', modality: 'video-to-video', credits: 12, gated: false, durations: [5], capabilities: { inputs: { prompt: { type: 'string' } }, media: { video: { required: true, label: 'Video', maxSeconds: 40 }, audio: { required: true, label: 'Audio', maxSeconds: 40 } } } },
+    { id: 'inworld-tts', name: 'Veyrnox Speech', modality: 'text-to-speech', credits: 2, gated: false, durations: [5], capabilities: { inputs: { prompt: { type: 'string' } }, media: {} } },
+    { id: 'zonos2-voice-clone', name: 'Veyrnox Voice Clone', modality: 'text-to-speech', credits: 2, gated: false, durations: [5], capabilities: { inputs: { prompt: { type: 'string' } }, media: { audio: { required: true, label: 'Audio' } } } },
+    { id: 'kling-3.0-i2v-kie', name: 'Veyrnox Product Video', modality: 'image-to-video', credits: 26, gated: false, durations: [5], capabilities: { inputs: { prompt: { type: 'string' } }, media: { image: { required: true, label: 'Image' } } } },
 ];
 const CHAT_MODELS = [
     { id: 'claude-sonnet', name: 'Claude Sonnet', maker: 'claude', maker_label: 'Claude', credits_per_reply: 2, gated: false, options: { thinking: { extra_credits: 1 }, web: { extra_credits: 1 }, images: { extra_credits: 1 } } },
@@ -149,6 +155,11 @@ createServer(async (req, res) => {
     if (await mockSocialUploads(req, res, `http://${req.headers.host || `localhost:${PORT}`}`, state.socialPosts)) return;
     const body = req.method === 'POST' || req.method === 'PATCH' || req.method === 'PUT' || req.method === 'DELETE' ? await readBody(req) : {};
     console.log(req.method, path);
+
+    if (path.startsWith('/mock-upload/') && req.method === 'PUT') {
+        res.writeHead(200, { etag: '"mock-upload"' });
+        return res.end();
+    }
 
     if (path.startsWith('/auth/v1/token') || path === '/auth/v1/signup') return send(res, 200, tokens());
     if (path === '/auth/v1/logout') { res.writeHead(204); return res.end(); }
@@ -420,6 +431,7 @@ createServer(async (req, res) => {
         { id: 'c1111111-1111-4111-8111-111111111111', workspace_id: 'a1111111-1111-4111-8111-111111111111', owner_id: 'u1', name: 'Spring launch reel', version: 54, created_at: '2026-10-01T10:00:00Z', updated_at: '2026-10-18T09:00:00Z' },
         { id: 'c2222222-2222-4222-8222-222222222222', workspace_id: 'a1111111-1111-4111-8111-111111111111', owner_id: 'u1', name: 'Product teaser', version: 3, created_at: '2026-10-10T10:00:00Z', updated_at: '2026-10-12T09:00:00Z' },
     ]);
+    const PROJECT_DOCUMENTS = (globalThis.__MOCK_PROJECT_DOCUMENTS ??= new Map());
     const WORKSPACES = [
         { id: 'a1111111-1111-4111-8111-111111111111', organisation_id: 'o1', name: 'Studio', is_default: true },
         { id: 'a2222222-2222-4222-8222-222222222222', organisation_id: 'o1', name: 'Client work', is_default: false },
@@ -453,12 +465,25 @@ createServer(async (req, res) => {
         return send(res, 201, { project: made, idempotent: false });
     }
     m = path.match(/^\/api\/v1\/projects\/([^/]+)\/document$/);
+    if (m && req.method === 'GET') {
+        const p = PROJECTS.find((x) => x.id === m[1]);
+        if (!p) return send(res, 404, { error: { code: 'NOT_FOUND', message: 'The resource was not found.', requestId: 'mock' } });
+        const document = PROJECT_DOCUMENTS.get(p.id) ?? { schema_version: 3, project_id: p.id, brief: '', canvas: { aspect_ratio: '16:9', frame_rate: 30 } };
+        PROJECT_DOCUMENTS.set(p.id, document);
+        return send(res, 200, { revision: p.version, document });
+    }
     if (m && req.method === 'PUT') {
         const p = PROJECTS.find((x) => x.id === m[1]);
         if (!p) return send(res, 404, { error: { code: 'NOT_FOUND', message: 'The resource was not found.', requestId: 'mock' } });
         if (body.expected_revision !== p.version) return send(res, 409, { error: { code: 'REVISION_CONFLICT', message: 'The project changed.', requestId: 'mock' } });
+        if (body.document) PROJECT_DOCUMENTS.set(p.id, body.document);
         p.version += 1; p.updated_at = new Date().toISOString();
         return send(res, 200, { revision: p.version, restored_from: body.restore_revision });
+    }
+    m = path.match(/^\/api\/v1\/projects\/([^/]+)\/assets$/);
+    if (m && req.method === 'GET') {
+        if (!PROJECTS.some((x) => x.id === m[1])) return send(res, 404, { error: { code: 'NOT_FOUND', message: 'The resource was not found.', requestId: 'mock' } });
+        return send(res, 200, { assets: [] });
     }
     m = path.match(/^\/api\/v1\/projects\/([^/]+)(\/history)?$/);
     if (m && !m[2] && (req.method === 'PATCH' || req.method === 'DELETE')) {
@@ -514,6 +539,18 @@ createServer(async (req, res) => {
         });
 
     if (!req.headers.authorization?.startsWith('Bearer ')) return send(res, 401, { error: 'not_authenticated' });
+    if (path === '/api/v1/uploads' && req.method === 'POST') {
+        const allowed = ['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'audio/mpeg', 'audio/wav'];
+        if (!allowed.includes(body.content_type)) return send(res, 400, { error: 'upload_type_not_allowed' });
+        if (typeof body.size_bytes === 'number' && body.size_bytes > 100_000_000) return send(res, 400, { error: 'upload_too_large' });
+        const id = randomUUID();
+        return send(res, 200, {
+            key: `uploads/mock/${id}`,
+            upload_url: `http://localhost:${PORT}/mock-upload/${id}`,
+            content_type: body.content_type,
+            expires_in: 900,
+        });
+    }
     if (path === '/api/v1/checkin') {
         const result = mockCheckin(req.method, req.headers.authorization || 'dev', state, process.env.CHECKIN_ENABLED === 'true');
         return send(res, result.status, result.body);

@@ -1,5 +1,5 @@
 // Writes src/lib/oddlings/puppetScript.ts: the web's animated puppet (shader, pixel preparation, rigs and pose maths for
-// the 72 cast portraits) wrapped, not rewritten, into one script that a WebView runs offline. `--check` fails when the
+// the curated cast portraits) wrapped, not rewritten, into one script that a WebView runs offline. `--check` fails when the
 // file is out of date (the drift test runs it). Plain Node, no dependencies.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';

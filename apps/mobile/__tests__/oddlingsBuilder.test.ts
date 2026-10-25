@@ -22,7 +22,7 @@ describe('drift: the app builder matches the web builder', () => {
 
     test('the web reference ran', () => {
         expect(run.stderr).toBe('');
-        expect(ref?.cases).toHaveLength(72);
+        expect(ref?.cases).toHaveLength(ODDLINGS.length);
     });
 
     test('every character: sanitised picks and both prompts are identical', () => {

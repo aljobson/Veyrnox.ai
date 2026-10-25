@@ -28,8 +28,8 @@ describe('the moving preview', () => {
         expect(run.status).toBe(0);
     });
 
-    test('every one of the 72 characters has a rig that stays inside the 1024 by 1536 portrait and a finite pose', () => {
-        expect(ODDLINGS).toHaveLength(72);
+    test('every curated character has a rig that stays inside the 1024 by 1536 portrait and a finite pose', () => {
+        expect(ODDLINGS).toHaveLength(20);
         for (const o of ODDLINGS) {
             const rig = bundle.oddlingPuppetRigs.puppetRig(o.id);
             expect(rig).not.toBeNull();

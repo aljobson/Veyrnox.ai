@@ -22,7 +22,7 @@ describe('tab shell', () => {
         expect(fs.existsSync(path.join(APP, '(app)', 'library.tsx'))).toBe(false);
         expect(fs.existsSync(path.join(APP, '(app)', 'publish.tsx'))).toBe(false);
         expect(fs.existsSync(path.join(APP, '(app)', 'create', 'index.tsx'))).toBe(false);
-        expect(fs.existsSync(path.join(APP, '(app)', 'cinema', 'index.tsx'))).toBe(false);
+        expect(fs.existsSync(path.join(APP, '(app)', 'cinema', 'index.tsx'))).toBe(true);
     });
 
     test('the layout lists the tabs in order, each with a visible and a spoken label from the catalog', () => {

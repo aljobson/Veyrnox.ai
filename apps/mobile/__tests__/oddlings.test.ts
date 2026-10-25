@@ -8,11 +8,11 @@ const { readFileSync } = require('fs') as { readFileSync: (path: string, encodin
 const { join } = require('path') as { join: (...p: string[]) => string };
 
 describe('the cast', () => {
-    test('is the web gallery: 72 characters, 68 human and 4 other beings', () => {
-        expect(ODDLINGS).toHaveLength(72);
-        expect(kindCount('all', 'human')).toBe(68);
+    test('is the curated web gallery: 20 characters, 16 human and 4 other beings', () => {
+        expect(ODDLINGS).toHaveLength(20);
+        expect(kindCount('all', 'human')).toBe(16);
         expect(kindCount('all', 'creature')).toBe(4);
-        expect(new Set(ODDLINGS.map((o) => o.id)).size).toBe(72);
+        expect(new Set(ODDLINGS.map((o) => o.id)).size).toBe(20);
     });
 
     test('every collection tab has characters and All is first', () => {
@@ -38,7 +38,7 @@ describe('the cast', () => {
 describe('filters', () => {
     test('a kind filter narrows the open collection', () => {
         expect(visibleOddlings('all', 'creature')).toHaveLength(4);
-        expect(visibleOddlings('all', null)).toHaveLength(72);
+        expect(visibleOddlings('all', null)).toHaveLength(20);
     });
 
     test('pressing the active chip clears it', () => {

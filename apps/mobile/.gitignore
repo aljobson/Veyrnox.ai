@@ -21,6 +21,9 @@ expo-env.d.ts
 # Metro
 .metro-health-check*
 
+# Native E2E traces, screenshots, videos and replay cache
+.e2e/
+
 # debug
 npm-debug.*
 yarn-debug.*

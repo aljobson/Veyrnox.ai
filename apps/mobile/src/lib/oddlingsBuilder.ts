@@ -125,10 +125,32 @@ const canonChanged = ({ keys, topic }: CanonCategory, now: Picks, original: Pick
     ? conflictTopicPicks(topic, now) !== conflictTopicPicks(topic, original)
     : (keys ?? []).some((key) => (now[key] || '') !== (original[key] || '')));
 
+type CastCharacter = { readonly name: string; readonly picks: Picks };
+function inheritedPreset(raw: Picks): CastCharacter | undefined {
+    const rule = oneLine(raw.oddling_rule, 160);
+    return rule ? (cast.characters as unknown as CastCharacter[]).find((item) => oneLine(item.picks.oddling_rule, 160) === rule) : undefined;
+}
+
+// A generated preset remains the same fictional person after an edit. Match the
+// web prompt exactly so providers change only the traits the person selected.
+function continuityLock(raw: Picks): string {
+    const preset = inheritedPreset(raw);
+    if (!preset) return '';
+    const current = resolveExclusive(raw);
+    const original = resolveExclusive(preset.picks);
+    const changed = GROUPS
+        .filter(({ id }) => (current[id] || '') !== (original[id] || ''))
+        .map(({ label }) => label.toLowerCase());
+    const name = oneLine(current.oddling_name, 40) || preset.name;
+    const anchor = `character continuity lock: ${name} remains the exact same established fictional person; preserve all unchanged facial identity, age, heritage, skin tone, body proportions and distinctive details`;
+    if (!changed.length) return `${anchor}; do not redesign, recast or replace the character`;
+    return `${anchor}; change only these selected attributes: ${changed.join(', ')}; do not alter anything else and do not redesign, recast or replace the character`;
+}
+
 function inheritedVisualCanon(raw: Picks): string {
     const picks = resolveExclusive(raw);
     const rule = oneLine(picks.oddling_rule, 160);
-    const original = rule ? (cast.characters as unknown as { picks: Picks }[]).find((item) => oneLine(item.picks.oddling_rule, 160) === rule)?.picks : undefined;
+    const original = inheritedPreset(picks)?.picks;
     if (!original) return rule;
     const changed = CANON_CATEGORIES.filter((c) => canonChanged(c, picks, original));
     return rule.split(',').map((clause) => clause.trim()).filter((clause) => !changed.some(({ words }) => words.test(clause))).join(', ');
@@ -145,6 +167,8 @@ export function oddlingIdentity(picks: Picks): string[] {
     if (obsession) parts.push(`interested in ${obsession}`);
     if (voice) parts.push(voice);
     if (show) parts.push(show);
+    const continuity = continuityLock(picks);
+    if (continuity) parts.push(continuity);
     if (rule) parts.push(`immutable visual canon: ${rule}`);
     return parts;
 }
