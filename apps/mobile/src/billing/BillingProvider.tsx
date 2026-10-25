@@ -3,7 +3,8 @@ import { Platform } from 'react-native';
 import Purchases, { type CustomerInfo, type PurchasesOfferings, type PurchasesPackage } from 'react-native-purchases';
 import { useAuth } from '../auth/AuthProvider';
 import { ApiError } from '../lib/api';
-import { stayDiscountFor } from '../lib/billing';
+import { generationPlanFor, stayDiscountFor } from '../lib/billing';
+import { getCacheUser } from '../lib/appCache';
 
 // Store billing is a build-time switch (ADR-0108); the server has its own flag and answers 404 while it is off.
 const ENABLED = process.env.EXPO_PUBLIC_STORE_BILLING_ENABLED === 'true';
@@ -24,6 +25,10 @@ interface BillingValue {
     readonly canPurchase: boolean;
     readonly publishActive: boolean;
     readonly generationActive: boolean;
+    readonly generationAccessResolved: boolean;
+    // Generation subscriptions fail closed until the server has conclusively ruled out an
+    // existing web plan. Credit-pack purchases use canPurchase and remain independent.
+    readonly generationPurchaseReady: boolean;
     readonly paidAccess: boolean;
     readonly accessResolved: boolean;
     readonly activeProductIds: readonly string[];
@@ -33,12 +38,13 @@ interface BillingValue {
     purchase(pkg: PurchasesPackage): Promise<PurchaseResult>;
     purchaseStayOffer(pkg: PurchasesPackage): Promise<PurchaseResult>;
     restore(): Promise<void>;
+    refreshGenerationAccess(): Promise<boolean>;
 }
 
 const BillingContext = createContext<BillingValue>({
-    status: 'off', offerings: null, canPurchase: false, publishActive: false, generationActive: false,
+    status: 'off', offerings: null, canPurchase: false, publishActive: false, generationActive: false, generationAccessResolved: false, generationPurchaseReady: false,
     paidAccess: false, accessResolved: false, activeProductIds: [], managementURL: null, debug: null,
-    purchase: async () => 'cancelled', purchaseStayOffer: async () => 'cancelled', restore: async () => {},
+    purchase: async () => 'cancelled', purchaseStayOffer: async () => 'cancelled', restore: async () => {}, refreshGenerationAccess: async () => false,
 });
 
 export const useBilling = () => useContext(BillingContext);
@@ -57,11 +63,32 @@ export function BillingProvider({ children }: { children: ReactNode }) {
     const [serverAccessResolved, setServerAccessResolved] = useState(false);
     const [serverPublishActive, setServerPublishActive] = useState(false);
     const [serverGenerationActive, setServerGenerationActive] = useState(false);
+    const [serverGenerationResolved, setServerGenerationResolved] = useState(false);
     const [activeProductIds, setActiveProductIds] = useState<readonly string[]>([]);
     const [managementURL, setManagementURL] = useState<string | null>(null);
     const [debug, setDebug] = useState<string | null>(null);
     const configured = useRef(false);
     const loggedIn = useRef(false);
+
+    const refreshGenerationAccess = useCallback(async (): Promise<boolean> => {
+        const owner = getCacheUser();
+        if (!owner) throw new Error('generation_access_unresolved');
+        try {
+            const generation = await api.request<{ subscription?: { status?: unknown } | null }>('/api/v1/subscriptions');
+            if (owner !== getCacheUser()) throw new Error('generation_access_unresolved');
+            const subscriptionStatus = generation?.subscription?.status;
+            const active = subscriptionStatus === 'active' || subscriptionStatus === 'past_due';
+            setServerGenerationActive(active);
+            setServerGenerationResolved(true);
+            return active;
+        } catch (error) {
+            if (owner === getCacheUser()) {
+                setServerGenerationActive(false);
+                setServerGenerationResolved(false);
+            }
+            throw error;
+        }
+    }, [api]);
 
     useEffect(() => {
         if (!ENABLED || !API_KEY) return;
@@ -156,24 +183,32 @@ export function BillingProvider({ children }: { children: ReactNode }) {
                 setServerAccessResolved(false);
                 setServerPublishActive(false);
                 setServerGenerationActive(false);
+                setServerGenerationResolved(false);
             });
             return () => { cancelled = true; };
         }
-        void Promise.all([
-            api.request<{ subscription?: { status?: unknown } | null }>('/api/v1/subscriptions').catch(() => null),
-            api.request<{ entitlement?: { tier?: unknown } }>('/api/v1/social/plan').catch(() => null),
-        ]).then(([generation, publish]) => {
+        const generation = Promise.resolve().then(refreshGenerationAccess).then(() => true).catch(() => false);
+        const publish = api.request<{ entitlement?: { tier?: unknown } }>('/api/v1/social/plan')
+            .then((value) => {
+                if (!cancelled) setServerPublishActive(value?.entitlement?.tier === 'publish');
+                return true;
+            })
+            .catch(() => {
+                if (!cancelled) setServerPublishActive(false);
+                return false;
+            });
+        void Promise.all([generation, publish]).then(([generationResolved, publishResolved]) => {
             if (cancelled) return;
-            const status = generation?.subscription?.status;
-            setServerGenerationActive(status === 'active' || status === 'past_due');
-            setServerPublishActive(publish?.entitlement?.tier === 'publish');
-            setServerAccessResolved(true);
+            setServerAccessResolved(generationResolved && publishResolved);
         });
         return () => { cancelled = true; };
-    }, [authStatus, api]);
+    }, [authStatus, api, refreshGenerationAccess]);
 
     const purchase = useCallback(async (pkg: PurchasesPackage): Promise<PurchaseResult> => {
         if (!canPurchase) throw new Error('billing_not_ready');
+        if (generationPlanFor(pkg.product.identifier) !== null && (generationActive || await refreshGenerationAccess())) {
+            throw new Error('generation_already_active');
+        }
         try {
             const { customerInfo } = await Purchases.purchasePackage(pkg);
             setPublishActive(isPublishActive(customerInfo));
@@ -185,7 +220,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
             if ((err as { userCancelled?: boolean }).userCancelled) return 'cancelled';
             throw err;
         }
-    }, [canPurchase]);
+    }, [canPurchase, generationActive, refreshGenerationAccess]);
 
     const purchaseStayOffer = useCallback(async (pkg: PurchasesPackage): Promise<PurchaseResult> => {
         if (!canPurchase) throw new Error('billing_not_ready');
@@ -208,22 +243,24 @@ export function BillingProvider({ children }: { children: ReactNode }) {
     }, [canPurchase]);
 
     const restore = useCallback(async () => {
+        if (!canPurchase) throw new Error('billing_not_ready');
         const info = await Purchases.restorePurchases();
         setPublishActive(isPublishActive(info));
         setGenerationActive(isGenerationActive(info));
         setActiveProductIds(info.activeSubscriptions);
         setManagementURL(info.managementURL);
         setAccessResolved(true);
-    }, []);
+    }, [canPurchase]);
 
     const publishEntitled = publishActive || serverPublishActive;
     const generationEntitled = generationActive || serverGenerationActive;
+    const generationPurchaseReady = canPurchase && serverGenerationResolved && !generationEntitled;
     const paidAccess = publishEntitled || generationEntitled;
     const paidAccessResolved = accessResolved || serverAccessResolved;
 
     const value = useMemo(
-        () => ({ status, offerings, canPurchase, publishActive: publishEntitled, generationActive: generationEntitled, paidAccess, accessResolved: paidAccessResolved, activeProductIds, managementURL, debug, purchase, purchaseStayOffer, restore }),
-        [status, offerings, canPurchase, publishEntitled, generationEntitled, paidAccess, paidAccessResolved, activeProductIds, managementURL, debug, purchase, purchaseStayOffer, restore],
+        () => ({ status, offerings, canPurchase, publishActive: publishEntitled, generationActive: generationEntitled, generationAccessResolved: serverGenerationResolved, generationPurchaseReady, paidAccess, accessResolved: paidAccessResolved, activeProductIds, managementURL, debug, purchase, purchaseStayOffer, restore, refreshGenerationAccess }),
+        [status, offerings, canPurchase, publishEntitled, generationEntitled, serverGenerationResolved, generationPurchaseReady, paidAccess, paidAccessResolved, activeProductIds, managementURL, debug, purchase, purchaseStayOffer, restore, refreshGenerationAccess],
     );
     return <BillingContext.Provider value={value}>{children}</BillingContext.Provider>;
 }

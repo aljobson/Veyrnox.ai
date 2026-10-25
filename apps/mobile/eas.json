@@ -32,7 +32,6 @@
         "EXPO_PUBLIC_EDITOR_ENABLED": "true",
         "EXPO_PUBLIC_FULL_EDITOR_ENABLED": "true",
         "EXPO_PUBLIC_STORE_BILLING_ENABLED": "true",
-        "EXPO_PUBLIC_HARD_PAYWALL_ENABLED": "true",
         "SENTRY_ALLOW_FAILURE": "true"
       }
     }
