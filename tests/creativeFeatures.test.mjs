@@ -32,6 +32,7 @@ test('every workflow exposes a real, required upload control', () => {
   }
   const textToSpeech = creativeFeature('text-to-speech');
   assert.equal(textToSpeech.scriptUpload, true);
+  assert.equal(textToSpeech.model, 'inworld-tts');
   assert.deepEqual(textToSpeech.media, []);
   for (const slug of ['ai-avatar-generator', 'ai-human-generator', 'ai-influencer-generator', 'ai-baby-generator', 'product-image-generator']) {
     const item = creativeFeature(slug);

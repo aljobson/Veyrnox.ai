@@ -6,6 +6,7 @@ import { checkCatalog } from '../lib/i18n/check.mjs';
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
 const workspace = read('app/veyrnox/_components/film/FilmWorkspace.js');
+const prompts = read('app/veyrnox/_components/film/FilmPrompts.js');
 const panel = read('app/veyrnox/_components/film/FilmCloud.js');
 const pure = read('app/veyrnox/_lib/filmStudioCloud.js');
 test('flag-off and signed-out render paths cannot mount the requesting panel', () => {
@@ -37,11 +38,15 @@ test('all cloud controls are real, labelled, busy-disabled 44px buttons; dialogs
 });
 test('replacement keys reset editors; pending starter belongs to the store', () => {
   assert.match(workspace, /const \{film,stage,ready,userId,error,saved,generation\}=state/);
-  assert.match(workspace, /<FilmFiles key=\{generation\}/); assert.match(workspace, /<section key=\{generation\}/);
+  assert.doesNotMatch(workspace, /FilmFiles/); assert.match(workspace, /<section key=\{generation\}/);
   assert.doesNotMatch(workspace, /onImport=/);
   assert.doesNotMatch(workspace, /setPendingStarter/); assert.match(workspace, /pendingVisible\(state\)/);
   const store=read('app/veyrnox/_lib/filmStudioStore.js');
   assert.match(store,/if \(typeof window !== 'undefined'\) onSessionChange/); assert.match(store,/boundaryPatch\(state, getStoredUserId\(\)\)/);
+});
+test('Film Studio has no project export or verified-master creation controls', () => {
+  assert.doesNotMatch(workspace, /FilmFiles|studioZip|downloadProject/);
+  assert.doesNotMatch(prompts, /FilmMaster|Prepare 16:9 master|exportFilmMaster/);
 });
 test('11 catalogs preserve every cloud key and interpolation slot', async () => {
   for (const locale of ['ar','de','es','fr','hi','ja','ko','pt','ru','zh']) {

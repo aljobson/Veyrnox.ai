@@ -81,12 +81,12 @@ test('unmounted sign-out then sign-in and account switches invalidate links/pend
   assert.equal(cloud.pendingVisible({...s,userId:'bob'}),false);
   assert.equal(cloud.pendingVisible({...s,...cloud.sessionLoadPatch(store,'alice',s)}),true);
 });
-test('write failure after server save drops the link and requests export without persistence claims', () => {
+test('write failure after server save drops the link without exposing removed export controls', () => {
   const s=state(), captured={userId:'alice',generation:3,text:JSON.stringify(s.film)};
   const saved={...s,...cloud.acceptSaveResult(s,captured,project())};
   const failed={...saved,...cloud.persistenceFailurePatch()};
   assert.equal(failed.cloud,null); assert.equal(failed.saved,false);
-  assert.deepEqual(cloud.saveFailureKeys(failed,{status:503}),['app.film.cloud.failed','app.film.cloud.exportFirst']);
+  assert.deepEqual(cloud.saveFailureKeys(failed,{status:503}),['app.film.cloud.failed']);
   assert.deepEqual(cloud.saveFailureKeys(s,{status:503}),['app.film.cloud.failed']);
 });
 test('list parsing drops invalid rows and projects extra fields away; handoff only selects known uuid', () => {

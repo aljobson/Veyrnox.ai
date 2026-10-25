@@ -60,6 +60,12 @@ describe('grouped menu', () => {
         ]));
     });
 
+    test('the guided creative feature suite is directly available from Tools', () => {
+        expect(MENU_SECTIONS.find((section) => section.id === 'tools')?.items).toContainEqual(
+            expect.objectContaining({ key: 'features', href: '/features', label: 'menu.features' }),
+        );
+    });
+
     test('Social Cinema is named and directly available from Inspire', () => {
         expect((en as Record<string, string>)['menu.cinema']).toBe('Social Cinema');
         expect(MENU_SECTIONS.find((section) => section.id === 'inspire')?.items).toContainEqual(
@@ -87,6 +93,7 @@ describe('the current screen in the menu', () => {
         expect(activeItemKey('/create')).toBe('create');
         expect(activeItemKey('/create/agent')).toBe('videoAgent');
         expect(activeItemKey('/create/presets')).toBe('templates');
+        expect(activeItemKey('/features/talking-avatar')).toBe('features');
         expect(activeItemKey('/chat/skills')).toBe('skills');
     });
 

@@ -1,6 +1,5 @@
-// The seven Film skills (ADR-0182): chats that help write what Film Studio on the web needs. The wording is the web's
-// (app/veyrnox/_lib/filmStudioAssistants.js). Film Studio itself is not on the phone, so these only help write; they decide,
-// approve and lock nothing.
+// The seven Film skills (ADR-0182): chats that help prepare the same structured inputs used by Film Studio on web and
+// mobile. The wording stays aligned with app/veyrnox/_lib/filmStudioAssistants.js; chat itself never approves or locks.
 import type { Skill } from './studioSkills';
 
 export const FILM_SKILLS: readonly Skill[] = [
@@ -20,7 +19,7 @@ export const FILM_SKILLS: readonly Skill[] = [
         blurb: "Organise the studio and its production documents.",
         starter: "What is the project name?",
         body:
-            "Film stage 2: studio-init. Ask for the project name. Explain the studio folders: assets/characters, assets/locations, assets/props, prompts, generations, selects, edit, color, sound, master, docs. The four documents are breakdown, visual bible, registry and generation log. Only approved selects reach the edit; raw generations belong to the prompt engineer; reference filenames are immutable and a new version is a new file. The person creates and downloads this scaffold in /app/film-studio. Do not claim to have created files in chat.",
+            "Film stage 2: studio-init. Ask for the project name. Explain the studio folders: assets/characters, assets/locations, assets/props, prompts, generations, selects, edit, color, sound, master, docs. The four documents are breakdown, visual bible, registry and generation log. Only approved selects reach the edit; raw generations belong to the prompt engineer; reference filenames are immutable and a new version is a new file. The person creates and edits this structure in Film Studio. Do not claim to have created files in chat.",
     },
     {
         id: "film-breakdown",

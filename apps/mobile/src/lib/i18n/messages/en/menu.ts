@@ -12,6 +12,7 @@ export default {
     'menu.chat': 'LLM Chat',
     'menu.videoAgent': 'Video agent',
     'menu.create': 'Create',
+    'menu.features': 'Creative tools',
     'menu.toolDirectory': 'Tools',
     'menu.film': 'Film Studio',
     'menu.mcp': 'MCP',

@@ -1,20 +1,18 @@
-import * as DocumentPicker from 'expo-document-picker';
-import { File } from 'expo-file-system';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { API_BASE } from '../../../lib/api';
 import { touchTarget } from '../../../lib/a11y';
-import { FILM_STUDIO_WEB_PATH, MAX_FILM_BYTES, shotRows, stageStatuses, summarize, type Film } from '../../../lib/filmStudio';
-import { clearStudio, saveStudio } from '../../../lib/filmStudioStore';
+import { FILM_STUDIO_WEB_PATH, shotRows, stageStatuses, summarize, type Film } from '../../../lib/filmStudio';
+import { clearStudio } from '../../../lib/filmStudioStore';
 import { useAuth } from '../../../auth/AuthProvider';
 import { getCacheUser, subscribeCacheUser } from '../../../lib/appCache';
 import { clearOpenedFilm, fetchCloudFilms, loadActiveStudio } from '../../../lib/filmCloud';
 import { plural, t } from '../../../lib/i18n';
 import { colors } from '../../../theme';
 
-// ADR-0210 and ADR-0252: read a file import or a film opened from the account.
+// ADR-0210 and ADR-0252: open and edit a native film or a film saved to the account.
 export default function FilmStudio() {
     const router = useRouter();
     const { api } = useAuth();
@@ -24,8 +22,6 @@ export default function FilmStudio() {
     const [film, setFilm] = useState<Film | null>(null);
     const [loading, setLoading] = useState(true);
     const [savedAt, setSavedAt] = useState<number | null>(null);
-    const [problem, setProblem] = useState<string | null>(null);
-    const [busy, setBusy] = useState(false);
 
     const reload = useCallback(() => {
         const token = ++loadToken.current;
@@ -61,8 +57,6 @@ export default function FilmStudio() {
             ++generation.current;
             setFilm(null);
             setSavedAt(null);
-            setProblem(null);
-            setBusy(false);
             setCloudCount(null);
             setLoading(true);
             reload();
@@ -71,33 +65,6 @@ export default function FilmStudio() {
         void fetchCount();
         return () => { unsubscribe(); ++generation.current; ++loadToken.current; };
     }, [api, reload]);
-
-    const pick = useCallback(async () => {
-        if (busy) return;
-        const session = generation.current;
-        setBusy(true);
-        setProblem(null);
-        try {
-            const res = await DocumentPicker.getDocumentAsync({ type: ['application/json', 'text/plain', '*/*'], copyToCacheDirectory: true, multiple: false });
-            if (session !== generation.current) return;
-            if (res.canceled || !res.assets[0]) return;
-            const asset = res.assets[0];
-            if (typeof asset.size === 'number' && asset.size > MAX_FILM_BYTES) return setProblem('The studio file must be smaller than 1 MB.');
-            const raw = await new File(asset.uri).text();
-            if (session !== generation.current) return;
-            const saved = await saveStudio(raw);
-            if (session !== generation.current) return;
-            if (!saved.ok) return setProblem(saved.error);
-            clearOpenedFilm();
-            setFilm(saved.film);
-            setSavedAt(Date.now());
-        } catch {
-            if (session !== generation.current) return;
-            setProblem('That file could not be read. Try exporting it again from the web.');
-        } finally {
-            if (session === generation.current) setBusy(false);
-        }
-    }, [busy]);
 
     const remove = useCallback(async () => {
         const session = generation.current;
@@ -118,14 +85,6 @@ export default function FilmStudio() {
                 <Text style={styles.body}>{t('filmCloud.intro')}</Text>
                 <Pressable accessibilityRole="button" style={styles.primary} onPress={() => router.push('/film/workspace')}>
                     <Text style={styles.primaryText}>Start a new film</Text>
-                </Pressable>
-                <Text style={styles.heading} accessibilityRole="header">Open an export</Text>
-                <Text style={styles.step}>1. On veyrnox.ai open Film Studio and export your studio as JSON.</Text>
-                <Text style={styles.step}>2. Put the file in Files, iCloud Drive or an email to yourself.</Text>
-                <Text style={styles.step}>3. Choose it here.</Text>
-                {problem ? <Text style={styles.error}>{problem}</Text> : null}
-                <Pressable accessibilityRole="button" disabled={busy} style={[styles.primary, busy && styles.off]} onPress={pick}>
-                    <Text style={styles.primaryText}>{busy ? 'Opening…' : 'Choose a studio file'}</Text>
                 </Pressable>
                 <Links router={router} cloudCount={cloudCount} />
             </ScrollView>
@@ -174,10 +133,6 @@ export default function FilmStudio() {
                 </Pressable>
             ))}
 
-            <Pressable accessibilityRole="button" disabled={busy} style={[styles.secondary, busy && styles.off]} onPress={pick}>
-                <Text style={styles.secondaryText}>{busy ? 'Opening…' : 'Open a newer export'}</Text>
-            </Pressable>
-            {problem ? <Text style={styles.error}>{problem}</Text> : null}
             <Pressable accessibilityRole="button" style={[styles.secondary, touchTarget]} onPress={remove}>
                 <Text style={styles.secondaryText}>Remove from this phone</Text>
             </Pressable>
@@ -195,10 +150,6 @@ function Links({ router, cloudCount }: { router: ReturnType<typeof useRouter>; c
                     <Text style={styles.muted}>{plural('filmCloud.linkCount', cloudCount)}</Text>
                 </Pressable>
             ) : null}
-            <Pressable accessibilityRole="button" style={[styles.row, touchTarget]} onPress={() => router.push('/library/files')}>
-                <Text style={styles.name}>Film masters</Text>
-                <Text style={styles.muted}>Your saved 16:9 masters. Share one or save it to Photos.</Text>
-            </Pressable>
             <Pressable accessibilityRole="button" style={[styles.row, touchTarget]} onPress={() => router.push('/chat/new')}>
                 <Text style={styles.name}>Film chats</Text>
                 <Text style={styles.muted}>Seven helpers for setup, breakdown, references, passports, stress tests and prompts.</Text>
@@ -218,9 +169,7 @@ const styles = StyleSheet.create({
     title: { color: colors.text, fontSize: 22, fontWeight: '700' },
     heading: { color: colors.text, fontSize: 17, fontWeight: '600', marginTop: 16 },
     body: { color: colors.body, fontSize: 15 },
-    step: { color: colors.body, fontSize: 15 },
     muted: { color: colors.muted, fontSize: 13 },
-    error: { color: colors.danger },
     row: { paddingVertical: 12, borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth, gap: 3 },
     name: { color: colors.text, fontSize: 16 },
     web: { color: colors.accent, fontSize: 13, fontWeight: '600' },
@@ -231,5 +180,4 @@ const styles = StyleSheet.create({
     primaryText: { color: colors.accentInk, fontWeight: '700', fontSize: 16 },
     secondary: { minHeight: 44, borderRadius: 10, borderColor: colors.border, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginTop: 12 },
     secondaryText: { color: colors.accent, fontWeight: '600' },
-    off: { opacity: 0.4 },
 });
