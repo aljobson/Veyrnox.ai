@@ -23,7 +23,15 @@ ON CONFLICT (id) DO UPDATE SET
 
 -- Retire the unused direct-provider profile output if it exists. Historical
 -- profile records remain private; no destructive data migration is needed.
-UPDATE public.model_catalog SET active=false WHERE id='verified-voice-tts';
+DO $$
+DECLARE affected BIGINT;
+BEGIN
+  UPDATE public.model_catalog SET active=false WHERE id='verified-voice-tts';
+  GET DIAGNOSTICS affected = ROW_COUNT;
+  IF affected <> 1 THEN
+    RAISE EXCEPTION 'Expected one verified-voice-tts row, updated %', affected;
+  END IF;
+END $$;
 
 DO $$
 DECLARE actual RECORD;
