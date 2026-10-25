@@ -2,7 +2,7 @@
 
 ## Release verdict
 
-The signed-in iOS application, Social Cinema route, native Editor, Creative Tools directory, and all 22 Creative Tool detail workflows pass automated device journeys on iPhone 17 Pro. The generation-source mock now supports the same grant + raw PUT sequence used by the app.
+The signed-in iOS application, Social Cinema route, native Editor, Creative Tools directory, and all 22 Creative Tool detail workflows pass automated device journeys on iPhone 17 Pro. A full creation journey also submits an image generation, observes completion, renders its output, and finds the ready creation in Library. The generation-source mock supports the same grant + raw PUT sequence used by the app.
 
 The complete mobile Jest suite is green. Seven pre-existing full-lint errors remain in unchanged files; they are listed below rather than hidden by exclusions.
 
@@ -11,6 +11,7 @@ The complete mobile Jest suite is green. Seven pre-existing full-lint errors rem
 | Area | Result | Evidence |
 | --- | ---: | --- |
 | Native smoke suite | 4/4 passed | Explore/Create/Editor/Library/Publish, menu, Social Cinema, Creative Tools catalogue, saved Editor project |
+| Generated-output device journey | 1/1 passed | Prompt submitted, job completed, output rendered, ready creation found in Library; three screenshots retained |
 | Creative Tool device matrix | 22/22 passed | Example media, exact required upload count, Library alternative, source permission, final review |
 | Focused unit/component regression | 44/44 passed | Mock parity, tab shell, full Editor, uploads, Creative Tool screens |
 | Complete mobile Jest suite | 3,607/3,607 passed | 200/200 suites, including regenerated Oddlings web/mobile parity |
@@ -46,6 +47,7 @@ cd apps/mobile
 npm test -- --runInBand __tests__/devMockParity.test.ts __tests__/tabShell.test.ts __tests__/fullEditorScreen.test.tsx __tests__/uploads.test.ts __tests__/creativeFeatureScreen.test.tsx
 npm run typecheck
 npm run test:e2e -- --target ios-simulator --tag smoke
+npm run test:e2e -- tests/generation.e2e.ts --target ios-simulator
 npm run test:e2e -- tests/creative-tools.e2e.ts --target ios-simulator
 ```
 
