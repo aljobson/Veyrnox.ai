@@ -1,0 +1,30 @@
+# Spike only: not deployed. Create with `fly apps create` and set
+# CONCAT_API_TOKEN via `fly secrets set` (owner step). No public service:
+# the Worker reaches it over Fly's private network (6PN), never the internet.
+app = "veyrnox-concat-render"
+primary_region = "ams"
+kill_signal = "SIGTERM"
+kill_timeout = 120
+
+[build]
+  dockerfile = "services/concat-render/Dockerfile"
+
+[env]
+  VK_ICD_FILENAMES = "/usr/share/vulkan/icd.d/lvp_icd.json"
+
+[checks.api]
+  type = "tcp"
+  port = 7420
+  interval = "30s"
+  timeout = "5s"
+  grace_period = "30s"
+
+[[restart]]
+  policy = "on-failure"
+  max_retries = 5
+
+# Software rendering is CPU-bound: size up for the spike, then measure.
+[[vm]]
+  cpu_kind = "performance"
+  cpus = 4
+  memory = "8gb"
