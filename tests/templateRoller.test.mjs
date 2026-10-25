@@ -7,7 +7,7 @@ import { SHOWCASE_CLIPS } from '../app/veyrnox/_lib/showcase.js';
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 
 test('gallery video eligibility excludes recipes with missing previews', () => {
-  assert.equal(PRESETS.filter(hasTemplateVideo).length, 142);
+  assert.equal(PRESETS.filter(hasTemplateVideo).length, 150);
   assert.equal(hasTemplateVideo({}), false);
   assert.equal(hasTemplateVideo({ clipKey: 'missing-preview' }), false);
   assert.equal(hasTemplateVideo(PRESETS.find((preset) => preset.clipKey)), true);
@@ -19,7 +19,7 @@ test('gallery video eligibility excludes recipes with missing previews', () => {
 test('preview-backed templates contain unique local videos', () => {
   const videos = new Set();
   const previewBacked = PRESETS.filter((preset) => preset.clipKey);
-  assert.equal(previewBacked.length, 142);
+  assert.equal(previewBacked.length, 150);
   for (const preset of previewBacked) {
     const clip = SHOWCASE_CLIPS[preset.clipKey];
     assert.ok(clip?.video, preset.id);
