@@ -21,7 +21,7 @@ const start = async (auth, aal = 'aal1') => (await one('SELECT public.start_priv
 const read = async (auth, id, section, cursor = null, size = null, thread = null, aal = 'aal1') =>
     (await one('SELECT public.read_privacy_export_page($1,$2,$3,$4,$5,$6,$7,$8) AS r', [auth, aal, id, section, thread, cursor?.after ?? null, cursor?.key ?? null, size])).r;
 const ALLOW = {
-    profile: 'id email created_at preferred_locale rights_attested_at rights_attestation_version balance free_balance subscription_balance subscription_expires_at cinema_profile cinema_membership referral_code referred_at referrals_made creator_profile checkin_streak push_devices sanctions_hold_until frozen',
+    profile: 'id email created_at preferred_locale rights_attested_at rights_attestation_version balance free_balance subscription_balance subscription_expires_at cinema_profile cinema_membership referral_code referred_at referrals_made creator_profile checkin_streak push_devices voice_profiles sanctions_hold_until frozen',
     credit_history: 'id delta free_delta subscription_delta job_id created_at reason',
     top_ups: 'id pack_id sales_channel credits price_usd_cents status consent_at consent_version created_at credited_at refunded_cents clawed_back_credits returned_at',
     credit_subscriptions: 'id plan_id status price_usd_cents consent_version consent_at started_at current_period_end cancel_at_period_end ended_at end_reason created_at credits',
@@ -130,10 +130,15 @@ try {
     await q(withProfile); await q(withProfile);
     const withCheckin = await readFile(new URL('../packages/db/schema/supabase/0368_daily_checkin.sql', import.meta.url), 'utf8');
     await q(withCheckin); await q(withCheckin);
+    const withVoiceProfiles = await readFile(new URL('../packages/db/schema/supabase/0390_verified_voice_profiles.sql', import.meta.url), 'utf8');
+    await q(withVoiceProfiles); await q(withVoiceProfiles);
     await q('ALTER TABLE public.chat_messages ALTER COLUMN seq RESTART WITH 3000000000');
     const alice = await person('alice'), bob = await person('bob-private');
     otherIds.push(bob.id, bob.auth); secrets.push(bob.email);
     const af = await fixture(alice, bob);
+    await q(`INSERT INTO public.voice_profiles(user_id,provider_voice_id,name,language,status,consent_version,sample_count,sample_seconds)
+        VALUES($1,'provider-secret','Alice voice','en','samples_pending','voice-owner-2026-10-25',2,1800),
+              ($2,'bob-private-provider','Bob private voice','en','samples_pending','voice-owner-2026-10-25',1,900)`, [alice.id, bob.id]);
     assert.equal((await one('SELECT public.daily_checkin($1) AS r', [alice.auth])).r.ok, true);
     // Bob fixtures use the same projection sources, but never appear in Alice's export.
     const bf = await fixture(bob, alice);
@@ -177,6 +182,9 @@ try {
         all[section] = await walk(alice, request.export_id, section, null, section === 'chat_messages' ? af.thread : null);
         assert.ok(all[section].length > 0, `${section} fixture must exercise its projection`);
     }
+    assert.equal(all.profile[0].voice_profiles.length, 1);
+    keys(all.profile[0].voice_profiles[0], 'id name language status consent_version consented_at verified_at ready_at sample_count sample_seconds revocation_requested_at revoked_at error_code created_at updated_at');
+    assert.equal(all.profile[0].voice_profiles[0].name, 'Alice voice');
     assert.equal(all.creations.length, 201); assert.equal(all.chat_messages.length, 51);
     assert.equal(all.blocks.length, 205); assert.equal(all.creator_follows.length, 205);
     assert.ok(BigInt(all.chat_messages[0].seq) >= 3000000000n);
@@ -275,7 +283,7 @@ try {
         'cinema_memberships', 'cinema_profiles', 'cinema_saved_titles', 'cinema_series_follows', 'cinema_watch_resume',
         'content_appeals', 'content_reports', 'credit_balances', 'credit_subscriptions', 'jobs',
         'checkin_streaks', 'creator_profiles', 'ledger_entries', 'push_tokens', 'referral_codes', 'referrals', 'social_brands',
-        'social_posts', 'social_publish_subscriptions', 'top_ups', 'user_blocks',
+        'social_posts', 'social_publish_subscriptions', 'top_ups', 'user_blocks', 'voice_profiles',
     ]);
     const NOT_EXPORTED = new Set([
         'account_deletions', 'account_read_rate_limits', 'api_requests', 'asset_link_rate_limits', 'chat_closed_sends',
