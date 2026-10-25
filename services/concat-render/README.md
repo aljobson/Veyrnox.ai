@@ -31,3 +31,16 @@ a sample timeline and prints the time. Copy into a running container
 Checked by eye on 4 frames: trim, clip order, text timing and position were right.
 Not covered: crossfade transitions (skipped), audio clips, volume, font match
 (the server falls back to an italic face), pixel comparison with `editorRender.mjs`.
+
+## Fly measurement (2026-10-25)
+
+Machine: performance-4x, 8 GB, ams, CPU only (lavapipe). 5 s 720p clip with audio.
+
+| Export | Render time | Realtime factor |
+| --- | --- | --- |
+| 640x360 | 3.06 s | 0.61x |
+| 1920x1080 | 12.1 s | 2.42x |
+
+So a 30 s 1080p export is about 70 s of render; short vertical clips are fine.
+`concat-cli serve` prints its token to stdout at start, so it lands in Fly logs:
+treat the token as readable by anyone with log access and rotate it after the spike.
