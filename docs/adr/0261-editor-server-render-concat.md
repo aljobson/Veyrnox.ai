@@ -30,8 +30,9 @@ default and stays free. Nothing changes for a user who does not choose it.
 1. **Runner.** One Docker image, built from a pinned upstream commit, one Machine
    maximum and one render at a time (Concat refuses a second export with `busy`).
    It follows the OpenMontage runner pattern (ADR-0074): the Worker never runs
-   ffmpeg and reaches the wrapper over private networking with a shared HMAC
-   secret. The wrapper reaches local Concat with a freshly generated per-render
+   ffmpeg and reaches the wrapper at its public `https://<app>.fly.dev` address
+   (Cloudflare Workers cannot join Fly's private network, as with the Montage runner)
+   with a shared, direction- and path-bound HMAC secret; unsigned requests get 401. The wrapper reaches local Concat with a freshly generated per-render
    token. The runner holds no Supabase key and no R2 write key.
 2. **Job.** A new `jobs` kind. The Worker validates the project document, asks
    for fresh presigned GET links (at most 15 minutes) for every source, and
