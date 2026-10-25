@@ -1,4 +1,4 @@
-import { checkPicked, missingRequired, slotsFor, toSourceKeys, type PickedFile } from '../src/lib/sources';
+import { checkPicked, missingRequired, requiredNamedSlots, slotsFor, toSourceKeys, type PickedFile } from '../src/lib/sources';
 import type { CatalogModel } from '../src/lib/media';
 
 const MB = 1024 * 1024;
@@ -19,6 +19,12 @@ describe('slotsFor', () => {
     test('ignores slot names the server does not know and models with no media', () => {
         expect(slotsFor(model({ mystery: { required: true } }))).toEqual([]);
         expect(slotsFor(model(undefined))).toEqual([]);
+    });
+
+    test('guided recipes require only their exact named slots, not another slot of the same kind', () => {
+        const slots = requiredNamedSlots(model({ image: { required: true }, endImage: { required: false }, audio: { required: false } }), ['image', 'audio']);
+        expect(slots.map((slot) => slot.slot)).toEqual(['image', 'audio']);
+        expect(slots.every((slot) => slot.required)).toBe(true);
     });
 });
 

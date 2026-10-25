@@ -32,6 +32,7 @@ import { MENU_ICONS } from '../../../lib/menuIcons';
 import { colors, fonts, radius } from '../../../theme';
 import { plural, t } from '../../../lib/i18n';
 import { creativeFeature } from '../../../lib/creativeFeatures';
+import { consumeCreativeSourceHandoff, readCreativeSourceHandoff } from '../../../lib/creativeSourceHandoff';
 
 const PLACEHOLDER: Record<string, string> = { topic: 'form.topicPlaceholder' };
 
@@ -45,9 +46,10 @@ function hostOf(url: string): string {
 }
 
 export default function CreateWithModel() {
-    const { modelId, prompt: presetPrompt, duration: presetDuration, startOddling, tpl, tneeds, tratio, tposter, recipe } = useLocalSearchParams<{ modelId: string; prompt?: string; duration?: string; startOddling?: string; tpl?: string; tneeds?: string; tratio?: string; tposter?: string; recipe?: string }>();
+    const { modelId, prompt: presetPrompt, duration: presetDuration, startOddling, tpl, tneeds, tratio, tposter, recipe, sourceHandoff } = useLocalSearchParams<{ modelId: string; prompt?: string; duration?: string; startOddling?: string; tpl?: string; tneeds?: string; tratio?: string; tposter?: string; recipe?: string; sourceHandoff?: string }>();
     // A template also brings its name, picture, shape and what it needs; each is checked before it is used.
     const template = useMemo(() => readTemplate({ tpl, tneeds, tratio, tposter }, ['veyrnox.ai', hostOf(API_BASE)]), [tpl, tneeds, tratio, tposter]);
+    const handedSources = useMemo(() => readCreativeSourceHandoff(typeof sourceHandoff === 'string' ? sourceHandoff : undefined, typeof recipe === 'string' ? recipe : undefined, modelId), [modelId, recipe, sourceHandoff]);
     const { api } = useAuth();
     const router = useRouter();
     const [model, setModel] = useState<CatalogModel | null>(null);
@@ -56,9 +58,10 @@ export default function CreateWithModel() {
     const [duration, setDuration] = useState<number | null>(null);
     const [busy, setBusy] = useState(false);
     // Storage keys of the files already uploaded, by slot, and the slots still uploading.
-    const [uploaded, setUploaded] = useState<Partial<Record<SlotName, string>>>({});
+    const [uploaded, setUploaded] = useState<Partial<Record<SlotName, string>>>(handedSources?.uploaded ?? {});
     // Library creations chosen as files, by slot (job ids). A slot has an upload or a Library file, never both.
-    const [fromLibrary, setFromLibrary] = useState<Partial<Record<SlotName, string>>>({});
+    const [fromLibrary, setFromLibrary] = useState<Partial<Record<SlotName, string>>>(handedSources?.fromLibrary ?? {});
+    const [sourceRights, setSourceRights] = useState(handedSources !== null);
     const [sending, setSending] = useState<Partial<Record<SlotName, boolean>>>({});
     const [error, setError] = useState<string | null>(null);
     const [opts, setOpts] = useState<OptionValues>({ aspect: null, count: 1, seed: '', negative: '', voice: '', audioSeconds: '' });
@@ -81,6 +84,10 @@ export default function CreateWithModel() {
     const draftReady = useRef(false);
 
     useEffect(() => {
+        consumeCreativeSourceHandoff(typeof sourceHandoff === 'string' ? sourceHandoff : undefined, typeof recipe === 'string' ? recipe : undefined, modelId);
+    }, [modelId, recipe, sourceHandoff]);
+
+    useEffect(() => {
         fetchCatalog()
             .then(async (all) => {
                 const found = all.find((m) => m.id === modelId) ?? null;
@@ -95,7 +102,8 @@ export default function CreateWithModel() {
                 // Where the person said the result will land (the vibe check) picks the opening ratio; no answer keeps 16:9.
                 const vibe = await loadVibe();
                 // A template that has a shape of its own opens in the model's nearest one; otherwise the usual default.
-                const aspect = nearestAspect(template?.ratio ?? null, o.aspects) ?? defaultAspect(o.aspects, vibe?.answers ?? null);
+                const guidedAspect = handedSources?.aspect;
+                const aspect = (guidedAspect && o.aspects.includes(guidedAspect) ? guidedAspect : null) ?? nearestAspect(template?.ratio ?? null, o.aspects) ?? defaultAspect(o.aspects, vibe?.answers ?? null);
                 const base: OptionValues = { aspect, count: 1, seed: '', negative: '', voice: '', audioSeconds: '' };
                 // A template brings its own words; only a form opened bare gets the unsent draft back.
                 if (typeof presetPrompt === 'string') {
@@ -118,8 +126,7 @@ export default function CreateWithModel() {
                 });
             })
             .catch(() => setError(t('form.modelLoad')));
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [modelId, presetDuration]);
+    }, [modelId, presetDuration, handedSources, presetPrompt, template]);
 
     const takesStartImage = !!model && slotsFor(model).some((s) => s.slot === 'image' && s.kind === 'image');
     useEffect(() => {
@@ -187,9 +194,9 @@ export default function CreateWithModel() {
     const sources = toSourceKeys(uploaded);
     const assets = toSourceAssets(fromLibrary, SLOT_ORDER);
     const waiting = Object.values(sending).some(Boolean);
-    const ready = !waiting && missingRequired(slots, { ...uploaded, ...fromLibrary }).length === 0 && (!promptRequired(model) || !!text) && !seedIsInvalid(opts.seed) && !voiceIsMissing(options, opts.voice) && !audioLengthInvalid(options, opts.audioSeconds);
-    const text_ = textInput(model);
     const hasReference = sources.length > 0 || assets.length > 0 || !!startFile;
+    const ready = !waiting && (!hasReference || sourceRights) && missingRequired(slots, { ...uploaded, ...fromLibrary }).length === 0 && (!promptRequired(model) || !!text) && !seedIsInvalid(opts.seed) && !voiceIsMissing(options, opts.voice) && !audioLengthInvalid(options, opts.audioSeconds);
+    const text_ = textInput(model);
     const stageLine = template
         ? t('create.workspace.stageTemplate', { name: template.title })
         : hasReference
@@ -206,7 +213,7 @@ export default function CreateWithModel() {
         let started = 0;
         let first: string | null = null;
         try {
-            first = await pending.current.run(api, { modelId: model.id, prompt: text, durationSeconds: isVideo ? duration : null, confirmedCredits: unit, sources, assets, textKey: text_?.key, extraInputs: extra }, n, (count) => { started = count; });
+            first = await pending.current.run(api, { modelId: model.id, prompt: text, durationSeconds: isVideo ? duration : null, confirmedCredits: unit, sources, assets, sourceRights: hasReference ? sourceRights : undefined, textKey: text_?.key, extraInputs: extra }, n, (count) => { started = count; });
             clearDraft().catch(() => undefined);
             if (n === 1 && first) router.replace({ pathname: '/job/[id]', params: { id: first } });
             else router.replace('/library');
@@ -265,10 +272,11 @@ export default function CreateWithModel() {
                                 slot={s}
                                 drawable={canDraw(model) && s.slot === 'image'}
                                 api={api}
-                                onChange={(key) => setUploaded((u) => ({ ...u, [s.slot]: key }))}
-                                onLibrary={(jobId) => setFromLibrary((l) => ({ ...l, [s.slot]: jobId }))}
+                                onChange={(key) => { setSourceRights(false); setUploaded((u) => ({ ...u, [s.slot]: key })); }}
+                                onLibrary={(jobId) => { setSourceRights(false); setFromLibrary((l) => ({ ...l, [s.slot]: jobId })); }}
                                 onBusy={(b) => setSending((x) => ({ ...x, [s.slot]: b }))}
                                 initial={s.slot === 'image' ? startFile : null}
+                                initialReady={!!uploaded[s.slot] || !!fromLibrary[s.slot]}
                                 hint={s.slot === 'image' && template?.needs ? t('create.template.needs', { what: template.needs }) : undefined}
                             />
                         ))}
@@ -309,7 +317,7 @@ export default function CreateWithModel() {
                         </Pressable>
                     </View>
                 ) : null}
-                {sources.length || assets.length ? <Text style={styles.consent}>{t('form.consent')}</Text> : null}
+                {sources.length || assets.length ? <View style={styles.rightsBox}><Pressable accessibilityRole="checkbox" accessibilityLabel={t('form.sourceRights')} accessibilityState={{ checked: sourceRights, disabled: waiting }} disabled={waiting} onPress={() => setSourceRights((value) => !value)} style={styles.rightsControl}><Text style={styles.rightsText}>{sourceRights ? '☑' : '☐'} {t('form.sourceRights')}</Text></Pressable><Text style={styles.consent}>{t('form.consent')}</Text></View> : null}
                 {((isVideo && model.durations.length > 1) || hasAnyOption(options) || takesImageCount(model) || takesCharacter || takesCamera) ? (
                     <View style={styles.settingsSection}>
                         <View style={styles.sectionTop}>
@@ -415,6 +423,9 @@ const styles = StyleSheet.create({
     clear: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 14 },
     clearText: { color: colors.accent, fontWeight: '600' },
     consent: { color: colors.muted, fontSize: 12 },
+    rightsBox: { gap: 6 },
+    rightsControl: { minHeight: MIN_TARGET, justifyContent: 'center', borderWidth: 1, borderColor: colors.borderStrong, borderRadius: radius.md, padding: 12, backgroundColor: colors.surface },
+    rightsText: { color: colors.body, fontSize: 12, lineHeight: 18 },
     costCard: { gap: 11, padding: 16, borderRadius: 20, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
     costTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 },
     cost: { color: colors.money, fontFamily: fonts.displayHeavy, fontSize: 30, lineHeight: 34, marginTop: 4 },

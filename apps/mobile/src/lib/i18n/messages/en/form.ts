@@ -7,6 +7,7 @@ export default {
     'form.describeChange': 'Describe the change (optional)',
     'form.topic': 'Topic',
     'form.consent': 'Your file is sent to the AI provider that makes this. It is deleted after a day.',
+    'form.sourceRights': 'I own these files, or I have permission from everyone identifiable in them. No real person’s face, body or voice is used without consent, and I hold the rights to any brand, artwork or recording.',
     'form.seconds.one': '{count} second',
     'form.seconds.other': '{count} seconds',
     'form.costs.one': 'Costs {count} credit. Refunded if it fails.',
