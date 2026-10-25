@@ -210,7 +210,7 @@ export function TopUpPacks({ signedIn }) {
       {packs && packs.length > 0 && (
         <fieldset data-testid="credit-packs" data-assistant-target="credits.packs">
           <legend className="sr-only">{t("app.credits.packs.choose")}</legend>
-          <div className="grid grid-cols-[repeat(auto-fit,minmax(13rem,1fr))] gap-3">
+          <div className="mt-[4.5rem] grid grid-cols-[repeat(auto-fit,minmax(13rem,1fr))] gap-3">
             {packs.map((p) => {
               const on = selected === p.id;
               // Best value: strictly the lowest catalog rate, and only when packs differ.

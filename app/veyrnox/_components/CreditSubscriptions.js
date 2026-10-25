@@ -99,7 +99,7 @@ export function Plans({ plans, packs, selected, onSelect, publicOnly = false, in
           ))}
         </div>
       )}
-      <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <ul className="mt-[4.5rem] grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {shown.map((p) => {
           // A yearly plan holds a month of credits: its rate per credit is the yearly price over twelve months.
           const saving = subscriptionSavingPercent(p.billing_interval === 'year' ? { ...p, credits: p.credits * 12 } : p, packs);
