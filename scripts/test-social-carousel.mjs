@@ -41,7 +41,8 @@ try {
     assert.deepEqual((await rows('SELECT source_job_id FROM public.social_post_media WHERE post_id=$1 ORDER BY position', [queued.post_id])).map(r => r.source_job_id), [second.job_id, first.job_id]);
     const single = await create([first]), submitted = await create([first, second]), stale = await create([first, second]), restored = await create([first, second]);
     for (const post of [single, submitted, stale, restored]) assert.equal(post.ok, true);
-    const version = await scalar('SELECT updated_at AS r FROM public.social_posts WHERE id=$1', [restored.post_id]);
+    // Read as text: a JS Date keeps milliseconds, Postgres keeps microseconds, and the cancel check is an exact match.
+    const version = await scalar('SELECT updated_at::text AS r FROM public.social_posts WHERE id=$1', [restored.post_id]);
     const canceled = await scalar('SELECT public.cancel_social_post($1,$2,$3) AS r', [auth, restored.post_id, version]);
     assert.equal(canceled.ok, true);
     const restore = await scalar("SELECT public.restore_social_post($1,$2,$3,now()+interval '2 minutes') AS r", [auth, restored.post_id, canceled.updated_at]);
