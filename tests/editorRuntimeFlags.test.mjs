@@ -62,3 +62,28 @@ test('Oddlings stays off in production and staging and requires its grouped opt-
         assert.equal(editorFeatureEnabled('PROJECT_ODDLINGS_ENABLED', vars), false);
     assert.equal(editorFeatureEnabled('PROJECT_ODDLINGS_ENABLED', env({oddlings:'true'})), true);
 });
+
+test('server recovery has an independent grouped switch and both ship off', () => {
+    const config = parseJsonc(readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8'));
+    for (const vars of [config.vars, config.env.staging.vars]) {
+        assert.equal(JSON.parse(vars.EDITOR_RUNTIME_FLAGS).serverRender, 'false');
+        assert.equal(JSON.parse(vars.EDITOR_RUNTIME_FLAGS).serverRenderRecovery, 'false');
+        assert.equal(editorFeatureEnabled('EDITOR_SERVER_RENDER_ENABLED', vars), false);
+        assert.equal(editorFeatureEnabled('EDITOR_SERVER_RENDER_RECOVERY_ENABLED', vars), false);
+        assert.equal(Object.hasOwn(vars, 'EDITOR_SERVER_RENDER_SWEEP_ENABLED'), false);
+        assert.equal(Object.hasOwn(vars, 'EDITOR_SERVER_RENDER_ENABLED'), false);
+    }
+    assert.equal(config.vars.CLIP_EDIT_SLOW_ENABLED, 'false');
+    assert.equal(config.vars.WEBHOOK_DELIVERY_LOG_ENABLED, 'false');
+    assert.equal(config.env.staging.vars.CLIP_EDIT_SLOW_ENABLED, 'true');
+    assert.equal(config.env.staging.vars.WEBHOOK_DELIVERY_LOG_ENABLED, 'true');
+    assert.equal(editorFeatureEnabled('EDITOR_SERVER_RENDER_ENABLED', env({ serverRender: 'true' })), true);
+    assert.equal(editorFeatureEnabled('EDITOR_SERVER_RENDER_ENABLED', { ...env({ serverRender: 'true' }), EDITOR_SERVER_RENDER_ENABLED: 'false' }), false);
+    const rollback = env({ serverRender: 'false', serverRenderRecovery: 'true' });
+    assert.equal(editorFeatureEnabled('EDITOR_SERVER_RENDER_ENABLED', rollback), false);
+    assert.equal(editorFeatureEnabled('EDITOR_SERVER_RENDER_RECOVERY_ENABLED', rollback), true);
+    const worker = readFileSync(new URL('../worker.js', import.meta.url), 'utf8');
+    assert.match(worker, /observeRecovery\('editor_server_render', \(\) => runEditorServerRenderSweep\(env\), env\)/);
+    assert.match(worker, /editorFeatureEnabled\('EDITOR_SERVER_RENDER_RECOVERY_ENABLED'/);
+    assert.doesNotMatch(worker, /editorFeatureEnabled\('EDITOR_SERVER_RENDER_ENABLED'/);
+});

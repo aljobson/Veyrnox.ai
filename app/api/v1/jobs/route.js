@@ -100,6 +100,7 @@ export async function GET(req) {
 
     const jobs = row.jobs.map((j) => ({
         job_id: j.job_id,
+        ...(j.output_type === 'editor-render' ? { output_type: j.output_type, render_id: j.render_id ?? null } : {}),
         state: mapState(j.state),
         // FAILED is not REFUNDED; the Library shows the difference.
         refunded: j.state === 'REFUNDED',
