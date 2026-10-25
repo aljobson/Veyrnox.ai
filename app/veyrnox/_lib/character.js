@@ -25,7 +25,7 @@ export const ODDLING_SHOWS = [
   ['Confessions from elsewhere', 'shares intimate confessions from a fictional other world'],
 ];
 
-export const ODDLING_ARCHETYPES = [
+const ALL_ODDLING_ARCHETYPES = [
   {
     id: 'duchess-volume',
     kind: 'human',
@@ -284,6 +284,20 @@ export const ODDLING_ARCHETYPES = [
     picks: { character_type: 'Spectre', eye_color: 'Solid Black', face_skin_material: 'Porcelain', face_surface_pattern: 'Cracked', rendering_style: 'Hyper-Realistic', oddling_name: 'Receipt Wraith', oddling_obsession: 'tiny purchases with catastrophic emotional overhead', oddling_voice: 'Tender menace', oddling_show: 'Five-second verdicts', oddling_rule: 'cracked white porcelain face, ink-black eyes, thermal-paper veil' },
   },
 ];
+
+// Keep the public cast deliberately small enough that every character feels
+// memorable. The four non-human originals remain available beside a curated
+// set of sixteen humans; the retired size-demo characters still live in source
+// history, but are no longer exposed as cast presets or public portrait pages.
+const ODDLING_CATALOG_IDS = new Set([
+  'duchess-volume', 'major-minor', 'bughead-brenda', 'pam-bouffant',
+  'vera-static', 'mister-monday', 'bloom-service', 'coupon-saint',
+  'olive-orbit', 'brick-picnic', 'madame-scissors', 'pocket-atlas',
+  'noodle-duke', 'taffy-tessa', 'tuesday-triangle', 'colonel-crumb',
+  'auntie-antenna', 'brine-minister', 'mossbyte', 'receipt-wraith',
+]);
+
+export const ODDLING_ARCHETYPES = ALL_ODDLING_ARCHETYPES.filter(({ id }) => ODDLING_CATALOG_IDS.has(id));
 
 // { id, tab, label, options: [label, prompt phrase][] }
 // The original groups. characterOptions.js adds the everyday vocabulary (more
@@ -678,10 +692,29 @@ const canonChanged = ({ keys, topic }, now, original) => (topic
   ? conflictTopicPicks(topic, now) !== conflictTopicPicks(topic, original)
   : keys.some((key) => (now?.[key] || '') !== (original[key] || '')));
 
+function inheritedPreset(picks) {
+  const rule = oneLine(picks?.oddling_rule, 160);
+  return rule ? ODDLING_ARCHETYPES.find((item) => oneLine(item.picks.oddling_rule, 160) === rule) || null : null;
+}
+
+function continuityLock(picks) {
+  const preset = inheritedPreset(picks);
+  if (!preset) return '';
+  const current = resolveExclusivePicks(picks);
+  const original = resolveExclusivePicks(preset.picks);
+  const changed = CHARACTER_GROUPS
+    .filter(({ id }) => (current[id] || '') !== (original[id] || ''))
+    .map(({ label }) => label.toLowerCase());
+  const name = oneLine(current.oddling_name, 40) || preset.name;
+  const anchor = `character continuity lock: ${name} remains the exact same established fictional person; preserve all unchanged facial identity, age, heritage, skin tone, body proportions and distinctive details`;
+  if (!changed.length) return `${anchor}; do not redesign, recast or replace the character`;
+  return `${anchor}; change only these selected attributes: ${changed.join(', ')}; do not alter anything else and do not redesign, recast or replace the character`;
+}
+
 function inheritedVisualCanon(rawPicks) {
   const picks = resolveExclusivePicks(rawPicks);
   const rule = oneLine(picks.oddling_rule, 160);
-  const original = rule && ODDLING_ARCHETYPES.find((item) => oneLine(item.picks.oddling_rule, 160) === rule)?.picks;
+  const original = inheritedPreset(picks)?.picks;
   if (!original) return rule;
   const changed = CANON_CATEGORIES.filter((category) => canonChanged(category, picks, original));
   return rule.split(',').map((clause) => clause.trim())
@@ -700,6 +733,8 @@ export function oddlingIdentity(picks) {
   if (obsession) parts.push(`interested in ${obsession}`);
   if (voice) parts.push(voice);
   if (show) parts.push(show);
+  const continuity = continuityLock(picks);
+  if (continuity) parts.push(continuity);
   if (rule) parts.push(`immutable visual canon: ${rule}`);
   return parts;
 }

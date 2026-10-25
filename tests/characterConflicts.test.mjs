@@ -192,12 +192,11 @@ test('swapping a cast preset accessory also takes its description out of the pre
         assert.ok(prompt.includes('ordinary everyday shoulder bag') && !prompt.includes(bagClause) && !/handbag/i.test(prompt), id);
     }
     // Everyday sunglasses replace tiny sunglasses in the picks and in the canon.
-    for (const id of ['pam-bouffant', 'cloudette-forecast', 'brick-picnic']) {
+    for (const id of ['pam-bouffant', 'brick-picnic']) {
         const prompt = buildCharacterPrompt('', withPick(id, 'everyday_accessories', 'Sunglasses'));
         assert.ok(prompt.includes('wearing regular-sized sunglasses'), id);
         assert.doesNotMatch(prompt, /tiny (oval )?sunglasses/i, id);
     }
-    assert.doesNotMatch(buildCharacterPrompt('', withPick('baron-boucle', 'everyday_accessories', 'Round Glasses')), /monocle/i);
     // Glasses added to a preset that already has round glasses replace them rather than doubling up.
     const major = buildCharacterPrompt('', withPick('major-minor', 'everyday_accessories', 'Glasses'));
     assert.ok(major.includes('everyday glasses at a normal scale') && !major.includes('round glasses'));
@@ -220,6 +219,21 @@ test('swapping a cast preset accessory also takes its description out of the pre
     const remixedPam = buildCharacterPrompt('', { ...archetype('pam-bouffant').picks, everyday_accessories: 'Sunglasses' });
     assert.ok(remixedPam.includes('wearing regular-sized sunglasses'));
     assert.doesNotMatch(remixedPam, /tiny (oval )?sunglasses/i);
+});
+
+test('editing a preset locks the same character identity and limits the change to chosen traits', () => {
+    const duchess = archetype('duchess-volume');
+    const prompt = buildCharacterPrompt('', {
+        ...duchess.picks,
+        hair: 'Cube Cut', hair_color: 'Electric Blue', wardrobe_style: 'Modern Basics',
+    });
+    assert.match(prompt, /Duchess Volume remains the exact same established fictional person/);
+    assert.match(prompt, /preserve all unchanged facial identity, age, heritage, skin tone, body proportions and distinctive details/);
+    assert.match(prompt, /change only these selected attributes: hair \/ head shape, hair color, wardrobe world/);
+    assert.match(prompt, /do not alter anything else and do not redesign, recast or replace the character/);
+    assert.match(prompt, /impossibly precise cube-shaped haircut/);
+    assert.match(prompt, /plain fitted crew-neck T-shirt/);
+    assert.doesNotMatch(prompt, /circular ivory quilted couture/);
 });
 
 test('the groups the Studio does not show yet are a recorded gap, so they cannot be forgotten or half-wired', () => {

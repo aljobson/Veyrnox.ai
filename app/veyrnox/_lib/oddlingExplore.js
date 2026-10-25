@@ -13,7 +13,7 @@ export const ODDLING_KIND_FILTERS = [
 
 // First-party portraits that already ship in public/oddlings/portraits, picked
 // to look different from each other (body, hair, fashion, a creature).
-export const ODDLING_HERO_IDS = ['duchess-volume', 'disco-anvil', 'madame-scissors', 'tuesday-triangle', 'mossbyte'];
+export const ODDLING_HERO_IDS = ['duchess-volume', 'pam-bouffant', 'madame-scissors', 'tuesday-triangle', 'mossbyte'];
 
 const DEEP_LINK_PARAM = 'oddling';
 const DEEP_LINK_MAX = 80;

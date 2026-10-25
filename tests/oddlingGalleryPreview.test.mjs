@@ -45,8 +45,8 @@ test('motion never zooms beyond the full portrait and leaves the source untouche
   assert.match(studio, /<CharacterPortrait oddling=\{oddling\} \/>/);
 });
 
-test('all originals have bounded head, eye, chest, arm and lower-body calibration', () => {
-  assert.deepEqual(Object.keys(ODDLING_PUPPET_RIGS).sort(), ODDLING_ARCHETYPES.map(({ id }) => id).sort());
+test('all public originals have bounded puppet rigs while retired rig history stays harmless', () => {
+  assert.deepEqual(ODDLING_ARCHETYPES.map(({ id }) => id).filter((id) => !Object.hasOwn(ODDLING_PUPPET_RIGS, id)), []);
   assert.equal(puppetRig('__proto__'), null);
   assert.equal(puppetRig('../../somewhere'), null);
   for (const [id, rig] of Object.entries(ODDLING_PUPPET_RIGS)) {

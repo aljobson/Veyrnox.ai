@@ -244,30 +244,28 @@ test('every character has its own standalone portrait instead of a sprite panel'
         assert.equal(metadata.width, 1024);
         assert.equal(metadata.height, 1536);
     }
-    assert.equal(images.size, 72);
-    assert.equal(hashes.size, 72, 'no character reuses another character image');
+    assert.equal(images.size, 20);
+    assert.equal(hashes.size, 20, 'no character reuses another character image');
 });
 
 test('human preset collections are complete, distinct, and human-first', () => {
     assert.deepEqual(ODDLING_PRESET_SOURCES.map((source) => source.id), [
-        'all', 'body', 'silhouettes', 'fashion', 'hair', 'denim', 'oddities', 'torsos',
-        'head-sizes', 'neck-sizes', 'arm-sizes', 'leg-sizes', 'hand-sizes', 'foot-sizes',
-        'eye-sizes', 'mouth-sizes', 'ear-sizes', 'nose-sizes', 'humans', 'beings',
+        'all', 'body', 'oddities', 'silhouettes', 'fashion', 'humans', 'beings',
     ]);
-    for (const source of ODDLING_PRESET_SOURCES.slice(1, 7)) {
+    for (const source of ODDLING_PRESET_SOURCES.slice(1, 5)) {
         const oddlings = oddlingsForSource(source.id);
         assert.equal(oddlings.length, 4, `${source.id} should contain one four-character art sheet`);
         assert.ok(oddlings.every((oddling) => oddling.kind === 'human'));
     }
-    assert.equal(oddlingsForSource('humans').length, 68);
+    assert.equal(oddlingsForSource('humans').length, 16);
     assert.equal(oddlingsForSource('beings').length, 4);
 });
 
 test('the All source lists every original character once and is where an unknown source lands', () => {
     const everyone = oddlingsForSource('all');
     assert.deepEqual(everyone.map(({ id }) => id), ODDLING_ARCHETYPES.map(({ id }) => id));
-    assert.equal(everyone.length, 72);
-    assert.equal(new Set(everyone.map(({ id }) => id)).size, 72);
+    assert.equal(everyone.length, 20);
+    assert.equal(new Set(everyone.map(({ id }) => id)).size, 20);
     assert.notEqual(everyone, ODDLING_ARCHETYPES, 'callers get a copy they can sort without touching the cast');
     assert.deepEqual(oddlingsForSource('unknown').map(({ id }) => id), everyone.map(({ id }) => id));
     for (const source of ODDLING_PRESET_SOURCES) {
@@ -275,19 +273,10 @@ test('the All source lists every original character once and is where an unknown
     }
 });
 
-test('new torso collection covers all sizes with unique original characters and recreatable passports', () => {
-    const characters = oddlingsForSource('torsos');
-    assert.deepEqual(characters.map(({ id }) => id), ['pip-parcel', 'mira-measure', 'arlo-archive', 'orla-overture']);
-    assert.deepEqual(characters.map(({ picks }) => picks.torso_size), ['Small', 'Medium', 'Large', 'Extra Large']);
-    assert.ok(ODDLING_STUDIO_SECTIONS.find(({ id }) => id === 'build').groupIds.includes('torso_size'));
-    for (const character of characters) {
-        assert.equal(character.kind, 'human');
-        for (const mode of ['portrait', 'motion']) {
-            const prompt = buildOddlingStudioPrompt({ mode, picks: character.picks });
-            assert.ok(prompt.includes(character.name));
-            assert.match(prompt, /torso relative to the head and limbs/);
-        }
-        assert.match(gallerySource(character).image, new RegExp(`${character.id}\\.webp$`));
+test('retired size-demo collections no longer leak into the curated cast', () => {
+    assert.deepEqual(oddlingsForSource('torsos').map(({ id }) => id), ODDLING_ARCHETYPES.map(({ id }) => id), 'unknown old tabs safely fall back to All');
+    for (const id of ['pip-parcel', 'mira-measure', 'arlo-archive', 'orla-overture']) {
+        assert.equal(ODDLING_ARCHETYPES.some((character) => character.id === id), false);
     }
 });
 
@@ -302,7 +291,7 @@ test('animation only resolves known portrait ids and image-to-video models', () 
     assert.equal(animationModel([{ ...imageVideo, media: { image: { required: true }, audio: { required: true } } }]), undefined);
     assert.equal(animationModel([{ ...imageVideo, durations: [10] }]), undefined);
     assert.equal(buildOddlingAnimationPrompt('unknown', 'deadpan-turn'), '');
-    const prompt = buildOddlingAnimationPrompt('shelf-life', 'micro-dance');
+    const prompt = buildOddlingAnimationPrompt('colonel-crumb', 'micro-dance');
     assert.match(prompt, /exact single character in the start image/);
     assert.match(prompt, /one simple repeatable dance move/);
     assert.match(prompt, /Preserve the face, body shape and size, outfit colors and fit/);
