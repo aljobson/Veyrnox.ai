@@ -63,6 +63,6 @@ export function cloudErrorKey(err) {
   if (code === 'rate_limited' || err?.status === 429) return 'app.film.cloud.rateLimited';
   return 'app.film.cloud.failed';
 }
-export function saveFailureKeys(state, err) {
-  return [cloudErrorKey(err), ...(!state.saved || state.error ? ['app.film.cloud.exportFirst'] : [])];
+export function saveFailureKeys(_state, err) {
+  return [cloudErrorKey(err)];
 }

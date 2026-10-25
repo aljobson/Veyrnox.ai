@@ -112,7 +112,7 @@ describe('parseFilm', () => {
         expect(parsed.ok && parsed.film.shots[0].id).toBe('S1');
     });
     test('refuses non-JSON, the wrong schema, a bad aspect and duplicate shots', () => {
-        expect(parseFilm('nope')).toEqual({ ok: false, error: 'That is not a Film Studio JSON export.' });
+        expect(parseFilm('nope')).toEqual({ ok: false, error: 'That is not a valid Film Studio project.' });
         expect(parseFilm(JSON.stringify({ ...baseFilm(), schema: 2 })).ok).toBe(false);
         expect(parseFilm(JSON.stringify({ ...baseFilm(), stack: { ...baseFilm().stack, aspect: '4:3' } })).ok).toBe(false);
         const dup = parseFilm(JSON.stringify({ ...baseFilm(), shots: [SHOT, SHOT] }));

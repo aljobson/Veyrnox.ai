@@ -22,6 +22,7 @@ export const MENU_SECTIONS: MenuSection[] = [
         label: 'menu.tools',
         items: [
             { key: 'create', label: 'menu.create', href: '/create', icon: 'image' },
+            { key: 'features', label: 'menu.features', href: '/features', icon: 'sparkle' },
             { key: 'tools', label: 'menu.toolDirectory', href: '/create/tools', icon: 'wrench' },
             { key: 'faceFilters', label: 'faceFilters.title', href: '/face-filters', icon: 'smiley' },
             { key: 'editor', label: 'tabs.editor', href: '/editor', icon: 'slate' },

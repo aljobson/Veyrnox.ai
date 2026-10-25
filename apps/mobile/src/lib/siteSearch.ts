@@ -1,4 +1,5 @@
 import { kindOf, type CatalogModel } from './media';
+import { CREATIVE_FEATURES } from './creativeFeatures';
 
 // Search over the app's own screens and the model catalogue (parity P7, the web's site search). It works on the
 // phone: nothing is sent anywhere, and the models come from the catalogue the app already loads.
@@ -51,7 +52,17 @@ export const SCREENS: readonly ScreenDef[] = [
 ];
 
 export function screenEntries(title: (key: string) => string): SearchEntry[] {
-    return SCREENS.map((s) => ({ id: `screen:${s.id}`, kind: 'screen', title: title(s.titleKey), detail: '', href: s.href, keywords: s.keywords }));
+    return [
+        ...SCREENS.map((s) => ({ id: `screen:${s.id}`, kind: 'screen' as const, title: title(s.titleKey), detail: '', href: s.href, keywords: s.keywords })),
+        ...CREATIVE_FEATURES.map((feature) => ({
+            id: `feature:${feature.slug}`,
+            kind: 'screen' as const,
+            title: feature.title,
+            detail: feature.group,
+            href: `/features/${feature.slug}`,
+            keywords: `${feature.group} ${feature.kind} ${feature.media.join(' ')} ${feature.steps.join(' ')}`.toLowerCase(),
+        })),
+    ];
 }
 
 export function modelEntries(models: readonly CatalogModel[]): SearchEntry[] {

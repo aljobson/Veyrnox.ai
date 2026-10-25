@@ -204,7 +204,7 @@
   },
   {
     "area": "setup",
-    "text": "Project nameTarget film length30 seconds60 seconds90 seconds120 secondsThe studio export contains your project documents and this folder structure.assets/characters/\nassets/locations/\nassets/props/\nprompts/\ngenerations/\nselects/\nedit/\ncolor/\nsound/\nmaster/\ndocs/Only approved takes in selects reach the edit.Raw generation attempts stay in generations for the prompt engineer.Reference filenames stay fixed. A new version gets a new file.",
+    "text": "Project nameTarget film length30 seconds60 seconds90 seconds120 secondsFilm Studio keeps your project documents and production structure together.assets/characters/\nassets/locations/\nassets/props/\nprompts/\ngenerations/\nselects/\nedit/\ncolor/\nsound/\nmaster/\ndocs/Only approved takes in selects reach the edit.Raw generation attempts stay in generations for the prompt engineer.Reference filenames stay fixed. A new version gets a new file.",
     "labels": [
       "aria-label=\"Project name\"",
       "aria-label=\"Target film length\""

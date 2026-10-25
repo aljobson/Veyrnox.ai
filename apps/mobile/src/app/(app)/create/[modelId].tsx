@@ -31,6 +31,7 @@ import { SLOT_ORDER, missingRequired, slotsFor, toSourceKeys, type SlotName } fr
 import { MENU_ICONS } from '../../../lib/menuIcons';
 import { colors, fonts, radius } from '../../../theme';
 import { plural, t } from '../../../lib/i18n';
+import { creativeFeature } from '../../../lib/creativeFeatures';
 
 const PLACEHOLDER: Record<string, string> = { topic: 'form.topicPlaceholder' };
 
@@ -44,7 +45,7 @@ function hostOf(url: string): string {
 }
 
 export default function CreateWithModel() {
-    const { modelId, prompt: presetPrompt, duration: presetDuration, startOddling, tpl, tneeds, tratio, tposter } = useLocalSearchParams<{ modelId: string; prompt?: string; duration?: string; startOddling?: string; tpl?: string; tneeds?: string; tratio?: string; tposter?: string }>();
+    const { modelId, prompt: presetPrompt, duration: presetDuration, startOddling, tpl, tneeds, tratio, tposter, recipe } = useLocalSearchParams<{ modelId: string; prompt?: string; duration?: string; startOddling?: string; tpl?: string; tneeds?: string; tratio?: string; tposter?: string; recipe?: string }>();
     // A template also brings its name, picture, shape and what it needs; each is checked before it is used.
     const template = useMemo(() => readTemplate({ tpl, tneeds, tratio, tposter }, ['veyrnox.ai', hostOf(API_BASE)]), [tpl, tneeds, tratio, tposter]);
     const { api } = useAuth();
@@ -194,6 +195,7 @@ export default function CreateWithModel() {
         : hasReference
             ? t('create.workspace.stageReference')
             : t('create.workspace.stageEmpty');
+    const modelLabel = creativeFeature(typeof recipe === 'string' ? recipe : undefined)?.title ?? model.name;
 
     async function generate() {
         if (!model || !ready || busy) return;
@@ -234,9 +236,9 @@ export default function CreateWithModel() {
                             <Text style={styles.savedText}>{t('create.workspace.saved')}</Text>
                         </View>
                     </View>
-                    <View style={styles.modelPill} accessibilityLabel={t('create.workspace.modelLabel', { name: model.name })}>
+                    <View style={styles.modelPill} accessibilityLabel={t('create.workspace.modelLabel', { name: modelLabel })}>
                         <Text style={styles.modelLive}>{t('create.livePrices')}</Text>
-                        <Text style={styles.modelName}>{model.name}</Text>
+                        <Text style={styles.modelName}>{modelLabel}</Text>
                         <Text style={styles.modelKind}>{(kindOf(model.modality) ?? model.modality).toUpperCase()}</Text>
                     </View>
                 </View>

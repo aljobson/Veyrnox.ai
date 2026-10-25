@@ -13,7 +13,6 @@ import { FilmInit, FilmSetup } from './FilmSetup';
 import { FilmBreakdown } from './FilmBreakdown';
 import { FilmBoards } from './FilmBoards';
 import { FilmPassports } from './FilmPassports';
-import { FilmFiles } from './FilmFiles';
 import { FilmCloud } from './FilmCloud';
 import { sessionLoadPatch, replaceWorkspaceFilm, pendingVisible, persistenceFailurePatch } from '../../_lib/filmStudioCloud';
 import { FilmTests } from './FilmTests';
@@ -115,7 +114,6 @@ export function FilmWorkspace({cloud=false}) {
       </section>
       <p role="status" className="mt-3 text-xs text-vx-fg-muted">{saved?t("app.film.workspace.saved"):userId?t("app.film.workspace.unsaved"):t("app.film.workspace.signIn")}</p>
       {cloud&&userId&&<FilmCloud key={userId} state={state} replaceFilm={replaceFilm} persist={persist}/>}
-      <FilmFiles key={generation} film={film}/>
     </header>
     {error&&<p role="alert" className="mb-5 text-sm text-vx-danger">{error}</p>}
     {film.templateId&&<SelectedTemplate templateId={film.templateId} targetSeconds={film.targetSeconds}/>}
