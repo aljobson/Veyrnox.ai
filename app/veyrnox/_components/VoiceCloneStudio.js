@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useI18n } from '../../../components/I18nProvider';
 import { getSession, onSessionChange } from '../../lib/authClient';
 import { gatewayDownload, gatewayFetch } from '../_lib/gateway';
@@ -41,6 +42,7 @@ export default function VoiceCloneStudio() {
   const { t } = useI18n();
   const [signedIn, setSignedIn] = useState(null);
   const [available, setAvailable] = useState(null);
+  const [speechAvailable, setSpeechAvailable] = useState(false);
   const [profiles, setProfiles] = useState([]);
   const [name, setName] = useState('');
   const [language, setLanguage] = useState('en');
@@ -50,11 +52,14 @@ export default function VoiceCloneStudio() {
   const [captchaUrl, setCaptchaUrl] = useState('');
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
+  const [speechText, setSpeechText] = useState('');
+  const [speechJob, setSpeechJob] = useState('');
 
   const load = useCallback(async () => {
     try {
       const result = await gatewayFetch('/voice-profiles');
       setAvailable(result.available === true);
+      setSpeechAvailable(result.speech_available === true);
       setProfiles(Array.isArray(result.profiles) ? result.profiles : []);
       setError('');
     } catch (err) {
@@ -145,6 +150,18 @@ export default function VoiceCloneStudio() {
     });
   }
 
+  async function generateSpeech() {
+    if (!profile || profile.status !== 'ready') return;
+    await run('speech', async () => {
+      const result = await gatewayFetch(`/voice-profiles/${profile.id}/speech`, {
+        method: 'POST',
+        body: JSON.stringify({ text: speechText, idempotency_key: `voice-${crypto.randomUUID()}` }),
+      });
+      setSpeechJob(result.job_id || '');
+      setSpeechText('');
+    });
+  }
+
   return (
     <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_390px]">
       <div className="space-y-6">
@@ -205,6 +222,19 @@ export default function VoiceCloneStudio() {
           <p className="mt-3 text-sm leading-6 text-vx-fg-muted">{profile.status === 'ready' ? t('app.voiceClone.ready') : profile.status === 'failed' ? t('app.voiceClone.failed') : t('app.voiceClone.training')}</p>
           {profile.error_code && <code className="mt-3 block text-xs text-vx-danger">{profile.error_code}</code>}
           {profile.status === 'training' && <button type="button" disabled={busy} onClick={refreshStatus} className="mt-5 min-h-11 rounded-full border border-vx-accent px-5 text-sm font-black text-vx-accent">{busy === 'refresh' ? t('app.voiceClone.working') : t('app.voiceClone.refresh')}</button>}
+        </section>}
+
+        {profile?.status === 'ready' && <section className={`${card} p-5 sm:p-6`}>
+          <div className="flex items-start justify-between gap-4">
+            <div><p className="font-vx-mono text-[10px] font-bold uppercase tracking-[0.14em] text-vx-accent">05 · {t('app.voiceClone.speak')}</p><h2 className="mt-1 text-xl font-black">{t('app.voiceClone.speakTitle')}</h2></div>
+            <span className="font-vx-mono text-[10px] text-vx-fg-faint">{speechText.length}/1000</span>
+          </div>
+          <p className="mt-3 text-sm leading-6 text-vx-fg-muted">{t('app.voiceClone.speakHelp')}</p>
+          <textarea value={speechText} maxLength={1000} rows={6} onChange={(event) => { setSpeechText(event.target.value); setSpeechJob(''); }} placeholder={t('app.voiceClone.speakPlaceholder')} className="mt-4 w-full resize-y rounded-xl border border-vx-field bg-vx-base px-4 py-3 text-sm focus:border-vx-accent focus:outline-hidden" />
+          {!speechAvailable && <p role="status" className="mt-3 rounded-xl border border-vx-border bg-vx-base px-4 py-3 text-xs leading-5 text-vx-fg-muted">{t('app.voiceClone.speakUnavailable')}</p>}
+          <button type="button" disabled={!speechAvailable || !speechText.trim() || busy} onClick={generateSpeech} className="mt-5 min-h-12 rounded-full bg-vx-accent px-6 text-sm font-black text-vx-accent-ink disabled:opacity-45">{busy === 'speech' ? t('app.voiceClone.working') : t('app.voiceClone.speakAction')}</button>
+          <p className="mt-3 text-xs text-vx-fg-muted">{t('app.voiceClone.speakPrice')}</p>
+          {speechJob && <div role="status" className="mt-4 rounded-xl border border-vx-accent/40 bg-vx-accent/[0.06] px-4 py-3 text-sm"><p className="font-black">{t('app.voiceClone.speakDone')}</p><Link href="/app/library" className="mt-2 inline-block font-bold text-vx-accent underline underline-offset-4">{t('app.voiceClone.openLibrary')}</Link></div>}
         </section>}
 
         {error && <p role="alert" className="rounded-xl border border-vx-danger/35 bg-vx-danger/[0.06] px-4 py-3 text-sm text-vx-danger">{t('app.voiceClone.error', { code: error })}</p>}
