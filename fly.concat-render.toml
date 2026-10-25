@@ -2,7 +2,11 @@
 # Enforce count with `fly scale count 1 --max-per-region 1 -c fly.concat-render.toml`
 # and deploy with `--ha=false`. fly.toml has no app-wide maximum-count setting.
 # Keep all scaling in ams; see services/concat-render/README.md release procedure.
-# No public service: the Worker reaches the wrapper over private networking.
+# The Worker is on Cloudflare and cannot join Fly's private network, so the wrapper is
+# reached at https://veyrnox-concat-render.fly.dev like the Montage runner. Every request
+# must carry the HMAC signature the wrapper verifies (direction and path bound); unsigned
+# requests get 401. The machine must stay up for a whole render (a render sends no
+# inbound traffic, so Fly's idle auto-stop would kill it mid-run): auto-stop is off.
 app = "veyrnox-concat-render"
 primary_region = "ams"
 kill_signal = "SIGTERM"
@@ -14,6 +18,13 @@ kill_timeout = 120
 [deploy]
   strategy = "rolling"
   max_unavailable = 1
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
 
 [env]
   VK_ICD_FILENAMES = "/usr/share/vulkan/icd.d/lvp_icd.json"

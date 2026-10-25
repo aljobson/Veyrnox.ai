@@ -32,8 +32,9 @@ An explicit ended report remains loss evidence after the launch grace.
 The runner needs `EDITOR_RENDER_SIGNING_SECRET`, `EDITOR_RENDER_CALLBACK_URL`
 (the fixed Worker `/api/webhook/editor-render` URL), and
 `EDITOR_RENDER_SOURCE_HOSTS` (comma-separated exact private R2 endpoint hosts).
-The Worker needs the same signing secret and `EDITOR_RENDER_RUNNER_BASE` set
-by the operator; it constructs callbacks from `PUBLIC_HOST`. Secrets belong
+The Worker needs the same signing secret and `EDITOR_RENDER_RUNNER_BASE`
+(`https://veyrnox-concat-render.fly.dev`, the public HTTPS address; the Worker is
+on Cloudflare and cannot use Fly private networking) set by the operator; it constructs callbacks from `PUBLIC_HOST`. Secrets belong
 in the platform's secret store, never command lines or checked-in files.
 No R2 write credential or Supabase credential is passed to the runner.
 
