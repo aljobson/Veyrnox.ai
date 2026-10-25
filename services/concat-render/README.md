@@ -10,7 +10,7 @@ and does its `concat.json` suit our timeline.
 
 Run (builds Rust + FFmpeg bindings: ~10-20 min, ~6 GB):
 
-    docker build -f services/concat-render/Dockerfile -t concat-render services/concat-render
+    docker build -f services/concat-render/Dockerfile -t concat-render .
     docker run --rm -d --name cr -e CONCAT_API_TOKEN=local-test concat-render
     docker exec -e CONCAT_API_TOKEN=local-test cr node /app/smoke.mjs 640 360
     docker exec -e CONCAT_API_TOKEN=local-test cr node /app/smoke.mjs
