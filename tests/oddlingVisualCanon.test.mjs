@@ -56,7 +56,7 @@ test('mixed body/hair clauses and compound wardrobe words cannot retain obsolete
   const bloom = { ...preset('bloom-service'), body_type: 'Hyper-Muscular' };
   assert.doesNotMatch(canon(bloom), /tiny compact human/);
   assert.match(buildCharacterPrompt('', bloom), /hyper-muscular bodybuilder physique/);
-  for (const [id, oldOutfit] of [['taffy-tessa', 'bubble raincoat'], ['disco-anvil', 'ceremonial tracksuit'], ['colonel-crumb', 'gigantic cream sleeves']]) {
+  for (const [id, oldOutfit] of [['taffy-tessa', 'bubble raincoat'], ['tuesday-triangle', 'origami suit'], ['colonel-crumb', 'gigantic cream sleeves']]) {
     assert.ok(!canon({ ...preset(id), wardrobe_style: 'Office Surrealist' }).includes(oldOutfit), id);
   }
 });

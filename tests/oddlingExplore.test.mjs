@@ -27,9 +27,7 @@ test('Explore opens on All, with the themed collections kept as tabs and Human /
     assert.equal(ODDLING_EXPLORE_DEFAULT_SOURCE, 'all');
     assert.equal(oddlingsForSource(ODDLING_EXPLORE_DEFAULT_SOURCE).length, ODDLING_ARCHETYPES.length);
     assert.equal(ODDLING_EXPLORE_TABS[0].id, 'all');
-    assert.deepEqual(ODDLING_EXPLORE_TABS.map(({ id }) => id), ['all', 'body', 'silhouettes', 'fashion', 'hair', 'denim', 'oddities', 'torsos',
-        'head-sizes', 'neck-sizes', 'arm-sizes', 'leg-sizes', 'hand-sizes', 'foot-sizes',
-        'eye-sizes', 'mouth-sizes', 'ear-sizes', 'nose-sizes']);
+    assert.deepEqual(ODDLING_EXPLORE_TABS.map(({ id }) => id), ['all', 'body', 'oddities', 'silhouettes', 'fashion']);
     assert.ok(ODDLING_EXPLORE_TABS.every((tab) => !tab.kind), 'kind sources became filter chips');
     assert.deepEqual(ODDLING_KIND_FILTERS.map(({ id }) => id), ['human', 'creature']);
     assert.deepEqual(ODDLING_KIND_FILTERS.map(({ label }) => label), ['Human', 'Other beings']);
@@ -84,20 +82,20 @@ test('deep link resolves only a built-in archetype id', () => {
     for (const oddling of ODDLING_ARCHETYPES) {
         assert.equal(parseOddlingDeepLink(`?oddling=${encodeURIComponent(oddling.id)}`), oddling);
     }
-    assert.equal(parseOddlingDeepLink('oddling=shelf-life').id, 'shelf-life');
-    assert.equal(parseOddlingDeepLink('?utm_source=x&oddling=mossbyte&oddling=shelf-life').id, 'mossbyte', 'the first value counts');
+    assert.equal(parseOddlingDeepLink('oddling=colonel-crumb').id, 'colonel-crumb');
+    assert.equal(parseOddlingDeepLink('?utm_source=x&oddling=mossbyte&oddling=colonel-crumb').id, 'mossbyte', 'the first value counts');
     const refused = [
-        '', '?', '?oddling=', '?oddling=1', '?oddling=unknown', '?oddling=SHELF-LIFE', '?oddling=%20shelf-life',
-        '?oddling=shelf-life%20', '?oddling=../../etc/passwd', '?oddling=__proto__', '?oddling=constructor',
+        '', '?', '?oddling=', '?oddling=1', '?oddling=unknown', '?oddling=COLONEL-CRUMB', '?oddling=%20colonel-crumb',
+        '?oddling=colonel-crumb%20', '?oddling=../../etc/passwd', '?oddling=__proto__', '?oddling=constructor',
         '?oddling=%3Cscript%3Ealert(1)%3C/script%3E', '?oddling=https://example.com/portrait.webp',
-        '?oddling[]=shelf-life', '?Oddling=shelf-life', `?oddling=${'a'.repeat(5000)}`, '?oddling=%E0%A4%A',
+        '?oddling[]=colonel-crumb', '?Oddling=colonel-crumb', `?oddling=${'a'.repeat(5000)}`, '?oddling=%E0%A4%A',
     ];
     for (const search of refused) assert.equal(parseOddlingDeepLink(search), null, search.slice(0, 40));
     for (const bad of [undefined, null, 42, {}, []]) assert.equal(parseOddlingDeepLink(bad), null);
     assert.equal(parseOddlingDeepLink(), null);
 });
 
-test('the hero strip uses portraits that already ship, with no new assets', async () => {
+test('the curated cast and hero strip use portraits that already ship', async () => {
     assert.equal(new Set(ODDLING_HERO_IDS).size, ODDLING_HERO_IDS.length);
     assert.equal(heroCharacters().length, ODDLING_HERO_IDS.length);
     assert.ok(heroCharacters().some(({ kind }) => kind === 'human') && heroCharacters().some(({ kind }) => kind === 'creature'));
@@ -105,7 +103,7 @@ test('the hero strip uses portraits that already ship, with no new assets', asyn
         await access(new URL(`../public/oddlings/portraits/${id}.webp`, import.meta.url));
     }
     const shipped = (await readdir(new URL('../public/oddlings/portraits/', import.meta.url))).filter((name) => name.endsWith('.webp'));
-    assert.equal(shipped.length, ODDLING_ARCHETYPES.length, 'one portrait per character, none added for the strip');
+    for (const { id } of ODDLING_ARCHETYPES) assert.ok(shipped.includes(`${id}.webp`), `${id} keeps its portrait`);
 });
 
 test('the character sheet renders through the shared Modal instead of a hand-rolled dialog', async () => {
@@ -247,7 +245,7 @@ test('deep link loads the character once, then takes the parameter out of the ad
 test('withoutDeepLink drops only the oddling parameter and keeps the rest of the address', () => {
     assert.equal(withoutDeepLink({ pathname: '/app/oddlings', search: '?oddling=mossbyte', hash: '' }), '/app/oddlings');
     assert.equal(withoutDeepLink({ pathname: '/app/oddlings', search: '?utm_source=mail&oddling=mossbyte&ref=a%20b', hash: '#cast' }), '/app/oddlings?utm_source=mail&ref=a+b#cast');
-    assert.equal(withoutDeepLink({ pathname: '/app/oddlings', search: '?oddling=mossbyte&oddling=shelf-life', hash: '' }), '/app/oddlings', 'every copy goes');
+    assert.equal(withoutDeepLink({ pathname: '/app/oddlings', search: '?oddling=mossbyte&oddling=colonel-crumb', hash: '' }), '/app/oddlings', 'every copy goes');
     assert.equal(withoutDeepLink({ pathname: '/app/oddlings', search: '', hash: '#x' }), '/app/oddlings#x');
     assert.equal(withoutDeepLink({ pathname: '/app/oddlings', search: '?Oddling=keep', hash: '' }), '/app/oddlings?Oddling=keep', 'parameter names are case-sensitive, like the parser');
     assert.equal(withoutDeepLink({ pathname: '//evil.example/x', search: '?oddling=mossbyte' }), '/evil.example/x', 'never a protocol-relative address');

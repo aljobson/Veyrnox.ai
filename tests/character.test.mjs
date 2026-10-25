@@ -53,10 +53,10 @@ test('Oddlings add a bounded creator identity and recurring show to the visual p
     assert.ok(prompt.endsWith('presenting a rainy forecast'));
 });
 
-test('Oddling starters lead with weird humans and retain an optional creature cast', () => {
-    assert.equal(ODDLING_ARCHETYPES.length, 72);
+test('the curated Oddling cast stays memorable and retains the four other beings', () => {
+    assert.equal(ODDLING_ARCHETYPES.length, 20);
     assert.equal(ODDLING_ARCHETYPES[0].kind, 'human');
-    assert.equal(ODDLING_ARCHETYPES.filter((oddling) => oddling.kind === 'human').length, 68);
+    assert.equal(ODDLING_ARCHETYPES.filter((oddling) => oddling.kind === 'human').length, 16);
     assert.equal(ODDLING_ARCHETYPES.filter((oddling) => oddling.kind === 'creature').length, 4);
     for (const oddling of ODDLING_ARCHETYPES) {
         assert.equal(oddling.picks.oddling_name, oddling.name);
@@ -80,16 +80,6 @@ test('human starters cover intentionally different body silhouettes and wearable
     assert.equal(byId['taffy-tessa'].picks.body_type, 'Fat');
     assert.equal(byId['tuesday-triangle'].picks.body_type, 'Inverted Triangle');
     assert.equal(byId['colonel-crumb'].picks.body_type, 'Very Skinny');
-    assert.equal(byId['baron-boucle'].picks.body_type, 'Fat');
-    assert.equal(byId['tall-order'].picks.body_type, 'Very Skinny');
-    assert.equal(byId['tall-order'].picks.height, 'Tall');
-    assert.equal(byId['tall-order'].picks.proportions, 'Natural');
-    assert.equal(byId['bubble-barry'].picks.body_type, 'Fat');
-    assert.equal(byId['max-rep'].picks.body_type, 'Hyper-Muscular');
-    const maxPrompt = buildCharacterPrompt('Full-body studio introduction', byId['max-rep'].picks);
-    assert.match(maxPrompt, /two head-heights above the scalp in three oversized stacked S-shaped waves/);
-    assert.match(maxPrompt, /blue fitted T-shirt, acid-green tight jeans, white trainers/);
-    assert.equal(byId['shelf-life'].picks.body_type, 'Pear');
     for (const id of ['duchess-volume', 'major-minor', 'bughead-brenda', 'pam-bouffant']) {
         assert.match(buildCharacterPrompt('', byId[id].picks), /original adult character, not a real person/);
     }

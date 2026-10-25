@@ -5,7 +5,6 @@ import {
   sanitizeOddlingPicks,
 } from './character.js';
 import { changeCharacterPick } from './characterOptions.js';
-import { ODDLING_FEATURE_SOURCES } from './oddlingFeatureCharacters.js';
 
 export const ODDLING_STUDIO_SECTIONS = [
   { id: 'signal', label: 'Character signal', hint: 'Human-first, with other beings optional', groupIds: ['character_type'] },
@@ -69,21 +68,15 @@ const ODDLING_GALLERY_SHEETS = [
   { image: '/oddlings/oddling-humans.webp', aspectRatio: '1 / 2', ids: ['vera-static', 'mister-monday', 'bloom-service', 'coupon-saint'] },
   { image: '/oddlings/oddling-silhouette-parade.webp', aspectRatio: '1 / 2', ids: ['olive-orbit', 'brick-picnic', 'madame-scissors', 'pocket-atlas'] },
   { image: '/oddlings/oddling-fashion-disasters.webp', aspectRatio: '1 / 2', ids: ['noodle-duke', 'taffy-tessa', 'tuesday-triangle', 'colonel-crumb'] },
-  { image: '/oddlings/oddling-hair-parade.webp', aspectRatio: '1 / 2', ids: ['disco-anvil', 'cloudette-forecast', 'ziggy-receipt', 'baron-boucle'] },
-  { image: '/oddlings/oddling-denim-basics.webp', aspectRatio: '3 / 8', ids: ['tall-order', 'bubble-barry', 'max-rep', 'shelf-life'] },
   { image: '/oddlings/oddling-cast.webp', aspectRatio: '1 / 2', ids: ['auntie-antenna', 'brine-minister', 'mossbyte', 'receipt-wraith'] },
 ];
 
 export const ODDLING_PRESET_SOURCES = [
   { id: 'all', label: 'All characters', all: true },
   { id: 'body', label: 'Character collection', ids: ODDLING_GALLERY_SHEETS[0].ids },
+  { id: 'oddities', label: 'Surreal characters', ids: ODDLING_GALLERY_SHEETS[1].ids },
   { id: 'silhouettes', label: 'Distinctive silhouettes', ids: ODDLING_GALLERY_SHEETS[2].ids },
   { id: 'fashion', label: 'Statement fashion', ids: ODDLING_GALLERY_SHEETS[3].ids },
-  { id: 'hair', label: 'Hair sculptures', ids: ODDLING_GALLERY_SHEETS[4].ids },
-  { id: 'denim', label: 'Tee + tight jeans', ids: ODDLING_GALLERY_SHEETS[5].ids },
-  { id: 'oddities', label: 'Surreal characters', ids: ODDLING_GALLERY_SHEETS[1].ids },
-  { id: 'torsos', label: 'Torso sizes · New', ids: ['pip-parcel', 'mira-measure', 'arlo-archive', 'orla-overture'] },
-  ...ODDLING_FEATURE_SOURCES,
   { id: 'humans', label: 'All human characters', kind: 'human' },
   { id: 'beings', label: 'Other beings', kind: 'creature' },
 ];
