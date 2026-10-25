@@ -83,7 +83,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await bindCacheUser(userId);
         await setCinemaUploadOwner(userId).catch(() => undefined);
         await claimLegacyOddlings(userId).catch(() => undefined);
-        await writeRefreshToken(session.refreshToken);
+        // A valid remote session must become usable even when the native
+        // credential store is temporarily unavailable (for example, an
+        // ad-hoc simulator build without a Keychain access group). The
+        // access token remains memory-only; a later refresh can retry the
+        // persistence step without trapping the user on the sign-in screen.
+        try {
+            await writeRefreshToken(session.refreshToken);
+        } catch {
+            // The in-memory session remains valid for this app run.
+        }
         setStatus('signedIn');
     }, []);
 

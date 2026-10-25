@@ -202,6 +202,18 @@ test('provider adopts passkey session through secure store/cache and aal1 still 
     expect(needsChallenge({ factors: [{ id: 'totp', status: 'verified', friendlyName: 'Authenticator' }] }, aalFromToken(accessToken))).toBe(true);
 });
 
+test('provider enters the app when native session persistence is unavailable', async () => {
+    jest.mocked(passkeySignInOptions).mockResolvedValue({ challenge_id: 'challenge-id', options: { challenge: 'challenge' } });
+    jest.mocked(native.get).mockResolvedValue(credential as never);
+    jest.mocked(passkeySignInVerify).mockResolvedValue({ accessToken, refreshToken: 'refresh-passkey', expiresAt: Date.now() + 3600000 });
+    jest.mocked(writeRefreshToken).mockRejectedValueOnce(new Error('Keychain unavailable'));
+    await provider();
+    await act(async () => { expect(await context.signInWithPasskey('captcha')).toBe(true); });
+    expect(writeRefreshToken).toHaveBeenCalledWith('refresh-passkey');
+    expect(context.status).toBe('signedIn');
+    expect(await context.getAccessToken()).toBe(accessToken);
+});
+
 test.each(['flag', 'android', 'unsupported'])('provider action with %s gate closed starts no authentication', async reason => {
     if (reason === 'flag') delete process.env.EXPO_PUBLIC_PASSKEYS_IOS_ENABLED;
     if (reason === 'android') Object.defineProperty(RN.Platform, 'OS', { configurable: true, value: 'android' });
