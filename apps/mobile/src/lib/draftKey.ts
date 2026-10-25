@@ -1,6 +1,7 @@
 import * as Crypto from 'expo-crypto';
 import type { CacheStorage } from './cache';
-import { mediaSignature, type Draft } from './publishCompose';
+import type { Draft } from './publishCompose';
+import { mediaSignature } from './publishMediaSignature';
 
 // ADR-0122: the idempotency key of a Publish draft is saved before the post is sent, so closing or losing the app
 // in the middle of a send cannot turn a retry into a second public post. It lives under the cache prefix, so the
