@@ -123,7 +123,7 @@ test('every page template and every sitemap page renders within accessibility an
           expect(metrics.images, 'first gallery page is bounded').toBeLessThanOrEqual(20);
           const before = await page.locator('#preset-gallery-results > a').count();
           await page.getByRole('button', { name: 'Show more templates' }).click();
-          await expect(page.locator('#preset-gallery-results > a')).toHaveCount(before + 12);
+          await expect(page.locator('#preset-gallery-results > a')).toHaveCount(before + 50);
         }
         let timer;
         let scan;

@@ -78,6 +78,7 @@ test('canvas geometry and transport retain LTR coordinates while localized contr
  assert.match(canvas,/dir="ltr"/);assert.match(canvas,/insetInlineStart/);assert.doesNotMatch(canvas,/style=\{\{ left:|-right-/);
  assert.match(transport,/dir="ltr"/);assert.doesNotMatch(transport,/ml-auto/);
  const spec=readFileSync('e2e/authenticated-media.spec.mjs','utf8');
- for(const hook of ['film-download-project','film-open-in-studio','generated-result-image'])assert.ok(spec.includes(`getByTestId('${hook}')`));
+ for(const hook of ['film-open-in-studio','generated-result-image'])assert.ok(spec.includes(`getByTestId('${hook}')`));
+ assert.match(spec,/film-download-project'\)\)\.toHaveCount\(0\)/);
  assert.doesNotMatch(spec,/film-(?:import|export)-json|Import studio JSON/);
 });
