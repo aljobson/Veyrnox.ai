@@ -33,20 +33,15 @@ test('every workflow has an exact, attributable reference example', () => {
     assert.ok(['image', 'video'].includes(example.kind));
     assert.match(example.url, /^https:\/\/cdn\.lipsync\.video\//);
     assert.equal(example.sourceUrl, `https://lipsync.video/${item.slug === 'lip-sync' ? '' : item.slug}`);
-    assert.equal(creativeFeatureExampleAssetPath(item.slug), `/api/reference-examples/${item.slug}`);
+    assert.equal(creativeFeatureExampleAssetPath(item.slug), example.url);
   }
 });
 
-test('reference media is rendered through a same-origin allowlisted proxy', async () => {
-  const [studio, route] = await Promise.all([
-    readFile(new URL('../app/veyrnox/_components/CreativeFeatureStudio.js', import.meta.url), 'utf8'),
-    readFile(new URL('../app/api/reference-examples/[slug]/route.js', import.meta.url), 'utf8'),
-  ]);
+test('reference media uses the fixed audited URL without leaking a referrer', async () => {
+  const studio = await readFile(new URL('../app/veyrnox/_components/CreativeFeatureStudio.js', import.meta.url), 'utf8');
   assert.match(studio, /src=\{exampleAsset\}/);
   assert.doesNotMatch(studio, /src=\{example\.url\}/);
-  assert.match(route, /creativeFeatureExample\(slug\)/);
-  assert.match(route, /redirect: 'error'/);
-  assert.match(route, /X-Content-Type-Options/);
+  assert.match(studio, /referrerPolicy="no-referrer"/);
 });
 
 test('voice cloning is the only guarded workflow and names the remaining production gate', () => {
