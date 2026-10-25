@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { editorServerRenderHandlers, finalizeUploadedRender } from '../lib/editorServerRender.js';
 import { editorServerRenderWebhook } from '../lib/editorServerRenderWebhook.js';
 import { sweepEditorServerRender } from '../lib/editorServerRenderSweep.js';
-import { signRunnerBody } from '../lib/montageSigning.js';
+import { signEditorRenderBody, verifyEditorRenderBody, CALLBACK_PATH } from '../lib/editorServerRenderSigning.js';
 import { presignPutUrl } from '../packages/adapters/r2.js';
 import { runnerHandler, uploadRenderedFile } from '../services/concat-render/runner.mjs';
 import { editorServerRenderDeps } from '../lib/editorServerRenderRuntime.js';
@@ -20,10 +20,10 @@ const doc = () => ({ schema_version: 2, project_id: ID, brief: '', canvas: { asp
 const request = (body = { document: doc(), label: 'Edit', resolution: '1080p' }, method = 'POST') => new Request(`https://app.test/api/v1/editor/server-render?job_id=${ID}`, {
     method, headers: { 'content-type': 'application/json', 'x-veyrnox-auth-id': AUTH, 'x-request-id': ID, 'idempotency-key': 'render-test-1' }, ...(method === 'POST' ? { body: JSON.stringify(body) } : {}),
 });
-async function signed(body, signature = true) {
+async function signed(body, signature = true, path = CALLBACK_PATH) {
     const raw = JSON.stringify({ job_id: ID, ...body }), t = Math.floor(Date.now() / 1000);
     return new Request('https://app.test/api/webhook/editor-render', { method: 'POST', headers: {
-        'x-runner-timestamp': String(t), 'x-runner-signature': signature ? await signRunnerBody(secret, raw, t) : 'bad',
+        'x-runner-timestamp': String(t), 'x-runner-signature': signature ? await signEditorRenderBody(secret, path, raw, t) : 'bad',
     }, body: raw });
 }
 function world() {
@@ -48,11 +48,19 @@ function world() {
             }
             if (name === 'get_user_job') return { ok: true, ...job };
             if (name === 'server_render_upload_grant') {
-                if (job.state !== 'SUBMITTED') return { ok: false };
+                if (job.state !== 'SUBMITTED' || (job.editor_render_upload_grants || 0) >= 4) return { ok: false };
+                job.editor_render_upload_grants = (job.editor_render_upload_grants || 0) + 1;
                 job.inputs.upload_size = a.p_size; return { ok: true, r2_key: job.inputs.output_key, size_bytes: a.p_size };
             }
             if (name === 'fail_server_render') { if (job.state !== 'STORED' && job.state !== 'REFUNDED') { refunds++; job.state = 'REFUNDED'; } return { ok: true, state: job.state }; }
-            if (name === 'finalize_server_render') { if (job.state !== 'SUBMITTED') return { ok: false }; job.state = 'STORED'; return { ok: true }; }
+            if (name === 'finalize_server_render') { if (job.state !== 'SUBMITTED') return { ok: false, code: 'JOB_CLOSED' }; job.state = 'STORED'; return { ok: true }; }
+            if (name === 'record_server_render_activity') { job.editor_render_unknown_at = null; return null; }
+            if (name === 'observe_server_render') {
+                const previous = job.editor_render_unknown_at;
+                if (a.p_state !== 'unknown') { job.editor_render_unknown_at = null; return { lost: false }; }
+                job.editor_render_unknown_at ||= a.p_observed_at;
+                return { lost: previous && Date.parse(a.p_observed_at) - Date.parse(previous) >= 60000 };
+            }
             if (name === 'cleanup_server_render') return true;
             throw new Error(name);
         },
@@ -188,11 +196,13 @@ test('timeout, lost-run and cancel racing inspection cannot deliver after refund
     await sweepEditorServerRender({ deps: w.deps, enabled: true }); assert.equal(w.counts().refunds, 1);
     const v = world(); await v.handlers.create(request()); v.job().inputs.upload_size = 10;
     v.deps.inspect = async () => { await v.handlers.cancel(request(undefined, 'DELETE')); return { width: 1920, height: 1080, seconds: 5, frame_rate: 30 }; };
-    assert.equal((await finalizeUploadedRender(structuredClone(v.job()), v.deps)).ok, false);
+    assert.equal((await finalizeUploadedRender(structuredClone(v.job()), v.deps)).ok, true);
     assert.equal(v.job().state, 'REFUNDED');
     const r = world(); await r.handlers.create(request()); r.job().created_at = new Date(Date.now() - 5 * 60000).toISOString();
     r.deps.runner.states = async () => ({ ok: true, data: { runs: { [ID]: 'unknown' } } });
-    await sweepEditorServerRender({ deps: r.deps, enabled: true }); assert.equal(r.counts().refunds, 1);
+    const now = Date.now();
+    await sweepEditorServerRender({ deps: r.deps, enabled: true, now }); assert.equal(r.counts().refunds, 0);
+    await sweepEditorServerRender({ deps: r.deps, enabled: true, now: now + 60000 }); assert.equal(r.counts().refunds, 1);
 });
 test('each sweep ignores the other orchestrators, and the editor sweep is off by default', async () => {
     const w = world(); await w.handlers.create(request());
@@ -211,7 +221,7 @@ test('runner authenticates, admits one render, and suppresses replay', async () 
     let release, executions = 0;
     const gate = new Promise(r => { release = r; });
     const handle = runnerHandler({ env: { EDITOR_RENDER_SIGNING_SECRET: secret, EDITOR_RENDER_CALLBACK_URL: 'https://app.test/callback' }, execute: async () => { executions++; await gate; } });
-    const send = async id => { const r = await signed({ job_id: id, callback_url: 'https://app.test/callback', calls: [], sources: [] }); return handle('/run', new Uint8Array(await r.arrayBuffer()), r.headers); };
+    const send = async id => { const r = await signed({ job_id: id, callback_url: 'https://app.test/callback', calls: [], sources: [] }, true, '/run'); return handle('/run', new Uint8Array(await r.arrayBuffer()), r.headers); };
     try {
         assert.equal((await send(ID)).status, 202);
         assert.equal((await send(ID)).status, 200);
@@ -303,4 +313,87 @@ test('call-plan references resolve only from local imports and Concat-created ID
     assert.equal(calls.find(c => c.params.command?.op === 'addClip').params.command.mediaId, 'created-2');
     assert.equal(calls.at(-1).params.output, '/scratch/output.mp4');
     assert.equal(JSON.stringify(calls).includes('$ref'), false);
+});
+
+test('INVALID_RENDER is a client error', async () => {
+    const w = world(), rpc = w.deps.rpc;
+    w.deps.rpc = (name, args) => name === 'admit_server_render' ? { ok: false, code: 'INVALID_RENDER' } : rpc(name, args);
+    const response = await w.handlers.create(request());
+    assert.equal(response.status, 400); assert.equal(w.counts().debits, 0);
+});
+test('callback signatures cannot cancel an active runner or cross runner paths', async () => {
+    let release, signal;
+    const gate = new Promise(resolve => { release = resolve; });
+    const handle = runnerHandler({ env: { EDITOR_RENDER_SIGNING_SECRET: secret, EDITOR_RENDER_CALLBACK_URL: 'https://app.test/callback' },
+        execute: async (_body, options) => { signal = options.signal; await gate; } });
+    const send = async (path, req) => handle(path, new Uint8Array(await req.arrayBuffer()), req.headers);
+    try {
+        assert.equal((await send('/run', await signed({ calls: [], sources: [], callback_url: 'https://app.test/callback' }, true, '/run'))).status, 202);
+        assert.equal((await send('/cancel', await signed({ event: 'started' }))).status, 401);
+        assert.equal((await send('/cancel', await signed({}, true, '/runs'))).status, 401);
+        assert.equal(signal.aborted, false);
+        assert.equal((await send('/cancel', await signed({}, true, '/cancel'))).status, 200);
+        assert.equal(signal.aborted, true);
+    } finally { release(); }
+});
+test('Worker runner calls sign the exact POST path', async () => {
+    const old = globalThis.fetch, paths = [];
+    globalThis.fetch = async (url, init) => {
+        const path = new URL(url).pathname; paths.push(path);
+        assert.equal(await verifyEditorRenderBody(secret, path, init.body, init.headers['x-runner-timestamp'], init.headers['x-runner-signature']), true);
+        return Response.json({ ok: true });
+    };
+    try {
+        const deps = editorServerRenderDeps({ env: { EDITOR_RENDER_RUNNER_BASE: 'https://runner.test', EDITOR_RENDER_SIGNING_SECRET: secret, PUBLIC_HOST: 'https://app.test' }, cfg: {}, r2cfg: {} });
+        await deps.runner.run({ job_id: ID }); await deps.runner.cancel(ID); await deps.runner.states([ID]);
+        assert.deepEqual(paths, ['/run', '/cancel', '/runs']);
+    } finally { globalThis.fetch = old; }
+});
+test('upload grant replay is bounded to four immutable grants', async () => {
+    const w = world(); await w.handlers.create(request()); const hook = editorServerRenderWebhook(w.deps);
+    for (let i = 0; i < 4; i++) assert.equal((await hook(await signed({ event: 'upload_grant', size_bytes: 10 }))).status, 200);
+    assert.equal((await hook(await signed({ event: 'upload_grant', size_bytes: 10 }))).status, 409);
+    assert.equal(w.counts().grants, 4);
+});
+test('unknown observations separated by callbacks or a running response do not refund', async () => {
+    const w = world(); await w.handlers.create(request()); const now = Date.now();
+    w.job().created_at = new Date(now - 5 * 60000).toISOString();
+    let state = 'unknown';
+    w.deps.runner.states = async () => ({ ok: true, data: { runs: { [ID]: state } } });
+    const hook = editorServerRenderWebhook(w.deps);
+    await sweepEditorServerRender({ deps: w.deps, enabled: true, now });
+    await hook(await signed({ event: 'started' }));
+    await sweepEditorServerRender({ deps: w.deps, enabled: true, now: now + 60000 });
+    state = 'running'; await sweepEditorServerRender({ deps: w.deps, enabled: true, now: now + 120000 });
+    state = 'unknown'; await sweepEditorServerRender({ deps: w.deps, enabled: true, now: now + 180000 });
+    assert.equal(w.counts().refunds, 0);
+});
+test('recorded spike video durations pass finalize despite shorter AAC streams', async () => {
+    const probes = JSON.parse(readFileSync(new URL('./fixtures/editorServerRender/spike-probes.json', import.meta.url)));
+    for (const probe of probes) {
+        const w = world(); await w.handlers.create(request()); w.job().inputs.upload_size = 10; w.job().inputs.seconds = probe.output_seconds;
+        const video = probe.streams.find(stream => stream.codec_type === 'video');
+        assert.ok(Number(probe.streams.find(stream => stream.codec_type === 'audio').duration) < Number(video.duration));
+        w.deps.inspect = async () => ({ seconds: Number(video.duration), width: video.width, height: video.height, frame_rate: 30 });
+        assert.equal((await finalizeUploadedRender(w.job(), w.deps)).ok, true);
+        assert.equal(w.job().state, 'STORED');
+        assert.equal(w.calls.find(([name]) => name === 'finalize_server_render')[1].p_seconds, probe.output_seconds);
+    }
+    for (const delta of [0.099, 0.101, -0.101]) {
+        const w = world(); await w.handlers.create(request()); w.job().inputs.upload_size = 10;
+        w.deps.inspect = async () => ({ seconds: 5 + delta, width: 1920, height: 1080, frame_rate: 30 });
+        await finalizeUploadedRender(w.job(), w.deps);
+        assert.equal(w.job().state, Math.abs(delta) <= .1 ? 'STORED' : 'REFUNDED');
+    }
+});
+test('closed finalize races and already FAILED/REFUNDED callbacks are processed no-ops', async () => {
+    for (const state of ['FAILED', 'REFUNDED', 'race']) {
+        const w = world(); await w.handlers.create(request()); w.job().inputs.upload_size = 10;
+        if (state === 'race') w.deps.inspect = async () => { w.job().state = 'REFUNDED'; return { seconds: 5, width: 1920, height: 1080, frame_rate: 30 }; };
+        else { w.job().state = state; w.deps.get = async () => { throw new Error('must not inspect a closed job'); }; }
+        const hook = editorServerRenderWebhook(w.deps);
+        assert.equal((await hook(await signed({ event: 'done' }))).status, 200);
+        assert.equal((await (await hook(await signed({ event: 'done' }))).json()).duplicate, true);
+        assert.equal(w.counts().refunds, 0);
+    }
 });

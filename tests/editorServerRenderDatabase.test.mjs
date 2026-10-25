@@ -48,12 +48,65 @@ test('PostgreSQL: settlement, refund races, shared capacity and evidence preserv
     await query(`INSERT INTO auth.users VALUES('${A}'); INSERT INTO public.users(id,auth_id,email) VALUES('${U}','${A}','test@example.test');
      INSERT INTO public.users(id,auth_id,email,is_admin) VALUES('${ADMIN}','${ADMIN}','admin@example.test',true);
      INSERT INTO public.credit_balances(user_id,balance) VALUES('${U}',10000);
-     INSERT INTO public.ledger_entries(user_id,delta,reason) VALUES('${U}',10000,'grant:test');
-     UPDATE public.model_catalog SET active=true,editor_render_rates='{"1080p":2,"720p":1}' WHERE id='editor-server-render';`);
+     INSERT INTO public.ledger_entries(user_id,delta,reason) VALUES('${U}',10000,'grant:test');`);
     // Keep the real ledger throttle enabled, but isolate each scenario from
     // earlier fixtures consuming its ten-job/minute budget. Two minutes is
     // still inside the upload-grant window; no production function is stubbed.
     t.beforeEach(() => query(`UPDATE public.jobs SET created_at=least(created_at,now()-interval '2 minutes') WHERE user_id='${U}';`));
+    await t.test('active catalog bills exact 10s/15s units, rounds up and enforces v1 caps', async () => {
+        assert.equal(await query("SELECT active AND cost_unit='per_second' AND credits_5s=1 AND billing_seconds=10 FROM public.model_catalog WHERE id='editor-server-render';"), 't');
+        for (const [resolution, seconds, credits] of [
+            ['1080p', .01, 1], ['1080p', 10, 1], ['1080p', 10.001, 2], ['1080p', 120, 12],
+            ['720p', .01, 1], ['720p', 15, 1], ['720p', 15.001, 2], ['720p', 300, 20],
+        ]) {
+            const result = await json(`SELECT public.admit_server_render('${A}','price-${resolution}-${seconds}',${q(JSON.stringify({ timeline: document }))}::jsonb,'${resolution}',${seconds},'Test');`);
+            assert.equal(result.credits, credits);
+            assert.equal(await query(`SELECT -delta FROM public.ledger_entries WHERE job_id='${result.job_id}' AND delta<0;`), String(credits));
+            await query(`SELECT public.fail_server_render('${result.job_id}','user_cancelled'); UPDATE public.jobs SET created_at=now()-interval '2 minutes' WHERE id='${result.job_id}';`);
+        }
+        for (const [resolution, seconds] of [['1080p', 120.01], ['720p', 300.01]]) {
+            const result = await json(`SELECT public.admit_server_render('${A}','cap-${resolution}', '{}'::jsonb,'${resolution}',${seconds},'Test');`);
+            assert.equal(result.code, 'INVALID_RENDER');
+        }
+    });
+    await t.test('upload grant replays are bounded and cannot extend the deadline indefinitely', async () => {
+        const id = (await json(admit('database-grant-bound'))).job_id;
+        await query(`UPDATE public.jobs SET created_at=now()-interval '20 minutes' WHERE id='${id}';`);
+        for (let i = 0; i < 4; i++) assert.equal((await json(`SELECT public.server_render_upload_grant('${id}',10);`)).ok, true);
+        const expires = await query(`SELECT editor_render_upload_expires_at FROM public.jobs WHERE id='${id}';`);
+        assert.equal((await json(`SELECT public.server_render_upload_grant('${id}',10);`)).code, 'UPLOAD_CLOSED');
+        assert.equal(await query(`SELECT editor_render_upload_expires_at FROM public.jobs WHERE id='${id}';`), expires);
+        await query(`SELECT public.fail_server_render('${id}','user_cancelled');`);
+    });
+    await t.test('two persisted unknown polls are required; callbacks and running polls reset loss', async () => {
+        const id = (await json(admit('database-unknown-polls'))).job_id;
+        await query(`UPDATE public.jobs SET created_at=now()-interval '5 minutes' WHERE id='${id}';`);
+        const observe = state => json(`SELECT public.observe_server_render('${id}',${q(state)},clock_timestamp());`);
+        assert.equal((await observe('unknown')).lost, false);
+        await query(`UPDATE public.jobs SET editor_render_unknown_at=now()-interval '2 minutes' WHERE id='${id}'; SELECT public.record_server_render_activity('${id}');`);
+        assert.equal((await observe('unknown')).lost, false);
+        assert.equal(await query(`SELECT state FROM public.jobs WHERE id='${id}';`), 'SUBMITTED');
+        assert.equal((await observe('running')).lost, false);
+        assert.equal(await query(`SELECT editor_render_unknown_at IS NULL FROM public.jobs WHERE id='${id}';`), 't');
+        assert.equal((await observe('unknown')).lost, false);
+        // A callback arriving during a poll must win even if the poll returns unknown.
+        await query(`SELECT public.record_server_render_activity('${id}');`);
+        assert.equal((await json(`SELECT public.observe_server_render('${id}','unknown',now()-interval '1 minute');`)).lost, false);
+        assert.equal(await query(`SELECT editor_render_unknown_at IS NULL FROM public.jobs WHERE id='${id}';`), 't');
+        await observe('unknown');
+        await query(`UPDATE public.jobs SET editor_render_unknown_at=now()-interval '2 minutes',editor_render_last_callback_at=now()-interval '3 minutes' WHERE id='${id}';`);
+        const callback = lockedTransaction(`SELECT id FROM public.jobs WHERE id='${id}' FOR UPDATE;`,
+            `SELECT public.record_server_render_activity('${id}');`);
+        await callback.ready;
+        const [, raced] = await Promise.all([callback.done, observe('unknown')]);
+        assert.equal(raced.lost, false, 'callback arriving during a poll wins the job lock');
+        assert.equal(await query(`SELECT state FROM public.jobs WHERE id='${id}';`), 'SUBMITTED');
+        await query(`UPDATE public.jobs SET editor_render_unknown_at=now()-interval '2 minutes',editor_render_last_callback_at=now()-interval '3 minutes' WHERE id='${id}';`);
+        assert.equal((await observe('unknown')).lost, true);
+        assert.equal(await query(`SELECT state FROM public.jobs WHERE id='${id}';`), 'REFUNDED');
+        assert.equal(await query(`SELECT count(*) FROM public.ledger_entries WHERE job_id='${id}' AND delta>0;`), '1');
+        assert.equal(await query(`SELECT count(*) FROM public.asset_reap_queue WHERE r2_key=(SELECT editor_render_output_key FROM public.jobs WHERE id='${id}');`), '1');
+    });
     let settled;
     await t.test('admit and refund interleave with the real dispute freeze without reversing balance/user locks', async () => {
         const id = (await json(admit('database-dispute-refund'))).job_id;
@@ -133,7 +186,7 @@ SELECT private.remove_editor_library_render('${rid}'); ROLLBACK;`), error => err
         const id = (await json(admit('database-shared-refund-race'))).job_id;
         await query(`SELECT public.server_render_upload_grant('${id}',10);`);
         const sweep = lockedTransaction(`SELECT id FROM public.jobs WHERE id='${id}' FOR UPDATE;`,
-            `UPDATE public.jobs SET state='FAILED' WHERE id='${id}'; SELECT public.ledger_refund('${id}','${U}',10,'refund:timeout');`);
+            `UPDATE public.jobs SET state='FAILED' WHERE id='${id}'; SELECT public.ledger_refund('${id}','${U}',(SELECT credits FROM public.jobs WHERE id='${id}'),'refund:timeout');`);
         await sweep.ready;
         const [, finalized] = await Promise.all([sweep.done, json(`SET lock_timeout='3s'; ${finalize(id)}`)]);
         assert.equal(finalized.code, 'JOB_CLOSED');
@@ -188,7 +241,8 @@ SELECT private.remove_editor_library_render('${rid}'); ROLLBACK;`), error => err
         const id = (await json(admit('database-refund-delete'))).job_id;
         const key = await query(`SELECT editor_render_output_key FROM public.jobs WHERE id='${id}';`);
         await query(`SELECT public.server_render_upload_grant('${id}',10); SELECT public.fail_server_render('${id}','user_cancelled');`);
-        // No cleanup call before deletion: cover the crash window as well.
+        // Refund itself must enqueue; no callback/sweep cleanup call is required.
+        assert.equal(await query(`SELECT count(*) FROM public.asset_reap_queue WHERE r2_key=${q(key)};`), '1');
         assert.equal((await json(`SELECT public.delete_user_job('${A}','${id}');`)).ok, true);
         assert.equal(await query(`SELECT inputs='{}'::jsonb AND editor_render_output_key=${q(key)} FROM public.jobs WHERE id='${id}';`), 't');
         assert.equal(await query(`SELECT public.cleanup_server_render('${id}');`), 't');
@@ -199,16 +253,18 @@ SELECT private.remove_editor_library_render('${rid}'); ROLLBACK;`), error => err
         assert.equal(await query("SELECT is_nullable FROM information_schema.columns WHERE table_schema='public' AND table_name='asset_reap_queue' AND column_name='r2_key';"), 'NO');
         assert.equal(await query('SELECT count(*) FROM public.asset_reap_queue WHERE r2_key IS NULL;'), '0');
     });
-    await t.test('upload sources require a live reservation and reject keys preserved by escalation', async () => {
+    await t.test('upload sources survive PUT expiry for 24 hours and reject keys preserved by escalation', async () => {
         await query('DELETE FROM public.assets; DELETE FROM public.editor_library_renders;');
         const id = (await json(admit('database-upload-source'))).job_id;
         const key = `uploads/${A}/${id}.mp4`;
         await query(`INSERT INTO public.upload_reservations(user_id,r2_key,size_bytes) VALUES('${U}',${q(key)},10);
          SELECT public.job_stored('er_${id}','concat-render',${q(key)},'video/mp4',10,'${hash}');`);
         assert.equal((await json(`SELECT public.server_render_source('${A}','u-${id}');`)).ok, true);
-        await query(`UPDATE public.upload_reservations SET put_expires_at=now()-interval '1 second' WHERE r2_key=${q(key)};`);
+        await query(`UPDATE public.upload_reservations SET created_at=now()-interval '20 minutes',put_expires_at=now()-interval '4 minutes' WHERE r2_key=${q(key)};`);
+        assert.equal((await json(`SELECT public.server_render_source('${A}','u-${id}');`)).ok, true);
+        await query(`UPDATE public.upload_reservations SET created_at=now()-interval '25 hours' WHERE r2_key=${q(key)};`);
         assert.equal((await json(`SELECT public.server_render_source('${A}','u-${id}');`)).ok, false);
-        await query(`UPDATE public.upload_reservations SET put_expires_at=now()+interval '16 minutes' WHERE r2_key=${q(key)};`);
+        await query(`UPDATE public.upload_reservations SET created_at=now()-interval '20 minutes' WHERE r2_key=${q(key)};`);
         const event = await json(`SELECT public.record_csam_escalation('${ADMIN}','${U}','${id}','Test upload source','test-upload-preserve');`);
         assert.equal(event.preserved, 1);
         await query(`UPDATE public.users SET frozen_at=NULL WHERE id='${U}';`);
@@ -221,8 +277,8 @@ SELECT private.remove_editor_library_render('${rid}'); ROLLBACK;`), error => err
     await t.test('permanently ineligible refund cleanup leaves the candidate query', async () => {
         const id = (await json(admit('database-cleanup-live-asset'))).job_id;
         const key = await query(`SELECT inputs->>'output_key' FROM public.jobs WHERE id='${id}';`);
-        await query(`SELECT public.fail_server_render('${id}','user_cancelled');
-         INSERT INTO public.assets(job_id,r2_key,mime_type,size_bytes) VALUES('${id}',${q(key)},'video/mp4',10);`);
+        await query(`INSERT INTO public.assets(job_id,r2_key,mime_type,size_bytes) VALUES('${id}',${q(key)},'video/mp4',10);
+         SELECT public.fail_server_render('${id}','user_cancelled');`);
         assert.equal(await query(`SELECT public.cleanup_server_render('${id}');`), 'f');
         assert.equal(await query(`SELECT inputs->>'cleanup_skipped' FROM public.jobs WHERE id='${id}';`), 'true');
         assert.equal(await query(`SELECT count(*) FROM public.asset_reap_queue WHERE r2_key=${q(key)};`), '0');

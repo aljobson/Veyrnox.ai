@@ -2,3 +2,4 @@
 *
 !services/concat-render/*.mjs
 !lib/montageSigning.js
+!lib/editorServerRenderSigning.js

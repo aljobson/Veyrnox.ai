@@ -191,6 +191,12 @@ CREATE TRIGGER cleanup_deleted_server_render AFTER UPDATE OF deleted_at ON publi
  FOR EACH ROW WHEN (OLD.deleted_at IS NULL AND NEW.deleted_at IS NOT NULL AND NEW.provider='concat-render' AND NEW.state='REFUNDED')
  EXECUTE FUNCTION private.cleanup_deleted_server_render();
 
+-- Every refund path (including shared sweeps) queues safe cleanup atomically.
+DROP TRIGGER IF EXISTS cleanup_refunded_server_render ON public.jobs;
+CREATE TRIGGER cleanup_refunded_server_render AFTER UPDATE OF state ON public.jobs
+ FOR EACH ROW WHEN (OLD.state IS DISTINCT FROM NEW.state AND NEW.state='REFUNDED' AND NEW.provider='concat-render')
+ EXECUTE FUNCTION private.cleanup_deleted_server_render();
+
 CREATE OR REPLACE FUNCTION public.server_render_source(p_auth_id TEXT,p_media_id TEXT)
 RETURNS JSONB LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $$
 DECLARE uid UUID; mid UUID; r RECORD;
@@ -211,7 +217,7 @@ BEGIN
  ELSIF left(p_media_id,1)='u' THEN
   SELECT r2_key,size_bytes,CASE WHEN r2_key LIKE '%.mp4' THEN 'video/mp4' WHEN r2_key LIKE '%.mp3' THEN 'audio/mpeg' WHEN r2_key LIKE '%.wav' THEN 'audio/wav' END AS mime_type INTO r
   FROM public.upload_reservations ur WHERE user_id=uid AND r2_key ~ ('^uploads/'||lower(p_auth_id)||'/'||mid::text||'\.(mp4|mp3|wav)$')
-  AND put_expires_at>now() AND created_at>now()-interval '24 hours'
+  AND created_at>now()-interval '24 hours'
   AND NOT EXISTS(SELECT 1 FROM public.evidence_holds h WHERE h.r2_key=ur.r2_key AND h.released_at IS NULL) LIMIT 1;
  ELSE
   SELECT f.r2_key,f.size_bytes,'video/mp4'::text AS mime_type INTO r FROM public.film_library_masters f

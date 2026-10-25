@@ -4,7 +4,7 @@ import { mkdtemp, rm, stat, open } from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
-import { signRunnerBody, verifyRunnerBody, SIGNATURE_HEADER, TIMESTAMP_HEADER } from '../../lib/montageSigning.js';
+import { signEditorRenderBody, verifyEditorRenderBody, CALLBACK_PATH, SIGNATURE_HEADER, TIMESTAMP_HEADER } from '../../lib/editorServerRenderSigning.js';
 import { connectConcat, executeCalls } from './rpc.mjs';
 
 export const MAX_BYTES = 25 * 1024 * 1024;
@@ -102,7 +102,7 @@ export function runnerHandler({ env = process.env, execute = renderJob, fetchImp
             const t = Math.floor(now() / 1000);
             try {
                 const res = await fetchImpl(env.EDITOR_RENDER_CALLBACK_URL, { method: 'POST', redirect: 'error',
-                    headers: { 'content-type': 'application/json', [TIMESTAMP_HEADER]: String(t), [SIGNATURE_HEADER]: await signRunnerBody(env.EDITOR_RENDER_SIGNING_SECRET, raw, t) },
+                    headers: { 'content-type': 'application/json', [TIMESTAMP_HEADER]: String(t), [SIGNATURE_HEADER]: await signEditorRenderBody(env.EDITOR_RENDER_SIGNING_SECRET, CALLBACK_PATH, raw, t) },
                     body: raw, signal: AbortSignal.timeout(30000) });
                 if (res.ok) return await res.json();
                 if (res.status < 500) return null;
@@ -112,7 +112,7 @@ export function runnerHandler({ env = process.env, execute = renderJob, fetchImp
         return null;
     };
     return async (path, raw, headers) => {
-        if (!await verifyRunnerBody(env.EDITOR_RENDER_SIGNING_SECRET, raw, headers.get(TIMESTAMP_HEADER), headers.get(SIGNATURE_HEADER), Math.floor(now() / 1000))) return { status: 401, body: { error: 'invalid_signature' } };
+        if (!await verifyEditorRenderBody(env.EDITOR_RENDER_SIGNING_SECRET, path, raw, headers.get(TIMESTAMP_HEADER), headers.get(SIGNATURE_HEADER), Math.floor(now() / 1000))) return { status: 401, body: { error: 'invalid_signature' } };
         let body;
         try { body = JSON.parse(new TextDecoder().decode(raw)); } catch { return { status: 400, body: { error: 'invalid_json' } }; }
         if (path === '/runs') return { status: 200, body: { runs: Object.fromEntries((Array.isArray(body.job_ids) ? body.job_ids.slice(0, 100) : []).map(id => [id, active?.id === id ? 'running' : ended.has(id) ? 'ended' : 'unknown'])) } };

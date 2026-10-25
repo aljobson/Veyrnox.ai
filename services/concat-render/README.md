@@ -6,10 +6,12 @@ over its token-guarded JSON-RPC socket. Admission and recovery use independent
 `EDITOR_SERVER_RENDER_ENABLED` / `EDITOR_SERVER_RENDER_RECOVERY_ENABLED` switches,
 configured as `"serverRender":"false"` / `"serverRenderRecovery":"false"` in
 `EDITOR_RUNTIME_FLAGS`. Status, cancel and callbacks remain available when off.
-Apply 0395/0396 before activation; the reaper supports a Worker-first rollout for
-one release. On rollback disable admission and leave recovery enabled to drain
-existing jobs. There is no UI or deployment
-in this slice. The catalog entry is inactive with no resolution rates set.
+Apply 0395/0396 before the Worker deploy (round 4 release order). On rollback disable admission and leave recovery enabled to drain
+existing jobs. Recovery must run for as long as admission does, and until all
+outstanding jobs settle and cleanup is queued. There is no UI in this slice.
+The active catalog entry bills 1 credit per 10 s at 1080p or per 15 s at 720p,
+rounded up with a minimum of 1. V1 limits remain 120 s/1080p and 300 s/720p;
+all credit arithmetic is in the database.
 
 Questions this answers: does Concat render with no GPU (lavapipe), how fast,
 and does its `concat.json` suit our timeline.
@@ -20,6 +22,12 @@ Build from the checkout root with
 `docker build -f services/concat-render/Dockerfile -t concat-render .`.
 The default entry point is the HTTP wrapper on port 8080. It accepts signed
 `/run`, `/cancel`, and `/runs` requests and runs one render at a time.
+The editor-only HMAC covers `<timestamp>.POST <path>.<raw body>`; callbacks use
+`/api/webhook/editor-render`, so a callback cannot be replayed as `/cancel`.
+Upload grants are capped at four per job within the 45-minute live-job window.
+Two unknown polls at least one minute apart are required before lost-run refund;
+callbacks, running reports and unavailable polls reset the persisted sequence.
+An explicit ended report remains loss evidence after the launch grace.
 
 The runner needs `EDITOR_RENDER_SIGNING_SECRET`, `EDITOR_RENDER_CALLBACK_URL`
 (the fixed Worker `/api/webhook/editor-render` URL), and
@@ -86,7 +94,7 @@ set `EDITOR_RENDER_TEST_DATABASE_URL` when running
 nonlocal address or an existing `jobs` table; it leaves fixtures in that test
 database for inspection. It loads the real ledger, settlement and escalation
 functions with minimal unrelated platform fixtures. A full Supabase migration
-replay and a real Concat render remain release checks, as do price and AGPL.
+replay and a real Concat render remain release checks for these changes, as does AGPL sign-off. Price is owner-approved.
 
 Exact host database proof (local PostgreSQL 15+, test superuser, fresh database):
 
@@ -94,3 +102,36 @@ Exact host database proof (local PostgreSQL 15+, test superuser, fresh database)
 createdb --host=127.0.0.1 --port=5432 --username=postgres editor_server_render_round2_test
 EDITOR_RENDER_TEST_DATABASE_URL='postgresql://postgres@127.0.0.1:5432/editor_server_render_round2_test' node --test tests/editorServerRenderDatabase.test.mjs
 ```
+
+## Single-Machine release procedure (operator only)
+
+This service requires exactly one Machine in `ams`, maximum one app-wide, with
+no autoscaler, spare Machine, canary or blue/green deploy. Disable admission and
+drain existing renders before replacing it. Recovery stays on. Scale vertically.
+
+Fly has no app-wide maximum-Machine key in `fly.toml`. The config selects rolling
+replacement and has no proxy autostart/autostop or autoscaler. Enforce the count
+operationally before admission with the following commands from this checkout:
+
+```sh
+# Existing app: reduce to one before deploying; omit this on the first deploy.
+fly scale count 1 --max-per-region 1 --region ams -c fly.concat-render.toml
+fly deploy -c fly.concat-render.toml --ha=false --strategy rolling
+fly scale count 1 --max-per-region 1 --region ams -c fly.concat-render.toml
+fly machines list -a veyrnox-concat-render
+```
+
+Verify the list contains exactly one app Machine, in `ams`, with no Machines in
+other regions; refuse admission otherwise. Do not attach a metrics autoscaler.
+These commands are release instructions, not evidence of deployment or an
+unoverrideable platform cap. See Fly's [configuration](https://docs.fly.io/reference/configuration),
+[scale count](https://docs.fly.io/flyctl/cmd/fly_scale_count), and
+[deploy](https://docs.fly.io/flyctl/cmd/fly_deploy) references.
+
+Before Worker deploy, apply migrations 0395/0396 and run the database suite and
+full migration replay. Provision `EDITOR_RENDER_SIGNING_SECRET` on Worker and
+runner, plus the fixed callback/base URL and source-host settings above. The
+Concat runner token (`CONCAT_API_TOKEN`) is generated privately for each render;
+retain stdout/stderr suppression and never put that token in the repository.
+The owner alone flips the production flag after real-runner acceptance and
+release sign-off. Both admission and recovery flags ship `"false"`.

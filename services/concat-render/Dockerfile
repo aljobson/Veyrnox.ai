@@ -23,7 +23,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && useradd -m -d /work render
 COPY --from=build /src/src/target/app/concat-cli /usr/local/bin/concat-cli
 COPY services/concat-render/ /app/services/concat-render/
-COPY lib/montageSigning.js /app/lib/montageSigning.js
+COPY lib/montageSigning.js lib/editorServerRenderSigning.js /app/lib/
 USER render
 WORKDIR /work
 ENV VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.json

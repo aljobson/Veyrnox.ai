@@ -1,6 +1,6 @@
 # ADR-0261: Server render for editor export (Concat runner)
 
-Status: Proposed
+Status: Accepted; slices 2–3 built, production flag off
 Date: 2026-10-25
 
 ## Context
@@ -27,20 +27,20 @@ Add an opt-in **Export on server** path for editor projects, rendered by Concat
 running unmodified in its own container on Fly Machines. Browser export stays the
 default and stays free. Nothing changes for a user who does not choose it.
 
-1. **Runner.** One Docker image, built from a pinned upstream commit, one render
-   per Machine (Concat refuses a second export with `busy`). It follows the
-   OpenMontage runner pattern (ADR-0074): the Worker never runs ffmpeg, Concat
-   is reached only over Fly's private network with a token held as a Fly secret
-   and a Worker secret, and the runner holds no Supabase key and no R2 write
-   key.
+1. **Runner.** One Docker image, built from a pinned upstream commit, one Machine
+   maximum and one render at a time (Concat refuses a second export with `busy`).
+   It follows the OpenMontage runner pattern (ADR-0074): the Worker never runs
+   ffmpeg and reaches the wrapper over private networking with a shared HMAC
+   secret. The wrapper reaches local Concat with a freshly generated per-render
+   token. The runner holds no Supabase key and no R2 write key.
 2. **Job.** A new `jobs` kind. The Worker validates the project document, asks
    for fresh presigned GET links (at most 15 minutes) for every source, and
    persists a random-UUID output key scoped to the job. Immediately before upload,
    the runner requests a fresh strict presigned PUT (at most 15 minutes, signed
    Content-Length and If-None-Match). The runner
    downloads sources to a scratch disk, translates the document, renders,
-   uploads, and reports through a signed callback (HMAC-SHA256 over timestamp
-   and raw body, 300 s tolerance, `webhook_events(source, external_id)`).
+   uploads, and reports through a signed callback (HMAC-SHA256 over timestamp,
+   POST path and raw body, 300 s tolerance, `webhook_events(source, external_id)`).
 3. **Result.** The file becomes an editor-render in the Library through the
    existing byte-inspection helper and a service-role-only, job-bound finalize
    RPC. It links one canonical asset to the editor-render in the same transaction
@@ -64,10 +64,7 @@ default and stays free. Nothing changes for a user who does not choose it.
    commit (this repository is public). Any change to Concat, or a decision to
    link it into our code, needs the owner's legal read first. Until then the
    flag must stay off in production.
-2. **Price.** The measured cost is about 2.4 CPU-seconds per output second at
-   1080p on four CPUs. The credit price, and whether a free allowance applies,
-   are the owner's call. A larger machine or a GPU host may change the number.
-3. **Fidelity.** The server render and the browser preview are drawn by
+2. **Fidelity.** The server render and the browser preview are drawn by
    different engines. Text, fonts and other transitions may differ. The
    dialog must say so, or a pixel-comparison gate must pass before release.
 
@@ -77,15 +74,14 @@ default and stays free. Nothing changes for a user who does not choose it.
 2. Translator as a tested module for schemaVersion 2 and 3, with fixtures (built, supported subset below).
 3. `jobs` kind, callback, refund path, idempotency tests, behind the flag (built; SQL/runtime acceptance outstanding below).
 4. Export dialog option and mobile entry, behind the same flag.
-5. Measured price, fidelity decision, owner flip.
+5. Owner-approved price (built), fidelity decision, owner flip.
 
 ## Consequences
 
 - A second render engine to keep in step with the browser one. Every new editor
   feature needs a translator rule or an explicit "not supported on server".
-- A new always-cold, pay-per-run service. Idle cost is near zero when Machines
-  stop; a render costs roughly a cent for a short 1080p clip (estimate, to be
-  measured on a real bill).
+- A single-Machine service with no autoscaling; its idle and render costs must
+  be measured on a real bill before changing the v1 capacity policy.
 - Long and high-quality exports stop depending on the user's device.
 
 ## Slices 2–3: lifecycle trace and decision (2026-10-25)
@@ -149,7 +145,7 @@ failure branch. Auto Short excludes both montage and concat-render providers.
 
 ### Built status and acceptance limits
 
-Slices 2 and 3 are implemented, with both independent-review fix rounds applied.
+Slices 2 and 3 are implemented, including the round 4 corrections below.
 Admission uses `EDITOR_SERVER_RENDER_ENABLED`; recovery independently uses
 `EDITOR_SERVER_RENDER_RECOVERY_ENABLED`. Both ship explicitly false as
 `serverRender` and `serverRenderRecovery` in `EDITOR_RUNTIME_FLAGS` in production
@@ -159,10 +155,13 @@ when the switch is off. Refunded create replays return HTTP 409 with
 `render_refunded` and `retry_with_new_key: true`.
 Migrations `0395` and `0396` follow main's `0394`; the open-PR check found only
 ADR-only PR #1656. No migrations were applied to a shared environment. The
-catalog row remains inactive and `editor_render_rates` is unset. An operator
-must supply positive per-output-second rates for `720p` and `1080p`, and the
-owner must approve activation, before admission works. The Worker never chooses
-a credit price. Limits start at 120 seconds for 1080p and 300 seconds for 720p,
+catalog row is active with the owner's final price: 1 credit per 10 output
+seconds at 1080p and per 15 seconds at 720p, rounded up, minimum 1 credit.
+`credits_5s=1`, `cost_unit=per_second`, `billing_seconds=10` describe the base
+1080p rate; `editor_render_rates` supplies exact resolution-specific
+`billing_seconds` divisors (10 and 15). SQL computes the quote and debit, with
+no approximate 1/15 rate and no application price arithmetic. Exposure stays
+behind the flag. V1 eligibility limits are 120 seconds for 1080p and 300 seconds for 720p,
 and both SQL and inspection enforce the 25 MiB output ceiling.
 
 The translator ports the measured PoC and supports v2 sequences and v3 explicit
@@ -208,8 +207,8 @@ The reaper defers disallowed keys by one day and counts them as skipped, so held
 or still-referenced keys cannot occupy every batch. An authorization RPC error
 skips without incrementing deletion attempts. Migration 0396 supplies the reaper
 authorization RPC and `not_before` column even while editor admission is off.
-The original mandatory database-first deployment order is relaxed for one
-release by ESR-019 below; database-first remains the preferred order.
+ESR-019 below previously relaxed database-first rollout for one release;
+round 4 restores mandatory database-first deployment.
 
 Queue-writer audit: `expire_assets` (0016, replaced by 0350), content takedown
 (0146/0253, replaced by 0272), account erasure (0347), job deletion (0351) and
@@ -227,7 +226,7 @@ entries from writers that enqueue before deleting within a transaction.
 Live SUBMITTED/FAILED recovery and REFUNDED cleanup use separate bounded queries
 (100 and 25). Cleanup records permanently ineligible held/asset-backed keys so
 they leave the candidate query. The canonical removal/evidence-release paths
-own any later deletion. Upload sources require an unexpired reservation, a
+own any later deletion. Upload sources require a
 reservation younger than the existing 24-hour cleanup window, and matching R2
 object size/type before debit; the reservation schema has no completion marker.
 The j/e/u source paths check active evidence holds by object key. Tests include
@@ -278,7 +277,8 @@ tests finalization against a job-first shared-sweep refund.
 the cleanup key and grant deadline when `delete_user_job` clears `inputs`.
 The key is immutable once set. Deleting a REFUNDED render transactionally calls
 cleanup and enqueues the stable key with its grant deadline. The sweep excludes
-deleted jobs; a later direct cleanup replay remains safe. Missing legacy keys
+deleted jobs; the round 4 refund trigger below queues cleanup independently of
+that query, and a later direct cleanup replay remains safe. Missing legacy keys
 are marked handled rather than inserted: `asset_reap_queue.r2_key` is NOT NULL
 in 0016, and every new cleanup insertion guards against NULL.
 
@@ -325,12 +325,11 @@ unverified in this sandbox; the commands below are required host acceptance.
 1. Keep both grouped render switches false. Run `npm test` and the database
    suite below. The latter requires a new empty **local PostgreSQL 15+ database**
    and a role permitted to create roles/extensions (a local test superuser).
-2. Apply 0395 then 0396 through the normal migration workflow before enabling
-   either switch. Prefer applying them before deploying the Worker. The
-   one-release reaper fallback permits the reverse rollout order while disabled.
+2. Apply 0395 then 0396 through the normal migration workflow before Worker
+   deploy and before enabling either switch (round 4 release requirement).
 3. Confirm full migration replay/privileges and the new database tests; prove a
-   real Concat render and strict R2 upload before activation. Pricing and AGPL
-   decisions remain separate owner decisions.
+   real Concat render and strict R2 upload before activation. Price is approved;
+   AGPL disposition remains an owner decision.
 4. Enable recovery before admission when activation is authorized. During
    rollback, disable only admission and leave recovery running to drain jobs.
 5. Remove the temporary pre-0396 reaper fallback in the following release after
@@ -353,5 +352,72 @@ here because the sandbox cannot start the local PostgreSQL server.
 
 The accepted frozen work order is SHA256
 `36b93c484eb65f6bb15dad06ffc5c683f0ffbe238c46182f0562e05521f859b9`.
-Slices 4 and 5, price, AGPL disposition, deployment and production activation
-remain unbuilt/out of scope.
+That earlier order left price out of scope; the round 4 order below supplies it.
+UI, fidelity/AGPL disposition, deployment and production activation remain outside
+this implementation order.
+
+### Round 4 corrections and release checklist
+
+Frozen work order SHA256:
+`6f10b3633d3f079ca797000ae3c52525d877a98a4f1f38c8ca696090dbd4a0c8`.
+
+The host reports the pre-round-4 build passed 17/17 PostgreSQL cases, a full
+372-migration replay and `npm test`. That is evidence for the prior build, not
+verification of these edits. The expanded SQL suite and a real Concat render
+through the HTTP runner still require host execution; no such run is claimed.
+
+- Upload source PUT expiry no longer disqualifies completed bytes. The 24-hour
+  reservation cap, evidence hold check and pre-debit R2 size/type proof remain.
+- Editor-only signatures bind direction through distinct POST paths:
+  `<timestamp>.POST /api/webhook/editor-render.<body>` versus `/run`, `/runs`
+  and `/cancel`. Montage signing is unchanged. Grants are bounded to four per
+  live job and refused after 45 minutes, cancellation or refund.
+- Lost-run inference requires two persisted unknown observations at least one
+  minute apart, after the three-minute launch grace. Callbacks clear the
+  sequence; stale polls predating a callback cannot declare loss. Running and
+  unavailable observations clear it; an explicit ended report remains loss
+  evidence after the launch grace. The RPC arbitrates refund with
+  callbacks under the job lock. The 45-minute timeout remains the backstop.
+- Finalize uses VIDEO packet duration and `max(2 / frame_rate, 0.1)` seconds
+  tolerance in Worker and SQL. Recorded spike probes: a 7 s 1080p 30 fps
+  H.264+AAC render measured video **7.000000 s**, audio **6.976 s**; a 5 s render
+  measured video **5.000000 s**, audio **4.970 s**. These recorded values are
+  fixture evidence, not a new render. AAC duration is not the finalize target.
+- A jobs transition to REFUNDED for `concat-render` queues cleanup in the
+  refund transaction, including shared-sweep refunds. The existing cleanup RPC
+  guards evidence holds, canonical assets and outstanding upload deadlines.
+  Recovery must run as long as admission does, then until settlement and cleanup
+  are complete. Turning admission off must not stop recovery.
+- INVALID_RENDER returns HTTP 400. Already FAILED/REFUNDED jobs and JOB_CLOSED
+  races during finalize acknowledge completion with HTTP 200 and mark the
+  webhook event processed, without delivering bytes or issuing another debit.
+
+Release checklist (not executed by this work order):
+
+1. Apply **0395 and 0396 before Worker deploy**; this supersedes the earlier
+   relaxed rollout order for this release. Run the expanded PostgreSQL suite
+   against an empty database and replay all migrations.
+2. Keep the Fly app at **one Machine maximum, no autoscaler**, in `ams`.
+   `fly.toml` has no app-wide machine-count maximum setting: the proposed
+   operational enforcement is `fly scale count 1 --max-per-region 1`, deployment
+   with `--ha=false`, rolling replacement, and a one-Machine admission gate from
+   the machine list. Follow the exact README procedure; no scaling or deploy
+   command was run here. This is the explicit config-only requirement limitation.
+3. Provision **EDITOR_RENDER_SIGNING_SECRET** on both sides and the configured
+   runner/callback URLs and source hosts. The **runner token (CONCAT_API_TOKEN)**
+   remains freshly generated per render, private to the wrapper/Concat process;
+   preserve suppressed stdout/stderr. No token is checked in or logged.
+4. Run a real Concat render through the runner and verify inspection, settlement,
+   Library delivery, cancellation and cleanup. This remains host acceptance.
+5. Production flag flip belongs to the **owner**. Admission and recovery still
+   ship `"false"`; enable recovery with admission. No commit, push or publication
+   is part of this work order.
+
+Round 4 sandbox proof: `npm test` exited 1 after 115.3 s: **5,617 tests,
+5,608 passed, 7 failed, 2 skipped**. Six failures are localhost `listen EPERM`
+(auditRemediation, cinemaMalwareScanner and four deployRecovery cases); the
+seventh is the existing socialActivityCursor positive-offset assertion. Those
+files were not edited. Focused editor-render tests: **31 passed, zero failed,
+one PostgreSQL suite skipped**. Catalog UPDATE guards, targeted ESLint and
+`git diff --check` pass. Database execution/migration replay, application/container
+builds and a real Concat render were not verified in this round.
