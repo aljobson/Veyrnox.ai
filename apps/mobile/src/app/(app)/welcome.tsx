@@ -5,17 +5,18 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { VeyCharacter } from '../../components/VeyCharacter';
 import { touchTarget } from '../../lib/a11y';
+import { appStorage } from '../../lib/appCache';
 import { FIRST_RUN_SLOT, WELCOME_CARDS, creditsCardKeys, serializeSeen } from '../../lib/firstRun';
 import { plural, t } from '../../lib/i18n';
 import { colors, fonts } from '../../theme';
 
 // Records that the welcome was shown (or skipped). A failure to save only means it may show once more.
 export async function markWelcomeSeen(): Promise<void> {
-    try {
-        await SecureStore.setItemAsync(FIRST_RUN_SLOT, serializeSeen());
-    } catch {
-        // Not saved: the welcome can show again next time.
-    }
+    const seen = serializeSeen();
+    await Promise.all([
+        SecureStore.setItemAsync(FIRST_RUN_SLOT, seen).catch(() => undefined),
+        appStorage.set(FIRST_RUN_SLOT, seen).catch(() => undefined),
+    ]);
 }
 
 // Three cards, shown once and skippable on every one. Vey waves on the first and last; the second quotes the real free credits.

@@ -82,8 +82,10 @@ describe('where the welcome shows', () => {
         expect(read('app', '(app)', '_layout.tsx')).toContain('FirstRunGate');
         const gate = read('components', 'FirstRunGate.tsx');
         expect(gate).toContain("router.replace('/welcome')");
+        expect(gate).toContain('appStorage.get(FIRST_RUN_SLOT)');
         const screen = read('app', '(app)', 'welcome.tsx');
         expect(screen).toContain('markWelcomeSeen');
+        expect(screen).toContain('appStorage.set(FIRST_RUN_SLOT, seen)');
         expect(screen).toContain("t('welcome.skip')");
     });
 

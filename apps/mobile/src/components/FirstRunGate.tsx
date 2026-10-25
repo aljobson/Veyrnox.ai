@@ -1,6 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
 import { useRootNavigationState, useRouter } from 'expo-router';
 import { useEffect, useRef } from 'react';
+import { appStorage } from '../lib/appCache';
 import { FIRST_RUN_SLOT, claimWelcomeRedirect, hasSeenWelcome } from '../lib/firstRun';
 
 // Sends a person who has not seen the welcome to it, once per launch. It draws nothing and waits until navigation is
@@ -14,11 +15,12 @@ export function FirstRunGate() {
     useEffect(() => {
         if (!ready || checked.current) return;
         checked.current = true;
-        SecureStore.getItemAsync(FIRST_RUN_SLOT)
-            .then((raw) => {
-                if (!hasSeenWelcome(raw) && claimWelcomeRedirect()) router.replace('/welcome');
-            })
-            .catch(() => {});
+        void Promise.all([
+            SecureStore.getItemAsync(FIRST_RUN_SLOT).catch(() => null),
+            appStorage.get(FIRST_RUN_SLOT).catch(() => null),
+        ]).then(([secure, fallback]) => {
+            if (!hasSeenWelcome(secure) && !hasSeenWelcome(fallback) && claimWelcomeRedirect()) router.replace('/welcome');
+        });
     }, [ready, router]);
     return null;
 }

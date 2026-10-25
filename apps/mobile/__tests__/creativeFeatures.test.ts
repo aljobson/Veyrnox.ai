@@ -18,6 +18,7 @@ describe('guided creative feature registry', () => {
             expect(feature.model).toMatch(/^[a-z0-9][a-z0-9.-]+$/);
             expect(feature.steps).toHaveLength(3);
             expect(feature.example.url).toMatch(/^https:\/\/cdn\.lipsync\.video\//);
+            if (feature.example.kind === 'video') expect(feature.example.posterUrl).toMatch(/^https:\/\/cdn\.lipsync\.video\//);
             expect(feature.example.sourceUrl).toMatch(/^https:\/\/lipsync\.video\//);
             expect(creativeFeature(feature.slug)).toBe(feature);
         }
@@ -31,6 +32,8 @@ describe('guided creative feature registry', () => {
         const detail = readFileSync(join(root, '[slug].tsx'), 'utf8');
         const create = readFileSync(join(root, '..', 'create', '[modelId].tsx'), 'utf8');
         expect(hub).toContain('CREATIVE_FEATURE_GROUPS');
+        expect(hub).toContain('feature.example.posterUrl ?? feature.example.url');
+        expect(hub).toContain('contentFit="contain"');
         expect(detail).toContain('<Example feature={feature} />');
         expect(detail).toContain('DocumentPicker.getDocumentAsync');
         expect(detail).toContain("pathname: '/create/[modelId]'");
