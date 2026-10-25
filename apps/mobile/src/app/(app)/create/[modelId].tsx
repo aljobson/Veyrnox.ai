@@ -282,9 +282,8 @@ export default function CreateWithModel() {
                             />
                         ))}
                     </View>
-                ) : (
-                    <View style={styles.section}><AttachFromDevice api={api} current={model} /></View>
-                )}
+                ) : null}
+                <View style={styles.section}><AttachFromDevice api={api} current={model} /></View>
                 {text_ ? (
                     <View style={styles.section}>
                         <View style={styles.sectionTop}>

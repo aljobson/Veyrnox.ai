@@ -223,6 +223,7 @@
     // Migrations through 0323 are applied before this rollout. Paid Publish
     // accounts receive the management suite; native video stays separately
     // gated until each provider's production review is complete.
+    "PUBLISH_CAROUSEL_ENABLED": "false",
     "PUBLISH_RUNTIME_FLAGS": "{\"multiAccount\":\"true\",\"plans\":\"true\",\"videoDestinations\":\"false\",\"inbox\":\"true\",\"inboxWorkflows\":\"true\",\"smartlinks\":\"true\",\"contentPresets\":\"true\",\"queues\":\"true\",\"approvals\":\"true\",\"teams\":\"true\",\"variants\":\"true\",\"reports\":\"true\",\"scheduledReports\":\"true\",\"reportExports\":\"true\",\"reportDelivery\":\"true\",\"customerApi\":\"true\",\"customerWebhooks\":\"true\",\"ads\":\"true\",\"commerce\":\"true\",\"rssAutolists\":\"true\",\"automation\":\"true\"}",
     // Preserve the private pilot secret and default YouTube uploads to Private.
     "PUBLISH_YOUTUBE_VISIBILITY_ENABLED": "true",
@@ -382,6 +383,7 @@
         // Publish migrations through 0323 are installed in staging. These
         // management surfaces are enabled here for acceptance before any
         // production rollout; native video destinations remain separately gated.
+        "PUBLISH_CAROUSEL_ENABLED": "false",
         "PUBLISH_RUNTIME_FLAGS": "{\"multiAccount\":\"true\",\"plans\":\"true\",\"videoDestinations\":\"false\",\"inbox\":\"true\",\"inboxWorkflows\":\"true\",\"smartlinks\":\"true\",\"contentPresets\":\"true\",\"queues\":\"true\",\"approvals\":\"true\",\"teams\":\"true\",\"variants\":\"true\",\"reports\":\"true\",\"scheduledReports\":\"true\",\"reportExports\":\"true\",\"reportDelivery\":\"true\",\"customerApi\":\"true\",\"customerWebhooks\":\"true\",\"ads\":\"true\",\"commerce\":\"true\",\"rssAutolists\":\"true\",\"automation\":\"true\"}",
         "REPORT_EMAIL_FROM": "Veyrnox Reports <support@veyrnox.ai>",
         "REPORT_EMAIL_REPLY_TO": "support@veyrnox.ai",

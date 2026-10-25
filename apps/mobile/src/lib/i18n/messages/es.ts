@@ -83,6 +83,14 @@ const es = {
     'checkin.earned.few': 'Has ganado {credits} créditos.',
     'checkin.earned.many': 'Has ganado {credits} créditos.',
     'checkin.earned.other': 'Has ganado {credits} créditos.',
+    'app.publish.carousel.limit': '{count} archivos seleccionados · Máximo {max}',
+    'app.publish.carousel.item': 'Archivo {count}',
+    'app.publish.carousel.earlier': 'Mover antes',
+    'app.publish.carousel.later': 'Mover después',
+    'app.publish.carousel.blocked': '{network} no admite esta combinación o cantidad de archivos.',
+    'app.publish.carousel.closed': 'Las publicaciones con varios archivos aún no están disponibles.',
+    'app.publish.carousel.unavailable': 'Este archivo está retenido o no está disponible.',
+    'app.publish.common.remove': 'Eliminar',
 } as const;
 
 export default es;

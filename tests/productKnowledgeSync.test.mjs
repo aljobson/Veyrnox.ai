@@ -22,6 +22,12 @@ const retiredOddlingsKnowledge = {
         'Local moodboard preview; describe what to borrow below.',
     ]),
 };
+// ADR-0262: each attachment supplies its own type; the global media-type
+// selector and the single-selection instruction were replaced by an ordered strip.
+const retiredPublishKnowledge = {
+    controls: new Set(['Media type']),
+    descriptions: new Set(['Media selected. Choose accounts, add a caption and confirm when to post.']),
+};
 
 test('phase B retains every app route knowledge item from origin/main', async () => {
     const baseline = JSON.parse(await readFile(path.join(root, 'tests/fixtures/app-knowledge-main.json'), 'utf8'));
@@ -42,6 +48,7 @@ test('phase B retains every app route knowledge item from origin/main', async ()
                 // Oddlings now uploads a source image for the recommended edit
                 // pipeline instead of treating it as a local-only moodboard.
                 if (entry.route === '/app/oddlings' && retiredOddlingsKnowledge[field]?.has(value)) continue;
+                if (entry.route === '/app/publish' && retiredPublishKnowledge[field]?.has(value)) continue;
                 assert.ok(actual.has(normal(value)), `${entry.route} ${field}: ${value}`);
             }
         }
@@ -121,6 +128,7 @@ test('all main route knowledge survives localization except the retired unknown-
                 if (route === '/social-cinema/series/[slug]' && field === 'descriptions' && expected === 'This series is not available.') continue;
                 if (route === '/app/film-studio' && retiredFilmStudioKnowledge[field]?.has(expected)) continue;
                 if (route === '/app/oddlings' && retiredOddlingsKnowledge[field]?.has(expected)) continue;
+                if (route === '/app/publish' && retiredPublishKnowledge[field]?.has(expected)) continue;
                 assert.ok(actual.has(normal(expected)), `${route} ${field}: ${expected}`);
             }
         }

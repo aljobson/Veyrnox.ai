@@ -30,7 +30,7 @@ async function drive(row, handler, settings = deps, controls = {}) {
             const denied = controls.denyAuthorization || authorizations > (controls.allowAuthorizations ?? Infinity);
             return Response.json({ ok: !denied, code: denied ? 'MEDIA_HELD' : undefined });
         }
-        if (name === 'claim_due_social_post_targets') return Response.json([row]);
+        if (name === 'claim_due_social_post_targets_v2') return Response.json([row]);
         if (name === 'mark_social_provider_submission') { if (controls.denyMark) return Response.json(null); assert.equal(args.p_claim_key, row.claim_key); assert.equal(args.p_target_id, row.target_id); assert.equal(args.p_network, row.network); row.provider_state = { ...row.provider_state, submission_started: true }; return Response.json({ ok: true }); }
         if (name === 'report_social_post_progress') { if (controls.failReport) throw Error('checkpoint response lost'); assert.equal(args.p_claim_key, row.claim_key); report = args; return Response.json({ ok: true }); }
         if (name === 'complete_social_post_target') { assert.equal(args.p_claim_key, row.claim_key); terminal = args; return Response.json({ ok: true }); }
@@ -132,7 +132,7 @@ test('held native videos are deferred before sharing a source or recording a sub
     for (const network of ['instagram', 'facebook', 'tiktok']) {
         const result = await drive(await target(network), () => assert.fail('held source reached provider'), settings, { denyAuthorization: true });
         assert.equal(result.result.deferred, 1); assert.equal(result.report, undefined); assert.equal(result.terminal, undefined);
-        assert.deepEqual(result.order, ['authorize_social_target_dispatch', 'claim_due_social_post_targets', 'authorize_social_target_dispatch']);
+        assert.deepEqual(result.order, ['authorize_social_target_dispatch', 'claim_due_social_post_targets_v2', 'authorize_social_target_dispatch']);
     }
 });
 

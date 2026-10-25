@@ -92,7 +92,10 @@ export interface ReviewTarget {
     readonly text: string;
 }
 
+export interface ReviewAttachment { readonly mediaType: string | null; readonly previewUrl: string | null; readonly held: boolean; }
+
 export interface Review {
+    readonly attachments: readonly ReviewAttachment[];
     readonly brandName: string;
     readonly networks: readonly string[];
     readonly targets: readonly ReviewTarget[];
@@ -127,8 +130,12 @@ export function parseReview(body: unknown): Review {
         policy: str(b.policy) ?? 'one',
         decision: str(b.decision) ?? 'pending',
         requestStatus: str(b.request_status) ?? 'pending',
+        attachments: (Array.isArray(b.attachments) ? b.attachments : b.media ? [b.media] : []).map(raw => {
+            const item = rec(raw);
+            return { mediaType: str(item.media_type), held: item.held === true, previewUrl: item.held === true ? null : previewUrl(item.preview_url) };
+        }),
         mediaType: str(media.media_type),
-        previewUrl: previewUrl(media.preview_url),
+        previewUrl: media.held === true ? null : previewUrl(media.preview_url),
     };
 }
 

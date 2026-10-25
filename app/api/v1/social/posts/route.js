@@ -19,7 +19,7 @@
 import { socialUploadsEnabled } from '../../../../../lib/social/uploadPolicy.js';
 import { calendarEnabled, publishPlansEnabled, socialContentVariantsEnabled, youtubeVisibilityEnabled } from '../../../../../lib/social/publishFeature.js';
 import { readPublishEntitlement } from '../../../../../lib/social/publishPlanApi.js';
-import { postCapabilityError } from '../../../../../lib/social/postCapabilities.js';
+import { carouselAdmission, postCapabilityError } from '../../../../../lib/social/postCapabilities.js';
 import { NextResponse } from 'next/server';
 import { accountReadLimit } from '../../../../../lib/accountReadLimit.js';
 import { socialPostWriteLimit } from '../../../../../lib/socialPostWriteLimit.js';
@@ -199,6 +199,8 @@ export async function POST(req) {
         if (destinations.length !== new Set(accountIds).size) return NextResponse.json({ error: 'ACCOUNT_NOT_FOUND' }, { status: 404 });
         const parsed = parsePostVariants(rawNetworkText, destinations.map((account) => account.network));
         if (parsed.error) return NextResponse.json({ error: parsed.error }, { status: 400 });
+        const admission = carouselAdmission(destinations, mediaItems);
+        if (admission) return NextResponse.json(admission, { status: 400 });
         const capabilityError = postCapabilityError(destinations, mediaItems, globalText, process.env, authId, parsed.variants);
         if (capabilityError) return NextResponse.json({ error: capabilityError }, { status: 400 });
         result = await rpc(hasVariants ? 'create_social_post_with_options' : visibility !== undefined ? 'create_social_post_with_youtube_visibility' : 'create_social_post', {

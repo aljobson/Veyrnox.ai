@@ -7,6 +7,21 @@ const key=await generateSocialCustomerApiKey(),auth='11111111-1111-4111-8111-111
 let calls=[];function stub(results={}){calls=[];globalThis.fetch=async(url,init)=>{const name=new URL(url).pathname.split('/').pop();const args=JSON.parse(init.body);calls.push({name,args});const data={authenticate_social_api_key:{ok:true,key_id:'k',request_id:17,brand_id:brand,auth_id:auth},complete_social_api_key_request:{ok:true},list_social_posts:{ok:true,posts:[{id:'post'}]},list_social_accounts:{ok:true,accounts:[{id:account,network:'instagram',status:'active'}]},create_social_post:{ok:true,post_id:'post',idempotent:false,target_count:1},...results};return Response.json(data[name]);};}
 const req=(url,options={})=>new Request(url,{...options,headers:{authorization:`Bearer ${key.token}`,'content-type':'application/json',...(options.headers||{})}});
 
+test('customer carousel gate rejects while off and forwards the complete ordered list when on', async () => {
+    const prior = process.env.PUBLISH_CAROUSEL_ENABLED;
+    try {
+        for (const enabled of ['false', 'true']) {
+            process.env.PUBLISH_CAROUSEL_ENABLED = enabled; stub();
+            const media = [{ mediaType: 'image', jobId: job }, { mediaType: 'image', jobId: account }];
+            const res = await POST(req('https://veyrnox.test/api/publish/v1/posts', { method: 'POST', body: JSON.stringify({ publishNow: true, text: 'Carousel', idempotencyKey: 'carousel_123', accountIds: [account], media }) }));
+            assert.equal(res.status, enabled === 'true' ? 201 : 400);
+            const create = calls.find(c => c.name === 'create_social_post');
+            if (enabled === 'true') assert.deepEqual(create.args.p_media, media.map(m => ({ media_type: m.mediaType, job_id: m.jobId })));
+            else { assert.equal(create, undefined); assert.equal((await res.json()).error, 'carousel_not_open'); }
+        }
+    } finally { if (prior === undefined) delete process.env.PUBLISH_CAROUSEL_ENABLED; else process.env.PUBLISH_CAROUSEL_ENABLED = prior; }
+});
+
 test('customer posts endpoint validates cursors and returns post data',async()=>{stub();assert.equal((await GET(req('https://veyrnox.test/api/publish/v1/posts?limit=51'))).status,400);stub();const response=await GET(req('https://veyrnox.test/api/publish/v1/posts?limit=10'));assert.equal(response.status,200);assert.deepEqual(await response.json(),{data:[{id:'post'}]});assert.equal(calls[1].args.p_limit,10);});
 
 test('customer posts endpoint creates a post with the authenticated brand',async()=>{stub();const response=await POST(req('https://veyrnox.test/api/publish/v1/posts',{method:'POST',body:JSON.stringify({publishNow:true,scheduledAt:new Date(Date.now()-60_000).toISOString(),text:'Hello',idempotencyKey:'customer_123',accountIds:[account],media:[{mediaType:'image',jobId:job}]})}));assert.equal(response.status,201);assert.deepEqual(await response.json(),{data:{id:'post',status:'scheduled',idempotent:false,target_count:1}});const create=calls.find(c=>c.name==='create_social_post');assert.equal(create.args.p_brand_id,brand);assert.equal(create.args.p_auth_id,auth);assert.equal(create.args.p_global_text,'Hello');});

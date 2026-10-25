@@ -1,7 +1,7 @@
 import type { ApiClient } from './api';
 import { ApiError } from './api';
 import { isLinkOnOrigin } from './bearerLink';
-import { MAX_TEXT, networkLabel, networkTextProblem, type MediaType, type YoutubeVisibility } from './publishCompose';
+import { MAX_TEXT, draftMedia, mediaSignature, type PostMedia, networkLabel, networkTextProblem, type MediaType, type YoutubeVisibility } from './publishCompose';
 import { t } from './i18n';
 
 // ADR-0238: ask outside reviewers to approve a post. The server schedules the post once the policy is met and answers
@@ -15,6 +15,7 @@ const EMAIL_RE = /^[^\s<>@]{1,64}@[^\s<>@]{1,185}\.[^\s<>@]{1,63}$/;
 const MIN_LEAD_MS = 60_000;
 
 export interface ApprovalDraft {
+    readonly media?: readonly PostMedia[];
     readonly jobId: string;
     readonly uploadId?: string;
     readonly mediaType: MediaType;
@@ -42,7 +43,7 @@ export function parseReviewers(text: string): { emails: string[]; rejected: stri
 
 // A key into the catalog for what is wrong, or null.
 export function validateApproval(d: ApprovalDraft, now: Date): string | null {
-    if (!!d.jobId === !!d.uploadId) return 'approvals.err.creation';
+    if ((!d.media && !!d.jobId === !!d.uploadId) || !draftMedia(d).length || draftMedia(d).length > 10 || draftMedia(d).some(item => !!item.jobId === !!item.uploadId)) return 'approvals.err.creation';
     if (d.accountIds.length === 0) return 'approvals.err.accounts';
     if (d.text.length > MAX_TEXT) return 'approvals.err.text';
     if (networkTextProblem(d.networkText)) return 'publishLinks.err.variantTooLong';
@@ -52,7 +53,7 @@ export function validateApproval(d: ApprovalDraft, now: Date): string | null {
 }
 
 export const signatureOf = (d: ApprovalDraft): string =>
-    JSON.stringify(['approval', d.uploadId ? `upload:${d.uploadId}` : d.jobId, d.mediaType, [...d.accountIds].sort(), d.text.trim(), d.scheduledAt.toISOString(), [...d.reviewers].sort(), d.policy,
+    JSON.stringify(['approval', ...mediaSignature(d), [...d.accountIds].sort(), d.text.trim(), d.scheduledAt.toISOString(), [...d.reviewers].sort(), d.policy,
         ...(Object.keys(d.networkText ?? {}).length > 0 || d.youtubeVisibility ? [Object.entries(d.networkText ?? {}).sort(([a], [b]) => a.localeCompare(b)), d.youtubeVisibility ?? null] : []),
     ]);
 
@@ -62,7 +63,7 @@ export function approvalBody(d: ApprovalDraft, idempotencyKey: string): Record<s
         globalText: d.text.trim(),
         idempotencyKey,
         accountIds: [...d.accountIds],
-        media: [{ mediaType: d.mediaType, ...(d.uploadId ? { uploadId: d.uploadId } : { jobId: d.jobId }) }],
+        media: draftMedia(d),
         reviewers: [...d.reviewers],
         policy: d.policy,
         ...(d.networkText && Object.keys(d.networkText).length > 0 ? { networkText: d.networkText } : {}),

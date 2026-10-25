@@ -83,6 +83,14 @@ const hi = {
     'checkin.earned.few': 'आपने {credits} क्रेडिट कमाए।',
     'checkin.earned.many': 'आपने {credits} क्रेडिट कमाए।',
     'checkin.earned.other': 'आपने {credits} क्रेडिट कमाए।',
+    'app.publish.carousel.limit': '{count} फ़ाइलें चुनी गईं · अधिकतम {max}',
+    'app.publish.carousel.item': 'फ़ाइल {count}',
+    'app.publish.carousel.earlier': 'पहले ले जाएँ',
+    'app.publish.carousel.later': 'बाद में ले जाएँ',
+    'app.publish.carousel.blocked': '{network} फ़ाइलों के इस संयोजन या संख्या का समर्थन नहीं करता।',
+    'app.publish.carousel.closed': 'कई फ़ाइलों वाली पोस्ट अभी उपलब्ध नहीं हैं।',
+    'app.publish.carousel.unavailable': 'यह अटैचमेंट रोका गया है या उपलब्ध नहीं है।',
+    'app.publish.common.remove': 'हटाएँ',
 } as const;
 
 export default hi;

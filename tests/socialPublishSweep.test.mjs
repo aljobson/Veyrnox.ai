@@ -45,15 +45,15 @@ test('refuses to run without a supabase config, a valid encryption key, or R2 co
 });
 
 test('nothing claimed is a clean no-op, not an error', async () => {
-    await withFetch({ claim_due_social_post_targets: async () => [] }, async (calls) => {
+    await withFetch({ claim_due_social_post_targets_v2: async () => [] }, async (calls) => {
         assert.deepEqual(await runPublishSweep({ cfg, cryptoCfg, r2cfg }), { ok: true, claimed: 0, published: 0, failed: 0, errors: 0 });
-        assert.deepEqual(calls, ['authorize_social_target_dispatch', 'claim_due_social_post_targets']);
+        assert.deepEqual(calls, ['authorize_social_target_dispatch', 'claim_due_social_post_targets_v2']);
     });
 });
 
 test('an unimplemented network fails its target with a named reason, never hangs as pending', async () => {
     await withFetch({
-        claim_due_social_post_targets: async () => [target({ network: 'unknown', target_id: 't-2' })],
+        claim_due_social_post_targets_v2: async () => [target({ network: 'unknown', target_id: 't-2' })],
         complete_social_post_target: async (body) => {
             assert.equal(body.p_target_id, 't-2');
             assert.equal(body.p_ok, false);
@@ -70,7 +70,7 @@ test('publishes an Instagram image target and reports the platform ids back', as
     const accessTokenEnc = await encryptToken('ig-access-token', cryptoCfg);
     let publishCalls = 0;
     await withFetch({
-        claim_due_social_post_targets: async () => [target({ access_token_enc: accessTokenEnc })],
+        claim_due_social_post_targets_v2: async () => [target({ access_token_enc: accessTokenEnc })],
         mark_social_provider_submission: async () => ({ ok: true }),
         complete_social_post_target: async (body) => {
             assert.equal(body.p_ok, true);
@@ -100,7 +100,7 @@ test('publishes a LinkedIn image target and reports the platform ids back', asyn
     const accessTokenEnc = await encryptToken('member-access-token', cryptoCfg);
     let publishCalls = 0;
     await withFetch({
-        claim_due_social_post_targets: async () => [target({
+        claim_due_social_post_targets_v2: async () => [target({
             network: 'linkedin', target_id: 't-li', external_account_id: 'member-42', access_token_enc: accessTokenEnc,
         })],
         mark_social_provider_submission: async () => ({ ok: true }),
@@ -143,7 +143,7 @@ test('publishes an X image target and reports the platform ids back', async () =
     const accessTokenEnc = await encryptToken('x-access-token', cryptoCfg);
     let publishCalls = 0;
     await withFetch({
-        claim_due_social_post_targets: async () => [target({
+        claim_due_social_post_targets_v2: async () => [target({
             network: 'twitter', target_id: 't-x', external_account_id: '987654321', access_token_enc: accessTokenEnc,
         })],
         mark_social_provider_submission: async () => ({ ok: true }),
@@ -192,7 +192,7 @@ test('a core target already marked as submitted is not sent again: it ends as a 
     const accessTokenEnc = await encryptToken('ig-access-token', cryptoCfg);
     let providerCalls = 0;
     await withFetch({
-        claim_due_social_post_targets: async () => [target({ access_token_enc: accessTokenEnc, claim_key: 'k-9', provider_state: { submission_started: true } })],
+        claim_due_social_post_targets_v2: async () => [target({ access_token_enc: accessTokenEnc, claim_key: 'k-9', provider_state: { submission_started: true } })],
         complete_social_post_target: async (body) => {
             assert.equal(body.p_ok, false);
             assert.equal(body.p_error, 'provider_result_unknown_reconcile_before_retry');
@@ -216,7 +216,7 @@ test('a core target whose marker is lost to another sweep is not sent either', a
     const accessTokenEnc = await encryptToken('li-access-token', cryptoCfg);
     let providerCalls = 0;
     await withFetch({
-        claim_due_social_post_targets: async () => [target({ network: 'linkedin', target_id: 't-li2', external_account_id: 'member-1', access_token_enc: accessTokenEnc, claim_key: 'k-2' })],
+        claim_due_social_post_targets_v2: async () => [target({ network: 'linkedin', target_id: 't-li2', external_account_id: 'member-1', access_token_enc: accessTokenEnc, claim_key: 'k-2' })],
         mark_social_provider_submission: async (body) => {
             assert.deepEqual(body, { p_target_id: 't-li2', p_claim_key: 'k-2', p_network: 'linkedin' });
             return null; // the row is no longer ours, or already marked
@@ -252,7 +252,7 @@ test('X: a token near expiry is refreshed first, the rotated pair is stored with
     const refreshTokenEnc = await encryptToken('x-old-refresh', cryptoCfg);
     const seen = { auth: [], rotate: null };
     await withFetch({
-        claim_due_social_post_targets: async () => [target({
+        claim_due_social_post_targets_v2: async () => [target({
             network: 'twitter', target_id: 't-x2', external_account_id: '987654321', account_id: 'acct-x', claim_key: 'k-x',
             access_token_enc: accessTokenEnc, refresh_token_enc: refreshTokenEnc,
             token_expires_at: new Date(Date.now() + 60 * 1000).toISOString(), // inside the ten-minute buffer
@@ -297,7 +297,7 @@ test('X: a rotation that loses the compare-and-swap fails the attempt without pu
     const expiring = () => target({ network: 'twitter', target_id: 't-x3', external_account_id: '1', access_token_enc: accessTokenEnc, refresh_token_enc: refreshTokenEnc, token_expires_at: new Date(Date.now() + 1000).toISOString() });
     Object.assign(process.env, { X_CLIENT_ID: 'x-client-id-1234', X_CLIENT_SECRET: 'x-secret-12345678' });
     await withFetch({
-        claim_due_social_post_targets: async () => [expiring()],
+        claim_due_social_post_targets_v2: async () => [expiring()],
         rotate_extended_social_tokens: async () => null,
         complete_social_post_target: async (body) => { assert.equal(body.p_error, 'token_refresh_failed'); return { ok: true }; },
     }, async (calls) => {
@@ -312,7 +312,7 @@ test('X: a rotation that loses the compare-and-swap fails the attempt without pu
     });
     delete process.env.X_CLIENT_ID; delete process.env.X_CLIENT_SECRET;
     await withFetch({
-        claim_due_social_post_targets: async () => [expiring()],
+        claim_due_social_post_targets_v2: async () => [expiring()],
         complete_social_post_target: async (body) => { assert.equal(body.p_error, 'token_refresh_unavailable'); return { ok: true }; },
     }, async () => {
         assert.deepEqual(await runPublishSweep({ cfg, cryptoCfg, r2cfg }), { ok: true, claimed: 1, published: 0, failed: 1, errors: 0 });
@@ -321,7 +321,7 @@ test('X: a rotation that loses the compare-and-swap fails the attempt without pu
 
 test('missing media on a claimed target fails cleanly instead of dispatching', async () => {
     await withFetch({
-        claim_due_social_post_targets: async () => [target({ media_type: null, r2_key: null })],
+        claim_due_social_post_targets_v2: async () => [target({ media_type: null, r2_key: null })],
         complete_social_post_target: async (body) => {
             assert.equal(body.p_error, 'missing_media');
             return { ok: true };
@@ -334,7 +334,7 @@ test('missing media on a claimed target fails cleanly instead of dispatching', a
 
 test('passes the claim key back with the report (0168)', async () => {
     await withFetch({
-        claim_due_social_post_targets: async () => [target({ network: 'pinterest', claim_key: 'k-1' })],
+        claim_due_social_post_targets_v2: async () => [target({ network: 'pinterest', claim_key: 'k-1' })],
         complete_social_post_target: async (body) => {
             assert.equal(body.p_claim_key, 'k-1');
             return { ok: true };
@@ -347,7 +347,7 @@ test('passes the claim key back with the report (0168)', async () => {
 
 test('omits the claim key when the claim returned none (pre-0168 functions)', async () => {
     await withFetch({
-        claim_due_social_post_targets: async () => [target({ network: 'pinterest' })],
+        claim_due_social_post_targets_v2: async () => [target({ network: 'pinterest' })],
         complete_social_post_target: async (body) => {
             assert.equal('p_claim_key' in body, false);
             return { ok: true };
@@ -359,7 +359,7 @@ test('omits the claim key when the claim returned none (pre-0168 functions)', as
 
 test('a lost claim is counted on its own, not as published or failed', async () => {
     await withFetch({
-        claim_due_social_post_targets: async () => [target({ network: 'pinterest', claim_key: 'stale' })],
+        claim_due_social_post_targets_v2: async () => [target({ network: 'pinterest', claim_key: 'stale' })],
         complete_social_post_target: async () => ({ ok: false, code: 'CLAIM_LOST' }),
     }, async () => {
         const out = await runPublishSweep({ cfg, cryptoCfg, r2cfg });
@@ -369,7 +369,7 @@ test('a lost claim is counted on its own, not as published or failed', async () 
 
 test('one target throwing during dispatch does not sink the rest of the batch', async () => {
     await withFetch({
-        claim_due_social_post_targets: async () => [
+        claim_due_social_post_targets_v2: async () => [
             target({ target_id: 't-bad', access_token_enc: '\\xnotvalidhex!' }),
             target({ target_id: 't-skip', network: 'pinterest' }),
         ],
@@ -385,7 +385,7 @@ test('one target throwing during dispatch does not sink the rest of the batch', 
 
 test(`claims at most ${BATCH} targets per sweep`, async () => {
     await withFetch({
-        claim_due_social_post_targets: async (body) => {
+        claim_due_social_post_targets_v2: async (body) => {
             assert.equal(body.p_limit, BATCH);
             return [];
         },

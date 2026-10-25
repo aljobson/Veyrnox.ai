@@ -83,6 +83,14 @@ const ko = {
     'checkin.earned.few': '{credits} 크레딧을 받았습니다.',
     'checkin.earned.many': '{credits} 크레딧을 받았습니다.',
     'checkin.earned.other': '{credits} 크레딧을 받았습니다.',
+    'app.publish.carousel.limit': '선택한 파일 {count}개 · 최대 {max}개',
+    'app.publish.carousel.item': '파일 {count}',
+    'app.publish.carousel.earlier': '앞으로 이동',
+    'app.publish.carousel.later': '뒤로 이동',
+    'app.publish.carousel.blocked': '{network}에서는 이 파일 조합이나 개수를 지원하지 않습니다.',
+    'app.publish.carousel.closed': '여러 파일이 포함된 게시물은 아직 사용할 수 없습니다.',
+    'app.publish.carousel.unavailable': '이 첨부 파일은 보류 중이거나 사용할 수 없습니다.',
+    'app.publish.common.remove': '삭제',
 } as const;
 
 export default ko;

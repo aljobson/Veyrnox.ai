@@ -83,6 +83,14 @@ const ja = {
     'checkin.earned.few': '{credits}クレジットを獲得しました。',
     'checkin.earned.many': '{credits}クレジットを獲得しました。',
     'checkin.earned.other': '{credits}クレジットを獲得しました。',
+    'app.publish.carousel.limit': '選択済みファイル数：{count} · 最大{max}',
+    'app.publish.carousel.item': 'ファイル{count}',
+    'app.publish.carousel.earlier': '前へ移動',
+    'app.publish.carousel.later': '後ろへ移動',
+    'app.publish.carousel.blocked': '{network}では、このファイルの組み合わせや数はサポートされていません。',
+    'app.publish.carousel.closed': '複数のファイルを含む投稿はまだ利用できません。',
+    'app.publish.carousel.unavailable': 'この添付ファイルは保留中か、利用できません。',
+    'app.publish.common.remove': '削除',
 } as const;
 
 export default ja;

@@ -44,3 +44,34 @@ test('signed public link reads the safe projection and records one decision',asy
   const decided=await publicRoute.POST(request(`https://veyrnox.ai/api/social/approvals/${token}`,'POST',{decision:'approved',comment:'Ready'}),{params});assert.equal(decided.status,200);assert.equal((await decided.json()).request_status,'approved');assert.equal(calls.at(-1).name,'decide_social_approval');});
 
 test('forged public links are rejected without a database call',async()=>{stub();const res=await publicRoute.GET(request('https://veyrnox.ai/api/social/approvals/forged'),{params:Promise.resolve({token:'forged'})});assert.equal(res.status,404);assert.equal(calls.length,0);});
+
+test('approval carousel admission is gated before request creation', async () => {
+  const prior = process.env.PUBLISH_CAROUSEL_ENABLED;
+  try {
+    for (const enabled of ['false', 'true']) {
+      process.env.PUBLISH_CAROUSEL_ENABLED = enabled; stub();
+      const res = await ownerRoute.POST(request('https://veyrnox.ai/api/v1/social/approvals', 'POST', {
+        scheduledAt: new Date(Date.now() + 3600000).toISOString(), globalText: 'Review all', idempotencyKey: 'carousel_12345',
+        accountIds: [account], media: [{ mediaType: 'image', jobId: job }, { mediaType: 'image', jobId: postId }], policy: 'all', reviewers: ['r@example.com'],
+      }));
+      assert.equal(res.status, enabled === 'true' ? 201 : 400);
+      assert.equal(calls.some(c => c.name === 'create_social_post_approval'), enabled === 'true');
+      if (enabled === 'false') assert.equal((await res.json()).error, 'carousel_not_open');
+    }
+  } finally { if (prior === undefined) delete process.env.PUBLISH_CAROUSEL_ENABLED; else process.env.PUBLISH_CAROUSEL_ENABLED = prior; }
+});
+
+test('review preview preserves every position but never signs a held attachment', async () => {
+  stub({ get_social_approval_review: { ok: true, reviewer_id: reviewerId, attachments: [
+    { media_type: 'image', r2_key: 'first.jpg' }, { media_type: 'image', held: true, r2_key: 'held.jpg' }, { media_type: 'video', r2_key: 'last.mp4' },
+  ] } });
+  const token = await createApprovalToken({ reviewerId }, process.env.SOCIAL_APPROVAL_LINK_SECRET);
+  const res = await publicRoute.GET(request('https://veyrnox.ai/api/social/approvals/token'), { params: Promise.resolve({ token }) });
+  const body = await res.json();
+  const { verifyMediaProxyToken } = await import('../lib/social/mediaProxyToken.js');
+  assert.deepEqual(body.attachments.map(m => [m.position, m.media_type]), [[0, 'image'], [1, 'image'], [2, 'video']]);
+  assert.equal(body.attachments[1].preview_url, null);
+  for (const [index, key] of [[0, 'first.jpg'], [2, 'last.mp4']]) assert.equal(await verifyMediaProxyToken(decodeURIComponent(body.attachments[index].preview_url.split('/').at(-1)), process.env.SOCIAL_MEDIA_PROXY_SECRET), key);
+  assert.deepEqual(body.media, body.attachments[0]);
+  assert.equal(JSON.stringify(body).includes('r2_key'), false);
+});

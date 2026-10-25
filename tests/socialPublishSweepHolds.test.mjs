@@ -23,7 +23,7 @@ for (const code of ['MEDIA_HELD', 'MEDIA_SCANNING', 'CLAIM_LOST']) test(`${code}
     globalThis.fetch = async (url, init) => {
         const name = new URL(url).pathname.split('/').pop(); calls.push(name);
         const probe = presentProbe(name, init, calls); if (probe) return probe;
-        if (name === 'claim_due_social_post_targets') return Response.json([row]);
+        if (name === 'claim_due_social_post_targets_v2') return Response.json([row]);
         assert.equal(name, 'authorize_social_target_dispatch');
         assert.equal(JSON.parse(init.body).p_claim_key, row.claim_key);
         return Response.json({ ok: false, code });
@@ -31,14 +31,14 @@ for (const code of ['MEDIA_HELD', 'MEDIA_SCANNING', 'CLAIM_LOST']) test(`${code}
     // Invalid signing secret makes presign fail if authorization is ordered incorrectly.
     const out = await runPublishSweep({ ...deps, r2cfg: { ...r2cfg, secretAccessKey: {} } });
     assert.equal(out.deferred, 1); assert.equal(out.failed, 0);
-    assert.deepEqual(calls, ['hold_probe', 'claim_due_social_post_targets', 'authorize_social_target_dispatch']);
+    assert.deepEqual(calls, ['hold_probe', 'claim_due_social_post_targets_v2', 'authorize_social_target_dispatch']);
 });
 test('hold after Threads container creation blocks threads_publish, while polling needs no authorization', async () => {
     let row = await target(), held = false, finished = false; const calls = [];
     globalThis.fetch = async (url, init) => {
         const u = new URL(url), name = u.pathname.split('/').pop(); calls.push(name);
         const probe = presentProbe(name, init, calls); if (probe) return probe;
-        if (name === 'claim_due_social_post_targets') return Response.json([row]);
+        if (name === 'claim_due_social_post_targets_v2') return Response.json([row]);
         if (name === 'authorize_social_target_dispatch') return Response.json({ ok: !held, code: held ? 'MEDIA_HELD' : undefined });
         if (name === 'threads') return Response.json({ id: 'container' });
         if (name === 'container') return Response.json({ status: finished ? 'FINISHED' : 'IN_PROGRESS' });
@@ -46,20 +46,20 @@ test('hold after Threads container creation blocks threads_publish, while pollin
         assert.fail('unexpected provider or mutation: ' + name);
     };
     assert.equal((await runPublishSweep(deps)).failed, 0);
-    assert.deepEqual(calls, ['hold_probe', 'claim_due_social_post_targets', 'authorize_social_target_dispatch', 'threads', 'report_social_post_progress']);
+    assert.deepEqual(calls, ['hold_probe', 'claim_due_social_post_targets_v2', 'authorize_social_target_dispatch', 'threads', 'report_social_post_progress']);
     held = true; calls.length = 0;
     await runPublishSweep(deps);
-    assert.deepEqual(calls, ['hold_probe', 'claim_due_social_post_targets', 'container', 'report_social_post_progress']);
+    assert.deepEqual(calls, ['hold_probe', 'claim_due_social_post_targets_v2', 'container', 'report_social_post_progress']);
     finished = true; calls.length = 0;
     assert.equal((await runPublishSweep(deps)).deferred, 1);
-    assert.deepEqual(calls, ['hold_probe', 'claim_due_social_post_targets', 'container', 'authorize_social_target_dispatch']);
+    assert.deepEqual(calls, ['hold_probe', 'claim_due_social_post_targets_v2', 'container', 'authorize_social_target_dispatch']);
 });
 test('Threads publishing authorizes before marker and provider call; permalink reconciliation does neither', async () => {
     const row = await target({ container_id: 'container', started_at: new Date().toISOString() }); const calls = [];
     globalThis.fetch = async (url, init) => {
         const name = new URL(url).pathname.split('/').pop(); calls.push(name);
         const probe = presentProbe(name, init, calls); if (probe) return probe;
-        if (name === 'claim_due_social_post_targets') return Response.json([row]);
+        if (name === 'claim_due_social_post_targets_v2') return Response.json([row]);
         if (name === 'container') return Response.json({ status: 'FINISHED' });
         if (name === 'threads_publish') return Response.json({ id: 'post' });
         if (name === 'post') return Response.json({ permalink: 'https://threads.test/post' });
@@ -67,9 +67,9 @@ test('Threads publishing authorizes before marker and provider call; permalink r
         return Response.json({ ok: true });
     };
     await runPublishSweep(deps);
-    assert.deepEqual(calls, ['hold_probe', 'claim_due_social_post_targets','container','authorize_social_target_dispatch','mark_social_provider_submission','threads_publish','report_social_post_progress']);
+    assert.deepEqual(calls, ['hold_probe', 'claim_due_social_post_targets_v2','container','authorize_social_target_dispatch','mark_social_provider_submission','threads_publish','report_social_post_progress']);
     calls.length = 0; await runPublishSweep(deps);
-    assert.deepEqual(calls, ['hold_probe', 'claim_due_social_post_targets','post','complete_social_post_target']);
+    assert.deepEqual(calls, ['hold_probe', 'claim_due_social_post_targets_v2','post','complete_social_post_target']);
 });
 
 // Review of PR #886: the marker used to be written before the hold check, so a
@@ -80,7 +80,7 @@ for (const network of ['facebook', 'instagram', 'linkedin', 'twitter']) test(`${
     globalThis.fetch = async (url, init) => {
         const u = new URL(url), name = u.pathname.split('/').pop(); calls.push(name);
         const probe = presentProbe(name, init, calls); if (probe) return probe;
-        if (name === 'claim_due_social_post_targets') return Response.json([row]);
+        if (name === 'claim_due_social_post_targets_v2') return Response.json([row]);
         // The pre-dispatch check passes; the one right before the provider call fails.
         if (name === 'authorize_social_target_dispatch') return ++authorizations === 1 ? Response.json({ ok: true }) : new Response('{"message":"upstream"}', { status: 503 });
         if (name === 'complete_social_post_target') { reported = JSON.parse(init.body); return Response.json({ ok: true }); }
@@ -99,7 +99,7 @@ test('hold checks call the RPC only when the server gate is exactly true', async
         globalThis.fetch = async (url, init) => {
             const name = new URL(url).pathname.split('/').pop(); calls.push(name);
         const probe = presentProbe(name, init, calls); if (probe) return probe;
-            if (name === 'claim_due_social_post_targets') return Response.json([row]);
+            if (name === 'claim_due_social_post_targets_v2') return Response.json([row]);
             if (name === 'threads') return Response.json({ id: 'container' });
             if (name === 'authorize_social_target_dispatch') {
                 assert.equal(flag, 'true', 'disabled deployment must not need migration 0289');
@@ -108,7 +108,7 @@ test('hold checks call the RPC only when the server gate is exactly true', async
         };
         const out = await runPublishSweep({ ...deps, env: { SOCIAL_HOLD_CHECKS_ENABLED: flag } });
         assert.equal(out.failed, 0); assert.equal(out.deferred || 0, 0);
-        assert.deepEqual(calls, [...(flag === 'true' ? ['hold_probe'] : []), 'claim_due_social_post_targets',
+        assert.deepEqual(calls, [...(flag === 'true' ? ['hold_probe'] : []), 'claim_due_social_post_targets_v2',
             ...(flag === 'true' ? ['authorize_social_target_dispatch'] : []), 'threads', 'report_social_post_progress']);
     }
 });
@@ -118,7 +118,7 @@ test('Threads publishes after a hold longer than the poll bound is released', as
     globalThis.fetch = async (url, init) => {
         const name = new URL(url).pathname.split('/').pop(); calls.push(name);
         const probe = presentProbe(name, init, calls); if (probe) return probe;
-        if (name === 'claim_due_social_post_targets') return Response.json([row]);
+        if (name === 'claim_due_social_post_targets_v2') return Response.json([row]);
         if (name === 'authorize_social_target_dispatch') return Response.json({ ok: !held, code: held ? 'MEDIA_HELD' : undefined });
         if (name === 'threads') return Response.json({ id: 'container' });
         if (name === 'container') return Response.json({ status: 'FINISHED' });
@@ -132,10 +132,10 @@ test('Threads publishes after a hold longer than the poll bound is released', as
     held = true; row.provider_state.started_at = new Date(Date.now() - 3 * 3600000).toISOString();
     calls.length = 0;
     assert.equal((await runPublishSweep(deps)).deferred, 1); assert.equal(published, 0);
-    assert.deepEqual(calls, ['hold_probe', 'claim_due_social_post_targets', 'container', 'authorize_social_target_dispatch']);
+    assert.deepEqual(calls, ['hold_probe', 'claim_due_social_post_targets_v2', 'container', 'authorize_social_target_dispatch']);
     held = false; calls.length = 0;
     assert.equal((await runPublishSweep(deps)).failed, 0); assert.equal(published, 1);
-    assert.deepEqual(calls, ['hold_probe', 'claim_due_social_post_targets', 'container', 'authorize_social_target_dispatch',
+    assert.deepEqual(calls, ['hold_probe', 'claim_due_social_post_targets_v2', 'container', 'authorize_social_target_dispatch',
         'mark_social_provider_submission', 'threads_publish', 'report_social_post_progress']);
     assert.equal((await runPublishSweep(deps)).published, 1); assert.equal(published, 1);
 });
@@ -147,7 +147,7 @@ test('missing authorization RPC defers every target without completion and logs 
     globalThis.fetch = async (url, init) => {
         const name = new URL(url).pathname.split('/').pop(); calls.push(name);
         const probe = presentProbe(name, init, calls); if (probe) return probe;
-        if (name === 'claim_due_social_post_targets') return Response.json(rows);
+        if (name === 'claim_due_social_post_targets_v2') return Response.json(rows);
         assert.equal(name, 'authorize_social_target_dispatch', 'no provider or completion may run');
         return Response.json({ code: 'PGRST202', message: 'missing RPC' }, { status: 404 });
     };
@@ -186,10 +186,10 @@ test('a coded probe refusal proves presence and precedes the claim', async () =>
                 assert.deepEqual(JSON.parse(init.body), { p_target_id: ZERO, p_claim_key: ZERO });
                 return Response.json({ ok: false, code });
             }
-            assert.equal(name, 'claim_due_social_post_targets'); return Response.json([]);
+            assert.equal(name, 'claim_due_social_post_targets_v2'); return Response.json([]);
         };
         assert.equal((await runPublishSweep(deps)).claimed, 0);
-        assert.deepEqual(calls, ['authorize_social_target_dispatch', 'claim_due_social_post_targets']);
+        assert.deepEqual(calls, ['authorize_social_target_dispatch', 'claim_due_social_post_targets_v2']);
     }
 });
 

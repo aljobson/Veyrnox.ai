@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { GatewayError, gatewayFetch, makeIdempotencyKey, notifyBalanceChanged } from '../../_lib/gateway';
-import { attachSlotFor, modelForAttachment } from '../../../../lib/createAttach.mjs';
+import { planAttachments } from '../../../../lib/createAttach.mjs';
 import { pushJobHistory } from '../../_lib/jobHistory';
 import { useStudioJobs } from '../../_lib/useStudioJobs';
 import { useFreeAllowance } from '../../_lib/useFreeAllowance';
@@ -131,18 +131,17 @@ export function useChatMediaGeneration({ kind, models, catalogLive }) {
     setConsent(false);
   }
 
-  // The paperclip shown for every model: the file's type picks the slot, and the
-  // model switches to one of this composer's that takes it. A notice is a code
-  // ('unsupported', or 'switched' with the model's name) for the composer to word.
+  // The paperclip shown for every model: the files' types pick the slots, and the model
+  // switches to this composer's one that takes the most of them. The notice is codes
+  // ('unsupported'; 'switched' with the model's name; 'unused' with a count) for the composer to word.
   function attachFromDevice(fileList) {
-    const file = fileList && fileList[0];
-    if (!file) return;
-    const slot = attachSlotFor(file);
-    const target = slot && modelForAttachment(availableModels.filter((item) => !item.gated), model, slot);
-    if (!target) { setAttachNotice({ code: 'unsupported' }); return; }
-    if (target.id !== model?.id) { selectModel(target.id); setAttachNotice({ code: 'switched', name: target.name }); }
-    else setAttachNotice(null);
-    pickSource(slot, file);
+    const plan = planAttachments(availableModels.filter((item) => !item.gated), model, Array.from(fileList || []));
+    if (!plan) { setAttachNotice({ unsupported: true }); return; }
+    const switched = plan.model.id !== model?.id;
+    setAttachNotice({ switched: switched ? plan.model.name : null, unused: plan.unused.length });
+    if (switched) selectModel(plan.model.id);
+    else clearSources();
+    for (const { slot, file } of plan.assignments) pickSource(slot, file);
   }
 
   async function uploadSource(file) {

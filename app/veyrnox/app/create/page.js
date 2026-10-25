@@ -37,7 +37,7 @@ import { CharacterPanel } from '../../_components/CharacterPanel';
 import { buildCharacterPrompt, sanitizeOddlingPicks } from '../../_lib/character';
 import { DrawOnImage } from '../../_components/DrawOnImage';
 import { SourcePickers } from '../../_components/SourcePickers';
-import { attachAccept, attachSlotFor, modelForAttachment } from '../../../../lib/createAttach.mjs';
+import { attachAccept, planAttachments } from '../../../../lib/createAttach.mjs';
 import SourceRightsConfirmation from '../../_components/SourceRightsConfirmation';
 import { LibraryPicker } from '../../_components/LibraryPicker';
 import { GenerationSettings } from '../../_components/GenerationSettings';
@@ -310,17 +310,17 @@ export default function CreateStudio() {
   }
 
   const [attachNotice, setAttachNotice] = useState('');
-  // The always-visible paperclip: the file's type picks the slot, and the model
-  // switches to one that takes it when the current one cannot.
+  // The always-visible paperclip: the files' types pick the slots, and the model
+  // switches to the one that takes the most of them when the current one cannot.
   function attachFromDevice(fileList) {
-    const file = fileList && fileList[0];
-    if (!file) return;
-    const slot = attachSlotFor(file);
-    const target = slot && modelForAttachment(models, model, slot);
-    if (!target) { setAttachNotice(t('app.create.attach.unsupported')); return; }
-    setAttachNotice(target.id === model?.id ? '' : t('app.create.attach.switched', { name: target.name }));
-    if (target.id !== model?.id) { setPresetParam(null); setGoal(target.kind); setModelId(target.id); }
-    pickSource(slot, file);
+    const plan = planAttachments(models, model, Array.from(fileList || []));
+    if (!plan) { setAttachNotice(t('app.create.attach.unsupported')); return; }
+    const switched = plan.model.id !== model?.id;
+    setAttachNotice([switched && t('app.create.attach.switched', { name: plan.model.name }), plan.unused.length && t('app.create.attach.unused', { count: plan.unused.length })].filter(Boolean).join(' '));
+    if (switched) { setPresetParam(null); setGoal(plan.model.kind); setModelId(plan.model.id); }
+    const placed = new Set(plan.assignments.map(item => item.slot));
+    for (const slot of Object.keys(sources)) if (!placed.has(slot)) pickSource(slot, null);
+    for (const { slot, file } of plan.assignments) pickSource(slot, file);
   }
 
   function applyDrawing(file) {
@@ -606,11 +606,11 @@ export default function CreateStudio() {
           {model?.takesVoice && <VoiceDescription value={voice} onChange={setVoice} />}
 
           {animationPortrait && <div role="status" className="mt-4 rounded-xl border border-vx-accent/30 bg-vx-panel p-4 text-sm text-vx-fg-body">{portraitStatus}{animationMismatch && <p className="mt-2 text-vx-danger">{t("app.create.animationModel")}</p>}</div>}
-          {Object.keys(media).length === 0 && (
+          {(
             <div className="mt-3 flex items-center gap-3">
               <label className="font-vx-mono text-[11px] font-bold rounded-full px-3.5 py-1.5 border border-vx-border text-vx-fg-muted hover:text-vx-fg cursor-pointer has-focus-visible:outline-solid has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-vx-accent">
                 {t('app.create.attach.button')}
-                <input data-testid="create-attach" type="file" accept={attachAccept()} className="sr-only"
+                <input data-testid="create-attach" type="file" multiple accept={attachAccept()} className="sr-only"
                   onChange={(e) => { attachFromDevice(e.target.files); e.target.value = ''; }} />
               </label>
               <span className="text-xs text-vx-fg-muted">{t('app.create.attach.hint')}</span>

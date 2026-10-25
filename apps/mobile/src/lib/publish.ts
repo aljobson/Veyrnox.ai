@@ -19,6 +19,7 @@ export interface PublishAccount {
     // Whether posting to this network is open for this account, and the media types it takes.
     readonly publishingEnabled: boolean;
     readonly supportedMedia: string[];
+    readonly carousel?: { min: number; max: number; types: string[] } | null;
 }
 
 export type PublishRole = 'owner' | 'manager' | 'editor' | 'reviewer' | 'analyst' | 'viewer';
@@ -47,6 +48,7 @@ export interface PublishAccountsState {
     readonly plansEnabled: boolean;
     readonly accounts: PublishAccount[];
     readonly uploadsEnabled: boolean;
+    readonly carouselEnabled?: boolean;
     readonly features: PublishFeatures;
 }
 
@@ -70,6 +72,8 @@ export function parseAccounts(body: unknown): PublishAccountsState {
             connectedAt: str(raw.connected_at),
             tokenExpiresAt: str(raw.token_expires_at),
             publishingEnabled: raw.publishingEnabled === true,
+            carousel: b.carouselEnabled === true && isObject(raw.carousel) && typeof raw.carousel.max === 'number' && raw.carousel.max >= 2 && raw.carousel.max <= 10
+                ? { min: 2, max: raw.carousel.max, types: list(raw.carousel.types).filter((type): type is string => type === 'image' || type === 'video') } : null,
             supportedMedia: list(raw.supportedMedia).filter((m): m is string => typeof m === 'string'),
         });
     }
@@ -82,6 +86,7 @@ export function parseAccounts(body: unknown): PublishAccountsState {
         plansEnabled: flag(b, 'plansEnabled'),
         accounts,
         uploadsEnabled: flag(b, 'uploadsEnabled'),
+        carouselEnabled: flag(b, 'carouselEnabled'),
         features: {
             inbox: flag(b, 'inboxEnabled'),
             inboxWorkflows: flag(b, 'inboxWorkflowsEnabled'),

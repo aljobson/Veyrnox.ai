@@ -134,7 +134,9 @@ export async function fetchConnectedAccount(accessToken, fetcher = fetch) {
  * `isAigc: true` is deliberate, not a placeholder default — every image
  * this platform publishes is AI-generated, and TikTok's content policy
  * requires that disclosure. */
-export async function submitMediaUploadPost(accessToken, { photoUrl, caption }, fetcher = fetch) {
+export async function submitMediaUploadPost(accessToken, { photoUrl, photoUrls, caption }, fetcher = fetch) {
+    if (photoUrls !== undefined && (!Array.isArray(photoUrls) || photoUrls.length < 2 || photoUrls.length > 10
+        || photoUrls.some(url => typeof url !== 'string' || !url))) throw new Error('invalid_carousel');
     const res = await fetcher(`${API_BASE}/v2/post/publish/content/init/`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
@@ -151,7 +153,7 @@ export async function submitMediaUploadPost(accessToken, { photoUrl, caption }, 
             },
             source_info: {
                 source: 'PULL_FROM_URL',
-                photo_images: [photoUrl],
+                photo_images: photoUrls || [photoUrl],
                 photo_cover_index: 0,
             },
             is_aigc: true,

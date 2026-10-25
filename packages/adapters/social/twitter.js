@@ -1,3 +1,4 @@
+import { imageItems } from './carousel.js';
 // X (Twitter) API v2 adapter — ADR-0061 §2.1 "adapters, not SDKs": plain
 // fetch, no X SDK on the SSR graph. Verified against docs.x.com (OAuth 2.0
 // Authorization Code with PKCE, the chunked media upload quickstart, and
@@ -225,63 +226,69 @@ function numberOrZero(value) {
  * fails the target cleanly instead of silently dropping it. `username` is
  * required to build the permalink — pass the value fetchConnectedAccount
  * returned at connect time. */
-export async function publishPost(accessToken, { username, caption, mediaType, mediaUrl }, fetcher = fetch, beforePublish = async () => {}) {
-    if (mediaType !== 'image') {
+export async function publishPost(accessToken, { username, caption, mediaType, mediaUrl, media }, fetcher = fetch, beforePublish = async () => {}) {
+    if (media === undefined && mediaType !== 'image') {
         const err = new Error(`unsupported media type: ${mediaType}`);
         err.code = 'UNSUPPORTED_MEDIA_TYPE';
         throw err;
     }
     const auth = { Authorization: `Bearer ${accessToken}` };
 
-    const sourceRes = await fetcher(mediaUrl, { signal: AbortSignal.timeout(20000) });
-    if (!sourceRes.ok) throw new Error(`source_media_fetch_failed_${sourceRes.status}`);
-    const bytes = new Uint8Array(await sourceRes.arrayBuffer());
-    if (bytes.byteLength > MAX_IMAGE_BYTES) throw new Error('image_too_large_for_single_append');
-    const contentType = sourceRes.headers.get('content-type') || 'image/jpeg';
+    const items = imageItems(media, mediaType, mediaUrl, 4);
+    const ids = [];
+    for (const item of items) {
+        const sourceRes = await fetcher(item.mediaUrl, { signal: AbortSignal.timeout(20000) });
+        if (!sourceRes.ok) throw new Error(`source_media_fetch_failed_${sourceRes.status}`);
+        const bytes = new Uint8Array(await sourceRes.arrayBuffer());
+        if (bytes.byteLength > MAX_IMAGE_BYTES) throw new Error('image_too_large_for_single_append');
+        const contentType = sourceRes.headers.get('content-type') || 'image/jpeg';
 
-    const initRes = await fetcher(`${API_BASE}/2/media/upload/initialize`, {
-        method: 'POST',
-        headers: { ...auth, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ media_type: contentType, total_bytes: bytes.byteLength, media_category: 'tweet_image' }),
-        signal: AbortSignal.timeout(15000),
-    });
-    const init = await initRes.json().catch(() => null);
-    const mediaId = init && init.data && init.data.id;
-    if (!initRes.ok || !mediaId) throw new Error((init && init.title) || `media_init_failed_${initRes.status}`);
-
-    const form = new FormData();
-    form.set('segment_index', '0');
-    form.set('media', new Blob([bytes], { type: contentType }));
-    const appendRes = await fetcher(`${API_BASE}/2/media/upload/${mediaId}/append`, {
-        method: 'POST', headers: auth, body: form, signal: AbortSignal.timeout(30000),
-    });
-    if (!appendRes.ok) throw new Error(`media_append_failed_${appendRes.status}`);
-
-    const finalizeRes = await fetcher(`${API_BASE}/2/media/upload/${mediaId}/finalize`, {
-        method: 'POST', headers: auth, signal: AbortSignal.timeout(15000),
-    });
-    const finalize = await finalizeRes.json().catch(() => null);
-    if (!finalizeRes.ok) throw new Error((finalize && finalize.title) || `media_finalize_failed_${finalizeRes.status}`);
-
-    // A tweet_image normally finalizes synchronously (no processing_info
-    // at all). Only poll if X reports it isn't done yet, bounded so a
-    // stuck upload can never hold a sweep tick open indefinitely.
-    let state = finalize && finalize.data && finalize.data.processing_info && finalize.data.processing_info.state;
-    for (let attempt = 0; state && state !== 'succeeded' && state !== 'failed' && attempt < 5; attempt += 1) {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        const statusRes = await fetcher(`${API_BASE}/2/media/upload?command=STATUS&media_id=${encodeURIComponent(mediaId)}`, {
-            headers: auth, signal: AbortSignal.timeout(10000),
+        const initRes = await fetcher(`${API_BASE}/2/media/upload/initialize`, {
+            method: 'POST',
+            headers: { ...auth, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ media_type: contentType, total_bytes: bytes.byteLength, media_category: 'tweet_image' }),
+            signal: AbortSignal.timeout(15000),
         });
-        const status = await statusRes.json().catch(() => null);
-        state = status && status.data && status.data.processing_info && status.data.processing_info.state;
+        const init = await initRes.json().catch(() => null);
+        const mediaId = init && init.data && init.data.id;
+        if (!initRes.ok || !mediaId) throw new Error((init && init.title) || `media_init_failed_${initRes.status}`);
+
+        const form = new FormData();
+        form.set('segment_index', '0');
+        form.set('media', new Blob([bytes], { type: contentType }));
+        const appendRes = await fetcher(`${API_BASE}/2/media/upload/${mediaId}/append`, {
+            method: 'POST', headers: auth, body: form, signal: AbortSignal.timeout(30000),
+        });
+        if (!appendRes.ok) throw new Error(`media_append_failed_${appendRes.status}`);
+
+        const finalizeRes = await fetcher(`${API_BASE}/2/media/upload/${mediaId}/finalize`, {
+            method: 'POST', headers: auth, signal: AbortSignal.timeout(15000),
+        });
+        const finalize = await finalizeRes.json().catch(() => null);
+        if (!finalizeRes.ok) throw new Error((finalize && finalize.title) || `media_finalize_failed_${finalizeRes.status}`);
+
+        // A tweet_image normally finalizes synchronously (no processing_info
+        // at all). Only poll if X reports it isn't done yet, bounded so a
+        // stuck upload can never hold a sweep tick open indefinitely.
+        let state = finalize && finalize.data && finalize.data.processing_info && finalize.data.processing_info.state;
+        for (let attempt = 0; state && state !== 'succeeded' && state !== 'failed' && attempt < 5; attempt += 1) {
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+            const statusRes = await fetcher(`${API_BASE}/2/media/upload?command=STATUS&media_id=${encodeURIComponent(mediaId)}`, {
+                headers: auth, signal: AbortSignal.timeout(10000),
+            });
+            const status = await statusRes.json().catch(() => null);
+            state = status && status.data && status.data.processing_info && status.data.processing_info.state;
+        }
+        if (state === 'failed') throw new Error('media_processing_failed');
+
+        ids.push(mediaId);
     }
-    if (state === 'failed') throw new Error('media_processing_failed');
 
     await beforePublish();
     const postRes = await fetcher(`${API_BASE}/2/tweets`, {
         method: 'POST',
         headers: { ...auth, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: caption || '', media: { media_ids: [mediaId] } }),
+        body: JSON.stringify({ text: caption || '', media: { media_ids: ids } }),
         signal: AbortSignal.timeout(15000),
     });
     const posted = await postRes.json().catch(() => null);

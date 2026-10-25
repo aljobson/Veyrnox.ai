@@ -83,6 +83,14 @@ const pt = {
     'checkin.earned.few': 'Você ganhou {credits} créditos.',
     'checkin.earned.many': 'Você ganhou {credits} créditos.',
     'checkin.earned.other': 'Você ganhou {credits} créditos.',
+    'app.publish.carousel.limit': '{count} arquivos selecionados · Máximo {max}',
+    'app.publish.carousel.item': 'Arquivo {count}',
+    'app.publish.carousel.earlier': 'Mover para antes',
+    'app.publish.carousel.later': 'Mover para depois',
+    'app.publish.carousel.blocked': '{network} não aceita esta combinação ou quantidade de arquivos.',
+    'app.publish.carousel.closed': 'Publicações com vários arquivos ainda não estão disponíveis.',
+    'app.publish.carousel.unavailable': 'Este anexo está retido ou indisponível.',
+    'app.publish.common.remove': 'Remover',
 } as const;
 
 export default pt;

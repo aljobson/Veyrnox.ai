@@ -79,5 +79,13 @@
   "checkin.earned.two",
   "checkin.earned.few",
   "checkin.earned.many",
-  "checkin.earned.other"
+  "checkin.earned.other",
+  "app.publish.carousel.limit",
+  "app.publish.carousel.item",
+  "app.publish.carousel.earlier",
+  "app.publish.carousel.later",
+  "app.publish.carousel.blocked",
+  "app.publish.carousel.closed",
+  "app.publish.carousel.unavailable",
+  "app.publish.common.remove"
 ]

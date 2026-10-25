@@ -45,7 +45,7 @@ test('TikTok: unsupported photo MIME fails without submitting to the provider', 
     for (const mime of ['image/png', 'image/gif', undefined]) {
         let failure;
         await withFetch({
-            claim_due_social_post_targets: async () => [target({ network: 'tiktok', access_token_enc: accessTokenEnc, mime_type: mime })],
+            claim_due_social_post_targets_v2: async () => [target({ network: 'tiktok', access_token_enc: accessTokenEnc, mime_type: mime })],
             complete_social_post_target: async body => { failure = body; return { ok: true }; },
         }, async () => {
             const out = await runPublishSweep(asyncDeps);
@@ -60,7 +60,7 @@ test('TikTok: first dispatch proxies the media through our own domain and report
     const accessTokenEnc = await encryptToken('tt-access-token', cryptoCfg);
     let seenPhotoUrl;
     await withFetch({
-        claim_due_social_post_targets: async () => [target({
+        claim_due_social_post_targets_v2: async () => [target({
             network: 'tiktok', target_id: 't-tt', external_account_id: 'tt-open-id', access_token_enc: accessTokenEnc,
         })],
         mark_social_provider_submission: async (body) => {
@@ -91,7 +91,7 @@ test('TikTok: first dispatch proxies the media through our own domain and report
         };
         const out = await runPublishSweep(asyncDeps);
         assert.deepEqual(out, { ok: true, claimed: 1, published: 0, failed: 0, errors: 0 });
-        assert.deepEqual(calls, ['authorize_social_target_dispatch', 'claim_due_social_post_targets', 'authorize_social_target_dispatch', 'authorize_social_target_dispatch', 'mark_social_provider_submission', 'report_social_post_progress']);
+        assert.deepEqual(calls, ['authorize_social_target_dispatch', 'claim_due_social_post_targets_v2', 'authorize_social_target_dispatch', 'authorize_social_target_dispatch', 'mark_social_provider_submission', 'report_social_post_progress']);
         assert.ok(seenPhotoUrl.startsWith('https://veyrnox.ai/media/social/'));
     });
 });
@@ -99,7 +99,7 @@ test('TikTok: first dispatch proxies the media through our own domain and report
 test('TikTok: a still-processing status keeps polling instead of completing', async () => {
     const accessTokenEnc = await encryptToken('tt-access-token', cryptoCfg);
     await withFetch({
-        claim_due_social_post_targets: async () => [target({
+        claim_due_social_post_targets_v2: async () => [target({
             network: 'tiktok', target_id: 't-tt', access_token_enc: accessTokenEnc,
             provider_state: { publish_id: 'publish-1', started_at: new Date().toISOString() },
         })],
@@ -118,14 +118,14 @@ test('TikTok: a still-processing status keeps polling instead of completing', as
         };
         const out = await runPublishSweep(asyncDeps);
         assert.deepEqual(out, { ok: true, claimed: 1, published: 0, failed: 0, errors: 0 });
-        assert.deepEqual(calls, ['authorize_social_target_dispatch', 'claim_due_social_post_targets', 'report_social_post_progress']);
+        assert.deepEqual(calls, ['authorize_social_target_dispatch', 'claim_due_social_post_targets_v2', 'report_social_post_progress']);
     });
 });
 
 test('TikTok: SEND_TO_USER_INBOX completes as delivered, not published — it is a draft, not a live post', async () => {
     const accessTokenEnc = await encryptToken('tt-access-token', cryptoCfg);
     await withFetch({
-        claim_due_social_post_targets: async () => [target({
+        claim_due_social_post_targets_v2: async () => [target({
             network: 'tiktok', target_id: 't-tt', access_token_enc: accessTokenEnc,
             provider_state: { publish_id: 'publish-1', started_at: new Date().toISOString() },
         })],
@@ -153,7 +153,7 @@ test('TikTok: SEND_TO_USER_INBOX completes as delivered, not published — it is
 test('TikTok: a FAILED status fails the target with the provider\'s own reason', async () => {
     const accessTokenEnc = await encryptToken('tt-access-token', cryptoCfg);
     await withFetch({
-        claim_due_social_post_targets: async () => [target({
+        claim_due_social_post_targets_v2: async () => [target({
             network: 'tiktok', target_id: 't-tt', access_token_enc: accessTokenEnc,
             provider_state: { publish_id: 'publish-1', started_at: new Date().toISOString() },
         })],
@@ -180,7 +180,7 @@ test('TikTok: a poll stuck past the outer time bound fails cleanly without calli
     const accessTokenEnc = await encryptToken('tt-access-token', cryptoCfg);
     let tiktokCalls = 0;
     await withFetch({
-        claim_due_social_post_targets: async () => [target({
+        claim_due_social_post_targets_v2: async () => [target({
             network: 'tiktok', target_id: 't-tt', access_token_enc: accessTokenEnc,
             provider_state: { publish_id: 'publish-1', started_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString() },
         })],
@@ -213,7 +213,7 @@ test('YouTube: first dispatch spends one quota unit and starts a resumable sessi
     const accessTokenEnc = await encryptToken('yt-access-token', cryptoCfg);
     let quotaCalls = 0;
     await withFetch({
-        claim_due_social_post_targets: async () => [youtubeTarget({ access_token_enc: accessTokenEnc })],
+        claim_due_social_post_targets_v2: async () => [youtubeTarget({ access_token_enc: accessTokenEnc })],
         consume_youtube_upload_quota: async () => { quotaCalls += 1; return { ok: true, used: 1, limit: 80 }; },
         report_social_post_progress: async (body) => {
             assert.equal(body.p_provider_state.phase, 'uploading');
@@ -235,7 +235,7 @@ test('YouTube: first dispatch spends one quota unit and starts a resumable sessi
         const out = await runPublishSweep(asyncDeps);
         assert.deepEqual(out, { ok: true, claimed: 1, published: 0, failed: 0, errors: 0 });
         assert.equal(quotaCalls, 1);
-        assert.deepEqual(calls, ['authorize_social_target_dispatch', 'claim_due_social_post_targets', 'authorize_social_target_dispatch', 'consume_youtube_upload_quota', 'report_social_post_progress']);
+        assert.deepEqual(calls, ['authorize_social_target_dispatch', 'claim_due_social_post_targets_v2', 'authorize_social_target_dispatch', 'consume_youtube_upload_quota', 'report_social_post_progress']);
     });
 });
 
@@ -258,7 +258,7 @@ test('YouTube: quota exhaustion defers to the next Pacific day rather than burni
     const accessTokenEnc = await encryptToken('yt-access-token', cryptoCfg);
     let uploadInitCalls = 0;
     await withFetch({
-        claim_due_social_post_targets: async () => [youtubeTarget({ access_token_enc: accessTokenEnc })],
+        claim_due_social_post_targets_v2: async () => [youtubeTarget({ access_token_enc: accessTokenEnc })],
         consume_youtube_upload_quota: async () => ({ ok: false, code: 'QUOTA_EXHAUSTED' }),
         report_social_post_progress: async (body) => {
             assert.deepEqual(body.p_provider_state, {});
@@ -280,7 +280,7 @@ test('YouTube: quota exhaustion defers to the next Pacific day rather than burni
 test('YouTube: an in-progress session uploads the whole small file in one chunk and moves to processing', async () => {
     const accessTokenEnc = await encryptToken('yt-access-token', cryptoCfg);
     await withFetch({
-        claim_due_social_post_targets: async () => [youtubeTarget({
+        claim_due_social_post_targets_v2: async () => [youtubeTarget({
             access_token_enc: accessTokenEnc,
             provider_state: {
                 youtube_visibility: 'private', phase: 'uploading', session_uri: 'https://upload.example/session-1', total_bytes: 1000,
@@ -318,14 +318,14 @@ test('YouTube: an in-progress session uploads the whole small file in one chunk 
         const out = await runPublishSweep(asyncDeps);
         assert.deepEqual(out, { ok: true, claimed: 1, published: 0, failed: 0, errors: 0 });
         assert.equal(putCount, 2); // probe, then the chunk itself
-        assert.deepEqual(calls, ['authorize_social_target_dispatch', 'claim_due_social_post_targets', 'authorize_social_target_dispatch', 'authorize_social_target_dispatch', 'report_social_post_progress']);
+        assert.deepEqual(calls, ['authorize_social_target_dispatch', 'claim_due_social_post_targets_v2', 'authorize_social_target_dispatch', 'authorize_social_target_dispatch', 'report_social_post_progress']);
     });
 });
 
 test('YouTube: processing succeeded completes the target with a watch URL', async () => {
     const accessTokenEnc = await encryptToken('yt-access-token', cryptoCfg);
     await withFetch({
-        claim_due_social_post_targets: async () => [youtubeTarget({
+        claim_due_social_post_targets_v2: async () => [youtubeTarget({
             access_token_enc: accessTokenEnc,
             provider_state: { phase: 'processing', video_id: 'video-1', started_at: new Date().toISOString() },
         })],
@@ -357,7 +357,7 @@ test('YouTube: an expired upload session clears provider_state instead of retryi
     const accessTokenEnc = await encryptToken('yt-access-token', cryptoCfg);
     let uploadInitCalls = 0;
     await withFetch({
-        claim_due_social_post_targets: async () => [youtubeTarget({
+        claim_due_social_post_targets_v2: async () => [youtubeTarget({
             access_token_enc: accessTokenEnc,
             provider_state: {
                 phase: 'uploading', session_uri: 'https://upload.example/session-dead', total_bytes: 1000,
@@ -390,7 +390,7 @@ test('YouTube: a session that keeps expiring fails the post instead of restartin
     const accessTokenEnc = await encryptToken('yt-access-token', cryptoCfg);
     let completed;
     await withFetch({
-        claim_due_social_post_targets: async () => [youtubeTarget({
+        claim_due_social_post_targets_v2: async () => [youtubeTarget({
             access_token_enc: accessTokenEnc,
             provider_state: {
                 phase: 'uploading', session_uri: 'https://upload.example/session-dead', total_bytes: 1000,
@@ -416,7 +416,7 @@ test('YouTube: a quota answer that is not "exhausted" fails normally instead of 
     const accessTokenEnc = await encryptToken('yt-access-token', cryptoCfg);
     let completed;
     await withFetch({
-        claim_due_social_post_targets: async () => [youtubeTarget({ access_token_enc: accessTokenEnc })],
+        claim_due_social_post_targets_v2: async () => [youtubeTarget({ access_token_enc: accessTokenEnc })],
         consume_youtube_upload_quota: async () => ({ ok: false, code: 'SOMETHING_ELSE' }),
         report_social_post_progress: async () => assert.fail('must not defer'),
         complete_social_post_target: async (body) => { completed = body; return { ok: true }; },
@@ -432,7 +432,7 @@ test('YouTube: an access token near expiry is refreshed before dispatch, and the
     const refreshTokenEnc = await encryptToken('yt-refresh-token', cryptoCfg);
     let sawBearer;
     await withFetch({
-        claim_due_social_post_targets: async () => [youtubeTarget({
+        claim_due_social_post_targets_v2: async () => [youtubeTarget({
             access_token_enc: accessTokenEnc, refresh_token_enc: refreshTokenEnc,
             token_expires_at: new Date(Date.now() - 1000).toISOString(),
         })],
@@ -472,7 +472,7 @@ test('YouTube preserves selected visibility through quota deferral, expired sess
                 : { youtube_visibility: visibility };
             let progress;
             await withFetch({
-                claim_due_social_post_targets: async () => [youtubeTarget({ access_token_enc: accessTokenEnc, provider_state: state })],
+                claim_due_social_post_targets_v2: async () => [youtubeTarget({ access_token_enc: accessTokenEnc, provider_state: state })],
                 consume_youtube_upload_quota: async () => stage === 'quota' ? { ok: false, code: 'QUOTA_EXHAUSTED' } : { ok: true },
                 report_social_post_progress: async (body) => { progress = body.p_provider_state; return { ok: true }; },
             }, async () => {
@@ -498,12 +498,12 @@ test('YouTube rejects invalid persisted visibility before calling upload or cons
     for (const visibility of ['invalid', null, 12]) {
         let completed;
         await withFetch({
-            claim_due_social_post_targets: async () => [youtubeTarget({ access_token_enc: accessTokenEnc, provider_state: { youtube_visibility: visibility } })],
+            claim_due_social_post_targets_v2: async () => [youtubeTarget({ access_token_enc: accessTokenEnc, provider_state: { youtube_visibility: visibility } })],
             complete_social_post_target: async (body) => { completed = body; return { ok: true }; },
         }, async (calls) => {
             assert.equal((await runPublishSweep(asyncDeps)).failed, 1);
             assert.equal(completed.p_error, 'invalid_youtube_visibility');
-            assert.deepEqual(calls, ['authorize_social_target_dispatch', 'claim_due_social_post_targets', 'authorize_social_target_dispatch', 'complete_social_post_target']);
+            assert.deepEqual(calls, ['authorize_social_target_dispatch', 'claim_due_social_post_targets_v2', 'authorize_social_target_dispatch', 'complete_social_post_target']);
         });
     }
 });

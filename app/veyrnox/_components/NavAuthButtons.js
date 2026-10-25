@@ -111,7 +111,7 @@ export function NavAuthButtons({ account: given }) {
           aria-expanded={menuOpen}
           aria-controls="vx-account-menu"
           aria-label={t('public.account.name', { name: account.name })}
-          className="flex items-center min-h-11 gap-2 rounded-full ps-1 pe-1 sm:pe-3 py-1 text-sm font-semibold text-vx-fg-body hover:text-vx-fg hover:bg-vx-fg/[0.05]"
+          className="flex min-h-11 items-center gap-2 rounded-full py-1 pe-1 ps-1 text-sm font-semibold text-vx-fg-body hover:bg-vx-fg/[0.05] hover:text-vx-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-accent sm:pe-3"
         >
           <span aria-hidden="true" className="flex h-8 w-8 items-center justify-center rounded-full bg-vx-accent text-vx-accent-ink font-extrabold">
             {account.initial}
@@ -124,10 +124,10 @@ export function NavAuthButtons({ account: given }) {
             id="vx-account-menu"
             className="absolute end-0 top-full mt-2 max-h-[calc(100dvh-5rem)] w-60 overflow-y-auto rounded-xl border border-vx-border bg-vx-panel p-1.5 shadow-2xl z-50"
           >
-            <div className="px-3 py-2 border-b border-vx-border mb-1">
-              <div className="text-sm font-bold text-vx-fg truncate">{account.name}</div>
+            <div className="mb-1 border-b border-vx-border px-3 py-2">
+              <div className="break-words text-sm font-bold text-vx-fg">{account.name}</div>
               {account.email && account.email !== account.name && (
-                <div className="text-xs text-vx-fg-muted truncate">{account.email}</div>
+                <div className="break-all text-xs text-vx-fg-muted">{account.email}</div>
               )}
             </div>
             {links.map((l) => (
@@ -135,7 +135,7 @@ export function NavAuthButtons({ account: given }) {
                 key={l.href}
                 href={href(l.href)}
                 onClick={() => setMenuOpen(false)}
-                className="flex min-h-11 items-center rounded-lg px-3 py-2 text-sm text-vx-fg-body hover:bg-vx-fg/[0.05] hover:text-vx-fg"
+                className="flex min-h-11 items-center rounded-lg px-3 py-2 text-sm text-vx-fg-body hover:bg-vx-fg/[0.05] hover:text-vx-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-accent"
               >
                 {t.label(l.label)}
               </Link>
@@ -145,7 +145,7 @@ export function NavAuthButtons({ account: given }) {
               // Focus goes to the account button first: this one unmounts with the
               // list, and the dialog returns focus to whatever held it on opening.
               onClick={() => { triggerRef.current?.focus(); setMenuOpen(false); setConfirming(true); }}
-              className="block min-h-11 w-full text-start rounded-lg px-3 py-2 text-sm text-vx-fg-body hover:bg-vx-fg/[0.05] hover:text-vx-fg"
+              className="block min-h-11 w-full rounded-lg px-3 py-2 text-start text-sm text-vx-fg-body hover:bg-vx-fg/[0.05] hover:text-vx-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-accent"
             >
               {t('public.account.signOut')}
             </button>

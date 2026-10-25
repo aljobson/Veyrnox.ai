@@ -83,6 +83,14 @@ const ru = {
     'checkin.earned.few': 'Вы получили {credits} кредита.',
     'checkin.earned.many': 'Вы получили {credits} кредитов.',
     'checkin.earned.other': 'Вы получили {credits} кредита.',
+    'app.publish.carousel.limit': 'Выбрано файлов: {count} · Максимум: {max}',
+    'app.publish.carousel.item': 'Файл {count}',
+    'app.publish.carousel.earlier': 'Переместить раньше',
+    'app.publish.carousel.later': 'Переместить позже',
+    'app.publish.carousel.blocked': '{network} не поддерживает такое сочетание или количество файлов.',
+    'app.publish.carousel.closed': 'Публикации с несколькими файлами пока недоступны.',
+    'app.publish.carousel.unavailable': 'Это вложение заблокировано или недоступно.',
+    'app.publish.common.remove': 'Удалить',
 } as const;
 
 export default ru;

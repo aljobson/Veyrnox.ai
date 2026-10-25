@@ -55,7 +55,7 @@ export default function Admin() {
 
   return (
     <div className="min-h-dvh">
-      <AppNav active="explore" />
+      <AppNav />
 
       <Main className="max-w-[1400px] mx-auto px-4 sm:px-8 pt-10 pb-6">
         <Chip tone="danger" className="mb-3">ADMIN · OPS</Chip>

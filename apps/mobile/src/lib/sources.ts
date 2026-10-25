@@ -69,6 +69,13 @@ export function requiredNamedSlots(model: CatalogModel, names: readonly SlotKind
         .map((slot) => ({ ...slot, required: true }));
 }
 
+// The media kind a picked file's MIME type belongs to, or null when the server takes none like it.
+export function kindOfMime(mimeType: string | undefined): SlotKind | null {
+    const raw = (mimeType ?? '').trim().toLowerCase();
+    const type = ALIASES[raw] ?? raw;
+    return Object.hasOwn(ALLOWED, type) ? ALLOWED[type].kind : null;
+}
+
 export function checkPicked(kind: SlotKind, file: PickedFile, maxSeconds?: number): PickedCheck {
     const raw = (file.mimeType ?? '').trim().toLowerCase();
     const type = ALIASES[raw] ?? raw;

@@ -24,7 +24,9 @@ test('production public variables retain Cloudflare text-binding headroom', () =
     // Cinema flag goes into that JSON object, not into a new var.
     // 2026-10-24: ADR-0256 adds SUPPLIER_ROUTES_SHADOW and SUPPLIER_ROUTES_ENABLED (59 to 61 vars). The live Worker has 50 secrets,
     // so 61 vars is 111 text bindings against the 128 limit (17 free), more headroom than the three this cap was set to keep. Cap 62.
-    assert.ok(Object.keys(config.vars).length <= 62, 'production vars must stay at or below 62');
+    // ADR-0262 adds the frozen work order's standalone carousel switch: 63 vars,
+    // at the recorded 50-secret footprint, 113 bindings with 15 slots remaining.
+    assert.ok(Object.keys(config.vars).length <= 63, 'production vars must stay at or below 63');
 });
 
 test('daily check-in is on in production and accepts only explicit boolean strings elsewhere', () => {

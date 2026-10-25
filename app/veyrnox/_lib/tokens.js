@@ -71,6 +71,7 @@ export function kindOf(modality) {
 export {
   PRESETS,
   PRESET_CATEGORIES,
+  QUICK_PRESET_CATEGORIES,
   WALL_PRESETS,
   ALL_TEMPLATES,
   templatesIn,

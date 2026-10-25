@@ -30,6 +30,23 @@ const validBody = () => ({
     media: [{ mediaType: 'image', jobId }],
 });
 
+test('carousel admission rejects scheduled posts before the writer and names a blocking network', async () => {
+    const prior = process.env.PUBLISH_CAROUSEL_ENABLED;
+    try {
+            process.env.PUBLISH_CAROUSEL_ENABLED = 'false'; stub();
+            const body = { ...validBody(), media: [validBody().media[0], { mediaType: 'image', jobId: postId }] };
+            const res = await POST(postRequest(body));
+            assert.equal(res.status, 400);
+            assert.equal((await res.json()).error, 'carousel_not_open');
+            assert.equal(calls.some(c => c.name.startsWith('create_social_post')), false);
+        process.env.PUBLISH_CAROUSEL_ENABLED = 'true';
+        stub({ list_social_accounts: { ok: true, accounts: [{ id: accountId, network: 'twitter', status: 'active' }] } });
+        const blocked = await POST(postRequest({ ...validBody(), media: Array.from({ length: 5 }, () => validBody().media[0]) }));
+        assert.deepEqual(await blocked.json(), { error: 'media_count_not_supported', network: 'twitter' });
+        assert.equal(calls.some(c => c.name.startsWith('create_social_post')), false);
+    } finally { if (prior === undefined) delete process.env.PUBLISH_CAROUSEL_ENABLED; else process.env.PUBLISH_CAROUSEL_ENABLED = prior; }
+});
+
 test('POST: only the verified TikTok review subject can queue a sandbox image', async () => {
     const names = ['PUBLISH_RELEASED_NETWORKS', 'TIKTOK_REVIEW_ENABLED', 'TIKTOK_REVIEW_AUTH_IDS'];
     const previous = names.map(k => process.env[k]);
