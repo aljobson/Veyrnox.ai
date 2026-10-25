@@ -41,6 +41,8 @@ export default {
     'library.costFree': 'Free',
     'library.schedule': 'Schedule this',
     'library.scheduleLabel': 'Schedule {name} for posting',
+    'library.reuse': 'Use',
+    'library.reuseLabel': 'Use {name} in another creative tool',
     'library.older': 'Show older creations',
     'library.noMatch': 'Nothing matches these filters.',
     'library.noMatchOlder': 'Nothing matches in what is loaded. Show older creations to keep looking.',

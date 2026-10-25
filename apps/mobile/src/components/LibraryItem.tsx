@@ -12,16 +12,18 @@ interface Props {
     readonly grid: boolean;
     readonly starred: boolean;
     readonly canSchedule: boolean;
+    readonly canReuse: boolean;
     readonly onOpen: () => void;
     readonly onStar: () => void;
     readonly onSchedule: () => void;
+    readonly onReuse: () => void;
 }
 
 const GLYPH: Record<Kind, string> = { image: '▣', video: '▶', audio: '♪' };
 
 // One creation in the Library: what it is, its state, its price, when its file goes, and the actions that apply.
 // A failed job says how many credits came back; a file near the end of its life says when.
-export function LibraryItem({ job, name, kind, grid, starred, canSchedule, onOpen, onStar, onSchedule }: Props) {
+export function LibraryItem({ job, name, kind, grid, starred, canSchedule, canReuse, onOpen, onStar, onSchedule, onReuse }: Props) {
     const status = rowStatus(job);
     const expiry = expiryOf(job);
     const when = new Date(job.created_at).toLocaleDateString();
@@ -55,6 +57,11 @@ export function LibraryItem({ job, name, kind, grid, starred, canSchedule, onOpe
                         <Text style={styles.scheduleText}>{t('library.schedule')}</Text>
                     </Pressable>
                 ) : null}
+                {canReuse ? (
+                    <Pressable accessibilityRole="button" accessibilityLabel={t('library.reuseLabel', { name })} style={[styles.schedule, touchTarget]} onPress={onReuse}>
+                        <Text style={styles.scheduleText}>{t('library.reuse')}</Text>
+                    </Pressable>
+                ) : null}
             </View>
         </View>
     );
@@ -70,7 +77,7 @@ const styles = StyleSheet.create({
     status: { color: colors.accent, fontWeight: '600' },
     statusBad: { color: colors.danger },
     muted: { color: colors.muted, fontSize: 13 },
-    actions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    actions: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
     star: { minWidth: 44, alignItems: 'center' },
     starText: { color: colors.muted, fontSize: 22 },
     starOn: { color: colors.money },

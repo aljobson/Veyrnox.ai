@@ -6,12 +6,14 @@ export interface NextSteps {
     readonly edit: boolean;
     readonly publish: boolean;
     readonly makeAnother: boolean;
+    readonly reuse: boolean;
 }
 
 export function nextStepsFor(mime: string, modelId: string | null): NextSteps {
     const video = mime.startsWith('video/');
     const image = mime.startsWith('image/');
-    return { edit: video, publish: video || image, makeAnother: !!modelId };
+    const audio = mime.startsWith('audio/');
+    return { edit: video, publish: video || image, makeAnother: !!modelId, reuse: video || image || audio };
 }
 
 export const editHref = (jobId: string) => ({ pathname: '/edit', params: { jobId } }) as const;

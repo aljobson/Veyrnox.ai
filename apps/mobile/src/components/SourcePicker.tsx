@@ -32,6 +32,8 @@ interface SourcePickerProps {
     // A source uploaded on the preceding guided-tool screen. The key itself is
     // held by the parent; this only renders the picker in its ready state.
     readonly initialReady?: boolean;
+    // Human-readable state for a preselected Library creation. The route never carries its asset URL.
+    readonly initialReadyLabel?: string;
 }
 
 type Status = { readonly step: 'empty' } | { readonly step: 'uploading'; readonly fraction: number } | { readonly step: 'ready' };
@@ -55,12 +57,12 @@ async function choose(kind: Slot['kind']): Promise<PickedFile | null> {
     return { uri: a.uri, mimeType: a.mimeType, size: a.fileSize, durationSeconds: typeof a.duration === 'number' ? a.duration / 1000 : undefined };
 }
 
-export function SourcePicker({ slot, api, onChange, onLibrary, onBusy, initial, drawable = false, hint, initialReady = false }: SourcePickerProps) {
+export function SourcePicker({ slot, api, onChange, onLibrary, onBusy, initial, drawable = false, hint, initialReady = false, initialReadyLabel }: SourcePickerProps) {
     const [status, setStatus] = useState<Status>(initialReady ? { step: 'ready' } : { step: 'empty' });
     const [preview, setPreview] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [choosing, setChoosing] = useState(false);
-    const [libraryName, setLibraryName] = useState<string | null>(null);
+    const [libraryName, setLibraryName] = useState<string | null>(initialReadyLabel ?? null);
     const [drawing, setDrawing] = useState<number | null>(null);
     const DrawScreen = useMemo(() => drawable ? loadDrawOnImage() : null, [drawable]);
     const owned = useRef<string | null>(null);

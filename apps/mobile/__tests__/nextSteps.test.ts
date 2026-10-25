@@ -8,25 +8,25 @@ import { editHref, makeAnotherHref, nextStepsFor, preloadJob, publishHref } from
 
 describe('next steps after a result (N5)', () => {
     test('a video can be edited, published or made again', () => {
-        expect(nextStepsFor('video/mp4', 'kling-3')).toEqual({ edit: true, publish: true, makeAnother: true });
+        expect(nextStepsFor('video/mp4', 'kling-3')).toEqual({ edit: true, publish: true, makeAnother: true, reuse: true });
     });
 
     test('an image can be published or made again, not edited', () => {
-        expect(nextStepsFor('image/png', 'nano-banana')).toEqual({ edit: false, publish: true, makeAnother: true });
-        expect(nextStepsFor('image/webp', 'seedream-4')).toEqual({ edit: false, publish: true, makeAnother: true });
+        expect(nextStepsFor('image/png', 'nano-banana')).toEqual({ edit: false, publish: true, makeAnother: true, reuse: true });
+        expect(nextStepsFor('image/webp', 'seedream-4')).toEqual({ edit: false, publish: true, makeAnother: true, reuse: true });
     });
 
-    test('audio can only be made again: the composer takes images and videos', () => {
-        expect(nextStepsFor('audio/mpeg', 'tts-1')).toEqual({ edit: false, publish: false, makeAnother: true });
+    test('audio can be made again or reused: the publishing composer takes images and videos', () => {
+        expect(nextStepsFor('audio/mpeg', 'tts-1')).toEqual({ edit: false, publish: false, makeAnother: true, reuse: true });
     });
 
     test('Make another needs the model; without it only the file steps show', () => {
-        expect(nextStepsFor('video/mp4', null)).toEqual({ edit: true, publish: true, makeAnother: false });
-        expect(nextStepsFor('image/png', '')).toEqual({ edit: false, publish: true, makeAnother: false });
+        expect(nextStepsFor('video/mp4', null)).toEqual({ edit: true, publish: true, makeAnother: false, reuse: true });
+        expect(nextStepsFor('image/png', '')).toEqual({ edit: false, publish: true, makeAnother: false, reuse: true });
     });
 
     test('an unknown file type offers nothing it cannot honour', () => {
-        expect(nextStepsFor('application/zip', 'm')).toEqual({ edit: false, publish: false, makeAnother: true });
+        expect(nextStepsFor('application/zip', 'm')).toEqual({ edit: false, publish: false, makeAnother: true, reuse: false });
     });
 
     test('the links carry the file or the model', () => {
@@ -62,6 +62,7 @@ describe('the screens use them', () => {
         expect(job).toContain('router.push(editHref(id))');
         expect(job).toContain('router.push(publishHref(id))');
         expect(job).toContain('router.push(makeAnotherHref(modelId))');
+        expect(job).toContain('router.push(creativeReuseHref(id, reusableKind))');
         expect(job).toContain("accessibilityRole=\"header\">{t('job.next.title')}");
     });
 

@@ -12,6 +12,7 @@ import { REVIEW_ASK_DELAY_MS, claimReviewAsk, shouldAskForReview } from '../../.
 import { loadReviewAsk } from '../../../lib/storeReview';
 import { mediaApi, waitForJob, type JobState } from '../../../lib/media';
 import { editHref, makeAnotherHref, nextStepsFor, publishHref } from '../../../lib/nextSteps';
+import { creativeReuseHref, kindForMime } from '../../../lib/creativeReuse';
 import { saveOutput, shareOutput } from '../../../lib/output';
 import { colors } from '../../../theme';
 import { plural, t } from '../../../lib/i18n';
@@ -187,7 +188,8 @@ export default function JobScreen() {
 
     const canSave = !!asset && (asset.mime.startsWith('image/') || asset.mime.startsWith('video/'));
 
-    const next = asset ? nextStepsFor(asset.mime, modelId) : { edit: false, publish: false, makeAnother: false };
+    const next = asset ? nextStepsFor(asset.mime, modelId) : { edit: false, publish: false, makeAnother: false, reuse: false };
+    const reusableKind = asset ? kindForMime(asset.mime) : null;
 
     return (
         <View style={styles.screen}>
@@ -247,7 +249,7 @@ export default function JobScreen() {
             )}
             {asset && stems.length === 0 ? (
                 <ScrollView style={styles.actions} contentContainerStyle={styles.actionsBody}>
-                    {next.edit || next.publish || next.makeAnother ? (
+                    {next.edit || next.publish || next.makeAnother || next.reuse ? (
                         <View style={styles.nextBlock}>
                             <Text style={styles.nextTitle} accessibilityRole="header">{t('job.next.title')}</Text>
                             <View style={styles.nextRow}>
@@ -264,6 +266,11 @@ export default function JobScreen() {
                                 {next.makeAnother && modelId ? (
                                     <Pressable accessibilityRole="button" style={styles.nextButton} onPress={() => router.push(makeAnotherHref(modelId))}>
                                         <Text style={styles.nextText}>{t('job.next.makeAnother')}</Text>
+                                    </Pressable>
+                                ) : null}
+                                {next.reuse && reusableKind ? (
+                                    <Pressable accessibilityRole="button" style={styles.nextButton} onPress={() => router.push(creativeReuseHref(id, reusableKind))}>
+                                        <Text style={styles.nextText}>{t('job.next.reuse')}</Text>
                                     </Pressable>
                                 ) : null}
                             </View>

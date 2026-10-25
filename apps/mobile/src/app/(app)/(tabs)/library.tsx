@@ -7,9 +7,10 @@ import { StaleNote } from '../../../components/StaleNote';
 import { appCache, getCacheUser } from '../../../lib/appCache';
 import { POLICIES, type CacheMeta } from '../../../lib/cache';
 import { observe } from '../../../lib/network';
-import { KIND_FILTERS, STATE_FILTERS, canSchedule, filterJobs, kindMap, readFavourites, toggled, writeFavourites, type KindFilter, type StateFilter, type View as LayoutView } from '../../../lib/libraryView';
+import { KIND_FILTERS, STATE_FILTERS, canReuse, canSchedule, filterJobs, kindMap, readFavourites, toggled, writeFavourites, type KindFilter, type StateFilter, type View as LayoutView } from '../../../lib/libraryView';
 import { fetchCatalogCached, mediaApi, type CatalogModel, type Job, type JobPage } from '../../../lib/media';
 import { publishHref } from '../../../lib/nextSteps';
+import { creativeReuseHref } from '../../../lib/creativeReuse';
 import { VEY_CLEARANCE } from '../../../components/VeyMascot';
 import { colors, fonts } from '../../../theme';
 import { t } from '../../../lib/i18n';
@@ -134,19 +135,22 @@ export default function Library() {
                             </Pressable>
                         ) : undefined
                     }
-                    renderItem={({ item }) => (
-                        <LibraryItem
+                    renderItem={({ item }) => {
+                        const kind = kinds.get(item.model_id);
+                        return <LibraryItem
                             job={item}
                             name={item.label || names.get(item.model_id) || item.model_id}
-                            kind={kinds.get(item.model_id)}
+                            kind={kind}
                             grid={view === 'grid'}
                             starred={favourites.includes(item.job_id)}
                             canSchedule={canSchedule(item, kinds)}
+                            canReuse={canReuse(item, kinds)}
                             onOpen={() => router.push({ pathname: '/job/[id]', params: { id: item.job_id } })}
                             onStar={() => star(item.job_id)}
                             onSchedule={() => router.push(publishHref(item.job_id))}
+                            onReuse={() => { if (kind) router.push(creativeReuseHref(item.job_id, kind)); }}
                         />
-                    )}
+                    }}
                 />
             )}
         </View>
