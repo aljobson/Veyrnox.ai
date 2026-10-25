@@ -67,8 +67,9 @@ test('the shared studio renders upload controls even for guarded workflows', asy
 
 test('the dedicated voice-cloning workflow provides training and verification audio uploads', async () => {
   const studio = await readFile(new URL('../app/veyrnox/_components/VoiceCloneStudio.js', import.meta.url), 'utf8');
-  assert.equal((studio.match(/type="file" accept="audio\/mpeg,audio\/wav"/g) || []).length, 2);
-  assert.match(studio, /uploadPrivateAudio\(sample\)/);
+  assert.equal((studio.match(/type="file" accept="audio\/mpeg,audio\/wav/g) || []).length, 3);
+  assert.match(studio, /data-testid="source-upload-audio"/);
+  assert.equal((studio.match(/uploadPrivateAudio\(sample\)/g) || []).length, 2);
   assert.match(studio, /uploadPrivateAudio\(verification\)/);
 });
 

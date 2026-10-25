@@ -95,10 +95,18 @@ export default function VoiceCloneStudio() {
 
   async function createProfile() {
     await run('create', async () => {
-      await gatewayFetch('/voice-profiles', { method: 'POST', body: JSON.stringify({
+      const result = await gatewayFetch('/voice-profiles', { method: 'POST', body: JSON.stringify({
         name, language, owner_attestation: attested, consent_version: CONSENT_VERSION,
       }) });
-      setName(''); setAttested(false); await load();
+      const created = result?.profile;
+      if (!created?.id) throw new Error('profile_create_unavailable');
+      setProfiles((previous) => [created, ...previous]);
+      setName(''); setAttested(false);
+      const sourceKey = await uploadPrivateAudio(sample);
+      await gatewayFetch(`/voice-profiles/${created.id}/samples`, {
+        method: 'POST', body: JSON.stringify({ source_key: sourceKey }),
+      });
+      setSample(null); await load();
     });
   }
 
@@ -191,7 +199,8 @@ export default function VoiceCloneStudio() {
             <label className="text-sm font-bold">{t('app.voiceClone.language')}<select value={language} onChange={(event) => setLanguage(event.target.value)} className="mt-2 w-full rounded-xl border border-vx-field bg-vx-base px-4 py-3 font-normal"><option value="en">{t('app.voiceClone.language.en')}</option><option value="es">{t('app.voiceClone.language.es')}</option><option value="fr">{t('app.voiceClone.language.fr')}</option><option value="de">{t('app.voiceClone.language.de')}</option><option value="pt">{t('app.voiceClone.language.pt')}</option><option value="it">{t('app.voiceClone.language.it')}</option><option value="pl">{t('app.voiceClone.language.pl')}</option><option value="hi">{t('app.voiceClone.language.hi')}</option><option value="ja">{t('app.voiceClone.language.ja')}</option><option value="ko">{t('app.voiceClone.language.ko')}</option></select></label>
           </div>
           <label className="mt-5 flex items-start gap-3 text-sm leading-6"><input type="checkbox" checked={attested} onChange={(event) => setAttested(event.target.checked)} className="mt-1 h-5 w-5 accent-vx-accent" /><span>{t('app.voiceClone.attestation')}</span></label>
-          <button type="button" disabled={!available || busy || !name.trim() || !attested} onClick={createProfile} className="mt-5 min-h-12 rounded-full bg-vx-accent px-6 text-sm font-black text-vx-accent-ink disabled:opacity-45">{busy === 'create' ? t('app.voiceClone.working') : t('app.voiceClone.createAction')}</button>
+          <label className="mt-5 block text-sm font-bold">{t('app.voiceClone.initialSample')}<span className="mt-1 block text-xs font-normal leading-5 text-vx-fg-muted">{t('app.voiceClone.initialSampleHelp')}</span><input data-testid="source-upload-audio" aria-label={t('app.voiceClone.initialSample')} type="file" accept="audio/mpeg,audio/wav,audio/x-wav,audio/wave" onChange={(event) => { setSample(event.target.files?.[0] || null); setError(''); }} className="mt-3 block w-full text-sm" /></label>
+          <button type="button" disabled={!available || busy || !name.trim() || !attested || !sample} onClick={createProfile} className="mt-5 min-h-12 rounded-full bg-vx-accent px-6 text-sm font-black text-vx-accent-ink disabled:opacity-45">{busy === 'create' ? t('app.voiceClone.working') : t('app.voiceClone.createAction')}</button>
         </section>}
 
         {profile?.status === 'samples_pending' && <section className={`${card} p-5 sm:p-6`}>
