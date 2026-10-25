@@ -5,9 +5,9 @@ const base = {
   negativePrompt: 'identity drift, warped anatomy, flicker, captions, logos, watermark',
 };
 const steps = [
-  'Upload a clear photo you have permission to use.',
-  'Edit the prompt to personalise the scene.',
-  'Generate an inspired 5s or 10s shot, or build a longer multi-shot film in Film Studio.',
+  'Upload a clear starting image that matches the subject guidance.',
+  'Use this template to load its editable ten-second prompt and settings.',
+  'Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film.',
 ];
 const recipes = [
   { id:'street-meeting-motorbike', name:'STREET MEETING', category:'CINEMATIC', aspect:'16:9', previewAspect:'16 / 9', bg:'linear-gradient(155deg,#1a292b,#75726b,#d9cbbc)', action:'Stage a spontaneous meeting between two people beside a parked motorbike. Move from a wide street view to a closer fashion portrait with a smooth camera move and natural gestures.' },
