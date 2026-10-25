@@ -83,11 +83,46 @@ export const ODDLING_PRESET_SOURCES = [
 
 export const ODDLING_LIBRARY_KEY = 'veyrnox_oddling_library_v1';
 const LIBRARY_LIMIT = 24;
+const ODDLING_PORTRAIT_MODEL_PRIORITY = ['flux-2-pro', 'nano-banana-pro-grsai', 'seedream-4', 'nano-banana-kie'];
+const ODDLING_REFERENCE_MODEL_PRIORITY = ['nano-banana-pro-edit-grsai', 'nano-banana-pro-edit'];
 const RANDOM_STYLE_GROUPS = [
   'hair', 'hair_color', 'head_shape', 'neck', 'eye_shape', 'eye_color',
   'face_features', 'facial_hair', 'wardrobe_style', 'accessories',
   'distinctive_features', 'rendering_style',
 ];
+
+// A direct visit is a genuinely new Oddling. These two neutral choices make
+// the first preview useful without smuggling in a cast member's name, premise,
+// show or visual canon.
+export function freshOddlingPicks() {
+  return { character_type: 'Human', rendering_style: 'Hyper-Realistic' };
+}
+
+function openPromptImageModels(models, needsReference) {
+  return (Array.isArray(models) ? models : []).filter((model) => (
+    model?.kind === 'image'
+    && !model.gated
+    && !model.isEdit
+    && !model.takesPlan
+    && !model.takesTopic
+    && model.takesPrompt !== false
+    && Number.isFinite(model.credits)
+    && Object.values(model.media || {}).some((slot) => slot?.required) === needsReference
+    && (!needsReference || model.media?.image?.required === true)
+    && (!needsReference || !Object.entries(model.media || {}).some(([slot, spec]) => slot !== 'image' && spec?.required))
+  ));
+}
+
+function preferredModel(models, priority) {
+  const byId = new Map(models.map((model) => [model.id, model]));
+  return priority.map((id) => byId.get(id)).find(Boolean) || models.find((model) => model.bestValue) || models[0];
+}
+
+/** Product-owned portrait choice: prompt-led when starting fresh, edit-led when an image is supplied. */
+export function oddlingPortraitModel(models, { reference = false } = {}) {
+  const eligible = openPromptImageModels(models, reference);
+  return preferredModel(eligible, reference ? ODDLING_REFERENCE_MODEL_PRIORITY : ODDLING_PORTRAIT_MODEL_PRIORITY);
+}
 
 export function groupById(id) {
   return CHARACTER_GROUPS.find((group) => group.id === id) || null;
@@ -109,20 +144,21 @@ export function randomizeOddlingStyle(picks, random = Math.random) {
 
 // Everything in the studio prompt except the character head. Create adds the
 // head itself from the handed-over picks, so this is what the handoff carries.
-export function buildOddlingDirection({ mode = 'portrait', motionId = '', scene = '', referenceNote = '' }) {
+export function buildOddlingDirection({ mode = 'portrait', motionId = '', scene = '', referenceNote = '', hasReference = false }) {
   const motion = ODDLING_MOTIONS.find((item) => item.id === motionId);
   return [
     mode === 'motion'
       ? 'vertical short-form creator video, full body visible at the opening, consistent identity throughout the shot'
       : 'full-body editorial creator portrait, complete silhouette visible, character-sheet clarity',
     motion?.phrase,
+    hasReference ? 'use the supplied image as the base composition and visual material; apply the requested Oddling traits while keeping the result an original fictional adult character' : '',
     String(referenceNote || '').trim() ? `visual reference direction: ${String(referenceNote).trim()}` : '',
     String(scene || '').trim(),
   ].filter(Boolean).join(', ');
 }
 
-export function buildOddlingStudioPrompt({ picks, mode = 'portrait', motionId = '', scene = '', referenceNote = '' }) {
-  return buildCharacterPrompt(buildOddlingDirection({ mode, motionId, scene, referenceNote }), picks);
+export function buildOddlingStudioPrompt({ picks, mode = 'portrait', motionId = '', scene = '', referenceNote = '', hasReference = false }) {
+  return buildCharacterPrompt(buildOddlingDirection({ mode, motionId, scene, referenceNote, hasReference }), picks);
 }
 
 function cleanLibraryItem(item) {

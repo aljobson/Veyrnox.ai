@@ -20,7 +20,7 @@ export const scenarios = [
   { area: 'generation', name: 'GenerationPanel', props: { voiceover: true }, key: 'app.editor.generation.voiceoverIntro' },
   { area: 'generation', name: 'GenerationPanel', props: { avatar: true }, key: 'app.editor.generation.avatarIntro' },
   { area: 'generation', name: 'GenerationPanel', props: { voiceover: true }, states: ['separation'], key: 'app.editor.generation.separationPolicy' },
-  { area: 'oddlings', name: 'default', key: 'app.oddlings.opensCreate' },
+  { area: 'oddlings', name: 'default', key: 'app.oddlings.startFresh' },
   { area: 'editor', name: 'Editor', key: 'app.editor.legacy.policy' },
   { area: 'create', name: 'default', key: 'app.create.totalCost' },
 ];
