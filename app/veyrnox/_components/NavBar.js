@@ -356,6 +356,7 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
     { key: 'explore', href: '/app',         label: t("label.Explore") },
     { key: 'oddlings', href: '/app/oddlings', label: t("label.Oddlings") },
     { key: 'create',  href: '/app/create',  label: t("label.Create") },
+    { key: 'features', href: '/app/features', label: t('label.Tools') },
     // Video agent (ADR-0074): bought from a plan on its own page, so it has its own tab and is not in the Create picker.
     { key: 'agent', href: '/app/video-agent', label: t("app.nav.videoAgent") },
     { key: 'skills', href: '/app/skills', label: t('label.Studio skills') },
@@ -382,6 +383,7 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
     ] },
     { id: 'tools', label: t('app.nav.side.tools'), items: [
       { key: 'create', href: '/app/create', label: t('label.Create'), icon: 'image' },
+      { key: 'features', href: '/app/features', label: t('label.Tools'), icon: 'wand' },
       { key: 'film', href: '/app/film-studio', label: t('label.Film Studio'), icon: 'film' },
       { key: 'oddlings', href: '/app/oddlings', label: t('label.Oddlings'), icon: 'character' },
       ...(enhanceEnabled ? [{ key: 'enhance', href: '/app/enhance', label: t('label.Enhance'), icon: 'wand' }] : []),
