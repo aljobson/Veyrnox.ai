@@ -120,12 +120,12 @@ export function MediaComposer({ kind, media, prompt, onPrompt }) {
             className="px-4 py-2 text-start text-xs text-vx-accent underline disabled:opacity-50">{t("app.chat.media.chooseControls")}</button>
         )}
 
-        {model && Object.keys(model.media || {}).length === 0 && (
+        {model && (
           <div className="border-b border-vx-border px-3 py-3">
             <div className="flex items-center gap-3">
               <label className="shrink-0 cursor-pointer rounded-full border border-vx-border px-3.5 py-1.5 font-vx-mono text-[11px] font-bold text-vx-fg-muted hover:text-vx-fg has-focus-visible:outline-solid has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-vx-accent">
                 {t('app.create.attach.button')}
-                <input data-testid="chat-media-attach" type="file" accept={attachAccept()} disabled={busy} className="sr-only"
+                <input data-testid="chat-media-attach" type="file" multiple accept={attachAccept()} disabled={busy} className="sr-only"
                   onChange={(e) => { attachFromDevice(e.target.files); e.target.value = ''; }} />
               </label>
               <span className="text-xs text-vx-fg-muted">{t('app.create.attach.hint')}</span>
@@ -134,9 +134,10 @@ export function MediaComposer({ kind, media, prompt, onPrompt }) {
         )}
         {attachNotice && (
           <p role="status" className="border-b border-vx-border px-4 py-2 text-xs text-vx-fg-muted">
-            {attachNotice.code === 'switched'
-              ? t('app.create.attach.switched', { name: attachNotice.name })
-              : t('app.create.attach.unsupported')}
+            {attachNotice.unsupported ? t('app.create.attach.unsupported') : [
+              attachNotice.switched && t('app.create.attach.switched', { name: attachNotice.switched }),
+              attachNotice.unused > 0 && t('app.create.attach.unused', { count: number(attachNotice.unused) }),
+            ].filter(Boolean).join(' ')}
           </p>
         )}
 
