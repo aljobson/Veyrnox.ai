@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { GatewayError, gatewayFetch, makeIdempotencyKey, notifyBalanceChanged } from '../../_lib/gateway';
+import { attachSlotFor, modelForAttachment } from '../../../../lib/createAttach.mjs';
 import { pushJobHistory } from '../../_lib/jobHistory';
 import { useStudioJobs } from '../../_lib/useStudioJobs';
 import { useFreeAllowance } from '../../_lib/useFreeAllowance';
@@ -37,6 +38,7 @@ export function useChatMediaGeneration({ kind, models, catalogLive }) {
   const [sources, setSources] = useState({});
   const [libraryFor, setLibraryFor] = useState(null);
   const [consent, setConsent] = useState(false);
+  const [attachNotice, setAttachNotice] = useState(null);
   const [balance, setBalance] = useState(null);
   const [error, setError] = useState(null);
   const [jobKind, setJobKind] = useState(null);
@@ -127,6 +129,20 @@ export function useChatMediaGeneration({ kind, models, catalogLive }) {
       return next;
     });
     setConsent(false);
+  }
+
+  // The paperclip shown for every model: the file's type picks the slot, and the
+  // model switches to one of this composer's that takes it. A notice is a code
+  // ('unsupported', or 'switched' with the model's name) for the composer to word.
+  function attachFromDevice(fileList) {
+    const file = fileList && fileList[0];
+    if (!file) return;
+    const slot = attachSlotFor(file);
+    const target = slot && modelForAttachment(availableModels.filter((item) => !item.gated), model, slot);
+    if (!target) { setAttachNotice({ code: 'unsupported' }); return; }
+    if (target.id !== model?.id) { selectModel(target.id); setAttachNotice({ code: 'switched', name: target.name }); }
+    else setAttachNotice(null);
+    pickSource(slot, file);
   }
 
   async function uploadSource(file) {
@@ -229,6 +245,8 @@ export function useChatMediaGeneration({ kind, models, catalogLive }) {
     sources,
     media,
     pickSource,
+    attachFromDevice,
+    attachNotice,
     libraryFor,
     setLibraryFor,
     consent,

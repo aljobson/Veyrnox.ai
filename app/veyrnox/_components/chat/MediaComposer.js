@@ -8,6 +8,7 @@ import { generationSlotKind, generationMimeTypes } from '../../../../lib/generat
 import { ERROR_COPY } from '../../_lib/createErrors';
 import { mediaPromptIsMissing, outputDurationLabel, resolutionLabel, videoAudioLabelDiagnostic as videoAudioLabel } from '../../_lib/chatMedia';
 import { sourceDurationLimit } from '../../_lib/modelPricing';
+import { attachAccept } from '../../../../lib/createAttach.mjs';
 import { SourcePickers } from '../SourcePickers';
 import { LibraryPicker } from '../LibraryPicker';
 
@@ -42,7 +43,7 @@ export function MediaComposer({ kind, media, prompt, onPrompt }) {
     availableModels, model, selectModel, duration, setDuration, aspect, setAspect, count, setCount,
     audioDuration, setAudioDuration, audioDurationControl, invalidAudioDuration,
     resolution, setResolution, audio, setAudio,
-    voice, setVoice, sources, pickSource, libraryFor, setLibraryFor, consent, setConsent,
+    voice, setVoice, sources, pickSource, attachFromDevice, attachNotice, libraryFor, setLibraryFor, consent, setConsent,
     balance, cost, freeLeft, error, jobs, generating, sending, missingSource, missingConsent, missingVoice,
     generate, catalogLive,
   } = media;
@@ -117,6 +118,26 @@ export function MediaComposer({ kind, media, prompt, onPrompt }) {
         {model?.kind === 'video' && !model.audioOptions?.length && availableModels.some((item) => !item.gated && item.audioOptions?.length > 1 && item.resolutions?.length > 1) && (
           <button type="button" disabled={busy} onClick={() => selectModel(availableModels.find((item) => !item.gated && item.audioOptions?.length > 1 && item.resolutions?.length > 1).id)}
             className="px-4 py-2 text-start text-xs text-vx-accent underline disabled:opacity-50">{t("app.chat.media.chooseControls")}</button>
+        )}
+
+        {model && Object.keys(model.media || {}).length === 0 && (
+          <div className="border-b border-vx-border px-3 py-3">
+            <div className="flex items-center gap-3">
+              <label className="shrink-0 cursor-pointer rounded-full border border-vx-border px-3.5 py-1.5 font-vx-mono text-[11px] font-bold text-vx-fg-muted hover:text-vx-fg has-focus-visible:outline-solid has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-vx-accent">
+                {t('app.create.attach.button')}
+                <input data-testid="chat-media-attach" type="file" accept={attachAccept()} disabled={busy} className="sr-only"
+                  onChange={(e) => { attachFromDevice(e.target.files); e.target.value = ''; }} />
+              </label>
+              <span className="text-xs text-vx-fg-muted">{t('app.create.attach.hint')}</span>
+            </div>
+          </div>
+        )}
+        {attachNotice && (
+          <p role="status" className="border-b border-vx-border px-4 py-2 text-xs text-vx-fg-muted">
+            {attachNotice.code === 'switched'
+              ? t('app.create.attach.switched', { name: attachNotice.name })
+              : t('app.create.attach.unsupported')}
+          </p>
         )}
 
         {model && Object.keys(model.media || {}).length > 0 && (
