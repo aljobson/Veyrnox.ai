@@ -1,10 +1,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
-import { PRESETS } from '../app/veyrnox/_lib/templates.js';
+import { PRESETS, hasTemplateVideo } from '../app/veyrnox/_lib/templates.js';
 import { SHOWCASE_CLIPS } from '../app/veyrnox/_lib/showcase.js';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
+
+test('gallery video eligibility excludes recipes with missing previews', () => {
+  assert.equal(PRESETS.filter(hasTemplateVideo).length, 142);
+  assert.equal(hasTemplateVideo({}), false);
+  assert.equal(hasTemplateVideo({ clipKey: 'missing-preview' }), false);
+  assert.equal(hasTemplateVideo(PRESETS.find((preset) => preset.clipKey)), true);
+  for (const path of ['app/veyrnox/_components/PresetGallery.js', 'app/veyrnox/m/explore/page.js']) {
+    assert.match(read(path), /\.filter\(hasTemplateVideo\)/, path);
+  }
+});
 
 test('preview-backed templates contain unique local videos', () => {
   const videos = new Set();

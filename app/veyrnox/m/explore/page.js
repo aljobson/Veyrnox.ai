@@ -8,13 +8,16 @@ import { PresetCard } from '../../_components/PresetCard';
 import { TemplateRoller } from '../../_components/TemplateRoller';
 import { PRESET_CATEGORIES, templatesIn } from '../../_lib/tokens';
 import { useCatalog } from '../../_lib/useCatalog';
+import { hasTemplateVideo } from '../../_lib/templates.js';
+
+const TEMPLATE_BATCH_SIZE = 50;
 
 export default function MobileExplore() {
   const { t } = useI18n();
   const [cat, setCat] = useState('ALL');
-  const [visibleCount, setVisibleCount] = useState(24);
+  const [visibleCount, setVisibleCount] = useState(TEMPLATE_BATCH_SIZE);
   const { models } = useCatalog();
-  const list = templatesIn(cat);
+  const list = templatesIn(cat).filter(hasTemplateVideo);
   const rollerPresets = list.filter((preset) => preset.clipKey).slice(0, 48);
 
   return (
@@ -29,7 +32,7 @@ export default function MobileExplore() {
           {PRESET_CATEGORIES.map((c) => (
             <button
               key={c}
-              onClick={() => { setCat(c); setVisibleCount(24); }}
+              onClick={() => { setCat(c); setVisibleCount(TEMPLATE_BATCH_SIZE); }}
               aria-pressed={cat === c}
               className={`shrink-0 font-vx-mono text-[10px] tracking-[0.12em] font-bold rounded-full px-3.5 py-1.5 border ${
                 cat === c
@@ -49,7 +52,7 @@ export default function MobileExplore() {
         </div>
         {visibleCount < list.length && <div className="mt-5 text-center">
           <p className="mb-3 text-sm text-vx-fg-muted" aria-live="polite">{t('presets.showing', { shown: Math.min(visibleCount, list.length), total: list.length })}</p>
-          <button type="button" onClick={() => setVisibleCount((count) => count + 24)} className="rounded-full border border-vx-border px-6 py-3 font-semibold hover:border-vx-accent">{t('presets.more')}</button>
+          <button type="button" onClick={() => setVisibleCount((count) => count + TEMPLATE_BATCH_SIZE)} className="rounded-full border border-vx-border px-6 py-3 font-semibold hover:border-vx-accent">{t('presets.more')}</button>
         </div>}
       </div>
       <MobileTabs />

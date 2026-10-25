@@ -6,7 +6,17 @@ import { AUTO_PRODUCT_DOCS, AUTO_PRODUCT_INVENTORY } from '../lib/generatedProdu
 import { buildVeyKnowledgeArtifact, renderVeyKnowledgeModule } from '../scripts/lib/vey-knowledge-source.mjs';
 
 const root = process.cwd();
-const retiredFilmStudioControls = new Set(['Import studio JSON']);
+const retiredFilmStudioKnowledge = {
+    controls: new Set(['Import studio JSON', 'Prepare 16:9 master']),
+    links: new Set(['/legal/aup']),
+    descriptions: new Set([
+        'Your current film is still here. Export it first if you want to keep a separate copy.',
+        'The studio export contains your project documents and this folder structure.',
+        'Create an exact 16:9 master at 1920×1080. The picture fills the frame with a centre crop, without stretching. The shot card sets the length. Export is free. Masters prepared from a Library take can be saved directly to your Library.',
+        'To save directly to Library, log a Library take ID and prepare its master without choosing a local file.',
+        'Saving is free. The video stays in your Library until its source take expires, up to 90 days.',
+    ]),
+};
 
 test('phase B retains every app route knowledge item from origin/main', async () => {
     const baseline = JSON.parse(await readFile(path.join(root, 'tests/fixtures/app-knowledge-main.json'), 'utf8'));
@@ -20,10 +30,10 @@ test('phase B retains every app route knowledge item from origin/main', async ()
             const normal = ['links', 'targets'].includes(field) ? value => value : words;
             const actual = new Set(current[field].map(normal));
             for (const value of values) {
-                // The simplified download flow retires destructive workspace
-                // replacement. Keep this narrow exception beside the baseline
-                // so later removals still require an explicit decision.
-                if (entry.route === '/app/film-studio' && field === 'controls' && retiredFilmStudioControls.has(value)) continue;
+                // Film export/import and verified-master creation were retired
+                // deliberately. Keep each removed item explicit so later
+                // knowledge loss still requires a conscious decision.
+                if (entry.route === '/app/film-studio' && retiredFilmStudioKnowledge[field]?.has(value)) continue;
                 assert.ok(actual.has(normal(value)), `${entry.route} ${field}: ${value}`);
             }
         }
@@ -101,9 +111,7 @@ test('all main route knowledge survives localization except the retired unknown-
                 // The accepted phase-A correction calls notFound() for unknown
                 // series. Do not restore nonexistent HTTP-200 fallback copy.
                 if (route === '/social-cinema/series/[slug]' && field === 'descriptions' && expected === 'This series is not available.') continue;
-                // Film Studio now offers a download-only handoff rather than
-                // importing a file that replaces the browser workspace.
-                if (route === '/app/film-studio' && field === 'controls' && retiredFilmStudioControls.has(expected)) continue;
+                if (route === '/app/film-studio' && retiredFilmStudioKnowledge[field]?.has(expected)) continue;
                 assert.ok(actual.has(normal(expected)), `${route} ${field}: ${expected}`);
             }
         }
