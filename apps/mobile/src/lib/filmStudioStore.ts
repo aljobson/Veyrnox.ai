@@ -2,10 +2,8 @@ import { appCache, getCacheUser } from './appCache';
 import { POLICIES, type Cache } from './cache';
 import { parseFilm, type Film } from './filmStudio';
 
-// ADR-0210: the studio a person imported, kept in the app's per-account cache. It is a read-only copy of the web's
-// export: the web stays the place to change anything, and an import replaces the copy. Sign-out, account deletion and a
-// change of user remove it with the rest of the cache. The OS may also reclaim cache files; importing again restores it.
-// The text is parsed again on every read, so a damaged or hand-edited copy is dropped rather than shown.
+// The active native studio is kept in the app's per-account cache. Sign-out, account deletion and a change of user remove
+// it with the rest of the cache. The text is parsed on every read so a damaged project is dropped rather than shown.
 
 export async function loadStudio(cache: Cache = appCache, userId: string | undefined = getCacheUser()): Promise<{ film: Film; savedAt: number } | null> {
     const saved = await cache.read<unknown>(POLICIES.filmStudio, userId).catch(() => null);

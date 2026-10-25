@@ -1,8 +1,6 @@
 import { act } from 'react';
 import * as RN from 'react-native';
 import { createRoot, type Root } from 'test-renderer';
-import * as DocumentPicker from 'expo-document-picker';
-import { File, Paths } from 'expo-file-system';
 import Screen from '../src/app/(app)/film/index';
 import { ApiError } from '../src/lib/api';
 import { bindCacheUser, resetCacheUser, wipeCache } from '../src/lib/appCache';
@@ -18,12 +16,11 @@ const mockRouter = { push: mockPush };
 jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useRouter: () => mockRouter,
     useFocusEffect: (callback: () => void) => { mockFocus = callback; require('react').useEffect(callback, [callback]); } }));
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi }) }));
-jest.mock('expo-document-picker', () => ({ getDocumentAsync: jest.fn() }));
 void [RN.ScrollView, RN.Text, RN.Pressable, RN.StyleSheet, RN.View, RN.ActivityIndicator];
 const id = '11111111-1111-4111-8111-111111111111';
 const row = { id, name: 'Film B', revision: 1 };
 const raw = (name: string) => JSON.stringify({ ...emptyFilm(), name });
-const intro = 'Build all seven Film Studio stages on your phone, or open an existing studio from your account or a JSON export.';
+const intro = 'Build all seven Film Studio stages on your phone, or open an existing studio from your account.';
 let root: Root;
 const has = (text: string) => root.container.queryAll(n => n.children.some(c => typeof c === 'string' && c.includes(text))).length > 0;
 async function press(text: string) {
@@ -37,11 +34,6 @@ async function press(text: string) {
 }
 async function mount() { root = createRoot(); await act(async () => root.render(<Screen />)); }
 async function open(name = 'Film B') { await cloud().openCloudFilm({ request: jest.fn().mockResolvedValue({ project: row, studio_json: raw(name) }) }, id); }
-async function pick(text: string) {
-    const file = new File(Paths.cache, 'film-cloud-import.json'); if (!file.exists) file.create(); file.write(text);
-    jest.mocked(DocumentPicker.getDocumentAsync).mockResolvedValue({ canceled: false, assets: [{ name: 'film.json', uri: file.uri, size: text.length, lastModified: 0 }] });
-    await press('Open a newer export');
-}
 beforeEach(async () => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
     jest.clearAllMocks(); resetCacheUser(); await wipeCache(); await bindCacheUser('alice'); mockFocus = undefined;
@@ -71,21 +63,10 @@ test('focus after opening B replaces A and Remove clears both sources', async ()
     expect(has('Film B')).toBe(true); expect(has('Film A')).toBe(false);
     await press('Remove from this phone'); expect(cloud().getOpenedFilm()).toBeNull(); expect(await loadStudio()).toBeNull(); expect(has('Film B')).toBe(false);
 });
-test('invalid import leaves B in memory and on screen through a focus reload', async () => {
-    await open(); await mount(); await pick('invalid json');
-    expect(has('That is not a Film Studio JSON export.')).toBe(true); expect(has('Film B')).toBe(true); expect(cloud().getOpenedFilm()?.film.name).toBe('Film B');
-    await act(async () => { mockFocus!(); }); expect(has('Film B')).toBe(true); expect(await loadStudio()).toBeNull();
-});
-test('valid import clears the cloud slot and shows the imported film', async () => {
-    await open(); await mount(); await pick(raw('Imported'));
-    expect(cloud().getOpenedFilm()).toBeNull(); expect(has('Imported')).toBe(true); expect(has('Film B')).toBe(false);
-    expect((await loadStudio())?.film.name).toBe('Imported');
-});
-test.each(['cancel', 'throw'])('picker %s preserves the active film', async kind => {
+test('Film Studio exposes native and account flows without export or master creation entry points', async () => {
     await open(); await mount();
-    if (kind === 'cancel') jest.mocked(DocumentPicker.getDocumentAsync).mockResolvedValue({ canceled: true, assets: null });
-    else jest.mocked(DocumentPicker.getDocumentAsync).mockRejectedValue(new Error('private'));
-    await press('Open a newer export'); expect(has('Film B')).toBe(true); expect(cloud().getOpenedFilm()?.film.name).toBe('Film B');
+    expect(has('Film B')).toBe(true);
+    for (const removed of ['Open an export', 'Open a newer export', 'Choose a studio file', 'Film masters']) expect(has(removed)).toBe(false);
 });
 test.each(['bob', 'alice'])('session reset drops mounted film and cloud count (%s)', async user => {
     await open('Alice private film'); mockRequest.mockResolvedValue({ projects: [row] }); await mount();
@@ -98,14 +79,4 @@ test('stale list response is ignored after switching accounts', async () => {
     let resolve!: (value: unknown) => void; mockRequest.mockReturnValueOnce(new Promise(r => { resolve = r; })); await mount();
     await act(async () => bindCacheUser('bob'));
     await act(async () => resolve({ projects: [row] })); expect(has('Films saved to your account')).toBe(false);
-});
-test('pending import from a previous session cannot change the new screen or slot', async () => {
-    await open(); await mount(); let resolve!: (value: unknown) => void;
-    jest.mocked(DocumentPicker.getDocumentAsync).mockReturnValue(new Promise(r => { resolve = r; }) as any);
-    // Do not await the event handler while the picker is open.
-    const node = root.container.queryAll(n => n.children.some(c => c === 'Open a newer export'))[0];
-    await act(async () => { (node.parent as any).props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }); });
-    await act(async () => { await wipeCache(); await bindCacheUser('bob'); });
-    await act(async () => resolve({ canceled: true, assets: null }));
-    expect(has('Film B')).toBe(false); expect(cloud().getOpenedFilm()).toBeNull();
 });

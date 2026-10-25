@@ -1,6 +1,5 @@
-// Film Studio on the phone, first slice (ADR-0210): read a studio exported from the web, show its stages, shots and
-// assets, and hand a current shot prompt to Create. Film Studio keeps no copy on the server, so the exported JSON is
-// the only "project"; this file never writes to the web studio and never decides, approves or locks anything.
+// Film Studio on the phone: validate the same studio document used by native editing and account cloud saves, show its
+// stages, shots and assets, and hand a current shot prompt to Create.
 // The checks below are copies of app/veyrnox/_lib/filmStudio.js and filmStudioStorage.js; __tests__/filmStudio.test.ts
 // runs both on the same studio so a change on the web that this file misses fails a test.
 import { estimateCredits, kindOf, textInput, type CatalogModel } from './media';
@@ -74,18 +73,18 @@ const SHOT_KEYS = SHOT_LANES.flatMap(([, fields]) => fields.map(([k]) => k));
 
 export type ParseResult = { ok: true; film: Film } | { ok: false; error: string };
 
-// The same schema, size, bounds and identifier checks as the web's import.
+// The same schema, size, bounds and identifier checks as the web workspace.
 export function parseFilm(raw: string): ParseResult {
     if (typeof raw !== 'string' || byteLength(raw) > MAX_FILM_BYTES) return { ok: false, error: 'The studio file must be smaller than 1 MB.' };
     let f: unknown;
     try {
         f = JSON.parse(raw);
     } catch {
-        return { ok: false, error: 'That is not a Film Studio JSON export.' };
+        return { ok: false, error: 'That is not a valid Film Studio project.' };
     }
     if (isObj(f) && f.targetSeconds === undefined) f = { ...f, targetSeconds: 60 };
     if (isObj(f) && f.templateId === undefined) f = { ...f, templateId: '' };
-    const bad = { ok: false, error: 'This file is not a valid Film Studio export.' } as const;
+    const bad = { ok: false, error: 'This is not a valid Film Studio project.' } as const;
     if (!isObj(f) || f.schema !== 1 || !strings(f, ['name', 'script', 'templateId']) || !/^(?:|[a-z0-9][a-z0-9-]{0,99})$/.test(f.templateId as string)) return bad;
     if (![30, 60, 90, 120].includes(f.targetSeconds as number) || !strings(f.stack, STACK_KEYS) || !['16:9', '9:16', '1:1'].includes((f.stack as Obj).aspect as string)) return bad;
     const valid =

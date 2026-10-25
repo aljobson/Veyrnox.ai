@@ -154,7 +154,7 @@ export function FilmCloud({ state, replaceFilm, persist }) {
       } catch (err) { if (cloudErrorKey(err) !== 'app.film.cloud.removedElsewhere') throw err; }
       if (!current(token)) return;
       const localSaved = unlink(row.id);
-      const removedNotice = localSaved ? notice(false, 'app.film.cloud.removed') : notice(true, 'app.film.cloud.removed', 'app.film.cloud.exportFirst');
+      const removedNotice = notice(!localSaved, 'app.film.cloud.removed');
       setMessage(removedNotice);
       reloadPending.current = true;
     } catch (err) {
