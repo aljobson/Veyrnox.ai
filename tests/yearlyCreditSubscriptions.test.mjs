@@ -127,5 +127,8 @@ test('the plans and the credit packs show Vey on the chosen card and nowhere els
   const packs = readFileSync('app/veyrnox/_components/TopUpPacks.js', 'utf8');
   assert.match(packs, /\{on && <VeyCardPeek \/>\}/);
   assert.equal((packs.match(/<VeyCardPeek/g) || []).length, 1);
+  const publish = readFileSync('app/veyrnox/app/publish/plan/PublishPlanPanel.js', 'utf8');
+  assert.match(publish, /\{on && <VeyCardPeek \/>\}/);
+  assert.equal((publish.match(/<VeyCardPeek/g) || []).length, 1);
   for (const src of [plans, packs]) assert.doesNotMatch(src, /notify\(|useVeyPaywallMood|VeyPaywallBuddy/);
 });
