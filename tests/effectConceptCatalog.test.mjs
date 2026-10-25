@@ -7,7 +7,7 @@ import { EFFECT_THEMES, PRESETS, searchTemplates, templateById, templatesInTheme
 test('the complete effect inventory is deduplicated into the public Veyrnox gallery', () => {
   assert.equal(EFFECT_CONCEPTS.length, 1036);
   assert.equal(EFFECT_CONCEPT_TEMPLATES.length, 1036);
-  assert.equal(PRESETS.length, 1178);
+  assert.equal(PRESETS.length, 1186);
   assert.equal(new Set(PRESETS.map((preset) => preset.id)).size, PRESETS.length);
   assert.equal(new Set(EFFECT_CONCEPTS.map((concept) => concept.name)).size, EFFECT_CONCEPTS.length);
 });

@@ -298,3 +298,17 @@ The existing `FilmPlayer` supplies visible Play/Pause, pauses off screen,
 leaves the poster still for reduced motion/data saver, and fetches the file
 only when playback begins. Both videos remain under the 2 MB film budget;
 posters remain under 150 KB. Posters use the final branded hologram pose.
+
+
+### Full-HD motion-inspired previews
+
+These full-duration 1080p examples are encoded as silent browser previews. The corresponding recipes use image-to-video inspiration rather than the source motion itself. Provenance for duplicate auditing:
+
+- Street Meeting: https://cdn.higgsfield.ai/higgsfield_multiplier_video_explore_variant/47e7f67c-9036-5716-b9c7-fee8bc56d0d6.mp4
+- Pop Portrait: https://cdn.higgsfield.ai/higgsfield_multiplier_video_explore_variant/8d95f4bf-551f-5606-a72b-54bdb2c20312.mp4
+- Colourful City Split: https://cdn.higgsfield.ai/higgsfield_multiplier_video_explore_variant/62737c89-a414-52a5-9cf2-9dc7fd77deb0.mp4
+- Umbrella World Switch: https://cdn.higgsfield.ai/higgsfield_multiplier_video_explore_variant/3a5875b4-b107-5fba-b2ca-7cd5f1a129dc.mp4
+- Selfie City Journey: https://cdn.higgsfield.ai/higgsfield_multiplier_video_explore_variant/3d0c8832-4fcc-50a7-b65c-e480f0a25742.mp4
+- Animated City Stride: https://cdn.higgsfield.ai/higgsfield_multiplier_video_explore_variant/d5fa99e5-4267-548f-8ced-cdf69c477346.mp4
+- Travel Fashion Transition: https://cdn.higgsfield.ai/higgsfield_multiplier_video_explore_variant/99957f6f-745c-5d1f-bc76-0d8de5c67d6a.mp4
+- Street Style Adventure: https://cdn.higgsfield.ai/higgsfield_multiplier_video_explore_variant/038006dd-02ba-5bc5-9825-e9b27bf32373.mp4
