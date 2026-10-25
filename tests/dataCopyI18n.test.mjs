@@ -19,7 +19,7 @@ const tree = (file, source) => ts.createSourceFile(file, source, ts.ScriptTarget
 
 test('all template needs and 15 distinct steps have exact English and ten translated display entries', () => {
   const original = JSON.stringify(ALL_TEMPLATES);
-  assert.equal(ALL_TEMPLATES.length, 1186);
+  assert.equal(ALL_TEMPLATES.length, 1191);
   assert.ok(ALL_TEMPLATES.every(p => p.needs), 'Every public recipe retains translated input guidance');
   assert.equal(Object.keys(PRESET_STEP_KEYS).length, 15);
   for (const code of codes) {

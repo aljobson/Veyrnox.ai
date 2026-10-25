@@ -312,3 +312,13 @@ These full-duration 1080p examples are encoded as silent browser previews. The c
 - Animated City Stride: https://cdn.higgsfield.ai/higgsfield_multiplier_video_explore_variant/d5fa99e5-4267-548f-8ced-cdf69c477346.mp4
 - Travel Fashion Transition: https://cdn.higgsfield.ai/higgsfield_multiplier_video_explore_variant/99957f6f-745c-5d1f-bc76-0d8de5c67d6a.mp4
 - Street Style Adventure: https://cdn.higgsfield.ai/higgsfield_multiplier_video_explore_variant/038006dd-02ba-5bc5-9825-e9b27bf32373.mp4
+
+### Additional viral-effect previews
+
+The original source files are kept unscaled; their 600-pixel width is a preview limitation, not a statement about generated output resolution. Recipes are independent Veyrnox adaptations. Source provenance for duplicate auditing:
+
+- Raven transition: https://cdn.higgsfield.ai/kling_motion/8c4795a8-e7ef-4272-8fb3-9d349192a013.mp4
+- Firework reveal: https://cdn.higgsfield.ai/kling_motion/cf305131-a261-4c5d-baa6-5fe3c8c2efc8.mp4
+- Northern lights journey: https://cdn.higgsfield.ai/kling_motion/90207a63-b601-4078-9932-b99ebbea82c8.mp4
+- Fairy lights: https://cdn.higgsfield.ai/kling_motion/563f6c3f-b689-407d-a75c-bbe771343e69.mp4
+- Outfit switch: https://cdn.higgsfield.ai/seedance_motion/970e676b-6a57-4dfc-b5a6-132533d9180d.mp4

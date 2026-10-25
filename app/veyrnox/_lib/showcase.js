@@ -1,4 +1,6 @@
 import { SHOWCASE_CLIP_EXPANSION_7 } from './sourceTemplateExpansion7.js';
+
+import { SHOWCASE_CLIP_EXPANSION_6 } from './sourceTemplateExpansion6.js';
 // Public clip records intentionally use neutral asset paths and contain no
 // source-platform identifiers. Provenance and encode settings remain internal:
 // docs/product/showcase-clips.md
@@ -440,6 +442,8 @@ export const SHOWCASE_CLIPS = {
   ...SHOWCASE_CLIP_EXPANSION_4,
   ...SHOWCASE_CLIP_EXPANSION_5,
   ...SHOWCASE_CLIP_EXPANSION_7,
+
+  ...SHOWCASE_CLIP_EXPANSION_6,
 };
 
 // Give each public placement its own clip, including templates also on /presets.
