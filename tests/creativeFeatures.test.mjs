@@ -26,6 +26,20 @@ test('every live workflow has a model, brief and three-step handoff', () => {
   }
 });
 
+test('every workflow exposes a real, required upload control', () => {
+  for (const item of CREATIVE_FEATURES) {
+    assert.ok(item.media.length > 0 || item.scriptUpload, `${item.slug} needs an upload`);
+  }
+  const textToSpeech = creativeFeature('text-to-speech');
+  assert.equal(textToSpeech.scriptUpload, true);
+  assert.deepEqual(textToSpeech.media, []);
+  for (const slug of ['ai-avatar-generator', 'ai-human-generator', 'ai-influencer-generator', 'ai-baby-generator', 'product-image-generator']) {
+    const item = creativeFeature(slug);
+    assert.equal(item.model, 'nano-banana-pro-edit-grsai');
+    assert.deepEqual(item.media, ['image']);
+  }
+});
+
 test('every workflow has an exact, attributable reference example', () => {
   for (const item of CREATIVE_FEATURES) {
     const example = creativeFeatureExample(item.slug);
@@ -42,6 +56,20 @@ test('reference media uses the fixed audited URL without leaking a referrer', as
   assert.match(studio, /src=\{exampleAsset\}/);
   assert.doesNotMatch(studio, /src=\{example\.url\}/);
   assert.match(studio, /referrerPolicy="no-referrer"/);
+});
+
+test('the shared studio renders upload controls even for guarded workflows', async () => {
+  const studio = await readFile(new URL('../app/veyrnox/_components/CreativeFeatureStudio.js', import.meta.url), 'utf8');
+  assert.match(studio, /feature\.media\.length > 0 && <SourcePickers/);
+  assert.doesNotMatch(studio, /feature\.media\.length && !feature\.blocked/);
+  assert.match(studio, /data-testid="source-upload-script"/);
+});
+
+test('the dedicated voice-cloning workflow provides training and verification audio uploads', async () => {
+  const studio = await readFile(new URL('../app/veyrnox/_components/VoiceCloneStudio.js', import.meta.url), 'utf8');
+  assert.equal((studio.match(/type="file" accept="audio\/mpeg,audio\/wav"/g) || []).length, 2);
+  assert.match(studio, /uploadPrivateAudio\(sample\)/);
+  assert.match(studio, /uploadPrivateAudio\(verification\)/);
 });
 
 test('voice cloning is the only guarded workflow and names the remaining production gate', () => {

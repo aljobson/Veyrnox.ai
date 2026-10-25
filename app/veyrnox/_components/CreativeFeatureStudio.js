@@ -8,6 +8,7 @@ import { writeStudioDraft } from '../_lib/landingDraft';
 import { creativeFeatureExample, creativeFeatureExampleAssetPath, translatedCreativeFeature } from '../_lib/creativeFeatures';
 import { gatewayFetch } from '../_lib/gateway';
 import { generationFileProblem, generationFileType } from '../_lib/editorGenerationUploads.mjs';
+import { readCreativeScriptFile } from '../_lib/creativeScriptUpload.mjs';
 import { SourcePickers } from './SourcePickers';
 import SourceRightsConfirmation from './SourceRightsConfirmation';
 
@@ -21,6 +22,7 @@ export default function CreativeFeatureStudio({ feature }) {
   const exampleAsset = creativeFeatureExampleAssetPath(feature.slug);
   const [brief, setBrief] = useState('');
   const [sources, setSources] = useState({});
+  const [scriptSource, setScriptSource] = useState(null);
   const [consent, setConsent] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState('');
@@ -28,6 +30,7 @@ export default function CreativeFeatureStudio({ feature }) {
   const objectUrls = useRef(new Set());
   const prompt = `${copy.prompt}${brief.trim()}`.trim();
   const media = useMemo(() => Object.fromEntries(feature.media.map((slot) => [slot, { required: true }])), [feature.media]);
+  const hasUpload = feature.media.length > 0 || feature.scriptUpload;
 
   useEffect(() => () => {
     objectUrls.current.forEach((url) => URL.revokeObjectURL(url));
@@ -60,6 +63,27 @@ export default function CreativeFeatureStudio({ feature }) {
     setError('');
   }
 
+  async function pickScript(file) {
+    if (!file) {
+      setScriptSource(null);
+      setBrief('');
+      setConsent(false);
+      setError('');
+      return;
+    }
+    const result = await readCreativeScriptFile(file);
+    if (result.problem) {
+      setScriptSource(null);
+      setConsent(false);
+      setError(t(`app.features.error.script.${result.problem}`));
+      return;
+    }
+    setScriptSource({ name: file.name, size: file.size });
+    setBrief(result.text);
+    setConsent(false);
+    setError('');
+  }
+
   async function uploadSource(slot, source, index) {
     setUploadProgress(t('app.features.uploading', { current: index + 1, total: feature.media.length }));
     const signed = await gatewayFetch('/uploads', {
@@ -81,11 +105,15 @@ export default function CreativeFeatureStudio({ feature }) {
       setError(t('app.features.error.required', { input: copy.input.toLowerCase() }));
       return;
     }
+    if (feature.scriptUpload && !scriptSource) {
+      setError(t('app.features.error.script.required'));
+      return;
+    }
     if (feature.media.some((slot) => !sources[slot]?.file)) {
       setError(t('app.features.error.sources'));
       return;
     }
-    if (feature.media.length && !consent) {
+    if (hasUpload && !consent) {
       setError(t('app.features.error.consent'));
       return;
     }
@@ -111,7 +139,7 @@ export default function CreativeFeatureStudio({ feature }) {
       aspect: feature.kind === 'video' ? '9:16' : '1:1',
       durationSeconds: feature.kind === 'video' ? 5 : undefined,
       sources: uploadedSources,
-      consent: feature.media.length ? true : undefined,
+      consent: hasUpload ? true : undefined,
     })) {
       setError(t('app.features.error.handoff'));
       setUploading(false);
@@ -154,12 +182,28 @@ export default function CreativeFeatureStudio({ feature }) {
         <section className={`${card} p-5 sm:p-6`}>
           <p className="font-vx-mono text-[10px] font-bold uppercase tracking-[0.14em] text-vx-accent">{t('app.features.sources')}</p>
           <h2 className="mt-1 text-xl font-black">{t('app.features.sourcesTitle')}</h2>
-          {feature.media.length && !feature.blocked
-            ? <><SourcePickers media={media} sources={sources} onPick={pickSource} onDraw={null} onLibrary={null} />
-              <SourceRightsConfirmation confirmed={consent} onChange={(value) => { setConsent(value); setError(''); }} /></>
-            : <div className="mt-4 flex flex-wrap gap-2">
-              {feature.media.length ? feature.media.map((item) => <span key={item} className="rounded-full border border-vx-border bg-vx-base px-3 py-2 text-xs font-bold capitalize">{t('app.features.uploadRequired', { type: item })}</span>) : <span className="rounded-full border border-vx-border bg-vx-base px-3 py-2 text-xs font-bold">{t('app.features.noUpload')}</span>}
+          {feature.media.length > 0 && <SourcePickers media={media} sources={sources} onPick={pickSource} onDraw={null} onLibrary={null} />}
+          {feature.scriptUpload && <div className="mt-4 rounded-xl border border-vx-field bg-vx-base p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-black">{t('app.features.scriptUpload')}</p>
+                <p className="mt-1 text-xs leading-5 text-vx-fg-muted">{t('app.features.scriptUploadHelp')}</p>
+              </div>
+              <label className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full border border-vx-accent px-5 text-xs font-black text-vx-accent hover:bg-vx-accent/10">
+                {scriptSource ? t('app.features.scriptReplace') : t('app.features.scriptChoose')}
+                <input data-testid="source-upload-script" type="file" accept=".txt,.md,.markdown,text/plain,text/markdown" className="sr-only" onChange={(event) => {
+                  const file = event.currentTarget.files?.[0] || null;
+                  event.currentTarget.value = '';
+                  void pickScript(file);
+                }} />
+              </label>
+            </div>
+            {scriptSource && <div className="mt-3 flex items-center justify-between gap-3 rounded-lg border border-vx-border px-3 py-2">
+              <span className="min-w-0 truncate text-xs font-bold">{scriptSource.name}</span>
+              <button type="button" onClick={() => { void pickScript(null); }} className="shrink-0 text-xs font-bold text-vx-danger underline underline-offset-4">{t('app.features.scriptRemove')}</button>
             </div>}
+          </div>}
+          {hasUpload && <SourceRightsConfirmation confirmed={consent} onChange={(value) => { setConsent(value); setError(''); }} />}
           <p className="mt-4 text-xs leading-5 text-vx-fg-muted">{t('app.features.uploadSafety')}</p>
         </section>
       </div>
