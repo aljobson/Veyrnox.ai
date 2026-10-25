@@ -34,7 +34,7 @@ export function SourcePickers({ media, sources, onPick, onDraw, onLibrary }) {
     const limits = [spec.maxSeconds && t('app.create.sources.seconds', {count: number(spec.maxSeconds)}), spec.maxPixels && t('app.create.sources.pixels', {count: number(spec.maxPixels / 1e6)})].filter(Boolean);
     return (
       <div key={slot} className="mt-3 flex items-center gap-3 rounded-lg border border-vx-border bg-vx-panel p-3">
-        {picked && kind === 'image' ? (
+        {picked && kind === 'image' && picked.previewUrl ? (
           <img src={picked.previewUrl} alt={slot === 'endImage' ? t("app.create.sources.endAlt") : t("app.create.sources.startAlt")} className="w-16 h-16 rounded-sm object-cover bg-black shrink-0" />
         ) : (
           <div className="w-16 h-16 rounded-sm border border-dashed border-vx-border shrink-0 flex items-center justify-center text-vx-fg-faint" aria-hidden="true">
@@ -46,7 +46,7 @@ export function SourcePickers({ media, sources, onPick, onDraw, onLibrary }) {
             {(spec.label ? tOr(t, `label.${spec.label}`, spec.label) : t(ui.labelKey))}{spec.required ? t("app.create.sources.required") : t("app.create.sources.optional")}
           </div>
           <div className="text-xs text-vx-fg-body truncate mt-1">
-            {picked ? (picked.file ? picked.file.name : t('app.create.sources.libraryName', {name: tOr(t, `app.helpers.message.${picked.labelCode}`, picked.label)})) : [t(ui.hint), ...limits].join(', ')}
+            {picked ? (picked.file ? picked.file.name : picked.sourceKey ? picked.label : t('app.create.sources.libraryName', {name: tOr(t, `app.helpers.message.${picked.labelCode}`, picked.label)})) : [t(ui.hint), ...limits].join(', ')}
           </div>
         </div>
         {/* A Library image is a presigned R2 URL: the canvas cannot read it back. */}

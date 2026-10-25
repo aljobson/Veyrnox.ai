@@ -1,11 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '../../../components/I18nProvider';
 import { writeStudioDraft } from '../_lib/landingDraft';
-import { translatedCreativeFeature } from '../_lib/creativeFeatures';
+import { creativeFeatureExample, creativeFeatureExampleAssetPath, translatedCreativeFeature } from '../_lib/creativeFeatures';
+import { gatewayFetch } from '../_lib/gateway';
+import { generationFileProblem, generationFileType } from '../_lib/editorGenerationUploads.mjs';
+import { SourcePickers } from './SourcePickers';
+import SourceRightsConfirmation from './SourceRightsConfirmation';
 
 const card = 'rounded-2xl border border-vx-border bg-vx-panel';
 
@@ -13,14 +17,92 @@ export default function CreativeFeatureStudio({ feature }) {
   const router = useRouter();
   const { t } = useI18n();
   const copy = translatedCreativeFeature(feature, t);
+  const example = creativeFeatureExample(feature.slug);
+  const exampleAsset = creativeFeatureExampleAssetPath(feature.slug);
   const [brief, setBrief] = useState('');
+  const [sources, setSources] = useState({});
+  const [consent, setConsent] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState('');
   const [error, setError] = useState('');
+  const objectUrls = useRef(new Set());
   const prompt = `${copy.prompt}${brief.trim()}`.trim();
+  const media = useMemo(() => Object.fromEntries(feature.media.map((slot) => [slot, { required: true }])), [feature.media]);
 
-  function launch() {
+  useEffect(() => () => {
+    objectUrls.current.forEach((url) => URL.revokeObjectURL(url));
+    objectUrls.current.clear();
+  }, []);
+
+  function pickSource(slot, file) {
+    if (file) {
+      const problem = generationFileProblem(slot, file);
+      if (problem) {
+        setError(t('app.features.error.file'));
+        return;
+      }
+    }
+    setSources((previous) => {
+      const prior = previous[slot];
+      if (prior?.previewUrl) {
+        URL.revokeObjectURL(prior.previewUrl);
+        objectUrls.current.delete(prior.previewUrl);
+      }
+      const next = { ...previous };
+      if (file) {
+        const previewUrl = URL.createObjectURL(file);
+        objectUrls.current.add(previewUrl);
+        next[slot] = { file, previewUrl, label: file.name, mimeType: generationFileType(file) };
+      } else delete next[slot];
+      return next;
+    });
+    setConsent(false);
+    setError('');
+  }
+
+  async function uploadSource(slot, source, index) {
+    setUploadProgress(t('app.features.uploading', { current: index + 1, total: feature.media.length }));
+    const signed = await gatewayFetch('/uploads', {
+      method: 'POST',
+      body: JSON.stringify({ content_type: source.mimeType, size_bytes: source.file.size }),
+    });
+    const response = await fetch(signed.upload_url, {
+      method: 'PUT',
+      headers: signed.headers || { 'Content-Type': signed.content_type },
+      body: source.file,
+    });
+    if (!response.ok) throw new Error('upload_failed');
+    return [slot, { sourceKey: signed.key, label: source.label, mimeType: source.mimeType }];
+  }
+
+  async function launch() {
     if (feature.blocked) return;
     if (!brief.trim() && feature.input !== 'Production note') {
       setError(t('app.features.error.required', { input: copy.input.toLowerCase() }));
+      return;
+    }
+    if (feature.media.some((slot) => !sources[slot]?.file)) {
+      setError(t('app.features.error.sources'));
+      return;
+    }
+    if (feature.media.length && !consent) {
+      setError(t('app.features.error.consent'));
+      return;
+    }
+    setUploading(true);
+    setError('');
+    let uploadedSources = {};
+    try {
+      const uploaded = [];
+      for (let index = 0; index < feature.media.length; index += 1) {
+        const slot = feature.media[index];
+        uploaded.push(await uploadSource(slot, sources[slot], index));
+      }
+      uploadedSources = Object.fromEntries(uploaded);
+    } catch {
+      setError(t('app.features.error.upload'));
+      setUploading(false);
+      setUploadProgress('');
       return;
     }
     if (!writeStudioDraft(window.sessionStorage, {
@@ -28,8 +110,12 @@ export default function CreativeFeatureStudio({ feature }) {
       model: feature.model,
       aspect: feature.kind === 'video' ? '9:16' : '1:1',
       durationSeconds: feature.kind === 'video' ? 5 : undefined,
+      sources: uploadedSources,
+      consent: feature.media.length ? true : undefined,
     })) {
       setError(t('app.features.error.handoff'));
+      setUploading(false);
+      setUploadProgress('');
       return;
     }
     router.push(`/app/create?model=${encodeURIComponent(feature.model)}&recipe=${encodeURIComponent(feature.slug)}`);
@@ -46,6 +132,17 @@ export default function CreativeFeatureStudio({ feature }) {
           <p className="mt-4 max-w-2xl text-sm leading-6 text-vx-fg-muted">{t('app.features.guide')}</p>
         </header>
 
+        {example && <section className={`${card} overflow-hidden`}>
+          <div className="flex items-center justify-between gap-4 px-5 py-4 sm:px-6">
+            <div><p className="font-vx-mono text-[10px] font-bold uppercase tracking-[0.14em] text-vx-accent">{t('app.features.example')}</p><h2 className="mt-1 text-xl font-black">{t('app.features.exampleTitle')}</h2></div>
+            <a href={example.sourceUrl} target="_blank" rel="noreferrer" className="text-xs font-bold text-vx-accent underline underline-offset-4">{t('app.features.exampleSource')}</a>
+          </div>
+          {example.kind === 'video'
+            ? <video controls playsInline preload="metadata" src={exampleAsset} className="aspect-video w-full bg-black object-contain" aria-label={t('app.features.exampleAria', { title: copy.title })} />
+            : <img loading="lazy" src={exampleAsset} alt={t('app.features.exampleAria', { title: copy.title })} className="max-h-[520px] w-full bg-black object-contain" />}
+          <p className="px-5 py-3 text-[11px] leading-4 text-vx-fg-faint sm:px-6">{t('app.features.exampleNote')}</p>
+        </section>}
+
         <section className={`${card} p-5 sm:p-6`}>
           <div className="flex items-start justify-between gap-4">
             <div><p className="font-vx-mono text-[10px] font-bold uppercase tracking-[0.14em] text-vx-accent">{t('app.features.brief')}</p><h2 className="mt-1 text-xl font-black">{copy.input}</h2></div>
@@ -57,9 +154,12 @@ export default function CreativeFeatureStudio({ feature }) {
         <section className={`${card} p-5 sm:p-6`}>
           <p className="font-vx-mono text-[10px] font-bold uppercase tracking-[0.14em] text-vx-accent">{t('app.features.sources')}</p>
           <h2 className="mt-1 text-xl font-black">{t('app.features.sourcesTitle')}</h2>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {feature.media.length ? feature.media.map((item) => <span key={item} className="rounded-full border border-vx-border bg-vx-base px-3 py-2 text-xs font-bold capitalize">{t('app.features.uploadRequired', { type: item })}</span>) : <span className="rounded-full border border-vx-border bg-vx-base px-3 py-2 text-xs font-bold">{t('app.features.noUpload')}</span>}
-          </div>
+          {feature.media.length && !feature.blocked
+            ? <><SourcePickers media={media} sources={sources} onPick={pickSource} onDraw={null} onLibrary={null} />
+              <SourceRightsConfirmation confirmed={consent} onChange={(value) => { setConsent(value); setError(''); }} /></>
+            : <div className="mt-4 flex flex-wrap gap-2">
+              {feature.media.length ? feature.media.map((item) => <span key={item} className="rounded-full border border-vx-border bg-vx-base px-3 py-2 text-xs font-bold capitalize">{t('app.features.uploadRequired', { type: item })}</span>) : <span className="rounded-full border border-vx-border bg-vx-base px-3 py-2 text-xs font-bold">{t('app.features.noUpload')}</span>}
+            </div>}
           <p className="mt-4 text-xs leading-5 text-vx-fg-muted">{t('app.features.uploadSafety')}</p>
         </section>
       </div>
@@ -73,7 +173,7 @@ export default function CreativeFeatureStudio({ feature }) {
         </section>
 
         <section className={`${card} p-5`}>
-          {feature.blocked ? <><p className="text-sm font-black text-vx-danger">{t('app.features.safeguard')}</p><p className="mt-2 text-xs leading-5 text-vx-fg-muted">{copy.blockedReason}</p><Link href="/app/features/text-to-speech" className="mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-full border border-vx-accent px-5 text-sm font-black text-vx-accent">{t('app.features.useTts')}</Link></> : <><p className="font-vx-mono text-[10px] font-bold uppercase tracking-[0.14em] text-vx-fg-muted">{t('app.features.liveModel')}</p><p className="mt-2 text-sm font-black">{feature.model}</p>{error && <p role="alert" className="mt-4 rounded-xl border border-vx-danger/35 bg-vx-danger/[0.06] px-4 py-3 text-xs leading-5 text-vx-danger">{error}</p>}<button type="button" onClick={launch} className="mt-5 min-h-12 w-full rounded-full bg-vx-accent px-5 text-sm font-black text-vx-accent-ink hover:bg-vx-accent-hover">{t('app.features.continue')}</button><p className="mt-3 text-center text-[11px] leading-4 text-vx-fg-faint">{t('app.features.finalReview')}</p></>}
+          {feature.blocked ? <><p className="text-sm font-black text-vx-danger">{t('app.features.safeguard')}</p><p className="mt-2 text-xs leading-5 text-vx-fg-muted">{copy.blockedReason}</p><Link href="/app/features/text-to-speech" className="mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-full border border-vx-accent px-5 text-sm font-black text-vx-accent">{t('app.features.useTts')}</Link></> : <><p className="font-vx-mono text-[10px] font-bold uppercase tracking-[0.14em] text-vx-fg-muted">{t('app.features.liveModel')}</p><p className="mt-2 text-sm font-black">{feature.model}</p>{error && <p role="alert" className="mt-4 rounded-xl border border-vx-danger/35 bg-vx-danger/[0.06] px-4 py-3 text-xs leading-5 text-vx-danger">{error}</p>}{uploadProgress && <p role="status" className="mt-4 text-xs font-bold text-vx-accent">{uploadProgress}</p>}<button type="button" disabled={uploading} onClick={launch} className="mt-5 min-h-12 w-full rounded-full bg-vx-accent px-5 text-sm font-black text-vx-accent-ink hover:bg-vx-accent-hover disabled:cursor-wait disabled:opacity-60">{uploading ? t('app.features.uploadingAction') : t('app.features.continue')}</button><p className="mt-3 text-center text-[11px] leading-4 text-vx-fg-faint">{t('app.features.finalReview')}</p></>}
         </section>
 
         <Link href="/app/features" className="block text-center text-xs font-bold text-vx-accent underline underline-offset-4">{t('app.features.browse')}</Link>

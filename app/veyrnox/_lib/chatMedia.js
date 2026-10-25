@@ -38,6 +38,8 @@ export async function mediaGenerationSources(model, sources, uploadSource) {
     const source = sources?.[slot];
     if (source?.assetId) {
       references = { ...references, source_assets: [...references.source_assets, { asset_id: source.assetId, slot }] };
+    } else if (source?.sourceKey) {
+      references = { ...references, source_keys: [...references.source_keys, { key: source.sourceKey, slot }] };
     } else if (source?.file) {
       const key = await uploadSource(source.file);
       references = { ...references, source_keys: [...references.source_keys, { key, slot }] };
