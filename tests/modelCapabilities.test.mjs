@@ -44,6 +44,8 @@ const CATALOG = [
     // Face Filters A1-A5, staged inactive by migration 0356.
     'fal-ai/image-editing/retouch', 'fal-ai/image-editing/face-enhancement', 'fal-ai/iclight-v2',
     'fal-ai/image-apps-v2/makeup-application', 'fal-ai/image-apps-v2/age-modify',
+    // Zero-shot voice cloning through the existing fal provider.
+    'fal-ai/zonos2',
 ];
 
 // Endpoints the pre-registry snapshot does not cover: corrected on purpose
@@ -54,7 +56,7 @@ const CORRECTED = new Set(['fal-ai/sana/v1.5/4.8b', 'fal-ai/kling-video/v3/pro/i
     'fal-ai/mmaudio-v2', 'fal-ai/topaz/upscale/video',
     'fal-ai/elevenlabs/text-to-dialogue/eleven-v3', 'fal-ai/qwen-3-tts/voice-design/1.7b', 'fal-ai/demucs',
     'fal-ai/image-editing/retouch', 'fal-ai/image-editing/face-enhancement', 'fal-ai/iclight-v2',
-    'fal-ai/image-apps-v2/makeup-application', 'fal-ai/image-apps-v2/age-modify']);
+    'fal-ai/image-apps-v2/makeup-application', 'fal-ai/image-apps-v2/age-modify', 'fal-ai/zonos2']);
 
 /** Every valid combination of a record's inputs: all declared keys, each enum value, each length. */
 function fixtures(record) {
@@ -232,6 +234,13 @@ test('every fallback model derives all public capabilities from the gateway regi
     }
 });
 
+test('voice cloning is active on the shared fal route and retires the verified-profile model', () => {
+    const migration = readFileSync(new URL('../packages/db/schema/supabase/0392_zonos2_voice_clone.sql', import.meta.url), 'utf8');
+    assert.match(migration, /'zonos2-voice-clone','Zonos2 Voice Clone','fal','fal-ai\/zonos2'/);
+    assert.match(migration, /'text-to-speech',2,0\.0100,'per_generation',NULL,false,true/);
+    assert.match(migration, /UPDATE public\.model_catalog SET active=false WHERE id='verified-voice-tts'/);
+});
+
 test('Nano Banana Pro pins every billed parameter, and Edit sends its source as a list', () => {
     const pins = { resolution: '2K', num_images: 1, enable_web_search: false, sync_mode: false };
     const pro = capabilityFor('fal-ai/nano-banana-pro');
@@ -274,6 +283,19 @@ test('Qwen voice design sends the words as fal\'s text and the described voice a
         enable_safety_checker: false, audio_url: 'https://r2/voice.mp3', aspect_ratio: '16:9' }), { prompt: 'p', voice_description: 'v' });
     assert.deepEqual(r.media, {});
     assert.deepEqual(publicCapabilities(r).inputs, { prompt: { type: 'string', max: 1000 }, voice_description: { type: 'string', max: 500 } });
+});
+
+test('Zonos2 clones only from a required bounded audio sample through the existing fal provider', () => {
+    const r = capabilityFor('fal-ai/zonos2');
+    const sample = 'https://r2.example/owned-voice.wav';
+    assert.deepEqual(checkInputs(r, { prompt: 'Hello from my voice.', audio_url: sample }), { ok: true });
+    assert.equal(checkInputs(r, { prompt: 'Hello without a sample.' }).ok, false);
+    assert.deepEqual(shapePayload(r, { prompt: 'Hello from my voice.', audio_url: sample }), {
+        text: 'Hello from my voice.', reference_audio_url: sample, language: 'en_us', accurate_mode: true,
+        clean_speaker_background: true, enable_safety_checker: true,
+    });
+    assert.deepEqual(publicCapabilities(r).media, { audio: { required: true, maxSeconds: 120 } });
+    assert.equal(checkInputs(r, { prompt: 'x'.repeat(1001), audio_url: sample }).ok, false);
 });
 
 test('MMAudio buys one 8s clip, and background removal sends only the image', () => {

@@ -82,6 +82,7 @@ const LIVE_SPEECH = {
     'inworld-tts': 'fal-ai/inworld-tts',
     'elevenlabs-tts-turbo': 'fal-ai/elevenlabs/tts/turbo-v2.5',
     'minimax-speech-2.6-hd': 'fal-ai/minimax/speech-2.6-hd',
+    'zonos2-voice-clone': 'fal-ai/zonos2',
     'elevenlabs-dialogue': 'fal-ai/elevenlabs/text-to-dialogue/eleven-v3',
 };
 

@@ -37,6 +37,7 @@ export const MODELS = [
   { id: 'elevenlabs-tts-turbo', name: 'ElevenLabs TTS Turbo', credits: 4,                                       kind: 'audio', speech: true, promptMax: 1000, durations: [5] },
   { id: 'minimax-speech-2.6-hd', name: 'MiniMax Speech 2.6 HD', credits: 6,                                     kind: 'audio', speech: true, promptMax: 1000, durations: [5] },
   { id: 'inworld-tts',        name: 'Inworld TTS',         credits: 2,                                          kind: 'audio', speech: true, promptMax: 2000, durations: [5] },
+  { id: 'zonos2-voice-clone', name: 'Zonos2 Voice Clone',  credits: 2,   tag: 'NEW',                            kind: 'audio', speech: true, promptMax: 1000, durations: [5], media: { audio: { required: true } } },
   { id: 'elevenlabs-dialogue', name: 'ElevenLabs Dialogue', credits: 6,  tag: 'NEW',                            kind: 'audio', speech: true, promptMax: 1000, durations: [5] },
 ];
 

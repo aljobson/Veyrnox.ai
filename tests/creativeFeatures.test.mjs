@@ -63,20 +63,16 @@ test('the shared studio renders upload controls even for guarded workflows', asy
   assert.match(studio, /feature\.media\.length > 0 && <SourcePickers/);
   assert.doesNotMatch(studio, /feature\.media\.length && !feature\.blocked/);
   assert.match(studio, /data-testid="source-upload-script"/);
+  assert.match(studio, /<p className="mt-2 text-sm font-black">\{copy\.title\}<\/p>/);
+  assert.doesNotMatch(studio, />\{feature\.model\}<\/p>/);
 });
 
-test('the dedicated voice-cloning workflow provides training and verification audio uploads', async () => {
-  const studio = await readFile(new URL('../app/veyrnox/_components/VoiceCloneStudio.js', import.meta.url), 'utf8');
-  assert.equal((studio.match(/type="file" accept="audio\/mpeg,audio\/wav/g) || []).length, 3);
-  assert.match(studio, /data-testid="source-upload-audio"/);
-  assert.equal((studio.match(/uploadPrivateAudio\(sample\)/g) || []).length, 2);
-  assert.match(studio, /uploadPrivateAudio\(verification\)/);
-});
-
-test('voice cloning is the only guarded workflow and names the remaining production gate', () => {
-  const blocked = CREATIVE_FEATURES.filter((item) => item.blocked);
-  assert.deepEqual(blocked.map((item) => item.slug), ['ai-voice-cloning']);
-  assert.match(blocked[0].blockedReason, /verification.*two-factor.*revocation.*provider account/i);
+test('voice cloning uses the live fal voice model and the shared audio upload flow', () => {
+  const voice = creativeFeature('ai-voice-cloning');
+  assert.equal(voice.model, 'zonos2-voice-clone');
+  assert.deepEqual(voice.media, ['audio']);
+  assert.equal(voice.blocked, undefined);
+  assert.deepEqual(CREATIVE_FEATURES.filter((item) => item.blocked), []);
 });
 
 test('the app route and sidebar expose the workflow suite', async () => {
@@ -87,6 +83,7 @@ test('the app route and sidebar expose the workflow suite', async () => {
   ]);
   assert.match(page, /creativeFeatureGroups/);
   assert.match(detail, /generateStaticParams/);
+  assert.doesNotMatch(detail, /VoiceCloneStudio|MfaPanel/);
   assert.match(nav, /href: '\/app\/features'/);
   assert.match(nav, /key: 'features', href: '\/app\/features'/);
 });
