@@ -6,7 +6,8 @@ import type { PublishAccount } from './publish';
 // ADR-0122: the Publish composer. Everything that decides what is sent lives here so it can be tested;
 // the server stays the authority on every rule (plan, networks, media), these checks only save a round trip.
 
-export type MediaType = 'image' | 'video';
+export type { MediaType } from './publishMediaSignature';
+import type { MediaType } from './publishMediaSignature';
 export const MAX_TEXT = 4000;
 const MIN_LEAD_MS = 60_000;
 
@@ -29,15 +30,9 @@ export type When = { readonly kind: 'now' } | { readonly kind: 'at'; readonly at
 export type YoutubeVisibility = 'private' | 'unlisted' | 'public';
 export const YOUTUBE_VISIBILITIES: readonly YoutubeVisibility[] = ['private', 'unlisted', 'public'];
 
-export interface PostMedia { readonly jobId?: string; readonly uploadId?: string; readonly mediaType: MediaType; }
-export type MediaDraft = { readonly media?: readonly PostMedia[]; readonly jobId: string; readonly uploadId?: string; readonly mediaType: MediaType };
-export const draftMedia = (draft: MediaDraft): readonly PostMedia[] => draft.media ?? [{ mediaType: draft.mediaType, ...(draft.uploadId ? { uploadId: draft.uploadId } : { jobId: draft.jobId }) }];
-export function mediaSignature(draft: MediaDraft): unknown[] {
-    const items = draftMedia(draft);
-    const identities = items.map(item => [item.uploadId ? `upload:${item.uploadId}` : item.jobId, item.mediaType]);
-    // Preserve saved one-file retry keys across an app upgrade.
-    return items.length === 1 ? identities[0] : [identities, 'carousel'];
-}
+export { draftMedia, mediaSignature } from './publishMediaSignature';
+export type { MediaDraft, PostMedia } from './publishMediaSignature';
+import { draftMedia, type MediaDraft, type PostMedia } from './publishMediaSignature';
 export function mediaBlocker(items: readonly PostMedia[], accounts: readonly PublishAccount[]): string | null {
     for (const account of accounts) {
         if (items.length > 1 && (!account.carousel || items.length > account.carousel.max
