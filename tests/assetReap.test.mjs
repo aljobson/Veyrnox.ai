@@ -144,7 +144,7 @@ test('a batch of held or live-asset keys is deferred so the next eligible object
     } finally { w.restore(); }
 });
 
-test('one-release fallback drains the legacy queue when 0396 not_before is missing', async () => {
+test('one-release fallback drains the legacy queue when 0397 not_before is missing', async () => {
     const w = world([{ id: 'legacy', r2_key: 'jobs/legacy.mp4', attempts: 0 }]);
     const previous = globalThis.fetch; let reads = 0;
     globalThis.fetch = (input, init) => {

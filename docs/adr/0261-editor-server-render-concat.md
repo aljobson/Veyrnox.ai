@@ -153,7 +153,7 @@ and staging, without adding text bindings or changing other flags. Only
 POST create is gated; status, cancellation and signed callbacks keep working
 when the switch is off. Refunded create replays return HTTP 409 with
 `render_refunded` and `retry_with_new_key: true`.
-Migrations `0395` and `0396` follow main's `0394`; the open-PR check found only
+Migrations `0396` and `0397` follow main's `0395`; the open-PR check found only
 ADR-only PR #1656. No migrations were applied to a shared environment. The
 catalog row is active with the owner's final price: 1 credit per 10 output
 seconds at 1080p and per 15 seconds at 720p, rounded up, minimum 1 credit.
@@ -205,20 +205,20 @@ existing browser reservations using that prefix can still replay.
 
 The reaper defers disallowed keys by one day and counts them as skipped, so held
 or still-referenced keys cannot occupy every batch. An authorization RPC error
-skips without incrementing deletion attempts. Migration 0396 supplies the reaper
+skips without incrementing deletion attempts. Migration 0397 supplies the reaper
 authorization RPC and `not_before` column even while editor admission is off.
 ESR-019 below previously relaxed database-first rollout for one release;
 round 4 restores mandatory database-first deployment.
 
 Queue-writer audit: `expire_assets` (0016, replaced by 0350), content takedown
 (0146/0253, replaced by 0272), account erasure (0347), job deletion (0351) and
-linked-render expiry (0396) enqueue and remove the canonical asset in the same
+linked-render expiry (0397) enqueue and remove the canonical asset in the same
 transaction. The reaper sees their committed deletion. Film-master expiry
-(0279), browser-render expiry (0285, replaced by 0396), account-erasure upload
+(0279), browser-render expiry (0285, replaced by 0397), account-erasure upload
 and social-upload cleanup, and job-step cleanup use their own keys; a surviving
 canonical reference correctly postpones deletion. Evidence release (0275)
 queues keys whose canonical assets were already removed during escalation.
-Refund cleanup (0396) refuses active assets/holds. No other application queue
+Refund cleanup (0397) refuses active assets/holds. No other application queue
 inserters were found. No existing writer needs changing for the live-asset
 check; putting that check in the enqueue trigger would incorrectly discard
 entries from writers that enqueue before deleting within a transaction.
@@ -294,7 +294,7 @@ reports the missing `not_before` column, and uses the previous deletion behavior
 if `asset_reap_allowed` is specifically missing. Auth failures, network errors,
 other SQL errors and unknown failures still fail closed. This compatibility
 path is an accepted ESR-019 change and must be removed after all target databases
-have 0396. Admission/recovery must remain off until migrations are confirmed.
+have 0397. Admission/recovery must remain off until migrations are confirmed.
 
 Evidence release updates `released_at` in one statement, then enqueues in a
 second statement within the same transaction. This avoids the enqueue trigger
@@ -325,14 +325,14 @@ unverified in this sandbox; the commands below are required host acceptance.
 1. Keep both grouped render switches false. Run `npm test` and the database
    suite below. The latter requires a new empty **local PostgreSQL 15+ database**
    and a role permitted to create roles/extensions (a local test superuser).
-2. Apply 0395 then 0396 through the normal migration workflow before Worker
+2. Apply 0396 then 0397 through the normal migration workflow before Worker
    deploy and before enabling either switch (round 4 release requirement).
 3. Confirm full migration replay/privileges and the new database tests; prove a
    real Concat render and strict R2 upload before activation. Price is approved;
    AGPL disposition remains an owner decision.
 4. Enable recovery before admission when activation is authorized. During
    rollback, disable only admission and leave recovery running to drain jobs.
-5. Remove the temporary pre-0396 reaper fallback in the following release after
+5. Remove the temporary pre-0397 reaper fallback in the following release after
    checking every target database has the migration.
 
 From this checkout, with local PostgreSQL running (use `.pgpass`/`PGPASSWORD`
@@ -345,7 +345,7 @@ EDITOR_RENDER_TEST_DATABASE_URL='postgresql://postgres@127.0.0.1:5432/editor_ser
 
 Use a fresh database name for every run: the suite refuses an existing `jobs`
 table and leaves fixtures for inspection. It loads the actual financial,
-settlement, dispute, escalation and release functions plus 0395/0396; unrelated
+settlement, dispute, escalation and release functions plus 0396/0397; unrelated
 platform tables/rate-limit services are minimal fixtures. It is not a substitute
 for a full Supabase migration replay. SQL execution remains host acceptance work
 here because the sandbox cannot start the local PostgreSQL server.
@@ -394,7 +394,7 @@ through the HTTP runner still require host execution; no such run is claimed.
 
 Release checklist (not executed by this work order):
 
-1. Apply **0395 and 0396 before Worker deploy**; this supersedes the earlier
+1. Apply **0396 and 0397 before Worker deploy**; this supersedes the earlier
    relaxed rollout order for this release. Run the expanded PostgreSQL suite
    against an empty database and replay all migrations.
 2. Keep the Fly app at **one Machine maximum, no autoscaler**, in `ams`.

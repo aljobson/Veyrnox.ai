@@ -60,7 +60,7 @@ ${functionSQL('0329_provider_spend_and_submit_guards.sql', 'public.sweep_stuck_j
 ${functionSQL('0275_csam_escalation_and_content_reports.sql', 'public.record_csam_escalation')}
 ${functionSQL('0351_delete_user_job.sql', 'public.delete_user_job')}
 ${editor.slice(0, editor.indexOf('SELECT cron.schedule'))} COMMIT;
-${sql('0395_editor_server_render.sql')}
-${sql('0396_editor_server_render_library.sql')}
+${sql('0396_editor_server_render.sql')}
+${sql('0397_editor_server_render_library.sql')}
 `;
 }

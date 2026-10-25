@@ -6,7 +6,7 @@ over its token-guarded JSON-RPC socket. Admission and recovery use independent
 `EDITOR_SERVER_RENDER_ENABLED` / `EDITOR_SERVER_RENDER_RECOVERY_ENABLED` switches,
 configured as `"serverRender":"false"` / `"serverRenderRecovery":"false"` in
 `EDITOR_RUNTIME_FLAGS`. Status, cancel and callbacks remain available when off.
-Apply 0395/0396 before the Worker deploy (round 4 release order). On rollback disable admission and leave recovery enabled to drain
+Apply 0396/0397 before the Worker deploy (round 4 release order). On rollback disable admission and leave recovery enabled to drain
 existing jobs. Recovery must run for as long as admission does, and until all
 outstanding jobs settle and cleanup is queued. There is no UI in this slice.
 The active catalog entry bills 1 credit per 10 s at 1080p or per 15 s at 720p,
@@ -128,7 +128,7 @@ unoverrideable platform cap. See Fly's [configuration](https://docs.fly.io/refer
 [scale count](https://docs.fly.io/flyctl/cmd/fly_scale_count), and
 [deploy](https://docs.fly.io/flyctl/cmd/fly_deploy) references.
 
-Before Worker deploy, apply migrations 0395/0396 and run the database suite and
+Before Worker deploy, apply migrations 0396/0397 and run the database suite and
 full migration replay. Provision `EDITOR_RENDER_SIGNING_SECRET` on Worker and
 runner, plus the fixed callback/base URL and source-host settings above. The
 Concat runner token (`CONCAT_API_TOKEN`) is generated privately for each render;
