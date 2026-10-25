@@ -72,9 +72,9 @@ test('frame-src admits Turnstile and the two documented cinema players, nothing 
 test('img-src admits only owned storage and the documented artwork/reference hosts', async () => {
     const csp = (await headerMap()).get('content-security-policy');
     const imageSrc = directives(csp).get('img-src');
-    assert.ok(imageSrc.includes(YOUTUBE_IMAGE_HOST));
+    assert.ok(imageSrc.some((source) => source === YOUTUBE_IMAGE_HOST));
     assert.deepEqual(imageSrc.filter((source) => source.startsWith('http') && !source.includes('r2.cloudflarestorage.com')), [YOUTUBE_IMAGE_HOST, LIPSYNC_REFERENCE_MEDIA_HOST]);
-    assert.ok(directives(csp).get('media-src').includes(LIPSYNC_REFERENCE_MEDIA_HOST));
+    assert.ok(directives(csp).get('media-src').some((source) => source === LIPSYNC_REFERENCE_MEDIA_HOST));
 });
 
 test('connect-src permits only our backends and the exact Stream upload hosts (ADR-0052)', async () => {
