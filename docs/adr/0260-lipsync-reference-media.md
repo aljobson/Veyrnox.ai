@@ -1,8 +1,7 @@
 # ADR-0260: Render audited LipSync reference media from its CDN
 
-## Status
-
-Accepted — 2026-10-25
+Status: Accepted
+Date: 2026-10-25
 
 ## Context
 
