@@ -16,6 +16,13 @@ export const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || 
 const SCRIPT_SRC = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
 
 let scriptPromise = null;
+// The widget's own theme: what the page shows, with "system" resolved through the device.
+function turnstileTheme() {
+    const choice = document.documentElement.dataset.theme;
+    if (choice === 'light') return 'light';
+    return choice === 'system' && window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+}
+
 function loadScript() {
     if (window.turnstile) return Promise.resolve(window.turnstile);
     if (!scriptPromise) {
@@ -59,11 +66,11 @@ export function Turnstile({ onToken, onError, onFailure, onWaiting, onUnsupporte
                 widgetId.current = ts.render(box.current, {
                     sitekey: TURNSTILE_SITE_KEY,
                     // Appearance only (ADR-0026 amendment 6). The site is dark
-                    // unless the visitor chose light (`data-theme` on <html>).
+                    // unless the visitor chose light, or system on a light device (`data-theme` on <html>).
                     // At its default the widget follows the operating system,
                     // which put a white box in the dark dialog for anyone
                     // whose system is light.
-                    theme: document.documentElement.dataset.theme === 'light' ? 'light' : 'dark',
+                    theme: turnstileTheme(),
                     callback: (token) => {
                         lastFailure.current = null;
                         onToken(token);

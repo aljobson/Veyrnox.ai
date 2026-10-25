@@ -26,6 +26,7 @@ const privateFunctions = {
 
 // Exact public exceptions. Do not add blanket file exclusions for UI code.
 const exceptions = [
+  { file: /^(?:app\/layout\.js|app\/veyrnox\/_components\/ThemeToggle\.js|lib\/themePreference\.mjs)$/, pattern: /^(?:\(prefers-color-scheme: (?:light|dark)\)|= ; Path=\/; Max-Age= ; SameSite=Lax)$/, reason: 'CSS media query and cookie attributes for the theme preference, not copy' },
   ...helperExceptions,
   { file: /^app\/s\/\[slug\]\/page\.js$/, pattern: /^(?:— Veyrnox|bg-\[#080b14\] text-white|bg-\[#f5f5f2\] text-\[#171717\]|bg-gradient-to-br from-\[#35133d\] via-\[#9d3155\] to-\[#f49b55\] text-white)$/, reason: 'Brand suffix and the three exact theme CSS class lists; no visitor prose.' },
   { file: /\/_lib\/(?:showcase|sourceTemplateExpansion\d*|character|characterOptions|oddlingCatalog)\.js$/, pattern: /./, reason: 'source catalog names, descriptors and prompts remain unchanged (ADR-0107)' },

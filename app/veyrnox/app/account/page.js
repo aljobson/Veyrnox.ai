@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useState, useSyncExternalStore } from 'react';
 import { AppNav } from '../../_components/NavBar';
 import { Main } from '../../_components/Main';
+import { ThemePicker } from '../../_components/ThemeToggle';
 import { MfaPanel } from '../../_components/MfaPanel';
 import { PasskeyPanel } from '../../_components/PasskeyPanel';
 import { ReferralPanel } from '../../_components/ReferralPanel';
@@ -24,6 +25,11 @@ export default function Account() {
   const account = useSyncExternalStore(onSessionChange, currentAccount, noAccount);
   return <><AppNav /><Main className="max-w-[900px] mx-auto px-4 sm:px-8 py-10">
     <h1 className="text-3xl font-black mb-6">{t("label.Account & security")}</h1>
+    <section className="rounded-2xl border border-vx-border p-5 mb-6">
+      <h2 className="font-bold mb-2">{t("ui.themeAppearance")}</h2>
+      <p className="text-sm text-vx-fg-muted mb-4">{t("ui.themeAppearanceHelp")}</p>
+      <ThemePicker />
+    </section>
     {account ? <AccountControls key={account} /> : <div className="text-vx-fg-body">
       <p className="mb-4">{t("app.account.signInHelp")}</p>
       <button type="button" className={button} onClick={() => window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>{t("oauth.signIn")}</button>
