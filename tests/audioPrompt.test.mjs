@@ -185,8 +185,13 @@ test('every audio catalog row requires either its prompt or an inspected mixed-a
         if (!record) continue;
         assert.ok(record.kind === 'audio' || record.kind === 'speech', `${row.id} record kind`);
         if (record.media?.audio?.required) {
-            assert.equal(row.modality, 'audio-to-audio', `${row.id} source-driven modality`);
-            assert.equal(record.inputs.prompt, undefined, `${row.id} does not invent a text prompt`);
+            if (record.kind === 'speech') {
+                assert.equal(row.modality, 'text-to-speech', `${row.id} source-conditioned speech modality`);
+                assert.equal(record.inputs.prompt?.required, true, `${row.id} requires words to speak`);
+            } else {
+                assert.equal(row.modality, 'audio-to-audio', `${row.id} source-driven modality`);
+                assert.equal(record.inputs.prompt, undefined, `${row.id} does not invent a text prompt`);
+            }
             assert.equal(checkInputs(record, {}).ok, false, `${row.id} refuses a missing audio source`);
             assert.equal(checkSource(record, {audio_url:{seconds:121}}).ok, false, `${row.id} refuses an overlong source`);
         } else assert.equal(record.inputs.prompt?.required, true, `${row.id} requires its prompt`);

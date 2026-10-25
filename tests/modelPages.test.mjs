@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { REGISTRY } from '../lib/modelCapabilities.js';
-import { readPublicCatalog, toPublicModels } from '../lib/publicCatalog.js';
+import { publicModelName, readPublicCatalog, toPublicModels } from '../lib/publicCatalog.js';
 import { MODEL_ID_RE, fallbackModels, findModel, modelDetail, modelFacts, shelfModels, templatesForModel } from '../app/veyrnox/_lib/modelPages.js';
 import { MODELS } from '../app/veyrnox/_lib/tokens.js';
 
@@ -20,6 +20,21 @@ test('public rows never carry provider routing or cost, and unknown endpoints ar
         assert.equal('provider_cost_per_unit' in out[0], false);
         assert.equal(out[0].credits, 19);
     } finally { console.error = errors; }
+});
+
+test('customer model names never expose the wholesale route', () => {
+    const names = [
+        ['Wan 2.5 (kie)', 'Wan 2.5'],
+        ['Kling 3.0 Pro I2V (kie, no audio)', 'Kling 3.0 Pro I2V'],
+        ['Nano Banana Pro Edit (GrsAI, no seed)', 'Nano Banana Pro Edit'],
+        ['Veo 3.1 · Crun reserved', 'Veo 3.1'],
+        ['Seedance 2.0 via BytePlus', 'Seedance 2.0'],
+        ['Kling 3.0 (image-to-video)', 'Kling 3.0 (image-to-video)'],
+    ];
+    for (const [input, expected] of names) assert.equal(publicModelName(input), expected);
+    const [publicRow] = toPublicModels([row('private-route-id', shelfEndpoint, { name: 'Example (KIE, wholesale)' })]);
+    assert.equal(publicRow.name, 'Example');
+    assert.doesNotMatch(JSON.stringify(publicRow), /wholesale/i);
 });
 
 test('public rows expose only validated catalog update timestamps', () => {
