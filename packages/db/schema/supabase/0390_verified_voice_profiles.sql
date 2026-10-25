@@ -321,3 +321,54 @@ REVOKE ALL ON FUNCTION private.erase_revoked_voice_profiles() FROM PUBLIC, anon,
 DROP TRIGGER IF EXISTS erase_revoked_voice_profiles ON public.users;
 CREATE TRIGGER erase_revoked_voice_profiles AFTER UPDATE OF deleted_at ON public.users
 FOR EACH ROW EXECUTE FUNCTION private.erase_revoked_voice_profiles();
+
+-- Extend the established privacy export without copying its large projection
+-- function. The previous implementation becomes a private, uncallable helper;
+-- the public service-role wrapper adds only safe voice lifecycle metadata.
+-- Provider handles and sample audio are deliberately excluded.
+DO $$
+BEGIN
+  IF to_regprocedure('private.read_privacy_export_page_without_voice(text,text,uuid,text,uuid,text,text,integer)') IS NULL THEN
+    ALTER FUNCTION public.read_privacy_export_page(TEXT,TEXT,UUID,TEXT,UUID,TEXT,TEXT,INTEGER)
+      SET SCHEMA private;
+    ALTER FUNCTION private.read_privacy_export_page(TEXT,TEXT,UUID,TEXT,UUID,TEXT,TEXT,INTEGER)
+      RENAME TO read_privacy_export_page_without_voice;
+  END IF;
+END $$;
+REVOKE ALL ON FUNCTION private.read_privacy_export_page_without_voice(TEXT,TEXT,UUID,TEXT,UUID,TEXT,TEXT,INTEGER)
+  FROM PUBLIC, anon, authenticated, service_role;
+
+CREATE OR REPLACE FUNCTION public.read_privacy_export_page(
+  p_auth_id TEXT, p_aal TEXT, p_export_id UUID, p_section TEXT,
+  p_thread_id UUID, p_after TEXT, p_key TEXT, p_page_size INTEGER DEFAULT NULL
+) RETURNS JSONB
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE result JSONB; profiles JSONB;
+BEGIN
+  result := private.read_privacy_export_page_without_voice(
+    p_auth_id,p_aal,p_export_id,p_section,p_thread_id,p_after,p_key,p_page_size);
+  IF p_section='profile' AND result->>'ok'='true' THEN
+    SELECT COALESCE(jsonb_agg(jsonb_build_object(
+      'id',v.id,'name',v.name,'language',v.language,'status',v.status,
+      'consent_version',v.consent_version,'consented_at',v.consented_at,
+      'verified_at',v.verified_at,'ready_at',v.ready_at,
+      'sample_count',v.sample_count,'sample_seconds',v.sample_seconds,
+      'revocation_requested_at',v.revocation_requested_at,'revoked_at',v.revoked_at,
+      'error_code',v.error_code,'created_at',v.created_at,'updated_at',v.updated_at
+    ) ORDER BY v.created_at,v.id),'[]'::jsonb) INTO profiles
+    FROM public.voice_profiles v
+    JOIN public.users u ON u.id=v.user_id AND u.auth_id=p_auth_id AND u.deleted_at IS NULL
+    JOIN public.privacy_export_requests r ON r.id=p_export_id AND r.user_id=u.id
+    WHERE v.created_at<=r.as_of;
+    result := jsonb_set(result,'{rows,0,voice_profiles}',profiles,true);
+  END IF;
+  RETURN result;
+END $$;
+REVOKE ALL ON FUNCTION public.read_privacy_export_page(TEXT,TEXT,UUID,TEXT,UUID,TEXT,TEXT,INTEGER)
+  FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.read_privacy_export_page(TEXT,TEXT,UUID,TEXT,UUID,TEXT,TEXT,INTEGER)
+  TO service_role;
