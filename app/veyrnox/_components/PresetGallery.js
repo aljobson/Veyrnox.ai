@@ -7,6 +7,7 @@ import { useCatalog } from '../_lib/useCatalog';
 import { usePopularTemplates } from '../_lib/usePopularTemplates';
 import { useI18n } from '../../../components/I18nProvider';
 import { rankByTaste } from '../../../lib/creatorWords.js';
+import { hasTemplateVideo } from '../_lib/templates.js';
 
 const TEMPLATE_BATCH_SIZE = 50;
 
@@ -23,11 +24,10 @@ export function PresetGallery({ size = 'lg', columns = 'lg:columns-3', taste = n
   // Popular (ADR-0072) is a ranking, not a home category: it appears only once some template has enough use to rank, in rank order.
   const popular = popularIds.map((id) => PRESETS.find((preset) => preset.id === id)).filter(Boolean);
   const categories = popular.length ? ['ALL', 'NEW', 'POPULAR', ...PRESET_CATEGORIES.slice(2)] : PRESET_CATEGORIES;
-  const list = cat === 'POPULAR' ? popular : templatesIn(cat);
+  const list = (cat === 'POPULAR' ? popular : templatesIn(cat)).filter(hasTemplateVideo);
   const matches = searchTemplates(list, query);
   const ordered = rankByTaste(matches, taste, (p) => `${p.name} ${p.category} ${p.prompt}`);
-  // The roller is for instantly playable previews. Recipes without preview
-  // media still appear in the complete searchable grid below it.
+  // The roller offers a quick sample of the video-backed gallery below.
   const rollerPresets = ordered.filter((preset) => preset.clipKey).slice(0, 48);
   const modelCount = new Set(matches.map((preset) => preset.model)).size;
   return (

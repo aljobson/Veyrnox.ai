@@ -8,6 +8,7 @@ import { PresetCard } from '../../_components/PresetCard';
 import { TemplateRoller } from '../../_components/TemplateRoller';
 import { PRESET_CATEGORIES, templatesIn } from '../../_lib/tokens';
 import { useCatalog } from '../../_lib/useCatalog';
+import { hasTemplateVideo } from '../../_lib/templates.js';
 
 const TEMPLATE_BATCH_SIZE = 50;
 
@@ -16,7 +17,7 @@ export default function MobileExplore() {
   const [cat, setCat] = useState('ALL');
   const [visibleCount, setVisibleCount] = useState(TEMPLATE_BATCH_SIZE);
   const { models } = useCatalog();
-  const list = templatesIn(cat);
+  const list = templatesIn(cat).filter(hasTemplateVideo);
   const rollerPresets = list.filter((preset) => preset.clipKey).slice(0, 48);
 
   return (
