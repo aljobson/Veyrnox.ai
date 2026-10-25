@@ -11,6 +11,7 @@
 import { SOURCE_TEMPLATES } from './sourceTemplates.js';
 import { EFFECT_CONCEPT_TEMPLATES } from './effectConceptTemplates.js';
 import { EFFECT_THEMES, effectThemeId, themedTemplates } from './effectThemes.js';
+import { SHOWCASE_CLIPS } from './showcase.js';
 
 const CATEGORY_ORDER = ['YOUR PHOTO', 'KIDS BIRTHDAY', 'CINEMATIC', 'ANIME', 'CARTOONS', 'MOVIES', 'FANTASY', 'REALISTIC', 'FASHION', 'PRODUCTS', 'VFX', 'UGC', 'ADS'];
 
@@ -47,6 +48,8 @@ const WALL_CLIP_KEYS = [
 export const PRESETS = [...SOURCE_TEMPLATES, ...EFFECT_CONCEPT_TEMPLATES];
 export const WALL_PRESETS = WALL_CLIP_KEYS.map((key) => SOURCE_TEMPLATES.find((p) => p.clipKey === key)).filter(Boolean);
 export const ALL_TEMPLATES = PRESETS;
+// Only advertise recipes with an actual video preview in the visual gallery.
+export const hasTemplateVideo = (preset) => Boolean(preset?.clipKey && SHOWCASE_CLIPS[preset.clipKey]?.video);
 export const PRESET_CATEGORIES = ['ALL', 'NEW', ...CATEGORY_ORDER.filter((category) => PRESETS.some((p) => p.category === category))];
 export { EFFECT_THEMES, effectThemeId };
 
