@@ -20,6 +20,7 @@ Object.assign(process.env, {
 
 const accountRoute = await import('../app/api/v1/account/route.js');
 const { accountLabel } = await import('../app/veyrnox/_lib/account.js');
+const { activeStudioDestination } = await import('../app/veyrnox/_lib/studioNavigation.js');
 
 // JSX component, so this reads the source, like createAutoShort.test.mjs.
 // Comments are stripped first: several of them explain the markup they sit
@@ -34,6 +35,7 @@ const strip = (t) => t
 const authSrc = strip(readFileSync(new URL('../app/veyrnox/_components/NavAuthButtons.js', import.meta.url), 'utf8'));
 const raw = readFileSync(new URL('../app/veyrnox/_components/NavBar.js', import.meta.url), 'utf8');
 const src = strip(raw);
+const adminPageSrc = strip(readFileSync(new URL('../app/veyrnox/app/admin/page.js', import.meta.url), 'utf8'));
 
 const appNav = src.slice(src.indexOf('export function AppNav'));
 const ternary = appNav.indexOf('{account ? (');
@@ -82,9 +84,41 @@ test('the summary follows veyrnox:balance-changed', () => {
         'and it unsubscribes');
 });
 
+test('the studio nav derives current page instead of defaulting to Explore', () => {
+    const candidates = [
+        { key: 'explore', href: '/app' },
+        { key: 'publish', href: '/app/publish' },
+        { key: 'calendar', href: '/app/publish/calendar' },
+        { key: 'credits', href: '/app/credits' },
+        { key: 'cinema', href: '/social-cinema' },
+    ];
+    for (const [path, expected] of [
+        ['/app', 'explore'],
+        ['/veyrnox/app', 'explore'],
+        ['/app/publish', 'publish'],
+        ['/app/publish/reports', 'publish'],
+        ['/app/publish/calendar/week', 'calendar'],
+        ['/app/credits', 'credits'],
+        ['/social-cinema/title/one', 'cinema'],
+        ['/app/account', null],
+        ['/app/admin', null],
+    ]) assert.equal(activeStudioDestination(path, candidates), expected, path);
+    assert.match(appNav, /const activeKey = active \?\? activeStudioDestination\(pathname,/);
+    assert.doesNotMatch(appNav, /active = 'explore'/);
+    assert.match(appNav, /activeKey=\{activeKey\}/, 'the desktop sidebar receives the derived destination');
+    assert.match(appNav, /activeCandidates\.find\(\(item\) => item\.key === activeKey\)/,
+        'the mobile menu receives the same derived destination');
+    assert.match(appNav, /\.\.\.utilityItems,[\s\S]*\.\.\.APP_BROWSE_CATEGORIES/,
+        'mobile navigation includes utility destinations such as Credits');
+    assert.match(adminPageSrc, /<AppNav \/>/,
+        'the Admin landing page must not override the route-derived selection');
+    assert.doesNotMatch(adminPageSrc, /<AppNav[^>]*active=/,
+        'Admin does not falsely select a Studio destination');
+});
+
 test('public app pages do not open sign-in merely to draw their nav', () => {
     const loadSummary = appNav.slice(appNav.indexOf('const loadSummary'), appNav.indexOf('useEffect', appNav.indexOf('const loadSummary')));
-    assert.match(loadSummary, /if \(!readAccount \|\| !session\) \{ setSummary\(null\); return; \}/,
+    assert.match(loadSummary, /if \(!readAccount \|\| !session\) \{[\s\S]*setSummary\(null\);[\s\S]*setSummaryState\('idle'\);[\s\S]*return;/,
         'a signed-out visitor stops before the authenticated account request');
     assert.ok(loadSummary.indexOf('!session') < loadSummary.indexOf("gatewayFetch('/account')"),
         'the local session check happens before the API wrapper can raise the auth gate');
@@ -141,7 +175,7 @@ test('a raw id never reaches the header, and a failed read never lies', () => {
     // accountLabel only ever yields name/email/initial, and the endpoint's
     // fallback chain ends at the email — no branch reaches an id.
     assert.ok(!/auth-id|\.sub\b|user_id/.test(appNav), 'no identifier in the rendered label');
-    assert.match(appNav, /if \(e instanceof GatewayError && e\.status === 401\) setSummary\(null\);/,
+    assert.match(appNav, /if \(e instanceof GatewayError && e\.status === 401\) \{[\s\S]*setSummary\(null\);[\s\S]*setSummaryState\('signed-out'\);/,
         'signed out clears the figures; any other failure keeps the last good read');
     assert.match(appNav, /assets != null \? new Intl\.NumberFormat/, 'no count renders as an em dash');
 });
@@ -155,7 +189,7 @@ test('amber means credits and nothing else', () => {
 test('the whole nav still fits without a hidden horizontal rail', () => {
     // Primary destinations remain visible; specialist tools live in the
     // explicit More menu until a 2xl viewport can hold them all.
-    assert.match(signedIn, /flex flex-col gap-px/, 'the two figures stack');
+    assert.match(signedIn, /className="[^"\n]*\bflex\b[^"\n]*\bflex-col\b[^"\n]*\bgap-px\b/, 'the two figures stack');
     assert.match(appNav, /lg:hidden \$\{account \? 'hidden sm:flex' : 'flex'\}/,
         'the mark yields to signed-in account controls below sm, and only then');
     assert.match(appNav, /<AppSidebar[\s\S]*sections=\{sidebarSections\}/,
@@ -168,6 +202,15 @@ test('the whole nav still fits without a hidden horizontal rail', () => {
         'long and translated tool names keep a full-width row instead of colliding in a two-column grid');
     assert.match(src, /flex min-h-10 items-center rounded-xl/,
         'desktop sidebar destinations keep at least a 40px target');
+    assert.match(signedIn, /href="\/app\/library"[\s\S]*max-\[429px\]:hidden/,
+        'only the secondary asset count yields on the narrowest phones');
+    const balanceLink = signedIn.slice(signedIn.indexOf('data-testid="app-credit-balance"'), signedIn.indexOf('</Link>', signedIn.indexOf('data-testid="app-credit-balance"')));
+    assert.doesNotMatch(balanceLink, /max-\[429px\]:hidden/,
+        'the primary credit balance remains visible on authenticated mobile layouts');
+    assert.match(signedIn, /readAccount && summaryState !== 'signed-out'/,
+        'pages that suppress account reads do not show misleading em-dash totals');
+    assert.match(signedIn, /summaryState === 'loading' && summary !== null[\s\S]*animate-pulse/,
+        'a background refresh is visibly distinct from settled totals');
 });
 
 test('Oddlings is available without looking permanently selected', () => {
@@ -220,7 +263,7 @@ test('the bar names the account beside the avatar, and hides that name below sm'
     // is a direct child of the flex button, which blockifies it — move it
     // out of that row and the ellipsis silently stops.
     const button = authSrc.slice(authSrc.indexOf('aria-expanded={menuOpen}'), authSrc.indexOf(span[0]));
-    assert.match(button, /className="flex items-center/, 'the name sits in the flex row that blockifies it');
+    assert.match(button, /className="flex[^"\n]*items-center/, 'the name sits in the flex row that blockifies it');
 });
 
 // ── GET /api/v1/account ───────────────────────────────────────────────────

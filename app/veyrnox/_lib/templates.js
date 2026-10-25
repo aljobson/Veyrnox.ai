@@ -51,6 +51,9 @@ export const ALL_TEMPLATES = PRESETS;
 // Only advertise recipes with an actual video preview in the visual gallery.
 export const hasTemplateVideo = (preset) => Boolean(preset?.clipKey && SHOWCASE_CLIPS[preset.clipKey]?.video);
 export const PRESET_CATEGORIES = ['ALL', 'NEW', ...CATEGORY_ORDER.filter((category) => PRESETS.some((p) => p.category === category))];
+// The first filter row is deliberately concise; the gallery can disclose the
+// complete category catalog in place without hiding choices in a scroll rail.
+export const QUICK_PRESET_CATEGORIES = ['ALL', 'NEW', 'POPULAR', 'YOUR PHOTO', 'PRODUCTS', 'STORIES'];
 export { EFFECT_THEMES, effectThemeId };
 
 // "New" is a flag, not a home category: a new template also sits in its own.
