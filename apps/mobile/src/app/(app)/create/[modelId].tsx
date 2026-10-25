@@ -10,6 +10,7 @@ import { createGenerationSubmit, generationMessage } from '../../../lib/generati
 import { CameraPanel } from '../../../components/CameraPanel';
 import { CharacterPanel } from '../../../components/CharacterPanel';
 import { CreateOptions, type OptionValues } from '../../../components/CreateOptions';
+import { AttachFromDevice } from '../../../components/AttachFromDevice';
 import { SourcePicker } from '../../../components/SourcePicker';
 import { TemplateBanner } from '../../../components/TemplateBanner';
 import { DEFAULT_CINEMA, buildCinemaPrompt, sanitizeCinema, type Cinema } from '../../../lib/cinemaCamera';
@@ -281,7 +282,9 @@ export default function CreateWithModel() {
                             />
                         ))}
                     </View>
-                ) : null}
+                ) : (
+                    <View style={styles.section}><AttachFromDevice api={api} current={model} /></View>
+                )}
                 {text_ ? (
                     <View style={styles.section}>
                         <View style={styles.sectionTop}>

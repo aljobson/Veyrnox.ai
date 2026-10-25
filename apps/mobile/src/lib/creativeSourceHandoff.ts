@@ -3,7 +3,7 @@ import type { SlotName } from './sources';
 export interface CreativeSourceHandoff {
     readonly recipe: string;
     readonly modelId: string;
-    readonly aspect: '1:1' | '9:16';
+    readonly aspect?: '1:1' | '9:16';
     readonly uploaded: Partial<Record<SlotName, string>>;
     readonly fromLibrary: Partial<Record<SlotName, string>>;
 }

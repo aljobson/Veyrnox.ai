@@ -37,6 +37,7 @@ import { CharacterPanel } from '../../_components/CharacterPanel';
 import { buildCharacterPrompt, sanitizeOddlingPicks } from '../../_lib/character';
 import { DrawOnImage } from '../../_components/DrawOnImage';
 import { SourcePickers } from '../../_components/SourcePickers';
+import { attachAccept, attachSlotFor, modelForAttachment } from '../../../../lib/createAttach.mjs';
 import SourceRightsConfirmation from '../../_components/SourceRightsConfirmation';
 import { LibraryPicker } from '../../_components/LibraryPicker';
 import { GenerationSettings } from '../../_components/GenerationSettings';
@@ -306,6 +307,20 @@ export default function CreateStudio() {
       else delete next[slot];
       return next;
     });
+  }
+
+  const [attachNotice, setAttachNotice] = useState('');
+  // The always-visible paperclip: the file's type picks the slot, and the model
+  // switches to one that takes it when the current one cannot.
+  function attachFromDevice(fileList) {
+    const file = fileList && fileList[0];
+    if (!file) return;
+    const slot = attachSlotFor(file);
+    const target = slot && modelForAttachment(models, model, slot);
+    if (!target) { setAttachNotice(tOr(t, 'app.create.attach.unsupported', 'No model takes that file type. Use PNG, JPEG or WebP images, MP4 video, or MP3 or WAV audio.')); return; }
+    setAttachNotice(target.id === model?.id ? '' : tOr(t, 'app.create.attach.switched', 'Switched to {name}, which accepts your file.', { name: target.name }));
+    if (target.id !== model?.id) { setPresetParam(null); setGoal(target.kind); setModelId(target.id); }
+    pickSource(slot, file);
   }
 
   function applyDrawing(file) {
@@ -591,6 +606,17 @@ export default function CreateStudio() {
           {model?.takesVoice && <VoiceDescription value={voice} onChange={setVoice} />}
 
           {animationPortrait && <div role="status" className="mt-4 rounded-xl border border-vx-accent/30 bg-vx-panel p-4 text-sm text-vx-fg-body">{portraitStatus}{animationMismatch && <p className="mt-2 text-vx-danger">{t("app.create.animationModel")}</p>}</div>}
+          {Object.keys(media).length === 0 && (
+            <div className="mt-3 flex items-center gap-3">
+              <label className="font-vx-mono text-[11px] font-bold rounded-full px-3.5 py-1.5 border border-vx-border text-vx-fg-muted hover:text-vx-fg cursor-pointer has-focus-visible:outline-solid has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-vx-accent">
+                {tOr(t, 'app.create.attach.button', 'Attach from device')}
+                <input data-testid="create-attach" type="file" accept={attachAccept()} className="sr-only"
+                  onChange={(e) => { attachFromDevice(e.target.files); e.target.value = ''; }} />
+              </label>
+              <span className="text-xs text-vx-fg-muted">{tOr(t, 'app.create.attach.hint', 'Image, video or audio as a reference')}</span>
+            </div>
+          )}
+          {attachNotice && <p role="status" className="mt-2 text-xs text-vx-fg-muted">{attachNotice}</p>}
           <div className="scroll-mt-24" data-assistant-target={Object.keys(media).length ? 'create.upload' : undefined}>
             <SourcePickers media={media} sources={sources} onPick={pickSource}
               onDraw={model?.kind === 'image' ? () => setDrawing(true) : null} onLibrary={setLibraryFor} />

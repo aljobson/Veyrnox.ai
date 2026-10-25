@@ -40,7 +40,7 @@ type Status = { readonly step: 'empty' } | { readonly step: 'uploading'; readonl
 
 const NOUN = { image: 'image', video: 'video', audio: 'audio file' } as const;
 
-async function choose(kind: Slot['kind']): Promise<PickedFile | null> {
+export async function choose(kind: Slot['kind']): Promise<PickedFile | null> {
     if (kind === 'audio') {
         const res = await DocumentPicker.getDocumentAsync({ type: ['audio/mpeg', 'audio/wav', 'audio/x-wav', 'audio/wave'], copyToCacheDirectory: true });
         const a = res.canceled ? null : res.assets[0];
