@@ -3,7 +3,7 @@ declare const __dirname: string;
 const fs = require('fs') as { readFileSync: (p: string, e: 'utf8') => string };
 const path = require('path') as { join: (...p: string[]) => string };
 
-import { HOP_COOLDOWN_MS, HOP_SCROLL_PX, INITIAL_SCROLL, PAYWALL_MOODS, nextScrollState, onVeyReaction, paywallMoodFor, reactVey, type PaywallEvent } from '../src/lib/veyMotion';
+import { HOP_COOLDOWN_MS, HOP_SCROLL_PX, INITIAL_SCROLL, nextScrollState, onVeyReaction, reactVey } from '../src/lib/veyMotion';
 
 const read = (...p: string[]) => fs.readFileSync(path.join(__dirname, '..', 'src', ...p), 'utf8');
 
@@ -37,27 +37,22 @@ describe('Vey hops as a list scrolls', () => {
     });
 });
 
-describe('the companion beside a paywall', () => {
-    test('has a mood for everything the reader does, and every held mood ends', () => {
-        const events = Object.keys(PAYWALL_MOODS) as PaywallEvent[];
-        expect(events.sort()).toEqual(['ambient', 'checkout', 'credited', 'error', 'select', 'welcomeFirst', 'welcomeLow']);
-        for (const event of events) expect(Number.isInteger(paywallMoodFor(event).holdMs)).toBe(true);
-        // Only an open store sheet keeps a mood until something else changes it.
-        expect(events.filter((e) => paywallMoodFor(e).holdMs === 0)).toEqual(['checkout']);
-        expect(paywallMoodFor('credited').mood).toBe('cheer');
-        expect(paywallMoodFor('error').mood).toBe('worried');
-        expect(paywallMoodFor('welcomeLow').mood).toBe('worried');
-    });
-
-    test('is on every place the app sells something, as decoration only', () => {
-        expect(read('app', '(app)', 'credits.tsx')).toContain('<VeyPaywallBuddy');
-        expect(read('components', 'UnlockCard.tsx')).toContain('<VeyPaywallBuddy');
-        expect(read('components', 'LowBalanceNote.tsx')).toContain('<VeyPaywallBuddy');
-        const buddy = read('components', 'VeyPaywallBuddy.tsx');
-        expect(buddy).toContain('pointerEvents="none"');
+describe('the companion on a paywall', () => {
+    test('peeks over the chosen card only, as decoration', () => {
+        expect(read('app', '(app)', 'credits.tsx')).toContain('{chosenId === item.id ? <VeyCardPeek /> : null}');
+        expect(read('components', 'UnlockCard.tsx')).toContain('{selected === p.id ? <VeyCardPeek');
+        expect(read('components', 'LowBalanceNote.tsx')).not.toContain('Vey');
+        for (const file of [['app', '(app)', 'credits.tsx'], ['components', 'UnlockCard.tsx']]) {
+            const source = read(...file);
+            expect((source.match(/<VeyCardPeek/g) ?? []).length).toBe(1);
+            expect(source).not.toMatch(/notify\(|useVeyPaywallMood|VeyPaywallBuddy/);
+        }
+        const peek = read('components', 'VeyCardPeek.tsx');
+        expect(peek).toContain('pointerEvents="none"');
+        expect(peek).toContain('overflow: \'hidden\'');
         // No words of its own: nothing to translate, and nothing a screen reader reads twice.
-        expect(buddy).not.toMatch(/\bt\('/);
-        expect(buddy).not.toContain('<Text');
+        expect(peek).not.toMatch(/\bt\('/);
+        expect(peek).not.toContain('<Text');
     });
 });
 

@@ -9,7 +9,7 @@ import { Button } from './Button';
 import { gatewayFetch, GatewayError, makeIdempotencyKey, notifyBalanceChanged, ACCOUNT_PAUSED_COPY } from '../_lib/gateway';
 import { retryTopUpReturn } from '../_lib/topUpReturnRetry';
 import { useCatalog } from '../_lib/useCatalog';
-import { VeyPaywallBuddy, useVeyPaywallMood } from './VeyPaywallBuddy';
+import { VeyCardPeek } from './VeyCardPeek';
 
 // Supply Consent (CONTEXT.md), approved as v1 in #99: keep the text verbatim.
 // Changing it needs a new sign-off and a new version, here and in
@@ -139,9 +139,8 @@ function Check() {
   );
 }
 
-export function TopUpPacks({ signedIn, welcome = null }) {
+export function TopUpPacks({ signedIn }) {
   const { t, locale } = useI18n();
-  const { mood, notify } = useVeyPaywallMood(welcome);
   const translation = useRef(t);
   translation.current = t;
   const number = new Intl.NumberFormat(localeTag(locale, 'en-US'));
@@ -163,9 +162,9 @@ export function TopUpPacks({ signedIn, welcome = null }) {
     let cancelled = false;
     gatewayFetch('/credit-packs')
       .then((b) => { if (!cancelled) setPacks(Array.isArray(b?.packs) ? b.packs : []); })
-      .catch(() => { if (!cancelled) setError(translation.current("app.credits.packs.unavailable")); if (!cancelled) notify('error'); });
+      .catch(() => { if (!cancelled) setError(translation.current("app.credits.packs.unavailable")); });
     return () => { cancelled = true; };
-  }, [signedIn, notify]);
+  }, [signedIn]);
 
   if (!signedIn) {
     return (
@@ -180,7 +179,6 @@ export function TopUpPacks({ signedIn, welcome = null }) {
     if (!selected || !idempotencyKey || !consent || busy) return;
     setBusy(true);
     setError(null);
-    notify('checkout');
     try {
       const res = await gatewayFetch('/top-ups', {
         method: 'POST',
@@ -198,13 +196,11 @@ export function TopUpPacks({ signedIn, welcome = null }) {
       const code = e instanceof GatewayError ? e.code : null;
       setError(tOr(t, `app.credits.packs.error.${code}`, code === 'account_frozen' ? ACCOUNT_PAUSED_COPY : t('app.credits.packs.failed')));
       setBusy(false);
-      notify('error');
     }
   }
 
   return (
     <div className="mt-6">
-      {((packs && packs.length > 0) || error) && <VeyPaywallBuddy mood={mood} />}
       {packs == null && !error && (
         <div className="font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">{t("app.credits.packs.loading")}</div>
       )}
@@ -227,11 +223,10 @@ export function TopUpPacks({ signedIn, welcome = null }) {
                 <label
                   key={p.id}
                   data-credit-pack={p.id}
-                  onPointerEnter={(e) => { if (e.pointerType === 'mouse') notify('hover'); }}
-                  onPointerLeave={(e) => { if (e.pointerType === 'mouse') notify('leave'); }}
-                  className={`flex flex-col items-stretch rounded-2xl border px-5 py-6 cursor-pointer transition-[border-color,background-color,box-shadow] duration-150 has-focus-visible:outline-solid has-focus-visible:outline-2 has-focus-visible:outline-vx-accent ${on ? 'border-vx-money bg-vx-money/[0.07] shadow-[inset_0_0_0_1px_rgb(var(--vx-money)),0_8px_28px_-12px_rgb(var(--vx-money)/0.55)]' : 'border-vx-border bg-vx-base/60 hover:border-vx-money/60'}`}
+                  className={`relative flex flex-col items-stretch rounded-2xl border px-5 py-6 cursor-pointer transition-[border-color,background-color,box-shadow] duration-150 has-focus-visible:outline-solid has-focus-visible:outline-2 has-focus-visible:outline-vx-accent ${on ? 'border-vx-money bg-vx-money/[0.07] shadow-[inset_0_0_0_1px_rgb(var(--vx-money)),0_8px_28px_-12px_rgb(var(--vx-money)/0.55)]' : 'border-vx-border bg-vx-base/60 hover:border-vx-money/60'}`}
                 >
-                  <input type="radio" name="credit-pack" value={p.id} checked={on} onChange={() => { setSelected(p.id); setIdempotencyKey(makeIdempotencyKey()); notify('select'); }} className="sr-only" />
+                  {on && <VeyCardPeek />}
+                  <input type="radio" name="credit-pack" value={p.id} checked={on} onChange={() => { setSelected(p.id); setIdempotencyKey(makeIdempotencyKey()); }} className="sr-only" />
                   <span className="flex w-full items-center justify-between gap-3 font-vx-mono text-[10px] tracking-[0.12em] text-vx-fg-muted">{t("app.credits.packs.pack")}{best && <span className="rounded-full bg-vx-money px-2 py-0.5 text-[9px] font-bold tracking-[0.1em] text-vx-base">{t("app.credits.packs.bestValue")}</span>}{on && <span aria-hidden="true" className="flex h-5 w-5 items-center justify-center rounded-full bg-vx-money text-[11px] font-bold text-vx-base">✓</span>}</span>
                   <span className="mt-4 flex items-center gap-2 rounded-lg bg-vx-money/[0.12] px-3 py-2.5 font-vx-mono text-[18px] font-bold text-vx-money vx-num">
                     <Diamond />
@@ -264,7 +259,7 @@ export function TopUpPacks({ signedIn, welcome = null }) {
             {t("pricing.packs.tax")}</p>
 
           <BindingText id="supply"  ><label className="mt-4 flex items-start gap-2 text-sm text-vx-fg-body cursor-pointer">
-            <input type="checkbox" required checked={consent} onChange={(e) => { setConsent(e.target.checked); if (e.target.checked) notify('consent'); }} className="mt-1 accent-vx-accent" />
+            <input type="checkbox" required checked={consent} onChange={(e) => { setConsent(e.target.checked); }} className="mt-1 accent-vx-accent" />
             <span>
               <span lang="en" dir="ltr">{SUPPLY_CONSENT_TEXT}</span>{' '}
               <a href="/legal/refund" className="underline text-vx-fg-muted">Refund policy</a>

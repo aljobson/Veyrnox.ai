@@ -20,7 +20,7 @@ import {
   subscriptionReturnFrom,
 } from '../_lib/creditSubscriptionUi';
 import { subscriptionSavingPercent, yearlySaving } from '../_lib/subscriptionPlans';
-import { VeyPaywallBuddy, useVeyPaywallMood } from './VeyPaywallBuddy';
+import { VeyCardPeek } from './VeyCardPeek';
 const usd = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
@@ -76,7 +76,7 @@ async function publicOfferState() {
   }
 }
 const CADENCES = ['month', 'year'];
-export function Plans({ plans, packs, selected, onSelect, publicOnly = false, initialCadence = 'month', notify }) {
+export function Plans({ plans, packs, selected, onSelect, publicOnly = false, initialCadence = 'month' }) {
   const { t, locale } = useI18n();
   const hasYearly = plans.some((p) => p.billing_interval === 'year') && plans.some((p) => p.billing_interval === 'month');
   const [cadence, setCadence] = useState(initialCadence);
@@ -105,9 +105,8 @@ export function Plans({ plans, packs, selected, onSelect, publicOnly = false, in
           const saving = subscriptionSavingPercent(p.billing_interval === 'year' ? { ...p, credits: p.credits * 12 } : p, packs);
           const yearly = p.billing_interval === 'year' ? yearlySaving(p, plans) : null;
           const planName = tOr(t, `app.credits.subscription.plan.${p.id}`, names[p.id] || p.id);
-          return <li key={p.id} className="rounded-xl border border-vx-border p-5"
-            onPointerEnter={(e) => { if (notify && e.pointerType === 'mouse') notify('hover'); }}
-            onPointerLeave={(e) => { if (notify && e.pointerType === 'mouse') notify('leave'); }}>
+          return <li key={p.id} className="relative rounded-xl border border-vx-border p-5">
+            {!publicOnly && selected === p.id && <VeyCardPeek />}
             {saving && (
               <p className="mb-2 font-vx-mono text-[10px] font-bold uppercase tracking-[0.1em] text-vx-accent">
                 {t('pricing.subs.saving', { pct: saving })}
@@ -153,7 +152,7 @@ export function Plans({ plans, packs, selected, onSelect, publicOnly = false, in
               <button
                 className="mt-4 rounded-full border border-vx-border px-4 py-2 font-bold"
                 aria-pressed={selected === p.id}
-                onClick={() => { onSelect(p.id); if (notify) notify('select'); }}
+                onClick={() => onSelect(p.id)}
               >
                 {selected === p.id ? t('public.subscription.selected') : t('public.subscription.choose', { plan: planName })}
               </button>
@@ -270,7 +269,6 @@ export function CreditSubscriptions() {
   );
 }
 function Billing({ account, recovery, setRecovery }) {
-  const { mood, notify } = useVeyPaywallMood();
   const { t, locale } = useI18n();
   const translation = useRef(t);
   translation.current = t;
@@ -387,7 +385,6 @@ function Billing({ account, recovery, setRecovery }) {
     setBusy(true);
     setError('');
     setNotice('');
-    notify('checkout');
     try {
       const r = await gatewayFetch('/subscriptions/checkout', {
         method: 'POST',
@@ -405,7 +402,6 @@ function Billing({ account, recovery, setRecovery }) {
     } catch (e) {
       setError(message(e.code, t));
       setBusy(false);
-      notify('error');
     }
   }
   async function cancel(id, mode) {
@@ -589,12 +585,10 @@ function Billing({ account, recovery, setRecovery }) {
         <>
           <p className="mt-4">
             {t("app.credits.subscription.intro")}</p>
-          <VeyPaywallBuddy mood={mood} />
           <Plans
             plans={catalog.plans}
             packs={catalog.packs}
             selected={selected}
-            notify={notify}
             onSelect={(id) => {
               setSelected(id);
               setAgreed(false);
@@ -616,7 +610,7 @@ function Billing({ account, recovery, setRecovery }) {
                     <input
                       type="checkbox"
                       checked={agreed}
-                      onChange={(e) => { setAgreed(e.target.checked); if (e.target.checked) notify('consent'); }}
+                      onChange={(e) => { setAgreed(e.target.checked); }}
                     />
                     <span>
                       I agree to {names[plan.id] || plan.id} at{' '}
@@ -629,7 +623,7 @@ function Billing({ account, recovery, setRecovery }) {
                   <input
                     type="checkbox"
                     checked={agreed}
-                    onChange={(e) => { setAgreed(e.target.checked); if (e.target.checked) notify('consent'); }}
+                    onChange={(e) => { setAgreed(e.target.checked); }}
                   />
                   <span>
                     I agree to {names[plan.id] || plan.id} at{' '}

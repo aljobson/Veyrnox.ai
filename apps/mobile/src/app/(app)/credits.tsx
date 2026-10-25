@@ -6,7 +6,7 @@ import { useBilling } from '../../billing/BillingProvider';
 import { toDisplayPackages, waitForBalanceChange } from '../../lib/billing';
 import { colors } from '../../theme';
 import { plural, t } from '../../lib/i18n';
-import { VeyPaywallBuddy, useVeyPaywallMood } from '../../components/VeyPaywallBuddy';
+import { VeyCardPeek } from '../../components/VeyCardPeek';
 import { useVeyScroll } from '../../lib/useVeyScroll';
 
 type Outcome = { kind: 'credited'; balance: number } | { kind: 'pending' } | { kind: 'error' } | null;
@@ -16,7 +16,7 @@ export default function Credits() {
     const { status, offerings, canPurchase, purchase } = useBilling();
     const [busyId, setBusyId] = useState<string | null>(null);
     const [outcome, setOutcome] = useState<Outcome>(null);
-    const { mood, notify } = useVeyPaywallMood();
+    const [chosenId, setChosenId] = useState<string | null>(null);
     const onScroll = useVeyScroll();
 
     const packs = toDisplayPackages(offerings?.all.credits?.availablePackages ?? []).filter((p) => p.credits !== null);
@@ -26,20 +26,14 @@ export default function Credits() {
         if (!pkg || busyId) return;
         setBusyId(id);
         setOutcome(null);
-        notify('select');
+        setChosenId(id);
         try {
             const before = (await api.getBalance()).balance;
-            notify('checkout');
-            if ((await purchase(pkg)) === 'cancelled') {
-                notify('ambient');
-                return;
-            }
+            if ((await purchase(pkg)) === 'cancelled') return;
             const result = await waitForBalanceChange(async () => (await api.getBalance()).balance, before);
             setOutcome(result.changed ? { kind: 'credited', balance: result.balance } : { kind: 'pending' });
-            if (result.changed) notify('credited');
         } catch {
             setOutcome({ kind: 'error' });
-            notify('error');
         } finally {
             setBusyId(null);
         }
@@ -58,14 +52,10 @@ export default function Credits() {
                     onScroll={onScroll}
                     scrollEventThrottle={64}
                     keyExtractor={(p) => p.id}
-                    ListHeaderComponent={
-                        <>
-                            {canPurchase ? null : <Text style={styles.muted}>{t('credits.notOpen')}</Text>}
-                            <VeyPaywallBuddy mood={mood} />
-                        </>
-                    }
+                    ListHeaderComponent={canPurchase ? undefined : <Text style={styles.muted}>{t('credits.notOpen')}</Text>}
                     renderItem={({ item }) => (
                         <Pressable accessibilityRole="button" disabled={!canPurchase || busyId !== null} style={[styles.row, !canPurchase && styles.off]} onPress={() => buy(item.id)}>
+                            {chosenId === item.id ? <VeyCardPeek /> : null}
                             <View style={styles.rowText}>
                                 <Text style={styles.name}>{plural('credits.pack', item.credits ?? 0, { count: item.credits?.toLocaleString() ?? '0' })}</Text>
                             </View>

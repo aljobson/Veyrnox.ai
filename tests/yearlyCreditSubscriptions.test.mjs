@@ -109,19 +109,23 @@ test('the hourly sweep is scheduled and the yearly plans stay inactive in this c
   assert.doesNotMatch(sql, /UPDATE public\.credit_subscription_plans/i, 'activation is a separate, deliberate step');
 });
 
-test('Vey beside the plans: the peek mood keeps the bottom edge clipped and the character cheering over the card', () => {
+test('Vey peeks over the chosen card only: head and paws, cropped at the card edge, decoration only', () => {
   const f = fixture('en', '/app/credits');
-  const { VeyPaywallBuddy } = f.load('app/veyrnox/_components/VeyPaywallBuddy.jsx');
-  const html = f.render(React.createElement(VeyPaywallBuddy, { mood: 'peek' }));
+  const { VeyCardPeek } = f.load('app/veyrnox/_components/VeyCardPeek.jsx');
+  const html = f.render(React.createElement(VeyCardPeek));
   assert.match(html, /data-testid="paywall-vey"/);
-  assert.match(html, /data-mood="peek"/);
-  assert.match(html, /data-vey-pose="cheer"/);
-  assert.match(html, /clip-path:inset\(-300% -50% 0 -50%\)/, 'only the card edge crops Vey');
+  assert.match(html, /bottom-full/, 'sits on the top edge of the card it is rendered in');
+  assert.match(html, /clip-path:inset\(-100% -50% 0 -50%\)/, 'only the card edge crops Vey');
   assert.match(html, /aria-hidden="true"/, 'decoration only');
+  assert.match(html, /pointer-events-none/);
 });
 
-test('the subscription plans notify Vey on hover, select, consent, checkout and error, like the credit packs', async () => {
-  const src = readFileSync('app/veyrnox/_components/CreditSubscriptions.js', 'utf8');
-  for (const event of ['hover', 'leave', 'select', 'consent', 'checkout', 'error']) assert.match(src, new RegExp(`notify\\('${event}'\\)`), event);
-  assert.match(src, /<VeyPaywallBuddy mood=\{mood\} \/>/);
+test('the plans and the credit packs show Vey on the chosen card and nowhere else', () => {
+  const plans = readFileSync('app/veyrnox/_components/CreditSubscriptions.js', 'utf8');
+  assert.match(plans, /selected === p\.id && <VeyCardPeek \/>/);
+  assert.equal((plans.match(/<VeyCardPeek/g) || []).length, 1);
+  const packs = readFileSync('app/veyrnox/_components/TopUpPacks.js', 'utf8');
+  assert.match(packs, /\{on && <VeyCardPeek \/>\}/);
+  assert.equal((packs.match(/<VeyCardPeek/g) || []).length, 1);
+  for (const src of [plans, packs]) assert.doesNotMatch(src, /notify\(|useVeyPaywallMood|VeyPaywallBuddy/);
 });
