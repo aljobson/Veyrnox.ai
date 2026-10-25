@@ -56,6 +56,7 @@ const STORES = { APP_STORE: 'ios', PLAY_STORE: 'android', TEST_STORE: 'ios' };
 
 const CREDITS_PREFIX = 'ai.veyrnox.credits.';
 const PUBLISH_PREFIX = 'ai.veyrnox.publish.';
+const GENERATION_PREFIX = 'ai.veyrnox.generation.';
 // Subscription events that (re)open or extend a plan. Source: RevenueCat docs, event types (checked 2026-10-17).
 const SUBSCRIPTION_ACTIONS = {
     INITIAL_PURCHASE: 'activate', RENEWAL: 'activate', PRODUCT_CHANGE: 'activate', UNCANCELLATION: 'activate',
@@ -69,7 +70,7 @@ const finiteMs = (v) => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? 
  * @returns {{kind:'ignore', reason:string}
  *   |{kind:'purchase'|'refund', eventId:string, channel:'ios'|'android', productId:string,
  *     transactionId:string, customerIds:string[], sandbox:boolean}
- *   |{kind:'subscription', eventId:string, type:string, action:'activate'|'cancel_at_period_end'|'past_due'|'expire'|'refund',
+ *   |{kind:'subscription', family:'publish'|'generation', eventId:string, type:string, action:'activate'|'cancel_at_period_end'|'past_due'|'expire'|'refund',
  *     channel:'ios'|'android', productId:string, originalTransactionId:string, periodEnd:string|null,
  *     occurredAt:string, customerIds:string[], sandbox:boolean}}
  */
@@ -97,12 +98,12 @@ export function parseStoreEvent(body) {
     const sandbox = store === 'TEST_STORE' || String(event.environment || '').toUpperCase() !== 'PRODUCTION';
 
     // A cancellation of a credit pack is a refund; of a Publish plan it is either a refund or "will not renew".
-    const isPublish = productId.startsWith(PUBLISH_PREFIX);
-    if (type === 'NON_RENEWING_PURCHASE' || (type === 'CANCELLATION' && !isPublish)) {
+    const family = productId.startsWith(PUBLISH_PREFIX) ? 'publish' : productId.startsWith(GENERATION_PREFIX) ? 'generation' : null;
+    if (type === 'NON_RENEWING_PURCHASE' || (type === 'CANCELLATION' && family === null)) {
         if (type === 'NON_RENEWING_PURCHASE' && !productId.startsWith(CREDITS_PREFIX)) return { kind: 'ignore', reason: 'product' };
         return { kind: type === 'NON_RENEWING_PURCHASE' ? 'purchase' : 'refund', eventId, channel, productId, transactionId, customerIds, sandbox };
     }
-    if (!isPublish) return { kind: 'ignore', reason: 'product' };
+    if (family === null) return { kind: 'ignore', reason: 'product' };
 
     const action = type === 'CANCELLATION'
         ? (String(event.cancel_reason || '').toUpperCase() === 'CUSTOMER_SUPPORT' ? 'refund' : 'cancel_at_period_end')
@@ -113,7 +114,7 @@ export function parseStoreEvent(body) {
     const occurred = finiteMs(event.event_timestamp_ms);
     if (action === 'activate' && expires === null) return { kind: 'ignore', reason: 'period_end' };
     return {
-        kind: 'subscription', eventId, type: type.toLowerCase(), action, channel, productId, originalTransactionId: original,
+        kind: 'subscription', family, eventId, type: type.toLowerCase(), action, channel, productId, originalTransactionId: original,
         periodEnd: expires === null ? null : new Date(expires).toISOString(),
         occurredAt: new Date(occurred ?? Date.now()).toISOString(), customerIds, sandbox,
     };

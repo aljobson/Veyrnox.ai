@@ -3,7 +3,20 @@
 // The part of a RevenueCat package the screens read.
 export interface RcPackage {
     readonly identifier: string;
-    readonly product: { readonly identifier: string; readonly title: string; readonly priceString: string };
+    readonly product: {
+        readonly identifier: string;
+        readonly title: string;
+        readonly priceString: string;
+        readonly price?: number;
+        readonly discounts?: readonly RcDiscount[] | null;
+    };
+}
+
+export interface RcDiscount {
+    readonly identifier: string;
+    readonly price: number;
+    readonly priceString: string;
+    readonly cycles: number;
 }
 
 export type Interval = 'week' | 'month' | 'year';
@@ -15,7 +28,10 @@ export interface DisplayPackage {
     readonly priceString: string;
     readonly credits: number | null;
     readonly interval: Interval | null;
+    readonly generationPlan: GenerationPlan | null;
 }
+
+export type GenerationPlan = 'lite' | 'starter' | 'plus' | 'ultra';
 
 const CREDITS_RE = /^ai\.veyrnox\.credits\.(\d{1,6})$/;
 const PUBLISH_INTERVALS: Record<string, Interval> = {
@@ -23,6 +39,7 @@ const PUBLISH_INTERVALS: Record<string, Interval> = {
     'ai.veyrnox.publish.monthly': 'month',
     'ai.veyrnox.publish.annual': 'year',
 };
+const GENERATION_RE = /^ai\.veyrnox\.generation\.(lite|starter|plus|ultra)\.(monthly|annual)$/;
 
 export function creditsFor(productId: string): number | null {
     const m = CREDITS_RE.exec(productId);
@@ -30,7 +47,27 @@ export function creditsFor(productId: string): number | null {
 }
 
 export function intervalFor(productId: string): Interval | null {
-    return PUBLISH_INTERVALS[productId] ?? null;
+    const generation = GENERATION_RE.exec(productId);
+    return PUBLISH_INTERVALS[productId] ?? (generation?.[2] === 'monthly' ? 'month' : generation?.[2] === 'annual' ? 'year' : null);
+}
+
+export function generationPlanFor(productId: string): GenerationPlan | null {
+    return GENERATION_RE.exec(productId)?.[1] as GenerationPlan | undefined ?? null;
+}
+
+export function isPaidSubscriptionProduct(productId: string): boolean {
+    return productId.startsWith('ai.veyrnox.publish.') || generationPlanFor(productId) !== null;
+}
+
+// App Store price points are localized and may not land on exactly 15%. Only advertise the
+// retention offer when the configured price is within one percentage point of the promised saving.
+export function stayDiscountFor(pkg: RcPackage, identifier = 'stay15'): RcDiscount | null {
+    const full = pkg.product.price;
+    if (!full || full <= 0) return null;
+    const discount = pkg.product.discounts?.find((item) => item.identifier === identifier) ?? null;
+    if (!discount || discount.price < 0) return null;
+    const percent = (1 - discount.price / full) * 100;
+    return percent >= 14.5 && percent <= 15.5 ? discount : null;
 }
 
 const INTERVAL_ORDER: Record<Interval, number> = { week: 0, month: 1, year: 2 };
@@ -44,6 +81,7 @@ export function toDisplayPackages(packages: readonly RcPackage[]): DisplayPackag
             priceString: p.product.priceString,
             credits: creditsFor(p.product.identifier),
             interval: intervalFor(p.product.identifier),
+            generationPlan: generationPlanFor(p.product.identifier),
         }))
         .filter((p) => p.credits !== null || p.interval !== null)
         .sort((a, b) => (a.credits ?? 0) - (b.credits ?? 0) || INTERVAL_ORDER[a.interval ?? 'week'] - INTERVAL_ORDER[b.interval ?? 'week']);

@@ -14,6 +14,7 @@ import { applyThemePreference, colors, themePreference, THEME_PREFERENCES, type 
 import { CREATOR_PROFILE_ENABLED, resetVibe } from '../../lib/creatorProfile';
 import { clearVibe } from '../../lib/creatorProfileStore';
 import { t } from '../../lib/i18n';
+import { stayDiscountFor } from '../../lib/billing';
 import { MENU_ICONS, type MenuIcon } from '../../lib/menuIcons';
 
 export default function Account() {
@@ -23,8 +24,10 @@ export default function Account() {
     const [pushNote, setPushNote] = useState<string | null>(null);
     const router = useRouter();
     const pathname = usePathname();
-    const { status: billing, canPurchase, restore } = useBilling();
+    const { status: billing, offerings, canPurchase, paidAccess, activeProductIds, managementURL, purchaseStayOffer, restore } = useBilling();
     const [restoreNote, setRestoreNote] = useState<string | null>(null);
+    const [stayBusy, setStayBusy] = useState(false);
+    const [stayNote, setStayNote] = useState<string | null>(null);
     const [appearance, setAppearance] = useState<ThemePreference>(themePreference);
 
     // Best effort: when it fails the section simply shows no details.
@@ -56,6 +59,25 @@ export default function Account() {
             setRestoreNote(t('account.restoreDone'));
         } catch {
             setRestoreNote(t('account.restoreFailed'));
+        }
+    }
+
+    const activePackage = Object.values(offerings?.all ?? {})
+        .flatMap((offering) => offering.availablePackages)
+        .find((pkg) => activeProductIds.includes(pkg.product.identifier) && stayDiscountFor(pkg)) ?? null;
+    const stayDiscount = activePackage ? stayDiscountFor(activePackage) : null;
+
+    async function onStay() {
+        if (!activePackage || stayBusy) return;
+        setStayBusy(true);
+        setStayNote(null);
+        try {
+            const result = await purchaseStayOffer(activePackage);
+            setStayNote(result === 'purchased' ? t('account.stayDone') : t('account.stayCancelled'));
+        } catch {
+            setStayNote(t('account.stayUnavailable'));
+        } finally {
+            setStayBusy(false);
         }
     }
 
@@ -114,7 +136,10 @@ export default function Account() {
             {billing !== 'off' ? (
                 <Section title={t('account.purchases')}>
                     <Row icon="coins" label={t('account.restore')} onPress={onRestore} disabled={!canPurchase} />
+                    {paidAccess && stayDiscount ? <Row icon="heart" label={t('account.stay', { price: stayDiscount.priceString, cycles: stayDiscount.cycles })} onPress={() => void onStay()} disabled={stayBusy} /> : null}
+                    {paidAccess && managementURL ? <Row icon="wrench" label={t('account.manageSubscription')} onPress={() => void Linking.openURL(managementURL)} /> : null}
                     {restoreNote ? <Text style={styles.note}>{restoreNote}</Text> : null}
+                    {stayNote ? <Text style={styles.note} accessibilityLiveRegion="polite">{stayNote}</Text> : null}
                     <Text style={styles.note}>{t('account.packsNote')}</Text>
                 </Section>
             ) : null}
