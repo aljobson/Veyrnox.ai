@@ -1,6 +1,8 @@
-# Spike only: not deployed. Create with `fly apps create` and set
-# CONCAT_API_TOKEN via `fly secrets set` (owner step). No public service:
-# the Worker reaches it over Fly's private network (6PN), never the internet.
+# ADR-0261: exactly ONE Machine for this app, no autoscaler or spare Machine.
+# Enforce count with `fly scale count 1 --max-per-region 1 -c fly.concat-render.toml`
+# and deploy with `--ha=false`. fly.toml has no app-wide maximum-count setting.
+# Keep all scaling in ams; see services/concat-render/README.md release procedure.
+# No public service: the Worker reaches the wrapper over private networking.
 app = "veyrnox-concat-render"
 primary_region = "ams"
 kill_signal = "SIGTERM"
@@ -9,12 +11,16 @@ kill_timeout = 120
 [build]
   dockerfile = "services/concat-render/Dockerfile"
 
+[deploy]
+  strategy = "rolling"
+  max_unavailable = 1
+
 [env]
   VK_ICD_FILENAMES = "/usr/share/vulkan/icd.d/lvp_icd.json"
 
 [checks.api]
   type = "tcp"
-  port = 7420
+  port = 8080
   interval = "30s"
   timeout = "5s"
   grace_period = "30s"
@@ -23,7 +29,7 @@ kill_timeout = 120
   policy = "on-failure"
   max_retries = 5
 
-# Software rendering is CPU-bound: size up for the spike, then measure.
+# Software rendering is CPU-bound; scale vertically, never add Machines.
 [[vm]]
   cpu_kind = "performance"
   cpus = 4

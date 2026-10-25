@@ -1,3 +1,5 @@
-# Build context is the repo root (fly deploy -c fly.concat-render.toml); send only what the image needs.
+# Only runtime code and the existing spike driver enter the image.
 *
-!services/concat-render/smoke.mjs
+!services/concat-render/*.mjs
+!lib/montageSigning.js
+!lib/editorServerRenderSigning.js

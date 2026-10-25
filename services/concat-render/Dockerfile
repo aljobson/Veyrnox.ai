@@ -22,11 +22,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
     && useradd -m -d /work render
 COPY --from=build /src/src/target/app/concat-cli /usr/local/bin/concat-cli
-COPY services/concat-render/smoke.mjs /app/smoke.mjs
+COPY services/concat-render/ /app/services/concat-render/
+COPY lib/montageSigning.js lib/editorServerRenderSigning.js /app/lib/
 USER render
 WORKDIR /work
 ENV VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.json
-# CONCAT_API_TOKEN must be set (fly secrets); serve refuses nothing without it
-# but would mint a random one nobody can read.
+# The HTTP wrapper mints a process-local Concat token and discards Concat output.
 ENTRYPOINT ["/usr/bin/tini", "--"]
-CMD ["sh", "-c", "exec concat-cli serve --json 0.0.0.0:7420 --root /work"]
+CMD ["node", "--experimental-default-type=module", "/app/services/concat-render/runner.mjs"]
