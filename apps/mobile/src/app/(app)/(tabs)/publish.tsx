@@ -214,7 +214,7 @@ export default function Publish() {
                             ) : <Text style={styles.muted}>{t('plan.unavailable')}</Text>}
                             {message ? <Text style={styles.planMessage} accessibilityLiveRegion="polite">{message}</Text> : null}
                             <View style={styles.planLinks}>
-                                <Pressable accessibilityRole="button" disabled={busy} onPress={() => void onRestore()}><Text style={styles.link}>{t('account.restore')}</Text></Pressable>
+                                <Pressable accessibilityRole="button" disabled={busy || !canPurchase} onPress={() => void onRestore()}><Text style={[styles.link, !canPurchase && styles.off]}>{t('account.restore')}</Text></Pressable>
                                 <Pressable accessibilityRole="link" onPress={() => void WebBrowser.openBrowserAsync(`${API_BASE}/legal/terms`)}><Text style={styles.link}>{t('plan.terms')}</Text></Pressable>
                                 <Pressable accessibilityRole="link" onPress={() => void WebBrowser.openBrowserAsync(`${API_BASE}/legal/privacy`)}><Text style={styles.link}>{t('plan.privacy')}</Text></Pressable>
                             </View>

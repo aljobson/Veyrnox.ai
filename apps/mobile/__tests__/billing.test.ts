@@ -1,4 +1,4 @@
-import { creditsFor, generationPlanFor, intervalFor, isPaidSubscriptionProduct, renewalTerms, stayDiscountFor, toDisplayPackages, waitForBalanceChange, type RcPackage } from '../src/lib/billing';
+import { creditsFor, generationCatalogId, generationPlanFor, intervalFor, isPaidSubscriptionProduct, isWebParityPack, parseGenerationCatalog, renewalTerms, stayDiscountFor, toDisplayPackages, waitForBalanceChange, type RcPackage } from '../src/lib/billing';
 
 const pkg = (id: string, product: string, price = '$1.00'): RcPackage => ({ identifier: id, product: { identifier: product, title: product, priceString: price } });
 
@@ -11,6 +11,13 @@ describe('billing helpers', () => {
         expect(intervalFor('ai.veyrnox.generation.plus.monthly')).toBe('month');
         expect(generationPlanFor('ai.veyrnox.generation.plus.monthly')).toBe('plus');
         expect(isPaidSubscriptionProduct('ai.veyrnox.generation.ultra.annual')).toBe(true);
+        expect(intervalFor('ai.veyrnox.publish.annual:annual')).toBe('year');
+        expect(intervalFor('ai.veyrnox.generation.plus.monthly:monthly')).toBe('month');
+        expect(generationPlanFor('ai.veyrnox.generation.plus.monthly:monthly')).toBe('plus');
+        expect(generationCatalogId('ai.veyrnox.generation.plus.annual:annual')).toBe('plus-yearly');
+        expect(intervalFor('ai.veyrnox.publish.monthly:annual')).toBeNull();
+        expect(generationPlanFor('ai.veyrnox.generation.plus.monthly:annual')).toBeNull();
+        expect(isPaidSubscriptionProduct('ai.veyrnox.publish.monthly:annual')).toBe(false);
         expect(intervalFor('ai.veyrnox.publish.daily')).toBeNull();
     });
 
@@ -26,11 +33,24 @@ describe('billing helpers', () => {
 
     test('lists known packs in order and drops anything else', () => {
         const list = toDisplayPackages([
-            pkg('c3', 'ai.veyrnox.credits.3000'), pkg('c1', 'ai.veyrnox.credits.100'), pkg('x', 'ai.wallet.sub'), pkg('c2', 'ai.veyrnox.credits.270'),
+            pkg('c4', 'ai.veyrnox.credits.1000'), pkg('c3', 'ai.veyrnox.credits.3000'), pkg('c1', 'ai.veyrnox.credits.100'), pkg('x', 'ai.wallet.sub'), pkg('c2', 'ai.veyrnox.credits.300'),
         ]);
-        expect(list.map((p) => p.credits)).toEqual([100, 270, 3000]);
+        expect(list.map((p) => p.credits)).toEqual([100, 300, 1000, 3000]);
+        expect(list.filter(isWebParityPack).map((p) => p.credits)).toEqual([100, 300, 1000]);
         const subs = toDisplayPackages([pkg('a', 'ai.veyrnox.publish.annual'), pkg('w', 'ai.veyrnox.publish.weekly'), pkg('m', 'ai.veyrnox.publish.monthly')]);
         expect(subs.map((p) => p.interval)).toEqual(['week', 'month', 'year']);
+    });
+
+    test('maps and orders the website generation plan families', () => {
+        const plans = toDisplayPackages([
+            pkg('uy', 'ai.veyrnox.generation.ultra.annual'),
+            pkg('lm', 'ai.veyrnox.generation.lite.monthly'),
+            pkg('sm', 'ai.veyrnox.generation.starter.monthly'),
+            pkg('sy', 'ai.veyrnox.generation.starter.annual'),
+        ]);
+        expect(plans.map((p) => `${p.generationPlan}:${p.interval}`)).toEqual(['lite:month', 'starter:month', 'starter:year', 'ultra:year']);
+        expect(generationCatalogId('ai.veyrnox.generation.starter.annual')).toBe('starter-yearly');
+        expect(parseGenerationCatalog({ plans: [{ id: 'starter-monthly', credits: 398 }, { id: '', credits: 0 }, null] })).toEqual([{ id: 'starter-monthly', credits: 398 }]);
     });
 
     test('renewal terms name the price, period, auto-renewal and where to cancel', () => {
@@ -56,5 +76,15 @@ describe('waitForBalanceChange', () => {
         let n = 0;
         const r = await waitForBalanceChange(async () => { if (n++ < 2) throw new Error('offline'); return 60; }, 10, fast);
         expect(r.changed).toBe(true);
+    });
+    test('does not mistake an unrelated debit or small credit for a purchased pack', async () => {
+        const reads = [95, 110, 199, 200];
+        const r = await waitForBalanceChange(async () => reads.shift() ?? 200, 100, { ...fast, minimumIncrease: 100 });
+        expect(r).toEqual({ changed: true, balance: 200 });
+    });
+    test('leaves fulfilment pending when the expected pack increase never arrives', async () => {
+        const reads = [95, 110, 150, 199];
+        const r = await waitForBalanceChange(async () => reads.shift() ?? 199, 100, { ...fast, minimumIncrease: 100 });
+        expect(r).toEqual({ changed: false, balance: 199 });
     });
 });

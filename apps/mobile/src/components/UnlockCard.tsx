@@ -84,7 +84,7 @@ export function UnlockCard({ feature, onUnlocked }: { feature: LockedFeature; on
             )}
             {message ? <Text style={styles.muted} accessibilityLiveRegion="polite">{message}</Text> : null}
             {status === 'ready' ? (
-                <Pressable accessibilityRole="button" disabled={busy} style={[styles.restore, touchTarget]} onPress={onRestore}>
+                <Pressable accessibilityRole="button" disabled={busy || !canPurchase} style={[styles.restore, touchTarget, !canPurchase && styles.off]} onPress={onRestore}>
                     <Text style={styles.restoreText}>{t('unlock.restore')}</Text>
                 </Pressable>
             ) : null}

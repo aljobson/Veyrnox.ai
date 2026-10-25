@@ -211,6 +211,10 @@ test('parses subscription events into one action each', () => {
     assert.equal(parseStoreEvent(sub('PRODUCT_CHANGE', { product_id: 'ai.veyrnox.publish.weekly', new_product_id: 'ai.veyrnox.publish.annual' })).productId, 'ai.veyrnox.publish.annual');
     const generation = parseStoreEvent(sub('RENEWAL', { product_id: 'ai.veyrnox.generation.starter.monthly' }));
     assert.deepEqual([generation.kind, generation.family], ['subscription', 'generation']);
+    const playPublish = parseStoreEvent(sub('RENEWAL', { product_id: 'ai.veyrnox.publish.annual:annual', store: 'PLAY_STORE' }));
+    assert.deepEqual([playPublish.kind, playPublish.family, playPublish.productId, playPublish.channel], ['subscription', 'publish', 'ai.veyrnox.publish.annual:annual', 'android']);
+    const playGeneration = parseStoreEvent(sub('RENEWAL', { product_id: 'ai.veyrnox.generation.starter.monthly:monthly', store: 'PLAY_STORE' }));
+    assert.deepEqual([playGeneration.kind, playGeneration.family, playGeneration.productId, playGeneration.channel], ['subscription', 'generation', 'ai.veyrnox.generation.starter.monthly:monthly', 'android']);
 });
 
 test('routes AI Generation subscriptions to the credit subscription ledger', async () => {

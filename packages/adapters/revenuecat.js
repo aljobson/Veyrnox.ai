@@ -16,7 +16,8 @@ const enc = (s) => new TextEncoder().encode(s);
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const EVENT_ID_RE = /^[A-Za-z0-9._-]{8,128}$/;
-const PRODUCT_RE = /^[A-Za-z0-9._-]{1,128}$/;
+// RevenueCat identifies Play subscriptions as productId:basePlanId.
+const PRODUCT_RE = /^[A-Za-z0-9._:-]{1,200}$/;
 const TRANSACTION_MAX = 200;
 
 /**

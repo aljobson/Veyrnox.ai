@@ -33,13 +33,27 @@ export interface DisplayPackage {
 
 export type GenerationPlan = 'lite' | 'starter' | 'plus' | 'ultra';
 
+export const WEB_PARITY_PACK_CREDITS = [100, 300, 1000] as const;
+
+export interface GenerationCatalogPlan {
+    readonly id: string;
+    readonly credits: number;
+}
+
 const CREDITS_RE = /^ai\.veyrnox\.credits\.(\d{1,6})$/;
-const PUBLISH_INTERVALS: Record<string, Interval> = {
-    'ai.veyrnox.publish.weekly': 'week',
-    'ai.veyrnox.publish.monthly': 'month',
-    'ai.veyrnox.publish.annual': 'year',
-};
-const GENERATION_RE = /^ai\.veyrnox\.generation\.(lite|starter|plus|ultra)\.(monthly|annual)$/;
+const PUBLISH_RE = /^ai\.veyrnox\.publish\.(weekly|monthly|annual)(?::(weekly|monthly|annual))?$/;
+const GENERATION_RE = /^ai\.veyrnox\.generation\.(lite|starter|plus|ultra)\.(monthly|annual)(?::(monthly|annual))?$/;
+
+function generationParts(productId: string): RegExpExecArray | null {
+    const match = GENERATION_RE.exec(productId);
+    return match && (!match[3] || match[3] === match[2]) ? match : null;
+}
+
+function publishInterval(productId: string): Interval | null {
+    const match = PUBLISH_RE.exec(productId);
+    if (!match || (match[2] && match[2] !== match[1])) return null;
+    return match[1] === 'weekly' ? 'week' : match[1] === 'monthly' ? 'month' : 'year';
+}
 
 export function creditsFor(productId: string): number | null {
     const m = CREDITS_RE.exec(productId);
@@ -47,16 +61,37 @@ export function creditsFor(productId: string): number | null {
 }
 
 export function intervalFor(productId: string): Interval | null {
-    const generation = GENERATION_RE.exec(productId);
-    return PUBLISH_INTERVALS[productId] ?? (generation?.[2] === 'monthly' ? 'month' : generation?.[2] === 'annual' ? 'year' : null);
+    const generation = generationParts(productId);
+    return publishInterval(productId) ?? (generation?.[2] === 'monthly' ? 'month' : generation?.[2] === 'annual' ? 'year' : null);
 }
 
 export function generationPlanFor(productId: string): GenerationPlan | null {
-    return GENERATION_RE.exec(productId)?.[1] as GenerationPlan | undefined ?? null;
+    return generationParts(productId)?.[1] as GenerationPlan | undefined ?? null;
+}
+
+export function generationCatalogId(productId: string): string | null {
+    const match = generationParts(productId);
+    return match ? `${match[1]}-${match[2] === 'annual' ? 'yearly' : 'monthly'}` : null;
+}
+
+export function isWebParityPack(pkg: DisplayPackage): boolean {
+    return pkg.credits !== null && (WEB_PARITY_PACK_CREDITS as readonly number[]).includes(pkg.credits);
+}
+
+export function parseGenerationCatalog(value: unknown): GenerationCatalogPlan[] {
+    if (!value || typeof value !== 'object' || !Array.isArray((value as { plans?: unknown }).plans)) return [];
+    return (value as { plans: unknown[] }).plans.flatMap((plan) => {
+        if (!plan || typeof plan !== 'object') return [];
+        const id = (plan as { id?: unknown }).id;
+        const credits = (plan as { credits?: unknown }).credits;
+        return typeof id === 'string' && Number.isInteger(credits) && (credits as number) > 0
+            ? [{ id, credits: credits as number }]
+            : [];
+    });
 }
 
 export function isPaidSubscriptionProduct(productId: string): boolean {
-    return productId.startsWith('ai.veyrnox.publish.') || generationPlanFor(productId) !== null;
+    return publishInterval(productId) !== null || generationPlanFor(productId) !== null;
 }
 
 // App Store price points are localized and may not land on exactly 15%. Only advertise the
@@ -71,6 +106,7 @@ export function stayDiscountFor(pkg: RcPackage, identifier = 'stay15'): RcDiscou
 }
 
 const INTERVAL_ORDER: Record<Interval, number> = { week: 0, month: 1, year: 2 };
+const GENERATION_PLAN_ORDER: Record<GenerationPlan, number> = { lite: 0, starter: 1, plus: 2, ultra: 3 };
 
 export function toDisplayPackages(packages: readonly RcPackage[]): DisplayPackage[] {
     return packages
@@ -84,7 +120,13 @@ export function toDisplayPackages(packages: readonly RcPackage[]): DisplayPackag
             generationPlan: generationPlanFor(p.product.identifier),
         }))
         .filter((p) => p.credits !== null || p.interval !== null)
-        .sort((a, b) => (a.credits ?? 0) - (b.credits ?? 0) || INTERVAL_ORDER[a.interval ?? 'week'] - INTERVAL_ORDER[b.interval ?? 'week']);
+        .sort((a, b) => {
+            if (a.credits !== null || b.credits !== null) return (a.credits ?? Number.MAX_SAFE_INTEGER) - (b.credits ?? Number.MAX_SAFE_INTEGER);
+            if (a.generationPlan && b.generationPlan && a.generationPlan !== b.generationPlan) {
+                return GENERATION_PLAN_ORDER[a.generationPlan] - GENERATION_PLAN_ORDER[b.generationPlan];
+            }
+            return INTERVAL_ORDER[a.interval ?? 'week'] - INTERVAL_ORDER[b.interval ?? 'week'];
+        });
 }
 
 const INTERVAL_WORD: Record<Interval, string> = { week: 'week', month: 'month', year: 'year' };
@@ -99,6 +141,7 @@ export interface BalanceWait {
     readonly sleep?: (ms: number) => Promise<void>;
     readonly intervalMs?: number;
     readonly timeoutMs?: number;
+    readonly minimumIncrease?: number;
 }
 
 // A purchase is credited by the server when the store's webhook arrives, a few seconds after the sheet closes.
@@ -106,13 +149,13 @@ export interface BalanceWait {
 export async function waitForBalanceChange(
     read: () => Promise<number>,
     before: number,
-    { sleep = (ms) => new Promise((r) => setTimeout(r, ms)), intervalMs = 2000, timeoutMs = 40_000 }: BalanceWait = {},
+    { sleep = (ms) => new Promise((r) => setTimeout(r, ms)), intervalMs = 2000, timeoutMs = 40_000, minimumIncrease = 1 }: BalanceWait = {},
 ): Promise<{ changed: boolean; balance: number }> {
     let balance = before;
     for (let waited = 0; waited <= timeoutMs; waited += intervalMs) {
         try {
             balance = await read();
-            if (balance !== before) return { changed: true, balance };
+            if (balance >= before + Math.max(1, minimumIncrease)) return { changed: true, balance };
         } catch {
             // A failed read is retried until the time is up.
         }

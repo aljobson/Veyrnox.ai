@@ -27,8 +27,8 @@ Legend: **Owner** = only the owner can do it (accounts, keys, store consoles). *
 | O1 | Apple Developer Program team; App Store Connect app record for `ai.veyrnox.app` | everything iOS |
 | O2 | App Store Connect API key, uploaded to EAS and to RevenueCat (Veyrnox.ai iOS app shows no key yet) | `eas submit`, receipt checks |
 | O3 | Expo account, then `npx eas-cli init` in `apps/mobile` (writes the project id into `app.json`; the mobile session commits it) | any EAS build |
-| O4 | In-app purchase products in App Store Connect: `ai.veyrnox.credits.100`, `.270`, `.1200`, `.3000` (consumable); `ai.veyrnox.publish.weekly`, `.monthly`, `.annual`; and `ai.veyrnox.generation.{lite,starter,plus,ultra}.{monthly,annual}` (auto-renewing subscriptions). Add a promotional offer with identifier `stay15` at the nearest store price point to 15% off for every subscription SKU, and matching iOS 18+ win-back offers for expired subscribers. | purchases + retention |
-| O5 | RevenueCat: attach products to the `credits`, `publish`, and `generation` offerings; attach Publish products to entitlement `publish` and Generation products to entitlement `generation`; upload the App Store in-app purchase key so signed promotional offers work; copy the public iOS SDK key into EAS as `EXPO_PUBLIC_REVENUECAT_IOS_KEY`. | purchases + hard paywall |
+| O4 | In-app purchase products in App Store Connect: `ai.veyrnox.credits.100`, `.300`, `.1000` (consumable, using the nearest store price points to the web's $10, $25 and $75); `ai.veyrnox.publish.weekly`, `.monthly`, `.annual`; and `ai.veyrnox.generation.{lite,starter,plus,ultra}.{monthly,annual}` (auto-renewing subscriptions). Add a promotional offer with identifier `stay15` at the nearest store price point to 15% off for every subscription SKU, and matching iOS 18+ win-back offers for expired subscribers. | purchases + retention |
+| O5 | RevenueCat: attach the three current pack products to `credits`, and attach products to the `publish` and `generation` offerings; attach Publish products to entitlement `publish` and Generation products to entitlement `generation`; upload the App Store in-app purchase key so signed promotional offers work; copy the public iOS SDK key into EAS as `EXPO_PUBLIC_REVENUECAT_IOS_KEY`. | purchases + paywall |
 
 Retention economics: if fulfilment costs 50% of the normal subscription price, a customer paying 85% through an App Store tier with a 15% commission leaves 22.25% of the normal price before tax, RevenueCat and other costs (`85% × 85% − 50%`). At a 30% store commission it leaves 9.5%. Configure localized store price points from this floor; the app only advertises `stay15` when the actual localized discount is within 0.5 percentage points of 15%.
 | O6 | Sentry project: DSN as `EXPO_PUBLIC_SENTRY_DSN`, token as `SENTRY_AUTH_TOKEN` (EAS secrets) | crash reports |
@@ -36,7 +36,7 @@ Retention economics: if fulfilment costs 50% of the normal subscription price, a
 | O8 | Decide the Apple sign-in path on the simulator/device: native sheet needs an Apple ID on the device | testing |
 | O9 | Confirm the encryption declaration (HTTPS only, exempt) and the age rating **18+** to match the privacy policy | App Store Connect forms |
 | O10 | A review account: a production email account with some credits, credentials in App Review notes (Apple cannot pass Turnstile on a fresh sign-up) | App Review |
-| O11 | Google (second): Play Console app, service account key into RevenueCat and EAS submit, licence testers | Android |
+| O11 | Google (second): create Play Console one-time products `ai.veyrnox.credits.100`, `.300`, `.1000`; subscriptions `ai.veyrnox.publish.{weekly,monthly,annual}` with matching base-plan ids `weekly`, `monthly`, `annual`; and `ai.veyrnox.generation.{lite,starter,plus,ultra}.{monthly,annual}` with the matching `monthly` or `annual` base-plan id. Attach RevenueCat's resulting `productId:basePlanId` identifiers to the `publish` and `generation` offerings/entitlements, add the service-account key, put `EXPO_PUBLIC_REVENUECAT_ANDROID_KEY` in EAS, configure EAS Submit, and add licence testers. | Android |
 
 ## 4. Server and flag steps
 
@@ -45,7 +45,7 @@ Retention economics: if fulfilment costs 50% of the normal subscription price, a
 | S-1 | `STORE_BILLING_ENABLED` on in production needs a text-binding slot: production vars are at the 77 cap (`tests/workerBindingBudget.test.mjs`). Free a slot or move a var first | owner + server |
 | S-2 | `ACCOUNT_DELETION_ENABLED` on in the environment the build targets, after migration 0347 is applied there; not in `wrangler.jsonc` (binding cap, CLAUDE.md) | owner |
 | S-3 | `REVENUECAT_WEBHOOK_SECRET` set on production; webhook added in RevenueCat for the production project; `reconcile_top_ups()` returns zero rows before the flag goes on (ADR-0108) | owner |
-| S-4 | Migrations 0344 and 0346 are already on production and staging; 0347 (deletion) and 0348 (push) must be applied by the `apply-migrations` workflow with the owner's approval | owner |
+| S-4 | Before store billing is enabled, migrations 0344, 0346, 0393 and 0394 must be applied by the `apply-migrations` workflow with the owner's approval; 0394 contains the launch pack catalog and exact Google Play `productId:basePlanId` mappings. Migrations 0347 (deletion) and 0348 (push) are also required for those release features. | owner |
 | S-5 | After PRs 1216 and 1219 merge: Apple Team ID and Android fingerprints in `lib/mobileAppLinks.js`; `PUSH_NOTIFICATIONS_ENABLED` per environment | owner |
 
 ## 5. What the mobile session prepares
@@ -94,7 +94,7 @@ Retention economics: if fulfilment costs 50% of the normal subscription price, a
 4. First **preview** build (`eas build --profile preview --platform ios`) to a real device through TestFlight internal testing. Prove: Apple and Google sign-in, a **sandbox purchase and its refund** (closes the M6 gap), restore purchases, the paywall terms (section 6), report, deletion, crash report reaches Sentry.
 5. After PRs 1216 and 1219: M-2, M-3, M-4 and a second internal build; prove links and push on the device.
 6. Owner: S-1, S-3, S-4 for production, then the **production** build and TestFlight **external** review. Record the result (the M7 done-condition).
-7. Android after iOS: O11, a Play internal testing track, the same proofs.
+7. Android after iOS: O11, then a signed Play internal-testing build. Prove all three pack purchases, one Generation subscription, one Publish subscription, restore, renewal/cancellation copy, and a refund. Confirm the RevenueCat webhook records the exact `productId:basePlanId` and resolves it through migration 0394 before calling the Android pass complete.
 
 ## 8. Review risks to decide before submitting
 
