@@ -28,12 +28,16 @@ const usd = new Intl.NumberFormat('en-US', {
 });
 const names = {
   'lite-monthly': 'Lite',
+  'lite-yearly': 'Lite',
   'starter-monthly': 'Starter',
   'starter-weekly': 'Starter',
+  'starter-yearly': 'Starter',
   'plus-monthly': 'Plus',
   'plus-weekly': 'Plus',
+  'plus-yearly': 'Plus',
   'ultra-monthly': 'Ultra',
   'ultra-weekly': 'Ultra',
+  'ultra-yearly': 'Ultra',
 };
 const intervalName = (value) => (value === 'week' ? 'week' : value === 'year' ? 'year' : 'month');
 const identity = () => getSession()?.user?.id || '',

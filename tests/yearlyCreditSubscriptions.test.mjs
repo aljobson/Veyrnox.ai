@@ -93,6 +93,9 @@ test('the plan cards show a Monthly/Yearly choice, the yearly price, a monthly e
   assert.match(yearly, /\$17\.10 a month, billed yearly/);
   assert.match(yearly, /Save \$22\.80 a year \(10%\)/);
   assert.match(yearly, /398 Credits a month, granted monthly/);
+  assert.match(yearly, /<h3[^>]*>Starter<\/h3>/, 'the card carries the plan name, not its id');
+  assert.match(yearly, /Choose Starter/);
+  assert.doesNotMatch(yearly, /starter-yearly/, 'a raw plan id must never reach the page');
   assert.doesNotMatch(yearly, /<s[ >]|<del[ >]|line-through/, 'no struck-through list price');
   const onlyMonthly = f.render(React.createElement(Plans, { plans: [PLANS[0]], packs: [], publicOnly: true }));
   assert.doesNotMatch(onlyMonthly, /Yearly/, 'no toggle when there is no yearly plan');
