@@ -10,7 +10,7 @@ import { getStoredSession, getStoredUserId, onSessionChange } from '../../lib/au
 import { useCatalog } from '../_lib/useCatalog';
 import { gatewayFetch } from '../_lib/gateway';
 import { REVEAL_SAVED_ODDLING } from '../../../lib/savedOddlingHelp.js';
-import { journeyHandoff, publishJourneyView } from '../_lib/veyJourneyStore';
+import { beginJourney, journeyHandoff, publishJourneyView } from '../_lib/veyJourneyStore';
 import { Button } from './Button';
 import { OddlingCatalog } from './OddlingCatalog';
 import { OddlingExplore, useOddlingExplore } from './OddlingExplore';
@@ -36,7 +36,9 @@ import {
   buildOddlingDirection,
   buildOddlingAnimationPrompt,
   animationModel,
+  freshOddlingPicks,
   oddlingPortrait,
+  oddlingPortraitModel,
   oddlingCreditState,
   randomizeOddlingAll,
   randomizeOddlingStyle,
@@ -55,10 +57,10 @@ export default function OddlingStudio() {
   const explore = useOddlingExplore();
   const { models, live: catalogLive } = useCatalog();
   const videoModel = animationModel(models);
-  const [portraitId, setPortraitId] = useState(ODDLING_ARCHETYPES[0].id);
+  const [portraitId, setPortraitId] = useState('');
   const portrait = oddlingPortrait(portraitId);
   const [mode, setMode] = useState('portrait');
-  const [picks, setPicks] = useState({ ...ODDLING_ARCHETYPES[0].picks });
+  const [picks, setPicks] = useState(freshOddlingPicks);
   const [motionId, setMotionId] = useState(ODDLING_MOTIONS[0].id);
   const [scene, setScene] = useState(ODDLING_SCENES[0]);
   const [reference, setReference] = useState(null);
@@ -137,9 +139,9 @@ export default function OddlingStudio() {
 
   const promptPreview = mode === 'motion'
     ? buildOddlingAnimationPrompt(portraitId, motionId)
-    : buildOddlingStudioPrompt({ picks, mode, motionId, scene, referenceNote });
+    : buildOddlingStudioPrompt({ picks, mode, motionId, scene, referenceNote, hasReference: !!reference });
   const selectedTraits = CHARACTER_GROUPS.filter((group) => picks[group.id]).length;
-  const portraitModel = models.find((model) => model.id === 'flux-2-pro' && !model.gated);
+  const portraitModel = oddlingPortraitModel(models, { reference: !!reference });
   const generationModel = mode === 'motion' ? videoModel : portraitModel;
   const generationCost = catalogLive && typeof generationModel?.credits === 'number' ? generationModel.credits : null;
   const creditState = session ? oddlingCreditState(balance, generationCost) : null;
@@ -158,6 +160,21 @@ export default function OddlingStudio() {
     setPicks((current) => Object.fromEntries(Object.entries(current).filter(([key]) => !ids.has(key))));
     setPortraitId('');
     setNotice('');
+  }
+
+  function startFresh() {
+    if (reference?.url) URL.revokeObjectURL(reference.url);
+    setPicks(freshOddlingPicks());
+    setPortraitId('');
+    setLoadedPassportId(null);
+    setReference(null);
+    setReferenceNote('');
+    setMode('portrait');
+    setMotionId(ODDLING_MOTIONS[0].id);
+    setScene(ODDLING_SCENES[0]);
+    setSheet(null);
+    setNotice(t('app.oddlings.freshStarted'));
+    window.setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 0);
   }
 
   function loadOddling(oddling) {
@@ -206,34 +223,71 @@ export default function OddlingStudio() {
     if (!file) return;
     if (!['image/jpeg', 'image/png', 'image/webp', 'image/avif'].includes(file.type)) { setNotice(t("app.oddlings.imageTypes")); return; }
     if (file.size > 2 * 1024 * 1024) { setNotice(t("app.oddlings.referenceLimit")); return; }
-    setReference({ name: file.name, url: URL.createObjectURL(file) });
+    if (reference?.url) URL.revokeObjectURL(reference.url);
+    setReference({ file, name: file.name, mimeType: file.type, url: URL.createObjectURL(file) });
     setNotice(t("app.oddlings.referenceAdded"));
   }
 
-  function continueToCreate() {
+  function removeReference() {
+    if (reference?.url) URL.revokeObjectURL(reference.url);
+    setReference(null);
+    setReferenceNote('');
+    setNotice('');
+  }
+
+  async function uploadReferenceSource(file) {
+    const upload = await gatewayFetch('/uploads', {
+      method: 'POST',
+      body: JSON.stringify({ content_type: file.type, size_bytes: file.size }),
+    });
+    const response = await fetch(upload.upload_url, {
+      method: 'PUT',
+      headers: upload.headers || { 'Content-Type': upload.content_type },
+      body: file,
+    });
+    if (!response.ok) throw new Error('upload_failed');
+    return upload.key;
+  }
+
+  async function continueToCreate() {
     if (!generationModel || !catalogLive || generationCost == null) {
       setNotice(t("app.oddlings.waitPrice")); return;
     }
     if (mode === 'motion' && !portrait) {
       setNotice(t("app.oddlings.chooseCharacter")); return;
     }
-    const model = mode === 'motion' ? videoModel.id : 'flux-2-pro';
+    if (reference && !session) {
+      setNotice(t('app.oddlings.signInForUpload'));
+      window.dispatchEvent(new CustomEvent('veyrnox:auth-required'));
+      return;
+    }
+    setHandingOff('create');
+    const model = generationModel.id;
     const prompt = mode === 'motion'
       ? buildOddlingAnimationPrompt(portraitId, motionId)
-      : buildOddlingDirection({ mode, motionId, scene, referenceNote });
-    writeOddlingDraft(window.localStorage, picks);
-    const result = saveOddlingToLibrary(window.localStorage, picks, motionId);
-    if (result.ok) setLibrary(result.items);
-    const written = writeStudioDraft(window.sessionStorage, {
-      prompt, model, aspect: '9:16', oddlingPicks: picks,
-      ...(mode === 'motion' ? { durationSeconds: 5 } : {}),
-    });
-    if (!written) { setNotice(t("app.oddlings.handoffFailed")); return; }
-    if (mode !== 'motion') journeyHandoff(loadedPassportId);
-    setHandingOff('create');
-    let destination = `/app/create?model=${encodeURIComponent(model)}&oddling=1&passport=1`;
-    if (mode === 'motion' && portraitId) destination += '&oddlingPhoto=' + encodeURIComponent(portraitId) + '&motion=' + encodeURIComponent(motionId);
-    router.push(destination);
+      : buildOddlingDirection({ mode, motionId, scene, referenceNote, hasReference: !!reference });
+    try {
+      const sourceKey = reference ? await uploadReferenceSource(reference.file) : '';
+      writeOddlingDraft(window.localStorage, picks);
+      const result = saveOddlingToLibrary(window.localStorage, picks, motionId);
+      if (result.ok) setLibrary(result.items);
+      const written = writeStudioDraft(window.sessionStorage, {
+        prompt, model, aspect: '9:16', oddlingPicks: picks,
+        ...(sourceKey ? { sources: { image: { sourceKey, mimeType: reference.mimeType, label: reference.name } } } : {}),
+        ...(mode === 'motion' ? { durationSeconds: 5 } : {}),
+      });
+      if (!written) { setNotice(t("app.oddlings.handoffFailed")); setHandingOff(null); return; }
+      if (mode !== 'motion' && result.ok) {
+        beginJourney(result.item.id);
+        journeyHandoff(result.item.id);
+      } else if (mode !== 'motion') journeyHandoff(loadedPassportId);
+      let destination = `/app/create?model=${encodeURIComponent(model)}&oddling=1&passport=1`;
+      if (mode === 'motion' && portraitId) destination += '&oddlingPhoto=' + encodeURIComponent(portraitId) + '&motion=' + encodeURIComponent(motionId);
+      router.push(destination);
+    } catch {
+      setHandingOff(null);
+      setNotice(t('app.oddlings.uploadFailed'));
+    }
   }
 
   function continueToChat() {
@@ -260,7 +314,8 @@ export default function OddlingStudio() {
             <h1 data-testid="oddling-title" className="vx-display mt-2 text-3xl sm:text-4xl">{t("app.oddlings.title")}</h1>
             <p className="mt-2 max-w-xl text-sm leading-relaxed text-vx-fg-body">{t("app.oddlings.intro")}</p>
           </div>
-          <div className="flex w-full items-center gap-3 sm:w-auto">
+          <div className="flex w-full flex-wrap items-center justify-end gap-3 sm:w-auto">
+            <button type="button" onClick={startFresh} className={chip(false)}>{t('app.oddlings.startFresh')}</button>
             <span className="rounded-full border border-vx-border px-2.5 py-1 font-vx-mono text-[9px] text-vx-fg-muted">{t(pluralKey(t,locale,'app.oddlings.traits',selectedTraits),{count:number(selectedTraits)})}</span>
             <div className="grid min-w-0 flex-1 grid-cols-2 rounded-xl border border-vx-border bg-vx-base p-1 sm:w-72 sm:flex-none" role="tablist" aria-label={t("app.oddlings.creationMode")}>
               <button type="button" role="tab" aria-selected={mode === 'portrait'} onClick={() => setMode('portrait')} className={`rounded-lg px-3 py-2.5 text-sm font-bold ${mode === 'portrait' ? 'bg-vx-panel text-vx-fg shadow-sm' : 'text-vx-fg-muted'}`}>{t("app.oddlings.create")}</button>
@@ -286,6 +341,7 @@ export default function OddlingStudio() {
                 </label>
               </div>
               {reference && <img data-testid="oddling-reference-image" src={blobUrl(reference.url)} alt={t('app.oddlings.referenceAlt',{name:reference.name})} className="mt-3 max-h-48 w-full rounded-xl object-cover" />}
+              {reference && <button type="button" onClick={removeReference} className="mt-2 font-vx-mono text-[9px] font-bold text-vx-fg-muted underline">{t('app.oddlings.removeReference')}</button>}
               <input value={referenceNote} onChange={(event) => setReferenceNote(event.target.value)} maxLength={180} className={`${field} mt-3`} placeholder={t("app.oddlings.referencePlaceholder")} />
             </div>
 
@@ -395,7 +451,7 @@ export default function OddlingStudio() {
                   <Link href="/app/credits" className="shrink-0 rounded-full bg-vx-money px-3 py-1.5 text-[11px] font-extrabold text-vx-money-ink hover:brightness-110">{t("app.oddlings.getCredits")}</Link>
                 </div>
               )}
-              {!lowCredits && <p className="hidden min-w-0 flex-1 font-vx-mono text-[10px] text-vx-fg-faint sm:block">{t("app.oddlings.opensCreate")}{generationCost != null && <> · <span className="font-bold text-vx-money">{t('app.oddlings.livePrice',{count:number(generationCost)})}</span></>}</p>}
+              {!lowCredits && <p className="hidden min-w-0 flex-1 font-vx-mono text-[10px] text-vx-fg-faint sm:block">{generationModel ? t('app.oddlings.selectedPipeline',{model:generationModel.name}) : t("app.oddlings.opensCreate")}{generationCost != null && <> · <span className="font-bold text-vx-money">{t('app.oddlings.livePrice',{count:number(generationCost)})}</span></>}</p>}
               <div className="ms-auto grid w-full gap-2 sm:flex sm:w-auto sm:items-center sm:justify-end">
                 {mode === 'portrait' && (
                   <button type="button" onClick={surprise} className="w-full rounded-full border border-vx-border bg-vx-base px-4 py-2 text-xs font-extrabold text-vx-fg transition-colors hover:border-vx-accent sm:w-auto">{t("app.oddlings.surprise")}</button>

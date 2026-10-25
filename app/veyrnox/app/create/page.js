@@ -677,8 +677,16 @@ export default function CreateStudio() {
 
         {/* ============ CONTROLS ============ */}
         <aside className="flex flex-col gap-5 lg:col-start-2 lg:row-start-1 lg:row-span-3">
-          <CreateGoalPicker goal={goal} onChange={pickGoal} />
-          <div className="rounded-2xl border border-vx-border bg-vx-panel p-5">
+          {!oddlingTransfer && <CreateGoalPicker goal={goal} onChange={pickGoal} />}
+          {oddlingTransfer ? (
+            <section data-testid="oddling-generation-pipeline" className="rounded-2xl border border-vx-accent/40 bg-vx-accent/[0.06] p-5">
+              <span className="font-vx-mono text-[10px] font-bold tracking-[0.14em] text-vx-accent">{t('app.create.oddlingPipeline')}</span>
+              <h2 className="mt-2 text-lg font-extrabold text-vx-fg">{model?.name || t('app.create.checkingPrices')}</h2>
+              <p className="mt-2 text-xs leading-5 text-vx-fg-muted">{t(model?.kind === 'video' ? 'app.create.oddlingMotionPipelineHelp' : model?.media?.image?.required ? 'app.create.oddlingReferencePipelineHelp' : 'app.create.oddlingPortraitPipelineHelp')}</p>
+              {model && <p className="mt-3 font-vx-mono text-[11px] font-bold text-vx-money">{creditLabel(model.credits)}</p>}
+              <Link href="/app/oddlings" className="mt-4 inline-flex min-h-10 items-center rounded-full border border-vx-accent/50 px-4 py-2 text-xs font-extrabold text-vx-accent hover:bg-vx-accent/10">{t('app.create.changeOddling')}</Link>
+            </section>
+          ) : <div className="rounded-2xl border border-vx-border bg-vx-panel p-5">
             <div className="flex items-baseline justify-between mb-3">
               <span className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">{t("app.create.modelHeading")}</span>
               {catalogStatus === 'live' ? (
@@ -761,7 +769,7 @@ export default function CreateStudio() {
                 ))}
               </div>
             </div>
-          </div>
+          </div>}
 
           {model?.kind === 'video' && !fixedDurationLabel && !sourceDurationMax && (
             <ControlRow assistantTarget="create.duration" label={t("app.create.durationHeading")} options={durations} value={duration} onChange={setDuration}
@@ -799,8 +807,8 @@ export default function CreateStudio() {
             <ControlRow assistantTarget="create.count" label={t("app.create.imagesHeading")} options={IMAGE_COUNTS} value={count} onChange={setCount} />
           )}
 
-          {model?.kind === 'image' && (
-            <div className="scroll-mt-24" data-assistant-target="create.character"><CharacterPanel enabled={characterOn} onToggle={setCharacterOn} picks={character} onChange={setCharacter} handoffPicks={oddlingTransfer} /></div>
+          {model?.kind === 'image' && !oddlingTransfer && (
+            <div className="scroll-mt-24" data-assistant-target="create.character"><CharacterPanel enabled={characterOn} onToggle={setCharacterOn} picks={character} onChange={setCharacter} /></div>
           )}
 
           {!isShort && (

@@ -15,6 +15,8 @@ import {
     oddlingPortrait,
     animationModel,
     buildOddlingAnimationPrompt,
+    freshOddlingPicks,
+    oddlingPortraitModel,
     oddlingsForSource,
     oddlingCreditState,
     randomizeOddlingStyle,
@@ -31,6 +33,31 @@ test('every full-studio section resolves to real character groups', () => {
         assert.ok(section.groupIds.length > 0);
         for (const id of section.groupIds) assert.ok(ids.has(id), `${section.id} references missing ${id}`);
     }
+});
+test('a new custom Oddling is neutral and carries no cast identity', () => {
+    const fresh = freshOddlingPicks();
+    assert.deepEqual(fresh, { character_type: 'Human', rendering_style: 'Hyper-Realistic' });
+    for (const oddling of ODDLING_ARCHETYPES) {
+        assert.notEqual(fresh.oddling_name, oddling.name);
+        assert.notDeepEqual(fresh, oddling.picks);
+    }
+    fresh.character_type = 'Moth';
+    assert.equal(freshOddlingPicks().character_type, 'Human', 'each builder gets its own state object');
+});
+
+test('Oddlings chooses a curated generation pipeline instead of exposing arbitrary models', () => {
+    const model = (id, patch = {}) => ({ id, name: id, kind: 'image', credits: 2, media: {}, ...patch });
+    const models = [
+        model('cheap-generic', { credits: 1, bestValue: true }),
+        model('nano-banana-pro-edit-grsai', { media: { image: { required: true } } }),
+        model('flux-2-pro'),
+        model('audio-required-edit', { media: { image: { required: true }, audio: { required: true } } }),
+    ];
+    assert.equal(oddlingPortraitModel(models)?.id, 'flux-2-pro');
+    assert.equal(oddlingPortraitModel(models, { reference: true })?.id, 'nano-banana-pro-edit-grsai');
+    assert.equal(oddlingPortraitModel(models.filter(({ id }) => id !== 'flux-2-pro'))?.id, 'cheap-generic');
+    assert.equal(oddlingPortraitModel(models.filter(({ id }) => id !== 'nano-banana-pro-edit-grsai'), { reference: true }), undefined);
+    assert.equal(oddlingPortraitModel([model('flux-2-pro', { gated: true })]), undefined);
 });
 test('doll lab quick picks are valid canonical body, hair and wardrobe traits', () => {
     assert.deepEqual(ODDLING_DOLL_FACETS.map(({ id }) => id), ['body_type', 'hair', 'wardrobe_style']);
@@ -107,6 +134,18 @@ test('motion drafts combine identity, visual canon, action and scene', () => {
     assert.match(prompt, /harmlessly malfunctions/);
     assert.match(prompt, /orange and blue palette/);
     assert.match(prompt, /tiny etiquette classroom/);
+});
+
+test('a supplied image becomes an explicit fictional-character transformation direction', () => {
+    const prompt = buildOddlingStudioPrompt({
+        picks: { oddling_name: 'New Signal', character_type: 'Human', hair: 'Cube Cut' },
+        scene: 'standing in a clean studio',
+        referenceNote: 'keep the jacket shape',
+        hasReference: true,
+    });
+    assert.match(prompt, /supplied image as the base composition and visual material/);
+    assert.match(prompt, /original fictional adult character/);
+    assert.match(prompt, /keep the jacket shape/);
 });
 
 test('randomize styling preserves deliberate body and identity choices', () => {
