@@ -1,4 +1,5 @@
 import { CREATIVE_FEATURES, CREATIVE_FEATURE_GROUPS, creativeFeature, featurePrompt } from '../src/lib/creativeFeatures';
+import { compatibleCreativeFeatures, creativeReuseHref, creativeReuseTargetHref, kindForMime, readCreativeReuse } from '../src/lib/creativeReuse';
 declare const require: (id: string) => any;
 declare const __dirname: string;
 const { readFileSync } = require('fs') as { readFileSync: (path: string, encoding: 'utf8') => string };
@@ -43,5 +44,40 @@ describe('guided creative feature registry', () => {
         expect(create).toContain('sourceRights: hasReference ? sourceRights : undefined');
         expect(create).toContain("t('form.sourceRights')");
         expect(create).toContain('o.aspects.includes(guidedAspect)');
+    });
+});
+
+describe('reuse a finished creation in a compatible guided tool', () => {
+    test('validates route input and maps media types', () => {
+        expect(kindForMime('image/png')).toBe('image');
+        expect(kindForMime('video/mp4')).toBe('video');
+        expect(kindForMime('audio/mpeg')).toBe('audio');
+        expect(kindForMime('application/zip')).toBeNull();
+        expect(readCreativeReuse('job_123', 'image')).toEqual({ jobId: 'job_123', kind: 'image' });
+        expect(readCreativeReuse('../job', 'image')).toBeNull();
+        expect(readCreativeReuse('job_123', 'document')).toBeNull();
+    });
+
+    test('shows only tools with a matching source slot and preserves no asset URL', () => {
+        const reuse = { jobId: 'job_123', kind: 'audio' } as const;
+        const compatible = compatibleCreativeFeatures('audio');
+        expect(compatible.length).toBeGreaterThan(0);
+        expect(compatible.every((feature) => feature.media.includes('audio'))).toBe(true);
+        expect(compatible.map((feature) => feature.slug)).toContain('talking-avatar');
+        expect(compatible.map((feature) => feature.slug)).not.toContain('product-image-generator');
+        expect(creativeReuseHref(reuse.jobId, reuse.kind)).toEqual({ pathname: '/features', params: { sourceJobId: 'job_123', sourceKind: 'audio' } });
+        expect(creativeReuseTargetHref('talking-avatar', reuse)).toEqual({ pathname: '/features/[slug]', params: { slug: 'talking-avatar', sourceJobId: 'job_123', sourceKind: 'audio' } });
+    });
+
+    test('hub, detail and picker carry the validated Library job without an asset URL', () => {
+        const root = join(__dirname, '..', 'src', 'app', '(app)', 'features');
+        const hub = readFileSync(join(root, 'index.tsx'), 'utf8');
+        const detail = readFileSync(join(root, '[slug].tsx'), 'utf8');
+        const picker = readFileSync(join(__dirname, '..', 'src', 'components', 'SourcePicker.tsx'), 'utf8');
+        expect(hub).toContain('compatibleCreativeFeatures(reuse.kind)');
+        expect(hub).toContain('creativeReuseTargetHref(feature.slug, reuse)');
+        expect(detail).toContain('{ [reuse.kind]: reuse.jobId }');
+        expect(detail).toContain('initialReady={reuse?.kind === slot.slot}');
+        expect(picker).toContain('initialReadyLabel');
     });
 });

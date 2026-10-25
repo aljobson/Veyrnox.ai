@@ -4,6 +4,7 @@ export default {
     'job.next.edit': 'Edit this video',
     'job.next.publish': 'Publish this',
     'job.next.makeAnother': 'Make another',
+    'job.next.reuse': 'Use in another tool',
     'job.queued': 'In the queue…',
     'job.running': 'Creating…',
     'job.succeeded': 'Done',

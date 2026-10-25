@@ -1,4 +1,4 @@
-import { MAX_FAVOURITES, canSchedule, expiryOf, filterJobs, kindMap, parseProvenance, readFavourites, rowStatus, sizeLabel, toggled, writeFavourites } from '../src/lib/libraryView';
+import { MAX_FAVOURITES, canReuse, canSchedule, expiryOf, filterJobs, kindMap, parseProvenance, readFavourites, rowStatus, sizeLabel, toggled, writeFavourites } from '../src/lib/libraryView';
 import { createCache, createMemoryStorage } from '../src/lib/cache';
 import type { CatalogModel, Job } from '../src/lib/media';
 
@@ -62,6 +62,19 @@ describe('Schedule this', () => {
         expect(canSchedule(job({ state: 'running' }), kinds, NOW)).toBe(false);
         expect(canSchedule(job({ has_asset: false }), kinds, NOW)).toBe(false);
         expect(canSchedule(job({ asset_expires_at: '2026-10-01T00:00:00Z' }), kinds, NOW)).toBe(false);
+    });
+});
+
+describe('Use in another tool', () => {
+    test('offered for every stored, unheld, unexpired known media kind', () => {
+        expect(canReuse(job(), kinds, NOW)).toBe(true);
+        expect(canReuse(job({ model_id: 'vid' }), kinds, NOW)).toBe(true);
+        expect(canReuse(job({ model_id: 'aud' }), kinds, NOW)).toBe(true);
+        expect(canReuse(job({ model_id: 'gone' }), kinds, NOW)).toBe(false);
+        expect(canReuse(job({ held: true }), kinds, NOW)).toBe(false);
+        expect(canReuse(job({ state: 'running' }), kinds, NOW)).toBe(false);
+        expect(canReuse(job({ has_asset: false }), kinds, NOW)).toBe(false);
+        expect(canReuse(job({ asset_expires_at: '2026-10-01T00:00:00Z' }), kinds, NOW)).toBe(false);
     });
 });
 

@@ -59,6 +59,11 @@ export function canSchedule(job: Job, kinds: ReadonlyMap<string, Kind>, now: num
     return job.state === 'succeeded' && job.has_asset && !job.held && (k === 'image' || k === 'video') && expiryOf(job, now).kind !== 'gone';
 }
 
+// Every media kind can seed at least one guided workflow. The destination still verifies the job on the server.
+export function canReuse(job: Job, kinds: ReadonlyMap<string, Kind>, now: number = Date.now()): boolean {
+    return job.state === 'succeeded' && job.has_asset && !job.held && kinds.has(job.model_id) && expiryOf(job, now).kind !== 'gone';
+}
+
 export const MAX_FAVOURITES = 200;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

@@ -9,19 +9,23 @@ import { VideoView, useVideoPlayer } from 'expo-video';
 import { useAuth } from '../../../auth/AuthProvider';
 import { SourcePicker } from '../../../components/SourcePicker';
 import { creativeFeature, featurePrompt, type CreativeFeature } from '../../../lib/creativeFeatures';
+import { readCreativeReuse, type CreativeReuse } from '../../../lib/creativeReuse';
 import { stageCreativeSourceHandoff } from '../../../lib/creativeSourceHandoff';
 import { fetchCatalog, type CatalogModel } from '../../../lib/media';
 import { missingRequired, requiredNamedSlots, type Slot, type SlotName } from '../../../lib/sources';
+import { t } from '../../../lib/i18n';
 import { colors, fonts } from '../../../theme';
 
 export default function CreativeFeatureDetail() {
-    const { slug } = useLocalSearchParams<{ slug?: string }>();
+    const { slug, sourceJobId, sourceKind } = useLocalSearchParams<{ slug?: string; sourceJobId?: string; sourceKind?: string }>();
     const feature = creativeFeature(typeof slug === 'string' ? slug : undefined);
     if (!feature) return <View style={styles.center}><Stack.Screen options={{ title: 'Creative tool' }} /><Text style={styles.error}>That creative tool is not available.</Text></View>;
-    return <FeatureStudio key={feature.slug} feature={feature} />;
+    const requestedReuse = readCreativeReuse(sourceJobId, sourceKind);
+    const reuse = requestedReuse && feature.media.includes(requestedReuse.kind) ? requestedReuse : null;
+    return <FeatureStudio key={`${feature.slug}:${reuse?.jobId ?? ''}`} feature={feature} reuse={reuse} />;
 }
 
-function FeatureStudio({ feature }: { feature: CreativeFeature }) {
+function FeatureStudio({ feature, reuse }: { feature: CreativeFeature; reuse: CreativeReuse | null }) {
     const router = useRouter();
     const { api } = useAuth();
     const [brief, setBrief] = useState('');
@@ -29,7 +33,7 @@ function FeatureStudio({ feature }: { feature: CreativeFeature }) {
     const [model, setModel] = useState<CatalogModel | null | undefined>(undefined);
     const [error, setError] = useState('');
     const [uploaded, setUploaded] = useState<Partial<Record<SlotName, string>>>({});
-    const [fromLibrary, setFromLibrary] = useState<Partial<Record<SlotName, string>>>({});
+    const [fromLibrary, setFromLibrary] = useState<Partial<Record<SlotName, string>>>(() => reuse ? { [reuse.kind]: reuse.jobId } : {});
     const [sending, setSending] = useState<Partial<Record<SlotName, boolean>>>({});
     const [rights, setRights] = useState(false);
     useEffect(() => {
@@ -77,7 +81,7 @@ function FeatureStudio({ feature }: { feature: CreativeFeature }) {
             {feature.scriptUpload ? <><Pressable accessibilityRole="button" style={styles.secondary} onPress={() => void chooseScript()}><Text style={styles.secondaryText}>{script ? 'Replace script' : 'Upload TXT or Markdown script'}</Text></Pressable>{script ? <Text style={styles.note}>{script}</Text> : null}</> : null}
             <TextInput accessibilityLabel={feature.input} value={brief} onChangeText={(value) => { setBrief(value.slice(0, 1000)); setError(''); }} placeholder={feature.placeholder} placeholderTextColor={colors.muted} style={styles.input} multiline maxLength={1000} />
         </View>
-        <View style={styles.card}><Text style={styles.kicker}>REQUIRED SOURCES</Text><Text style={styles.cardTitle}>{required.length ? required.join(' + ') : 'No media required'}</Text>{model && slots.length ? slots.map((slot) => <SourcePicker key={slot.slot} slot={slot} api={api} onChange={(key) => { setRights(false); setUploaded((current) => ({ ...current, [slot.slot]: key })); }} onLibrary={(jobId) => { setRights(false); setFromLibrary((current) => ({ ...current, [slot.slot]: jobId })); }} onBusy={(busy) => setSending((current) => ({ ...current, [slot.slot]: busy }))} hint={`Required for ${feature.title}`} />) : <Text style={styles.note}>{required.length ? 'Checking the live upload requirements…' : 'Your script is the source for this workflow.'}</Text>}{slots.length ? <Pressable accessibilityRole="checkbox" accessibilityLabel="I have permission to use these sources" accessibilityState={{ checked: rights, disabled: waiting }} disabled={waiting} style={[styles.rights, rights && styles.rightsOn]} onPress={() => { setRights((value) => !value); setError(''); }}><Text style={styles.rightsText}>{rights ? '☑' : '☐'} I have permission to use these sources to generate AI content.</Text></Pressable> : null}</View>
+        <View style={styles.card}><Text style={styles.kicker}>REQUIRED SOURCES</Text><Text style={styles.cardTitle}>{required.length ? required.join(' + ') : 'No media required'}</Text>{model && slots.length ? slots.map((slot) => <SourcePicker key={slot.slot} slot={slot} api={api} onChange={(key) => { setRights(false); setUploaded((current) => ({ ...current, [slot.slot]: key })); }} onLibrary={(jobId) => { setRights(false); setFromLibrary((current) => ({ ...current, [slot.slot]: jobId })); }} onBusy={(busy) => setSending((current) => ({ ...current, [slot.slot]: busy }))} hint={`Required for ${feature.title}`} initialReady={reuse?.kind === slot.slot} initialReadyLabel={reuse?.kind === slot.slot ? t('features.reuse.selected') : undefined} />) : <Text style={styles.note}>{required.length ? 'Checking the live upload requirements…' : 'Your script is the source for this workflow.'}</Text>}{slots.length ? <Pressable accessibilityRole="checkbox" accessibilityLabel="I have permission to use these sources" accessibilityState={{ checked: rights, disabled: waiting }} disabled={waiting} style={[styles.rights, rights && styles.rightsOn]} onPress={() => { setRights((value) => !value); setError(''); }}><Text style={styles.rightsText}>{rights ? '☑' : '☐'} I have permission to use these sources to generate AI content.</Text></Pressable> : null}</View>
         <View style={styles.card}><Text style={styles.kicker}>WORKFLOW</Text>{feature.steps.map((step, index) => <View key={step} style={styles.step}><Text style={styles.number}>0{index + 1}</Text><Text style={styles.stepText}>{step}</Text></View>)}</View>
         <View style={styles.card}><Text style={styles.kicker}>LIVE MODEL</Text>{model === undefined ? <ActivityIndicator color={colors.accent} /> : <Text style={styles.cardTitle}>{model ? `Veyrnox ${feature.kind} model · ${model.credits} credits` : 'Unavailable'}</Text>}{error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}<Pressable accessibilityRole="button" disabled={model === undefined || waiting} style={[styles.primary, (model === undefined || waiting) && styles.off]} onPress={openCreate}><Text style={styles.primaryText}>Continue to final review</Text></Pressable><Text style={styles.note}>You will see the exact price before generating. A failed generation is refunded automatically.</Text></View>
     </ScrollView>;

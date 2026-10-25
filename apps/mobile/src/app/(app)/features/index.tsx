@@ -1,24 +1,30 @@
 import { Image } from 'expo-image';
-import { Link, Stack } from 'expo-router';
+import { Link, Stack, useLocalSearchParams } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { CREATIVE_FEATURE_GROUPS, CREATIVE_FEATURES } from '../../../lib/creativeFeatures';
+import { compatibleCreativeFeatures, creativeReuseTargetHref, readCreativeReuse } from '../../../lib/creativeReuse';
+import { t } from '../../../lib/i18n';
 import { colors, fonts } from '../../../theme';
 
 export default function CreativeFeatures() {
+    const { sourceJobId, sourceKind } = useLocalSearchParams<{ sourceJobId?: string; sourceKind?: string }>();
+    const reuse = readCreativeReuse(sourceJobId, sourceKind);
+    const available = reuse ? compatibleCreativeFeatures(reuse.kind) : CREATIVE_FEATURES;
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
             <Stack.Screen options={{ title: 'Creative tools' }} />
             <View style={styles.hero}>
-                <Text style={styles.kicker}>GUIDED CREATION</Text>
-                <Text style={styles.title} accessibilityRole="header">Make the exact thing you need</Text>
-                <Text style={styles.lead}>Choose a workflow. Veyrnox sets the right model, prompt shape and required uploads, then opens the final review in Create.</Text>
+                <Text style={styles.kicker}>{reuse ? t('features.reuse.kicker') : 'GUIDED CREATION'}</Text>
+                <Text style={styles.title} accessibilityRole="header">{reuse ? t('features.reuse.title', { kind: reuse.kind }) : 'Make the exact thing you need'}</Text>
+                <Text style={styles.lead}>{reuse ? t('features.reuse.lead') : 'Choose a workflow. Veyrnox sets the right model, prompt shape and required uploads, then opens the final review in Create.'}</Text>
             </View>
             {CREATIVE_FEATURE_GROUPS.map((group) => {
-                const features = CREATIVE_FEATURES.filter((item) => item.group === group);
+                const features = available.filter((item) => item.group === group);
+                if (!features.length) return null;
                 return <View key={group} style={styles.group}>
                     <View style={styles.groupHeading}><Text style={styles.groupTitle} accessibilityRole="header">{group}</Text><Text style={styles.count}>{features.length} tools</Text></View>
                     <View style={styles.grid}>{features.map((feature) => (
-                        <Link key={feature.slug} href={{ pathname: '/features/[slug]', params: { slug: feature.slug } }} asChild>
+                        <Link key={feature.slug} href={reuse ? creativeReuseTargetHref(feature.slug, reuse) : { pathname: '/features/[slug]', params: { slug: feature.slug } }} asChild>
                             <Pressable accessibilityRole="button" accessibilityLabel={`${feature.title}. ${feature.steps.join('. ')}`} style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
                                 {feature.example.kind === 'image' ? <Image source={{ uri: feature.example.url }} style={styles.thumb} contentFit="cover" accessibilityIgnoresInvertColors /> : <View style={styles.videoThumb}><Text style={styles.play}>▶</Text></View>}
                                 <View style={styles.cardCopy}>
