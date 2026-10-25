@@ -1,5 +1,42 @@
 const feature = (definition) => Object.freeze(definition);
 
+// Exact public template/example media shown on the corresponding LipSync.video
+// pages during the 2026-10-25 reference audit. Keep the source page beside the
+// asset so the UI is transparent about provenance and reviewers can re-check it.
+export const CREATIVE_FEATURE_EXAMPLES = Object.freeze({
+  'ai-avatar-generator': { kind: 'image', url: 'https://cdn.lipsync.video/lipsync/web/assets/ai-avatar-genetator/howto/portrait-transformed-into-a-reusable-digital-presenter-with-the-same-identity.webp' },
+  'talking-avatar': { kind: 'video', url: 'https://cdn.lipsync.video/lipsync/web/assets/talking-avatar/sample-display/Talkingavatarvideoforeducation_01.webm' },
+  'ai-human-generator': { kind: 'video', url: 'https://cdn.lipsync.video/lipsync/web/assets/ai-human-generator/example/AI-Human-Social-Influencer-Video-Example.mp4' },
+  'ai-influencer-generator': { kind: 'video', url: 'https://cdn.lipsync.video/lipsync/web/assets/ai-influencer-generator/preview/beauty-ai-influencer-video.mp4' },
+  'text-to-speech': { kind: 'image', url: 'https://cdn.lipsync.video/lipsync/web/assets/text-to-speech/Convert-text-to-natural-AI-speech.webp' },
+  'ai-voice-cloning': { kind: 'image', url: 'https://cdn.lipsync.video/lipsync/web/assets/ai-voice-cloning/introduction.webp' },
+  'ai-hairstyle-changer': { kind: 'image', url: 'https://cdn.lipsync.video/lipsync/web/assets/ai-hair-style-changer/hairstyle-templates/Bob_Cut.webp' },
+  'ai-hair-color-changer': { kind: 'image', url: 'https://cdn.lipsync.video/lipsync/web/assets/ai-hair-color-changer/function-area/ai-hair-color-changer-sample-after.webp' },
+  'ai-baby-generator': { kind: 'image', url: 'https://cdn.lipsync.video/lipsync/web/assets/ai-baby-generator/Sample-of-a-baby-generated.webp' },
+  'lip-sync': { kind: 'image', url: 'https://cdn.lipsync.video/lipsync/cdn/template/preview/studio/studio_19_preview.webp?x-oss-process=image/resize,l_144' },
+  'ai-talking-photo-generator': { kind: 'video', url: 'https://cdn.lipsync.video/lipsync/web/assets/talkingPhoto-1/examples/Turn-portrait-to-talking-video.mp4' },
+  'singing-photo': { kind: 'video', url: 'https://cdn.lipsync.video/lipsync/web/assets/sing-photo/singing-3-example-video.webm' },
+  'avatar-dialogue': { kind: 'video', url: 'https://cdn.lipsync.video/lipsync/web/assets/avatar-dialogue/H1-showcase-video.webm' },
+  'video-dubbing': { kind: 'video', url: 'https://cdn.lipsync.video/lipsync/web/assets/ai-dubbing/template/video-English.mp4' },
+  'talking-cartoon': { kind: 'video', url: 'https://cdn.lipsync.video/lipsync/web/assets/talking-cartoon/video-sample/Talking-Cartoon-Demo1.mp4' },
+  'talking-animals': { kind: 'video', url: 'https://cdn.lipsync.video/lipsync/web/assets/talking-animals/sample-display/talkingcatvideo.webm' },
+  'ai-baby-podcast': { kind: 'video', url: 'https://cdn.lipsync.video/lipsync/web/assets/ai-baby-podcast/Baby-Podcast.mp4' },
+  'talking-objects': { kind: 'image', url: 'https://cdn.lipsync.video/lipsync/web/assets/talking-objects/talking-object-video-first-frame.webp?x-oss-process=image/resize,w_800/format,webp' },
+  'ai-ad-clone': { kind: 'video', url: 'https://cdn.lipsync.video/lipsync/web/assets/ai-ad-clone/hero/preview-video.webm' },
+  'product-avatar': { kind: 'video', url: 'https://cdn.lipsync.video/lipsync/web/assets/product-avatar/3-examples-of-product-avatar-video.mp4' },
+  'product-video-generator': { kind: 'video', url: 'https://cdn.lipsync.video/lipsync/web/assets/product-video-generator/AI-generated-creative-soda-advertisement.webm' },
+  'product-image-generator': { kind: 'image', url: 'https://cdn.lipsync.video/lipsync/web/assets/product-image-generator/AI-Product-Image-Generator.webp' },
+});
+
+export function creativeFeatureExample(slug) {
+  const example = CREATIVE_FEATURE_EXAMPLES[slug];
+  return example ? { ...example, sourceUrl: `https://lipsync.video/${slug === 'lip-sync' ? '' : slug}` } : null;
+}
+
+export function creativeFeatureExampleAssetPath(slug) {
+  return CREATIVE_FEATURE_EXAMPLES[slug] ? `/api/reference-examples/${encodeURIComponent(slug)}` : null;
+}
+
 export const CREATIVE_FEATURES = Object.freeze([
   feature({ slug: 'ai-avatar-generator', title: 'AI Avatar Generator', group: 'Avatars', model: 'nano-banana-pro-grsai', kind: 'image', media: [], input: 'Describe the avatar', placeholder: 'A warm, confident presenter in a modern studio…', prompt: 'Create an original, photorealistic avatar from this brief. Keep the person fictional and brand-safe. ', steps: ['Describe an original character', 'Choose the final framing in Create', 'Generate and save the avatar'] }),
   feature({ slug: 'talking-avatar', title: 'Talking Avatar', group: 'Avatars', model: 'kling-avatar-v2', kind: 'video', media: ['image', 'audio'], input: 'Performance direction', placeholder: 'Friendly delivery, steady eye contact and natural gestures…', prompt: 'Animate the supplied avatar speaking the supplied audio. Preserve identity and framing. ', steps: ['Add an avatar image', 'Add speech audio up to 10 seconds', 'Generate the performance'] }),

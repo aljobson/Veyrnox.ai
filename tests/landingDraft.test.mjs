@@ -47,6 +47,24 @@ test('a template draft carries its aspect ratio through to the studio', async ()
     assert.equal(writeStudioDraft({ setItem() { throw new Error('denied'); } }, { prompt: 'x', model: 'y' }), false);
 });
 
+test('a guided feature carries only validated private upload keys and recorded consent', async () => {
+    const { takeStudioDraft, writeStudioDraft } = await import('../app/veyrnox/_lib/landingDraft.js');
+    const map = new Map();
+    const s = { getItem: (k) => map.get(k) ?? null, setItem: (k, v) => map.set(k, v), removeItem: (k) => map.delete(k) };
+    const key = 'uploads/00000000-0000-4000-8000-000000000000/11111111-1111-4111-8111-111111111111.png';
+    writeStudioDraft(s, { prompt: 'make it speak', model: 'avatar', sources: {
+        image: { sourceKey: key, mimeType: 'image/png', label: 'portrait.png' },
+    }, consent: true }, NOW);
+    assert.deepEqual(takeStudioDraft(s, 'avatar', NOW), { prompt: 'make it speak', aspect: null, sources: {
+        image: { sourceKey: key, mimeType: 'image/png', label: 'portrait.png' },
+    }, consent: true });
+
+    writeStudioDraft(s, { prompt: 'drop unsafe input', model: 'avatar', sources: {
+        image: { sourceKey: 'uploads/someone-else/file.exe', mimeType: 'image/png', label: 'bad' },
+    }, consent: true }, NOW);
+    assert.deepEqual(takeStudioDraft(s, 'avatar', NOW), { prompt: 'drop unsafe input', aspect: null });
+});
+
 test('a Film Studio draft carries its clip length without changing older drafts', async()=>{
     const {takeStudioDraft,writeStudioDraft}=await import('../app/veyrnox/_lib/landingDraft.js');
     const map=new Map();const s={getItem:k=>map.get(k)??null,setItem:(k,v)=>map.set(k,v),removeItem:k=>map.delete(k)};

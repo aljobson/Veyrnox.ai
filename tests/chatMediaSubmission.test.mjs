@@ -48,6 +48,14 @@ test('Chat preserves end-frame roles and mixed uploaded/Library selections, igno
   assert.deepEqual(await media.mediaGenerationSources({}, {}, () => assert.fail('no source')), { source_keys: [], source_assets: [] });
 });
 
+test('Chat reuses source keys uploaded by a guided feature without uploading the file twice', async () => {
+  const key = 'uploads/00000000-0000-4000-8000-000000000000/11111111-1111-4111-8111-111111111111.png';
+  const result = await media.mediaGenerationSources({ media: { image: {} } }, {
+    image: { sourceKey: key, label: 'portrait.png', mimeType: 'image/png' },
+  }, () => assert.fail('a handed-off source key must not upload again'));
+  assert.deepEqual(result, { source_assets: [], source_keys: [{ key, slot: 'image' }] });
+});
+
 test('Chat upload failure propagates before remaining files are uploaded or requests can be submitted', async () => {
   let uploads = 0;
   await assert.rejects(media.mediaGenerationSources({ media: { image: {}, endImage: {} } }, {

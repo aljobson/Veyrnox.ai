@@ -159,6 +159,10 @@ export default function CreateStudio() {
       setSources({ video: { assetId: videoSoundDraft.jobId, previewUrl: videoSoundDraft.assetUrl, label: videoSoundDraft.label } });
       setConsent(false);
     } else if (draft) setPrompt(draft.prompt);
+    if (!videoSoundDraft && draft && storedDraft?.sources) {
+      setSources(storedDraft.sources);
+      setConsent(storedDraft.consent === true);
+    }
     if (storedDraft?.followup) setPlannedFollowup(storedDraft.followup);
     if (draft?.aspect) incomingAspect.current = draft.aspect;
     if (draft?.durationSeconds) setDuration(`${draft.durationSeconds}s`);

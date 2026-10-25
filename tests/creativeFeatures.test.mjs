@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { CREATIVE_FEATURES, CREATIVE_FEATURE_SLUGS, creativeFeature } from '../app/veyrnox/_lib/creativeFeatures.js';
+import { CREATIVE_FEATURES, CREATIVE_FEATURE_SLUGS, creativeFeature, creativeFeatureExample, creativeFeatureExampleAssetPath } from '../app/veyrnox/_lib/creativeFeatures.js';
 
 const EXPECTED = [
   'ai-avatar-generator', 'talking-avatar', 'ai-human-generator', 'ai-influencer-generator',
@@ -24,6 +24,29 @@ test('every live workflow has a model, brief and three-step handoff', () => {
     assert.equal(item.steps.length, 3);
     if (!item.blocked) assert.ok(item.model);
   }
+});
+
+test('every workflow has an exact, attributable reference example', () => {
+  for (const item of CREATIVE_FEATURES) {
+    const example = creativeFeatureExample(item.slug);
+    assert.ok(example, `${item.slug} needs an example`);
+    assert.ok(['image', 'video'].includes(example.kind));
+    assert.match(example.url, /^https:\/\/cdn\.lipsync\.video\//);
+    assert.equal(example.sourceUrl, `https://lipsync.video/${item.slug === 'lip-sync' ? '' : item.slug}`);
+    assert.equal(creativeFeatureExampleAssetPath(item.slug), `/api/reference-examples/${item.slug}`);
+  }
+});
+
+test('reference media is rendered through a same-origin allowlisted proxy', async () => {
+  const [studio, route] = await Promise.all([
+    readFile(new URL('../app/veyrnox/_components/CreativeFeatureStudio.js', import.meta.url), 'utf8'),
+    readFile(new URL('../app/api/reference-examples/[slug]/route.js', import.meta.url), 'utf8'),
+  ]);
+  assert.match(studio, /src=\{exampleAsset\}/);
+  assert.doesNotMatch(studio, /src=\{example\.url\}/);
+  assert.match(route, /creativeFeatureExample\(slug\)/);
+  assert.match(route, /redirect: 'error'/);
+  assert.match(route, /X-Content-Type-Options/);
 });
 
 test('voice cloning is the only guarded workflow and names the remaining production gate', () => {
