@@ -53,7 +53,7 @@ test('production and staging both name the flag "true"; a missing var stays clos
 
 test('the public roster is exactly the first-party cast', () => {
     const roster = listPublicOddlings();
-    assert.ok(roster.length >= 32, 'the gallery lists the whole cast');
+    assert.equal(roster.length, 20, 'the gallery lists the curated cast');
     assert.deepEqual(roster.map((o) => o.id), ids);
     assert.equal(new Set(roster.map((o) => o.id)).size, roster.length, 'ids are unique');
     for (const oddling of roster) {
@@ -95,7 +95,7 @@ test('sitemap paths are the index plus one page per character', () => {
     assert.equal(paths.length, ids.length + 1);
     assert.equal(paths[0], '/oddlings');
     assert.deepEqual(paths.slice(1), ids.map((id) => `/oddlings/${id}`));
-    assert.ok(paths.length >= 33, 'the 32 characters and the gallery page');
+    assert.equal(paths.length, 21, 'the 20 characters and the gallery page');
     assert.ok(!paths.some((p) => p.startsWith('/app')), 'the signed-in studio is never listed');
 });
 

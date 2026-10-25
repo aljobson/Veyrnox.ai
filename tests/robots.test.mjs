@@ -77,7 +77,7 @@ async function sitemapUrls(flag) {
 
 test('the sitemap lists the Oddlings gallery and every character only while the flag is on', async () => {
     const castIds = ODDLING_ARCHETYPES.map((a) => a.id);
-    assert.ok(castIds.length >= 32);
+    assert.equal(castIds.length, 20);
     const open = (await sitemapUrls('true')).filter((url) => url.startsWith(`${SITE_URL}/oddlings`));
     assert.deepEqual(open, [`${SITE_URL}/oddlings`, ...castIds.map((id) => `${SITE_URL}/oddlings/${id}`)]);
     assert.equal(open.length, castIds.length + 1, 'the cast plus the gallery page');
