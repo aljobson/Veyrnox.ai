@@ -26,10 +26,10 @@ test('every live workflow has a model, brief and three-step handoff', () => {
   }
 });
 
-test('voice cloning is the only guarded workflow and explains the required controls', () => {
+test('voice cloning is the only guarded workflow and names the remaining production gate', () => {
   const blocked = CREATIVE_FEATURES.filter((item) => item.blocked);
   assert.deepEqual(blocked.map((item) => item.slug), ['ai-voice-cloning']);
-  assert.match(blocked[0].blockedReason, /verification.*consent.*revocation.*impersonation/i);
+  assert.match(blocked[0].blockedReason, /verification.*two-factor.*revocation.*provider account/i);
 });
 
 test('the app route and sidebar expose the workflow suite', async () => {
