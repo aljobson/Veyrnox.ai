@@ -209,6 +209,20 @@ test('parses subscription events into one action each', () => {
     assert.equal(parseStoreEvent(sub('CANCELLATION', { cancel_reason: 'CUSTOMER_SUPPORT' })).action, 'refund');
     // A plan change names the new product.
     assert.equal(parseStoreEvent(sub('PRODUCT_CHANGE', { product_id: 'ai.veyrnox.publish.weekly', new_product_id: 'ai.veyrnox.publish.annual' })).productId, 'ai.veyrnox.publish.annual');
+    const generation = parseStoreEvent(sub('RENEWAL', { product_id: 'ai.veyrnox.generation.starter.monthly' }));
+    assert.deepEqual([generation.kind, generation.family], ['subscription', 'generation']);
+});
+
+test('routes AI Generation subscriptions to the credit subscription ledger', async () => {
+    handlers.apply_store_generation_event = json({ ok: true, status: 'active', granted: 398 });
+    const event = sub('INITIAL_PURCHASE', { product_id: 'ai.veyrnox.generation.starter.monthly', id: 'evt-generation-start-1' });
+    assert.equal((await send(event)).status, 200);
+    assert.equal(rpcCalls('apply_store_publish_event').length, 0);
+    assert.deepEqual(rpcCalls('apply_store_generation_event')[0].body, {
+        p_rc_customer_id: CUSTOMER, p_channel: 'ios', p_store_product_id: 'ai.veyrnox.generation.starter.monthly',
+        p_original_transaction_id: '2000000000000001', p_event_id: 'evt-generation-start-1', p_action: 'activate', p_type: 'initial_purchase',
+        p_period_end: '2026-11-17T00:00:00.000Z', p_occurred_at: '2026-10-17T00:00:00.000Z',
+    });
 });
 
 test('keeps credit packs and Publish plans apart and ignores what it cannot place', () => {

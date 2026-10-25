@@ -107,9 +107,10 @@ async function creditPurchase(cfg, p) {
 }
 
 async function applySubscription(cfg, p) {
+    const rpcName = p.family === 'generation' ? 'apply_store_generation_event' : 'apply_store_publish_event';
     let last = null;
     for (const customerId of p.customerIds) {
-        const res = await rpc('apply_store_publish_event', {
+        const res = await rpc(rpcName, {
             p_rc_customer_id: customerId, p_channel: p.channel, p_store_product_id: p.productId,
             p_original_transaction_id: p.originalTransactionId, p_event_id: p.eventId, p_action: p.action, p_type: p.type,
             p_period_end: p.periodEnd, p_occurred_at: p.occurredAt,
@@ -132,7 +133,7 @@ async function applySubscription(cfg, p) {
         await markProcessed(cfg, SOURCE, p.eventId);
         return NextResponse.json({ ok: true, warn: code.toLowerCase() });
     }
-    console.error(LOG, 'apply_store_publish_event gave no usable verdict:', p.eventId, code);
+    console.error(LOG, `${rpcName} gave no usable verdict:`, p.eventId, code);
     return NextResponse.json({ error: 'internal' }, { status: 500 });
 }
 

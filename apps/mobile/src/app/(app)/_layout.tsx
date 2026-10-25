@@ -9,6 +9,7 @@ import { OfflineBanner } from '../../components/OfflineBanner';
 import { MfaGate } from '../../components/account/MfaGate';
 import { HomeBackButton } from '../../components/HomeBackButton';
 import { ServiceBanner } from '../../components/ServiceBanner';
+import { HardPaywallGate } from '../../components/HardPaywallGate';
 import { getThemePreference, paletteForScheme, resolveScheme } from '../../theme';
 
 export default function AppLayout() {
@@ -20,6 +21,7 @@ export default function AppLayout() {
         <>
             <AiConsentHost />
             <MfaGate>
+            <HardPaywallGate>
             <FirstRunGate />
             <CheckInModal />
             <Stack
@@ -41,6 +43,7 @@ export default function AppLayout() {
             >
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             </Stack>
+            </HardPaywallGate>
             </MfaGate>
         </>
     );

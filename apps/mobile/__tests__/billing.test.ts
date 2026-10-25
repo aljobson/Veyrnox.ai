@@ -1,4 +1,4 @@
-import { creditsFor, intervalFor, renewalTerms, toDisplayPackages, waitForBalanceChange, type RcPackage } from '../src/lib/billing';
+import { creditsFor, generationPlanFor, intervalFor, isPaidSubscriptionProduct, renewalTerms, stayDiscountFor, toDisplayPackages, waitForBalanceChange, type RcPackage } from '../src/lib/billing';
 
 const pkg = (id: string, product: string, price = '$1.00'): RcPackage => ({ identifier: id, product: { identifier: product, title: product, priceString: price } });
 
@@ -8,7 +8,20 @@ describe('billing helpers', () => {
         expect(creditsFor('ai.veyrnox.credits.x')).toBeNull();
         expect(creditsFor('com.other.credits.100')).toBeNull();
         expect(intervalFor('ai.veyrnox.publish.annual')).toBe('year');
+        expect(intervalFor('ai.veyrnox.generation.plus.monthly')).toBe('month');
+        expect(generationPlanFor('ai.veyrnox.generation.plus.monthly')).toBe('plus');
+        expect(isPaidSubscriptionProduct('ai.veyrnox.generation.ultra.annual')).toBe(true);
         expect(intervalFor('ai.veyrnox.publish.daily')).toBeNull();
+    });
+
+    test('only exposes a correctly configured fifteen percent stay offer', () => {
+        const product = { ...pkg('g', 'ai.veyrnox.generation.lite.monthly', '$10.00'), product: {
+            ...pkg('g', 'ai.veyrnox.generation.lite.monthly', '$10.00').product,
+            price: 10,
+            discounts: [{ identifier: 'stay15', price: 8.5, priceString: '$8.50', cycles: 3 }],
+        } };
+        expect(stayDiscountFor(product)?.priceString).toBe('$8.50');
+        expect(stayDiscountFor({ ...product, product: { ...product.product, discounts: [{ identifier: 'stay15', price: 8, priceString: '$8.00', cycles: 3 }] } })).toBeNull();
     });
 
     test('lists known packs in order and drops anything else', () => {

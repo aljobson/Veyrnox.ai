@@ -48,6 +48,7 @@ The retired `Paths.document/veyrnox-oddlings/passports.json` is read only by the
 | `jobs.deleted_at` through `delete_user_job` | 0351 | That RPC only | Delete a creation (ADR-0116) |
 | `store_customers` and store provenance on top-ups | 0344 | RevenueCat webhook through `credit_top_up` and `apply_top_up_refund` | Credit packs (ADR-0108) |
 | Store Publish subscription tables | 0346 | RevenueCat webhook | Publish Plan in the stores (ADR-0109) |
+| Store AI Generation subscription identity and product map | 0393 | RevenueCat webhook through `apply_store_generation_event` | Generation entitlement and recurring credit grants |
 | `account_deletions` and the prepare, erase, complete functions | 0347 | Those functions only | Delete account (ADR-0111) |
 | `push_tokens`, `push_outbox`, `push_token_writes` | 0348 | `register_push_token`, `remove_push_token`, `push_*` RPCs | Push for finished creations (ADR-0113) |
 | `user_blocks` and `block_cinema_user`, `unblock_cinema_user`, `list_blocked_cinema_users` | 0353 | Those functions only | Block a Cinema member (ADR-0135) |
