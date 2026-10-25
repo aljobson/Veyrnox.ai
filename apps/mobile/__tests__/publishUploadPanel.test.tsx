@@ -35,8 +35,8 @@ beforeEach(() => {
     });
 });
 afterEach(async () => { await act(async () => root.unmount()); });
-async function render(enabled = true, selectedUploadId: string | null = null) {
-    await act(async () => root.render(<PublishUploadPanel api={{ request } as unknown as ApiClient} enabled={enabled} selectedUploadId={selectedUploadId} onSelect={onSelect} onBusyChange={onBusyChange} />));
+async function render(enabled = true, selectedUploadId: string | null = null, max = 1, nonUploadCount = 0) {
+    await act(async () => root.render(<PublishUploadPanel api={{ request } as unknown as ApiClient} enabled={enabled} max={max} nonUploadCount={nonUploadCount} selectedUploads={selectedUploadId ? [{ uploadId: selectedUploadId, mediaType: 'image' }] : []} onSelect={onSelect} onBusyChange={onBusyChange} />));
 }
 const nodes = (role: string) => root.container.queryAll(n => n.props.accessibilityRole === role);
 function control(key: keyof typeof strings, role = 'button'): TestInstance {
@@ -51,6 +51,37 @@ async function pick() { await press('publishUploads.rights', 'checkbox'); await 
 const text = () => root.container.queryAll(n => n.children.some(c => typeof c === 'string')).flatMap(n => n.children.filter(c => typeof c === 'string')).join(' ');
 async function switchAccount() { await act(async () => { mockOwner = 'B'; mockListeners.forEach(fn => fn()); }); }
 
+test('Photos preserves multiple picker items in order and cleans every cached copy', async () => {
+    jest.mocked(ImagePicker.launchImageLibraryAsync).mockResolvedValue({ canceled: false, assets: [
+        { uri: 'file:///cache/one', mimeType: 'image/jpeg', width: 100, height: 100 },
+        { uri: 'file:///cache/two', mimeType: 'image/jpeg', width: 100, height: 100 },
+    ] });
+    let sequence = 0;
+    request.mockImplementation(async (_path: string, init?: RequestInit) => {
+        const body = JSON.parse(String(init?.body || '{}'));
+        return body.action === 'reserve' ? { ...grant, id: `u${++sequence}` } : body.action === 'complete' ? { upload: { ...row, id: `u${sequence}` } } : { uploads: [] };
+    });
+    await render(true, null, 4); await pick();
+    expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalledWith(expect.objectContaining({ allowsMultipleSelection: true, orderedSelection: true, selectionLimit: 4 }));
+    expect(onSelect).toHaveBeenLastCalledWith([{ uploadId: 'u1', mediaType: 'image' }, { uploadId: 'u2', mediaType: 'image' }]);
+    expect(mockDeleted).toHaveBeenCalledWith('file:///cache/one'); expect(mockDeleted).toHaveBeenCalledWith('file:///cache/two');
+});
+
+test('account change while a multiple Files picker is open discards every late copy', async () => {
+    const held = deferred<Awaited<ReturnType<typeof DocumentPicker.getDocumentAsync>>>();
+    jest.mocked(DocumentPicker.getDocumentAsync).mockReturnValueOnce(held.promise);
+    await render(true, null, 4); await press('publishUploads.rights', 'checkbox'); await press('publishUploads.files');
+    expect(DocumentPicker.getDocumentAsync).toHaveBeenCalledWith(expect.objectContaining({ multiple: true, copyToCacheDirectory: true }));
+    await switchAccount();
+    await act(async () => held.resolve({ canceled: false, assets: [
+        { uri: 'file:///cache/one', name: 'one.jpg', mimeType: 'image/jpeg', lastModified: 0 },
+        { uri: 'file:///cache/two', name: 'two.jpg', mimeType: 'image/jpeg', lastModified: 0 },
+    ] }));
+    expect(bodyCalls().some(c => c.action === 'reserve')).toBe(false);
+    expect(mockDeleted).toHaveBeenCalledWith('file:///cache/one'); expect(mockDeleted).toHaveBeenCalledWith('file:///cache/two');
+    expect(onSelect.mock.calls.filter(([p]) => p.length > 0)).toHaveLength(0);
+});
+
 test('false gate renders nothing and sends nothing', async () => { await render(false); expect(nodes('header')).toHaveLength(0); expect(request).not.toHaveBeenCalled(); });
 test('unticked rights disables pickers; all buttons labeled and heading is header', async () => {
     await render(); expect(nodes('header')).toHaveLength(1);
@@ -60,7 +91,7 @@ test('unticked rights disables pickers; all buttons labeled and heading is heade
 });
 test('success selects ready upload, clears rights, cleans copies and disables image disk cache', async () => {
     await render(); await pick();
-    expect(onSelect).toHaveBeenCalledWith({ uploadId: 'u', mediaType: 'image' });
+    expect(onSelect).toHaveBeenCalledWith([{ uploadId: 'u', mediaType: 'image' }]);
     expect(control('publishUploads.rights', 'checkbox').props.accessibilityState.checked).toBe(false);
     expect(mockDeleted).toHaveBeenCalledWith('file:///cache/pick');
     expect(text()).toContain(strings['publishUploads.selectedNotice']); expect(text()).not.toContain('private name');
@@ -70,7 +101,7 @@ test('success selects ready upload, clears rights, cleans copies and disables im
 });
 test('list uploads_not_open hides quietly', async () => {
     request.mockRejectedValueOnce(new ApiError(503, 'uploads_not_open')); await render();
-    expect(nodes('header')).toHaveLength(0); expect(text()).not.toContain('uploads_not_open'); expect(onSelect).toHaveBeenCalledWith(null);
+    expect(nodes('header')).toHaveLength(0); expect(text()).not.toContain('uploads_not_open'); expect(onSelect).toHaveBeenCalledWith([]);
 });
 test('list failure offers Retry', async () => {
     request.mockRejectedValueOnce(new ApiError(503, 'uploads_unavailable')); await render(); expect(text()).toContain(strings['publishUploads.loadFailed']);
@@ -95,7 +126,7 @@ test('account change while picker is deferred discards late file and never reser
     await render(); await pick(); await switchAccount();
     await act(async () => held.resolve(picked()));
     expect(bodyCalls().some(c => c.action === 'reserve')).toBe(false); expect(mockDeleted).toHaveBeenCalledWith('file:///cache/pick');
-    expect(onSelect.mock.calls.filter(([p]) => p !== null)).toHaveLength(0);
+    expect(onSelect.mock.calls.filter(([p]) => p.length > 0)).toHaveLength(0);
 });
 test('account change during HEIC conversion deletes late converted copy', async () => {
     const held = deferred<{ uri: string; width: number; height: number }>(); mockSave.mockReturnValueOnce(held.promise);
@@ -112,7 +143,7 @@ test('account switch during reserve makes no PUT, complete or DELETE', async () 
     const held = deferred<typeof grant>(); await render(); request.mockReturnValueOnce(held.promise);
     await pick(); await switchAccount(); await act(async () => held.resolve(grant));
     expect(putFromDisk).not.toHaveBeenCalled(); expect(bodyCalls().some(c => c.action === 'complete' || c.method === 'DELETE')).toBe(false);
-    expect(onSelect.mock.calls.filter(([p]) => p !== null)).toHaveLength(0);
+    expect(onSelect.mock.calls.filter(([p]) => p.length > 0)).toHaveLength(0);
 });
 test('same-account unmount during reserve deletes exactly once without late callbacks or warnings', async () => {
     const held = deferred<typeof grant>(); await render(); request.mockReturnValueOnce(held.promise); await pick();
@@ -126,12 +157,12 @@ test('remove selected clears parent; removing unselected does not', async () => 
     request.mockResolvedValueOnce({ uploads: [row] }); await render(true, 'other'); await press('publishUploads.remove'); expect(onSelect).not.toHaveBeenCalled();
     await act(async () => root.unmount()); root = createRoot(); request.mockResolvedValueOnce({ uploads: [row] }); await render(true, 'u');
     expect(control('publishUploads.select').props.accessibilityState.selected).toBe(true);
-    await press('publishUploads.remove'); expect(onSelect).toHaveBeenCalledWith(null);
+    await press('publishUploads.remove'); expect(onSelect).toHaveBeenCalledWith([]);
 });
 test('Files and camera use the specified pickers; no microphone', async () => {
     jest.mocked(DocumentPicker.getDocumentAsync).mockResolvedValueOnce({ canceled: true, assets: null });
     await render(); await press('publishUploads.rights', 'checkbox'); await press('publishUploads.files');
-    expect(DocumentPicker.getDocumentAsync).toHaveBeenCalledWith({ type: ['image/jpeg', 'image/png', 'image/webp', 'video/mp4'], copyToCacheDirectory: true });
+    expect(DocumentPicker.getDocumentAsync).toHaveBeenCalledWith({ type: ['image/jpeg', 'image/png', 'image/webp', 'video/mp4'], copyToCacheDirectory: true, multiple: false });
     jest.mocked(ImagePicker.requestCameraPermissionsAsync).mockResolvedValueOnce({ granted: true } as ImagePicker.CameraPermissionResponse);
     jest.mocked(ImagePicker.launchCameraAsync).mockResolvedValueOnce(picked());
     await press('publishUploads.rights', 'checkbox'); await press('publishUploads.camera');
@@ -147,7 +178,7 @@ test('account change aborts native PUT, cleans temporary file and sends no DELET
     await render(); await pick(); await switchAccount();
     expect(signal?.aborted).toBe(true); expect(mockDeleted).toHaveBeenCalledWith('file:///cache/pick');
     expect(bodyCalls().some(c => c.method === 'DELETE' || c.action === 'complete')).toBe(false);
-    expect(onSelect.mock.calls.filter(([p]) => p !== null)).toHaveLength(0);
+    expect(onSelect.mock.calls.filter(([p]) => p.length > 0)).toHaveLength(0);
 });
 test('remove in-use shows web wording and keeps the selected row', async () => {
     request.mockResolvedValueOnce({ uploads: [row] }); await render(true, 'u');
@@ -194,9 +225,62 @@ test('account changes reopen and reload a per-user gate, respecting the current 
     const selected = root.container.queryAll(n => n.props.accessibilityRole === 'button' && n.props.accessibilityLabel === 'Select video, 1.0 MB');
     expect(selected).toHaveLength(1);
     await act(async () => selected[0].props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }));
-    expect(onSelect).toHaveBeenLastCalledWith({ uploadId: 'b-upload', mediaType: 'video' });
+    expect(onSelect).toHaveBeenLastCalledWith([{ uploadId: 'b-upload', mediaType: 'video' }]);
     await act(async () => { mockOwner = 'A'; mockListeners.forEach(fn => fn()); });
-    expect(nodes('header')).toHaveLength(0); expect(onSelect).toHaveBeenLastCalledWith(null);
+    expect(nodes('header')).toHaveLength(0); expect(onSelect).toHaveBeenLastCalledWith([]);
     await render(false); await switchAccount(); expect(request).toHaveBeenCalledTimes(3);
     await render(true); expect(nodes('header')).toHaveLength(1); expect(request).toHaveBeenCalledTimes(4);
+});
+
+for (const [max, jobs, selected] of [[3, 2, 'u'], [0, 0, null]] as const) test(`full carousel or zero capacity (${max}, ${jobs} jobs) blocks additions and preserves uploads`, async () => {
+    request.mockResolvedValueOnce({ uploads: [{ ...row, id: 'another' }] });
+    await render(true, selected, max, jobs);
+    await press('publishUploads.rights', 'checkbox');
+    for (const key of ['library', 'files', 'camera'] as const) {
+        expect(control(`publishUploads.${key}`).props.accessibilityState.disabled).toBe(true);
+        await press(`publishUploads.${key}`);
+    }
+    expect(control('publishUploads.select').props.accessibilityState.disabled).toBe(true);
+    await press('publishUploads.select');
+    expect(onSelect).not.toHaveBeenCalled();
+    expect(ImagePicker.launchImageLibraryAsync).not.toHaveBeenCalled();
+    expect(DocumentPicker.getDocumentAsync).not.toHaveBeenCalled();
+    expect(ImagePicker.launchCameraAsync).not.toHaveBeenCalled();
+    expect(text()).not.toMatch(/Maximum -/);
+});
+test('one remaining place in a carousel still uses multiple selection with capacity one', async () => {
+    await render(true, null, 3, 2); await pick();
+    expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalledWith(expect.objectContaining({ allowsMultipleSelection: true, selectionLimit: 1 }));
+    expect(onSelect).toHaveBeenLastCalledWith([{ uploadId: 'u', mediaType: 'image' }]);
+});
+
+for (const [selected, jobs] of [['previous', 0], [null, 1]] as const) {
+    for (const source of ['library', 'files', 'camera'] as const) test(`single-file ${source} replaces ${selected ? 'upload' : 'job'} choice`, async () => {
+        jest.mocked(DocumentPicker.getDocumentAsync).mockResolvedValueOnce({ canceled: false, assets: [{ uri: 'file:///cache/pick', name: 'replacement.jpg', mimeType: 'image/jpeg', lastModified: 0 }] });
+        jest.mocked(ImagePicker.requestCameraPermissionsAsync).mockResolvedValueOnce({ granted: true } as ImagePicker.CameraPermissionResponse);
+        jest.mocked(ImagePicker.launchCameraAsync).mockResolvedValueOnce(picked());
+        await render(true, selected, 1, jobs);
+        await press('publishUploads.rights', 'checkbox');
+        expect(control(`publishUploads.${source}`).props.accessibilityState.disabled).toBe(false);
+        await press(`publishUploads.${source}`);
+        expect(onSelect).toHaveBeenCalledTimes(1);
+        expect(onSelect).toHaveBeenCalledWith([{ uploadId: 'u', mediaType: 'image' }]);
+        expect(mockDeleted).toHaveBeenCalledWith('file:///cache/pick');
+        if (source === 'library') expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalledWith(expect.objectContaining({ allowsMultipleSelection: false, selectionLimit: 1 }));
+        if (source === 'files') expect(DocumentPicker.getDocumentAsync).toHaveBeenCalledWith(expect.objectContaining({ multiple: false }));
+    });
+    test(`single-file row Select replaces ${selected ? 'upload' : 'job'} choice`, async () => {
+        request.mockResolvedValueOnce({ uploads: [row] });
+        await render(true, selected, 1, jobs);
+        expect(control('publishUploads.select').props.accessibilityState.disabled).toBe(false);
+        await press('publishUploads.select');
+        expect(onSelect).toHaveBeenCalledWith([{ uploadId: 'u', mediaType: 'image' }]);
+    });
+}
+test('canceling or failing a single-file replacement preserves the previous upload', async () => {
+    await render(true, 'previous', 1);
+    jest.mocked(ImagePicker.launchImageLibraryAsync).mockResolvedValueOnce({ canceled: true, assets: null });
+    await pick(); expect(onSelect).not.toHaveBeenCalled();
+    jest.mocked(putFromDisk).mockRejectedValueOnce(new ApiError(0, 'upload_failed'));
+    await pick(); expect(onSelect).not.toHaveBeenCalled();
 });

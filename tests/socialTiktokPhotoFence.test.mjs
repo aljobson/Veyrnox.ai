@@ -27,7 +27,7 @@ async function fixture(options, run) {
                 return Response.json(body.p_target_id === zero ? { ok: false, code: 'CLAIM_LOST' }
                     : options.held ? { ok: false, code: 'MEDIA_HELD' } : { ok: true });
             }
-            if (name === 'claim_due_social_post_targets') return Response.json([{
+            if (name === 'claim_due_social_post_targets_v2') return Response.json([{
                 target_id: 'target-fixture', claim_key: 'claim-fixture', post_id: 'post-fixture', account_id: 'account-fixture',
                 network: 'tiktok', access_token_enc: encrypted, external_account_id: 'fixture-open-id',
                 media_type: 'image', mime_type: options.mime === undefined ? 'image/jpeg' : options.mime,
@@ -96,7 +96,7 @@ test('TikTok photo normal initialization retains its fence and uses authorizatio
         assert.deepEqual(await runPublishSweep(deps), { ok: true, claimed: 1, published: 0, failed: 0, errors: 0 });
         assert.equal(f.progress[0].p_provider_state.submission_started, true);
         assert.equal(f.progress[0].p_provider_state.publish_id, 'fixture-publish-id');
-        assert.deepEqual(f.calls, ['authorize_social_target_dispatch', 'claim_due_social_post_targets',
+        assert.deepEqual(f.calls, ['authorize_social_target_dispatch', 'claim_due_social_post_targets_v2',
             'authorize_social_target_dispatch', 'authorize_social_target_dispatch', 'mark_social_provider_submission', 'init', 'report_social_post_progress']);
     });
 });

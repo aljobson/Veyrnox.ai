@@ -66,7 +66,9 @@ export function syncWebI18n(check = false) {
     const changed = [];
 
     for (const code of CODES) {
-        const web = readCatalog(join(WEB, `${code}.mjs`));
+        const web = { ...readCatalog(join(WEB, `${code}.mjs`)),
+            ...readCatalog(join(WEB, 'app', code, 'publish-composer.mjs')),
+            ...readCatalog(join(WEB, 'app', code, 'publish.mjs')) };
         const lines = [];
         const missing = [];
         for (const key of webKeys) {

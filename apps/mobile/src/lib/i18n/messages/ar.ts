@@ -83,6 +83,14 @@ const ar = {
     'checkin.earned.few': 'ربحت {credits} من الرصيد.',
     'checkin.earned.many': 'ربحت {credits} من الرصيد.',
     'checkin.earned.other': 'ربحت {credits} من الرصيد.',
+    'app.publish.carousel.limit': 'تم اختيار {count} من الملفات · الحد الأقصى {max}',
+    'app.publish.carousel.item': 'الملف {count}',
+    'app.publish.carousel.earlier': 'نقل إلى السابق',
+    'app.publish.carousel.later': 'نقل إلى التالي',
+    'app.publish.carousel.blocked': 'لا تدعم {network} هذه المجموعة أو هذا العدد من الملفات.',
+    'app.publish.carousel.closed': 'المنشورات التي تحتوي على عدة ملفات غير متاحة بعد.',
+    'app.publish.carousel.unavailable': 'هذا المرفق محجوز أو غير متاح.',
+    'app.publish.common.remove': 'إزالة',
 } as const;
 
 export default ar;

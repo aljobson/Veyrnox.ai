@@ -83,6 +83,14 @@ const de = {
     'checkin.earned.few': 'Du hast {credits} Credits verdient.',
     'checkin.earned.many': 'Du hast {credits} Credits verdient.',
     'checkin.earned.other': 'Du hast {credits} Credits verdient.',
+    'app.publish.carousel.limit': '{count} Dateien ausgewählt · Maximal {max}',
+    'app.publish.carousel.item': 'Datei {count}',
+    'app.publish.carousel.earlier': 'Nach vorne',
+    'app.publish.carousel.later': 'Nach hinten',
+    'app.publish.carousel.blocked': '{network} unterstützt diese Kombination oder Anzahl von Dateien nicht.',
+    'app.publish.carousel.closed': 'Beiträge mit mehreren Dateien sind noch nicht verfügbar.',
+    'app.publish.carousel.unavailable': 'Dieser Anhang ist gesperrt oder nicht verfügbar.',
+    'app.publish.common.remove': 'Entfernen',
 } as const;
 
 export default de;

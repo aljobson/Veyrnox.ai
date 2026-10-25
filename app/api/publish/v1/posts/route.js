@@ -1,6 +1,6 @@
 import { limitRequestBody } from '../../../../../lib/requestBodyLimit.js';
 import { authenticateSocialCustomerApiRequest, socialCustomerApiResponse } from '../../../../../lib/social/customerApiAuth.js';
-import { postCapabilityError } from '../../../../../lib/social/postCapabilities.js';
+import { carouselAdmission, postCapabilityError } from '../../../../../lib/social/postCapabilities.js';
 import { socialUploadsEnabled } from '../../../../../lib/social/uploadPolicy.js';
 import { rpc, SupabaseError } from '../../../../../packages/db/supabase-client.js';
 
@@ -59,6 +59,8 @@ export async function POST(req) {
     if (!listed?.ok || !Array.isArray(listed.accounts)) return reply(authenticated, { error: 'service_unavailable' }, 503, 'service_unavailable');
     const destinations = listed.accounts.filter((account) => body.accountIds.includes(account.id) && account.status === 'active');
     if (destinations.length !== body.accountIds.length) return reply(authenticated, { error: 'account_not_found' }, 404, 'account_not_found');
+    const admission = carouselAdmission(destinations, media);
+    if (admission) return reply(authenticated, admission, 400, admission.error);
     const capabilityError = postCapabilityError(destinations, media, body.text || '', process.env, authenticated.authId);
     if (capabilityError) return reply(authenticated, { error: capabilityError }, 400, capabilityError);
     const result = await rpc('create_social_post', { p_auth_id: authenticated.authId, p_brand_id: authenticated.brandId,

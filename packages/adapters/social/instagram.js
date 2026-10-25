@@ -1,3 +1,4 @@
+import { metaCarouselStep } from './carousel.js';
 // Instagram adapter — Instagram API with Instagram Login ("Business Login
 // for Instagram") — ADR-0061 §2.1 "adapters, not SDKs": plain fetch, no
 // Meta SDK on the SSR graph. Verified against Meta's own docs
@@ -321,3 +322,6 @@ async function getJson(url, fetcher) {
     }
     return body;
 }
+
+export const publishCarouselStep = (token, input, fetcher = fetch, beforePublish = async () => {}) =>
+    metaCarouselStep('instagram', token, input, fetcher, beforePublish);

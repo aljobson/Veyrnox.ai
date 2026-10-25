@@ -3,12 +3,13 @@ import { tOr } from '../../../../lib/i18n/translate.mjs';
 import { localeTag } from '../../../../lib/i18n/locales.mjs';
 import { useI18n } from '../../../../components/I18nProvider';
 import { useEffect, useRef, useState } from 'react';
+import { toggleMedia } from '../../../../lib/social/carouselSelection.js';
 import { listSocialUploads, uploadSocialFile, removeSocialUpload } from '../../../lib/socialUploadsClient.js';
 
 const button = 'rounded-full border border-vx-border px-4 py-2 text-sm font-bold disabled:opacity-50 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vx-accent';
 
 
-export default function DeviceUploads({ selected, onSelect, onBusyChange, list = listSocialUploads, upload = uploadSocialFile, remove = removeSocialUpload }) {
+export default function DeviceUploads({ selected = [], max = 1, onSelect, onBusyChange, list = listSocialUploads, upload = uploadSocialFile, remove = removeSocialUpload }) {
   const { t, locale } = useI18n();
     const errorCopy = code => tOr(t, `app.publish.uploads.error.${code}`, t('app.publish.uploads.failed'));
     const number = value => locale === 'en' ? value : value.toLocaleString(localeTag(locale));
@@ -21,6 +22,8 @@ export default function DeviceUploads({ selected, onSelect, onBusyChange, list =
     const [removing, setRemoving] = useState(null);
     const input = useRef(null);
     const controller = useRef(null);
+    const selection = useRef(selected);
+    useEffect(() => { selection.current = selected; }, [selected]);
     useEffect(() => {
         let live = true;
         list().then((r) => { if (live) setFiles(r.uploads || []); })
@@ -29,17 +32,22 @@ export default function DeviceUploads({ selected, onSelect, onBusyChange, list =
         return () => { live = false; controller.current?.abort(); };
     }, [list, t]);
     async function chooseFile(e) {
-        const file = e.target.files?.[0];
+        const picked = Array.from(e.target.files || []);
         e.target.value = '';
-        if (!file || !consent || controller.current) return;
+        if (!picked.length || !consent || controller.current) return;
+        if (picked.length > (max === 1 ? 1 : max - selected.length)) { setError(t('app.publish.carousel.limit', { count: selected.length + picked.length, max })); return; }
         const active = new AbortController();
         controller.current = active;
         setError(''); setNotice(''); setProgress(0); onBusyChange?.(true);
         try {
-            const uploaded = await upload(file, { signal: active.signal, onProgress: setProgress });
-            if (active.signal.aborted) return;
-            setFiles((old) => [uploaded, ...old]);
-            onSelect({ uploadId: uploaded.id, thumbUrl: uploaded.url, mediaType: uploaded.mime_type.split('/')[0], filename: uploaded.filename });
+            let next = max === 1 ? [] : [...selected];
+            for (const file of picked) {
+                const uploaded = await upload(file, { signal: active.signal, onProgress: setProgress });
+                if (active.signal.aborted) return;
+                setFiles(old => [uploaded, ...old]);
+                next = [...next, { uploadId: uploaded.id, thumbUrl: uploaded.url, mediaType: uploaded.mime_type.split('/')[0], filename: uploaded.filename }];
+                onSelect(next);
+            }
             setNotice(t("app.publish.uploads.selectedNotice"));
         } catch (err) {
             if (!active.signal.aborted) setError(errorCopy(err.code));
@@ -53,7 +61,7 @@ export default function DeviceUploads({ selected, onSelect, onBusyChange, list =
         try {
             await remove(file.id);
             setFiles((old) => old.filter((f) => f.id !== file.id));
-            if (selected?.uploadId === file.id) onSelect(null);
+            if (selection.current.some(item => item.uploadId === file.id)) onSelect(selection.current.filter(item => item.uploadId !== file.id));
             setNotice(t("app.publish.uploads.removed"));
         } catch (err) { setError(errorCopy(err.code)); }
         finally { setRemoving(null); }
@@ -66,7 +74,7 @@ export default function DeviceUploads({ selected, onSelect, onBusyChange, list =
             <input type="checkbox" checked={consent} disabled={busy} onChange={(e) => setConsent(e.target.checked)} className="mt-1 accent-vx-accent" />
             <span>{t("app.publish.uploads.rights")}</span>
         </label>
-        <input ref={input} type="file" accept="image/jpeg,image/png,image/webp,video/mp4" onChange={chooseFile} className="sr-only" tabIndex={-1} aria-label={t("app.publish.uploads.choose")} />
+        <input ref={input} type="file" multiple={max > 1} accept="image/jpeg,image/png,image/webp,video/mp4" onChange={chooseFile} className="sr-only" tabIndex={-1} aria-label={t("app.publish.uploads.choose")} />
         <div className="flex flex-wrap items-center gap-2">
             <button type="button" className={button} disabled={!consent || busy} onClick={() => input.current?.click()}>{t("app.publish.uploads.upload")}</button>
             {busy && <button type="button" className={button} onClick={() => controller.current?.abort()}>{t("app.publish.uploads.cancel")}</button>}
@@ -76,12 +84,12 @@ export default function DeviceUploads({ selected, onSelect, onBusyChange, list =
         {!loading && !files.length && <p className="text-sm text-vx-fg-muted">{t("app.publish.uploads.empty")}</p>}
         <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {files.map((file) => <li key={file.id} className="min-w-0 rounded-lg border border-vx-border p-2">
-                <button type="button" aria-pressed={selected?.uploadId === file.id} disabled={busy || removing !== null}
+                <button type="button" aria-pressed={selected.some(item => item.uploadId === file.id)} disabled={busy || removing !== null}
                     className="w-full text-start focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vx-accent"
-                    onClick={() => onSelect({ uploadId: file.id, thumbUrl: file.url, mediaType: file.mime_type.split('/')[0], filename: file.filename })}>
+                    onClick={() => onSelect(toggleMedia(selected, { uploadId: file.id, thumbUrl: file.url, mediaType: file.mime_type.split('/')[0], filename: file.filename }, max))}>
                     {file.mime_type.startsWith('video/') ? <video src={file.url} preload="metadata" muted playsInline className="h-24 w-full object-contain" /> : <img src={file.url} alt="" className="h-24 w-full object-contain" />}
                     <span className="block truncate text-sm">{file.filename}</span>
-                    <span className="text-xs text-vx-fg-muted">{selected?.uploadId === file.id ? t("app.publish.uploads.selected") : ''}{locale === 'en' ? (file.size_bytes / 1024 / 1024).toFixed(1) : new Intl.NumberFormat(localeTag(locale), { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(file.size_bytes / 1024 / 1024)} {t("app.publish.uploads.megabytes")}</span>
+                    <span className="text-xs text-vx-fg-muted">{selected.some(item => item.uploadId === file.id) ? t("app.publish.uploads.selected") : ''}{locale === 'en' ? (file.size_bytes / 1024 / 1024).toFixed(1) : new Intl.NumberFormat(localeTag(locale), { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(file.size_bytes / 1024 / 1024)} {t("app.publish.uploads.megabytes")}</span>
                 </button>
                 <button type="button" disabled={busy || removing !== null} className="mt-2 text-xs underline" aria-label={t('app.publish.uploads.remove', { filename: file.filename })} onClick={() => removeFile(file)}>{removing === file.id ? t("app.publish.uploads.removing") : t("app.publish.common.remove")}</button>
             </li>)}

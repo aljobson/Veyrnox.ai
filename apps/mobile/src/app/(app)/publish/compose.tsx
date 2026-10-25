@@ -1,17 +1,18 @@
+import { PublishMediaSelection } from '../../../components/PublishMediaSelection';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { fetchCatalog, mediaApi, type CatalogModel } from '../../../lib/media';
 import { fetchAccounts, publishErrorMessage, type PublishAccount } from '../../../lib/publish';
-import { MAX_TEXT, captionWarning, cleanNetworkText, composeErrorMessage, createBody, createPost, eligibleAccounts, mediaTypeOf, validateDraft, type Draft, type When, type YoutubeVisibility } from '../../../lib/publishCompose';
+import { MAX_TEXT, mediaBlocker, networkLabel, captionWarning, cleanNetworkText, composeErrorMessage, createBody, createPost, mediaTypeOf, validateDraft, type Draft, type When, type YoutubeVisibility } from '../../../lib/publishCompose';
 import { confirmSlot, fetchQueues, queueErrorKey, reserveSlot, type PublishQueue } from '../../../lib/publishQueues';
 import { NetworkTextFields, QueuePicker, YoutubeVisibilityChips } from '../../../components/ComposeExtras';
 import { t } from '../../../lib/i18n';
 import { WhenPicker, whenFrom } from '../../../components/WhenPicker';
-import { appStorage, getCacheUser } from '../../../lib/appCache';
+import { appStorage, getCacheUser, subscribeCacheUser } from '../../../lib/appCache';
 import { createDraftKeys, draftSignature, isDefiniteRefusal } from '../../../lib/draftKey';
 import { PublishUploadPanel } from '../../../components/PublishUploadPanel';
-import { choose, clearUpload, type CreationPick, type MediaChoice } from '../../../lib/publishMediaChoice';
+import { choiceId, choiceMedia, toggleChoice, type CreationPick, type MediaChoice } from '../../../lib/publishMediaChoice';
 import { colors } from '../../../theme';
 import { usePublishApi } from '../../../lib/usePublishApi';
 
@@ -24,8 +25,11 @@ export default function Compose() {
     const [picks, setPicks] = useState<CreationPick[] | null>(null);
     const [accounts, setAccounts] = useState<PublishAccount[] | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [chosen, setChosen] = useState<MediaChoice | null>(null);
+    const [choices, setChoices] = useState<MediaChoice[]>([]);
+    const chosen = choices[0] || null;
+    const [carouselEnabled, setCarouselEnabled] = useState(false);
     const [accountIds, setAccountIds] = useState<string[]>([]);
+    useEffect(() => subscribeCacheUser(() => { setChoices([]); setAccountIds([]); }), []);
     const [text, setText] = useState('');
     const [mode, setMode] = useState<'now' | 'schedule' | 'queue'>('schedule');
     const [networkText, setNetworkText] = useState<Record<string, string>>({});
@@ -56,7 +60,8 @@ export default function Compose() {
                 setPicks(list);
                 setAccounts(acc.accounts);
                 setUploadsEnabled(acc.uploadsEnabled);
-                if (presetJob) setChosen(list.find((p) => p.job.job_id === presetJob) ?? null);
+                setCarouselEnabled(acc.carouselEnabled === true);
+                if (presetJob) setChoices(list.filter(p => p.job.job_id === presetJob));
             })
             .catch((err) => !cancelled && setError(publishErrorMessage(err)));
         return () => {
@@ -64,11 +69,15 @@ export default function Compose() {
         };
     }, [api, presetJob]);
 
-    const eligible = useMemo(() => (chosen && accounts ? eligibleAccounts(accounts, chosen.mediaType) : []), [chosen, accounts]);
+    const eligible = (accounts || []).filter(a => a.status === 'active' && a.publishingEnabled && a.supportedMedia.length > 0);
     const queue = mode === 'queue' ? queues.find((q) => q.id === queueId) ?? null : null;
     const queueAccounts = queue && accounts ? accounts.filter((a) => queue.accountIds.includes(a.id)) : [];
     const queueUsable = !!queue && queueAccounts.length === queue.accountIds.length && queueAccounts.every((a) => eligible.some((e) => e.id === a.id));
     const selected = queue ? queueAccounts : eligible.filter((a) => accountIds.includes(a.id));
+    const chosenAccounts = selected;
+    const maxMedia = carouselEnabled ? Math.min(10, ...chosenAccounts.map(a => a.carousel?.max || 1)) : 1;
+    const blockedNetwork = mediaBlocker(choiceMedia(choices), chosenAccounts);
+    const blocker = choices.length > 1 && !carouselEnabled ? t('app.publish.carousel.closed') : blockedNetwork ? t('app.publish.carousel.blocked', { network: networkLabel(blockedNetwork) }) : null;
     const when: When | null = mode !== 'schedule' ? { kind: 'now' } : (() => { const d = whenFrom(date, time); return d ? { kind: 'at', at: d } : null; })();
     const networks = [...new Set(selected.map((a) => a.network))];
     const warn = captionWarning(text, networks);
@@ -80,6 +89,7 @@ export default function Compose() {
 
     function submit() {
         if (!chosen || busy || preparingRef.current) return;
+        if (blocker) { setProblem(blocker); return; }
         if (!when) {
             setProblem('Enter the date as YYYY-MM-DD and the time as HH:MM.');
             return;
@@ -88,7 +98,7 @@ export default function Compose() {
             setProblem(queue ? t('compose.queueNoMatch') : t('compose.queuePick'));
             return;
         }
-        const draft: Draft = { jobId: chosen.kind === 'job' ? chosen.job.job_id : '', ...(chosen.kind === 'upload' ? { uploadId: chosen.uploadId } : {}), mediaType: chosen.mediaType, accountIds: selected.map((a) => a.id), text, when, networkText: cleanNetworkText(networkText, networks), ...(showYoutube ? { youtubeVisibility: ytVisibility } : {}), ...(queue ? { queue: { id: queue.id, name: queue.name } } : {}) };
+        const draft: Draft = { jobId: chosen.kind === 'job' ? chosen.job.job_id : '', ...(chosen.kind === 'upload' ? { uploadId: chosen.uploadId } : {}), mediaType: chosen.mediaType, media: choiceMedia(choices), accountIds: selected.map((a) => a.id), text, when, networkText: cleanNetworkText(networkText, networks), ...(showYoutube ? { youtubeVisibility: ytVisibility } : {}), ...(queue ? { queue: { id: queue.id, name: queue.name } } : {}) };
         const now = new Date();
         const invalid = validateDraft(draft, accounts ?? [], now);
         if (invalid) {
@@ -125,6 +135,10 @@ export default function Compose() {
                 stage = 'reserve';
                 // Reserve the slot, post at its time, then confirm it. A retry repeats all three safely with the same key.
                 const slot = await reserveSlot(api, draft.queue.id, key);
+                const reserved = slot.accountIds.map(id => accounts?.find(account => account.id === id));
+                if (reserved.some(account => !account)) { setProblem(t('compose.queueNoMatch')); return; }
+                const blocked = mediaBlocker(draft.media || [], reserved as PublishAccount[]);
+                if (blocked) { setProblem(t('app.publish.carousel.blocked', { network: networkLabel(blocked) })); return; }
                 stage = 'post';
                 const made = await createPost(api, createBody({ ...draft, accountIds: slot.accountIds, when: { kind: 'at', at: slot.scheduledAt } }, key, now));
                 stage = 'confirm';
@@ -152,14 +166,24 @@ export default function Compose() {
                 <Text style={styles.heading} accessibilityRole="header">1. Creation</Text>
                 {picks.length === 0 ? <Text style={styles.muted}>No finished images or videos yet. Make one in Create first.</Text> : null}
                 {picks.slice(0, 30).map((p) => (
-                    <Pressable key={p.job.job_id} accessibilityRole="button" disabled={preparing} accessibilityState={{ disabled: preparing, selected: (chosen?.kind === 'job' && chosen.job.job_id === p.job.job_id) }} style={[styles.row, (chosen?.kind === 'job' && chosen.job.job_id === p.job.job_id) && styles.rowOn]} onPress={() => { if (preparingRef.current) return; setChosen(old => choose(old, p)); setAccountIds([]); }}>
+                    <Pressable key={p.job.job_id} accessibilityRole="button" disabled={preparing} accessibilityState={{ disabled: preparing, selected: choices.some(item => choiceId(item) === choiceId(p)) }} style={[styles.row, choices.some(item => choiceId(item) === choiceId(p)) && styles.rowOn]} onPress={() => { if (preparingRef.current) return; setChoices(old => toggleChoice(old, p, maxMedia)); if (maxMedia === 1) setAccountIds([]); }}>
                         <Text style={styles.rowText}>{p.name}</Text>
                         <Text style={styles.muted}>{p.mediaType} · {new Date(p.job.created_at).toLocaleDateString()}</Text>
                     </Pressable>
                 ))}
 
-                <PublishUploadPanel api={api} enabled={uploadsEnabled} selectedUploadId={chosen?.kind === 'upload' ? chosen.uploadId : null}
-                    onSelect={pick => { setChosen(old => pick ? choose(old, { kind: 'upload', ...pick }) : clearUpload(old, chosen?.kind === 'upload' ? chosen.uploadId : null)); if (pick) setAccountIds([]); }}
+                <PublishMediaSelection items={choices} max={maxMedia} onChange={setChoices} disabled={preparing || busy} />
+                {blocker ? <Text style={styles.error} accessibilityRole="alert">{blocker}</Text> : null}
+                <PublishUploadPanel api={api} enabled={uploadsEnabled} max={maxMedia} nonUploadCount={choices.filter(item => item.kind === 'job').length}
+                    selectedUploads={choices.flatMap(item => item.kind === 'upload' ? [{ uploadId: item.uploadId, mediaType: item.mediaType }] : [])}
+                    onSelect={uploads => {
+                        const before = choices.filter(item => item.kind === 'upload');
+                        setChoices(old => {
+                        if (maxMedia === 1 && uploads.length) return uploads.map(item => ({ kind: 'upload', ...item }));
+                        const removed = new Set(before.flatMap(item => item.kind === 'upload' && !uploads.some(upload => upload.uploadId === item.uploadId) ? [item.uploadId] : []));
+                        const kept = old.filter(item => item.kind === 'job' || !removed.has(item.uploadId));
+                        return [...kept, ...uploads.filter(upload => !kept.some(item => item.kind === 'upload' && item.uploadId === upload.uploadId)).map(item => ({ kind: 'upload' as const, ...item }))];
+                    }); if (maxMedia === 1 && uploads.length) setAccountIds([]); }}
                     onBusyChange={value => { preparingRef.current = value; setPreparing(value); }} />
                 {chosen ? (
                     <>

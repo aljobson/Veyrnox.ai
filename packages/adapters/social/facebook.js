@@ -1,3 +1,4 @@
+import { imageItems } from './carousel.js';
 import { authorizeUrl, bearer, requireImage } from './common.js';
 import { publishScopeFeatureEnabled } from '../../../lib/social/scopeFlags.js';
 
@@ -84,9 +85,26 @@ export async function fetchCandidates(token, fetcher = fetch) {
     }
     throw new Error('too_many_pages');
 }
-export async function publishPost(token, { externalAccountId, caption, mediaType, mediaUrl }, fetcher = fetch, beforePublish = async () => {}) {
+export async function publishPost(token, { externalAccountId, caption, mediaType, mediaUrl, media }, fetcher = fetch, beforePublish = async () => {}) {
     requireImage(mediaType);
     if (!/^\d+$/.test(externalAccountId)) throw new Error('invalid_page');
+    if (media?.length > 1) {
+        const items = imageItems(media, mediaType, mediaUrl, 10);
+        const attached = [];
+        for (const item of items) {
+            const photo = await facebookRequest(`${BASE}/${externalAccountId}/photos`, { method: 'POST',
+                headers: { ...bearer(token), 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ url: item.mediaUrl, published: 'false' }).toString() }, fetcher);
+            if (!photo.id) throw new Error('missing_photo_id');
+            attached.push({ media_fbid: photo.id });
+        }
+        await beforePublish();
+        const post = await facebookRequest(`${BASE}/${externalAccountId}/feed`, { method: 'POST',
+            headers: { ...bearer(token), 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ message: caption || '', attached_media: JSON.stringify(attached) }).toString() }, fetcher);
+        if (!post.id) throw new Error('missing_post_id');
+        return { platformPostId: post.id, platformPostUrl: `https://www.facebook.com/${post.id}` };
+    }
     await beforePublish();
     const result = await facebookRequest(`${BASE}/${externalAccountId}/photos`, { method: 'POST',
         headers: { ...bearer(token), 'Content-Type': 'application/x-www-form-urlencoded' },

@@ -1,3 +1,4 @@
+import { imageItems } from './carousel.js';
 import { bearer, jsonBody, jsonRequest, readImage, requireImage } from './common.js';
 export const SCOPES = ['app-password'];
 export const config = () => ({});
@@ -30,21 +31,26 @@ export async function refreshAccessToken(_cfg, token, fetcher = fetch) {
     const { jwt, pds } = unpack(token);
     return session(await jsonRequest(`${pds}/xrpc/com.atproto.server.refreshSession`, { method: 'POST', headers: bearer(jwt) }, fetcher), pds);
 }
-export async function publishPost(token, { externalAccountId, caption, mediaType, mediaUrl, targetId }, fetcher = fetch, beforePublish = async () => {}) {
-    requireImage(mediaType);
+export async function publishPost(token, { externalAccountId, caption, mediaType, mediaUrl, media, targetId }, fetcher = fetch, beforePublish = async () => {}) {
+    if (media === undefined) requireImage(mediaType);
     if ([...new Intl.Segmenter('en', { granularity: 'grapheme' }).segment(caption)].length > 300) throw new Error('caption_too_long');
     const { jwt, pds } = unpack(token);
     // A deterministic record key makes a retry after a lost provider response
     // overwrite the same record, rather than creating another public post.
     if (!/^[0-9a-f-]{36}$/i.test(targetId || '')) throw new Error('invalid_target');
     const rkey = targetId.replaceAll('-', '');
-    const { bytes, mime } = await readImage(mediaUrl, 1000000, fetcher);
-    const blob = await jsonRequest(`${pds}/xrpc/com.atproto.repo.uploadBlob`, { method: 'POST', headers: { ...bearer(jwt), 'Content-Type': mime }, body: bytes }, fetcher);
-    if (!blob.blob) throw new Error('missing_blob');
+    const items = imageItems(media, mediaType, mediaUrl, 4);
+    const images = [];
+    for (const item of items) {
+        const { bytes, mime } = await readImage(item.mediaUrl, 1000000, fetcher);
+        const blob = await jsonRequest(`${pds}/xrpc/com.atproto.repo.uploadBlob`, { method: 'POST', headers: { ...bearer(jwt), 'Content-Type': mime }, body: bytes }, fetcher);
+        if (!blob.blob) throw new Error('missing_blob');
+        images.push({ alt: caption, image: blob.blob });
+    }
     await beforePublish();
     const data = await jsonRequest(`${pds}/xrpc/com.atproto.repo.putRecord`, { ...jsonBody({ repo: externalAccountId, collection: 'app.bsky.feed.post', rkey,
         record: { $type: 'app.bsky.feed.post', text: caption, createdAt: new Date().toISOString(),
-            embed: { $type: 'app.bsky.embed.images', images: [{ alt: caption, image: blob.blob }] } } }),
+            embed: { $type: 'app.bsky.embed.images', images } } }),
         headers: { ...bearer(jwt), 'Content-Type': 'application/json' } }, fetcher);
     if (!data.uri) throw new Error('missing_post_id');
     return { platformPostId: data.uri, platformPostUrl: `https://bsky.app/profile/${encodeURIComponent(externalAccountId)}/post/${rkey}` };

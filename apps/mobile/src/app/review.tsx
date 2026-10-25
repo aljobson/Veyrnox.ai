@@ -55,8 +55,12 @@ export default function ReviewLink() {
             {review ? (
                 <Card title={review.brandName || t('share.review.title')}>
                     {review.networks.length ? <Text style={shared.help}>{review.networks.join(' · ')}</Text> : null}
-                    {review.previewUrl && review.mediaType !== 'video' ? <Image source={{ uri: review.previewUrl }} style={styles.media} contentFit="contain" accessibilityLabel={t('share.review.preview')} /> : null}
-                    {review.previewUrl && review.mediaType === 'video' ? <Action label={t('share.review.watch')} onPress={() => void WebBrowser.openBrowserAsync(review.previewUrl as string)} /> : null}
+                    {review.attachments.map((item, index) => <View key={index}>
+                        <Text style={shared.label}>{t('app.publish.carousel.item', { count: index + 1 })}</Text>
+                        {item.held || !item.previewUrl ? <Text style={shared.help}>{t('app.publish.carousel.unavailable')}</Text>
+                            : item.mediaType === 'video' ? <Action label={t('share.review.watch')} onPress={() => void WebBrowser.openBrowserAsync(item.previewUrl as string)} />
+                            : <Image source={{ uri: item.previewUrl }} cachePolicy="none" style={styles.media} contentFit="contain" accessibilityLabel={t('share.review.preview')} />}
+                    </View>)}
                     {review.targets.length ? (
                         review.targets.map((target) => (
                             <View key={target.network} style={{ gap: 4 }}>

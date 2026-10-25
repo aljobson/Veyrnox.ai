@@ -183,6 +183,23 @@ test('MCP exposes the Publish tools only while the flag is on', () => {
     } finally { process.env.PUBLISH_AUTOMATION_ENABLED = 'true'; }
 });
 
+test('MCP scheduling uses carousel admission and preserves ordered attachments', async () => {
+    const prior = process.env.PUBLISH_CAROUSEL_ENABLED;
+    try {
+        const server = createVeyrnoxMcpServer({ headers: new Headers(identity) });
+        const tool = server._registeredTools.publish_schedule_post;
+        for (const enabled of ['false', 'true']) {
+            process.env.PUBLISH_CAROUSEL_ENABLED = enabled;
+            stub({ list_social_accounts: { ok: true, accounts: [{ id: account, network: 'twitter', status: 'active' }] } });
+            const media = [{ media_type: 'image', job_id: job }, { media_type: 'image', job_id: post }];
+            const result = await tool.handler(schedule({ media }), {});
+            const create = calls.find(c => c.name === 'create_social_post');
+            if (enabled === 'true') assert.deepEqual(create.args.p_media, media);
+            else { assert.equal(create, undefined); assert.equal(result.isError, true); assert.match(JSON.stringify(result), /carousel_not_open/); }
+        }
+    } finally { if (prior === undefined) delete process.env.PUBLISH_CAROUSEL_ENABLED; else process.env.PUBLISH_CAROUSEL_ENABLED = prior; }
+});
+
 test('the Publish tool source never offers publish-now and imports no auth SDK', () => {
     const source = readFileSync(new URL('../lib/veyrnoxPublishMcp.js', import.meta.url), 'utf8')
         + readFileSync(new URL('../lib/publishAutomation.js', import.meta.url), 'utf8')
