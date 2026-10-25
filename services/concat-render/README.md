@@ -18,3 +18,16 @@ Run (builds Rust + FFmpeg bindings: ~10-20 min, ~6 GB):
 
 Prints `realtimeFactor` (render seconds per clip second). The Fly numbers are
 the ones that count; local Docker on Apple silicon runs arm64.
+
+## poc/
+
+`translate.mjs` turns a schemaVersion 2 editor timeline into Concat API calls
+(`project.create`, `media.import`, `edit.apply` addClip/trimClip/moveClips/
+updateClip/addTextClip, `export.run`). `run.mjs` builds two test clips, renders
+a sample timeline and prints the time. Copy into a running container
+(`docker cp services/concat-render/poc cr:/tmp/poc`) and run
+`CONCAT_API_TOKEN=... node run.mjs` there.
+
+Checked by eye on 4 frames: trim, clip order, text timing and position were right.
+Not covered: crossfade transitions (skipped), audio clips, volume, font match
+(the server falls back to an italic face), pixel comparison with `editorRender.mjs`.
