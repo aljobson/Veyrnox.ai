@@ -22,6 +22,7 @@ import { LanguageMenu } from './LanguageMenu';
 import { useI18n } from '../../../components/I18nProvider';
 import { localeTag } from '../../../lib/i18n/locales.mjs';
 import { pluralKey } from '../../../lib/i18n/translate.mjs';
+import { activeStudioDestination } from '../_lib/studioNavigation';
 
 // Studio pages keep the making tools in the tab strip. This complementary
 // list makes the rest of the public site reachable from that same header,
@@ -346,8 +347,9 @@ function AppSidebar({ sections, homeLabel, logoLabel, accountLabel, accountHref,
 // out it is a single sign-in button and no figures at all.
 // If `balance` prop is provided the parent owns it; otherwise the pill
 // self-fetches and subscribes to veyrnox:balance-changed.
-export function AppNav({ balance, active = 'explore', readAccount = true }) {
+export function AppNav({ balance, active, readAccount = true }) {
   const { t, locale } = useI18n();
+  const pathname = usePathname();
   const projectsEnabled = useProjectsEnabled();
   const publishEnabled = usePublishEnabled();
   const enhanceEnabled = useVideoEnhancePreview();
@@ -368,11 +370,21 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
     ...(publishEnabled ? [{ key: 'publish', href: '/app/publish', label: t("app.nav.publish") }] : []),
     ...(enhanceEnabled ? [{ key: 'enhance', href: '/app/enhance', label: t("label.Enhance") }] : []),
   ];
+  const utilityItems = [
+    { key: 'credits', href: '/app/credits', label: t('label.Credits') },
+  ];
+  const activeCandidates = [
+    ...items,
+    ...utilityItems,
+    { key: 'cinema', href: '/social-cinema' },
+  ];
+  const activeKey = active ?? activeStudioDestination(pathname, activeCandidates);
   // The public taxonomy intentionally mentions some destinations in more
   // than one group. The compact app menu is one flat list, so keep the first
   // useful occurrence of each route instead of rendering duplicate links.
   const menuItems = [...new Map([
     ...items,
+    ...utilityItems,
     ...APP_BROWSE_CATEGORIES,
   ].map((item) => [item.href, item])).values()];
   const sidebarSections = [
@@ -417,15 +429,27 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
   // A generation both spends credits and stores an asset, so the existing
   // veyrnox:balance-changed is already the moment all of it moved.
   const [summary, setSummary] = useState(null);
+  const [summaryState, setSummaryState] = useState('idle');
   const loadSummary = useCallback(async () => {
-    if (!readAccount || !session) { setSummary(null); return; }
+    if (!readAccount || !session) {
+      setSummary(null);
+      setSummaryState('idle');
+      return;
+    }
+    setSummaryState('loading');
     try {
       setSummary(await gatewayFetch('/account'));
+      setSummaryState('ready');
     } catch (e) {
       // Signed out: drop the figures with the session. Any other failure
-      // keeps the last good read — a stale number beats a wrong one, and
-      // an unanswered read renders "—", never a spinner.
-      if (e instanceof GatewayError && e.status === 401) setSummary(null);
+      // keeps the last good read in memory while the compact block offers
+      // an explicit retry rather than presenting stale totals as current.
+      if (e instanceof GatewayError && e.status === 401) {
+        setSummary(null);
+        setSummaryState('signed-out');
+      } else {
+        setSummaryState('error');
+      }
     }
   }, [readAccount, session]);
   useEffect(() => {
@@ -449,12 +473,12 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
       logoLabel={t('ui.home')}
       accountLabel={account?.name}
       accountHref="/app/account"
-      activeKey={active}
+      activeKey={activeKey}
       aria-label={t("app.nav.studio")}
       collapseLabel={t('app.nav.side.collapse')}
       expandLabel={t('app.nav.side.expand')}
     />
-    <header data-print="hide" className="sticky top-0 z-40 flex items-center justify-between gap-2 px-4 sm:px-8 h-16 border-b border-vx-border bg-vx-base/88 backdrop-blur-sm">
+    <header data-print="hide" className="sticky top-0 z-40 flex h-16 items-center justify-between gap-1.5 border-b border-vx-border bg-vx-base/88 px-2 backdrop-blur-sm min-[430px]:gap-2 min-[430px]:px-3 sm:px-8">
       {summary && <PaywallPrompt credits={summary.credits} createdAt={summary.created_at} />}
       <Link
         href="/app"
@@ -469,7 +493,7 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
       <MobileMenu
         items={menuItems}
         languageMenu
-        activeHref={items.find((item) => item.key === active)?.href}
+        activeHref={activeCandidates.find((item) => item.key === activeKey)?.href}
         buttonLabel={t("app.nav.menu")}
         navLabel={t("app.nav.studio")}
         className="lg:hidden"
@@ -483,7 +507,26 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
             {/* Both figures stack inside one block: side by side they need
                 459px of nav and a phone gives 328. Amber is the credit
                 figure and nothing else — the count is body text. */}
-            <span className="flex flex-col gap-px rounded-2xl border border-vx-border bg-vx-panel px-1.5 sm:px-2.5 py-0.5">
+            {readAccount && summaryState !== 'signed-out' && <span className="relative flex min-h-11 flex-col justify-center gap-px rounded-2xl border border-vx-border bg-vx-panel px-1.5 py-0.5 max-[429px]:hidden sm:px-2.5" aria-busy={summaryState === 'loading'}>
+              {summaryState === 'error' && (
+                <button
+                  type="button"
+                  onClick={loadSummary}
+                  className="inline-flex min-h-10 items-center justify-center px-2 text-[11px] font-bold text-vx-danger focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-danger"
+                >
+                  {t('recovery.retry')}
+                </button>
+              )}
+              {(summaryState === 'idle' || summaryState === 'loading') && summary === null && (
+                <span aria-hidden="true" className="flex w-14 flex-col gap-1.5 py-1">
+                  <span className="vx-shimmer h-2 rounded-full bg-vx-border" />
+                  <span className="vx-shimmer h-2 rounded-full bg-vx-border" />
+                </span>
+              )}
+              {summaryState === 'loading' && summary !== null && (
+                <span aria-hidden="true" className="absolute end-1 top-1 h-1.5 w-1.5 animate-pulse rounded-full bg-vx-accent" />
+              )}
+              {(summaryState === 'ready' || (summaryState === 'loading' && summary !== null)) && <>
               <Link
                 href="/app/credits"
                 data-testid="app-credit-balance"
@@ -503,7 +546,8 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
                 <span className="font-vx-mono text-[11px] font-bold text-vx-fg-body vx-num">{assetFmt}</span>
                 <span aria-hidden="true" className="font-vx-mono text-[11px] font-bold text-vx-fg-muted">{assetWord}</span>
               </Link>
-            </span>
+              </>}
+            </span>}
             {/* The account menu the marketing nav already ships: who you
                 are, links into the app, sign out. Named from the signed-in
                 session, with /account's verified email behind it. */}
@@ -513,7 +557,7 @@ export function AppNav({ balance, active = 'explore', readAccount = true }) {
           <button
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent('veyrnox:auth-required', { detail: { mode: 'sign_in' } }))}
-            className="rounded-full bg-vx-accent text-vx-accent-ink text-[13px] sm:text-sm font-bold px-3 sm:px-4 py-2 hover:bg-vx-accent-hover"
+            className="vx-press min-h-11 rounded-full bg-vx-accent px-3 text-[13px] font-bold text-vx-accent-ink hover:bg-vx-accent-hover sm:px-4 sm:text-sm"
           >
             {t("oauth.signIn")}</button>
         )}

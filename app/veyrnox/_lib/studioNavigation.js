@@ -5,3 +5,11 @@ export const STUDIO_LINKS = [
   { href: '/app/editor', label: 'Video editor' },
   { href: '/app/projects', label: 'Projects' },
 ];
+
+export function activeStudioDestination(pathname, items) {
+  const path = (pathname || '').replace(/^\/veyrnox/, '') || '/';
+  if (path === '/app') return 'explore';
+  return items
+    .filter((item) => item.href !== '/app' && (path === item.href || path.startsWith(`${item.href}/`)))
+    .sort((a, b) => b.href.length - a.href.length)[0]?.key ?? null;
+}

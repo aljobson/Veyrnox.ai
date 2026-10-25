@@ -18,12 +18,18 @@ export function PresetGallery({ size = 'lg', columns = 'lg:columns-3', taste = n
   const { t } = useI18n();
   const [cat, setCat] = useState('ALL');
   const [query, setQuery] = useState('');
+  const [allCategoriesOpen, setAllCategoriesOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(TEMPLATE_BATCH_SIZE);
   const { models } = useCatalog();
   const popularIds = usePopularTemplates();
   // Popular (ADR-0072) is a ranking, not a home category: it appears only once some template has enough use to rank, in rank order.
   const popular = popularIds.map((id) => PRESETS.find((preset) => preset.id === id)).filter(Boolean);
   const categories = popular.length ? ['ALL', 'NEW', 'POPULAR', ...PRESET_CATEGORIES.slice(2)] : PRESET_CATEGORIES;
+  const preferredCategories = ['ALL', 'NEW', 'POPULAR', 'YOUR PHOTO', 'PRODUCTS', 'STORIES'];
+  const quickCategories = categories.filter((category) => preferredCategories.includes(category));
+  const shownCategories = allCategoriesOpen
+    ? categories
+    : [...quickCategories, ...(quickCategories.includes(cat) ? [] : [cat])];
   const list = (cat === 'POPULAR' ? popular : templatesIn(cat)).filter(hasTemplateVideo);
   const matches = searchTemplates(list, query);
   const ordered = rankByTaste(matches, taste, (p) => `${p.name} ${p.category} ${p.prompt}`);
@@ -42,18 +48,26 @@ export function PresetGallery({ size = 'lg', columns = 'lg:columns-3', taste = n
           className="mt-3 w-full rounded-xl border border-vx-border bg-vx-panel px-4 py-3 text-[16px] text-vx-fg outline-none placeholder:text-vx-fg-muted focus:border-vx-accent focus:ring-2 focus:ring-vx-accent/30"
         />
       </label>
-      <h2 className="mt-7 mb-3 text-[15px] font-bold tracking-tight">{t('presets.categories.title')}</h2>
-      {/* One scrolling row below sm (thirteen chips wrapped to four rows on a
-          phone); it wraps again from sm. The vertical padding keeps a chip's
-          focus ring inside the scroller. */}
-      <div className="-mx-4 -my-1.5 flex gap-2 overflow-x-auto px-4 py-1.5 sm:mx-0 sm:my-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:py-0" role="group" aria-label={t('presets.filter')}>
-        {categories.map((c) => (
+      <div className="mt-7 mb-3 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-[15px] font-bold tracking-tight">{t('presets.categories.title')}</h2>
+        <button
+          type="button"
+          onClick={() => setAllCategoriesOpen((open) => !open)}
+          aria-expanded={allCategoriesOpen}
+          aria-controls="template-category-filters"
+          className="vx-press inline-flex min-h-11 items-center rounded-full border border-dashed border-vx-border px-4 text-[14px] font-semibold text-vx-fg-muted hover:border-vx-accent hover:text-vx-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-accent"
+        >
+          {t('presets.filter')}
+        </button>
+      </div>
+      <div id="template-category-filters" className="flex flex-wrap gap-2" role="group" aria-label={t('presets.filter')}>
+        {shownCategories.map((c) => (
           <button
             key={c}
             type="button"
             onClick={() => { setCat(c); setVisibleCount(TEMPLATE_BATCH_SIZE); }}
             aria-pressed={cat === c}
-            className="vx-press shrink-0 whitespace-nowrap rounded-full border px-4 py-2 text-[14px] font-semibold border-vx-border text-vx-fg-body hover:border-vx-fg-muted aria-pressed:border-vx-fg aria-pressed:bg-vx-fg aria-pressed:text-vx-base"
+            className="vx-press inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-full border border-vx-border px-4 text-[14px] font-semibold text-vx-fg-body hover:border-vx-fg-muted aria-pressed:border-vx-accent aria-pressed:bg-vx-accent aria-pressed:text-vx-accent-ink"
           >
             {t.messages[`presets.cat.${c}`] ?? c}
           </button>

@@ -106,6 +106,10 @@ test('the gallery labels every category, shows Popular only when something ranke
     for (const c of ['ALL', 'NEW', 'POPULAR', 'YOUR PHOTO', 'CINEMATIC', 'ANIME', 'CARTOONS', 'MOVIES', 'FANTASY', 'REALISTIC', 'FASHION', 'PRODUCTS', 'VFX', 'UGC', 'ADS']) assert.match(english, new RegExp(`'presets\\.cat\\.${c}': '`), `${c} has a label`);
     assert.match(gallery, /const categories = popular\.length \? \['ALL', 'NEW', 'POPULAR', \.\.\.PRESET_CATEGORIES\.slice\(2\)\] : PRESET_CATEGORIES;/);
     assert.match(gallery, /const list = \(cat === 'POPULAR' \? popular : templatesIn\(cat\)\)\.filter\(hasTemplateVideo\);/);
+    assert.match(gallery, /aria-controls="template-category-filters"/);
+    assert.match(gallery, /shownCategories\.map/);
+    assert.match(gallery, /className="flex flex-wrap gap-2"/, 'category choices wrap instead of hiding in a mobile scroller');
+    assert.doesNotMatch(gallery, /overflow-x-auto/, 'discoverability never depends on an invisible horizontal scrollbar');
 });
 
 test('the studio sends the template only while its own model is selected', () => {
