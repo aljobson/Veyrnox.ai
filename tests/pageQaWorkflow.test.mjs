@@ -93,7 +93,7 @@ test('privacy handler is installed before navigation and on replacement pages wi
   assert.match(sweep, /page = await context.newPage\(\);\s+await handlePrivacyChoices\(page\);/);
   assert.doesNotMatch(sweep, /if \(await privacyChoices\.isVisible\(\)\)/);
   assert.match(sweep, /getByRole\('button', \{ name: 'Show more templates' \}\)\.click\(\)/);
-  assert.match(sweep, /toHaveCount\(before \+ 12\)/);
+  assert.match(sweep, /toHaveCount\(before \+ 50\)/);
   assert.match(config, /actionTimeout: 10_000/);
   assert.match(config, /navigationTimeout: 30_000/);
   assert.match(config, /retries: 0/);

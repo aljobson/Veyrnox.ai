@@ -30,13 +30,13 @@ test('Film Setup normalizes declared duration/aspect and persists the chosen wor
   await expect.poll(() => page.evaluate(key => JSON.parse(localStorage.getItem(key)).stack.seconds, filmKey)).toBe('10');
 });
 
-test('Film Studio hides technical file formats behind one project download', async ({ page }) => {
+test('Film Studio does not expose local project archives or master creation', async ({ page }) => {
   const fixture = await installProductFixtures(page); await fixture.open('/app/film-studio');
   await installFilm(page, { ...emptyFilm(), name: 'Synthetic project' });
   await expect(page.locator('body')).not.toContainText('JSON');
-  await expect(page.getByTestId('film-download-project')).toHaveText('Download project');
-  const downloading = page.waitForEvent('download'); await page.getByTestId('film-download-project').click();
-  const download = await downloading; expect(download.suggestedFilename()).toBe('Synthetic-project.zip'); await download.cancel();
+  await expect(page.getByTestId('film-download-project')).toHaveCount(0);
+  await expect(page.getByText('Download project', { exact: true })).toHaveCount(0);
+  await expect(page.getByText(/Prepare .* master/)).toHaveCount(0);
 });
 
 test('Film handoff honestly blocks incompatible format then transfers a compatible complete prompt without generating', async ({ page }) => {
