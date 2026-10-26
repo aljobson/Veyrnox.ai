@@ -198,3 +198,15 @@ test('GrsAI recovery still enforces the output host allowlist', async () => {
         assert.deepEqual(net.calls.map((c) => c.name), ['job_state', 'job_succeeded']);
     } finally { net.restore(); }
 });
+
+test('a supplier failure message is logged, and the stored error code is unchanged', async () => {
+    const net = fakeNet({});
+    const logged = [];
+    const realError = console.error;
+    console.error = (...args) => logged.push(args.join(' '));
+    try {
+        await completeJob({ source: 'kie', job, providerJobId: 't1', outcome: { state: 'fail', errorCode: '400', detail: 'image not accessible' }, ext: '', cfg });
+        assert.ok(logged.some((l) => l.includes('[kie-webhook] provider failure t1 400 image not accessible')));
+        assert.equal(net.calls.find((c) => c.name === 'job_failed').args.p_error_code, '400');
+    } finally { console.error = realError; net.restore(); }
+});
