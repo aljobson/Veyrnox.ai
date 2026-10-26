@@ -43,6 +43,8 @@ test('an uploaded Oddling image is uploaded and handed to the recommended edit m
   assert.match(source, /hasReference: !!reference/);
   assert.match(source, /for \(const item of references\) uploadedReferences.push/);
   assert.match(source, /references.length > referenceMax/);
+  assert.match(source, /if \(image\.current\) image\.current\.src = url/);
+  assert.doesNotMatch(source, /src=\{blobUrl\(/, 'picked file names never share the preview URL sink');
   assert.match(source, /Sign in to securely hand this image to Create/);
 });
 
