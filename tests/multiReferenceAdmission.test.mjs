@@ -14,7 +14,7 @@ test('paid/free admission compares ordered identity; chat retries ignore search 
   await client.connect();
   try {
     await client.query('BEGIN');
-    const migration = readFileSync(new URL('../packages/db/schema/supabase/0396_multi_reference_identity.sql', import.meta.url), 'utf8');
+    const migration = readFileSync(new URL('../packages/db/schema/supabase/0399_multi_reference_identity.sql', import.meta.url), 'utf8');
     const setup = `DO $$ BEGIN
   IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'anon') THEN CREATE ROLE anon; END IF;
   IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'authenticated') THEN CREATE ROLE authenticated; END IF;

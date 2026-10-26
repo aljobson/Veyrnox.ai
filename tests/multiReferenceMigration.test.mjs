@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 const directory = new URL('../packages/db/schema/supabase/', import.meta.url);
-const migrationName = '0396_multi_reference_identity.sql';
+const migrationName = '0399_multi_reference_identity.sql';
 const migration = readFileSync(new URL(migrationName, directory), 'utf8');
 const guard = `        IF EXISTS (SELECT 1 FROM public.jobs j WHERE j.id = v_existing AND
             (j.model_id IS DISTINCT FROM p_model_id OR
@@ -11,7 +11,7 @@ const guard = `        IF EXISTS (SELECT 1 FROM public.jobs j WHERE j.id = v_exi
         END IF;
 `;
 for (const [name, count] of [['ledger_debit_for_admission', 2], ['submit_free_job_for_admission', 1]]) {
-  test(`0396 ${name} differs from the latest prior definition only at replay guards`, () => {
+  test(`0399 ${name} differs from the latest prior definition only at replay guards`, () => {
     const pattern = new RegExp(`CREATE\\s+(?:OR\\s+REPLACE\\s+)?FUNCTION\\s+private\\.${name}\\([\\s\\S]*?END\\s+\\$\\$;`, 'i');
     // Sort explicitly: do not rely on directory enumeration order.
     const latest = readdirSync(directory).filter(file=>file.endsWith('.sql') && file < migrationName).sort().reverse()
