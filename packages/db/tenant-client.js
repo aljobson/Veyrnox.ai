@@ -3,7 +3,7 @@ import { readConfig } from '../security/config.js';
 import { ApiError } from '../security/errors.js';
 import { readBody } from '../security/input.js';
 
-export async function tenantRequest(request, context, path, { method = 'GET', body, maxBytes = 256 * 1024, limitAware = false } = {}) {
+export async function tenantRequest(request, context, path, { method = 'GET', body, maxBytes = 256 * 1024, limitAware = false, removalAware = false } = {}) {
     const cfg = readConfig(process.env);
     const authorization = request.headers.get('authorization');
     if (!authorization?.toLowerCase().startsWith('bearer ')) throw new ApiError(401, 'UNAUTHORIZED', 'Authentication required.');
@@ -26,7 +26,22 @@ export async function tenantRequest(request, context, path, { method = 'GET', bo
             409: ['CONFLICT', 'The request conflicts with the saved state.'],
             429: ['RATE_LIMITED', 'Too many requests. Try again later.'],
         };
-        if (limitAware && response.status === 429) {
+        if (removalAware && [403, 409].includes(response.status)) {
+            const removalErrors = {
+                ACCOUNT_FROZEN: [403, 'This account is frozen.'],
+                ON_HOLD: [409, 'This saved video is on hold.'],
+                IN_PROGRESS: [409, 'This job is still in progress.'],
+                USED_BY_POST: [409, 'This video is used by a post.'],
+                USED_BY_CINEMA: [409, 'This video is used by Cinema.'],
+                USED_BY_LIBRARY: [409, 'This video is used by a Library item.'],
+            };
+            let code;
+            try { code = JSON.parse(new TextDecoder().decode(await readBody(response, 4096)))?.message; }
+            catch { /* Retain the generic projection for malformed/unknown errors. */ }
+            finally { await response.body?.cancel().catch(() => {}); }
+            const mapped = Object.hasOwn(removalErrors, code) ? removalErrors[code] : null;
+            if (mapped?.[0] === response.status) throw new ApiError(mapped[0], code, mapped[1]);
+        } else if (limitAware && response.status === 429) {
             let limitReached = false;
             try {
                 const bytes = await readBody(response, 4096);

@@ -36,6 +36,9 @@ import { sweepSocialUploads } from './lib/social/uploadSweep.js';
 import { sweepUploads, sweepConsumedUploads } from './lib/uploadSweep.js';
 import { isConfigured as r2IsConfigured } from './packages/adapters/r2.js';
 import { sweepSteps } from './lib/autoShortSweep.js';
+import { sweepEditorServerRender } from './lib/editorServerRenderSweep.js';
+import { editorServerRenderDeps } from './lib/editorServerRenderRuntime.js';
+import { editorFeatureEnabled } from './lib/editorRuntimeFlags.mjs';
 import { sweepMontage } from './lib/montageSweep.js';
 import { montageDeps, runtimeConfig as montageConfig } from './lib/montageRuntime.js';
 import { sweepGrsai } from './lib/grsaiSweep.js';
@@ -95,6 +98,8 @@ export default {
             observeRecovery('auto_short', () => runAutoShortSweep(env), env),
             // Expected by the heartbeat only while the video-agent catalog row is active (0229).
             observeRecovery('video_agent', () => runMontageSweep(env), env),
+            ...(editorFeatureEnabled('EDITOR_SERVER_RENDER_RECOVERY_ENABLED', env)
+                ? [observeRecovery('editor_server_render', () => runEditorServerRenderSweep(env), env)] : []),
             observeRecovery('asset_reap', () => runAssetReap(env), env),
             observeRecovery('grsai', () => sweepGrsai({
                 cfg: { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY },
@@ -198,6 +203,12 @@ async function runMontageSweep(env) {
     const out = await sweepMontage({ cfg, deps: montageDeps({ cfg, r2cfg, ...rt }), liveness: env.MONTAGE_LIVENESS_ENABLED === 'true' });
     if (out.checked) console.error('[video-agent-sweep]', JSON.stringify(out));
     return out;
+}
+
+async function runEditorServerRenderSweep(env) {
+    if (!editorFeatureEnabled('EDITOR_SERVER_RENDER_RECOVERY_ENABLED', env)) return;
+    const cfg = { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY };
+    return sweepEditorServerRender({ enabled: true, deps: editorServerRenderDeps({ env, cfg, r2cfg: r2EnvFrom(env) }) });
 }
 
 function r2EnvFrom(env) {
