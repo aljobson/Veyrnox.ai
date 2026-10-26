@@ -157,3 +157,14 @@ test('basic recovery accepts the legacy public ID only with the GrsAI Lite endpo
         { id: 'nano-banana-pro-grsai', provider_endpoint: 'grsai:unknown' },
     ]);
 });
+
+test('GrsAI, BytePlus and Crun are polled on the every-minute trigger, not the five-minute one', async () => {
+    const { readFileSync } = await import('node:fs');
+    const worker = readFileSync(new URL('../worker.js', import.meta.url), 'utf8');
+    const minute = worker.indexOf('// Provider polling runs every minute');
+    const fiveMinute = worker.indexOf("event.cron === '*/5 * * * *' ? [");
+    assert.ok(minute > -1 && fiveMinute > minute, 'the polling block sits before the five-minute block');
+    const polling = worker.slice(minute, fiveMinute);
+    for (const sweep of ["observeRecovery('grsai'", "observeRecovery('byteplus'", 'sweepCrun(']) assert.ok(polling.includes(sweep), sweep);
+    assert.ok(!worker.slice(fiveMinute).includes('sweepGrsai('), 'no second GrsAI run on the five-minute tick');
+});
