@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { editorFeatureEnabled } from '../lib/editorRuntimeFlags.mjs';
+import { editorFeatureEnabled, editorServerRenderMode } from '../lib/editorRuntimeFlags.mjs';
 import { publishRuntimeFeatureEnabled } from '../lib/social/runtimeFlags.js';
 import { parseJsonc } from '../scripts/check-migration-ledger.mjs';
 import { readPublicCatalog } from '../lib/publicCatalog.js';
@@ -63,13 +63,15 @@ test('Oddlings stays off in production and staging and requires its grouped opt-
     assert.equal(editorFeatureEnabled('PROJECT_ODDLINGS_ENABLED', env({oddlings:'true'})), true);
 });
 
-test('server render and its recovery are grouped switches: on in production (owner test, 2026-10-26), off in staging', () => {
+test('server render is owner-preview in production (fail-closed allowlist), recovery on; both off in staging', () => {
     const config = parseJsonc(readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8'));
-    for (const [vars, on] of [[config.vars, true], [config.env.staging.vars, false]]) {
-        assert.equal(JSON.parse(vars.EDITOR_RUNTIME_FLAGS).serverRender, String(on));
-        assert.equal(JSON.parse(vars.EDITOR_RUNTIME_FLAGS).serverRenderRecovery, String(on));
-        assert.equal(editorFeatureEnabled('EDITOR_SERVER_RENDER_ENABLED', vars), on);
-        assert.equal(editorFeatureEnabled('EDITOR_SERVER_RENDER_RECOVERY_ENABLED', vars), on);
+    for (const [vars, render, recovery, mode] of [[config.vars, 'preview', 'true', 'preview'], [config.env.staging.vars, 'false', 'false', 'off']]) {
+        assert.equal(JSON.parse(vars.EDITOR_RUNTIME_FLAGS).serverRender, render);
+        assert.equal(JSON.parse(vars.EDITOR_RUNTIME_FLAGS).serverRenderRecovery, recovery);
+        // Only the literal 'true' means open to everyone; 'preview' is not that.
+        assert.equal(editorFeatureEnabled('EDITOR_SERVER_RENDER_ENABLED', vars), false);
+        assert.equal(editorFeatureEnabled('EDITOR_SERVER_RENDER_RECOVERY_ENABLED', vars), recovery === 'true');
+        assert.equal(editorServerRenderMode(vars), mode);
         assert.equal(Object.hasOwn(vars, 'EDITOR_SERVER_RENDER_SWEEP_ENABLED'), false);
         assert.equal(Object.hasOwn(vars, 'EDITOR_SERVER_RENDER_ENABLED'), false);
     }
