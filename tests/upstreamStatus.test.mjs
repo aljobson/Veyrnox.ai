@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { SupabaseError } from '../packages/db/supabase-client.js';
 import {
-    STATUS_TTL_MS, _resetUpstreamStatus, currentStatus, isOutageError, probeDatabase,
+    STATUS_TTL_MS, STATUS_STALE_MS, _resetUpstreamStatus, currentStatus, isOutageError, probeDatabase,
 } from '../lib/upstreamStatus.js';
 import { readStatus, nextPollDelay, POLL_OK_MS, POLL_DEGRADED_MS } from '../app/veyrnox/_lib/serviceStatus.js';
 
@@ -56,6 +56,45 @@ test('status is unknown without a configured database, and probes are shared ins
     clock += STATUS_TTL_MS + 1;
     await currentStatus({ ...args, probe: async () => { probes++; return 'ok'; } });
     assert.equal(probes, 2, 'past the window it probes again');
+    _resetUpstreamStatus();
+});
+
+test('past the window a recent answer is served at once while the probe runs after the response', async () => {
+    _resetUpstreamStatus();
+    let clock = 1_000_000;
+    const background = [];
+    const waitUntil = (w) => background.push(w);
+    await currentStatus({ cfg, now: () => clock, probe: async () => 'ok', waitUntil });
+
+    clock += STATUS_TTL_MS + 1;
+    let release;
+    const gate = new Promise((r) => { release = r; });
+    let probes = 0;
+    const probe = async () => { probes++; await gate; return 'degraded'; };
+    const [a, b] = await Promise.all([currentStatus({ cfg, now: () => clock, probe, waitUntil }), currentStatus({ cfg, now: () => clock, probe, waitUntil })]);
+    assert.equal(a.status, 'ok', 'served without waiting for the probe');
+    assert.equal(b.status, 'ok');
+    assert.equal(probes, 1);
+    release();
+    await Promise.all(background);
+    assert.equal((await currentStatus({ cfg, now: () => clock, probe, waitUntil })).status, 'degraded', 'the next look sees the new answer');
+
+    // Too old to serve: the caller waits for a fresh probe.
+    clock += STATUS_STALE_MS + 1;
+    assert.equal((await currentStatus({ cfg, now: () => clock, probe: async () => 'ok', waitUntil })).status, 'ok');
+    _resetUpstreamStatus();
+});
+
+test('a failing background probe is not an unhandled rejection', async () => {
+    _resetUpstreamStatus();
+    let clock = 1_000_000;
+    const background = [];
+    const waitUntil = (w) => background.push(w);
+    await currentStatus({ cfg, now: () => clock, probe: async () => 'ok', waitUntil });
+    clock += STATUS_TTL_MS + 1;
+    const r = await currentStatus({ cfg, now: () => clock, probe: async () => { throw new Error('boom'); }, waitUntil });
+    assert.equal(r.status, 'ok');
+    await Promise.allSettled(background);
     _resetUpstreamStatus();
 });
 
