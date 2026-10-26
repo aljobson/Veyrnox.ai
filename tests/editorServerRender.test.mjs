@@ -38,6 +38,8 @@ function world() {
         inspect: async () => ({ width: 1920, height: 1080, seconds: 5, frame_rate: 30 }),
         rpc: async (name, a) => {
             calls.push([name, a]);
+            if (name === 'replay_server_render') return job && JSON.stringify(job.inputs.document) === JSON.stringify(a.p_document)
+                ? { ok: true, idempotent: true, job_id: ID, state: job.state, credits: 10 } : null;
             if (name === 'consume_upload_request') return { ok: true };
             if (name === 'server_render_source') return { ok: true, r2_key: 'source', size_bytes: 10, mime_type: a.p_media_id.includes('2222') ? 'audio/wav' : 'video/mp4' };
             if (name === 'admit_server_render') {
@@ -106,11 +108,13 @@ test('upload reservations must have matching stored bytes before debit; held sou
     d.timeline.media[upload] = { ...d.timeline.media[old], id: upload };
     delete d.timeline.media[old];
     for (const clip of d.timeline.video) if (clip.mediaId === old) clip.mediaId = upload;
-    for (const object of [null, { size: 9, type: 'video/mp4' }, { size: 10, type: 'audio/wav' }, { size: 10, type: 'video/mp4' }]) {
-        const w = world();
-        w.deps.get = async () => object ? { ok: true, response: new Response(new Uint8Array(object.size), { headers: { 'content-length': String(object.size), 'content-type': object.type } }) } : { ok: false };
+    for (const object of [null, { size: 9, type: 'video/mp4' }, { size: 10, type: 'audio/wav' }, { size: 16, type: 'video/mp4' }]) {
+        const w = world(), rpc = w.deps.rpc;
+        w.deps.rpc = (name, args) => name === 'server_render_source' && args.p_media_id === upload
+            ? { ok: true, r2_key: 'source', size_bytes: 16, mime_type: 'video/mp4' } : rpc(name, args);
+        w.deps.get = async () => object ? { ok: true, response: new Response(Uint8Array.from({ length: object.size }, (_, i) => i >= 4 && i < 8 ? 'ftyp'.charCodeAt(i - 4) : 0), { headers: { 'content-length': String(object.size), 'content-type': object.type } }) } : { ok: false };
         const result = await w.handlers.create(request({ document: d, label: 'Upload' }));
-        const complete = object?.size === 10 && object.type === 'video/mp4';
+        const complete = object?.size === 16 && object.type === 'video/mp4';
         assert.equal(result.status, complete ? 202 : 409);
         assert.equal(w.counts().debits, complete ? 1 : 0);
     }

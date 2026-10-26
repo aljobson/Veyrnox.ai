@@ -42,3 +42,28 @@ test('successful reservation yields a length-bound non-overwriting signature', a
     assert.equal(body.headers['If-None-Match'], '*');
     assert.equal(new URL(body.upload_url).searchParams.get('X-Amz-SignedHeaders'), 'content-length;content-type;host;if-none-match');
 });
+
+test('batch budget uses server-held totals before granting any upload, and fails closed', async () => {
+    for (const budget of [{ ok: false, code: 'UPLOAD_BUDGET_EXCEEDED' }, null, { ok: true }]) {
+        const calls = [];
+        globalThis.fetch = async (url, init) => {
+            const path = new URL(url).pathname; calls.push(path);
+            if (path.endsWith('/consume_upload_request')) return Response.json({ ok: true });
+            if (path.endsWith('/read_user_balance')) return Response.json(10);
+            if (path.endsWith('/check_upload_batch_budget')) {
+                const args = JSON.parse(init.body);
+                assert.equal(args.p_count, 3); assert.equal(args.p_bytes, 300000000); assert.equal(args.p_auth_id, auth);
+                assert.deepEqual(args.p_stored, []); return Response.json(budget);
+            }
+            if (path.endsWith('/reserve_upload')) return Response.json({ ok: true });
+            return new Response('<ListBucketResult></ListBucketResult>');
+        };
+        const req = new Request('https://veyrnox.test/api/v1/uploads', { method: 'POST', headers: { 'x-veyrnox-auth-id': auth },
+            body: JSON.stringify({ content_type: 'video/mp4', size_bytes: 100000000, batch_count: 3, batch_bytes: 300000000 }) });
+        const res = await POST(req), body = await res.json();
+        assert.equal(res.status, budget?.ok ? 200 : budget ? 429 : 503);
+        assert.equal(calls.some(p => p.endsWith('/reserve_upload')), budget?.ok === true);
+        if (!budget?.ok) assert.equal(body.upload_url, undefined);
+        else assert.equal(body.reserved, true);
+    }
+});

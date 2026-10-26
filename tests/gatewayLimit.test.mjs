@@ -30,3 +30,10 @@ test('signed-out gateway never sends a request', async () => {
   const gateway = load(null, null);
   await assert.rejects(gateway.gatewayFetch('/film-studio'), err => err.status === 401); assert.equal(gateway.calls(), 0);
 });
+
+test('uploads preserve budget and admission refusals instead of generic rate mapping', async () => {
+  for (const [status, error] of [[429, 'upload_budget_exceeded'], [429, 'too_many_pending_uploads'], [503, 'upload_admission_unavailable']]) {
+    const { gatewayFetch } = load(Response.json({ error }, { status }));
+    await assert.rejects(gatewayFetch('/uploads', { method: 'POST' }), e => e.code === error && e.body.error === error && e.status === status);
+  }
+});

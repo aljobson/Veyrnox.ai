@@ -90,6 +90,13 @@ export async function gatewayFetch(path, init = {}, brandRetried = false, brandS
     }
     throw new GatewayError('unauthenticated', { status: 401, code: 'unauthenticated' });
   }
+  // Upload reservation refusals carry actionable budget/admission codes.
+  if (path === '/uploads' && !res.ok && res.status !== 401) {
+    let body = null; try { body = await res.json(); } catch { /* typed fallback */ }
+    assertCurrentAccount();
+    throw new GatewayError('upload refused', { status: res.status, code: body?.error || 'upload_failed', body,
+      ...(res.status === 429 ? { retryAfter: Math.max(1, Number(res.headers.get('retry-after')) || 60) } : {}) });
+  }
   if (res.status === 429) {
     const retryAfter = Math.max(1, Number(res.headers.get('retry-after')) || 60);
     let limitReached = false;

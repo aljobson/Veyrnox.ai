@@ -114,6 +114,29 @@ export async function POST(req) {
         return NextResponse.json({ error: 'too_many_pending_uploads' }, { status: 429 });
     }
 
+    // Editor batch preflight: real account reservations plus legacy R2 objects.
+    // This does not reserve the batch; reserve_upload still arbitrates each grant.
+    if (Object.hasOwn(body, 'batch_count') || Object.hasOwn(body, 'batch_bytes')) {
+        if (!Number.isSafeInteger(body.batch_count) || body.batch_count < 1 || body.batch_count > 10
+            || !Number.isSafeInteger(body.batch_bytes) || body.batch_bytes < body.size_bytes) {
+            return NextResponse.json({ error: 'invalid_upload_batch' }, { status: 400 });
+        }
+        if (process.env.UPLOAD_INTEGRITY_ENABLED !== 'true') {
+            return NextResponse.json({ error: 'upload_reservation_unavailable' }, { status: 503 });
+        }
+        let budget;
+        try {
+            budget = await rpc('check_upload_batch_budget', { p_auth_id: authId,
+                p_stored: held.objects.map(({ key, size }) => ({ key, size })),
+                p_count: body.batch_count, p_bytes: body.batch_bytes }, cfg);
+        } catch { /* fail closed */ }
+        if (budget?.ok !== true) {
+            const full = budget?.code === 'UPLOAD_BUDGET_EXCEEDED';
+            return NextResponse.json({ error: full ? 'upload_budget_exceeded' : 'upload_reservation_unavailable' },
+                { status: full ? 429 : 503, headers: { 'Cache-Control': 'no-store' } });
+        }
+    }
+
     // Gate: the key is built from the verified auth id and a fresh UUID. No
     // filename, no path, nothing the client sent.
     const derived = uploadKeyFor(authId, declared.contentType, crypto.randomUUID());
@@ -157,5 +180,6 @@ export async function POST(req) {
         ...(signed.headers ? { headers: signed.headers } : {}),
         max_bytes: declared.maxBytes,
         expires_in: signed.expires,
+        reserved: strict,
     }, { headers: { 'Cache-Control': 'no-store' } });
 }

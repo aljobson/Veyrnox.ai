@@ -33,7 +33,7 @@ ALTER TABLE public.credit_balances ADD COLUMN free_balance integer DEFAULT 0, AD
  ADD COLUMN subscription_expires_at timestamptz, ADD COLUMN subscription_cycle integer DEFAULT 0;
 ALTER TABLE public.ledger_entries ADD COLUMN free_delta integer DEFAULT 0, ADD COLUMN subscription_delta integer DEFAULT 0, ADD COLUMN subscription_cycle integer;
 CREATE TABLE public.account_actions(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),user_id uuid,action text,actor text,reason text,top_up_id uuid,job_id uuid,idempotency_key text UNIQUE,credits_taken integer,credits_shortfall integer);
-CREATE FUNCTION public.consume_upload_request(text) RETURNS jsonb LANGUAGE sql AS $$ SELECT '{"ok":true}'::jsonb $$;
+CREATE FUNCTION public.consume_upload_request(p_auth_id text) RETURNS jsonb LANGUAGE sql AS $$ SELECT '{"ok":true}'::jsonb $$;
 CREATE FUNCTION public.consume_job_read_request(uuid) RETURNS jsonb LANGUAGE sql AS $$
  SELECT CASE WHEN current_setting('esr.test_rate_limited',true)='true' THEN '{"ok":false,"code":"RATE_LIMITED"}'::jsonb ELSE '{"ok":true}'::jsonb END $$;
 CREATE TABLE public.top_ups(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),user_id uuid REFERENCES public.users(id),order_id text UNIQUE);
@@ -47,7 +47,7 @@ CREATE TABLE public.social_posts(id uuid,status text);
 CREATE TABLE public.cinema_uploads(source_job_id uuid);
 CREATE TABLE public.job_steps(job_id uuid,output_r2_key text,output_text jsonb);
 CREATE TABLE public.film_library_masters(id uuid,user_id uuid,source_job_id uuid,r2_key text,size_bytes bigint,expires_at timestamptz);
-CREATE TABLE public.upload_reservations(user_id uuid,r2_key text,size_bytes bigint,created_at timestamptz DEFAULT now(),put_expires_at timestamptz DEFAULT now()+interval '16 minutes');
+${sql('0129_upload_reservations.sql')}
 CREATE TABLE public.provider_spend_reservations(user_id uuid,effect_key text,provider text);
 ${retention.slice(0, retention.indexOf('SELECT cron.schedule'))}
 ${functionSQL('0177_append_only_no_truncate.sql', 'public.append_only_no_truncate')}

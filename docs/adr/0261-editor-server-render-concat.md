@@ -1,8 +1,7 @@
 # ADR-0261: Server render for editor export (Concat runner)
 
-Status: Accepted; slices 2–4 web built, production flag off
+Status: Accepted; slices 2–5 web built, production flag off
 Date: 2026-10-25
-
 ## Context
 
 The browser editor renders and exports on the user's device (ADR-0080, ADR-0097,
@@ -496,3 +495,5 @@ Round-1 sandbox proof: `npm test` exits 1: **5,700 tests, 5,691 passed, 7 failed
 socialActivityCursor timezone assertion; those tests are untouched. Focused suite:
 **35 passed**. Targeted ESLint: zero errors, two warnings on existing confirmation
 state code. Locale parity, knowledge freshness and `git diff --check` pass.
+
+Slice 5 flow, limits, retention deviations and acceptance: [device-files appendix](0261-editor-server-render-device-files.md).
