@@ -16,6 +16,7 @@ import { Button } from './Button';
 import { OddlingCatalog } from './OddlingCatalog';
 import { OddlingExplore, useOddlingExplore } from './OddlingExplore';
 import { OddlingMotionPanel } from './OddlingMotionPanel';
+import { OddlingReferencePreview } from './OddlingReferencePreview';
 import { OddlingSheet } from './OddlingSheet';
 import { chip, field } from './oddlingStyles';
 import {
@@ -47,40 +48,6 @@ import {
 } from '../_lib/oddlingStudio';
 
 const PORTRAIT_INVALIDATING_KEYS = new Set([...CHARACTER_GROUPS.map((group) => group.id), 'oddling_rule']);
-
-function ReferencePreview({ file, alt }) {
-  const canvas = useRef(null);
-  const [previewState, setPreviewState] = useState('loading');
-  useEffect(() => {
-    let cancelled = false;
-    let bitmap = null;
-    setPreviewState('loading');
-    if (typeof createImageBitmap !== 'function') {
-      setPreviewState('failed');
-      return () => { cancelled = true; };
-    }
-    createImageBitmap(file, { imageOrientation: 'from-image' }).then((decoded) => {
-      if (cancelled) { decoded.close(); return; }
-      bitmap = decoded;
-      const target = canvas.current;
-      if (!target) return;
-      const scale = Math.min(1, 1024 / decoded.width, 1024 / decoded.height);
-      target.width = Math.max(1, Math.round(decoded.width * scale));
-      target.height = Math.max(1, Math.round(decoded.height * scale));
-      const context = target.getContext('2d');
-      if (!context) { setPreviewState('failed'); return; }
-      context.drawImage(decoded, 0, 0, target.width, target.height);
-      setPreviewState('ready');
-    }).catch(() => { if (!cancelled) setPreviewState('failed'); });
-    return () => { cancelled = true; bitmap?.close(); };
-  }, [file]);
-  return (
-    <div className="mt-3">
-      <canvas ref={canvas} hidden={previewState !== 'ready'} data-testid="oddling-reference-image" role="img" aria-label={alt} className="max-h-48 w-full rounded-xl object-cover" />
-      {previewState !== 'ready' && <p data-testid="oddling-reference-fallback" className="rounded-xl border border-white/10 bg-black/20 px-3 py-4 text-xs text-white/65">{alt}</p>}
-    </div>
-  );
-}
 
 export default function OddlingStudio() {
   const { t, locale } = useI18n();
@@ -381,7 +348,7 @@ export default function OddlingStudio() {
               {referenceMax > 1 && <p className="mt-2 text-xs text-vx-fg-muted">{t(pluralKey(t, locale, 'app.create.sources.maxFiles', referenceMax), { count: referenceMax })}</p>}
               {references.length > referenceMax && <p role="alert">{t(pluralKey(t, locale, 'app.create.sources.overLimit', referenceMax), { count: referenceMax })}</p>}
               {references.map((item, index) => <div key={`${item.file.lastModified}:${item.file.size}:${index}`}>
-                <ReferencePreview file={item.file} alt={t('app.oddlings.referenceAlt',{name:item.name})} />
+                <OddlingReferencePreview file={item.file} alt={t('app.oddlings.referenceAlt',{name:item.name})} />
                 <button type="button" onClick={() => removeReference(index)} className="mt-2 font-vx-mono text-[9px] font-bold text-vx-fg-muted underline">{t('app.oddlings.removeReference')}</button>
                 {index > 0 && <button type="button" className={chip(false)} aria-label={t('app.create.sources.moveEarlier')} onClick={() => moveReference(index, index - 1)}>↑</button>}
                 {index < references.length - 1 && <button type="button" className={chip(false)} aria-label={t('app.create.sources.moveLater')} onClick={() => moveReference(index, index + 1)}>↓</button>}

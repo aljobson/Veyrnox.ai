@@ -5,6 +5,7 @@ import { readFile } from 'node:fs/promises';
 
 const source = resolveI18nSource(await readFile(new URL('../app/veyrnox/_components/OddlingStudio.js', import.meta.url), 'utf8'));
 const catalog = resolveI18nSource(await readFile(new URL('../app/veyrnox/_components/OddlingCatalog.js', import.meta.url), 'utf8'));
+const preview = resolveI18nSource(await readFile(new URL('../app/veyrnox/_components/OddlingReferencePreview.js', import.meta.url), 'utf8'));
 
 test('Oddling Studio presents a Sims-style catalog and a price-forward action', () => {
   assert.match(source, /<OddlingCatalog picks=\{picks\} onPick=\{setPick\}/);
@@ -43,12 +44,12 @@ test('an uploaded Oddling image is uploaded and handed to the recommended edit m
   assert.match(source, /hasReference: !!reference/);
   assert.match(source, /for \(const item of references\) uploadedReferences.push/);
   assert.match(source, /references.length > referenceMax/);
-  assert.match(source, /createImageBitmap\(file/);
-  assert.match(source, /context\.drawImage/);
-  assert.match(source, /previewState !== 'ready'/);
-  assert.match(source, /data-testid="oddling-reference-fallback"/);
-  assert.match(source, /\.catch\(\(\) => \{ if \(!cancelled\) setPreviewState\('failed'\); \}\)/);
-  assert.doesNotMatch(source, /\.src\s*=|src=\{blobUrl\(/, 'picked file data never enters an HTML URL sink');
+  assert.match(preview, /createImageBitmap\(file/);
+  assert.match(preview, /context\.drawImage/);
+  assert.match(preview, /previewState !== 'ready'/);
+  assert.match(preview, /data-testid="oddling-reference-fallback"/);
+  assert.match(preview, /\.catch\(\(\) => \{ if \(!cancelled\) setPreviewState\('failed'\); \}\)/);
+  assert.doesNotMatch(preview, /\.src\s*=|src=\{blobUrl\(/, 'picked file data never enters an HTML URL sink');
   assert.match(source, /Sign in to securely hand this image to Create/);
 });
 
