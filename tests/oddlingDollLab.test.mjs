@@ -44,7 +44,10 @@ test('an uploaded Oddling image is uploaded and handed to the recommended edit m
   assert.match(source, /for \(const item of references\) uploadedReferences.push/);
   assert.match(source, /references.length > referenceMax/);
   assert.match(source, /createImageBitmap\(file/);
-  assert.match(source, /getContext\('2d'\)\?\.drawImage/);
+  assert.match(source, /context\.drawImage/);
+  assert.match(source, /previewState !== 'ready'/);
+  assert.match(source, /data-testid="oddling-reference-fallback"/);
+  assert.match(source, /\.catch\(\(\) => \{ if \(!cancelled\) setPreviewState\('failed'\); \}\)/);
   assert.doesNotMatch(source, /\.src\s*=|src=\{blobUrl\(/, 'picked file data never enters an HTML URL sink');
   assert.match(source, /Sign in to securely hand this image to Create/);
 });
