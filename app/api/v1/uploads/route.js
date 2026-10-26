@@ -18,7 +18,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { rpc, envConfig } from '../../../../packages/db/supabase-client.js';
+import { rpc, select, envConfig } from '../../../../packages/db/supabase-client.js';
 import { presignPutUrl, listObjects, isConfigured as r2IsConfigured, envConfig as r2EnvConfig } from '../../../../packages/adapters/r2.js';
 import { checkDeclared, uploadKeyFor, UPLOAD_URL_TTL_SECONDS, UPLOAD_PREFIX } from '../../../../lib/uploadSource.js';
 import { admissionAvailable } from '../../../../lib/uploadAdmission.js';
@@ -114,6 +114,29 @@ export async function POST(req) {
         return NextResponse.json({ error: 'too_many_pending_uploads' }, { status: 429 });
     }
 
+    // Editor batch preflight: real account reservations plus legacy R2 objects.
+    // This does not reserve the batch; reserve_upload still arbitrates each grant.
+    if (Object.hasOwn(body, 'batch_count') || Object.hasOwn(body, 'batch_bytes')) {
+        if (!Number.isSafeInteger(body.batch_count) || body.batch_count < 1 || body.batch_count > 10
+            || !Number.isSafeInteger(body.batch_bytes) || body.batch_bytes < body.size_bytes) {
+            return NextResponse.json({ error: 'invalid_upload_batch' }, { status: 400 });
+        }
+        if (process.env.UPLOAD_INTEGRITY_ENABLED !== 'true') {
+            return NextResponse.json({ error: 'upload_reservation_unavailable' }, { status: 503 });
+        }
+        let budget;
+        try {
+            budget = await rpc('check_upload_batch_budget', { p_auth_id: authId,
+                p_stored: held.objects.map(({ key, size }) => ({ key, size })),
+                p_count: body.batch_count, p_bytes: body.batch_bytes }, cfg);
+        } catch { /* fail closed */ }
+        if (budget?.ok !== true) {
+            const full = budget?.code === 'UPLOAD_BUDGET_EXCEEDED';
+            return NextResponse.json({ error: full ? 'upload_budget_exceeded' : 'upload_reservation_unavailable' },
+                { status: full ? 429 : 503, headers: { 'Cache-Control': 'no-store' } });
+        }
+    }
+
     // Gate: the key is built from the verified auth id and a fresh UUID. No
     // filename, no path, nothing the client sent.
     const derived = uploadKeyFor(authId, declared.contentType, crypto.randomUUID());
@@ -123,6 +146,7 @@ export async function POST(req) {
     }
 
     const strict = process.env.UPLOAD_INTEGRITY_ENABLED === 'true';
+    let reservedUntil;
     if (strict) {
         let reserved;
         try {
@@ -136,6 +160,15 @@ export async function POST(req) {
             return NextResponse.json({ error: budget ? 'upload_budget_exceeded' : 'upload_reservation_unavailable' },
                 { status: budget ? 429 : 503, headers: { 'Cache-Control': 'no-store', 'Retry-After': '60' } });
         }
+        // Use the database reservation clock; an unavailable optional read keeps
+        // the existing grant contract and clients use their conservative fallback.
+        try {
+            const rows = await select('upload_reservations', {
+                columns: 'created_at', filter: `r2_key=eq.${encodeURIComponent(derived.key)}`, limit: 1,
+            }, cfg);
+            const createdAt = typeof rows?.[0]?.created_at === 'string' ? Date.parse(rows[0].created_at) : NaN;
+            if (Number.isFinite(createdAt)) reservedUntil = new Date(createdAt + 23 * 60 * 60 * 1000).toISOString();
+        } catch { /* backwards-compatible optional deadline */ }
     }
 
     let signed;
@@ -157,5 +190,7 @@ export async function POST(req) {
         ...(signed.headers ? { headers: signed.headers } : {}),
         max_bytes: declared.maxBytes,
         expires_in: signed.expires,
+        reserved: strict,
+        ...(reservedUntil ? { reserved_until: reservedUntil } : {}),
     }, { headers: { 'Cache-Control': 'no-store' } });
 }

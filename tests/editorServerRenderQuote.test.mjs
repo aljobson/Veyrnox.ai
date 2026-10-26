@@ -14,6 +14,7 @@ function world(options = {}) {
     const deps = {
         rpc: async (name, args) => {
             calls.push([name, args]);
+            if (name === 'replay_server_render') return job ? { ok: true, ...job, idempotent: true } : null;
             if (name === 'consume_upload_request') return { ok: true };
             if (name === 'quote_server_render') return { credits: price, max_seconds: args.p_resolution === '720p' ? 300 : 120 };
             if (name === 'server_render_source') return { ok: true, r2_key: 'source', size_bytes: 10, mime_type: args.p_media_id.includes('2222') ? 'audio/wav' : 'video/mp4' };

@@ -9,6 +9,7 @@ import { documentForTimeline } from '../../_lib/editorProject.mjs';
 import { SERVER_RENDER_PATH, serverRenderVisible, serverRenderDisabled, renderSnapshot, snapshotIdentity,
     quoteRequest, renderAttempt, sendRenderAttempt, renderStatus, terminalRender, renderPollDelay, renderPollOutcome, retryRenderTransport,
     renderError, renderFeature, renderLibraryHref, renderDownloadPath } from '../../_lib/editorServerRenderClient.mjs';
+import { exportDocument, localRenderFiles, pendingRenderFiles, uploadRenderFiles, uploadedRenderAttempt } from '../../_lib/editorServerRenderUploads.mjs';
 import { ConfirmDialog } from '../ConfirmDialog';
 import { Button } from '../Button';
 const noActor = () => null;
@@ -27,16 +28,18 @@ export function ServerRenderPanel(props) {
     return enabled && actor ? <RenderSession key={actor} {...props} actor={actor} /> : null;
 }
 
-function RenderSession({ actor, project, timeline, height, label, balanceInfo, state, onState, onCredits }) {
+function RenderSession({ actor, project, timeline, blobs, uploadCache, height, label, balanceInfo, state, onState, onCredits }) {
     const { t, locale } = useI18n();
     const [quote, setQuote] = useState(null), [busy, setBusy] = useState(false), [cancelOpen, setCancelOpen] = useState(false);
+    const [upload, setUpload] = useState(null), [fileErrors, setFileErrors] = useState([]);
+    const fallbackCache = useRef(new Map()), cacheRef = uploadCache || fallbackCache;
     const alive = useRef(true), controller = useRef(null), locked = useRef(false), generation = useRef(0);
     const current = state?.actor === actor ? state : null;
     const job = current?.job;
     const jobId = job?.jobId, phase = job?.phase, renderId = job?.renderId;
     const statusUnavailable = current?.statusUnavailable === true;
     const doc = useMemo(() => project?.actor === actor && project?.document && project?.savedAt
-        ? documentForTimeline(project.document, timeline) : null, [actor, project, timeline]);
+        ? exportDocument(documentForTimeline(project.document, timeline)) : null, [actor, project, timeline]);
     const reason = serverRenderDisabled(doc, height, label);
     const snapshot = useMemo(() => renderSnapshot(doc, height, label), [doc, height, label]);
     const identity = snapshotIdentity(snapshot), identityRef = useRef(identity);
@@ -44,11 +47,15 @@ function RenderSession({ actor, project, timeline, height, label, balanceInfo, s
     useEffect(() => {
         generation.current++;
         setQuote(null);
+        setFileErrors([]);
     }, [identity]);
     useEffect(() => {
         alive.current = true;
-        return () => { alive.current = false; controller.current?.abort(); };
-    }, []);
+        const unsubscribe = onSessionChange(() => {
+            if (actor !== getStoredUserId()) { controller.current?.abort(); cacheRef.current.clear(); }
+        });
+        return () => { alive.current = false; controller.current?.abort(); unsubscribe(); };
+    }, [actor, cacheRef]);
     const valid = () => alive.current && actor === getStoredUserId();
     const save = next => { if (valid()) onState({ ...next, actor }); };
     function call(path, init = {}) {
@@ -59,7 +66,8 @@ function RenderSession({ actor, project, timeline, height, label, balanceInfo, s
         if (!valid()) return;
         const code = error.body?.error || error.code;
         if (code === 'preview_only' && error.status === 403) { save({ unavailable: true }); return; }
-        save({ ...previous, error: { code, status: error.status, feature: error.body?.feature } });
+        save({ ...previous, error: { code, status: error.status, feature: error.body?.feature,
+            uploadedLocalFiles: previous?.attempt?.uploadedLocalFiles === true } });
     }
     useEffect(() => {
         // A completed POST replay has no render_id; read the canonical status once for delivery.
@@ -99,6 +107,9 @@ function RenderSession({ actor, project, timeline, height, label, balanceInfo, s
 
     async function getQuote() {
         if (locked.current || !snapshot) return;
+        const classified = localRenderFiles(snapshot.document, blobs?.current);
+        setFileErrors(classified.errors);
+        if (classified.errors.length) return;
         locked.current = true; setBusy(true); setQuote(null);
         const ticket = generation.current, frozen = snapshot;
         save({ ...current, error: null, attempt: null, uncertain: false, needsCredits: false, job: null, statusUnavailable: false });
@@ -107,7 +118,10 @@ function RenderSession({ actor, project, timeline, height, label, balanceInfo, s
             if (valid() && ticket === generation.current && identityRef.current === snapshotIdentity(frozen)) {
                 // Validate the server response without calculating a price.
                 renderAttempt(frozen, price, 'validation');
-                setQuote({ snapshot: frozen, price, identity: snapshotIdentity(frozen) });
+                setFileErrors([]);
+                const pending = pendingRenderFiles(classified.files, cacheRef.current, actor);
+                setQuote({ snapshot: frozen, price, identity: snapshotIdentity(frozen), files: classified.files,
+                    pending, consent: pending.map(file => file.id) });
             }
         } catch (error) { showError(error); }
         finally { locked.current = false; if (valid()) setBusy(false); }
@@ -129,9 +143,29 @@ function RenderSession({ actor, project, timeline, height, label, balanceInfo, s
             } else showError(error, { ...pending, uncertain: retryRenderTransport(error) });
         } finally { locked.current = false; if (valid()) setBusy(false); }
     }
-    function confirm() {
-        if (!quote || quote.identity !== identityRef.current) return;
-        void submit(renderAttempt(quote.snapshot, quote.price, makeIdempotencyKey()));
+    async function confirm() {
+        if (locked.current || !quote || quote.identity !== identityRef.current) return;
+        const pending = pendingRenderFiles(quote.files, cacheRef.current, actor);
+        if (pending.some(file => !quote.consent.includes(file.id))) {
+            setQuote({ ...quote, pending, consent: pending.map(file => file.id) });
+            return; // Expiry needs renewed consent before any replacement upload.
+        }
+        if (!quote.files.length) { void submit(renderAttempt(quote.snapshot, quote.price, makeIdempotencyKey())); return; }
+        locked.current = true; setBusy(true); setQuote(null);
+        const abort = new AbortController(); controller.current = abort;
+        const uploadCall = accountBoundCall(gatewayFetch, actor, getStoredUserId, abort.signal);
+        let attempt;
+        try {
+            await uploadRenderFiles(quote.files, { actor, getActor: getStoredUserId, cache: cacheRef.current, consent: quote.consent,
+                call: uploadCall, signal: abort.signal, onProgress: next => { if (valid()) setUpload(next); } });
+            if (!valid()) return;
+            // No async gap between final expiry check and the first create send.
+            setFileErrors([]);
+            attempt = uploadedRenderAttempt(quote.snapshot, quote.price, makeIdempotencyKey(), quote.files, cacheRef.current, actor);
+        } catch (error) {
+            if (error.name !== 'AbortError') showError(error);
+        } finally { locked.current = false; if (valid()) { setBusy(false); setUpload(null); } }
+        if (attempt && valid()) void submit(attempt);
     }
     async function cancel() {
         if (locked.current || !job?.jobId) return;
@@ -174,6 +208,12 @@ function RenderSession({ actor, project, timeline, height, label, balanceInfo, s
             {Number.isSafeInteger(job.credits) && <p>{t('app.editor.server.charged', { credits: number(job.credits) })}</p>}
             {inFlight && !statusUnavailable && <progress aria-label={t('app.editor.server.progress')} className="w-full" />}
         </div>}
+        {fileErrors.map((item, index) => <p key={item.id || index} role="status" className="break-words">{item.name ? `${item.name}: ` : ''}{t(`app.editor.server.${item.code}`)}</p>)}
+        {upload && <div role="status" className="space-y-2 break-words">
+            <p>{t('app.editor.server.uploadingFile', { name: upload.name })}</p>
+            <progress value={upload.progress} max={1} aria-label={t('app.editor.server.uploadProgress')} className="w-full" />
+            <Button type="button" size="sm" className="min-h-11" onClick={() => controller.current?.abort()}>{t('app.editor.server.abortFile')}</Button>
+        </div>}
         {error && <p role="status">{t(renderError(error), { feature: t(renderFeature(error.feature)) })}</p>}
         {statusUnavailable && <Button type="button" className="min-h-11" size="sm" disabled={busy} onClick={() => save({ ...current, statusUnavailable: false, error: null })}>{t('app.editor.server.retryStatus')}</Button>}
         {job?.phase === 'done' && <div className="flex flex-wrap items-center gap-3">
@@ -185,8 +225,8 @@ function RenderSession({ actor, project, timeline, height, label, balanceInfo, s
                 : <Button type="button" className="min-h-11" size="sm" disabled={!!reason || busy} onClick={getQuote}>{t(job || error ? 'app.editor.server.tryAgain' : 'app.editor.server.getQuote')}</Button>}
         {busy && <p role="status">{t('app.editor.server.working')}</p>}
         {quote && quote.identity === identity && <ConfirmDialog title={t('app.editor.server.confirmTitle')}
-            body={t('app.editor.server.price', { credits: number(quote.price.credits), resolution: quote.price.resolution }) + balanceCopy}
-            confirmLabel={t('app.editor.server.confirm')} onConfirm={confirm} onCancel={() => setQuote(null)} />}
+            body={(quote.pending?.length ? t('app.editor.server.uploadConsent', { count: number(quote.pending.length), mb: number(Math.ceil(quote.pending.reduce((sum, file) => sum + file.size, 0) / 1000000)) }) + ' ' : '') + t('app.editor.server.price', { credits: number(quote.price.credits), resolution: quote.price.resolution }) + balanceCopy}
+            confirmLabel={t(quote.pending?.length ? 'app.editor.server.uploadAndRender' : 'app.editor.server.confirm')} onConfirm={confirm} onCancel={() => setQuote(null)} />}
         {cancelOpen && <ConfirmDialog title={t('app.editor.server.cancelTitle')} body={t('app.editor.server.cancelBody')}
             confirmLabel={t('app.editor.server.cancel')} onConfirm={cancel} onCancel={() => setCancelOpen(false)} />}
     </section>;

@@ -40,9 +40,10 @@ export class GatewayError extends Error {
  * On 5xx or shape error → throws with .code = 'gateway_error'.
  *
  * @param {string} path       leading slash, e.g. '/balance', '/jobs/123'
- * @param {RequestInit} [init]
+ * @param {RequestInit & {preserveUploadErrors?: boolean}} [init]
  */
 export async function gatewayFetch(path, init = {}, brandRetried = false, brandSnapshot) {
+  const { preserveUploadErrors, ...requestInit } = init;
   const assertCurrentBrand = () => { if (brandSnapshot !== undefined) assertSocialBrandSnapshot(brandSnapshot); };
   assertCurrentBrand();
   const token = await getFreshAccessToken();
@@ -71,7 +72,7 @@ export async function gatewayFetch(path, init = {}, brandRetried = false, brandS
   }
   let res;
   try {
-    res = await fetch(`/api/v1${path}`, { ...init, headers });
+    res = await fetch(`/api/v1${path}`, { ...requestInit, headers });
   } catch {
     captureOperationalError('gateway_network_error', {
       route: normaliseGatewayPath(path),
@@ -89,6 +90,14 @@ export async function gatewayFetch(path, init = {}, brandRetried = false, brandS
       dispatchAuthRequired();
     }
     throw new GatewayError('unauthenticated', { status: 401, code: 'unauthenticated' });
+  }
+  // Only the server-render upload flow opts into reservation refusal codes.
+  if (preserveUploadErrors === true && path === '/uploads' && !res.ok) {
+    let body = null; try { body = await res.json(); } catch { /* typed fallback */ }
+    assertCurrentAccount();
+    assertCurrentBrand();
+    throw new GatewayError('upload refused', { status: res.status, code: typeof body?.error === 'string' && body.error ? body.error : 'upload_failed', body,
+      ...(res.status === 429 ? { retryAfter: Math.max(1, Number(res.headers.get('retry-after')) || 60) } : {}) });
   }
   if (res.status === 429) {
     const retryAfter = Math.max(1, Number(res.headers.get('retry-after')) || 60);

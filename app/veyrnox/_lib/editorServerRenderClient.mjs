@@ -48,6 +48,10 @@ export function renderPollOutcome(failures, error = null) {
 }
 export const retryRenderTransport = error => ['network_error', 'gateway_error', 'internal'].includes(error?.code);
 const ERRORS = Object.freeze({
+    upload_budget_exceeded: 'uploadBudget', too_many_pending_uploads: 'uploadBudget',
+    upload_admission_unavailable: 'uploadAdmission', upload_consent_expired: 'uploadExpired',
+    upload_reservation_unavailable: 'uploadUnavailable', upload_invalid_grant: 'uploadUnavailable', upload_failed: 'uploadFailed',
+    upload_unreadable: 'uploadInvalid', upload_type_mismatch: 'uploadInvalid',
     render_busy: 'busy', editor_render_unsupported: 'unsupported', editor_render_duration_limit: 'duration',
     editor_render_clip_limit: 'clips', editor_render_media_not_owned: 'ownership', editor_render_upload_incomplete: 'upload',
     insufficient_balance: 'balanceLow', rate_limited: 'rate', runner_submit_failed: 'submitFailed',
@@ -57,6 +61,7 @@ const ERRORS = Object.freeze({
 });
 export function renderError(error) {
     const code = error?.code || error?.error;
+    if (error?.status === 403 && code === 'editor_render_media_not_owned' && error.uploadedLocalFiles === true) return 'app.editor.server.uploadExpired';
     return `app.editor.server.${error?.status === 501 ? 'disabled' : Object.hasOwn(ERRORS, code) ? ERRORS[code] : 'failed'}`;
 }
 // Server-supplied feature names select known translated labels, never raw text.
