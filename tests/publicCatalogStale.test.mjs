@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readPublicCatalog, CATALOG_TTL_SECONDS } from '../lib/publicCatalog.js';
+import { readPublicCatalog, CATALOG_TTL_SECONDS, _resetPublicCatalogRefresh } from '../lib/publicCatalog.js';
 
 const row = { id: 'demucs-stems', name: 'Demucs', modality: 'audio-to-audio', credits_5s: 6, provider_endpoint: 'fal-ai/demucs', gated_flag: false };
 const cfg = { supabaseUrl: 'https://test.invalid', serviceRoleKey: 'test-only' };
@@ -50,4 +50,44 @@ test('flag changes partition fresh caches and clamp an enabled stale fallback du
         assert.equal((await readPublicCatalog({ cfg, selectRows: async () => { reads++; return [edit]; } }))[0].capabilities.media.image.maxFiles, 1);
         assert.equal(reads, 1);
     } finally { if (previous === undefined) delete process.env.MULTI_REFERENCE_ENABLED; else process.env.MULTI_REFERENCE_ENABLED = previous; }
+}));
+
+test('past the window the stale list is served at once and refreshed after the response', withCache(async (store) => {
+    _resetPublicCatalogRefresh();
+    await readPublicCatalog({ cfg, selectRows: async () => [row] });
+    const [key, saved] = [...store.entries()][0];
+    store.set(key, new Response(await saved.clone().text(), { headers: { 'Content-Type': 'application/json', 'X-Fetched-At': String(Date.now() - (CATALOG_TTL_SECONDS + 60) * 1000) } }));
+
+    const background = [];
+    let reads = 0;
+    let release;
+    const gate = new Promise((r) => { release = r; });
+    const selectRows = async () => { reads++; await gate; return [{ ...row, name: 'Demucs v2' }]; };
+    const waitUntil = (work) => background.push(work);
+
+    const [a, b] = await Promise.all([
+        readPublicCatalog({ cfg, selectRows, waitUntil }),
+        readPublicCatalog({ cfg, selectRows, waitUntil }),
+    ]);
+    assert.equal(a[0].name, 'Demucs', 'the visitor did not wait for the database');
+    assert.equal(b[0].name, 'Demucs');
+    assert.equal(background.length, 1, 'a burst on a stale copy makes one refresh');
+
+    release();
+    await Promise.all(background);
+    assert.equal(reads, 1);
+    const fresh = await readPublicCatalog({ cfg, selectRows: async () => { throw new Error('must not be called'); }, waitUntil });
+    assert.equal(fresh[0].name, 'Demucs v2', 'the next visitor gets the refreshed list');
+}));
+
+test('a failed background refresh keeps the saved list and is not an unhandled rejection', withCache(async (store) => {
+    _resetPublicCatalogRefresh();
+    await readPublicCatalog({ cfg, selectRows: async () => [row] });
+    const [key, saved] = [...store.entries()][0];
+    store.set(key, new Response(await saved.clone().text(), { headers: { 'Content-Type': 'application/json', 'X-Fetched-At': String(Date.now() - (CATALOG_TTL_SECONDS + 60) * 1000) } }));
+
+    const background = [];
+    const models = await readPublicCatalog({ cfg, selectRows: async () => { throw new Error('supabase down'); }, waitUntil: (w) => background.push(w) });
+    assert.equal(models.length, 1);
+    await Promise.all(background);
 }));
