@@ -58,12 +58,13 @@
    Inline tokens also resolve inside scoped palettes such as .vx-paper;
    opacity modifiers continue to work through color-mix().
 
-   Dark is the default and the brand. Light is opt-in through the toggle
-   in the nav, which writes `data-theme` on <html> and remembers the
-   choice in localStorage. System preference is NOT auto-applied: the
-   pages are statically prerendered and the CI grep gate forbids the
-   inline <script> a flash-free auto-switch would need, so honouring
-   prefers-color-scheme would repaint after hydration on every visit. */
+   Dark is the default and the brand. The toggle in the nav and the picker
+   on /app/account write `data-theme` (light, dark or system) on <html> and
+   remember it in the `veyrnox_theme` cookie; app/layout.js reads that cookie
+   and puts the attribute in the first response, so there is no flash and no
+   inline <script> (the CSP and the CI grep gate forbid one). "system" is the
+   light set under prefers-color-scheme, kept in step with the light block
+   by tests/uiLandmarksAndTheme.test.mjs. */
 :root {
   color-scheme: dark;
   --vx-base: 10 10 11;
@@ -116,6 +117,30 @@
   --vx-danger: 196 36 26;
   --vx-danger-ink: 255 255 255;
   --vx-warn: 43 78 190;
+}
+
+/* Follow the device: the same light set, only when the device is light. */
+@media (prefers-color-scheme: light) {
+  :root[data-theme='system'] {
+    color-scheme: light;
+    --vx-base: 255 255 255;
+    --vx-panel: 246 246 247;
+    --vx-border: 220 220 224;
+    --vx-border-boost: 168 168 176;
+    --vx-field: 138 138 146; /* 3.4:1 on base, 3.2:1 on panel */
+    --vx-fg: 10 10 11;
+    --vx-fg-body: 63 63 70;
+    --vx-fg-muted: 82 82 91;
+    --vx-fg-faint: 107 107 115;
+    --vx-accent: 11 122 102;
+    --vx-accent-hover: 9 95 80;
+    --vx-accent-ink: 255 255 255;
+    --vx-money: 138 90 0;
+    --vx-money-ink: 255 255 255;
+    --vx-danger: 196 36 26;
+    --vx-danger-ink: 255 255 255;
+    --vx-warn: 43 78 190;
+  }
 }
 
 /* In-page anchors (/#explore, /#models, /#faq) glide instead of jumping.
@@ -367,6 +392,37 @@ main:focus-visible { outline: none; }
     --chart-scale-04: oklch(0.68 0.02 106);
     --chart-scale-05: oklch(0.55 0.025 106);
     --chart-scale-pattern-color: oklch(0.96 0.005 106);
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root[data-theme='system'] {
+      --chart-1: oklch(0.32 0 none);
+      --chart-2: oklch(0.41 0 none);
+      --chart-3: oklch(0.54 0 none);
+      --chart-4: oklch(0.71 0 none);
+      --chart-5: oklch(0.89 0 none);
+      --chart-background: oklch(1 0 0);
+      --chart-foreground: oklch(0.145 0.004 285);
+      --chart-foreground-muted: oklch(0.55 0.014 260);
+      --chart-line-primary: var(--chart-1);
+      --chart-line-secondary: var(--chart-2);
+      --chart-crosshair: oklch(0.4 0.1828 274.34);
+      --chart-grid: oklch(0.9 0 0);
+      --chart-brush-border: var(--chart-grid);
+      --chart-tooltip-background: oklch(0.21 0.006 285 / 0.8);
+      --chart-tooltip-foreground: oklch(0.985 0 0);
+      --chart-tooltip-muted: oklch(0.65 0.01 260);
+      --chart-marker-background: oklch(0.97 0.005 260);
+      --chart-marker-border: oklch(0.85 0.01 260);
+      --chart-marker-foreground: oklch(0.3 0.01 260);
+      --chart-label: oklch(0.45 0.01 260);
+      --chart-scale-01: oklch(0.98 0.003 106);
+      --chart-scale-02: oklch(0.92 0.008 106);
+      --chart-scale-03: oklch(0.82 0.015 106);
+      --chart-scale-04: oklch(0.68 0.02 106);
+      --chart-scale-05: oklch(0.55 0.025 106);
+      --chart-scale-pattern-color: oklch(0.96 0.005 106);
+    }
   }
 }
 

@@ -268,8 +268,9 @@ test('the check itself runs as before: the one option set is the theme, which is
     // execution) stay at Turnstile's default: none is in this list.
     assert.deepEqual(keys, ['sitekey', 'theme', 'callback', 'expired-callback', 'error-callback', 'before-interactive-callback', 'unsupported-callback']);
     // The site's own theme, not the operating system's: dark unless the
-    // visitor chose light, which ThemeToggle records as data-theme on <html>.
-    assert.match(options, /theme: document\.documentElement\.dataset\.theme === 'light' \? 'light' : 'dark',/);
+    // visitor chose light (or system on a light device), which ThemeToggle records as data-theme on <html>.
+    assert.match(options, /theme: turnstileTheme\(\),/);
+    assert.match(turnstile, /choice === 'system' && window\.matchMedia\?\.\('\(prefers-color-scheme: light\)'\)\.matches/);
     assert.match(options, /sitekey: TURNSTILE_SITE_KEY,/);
     assert.doesNotMatch(options, /\.\.\./, 'no options spread in from elsewhere');
 });

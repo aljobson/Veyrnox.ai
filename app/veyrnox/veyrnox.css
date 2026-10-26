@@ -139,6 +139,7 @@
 /* The mask would clip a shadow on the slip itself, so it lives on a wrapper. */
 .vx-paper-shadow { filter: drop-shadow(0 18px 28px rgb(0 0 0 / 0.45)); }
 :root[data-theme='light'] .vx-paper-shadow { filter: drop-shadow(0 14px 24px rgb(16 22 20 / 0.16)); }
+@media (prefers-color-scheme: light) { :root[data-theme='system'] .vx-paper-shadow { filter: drop-shadow(0 14px 24px rgb(16 22 20 / 0.16)); } }
 .vx-paper ::selection { background: rgb(11 122 102 / 0.22); }
 .vx-paper textarea { caret-color: rgb(var(--vx-accent)); }
 
@@ -242,6 +243,10 @@
 @media (prefers-reduced-motion: reduce) { .vx-title-glow::after { animation: none; } }
 :root[data-theme='light'] .vx-title-glow { color: inherit; text-shadow: none; }
 :root[data-theme='light'] .vx-title-glow::after { display: none; }
+@media (prefers-color-scheme: light) {
+  :root[data-theme='system'] .vx-title-glow { color: inherit; text-shadow: none; }
+  :root[data-theme='system'] .vx-title-glow::after { display: none; }
+}
 
 }
 
@@ -288,4 +293,20 @@ html[data-vey-mobile-workspace="true"] [data-create-cost-card] {
   .vx-root:has(.vx-sidebar) { padding-inline-start: 16rem; }
   html[data-vx-rail] .vx-root:has(.vx-sidebar) { padding-inline-start: 4rem; }
   html[data-vx-rail] .vx-sidebar { width: 4rem; }
+}
+
+/* Theme controls that read <html data-theme> directly, so they are right
+   in the server's first paint and not only after hydration. Dark is the
+   default (no attribute); "system" is light only on a light device. */
+.vx-theme-moon { display: none; }
+:root[data-theme='light'] .vx-theme-sun { display: none; }
+:root[data-theme='light'] .vx-theme-moon { display: inline-flex; }
+.vx-theme-choice[data-theme-choice='dark'],
+:root[data-theme='light'] .vx-theme-choice[data-theme-choice='light'],
+:root[data-theme='system'] .vx-theme-choice[data-theme-choice='system'] { border-color: rgb(var(--vx-accent)); color: rgb(var(--vx-accent)); }
+:root[data-theme='light'] .vx-theme-choice[data-theme-choice='dark'],
+:root[data-theme='system'] .vx-theme-choice[data-theme-choice='dark'] { border-color: rgb(var(--vx-border)); color: rgb(var(--vx-fg-muted)); }
+@media (prefers-color-scheme: light) {
+  :root[data-theme='system'] .vx-theme-sun { display: none; }
+  :root[data-theme='system'] .vx-theme-moon { display: inline-flex; }
 }

@@ -11,7 +11,9 @@ import AnalyticsProvider, { analyticsEnabled } from '../components/AnalyticsProv
 import SiteChrome from './veyrnox/_components/SiteChrome';
 import ServiceStatusBanner from './veyrnox/_components/ServiceStatusBanner';
 import { I18nProvider } from '../components/I18nProvider';
+import { cookies } from 'next/headers';
 import { getLocale } from '../lib/i18n/server';
+import { THEME_COOKIE, parseTheme } from '../lib/themePreference.mjs';
 import { localeInfo, localesEnabled } from '../lib/i18n/locales.mjs';
 import { translator } from '../lib/i18n/translate.mjs';
 import { OG_IMAGE, OPEN_GRAPH_BASE, ORG_LD, JsonLd } from './seo';
@@ -54,18 +56,30 @@ export async function generateMetadata() {
 
 }
 
+// The remembered appearance, from the cookie the toggle writes. Read on the
+// server so <html> carries it in the first response: no flash, no inline script.
+async function storedTheme() {
+  return parseTheme((await cookies()).get(THEME_COOKIE)?.value);
+}
+
 // Dark is the brand default; the theme toggle overrides it per browser.
-export const viewport = {
-  themeColor: '#0A0A0B',
-  colorScheme: 'dark light',
-};
+export async function generateViewport() {
+  const choice = await storedTheme();
+  return {
+    themeColor: choice === 'light' ? '#FFFFFF' : choice === 'system'
+      ? [{ media: '(prefers-color-scheme: light)', color: '#FFFFFF' }, { media: '(prefers-color-scheme: dark)', color: '#0A0A0B' }]
+      : '#0A0A0B',
+    colorScheme: 'dark light',
+  };
+}
 
 export default async function RootLayout({ children }) {
   const locale = await getLocale();
   const info = localeInfo(locale);
   const t = translator(locale);
+  const theme = await storedTheme();
   return (
-    <html lang={info.hreflang} dir={info.dir} data-scroll-behavior="smooth" className={inter.variable}>
+    <html lang={info.hreflang} dir={info.dir} data-theme={theme || undefined} data-scroll-behavior="smooth" className={inter.variable}>
       <body>
         <I18nProvider locale={locale} enabled={localesEnabled()}>
         <AnalyticsProvider>
