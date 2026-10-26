@@ -182,8 +182,13 @@ test('bad signature is 401 before lookup; failed callbacks and cancel refund onc
     assert.equal(w.counts().refunds, 1);
 });
 test('runner submit failure and oversize output refund, and sweep recovers a lost callback', async () => {
-    const w = world(); w.deps.runner.run = async () => ({ ok: false });
-    assert.equal((await w.handlers.create(request())).status, 503); assert.equal(w.counts().refunds, 1);
+    const w = world(); w.deps.runner.run = async () => ({ ok: false, error: 'runner_400' });
+    const failed = await w.handlers.create(request());
+    assert.equal(failed.status, 503); assert.equal(w.counts().refunds, 1);
+    // A short diagnostic code is returned (never a body or secret) so a refused submit can be traced.
+    assert.equal((await failed.json()).detail, 'runner_400');
+    const thrown = world(); thrown.deps.runner.run = async () => { throw new TypeError('Invalid URL'); };
+    assert.equal((await (await thrown.handlers.create(request())).json()).detail, 'runner_exception_typeerror');
     const v = world(); await v.handlers.create(request());
     assert.equal((await editorServerRenderWebhook(v.deps)(await signed({ event: 'upload_grant', size_bytes: 26214401 }))).status, 400);
     assert.equal(v.counts().refunds, 1);
