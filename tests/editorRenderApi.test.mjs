@@ -54,11 +54,29 @@ test('owned bytes are fully hashed and packet-inspected before privileged settle
 });
 test('readbacks omit internal keys and only inspected owned videos get short-lived downloads', async () => {
     const quarantined = setup(); assert.equal((await quarantined.asset(request(), id)).status, 404); assert.equal(quarantined.signs.length, 0);
-    const stored = setup({ row: { state: 'stored', owner_id: actor, request_key: 'private-key' } });
-    const page = await (await stored.list(request())).json(); assert.equal(page.renders[0].id, id); for (const field of ['r2_key', 'owner_id', 'request_key']) assert.ok(!(field in page.renders[0]));
+    const stored = setup({ row: { state: 'stored', owner_id: actor, request_key: 'private-key', source_job_id: 'internal-job', asset_id: 'internal-asset' } });
+    const page = await (await stored.list(request())).json(); assert.equal(page.renders[0].id, id); for (const field of ['r2_key', 'owner_id', 'request_key', 'source_job_id', 'asset_id']) assert.ok(!(field in page.renders[0]));
     assert.equal((await stored.asset(request('GET', null, actor, '?download=1'), id)).status, 200); assert.equal(stored.signs[0][1], 900); assert.match(stored.signs[0][3].downloadFilename, /\.mp4$/);
     assert.equal((await stored.asset(request('GET', null, actor, '?download=0'), id)).status, 400);
     assert.equal((await stored.asset(request('GET', null, actor, '?download=1&download=1'), id)).status, 400);
+});
+test('linked removal projects distinct safe errors without exposing arbitrary SQL messages', async () => {
+    const original = globalThis.fetch;
+    try {
+        for (const [status, message, code] of [
+            [429, 'RATE_LIMITED', 'RATE_LIMITED'], [403, 'ACCOUNT_FROZEN', 'ACCOUNT_FROZEN'],
+            ...['ON_HOLD', 'IN_PROGRESS', 'USED_BY_POST', 'USED_BY_CINEMA', 'USED_BY_LIBRARY'].map(code => [409, code, code]),
+            [409, 'secret SQL table name', 'CONFLICT'], [403, 'USED_BY_POST', 'FORBIDDEN'],
+        ]) {
+            globalThis.fetch = async () => Response.json({ message }, { status });
+            const response = await editorRenderHandlers({ enabled: true, cfg, r2cfg }).remove(request('DELETE', { id }));
+            assert.equal(response.status, status);
+            const body = await response.json();
+            assert.equal(body.error.code, code);
+            assert.ok(!JSON.stringify(body).includes('secret SQL'));
+            if (status === 429) assert.equal(response.headers.get('retry-after'), '60');
+        }
+    } finally { globalThis.fetch = original; }
 });
 test('caller-JWT adapter sends no service key and bounds safe upstream error projection', async () => {
     const original = globalThis.fetch; let outbound;

@@ -42,6 +42,7 @@ const BROWSER_CALLABLE = new Set([
     'private.reserve_editor_library_render(text,text,bigint,boolean,text)',
     'public.read_editor_library_renders(uuid)',
     'private.read_editor_library_renders(uuid)',
+    'private.editor_render_available(uuid,uuid,text)',
     'public.remove_editor_library_render(uuid)',
     'private.remove_editor_library_render(uuid)',
     // 0280: authenticated, RLS-scoped brand/review invokers and their private operations.

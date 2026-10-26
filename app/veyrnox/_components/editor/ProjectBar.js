@@ -39,7 +39,7 @@ export function ProjectBar(props) {
     }),[blobs,onLoadTimeline,onRelinked,onContext,tl.schemaVersion]);
     return <ProjectSessionBar key={actor || 'signed-out'} {...props} onContext={projectContext} />;
 }
-function ProjectSessionBar({ tl, blobs, onLoadTimeline, onRelinked, onContext,compact=false }) {
+function ProjectSessionBar({ tl, blobs, onLoadTimeline, onRelinked, onContext,compact=false, serverRenderEligible=false }) {
   const { t, locale } = useI18n();
     const number = value => locale === 'en' ? String(value) : value.toLocaleString(localeTag(locale));
     const enabled = useProjectsEnabled();
@@ -95,7 +95,8 @@ function ProjectSessionBar({ tl, blobs, onLoadTimeline, onRelinked, onContext,co
 
     const current = doc ? documentForTimeline(doc, tl) : null;
     const dirty = !!doc && !equalProjectDocuments(doc, current);
-    useEffect(()=>{onContext?.({id:projectId,workspaceId,revision,dirty,busy,error:!!error,savedAt});},[onContext,projectId,workspaceId,revision,dirty,busy,error,savedAt]);
+    const contextDocument = serverRenderEligible ? doc : undefined, contextActor = serverRenderEligible ? actor : undefined;
+    useEffect(()=>{onContext?.({id:projectId,workspaceId,revision,dirty,busy,error:!!error,savedAt,...(serverRenderEligible ? {document:contextDocument,actor:contextActor} : {})});},[onContext,projectId,workspaceId,revision,dirty,busy,error,savedAt,serverRenderEligible,contextDocument,contextActor]);
     const save = useCallback(async ({ against = revision, restore = null } = {}) => {
         if (isOddlingsDocument(doc)) return;
         if (!currentAccount() || !endpoint || !doc) return;
