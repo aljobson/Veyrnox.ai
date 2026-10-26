@@ -54,7 +54,7 @@
     "clsx": "^2.1.1",
     "d3-array": "^3.2.4",
     "d3-shape": "^3.2.0",
-    "mediabunny": "1.62.1",
+    "mediabunny": "1.60.0",
     "motion": "^14.6.0",
     "next": "^16.4.2",
     "qrcode.react": "^4.2.0",
