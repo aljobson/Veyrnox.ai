@@ -49,13 +49,24 @@ import {
 const PORTRAIT_INVALIDATING_KEYS = new Set([...CHARACTER_GROUPS.map((group) => group.id), 'oddling_rule']);
 
 function ReferencePreview({ file, alt }) {
-  const image = useRef(null);
+  const canvas = useRef(null);
   useEffect(() => {
-    const url = URL.createObjectURL(file);
-    if (image.current) image.current.src = url;
-    return () => URL.revokeObjectURL(url);
+    if (typeof createImageBitmap !== 'function') return undefined;
+    let cancelled = false;
+    let bitmap = null;
+    createImageBitmap(file, { imageOrientation: 'from-image' }).then((decoded) => {
+      if (cancelled) { decoded.close(); return; }
+      bitmap = decoded;
+      const target = canvas.current;
+      if (!target) return;
+      const scale = Math.min(1, 1024 / decoded.width, 1024 / decoded.height);
+      target.width = Math.max(1, Math.round(decoded.width * scale));
+      target.height = Math.max(1, Math.round(decoded.height * scale));
+      target.getContext('2d')?.drawImage(decoded, 0, 0, target.width, target.height);
+    }).catch(() => {});
+    return () => { cancelled = true; bitmap?.close(); };
   }, [file]);
-  return <img ref={image} data-testid="oddling-reference-image" alt={alt} className="mt-3 max-h-48 w-full rounded-xl object-cover" />;
+  return <canvas ref={canvas} data-testid="oddling-reference-image" role="img" aria-label={alt} className="mt-3 max-h-48 w-full rounded-xl object-cover" />;
 }
 
 export default function OddlingStudio() {
