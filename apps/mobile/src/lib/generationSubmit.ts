@@ -40,6 +40,21 @@ export function generationMessage(err: unknown): string {
     if (err instanceof OfflineError) return OFFLINE_PAID_MESSAGE;
     if (!(err instanceof ApiError)) return t('common.error');
     switch (err.code) {
+        case 'source_count_exceeded':
+            return t('app.create.error.source_count_exceeded');
+        case 'sources_too_large':
+            return t('app.create.error.sources_too_large');
+        case 'source_size_unknown':
+            return t('app.create.error.source_size_unknown');
+        case 'references_invalid':
+            return t('app.create.error.references_invalid');
+        case 'references_ambiguous':
+            return t('app.create.error.references_ambiguous');
+        case 'body_too_large':
+            return t('app.create.error.body_too_large');
+        case 'idempotency_conflict':
+            return t('app.create.error.idempotency_conflict');
+
         case 'insufficient_credits':
             return t('form.err.insufficient');
         case 'rate_limited':

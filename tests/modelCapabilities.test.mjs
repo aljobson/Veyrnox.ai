@@ -141,7 +141,7 @@ test('Kling 3.0 i2v record carries the corrected fal contract', () => {
     );
     assert.deepEqual(shapePayload(record, { prompt: 'p', image_url: 'https://r2.example/start.png', endImage_url: 'https://r2.example/end.png', duration_seconds: 5 }),
         { prompt: 'p', start_image_url: 'https://r2.example/start.png', end_image_url: 'https://r2.example/end.png', duration: '5', generate_audio: false });
-    assert.deepEqual(publicCapabilities(record).media, { image: { required: true, kind: 'image', label: 'Start frame' }, endImage: { required: false, kind: 'image', label: 'End frame' } });
+    assert.deepEqual(publicCapabilities(record).media, { image: { required: true, maxFiles: 1, kind: 'image', label: 'Start frame' }, endImage: { required: false, maxFiles: 1, kind: 'image', label: 'End frame' } });
 });
 
 test('undeclared keys are dropped by the gateway, and refused if they reach the check', () => {
@@ -294,7 +294,7 @@ test('Zonos2 clones only from a required bounded audio sample through the existi
         text: 'Hello from my voice.', reference_audio_url: sample, language: 'en_us', accurate_mode: true,
         clean_speaker_background: true, enable_safety_checker: true,
     });
-    assert.deepEqual(publicCapabilities(r).media, { audio: { required: true, maxSeconds: 120 } });
+    assert.deepEqual(publicCapabilities(r).media, { audio: { required: true, maxFiles: 1, maxSeconds: 120 } });
     assert.equal(checkInputs(r, { prompt: 'x'.repeat(1001), audio_url: sample }).ok, false);
 });
 
@@ -341,7 +341,7 @@ test('lip sync caps each source at the length its price covers, before the debit
     assert.equal(checkInputs(avatar, { prompt: 'p', image_url: 'https://r2/f.png' }).ok, false);
     const inputs = declaredInputs(avatar, { prompt: 'talks', aspect_ratio: '16:9', image_url: 'https://r2/f.png', audio_url: 'https://r2/s.mp3' });
     assert.deepEqual(shapePayload(avatar, inputs), { prompt: 'talks', image_url: 'https://r2/f.png', audio_url: 'https://r2/s.mp3' });
-    assert.deepEqual(publicCapabilities(latent).media, { video: { required: true, maxSeconds: 40 }, audio: { required: true, maxSeconds: 40 } });
+    assert.deepEqual(publicCapabilities(latent).media, { video: { required: true, maxFiles: 1, maxSeconds: 40 }, audio: { required: true, maxFiles: 1, maxSeconds: 40 } });
 });
 
 test('a dialogue script becomes speaker blocks, and the prompt itself is never sent', () => {

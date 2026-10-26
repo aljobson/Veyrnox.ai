@@ -59,10 +59,10 @@ test('a guided feature carries only validated private upload keys and recorded c
         image: { sourceKey: key, mimeType: 'image/png', label: 'portrait.png' },
     }, consent: true });
 
-    writeStudioDraft(s, { prompt: 'drop unsafe input', model: 'avatar', sources: {
+    assert.equal(writeStudioDraft(s, { prompt: 'drop unsafe input', model: 'avatar', sources: {
         image: { sourceKey: 'uploads/someone-else/file.exe', mimeType: 'image/png', label: 'bad' },
-    }, consent: true }, NOW);
-    assert.deepEqual(takeStudioDraft(s, 'avatar', NOW), { prompt: 'drop unsafe input', aspect: null });
+    }, consent: true }, NOW), false);
+    assert.equal(takeStudioDraft(s, 'avatar', NOW), null);
 });
 
 test('a Film Studio draft carries its clip length without changing older drafts', async()=>{

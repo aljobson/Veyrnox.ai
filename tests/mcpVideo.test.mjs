@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { startMcpVideo, startMcpEdit } from '../lib/mcpVideo.js';
 
-const VIDEO = { id: 'kling-i2v', modality: 'image-to-video', credits: 10, durations: [5, 10] };
+const VIDEO = { id: 'kling-i2v', modality: 'image-to-video', credits: 10, durations: [5, 10], capabilities: { media: { image: { maxFiles: 1 } } } };
 const ARGS = { model_id: VIDEO.id, prompt: 'A slow dolly shot', confirmed_credits: 10, user_approved: true, idempotency_key: 'mcp-video-0001' };
 const ASSET = '3f2b8c1e-5a47-4d3e-9b0a-1c2d3e4f5a6b';
 
@@ -25,7 +25,7 @@ test('a confirmed video is sent once to the generation route with only the allow
   assert.deepEqual(calls.create, [{
     model_id: VIDEO.id, idempotency_key: 'mcp-video-0001', confirmed_credits: 10,
     inputs: { prompt: 'A slow dolly shot', aspect_ratio: '9:16', duration_seconds: 5, seed: 3 },
-    source_assets: [], consent: false,
+    references: [], consent: false,
   }]);
 });
 
@@ -53,14 +53,14 @@ test('there is no per-call price cap: a dear video model is allowed at its exact
   assert.equal(result.ok, true);
 });
 
-test('a source file needs consent and is capped at two; with consent it is passed by id and slot only', async () => {
+test('a source file needs consent and obeys the model cap; with consent it is passed by id and slot only', async () => {
   const source = { asset_id: ASSET, slot: 'image' };
   const noConsent = await video({ ...ARGS, source_assets: [source] });
   assert.deepEqual([noConsent.result.status, noConsent.result.body.error, noConsent.calls.create.length], [400, 'consent_required', 0]);
   const tooMany = await video({ ...ARGS, consent: true, source_assets: [source, source, source] });
-  assert.deepEqual([tooMany.result.body.error, tooMany.calls.create.length], ['source_asset_invalid', 0]);
+  assert.deepEqual([tooMany.result.body.error, tooMany.calls.create.length], ['source_count_exceeded', 0]);
   const ok = await video({ ...ARGS, consent: true, source_assets: [{ ...source, url: 'https://evil.example/x.mp4' }] });
-  assert.deepEqual([ok.calls.create[0].source_assets, ok.calls.create[0].consent], [[source], true]);
+  assert.deepEqual([ok.calls.create[0].references, ok.calls.create[0].consent], [[{ ...source, origin: 'asset' }], true]);
 });
 
 test('consent is not sent when there is no source, whatever the caller says', async () => {

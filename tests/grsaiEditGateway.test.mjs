@@ -83,7 +83,7 @@ test('owned edit bills two credits, drops client URL/seed, stores source key and
         assert.equal((await post()).status, 200);
         const debit = rpcCalls(net, 'ledger_debit')[0].body;
         assert.equal(debit.p_credits, 2);
-        assert.deepEqual(debit.p_inputs.source_keys, { image_url: SOURCE });
+        assert.deepEqual(debit.p_inputs.references, [{slot:'image',origin:'upload',key:SOURCE}]);
         assert.equal(debit.p_inputs.image_url, undefined);
         assert.equal(debit.p_inputs.seed, undefined);
         const input = submits(net)[0].body;
@@ -110,7 +110,7 @@ test('invalid ownership, absent source, duplicate images and missing consent nev
         [{ source_key: SOURCE.replace(AUTH, JOB) }, 'source_not_found'],
         [{ source_key: undefined }, 'inputs_invalid:image_url'],
         [{ consent: false }, 'consent_required'],
-        [{ source_keys: [SOURCE, SOURCE] }, 'source_key_invalid'],
+        [{ source_keys: [SOURCE, SOURCE] }, 'source_count_exceeded'],
         [{ inputs: { prompt: 'p', imageSize: '4K' } }, 'inputs_key_not_allowed:imageSize'],
     ]) {
         const net = network();

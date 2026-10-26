@@ -28,7 +28,7 @@ function wav(seconds = 1) {
     bytes.writeUInt16LE(2,32); bytes.writeUInt16LE(16,34); bytes.write('data',36); bytes.writeUInt32LE(data,40); return bytes;
 }
 const ref = (asset_id,slot) => ({ asset_id,slot });
-function network({ model = kling, overrides = {}, replay = false, rate = { ok: true } } = {}) {
+function network({ model = kling, overrides = {}, replay = false, rate = { ok: true }, admission } = {}) {
     const assets = Object.fromEntries([[START,'png',png,'image/png'],[END,'png',png,'image/png'],[VIDEO,'mp4',mp4,'video/mp4'],[AUDIO,'wav',wav(),'audio/wav']].map(([id,extension,bytes,mime_type]) => [id,{ ok: true, state: 'STORED', r2_key: `jobs/${id}/output.${extension}`, mime_type, bytes, ...overrides[id] }]));
     const objects = new Map(Object.values(assets).map(asset => [`/test/${asset.r2_key}`,asset])); objects.set(`/test/${UPLOAD}`,{ bytes: png, mime_type: 'image/png' });
     objects.set(`/test/${VIDEO_UPLOAD}`,assets[VIDEO]); objects.set(`/test/${AUDIO_UPLOAD}`,assets[AUDIO]);
@@ -44,7 +44,7 @@ function network({ model = kling, overrides = {}, replay = false, rate = { ok: t
                 if (!asset) return Response.json({ ok: false, code: 'NOT_FOUND' });
                 const { bytes: _bytes,...record } = asset; return Response.json(record);
             }
-            if (name === 'ledger_debit') return Response.json({ ok: true, job_id: JOB, balance_after: 76, idempotent: replay });
+            if (name === 'ledger_debit' || name === 'submit_free_job') return Response.json(admission || { ok: true, job_id: JOB, balance_after: 76, idempotent: replay });
             return Response.json({ ok: true });
         }
         if (u.pathname === '/rest/v1/model_catalog') return Response.json([model]);
@@ -88,7 +88,7 @@ test('owned start/end frames are inspected after admission and reach the correct
         assert.deepEqual(rpcCalls(net,'get_user_asset').map(c => c.body),[{ p_auth_id: AUTH,p_job_id: START },{ p_auth_id: AUTH,p_job_id: END }]);
         const debit = rpcCalls(net,'ledger_debit')[0].body;
         assert.equal(debit.p_credits,24,'only the catalog priced 5-second unit is multiplied');
-        assert.deepEqual(debit.p_inputs.source_assets,{ image_url: START,endImage_url: END });
+        assert.deepEqual(debit.p_inputs.references,[{ slot: 'image', origin: 'asset', asset_id: START }, { slot: 'endImage', origin: 'asset', asset_id: END }]);
         assert.equal(debit.p_inputs.image_url,undefined); assert.equal(debit.p_inputs.endImage_url,undefined); assert.equal(debit.p_inputs.source_keys,undefined);
         assert.ok(!net.calls.some(c => c.host === 'attacker.example'));
         const index = c => net.calls.indexOf(c);
@@ -117,7 +117,7 @@ test('declared video/audio slots inspect real containers and measured lengths wi
         assert.equal((await post({ model_id: latent.id,source_assets: [ref(VIDEO,'video'),ref(AUDIO,'audio')],inputs: {} })).status,200);
         const payload = submits(net)[0].body; assert.deepEqual(Object.keys(payload).sort(),['audio_url','video_url']);
         assert.equal(new URL(payload.video_url).pathname,`/test/jobs/${VIDEO}/output.mp4`); assert.equal(new URL(payload.audio_url).pathname,`/test/jobs/${AUDIO}/output.wav`);
-        assert.deepEqual(rpcCalls(net,'ledger_debit')[0].body.p_inputs.source_assets,{ video_url: VIDEO,audio_url: AUDIO });
+        assert.deepEqual(rpcCalls(net,'ledger_debit')[0].body.p_inputs.references,[{ slot: 'video', origin: 'asset', asset_id: VIDEO }, { slot: 'audio', origin: 'asset', asset_id: AUDIO }]);
         assert.ok(inspections(net).length > 2,'MP4 duration is actually inspected with range reads');
     } finally { net.restore(); }
     await rejected({ source_assets: [VIDEO] },'source_type_unsupported');
@@ -147,18 +147,18 @@ test('equal or shorter lip-sync speech keeps the approved provider payload and e
 });
 test('invalid or undeclared slots are refused before storage inspection, debit or dispatch',async () => {
     for (const [extra,error] of [
-        [{ source_assets: [ref(START,'image'),ref(END,'image')] },'source_slot_invalid'],
+        [{ source_assets: [ref(START,'image'),ref(END,'image')] },'source_count_exceeded'],
         [{ source_assets: [ref(VIDEO,'video')] },'source_slot_invalid'],
         [{ source_assets: [ref(START,'start_image_url')] },'source_asset_invalid'],
         [{ source_assets: [{ ...ref(START,'image'),url: 'https://attacker.example/a.png' }] },'source_asset_invalid'],
         [{ source_assets: [{ slot: 'image',asset_id: {} }] },'source_asset_invalid'],
-        [{ source_assets: [ref(START,'image'),ref(END,'endImage')],source_key: UPLOAD },'source_asset_invalid'],
+        [{ source_assets: [ref(START,'image'),ref(END,'endImage')],source_key: UPLOAD },'source_count_exceeded'],
         [{ source_assets: [ref(START,'image')],inputs: { prompt: 'p',endImage_url: 'https://attacker.example/end.png' } },'inputs_key_not_allowed:endImage_url'],
     ]) {
         const calls = await rejected(extra,error);
         assert.equal(calls.filter(c => c.pathname === '/rest/v1/rpc/get_user_asset' || c.host.endsWith('.r2.cloudflarestorage.com')).length,0,error);
     }
-    await rejected({ source_assets: [START,END] },'source_key_invalid');
+    await rejected({ source_assets: [START,END] },'source_count_exceeded');
     await rejected({ source_assets: [ref(END,'endImage')] },'inputs_invalid:image_url');
 });
 test('unowned, expired, wrong declared MIME and mismatched actual bytes never debit or dispatch',async () => {
@@ -186,7 +186,7 @@ test('an idempotent accepted replay retains source IDs and records no second pro
     const net = network({ replay: true });
     try {
         const res = await post(); assert.equal(res.status,200); assert.equal((await res.json()).idempotent,true);
-        assert.equal(submits(net).length,0); assert.deepEqual(rpcCalls(net,'ledger_debit')[0].body.p_inputs.source_assets,{ image_url: START,endImage_url: END });
+        assert.equal(submits(net).length,0); assert.deepEqual(rpcCalls(net,'ledger_debit')[0].body.p_inputs.references,[{ slot: 'image', origin: 'asset', asset_id: START }, { slot: 'endImage', origin: 'asset', asset_id: END }]);
     } finally { net.restore(); }
 });
 
@@ -212,7 +212,7 @@ test('owned upload descriptors preserve start/end roles, deduplicate inspection 
         const payload=submits(net)[0].body;
         assert.equal(payload.start_image_url,payload.end_image_url);
         assert.equal(inspections(net).length,1);
-        assert.deepEqual(rpcCalls(net,'ledger_debit')[0].body.p_inputs.source_keys,{endImage_url:UPLOAD,image_url:UPLOAD});
+        assert.deepEqual(rpcCalls(net,'ledger_debit')[0].body.p_inputs.references,[{slot:'endImage',origin:'upload',key:UPLOAD},{slot:'image',origin:'upload',key:UPLOAD}]);
         assert.equal(rpcCalls(net,'ledger_debit')[0].body.p_credits,24);
     }finally{net.restore();}
     const mixed=network();try{
@@ -224,10 +224,91 @@ test('malformed, conflicting, foreign and wrong-kind uploaded slots refuse witho
     for(const [source_keys,source_assets,error] of [
         [[{key:UPLOAD,slot:'start_image_url'}],[],'source_key_invalid'],
         [[{key:UPLOAD,slot:'image',url:'https://outsider.example/a.png'}],[],'source_key_invalid'],
-        [[{key:UPLOAD,slot:'image'},{key:UPLOAD,slot:'image'}],[],'source_slot_invalid'],
-        [[{key:UPLOAD,slot:'image'}],[ref(START,'image')],'source_slot_invalid'],
+        [[{key:UPLOAD,slot:'image'},{key:UPLOAD,slot:'image'}],[],'source_count_exceeded'],
+        [[{key:UPLOAD,slot:'image'}],[ref(START,'image')],'source_count_exceeded'],
         [[{key:UPLOAD,slot:'video'}],[],'source_slot_invalid'],
         [[{key:UPLOAD.replace(AUTH,FOREIGN),slot:'image'}],[],'source_not_found'],
     ])await rejected({source_keys,source_assets},error);
     await rejected({model_id:latent.id,inputs:{},source_assets:[],source_keys:[{key:UPLOAD,slot:'audio'}]},'source_type_unsupported',{model:latent});
+});
+
+test('three mixed-origin references reach the fake provider and stored job in exact order', async () => {
+    const old = process.env.MULTI_REFERENCE_ENABLED; process.env.MULTI_REFERENCE_ENABLED = 'true';
+    const model = {...kling,id:'nano-banana-pro-edit',provider_endpoint:'fal-ai/nano-banana-pro/edit',modality:'image-to-image'};
+    const net = network({model});
+    const references = [{slot:'image',origin:'asset',asset_id:END},{slot:'image',origin:'upload',key:UPLOAD},{slot:'image',origin:'asset',asset_id:START}];
+    try {
+        const response=await post({model_id:model.id,source_assets:undefined,references,inputs:{prompt:'combine'}});
+        assert.equal(response.status,200);
+        assert.deepEqual(submits(net)[0].body.image_urls.map(url=>new URL(url).pathname),[`/test/jobs/${END}/output.png`,`/test/${UPLOAD}`,`/test/jobs/${START}/output.png`]);
+        assert.deepEqual(rpcCalls(net,'ledger_debit')[0].body.p_inputs,{prompt:'combine',references});
+        assert.equal(rpcCalls(net,'ledger_debit')[0].body.p_credits,model.credits_5s);
+    } finally {net.restore();if(old===undefined)delete process.env.MULTI_REFERENCE_ENABLED;else process.env.MULTI_REFERENCE_ENABLED=old;}
+});
+test('a request above the total JSON bound never reaches catalog or admission',async()=>{
+    const net=network();
+    try { const res=await post({references:'x'.repeat(128 * 1024)});assert.equal(res.status,413);assert.equal(net.calls.length,0); }
+    finally {net.restore();}
+});
+
+test('paid and free identity conflicts return HTTP 409 without provider submission or paid fallback', async () => {
+    const old = process.env.FREE_ALLOWANCE_ENABLED;
+    try {
+        for (const free of [false, true]) {
+            process.env.FREE_ALLOWANCE_ENABLED = String(free);
+            const net = network({ model: { ...kling, free_allowance_per_day: free ? 3 : 0 }, admission: { ok: false, code: 'IDEMPOTENCY_CONFLICT' } });
+            try {
+                const response = await post();
+                assert.equal(response.status, 409);
+                assert.equal((await response.json()).error, 'idempotency_conflict');
+                assert.equal(submits(net).length, 0);
+                assert.equal(rpcCalls(net, free ? 'submit_free_job' : 'ledger_debit').length, 1);
+                if (free) assert.equal(rpcCalls(net, 'ledger_debit').length, 0);
+            } finally { net.restore(); }
+        }
+    } finally { if (old === undefined) delete process.env.FREE_ALLOWANCE_ENABLED; else process.env.FREE_ALLOWANCE_ENABLED = old; }
+});
+
+test('maximal dialogue survives the request bound with escaped Unicode and envelope headroom', async () => {
+    const model = {...kling,id:'dialogue',provider_endpoint:'fal-ai/elevenlabs/text-to-dialogue/eleven-v3',modality:'text-to-audio'};
+    const net=network({model});
+    try {
+        const prompt = 'Ana: ' + '語'.repeat(995);
+        assert.equal(prompt.length,1000);
+        const body = JSON.stringify({model_id:model.id,idempotency_key:'max-dialogue-request',inputs:{prompt}}).replaceAll('語','\\u8a9e');
+        // Legal JSON whitespace represents envelope headroom beyond the old 64 KiB bound.
+        const wire = ' '.repeat(64 * 1024) + body;
+        const res=await POST(new Request('https://veyrnox.test/api/v1/generations',{method:'POST',headers:{'x-veyrnox-auth-id':AUTH},body:wire}));
+        assert.equal(res.status,200,JSON.stringify(await res.json()));
+        assert.equal(submits(net)[0].body.inputs[0].text,'語'.repeat(995));
+        assert.equal(rpcCalls(net,'ledger_debit').length,1);
+    } finally {net.restore();}
+});
+
+test('durable fal dispatch cannot admit unified or legacy references', async () => {
+    const saved = {...process.env};
+    Object.assign(process.env,{FAL_DISPATCH_SCHEMA_ENABLED:'true',FAL_DURABLE_DISPATCH_ENABLED:'true',MULTI_REFERENCE_ENABLED:'true'});
+    try {
+        const model = {...kling,id:'flux-2-pro',provider_endpoint:'fal-ai/flux-2-pro',modality:'text-to-image'};
+        for (const sources of [
+            {source_assets:undefined,references:[{slot:'image',origin:'upload',key:UPLOAD}]},
+            {source_assets:undefined,references:[{slot:'image',origin:'asset',asset_id:START}]},
+            {source_assets:[ref(START,'image')]},
+            {source_assets:undefined,source_keys:[{slot:'image',key:UPLOAD}]},
+        ]) {
+            const net=network({model});
+            try {
+                const response=await post({...sources,model_id:model.id,inputs:{prompt:'p'}});
+                assert.equal(response.status,400);
+                assert.equal((await response.json()).error,'source_slot_invalid');
+                assert.equal(rpcCalls(net,'admit_fal_dispatch').length,0);
+                assert.equal(rpcCalls(net,'ledger_debit').length,0);
+                assert.equal(submits(net).length,0);
+            } finally {net.restore();}
+        }
+    } finally {
+        for (const key of ['FAL_DISPATCH_SCHEMA_ENABLED','FAL_DURABLE_DISPATCH_ENABLED','MULTI_REFERENCE_ENABLED']) {
+            if(saved[key]===undefined)delete process.env[key];else process.env[key]=saved[key];
+        }
+    }
 });

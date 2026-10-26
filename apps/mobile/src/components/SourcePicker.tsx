@@ -8,14 +8,16 @@ import { claimDrawFile, deleteDrawFile, isDrawFile, releaseDrawFile } from '../l
 import { loadDrawOnImage } from '../lib/drawLoader';
 import type { ApiClient } from '../lib/api';
 import { LibraryChooser } from './LibraryChooser';
-import { t } from '../lib/i18n';
+import { t, plural } from '../lib/i18n';
 import type { LibraryChoice } from '../lib/librarySource';
-import { checkPicked, pickedProblem, type PickedFile, type Slot } from '../lib/sources';
+import { checkPicked, pickedProblem, type PickedFile, type Slot, type GenerationReference } from '../lib/sources';
 import { uploadMessage, uploadSource } from '../lib/uploads';
 import { colors } from '../theme';
 
 interface SourcePickerProps {
     readonly slot: Slot;
+    readonly references?: readonly GenerationReference[];
+    readonly onReferences?: (references: readonly GenerationReference[]) => void;
     readonly api: ApiClient;
     // The storage key once the file is uploaded, or undefined when it is removed or fails.
     readonly onChange: (key: string | undefined) => void;
@@ -57,7 +59,45 @@ export async function choose(kind: Slot['kind']): Promise<PickedFile | null> {
     return { uri: a.uri, mimeType: a.mimeType, size: a.fileSize, durationSeconds: typeof a.duration === 'number' ? a.duration / 1000 : undefined };
 }
 
-export function SourcePicker({ slot, api, onChange, onLibrary, onBusy, initial, drawable = false, hint, initialReady = false, initialReadyLabel }: SourcePickerProps) {
+// Each row retains its own upload controller, progress and cancellation.
+export function SourcePicker(props: SourcePickerProps) {
+    return props.onReferences ? <ReferencePicker {...props} /> : <SourceFilePicker {...props} />;
+}
+function ReferencePicker(props: SourcePickerProps) {
+    const serial = useRef(props.references?.length || 1);
+    const [rows, setRows] = useState(() => (props.references?.length ? props.references : [undefined]).map((reference, id) => ({ id, reference })));
+    const current = useRef(rows);
+    const busy = useRef(new Set<number>());
+    const max = props.slot.maxFiles ?? 1;
+    function change(next: typeof rows) {
+        current.current = next; setRows(next);
+        props.onReferences?.(next.flatMap(row => row.reference ? [row.reference] : []));
+    }
+    function reference(id: number, value: GenerationReference | undefined, origin: 'upload' | 'asset') {
+        change(current.current.map(row => row.id !== id ? row : { ...row, reference: value || (row.reference?.origin === origin ? undefined : row.reference) }));
+    }
+    function move(index: number, target: number) {
+        const next = [...current.current]; next.splice(target, 0, next.splice(index, 1)[0]); change(next);
+    }
+    return <View style={{ gap: 12 }}>
+        {max > 1 && <Text style={styles.hint}>{plural('app.create.sources.maxFiles', max)}</Text>}
+        {rows.filter(row => row.reference).length > max && <Text accessibilityRole="alert" style={styles.error}>{plural('app.create.sources.overLimit', max)}</Text>}
+        {rows.map((row, index) => <View key={row.id} style={{ gap: 8 }}>
+            <SourceFilePicker {...props} slot={{ ...props.slot, required: props.slot.required && index === 0 }}
+                initial={row.id === 0 ? props.initial : null} initialReady={!!row.reference}
+                onChange={key => reference(row.id, key ? { slot: props.slot.slot, origin: 'upload', key } : undefined, 'upload')}
+                onLibrary={props.onLibrary ? asset_id => reference(row.id, asset_id ? { slot: props.slot.slot, origin: 'asset', asset_id } : undefined, 'asset') : undefined}
+                onBusy={value => { if (value) busy.current.add(row.id); else busy.current.delete(row.id); props.onBusy(busy.current.size > 0); }} />
+            <View style={styles.row}>
+                {index > 0 && <Pressable accessibilityRole="button" accessibilityLabel={t('app.create.sources.moveEarlier')} onPress={() => move(index, index - 1)}><Text style={styles.pickText}>↑</Text></Pressable>}
+                {index < rows.length - 1 && <Pressable accessibilityRole="button" accessibilityLabel={t('app.create.sources.moveLater')} onPress={() => move(index, index + 1)}><Text style={styles.pickText}>↓</Text></Pressable>}
+            </View>
+        </View>)}
+        {rows.length < max && <Pressable accessibilityRole="button" onPress={() => change([...current.current, { id: serial.current++, reference: undefined }])}><Text style={styles.pickText}>{t(props.slot.kind === 'image' ? 'app.create.sources.image.add' : props.slot.kind === 'video' ? 'app.create.sources.video.add' : 'app.create.sources.audio.add')}</Text></Pressable>}
+    </View>;
+}
+
+function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, drawable = false, hint, initialReady = false, initialReadyLabel }: SourcePickerProps) {
     const [status, setStatus] = useState<Status>(initialReady ? { step: 'ready' } : { step: 'empty' });
     const [preview, setPreview] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);

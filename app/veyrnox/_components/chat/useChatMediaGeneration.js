@@ -1,4 +1,5 @@
 'use client';
+import { generationSourceState, sourceList, publicSlotMax, editSlotSource, moveSlotSource } from '../../../../lib/generationSourceSlots.mjs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { GatewayError, gatewayFetch, makeIdempotencyKey, notifyBalanceChanged } from '../../_lib/gateway';
 import { planAttachments } from '../../../../lib/createAttach.mjs';
@@ -20,7 +21,8 @@ import {
   supportedDuration,
 } from '../../_lib/chatMedia';
 
-const errorFor = (error) => error instanceof GatewayError
+const LOCAL_SOURCE_CODES = ['source_reattach_required', 'source_count_exceeded']; // refused here, before anything is sent
+const errorFor = (error) => error instanceof GatewayError || LOCAL_SOURCE_CODES.includes(error?.code)
   ? { code: submitErrorCode(error.code), retryAfter: error.retryAfter }
   : { code: 'outcome_unknown' };
 
@@ -61,8 +63,7 @@ export function useChatMediaGeneration({ kind, models, catalogLive }) {
   const freeLeft = freeLeftFor(freeMap, model?.id);
   const cost = freeLeft > 0 ? freeCost(unitCost, count, freeLeft) : unitCost * count;
   const media = model?.media || {};
-  const missingSource = Object.entries(media).some(([slot, spec]) => spec.required && !sources[slot]);
-  const hasSource = Object.keys(media).some((slot) => sources[slot]);
+  const { missingSource, needsReattach, overLimit, hasSource: hasSource } = generationSourceState(media, sources);
   const missingConsent = hasSource && !consent;
   const missingVoice = voiceIsMissing(model, voice);
   const onUnreachable = useCallback(() => setError({ code: 'poll_unreachable' }), []);
@@ -80,7 +81,7 @@ export function useChatMediaGeneration({ kind, models, catalogLive }) {
 
   const clearSources = useCallback(() => {
     setSources((previous) => {
-      Object.values(previous).forEach((source) => source?.file && URL.revokeObjectURL(source.previewUrl));
+      Object.values(previous).flatMap(sourceList).forEach((source) => source?.file && URL.revokeObjectURL(source.previewUrl));
       return {};
     });
     setLibraryFor(null);
@@ -90,7 +91,7 @@ export function useChatMediaGeneration({ kind, models, catalogLive }) {
   useEffect(() => { sourceRef.current = sources; }, [sources]);
 
   useEffect(() => () => {
-    Object.values(sourceRef.current).forEach((source) => source?.file && URL.revokeObjectURL(source.previewUrl));
+    Object.values(sourceRef.current).flatMap(sourceList).forEach((source) => source?.file && URL.revokeObjectURL(source.previewUrl));
   }, []);
 
   const loadBalance = useCallback(async () => {
@@ -119,14 +120,13 @@ export function useChatMediaGeneration({ kind, models, catalogLive }) {
     setAudio(null);
   }, [kind, clearSources]);
 
-  function pickSource(slot, file, asset = null) {
-    setSources((previous) => {
-      if (previous[slot]?.file) URL.revokeObjectURL(previous[slot].previewUrl);
-      const next = { ...previous };
-      if (file) next[slot] = { file, previewUrl: URL.createObjectURL(file) };
-      else if (asset) next[slot] = { assetId: asset.id, previewUrl: asset.url, label: asset.label };
-      else delete next[slot];
-      return next;
+  function pickSource(slot, file, asset = null, index) {
+    setSources(previous => {
+      const old = sourceList(previous[slot]);
+      const removed = index !== undefined ? old[index] : publicSlotMax(media[slot]) === 1 || (!file && !asset) ? old : [];
+      for (const item of sourceList(removed)) if (item?.file) URL.revokeObjectURL(item.previewUrl);
+      const source = file ? { file, previewUrl: URL.createObjectURL(file) } : asset ? { assetId: asset.id, previewUrl: asset.url, label: asset.label } : null;
+      return editSlotSource(previous, slot, source, index, publicSlotMax(media[slot]));
     });
     setConsent(false);
   }
@@ -141,7 +141,8 @@ export function useChatMediaGeneration({ kind, models, catalogLive }) {
     setAttachNotice({ switched: switched ? plan.model.name : null, unused: plan.unused.length });
     if (switched) selectModel(plan.model.id);
     else clearSources();
-    for (const { slot, file } of plan.assignments) pickSource(slot, file);
+    const positions = {};
+    for (const { slot, file } of plan.assignments) pickSource(slot, file, null, (positions[slot] = (positions[slot] || 0) + 1) - 1);
   }
 
   async function uploadSource(file) {
@@ -160,6 +161,8 @@ export function useChatMediaGeneration({ kind, models, catalogLive }) {
   }
 
   async function generate(prompt) {
+    if (needsReattach) { setError({ code: 'source_reattach_required' }); return false; }
+    if (overLimit) { setError({ code: 'source_count_exceeded' }); return false; }
     const cleanPrompt = String(prompt || '').trim();
     if (inFlight.current || sending || generating || !catalogLive || !model || model.gated || mediaPromptIsMissing(model, cleanPrompt) || balance == null
       || cost > balance || missingSource || missingConsent || missingVoice || invalidAudioDuration) return false;
@@ -176,7 +179,7 @@ export function useChatMediaGeneration({ kind, models, catalogLive }) {
     Object.keys(inputs).forEach((key) => inputs[key] === undefined && delete inputs[key]);
 
     try {
-      const { source_keys: sourceKeys, source_assets: sourceAssets } = await mediaGenerationSources(model, sources, uploadSource);
+      const { references, source_keys: sourceKeys, source_assets: sourceAssets } = await mediaGenerationSources(model, sources, uploadSource);
       const anySource = sourceKeys.length + sourceAssets.length > 0;
       const { started, error: failure } = await sendInOrder(count, async (index) => {
         const submitted = await gatewayFetch('/generations', {
@@ -185,8 +188,7 @@ export function useChatMediaGeneration({ kind, models, catalogLive }) {
             model_id: model.id,
             idempotency_key: makeIdempotencyKey(),
             inputs: inputsForIndex(inputs, index, count),
-            source_keys: sourceKeys.length ? sourceKeys : undefined,
-            source_assets: sourceAssets.length ? sourceAssets : undefined,
+            references,
             consent: anySource ? true : undefined,
           }),
         });
@@ -244,6 +246,7 @@ export function useChatMediaGeneration({ kind, models, catalogLive }) {
     sources,
     media,
     pickSource,
+    reorderSources: (slot, from, to) => { setConsent(false); setSources(prev => moveSlotSource(prev, slot, from, to)); },
     attachFromDevice,
     attachNotice,
     libraryFor,

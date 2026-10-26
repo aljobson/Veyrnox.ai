@@ -1,4 +1,5 @@
 'use client';
+import { sourceList } from '../../../lib/generationSourceSlots.mjs';
 import { helperEnglish } from '../../../lib/helperMessages.mjs';
 
 import { useEffect } from 'react';
@@ -12,12 +13,12 @@ export function useCreateJourney({ model, models, catalogLive, prompt, character
   setModelId, setPrompt, setSources, setConsent, setDuration, setAnimationPortrait }) {
   const promptStamp = journeyStamp([prompt, characterOn, character]);
   const settingsStamp = journeyStamp([model?.id, duration, aspect, n, seed, negative, cinemaOn, cinema]);
-  const costStamp = journeyStamp([promptStamp, settingsStamp, cost, balance, Object.entries(sources).map(([slot, item]) => [slot, item.assetId || item.previewUrl]), missingConsent]);
+  const costStamp = journeyStamp([promptStamp, settingsStamp, cost, balance, Object.entries(sources).map(([slot, value]) => [slot, sourceList(value).map(item => item.assetId || item.previewUrl || item.sourceKey || null)]), missingConsent]);
   const jobStamp = JSON.stringify(jobs.map(({ job_id, state }) => ({ job_id, state })));
   useEffect(() => {
     publishJourneyView({ route: '/app/create', kind: model?.kind, modelId: model?.id, duration, aspect, imageRequired: !!model?.media?.image?.required,
       promptReady: !!prompt?.trim(), promptStamp, settingsStamp, costStamp, characterOn,
-      sourceId: sources.image?.assetId || null, sourceAttached: !!sources.image, missingSource, missingConsent, cost, balance,
+      sourceId: sourceList(sources.image)[0]?.assetId || null, sourceAttached: !!sources.image, missingSource, missingConsent, cost, balance,
       canGenerate: !!model && !model.gated && !animationMismatch && !missingSource && !missingConsent && !missingPrompt && !missingVoice && balance != null && cost <= balance && !generating && !sending,
       jobs: JSON.parse(jobStamp), error: error?.code || null });
   }, [model, duration, aspect, prompt, promptStamp, settingsStamp, costStamp, characterOn, sources, missingSource, missingConsent, missingPrompt, missingVoice, animationMismatch, cost, balance, generating, sending, jobStamp, error]);

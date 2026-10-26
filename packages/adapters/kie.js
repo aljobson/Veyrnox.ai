@@ -25,6 +25,8 @@
  *   KIE_WEBHOOK_HMAC_KEY the webhookHmacKey enabled in kie.ai settings
  */
 
+import { capabilityFor } from '../../lib/modelCapabilities.js';
+import { hardMaxFiles } from '../../lib/multiReference.mjs';
 import { buildKieDialogue } from '../../lib/kieDialogue.js';
 import { readBoundedBody } from '../../lib/boundedBody.js';
 
@@ -114,7 +116,8 @@ export function buildRequest(target, inputs) {
         if (!inputs.image_url) return { ok: false, error: 'inputs_invalid:image_url' };
         const seconds = clipSeconds(inputs);
         if (seconds === null) return { ok: false, error: 'duration_not_supported' };
-        const image_urls = [inputs.image_url];
+        const image_urls = Array.isArray(inputs.image_url) ? [...inputs.image_url] : [inputs.image_url];
+        if (!image_urls.length || image_urls.length > hardMaxFiles(capabilityFor('market:kling-3.0/video').media.image) || image_urls.some(url => typeof url !== 'string' || !url)) return { ok: false, error: 'source_count_exceeded' };
         // Film Studio's versioned passport handles are labels, not Kling's
         // @element references (which require a kling_elements payload). Keep
         // the stored draft intact and render only these handles as plain text

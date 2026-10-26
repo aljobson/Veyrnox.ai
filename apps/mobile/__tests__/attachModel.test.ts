@@ -31,3 +31,12 @@ describe('planAttachments', () => {
         expect(planAttachments([lipsync], lipsync, [item('image', 'a')])).toBeNull();
     });
 });
+
+it('chooses the verified three-file model and preserves assignment order', () => {
+    const multi: CatalogModel = { ...edit, id: 'multi', capabilities: { media: { image: { maxFiles: 3, required: true } } } };
+    const files = [item('image','a'),item('image','b'),item('image','c'),item('image','d')];
+    const plan = planAttachments([frames,multi],frames,files);
+    expect(plan?.model.id).toBe('multi');
+    expect(plan?.assignments.map(a=>a.item.name)).toEqual(['a','b','c']);
+    expect(plan?.unused).toEqual([files[3]]);
+});

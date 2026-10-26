@@ -29,6 +29,10 @@ Run these without pasting an access token into logs or tickets:
 
 Seven `publish_*` tools register only while `PUBLISH_AUTOMATION_ENABLED` is on; with it off the connector is the five read-only generation tools the public page describes. The `/mcp` page and the consent screen switch to the Publish wording by themselves when the flag is on (English until translated; other languages show English for those sections). Check both pages after flipping. Acceptance, with a Publish Plan account and a disposable client: `publish_list_accounts` shows only that brand; `publish_schedule_post` for three days out creates one post and a retry with the same `idempotency_key` creates none; `publish_reschedule_post` with a stale `expected_at` is refused with 409; `publish_cancel_post` removes it from the calendar; a free account gets `publish_plan_required`.
 
+## Ordered video references
+
+`generate_video.source_assets` preserves order and accepts repeated `{slot, asset_id}` entries up to the selected model's `capabilities.media[slot].maxFiles`. The schema's overall bound is nine, with at most three per media kind; the runtime enforces the smaller effective model limit. `MULTI_REFERENCE_ENABLED=false` limits each slot to one. The tool sends unified ordered Library reference descriptors to the generation route. Reordered or replaced references under an existing idempotency key return `idempotency_conflict`; exact retries replay. Existing consent and price approval requirements still apply. See [ADR-0263](../adr/0263-generation-reference-limits.md).
+
 ## Monitoring
 
 - Watch 401, 409, 429 and 5xx rates on `/api/v1/mcp` separately from tool-level errors.

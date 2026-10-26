@@ -25,10 +25,9 @@ import { shortfall } from '../../../lib/lowBalance';
 import { useFreeLeft } from '../../../lib/useFreeLeft';
 import { estimateCredits, fetchCatalog, kindOf, promptRequired, textInput, type CatalogModel } from '../../../lib/media';
 import { MIN_TARGET, selectedState } from '../../../lib/a11y';
-import { toSourceAssets } from '../../../lib/librarySource';
 import { portraitAsPickedFile, startOddlingId } from '../../../lib/oddlingsAnimate';
 import type { PickedFile } from '../../../lib/sources';
-import { SLOT_ORDER, missingRequired, slotsFor, toSourceKeys, type SlotName } from '../../../lib/sources';
+import { legacyReferences, replaceSlotReferences, slotsFor, type GenerationReference, type SlotName } from '../../../lib/sources';
 import { MENU_ICONS } from '../../../lib/menuIcons';
 import { colors, fonts, radius } from '../../../theme';
 import { plural, t } from '../../../lib/i18n';
@@ -59,9 +58,7 @@ export default function CreateWithModel() {
     const [duration, setDuration] = useState<number | null>(null);
     const [busy, setBusy] = useState(false);
     // Storage keys of the files already uploaded, by slot, and the slots still uploading.
-    const [uploaded, setUploaded] = useState<Partial<Record<SlotName, string>>>(handedSources?.uploaded ?? {});
-    // Library creations chosen as files, by slot (job ids). A slot has an upload or a Library file, never both.
-    const [fromLibrary, setFromLibrary] = useState<Partial<Record<SlotName, string>>>(handedSources?.fromLibrary ?? {});
+    const [references, setReferences] = useState<readonly GenerationReference[]>(() => handedSources?.references ?? legacyReferences(handedSources?.uploaded ?? {}, handedSources?.fromLibrary ?? {}));
     const [sourceRights, setSourceRights] = useState(handedSources !== null);
     const [sending, setSending] = useState<Partial<Record<SlotName, boolean>>>({});
     const [error, setError] = useState<string | null>(null);
@@ -192,11 +189,9 @@ export default function CreateWithModel() {
     const withCharacter = takesCharacter && characterOn ? buildCharacterPrompt(prompt, character) : prompt.trim();
     const text = takesCamera && cameraOn ? buildCinemaPrompt(withCharacter, cinema) : withCharacter;
     const slots = slotsFor(model);
-    const sources = toSourceKeys(uploaded);
-    const assets = toSourceAssets(fromLibrary, SLOT_ORDER);
     const waiting = Object.values(sending).some(Boolean);
-    const hasReference = sources.length > 0 || assets.length > 0 || !!startFile;
-    const ready = !waiting && (!hasReference || sourceRights) && missingRequired(slots, { ...uploaded, ...fromLibrary }).length === 0 && (!promptRequired(model) || !!text) && !seedIsInvalid(opts.seed) && !voiceIsMissing(options, opts.voice) && !audioLengthInvalid(options, opts.audioSeconds);
+    const hasReference = references.length > 0 || !!startFile;
+    const ready = !waiting && (!hasReference || sourceRights) && slots.every(slot => (!slot.required || references.some(ref => ref.slot === slot.slot)) && references.filter(ref => ref.slot === slot.slot).length <= (slot.maxFiles ?? 1)) && (!promptRequired(model) || !!text) && !seedIsInvalid(opts.seed) && !voiceIsMissing(options, opts.voice) && !audioLengthInvalid(options, opts.audioSeconds);
     const text_ = textInput(model);
     const stageLine = template
         ? t('create.workspace.stageTemplate', { name: template.title })
@@ -214,7 +209,7 @@ export default function CreateWithModel() {
         let started = 0;
         let first: string | null = null;
         try {
-            first = await pending.current.run(api, { modelId: model.id, prompt: text, durationSeconds: isVideo ? duration : null, confirmedCredits: unit, sources, assets, sourceRights: hasReference ? sourceRights : undefined, textKey: text_?.key, extraInputs: extra }, n, (count) => { started = count; });
+            first = await pending.current.run(api, { modelId: model.id, prompt: text, durationSeconds: isVideo ? duration : null, confirmedCredits: unit, references, sourceRights: hasReference ? sourceRights : undefined, textKey: text_?.key, extraInputs: extra }, n, (count) => { started = count; });
             clearDraft().catch(() => undefined);
             if (n === 1 && first) router.replace({ pathname: '/job/[id]', params: { id: first } });
             else router.replace('/library');
@@ -273,11 +268,13 @@ export default function CreateWithModel() {
                                 slot={s}
                                 drawable={canDraw(model) && s.slot === 'image'}
                                 api={api}
-                                onChange={(key) => { setSourceRights(false); setUploaded((u) => ({ ...u, [s.slot]: key })); }}
-                                onLibrary={(jobId) => { setSourceRights(false); setFromLibrary((l) => ({ ...l, [s.slot]: jobId })); }}
+                                references={references.filter(ref => ref.slot === s.slot)}
+                                onReferences={files => { setSourceRights(false); setReferences(all => replaceSlotReferences(all, s.slot, files)); }}
+                                onChange={() => {}}
+                                onLibrary={() => {}}
                                 onBusy={(b) => setSending((x) => ({ ...x, [s.slot]: b }))}
                                 initial={s.slot === 'image' ? startFile : null}
-                                initialReady={!!uploaded[s.slot] || !!fromLibrary[s.slot]}
+                                initialReady={references.some(ref => ref.slot === s.slot)}
                                 hint={s.slot === 'image' && template?.needs ? t('create.template.needs', { what: template.needs }) : undefined}
                             />
                         ))}
@@ -319,7 +316,7 @@ export default function CreateWithModel() {
                         </Pressable>
                     </View>
                 ) : null}
-                {sources.length || assets.length ? <View style={styles.rightsBox}><Pressable accessibilityRole="checkbox" accessibilityLabel={t('form.sourceRights')} accessibilityState={{ checked: sourceRights, disabled: waiting }} disabled={waiting} onPress={() => setSourceRights((value) => !value)} style={styles.rightsControl}><Text style={styles.rightsText}>{sourceRights ? '☑' : '☐'} {t('form.sourceRights')}</Text></Pressable><Text style={styles.consent}>{t('form.consent')}</Text></View> : null}
+                {references.length ? <View style={styles.rightsBox}><Pressable accessibilityRole="checkbox" accessibilityLabel={t('form.sourceRights')} accessibilityState={{ checked: sourceRights, disabled: waiting }} disabled={waiting} onPress={() => setSourceRights((value) => !value)} style={styles.rightsControl}><Text style={styles.rightsText}>{sourceRights ? '☑' : '☐'} {t('form.sourceRights')}</Text></Pressable><Text style={styles.consent}>{t('form.consent')}</Text></View> : null}
                 {((isVideo && model.durations.length > 1) || hasAnyOption(options) || takesImageCount(model) || takesCharacter || takesCamera) ? (
                     <View style={styles.settingsSection}>
                         <View style={styles.sectionTop}>

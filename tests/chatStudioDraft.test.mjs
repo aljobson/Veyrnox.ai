@@ -61,7 +61,7 @@ test('catalog outage fallback keeps the required Kling start image and Oddling p
   const storage = { getItem: (key) => values.get(key) ?? null, setItem: (key, value) => values.set(key, value), removeItem: (key) => values.delete(key) };
   const catalog = fromFallback();
   const kling = catalog.find((model) => model.id === 'kling-3.0-i2v');
-  assert.deepEqual(kling.media.image, { required: true, kind: 'image', label: 'Start frame' });
+  assert.deepEqual(kling.media.image, { required: true, maxFiles: 1, kind: 'image', label: 'Start frame' });
   assert.equal(kling.aspects, null, 'the fallback does not invent an unsupported ratio');
   const [parsed] = parseStudioDrafts('```studio\n{"model":"kling-3.0-i2v","prompt":"Mossbyte waves"}\n```', catalog);
   assert.deepEqual(parsed.needs, ['image']);

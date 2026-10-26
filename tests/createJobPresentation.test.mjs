@@ -1,3 +1,4 @@
+import * as generationSlots from '../lib/generationSourceSlots.mjs';
 import * as helperDisplay from '../lib/i18n/helperCopy.mjs';
 import { appMessagesFor } from '../lib/i18n/appMessages.mjs';
 import { translator, tOr, pluralKey } from '../lib/i18n/translate.mjs';
@@ -27,6 +28,7 @@ function harness(initialJobs, selected = audio) {
   };
   const stubs = {
     '../../../../lib/i18n/helperCopy.mjs': helperDisplay,
+    '../../../../lib/generationSourceSlots.mjs': { ...generationSlots, generationSourceState: () => ({ needsReattach: false, hasSource: false, missingSource: false }) },
     react,
     '../../../../components/I18nProvider': { useI18n: () => ({ t, locale: 'en' }) },
     '../../../../lib/i18n/locales.mjs': { localeTag },

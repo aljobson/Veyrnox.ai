@@ -64,7 +64,7 @@ test('an owned Library image becomes the source, recorded by job id and signed b
         const lookup = rpcCalls(net, 'get_user_asset')[0].body;
         assert.deepEqual(lookup, { p_auth_id: AUTH, p_job_id: MINE });
         const debit = rpcCalls(net, 'ledger_debit')[0].body;
-        assert.deepEqual(debit.p_inputs.source_assets, { image_url: MINE });
+        assert.deepEqual(debit.p_inputs.references, [{slot:'image',origin:'asset',asset_id:MINE}]);
         assert.equal(debit.p_inputs.source_keys, undefined, 'the upload sweep must never see a Library asset');
         assert.equal(debit.p_inputs.image_url, undefined, 'no presigned URL is stored');
         const source = new URL(submits(net)[0].body.urls[0]);
@@ -83,9 +83,9 @@ test('anything but an owned, stored image of an allowed type never debits or sub
         [{}, 'source_not_found', { ok: true, state: 'STORED', r2_key: ASSET_KEY, mime_type: 'image/png', asset_expires_at: '2020-01-01T00:00:00Z' }],
         [{ source_assets: ['not-a-uuid'] }, 'source_asset_invalid'],
         [{ source_assets: MINE }, 'source_asset_invalid'],
-        [{ source_assets: [MINE, MINE, MINE] }, 'source_asset_invalid'],
+        [{ source_assets: [MINE, MINE, MINE] }, 'source_count_exceeded'],
         [{ consent: false }, 'consent_required'],
-        [{ source_key: UPLOAD }, 'source_key_invalid'],
+        [{ source_key: UPLOAD }, 'source_count_exceeded'],
     ]) {
         const net = network(asset ? { asset } : undefined);
         try {

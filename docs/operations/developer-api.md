@@ -27,6 +27,12 @@ The official CLI uses a loopback callback and stores tokens locally. It never re
 | `GET` | `/generations/{job_id}` | Owned job status |
 | `GET` | `/generations/{job_id}/asset` | Short-lived owned asset URL |
 
+## Generation references
+
+For generation media, `/models` exposes `capabilities.media[slot].maxFiles` (1–3). Send an ordered `references` array of `{slot, origin: "upload", key}` or `{slot, origin: "asset", asset_id}` to `/generations`. Repeated slots are allowed up to that model's effective limit. The total maximum is nine, with at most three of each kind (`endImage` counts as image). The disabled-by-default `MULTI_REFERENCE_ENABLED` flag makes every slot's effective limit one. No credit price depends on reference count for the currently enabled contracts.
+
+Legacy `source_key`, `source_keys` and `source_assets` remain accepted (uploads followed by assets); do not mix them with `references`. Every source requires ownership and rights consent. Order is significant: retry the same idempotency key with exactly the same model, inputs and ordered references; changes return HTTP 409 `idempotency_conflict`. JSON bodies are limited to 128 KiB, and referenced bytes to 200 MiB in addition to per-file restrictions. Sources whose stored total size cannot be proven are rejected with `source_size_unknown`. See [ADR-0263](../adr/0263-generation-reference-limits.md) for verified endpoint limits and rollout requirements.
+
 ## Publish routes (ADR-0112, off by default)
 
 Available only while `PUBLISH_AUTOMATION_ENABLED` is on; otherwise every path below returns `404 publish_automation_not_open`. They run the signed-in Publish handlers, so the Publish Plan, brand role, rate limits and released-network rules are the web app's. All bodies are snake_case; `brand_id` (query or body) is optional.

@@ -94,7 +94,8 @@ try {
 
     await check('a send that made a job is answered with that job, as it moves, and is never closed', async () => {
         const u = await user(); const key = newKey();
-        const d = await debit(u, key);
+        const sent = { kind: 'chat', thread_id: randomUUID() }; // the same send again is the same request (0399 compares it)
+        const d = await debit(u, key, { inputs: sent });
         const seen = async () => { const r = await close(u, key); assert.deepEqual([r.ok, r.closed, r.job_id, r.credits, r.model_id], [true, false, d.job_id, 2, CHAT]); return [r.state, r.error_code]; };
         assert.deepEqual(await seen(), ['DEBITED', null]);
         await rpc(`public.job_submitted($1, 'openrouter-chat', $2)`, [d.job_id, d.job_id]);
@@ -105,7 +106,7 @@ try {
         assert.deepEqual(await seen(), ['REFUNDED', 'user_canceled']);
         assert.equal(await closedRows(u), 0, 'nothing is written for a send that has a job');
         // The same send again is a replay, as it always was: it is not refused, and charges nothing more.
-        const replay = await debit(u, key);
+        const replay = await debit(u, key, { inputs: sent });
         assert.deepEqual([replay.ok, replay.idempotent, replay.job_id], [true, true, d.job_id]);
         // A reply that was delivered and could not be stored reads as charged, with its code.
         const key2 = newKey(); const d2 = await debit(u, key2);
@@ -119,13 +120,14 @@ try {
 
     await check('a send is looked for among the caller\'s own, and closed for the caller alone', async () => {
         const a = await user(); const b = await user(); const key = newKey();
-        const d = await debit(a, key);
+        const sent = { kind: 'chat', thread_id: randomUUID() };
+        const d = await debit(a, key, { inputs: sent });
         // B asks about A's key: the same answer as for a key nobody used. Nothing of A's job is shown.
         assert.deepEqual(await close(b, key), { ok: true, closed: true });
         assert.deepEqual(await close(b, newKey()), { ok: true, closed: true });
         // It closed nothing of A's: A's job is as it was, and A's replay still answers.
         assert.equal((await close(a, key)).job_id, d.job_id);
-        assert.equal((await debit(a, key)).idempotent, true);
+        assert.equal((await debit(a, key, { inputs: sent })).idempotent, true);
         // And a key B closed is not closed for A: A's send under the same words is charged.
         const shared = newKey();
         await close(b, shared);

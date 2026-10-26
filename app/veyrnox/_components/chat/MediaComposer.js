@@ -1,4 +1,5 @@
 'use client';
+import { generationSourceState } from '../../../../lib/generationSourceSlots.mjs';
 import BindingText, { BindingPolicyLink } from '../../../../components/BindingText';
 import { helperCopy } from '../../../../lib/i18n/helperCopy.mjs';
 import { useI18n } from '../../../../components/I18nProvider';
@@ -43,19 +44,19 @@ export function MediaComposer({ kind, media, prompt, onPrompt }) {
     availableModels, model, selectModel, duration, setDuration, aspect, setAspect, count, setCount,
     audioDuration, setAudioDuration, audioDurationControl, invalidAudioDuration,
     resolution, setResolution, audio, setAudio,
-    voice, setVoice, sources, pickSource, attachFromDevice, attachNotice, libraryFor, setLibraryFor, consent, setConsent,
+    voice, setVoice, sources, pickSource, reorderSources, attachFromDevice, attachNotice, libraryFor, setLibraryFor, consent, setConsent,
     balance, cost, freeLeft, error, jobs, generating, sending, missingSource, missingConsent, missingVoice,
     generate, catalogLive,
   } = media;
   const busy = sending || generating;
   const durations = model?.durations?.length ? model.durations : [5];
   const aspects = model?.aspects || [];
-  const hasSource = Object.values(sources).some(Boolean);
+  const { hasSource } = generationSourceState(model?.media, sources);
   const missingPrompt = mediaPromptIsMissing(model, prompt);
   const canGenerate = catalogLive && model && !model.gated && !busy && !missingPrompt && !missingSource && !missingConsent
     && !missingVoice && !invalidAudioDuration && balance != null && cost <= balance;
   const resultReady = jobs.some((job) => job.state === 'succeeded');
-  const errorCopy = error ? tOr(t, `app.create.error.${error.code}`, ERROR_COPY[error.code] || t('app.chat.media.failed')) : '';
+  const errorCopy = error ? error.code === 'source_reattach_required' ? t('app.create.reattach') : tOr(t, `app.create.error.${error.code}`, ERROR_COPY[error.code] || t('app.chat.media.failed')) : '';
   const sourceDurationMax = sourceDurationLimit(model);
   const actualLength = sourceDurationMax ? t('app.chat.media.sourceLimit', { seconds: number(sourceDurationMax) })
     : model?.kind === 'video' ? outputDurationLabel(model, duration) : model?.presentation?.fixedDurationLabel;
@@ -143,7 +144,7 @@ export function MediaComposer({ kind, media, prompt, onPrompt }) {
 
         {model && Object.keys(model.media || {}).length > 0 && (
           <div className="border-b border-vx-border px-3 pb-3">
-            <SourcePickers media={model.media} sources={sources} onPick={pickSource} onDraw={null} onLibrary={setLibraryFor} />
+            <SourcePickers media={model.media} sources={sources} onPick={pickSource} onReorder={reorderSources} onDraw={null} onLibrary={setLibraryFor} />
             {hasSource && (
               <BindingText id="mediaRights"  slots={{ policy: <BindingPolicyLink policy="aup" /> }}><label lang="en" dir="ltr" className="mt-2 flex items-start gap-2 text-xs text-vx-fg-muted">
                 <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} className="mt-0.5 accent-vx-accent" />

@@ -17,11 +17,11 @@ const frames = { ...model, media: { image: { required: true,kind: 'image',label:
 const selection = (assetId,mimeType = 'image/png') => ({ assetId,mimeType,previewUrl: 'https://preview.example/file.png',label: 'Original frame' });
 test('editor exposes supported frame slots and sends only asset IDs and their explicit roles',() => {
     assert.equal(generationModelSupported(frames),true);
-    assert.deepEqual(generationSources(frames,{ image: selection(start),endImage: selection(end) },true),{ assets: [{ asset_id: start,slot: 'image' },{ asset_id: end,slot: 'endImage' }] });
-    assert.deepEqual(generationSources(frames,{ image: selection(start) },true),{ assets: [{ asset_id: start,slot: 'image' }] });
-    assert.deepEqual(generationSources(frames,{ image: selection(start),endImage: selection(start) },true),{ assets: [{ asset_id: start,slot: 'image' },{ asset_id: start,slot: 'endImage' }] });
+    assert.deepEqual(generationSources(frames,{ image: selection(start),endImage: selection(end) },true),{ assets: [{ asset_id: start,slot: 'image' },{ asset_id: end,slot: 'endImage' }], references: [{ asset_id: start,slot: 'image' },{ asset_id: end,slot: 'endImage' }].map(ref => ({ ...ref, origin: 'asset' })) });
+    assert.deepEqual(generationSources(frames,{ image: selection(start) },true),{ assets: [{ asset_id: start,slot: 'image' }], references: [{ asset_id: start,slot: 'image' }].map(ref => ({ ...ref, origin: 'asset' })) });
+    assert.deepEqual(generationSources(frames,{ image: selection(start),endImage: selection(start) },true),{ assets: [{ asset_id: start,slot: 'image' },{ asset_id: start,slot: 'endImage' }], references: [{ asset_id: start,slot: 'image' },{ asset_id: start,slot: 'endImage' }].map(ref => ({ ...ref, origin: 'asset' })) });
     assert.notDeepEqual(generationSources(frames,{ image: selection(start),endImage: selection(end) },true),generationSources(frames,{ image: selection(end),endImage: selection(start) },true),'swapped frame roles have distinct idempotency signatures');
-    assert.deepEqual(generationSources({ ...model,media: {} },{ image: selection(start) },false),{ assets: [] },'hidden prior model slots cannot leak into a new model');
+    assert.deepEqual(generationSources({ ...model,media: {} },{ image: selection(start) },false),{ assets: [], references: [].map(ref => ({ ...ref, origin: 'asset' })) },'hidden prior model slots cannot leak into a new model');
 });
 test('editor validates required frame, actual MIME and strict consent before a request is prepared',() => {
     assert.equal(generationSources(frames,{ endImage: selection(end) },true).error,'Choose the start frame.');
@@ -43,8 +43,8 @@ test('source-driven avatar and lip sync buy one catalog unit without invented ou
     assert.deepEqual(generationInputs(avatar,values),{ inputs: { prompt: 'Subtle head motion' } });
     assert.deepEqual(generationInputs(lipSync,{ ...values,prompt: 'Hidden text cannot leak' }),{ inputs: {} });
     assert.equal(generationQuote(avatar,10),12); assert.equal(generationQuote(lipSync,40),12);
-    assert.deepEqual(generationSources(avatar,{ image: selection(start),audio: selection(end,'audio/wav') },true),{ assets: [{ asset_id: start,slot: 'image' },{ asset_id: end,slot: 'audio' }] });
-    assert.deepEqual(generationSources(lipSync,{ video: selection(start,'video/mp4'),audio: selection(end,'audio/mpeg') },true),{ assets: [{ asset_id: start,slot: 'video' },{ asset_id: end,slot: 'audio' }] });
+    assert.deepEqual(generationSources(avatar,{ image: selection(start),audio: selection(end,'audio/wav') },true),{ assets: [{ asset_id: start,slot: 'image' },{ asset_id: end,slot: 'audio' }], references: [{ asset_id: start,slot: 'image' },{ asset_id: end,slot: 'audio' }].map(ref => ({ ...ref, origin: 'asset' })) });
+    assert.deepEqual(generationSources(lipSync,{ video: selection(start,'video/mp4'),audio: selection(end,'audio/mpeg') },true),{ assets: [{ asset_id: start,slot: 'video' },{ asset_id: end,slot: 'audio' }], references: [{ asset_id: start,slot: 'video' },{ asset_id: end,slot: 'audio' }].map(ref => ({ ...ref, origin: 'asset' })) });
     assert.equal(generationSources(avatar,{ image: selection(start) },true).error,'Choose the speech audio.');
     assert.equal(generationSourceLabel(avatar,'image'),'Avatar photo'); assert.equal(generationSourceLabel(lipSync,'video'),'Source video');
     assert.ok(generationSources(avatar,{ image: selection(start),audio: selection(end,'audio/wav') },false).error);
@@ -90,7 +90,7 @@ test('complete movement directions retain gateway limits and unchanged source, d
     const prepared = generationInputs(fal,{prompt:result.prompt,duration:10});
     assert.deepEqual(Object.keys(prepared.inputs).sort(),['duration_seconds','prompt']);
     assert.equal(prepared.inputs.duration_seconds,10);
-    assert.deepEqual(generationSources(fal,{image:selection(start),endImage:selection(end)},true),{assets:[{asset_id:start,slot:'image'},{asset_id:end,slot:'endImage'}]});
+    assert.deepEqual(generationSources(fal,{image:selection(start),endImage:selection(end)},true),{assets:[{asset_id:start,slot:'image'},{asset_id:end,slot:'endImage'}], references:[{origin:'asset',asset_id:start,slot:'image'},{origin:'asset',asset_id:end,slot:'endImage'}]});
     assert.ok(generationSources(fal,{},true).error);
     assert.ok(generationSources(fal,{image:selection(start)},false).error);
     assert.equal(generationQuote(fal,10),24);

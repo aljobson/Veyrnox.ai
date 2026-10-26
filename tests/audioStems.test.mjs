@@ -28,7 +28,7 @@ test('dedicated editor mode requires exact ungated contract, one source and reco
  assert.deepEqual(generationModelsForMode([model,{...model,gated:true},{...model,outputStems:['vocals']}],'separation'),[model]);
  assert.equal(isShelfModel(cap),false);assert.deepEqual(generationInputs(model,{prompt:'hidden text'}),{inputs:{}});assert.equal(generationQuote(model,120),6);
  assert.ok(generationSources(model,{},true).error);const source={assetId:id,mimeType:'audio/wav'};
- assert.ok(generationSources(model,{audio:source},false).error);assert.deepEqual(generationSources(model,{audio:source},true),{assets:[{asset_id:id,slot:'audio'}]});
+ assert.ok(generationSources(model,{audio:source},false).error);assert.deepEqual(generationSources(model,{audio:source},true),{assets:[{asset_id:id,slot:'audio'}],references:[{slot:'audio',origin:'asset',asset_id:id}]});
 });
 test('output parser accepts complete declared MP3 files only, including optional vendor MIME metadata',()=>{
  const payload=Object.fromEntries(AUDIO_STEMS.map(label=>[label,{url:`https://provider.invalid/${label}.mp3`,content_type:'audio/mpeg'}]));

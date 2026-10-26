@@ -80,3 +80,15 @@ test('unknown and malformed generation paths fail without reaching storage', asy
     const missing = await developerApi(request('/anything'), ['anything']);
     assert.deepEqual([missing.status, await missing.json()], [404, { error: 'not_found' }]);
 });
+
+test('OpenAPI exposes effective file limits and ordered descriptors with a bounded legacy contract', () => {
+    const schemas = developerOpenApi.components.schemas;
+    assert.equal(schemas.MediaSlot.properties.maxFiles.maximum, 3);
+    assert.equal(schemas.ModelCatalog.properties.models.items.properties.capabilities.properties.media.additionalProperties.$ref, '#/components/schemas/MediaSlot');
+    const generation = developerOpenApi.paths['/generations'].post.requestBody.content['application/json'].schema;
+    assert.equal(generation.properties.references.maxItems, 9);
+    assert.deepEqual(generation.properties.references.items.oneOf.map(s => s.properties.origin.const), ['upload', 'asset']);
+    assert.equal(generation.properties.source_keys.maxItems, 9);
+    assert.equal(generation.properties.source_assets.maxItems, 9);
+    assert.match(developerOpenApi.paths['/generations'].post.responses[409].description, /idempotency_conflict/);
+});

@@ -68,3 +68,23 @@ test('ownership is still checked before any network call', async () => {
         assert.equal(called, false, 'a key that is not ours must not cost a round trip');
     } finally { globalThis.fetch = realFetch; }
 });
+
+test('a 200 response without a total keeps the old single-file tolerance but reports no proven size', async () => {
+    const restore = stubFetch(null, 200);
+    try {
+        const out = await resolveUploadedSource(AUTH, KEY, CFG);
+        assert.equal(out.ok, true, 'one file must not start failing because a response lacks Content-Length');
+        assert.equal(out.sizeBytes, null, 'the prefix length is never reported as the size; several references demand a proven size');
+    } finally { restore(); }
+});
+test('a 200 response uses Content-Length and enforces the same per-file bound', async () => {
+    const original = globalThis.fetch;
+    try {
+        for (const total of [PNG.length, CAP + 1]) {
+            globalThis.fetch = async () => new Response(PNG, {headers: {'content-length': String(total)}});
+            const result = await resolveUploadedSource(AUTH, KEY, CFG);
+            if (total > CAP) assert.equal(result.error, 'upload_too_large');
+            else { assert.equal(result.ok, true); assert.equal(result.sizeBytes, PNG.length); }
+        }
+    } finally { globalThis.fetch = original; }
+});

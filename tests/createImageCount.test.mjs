@@ -2,6 +2,9 @@ import { resolveI18nSource } from '../scripts/lib/vey-knowledge-i18n.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import ts from 'typescript';
+import { mediaGenerationSources } from '../app/veyrnox/_lib/chatMedia.js';
+import { sendInOrder, inputsForIndex } from '../app/veyrnox/_lib/imageBatch.js';
 
 // JSX page and a React hook, so this reads the source, like uploadConsent.test.mjs.
 const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
@@ -28,13 +31,44 @@ test('the total drives the price, the balance guard and the button', () => {
     assert.match(page, /cost===0\?'app.create.generateFree':'app.create.generatePaid',\{credits:creditLabel\(cost\)\}/);
 });
 
-test('each source is uploaded once, before any request, and reused by all', () => {
+test('each source is uploaded once, before any request, and reused by all', async () => {
     assert.ok(submit.length > 0 && sendOne.length > 0, 'submit and its sendInOrder found');
-    assert.equal((submit.match(/mediaGenerationSources\(model, sources, uploadSource\)/g) || []).length, 1, 'shared source upload runs once');
-    assert.ok(submit.indexOf('mediaGenerationSources(') < submit.indexOf('await sendInOrder('), 'uploads come first');
-    assert.equal(sendOne.includes('uploadSource('), false, 'no upload inside the per-request callback');
-    assert.match(sendOne, /source_keys: source_keys\.length \? source_keys : undefined,/);
-    assert.match(sendOne, /source_assets: source_assets\.length \? source_assets : undefined,/);
+    assert.equal((submit.match(/mediaGenerationSources\(model, sources, uploadSource\)/g) || []).length, 1);
+    assert.ok(submit.indexOf('mediaGenerationSources(') < submit.indexOf('await sendInOrder('));
+    assert.equal(sendOne.includes('uploadSource('), false);
+
+    // Execute the actual page's request object, not a duplicate of its field names.
+    const ast = ts.createSourceFile('page.js', read('../app/veyrnox/app/create/page.js'), ts.ScriptTarget.Latest, true, ts.ScriptKind.JSX);
+    let requestObject;
+    function visit(node) {
+        if (ts.isCallExpression(node) && node.expression.getText(ast) === 'JSON.stringify') {
+            const arg = node.arguments[0];
+            if (arg && ts.isObjectLiteralExpression(arg) && arg.properties.some(p => p.name?.getText(ast) === 'idempotency_key')) requestObject = arg.getText(ast);
+        }
+        ts.forEachChild(node, visit);
+    }
+    visit(ast); assert.ok(requestObject, 'generation request body found');
+    const serialize = new Function('context', `const {modelId,keys,inputs,inputsForIndex,presetParam,templateStartId,references,anySource,i,n}=context; return JSON.stringify(${requestObject});`);
+    for (const count of [1, 3]) {
+        const events = [], files = Array.from({length:count}, (_,i) => ({name:`reference-${i}.png`}));
+        const sources = {image:files.map(file=>({file}))};
+        const {references} = await mediaGenerationSources({media:{image:{maxFiles:3}}}, sources, async file => {
+            events.push(`upload:${file.name}`); return `uploads/${file.name}`;
+        });
+        const bodies = [], keys = ['batch-key-1','batch-key-2','batch-key-3'];
+        const result = await sendInOrder(3, async i => {
+            events.push(`request:${i}`);
+            bodies.push(JSON.parse(serialize({modelId:'edit',keys,inputs:{prompt:'p'},inputsForIndex,presetParam:null,templateStartId:()=>null,references,anySource:true,i,n:3})));
+        });
+        assert.equal(result.started, 3); assert.equal(result.error, null);
+        assert.deepEqual(events.slice(0,count),files.map(file=>`upload:${file.name}`));
+        assert.equal(events.filter(event=>event.startsWith('upload:')).length,count);
+        for (const [i,body] of bodies.entries()) {
+            assert.deepEqual(body.references,files.map(file=>({slot:'image',origin:'upload',key:`uploads/${file.name}`})));
+            assert.equal(body.idempotency_key, keys[i]); assert.equal(body.consent, true);
+            assert.equal('source_keys' in body, false); assert.equal('source_assets' in body, false);
+        }
+    }
 });
 
 test('N idempotency keys are minted up front, one per request', () => {
