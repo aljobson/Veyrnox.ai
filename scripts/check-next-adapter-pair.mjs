@@ -17,6 +17,9 @@ export const KNOWN_PAIRS = {
     // Verified in the adapter source (preview-props.json inlined); worker-smoke
     // must pass on the PR that moves to it.
     '1.20.12': ['16.4'],
+    // The framework-runtime dependency PR's worker-smoke completed successfully
+    // with Next 16.4.2 before this compatibility row was added.
+    '1.20.13': ['16.4'],
 };
 
 export function checkPair(nextVersion, adapterVersion, table = KNOWN_PAIRS) {

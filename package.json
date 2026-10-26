@@ -66,7 +66,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
-    "@opennextjs/cloudflare": "^1.20.12",
+    "@opennextjs/cloudflare": "^1.20.13",
     "@reticlehq/next": "^3.7.0",
     "@reticlehq/react": "^3.7.0",
     "@tailwindcss/postcss": "^4.3.3",
@@ -77,7 +77,7 @@
     "sharp": "^0.35.5",
     "tailwindcss": "^4.3.3",
     "typescript": "6.0.3",
-    "wrangler": "^4.147.0"
+    "wrangler": "^4.152.0"
   },
   "overrides": {
     "@node-minify/core": {
