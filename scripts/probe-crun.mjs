@@ -35,6 +35,7 @@ const PROBES = {
     'veo-fast': { endpoint: 'crun:google/veo3-1-fast-t2v', usd: 0.134, inputs: { duration_seconds: 8 } },
     'seedance-fast': { endpoint: 'crun:bytedance/seedance2-0-fast-t2v', usd: 0.29, inputs: { duration_seconds: 5 } },
     'nano-banana': { endpoint: 'crun:google/nano-banana', usd: 0.015, image: true, inputs: {} },
+    'nano-banana-2-1': { endpoint: 'crun:google/nano-banana-2-1', usd: 0.015, image: true, inputs: {} },
     seedream: { endpoint: 'crun:bytedance/seedream-4', usd: 0.015, image: true, inputs: {} },
     veo: { endpoint: 'crun:google/veo3-1-t2v', usd: 1.0, inputs: { duration_seconds: 8 }, needsYes: true },
 };
