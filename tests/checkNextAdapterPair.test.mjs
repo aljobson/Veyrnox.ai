@@ -11,6 +11,7 @@ test('known pairs pass, any patch of the next line', () => {
     assert.deepEqual(checkPair('16.3.8', '1.20.8'), []);
     assert.deepEqual(checkPair('16.3.0', '1.20.8'), []);
     assert.deepEqual(checkPair('16.4.2', '1.20.12'), []);
+    assert.deepEqual(checkPair('16.4.2', '1.20.13'), []);
 });
 test('an adapter version missing from the table fails and names the table', () => {
     assert.match(checkPair('16.4.2', '1.20.9')[0], /not in KNOWN_PAIRS/);
