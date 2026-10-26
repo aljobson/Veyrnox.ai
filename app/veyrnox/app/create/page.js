@@ -65,10 +65,10 @@ function readFlag(name) {
   try { return window.localStorage.getItem(name) === '1'; } catch { return false; }
 }
 
-const LOCAL_ERRORS = {source_reattach_required: {"code": "source_reattach_required"},poll_unreachable: {"code": "poll_unreachable"}, model_gated: {"code": "model_gated"}, source_required: {"code": "source_required"}, consent_required: {"code": "consent_required"}, inputs_invalid_prompt: {"code": "inputs_invalid:prompt"}, inputs_invalid_voice_description: {"code": "inputs_invalid:voice_description"}, inputs_invalid_duration: {"code": "inputs_invalid:duration"}};
+const LOCAL_ERRORS = {source_reattach_required: {"code": "source_reattach_required"}, source_count_exceeded: {"code": "source_count_exceeded"},poll_unreachable: {"code": "poll_unreachable"}, model_gated: {"code": "model_gated"}, source_required: {"code": "source_required"}, consent_required: {"code": "consent_required"}, inputs_invalid_prompt: {"code": "inputs_invalid:prompt"}, inputs_invalid_voice_description: {"code": "inputs_invalid:voice_description"}, inputs_invalid_duration: {"code": "inputs_invalid:duration"}};
 
 function errorFor(e) {
-  return e instanceof GatewayError || e?.code === 'source_reattach_required' ? { code: e.code, retryAfter: e.retryAfter } : { code: 'internal' };
+  return e instanceof GatewayError || ['source_reattach_required', 'source_count_exceeded'].includes(e?.code) ? { code: e.code, retryAfter: e.retryAfter } : { code: 'internal' };
 }
 
 // Off on the server and first paint, then whatever this browser has stored.
@@ -254,7 +254,7 @@ export default function CreateStudio() {
   const sourceDurationMax = sourceDurationLimit(model);
   const media = model?.media || {};
   const animationMismatch = !!animationPortrait && (model?.kind !== 'video' || !media.image?.required);
-  const { missingSource, needsReattach, hasSource: hasUpload } = generationSourceState(media, sources);
+  const { missingSource, needsReattach, overLimit, hasSource: hasUpload } = generationSourceState(media, sources);
   const missingConsent = hasUpload && !consent;
   const missingVoice = voiceIsMissing(model, voice);
   const missingPrompt = promptIsMissing(model, prompt);
@@ -402,6 +402,7 @@ export default function CreateStudio() {
     if (model.gated) { inFlight.current = false; setError(LOCAL_ERRORS.model_gated); return; }
     if (animationMismatch) { inFlight.current = false; setError(LOCAL_ERRORS.source_required); return; }
     if (needsReattach) { inFlight.current = false; setError(LOCAL_ERRORS.source_reattach_required); return; }
+    if (overLimit) { inFlight.current = false; setError(LOCAL_ERRORS.source_count_exceeded); return; }
     if (missingSource) { inFlight.current = false; setError(LOCAL_ERRORS.source_required); return; }
     if (missingConsent) { inFlight.current = false; setError(LOCAL_ERRORS.consent_required); return; }
     if (missingPrompt) { inFlight.current = false; setError(LOCAL_ERRORS.inputs_invalid_prompt); return; }

@@ -40,7 +40,7 @@ export async function mediaGenerationSources(model, sources, uploadSource) {
     const spec = model?.media?.[slot];
     if (!spec) continue;
     const files = sourceList(value);
-    if (files.length > publicSlotMax(spec)) throw new Error('source_count_exceeded');
+    if (files.length > publicSlotMax(spec)) throw Object.assign(new Error('source_count_exceeded'), { code: 'source_count_exceeded' });
     for (const source of files) {
       if (source.assetId) {
         references.push({ slot, origin: 'asset', asset_id: source.assetId });

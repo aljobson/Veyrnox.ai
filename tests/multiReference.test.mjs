@@ -137,8 +137,11 @@ test('unverified raised limits fail closed even with the flag enabled', () => {
 
 test('unknown totals fail closed and individually valid videos hit the combined bound', async () => flag('true', async () => {
   for (const sizeBytes of [undefined, null, NaN, -1, 0]) {
-    const result = await resolveGenerationSources({record,references:references.slice(0,1)}, {upload:async()=>({...source('a'),sizeBytes})});
-    assert.equal(result.error,'source_size_unknown');
+    // One reference keeps its old tolerance (no sum to prove); two or more need every size proven.
+    const one = await resolveGenerationSources({record,references:references.slice(0,1)}, {upload:async()=>({...source('a'),sizeBytes})});
+    assert.equal(one.ok,true);
+    const two = await resolveGenerationSources({record,references:references.slice(0,2)}, {upload:async()=>({...source('a'),sizeBytes})});
+    assert.equal(two.error,'source_size_unknown');
   }
   // Synthetic verified endpoint exercises a future multi-video slot without raising any catalog cap.
   const videoRecord = {media:{video:{...record.media.image,field:'video_urls'}}};
@@ -154,11 +157,11 @@ test('optional incomplete references block readiness and serialization before an
   const media = {image:{required:false,maxFiles:3}};
   for (const placeholder of [{needsUpload:true},{needsUpload:true,assetId}]) {
     const sources = {image:[{file:{name:'first.png'}},placeholder]};
-    assert.deepEqual(generationSourceState(media,sources),{needsReattach:true,hasSource:false,missingSource:true});
+    assert.deepEqual(generationSourceState(media,sources),{needsReattach:true,overLimit:false,hasSource:false,missingSource:true});
     await assert.rejects(mediaGenerationSources({media},sources,()=>assert.fail('must validate all references before uploading')), {code:'source_reattach_required'});
   }
-  assert.deepEqual(generationSourceState(media,{}),{needsReattach:false,hasSource:false,missingSource:false});
-  assert.deepEqual(generationSourceState(media,{image:{assetId}}),{needsReattach:false,hasSource:true,missingSource:false});
+  assert.deepEqual(generationSourceState(media,{}),{needsReattach:false,overLimit:false,hasSource:false,missingSource:false});
+  assert.deepEqual(generationSourceState(media,{image:{assetId}}),{needsReattach:false,overLimit:false,hasSource:true,missingSource:false});
 });
 
 test('dispatch uses the hard contract after the admission flag turns off', async () => {
@@ -194,4 +197,14 @@ test('a synthetic admitted multi-file contract survives a flag change at Kie dis
       assert.equal(buildRequest(target,{...inputs,image_url:[...inputs.image_url,'four']}).error,'source_count_exceeded');
     });
   } finally { endpoint.media.image=original; }
+});
+
+test('an over-limit draft is refused locally with a coded error, never as "may have been charged"', async () => {
+  const { generationSourceState } = await import('../lib/generationSourceSlots.mjs');
+  const { mediaGenerationSources } = await import('../app/veyrnox/_lib/chatMedia.js');
+  const media = { image: { maxFiles: 1 } };
+  const sources = { image: [{ sourceKey: 'a' }, { sourceKey: 'b' }, { sourceKey: 'c' }] }; // e.g. a 3-file Oddling handoff into a one-file model
+  assert.equal(generationSourceState(media, sources).overLimit, true);
+  assert.equal(generationSourceState(media, { image: [{ sourceKey: 'a' }] }).overLimit, false);
+  await assert.rejects(() => mediaGenerationSources({ media }, sources, async () => 'k'), { code: 'source_count_exceeded' });
 });

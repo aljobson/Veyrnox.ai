@@ -21,7 +21,8 @@ import {
   supportedDuration,
 } from '../../_lib/chatMedia';
 
-const errorFor = (error) => error instanceof GatewayError || error?.code === 'source_reattach_required'
+const LOCAL_SOURCE_CODES = ['source_reattach_required', 'source_count_exceeded']; // refused here, before anything is sent
+const errorFor = (error) => error instanceof GatewayError || LOCAL_SOURCE_CODES.includes(error?.code)
   ? { code: submitErrorCode(error.code), retryAfter: error.retryAfter }
   : { code: 'outcome_unknown' };
 
@@ -62,7 +63,7 @@ export function useChatMediaGeneration({ kind, models, catalogLive }) {
   const freeLeft = freeLeftFor(freeMap, model?.id);
   const cost = freeLeft > 0 ? freeCost(unitCost, count, freeLeft) : unitCost * count;
   const media = model?.media || {};
-  const { missingSource, needsReattach, hasSource: hasSource } = generationSourceState(media, sources);
+  const { missingSource, needsReattach, overLimit, hasSource: hasSource } = generationSourceState(media, sources);
   const missingConsent = hasSource && !consent;
   const missingVoice = voiceIsMissing(model, voice);
   const onUnreachable = useCallback(() => setError({ code: 'poll_unreachable' }), []);
@@ -161,6 +162,7 @@ export function useChatMediaGeneration({ kind, models, catalogLive }) {
 
   async function generate(prompt) {
     if (needsReattach) { setError({ code: 'source_reattach_required' }); return false; }
+    if (overLimit) { setError({ code: 'source_count_exceeded' }); return false; }
     const cleanPrompt = String(prompt || '').trim();
     if (inFlight.current || sending || generating || !catalogLive || !model || model.gated || mediaPromptIsMissing(model, cleanPrompt) || balance == null
       || cost > balance || missingSource || missingConsent || missingVoice || invalidAudioDuration) return false;

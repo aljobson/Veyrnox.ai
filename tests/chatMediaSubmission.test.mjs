@@ -79,7 +79,8 @@ test('Create and chat use incomplete-source readiness and the existing localized
     const code = read(path);
     assert.match(code,/generationSourceState\(media, sources\)/);
     assert.match(code,/if \(needsReattach\)/);
-    assert.match(code,/code === 'source_reattach_required'/);
+    assert.match(code,/'source_reattach_required'[^\n]*'source_count_exceeded'|'source_count_exceeded'[^\n]*'source_reattach_required'/, 'local refusals are recognised, not reported as an unknown outcome');
+    assert.match(code,/if \(overLimit\)/);
   }
   for (const path of ['app/veyrnox/app/create/page.js','app/veyrnox/_components/chat/MediaComposer.js']) {
     assert.match(read(path),/error.code === 'source_reattach_required' \? t\('app.create.reattach'\)/);

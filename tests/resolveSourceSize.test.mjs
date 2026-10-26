@@ -53,7 +53,7 @@ test('an object at exactly the cap is allowed', async () => {
 test('a 206 with no parseable total is refused rather than assumed small', async () => {
     const restore = stubFetch(null, 206);
     try {
-        assert.equal((await resolveUploadedSource(AUTH, KEY, CFG)).error, 'source_size_unknown');
+        assert.equal((await resolveUploadedSource(AUTH, KEY, CFG)).error, 'source_unreadable');
     } finally { restore(); }
 });
 
@@ -69,10 +69,13 @@ test('ownership is still checked before any network call', async () => {
     } finally { globalThis.fetch = realFetch; }
 });
 
-test('a 200 response without an authoritative total never uses the sniffed prefix size', async () => {
+test('a 200 response without a total keeps the old single-file tolerance but reports no proven size', async () => {
     const restore = stubFetch(null, 200);
-    try { assert.equal((await resolveUploadedSource(AUTH, KEY, CFG)).error, 'source_size_unknown'); }
-    finally { restore(); }
+    try {
+        const out = await resolveUploadedSource(AUTH, KEY, CFG);
+        assert.equal(out.ok, true, 'one file must not start failing because a response lacks Content-Length');
+        assert.equal(out.sizeBytes, null, 'the prefix length is never reported as the size; several references demand a proven size');
+    } finally { restore(); }
 });
 test('a 200 response uses Content-Length and enforces the same per-file bound', async () => {
     const original = globalThis.fetch;
