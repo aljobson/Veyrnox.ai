@@ -39,8 +39,10 @@ test('Create keeps an Oddling handoff focused on the selected pipeline', async (
 test('an uploaded Oddling image is uploaded and handed to the recommended edit model', () => {
   assert.match(source, /oddlingPortraitModel\(models, \{ reference: !!reference \}\)/);
   assert.match(source, /gatewayFetch\('\/uploads'/);
-  assert.match(source, /sources: \{ image: \{ sourceKey, mimeType: reference\.mimeType, label: reference\.name \} \}/);
+  assert.match(source, /sources: \{ image: uploadedReferences \}/);
   assert.match(source, /hasReference: !!reference/);
+  assert.match(source, /for \(const item of references\) uploadedReferences.push/);
+  assert.match(source, /references.length > referenceMax/);
   assert.match(source, /Sign in to securely hand this image to Create/);
 });
 

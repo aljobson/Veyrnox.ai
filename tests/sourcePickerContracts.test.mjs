@@ -52,15 +52,25 @@ test('Studio preserves mixed upload and Library slot roles with consent and batc
     undeclared: { assetId: 'ignored' },
   }, async file => { calls.push(file.name); return `owned/${file.name}`; });
   assert.deepEqual(refs, {
+    references: [{slot:'image',origin:'upload',key:'owned/start.png'}, {slot:'endImage',origin:'asset',asset_id:'end-asset'}, {slot:'video',origin:'asset',asset_id:'video-asset'}, {slot:'audio',origin:'upload',key:'owned/mix.wav'}],
     source_keys: [{ key: 'owned/start.png', slot: 'image' }, { key: 'owned/mix.wav', slot: 'audio' }],
     source_assets: [{ asset_id: 'end-asset', slot: 'endImage' }, { asset_id: 'video-asset', slot: 'video' }],
   });
   assert.deepEqual(calls, ['start.png', 'mix.wav']);
   const page = read('app/veyrnox/app/create/page.js');
   const submit = page.slice(page.indexOf('async function onSubmit()'), page.indexOf('function cancel()'));
-  assert.match(submit, /const \{ source_keys, source_assets \} = await mediaGenerationSources\(model, sources, uploadSource\);/);
+  assert.match(submit, /const \{ references, source_keys, source_assets \} = await mediaGenerationSources\(model, sources, uploadSource\);/);
   assert.match(submit, /if \(missingConsent\)/);
   assert.match(submit, /consent: anySource \? true : undefined/);
   assert.match(submit, /idempotency_key: keys\[i\]/);
   assert.ok(submit.indexOf('mediaGenerationSources(') < submit.indexOf('await sendInOrder('));
+});
+
+test('three references render separately with per-file removal and an over-cap notice', () => {
+  const files = [{label:'one'},{label:'two'},{label:'three'}];
+  const html = render({image:{maxFiles:3}}, {image:files});
+  for (const label of ['one','two','three']) assert.ok(html.includes(label));
+  assert.equal((html.match(/✕/g)||[]).length,3);
+  assert.equal((html.match(/type="file"/g)||[]).length,0);
+  assert.match(render({image:{maxFiles:1}},{image:files}),/role="alert"/);
 });

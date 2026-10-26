@@ -1,4 +1,5 @@
 'use client';
+import { publicSlotMax } from '../../../lib/generationSourceSlots.mjs';
 import { pluralKey } from '../../../lib/i18n/translate.mjs';
 import { localeTag } from '../../../lib/i18n/locales.mjs';
 import { useI18n } from '../../../components/I18nProvider';
@@ -63,7 +64,9 @@ export default function OddlingStudio() {
   const [picks, setPicks] = useState(freshOddlingPicks);
   const [motionId, setMotionId] = useState(ODDLING_MOTIONS[0].id);
   const [scene, setScene] = useState(ODDLING_SCENES[0]);
-  const [reference, setReference] = useState(null);
+  const [references, setReferences] = useState([]);
+  const reference = references[0] || null;
+  const referenceUrls = useRef(new Set());
   const [referenceNote, setReferenceNote] = useState('');
   const [workspace, setWorkspace] = useState('explore');
   const [library, setLibrary] = useState([]);
@@ -134,8 +137,9 @@ export default function OddlingStudio() {
   }, []);
 
   useEffect(() => () => {
-    if (reference?.url) URL.revokeObjectURL(reference.url);
-  }, [reference]);
+    for (const url of referenceUrls.current) URL.revokeObjectURL(url);
+    referenceUrls.current.clear();
+  }, []);
 
   const promptPreview = mode === 'motion'
     ? buildOddlingAnimationPrompt(portraitId, motionId)
@@ -143,6 +147,7 @@ export default function OddlingStudio() {
   const selectedTraits = CHARACTER_GROUPS.filter((group) => picks[group.id]).length;
   const portraitModel = oddlingPortraitModel(models, { reference: !!reference });
   const generationModel = mode === 'motion' ? videoModel : portraitModel;
+  const referenceMax = publicSlotMax(oddlingPortraitModel(models, { reference: true })?.media?.image);
   const generationCost = catalogLive && typeof generationModel?.credits === 'number' ? generationModel.credits : null;
   const creditState = session ? oddlingCreditState(balance, generationCost) : null;
   const lowCredits = creditState?.low;
@@ -163,11 +168,12 @@ export default function OddlingStudio() {
   }
 
   function startFresh() {
-    if (reference?.url) URL.revokeObjectURL(reference.url);
+    for (const url of referenceUrls.current) URL.revokeObjectURL(url);
+    referenceUrls.current.clear();
     setPicks(freshOddlingPicks());
     setPortraitId('');
     setLoadedPassportId(null);
-    setReference(null);
+    setReferences([]);
     setReferenceNote('');
     setMode('portrait');
     setMotionId(ODDLING_MOTIONS[0].id);
@@ -220,19 +226,28 @@ export default function OddlingStudio() {
 
   function uploadReference(event) {
     const file = event.target.files?.[0];
+    event.target.value = '';
     if (!file) return;
     if (!['image/jpeg', 'image/png', 'image/webp', 'image/avif'].includes(file.type)) { setNotice(t("app.oddlings.imageTypes")); return; }
     if (file.size > 2 * 1024 * 1024) { setNotice(t("app.oddlings.referenceLimit")); return; }
-    if (reference?.url) URL.revokeObjectURL(reference.url);
-    setReference({ file, name: file.name, mimeType: file.type, url: URL.createObjectURL(file) });
+    if (referenceMax > 1 && references.length >= referenceMax) { setNotice(t(pluralKey(t, locale, 'app.create.sources.overLimit', referenceMax), { count: referenceMax })); return; }
+    const url = URL.createObjectURL(file);
+    referenceUrls.current.add(url);
+    if (referenceMax === 1) for (const item of references) { URL.revokeObjectURL(item.url); referenceUrls.current.delete(item.url); }
+    setReferences(current => [...(referenceMax === 1 ? [] : current), { file, name: file.name, mimeType: file.type, url }]);
     setNotice(t("app.oddlings.referenceAdded"));
   }
 
-  function removeReference() {
-    if (reference?.url) URL.revokeObjectURL(reference.url);
-    setReference(null);
-    setReferenceNote('');
+  function removeReference(index) {
+    URL.revokeObjectURL(references[index].url);
+    referenceUrls.current.delete(references[index].url);
+    setReferences(current => current.filter((_, position) => position !== index));
+    if (references.length === 1) setReferenceNote('');
     setNotice('');
+  }
+
+  function moveReference(from, to) {
+    setReferences(current => { const next = [...current]; next.splice(to, 0, next.splice(from, 1)[0]); return next; });
   }
 
   async function uploadReferenceSource(file) {
@@ -261,19 +276,21 @@ export default function OddlingStudio() {
       window.dispatchEvent(new CustomEvent('veyrnox:auth-required'));
       return;
     }
+    if (references.length > referenceMax) { setNotice(t(pluralKey(t, locale, 'app.create.sources.overLimit', referenceMax), { count: referenceMax })); return; }
     setHandingOff('create');
     const model = generationModel.id;
     const prompt = mode === 'motion'
       ? buildOddlingAnimationPrompt(portraitId, motionId)
       : buildOddlingDirection({ mode, motionId, scene, referenceNote, hasReference: !!reference });
     try {
-      const sourceKey = reference ? await uploadReferenceSource(reference.file) : '';
+      const uploadedReferences = [];
+      for (const item of references) uploadedReferences.push({ sourceKey: await uploadReferenceSource(item.file), mimeType: item.mimeType, label: item.name });
       writeOddlingDraft(window.localStorage, picks);
       const result = saveOddlingToLibrary(window.localStorage, picks, motionId);
       if (result.ok) setLibrary(result.items);
       const written = writeStudioDraft(window.sessionStorage, {
         prompt, model, aspect: '9:16', oddlingPicks: picks,
-        ...(sourceKey ? { sources: { image: { sourceKey, mimeType: reference.mimeType, label: reference.name } } } : {}),
+        ...(uploadedReferences.length ? { sources: { image: uploadedReferences } } : {}),
         ...(mode === 'motion' ? { durationSeconds: 5 } : {}),
       });
       if (!written) { setNotice(t("app.oddlings.handoffFailed")); setHandingOff(null); return; }
@@ -335,13 +352,19 @@ export default function OddlingStudio() {
                   <span className="font-vx-mono text-[9px] font-bold tracking-[0.12em] text-vx-fg-muted">{t("app.oddlings.optionalReference")}</span>
                   <p className="mt-1 text-xs text-vx-fg-faint">{t("app.oddlings.moodboard")}</p>
                 </div>
-                <label className={chip(!!reference)}>
-                  {reference ? t("app.oddlings.replace") : t("app.oddlings.uploadPhoto")}
+                {(references.length < referenceMax || referenceMax === 1) && <label className={chip(!!reference)}>
+                  {reference && referenceMax === 1 ? t("app.oddlings.replace") : t("app.oddlings.uploadPhoto")}
                   <input data-testid="oddling-reference-file" type="file" accept="image/*" onChange={uploadReference} className="sr-only" />
-                </label>
+                </label>}
               </div>
-              {reference && <img data-testid="oddling-reference-image" src={blobUrl(reference.url)} alt={t('app.oddlings.referenceAlt',{name:reference.name})} className="mt-3 max-h-48 w-full rounded-xl object-cover" />}
-              {reference && <button type="button" onClick={removeReference} className="mt-2 font-vx-mono text-[9px] font-bold text-vx-fg-muted underline">{t('app.oddlings.removeReference')}</button>}
+              {referenceMax > 1 && <p className="mt-2 text-xs text-vx-fg-muted">{t(pluralKey(t, locale, 'app.create.sources.maxFiles', referenceMax), { count: referenceMax })}</p>}
+              {references.length > referenceMax && <p role="alert">{t(pluralKey(t, locale, 'app.create.sources.overLimit', referenceMax), { count: referenceMax })}</p>}
+              {references.map((item, index) => <div key={item.url}>
+                <img data-testid="oddling-reference-image" src={blobUrl(item.url)} alt={t('app.oddlings.referenceAlt',{name:item.name})} className="mt-3 max-h-48 w-full rounded-xl object-cover" />
+                <button type="button" onClick={() => removeReference(index)} className="mt-2 font-vx-mono text-[9px] font-bold text-vx-fg-muted underline">{t('app.oddlings.removeReference')}</button>
+                {index > 0 && <button type="button" className={chip(false)} aria-label={t('app.create.sources.moveEarlier')} onClick={() => moveReference(index, index - 1)}>↑</button>}
+                {index < references.length - 1 && <button type="button" className={chip(false)} aria-label={t('app.create.sources.moveLater')} onClick={() => moveReference(index, index + 1)}>↓</button>}
+              </div>)}
               <input value={referenceNote} onChange={(event) => setReferenceNote(event.target.value)} maxLength={180} className={`${field} mt-3`} placeholder={t("app.oddlings.referencePlaceholder")} />
             </div>
 

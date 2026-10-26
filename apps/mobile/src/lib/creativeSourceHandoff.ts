@@ -1,11 +1,12 @@
-import type { SlotName } from './sources';
+import type { GenerationReference, SlotName } from './sources';
 
 export interface CreativeSourceHandoff {
     readonly recipe: string;
     readonly modelId: string;
     readonly aspect?: '1:1' | '9:16';
-    readonly uploaded: Partial<Record<SlotName, string>>;
-    readonly fromLibrary: Partial<Record<SlotName, string>>;
+    readonly uploaded: Partial<Record<SlotName, string | readonly string[]>>;
+    readonly references?: readonly GenerationReference[];
+    readonly fromLibrary: Partial<Record<SlotName, string | readonly string[]>>;
 }
 
 interface Pending extends CreativeSourceHandoff {
@@ -28,8 +29,9 @@ export function stageCreativeSourceHandoff(value: CreativeSourceHandoff, now = D
     const key = token();
     pending.set(key, {
         ...value,
-        uploaded: { ...value.uploaded },
-        fromLibrary: { ...value.fromLibrary },
+        uploaded: copySlots(value.uploaded),
+        references: value.references?.map(ref => ({ ...ref })),
+        fromLibrary: copySlots(value.fromLibrary),
         createdAt: now,
     });
     return key;
@@ -53,7 +55,12 @@ export function readCreativeSourceHandoff(key: string | undefined, recipe: strin
         recipe: item.recipe,
         modelId: item.modelId,
         aspect: item.aspect,
-        uploaded: { ...item.uploaded },
-        fromLibrary: { ...item.fromLibrary },
+        uploaded: copySlots(item.uploaded),
+        references: item.references?.map(ref => ({ ...ref })),
+        fromLibrary: copySlots(item.fromLibrary),
     };
+}
+
+function copySlots(value: CreativeSourceHandoff["uploaded"]): CreativeSourceHandoff["uploaded"] {
+    return Object.fromEntries(Object.entries(value).map(([slot, keys]) => [slot, Array.isArray(keys) ? [...keys] : keys]));
 }

@@ -1,5 +1,6 @@
 // ADR-0067: every ending of a chat turn, with the database and the provider faked.
 import test from 'node:test';
+import { createHash } from 'node:crypto';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runChatTurn, turnCeilingMs, STOPS_BEFORE_TEXT_PER_DAY } from '../lib/chatTurn.js';
@@ -11,6 +12,7 @@ const AUTH = '11111111-1111-4111-8111-111111111111';
 const JOB = '22222222-2222-4222-8222-222222222222';
 const MODEL = { id: 'chat-fast', provider: 'openrouter-chat', provider_endpoint: 'vendor/fast', modality: 'text', credits_5s: 2, gated_flag: false, active: true };
 const body = (extra = {}) => ({ text: 'Hello there', idempotency_key: 'key-0123456789', ...extra });
+const REQUEST_HASH = createHash('sha256').update(body().text.trim()).digest('hex');
 const env = { OPENROUTER_API_KEY: 'sk-test' };
 
 /** A fake database: scripted replies per RPC name, every call recorded. */
@@ -117,7 +119,7 @@ test('the debit: price from the catalog, never the client; no message text on th
     assert.equal(d.p_reason, 'debit:chat');
     assert.equal(d.p_user_id, 'user-1');
     assert.equal(d.p_idempotency_key, 'key-0123456789');
-    assert.deepEqual(d.p_inputs, { kind: 'chat', thread_id: THREAD, options: { thinking: false, web: false } });
+    assert.deepEqual(d.p_inputs, { kind: 'chat', thread_id: THREAD, request_hash: REQUEST_HASH, options: { thinking: false, web: false } });
     assert.ok(!JSON.stringify(d).includes('Hello there'), 'the message text is not stored on the job');
     assert.equal(d.p_limit_per_window, 10); assert.equal(d.p_window_seconds, 60);
 });
@@ -443,7 +445,7 @@ test('options: the debit is the catalog base plus the chosen extras, and the job
     await res.text();
     const [, debit] = called(f, 'ledger_debit')[0];
     assert.equal(debit.p_credits, 10);
-    assert.deepEqual(debit.p_inputs, { kind: 'chat', thread_id: THREAD, options: { thinking: true, web: true } });
+    assert.deepEqual(debit.p_inputs, { kind: 'chat', thread_id: THREAD, request_hash: REQUEST_HASH, options: { thinking: true, web: true } });
     assert.equal(f.streamCalls[0].maxTokens, 8192);
     assert.equal(f.streamCalls[0].reasoningEffort, 'high');
     assert.equal(f.streamCalls[0].webSearch, true);
@@ -506,7 +508,7 @@ test('images: price includes the extra, the job records the keys and sizes, the 
     const [, debit] = called(f, 'ledger_debit')[0];
     assert.equal(debit.p_credits, 4 + 3);
     assert.deepEqual(debit.p_inputs, {
-        kind: 'chat', thread_id: THREAD, options: { thinking: false, web: false },
+        kind: 'chat', thread_id: THREAD, request_hash: REQUEST_HASH, options: { thinking: false, web: false },
         attachments: [{ type: 'image/png', width: 1600, height: 900 }, { type: 'image/png', width: 1600, height: 900 }],
         source_keys: { image_1: K1, image_2: K2 },
     });
@@ -559,7 +561,7 @@ test('images: no attachments means no resolver call and an unchanged job record'
     const w = withImages(f, () => imageOk());
     await (await run(f, w.over())).text();
     assert.equal(w.seen.length, 0);
-    assert.deepEqual(called(f, 'ledger_debit')[0][1].p_inputs, { kind: 'chat', thread_id: THREAD, options: { thinking: false, web: false } });
+    assert.deepEqual(called(f, 'ledger_debit')[0][1].p_inputs, { kind: 'chat', thread_id: THREAD, request_hash: REQUEST_HASH, options: { thinking: false, web: false } });
     assert.equal(typeof f.streamCalls[0].messages.at(-1).content, 'string');
 });
 
@@ -584,7 +586,7 @@ test('library images: priced like uploads, resolved for the caller, recorded und
     const [, debit] = called(f, 'ledger_debit')[0];
     assert.equal(debit.p_credits, 4 + 3);
     assert.deepEqual(debit.p_inputs, {
-        kind: 'chat', thread_id: THREAD, options: { thinking: false, web: false },
+        kind: 'chat', thread_id: THREAD, request_hash: REQUEST_HASH, options: { thinking: false, web: false },
         attachments: [{ type: 'image/png', width: 1600, height: 900 }, { type: 'image/png', width: 1600, height: 900 }],
         source_assets: { image_1: A1, image_2: A2 },
     });
@@ -717,7 +719,7 @@ test('capped web search: the debit is the row price, and the job keeps the engin
     await (await run(f, { body: webBody(), env: EXA_ENV })).text();
     const d = called(f, 'ledger_debit')[0][1];
     assert.equal(d.p_credits, 3, 'base 1 plus Web search 2, looked up and added');
-    assert.deepEqual(d.p_inputs, { kind: 'chat', thread_id: THREAD, options: { thinking: false, web: true }, web_engine: 'capped', search_provider: 'exa', search_cost_usd: 0.008 });
+    assert.deepEqual(d.p_inputs, { kind: 'chat', thread_id: THREAD, request_hash: REQUEST_HASH, options: { thinking: false, web: true }, web_engine: 'capped', search_provider: 'exa', search_cost_usd: 0.008 });
     assert.ok(!JSON.stringify(d).includes('What is'), 'no message text on the job');
 });
 
@@ -771,7 +773,7 @@ test('a capped row with Web search not chosen does no search and keeps the plain
     await (await run(f, { body: body(), env: EXA_ENV })).text();
     assert.equal(f.searches.length, 0);
     assert.equal(f.streamCalls[0].webSearch, false);
-    assert.deepEqual(called(f, 'ledger_debit')[0][1].p_inputs, { kind: 'chat', thread_id: THREAD, options: { thinking: false, web: false } }, 'no engine or cost recorded when no search ran');
+    assert.deepEqual(called(f, 'ledger_debit')[0][1].p_inputs, { kind: 'chat', thread_id: THREAD, request_hash: REQUEST_HASH, options: { thinking: false, web: false } }, 'no engine or cost recorded when no search ran');
 });
 
 test('a plugin row is unchanged: the plugin runs, no search call is made, even with a key set', async () => {
@@ -779,7 +781,7 @@ test('a plugin row is unchanged: the plugin runs, no search call is made, even w
     await (await run(f, { body: webBody(), env: EXA_ENV })).text();
     assert.equal(f.searches.length, 0);
     assert.equal(f.streamCalls[0].webSearch, true);
-    assert.deepEqual(called(f, 'ledger_debit')[0][1].p_inputs, { kind: 'chat', thread_id: THREAD, options: { thinking: false, web: true } });
+    assert.deepEqual(called(f, 'ledger_debit')[0][1].p_inputs, { kind: 'chat', thread_id: THREAD, request_hash: REQUEST_HASH, options: { thinking: false, web: true } });
 });
 
 test('before the engine column exists in the database, a turn still runs, as a plugin row', async () => {
@@ -815,7 +817,7 @@ test('free allowance on, plain reply: a 0-credit job, no ledger_debit, charged n
     assert.equal(called(f, 'ledger_debit').length, 0);
     const [, args] = called(f, 'submit_free_job')[0];
     assert.deepEqual([args.p_model_id, args.p_idempotency_key], ['chat-fast', 'key-0123456789']);
-    assert.deepEqual(args.p_inputs, { kind: 'chat', thread_id: THREAD, options: { thinking: false, web: false } });
+    assert.deepEqual(args.p_inputs, { kind: 'chat', thread_id: THREAD, request_hash: REQUEST_HASH, options: { thinking: false, web: false } });
     const start = evs.find((e) => e.event === 'start').data;
     assert.deepEqual([start.job_id, start.credits, start.balance_after], [JOB, 0, 8]);
     assert.equal(called(f, 'ledger_refund').length, 0);

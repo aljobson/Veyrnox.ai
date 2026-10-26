@@ -116,3 +116,14 @@ test.each(['unmount', 'account'] as const)('late onDone after %s discards the fi
     expect(new File(file.uri).exists).toBe(false);
     expect(uploadSource).toHaveBeenCalledTimes(count);
 });
+
+test('multiple references keep mixed order when reordered and remove only the chosen file', async () => {
+    const onReferences = jest.fn();
+    await act(async () => root.render(<SourcePicker slot={{...slot,maxFiles:3}} api={api} onChange={() => {}} onBusy={() => {}} onLibrary={() => {}}
+        references={[{slot:'image',origin:'upload',key:'first'},{slot:'image',origin:'asset',asset_id:'second'},{slot:'image',origin:'upload',key:'third'}]} onReferences={onReferences} />));
+    expect(button('Remove Image')).toHaveLength(3);
+    await press('Move earlier',1);
+    expect(onReferences.mock.lastCall?.[0]).toEqual([{slot:'image',origin:'upload',key:'first'},{slot:'image',origin:'upload',key:'third'},{slot:'image',origin:'asset',asset_id:'second'}]);
+    await press('Remove Image',1);
+    expect(onReferences.mock.lastCall?.[0]).toEqual([{slot:'image',origin:'upload',key:'first'},{slot:'image',origin:'asset',asset_id:'second'}]);
+});

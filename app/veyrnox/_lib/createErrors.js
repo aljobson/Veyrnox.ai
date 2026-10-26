@@ -2,6 +2,11 @@ import { ACCOUNT_PAUSED_COPY, ACCOUNT_ON_HOLD_COPY } from './gateway';
 
 // What the create page says for each gateway error code.
 export const ERROR_COPY = {
+  body_too_large: "This request is too large. Shorten the text or remove attachments, then try again. Nothing was charged.",
+  references_ambiguous: "The attachment list conflicts. Clear it and add the files again. Nothing was charged.",
+  references_invalid: "Some reference files could not be read. Remove them and attach them again. Nothing was charged.",
+  sources_too_large: "The reference files are too large together. Remove files or use smaller ones. Nothing was charged.",
+  source_count_exceeded: "This model accepts fewer reference files. Remove extra files or choose another model. Nothing was charged.",
   // A submit whose reply never arrived (imageBatch.submitErrorCode): it may have been charged.
   dispatch_acceptance_unknown: 'We lost the reply to this request, so it may be queued and charged. Open Library to check before trying again.',
   idempotency_conflict: 'This request key was already used with different settings. Open Library to check the original job.',
@@ -35,7 +40,7 @@ export const ERROR_COPY = {
   upload_unreadable:     'We could not read that file. Nothing was charged.',
   source_not_found:      'An upload expired. Add it again. Nothing was charged.',
   source_too_large:      'That image has too many pixels for this model. Use a smaller one. Nothing was charged.',
-  source_size_unknown:   'We could not read that image\'s size. Try a PNG. Nothing was charged.',
+  source_size_unknown: "We could not verify a source file’s size. Reattach it or choose another file. Nothing was charged.",
   source_too_long:       'That recording is longer than this model takes (see the limit on the upload). Nothing was charged.',
   source_length_unknown: 'We could not read that file\'s length. Try a WAV or an MP3 without cover art. Nothing was charged.',
   lipsync_video_length_unknown: 'We could not verify the video\'s visual duration for lip sync. Export a plain MP4 with one video track and try again. Nothing was charged.',

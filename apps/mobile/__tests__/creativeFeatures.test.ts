@@ -79,7 +79,9 @@ describe('reuse a finished creation in a compatible guided tool', () => {
         const picker = readFileSync(join(__dirname, '..', 'src', 'components', 'SourcePicker.tsx'), 'utf8');
         expect(hub).toContain('compatibleCreativeFeatures(reuse.kind)');
         expect(hub).toContain('creativeReuseTargetHref(feature.slug, reuse)');
-        expect(detail).toContain('{ [reuse.kind]: reuse.jobId }');
+        expect(detail).toContain("[{ slot: reuse.kind, origin: 'asset', asset_id: reuse.jobId }]");
+        expect(detail).toContain('references={references.filter(ref => ref.slot === slot.slot)}');
+        expect(detail).toContain('uploaded: {}, fromLibrary: {}, references');
         expect(detail).toContain('initialReady={reuse?.kind === slot.slot}');
         expect(picker).toContain('initialReadyLabel');
     });

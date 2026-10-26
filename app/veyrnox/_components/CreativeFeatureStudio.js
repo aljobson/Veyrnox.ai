@@ -1,4 +1,5 @@
 'use client';
+import { sourceList, publicSlotMax, editSlotSource, moveSlotSource, generationSlotKind, generationMimeTypes } from '../../../lib/generationSourceSlots.mjs';
 
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -9,6 +10,8 @@ import { creativeFeatureExample, creativeFeatureExampleAssetPath, translatedCrea
 import { gatewayFetch } from '../_lib/gateway';
 import { generationFileProblem, generationFileType } from '../_lib/editorGenerationUploads.mjs';
 import { readCreativeScriptFile } from '../_lib/creativeScriptUpload.mjs';
+import { useCatalog } from '../_lib/useCatalog';
+import { LibraryPicker } from './LibraryPicker';
 import { SourcePickers } from './SourcePickers';
 import SourceRightsConfirmation from './SourceRightsConfirmation';
 
@@ -22,6 +25,7 @@ export default function CreativeFeatureStudio({ feature }) {
   const exampleAsset = creativeFeatureExampleAssetPath(feature.slug);
   const [brief, setBrief] = useState('');
   const [sources, setSources] = useState({});
+  const [libraryFor, setLibraryFor] = useState(null);
   const [scriptSource, setScriptSource] = useState(null);
   const [consent, setConsent] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -29,7 +33,9 @@ export default function CreativeFeatureStudio({ feature }) {
   const [error, setError] = useState('');
   const objectUrls = useRef(new Set());
   const prompt = `${copy.prompt}${brief.trim()}`.trim();
-  const media = useMemo(() => Object.fromEntries(feature.media.map((slot) => [slot, { required: true }])), [feature.media]);
+  const catalog = useCatalog();
+  const selectedModel = catalog.models.find(model => model.id === feature.model);
+  const media = useMemo(() => Object.fromEntries(feature.media.map(slot => [slot, { ...selectedModel?.media?.[slot], required: true }])), [feature.media, selectedModel]);
   const hasUpload = feature.media.length > 0 || feature.scriptUpload;
 
   useEffect(() => () => {
@@ -37,7 +43,7 @@ export default function CreativeFeatureStudio({ feature }) {
     objectUrls.current.clear();
   }, []);
 
-  function pickSource(slot, file) {
+  function pickSource(slot, file, asset = null, index) {
     if (file) {
       const problem = generationFileProblem(slot, file);
       if (problem) {
@@ -46,7 +52,7 @@ export default function CreativeFeatureStudio({ feature }) {
       }
     }
     setSources((previous) => {
-      const prior = previous[slot];
+      const prior = sourceList(previous[slot])[index ?? (publicSlotMax(media[slot]) === 1 ? 0 : -1)];
       if (prior?.previewUrl) {
         URL.revokeObjectURL(prior.previewUrl);
         objectUrls.current.delete(prior.previewUrl);
@@ -55,9 +61,9 @@ export default function CreativeFeatureStudio({ feature }) {
       if (file) {
         const previewUrl = URL.createObjectURL(file);
         objectUrls.current.add(previewUrl);
-        next[slot] = { file, previewUrl, label: file.name, mimeType: generationFileType(file) };
-      } else delete next[slot];
-      return next;
+        return editSlotSource(previous, slot, { file, previewUrl, label: file.name, mimeType: generationFileType(file) }, index, publicSlotMax(media[slot]));
+      }
+      return editSlotSource(next, slot, asset ? { assetId: asset.id, previewUrl: asset.url, label: asset.label } : null, index, publicSlotMax(media[slot]));
     });
     setConsent(false);
     setError('');
@@ -109,7 +115,7 @@ export default function CreativeFeatureStudio({ feature }) {
       setError(t('app.features.error.script.required'));
       return;
     }
-    if (feature.media.some((slot) => !sources[slot]?.file)) {
+    if (!catalog.live || !selectedModel || feature.media.some((slot) => !sourceList(sources[slot]).length || sourceList(sources[slot]).length > publicSlotMax(media[slot]))) {
       setError(t('app.features.error.sources'));
       return;
     }
@@ -124,9 +130,9 @@ export default function CreativeFeatureStudio({ feature }) {
       const uploaded = [];
       for (let index = 0; index < feature.media.length; index += 1) {
         const slot = feature.media[index];
-        uploaded.push(await uploadSource(slot, sources[slot], index));
+        for (const source of sourceList(sources[slot])) uploaded.push(source.assetId ? [slot, { assetId: source.assetId, label: source.label }] : await uploadSource(slot, source, index));
       }
-      uploadedSources = Object.fromEntries(uploaded);
+      for (const [slot, source] of uploaded) uploadedSources = editSlotSource(uploadedSources, slot, source, undefined, publicSlotMax(media[slot]));
     } catch {
       setError(t('app.features.error.upload'));
       setUploading(false);
@@ -182,7 +188,7 @@ export default function CreativeFeatureStudio({ feature }) {
         <section className={`${card} p-5 sm:p-6`}>
           <p className="font-vx-mono text-[10px] font-bold uppercase tracking-[0.14em] text-vx-accent">{t('app.features.sources')}</p>
           <h2 className="mt-1 text-xl font-black">{t('app.features.sourcesTitle')}</h2>
-          {feature.media.length > 0 && <SourcePickers media={media} sources={sources} onPick={pickSource} onDraw={null} onLibrary={null} />}
+          {feature.media.length > 0 && <SourcePickers media={media} sources={sources} onPick={pickSource} onReorder={(slot, from, to) => { setConsent(false); setSources(prev => moveSlotSource(prev, slot, from, to)); }} onDraw={null} onLibrary={setLibraryFor} />}
           {feature.scriptUpload && <div className="mt-4 rounded-xl border border-vx-field bg-vx-base p-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -203,6 +209,7 @@ export default function CreativeFeatureStudio({ feature }) {
               <button type="button" onClick={() => { void pickScript(null); }} className="shrink-0 text-xs font-bold text-vx-danger underline underline-offset-4">{t('app.features.scriptRemove')}</button>
             </div>}
           </div>}
+          {libraryFor && <LibraryPicker kind={generationSlotKind(libraryFor)} mimeTypes={generationMimeTypes(generationSlotKind(libraryFor))} onClose={() => setLibraryFor(null)} onPick={asset => { pickSource(libraryFor, null, asset); setLibraryFor(null); }} />}
           {hasUpload && <SourceRightsConfirmation confirmed={consent} onChange={(value) => { setConsent(value); setError(''); }} />}
           <p className="mt-4 text-xs leading-5 text-vx-fg-muted">{t('app.features.uploadSafety')}</p>
         </section>

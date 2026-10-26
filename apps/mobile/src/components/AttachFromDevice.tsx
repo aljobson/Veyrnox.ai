@@ -71,12 +71,12 @@ export function AttachFromDevice({ api, current }: Props) {
             }
             const plan = planAttachments(await fetchCatalog(), current, picked);
             if (!plan) { setError(problems[0] ?? 'No model takes those files right now.'); return; }
-            const uploaded: Partial<Record<SlotName, string>> = {};
+            const uploaded: Partial<Record<SlotName, string[]>> = {};
             const abort = new AbortController();
             let done = 0;
             for (const { slot, item } of plan.assignments) {
                 setProgress(`Uploading ${done + 1} of ${plan.assignments.length}…`);
-                uploaded[slot] = await uploadSource(api, item.file, item.contentType, () => {}, abort.signal);
+                (uploaded[slot] ??= []).push(await uploadSource(api, item.file, item.contentType, () => {}, abort.signal));
                 done++;
             }
             const skipped = plan.unused.length + problems.length;

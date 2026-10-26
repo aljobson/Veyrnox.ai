@@ -1,3 +1,4 @@
+import type { GenerationReference } from './sources';
 import { aiConsent } from './aiConsentStore';
 import { appCache } from './appCache';
 import { POLICIES, type CacheMeta } from './cache';
@@ -14,7 +15,7 @@ export interface CatalogModel {
     readonly durations: number[];
     readonly capabilities: {
         readonly inputs?: Record<string, unknown>;
-        readonly media?: Record<string, { readonly required?: boolean; readonly label?: string; readonly maxSeconds?: number }>;
+        readonly media?: Record<string, { readonly required?: boolean; readonly label?: string; readonly maxFiles?: number; readonly maxSeconds?: number }>;
         // Present on stem-splitting models (six labelled files from one audio file). The server marks the model
         // gated in the catalog while its flag is off, so the gated check already hides it.
         readonly outputStems?: string[];
@@ -126,6 +127,7 @@ export interface GenerationRequest {
     // Reuse the same key to retry the same request: it is charged once.
     readonly idempotencyKey: string;
     // Files already uploaded, by the slot the model declares for them.
+    readonly references?: readonly GenerationReference[];
     readonly sources?: readonly { readonly key: string; readonly slot: string }[];
     // Library creations used as files, by the slot the model declares for them (ADR-0190).
     readonly assets?: readonly { readonly assetId: string; readonly slot: string }[];
@@ -149,9 +151,9 @@ export const mediaApi = (api: ApiClient) => ({
                 confirmed_credits: r.confirmedCredits,
                 inputs: { ...r.extraInputs, ...(r.prompt ? { [r.textKey ?? 'prompt']: r.prompt } : {}), ...(r.durationSeconds ? { duration_seconds: r.durationSeconds } : {}) },
                 // The server refuses uploaded sources without consent to send them to the provider.
-                ...(r.sources?.length ? { source_keys: r.sources } : {}),
-                ...(r.assets?.length ? { source_assets: r.assets.map((a) => ({ asset_id: a.assetId, slot: a.slot })) } : {}),
-                ...(r.sources?.length || r.assets?.length ? { consent: r.sourceRights === undefined ? agreed : r.sourceRights && agreed } : {}),
+                ...(r.references ? { references: r.references } : r.sources?.length ? { source_keys: r.sources } : {}),
+                ...(!r.references && r.assets?.length ? { source_assets: r.assets.map((a) => ({ asset_id: a.assetId, slot: a.slot })) } : {}),
+                ...(r.references?.length || r.sources?.length || r.assets?.length ? { consent: r.sourceRights === undefined ? agreed : r.sourceRights && agreed } : {}),
             }),
         });
     },

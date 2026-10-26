@@ -1,3 +1,4 @@
+import { sourceList, publicSlotMax } from '../../../lib/generationSourceSlots.mjs';
 import { helperEnglish, helperDiagnostic } from '../../../lib/helperMessages.mjs';
 import { generationFileProblem } from './editorGenerationUploads.mjs';
 import { generationSlotKind, generationMimeTypes } from '../../../lib/generationSourceSlots.mjs';
@@ -82,21 +83,26 @@ export function generationPromptHelp(model) {
 }
 
 export function generationSources(model, sources, consent) {
-    const media = model?.media || {}, assets = [], uploads = [];
-    if (Object.keys(media).length > 2 || Object.keys(media).some(slot => !generationSlotKind(slot))) return { error: 'Choose a supported generation model.' };
+    const media = model?.media || {}, assets = [], uploads = [], references = [];
+    if (Object.keys(media).length > 4 || Object.keys(media).some(slot => !generationSlotKind(slot))) return { error: 'Choose a supported generation model.' };
     for (const [slot,spec] of Object.entries(media)) {
-        const selected = sources?.[slot], label = generationSourceLabel(model,slot);
-        if (!selected) { if (spec.required) return { error: `Choose the ${label.toLowerCase()}.` }; continue; }
+        const selections = sourceList(sources?.[slot]), label = generationSourceLabel(model,slot);
+        if (!selections.length) { if (spec.required) return { error: `Choose the ${label.toLowerCase()}.` }; continue; }
+        if (selections.length > publicSlotMax(spec)) return { error: 'source_count_exceeded' };
+        for (const selected of selections) {
         if (selected.file) {
+            references.push({ slot, origin: 'upload', localId: selected.localId });
             const problem = generationFileProblem(slot,selected.file);
             if (problem || typeof selected.localId !== 'string' || !selected.localId) return { error: problem || 'Choose the source again.' };
             uploads.push({ slot,localId:selected.localId,file:selected.file,mimeType:selected.mimeType }); continue;
         }
         if (typeof selected.assetId !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(selected.assetId) || !generationMimeTypes(generationSlotKind(slot)).includes(selected.mimeType)) return { error: `Choose a supported ${generationSlotKind(slot)} from your Library for ${label.toLowerCase()}.` };
         assets.push({ asset_id: selected.assetId, slot });
+        references.push({ slot, origin: 'asset', asset_id: selected.assetId });
+        }
     }
     if ((assets.length || uploads.length) && consent !== true) return { error: 'Confirm the source permission statement.' };
-    return { assets,...(uploads.length ? { uploads } : {}) };
+    return { assets, references,...(uploads.length ? { uploads } : {}) };
 }
 
 /** Locale-neutral display diagnostic; the legacy string interface remains available. */

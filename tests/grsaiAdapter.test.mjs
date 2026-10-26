@@ -120,3 +120,13 @@ test('edit requires one reference, pins 2K and defaults to source aspect without
         assert.equal(buildRequest(EDIT_ENDPOINT, { ...inputs, ...patch }).ok, false);
     }
 });
+
+test('GrsAI single-reference array shape is unchanged regardless of the multi-reference flag', () => {
+    const old = process.env.MULTI_REFERENCE_ENABLED;
+    try {
+        for (const value of ['false','true']) {
+            process.env.MULTI_REFERENCE_ENABLED=value;
+            assert.deepEqual(buildRequest(EDIT_ENDPOINT,{prompt:'p',image_url:'https://owned.test/one.png'}).body.urls,['https://owned.test/one.png']);
+        }
+    } finally {if(old===undefined)delete process.env.MULTI_REFERENCE_ENABLED;else process.env.MULTI_REFERENCE_ENABLED=old;}
+});

@@ -1,4 +1,4 @@
-import { generationSlotKind, generationMimeTypes } from '../../../lib/generationSourceSlots.mjs';
+import { generationSlotKind, generationMimeTypes, sourceList, setSlotSources } from '../../../lib/generationSourceSlots.mjs';
 import { isUploadKey } from '../../../lib/uploadSource.js';
 
 // The landing hero's prompt, handed to app/create through sessionStorage so
@@ -16,16 +16,23 @@ function safeDraftSources(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const entries = Object.entries(value);
   if (!entries.length || entries.length > 4) return null;
-  const safe = {};
-  for (const [slot, source] of entries) {
+  let safe = {};
+  for (const [slot, value] of entries) {
     const kind = generationSlotKind(slot);
-    if (!kind || !source || typeof source !== 'object' || !isUploadKey(source.sourceKey)) return null;
-    if (!generationMimeTypes(kind).includes(source.mimeType)) return null;
-    safe[slot] = {
-      sourceKey: source.sourceKey,
-      mimeType: source.mimeType,
-      label: typeof source.label === 'string' ? source.label.slice(0, 160) : '',
-    };
+    const files = sourceList(value);
+    if (!kind || files.length > 3) return null;
+    const cleaned = [];
+    for (const source of files) {
+      if (!source || typeof source !== 'object') return null;
+      if (source.assetId && /^[\w-]{1,80}$/.test(source.assetId)) {
+        cleaned.push({ assetId: source.assetId, label: String(source.label || '').slice(0, 160) });
+      } else if (isUploadKey(source.sourceKey) && generationMimeTypes(kind).includes(source.mimeType)) {
+        cleaned.push({ sourceKey: source.sourceKey, mimeType: source.mimeType, label: String(source.label || '').slice(0, 160) });
+      } else if (source.file || source.needsUpload) {
+        cleaned.push({ needsUpload: true, label: String(source.file?.name || source.label || '').slice(0, 160) });
+      } else return null;
+    }
+    safe = setSlotSources(safe, slot, cleaned);
   }
   return safe;
 }
@@ -52,7 +59,7 @@ export function takeStudioDraft(storage, modelId, now = Date.now()) {
       ...(draft.oddlingPicks && typeof draft.oddlingPicks === 'object'
         ? { oddlingPicks: draft.oddlingPicks }
         : {}),
-      ...(sources ? { sources, consent: draft.consent === true } : {}),
+      ...(sources ? { ...(Object.values(sources).flatMap(sourceList).some(source => source.needsUpload) ? { needsUpload: true } : {}), sources, consent: draft.consent === true } : {}),
     };
   } catch {
     return null;
@@ -68,6 +75,7 @@ export function takeLandingDraft(storage, modelId, now = Date.now()) {
 export function writeStudioDraft(storage, { prompt, model, aspect = null, durationSeconds, negativePrompt, templateId, oddlingPicks, followup, sources, consent }, now = Date.now()) {
   try {
     const safeSources = safeDraftSources(sources);
+    if (sources && Object.keys(sources).length && !safeSources) return false;
     storage.setItem(LANDING_DRAFT_KEY, JSON.stringify({
       prompt, model, aspect, durationSeconds, negativePrompt, templateId, at: now,
       ...(oddlingPicks && typeof oddlingPicks === 'object' ? { oddlingPicks } : {}),

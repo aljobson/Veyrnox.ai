@@ -1,8 +1,8 @@
 'use client';
 import { useI18n } from '../../../components/I18nProvider';
-import { tOr } from '../../../lib/i18n/translate.mjs';
+import { tOr, pluralKey } from '../../../lib/i18n/translate.mjs';
 import { localeTag } from '../../../lib/i18n/locales.mjs';
-import { generationSlotKind, generationMimeTypes } from '../../../lib/generationSourceSlots.mjs';
+import { generationSlotKind, generationMimeTypes, sourceList, publicSlotMax } from '../../../lib/generationSourceSlots.mjs';
 
 // One upload field per media slot the model declares in the catalog
 // (capabilities.media): a start image, a video to lip-sync, the speech.
@@ -24,14 +24,14 @@ const pill = 'font-vx-mono text-[11px] font-bold rounded-full px-3.5 py-1.5 bord
  * @param {(() => void)|null} props.onDraw  shown for the image slot when set
  * @param {((slot:string) => void)|null} props.onLibrary  "From library" for each known media slot
  */
-export function SourcePickers({ media, sources, onPick, onDraw, onLibrary }) {
+export function SourcePickers({ media, sources, onPick, onDraw, onLibrary, onReorder }) {
   const { t, locale } = useI18n();
   const number = value => locale === 'en' ? String(value) : new Intl.NumberFormat(localeTag(locale)).format(value);
   return Object.entries(media).filter(([slot]) => SLOTS[slot]).map(([slot, spec]) => {
-    const ui = SLOTS[slot];
-    const kind = generationSlotKind(slot);
-    const picked = sources[slot];
+    const ui = SLOTS[slot], kind = generationSlotKind(slot), files = sourceList(sources[slot]), max = publicSlotMax(spec);
     const limits = [spec.maxSeconds && t('app.create.sources.seconds', {count: number(spec.maxSeconds)}), spec.maxPixels && t('app.create.sources.pixels', {count: number(spec.maxPixels / 1e6)})].filter(Boolean);
+    if (max === 1 && files.length <= 1 && !files[0]?.needsUpload) {
+      const picked = files[0];
     return (
       <div key={slot} className="mt-3 flex items-center gap-3 rounded-lg border border-vx-border bg-vx-panel p-3">
         {picked && kind === 'image' && picked.previewUrl ? (
@@ -67,5 +67,28 @@ export function SourcePickers({ media, sources, onPick, onDraw, onLibrary }) {
         )}
       </div>
     );
+    }
+    return <div key={slot} className="mt-3 space-y-3 rounded-lg border border-vx-border bg-vx-panel p-3">
+      <div className="font-vx-mono text-[10px] text-vx-fg-muted">{spec.label ? tOr(t, `label.${spec.label}`, spec.label) : t(ui.labelKey)}{spec.required ? t('app.create.sources.required') : t('app.create.sources.optional')}</div>
+      {max > 1 && <p className="text-xs text-vx-fg-muted">{t(pluralKey(t, locale, 'app.create.sources.maxFiles', max), { count: number(max) })} · {[t(ui.hint), ...limits].join(', ')}</p>}
+      {files.length > max && <p role="alert">{t(pluralKey(t, locale, 'app.create.sources.overLimit', max), { count: number(max) })}</p>}
+      {files.map((picked, index) => <div key={index} className="flex items-center gap-3">
+        {kind === 'image' && picked.previewUrl && <img src={picked.previewUrl} alt={t(slot === 'endImage' ? 'app.create.sources.endAlt' : 'app.create.sources.startAlt')} className="w-16 h-16 rounded-sm object-cover" />}
+        <span className="min-w-0 flex-1 truncate text-xs">{picked.file?.name || picked.label || t('app.create.sources.image.label')}</span>
+        {picked.needsUpload && <label className={pill}>{t('app.create.reattach')}<input type="file" className="sr-only" accept={generationMimeTypes(kind).join(',')} onChange={e => { const file = e.target.files?.[0]; e.target.value = ''; if (file) onPick(slot, file, null, index); }} /></label>}
+        {picked.file && slot === 'image' && index === 0 && onDraw && <button type="button" onClick={onDraw} className={pill}>{t('app.create.sources.draw')}</button>}
+        {onReorder && index > 0 && <button type="button" className={pill} onClick={() => onReorder(slot, index, index - 1)} aria-label={t('app.create.sources.moveEarlier')}>↑</button>}
+        {onReorder && index < files.length - 1 && <button type="button" className={pill} onClick={() => onReorder(slot, index, index + 1)} aria-label={t('app.create.sources.moveLater')}>↓</button>}
+        <button type="button" onClick={() => onPick(slot, null, null, index)} aria-label={tOr(t, `app.create.sources.${slot}.remove`, t('app.publish.smartlink.remove'))}>✕</button>
+      </div>)}
+      {(files.length < max || max === 1) && <div className="flex gap-3">
+        {onLibrary && <button data-assistant-control="create.upload" type="button" onClick={() => onLibrary(slot)} className={pill}>{t('app.create.sources.library')}</button>}
+        <label className={`${pill} cursor-pointer`}>
+          {files.length && max === 1 ? t('app.oddlings.replace') : t(ui.add)}
+          <input data-testid={`source-upload-${slot}`} type="file" accept={generationMimeTypes(kind).join(',')} className="sr-only"
+            onChange={e => { const file = e.target.files?.[0]; e.target.value = ''; if (file) onPick(slot, file); }} />
+        </label>
+      </div>}
+    </div>;
   });
 }

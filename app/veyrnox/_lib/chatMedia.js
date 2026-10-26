@@ -1,3 +1,4 @@
+import { sourceList, publicSlotMax, generationSourceState } from '../../../lib/generationSourceSlots.mjs';
 import { helperEnglish, helperDiagnostic } from '../../../lib/helperMessages.mjs';
 export const COMPOSER_KINDS = Object.freeze({
   CHAT: 'chat',
@@ -33,19 +34,24 @@ export function mediaPromptIsMissing(model, prompt) {
 
 /** Preserve model-declared roles when mixing uploaded files and owned Library assets. */
 export async function mediaGenerationSources(model, sources, uploadSource) {
-  let references = { source_keys: [], source_assets: [] };
-  for (const slot of Object.keys(model?.media || {})) {
-    const source = sources?.[slot];
-    if (source?.assetId) {
-      references = { ...references, source_assets: [...references.source_assets, { asset_id: source.assetId, slot }] };
-    } else if (source?.sourceKey) {
-      references = { ...references, source_keys: [...references.source_keys, { key: source.sourceKey, slot }] };
-    } else if (source?.file) {
-      const key = await uploadSource(source.file);
-      references = { ...references, source_keys: [...references.source_keys, { key, slot }] };
+  if (generationSourceState(model?.media, sources).needsReattach) throw Object.assign(new Error('source_reattach_required'), { code: 'source_reattach_required' });
+  const references = [], source_keys = [], source_assets = [];
+  for (const [slot, value] of Object.entries(sources || {})) {
+    const spec = model?.media?.[slot];
+    if (!spec) continue;
+    const files = sourceList(value);
+    if (files.length > publicSlotMax(spec)) throw new Error('source_count_exceeded');
+    for (const source of files) {
+      if (source.assetId) {
+        references.push({ slot, origin: 'asset', asset_id: source.assetId });
+        source_assets.push({ slot, asset_id: source.assetId });
+      } else if (source.sourceKey || source.file) {
+        const key = source.sourceKey || await uploadSource(source.file);
+        references.push({ slot, origin: 'upload', key }); source_keys.push({ slot, key });
+      } else throw Object.assign(new Error('source_reattach_required'), { code: 'source_reattach_required' });
     }
   }
-  return references;
+  return { references, source_keys, source_assets };
 }
 
 export function supportedDuration(model, wanted) {

@@ -1,3 +1,4 @@
+import { readBoundedBody } from '../../../../lib/boundedBody.js';
 import { editorFeatureEnabled } from '../../../../lib/editorRuntimeFlags.mjs';
 import { falDispatchEnabled, admitFalDispatch } from '../../../../lib/falDispatch.js';
 import { publishFalDispatchWakeup } from '../../../../lib/falDispatchWakeup.js';
@@ -40,6 +41,11 @@ const MODEL_ID_RE = /^[a-z0-9][a-z0-9.-]{0,63}$/;
 // beyond the priced unit, ...) are deliberately absent: the catalog price
 // is per 5-second unit / single output and the payload must not buy more.
 const MAX_INPUTS_BYTES = 8 * 1024;
+// Existing inputs (including ten Clip Editor clips, dialogue and narration)
+// share the 8 Ki UTF-16-unit JSON limit below. Even fully escaped JSON needs
+// at most 6 bytes/unit (48 KiB); 128 KiB leaves room for reference descriptors,
+// model/idempotency IDs and envelope whitespace without narrowing that contract.
+const MAX_REQUEST_BYTES = 128 * 1024;
 const UNIT_SECONDS = 5;
 const RATE_LIMIT_PER_WINDOW = 10;
 const RATE_WINDOW_SECONDS = 60;
@@ -146,7 +152,8 @@ export async function POST(req) {
     }
 
     let body;
-    try { body = await req.json(); } catch { return NextResponse.json({ error: 'invalid_json' }, { status: 400 }); }
+    try { body = JSON.parse(new TextDecoder().decode(await readBoundedBody(req.body, MAX_REQUEST_BYTES, req.signal))); }
+    catch (error) { return NextResponse.json({ error: error.status === 413 ? 'body_too_large' : 'invalid_json' }, { status: error.status === 413 ? 413 : 400 }); }
     const modelId = body && body.model_id;
     const idempotencyKey = body && body.idempotency_key;
     const confirmedCredits = body && body.confirmed_credits;
@@ -272,9 +279,9 @@ export async function POST(req) {
     // ownership, expiry, MIME sniffing and bounded size/length checks before debit.
     const r2cfg = rawKeys.length || rawAssets.length ? r2EnvConfig() : null;
     if (r2cfg && !r2IsConfigured(r2cfg)) return NextResponse.json({ error: 'gateway_not_configured' }, { status: 503 });
-    const resolved = await resolveGenerationSources({ authId, keys: rawKeys, assets: rawAssets, record, r2cfg, dbcfg: cfg });
+    const resolved = await resolveGenerationSources({ authId, references: references.references, record, r2cfg, dbcfg: cfg });
     if (!resolved.ok) return NextResponse.json({ error: resolved.error }, { status: sourceErrorStatus(resolved.error) });
-    const { sources, sourceKeys, sourceAssets } = resolved;
+    const { sources } = resolved;
     Object.assign(inputs,resolved.inputs);
 
     // From here on only the keys this model declares exist: the create page
@@ -298,15 +305,10 @@ export async function POST(req) {
     // The job row records which uploads were used, not the 15-minute URLs.
     // Library sources are recorded by job id under their own name, so the
     // upload sweep (lib/uploadSweep.js), which deletes source_keys, never sees them.
-    const usedKeys = Object.fromEntries(Object.entries(sourceKeys).filter(([f]) => modelInputs[f] !== undefined));
-    const usedAssets = Object.fromEntries(Object.entries(sourceAssets).filter(([f]) => modelInputs[f] !== undefined));
-    let storedInputs = Object.keys(usedKeys).length || Object.keys(usedAssets).length
-        ? {
-            ...Object.fromEntries(Object.entries(modelInputs).filter(([k]) => !(k in usedKeys) && !(k in usedAssets))),
-            ...(Object.keys(usedKeys).length ? { source_keys: usedKeys } : {}),
-            ...(Object.keys(usedAssets).length ? { source_assets: usedAssets } : {}),
-        }
-        : modelInputs;
+    let storedInputs = resolved.references.length ? {
+        ...Object.fromEntries(Object.entries(modelInputs).filter(([key]) => !Object.hasOwn(sources, key))),
+        references: resolved.references,
+    } : modelInputs;
     // A Clip Editor job stores the resolved edit (owned R2 keys, real lengths)
     // and is priced on its output length, never on what the client sent.
     let pricedInputs = modelInputs;
@@ -387,6 +389,9 @@ export async function POST(req) {
     // and a bad or missing one is simply ignored.
     const presetId = templateStartId(body && body.preset, modelId);
     const jobInputs = presetId ? { ...storedInputs, preset_id: presetId } : storedInputs;
+    // Durable dispatch is source-free: readGenerationSources converts unified
+    // references into rawKeys/rawAssets, and source validation has already run.
+    // Never pass reference jobs to the separate 0243 strict-payload replay contract.
     if (falDispatchEnabled(process.env) && modelRow.provider === 'fal' && modelRow.modality === 'text-to-image'
         && !rawKeys.length && !rawAssets.length) {
         return admitFalDispatch({ userId, key: idempotencyKey, model: modelRow, record,
@@ -441,7 +446,7 @@ export async function POST(req) {
         status: spendLimit.status, headers: { 'retry-after': String(spendLimit.retryAfter) },
     });
     if (!debit || debit.ok === false) {
-        const status = debit && debit.code === 'INSUFFICIENT_BALANCE' ? 402
+        const status = debit?.code === 'IDEMPOTENCY_CONFLICT' ? 409 : debit && debit.code === 'INSUFFICIENT_BALANCE' ? 402
             : debit && (debit.code === 'ACCOUNT_FROZEN' || debit.code === 'ACCOUNT_ON_HOLD') ? 403 : 400;
         // Don't leak DB/RPC messages to the client — log server-side only.
         if (debit && debit.message) console.error('[generations] debit rejected:', debit.code, debit.message);

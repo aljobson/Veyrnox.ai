@@ -13,7 +13,7 @@ const root = join(__dirname, '..');
 const repo = join(root, '..', '..');
 
 // The public site's catalog files are plain `export default { ... }` modules with no imports. The Publish composer's
-// shared strings live in the signed-in app area; scripts/sync-web-i18n.mjs reads the same three files in the same order.
+// shared strings live in the signed-in app area; scripts/sync-web-i18n.mjs reads the same catalog files in the same order.
 function readModule(path: string): Record<string, string> {
     const text = readFileSync(path, 'utf8').replace(/^export default\s+/m, 'return ');
     return new Function(text)() as Record<string, string>;
@@ -22,6 +22,8 @@ function readWebCatalog(code: string): Record<string, string> {
     return {
         ...readModule(join(repo, 'lib', 'i18n', 'messages', `${code}.mjs`)),
         ...readModule(join(repo, 'lib', 'i18n', 'messages', 'app', code, 'publish-composer.mjs')),
+        ...readModule(join(repo, 'lib', 'i18n', 'messages', 'app', code, 'create-sources.mjs')),
+        ...readModule(join(repo, 'lib', 'i18n', 'messages', 'app', code, 'data-errors.mjs')),
         ...readModule(join(repo, 'lib', 'i18n', 'messages', 'app', code, 'publish.mjs')),
     };
 }

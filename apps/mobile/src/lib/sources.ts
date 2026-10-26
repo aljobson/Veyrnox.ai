@@ -32,6 +32,7 @@ export interface Slot {
     readonly kind: SlotKind;
     readonly required: boolean;
     readonly label: string;
+    readonly maxFiles?: number;
     readonly maxSeconds?: number;
     readonly maxPixels?: number;
 }
@@ -49,10 +50,11 @@ const DEFAULT_LABEL: Record<SlotName, string> = { image: 'Image', endImage: 'Las
 
 // The file slots a model declares, in a fixed order, ignoring names the server does not know.
 export function slotsFor(model: CatalogModel): Slot[] {
-    const media = (model.capabilities?.media ?? {}) as Record<string, { required?: boolean; label?: string; maxSeconds?: number; maxPixels?: number }>;
+    const media = (model.capabilities?.media ?? {}) as Record<string, { required?: boolean; label?: string; maxFiles?: number; maxSeconds?: number; maxPixels?: number }>;
     return SLOT_ORDER.filter((name) => Object.hasOwn(media, name)).map((name) => ({
         slot: name,
         kind: KIND[name],
+        maxFiles: Math.max(1, Math.min(3, media[name].maxFiles ?? 1)),
         required: media[name].required === true,
         label: media[name].label ?? DEFAULT_LABEL[name],
         ...(typeof media[name].maxPixels === 'number' ? { maxPixels: media[name].maxPixels } : {}),
@@ -106,4 +108,17 @@ export function pickedProblem(error: Extract<PickedCheck, { ok: false }>['error'
         default:
             return 'Could not read that file. Try another.';
     }
+}
+
+export type GenerationReference = { readonly slot: SlotName; readonly origin: 'upload'; readonly key: string } | { readonly slot: SlotName; readonly origin: 'asset'; readonly asset_id: string };
+export function legacyReferences(uploaded: Partial<Record<SlotName, string | readonly string[]>>, assets: Partial<Record<SlotName, string | readonly string[]>>): GenerationReference[] {
+    return SLOT_ORDER.flatMap(slot => [
+        ...([uploaded[slot]].flat().filter(Boolean) as string[]).map(key => ({ slot, origin: 'upload' as const, key })),
+        ...([assets[slot]].flat().filter(Boolean) as string[]).map(asset_id => ({ slot, origin: 'asset' as const, asset_id })),
+    ]);
+}
+export function replaceSlotReferences(all: readonly GenerationReference[], slot: SlotName, files: readonly GenerationReference[]): GenerationReference[] {
+    const first = all.findIndex(ref => ref.slot === slot), rest = all.filter(ref => ref.slot !== slot);
+    rest.splice(first < 0 ? rest.length : first, 0, ...files);
+    return rest;
 }

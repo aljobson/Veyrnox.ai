@@ -139,6 +139,20 @@ test('generations: a clip-edit is priced on its output, stores the resolved edit
     assert.ok(fal.url.includes('fal-ai/workflow-utilities/trim-video'), fal.url);
     assert.equal(fal.body.start_time, 2);
     assert.equal(fal.body.end_time, 8.5);
+    // A retry re-resolves the owned immutable assets. Signing/inspection is execution
+    // metadata; admission must receive the same deterministic edit, with no URLs.
+    rpcs.ledger_debit.idempotent = true;
+    const replay = await generations.POST(new Request('https://veyrnox.test/api/v1/generations', {
+        method:'POST', headers:{'x-veyrnox-auth-id':'auth-user-1','content-type':'application/json'},
+        body:JSON.stringify({model_id:'clip-edit',idempotency_key:'edit-key-0001',inputs:{clips:[{asset_id:A,in_s:2,out_s:8.5}]}}),
+    }));
+    assert.equal((await replay.json()).idempotent,true);
+    const admissions = calls.filter(c=>c.url.includes('/rpc/ledger_debit'));
+    assert.equal(admissions.length,2);
+    assert.deepEqual(admissions[1].body.p_inputs,admissions[0].body.p_inputs);
+    assert.equal(JSON.stringify(admissions[1].body.p_inputs).includes('https:'),false);
+    assert.equal(calls.filter(c=>c.url.includes('queue.fal.run')).length,1);
+
 });
 
 /** Shared fetch mock for the captions gateway tests. */

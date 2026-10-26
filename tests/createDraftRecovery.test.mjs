@@ -32,13 +32,13 @@ test('recovery requests fresh owned asset links using IDs only and never generat
   assert.deepEqual(calls, ['/jobs/saved-max-rep/asset']);
   assert.equal(restored.image.assetId, 'saved-max-rep'); assert.equal(restored.image.previewUrl, 'https://media.invalid/new-link'); assert.deepEqual(failed, []);
   const denied = await reopenDraftSources(draft.sources, async () => { throw Error('forbidden'); });
-  assert.deepEqual(denied.restored, {}); assert.deepEqual(denied.failed, ['image']);
+  assert.equal(denied.restored.image.needsUpload, true); assert.deepEqual(denied.failed, ['image:0']);
   const wrongType = await reopenDraftSources(draft.sources, async () => ({ url: 'https://media.invalid/video', mime_type: 'video/mp4' }));
-  assert.deepEqual(wrongType.failed, ['image']);
+  assert.deepEqual(wrongType.failed, ['image:0']);
 });
 test('local upload bytes are not serialized and the restored draft marks them for reattachment', () => {
   const s = storage(); writeCreateDraft(s, 'alice', { ...draft, sources: { image: { file: { name: 'private.png' }, previewUrl: 'blob:private-data' } } }, now);
-  const saved = readCreateDraft(s, 'alice', now); assert.equal(saved.needsUpload, true); assert.deepEqual(saved.sources, {});
+  const saved = readCreateDraft(s, 'alice', now); assert.equal(saved.needsUpload, true); assert.deepEqual(saved.sources, { image: { needsUpload: true, label: '' } });
   assert.ok(!s.getItem(`${CREATE_DRAFT_STORAGE}:alice`).includes('private'));
 });
 test('helper visibility and the simultaneous question/walkthrough mode survive reload without persisting messages', () => {

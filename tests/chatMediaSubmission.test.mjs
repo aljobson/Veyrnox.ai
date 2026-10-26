@@ -25,11 +25,11 @@ test('Chat preserves explicit image/audio and video/audio Library source slots',
     const model = { media: Object.fromEntries(Object.keys(slots).map((slot) => [slot, { required: true }])) };
     const sources = Object.freeze(Object.fromEntries(Object.entries(slots).map(([slot, assetId]) => [slot, Object.freeze({ assetId })])));
     const result = await media.mediaGenerationSources(model, sources, () => assert.fail('Library selections must not upload'));
-    assert.deepEqual(result, { source_keys: [], source_assets: Object.entries(slots).map(([slot, asset_id]) => ({ asset_id, slot })) });
-    const references = readGenerationSources(result);
+    assert.deepEqual(result, { references: Object.entries(slots).map(([slot, asset_id]) => ({ slot, origin: 'asset', asset_id })), source_keys: [], source_assets: Object.entries(slots).map(([slot, asset_id]) => ({ asset_id, slot })) });
+    const references = readGenerationSources({references:result.references});
     assert.equal(references.ok, true);
     const resolved = await resolveGenerationSources({ authId: IMAGE, ...references, record: model }, {
-      asset: async (_auth, id, _r2, _db, { kind }) => ({ ok: true, field: `${kind}_url`, contentType: kind === 'image' ? 'image/png' : kind === 'video' ? 'video/mp4' : 'audio/wav', url: `https://fixture.invalid/${id}` }),
+      asset: async (_auth, id, _r2, _db, { kind }) => ({ ok: true, sizeBytes: 10, field: `${kind}_url`, contentType: kind === 'image' ? 'image/png' : kind === 'video' ? 'video/mp4' : 'audio/wav', url: `https://fixture.invalid/${id}` }),
     });
     assert.equal(resolved.ok, true);
     assert.deepEqual(Object.keys(resolved.inputs), Object.keys(slots).map((slot) => `${slot}_url`));
@@ -43,9 +43,9 @@ test('Chat preserves end-frame roles and mixed uploaded/Library selections, igno
     image: { assetId: IMAGE }, endImage: { file }, audio: { assetId: AUDIO },
   }, async (value) => { uploadCalls.push(value); return 'uploads/fixture/end.png'; });
   assert.deepEqual(uploadCalls, [file]);
-  assert.deepEqual(result, { source_assets: [{ asset_id: IMAGE, slot: 'image' }], source_keys: [{ key: 'uploads/fixture/end.png', slot: 'endImage' }] });
-  assert.equal(readGenerationSources(result).ok, true);
-  assert.deepEqual(await media.mediaGenerationSources({}, {}, () => assert.fail('no source')), { source_keys: [], source_assets: [] });
+  assert.deepEqual(result, { references: [{slot:'image',origin:'asset',asset_id:IMAGE},{slot:'endImage',origin:'upload',key:'uploads/fixture/end.png'}], source_assets: [{ asset_id: IMAGE, slot: 'image' }], source_keys: [{ key: 'uploads/fixture/end.png', slot: 'endImage' }] });
+  assert.equal(readGenerationSources({references:result.references}).ok, true);
+  assert.deepEqual(await media.mediaGenerationSources({}, {}, () => assert.fail('no source')), { references: [], source_keys: [], source_assets: [] });
 });
 
 test('Chat reuses source keys uploaded by a guided feature without uploading the file twice', async () => {
@@ -53,7 +53,7 @@ test('Chat reuses source keys uploaded by a guided feature without uploading the
   const result = await media.mediaGenerationSources({ media: { image: {} } }, {
     image: { sourceKey: key, label: 'portrait.png', mimeType: 'image/png' },
   }, () => assert.fail('a handed-off source key must not upload again'));
-  assert.deepEqual(result, { source_assets: [], source_keys: [{ key, slot: 'image' }] });
+  assert.deepEqual(result, { references: [{slot:'image',origin:'upload',key}], source_assets: [], source_keys: [{ key, slot: 'image' }] });
 });
 
 test('Chat upload failure propagates before remaining files are uploaded or requests can be submitted', async () => {
@@ -72,4 +72,16 @@ test('both Chat UI and submit guard use model-aware prompts and the hook emits t
   assert.match(hook, /model\.takesPrompt !== false \? \{ prompt: cleanPrompt \} : \{\}/);
   assert.match(hook, /await mediaGenerationSources\(model, sources, uploadSource\)/);
   assert.doesNotMatch(hook, /sourceAssets\.push\(sources\[slot\]\.assetId\)/);
+});
+
+test('Create and chat use incomplete-source readiness and the existing localized reattach message', () => {
+  for (const path of ['app/veyrnox/app/create/page.js','app/veyrnox/_components/chat/useChatMediaGeneration.js']) {
+    const code = read(path);
+    assert.match(code,/generationSourceState\(media, sources\)/);
+    assert.match(code,/if \(needsReattach\)/);
+    assert.match(code,/code === 'source_reattach_required'/);
+  }
+  for (const path of ['app/veyrnox/app/create/page.js','app/veyrnox/_components/chat/MediaComposer.js']) {
+    assert.match(read(path),/error.code === 'source_reattach_required' \? t\('app.create.reattach'\)/);
+  }
 });

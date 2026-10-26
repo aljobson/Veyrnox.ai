@@ -37,3 +37,17 @@ test('a fresh copy is served without asking the database, and with no copy an ou
 test('with nothing saved, an outage is still an error for the caller to handle', withCache(async () => {
     await assert.rejects(readPublicCatalog({ cfg, selectRows: async () => { throw new Error('supabase down'); } }), /supabase down/);
 }));
+
+test('flag changes partition fresh caches and clamp an enabled stale fallback during an outage', withCache(async () => {
+    const previous = process.env.MULTI_REFERENCE_ENABLED;
+    const edit = { ...row, id: 'edit', provider_endpoint: 'fal-ai/nano-banana-pro/edit' };
+    try {
+        process.env.MULTI_REFERENCE_ENABLED = 'true';
+        assert.equal((await readPublicCatalog({ cfg, selectRows: async () => [edit] }))[0].capabilities.media.image.maxFiles, 3);
+        process.env.MULTI_REFERENCE_ENABLED = 'false';
+        assert.equal((await readPublicCatalog({ cfg, selectRows: async () => { throw Error('offline'); } }))[0].capabilities.media.image.maxFiles, 1);
+        let reads = 0;
+        assert.equal((await readPublicCatalog({ cfg, selectRows: async () => { reads++; return [edit]; } }))[0].capabilities.media.image.maxFiles, 1);
+        assert.equal(reads, 1);
+    } finally { if (previous === undefined) delete process.env.MULTI_REFERENCE_ENABLED; else process.env.MULTI_REFERENCE_ENABLED = previous; }
+}));

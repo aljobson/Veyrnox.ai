@@ -1,4 +1,5 @@
 'use client';
+import { generationSourceState, sourceList, publicSlotMax, editSlotSource, moveSlotSource } from '../../../../lib/generationSourceSlots.mjs';
 import LegalLink from '../../../../components/LegalLink';
 import { helperCopy } from '../../../../lib/i18n/helperCopy.mjs';
 import { tOr, pluralKey } from '../../../../lib/i18n/translate.mjs';
@@ -64,10 +65,10 @@ function readFlag(name) {
   try { return window.localStorage.getItem(name) === '1'; } catch { return false; }
 }
 
-const LOCAL_ERRORS = {poll_unreachable: {"code": "poll_unreachable"}, model_gated: {"code": "model_gated"}, source_required: {"code": "source_required"}, consent_required: {"code": "consent_required"}, inputs_invalid_prompt: {"code": "inputs_invalid:prompt"}, inputs_invalid_voice_description: {"code": "inputs_invalid:voice_description"}, inputs_invalid_duration: {"code": "inputs_invalid:duration"}};
+const LOCAL_ERRORS = {source_reattach_required: {"code": "source_reattach_required"},poll_unreachable: {"code": "poll_unreachable"}, model_gated: {"code": "model_gated"}, source_required: {"code": "source_required"}, consent_required: {"code": "consent_required"}, inputs_invalid_prompt: {"code": "inputs_invalid:prompt"}, inputs_invalid_voice_description: {"code": "inputs_invalid:voice_description"}, inputs_invalid_duration: {"code": "inputs_invalid:duration"}};
 
 function errorFor(e) {
-  return e instanceof GatewayError ? { code: e.code, retryAfter: e.retryAfter } : { code: 'internal' };
+  return e instanceof GatewayError || e?.code === 'source_reattach_required' ? { code: e.code, retryAfter: e.retryAfter } : { code: 'internal' };
 }
 
 // Off on the server and first paint, then whatever this browser has stored.
@@ -206,7 +207,7 @@ export default function CreateStudio() {
       setSources(restoredSources); setConsent(false); setAnimationPortrait(null); setTier(null);
     },
     reset: () => {
-      setPrompt(null); setSources(current => { Object.values(current).forEach(source => { if (source.file) URL.revokeObjectURL(source.previewUrl); }); return {}; });
+      setPrompt(null); setSources(current => { Object.values(current).flatMap(sourceList).forEach(source => { if (source.file) URL.revokeObjectURL(source.previewUrl); }); return {}; });
       setConsent(false); setGoal('image'); setModelId(starterModel(catalogModels, 'image')?.id || '');
       setDuration('5s'); setAspect('16:9'); setCount(1); setCharacterOn(false); setCharacter({}); setOddlingTransfer(null);
       setCinemaOn(false); setCinema(DEFAULT_CINEMA); setSeed(''); setNegative(''); setVoice(''); setAudioDurations({});
@@ -253,8 +254,7 @@ export default function CreateStudio() {
   const sourceDurationMax = sourceDurationLimit(model);
   const media = model?.media || {};
   const animationMismatch = !!animationPortrait && (model?.kind !== 'video' || !media.image?.required);
-  const missingSource = Object.entries(media).some(([slot, spec]) => spec.required && !sources[slot]);
-  const hasUpload = Object.keys(media).some((slot) => sources[slot]);
+  const { missingSource, needsReattach, hasSource: hasUpload } = generationSourceState(media, sources);
   const missingConsent = hasUpload && !consent;
   const missingVoice = voiceIsMissing(model, voice);
   const missingPrompt = promptIsMissing(model, prompt);
@@ -296,16 +296,15 @@ export default function CreateStudio() {
     setAudioDurations((previous) => ({ ...previous, [model.id]: value }));
   }
 
-  function pickSource(slot, file, asset = null) {
+  function pickSource(slot, file, asset = null, index) {
     draftRecovery.sourceEdited();
     setConsent(false);
-    setSources((prev) => {
-      if (prev[slot]?.file) URL.revokeObjectURL(prev[slot].previewUrl);
-      const next = { ...prev };
-      if (file) next[slot] = { file, previewUrl: URL.createObjectURL(file) };
-      else if (asset) next[slot] = { assetId: asset.id, previewUrl: asset.url, label: asset.label };
-      else delete next[slot];
-      return next;
+    setSources(previous => {
+      const old = sourceList(previous[slot]);
+      const removed = index !== undefined ? old[index] : publicSlotMax(media[slot]) === 1 || (!file && !asset) ? old : [];
+      for (const item of sourceList(removed)) if (item?.file) URL.revokeObjectURL(item.previewUrl);
+      const source = file ? { file, previewUrl: URL.createObjectURL(file) } : asset ? { assetId: asset.id, previewUrl: asset.url, label: asset.label } : null;
+      return editSlotSource(previous, slot, source, index, publicSlotMax(media[slot]));
     });
   }
 
@@ -318,14 +317,15 @@ export default function CreateStudio() {
     const switched = plan.model.id !== model?.id;
     setAttachNotice([switched && t('app.create.attach.switched', { name: plan.model.name }), plan.unused.length && t('app.create.attach.unused', { count: plan.unused.length })].filter(Boolean).join(' '));
     if (switched) { setPresetParam(null); setGoal(plan.model.kind); setModelId(plan.model.id); }
-    const placed = new Set(plan.assignments.map(item => item.slot));
-    for (const slot of Object.keys(sources)) if (!placed.has(slot)) pickSource(slot, null);
-    for (const { slot, file } of plan.assignments) pickSource(slot, file);
+    for (const source of Object.values(sources).flatMap(sourceList)) if (source.file) URL.revokeObjectURL(source.previewUrl);
+    setSources({});
+    const positions = {};
+    for (const { slot, file } of plan.assignments) pickSource(slot, file, null, (positions[slot] = (positions[slot] || 0) + 1) - 1);
   }
 
   function applyDrawing(file) {
     setDrawing(false);
-    pickSource('image', file);
+    pickSource('image', file, null, 0);
   }
 
   // The browser PUTs the file straight to R2 on a 15-minute URL the gateway
@@ -401,6 +401,7 @@ export default function CreateStudio() {
     inFlight.current = true;
     if (model.gated) { inFlight.current = false; setError(LOCAL_ERRORS.model_gated); return; }
     if (animationMismatch) { inFlight.current = false; setError(LOCAL_ERRORS.source_required); return; }
+    if (needsReattach) { inFlight.current = false; setError(LOCAL_ERRORS.source_reattach_required); return; }
     if (missingSource) { inFlight.current = false; setError(LOCAL_ERRORS.source_required); return; }
     if (missingConsent) { inFlight.current = false; setError(LOCAL_ERRORS.consent_required); return; }
     if (missingPrompt) { inFlight.current = false; setError(LOCAL_ERRORS.inputs_invalid_prompt); return; }
@@ -428,7 +429,7 @@ export default function CreateStudio() {
     try {
       // Only the slots this model takes; a leftover upload from another model stays local.
       // Each file is uploaded once and its key reused by every request.
-      const { source_keys, source_assets } = await mediaGenerationSources(model, sources, uploadSource);
+      const { references, source_keys, source_assets } = await mediaGenerationSources(model, sources, uploadSource);
       const anySource = source_keys.length + source_assets.length > 0;
       const { started, error: failure } = await sendInOrder(n, async (i) => {
         const submitted = await gatewayFetch('/generations', {
@@ -436,8 +437,7 @@ export default function CreateStudio() {
           body: JSON.stringify({
             model_id: modelId, idempotency_key: keys[i], inputs: inputsForIndex(inputs, i, n),
             preset: templateStartId(presetParam, modelId) || undefined,
-            source_keys: source_keys.length ? source_keys : undefined,
-            source_assets: source_assets.length ? source_assets : undefined,
+            references,
             consent: anySource ? true : undefined,
           }),
         });
@@ -515,7 +515,7 @@ export default function CreateStudio() {
               <div className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-fg-muted">{t("app.create.untitled")}</div>
               <h1 className="text-2xl sm:text-3xl font-black tracking-[-0.02em] mt-1">{t("label.Create")}</h1>
             </div>
-            <Chip tone="neutral">{draftRecovery.saved ? Object.values(sources).some(source => source.file) ? t("app.create.settingsSaved") : t("app.create.savedInTab") : t("app.create.unsaved")}</Chip>
+            <Chip tone="neutral">{draftRecovery.saved ? Object.values(sources).flatMap(sourceList).some(source => source.file) ? t("app.create.settingsSaved") : t("app.create.savedInTab") : t("app.create.unsaved")}</Chip>
           </div>
 
           <div data-assistant-target="create.result" className="scroll-mt-24">
@@ -618,10 +618,10 @@ export default function CreateStudio() {
           )}
           {attachNotice && <p role="status" className="mt-2 text-xs text-vx-fg-muted">{attachNotice}</p>}
           <div className="scroll-mt-24" data-assistant-target={Object.keys(media).length ? 'create.upload' : undefined}>
-            <SourcePickers media={media} sources={sources} onPick={pickSource}
+            <SourcePickers media={media} sources={sources} onPick={pickSource} onReorder={(slot, from, to) => { setConsent(false); setSources(prev => moveSlotSource(prev, slot, from, to)); }}
               onDraw={model?.kind === 'image' ? () => setDrawing(true) : null} onLibrary={setLibraryFor} />
           </div>
-          {Object.values(sources).some(source => source.file) && <p className="mt-2 text-xs text-vx-fg-muted">{t("app.create.reattach")}</p>}
+          {Object.values(sources).flatMap(sourceList).some(source => source.file) && <p className="mt-2 text-xs text-vx-fg-muted">{t("app.create.reattach")}</p>}
           {libraryFor && (
             <LibraryPicker kind={generationSlotKind(libraryFor)} mimeTypes={generationMimeTypes(generationSlotKind(libraryFor))}
               onClose={() => setLibraryFor(null)}
@@ -632,8 +632,8 @@ export default function CreateStudio() {
             <SourceRightsConfirmation confirmed={consent} onChange={setConsent} />
           )}
 
-          {drawing && sources.image?.file && (
-            <DrawOnImage file={sources.image.file} onDone={applyDrawing} onCancel={() => setDrawing(false)} />
+          {drawing && sourceList(sources.image)[0]?.file && (
+            <DrawOnImage file={sourceList(sources.image)[0].file} onDone={applyDrawing} onCancel={() => setDrawing(false)} />
           )}
 
         </div>
@@ -693,7 +693,7 @@ export default function CreateStudio() {
             <div role="alert" className="mt-3 rounded-lg border border-vx-danger/40 bg-vx-danger/[0.07] px-4 py-3 text-sm text-vx-danger flex items-start gap-2">
               <span aria-hidden="true">✕</span>
               <span>
-                {tOr(t, `app.create.error.${error.code}`, ERROR_COPY[error.code] || t('app.create.error.unknown'))}
+                {error.code === 'source_reattach_required' ? t('app.create.reattach') : tOr(t, `app.create.error.${error.code}`, ERROR_COPY[error.code] || t('app.create.error.unknown'))}
                 {error.retryAfter && t('app.create.retryIn', { seconds: locale === 'en' ? error.retryAfter : Number(error.retryAfter).toLocaleString(localeTag(locale)) })}
                 {error.note && ` ${error.note}`}
               </span>

@@ -12,7 +12,7 @@ import { creativeFeature, featurePrompt, type CreativeFeature } from '../../../l
 import { readCreativeReuse, type CreativeReuse } from '../../../lib/creativeReuse';
 import { stageCreativeSourceHandoff } from '../../../lib/creativeSourceHandoff';
 import { fetchCatalog, type CatalogModel } from '../../../lib/media';
-import { missingRequired, requiredNamedSlots, type Slot, type SlotName } from '../../../lib/sources';
+import { requiredNamedSlots, type Slot, type GenerationReference, replaceSlotReferences, type SlotName } from '../../../lib/sources';
 import { t } from '../../../lib/i18n';
 import { colors, fonts } from '../../../theme';
 
@@ -32,8 +32,7 @@ function FeatureStudio({ feature, reuse }: { feature: CreativeFeature; reuse: Cr
     const [script, setScript] = useState<string | null>(null);
     const [model, setModel] = useState<CatalogModel | null | undefined>(undefined);
     const [error, setError] = useState('');
-    const [uploaded, setUploaded] = useState<Partial<Record<SlotName, string>>>({});
-    const [fromLibrary, setFromLibrary] = useState<Partial<Record<SlotName, string>>>(() => reuse ? { [reuse.kind]: reuse.jobId } : {});
+    const [references, setReferences] = useState<readonly GenerationReference[]>(() => reuse ? [{ slot: reuse.kind, origin: 'asset', asset_id: reuse.jobId }] : []);
     const [sending, setSending] = useState<Partial<Record<SlotName, boolean>>>({});
     const [rights, setRights] = useState(false);
     useEffect(() => {
@@ -48,7 +47,7 @@ function FeatureStudio({ feature, reuse }: { feature: CreativeFeature; reuse: Cr
     }, [feature.media, model]);
     const hasEverySlot = feature.media.every((name) => slots.some((slot) => slot.slot === name));
     const waiting = Object.values(sending).some(Boolean);
-    const sourcesReady = missingRequired(slots, { ...uploaded, ...fromLibrary }).length === 0;
+    const sourcesReady = slots.every(slot => (!slot.required || references.some(ref => ref.slot === slot.slot)) && references.filter(ref => ref.slot === slot.slot).length <= (slot.maxFiles ?? 1));
     const prompt = featurePrompt(feature, brief);
     const canContinue = model !== undefined && model !== null && hasEverySlot && !waiting && sourcesReady && (!slots.length || rights) && (!feature.scriptUpload || !!script) && (feature.input === 'Production note' || !!brief.trim());
 
@@ -69,7 +68,7 @@ function FeatureStudio({ feature, reuse }: { feature: CreativeFeature; reuse: Cr
             setError(model === null || !hasEverySlot ? 'The live model is not available right now.' : waiting ? 'Wait for every upload to finish.' : !sourcesReady ? 'Add every required source.' : slots.length && !rights ? 'Confirm that you have permission to use these sources.' : feature.scriptUpload && !script ? 'Upload a script first.' : `Complete “${feature.input}” first.`);
             return;
         }
-        const sourceHandoff = stageCreativeSourceHandoff({ recipe: feature.slug, modelId: feature.model, aspect: feature.kind === 'video' ? '9:16' : '1:1', uploaded, fromLibrary });
+        const sourceHandoff = stageCreativeSourceHandoff({ recipe: feature.slug, modelId: feature.model, aspect: feature.kind === 'video' ? '9:16' : '1:1', uploaded: {}, fromLibrary: {}, references });
         router.push({ pathname: '/create/[modelId]', params: { modelId: feature.model, prompt: prompt || feature.title, ...(feature.kind === 'video' ? { duration: '5' } : {}), recipe: feature.slug, sourceHandoff } });
     }
     return <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -81,7 +80,7 @@ function FeatureStudio({ feature, reuse }: { feature: CreativeFeature; reuse: Cr
             {feature.scriptUpload ? <><Pressable accessibilityRole="button" style={styles.secondary} onPress={() => void chooseScript()}><Text style={styles.secondaryText}>{script ? 'Replace script' : 'Upload TXT or Markdown script'}</Text></Pressable>{script ? <Text style={styles.note}>{script}</Text> : null}</> : null}
             <TextInput accessibilityLabel={feature.input} value={brief} onChangeText={(value) => { setBrief(value.slice(0, 1000)); setError(''); }} placeholder={feature.placeholder} placeholderTextColor={colors.muted} style={styles.input} multiline maxLength={1000} />
         </View>
-        <View style={styles.card}><Text style={styles.kicker}>REQUIRED SOURCES</Text><Text style={styles.cardTitle}>{required.length ? required.join(' + ') : 'No media required'}</Text>{model && slots.length ? slots.map((slot) => <SourcePicker key={slot.slot} slot={slot} api={api} onChange={(key) => { setRights(false); setUploaded((current) => ({ ...current, [slot.slot]: key })); }} onLibrary={(jobId) => { setRights(false); setFromLibrary((current) => ({ ...current, [slot.slot]: jobId })); }} onBusy={(busy) => setSending((current) => ({ ...current, [slot.slot]: busy }))} hint={`Required for ${feature.title}`} initialReady={reuse?.kind === slot.slot} initialReadyLabel={reuse?.kind === slot.slot ? t('features.reuse.selected') : undefined} />) : <Text style={styles.note}>{required.length ? 'Checking the live upload requirements…' : 'Your script is the source for this workflow.'}</Text>}{slots.length ? <Pressable accessibilityRole="checkbox" accessibilityLabel="I have permission to use these sources" accessibilityState={{ checked: rights, disabled: waiting }} disabled={waiting} style={[styles.rights, rights && styles.rightsOn]} onPress={() => { setRights((value) => !value); setError(''); }}><Text style={styles.rightsText}>{rights ? '☑' : '☐'} I have permission to use these sources to generate AI content.</Text></Pressable> : null}</View>
+        <View style={styles.card}><Text style={styles.kicker}>REQUIRED SOURCES</Text><Text style={styles.cardTitle}>{required.length ? required.join(' + ') : 'No media required'}</Text>{model && slots.length ? slots.map((slot) => <SourcePicker key={slot.slot} slot={slot} api={api} references={references.filter(ref => ref.slot === slot.slot)} onReferences={files => { setRights(false); setReferences(all => replaceSlotReferences(all, slot.slot, files)); }} onChange={() => {}} onLibrary={() => {}} onBusy={(busy) => setSending((current) => ({ ...current, [slot.slot]: busy }))} hint={`Required for ${feature.title}`} initialReady={reuse?.kind === slot.slot} initialReadyLabel={reuse?.kind === slot.slot ? t('features.reuse.selected') : undefined} />) : <Text style={styles.note}>{required.length ? 'Checking the live upload requirements…' : 'Your script is the source for this workflow.'}</Text>}{slots.length ? <Pressable accessibilityRole="checkbox" accessibilityLabel="I have permission to use these sources" accessibilityState={{ checked: rights, disabled: waiting }} disabled={waiting} style={[styles.rights, rights && styles.rightsOn]} onPress={() => { setRights((value) => !value); setError(''); }}><Text style={styles.rightsText}>{rights ? '☑' : '☐'} I have permission to use these sources to generate AI content.</Text></Pressable> : null}</View>
         <View style={styles.card}><Text style={styles.kicker}>WORKFLOW</Text>{feature.steps.map((step, index) => <View key={step} style={styles.step}><Text style={styles.number}>0{index + 1}</Text><Text style={styles.stepText}>{step}</Text></View>)}</View>
         <View style={styles.card}><Text style={styles.kicker}>LIVE MODEL</Text>{model === undefined ? <ActivityIndicator color={colors.accent} /> : <Text style={styles.cardTitle}>{model ? `Veyrnox ${feature.kind} model · ${model.credits} credits` : 'Unavailable'}</Text>}{error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}<Pressable accessibilityRole="button" disabled={model === undefined || waiting} style={[styles.primary, (model === undefined || waiting) && styles.off]} onPress={openCreate}><Text style={styles.primaryText}>Continue to final review</Text></Pressable><Text style={styles.note}>You will see the exact price before generating. A failed generation is refunded automatically.</Text></View>
     </ScrollView>;

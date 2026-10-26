@@ -53,7 +53,7 @@ test('an object at exactly the cap is allowed', async () => {
 test('a 206 with no parseable total is refused rather than assumed small', async () => {
     const restore = stubFetch(null, 206);
     try {
-        assert.equal((await resolveUploadedSource(AUTH, KEY, CFG)).error, 'source_unreadable');
+        assert.equal((await resolveUploadedSource(AUTH, KEY, CFG)).error, 'source_size_unknown');
     } finally { restore(); }
 });
 
@@ -67,4 +67,21 @@ test('ownership is still checked before any network call', async () => {
         assert.equal(out.error, 'source_not_found');
         assert.equal(called, false, 'a key that is not ours must not cost a round trip');
     } finally { globalThis.fetch = realFetch; }
+});
+
+test('a 200 response without an authoritative total never uses the sniffed prefix size', async () => {
+    const restore = stubFetch(null, 200);
+    try { assert.equal((await resolveUploadedSource(AUTH, KEY, CFG)).error, 'source_size_unknown'); }
+    finally { restore(); }
+});
+test('a 200 response uses Content-Length and enforces the same per-file bound', async () => {
+    const original = globalThis.fetch;
+    try {
+        for (const total of [PNG.length, CAP + 1]) {
+            globalThis.fetch = async () => new Response(PNG, {headers: {'content-length': String(total)}});
+            const result = await resolveUploadedSource(AUTH, KEY, CFG);
+            if (total > CAP) assert.equal(result.error, 'upload_too_large');
+            else { assert.equal(result.ok, true); assert.equal(result.sizeBytes, PNG.length); }
+        }
+    } finally { globalThis.fetch = original; }
 });

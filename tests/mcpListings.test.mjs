@@ -14,6 +14,7 @@ test('list_models text carries every model as JSON after the summary line', () =
   assert.deepEqual(JSON.parse(json), [{
     model_id: 'kling-3-pro-i2v', name: 'Kling 3.0 Pro I2V', modality: 'image-to-video', price_credits: 40,
     price_unit: 'per 5 seconds', aspect_ratios: ['16:9', '9:16'], durations: [5, 10], source_slots: ['image', 'endImage'],
+    source_limits: { image: { maxFiles: 1, required: true }, endImage: { maxFiles: 1, required: false } },
   }]);
 });
 

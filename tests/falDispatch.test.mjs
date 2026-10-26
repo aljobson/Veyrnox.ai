@@ -1,6 +1,7 @@
+import { capabilityFor } from '../lib/modelCapabilities.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { runFalDispatch, falDispatchEnabled } from '../lib/falDispatch.js';
+import { runFalDispatch, falDispatchEnabled, admitFalDispatch } from '../lib/falDispatch.js';
 const env = { FAL_DISPATCH_SCHEMA_ENABLED: 'true', FAL_DURABLE_DISPATCH_ENABLED: 'true',
     SUPABASE_URL: 'https://db.test', SUPABASE_SERVICE_ROLE_KEY: 'test', FAL_KEY: 'test-fal', PUBLIC_HOST: 'https://veyrnox.test' };
 const job = { job_id: 'test-job', attempt_token: 'test-token', endpoint: 'fal-ai/flux-2-pro', payload: { prompt: 'test' } };
@@ -102,4 +103,16 @@ test('the invocation reserves enough time for claim, submit, two evidence writes
     const d=deps({count:20,now:()=>calls++===0?0:135_000});
     assert.equal((await runFalDispatch(env,d)).submitted,0);
     assert.equal(d.calls.filter(c=>c.name==='start_fal_dispatch').length,0);
+});
+
+test('durable admission retries preserve exact request inputs and provider payload', async () => {
+    const calls=[];
+    const request={userId:'user',key:'retry-dispatch',model:{id:'flux-2-pro',provider_endpoint:'fal-ai/flux-2-pro'},record:capabilityFor('fal-ai/flux-2-pro'),
+        inputs:{prompt:'same scene',seed:12},jobInputs:{prompt:'same scene',seed:12,preset_id:'attribution'},free:false,cfg:{}};
+    const rpc=async(name,args)=>{calls.push({name,args:structuredClone(args)});return {ok:true,job_id:'job',idempotent:calls.length>1};};
+    assert.equal((await admitFalDispatch({...request,rpc})).status,202);
+    assert.equal((await admitFalDispatch({...request,rpc})).status,200);
+    assert.deepEqual(calls[1],calls[0]);
+    assert.deepEqual(calls[0].args.p_inputs,request.jobInputs);
+    assert.deepEqual(calls[0].args.p_payload,{prompt:'same scene',seed:12});
 });
