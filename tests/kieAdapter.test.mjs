@@ -200,3 +200,14 @@ test('Kling treats versioned Film Studio passport handles as labels, preserving 
     assert.equal(request.body.input.kling_elements, undefined);
     assert.equal(buildRequest(parseEndpoint('market:kling-2.6/text-to-video'), { prompt: original }).body.input.prompt, original);
 });
+
+test('a failed market task carries a short sanitized failMsg for the log, never links or emails', async () => {
+    const { sanitizeFailMessage } = await import('../packages/adapters/kie.js');
+    const out = interpretRecord('market', { state: 'fail', failCode: '400', failMsg: 'Image https://r2.example/x.png?X-Amz-Signature=abc is not\n accessible; contact a@b.co' });
+    assert.equal(out.errorCode, '400');
+    assert.equal(out.detail, 'Image [url] is not accessible; contact [email]');
+    assert.equal(interpretRecord('market', { state: 'fail', failCode: '400' }).detail, undefined);
+    assert.equal('detail' in interpretRecord('market', { state: 'fail', failCode: '400', failMsg: '   ' }), false);
+    assert.equal(sanitizeFailMessage({}), undefined);
+    assert.equal(sanitizeFailMessage('x'.repeat(500)).length, 160);
+});

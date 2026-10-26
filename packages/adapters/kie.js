@@ -307,7 +307,7 @@ export async function submitTask(job, cfg) {
  *
  * @returns {Promise<
  *   {ok:true, state:'success', outputUrl:string} |
- *   {ok:true, state:'fail', errorCode:string} |
+ *   {ok:true, state:'fail', errorCode:string, detail?:string} |
  *   {ok:true, state:'pending'} |
  *   {ok:false, error:string}
  * >}
@@ -341,6 +341,25 @@ export async function fetchTask(providerEndpoint, taskId, cfg) {
     return interpretRecord(target.kind, data.data);
 }
 
+const FAIL_DETAIL_MAX = 160;
+
+/**
+ * Kie's failMsg says why a task failed (the failCode alone is often just "400"). It is for the server
+ * log only: links (ours are signed), emails and control characters are removed and the text is cut short.
+ * @returns {string|undefined}
+ */
+export function sanitizeFailMessage(value) {
+    if (typeof value !== 'string') return undefined;
+    const text = value
+        .replace(/https?:\/\/\S+/gi, '[url]')
+        .replace(/[^\s@]+@[^\s@]+\.[^\s@]+/g, '[email]')
+        .replace(/[\u0000-\u001f\u007f]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, FAIL_DETAIL_MAX);
+    return text || undefined;
+}
+
 /** Pure mapping of a kie record onto our outcome. Exported for tests. */
 export function interpretRecord(kind, record) {
     if (kind === 'veo') {
@@ -362,7 +381,10 @@ export function interpretRecord(kind, record) {
         const url = Array.isArray(urls) && typeof urls[0] === 'string' ? urls[0] : null;
         return url ? { ok: true, state: 'success', outputUrl: url } : { ok: true, state: 'fail', errorCode: 'no_output_url' };
     }
-    if (record.state === 'fail') return { ok: true, state: 'fail', errorCode: String(record.failCode || 'provider_error').slice(0, 128) };
+    if (record.state === 'fail') {
+        const detail = sanitizeFailMessage(record.failMsg);
+        return { ok: true, state: 'fail', errorCode: String(record.failCode || 'provider_error').slice(0, 128), ...(detail ? { detail } : {}) };
+    }
     return { ok: true, state: 'pending' };
 }
 
