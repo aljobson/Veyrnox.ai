@@ -131,7 +131,7 @@ for (const status of [403, 404, 500]) test(`poll failure ${status} stops, surviv
     f.dispose(); assert.equal(f.timers.size, 0);
 });
 
-function localPanel({ transfer, getActor = () => actor, subscribe = () => () => {} } = {}) {
+function localPanel({ transfer, getActor = () => actor, subscribe = () => () => {}, createError, quoteWait } = {}) {
     const timeline = JSON.parse(read('tests/fixtures/editorServerRender/v2.json'));
     const old = timeline.video[0].mediaId;
     timeline.media.local = { ...timeline.media[old], id: 'local' }; delete timeline.media[old];
@@ -147,8 +147,9 @@ function localPanel({ transfer, getActor = () => actor, subscribe = () => () => 
         '../ConfirmDialog': { ConfirmDialog: 'confirm-dialog' },
         '../../_lib/gateway': { makeIdempotencyKey: () => 'fixed-test-key', notifyBalanceChanged() {}, gatewayFetch: async (path, init) => {
             calls.push({ path, init });
-            if (path.endsWith('/quote')) return { credits: 1, resolution: '1080p' };
+            if (path.endsWith('/quote')) { await quoteWait?.(); return { credits: 1, resolution: '1080p' }; }
             if (path === '/uploads') return { key: `uploads/${actor}/${actor}.mp4`, upload_url: 'https://r2.test/put', headers: { 'Content-Type': 'video/mp4' }, content_type: 'video/mp4', expires_in: 900, reserved: true };
+            if (createError) throw createError;
             return { job_id: actor, state: 'SUBMITTED', credits: 1 };
         } },
     });
@@ -175,6 +176,52 @@ test('local consent precedes all upload requests; Cancel sends nothing; confirm 
     assert.ok(create); const body = JSON.parse(create.init.body);
     assert.equal(body.quoted_credits, 1); assert.equal(body.document.timeline.video[0].mediaId, `u-${actor}`);
     assert.deepEqual(p.props.project.document, original); assert.equal(puts, 1); p.f.dispose();
+});
+
+test('file errors disappear when the snapshot identity changes', async () => {
+    const p = localPanel();
+    p.props.blobs.current.clear();
+    let tree = p.render();
+    await walk(tree).find(n => n.props.children === 'app.editor.server.getQuote').props.onClick();
+    tree = p.render();
+    const hasFileError = tree => walk(tree).some(n => n.type === 'p' && Array.isArray(n.props.children) && n.props.children.includes('app.editor.server.localMissing'));
+    assert.equal(hasFileError(tree), true);
+    p.props.label = 'Changed snapshot'; p.render();
+    assert.equal(hasFileError(p.render()), false); p.f.dispose();
+});
+
+for (const stage of ['quote', 'upload']) test(`successful ${stage} clears stale file errors`, async () => {
+    let complete;
+    const wait = () => new Promise(resolve => { complete = resolve; });
+    const p = localPanel(stage === 'quote' ? { quoteWait: wait } : { transfer: wait });
+    let tree = p.render();
+    let pending = walk(tree).find(n => n.props.children === 'app.editor.server.getQuote').props.onClick();
+    if (stage === 'upload') {
+        await pending; tree = p.render();
+        pending = walk(tree).find(n => n.type === 'confirm-dialog').props.onConfirm();
+        await new Promise(resolve => setImmediate(resolve));
+    }
+    // Simulate a stale per-file error while the asynchronous operation completes.
+    p.f.setters[4]([{ code: 'localMissing' }]);
+    assert.ok(walk(p.render()).some(n => Array.isArray(n.props.children) && n.props.children.includes('app.editor.server.localMissing')));
+    complete({ ok: true }); await pending;
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(walk(p.render()).some(n => Array.isArray(n.props.children) && n.props.children.includes('app.editor.server.localMissing')), false);
+    p.f.dispose();
+});
+
+test('ownership refusal after local upload displays the expired-upload message', async () => {
+    const p = localPanel({ transfer: async () => ({ ok: true }),
+        createError: { status: 403, code: 'editor_render_media_not_owned', body: { error: 'editor_render_media_not_owned' } } });
+    let tree = p.render();
+    await walk(tree).find(n => n.props.children === 'app.editor.server.getQuote').props.onClick(); tree = p.render();
+    await walk(tree).find(n => n.type === 'confirm-dialog').props.onConfirm();
+    await new Promise(resolve => setImmediate(resolve));
+    assert.ok(walk(p.render()).some(n => n.props.children === 'app.editor.server.uploadExpired'));
+    assert.equal(p.calls.find(c => c.path === '/uploads').init.preserveUploadErrors, true);
+    assert.equal(client.renderError({ status: 403, code: 'editor_render_media_not_owned' }), 'app.editor.server.ownership');
+    assert.equal(client.renderError({ status: 400, code: 'editor_render_media_not_owned', uploadedLocalFiles: true }), 'app.editor.server.ownership');
+    p.f.dispose();
 });
 for (const cause of ['cancel', 'account']) test(`${cause} aborts active file and prevents create`, async () => {
     let changed, currentActor = actor, aborted = false;

@@ -14,7 +14,10 @@ and the same durations. Unsupported files receive per-file translated reasons.
 Every new label is supplied in the same eleven locales as slice 4.
 
 MP4 (`video/mp4`) is limited to 100 MiB; MP3 (`audio/mpeg`) and WAV (`audio/wav`)
-to 20 MiB. Images, MOV, WebM, M4A and missing originals are refused. A batch may
+to 20 MiB. WAV aliases `audio/x-wav`, `audio/wave`, `audio/vnd.wave` and MP3 aliases
+`audio/mp3`, `audio/x-mpeg` are normalized before classification and grant issuance;
+the canonical type is signed and sent on PUT, with the original Blob unchanged.
+Images, MOV, WebM, M4A and missing originals are refused. A batch may
 contain at most ten local files; existing 40-clip and duration caps are unchanged.
 No upload or debit happens until the user confirms the file count, aggregate MB,
 retention statement and quoted price. Uploads are sequential, with progress and
@@ -29,7 +32,10 @@ authoritative under concurrency. A refusal preserves completed files, uses a
 specific translated message and charges nothing. The batch path fails closed
 when strict upload reservations are disabled; ordinary upload callers are unchanged.
 
-The gateway preserves upload budget/admission errors. The client passes every
+Only server-render uploads opt into gateway upload budget/admission errors via
+`preserveUploadErrors: true`; all other callers retain the default error codes,
+retry headers and operational-error reporting. The option never reaches fetch.
+The client passes every
 returned grant header and the unchanged Blob to the PUT. **Browser constraint:**
 JavaScript cannot set the forbidden `Content-Length` header; the browser derives
 it from the Blob. This follows existing editor-delivery and chat upload behavior.
@@ -39,14 +45,22 @@ A real browser/R2 test must still verify bucket CORS and signed-header behavior.
 Each file has at most three attempts per confirmation. A network error retries
 with the same grant until its 15-minute expiry; refresh creates a new reservation
 and retains the old budget. A PUT 412 is treated as possibly stored, leaving the
-same key for create's storage checks. Completed files are reused while their
-reservation anchor is younger than 23 hours. The anchor is captured immediately
-before asking for the grant, never when a delayed PUT response is processed.
+same key for create's storage checks. POST `/api/v1/uploads` optionally adds
+`reserved_until`, the database reservation's `created_at` plus 23 hours, read by
+the service role for the exact newly reserved key. No other reply field changes.
+Completed files use that server deadline; missing/invalid deadlines fall back to
+22 hours from the client timestamp captured immediately before requesting the
+grant. The optional database read failing leaves the original grant reply intact.
+Neither deadline is extended when a delayed PUT response is processed.
 Expired completed files require renewed consent and a new upload. The deadline
 is checked again immediately before the first create send. After that send the
 body, quoted credits and idempotency key are immutable, including after source expiry.
 The batch cache is account-bound and survives closing Export within the workspace;
 account changes abort active requests, clear it and prevent create.
+An immutable attempt records whether local files were uploaded. A subsequent
+403 `editor_render_media_not_owned` then displays the expired-upload message;
+ordinary ownership failures retain their existing message. Per-file validation
+errors clear on snapshot identity changes and successful quotes/uploads.
 
 ## Retention and admission safety
 
@@ -87,6 +101,24 @@ Apply 0401 before the Worker; flags remain unchanged and off in this checkout.
 remote main/open-PR migration-number check remains unverified in this sandbox.
 
 ## Proof and remaining acceptance
+
+Slice 5 fix round 1 follows work order SHA256
+`5045cf78d8698431e92d55e001c88cf6d5cdd8cb7625d1575d4c83cefb0ee1be`.
+Regression tests compare ordinary uploads with the default gateway contract,
+cover each audio alias through grant and PUT, server and fallback deadline
+boundaries, delayed completion, expired-upload messaging and file-error resets.
+No SQL migration or feature flag changes are needed for these fixes.
+
+Fix-round-1 sandbox proof: `npm test` exits 1 after 94.9 seconds: **5,797 tests,
+5,787 passed, 7 failed, 3 skipped**. Six failures are sandbox `listen EPERM`
+denials in auditRemediation, cinemaMalwareScanner and four deployRecovery cases;
+the seventh is the known socialActivityCursor positive-offset assertion. Those
+test files are untouched. The focused regression suite passes **55/55**.
+Targeted ESLint has zero errors and the two existing panel warnings (ref mutation
+during render and synchronous state updates in an effect); `git diff --check`
+passes. PostgreSQL acceptance, migration replay, browser/R2 behavior, application
+build and a real render were not verified in this fix round. No commit, push,
+publication or deployment was performed.
 
 Tests cover consent/cancel/account-change, limits/remapping, aggregate budget
 refusals, retry/412/expiry, delayed completion, immutable sent attempts, quote

@@ -47,6 +47,7 @@ function RenderSession({ actor, project, timeline, blobs, uploadCache, height, l
     useEffect(() => {
         generation.current++;
         setQuote(null);
+        setFileErrors([]);
     }, [identity]);
     useEffect(() => {
         alive.current = true;
@@ -65,7 +66,8 @@ function RenderSession({ actor, project, timeline, blobs, uploadCache, height, l
         if (!valid()) return;
         const code = error.body?.error || error.code;
         if (code === 'preview_only' && error.status === 403) { save({ unavailable: true }); return; }
-        save({ ...previous, error: { code, status: error.status, feature: error.body?.feature } });
+        save({ ...previous, error: { code, status: error.status, feature: error.body?.feature,
+            uploadedLocalFiles: previous?.attempt?.uploadedLocalFiles === true } });
     }
     useEffect(() => {
         // A completed POST replay has no render_id; read the canonical status once for delivery.
@@ -116,6 +118,7 @@ function RenderSession({ actor, project, timeline, blobs, uploadCache, height, l
             if (valid() && ticket === generation.current && identityRef.current === snapshotIdentity(frozen)) {
                 // Validate the server response without calculating a price.
                 renderAttempt(frozen, price, 'validation');
+                setFileErrors([]);
                 const pending = pendingRenderFiles(classified.files, cacheRef.current, actor);
                 setQuote({ snapshot: frozen, price, identity: snapshotIdentity(frozen), files: classified.files,
                     pending, consent: pending.map(file => file.id) });
@@ -157,6 +160,7 @@ function RenderSession({ actor, project, timeline, blobs, uploadCache, height, l
                 call: uploadCall, signal: abort.signal, onProgress: next => { if (valid()) setUpload(next); } });
             if (!valid()) return;
             // No async gap between final expiry check and the first create send.
+            setFileErrors([]);
             attempt = uploadedRenderAttempt(quote.snapshot, quote.price, makeIdempotencyKey(), quote.files, cacheRef.current, actor);
         } catch (error) {
             if (error.name !== 'AbortError') showError(error);

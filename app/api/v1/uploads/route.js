@@ -18,7 +18,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { rpc, envConfig } from '../../../../packages/db/supabase-client.js';
+import { rpc, select, envConfig } from '../../../../packages/db/supabase-client.js';
 import { presignPutUrl, listObjects, isConfigured as r2IsConfigured, envConfig as r2EnvConfig } from '../../../../packages/adapters/r2.js';
 import { checkDeclared, uploadKeyFor, UPLOAD_URL_TTL_SECONDS, UPLOAD_PREFIX } from '../../../../lib/uploadSource.js';
 import { admissionAvailable } from '../../../../lib/uploadAdmission.js';
@@ -146,6 +146,7 @@ export async function POST(req) {
     }
 
     const strict = process.env.UPLOAD_INTEGRITY_ENABLED === 'true';
+    let reservedUntil;
     if (strict) {
         let reserved;
         try {
@@ -159,6 +160,15 @@ export async function POST(req) {
             return NextResponse.json({ error: budget ? 'upload_budget_exceeded' : 'upload_reservation_unavailable' },
                 { status: budget ? 429 : 503, headers: { 'Cache-Control': 'no-store', 'Retry-After': '60' } });
         }
+        // Use the database reservation clock; an unavailable optional read keeps
+        // the existing grant contract and clients use their conservative fallback.
+        try {
+            const rows = await select('upload_reservations', {
+                columns: 'created_at', filter: `r2_key=eq.${encodeURIComponent(derived.key)}`, limit: 1,
+            }, cfg);
+            const createdAt = typeof rows?.[0]?.created_at === 'string' ? Date.parse(rows[0].created_at) : NaN;
+            if (Number.isFinite(createdAt)) reservedUntil = new Date(createdAt + 23 * 60 * 60 * 1000).toISOString();
+        } catch { /* backwards-compatible optional deadline */ }
     }
 
     let signed;
@@ -181,5 +191,6 @@ export async function POST(req) {
         max_bytes: declared.maxBytes,
         expires_in: signed.expires,
         reserved: strict,
+        ...(reservedUntil ? { reserved_until: reservedUntil } : {}),
     }, { headers: { 'Cache-Control': 'no-store' } });
 }

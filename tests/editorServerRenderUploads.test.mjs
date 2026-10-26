@@ -91,8 +91,9 @@ test('network retries are bounded; abort and account change stop before the next
     h.options.transfer = async () => { stop.abort(); return { ok: true }; };
     await assert.rejects(uploadRenderFiles(h.files, h.options), { name: 'AbortError' });
 });
-test('partial resume within 23h reuses; after 23h requires renewed consent then replaces swept source', async () => {
+test('legacy grant reuse falls back to 22h; expiry requires renewed consent then replaces source', async () => {
     const f = setup(); await uploadRenderFiles(f.files, f.options);
+    assert.equal(REUSE_MS, 22 * 60 * 60 * 1000);
     f.options.consent = []; f.time(REUSE_MS - 1);
     await uploadRenderFiles(f.files, f.options); assert.equal(f.counts().puts, 1);
     f.time(2);
@@ -100,6 +101,52 @@ test('partial resume within 23h reuses; after 23h requires renewed consent then 
     assert.equal(f.counts().puts, 1);
     f.options.consent = ['local-1']; await uploadRenderFiles(f.files, f.options);
     assert.equal(f.counts().puts, 2); assert.equal(f.counts().grants, 2);
+});
+
+for (const [alias, type, ext] of [
+    ['audio/x-wav', 'audio/wav', 'wav'], ['audio/wave', 'audio/wav', 'wav'], ['audio/vnd.wave', 'audio/wav', 'wav'],
+    ['audio/mp3', 'audio/mpeg', 'mp3'], ['audio/x-mpeg', 'audio/mpeg', 'mp3'],
+]) test(`${alias} is classified and uploaded with canonical ${type}`, async () => {
+    const f = setup(), original = blob(alias);
+    const { files, errors } = localRenderFiles(f.local, new Map([['local-1', original]]));
+    assert.deepEqual(errors, []); assert.equal(files[0].type, type);
+    f.options.call = async (path, init) => {
+        assert.equal(path, '/uploads'); assert.equal(init.preserveUploadErrors, true);
+        assert.equal(JSON.parse(init.body).content_type, type);
+        return { key: `uploads/${actor}/${id}.${ext}`, upload_url: 'https://r2.test/upload',
+            headers: { 'Content-Type': type, 'Content-Length': String(original.size), 'If-None-Match': '*' },
+            content_type: type, expires_in: 900, reserved: true };
+    };
+    f.options.transfer = async (_, init) => {
+        assert.equal(init.headers['Content-Type'], type); assert.equal(init.body, original);
+        assert.equal(init.body.type, alias); return { ok: true };
+    };
+    await uploadRenderFiles(files, f.options);
+});
+
+for (const offset of [-90 * 60000, 90 * 60000]) test(`server deadline overrides client anchor (offset ${offset})`, async () => {
+    const f = setup(), call = f.options.call;
+    const deadline = f.options.now() + offset + 23 * 60 * 60 * 1000;
+    f.options.call = async () => ({ ...await call(), reserved_until: new Date(deadline).toISOString() });
+    f.options.transfer = async () => { f.time(90 * 60000); return { ok: true }; };
+    await uploadRenderFiles(f.files, f.options);
+    assert.equal(f.cache.get('local-1').reservedUntil, deadline);
+    assert.equal(pendingRenderFiles(f.files, f.cache, actor, deadline - 1).length, 0);
+    assert.equal(pendingRenderFiles(f.files, f.cache, actor, deadline).length, 1);
+    const snapshot = renderSnapshot(f.local, 1080, 'Edit'), price = { credits: 1, resolution: '1080p' };
+    assert.throws(() => uploadedRenderAttempt(snapshot, price, 'key', f.files, f.cache, actor, deadline), { code: 'upload_consent_expired' });
+    f.time(deadline - f.options.now()); f.options.consent = [];
+    await assert.rejects(uploadRenderFiles(f.files, f.options), { code: 'upload_consent_expired' });
+    f.options.consent = ['local-1']; f.options.call = call;
+    await uploadRenderFiles(f.files, f.options); assert.equal(f.counts().grants, 2);
+});
+
+for (const value of [undefined, null, 123, 'not-a-date']) test(`invalid or absent deadline ${value} uses 22h fallback`, async () => {
+    const f = setup(), call = f.options.call, anchor = f.options.now();
+    f.options.call = async () => ({ ...await call(), reserved_until: value });
+    await uploadRenderFiles(f.files, f.options);
+    assert.equal(pendingRenderFiles(f.files, f.cache, actor, anchor + REUSE_MS - 1).length, 0);
+    assert.equal(pendingRenderFiles(f.files, f.cache, actor, anchor + REUSE_MS).length, 1);
 });
 test('delayed completion never extends reservation anchor; expiry checked immediately before first create', async () => {
     const f = setup(); f.options.transfer = async () => { f.time(90 * 60000); return { ok: true }; };

@@ -1,8 +1,12 @@
 import { ALLOWED_UPLOAD_TYPES } from '../../../lib/uploadSource.js';
 import { renderSnapshot, renderAttempt } from './editorServerRenderClient.mjs';
 
-export const REUSE_MS = 23 * 60 * 60 * 1000;
+export const REUSE_MS = 22 * 60 * 60 * 1000;
 const supported = new Set(['video/mp4', 'audio/mpeg', 'audio/wav']);
+const aliases = new Map([
+    ['audio/x-wav', 'audio/wav'], ['audio/wave', 'audio/wav'], ['audio/vnd.wave', 'audio/wav'],
+    ['audio/mp3', 'audio/mpeg'], ['audio/x-mpeg', 'audio/mpeg'],
+]);
 const serverMedia = id => /^[jefu]-/.test(id);
 const failure = code => Object.assign(new Error(code), { code });
 export function exportDocument(document) {
@@ -17,7 +21,7 @@ export function localRenderFiles(document, blobs = new Map()) {
     const files = [], errors = [];
     for (const media of Object.values(document.timeline.media)) {
         if (serverMedia(media.id)) continue;
-        const blob = blobs.get(media.id), type = blob?.type;
+        const blob = blobs.get(media.id), type = aliases.get(blob?.type) || blob?.type;
         const code = !blob ? 'localMissing' : !supported.has(type) ? 'localType'
             : !Number.isSafeInteger(blob.size) || blob.size < 1 || blob.size > ALLOWED_UPLOAD_TYPES[type].maxBytes ? 'localSize' : null;
         if (code) errors.push({ id: media.id, name: media.name, code });
@@ -27,7 +31,7 @@ export function localRenderFiles(document, blobs = new Map()) {
     return { files, errors };
 }
 export function reusableUpload(record, file, actor, now = Date.now()) {
-    return !!record?.complete && record.actor === actor && record.blob === file.blob && now < record.anchor + REUSE_MS;
+    return !!record?.complete && record.actor === actor && record.blob === file.blob && now < (record.reservedUntil ?? record.anchor + REUSE_MS);
 }
 export const pendingRenderFiles = (files, cache, actor, now = Date.now()) => files.filter(file => !reusableUpload(cache.get(file.id), file, actor, now));
 export function remapRenderDocument(document, mapping) {
@@ -44,7 +48,8 @@ export function uploadedRenderAttempt(snapshot, price, key, files, cache, actor,
     if (pendingRenderFiles(files, cache, actor, now).length) throw failure('upload_consent_expired');
     const mapping = new Map(files.map(file => [file.id, cache.get(file.id).mediaId]));
     const doc = remapRenderDocument(snapshot.document, mapping);
-    return renderAttempt(renderSnapshot(doc, Number.parseInt(snapshot.resolution), snapshot.label), price, key);
+    return Object.freeze({ ...renderAttempt(renderSnapshot(doc, Number.parseInt(snapshot.resolution), snapshot.label), price, key),
+        uploadedLocalFiles: files.length > 0 });
 }
 
 /** One file at a time; completed sources survive refusals/cancellation in cache. */
@@ -67,14 +72,16 @@ export async function uploadRenderFiles(files, { actor, getActor, cache, consent
                 if (!record || now() >= record.expiresAt) {
                     // Captured BEFORE requesting: PUT completion never extends retention.
                     const anchor = now();
-                    const grant = await call('/uploads', { method: 'POST', signal,
+                    const grant = await call('/uploads', { method: 'POST', signal, preserveUploadErrors: true,
                         body: JSON.stringify({ content_type: file.type, size_bytes: file.size,
                             batch_count: pending.length - index, batch_bytes: pending.slice(index).reduce((sum, item) => sum + item.size, 0) }) });
                     check();
                     const match = /^uploads\/([0-9a-f-]{36})\/([0-9a-f-]{36})\.(mp4|mp3|wav)$/.exec(grant.key || '');
                     if (grant.reserved !== true || !match || match[1] !== actor.toLowerCase() || !grant.upload_url || !grant.headers
                         || grant.content_type !== file.type || !Number.isFinite(grant.expires_in) || grant.expires_in <= 0) throw failure('upload_invalid_grant');
-                    record = { actor, blob: file.blob, anchor, expiresAt: anchor + grant.expires_in * 1000,
+                    const deadline = typeof grant.reserved_until === 'string' ? Date.parse(grant.reserved_until) : NaN;
+                    record = { actor, blob: file.blob, anchor, reservedUntil: Number.isFinite(deadline) ? deadline : undefined,
+                        expiresAt: anchor + grant.expires_in * 1000,
                         mediaId: `u-${match[2]}`, grant, complete: false };
                     cache.set(file.id, record);
                 }

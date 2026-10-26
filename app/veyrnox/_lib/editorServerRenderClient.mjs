@@ -61,6 +61,7 @@ const ERRORS = Object.freeze({
 });
 export function renderError(error) {
     const code = error?.code || error?.error;
+    if (error?.status === 403 && code === 'editor_render_media_not_owned' && error.uploadedLocalFiles === true) return 'app.editor.server.uploadExpired';
     return `app.editor.server.${error?.status === 501 ? 'disabled' : Object.hasOwn(ERRORS, code) ? ERRORS[code] : 'failed'}`;
 }
 // Server-supplied feature names select known translated labels, never raw text.
