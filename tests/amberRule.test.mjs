@@ -7,7 +7,7 @@ const read = (p) => readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
 
 test('U3: warn is its own token in every theme block', () => {
   const css = read('app/globals.css');
-  assert.equal((css.match(/--vx-warn:/g) || []).length, 3, 'dark, light and print');
+  assert.equal((css.match(/--vx-warn:/g) || []).length, 4, 'dark, light, system (light under prefers-color-scheme) and print');
   assert.match(read('app/veyrnox/veyrnox.css'), /\.vx-paper \{[^}]*--vx-warn:/);
   assert.match(css, /--color-vx-warn: rgb\(var\(--vx-warn\)\)/);
 });
