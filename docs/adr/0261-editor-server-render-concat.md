@@ -1,6 +1,6 @@
 # ADR-0261: Server render for editor export (Concat runner)
 
-Status: Accepted; slices 2–3 built, production flag off
+Status: Accepted; slices 2–4 web built, production flag off
 Date: 2026-10-25
 
 ## Context
@@ -74,7 +74,7 @@ default and stays free. Nothing changes for a user who does not choose it.
 1. Runner repo or folder, image, fake-source smoke test (done in #1652).
 2. Translator as a tested module for schemaVersion 2 and 3, with fixtures (built, supported subset below).
 3. `jobs` kind, callback, refund path, idempotency tests, behind the flag (built; SQL/runtime acceptance outstanding below).
-4. Export dialog option and mobile entry, behind the same flag.
+4. Export dialog option (web built below); mobile entry remains out of scope.
 5. Owner-approved price (built), fidelity decision, owner flip.
 
 ## Consequences
@@ -422,3 +422,77 @@ files were not edited. Focused editor-render tests: **31 passed, zero failed,
 one PostgreSQL suite skipped**. Catalog UPDATE guards, targeted ESLint and
 `git diff --check` pass. Database execution/migration replay, application/container
 builds and a real Concat render were not verified in this round.
+
+## Slice 4 web: built, owner preview and round-1 fixes (2026-10-26)
+
+Frozen work order SHA256:
+`ae224b919e8f0343ed0505e24a05af017431e746d8d18df48a49eb7fb720b361`.
+
+The web export modal offers **Export on server** below unchanged browser controls.
+It requires an attached saved cloud project and uses `documentForTimeline`, the
+save builder. Only the selected 720p or 1080p size is supported; other sizes show
+a disabled reason. Unsupported edits remain translator errors. The panel warns
+about preview differences and the server's MP4 / 30 fps output.
+
+`editorServerRenderMode` maps grouped `serverRender` values `false`, `preview`,
+`true` to `off`, `preview`, `on`; an explicit legacy flag overrides the group.
+Boolean callers still accept only `true`. Both production render flags stay
+`false`. After deployment, the owner can select `preview` and provision the
+comma-separated UUID allowlist in Worker secret `EDITOR_SERVER_RENDER_PREVIEW_USER_IDS`.
+Empty/missing admits nobody. Create and quote enforce 403 `preview_only`; owned
+status/cancel continue regardless of admission mode. Recovery is independently gated.
+
+Set the browser convenience switch in the console, then reopen Export:
+
+```js
+localStorage.setItem('veyrnox_editor_server_render', '1');
+// Hide it again:
+localStorage.removeItem('veyrnox_editor_server_render');
+```
+
+Neither the switch nor the UI is a security boundary. Either UI gate closed means
+no panel DOM or requests. Preview-denied accounts' panels hide. REV-001 gates the
+extra ProjectBar document/actor context with a prop: mode off retains the original
+payload and doc-only changes do not trigger its context effect (regression tested).
+
+`POST /api/v1/editor/server-render/quote` translates the same snapshot as create
+and returns server credits, seconds, resolution and maximum duration. Confirmation
+freezes document, size and label; any change invalidates it. Only Confirm admits,
+with `quoted_credits`. Retries reuse body/key; a known failed attempt gets a new
+key and quote. REV-002 rejects blank, over-160-character or control-character names
+before quoting, with name-specific messages in all 11 locales and boundary tests.
+Workspace state survives closing Export and the 402 credits-dialog handoff. Return
+after top-up to re-quote. Existing generation balance is reused without a request.
+Status handles uppercase mutations and `publicJob` reads; visible-tab polling backs
+off from 3 to 10 seconds. REV-003 stops on 403/404 or five consecutive other failures;
+success resets the streak. The stopped state survives reopening, offers status-only
+retry, and keeps Cancel available. Terminal jobs/unmount stop polling. Delivery uses
+`render_id` and existing Library asset/download routes. Pure and component tests cover this.
+
+REV-004: quote and create each consume the shared `consume_upload_request` limiter.
+Two requests per confirmed export are acceptable for this opt-in owner preview:
+translation and admission both remain abuse-limited using the existing path.
+Repeated quotes can exhaust that shared allowance; the limiter is unchanged.
+
+Migration **0398** adds service-role-only quote/shared arithmetic. Admit drops the
+old overload and checks consent after replay lookup, before debit/job creation;
+other 0396 behavior and the browser-callable allowlist stay unchanged. Replay keeps
+original credits/state after catalog changes. Apply 0398 before the Worker.
+Main ended at 0397; checked open PRs 1658, 1662 and 1665 added no migrations.
+Tests cover both resolutions at 10.0/10.03 seconds, quote/debit equality, price drift
+without debit/job, original-price replay and PUBLIC/anon/authenticated denial.
+
+Host acceptance of the pre-fix build: migration replay **374 clean**, PostgreSQL
+**30/30**, `npm test` **5688/5691**, with the known timezone failure, as reported.
+Round-1 browser keyboard/pointer, 375 px, dark/light and real runner checks remain
+unverified here; prior local browser startup was blocked by `listen EPERM`.
+Database tests/replay were not rerun for these UI-only fixes. No commit, push,
+publication, deployment or flag flip. The mandatory knowledge generator retains
+its existing >9,000-line format (previously reported size-limit deviation);
+all other changed/new files remain under 500 lines.
+
+Round-1 sandbox proof: `npm test` exits 1: **5,700 tests, 5,691 passed, 7 failed,
+2 skipped** (86.9 s). Failures: six localhost `listen EPERM` cases and the known
+socialActivityCursor timezone assertion; those tests are untouched. Focused suite:
+**35 passed**. Targeted ESLint: zero errors, two warnings on existing confirmation
+state code. Locale parity, knowledge freshness and `git diff --check` pass.

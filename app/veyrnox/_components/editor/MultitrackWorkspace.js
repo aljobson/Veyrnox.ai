@@ -24,6 +24,7 @@ import { GenerationPanel } from './GenerationPanel';
 import { AdvancedMediaBin } from './AdvancedMediaBin';
 import { matchLocalFile } from '../../_lib/editorProject.mjs';
 import { ExportPanel } from './ExportPanel';
+import { ServerRenderPanel } from './ServerRenderPanel';
 import { CatalogPanel } from './CatalogPanel';
 import { CaptionPanel } from './CaptionPanel';
 import { FilterPanel } from './FilterPanel';
@@ -81,8 +82,9 @@ const EDITOR_PALETTE={
 export function MultitrackWorkspace({ onCredits }) {
     const { t, locale } = useI18n();
     const number = value => locale === 'en' ? value : Number(value).toLocaleString(localeTag(locale));
-    const {organization,localInference,scenes,clipper,agent}=useEditorCompletionFlags(),[scenePreview,setScenePreview]=useState([]),fontRegistry=useRef(null);
+    const {organization,localInference,scenes,clipper,agent,serverRender}=useEditorCompletionFlags(),[scenePreview,setScenePreview]=useState([]),fontRegistry=useRef(null);
     const sharedTools=useEditorSharedEnabled(),[projectContext,setProjectContext]=useState(null);
+    const [serverRenderState, setServerRenderState] = useState(null), [serverRenderBalance, setServerRenderBalance] = useState(null);
     const [fitScreen,setFitScreen]=useState(true);
     const [layout,setLayout]=useState({...WORKSPACE_LAYOUT});
     const [proxies,setProxies]=useState(()=>new Map()),[proxyJob,setProxyJob]=useState(null),[previewStatus,setPreviewStatus]=useState({sources:[]}),proxyGeneration=useRef(0),sourceGeneration=useRef(0),privateSession=useRef(false);
@@ -269,7 +271,7 @@ export function MultitrackWorkspace({ onCredits }) {
     const openMedia = () => { setPanel('Media'); setMobileStage('media'); };
     return <div role="region" data-testid="editor-workspace" aria-label={t("app.editor.workspace.workspace")} style={EDITOR_PALETTE} className={`${fitScreen?"fixed inset-0 z-[60] flex flex-col overflow-hidden outline-none":"space-y-3 rounded-2xl"} bg-vx-base text-vx-fg`} tabIndex={0} onKeyDown={keys}>
         {shortcuts&&<ShortcutGuide onClose={()=>setShortcuts(false)} />}
-        {exportOpen&&<Modal aria-label={t("app.editor.workspace.exportVideo")} onCancel={()=>setExportOpen(false)} className="items-center justify-center p-4"><div className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-2xl border border-vx-border bg-vx-panel p-5 shadow-2xl"><div className="mb-4 flex items-center justify-between gap-3"><h2 className="text-lg font-black">{t("app.editor.workspace.export")}</h2><Button size="sm" variant="ghost" onClick={()=>setExportOpen(false)}>{t("app.editor.workspace.close")}</Button></div><ExportPanel tl={tl} name={exportName} onName={setExportName} height={height} onHeight={setHeight} disabled={disabled} exporting={exporting} progress={progress} result={result} blocker={blocker} onExport={runExport} onCancel={() => abort.current?.abort()} onCover={async () => { await preview.current.draw(tl, frame, canvas.current); return new Promise((resolve, reject) => canvas.current.toBlob(blob => blob ? resolve(blob) : reject(new Error(t("app.editor.workspace.noFrame"))), 'image/png')); }} /></div></Modal>}
+        {exportOpen&&<Modal aria-label={t("app.editor.workspace.exportVideo")} onCancel={()=>setExportOpen(false)} className="items-center justify-center p-4"><div className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-2xl border border-vx-border bg-vx-panel p-5 shadow-2xl"><div className="mb-4 flex items-center justify-between gap-3"><h2 className="text-lg font-black">{t("app.editor.workspace.export")}</h2><Button size="sm" variant="ghost" onClick={()=>setExportOpen(false)}>{t("app.editor.workspace.close")}</Button></div><ExportPanel tl={tl} name={exportName} onName={setExportName} height={height} onHeight={setHeight} disabled={disabled} exporting={exporting} progress={progress} result={result} blocker={blocker} onExport={runExport} onCancel={() => abort.current?.abort()} onCover={async () => { await preview.current.draw(tl, frame, canvas.current); return new Promise((resolve, reject) => canvas.current.toBlob(blob => blob ? resolve(blob) : reject(new Error(t("app.editor.workspace.noFrame"))), 'image/png')); }} />{serverRender !== 'off' && <ServerRenderPanel mode={serverRender} project={projectContext} timeline={tl} height={height} label={exportName} balanceInfo={serverRenderBalance} state={serverRenderState} onState={setServerRenderState} onCredits={() => { setExportOpen(false); onCredits?.(); }} />}</div></Modal>}
         {draftCandidate&&<div role="status" className="m-3 flex flex-wrap items-center gap-3 rounded-xl border border-vx-accent bg-vx-panel px-4 py-3 text-sm">
             <div className="min-w-0 flex-1"><p className="font-bold">{t("app.editor.workspace.recoverQuestion")}</p><p className="text-xs text-vx-fg-muted">{t('app.editor.workspace.savedAt', { date: new Date(draftCandidate.updatedAt).toLocaleString(localeTag(locale)) })}</p></div>
             <Button size="sm" onClick={recoverDraft} data-testid="editor-recover">{t("app.editor.workspace.recover")}</Button><Button size="sm" variant="ghost" onClick={discardDraft} data-testid="editor-discard">{t("app.publish.drafts.discard")}</Button>
@@ -281,7 +283,7 @@ export function MultitrackWorkspace({ onCredits }) {
                 <span aria-hidden="true" className="h-5 w-px bg-vx-border" />
                 <span className="text-[11px] font-black uppercase tracking-[0.16em] text-vx-fg-body">Cut</span>
             </div>
-            <ProjectBar compact onContext={setProjectContext} tl={tl} blobs={blobs} onLoadTimeline={load} onRelinked={relinked} />
+            <ProjectBar compact serverRenderEligible={serverRender !== 'off'} onContext={setProjectContext} tl={tl} blobs={blobs} onLoadTimeline={load} onRelinked={relinked} />
             <EditorHelperHost />
             {draftStatus&&draftStatus!=='recovery'&&<span role="status" className="hidden shrink-0 text-[10px] text-vx-fg-muted xl:inline">{tOr(t, `app.editor.workspace.draft.${draftStatus}`, draftStatus)}</span>}
             <div className="flex w-full shrink-0 items-center justify-end gap-1.5 border-t border-vx-border pt-2 sm:ms-auto sm:w-auto sm:gap-2 sm:border-t-0 sm:pt-0">
@@ -321,7 +323,7 @@ export function MultitrackWorkspace({ onCredits }) {
                 <Button data-testid="editor-add-text" size="sm" disabled={disabled} onClick={() => { const next = apply(sequence => addSequenceText(sequence, { start: Math.min(frame, SEQUENCE_MAX - 90) })); if (next) selectClip({ track: 'text', id: `t${next.seq}` }); }}>{t("app.editor.workspace.addText")}</Button></>}
                 {panel==='Audio' && <><VoiceoverRecorder disabled={disabled} onError={setNotice} onRecord={(file,name)=>ingest(file,name,undefined,undefined,{}, {start:Math.min(frame,SEQUENCE_MAX-1)})} /><OriginalAudioPanel disabled={disabled} onIngest={ingest} /></>}
                 {panel==='Plugins' && <AssetPackPanel disabled={disabled} onIngest={ingest} />}
-                <div hidden={panel !== 'Generate'}><GenerationPanel disabled={disabled} onIngest={ingest} /></div>
+                <div hidden={panel !== 'Generate'}><GenerationPanel disabled={disabled} onIngest={ingest} onBalance={serverRender !== 'off' ? setServerRenderBalance : undefined} /></div>
                 <div hidden={panel!=='Audio'}><GenerationPanel voiceover disabled={disabled} onIngest={ingest} /></div>
                 <div hidden={panel!=='Elements'}><GenerationPanel avatar disabled={disabled} onIngest={ingest} /></div>
                 {panel === 'Text' && <><TextStyleCatalog disabled={disabled} frame={frame} apply={apply} onSelect={selectClip} />{organization&&<CustomFontPanel tl={tl} registry={fontRegistry} disabled={disabled} apply={apply} onError={setNotice} onLoaded={()=>setTick(n=>n+1)} onBusy={setBusy} />}</>}
