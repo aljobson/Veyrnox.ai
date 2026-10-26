@@ -21,7 +21,7 @@ import { loadLibraryBlob } from '../../_lib/editorLibrary.mjs';
 import { libraryMediaId } from '../../_lib/editorMedia.mjs';
 import { generationInputs, generationQuote, generationSources, generationModelsForMode, generationAvatarSupported, generationSourceLabel, generationPromptHelpDiagnostic as generationPromptHelp, generationMovementPrompt, CAMERA_MOVEMENTS, MOVEMENT_PACES } from '../../_lib/editorGeneration.mjs';
 import { generationSlotKind, generationMimeTypes } from '../../../../lib/generationSourceSlots.mjs';
-export function GenerationPanel({ disabled, onIngest,voiceover=false,avatar=false }) {
+export function GenerationPanel({ disabled, onIngest,voiceover=false,avatar=false, onBalance }) {
   const { t, locale } = useI18n();
     const number = value => locale === 'en' ? value : Number(value).toLocaleString(localeTag(locale));
     const credits = count => t(pluralKey(t, locale, 'app.editor.generation.credits', Number(count)), { count: count == null ? '—' : number(count) });
@@ -37,10 +37,10 @@ export function GenerationPanel({ disabled, onIngest,voiceover=false,avatar=fals
     const loadBalance = useCallback(() => {
         const owner = getSession()?.user?.id; if (!owner) return;
         Promise.all([gatewayFetch('/balance'), gatewayFetch('/free-allowance').catch(() => null)]).then(([balance, allowance]) => {
-            if (alive.current && getSession()?.user?.id === owner) { setBalance(balance.balance); setFreeLeft(allowance?.enabled ? allowance.left || {} : {}); }
-        }, () => { if (alive.current && getSession()?.user?.id === owner) setBalance(null); });
-    }, []);
-    useEffect(() => { alive.current = true; loadBalance(); const off = onSessionChange(() => { uploadController.current?.abort();clearJobs(); pending.current = null; setSources({}); setLibraryFor(null); setError(''); setPrompt(''); setVoice(''); setMovement('push-in'); setPace('gentle'); setConsent(false); setFreeLeft({}); setBalance(null); loadBalance(); }); window.addEventListener('veyrnox:balance-changed', loadBalance); return () => { alive.current = false; uploadController.current?.abort();off(); window.removeEventListener('veyrnox:balance-changed', loadBalance); }; }, [clearJobs, loadBalance]);
+            if (alive.current && getSession()?.user?.id === owner) { setBalance(balance.balance); onBalance?.({ actor: owner, balance: balance.balance }); setFreeLeft(allowance?.enabled ? allowance.left || {} : {}); }
+        }, () => { if (alive.current && getSession()?.user?.id === owner) { setBalance(null); onBalance?.({ actor: owner, balance: null }); } });
+    }, [onBalance]);
+    useEffect(() => { alive.current = true; loadBalance(); const off = onSessionChange(() => { uploadController.current?.abort();clearJobs(); pending.current = null; setSources({}); setLibraryFor(null); setError(''); setPrompt(''); setVoice(''); setMovement('push-in'); setPace('gentle'); setConsent(false); setFreeLeft({}); setBalance(null); onBalance?.(null); loadBalance(); }); window.addEventListener('veyrnox:balance-changed', loadBalance); return () => { alive.current = false; uploadController.current?.abort();off(); window.removeEventListener('veyrnox:balance-changed', loadBalance); }; }, [clearJobs, loadBalance, onBalance]);
     function pick(slot, asset) { setSources(previous => ({ ...previous, [slot]: { assetId: asset.id, previewUrl: asset.url, label: asset.label, mimeType: asset.mimeType } })); setConsent(false); setError(''); }
     function pickFile(slot,file) { const problem=generationFileProblem(slot,file);if(problem){setError(problem);return;}setSources(previous=>({...previous,[slot]:{file,localId:crypto.randomUUID(),mimeType:generationFileType(file),label:file.name}}));setConsent(false);setError(''); }
     // The paperclip: the files' types pick the slots, and the model follows the files.
@@ -74,7 +74,7 @@ export function GenerationPanel({ disabled, onIngest,voiceover=false,avatar=fals
             const r = await gatewayFetch('/generations', { method: 'POST', body: JSON.stringify(pending.current.body) }); const credits = r.free_allowance ? 0 : quote;
             if (!alive.current || getSession()?.user?.id !== owner) return;
             pushJobHistory({ job_id: r.job_id, model_id: model.id, credits, name: (prompt || model.name).slice(0, 40) }); pending.current = null;
-            if (alive.current) { startJobs({ job_id: r.job_id, state: 'queued', model_id: model.id, credits }); if (r.balance_after != null) setBalance(r.balance_after); } notifyBalanceChanged();
+            if (alive.current) { startJobs({ job_id: r.job_id, state: 'queued', model_id: model.id, credits }); if (r.balance_after != null) { setBalance(r.balance_after); onBalance?.({ actor: owner, balance: r.balance_after }); } } notifyBalanceChanged();
         } catch (e) { if (alive.current&&getSession()?.user?.id===owner) setError(e.name==='AbortError'?t("app.editor.generation.uploadCancelled"):e.code === 'account_paused' ? t("app.editor.generation.paused") : e.status === 429 ? t("app.editor.generation.rateLimit") : t("app.editor.generation.unconfirmed")); }
         finally { sent.current = false;uploadController.current=null; if (alive.current) {setSending(false);setUploading(null);} }
     }

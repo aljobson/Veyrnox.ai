@@ -1,0 +1,130 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import React from 'react';
+import ts from 'typescript';
+import * as client from '../app/veyrnox/_lib/editorServerRenderClient.mjs';
+
+const require = createRequire(import.meta.url);
+const read = path => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
+const actor = '11111111-1111-4111-8111-111111111111';
+const walk = node => Array.isArray(node) ? node.flatMap(walk) : React.isValidElement(node) ? [node, ...walk(node.props.children)] : [];
+// Same transpiled-component/hook approach as authenticatedSmartLinkState.test.mjs.
+function fixture(file, exported, mocks = {}, initialStates = {}) {
+    let cursor = 0, stateIndex = 0;
+    const slots = [], setters = [], effects = [], timers = new Map();
+    let timerId = 0;
+    const hooks = {
+        useState(initial) {
+            const index = cursor++, at = stateIndex++;
+            if (!(index in slots)) slots[index] = Object.hasOwn(initialStates, at) ? initialStates[at] : typeof initial === 'function' ? initial() : initial;
+            setters[at] = value => { slots[index] = typeof value === 'function' ? value(slots[index]) : value; };
+            return [slots[index], setters[at]];
+        },
+        useRef(current) { const index = cursor++; return slots[index] ||= { current }; },
+        useMemo(fn, deps) {
+            const index = cursor++, previous = slots[index];
+            if (!previous || deps.some((value, i) => !Object.is(value, previous.deps[i]))) slots[index] = { deps, value: fn() };
+            return slots[index].value;
+        },
+        useCallback(fn, deps) { return hooks.useMemo(() => fn, deps); },
+        useEffect(fn, deps) {
+            const index = cursor++, previous = slots[index];
+            if (!previous || deps.some((value, i) => !Object.is(value, previous.deps[i]))) {
+                previous?.cleanup?.(); slots[index] = { deps };
+                effects.push(() => { slots[index].cleanup = fn(); });
+            }
+        },
+    };
+    const timer = fn => { timers.set(++timerId, fn); return timerId; };
+    const clear = id => timers.delete(id);
+    const browserDocument = { visibilityState: 'visible', addEventListener() {}, removeEventListener() {} };
+    const stubs = {
+        react: hooks,
+        '../../../../components/I18nProvider': { useI18n: () => ({ t: key => key, locale: 'en' }) },
+        '../../../../lib/i18n/locales.mjs': { localeTag: () => 'en' },
+        '../../../lib/authClient': { getStoredUserId: () => actor },
+        '../Button': { Button: 'button' },
+        ...mocks,
+    };
+    const output = { exports: {} };
+    const code = ts.transpileModule(`${read(file)}\nexport { ${exported} };`, {
+        compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+    }).outputText;
+    new Function('require', 'exports', 'window', 'document', 'setTimeout', 'clearTimeout', code)(
+        id => id === 'react/jsx-runtime' ? require(id) : stubs[id] || {}, output.exports,
+        { location: { search: '' } }, browserDocument, timer, clear);
+    return {
+        setters, timers,
+        render(props) { cursor = 0; stateIndex = 0; const tree = output.exports[exported](props); while (effects.length) effects.shift()(); return tree; },
+        async tick() { const [id, fn] = timers.entries().next().value; timers.delete(id); await fn(); },
+        dispose() { for (const slot of slots) slot?.cleanup?.(); },
+    };
+}
+
+for (const eligible of [undefined, false, true]) test(`project context document subscription is gated (${eligible})`, () => {
+    const first = { project_id: 'project', schema_version: 2 }, next = { ...first, brief: 'Changed' };
+    const context = [];
+    const f = fixture('app/veyrnox/_components/editor/ProjectBar.js', 'ProjectSessionBar', {
+        '../ProjectsFlag': { useProjectsEnabled: () => false },
+        './MultitrackFlag': { useMultitrackEnabled: () => true },
+        '../../../../lib/projectDocument.js': { equalProjectDocuments: () => true },
+        '../../_lib/editorProject.mjs': { documentForTimeline: doc => doc },
+    }, { 3: first });
+    const props = { tl: {}, blobs: { current: new Map() }, onContext: value => context.push(value), serverRenderEligible: eligible };
+    f.render(props);
+    assert.equal(context.length, 1);
+    const original = { id: null, workspaceId: null, revision: 0, dirty: false, busy: false, error: false, savedAt: null };
+    assert.deepEqual(context[0], eligible ? { ...original, document: first, actor } : original);
+    f.setters[3](next); f.render(props);
+    assert.equal(context.length, eligible ? 2 : 1, 'doc-only changes must not re-run setProjectContext while off');
+    if (eligible) assert.equal(context[1].document, next);
+    else { assert.equal(Object.hasOwn(context[0], 'document'), false); assert.equal(Object.hasOwn(context[0], 'actor'), false); }
+    f.dispose();
+});
+
+test('workspace passes the admission flag gate to ProjectBar', () => {
+    assert.match(read('app/veyrnox/_components/editor/MultitrackWorkspace.js'), /<ProjectBar compact serverRenderEligible=\{serverRender !== 'off'\}/);
+});
+
+for (const status of [403, 404, 500]) test(`poll failure ${status} stops, survives reopening, and retries only status with cancel available`, async () => {
+    const calls = [];
+    let fail = true;
+    let state = { actor, job: client.renderStatus({ job_id: 'job', state: 'SUBMITTED', credits: 2 }) };
+    const mocks = {
+        '../../_lib/editorServerRenderClient.mjs': client,
+        '../../_lib/editorDelivery.mjs': { accountBoundCall: call => call },
+        '../../_lib/gateway': {
+            gatewayFetch: async (path, init = {}) => { calls.push({ path, method: init.method || 'GET' }); if (fail) throw { status }; return { job_id: 'job', state: 'running', credits: 2 }; },
+            makeIdempotencyKey: () => assert.fail('checking status must not create a paid attempt'), notifyBalanceChanged() {},
+        },
+        '../ConfirmDialog': { ConfirmDialog: 'confirm-dialog' },
+    };
+    const create = () => fixture('app/veyrnox/_components/editor/ServerRenderPanel.js', 'RenderSession', mocks);
+    let f = create();
+    const props = { actor, timeline: {}, height: 720, label: 'Name', onState: value => { state = typeof value === 'function' ? value(state) : value; } };
+    const render = () => f.render({ ...props, state });
+    let tree = render();
+    const limit = status === 500 ? 5 : 1;
+    for (let n = 0; n < limit; n++) { assert.equal(f.timers.size, 1); await f.tick(); tree = render(); }
+    assert.equal(calls.length, limit);
+    assert.equal(f.timers.size, 0);
+    assert.equal(state.job.phase, 'rendering', 'status failure must not claim the render failed');
+    assert.equal(state.statusUnavailable, true);
+    assert.ok(walk(tree).some(node => node.type === 'p' && node.props.children === 'app.editor.server.statusUnavailable'));
+    assert.equal(walk(tree).filter(node => node.type === 'progress').length, 0);
+    const cancel = walk(tree).find(node => node.type === 'button' && node.props.children === 'app.editor.server.cancel');
+    assert.equal(cancel.props.disabled, false);
+    cancel.props.onClick(); tree = render();
+    assert.ok(walk(tree).some(node => node.type === 'confirm-dialog' && node.props.onConfirm));
+    f.dispose(); f = create(); tree = render();
+    assert.equal(f.timers.size, 0, 'reopening must retain stopped state');
+    fail = false;
+    walk(tree).find(node => node.type === 'button' && node.props.children === 'app.editor.server.retryStatus').props.onClick();
+    render(); assert.equal(f.timers.size, 1);
+    await f.tick(); render();
+    assert.equal(state.statusUnavailable, false);
+    assert.ok(calls.every(call => call.method === 'GET' && call.path === '/editor/server-render?job_id=job'));
+    f.dispose(); assert.equal(f.timers.size, 0);
+});

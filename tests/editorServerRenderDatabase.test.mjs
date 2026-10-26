@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { readFileSync } from 'node:fs';
+import { quoteDatabaseTests } from './helpers/editorServerRenderQuoteDatabase.mjs';
 import { fixtureSQL } from './helpers/editorServerRenderDatabase.mjs';
 
 const url = process.env.EDITOR_RENDER_TEST_DATABASE_URL;
@@ -53,6 +54,7 @@ test('PostgreSQL: settlement, refund races, shared capacity and evidence preserv
     // earlier fixtures consuming its ten-job/minute budget. Two minutes is
     // still inside the upload-grant window; no production function is stubbed.
     t.beforeEach(() => query(`UPDATE public.jobs SET created_at=least(created_at,now()-interval '2 minutes') WHERE user_id='${U}';`));
+    await quoteDatabaseTests(t, { query, json, authId: A, userId: U });
     await t.test('active catalog bills exact 10s/15s units, rounds up and enforces v1 caps', async () => {
         assert.equal(await query("SELECT active AND cost_unit='per_second' AND credits_5s=1 AND billing_seconds=10 FROM public.model_catalog WHERE id='editor-server-render';"), 't');
         for (const [resolution, seconds, credits] of [
