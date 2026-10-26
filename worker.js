@@ -2,7 +2,7 @@ import { runFalDispatch } from './lib/falDispatch.js';
 /**
  * Worker entry (OpenNext custom worker): the generated app handler, plus the
  * Cron Triggers that run every 5 minutes (wrangler.jsonc `triggers.crons`):
- *   - GrsAI generation polling (lib/grsaiSweep.js)
+ *   - (GrsAI, BytePlus and Crun polling now run on the every-minute trigger)
  *   - the Top-up backfill (lib/scheduledBackfill.js)
  *   - the Auto Short step sweep (lib/autoShortSweep.js), which re-reads
  *     pipeline steps a provider callback never finished
@@ -87,6 +87,24 @@ export default {
             ...(event.cron === '* * * * *' ? [runPushSweep({
                 env, cfg: { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY },
             })] : []),
+            // Provider polling runs every minute: GrsAI, BytePlus and Crun send no signed
+            // callback, so a finished generation is only found when one of these reads it.
+            // On the five-minute tick it waited up to five minutes after the provider was done.
+            ...(event.cron === '* * * * *' ? [
+            observeRecovery('grsai', () => sweepGrsai({
+                cfg: { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY },
+                r2cfg: r2EnvFrom(env), apiKey: env.GRSAI_API_KEY,
+            }).then((out) => { if (out.checked) console.error('[grsai-sweep]', JSON.stringify(out)); return out; }), env),
+            observeRecovery('byteplus', () => sweepByteplus({
+                cfg: { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY },
+                r2cfg: r2EnvFrom(env), apiKey: env.BYTEPLUS_API_KEY,
+            }).then((out) => { if (out.checked) console.error('[byteplus-sweep]', JSON.stringify(out)); return out; }), env),
+            // ADR-0256 phase 5: off unless CRUN_ENABLED is "true". Not a recovery task: worker_task_health (0157) has no name for it.
+            ...(env.CRUN_ENABLED === 'true' ? [sweepCrun({
+                cfg: { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY },
+                r2cfg: r2EnvFrom(env), apiKey: env.CRUN_API_KEY,
+            }).then((out) => { if (out.checked) console.error('[crun-sweep]', JSON.stringify(out)); return out; })] : []),
+            ] : []),
             ...(event.cron === '*/5 * * * *' ? [
             ...(env.FAL_DISPATCH_SCHEMA_ENABLED === 'true'
                 ? [observeRecovery('fal_dispatch', () => runFalDispatch(env), env)] : []),
@@ -101,19 +119,6 @@ export default {
             ...(editorFeatureEnabled('EDITOR_SERVER_RENDER_RECOVERY_ENABLED', env)
                 ? [observeRecovery('editor_server_render', () => runEditorServerRenderSweep(env), env)] : []),
             observeRecovery('asset_reap', () => runAssetReap(env), env),
-            observeRecovery('grsai', () => sweepGrsai({
-                cfg: { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY },
-                r2cfg: r2EnvFrom(env), apiKey: env.GRSAI_API_KEY,
-            }).then((out) => { if (out.checked) console.error('[grsai-sweep]', JSON.stringify(out)); return out; }), env),
-            observeRecovery('byteplus', () => sweepByteplus({
-                cfg: { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY },
-                r2cfg: r2EnvFrom(env), apiKey: env.BYTEPLUS_API_KEY,
-            }).then((out) => { if (out.checked) console.error('[byteplus-sweep]', JSON.stringify(out)); return out; }), env),
-            // ADR-0256 phase 5: off unless CRUN_ENABLED is "true". Not a recovery task: worker_task_health (0157) has no name for it.
-            ...(env.CRUN_ENABLED === 'true' ? [sweepCrun({
-                cfg: { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY },
-                r2cfg: r2EnvFrom(env), apiKey: env.CRUN_API_KEY,
-            }).then((out) => { if (out.checked) console.error('[crun-sweep]', JSON.stringify(out)); return out; })] : []),
             observeRecovery('publish_sweep', () => runPublishSweep({
                 env,
                 cfg: { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY },
