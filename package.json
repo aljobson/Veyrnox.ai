@@ -37,7 +37,7 @@
     "verify:video-enhance": "node scripts/verify-video-enhance.mjs"
   },
   "dependencies": {
-    "@mediapipe/tasks-vision": "1.1.1",
+    "@mediapipe/tasks-vision": "1.0.1",
     "@modelcontextprotocol/server": "^2.3.1",
     "@number-flow/react": "^0.6.2",
     "@posthog/next": "0.9.0",
