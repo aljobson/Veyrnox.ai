@@ -131,3 +131,10 @@ test('endpointKind tells the sweep a picture from a clip, and refuses what the a
   assert.equal(endpointKind('crun:google/unknown'), null);
   assert.equal(endpointKind('kie:veo3_lite'), null);
 });
+
+test('Nano Banana 2.1 sends a 1K picture, the row Crun prices at 3 credits, and no reference images', () => {
+  const r = buildRequest({ model: 'google/nano-banana-2-1' }, { prompt: 'a fox' });
+  assert.deepEqual(r.body, { model: 'google/nano-banana-2-1', input: { prompt: 'a fox', aspect_ratio: '1:1', resolution: '1K' } });
+  assert.equal(endpointKind('crun:google/nano-banana-2-1'), 'image');
+  assert.equal(buildRequest({ model: 'google/nano-banana-2-1' }, { prompt: 'x', img_urls: ['https://a/b.png'] }).error, 'input_media_unsupported');
+});

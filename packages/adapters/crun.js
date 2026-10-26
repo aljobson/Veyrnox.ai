@@ -41,6 +41,8 @@ const MODELS = {
 // and its aspect set is the square only, because that row has no aspect input.
 const IMAGE_MODELS = {
     'google/nano-banana': { kind: 'image', aspects: new Set(['1:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9']), fixed: { output_format: 'png' } },
+    // Docs read 2026-10-26: resolution 1K | 2K | 4K, default 1K; the 3-credit price on Crun's page is the 1K row.
+    'google/nano-banana-2-1': { kind: 'image', aspects: new Set(['1:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9']), fixed: { resolution: '1K' } },
     'bytedance/seedream-4': { kind: 'image', aspects: new Set(['1:1']), fixed: { resolution: '2K', num_outputs: 1 } },
 };
 const ENDPOINT_RE = /^crun:([a-z0-9][a-z0-9./_-]{1,80})$/i;

@@ -4,7 +4,7 @@ import { chooseProbe, summariseStreams, isMp4, imageKind } from '../scripts/prob
 import { parseEndpoint } from '../packages/adapters/crun.js';
 
 test('every probe maps to an endpoint the adapter parses', () => {
-  for (const name of ['veo-lite', 'veo-fast', 'seedance-fast', 'nano-banana', 'seedream']) {
+  for (const name of ['veo-lite', 'veo-fast', 'seedance-fast', 'nano-banana', 'nano-banana-2-1', 'seedream']) {
     const r = chooseProbe([name]);
     assert.equal(r.ok, true);
     assert.ok(parseEndpoint(r.probe.endpoint), name);
