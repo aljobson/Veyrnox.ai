@@ -87,3 +87,18 @@ test('server recovery has an independent grouped switch and both ship off', () =
     assert.match(worker, /editorFeatureEnabled\('EDITOR_SERVER_RENDER_RECOVERY_ENABLED'/);
     assert.doesNotMatch(worker, /editorFeatureEnabled\('EDITOR_SERVER_RENDER_ENABLED'/);
 });
+
+test('server preview is a third admission mode without changing boolean flag semantics', async () => {
+    const { editorServerRenderMode } = await import('../lib/editorRuntimeFlags.mjs');
+    for (const [value, mode] of [['true', 'on'], ['false', 'off'], ['preview', 'preview'], [true, 'off'], ['constructor', 'off'], [undefined, 'off']]) {
+        assert.equal(editorServerRenderMode(env({ serverRender: value })), mode);
+        assert.equal(editorServerRenderMode({ EDITOR_SERVER_RENDER_ENABLED: value }), mode);
+    }
+    const preview = env({ serverRender: 'preview', organization: 'true' });
+    assert.equal(editorFeatureEnabled('EDITOR_SERVER_RENDER_ENABLED', preview), false);
+    assert.equal(editorFeatureEnabled('EDITOR_ORGANIZATION_ENABLED', preview), true);
+    assert.equal(editorServerRenderMode({ ...preview, EDITOR_SERVER_RENDER_ENABLED: 'false' }), 'off');
+    for (const flags of [null, [], { serverRender: 'preview', organization: 'preview' }, { serverRender: 'preview', unknown: 'true' }]) assert.equal(editorServerRenderMode(env(flags)), 'off');
+    assert.equal(editorServerRenderMode({ EDITOR_RUNTIME_FLAGS: ' '.repeat(1025) + JSON.stringify({ serverRender: 'preview' }) }), 'off');
+    assert.equal(editorServerRenderMode(null), 'off');
+});
