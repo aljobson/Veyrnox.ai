@@ -1,16 +1,15 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
-import { touchTarget } from '../../lib/a11y';
 import { fetchProfile, verifyFactor } from '../../lib/auth/accountCalls';
 import { toSession } from '../../lib/auth/supabaseAuth';
 import { t } from '../../lib/i18n';
 import { userIdFromToken } from '../../lib/appCache';
 import { aalFromToken, mfaErrorKey, needsChallenge, validCode, verifiedFactors } from '../../lib/mfa';
 import { markMfaCleared, mfaClearedFor } from '../../lib/mfaCheck';
-import { colors } from '../../theme';
 import { CodeField } from './CodeField';
-import { Action, Status } from './shared';
+import { Status } from './AccountParts';
+import { Button, Text, themedStyles, useThemedStyles } from '../ui';
 
 // How long a signed-in person waits for the check before the app opens anyway. The gate is a prompt, not the
 // security boundary: the server still requires aal2 where it matters (admin), so a slow or failed check lets the
@@ -22,6 +21,7 @@ type Phase = 'checking' | 'challenge' | 'clear';
 // Stops sign-in at a six-digit code when the account has a verified authenticator and this session has not
 // passed it. Sign out is always on screen: a lost phone must not trap the person on this step.
 export function MfaGate({ children }: { children: ReactNode }) {
+    const styles = useThemedStyles(sheets);
     const { status, getAccessToken, adoptSession, signOut } = useAuth();
     const [phase, setPhase] = useState<Phase>('checking');
     const [factorId, setFactorId] = useState<string | null>(null);
@@ -83,28 +83,23 @@ export function MfaGate({ children }: { children: ReactNode }) {
     if (phase === 'checking') {
         return (
             <View style={styles.screen}>
-                <ActivityIndicator color={colors.accent} accessibilityLabel={t('acct.mfa.checking')} />
+                <ActivityIndicator color={styles.accent.color} accessibilityLabel={t('acct.mfa.checking')} />
             </View>
         );
     }
     return (
         <View style={styles.screen}>
-            <Text style={styles.title} accessibilityRole="header">{t('acct.mfa.challengeTitle')}</Text>
-            <Text style={styles.help}>{t('acct.mfa.challengeHelp')}</Text>
+            <Text variant="title2" accessibilityRole="header">{t('acct.mfa.challengeTitle')}</Text>
+            <Text variant="footnote" tone="secondary">{t('acct.mfa.challengeHelp')}</Text>
             <CodeField value={code} onChange={setCode} />
-            <Action label={t('acct.mfa.verify')} disabled={busy || !validCode(code)} onPress={() => void submit()} />
+            <Button variant="tertiary" label={t('acct.mfa.verify')} disabled={busy || !validCode(code)} onPress={() => void submit()} />
             <Status text={error} error />
-            <Pressable accessibilityRole="button" style={styles.out} onPress={() => void signOut()}>
-                <Text style={styles.outText}>{t('public.account.signOut')}</Text>
-            </Pressable>
+            <Button variant="tertiary" tone="secondary" accessibilityRole="button" label={t('public.account.signOut')} onPress={() => void signOut()} />
         </View>
     );
 }
 
-const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: colors.background, padding: 24, gap: 16, justifyContent: 'center' },
-    title: { color: colors.text, fontSize: 22, fontWeight: '700' },
-    help: { color: colors.muted, fontSize: 15 },
-    out: { ...touchTarget, alignItems: 'center' },
-    outText: { color: colors.muted },
-});
+const sheets = themedStyles((p) => ({
+    screen: { flex: 1, backgroundColor: p.bg, padding: 24, gap: 16, justifyContent: 'center' },
+    accent: { color: p.accent },
+}));

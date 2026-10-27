@@ -2,6 +2,7 @@
 // Local stand-in for Supabase Auth and the /api/v1 routes the app uses, so every signed-in screen can be
 // previewed in the simulator without an account. Development only: `node dev/mock-server.mjs` (port 8799).
 import { mockSocialUploads, uploadsEnabled, validateUploadMedia } from './mockSocialUploads.mjs';
+import { mockSecurity } from './mockSecurityFixtures.mjs';
 import { mockCheckin } from './mockCheckin.mjs';
 import { createServer } from 'node:http';
 import { deflateSync } from 'node:zlib';
@@ -155,6 +156,7 @@ createServer(async (req, res) => {
     if (await mockSocialUploads(req, res, `http://${req.headers.host || `localhost:${PORT}`}`, state.socialPosts)) return;
     const body = req.method === 'POST' || req.method === 'PATCH' || req.method === 'PUT' || req.method === 'DELETE' ? await readBody(req) : {};
     console.log(req.method, path);
+    if (mockSecurity(req, res, url, body)) return;
 
     if (path.startsWith('/mock-upload/') && req.method === 'PUT') {
         res.writeHead(200, { etag: '"mock-upload"' });

@@ -1,6 +1,6 @@
 // English strings for the native Publish operating dashboard.
 export default {
-    'publishHome.eyebrow': 'YOUR SOCIAL STUDIO',
+    'publishHome.eyebrow': 'Your social studio',
     'publishHome.title': 'Plan. Create. Grow.',
     'publishHome.lead': 'Run every channel from one focused workspace — with the same brand, plan and permissions as the website.',
     'publishHome.publishingFor': 'Publishing for',

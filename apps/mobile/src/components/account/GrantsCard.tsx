@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Text, View } from 'react-native';
+import { ActivityIndicator, Alert } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { accountErrorKey, normaliseGrants, type Grant } from '../../lib/accountSecurity';
 import { fetchGrantsRaw, revokeGrant } from '../../lib/auth/accountCalls';
 import { getLocale, t } from '../../lib/i18n';
-import { colors } from '../../theme';
-import { Action, Card, Status, styles } from './shared';
+import { Card, Status } from './AccountParts';
+import { Button, Text, Card as Surface, themedStyles, useThemedStyles } from '../ui';
 
 // The apps and assistants the person has let into their account (the web's Connected assistants).
 export function GrantsCard() {
+    const styles = useThemedStyles(sheets);
     const { getAccessToken } = useAuth();
     const [grants, setGrants] = useState<Grant[] | null>(null);
     const [busy, setBusy] = useState(false);
@@ -53,20 +54,25 @@ export function GrantsCard() {
 
     return (
         <Card title={t('acct.oauth.title')} help={t('acct.oauth.help')}>
-            {grants === null && !note ? <ActivityIndicator color={colors.accent} accessibilityLabel={t('acct.oauth.loading')} /> : null}
-            {grants?.length === 0 ? <Text style={styles.help}>{t('acct.oauth.empty')}</Text> : null}
+            {grants === null && !note ? <ActivityIndicator color={styles.accent.color} accessibilityLabel={t('acct.oauth.loading')} /> : null}
+            {grants?.length === 0 ? <Text variant="footnote" tone="secondary">{t('acct.oauth.empty')}</Text> : null}
             {grants?.map((g) => (
-                <View key={g.clientId} style={{ gap: 4 }}>
-                    <Text style={styles.name}>{nameOf(g)}</Text>
-                    <Text style={styles.help}>
+                <Surface key={g.clientId} style={styles.row}>
+                    <Text variant="bodyStrong">{nameOf(g)}</Text>
+                    <Text variant="footnote" tone="secondary">
                         {g.scopes.length ? t('acct.oauth.access', { scopes: g.scopes.join(', ') }) : t('acct.oauth.defaultAccess')}
                         {g.grantedAt && !Number.isNaN(Date.parse(g.grantedAt)) ? ` ${t('acct.oauth.since', { date: new Date(g.grantedAt).toLocaleDateString(getLocale()) })}` : ''}
                     </Text>
-                    <Action label={t('acct.oauth.revokeNamed', { name: nameOf(g) })} disabled={busy} danger onPress={() => confirm(g)} />
-                </View>
+                    <Button variant="tertiary" label={t('acct.oauth.revokeNamed', { name: nameOf(g) })} disabled={busy} tone="danger" onPress={() => confirm(g)} />
+                </Surface>
             ))}
             <Status text={note?.text ?? null} error={note?.error} />
-            <Action label={t('acct.oauth.refresh')} disabled={busy} onPress={() => void load()} />
+            <Button variant="tertiary" label={t('acct.oauth.refresh')} disabled={busy} onPress={() => void load()} />
         </Card>
     );
 }
+
+const sheets = themedStyles((p) => ({
+    accent: { color: p.accent },
+    row: { gap: 4 },
+}));

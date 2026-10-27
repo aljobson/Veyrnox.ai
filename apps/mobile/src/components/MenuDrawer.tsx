@@ -1,6 +1,6 @@
+import { Button, ListRow, Text, Icon, themedStyles, useThemedStyles } from './ui';
 import { useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Animated, Modal, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
-import { Image } from 'expo-image';
+import { AccessibilityInfo, Animated, Modal, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { usePathname, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../auth/AuthProvider';
@@ -8,8 +8,8 @@ import { fetchProfile, type Profile } from '../lib/auth/accountCalls';
 import { HEADER_MAX_FONT_SCALE, MIN_TARGET } from '../lib/a11y';
 import { t } from '../lib/i18n';
 import { HOME_ICON, MENU_SECTIONS, activeItemKey } from '../lib/menu';
-import { MENU_ICONS, type MenuIcon } from '../lib/menuIcons';
-import { colors, type Palette } from '../theme';
+import { type MenuIcon } from '../lib/menuIcons';
+import { type Palette } from '../theme';
 import { Logo } from './Logo';
 
 const DRAWER_MAX = 320;
@@ -17,27 +17,25 @@ const DRAWER_MAX = 320;
 // The hamburger in the tab header. It opens a left drawer shaped like the web app's sidebar: your account on top, then
 // the grouped menu with an icon on every row and the current screen lit. Plain React Native (Modal and Animated) and
 // image assets, so it needs no native module and no rebuild.
-export function MenuButton({ palette = colors }: { palette?: Palette }) {
+export function MenuButton({ palette }: { palette?: Palette }) {
+    const styles = useThemedStyles(sheets);
     const [open, setOpen] = useState(false);
     return (
         <>
-            <Pressable accessibilityRole="button" accessibilityLabel={t('menu.open')} style={styles.hit} onPress={() => setOpen(true)}>
+            <Button label={t('menu.open')} variant="tertiary" accessibilityRole="button" accessibilityLabel={t('menu.open')} style={styles.hit} onPress={() => setOpen(true)}>
                 <View style={styles.bars}>
-                    <View style={[styles.bar, { backgroundColor: palette.text }]} />
-                    <View style={[styles.bar, { backgroundColor: palette.text }]} />
-                    <View style={[styles.bar, { backgroundColor: palette.text }]} />
+                    <View style={[styles.bar, { backgroundColor: palette?.text ?? styles.ink.color }]} />
+                    <View style={[styles.bar, { backgroundColor: palette?.text ?? styles.ink.color }]} />
+                    <View style={[styles.bar, { backgroundColor: palette?.text ?? styles.ink.color }]} />
                 </View>
-            </Pressable>
+            </Button>
             <MenuDrawer open={open} onClose={() => setOpen(false)} />
         </>
     );
 }
 
-function Icon({ name, color, size = 22 }: { name: MenuIcon; color: string; size?: number }) {
-    return <Image source={MENU_ICONS[name]} style={{ width: size, height: size }} tintColor={color} contentFit="contain" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" />;
-}
-
 function MenuDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+    const styles = useThemedStyles(sheets);
     const router = useRouter();
     const pathname = usePathname();
     const insets = useSafeAreaInsets();
@@ -100,17 +98,11 @@ function MenuDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
                 >
                     <View style={styles.top}>
                         <Logo size={24} />
-                        <Pressable accessibilityRole="button" accessibilityLabel={t('menu.close')} style={styles.hit} onPress={onClose}>
-                            <Icon name="close" color={colors.muted} size={20} />
-                        </Pressable>
+                        <Button label={t('menu.close')} variant="tertiary" accessibilityRole="button" accessibilityLabel={t('menu.close')} style={styles.hit} onPress={onClose}>
+                            <Icon name="close" tint={styles.mutedInk.color} size={20} />
+                        </Button>
                     </View>
-                    <Pressable accessibilityRole="button" accessibilityLabel={who} accessibilityHint={t('menu.account')} style={({ pressed }) => [styles.pill, pressed && styles.pressed]} onPress={() => go('/account')}>
-                        <View style={styles.avatar}>
-                            <Text style={styles.avatarText} maxFontSizeMultiplier={1.2}>{who.charAt(0).toUpperCase()}</Text>
-                        </View>
-                        <Text style={styles.pillText} numberOfLines={1}>{who}</Text>
-                        <Icon name="caretRight" color={colors.muted} size={16} />
-                    </Pressable>
+                    <ListRow accessibilityRole="button" accessibilityLabel={who} accessibilityHint={t('menu.account')} style={styles.pill} title={<Text variant="bodyStrong" numberOfLines={1}>{who}</Text>} icon="user" onPress={() => go('/account')} />
                     <ScrollView contentContainerStyle={styles.list}>
                         <Row label={t('menu.home')} icon={HOME_ICON} active={active === 'home'} onPress={() => go('/')} />
                         {MENU_SECTIONS.map((section) => {
@@ -118,16 +110,16 @@ function MenuDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
                             const name = t(section.label);
                             return (
                                 <View key={section.id}>
-                                    <Pressable
+                                    <Button label={name} variant="tertiary"
                                         accessibilityRole="button"
                                         accessibilityLabel={t(collapsed ? 'menu.sectionClosed' : 'menu.sectionOpen', { name })}
                                         accessibilityState={{ expanded: !collapsed }}
                                         style={styles.heading}
                                         onPress={() => setClosed((prev) => ({ ...prev, [section.id]: !prev[section.id] }))}
                                     >
-                                        <Icon name={collapsed ? 'caretRight' : 'caretDown'} color={colors.muted} size={12} />
-                                        <Text style={styles.headingText} maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE}>{name.toUpperCase()}</Text>
-                                    </Pressable>
+                                        <Icon name={collapsed ? 'caretRight' : 'caretDown'} tint={styles.mutedInk.color} size={16} />
+                                        <Text variant="caption" style={styles.headingText} maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE}>{name}</Text>
+                                    </Button>
                                     {collapsed ? null : (
                                         <View style={section.id === 'tools' ? styles.grid : undefined}>
                                             {section.items.map((item) => (
@@ -146,40 +138,40 @@ function MenuDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
 }
 
 function Row({ label, icon, active, half, onPress }: { label: string; icon: MenuIcon; active: boolean; half?: boolean; onPress: () => void }) {
+    const styles = useThemedStyles(sheets);
     return (
-        <Pressable
+        <Button label={label} variant="tertiary"
             accessibilityRole="link"
             accessibilityLabel={label}
             accessibilityState={{ selected: active }}
-            style={({ pressed }) => [styles.row, half && styles.half, active && styles.rowActive, pressed && !active && styles.pressed]}
+            containerStyle={half ? styles.half : undefined} style={[styles.row, active && styles.rowActive]}
             onPress={onPress}
         >
-            <Icon name={icon} color={active ? colors.accent : colors.muted} />
-            <Text style={[styles.rowText, active && styles.rowTextActive]} numberOfLines={1}>{label}</Text>
-        </Pressable>
+            <Icon name={icon} tint={active ? styles.accentInk.color : styles.mutedInk.color} />
+            <Text variant="bodyStrong" style={[styles.rowText, active && styles.rowTextActive]} numberOfLines={1}>{label}</Text>
+        </Button>
     );
 }
 
-const styles = StyleSheet.create({
+const sheets = themedStyles((p) => ({
+    mutedInk: { color: p.textSecondary },
+    accentInk: { color: p.accent },
+    ink: { color: p.textPrimary },
     root: { flex: 1, flexDirection: 'row' },
-    scrim: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.6)' },
-    drawer: { backgroundColor: colors.background, borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: colors.border },
+    scrim: { ...StyleSheet.absoluteFill, backgroundColor: p.scrim },
+    drawer: { backgroundColor: p.bg, borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: p.borderSubtle },
     top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 16, paddingRight: 4, minHeight: 52 },
-    pill: { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 12, marginTop: 8, marginBottom: 4, minHeight: 56, paddingVertical: 8, paddingLeft: 10, paddingRight: 14, borderRadius: 999, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
-    avatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
-    avatarText: { color: colors.accentInk, fontSize: 17, fontWeight: '700' },
-    pillText: { flex: 1, color: colors.text, fontSize: 16, fontWeight: '600' },
+    pill: { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 12, marginTop: 8, marginBottom: 4, minHeight: 56, paddingVertical: 8, paddingLeft: 10, paddingRight: 14, borderRadius: 999, backgroundColor: p.surface, borderColor: p.borderSubtle, borderWidth: 1 },
     list: { paddingHorizontal: 8, paddingTop: 8, paddingBottom: 24 },
     hit: { minWidth: MIN_TARGET, minHeight: MIN_TARGET, alignItems: 'center', justifyContent: 'center' },
     bars: { gap: 4 },
     bar: { width: 20, height: 2, borderRadius: 1 },
-    heading: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: MIN_TARGET, paddingHorizontal: 12, marginTop: 8 },
-    headingText: { color: colors.muted, fontSize: 11, fontWeight: '700', letterSpacing: 1.6 },
+    heading: { justifyContent: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: MIN_TARGET, paddingHorizontal: 12, marginTop: 8 },
+    headingText: { color: p.textSecondary },
     grid: { flexDirection: 'row', flexWrap: 'wrap' },
-    row: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: MIN_TARGET, paddingHorizontal: 12, borderRadius: 14 },
+    row: { justifyContent: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: MIN_TARGET, paddingHorizontal: 12, borderRadius: 14 },
     half: { width: '50%' },
-    rowActive: { backgroundColor: colors.accentSoft },
-    pressed: { backgroundColor: colors.surface },
-    rowText: { flexShrink: 1, color: colors.body, fontSize: 16, fontWeight: '600' },
-    rowTextActive: { color: colors.accent },
-});
+    rowActive: { backgroundColor: p.accentSubtle },
+    rowText: { flexShrink: 1, color: p.textSecondary },
+    rowTextActive: { color: p.accent },
+}));

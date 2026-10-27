@@ -1,13 +1,14 @@
 import { useState } from 'react';
-import { Text, TextInput, View } from 'react-native';
+import { View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { accountErrorKey, validNonce, validPassword } from '../../lib/accountSecurity';
 import { changePassword, requestPasswordCode } from '../../lib/auth/accountCalls';
 import { t } from '../../lib/i18n';
-import { colors } from '../../theme';
-import { Action, Card, Status, styles } from './shared';
+import { Card, Status } from './AccountParts';
+import { Button, Text, TextField, themedStyles, useThemedStyles } from '../ui';
 
 export function PasswordCard() {
+    const styles = useThemedStyles(sheets);
     const { getAccessToken } = useAuth();
     const [password, setPassword] = useState('');
     const [code, setCode] = useState('');
@@ -40,37 +41,37 @@ export function PasswordCard() {
 
     return (
         <Card title={t('acct.pw.title')} help={t('acct.pw.help')}>
-            <Action label={t('acct.pw.send')} disabled={busy} onPress={() => void run(() => requestPasswordCode(getAccessToken), t('acct.pw.sent'))} />
-            <View style={{ gap: 6 }}>
-                <Text style={styles.label}>{t('acct.pw.new')}</Text>
-                <TextInput
+            <Button variant="tertiary" label={t('acct.pw.send')} disabled={busy} onPress={() => void run(() => requestPasswordCode(getAccessToken), t('acct.pw.sent'))} />
+            <View style={styles.fieldGroup}>
+                <Text variant="footnote" tone="secondary">{t('acct.pw.new')}</Text>
+                <TextField
                     accessibilityLabel={t('acct.pw.new')}
-                    style={styles.input}
                     secureTextEntry
                     autoComplete="new-password"
                     textContentType="newPassword"
                     maxLength={72}
                     value={password}
                     onChangeText={setPassword}
-                    placeholderTextColor={colors.muted}
                 />
             </View>
-            <View style={{ gap: 6 }}>
-                <Text style={styles.label}>{t('acct.pw.code')}</Text>
-                <TextInput
+            <View style={styles.fieldGroup}>
+                <Text variant="footnote" tone="secondary">{t('acct.pw.code')}</Text>
+                <TextField
                     accessibilityLabel={t('acct.pw.code')}
-                    style={styles.input}
                     keyboardType="number-pad"
                     autoComplete="one-time-code"
                     textContentType="oneTimeCode"
                     maxLength={10}
                     value={code}
                     onChangeText={(v) => setCode(v.trim())}
-                    placeholderTextColor={colors.muted}
                 />
             </View>
-            <Action label={t('acct.pw.update')} disabled={busy || !password || !code} onPress={() => void update()} />
+            <Button variant="tertiary" label={t('acct.pw.update')} disabled={busy || !password || !code} onPress={() => void update()} />
             <Status text={note?.text ?? null} error={note?.error} />
         </Card>
     );
 }
+
+const sheets = themedStyles(() => ({
+    fieldGroup: { gap: 6 },
+}));

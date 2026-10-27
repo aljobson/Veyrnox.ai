@@ -3,7 +3,7 @@ export default {
     'editor.unavailable': 'The editor is not available yet',
     'editor.open': 'Open in editor',
     'editor.new': 'New edit',
-    'editor.home.eyebrow': 'CREATE & CUT',
+    'editor.home.eyebrow': 'Create & cut',
     'editor.home.summary': 'Open a recent edit or start a new project. Everything happens in the native mobile editor.',
     'editor.home.newHint': 'Creates a blank project and opens the editor',
     'editor.home.newBody': 'Open a fresh native editing timeline',

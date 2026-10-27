@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { getLocale, t } from '../../lib/i18n';
 import { addPasskey, passkeyGate, passkeyAddErrorKey, fetchPasskeys, passkeyErrorKey, removePasskey, type Passkey } from '../../lib/passkeys';
-import { colors } from '../../theme';
-import { Action, Card, Status, styles } from './shared';
+import { Card, Status } from './AccountParts';
+import { Button, Text, TextField, Card as Surface, themedStyles, useThemedStyles } from '../ui';
 
 const when = (iso: string | null) => (iso && !Number.isNaN(Date.parse(iso)) ? new Date(iso).toLocaleDateString(getLocale()) : '');
 
 export function PasskeysCard() {
+    const styles = useThemedStyles(sheets);
     const { getAccessToken } = useAuth();
     const [list, setList] = useState<Passkey[] | null>(null);
     const [name, setName] = useState('');
@@ -78,28 +79,34 @@ export function PasskeysCard() {
 
     return (
         <Card title={t('pk.title')} help={t('pk.help')}>
-            {list === null && !note ? <ActivityIndicator color={colors.accent} accessibilityLabel={t('pk.loading')} /> : null}
-            {list?.length === 0 ? <Text style={styles.help}>{t('pk.none')}</Text> : null}
+            {list === null && !note ? <ActivityIndicator color={styles.accent.color} accessibilityLabel={t('pk.loading')} /> : null}
+            {list?.length === 0 ? <Text variant="footnote" tone="secondary">{t('pk.none')}</Text> : null}
             {list?.map((p) => (
-                <View key={p.id} style={{ gap: 4 }}>
-                    <Text style={styles.name}>{p.name ?? t('pk.unnamed')}</Text>
-                    <Text style={styles.help}>
+                <Surface key={p.id} style={styles.row}>
+                    <Text variant="bodyStrong">{p.name ?? t('pk.unnamed')}</Text>
+                    <Text variant="footnote" tone="secondary">
                         {[p.createdAt ? t('pk.added', { date: when(p.createdAt) }) : '', p.lastUsedAt ? t('pk.used', { date: when(p.lastUsedAt) }) : ''].filter(Boolean).join(' · ')}
                     </Text>
-                    <Action label={t('pk.removeNamed', { name: p.name ?? t('pk.unnamed') })} danger disabled={busy} onPress={() => confirm(p)} />
-                </View>
+                    <Button variant="tertiary" label={t('pk.removeNamed', { name: p.name ?? t('pk.unnamed') })} tone="danger" disabled={busy} onPress={() => confirm(p)} />
+                </Surface>
             ))}
             {available ? (
-                <View style={{ gap: 12 }} accessibilityState={{ busy }}>
-                    <Text style={styles.label}>{t('passkey.nameLabel')}</Text>
-                    <TextInput style={styles.input} value={name} onChangeText={setName} editable={!busy}
+                <View style={styles.group} accessibilityState={{ busy }}>
+                    <Text variant="footnote" tone="secondary">{t('passkey.nameLabel')}</Text>
+                    <TextField  value={name} onChangeText={setName} editable={!busy}
                         accessibilityLabel={t('passkey.nameLabel')} placeholder={t('passkey.namePlaceholder')}
-                        placeholderTextColor={colors.muted} maxLength={64} />
-                    <Action label={t('passkey.add')} disabled={busy} onPress={() => void add()} />
-                    {busy ? <Text style={styles.help} accessibilityLiveRegion="polite">{t('passkey.busy')}</Text> : null}
+                         maxLength={64} />
+                    <Button variant="tertiary" label={t('passkey.add')} disabled={busy} onPress={() => void add()} />
+                    {busy ? <Text variant="footnote" tone="secondary" accessibilityLiveRegion="polite">{t('passkey.busy')}</Text> : null}
                 </View>
-            ) : <Text style={styles.help}>{t('pk.addLater')}</Text>}
+            ) : <Text variant="footnote" tone="secondary">{t('pk.addLater')}</Text>}
             <Status text={note?.text ?? null} error={note?.error} />
         </Card>
     );
 }
+
+const sheets = themedStyles((p) => ({
+    accent: { color: p.accent },
+    group: { gap: 12 },
+    row: { gap: 4 },
+}));

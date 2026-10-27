@@ -4,7 +4,8 @@ import { useAuth } from '../../auth/AuthProvider';
 import { accountErrorKey } from '../../lib/accountSecurity';
 import { revokeSessions, type SessionScope } from '../../lib/auth/accountCalls';
 import { t } from '../../lib/i18n';
-import { Action, Card, Status } from './shared';
+import { Card, Status } from './AccountParts';
+import { Button } from '../ui';
 
 export function DevicesCard() {
     const { getAccessToken, signOut } = useAuth();
@@ -36,8 +37,8 @@ export function DevicesCard() {
 
     return (
         <Card title={t('acct.dev.title')} help={t('acct.dev.help')}>
-            <Action label={t('acct.dev.others')} disabled={busy} onPress={() => confirm('others')} />
-            <Action label={t('acct.dev.everywhere')} disabled={busy} danger onPress={() => confirm('global')} />
+            <Button variant="tertiary" label={t('acct.dev.others')} tone="danger" disabled={busy} onPress={() => confirm('others')} />
+            <Button variant="tertiary" label={t('acct.dev.everywhere')} disabled={busy} tone="danger" onPress={() => confirm('global')} />
             <Status text={note?.text ?? null} error={note?.error} />
         </Card>
     );

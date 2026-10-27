@@ -14,13 +14,14 @@ export type ButtonProps = Omit<PressableProps, 'children' | 'style'> & {
     iconOnly?: boolean;
     containerStyle?: StyleProp<ViewStyle>;
     variant?: 'primary' | 'secondary' | 'tertiary' | 'destructive';
+    tone?: 'primary' | 'secondary' | 'accent' | 'danger';
     size?: 'lg' | 'md' | 'sm';
     icon?: MenuIcon;
     loading?: boolean;
     style?: StyleProp<ViewStyle>;
     textStyle?: StyleProp<TextStyle>;
 };
-export function Button({ label, variant = 'primary', size = 'lg', icon, loading, disabled, style, textStyle, onPress, children, iconOnly, containerStyle, ...props }: ButtonProps) {
+export function Button({ label, variant = 'primary', size = 'lg', tone = 'primary', icon, loading, disabled, style, textStyle, onPress, children, iconOnly, containerStyle, ...props }: ButtonProps) {
     const s = useThemedStyles(sheets);
     const reduced = useReducedMotion();
     const scale = useRef(new Animated.Value(1)).current;
@@ -36,7 +37,7 @@ export function Button({ label, variant = 'primary', size = 'lg', icon, loading,
     const press = (value: number) => {
         if (!reduced) Animated.spring(scale, { toValue: value, speed: 32, bounciness: 0, useNativeDriver: true }).start();
     };
-    const ink = variant === 'primary' ? s.primaryInk : variant === 'destructive' ? s.destructiveInk : s.ink;
+    const ink = variant === 'primary' ? s.primaryInk : variant === 'destructive' ? s.destructiveInk : s[`${tone}Tone`];
     return (
         <Animated.View style={[s.hit, containerStyle, animatedStyle]}>
             <Pressable
@@ -86,5 +87,8 @@ const sheets = themedStyles((p) => ({
     destructivePressed: { opacity: 0.8 },
     primaryInk: { color: p.onAccent },
     destructiveInk: { color: p.bg },
-    ink: { color: p.textPrimary },
+    primaryTone: { color: p.textPrimary },
+    secondaryTone: { color: p.textSecondary },
+    accentTone: { color: p.accent },
+    dangerTone: { color: p.danger },
 }));
