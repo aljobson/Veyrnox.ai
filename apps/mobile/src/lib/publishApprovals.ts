@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import { ApiError, type ApiClient } from './api';
 
 // Approvals, read-only (ADR-0135). A person who publishes can ask outside reviewers to approve a post; each reviewer
@@ -70,11 +71,11 @@ const tidy = (s: string): string => {
     return t ? t.charAt(0).toUpperCase() + t.slice(1) : '';
 };
 
-const STATUS: Record<string, string> = { pending: 'Waiting for review', approved: 'Approved', rejected: 'Rejected', commented: 'Has comments', canceled: 'Canceled', failed: 'Could not be sent' };
-const DECISION: Record<string, string> = { pending: 'Not yet', approved: 'Approved', rejected: 'Rejected', commented: 'Left a comment' };
+const STATUS: Record<string, string> = { pending: t('publishApprovals.waitingforreview'), approved: t('publishApprovals.approved'), rejected: t('publishApprovals.rejected'), commented: t('publishApprovals.hascomments'), canceled: t('publishApprovals.canceled'), failed: t('publishApprovals.couldnotbesent') };
+const DECISION: Record<string, string> = { pending: t('publishApprovals.notyet'), approved: t('publishApprovals.approved'), rejected: t('publishApprovals.rejected'), commented: t('publishApprovals.leftacomment') };
 
-export const approvalStatusLabel = (s: string): string => STATUS[s] ?? (tidy(s) || 'Waiting for review');
-export const decisionLabel = (s: string): string => DECISION[s] ?? (tidy(s) || 'Not yet');
+export const approvalStatusLabel = (s: string): string => STATUS[s] ?? (tidy(s) || t('publishApprovals.waitingforreview'));
+export const decisionLabel = (s: string): string => DECISION[s] ?? (tidy(s) || t('publishApprovals.notyet'));
 
 // The brand header is added by withBrand, so this is a plain read.
 export async function fetchApprovals(api: ApiClient): Promise<ApprovalRequest[]> {

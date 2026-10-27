@@ -1,3 +1,4 @@
+import { plural, t } from '../../lib/i18n';
 import { Image } from 'expo-image';
 import { StyleSheet, Pressable, Text, View } from 'react-native';
 import { formatDuration, posterUrl, type CinemaTitle } from '../../lib/cinema';
@@ -18,7 +19,7 @@ interface Props {
 export function TitleCard({ item, height, playing, onPlay, onOpen, onReport }: Props) {
     const series = item.contentType === 'SERIES';
     const meta = series
-        ? `${item.episodeCount} episode${item.episodeCount === 1 ? '' : 's'}`
+        ? plural('cinema.episodes', item.episodeCount)
         : formatDuration(item.durationSeconds);
     return (
         <View style={[styles.page, { height }]}>
@@ -31,7 +32,7 @@ export function TitleCard({ item, height, playing, onPlay, onOpen, onReport }: P
                 </>
             )}
             <View style={styles.info} pointerEvents="box-none">
-                <Pressable accessibilityRole="button" accessibilityHint="Opens the title page" onPress={onOpen}>
+                <Pressable accessibilityRole="button" accessibilityHint={t('cinema.opensthetitlepage')} onPress={onOpen}>
                     <Text style={styles.title} numberOfLines={2}>{item.title}</Text>
                     <Text style={styles.meta}>{[item.creator, meta].filter(Boolean).join(' · ')}</Text>
                     {!playing && item.synopsis ? <Text style={styles.synopsis} numberOfLines={2}>{item.synopsis}</Text> : null}
@@ -39,10 +40,10 @@ export function TitleCard({ item, height, playing, onPlay, onOpen, onReport }: P
                 <View style={styles.actions}>
                     {!playing ? (
                         <Pressable accessibilityRole="button" style={styles.play} onPress={series ? onOpen : onPlay}>
-                            <Text style={styles.playText}>{series ? 'Episodes' : 'Play'}</Text>
+                            <Text style={styles.playText}>{series ? t('cinema.episodes') : t('cinema.play')}</Text>
                         </Pressable>
                     ) : null}
-                    <Pressable accessibilityRole="button" accessibilityLabel={`Report ${item.title}`} style={styles.report} onPress={onReport}>
+                    <Pressable accessibilityRole="button" accessibilityLabel={t('cinema.report', { value1: item.title })} style={styles.report} onPress={onReport}>
                         <Image source={MENU_ICONS.flag} style={styles.reportIcon} tintColor={ON_POSTER_SOFT} contentFit="contain" accessibilityElementsHidden />
                     </Pressable>
                 </View>

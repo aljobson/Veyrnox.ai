@@ -1,3 +1,4 @@
+import { t } from '../../lib/i18n';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -27,7 +28,7 @@ export default function ReportScreen() {
     const [sent, setSent] = useState(false);
 
     async function send() {
-        if (!category) return setError('Choose what is wrong.');
+        if (!category) return setError(t('report.choosewhatiswrong'));
         const input = { kind, subjectId, category, details };
         const invalid = validateReport(input);
         if (invalid) return setError(invalid);
@@ -46,11 +47,11 @@ export default function ReportScreen() {
     if (sent) {
         return (
             <View style={styles.done}>
-                <Stack.Screen options={{ title: 'Report' }} />
-                <Text style={styles.doneTitle}>Thanks, we have it.</Text>
-                <Text style={styles.body}>A person reads every report. We may remove content or close an account, and we do not tell you the outcome.</Text>
+                <Stack.Screen options={{ title: t('report.report') }} />
+                <Text style={styles.doneTitle}>{t('report.thankswehaveit')}</Text>
+                <Text style={styles.body}>{t('report.apersonreadseveryreportWemay')}</Text>
                 <Pressable accessibilityRole="button" style={styles.primary} onPress={() => router.back()}>
-                    <Text style={styles.primaryText}>Done</Text>
+                    <Text style={styles.primaryText}>{t('report.done')}</Text>
                 </Pressable>
             </View>
         );
@@ -58,9 +59,9 @@ export default function ReportScreen() {
 
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-            <Stack.Screen options={{ title: kind === 'job' ? 'Report this creation' : kind === 'cinema_title' ? 'Report this title' : 'Report a problem' }} />
+            <Stack.Screen options={{ title: kind === 'job' ? t('report.reportthiscreation') : kind === 'cinema_title' ? t('report.reportthistitle') : t('report.reportaproblem') }} />
             <Text style={styles.body}>
-                {kind === 'job' ? 'What is wrong with this creation?' : kind === 'cinema_title' ? 'What is wrong with this title?' : 'What would you like to report?'}
+                {kind === 'job' ? t('report.whatiswrongwiththiscreation') : kind === 'cinema_title' ? t('report.whatiswrongwiththistitle') : t('report.whatwouldyouliketoreport')}
             </Text>
             {REPORT_CATEGORIES.map((c) => (
                 <Pressable
@@ -74,10 +75,10 @@ export default function ReportScreen() {
                 </Pressable>
             ))}
             <TextInput
-                accessibilityLabel="Details"
+                accessibilityLabel={t('report.details')}
                 multiline
                 maxLength={2000}
-                placeholder={kind === 'other' ? 'Tell us what happened (required)' : 'Anything else we should know (optional)'}
+                placeholder={kind === 'other' ? t('report.telluswhathappenedrequired') : t('report.anythingelseweshouldknowoptional')}
                 placeholderTextColor={colors.muted}
                 style={styles.input}
                 value={details}
@@ -85,9 +86,9 @@ export default function ReportScreen() {
             />
             {error ? <Text style={styles.error}>{error}</Text> : null}
             <Pressable accessibilityRole="button" disabled={busy} style={[styles.primary, busy && styles.off]} onPress={send}>
-                {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.primaryText}>Send report</Text>}
+                {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.primaryText}>{t('report.sendreport')}</Text>}
             </Pressable>
-            <Text style={styles.small}>Do not send illegal images in a report. Describe them instead.</Text>
+            <Text style={styles.small}>{t('report.donotsendillegalimagesina')}</Text>
         </ScrollView>
     );
 }

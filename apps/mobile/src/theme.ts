@@ -69,6 +69,15 @@ export const resolveScheme = (preference: ThemePreference, system: string | null
     preference === 'oled' || preference === 'dark' ? 'dark' : preference === 'light' ? 'light' : system === 'light' ? 'light' : 'dark';
 export const toggledTheme = (value: Scheme): ThemePreference => (value === 'dark' ? 'light' : 'dark');
 export const THEME_RETURN_KEY = 'veyrnox.theme.return';
+export async function saveThemeReturnPath(path: string | null): Promise<boolean> {
+    try {
+        const store = secureStore();
+        if (!store || (path !== null && !path.startsWith('/'))) return false;
+        if (path === null) await store.deleteItemAsync(THEME_RETURN_KEY);
+        else store.setItem(THEME_RETURN_KEY, path);
+        return true;
+    } catch { return false; }
+}
 export async function takeThemeReturnPath(): Promise<string | null> {
     try {
         const path = read(THEME_RETURN_KEY);
@@ -101,7 +110,7 @@ export async function applyAppearance(partial: Partial<AppearanceSettings>, retu
     }
     listeners.forEach((fn) => fn());
     if (reload) {
-        if (returnPath?.startsWith('/')) save(THEME_RETURN_KEY, returnPath);
+        if (returnPath?.startsWith('/') && !(await saveThemeReturnPath(returnPath))) return;
         try {
             await require('expo').reloadAppAsync('Veyrnox appearance changed');
         } catch {

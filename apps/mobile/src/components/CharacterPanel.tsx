@@ -1,3 +1,4 @@
+import { displayLabel } from '../lib/displayLabels';
 import { Text, Button, Card, themedStyles, useThemedStyles } from './ui';
 import { useMemo, useState } from 'react';
 import { Switch, View } from 'react-native';
@@ -27,7 +28,7 @@ export function CharacterPanel({ on, picks, onToggle, onChange }: Props) {
     const sheet = useMemo(() => {
         const group = open ? groupById(open) : null;
         if (!group) return null;
-        return { title: group.label, choices: group.options.map(([value, , label]) => ({ value, label, swatch: swatchOf(group.id, value) })) as PickChoice[] };
+        return { title: displayLabel(group.label), choices: group.options.map(([value, , label]) => ({ value, label: displayLabel(label), swatch: swatchOf(group.id, value) })) as PickChoice[] };
     }, [open]);
 
     return (

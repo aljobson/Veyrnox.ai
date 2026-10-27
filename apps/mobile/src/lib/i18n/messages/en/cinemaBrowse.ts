@@ -46,4 +46,16 @@ export default {
     // --- Cinema profile, creator application, audience insights (ADR-0168, parity P6) ---
     'cinemaBrowse.tab.profile': 'Profile',
     'cinemaBrowse.lock.paid': 'This is a paid title. Paid titles are not available in the app yet.',
+    "cinemaBrowse.romance": "Romance",
+    "cinemaBrowse.drama": "Drama",
+    "cinemaBrowse.thriller": "Thriller",
+    "cinemaBrowse.comedy": "Comedy",
+    "cinemaBrowse.horror": "Horror",
+    "cinemaBrowse.sciFi": "Sci-Fi",
+    "cinemaBrowse.fantasy": "Fantasy",
+    "cinemaBrowse.action": "Action",
+    "cinemaBrowse.mystery": "Mystery",
+    "cinemaBrowse.documentary": "Documentary",
+    "cinemaBrowse.animation": "Animation",
+    "cinemaBrowse.kids": "Kids",
 } as const;

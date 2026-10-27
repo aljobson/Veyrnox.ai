@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import type { ApiClient } from './api';
 
 // ADR-0163: manage publish queues (list, save, delete). A queue is a set of accounts and weekly time slots; posts
@@ -39,7 +40,7 @@ export const fetchQueueList = async (api: ApiClient) => parseQueueList(await api
 
 export const QUEUE_NAME_MAX = 80;
 export const MAX_SLOTS = 35;
-export const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const;
+export const DAYS = [t('publishQueueAdmin.mon'), t('publishQueueAdmin.tue'), t('publishQueueAdmin.wed'), t('publishQueueAdmin.thu'), t('publishQueueAdmin.fri'), t('publishQueueAdmin.sat'), t('publishQueueAdmin.sun')] as const;
 
 export interface QueueInput {
     readonly id: string | null;

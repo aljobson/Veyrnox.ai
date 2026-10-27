@@ -3,10 +3,10 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { fetchPass, passIsLive, type Pass } from '../../lib/cinemaPass';
 import { readOf } from '../../lib/cinemaSocial';
-import { t } from '../../lib/i18n';
+import { formatLocale, t } from '../../lib/i18n';
 import { colors } from '../../theme';
 
-const day = (iso: string) => new Date(iso).toLocaleDateString();
+const day = (iso: string) => new Date(iso).toLocaleDateString(formatLocale());
 
 // Shows a Cinema Pass the account already has. No price and nothing to buy (ADR-0207); with no Pass, or while the Pass
 // routes are closed, it shows nothing at all.

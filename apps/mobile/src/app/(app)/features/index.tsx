@@ -1,3 +1,4 @@
+import { displayLabel } from '../../../lib/displayLabels';
 import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -13,21 +14,21 @@ export default function CreativeFeatures() {
     const available = reuse ? compatibleCreativeFeatures(reuse.kind) : CREATIVE_FEATURES;
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-            <Stack.Screen options={{ title: 'Creative tools' }} />
+            <Stack.Screen options={{ title: t('features.creativetools') }} />
             <View style={styles.hero}>
-                <Text style={styles.kicker}>{reuse ? t('features.reuse.kicker') : 'GUIDED CREATION'}</Text>
-                <Text style={styles.title} accessibilityRole="header">{reuse ? t('features.reuse.title', { kind: reuse.kind }) : 'Make the exact thing you need'}</Text>
-                <Text style={styles.lead}>{reuse ? t('features.reuse.lead') : 'Choose a workflow. Veyrnox sets the right model, prompt shape and required uploads, then opens the final review in Create.'}</Text>
+                <Text style={styles.kicker}>{reuse ? t('features.reuse.kicker') : t('features.gUIDEDCREATION')}</Text>
+                <Text style={styles.title} accessibilityRole="header">{reuse ? t('features.reuse.title', { kind: reuse.kind }) : t('features.maketheexactthingyouneed')}</Text>
+                <Text style={styles.lead}>{reuse ? t('features.reuse.lead') : t('features.chooseaworkflowVeyrnoxsetstheright')}</Text>
             </View>
             {CREATIVE_FEATURE_GROUPS.map((group) => {
                 const features = available.filter((item) => item.group === group);
                 if (!features.length) return null;
-                return <View key={group} style={styles.group}>
-                    <View style={styles.groupHeading}><Text style={styles.groupTitle} accessibilityRole="header">{group}</Text><Text style={styles.count}>{features.length} tools</Text></View>
+                return <View key={displayLabel(group)} style={styles.group}>
+                    <View style={styles.groupHeading}><Text style={styles.groupTitle} accessibilityRole="header">{displayLabel(group)}</Text><Text style={styles.count}>{t('features.tools', { value1: features.length })}</Text></View>
                     <View style={styles.grid}>{features.map((feature) => (
                         <Pressable key={feature.slug} accessibilityRole="button" accessibilityLabel={`${feature.title}. ${feature.steps.join('. ')}`} style={({ pressed }) => [styles.card, pressed && styles.pressed]} onPress={() => router.push(reuse ? creativeReuseTargetHref(feature.slug, reuse) : { pathname: '/features/[slug]', params: { slug: feature.slug } })}>
                             <View style={styles.mediaFrame}>
-                                <Image source={{ uri: feature.example.posterUrl ?? feature.example.url }} style={styles.thumb} contentFit="contain" accessibilityLabel={`${feature.title} example`} accessibilityIgnoresInvertColors />
+                                <Image source={{ uri: feature.example.posterUrl ?? feature.example.url }} style={styles.thumb} contentFit="contain" accessibilityLabel={t('features.example', { value1: feature.title })} accessibilityIgnoresInvertColors />
                                 {feature.example.kind === 'video' ? <View style={styles.playBadge} accessibilityElementsHidden><Text style={styles.play}>▶</Text></View> : null}
                             </View>
                                 <View style={styles.cardCopy}>
@@ -55,6 +56,6 @@ const styles = StyleSheet.create({
     grid: { gap: 12 }, card: { width: '100%', overflow: 'hidden', borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
     mediaFrame: { width: '100%', height: 210, alignItems: 'center', justifyContent: 'center', backgroundColor: '#09090B' }, thumb: { width: '100%', height: '100%' },
     playBadge: { position: 'absolute', width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.72)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)' },
-    play: { color: colors.accent, fontSize: 22, marginLeft: 3 }, cardCopy: { padding: 16, gap: 5 }, kind: { color: colors.accent, fontSize: 9, fontWeight: '900', letterSpacing: 1.3 },
+    play: { color: colors.accent, fontSize: 22, marginStart: 3 }, cardCopy: { padding: 16, gap: 5 }, kind: { color: colors.accent, fontSize: 9, fontWeight: '900', letterSpacing: 1.3 },
     name: { color: colors.text, fontSize: 17, fontWeight: '800' }, summary: { color: colors.muted, fontSize: 12, lineHeight: 17 }, pressed: { opacity: 0.72 },
 });

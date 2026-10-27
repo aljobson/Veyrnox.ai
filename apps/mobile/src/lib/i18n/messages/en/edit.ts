@@ -61,4 +61,6 @@ export default {
     'edit.audio.with': 'Sound: {name}, from {seconds} s',
     'edit.problem.audio_offset': 'The sound must start inside the video.',
     'edit.err.notAudio': 'That file is not audio.',
+    "edit.stos": "{value1}. {value2}: {value3} s to {value4} s",
+    "edit.s": "{value1} s",
 } as const;

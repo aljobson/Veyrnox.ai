@@ -1,3 +1,4 @@
+import { t } from '../../../../lib/i18n';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
@@ -45,8 +46,8 @@ export default function FilmShot() {
     if (!film || !shot) {
         return (
             <View style={styles.screen}>
-                <Stack.Screen options={{ title: 'Shot' }} />
-                <Text style={styles.muted}>That shot is not in the studio on this phone.</Text>
+                <Stack.Screen options={{ title: t('film.shot') }} />
+                <Text style={styles.muted}>{t('film.thatshotisnotinthestudio')}</Text>
             </View>
         );
     }
@@ -66,23 +67,23 @@ export default function FilmShot() {
             <Text style={styles.title} accessibilityRole="header">{shot.id}</Text>
             <Text style={styles.status}>{row.label}</Text>
 
-            <Text style={styles.heading} accessibilityRole="header">Assets</Text>
-            {row.assets.length === 0 ? <Text style={styles.muted}>No assets named.</Text> : null}
+            <Text style={styles.heading} accessibilityRole="header">{t('film.assets')}</Text>
+            {row.assets.length === 0 ? <Text style={styles.muted}>{t('film.noassetsnamed')}</Text> : null}
             {row.assets.map((a) => (
                 <Text key={a.key} style={a.locked ? styles.good : styles.muted}>
-                    {a.key} · {a.locked ? 'locked' : 'draft'}
+                    {a.key} · {a.locked ? t('film.locked') : t('film.draft')}
                 </Text>
             ))}
 
-            <Text style={styles.heading} accessibilityRole="header">Make this shot</Text>
-            {!prompt ? <Text style={styles.muted}>No prompt yet.</Text> : null}
+            <Text style={styles.heading} accessibilityRole="header">{t('film.makethisshot')}</Text>
+            {!prompt ? <Text style={styles.muted}>{t('film.nopromptyet')}</Text> : null}
             {!offer ? <ActivityIndicator color={colors.accent} /> : null}
             {offer && offer.ok ? (
                 <>
-                    <Text style={styles.money}>{offer.credits} credits · {offer.model.name} · {offer.seconds} seconds</Text>
-                    <Text style={styles.muted}>This opens Create with the prompt filled in. You see the price there too, and nothing is charged until you press Generate.</Text>
+                    <Text style={styles.money}>{t('film.creditsseconds', { value1: offer.credits, value2: offer.model.name, value3: offer.seconds })}</Text>
+                    <Text style={styles.muted}>{t('film.thisopensCreatewiththepromptfilled')}</Text>
                     <Pressable accessibilityRole="button" style={styles.primary} onPress={() => { if (current()) router.push({ pathname: '/create/[modelId]', params: { modelId: offer.model.id, prompt: offer.prompt, duration: String(offer.seconds) } }); }}>
-                        <Text style={styles.primaryText}>Open in Create</Text>
+                        <Text style={styles.primaryText}>{t('film.openinCreate')}</Text>
                     </Pressable>
                 </>
             ) : offer ? (
@@ -90,19 +91,19 @@ export default function FilmShot() {
             ) : null}
             {prompt ? (
                 <Pressable accessibilityRole="button" style={[styles.secondary, touchTarget]} onPress={() => { if (current()) void Share.share({ message: prompt.content }); }}>
-                    <Text style={styles.secondaryText}>Share the full prompt</Text>
+                    <Text style={styles.secondaryText}>{t('film.sharethefullprompt')}</Text>
                 </Pressable>
             ) : null}
 
-            {attempts.length ? <Text style={styles.heading} accessibilityRole="header">Attempts</Text> : null}
+            {attempts.length ? <Text style={styles.heading} accessibilityRole="header">{t('film.attempts')}</Text> : null}
             {attempts.map((a) => (
                 <View key={a.version} style={styles.attempt}>
-                    <Text style={styles.name}>Version {a.version} · {a.verdict}</Text>
+                    <Text style={styles.name}>{t('film.version', { value1: a.version, value2: a.verdict })}</Text>
                     <Text style={styles.muted}>{a.changed}</Text>
                 </View>
             ))}
 
-            <Text style={styles.heading} accessibilityRole="header">Shot card</Text>
+            <Text style={styles.heading} accessibilityRole="header">{t('film.shotcard')}</Text>
             {SHOT_LANES.map(([lane, fields]) => (
                 <View key={lane} style={styles.lane}>
                     <Text style={styles.laneName}>{lane}</Text>

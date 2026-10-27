@@ -1,6 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 import type { ChatMessage } from '../../lib/chat';
-import { plural } from '../../lib/i18n';
+import { t, plural } from '../../lib/i18n';
 import { withoutDrafts, type StudioDraft } from '../../lib/studioSkills';
 import { Text, themedStyles, useThemedStyles } from '../ui';
 import { DraftCards } from './DraftCards';
@@ -10,7 +10,7 @@ export function MessageBubble({ message, sending, drafts }: { message: ChatMessa
     const shown = drafts.length ? withoutDrafts(message.content) : message.content;
     return (
         <View style={[styles.bubble, message.role === 'user' ? styles.user : styles.assistant]}>
-            <Text accessible accessibilityLabel={`${message.role === 'user' ? 'You' : 'Assistant'}: ${shown || (sending ? 'writing' : '')}`} variant="body" style={[styles.text, message.role === 'user' && styles.userText]}>{shown || (sending && !message.content ? '…' : '')}</Text>
+            <Text accessible accessibilityLabel={`${message.role === 'user' ? t('chat.speakerYou') : t('chat.speakerAssistant')}: ${shown || (sending ? t('chat.writing') : '')}`} variant="body" style={[styles.text, message.role === 'user' && styles.userText]}>{shown || (sending && !message.content ? '…' : '')}</Text>
             {drafts.length ? <DraftCards drafts={drafts} /> : null}
             {message.role === 'assistant' && message.credits ? <Text variant="caption" style={styles.cost}>{plural('chat.replyCost', message.credits)}</Text> : null}
         </View>

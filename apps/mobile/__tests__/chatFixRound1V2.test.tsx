@@ -102,7 +102,7 @@ test('attachment badge is 24pt with a full inward 44pt hit area and a single dis
     const hit = badge.props.hitSlop;
     expect(style(badge).width + hit.left + hit.right).toBe(44);
     expect(style(badge).height + hit.top + hit.bottom).toBe(44);
-    expect(style(badge.parent!)).toMatchObject({ width: 44, height: 44, top: 0, right: 0, alignItems: 'flex-end', justifyContent: 'flex-start' });
+    expect(style(badge.parent!)).toMatchObject({ width: 44, height: 44, top: 0, end: 0, alignItems: 'flex-end', justifyContent: 'flex-start' });
     expect(badge.queryAll(n => n.props.source === MENU_ICONS.close)).toHaveLength(1);
     await act(async () => badge.props.onClick(event));
     expect(remove).toHaveBeenCalledWith('one');

@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import type { ApiClient } from './api';
 
 // ADR-0161: publish queues. The composer reserves the next free slot of a queue, creates the post at that time, then
@@ -61,7 +62,7 @@ export const confirmSlot = (api: ApiClient, assignmentId: string, postId: string
     api.request('/api/v1/social/queues/reserve', json('PATCH', { assignmentId, postId }));
 
 // The weekday names a queue's slots, e.g. "Mon 09:00". Time is in the queue's own time zone.
-const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const DAYS = [t('publishQueues.mon'), t('publishQueues.tue'), t('publishQueues.wed'), t('publishQueues.thu'), t('publishQueues.fri'), t('publishQueues.sat'), t('publishQueues.sun')];
 export function slotLabel(s: QueueSlot): string {
     const h = String(Math.floor(s.minute / 60)).padStart(2, '0');
     const m = String(s.minute % 60).padStart(2, '0');

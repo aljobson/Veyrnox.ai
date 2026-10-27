@@ -2,13 +2,13 @@ import { Stack } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, TextInput, View } from 'react-native';
 import { touchTarget } from '../../../lib/a11y';
-import { t } from '../../../lib/i18n';
+import { formatLocale, t } from '../../../lib/i18n';
 import { roleLabel } from '../../../lib/publishBrand';
 import { canManage, changeRole, fetchTeam, inviteErrorKey, inviteMember, removeMember, revokeInvite, rolesFor, teamActionErrorKey, teamErrorKey, validEmail, type ChangeableRole, type Invitation_, type Member, type Team } from '../../../lib/publishTeam';
 import { usePublishApi } from '../../../lib/usePublishApi';
 import { colors, LIST_END_PADDING } from '../../../theme';
 
-const day = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString() : '');
+const day = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(formatLocale()) : '');
 
 export default function TeamScreen() {
     const api = usePublishApi();

@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import { ApiError, type ApiClient } from './api';
 
 // In-app account deletion (ADR-0111 on the server, ADR-0110 here). Two calls:
@@ -10,16 +11,16 @@ export const ACCOUNT_DELETION_ENABLED = process.env.EXPO_PUBLIC_ACCOUNT_DELETION
 
 // What the server can list as stopping a deletion, with the words the person sees.
 const BLOCKER_COPY: Record<string, string> = {
-    account_frozen: 'Your account is frozen. Contact support to resolve it first.',
-    account_on_hold: 'Your account is on hold. Contact support to resolve it first.',
-    active_subscription: 'You have an active plan. Cancel it first (plans bought in the App Store or Google Play are cancelled in that store).',
-    generation_in_progress: 'A creation is still running. Wait for it to finish.',
-    top_up_in_progress: 'A credit purchase is still being processed. Try again in about two hours.',
-    cinema_content_present: 'You have Cinema content. Remove it first, or contact support.',
-    projects_present: 'You have saved projects. Delete them on the website first.',
-    publish_team_present: 'You are part of a Publish team. Leave or remove the team on the website first.',
+    account_frozen: t('accountDeletion.youraccountisfrozenContactsupportto'),
+    account_on_hold: t('accountDeletion.youraccountisonholdContactsupport'),
+    active_subscription: t('accountDeletion.youhaveanactiveplanCancelit'),
+    generation_in_progress: t('accountDeletion.acreationisstillrunningWaitfor'),
+    top_up_in_progress: t('accountDeletion.acreditpurchaseisstillbeingprocessed'),
+    cinema_content_present: t('accountDeletion.youhaveCinemacontentRemoveitfirst'),
+    projects_present: t('accountDeletion.youhavesavedprojectsDeletethemon'),
+    publish_team_present: t('accountDeletion.youarepartofaPublishteam'),
 };
-const UNKNOWN_BLOCKER = 'Something on your account stops deletion. Contact support.';
+const UNKNOWN_BLOCKER = t('accountDeletion.somethingonyouraccountstopsdeletionContact');
 
 export const blockerText = (code: string): string => BLOCKER_COPY[code] ?? UNKNOWN_BLOCKER;
 

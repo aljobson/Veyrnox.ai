@@ -1,3 +1,4 @@
+import { displayLabel } from '../../lib/displayLabels';
 import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 import { SKILL_GROUPS, SKILLS, type Skill } from '../../lib/studioSkills';
@@ -15,8 +16,8 @@ export function ConversationEmpty({ skillNote, applyStarter }: { skillNote: stri
                 <Text variant="caption" style={styles.eyebrow}>{t('chat.workspace.skillsEyebrow')}</Text>
                 <Text variant="callout" style={styles.skillsHelp}>{t('chat.workspace.skillsHelp')}</Text>
                 {SKILL_GROUPS.filter((group) => group !== 'Film').map((group) => (
-                    <View key={group} style={styles.skillGroup}>
-                        <Text variant="footnote" style={styles.skillGroupLabel}>{group}</Text>
+                    <View key={displayLabel(group)} style={styles.skillGroup}>
+                        <Text variant="footnote" style={styles.skillGroupLabel}>{displayLabel(group)}</Text>
                         <View style={styles.skillGrid}>
                             {SKILLS.filter((skill) => skill.group === group).map((skill) => {
                                 const selected = skillNote === skill.name;
@@ -38,8 +39,8 @@ export function ConversationEmpty({ skillNote, applyStarter }: { skillNote: stri
                         </View>
                     </View>
                 ))}
-                <Button accessibilityRole="button" containerStyle={styles.filmLink} onPress={() => router.push('/film')} variant="tertiary" size="md" label="Open Film Studio">
-                    <Text variant="footnote" style={styles.filmLinkText}>Open Film Studio</Text><Icon name="arrowRight" size={20} />
+                <Button accessibilityRole="button" containerStyle={styles.filmLink} onPress={() => router.push('/film')} variant="tertiary" size="md" label={t('chat.openFilmStudio')}>
+                    <Text variant="footnote" style={styles.filmLinkText}>{t('chat.openFilmStudio')}</Text><Icon name="arrowRight" size={20} />
                 </Button>
             </View>
         </View>

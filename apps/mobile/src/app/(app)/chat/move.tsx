@@ -1,3 +1,4 @@
+import { t } from '../../../lib/i18n';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
@@ -38,10 +39,10 @@ export default function MoveToFolder() {
         }
     }
 
-    const rows: { id: string | null; name: string }[] = [{ id: null, name: 'No folder' }, ...(folders ?? []).map((f) => ({ id: f.id, name: f.name }))];
+    const rows: { id: string | null; name: string }[] = [{ id: null, name: t('chat.nofolder') }, ...(folders ?? []).map((f) => ({ id: f.id, name: f.name }))];
     return (
         <View style={styles.screen}>
-            <Stack.Screen options={{ title: 'Move to folder' }} />
+            <Stack.Screen options={{ title: t('chat.movetofolder') }} />
             {problem ? <Text style={styles.error}>{problem}</Text> : null}
             {!folders && !problem ? (
                 <ActivityIndicator color={styles.accentInk.color} />
@@ -52,7 +53,7 @@ export default function MoveToFolder() {
                     renderItem={({ item }) => (
                         <Card accessibilityRole="button" accessibilityState={{ selected: item.id === current, disabled: busy }} style={styles.row} onPress={() => choose(item.id)} selected={item.id === current}>
                             <Text variant="body" style={styles.name}>{item.name}</Text>
-                            {item.id === current ? <Text style={styles.on}>Current</Text> : null}
+                            {item.id === current ? <Text style={styles.on}>{t('chat.current')}</Text> : null}
                         </Card>
                     )}
                 />

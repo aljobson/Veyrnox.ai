@@ -1,3 +1,4 @@
+import { t } from '../lib/i18n';
 import { Text, Card, themedStyles, useThemedStyles } from './ui';
 
 import { freeLines, type FreeLeft } from '../lib/freeAllowance';
@@ -9,8 +10,8 @@ export function FreeAllowanceCard({ models, left }: { readonly models: readonly 
     const lines = freeLines(left, models);
     if (lines.length === 0) return null;
     return (
-        <Card style={styles.card} accessible accessibilityLabel={`Free today. ${lines.join('. ')}`}>
-            <Text variant="footnote" tone="secondary" accessibilityRole="header">Free today</Text>
+        <Card style={styles.card} accessible accessibilityLabel={t('freeAllowanceCard.freetoday', { value1: lines.join('. ') })}>
+            <Text variant="footnote" tone="secondary" accessibilityRole="header">{t('freeAllowanceCard.freetoday2')}</Text>
             {lines.map((l) => (
                 <Text variant="callout" tone="secondary" key={l} style={styles.count}>
                     {l}

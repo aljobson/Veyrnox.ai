@@ -1,3 +1,4 @@
+import { plural, t } from './i18n';
 import type { ApiClient } from './api';
 
 // ADR-0130: the two read-only file lists in the Library, film masters and editor renders, with the short-lived
@@ -32,7 +33,7 @@ export function parseFiles(body: unknown, kind: FileKind): { enabled: boolean; f
         if (!id) continue;
         files.push({
             id,
-            label: str(raw.label) ?? 'Untitled video',
+            label: str(raw.label) ?? t('libraryFiles.untitledvideo'),
             sizeBytes: num(raw.size_bytes),
             width: num(raw.width),
             height: num(raw.height),
@@ -47,13 +48,13 @@ export function parseFiles(body: unknown, kind: FileKind): { enabled: boolean; f
 
 export function sizeLabel(bytes: number | null): string | null {
     if (bytes === null) return null;
-    return bytes >= 1_048_576 ? `${Math.round(bytes / 1_048_576)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
+    return bytes >= 1_048_576 ? t('libraryFiles.mB', { value1: Math.round(bytes / 1_048_576) }) : t('libraryFiles.kB', { value1: Math.max(1, Math.round(bytes / 1024)) });
 }
 
 export function lengthLabel(seconds: number | null): string | null {
     if (seconds === null) return null;
     const whole = Math.round(seconds);
-    return whole >= 60 ? `${Math.floor(whole / 60)} min ${whole % 60} s` : `${whole} s`;
+    return whole >= 60 ? t('libraryFiles.mins', { value1: Math.floor(whole / 60), value2: whole % 60 }) : t('libraryFiles.s', { value1: whole });
 }
 
 export const resolutionLabel = (width: number | null, height: number | null): string | null => (width !== null && height !== null ? `${width} × ${height}` : null);
@@ -62,12 +63,12 @@ export function expiryLabel(expiresAt: string | null, now: Date = new Date()): s
     if (!expiresAt) return null;
     const ms = Date.parse(expiresAt) - now.getTime();
     if (Number.isNaN(ms)) return null;
-    if (ms <= 0) return 'Expired';
+    if (ms <= 0) return t('libraryFiles.expired');
     const hours = Math.floor(ms / 3_600_000);
-    if (hours < 1) return 'Expires within the hour';
-    if (hours < 24) return `Expires in ${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+    if (hours < 1) return t('libraryFiles.expireswithinthehour');
+    if (hours < 24) return plural('libraryFiles.hours', hours);
     const days = Math.floor(hours / 24);
-    return `Expires in ${days} ${days === 1 ? 'day' : 'days'}`;
+    return plural('libraryFiles.days', days);
 }
 
 const PATH: Record<FileKind, string> = { masters: '/api/v1/library/masters', renders: '/api/v1/library/editor-renders' };
@@ -96,9 +97,9 @@ export function fileErrorMessage(err: unknown): string {
     const e = err as { status?: number; code?: string } | null;
     const status = typeof e?.status === 'number' ? e.status : -1;
     const code = String(e?.code ?? '');
-    if (status === 0) return 'No connection. Check your internet and try again.';
-    if (status === 404 || code === 'not_found' || code === 'NOT_FOUND') return 'That file is no longer available. Files are kept for a limited time.';
-    if (status === 429) return 'Too many requests. Try again in a moment.';
-    if (status === 503) return 'The Library is busy. Try again in a moment.';
-    return 'Something went wrong. Try again.';
+    if (status === 0) return t('libraryFiles.noconnectionCheckyourinternetandtry');
+    if (status === 404 || code === 'not_found' || code === 'NOT_FOUND') return t('libraryFiles.thatfileisnolongeravailableFiles');
+    if (status === 429) return t('libraryFiles.toomanyrequestsTryagainina');
+    if (status === 503) return t('libraryFiles.theLibraryisbusyTryagainin');
+    return t('libraryFiles.somethingwentwrongTryagain');
 }

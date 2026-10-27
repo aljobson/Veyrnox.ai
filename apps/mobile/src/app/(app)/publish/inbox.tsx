@@ -4,7 +4,7 @@ import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Tex
 import { UnlockCard } from '../../../components/UnlockCard';
 import { touchTarget } from '../../../lib/a11y';
 import { ApiError } from '../../../lib/api';
-import { t } from '../../../lib/i18n';
+import { formatLocale, t } from '../../../lib/i18n';
 import { KINDS, STATES, fetchInbox, inboxErrorKey, type Counts, type InboxKind, type InboxState, type Thread } from '../../../lib/publishInbox';
 import { usePublishApi } from '../../../lib/usePublishApi';
 import { colors, LIST_END_PADDING } from '../../../theme';
@@ -72,7 +72,7 @@ export default function Inbox() {
                                 <Pressable accessibilityRole="button" accessibilityLabel={`${item.name || item.network}, ${t(`inbox.kind.${item.kind}`)}${item.unread ? `, ${t('inbox.unread', { count: item.unread })}` : ''}`} style={[styles.row, touchTarget]} onPress={() => router.push({ pathname: '/publish/inbox-thread', params: { id: item.id } })}>
                                     <Text style={[styles.name, item.unread > 0 && styles.bold]} numberOfLines={1}>{item.name || item.network}</Text>
                                     <Text style={styles.muted} numberOfLines={1}>{item.subject || t(`inbox.kind.${item.kind}`)}</Text>
-                                    <Text style={styles.meta}>{item.network} · {item.accountName}{item.unread ? ` · ${t('inbox.unread', { count: item.unread })}` : ''}{item.latestAt ? ` · ${new Date(item.latestAt).toLocaleDateString()}` : ''}</Text>
+                                    <Text style={styles.meta}>{item.network} · {item.accountName}{item.unread ? ` · ${t('inbox.unread', { count: item.unread })}` : ''}{item.latestAt ? ` · ${new Date(item.latestAt).toLocaleDateString(formatLocale())}` : ''}</Text>
                                 </Pressable>
                             )}
                         />

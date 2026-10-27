@@ -56,7 +56,7 @@ const sheets = themedStyles((p) => ({
     heroShade: { position: 'absolute', inset: 0, backgroundColor: p.mediaShade },
     heroLabel: {
         position: 'absolute',
-        left: 14,
+        start: 14,
         bottom: 14,
         borderRadius: 999,
         borderWidth: 1,

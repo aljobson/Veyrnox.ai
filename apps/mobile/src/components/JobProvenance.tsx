@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { ActivityIndicator, Platform, View } from 'react-native';
 
 import { ApiError } from '../lib/api';
-import { plural, t } from '../lib/i18n';
+import { formatLocale, plural, t } from '../lib/i18n';
 import { parseProvenance, sizeLabel, type Provenance } from '../lib/libraryView';
 import { mediaApi } from '../lib/media';
 import type { ApiClient } from '../lib/api';
@@ -43,7 +43,7 @@ export function JobProvenance({ api, jobId }: { readonly api: ApiClient; readonl
                     {prov ? (
                         <>
                             <Text variant="body" tone="secondary" style={styles.line}>{t('prov.model', { model: prov.model })}</Text>
-                            {prov.madeAt ? <Text variant="body" tone="secondary" style={styles.line}>{t('prov.when', { date: new Date(prov.madeAt).toLocaleString() })}</Text> : null}
+                            {prov.madeAt ? <Text variant="body" tone="secondary" style={styles.line}>{t('prov.when', { date: new Date(prov.madeAt).toLocaleString(formatLocale()) })}</Text> : null}
                             {prov.credits !== null ? <Text variant="body" tone="warning">{t('prov.cost', { credits: prov.credits > 0 ? plural('library.cost', prov.credits) : t('library.costFree') })}</Text> : null}
                             {prov.mime ? <Text variant="body" tone="secondary" style={styles.line}>{t('prov.file', { type: prov.mime, size: sizeLabel(prov.sizeBytes) ?? '—' })}</Text> : null}
                             {prov.sha256 ? (

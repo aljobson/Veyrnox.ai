@@ -5,10 +5,10 @@ import { useAuth } from '../../../auth/AuthProvider';
 import { MIN_TARGET } from '../../../lib/a11y';
 import { fetchAnalytics, type Analytics } from '../../../lib/cinemaCreator';
 import { readOf, type Read } from '../../../lib/cinemaSocial';
-import { plural, t } from '../../../lib/i18n';
+import { formatLocale, plural, t } from '../../../lib/i18n';
 import { colors } from '../../../theme';
 
-const day = (iso: string) => (iso && Number.isFinite(Date.parse(iso)) ? new Date(iso).toLocaleDateString() : '');
+const day = (iso: string) => (iso && Number.isFinite(Date.parse(iso)) ? new Date(iso).toLocaleDateString(formatLocale()) : '');
 const ROWS = ['viewers', 'completions', 'voters', 'sharers', 'commenters'] as const;
 
 // A creator's own audience counts for one title over the last 28 days (CINEMA_CREATOR_ANALYTICS_ENABLED). Counts under

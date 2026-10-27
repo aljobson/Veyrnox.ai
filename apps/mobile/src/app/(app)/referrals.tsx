@@ -1,3 +1,4 @@
+import { t } from '../../lib/i18n';
 import { Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -25,7 +26,7 @@ export default function Referrals() {
 
     async function share(link: string) {
         // The system share sheet also offers Copy.
-        await Share.share({ message: `Make AI images, video and audio with me on Veyrnox.ai: ${link}` }).catch(() => undefined);
+        await Share.share({ message: t('referrals.makeAIimagesvideoandaudiowith', { value1: link }) }).catch(() => undefined);
     }
 
     async function useCode() {
@@ -35,7 +36,7 @@ export default function Referrals() {
         try {
             await attachReferral(api, typed);
             setTyped('');
-            setNote('Done. Your friend earns Credits when you buy your first Credit Pack.');
+            setNote(t('referrals.doneYourfriendearnsCreditswhenyou'));
         } catch (err) {
             setNote(attachMessage(err));
         } finally {
@@ -45,28 +46,25 @@ export default function Referrals() {
 
     return (
         <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
-            <Stack.Screen options={{ title: 'Refer a friend' }} />
+            <Stack.Screen options={{ title: t('referrals.referafriend') }} />
             <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
                 {failed ? (
-                    <Text style={styles.error}>Could not load this. Check your connection.</Text>
+                    <Text style={styles.error}>{t('referrals.couldnotloadthisCheckyourconnection')}</Text>
                 ) : info === null ? (
                     <ActivityIndicator color={colors.accent} />
                 ) : !info.enabled ? (
-                    <Text style={styles.body1}>Referrals are not available right now.</Text>
+                    <Text style={styles.body1}>{t('referrals.referralsarenotavailablerightnow')}</Text>
                 ) : (
                     <>
-                        <Text style={styles.body1}>
-                            When a friend you refer buys their first Credit Pack, you earn Credits worth 10% of that Pack, added to your balance 14 days later if the purchase has not been refunded or disputed.
-                            Credits only; they never expire. Nothing is paid out as money.
-                        </Text>
+                        <Text style={styles.body1}>{t('referrals.whenafriendyoureferbuystheir')}</Text>
                         <View style={styles.codeBox}>
-                            <Text style={styles.label}>Your code</Text>
-                            <Text selectable style={styles.code} accessibilityLabel={`Your referral code ${info.code.split('').join(' ')}`}>
+                            <Text style={styles.label}>{t('referrals.yourcode')}</Text>
+                            <Text selectable style={styles.code} accessibilityLabel={t('referrals.yourreferralcode', { value1: info.code.split('').join(' ') })}>
                                 {info.code}
                             </Text>
                         </View>
                         <Pressable accessibilityRole="button" style={styles.button} onPress={() => share(referralLink(info.code))}>
-                            <Text style={styles.buttonText}>Share your link</Text>
+                            <Text style={styles.buttonText}>{t('referrals.shareyourlink')}</Text>
                         </Pressable>
                         <Text style={styles.muted}>{friendsLine(info.referred)}</Text>
                     </>
@@ -74,20 +72,20 @@ export default function Referrals() {
 
                 {info?.enabled ? (
                     <View style={styles.attach}>
-                        <Text style={styles.label}>Have a friend's code?</Text>
+                        <Text style={styles.label}>{t('referrals.haveafriendscode')}</Text>
                         <TextInput
                             style={styles.input}
                             value={typed}
                             onChangeText={setTyped}
-                            placeholder="10 letters and numbers"
-                            accessibilityLabel="Friend's referral code, 10 letters and numbers"
+                            placeholder={t('referrals.10lettersandnumbers')}
+                            accessibilityLabel={t('referrals.friendsreferralcode10lettersand')}
                             placeholderTextColor={colors.muted}
                             autoCapitalize="characters"
                             autoCorrect={false}
                             maxLength={32}
                         />
                         <Pressable accessibilityRole="button" disabled={!typed.trim() || busy} style={[styles.secondary, (!typed.trim() || busy) && styles.off]} onPress={useCode}>
-                            {busy ? <ActivityIndicator color={colors.text} /> : <Text style={styles.secondaryText}>Use this code</Text>}
+                            {busy ? <ActivityIndicator color={colors.text} /> : <Text style={styles.secondaryText}>{t('referrals.usethiscode')}</Text>}
                         </Pressable>
                         {note ? <Text style={styles.muted}>{note}</Text> : null}
                     </View>

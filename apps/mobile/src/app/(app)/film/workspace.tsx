@@ -1,3 +1,5 @@
+import { displayLabel } from '../../../lib/displayLabels';
+import { plural, t } from '../../../lib/i18n';
 import { Button } from '../../../components/ui';
 import { randomUUID } from 'expo-crypto';
 import { Stack, useRouter } from 'expo-router';
@@ -47,30 +49,30 @@ export default function FilmWorkspace() {
             if (cloud) {
                 try {
                     const project = await saveActiveStudioToCloud(api, film, randomUUID());
-                    setNote(`Saved to your account · revision ${project.revision}`);
+                    setNote(t('film.savedtoyouraccountrevision', { value1: project.revision }));
                 } catch (error) {
                     const status = cloudStatus(error);
                     const message = error instanceof ApiError && error.status === 409
-                        ? 'This film changed elsewhere. Your edit is saved on this phone; open the latest account copy before saving again.'
+                        ? t('film.thisfilmchangedelsewhereYoureditis')
                         : status === 'offline'
-                            ? 'You’re offline. Your film is saved on this phone; save to your account when you’re connected.'
+                            ? t('film.youreofflineYourfilmissaved')
                             : status === 'busy'
-                                ? 'Account saving is busy. Your film is saved on this phone; try again in a moment.'
+                                ? t('film.accountsavingisbusyYourfilmis')
                                 : status === 'unavailable'
-                                    ? 'Account saving is not available right now. Your film is saved on this phone.'
-                                    : 'Your film is saved on this phone, but could not be saved to your account.';
+                                    ? t('film.accountsavingisnotavailablerightnow')
+                                    : t('film.yourfilmissavedonthisphone');
                     setNote(message);
                 }
-            } else setNote('Saved on this phone.');
+            } else setNote(t('film.savedonthisphone'));
         } catch (error) {
-            setNote(error instanceof Error && error.message ? error.message : 'Could not save the studio.');
+            setNote(error instanceof Error && error.message ? error.message : t('film.couldnotsavethestudio'));
         } finally { setBusy(false); }
     }
 
     function newFilm() {
-        Alert.alert('Start a new film?', 'The studio currently open on this phone will be replaced. Save it to your account first if you want to keep it.', [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Start new', style: 'destructive', onPress: async () => { clearOpenedFilm(); await clearStudio(); setFilm(emptyFilm()); setStage(0); setDirty(true); setNote(null); } },
+        Alert.alert(t('film.startanewfilm2'), t('film.thestudiocurrentlyopenonthisphone'), [
+            { text: t('film.cancel'), style: 'cancel' },
+            { text: t('film.startnew'), style: 'destructive', onPress: async () => { clearOpenedFilm(); await clearStudio(); setFilm(emptyFilm()); setStage(0); setDirty(true); setNote(null); } },
         ]);
     }
 
@@ -78,7 +80,7 @@ export default function FilmWorkspace() {
     const issues = stageIssues(film, stage);
     return (
         <View style={styles.screen}>
-            <Stack.Screen options={{ title: film.name || 'Film Studio workspace' }} />
+            <Stack.Screen options={{ title: film.name || t('film.filmStudioworkspace') }} />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.stageBar} contentContainerStyle={styles.stageBarContent}>
                 {FILM_STAGES.map(([, title], index) => {
                     const open = stageIssues(film, index).length;
@@ -89,10 +91,10 @@ export default function FilmWorkspace() {
             </ScrollView>
             <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
                 <View style={styles.titleRow}>
-                    <View style={{ flex: 1 }}><Text style={styles.kicker}>STAGE {stage + 1} OF 7</Text><Text style={styles.title} accessibilityRole="header">{FILM_STAGES[stage][1]}</Text></View>
-                    <Pressable accessibilityRole="button" style={styles.smallButton} onPress={newFilm}><Text style={styles.smallButtonText}>New</Text></Pressable>
+                    <View style={{ flex: 1 }}><Text style={styles.kicker}>{t('film.sTAGEOF7', { value1: stage + 1 })}</Text><Text style={styles.title} accessibilityRole="header">{FILM_STAGES[stage][1]}</Text></View>
+                    <Pressable accessibilityRole="button" style={styles.smallButton} onPress={newFilm}><Text style={styles.smallButtonText}>{t('film.new')}</Text></Pressable>
                 </View>
-                {issues.length ? <View style={styles.issues}><Text style={styles.issueTitle}>{issues.length} item{issues.length === 1 ? '' : 's'} to finish</Text>{issues.slice(0, 4).map((issue) => <Text key={issue} style={styles.issue}>• {issue}</Text>)}</View> : <Text style={styles.complete}>✓ This stage is complete</Text>}
+                {issues.length ? <View style={styles.issues}><Text style={styles.issueTitle}>{plural('film.itemsToFinish', issues.length)}</Text>{issues.slice(0, 4).map((issue) => <Text key={issue} style={styles.issue}>• {issue}</Text>)}</View> : <Text style={styles.complete}>{t('film.thisstageiscomplete')}</Text>}
                 {stage === 0 ? <Setup film={film} change={change} /> : null}
                 {stage === 1 ? <Identity film={film} change={change} /> : null}
                 {stage === 2 ? <Breakdown film={film} change={change} /> : null}
@@ -102,8 +104,8 @@ export default function FilmWorkspace() {
                 {stage === 6 ? <Prompts film={film} change={change} router={router} /> : null}
                 {note ? <Text accessibilityLiveRegion="polite" style={note.startsWith('Could') || note.includes('missing') ? styles.error : styles.complete}>{note}</Text> : null}
                 <View style={styles.saveRow}>
-                    <Pressable accessibilityRole="button" accessibilityState={{ disabled: busy }} disabled={busy} style={styles.secondary} onPress={() => void save(false)}><Text style={styles.secondaryText}>{busy ? 'Saving…' : dirty ? 'Save on phone' : 'Saved on phone'}</Text></Pressable>
-                    <Pressable accessibilityRole="button" accessibilityState={{ disabled: busy }} disabled={busy} style={styles.primary} onPress={() => void save(true)}><Text style={styles.primaryText}>Save to account</Text></Pressable>
+                    <Pressable accessibilityRole="button" accessibilityState={{ disabled: busy }} disabled={busy} style={styles.secondary} onPress={() => void save(false)}><Text style={styles.secondaryText}>{busy ? t('film.saving') : dirty ? t('film.saveonphone') : t('film.savedonphone')}</Text></Pressable>
+                    <Pressable accessibilityRole="button" accessibilityState={{ disabled: busy }} disabled={busy} style={styles.primary} onPress={() => void save(true)}><Text style={styles.primaryText}>{t('film.savetoaccount')}</Text></Pressable>
                 </View>
             </ScrollView>
         </View>
@@ -113,32 +115,32 @@ export default function FilmWorkspace() {
 function Setup({ film, change }: Props) {
     const stack = (key: keyof Film['stack'], value: string) => change({ ...film, stack: { ...film.stack, [key]: value } });
     return <View style={styles.section}>
-        <Field label="Image model" value={film.stack.image} onChange={(value) => stack('image', value)} placeholder="Model name or id" />
-        <Field label="How you access it" value={film.stack.imageAccess} onChange={(value) => stack('imageAccess', value)} placeholder="Studio or external service" />
-        <Field label="Video model" value={film.stack.video} onChange={(value) => stack('video', value)} placeholder="Model name or id" />
-        <Field label="How you access it" value={film.stack.videoAccess} onChange={(value) => stack('videoAccess', value)} placeholder="Studio or external service" />
-        <Text style={styles.label}>Clip length</Text><Choices values={['10', '12', '15']} selected={film.stack.seconds} onPick={(value) => stack('seconds', value)} suffix=" sec" />
+        <Field label={t('film.imagemodel')} value={film.stack.image} onChange={(value) => stack('image', value)} placeholder={t('film.modelnameorid')} />
+        <Field label={t('film.howyouaccessit')} value={film.stack.imageAccess} onChange={(value) => stack('imageAccess', value)} placeholder={t('film.studioorexternalservice')} />
+        <Field label={t('film.videomodel')} value={film.stack.video} onChange={(value) => stack('video', value)} placeholder={t('film.modelnameorid')} />
+        <Field label={t('film.howyouaccessit')} value={film.stack.videoAccess} onChange={(value) => stack('videoAccess', value)} placeholder={t('film.studioorexternalservice')} />
+        <Text style={styles.label}>{t('film.cliplength')}</Text><Choices values={['10', '12', '15']} selected={film.stack.seconds} onPick={(value) => stack('seconds', value)} suffix={t('film.sec')} />
     </View>;
 }
 
 function Identity({ film, change }: Props) {
     return <View style={styles.section}>
-        <Field label="Studio name" value={film.name} onChange={(name) => change({ ...film, name })} maxLength={120} placeholder="Untitled film" />
-        <Text style={styles.label}>Final runtime</Text><Choices values={['30', '60', '90', '120']} selected={String(film.targetSeconds)} onPick={(value) => change({ ...film, targetSeconds: Number(value) })} suffix=" sec" />
-        <Text style={styles.label}>Aspect ratio</Text><Choices values={['16:9', '9:16', '1:1']} selected={film.stack.aspect} onPick={(value) => change({ ...film, stack: { ...film.stack, aspect: value } })} />
+        <Field label={t('film.studioname')} value={film.name} onChange={(name) => change({ ...film, name })} maxLength={120} placeholder={t('film.untitledfilm')} />
+        <Text style={styles.label}>{t('film.finalruntime')}</Text><Choices values={['30', '60', '90', '120']} selected={String(film.targetSeconds)} onPick={(value) => change({ ...film, targetSeconds: Number(value) })} suffix={t('film.sec')} />
+        <Text style={styles.label}>{t('film.aspectratio')}</Text><Choices values={['16:9', '9:16', '1:1']} selected={film.stack.aspect} onPick={(value) => change({ ...film, stack: { ...film.stack, aspect: value } })} />
     </View>;
 }
 
 function Breakdown({ film, change }: Props) {
     const setShot = (index: number, shot: Shot) => change({ ...film, shots: film.shots.map((item, i) => i === index ? shot : item) });
     return <View style={styles.section}>
-        <Field label="Script, treatment or idea" value={film.script} onChange={(script) => change({ ...film, script })} multiline maxLength={24_000} placeholder="Paste the source material you are breaking down." />
+        <Field label={t('film.scripttreatmentoridea')} value={film.script} onChange={(script) => change({ ...film, script })} multiline maxLength={24_000} placeholder={t('film.pastethesourcematerialyouarebreaking')} />
         {film.shots.map((shot, index) => <View key={`${index}-${shot.id}`} style={styles.card}>
-            <View style={styles.titleRow}><Text style={styles.cardTitle}>Shot {index + 1}</Text><Button variant="tertiary" tone="danger" size="md" label="Remove" onPress={() => change({ ...film, shots: film.shots.filter((_, i) => i !== index) })} /></View>
+            <View style={styles.titleRow}><Text style={styles.cardTitle}>{t('film.shot2', { value1: index + 1 })}</Text><Button variant="tertiary" tone="danger" size="md" label={t('film.remove')} onPress={() => change({ ...film, shots: film.shots.filter((_, i) => i !== index) })} /></View>
             {SHOT_LANES.map(([lane, fields]) => <View key={lane} style={styles.fieldGroup}><Text style={styles.groupTitle}>{lane}</Text>{fields.map(([key, label]) => <Field key={key} label={label} value={String(shot[key] ?? '')} onChange={(value) => setShot(index, { ...shot, [key]: value })} />)}</View>)}
-            <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: shot.oneAction }} style={[styles.choice, shot.oneAction && styles.choiceOn]} onPress={() => setShot(index, { ...shot, oneAction: !shot.oneAction })}><Text style={styles.choiceText}>{shot.oneAction ? '✓ ' : ''}One action in this clip</Text></Pressable>
+            <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: shot.oneAction }} style={[styles.choice, shot.oneAction && styles.choiceOn]} onPress={() => setShot(index, { ...shot, oneAction: !shot.oneAction })}><Text style={styles.choiceText}>{t('film.oneactioninthisclip', { value1: shot.oneAction ? '✓ ' : '' })}</Text></Pressable>
         </View>)}
-        <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => change({ ...film, shots: [...film.shots, blankShot(`S${film.shots.length + 1}`)] })}><Text style={styles.secondaryText}>Add shot</Text></Pressable>
+        <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => change({ ...film, shots: [...film.shots, blankShot(`S${film.shots.length + 1}`)] })}><Text style={styles.secondaryText}>{t('film.addshot')}</Text></Pressable>
     </View>;
 }
 
@@ -146,11 +148,11 @@ function Boards({ film, change }: Props) {
     const required = [...requiredAssets(film).map((name) => ({ name, type: assetType(film, name) })), ...STYLE_BOARDS.map((name) => ({ name, type: 'style' }))];
     const addMissing = () => change({ ...film, boards: [...film.boards, ...required.filter((need) => !film.boards.some((board) => board.name === need.name && board.type === need.type)).map((need, index) => ({ id: `board-${Date.now()}-${index}`, name: need.name, type: need.type, decision: '', references: [] }))] });
     return <View style={styles.section}>
-        <Text style={styles.help}>One line per reference: source | precise caption. Prefix a source with ! to mark an anti-reference.</Text>
-        <Pressable accessibilityRole="button" style={styles.secondary} onPress={addMissing}><Text style={styles.secondaryText}>Create missing boards</Text></Pressable>
+        <Text style={styles.help}>{t('film.onelineperreferencesourceprecisecaption')}</Text>
+        <Pressable accessibilityRole="button" style={styles.secondary} onPress={addMissing}><Text style={styles.secondaryText}>{t('film.createmissingboards')}</Text></Pressable>
         {film.boards.map((board, index) => <View key={board.id} style={styles.card}>
             <Text style={styles.cardTitle}>{board.name} · {board.type}</Text>
-            <Field label="References" value={referenceLines(board)} multiline placeholder="file-or-url | what must remain consistent" onChange={(value) => change({ ...film, boards: film.boards.map((item, i) => i === index ? { ...item, references: parseReferences(value) } : item) })} />
+            <Field label={t('film.references')} value={referenceLines(board)} multiline placeholder={t('film.fileorurlwhatmustremainconsistent')} onChange={(value) => change({ ...film, boards: film.boards.map((item, i) => i === index ? { ...item, references: parseReferences(value) } : item) })} />
             <Choices values={['draft', 'approved', 'revise', 'rejected']} selected={board.decision || 'draft'} onPick={(decision) => change({ ...film, boards: film.boards.map((item, i) => i === index ? { ...item, decision: decision === 'draft' ? '' : decision } : item) })} />
         </View>)}
     </View>;
@@ -160,25 +162,25 @@ function Passports({ film, change }: Props) {
     const required = requiredAssets(film);
     const addMissing = () => change({ ...film, assets: [...film.assets, ...required.filter((key) => !film.assets.some((asset) => assetKey(asset) === key)).map((key) => { const [tag, version] = key.split(':v'); return { tag, version: Number(version), type: assetType(film, key), descriptor: '', references: [], tests: {} }; })] });
     return <View style={styles.section}>
-        <Pressable accessibilityRole="button" style={styles.secondary} onPress={addMissing}><Text style={styles.secondaryText}>Create missing passports</Text></Pressable>
+        <Pressable accessibilityRole="button" style={styles.secondary} onPress={addMissing}><Text style={styles.secondaryText}>{t('film.createmissingpassports')}</Text></Pressable>
         {film.assets.map((asset, index) => <View key={assetKey(asset)} style={styles.card}>
-            <Text style={styles.cardTitle}>{assetKey(asset)} · {asset.type}{isLocked(film, asset) ? ' · LOCKED' : ''}</Text>
-            <Field label="Canonical descriptor" value={asset.descriptor} multiline onChange={(descriptor) => updateAsset(film, change, index, { ...asset, descriptor })} placeholder="Exact identity, form, material, colour, wear and distinguishing details." />
-            <Field label="Approved reference files" value={asset.references.join('\n')} multiline onChange={(value) => updateAsset(film, change, index, { ...asset, references: value.split('\n').map((line) => line.trim()).filter(Boolean) })} placeholder="One file or Library reference per line" />
+            <Text style={styles.cardTitle}>{assetKey(asset)} · {asset.type}{isLocked(film, asset) ? t('film.lOCKED') : ''}</Text>
+            <Field label={t('film.canonicaldescriptor')} value={asset.descriptor} multiline onChange={(descriptor) => updateAsset(film, change, index, { ...asset, descriptor })} placeholder={t('film.exactidentityformmaterialcolourwearand')} />
+            <Field label={t('film.approvedreferencefiles')} value={asset.references.join('\n')} multiline onChange={(value) => updateAsset(film, change, index, { ...asset, references: value.split('\n').map((line) => line.trim()).filter(Boolean) })} placeholder={t('film.onefileorLibraryreferenceperline')} />
         </View>)}
     </View>;
 }
 
 function Tests({ film, change }: Props) {
-    const lock = (key: string) => { try { change(lockAsset(film, key)); } catch (error) { Alert.alert('Cannot lock this asset', error instanceof Error ? error.message : 'Finish every test first.'); } };
+    const lock = (key: string) => { try { change(lockAsset(film, key)); } catch (error) { Alert.alert(t('film.cannotlockthisasset'), error instanceof Error ? error.message : t('film.finisheverytestfirst')); } };
     return <View style={styles.section}>{film.assets.map((asset, index) => <View key={assetKey(asset)} style={styles.card}>
-        <Text style={styles.cardTitle}>{assetKey(asset)} {isLocked(film, asset) ? '· LOCKED' : '· DRAFT'}</Text>
+        <Text style={styles.cardTitle}>{assetKey(asset)} {isLocked(film, asset) ? t('film.lOCKED2') : t('film.dRAFT')}</Text>
         {testMatrix(film, asset).map((row) => { const test = asset.tests[row.id] ?? { result: '', verdict: 'pending' }; return <View key={row.id} style={styles.testRow}>
-            <Text style={styles.groupTitle}>{row.id} · {row.angle} · {row.size}{row.pair ? ` · with ${row.pair}` : ''}</Text>
-            <Field label="Actual output reference" value={test.result} onChange={(result) => updateAsset(film, change, index, { ...asset, tests: { ...asset.tests, [row.id]: { ...test, result } } })} />
+            <Text style={styles.groupTitle}>{row.id} · {row.angle} · {row.size}{row.pair ? t('film.with', { value1: row.pair }) : ''}</Text>
+            <Field label={t('film.actualoutputreference')} value={test.result} onChange={(result) => updateAsset(film, change, index, { ...asset, tests: { ...asset.tests, [row.id]: { ...test, result } } })} />
             <Choices values={['pending', 'pass', 'miss']} selected={test.verdict} onPick={(verdict) => updateAsset(film, change, index, { ...asset, tests: { ...asset.tests, [row.id]: { ...test, verdict } } })} />
         </View>; })}
-        <Pressable accessibilityRole="button" style={styles.primary} onPress={() => lock(assetKey(asset))}><Text style={styles.primaryText}>{isLocked(film, asset) ? 'Locked' : 'Lock after every test passes'}</Text></Pressable>
+        <Pressable accessibilityRole="button" style={styles.primary} onPress={() => lock(assetKey(asset))}><Text style={styles.primaryText}>{isLocked(film, asset) ? t('film.locked2') : t('film.lockaftereverytestpasses')}</Text></Pressable>
     </View>)}</View>;
 }
 
@@ -193,7 +195,7 @@ function Prompts({ film, change, router }: Props & { router: ReturnType<typeof u
     const build = () => {
         if (!shot) return;
         try { const prompt = nextPromptVersion(film, shot, buildShotPrompt(film, shot, details)); change({ ...film, prompts: [...film.prompts, prompt] }); }
-        catch (error) { Alert.alert('Prompt not ready', error instanceof Error ? error.message : 'Finish the earlier stages first.'); }
+        catch (error) { Alert.alert(t('film.promptnotready'), error instanceof Error ? error.message : t('film.finishtheearlierstagesfirst')); }
     };
     const log = () => {
         const prompt = shot ? latestPrompt(film, shot.id) : null;
@@ -201,22 +203,22 @@ function Prompts({ film, change, router }: Props & { router: ReturnType<typeof u
         try {
             change(logFilmAttempt(film, prompt, { result, changed, verdict, checks }));
             setResult(''); setChanged(''); setVerdict('rejected'); setChecks([]);
-        } catch (error) { Alert.alert('Result not recorded', error instanceof Error ? error.message : 'Check every field and try again.'); }
+        } catch (error) { Alert.alert(t('film.resultnotrecorded'), error instanceof Error ? error.message : t('film.checkeveryfieldandtryagain')); }
     };
     return <View style={styles.section}>
-        {film.shots.length ? <Choices values={film.shots.map((item) => item.id)} selected={shot?.id ?? ''} onPick={setSelected} /> : <Text style={styles.help}>Add a shot in stage 3 first.</Text>}
+        {film.shots.length ? <Choices values={film.shots.map((item) => item.id)} selected={shot?.id ?? ''} onPick={setSelected} /> : <Text style={styles.help}>{t('film.addashotinstage3first')}</Text>}
         {shot ? <>
             {PROMPT_DETAILS.map(([key, label]) => <Field key={key} label={label} value={details[key] ?? ''} multiline={key === 'constraints' || key === 'quality'} onChange={(value) => setDetails((current) => ({ ...current, [key]: value }))} />)}
-            <Pressable accessibilityRole="button" style={styles.primary} onPress={build}><Text style={styles.primaryText}>{latestPrompt(film, shot.id) ? 'Create next prompt version' : 'Build 15-block prompt'}</Text></Pressable>
+            <Pressable accessibilityRole="button" style={styles.primary} onPress={build}><Text style={styles.primaryText}>{latestPrompt(film, shot.id) ? t('film.createnextpromptversion') : t('film.build15blockprompt')}</Text></Pressable>
             {latestPrompt(film, shot.id) ? <View style={styles.card}>
-                <Text style={styles.cardTitle}>Prompt v{latestPrompt(film, shot.id)?.version}</Text><Text selectable style={styles.prompt}>{latestPrompt(film, shot.id)?.content}</Text>
-                <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => router.push({ pathname: '/film/shot/[id]', params: { id: shot.id } })}><Text style={styles.secondaryText}>Open shot and send to Create</Text></Pressable>
-                <Text style={styles.groupTitle}>LOG THE GENERATED TAKE</Text>
-                <Field label="Result file or Library reference" value={result} onChange={setResult} />
-                <Field label="What changed for this version" value={changed} onChange={setChanged} multiline />
+                <Text style={styles.cardTitle}>{t('film.promptv', { value1: latestPrompt(film, shot.id)?.version ?? '' })}</Text><Text selectable style={styles.prompt}>{latestPrompt(film, shot.id)?.content}</Text>
+                <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => router.push({ pathname: '/film/shot/[id]', params: { id: shot.id } })}><Text style={styles.secondaryText}>{t('film.openshotandsendtoCreate')}</Text></Pressable>
+                <Text style={styles.groupTitle}>{t('film.lOGTHEGENERATEDTAKE')}</Text>
+                <Field label={t('film.resultfileorLibraryreference')} value={result} onChange={setResult} />
+                <Field label={t('film.whatchangedforthisversion')} value={changed} onChange={setChanged} multiline />
                 <Choices values={['rejected', 'accepted']} selected={verdict} onPick={(value) => setVerdict(value as 'accepted' | 'rejected')} />
-                {verdict === 'accepted' ? <View style={styles.section}>{ACCEPTANCE_CHECKS.map((check) => <Pressable key={check} accessibilityRole="checkbox" accessibilityState={{ checked: checks.includes(check) }} style={[styles.choice, checks.includes(check) && styles.choiceOn]} onPress={() => setChecks((current) => current.includes(check) ? current.filter((item) => item !== check) : [...current, check])}><Text style={styles.choiceText}>{checks.includes(check) ? '✓ ' : ''}{check}</Text></Pressable>)}</View> : null}
-                <Pressable accessibilityRole="button" style={styles.primary} onPress={log}><Text style={styles.primaryText}>Record {verdict} take</Text></Pressable>
+                {verdict === 'accepted' ? <View style={styles.section}>{ACCEPTANCE_CHECKS.map((check) => <Pressable key={displayLabel(check)} accessibilityRole="checkbox" accessibilityState={{ checked: checks.includes(check) }} style={[styles.choice, checks.includes(check) && styles.choiceOn]} onPress={() => setChecks((current) => current.includes(check) ? current.filter((item) => item !== check) : [...current, check])}><Text style={styles.choiceText}>{checks.includes(check) ? '✓ ' : ''}{displayLabel(check)}</Text></Pressable>)}</View> : null}
+                <Pressable accessibilityRole="button" style={styles.primary} onPress={log}><Text style={styles.primaryText}>{t('film.recordtake', { value1: verdict })}</Text></Pressable>
             </View> : null}
         </> : null}
     </View>;

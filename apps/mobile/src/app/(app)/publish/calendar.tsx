@@ -1,8 +1,9 @@
+import { Icon } from '../../../components/ui';
 import { Stack, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { touchTarget } from '../../../lib/a11y';
-import { t } from '../../../lib/i18n';
+import { formatLocale, t } from '../../../lib/i18n';
 import { postStatusLabel, targetStatusLabel } from '../../../lib/publish';
 import { ApiError } from '../../../lib/api';
 import { calendarErrorKey, countByDay, dayGroups, fetchCalendar, monthBounds, weekBounds, type CalendarPost } from '../../../lib/publishCalendar';
@@ -12,8 +13,8 @@ import { usePublishApi } from '../../../lib/usePublishApi';
 import { colors } from '../../../theme';
 
 const MAX_PAGES = 5; // 100 posts a page: a week is never expected to need more than this
-const short = (d: Date) => d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
-const time = (iso: string | null) => (iso ? new Date(iso).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : '');
+const short = (d: Date) => d.toLocaleDateString(formatLocale(undefined), { day: 'numeric', month: 'short' });
+const time = (iso: string | null) => (iso ? new Date(iso).toLocaleTimeString(formatLocale(undefined), { hour: '2-digit', minute: '2-digit' }) : '');
 
 export default function Calendar() {
     const api = usePublishApi();
@@ -73,11 +74,11 @@ export default function Calendar() {
         <View style={styles.screen}>
             <Stack.Screen options={{ title: t('calendar.title') }} />
             <View style={styles.nav}>
-                <Pressable accessibilityRole="button" accessibilityLabel={t(view === 'week' ? 'calendar.prev' : 'calendar.prevMonth')} style={[styles.arrow, touchTarget]} onPress={() => setOffset((o) => o - 1)}><Text style={styles.arrowText}>‹</Text></Pressable>
+                <Pressable accessibilityRole="button" accessibilityLabel={t(view === 'week' ? 'calendar.prev' : 'calendar.prevMonth')} style={[styles.arrow, touchTarget]} onPress={() => setOffset((o) => o - 1)}><Icon name="arrowLeft" size={24} tint={styles.arrowText.color} /></Pressable>
                 <Pressable accessibilityRole="button" accessibilityLabel={t(view === 'week' ? 'calendar.thisWeek' : 'calendar.thisMonth')} disabled={offset === 0} style={[touchTarget, styles.rangeBox]} onPress={() => setOffset(0)}>
-                    <Text style={styles.range}>{view === 'week' ? `${short(week.start)} – ${short(last)}` : week.start.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</Text>
+                    <Text style={styles.range}>{view === 'week' ? `${short(week.start)} – ${short(last)}` : week.start.toLocaleDateString(formatLocale(undefined), { month: 'long', year: 'numeric' })}</Text>
                 </Pressable>
-                <Pressable accessibilityRole="button" accessibilityLabel={t(view === 'week' ? 'calendar.next' : 'calendar.nextMonth')} style={[styles.arrow, touchTarget]} onPress={() => setOffset((o) => o + 1)}><Text style={styles.arrowText}>›</Text></Pressable>
+                <Pressable accessibilityRole="button" accessibilityLabel={t(view === 'week' ? 'calendar.next' : 'calendar.nextMonth')} style={[styles.arrow, touchTarget]} onPress={() => setOffset((o) => o + 1)}><Icon name="arrowRight" size={24} tint={styles.arrowText.color} /></Pressable>
             </View>
             <View style={styles.views}>
                 {(['week', 'month'] as const).map((v) => (
@@ -98,7 +99,7 @@ export default function Calendar() {
                     {groups.length === 0 ? <Text style={styles.muted}>{t(view === 'week' ? 'calendar.none' : picked ? 'calendar.noneDay' : 'calendar.noneMonth')}</Text> : null}
                     {groups.map((g) => (
                         <View key={g.key}>
-                            <Text style={styles.day} accessibilityRole="header">{g.date.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
+                            <Text style={styles.day} accessibilityRole="header">{g.date.toLocaleDateString(formatLocale(undefined), { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
                             {g.posts.map((p) => (
                                 <Pressable
                                     key={p.id}

@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import * as Crypto from 'expo-crypto';
 import { ApiError, type ApiClient } from './api';
 import { CATEGORIES } from './cinemaBrowse';
@@ -7,10 +8,10 @@ import { isDefiniteRefusal } from './draftKey';
 export const RIGHTS_VERSION = 'rights-2026-10-13';
 export const CINEMA_POLICY_VERSION = 'cinema-safety-2026-10-13';
 export const RIGHTS_TEXT = 'I own or hold the rights to everything in this title, including any real people, voices, music and footage, and I have declared its AI use truthfully.';
-export const SAFETY_TEXT = 'This title contains no nudity, pornography, explicit sexual content, sexualised minors, non-consensual intimate imagery, sexual violence, or sexual deepfake of a real person. I have read the Cinema Content Policy.';
+export const SAFETY_TEXT = t('cinemaDrafts.thistitlecontainsnonuditypornographyexplicit');
 export const MALWARE_TEXT = 'I have not intentionally included malware, executable code, disguised files or links intended to compromise viewers or Veyrnox.';
-export const CINEMA_RATINGS = [['ALL', 'All ages'], ['PG', 'Parental guidance'], ['12', '12+'], ['15', '15+'], ['18', '18+']] as const;
-export const CINEMA_WARNING_CODES = [['violence', 'Violence'], ['graphic_violence', 'Graphic violence'], ['strong_language', 'Strong language'], ['sex_references', 'Sex references'], ['drugs', 'Drugs'], ['horror', 'Horror or threat'], ['self_harm', 'Self-harm or suicide'], ['discrimination', 'Discrimination'], ['flashing_images', 'Flashing images']] as const;
+export const CINEMA_RATINGS = [['ALL', t('cinemaDrafts.allages')], ['PG', t('cinemaDrafts.parentalguidance')], ['12', '12+'], ['15', '15+'], ['18', '18+']] as const;
+export const CINEMA_WARNING_CODES = [['violence', t('cinemaDrafts.violence')], ['graphic_violence', t('cinemaDrafts.graphicviolence')], ['strong_language', t('cinemaDrafts.stronglanguage')], ['sex_references', t('cinemaDrafts.sexreferences')], ['drugs', t('cinemaDrafts.drugs')], ['horror', t('cinemaDrafts.horrororthreat')], ['self_harm', 'Self-harm or suicide'], ['discrimination', t('cinemaDrafts.discrimination')], ['flashing_images', t('cinemaDrafts.flashingimages')]] as const;
 export const AI_DISCLOSURES = ['generated_video', 'generated_voice', 'generated_music', 'synthetic_people', 'face_replacement', 'cloned_voice', 'generated_script', 'manipulated_real_world_footage'] as const;
 export const UPLOAD_CHUNK_BYTES = 5242880;
 export const MAX_UPLOAD_BYTES = 2147483648;

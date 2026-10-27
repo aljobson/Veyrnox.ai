@@ -1,3 +1,4 @@
+import { plural, t } from '../../../lib/i18n';
 import { Stack } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, StyleSheet, View } from 'react-native';
@@ -45,10 +46,10 @@ export default function Folders() {
     }
 
     function remove(f: Folder) {
-        Alert.alert(`Delete "${f.name}"?`, 'Its chats stay, with no folder.', [
-            { text: 'Keep it', style: 'cancel' },
+        Alert.alert(t('chat.delete', { value1: f.name }), t('chat.itschatsstaywithnofolder'), [
+            { text: t('chat.keepit'), style: 'cancel' },
             {
-                text: 'Delete folder',
+                text: t('chat.deletefolder'),
                 style: 'destructive',
                 onPress: () => {
                     deleteFolder(api, f.id).then(load, (err) => setProblem(chatLibraryErrorMessage(err)));
@@ -59,14 +60,14 @@ export default function Folders() {
 
     return (
         <View style={styles.screen}>
-            <Stack.Screen options={{ title: 'Folders' }} />
+            <Stack.Screen options={{ title: t('chat.folders') }} />
             <View style={styles.form}>
-                <TextField containerStyle={styles.field} accessibilityLabel={editing ? 'New folder name' : 'Folder name'} style={styles.input} value={name} onChangeText={setName} placeholder={editing ? `Rename "${editing.name}"` : 'New folder'} maxLength={60} />
-                <Button accessibilityRole="button" disabled={busy} containerStyle={styles.button} onPress={save} variant="secondary" size="md" label={(editing ? 'Rename' : 'Add')}>
-                    {busy ? <ActivityIndicator color={styles.accentInkInk.color} /> : <Text variant="bodyStrong" style={styles.buttonText}>{editing ? 'Rename' : 'Add'}</Text>}
+                <TextField containerStyle={styles.field} accessibilityLabel={editing ? t('chat.newfoldername') : t('chat.foldername')} style={styles.input} value={name} onChangeText={setName} placeholder={editing ? t('chat.rename2', { value1: editing.name }) : t('chat.newfolder')} maxLength={60} />
+                <Button accessibilityRole="button" disabled={busy} containerStyle={styles.button} onPress={save} variant="secondary" size="md" label={(editing ? t('chat.rename3') : t('chat.add'))}>
+                    {busy ? <ActivityIndicator color={styles.accentInkInk.color} /> : <Text variant="bodyStrong" style={styles.buttonText}>{editing ? t('chat.rename3') : t('chat.add')}</Text>}
                 </Button>
             </View>
-            {editing ? <Button accessibilityRole="button" onPress={() => { setEditing(null); setName(''); }} variant="secondary" size="md" label={"Cancel rename"}><Text style={styles.link}>Cancel rename</Text></Button> : null}
+            {editing ? <Button accessibilityRole="button" onPress={() => { setEditing(null); setName(''); }} variant="secondary" size="md" label={t('chat.cancelrename')}><Text style={styles.link}>{t('chat.cancelrename')}</Text></Button> : null}
             {problem ? <Text style={styles.error}>{problem}</Text> : null}
             {folders === null && !problem ? (
                 <ActivityIndicator color={styles.accentInk.color} />
@@ -74,15 +75,15 @@ export default function Folders() {
                 <FlatList keyboardShouldPersistTaps="handled"
                     data={folders ?? []}
                     keyExtractor={(f) => f.id}
-                    ListEmptyComponent={<Text style={styles.muted}>No folders yet.</Text>}
+                    ListEmptyComponent={<Text style={styles.muted}>{t('chat.nofoldersyet')}</Text>}
                     renderItem={({ item }) => (
                         <Card style={styles.row}>
                             <View style={styles.text}>
                                 <Text variant="body" style={styles.name}>{item.name}</Text>
-                                <Text style={styles.muted}>{item.count} {item.count === 1 ? 'chat' : 'chats'}</Text>
+                                <Text style={styles.muted}>{plural('chat.folderCount', item.count)}</Text>
                             </View>
-                            <Button accessibilityRole="button" accessibilityLabel={`Rename ${item.name}`} containerStyle={styles.action} onPress={() => { setEditing(item); setName(item.name); }} variant="tertiary" size="md" label={`Rename ${item.name}`}><Text style={styles.link}>Rename</Text></Button>
-                            <Button accessibilityRole="button" accessibilityLabel={`Delete ${item.name}`} containerStyle={styles.action} onPress={() => remove(item)} variant="tertiary" size="md" label={`Delete ${item.name}`}><Text style={styles.danger}>Delete</Text></Button>
+                            <Button accessibilityRole="button" accessibilityLabel={t('chat.rename4', { value1: item.name })} containerStyle={styles.action} onPress={() => { setEditing(item); setName(item.name); }} variant="tertiary" size="md" label={t('chat.rename4', { value1: item.name })}><Text style={styles.link}>{t('chat.rename3')}</Text></Button>
+                            <Button accessibilityRole="button" accessibilityLabel={t('chat.delete2', { value1: item.name })} containerStyle={styles.action} onPress={() => remove(item)} variant="tertiary" size="md" label={t('chat.delete2', { value1: item.name })}><Text style={styles.danger}>{t('chat.delete3')}</Text></Button>
                         </Card>
                     )}
                 />

@@ -1,7 +1,7 @@
 import { Text, Button, Card, Icon, themedStyles, useThemedStyles } from './ui';
 import { StyleSheet, View } from 'react-native';
 
-import { plural, t } from '../lib/i18n';
+import { formatLocale, plural, t } from '../lib/i18n';
 import { expiryOf, rowStatus } from '../lib/libraryView';
 import type { Job, Kind } from '../lib/media';
 import { ds } from '../theme';
@@ -26,11 +26,11 @@ export function LibraryItem({ job, name, kind, grid, starred, canSchedule, canRe
     const styles = useThemedStyles(sheets);
     const status = rowStatus(job);
     const expiry = expiryOf(job);
-    const when = new Date(job.created_at).toLocaleDateString();
+    const when = new Date(job.created_at).toLocaleDateString(formatLocale());
     const cost = job.credits > 0 ? plural('library.cost', job.credits) : t('library.costFree');
     const statusText =
         status === 'refunded' ? (job.credits > 0 ? plural('library.refunded', job.credits) : t('library.refundedFree')) : t(`library.status.${status}`);
-    const expiryText = expiry.kind === 'on' ? t('library.expires', { date: expiry.date.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) }) : expiry.kind === 'gone' ? t('library.expired') : null;
+    const expiryText = expiry.kind === 'on' ? t('library.expires', { date: expiry.date.toLocaleDateString(formatLocale(undefined), { day: 'numeric', month: 'short', year: 'numeric' }) }) : expiry.kind === 'gone' ? t('library.expired') : null;
     const bad = status === 'refunded' || status === 'failed';
 
     return (

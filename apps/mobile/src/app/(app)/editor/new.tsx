@@ -1,3 +1,4 @@
+import { directionalStyle } from '../../../lib/rtl';
 import { randomUUID } from 'expo-crypto';
 import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -32,7 +33,7 @@ function Choice({ icon, title, body, disabled, onPress }: { readonly icon: MenuI
                 <Text style={styles.choiceTitle}>{title}</Text>
                 <Text style={styles.choiceBody}>{body}</Text>
             </View>
-            <Image source={MENU_ICONS.caretRight} style={styles.caret} tintColor={colors.muted} contentFit="contain" alt="" accessibilityElementsHidden />
+            <Image source={MENU_ICONS.caretRight} style={[styles.caret, directionalStyle()]} tintColor={colors.muted} contentFit="contain" alt="" accessibilityElementsHidden />
         </Pressable>
     );
 }

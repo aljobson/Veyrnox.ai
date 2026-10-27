@@ -8,7 +8,7 @@ import { PasskeysCard } from '../src/components/account/PasskeysCard';
 import SignIn from '../src/app/sign-in';
 import PasskeyAuth from '../src/app/passkey';
 import { addPasskey, fetchPasskeys, passkeysServerAvailable } from '../src/lib/passkeys';
-import { AuthError, passkeySignInOptions, passkeySignInVerify } from '../src/lib/auth/supabaseAuth';
+import { AuthError, refreshSession, passkeySignInOptions, passkeySignInVerify } from '../src/lib/auth/supabaseAuth';
 import { readRefreshToken, writeRefreshToken } from '../src/lib/auth/sessionStore';
 import { bindCacheUser } from '../src/lib/appCache';
 import { aalFromToken, needsChallenge } from '../src/lib/mfa';
@@ -35,12 +35,12 @@ jest.mock('../src/lib/appCache', () => ({
     getCacheUser: jest.fn(() => null),
     subscribeCacheUser: jest.fn(() => jest.fn()),
     userIdFromToken: () => 'passkey-user',
-    wipeCache: jest.fn(),
+    wipeCache: jest.fn(async () => {}),
 }));
 jest.mock('../src/lib/cinemaProgress', () => ({ cinemaProgressIdentity: { setUser: jest.fn() } }));
 jest.mock('../src/lib/aiConsentStore', () => ({ aiConsent: { setUser: jest.fn(), forget: jest.fn(), ensure: jest.fn() } }));
 jest.mock('../src/lib/auth/sessionStore', () => ({ writeRefreshToken: jest.fn(), readRefreshToken: jest.fn(), clearRefreshToken: jest.fn() }));
-jest.mock('../src/lib/auth/supabaseAuth', () => ({ ...jest.requireActual('../src/lib/auth/supabaseAuth'), passkeySignInOptions: jest.fn(), passkeySignInVerify: jest.fn() }));
+jest.mock('../src/lib/auth/supabaseAuth', () => ({ ...jest.requireActual('../src/lib/auth/supabaseAuth'), refreshSession: jest.fn(), passkeySignInOptions: jest.fn(), passkeySignInVerify: jest.fn() }));
 jest.mock('../src/lib/passkeys', () => ({ ...jest.requireActual('../src/lib/passkeys'), addPasskey: jest.fn(), fetchPasskeys: jest.fn(), passkeysServerAvailable: jest.fn() }));
 
 void [RN.ActivityIndicator, RN.Pressable, RN.ScrollView, RN.StyleSheet, RN.Text, RN.TextInput, RN.View];
@@ -241,4 +241,28 @@ test('provider rejects malformed sign-in options before ceremony', async () => {
     await expect(context.signInWithPasskey('captcha')).rejects.toMatchObject({ code: 'malformed_options' });
     expect(native.get).not.toHaveBeenCalled();
     expect(writeRefreshToken).not.toHaveBeenCalled();
+});
+
+test('AuthProvider.canReloadSession requires the current credential to be durable and no refresh in flight', async () => {
+    await provider();
+    expect(context.canReloadSession()).toBe(false);
+    const session = { accessToken, refreshToken: 'original', expiresAt: Date.now() + 3600000 };
+    jest.mocked(writeRefreshToken).mockRejectedValueOnce(Error('storage unavailable'));
+    await act(async () => context.adoptSession(session));
+    expect(context.status).toBe('signedIn');
+    expect(context.canReloadSession()).toBe(false);
+    await act(async () => context.adoptSession(session));
+    expect(context.canReloadSession()).toBe(true);
+    let finish!: (value: typeof session) => void;
+    jest.mocked(refreshSession).mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    let refreshing!: Promise<string | null>;
+    await act(async () => { refreshing = context.getAccessToken(true); });
+    expect(context.canReloadSession()).toBe(false);
+    jest.mocked(writeRefreshToken).mockRejectedValueOnce(Error('rotated token not saved'));
+    await act(async () => { finish({ ...session, refreshToken: 'rotated' }); await refreshing; });
+    expect(context.canReloadSession()).toBe(false);
+    await act(async () => context.adoptSession({ ...session, refreshToken: 'rotated' }));
+    expect(context.canReloadSession()).toBe(true);
+    await act(async () => context.onSessionLost());
+    expect(context.canReloadSession()).toBe(false);
 });

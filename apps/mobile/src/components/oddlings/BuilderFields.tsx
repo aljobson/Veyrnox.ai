@@ -1,3 +1,5 @@
+import { Icon } from '../ui';
+import { displayLabel } from '../../lib/displayLabels';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { MIN_TARGET } from '../../lib/a11y';
 import { t } from '../../lib/i18n';
@@ -22,15 +24,15 @@ export function BuilderFields({ picks, scene, motionId, onText, onOpen, onScene 
             <Label text={t('oddlings.build.name')} />
             <TextInput style={styles.input} value={picks.oddling_name || ''} maxLength={40} onChangeText={(v) => onText('oddling_name', v)} accessibilityLabel={t('oddlings.build.name')} />
             <Label text={t('oddlings.build.voice')} />
-            <Row text={known(TONES, picks.oddling_voice)} label={t('oddlings.build.voice')} onPress={() => onOpen('oddling_voice')} />
+            <Row text={displayLabel(known(TONES, picks.oddling_voice))} label={t('oddlings.build.voice')} onPress={() => onOpen('oddling_voice')} />
             <Label text={t('oddlings.build.reason')} />
             <TextInput style={styles.input} value={picks.oddling_obsession || ''} maxLength={140} onChangeText={(v) => onText('oddling_obsession', v)} accessibilityLabel={t('oddlings.build.reason')} />
             <Label text={t('oddlings.build.show')} />
-            <Row text={known(SHOWS, picks.oddling_show)} label={t('oddlings.build.show')} onPress={() => onOpen('oddling_show')} />
+            <Row text={displayLabel(known(SHOWS, picks.oddling_show))} label={t('oddlings.build.show')} onPress={() => onOpen('oddling_show')} />
             <Label text={t('oddlings.build.canon')} />
             <TextInput style={[styles.input, styles.multi]} value={picks.oddling_rule || ''} maxLength={160} multiline onChangeText={(v) => onText('oddling_rule', v)} accessibilityLabel={t('oddlings.build.canon')} />
             <Label text={t('oddlings.build.motion')} />
-            <Row text={MOTIONS.find((m) => m.id === motionId)?.name ?? MOTIONS[0].name} label={t('oddlings.build.motion')} onPress={() => onOpen('motion')} />
+            <Row text={displayLabel(MOTIONS.find((m) => m.id === motionId)?.name ?? MOTIONS[0].name)} label={t('oddlings.build.motion')} onPress={() => onOpen('motion')} />
             <Label text={t('oddlings.build.scene')} />
             <TextInput style={[styles.input, styles.multi]} value={scene} maxLength={300} multiline onChangeText={onScene} accessibilityLabel={t('oddlings.build.scene')} />
             <View style={styles.chips}>
@@ -50,7 +52,7 @@ function Row({ text, label, onPress }: { text: string; label: string; onPress: (
     return (
         <Pressable accessibilityRole="button" accessibilityLabel={`${label}: ${text}`} style={styles.row} onPress={onPress}>
             <Text style={styles.rowText}>{text}</Text>
-            <Text style={styles.chev} accessible={false}>›</Text>
+            <Icon name="caretRight" size={24} tint={styles.chev.color} />
         </Pressable>
     );
 }

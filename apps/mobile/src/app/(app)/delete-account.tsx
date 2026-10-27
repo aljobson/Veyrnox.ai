@@ -1,3 +1,4 @@
+import { t } from '../../lib/i18n';
 import { Stack, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -41,27 +42,27 @@ export default function DeleteAccount() {
             return;
         }
         if (out.kind === 'expired') {
-            setNote('That took too long. Please confirm again.');
+            setNote(t('deleteaccount.thattooktoolongPleaseconfirmagain'));
             await prepare();
             return;
         }
         if (out.kind === 'retry') {
-            setNote('Your data is erased but finishing took a moment. Tap delete again to finish.');
+            setNote(t('deleteaccount.yourdataiserasedbutfinishingtook'));
         } else if (out.kind === 'blocked') {
             setNote(out.blockers.map(blockerText).join('\n'));
         } else {
-            setNote('Could not delete your account. Nothing was lost; try again.');
+            setNote(t('deleteaccount.couldnotdeleteyouraccountNothingwas'));
         }
         setView({ step: 'prepared', result: { kind: 'ready', forfeit, token } });
     }
 
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-            <Stack.Screen options={{ title: 'Delete account' }} />
+            <Stack.Screen options={{ title: t('deleteaccount.deleteaccount') }} />
             {view.step === 'loading' || view.step === 'erasing' ? (
                 <View style={styles.center}>
                     <ActivityIndicator color={colors.accent} />
-                    <Text style={styles.body}>{view.step === 'loading' ? 'Checking your account…' : 'Deleting…'}</Text>
+                    <Text style={styles.body}>{view.step === 'loading' ? t('deleteaccount.checkingyouraccount') : t('deleteaccount.deleting')}</Text>
                 </View>
             ) : (
                 <Prepared_ result={view.result} typed={typed} setTyped={setTyped} note={note} onErase={erase} onRetry={prepare} />
@@ -83,20 +84,20 @@ function Prepared_({ result, typed, setTyped, note, onErase, onRetry }: Prepared
     if (result.kind === 'unavailable') {
         return (
             <>
-                <Text style={styles.body}>Deleting your account from the app is not available yet.</Text>
-                <Text style={styles.body}>Email {PRIVACY_EMAIL} from your account address and we will delete it.</Text>
+                <Text style={styles.body}>{t('deleteaccount.deletingyouraccountfromtheappis')}</Text>
+                <Text style={styles.body}>{t('deleteaccount.emailfromyouraccountaddressandwe', { value1: PRIVACY_EMAIL })}</Text>
             </>
         );
     }
     if (result.kind === 'rate_limited') {
-        return <Text style={styles.body}>You have asked too many times. Try again in about {Math.ceil(result.retryAfterSeconds / 60)} minutes.</Text>;
+        return <Text style={styles.body}>{t('deleteaccount.youhaveaskedtoomanytimesTry', { value1: Math.ceil(result.retryAfterSeconds / 60) })}</Text>;
     }
     if (result.kind === 'failed') {
         return (
             <>
-                <Text style={styles.error}>Could not check your account. Nothing was changed.</Text>
+                <Text style={styles.error}>{t('deleteaccount.couldnotcheckyouraccountNothingwas')}</Text>
                 <Pressable accessibilityRole="button" style={styles.secondary} onPress={onRetry}>
-                    <Text style={styles.secondaryText}>Try again</Text>
+                    <Text style={styles.secondaryText}>{t('deleteaccount.tryagain')}</Text>
                 </Pressable>
             </>
         );
@@ -104,31 +105,27 @@ function Prepared_({ result, typed, setTyped, note, onErase, onRetry }: Prepared
     if (result.kind === 'blocked') {
         return (
             <>
-                <Text style={styles.title} accessibilityRole="header">Not yet</Text>
-                <Text style={styles.body}>Something on your account has to be sorted first:</Text>
+                <Text style={styles.title} accessibilityRole="header">{t('deleteaccount.notyet')}</Text>
+                <Text style={styles.body}>{t('deleteaccount.somethingonyouraccounthastobe')}</Text>
                 {result.blockers.map((code) => (
                     <Text key={code} style={styles.blocker}>
                         {blockerText(code)}
                     </Text>
                 ))}
-                <Text style={styles.small}>Questions: {PRIVACY_EMAIL}</Text>
+                <Text style={styles.small}>{t('deleteaccount.questions', { value1: PRIVACY_EMAIL })}</Text>
             </>
         );
     }
     const ok = typed.trim() === CONFIRM_WORD;
     return (
         <>
-            <Text style={styles.title} accessibilityRole="header">Delete your account?</Text>
+            <Text style={styles.title} accessibilityRole="header">{t('deleteaccount.deleteyouraccount')}</Text>
             <Forfeits forfeit={result.forfeit} />
-            <Text style={styles.body}>
-                This erases your account and what is stored with it. It cannot be undone. Records we must keep by law, such as payment records, are kept.
-            </Text>
-            <Text style={styles.body}>
-                If you subscribed in the App Store or Google Play, deleting your account does not cancel it. Cancel in the store first.
-            </Text>
-            <Text style={styles.label}>Type {CONFIRM_WORD} to confirm</Text>
+            <Text style={styles.body}>{t('deleteaccount.thiserasesyouraccountandwhatis')}</Text>
+            <Text style={styles.body}>{t('deleteaccount.ifyousubscribedintheAppStore')}</Text>
+            <Text style={styles.label}>{t('deleteaccount.typetoconfirm', { value1: CONFIRM_WORD })}</Text>
             <TextInput
-                accessibilityLabel={`Type ${CONFIRM_WORD} to confirm`}
+                accessibilityLabel={t('deleteaccount.typetoconfirm', { value1: CONFIRM_WORD })}
                 autoCapitalize="characters"
                 autoCorrect={false}
                 placeholder={CONFIRM_WORD}
@@ -145,7 +142,7 @@ function Prepared_({ result, typed, setTyped, note, onErase, onRetry }: Prepared
                 style={[styles.danger, !ok && styles.off]}
                 onPress={() => onErase(result.token)}
             >
-                <Text style={styles.dangerText}>Delete my account</Text>
+                <Text style={styles.dangerText}>{t('deleteaccount.deletemyaccount')}</Text>
             </Pressable>
         </>
     );
@@ -154,9 +151,7 @@ function Prepared_({ result, typed, setTyped, note, onErase, onRetry }: Prepared
 function Forfeits({ forfeit }: { forfeit: Forfeit }) {
     if (forfeit.credits <= 0) return null;
     return (
-        <Text style={styles.forfeit}>
-            You will lose {forfeit.credits} credits{forfeit.freeCredits > 0 ? ` (${forfeit.freeCredits} of them free)` : ''}. They are not refunded.
-        </Text>
+        <Text style={styles.forfeit}>{t('deleteaccount.youwilllosecreditsTheyarenot', { value1: forfeit.credits, value2: forfeit.freeCredits > 0 ? t('deleteaccount.ofthemfree', { value1: forfeit.freeCredits }) : '' })}</Text>
     );
 }
 

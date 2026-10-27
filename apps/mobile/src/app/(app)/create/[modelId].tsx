@@ -301,7 +301,7 @@ export default function CreateWithModel() {
                         {isVideo && model.durations.length > 1 ? (
                             <View style={styles.chips}>
                                 {model.durations.map((d) => (
-                                    <Chip key={d} label={`${d}s`} accessibilityRole="button" accessibilityLabel={plural('form.seconds', d)} accessibilityState={selectedState(duration === d)} selected={duration === d} onPress={() => setDuration(d)} />
+                                    <Chip key={d} label={t('create.s', { value1: d })} accessibilityRole="button" accessibilityLabel={plural('form.seconds', d)} accessibilityState={selectedState(duration === d)} selected={duration === d} onPress={() => setDuration(d)} />
                                 ))}
                             </View>
                         ) : null}
@@ -364,7 +364,7 @@ const sheets = themedStyles((p) => ({
     chips: { flexDirection: 'row', gap: ds.space.sm },
     short: { backgroundColor: p.bgElevated1, borderColor: p.warning, borderWidth: 1, borderRadius: ds.radius.md, padding: ds.space.md, gap: ds.space.xs },
     shortText: { color: p.warning, fontVariant: ['tabular-nums'], },
-    restored: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: ds.space.md, backgroundColor: p.bgElevated1, borderColor: p.borderSubtle, borderWidth: 1, borderRadius: ds.radius.md, paddingLeft: ds.space.md },
+    restored: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: ds.space.md, backgroundColor: p.bgElevated1, borderColor: p.borderSubtle, borderWidth: 1, borderRadius: ds.radius.md, paddingStart: ds.space.md },
     restoredText: { color: p.textSecondary, flexShrink: 1 },
     consent: { color: p.textTertiary, },
     rightsBox: { gap: ds.space.sm },

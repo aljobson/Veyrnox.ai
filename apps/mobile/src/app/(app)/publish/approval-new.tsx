@@ -7,7 +7,7 @@ import { WhenPicker, whenFrom } from '../../../components/WhenPicker';
 import { touchTarget } from '../../../lib/a11y';
 import { appStorage, getCacheUser, subscribeCacheUser } from '../../../lib/appCache';
 import { createDraftKeys, isDefiniteRefusal } from '../../../lib/draftKey';
-import { t } from '../../../lib/i18n';
+import { formatLocale, t } from '../../../lib/i18n';
 import { fetchCatalog, mediaApi, type CatalogModel } from '../../../lib/media';
 import { fetchAccounts, publishErrorMessage, type PublishAccount } from '../../../lib/publish';
 import { MAX_REVIEWERS, approvalConfirmExtra, approvalCreateErrorKey, variantsUnavailable, createApproval, parseReviewers, signatureOf, validateApproval, type ApprovalDraft, type Created, type Policy } from '../../../lib/publishApprovalCreate';
@@ -104,7 +104,7 @@ export default function ApprovalNew() {
         setProblem(null);
         const where = eligible.filter((a) => accountIds.includes(a.id)).map((a) => `${a.displayName} (${a.network})`).join(', ');
         const extra = approvalConfirmExtra(draft.networkText, draft.youtubeVisibility);
-        const confirmation = t('approvals.confirmBody', { reviewers: reviewers.emails.join(', '), where, when: at.toLocaleString(), policy: t(`approvals.policy.${policy}`) });
+        const confirmation = t('approvals.confirmBody', { reviewers: reviewers.emails.join(', '), where, when: at.toLocaleString(formatLocale()), policy: t(`approvals.policy.${policy}`) });
         Alert.alert(t('approvals.confirmTitle'), confirmation + (extra.length ? '\n\n' + extra.join('\n') : ''), [
             { text: t('approvals.cancel'), style: 'cancel' },
             { text: t('approvals.send'), onPress: () => { if (!preparingRef.current) void send(draft); } },
@@ -175,7 +175,7 @@ export default function ApprovalNew() {
                 {picks.slice(0, 30).map((p) => (
                     <Pressable key={p.job.job_id} accessibilityRole="button" disabled={preparing} accessibilityState={{ disabled: preparing, selected: choices.some(item => choiceId(item) === choiceId(p)) }} style={[styles.row, touchTarget, choices.some(item => choiceId(item) === choiceId(p)) && styles.rowOn]} onPress={() => { if (preparingRef.current) return; setChoices(old => toggleChoice(old, p, maxMedia)); if (maxMedia === 1) setAccountIds([]); }}>
                         <Text style={styles.name}>{p.name}</Text>
-                        <Text style={styles.muted}>{p.mediaType} · {new Date(p.job.created_at).toLocaleDateString()}</Text>
+                        <Text style={styles.muted}>{p.mediaType} · {new Date(p.job.created_at).toLocaleDateString(formatLocale())}</Text>
                     </Pressable>
                 ))}
                 <PublishMediaSelection items={choices} max={maxMedia} onChange={setChoices} disabled={preparing || busy} />

@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import { Directory, File, Paths } from 'expo-file-system';
 import { MOTIONS, sanitizePicks, type Picks } from './oddlingsBuilder';
 
@@ -21,7 +22,7 @@ export function cleanItem(raw: unknown): Passport | null {
     return {
         id: (String(item.id || '').replace(/[^A-Za-z0-9._-]/g, '-').slice(0, 80) || `oddling-${savedAt}`),
         savedAt,
-        name: picks.oddling_name || 'Untitled Oddling',
+        name: picks.oddling_name || t('oddlingsLibrary.untitledOddling'),
         picks,
         motionId: MOTIONS.some((m) => m.id === item.motionId) ? (item.motionId as string) : '',
     };

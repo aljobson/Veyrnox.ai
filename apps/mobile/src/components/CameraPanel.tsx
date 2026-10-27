@@ -1,3 +1,4 @@
+import { displayLabel } from '../lib/displayLabels';
 import { Text, Card, Chip, themedStyles, useThemedStyles } from './ui';
 import { ScrollView, Switch, View } from 'react-native';
 import { selectedState } from '../lib/a11y';
@@ -27,7 +28,7 @@ export function CameraPanel({ on, value, onToggle, onChange }: Props) {
                 <>
                     <Row label={t('cam.camera')} options={Object.keys(CAMERAS)} selected={value.camera} onPick={(camera) => onChange({ ...value, camera })} />
                     <Row label={t('cam.lens')} options={Object.keys(LENSES)} selected={value.lens} onPick={(lens) => onChange({ ...value, lens })} />
-                    <Row label={t('cam.focal')} options={Object.keys(FOCAL_LENGTHS)} selected={String(value.focal)} suffix=" mm" onPick={(f) => onChange({ ...value, focal: Number(f) })} />
+                    <Row label={t('cam.focal')} options={Object.keys(FOCAL_LENGTHS)} selected={String(value.focal)} suffix={t('cameraPanel.mm')} onPick={(f) => onChange({ ...value, focal: Number(f) })} />
                     <Row label={t('cam.aperture')} options={Object.keys(APERTURES)} selected={value.aperture} onPick={(aperture) => onChange({ ...value, aperture })} />
                     <Text variant="caption" tone="tertiary" style={styles.muted}>{t('cam.help')}</Text>
                 </>
@@ -43,7 +44,7 @@ function Row({ label, options, selected, suffix = '', onPick }: { readonly label
             <Text variant="bodyStrong" tone="secondary" style={styles.label}>{label}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
                 {options.map((o) => (
-                    <Chip selected={selected === o} key={o} accessibilityRole="button" accessibilityLabel={`${o}${suffix}`} accessibilityState={selectedState(selected === o)} onPress={() => onPick(o)} label={`${o}${suffix}`} />
+                    <Chip selected={selected === o} key={o} accessibilityRole="button" accessibilityLabel={`${displayLabel(o)}${suffix}`} accessibilityState={selectedState(selected === o)} onPress={() => onPick(o)} label={`${displayLabel(o)}${suffix}`} />
                 ))}
             </ScrollView>
         </View>

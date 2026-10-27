@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import { ApiError, type ApiClient } from './api';
 
 // ADR-0121: read-only Publish screens over /api/v1/social/*. Everything here is parsed defensively:
@@ -147,13 +148,13 @@ export function parsePosts(body: unknown): PublishPost[] {
 }
 
 export const postStatusLabel = (s: string): string =>
-    ({ draft: 'Draft', scheduled: 'Scheduled', published: 'Published', failed: 'Failed', canceled: 'Canceled' })[s] ?? 'Unknown';
+    ({ draft: t('publish.draft'), scheduled: t('publish.scheduled'), published: t('publish.published'), failed: t('publish.failed'), canceled: t('publish.canceled') })[s] ?? t('publish.unknown');
 
 export const targetStatusLabel = (s: string): string =>
-    ({ pending: 'Waiting', publishing: 'Publishing', submitted: 'Sent to the network', delivered: 'Delivered', published: 'Published', failed: 'Failed' })[s] ?? 'Unknown';
+    ({ pending: t('publish.waiting'), publishing: t('publish.publishing'), submitted: t('publish.senttothenetwork'), delivered: t('publish.delivered'), published: t('publish.published'), failed: t('publish.failed') })[s] ?? t('publish.unknown');
 
 export const accountStatusLabel = (s: string): string =>
-    ({ active: 'Connected', expired: 'Needs to be reconnected', revoked: 'Access was removed', error: 'Needs attention' })[s] ?? 'Needs attention';
+    ({ active: t('publish.connected'), expired: t('publish.needstobereconnected'), revoked: t('publish.accesswasremoved'), error: t('publish.needsattention') })[s] ?? t('publish.needsattention');
 
 // Provider text shown as plain text in a bounded box: control characters removed, cut at 300.
 export function boundedError(text: string | null): string | null {
@@ -248,12 +249,12 @@ export const findPost = (posts: readonly PublishPost[], id: string): PublishPost
 
 export function publishErrorMessage(err: unknown): string {
     if (err instanceof ApiError) {
-        if (err.status === 0) return 'No connection. Check your internet and try again.';
-        if (err.status === 402) return 'This needs the Publish Plan.';
-        if (err.status === 404) return 'That account is no longer available.';
-        if (err.status === 429) return 'Too many requests. Try again in a moment.';
+        if (err.status === 0) return t('publish.noconnectionCheckyourinternetandtry');
+        if (err.status === 402) return t('publish.thisneedsthePublishPlan');
+        if (err.status === 404) return t('publish.thataccountisnolongeravailable');
+        if (err.status === 429) return t('publish.toomanyrequestsTryagainina');
     }
-    return 'Could not load this. Try again.';
+    return t('publish.couldnotloadthisTryagain');
 }
 
 // The analytics range the server takes: YYYY-MM-DD, inclusive, the last `days` days ending today (UTC).

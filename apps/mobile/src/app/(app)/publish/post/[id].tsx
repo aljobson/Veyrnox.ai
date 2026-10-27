@@ -1,3 +1,4 @@
+import { formatLocale, t } from '../../../../lib/i18n';
 import { Button } from '../../../../components/ui';
 import { AddressText } from '../../../../components/AddressText';
 import { Stack, useLocalSearchParams } from 'expo-router';
@@ -55,7 +56,7 @@ export default function PostDetail() {
     function chosenTime(): Date | null {
         const d = whenFrom(date, time);
         if (!d || d.getTime() <= Date.now() + 60_000) {
-            setProblem('Choose a time in the future (at least a minute away), as YYYY-MM-DD and HH:MM.');
+            setProblem(t('publish.chooseatimeinthefutureat'));
             return null;
         }
         return d;
@@ -64,13 +65,13 @@ export default function PostDetail() {
     if (error) return <View style={styles.screen}><Text style={styles.error}>{error}</Text></View>;
     if (!state) return <View style={styles.screen}><ActivityIndicator color={colors.accent} /></View>;
     const post = state.post;
-    if (!post) return <View style={styles.screen}><Stack.Screen options={{ title: 'Post' }} /><Text style={styles.muted}>This post is not in your most recent posts, so its details cannot be shown here yet.</Text></View>;
+    if (!post) return <View style={styles.screen}><Stack.Screen options={{ title: t('publish.post') }} /><Text style={styles.muted}>{t('publish.thispostisnotinyourmost')}</Text></View>;
 
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.body}>
             <Stack.Screen options={{ title: postStatusLabel(post.status) }} />
-            {post.scheduledAt ? <Text style={styles.muted}>{post.status === 'canceled' ? 'Was scheduled for' : 'Scheduled for'} {new Date(post.scheduledAt).toLocaleString()}</Text> : null}
-            <Text style={styles.text}>{post.text || 'No text'}</Text>
+            {post.scheduledAt ? <Text style={styles.muted}>{post.status === 'canceled' ? t('publish.wasscheduledfor') : t('publish.scheduledfor')} {new Date(post.scheduledAt).toLocaleString(formatLocale())}</Text> : null}
+            <Text style={styles.text}>{post.text || t('publish.notext')}</Text>
             {post.targets.map((t) => {
                 const err = boundedError(t.lastError);
                 return (
@@ -93,21 +94,21 @@ export default function PostDetail() {
                                 if (post.status === 'scheduled') void change(() => reschedulePost(api, post.id, post.scheduledAt ?? '', d));
                                 else if (post.updatedAt) void change(() => restorePost(api, post.id, post.updatedAt as string, d));
                             }}>
-                                {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>{post.status === 'scheduled' ? 'Save new time' : 'Schedule again'}</Text>}
+                                {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>{post.status === 'scheduled' ? t('publish.savenewtime') : t('publish.scheduleagain')}</Text>}
                             </Pressable>
-                            <Button variant="tertiary" label="Cancel" onPress={() => setEditing(false)} />
+                            <Button variant="tertiary" label={t('publish.cancel2')} onPress={() => setEditing(false)} />
                         </>
                     ) : (
                         <>
-                            {post.status === 'scheduled' ? <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => setEditing(true)}><Text style={styles.secondaryText}>Change the time</Text></Pressable> : null}
-                            {post.status === 'canceled' && post.updatedAt ? <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => setEditing(true)}><Text style={styles.secondaryText}>Schedule it again</Text></Pressable> : null}
+                            {post.status === 'scheduled' ? <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => setEditing(true)}><Text style={styles.secondaryText}>{t('publish.changethetime')}</Text></Pressable> : null}
+                            {post.status === 'canceled' && post.updatedAt ? <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => setEditing(true)}><Text style={styles.secondaryText}>{t('publish.scheduleitagain')}</Text></Pressable> : null}
                             {post.status === 'scheduled' && post.updatedAt ? (
-                                <Button variant="tertiary" tone="danger" label="Cancel this post" disabled={busy} onPress={() => Alert.alert('Cancel this post?', 'It will not be published. You can schedule it again later.', [
-                                    { text: 'Keep it', style: 'cancel' },
-                                    { text: 'Cancel post', style: 'destructive', onPress: () => void change(() => cancelPost(api, post.id, post.updatedAt as string)) },
+                                <Button variant="tertiary" tone="danger" label={t('publish.cancelthispost')} disabled={busy} onPress={() => Alert.alert(t('publish.cancelthispost2'), t('publish.itwillnotbepublishedYoucan'), [
+                                    { text: t('publish.keepit'), style: 'cancel' },
+                                    { text: t('publish.cancelpost'), style: 'destructive', onPress: () => void change(() => cancelPost(api, post.id, post.updatedAt as string)) },
                                 ])} />
                             ) : null}
-                            {!post.updatedAt ? <Text style={styles.muted2}>Cancelling and scheduling again are not available in the app yet.</Text> : null}
+                            {!post.updatedAt ? <Text style={styles.muted2}>{t('publish.cancellingandschedulingagainarenotavailable')}</Text> : null}
                         </>
                     )}
                     {problem ? <Text style={styles.error2}>{problem}</Text> : null}

@@ -2,12 +2,12 @@ import { Stack } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { touchTarget } from '../../../lib/a11y';
-import { t, plural } from '../../../lib/i18n';
+import { formatLocale, t, plural } from '../../../lib/i18n';
 import { approveBatch, batchGroups, discardDrafts, draftActionErrorKey, draftsErrorKey, fetchDrafts, groupNetworks, type Draft } from '../../../lib/publishDrafts';
 import { usePublishApi } from '../../../lib/usePublishApi';
 import { colors } from '../../../theme';
 
-const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString() : null);
+const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString(formatLocale()) : null);
 
 export default function Drafts() {
     const api = usePublishApi();

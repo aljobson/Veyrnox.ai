@@ -9,14 +9,12 @@ import { AuthProvider } from '../auth/AuthProvider';
 import { BillingProvider } from '../billing/BillingProvider';
 import { PushProvider } from '../push/PushProvider';
 import { captureIssue, initCrashReporting, withCrashReporting } from '../lib/crash';
-import { applyDeviceLocale } from '../lib/i18n';
+import { LanguageGate } from '../components/LanguageGate';
 import { setIssueReporter } from '../lib/requestGuard';
 import { getAppearance, getThemePreference, resolveScheme, takeThemeReturnPath } from '../theme';
 
 initCrashReporting();
 setIssueReporter(captureIssue);
-// Reads the device language once; only languages switched on in ACTIVE_LOCALES are used (English today).
-applyDeviceLocale();
 
 function RootLayout() {
     // The headings use Archivo; a failed load (error) falls back to the system font rather than blocking the app.
@@ -34,7 +32,7 @@ function RootLayout() {
                     <PushProvider>
                         <ThemeRouteRestorer />
                         <StatusBar style={dark ? 'light' : 'dark'} />
-                        <Slot />
+                        <LanguageGate><Slot /></LanguageGate>
                     </PushProvider>
                 </BillingProvider>
             </AuthProvider>

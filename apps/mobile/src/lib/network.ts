@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import { API_BASE, ApiError } from './api';
 
 import { isOffline, markOffline, markOnline } from './networkState';
@@ -64,4 +65,4 @@ export async function ensureOnline(probe: () => Promise<boolean> = defaultProbe)
     throw new OfflineError();
 }
 
-export const OFFLINE_PAID_MESSAGE = 'You are offline. Nothing was sent and you were not charged. Reconnect and try again.';
+export const OFFLINE_PAID_MESSAGE = t('network.youareofflineNothingwassentand');

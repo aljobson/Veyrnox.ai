@@ -1,3 +1,4 @@
+import { plural, t } from '../../../lib/i18n';
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, View } from 'react-native';
@@ -33,7 +34,7 @@ export default function NewChat() {
                     void pick(model);
                 }
             })
-            .catch(() => setError('Could not load models.'));
+            .catch(() => setError(t('chat.couldnotloadmodels')));
         // Personas are an extra: off, or failing, shows nothing.
         fetchPersonas(api).then((r) => setPersonas(r.personas), () => undefined);
     }, [api]);
@@ -46,7 +47,7 @@ export default function NewChat() {
             const thread = await chatApi(api).createThread(model.id);
             router.replace({ pathname: '/chat/[id]', params: { id: thread.id } });
         } catch (err) {
-            setError(err instanceof ApiError && err.code === 'thread_limit' ? 'You have reached the chat limit. Delete one first.' : 'Could not start the chat.');
+            setError(err instanceof ApiError && err.code === 'thread_limit' ? t('chat.youhavereachedthechatlimitDelete') : t('chat.couldnotstartthechat'));
             setCreating(false);
         }
     }
@@ -54,7 +55,7 @@ export default function NewChat() {
     async function pickPersona(persona: Persona) {
         if (creating) return;
         const fallback = (models ?? []).find((m) => !m.gated);
-        if (!persona.modelId && !fallback) return setError('Choose a model below.');
+        if (!persona.modelId && !fallback) return setError(t('chat.chooseamodelbelow'));
         setCreating(true);
         setError(null);
         try {
@@ -68,13 +69,13 @@ export default function NewChat() {
 
     return (
         <View style={styles.screen}>
-            <Stack.Screen options={{ title: 'New chat' }} />
+            <Stack.Screen options={{ title: t('chat.newchat') }} />
             {error ? <Text style={styles.error}>{error}</Text> : null}
             {personas.length > 0 ? (
                 <View style={styles.personas}>
-                    <Text variant="footnote" style={styles.heading} accessibilityRole="header">Start from a persona</Text>
+                    <Text variant="footnote" style={styles.heading} accessibilityRole="header">{t('chat.startfromapersona')}</Text>
                     {personas.map((p) => (
-                        <Card key={p.id} accessibilityRole="button" accessibilityLabel={`Start a chat with the ${p.name} persona`} disabled={creating} style={styles.row} onPress={() => pickPersona(p)}>
+                        <Card key={p.id} accessibilityRole="button" accessibilityLabel={t('chat.startachatwiththepersona', { value1: p.name })} disabled={creating} style={styles.row} onPress={() => pickPersona(p)}>
                             <Text variant="bodyStrong" style={styles.name}>{p.name}</Text>
                             <Text style={styles.muted} numberOfLines={1}>{p.instructions}</Text>
                         </Card>
@@ -87,7 +88,7 @@ export default function NewChat() {
                 <FlatList
                     ListHeaderComponent={
                         <>
-                            <Text variant="footnote" style={styles.heading} accessibilityRole="header">Or choose a model</Text>
+                            <Text variant="footnote" style={styles.heading} accessibilityRole="header">{t('chat.orchooseamodel')}</Text>
                         </>
                     }
                     data={models ?? []}
@@ -96,7 +97,7 @@ export default function NewChat() {
                         <Card accessibilityRole="button" disabled={creating || item.gated} style={[styles.row, item.gated && styles.gated]} onPress={() => pick(item)}>
                             <Text variant="bodyStrong" style={styles.name}>{item.name}</Text>
                             <Text style={styles.muted}>
-                                {item.maker_label} · <Text tone="warning">{item.credits_per_reply} {item.credits_per_reply === 1 ? 'credit' : 'credits'} per reply</Text>
+                                {item.maker_label} · <Text tone="warning">{plural('chat.creditsPerReply', item.credits_per_reply)}</Text>
                             </Text>
                         </Card>
                     )}

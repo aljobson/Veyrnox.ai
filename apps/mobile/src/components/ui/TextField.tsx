@@ -1,3 +1,4 @@
+import { I18nManager } from 'react-native';
 import { KeyboardFocusContext } from '../KeyboardFocusContext';
 import { useContext } from 'react';
 import { FontStatus } from './FontStatus';
@@ -27,7 +28,7 @@ export const TextField = forwardRef<ComponentRef<typeof TextInput>, TextFieldPro
                     allowFontScaling
                     maxFontSizeMultiplier={BODY_MAX_FONT_SCALE}
                     placeholderTextColor={s.placeholder.color}
-                    style={[s.input, style, family && !loadedFonts.has(family) ? fallback : undefined]}
+                    style={[I18nManager.isRTL ? { textAlign: 'right', writingDirection: 'rtl' } : undefined, s.input, style, family && !loadedFonts.has(family) ? fallback : undefined]}
                     onFocus={(e) => {
                         setFocused(true);
                         revealFocused?.();

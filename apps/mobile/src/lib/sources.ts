@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import type { CatalogModel } from './media';
 
 // Mirrors lib/uploadSource.js and lib/generationSourceSlots.mjs on the server. The server
@@ -46,7 +47,7 @@ export interface PickedFile {
 
 export type PickedCheck = { readonly ok: true; readonly contentType: string } | { readonly ok: false; readonly error: 'type' | 'too_large' | 'size_unknown' | 'too_long' };
 
-const DEFAULT_LABEL: Record<SlotName, string> = { image: 'Image', endImage: 'Last frame', video: 'Video', audio: 'Audio' };
+const DEFAULT_LABEL: Record<SlotName, string> = { image: t('sources.image'), endImage: t('sources.lastframe'), video: t('sources.video'), audio: t('sources.audio') };
 
 // The file slots a model declares, in a fixed order, ignoring names the server does not know.
 export function slotsFor(model: CatalogModel): Slot[] {
@@ -100,13 +101,13 @@ export function toSourceKeys(uploaded: Partial<Record<SlotName, string>>): { key
 export function pickedProblem(error: Extract<PickedCheck, { ok: false }>['error'], kind: SlotKind): string {
     switch (error) {
         case 'type':
-            return kind === 'image' ? 'Use a JPEG, PNG or WebP image.' : kind === 'video' ? 'Use an MP4 video.' : 'Use an MP3 or WAV file.';
+            return kind === 'image' ? t('sources.useaJPEGPNGorWebPimage') : kind === 'video' ? t('sources.useanMP4video') : t('sources.useanMP3orWAVfile');
         case 'too_large':
-            return kind === 'video' ? 'That video is over 100 MB.' : 'That file is over 20 MB.';
+            return kind === 'video' ? t('sources.thatvideoisover100MB') : t('sources.thatfileisover20MB');
         case 'too_long':
-            return 'That file is longer than this model accepts.';
+            return t('sources.thatfileislongerthanthismodel');
         default:
-            return 'Could not read that file. Try another.';
+            return t('sources.couldnotreadthatfileTryanother');
     }
 }
 

@@ -1,0 +1,18 @@
+export default {
+    "montage.somethingwentwrongTryagain": "Something went wrong. Try again.",
+    "montage.thisisnotavailablerightnow": "This is not available right now.",
+    "montage.wecouldnotmakeaplanYou": "We could not make a plan. You were not charged. Try again in a moment.",
+    "montage.thisisbusyorofflinerightnow": "This is busy or offline right now. You were not charged. Try again shortly.",
+    "montage.everyslotistakenrightnowTry": "Every slot is taken right now. Try again in about {value1} minutes.",
+    "montage.everyslotistakenrightnowTry2": "Every slot is taken right now. Try again in a few minutes.",
+    "montage.youalreadyhaveonebeingmadeIt": "You already have one being made. It will appear in your Library when it is done.",
+    "montage.thisplanranoutPlanagainyou": "This plan ran out. Plan again; you were not charged.",
+    "montage.thepricechangedPlanagaintosee": "The price changed. Plan again to see the new price; you were not charged.",
+    "montage.thatplannolongermatchesPlanagain": "That plan no longer matches. Plan again; you were not charged.",
+    "montage.describethevideoin3to500": "Describe the video in 3 to 500 characters.",
+    "montage.keeptheexactnarrationtocharactersand": "Keep the exact narration to {value1} characters and remove line breaks.",
+    "montage.toomanyrequestsWaitaminutebefore": "Too many requests. Wait a minute before you plan again.",
+    "montage.notenoughcreditsforthis": "Not enough credits for this.",
+    "montage.noconnectionCheckitandtryagain": "No connection. Check it and try again.",
+    "montage.somethingwentwrongYouwerenotcharged": "Something went wrong. You were not charged. Try again.",
+} as const;

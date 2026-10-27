@@ -125,14 +125,14 @@ export default function CinemaTitlePage() {
         ]);
     };
 
-    if (failed) return <View style={styles.center}><Text style={styles.muted}>This title is not available.</Text></View>;
+    if (failed) return <View style={styles.center}><Text style={styles.muted}>{t('cinema.thistitleisnotavailable')}</Text></View>;
     if (!detail) return <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>;
 
     const { title } = detail;
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
             <Stack.Screen options={{ title: title.title }} />
-            <Image source={{ uri: posterUrl(title.id) }} style={styles.poster} contentFit="cover" accessibilityLabel={`Poster for ${title.title}`} accessibilityIgnoresInvertColors />
+            <Image source={{ uri: posterUrl(title.id) }} style={styles.poster} contentFit="cover" accessibilityLabel={t('cinema.posterfor', { value1: title.title })} accessibilityIgnoresInvertColors />
             <Text style={styles.title} accessibilityRole="header">{title.title}</Text>
             {title.creator ? <Text style={styles.muted}>{title.creator}</Text> : null}
             {title.categories.length ? <Text style={styles.muted}>{title.categories.map((c) => t(categoryKey(c))).join(' · ')}</Text> : null}
@@ -152,10 +152,10 @@ export default function CinemaTitlePage() {
             {title.contentType !== 'SERIES' ? (
                 detail.watchable || entOpen ? (
                     <Pressable accessibilityRole="button" style={styles.play} onPress={() => watch(title.id, title.title)}>
-                        <Text style={styles.playText}>Play</Text>
+                        <Text style={styles.playText}>{t('cinema.play')}</Text>
                     </Pressable>
                 ) : lock ? null : (
-                    <Text style={styles.muted}>This title is not available to watch in the app yet.</Text>
+                    <Text style={styles.muted}>{t('cinema.thistitleisnotavailabletowatch')}</Text>
                 )
             ) : (
                 episodes.map((e) => (
@@ -167,7 +167,7 @@ export default function CinemaTitlePage() {
                         style={[styles.row, !e.watchable && styles.rowOff]}
                         onPress={() => watch(e.id, e.title, title.id)}
                     >
-                        <Text style={styles.rowTitle} numberOfLines={1}>S{e.season} E{e.position} · {e.title}</Text>
+                        <Text style={styles.rowTitle} numberOfLines={1}>{t('cinema.sE', { value1: e.season, value2: e.position, value3: e.title })}</Text>
                         <Text style={styles.muted}>{e.watchable ? formatDuration(e.durationSeconds) : t(episodeLocks.get(e.id) === 'free_ceiling' ? 'cinemaSeries.state.free_ceiling' : (episodeLocks.get(e.id) ?? detailLocks.get(e.id)) === 'paid' ? 'cinemaSeries.state.paid' : 'cinemaSeries.state.locked')}</Text>
                     </Pressable>
                 ))
@@ -181,7 +181,7 @@ export default function CinemaTitlePage() {
                 <Text style={styles.muted}>{t('comments.title')}</Text>
             </Pressable>
             <Pressable accessibilityRole="button" style={styles.report} onPress={report}>
-                <Text style={styles.muted}>Report this title</Text>
+                <Text style={styles.muted}>{t('cinema.reportthistitle')}</Text>
             </Pressable>
             {title.creatorUsername ? (
                 <Pressable accessibilityRole="button" accessibilityState={{ busy: blocking, disabled: blocking }} disabled={blocking} style={styles.report} onPress={block}>

@@ -14,16 +14,16 @@ import type { MenuIcon } from '../../lib/menuIcons';
 type Source = 'photo' | 'video' | 'reference' | 'prompt';
 
 const SOURCES: readonly { key: Source; icon: MenuIcon; label: string; detail: string }[] = [
-    { key: 'photo', icon: 'camera', label: 'My photo', detail: 'Animate or transform it' },
-    { key: 'video', icon: 'film', label: 'My video', detail: 'Add sound, sync or enhance' },
-    { key: 'reference', icon: 'brush', label: 'A reference', detail: 'Guide a style or character' },
-    { key: 'prompt', icon: 'sparkle', label: 'Just an idea', detail: 'Describe the video in words' },
+    { key: 'photo', icon: 'camera', label: t('start.myphoto'), detail: t('start.animateortransformit') },
+    { key: 'video', icon: 'film', label: t('start.myvideo'), detail: t('start.addsoundsyncorenhance') },
+    { key: 'reference', icon: 'brush', label: t('start.areference'), detail: t('start.guideastyleorcharacter') },
+    { key: 'prompt', icon: 'sparkle', label: t('start.justanidea'), detail: t('start.describethevideoinwords') },
 ];
 const TEMPLATE_IDEAS = [
-    { icon: 'camera', title: 'Animate a portrait' },
-    { icon: 'bag', title: 'Product reveal' },
-    { icon: 'audio', title: 'Music visualizer' },
-    { icon: 'moon', title: 'Story trailer' },
+    { icon: 'camera', title: t('start.animateaportrait') },
+    { icon: 'bag', title: t('start.productreveal') },
+    { icon: 'audio', title: t('start.musicvisualizer') },
+    { icon: 'moon', title: t('start.storytrailer') },
 ] as const;
 
 export function sourceHref(source: Source) {
@@ -57,10 +57,8 @@ export default function Start() {
         <View style={styles.screen}>
             <Stack.Screen options={{ headerShown: false, gestureEnabled: false }} />
             <ScrollView contentContainerStyle={styles.body}>
-                <Text variant="display" style={styles.title} accessibilityRole="header">
-                    What are you starting with?
-                </Text>
-                <Text style={styles.lead}>Pick the real material. The next screen asks for that file, reference or idea.</Text>
+                <Text variant="display" style={styles.title} accessibilityRole="header">{t('start.whatareyoustartingwith')}</Text>
+                <Text style={styles.lead}>{t('start.picktherealmaterialThenextscreen')}</Text>
 
                 <View style={styles.sourceGrid}>
                     {SOURCES.map((item) => (
@@ -71,9 +69,7 @@ export default function Start() {
                 </View>
 
                 <View style={styles.sectionHead}>
-                    <Text variant="title2" style={styles.sectionTitle} accessibilityRole="header">
-                        Or try a template
-                    </Text>
+                    <Text variant="title2" style={styles.sectionTitle} accessibilityRole="header">{t('start.ortryatemplate')}</Text>
                     <Pressable
                         accessibilityRole="button"
                         onPress={() => {
@@ -81,7 +77,7 @@ export default function Start() {
                             router.replace('/create/presets');
                         }}
                     >
-                        <Text style={styles.seeAll}>See all</Text>
+                        <Text style={styles.seeAll}>{t('start.seeall')}</Text>
                     </Pressable>
                 </View>
                 {templates === null ? <ActivityIndicator color={colors.accent} /> : null}
@@ -91,7 +87,7 @@ export default function Start() {
                             <Pressable
                                 key={template.id}
                                 accessibilityRole="button"
-                                accessibilityLabel={`Try ${template.title}`}
+                                accessibilityLabel={t('start.try', { value1: template.title })}
                                 style={({ pressed }) => [styles.template, pressed && styles.templatePressed]}
                                 onPress={() => {
                                     noteOnboardingCompleted();
@@ -104,9 +100,7 @@ export default function Start() {
                                         {template.title}
                                     </Text>
                                     <View style={styles.tryButton}>
-                                        <Text variant="footnote" style={styles.tryText}>
-                                            Try this
-                                        </Text>
+                                        <Text variant="footnote" style={styles.tryText}>{t('start.trythis')}</Text>
                                     </View>
                                 </Card>
                             </Pressable>
@@ -119,7 +113,7 @@ export default function Start() {
                                 <ChoiceCard
                                     icon={template.icon}
                                     title={template.title}
-                                    detail="Explore"
+                                    detail={t('start.explore')}
                                     onPress={() => {
                                         noteOnboardingCompleted();
                                         router.replace('/create/presets');
@@ -131,7 +125,7 @@ export default function Start() {
                 ) : null}
                 <Button
                     variant="tertiary"
-                    label="Use something from my Library"
+                    label={t('start.usesomethingfrommyLibrary')}
                     onPress={() => {
                         noteOnboardingCompleted();
                         router.replace('/library');
@@ -140,7 +134,7 @@ export default function Start() {
             </ScrollView>
             <View style={styles.footer}>
                 <Button
-                    label={picked ? `Continue with ${picked.label.toLowerCase()}` : 'Choose where to start'}
+                    label={picked ? t('start.continuewith', { value1: picked.label.toLowerCase() }) : t('start.choosewheretostart')}
                     disabled={!source}
                     onPress={() => {
                         if (source) {

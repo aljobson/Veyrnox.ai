@@ -1,5 +1,5 @@
 import { EmptyState } from '../../../components/EmptyState';
-import { t as tr } from '../../../lib/i18n';
+import { formatLocale, t, t as tr } from '../../../lib/i18n';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
@@ -8,7 +8,7 @@ import { colors } from '../../../theme';
 import { HeaderAction } from '../../../components/HeaderAction';
 import { usePublishApi } from '../../../lib/usePublishApi';
 
-const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString() : null);
+const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString(formatLocale()) : null);
 
 export default function Posts() {
     const api = usePublishApi();
@@ -54,7 +54,7 @@ export default function Posts() {
 
     return (
         <View style={styles.screen}>
-            <Stack.Screen options={{ title: 'Posts', headerRight: () => <HeaderAction label="New post" onPress={() => router.push('/publish/compose')} /> }} />
+            <Stack.Screen options={{ title: t('publish.posts'), headerRight: () => <HeaderAction label={t('publish.newpost')} onPress={() => router.push('/publish/compose')} /> }} />
             {doneKey ? <Text style={styles.done} accessibilityRole="alert" accessibilityLiveRegion="polite">{tr(doneKey)}</Text> : null}
             {error && !posts ? (
                 <Text style={styles.error}>{error}</Text>
@@ -69,10 +69,10 @@ export default function Posts() {
                     refreshControl={<RefreshControl refreshing={refreshing} tintColor={colors.accent} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}
                     ListEmptyComponent={<EmptyState title={tr('empty.posts.title')} body={tr('empty.posts.body')} actionLabel={tr('empty.posts.action')} href="/publish/compose" />}
                     renderItem={({ item }) => (
-                        <Pressable accessibilityRole="button" accessibilityLabel={`${postStatusLabel(item.status)} post: ${item.text.slice(0, 60)}`} style={styles.row} onPress={() => router.push({ pathname: '/publish/post/[id]', params: { id: item.id } })}>
+                        <Pressable accessibilityRole="button" accessibilityLabel={t('publish.post2', { value1: postStatusLabel(item.status), value2: item.text.slice(0, 60) })} style={styles.row} onPress={() => router.push({ pathname: '/publish/post/[id]', params: { id: item.id } })}>
                             <Text style={[styles.status, (item.status === 'failed') && styles.bad]}>{postStatusLabel(item.status)}{item.scheduledAt ? `  ·  ${when(item.scheduledAt)}` : ''}</Text>
-                            <Text style={styles.text} numberOfLines={2}>{item.text || 'No text'}</Text>
-                            <Text style={styles.muted}>{item.targets.map((t) => t.network).join(', ') || 'No networks'}</Text>
+                            <Text style={styles.text} numberOfLines={2}>{item.text || t('publish.notext')}</Text>
+                            <Text style={styles.muted}>{item.targets.map((t) => t.network).join(', ') || t('publish.nonetworks')}</Text>
                         </Pressable>
                     )}
                 />

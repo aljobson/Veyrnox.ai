@@ -1,3 +1,4 @@
+import { t } from '../../../lib/i18n';
 import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
@@ -26,14 +27,14 @@ export default function Templates() {
 
     return (
         <View style={styles.screen}>
-            <Stack.Screen options={{ title: 'Templates' }} />
+            <Stack.Screen options={{ title: t('presets.templates') }} />
             {unavailableId ? (
                 <Text style={styles.unavailable} accessibilityLiveRegion="assertive">
-                    {unavailablePreset ? `${unavailablePreset.title} is not available right now.` : 'That template is not available right now.'}
+                    {unavailablePreset ? t('presets.isnotavailablerightnow', { value1: unavailablePreset.title }) : t('presets.thattemplateisnotavailablerightnow')}
                 </Text>
             ) : null}
             {failed ? (
-                <Text style={styles.error}>Could not load templates. Check your connection.</Text>
+                <Text style={styles.error}>{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text>
             ) : presets === null ? (
                 <ActivityIndicator color={colors.accent} />
             ) : (
@@ -43,10 +44,10 @@ export default function Templates() {
                     stickySectionHeadersEnabled={false}
                     ListHeaderComponent={(
                         <TextInput
-                            accessibilityLabel="Search effects"
+                            accessibilityLabel={t('presets.searcheffects')}
                             value={query}
                             onChangeText={setQuery}
-                            placeholder="Search 1,000+ effects"
+                            placeholder={t('presets.search1000effects')}
                             placeholderTextColor={colors.muted}
                             autoCapitalize="none"
                             autoCorrect={false}
@@ -54,12 +55,12 @@ export default function Templates() {
                             style={styles.search}
                         />
                     )}
-                    ListEmptyComponent={<Text style={styles.muted}>{query ? 'No matching effects.' : 'No templates available right now.'}</Text>}
+                    ListEmptyComponent={<Text style={styles.muted}>{query ? t('presets.nomatchingeffects') : t('presets.notemplatesavailablerightnow')}</Text>}
                     renderSectionHeader={({ section }) => <Text style={styles.header} accessibilityRole="header">{section.title}</Text>}
                     renderItem={({ item }) => (
                         <Pressable
                             accessibilityRole="button"
-                            accessibilityLabel={`${item.title}, ${presetPrice(item)}${item.available ? '' : ', not available right now'}`}
+                            accessibilityLabel={`${item.title}, ${presetPrice(item)}${item.available ? '' : t('presets.notAvailableSuffix')}`}
                             style={styles.row}
                             onPress={() => open(item)}
                         >
@@ -67,11 +68,11 @@ export default function Templates() {
                             <View style={styles.text}>
                                 <Text style={styles.name}>
                                     {item.title}
-                                    {item.isNew ? '  NEW' : ''}
+                                    {item.isNew ? t('presets.nEW') : ''}
                                 </Text>
                                 <Text style={styles.price}>{presetPrice(item)}</Text>
-                                {!item.available ? <Text style={styles.unavailableText}>Not available right now</Text> : null}
-                                {item.needs ? <Text style={styles.muted}>Needs: {item.needs}</Text> : null}
+                                {!item.available ? <Text style={styles.unavailableText}>{t('presets.notavailablerightnow')}</Text> : null}
+                                {item.needs ? <Text style={styles.muted}>{t('presets.needs', { value1: item.needs })}</Text> : null}
                             </View>
                         </Pressable>
                     )}

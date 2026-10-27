@@ -1,3 +1,4 @@
+import { t } from './i18n';
 // Studio skills (ADR-0073, ADR-0167): built-in assistants that help prepare ONE thing to make. A skill is only
 // instructions copied onto a new chat; it never makes anything and never spends credits beyond the chat's own replies. Its
 // result is a "Studio draft" block the chat shows as an Open in Create button; only the person's own Create press charges.
@@ -37,51 +38,51 @@ export interface Skill {
 
 export const SKILLS: readonly Skill[] = [
   {
-    id: 'prompt-writer', name: 'Prompt writer', group: 'Make',
-    blurb: 'Turn a rough idea into a strong prompt and the right model.',
-    starter: 'Describe what you want to make',
+    id: 'prompt-writer', name: t('studioSkills.promptwriter'), group: 'Make',
+    blurb: t('studioSkills.turnaroughideaintoastrong'),
+    starter: t('studioSkills.describewhatyouwanttomake'),
     body: 'Skill: Prompt writer. If the idea is vague, ask what the subject, mood and style are. Pick the best-fitting model from the list for an image, video or audio and say why in one line. Write one strong prompt: a concrete subject and setting, the light, the camera or composition, the style, and for video one clear action. Plain language, not a pile of keywords. Offer one variation they can ask for.',
   },
   {
-    id: 'model-picker', name: 'Model picker', group: 'Plan',
-    blurb: 'Find the cheapest model that does the job for your budget.',
-    starter: 'What do you want to make, and how many Credits can you spend?',
+    id: 'model-picker', name: t('studioSkills.modelpicker'), group: 'Plan',
+    blurb: t('studioSkills.findthecheapestmodelthatdoesthe'),
+    starter: t('studioSkills.whatdoyouwanttomakeand'),
     body: 'Skill: Model picker. Ask the goal and the budget in Credits if not given. Recommend up to three models from the list, the cheapest that does the job first, one line each: what it is good at and its Credits. Say plainly when a cheaper model will do. If they choose one, write a starter prompt for it.',
   },
   {
-    id: 'fix-my-photo', name: 'Fix this photo', group: 'Edit',
-    blurb: 'Upscale, cut out, expand or change a photo, with the cheapest tool.',
-    starter: 'Attach your photo, or say what is wrong with it',
+    id: 'fix-my-photo', name: t('studioSkills.fixthisphoto'), group: 'Edit',
+    blurb: t('studioSkills.upscalecutoutexpandorchangea'),
+    starter: t('studioSkills.attachyourphotoorsaywhatis'),
     body: 'Skill: Fix this photo. If they attached an image, look at it. Decide which edit they need: upscale (small or soft), remove the background (cut out the subject), expand (extend beyond the edges) or edit with a prompt (change something). Name the one cheapest tool that does it, by id from the list, and what to expect. Tools that take an image need it chosen in the Studio with From library: say so. For a tool without a text prompt use a short description such as "Remove the background".',
   },
   {
-    id: 'edit-with-words', name: 'Edit with words', group: 'Edit',
-    blurb: 'Describe a change to a photo as a precise edit.',
-    starter: 'Attach your photo and say what to change',
+    id: 'edit-with-words', name: t('studioSkills.editwithwords'), group: 'Edit',
+    blurb: t('studioSkills.describeachangetoaphotoas'),
+    starter: t('studioSkills.attachyourphotoandsaywhatto'),
     body: 'Skill: Edit with words. If they attached an image, look at it. Turn the request into a precise edit instruction: what to change, what must stay exactly the same, and how the new part should look. One change at a time works best: if they asked for several, split them and give the order. Use an image-to-image model from the list. Remind them to choose their image in the Studio with From library. Give the draft for the first change.',
   },
   {
-    id: 'bring-to-life', name: 'Bring it to life', group: 'Make',
-    blurb: 'Turn a still photo into a short moving clip.',
-    starter: 'Attach a photo to animate',
+    id: 'bring-to-life', name: t('studioSkills.bringittolife'), group: 'Make',
+    blurb: t('studioSkills.turnastillphotointoashort'),
+    starter: t('studioSkills.attachaphototoanimate'),
     body: 'Skill: Bring it to life. If they attached an image, look at it. Write a motion prompt: what moves, how the camera moves, how fast, and what stays still. Simple movement works best in a short clip. Use an image-to-video model from the list. Remind them to choose the image in the Studio with From library.',
   },
   {
-    id: 'add-sound', name: 'Add sound', group: 'Edit',
-    blurb: 'Describe the sound that fits a short video.',
-    starter: 'What happens in your video?',
+    id: 'add-sound', name: t('studioSkills.addsound'), group: 'Edit',
+    blurb: t('studioSkills.describethesoundthatfitsashort'),
+    starter: t('studioSkills.whathappensinyourvideo'),
     body: 'Skill: Add sound. You cannot see video, so ask what happens in it. Describe the sound that fits in one or two sentences: ambience, effects, rhythm and mood, with no music unless they ask. Use the video-to-audio model from the list. Remind them to choose the clip from their Library in the Studio.',
   },
   {
-    id: 'storyboard', name: 'Storyboard', group: 'Plan',
-    blurb: 'Plan a short sequence of shots with a consistent look.',
-    starter: 'What is the idea, and how long should it be?',
+    id: 'storyboard', name: t('studioSkills.storyboard'), group: 'Plan',
+    blurb: t('studioSkills.planashortsequenceofshotswith'),
+    starter: t('studioSkills.whatistheideaandhowlong'),
     body: 'Skill: Storyboard. Ask for the idea, the length and the platform if not given. Plan 3 to 6 short shots, one line each: what we see, the camera, the mood. Keep the characters and style consistent. Then give one draft block per shot in order, using the same model for all so the look matches. Models do not remember earlier shots, so every prompt repeats the character and style description in full.',
   },
   {
-    id: 'fix-my-prompt', name: 'Fix my prompt', group: 'Make',
-    blurb: 'Find out why a prompt went wrong and rewrite it.',
-    starter: 'Paste the prompt and say what went wrong',
+    id: 'fix-my-prompt', name: t('studioSkills.fixmyprompt'), group: 'Make',
+    blurb: t('studioSkills.findoutwhyapromptwentwrong'),
+    starter: t('studioSkills.pastethepromptandsaywhatwent'),
     body: 'Skill: Fix my prompt. They paste a prompt and say what went wrong, or attach the result. Name the likely cause in one or two lines: too vague, conflicting instructions, too many subjects, or the wrong model for the job. Rewrite the prompt and say what you changed. If a different model would suit better, say which.',
   },
     ...FILM_SKILLS,

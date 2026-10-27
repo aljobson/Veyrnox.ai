@@ -36,7 +36,7 @@ export function useFullEditorSession({ projectId, jobId }: { projectId: string; 
     const [dirty, setDirty] = useState(false);
     const [saving, setSaving] = useState(false);
     const [problem, setProblem] = useState<string | null>(null);
-    useAnnouncement(document ? (saving ? t('editor.saving') : dirty ? 'Unsaved changes' : t('editor.saved')) : null);
+    useAnnouncement(document ? (saving ? t('editor.saving') : dirty ? t('editor.unsavedchanges2') : t('editor.saved')) : null);
     const [tool, setTool] = useState<Tool>('media');
     const [selection, setSelection] = useState<Selection | null>(null);
     const [selections, setSelections] = useState<Selection[]>([]);
@@ -114,7 +114,7 @@ export function useFullEditorSession({ projectId, jobId }: { projectId: string; 
                     const base = timelineOf(loaded.timeline);
                     const mediaId = `j-${jobId}`;
                     if (!base.media[mediaId]) {
-                        const media: Media = { id: mediaId, name: project?.name || 'Library video', kind: 'video', frames: 300, hasAudio: true, width: 0, height: 0 };
+                        const media: Media = { id: mediaId, name: project?.name || t('editor.libraryvideo2'), kind: 'video', frames: 300, hasAudio: true, width: 0, height: 0 };
                         const trackId = base.tracks.find((track) => track.kind === 'video' && !track.locked)?.id;
                         if (trackId) {
                             const seq = base.seq + 1;

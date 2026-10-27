@@ -7,7 +7,7 @@ import { clearStudio } from '../../../lib/filmStudioStore';
 import { useAuth } from '../../../auth/AuthProvider';
 import { getCacheUser, subscribeCacheUser } from '../../../lib/appCache';
 import { clearOpenedFilm, fetchCloudFilms, loadActiveStudio } from '../../../lib/filmCloud';
-import { plural, t } from '../../../lib/i18n';
+import { formatLocale, plural, t } from '../../../lib/i18n';
 import { colors } from '../../../theme';
 
 // ADR-0210 and ADR-0252: open and edit a native film or a film saved to the account.
@@ -78,11 +78,11 @@ export default function FilmStudio() {
     if (!film) {
         return (
             <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-                <Stack.Screen options={{ title: 'Film Studio' }} />
-                <Text style={styles.title} accessibilityRole="header">Start or open a film</Text>
+                <Stack.Screen options={{ title: t('film.filmStudio') }} />
+                <Text style={styles.title} accessibilityRole="header">{t('film.startoropenafilm')}</Text>
                 <Text style={styles.body}>{t('filmCloud.intro')}</Text>
                 <Pressable accessibilityRole="button" style={styles.primary} onPress={() => router.push('/film/workspace')}>
-                    <Text style={styles.primaryText}>Start a new film</Text>
+                    <Text style={styles.primaryText}>{t('film.startanewfilm')}</Text>
                 </Pressable>
                 <Links router={router} cloudCount={cloudCount} />
             </ScrollView>
@@ -94,35 +94,33 @@ export default function FilmStudio() {
     const rows = shotRows(film);
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-            <Stack.Screen options={{ title: 'Film Studio' }} />
+            <Stack.Screen options={{ title: t('film.filmStudio') }} />
             <Text style={styles.title} accessibilityRole="header">{sum.name}</Text>
-            <Text style={styles.muted}>
-                {sum.aspect} · {sum.shots} {sum.shots === 1 ? 'shot' : 'shots'} · {sum.lockedAssets} of {sum.assets} assets locked · {sum.acceptedShots} takes accepted
-            </Text>
+            <Text style={styles.muted}>{t('film.ofassetslockedtakesaccepted', { value1: sum.aspect, value2: plural('film.shotCount', sum.shots), value3: '', value4: sum.lockedAssets, value5: sum.assets, value6: sum.acceptedShots })}</Text>
             <Text style={styles.body}>{t('filmCloud.intro')}</Text>
-            <Text style={styles.muted}>Opened {savedAt ? new Date(savedAt).toLocaleDateString() : 'from your account'}. You can edit every stage on this phone and save it back to your account.</Text>
+            <Text style={styles.muted}>{t('film.openedYoucanediteverystageon', { value1: savedAt ? new Date(savedAt).toLocaleDateString(formatLocale()) : t('film.fromAccount') })}</Text>
 
             <Pressable accessibilityRole="button" style={styles.primary} onPress={() => router.push('/film/workspace')}>
-                <Text style={styles.primaryText}>Edit in Film Studio</Text>
+                <Text style={styles.primaryText}>{t('film.editinFilmStudio')}</Text>
             </Pressable>
 
-            <Text style={styles.heading} accessibilityRole="header">Stages</Text>
+            <Text style={styles.heading} accessibilityRole="header">{t('film.stages')}</Text>
             {stages.map((s, i) => (
-                <View key={s.id} style={styles.row} accessible accessibilityLabel={`Stage ${i + 1}, ${s.title}, ${s.done ? 'done' : `${s.open} to fix`}`}>
+                <View key={s.id} style={styles.row} accessible accessibilityLabel={t('film.stage', { value1: i + 1, value2: s.title, value3: s.done ? t('film.done') : t('film.remaining', { count: s.open }) })}>
                     <Text style={styles.name}>
                         {s.done ? '✓' : '•'} {i + 1}. {s.title}
                     </Text>
                     {s.done ? null : (
                         <>
-                            <Text style={styles.muted}>{s.open} to fix. {s.first}</Text>
-                            <Text style={styles.web}>Open the native workspace</Text>
+                            <Text style={styles.muted}>{t('film.tofix', { value1: s.open, value2: s.first ?? '' })}</Text>
+                            <Text style={styles.web}>{t('film.openthenativeworkspace')}</Text>
                         </>
                     )}
                 </View>
             ))}
 
-            <Text style={styles.heading} accessibilityRole="header">Shots</Text>
-            {rows.length === 0 ? <Text style={styles.muted}>No shots yet. Add them in the breakdown on the web.</Text> : null}
+            <Text style={styles.heading} accessibilityRole="header">{t('film.shots')}</Text>
+            {rows.length === 0 ? <Text style={styles.muted}>{t('film.noshotsyetAddtheminthe')}</Text> : null}
             {rows.map((r) => (
                 <Pressable key={r.shot.id} accessibilityRole="button" accessibilityLabel={`${r.shot.id}, ${r.label}`} style={[styles.row, touchTarget]} onPress={() => router.push({ pathname: '/film/shot/[id]', params: { id: r.shot.id } })}>
                     <Text style={styles.name}>{r.shot.id}</Text>
@@ -132,7 +130,7 @@ export default function FilmStudio() {
             ))}
 
             <Pressable accessibilityRole="button" style={[styles.secondary, touchTarget]} onPress={remove}>
-                <Text style={styles.secondaryText}>Remove from this phone</Text>
+                <Text style={styles.secondaryText}>{t('film.removefromthisphone')}</Text>
             </Pressable>
             <Links router={router} cloudCount={cloudCount} />
         </ScrollView>
@@ -149,8 +147,8 @@ function Links({ router, cloudCount }: { router: ReturnType<typeof useRouter>; c
                 </Pressable>
             ) : null}
             <Pressable accessibilityRole="button" style={[styles.row, touchTarget]} onPress={() => router.push('/chat/new')}>
-                <Text style={styles.name}>Film chats</Text>
-                <Text style={styles.muted}>Seven helpers for setup, breakdown, references, passports, stress tests and prompts.</Text>
+                <Text style={styles.name}>{t('film.filmchats')}</Text>
+                <Text style={styles.muted}>{t('film.sevenhelpersforsetupbreakdownreferencespassports')}</Text>
             </Pressable>
 
         </View>

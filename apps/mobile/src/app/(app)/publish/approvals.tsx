@@ -3,11 +3,11 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { touchTarget } from '../../../lib/a11y';
 import { approvalErrorKey, approvalStatusLabel, decisionLabel, fetchApprovals, type ApprovalRequest } from '../../../lib/publishApprovals';
-import { t } from '../../../lib/i18n';
+import { formatLocale, t } from '../../../lib/i18n';
 import { usePublishApi } from '../../../lib/usePublishApi';
 import { colors, LIST_END_PADDING } from '../../../theme';
 
-const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString() : null);
+const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString(formatLocale()) : null);
 
 export default function Approvals() {
     const api = usePublishApi();

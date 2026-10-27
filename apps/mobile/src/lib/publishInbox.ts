@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import { ApiError, type ApiClient } from './api';
 
 // ADR-0180: the Publish inbox. Read first; reply, resolve, reopen and assign now match the web. Conversations from the connected accounts: messages, comments and reviews.
@@ -107,7 +108,7 @@ export function parseThreadView(body: unknown): { thread: Thread | null; canRepl
     }
     const notes: Note[] = [];
     for (const raw of Array.isArray(b.notes) ? b.notes : []) {
-        if (isObject(raw) && str(raw.id)) notes.push({ id: raw.id as string, body: bounded(raw.body, BODY_MAX), author: bounded(raw.actor_email, NAME_MAX) || 'Someone', createdAt: str(raw.created_at) });
+        if (isObject(raw) && str(raw.id)) notes.push({ id: raw.id as string, body: bounded(raw.body, BODY_MAX), author: bounded(raw.actor_email, NAME_MAX) || t('publishInbox.someone'), createdAt: str(raw.created_at) });
     }
     return { thread, canReply: isObject(b.thread) && b.thread.can_reply === true, messages, notes };
 }

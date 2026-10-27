@@ -6,11 +6,11 @@ import { useAuth } from '../../../auth/AuthProvider';
 import { touchTarget } from '../../../lib/a11y';
 import { blockMember, blocksErrorKey } from '../../../lib/cinemaBlocks';
 import { BODY_MAX, bodyOk, commentsErrorKey, fetchComments, parseComments, submitComment, withdrawComment, type Comment, type OwnComment } from '../../../lib/cinemaComments';
-import { t } from '../../../lib/i18n';
+import { formatLocale, t } from '../../../lib/i18n';
 import { colors } from '../../../theme';
 
 const STATUS: Record<string, string> = { pending: 'comments.status.pending', approved: 'comments.status.approved', rejected: 'comments.status.rejected', removed: 'comments.status.removed', withdrawn: 'comments.status.withdrawn' };
-const when = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString() : '');
+const when = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(formatLocale()) : '');
 
 export default function Comments() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
     author: { color: colors.muted, fontSize: 13 },
     body: { color: colors.text, fontSize: 15 },
     actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
-    act: { paddingRight: 16, justifyContent: 'center' },
+    act: { paddingEnd: 16, justifyContent: 'center' },
     link: { color: colors.accent, fontSize: 14 },
     moreBtn: { alignItems: 'center', justifyContent: 'center' },
     muted: { color: colors.muted, fontSize: 13 },

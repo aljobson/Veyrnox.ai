@@ -1,3 +1,4 @@
+import { I18nManager } from 'react-native';
 import { useFaceFiltersAvailable } from '../lib/useFaceFiltersAvailable';
 import { Button, ListRow, Text, Icon, themedStyles, useThemedStyles } from './ui';
 import { useEffect, useRef, useState } from 'react';
@@ -97,7 +98,7 @@ function MenuDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
                     accessibilityViewIsModal
                     style={[
                         styles.drawer,
-                        { width: drawerWidth, paddingTop: insets.top + 8, paddingBottom: insets.bottom, paddingLeft: insets.left, transform: [{ translateX: slide.interpolate({ inputRange: [0, 1], outputRange: [-drawerWidth, 0] }) }] },
+                        { width: drawerWidth, paddingTop: insets.top + 8, paddingBottom: insets.bottom, paddingStart: I18nManager.isRTL ? insets.right : insets.left, transform: [{ translateX: slide.interpolate({ inputRange: [0, 1], outputRange: [I18nManager.isRTL ? drawerWidth : -drawerWidth, 0] }) }] },
                     ]}
                 >
                     <View style={styles.top}>
@@ -163,9 +164,9 @@ const sheets = themedStyles((p) => ({
     ink: { color: p.textPrimary },
     root: { flex: 1, flexDirection: 'row' },
     scrim: { ...StyleSheet.absoluteFill, backgroundColor: p.scrim },
-    drawer: { backgroundColor: p.bg, borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: p.borderSubtle },
-    top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 16, paddingRight: 4, minHeight: 52 },
-    pill: { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 12, marginTop: 8, marginBottom: 4, minHeight: 56, paddingVertical: 8, paddingLeft: 10, paddingRight: 14, borderRadius: 999, backgroundColor: p.surface, borderColor: p.borderSubtle, borderWidth: 1 },
+    drawer: { backgroundColor: p.bg, borderEndWidth: StyleSheet.hairlineWidth, borderEndColor: p.borderSubtle },
+    top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingStart: 16, paddingEnd: 4, minHeight: 52 },
+    pill: { flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 12, marginTop: 8, marginBottom: 4, minHeight: 56, paddingVertical: 8, paddingStart: 10, paddingEnd: 14, borderRadius: 999, backgroundColor: p.surface, borderColor: p.borderSubtle, borderWidth: 1 },
     list: { paddingHorizontal: 8, paddingTop: 8, paddingBottom: 24 },
     hit: { minWidth: MIN_TARGET, minHeight: MIN_TARGET, alignItems: 'center', justifyContent: 'center' },
     bars: { gap: 4 },

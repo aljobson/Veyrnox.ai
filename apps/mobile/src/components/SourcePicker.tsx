@@ -145,7 +145,7 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
         try {
             file = await choose(slot.kind);
         } catch {
-            setError('Could not open your files. Check the permission in Settings.');
+            setError(t('sourcePicker.couldnotopenyourfilesCheckthe'));
             return;
         }
         if (file) await accept(file);
@@ -230,11 +230,11 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
         <View style={styles.box}>
             <Text variant="bodyStrong" tone="primary" style={styles.label}>
                 {slot.label}
-                {slot.required ? '' : ' (optional)'}
+                {slot.required ? '' : t('sourcePicker.optional')}
             </Text>
             {hint ? <Text variant="footnote" tone="tertiary" style={styles.slotHint}>{hint}</Text> : null}
             {status.step === 'empty' ? (
-                <Button variant="secondary" accessibilityRole="button" accessibilityLabel={`Choose ${NOUN[slot.kind]} for ${slot.label}`} onPress={pick} label={`Choose ${NOUN[slot.kind]}`} />
+                <Button variant="secondary" accessibilityRole="button" accessibilityLabel={t('sourcePicker.choosefor', { value1: NOUN[slot.kind], value2: slot.label })} onPress={pick} label={t('sourcePicker.choose', { value1: NOUN[slot.kind] })} />
             ) : (
                 <View style={styles.row}>
                     {preview ? <Image source={{ uri: preview }} style={styles.thumb} contentFit="cover" /> : <View style={[styles.thumb, styles.thumbPlain]} />}
@@ -242,13 +242,13 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
                         {status.step === 'uploading' ? (
                             <View style={styles.status}>
                                 <ActivityIndicator color={styles.accentInk.color} />
-                                <Text variant="body" tone="secondary" style={styles.body}>Uploading {Math.round(status.fraction * 100)}%</Text>
+                                <Text variant="body" tone="secondary" style={styles.body}>{t('sourcePicker.uploading', { value1: Math.round(status.fraction * 100) })}</Text>
                             </View>
                         ) : (
-                            <Text variant="body" tone="secondary" style={styles.body}>{libraryName ? t('libsrc.ready', { name: libraryName }) : 'Ready'}</Text>
+                            <Text variant="body" tone="secondary" style={styles.body}>{libraryName ? t('libsrc.ready', { name: libraryName }) : t('sourcePicker.ready')}</Text>
                         )}
                     </View>
-                    <Button variant="secondary" accessibilityRole="button" accessibilityLabel={`Remove ${slot.label}`} onPress={remove} hitSlop={12} label={status.step === 'uploading' ? 'Cancel' : 'Remove'} />
+                    <Button variant="secondary" accessibilityRole="button" accessibilityLabel={t('sourcePicker.remove', { value1: slot.label })} onPress={remove} hitSlop={12} label={status.step === 'uploading' ? t('sourcePicker.cancel') : t('sourcePicker.remove2')} />
                 </View>
             )}
             {status.step === 'empty' && onLibrary ? (
@@ -264,7 +264,7 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
                 void accept(file);
             }} /> : null}
             {choosing ? <LibraryChooser api={api} kind={slot.kind} onPick={chooseFromLibrary} onClose={() => setChoosing(false)} /> : null}
-            {slot.maxSeconds ? <Text variant="caption" tone="tertiary" style={styles.hint}>Up to {slot.maxSeconds} seconds.</Text> : null}
+            {slot.maxSeconds ? <Text variant="caption" tone="tertiary" style={styles.hint}>{t('sourcePicker.uptoseconds', { value1: slot.maxSeconds })}</Text> : null}
             {error ? <Text variant="body" tone="danger" style={styles.error}>{error}</Text> : null}
         </View>
     );

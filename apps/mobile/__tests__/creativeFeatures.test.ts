@@ -1,3 +1,4 @@
+import en from '../src/lib/i18n/messages/en';
 import { CREATIVE_FEATURES, CREATIVE_FEATURE_GROUPS, creativeFeature, featurePrompt } from '../src/lib/creativeFeatures';
 import { compatibleCreativeFeatures, creativeReuseHref, creativeReuseTargetHref, kindForMime, readCreativeReuse } from '../src/lib/creativeReuse';
 declare const require: (id: string) => any;
@@ -37,7 +38,8 @@ describe('guided creative feature registry', () => {
         expect(detail).toContain('<Example feature={feature} />');
         expect(detail).toContain('DocumentPicker.getDocumentAsync');
         expect(detail).toContain("pathname: '/create/[modelId]'");
-        expect(detail).toContain('REQUIRED SOURCES');
+        expect(detail).toContain("t('features.rEQUIREDSOURCES')");
+        expect(en['features.rEQUIREDSOURCES']).toBe('REQUIRED SOURCES');
         expect(detail).toContain('<SourcePicker');
         expect(detail).toContain('accessibilityRole="checkbox"');
         expect(detail).toContain('stageCreativeSourceHandoff');

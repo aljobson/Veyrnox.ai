@@ -1,3 +1,4 @@
+import { plural, t } from '../lib/i18n';
 import { Text, Button, themedStyles, useThemedStyles } from './ui';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
@@ -59,7 +60,7 @@ export function AttachFromDevice({ api, current }: Props) {
             try {
                 files = await chooseMany(source);
             } catch {
-                setError('Could not open your files. Check the permission in Settings.');
+                setError(t('attachFromDevice.couldnotopenyourfilesCheckthe'));
                 return;
             }
             if (!files.length) return;
@@ -69,22 +70,22 @@ export function AttachFromDevice({ api, current }: Props) {
                 const kind = kindOfMime(file.mimeType);
                 const checked = kind ? checkPicked(kind, file) : null;
                 if (kind && checked?.ok) picked.push({ kind, file, contentType: checked.contentType });
-                else problems.push(kind && checked && !checked.ok ? pickedProblem(checked.error, kind) : 'Use JPEG, PNG or WebP pictures, MP4 video, or MP3 or WAV audio.');
+                else problems.push(kind && checked && !checked.ok ? pickedProblem(checked.error, kind) : t('attachFromDevice.useJPEGPNGorWebPpicturesMP4'));
             }
             const plan = planAttachments(await fetchCatalog(), current, picked);
-            if (!plan) { setError(problems[0] ?? 'No model takes those files right now.'); return; }
+            if (!plan) { setError(problems[0] ?? t('attachFromDevice.nomodeltakesthosefilesrightnow')); return; }
             const uploaded: Partial<Record<SlotName, string[]>> = {};
             const abort = new AbortController();
             let done = 0;
             for (const { slot, item } of plan.assignments) {
-                setProgress(`Uploading ${done + 1} of ${plan.assignments.length}…`);
+                setProgress(t('attachFromDevice.uploadingof', { value1: done + 1, value2: plan.assignments.length }));
                 (uploaded[slot] ??= []).push(await uploadSource(api, item.file, item.contentType, () => {}, abort.signal));
                 done++;
             }
             const skipped = plan.unused.length + problems.length;
             const handoff = stageCreativeSourceHandoff({ recipe: 'attach', modelId: plan.model.id, uploaded, fromLibrary: {} });
             router.replace({ pathname: '/create/[modelId]', params: { modelId: plan.model.id, recipe: 'attach', sourceHandoff: handoff } });
-            if (skipped) setError(`${skipped} file${skipped === 1 ? '' : 's'} did not fit this model and ${skipped === 1 ? 'was' : 'were'} left out.`);
+            if (skipped) setError(plural('attachFromDevice.skippedFiles', skipped));
         } catch (err) {
             setError(uploadMessage(err));
         } finally {
@@ -95,11 +96,11 @@ export function AttachFromDevice({ api, current }: Props) {
 
     return (
         <View style={styles.box}>
-            <Text variant="bodyStrong" tone="primary" style={styles.label}>Attach from device</Text>
-            <Text variant="footnote" tone="tertiary" style={styles.hint}>Pick several pictures, videos or audio files at once. If this model cannot use them, we move you to one that can.</Text>
+            <Text variant="bodyStrong" tone="primary" style={styles.label}>{t('attachFromDevice.attachfromdevice')}</Text>
+            <Text variant="footnote" tone="tertiary" style={styles.hint}>{t('attachFromDevice.pickseveralpicturesvideosoraudiofiles')}</Text>
             <View style={styles.row}>
                 {(['photos', 'files'] as const).map((source) => (
-                    <Button variant="secondary" containerStyle={styles.grow} key={source} accessibilityRole="button" accessibilityLabel={source === 'photos' ? 'Attach pictures and videos from Photos' : 'Attach files from Files'} accessibilityState={{ disabled: busy !== null }} disabled={busy !== null} onPress={() => void attach(source)} label={source === 'photos' ? 'Photos & videos' : 'Files'} loading={busy === source} />
+                    <Button variant="secondary" containerStyle={styles.grow} key={source} accessibilityRole="button" accessibilityLabel={source === 'photos' ? t('attachFromDevice.attachpicturesandvideosfromPhotos') : t('attachFromDevice.attachfilesfromFiles')} accessibilityState={{ disabled: busy !== null }} disabled={busy !== null} onPress={() => void attach(source)} label={source === 'photos' ? t('attachFromDevice.photosvideos') : t('attachFromDevice.files')} loading={busy === source} />
                 ))}
             </View>
             {progress ? <Text variant="footnote" tone="tertiary" accessibilityLiveRegion="polite" style={styles.hint}>{progress}</Text> : null}

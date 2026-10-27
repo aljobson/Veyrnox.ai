@@ -98,7 +98,7 @@ function Tile({ preset, index, tall, scrollX, still, onOpen }: { preset: Preset;
               opacity: curve(TILE_CURVE.opacity),
               transform: [{ perspective: 700 }, { translateY: curve(TILE_CURVE.lift) }, { rotateY: turn }, { scale: curve(TILE_CURVE.scale) }],
           };
-    const label = `${preset.title}, ${preset.modelName}, ${presetPrice(preset)}${preset.isNew ? `, ${t('explore.new')}` : ''}${preset.available ? '' : ', not available right now'}`;
+    const label = `${preset.title}, ${preset.modelName}, ${presetPrice(preset)}${preset.isNew ? `, ${t('explore.new')}` : ''}${preset.available ? '' : `, ${t('templateCollage.unavailableHint')}`}`;
     return (
         <View style={styles.slot}>
             <Animated.View style={[styles.tile, { width: shape.width, height: shape.height, top: shape.top, left: (STEP - shape.width) / 2 }, motion]}>
@@ -113,7 +113,7 @@ function Tile({ preset, index, tall, scrollX, still, onOpen }: { preset: Preset;
                         <Text style={styles.tileName} numberOfLines={1}>{preset.title}</Text>
                         <Text style={styles.model} numberOfLines={1}>{preset.modelName}</Text>
                         <Text style={styles.price}>{presetPrice(preset)}</Text>
-                        {!preset.available ? <Text style={styles.unavailable}>Not available right now</Text> : null}
+                        {!preset.available ? <Text style={styles.unavailable}>{t('templateCollage.notavailablerightnow')}</Text> : null}
                     </View>
                 </Pressable>
             </Animated.View>
@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
     },
     press: { flex: 1, borderRadius: 15, overflow: 'hidden' },
     poster: { flex: 1, backgroundColor: colors.border },
-    badge: { position: 'absolute', top: 8, left: 8, backgroundColor: colors.accent, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
+    badge: { position: 'absolute', top: 8, start: 8, backgroundColor: colors.accent, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
     badgeText: { color: colors.accentInk, fontSize: 11, fontWeight: '700' },
     info: { padding: 10, gap: 2, backgroundColor: colors.surface },
     tileName: { color: colors.text, fontWeight: '600', fontSize: 14 },

@@ -1,3 +1,4 @@
+import { directionalStyle } from '../../../lib/rtl';
 import { Button, Card, Text, themedStyles, useThemedStyles, useAppearance } from '../../../components/ui';
 import { Image } from 'expo-image';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
@@ -6,7 +7,7 @@ import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { EDITOR_ENABLED } from '../../../lib/editorFlag';
-import { t } from '../../../lib/i18n';
+import { formatLocale, t } from '../../../lib/i18n';
 import { MENU_ICONS } from '../../../lib/menuIcons';
 import { fetchProjects, fetchWorkspaces, projectsErrorMessage, type Project, type Workspace } from '../../../lib/projects';
 
@@ -103,7 +104,7 @@ export default function EditorHome() {
                                 <Text variant="bodyStrong" style={styles.primaryTitle}>{t('editor.new')}</Text>
                                 <Text variant="footnote" style={styles.primaryBody}>{t('editor.home.newBody')}</Text>
                             </View>
-                            <Image source={MENU_ICONS.caretRight} style={styles.caret} tintColor={styles.onAccentInk.color} contentFit="contain" alt="" accessibilityElementsHidden />
+                            <Image source={MENU_ICONS.caretRight} style={[styles.caret, directionalStyle()]} tintColor={styles.onAccentInk.color} contentFit="contain" alt="" accessibilityElementsHidden />
                         </Button>
                         {workspaces && workspaces.length > 1 ? (
                             <View style={styles.chips} accessibilityRole="tablist">
@@ -153,9 +154,9 @@ export default function EditorHome() {
                         </View>
                         <View style={styles.projectCopy}>
                             <Text variant="bodyStrong" style={styles.projectName} numberOfLines={1}>{item.name}</Text>
-                            <Text variant="footnote" style={styles.projectMeta}>{t('editor.home.version', { version: String(item.version) })}{item.updatedAt ? ` · ${new Date(item.updatedAt).toLocaleDateString()}` : ''}</Text>
+                            <Text variant="footnote" style={styles.projectMeta}>{t('editor.home.version', { version: String(item.version) })}{item.updatedAt ? ` · ${new Date(item.updatedAt).toLocaleDateString(formatLocale())}` : ''}</Text>
                         </View>
-                        <Image source={MENU_ICONS.caretRight} style={styles.caret} tintColor={styles.mutedInk.color} contentFit="contain" alt="" accessibilityElementsHidden />
+                        <Image source={MENU_ICONS.caretRight} style={[styles.caret, directionalStyle()]} tintColor={styles.mutedInk.color} contentFit="contain" alt="" accessibilityElementsHidden />
                     </Card>
                 )}
             />

@@ -1,0 +1,15 @@
+export default {
+    "attachFromDevice.couldnotopenyourfilesCheckthe": "Could not open your files. Check the permission in Settings.",
+    "attachFromDevice.nomodeltakesthosefilesrightnow": "No model takes those files right now.",
+    "attachFromDevice.filedidnotfitthismodeland": "{value1} file{value2} did not fit this model and {value3} left out.",
+    "attachFromDevice.attachfromdevice": "Attach from device",
+    "attachFromDevice.pickseveralpicturesvideosoraudiofiles": "Pick several pictures, videos or audio files at once. If this model cannot use them, we move you to one that can.",
+    "attachFromDevice.attachpicturesandvideosfromPhotos": "Attach pictures and videos from Photos",
+    "attachFromDevice.attachfilesfromFiles": "Attach files from Files",
+    "attachFromDevice.photosvideos": "Photos & videos",
+    "attachFromDevice.files": "Files",
+    "attachFromDevice.useJPEGPNGorWebPpicturesMP4": "Use JPEG, PNG or WebP pictures, MP4 video, or MP3 or WAV audio.",
+    "attachFromDevice.uploadingof": "Uploading {value1} of {value2}…",
+    "attachFromDevice.skippedFiles.one": "{count} file did not fit this model and was left out.",
+    "attachFromDevice.skippedFiles.other": "{count} files did not fit this model and were left out.",
+} as const;

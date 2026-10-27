@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { MIN_TARGET } from '../lib/a11y';
 import type { ApiClient } from '../lib/api';
-import { t } from '../lib/i18n';
+import { formatLocale, t } from '../lib/i18n';
 import { libraryChoices, type LibraryChoice } from '../lib/librarySource';
 import { fetchCatalogCached, mediaApi, type CatalogModel, type Job, type JobPage } from '../lib/media';
 import type { SlotKind } from '../lib/sources';
@@ -66,9 +66,9 @@ export function LibraryChooser({ api, kind, onPick, onClose }: Props) {
                         ListEmptyComponent={<Text style={styles.muted}>{t(next ? 'libsrc.emptyMore' : 'libsrc.empty', { kind: t(`libsrc.kind.${kind}`) })}</Text>}
                         ListFooterComponent={next ? <Pressable accessibilityRole="button" style={styles.more} onPress={() => load(next)}><Text style={styles.moreText}>{t('libsrc.older')}</Text></Pressable> : undefined}
                         renderItem={({ item }) => (
-                            <Pressable accessibilityRole="button" accessibilityLabel={`${item.name}, ${new Date(item.createdAt).toLocaleDateString()}`} style={styles.row} onPress={() => { onPick(item); onClose(); }}>
+                            <Pressable accessibilityRole="button" accessibilityLabel={`${item.name}, ${new Date(item.createdAt).toLocaleDateString(formatLocale())}`} style={styles.row} onPress={() => { onPick(item); onClose(); }}>
                                 <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
-                                <Text style={styles.muted}>{new Date(item.createdAt).toLocaleDateString()}</Text>
+                                <Text style={styles.muted}>{new Date(item.createdAt).toLocaleDateString(formatLocale())}</Text>
                             </Pressable>
                         )}
                     />

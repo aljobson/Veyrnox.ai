@@ -1,13 +1,14 @@
+import { t } from './i18n';
 import { ApiError, type ApiClient } from './api';
 
 // Everything the Account screen shows that is not a screen of its own: legal
 // links, contact addresses, the age rule and the in-app report call (ADR-0110).
 
 export const LEGAL_LINKS = [
-    { label: 'Terms of service', labelKey: 'account.legal.terms', route: '/legal/terms' },
-    { label: 'Privacy policy', labelKey: 'account.legal.privacy', route: '/legal/privacy' },
-    { label: 'Acceptable use policy', labelKey: 'account.legal.aup', route: '/legal/aup' },
-    { label: 'Refunds', labelKey: 'account.legal.refunds', route: '/legal/refund' },
+    { label: t('account.termsofservice'), labelKey: 'account.legal.terms', route: '/legal/terms' },
+    { label: t('account.privacypolicy'), labelKey: 'account.legal.privacy', route: '/legal/privacy' },
+    { label: t('account.acceptableusepolicy'), labelKey: 'account.legal.aup', route: '/legal/aup' },
+    { label: t('account.refunds'), labelKey: 'account.legal.refunds', route: '/legal/refund' },
 ] as const;
 
 export const SUPPORT_EMAIL = 'support@veyrnox.com';
@@ -28,14 +29,14 @@ export const MIN_AGE = 18;
 
 // Mirrors CATEGORIES and the subject kinds in app/api/v1/reports/route.js.
 export const REPORT_CATEGORIES = [
-    { id: 'csam', label: 'Sexual content involving a minor' },
-    { id: 'intimate_image', label: 'Intimate image shared without consent' },
-    { id: 'real_person', label: 'Real person shown without consent' },
-    { id: 'violence', label: 'Violence or gore' },
-    { id: 'hate', label: 'Hate or harassment' },
-    { id: 'fraud', label: 'Scam or fraud' },
-    { id: 'copyright', label: 'Copyright' },
-    { id: 'other', label: 'Something else' },
+    { id: 'csam', label: t('account.sexualcontentinvolvingaminor') },
+    { id: 'intimate_image', label: t('account.intimateimagesharedwithoutconsent') },
+    { id: 'real_person', label: t('account.realpersonshownwithoutconsent') },
+    { id: 'violence', label: t('account.violenceorgore') },
+    { id: 'hate', label: t('account.hateorharassment') },
+    { id: 'fraud', label: t('account.scamorfraud') },
+    { id: 'copyright', label: t('account.copyright') },
+    { id: 'other', label: t('account.somethingelse') },
 ] as const;
 
 export type ReportCategory = (typeof REPORT_CATEGORIES)[number]['id'];
@@ -54,24 +55,24 @@ const MIN_OTHER_DETAILS = 10;
 
 // The same rules the server applies, so a bad report is caught before the request.
 export function validateReport(input: ReportInput): string | null {
-    if (!REPORT_CATEGORIES.some((c) => c.id === input.category)) return 'Choose what is wrong.';
+    if (!REPORT_CATEGORIES.some((c) => c.id === input.category)) return t('account.choosewhatiswrong');
     if (input.kind === 'other') {
-        if (input.subjectId !== null) return 'This report is not about one item.';
-        if (input.details.trim().length < MIN_OTHER_DETAILS) return 'Tell us a little more (at least 10 characters).';
+        if (input.subjectId !== null) return t('account.thisreportisnotaboutoneitem');
+        if (input.details.trim().length < MIN_OTHER_DETAILS) return t('account.tellusalittlemoreatleast');
     } else if (!input.subjectId || !UUID_RE.test(input.subjectId)) {
-        return 'This item cannot be reported.';
+        return t('account.thisitemcannotbereported');
     }
-    if (input.details.length > MAX_DETAILS) return 'That is too long (2000 characters at most).';
+    if (input.details.length > MAX_DETAILS) return t('account.thatistoolong2000charactersat');
     return null;
 }
 
 export function reportErrorMessage(err: unknown): string {
     if (err instanceof ApiError) {
-        if (err.code === 'too_many_open_reports') return 'You have several open reports. We will review them first.';
-        if (err.code === 'rate_limited') return 'Too many requests. Try again in a minute.';
-        if (err.status === 0) return 'No connection. Check your network and try again.';
+        if (err.code === 'too_many_open_reports') return t('account.youhaveseveralopenreportsWewill');
+        if (err.code === 'rate_limited') return t('account.toomanyrequestsTryagainina');
+        if (err.status === 0) return t('account.noconnectionCheckyournetworkandtry');
     }
-    return 'The report did not send. Try again.';
+    return t('account.thereportdidnotsendTryagain');
 }
 
 // Sends one report. A repeat for the same item answers with the first report, not an error.

@@ -2,7 +2,7 @@ import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { MIN_TARGET } from '../../../lib/a11y';
-import { t } from '../../../lib/i18n';
+import { formatLocale, t } from '../../../lib/i18n';
 import type { Passport } from '../../../lib/oddlingsLibrary';
 import { useAuth } from '../../../auth/AuthProvider';
 import { getCacheUser, subscribeCacheUser } from '../../../lib/appCache';
@@ -77,7 +77,7 @@ export default function SavedPassports() {
                                 <Text style={styles.sub} numberOfLines={2}>{item.picks.oddling_obsession || t('oddlings.saved.noPremise')}</Text>
                                 {phoneOnly ?
                                     <Text style={styles.sub}>{t('oddlingsProjects.phoneOnly')}</Text> : null}
-                                <Text style={styles.date}>{new Date(item.savedAt).toLocaleString()}</Text>
+                                <Text style={styles.date}>{new Date(item.savedAt).toLocaleString(formatLocale())}</Text>
                             </Pressable>
                             <Pressable accessibilityRole="button" accessibilityLabel={t('oddlings.saved.delete', { name: item.name })} style={styles.del} onPress={() => confirmDelete(item)}>
                                 <Text style={styles.delText}>✕</Text>

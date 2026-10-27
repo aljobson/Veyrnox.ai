@@ -1,3 +1,4 @@
+import { t } from '../lib/i18n';
 import Constants from 'expo-constants';
 import * as Crypto from 'expo-crypto';
 import * as Device from 'expo-device';
@@ -69,7 +70,7 @@ export function PushProviderLive({ children }: { children: ReactNode }) {
         try {
             if (Platform.OS === 'android') {
                 await Notifications.setNotificationChannelAsync(JOBS_CHANNEL, {
-                    name: 'Creations',
+                    name: t('push.creations'),
                     importance: Notifications.AndroidImportance.DEFAULT,
                 });
             }

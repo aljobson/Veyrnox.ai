@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import type { ApiClient } from './api';
 
 // ADR-0131: workspaces and projects (the editor's cloud saves). Reading, plus create, rename, delete and restore a version (same routes as the web). The routes sit behind TENANT_PROJECTS_ENABLED
@@ -34,7 +35,7 @@ export function parseWorkspaces(body: unknown): Workspace[] {
     for (const raw of list) {
         if (!isObject(raw)) continue;
         const id = str(raw.id);
-        if (id) out.push({ id, name: str(raw.name) ?? 'Workspace', isDefault: raw.is_default === true });
+        if (id) out.push({ id, name: str(raw.name) ?? t('projects.workspace'), isDefault: raw.is_default === true });
     }
     return out;
 }
@@ -47,7 +48,7 @@ export function parseProject(raw: unknown): Project | null {
     return {
         id,
         workspaceId: str(r.workspace_id),
-        name: str(r.name) ?? 'Untitled project',
+        name: str(r.name) ?? t('projects.untitledproject'),
         version: typeof r.version === 'number' && Number.isInteger(r.version) && r.version >= 0 ? r.version : 0,
         createdAt: str(r.created_at),
         updatedAt: str(r.updated_at),
@@ -105,11 +106,11 @@ export const restoreVersion = (api: ApiClient, id: string, currentRevision: numb
 
 export function projectsErrorMessage(err: unknown): string {
     const status = (err as { status?: unknown } | null)?.status;
-    if (status === 0) return 'No connection. Check your internet and try again.';
-    if (status === 404) return 'Projects are not available yet.';
-    if (status === 409) return 'This project changed somewhere else. Reload it and try again.';
-    if (status === 401 || status === 403) return 'You do not have permission to see this.';
-    if (status === 429) return 'Too many requests. Try again in a moment.';
-    if (status === 502 || status === 503) return 'The service is busy. Try again in a moment.';
-    return 'Something went wrong. Try again.';
+    if (status === 0) return t('projects.noconnectionCheckyourinternetandtry');
+    if (status === 404) return t('projects.projectsarenotavailableyet');
+    if (status === 409) return t('projects.thisprojectchangedsomewhereelseReloadit');
+    if (status === 401 || status === 403) return t('projects.youdonothavepermissiontosee');
+    if (status === 429) return t('projects.toomanyrequestsTryagainina');
+    if (status === 502 || status === 503) return t('projects.theserviceisbusyTryagainin');
+    return t('projects.somethingwentwrongTryagain');
 }

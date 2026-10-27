@@ -1,3 +1,4 @@
+import { t } from '../../lib/i18n';
 import { Stack } from 'expo-router';
 import { Text, View } from 'react-native';
 import { EditorSpikeHarness } from '../../components/dev/EditorSpikeHarness';
@@ -11,12 +12,12 @@ export default function DevS1Editor() {
     const on = spikeEnabled(process.env.EXPO_PUBLIC_DEV_S1_EDITOR_SPIKE);
     return (
         <>
-            <Stack.Screen options={{ title: 'S1 editor spike' }} />
+            <Stack.Screen options={{ title: t('devs1editor.s1editorspike') }} />
             {on ? (
                 <EditorSpikeHarness />
             ) : (
                 <View style={{ flex: 1, padding: 24, backgroundColor: colors.background }}>
-                    <Text style={{ color: colors.body }}>{`Spike S1 is off in this build (${S1_FLAG} is not 1).`}</Text>
+                    <Text style={{ color: colors.body }}>{t('devs1editor.spikeS1isoffinthisbuild', { value1: S1_FLAG })}</Text>
                 </View>
             )}
         </>

@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import { noteLocalSubmission } from './celebrate';
 import { API_BASE, ApiError, type ApiClient } from './api';
 import { OFFLINE_PAID_MESSAGE, OfflineError, ensureOnline } from './network';
@@ -118,41 +119,41 @@ export function minutesLeft(expiresAtSeconds: number, nowMs: number = Date.now()
 
 export function planMessage(err: unknown): string {
     if (err instanceof OfflineError) return OFFLINE_PAID_MESSAGE;
-    if (!(err instanceof ApiError)) return 'Something went wrong. Try again.';
+    if (!(err instanceof ApiError)) return t('montage.somethingwentwrongTryagain');
     switch (err.code) {
         case 'video_agent_unavailable':
-            return 'This is not available right now.';
+            return t('montage.thisisnotavailablerightnow');
         case 'plan_unavailable':
-            return 'We could not make a plan. You were not charged. Try again in a moment.';
+            return t('montage.wecouldnotmakeaplanYou');
         case 'video_agent_offline':
         case 'narration_unavailable':
-            return 'This is busy or offline right now. You were not charged. Try again shortly.';
+            return t('montage.thisisbusyorofflinerightnow');
         case 'video_agent_busy': {
             const secs = typeof err.body.retry_after_seconds === 'number' ? err.body.retry_after_seconds : null;
-            return secs ? `Every slot is taken right now. Try again in about ${Math.max(1, Math.round(secs / 60))} minutes.` : 'Every slot is taken right now. Try again in a few minutes.';
+            return secs ? t('montage.everyslotistakenrightnowTry', { value1: Math.max(1, Math.round(secs / 60)) }) : t('montage.everyslotistakenrightnowTry2');
         }
         case 'video_agent_in_progress':
-            return 'You already have one being made. It will appear in your Library when it is done.';
+            return t('montage.youalreadyhaveonebeingmadeIt');
         case 'plan_expired':
-            return 'This plan ran out. Plan again; you were not charged.';
+            return t('montage.thisplanranoutPlanagainyou');
         case 'plan_price_changed':
-            return 'The price changed. Plan again to see the new price; you were not charged.';
+            return t('montage.thepricechangedPlanagaintosee');
         case 'plan_invalid':
         case 'plan_mismatch':
         case 'plan_key_mismatch':
-            return 'That plan no longer matches. Plan again; you were not charged.';
+            return t('montage.thatplannolongermatchesPlanagain');
         case 'inputs_invalid:brief':
-            return 'Describe the video in 3 to 500 characters.';
+            return t('montage.describethevideoin3to500');
         case 'inputs_invalid:narration_text':
-            return `Keep the exact narration to ${MAX_NARRATION_LENGTH} characters and remove line breaks.`;
+            return t('montage.keeptheexactnarrationtocharactersand', { value1: MAX_NARRATION_LENGTH });
         case 'rate_limited':
-            return 'Too many requests. Wait a minute before you plan again.';
+            return t('montage.toomanyrequestsWaitaminutebefore');
         case 'insufficient_credits':
-            return 'Not enough credits for this.';
+            return t('montage.notenoughcreditsforthis');
         case 'network':
-            return 'No connection. Check it and try again.';
+            return t('montage.noconnectionCheckitandtryagain');
         default:
-            return 'Something went wrong. You were not charged. Try again.';
+            return t('montage.somethingwentwrongYouwerenotcharged');
     }
 }
 

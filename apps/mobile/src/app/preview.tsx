@@ -1,3 +1,4 @@
+import { Icon } from '../components/ui';
 import { Image } from 'expo-image';
 import { Redirect, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -44,7 +45,7 @@ export default function Preview() {
         <View style={[styles.screen, { paddingTop: insets.top }]}>
             <View style={styles.bar}>
                 <Pressable accessibilityRole="button" accessibilityLabel={t('preview.back')} style={[styles.back, touchTarget]} onPress={() => (router.canGoBack() ? router.back() : router.replace('/sign-in'))}>
-                    <Text style={styles.backText}>{'‹'}</Text>
+                    <Icon name="arrowLeft" size={24} tint={styles.backText.color} />
                 </Pressable>
                 <Text style={styles.barTitle} accessibilityRole="header">{t('preview.title')}</Text>
                 <View style={styles.back} />

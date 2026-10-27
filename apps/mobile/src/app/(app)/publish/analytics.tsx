@@ -5,7 +5,7 @@ import { BarChart } from '../../../components/BarChart';
 import { UnlockCard } from '../../../components/UnlockCard';
 import { touchTarget } from '../../../lib/a11y';
 import { ApiError } from '../../../lib/api';
-import { t } from '../../../lib/i18n';
+import { formatLocale, t } from '../../../lib/i18n';
 import { fetchAccounts, fetchAnalytics, metricLabel, publishErrorMessage, type Analytics, type PublishAccount } from '../../../lib/publish';
 import { allowedRanges, delta, percentText, previousBounds, rangeBounds, summarize, thin, type Delta, type RangeDays } from '../../../lib/publishAnalytics';
 import { colors } from '../../../theme';
@@ -109,17 +109,17 @@ export default function AnalyticsScreen() {
             {error ? <Text style={styles.error} accessibilityRole="alert">{error}</Text> : !locked && (!accounts || (accountId && !data)) ? <ActivityIndicator color={colors.accent} /> : null}
             {data && summary ? (
                 <>
-                    <Text style={styles.muted}>{t('analytics.last', { days: range })}{data.syncFailing ? ` ${t('analytics.syncFailing')}` : data.lastOkAt ? ` ${t('analytics.updated', { when: new Date(data.lastOkAt).toLocaleString() })}` : ''}</Text>
+                    <Text style={styles.muted}>{t('analytics.last', { days: range })}{data.syncFailing ? ` ${t('analytics.syncFailing')}` : data.lastOkAt ? ` ${t('analytics.updated', { when: new Date(data.lastOkAt).toLocaleString(formatLocale()) })}` : ''}</Text>
                     {compare && compareFailed ? <Text style={styles.muted}>{t('analytics.compareFailed')}</Text> : null}
                     <View style={styles.stats}>
-                        <Stat label={t('analytics.followers')} value={summary.followers === null ? '–' : summary.followers.toLocaleString()} change={before ? delta(summary.followersChange, before.followersChange) : null} />
+                        <Stat label={t('analytics.followers')} value={summary.followers === null ? '–' : summary.followers.toLocaleString(formatLocale())} change={before ? delta(summary.followersChange, before.followersChange) : null} />
                         <Stat label={t('analytics.posts')} value={String(summary.posts)} change={before ? delta(summary.posts, before.posts) : null} />
-                        <Stat label={t('analytics.interactions')} value={summary.interactions.toLocaleString()} change={before ? delta(summary.interactions, before.interactions) : null} />
+                        <Stat label={t('analytics.interactions')} value={summary.interactions.toLocaleString(formatLocale())} change={before ? delta(summary.interactions, before.interactions) : null} />
                     </View>
-                    {summary.followersChange !== null ? <Text style={styles.muted}>{t('analytics.followersChange', { change: summary.followersChange > 0 ? `+${summary.followersChange.toLocaleString()}` : summary.followersChange.toLocaleString() })}</Text> : null}
+                    {summary.followersChange !== null ? <Text style={styles.muted}>{t('analytics.followersChange', { change: summary.followersChange > 0 ? `+${summary.followersChange.toLocaleString(formatLocale())}` : summary.followersChange.toLocaleString(formatLocale()) })}</Text> : null}
                     {points.length > 1 ? (
                         <View style={styles.card}>
-                            <BarChart values={points.map((p) => p.value)} label={t('analytics.followersChart', { from: points[0].date, to: points[points.length - 1].date })} summary={t('analytics.chartSummary', { first: points[0].value.toLocaleString(), last: points[points.length - 1].value.toLocaleString() })} />
+                            <BarChart values={points.map((p) => p.value)} label={t('analytics.followersChart', { from: points[0].date, to: points[points.length - 1].date })} summary={t('analytics.chartSummary', { first: points[0].value.toLocaleString(formatLocale()), last: points[points.length - 1].value.toLocaleString(formatLocale()) })} />
                         </View>
                     ) : null}
                     {latest ? (
@@ -128,7 +128,7 @@ export default function AnalyticsScreen() {
                             {Object.entries(latest.metrics).map(([k, v]) => (
                                 <View key={k} style={styles.metric} accessible accessibilityLabel={`${metricLabel(k)}: ${v}`}>
                                     <Text style={styles.text}>{metricLabel(k)}</Text>
-                                    <Text style={styles.value}>{v.toLocaleString()}</Text>
+                                    <Text style={styles.value}>{v.toLocaleString(formatLocale())}</Text>
                                 </View>
                             ))}
                         </View>
@@ -138,9 +138,9 @@ export default function AnalyticsScreen() {
                     {data.posts.slice(0, 20).map((p) => (
                         <View key={p.id} style={styles.card}>
                             <Text style={styles.text} numberOfLines={2}>{p.caption || p.type || t('analytics.post')}</Text>
-                            {p.publishedAt ? <Text style={styles.muted}>{new Date(p.publishedAt).toLocaleDateString()}</Text> : null}
+                            {p.publishedAt ? <Text style={styles.muted}>{new Date(p.publishedAt).toLocaleDateString(formatLocale())}</Text> : null}
                             {Object.entries(p.metrics).slice(0, 4).map(([k, v]) => (
-                                <Text key={k} style={styles.small}>{metricLabel(k)}: {v.toLocaleString()}</Text>
+                                <Text key={k} style={styles.small}>{metricLabel(k)}: {v.toLocaleString(formatLocale())}</Text>
                             ))}
                         </View>
                     ))}

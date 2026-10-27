@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import * as Crypto from 'expo-crypto';
 import { API_BASE, ApiError, type ApiClient } from './api';
 import { DEV_MOCK } from './config';
@@ -51,16 +52,16 @@ export type BlockReason =
     | 'error';
 
 export const BLOCK_COPY: Record<BlockReason, string> = {
-    free_ceiling: 'You have reached the free viewing limit for this month. Free viewing starts again next month.',
-    pass_ceiling: 'You have reached your viewing limit for this month.',
-    locked: 'This title is not available to watch in the app yet.',
-    not_ready: 'This video is still being prepared. Try again in a few minutes.',
-    missing: 'This title is not available.',
-    closed: 'Cinema viewing is not open yet.',
-    rate_limited: 'Too many requests. Try again in a minute.',
-    signin: 'Sign in to watch.',
-    network: 'No connection. Check your network and try again.',
-    error: 'Playback is unavailable right now. Try again in a moment.',
+    free_ceiling: t('cinemaPlayback.youhavereachedthefreeviewinglimit'),
+    pass_ceiling: t('cinemaPlayback.youhavereachedyourviewinglimitfor'),
+    locked: t('cinemaPlayback.thistitleisnotavailabletowatch'),
+    not_ready: t('cinemaPlayback.thisvideoisstillbeingpreparedTry'),
+    missing: t('cinemaPlayback.thistitleisnotavailable'),
+    closed: t('cinemaPlayback.cinemaviewingisnotopenyet'),
+    rate_limited: t('cinemaPlayback.toomanyrequestsTryagainina'),
+    signin: t('cinemaPlayback.signintowatch'),
+    network: t('cinemaPlayback.noconnectionCheckyournetworkandtry'),
+    error: t('cinemaPlayback.playbackisunavailablerightnowTryagain'),
 };
 
 // Reasons that mean the viewer may not watch any more: playback stops and the reason is shown.

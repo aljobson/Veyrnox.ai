@@ -1,3 +1,4 @@
+import { t as translate } from './i18n';
 import { ApiError, type ApiClient } from './api';
 import { isUsername } from './cinemaBlocks';
 
@@ -12,11 +13,11 @@ export const DETAILS_MIN = 3;
 export const DETAILS_MAX = 500;
 
 export const REPORT_CATEGORIES = [
-    { key: 'spam', label: 'Spam' },
-    { key: 'abuse', label: 'Abuse or harassment' },
-    { key: 'privacy', label: 'Private information' },
-    { key: 'rights', label: 'Copyright or rights' },
-    { key: 'other', label: 'Something else' },
+    { key: 'spam', label: translate('cinemaComments.spam') },
+    { key: 'abuse', label: translate('cinemaComments.abuseorharassment') },
+    { key: 'privacy', label: translate('cinemaComments.privateinformation') },
+    { key: 'rights', label: translate('cinemaComments.copyrightorrights') },
+    { key: 'other', label: translate('cinemaComments.somethingelse') },
 ] as const;
 export type ReportCategory = (typeof REPORT_CATEGORIES)[number]['key'];
 
@@ -53,7 +54,7 @@ export function parseComments(body: unknown): { comments: Comment[]; own: OwnCom
         const id = uuid(raw.id);
         const t = text(raw.body);
         if (!id || !t.trim()) continue;
-        const display = typeof raw.display_name === 'string' && raw.display_name.trim() ? raw.display_name.trim().slice(0, 80) : 'Member';
+        const display = typeof raw.display_name === 'string' && raw.display_name.trim() ? raw.display_name.trim().slice(0, 80) : translate('cinemaComments.member');
         comments.push({ id, body: t, createdAt: when(raw.created_at), username: isUsername(raw.username) ? raw.username : null, displayName: display, own: raw.own === true });
     }
     const own: OwnComment[] = [];

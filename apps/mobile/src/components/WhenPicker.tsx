@@ -1,3 +1,4 @@
+import { t } from '../lib/i18n';
 import { Chip, Text, TextField } from './ui';
 import { StyleSheet, View } from 'react-native';
 import { parseWhen, quickTimes } from '../lib/publishCompose';
@@ -21,10 +22,10 @@ export function WhenPicker({ date, time, onChange }: { date: string; time: strin
                 ))}
             </View>
             <View style={styles.row}>
-                <TextField accessibilityLabel="Date, year-month-day" containerStyle={styles.date} value={date} onChangeText={(v) => onChange(v, time)} placeholder="YYYY-MM-DD" placeholderTextColor={colors.muted} autoCapitalize="none" keyboardType="numbers-and-punctuation" />
-                <TextField accessibilityLabel="Time, hour:minute" containerStyle={styles.time} value={time} onChangeText={(v) => onChange(date, v)} placeholder="HH:MM" placeholderTextColor={colors.muted} autoCapitalize="none" keyboardType="numbers-and-punctuation" />
+                <TextField accessibilityLabel={t('whenPicker.dateyearmonthday')} containerStyle={styles.date} value={date} onChangeText={(v) => onChange(v, time)} placeholder={t('whenPicker.yYYYMMDD')} placeholderTextColor={colors.muted} autoCapitalize="none" keyboardType="numbers-and-punctuation" />
+                <TextField accessibilityLabel={t('whenPicker.timehourminute')} containerStyle={styles.time} value={time} onChangeText={(v) => onChange(date, v)} placeholder={t('whenPicker.hHMM')} placeholderTextColor={colors.muted} autoCapitalize="none" keyboardType="numbers-and-punctuation" />
             </View>
-            <Text style={styles.muted}>Times are in this phone's time zone.</Text>
+            <Text style={styles.muted}>{t('whenPicker.timesareinthisphonestime')}</Text>
         </View>
     );
 }

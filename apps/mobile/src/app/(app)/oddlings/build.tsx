@@ -1,3 +1,4 @@
+import { displayLabel } from '../../../lib/displayLabels';
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -95,14 +96,14 @@ export default function OddlingBuilder() {
 
     const sheet = useMemo(() => {
         if (!open) return null;
-        if (open === 'motion') return { title: t('oddlings.build.motion'), choices: MOTIONS.map((m) => ({ value: m.id, label: m.name })) as PickChoice[] };
+        if (open === 'motion') return { title: t('oddlings.build.motion'), choices: MOTIONS.map((m) => ({ value: m.id, label: displayLabel(m.name) })) as PickChoice[] };
         if (open === 'oddling_voice' || open === 'oddling_show') {
             const table = open === 'oddling_voice' ? TONES : SHOWS;
-            return { title: t(open === 'oddling_voice' ? 'oddlings.build.voice' : 'oddlings.build.show'), choices: table.map(([value]) => ({ value, label: value })) as PickChoice[] };
+            return { title: t(open === 'oddling_voice' ? 'oddlings.build.voice' : 'oddlings.build.show'), choices: table.map(([value]) => ({ value, label: displayLabel(value) })) as PickChoice[] };
         }
         const group = groupById(open);
         if (!group) return null;
-        return { title: group.label, choices: group.options.map(([value, , label]) => ({ value, label, swatch: swatchOf(group.id, value) })) as PickChoice[] };
+        return { title: displayLabel(group.label), choices: group.options.map(([value, , label]) => ({ value, label: displayLabel(label), swatch: swatchOf(group.id, value) })) as PickChoice[] };
     }, [open]);
 
     async function save() {

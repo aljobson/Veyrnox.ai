@@ -122,3 +122,7 @@ describe('the list for the localization process is current', () => {
         for (const key of Object.keys(en)) if (!webKeys.includes(key)) expect(doc).toContain(`\`${key}\``);
     });
 });
+
+test('English values contain rendered punctuation, never HTML entities copied from JSX', () => {
+    expect(Object.entries(en).filter(([, value]) => /&(apos|quot|amp|lt|gt|nbsp|#\d+);/.test(value))).toEqual([]);
+});

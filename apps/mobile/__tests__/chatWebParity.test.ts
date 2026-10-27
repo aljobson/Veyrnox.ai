@@ -1,3 +1,4 @@
+import en from '../src/lib/i18n/messages/en';
 declare const require: (id: string) => any;
 declare const __dirname: string;
 const fs = require('fs') as { readFileSync: (p: string, e: 'utf8') => string };
@@ -27,8 +28,10 @@ describe('the native LLM chat mirrors the website workspace', () => {
         expect(workspaceEntry).toContain("router.replace('/chat/new')");
         expect(workspaceEntry).not.toContain('Search chats');
         expect(conversation).toContain("router.push('/chat/library')");
-        expect(library).toContain('Your workspace');
-        expect(library).toContain('New chat');
+        expect(library).toContain("t('chat.yourworkspace')");
+        expect(en['chat.yourworkspace']).toBe('Your workspace');
+        expect(library).toContain("t('chat.newchat')");
+        expect(en['chat.newchat']).toBe('New chat');
     });
 
     test('keeps creation modes, reply setup, attachments and price in one command deck', () => {

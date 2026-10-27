@@ -19,7 +19,7 @@ import { colors, fonts } from '../../../theme';
 export default function CreativeFeatureDetail() {
     const { slug, sourceJobId, sourceKind } = useLocalSearchParams<{ slug?: string; sourceJobId?: string; sourceKind?: string }>();
     const feature = creativeFeature(typeof slug === 'string' ? slug : undefined);
-    if (!feature) return <View style={styles.center}><Stack.Screen options={{ title: 'Creative tool' }} /><Text style={styles.error}>That creative tool is not available.</Text></View>;
+    if (!feature) return <View style={styles.center}><Stack.Screen options={{ title: t('features.creativetool') }} /><Text style={styles.error}>{t('features.thatcreativetoolisnotavailable')}</Text></View>;
     const requestedReuse = readCreativeReuse(sourceJobId, sourceKind);
     const reuse = requestedReuse && feature.media.includes(requestedReuse.kind) ? requestedReuse : null;
     return <FeatureStudio key={`${feature.slug}:${reuse?.jobId ?? ''}`} feature={feature} reuse={reuse} />;
@@ -49,7 +49,7 @@ function FeatureStudio({ feature, reuse }: { feature: CreativeFeature; reuse: Cr
     const waiting = Object.values(sending).some(Boolean);
     const sourcesReady = slots.every(slot => (!slot.required || references.some(ref => ref.slot === slot.slot)) && references.filter(ref => ref.slot === slot.slot).length <= (slot.maxFiles ?? 1));
     const prompt = featurePrompt(feature, brief);
-    const canContinue = model !== undefined && model !== null && hasEverySlot && !waiting && sourcesReady && (!slots.length || rights) && (!feature.scriptUpload || !!script) && (feature.input === 'Production note' || !!brief.trim());
+    const canContinue = model !== undefined && model !== null && hasEverySlot && !waiting && sourcesReady && (!slots.length || rights) && (!feature.scriptUpload || !!script) && (feature.slug === 'lip-sync' || !!brief.trim());
 
     async function chooseScript() {
         setError('');
@@ -61,11 +61,11 @@ function FeatureStudio({ feature, reuse }: { feature: CreativeFeature; reuse: Cr
             const text = (await new File(asset.uri).text()).trim().slice(0, 1000);
             if (!text) throw new Error('invalid_script');
             setBrief(text); setScript(asset.name);
-        } catch { setScript(null); setError('Choose a TXT or Markdown file up to 128 KB.'); }
+        } catch { setScript(null); setError(t('features.chooseaTXTorMarkdownfileup')); }
     }
     function openCreate() {
         if (!canContinue) {
-            setError(model === null || !hasEverySlot ? 'The live model is not available right now.' : waiting ? 'Wait for every upload to finish.' : !sourcesReady ? 'Add every required source.' : slots.length && !rights ? 'Confirm that you have permission to use these sources.' : feature.scriptUpload && !script ? 'Upload a script first.' : `Complete “${feature.input}” first.`);
+            setError(model === null || !hasEverySlot ? t('features.thelivemodelisnotavailableright') : waiting ? t('features.waitforeveryuploadtofinish') : !sourcesReady ? t('features.addeveryrequiredsource') : slots.length && !rights ? t('features.confirmthatyouhavepermissiontouse') : feature.scriptUpload && !script ? t('features.uploadascriptfirst') : t('features.completefirst', { value1: feature.input }));
             return;
         }
         const sourceHandoff = stageCreativeSourceHandoff({ recipe: feature.slug, modelId: feature.model, aspect: feature.kind === 'video' ? '9:16' : '1:1', uploaded: {}, fromLibrary: {}, references });
@@ -73,25 +73,25 @@ function FeatureStudio({ feature, reuse }: { feature: CreativeFeature; reuse: Cr
     }
     return <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Stack.Screen options={{ title: feature.title }} />
-        <View style={styles.hero}><Text style={styles.kicker}>{feature.group.toUpperCase()} · {feature.kind.toUpperCase()}</Text><Text style={styles.title} accessibilityRole="header">{feature.title}</Text><Text style={styles.lead}>Follow the guided setup, then review uploads, price and final settings in Create before anything is generated.</Text></View>
+        <View style={styles.hero}><Text style={styles.kicker}>{feature.group.toUpperCase()} · {feature.kind.toUpperCase()}</Text><Text style={styles.title} accessibilityRole="header">{feature.title}</Text><Text style={styles.lead}>{t('features.followtheguidedsetupthenreviewuploads')}</Text></View>
         <Example feature={feature} />
         <View style={styles.card}>
             <View style={styles.row}><Text style={styles.cardTitle}>{feature.input}</Text><Text style={styles.counter}>{brief.length}/1000</Text></View>
-            {feature.scriptUpload ? <><Pressable accessibilityRole="button" style={styles.secondary} onPress={() => void chooseScript()}><Text style={styles.secondaryText}>{script ? 'Replace script' : 'Upload TXT or Markdown script'}</Text></Pressable>{script ? <Text style={styles.note}>{script}</Text> : null}</> : null}
+            {feature.scriptUpload ? <><Pressable accessibilityRole="button" style={styles.secondary} onPress={() => void chooseScript()}><Text style={styles.secondaryText}>{script ? t('features.replacescript') : t('features.uploadTXTorMarkdownscript')}</Text></Pressable>{script ? <Text style={styles.note}>{script}</Text> : null}</> : null}
             <TextInput accessibilityLabel={feature.input} value={brief} onChangeText={(value) => { setBrief(value.slice(0, 1000)); setError(''); }} placeholder={feature.placeholder} placeholderTextColor={colors.muted} style={styles.input} multiline maxLength={1000} />
         </View>
-        <View style={styles.card}><Text style={styles.kicker}>REQUIRED SOURCES</Text><Text style={styles.cardTitle}>{required.length ? required.join(' + ') : 'No media required'}</Text>{model && slots.length ? slots.map((slot) => <SourcePicker key={slot.slot} slot={slot} api={api} references={references.filter(ref => ref.slot === slot.slot)} onReferences={files => { setRights(false); setReferences(all => replaceSlotReferences(all, slot.slot, files)); }} onChange={() => {}} onLibrary={() => {}} onBusy={(busy) => setSending((current) => ({ ...current, [slot.slot]: busy }))} hint={`Required for ${feature.title}`} initialReady={reuse?.kind === slot.slot} initialReadyLabel={reuse?.kind === slot.slot ? t('features.reuse.selected') : undefined} />) : <Text style={styles.note}>{required.length ? 'Checking the live upload requirements…' : 'Your script is the source for this workflow.'}</Text>}{slots.length ? <Pressable accessibilityRole="checkbox" accessibilityLabel="I have permission to use these sources" accessibilityState={{ checked: rights, disabled: waiting }} disabled={waiting} style={[styles.rights, rights && styles.rightsOn]} onPress={() => { setRights((value) => !value); setError(''); }}><Text style={styles.rightsText}>{rights ? '☑' : '☐'} I have permission to use these sources to generate AI content.</Text></Pressable> : null}</View>
-        <View style={styles.card}><Text style={styles.kicker}>WORKFLOW</Text>{feature.steps.map((step, index) => <View key={step} style={styles.step}><Text style={styles.number}>0{index + 1}</Text><Text style={styles.stepText}>{step}</Text></View>)}</View>
-        <View style={styles.card}><Text style={styles.kicker}>LIVE MODEL</Text>{model === undefined ? <ActivityIndicator color={colors.accent} /> : <Text style={styles.cardTitle}>{model ? `Veyrnox ${feature.kind} model · ${model.credits} credits` : 'Unavailable'}</Text>}{error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}<Pressable accessibilityRole="button" disabled={model === undefined || waiting} style={[styles.primary, (model === undefined || waiting) && styles.off]} onPress={openCreate}><Text style={styles.primaryText}>Continue to final review</Text></Pressable><Text style={styles.note}>You will see the exact price before generating. A failed generation is refunded automatically.</Text></View>
+        <View style={styles.card}><Text style={styles.kicker}>{t('features.rEQUIREDSOURCES')}</Text><Text style={styles.cardTitle}>{required.length ? required.join(' + ') : t('features.nomediarequired')}</Text>{model && slots.length ? slots.map((slot) => <SourcePicker key={slot.slot} slot={slot} api={api} references={references.filter(ref => ref.slot === slot.slot)} onReferences={files => { setRights(false); setReferences(all => replaceSlotReferences(all, slot.slot, files)); }} onChange={() => {}} onLibrary={() => {}} onBusy={(busy) => setSending((current) => ({ ...current, [slot.slot]: busy }))} hint={t('features.requiredfor', { value1: feature.title })} initialReady={reuse?.kind === slot.slot} initialReadyLabel={reuse?.kind === slot.slot ? t('features.reuse.selected') : undefined} />) : <Text style={styles.note}>{required.length ? t('features.checkingtheliveuploadrequirements') : t('features.yourscriptisthesourceforthis')}</Text>}{slots.length ? <Pressable accessibilityRole="checkbox" accessibilityLabel={t('features.ihavepermissiontousethesesources')} accessibilityState={{ checked: rights, disabled: waiting }} disabled={waiting} style={[styles.rights, rights && styles.rightsOn]} onPress={() => { setRights((value) => !value); setError(''); }}><Text style={styles.rightsText}>{t('features.ihavepermissiontousethesesources2', { value1: rights ? '☑' : '☐' })}</Text></Pressable> : null}</View>
+        <View style={styles.card}><Text style={styles.kicker}>{t('features.wORKFLOW')}</Text>{feature.steps.map((step, index) => <View key={step} style={styles.step}><Text style={styles.number}>0{index + 1}</Text><Text style={styles.stepText}>{step}</Text></View>)}</View>
+        <View style={styles.card}><Text style={styles.kicker}>{t('features.lIVEMODEL')}</Text>{model === undefined ? <ActivityIndicator color={colors.accent} /> : <Text style={styles.cardTitle}>{model ? t('features.veyrnoxmodelcredits', { value1: feature.kind, value2: model.credits }) : t('features.unavailable')}</Text>}{error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}<Pressable accessibilityRole="button" disabled={model === undefined || waiting} style={[styles.primary, (model === undefined || waiting) && styles.off]} onPress={openCreate}><Text style={styles.primaryText}>{t('features.continuetofinalreview')}</Text></Pressable><Text style={styles.note}>{t('features.youwillseetheexactpricebefore')}</Text></View>
     </ScrollView>;
 }
 
 function Example({ feature }: { feature: CreativeFeature }) {
-    return <View style={styles.example}><View style={styles.exampleHead}><View><Text style={styles.kicker}>WORKING EXAMPLE</Text><Text style={styles.cardTitle}>See the intended result</Text></View><AddressText label="Source" address={feature.example.sourceUrl} /></View>{feature.example.kind === 'video' ? <ExampleVideo url={feature.example.url} title={feature.title} /> : <Image source={{ uri: feature.example.url }} style={styles.exampleMedia} contentFit="contain" accessibilityLabel={`${feature.title} example`} accessibilityIgnoresInvertColors />}</View>;
+    return <View style={styles.example}><View style={styles.exampleHead}><View><Text style={styles.kicker}>{t('features.wORKINGEXAMPLE')}</Text><Text style={styles.cardTitle}>{t('features.seetheintendedresult')}</Text></View><AddressText label={t('features.source')} address={feature.example.sourceUrl} /></View>{feature.example.kind === 'video' ? <ExampleVideo url={feature.example.url} title={feature.title} /> : <Image source={{ uri: feature.example.url }} style={styles.exampleMedia} contentFit="contain" accessibilityLabel={t('features.example', { value1: feature.title })} accessibilityIgnoresInvertColors />}</View>;
 }
 function ExampleVideo({ url, title }: { url: string; title: string }) {
     const player = useVideoPlayer(url, (instance) => { instance.loop = true; });
-    return <VideoView player={player} style={styles.exampleMedia} nativeControls contentFit="contain" accessibilityLabel={`${title} example video`} />;
+    return <VideoView player={player} style={styles.exampleMedia} nativeControls contentFit="contain" accessibilityLabel={t('features.examplevideo', { value1: title })} />;
 }
 
 const styles = StyleSheet.create({

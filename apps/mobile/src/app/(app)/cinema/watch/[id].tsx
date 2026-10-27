@@ -21,7 +21,7 @@ export default function Watch() {
         } : null;
     return (
         <View style={styles.screen}>
-            <Stack.Screen options={{ title: title ?? 'Now playing', ...(allEpisodes ? { headerRight: () => <HeaderAction label={t('cinemaSeries.allEpisodes')} onPress={allEpisodes} /> } : {}) }} />
+            <Stack.Screen options={{ title: title ?? t('cinema.nowplaying'), ...(allEpisodes ? { headerRight: () => <HeaderAction label={t('cinemaSeries.allEpisodes')} onPress={allEpisodes} /> } : {}) }} />
             <CinemaPlayer contentId={id} resumePosition={Number(position ?? 0)} />
         </View>
     );

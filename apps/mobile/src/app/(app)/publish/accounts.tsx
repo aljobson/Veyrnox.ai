@@ -5,11 +5,11 @@ import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, StyleShe
 import { accountStatusLabel, fetchAccounts, publishErrorMessage, type PublishAccount } from '../../../lib/publish';
 import { disconnectAccount, disconnectErrorKey } from '../../../lib/publishAccounts';
 import { touchTarget } from '../../../lib/a11y';
-import { t } from '../../../lib/i18n';
+import { formatLocale, t } from '../../../lib/i18n';
 import { colors } from '../../../theme';
 import { usePublishApi } from '../../../lib/usePublishApi';
 
-const date = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString() : null);
+const date = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(formatLocale()) : null);
 
 export default function Accounts() {
     const api = usePublishApi();
@@ -54,7 +54,7 @@ export default function Accounts() {
 
     return (
         <View style={styles.screen}>
-            <Stack.Screen options={{ title: 'Connected accounts' }} />
+            <Stack.Screen options={{ title: t('publish.connectedaccounts') }} />
             {error && !data ? (
                 <Text style={styles.error}>{error}</Text>
             ) : !data ? (
@@ -64,8 +64,8 @@ export default function Accounts() {
                     data={data.accounts}
                     keyExtractor={(a) => a.id}
                     refreshControl={<RefreshControl refreshing={refreshing} tintColor={colors.accent} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}
-                    ListHeaderComponent={<View><Text style={styles.muted}>{data.accounts.length} of {data.accountLimit} accounts</Text>{notice ? <Text style={styles.notice} accessibilityLiveRegion="polite">{notice}</Text> : null}</View>}
-                    ListEmptyComponent={<Text style={styles.muted}>No accounts are connected yet.</Text>}
+                    ListHeaderComponent={<View><Text style={styles.muted}>{t('publish.ofaccounts', { value1: data.accounts.length, value2: data.accountLimit })}</Text>{notice ? <Text style={styles.notice} accessibilityLiveRegion="polite">{notice}</Text> : null}</View>}
+                    ListEmptyComponent={<Text style={styles.muted}>{t('publish.noaccountsareconnectedyet')}</Text>}
                     ListFooterComponent={
                         <View>
                             <Pressable accessibilityRole="button" style={[styles.connect, touchTarget]} onPress={() => router.push('/publish/connect')}>
@@ -80,7 +80,7 @@ export default function Accounts() {
                                 <Text style={styles.name}>{item.displayName}</Text>
                                 <Text style={styles.muted}>{item.network}</Text>
                                 <Text style={[styles.status, item.status !== 'active' && styles.warn]}>{accountStatusLabel(item.status)}</Text>
-                                {item.tokenExpiresAt && item.status === 'active' ? <Text style={styles.muted}>Access renews by {date(item.tokenExpiresAt)}</Text> : null}
+                                {item.tokenExpiresAt && item.status === 'active' ? <Text style={styles.muted}>{t('publish.accessrenewsby', { value1: date(item.tokenExpiresAt) ?? '' })}</Text> : null}
                             </View>
                             <Pressable accessibilityRole="button" accessibilityLabel={t('accounts.disconnect', { name: item.displayName })} style={[styles.disconnect, touchTarget]} onPress={() => confirmDisconnect(item)}>
                                 <Text style={styles.disconnectText}>{t('accounts.disconnectAction')}</Text>

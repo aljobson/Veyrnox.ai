@@ -1,3 +1,4 @@
+import { t } from './i18n';
 export type TrackKind = 'video' | 'audio' | 'text';
 export type Selection = { track: TrackKind; id: string };
 export type Canvas = { aspect_ratio: '16:9' | '9:16' | '1:1'; frame_rate: 24 | 25 | 30 | 60 };
@@ -56,14 +57,14 @@ export function timelineOf(value: unknown): Timeline {
     const media = Object.fromEntries(Object.entries(raw.media).map(([id, item]) => {
         const source = item as Media;
         const kind = ['video', 'audio', 'image', 'graphic'].includes(String(source.kind)) ? String(source.kind) : 'video';
-        return [id, { ...source, id, kind, frames: Math.max(1, Math.round(Number(source.frames) || 90)), name: String(source.name || 'Untitled').slice(0, 120), hasAudio: source.hasAudio ?? kind === 'audio', width: Number(source.width) || 0, height: Number(source.height) || 0 }];
+        return [id, { ...source, id, kind, frames: Math.max(1, Math.round(Number(source.frames) || 90)), name: String(source.name || t('nativeEditorModel.untitled')).slice(0, 120), hasAudio: source.hasAudio ?? kind === 'audio', width: Number(source.width) || 0, height: Number(source.height) || 0 }];
     })) as Record<string, Media>;
     const clip = (kind: 'video' | 'audio', item: Clip) => ({ ...item, start: Math.max(0, Math.round(Number(item.start) || 0)), in: Math.max(0, Number(item.in) || 0), len: Math.max(1, Math.round(Number(item.len) || 1)), trackId: trackId(kind, item.trackId), volume: item.volume ?? 1, ...(kind === 'video' ? { transition: item.transition ?? 0 } : {}) });
     return {
         ...emptyTimeline(), ...raw, schemaVersion: 3, fps: 30, media, tracks, markers: Array.isArray(raw.markers) ? raw.markers : [],
         video: raw.video.map((item) => clip('video', item)),
         audio: raw.audio.map((item) => clip('audio', item)),
-        text: raw.text.map((item) => ({ ...item, start: Math.max(0, Math.round(Number(item.start) || 0)), len: Math.max(1, Math.round(Number(item.len) || 1)), trackId: trackId('text', item.trackId), text: String(item.text || 'Your text').slice(0, 1000), x: Number.isFinite(item.x) ? item.x : .5, y: Number.isFinite(item.y) ? item.y : .85, size: Math.max(2, Math.min(40, Math.round(Number(item.size) || 6))) })),
+        text: raw.text.map((item) => ({ ...item, start: Math.max(0, Math.round(Number(item.start) || 0)), len: Math.max(1, Math.round(Number(item.len) || 1)), trackId: trackId('text', item.trackId), text: String(item.text || t('nativeEditorModel.yourtext')).slice(0, 1000), x: Number.isFinite(item.x) ? item.x : .5, y: Number.isFinite(item.y) ? item.y : .85, size: Math.max(2, Math.min(40, Math.round(Number(item.size) || 6))) })),
     } as Timeline;
 }
 
@@ -149,5 +150,5 @@ export function addTrack(timeline: Timeline, kind: TrackKind): Timeline {
 
 export function addMarker(timeline: Timeline, frame: number): Timeline {
     const seq = timeline.seq + 1;
-    return { ...timeline, seq, markers: [...timeline.markers, { id: `m${seq}`, frame: Math.max(0, Math.round(frame)), label: `Marker ${timeline.markers.length + 1}`, color: '#3ee6c4' }].sort((a, b) => a.frame - b.frame) };
+    return { ...timeline, seq, markers: [...timeline.markers, { id: `m${seq}`, frame: Math.max(0, Math.round(frame)), label: t('nativeEditorModel.marker', { value1: timeline.markers.length + 1 }), color: '#3ee6c4' }].sort((a, b) => a.frame - b.frame) };
 }

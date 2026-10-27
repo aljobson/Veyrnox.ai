@@ -26,11 +26,11 @@ import { ensureOnline, OFFLINE_PAID_MESSAGE, OfflineError } from '../../../lib/n
 import { Text, TextField, Button, Icon, themedStyles, useThemedStyles } from '../../../components/ui';
 
 const ERROR_TEXT: Record<string, string> = {
-    insufficient_credits: 'Not enough credits for this reply.',
-    rate_limited: 'Too many messages. Wait a moment.',
-    option_unavailable: 'That choice is not available for this model.',
-    chat_not_open: 'Chat is not available right now.',
-    consent_declined: 'You need to agree to AI sharing to chat.',
+    insufficient_credits: t('chat.notenoughcreditsforthisreply'),
+    rate_limited: t('chat.toomanymessagesWaitamoment'),
+    option_unavailable: t('chat.thatchoiceisnotavailableforthis'),
+    chat_not_open: t('chat.chatisnotavailablerightnow'),
+    consent_declined: t('chat.youneedtoagreetoAIsharing'),
 };
 
 export default function Conversation() {
@@ -39,7 +39,7 @@ export default function Conversation() {
     const { api } = useAuth();
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    const [title, setTitle] = useState('Chat');
+    const [title, setTitle] = useState(t('chat.chat2'));
     const [pinned, setPinned] = useState(false);
     const [renaming, setRenaming] = useState<string | null>(null);
     const [messages, setMessages] = useState<ChatMessage[] | null>(null);
@@ -88,7 +88,7 @@ export default function Conversation() {
         chatApi(api)
             .getThread(id)
             .then(async (r) => {
-                setTitle(r.thread.title || 'Chat');
+                setTitle(r.thread.title || t('chat.chat2'));
                 setPinned(r.thread.pinned);
                 setMessages(r.messages);
                 // The price is shown before sending, so the model list is read; if it fails the chat still opens and
@@ -99,7 +99,7 @@ export default function Conversation() {
                 setThread({ model_id: r.thread.model_id, system_prompt: r.thread.system_prompt ?? null });
                 if (listed?.max_attachments) setMaxImages(Math.min(MAX_ATTACHMENTS, listed.max_attachments));
             })
-            .catch(() => setError('Could not load this chat.'));
+            .catch(() => setError(t('chat.couldnotloadthischat')));
         return () => abort.current?.abort();
     }, [api, id]);
 
@@ -233,7 +233,7 @@ export default function Conversation() {
                 setNotice(t(wasResumed ? resumeNoticeKey(outcome) : outcome === 'nothing' && !controller.signal.aborted ? 'chat.lost.nothing' : stopNoticeKey(outcome)));
                 setStopping(false);
             } else if (failed) {
-                setError(ERROR_TEXT[failed] ?? 'The reply did not complete. You were not charged for a failed reply.');
+                setError(ERROR_TEXT[failed] ?? t('chat.thereplydidnotcompleteYouwere'));
                 setMessages((m) => (m ?? []).filter((x) => x.id !== `a${stamp}` || x.content.length > 0));
                 if (again === undefined) setDraft(text);
                 pendingKey.current = null;
@@ -307,7 +307,7 @@ export default function Conversation() {
     // The web keeps thread management in the chat rail. On a phone the rail is the previous screen, so these less-frequent
     // actions live behind one compact menu instead of taking a full row above every conversation.
     function showManage() {
-        const rename = () => setRenaming(title === 'Chat' ? '' : title);
+        const rename = () => setRenaming(title === t('chat.chatFallback') ? '' : title);
         const move = () => router.push({ pathname: '/chat/move', params: { threadId: String(id) } });
         if (Platform.OS === 'ios') {
             ActionSheetIOS.showActionSheetWithOptions(
@@ -341,10 +341,10 @@ export default function Conversation() {
 
     return (
         <KeyboardScreen style={styles.screen}>
-            <Stack.Screen options={{ title: 'LLM Chat' }} />
+            <Stack.Screen options={{ title: t('chat.lLMChat') }} />
             <View style={styles.conversationBar}>
-                <Button accessibilityRole="button" accessibilityLabel="Open chats" containerStyle={styles.headerControl} onPress={() => router.push('/chat/library')} variant="tertiary" size="md" label="Open chats">
-                    <Text variant="footnote" style={styles.headerControlText}>Chats</Text>
+                <Button accessibilityRole="button" accessibilityLabel={t('chat.openchats')} containerStyle={styles.headerControl} onPress={() => router.push('/chat/library')} variant="tertiary" size="md" label={t('chat.openchats')}>
+                    <Text variant="footnote" style={styles.headerControlText}>{t('chat.chats')}</Text>
                 </Button>
                 <View style={styles.conversationTitle}>
                     <Text variant="callout" numberOfLines={1} style={styles.threadTitle}>{title}</Text>

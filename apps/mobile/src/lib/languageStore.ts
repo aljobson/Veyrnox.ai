@@ -1,23 +1,28 @@
-import * as SecureStore from 'expo-secure-store';
+declare const require: (id: string) => any;
+const secureStore = (): typeof import('expo-secure-store') => require('expo-secure-store');
 import type { ApiClient } from './api';
 import { LANGUAGE_SLOT, parseLanguage, serializeLanguage } from './language';
 
-// The phone's copy of the language choice. Only English is switched on in the app (ADR-0132), so a choice of another
-// language is remembered, not shown, until that language goes live. A failed read means "never chose"; a failed write
-// only means the card is asked again.
+// Read synchronously before translated modules mount, like Appearance's startup settings.
+export function readLanguage(): string | null {
+    try { return parseLanguage(secureStore().getItem(LANGUAGE_SLOT)); } catch { return null; }
+}
+
 export async function loadLanguage(): Promise<string | null> {
     try {
-        return parseLanguage(await SecureStore.getItemAsync(LANGUAGE_SLOT));
+        return parseLanguage(await secureStore().getItemAsync(LANGUAGE_SLOT));
     } catch {
         return null;
     }
 }
 
-export async function storeLanguage(code: string): Promise<void> {
+export async function saveLanguage(code: string | null, pendingAccountSync = false): Promise<boolean> {
     try {
-        await SecureStore.setItemAsync(LANGUAGE_SLOT, serializeLanguage(code));
+        if (code === null) await secureStore().deleteItemAsync(LANGUAGE_SLOT);
+        else await secureStore().setItemAsync(LANGUAGE_SLOT, JSON.stringify({ ...JSON.parse(serializeLanguage(code)), pendingAccountSync }));
+        return true;
     } catch {
-        // Not saved: the card can be asked again.
+        return false;
     }
 }
 
@@ -33,4 +38,19 @@ export async function saveAccountLanguage(api: Pick<ApiClient, 'request'>, code:
     } catch {
         // The display choice never waits for the account.
     }
+}
+
+export const storeLanguage = saveLanguage;
+
+// Only an explicit pre-sign-in choice schedules this one-shot account update. Consume before sending,
+// so remounts/relaunches cannot repeatedly overwrite an account preference changed elsewhere.
+export async function syncPendingAccountLanguage(api: Pick<ApiClient, 'request'>, active: readonly string[]): Promise<void> {
+    let code: string | null;
+    try {
+        const raw = secureStore().getItem(LANGUAGE_SLOT);
+        code = parseLanguage(raw);
+        if (!code || !active.includes(code) || !JSON.parse(raw!).pendingAccountSync) return;
+        secureStore().setItem(LANGUAGE_SLOT, serializeLanguage(code));
+    } catch { return; }
+    await saveAccountLanguage(api, code);
 }

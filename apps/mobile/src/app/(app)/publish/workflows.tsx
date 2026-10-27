@@ -4,7 +4,7 @@ import { Alert, FlatList, Pressable, StyleSheet, Switch, Text, View } from 'reac
 import { WorkflowEditor } from '../../../components/publish/WorkflowEditor';
 import { touchTarget } from '../../../lib/a11y';
 import { type ApiClient } from '../../../lib/api';
-import { t } from '../../../lib/i18n';
+import { formatLocale, t } from '../../../lib/i18n';
 import {
     deleteWorkflow, draftOf, fetchWorkflows, fetchWorkflowPlan, planManagementKey, planPeriodKey, saveWorkflow, workflowErrorKey,
     type Workflow, type WorkflowDraft, type WorkflowPlan,
@@ -13,8 +13,8 @@ import { usePublishApi } from '../../../lib/usePublishApi';
 import { colors, LIST_END_PADDING } from '../../../theme';
 
 type ReadState<T> = { api: ApiClient; value: T | null; message: string | null };
-const displayDate = (value: string | null): string => value ? new Date(value).toLocaleDateString() : t('publishWorkflows.unknown');
-const displayNumber = (value: number | null): string => value === null ? t('publishWorkflows.unknown') : value.toLocaleString();
+const displayDate = (value: string | null): string => value ? new Date(value).toLocaleDateString(formatLocale()) : t('publishWorkflows.unknown');
+const displayNumber = (value: number | null): string => value === null ? t('publishWorkflows.unknown') : value.toLocaleString(formatLocale());
 
 export default function Workflows() {
     const api = usePublishApi();
@@ -45,9 +45,9 @@ export default function Workflows() {
 
     const toggle = (w: Workflow, enabled: boolean) => write(() => saveWorkflow(api, { ...draftOf(w), enabled }));
     const confirmDelete = (w: Workflow) =>
-        Alert.alert('Delete this workflow?', 'It stops suggesting replies. This cannot be undone.', [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Delete', style: 'destructive', onPress: () => void write(() => deleteWorkflow(api, w.id)) },
+        Alert.alert(t('publish.deletethisworkflow'), t('publish.itstopssuggestingrepliesThiscannotbe'), [
+            { text: t('publish.cancel2'), style: 'cancel' },
+            { text: t('publish.delete'), style: 'destructive', onPress: () => void write(() => deleteWorkflow(api, w.id)) },
         ]);
 
     useFocusEffect(useCallback(() => {
@@ -90,12 +90,12 @@ export default function Workflows() {
                         {currentWorkflows?.value ? (
                             editing === 'new' ? (
                                 <View style={styles.card}>
-                                    <Text accessibilityRole="header" style={styles.name}>New workflow</Text>
+                                    <Text accessibilityRole="header" style={styles.name}>{t('publish.newworkflow')}</Text>
                                     <WorkflowEditor initial={BLANK} busy={busy} onSave={(d) => void write(() => saveWorkflow(api, d))} onCancel={() => setEditing(null)} />
                                 </View>
                             ) : (
                                 <Pressable accessibilityRole="button" style={[styles.action, touchTarget]} onPress={() => setEditing('new')}>
-                                    <Text style={styles.link}>+ New workflow</Text>
+                                    <Text style={styles.link}>{t('publish.newworkflow2')}</Text>
                                 </Pressable>
                             )
                         ) : null}
@@ -144,8 +144,8 @@ export default function Workflows() {
                             <WorkflowEditor initial={draftOf(item)} busy={busy} onSave={(d) => void write(() => saveWorkflow(api, d))} onCancel={() => setEditing(null)} />
                         ) : (
                             <View style={styles.titleRow}>
-                                <Pressable accessibilityRole="button" disabled={busy} style={[styles.action, touchTarget]} onPress={() => setEditing(item.id)}><Text style={styles.link}>Edit</Text></Pressable>
-                                <Pressable accessibilityRole="button" disabled={busy} style={[styles.action, touchTarget]} onPress={() => confirmDelete(item)}><Text style={styles.danger}>Delete</Text></Pressable>
+                                <Pressable accessibilityRole="button" disabled={busy} style={[styles.action, touchTarget]} onPress={() => setEditing(item.id)}><Text style={styles.link}>{t('publish.edit')}</Text></Pressable>
+                                <Pressable accessibilityRole="button" disabled={busy} style={[styles.action, touchTarget]} onPress={() => confirmDelete(item)}><Text style={styles.danger}>{t('publish.delete')}</Text></Pressable>
                             </View>
                         )}
                         {expanded === item.id ? (

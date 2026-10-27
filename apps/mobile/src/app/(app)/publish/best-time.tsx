@@ -8,7 +8,7 @@ import { fetchInsights, insightsErrorKey, MIN_HISTORY_DAYS, MIN_MEASURED_POSTS, 
 import { usePublishApi } from '../../../lib/usePublishApi';
 import { colors } from '../../../theme';
 
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const DAYS = [t('publish.monday'), t('publish.tuesday'), t('publish.wednesday'), t('publish.thursday'), t('publish.friday'), t('publish.saturday'), t('publish.sunday')];
 const hour = (h: number) => `${String(h).padStart(2, '0')}:00`;
 const num = (n: number) => (Math.round(n * 10) / 10).toString();
 

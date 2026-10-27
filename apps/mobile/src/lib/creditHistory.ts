@@ -1,3 +1,4 @@
+import { formatLocale, plural, t } from './i18n';
 import type { ApiClient } from './api';
 
 // ADR-0122: the signed-in person's credit history. Mirrors GET /api/v1/ledger (stable `kind` categories, never the
@@ -31,40 +32,40 @@ export interface Usage {
 
 // Plain-English wording for lib/ledgerKind.js. An unknown kind reads as an adjustment, never as raw text.
 const KIND_LABEL: Record<string, string> = {
-    signup_grant: 'Welcome credits',
-    checkin_reward: 'Daily check-in reward',
-    free_credit_expiry: 'Free credits expired',
-    generation_refund: 'Refund for a creation that did not finish',
-    generation: 'Creation',
-    top_up: 'Credits bought',
-    referral_reward: 'Referral reward',
-    referral_reward_reversed: 'Referral reward taken back',
-    payment_adjustment: 'Payment adjustment',
-    adjustment: 'Adjustment',
+    signup_grant: 'creditHistory.signup_grant',
+    checkin_reward: 'creditHistory.checkin_reward',
+    free_credit_expiry: 'creditHistory.free_credit_expiry',
+    generation_refund: 'creditHistory.generation_refund',
+    generation: 'creditHistory.generation',
+    top_up: 'creditHistory.top_up',
+    referral_reward: 'creditHistory.referral_reward',
+    referral_reward_reversed: 'creditHistory.referral_reward_reversed',
+    payment_adjustment: 'creditHistory.payment_adjustment',
+    adjustment: 'creditHistory.adjustment',
 };
 
-export const kindLabel = (kind: string): string => KIND_LABEL[kind] ?? KIND_LABEL.adjustment;
+export const kindLabel = (kind: string): string => t(KIND_LABEL[kind] ?? KIND_LABEL.adjustment);
 
 const MINUS = '−';
 
 // "+10 credits", "−3 credits", "+1 credit".
 export function creditsDelta(delta: number): string {
     const n = Math.abs(delta);
-    return `${delta < 0 ? MINUS : '+'}${n.toLocaleString('en-US')} ${n === 1 ? 'credit' : 'credits'}`;
+    return t('creditHistory.delta', { sign: delta < 0 ? MINUS : '+', credits: creditsCount(n) });
 }
 
 export function creditsCount(n: number): string {
-    return `${n.toLocaleString('en-US')} ${n === 1 ? 'credit' : 'credits'}`;
+    return plural('creditHistory.count', n, { count: n.toLocaleString(formatLocale('en-US')) });
 }
 
 export function entryDate(iso: string): string {
     const at = new Date(iso);
-    return Number.isNaN(at.getTime()) ? '' : at.toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    return Number.isNaN(at.getTime()) ? '' : at.toLocaleString(formatLocale('en-GB'), { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 // The part of an entry that came from free credits, when there is one.
 export function freeNote(entry: LedgerEntry): string | null {
-    return entry.freeDelta !== 0 ? `${creditsCount(Math.abs(entry.freeDelta))} of this was free credits` : null;
+    return entry.freeDelta !== 0 ? t('creditHistory.free', { credits: creditsCount(Math.abs(entry.freeDelta)) }) : null;
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -104,9 +105,9 @@ export async function fetchUsage(api: Pick<ApiClient, 'request'>): Promise<Usage
 
 export function usageLines(usage: Usage): readonly string[] {
     return [
-        `Last 24 hours: ${creditsCount(usage.day)}`,
-        `Last 7 days: ${creditsCount(usage.week)}`,
-        `Last 30 days: ${usage.truncated ? 'at least ' : ''}${creditsCount(usage.month)}`,
+        t('creditHistory.day', { credits: creditsCount(usage.day) }),
+        t('creditHistory.week', { credits: creditsCount(usage.week) }),
+        t(usage.truncated ? 'creditHistory.monthAtLeast' : 'creditHistory.month', { credits: creditsCount(usage.month) }),
     ];
 }
 

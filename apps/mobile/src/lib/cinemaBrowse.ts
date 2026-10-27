@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import { API_BASE, ApiError, type ApiClient } from './api';
 import { parseTitle, type CinemaTitle, type Episode } from './cinema';
 
@@ -5,10 +6,10 @@ import { parseTitle, type CinemaTitle, type Episode } from './cinema';
 // The server is the authority on every rule. A closed switch is an answer, not a failure: the screen says so.
 
 export const CATEGORIES = [
-    { slug: 'romance', label: 'Romance' }, { slug: 'drama', label: 'Drama' }, { slug: 'thriller', label: 'Thriller' },
-    { slug: 'comedy', label: 'Comedy' }, { slug: 'horror', label: 'Horror' }, { slug: 'sci-fi', label: 'Sci-Fi' },
-    { slug: 'fantasy', label: 'Fantasy' }, { slug: 'action', label: 'Action' }, { slug: 'mystery', label: 'Mystery' },
-    { slug: 'documentary', label: 'Documentary' }, { slug: 'animation', label: 'Animation' }, { slug: 'kids', label: 'Kids' },
+    { slug: 'romance', label: t('cinemaBrowse.romance') }, { slug: 'drama', label: t('cinemaBrowse.drama') }, { slug: 'thriller', label: t('cinemaBrowse.thriller') },
+    { slug: 'comedy', label: t('cinemaBrowse.comedy') }, { slug: 'horror', label: t('cinemaBrowse.horror') }, { slug: 'sci-fi', label: t('cinemaBrowse.sciFi') },
+    { slug: 'fantasy', label: t('cinemaBrowse.fantasy') }, { slug: 'action', label: t('cinemaBrowse.action') }, { slug: 'mystery', label: t('cinemaBrowse.mystery') },
+    { slug: 'documentary', label: t('cinemaBrowse.documentary') }, { slug: 'animation', label: t('cinemaBrowse.animation') }, { slug: 'kids', label: t('cinemaBrowse.kids') },
 ] as const;
 export const categoryKey = (slug: string): string => `cinemaBrowse.cat.${slug}`;
 

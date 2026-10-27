@@ -1,3 +1,4 @@
+import { t as translate } from './i18n';
 import { API_BASE, ApiError, type ApiClient } from './api';
 
 // Cinema's social layer (ADR-0178): saved titles and follows, winners, voting, story polls. Every one of these is behind
@@ -102,7 +103,7 @@ export function parseRetentionList(body: unknown): { items: RetentionItem[]; nex
     const items: RetentionItem[] = [];
     for (const raw of Array.isArray(b.items) ? b.items : []) {
         if (!isObject(raw) || !isUuid(raw.target_id) || !isUuid(raw.content_id)) continue;
-        items.push({ targetId: raw.target_id, contentId: raw.content_id, title: str(raw.title, 160) || 'Untitled', creator: str(raw.display_name, 80) || str(raw.username, 30) });
+        items.push({ targetId: raw.target_id, contentId: raw.content_id, title: str(raw.title, 160) || translate('cinemaSocial.untitled'), creator: str(raw.display_name, 80) || str(raw.username, 30) });
     }
     return { items, next: isUuid(b.next) ? b.next : null };
 }
@@ -309,7 +310,7 @@ export function parseWinners(body: unknown): WinnerWeek[] {
         const titles: WinnerTitle[] = [];
         for (const t of Array.isArray(w.titles) ? w.titles : []) {
             if (!isObject(t) || !isUuid(t.id) || typeof t.rank !== 'number') continue;
-            titles.push({ id: t.id, title: str(t.title, 160) || 'Untitled', rank: t.rank });
+            titles.push({ id: t.id, title: str(t.title, 160) || translate('cinemaSocial.untitled'), rank: t.rank });
         }
         titles.sort((a, b) => a.rank - b.rank);
         weeks.push({ id: w.id, name: str(w.name, 80), endsAt: str(w.ends_at, 40), titles });
