@@ -2,11 +2,10 @@ import { Stack, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { touchTarget } from '../../../lib/a11y';
-import { VEY_CLEARANCE } from '../../../components/VeyMascot';
 import { approvalErrorKey, approvalStatusLabel, decisionLabel, fetchApprovals, type ApprovalRequest } from '../../../lib/publishApprovals';
 import { t } from '../../../lib/i18n';
 import { usePublishApi } from '../../../lib/usePublishApi';
-import { colors } from '../../../theme';
+import { colors, LIST_END_PADDING } from '../../../theme';
 
 const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString() : null);
 
@@ -44,7 +43,7 @@ export default function Approvals() {
                     data={requests}
                     keyExtractor={(r) => r.id}
                     refreshControl={<RefreshControl refreshing={refreshing} tintColor={colors.accent} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}
-                    contentContainerStyle={{ paddingBottom: VEY_CLEARANCE }}
+                    contentContainerStyle={{ paddingBottom: LIST_END_PADDING }}
                     ListHeaderComponent={<View><Text style={styles.intro}>{t('approvals.intro')}</Text><Pressable accessibilityRole="button" style={[styles.ask, touchTarget]} onPress={() => router.push('/publish/approval-new')}><Text style={styles.askText}>{t('approvals.new')}</Text></Pressable></View>}
                     ListEmptyComponent={<Text style={styles.muted}>{t('approvals.none')}</Text>}
                     renderItem={({ item }) => (

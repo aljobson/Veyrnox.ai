@@ -3,7 +3,6 @@ import { Stack, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Alert, FlatList, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { WorkflowEditor } from '../../../components/publish/WorkflowEditor';
-import { VEY_CLEARANCE } from '../../../components/VeyMascot';
 import { touchTarget } from '../../../lib/a11y';
 import { API_BASE, type ApiClient } from '../../../lib/api';
 import { t } from '../../../lib/i18n';
@@ -12,7 +11,7 @@ import {
     type Workflow, type WorkflowDraft, type WorkflowPlan,
 } from '../../../lib/publishWorkflows';
 import { usePublishApi } from '../../../lib/usePublishApi';
-import { colors } from '../../../theme';
+import { colors, LIST_END_PADDING } from '../../../theme';
 
 type ReadState<T> = { api: ApiClient; value: T | null; message: string | null };
 const displayDate = (value: string | null): string => value ? new Date(value).toLocaleDateString() : t('publishWorkflows.unknown');
@@ -206,7 +205,7 @@ function PlanCard({ state }: { state: ReadState<WorkflowPlan> | null }) {
 // No custom animation, including the inline detail view and loading state.
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 16, paddingTop: 8 },
-    content: { gap: 12, paddingBottom: VEY_CLEARANCE },
+    content: { gap: 12, paddingBottom: LIST_END_PADDING },
     section: { gap: 8 },
     card: { gap: 6, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 14 },
     heading: { color: colors.text, fontSize: 18, fontWeight: '700' },

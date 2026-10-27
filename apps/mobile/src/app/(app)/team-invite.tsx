@@ -3,12 +3,11 @@ import { useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { Action, Card, Status, styles as shared } from '../../components/account/shared';
-import { VEY_CLEARANCE } from '../../components/VeyMascot';
 import { t } from '../../lib/i18n';
 import { roleLabel } from '../../lib/publishBrand';
 import { inviteState, inviteTokenFromLink, validToken } from '../../lib/shareLinks';
 import { useTeamInvite } from '../../lib/useTeamInvite';
-import { colors } from '../../theme';
+import { colors, LIST_END_PADDING } from '../../theme';
 
 // Join a Publish brand from an invitation link. The invitation is for one email address: the server refuses anyone
 // signed in under another, and the screen says which address it was sent to.
@@ -74,5 +73,5 @@ export default function TeamInvite() {
 
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
-    content: { padding: 16, gap: 16, paddingBottom: 16 + VEY_CLEARANCE },
+    content: { padding: 16, gap: 16, paddingBottom: 16 + LIST_END_PADDING },
 });

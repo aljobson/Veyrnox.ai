@@ -1,11 +1,10 @@
 import { Link, Stack } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { VEY_CLEARANCE } from '../../components/VeyMascot';
 import { t } from '../../lib/i18n';
 import { fetchCatalog } from '../../lib/media';
 import { modelEntries, screenEntries, searchEntries, type SearchEntry } from '../../lib/siteSearch';
-import { colors } from '../../theme';
+import { colors, LIST_END_PADDING } from '../../theme';
 
 // Search the app's own screens and the model catalogue. Nothing leaves the phone except the catalogue fetch the
 // app already makes; if that fails, screens are still searchable.
@@ -42,7 +41,7 @@ export default function Search() {
                 data={results}
                 keyboardShouldPersistTaps="handled"
                 keyExtractor={(e) => e.id}
-                contentContainerStyle={{ gap: 8, paddingBottom: VEY_CLEARANCE }}
+                contentContainerStyle={{ gap: 8, paddingBottom: LIST_END_PADDING }}
                 renderItem={({ item }) => (
                     <Link href={item.href as never} asChild>
                         <Pressable accessibilityRole="button" accessibilityLabel={`${item.title}, ${t(item.kind === 'model' ? 'srch.kindModel' : 'srch.kindScreen')}`} style={styles.row}>

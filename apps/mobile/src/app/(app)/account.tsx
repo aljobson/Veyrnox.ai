@@ -9,8 +9,7 @@ import { fetchProfile, type Profile } from '../../lib/auth/accountCalls';
 import { signInMethodKey } from '../../lib/accountSecurity';
 import { LEGAL_LINKS, SUPPORT_EMAIL } from '../../lib/account';
 import { usePush } from '../../push/pushContext';
-import { VEY_CLEARANCE } from '../../components/VeyMascot';
-import { colors } from '../../theme';
+import { colors, LIST_END_PADDING } from '../../theme';
 import { ListRow } from '../../components/ui';
 import { CREATOR_PROFILE_ENABLED, resetVibe } from '../../lib/creatorProfile';
 import { clearVibe } from '../../lib/creatorProfileStore';
@@ -253,7 +252,7 @@ const Row = ({ label, icon, onPress, disabled, danger, ...rest }: RowProps) => (
 
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
-    content: { padding: 16, paddingBottom: 16 + VEY_CLEARANCE, gap: 24 },
+    content: { padding: 16, paddingBottom: 16 + LIST_END_PADDING, gap: 24 },
     section: { gap: 8 },
     sectionTitle: { color: colors.muted, fontSize: 14, textTransform: 'uppercase' },
     row: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 16 },

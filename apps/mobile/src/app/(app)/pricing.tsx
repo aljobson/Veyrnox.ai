@@ -3,17 +3,14 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { CatalogList, kindTitleKey } from '../../components/CatalogList';
 import { priceLines } from '../../lib/catalogPages';
 import { t } from '../../lib/i18n';
-import { VEY_CLEARANCE } from '../../components/VeyMascot';
-import { useVeyScroll } from '../../lib/useVeyScroll';
-import { colors, radius, space, type } from '../../theme';
+import { colors, radius, space, type, LIST_END_PADDING } from '../../theme';
 import { MIN_TARGET } from '../../lib/a11y';
 
 // What each model costs, in credits, from the public catalogue (read-only). It shows prices only: credits are
 // bought in the store, and nothing on this screen links anywhere to buy them.
 export default function Pricing() {
-    const onScroll = useVeyScroll();
     return (
-        <ScrollView style={styles.screen} contentContainerStyle={styles.content} onScroll={onScroll} scrollEventThrottle={64}>
+        <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
             <Stack.Screen options={{ title: t('prc.title') }} />
             <Text style={styles.note}>{t('prc.intro')}</Text>
             <CatalogList
@@ -42,7 +39,7 @@ export default function Pricing() {
 
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
-    content: { padding: space.lg, paddingBottom: space.lg + VEY_CLEARANCE, gap: 20 },
+    content: { padding: space.lg, paddingBottom: space.lg + LIST_END_PADDING, gap: 20 },
     heading: { color: colors.muted, ...type.footnote, textTransform: 'uppercase' },
     row: { minHeight: MIN_TARGET, flexDirection: 'row', justifyContent: 'space-between', gap: space.md, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: radius.lg, padding: 14 },
     name: { color: colors.text, ...type.body, flexShrink: 1 },

@@ -412,7 +412,7 @@ export default function Conversation() {
                         ) : undefined
                     }
                     renderItem={({ item }) => (
-                        <View accessible accessibilityLabel={`${item.role === 'user' ? 'You' : 'Vey'}: ${item.content || (sending ? 'writing' : '')}`} style={[styles.bubble, item.role === 'user' ? styles.user : styles.assistant]}>
+                        <View accessible accessibilityLabel={`${item.role === 'user' ? 'You' : 'Assistant'}: ${item.content || (sending ? 'writing' : '')}`} style={[styles.bubble, item.role === 'user' ? styles.user : styles.assistant]}>
                             {(() => {
                                 const drafts = item.role === 'assistant' ? draftsOf(item.content) : [];
                                 const shown = drafts.length ? withoutDrafts(item.content) : item.content;

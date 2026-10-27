@@ -40,12 +40,6 @@ describe('Vey character art (the web character, drawn as layers)', () => {
 });
 
 describe('the animated Vey (N8 follow-up)', () => {
-    test('the mascot shows the character, not the plain mark', () => {
-        const mascot = read('components', 'VeyMascot.tsx');
-        expect(mascot).toContain('<VeyCharacter');
-        expect(mascot).not.toContain('logo-mark');
-    });
-
     test('the head and both arms move, and the character respects Reduce Motion', () => {
         const art = read('components', 'VeyCharacter.tsx');
         expect(art).toContain('Animated.loop');

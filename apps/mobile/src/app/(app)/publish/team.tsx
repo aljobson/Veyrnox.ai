@@ -1,13 +1,12 @@
 import { Stack } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, TextInput, View } from 'react-native';
-import { VEY_CLEARANCE } from '../../../components/VeyMascot';
 import { touchTarget } from '../../../lib/a11y';
 import { t } from '../../../lib/i18n';
 import { roleLabel } from '../../../lib/publishBrand';
 import { canManage, changeRole, fetchTeam, inviteErrorKey, inviteMember, removeMember, revokeInvite, rolesFor, teamActionErrorKey, teamErrorKey, validEmail, type ChangeableRole, type Invitation_, type Member, type Team } from '../../../lib/publishTeam';
 import { usePublishApi } from '../../../lib/usePublishApi';
-import { colors } from '../../../theme';
+import { colors, LIST_END_PADDING } from '../../../theme';
 
 const day = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString() : '');
 
@@ -205,7 +204,7 @@ export default function TeamScreen() {
 
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
-    body: { padding: 16, paddingBottom: VEY_CLEARANCE, gap: 8 },
+    body: { padding: 16, paddingBottom: LIST_END_PADDING, gap: 8 },
     intro: { color: colors.body },
     notice: { color: colors.accent },
     heading: { color: colors.muted, fontSize: 13, textTransform: 'uppercase', marginTop: 12 },

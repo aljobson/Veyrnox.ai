@@ -4,7 +4,6 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from 'react-native';
 import { NetworkTextFields, YoutubeVisibilityChips } from '../../../components/ComposeExtras';
 import { WhenPicker, whenFrom } from '../../../components/WhenPicker';
-import { VEY_CLEARANCE } from '../../../components/VeyMascot';
 import { touchTarget } from '../../../lib/a11y';
 import { appStorage, getCacheUser, subscribeCacheUser } from '../../../lib/appCache';
 import { createDraftKeys, isDefiniteRefusal } from '../../../lib/draftKey';
@@ -18,7 +17,7 @@ import { useBrandScopedVariants } from '../../../lib/useBrandScopedVariants';
 import { usePublishApi } from '../../../lib/usePublishApi';
 import { PublishUploadPanel } from '../../../components/PublishUploadPanel';
 import { choiceId, choiceMedia, toggleChoice, type CreationPick, type MediaChoice } from '../../../lib/publishMediaChoice';
-import { colors } from '../../../theme';
+import { colors, LIST_END_PADDING } from '../../../theme';
 
 const draftKeys = createDraftKeys(appStorage);
 
@@ -237,7 +236,7 @@ export default function ApprovalNew() {
 const styles = StyleSheet.create({
     flex: { flex: 1, backgroundColor: colors.background },
     pad: { flex: 1, backgroundColor: colors.background, padding: 16 },
-    body: { padding: 16, paddingBottom: VEY_CLEARANCE, gap: 10 },
+    body: { padding: 16, paddingBottom: LIST_END_PADDING, gap: 10 },
     heading: { color: colors.text, fontSize: 16, fontWeight: '700', marginTop: 10 },
     row: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 12, gap: 2 },
     rowOn: { borderColor: colors.accent },

@@ -1,12 +1,11 @@
 import { Stack, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
-import { VEY_CLEARANCE } from '../../../components/VeyMascot';
 import { touchTarget } from '../../../lib/a11y';
 import { t } from '../../../lib/i18n';
 import { FORMATS, fetchReports, reportsErrorKey, shareReport, type Report, type ReportFormat } from '../../../lib/publishReports';
 import { usePublishApi } from '../../../lib/usePublishApi';
-import { colors } from '../../../theme';
+import { colors, LIST_END_PADDING } from '../../../theme';
 
 export default function Reports() {
     const api = usePublishApi();
@@ -55,7 +54,7 @@ export default function Reports() {
                 <FlatList
                     data={reports}
                     keyExtractor={(r) => r.id}
-                    contentContainerStyle={{ paddingBottom: VEY_CLEARANCE }}
+                    contentContainerStyle={{ paddingBottom: LIST_END_PADDING }}
                     refreshControl={<RefreshControl refreshing={refreshing} tintColor={colors.accent} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}
                     ListHeaderComponent={<View><Text style={styles.muted}>{t('reports.intro')}</Text>{notice ? <Text style={styles.error} accessibilityRole="alert">{notice}</Text> : null}</View>}
                     ListEmptyComponent={<Text style={styles.muted}>{t('reports.none')}</Text>}

@@ -1,12 +1,11 @@
 import { Stack } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, Share, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
-import { VEY_CLEARANCE } from '../../../components/VeyMascot';
 import { touchTarget } from '../../../lib/a11y';
 import { t } from '../../../lib/i18n';
 import { EMPTY, MAX_ITEMS, THEMES, fetchSmartlink, publicUrl, saveSmartlink, slugFrom, smartlinkErrorKey, validateSmartlink, type LinkItem, type SmartLink } from '../../../lib/publishSmartlink';
 import { usePublishApi } from '../../../lib/usePublishApi';
-import { colors } from '../../../theme';
+import { colors, LIST_END_PADDING } from '../../../theme';
 
 export default function SmartlinkScreen() {
     const api = usePublishApi();
@@ -134,7 +133,7 @@ export default function SmartlinkScreen() {
 const styles = StyleSheet.create({
     flex: { flex: 1, backgroundColor: colors.background },
     screen: { flex: 1, backgroundColor: colors.background, padding: 16 },
-    body: { padding: 16, paddingBottom: VEY_CLEARANCE, gap: 8 },
+    body: { padding: 16, paddingBottom: LIST_END_PADDING, gap: 8 },
     label: { color: colors.text, fontSize: 14, fontWeight: '600', marginTop: 8 },
     input: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 12, color: colors.text, fontSize: 16, minHeight: 48 },
     multi: { minHeight: 80 },

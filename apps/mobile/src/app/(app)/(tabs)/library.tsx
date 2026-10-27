@@ -11,15 +11,12 @@ import { KIND_FILTERS, STATE_FILTERS, canReuse, canSchedule, filterJobs, kindMap
 import { fetchCatalogCached, mediaApi, type CatalogModel, type Job, type JobPage } from '../../../lib/media';
 import { publishHref } from '../../../lib/nextSteps';
 import { creativeReuseHref } from '../../../lib/creativeReuse';
-import { VEY_CLEARANCE } from '../../../components/VeyMascot';
-import { colors, fonts } from '../../../theme';
+import { colors, fonts, LIST_END_PADDING } from '../../../theme';
 import { t } from '../../../lib/i18n';
 import { selectedState, touchTarget } from '../../../lib/a11y';
 import { EmptyState } from '../../../components/EmptyState';
-import { useVeyScroll } from '../../../lib/useVeyScroll';
 
 export default function Library() {
-    const onScroll = useVeyScroll();
     const { api } = useAuth();
     const router = useRouter();
     const [jobs, setJobs] = useState<Job[] | null>(null);
@@ -111,8 +108,6 @@ export default function Library() {
             ) : (
                 <FlatList
                     contentContainerStyle={styles.list}
-                    onScroll={onScroll}
-                    scrollEventThrottle={64}
                     key={view}
                     numColumns={view === 'grid' ? 2 : 1}
                     data={shown}
@@ -166,8 +161,7 @@ function Chip({ label, on, onPress }: { readonly label: string; readonly on: boo
 }
 
 const styles = StyleSheet.create({
-    // The mascot sits in the bottom corner of every tab; the last row scrolls clear of it.
-    list: { paddingBottom: VEY_CLEARANCE },
+    list: { paddingBottom: LIST_END_PADDING },
     barScroll: { flexGrow: 0, marginBottom: 8 },
     bar: { flexDirection: 'row', gap: 6 },
     chip: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 12, borderRadius: 10, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },

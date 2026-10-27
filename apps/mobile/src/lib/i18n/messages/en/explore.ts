@@ -41,7 +41,6 @@ export default {
     'explore.searchOpen': 'Search',
     'explore.seeAllShort': 'See all',
     'explore.categories': 'Categories',
-    'explore.chat.title': 'Chat with Vey',
     'explore.chat.body': 'Ask, brainstorm, or get help with a prompt.',
     'explore.chat.hint': 'Opens the chat.',
     'explore.collageHint': 'Swipe to browse templates',

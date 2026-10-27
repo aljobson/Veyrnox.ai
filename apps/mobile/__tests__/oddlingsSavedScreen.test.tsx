@@ -18,7 +18,6 @@ jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi })
 jest.mock('expo-crypto', () => { let n = 0; return { randomUUID: () => `uuid-key-${++n}` }; });
 jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useRouter: () => ({ push: jest.fn() }),
     useFocusEffect: (fn: () => void) => jest.requireActual('react').useEffect(fn, [fn]) }));
-jest.mock('../src/components/VeyMascot', () => ({ VEY_CLEARANCE: 0 }));
 jest.mock('../src/lib/appCache', () => {
     const actual = jest.requireActual('../src/lib/appCache'), data = new Map<string, string>();
     return { ...actual, userDocStorage: { get: async (k: string) => data.get(k) ?? null,

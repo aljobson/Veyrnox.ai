@@ -3,11 +3,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { Action } from '../../components/account/shared';
-import { VEY_CLEARANCE } from '../../components/VeyMascot';
 import { entryDate } from '../../lib/creditHistory';
 import { plural, t } from '../../lib/i18n';
 import { dollars, fetchTopUps, merge, statusKey, type TopUp, type TopUpCursor } from '../../lib/topUps';
-import { colors } from '../../theme';
+import { colors, LIST_END_PADDING } from '../../theme';
 
 // Past credit purchases, newest first. Read-only.
 export default function TopUps() {
@@ -65,7 +64,7 @@ export default function TopUps() {
                 <FlatList
                     data={items}
                     keyExtractor={(i) => i.id}
-                    contentContainerStyle={{ padding: 16, gap: 8, paddingBottom: 16 + VEY_CLEARANCE }}
+                    contentContainerStyle={{ padding: 16, gap: 8, paddingBottom: 16 + LIST_END_PADDING }}
                     ListEmptyComponent={<Text style={styles.note}>{t('topup.empty')}</Text>}
                     onEndReached={() => void more()}
                     onEndReachedThreshold={0.4}
