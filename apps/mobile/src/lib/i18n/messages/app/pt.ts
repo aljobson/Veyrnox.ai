@@ -4644,5 +4644,9 @@ export default {
   "publishDepth.presets.gone": "Este modelo não está mais disponível.",
   "publishDepth.presets.rate": "Muitas alterações. Aguarde um pouco e tente novamente.",
   "publishDepth.presets.network": "Sem conexão. Confira sua rede e tente novamente.",
-  "publishDepth.presets.failed": "Não foi possível carregar ou salvar os modelos. Tente novamente."
+  "publishDepth.presets.failed": "Não foi possível carregar ou salvar os modelos. Tente novamente.",
+  "cinemaStudio.withdrawPublished": "Retirar «{title}» do Social Cinema? O título sai imediatamente do catálogo e todos os desbloqueios dos espectadores nos últimos 30 dias são reembolsados em créditos.",
+  "cinemaStudio.withdrawReview": "Retirar «{title}» da revisão?",
+  "cinemaStudio.numbered": "{type} n.º {position}",
+  "cinemaStudio.positionInvalid": "Use um número inteiro de 1 a 10000."
 } as const;

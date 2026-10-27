@@ -4836,5 +4836,9 @@ export default {
   "publishDepth.presets.gone": "لم يعد هذا القالب متاحًا.",
   "publishDepth.presets.rate": "تغييرات كثيرة جدًا. انتظر قليلًا وحاول مجددًا.",
   "publishDepth.presets.network": "لا يوجد اتصال. تحقق من الشبكة وحاول مجددًا.",
-  "publishDepth.presets.failed": "تعذّر تحميل القوالب أو حفظها. حاول مجددًا."
+  "publishDepth.presets.failed": "تعذّر تحميل القوالب أو حفظها. حاول مجددًا.",
+  "cinemaStudio.withdrawPublished": "هل تريد سحب «{title}» من Social Cinema؟ سيُزال من الكتالوج فورًا وستُرد تكاليف جميع عمليات فتح المشاهدة خلال آخر 30 يومًا على هيئة أرصدة.",
+  "cinemaStudio.withdrawReview": "هل تريد سحب «{title}» من المراجعة؟",
+  "cinemaStudio.numbered": "{type} رقم {position}",
+  "cinemaStudio.positionInvalid": "استخدم عددًا صحيحًا من 1 إلى 10000."
 } as const;

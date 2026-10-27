@@ -4644,5 +4644,9 @@ export default {
   "publishDepth.presets.gone": "Este preajuste ya no está disponible.",
   "publishDepth.presets.rate": "Demasiados cambios. Espera un momento e inténtalo de nuevo.",
   "publishDepth.presets.network": "Sin conexión. Revisa tu red e inténtalo de nuevo.",
-  "publishDepth.presets.failed": "No se pudieron cargar o guardar los preajustes. Inténtalo de nuevo."
+  "publishDepth.presets.failed": "No se pudieron cargar o guardar los preajustes. Inténtalo de nuevo.",
+  "cinemaStudio.withdrawPublished": "¿Retirar «{title}» de Social Cinema? Saldrá del catálogo de inmediato y todos los desbloqueos de espectadores de los últimos 30 días se reembolsarán en créditos.",
+  "cinemaStudio.withdrawReview": "¿Retirar «{title}» de la revisión?",
+  "cinemaStudio.numbered": "{type} n.º {position}",
+  "cinemaStudio.positionInvalid": "Usa un número entero del 1 al 10000."
 } as const;

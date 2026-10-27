@@ -4516,5 +4516,9 @@ export default {
   "publishDepth.presets.gone": "このプリセットは利用できなくなりました。",
   "publishDepth.presets.rate": "変更が多すぎます。少し待ってからお試しください。",
   "publishDepth.presets.network": "接続できません。ネットワークを確認して再試行してください。",
-  "publishDepth.presets.failed": "プリセットを読み込むか保存できませんでした。もう一度お試しください。"
+  "publishDepth.presets.failed": "プリセットを読み込むか保存できませんでした。もう一度お試しください。",
+  "cinemaStudio.withdrawPublished": "「{title}」を Social Cinema から取り下げますか？カタログから直ちに削除され、過去30日間のすべての視聴者のアンロック料金がクレジットで返金されます。",
+  "cinemaStudio.withdrawReview": "「{title}」を審査から取り下げますか？",
+  "cinemaStudio.numbered": "{type}{position}",
+  "cinemaStudio.positionInvalid": "1から10000までの整数を入力してください。"
 } as const;

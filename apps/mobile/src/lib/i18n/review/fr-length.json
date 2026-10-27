@@ -4044,6 +4044,12 @@
     "ratio": 1.91
   },
   {
+    "id": "cinemaStudio.withdrawReview",
+    "english": "Withdraw '{title}' from review?",
+    "translation": "Retirer « {title} » de la procédure de validation ?",
+    "ratio": 1.65
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",
@@ -4114,5 +4120,17 @@
     "english": "Add audio",
     "translation": "Ajouter un audio",
     "ratio": 1.78
+  },
+  {
+    "id": "cinema.creator.first",
+    "english": "Add your first {type}.",
+    "translation": "Ajoutez votre premier élément : {type}.",
+    "ratio": 1.77
+  },
+  {
+    "id": "cinema.videoUpload.fromLibrary",
+    "english": "From Library",
+    "translation": "Depuis la bibliothèque",
+    "ratio": 1.83
   }
 ]

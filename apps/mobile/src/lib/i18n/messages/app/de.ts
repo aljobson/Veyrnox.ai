@@ -4580,5 +4580,9 @@ export default {
   "publishDepth.presets.gone": "Diese Vorlage ist nicht mehr verfügbar.",
   "publishDepth.presets.rate": "Zu viele Änderungen. Warte kurz und versuche es erneut.",
   "publishDepth.presets.network": "Keine Verbindung. Prüfe dein Netzwerk und versuche es erneut.",
-  "publishDepth.presets.failed": "Vorlagen konnten nicht geladen oder gespeichert werden. Versuche es erneut."
+  "publishDepth.presets.failed": "Vorlagen konnten nicht geladen oder gespeichert werden. Versuche es erneut.",
+  "cinemaStudio.withdrawPublished": "„{title}“ aus Social Cinema zurückziehen? Der Titel wird sofort aus dem Katalog entfernt und alle Freischaltungen durch Zuschauer der letzten 30 Tage werden in Credits erstattet.",
+  "cinemaStudio.withdrawReview": "„{title}“ aus der Prüfung zurückziehen?",
+  "cinemaStudio.numbered": "{type} Nr. {position}",
+  "cinemaStudio.positionInvalid": "Verwende eine ganze Zahl von 1 bis 10000."
 } as const;

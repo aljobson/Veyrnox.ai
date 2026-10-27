@@ -4580,5 +4580,9 @@ export default {
   "publishDepth.presets.gone": "यह प्रीसेट अब उपलब्ध नहीं है।",
   "publishDepth.presets.rate": "बहुत अधिक बदलाव। थोड़ी देर रुककर फिर कोशिश करें।",
   "publishDepth.presets.network": "कनेक्शन नहीं है। नेटवर्क जाँचकर फिर कोशिश करें।",
-  "publishDepth.presets.failed": "प्रीसेट लोड या सहेजे नहीं जा सके। फिर कोशिश करें।"
+  "publishDepth.presets.failed": "प्रीसेट लोड या सहेजे नहीं जा सके। फिर कोशिश करें।",
+  "cinemaStudio.withdrawPublished": "क्या «{title}» को Social Cinema से वापस लेना है? यह तुरंत सूची से हट जाएगा और पिछले 30 दिनों में दर्शकों के सभी अनलॉक का भुगतान क्रेडिट में वापस कर दिया जाएगा।",
+  "cinemaStudio.withdrawReview": "क्या «{title}» को समीक्षा से वापस लेना है?",
+  "cinemaStudio.numbered": "{type} क्रमांक {position}",
+  "cinemaStudio.positionInvalid": "1 से 10000 तक की पूर्ण संख्या इस्तेमाल करें।"
 } as const;

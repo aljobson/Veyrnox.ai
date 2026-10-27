@@ -4516,5 +4516,9 @@ export default {
   "publishDepth.presets.gone": "此预设已不可用。",
   "publishDepth.presets.rate": "更改过于频繁。请稍后重试。",
   "publishDepth.presets.network": "无网络连接。请检查网络后重试。",
-  "publishDepth.presets.failed": "无法加载或保存预设。请重试。"
+  "publishDepth.presets.failed": "无法加载或保存预设。请重试。",
+  "cinemaStudio.withdrawPublished": "要从 Social Cinema 撤回《{title}》吗？它将立即从目录中移除，过去 30 天内所有观众的解锁费用都将以积分退还。",
+  "cinemaStudio.withdrawReview": "要撤回《{title}》的审核申请吗？",
+  "cinemaStudio.numbered": "{type}（{position}）",
+  "cinemaStudio.positionInvalid": "请输入 1 到 10000 之间的整数。"
 } as const;
