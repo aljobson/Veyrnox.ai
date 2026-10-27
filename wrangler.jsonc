@@ -75,6 +75,7 @@
     // Cloud documents do not enable device-media uploads (ADR-0056 / roadmap D1).
     "PROJECT_MEDIA_UPLOADS_ENABLED": "false",
     // JOB_CANCEL_ENABLED (ADR job cancel) is omitted: absent is off. Needs FAL_DURABLE_DISPATCH_ENABLED to have anything to cancel.
+    // MOTION_TRANSFER_ENABLED and MOTION_REPLACE_ENABLED (ADR-0269) are omitted for the binding cap: absent is off, "true" turns each on.
     // The four fal rollout controls are intentionally omitted in production.
     // Their code paths require the exact value "true", so absence is fail-closed
     // and leaves Cloudflare text-binding headroom. Staging names them below.

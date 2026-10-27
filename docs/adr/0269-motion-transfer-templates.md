@@ -1,6 +1,6 @@
 # ADR-0269: Motion-transfer templates from our own driving clips
 
-Status: Proposed (2026-10-27). Nothing built. Waiting on the owner's decision on the model, the price and two staging probes.
+Status: Accepted (2026-10-27, owner in chat: "Kling 3.0 Motion Control Std at 36 credits per 5 s, Wan Replace at 23 for phase 2, flags shipped off"; about $1.66 of STAGING fal probes allowed). Built behind both flags with migration 0402 staged inactive; probes, clips and activation still to come.
 
 Date: 2026-10-27
 
@@ -130,13 +130,16 @@ Notes that bear on the choice:
 2. Migration (next free number on main, 0402 today; open PRs checked): two
    `model_catalog` rows, inactive, with recorded cost, `cost_unit
    per_second`, capability pins, the 0111 row-count assertion pattern.
-3. `lib/motionTemplates.js`: the server registry (id, title, R2 key, seconds,
-   orientation, mode, preview paths). Template data gets a `drivingClip`
-   field that names the registry entry, never a URL.
+3. `lib/motionClips.js`: the server registry (id, mode, R2 key, seconds,
+   orientation, provenance, `ready`). The cards in
+   `app/veyrnox/_lib/motionTransferTemplates.js` carry a `drivingClip` field
+   that names the registry entry, never a URL.
 4. Generation route: for the two offers, refuse a client `video_url` or
    `duration_seconds`, resolve the clip, presign it for 15 minutes, set
    `duration_seconds` from the registry before `priceFor`.
-5. fal adapter body for both endpoints from the capability record.
+5. fal adapter body for both endpoints from the capability records in
+   `lib/motionCapabilities.js`; `scripts/probe-fal-motion-transfer.mjs` runs
+   step 1.
 6. Tests: flag off refuses before debit; a client clip or duration is
    refused; price is 36 / 72 and 23 / 46; unknown template refused; the
    adapter body pins the safety and sound fields; refund on submit failure.

@@ -46,6 +46,8 @@ const CATALOG = [
     'fal-ai/image-apps-v2/makeup-application', 'fal-ai/image-apps-v2/age-modify',
     // Zero-shot voice cloning through the existing fal provider.
     'fal-ai/zonos2',
+    // Motion transfer, staged inactive by migration 0402 (ADR-0269).
+    'fal-ai/kling-video/v3/standard/motion-control', 'fal-ai/wan/v2.2-14b/animate/replace',
 ];
 
 // Endpoints the pre-registry snapshot does not cover: corrected on purpose
@@ -56,7 +58,8 @@ const CORRECTED = new Set(['fal-ai/sana/v1.5/4.8b', 'fal-ai/kling-video/v3/pro/i
     'fal-ai/mmaudio-v2', 'fal-ai/topaz/upscale/video',
     'fal-ai/elevenlabs/text-to-dialogue/eleven-v3', 'fal-ai/qwen-3-tts/voice-design/1.7b', 'fal-ai/demucs',
     'fal-ai/image-editing/retouch', 'fal-ai/image-editing/face-enhancement', 'fal-ai/iclight-v2',
-    'fal-ai/image-apps-v2/makeup-application', 'fal-ai/image-apps-v2/age-modify', 'fal-ai/zonos2']);
+    'fal-ai/image-apps-v2/makeup-application', 'fal-ai/image-apps-v2/age-modify', 'fal-ai/zonos2',
+    'fal-ai/kling-video/v3/standard/motion-control', 'fal-ai/wan/v2.2-14b/animate/replace']);
 
 /** Every valid combination of a record's inputs: all declared keys, each enum value, each length. */
 function fixtures(record) {

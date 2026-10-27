@@ -31,7 +31,7 @@ Every clip, either route:
 - Preview: one result made on staging from a photo of a consenting team member
   or a generated person, saved as `public/showcase/motion-<template-id>.mp4`
   and `.jpg`, with our own licensed music added in the preview only.
-- A provenance line in `lib/motionTemplates.js`: route, date, prompt or
+- A provenance line in `lib/motionClips.js`: route, date, prompt or
   release reference.
 
 ## Twenty concepts
