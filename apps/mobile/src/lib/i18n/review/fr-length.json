@@ -3984,6 +3984,18 @@
     "ratio": 1.75
   },
   {
+    "id": "analyticsConsent.policy",
+    "english": "Privacy Policy",
+    "translation": "Politique de confidentialité",
+    "ratio": 2
+  },
+  {
+    "id": "analyticsConsent.allow",
+    "english": "Allow",
+    "translation": "Autoriser",
+    "ratio": 1.8
+  },
+  {
     "id": "publishDepth.bluesky.password",
     "english": "App password",
     "translation": "Mot de passe d’application",
