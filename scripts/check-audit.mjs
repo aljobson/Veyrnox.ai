@@ -23,12 +23,7 @@ const BLOCKING = new Set(['high', 'critical']);
 
 // Add an entry only when there is no fixed version to move to, and say where
 // the package sits and why that is tolerable. Remove it when the gate says so.
-export const ALLOWED = [
-  {
-    id: 'GHSA-mrhx-c7xc-m3w5',
-    reason: 'Reticle development tooling requires Zod 3; npm offers only a SemVer-major Reticle change, and the production dependency audit does not include it.',
-  },
-];
+export const ALLOWED = [];
 
 const advisoryId = (via) => /\/(GHSA(?:-[0-9a-z]{4}){3})$/i.exec(via.url || '')?.[1] ?? null;
 
