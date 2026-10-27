@@ -62,7 +62,8 @@ If a build starts failing after a dependency change, bisect these three first.
   only writers; a Frozen or held account is refused, the balance is left as it is
   (no ledger row). A new table that references `users` must be classified in
   `scripts/test-account-deletion.mjs`. The route is off unless
-  `ACCOUNT_DELETION_ENABLED` is `"true"` (not in `wrangler.jsonc`: binding cap).
+  `ACCOUNT_DELETION_ENABLED` is `"true"`; on in production since 2026-10-27
+  (owner). Remove the var to turn it off.
 - **Deleting a creation** (ADR-0116): `delete_user_job` is the only writer of `jobs.deleted_at`. It
   removes the file (queued in `asset_reap_queue`) and the prompt, and keeps the job row and every
   ledger entry: no refund, no ledger or `credit_balances` write. It refuses an unsettled job, a hold or
