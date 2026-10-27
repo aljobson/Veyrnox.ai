@@ -10,7 +10,6 @@
 
 import { SOURCE_TEMPLATES } from './sourceTemplates.js';
 import { EFFECT_CONCEPT_TEMPLATES } from './effectConceptTemplates.js';
-import { MOTION_TREND_TEMPLATES } from './motionTrendTemplates.js';
 import { EFFECT_THEMES, effectThemeId, themedTemplates } from './effectThemes.js';
 import { SHOWCASE_CLIPS } from './showcase.js';
 
@@ -42,15 +41,13 @@ const WALL_CLIP_KEYS = [
   'wall-dolphin-surf-ride',
   'wall-event-character-swap',
 ];
-// The public library includes every runnable Veyrnox recipe. The source
-// templates have owned local preview media; effect concepts use an original
-// generated treatment until a preview is ready, but remain searchable and
-// usable on both web and mobile.
-export const PRESETS = [...SOURCE_TEMPLATES, ...MOTION_TREND_TEMPLATES, ...EFFECT_CONCEPT_TEMPLATES];
-export const WALL_PRESETS = WALL_CLIP_KEYS.map((key) => SOURCE_TEMPLATES.find((p) => p.clipKey === key)).filter(Boolean);
-export const ALL_TEMPLATES = PRESETS;
-// Only advertise recipes with an actual video preview in the visual gallery.
+// Every runnable recipe stays addressable by id (its own page and direct
+// links), but only recipes with a real video preview are listed anywhere:
+// gallery, categories, themes, search, sitemap, homepage and mobile.
+export const ALL_TEMPLATES = [...SOURCE_TEMPLATES, ...EFFECT_CONCEPT_TEMPLATES];
 export const hasTemplateVideo = (preset) => Boolean(preset?.clipKey && SHOWCASE_CLIPS[preset.clipKey]?.video);
+export const PRESETS = ALL_TEMPLATES.filter(hasTemplateVideo);
+export const WALL_PRESETS = WALL_CLIP_KEYS.map((key) => SOURCE_TEMPLATES.find((p) => p.clipKey === key)).filter(Boolean);
 export const PRESET_CATEGORIES = ['ALL', 'NEW', ...CATEGORY_ORDER.filter((category) => PRESETS.some((p) => p.category === category))];
 // The first filter row is deliberately concise; the gallery can disclose the
 // complete category catalog in place without hiding choices in a scroll rail.

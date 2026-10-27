@@ -75,18 +75,11 @@ export async function signUpWithPassword(
     return body.access_token ? toSession(body, now) : null;
 }
 
-export function authorizeUrl(provider: OAuthProvider, challenge: string, redirectTo: string): string {
-    const params = new URLSearchParams({
-        provider,
-        redirect_to: redirectTo,
-        code_challenge: challenge,
-        code_challenge_method: 's256',
-    });
-    // The system authentication session deliberately shares browser cookies.
-    // Without this provider hint, Google silently reuses the last active
-    // account instead of letting a person choose among their signed-in accounts.
-    if (provider === 'google') params.set('prompt', 'select_account');
-    return `${config.supabaseUrl}/auth/v1/authorize?${params.toString()}`;
+// Sign-in starts on our own site so iOS names veyrnox.ai in its sign-in prompt, not the
+// Supabase project host. The site forwards to Supabase with a fixed return address (ADR-0106).
+export function authorizeUrl(provider: OAuthProvider, challenge: string): string {
+    const params = new URLSearchParams({ provider, code_challenge: challenge });
+    return `${config.apiBase}/auth/mobile/start?${params.toString()}`;
 }
 
 export function exchangeAuthCode(code: string, verifier: string): Promise<Session> {

@@ -20,9 +20,6 @@ const NO_ARTICLE = Object.freeze({
     internal: ['/design-system'],
     // The phone layout of pages that already have an article under /app.
     mobile: ['/m', '/m/create', '/m/credits', '/m/explore', '/m/job', '/m/library'],
-    // Behind a flag that is off (ADR-0269: MOTION_TRANSFER_ENABLED / MOTION_REPLACE_ENABLED). Vey must not describe a
-    // page people cannot reach; write the article when the flag is turned on.
-    flaggedOff: ['/app/motion'],
     // Real pages Vey can only describe from the automatic scan of their labels. Each is a candidate for a reviewed
     // article; remove it from here when one is written (the test fails if a listed route gains an article).
     autoScanOnly: [

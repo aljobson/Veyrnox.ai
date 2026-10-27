@@ -75,7 +75,6 @@
     // Cloud documents do not enable device-media uploads (ADR-0056 / roadmap D1).
     "PROJECT_MEDIA_UPLOADS_ENABLED": "false",
     // JOB_CANCEL_ENABLED (ADR job cancel) is omitted: absent is off. Needs FAL_DURABLE_DISPATCH_ENABLED to have anything to cancel.
-    // MOTION_TRANSFER_ENABLED and MOTION_REPLACE_ENABLED (ADR-0269) are omitted for the binding cap: absent is off, "true" turns each on.
     // The four fal rollout controls are intentionally omitted in production.
     // Their code paths require the exact value "true", so absence is fail-closed
     // and leaves Cloudflare text-binding headroom. Staging names them below.
@@ -208,6 +207,14 @@
     // before an admin holds a factor locks every admin out of their own
     // dashboard, so that order is not optional.
     "ADMIN_REQUIRE_AAL2": "true",
+    // REQUIRE_AAL2_WHEN_ENROLLED is deliberately absent (= off; only "true" turns
+    // it on, and the var budget in tests/workerBindingBudget.test.mjs is full).
+    // "true" makes middleware.js refuse (403 mfa_required) an aal1 token on
+    // /api/v1 for any account with a verified TOTP factor (lib/mfaEnforcement.js,
+    // migration 0404, audit 2026-10-27 H2). Keep it off until the web app asks
+    // for the code at sign-in: today only its Account page can step a session
+    // up, so turning it on first stops enrolled web users everywhere else.
+    // Turn it on in staging first.
     // ADR-0066: Jev sorts untyped provider submit refusals into
     // provider_moderation / provider_input_rejected. off | shadow | enforce.
     // Needs the TYPESAFE_API_KEY secret; shadow only logs the label.
@@ -327,6 +334,7 @@
         "UPLOAD_REQUEST_RATE_LIMIT_ENABLED": "true",
         "ASSET_LINK_RATE_LIMIT_ENABLED": "true",
         "ADMIN_REQUIRE_AAL2": "true",
+        // REQUIRE_AAL2_WHEN_ENROLLED: absent (off), as in production; set it here first once the web sign-in code prompt ships.
         // ADR-0044 (vars are not inherited). On for the activation proof: 0129 is applied here and the staging bucket's
         // CORS allows PUT with Content-Type and If-None-Match from this origin (preflight checked 2026-10-09).
         // Production CORS is ready as of 2026-10-10; the real browser/R2 activation proof is still required.

@@ -20,20 +20,18 @@ describe('supabase auth', () => {
         globalThis.fetch = fetchMock as unknown as typeof fetch;
     });
 
-    test('Google authorize url carries PKCE and always asks which account to use', () => {
-        const url = new URL(authorizeUrl('google', 'chal', 'ai.veyrnox.app://auth/callback'));
-        expect(url.pathname).toBe('/auth/v1/authorize');
-        expect(url.searchParams.get('provider')).toBe('google');
-        expect(url.searchParams.get('prompt')).toBe('select_account');
-        expect(url.searchParams.get('code_challenge')).toBe('chal');
-        expect(url.searchParams.get('code_challenge_method')).toBe('s256');
-        expect(url.searchParams.get('redirect_to')).toBe('ai.veyrnox.app://auth/callback');
+    test('sign-in starts on our own site so iOS names veyrnox.ai, not the Supabase host', () => {
+        const url = new URL(authorizeUrl('google', 'chal'));
+        expect(url.origin).toBe(new URL(OAUTH_BRIDGE_URL).origin);
+        expect(url.hostname).not.toMatch(/supabase/);
+        expect(url.pathname).toBe('/auth/mobile/start');
+        expect(Object.fromEntries(url.searchParams)).toEqual({ provider: 'google', code_challenge: 'chal' });
     });
 
-    test('Apple authorize url does not receive Google-only prompt parameters', () => {
-        const url = new URL(authorizeUrl('apple', 'chal', 'ai.veyrnox.app://auth/callback'));
+    test('Apple sign-in starts on the same route with its own provider', () => {
+        const url = new URL(authorizeUrl('apple', 'chal'));
+        expect(url.pathname).toBe('/auth/mobile/start');
         expect(url.searchParams.get('provider')).toBe('apple');
-        expect(url.searchParams.has('prompt')).toBe(false);
     });
 
     test('exchanges a PKCE code for a session with an absolute expiry', async () => {
