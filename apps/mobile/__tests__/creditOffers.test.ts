@@ -21,10 +21,10 @@ test('annual allowance uses twelve monthly grants, and annual saving compares tw
     expect(yearlySaving(year, [{ ...month, currencyCode: 'EUR' }])).toBeNull();
     expect(yearlySaving(year, [])).toBeNull();
 });
-test('typical costs are medians of positive open non-plan video and image models', () => {
+test('typical costs use the web upper median of positive open non-plan video and image models', () => {
     const model = (modality: string, credits: number, extra = {}): CatalogModel => ({ id: '', name: '', modality, credits, gated: false, durations: [5], capabilities: null, ...extra });
     expect(typicalCosts([model('video', 10), model('video', 30), model('image', 4), model('image', 7), model('image', 12),
         model('video', 999, { gated: true }), model('image', 800, { capabilities: { inputs: { plan_id: {} } } }), model('audio', 40), model('image', 0), model('video', -3)]))
-        .toEqual({ video: 20, image: 7 });
+        .toEqual({ video: 30, image: 7 });
     expect(typicalCosts([])).toEqual({ video: null, image: null });
 });

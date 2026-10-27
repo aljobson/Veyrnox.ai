@@ -4535,5 +4535,8 @@ export default {
   "creditsPage.error.cancel_failed": "취소를 확인할 수 없습니다. 다시 시도하세요.",
   "creditsPage.error.temporarily_unavailable": "청구 기능을 일시적으로 이용할 수 없습니다. 나중에 다시 시도하세요.",
   "developers.row": "개발자용 API 및 CLI",
-  "developers.mcp": "어시스턴트 연결 (MCP)"
+  "developers.mcp": "어시스턴트 연결 (MCP)",
+  "creditsPage.refundStatus": "구독이 종료되었습니다. 청약철회 환불 확인을 사용하여 환불 상태를 확인하세요.",
+  "developers.oauth.kicker": "OAuth 2.1 + PKCE 인증",
+  "developers.shareValue": "공유: {value}"
 } as const;

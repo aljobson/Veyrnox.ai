@@ -1512,6 +1512,12 @@
     "ratio": 1.7
   },
   {
+    "id": "developers.oauth.kicker",
+    "english": "OAuth 2.1 + PKCE",
+    "translation": "OAuth 2.1 + PKCE प्रमाणीकरण",
+    "ratio": 1.69
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",

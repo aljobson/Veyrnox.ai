@@ -14,7 +14,7 @@ const endpoints = [
     ['GET', '/generations/{id}/asset', 'developers.ep.asset'], ['GET', '/balance', 'developers.ep.balance'],
 ] as const;
 function ShareButton({ value }: { value: string }) {
-    return <Button variant="tertiary" size="sm" label={t('developers.share')} onPress={() => { void Share.share({ message: value }).catch(() => {}); }} />;
+    return <Button variant="tertiary" size="sm" label={t('developers.share')} accessibilityLabel={t('developers.shareValue', { value })} onPress={() => { void Share.share({ message: value }).catch(() => {}); }} />;
 }
 export default function Developers() {
     const s = useThemedStyles(sheets);
@@ -24,8 +24,8 @@ export default function Developers() {
         <Text variant="display" accessibilityRole="header">{t('developers.title')}</Text>
         <Text variant="body" tone="secondary">{t('developers.lead')}</Text>
         <Card style={s.section}>
-            <Text variant="title2" accessibilityRole="header">{t('developers.cli.kicker')}</Text>
-            <Text variant="title3" accessibilityRole="header">{t('developers.cli.title')}</Text>
+            <Text variant="micro" tone="accent">{t('developers.cli.kicker')}</Text>
+            <Text variant="title2" accessibilityRole="header">{t('developers.cli.title')}</Text>
             {COMMANDS.map(command => <View key={command} style={s.well}><Text variant="footnote" selectable>{command}</Text><ShareButton value={command} /></View>)}
             <Text variant="footnote" tone="secondary">{t('developers.cli.note')}</Text>
         </Card>
@@ -39,13 +39,17 @@ export default function Developers() {
             </View>)}
         </View>
         <View style={s.section}>
-            <Text variant="micro" tone="accent">OAuth 2.1 + PKCE</Text>
+            <Text variant="micro" tone="accent">{t('developers.oauth.kicker')}</Text>
             <Text variant="title2" accessibilityRole="header">{t('developers.oauth.title')}</Text>
             <Text variant="footnote" tone="secondary">{t('developers.oauth.p')}</Text>
             <AddressText address={OAUTH_METADATA} /><ShareButton value={OAUTH_METADATA} />
-            {(['s1', 's2', 's3'] as const).map(step => <View key={step} style={s.section}>
-                <Text variant="bodyStrong">{t(`developers.oauth.${step}.head`)}</Text>
-                <Text variant="footnote" tone="secondary">{t(`developers.oauth.${step}.body`, { code: step === 's1' ? 'token_endpoint_auth_method: none' : 'Authorization: Bearer …' })}</Text>
+            {[
+                { head: t('developers.oauth.s1.head'), body: t('developers.oauth.s1.body', { code: 'token_endpoint_auth_method: none' }) },
+                { head: t('developers.oauth.s2.head'), body: t('developers.oauth.s2.body') },
+                { head: t('developers.oauth.s3.head'), body: t('developers.oauth.s3.body', { code: 'Authorization: Bearer …' }) },
+            ].map(step => <View key={step.head} style={s.section}>
+                <Text variant="bodyStrong">{step.head}</Text>
+                <Text variant="footnote" tone="secondary">{step.body}</Text>
             </View>)}
         </View>
         <Card style={s.section}>

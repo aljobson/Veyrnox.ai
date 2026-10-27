@@ -2652,6 +2652,12 @@
     "ratio": 1.8
   },
   {
+    "id": "developers.oauth.kicker",
+    "english": "OAuth 2.1 + PKCE",
+    "translation": "Аутентификация OAuth 2.1 + PKCE",
+    "ratio": 1.94
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

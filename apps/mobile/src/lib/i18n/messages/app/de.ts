@@ -4599,5 +4599,8 @@ export default {
   "creditsPage.error.cancel_failed": "Die Kündigung konnte nicht bestätigt werden. Versuche es erneut.",
   "creditsPage.error.temporarily_unavailable": "Die Abrechnung ist vorübergehend nicht verfügbar. Versuche es später erneut.",
   "developers.row": "API und CLI für Entwickler",
-  "developers.mcp": "Assistenten verbinden (MCP)"
+  "developers.mcp": "Assistenten verbinden (MCP)",
+  "creditsPage.refundStatus": "Das Abonnement ist beendet. Prüfe die Widerrufserstattung, um den Erstattungsstatus zu sehen.",
+  "developers.oauth.kicker": "Authentifizierung mit OAuth 2.1 + PKCE",
+  "developers.shareValue": "Teilen: {value}"
 } as const;

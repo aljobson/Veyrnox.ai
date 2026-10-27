@@ -4056,6 +4056,12 @@
     "ratio": 2.25
   },
   {
+    "id": "developers.oauth.kicker",
+    "english": "OAuth 2.1 + PKCE",
+    "translation": "Authentification OAuth 2.1 + PKCE",
+    "ratio": 2.06
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

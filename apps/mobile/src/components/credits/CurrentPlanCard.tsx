@@ -15,6 +15,10 @@ export function CurrentPlanCard({ subscription: row, storeBilled, missing, retry
     const [checked, setChecked] = useState(false);
     const [offline, setOffline] = useState(isOffline());
     useEffect(() => subscribe(() => setOffline(isOffline())), []);
+    const statusLabel = {
+        pending: t('creditsPage.status.pending'), active: t('creditsPage.status.active'),
+        past_due: t('creditsPage.status.past_due'), flagged: t('creditsPage.status.flagged'), ended: t('creditsPage.status.ended'),
+    }[row.status];
     const live = row.status === 'active' || row.status === 'past_due';
     const ended = row.status === 'ended' && row.end_reason === 'cancelled_cooling_off';
     function choose(next: CancelMode) { setMode(next); setChecked(false); }
@@ -23,12 +27,12 @@ export function CurrentPlanCard({ subscription: row, storeBilled, missing, retry
         await onCancel(mode); setMode(null); setChecked(false);
     }
     return <Card style={s.card}>
-        <View style={s.row}><Text variant="title3">{planName(row.plan_id.split('-')[0])}</Text><Chip label={t(`creditsPage.status.${row.status}`)} /></View>
+        <View style={s.row}><Text variant="title3">{planName(row.plan_id.split('-')[0])}</Text><Chip label={statusLabel} /></View>
         <Text variant="body">{t('creditsPage.monthlyCredits', { count: row.credits.toLocaleString(formatLocale()) })}</Text>
         {row.current_period_end ? <Text variant="footnote" tone="secondary">{t('creditsPage.periodEnd', { date: new Date(row.current_period_end).toLocaleDateString(formatLocale(), { day: 'numeric', month: 'short', year: 'numeric' }) })}</Text> : null}
         {row.cancel_at_period_end ? <Text variant="footnote" tone="secondary">{t('creditsPage.stopped')}</Text> : null}
         {storeBilled ? <Text variant="footnote" tone="secondary">{t('creditsPage.storeBilled')}</Text> : null}
-        {message || ended ? <Text variant="footnote" tone="secondary" accessibilityLiveRegion="polite">{t(message ?? 'creditsPage.refundUnknown')}</Text> : null}
+        {message || ended ? <Text variant="footnote" tone="secondary" accessibilityLiveRegion="polite">{t(message ?? 'creditsPage.refundStatus')}</Text> : null}
         {!storeBilled && !missing ? <>
             {live && !row.cancel_at_period_end ? <Button variant="tertiary" disabled={busy} label={t('creditsPage.stop')} onPress={() => choose('period_end')} /> : null}
             {live ? <Button variant="tertiary" disabled={busy} label={t('creditsPage.cancel')} onPress={() => choose('cooling_off')} /> : null}

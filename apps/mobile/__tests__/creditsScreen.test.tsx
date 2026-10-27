@@ -2,8 +2,9 @@ import { act } from 'react';
 import * as RN from 'react-native';
 import { createRoot, type Root, type TestInstance } from 'test-renderer';
 import Credits from '../src/app/(app)/credits';
+import { publishBalance } from '../src/lib/balanceEvents';
 import { ApiError } from '../src/lib/api';
-import { bindCacheUser, wipeCache } from '../src/lib/appCache';
+import { bindCacheUser, getCacheUser, wipeCache } from '../src/lib/appCache';
 import { setLocaleFromDevice, t } from '../src/lib/i18n';
 import { markOffline, markOnline } from '../src/lib/network';
 const pkg = (id: string, product: string, price: number) => ({ identifier: id, product: { identifier: product, title: id, price, priceString: `£${price}.00`, currencyCode: 'GBP', pricePerMonthString: '£8.33' } });
@@ -141,4 +142,33 @@ test('late subscription results from another owner are discarded', async () => {
     await mount(); await act(async () => bindCacheUser('replacement-owner'));
     await act(async () => resolve({ subscription: baseRow }));
     expect(text()).not.toContain('Credits each month: 200');
+});
+
+test('tapping the active cadence preserves selection, renewal terms and Continue', async () => {
+    await mount();
+    const before = text();
+    await click(root.container.queryAll(n => n.props.accessibilityRole === 'tab' && textOf(n) === 'Monthly')[0]);
+    expect(text()).toBe(before);
+    expect(controls(t('credits.subscriptions.continue'))[0].props.accessibilityState.disabled).toBe(false);
+    expect(root.container.queryAll(n => n.props.accessibilityRole === 'radio')[0].props.accessibilityState.selected).toBe(true);
+    await press(t('credits.subscriptions.continue')); expect(mockBilling.purchase).toHaveBeenCalledWith(monthly);
+});
+test('a previously ended cooling-off row shows neutral refund guidance until an action returns a result', async () => {
+    mockRow = { ...baseRow, status: 'ended', end_reason: 'cancelled_cooling_off' };
+    await mount(); expect(text()).toContain(t('creditsPage.refundStatus'));
+    expect(text()).not.toContain(t('creditsPage.refundUnknown'));
+    mockPost.mockResolvedValue({ ok: true, mode: 'cooling_off' });
+    await cancel(t('creditsPage.checkRefund'));
+    expect(text()).toContain(t('creditsPage.refundUnknown'));
+    expect(text()).not.toContain(t('creditsPage.refundStatus'));
+});
+test('a balance publication during the first read keeps its amount and receives the free-credit fields', async () => {
+    let resolve!: (result: typeof mockBalance) => void;
+    mockApi.getBalance.mockImplementationOnce(() => new Promise(done => { resolve = done; }));
+    await mount();
+    await act(async () => publishBalance(getCacheUser()!, 1800));
+    expect(text()).toContain('1,800');
+    await act(async () => resolve(mockBalance));
+    expect(text()).toContain('1,800'); expect(text()).toContain('20 credits'); expect(text()).toContain('Nov 1, 2026');
+    expect(mockApi.getBalance).toHaveBeenCalledTimes(1);
 });

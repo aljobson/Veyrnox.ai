@@ -35,7 +35,7 @@ export function typicalCosts(models: readonly CatalogModel[]) {
     const median = (kind: 'image' | 'video') => {
         const values = models.filter(m => kindOf(m.modality) === kind && !m.gated && !m.capabilities?.inputs?.plan_id && Number.isFinite(m.credits) && m.credits > 0).map(m => m.credits).sort((a, b) => a - b);
         const middle = Math.floor(values.length / 2);
-        return values.length ? values.length % 2 ? values[middle] : (values[middle - 1] + values[middle]) / 2 : null;
+        return values.length ? values[middle] : null;
     };
     return { video: median('video'), image: median('image') };
 }

@@ -4599,5 +4599,8 @@ export default {
   "creditsPage.error.cancel_failed": "रद्द करने की पुष्टि नहीं हो सकी। फिर कोशिश करें।",
   "creditsPage.error.temporarily_unavailable": "बिलिंग अस्थायी रूप से उपलब्ध नहीं है। बाद में कोशिश करें।",
   "developers.row": "डेवलपर API और CLI",
-  "developers.mcp": "एक सहायक जोड़ें (MCP)"
+  "developers.mcp": "एक सहायक जोड़ें (MCP)",
+  "creditsPage.refundStatus": "सदस्यता समाप्त हो गई है। रिफ़ंड की स्थिति देखने के लिए कूलिंग-ऑफ़ रिफ़ंड जाँचें का उपयोग करें।",
+  "developers.oauth.kicker": "OAuth 2.1 + PKCE प्रमाणीकरण",
+  "developers.shareValue": "साझा करें: {value}"
 } as const;

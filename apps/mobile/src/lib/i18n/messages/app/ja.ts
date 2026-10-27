@@ -4535,5 +4535,8 @@ export default {
   "creditsPage.error.cancel_failed": "解約を確認できませんでした。再度お試しください。",
   "creditsPage.error.temporarily_unavailable": "請求機能は一時的に利用できません。後ほどお試しください。",
   "developers.row": "開発者向けAPIとCLI",
-  "developers.mcp": "アシスタントを接続（MCP）"
+  "developers.mcp": "アシスタントを接続（MCP）",
+  "creditsPage.refundStatus": "サブスクリプションは終了しました。「クーリングオフの返金を確認」で返金状況を確認できます。",
+  "developers.oauth.kicker": "OAuth 2.1 + PKCE 認証",
+  "developers.shareValue": "共有：{value}"
 } as const;

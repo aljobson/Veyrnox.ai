@@ -17,6 +17,7 @@ import {
 } from '../../lib/billing';
 import { t } from '../../lib/i18n';
 import { ds } from '../../theme';
+import { VeyCardPeek } from '../../components/VeyCardPeek';
 import { BalanceCard } from '../../components/credits/BalanceCard';
 import { CheckInEntry } from '../../components/credits/CheckInEntry';
 import { PackCard, PackTaxNote } from '../../components/credits/PackCard';
@@ -240,7 +241,9 @@ export default function Credits() {
                     <Text variant="body" tone="tertiary" style={styles.muted}>{t('credits.unavailable')}</Text>
                 ) : <View style={styles.packList}>{packs.map(item => (
                     <PackCard key={item.id} pack={item} best={bestPackId(packs) === item.id} saving={packSavingPercent(item, packs)} costs={costs}
-                        busy={busyId === item.id} chosen={chosenId === item.id} disabled={!billing.canPurchase || busyId !== null} onPress={() => void buyPack(item.id)} />
+                        busy={busyId === item.id} chosen={chosenId === item.id} disabled={!billing.canPurchase || busyId !== null} onPress={() => void buyPack(item.id)}>
+                        {chosenId === item.id ? <VeyCardPeek /> : null}
+                    </PackCard>
                 ))}</View>}
                 <PackTaxNote />
             </View>
