@@ -2,7 +2,8 @@ import { useRef, useState } from 'react';
 import { Alert, Text, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { ApiError } from '../../../lib/api';
-import { bodyKeys, CINEMA_RATINGS, CINEMA_WARNING_CODES, creatorMessage, jsonWrite, MALWARE_TEXT, RIGHTS_TEXT, SAFETY_TEXT, submitBody, type CreatorTitle } from '../../../lib/cinemaDrafts';
+import { bodyKeys, CINEMA_RATINGS, CINEMA_WARNING_CODES, jsonWrite, MALWARE_TEXT, RIGHTS_TEXT, SAFETY_TEXT, submitBody, type CreatorTitle } from '../../../lib/cinemaDrafts';
+import { studioMessage } from '../../../lib/cinemaStudio';
 import { t } from '../../../lib/i18n';
 import { Action, Check, CreatorClosed, ui, useCreatorScope } from './RulesLinks';
 
@@ -19,7 +20,7 @@ export function SubmitPanel({ title, onDone }: { title: CreatorTitle; onDone(): 
             keys.finish(body); onDone();
         } catch (e) {
             if (!scope.live()) return;
-            keys.finish(body, e); setNote(creatorMessage(e));
+            keys.finish(body, e); setNote(studioMessage(e, { contentType: title.content_type }));
             if (e instanceof ApiError && e.code === 'publishing_not_open') setHidden(true);
             if (e instanceof ApiError && e.code === 'already_submitted') onDone();
         } finally { if (scope.live()) { sending.current = false; setBusy(false); } }
