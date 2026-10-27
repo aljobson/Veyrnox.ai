@@ -1,3 +1,4 @@
+import { english } from '../lib/i18n/binding';
 import * as DocumentPicker from 'expo-document-picker';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
@@ -175,8 +176,8 @@ export function PublishUploadPanel(props: Props) {
     return <View style={styles.panel}>
         <Text accessibilityRole="header" style={styles.heading}>{t('publishUploads.title')}</Text>
         <Text style={styles.text}>{t('publishUploads.limits')}</Text>
-        <Pressable accessibilityRole="checkbox" accessibilityLabel={t('publishUploads.rights')} accessibilityState={{ checked, disabled: busy }} disabled={busy} onPress={() => setChecked(v => !v)} style={touchTarget}>
-            <Text style={styles.text}>{checked ? '☑ ' : '☐ '}{t('publishUploads.rights')}</Text>
+        <Pressable accessibilityRole="checkbox" accessibilityLanguage="en" accessibilityLabel={english('publishUploads.rights')} accessibilityState={{ checked, disabled: busy }} disabled={busy} onPress={() => setChecked(v => !v)} style={touchTarget}>
+            <Text style={styles.text}>{checked ? '☑ ' : '☐ '}{english('publishUploads.rights')}</Text>
         </Pressable>
         {button('publishUploads.library', () => void pick('library'), !checked || busy || remaining === 0)}
         {button('publishUploads.files', () => void pick('files'), !checked || busy || remaining === 0)}

@@ -1,0 +1,1538 @@
+[
+  {
+    "id": "acct.mfa.unlock",
+    "english": "Unlock",
+    "translation": "अनलॉक करें",
+    "ratio": 1.67
+  },
+  {
+    "id": "acct.mfa.verify",
+    "english": "Verify",
+    "translation": "सत्यापित करें",
+    "ratio": 2.17
+  },
+  {
+    "id": "acct.oauth.confirm",
+    "english": "Revoke {name}?",
+    "translation": "{name} की पहुँच रद्द करें?",
+    "ratio": 1.86
+  },
+  {
+    "id": "acct.oauth.refresh",
+    "english": "Refresh",
+    "translation": "रीफ़्रेश करें",
+    "ratio": 1.86
+  },
+  {
+    "id": "ads.editLabel",
+    "english": "Edit {name}",
+    "translation": "{name} संपादित करें",
+    "ratio": 1.73
+  },
+  {
+    "id": "ads.err.notOpen",
+    "english": "Ads are not open yet.",
+    "translation": "विज्ञापन सुविधा अभी शुरू नहीं हुई है।",
+    "ratio": 1.76
+  },
+  {
+    "id": "ads.title",
+    "english": "Ads",
+    "translation": "विज्ञापन",
+    "ratio": 2.67
+  },
+  {
+    "id": "appearance.accent",
+    "english": "Accent",
+    "translation": "एक्सेंट रंग",
+    "ratio": 1.83
+  },
+  {
+    "id": "appearance.apply",
+    "english": "Apply",
+    "translation": "लागू करें",
+    "ratio": 1.8
+  },
+  {
+    "id": "appearance.sky",
+    "english": "Sky",
+    "translation": "आसमानी",
+    "ratio": 2
+  },
+  {
+    "id": "appearance.textSize",
+    "english": "Text size",
+    "translation": "टेक्स्ट का आकार",
+    "ratio": 1.67
+  },
+  {
+    "id": "approvals.sentTitle",
+    "english": "Sent",
+    "translation": "भेजे गए",
+    "ratio": 1.75
+  },
+  {
+    "id": "autolists.enabled",
+    "english": "On",
+    "translation": "चालू",
+    "ratio": 2
+  },
+  {
+    "id": "autolists.on",
+    "english": "On",
+    "translation": "चालू",
+    "ratio": 2
+  },
+  {
+    "id": "autolists.template",
+    "english": "Post text",
+    "translation": "पोस्ट का टेक्स्ट",
+    "ratio": 1.78
+  },
+  {
+    "id": "blocks.block",
+    "english": "Block",
+    "translation": "ब्लॉक करें",
+    "ratio": 2
+  },
+  {
+    "id": "blocks.blockMember",
+    "english": "Block {name}",
+    "translation": "{name} को ब्लॉक करें",
+    "ratio": 1.67
+  },
+  {
+    "id": "blocks.blockTitle",
+    "english": "Block {name}?",
+    "translation": "{name} को ब्लॉक करें?",
+    "ratio": 1.62
+  },
+  {
+    "id": "blocks.unblock",
+    "english": "Unblock",
+    "translation": "अनब्लॉक करें",
+    "ratio": 1.71
+  },
+  {
+    "id": "brand.assetsNone",
+    "english": "No files yet.",
+    "translation": "अभी कोई फ़ाइल नहीं है।",
+    "ratio": 1.69
+  },
+  {
+    "id": "brand.saving",
+    "english": "Saving",
+    "translation": "सहेजा जा रहा है",
+    "ratio": 2.5
+  },
+  {
+    "id": "chat.add",
+    "english": "Add",
+    "translation": "जोड़ें",
+    "ratio": 2
+  },
+  {
+    "id": "chat.edit",
+    "english": "Edit {value1}",
+    "translation": "{value1} संपादित करें",
+    "ratio": 1.62
+  },
+  {
+    "id": "chat.editpersona",
+    "english": "Edit persona",
+    "translation": "पर्सोना संपादित करें",
+    "ratio": 1.67
+  },
+  {
+    "id": "chat.make.seconds",
+    "english": "{n} s",
+    "translation": "{n} सेकंड",
+    "ratio": 1.8
+  },
+  {
+    "id": "chat.nofolder",
+    "english": "No folder",
+    "translation": "कोई फ़ोल्डर नहीं",
+    "ratio": 1.78
+  },
+  {
+    "id": "chat.pin",
+    "english": "Pin",
+    "translation": "पिन करें",
+    "ratio": 2.67
+  },
+  {
+    "id": "chat.pinned",
+    "english": "Pinned",
+    "translation": "पिन किया गया",
+    "ratio": 2
+  },
+  {
+    "id": "chat.renameSave",
+    "english": "Save",
+    "translation": "सेव करें",
+    "ratio": 2
+  },
+  {
+    "id": "chat.save",
+    "english": "Save",
+    "translation": "सेव करें",
+    "ratio": 2
+  },
+  {
+    "id": "chat.settings.save",
+    "english": "Save",
+    "translation": "सेव करें",
+    "ratio": 2
+  },
+  {
+    "id": "chat.skills.group.Edit",
+    "english": "Edit",
+    "translation": "एडिट करें",
+    "ratio": 2.25
+  },
+  {
+    "id": "chat.skills.group.Plan",
+    "english": "Plan",
+    "translation": "योजना बनाएँ",
+    "ratio": 2.75
+  },
+  {
+    "id": "chat.taptoretry",
+    "english": "{value1} Tap to retry.",
+    "translation": "{value1} फिर कोशिश करने के लिए टैप करें।",
+    "ratio": 1.82
+  },
+  {
+    "id": "chat.tapToRetry",
+    "english": "Tap to retry.",
+    "translation": "फिर कोशिश करने के लिए टैप करें।",
+    "ratio": 2.38
+  },
+  {
+    "id": "chat.unpin",
+    "english": "Unpin",
+    "translation": "पिन हटाएँ",
+    "ratio": 1.8
+  },
+  {
+    "id": "chat.writing",
+    "english": "writing",
+    "translation": "लिखा जा रहा है",
+    "ratio": 2
+  },
+  {
+    "id": "chat.writingSuffix",
+    "english": ", writing",
+    "translation": ", लिखा जा रहा है",
+    "ratio": 1.78
+  },
+  {
+    "id": "cinema.progress.retry",
+    "english": "Tap to retry.",
+    "translation": "फिर कोशिश करने के लिए टैप करें।",
+    "ratio": 2.38
+  },
+  {
+    "id": "cinema.signin",
+    "english": "Sign in",
+    "translation": "साइन इन करें",
+    "ratio": 1.71
+  },
+  {
+    "id": "cinemaBrowse.cat.kids",
+    "english": "Kids",
+    "translation": "बच्चों के लिए",
+    "ratio": 3.25
+  },
+  {
+    "id": "cinemaBrowse.cat.sci-fi",
+    "english": "Sci-Fi",
+    "translation": "विज्ञान कथा",
+    "ratio": 1.83
+  },
+  {
+    "id": "cinemaBrowse.kids",
+    "english": "Kids",
+    "translation": "बच्चों के लिए",
+    "ratio": 3.25
+  },
+  {
+    "id": "cinemaBrowse.sciFi",
+    "english": "Sci-Fi",
+    "translation": "विज्ञान कथा",
+    "ratio": 1.83
+  },
+  {
+    "id": "cinemaCreator.analytics.commenters",
+    "english": "Commenters",
+    "translation": "टिप्पणी करने वाले",
+    "ratio": 1.7
+  },
+  {
+    "id": "cinemaCreator.analytics.sharers",
+    "english": "Sharers",
+    "translation": "साझा करने वाले",
+    "ratio": 2
+  },
+  {
+    "id": "cinemaCreator.analytics.voters",
+    "english": "Voters",
+    "translation": "वोट देने वाले",
+    "ratio": 2.17
+  },
+  {
+    "id": "cinemaCreator.username",
+    "english": "Username",
+    "translation": "उपयोगकर्ता नाम",
+    "ratio": 1.75
+  },
+  {
+    "id": "cinemaDrafts.drugs",
+    "english": "Drugs",
+    "translation": "नशीले पदार्थ",
+    "ratio": 2.4
+  },
+  {
+    "id": "cinemaSeries.state.free_ceiling",
+    "english": "Free viewing used this month",
+    "translation": "इस महीने का मुफ़्त देखने का कोटा इस्तेमाल हो गया",
+    "ratio": 1.71
+  },
+  {
+    "id": "cinemaSocial.followingSeries",
+    "english": "Following series",
+    "translation": "सीरीज़ को फ़ॉलो कर रहे हैं",
+    "ratio": 1.63
+  },
+  {
+    "id": "cinemaSocial.save",
+    "english": "Save",
+    "translation": "सेव करें",
+    "ratio": 2
+  },
+  {
+    "id": "cinemaSocial.tapRetry",
+    "english": "Tap to retry.",
+    "translation": "फिर कोशिश करने के लिए टैप करें।",
+    "ratio": 2.38
+  },
+  {
+    "id": "cinemaUpload.edit",
+    "english": "Edit draft",
+    "translation": "ड्राफ़्ट एडिट करें",
+    "ratio": 1.8
+  },
+  {
+    "id": "cinemaUpload.loading",
+    "english": "Loading…",
+    "translation": "लोड हो रहा है…",
+    "ratio": 1.75
+  },
+  {
+    "id": "cinemaUpload.reload",
+    "english": "Reload",
+    "translation": "फिर लोड करें",
+    "ratio": 2
+  },
+  {
+    "id": "cinemaUpload.retry",
+    "english": "Retry",
+    "translation": "फिर कोशिश करें",
+    "ratio": 2.8
+  },
+  {
+    "id": "comments.err.notOpen",
+    "english": "Comments are not open yet.",
+    "translation": "टिप्पणियों की सुविधा अभी शुरू नहीं हुई है।",
+    "ratio": 1.62
+  },
+  {
+    "id": "comments.report",
+    "english": "Report",
+    "translation": "रिपोर्ट करें",
+    "ratio": 2
+  },
+  {
+    "id": "commerce.archive",
+    "english": "Archive",
+    "translation": "संग्रहित करें",
+    "ratio": 1.86
+  },
+  {
+    "id": "commerce.editLabel",
+    "english": "Edit {name}",
+    "translation": "{name} संपादित करें",
+    "ratio": 1.73
+  },
+  {
+    "id": "connect.err.state",
+    "english": "That sign-in expired. Try again.",
+    "translation": "उस साइन-इन की समय-सीमा समाप्त हो गई। फिर कोशिश करें।",
+    "ratio": 1.63
+  },
+  {
+    "id": "create.startFrom",
+    "english": "Start from",
+    "translation": "यहाँ से शुरू करें",
+    "ratio": 1.7
+  },
+  {
+    "id": "create.workspace.fixPrompt",
+    "english": "Fix my prompt",
+    "translation": "मेरा प्रॉम्प्ट ठीक करें",
+    "ratio": 1.77
+  },
+  {
+    "id": "creativeFeatures.uploadananimalimageyoumayuse",
+    "english": "Upload an animal image you may use",
+    "translation": "जानवर की इमेज अपलोड करें जिसे इस्तेमाल करने की अनुमति हो",
+    "ratio": 1.65
+  },
+  {
+    "id": "creativeFeatures.uploadareferenceyoumayuse",
+    "english": "Upload a reference you may use",
+    "translation": "रेफ़रेंस अपलोड करें जिसे इस्तेमाल करने की अनुमति हो",
+    "ratio": 1.7
+  },
+  {
+    "id": "deleteaccount.deleting",
+    "english": "Deleting…",
+    "translation": "मिटाया जा रहा है…",
+    "ratio": 1.89
+  },
+  {
+    "id": "dev.hooks.revokeTitle",
+    "english": "Revoke {name}?",
+    "translation": "{name} की पहुँच रद्द करें?",
+    "ratio": 1.86
+  },
+  {
+    "id": "dev.keys.neverUsed",
+    "english": "never used",
+    "translation": "कभी इस्तेमाल नहीं हुई",
+    "ratio": 2.1
+  },
+  {
+    "id": "dev.keys.none",
+    "english": "No keys yet.",
+    "translation": "अभी कोई कुंजी नहीं है।",
+    "ratio": 1.83
+  },
+  {
+    "id": "dev.keys.revokeTitle",
+    "english": "Revoke {name}?",
+    "translation": "{name} की पहुँच रद्द करें?",
+    "ratio": 1.86
+  },
+  {
+    "id": "dev.loading",
+    "english": "Loading",
+    "translation": "लोड हो रहा है",
+    "ratio": 1.86
+  },
+  {
+    "id": "draw.addBox",
+    "english": "Add box",
+    "translation": "बॉक्स जोड़ें",
+    "ratio": 1.71
+  },
+  {
+    "id": "draw.tool.box",
+    "english": "Box",
+    "translation": "बॉक्स",
+    "ratio": 1.67
+  },
+  {
+    "id": "draw.undo",
+    "english": "Undo",
+    "translation": "पूर्ववत करें",
+    "ratio": 3
+  },
+  {
+    "id": "draw.use",
+    "english": "Use drawing",
+    "translation": "चित्र इस्तेमाल करें",
+    "ratio": 1.73
+  },
+  {
+    "id": "edit.endLater",
+    "english": "End later",
+    "translation": "बाद में समाप्त करें",
+    "ratio": 2.11
+  },
+  {
+    "id": "edit.start",
+    "english": "Start",
+    "translation": "शुरू करें",
+    "ratio": 1.8
+  },
+  {
+    "id": "edit.uses",
+    "english": "using {seconds} s",
+    "translation": "{seconds} सेकंड इस्तेमाल हो रहे हैं",
+    "ratio": 2.06
+  },
+  {
+    "id": "editor.0s",
+    "english": "0s",
+    "translation": "0 सेकंड",
+    "ratio": 3.5
+  },
+  {
+    "id": "editor.add",
+    "english": "Add",
+    "translation": "जोड़ें",
+    "ratio": 2
+  },
+  {
+    "id": "editor.addtext",
+    "english": "Add text",
+    "translation": "टेक्स्ट जोड़ें",
+    "ratio": 1.75
+  },
+  {
+    "id": "editor.addText",
+    "english": "Add text",
+    "translation": "टेक्स्ट जोड़ें",
+    "ratio": 1.75
+  },
+  {
+    "id": "editor.adjust",
+    "english": "Adjust",
+    "translation": "समायोजित करें",
+    "ratio": 2.17
+  },
+  {
+    "id": "editor.adjust2",
+    "english": "Adjust",
+    "translation": "समायोजित करें",
+    "ratio": 2.17
+  },
+  {
+    "id": "editor.blur",
+    "english": "Blur",
+    "translation": "धुंधलापन",
+    "ratio": 2
+  },
+  {
+    "id": "editor.copy",
+    "english": "Copy",
+    "translation": "कॉपी करें",
+    "ratio": 2.25
+  },
+  {
+    "id": "editor.cover",
+    "english": "Cover",
+    "translation": "पूरा ढकें",
+    "ratio": 1.8
+  },
+  {
+    "id": "editor.duplicate",
+    "english": "Duplicate",
+    "translation": "डुप्लिकेट बनाएँ",
+    "ratio": 1.67
+  },
+  {
+    "id": "editor.export",
+    "english": "Export",
+    "translation": "एक्सपोर्ट करें",
+    "ratio": 2.33
+  },
+  {
+    "id": "editor.group",
+    "english": "Group",
+    "translation": "समूह बनाएँ",
+    "ratio": 2
+  },
+  {
+    "id": "editor.home.empty",
+    "english": "No edits yet",
+    "translation": "अभी कोई एडिट नहीं है",
+    "ratio": 1.67
+  },
+  {
+    "id": "editor.home.retry",
+    "english": "Tap to try again",
+    "translation": "फिर कोशिश करने के लिए टैप करें",
+    "ratio": 1.88
+  },
+  {
+    "id": "editor.keepCopy",
+    "english": "Keep mine as a copy",
+    "translation": "मेरा संस्करण कॉपी के रूप में रखें",
+    "ratio": 1.74
+  },
+  {
+    "id": "editor.leave",
+    "english": "Leave",
+    "translation": "बाहर जाएँ",
+    "ratio": 1.8
+  },
+  {
+    "id": "editor.lock",
+    "english": "Lock",
+    "translation": "लॉक करें",
+    "ratio": 2
+  },
+  {
+    "id": "editor.mute",
+    "english": "Mute",
+    "translation": "म्यूट करें",
+    "ratio": 2.5
+  },
+  {
+    "id": "editor.noclips",
+    "english": "No clips",
+    "translation": "क्लिप नहीं हैं",
+    "ratio": 1.75
+  },
+  {
+    "id": "editor.nocues",
+    "english": "No cues",
+    "translation": "क्यू नहीं हैं",
+    "ratio": 1.86
+  },
+  {
+    "id": "editor.none",
+    "english": "None",
+    "translation": "कोई नहीं",
+    "ratio": 2
+  },
+  {
+    "id": "editor.oldfilm",
+    "english": "Old film",
+    "translation": "पुरानी फ़िल्म",
+    "ratio": 1.63
+  },
+  {
+    "id": "editor.redo",
+    "english": "Redo",
+    "translation": "फिर करें",
+    "ratio": 2
+  },
+  {
+    "id": "editor.reload",
+    "english": "Reload",
+    "translation": "फिर लोड करें",
+    "ratio": 2
+  },
+  {
+    "id": "editor.retryNow",
+    "english": "Retry now",
+    "translation": "अभी फिर कोशिश करें",
+    "ratio": 2
+  },
+  {
+    "id": "editor.saving",
+    "english": "Saving…",
+    "translation": "सेव हो रहा है…",
+    "ratio": 2
+  },
+  {
+    "id": "editor.split",
+    "english": "Split",
+    "translation": "विभाजित करें",
+    "ratio": 2.4
+  },
+  {
+    "id": "editor.tab.adjust",
+    "english": "Adjust",
+    "translation": "समायोजित करें",
+    "ratio": 2.17
+  },
+  {
+    "id": "editor.text",
+    "english": "Text",
+    "translation": "टेक्स्ट",
+    "ratio": 1.75
+  },
+  {
+    "id": "editor.text2",
+    "english": "Text",
+    "translation": "टेक्स्ट",
+    "ratio": 1.75
+  },
+  {
+    "id": "editor.textsize",
+    "english": "Text size",
+    "translation": "टेक्स्ट का आकार",
+    "ratio": 1.67
+  },
+  {
+    "id": "editor.track.text",
+    "english": "Text",
+    "translation": "टेक्स्ट",
+    "ratio": 1.75
+  },
+  {
+    "id": "editor.undo",
+    "english": "Undo",
+    "translation": "पूर्ववत करें",
+    "ratio": 3
+  },
+  {
+    "id": "empty.posts.title",
+    "english": "No posts yet",
+    "translation": "अभी कोई पोस्ट नहीं है",
+    "ratio": 1.75
+  },
+  {
+    "id": "faceFilters.bridal",
+    "english": "Bridal",
+    "translation": "दुल्हन का लुक",
+    "ratio": 2.17
+  },
+  {
+    "id": "files.saving",
+    "english": "Saving…",
+    "translation": "सेव हो रहा है…",
+    "ratio": 2
+  },
+  {
+    "id": "files.share2",
+    "english": "Share",
+    "translation": "साझा करें",
+    "ratio": 1.8
+  },
+  {
+    "id": "files.taptoretry",
+    "english": "{value1} Tap to retry.",
+    "translation": "{value1} फिर कोशिश करने के लिए टैप करें।",
+    "ratio": 1.82
+  },
+  {
+    "id": "film.locked",
+    "english": "locked",
+    "translation": "लॉक किया गया",
+    "ratio": 2
+  },
+  {
+    "id": "film.lOCKED",
+    "english": " · LOCKED",
+    "translation": " · लॉक किया गया",
+    "ratio": 1.67
+  },
+  {
+    "id": "film.locked2",
+    "english": "Locked",
+    "translation": "लॉक किया गया",
+    "ratio": 2
+  },
+  {
+    "id": "film.lOCKED2",
+    "english": "· LOCKED",
+    "translation": "· लॉक किया गया",
+    "ratio": 1.75
+  },
+  {
+    "id": "film.noassetsnamed",
+    "english": "No assets named.",
+    "translation": "किसी एसेट का नाम नहीं दिया गया।",
+    "ratio": 1.94
+  },
+  {
+    "id": "film.nopromptyet",
+    "english": "No prompt yet.",
+    "translation": "अभी कोई प्रॉम्प्ट नहीं है।",
+    "ratio": 1.86
+  },
+  {
+    "id": "film.saving",
+    "english": "Saving…",
+    "translation": "सेव हो रहा है…",
+    "ratio": 2
+  },
+  {
+    "id": "film.untitledfilm",
+    "english": "Untitled film",
+    "translation": "बिना शीर्षक की फ़िल्म",
+    "ratio": 1.62
+  },
+  {
+    "id": "filmCloud.loading",
+    "english": "Loading…",
+    "translation": "लोड हो रहा है…",
+    "ratio": 1.75
+  },
+  {
+    "id": "filmCloud.retry",
+    "english": "Retry",
+    "translation": "फिर कोशिश करें",
+    "ratio": 2.8
+  },
+  {
+    "id": "filmCloud.untitledfilm",
+    "english": "Untitled film",
+    "translation": "बिना शीर्षक की फ़िल्म",
+    "ratio": 1.62
+  },
+  {
+    "id": "filmStudio.nopromptyet",
+    "english": "No prompt yet",
+    "translation": "अभी प्रॉम्प्ट नहीं है",
+    "ratio": 1.62
+  },
+  {
+    "id": "filmStudio.taskasaverb",
+    "english": "Task as a verb",
+    "translation": "कार्य को क्रिया में लिखें",
+    "ratio": 1.79
+  },
+  {
+    "id": "filmStudio.untitledfilm",
+    "english": "Untitled film",
+    "translation": "बिना शीर्षक की फ़िल्म",
+    "ratio": 1.62
+  },
+  {
+    "id": "help.ask.send",
+    "english": "Ask",
+    "translation": "पूछें",
+    "ratio": 1.67
+  },
+  {
+    "id": "help.ask.title",
+    "english": "Ask Vey",
+    "translation": "Vey से पूछें",
+    "ratio": 1.71
+  },
+  {
+    "id": "helpGuides.content.library.s2.title",
+    "english": "Filter",
+    "translation": "फ़िल्टर करें",
+    "ratio": 2
+  },
+  {
+    "id": "helpGuides.content.templates.s3.title",
+    "english": "Use it",
+    "translation": "इस्तेमाल करें",
+    "ratio": 2.17
+  },
+  {
+    "id": "helpGuides.content.your-own-files.s3.title",
+    "english": "Or reuse a result",
+    "translation": "या कोई पुराना नतीजा दोबारा इस्तेमाल करें",
+    "ratio": 2.35
+  },
+  {
+    "id": "helpGuides.content.your-own-files.s4.title",
+    "english": "Confirm you may use it",
+    "translation": "पुष्टि करें कि आप इसे इस्तेमाल कर सकते हैं",
+    "ratio": 1.91
+  },
+  {
+    "id": "inbox.kind.any",
+    "english": "Any kind",
+    "translation": "कोई भी प्रकार",
+    "ratio": 1.63
+  },
+  {
+    "id": "insights.err.notOpen",
+    "english": "Best time is not open yet.",
+    "translation": "बेहतरीन समय की सुविधा अभी शुरू नहीं हुई है।",
+    "ratio": 1.65
+  },
+  {
+    "id": "insights.title",
+    "english": "Best time to post",
+    "translation": "पोस्ट करने का सबसे अच्छा समय",
+    "ratio": 1.65
+  },
+  {
+    "id": "job.deleting",
+    "english": "Deleting…",
+    "translation": "मिटाया जा रहा है…",
+    "ratio": 1.89
+  },
+  {
+    "id": "job.running",
+    "english": "Creating…",
+    "translation": "बनाया जा रहा है…",
+    "ratio": 1.78
+  },
+  {
+    "id": "language.creatorNoun.fox",
+    "english": "Firestarter",
+    "translation": "चिंगारी जगाने वाला",
+    "ratio": 1.64
+  },
+  {
+    "id": "language.creatorNoun.jellyfish",
+    "english": "Dreamer",
+    "translation": "सपनों का मुसाफ़िर",
+    "ratio": 2.43
+  },
+  {
+    "id": "language.creatorNoun.owl",
+    "english": "Finisher",
+    "translation": "काम पूरा करने वाला",
+    "ratio": 2.25
+  },
+  {
+    "id": "library.reuse",
+    "english": "Use",
+    "translation": "इस्तेमाल करें",
+    "ratio": 4.33
+  },
+  {
+    "id": "oddlings.saved.noPremise",
+    "english": "No premise yet",
+    "translation": "अभी कहानी का आधार नहीं है",
+    "ratio": 1.79
+  },
+  {
+    "id": "oddlings.sheet.canon",
+    "english": "Canon",
+    "translation": "स्थायी विवरण",
+    "ratio": 2.4
+  },
+  {
+    "id": "oddlings.sheet.premise",
+    "english": "Premise",
+    "translation": "कहानी का आधार",
+    "ratio": 1.86
+  },
+  {
+    "id": "opt.draftClear",
+    "english": "Clear draft",
+    "translation": "ड्राफ़्ट साफ़ करें",
+    "ratio": 1.64
+  },
+  {
+    "id": "opt.roll",
+    "english": "Roll",
+    "translation": "रैंडम चुनें",
+    "ratio": 2.75
+  },
+  {
+    "id": "optionLabels0.option10",
+    "english": "Bee",
+    "translation": "मधुमक्खी",
+    "ratio": 2.67
+  },
+  {
+    "id": "optionLabels0.option105",
+    "english": "Antlers",
+    "translation": "बारहसिंघे के सींग",
+    "ratio": 2.43
+  },
+  {
+    "id": "optionLabels0.option16",
+    "english": "Ant",
+    "translation": "चींटी",
+    "ratio": 1.67
+  },
+  {
+    "id": "optionLabels0.option168",
+    "english": "Goatee",
+    "translation": "गोटी दाढ़ी",
+    "ratio": 1.67
+  },
+  {
+    "id": "optionLabels0.option17",
+    "english": "Cat",
+    "translation": "बिल्ली",
+    "ratio": 2
+  },
+  {
+    "id": "optionLabels0.option171",
+    "english": "Forked Beard",
+    "translation": "दो शाखाओं वाली दाढ़ी",
+    "ratio": 1.67
+  },
+  {
+    "id": "optionLabels0.option18",
+    "english": "Dog",
+    "translation": "कुत्ता",
+    "ratio": 2
+  },
+  {
+    "id": "optionLabels0.option2",
+    "english": "Elf",
+    "translation": "एल्फ़",
+    "ratio": 1.67
+  },
+  {
+    "id": "optionLabels0.option210",
+    "english": "Short",
+    "translation": "लघु फ़िल्म",
+    "ratio": 2
+  },
+  {
+    "id": "optionLabels0.option229",
+    "english": "Arm Size",
+    "translation": "बाँहों का आकार",
+    "ratio": 1.75
+  },
+  {
+    "id": "optionLabels0.option230",
+    "english": "Leg Size",
+    "translation": "पैरों का आकार",
+    "ratio": 1.63
+  },
+  {
+    "id": "optionLabels0.option232",
+    "english": "Eye Size",
+    "translation": "आँखों का आकार",
+    "ratio": 1.63
+  },
+  {
+    "id": "optionLabels0.option234",
+    "english": "Ear Size",
+    "translation": "कानों का आकार",
+    "ratio": 1.63
+  },
+  {
+    "id": "optionLabels0.option239",
+    "english": "Bare",
+    "translation": "बिना सजावट",
+    "ratio": 2.5
+  },
+  {
+    "id": "optionLabels0.option241",
+    "english": "Ruff",
+    "translation": "झालरदार कॉलर",
+    "ratio": 3
+  },
+  {
+    "id": "optionLabels0.option27",
+    "english": "Man",
+    "translation": "पुरुष",
+    "ratio": 1.67
+  },
+  {
+    "id": "optionLabels0.option282",
+    "english": "Beehive",
+    "translation": "मधुमक्खी के छत्ते जैसी शैली",
+    "ratio": 3.86
+  },
+  {
+    "id": "optionLabels0.option297",
+    "english": "Ginger",
+    "translation": "लाल-नारंगी",
+    "ratio": 1.67
+  },
+  {
+    "id": "optionLabels0.option31",
+    "english": "Heritage",
+    "translation": "वंशीय पृष्ठभूमि",
+    "ratio": 1.88
+  },
+  {
+    "id": "optionLabels0.option39",
+    "english": "20s",
+    "translation": "20–29 वर्ष",
+    "ratio": 3.33
+  },
+  {
+    "id": "optionLabels0.option40",
+    "english": "30s",
+    "translation": "30–39 वर्ष",
+    "ratio": 3.33
+  },
+  {
+    "id": "optionLabels0.option41",
+    "english": "40s",
+    "translation": "40–49 वर्ष",
+    "ratio": 3.33
+  },
+  {
+    "id": "optionLabels0.option42",
+    "english": "50s",
+    "translation": "50–59 वर्ष",
+    "ratio": 3.33
+  },
+  {
+    "id": "optionLabels0.option43",
+    "english": "60s",
+    "translation": "60–69 वर्ष",
+    "ratio": 3.33
+  },
+  {
+    "id": "optionLabels0.option52",
+    "english": "Porcelain",
+    "translation": "चीनी मिट्टी जैसा",
+    "ratio": 1.78
+  },
+  {
+    "id": "optionLabels0.option67",
+    "english": "Eye Type",
+    "translation": "आँखों का प्रकार",
+    "ratio": 1.88
+  },
+  {
+    "id": "optionLabels0.option76",
+    "english": "Hooded eyes",
+    "translation": "ढकी पलक वाली आँखें",
+    "ratio": 1.64
+  },
+  {
+    "id": "optionLabels0.option91",
+    "english": "Gap Teeth",
+    "translation": "दाँतों में फ़ासला",
+    "ratio": 1.89
+  },
+  {
+    "id": "optionLabels1.option308",
+    "english": "Split Color",
+    "translation": "दो हिस्सों में रंग",
+    "ratio": 1.64
+  },
+  {
+    "id": "optionLabels1.option370",
+    "english": "Who",
+    "translation": "पहचान",
+    "ratio": 1.67
+  },
+  {
+    "id": "optionLabels1.option401",
+    "english": "Chaotic expert",
+    "translation": "अफ़रा-तफ़री वाला विशेषज्ञ",
+    "ratio": 1.79
+  },
+  {
+    "id": "optionLabels1.option424",
+    "english": "70s Cinema Prime",
+    "translation": "70 के दशक का सिनेमा प्राइम",
+    "ratio": 1.63
+  },
+  {
+    "id": "optionLabels1.option432",
+    "english": "Firestarter",
+    "translation": "चिंगारी जगाने वाला",
+    "ratio": 1.64
+  },
+  {
+    "id": "optionLabels1.option433",
+    "english": "Finisher",
+    "translation": "काम पूरा करने वाला",
+    "ratio": 2.25
+  },
+  {
+    "id": "optionLabels1.option435",
+    "english": "Dreamer",
+    "translation": "सपनों का मुसाफ़िर",
+    "ratio": 2.43
+  },
+  {
+    "id": "optionLabels1.option447",
+    "english": "Mostly tidy",
+    "translation": "ज़्यादातर सलीकेदार",
+    "ratio": 1.64
+  },
+  {
+    "id": "optionLabels1.option456",
+    "english": "Edit",
+    "translation": "एडिट करें",
+    "ratio": 2.25
+  },
+  {
+    "id": "optionLabels1.option457",
+    "english": "Plan",
+    "translation": "योजना बनाएँ",
+    "ratio": 2.75
+  },
+  {
+    "id": "presets.pet",
+    "english": "Pet",
+    "translation": "पालतू जानवर",
+    "ratio": 3.67
+  },
+  {
+    "id": "preview.signIn",
+    "english": "Sign in",
+    "translation": "साइन इन करें",
+    "ratio": 1.71
+  },
+  {
+    "id": "privacyExport.waiting",
+    "english": "Waiting a moment…",
+    "translation": "थोड़ी देर प्रतीक्षा हो रही है…",
+    "ratio": 1.76
+  },
+  {
+    "id": "projects.restore",
+    "english": "Restore",
+    "translation": "रीस्टोर करें",
+    "ratio": 1.71
+  },
+  {
+    "id": "projects.save",
+    "english": "Save",
+    "translation": "सेव करें",
+    "ratio": 2
+  },
+  {
+    "id": "projects.taptoretry",
+    "english": "{value1} Tap to retry.",
+    "translation": "{value1} फिर कोशिश करने के लिए टैप करें।",
+    "ratio": 1.82
+  },
+  {
+    "id": "publish.assign",
+    "english": "Assign",
+    "translation": "असाइन करें",
+    "ratio": 1.67
+  },
+  {
+    "id": "publish.edit",
+    "english": "Edit",
+    "translation": "एडिट करें",
+    "ratio": 2.25
+  },
+  {
+    "id": "publish.notext",
+    "english": "No text",
+    "translation": "टेक्स्ट नहीं",
+    "ratio": 1.71
+  },
+  {
+    "id": "publish.postnow",
+    "english": "Post now?",
+    "translation": "अभी पोस्ट करें?",
+    "ratio": 1.67
+  },
+  {
+    "id": "publish.postnow2",
+    "english": "Post now",
+    "translation": "अभी पोस्ट करें",
+    "ratio": 1.75
+  },
+  {
+    "id": "publish.publishing",
+    "english": "Publishing",
+    "translation": "प्रकाशित हो रहा है",
+    "ratio": 1.8
+  },
+  {
+    "id": "publish.save",
+    "english": "Save",
+    "translation": "सेव करें",
+    "ratio": 2
+  },
+  {
+    "id": "publish.scheduled",
+    "english": "Scheduled",
+    "translation": "शेड्यूल किया गया",
+    "ratio": 1.78
+  },
+  {
+    "id": "publish.unassign",
+    "english": "Unassign",
+    "translation": "असाइनमेंट हटाएँ",
+    "ratio": 1.88
+  },
+  {
+    "id": "publish.waiting",
+    "english": "Waiting",
+    "translation": "प्रतीक्षा में",
+    "ratio": 1.86
+  },
+  {
+    "id": "publishDeveloper.key",
+    "english": "Key",
+    "translation": "कुंजी",
+    "ratio": 1.67
+  },
+  {
+    "id": "publishHome.publishingFor",
+    "english": "Publishing for",
+    "translation": "इनके लिए पब्लिश कर रहे हैं",
+    "ratio": 1.86
+  },
+  {
+    "id": "publishHome.scheduled",
+    "english": "Scheduled",
+    "translation": "शेड्यूल किया गया",
+    "ratio": 1.78
+  },
+  {
+    "id": "publishQueueAdmin.fri",
+    "english": "Fri",
+    "translation": "शुक्र",
+    "ratio": 1.67
+  },
+  {
+    "id": "publishQueues.fri",
+    "english": "Fri",
+    "translation": "शुक्र",
+    "ratio": 1.67
+  },
+  {
+    "id": "publishUploads.retry",
+    "english": "Retry",
+    "translation": "फिर कोशिश करें",
+    "ratio": 2.8
+  },
+  {
+    "id": "publishWorkflows.empty",
+    "english": "No workflows yet.",
+    "translation": "अभी कोई कार्यप्रवाह नहीं है।",
+    "ratio": 1.65
+  },
+  {
+    "id": "publishWorkflows.loading",
+    "english": "Loading…",
+    "translation": "लोड हो रहा है…",
+    "ratio": 1.75
+  },
+  {
+    "id": "publishWorkflows.on",
+    "english": "On",
+    "translation": "चालू",
+    "ratio": 2
+  },
+  {
+    "id": "publishWorkflows.refresh",
+    "english": "Refresh",
+    "translation": "रीफ़्रेश करें",
+    "ratio": 1.86
+  },
+  {
+    "id": "queues.edit",
+    "english": "Edit queue",
+    "translation": "कतार संपादित करें",
+    "ratio": 1.7
+  },
+  {
+    "id": "queues.enabled",
+    "english": "On",
+    "translation": "चालू",
+    "ratio": 2
+  },
+  {
+    "id": "queues.on",
+    "english": "On",
+    "translation": "चालू",
+    "ratio": 2
+  },
+  {
+    "id": "rate.cta",
+    "english": "Rate Veyrnox",
+    "translation": "Veyrnox को रेटिंग दें",
+    "ratio": 1.75
+  },
+  {
+    "id": "report.report",
+    "english": "Report",
+    "translation": "रिपोर्ट करें",
+    "ratio": 2
+  },
+  {
+    "id": "reports.cadence.monthly",
+    "english": "sent monthly",
+    "translation": "हर महीने भेजा जाता है",
+    "ratio": 1.75
+  },
+  {
+    "id": "reports.cadence.weekly",
+    "english": "sent weekly",
+    "translation": "हर सप्ताह भेजा जाता है",
+    "ratio": 2
+  },
+  {
+    "id": "reports.shareAs",
+    "english": "Share {name} as {format}",
+    "translation": "{name} को {format} के रूप में साझा करें",
+    "ratio": 1.63
+  },
+  {
+    "id": "share.invite.joining",
+    "english": "Joining",
+    "translation": "शामिल हो रहे हैं",
+    "ratio": 2.29
+  },
+  {
+    "id": "share.loading",
+    "english": "Loading",
+    "translation": "लोड हो रहा है",
+    "ratio": 1.86
+  },
+  {
+    "id": "share.review.reject",
+    "english": "Reject",
+    "translation": "अस्वीकार करें",
+    "ratio": 2.17
+  },
+  {
+    "id": "share.review.saving",
+    "english": "Saving",
+    "translation": "सहेजा जा रहा है",
+    "ratio": 2.5
+  },
+  {
+    "id": "share.review.title",
+    "english": "Review a post",
+    "translation": "पोस्ट की समीक्षा करें",
+    "ratio": 1.62
+  },
+  {
+    "id": "signIn.busy",
+    "english": "Signing in",
+    "translation": "साइन इन हो रहा है",
+    "ratio": 1.7
+  },
+  {
+    "id": "smartlink.save",
+    "english": "Save",
+    "translation": "सेव करें",
+    "ratio": 2
+  },
+  {
+    "id": "smartlink.saved",
+    "english": "Saved.",
+    "translation": "सहेजा गया।",
+    "ratio": 1.67
+  },
+  {
+    "id": "srch.s.explore",
+    "english": "Explore",
+    "translation": "एक्सप्लोर करें",
+    "ratio": 2
+  },
+  {
+    "id": "start.explore",
+    "english": "Explore",
+    "translation": "एक्सप्लोर करें",
+    "ratio": 2
+  },
+  {
+    "id": "studioSkills.fixmyprompt",
+    "english": "Fix my prompt",
+    "translation": "मेरा प्रॉम्प्ट ठीक करें",
+    "ratio": 1.77
+  },
+  {
+    "id": "tabs.explore",
+    "english": "Explore",
+    "translation": "एक्सप्लोर करें",
+    "ratio": 2
+  },
+  {
+    "id": "team.inviteTitle",
+    "english": "Invite {email}?",
+    "translation": "{email} को आमंत्रित करें?",
+    "ratio": 1.67
+  },
+  {
+    "id": "toolDirectory.expand",
+    "english": "Expand",
+    "translation": "विस्तार करें",
+    "ratio": 2
+  },
+  {
+    "id": "unlock.ads.title",
+    "english": "Unlock ads",
+    "translation": "विज्ञापन अनलॉक करें",
+    "ratio": 1.9
+  },
+  {
+    "id": "vibe.audience.audience",
+    "english": "My audience",
+    "translation": "अपने दर्शकों के लिए",
+    "ratio": 1.73
+  },
+  {
+    "id": "vibe.audience.customers",
+    "english": "My customers",
+    "translation": "अपने ग्राहकों के लिए",
+    "ratio": 1.67
+  },
+  {
+    "id": "vibe.audience.kids",
+    "english": "My kids",
+    "translation": "अपने बच्चों के लिए",
+    "ratio": 2.57
+  },
+  {
+    "id": "vibe.audience.me",
+    "english": "Me",
+    "translation": "अपने लिए",
+    "ratio": 4
+  },
+  {
+    "id": "vibe.audience.nobody_yet",
+    "english": "Nobody yet",
+    "translation": "अभी किसी के लिए नहीं",
+    "ratio": 2
+  },
+  {
+    "id": "vibe.chaos.1",
+    "english": "Mostly tidy",
+    "translation": "ज़्यादातर सलीकेदार",
+    "ratio": 1.64
+  },
+  {
+    "id": "vibe.pace.fox",
+    "english": "Fox",
+    "translation": "लोमड़ी",
+    "ratio": 2
+  },
+  {
+    "id": "vibe.pace.owl",
+    "english": "Owl",
+    "translation": "उल्लू",
+    "ratio": 1.67
+  },
+  {
+    "id": "vibe.start",
+    "english": "Start",
+    "translation": "शुरू करें",
+    "ratio": 1.8
+  },
+  {
+    "id": "vibe.voice.straight.sub",
+    "english": "Facts, no fluff.",
+    "translation": "सीधे तथ्य, बेकार की बातें नहीं।",
+    "ratio": 1.94
+  },
+  {
+    "id": "videoAgent.planning",
+    "english": "Planning…",
+    "translation": "योजना बन रही है…",
+    "ratio": 1.78
+  },
+  {
+    "id": "videoAgent.step3.title",
+    "english": "Approve to start",
+    "translation": "शुरू करने के लिए मंज़ूरी दें",
+    "ratio": 1.75
+  },
+  {
+    "id": "oauth.signIn",
+    "english": "Sign in",
+    "translation": "साइन इन करें",
+    "ratio": 1.71
+  },
+  {
+    "id": "social.saving",
+    "english": "Saving…",
+    "translation": "सेव हो रहा है…",
+    "ratio": 2
+  },
+  {
+    "id": "cinema.share.share",
+    "english": "Share",
+    "translation": "साझा करें",
+    "ratio": 1.8
+  },
+  {
+    "id": "oauth.declining",
+    "english": "Declining…",
+    "translation": "अस्वीकार हो रहा है…",
+    "ratio": 1.9
+  },
+  {
+    "id": "oauth.deny",
+    "english": "Deny",
+    "translation": "मना करें",
+    "ratio": 2
+  },
+  {
+    "id": "checkin.lastDay",
+    "english": "Day 6+",
+    "translation": "दिन 6 और आगे",
+    "ratio": 2
+  }
+]

@@ -1,4 +1,5 @@
 import { t } from './i18n';
+import { english } from './i18n/binding';
 import * as Crypto from 'expo-crypto';
 import { ApiError, type ApiClient } from './api';
 import { CATEGORIES } from './cinemaBrowse';
@@ -8,7 +9,7 @@ import { isDefiniteRefusal } from './draftKey';
 export const RIGHTS_VERSION = 'rights-2026-10-13';
 export const CINEMA_POLICY_VERSION = 'cinema-safety-2026-10-13';
 export const RIGHTS_TEXT = 'I own or hold the rights to everything in this title, including any real people, voices, music and footage, and I have declared its AI use truthfully.';
-export const SAFETY_TEXT = t('cinemaDrafts.thistitlecontainsnonuditypornographyexplicit');
+export const SAFETY_TEXT = english('cinemaDrafts.thistitlecontainsnonuditypornographyexplicit');
 export const MALWARE_TEXT = 'I have not intentionally included malware, executable code, disguised files or links intended to compromise viewers or Veyrnox.';
 export const CINEMA_RATINGS = [['ALL', t('cinemaDrafts.allages')], ['PG', t('cinemaDrafts.parentalguidance')], ['12', '12+'], ['15', '15+'], ['18', '18+']] as const;
 export const CINEMA_WARNING_CODES = [['violence', t('cinemaDrafts.violence')], ['graphic_violence', t('cinemaDrafts.graphicviolence')], ['strong_language', t('cinemaDrafts.stronglanguage')], ['sex_references', t('cinemaDrafts.sexreferences')], ['drugs', t('cinemaDrafts.drugs')], ['horror', t('cinemaDrafts.horrororthreat')], ['self_harm', 'Self-harm or suicide'], ['discrimination', t('cinemaDrafts.discrimination')], ['flashing_images', t('cinemaDrafts.flashingimages')]] as const;

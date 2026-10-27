@@ -74,7 +74,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const transientFailure = useRef(false);
     const dropped = useRef(false);
     const refreshInFlight = useRef<Promise<Session | null> | null>(null);
-    const canReloadSession = useCallback(() => !!sessionRef.current && persistedRefresh.current === sessionRef.current.refreshToken && !refreshInFlight.current, []);
+    // Notify effects when durability changes even if status remains signedIn.
+    const [sessionRevision, setSessionRevision] = useState(0);
+    const canReloadSession = useCallback(() => !!sessionRef.current && persistedRefresh.current === sessionRef.current.refreshToken && !refreshInFlight.current, [sessionRevision]);
 
     const adopt = useCallback(async (session: Session) => {
         sessionRef.current = session;
@@ -98,6 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // The in-memory session remains valid for this app run.
         }
         setStatus('signedIn');
+        setSessionRevision(value => value + 1);
     }, []);
 
     const drop = useCallback(async () => {
@@ -114,6 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await setCinemaUploadOwner(null).catch(() => undefined);
         await clearRefreshToken();
         setStatus('signedOut');
+        setSessionRevision(value => value + 1);
     }, []);
 
     // One refresh at a time: Supabase rotates refresh tokens, so two parallel
@@ -135,6 +139,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
         })().finally(() => {
             refreshInFlight.current = null;
+            setSessionRevision(value => value + 1);
         });
         refreshInFlight.current = run;
         return run;

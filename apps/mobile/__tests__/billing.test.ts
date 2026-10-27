@@ -88,3 +88,18 @@ describe('waitForBalanceChange', () => {
         expect(r).toEqual({ changed: false, balance: 199 });
     });
 });
+
+describe('binding renewal copy uses English substitutions in every locale', () => {
+    const { setLocaleFromDevice } = require('../src/lib/i18n');
+    afterEach(() => setLocaleFromDevice(['en']));
+    test.each(['de', 'ja', 'ar'])('%s preserves every period, store and the verbatim store price', locale => {
+        setLocaleFromDevice([locale]);
+        for (const interval of ['week', 'month', 'year'] as const) {
+            for (const store of ['ios', 'android'] as const) {
+                const price = '١٢٫٩٩ €';
+                const where = store === 'ios' ? 'your Apple ID settings' : 'the Google Play subscriptions page';
+                expect(renewalTerms(interval, price, store)).toBe(`${price} per ${interval}. Renews automatically each ${interval} until you cancel in ${where}. Cancel at least a day before renewal to avoid the next charge.`);
+            }
+        }
+    });
+});

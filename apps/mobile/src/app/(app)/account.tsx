@@ -149,7 +149,7 @@ export default function Account() {
                 </Section>
             ) : null}
 
-            <Section title={t('label.Credits')}>
+            <Section title={t('account.creditsSection')}>
                 <Link href="/history" asChild>
                     <Row icon="bookmark" label={t('account.history')} />
                 </Link>

@@ -1,3 +1,5 @@
+import { ControlLabelContext } from './ControlLabelContext';
+import { getLocale } from '../../lib/i18n';
 import { DisabledTextContext } from './DisabledTextContext';
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useRef } from 'react';
@@ -24,6 +26,7 @@ export type ButtonProps = Omit<PressableProps, 'children' | 'style'> & {
 };
 export function Button({ label, variant = 'primary', size = 'lg', tone = 'primary', icon, loading, disabled, style, textStyle, onPress, children, iconOnly, containerStyle, ...props }: ButtonProps) {
     const s = useThemedStyles(sheets);
+    const translated = getLocale() !== 'en';
     const reduced = useReducedMotion();
     const scale = useRef(new Animated.Value(1)).current;
     const blocked = disabled || loading;
@@ -57,18 +60,20 @@ export function Button({ label, variant = 'primary', size = 'lg', tone = 'primar
                 }}
                 style={({ pressed }) => [s.base, s[size], s[variant], pressed && !blocked && s[`${variant}Pressed`], style, blocked && (variant === 'primary' ? s.disabledPrimary : s.disabled)]}
             >
-                <DisabledTextContext value={!!blocked && variant === 'primary'}>
-                {loading ? (
-                    <ActivityIndicator color={ink.color} />
-                ) : children ?? (
-                    <>
-                        {icon ? <Icon name={icon} size={20} tint={ink.color} /> : null}
-                        {!iconOnly ? <Text variant="bodyStrong" style={[ink, textStyle, blocked && variant === 'primary' && s.disabledInk]}>
-                            {label}
-                        </Text> : null}
-                    </>
-                )}
-                </DisabledTextContext>
+                <ControlLabelContext value>
+                    <DisabledTextContext value={!!blocked && variant === 'primary'}>
+                    {loading ? (
+                        <ActivityIndicator color={ink.color} />
+                    ) : children ?? (
+                        <>
+                            {icon ? <Icon name={icon} size={20} tint={ink.color} /> : null}
+                            {!iconOnly ? <Text variant="bodyStrong" style={[ink, translated && { textAlign: 'center' }, textStyle, blocked && variant === 'primary' && s.disabledInk]}>
+                                {label}
+                            </Text> : null}
+                        </>
+                    )}
+                    </DisabledTextContext>
+                </ControlLabelContext>
             </Pressable>
         </Animated.View>
     );

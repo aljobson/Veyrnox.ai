@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Chip, Text, themedStyles, useThemedStyles } from './ui';
 import { useAuth } from '../auth/AuthProvider';
 import { ACTIVE_LOCALES, getLocale, t, type LocaleCode } from '../lib/i18n';
+import { directionReconciler, reconcileLanguageDirection } from '../lib/languageDirection';
 import { activeLanguages, changeLanguage } from '../lib/languageTransition';
 import { ds } from '../theme';
 
@@ -24,11 +25,12 @@ export function LanguageChoice({ returnPath, active = ACTIVE_LOCALES, onComplete
         setBusy(true);
         setFailed(false);
         const unchanged = picked === getLocale();
-        const ok = unchanged
-            ? (onComplete ? await saveLanguage(picked, true) : true)
+        const ready = await directionReconciler.beforeChoice();
+        const ok = ready && (unchanged
+            ? ((onComplete ? await saveLanguage(picked, true) : true) && await reconcileLanguageDirection(returnPath, { signedIn: status === 'signedIn', canReloadSession }))
             : await changeLanguage(picked, returnPath, { signedIn: status === 'signedIn', canReloadSession }, {
                 active, onChosen: code => status === 'signedIn' ? saveAccountLanguage(api, code) : Promise.resolve(),
-            });
+            }));
         if (ok && unchanged) { if (onComplete) onComplete(); else router.back(); }
         if (!ok) setFailed(true);
         setBusy(false);

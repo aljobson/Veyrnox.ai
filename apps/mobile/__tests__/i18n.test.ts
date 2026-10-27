@@ -56,7 +56,7 @@ describe('app translator', () => {
     test('defaults to English and follows the device', () => {
         expect(getLocale()).toBe('en');
         expect(setLocaleFromDevice(['de-DE'])).toBe('de');
-        expect(t('net.offline')).toBe(en['net.offline']); // no German catalog yet: English, not a key
+        expect(t('net.offline')).toBe("Du bist offline. Gespeicherte Inhalte werden angezeigt.");
         setLocaleFromDevice(['en-US']);
     });
 });

@@ -1,4 +1,5 @@
 import { t } from './i18n';
+import { english } from './i18n/binding';
 import { ApiError } from './api';
 
 // ADR-0128 (Apple 5.1.2(i), Google AI-content policy): before the app sends a person's content to a third-party AI
@@ -20,7 +21,7 @@ export const AI_CONSENT_VERSION = 'ai-share-2026-10-18';
 export const AI_CONSENT_TEXT = {
     title: t('aiConsent.beforeyoucreate'),
     body:
-        t('aiConsent.body'),
+        english('aiConsent.body'),
     privacyLabel: t('aiConsent.readthePrivacyPolicy'),
     agree: t('aiConsent.agreeandcontinue'),
     decline: t('aiConsent.notnow'),

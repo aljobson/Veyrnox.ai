@@ -35,7 +35,7 @@ export function AiConsentHost() {
                 <View style={styles.backdrop}>
                     <View style={styles.card}>
                         <Text variant="title2">{AI_CONSENT_TEXT.title}</Text>
-                        <Text>{AI_CONSENT_TEXT.body}</Text>
+                        <Text accessibilityLanguage="en">{AI_CONSENT_TEXT.body}</Text>
                         <Button variant="tertiary" accessibilityRole="link" label={AI_CONSENT_TEXT.privacyLabel} onPress={() => setReading(true)} />
                         <Button label={AI_CONSENT_TEXT.agree} onPress={() => answer(true)} />
                         <Button variant="secondary" label={AI_CONSENT_TEXT.decline} onPress={() => answer(false)} />

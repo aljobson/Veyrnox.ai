@@ -47,7 +47,8 @@ describe('guided creative feature registry', () => {
         expect(detail).not.toContain('model.name');
         expect(create).toContain('readCreativeSourceHandoff');
         expect(create).toContain('sourceRights: hasReference ? sourceRights : undefined');
-        expect(create).toContain("t('form.sourceRights')");
+        expect(create).toContain("english('form.sourceRights')");
+        expect(create).toContain('accessibilityLanguage="en" accessibilityLabel={english(');
         expect(create).toContain('o.aspects.includes(guidedAspect)');
     });
 });

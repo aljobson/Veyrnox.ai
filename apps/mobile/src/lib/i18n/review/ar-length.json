@@ -1,0 +1,1550 @@
+[
+  {
+    "id": "account.helpSection",
+    "english": "Help",
+    "translation": "المساعدة",
+    "ratio": 2
+  },
+  {
+    "id": "acct.brandKit",
+    "english": "Brand kit",
+    "translation": "حزمة العلامة التجارية",
+    "ratio": 2.33
+  },
+  {
+    "id": "acct.dev.everywhereTitle",
+    "english": "Sign out everywhere?",
+    "translation": "هل تريد تسجيل الخروج من كل الأجهزة؟",
+    "ratio": 1.75
+  },
+  {
+    "id": "acct.dev.othersTitle",
+    "english": "Sign out other devices?",
+    "translation": "هل تريد تسجيل الخروج من الأجهزة الأخرى؟",
+    "ratio": 1.7
+  },
+  {
+    "id": "acct.email",
+    "english": "Email",
+    "translation": "البريد الإلكتروني",
+    "ratio": 3.4
+  },
+  {
+    "id": "acct.method.email",
+    "english": "email and password",
+    "translation": "البريد الإلكتروني وكلمة المرور",
+    "ratio": 1.67
+  },
+  {
+    "id": "acct.profile",
+    "english": "Profile",
+    "translation": "الملف الشخصي",
+    "ratio": 1.71
+  },
+  {
+    "id": "acct.pw.send",
+    "english": "Email me a code",
+    "translation": "إرسال الرمز بالبريد الإلكتروني",
+    "ratio": 2
+  },
+  {
+    "id": "ads.ageMax",
+    "english": "Oldest age",
+    "translation": "الحد الأقصى للعمر",
+    "ratio": 1.7
+  },
+  {
+    "id": "ads.objective.leads",
+    "english": "Leads",
+    "translation": "العملاء المحتملون",
+    "ratio": 3.4
+  },
+  {
+    "id": "ads.status.paused",
+    "english": "Paused",
+    "translation": "متوقف مؤقتًا",
+    "ratio": 2
+  },
+  {
+    "id": "ads.title",
+    "english": "Ads",
+    "translation": "إعلانات",
+    "ratio": 2.33
+  },
+  {
+    "id": "analytics.posts",
+    "english": "Posts",
+    "translation": "المنشورات",
+    "ratio": 1.8
+  },
+  {
+    "id": "appearance.accent",
+    "english": "Accent",
+    "translation": "لون التمييز",
+    "ratio": 1.83
+  },
+  {
+    "id": "appearance.l",
+    "english": "L",
+    "translation": "كبير",
+    "ratio": 4
+  },
+  {
+    "id": "appearance.m",
+    "english": "M",
+    "translation": "متوسط",
+    "ratio": 5
+  },
+  {
+    "id": "appearance.s",
+    "english": "S",
+    "translation": "صغير",
+    "ratio": 4
+  },
+  {
+    "id": "appearance.sky",
+    "english": "Sky",
+    "translation": "سماوي",
+    "ratio": 1.67
+  },
+  {
+    "id": "appearance.xl",
+    "english": "XL",
+    "translation": "كبير جدًا",
+    "ratio": 4.5
+  },
+  {
+    "id": "autolists.edit",
+    "english": "Edit autolist",
+    "translation": "تعديل القائمة التلقائية",
+    "ratio": 1.77
+  },
+  {
+    "id": "autolists.enabled",
+    "english": "On",
+    "translation": "مفعّل",
+    "ratio": 2.5
+  },
+  {
+    "id": "autolists.off",
+    "english": "Off",
+    "translation": "إيقاف",
+    "ratio": 1.67
+  },
+  {
+    "id": "autolists.on",
+    "english": "On",
+    "translation": "مفعّل",
+    "ratio": 2.5
+  },
+  {
+    "id": "autolists.queue",
+    "english": "Queue",
+    "translation": "قائمة الانتظار",
+    "ratio": 2.8
+  },
+  {
+    "id": "autolists.save",
+    "english": "Save autolist",
+    "translation": "حفظ القائمة التلقائية",
+    "ratio": 1.62
+  },
+  {
+    "id": "brand.assets",
+    "english": "Brand assets",
+    "translation": "أصول العلامة التجارية",
+    "ratio": 1.75
+  },
+  {
+    "id": "brand.saving",
+    "english": "Saving",
+    "translation": "جارٍ الحفظ",
+    "ratio": 1.67
+  },
+  {
+    "id": "brand.title",
+    "english": "Brand kit",
+    "translation": "حزمة العلامة التجارية",
+    "ratio": 2.33
+  },
+  {
+    "id": "brandKit.mybrand",
+    "english": "My brand",
+    "translation": "علامتي التجارية",
+    "ratio": 1.88
+  },
+  {
+    "id": "brands.title",
+    "english": "Brand",
+    "translation": "العلامة التجارية",
+    "ratio": 3.2
+  },
+  {
+    "id": "calendar.posts.few",
+    "english": "{count} posts",
+    "translation": "عدد المنشورات: {count}",
+    "ratio": 1.69
+  },
+  {
+    "id": "calendar.posts.many",
+    "english": "{count} posts",
+    "translation": "عدد المنشورات: {count}",
+    "ratio": 1.69
+  },
+  {
+    "id": "calendar.posts.one",
+    "english": "{count} post",
+    "translation": "منشور واحد ({count})",
+    "ratio": 1.67
+  },
+  {
+    "id": "calendar.posts.other",
+    "english": "{count} posts",
+    "translation": "عدد المنشورات: {count}",
+    "ratio": 1.69
+  },
+  {
+    "id": "calendar.posts.two",
+    "english": "{count} posts",
+    "translation": "عدد المنشورات: {count}",
+    "ratio": 1.69
+  },
+  {
+    "id": "calendar.posts.zero",
+    "english": "{count} posts",
+    "translation": "عدد المنشورات: {count}",
+    "ratio": 1.69
+  },
+  {
+    "id": "calendar.postsMany",
+    "english": "{count} posts",
+    "translation": "عدد المنشورات: {count}",
+    "ratio": 1.69
+  },
+  {
+    "id": "calendar.postsOne",
+    "english": "{count} post",
+    "translation": "منشور واحد ({count})",
+    "ratio": 1.67
+  },
+  {
+    "id": "chat.add",
+    "english": "Add",
+    "translation": "إضافة",
+    "ratio": 1.67
+  },
+  {
+    "id": "chat.chat",
+    "english": "chat",
+    "translation": "الدردشة",
+    "ratio": 1.75
+  },
+  {
+    "id": "chat.chat2",
+    "english": "Chat",
+    "translation": "الدردشة",
+    "ratio": 1.75
+  },
+  {
+    "id": "chat.chatFallback",
+    "english": "Chat",
+    "translation": "الدردشة",
+    "ratio": 1.75
+  },
+  {
+    "id": "chat.chats",
+    "english": "Chats",
+    "translation": "المحادثات",
+    "ratio": 1.8
+  },
+  {
+    "id": "chat.chats2",
+    "english": "chats",
+    "translation": "المحادثات",
+    "ratio": 1.8
+  },
+  {
+    "id": "chat.composer.chat",
+    "english": "Chat",
+    "translation": "الدردشة",
+    "ratio": 1.75
+  },
+  {
+    "id": "chat.delete.keep",
+    "english": "Keep it",
+    "translation": "الاحتفاظ بها",
+    "ratio": 1.71
+  },
+  {
+    "id": "chat.folderCount.few",
+    "english": "{count} chats",
+    "translation": "عدد الدردشات: {count}",
+    "ratio": 1.62
+  },
+  {
+    "id": "chat.folderCount.many",
+    "english": "{count} chats",
+    "translation": "عدد الدردشات: {count}",
+    "ratio": 1.62
+  },
+  {
+    "id": "chat.folderCount.one",
+    "english": "{count} chat",
+    "translation": "دردشة واحدة ({count})",
+    "ratio": 1.75
+  },
+  {
+    "id": "chat.folderCount.other",
+    "english": "{count} chats",
+    "translation": "عدد الدردشات: {count}",
+    "ratio": 1.62
+  },
+  {
+    "id": "chat.folderCount.two",
+    "english": "{count} chats",
+    "translation": "عدد الدردشات: {count}",
+    "ratio": 1.62
+  },
+  {
+    "id": "chat.folderCount.zero",
+    "english": "{count} chats",
+    "translation": "عدد الدردشات: {count}",
+    "ratio": 1.62
+  },
+  {
+    "id": "chat.keepit",
+    "english": "Keep it",
+    "translation": "الاحتفاظ بها",
+    "ratio": 1.71
+  },
+  {
+    "id": "chat.opt.web",
+    "english": "Web",
+    "translation": "الويب",
+    "ratio": 1.67
+  },
+  {
+    "id": "chat.pin",
+    "english": "Pin",
+    "translation": "تثبيت",
+    "ratio": 1.67
+  },
+  {
+    "id": "chat.rename",
+    "english": "Rename",
+    "translation": "غيّر الاسم",
+    "ratio": 1.67
+  },
+  {
+    "id": "chat.rename3",
+    "english": "Rename",
+    "translation": "غيّر الاسم",
+    "ratio": 1.67
+  },
+  {
+    "id": "chat.tapToRetry",
+    "english": "Tap to retry.",
+    "translation": "اضغط لإعادة المحاولة.",
+    "ratio": 1.62
+  },
+  {
+    "id": "chat.unpin",
+    "english": "Unpin",
+    "translation": "إلغاء التثبيت",
+    "ratio": 2.6
+  },
+  {
+    "id": "chat.writing",
+    "english": "writing",
+    "translation": "جارٍ الكتابة",
+    "ratio": 1.71
+  },
+  {
+    "id": "cinema.progress.retry",
+    "english": "Tap to retry.",
+    "translation": "اضغط لإعادة المحاولة.",
+    "ratio": 1.62
+  },
+  {
+    "id": "cinema.progress.watched",
+    "english": "Watched",
+    "translation": "تمت المشاهدة",
+    "ratio": 1.71
+  },
+  {
+    "id": "cinema.signin",
+    "english": "Sign in",
+    "translation": "تسجيل الدخول",
+    "ratio": 1.71
+  },
+  {
+    "id": "cinemaBrowse.tab.profile",
+    "english": "Profile",
+    "translation": "الملف الشخصي",
+    "ratio": 1.71
+  },
+  {
+    "id": "cinemaBrowse.tab.saved",
+    "english": "Saved",
+    "translation": "المحفوظات",
+    "ratio": 1.8
+  },
+  {
+    "id": "cinemaComments.spam",
+    "english": "Spam",
+    "translation": "رسائل مزعجة",
+    "ratio": 2.75
+  },
+  {
+    "id": "cinemaSocial.removeShort.creator",
+    "english": "Unfollow",
+    "translation": "إلغاء المتابعة",
+    "ratio": 1.75
+  },
+  {
+    "id": "cinemaSocial.removeShort.series",
+    "english": "Unfollow",
+    "translation": "إلغاء المتابعة",
+    "ratio": 1.75
+  },
+  {
+    "id": "cinemaSocial.saved",
+    "english": "Saved",
+    "translation": "المحفوظات",
+    "ratio": 1.8
+  },
+  {
+    "id": "cinemaSocial.tapRetry",
+    "english": "Tap to retry.",
+    "translation": "اضغط لإعادة المحاولة.",
+    "ratio": 1.62
+  },
+  {
+    "id": "cinemaUpload.disclosures",
+    "english": "AI disclosures",
+    "translation": "إفصاحات الذكاء الاصطناعي",
+    "ratio": 1.71
+  },
+  {
+    "id": "cinemaUpload.keep",
+    "english": "Keep video",
+    "translation": "الاحتفاظ بالفيديو",
+    "ratio": 1.7
+  },
+  {
+    "id": "cinemaUpload.loading",
+    "english": "Loading…",
+    "translation": "جارٍ التحميل…",
+    "ratio": 1.63
+  },
+  {
+    "id": "cinemaUpload.pause",
+    "english": "Pause",
+    "translation": "إيقاف مؤقت",
+    "ratio": 2
+  },
+  {
+    "id": "cinemaUpload.reload",
+    "english": "Reload",
+    "translation": "إعادة التحميل",
+    "ratio": 2.17
+  },
+  {
+    "id": "cinemaUpload.retry",
+    "english": "Retry",
+    "translation": "إعادة المحاولة",
+    "ratio": 2.8
+  },
+  {
+    "id": "comments.cat.spam",
+    "english": "Spam",
+    "translation": "رسائل مزعجة",
+    "ratio": 2.75
+  },
+  {
+    "id": "comments.withdrawKeep",
+    "english": "Keep it",
+    "translation": "الاحتفاظ بها",
+    "ratio": 1.71
+  },
+  {
+    "id": "compose.queue",
+    "english": "Next queue slot",
+    "translation": "الموعد التالي في قائمة الانتظار",
+    "ratio": 2.07
+  },
+  {
+    "id": "compose.queueAction",
+    "english": "Add to queue",
+    "translation": "إضافة إلى قائمة الانتظار",
+    "ratio": 2
+  },
+  {
+    "id": "compose.queueTitle",
+    "english": "Add to queue?",
+    "translation": "إضافة إلى قائمة الانتظار؟",
+    "ratio": 1.92
+  },
+  {
+    "id": "contacts.notes",
+    "english": "Notes",
+    "translation": "الملاحظات",
+    "ratio": 1.8
+  },
+  {
+    "id": "create.tier.low",
+    "english": "Low",
+    "translation": "منخفض",
+    "ratio": 1.67
+  },
+  {
+    "id": "create.workspace.total",
+    "english": "Total cost",
+    "translation": "التكلفة الإجمالية",
+    "ratio": 1.7
+  },
+  {
+    "id": "creativeFeatures.aIAdClone",
+    "english": "AI Ad Clone",
+    "translation": "محاكاة إعلان بالذكاء الاصطناعي",
+    "ratio": 2.73
+  },
+  {
+    "id": "creativeFeatures.aIAvatarGenerator",
+    "english": "AI Avatar Generator",
+    "translation": "مولّد الشخصيات الافتراضية بالذكاء الاصطناعي",
+    "ratio": 2.26
+  },
+  {
+    "id": "creativeFeatures.aIBabyGenerator",
+    "english": "AI Baby Generator",
+    "translation": "مولّد صور الأطفال بالذكاء الاصطناعي",
+    "ratio": 2.06
+  },
+  {
+    "id": "creativeFeatures.aIBabyPodcast",
+    "english": "AI Baby Podcast",
+    "translation": "بودكاست أطفال بالذكاء الاصطناعي",
+    "ratio": 2.07
+  },
+  {
+    "id": "creativeFeatures.aIHairstyleChanger",
+    "english": "AI Hairstyle Changer",
+    "translation": "تغيير تسريحة الشعر بالذكاء الاصطناعي",
+    "ratio": 1.8
+  },
+  {
+    "id": "creativeFeatures.aIHumanGenerator",
+    "english": "AI Human Generator",
+    "translation": "مولّد البشر بالذكاء الاصطناعي",
+    "ratio": 1.61
+  },
+  {
+    "id": "creativeFeatures.aILipSync",
+    "english": "AI Lip Sync",
+    "translation": "مزامنة الشفاه بالذكاء الاصطناعي",
+    "ratio": 2.82
+  },
+  {
+    "id": "creativeFeatures.aIVoiceCloning",
+    "english": "AI Voice Cloning",
+    "translation": "استنساخ الصوت بالذكاء الاصطناعي",
+    "ratio": 1.94
+  },
+  {
+    "id": "credits.plan.generation",
+    "english": "AI Generation",
+    "translation": "التوليد بالذكاء الاصطناعي",
+    "ratio": 1.92
+  },
+  {
+    "id": "dev.loading",
+    "english": "Loading",
+    "translation": "جارٍ التحميل",
+    "ratio": 1.71
+  },
+  {
+    "id": "dev.logs.s.pending",
+    "english": "Pending",
+    "translation": "قيد الانتظار",
+    "ratio": 1.71
+  },
+  {
+    "id": "draw.color.cyan",
+    "english": "Cyan",
+    "translation": "السماوي",
+    "ratio": 1.75
+  },
+  {
+    "id": "draw.color.red",
+    "english": "Red",
+    "translation": "الأحمر",
+    "ratio": 2
+  },
+  {
+    "id": "edit.end",
+    "english": "End",
+    "translation": "النهاية",
+    "ratio": 2.33
+  },
+  {
+    "id": "editor.add",
+    "english": "Add",
+    "translation": "إضافة",
+    "ratio": 1.67
+  },
+  {
+    "id": "editor.blur",
+    "english": "Blur",
+    "translation": "التمويه",
+    "ratio": 1.75
+  },
+  {
+    "id": "editor.brandkit",
+    "english": "Brand kit",
+    "translation": "حزمة العلامة التجارية",
+    "ratio": 2.33
+  },
+  {
+    "id": "editor.cues",
+    "english": "{value1} cues",
+    "translation": "عدد المقاطع النصية: {value1}",
+    "ratio": 2.15
+  },
+  {
+    "id": "editor.fadeout",
+    "english": "Fade out",
+    "translation": "اختفاء تدريجي",
+    "ratio": 1.63
+  },
+  {
+    "id": "editor.gotostart",
+    "english": "Go to start",
+    "translation": "الانتقال إلى البداية",
+    "ratio": 1.82
+  },
+  {
+    "id": "editor.hue",
+    "english": "Hue",
+    "translation": "درجة اللون",
+    "ratio": 3.33
+  },
+  {
+    "id": "editor.noclips",
+    "english": "No clips",
+    "translation": "لا توجد مقاطع",
+    "ratio": 1.63
+  },
+  {
+    "id": "editor.nocues",
+    "english": "No cues",
+    "translation": "لا توجد مقاطع نصية",
+    "ratio": 2.57
+  },
+  {
+    "id": "editor.off",
+    "english": "Off",
+    "translation": "إيقاف",
+    "ratio": 1.67
+  },
+  {
+    "id": "editor.openBrandkit",
+    "english": "Open Brand kit",
+    "translation": "فتح مجموعة العلامة التجارية",
+    "ratio": 1.93
+  },
+  {
+    "id": "editor.pan",
+    "english": "Pan",
+    "translation": "توزيع الصوت",
+    "ratio": 3.67
+  },
+  {
+    "id": "editor.pause",
+    "english": "Pause",
+    "translation": "إيقاف مؤقت",
+    "ratio": 2
+  },
+  {
+    "id": "editor.reload",
+    "english": "Reload",
+    "translation": "إعادة التحميل",
+    "ratio": 2.17
+  },
+  {
+    "id": "editor.retryNow",
+    "english": "Retry now",
+    "translation": "إعادة المحاولة الآن",
+    "ratio": 2.11
+  },
+  {
+    "id": "editor.snap",
+    "english": "Snap",
+    "translation": "محاذاة تلقائية",
+    "ratio": 3.5
+  },
+  {
+    "id": "editor.tIMELINE",
+    "english": "TIMELINE",
+    "translation": "المخطط الزمني",
+    "ratio": 1.63
+  },
+  {
+    "id": "editor.tab.timeline",
+    "english": "Timeline",
+    "translation": "المخطط الزمني",
+    "ratio": 1.63
+  },
+  {
+    "id": "editor.timeline",
+    "english": "Timeline",
+    "translation": "المخطط الزمني",
+    "ratio": 1.63
+  },
+  {
+    "id": "editor.volume",
+    "english": "Volume",
+    "translation": "مستوى الصوت",
+    "ratio": 1.83
+  },
+  {
+    "id": "files.filmmasters",
+    "english": "Film masters",
+    "translation": "النسخ الرئيسية للأفلام",
+    "ratio": 1.83
+  },
+  {
+    "id": "film.aspectratio",
+    "english": "Aspect ratio",
+    "translation": "نسبة العرض إلى الارتفاع",
+    "ratio": 1.92
+  },
+  {
+    "id": "film.remaining",
+    "english": "{count} to fix",
+    "translation": "عدد المطلوب إصلاحه: {count}",
+    "ratio": 1.93
+  },
+  {
+    "id": "film.shotCount.one",
+    "english": "{count} shot",
+    "translation": "لقطة واحدة ({count})",
+    "ratio": 1.67
+  },
+  {
+    "id": "filmCloud.loading",
+    "english": "Loading…",
+    "translation": "جارٍ التحميل…",
+    "ratio": 1.63
+  },
+  {
+    "id": "filmCloud.retry",
+    "english": "Retry",
+    "translation": "إعادة المحاولة",
+    "ratio": 2.8
+  },
+  {
+    "id": "filmCloud.shots.one",
+    "english": "{count} shot",
+    "translation": "لقطة واحدة ({count})",
+    "ratio": 1.67
+  },
+  {
+    "id": "filmStudio.pace",
+    "english": "Pace",
+    "translation": "الإيقاع",
+    "ratio": 1.75
+  },
+  {
+    "id": "filmStudio.takeaccepted",
+    "english": "Take accepted",
+    "translation": "تم قبول محاولة التصوير",
+    "ratio": 1.69
+  },
+  {
+    "id": "help.help",
+    "english": "Help",
+    "translation": "المساعدة",
+    "ratio": 2
+  },
+  {
+    "id": "inbox.state.unread",
+    "english": "Unread",
+    "translation": "غير مقروءة",
+    "ratio": 1.67
+  },
+  {
+    "id": "inbox.title",
+    "english": "Inbox",
+    "translation": "صندوق الوارد",
+    "ratio": 2.4
+  },
+  {
+    "id": "insights.posts.few",
+    "english": "{count} posts",
+    "translation": "عدد المنشورات: {count}",
+    "ratio": 1.69
+  },
+  {
+    "id": "insights.posts.many",
+    "english": "{count} posts",
+    "translation": "عدد المنشورات: {count}",
+    "ratio": 1.69
+  },
+  {
+    "id": "insights.posts.one",
+    "english": "{count} post",
+    "translation": "منشور واحد ({count})",
+    "ratio": 1.67
+  },
+  {
+    "id": "insights.posts.other",
+    "english": "{count} posts",
+    "translation": "عدد المنشورات: {count}",
+    "ratio": 1.69
+  },
+  {
+    "id": "insights.posts.two",
+    "english": "{count} posts",
+    "translation": "عدد المنشورات: {count}",
+    "ratio": 1.69
+  },
+  {
+    "id": "insights.posts.zero",
+    "english": "{count} posts",
+    "translation": "عدد المنشورات: {count}",
+    "ratio": 1.69
+  },
+  {
+    "id": "insights.weeks.few",
+    "english": "{count} weeks",
+    "translation": "عدد الأسابيع: {count}",
+    "ratio": 1.62
+  },
+  {
+    "id": "insights.weeks.many",
+    "english": "{count} weeks",
+    "translation": "عدد الأسابيع: {count}",
+    "ratio": 1.62
+  },
+  {
+    "id": "insights.weeks.one",
+    "english": "{count} week",
+    "translation": "أسبوع واحد ({count})",
+    "ratio": 1.67
+  },
+  {
+    "id": "insights.weeks.other",
+    "english": "{count} weeks",
+    "translation": "عدد الأسابيع: {count}",
+    "ratio": 1.62
+  },
+  {
+    "id": "insights.weeks.two",
+    "english": "{count} weeks",
+    "translation": "عدد الأسابيع: {count}",
+    "ratio": 1.62
+  },
+  {
+    "id": "insights.weeks.zero",
+    "english": "{count} weeks",
+    "translation": "عدد الأسابيع: {count}",
+    "ratio": 1.62
+  },
+  {
+    "id": "library.queued",
+    "english": "Queued",
+    "translation": "في قائمة الانتظار",
+    "ratio": 2.83
+  },
+  {
+    "id": "library.reuse",
+    "english": "Use",
+    "translation": "استخدام",
+    "ratio": 2.33
+  },
+  {
+    "id": "library.state.queued",
+    "english": "Queued",
+    "translation": "في قائمة الانتظار",
+    "ratio": 2.83
+  },
+  {
+    "id": "library.status.queued",
+    "english": "Queued",
+    "translation": "في قائمة الانتظار",
+    "ratio": 2.83
+  },
+  {
+    "id": "libraryFiles.days.few",
+    "english": "Expires in {count} days",
+    "translation": "عدد الأيام حتى انتهاء الصلاحية: {count}",
+    "ratio": 1.7
+  },
+  {
+    "id": "libraryFiles.days.many",
+    "english": "Expires in {count} days",
+    "translation": "عدد الأيام حتى انتهاء الصلاحية: {count}",
+    "ratio": 1.7
+  },
+  {
+    "id": "libraryFiles.days.one",
+    "english": "Expires in {count} day",
+    "translation": "تنتهي الصلاحية بعد يوم واحد ({count})",
+    "ratio": 1.68
+  },
+  {
+    "id": "libraryFiles.days.other",
+    "english": "Expires in {count} days",
+    "translation": "عدد الأيام حتى انتهاء الصلاحية: {count}",
+    "ratio": 1.7
+  },
+  {
+    "id": "libraryFiles.days.two",
+    "english": "Expires in {count} days",
+    "translation": "عدد الأيام حتى انتهاء الصلاحية: {count}",
+    "ratio": 1.7
+  },
+  {
+    "id": "libraryFiles.days.zero",
+    "english": "Expires in {count} days",
+    "translation": "عدد الأيام حتى انتهاء الصلاحية: {count}",
+    "ratio": 1.7
+  },
+  {
+    "id": "libraryFiles.expired",
+    "english": "Expired",
+    "translation": "منتهي الصلاحية",
+    "ratio": 2
+  },
+  {
+    "id": "libraryFiles.hours.few",
+    "english": "Expires in {count} hours",
+    "translation": "عدد الساعات حتى انتهاء الصلاحية: {count}",
+    "ratio": 1.67
+  },
+  {
+    "id": "libraryFiles.hours.many",
+    "english": "Expires in {count} hours",
+    "translation": "عدد الساعات حتى انتهاء الصلاحية: {count}",
+    "ratio": 1.67
+  },
+  {
+    "id": "libraryFiles.hours.one",
+    "english": "Expires in {count} hour",
+    "translation": "تنتهي الصلاحية بعد ساعة واحدة ({count})",
+    "ratio": 1.7
+  },
+  {
+    "id": "libraryFiles.hours.other",
+    "english": "Expires in {count} hours",
+    "translation": "عدد الساعات حتى انتهاء الصلاحية: {count}",
+    "ratio": 1.67
+  },
+  {
+    "id": "libraryFiles.hours.two",
+    "english": "Expires in {count} hours",
+    "translation": "عدد الساعات حتى انتهاء الصلاحية: {count}",
+    "ratio": 1.67
+  },
+  {
+    "id": "libraryFiles.hours.zero",
+    "english": "Expires in {count} hours",
+    "translation": "عدد الساعات حتى انتهاء الصلاحية: {count}",
+    "ratio": 1.67
+  },
+  {
+    "id": "menu.brandKit",
+    "english": "Brand kit",
+    "translation": "حزمة العلامة التجارية",
+    "ratio": 2.33
+  },
+  {
+    "id": "menu.help",
+    "english": "Help",
+    "translation": "المساعدة",
+    "ratio": 2
+  },
+  {
+    "id": "menu.home",
+    "english": "Home",
+    "translation": "الرئيسية",
+    "ratio": 2
+  },
+  {
+    "id": "menu.title",
+    "english": "Menu",
+    "translation": "القائمة",
+    "ratio": 1.75
+  },
+  {
+    "id": "oddlings.puppet.pause",
+    "english": "Pause preview",
+    "translation": "إيقاف المعاينة مؤقتًا",
+    "ratio": 1.62
+  },
+  {
+    "id": "oddlings.saved.noPremise",
+    "english": "No premise yet",
+    "translation": "لا توجد فكرة أساسية بعد",
+    "ratio": 1.64
+  },
+  {
+    "id": "oddlings.sheet.canon",
+    "english": "Canon",
+    "translation": "المرجع الثابت",
+    "ratio": 2.6
+  },
+  {
+    "id": "oddlings.sheet.premise",
+    "english": "Premise",
+    "translation": "الفكرة الأساسية",
+    "ratio": 2.14
+  },
+  {
+    "id": "oddlings.show",
+    "english": "Show",
+    "translation": "البرنامج",
+    "ratio": 2
+  },
+  {
+    "id": "opt.roll",
+    "english": "Roll",
+    "translation": "اختيار عشوائي",
+    "ratio": 3.25
+  },
+  {
+    "id": "optionLabels0.option143",
+    "english": "Lips",
+    "translation": "الشفتان",
+    "ratio": 1.75
+  },
+  {
+    "id": "optionLabels0.option185",
+    "english": "Chess",
+    "translation": "رقعة شطرنج",
+    "ratio": 2
+  },
+  {
+    "id": "optionLabels0.option199",
+    "english": "Curvy",
+    "translation": "ممتلئ المنحنيات",
+    "ratio": 3
+  },
+  {
+    "id": "optionLabels0.option239",
+    "english": "Bare",
+    "translation": "بلا زينة",
+    "ratio": 2
+  },
+  {
+    "id": "optionLabels0.option241",
+    "english": "Ruff",
+    "translation": "ياقة مكشكشة",
+    "ratio": 2.75
+  },
+  {
+    "id": "optionLabels0.option245",
+    "english": "Left Arm",
+    "translation": "الذراع اليسرى",
+    "ratio": 1.63
+  },
+  {
+    "id": "optionLabels0.option25",
+    "english": "Gender",
+    "translation": "النوع الاجتماعي",
+    "ratio": 2.5
+  },
+  {
+    "id": "optionLabels0.option276",
+    "english": "Buzz Cut",
+    "translation": "قصة قصيرة جدًا",
+    "ratio": 1.75
+  },
+  {
+    "id": "optionLabels0.option280",
+    "english": "Pigtails",
+    "translation": "ذيلان جانبيان",
+    "ratio": 1.63
+  },
+  {
+    "id": "optionLabels0.option281",
+    "english": "Perm",
+    "translation": "تجعيد دائم",
+    "ratio": 2.5
+  },
+  {
+    "id": "optionLabels0.option286",
+    "english": "Undercut",
+    "translation": "حلاقة الجانبين",
+    "ratio": 1.75
+  },
+  {
+    "id": "optionLabels0.option289",
+    "english": "Locs",
+    "translation": "خصل مجدولة",
+    "ratio": 2.5
+  },
+  {
+    "id": "optionLabels0.option29",
+    "english": "Trans Man",
+    "translation": "رجل عابر جندريًا",
+    "ratio": 1.78
+  },
+  {
+    "id": "optionLabels0.option297",
+    "english": "Ginger",
+    "translation": "أحمر نحاسي",
+    "ratio": 1.67
+  },
+  {
+    "id": "optionLabels0.option298",
+    "english": "Auburn",
+    "translation": "كستنائي محمر",
+    "ratio": 2
+  },
+  {
+    "id": "optionLabels0.option3",
+    "english": "Alien",
+    "translation": "كائن فضائي",
+    "ratio": 2
+  },
+  {
+    "id": "optionLabels0.option30",
+    "english": "Trans Woman",
+    "translation": "امرأة عابرة جندريًا",
+    "ratio": 1.73
+  },
+  {
+    "id": "optionLabels0.option39",
+    "english": "20s",
+    "translation": "العشرينات",
+    "ratio": 3
+  },
+  {
+    "id": "optionLabels0.option40",
+    "english": "30s",
+    "translation": "الثلاثينات",
+    "ratio": 3.33
+  },
+  {
+    "id": "optionLabels0.option41",
+    "english": "40s",
+    "translation": "الأربعينات",
+    "ratio": 3.33
+  },
+  {
+    "id": "optionLabels0.option42",
+    "english": "50s",
+    "translation": "الخمسينات",
+    "ratio": 3
+  },
+  {
+    "id": "optionLabels0.option43",
+    "english": "60s",
+    "translation": "الستينات",
+    "ratio": 2.67
+  },
+  {
+    "id": "optionLabels0.option45",
+    "english": "Deep",
+    "translation": "داكنة جدًا",
+    "ratio": 2.5
+  },
+  {
+    "id": "optionLabels0.option51",
+    "english": "Fair",
+    "translation": "فاتحة جدًا",
+    "ratio": 2.5
+  },
+  {
+    "id": "optionLabels0.option60",
+    "english": "Red",
+    "translation": "الأحمر",
+    "ratio": 2
+  },
+  {
+    "id": "optionLabels0.option98",
+    "english": "Ears",
+    "translation": "الأذنان",
+    "ratio": 1.75
+  },
+  {
+    "id": "optionLabels1.option307",
+    "english": "Teal",
+    "translation": "أزرق مخضر",
+    "ratio": 2.25
+  },
+  {
+    "id": "optionLabels1.option328",
+    "english": "Beanie",
+    "translation": "قبعة صوفية",
+    "ratio": 1.67
+  },
+  {
+    "id": "optionLabels1.option360",
+    "english": "Snack Sceptre",
+    "translation": "صولجان الوجبات الخفيفة",
+    "ratio": 1.69
+  },
+  {
+    "id": "optionLabels1.option370",
+    "english": "Who",
+    "translation": "الهوية",
+    "ratio": 2
+  },
+  {
+    "id": "optionLabels1.option378",
+    "english": "Eyes",
+    "translation": "العينان",
+    "ratio": 1.75
+  },
+  {
+    "id": "optionLabels1.option388",
+    "english": "Finish",
+    "translation": "المظهر النهائي",
+    "ratio": 2.33
+  },
+  {
+    "id": "optionLabels1.option390",
+    "english": "Deadpan turn",
+    "translation": "التفاتة جامدة التعبير",
+    "ratio": 1.75
+  },
+  {
+    "id": "optionLabels1.option424",
+    "english": "70s Cinema Prime",
+    "translation": "عدسة سينمائية ثابتة من السبعينيات",
+    "ratio": 2.06
+  },
+  {
+    "id": "optionLabels1.option459",
+    "english": "Avatars",
+    "translation": "الصور الرمزية",
+    "ratio": 1.86
+  },
+  {
+    "id": "pk.title",
+    "english": "Passkeys",
+    "translation": "مفاتيح المرور",
+    "ratio": 1.63
+  },
+  {
+    "id": "pk.unnamed",
+    "english": "Passkey",
+    "translation": "مفتاح المرور",
+    "ratio": 1.71
+  },
+  {
+    "id": "plan.menu.posts",
+    "english": "Posts",
+    "translation": "المنشورات",
+    "ratio": 1.8
+  },
+  {
+    "id": "presets.pet",
+    "english": "Pet",
+    "translation": "حيوانات أليفة",
+    "ratio": 4.33
+  },
+  {
+    "id": "preview.signIn",
+    "english": "Sign in",
+    "translation": "تسجيل الدخول",
+    "ratio": 1.71
+  },
+  {
+    "id": "projects.rename",
+    "english": "Rename",
+    "translation": "غيّر الاسم",
+    "ratio": 1.67
+  },
+  {
+    "id": "publish.keepit",
+    "english": "Keep it",
+    "translation": "الاحتفاظ بها",
+    "ratio": 1.71
+  },
+  {
+    "id": "publish.keyword",
+    "english": "Keyword",
+    "translation": "كلمة مفتاحية",
+    "ratio": 1.71
+  },
+  {
+    "id": "publish.posts",
+    "english": "Posts",
+    "translation": "المنشورات",
+    "ratio": 1.8
+  },
+  {
+    "id": "publish.unassign",
+    "english": "Unassign",
+    "translation": "إلغاء الإسناد",
+    "ratio": 1.63
+  },
+  {
+    "id": "publishBrand.brand",
+    "english": "Brand",
+    "translation": "العلامة التجارية",
+    "ratio": 3.2
+  },
+  {
+    "id": "publishDeveloper.key",
+    "english": "Key",
+    "translation": "مفتاح",
+    "ratio": 1.67
+  },
+  {
+    "id": "publishQueueAdmin.fri",
+    "english": "Fri",
+    "translation": "الجمعة",
+    "ratio": 2
+  },
+  {
+    "id": "publishQueueAdmin.mon",
+    "english": "Mon",
+    "translation": "الاثنين",
+    "ratio": 2.33
+  },
+  {
+    "id": "publishQueueAdmin.sat",
+    "english": "Sat",
+    "translation": "السبت",
+    "ratio": 1.67
+  },
+  {
+    "id": "publishQueueAdmin.sun",
+    "english": "Sun",
+    "translation": "الأحد",
+    "ratio": 1.67
+  },
+  {
+    "id": "publishQueueAdmin.thu",
+    "english": "Thu",
+    "translation": "الخميس",
+    "ratio": 2
+  },
+  {
+    "id": "publishQueueAdmin.tue",
+    "english": "Tue",
+    "translation": "الثلاثاء",
+    "ratio": 2.67
+  },
+  {
+    "id": "publishQueueAdmin.wed",
+    "english": "Wed",
+    "translation": "الأربعاء",
+    "ratio": 2.67
+  },
+  {
+    "id": "publishQueues.fri",
+    "english": "Fri",
+    "translation": "الجمعة",
+    "ratio": 2
+  },
+  {
+    "id": "publishQueues.mon",
+    "english": "Mon",
+    "translation": "الاثنين",
+    "ratio": 2.33
+  },
+  {
+    "id": "publishQueues.sat",
+    "english": "Sat",
+    "translation": "السبت",
+    "ratio": 1.67
+  },
+  {
+    "id": "publishQueues.sun",
+    "english": "Sun",
+    "translation": "الأحد",
+    "ratio": 1.67
+  },
+  {
+    "id": "publishQueues.thu",
+    "english": "Thu",
+    "translation": "الخميس",
+    "ratio": 2
+  },
+  {
+    "id": "publishQueues.tue",
+    "english": "Tue",
+    "translation": "الثلاثاء",
+    "ratio": 2.67
+  },
+  {
+    "id": "publishQueues.wed",
+    "english": "Wed",
+    "translation": "الأربعاء",
+    "ratio": 2.67
+  },
+  {
+    "id": "publishUploads.retry",
+    "english": "Retry",
+    "translation": "إعادة المحاولة",
+    "ratio": 2.8
+  },
+  {
+    "id": "publishWorkflows.loading",
+    "english": "Loading…",
+    "translation": "جارٍ التحميل…",
+    "ratio": 1.63
+  },
+  {
+    "id": "publishWorkflows.off",
+    "english": "Off",
+    "translation": "إيقاف",
+    "ratio": 1.67
+  },
+  {
+    "id": "publishWorkflows.on",
+    "english": "On",
+    "translation": "مفعّل",
+    "ratio": 2.5
+  },
+  {
+    "id": "queues.enabled",
+    "english": "On",
+    "translation": "مفعّل",
+    "ratio": 2.5
+  },
+  {
+    "id": "queues.off",
+    "english": "Off",
+    "translation": "إيقاف",
+    "ratio": 1.67
+  },
+  {
+    "id": "queues.on",
+    "english": "On",
+    "translation": "مفعّل",
+    "ratio": 2.5
+  },
+  {
+    "id": "queues.timezone",
+    "english": "Time zone",
+    "translation": "المنطقة الزمنية",
+    "ratio": 1.67
+  },
+  {
+    "id": "queues.title",
+    "english": "Queues",
+    "translation": "قوائم الانتظار",
+    "ratio": 2.33
+  },
+  {
+    "id": "share.invite.brand",
+    "english": "Brand",
+    "translation": "العلامة التجارية",
+    "ratio": 3.2
+  },
+  {
+    "id": "share.invite.joining",
+    "english": "Joining",
+    "translation": "جارٍ الانضمام",
+    "ratio": 1.86
+  },
+  {
+    "id": "share.loading",
+    "english": "Loading",
+    "translation": "جارٍ التحميل",
+    "ratio": 1.71
+  },
+  {
+    "id": "share.review.saving",
+    "english": "Saving",
+    "translation": "جارٍ الحفظ",
+    "ratio": 1.67
+  },
+  {
+    "id": "signIn.busy",
+    "english": "Signing in",
+    "translation": "جارٍ تسجيل الدخول",
+    "ratio": 1.7
+  },
+  {
+    "id": "smartlink.theme.sunset",
+    "english": "Sunset",
+    "translation": "غروب الشمس",
+    "ratio": 1.67
+  },
+  {
+    "id": "srch.s.brand",
+    "english": "Brand kit",
+    "translation": "حزمة العلامة التجارية",
+    "ratio": 2.33
+  },
+  {
+    "id": "srch.s.help",
+    "english": "Help",
+    "translation": "المساعدة",
+    "ratio": 2
+  },
+  {
+    "id": "stems.title",
+    "english": "Stems",
+    "translation": "المسارات المفصولة",
+    "ratio": 3.4
+  },
+  {
+    "id": "team.inviteEmail",
+    "english": "Email address",
+    "translation": "عنوان البريد الإلكتروني",
+    "ratio": 1.77
+  },
+  {
+    "id": "toolDirectory.lipsync",
+    "english": "Lip sync",
+    "translation": "مزامنة الشفاه",
+    "ratio": 1.63
+  },
+  {
+    "id": "toolDirectory.moretools",
+    "english": "More tools",
+    "translation": "المزيد من الأدوات",
+    "ratio": 1.7
+  },
+  {
+    "id": "vibe.audience.me",
+    "english": "Me",
+    "translation": "نفسي",
+    "ratio": 2
+  },
+  {
+    "id": "vibe.pace.fox",
+    "english": "Fox",
+    "translation": "الثعلب",
+    "ratio": 2
+  },
+  {
+    "id": "vibe.pace.owl",
+    "english": "Owl",
+    "translation": "البومة",
+    "ratio": 2
+  },
+  {
+    "id": "videoAgent.aspect",
+    "english": "Aspect ratio",
+    "translation": "نسبة العرض إلى الارتفاع",
+    "ratio": 1.92
+  },
+  {
+    "id": "oauth.signIn",
+    "english": "Sign in",
+    "translation": "تسجيل الدخول",
+    "ratio": 1.71
+  },
+  {
+    "id": "authGate.email",
+    "english": "Email",
+    "translation": "البريد الإلكتروني",
+    "ratio": 3.4
+  },
+  {
+    "id": "checkin.lastDay",
+    "english": "Day 6+",
+    "translation": "اليوم 6 وما بعده",
+    "ratio": 2.67
+  }
+]

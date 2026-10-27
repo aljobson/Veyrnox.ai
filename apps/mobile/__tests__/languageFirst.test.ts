@@ -16,7 +16,7 @@ jest.mock('expo-secure-store', () => ({
 jest.mock('expo', () => ({ reloadAppAsync: jest.fn() }));
 beforeEach(() => { mockStore.clear(); mockWriteFail = false; setLocaleFromDevice(['en']); });
 function fixture(overrides: Partial<LanguageTransition> = {}): LanguageTransition {
-    return { active: ['en', 'es', 'ar'], current: 'en', signedIn: true, canReloadSession: () => true,
+    return { active: ['en', 'es', 'ar'], current: 'en', nativeRtl: false, reconcile: jest.fn(async () => true), signedIn: true, canReloadSession: () => true,
         load: async () => 'en', save: jest.fn(async () => true), saveReturn: jest.fn(async () => true),
         onChosen: jest.fn(async () => {}), direction: jest.fn(), reload: jest.fn(async () => {}), ...overrides };
 }
@@ -63,7 +63,7 @@ test('first-launch reload returns to sign-in, without needing a signed-in creden
     expect(deps.saveReturn).toHaveBeenCalledWith('/sign-in');
 });
 test.each([['ar', true, 'en'], ['es', false, 'ar']] as const)('%s sets the direction before reload', async (code, rtl, current) => {
-    const deps = fixture({ current });
+    const deps = fixture({ current, nativeRtl: current === 'ar' });
     await changeLanguage(code, '/language', deps, deps);
     expect(deps.direction).toHaveBeenCalledWith(rtl);
     expect(deps.reload).toHaveBeenCalledTimes(1);
@@ -101,7 +101,7 @@ test('Spanish dates, calendar weekdays and Credits use the app language', () => 
     const at = new Date(2026, 9, 27, 13, 15);
     expect(at.toLocaleDateString(formatLocale('de-DE'), { weekday: 'long' })).toBe('martes');
     expect(entryDate(at.toISOString())).toBe(at.toLocaleString('es', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }));
-    expect(creditsCount(12345)).toBe(`${(12345).toLocaleString('es')} credits`);
+    expect(creditsCount(12345)).toBe(`${(12345).toLocaleString('es')} créditos`);
     expect(t('label.Library')).not.toBe('Library');
 });
 

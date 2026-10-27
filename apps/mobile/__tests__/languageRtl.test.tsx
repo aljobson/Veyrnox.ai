@@ -37,6 +37,7 @@ test('real I18nManager adapters only run for a direction change', async () => {
     await changeLanguage('ar', '/sign-in', session, deps);
     expect(allow).toHaveBeenLastCalledWith(true); expect(force).toHaveBeenLastCalledWith(true);
     setLocaleFromDevice(['ar']);
+    I18nManager.isRTL = true;
     await changeLanguage('es', '/sign-in', session, deps);
     expect(allow).toHaveBeenLastCalledWith(false); expect(force).toHaveBeenLastCalledWith(false);
 });

@@ -1,3 +1,4 @@
+import { english } from '../lib/i18n/binding';
 import { useAnnouncement } from '../lib/useAnnouncement';
 import { discardCacheCopy } from '../lib/cacheFiles';
 import { Image } from 'expo-image';
@@ -116,7 +117,7 @@ export function FaceFiltersFlow({ api, owner }: { api: ApiClient; owner: string 
         <ScrollView style={styles.screen} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
             <Stack.Screen options={{ title: t('faceFilters.title') }} />
             <Text style={styles.heading} accessibilityRole="header">{model?.name ?? t('faceFilters.title')}</Text>
-            <Text style={styles.text}>{t('faceFilters.privacy')}</Text>
+            <Text accessibilityLanguage="en" style={styles.text}>{english('faceFilters.privacy')}</Text>
             {!models && !error ? <ActivityIndicator /> : null}
             {!model ? <>
                 {models?.length === 0 ? <Text style={styles.text}>{t('faceFilters.closed')}</Text> : null}
@@ -144,7 +145,7 @@ export function FaceFiltersFlow({ api, owner }: { api: ApiClient; owner: string 
                 {model.id === 'face-relight' ? <TextInput accessibilityLabel={t('faceFilters.prompt')} placeholder={t('faceFilters.prompt')} placeholderTextColor={colors.muted} style={styles.input} editable={!busy} multiline maxLength={textInput(model)?.max ?? 2000} value={prompt} onChangeText={value => { setPrompt(value); setChecked(false); }} /> : null}
                 <View style={styles.card}><Text style={styles.price}>{t('faceFilters.price', { credits: String(model.credits) })}</Text></View>
                 {missing > 0 ? <Pressable accessibilityRole="button" accessibilityLabel={t('lowBalance.buy')} style={styles.card} onPress={() => router.push('/credits')}><Text style={styles.text}>{t('form.err.insufficient')} {t('lowBalance.buy')}</Text></Pressable> : null}
-                <Pressable accessibilityRole="checkbox" accessibilityLabel={t('faceFilters.rights')} accessibilityState={{ checked, disabled: busy }} disabled={busy} style={[styles.card, checked && styles.selected]} onPress={() => setChecked(v => !v)}><Text style={styles.text}>{checked ? '☑ ' : '☐ '}{t('faceFilters.rights')}</Text></Pressable>
+                <Pressable accessibilityRole="checkbox" accessibilityLanguage="en" accessibilityLabel={english('faceFilters.rights')} accessibilityState={{ checked, disabled: busy }} disabled={busy} style={[styles.card, checked && styles.selected]} onPress={() => setChecked(v => !v)}><Text style={styles.text}>{checked ? '☑ ' : '☐ '}{english('faceFilters.rights')}</Text></Pressable>
                 <Pressable accessibilityRole="link" accessibilityLabel={t('faceFilters.policy')} style={styles.card} onPress={() => { router.push('/legal/aup'); }}><Text style={styles.text}>{t('faceFilters.policy')}</Text></Pressable>
                 <Pressable accessibilityRole="button" accessibilityLabel={`${t('faceFilters.run')}. ${t('faceFilters.price', { credits: String(model.credits) })}`} accessibilityState={{ disabled: !ready || busy, busy }} disabled={!ready || busy} style={[styles.card, (!ready || busy) && styles.disabled]} onPress={run}><Text style={styles.text}>{t('faceFilters.run')}</Text>{busy ? <ActivityIndicator /> : null}</Pressable>
             </>}

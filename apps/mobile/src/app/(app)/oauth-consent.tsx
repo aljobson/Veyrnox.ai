@@ -4,6 +4,7 @@ import { ActivityIndicator, Linking, ScrollView, StyleSheet, Text, View } from '
 import { useAuth } from '../../auth/AuthProvider';
 import { Action, Card, Status, styles as shared } from '../../components/account/shared';
 import { t } from '../../lib/i18n';
+import { english } from '../../lib/i18n/binding';
 import { consentErrorKey, decide, fetchRequest, validAuthorizationId, type Request } from '../../lib/oauthConsent';
 import { colors, fonts, LIST_END_PADDING } from '../../theme';
 
@@ -59,14 +60,14 @@ export default function OAuthConsent() {
             {request ? (
                 <>
                     <Text style={styles.title} accessibilityRole="header">{t('oauth.connectName', { name })}</Text>
-                    <Text style={shared.help}>{request.publish ? t('oauth.summaryPublish') : t('oauth.summary')}</Text>
+                    <Text accessibilityLanguage="en" style={shared.help}>{english(request.publish ? 'oauth.summaryPublish' : 'oauth.summary')}</Text>
                     <Card title={t('oauth.access')}>
-                        {[t('oauth.models'), t('oauth.estimate'), t('oauth.limit'), t('oauth.video'), t('oauth.assets'), ...(request.publish ? [t('oauth.publishAccess')] : [])].map((line) => (
-                            <Text key={line} style={shared.help}>{`• ${line}`}</Text>
+                        {[english('oauth.models'), english('oauth.estimate'), english('oauth.limit'), english('oauth.video'), english('oauth.assets'), ...(request.publish ? [english('oauth.publishAccess')] : [])].map((line) => (
+                            <Text key={line} accessibilityLanguage="en" style={shared.help}>{`• ${line}`}</Text>
                         ))}
                         {request.scopes.length ? <Text style={shared.label}>{`${t('oauth.scopes')} ${request.scopes.join(' · ')}`}</Text> : null}
                     </Card>
-                    <Text style={shared.help}>{`${t('oauth.password')} ${request.publish ? t('oauth.restrictionsPublish') : t('oauth.restrictions')} ${t('oauth.revoke')}`}</Text>
+                    <Text accessibilityLanguage="en" style={shared.help}>{`${english('oauth.password')} ${english(request.publish ? 'oauth.restrictionsPublish' : 'oauth.restrictions')} ${english('oauth.revoke')}`}</Text>
                     <Status text={error} error />
                     <View style={{ gap: 12 }}>
                         <Action label={busy === 'approve' ? t('oauth.connecting') : t('oauth.approve')} disabled={busy !== null} onPress={() => void choose('approve')} />
