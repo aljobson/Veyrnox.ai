@@ -21,7 +21,7 @@ import { captureEvent, chooseAnalytics, setAnalyticsUser, startAnalytics } from 
 async function bodyOf(init: RequestInit) {
     if (typeof init.body === 'string') return JSON.parse(init.body);
     // Depending on the runtime, the SDK sends a gzip Buffer or a gzip Blob.
-    const body = init.body instanceof Blob ? Buffer.from(await init.body.arrayBuffer()) : init.body;
+    const body = init.body instanceof Blob ? new Uint8Array(await init.body.arrayBuffer()) : init.body;
     return JSON.parse(require('zlib').gunzipSync(body).toString());
 }
 // Exercise the installed SDK's queue, identity envelopes and surviving AppState listeners.
