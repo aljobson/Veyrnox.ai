@@ -39,6 +39,8 @@ export default function MotionTemplateStudio({ modes, readyIds }) {
   const attempt = useRef(null);
   const inflight = useRef(false);
   const libraryLink = useRef(null);
+  const photoPanel = useRef(null);
+  const [brokenPosters, setBrokenPosters] = useState(() => new Set());
   const selected = templates.find(x => x.id === selectedId) || null;
   const model = selected && catalog.live ? catalog.models.find(m => m.id === selected.model) : null;
   const quote = selected && model ? motionTemplateQuote(selected, model.credits) : null;
@@ -56,6 +58,10 @@ export default function MotionTemplateStudio({ modes, readyIds }) {
     if (inflight.current) return;
     setSelectedId(id);
     reset();
+    // On one-column layouts the photo panel sits below every card: bring it into view.
+    if (typeof window !== 'undefined' && !window.matchMedia('(min-width: 1280px)').matches) {
+      requestAnimationFrame(() => photoPanel.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+    }
   }
 
   function pickPhoto(input) {
@@ -132,7 +138,7 @@ export default function MotionTemplateStudio({ modes, readyIds }) {
                 <button type="button" data-testid={`motion-template-${item.id}`} aria-pressed={active} disabled={busy} onClick={() => choose(item.id)}
                   className={`flex h-full min-h-11 w-full flex-col overflow-hidden rounded-xl border text-left ${active ? 'border-vx-accent' : 'border-vx-field'} bg-vx-base focus-visible:outline-2 focus-visible:outline-vx-accent disabled:opacity-55`}>
                   <span className="relative block aspect-[9/16] w-full bg-vx-panel">
-                    {item.ready && <img loading="lazy" src={item.preview.poster} alt={t('app.motion.previewAlt', { title: t(`app.motion.template.${item.id}.title`) })} className="h-full w-full object-cover" />}
+                    {item.ready && !brokenPosters.has(item.id) && <img loading="lazy" src={item.preview.poster} onError={() => setBrokenPosters(prev => new Set(prev).add(item.id))} alt={t('app.motion.previewAlt', { title: t(`app.motion.template.${item.id}.title`) })} className="h-full w-full object-cover" />}
                     {!item.ready && <span className="absolute inset-0 flex items-center justify-center p-2 text-center text-xs font-bold text-vx-fg-faint">{t('app.motion.notReady')}</span>}
                   </span>
                   <span className="block p-3">
@@ -146,7 +152,7 @@ export default function MotionTemplateStudio({ modes, readyIds }) {
           </ul>
         </section>
       </div>
-      {selected && <aside className={`${card} space-y-4 p-5 sm:p-6 xl:sticky xl:top-24`} aria-labelledby="motion-photo">
+      {selected && <aside ref={photoPanel} className={`${card} scroll-mt-20 space-y-4 p-5 sm:p-6 xl:sticky xl:top-24`} aria-labelledby="motion-photo">
         <h2 id="motion-photo" className="text-xl font-black">{t('app.motion.photo.title')}</h2>
         <p className="text-xs leading-5 text-vx-fg-muted">{t(selected.model === 'motion-replace' ? 'app.motion.photo.helpReplace' : 'app.motion.photo.help')}</p>
         {/* Only a browser-made blob: URL is ever shown; nothing from the file's name or contents becomes markup. */}
