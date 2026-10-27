@@ -1,27 +1,25 @@
 import { displayLabel } from '../../../lib/displayLabels';
 import { plural, t } from '../../../lib/i18n';
 import { Button } from '../../../components/ui';
+import { Field, Choices } from '../../../components/film/FilmFields';
+import { FilmSetupStage } from '../../../components/film/FilmSetupStage';
+import { FilmBreakdownStage } from '../../../components/film/FilmBreakdownStage';
+import { FilmBoardsStage } from '../../../components/film/FilmBoardsStage';
+import { useFilmAutosave } from '../../../components/film/useFilmAutosave';
+import { useEditorLeaveGuard } from '../../../components/editor/useEditorLeaveGuard';
+import { appCache, getCacheUser, subscribeCacheUser } from '../../../lib/appCache';
+import { fetchCatalogCached, type CatalogModel } from '../../../lib/media';
 import { randomUUID } from 'expo-crypto';
-import { Stack, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Stack, useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { ApiError } from '../../../lib/api';
-import { ACCEPTANCE_CHECKS, assetKey, assetType, buildShotPrompt, emptyFilm, FILM_STAGES, isLocked, latestPrompt, lockAsset, logFilmAttempt, nextPromptVersion, PROMPT_DETAILS, SHOT_LANES, shotAssets, stageIssues, STYLE_BOARDS, testMatrix, type Asset, type Board, type Film, type Shot } from '../../../lib/filmStudio';
-import { clearOpenedFilm, cloudStatus, loadActiveStudio, replaceActiveStudio, saveActiveStudioToCloud } from '../../../lib/filmCloud';
+import { ACCEPTANCE_CHECKS, accessibleStage, assetKey, assetType, buildShotPrompt, emptyFilm, FILM_STAGES, isLocked, latestPrompt, lockAsset, logFilmAttempt, nextPromptVersion, PROMPT_DETAILS, shotAssets, stageIssues, testMatrix, type Asset, type Film } from '../../../lib/filmStudio';
+import { clearOpenedFilm, cloudStatus, getActiveCloudLink, loadActiveStudio, saveActiveStudioToCloud } from '../../../lib/filmCloud';
 import { clearStudio } from '../../../lib/filmStudioStore';
 import { colors, fonts } from '../../../theme';
 
-const blankShot = (id: string): Shot => ({
-    id, location: '', time: '', characters: 'none', props: 'none', description: '', dialogue: 'none', seconds: '10', complexity: 'low',
-    goal: '', action: '', dramaturgy: '', blocking: '', acting: '', style: '', size: '', movement: '', lens: '', angle: '', cut: '', pace: '', transition: '', oneAction: false,
-});
-const referenceLines = (board: Board): string => board.references.map((reference) => `${reference.kind === 'anti-reference' ? '!' : ''}${reference.source} | ${reference.caption}`).join('\n');
-const parseReferences = (text: string): Board['references'] => text.split('\n').map((line) => line.trim()).filter(Boolean).map((line) => {
-    const anti = line.startsWith('!');
-    const [source, ...caption] = (anti ? line.slice(1) : line).split('|');
-    return { source: source.trim(), caption: caption.join('|').trim(), kind: anti ? 'anti-reference' : 'reference' };
-});
 const requiredAssets = (film: Film): string[] => [...new Set(film.shots.flatMap(shotAssets))];
 
 export default function FilmWorkspace() {
@@ -29,27 +27,72 @@ export default function FilmWorkspace() {
     const router = useRouter();
     const [film, setFilm] = useState<Film | null>(null);
     const [stage, setStage] = useState(0);
-    const [dirty, setDirty] = useState(false);
+    const latestFilm = useRef<Film | null>(null);
     const [busy, setBusy] = useState(false);
-    const [note, setNote] = useState<string | null>(null);
+    const [note, setNote] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+    const [binding, setBinding] = useState<{ owner: string | undefined; generation: number } | null>(null);
+    const generation = useRef(0);
+    const [catalog, setCatalog] = useState<CatalogModel[]>([]);
+    const [live, setLive] = useState(false);
+    const [unavailable, setUnavailable] = useState(false);
+    const [catalogTry, setCatalogTry] = useState(0);
+    const autosave = useFilmAutosave();
+    const { cancel, flush, schedule } = autosave;
+    const valid = () => binding !== null && binding.owner === getCacheUser() && binding.generation === generation.current;
 
+    useFocusEffect(useCallback(() => () => { void flush().catch(() => undefined); }, [flush]));
+    useEditorLeaveGuard(useCallback(async () => {
+        const owner = getCacheUser(), session = generation.current;
+        const sameSession = () => owner === getCacheUser() && session === generation.current;
+        try { await flush(); return sameSession(); }
+        catch {
+            if (!sameSession()) return false;
+            return new Promise<boolean>(resolve => Alert.alert(t('filmWorkspace.leaveTitle'), t('filmWorkspace.leaveBody'), [
+                { text: t('filmWorkspace.stay'), style: 'cancel', onPress: () => resolve(false) },
+                { text: t('filmWorkspace.leave'), style: 'destructive', onPress: () => { if (!sameSession()) return resolve(false); cancel(); resolve(true); } },
+            ], { cancelable: false }));
+        }
+    }, [flush, cancel]), () => router.back());
     useEffect(() => {
-        let live = true;
-        loadActiveStudio().then((saved) => { if (live) setFilm(saved?.film ?? emptyFilm()); }, () => { if (live) setFilm(emptyFilm()); });
-        return () => { live = false; };
-    }, []);
+        const load = () => {
+            const owner = getCacheUser(), session = generation.current;
+            const apply = (next: Film) => {
+                if (owner !== getCacheUser() || session !== generation.current) return;
+                setBinding({ owner, generation: session }); latestFilm.current = next; setFilm(next);
+                setStage(current => Math.min(current, accessibleStage(next)));
+            };
+            loadActiveStudio().then(saved => apply(saved?.film ?? emptyFilm()), () => apply(emptyFilm()));
+        };
+        const unsubscribe = subscribeCacheUser(() => {
+            generation.current++; cancel(); latestFilm.current = null; setBinding(null); setFilm(null); setNote(null); setBusy(false); load();
+        });
+        load();
+        return () => { unsubscribe(); generation.current++; };
+    }, [cancel]);
+    useEffect(() => {
+        let active = true;
+        setUnavailable(false);
+        const apply = (models: CatalogModel[]) => { if (active) { setCatalog(models); setLive(true); } };
+        fetchCatalogCached(apply).then(result => apply(result.value), () => { if (active) setUnavailable(true); });
+        return () => { active = false; };
+    }, [catalogTry]);
 
-    const change = (next: Film) => { setFilm(next); setDirty(true); setNote(null); };
-    async function save(cloud: boolean) {
-        if (!film || busy) return;
+    const change = (next: Film) => {
+        if (!valid()) return;
+        latestFilm.current = next; setFilm(next); setNote(null); schedule(next, valid);
+    };
+    async function save() {
+        if (!film || busy || !valid()) return;
         setBusy(true); setNote(null);
         try {
-            await replaceActiveStudio(film);
-            setDirty(false);
-            if (cloud) {
+            await flush();
+            if (!valid()) return;
+            {
                 try {
-                    const project = await saveActiveStudioToCloud(api, film, randomUUID());
-                    setNote(t('film.savedtoyouraccountrevision', { value1: project.revision }));
+                    const snapshot = latestFilm.current;
+                    if (!snapshot) return;
+                    const project = await saveActiveStudioToCloud(api, snapshot, randomUUID());
+                    if (valid()) setNote({ kind: 'ok', text: t('film.savedtoyouraccountrevision', { value1: project.revision }) });
                 } catch (error) {
                     const status = cloudStatus(error);
                     const message = error instanceof ApiError && error.status === 409
@@ -61,22 +104,35 @@ export default function FilmWorkspace() {
                                 : status === 'unavailable'
                                     ? t('film.accountsavingisnotavailablerightnow')
                                     : t('film.yourfilmissavedonthisphone');
-                    setNote(message);
+                    if (valid()) setNote({ kind: 'error', text: message });
                 }
-            } else setNote(t('film.savedonthisphone'));
+            }
         } catch (error) {
-            setNote(error instanceof Error && error.message ? error.message : t('film.couldnotsavethestudio'));
-        } finally { setBusy(false); }
+            if (valid()) setNote({ kind: 'error', text: error instanceof Error && error.message ? error.message : t('film.couldnotsavethestudio') });
+        } finally { if (valid()) setBusy(false); }
     }
 
     function newFilm() {
+        if (!valid() || !binding) return;
+        const owner = binding.owner, session = binding.generation;
+        const current = () => owner === getCacheUser() && session === generation.current;
         Alert.alert(t('film.startanewfilm2'), t('film.thestudiocurrentlyopenonthisphone'), [
             { text: t('film.cancel'), style: 'cancel' },
-            { text: t('film.startnew'), style: 'destructive', onPress: async () => { clearOpenedFilm(); await clearStudio(); setFilm(emptyFilm()); setStage(0); setDirty(true); setNote(null); } },
+            { text: t('film.startnew'), style: 'destructive', onPress: async () => {
+                if (!current()) return;
+                cancel(); clearOpenedFilm(); latestFilm.current = null; setFilm(null); setBinding(null);
+                const nextGeneration = ++generation.current;
+                await clearStudio(appCache, owner);
+                if (owner !== getCacheUser() || nextGeneration !== generation.current) return;
+                const next = emptyFilm();
+                setBinding({ owner, generation: nextGeneration }); latestFilm.current = next; setFilm(next); setStage(0); setNote(null); setBusy(false);
+                schedule(next, () => owner === getCacheUser() && nextGeneration === generation.current);
+            } },
         ]);
     }
 
     if (!film) return <ActivityIndicator style={{ flex: 1 }} color={colors.accent} />;
+    const available = accessibleStage(film);
     const issues = stageIssues(film, stage);
     return (
         <View style={styles.screen}>
@@ -84,7 +140,7 @@ export default function FilmWorkspace() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.stageBar} contentContainerStyle={styles.stageBarContent}>
                 {FILM_STAGES.map(([, title], index) => {
                     const open = stageIssues(film, index).length;
-                    return <Pressable key={title} accessibilityRole="tab" accessibilityState={{ selected: stage === index }} style={[styles.stageChip, stage === index && styles.stageChipOn]} onPress={() => setStage(index)}>
+                    return <Pressable key={title} accessibilityRole="tab" accessibilityLabel={title} disabled={index > available} accessibilityState={{ selected: stage === index, disabled: index > available }} style={[styles.stageChip, stage === index && styles.stageChipOn]} onPress={() => setStage(index)}>
                         <Text style={[styles.stageChipText, stage === index && styles.stageChipTextOn]}>{index + 1}. {title}{open ? ` · ${open}` : ' · ✓'}</Text>
                     </Pressable>;
                 })}
@@ -94,67 +150,29 @@ export default function FilmWorkspace() {
                     <View style={{ flex: 1 }}><Text style={styles.kicker}>{t('film.sTAGEOF7', { value1: stage + 1 })}</Text><Text style={styles.title} accessibilityRole="header">{FILM_STAGES[stage][1]}</Text></View>
                     <Pressable accessibilityRole="button" style={styles.smallButton} onPress={newFilm}><Text style={styles.smallButtonText}>{t('film.new')}</Text></Pressable>
                 </View>
-                {issues.length ? <View style={styles.issues}><Text style={styles.issueTitle}>{plural('film.itemsToFinish', issues.length)}</Text>{issues.slice(0, 4).map((issue) => <Text key={issue} style={styles.issue}>• {issue}</Text>)}</View> : <Text style={styles.complete}>{t('film.thisstageiscomplete')}</Text>}
-                {stage === 0 ? <Setup film={film} change={change} /> : null}
-                {stage === 1 ? <Identity film={film} change={change} /> : null}
-                {stage === 2 ? <Breakdown film={film} change={change} /> : null}
-                {stage === 3 ? <Boards film={film} change={change} /> : null}
-                {stage === 4 ? <Passports film={film} change={change} /> : null}
-                {stage === 5 ? <Tests film={film} change={change} /> : null}
-                {stage === 6 ? <Prompts film={film} change={change} router={router} /> : null}
-                {note ? <Text accessibilityLiveRegion="polite" style={note.startsWith('Could') || note.includes('missing') ? styles.error : styles.complete}>{note}</Text> : null}
+                {issues.length ? <View style={styles.issues}><Text style={styles.issueTitle}>{plural('film.itemsToFinish', issues.length)}</Text>{issues.slice(0, 12).map((issue) => <Text key={issue} style={styles.issue}>• {issue}</Text>)}{issues.length > 12 ? <Text style={styles.issue}>{t('filmWorkspace.notShown', { value1: issues.length - 12 })}</Text> : null}</View> : <Text style={styles.complete}>{t('film.thisstageiscomplete')}</Text>}
+                {stage === 0 ? <FilmSetupStage film={film} change={change} catalog={catalog} live={live} unavailable={unavailable} retry={() => setCatalogTry(n => n + 1)} /> : null}
+                {stage === 1 ? <Identity film={film} change={change} catalog={catalog} live={live} /> : null}
+                {stage === 2 ? <FilmBreakdownStage film={film} change={change} catalog={catalog} live={live} /> : null}
+                {stage === 3 ? <FilmBoardsStage film={film} change={change} catalog={catalog} live={live} /> : null}
+                {stage === 4 ? <Passports film={film} change={change} catalog={catalog} live={live} /> : null}
+                {stage === 5 ? <Tests film={film} change={change} catalog={catalog} live={live} /> : null}
+                {stage === 6 ? <Prompts film={film} change={change} catalog={catalog} live={live} router={router} /> : null}
+                {stage < 6 ? <Button label={t('filmWorkspace.continue', { value1: FILM_STAGES[stage + 1][1] })} disabled={issues.length > 0} onPress={() => setStage(stage + 1)} /> : null}
+                {note ? <Text accessibilityLiveRegion="polite" style={note.kind === 'error' ? styles.error : styles.complete}>{note.text}</Text> : null}
                 <View style={styles.saveRow}>
-                    <Pressable accessibilityRole="button" accessibilityState={{ disabled: busy }} disabled={busy} style={styles.secondary} onPress={() => void save(false)}><Text style={styles.secondaryText}>{busy ? t('film.saving') : dirty ? t('film.saveonphone') : t('film.savedonphone')}</Text></Pressable>
-                    <Pressable accessibilityRole="button" accessibilityState={{ disabled: busy }} disabled={busy} style={styles.primary} onPress={() => void save(true)}><Text style={styles.primaryText}>{t('film.savetoaccount')}</Text></Pressable>
+                    <Text accessibilityLiveRegion="polite" style={[styles.help, { flex: 1 }]}>{autosave.status === 'saving' ? t('film.saving') : autosave.status === 'failed' ? t('filmWorkspace.notSaved', { reason: autosave.reason }) : getActiveCloudLink() ? t('filmWorkspace.memorySaved') : t('filmWorkspace.saved')}</Text>
+                    <Pressable accessibilityRole="button" accessibilityState={{ disabled: busy }} disabled={busy} style={styles.primary} onPress={() => void save()}><Text style={styles.primaryText}>{t('film.savetoaccount')}</Text></Pressable>
                 </View>
             </ScrollView>
         </View>
     );
 }
 
-function Setup({ film, change }: Props) {
-    const stack = (key: keyof Film['stack'], value: string) => change({ ...film, stack: { ...film.stack, [key]: value } });
-    return <View style={styles.section}>
-        <Field label={t('film.imagemodel')} value={film.stack.image} onChange={(value) => stack('image', value)} placeholder={t('film.modelnameorid')} />
-        <Field label={t('film.howyouaccessit')} value={film.stack.imageAccess} onChange={(value) => stack('imageAccess', value)} placeholder={t('film.studioorexternalservice')} />
-        <Field label={t('film.videomodel')} value={film.stack.video} onChange={(value) => stack('video', value)} placeholder={t('film.modelnameorid')} />
-        <Field label={t('film.howyouaccessit')} value={film.stack.videoAccess} onChange={(value) => stack('videoAccess', value)} placeholder={t('film.studioorexternalservice')} />
-        <Text style={styles.label}>{t('film.cliplength')}</Text><Choices values={['10', '12', '15']} selected={film.stack.seconds} onPick={(value) => stack('seconds', value)} suffix={t('film.sec')} />
-    </View>;
-}
-
 function Identity({ film, change }: Props) {
     return <View style={styles.section}>
-        <Field label={t('film.studioname')} value={film.name} onChange={(name) => change({ ...film, name })} maxLength={120} placeholder={t('film.untitledfilm')} />
+        <Field label={t('film.studioname')} value={film.name} onChange={(name) => change({ ...film, name })} maxLength={100} placeholder={t('film.untitledfilm')} />
         <Text style={styles.label}>{t('film.finalruntime')}</Text><Choices values={['30', '60', '90', '120']} selected={String(film.targetSeconds)} onPick={(value) => change({ ...film, targetSeconds: Number(value) })} suffix={t('film.sec')} />
-        <Text style={styles.label}>{t('film.aspectratio')}</Text><Choices values={['16:9', '9:16', '1:1']} selected={film.stack.aspect} onPick={(value) => change({ ...film, stack: { ...film.stack, aspect: value } })} />
-    </View>;
-}
-
-function Breakdown({ film, change }: Props) {
-    const setShot = (index: number, shot: Shot) => change({ ...film, shots: film.shots.map((item, i) => i === index ? shot : item) });
-    return <View style={styles.section}>
-        <Field label={t('film.scripttreatmentoridea')} value={film.script} onChange={(script) => change({ ...film, script })} multiline maxLength={24_000} placeholder={t('film.pastethesourcematerialyouarebreaking')} />
-        {film.shots.map((shot, index) => <View key={`${index}-${shot.id}`} style={styles.card}>
-            <View style={styles.titleRow}><Text style={styles.cardTitle}>{t('film.shot2', { value1: index + 1 })}</Text><Button variant="tertiary" tone="danger" size="md" label={t('film.remove')} onPress={() => change({ ...film, shots: film.shots.filter((_, i) => i !== index) })} /></View>
-            {SHOT_LANES.map(([lane, fields]) => <View key={lane} style={styles.fieldGroup}><Text style={styles.groupTitle}>{lane}</Text>{fields.map(([key, label]) => <Field key={key} label={label} value={String(shot[key] ?? '')} onChange={(value) => setShot(index, { ...shot, [key]: value })} />)}</View>)}
-            <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: shot.oneAction }} style={[styles.choice, shot.oneAction && styles.choiceOn]} onPress={() => setShot(index, { ...shot, oneAction: !shot.oneAction })}><Text style={styles.choiceText}>{t('film.oneactioninthisclip', { value1: shot.oneAction ? '✓ ' : '' })}</Text></Pressable>
-        </View>)}
-        <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => change({ ...film, shots: [...film.shots, blankShot(`S${film.shots.length + 1}`)] })}><Text style={styles.secondaryText}>{t('film.addshot')}</Text></Pressable>
-    </View>;
-}
-
-function Boards({ film, change }: Props) {
-    const required = [...requiredAssets(film).map((name) => ({ name, type: assetType(film, name) })), ...STYLE_BOARDS.map((name) => ({ name, type: 'style' }))];
-    const addMissing = () => change({ ...film, boards: [...film.boards, ...required.filter((need) => !film.boards.some((board) => board.name === need.name && board.type === need.type)).map((need, index) => ({ id: `board-${Date.now()}-${index}`, name: need.name, type: need.type, decision: '', references: [] }))] });
-    return <View style={styles.section}>
-        <Text style={styles.help}>{t('film.onelineperreferencesourceprecisecaption')}</Text>
-        <Pressable accessibilityRole="button" style={styles.secondary} onPress={addMissing}><Text style={styles.secondaryText}>{t('film.createmissingboards')}</Text></Pressable>
-        {film.boards.map((board, index) => <View key={board.id} style={styles.card}>
-            <Text style={styles.cardTitle}>{board.name} · {board.type}</Text>
-            <Field label={t('film.references')} value={referenceLines(board)} multiline placeholder={t('film.fileorurlwhatmustremainconsistent')} onChange={(value) => change({ ...film, boards: film.boards.map((item, i) => i === index ? { ...item, references: parseReferences(value) } : item) })} />
-            <Choices values={['draft', 'approved', 'revise', 'rejected']} selected={board.decision || 'draft'} onPick={(decision) => change({ ...film, boards: film.boards.map((item, i) => i === index ? { ...item, decision: decision === 'draft' ? '' : decision } : item) })} />
-        </View>)}
     </View>;
 }
 
@@ -224,18 +242,11 @@ function Prompts({ film, change, router }: Props & { router: ReturnType<typeof u
     </View>;
 }
 
-type Props = { film: Film; change: (film: Film) => void };
+type Props = { film: Film; change: (film: Film) => void; catalog: readonly CatalogModel[]; live: boolean };
 function updateAsset(film: Film, change: Props['change'], index: number, asset: Asset) { change({ ...film, assets: film.assets.map((item, i) => i === index ? asset : item) }); }
-function Field({ label, value, onChange, placeholder, multiline = false, maxLength = 2_000 }: { label: string; value: string; onChange: (value: string) => void; placeholder?: string; multiline?: boolean; maxLength?: number }) {
-    return <View style={styles.field}><Text style={styles.label}>{label}</Text><TextInput accessibilityLabel={label} style={[styles.input, multiline && styles.multiline]} value={value} onChangeText={onChange} placeholder={placeholder} placeholderTextColor={colors.muted} multiline={multiline} maxLength={maxLength} /></View>;
-}
-function Choices({ values, selected, onPick, suffix = '' }: { values: readonly string[]; selected: string; onPick: (value: string) => void; suffix?: string }) {
-    return <View style={styles.choices}>{values.map((value) => <Pressable key={value} accessibilityRole="radio" accessibilityState={{ selected: value === selected }} style={[styles.choice, value === selected && styles.choiceOn]} onPress={() => onPick(value)}><Text style={[styles.choiceText, value === selected && styles.choiceTextOn]}>{value}{suffix}</Text></Pressable>)}</View>;
-}
-
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background }, stageBar: { flexGrow: 0, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }, stageBarContent: { paddingHorizontal: 12, paddingVertical: 10, gap: 8 },
-    stageChip: { minHeight: 40, justifyContent: 'center', borderRadius: 20, paddingHorizontal: 14, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }, stageChipOn: { backgroundColor: colors.accent, borderColor: colors.accent }, stageChipText: { color: colors.body, fontSize: 13, fontWeight: '700' }, stageChipTextOn: { color: colors.accentInk },
+    stageChip: { minHeight: 44, justifyContent: 'center', borderRadius: 20, paddingHorizontal: 14, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }, stageChipOn: { backgroundColor: colors.accent, borderColor: colors.accent }, stageChipText: { color: colors.body, fontSize: 13, fontWeight: '700' }, stageChipTextOn: { color: colors.accentInk },
     content: { padding: 16, paddingBottom: 100, gap: 16 }, titleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 }, kicker: { color: colors.accent, fontSize: 11, fontWeight: '900', letterSpacing: 1.4 }, title: { color: colors.text, fontFamily: fonts.display, fontSize: 26 },
     issues: { gap: 5, borderRadius: 14, borderWidth: 1, borderColor: colors.money, backgroundColor: colors.surface, padding: 14 }, issueTitle: { color: colors.money, fontWeight: '800' }, issue: { color: colors.body, fontSize: 13, lineHeight: 18 }, complete: { color: colors.accent, fontWeight: '700' }, error: { color: colors.danger },
     section: { gap: 14 }, card: { gap: 12, borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 14 }, cardTitle: { color: colors.text, fontSize: 17, fontWeight: '800' }, groupTitle: { color: colors.accent, fontSize: 13, fontWeight: '800' }, fieldGroup: { gap: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, paddingTop: 12 },

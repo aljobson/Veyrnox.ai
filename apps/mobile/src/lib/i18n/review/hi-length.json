@@ -1500,6 +1500,18 @@
     "ratio": 1.75
   },
   {
+    "id": "filmWorkspace.revise",
+    "english": "Revise",
+    "translation": "संशोधित करें",
+    "ratio": 2
+  },
+  {
+    "id": "filmWorkspace.retry",
+    "english": "Retry",
+    "translation": "फिर कोशिश करें",
+    "ratio": 2.8
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",

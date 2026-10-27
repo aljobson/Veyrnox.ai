@@ -77,6 +77,7 @@ import area_filmCloud from './en/filmCloud';
 import area_filmSkills from './en/filmSkills';
 import area_filmStudio from './en/filmStudio';
 import area_filmStudioStore from './en/filmStudioStore';
+import area_filmWorkspace from './en/filmWorkspace';
 import area_form from './en/form';
 import area_freeAllowance from './en/freeAllowance';
 import area_freeAllowanceCard from './en/freeAllowanceCard';
@@ -250,6 +251,7 @@ const catalog = {
     ...area_filmSkills,
     ...area_filmStudio,
     ...area_filmStudioStore,
+    ...area_filmWorkspace,
     ...area_form,
     ...area_freeAllowance,
     ...area_freeAllowanceCard,
