@@ -17,7 +17,7 @@ test('renders headers, literal OAuth slots, all endpoints and selectable address
         expect(root.container.queryAll(n => n.props.accessibilityRole === 'header' && textOf(n) === t(key)).length).toBeGreaterThan(0);
     for (const path of ['/models','/estimates','/generations','/generations/{id}','/generations/{id}/asset','/balance']) expect(text).toContain(path);
     expect(text).toContain('token_endpoint_auth_method: none'); expect(text).toContain('Authorization: Bearer …'); expect(text).toContain('confirmed_credits'); expect(text).not.toContain('{code}');
-    expect(root.container.queryAll(n => n.props.selectable && textOf(n).includes('https://veyrnox.ai/api/developer/openapi'))).toHaveLength(1);
+    expect(root.container.queryAll(n => n.props.selectable && textOf(n) === 'https://veyrnox.ai/api/developer/openapi')).toHaveLength(1);
     expect(root.container.queryAll(n => n.props.accessibilityRole === 'header' && textOf(n) === t('developers.cli.kicker'))).toHaveLength(0);
     const values = [
         'pipx install "git+https://github.com/aljobson/Veyrnox.ai.git#subdirectory=agent-harness"', 'veyrnox auth login',
