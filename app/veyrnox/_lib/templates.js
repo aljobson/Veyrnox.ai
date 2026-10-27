@@ -10,7 +10,6 @@
 
 import { SOURCE_TEMPLATES } from './sourceTemplates.js';
 import { EFFECT_CONCEPT_TEMPLATES } from './effectConceptTemplates.js';
-import { MOTION_TREND_TEMPLATES } from './motionTrendTemplates.js';
 import { EFFECT_THEMES, effectThemeId, themedTemplates } from './effectThemes.js';
 import { SHOWCASE_CLIPS } from './showcase.js';
 
@@ -46,7 +45,7 @@ const WALL_CLIP_KEYS = [
 // templates have owned local preview media; effect concepts use an original
 // generated treatment until a preview is ready, but remain searchable and
 // usable on both web and mobile.
-export const PRESETS = [...SOURCE_TEMPLATES, ...MOTION_TREND_TEMPLATES, ...EFFECT_CONCEPT_TEMPLATES];
+export const PRESETS = [...SOURCE_TEMPLATES, ...EFFECT_CONCEPT_TEMPLATES];
 export const WALL_PRESETS = WALL_CLIP_KEYS.map((key) => SOURCE_TEMPLATES.find((p) => p.clipKey === key)).filter(Boolean);
 export const ALL_TEMPLATES = PRESETS;
 // Only advertise recipes with an actual video preview in the visual gallery.
