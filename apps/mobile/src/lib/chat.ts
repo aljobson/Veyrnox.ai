@@ -80,6 +80,7 @@ export interface ChatThread {
 }
 
 export interface ChatMessage {
+    readonly status?: 'complete' | 'canceled' | 'error';
     readonly id: string;
     readonly role: 'user' | 'assistant';
     readonly content: string;

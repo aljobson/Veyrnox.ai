@@ -34,6 +34,7 @@ import area_cameraPanel from './en/cameraPanel';
 import area_catalog from './en/catalog';
 import area_char from './en/char';
 import area_chat from './en/chat';
+import area_chatDepth from './en/chatDepth';
 import area_chatLibrary from './en/chatLibrary';
 import area_checkin from './en/checkin';
 import area_chrome from './en/chrome';
@@ -211,6 +212,7 @@ const catalog = {
     ...area_catalog,
     ...area_char,
     ...area_chat,
+    ...area_chatDepth,
     ...area_chatLibrary,
     ...area_checkin,
     ...area_chrome,

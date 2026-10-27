@@ -13,6 +13,8 @@ interface Props {
     readonly grid: boolean;
     readonly starred: boolean;
     readonly canSchedule: boolean;
+    readonly canAsk?: boolean;
+    readonly onAsk?: () => void;
     readonly canReuse: boolean;
     readonly onOpen: () => void;
     readonly onStar: () => void;
@@ -22,7 +24,7 @@ interface Props {
 
 // One creation in the Library: what it is, its state, its price, when its file goes, and the actions that apply.
 // A failed job says how many credits came back; a file near the end of its life says when.
-export function LibraryItem({ job, name, kind, grid, starred, canSchedule, canReuse, onOpen, onStar, onSchedule, onReuse }: Props) {
+export function LibraryItem({ job, name, kind, grid, starred, canSchedule, canReuse, canAsk, onAsk, onOpen, onStar, onSchedule, onReuse }: Props) {
     const styles = useThemedStyles(sheets);
     const status = rowStatus(job);
     const expiry = expiryOf(job);
@@ -47,6 +49,7 @@ export function LibraryItem({ job, name, kind, grid, starred, canSchedule, canRe
                 {canSchedule ? (
                     <Button variant="secondary" accessibilityRole="button" accessibilityLabel={t('library.scheduleLabel', { name })} onPress={onSchedule} label={t('library.schedule')} />
                 ) : null}
+                {canAsk ? <Button variant="secondary" label={t('chatDepth.ask')} accessibilityLabel={t('chatDepth.askLabel', { name })} onPress={onAsk} /> : null}
                 {canReuse ? (
                     <Button variant="secondary" accessibilityRole="button" accessibilityLabel={t('library.reuseLabel', { name })} onPress={onReuse} label={t('library.reuse')} />
                 ) : null}

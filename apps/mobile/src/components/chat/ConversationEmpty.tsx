@@ -1,11 +1,11 @@
 import { displayLabel } from '../../lib/displayLabels';
 import { useRouter } from 'expo-router';
 import { View } from 'react-native';
-import { SKILL_GROUPS, SKILLS, type Skill } from '../../lib/studioSkills';
+import { SKILL_GROUPS, SKILLS, MAX_SELECTED_SKILLS, type Skill } from '../../lib/studioSkills';
 import { t } from '../../lib/i18n';
 import { Button, Card, Icon, Text, themedStyles, useThemedStyles } from '../ui';
 
-export function ConversationEmpty({ skillNote, applyStarter }: { skillNote: string | null; applyStarter: (skill: Skill) => Promise<void> }) {
+export function ConversationEmpty({ selectedIds = [], saving = false, onToggle, applyStarter }: { selectedIds?: readonly string[]; saving?: boolean; onToggle?: (skill: Skill) => Promise<void>; skillNote?: string | null; applyStarter?: (skill: Skill) => Promise<void> }) {
     const styles = useThemedStyles(sheets);
     const router = useRouter();
     return (
@@ -15,12 +15,13 @@ export function ConversationEmpty({ skillNote, applyStarter }: { skillNote: stri
             <View style={styles.skillsBlock}>
                 <Text variant="caption" style={styles.eyebrow}>{t('chat.workspace.skillsEyebrow')}</Text>
                 <Text variant="callout" style={styles.skillsHelp}>{t('chat.workspace.skillsHelp')}</Text>
+                <Text variant="caption">{t('chatDepth.selected', { count: selectedIds.length, max: MAX_SELECTED_SKILLS })}</Text>
                 {SKILL_GROUPS.filter((group) => group !== 'Film').map((group) => (
                     <View key={displayLabel(group)} style={styles.skillGroup}>
                         <Text variant="footnote" style={styles.skillGroupLabel}>{displayLabel(group)}</Text>
                         <View style={styles.skillGrid}>
                             {SKILLS.filter((skill) => skill.group === group).map((skill) => {
-                                const selected = skillNote === skill.name;
+                                const selected = selectedIds.includes(skill.id);
                                 return (
                                     <Card
                                         key={skill.id}
@@ -29,7 +30,8 @@ export function ConversationEmpty({ skillNote, applyStarter }: { skillNote: stri
                                         accessibilityState={{ selected }}
                                         selected={selected}
                                         style={[styles.starter]}
-                                        onPress={() => void applyStarter(skill)}
+                                        disabled={saving || (!selected && selectedIds.length >= MAX_SELECTED_SKILLS)}
+                                        onPress={() => void (onToggle ?? applyStarter)?.(skill)}
                                     >
                                         <Text variant="callout" style={styles.starterName}>{skill.name}</Text>
                                         <Text variant="caption" style={styles.starterBlurb}>{skill.blurb}</Text>

@@ -1,3 +1,8 @@
+import { useChatLocal } from '../../../lib/useChatLocal';
+import { captureChat, restoreDraft } from '../../../lib/chatLocal';
+import { useChatFreeLeft } from '../../../lib/useChatFreeLeft';
+import { freeLeftFor } from '../../../lib/freeAllowance';
+import { useAskAbout } from '../../../lib/useAskAbout';
 import { KeyboardScreen } from '../../../components/KeyboardScreen';
 import { useChatAutoScroll } from '../../../lib/useChatAutoScroll';
 import * as Crypto from 'expo-crypto';
@@ -17,9 +22,9 @@ import { ApiError } from '../../../lib/api';
 import { MIN_TARGET } from '../../../lib/a11y';
 import { chatApi, cleanOptions, cleanTitle, imagesExtra, isModelSwitch, NO_OPTIONS, replyPrice, sendKeyFor, type ChatMessage, type ChatModel, type PendingSend, type ReplyOptions } from '../../../lib/chat';
 import { attachmentRefs, MAX_ATTACHMENTS, roomFor, type ChatImage } from '../../../lib/chatAttach';
-import { pickPhotos, uploadChatImages } from '../../../lib/chatPhotos';
+import { pickPhotos, pickVideoFrames, uploadChatImages } from '../../../lib/chatPhotos';
 import { fetchCatalog, type CatalogModel, type Kind } from '../../../lib/media';
-import { parseStudioDrafts, skillInstructions, type Skill } from '../../../lib/studioSkills';
+import { parseStudioDrafts, skillsInstructions, fittingSkills, selectedSkillIds, skillById, MAX_SELECTED_SKILLS, type Skill } from '../../../lib/studioSkills';
 import { isQuiet, makeSendKey, resolveResumedSend, resolveStoppedSend, RESUME_QUIET_MS, resumeNoticeKey, stopNoticeKey, type StopOutcome } from '../../../lib/chatStop';
 import { plural, t } from '../../../lib/i18n';
 import { ensureOnline, OFFLINE_PAID_MESSAGE, OfflineError } from '../../../lib/network';
@@ -27,6 +32,7 @@ import { Text, TextField, Button, Icon, themedStyles, useThemedStyles } from '..
 
 const ERROR_TEXT: Record<string, string> = {
     insufficient_credits: t('chat.notenoughcreditsforthisreply'),
+    insufficient_balance: t('chat.notenoughcreditsforthisreply'),
     rate_limited: t('chat.toomanymessagesWaitamoment'),
     option_unavailable: t('chat.thatchoiceisnotavailableforthis'),
     chat_not_open: t('chat.chatisnotavailablerightnow'),
@@ -35,7 +41,7 @@ const ERROR_TEXT: Record<string, string> = {
 
 export default function Conversation() {
     const styles = useThemedStyles(sheets);
-    const { id, starter } = useLocalSearchParams<{ id: string; starter?: string }>();
+    const { id, starter, asset } = useLocalSearchParams<{ id: string; starter?: string; asset?: string }>();
     const { api } = useAuth();
     const router = useRouter();
     const insets = useSafeAreaInsets();
@@ -43,10 +49,13 @@ export default function Conversation() {
     const [pinned, setPinned] = useState(false);
     const [renaming, setRenaming] = useState<string | null>(null);
     const [messages, setMessages] = useState<ChatMessage[] | null>(null);
-    const [draft, setDraft] = useState('');
+    const { draft, setDraft, stars, star, starredOnly, setStarredOnly, mounted } = useChatLocal(id);
+    const [round, setRound] = useState(0);
+    const { left, loadedFor } = useChatFreeLeft(api, round);
     const [sending, setSending] = useState(false);
     const [stopping, setStopping] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [lowBalance, setLowBalance] = useState(false);
     const [notice, setNotice] = useState<string | null>(null);
     // Kept only while a send is unsettled, so a retry of the same message with the same choices is charged once.
     const { messageList, onContentSizeChange, onScrollBeginDrag } = useChatAutoScroll(messages?.length ?? 0, sending);
@@ -63,25 +72,28 @@ export default function Conversation() {
     const [makeKind, setMakeKind] = useState<Kind>('image');
     const [maxImages, setMaxImages] = useState(MAX_ATTACHMENTS);
     const [catalog, setCatalog] = useState<CatalogModel[] | null>(null);
-    const [skillNote, setSkillNote] = useState<string | null>(null);
+    const [savingSkills, setSavingSkills] = useState(false);
+    const skillBusy = useRef(false);
+    const selectedIds = selectedSkillIds(thread?.system_prompt);
+    useAskAbout(api, asset, model, maxImages, setImages, setNotice);
     const abort = useRef<AbortController | null>(null);
-    // The send in flight, for the return from the background (ADR-0181): when the app comes back and the reply has gone quiet,
-    // the turn is looked for by its job, because the server finishes it either way.
     const live = useRef<{ key: string; text: string; knownIds: ReadonlySet<string>; jobId: string | null; lastEventAt: number } | null>(null);
     const resumed = useRef<StopOutcome | null>(null);
     const busy = useRef(false); // synchronous: a second tap must not start a second turn
 
-    // A starter card is only instructions copied onto this chat; it costs nothing until a reply is sent.
-    async function applyStarter(skill: Skill) {
+    async function toggleSkill(skill: Skill) {
+        if (skillBusy.current) return;
+        const ids = selectedIds.includes(skill.id) ? selectedIds.filter(id => id !== skill.id) : [...selectedIds, skill.id];
+        if (ids.length > MAX_SELECTED_SKILLS) return;
+        skillBusy.current = true; setSavingSkills(true);
         try {
             const list = catalog ?? (await fetchCatalog().catch(() => []));
-            await chatApi(api).updateThread(id, { system_prompt: skillInstructions(skill, list) });
-            setThread((th) => (th ? { ...th, system_prompt: skillInstructions(skill, list) } : th));
-            setSkillNote(skill.name);
-            setDraft((d) => d || '');
-        } catch {
-            setError(t('chat.skills.failed'));
-        }
+            const selected = ids.map(id => skillById(id)!).filter(Boolean);
+            if (fittingSkills(selected, list).length !== selected.length) { setError(t('chatDepth.skillsTooLong')); return; }
+            const updated = await chatApi(api).updateThread(id, { system_prompt: skillsInstructions(selected, list) });
+            setThread(th => th ? { ...th, system_prompt: updated.system_prompt ?? null } : th);
+        } catch { setError(t('chat.skills.failed')); }
+        finally { skillBusy.current = false; setSavingSkills(false); }
     }
 
     useEffect(() => {
@@ -138,19 +150,22 @@ export default function Conversation() {
         async (again?: string) => {
             const text = (again ?? draft).trim();
             if (!text || busy.current || !messages || !model) return;
+            const sendCapture = captureChat(id);
+            busy.current = true; setRound(r => r + 1);
             const chosen = cleanOptions(model, options);
             setError(null);
+            setLowBalance(false);
             setNotice(null);
             try {
                 await ensureOnline();
             } catch (err) {
+                busy.current = false; setRound(r => r + 1);
                 if (err instanceof OfflineError) return setError(OFFLINE_PAID_MESSAGE);
                 throw err;
             }
             const attached = model && imagesExtra(model) !== null ? images : [];
             const pending = sendKeyFor(pendingKey.current, text, chosen, () => makeSendKey(Crypto.randomUUID()), attached.map((i) => i.id).join(','));
             pendingKey.current = pending;
-            busy.current = true;
             setSending(true);
             // Images from the phone go to storage first: a failed upload costs nothing and sends nothing.
             let refs: ReturnType<typeof attachmentRefs> = [];
@@ -161,7 +176,7 @@ export default function Conversation() {
                 setError(t('chat.attach.uploadFailed'));
                 pendingKey.current = null;
                 setSending(false);
-                busy.current = false;
+                busy.current = false; setRound(r => r + 1);
                 return;
             }
             if (again === undefined) setDraft('');
@@ -204,9 +219,11 @@ export default function Conversation() {
                 if (controller.signal.aborted || !(err instanceof ApiError && err.status > 0)) unanswered = true;
                 else failed = err.code;
             }
-            const giveBack = () => {
+            const giveBack = async () => {
                 setMessages((m) => (m ?? []).filter((x) => x.id !== `a${stamp}` && x.id !== `u${stamp}`));
-                if (again === undefined) setDraft(text);
+                if (again === undefined) {
+                    if (mounted.current) setDraft(text); else await restoreDraft(id, text, sendCapture);
+                }
             };
             if (unanswered) {
                 setStopping(true);
@@ -223,7 +240,7 @@ export default function Conversation() {
                     if (r) setMessages(r.messages);
                     setImages([]);
                 } else if (outcome === 'nothing') {
-                    giveBack();
+                    await giveBack();
                 } else {
                     // Not settled: what arrived stays on screen; with nothing on screen the message goes back.
                     setMessages((m) => (m ?? []).filter((x) => x.id !== `a${stamp}` || x.content.length > 0));
@@ -234,8 +251,11 @@ export default function Conversation() {
                 setStopping(false);
             } else if (failed) {
                 setError(ERROR_TEXT[failed] ?? t('chat.thereplydidnotcompleteYouwere'));
+                setLowBalance(failed === 'insufficient_balance' || failed === 'insufficient_credits');
                 setMessages((m) => (m ?? []).filter((x) => x.id !== `a${stamp}` || x.content.length > 0));
-                if (again === undefined) setDraft(text);
+                if (again === undefined) {
+                    if (mounted.current) setDraft(text); else await restoreDraft(id, text, sendCapture);
+                }
                 pendingKey.current = null;
             } else {
                 pendingKey.current = null;
@@ -246,7 +266,7 @@ export default function Conversation() {
             }
             live.current = null;
             setSending(false);
-            busy.current = false;
+            busy.current = false; setRound(r => r + 1);
         },
         [api, draft, id, images, messages, model, options],
     );
@@ -335,6 +355,14 @@ export default function Conversation() {
         if (r.images.length) setImages((cur) => [...cur, ...r.images]);
         if (r.problem === 'resize_unavailable') setNotice(t('chat.attach.needsUpdate'));
     }
+    async function addVideo() {
+        setNotice(t('chatDepth.reading'));
+        const r = await pickVideoFrames(roomFor(images.length, maxImages));
+        if (!mounted.current) return;
+        if (r.images.length) setImages(cur => [...cur, ...r.images].slice(0, maxImages));
+        setNotice(r.problem ? t(r.problem === 'room' ? 'chatDepth.videoRoom' : 'chatDepth.videoFailed', { count: maxImages }) : null);
+    }
+    const isFree = !busy.current && loadedFor === round && !!model && freeLeftFor(left, model.id) > 0 && !options.thinking && !options.web && images.length === 0;
     const canSend = !sending && !!draft.trim() && price !== null;
     const last = messages && messages.length >= 2 ? messages[messages.length - 1] : null;
     const lastUser = last?.role === 'assistant' && last.content ? messages![messages!.length - 2] : null;
@@ -357,6 +385,7 @@ export default function Conversation() {
                     <Icon name="sliders" size={20} />
                 </Button>
             </View>
+            {stars.length > 0 ? <View><Button variant="tertiary" containerStyle={styles.headerControl} label={t(starredOnly ? 'chatDepth.showAll' : 'chatDepth.showStarred')} accessibilityState={{ selected: starredOnly }} onPress={() => setStarredOnly(value => !value)} /></View> : null}
             {renaming !== null ? (
                 <View style={styles.renameBar}>
                     <TextField containerStyle={styles.field} style={styles.renameInput} value={renaming} onChangeText={setRenaming} placeholder={t('chat.renamePlaceholder')} accessibilityLabel={t('chat.rename')} maxLength={120} autoFocus />
@@ -373,12 +402,12 @@ export default function Conversation() {
                     onContentSizeChange={onContentSizeChange}
                     onScrollBeginDrag={onScrollBeginDrag}
                     style={styles.messageList}
-                    data={messages ?? []}
+                    data={starredOnly ? (messages ?? []).filter(message => message.role === 'assistant' && stars.includes(message.id)) : messages ?? []}
                     keyExtractor={(m) => m.id}
                     contentContainerStyle={[styles.list, (messages?.length ?? 0) === 0 && styles.emptyList]}
                     keyboardShouldPersistTaps="handled"
                     ListEmptyComponent={
-                        <ConversationEmpty skillNote={skillNote} applyStarter={applyStarter} />
+                        starredOnly ? <Text>{t('chatDepth.noStars')}</Text> : <ConversationEmpty selectedIds={selectedIds} saving={savingSkills} onToggle={toggleSkill} />
                     }
                     ListFooterComponent={
                         lastUser && !sending && model && price !== null ? (
@@ -388,12 +417,13 @@ export default function Conversation() {
                         ) : undefined
                     }
                     renderItem={({ item }) => (
-                        <MessageBubble message={item} sending={sending} drafts={item.role === 'assistant' ? draftsOf(item.content) : []} />
+                        <MessageBubble selected={stars.includes(item.id)} onStar={() => void star(item.id)} message={item} sending={sending} drafts={item.role === 'assistant' ? draftsOf(item.content) : []} />
                     )}
                 />
             )}
             {notice ? <Text style={styles.notice} accessibilityRole="alert">{notice}</Text> : null}
             {error ? <Text style={styles.error} accessibilityRole="alert">{error}</Text> : null}
+            {error && lowBalance ? <Button label={t('lowBalance.buy')} accessibilityLabel={t('lowBalance.buy')} variant="secondary" onPress={() => router.push('/credits')} /> : null}
             {thread && pickerModelsOpen ? <ModelPicker visible currentId={thread.model_id} models={allModels} onPick={(mid) => void pickModel(mid)} onClose={() => setPickerModelsOpen(false)} /> : null}
             {thread && settingsOpen ? <ChatSettings visible thread={thread} models={allModels} onSave={saveSettings} onClose={() => setSettingsOpen(false)} /> : null}
             <MakePanel visible={makeOpen} initialKind={makeKind} initialPrompt={draft.trim().slice(0, 2000)} onClose={() => setMakeOpen(false)} />
@@ -401,6 +431,7 @@ export default function Conversation() {
             {model && price !== null ? (
                 <View style={[styles.composerDock, { paddingBottom: Math.max(insets.bottom, 8) }]}>
                     <ChatComposerDeck
+                        free={isFree} onVideo={() => void addVideo()}
                         model={model}
                         options={cleanOptions(model, options)}
                         draft={draft}
@@ -411,7 +442,7 @@ export default function Conversation() {
                         images={images}
                         imageExtra={imageExtra}
                         maxImages={maxImages}
-                        placeholder={typeof starter === 'string' && starter ? starter.slice(0, 200) : t('chat.composer.ask')}
+                        placeholder={skillById(selectedIds[0])?.starter || (typeof starter === 'string' && starter ? starter.slice(0, 200) : t('chat.composer.ask'))}
                         onDraft={setDraft}
                         onModel={() => setPickerModelsOpen(true)}
                         onOptions={setOptions}

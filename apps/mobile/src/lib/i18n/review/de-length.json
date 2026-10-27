@@ -2772,6 +2772,30 @@
     "ratio": 1.83
   },
   {
+    "id": "chatDepth.free",
+    "english": "Free",
+    "translation": "Kostenlos",
+    "ratio": 2.25
+  },
+  {
+    "id": "chatDepth.sendFree",
+    "english": "Send free",
+    "translation": "Kostenlos senden",
+    "ratio": 1.78
+  },
+  {
+    "id": "chatDepth.starLabel",
+    "english": "Star reply",
+    "translation": "Antwort markieren",
+    "ratio": 1.7
+  },
+  {
+    "id": "chatDepth.showAll",
+    "english": "Show all",
+    "translation": "Alle anzeigen",
+    "ratio": 1.63
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

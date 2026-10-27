@@ -2760,6 +2760,54 @@
     "ratio": 1.83
   },
   {
+    "id": "chatDepth.free",
+    "english": "Free",
+    "translation": "Бесплатно",
+    "ratio": 2.25
+  },
+  {
+    "id": "chatDepth.sendFree",
+    "english": "Send free",
+    "translation": "Отправить бесплатно",
+    "ratio": 2.11
+  },
+  {
+    "id": "chatDepth.copy",
+    "english": "Copy or share",
+    "translation": "Копировать или поделиться",
+    "ratio": 1.92
+  },
+  {
+    "id": "chatDepth.copyLabel",
+    "english": "Copy or share reply",
+    "translation": "Копировать ответ или поделиться",
+    "ratio": 1.63
+  },
+  {
+    "id": "chatDepth.copyCode",
+    "english": "Copy or share code",
+    "translation": "Копировать код или поделиться",
+    "ratio": 1.61
+  },
+  {
+    "id": "chatDepth.wfTitle",
+    "english": "Workflows",
+    "translation": "Рабочие процессы",
+    "ratio": 1.78
+  },
+  {
+    "id": "chatDepth.wfOpen",
+    "english": "Open",
+    "translation": "Открыть",
+    "ratio": 1.75
+  },
+  {
+    "id": "chatDepth.wfClose",
+    "english": "Close workflow",
+    "translation": "Закрыть рабочий процесс",
+    "ratio": 1.64
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

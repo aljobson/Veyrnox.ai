@@ -1,5 +1,6 @@
+import { isAssetId } from '../../../lib/useAskAbout';
 import { plural, t } from '../../../lib/i18n';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
@@ -13,6 +14,7 @@ export default function NewChat() {
     const styles = useThemedStyles(sheets);
     const { api } = useAuth();
     const router = useRouter();
+    const { asset } = useLocalSearchParams<{ asset?: string }>();
     const [models, setModels] = useState<ChatModel[] | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [creating, setCreating] = useState(false);
@@ -45,7 +47,7 @@ export default function NewChat() {
         setError(null);
         try {
             const thread = await chatApi(api).createThread(model.id);
-            router.replace({ pathname: '/chat/[id]', params: { id: thread.id } });
+            router.replace({ pathname: '/chat/[id]', params: { id: thread.id, ...(isAssetId(asset) ? { asset } : {}) } });
         } catch (err) {
             setError(err instanceof ApiError && err.code === 'thread_limit' ? t('chat.youhavereachedthechatlimitDelete') : t('chat.couldnotstartthechat'));
             setCreating(false);
