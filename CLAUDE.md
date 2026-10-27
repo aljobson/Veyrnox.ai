@@ -203,6 +203,11 @@ developer surface is `/api/v1/developer/*` and requires a verified OAuth
     sign-in (ADR-0106 amendment 1). It answers a 302 to the constant
     `ai.veyrnox.app://auth/callback`, forwarding only a well-formed PKCE `code`
     or a short error word. It reads no identity header and has no open target.
+  - `/auth/mobile/start` — GET-only start of the mobile app's Google and Apple
+    sign-in (ADR-0106 amendment 2). It answers a 302 to `SUPABASE_URL`'s
+    authorize endpoint with a known provider, a well-formed PKCE challenge and
+    the fixed `/auth/mobile` return address. It reads no identity header and has
+    no open target.
   - `/social/connect/mobile/:network` — GET-only hand-back for the mobile app's
     Publish connect (ADR-0136). Used only when connect was started with
     `client: "mobile"`; answers a 302 to the constant `ai.veyrnox.app://social/callback`,
@@ -382,7 +387,10 @@ developer surface is `/api/v1/developer/*` and requires a verified OAuth
    (HaveIBeenPwned) is a project setting that must stay ON — it was found off
    in the 2026-09-16 audit, so verify it after any Auth config change.
    Second factors are TOTP through Supabase; `/api/v1/admin/metrics` demands
-   `aal2` once `ADMIN_REQUIRE_AAL2` is "true".
+   `aal2` once `ADMIN_REQUIRE_AAL2` is "true". With `REQUIRE_AAL2_WHEN_ENROLLED`
+   "true", middleware refuses every aal1 `/api/v1` call for an account that has
+   a verified factor (`lib/mfaEnforcement.js`); keep it off until the web app
+   asks for the code at sign-in.
 8. **Software & Data Integrity Failures** — migrations in git, RPC-only writes,
    R2 objects immutable after upload.
 9. **Security Logging & Monitoring Failures** — `console.error` for every

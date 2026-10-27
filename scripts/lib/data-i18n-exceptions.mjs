@@ -3,7 +3,6 @@ import { helperExceptions } from './helper-i18n-exceptions.mjs';
 // Named data fields only. New prose in these modules is still inventoried.
 export function dataException({ file, owner, field, text, templateFile }) {
   if (file.endsWith('/effectConceptCatalog.js') && owner === 'EFFECT_CONCEPTS' && field === 'name') return 'Canonical searchable effect title retained as source catalog data (ADR-0107).';
-  if (file.endsWith('/motionTrendTemplates.js') && owner === 'RECIPES' && ['prompt','name'].includes(field)) return 'Canonical model prompt or searchable catalog name; displayed guidance and steps come from translated theme recipes.';
   if (file.endsWith('/effectConceptTemplates.js') && owner === 'THEME_RECIPES' && field === 'direction') return 'Canonical model instruction interpolated into the editable generated prompt (ADR-0107).';
   if (file.endsWith('/sourceTemplateExpansion.js') && owner === 'SOURCE_TEMPLATE_EXPANSION' && field === 'description') return 'Unused provenance description: effectTemplate destructures neither description nor a spread; no returned template or renderer receives it.';
   if (file.endsWith('/sourceTemplateExpansion7.js') && owner === 'recipes' && field === 'action') return 'Canonical action interpolated into the provider prompt, not displayed as interface copy.';

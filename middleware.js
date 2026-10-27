@@ -30,6 +30,8 @@ import { isLocalizedPath, localesEnabled, localizedPathKey, splitLocalePath } fr
 import { LOCALE_HEADER, PATH_HEADER } from './lib/i18n/headerNames.mjs';
 import { isAppLocalePath, isSmartLinkLocalePath, localeFromCookie } from './lib/i18n/localeCookie.mjs';
 import { recordSecurityEvent } from './lib/securityEvents.js';
+import { aal2RequiredWhenEnrolled, accountMfaEnrolled, allowedAtAal1 } from './lib/mfaEnforcement.js';
+import { envConfig } from './packages/db/supabase-client.js';
 const POSTHOG_INGEST_PATH = '/ingest';
 const POSTHOG_INGEST_ORIGIN = 'https://eu.i.posthog.com';
 const CANONICAL_HOST = 'veyrnox.ai';
@@ -207,6 +209,22 @@ export async function middleware(req, event) {
     }
     if (isPublishApiPath(pathname) && !publishAllowed(claims.sub)) {
         return jsonError(503, { error: 'publish_not_open', requestId });
+    }
+
+    // A password alone must not act for an account that turned on two-factor
+    // sign-in (lib/mfaEnforcement.js). OAuth-client tokens are left to the
+    // MCP/developer routes' own scope rules: they come from a consent the person
+    // gave in a signed-in session, not from a fresh password.
+    if (aal2RequiredWhenEnrolled() && !oauthClientId && claims.aal !== 'aal2' && !allowedAtAal1(req.method, pathname)) {
+        let enrolled;
+        try {
+            enrolled = await accountMfaEnrolled(claims.sub, envConfig());
+        } catch {
+            // Unknown is not "not enrolled": refuse, retryably (ADR-0160's answer).
+            console.error('[auth] two-factor lookup unavailable; answering 503');
+            return jsonError(503, { error: 'service_unavailable', requestId });
+        }
+        if (enrolled) return jsonError(403, { error: 'mfa_required', requestId });
     }
 
     // Forward verified identity (inbound copies were blanked above).
