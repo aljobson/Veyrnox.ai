@@ -60,7 +60,7 @@ export function MakePanel({ visible, initialPrompt = '', initialKind = 'image', 
         setBusy(true);
         setError(null);
         try {
-            const r = await mediaApi(api).createGeneration({ modelId: model.id, prompt: text, durationSeconds: length, confirmedCredits: makePrice(model, length), idempotencyKey: request.key });
+            const r = await mediaApi(api).createGeneration({ analyticsKind: model.modality.includes('video') ? 'video' : model.modality.includes('image') ? 'image' : 'audio', modelId: model.id, prompt: text, durationSeconds: length, confirmedCredits: makePrice(model, length), idempotencyKey: request.key });
             pending.current = null;
             onClose();
             router.push({ pathname: '/job/[id]', params: { id: r.job_id } });

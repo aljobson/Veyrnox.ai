@@ -82,8 +82,10 @@ describe('where the welcome shows', () => {
     test('the signed-in layout sends a first-time person to it, and the screen records it was seen', () => {
         expect(read('app', '(app)', '_layout.tsx')).toContain('FirstRunGate');
         const gate = read('components', 'FirstRunGate.tsx');
-        expect(gate).toContain("router.replace('/welcome')");
-        expect(gate).toContain('appStorage.get(FIRST_RUN_SLOT)');
+        expect(gate).toContain('firstRunDestination');
+        const decision = read('lib', 'firstRunPending.ts');
+        expect(decision).toContain("return '/welcome'");
+        expect(decision).toContain('appStorage.get(FIRST_RUN_SLOT)');
         const screen = read('app', '(app)', 'welcome.tsx');
         expect(screen).toContain('markWelcomeSeen');
         expect(read('lib', 'markWelcomeSeen.ts')).toContain('appStorage.set(FIRST_RUN_SLOT, seen)');

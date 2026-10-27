@@ -1,3 +1,4 @@
+import { captureEvent } from '../../lib/analytics/events';
 import { markWelcomeSeen } from '../../lib/markWelcomeSeen';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
@@ -15,6 +16,7 @@ import { Button, Card, Icon, Text, themedStyles, useThemedStyles } from '../../c
 export default function Welcome() {
     const insets = useSafeAreaInsets();
     const router = useRouter();
+    useEffect(() => { captureEvent('onboarding_step', { step: 'welcome', action: 'view' }); }, []);
     const styles = useThemedStyles(sheets);
     const { api } = useAuth();
     const [index, setIndex] = useState(0);
@@ -34,7 +36,8 @@ export default function Welcome() {
     const last = index === WELCOME_CARDS.length - 1;
     const credits = creditsCardKeys(free);
 
-    async function done() {
+    async function done(action: 'next' | 'skip' = 'next') {
+        captureEvent('onboarding_step', { step: 'welcome', action });
         await markWelcomeSeen();
         // Start with the person's actual material. The optional preference quiz remains available from Account.
         router.replace('/start');
@@ -89,9 +92,9 @@ export default function Welcome() {
                 <Text style={styles.step} accessibilityLabel={t('welcome.step', { n: index + 1, total: WELCOME_CARDS.length })}>
                     {index + 1} / {WELCOME_CARDS.length}
                 </Text>
-                <Button label={last ? t('welcome.go') : t('welcome.next')} onPress={() => (last ? void done() : setIndex(index + 1))} />
+                <Button label={last ? t('welcome.go') : t('welcome.next')} onPress={() => (last ? void done() : (captureEvent('onboarding_step', { step: 'welcome', action: 'next' }), setIndex(index + 1)))} />
                 <Button variant="tertiary" disabled={index === 0} label={t('public.vey.back')} onPress={() => setIndex(index - 1)} />
-                <Button variant="tertiary" label={t('welcome.skip')} onPress={() => void done()} />
+                <Button variant="tertiary" label={t('welcome.skip')} onPress={() => void done('skip')} />
             </View>
         </View>
     );
