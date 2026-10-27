@@ -2610,6 +2610,48 @@
     "ratio": 2.5
   },
   {
+    "id": "creditsPage.periodEnd",
+    "english": "Paid period ends {date}",
+    "translation": "Оплаченный период заканчивается {date}",
+    "ratio": 1.65
+  },
+  {
+    "id": "developers.api.kicker",
+    "english": "Developer API",
+    "translation": "API для разработчиков",
+    "ratio": 1.62
+  },
+  {
+    "id": "developers.ep.balance",
+    "english": "Read paid and free credits.",
+    "translation": "Чтение баланса платных и бесплатных кредитов.",
+    "ratio": 1.67
+  },
+  {
+    "id": "developers.share",
+    "english": "Share",
+    "translation": "Поделиться",
+    "ratio": 2
+  },
+  {
+    "id": "creditsPage.expire",
+    "english": "Expire on",
+    "translation": "Срок действия до",
+    "ratio": 1.78
+  },
+  {
+    "id": "creditsPage.status.past_due",
+    "english": "Past due",
+    "translation": "Оплата просрочена",
+    "ratio": 2.13
+  },
+  {
+    "id": "creditsPage.status.ended",
+    "english": "Ended",
+    "translation": "Завершена",
+    "ratio": 1.8
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

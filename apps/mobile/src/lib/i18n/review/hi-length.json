@@ -1500,6 +1500,18 @@
     "ratio": 1.75
   },
   {
+    "id": "developers.share",
+    "english": "Share",
+    "translation": "साझा करें",
+    "ratio": 1.8
+  },
+  {
+    "id": "creditsPage.packs",
+    "english": "One-off credit packs",
+    "translation": "एक बार खरीदे जाने वाले क्रेडिट पैक",
+    "ratio": 1.7
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",

@@ -1530,6 +1530,18 @@
     "ratio": 1.92
   },
   {
+    "id": "creditsPage.status.pending",
+    "english": "Pending",
+    "translation": "قيد الانتظار",
+    "ratio": 1.71
+  },
+  {
+    "id": "creditsPage.videos",
+    "english": "≈ {videos} 5s videos",
+    "translation": "≈ {videos} فيديوهات مدتها 5 ثوانٍ",
+    "ratio": 1.65
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "تسجيل الدخول",

@@ -2442,6 +2442,54 @@
     "ratio": 1.67
   },
   {
+    "id": "creditsPage.best",
+    "english": "Best value",
+    "translation": "Melhor custo-benefício",
+    "ratio": 2.2
+  },
+  {
+    "id": "creditsPage.vsPack",
+    "english": "Save {pct}% vs the best pack rate",
+    "translation": "Economize {pct}% em relação à melhor tarifa de pacote",
+    "ratio": 1.61
+  },
+  {
+    "id": "developers.api.kicker",
+    "english": "Developer API",
+    "translation": "API para desenvolvedores",
+    "ratio": 1.85
+  },
+  {
+    "id": "developers.share",
+    "english": "Share",
+    "translation": "Compartilhar",
+    "ratio": 2.4
+  },
+  {
+    "id": "creditsPage.pack",
+    "english": "Credit pack",
+    "translation": "Pacote de créditos",
+    "ratio": 1.64
+  },
+  {
+    "id": "creditsPage.packs",
+    "english": "One-off credit packs",
+    "translation": "Pacotes de créditos de compra única",
+    "ratio": 1.75
+  },
+  {
+    "id": "creditsPage.status.past_due",
+    "english": "Past due",
+    "translation": "Pagamento atrasado",
+    "ratio": 2.25
+  },
+  {
+    "id": "creditsPage.status.ended",
+    "english": "Ended",
+    "translation": "Encerrada",
+    "ratio": 1.8
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",

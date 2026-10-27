@@ -2,7 +2,7 @@ import { subscribeBalance } from './balanceEvents';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../auth/AuthProvider';
-import { appCache, getCacheUser } from './appCache';
+import { appCache, getCacheUser, subscribeCacheUser } from './appCache';
 import { POLICIES } from './cache';
 import { observe } from './network';
 
@@ -24,4 +24,43 @@ export function useBalance(): number | null {
         }, [api]),
     );
     return balance;
+}
+
+
+// Details are display state; a numeric publication preserves the current free-credit fields.
+export function useBalanceDetails() {
+    const { api } = useAuth();
+    const [owner, setOwner] = useState(getCacheUser());
+    const [details, setDetails] = useState<import('./api').Balance | null>(null);
+    const [failed, setFailed] = useState(false);
+    const revision = useRef(0);
+    useEffect(() => subscribeCacheUser(() => {
+        revision.current++; setDetails(null); setFailed(false); setOwner(getCacheUser());
+    }), []);
+    useEffect(() => subscribeBalance((user, balance) => {
+        if (user === getCacheUser()) {
+            revision.current++;
+            setDetails(previous => ({ balance, free_credits: previous?.free_credits ?? 0, free_expires_at: previous?.free_expires_at ?? null }));
+        }
+    }), []);
+    const refresh = useCallback(async () => {
+        const version = ++revision.current;
+        const user = getCacheUser();
+        try {
+            const next = await observe(api.getBalance());
+            if (user === getCacheUser() && version === revision.current) { setDetails(next); setFailed(false); }
+        } catch (error) {
+            if (user === getCacheUser() && version === revision.current) setFailed(true);
+            throw error;
+        }
+    }, [api]);
+    useFocusEffect(useCallback(() => {
+        const version = revision.current;
+        void appCache.swr({ policy: POLICIES.balance, userId: owner, fetcher: () => observe(api.getBalance()),
+            onData: next => {
+                if (owner === getCacheUser() && version === revision.current) { setDetails(next); setFailed(false); }
+            },
+        }).catch(() => { if (owner === getCacheUser() && version === revision.current) setFailed(true); });
+    }, [api, owner]));
+    return { details, failed, refresh };
 }

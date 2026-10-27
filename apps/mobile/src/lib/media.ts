@@ -104,6 +104,10 @@ export function fetchCatalogCached(onData?: (models: CatalogModel[], meta: Cache
 }
 
 export async function fetchCatalog(): Promise<CatalogModel[]> {
+    return (await fetchAllCatalog()).filter(isSupported);
+}
+
+export async function fetchAllCatalog(): Promise<CatalogModel[]> {
     let res: Response;
     try {
         res = await fetch(`${API_BASE}/api/catalog`);
@@ -114,7 +118,7 @@ export async function fetchCatalog(): Promise<CatalogModel[]> {
     }
     if (!res.ok) throw new ApiError(res.status, 'catalog_unavailable');
     const body = (await res.json()) as { models?: CatalogModel[] };
-    return (body.models ?? []).filter(isSupported);
+    return (body.models ?? []).filter(model => kindOf(model.modality) !== null);
 }
 
 export interface GenerationRequest {

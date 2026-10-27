@@ -2646,6 +2646,12 @@
     "ratio": 3
   },
   {
+    "id": "creditsPage.best",
+    "english": "Best value",
+    "translation": "Bestes Preis-Leistungs-Verhältnis",
+    "ratio": 3.3
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",
