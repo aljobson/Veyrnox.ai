@@ -1,3 +1,5 @@
+import { captureEvent, setAnalyticsUser } from '../lib/analytics';
+import { setFirstRunUser } from '../lib/firstRunPending';
 import { claimLegacyOddlings } from '../lib/oddlingsAccountStore';
 import { setOwner as setCinemaUploadOwner } from '../lib/cinemaUploadStore';
 import { passkeyGate, toGoTrueCredential, validatePasskeyOptions } from '../lib/passkeys';
@@ -83,6 +85,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         dropped.current = false;
         transientFailure.current = false;
         const userId = userIdFromToken(session.accessToken);
+        setAnalyticsUser(userId);
+        setFirstRunUser(userId);
         cinemaProgressIdentity.setUser(userId);
         aiConsent.setUser(userId);
         await bindCacheUser(userId);
@@ -107,6 +111,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // A refresh rejection and the request's session-loss callback can both arrive.
         if (dropped.current) return;
         dropped.current = true;
+        setAnalyticsUser(null);
+        setFirstRunUser(null);
         sessionRef.current = null;
         persistedRefresh.current = null;
         transientFailure.current = false;
@@ -197,6 +203,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         if (!credential.identityToken) throw new Error('apple_no_identity_token');
         await adopt(await signInWithIdToken('apple', credential.identityToken, nonce.raw));
+        captureEvent('sign_in_completed', { method: 'apple' });
     }, [adopt]);
 
     const signInWithOAuth = useCallback(
@@ -210,6 +217,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const code = new URL(result.url).searchParams.get('code');
             if (!code) throw new Error('oauth_no_code');
             await adopt(await exchangeAuthCode(code, pkce.verifier));
+            captureEvent('sign_in_completed', { method: provider });
         },
         [adopt],
     );
@@ -217,6 +225,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const signInWithEmail = useCallback(
         async (email: string, password: string, captchaToken: string) => {
             await adopt(await signInWithPassword(email, password, captchaToken));
+            captureEvent('sign_in_completed', { method: 'email' });
         },
         [adopt],
     );
@@ -226,6 +235,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const session = await signUpWithPassword(email, password, captchaToken);
             if (!session) return false;
             await adopt(session);
+            captureEvent('sign_in_completed', { method: 'email' });
             return true;
         },
         [adopt],
@@ -237,6 +247,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const credential = await getCredential(options);
         if (credential === null) return false;
         await adopt(await passkeySignInVerify(challengeId, toGoTrueCredential(credential)));
+        captureEvent('sign_in_completed', { method: 'passkey' });
         return true;
     }, [adopt]);
 

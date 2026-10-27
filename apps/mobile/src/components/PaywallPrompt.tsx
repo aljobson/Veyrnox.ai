@@ -1,3 +1,4 @@
+import { useFirstRunPending } from '../lib/firstRunPending';
 import * as SecureStore from 'expo-secure-store';
 import { usePathname, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -22,9 +23,10 @@ const copyFor = (reason: PaywallReason) => ({
 // Matches the website's soft prompt: it suggests store billing at useful moments but never
 // prevents a signed-in person from using free credits or the rest of the app.
 export function PaywallPrompt() {
+    const firstRunPending = useFirstRunPending();
     const [owner, setOwner] = useState(getCacheUser());
     useEffect(() => subscribeCacheUser(() => setOwner(getCacheUser())), []);
-    return owner ? <AccountPaywall key={owner} owner={owner} /> : null;
+    return !firstRunPending && owner ? <AccountPaywall key={owner} owner={owner} /> : null;
 }
 
 function AccountPaywall({ owner }: { owner: string }) {

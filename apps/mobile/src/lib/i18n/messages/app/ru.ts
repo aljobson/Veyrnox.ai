@@ -4641,5 +4641,13 @@ export default {
   "whenPicker.hHMM": "HH:MM",
   "whenPicker.timehourminute": "Время, часы:минуты",
   "whenPicker.timesareinthisphonestime": "Время указано в часовом поясе этого телефона.",
-  "whenPicker.yYYYMMDD": "YYYY-MM-DD"
+  "whenPicker.yYYYMMDD": "YYYY-MM-DD",
+  "analyticsConsent.title": "Поможете улучшить Veyrnox?",
+  "analyticsConsent.choices": "Настройки конфиденциальности",
+  "analyticsConsent.body": "С вашего разрешения мы отправляем через veyrnox.ai в PostHog в ЕС сведения об открываемых экранах и используемых функциях, связанные с ID вашего аккаунта, а не с именем или электронной почтой, чтобы улучшить приложение. Мы никогда не отправляем запросы, тексты чатов, ваши медиафайлы, электронную почту или платёжные данные.",
+  "analyticsConsent.change": "Вы можете изменить выбор в разделе Аккаунт → Настройки конфиденциальности.",
+  "analyticsConsent.policy": "Политика конфиденциальности",
+  "analyticsConsent.allow": "Разрешить",
+  "analyticsConsent.decline": "Отказаться",
+  "analyticsConsent.saveError": "Не удалось сохранить ваш выбор. Попробуйте ещё раз."
 } as const;

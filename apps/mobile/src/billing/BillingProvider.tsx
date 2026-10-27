@@ -1,3 +1,4 @@
+import { captureEvent } from '../lib/analytics/events';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Platform } from 'react-native';
 import Purchases, { type CustomerInfo, type PurchasesOfferings, type PurchasesPackage } from 'react-native-purchases';
@@ -209,14 +210,18 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         if (generationPlanFor(pkg.product.identifier) !== null && (generationActive || await refreshGenerationAccess())) {
             throw new Error('generation_already_active');
         }
+        const product = pkg.product.subscriptionPeriod ? 'subscription' : 'pack';
+        captureEvent('purchase_started', { product });
         try {
             const { customerInfo } = await Purchases.purchasePackage(pkg);
             setPublishActive(isPublishActive(customerInfo));
             setGenerationActive(isGenerationActive(customerInfo));
             setActiveProductIds(customerInfo.activeSubscriptions);
             setManagementURL(customerInfo.managementURL);
+            captureEvent('purchase_finished', { product, outcome: 'succeeded' });
             return 'purchased';
         } catch (err) {
+            captureEvent('purchase_finished', { product, outcome: (err as { userCancelled?: boolean }).userCancelled ? 'cancelled' : 'failed' });
             if ((err as { userCancelled?: boolean }).userCancelled) return 'cancelled';
             throw err;
         }
@@ -225,18 +230,22 @@ export function BillingProvider({ children }: { children: ReactNode }) {
     const purchaseStayOffer = useCallback(async (pkg: PurchasesPackage): Promise<PurchaseResult> => {
         if (!canPurchase) throw new Error('billing_not_ready');
         if (!stayDiscountFor(pkg)) throw new Error('stay_offer_unavailable');
+        const product = 'subscription';
         const discount = pkg.product.discounts?.find((item) => item.identifier === 'stay15');
         if (!discount) throw new Error('stay_offer_unavailable');
         try {
             const offer = await Purchases.getPromotionalOffer(pkg.product, discount);
             if (!offer) throw new Error('stay_offer_ineligible');
+            captureEvent('purchase_started', { product });
             const { customerInfo } = await Purchases.purchaseDiscountedPackage(pkg, offer);
             setPublishActive(isPublishActive(customerInfo));
             setGenerationActive(isGenerationActive(customerInfo));
             setActiveProductIds(customerInfo.activeSubscriptions);
             setManagementURL(customerInfo.managementURL);
+            captureEvent('purchase_finished', { product, outcome: 'succeeded' });
             return 'purchased';
         } catch (err) {
+            captureEvent('purchase_finished', { product, outcome: (err as { userCancelled?: boolean }).userCancelled ? 'cancelled' : 'failed' });
             if ((err as { userCancelled?: boolean }).userCancelled) return 'cancelled';
             throw err;
         }

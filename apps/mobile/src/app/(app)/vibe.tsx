@@ -1,3 +1,4 @@
+import { captureEvent } from '../../lib/analytics/events';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -43,6 +44,7 @@ const GOAL_PRESENTATION: Record<Goal, { icon: MenuIcon }> = {
 export default function Vibe() {
     const insets = useSafeAreaInsets();
     const router = useRouter();
+    useEffect(() => { captureEvent('onboarding_step', { step: 'vibe', action: 'view' }); }, []);
     const styles = useThemedStyles(sheets);
     const { api, canReloadSession } = useAuth();
     const { retake } = useLocalSearchParams<{ retake?: string }>();
@@ -79,11 +81,13 @@ export default function Vibe() {
     }
 
     function choose(key: ChoiceKey, value: string) {
+        captureEvent('onboarding_step', { step: 'vibe', action: 'next' });
         setDraft((d) => ({ ...d, [key]: value }));
         setStep((s) => s + 1);
     }
 
     async function skip() {
+        captureEvent('onboarding_step', { step: 'vibe', action: 'skip' });
         const existing = await loadVibe();
         // Retaking and backing out leaves the saved answers alone.
         if (existing) {
@@ -97,6 +101,7 @@ export default function Vibe() {
     }
 
     async function finish() {
+        captureEvent('onboarding_step', { step: 'vibe', action: 'next' });
         const name = studio.trim();
         const answers = { ...draft, ...(name ? { studio_name: name } : {}) };
         if (!isCreatorAnswers(answers)) return;

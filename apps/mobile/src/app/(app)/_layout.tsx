@@ -49,6 +49,8 @@ export default function AppLayout() {
                     })}
                 >
                     <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                    <Stack.Screen name="analytics-consent" options={{ headerShown: false, gestureEnabled: false }} />
+                    <Stack.Screen name="privacy-choices" options={{ title: t('analyticsConsent.choices') }} />
                     <Stack.Screen name="welcome" options={{ headerShown: false }} />
                     <Stack.Screen name="start" options={{ headerShown: false }} />
                     <Stack.Screen name="vibe" options={{ headerShown: false }} />
