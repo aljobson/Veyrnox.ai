@@ -3984,6 +3984,54 @@
     "ratio": 1.75
   },
   {
+    "id": "publishDepth.bluesky.password",
+    "english": "App password",
+    "translation": "Mot de passe d’application",
+    "ratio": 2.17
+  },
+  {
+    "id": "publishDepth.note.add",
+    "english": "Add note",
+    "translation": "Ajouter une note",
+    "ratio": 2
+  },
+  {
+    "id": "publishDepth.reply.anyway",
+    "english": "Send anyway",
+    "translation": "Envoyer quand même",
+    "ratio": 1.64
+  },
+  {
+    "id": "publishDepth.suggestions.use",
+    "english": "Use",
+    "translation": "Utiliser",
+    "ratio": 2.67
+  },
+  {
+    "id": "publishDepth.analytics.title",
+    "english": "Inbox analytics",
+    "translation": "Statistiques de la messagerie",
+    "ratio": 1.93
+  },
+  {
+    "id": "publishDepth.analytics.sent",
+    "english": "Sent",
+    "translation": "Envoyés",
+    "ratio": 1.75
+  },
+  {
+    "id": "publishDepth.presets.apply",
+    "english": "Apply",
+    "translation": "Appliquer",
+    "ratio": 1.8
+  },
+  {
+    "id": "publishDepth.presets.save",
+    "english": "Save preset",
+    "translation": "Enregistrer le modèle",
+    "ratio": 1.91
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

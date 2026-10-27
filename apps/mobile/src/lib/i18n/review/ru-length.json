@@ -2610,6 +2610,48 @@
     "ratio": 2.5
   },
   {
+    "id": "publishDepth.bluesky.handle",
+    "english": "Bluesky handle",
+    "translation": "Имя пользователя Bluesky",
+    "ratio": 1.71
+  },
+  {
+    "id": "publishDepth.note.add",
+    "english": "Add note",
+    "translation": "Добавить заметку",
+    "ratio": 2
+  },
+  {
+    "id": "publishDepth.reply.anyway",
+    "english": "Send anyway",
+    "translation": "Всё равно отправить",
+    "ratio": 1.73
+  },
+  {
+    "id": "publishDepth.suggestions.use",
+    "english": "Use",
+    "translation": "Использовать",
+    "ratio": 4
+  },
+  {
+    "id": "publishDepth.analytics.sent",
+    "english": "Sent",
+    "translation": "Отправлено",
+    "ratio": 2.5
+  },
+  {
+    "id": "publishDepth.analytics.read_actions",
+    "english": "Marked read",
+    "translation": "Отмечено прочитанным",
+    "ratio": 1.82
+  },
+  {
+    "id": "publishDepth.presets.apply",
+    "english": "Apply",
+    "translation": "Применить",
+    "ratio": 1.8
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

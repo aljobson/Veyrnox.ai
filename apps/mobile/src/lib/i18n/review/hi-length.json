@@ -1500,6 +1500,30 @@
     "ratio": 1.75
   },
   {
+    "id": "publishDepth.suggestions.use",
+    "english": "Use",
+    "translation": "उपयोग करें",
+    "ratio": 3.33
+  },
+  {
+    "id": "publishDepth.analytics.sent",
+    "english": "Sent",
+    "translation": "भेजे गए",
+    "ratio": 1.75
+  },
+  {
+    "id": "publishDepth.analytics.platforms",
+    "english": "By network",
+    "translation": "नेटवर्क के अनुसार",
+    "ratio": 1.7
+  },
+  {
+    "id": "publishDepth.presets.apply",
+    "english": "Apply",
+    "translation": "लागू करें",
+    "ratio": 1.8
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",

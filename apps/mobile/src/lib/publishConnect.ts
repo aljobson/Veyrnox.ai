@@ -69,6 +69,7 @@ export interface ConnectedAccount {
 
 export type ConnectOutcome =
     | { kind: 'connected'; account: ConnectedAccount }
+    | { kind: 'choose'; network: string; selectionId: string; choices: { id: string; label: string }[] }
     | { kind: 'cancelled' }
     | { kind: 'error'; key: string };
 
@@ -114,13 +115,7 @@ export async function runConnect(api: ApiClient, network: string, deps: ConnectD
             codeVerifier: pkce.verifier,
             client: 'mobile',
         });
-        const a = res?.account;
-        const id = a && typeof a.id === 'string' ? a.id : null;
-        if (res?.ok !== true || !id) return { kind: 'error', key: 'common.error' };
-        return {
-            kind: 'connected',
-            account: { id, network: typeof a?.network === 'string' ? a.network : network, displayName: typeof a?.display_name === 'string' ? a.display_name : '' },
-        };
+        return callbackOutcome(res, network, true);
     } catch (err) {
         return { kind: 'error', key: connectErrorKey(err) };
     }
@@ -133,10 +128,75 @@ export function connectErrorKey(err: unknown): string {
     if (err.status === 429) return 'connect.err.rate';
     const word = typeof err.body.code === 'string' ? err.body.code : err.code;
     if (word === 'ACCOUNT_LIMIT') return 'connect.err.limit';
+    if (word === 'NO_ELIGIBLE_RESOURCE') return 'publishDepth.connect.noResource';
+    if (word === 'selection_expired') return 'connect.err.state';
+    if (word === 'invalid_selection' || word === 'too_many_resources') return 'connect.err.failed';
     if (word === 'NO_YOUTUBE_CHANNEL') return 'connect.err.noChannel';
     if (word === 'network_unavailable') return 'connect.err.unavailable';
     if (word === 'invalid_state') return 'connect.err.state';
     if (word === 'connect_failed') return 'connect.err.failed';
     if (err.status === 503) return 'connect.err.later';
     return 'common.error';
+}
+
+
+export const PHONE_CATALOGUE = ['instagram', 'linkedin', 'twitter', 'tiktok', 'youtube', 'facebook', 'threads', 'bluesky', 'twitch', 'gmb'] as const;
+const LABELS: Record<(typeof PHONE_CATALOGUE)[number], string> = {
+    instagram: 'Instagram', linkedin: 'LinkedIn', twitter: 'X (Twitter)', tiktok: 'TikTok', youtube: 'YouTube',
+    facebook: 'Facebook', threads: 'Threads', bluesky: 'Bluesky', twitch: 'Twitch', gmb: 'Google Business Profile',
+};
+export interface ConnectRow { key: (typeof PHONE_CATALOGUE)[number]; label: string; state: 'available' | 'setup' }
+const record = (v: unknown): Record<string, unknown> => v && typeof v === 'object' && !Array.isArray(v) ? v as Record<string, unknown> : {};
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export function parseConnectNetworks(body: unknown): ConnectRow[] | null {
+    const list = record(body).networks;
+    if (!Array.isArray(list)) return null;
+    return PHONE_CATALOGUE.flatMap(key => {
+        const row = list.map(record).find(r => r.key === key);
+        const state = row?.status === 'setup_required' ? 'setup' : row?.available === true && row.status === 'available' ? 'available' : null;
+        return state ? [{ key, label: LABELS[key], state }] : [];
+    });
+}
+export const fetchConnectNetworks = async (api: ApiClient) => parseConnectNetworks(await api.request('/api/v1/social/accounts'));
+
+function callbackOutcome(body: unknown, network: string, allowChoice = false): ConnectOutcome {
+    const res = record(body), a = record(res.account);
+    if (res.ok === true && typeof a.id === 'string' && a.id) return {
+        kind: 'connected', account: { id: a.id, network: typeof a.network === 'string' ? a.network : network,
+            displayName: typeof a.display_name === 'string' ? a.display_name.slice(0, 120) : '' },
+    };
+    if (allowChoice && res.ok === false && typeof res.selectionId === 'string' && UUID.test(res.selectionId)
+        && Array.isArray(res.choices) && res.choices.length >= 1 && res.choices.length <= 200) {
+        const choices = res.choices.flatMap(raw => {
+            const c = record(raw);
+            if (typeof c.id !== 'string' || !c.id || c.id.length > 128 || typeof c.label !== 'string') return [];
+            // eslint-disable-next-line no-control-regex
+            const label = c.label.replace(/[\u0000-\u001f\u007f]/g, '').slice(0, 120);
+            return label.trim() ? [{ id: c.id, label }] : [];
+        });
+        if (choices.length) return { kind: 'choose', network, selectionId: res.selectionId, choices };
+    }
+    return { kind: 'error', key: 'common.error' };
+}
+export async function finishSelection(api: ApiClient, network: string, selectionId: string, resourceId: string): Promise<ConnectOutcome> {
+    try {
+        return callbackOutcome(await post(api, path(network, 'callback'), { selectionId, resourceId, client: 'mobile' }), network);
+    } catch (err) { return { kind: 'error', key: connectErrorKey(err) }; }
+}
+
+export const BLUESKY_HANDLE_RE = /^[A-Za-z0-9.-]+$/;
+export const BLUESKY_APP_PASSWORD_RE = /^[a-z0-9]{4}(-[a-z0-9]{4}){3}$/;
+export function blueskyErrorKey(err: unknown): string {
+    if (!(err instanceof ApiError)) return 'publishDepth.bluesky.failed';
+    if (err.status === 503) return 'connect.err.later';
+    if ([429, 0].includes(err.status)) return connectErrorKey(err);
+    if (err.status === 404) return 'connect.err.unavailable';
+    if (err.body.code === 'ACCOUNT_LIMIT') return 'connect.err.limit';
+    if (err.body.stage === 'record_account') return 'publishDepth.bluesky.saveFailed';
+    if (err.body.stage === 'provider_session' && !['provider_request_failed_400', 'provider_request_failed_401'].includes(String(err.body.code))) return 'publishDepth.bluesky.sessionFailed';
+    return 'publishDepth.bluesky.failed';
+}
+export async function connectBluesky(api: ApiClient, identifier: string, appPassword: string): Promise<ConnectOutcome> {
+    try { return callbackOutcome(await post(api, path('bluesky', 'connect'), { identifier, appPassword, client: 'mobile' }), 'bluesky'); }
+    catch (err) { return { kind: 'error', key: blueskyErrorKey(err) }; }
 }

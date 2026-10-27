@@ -96,6 +96,7 @@
   "presets.festival": "Same spelling in Spanish and English for this label: Festival.",
   "publish.hHMM": "Technical notation, units or placeholder display, unchanged in Spanish: HH:MM.",
   "publish.https": "Technical notation, units or placeholder display, unchanged in Spanish: https://.",
+  "publishDepth.analytics.minutes": "Established local term or standard time-unit abbreviation.",
   "publishDeveloper.webhook": "Established Spanish loanword or website terminology: Webhook.",
   "publishLinks.confirmVariant": "Technical notation, units or placeholder display, unchanged in Spanish: {network}: {text}.",
   "publishUploads.size": "Technical notation, units or placeholder display, unchanged in Spanish: {size} MB.",
