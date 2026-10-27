@@ -179,6 +179,7 @@ export default function Account() {
                 <Link href="/brand-kit" asChild>
                     <Row icon="palette" label={t('acct.brandKit')} />
                 </Link>
+                <Link href="/developers" asChild><Row icon="cpu" label={t('developers.row')} /></Link>
                 <Link href="/publish/developer" asChild>
                     <Row icon="wrench" label={t('dev.row')} />
                 </Link>

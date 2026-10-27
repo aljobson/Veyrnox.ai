@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { groupModels, type Group } from '../lib/catalogPages';
 import { t } from '../lib/i18n';
-import { fetchCatalog } from '../lib/media';
+import { fetchCatalog, fetchAllCatalog } from '../lib/media';
 import { colors } from '../theme';
 import { Action } from './account/shared';
 
 // Loads the public catalogue and hands each group of models to the screen to draw.
-export function CatalogList({ render }: { render: (g: Group) => React.ReactNode }) {
+export function CatalogList({ render, includeGated = false }: { includeGated?: boolean; render: (g: Group) => React.ReactNode }) {
     const [groups, setGroups] = useState<Group[] | null>(null);
     const [failed, setFailed] = useState(false);
     const [attempt, setAttempt] = useState(0);
@@ -15,14 +15,14 @@ export function CatalogList({ render }: { render: (g: Group) => React.ReactNode 
     useEffect(() => {
         let live = true;
         setFailed(false);
-        fetchCatalog().then(
+        (includeGated ? fetchAllCatalog() : fetchCatalog()).then(
             (m) => live && setGroups(groupModels(m)),
             () => live && setFailed(true),
         );
         return () => {
             live = false;
         };
-    }, [attempt]);
+    }, [attempt, includeGated]);
 
     if (failed) {
         return (

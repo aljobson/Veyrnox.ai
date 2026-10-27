@@ -2628,6 +2628,54 @@
     "ratio": 1.75
   },
   {
+    "id": "developers.api.kicker",
+    "english": "Developer API",
+    "translation": "API para desarrolladores",
+    "ratio": 1.85
+  },
+  {
+    "id": "developers.ep.poll",
+    "english": "Poll an owned generation.",
+    "translation": "Consulta el estado de una generación propia.",
+    "ratio": 1.76
+  },
+  {
+    "id": "developers.oauth.title",
+    "english": "Users approve access. Apps keep no secret.",
+    "translation": "Los usuarios aprueban el acceso. Las apps no guardan ningún secreto.",
+    "ratio": 1.62
+  },
+  {
+    "id": "developers.share",
+    "english": "Share",
+    "translation": "Compartir",
+    "ratio": 1.8
+  },
+  {
+    "id": "creditsPage.pack",
+    "english": "Credit pack",
+    "translation": "Paquete de créditos",
+    "ratio": 1.73
+  },
+  {
+    "id": "creditsPage.packs",
+    "english": "One-off credit packs",
+    "translation": "Paquetes de créditos de pago único",
+    "ratio": 1.7
+  },
+  {
+    "id": "creditsPage.status.past_due",
+    "english": "Past due",
+    "translation": "Pago atrasado",
+    "ratio": 1.63
+  },
+  {
+    "id": "creditsPage.status.ended",
+    "english": "Ended",
+    "translation": "Finalizada",
+    "ratio": 2
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",

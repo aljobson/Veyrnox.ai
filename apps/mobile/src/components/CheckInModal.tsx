@@ -4,6 +4,7 @@ import { AppState, Modal, Pressable, ScrollView, StyleSheet, Text, View } from '
 import { useAuth } from '../auth/AuthProvider';
 import { appStorage, getCacheUser, subscribeCacheUser } from '../lib/appCache';
 import { claimCheckin, checkinErrorKey, type CheckinStatus } from '../lib/checkin';
+import { announceCheckin, onCheckinOpenRequest } from '../lib/checkinEntry';
 import { checkinStatusReader } from '../lib/checkinStatus';
 import { ApiError, type ApiClient } from '../lib/api';
 import { touchTarget } from '../lib/a11y';
@@ -35,7 +36,7 @@ function CheckInForUser({ owner, api }: { owner: string; api: ApiClient }) {
                 const next = await reader.read();
                 const saved = await appStorage.get(`checkin.${owner}`).catch(() => null);
                 if (!live || owner !== getCacheUser()) return;
-                setStatus(next); setError(null); setEarned(null);
+                setStatus(next); announceCheckin(owner, next); setError(null); setEarned(null);
                 setOpen(!!next && !next.claimed_today && saved !== today() && dismissed.get(owner) !== today());
             } catch { /* A display-storage failure does not trigger another API read. */ }
         }
@@ -45,6 +46,11 @@ function CheckInForUser({ owner, api }: { owner: string; api: ApiClient }) {
         const timer = setInterval(poll, 60_000);
         return () => { live = false; sub.remove(); clearInterval(timer); };
     }, [reader, owner]);
+    useEffect(() => onCheckinOpenRequest(() => {
+        if (owner !== getCacheUser()) return;
+        const next = reader.peek();
+        if (next) { setStatus(next); setOpen(true); }
+    }), [reader, owner]);
     function remember() {
         if (!owner) return;
         dismissed.set(owner, today());
@@ -57,16 +63,16 @@ function CheckInForUser({ owner, api }: { owner: string; api: ApiClient }) {
         try {
             const result = await claimCheckin(api);
             if (owner !== getCacheUser()) return;
-            if (!result) { reader.stop(); setOpen(false); setStatus(null); return; }
+            if (!result) { reader.stop(); announceCheckin(owner, null); setOpen(false); setStatus(null); return; }
             remember(); setEarned(result.credits);
             if (status) {
                 const next = { ...status, claimed_today: true, streak: result.streak };
-                reader.update(next); setStatus(next);
+                reader.update(next); setStatus(next); announceCheckin(owner, next);
             }
         } catch (err) {
             if (owner !== getCacheUser()) return;
             if (err instanceof ApiError && err.status === 403 && err.code === 'account_unavailable') {
-                reader.stop(); setOpen(false); setStatus(null);
+                reader.stop(); announceCheckin(owner, null); setOpen(false); setStatus(null);
             } else setError(checkinErrorKey(err));
         }
         finally { setBusy(false); }
