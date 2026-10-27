@@ -7,6 +7,8 @@ export interface CreativeSourceHandoff {
     readonly uploaded: Partial<Record<SlotName, string | readonly string[]>>;
     readonly references?: readonly GenerationReference[];
     readonly fromLibrary: Partial<Record<SlotName, string | readonly string[]>>;
+    // True only when the handing screen showed the source-rights statement and the person ticked it.
+    readonly rightsConfirmed?: boolean;
 }
 
 interface Pending extends CreativeSourceHandoff {
@@ -58,6 +60,7 @@ export function readCreativeSourceHandoff(key: string | undefined, recipe: strin
         uploaded: copySlots(item.uploaded),
         references: item.references?.map(ref => ({ ...ref })),
         fromLibrary: copySlots(item.fromLibrary),
+        rightsConfirmed: item.rightsConfirmed === true,
     };
 }
 

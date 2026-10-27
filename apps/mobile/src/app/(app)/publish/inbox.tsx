@@ -42,6 +42,7 @@ export default function Inbox() {
             <Stack.Screen options={{ title: t('inbox.title') }} />
             {locked ? <UnlockCard feature="inbox" onUnlocked={() => setReload((n) => n + 1)} /> : (
                 <>
+                    <Pressable style={[touchTarget, styles.row]} accessibilityRole="button" onPress={() => router.push('/publish/inbox-analytics')}><Text style={styles.name}>{t('publishDepth.analytics.title')}</Text></Pressable>
                     <View style={styles.chips}>
                         {STATES.map((s) => (
                             <Pressable key={s} accessibilityRole="button" accessibilityState={{ selected: state === s }} style={[styles.chip, touchTarget, state === s && styles.chipOn]} onPress={() => setState(s)}>

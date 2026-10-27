@@ -1,3 +1,5 @@
+import { fetchPublishPlan } from '../../../lib/publishPlan';
+import { planManagementKey } from '../../../lib/publishWorkflows';
 import { directionalStyle } from '../../../lib/rtl';
 import { Button, Card, Text, PriceText, themedStyles, useThemedStyles } from '../../../components/ui';
 import { Image } from 'expo-image';
@@ -53,6 +55,8 @@ export default function Publish() {
     const router = useRouter();
     const selectedBrand = useSyncExternalStore(brandStore.subscribe, brandStore.get, () => null);
     const { status: billingStatus, offerings, canPurchase, publishActive, purchase, restore } = useBilling();
+    const [plan, setPlan] = useState<Awaited<ReturnType<typeof fetchPublishPlan>> | null>(null);
+    const managementKey = plan?.tier === 'publish' ? planManagementKey(plan.source) : null;
     const [data, setData] = useState<PublishAccountsState | null>(null);
     const [posts, setPosts] = useState<PublishPost[]>([]);
     const [brands, setBrands] = useState<Brand[]>([]);
@@ -64,12 +68,15 @@ export default function Publish() {
 
     const load = useCallback(async () => {
         try {
+            setPlan(null);
             const nextData = await fetchAccounts(api);
-            const [nextPosts, nextBrands] = await Promise.all([
+            const [nextPosts, nextBrands, nextPlan] = await Promise.all([
                 fetchPosts(api).catch(() => null),
                 fetchBrands(baseApi).catch(() => null),
+                (hasPublishPlan(nextData) || publishActive) && nextData.plansEnabled ? fetchPublishPlan(baseApi) : Promise.resolve(null),
             ]);
             setData(nextData);
+            setPlan(nextPlan);
             if (nextPosts) setPosts(nextPosts);
             if (nextBrands) {
                 reconcileBrand(nextBrands);
@@ -79,7 +86,7 @@ export default function Publish() {
         } catch (err) {
             setError(publishErrorMessage(err));
         }
-    }, [api, baseApi]);
+    }, [api, baseApi, publishActive]);
 
     useFocusEffect(useCallback(() => { void load(); }, [load]));
 
@@ -220,7 +227,7 @@ export default function Publish() {
                             </View>
                         </Card>
                     ) : (
-                        <View style={styles.activePlan}><View style={styles.liveDot} /><Text variant="footnote" style={styles.activePlanText}>{t('publishHome.fullPublishing')}</Text></View>
+                        <View style={styles.activePlan}><View style={styles.liveDot} /><View><Text variant="footnote" style={styles.activePlanText}>{t('publishHome.fullPublishing')}</Text>{paid && data.plansEnabled && managementKey ? <Text variant="footnote" style={styles.muted}>{t(managementKey)}</Text> : null}</View></View>
                     )}
 
                     {GROUPS.map((group) => {

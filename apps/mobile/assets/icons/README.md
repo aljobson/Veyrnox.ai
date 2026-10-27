@@ -20,4 +20,9 @@ Design system v2 phase 2a additions (same render steps): star, arrow-up, arrow-d
 
 Design system v2 phase 2b additions (same render steps): arrow-right, globe, brain, cpu.
 
+Tools, Face filters and Studio skills additions (same render steps): arrows-out, selection-background,
+frame-corners, magic-wand, film-reel, user-sound, waveform, faders, speaker-high, monitor-play, drop-half, lightbulb,
+hourglass, pen-nib, bandaids, chat-text, slideshow, folder-simple-plus, list-checks, push-pin, identification-card,
+gauge, aperture.
+
 google-g.png is the multicolour Google "G" mark (Google sign-in branding guidelines). It is never tinted.

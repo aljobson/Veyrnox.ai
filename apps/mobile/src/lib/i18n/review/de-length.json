@@ -2646,6 +2646,48 @@
     "ratio": 3
   },
   {
+    "id": "publishDepth.note.add",
+    "english": "Add note",
+    "translation": "Notiz hinzufügen",
+    "ratio": 2
+  },
+  {
+    "id": "publishDepth.suggestions.use",
+    "english": "Use",
+    "translation": "Verwenden",
+    "ratio": 3
+  },
+  {
+    "id": "publishDepth.analytics.sent",
+    "english": "Sent",
+    "translation": "Gesendet",
+    "ratio": 2
+  },
+  {
+    "id": "publishDepth.analytics.failed",
+    "english": "Failed",
+    "translation": "Fehlgeschlagen",
+    "ratio": 2.33
+  },
+  {
+    "id": "publishDepth.analytics.read_actions",
+    "english": "Marked read",
+    "translation": "Als gelesen markiert",
+    "ratio": 1.82
+  },
+  {
+    "id": "publishDepth.presets.exists",
+    "english": "A preset already has this name.",
+    "translation": "Eine Vorlage mit diesem Namen ist bereits vorhanden.",
+    "ratio": 1.68
+  },
+  {
+    "id": "publishDepth.presets.failed",
+    "english": "Could not load or save presets. Try again.",
+    "translation": "Vorlagen konnten nicht geladen oder gespeichert werden. Versuche es erneut.",
+    "ratio": 1.79
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",
