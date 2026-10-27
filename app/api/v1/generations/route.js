@@ -16,8 +16,7 @@ import { templateStartId } from '../../../../lib/templateStart.js';
 import { classifySubmitFailure } from '../../../../lib/submitFailureClass.js';
 import { readGenerationSources, resolveGenerationSources, sourceErrorStatus } from '../../../../lib/generationSources.js';
 import { mediaInputKey } from '../../../../lib/generationSourceSlots.mjs';
-import { envConfig as r2EnvConfig, isConfigured as r2IsConfigured, presignGetUrl } from '../../../../packages/adapters/r2.js';
-import { motionTransferEnabled, resolveMotionClip, motionPricedInputs, motionSubmitSources } from '../../../../lib/motionTransfer.js';
+import { envConfig as r2EnvConfig, isConfigured as r2IsConfigured } from '../../../../packages/adapters/r2.js';
 import { editUnits, clipCaptionsEnabled, clipSlowEnabled } from '../../../../lib/clipEdit.js';
 import { compositeRefundGate } from '../../../../lib/compositeRefunds.js';
 import { resolveEdit, defaultDeps as editDeps } from '../../../../lib/clipEditSources.js';
@@ -62,8 +61,6 @@ const ALLOWED_INPUTS = {
     brief: { kind: 'string', max: 500 },
     plan_id: { kind: 'string', max: 600 },
     narration_text: { kind: 'string', max: 300 },
-    // Motion transfer (ADR-0269): a template id; the model contract narrows it to known clips.
-    motion_template: { kind: 'string', max: 64 },
     // Clip Editor: structured, so checked by lib/clipEditSources.js (within MAX_INPUTS_BYTES).
     clips: { kind: 'edit' },
     audio: { kind: 'edit' },
@@ -271,8 +268,6 @@ export async function POST(req) {
     }
     if (record.outputStems && !editorFeatureEnabled('EDITOR_AUDIO_STEMS_ENABLED')) return NextResponse.json({ error: 'audio_stems_unavailable' }, { status: 503 });
     if (modelRow.gated_flag) return NextResponse.json({ error: 'model_gated' }, { status: 402 });
-    // ADR-0269: off unless the mode's flag is "true"; refused before any source is signed or credit moves.
-    if (record.motion && !motionTransferEnabled(process.env, record.motion)) return NextResponse.json({ error: 'motion_transfer_unavailable' }, { status: 400 });
     for (const key of ['output_resolution', 'audio_enabled']) {
         if (inputs[key] !== undefined && !Object.hasOwn(record.inputs, key)) {
             return NextResponse.json({ error: `inputs_key_not_allowed:${key}` }, { status: 400 });
@@ -293,9 +288,6 @@ export async function POST(req) {
     // sends one control set for every model, and an undeclared key must not
     // reach the provider, the job row, or the price.
     const modelInputs = declaredInputs(record, inputs);
-    // ADR-0269: the driving clip and its length are the server's, resolved before the provider check and the debit.
-    const motion = record.motion ? await resolveMotionClip({ record, modelInputs, r2cfg: r2EnvConfig() }, { presign: presignGetUrl, isConfigured: r2IsConfigured }) : null;
-    if (motion && !motion.ok) return NextResponse.json({ error: motion.error }, { status: motion.status });
     // Refuse before the debit anything the provider request cannot express at
     // the priced unit (a longer clip, an aspect ratio the model lacks, ...).
     const providerCheck = provider.check(record, modelRow, modelInputs);
@@ -319,7 +311,7 @@ export async function POST(req) {
     } : modelInputs;
     // A Clip Editor job stores the resolved edit (owned R2 keys, real lengths)
     // and is priced on its output length, never on what the client sent.
-    let pricedInputs = motion ? motionPricedInputs(motion) : modelInputs;
+    let pricedInputs = modelInputs;
     if (record.edit) {
         // Captions are a new paid path: off until CLIP_EDIT_CAPTIONS_ENABLED is "true"
         // (0225 applied, billed cost checked, docs/editor/CAPTIONS.md).
@@ -503,8 +495,7 @@ export async function POST(req) {
     const submitted = await submitWithFailover({
         jobId, modelRow, ownRoute, routes: offerRoutes,
         canHop: !rawKeys.length && !rawAssets.length && !record.edit,
-        inputs: modelInputs, jobInputs: record.edit ? storedInputs : modelInputs, publicHost,
-        sources: motion ? motionSubmitSources(sources, motion) : sources,
+        inputs: modelInputs, jobInputs: record.edit ? storedInputs : modelInputs, publicHost, sources,
         first: { provider, record, key: providerKey },
         deps: { providerFor, capabilityFor },
     }, cfg);
