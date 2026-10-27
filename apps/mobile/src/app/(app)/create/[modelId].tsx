@@ -111,7 +111,14 @@ export default function CreateWithModel() {
                 const aspect = (guidedAspect && o.aspects.includes(guidedAspect) ? guidedAspect : null) ?? nearestAspect(template?.ratio ?? null, o.aspects) ?? defaultAspect(o.aspects, vibe?.answers ?? null);
                 const base: OptionValues = { aspect, count: 1, seed: '', negative: '', voice: '', audioSeconds: '' };
                 // A template brings its own words; only a form opened bare gets the unsent draft back.
-                if (typeof presetPrompt === 'string') {
+                if (typeof presetPrompt === 'string' || handedSources?.picks) {
+                    if (handedSources?.picks) {
+                        const picks = sanitizePicks(handedSources.picks);
+                        if (kindOf(found.modality) === 'image' && textInput(found)?.key === 'prompt') {
+                            setCharacter(picks);
+                            setCharacterOn(true);
+                        } else setPrompt(buildCharacterPrompt(typeof presetPrompt === 'string' ? presetPrompt : '', picks));
+                    }
                     setOpts(base);
                     draftReady.current = true;
                     return;
@@ -218,7 +225,7 @@ export default function CreateWithModel() {
         try {
             first = await pending.current.run(api, { analyticsKind: kindOf(model.modality), modelId: model.id, prompt: text, durationSeconds: isVideo ? duration : null, confirmedCredits: unit, references, sourceRights: hasReference ? sourceRights : undefined, textKey: text_?.key, extraInputs: extra }, n, (count) => { started = count; });
             clearDraft().catch(() => undefined);
-            if (n === 1 && first) router.replace({ pathname: '/job/[id]', params: { id: first } });
+            if (n === 1 && first) router.replace({ pathname: '/job/[id]', params: { id: first, ...(handedSources?.recipe === 'faceless-reel' && handedSources.followup === 'generated-sound' && model.id === 'wan-2.5-kie' && duration !== null && duration <= 8 ? { followup: 'faceless-sound' } : {}) } });
             else router.replace('/library');
         } catch (err) {
             setError(generationMessage(err));

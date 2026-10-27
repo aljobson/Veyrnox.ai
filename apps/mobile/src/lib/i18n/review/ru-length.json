@@ -2820,6 +2820,30 @@
     "ratio": 1.75
   },
   {
+    "id": "facelessReel.format.mood.label",
+    "english": "Mood reel",
+    "translation": "Атмосферный ролик",
+    "ratio": 1.89
+  },
+  {
+    "id": "facelessReel.pacing.balanced.label",
+    "english": "Balanced",
+    "translation": "Сбалансированный",
+    "ratio": 2
+  },
+  {
+    "id": "facelessReel.pacing.fast.label",
+    "english": "Fast",
+    "translation": "Быстрый",
+    "ratio": 1.75
+  },
+  {
+    "id": "videoAgentBalance.retry",
+    "english": "Retry balance",
+    "translation": "Повторить проверку баланса",
+    "ratio": 2
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

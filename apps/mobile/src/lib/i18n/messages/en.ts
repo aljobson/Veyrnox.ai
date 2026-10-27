@@ -74,6 +74,7 @@ import area_email from './en/email';
 import area_empty from './en/empty';
 import area_explore from './en/explore';
 import area_faceFilters from './en/faceFilters';
+import area_facelessReel from './en/facelessReel';
 import area_features from './en/features';
 import area_files from './en/files';
 import area_film from './en/film';
@@ -177,6 +178,7 @@ import area_uploads from './en/uploads';
 import area_vey from './en/vey';
 import area_vibe from './en/vibe';
 import area_videoAgent from './en/videoAgent';
+import area_videoAgentBalance from './en/videoAgentBalance';
 import area_welcome from './en/welcome';
 import area_whenPicker from './en/whenPicker';
 
@@ -253,6 +255,7 @@ const catalog = {
     ...area_empty,
     ...area_explore,
     ...area_faceFilters,
+    ...area_facelessReel,
     ...area_features,
     ...area_files,
     ...area_film,
@@ -356,6 +359,7 @@ const catalog = {
     ...area_vey,
     ...area_vibe,
     ...area_videoAgent,
+    ...area_videoAgentBalance,
     ...area_welcome,
     ...area_whenPicker,
 } as const;
