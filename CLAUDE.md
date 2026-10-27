@@ -387,7 +387,10 @@ developer surface is `/api/v1/developer/*` and requires a verified OAuth
    (HaveIBeenPwned) is a project setting that must stay ON — it was found off
    in the 2026-09-16 audit, so verify it after any Auth config change.
    Second factors are TOTP through Supabase; `/api/v1/admin/metrics` demands
-   `aal2` once `ADMIN_REQUIRE_AAL2` is "true".
+   `aal2` once `ADMIN_REQUIRE_AAL2` is "true". With `REQUIRE_AAL2_WHEN_ENROLLED`
+   "true", middleware refuses every aal1 `/api/v1` call for an account that has
+   a verified factor (`lib/mfaEnforcement.js`); keep it off until the web app
+   asks for the code at sign-in.
 8. **Software & Data Integrity Failures** — migrations in git, RPC-only writes,
    R2 objects immutable after upload.
 9. **Security Logging & Monitoring Failures** — `console.error` for every
