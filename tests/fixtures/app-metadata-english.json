@@ -131,14 +131,6 @@
       "url": "/app/library"
     }
   },
-  "app/veyrnox/app/motion/page.js": {
-    "title": "Motion templates",
-    "description": "Pick a movement and the person or pet in your photo performs it.",
-    "robots": {
-      "index": false,
-      "follow": false
-    }
-  },
   "app/veyrnox/app/oddlings/layout.js": {
     "title": "Oddling Studio",
     "description": "Design an original fictional creator, lock their visual canon and recurring show, then continue to portrait or motion generation.",

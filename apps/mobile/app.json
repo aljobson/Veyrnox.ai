@@ -11,7 +11,8 @@
       "bundleIdentifier": "ai.veyrnox.app",
       "usesAppleSignIn": true,
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleName": "Veyrnox.ai"
       },
       "associatedDomains": [
         "applinks:veyrnox.ai",

@@ -9,10 +9,10 @@ import { useAuth } from '../src/auth/AuthProvider';
 import * as calls from '../src/lib/auth/accountCalls';
 import * as keys from '../src/lib/passkeys';
 import { AuthError } from '../src/lib/auth/supabaseAuth';
-import { markMfaCleared } from '../src/lib/mfaCheck';
+import { knownMfaEnrolment, markMfaCleared, rememberMfaEnrolment } from '../src/lib/mfaCheck';
 import { t } from '../src/lib/i18n';
 import { MfaCard } from '../src/components/account/MfaCard';
-import { MfaGate } from '../src/components/account/MfaGate';
+import { GATE_TIMEOUT_MS, MfaGate } from '../src/components/account/MfaGate';
 import { PasswordCard } from '../src/components/account/PasswordCard';
 import { PasskeysCard } from '../src/components/account/PasskeysCard';
 import { DevicesCard } from '../src/components/account/DevicesCard';
@@ -21,7 +21,7 @@ import { GrantsCard } from '../src/components/account/GrantsCard';
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: jest.fn() }));
 jest.mock('../src/lib/auth/accountCalls', () => ({ fetchProfile: jest.fn(), enrollTotp: jest.fn(), verifyFactor: jest.fn(), unenrollFactor: jest.fn(), requestPasswordCode: jest.fn(), changePassword: jest.fn(), revokeSessions: jest.fn(), fetchGrantsRaw: jest.fn(), revokeGrant: jest.fn() }));
 jest.mock('../src/lib/passkeys', () => ({ ...jest.requireActual('../src/lib/passkeys'), fetchPasskeys: jest.fn(), addPasskey: jest.fn(), removePasskey: jest.fn(), passkeyGate: jest.fn(() => true) }));
-jest.mock('../src/lib/mfaCheck', () => ({ markMfaCleared: jest.fn(), mfaClearedFor: jest.fn(() => false) }));
+jest.mock('../src/lib/mfaCheck', () => ({ markMfaCleared: jest.fn(), mfaClearedFor: jest.fn(() => false), knownMfaEnrolment: jest.fn(async () => null), rememberMfaEnrolment: jest.fn(async () => {}) }));
 // Read the same fixtures used by the dev server without introducing a runtime dependency on dev code.
 const fixturePath = path.resolve(__dirname, '../dev/mockSecurityFixtures.mjs');
 const fixture = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', `import * as f from ${JSON.stringify(fixturePath)}; console.log(JSON.stringify({ ...f.createSecurityFixtures(), secret: f.SECURITY_SECRET, uri: f.SECURITY_URI, tokens: f.securityTokens('aal2'), initial: f.securityTokens('aal1') }));`], { encoding: 'utf8' }));
@@ -161,7 +161,52 @@ test('MFA gate preserves wrong-code recovery, session adoption, busy validation 
     expect(calls.verifyFactor).toHaveBeenLastCalledWith(getAccessToken, 'mock-totp', '123456');
     expect(adoptSession).toHaveBeenCalledWith(expect.objectContaining({ accessToken: fixture.tokens.access_token }));
     expect(markMfaCleared).toHaveBeenCalledWith('00000000-0000-4000-8000-000000000001');
+    expect(rememberMfaEnrolment).toHaveBeenCalledWith('00000000-0000-4000-8000-000000000001', true);
     expect(texts('Inside')).toHaveLength(1);
+});
+
+// Audit 2026-10-27 H2: a failed or slow check must not open the app for an account that may have two-factor.
+test('MFA gate fails closed when the check fails, then retries into the app', async () => {
+    jest.mocked(calls.fetchProfile).mockRejectedValueOnce(new AuthError(429, 'too_many_requests'));
+    await render(<MfaGate><RN.Text>Inside</RN.Text></MfaGate>);
+    expect(texts('Inside')).toHaveLength(0);
+    expect(texts(t('acct.mfa.unavailable'))).toHaveLength(1);
+    expect(control(t('public.account.signOut')).props.accessibilityState.disabled).toBe(false);
+    jest.mocked(calls.fetchProfile).mockResolvedValueOnce(profile([]));
+    await press(t('acct.mfa.retry'));
+    expect(texts('Inside')).toHaveLength(1);
+    expect(rememberMfaEnrolment).toHaveBeenLastCalledWith('00000000-0000-4000-8000-000000000001', false);
+});
+
+test('MFA gate opens on a failed check only for an account this phone saw without two-factor', async () => {
+    jest.mocked(knownMfaEnrolment).mockResolvedValueOnce(false);
+    jest.mocked(calls.fetchProfile).mockRejectedValueOnce(new Error('offline'));
+    await render(<MfaGate><RN.Text>Inside</RN.Text></MfaGate>);
+    expect(texts('Inside')).toHaveLength(1);
+    await act(async () => root.unmount());
+    root = createRoot();
+    jest.mocked(knownMfaEnrolment).mockResolvedValueOnce(true);
+    jest.mocked(calls.fetchProfile).mockRejectedValueOnce(new Error('offline'));
+    await render(<MfaGate><RN.Text>Inside</RN.Text></MfaGate>);
+    expect(texts('Inside')).toHaveLength(0);
+    expect(texts(t('acct.mfa.unavailable'))).toHaveLength(1);
+});
+
+test('MFA gate timeout no longer opens the app, and a late answer still decides', async () => {
+    jest.useFakeTimers();
+    try {
+        const slow = deferred<any>();
+        jest.mocked(calls.fetchProfile).mockReturnValueOnce(slow.promise);
+        await render(<MfaGate><RN.Text>Inside</RN.Text></MfaGate>);
+        await act(async () => { jest.advanceTimersByTime(GATE_TIMEOUT_MS + 1); });
+        expect(texts('Inside')).toHaveLength(0);
+        expect(texts(t('acct.mfa.unavailable'))).toHaveLength(1);
+        await act(async () => slow.resolve(profile()));
+        expect(controls(t('acct.mfa.verify'))).toHaveLength(1);
+        expect(texts('Inside')).toHaveLength(0);
+    } finally {
+        jest.useRealTimers();
+    }
 });
 
 test('password change preserves empty/invalid validation, trimmed nonce, API arguments and all busy conditions', async () => {

@@ -44,3 +44,23 @@ M0: typecheck and 13 unit tests (API client retry and session loss, token grants
 ## Amendment 1 (2026-10-18): OAuth redirects through the site
 
 The staging Supabase project kept falling back to its Site URL for `redirect_to=ai.veyrnox.app://auth/callback`, so Google sign-in ended on the website. The app now sends `redirect_to=<apiBase>/auth/mobile`, an address on the site's own origin that Supabase always allows. `app/auth/mobile/route.js` answers a 302 to the fixed `ai.veyrnox.app://auth/callback`, forwarding only a well-formed PKCE `code` or a short error word; the target is a constant, so it is not an open redirect, and a code is useless without the verifier held in the app. The auth session still ends on the app address, so the rest of the flow is unchanged. `tests/authMobileBridge.test.mjs` and `apps/mobile/__tests__/supabaseAuth.test.ts` pin both halves.
+
+## Amendment 2 (2026-10-27): sign-in starts on veyrnox.ai
+
+iOS names the host of the address an app opens in its "wants to use … to sign in"
+prompt, and the bundle's short name as the app. The app opened the Supabase
+project host directly, so testers saw `xdxdzmsztyzbnzeforxx.supabase.co` and
+"Veyrnoxai".
+
+- The app now opens `GET /auth/mobile/start?provider=&code_challenge=` on its own
+  API host. The route accepts only `google` or `apple` and a 43–128 character
+  base64url challenge, and answers a 302 to `SUPABASE_URL`'s `/auth/v1/authorize`
+  with `code_challenge_method=s256`, the fixed `${PUBLIC_HOST}/auth/mobile`
+  return address and, for Google, `prompt=select_account`. Both targets come
+  from configuration, so it is not an open redirect; it reads no identity
+  header. Bad input gets `400 invalid_request`; missing `SUPABASE_URL` gets
+  `503 oauth_not_configured`.
+- `ios.infoPlist.CFBundleName` is set to "Veyrnox.ai".
+- App builds before 1.0.0 (7) keep opening Supabase directly; both paths work.
+- Google's own consent screen already shows Veyrnox.ai. A Supabase custom domain
+  would brand the provider-side redirects too; not adopted (paid add-on, DNS).
