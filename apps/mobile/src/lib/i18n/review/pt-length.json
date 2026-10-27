@@ -1,0 +1,2504 @@
+[
+  {
+    "id": "abt.emailUs",
+    "english": "Email {email}",
+    "translation": "Enviar e-mail para {email}",
+    "ratio": 2
+  },
+  {
+    "id": "account.copyright",
+    "english": "Copyright",
+    "translation": "Direitos autorais",
+    "ratio": 1.89
+  },
+  {
+    "id": "account.legal.privacy",
+    "english": "Privacy policy",
+    "translation": "Política de privacidade",
+    "ratio": 1.64
+  },
+  {
+    "id": "account.privacypolicy",
+    "english": "Privacy policy",
+    "translation": "Política de privacidade",
+    "ratio": 1.64
+  },
+  {
+    "id": "account.stayDone",
+    "english": "Your 15% stay offer is active. Thank you for staying.",
+    "translation": "Sua oferta de permanência com 15% de desconto está ativa. Obrigado por continuar conosco.",
+    "ratio": 1.68
+  },
+  {
+    "id": "account.violenceorgore",
+    "english": "Violence or gore",
+    "translation": "Violência ou imagens explícitas de ferimentos",
+    "ratio": 2.81
+  },
+  {
+    "id": "acct.dev.othersDone",
+    "english": "Other devices were signed out.",
+    "translation": "As sessões dos outros dispositivos foram encerradas.",
+    "ratio": 1.73
+  },
+  {
+    "id": "acct.mfa.cancelSetup",
+    "english": "Cancel setup",
+    "translation": "Cancelar configuração",
+    "ratio": 1.75
+  },
+  {
+    "id": "acct.mfa.on",
+    "english": "Two-factor sign-in is on.",
+    "translation": "A autenticação de dois fatores está ativada.",
+    "ratio": 1.76
+  },
+  {
+    "id": "acct.mfa.removed",
+    "english": "Two-factor sign-in is off.",
+    "translation": "A autenticação de dois fatores está desativada.",
+    "ratio": 1.81
+  },
+  {
+    "id": "acct.mfa.retry",
+    "english": "Try again",
+    "translation": "Tentar novamente",
+    "ratio": 1.78
+  },
+  {
+    "id": "acct.mfa.secret",
+    "english": "Setup key",
+    "translation": "Chave de configuração",
+    "ratio": 2.33
+  },
+  {
+    "id": "acct.mfa.secretSpoken",
+    "english": "Setup key: {secret}",
+    "translation": "Chave de configuração: {secret}",
+    "ratio": 1.63
+  },
+  {
+    "id": "acct.mfa.unavailable",
+    "english": "Could not check two-factor sign-in.",
+    "translation": "Não foi possível verificar a autenticação de dois fatores.",
+    "ratio": 1.66
+  },
+  {
+    "id": "acct.mfa.unlock",
+    "english": "Unlock",
+    "translation": "Desbloquear",
+    "ratio": 1.83
+  },
+  {
+    "id": "activity.more",
+    "english": "Show older",
+    "translation": "Mostrar anteriores",
+    "ratio": 1.8
+  },
+  {
+    "id": "ads.err.notOpen",
+    "english": "Ads are not open yet.",
+    "translation": "Os anúncios ainda não estão disponíveis.",
+    "ratio": 1.9
+  },
+  {
+    "id": "ads.none",
+    "english": "No ad campaigns yet.",
+    "translation": "Ainda não há campanhas de anúncios.",
+    "ratio": 1.75
+  },
+  {
+    "id": "ads.title",
+    "english": "Ads",
+    "translation": "Anúncios",
+    "ratio": 2.67
+  },
+  {
+    "id": "analytics.post",
+    "english": "Post",
+    "translation": "Publicação",
+    "ratio": 2.5
+  },
+  {
+    "id": "analytics.posts",
+    "english": "Posts",
+    "translation": "Publicações",
+    "ratio": 2.2
+  },
+  {
+    "id": "appeals.tryagain",
+    "english": "Try again",
+    "translation": "Tentar novamente",
+    "ratio": 1.78
+  },
+  {
+    "id": "appearance.textSize",
+    "english": "Text size",
+    "translation": "Tamanho do texto",
+    "ratio": 1.78
+  },
+  {
+    "id": "approvals.done",
+    "english": "Done",
+    "translation": "Concluído",
+    "ratio": 2.25
+  },
+  {
+    "id": "approvals.err.share",
+    "english": "Could not open sharing. Try again.",
+    "translation": "Não foi possível abrir o compartilhamento. Tente novamente.",
+    "ratio": 1.74
+  },
+  {
+    "id": "approvals.noAccounts",
+    "english": "No connected account can post a {type} yet.",
+    "translation": "Nenhuma conta conectada pode publicar um arquivo do tipo {type} ainda.",
+    "ratio": 1.63
+  },
+  {
+    "id": "approvals.sentTitle",
+    "english": "Sent",
+    "translation": "Enviado",
+    "ratio": 1.75
+  },
+  {
+    "id": "approvals.shareLink",
+    "english": "Share link",
+    "translation": "Compartilhar link",
+    "ratio": 1.7
+  },
+  {
+    "id": "autolists.edit",
+    "english": "Edit autolist",
+    "translation": "Editar lista automática",
+    "ratio": 1.77
+  },
+  {
+    "id": "autolists.enabled",
+    "english": "On",
+    "translation": "Ativado",
+    "ratio": 3.5
+  },
+  {
+    "id": "autolists.err.notOpen",
+    "english": "Autolists are not open yet.",
+    "translation": "As listas automáticas ainda não estão disponíveis.",
+    "ratio": 1.85
+  },
+  {
+    "id": "autolists.new",
+    "english": "New autolist",
+    "translation": "Nova lista automática",
+    "ratio": 1.75
+  },
+  {
+    "id": "autolists.none",
+    "english": "No autolists yet.",
+    "translation": "Ainda não há listas automáticas.",
+    "ratio": 1.88
+  },
+  {
+    "id": "autolists.off",
+    "english": "Off",
+    "translation": "Desativado",
+    "ratio": 3.33
+  },
+  {
+    "id": "autolists.on",
+    "english": "On",
+    "translation": "Ativado",
+    "ratio": 3.5
+  },
+  {
+    "id": "autolists.save",
+    "english": "Save autolist",
+    "translation": "Salvar lista automática",
+    "ratio": 1.77
+  },
+  {
+    "id": "autolists.title",
+    "english": "RSS autolists",
+    "translation": "Listas automáticas de RSS",
+    "ratio": 1.92
+  },
+  {
+    "id": "brand.assetsNone",
+    "english": "No files yet.",
+    "translation": "Ainda não há arquivos.",
+    "ratio": 1.69
+  },
+  {
+    "id": "chat.add",
+    "english": "Add",
+    "translation": "Adicionar",
+    "ratio": 3
+  },
+  {
+    "id": "chat.all",
+    "english": "All",
+    "translation": "Todos",
+    "ratio": 1.67
+  },
+  {
+    "id": "chat.attach.done",
+    "english": "Done",
+    "translation": "Concluído",
+    "ratio": 2.25
+  },
+  {
+    "id": "chat.cancelrename",
+    "english": "Cancel rename",
+    "translation": "Cancelar alteração do nome",
+    "ratio": 2
+  },
+  {
+    "id": "chat.chats",
+    "english": "Chats",
+    "translation": "Conversas",
+    "ratio": 1.8
+  },
+  {
+    "id": "chat.chats2",
+    "english": "chats",
+    "translation": "conversas",
+    "ratio": 1.8
+  },
+  {
+    "id": "chat.composer.ask",
+    "english": "Ask anything…",
+    "translation": "Pergunte qualquer coisa…",
+    "ratio": 1.85
+  },
+  {
+    "id": "chat.composer.setup",
+    "english": "Reply setup",
+    "translation": "Configuração da resposta",
+    "ratio": 2.18
+  },
+  {
+    "id": "chat.couldnotloadmodels",
+    "english": "Could not load models.",
+    "translation": "Não foi possível carregar os modelos.",
+    "ratio": 1.68
+  },
+  {
+    "id": "chat.couldnotloadyourchatsTapto",
+    "english": "Could not load your chats. Tap to retry.",
+    "translation": "Não foi possível carregar seus chats. Toque para tentar novamente.",
+    "ratio": 1.65
+  },
+  {
+    "id": "chat.couldnotloadyourworkspace",
+    "english": "Could not load your workspace",
+    "translation": "Não foi possível carregar seu espaço de trabalho",
+    "ratio": 1.66
+  },
+  {
+    "id": "chat.pin",
+    "english": "Pin",
+    "translation": "Fixar",
+    "ratio": 1.67
+  },
+  {
+    "id": "chat.settings.open",
+    "english": "Settings",
+    "translation": "Configurações",
+    "ratio": 1.63
+  },
+  {
+    "id": "chat.settings.title",
+    "english": "Chat settings",
+    "translation": "Configurações do chat",
+    "ratio": 1.62
+  },
+  {
+    "id": "chat.skills.title",
+    "english": "Studio skills",
+    "translation": "Habilidades do Studio",
+    "ratio": 1.62
+  },
+  {
+    "id": "chat.tapToRetry",
+    "english": "Tap to retry.",
+    "translation": "Toque para tentar novamente.",
+    "ratio": 2.15
+  },
+  {
+    "id": "chat.taptoretry",
+    "english": "{value1} Tap to retry.",
+    "translation": "{value1} Toque para tentar novamente.",
+    "ratio": 1.68
+  },
+  {
+    "id": "chat.tryagain",
+    "english": "Try again",
+    "translation": "Tentar novamente",
+    "ratio": 1.78
+  },
+  {
+    "id": "chat.unpin",
+    "english": "Unpin",
+    "translation": "Desafixar",
+    "ratio": 1.8
+  },
+  {
+    "id": "chat.workspace.skillsEyebrow",
+    "english": "Studio skills",
+    "translation": "Habilidades do Studio",
+    "ratio": 1.62
+  },
+  {
+    "id": "chat.youneedtoagreetoAIsharing",
+    "english": "You need to agree to AI sharing to chat.",
+    "translation": "Você precisa concordar com o compartilhamento com IA para conversar.",
+    "ratio": 1.7
+  },
+  {
+    "id": "cinema.couldnotloadCinemaTaptoretry",
+    "english": "Could not load Cinema. Tap to retry.",
+    "translation": "Não foi possível carregar o Cinema. Toque para tentar novamente.",
+    "ratio": 1.78
+  },
+  {
+    "id": "cinema.play",
+    "english": "Play",
+    "translation": "Reproduzir",
+    "ratio": 2.5
+  },
+  {
+    "id": "cinema.progress.retry",
+    "english": "Tap to retry.",
+    "translation": "Toque para tentar novamente.",
+    "ratio": 2.15
+  },
+  {
+    "id": "cinemaBrowse.all",
+    "english": "All",
+    "translation": "Todos",
+    "ratio": 1.67
+  },
+  {
+    "id": "cinemaBrowse.cat.kids",
+    "english": "Kids",
+    "translation": "Infantil",
+    "ratio": 2
+  },
+  {
+    "id": "cinemaBrowse.cat.sci-fi",
+    "english": "Sci-Fi",
+    "translation": "Ficção científica",
+    "ratio": 2.83
+  },
+  {
+    "id": "cinemaBrowse.kids",
+    "english": "Kids",
+    "translation": "Infantil",
+    "ratio": 2
+  },
+  {
+    "id": "cinemaBrowse.loadFailed",
+    "english": "Could not load Cinema. Tap to retry.",
+    "translation": "Não foi possível carregar o Cinema. Toque para tentar novamente.",
+    "ratio": 1.78
+  },
+  {
+    "id": "cinemaBrowse.moreFailed",
+    "english": "Could not load more. Tap to retry.",
+    "translation": "Não foi possível carregar mais. Toque para tentar novamente.",
+    "ratio": 1.76
+  },
+  {
+    "id": "cinemaBrowse.play",
+    "english": "Play",
+    "translation": "Reproduzir",
+    "ratio": 2.5
+  },
+  {
+    "id": "cinemaBrowse.sciFi",
+    "english": "Sci-Fi",
+    "translation": "Ficção científica",
+    "ratio": 2.83
+  },
+  {
+    "id": "cinemaComments.copyrightorrights",
+    "english": "Copyright or rights",
+    "translation": "Direitos autorais ou outros direitos",
+    "ratio": 1.89
+  },
+  {
+    "id": "cinemaCreator.analytics.commenters",
+    "english": "Commenters",
+    "translation": "Pessoas que comentaram",
+    "ratio": 2.2
+  },
+  {
+    "id": "cinemaCreator.analytics.sharers",
+    "english": "Sharers",
+    "translation": "Pessoas que compartilharam",
+    "ratio": 3.71
+  },
+  {
+    "id": "cinemaCreator.analytics.viewers",
+    "english": "Viewers",
+    "translation": "Espectadores",
+    "ratio": 1.71
+  },
+  {
+    "id": "cinemaCreator.username",
+    "english": "Username",
+    "translation": "Nome de usuário",
+    "ratio": 1.88
+  },
+  {
+    "id": "cinemaDrafts.allages",
+    "english": "All ages",
+    "translation": "Todas as idades",
+    "ratio": 1.88
+  },
+  {
+    "id": "cinemaSocial.ended",
+    "english": "ended",
+    "translation": "encerrado",
+    "ratio": 1.8
+  },
+  {
+    "id": "cinemaSocial.polls",
+    "english": "Story polls",
+    "translation": "Enquetes da história",
+    "ratio": 1.82
+  },
+  {
+    "id": "cinemaSocial.removeShort.creator",
+    "english": "Unfollow",
+    "translation": "Deixar de seguir",
+    "ratio": 2
+  },
+  {
+    "id": "cinemaSocial.removeShort.series",
+    "english": "Unfollow",
+    "translation": "Deixar de seguir",
+    "ratio": 2
+  },
+  {
+    "id": "cinemaSocial.tapRetry",
+    "english": "Tap to retry.",
+    "translation": "Toque para tentar novamente.",
+    "ratio": 2.15
+  },
+  {
+    "id": "cinemaUpload.checksPending",
+    "english": "Safety checks are still running.",
+    "translation": "As verificações de segurança ainda estão em andamento.",
+    "ratio": 1.69
+  },
+  {
+    "id": "cinemaUpload.reload",
+    "english": "Reload",
+    "translation": "Recarregar",
+    "ratio": 1.67
+  },
+  {
+    "id": "cinemaUpload.retry",
+    "english": "Retry",
+    "translation": "Tentar novamente",
+    "ratio": 3.2
+  },
+  {
+    "id": "comments.cat.rights",
+    "english": "Copyright or rights",
+    "translation": "Direitos autorais ou outros direitos",
+    "ratio": 1.89
+  },
+  {
+    "id": "comments.done",
+    "english": "Done",
+    "translation": "Concluído",
+    "ratio": 2.25
+  },
+  {
+    "id": "comments.err.notOpen",
+    "english": "Comments are not open yet.",
+    "translation": "Os comentários ainda não estão disponíveis.",
+    "ratio": 1.65
+  },
+  {
+    "id": "comments.post",
+    "english": "Post",
+    "translation": "Publicar",
+    "ratio": 2
+  },
+  {
+    "id": "contacts.all",
+    "english": "All",
+    "translation": "Todos",
+    "ratio": 1.67
+  },
+  {
+    "id": "contacts.status.unknown",
+    "english": "Unknown",
+    "translation": "Desconhecido",
+    "ratio": 1.71
+  },
+  {
+    "id": "create.agentTitle",
+    "english": "Video from a brief",
+    "translation": "Vídeo a partir de um briefing",
+    "ratio": 1.61
+  },
+  {
+    "id": "create.tier.low",
+    "english": "Low",
+    "translation": "Baixo",
+    "ratio": 1.67
+  },
+  {
+    "id": "create.workspace.settings",
+    "english": "Settings",
+    "translation": "Configurações",
+    "ratio": 1.63
+  },
+  {
+    "id": "creativeFeatures.aIAdClone",
+    "english": "AI Ad Clone",
+    "translation": "Clonagem de anúncios com IA",
+    "ratio": 2.45
+  },
+  {
+    "id": "creativeFeatures.aILipSync",
+    "english": "AI Lip Sync",
+    "translation": "Sincronização labial com IA",
+    "ratio": 2.45
+  },
+  {
+    "id": "creativeFeatures.uploadaclearvoicesampleyoumay",
+    "english": "Upload a clear voice sample you may use",
+    "translation": "Enviar uma amostra de voz clara que você tem permissão para usar",
+    "ratio": 1.64
+  },
+  {
+    "id": "creativeFeatures.uploadananimalimageyoumayuse",
+    "english": "Upload an animal image you may use",
+    "translation": "Enviar uma imagem de animal que você tem permissão para usar",
+    "ratio": 1.76
+  },
+  {
+    "id": "creativeFeatures.uploadaportraityoumayedit",
+    "english": "Upload a portrait you may edit",
+    "translation": "Enviar um retrato que você tem permissão para editar",
+    "ratio": 1.73
+  },
+  {
+    "id": "creativeFeatures.uploadareferenceimageyoumayuse",
+    "english": "Upload a reference image you may use",
+    "translation": "Enviar uma imagem de referência que você tem permissão para usar",
+    "ratio": 1.78
+  },
+  {
+    "id": "creativeFeatures.uploadareferenceyoumayuse",
+    "english": "Upload a reference you may use",
+    "translation": "Enviar uma referência que você tem permissão para usar",
+    "ratio": 1.8
+  },
+  {
+    "id": "creativeFeatures.uploadavisualreferenceyoumayuse",
+    "english": "Upload a visual reference you may use",
+    "translation": "Enviar uma referência visual que você tem permissão para usar",
+    "ratio": 1.65
+  },
+  {
+    "id": "deleteaccount.tryagain",
+    "english": "Try again",
+    "translation": "Tentar novamente",
+    "ratio": 1.78
+  },
+  {
+    "id": "dev.hooks.events",
+    "english": "Send me",
+    "translation": "Enviar para mim",
+    "ratio": 2.14
+  },
+  {
+    "id": "dev.keys.none",
+    "english": "No keys yet.",
+    "translation": "Ainda não há chaves.",
+    "ratio": 1.67
+  },
+  {
+    "id": "dev.keys.title",
+    "english": "API keys",
+    "translation": "Chaves de API",
+    "ratio": 1.63
+  },
+  {
+    "id": "dev.logs.none",
+    "english": "No requests match.",
+    "translation": "Nenhuma solicitação corresponde à busca.",
+    "ratio": 2.22
+  },
+  {
+    "id": "dev.logs.s.all",
+    "english": "All",
+    "translation": "Todos",
+    "ratio": 1.67
+  },
+  {
+    "id": "dev.logs.s.success",
+    "english": "Succeeded",
+    "translation": "Concluído com sucesso",
+    "ratio": 2.33
+  },
+  {
+    "id": "dev.logs.title",
+    "english": "Request log",
+    "translation": "Registro de solicitações",
+    "ratio": 2.18
+  },
+  {
+    "id": "dev.row",
+    "english": "Publish developer tools",
+    "translation": "Ferramentas de desenvolvedor do Publish",
+    "ratio": 1.7
+  },
+  {
+    "id": "dev.secret.share",
+    "english": "Copy or share",
+    "translation": "Copiar ou compartilhar",
+    "ratio": 1.69
+  },
+  {
+    "id": "dev.tab.keys",
+    "english": "API keys",
+    "translation": "Chaves de API",
+    "ratio": 1.63
+  },
+  {
+    "id": "dev.tab.logs",
+    "english": "Request log",
+    "translation": "Registro de solicitações",
+    "ratio": 2.18
+  },
+  {
+    "id": "dev.title",
+    "english": "Developer tools",
+    "translation": "Ferramentas de desenvolvedor",
+    "ratio": 1.87
+  },
+  {
+    "id": "draw.addBox",
+    "english": "Add box",
+    "translation": "Adicionar caixa",
+    "ratio": 2.14
+  },
+  {
+    "id": "draw.box",
+    "english": "Newest box",
+    "translation": "Caixa mais recente",
+    "ratio": 1.8
+  },
+  {
+    "id": "draw.color.red",
+    "english": "Red",
+    "translation": "Vermelho",
+    "ratio": 2.67
+  },
+  {
+    "id": "draw.moveDown",
+    "english": "Move down",
+    "translation": "Mover para baixo",
+    "ratio": 1.78
+  },
+  {
+    "id": "draw.moveLeft",
+    "english": "Move left",
+    "translation": "Mover para a esquerda",
+    "ratio": 2.33
+  },
+  {
+    "id": "draw.moveRight",
+    "english": "Move right",
+    "translation": "Mover para a direita",
+    "ratio": 2
+  },
+  {
+    "id": "draw.moveUp",
+    "english": "Move up",
+    "translation": "Mover para cima",
+    "ratio": 2.14
+  },
+  {
+    "id": "draw.tool.box",
+    "english": "Box",
+    "translation": "Caixa",
+    "ratio": 1.67
+  },
+  {
+    "id": "draw.tool.pen",
+    "english": "Pen",
+    "translation": "Caneta",
+    "ratio": 2
+  },
+  {
+    "id": "draw.undo",
+    "english": "Undo",
+    "translation": "Desfazer",
+    "ratio": 2
+  },
+  {
+    "id": "edit.down",
+    "english": "Move down",
+    "translation": "Mover para baixo",
+    "ratio": 1.78
+  },
+  {
+    "id": "edit.endLater",
+    "english": "End later",
+    "translation": "Terminar depois",
+    "ratio": 1.67
+  },
+  {
+    "id": "edit.up",
+    "english": "Move up",
+    "translation": "Mover para cima",
+    "ratio": 2.14
+  },
+  {
+    "id": "editor.add",
+    "english": "Add",
+    "translation": "Adicionar",
+    "ratio": 3
+  },
+  {
+    "id": "editor.addText",
+    "english": "Add text",
+    "translation": "Adicionar texto",
+    "ratio": 1.88
+  },
+  {
+    "id": "editor.addcaptionatplayhead",
+    "english": "Add caption at playhead",
+    "translation": "Adicionar legenda na posição de reprodução",
+    "ratio": 1.83
+  },
+  {
+    "id": "editor.addmarker",
+    "english": "Add marker",
+    "translation": "Adicionar marcador",
+    "ratio": 1.8
+  },
+  {
+    "id": "editor.addreviewmarkeratplayhead",
+    "english": "Add review marker at playhead",
+    "translation": "Adicionar marcador de revisão na posição de reprodução",
+    "ratio": 1.86
+  },
+  {
+    "id": "editor.addtext",
+    "english": "Add text",
+    "translation": "Adicionar texto",
+    "ratio": 1.88
+  },
+  {
+    "id": "editor.addtexttrack",
+    "english": "Add text track",
+    "translation": "Adicionar faixa de texto",
+    "ratio": 1.71
+  },
+  {
+    "id": "editor.animatein",
+    "english": "Animate in",
+    "translation": "Animação de entrada",
+    "ratio": 1.9
+  },
+  {
+    "id": "editor.blur",
+    "english": "Blur",
+    "translation": "Desfoque",
+    "ratio": 2
+  },
+  {
+    "id": "editor.cUT",
+    "english": "CUT",
+    "translation": "CORTAR",
+    "ratio": 2
+  },
+  {
+    "id": "editor.contain",
+    "english": "Contain",
+    "translation": "Ajustar ao espaço",
+    "ratio": 2.43
+  },
+  {
+    "id": "editor.cover",
+    "english": "Cover",
+    "translation": "Preencher",
+    "ratio": 1.8
+  },
+  {
+    "id": "editor.cut",
+    "english": "Cut",
+    "translation": "Cortar",
+    "ratio": 2
+  },
+  {
+    "id": "editor.diptoblack",
+    "english": "Dip to black",
+    "translation": "Transição para preto",
+    "ratio": 1.67
+  },
+  {
+    "id": "editor.done",
+    "english": "Done",
+    "translation": "Concluído",
+    "ratio": 2.25
+  },
+  {
+    "id": "editor.fadein",
+    "english": "Fade in",
+    "translation": "Aparecimento gradual",
+    "ratio": 2.86
+  },
+  {
+    "id": "editor.fadeout",
+    "english": "Fade out",
+    "translation": "Desaparecimento gradual",
+    "ratio": 2.88
+  },
+  {
+    "id": "editor.filmgrain",
+    "english": "Film grain",
+    "translation": "Granulação de filme",
+    "ratio": 1.9
+  },
+  {
+    "id": "editor.hIDE",
+    "english": "HIDE",
+    "translation": "OCULTAR",
+    "ratio": 1.75
+  },
+  {
+    "id": "editor.hide",
+    "english": "Hide",
+    "translation": "Ocultar",
+    "ratio": 1.75
+  },
+  {
+    "id": "editor.home.empty",
+    "english": "No edits yet",
+    "translation": "Ainda não há edições",
+    "ratio": 1.67
+  },
+  {
+    "id": "editor.home.retry",
+    "english": "Tap to try again",
+    "translation": "Toque para tentar novamente",
+    "ratio": 1.69
+  },
+  {
+    "id": "editor.hue",
+    "english": "Hue",
+    "translation": "Matiz",
+    "ratio": 1.67
+  },
+  {
+    "id": "editor.lOCK",
+    "english": "LOCK ",
+    "translation": "BLOQUEAR ",
+    "ratio": 1.8
+  },
+  {
+    "id": "editor.lock",
+    "english": "Lock",
+    "translation": "Bloquear",
+    "ratio": 2
+  },
+  {
+    "id": "editor.mUTE",
+    "english": "MUTE ",
+    "translation": "SILENCIAR ",
+    "ratio": 2
+  },
+  {
+    "id": "editor.moveLeft",
+    "english": "Move left",
+    "translation": "Mover para a esquerda",
+    "ratio": 2.33
+  },
+  {
+    "id": "editor.moveRight",
+    "english": "Move right",
+    "translation": "Mover para a direita",
+    "ratio": 2
+  },
+  {
+    "id": "editor.mute",
+    "english": "Mute",
+    "translation": "Silenciar",
+    "ratio": 2.25
+  },
+  {
+    "id": "editor.nocues",
+    "english": "No cues",
+    "translation": "Nenhuma marcação",
+    "ratio": 2.29
+  },
+  {
+    "id": "editor.off",
+    "english": "Off",
+    "translation": "Desativado",
+    "ratio": 3.33
+  },
+  {
+    "id": "editor.opentools",
+    "english": "Open tools",
+    "translation": "Abrir ferramentas",
+    "ratio": 1.7
+  },
+  {
+    "id": "editor.pan",
+    "english": "Pan",
+    "translation": "Deslocar",
+    "ratio": 2.67
+  },
+  {
+    "id": "editor.pasteatplayhead",
+    "english": "Paste at playhead",
+    "translation": "Colar na posição de reprodução",
+    "ratio": 1.76
+  },
+  {
+    "id": "editor.play",
+    "english": "Play",
+    "translation": "Reproduzir",
+    "ratio": 2.5
+  },
+  {
+    "id": "editor.playheadtimecode",
+    "english": "Playhead timecode",
+    "translation": "Código de tempo do cursor de reprodução",
+    "ratio": 2.29
+  },
+  {
+    "id": "editor.redo",
+    "english": "Redo",
+    "translation": "Refazer",
+    "ratio": 1.75
+  },
+  {
+    "id": "editor.reload",
+    "english": "Reload",
+    "translation": "Recarregar",
+    "ratio": 1.67
+  },
+  {
+    "id": "editor.ripple",
+    "english": "Ripple",
+    "translation": "Ajustar em cascata",
+    "ratio": 3
+  },
+  {
+    "id": "editor.slideleft",
+    "english": "Slide left",
+    "translation": "Deslizar à esquerda",
+    "ratio": 1.9
+  },
+  {
+    "id": "editor.snap",
+    "english": "Snap",
+    "translation": "Encaixar",
+    "ratio": 2
+  },
+  {
+    "id": "editor.speed",
+    "english": "Speed",
+    "translation": "Velocidade",
+    "ratio": 2
+  },
+  {
+    "id": "editor.splitselectedclipatplayhead",
+    "english": "Split selected clip at playhead",
+    "translation": "Dividir clipe selecionado na posição de reprodução",
+    "ratio": 1.61
+  },
+  {
+    "id": "editor.tIMELINE",
+    "english": "TIMELINE",
+    "translation": "LINHA DO TEMPO",
+    "ratio": 1.75
+  },
+  {
+    "id": "editor.tab.timeline",
+    "english": "Timeline",
+    "translation": "Linha do tempo",
+    "ratio": 1.75
+  },
+  {
+    "id": "editor.tapacliptoselect",
+    "english": "Tap a clip to select",
+    "translation": "Toque em um clipe para selecionar",
+    "ratio": 1.65
+  },
+  {
+    "id": "editor.templates",
+    "english": "Templates",
+    "translation": "Modelos prontos",
+    "ratio": 1.67
+  },
+  {
+    "id": "editor.textsize",
+    "english": "Text size",
+    "translation": "Tamanho do texto",
+    "ratio": 1.78
+  },
+  {
+    "id": "editor.timeline",
+    "english": "Timeline",
+    "translation": "Linha do tempo",
+    "ratio": 1.75
+  },
+  {
+    "id": "editor.undo",
+    "english": "Undo",
+    "translation": "Desfazer",
+    "ratio": 2
+  },
+  {
+    "id": "editor.wipeleft",
+    "english": "Wipe left",
+    "translation": "Varredura à esquerda",
+    "ratio": 2.22
+  },
+  {
+    "id": "email.hide",
+    "english": "Hide",
+    "translation": "Ocultar",
+    "ratio": 1.75
+  },
+  {
+    "id": "email.securityRetry",
+    "english": "Try security check again",
+    "translation": "Tentar verificação de segurança novamente",
+    "ratio": 1.71
+  },
+  {
+    "id": "email.securityTitle",
+    "english": "Security check",
+    "translation": "Verificação de segurança",
+    "ratio": 1.71
+  },
+  {
+    "id": "email.show",
+    "english": "Show",
+    "translation": "Programa",
+    "ratio": 2
+  },
+  {
+    "id": "email.signInTitle",
+    "english": "Welcome back.",
+    "translation": "Boas-vindas de volta.",
+    "ratio": 1.62
+  },
+  {
+    "id": "explore.categoryAll",
+    "english": "All",
+    "translation": "Todos",
+    "ratio": 1.67
+  },
+  {
+    "id": "explore.noMatch",
+    "english": "No templates match.",
+    "translation": "Nenhum template corresponde à busca.",
+    "ratio": 1.89
+  },
+  {
+    "id": "explore.templates",
+    "english": "Templates",
+    "translation": "Modelos prontos",
+    "ratio": 1.67
+  },
+  {
+    "id": "explore.templatesError",
+    "english": "Could not load templates. Tap to retry.",
+    "translation": "Não foi possível carregar os templates. Toque para tentar novamente.",
+    "ratio": 1.74
+  },
+  {
+    "id": "explore.tryIt",
+    "english": "Try it",
+    "translation": "Experimente",
+    "ratio": 1.83
+  },
+  {
+    "id": "explore.tryThis",
+    "english": "Try this",
+    "translation": "Experimente isto",
+    "ratio": 2
+  },
+  {
+    "id": "explore.type.all",
+    "english": "All",
+    "translation": "Todos",
+    "ratio": 1.67
+  },
+  {
+    "id": "faceFilters.bold_lips",
+    "english": "Bold lips",
+    "translation": "Lábios marcantes",
+    "ratio": 1.78
+  },
+  {
+    "id": "features.reuse.title",
+    "english": "Choose a tool for this {kind}",
+    "translation": "Escolha uma ferramenta para este tipo de arquivo: {kind}",
+    "ratio": 1.93
+  },
+  {
+    "id": "features.wORKFLOW",
+    "english": "WORKFLOW",
+    "translation": "FLUXO DE TRABALHO",
+    "ratio": 2.13
+  },
+  {
+    "id": "files.editorrenders",
+    "english": "Editor renders",
+    "translation": "Renderizações do editor",
+    "ratio": 1.64
+  },
+  {
+    "id": "files.filmmasters",
+    "english": "Film masters",
+    "translation": "Arquivos mestres de filmes",
+    "ratio": 2.17
+  },
+  {
+    "id": "files.share2",
+    "english": "Share",
+    "translation": "Compartilhar",
+    "ratio": 2.4
+  },
+  {
+    "id": "files.taptoretry",
+    "english": "{value1} Tap to retry.",
+    "translation": "{value1} Toque para tentar novamente.",
+    "ratio": 1.68
+  },
+  {
+    "id": "film.addshot",
+    "english": "Add shot",
+    "translation": "Adicionar cena",
+    "ratio": 1.75
+  },
+  {
+    "id": "film.cannotlockthisasset",
+    "english": "Cannot lock this asset",
+    "translation": "Não é possível bloquear este recurso",
+    "ratio": 1.64
+  },
+  {
+    "id": "film.done",
+    "english": "done",
+    "translation": "concluído",
+    "ratio": 2.25
+  },
+  {
+    "id": "film.filmStudioworkspace",
+    "english": "Film Studio workspace",
+    "translation": "Espaço de trabalho do Estúdio de cinema",
+    "ratio": 1.86
+  },
+  {
+    "id": "filmCloud.retry",
+    "english": "Retry",
+    "translation": "Tentar novamente",
+    "ratio": 3.2
+  },
+  {
+    "id": "filmSkills.filmSetup",
+    "english": "Film · Setup",
+    "translation": "Filme · Configuração",
+    "ratio": 1.67
+  },
+  {
+    "id": "filmSkills.filmStudioinit",
+    "english": "Film · Studio init",
+    "translation": "Filme · Inicialização do estúdio",
+    "ratio": 1.78
+  },
+  {
+    "id": "filmStudio.blocking",
+    "english": "Blocking",
+    "translation": "Marcação de cena",
+    "ratio": 2
+  },
+  {
+    "id": "filmStudio.cuttype",
+    "english": "Cut type",
+    "translation": "Tipo de corte",
+    "ratio": 1.63
+  },
+  {
+    "id": "filmStudio.propassets",
+    "english": "Prop assets",
+    "translation": "Recursos de objetos",
+    "ratio": 1.73
+  },
+  {
+    "id": "filmStudio.shotgoal",
+    "english": "Shot goal",
+    "translation": "Objetivo da cena",
+    "ratio": 1.78
+  },
+  {
+    "id": "help.ask.send",
+    "english": "Ask",
+    "translation": "Perguntar",
+    "ratio": 3
+  },
+  {
+    "id": "help.ask.title",
+    "english": "Ask Vey",
+    "translation": "Perguntar ao Vey",
+    "ratio": 2.29
+  },
+  {
+    "id": "helpGuides.content.credits.l2",
+    "english": "Refund Policy",
+    "translation": "Política de Reembolso",
+    "ratio": 1.62
+  },
+  {
+    "id": "helpGuides.content.templates.s4.title",
+    "english": "Make it yours",
+    "translation": "Deixe com o seu jeito",
+    "ratio": 1.62
+  },
+  {
+    "id": "helpGuides.content.your-own-files.s1.title",
+    "english": "Pick a tool",
+    "translation": "Escolha uma ferramenta",
+    "ratio": 2
+  },
+  {
+    "id": "history.tryagain",
+    "english": "Try again",
+    "translation": "Tentar novamente",
+    "ratio": 1.78
+  },
+  {
+    "id": "inbox.err.notOpen",
+    "english": "The inbox is not open yet.",
+    "translation": "A caixa de entrada ainda não está disponível.",
+    "ratio": 1.73
+  },
+  {
+    "id": "inbox.kind.any",
+    "english": "Any kind",
+    "translation": "Qualquer tipo",
+    "ratio": 1.63
+  },
+  {
+    "id": "inbox.state.all",
+    "english": "All",
+    "translation": "Todos",
+    "ratio": 1.67
+  },
+  {
+    "id": "inbox.title",
+    "english": "Inbox",
+    "translation": "Caixa de entrada",
+    "ratio": 3.2
+  },
+  {
+    "id": "insights.err.notOpen",
+    "english": "Best time is not open yet.",
+    "translation": "O melhor horário ainda não está disponível.",
+    "ratio": 1.65
+  },
+  {
+    "id": "insights.title",
+    "english": "Best time to post",
+    "translation": "Melhor horário para publicar",
+    "ratio": 1.65
+  },
+  {
+    "id": "job.checkAgain",
+    "english": "Check again",
+    "translation": "Verificar novamente",
+    "ratio": 1.73
+  },
+  {
+    "id": "job.shareFailed",
+    "english": "Could not share. Try again.",
+    "translation": "Não foi possível compartilhar. Tente novamente.",
+    "ratio": 1.74
+  },
+  {
+    "id": "job.succeeded",
+    "english": "Done",
+    "translation": "Concluído",
+    "ratio": 2.25
+  },
+  {
+    "id": "library.loadError",
+    "english": "Could not load your library. Tap to retry.",
+    "translation": "Não foi possível carregar sua Biblioteca. Toque para tentar novamente.",
+    "ratio": 1.67
+  },
+  {
+    "id": "library.state.all",
+    "english": "All",
+    "translation": "Todos",
+    "ratio": 1.67
+  },
+  {
+    "id": "library.state.running",
+    "english": "Running",
+    "translation": "Em andamento",
+    "ratio": 1.71
+  },
+  {
+    "id": "library.state.succeeded",
+    "english": "Succeeded",
+    "translation": "Concluído com sucesso",
+    "ratio": 2.33
+  },
+  {
+    "id": "menu.templates",
+    "english": "Templates",
+    "translation": "Modelos prontos",
+    "ratio": 1.67
+  },
+  {
+    "id": "menu.toolDirectory",
+    "english": "Tools",
+    "translation": "Ferramentas",
+    "ratio": 2.2
+  },
+  {
+    "id": "menu.tools",
+    "english": "Tools",
+    "translation": "Ferramentas",
+    "ratio": 2.2
+  },
+  {
+    "id": "oddlings.animate.move",
+    "english": "Opening move",
+    "translation": "Movimento de abertura",
+    "ratio": 1.75
+  },
+  {
+    "id": "oddlings.build.done",
+    "english": "Done",
+    "translation": "Concluído",
+    "ratio": 2.25
+  },
+  {
+    "id": "oddlings.build.motion",
+    "english": "Opening move (for shorts)",
+    "translation": "Movimento de abertura (para vídeos curtos)",
+    "ratio": 1.68
+  },
+  {
+    "id": "oddlings.build.notSet",
+    "english": "Not set",
+    "translation": "Não definido",
+    "ratio": 1.71
+  },
+  {
+    "id": "oddlings.build.reason",
+    "english": "Why people follow them",
+    "translation": "Por que as pessoas seguem este personagem",
+    "ratio": 1.86
+  },
+  {
+    "id": "oddlings.empty",
+    "english": "No characters match.",
+    "translation": "Nenhum personagem corresponde à busca.",
+    "ratio": 1.9
+  },
+  {
+    "id": "oddlings.handoff.short",
+    "english": "Make a short",
+    "translation": "Criar um vídeo curto",
+    "ratio": 1.67
+  },
+  {
+    "id": "oddlings.show",
+    "english": "Show",
+    "translation": "Programa",
+    "ratio": 2
+  },
+  {
+    "id": "oddlingsProjects.conflict",
+    "english": "Could not save yet",
+    "translation": "Ainda não foi possível salvar",
+    "ratio": 1.61
+  },
+  {
+    "id": "oddlingsProjects.workspace",
+    "english": "Workspace",
+    "translation": "Espaço de trabalho",
+    "ratio": 2
+  },
+  {
+    "id": "opt.audioOff",
+    "english": "Audio off",
+    "translation": "Áudio desativado",
+    "ratio": 1.78
+  },
+  {
+    "id": "opt.audioOn",
+    "english": "Audio on",
+    "translation": "Áudio ativado",
+    "ratio": 1.63
+  },
+  {
+    "id": "opt.exclude",
+    "english": "Leave out",
+    "translation": "Excluir do resultado",
+    "ratio": 2.22
+  },
+  {
+    "id": "opt.roll",
+    "english": "Roll",
+    "translation": "Sortear",
+    "ratio": 1.75
+  },
+  {
+    "id": "opt.rollLabel",
+    "english": "Pick a random seed",
+    "translation": "Escolher uma semente aleatória",
+    "ratio": 1.67
+  },
+  {
+    "id": "opt.seed",
+    "english": "Seed",
+    "translation": "Semente",
+    "ratio": 1.75
+  },
+  {
+    "id": "opt.settings",
+    "english": "Settings",
+    "translation": "Configurações",
+    "ratio": 1.63
+  },
+  {
+    "id": "opt.settingsHide",
+    "english": "Hide settings",
+    "translation": "Ocultar configurações",
+    "ratio": 1.62
+  },
+  {
+    "id": "opt.settingsShow",
+    "english": "Show settings",
+    "translation": "Mostrar configurações",
+    "ratio": 1.62
+  },
+  {
+    "id": "optionLabels0.option10",
+    "english": "Bee",
+    "translation": "Abelha",
+    "ratio": 2
+  },
+  {
+    "id": "optionLabels0.option101",
+    "english": "Wing Ears",
+    "translation": "Orelhas de asas",
+    "ratio": 1.67
+  },
+  {
+    "id": "optionLabels0.option104",
+    "english": "Big Horns",
+    "translation": "Chifres grandes",
+    "ratio": 1.67
+  },
+  {
+    "id": "optionLabels0.option106",
+    "english": "Skin Features",
+    "translation": "Características da pele",
+    "ratio": 1.77
+  },
+  {
+    "id": "optionLabels0.option110",
+    "english": "Birthmarks",
+    "translation": "Marcas de nascença",
+    "ratio": 1.8
+  },
+  {
+    "id": "optionLabels0.option111",
+    "english": "Scars",
+    "translation": "Cicatrizes",
+    "ratio": 2
+  },
+  {
+    "id": "optionLabels0.option112",
+    "english": "Burn scars",
+    "translation": "Cicatrizes de queimadura",
+    "ratio": 2.4
+  },
+  {
+    "id": "optionLabels0.option116",
+    "english": "Head Shape",
+    "translation": "Formato da cabeça",
+    "ratio": 1.7
+  },
+  {
+    "id": "optionLabels0.option124",
+    "english": "Thick brows",
+    "translation": "Sobrancelhas grossas",
+    "ratio": 1.82
+  },
+  {
+    "id": "optionLabels0.option125",
+    "english": "Thin brows",
+    "translation": "Sobrancelhas finas",
+    "ratio": 1.8
+  },
+  {
+    "id": "optionLabels0.option126",
+    "english": "Arched brows",
+    "translation": "Sobrancelhas arqueadas",
+    "ratio": 1.83
+  },
+  {
+    "id": "optionLabels0.option128",
+    "english": "Bushy brows",
+    "translation": "Sobrancelhas volumosas",
+    "ratio": 2
+  },
+  {
+    "id": "optionLabels0.option129",
+    "english": "Bleached brows",
+    "translation": "Sobrancelhas descoloridas",
+    "ratio": 1.79
+  },
+  {
+    "id": "optionLabels0.option134",
+    "english": "Snub nose",
+    "translation": "Nariz arrebitado",
+    "ratio": 1.78
+  },
+  {
+    "id": "optionLabels0.option146",
+    "english": "Cupid bow lips",
+    "translation": "Lábios com arco do cupido",
+    "ratio": 1.79
+  },
+  {
+    "id": "optionLabels0.option149",
+    "english": "Chin & Jaw",
+    "translation": "Queixo e mandíbula",
+    "ratio": 1.8
+  },
+  {
+    "id": "optionLabels0.option150",
+    "english": "Strong Jaw",
+    "translation": "Mandíbula marcada",
+    "ratio": 1.7
+  },
+  {
+    "id": "optionLabels0.option151",
+    "english": "Soft Jaw",
+    "translation": "Mandíbula suave",
+    "ratio": 1.88
+  },
+  {
+    "id": "optionLabels0.option154",
+    "english": "Cleft Chin",
+    "translation": "Queixo com covinha",
+    "ratio": 1.8
+  },
+  {
+    "id": "optionLabels0.option157",
+    "english": "Tiny Brows",
+    "translation": "Sobrancelhas minúsculas",
+    "ratio": 2.3
+  },
+  {
+    "id": "optionLabels0.option16",
+    "english": "Ant",
+    "translation": "Formiga",
+    "ratio": 2.33
+  },
+  {
+    "id": "optionLabels0.option166",
+    "english": "Stubble",
+    "translation": "Barba por fazer",
+    "ratio": 2.14
+  },
+  {
+    "id": "optionLabels0.option168",
+    "english": "Goatee",
+    "translation": "Cavanhaque",
+    "ratio": 1.67
+  },
+  {
+    "id": "optionLabels0.option177",
+    "english": "Fur",
+    "translation": "Pelagem",
+    "ratio": 2.33
+  },
+  {
+    "id": "optionLabels0.option18",
+    "english": "Dog",
+    "translation": "Cachorro",
+    "ratio": 2.67
+  },
+  {
+    "id": "optionLabels0.option182",
+    "english": "Solid",
+    "translation": "Cor sólida",
+    "ratio": 2
+  },
+  {
+    "id": "optionLabels0.option199",
+    "english": "Curvy",
+    "translation": "Curvilíneo",
+    "ratio": 2
+  },
+  {
+    "id": "optionLabels0.option20",
+    "english": "Bird",
+    "translation": "Pássaro",
+    "ratio": 1.75
+  },
+  {
+    "id": "optionLabels0.option200",
+    "english": "Wider hips",
+    "translation": "Quadris mais largos",
+    "ratio": 1.9
+  },
+  {
+    "id": "optionLabels0.option223",
+    "english": "Torso Size",
+    "translation": "Tamanho do tronco",
+    "ratio": 1.7
+  },
+  {
+    "id": "optionLabels0.option228",
+    "english": "Neck Size",
+    "translation": "Tamanho do pescoço",
+    "ratio": 2
+  },
+  {
+    "id": "optionLabels0.option229",
+    "english": "Arm Size",
+    "translation": "Tamanho dos braços",
+    "ratio": 2.25
+  },
+  {
+    "id": "optionLabels0.option230",
+    "english": "Leg Size",
+    "translation": "Tamanho das pernas",
+    "ratio": 2.25
+  },
+  {
+    "id": "optionLabels0.option231",
+    "english": "Head Size",
+    "translation": "Tamanho da cabeça",
+    "ratio": 1.89
+  },
+  {
+    "id": "optionLabels0.option232",
+    "english": "Eye Size",
+    "translation": "Tamanho dos olhos",
+    "ratio": 2.13
+  },
+  {
+    "id": "optionLabels0.option234",
+    "english": "Ear Size",
+    "translation": "Tamanho das orelhas",
+    "ratio": 2.38
+  },
+  {
+    "id": "optionLabels0.option235",
+    "english": "Nose Size",
+    "translation": "Tamanho do nariz",
+    "ratio": 1.78
+  },
+  {
+    "id": "optionLabels0.option236",
+    "english": "Hand Size",
+    "translation": "Tamanho das mãos",
+    "ratio": 1.78
+  },
+  {
+    "id": "optionLabels0.option237",
+    "english": "Foot Size",
+    "translation": "Tamanho dos pés",
+    "ratio": 1.67
+  },
+  {
+    "id": "optionLabels0.option239",
+    "english": "Bare",
+    "translation": "Sem adornos",
+    "ratio": 2.75
+  },
+  {
+    "id": "optionLabels0.option241",
+    "english": "Ruff",
+    "translation": "Gola de rufo",
+    "ratio": 3
+  },
+  {
+    "id": "optionLabels0.option245",
+    "english": "Left Arm",
+    "translation": "Braço esquerdo",
+    "ratio": 1.75
+  },
+  {
+    "id": "optionLabels0.option252",
+    "english": "Left Leg",
+    "translation": "Perna esquerda",
+    "ratio": 1.75
+  },
+  {
+    "id": "optionLabels0.option261",
+    "english": "Cube Cut",
+    "translation": "Corte em cubo",
+    "ratio": 1.63
+  },
+  {
+    "id": "optionLabels0.option268",
+    "english": "Zigzag Cut",
+    "translation": "Corte em zigue-zague",
+    "ratio": 2
+  },
+  {
+    "id": "optionLabels0.option269",
+    "english": "Anvil Cut",
+    "translation": "Corte em bigorna",
+    "ratio": 1.78
+  },
+  {
+    "id": "optionLabels0.option27",
+    "english": "Man",
+    "translation": "Homem",
+    "ratio": 1.67
+  },
+  {
+    "id": "optionLabels0.option270",
+    "english": "Donut Halo",
+    "translation": "Halo de rosquinha",
+    "ratio": 1.7
+  },
+  {
+    "id": "optionLabels0.option272",
+    "english": "Shelf Cut",
+    "translation": "Corte prateleira",
+    "ratio": 1.78
+  },
+  {
+    "id": "optionLabels0.option276",
+    "english": "Buzz Cut",
+    "translation": "Corte raspado",
+    "ratio": 1.63
+  },
+  {
+    "id": "optionLabels0.option280",
+    "english": "Pigtails",
+    "translation": "Maria-chiquinha",
+    "ratio": 1.88
+  },
+  {
+    "id": "optionLabels0.option281",
+    "english": "Perm",
+    "translation": "Permanente",
+    "ratio": 2.5
+  },
+  {
+    "id": "optionLabels0.option282",
+    "english": "Beehive",
+    "translation": "Coque colmeia",
+    "ratio": 1.86
+  },
+  {
+    "id": "optionLabels0.option284",
+    "english": "Ponytail",
+    "translation": "Rabo de cavalo",
+    "ratio": 1.75
+  },
+  {
+    "id": "optionLabels0.option298",
+    "english": "Auburn",
+    "translation": "Castanho-avermelhado",
+    "ratio": 3.33
+  },
+  {
+    "id": "optionLabels0.option3",
+    "english": "Alien",
+    "translation": "Alienígena",
+    "ratio": 2
+  },
+  {
+    "id": "optionLabels0.option31",
+    "english": "Heritage",
+    "translation": "Ancestralidade",
+    "ratio": 1.75
+  },
+  {
+    "id": "optionLabels0.option33",
+    "english": "East Asian",
+    "translation": "Do leste asiático",
+    "ratio": 1.7
+  },
+  {
+    "id": "optionLabels0.option39",
+    "english": "20s",
+    "translation": "20 a 29 anos",
+    "ratio": 4
+  },
+  {
+    "id": "optionLabels0.option4",
+    "english": "Moth",
+    "translation": "Mariposa",
+    "ratio": 2
+  },
+  {
+    "id": "optionLabels0.option40",
+    "english": "30s",
+    "translation": "30 a 39 anos",
+    "ratio": 4
+  },
+  {
+    "id": "optionLabels0.option41",
+    "english": "40s",
+    "translation": "40 a 49 anos",
+    "ratio": 4
+  },
+  {
+    "id": "optionLabels0.option42",
+    "english": "50s",
+    "translation": "50 a 59 anos",
+    "ratio": 4
+  },
+  {
+    "id": "optionLabels0.option43",
+    "english": "60s",
+    "translation": "60 a 69 anos",
+    "ratio": 4
+  },
+  {
+    "id": "optionLabels0.option60",
+    "english": "Red",
+    "translation": "Vermelho",
+    "ratio": 2.67
+  },
+  {
+    "id": "optionLabels0.option69",
+    "english": "Eye Shape",
+    "translation": "Formato dos olhos",
+    "ratio": 1.89
+  },
+  {
+    "id": "optionLabels0.option72",
+    "english": "Downturned",
+    "translation": "Canto externo caído",
+    "ratio": 1.9
+  },
+  {
+    "id": "optionLabels0.option73",
+    "english": "Upturned",
+    "translation": "Canto externo elevado",
+    "ratio": 2.63
+  },
+  {
+    "id": "optionLabels0.option75",
+    "english": "Monolid",
+    "translation": "Pálpebra sem dobra",
+    "ratio": 2.57
+  },
+  {
+    "id": "optionLabels0.option76",
+    "english": "Hooded eyes",
+    "translation": "Olhos com pálpebra caída",
+    "ratio": 2.18
+  },
+  {
+    "id": "optionLabels0.option77",
+    "english": "Uneven eyes",
+    "translation": "Olhos assimétricos",
+    "ratio": 1.64
+  },
+  {
+    "id": "optionLabels0.option81",
+    "english": "Eye Features",
+    "translation": "Características dos olhos",
+    "ratio": 2.08
+  },
+  {
+    "id": "optionLabels0.option9",
+    "english": "Mantis",
+    "translation": "Louva-a-deus",
+    "ratio": 2
+  },
+  {
+    "id": "optionLabels0.option91",
+    "english": "Gap Teeth",
+    "translation": "Dentes separados",
+    "ratio": 1.78
+  },
+  {
+    "id": "optionLabels0.option98",
+    "english": "Ears",
+    "translation": "Orelhas",
+    "ratio": 1.75
+  },
+  {
+    "id": "optionLabels0.option99",
+    "english": "Elf Ears",
+    "translation": "Orelhas de elfo",
+    "ratio": 1.88
+  },
+  {
+    "id": "optionLabels1.option307",
+    "english": "Teal",
+    "translation": "Verde-azulado",
+    "ratio": 3.25
+  },
+  {
+    "id": "optionLabels1.option342",
+    "english": "Chrome Brows",
+    "translation": "Sobrancelhas cromadas",
+    "ratio": 1.75
+  },
+  {
+    "id": "optionLabels1.option346",
+    "english": "Bug Head Mask",
+    "translation": "Máscara de cabeça de inseto",
+    "ratio": 2.08
+  },
+  {
+    "id": "optionLabels1.option363",
+    "english": "Miniature Thermos",
+    "translation": "Garrafa térmica em miniatura",
+    "ratio": 1.65
+  },
+  {
+    "id": "optionLabels1.option368",
+    "english": "Cartoon",
+    "translation": "Desenho animado",
+    "ratio": 2.14
+  },
+  {
+    "id": "optionLabels1.option388",
+    "english": "Finish",
+    "translation": "Acabamento",
+    "ratio": 1.67
+  },
+  {
+    "id": "optionLabels1.option391",
+    "english": "Tiny object reveal",
+    "translation": "Revelação de objeto minúsculo",
+    "ratio": 1.61
+  },
+  {
+    "id": "optionLabels1.option424",
+    "english": "70s Cinema Prime",
+    "translation": "Lente fixa de cinema dos anos 70",
+    "ratio": 2
+  },
+  {
+    "id": "optionLabels1.option472",
+    "english": "References match",
+    "translation": "As referências correspondem",
+    "ratio": 1.69
+  },
+  {
+    "id": "optionLabels1.option475",
+    "english": "Performance and lip-sync hold",
+    "translation": "A performance e a sincronização labial se mantêm",
+    "ratio": 1.66
+  },
+  {
+    "id": "passkey.add",
+    "english": "Add a passkey",
+    "translation": "Adicionar uma chave de acesso",
+    "ratio": 2.23
+  },
+  {
+    "id": "passkey.added",
+    "english": "Passkey added.",
+    "translation": "Chave de acesso adicionada.",
+    "ratio": 1.93
+  },
+  {
+    "id": "passkey.err.setup",
+    "english": "Passkeys are not set up in the app yet.",
+    "translation": "As chaves de acesso ainda não estão configuradas no aplicativo.",
+    "ratio": 1.62
+  },
+  {
+    "id": "pk.added",
+    "english": "added {date}",
+    "translation": "adicionada em {date}",
+    "ratio": 1.67
+  },
+  {
+    "id": "pk.loading",
+    "english": "Loading passkeys",
+    "translation": "Carregando chaves de acesso",
+    "ratio": 1.69
+  },
+  {
+    "id": "pk.title",
+    "english": "Passkeys",
+    "translation": "Chaves de acesso",
+    "ratio": 2
+  },
+  {
+    "id": "pk.unnamed",
+    "english": "Passkey",
+    "translation": "Chave de acesso",
+    "ratio": 2.14
+  },
+  {
+    "id": "plan.menu.posts",
+    "english": "Posts",
+    "translation": "Publicações",
+    "ratio": 2.2
+  },
+  {
+    "id": "presets.morphMe",
+    "english": "Morph Me",
+    "translation": "Transforme-me",
+    "ratio": 1.63
+  },
+  {
+    "id": "presets.nomatchingeffects",
+    "english": "No matching effects.",
+    "translation": "Nenhum efeito corresponde à busca.",
+    "ratio": 1.7
+  },
+  {
+    "id": "presets.pet",
+    "english": "Pet",
+    "translation": "Animais",
+    "ratio": 2.33
+  },
+  {
+    "id": "presets.quirkLab",
+    "english": "Quirk Lab",
+    "translation": "Laboratório curioso",
+    "ratio": 2.11
+  },
+  {
+    "id": "presets.templates",
+    "english": "Templates",
+    "translation": "Modelos prontos",
+    "ratio": 1.67
+  },
+  {
+    "id": "preview.tab.templates",
+    "english": "Templates",
+    "translation": "Modelos prontos",
+    "ratio": 1.67
+  },
+  {
+    "id": "privacyExport.more",
+    "english": "For anything else, email {email}.",
+    "translation": "Para qualquer outra coisa, envie um e-mail para {email}.",
+    "ratio": 1.7
+  },
+  {
+    "id": "privacyExport.share",
+    "english": "Share / Save",
+    "translation": "Compartilhar / Salvar",
+    "ratio": 1.75
+  },
+  {
+    "id": "projects.taptoretry",
+    "english": "{value1} Tap to retry.",
+    "translation": "{value1} Toque para tentar novamente.",
+    "ratio": 1.68
+  },
+  {
+    "id": "projects.workspace",
+    "english": "Workspace",
+    "translation": "Espaço de trabalho",
+    "ratio": 2
+  },
+  {
+    "id": "publish.friday",
+    "english": "Friday",
+    "translation": "Sexta-feira",
+    "ratio": 1.83
+  },
+  {
+    "id": "publish.keyword",
+    "english": "Keyword",
+    "translation": "Palavra-chave",
+    "ratio": 1.86
+  },
+  {
+    "id": "publish.match",
+    "english": "Match",
+    "translation": "Correspondência",
+    "ratio": 3
+  },
+  {
+    "id": "publish.monday",
+    "english": "Monday",
+    "translation": "Segunda-feira",
+    "ratio": 2.17
+  },
+  {
+    "id": "publish.newworkflow",
+    "english": "New workflow",
+    "translation": "Novo fluxo de trabalho",
+    "ratio": 1.83
+  },
+  {
+    "id": "publish.newworkflow2",
+    "english": "+ New workflow",
+    "translation": "+ Novo fluxo de trabalho",
+    "ratio": 1.71
+  },
+  {
+    "id": "publish.post",
+    "english": "Post",
+    "translation": "Publicação",
+    "ratio": 2.5
+  },
+  {
+    "id": "publish.postnow",
+    "english": "Post now?",
+    "translation": "Publicar agora?",
+    "ratio": 1.67
+  },
+  {
+    "id": "publish.postnow2",
+    "english": "Post now",
+    "translation": "Publicar agora",
+    "ratio": 1.75
+  },
+  {
+    "id": "publish.posts",
+    "english": "Posts",
+    "translation": "Publicações",
+    "ratio": 2.2
+  },
+  {
+    "id": "publish.reply",
+    "english": "Reply",
+    "translation": "Responder",
+    "ratio": 1.8
+  },
+  {
+    "id": "publish.unassign",
+    "english": "Unassign",
+    "translation": "Remover atribuição",
+    "ratio": 2.25
+  },
+  {
+    "id": "publish.unknown",
+    "english": "Unknown",
+    "translation": "Desconhecido",
+    "ratio": 1.71
+  },
+  {
+    "id": "publishDeveloper.key",
+    "english": "Key",
+    "translation": "Chave",
+    "ratio": 1.67
+  },
+  {
+    "id": "publishHome.retry",
+    "english": "Try again",
+    "translation": "Tentar novamente",
+    "ratio": 1.78
+  },
+  {
+    "id": "publishHome.upgradeBadge",
+    "english": "Unlock your workflow",
+    "translation": "Desbloqueie seu fluxo de trabalho",
+    "ratio": 1.65
+  },
+  {
+    "id": "publishUploads.retry",
+    "english": "Retry",
+    "translation": "Tentar novamente",
+    "ratio": 3.2
+  },
+  {
+    "id": "publishUploads.select",
+    "english": "Select",
+    "translation": "Selecionar",
+    "ratio": 1.67
+  },
+  {
+    "id": "publishWorkflows.empty",
+    "english": "No workflows yet.",
+    "translation": "Ainda não há fluxos de trabalho.",
+    "ratio": 1.88
+  },
+  {
+    "id": "publishWorkflows.match.exact",
+    "english": "Exact match",
+    "translation": "Correspondência exata",
+    "ratio": 1.91
+  },
+  {
+    "id": "publishWorkflows.off",
+    "english": "Off",
+    "translation": "Desativado",
+    "ratio": 3.33
+  },
+  {
+    "id": "publishWorkflows.on",
+    "english": "On",
+    "translation": "Ativado",
+    "ratio": 3.5
+  },
+  {
+    "id": "publishWorkflows.title",
+    "english": "Workflows",
+    "translation": "Fluxos de trabalho",
+    "ratio": 2
+  },
+  {
+    "id": "publishWorkflows.unnamed",
+    "english": "Workflow",
+    "translation": "Fluxo de trabalho",
+    "ratio": 2.13
+  },
+  {
+    "id": "queues.addSlot",
+    "english": "Add time",
+    "translation": "Adicionar horário",
+    "ratio": 2.13
+  },
+  {
+    "id": "queues.enabled",
+    "english": "On",
+    "translation": "Ativado",
+    "ratio": 3.5
+  },
+  {
+    "id": "queues.off",
+    "english": "Off",
+    "translation": "Desativado",
+    "ratio": 3.33
+  },
+  {
+    "id": "queues.on",
+    "english": "On",
+    "translation": "Ativado",
+    "ratio": 3.5
+  },
+  {
+    "id": "report.done",
+    "english": "Done",
+    "translation": "Concluído",
+    "ratio": 2.25
+  },
+  {
+    "id": "reports.cadence.weekly",
+    "english": "sent weekly",
+    "translation": "enviado semanalmente",
+    "ratio": 1.82
+  },
+  {
+    "id": "reports.err.notOpen",
+    "english": "Reports are not open yet.",
+    "translation": "Os relatórios ainda não estão disponíveis.",
+    "ratio": 1.68
+  },
+  {
+    "id": "reports.err.share",
+    "english": "Could not open sharing. Try again.",
+    "translation": "Não foi possível abrir o compartilhamento. Tente novamente.",
+    "ratio": 1.74
+  },
+  {
+    "id": "signIn.busy",
+    "english": "Signing in",
+    "translation": "Entrando na conta",
+    "ratio": 1.7
+  },
+  {
+    "id": "smartlink.bio",
+    "english": "Short bio",
+    "translation": "Biografia curta",
+    "ratio": 1.67
+  },
+  {
+    "id": "smartlink.shareFailed",
+    "english": "Could not open sharing.",
+    "translation": "Não foi possível abrir o compartilhamento.",
+    "ratio": 1.83
+  },
+  {
+    "id": "smartlink.theme.sunset",
+    "english": "Sunset",
+    "translation": "Pôr do sol",
+    "ratio": 1.67
+  },
+  {
+    "id": "srch.s.templates",
+    "english": "Templates",
+    "translation": "Modelos prontos",
+    "ratio": 1.67
+  },
+  {
+    "id": "srch.s.tools",
+    "english": "Tools",
+    "translation": "Ferramentas",
+    "ratio": 2.2
+  },
+  {
+    "id": "start.try",
+    "english": "Try {value1}",
+    "translation": "Experimentar {value1}",
+    "ratio": 1.75
+  },
+  {
+    "id": "start.trythis",
+    "english": "Try this",
+    "translation": "Experimente isto",
+    "ratio": 2
+  },
+  {
+    "id": "stems.title",
+    "english": "Stems",
+    "translation": "Faixas separadas",
+    "ratio": 3.2
+  },
+  {
+    "id": "team.err.notOpen",
+    "english": "Team features are not open yet.",
+    "translation": "Os recursos de equipe ainda não estão disponíveis.",
+    "ratio": 1.61
+  },
+  {
+    "id": "team.err.share",
+    "english": "Could not open sharing. Try again.",
+    "translation": "Não foi possível abrir o compartilhamento. Tente novamente.",
+    "ratio": 1.74
+  },
+  {
+    "id": "toolDirectory.lipsync",
+    "english": "Lip sync",
+    "translation": "Sincronização labial",
+    "ratio": 2.5
+  },
+  {
+    "id": "toolsDir.entry",
+    "english": "Tools for your own files",
+    "translation": "Ferramentas para seus próprios arquivos",
+    "ratio": 1.63
+  },
+  {
+    "id": "toolsDir.title",
+    "english": "Tools",
+    "translation": "Ferramentas",
+    "ratio": 2.2
+  },
+  {
+    "id": "unlock.ads.title",
+    "english": "Unlock ads",
+    "translation": "Desbloquear anúncios",
+    "ratio": 2
+  },
+  {
+    "id": "unlock.inbox.title",
+    "english": "Unlock the inbox",
+    "translation": "Desbloquear caixa de entrada",
+    "ratio": 1.75
+  },
+  {
+    "id": "vibe.card.first",
+    "english": "Make my first one",
+    "translation": "Fazer minha primeira criação",
+    "ratio": 1.65
+  },
+  {
+    "id": "vibe.next",
+    "english": "Next",
+    "translation": "Próximo",
+    "ratio": 1.75
+  },
+  {
+    "id": "vibe.pace.fox",
+    "english": "Fox",
+    "translation": "Raposa",
+    "ratio": 2
+  },
+  {
+    "id": "vibe.pace.owl",
+    "english": "Owl",
+    "translation": "Coruja",
+    "ratio": 2
+  },
+  {
+    "id": "welcome.next",
+    "english": "Next",
+    "translation": "Próximo",
+    "ratio": 1.75
+  },
+  {
+    "id": "welcome.start.title",
+    "english": "Ready when you are",
+    "translation": "Tudo pronto quando você quiser",
+    "ratio": 1.67
+  },
+  {
+    "id": "chrome.privacyPolicy",
+    "english": "Privacy Policy",
+    "translation": "Política de privacidade",
+    "ratio": 1.64
+  },
+  {
+    "id": "label.Templates",
+    "english": "Templates",
+    "translation": "Modelos prontos",
+    "ratio": 1.67
+  },
+  {
+    "id": "recovery.retry",
+    "english": "Try again",
+    "translation": "Tentar novamente",
+    "ratio": 1.78
+  },
+  {
+    "id": "cinema.share.share",
+    "english": "Share",
+    "translation": "Compartilhar",
+    "ratio": 2.4
+  },
+  {
+    "id": "checkin.claim",
+    "english": "Check in",
+    "translation": "Fazer check-in",
+    "ratio": 1.75
+  },
+  {
+    "id": "app.publish.carousel.later",
+    "english": "Move later",
+    "translation": "Mover para depois",
+    "ratio": 1.7
+  },
+  {
+    "id": "app.create.sources.moveLater",
+    "english": "Move later",
+    "translation": "Mover para depois",
+    "ratio": 1.7
+  },
+  {
+    "id": "app.create.sources.image.add",
+    "english": "Add image",
+    "translation": "Adicionar imagem",
+    "ratio": 1.78
+  },
+  {
+    "id": "app.create.sources.video.add",
+    "english": "Add video",
+    "translation": "Adicionar vídeo",
+    "ratio": 1.67
+  },
+  {
+    "id": "app.create.sources.audio.add",
+    "english": "Add audio",
+    "translation": "Adicionar áudio",
+    "ratio": 1.67
+  }
+]

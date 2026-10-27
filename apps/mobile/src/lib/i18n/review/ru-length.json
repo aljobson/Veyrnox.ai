@@ -1,0 +1,2660 @@
+[
+  {
+    "id": "abt.f.legal",
+    "english": "Legal name",
+    "translation": "Юридическое название",
+    "ratio": 2
+  },
+  {
+    "id": "abt.f.trading",
+    "english": "Trading as",
+    "translation": "Торговое название",
+    "ratio": 1.7
+  },
+  {
+    "id": "account.acceptableusepolicy",
+    "english": "Acceptable use policy",
+    "translation": "Политика допустимого использования",
+    "ratio": 1.62
+  },
+  {
+    "id": "account.copyright",
+    "english": "Copyright",
+    "translation": "Авторские права",
+    "ratio": 1.67
+  },
+  {
+    "id": "account.legal.aup",
+    "english": "Acceptable use policy",
+    "translation": "Политика допустимого использования",
+    "ratio": 1.62
+  },
+  {
+    "id": "account.legal.privacy",
+    "english": "Privacy policy",
+    "translation": "Политика конфиденциальности",
+    "ratio": 1.93
+  },
+  {
+    "id": "account.privacypolicy",
+    "english": "Privacy policy",
+    "translation": "Политика конфиденциальности",
+    "ratio": 1.93
+  },
+  {
+    "id": "account.safetySection",
+    "english": "Safety",
+    "translation": "Безопасность",
+    "ratio": 2
+  },
+  {
+    "id": "account.scamorfraud",
+    "english": "Scam or fraud",
+    "translation": "Обман или мошенничество",
+    "ratio": 1.77
+  },
+  {
+    "id": "account.violenceorgore",
+    "english": "Violence or gore",
+    "translation": "Насилие или кровавые сцены",
+    "ratio": 1.63
+  },
+  {
+    "id": "accountCalls.authenticator",
+    "english": "Authenticator",
+    "translation": "Приложение-аутентификатор",
+    "ratio": 1.92
+  },
+  {
+    "id": "acct.mfa.unlock",
+    "english": "Unlock",
+    "translation": "Открыть доступ",
+    "ratio": 2.33
+  },
+  {
+    "id": "acct.mfa.verify",
+    "english": "Verify",
+    "translation": "Подтвердить",
+    "ratio": 1.83
+  },
+  {
+    "id": "acct.oauth.confirm",
+    "english": "Revoke {name}?",
+    "translation": "Отозвать доступ у {name}?",
+    "ratio": 1.79
+  },
+  {
+    "id": "activity.more",
+    "english": "Show older",
+    "translation": "Показать более ранние",
+    "ratio": 2.1
+  },
+  {
+    "id": "ads.ageMax",
+    "english": "Oldest age",
+    "translation": "Максимальный возраст",
+    "ratio": 2
+  },
+  {
+    "id": "ads.ends",
+    "english": "Ends (optional)",
+    "translation": "Окончание (необязательно)",
+    "ratio": 1.67
+  },
+  {
+    "id": "ads.save",
+    "english": "Save draft",
+    "translation": "Сохранить черновик",
+    "ratio": 1.8
+  },
+  {
+    "id": "ads.status.paused",
+    "english": "Paused",
+    "translation": "Приостановлено",
+    "ratio": 2.33
+  },
+  {
+    "id": "ads.title",
+    "english": "Ads",
+    "translation": "Реклама",
+    "ratio": 2.33
+  },
+  {
+    "id": "aiConsent.readthePrivacyPolicy",
+    "english": "Read the Privacy Policy",
+    "translation": "Прочитать политику конфиденциальности",
+    "ratio": 1.61
+  },
+  {
+    "id": "analytics.post",
+    "english": "Post",
+    "translation": "Публикация",
+    "ratio": 2.5
+  },
+  {
+    "id": "analytics.posts",
+    "english": "Posts",
+    "translation": "Публикации",
+    "ratio": 2
+  },
+  {
+    "id": "appeals.sendappeal",
+    "english": "Send appeal",
+    "translation": "Отправить апелляцию",
+    "ratio": 1.73
+  },
+  {
+    "id": "appeals.warning",
+    "english": "Warning",
+    "translation": "Предупреждение",
+    "ratio": 2
+  },
+  {
+    "id": "appearance.accent",
+    "english": "Accent",
+    "translation": "Акцентный цвет",
+    "ratio": 2.33
+  },
+  {
+    "id": "appearance.apply",
+    "english": "Apply",
+    "translation": "Применить",
+    "ratio": 1.8
+  },
+  {
+    "id": "approvals.noAccounts",
+    "english": "No connected account can post a {type} yet.",
+    "translation": "Ни один подключённый аккаунт пока не поддерживает публикации типа «{type}».",
+    "ratio": 1.74
+  },
+  {
+    "id": "approvals.policy.any",
+    "english": "Any one approves",
+    "translation": "Достаточно одного одобрения",
+    "ratio": 1.69
+  },
+  {
+    "id": "approvals.sentTitle",
+    "english": "Sent",
+    "translation": "Отправлено",
+    "ratio": 2.5
+  },
+  {
+    "id": "approvals.shareLink",
+    "english": "Share link",
+    "translation": "Поделиться ссылкой",
+    "ratio": 1.8
+  },
+  {
+    "id": "approvals.step.when",
+    "english": "4. Post at",
+    "translation": "4. Время публикации",
+    "ratio": 1.9
+  },
+  {
+    "id": "autolists.enabled",
+    "english": "On",
+    "translation": "Вкл.",
+    "ratio": 2
+  },
+  {
+    "id": "autolists.name",
+    "english": "Name",
+    "translation": "Название",
+    "ratio": 2
+  },
+  {
+    "id": "autolists.off",
+    "english": "Off",
+    "translation": "Выключено",
+    "ratio": 3
+  },
+  {
+    "id": "autolists.on",
+    "english": "On",
+    "translation": "Вкл.",
+    "ratio": 2
+  },
+  {
+    "id": "blocks.block",
+    "english": "Block",
+    "translation": "Заблокировать",
+    "ratio": 2.6
+  },
+  {
+    "id": "blocks.blockMember",
+    "english": "Block {name}",
+    "translation": "Заблокировать {name}",
+    "ratio": 1.67
+  },
+  {
+    "id": "blocks.blockTitle",
+    "english": "Block {name}?",
+    "translation": "Заблокировать {name}?",
+    "ratio": 1.62
+  },
+  {
+    "id": "blocks.title",
+    "english": "Blocked members",
+    "translation": "Заблокированные участники",
+    "ratio": 1.67
+  },
+  {
+    "id": "blocks.unblock",
+    "english": "Unblock",
+    "translation": "Разблокировать",
+    "ratio": 2
+  },
+  {
+    "id": "brand.saving",
+    "english": "Saving",
+    "translation": "Сохранение",
+    "ratio": 1.67
+  },
+  {
+    "id": "brands.mine",
+    "english": "My own brand",
+    "translation": "Мой собственный бренд",
+    "ratio": 1.75
+  },
+  {
+    "id": "calendar.next",
+    "english": "Next week",
+    "translation": "Следующая неделя",
+    "ratio": 1.78
+  },
+  {
+    "id": "cam.lens",
+    "english": "Lens",
+    "translation": "Объектив",
+    "ratio": 2
+  },
+  {
+    "id": "catalog.kind.image",
+    "english": "Image",
+    "translation": "Изображения",
+    "ratio": 2.2
+  },
+  {
+    "id": "chat.add",
+    "english": "Add",
+    "translation": "Добавить",
+    "ratio": 2.67
+  },
+  {
+    "id": "chat.askeachtime",
+    "english": "Ask each time",
+    "translation": "Спрашивать каждый раз",
+    "ratio": 1.62
+  },
+  {
+    "id": "chat.attach.imageN",
+    "english": "Attached image {n}",
+    "translation": "Прикреплённое изображение {n}",
+    "ratio": 1.61
+  },
+  {
+    "id": "chat.attach.libraryImage",
+    "english": "Library image",
+    "translation": "Изображение из библиотеки",
+    "ratio": 1.92
+  },
+  {
+    "id": "chat.cancelrename",
+    "english": "Cancel rename",
+    "translation": "Отменить переименование",
+    "ratio": 1.77
+  },
+  {
+    "id": "chat.composer.ask",
+    "english": "Ask anything…",
+    "translation": "Спросите о чём угодно…",
+    "ratio": 1.69
+  },
+  {
+    "id": "chat.draft.open",
+    "english": "Open in Create",
+    "translation": "Открыть в разделе «Создать»",
+    "ratio": 1.93
+  },
+  {
+    "id": "chat.make.button",
+    "english": "Make",
+    "translation": "Создать",
+    "ratio": 1.75
+  },
+  {
+    "id": "chat.make.kind.image",
+    "english": "Image",
+    "translation": "Изображения",
+    "ratio": 2.2
+  },
+  {
+    "id": "chat.make.length",
+    "english": "Length",
+    "translation": "Длительность",
+    "ratio": 2
+  },
+  {
+    "id": "chat.make.open",
+    "english": "Make",
+    "translation": "Создать",
+    "ratio": 1.75
+  },
+  {
+    "id": "chat.name",
+    "english": "Name",
+    "translation": "Название",
+    "ratio": 2
+  },
+  {
+    "id": "chat.pin",
+    "english": "Pin",
+    "translation": "Закрепить",
+    "ratio": 3
+  },
+  {
+    "id": "chat.rename",
+    "english": "Rename",
+    "translation": "Переименовать",
+    "ratio": 2.17
+  },
+  {
+    "id": "chat.rename3",
+    "english": "Rename",
+    "translation": "Переименовать",
+    "ratio": 2.17
+  },
+  {
+    "id": "chat.renameSave",
+    "english": "Save",
+    "translation": "Сохранить",
+    "ratio": 2.25
+  },
+  {
+    "id": "chat.save",
+    "english": "Save",
+    "translation": "Сохранить",
+    "ratio": 2.25
+  },
+  {
+    "id": "chat.send",
+    "english": "Send",
+    "translation": "Отправить",
+    "ratio": 2.25
+  },
+  {
+    "id": "chat.settings.save",
+    "english": "Save",
+    "translation": "Сохранить",
+    "ratio": 2.25
+  },
+  {
+    "id": "chat.skills.group.Edit",
+    "english": "Edit",
+    "translation": "Редактировать",
+    "ratio": 3.25
+  },
+  {
+    "id": "chat.skills.group.Make",
+    "english": "Make",
+    "translation": "Создать",
+    "ratio": 1.75
+  },
+  {
+    "id": "chat.skills.group.Plan",
+    "english": "Plan",
+    "translation": "Планировать",
+    "ratio": 2.75
+  },
+  {
+    "id": "chat.stop",
+    "english": "Stop",
+    "translation": "Остановить",
+    "ratio": 2.5
+  },
+  {
+    "id": "chat.unpin",
+    "english": "Unpin",
+    "translation": "Открепить",
+    "ratio": 1.8
+  },
+  {
+    "id": "chat.websearch",
+    "english": "Web search",
+    "translation": "Поиск в интернете",
+    "ratio": 1.7
+  },
+  {
+    "id": "chat.yourworkspace",
+    "english": "Your workspace",
+    "translation": "Ваше рабочее пространство",
+    "ratio": 1.79
+  },
+  {
+    "id": "cinema.nowplaying",
+    "english": "Now playing",
+    "translation": "Сейчас воспроизводится",
+    "ratio": 2
+  },
+  {
+    "id": "cinema.pauseorresume",
+    "english": "Pause or resume",
+    "translation": "Приостановить или продолжить",
+    "ratio": 1.87
+  },
+  {
+    "id": "cinema.play",
+    "english": "Play",
+    "translation": "Воспроизвести",
+    "ratio": 3.25
+  },
+  {
+    "id": "cinema.playbackprobe",
+    "english": "Playback probe",
+    "translation": "Проверка воспроизведения",
+    "ratio": 1.71
+  },
+  {
+    "id": "cinemaBrowse.cat.kids",
+    "english": "Kids",
+    "translation": "Детское",
+    "ratio": 1.75
+  },
+  {
+    "id": "cinemaBrowse.cat.sci-fi",
+    "english": "Sci-Fi",
+    "translation": "Фантастика",
+    "ratio": 1.67
+  },
+  {
+    "id": "cinemaBrowse.kids",
+    "english": "Kids",
+    "translation": "Детское",
+    "ratio": 1.75
+  },
+  {
+    "id": "cinemaBrowse.openTitle",
+    "english": "Open",
+    "translation": "Открыть",
+    "ratio": 1.75
+  },
+  {
+    "id": "cinemaBrowse.play",
+    "english": "Play",
+    "translation": "Воспроизвести",
+    "ratio": 3.25
+  },
+  {
+    "id": "cinemaBrowse.sciFi",
+    "english": "Sci-Fi",
+    "translation": "Фантастика",
+    "ratio": 1.67
+  },
+  {
+    "id": "cinemaBrowse.tab.saved",
+    "english": "Saved",
+    "translation": "Сохранённое",
+    "ratio": 2.2
+  },
+  {
+    "id": "cinemaBrowse.tab.vote",
+    "english": "Vote",
+    "translation": "Голосовать",
+    "ratio": 2.5
+  },
+  {
+    "id": "cinemaCreator.analytics.voters",
+    "english": "Voters",
+    "translation": "Проголосовали",
+    "ratio": 2.17
+  },
+  {
+    "id": "cinemaCreator.username",
+    "english": "Username",
+    "translation": "Имя пользователя",
+    "ratio": 2
+  },
+  {
+    "id": "cinemaDrafts.allages",
+    "english": "All ages",
+    "translation": "Для всех возрастов",
+    "ratio": 2.25
+  },
+  {
+    "id": "cinemaDrafts.drugs",
+    "english": "Drugs",
+    "translation": "Наркотики",
+    "ratio": 1.8
+  },
+  {
+    "id": "cinemaSocial.ended",
+    "english": "ended",
+    "translation": "завершена",
+    "ratio": 1.8
+  },
+  {
+    "id": "cinemaSocial.followSeries",
+    "english": "Follow series",
+    "translation": "Подписаться на сериал",
+    "ratio": 1.62
+  },
+  {
+    "id": "cinemaSocial.save",
+    "english": "Save",
+    "translation": "Сохранить",
+    "ratio": 2.25
+  },
+  {
+    "id": "cinemaSocial.saved",
+    "english": "Saved",
+    "translation": "Сохранённое",
+    "ratio": 2.2
+  },
+  {
+    "id": "cinemaSocial.vote",
+    "english": "Vote",
+    "translation": "Голосовать",
+    "ratio": 2.5
+  },
+  {
+    "id": "cinemaSocial.voting",
+    "english": "Voting",
+    "translation": "Голосование",
+    "ratio": 1.83
+  },
+  {
+    "id": "cinemaUpload.blocked",
+    "english": "Blocked people",
+    "translation": "Заблокированные пользователи",
+    "ratio": 2
+  },
+  {
+    "id": "cinemaUpload.edit",
+    "english": "Edit draft",
+    "translation": "Изменить черновик",
+    "ratio": 1.7
+  },
+  {
+    "id": "cinemaUpload.localPaused",
+    "english": "Upload paused",
+    "translation": "Загрузка приостановлена",
+    "ratio": 1.77
+  },
+  {
+    "id": "cinemaUpload.reload",
+    "english": "Reload",
+    "translation": "Перезагрузить",
+    "ratio": 2.17
+  },
+  {
+    "id": "cinemaUpload.retry",
+    "english": "Retry",
+    "translation": "Повторить",
+    "ratio": 1.8
+  },
+  {
+    "id": "cinemaUpload.save",
+    "english": "Save draft",
+    "translation": "Сохранить черновик",
+    "ratio": 1.8
+  },
+  {
+    "id": "cinemaUpload.warnings",
+    "english": "Content warnings",
+    "translation": "Предупреждения о содержании",
+    "ratio": 1.69
+  },
+  {
+    "id": "comments.post",
+    "english": "Post",
+    "translation": "Опубликовать",
+    "ratio": 3
+  },
+  {
+    "id": "comments.report",
+    "english": "Report",
+    "translation": "Пожаловаться",
+    "ratio": 2
+  },
+  {
+    "id": "comments.reportTitle",
+    "english": "Report a comment",
+    "translation": "Пожаловаться на комментарий",
+    "ratio": 1.69
+  },
+  {
+    "id": "commerce.archive",
+    "english": "Archive",
+    "translation": "Архивировать",
+    "ratio": 1.71
+  },
+  {
+    "id": "commerce.continueWeb",
+    "english": "More product tools are coming to the app.",
+    "translation": "Дополнительные инструменты для товаров скоро появятся в приложении.",
+    "ratio": 1.63
+  },
+  {
+    "id": "compose.queue",
+    "english": "Next queue slot",
+    "translation": "Следующее место в очереди",
+    "ratio": 1.67
+  },
+  {
+    "id": "create.tier.high",
+    "english": "High",
+    "translation": "Высокий",
+    "ratio": 1.75
+  },
+  {
+    "id": "create.tier.low",
+    "english": "Low",
+    "translation": "Низкий",
+    "ratio": 2
+  },
+  {
+    "id": "create.workspace.generateFree",
+    "english": "Generate · free",
+    "translation": "Сгенерировать · бесплатно",
+    "ratio": 1.67
+  },
+  {
+    "id": "create.workspace.saved",
+    "english": "Saved",
+    "translation": "Сохранено",
+    "ratio": 1.8
+  },
+  {
+    "id": "creativeFeatures.aIAdClone",
+    "english": "AI Ad Clone",
+    "translation": "ИИ-клонирование рекламы",
+    "ratio": 2.09
+  },
+  {
+    "id": "creativeFeatures.aILipSync",
+    "english": "AI Lip Sync",
+    "translation": "Синхронизация губ с ИИ",
+    "ratio": 2
+  },
+  {
+    "id": "creativeFeatures.dubbingnote",
+    "english": "Dubbing note",
+    "translation": "Примечание к дубляжу",
+    "ratio": 1.67
+  },
+  {
+    "id": "creativeFeatures.productionnote",
+    "english": "Production note",
+    "translation": "Примечание к производству",
+    "ratio": 1.67
+  },
+  {
+    "id": "creativeFeatures.uploadaclearvoicesampleyoumay",
+    "english": "Upload a clear voice sample you may use",
+    "translation": "Загрузите чёткий образец голоса, который вам разрешено использовать",
+    "ratio": 1.72
+  },
+  {
+    "id": "creativeFeatures.uploadananimalimageyoumayuse",
+    "english": "Upload an animal image you may use",
+    "translation": "Загрузите изображение животного, которое вам разрешено использовать",
+    "ratio": 1.97
+  },
+  {
+    "id": "creativeFeatures.uploadanownedvocalrecording",
+    "english": "Upload an owned vocal recording",
+    "translation": "Загрузите запись вокала, на которую у вас есть права",
+    "ratio": 1.68
+  },
+  {
+    "id": "creativeFeatures.uploadaportraityoumayedit",
+    "english": "Upload a portrait you may edit",
+    "translation": "Загрузите портрет, который вам разрешено редактировать",
+    "ratio": 1.8
+  },
+  {
+    "id": "creativeFeatures.uploadareferenceyoumayuse",
+    "english": "Upload a reference you may use",
+    "translation": "Загрузите референс, который вам разрешено использовать",
+    "ratio": 1.8
+  },
+  {
+    "id": "creativeFeatures.uploadavisualreferenceyoumayuse",
+    "english": "Upload a visual reference you may use",
+    "translation": "Загрузите визуальный референс, который вам разрешено использовать",
+    "ratio": 1.76
+  },
+  {
+    "id": "dev.hooks.events",
+    "english": "Send me",
+    "translation": "Отправлять мне",
+    "ratio": 2
+  },
+  {
+    "id": "dev.hooks.revokeTitle",
+    "english": "Revoke {name}?",
+    "translation": "Отозвать доступ у {name}?",
+    "ratio": 1.79
+  },
+  {
+    "id": "dev.keys.revokeTitle",
+    "english": "Revoke {name}?",
+    "translation": "Отозвать доступ у {name}?",
+    "ratio": 1.79
+  },
+  {
+    "id": "dev.keys.used",
+    "english": "last used {date}",
+    "translation": "последнее использование {date}",
+    "ratio": 1.88
+  },
+  {
+    "id": "dev.label",
+    "english": "Name",
+    "translation": "Название",
+    "ratio": 2
+  },
+  {
+    "id": "dev.secret.share",
+    "english": "Copy or share",
+    "translation": "Скопировать или поделиться",
+    "ratio": 2
+  },
+  {
+    "id": "drafts.openWeb",
+    "english": "More draft review tools are coming to the app.",
+    "translation": "Дополнительные инструменты проверки черновиков скоро появятся в приложении.",
+    "ratio": 1.63
+  },
+  {
+    "id": "draw.addBox",
+    "english": "Add box",
+    "translation": "Добавить рамку",
+    "ratio": 2
+  },
+  {
+    "id": "draw.color.cyan",
+    "english": "Cyan",
+    "translation": "Голубой",
+    "ratio": 1.75
+  },
+  {
+    "id": "draw.color.red",
+    "english": "Red",
+    "translation": "Красный",
+    "ratio": 2.33
+  },
+  {
+    "id": "draw.open",
+    "english": "Draw on image",
+    "translation": "Рисовать на изображении",
+    "ratio": 1.77
+  },
+  {
+    "id": "draw.size.small",
+    "english": "Small",
+    "translation": "Маленький",
+    "ratio": 1.8
+  },
+  {
+    "id": "draw.title",
+    "english": "Draw on start image",
+    "translation": "Рисовать на начальном изображении",
+    "ratio": 1.74
+  },
+  {
+    "id": "draw.tool.box",
+    "english": "Box",
+    "translation": "Рамка",
+    "ratio": 1.67
+  },
+  {
+    "id": "draw.undo",
+    "english": "Undo",
+    "translation": "Отменить",
+    "ratio": 2
+  },
+  {
+    "id": "draw.use",
+    "english": "Use drawing",
+    "translation": "Использовать рисунок",
+    "ratio": 1.82
+  },
+  {
+    "id": "edit.end",
+    "english": "End",
+    "translation": "Конец",
+    "ratio": 1.67
+  },
+  {
+    "id": "edit.endLater",
+    "english": "End later",
+    "translation": "Завершить позже",
+    "ratio": 1.67
+  },
+  {
+    "id": "editor.add",
+    "english": "Add",
+    "translation": "Добавить",
+    "ratio": 2.67
+  },
+  {
+    "id": "editor.addText",
+    "english": "Add text",
+    "translation": "Добавить текст",
+    "ratio": 1.75
+  },
+  {
+    "id": "editor.addtext",
+    "english": "Add text",
+    "translation": "Добавить текст",
+    "ratio": 1.75
+  },
+  {
+    "id": "editor.addtexttrack",
+    "english": "Add text track",
+    "translation": "Добавить текстовую дорожку",
+    "ratio": 1.86
+  },
+  {
+    "id": "editor.animatein",
+    "english": "Animate in",
+    "translation": "Анимация появления",
+    "ratio": 1.8
+  },
+  {
+    "id": "editor.animateout",
+    "english": "Animate out",
+    "translation": "Анимация исчезновения",
+    "ratio": 1.91
+  },
+  {
+    "id": "editor.blur",
+    "english": "Blur",
+    "translation": "Размытие",
+    "ratio": 2
+  },
+  {
+    "id": "editor.cUT",
+    "english": "CUT",
+    "translation": "МОНТАЖ",
+    "ratio": 2
+  },
+  {
+    "id": "editor.copy",
+    "english": "Copy",
+    "translation": "Копировать",
+    "ratio": 2.5
+  },
+  {
+    "id": "editor.cover",
+    "english": "Cover",
+    "translation": "Заполнить",
+    "ratio": 1.8
+  },
+  {
+    "id": "editor.cut",
+    "english": "Cut",
+    "translation": "Монтаж",
+    "ratio": 2
+  },
+  {
+    "id": "editor.fadein",
+    "english": "Fade in",
+    "translation": "Плавное появление",
+    "ratio": 2.43
+  },
+  {
+    "id": "editor.fadeout",
+    "english": "Fade out",
+    "translation": "Плавное исчезновение",
+    "ratio": 2.5
+  },
+  {
+    "id": "editor.group",
+    "english": "Group",
+    "translation": "Сгруппировать",
+    "ratio": 2.6
+  },
+  {
+    "id": "editor.home.eyebrow",
+    "english": "Create & cut",
+    "translation": "Создавайте и монтируйте",
+    "ratio": 1.92
+  },
+  {
+    "id": "editor.hue",
+    "english": "Hue",
+    "translation": "Цветовой тон",
+    "ratio": 4
+  },
+  {
+    "id": "editor.imageFallback",
+    "english": "image",
+    "translation": "изображение",
+    "ratio": 2.2
+  },
+  {
+    "id": "editor.imagePreviewAlt",
+    "english": "Image preview",
+    "translation": "Предпросмотр изображения",
+    "ratio": 1.85
+  },
+  {
+    "id": "editor.libraryimage",
+    "english": "Library image",
+    "translation": "Изображение из Библиотеки",
+    "ratio": 1.92
+  },
+  {
+    "id": "editor.lock",
+    "english": "Lock",
+    "translation": "Заблокировать",
+    "ratio": 3.25
+  },
+  {
+    "id": "editor.mUTE",
+    "english": "MUTE ",
+    "translation": "БЕЗ ЗВУКА ",
+    "ratio": 2
+  },
+  {
+    "id": "editor.mute",
+    "english": "Mute",
+    "translation": "Без звука",
+    "ratio": 2.25
+  },
+  {
+    "id": "editor.off",
+    "english": "Off",
+    "translation": "Выключено",
+    "ratio": 3
+  },
+  {
+    "id": "editor.oldfilm",
+    "english": "Old film",
+    "translation": "Старая плёнка",
+    "ratio": 1.63
+  },
+  {
+    "id": "editor.opacity",
+    "english": "Opacity",
+    "translation": "Непрозрачность",
+    "ratio": 2
+  },
+  {
+    "id": "editor.opentools",
+    "english": "Open tools",
+    "translation": "Открыть инструменты",
+    "ratio": 1.9
+  },
+  {
+    "id": "editor.pREVIEW",
+    "english": "PREVIEW",
+    "translation": "ПРЕДПРОСМОТР",
+    "ratio": 1.71
+  },
+  {
+    "id": "editor.pan",
+    "english": "Pan",
+    "translation": "Панорама",
+    "ratio": 2.67
+  },
+  {
+    "id": "editor.paused",
+    "english": "Saving paused",
+    "translation": "Сохранение приостановлено",
+    "ratio": 1.92
+  },
+  {
+    "id": "editor.play",
+    "english": "Play",
+    "translation": "Воспроизвести",
+    "ratio": 3.25
+  },
+  {
+    "id": "editor.preview",
+    "english": "Preview",
+    "translation": "Предпросмотр",
+    "ratio": 1.71
+  },
+  {
+    "id": "editor.redo",
+    "english": "Redo",
+    "translation": "Повторить",
+    "ratio": 2.25
+  },
+  {
+    "id": "editor.reload",
+    "english": "Reload",
+    "translation": "Перезагрузить",
+    "ratio": 2.17
+  },
+  {
+    "id": "editor.reopen",
+    "english": "Reopen",
+    "translation": "Открыть снова",
+    "ratio": 2.17
+  },
+  {
+    "id": "editor.retryNow",
+    "english": "Retry now",
+    "translation": "Повторить сейчас",
+    "ratio": 1.78
+  },
+  {
+    "id": "editor.ripple",
+    "english": "Ripple",
+    "translation": "Со сдвигом",
+    "ratio": 1.67
+  },
+  {
+    "id": "editor.saved",
+    "english": "Saved",
+    "translation": "Сохранено",
+    "ratio": 1.8
+  },
+  {
+    "id": "editor.snap",
+    "english": "Snap",
+    "translation": "Привязка",
+    "ratio": 2
+  },
+  {
+    "id": "editor.softglow",
+    "english": "Soft glow",
+    "translation": "Мягкое свечение",
+    "ratio": 1.67
+  },
+  {
+    "id": "editor.split",
+    "english": "Split",
+    "translation": "Разделить",
+    "ratio": 1.8
+  },
+  {
+    "id": "editor.stay",
+    "english": "Stay",
+    "translation": "Остаться",
+    "ratio": 2
+  },
+  {
+    "id": "editor.tIMELINE",
+    "english": "TIMELINE",
+    "translation": "ШКАЛА ВРЕМЕНИ",
+    "ratio": 1.63
+  },
+  {
+    "id": "editor.tab.preview",
+    "english": "Preview",
+    "translation": "Предпросмотр",
+    "ratio": 1.71
+  },
+  {
+    "id": "editor.tab.timeline",
+    "english": "Timeline",
+    "translation": "Шкала времени",
+    "ratio": 1.63
+  },
+  {
+    "id": "editor.timeline",
+    "english": "Timeline",
+    "translation": "Шкала времени",
+    "ratio": 1.63
+  },
+  {
+    "id": "editor.undo",
+    "english": "Undo",
+    "translation": "Отменить",
+    "ratio": 2
+  },
+  {
+    "id": "editor.ungroup",
+    "english": "Ungroup",
+    "translation": "Разгруппировать",
+    "ratio": 2.14
+  },
+  {
+    "id": "editor.wipeleft",
+    "english": "Wipe left",
+    "translation": "Вытеснение влево",
+    "ratio": 1.78
+  },
+  {
+    "id": "editor.zoom",
+    "english": "Zoom",
+    "translation": "Масштаб",
+    "ratio": 1.75
+  },
+  {
+    "id": "email.show",
+    "english": "Show",
+    "translation": "Показать",
+    "ratio": 2
+  },
+  {
+    "id": "explore.new",
+    "english": "New",
+    "translation": "Новые",
+    "ratio": 1.67
+  },
+  {
+    "id": "explore.seeAllShort",
+    "english": "See all",
+    "translation": "Смотреть все",
+    "ratio": 1.71
+  },
+  {
+    "id": "explore.start.create.hint",
+    "english": "Opens Create.",
+    "translation": "Открывает раздел «Создать».",
+    "ratio": 2.08
+  },
+  {
+    "id": "explore.tryIt",
+    "english": "Try it",
+    "translation": "Попробовать",
+    "ratio": 1.83
+  },
+  {
+    "id": "explore.tryThis",
+    "english": "Try this",
+    "translation": "Попробуйте это",
+    "ratio": 1.75
+  },
+  {
+    "id": "explore.type.image",
+    "english": "Images",
+    "translation": "Изображения",
+    "ratio": 1.83
+  },
+  {
+    "id": "faceFilters.artistic",
+    "english": "Artistic",
+    "translation": "Художественный",
+    "ratio": 1.75
+  },
+  {
+    "id": "faceFilters.dramatic",
+    "english": "Dramatic",
+    "translation": "Драматический",
+    "ratio": 1.63
+  },
+  {
+    "id": "faceFilters.natural",
+    "english": "Natural",
+    "translation": "Естественный",
+    "ratio": 1.71
+  },
+  {
+    "id": "faceFilters.policy",
+    "english": "Read Acceptable Use",
+    "translation": "Прочитать правила использования",
+    "ratio": 1.63
+  },
+  {
+    "id": "features.creativetool",
+    "english": "Creative tool",
+    "translation": "Творческий инструмент",
+    "ratio": 1.62
+  },
+  {
+    "id": "files.share2",
+    "english": "Share",
+    "translation": "Поделиться",
+    "ratio": 2
+  },
+  {
+    "id": "film.addshot",
+    "english": "Add shot",
+    "translation": "Добавить кадр",
+    "ratio": 1.63
+  },
+  {
+    "id": "film.cliplength",
+    "english": "Clip length",
+    "translation": "Длительность клипа",
+    "ratio": 1.64
+  },
+  {
+    "id": "film.imagemodel",
+    "english": "Image model",
+    "translation": "Модель изображений",
+    "ratio": 1.64
+  },
+  {
+    "id": "film.lOCKED",
+    "english": " · LOCKED",
+    "translation": " · ЗАФИКСИРОВАНО",
+    "ratio": 1.78
+  },
+  {
+    "id": "film.lOCKED2",
+    "english": "· LOCKED",
+    "translation": "· ЗАФИКСИРОВАНО",
+    "ratio": 1.88
+  },
+  {
+    "id": "film.lockaftereverytestpasses",
+    "english": "Lock after every test passes",
+    "translation": "Зафиксировать после успешного прохождения всех тестов",
+    "ratio": 1.89
+  },
+  {
+    "id": "film.locked",
+    "english": "locked",
+    "translation": "зафиксировано",
+    "ratio": 2.17
+  },
+  {
+    "id": "film.locked2",
+    "english": "Locked",
+    "translation": "Зафиксировано",
+    "ratio": 2.17
+  },
+  {
+    "id": "film.new",
+    "english": "New",
+    "translation": "Новый",
+    "ratio": 1.67
+  },
+  {
+    "id": "film.openinCreate",
+    "english": "Open in Create",
+    "translation": "Открыть в разделе «Создать»",
+    "ratio": 1.93
+  },
+  {
+    "id": "film.saveonphone",
+    "english": "Save on phone",
+    "translation": "Сохранить на телефоне",
+    "ratio": 1.62
+  },
+  {
+    "id": "filmCloud.retry",
+    "english": "Retry",
+    "translation": "Повторить",
+    "ratio": 1.8
+  },
+  {
+    "id": "filmCloud.title",
+    "english": "Saved films",
+    "translation": "Сохранённые фильмы",
+    "ratio": 1.64
+  },
+  {
+    "id": "filmStudio.acting",
+    "english": "Acting",
+    "translation": "Актёрская игра",
+    "ratio": 2.33
+  },
+  {
+    "id": "filmStudio.lens",
+    "english": "Lens",
+    "translation": "Объектив",
+    "ratio": 2
+  },
+  {
+    "id": "filmStudio.shotsize",
+    "english": "Shot size",
+    "translation": "Крупность плана",
+    "ratio": 1.67
+  },
+  {
+    "id": "filmStudio.styledevice",
+    "english": "Style device",
+    "translation": "Стилистический приём",
+    "ratio": 1.67
+  },
+  {
+    "id": "freeAllowanceCard.freetoday2",
+    "english": "Free today",
+    "translation": "Бесплатно сегодня",
+    "ratio": 1.7
+  },
+  {
+    "id": "help.ask.send",
+    "english": "Ask",
+    "translation": "Спросить",
+    "ratio": 2.67
+  },
+  {
+    "id": "help.ask.title",
+    "english": "Ask Vey",
+    "translation": "Спросить Vey",
+    "ratio": 1.71
+  },
+  {
+    "id": "helpGuides.content.credits.s5.title",
+    "english": "Limits",
+    "translation": "Ограничения",
+    "ratio": 1.83
+  },
+  {
+    "id": "helpGuides.content.library.s2.title",
+    "english": "Filter",
+    "translation": "Отфильтруйте",
+    "ratio": 2
+  },
+  {
+    "id": "helpGuides.content.templates.s2.title",
+    "english": "Open one",
+    "translation": "Откройте шаблон",
+    "ratio": 1.88
+  },
+  {
+    "id": "helpGuides.content.templates.s3.title",
+    "english": "Use it",
+    "translation": "Использовать",
+    "ratio": 2
+  },
+  {
+    "id": "helpGuides.content.your-own-files.l2",
+    "english": "Acceptable Use",
+    "translation": "Допустимое использование",
+    "ratio": 1.71
+  },
+  {
+    "id": "helpGuides.content.your-own-files.s1.title",
+    "english": "Pick a tool",
+    "translation": "Выберите инструмент",
+    "ratio": 1.73
+  },
+  {
+    "id": "helpGuides.content.your-own-files.s3.title",
+    "english": "Or reuse a result",
+    "translation": "Или используйте готовый результат",
+    "ratio": 1.94
+  },
+  {
+    "id": "helpGuides.title",
+    "english": "Guides",
+    "translation": "Руководства",
+    "ratio": 1.83
+  },
+  {
+    "id": "inbox.state.unread",
+    "english": "Unread",
+    "translation": "Непрочитанные",
+    "ratio": 2.17
+  },
+  {
+    "id": "inbox.state.unresolved",
+    "english": "Open",
+    "translation": "Открытые",
+    "ratio": 2
+  },
+  {
+    "id": "job.next.reuse",
+    "english": "Use in another tool",
+    "translation": "Использовать в другом инструменте",
+    "ratio": 1.74
+  },
+  {
+    "id": "job.playAudio",
+    "english": "Play audio",
+    "translation": "Воспроизвести аудио",
+    "ratio": 1.9
+  },
+  {
+    "id": "job.playVideo",
+    "english": "Play video",
+    "translation": "Воспроизвести видео",
+    "ratio": 1.9
+  },
+  {
+    "id": "language.creatorNoun.owl",
+    "english": "Finisher",
+    "translation": "Перфекционист",
+    "ratio": 1.63
+  },
+  {
+    "id": "library.costFree",
+    "english": "Free",
+    "translation": "Бесплатно",
+    "ratio": 2.25
+  },
+  {
+    "id": "library.expires",
+    "english": "File expires {date}. Save a copy.",
+    "translation": "Срок хранения файла истекает {date}. Сохраните копию.",
+    "ratio": 1.61
+  },
+  {
+    "id": "library.favouriteLabel",
+    "english": "Favourite {name}",
+    "translation": "Добавить {name} в избранное",
+    "ratio": 1.69
+  },
+  {
+    "id": "library.reuse",
+    "english": "Use",
+    "translation": "Использовать",
+    "ratio": 4
+  },
+  {
+    "id": "library.type.image",
+    "english": "Images",
+    "translation": "Изображения",
+    "ratio": 1.83
+  },
+  {
+    "id": "libsrc.kind.image",
+    "english": "images",
+    "translation": "изображения",
+    "ratio": 1.83
+  },
+  {
+    "id": "mcp.share",
+    "english": "Share endpoint",
+    "translation": "Поделиться адресом подключения",
+    "ratio": 2.14
+  },
+  {
+    "id": "menu.home",
+    "english": "Home",
+    "translation": "Главная",
+    "ratio": 1.75
+  },
+  {
+    "id": "menu.toolDirectory",
+    "english": "Tools",
+    "translation": "Инструменты",
+    "ratio": 2.2
+  },
+  {
+    "id": "menu.tools",
+    "english": "Tools",
+    "translation": "Инструменты",
+    "ratio": 2.2
+  },
+  {
+    "id": "oddlings.handoff.short",
+    "english": "Make a short",
+    "translation": "Создать короткое видео",
+    "ratio": 1.83
+  },
+  {
+    "id": "oddlings.puppet.pause",
+    "english": "Pause preview",
+    "translation": "Приостановить предпросмотр",
+    "ratio": 2
+  },
+  {
+    "id": "oddlings.puppet.play",
+    "english": "Play preview",
+    "translation": "Запустить предпросмотр",
+    "ratio": 1.83
+  },
+  {
+    "id": "oddlingsProjects.workspace",
+    "english": "Workspace",
+    "translation": "Рабочее пространство",
+    "ratio": 2.22
+  },
+  {
+    "id": "opt.audioOff",
+    "english": "Audio off",
+    "translation": "Аудио выключено",
+    "ratio": 1.67
+  },
+  {
+    "id": "opt.audioOn",
+    "english": "Audio on",
+    "translation": "Аудио включено",
+    "ratio": 1.75
+  },
+  {
+    "id": "opt.count",
+    "english": "Images",
+    "translation": "Изображения",
+    "ratio": 1.83
+  },
+  {
+    "id": "opt.roll",
+    "english": "Roll",
+    "translation": "Сгенерировать",
+    "ratio": 3.25
+  },
+  {
+    "id": "optionLabels0.option10",
+    "english": "Bee",
+    "translation": "Пчела",
+    "ratio": 1.67
+  },
+  {
+    "id": "optionLabels0.option117",
+    "english": "Long Oval",
+    "translation": "Удлинённый овал",
+    "ratio": 1.67
+  },
+  {
+    "id": "optionLabels0.option118",
+    "english": "Square",
+    "translation": "Квадратная",
+    "ratio": 1.67
+  },
+  {
+    "id": "optionLabels0.option122",
+    "english": "Oversized Head",
+    "translation": "Непропорционально большая голова",
+    "ratio": 2.29
+  },
+  {
+    "id": "optionLabels0.option149",
+    "english": "Chin & Jaw",
+    "translation": "Подбородок и челюсть",
+    "ratio": 2
+  },
+  {
+    "id": "optionLabels0.option150",
+    "english": "Strong Jaw",
+    "translation": "Выраженная челюсть",
+    "ratio": 1.8
+  },
+  {
+    "id": "optionLabels0.option151",
+    "english": "Soft Jaw",
+    "translation": "Мягкая линия челюсти",
+    "ratio": 2.5
+  },
+  {
+    "id": "optionLabels0.option152",
+    "english": "Pointed Chin",
+    "translation": "Заострённый подбородок",
+    "ratio": 1.83
+  },
+  {
+    "id": "optionLabels0.option153",
+    "english": "Round Chin",
+    "translation": "Круглый подбородок",
+    "ratio": 1.8
+  },
+  {
+    "id": "optionLabels0.option154",
+    "english": "Cleft Chin",
+    "translation": "Подбородок с ямочкой",
+    "ratio": 2
+  },
+  {
+    "id": "optionLabels0.option16",
+    "english": "Ant",
+    "translation": "Муравей",
+    "ratio": 2.33
+  },
+  {
+    "id": "optionLabels0.option168",
+    "english": "Goatee",
+    "translation": "Эспаньолка",
+    "ratio": 1.67
+  },
+  {
+    "id": "optionLabels0.option17",
+    "english": "Cat",
+    "translation": "Кошка",
+    "ratio": 1.67
+  },
+  {
+    "id": "optionLabels0.option173",
+    "english": "Single Chin Curl",
+    "translation": "Один завиток на подбородке",
+    "ratio": 1.63
+  },
+  {
+    "id": "optionLabels0.option175",
+    "english": "Human Skin",
+    "translation": "Человеческая кожа",
+    "ratio": 1.7
+  },
+  {
+    "id": "optionLabels0.option18",
+    "english": "Dog",
+    "translation": "Собака",
+    "ratio": 2
+  },
+  {
+    "id": "optionLabels0.option182",
+    "english": "Solid",
+    "translation": "Однотонная",
+    "ratio": 2
+  },
+  {
+    "id": "optionLabels0.option185",
+    "english": "Chess",
+    "translation": "Шахматный узор",
+    "ratio": 2.8
+  },
+  {
+    "id": "optionLabels0.option191",
+    "english": "Slim",
+    "translation": "Стройное",
+    "ratio": 2
+  },
+  {
+    "id": "optionLabels0.option192",
+    "english": "Lean",
+    "translation": "Подтянутое",
+    "ratio": 2.5
+  },
+  {
+    "id": "optionLabels0.option194",
+    "english": "Long-limbed",
+    "translation": "Длинные конечности",
+    "ratio": 1.64
+  },
+  {
+    "id": "optionLabels0.option195",
+    "english": "Compact build",
+    "translation": "Компактное телосложение",
+    "ratio": 1.77
+  },
+  {
+    "id": "optionLabels0.option199",
+    "english": "Curvy",
+    "translation": "Пышные формы",
+    "ratio": 2.4
+  },
+  {
+    "id": "optionLabels0.option205",
+    "english": "Broad build",
+    "translation": "Крупное телосложение",
+    "ratio": 1.82
+  },
+  {
+    "id": "optionLabels0.option206",
+    "english": "Full-bodied",
+    "translation": "Полное телосложение",
+    "ratio": 1.73
+  },
+  {
+    "id": "optionLabels0.option212",
+    "english": "Tall",
+    "translation": "Высокий",
+    "ratio": 1.75
+  },
+  {
+    "id": "optionLabels0.option224",
+    "english": "Small",
+    "translation": "Маленький",
+    "ratio": 1.8
+  },
+  {
+    "id": "optionLabels0.option239",
+    "english": "Bare",
+    "translation": "Без украшений",
+    "ratio": 3.25
+  },
+  {
+    "id": "optionLabels0.option241",
+    "english": "Ruff",
+    "translation": "Воротник-жабо",
+    "ratio": 3.25
+  },
+  {
+    "id": "optionLabels0.option248",
+    "english": "Robotic",
+    "translation": "Роботизированная",
+    "ratio": 2.29
+  },
+  {
+    "id": "optionLabels0.option255",
+    "english": "Bald",
+    "translation": "Без волос",
+    "ratio": 2.25
+  },
+  {
+    "id": "optionLabels0.option263",
+    "english": "Wedge Cut",
+    "translation": "Клиновидная стрижка",
+    "ratio": 2.11
+  },
+  {
+    "id": "optionLabels0.option264",
+    "english": "Tabletop",
+    "translation": "Плоская площадка",
+    "ratio": 2
+  },
+  {
+    "id": "optionLabels0.option268",
+    "english": "Zigzag Cut",
+    "translation": "Зигзагообразная стрижка",
+    "ratio": 2.3
+  },
+  {
+    "id": "optionLabels0.option269",
+    "english": "Anvil Cut",
+    "translation": "Стрижка-наковальня",
+    "ratio": 2
+  },
+  {
+    "id": "optionLabels0.option27",
+    "english": "Man",
+    "translation": "Мужчина",
+    "ratio": 2.33
+  },
+  {
+    "id": "optionLabels0.option276",
+    "english": "Buzz Cut",
+    "translation": "Стрижка под машинку",
+    "ratio": 2.38
+  },
+  {
+    "id": "optionLabels0.option277",
+    "english": "Bowl Cut",
+    "translation": "Стрижка под горшок",
+    "ratio": 2.25
+  },
+  {
+    "id": "optionLabels0.option281",
+    "english": "Perm",
+    "translation": "Химическая завивка",
+    "ratio": 4.5
+  },
+  {
+    "id": "optionLabels0.option284",
+    "english": "Ponytail",
+    "translation": "Конский хвост",
+    "ratio": 1.63
+  },
+  {
+    "id": "optionLabels0.option285",
+    "english": "Top Knot",
+    "translation": "Высокий пучок",
+    "ratio": 1.63
+  },
+  {
+    "id": "optionLabels0.option298",
+    "english": "Auburn",
+    "translation": "Рыжевато-каштановый",
+    "ratio": 3.17
+  },
+  {
+    "id": "optionLabels0.option3",
+    "english": "Alien",
+    "translation": "Инопланетянин",
+    "ratio": 2.6
+  },
+  {
+    "id": "optionLabels0.option31",
+    "english": "Heritage",
+    "translation": "Происхождение",
+    "ratio": 1.63
+  },
+  {
+    "id": "optionLabels0.option33",
+    "english": "East Asian",
+    "translation": "Восточноазиатское",
+    "ratio": 1.7
+  },
+  {
+    "id": "optionLabels0.option38",
+    "english": "Adult Age",
+    "translation": "Взрослый возраст",
+    "ratio": 1.78
+  },
+  {
+    "id": "optionLabels0.option39",
+    "english": "20s",
+    "translation": "20–29 лет",
+    "ratio": 3
+  },
+  {
+    "id": "optionLabels0.option4",
+    "english": "Moth",
+    "translation": "Мотылёк",
+    "ratio": 1.75
+  },
+  {
+    "id": "optionLabels0.option40",
+    "english": "30s",
+    "translation": "30–39 лет",
+    "ratio": 3
+  },
+  {
+    "id": "optionLabels0.option41",
+    "english": "40s",
+    "translation": "40–49 лет",
+    "ratio": 3
+  },
+  {
+    "id": "optionLabels0.option42",
+    "english": "50s",
+    "translation": "50–59 лет",
+    "ratio": 3
+  },
+  {
+    "id": "optionLabels0.option43",
+    "english": "60s",
+    "translation": "60–69 лет",
+    "ratio": 3
+  },
+  {
+    "id": "optionLabels0.option45",
+    "english": "Deep",
+    "translation": "Очень тёмный",
+    "ratio": 3
+  },
+  {
+    "id": "optionLabels0.option46",
+    "english": "Rich Brown",
+    "translation": "Насыщенный коричневый",
+    "ratio": 2.1
+  },
+  {
+    "id": "optionLabels0.option47",
+    "english": "Warm Brown",
+    "translation": "Тёплый коричневый",
+    "ratio": 1.7
+  },
+  {
+    "id": "optionLabels0.option48",
+    "english": "Olive",
+    "translation": "Оливковый",
+    "ratio": 1.8
+  },
+  {
+    "id": "optionLabels0.option49",
+    "english": "Golden",
+    "translation": "Золотистый",
+    "ratio": 1.67
+  },
+  {
+    "id": "optionLabels0.option51",
+    "english": "Fair",
+    "translation": "Светлый",
+    "ratio": 1.75
+  },
+  {
+    "id": "optionLabels0.option60",
+    "english": "Red",
+    "translation": "Красный",
+    "ratio": 2.33
+  },
+  {
+    "id": "optionLabels0.option61",
+    "english": "Purple",
+    "translation": "Фиолетовый",
+    "ratio": 1.67
+  },
+  {
+    "id": "optionLabels0.option72",
+    "english": "Downturned",
+    "translation": "С опущенными уголками",
+    "ratio": 2.1
+  },
+  {
+    "id": "optionLabels0.option73",
+    "english": "Upturned",
+    "translation": "С приподнятыми уголками",
+    "ratio": 2.88
+  },
+  {
+    "id": "optionLabels0.option74",
+    "english": "Almond",
+    "translation": "Миндалевидные",
+    "ratio": 2.17
+  },
+  {
+    "id": "optionLabels0.option75",
+    "english": "Monolid",
+    "translation": "Без складки века",
+    "ratio": 2.29
+  },
+  {
+    "id": "optionLabels0.option76",
+    "english": "Hooded eyes",
+    "translation": "С нависающим веком",
+    "ratio": 1.64
+  },
+  {
+    "id": "optionLabels0.option77",
+    "english": "Uneven eyes",
+    "translation": "Асимметричные глаза",
+    "ratio": 1.73
+  },
+  {
+    "id": "optionLabels0.option78",
+    "english": "Wide Set",
+    "translation": "Широко посаженные",
+    "ratio": 2.13
+  },
+  {
+    "id": "optionLabels0.option79",
+    "english": "Close Set",
+    "translation": "Близко посаженные",
+    "ratio": 1.89
+  },
+  {
+    "id": "optionLabels0.option91",
+    "english": "Gap Teeth",
+    "translation": "Щель между зубами",
+    "ratio": 1.89
+  },
+  {
+    "id": "optionLabels0.option99",
+    "english": "Elf Ears",
+    "translation": "Эльфийские уши",
+    "ratio": 1.75
+  },
+  {
+    "id": "optionLabels1.option300",
+    "english": "Silver",
+    "translation": "Серебряный",
+    "ratio": 1.67
+  },
+  {
+    "id": "optionLabels1.option305",
+    "english": "Pink",
+    "translation": "Розовый",
+    "ratio": 1.75
+  },
+  {
+    "id": "optionLabels1.option306",
+    "english": "Lilac",
+    "translation": "Сиреневый",
+    "ratio": 1.8
+  },
+  {
+    "id": "optionLabels1.option307",
+    "english": "Teal",
+    "translation": "Бирюзовый",
+    "ratio": 2.25
+  },
+  {
+    "id": "optionLabels1.option308",
+    "english": "Split Color",
+    "translation": "Двухцветное окрашивание",
+    "ratio": 2.09
+  },
+  {
+    "id": "optionLabels1.option316",
+    "english": "Tiny Formalwear",
+    "translation": "Миниатюрный парадный костюм",
+    "ratio": 1.8
+  },
+  {
+    "id": "optionLabels1.option324",
+    "english": "Sporty",
+    "translation": "Спортивный",
+    "ratio": 1.67
+  },
+  {
+    "id": "optionLabels1.option328",
+    "english": "Beanie",
+    "translation": "Шапка бини",
+    "ratio": 1.67
+  },
+  {
+    "id": "optionLabels1.option335",
+    "english": "Sunglasses",
+    "translation": "Солнцезащитные очки",
+    "ratio": 1.9
+  },
+  {
+    "id": "optionLabels1.option345",
+    "english": "Tiny Teacup",
+    "translation": "Крошечная чайная чашка",
+    "ratio": 2
+  },
+  {
+    "id": "optionLabels1.option347",
+    "english": "Tiny Sunglasses",
+    "translation": "Крошечные солнцезащитные очки",
+    "ratio": 1.93
+  },
+  {
+    "id": "optionLabels1.option357",
+    "english": "Giant Comb",
+    "translation": "Гигантская расчёска",
+    "ratio": 1.9
+  },
+  {
+    "id": "optionLabels1.option370",
+    "english": "Who",
+    "translation": "Личность",
+    "ratio": 2.67
+  },
+  {
+    "id": "optionLabels1.option386",
+    "english": "Limbs",
+    "translation": "Конечности",
+    "ratio": 2
+  },
+  {
+    "id": "optionLabels1.option388",
+    "english": "Finish",
+    "translation": "Оформление",
+    "ratio": 1.67
+  },
+  {
+    "id": "optionLabels1.option390",
+    "english": "Deadpan turn",
+    "translation": "Невозмутимый поворот",
+    "ratio": 1.67
+  },
+  {
+    "id": "optionLabels1.option396",
+    "english": "One-move dance",
+    "translation": "Танец из одного движения",
+    "ratio": 1.71
+  },
+  {
+    "id": "optionLabels1.option397",
+    "english": "Slow zoom confession",
+    "translation": "Признание с медленным приближением",
+    "ratio": 1.7
+  },
+  {
+    "id": "optionLabels1.option400",
+    "english": "Grand ceremony",
+    "translation": "Торжественная церемония",
+    "ratio": 1.64
+  },
+  {
+    "id": "optionLabels1.option430",
+    "english": "Creative Tilt Lens",
+    "translation": "Творческий объектив с наклоном",
+    "ratio": 1.67
+  },
+  {
+    "id": "optionLabels1.option433",
+    "english": "Finisher",
+    "translation": "Перфекционист",
+    "ratio": 1.63
+  },
+  {
+    "id": "optionLabels1.option441",
+    "english": "Sunlit kitchen",
+    "translation": "Кухня в солнечных лучах",
+    "ratio": 1.64
+  },
+  {
+    "id": "optionLabels1.option445",
+    "english": "Documentary grit",
+    "translation": "Суровый документальный стиль",
+    "ratio": 1.75
+  },
+  {
+    "id": "optionLabels1.option447",
+    "english": "Mostly tidy",
+    "translation": "В основном аккуратно",
+    "ratio": 1.82
+  },
+  {
+    "id": "optionLabels1.option455",
+    "english": "Make",
+    "translation": "Создать",
+    "ratio": 1.75
+  },
+  {
+    "id": "optionLabels1.option456",
+    "english": "Edit",
+    "translation": "Редактировать",
+    "ratio": 3.25
+  },
+  {
+    "id": "optionLabels1.option457",
+    "english": "Plan",
+    "translation": "Планировать",
+    "ratio": 2.75
+  },
+  {
+    "id": "passkey.add",
+    "english": "Add a passkey",
+    "translation": "Добавить ключ доступа",
+    "ratio": 1.62
+  },
+  {
+    "id": "passkey.nameLabel",
+    "english": "Passkey name (optional)",
+    "translation": "Название ключа доступа (необязательно)",
+    "ratio": 1.65
+  },
+  {
+    "id": "pk.title",
+    "english": "Passkeys",
+    "translation": "Ключи доступа",
+    "ratio": 1.63
+  },
+  {
+    "id": "pk.unnamed",
+    "english": "Passkey",
+    "translation": "Ключ доступа",
+    "ratio": 1.71
+  },
+  {
+    "id": "pk.used",
+    "english": "last used {date}",
+    "translation": "последнее использование {date}",
+    "ratio": 1.88
+  },
+  {
+    "id": "plan.menu.posts",
+    "english": "Posts",
+    "translation": "Публикации",
+    "ratio": 2
+  },
+  {
+    "id": "plan.privacy",
+    "english": "Privacy",
+    "translation": "Конфиденциальность",
+    "ratio": 2.57
+  },
+  {
+    "id": "presets.morphMe",
+    "english": "Morph Me",
+    "translation": "Преобразить меня",
+    "ratio": 2
+  },
+  {
+    "id": "presets.pet",
+    "english": "Pet",
+    "translation": "Питомцы",
+    "ratio": 2.33
+  },
+  {
+    "id": "presets.quirkLab",
+    "english": "Quirk Lab",
+    "translation": "Лаборатория странностей",
+    "ratio": 2.56
+  },
+  {
+    "id": "presets.soccerFever",
+    "english": "Soccer Fever",
+    "translation": "Футбольная лихорадка",
+    "ratio": 1.67
+  },
+  {
+    "id": "preview.title",
+    "english": "Preview",
+    "translation": "Предпросмотр",
+    "ratio": 1.71
+  },
+  {
+    "id": "privacyExport.share",
+    "english": "Share / Save",
+    "translation": "Поделиться / Сохранить",
+    "ratio": 1.83
+  },
+  {
+    "id": "projects.rename",
+    "english": "Rename",
+    "translation": "Переименовать",
+    "ratio": 2.17
+  },
+  {
+    "id": "projects.restore",
+    "english": "Restore",
+    "translation": "Восстановить",
+    "ratio": 1.71
+  },
+  {
+    "id": "projects.save",
+    "english": "Save",
+    "translation": "Сохранить",
+    "ratio": 2.25
+  },
+  {
+    "id": "projects.workspace",
+    "english": "Workspace",
+    "translation": "Рабочее пространство",
+    "ratio": 2.22
+  },
+  {
+    "id": "publish.cancelpost",
+    "english": "Cancel post",
+    "translation": "Отменить публикацию",
+    "ratio": 1.73
+  },
+  {
+    "id": "publish.edit",
+    "english": "Edit",
+    "translation": "Редактировать",
+    "ratio": 3.25
+  },
+  {
+    "id": "publish.keyword",
+    "english": "Keyword",
+    "translation": "Ключевое слово",
+    "ratio": 2
+  },
+  {
+    "id": "publish.match",
+    "english": "Match",
+    "translation": "Совпадение",
+    "ratio": 2
+  },
+  {
+    "id": "publish.monday",
+    "english": "Monday",
+    "translation": "Понедельник",
+    "ratio": 1.83
+  },
+  {
+    "id": "publish.name",
+    "english": "Name",
+    "translation": "Название",
+    "ratio": 2
+  },
+  {
+    "id": "publish.post",
+    "english": "Post",
+    "translation": "Публикация",
+    "ratio": 2.5
+  },
+  {
+    "id": "publish.postnow",
+    "english": "Post now?",
+    "translation": "Опубликовать сейчас?",
+    "ratio": 2.22
+  },
+  {
+    "id": "publish.postnow2",
+    "english": "Post now",
+    "translation": "Опубликовать сейчас",
+    "ratio": 2.38
+  },
+  {
+    "id": "publish.posts",
+    "english": "Posts",
+    "translation": "Публикации",
+    "ratio": 2
+  },
+  {
+    "id": "publish.reopen",
+    "english": "Reopen",
+    "translation": "Открыть снова",
+    "ratio": 2.17
+  },
+  {
+    "id": "publish.save",
+    "english": "Save",
+    "translation": "Сохранить",
+    "ratio": 2.25
+  },
+  {
+    "id": "publish.savenewtime",
+    "english": "Save new time",
+    "translation": "Сохранить новое время",
+    "ratio": 1.62
+  },
+  {
+    "id": "publish.schedule",
+    "english": "Schedule",
+    "translation": "Запланировать",
+    "ratio": 1.63
+  },
+  {
+    "id": "publish.send",
+    "english": "Send",
+    "translation": "Отправить",
+    "ratio": 2.25
+  },
+  {
+    "id": "publish.sunday",
+    "english": "Sunday",
+    "translation": "Воскресенье",
+    "ratio": 1.83
+  },
+  {
+    "id": "publish.unassign",
+    "english": "Unassign",
+    "translation": "Снять назначение",
+    "ratio": 2
+  },
+  {
+    "id": "publishHome.group.grow",
+    "english": "Measure & grow",
+    "translation": "Анализируйте и развивайтесь",
+    "ratio": 1.93
+  },
+  {
+    "id": "publishHome.title",
+    "english": "Plan. Create. Grow.",
+    "translation": "Планируйте. Создавайте. Растите.",
+    "ratio": 1.68
+  },
+  {
+    "id": "publishHome.tool.autolists",
+    "english": "Feed approved sources into queues.",
+    "translation": "Добавляйте материалы из одобренных источников в очереди.",
+    "ratio": 1.65
+  },
+  {
+    "id": "publishUploads.image",
+    "english": "Image",
+    "translation": "Изображения",
+    "ratio": 2.2
+  },
+  {
+    "id": "publishUploads.retry",
+    "english": "Retry",
+    "translation": "Повторить",
+    "ratio": 1.8
+  },
+  {
+    "id": "publishWorkflows.off",
+    "english": "Off",
+    "translation": "Выключено",
+    "ratio": 3
+  },
+  {
+    "id": "publishWorkflows.on",
+    "english": "On",
+    "translation": "Вкл.",
+    "ratio": 2
+  },
+  {
+    "id": "publishWorkflows.tier.free",
+    "english": "Free",
+    "translation": "Бесплатно",
+    "ratio": 2.25
+  },
+  {
+    "id": "publishWorkflows.title",
+    "english": "Workflows",
+    "translation": "Рабочие процессы",
+    "ratio": 1.78
+  },
+  {
+    "id": "queues.addSlot",
+    "english": "Add time",
+    "translation": "Добавить время",
+    "ratio": 1.75
+  },
+  {
+    "id": "queues.enabled",
+    "english": "On",
+    "translation": "Вкл.",
+    "ratio": 2
+  },
+  {
+    "id": "queues.name",
+    "english": "Name",
+    "translation": "Название",
+    "ratio": 2
+  },
+  {
+    "id": "queues.off",
+    "english": "Off",
+    "translation": "Выключено",
+    "ratio": 3
+  },
+  {
+    "id": "queues.on",
+    "english": "On",
+    "translation": "Вкл.",
+    "ratio": 2
+  },
+  {
+    "id": "queues.save",
+    "english": "Save queue",
+    "translation": "Сохранить очередь",
+    "ratio": 1.7
+  },
+  {
+    "id": "queues.slots",
+    "english": "Weekly times",
+    "translation": "Еженедельное расписание",
+    "ratio": 1.92
+  },
+  {
+    "id": "report.report",
+    "english": "Report",
+    "translation": "Пожаловаться",
+    "ratio": 2
+  },
+  {
+    "id": "report.thankswehaveit",
+    "english": "Thanks, we have it.",
+    "translation": "Спасибо, мы получили обращение.",
+    "ratio": 1.63
+  },
+  {
+    "id": "reports.cadence.monthly",
+    "english": "sent monthly",
+    "translation": "отправляется ежемесячно",
+    "ratio": 1.92
+  },
+  {
+    "id": "reports.cadence.weekly",
+    "english": "sent weekly",
+    "translation": "отправляется еженедельно",
+    "ratio": 2.18
+  },
+  {
+    "id": "reports.lastSent",
+    "english": "Last sent {when}",
+    "translation": "Последняя отправка: {when}",
+    "ratio": 1.63
+  },
+  {
+    "id": "share.review.all",
+    "english": "Everyone asked must approve.",
+    "translation": "Требуется одобрение всех приглашённых рецензентов.",
+    "ratio": 1.79
+  },
+  {
+    "id": "share.review.saving",
+    "english": "Saving",
+    "translation": "Сохранение",
+    "ratio": 1.67
+  },
+  {
+    "id": "smartlink.name",
+    "english": "Page name",
+    "translation": "Название страницы",
+    "ratio": 1.89
+  },
+  {
+    "id": "smartlink.save",
+    "english": "Save",
+    "translation": "Сохранить",
+    "ratio": 2.25
+  },
+  {
+    "id": "smartlink.saved",
+    "english": "Saved.",
+    "translation": "Сохранено.",
+    "ratio": 1.67
+  },
+  {
+    "id": "smartlink.theme",
+    "english": "Look",
+    "translation": "Оформление",
+    "ratio": 2.5
+  },
+  {
+    "id": "sources.image",
+    "english": "Image",
+    "translation": "Изображения",
+    "ratio": 2.2
+  },
+  {
+    "id": "srch.s.blocked",
+    "english": "Blocked members",
+    "translation": "Заблокированные участники",
+    "ratio": 1.67
+  },
+  {
+    "id": "srch.s.tools",
+    "english": "Tools",
+    "translation": "Инструменты",
+    "ratio": 2.2
+  },
+  {
+    "id": "start.addsoundsyncorenhance",
+    "english": "Add sound, sync or enhance",
+    "translation": "Добавить звук, синхронизировать или улучшить",
+    "ratio": 1.69
+  },
+  {
+    "id": "start.seeall",
+    "english": "See all",
+    "translation": "Смотреть все",
+    "ratio": 1.71
+  },
+  {
+    "id": "start.try",
+    "english": "Try {value1}",
+    "translation": "Попробовать {value1}",
+    "ratio": 1.67
+  },
+  {
+    "id": "start.trythis",
+    "english": "Try this",
+    "translation": "Попробуйте это",
+    "ratio": 1.75
+  },
+  {
+    "id": "stem.piano",
+    "english": "Piano",
+    "translation": "Фортепиано",
+    "ratio": 2
+  },
+  {
+    "id": "stems.play",
+    "english": "Play {stem}",
+    "translation": "Воспроизвести {stem}",
+    "ratio": 1.82
+  },
+  {
+    "id": "team.title",
+    "english": "Team",
+    "translation": "Команда",
+    "ratio": 1.75
+  },
+  {
+    "id": "toolDirectory.expand",
+    "english": "Expand",
+    "translation": "Расширение",
+    "ratio": 1.67
+  },
+  {
+    "id": "toolDirectory.lipsync",
+    "english": "Lip sync",
+    "translation": "Синхронизация губ",
+    "ratio": 2.13
+  },
+  {
+    "id": "toolDirectory.moretools",
+    "english": "More tools",
+    "translation": "Другие инструменты",
+    "ratio": 1.8
+  },
+  {
+    "id": "toolsDir.title",
+    "english": "Tools",
+    "translation": "Инструменты",
+    "ratio": 2.2
+  },
+  {
+    "id": "unlock.plan.week",
+    "english": "Weekly",
+    "translation": "Еженедельно",
+    "ratio": 1.83
+  },
+  {
+    "id": "vibe.audience.me",
+    "english": "Me",
+    "translation": "Себя",
+    "ratio": 2
+  },
+  {
+    "id": "vibe.chaos.1",
+    "english": "Mostly tidy",
+    "translation": "В основном аккуратно",
+    "ratio": 1.82
+  },
+  {
+    "id": "vibe.goal.meme",
+    "english": "Make a social ad",
+    "translation": "Создать рекламу для соцсетей",
+    "ratio": 1.75
+  },
+  {
+    "id": "vibe.look.doc_grit",
+    "english": "Documentary grit",
+    "translation": "Суровый документальный стиль",
+    "ratio": 1.75
+  },
+  {
+    "id": "vibe.look.sunlit_kitchen",
+    "english": "Sunlit kitchen",
+    "translation": "Кухня в солнечных лучах",
+    "ratio": 1.64
+  },
+  {
+    "id": "vibe.voice.done",
+    "english": "See my card",
+    "translation": "Показать мою карточку",
+    "ratio": 1.91
+  },
+  {
+    "id": "videoAgent.brief",
+    "english": "Brief",
+    "translation": "Описание задачи",
+    "ratio": 3
+  },
+  {
+    "id": "videoAgent.money",
+    "english": "Money",
+    "translation": "Стоимость",
+    "ratio": 1.8
+  },
+  {
+    "id": "welcome.skip",
+    "english": "Skip",
+    "translation": "Пропустить",
+    "ratio": 2.5
+  },
+  {
+    "id": "chrome.privacyPolicy",
+    "english": "Privacy Policy",
+    "translation": "Политика конфиденциальности",
+    "ratio": 1.93
+  },
+  {
+    "id": "model.media.image",
+    "english": "Image",
+    "translation": "изображение",
+    "ratio": 2.2
+  },
+  {
+    "id": "cinema.share.share",
+    "english": "Share",
+    "translation": "Поделиться",
+    "ratio": 2
+  },
+  {
+    "id": "oauth.scopes",
+    "english": "Scopes:",
+    "translation": "Области доступа:",
+    "ratio": 2.29
+  },
+  {
+    "id": "oauth.deny",
+    "english": "Deny",
+    "translation": "Отклонить",
+    "ratio": 2.25
+  },
+  {
+    "id": "app.publish.carousel.later",
+    "english": "Move later",
+    "translation": "Переместить позже",
+    "ratio": 1.7
+  },
+  {
+    "id": "app.create.sources.moveLater",
+    "english": "Move later",
+    "translation": "Переместить позже",
+    "ratio": 1.7
+  },
+  {
+    "id": "app.create.sources.image.add",
+    "english": "Add image",
+    "translation": "Добавить изображение",
+    "ratio": 2.22
+  }
+]

@@ -1,4 +1,5 @@
 import { t } from '../../lib/i18n';
+import { english } from '../../lib/i18n/binding';
 import { Stack, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -121,7 +122,7 @@ function Prepared_({ result, typed, setTyped, note, onErase, onRetry }: Prepared
         <>
             <Text style={styles.title} accessibilityRole="header">{t('deleteaccount.deleteyouraccount')}</Text>
             <Forfeits forfeit={result.forfeit} />
-            <Text style={styles.body}>{t('deleteaccount.thiserasesyouraccountandwhatis')}</Text>
+            <Text accessibilityLanguage="en" style={styles.body}>{english('deleteaccount.thiserasesyouraccountandwhatis')}</Text>
             <Text style={styles.body}>{t('deleteaccount.ifyousubscribedintheAppStore')}</Text>
             <Text style={styles.label}>{t('deleteaccount.typetoconfirm', { value1: CONFIRM_WORD })}</Text>
             <TextInput

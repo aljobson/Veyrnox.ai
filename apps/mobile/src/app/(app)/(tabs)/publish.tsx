@@ -206,7 +206,7 @@ export default function Publish() {
                                             </Card>
                                         ))}
                                     </View>
-                                    {chosenPlan?.interval ? <PriceText variant="caption" tone="secondary" text={renewalTerms(chosenPlan.interval, chosenPlan.priceString, store)} price={chosenPlan.priceString} /> : null}
+                                    {chosenPlan?.interval ? <PriceText accessibilityLanguage="en" variant="caption" tone="secondary" text={renewalTerms(chosenPlan.interval, chosenPlan.priceString, store)} price={chosenPlan.priceString} /> : null}
                                     <Button label={t('unlock.subscribe')} variant="secondary" accessibilityRole="button" disabled={!canPurchase || busy || !chosenPlan}  onPress={() => void subscribe()}>
                                         {busy ? <ActivityIndicator color={styles.textInk.color} /> : <Text variant="bodyStrong">{t('unlock.subscribe')}</Text>}
                                     </Button>

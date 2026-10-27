@@ -32,7 +32,7 @@ export function SubmitPanel({ title, onDone }: { title: CreatorTitle; onDone(): 
         {CINEMA_RATINGS.map(([code, label]) => <Check key={code} label={label} checked={rating === code} disabled={busy} onPress={() => setRating(code)} />)}
         <Text style={ui.heading} accessibilityRole="header">{t('cinemaUpload.warnings')}</Text>
         {CINEMA_WARNING_CODES.map(([code, label]) => <Check key={code} label={label} checked={warnings.includes(code)} disabled={busy} onPress={() => setWarnings(w => w.includes(code) ? w.filter(x => x !== code) : [...w, code])} />)}
-        <Text style={ui.heading} accessibilityRole="header" accessibilityLanguage="en">{t('cinemaUpload.declarations')}</Text>
+        <Text style={ui.heading} accessibilityRole="header">{t('cinemaUpload.declarations')}</Text>
         {[RIGHTS_TEXT, SAFETY_TEXT, MALWARE_TEXT].map((label, i) => <Check key={i} english label={label} checked={checks[i]} disabled={busy} onPress={() => setChecks(c => c.map((value, j) => j === i ? !value : value))} />)}
         {note ? <Text style={ui.text}>{t(note)}</Text> : null}
         <Action label={t('cinemaUpload.submit')} disabled={busy || !rating || !checks.every(Boolean)} onPress={() => Alert.alert(t('cinemaUpload.submit'), t('cinemaUpload.submitConfirm', { title: title.title }), [

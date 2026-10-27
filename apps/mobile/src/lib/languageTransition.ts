@@ -1,3 +1,4 @@
+import { directionReconciler, reconcileLanguageDirection } from './languageDirection';
 import { reloadAppAsync } from 'expo';
 import { I18nManager } from 'react-native';
 import { ACTIVE_LOCALES, getLocale, isRtl, type LocaleCode } from './i18n';
@@ -12,6 +13,8 @@ export const needsLanguageChoice = (stored: string | null, active: readonly Loca
 export interface LanguageTransition {
     active: readonly LocaleCode[];
     current: LocaleCode;
+    nativeRtl: boolean;
+    reconcile(): Promise<boolean>;
     signedIn: boolean;
     canReloadSession(): boolean;
     load(): Promise<string | null>;
@@ -25,15 +28,17 @@ let changing = false;
 // Keep the live translator unchanged. Reload initializes it before any screen or module captures strings.
 export async function changeLanguage(code: string, returnPath: string, session: { signedIn: boolean; canReloadSession(): boolean }, overrides: Partial<LanguageTransition> = {}): Promise<boolean> {
     if (changing) return false;
+    if (!(await directionReconciler.beforeChoice()) || changing) return false;
     const deps: LanguageTransition = {
-        active: ACTIVE_LOCALES, current: getLocale(), ...session,
+        active: ACTIVE_LOCALES, current: getLocale(), nativeRtl: I18nManager.isRTL,
+        reconcile: () => reconcileLanguageDirection(returnPath, session), ...session,
         onChosen: async () => {},
         load: loadLanguage, save: saveLanguage, saveReturn: saveThemeReturnPath,
         direction: rtl => { I18nManager.allowRTL(rtl); I18nManager.forceRTL(rtl); },
         reload: () => reloadAppAsync('Veyrnox language changed'), ...overrides,
     };
     if (!deps.active.includes(code as LocaleCode)) return false;
-    if (code === deps.current) return true;
+    if (code === deps.current) return deps.reconcile();
     if (deps.signedIn && !deps.canReloadSession()) return false;
     changing = true;
     let previous: string | null = null;
@@ -48,7 +53,7 @@ export async function changeLanguage(code: string, returnPath: string, session: 
         if (!routeSaved) return false;
         saved = await deps.save(code, !deps.signedIn);
         if (!saved || (deps.signedIn && !deps.canReloadSession())) throw new Error('language_not_durable');
-        if (isRtl(code as LocaleCode) !== isRtl(deps.current)) {
+        if (isRtl(code as LocaleCode) !== deps.nativeRtl) {
             directionChanged = true;
             deps.direction(isRtl(code as LocaleCode));
         }
@@ -59,7 +64,7 @@ export async function changeLanguage(code: string, returnPath: string, session: 
         return true;
     } catch {
         if (saved) await deps.save(previous);
-        try { if (directionChanged) deps.direction(isRtl(deps.current)); } catch { /* Keep the live language. */ }
+        try { if (directionChanged) deps.direction(deps.nativeRtl); } catch { /* Keep the live language. */ }
         return false;
     } finally {
         // A real reload tears down this runtime. On rejection, remove the prepared return route.

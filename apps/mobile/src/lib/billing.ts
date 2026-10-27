@@ -1,4 +1,4 @@
-import { t } from './i18n';
+import { english } from './i18n/binding';
 // Pure helpers for the purchase screens. No native modules here, so they are unit-tested.
 
 // The part of a RevenueCat package the screens read.
@@ -130,12 +130,12 @@ export function toDisplayPackages(packages: readonly RcPackage[]): DisplayPackag
         });
 }
 
-const INTERVAL_WORD: Record<Interval, string> = { week: 'billing.intervalWeek', month: 'billing.intervalMonth', year: 'billing.intervalYear' };
+const INTERVAL_WORD: Record<Interval, Parameters<typeof english>[0]> = { week: 'billing.intervalWeek', month: 'billing.intervalMonth', year: 'billing.intervalYear' };
 
 // What a store requires on a subscription screen: the price, the period, that it renews, and how to stop it.
 export function renewalTerms(interval: Interval, priceString: string, store: 'ios' | 'android'): string {
-    const where = store === 'ios' ? t('billing.yourAppleIDsettings') : t('billing.theGooglePlaysubscriptionspage');
-    return t('billing.perRenewsautomaticallyeachuntilyoucancel', { value1: priceString, value2: t(INTERVAL_WORD[interval]), value3: t(INTERVAL_WORD[interval]), value4: where });
+    const where = store === 'ios' ? english('billing.yourAppleIDsettings') : english('billing.theGooglePlaysubscriptionspage');
+    return english('billing.perRenewsautomaticallyeachuntilyoucancel', { value1: priceString, value2: english(INTERVAL_WORD[interval]), value3: english(INTERVAL_WORD[interval]), value4: where });
 }
 
 export interface BalanceWait {

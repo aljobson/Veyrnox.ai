@@ -75,7 +75,7 @@ export function UnlockCard({ feature, onUnlocked }: { feature: LockedFeature; on
                             </Pressable>
                         ))}
                     </View>
-                    {chosen?.interval ? <Text style={styles.muted}>{renewalTerms(chosen.interval, chosen.priceString, store)}</Text> : null}
+                    {chosen?.interval ? <Text accessibilityLanguage="en" style={styles.muted}>{renewalTerms(chosen.interval, chosen.priceString, store)}</Text> : null}
                     {!canPurchase ? <Text style={styles.muted}>{t('unlock.notOpen')}</Text> : null}
                     <Pressable accessibilityRole="button" disabled={!canPurchase || busy || !chosen} accessibilityState={{ disabled: !canPurchase || busy || !chosen }} style={[styles.button, touchTarget, (!canPurchase || busy || !chosen) && styles.off]} onPress={subscribe}>
                         {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>{t('unlock.subscribe')}</Text>}

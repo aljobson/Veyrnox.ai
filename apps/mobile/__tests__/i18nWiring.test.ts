@@ -1,4 +1,5 @@
-import { ACTIVE_LOCALES, CATALOGS, applyDeviceLocale, createTranslator, getLocale, LOCALE_CODES } from '../src/lib/i18n';
+import { LANGUAGES } from '../src/lib/language';
+import { ACTIVE_LOCALES, WEB_CATALOGS, CATALOGS, applyDeviceLocale, createTranslator, getLocale, LOCALE_CODES } from '../src/lib/i18n';
 import en from '../src/lib/i18n/messages/en';
 import webKeys from '../src/lib/i18n/webKeys.json';
 
@@ -72,7 +73,7 @@ describe('strings shared with the public site keep its key and its exact English
 describe('the generated language catalogs are the site translations, verbatim', () => {
     const codes = LOCALE_CODES.filter((c) => c !== 'en');
     test.each(codes)('%s', (code) => {
-        const own = CATALOGS[code] as Record<string, string>;
+        const own = WEB_CATALOGS[code] as Record<string, string>;
         const web = readWebCatalog(code);
         const english = en as Record<string, string>;
         for (const [key, value] of Object.entries(own)) {
@@ -85,18 +86,19 @@ describe('the generated language catalogs are the site translations, verbatim', 
     });
 });
 
-describe('English is on, and turning a language on shows its translation with English for the rest', () => {
-    test('only English is active, so no device language changes the screens today', () => {
-        expect(ACTIVE_LOCALES).toEqual(['en']);
+describe('all complete languages use their app and website translations', () => {
+    test('all eleven languages are active in language-list order', () => {
+        expect(ACTIVE_LOCALES).toEqual(LANGUAGES.map(language => language.code));
         expect(applyDeviceLocale()).toBe('en');
         expect(getLocale()).toBe('en');
     });
-    test('a language added to the active list reads its site translation, then English, never a bare key', () => {
+    test('an active language reads both website and app translations', () => {
         const es = createTranslator('es', CATALOGS);
         expect(es.t('label.Library')).toBe(readWebCatalog('es')['label.Library']);
-        expect(es.t('home.chat')).toBe('Chat with Vey');
-        expect(es.plural('home.credits', 1)).toBe('1 credit');
-        expect(es.plural('home.credits', 5)).toBe('5 credits');
+        expect(es.t('home.chat')).toBe(CATALOGS.es!['home.chat']);
+        expect(es.t('home.chat')).not.toBe(en['home.chat']);
+        expect(es.plural('home.credits', 1)).toBe(CATALOGS.es!['home.credits.one'].replace('{count}', '1'));
+        expect(es.plural('home.credits', 5)).toBe(CATALOGS.es!['home.credits.other'].replace('{count}', '5'));
     });
 });
 

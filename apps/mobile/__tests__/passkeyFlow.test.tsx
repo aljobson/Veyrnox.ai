@@ -1,4 +1,4 @@
-import { act } from 'react';
+import { act, useEffect } from 'react';
 import * as RN from 'react-native';
 import { createRoot, type Root, type TestInstance } from 'test-renderer';
 import * as native from 'react-native-passkeys';
@@ -13,6 +13,7 @@ import { readRefreshToken, writeRefreshToken } from '../src/lib/auth/sessionStor
 import { bindCacheUser } from '../src/lib/appCache';
 import { aalFromToken, needsChallenge } from '../src/lib/mfa';
 import { t } from '../src/lib/i18n';
+import { createDirectionReconciler } from '../src/lib/languageDirection';
 
 jest.mock('react-native-passkeys', () => ({ isSupported: jest.fn(() => true), create: jest.fn(), get: jest.fn() }));
 jest.mock('expo-router', () => ({
@@ -251,18 +252,48 @@ test('AuthProvider.canReloadSession requires the current credential to be durabl
     await act(async () => context.adoptSession(session));
     expect(context.status).toBe('signedIn');
     expect(context.canReloadSession()).toBe(false);
+    const notDurable = context.canReloadSession;
     await act(async () => context.adoptSession(session));
     expect(context.canReloadSession()).toBe(true);
+    expect(context.canReloadSession).not.toBe(notDurable);
     let finish!: (value: typeof session) => void;
     jest.mocked(refreshSession).mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
     let refreshing!: Promise<string | null>;
     await act(async () => { refreshing = context.getAccessToken(true); });
     expect(context.canReloadSession()).toBe(false);
+    const refreshingCheck = context.canReloadSession;
     jest.mocked(writeRefreshToken).mockRejectedValueOnce(Error('rotated token not saved'));
     await act(async () => { finish({ ...session, refreshToken: 'rotated' }); await refreshing; });
     expect(context.canReloadSession()).toBe(false);
+    expect(context.canReloadSession).not.toBe(refreshingCheck);
     await act(async () => context.adoptSession({ ...session, refreshToken: 'rotated' }));
     expect(context.canReloadSession()).toBe(true);
     await act(async () => context.onSessionLost());
     expect(context.canReloadSession()).toBe(false);
+});
+
+test('a signed-in readiness effect retries direction repair after a refresh persists the session', async () => {
+    const reload = jest.fn(async () => {});
+    const runtime = createDirectionReconciler({ read: async () => null, write: async () => {}, nativeRtl: () => false, direction: jest.fn(), reload });
+    function RepairProbe() {
+        context = auth.useAuth();
+        const { status, canReloadSession } = context;
+        useEffect(() => {
+            if (status === 'signedIn') void runtime.reconcile('ar', '/account', { signedIn: true, canReloadSession });
+        }, [status, canReloadSession]);
+        return null;
+    }
+    authSpy.mockRestore();
+    await render(<auth.AuthProvider><RepairProbe /></auth.AuthProvider>);
+    const session = { accessToken, refreshToken: 'original', expiresAt: Date.now() + 3600000 };
+    jest.mocked(writeRefreshToken).mockRejectedValueOnce(Error('storage unavailable'));
+    await act(async () => context.adoptSession(session));
+    expect(context.status).toBe('signedIn');
+    expect(reload).not.toHaveBeenCalled();
+    jest.mocked(refreshSession).mockResolvedValueOnce({ ...session, refreshToken: 'rotated' });
+    await act(async () => { await context.getAccessToken(true); });
+    expect(context.canReloadSession()).toBe(true);
+    expect(reload).toHaveBeenCalledTimes(1);
+    await act(async () => context.adoptSession(session));
+    expect(reload).toHaveBeenCalledTimes(1);
 });

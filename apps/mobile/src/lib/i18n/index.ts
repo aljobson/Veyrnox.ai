@@ -2,28 +2,38 @@ import { DEFAULT_LOCALE, isRtl, matchTag, resolveLocale, type LocaleCode } from 
 import { createTranslator, type Catalogs, type Translator, type Vars } from './translate';
 import en from './messages/en';
 import es from './messages/es';
+import appEs from './messages/app/es';
 import zh from './messages/zh';
+import appZh from './messages/app/zh';
 import hi from './messages/hi';
+import appHi from './messages/app/hi';
 import ar from './messages/ar';
+import appAr from './messages/app/ar';
 import fr from './messages/fr';
+import appFr from './messages/app/fr';
 import pt from './messages/pt';
+import appPt from './messages/app/pt';
 import ru from './messages/ru';
+import appRu from './messages/app/ru';
 import ja from './messages/ja';
+import appJa from './messages/app/ja';
 import de from './messages/de';
+import appDe from './messages/app/de';
 import ko from './messages/ko';
+import appKo from './messages/app/ko';
 import { readLanguage } from '../languageStore';
 import { deviceLanguageTags, readDeviceSources, resolveActive } from './device';
 
-// Every language ships the web's translations of the strings the app shares with the site (generated, see
-// scripts/sync-web-i18n.mjs); a key a language lacks reads English, never a bare key. Which languages are switched on is
-// ACTIVE_LOCALES below.
-export const CATALOGS: Catalogs = { en, es, zh, hi, ar, fr, pt, ru, ja, de, ko };
+// Website keys always win; generated catalogs remain byte-for-byte copies of the site.
+export const WEB_CATALOGS: Catalogs = { es, zh, hi, ar, fr, pt, ru, ja, de, ko };
+export const APP_CATALOGS = { es: appEs, zh: appZh, hi: appHi, ar: appAr, fr: appFr, pt: appPt, ru: appRu, ja: appJa, de: appDe, ko: appKo } as const;
+export const CATALOGS: Catalogs = {
+    en,
+    ...Object.fromEntries(Object.entries(APP_CATALOGS).map(([locale, app]) => [locale, { ...app, ...WEB_CATALOGS[locale as LocaleCode] }])),
+};
 
-
-// Languages switched on for the app. The other catalogs ship with the web's translations of the strings the two
-// share, but a screen would read as a mix until the localization process returns the app-only strings, so only
-// English is on. Turning a language on is adding its code here (ADR-0132).
-export const ACTIVE_LOCALES: readonly LocaleCode[] = ['en'];
+// ADR-0270: all ten complete app catalogs, in LANGUAGES order.
+export const ACTIVE_LOCALES: readonly LocaleCode[] = ['en', 'es', 'zh', 'hi', 'ar', 'fr', 'pt', 'ru', 'ja', 'de', 'ko'];
 
 export function startupLocale(stored: string | null, tags: readonly string[], active = ACTIVE_LOCALES): LocaleCode {
     return resolveActive([...(stored ? [stored] : []), ...tags], active);

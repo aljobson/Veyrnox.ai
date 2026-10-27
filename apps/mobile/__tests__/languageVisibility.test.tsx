@@ -3,7 +3,7 @@ import * as RN from 'react-native';
 import { createRoot, type Root } from 'test-renderer';
 import Account from '../src/app/(app)/account';
 import Vibe from '../src/app/(app)/vibe';
-import { ACTIVE_LOCALES, t } from '../src/lib/i18n';
+import { ACTIVE_LOCALES, setLocaleFromDevice, t } from '../src/lib/i18n';
 let mockActive = ['en'];
 let mockStored: string | null = null;
 const mockApi = {};
@@ -27,7 +27,13 @@ jest.mock('../src/components/ui', () => {
 void [RN.View, RN.ScrollView, RN.KeyboardAvoidingView];
 let root: Root;
 beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; mockActive = ['en']; mockStored = null; root = createRoot(); });
-afterEach(async () => { await act(async () => root.unmount()); });
+afterEach(async () => { await act(async () => root.unmount()); setLocaleFromDevice(['en']); });
+test('Arabic Account uses its translated Credits section heading', async () => {
+    setLocaleFromDevice(['ar']);
+    await act(async () => root.render(<Account />));
+    expect(root.container.queryAll(n => n.type === 'text' && n.props.children === 'الكريدت')).toHaveLength(1);
+    expect(root.container.queryAll(n => n.type === 'text' && n.props.children === 'Credits')).toHaveLength(0);
+});
 test.each([{ active: [] }, { active: ['en'] }, { active: ['en', 'es'] }])('Account Language row visibility follows $active', async ({ active }) => {
     mockActive = active; (ACTIVE_LOCALES as string[]).splice(0, Infinity, ...active);
     await act(async () => root.render(<Account />));

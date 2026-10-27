@@ -6,6 +6,7 @@ import { LanguageChoice } from '../src/components/LanguageChoice';
 import { saveLanguage, syncPendingAccountLanguage } from '../src/lib/languageStore';
 import { reloadAppAsync } from 'expo';
 import { LanguageGate } from '../src/components/LanguageGate';
+import * as direction from '../src/lib/languageDirection';
 import { changeLanguage } from '../src/lib/languageTransition';
 import { CATALOGS, getLocale, setLocaleFromDevice, startupLocale, t } from '../src/lib/i18n';
 import { DEFAULT_APPEARANCE } from '../src/theme';
@@ -22,7 +23,7 @@ jest.mock('expo-router', () => {
     const React = require('react');
     const Tabs = ({ children }: any) => React.createElement('tabs', null, children);
     Tabs.Screen = (props: any) => { mockScreens.push(props); return null; };
-    return { Tabs, useRouter: () => ({ back: mockBack }) };
+    return { Tabs, useGlobalSearchParams: () => ({}), useSegments: () => [], usePathname: () => '/sign-in', useRouter: () => ({ back: mockBack }) };
 });
 jest.mock('../src/components/HeaderChips', () => ({ HeaderRight: () => null }));
 jest.mock('../src/components/Logo', () => ({ Logo: () => null }));
@@ -60,7 +61,7 @@ test('reloading an already mounted LTR layout remounts its titles and accessibil
     expect(after.title).toBe('Biblioteca');
     expect(after.title).not.toBe(before.title);
     expect(after.tabBarAccessibilityLabel).toBe(t('tabs.library'));
-    // This Spanish tab entry is a test fixture; production still ships English only.
+    // The mounted layout must use the newly selected app catalog.
     expect(t('label.Library')).toBe('Biblioteca');
 });
 test('first screen bypasses English-only and offers exactly the injected active choices otherwise', async () => {
@@ -100,4 +101,29 @@ test('first launch remembers an unchanged device language and advances to sign-i
     expect(saveLanguage).toHaveBeenCalledWith('en', true);
     expect(root.container.queryAll(n => n.props.children === 'Sign-in fixture')).toHaveLength(1);
     expect(reloadAppAsync).not.toHaveBeenCalled();
+});
+
+
+test.each([true, false])('confirming the current locale reconciles native direction, firstLaunch=%s', async firstLaunch => {
+    const repair = jest.spyOn(direction, 'reconcileLanguageDirection').mockResolvedValue(true);
+    const complete = jest.fn();
+    mockStatus = firstLaunch ? 'signedOut' : 'signedIn';
+    try {
+        await act(async () => root.render(<LanguageChoice active={['en', 'de']} returnPath={firstLaunch ? '/sign-in' : '/language'} onComplete={firstLaunch ? complete : undefined} />));
+        await act(async () => root.container.queryAll(n => n.type === 'button')[0].props.onPress());
+        expect(repair).toHaveBeenCalledWith(firstLaunch ? '/sign-in' : '/language', expect.objectContaining({ signedIn: !firstLaunch }));
+        if (firstLaunch) expect(complete).toHaveBeenCalledTimes(1);
+        else expect(mockBack).toHaveBeenCalledTimes(1);
+    } finally { repair.mockRestore(); }
+});
+
+
+test('the recovery startup does not consume or send a pending account-language choice', async () => {
+    mockStatus = 'signedIn';
+    mockStored = 'de';
+    const repaired = jest.spyOn(direction.directionReconciler, 'handledRepair').mockReturnValue(true);
+    try {
+        await act(async () => root.render(<LanguageGate><RN.Text>App</RN.Text></LanguageGate>));
+        expect(syncPendingAccountLanguage).not.toHaveBeenCalled();
+    } finally { repaired.mockRestore(); }
 });

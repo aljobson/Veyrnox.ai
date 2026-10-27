@@ -7,6 +7,7 @@ import { ApiError, type ApiClient } from '../src/lib/api';
 import { fetchCatalog, type CatalogModel } from '../src/lib/media';
 import { uploadSource } from '../src/lib/uploads';
 import strings from '../src/lib/i18n/messages/en/faceFilters';
+import { LOCALE_CODES, setLocaleFromDevice } from '../src/lib/i18n';
 
 // RNTL is absent and installs are forbidden. Use jest-expo's installed renderer
 // with real React Native controls, exercising their accessibility click handlers.
@@ -46,7 +47,14 @@ beforeEach(() => {
     });
     root = createRoot();
 });
-afterEach(async () => { await act(async () => root.unmount()); });
+afterEach(async () => { await act(async () => root.unmount()); setLocaleFromDevice(['en']); });
+
+test.each(LOCALE_CODES)('%s retention disclosure stays English and marks its spoken language', async locale => {
+    setLocaleFromDevice([locale]);
+    await renderFlow();
+    const disclosure = root.container.queryAll(node => node.props.children === strings['faceFilters.privacy'] && node.props.accessibilityLanguage === 'en');
+    expect(disclosure.length).toBeGreaterThan(0);
+});
 
 async function renderFlow() {
     await act(async () => { root.render(<FaceFiltersFlow api={{ request: send } as unknown as ApiClient} owner="owner" />); });

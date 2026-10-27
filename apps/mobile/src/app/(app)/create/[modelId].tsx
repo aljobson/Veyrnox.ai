@@ -1,3 +1,4 @@
+import { english } from '../../../lib/i18n/binding';
 import { KeyboardFormScrollView } from '../../../components/KeyboardFormScrollView';
 import { KeyboardScreen } from '../../../components/KeyboardScreen';
 import { FormHeader } from '../../../components/create/FormHeader';
@@ -291,7 +292,7 @@ export default function CreateWithModel() {
                         <Button variant="tertiary" accessibilityRole="button" accessibilityLabel={t('opt.draftClear')} onPress={discardDraft} label={t('opt.draftClear')} />
                     </View>
                 ) : null}
-                {references.length ? <View style={styles.rightsBox}><Checkbox checked={sourceRights} accessibilityRole="checkbox" accessibilityLabel={t('form.sourceRights')} accessibilityState={{ checked: sourceRights, disabled: waiting }} disabled={waiting} onChange={() => setSourceRights((value) => !value)} style={styles.rightsControl}><Text variant="caption" tone="secondary" style={styles.rightsText}>{t('form.sourceRights')}</Text></Checkbox><Text variant="caption" tone="tertiary" style={styles.consent}>{t('form.consent')}</Text></View> : null}
+                {references.length ? <View style={styles.rightsBox}><Checkbox checked={sourceRights} accessibilityRole="checkbox" accessibilityLanguage="en" accessibilityLabel={english('form.sourceRights')} accessibilityState={{ checked: sourceRights, disabled: waiting }} disabled={waiting} onChange={() => setSourceRights((value) => !value)} style={styles.rightsControl}><Text variant="caption" tone="secondary" style={styles.rightsText}>{english('form.sourceRights')}</Text></Checkbox><Text accessibilityLanguage="en" variant="caption" tone="tertiary" style={styles.consent}>{english('form.consent')}</Text></View> : null}
                 {((isVideo && model.durations.length > 1) || hasAnyOption(options) || takesImageCount(model) || takesCharacter || takesCamera) ? (
                     <View style={styles.settingsSection}>
                         <View style={styles.sectionTop}>
