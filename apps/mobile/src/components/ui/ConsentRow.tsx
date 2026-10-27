@@ -1,44 +1,37 @@
 import { useState } from 'react';
+import { Pressable, View } from 'react-native';
 import { LegalSheet } from '../legal/LegalSheet';
 import type { LegalDoc } from '../../lib/legal';
-import { StyleSheet } from 'react-native';
 import { MIN_AGE } from '../../lib/account';
-import { splitSlots, t } from '../../lib/i18n';
+import { t } from '../../lib/i18n';
 import { Checkbox } from './Checkbox';
+import { Button } from './Button';
 import { Text } from './Text';
+import { themedStyles, useThemedStyles } from './AppearanceContext';
+
 export function ConsentRow({ agreed, onChange }: { agreed: boolean; onChange: (value: boolean) => void }) {
     const [document, setDocument] = useState<LegalDoc | null>(null);
+    const styles = useThemedStyles(sheets);
+    const label = t('signIn.agree', { age: MIN_AGE, terms: t('label.Terms'), privacy: t('chrome.privacyPolicy') });
     return (<>
-        <Checkbox
-            checked={agreed}
-            onChange={onChange}
-            accessibilityLabel={t('signIn.agree', { age: MIN_AGE, terms: t('label.Terms'), privacy: t('chrome.privacyPolicy') })}
-            accessibilityActions={[
-                { name: 'terms', label: t('signIn.openTerms') },
-                { name: 'privacy', label: t('signIn.openPrivacy') },
-            ]}
-            onAccessibilityAction={(e) => setDocument(e.nativeEvent.actionName === 'terms' ? 'terms' : 'privacy')}
-        >
-            <Text variant="footnote" tone="secondary">
-                {splitSlots(t('signIn.agree', { age: MIN_AGE }), ['terms', 'privacy']).map((piece, i) =>
-                    typeof piece === 'string' ? (
-                        piece
-                    ) : (
-                        <Text
-                            key={i}
-                            variant="footnote"
-                            style={styles.link}
-                            accessibilityRole="link"
-                            onPress={(event) => { event.stopPropagation(); setDocument(piece.slot === 'terms' ? 'terms' : 'privacy'); }}
-                        >
-                            {t(piece.slot === 'terms' ? 'label.Terms' : 'chrome.privacyPolicy')}
-                        </Text>
-                    ),
-                )}
-            </Text>
-        </Checkbox>
+        <View style={styles.row}>
+            <Checkbox checked={agreed} onChange={onChange} accessibilityLabel={label} />
+            <View style={styles.copy}>
+                <Pressable onPress={() => onChange(!agreed)} accessibilityRole="button" accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.sentence}>
+                    <Text variant="footnote" tone="secondary" accessible={false}>{label}</Text>
+                </Pressable>
+                <View style={styles.links}>
+                    <Button variant="tertiary" size="md" accessibilityRole="link" label={t('label.Terms')} onPress={() => setDocument('terms')} />
+                    <Button variant="tertiary" size="md" accessibilityRole="link" label={t('chrome.privacyPolicy')} onPress={() => setDocument('privacy')} />
+                </View>
+            </View>
+        </View>
         <LegalSheet doc={document} onClose={() => setDocument(null)} />
-    </>
-    );
+    </>);
 }
-const styles = StyleSheet.create({ link: { textDecorationLine: 'underline' } });
+const sheets = themedStyles(() => ({
+    row: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+    copy: { flex: 1 },
+    sentence: { minHeight: 44, justifyContent: 'center' },
+    links: { flexDirection: 'row', flexWrap: 'wrap' },
+}));

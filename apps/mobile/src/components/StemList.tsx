@@ -11,7 +11,7 @@ import { ds } from '../theme';
 
 // The six tracks a stem-splitting job makes. Each link lasts 15 minutes and is fetched when a track is played or
 // shared, never kept. Only labels the server listed (and the app knows) are shown.
-export function StemList({ api, jobId, stems }: { readonly api: ApiClient; readonly jobId: string; readonly stems: readonly string[] }) {
+export function StemList({ api, jobId, stems, onReady }: { onReady?: () => void; readonly api: ApiClient; readonly jobId: string; readonly stems: readonly string[] }) {
     const styles = useThemedStyles(sheets);
     const [busy, setBusy] = useState<string | null>(null);
     const [playing, setPlaying] = useState<{ url: string; stem: string } | null>(null);
@@ -44,7 +44,7 @@ export function StemList({ api, jobId, stems }: { readonly api: ApiClient; reado
                     <Button variant="secondary" accessibilityRole="button" accessibilityLabel={t('stems.share', { stem: t(`stem.${s}`) })} disabled={!!busy} onPress={() => act(s, 'share')} label={t('stems.share', { stem: t(`stem.${s}`) })} icon="externalLink" iconOnly />
                 </Card>
             ))}
-            {playing && <InlineMedia key={playing.url} url={playing.url} audio label={t('stems.play', { stem: t(`stem.${playing.stem}`) })} />}
+            {playing && <InlineMedia onReady={onReady} key={playing.url} url={playing.url} audio label={t('stems.play', { stem: t(`stem.${playing.stem}`) })} />}
             {error ? <Text variant="body" tone="danger" style={styles.error} accessibilityLiveRegion="polite">{t('stems.error')}</Text> : null}
         </View>
     );

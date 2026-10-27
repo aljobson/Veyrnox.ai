@@ -35,7 +35,7 @@ export function AttachStrip({ items, extra, max = MAX_ATTACHMENTS, disabled, emb
                 <Text variant="caption" tone="warning" style={styles.note}>{items.length > 0 ? <>{plural('chat.attach.extra', extra)}<Text variant="caption" tone="tertiary"> · {items.length}/{max}</Text></> : plural('chat.attach.hint', extra)}</Text>
             </View>
             {items.length > 0 ? (
-                <ScrollView horizontal contentContainerStyle={styles.thumbs}>
+                <ScrollView keyboardShouldPersistTaps="handled" horizontal contentContainerStyle={styles.thumbs}>
                     {items.map((it, i) => (
                         <View key={it.id} style={styles.thumb}>
                             <Image source={it.preview ? { uri: it.preview } : undefined} style={styles.img} accessibilityLabel={t('chat.attach.imageN', { n: String(i + 1) })} />

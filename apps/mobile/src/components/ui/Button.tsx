@@ -1,3 +1,4 @@
+import { DisabledTextContext } from './DisabledTextContext';
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useRef } from 'react';
 import { ActivityIndicator, Animated, Pressable, type PressableProps, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
@@ -37,7 +38,7 @@ export function Button({ label, variant = 'primary', size = 'lg', tone = 'primar
     const press = (value: number) => {
         if (!reduced) Animated.spring(scale, { toValue: value, speed: 32, bounciness: 0, useNativeDriver: true }).start();
     };
-    const ink = variant === 'primary' ? s.primaryInk : variant === 'destructive' ? s.destructiveInk : s[`${tone}Tone`];
+    const ink = blocked && variant === 'primary' ? s.disabledInk : variant === 'primary' ? s.primaryInk : variant === 'destructive' ? s.destructiveInk : s[`${tone}Tone`];
     return (
         <Animated.View style={[s.hit, containerStyle, animatedStyle]}>
             <Pressable
@@ -54,18 +55,20 @@ export function Button({ label, variant = 'primary', size = 'lg', tone = 'primar
                     if (variant === 'primary') void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
                     onPress?.(event);
                 }}
-                style={({ pressed }) => [s.base, s[size], s[variant], pressed && !blocked && s[`${variant}Pressed`], style, blocked && s.disabled]}
+                style={({ pressed }) => [s.base, s[size], s[variant], pressed && !blocked && s[`${variant}Pressed`], style, blocked && (variant === 'primary' ? s.disabledPrimary : s.disabled)]}
             >
+                <DisabledTextContext value={!!blocked && variant === 'primary'}>
                 {loading ? (
                     <ActivityIndicator color={ink.color} />
                 ) : children ?? (
                     <>
                         {icon ? <Icon name={icon} size={20} tint={ink.color} /> : null}
-                        {!iconOnly ? <Text variant="bodyStrong" style={[ink, textStyle]}>
+                        {!iconOnly ? <Text variant="bodyStrong" style={[ink, textStyle, blocked && variant === 'primary' && s.disabledInk]}>
                             {label}
                         </Text> : null}
                     </>
                 )}
+                </DisabledTextContext>
             </Pressable>
         </Animated.View>
     );
@@ -77,6 +80,8 @@ const sheets = themedStyles((p) => ({
     md: { minHeight: 44 },
     sm: { minHeight: 32 },
     disabled: { opacity: 0.4 },
+    disabledPrimary: { backgroundColor: p.surface },
+    disabledInk: { color: p.textTertiary },
     primary: { backgroundColor: p.accent },
     secondary: { backgroundColor: p.surface },
     tertiary: {},

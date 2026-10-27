@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
     label: { color: colors.muted, fontSize: 14, marginTop: 8 },
     forfeit: { color: colors.money, fontSize: 16, fontWeight: '600' },
     blocker: { color: colors.text, fontSize: 16, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 14 },
-    input: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 14, color: colors.text, fontSize: 16 },
+    input: { backgroundColor: colors.surface, borderColor: colors.borderStrong, borderWidth: 1, borderRadius: 12, padding: 14, color: colors.text, fontSize: 16 },
     error: { color: colors.danger },
     secondary: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, paddingVertical: 16, alignItems: 'center' },
     secondaryText: { color: colors.text, fontSize: 16, fontWeight: '600' },

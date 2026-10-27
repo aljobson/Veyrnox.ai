@@ -1,0 +1,31 @@
+declare const require: (name: string) => any;
+declare const __dirname: string;
+const { execFileSync } = require('child_process');
+const { resolve } = require('path');
+test('dev audio has a real WAV, matching MIME and digest; provenance handles ready, pending and missing jobs', () => {
+    const module = resolve(__dirname, '../dev/mockQaJobs.mjs');
+    execFileSync('node', ['--input-type=module', '-e', `
+        import assert from 'node:assert/strict';
+        import { createHash } from 'node:crypto';
+        import { audioFixture, qaAsset, mockQaJobs } from ${JSON.stringify(module)};
+        const job = { id: 'one', kind: 'text-to-speech', model_id: 'speech', credits: 2, created: 123456 };
+        const bytes = audioFixture();
+        assert.equal(bytes.toString('ascii', 0, 4), 'RIFF');
+        assert.equal(bytes.toString('ascii', 8, 12), 'WAVE');
+        assert.equal(bytes.readUInt32LE(40), bytes.length - 44);
+        assert.deepEqual(qaAsset(job, 'http://localhost'), { url: 'http://localhost/audio.wav', mime_type: 'audio/wav', expires_in: 900 });
+        assert.equal(qaAsset({ ...job, kind: 'audio-to-video' }, 'http://localhost').mime_type, 'video/mp4');
+        assert.equal(qaAsset({ ...job, kind: 'video-to-audio' }, 'http://localhost').mime_type, 'audio/wav');
+        assert.equal(qaAsset({ ...job, kind: 'video-to-image' }, 'http://localhost').mime_type, 'image/png');
+        let status, headers, body;
+        const res = { writeHead(s, h) { status=s; headers=h; }, end(b) { body=b; } };
+        const run = (path, state='succeeded') => mockQaJobs({method:'GET'}, res, new URL(path, 'http://localhost'), [job], () => state, [{ id:'speech', name:'Speech' }]);
+        assert.equal(run('/audio.wav'), true); assert.equal(headers['content-type'], 'audio/wav'); assert.deepEqual(body, bytes);
+        run('/api/v1/jobs/one/provenance'); const record=JSON.parse(body);
+        assert.equal(record.generated, true); assert.equal(record.content.mime_type, 'audio/wav');
+        assert.equal(record.content.sha256, createHash('sha256').update(bytes).digest('hex'));
+        run('/api/v1/jobs/one/provenance', 'running'); assert.equal(JSON.parse(body).generated, false);
+        run('/api/v1/jobs/missing/provenance'); assert.equal(status,404);
+        assert.equal(run('/unrelated'),false);
+    `]);
+});

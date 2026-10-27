@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AppState } from 'react-native';
+import { markOnline } from './networkState';
 import { API_BASE } from './api';
 
 // Is our database provider failing? Read from GET /api/status (ADR-0160), the same word the website banner uses.
@@ -23,6 +24,7 @@ async function fetchStatus(): Promise<ServiceStatus | null> {
     const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     try {
         const res = await fetch(`${API_BASE}/api/status`, { signal: controller.signal });
+        markOnline();
         return res.ok ? readServiceStatus(await res.json()) : null;
     } catch {
         return null;

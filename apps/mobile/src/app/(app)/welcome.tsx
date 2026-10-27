@@ -1,24 +1,19 @@
-import * as SecureStore from 'expo-secure-store';
+import { markWelcomeSeen } from '../../lib/markWelcomeSeen';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { VeyCharacter } from '../../components/VeyCharacter';
 import { touchTarget } from '../../lib/a11y';
-import { appStorage } from '../../lib/appCache';
-import { FIRST_RUN_SLOT, WELCOME_CARDS, creditsCardKeys, serializeSeen } from '../../lib/firstRun';
+import { WELCOME_CARDS, creditsCardKeys } from '../../lib/firstRun';
 import { plural, t } from '../../lib/i18n';
 import { ds } from '../../theme';
-import { Button, Card, Text, themedStyles, useThemedStyles } from '../../components/ui';
-
-// Records that the welcome was shown (or skipped). A failure to save only means it may show once more.
-export async function markWelcomeSeen(): Promise<void> {
-    const seen = serializeSeen();
-    await Promise.all([SecureStore.setItemAsync(FIRST_RUN_SLOT, seen).catch(() => undefined), appStorage.set(FIRST_RUN_SLOT, seen).catch(() => undefined)]);
-}
+import { Button, Card, Icon, Text, themedStyles, useThemedStyles } from '../../components/ui';
 
 // Three cards, shown once and skippable on every one. Vey waves on the first and last; the second quotes the real free credits.
 export default function Welcome() {
+    const insets = useSafeAreaInsets();
     const router = useRouter();
     const styles = useThemedStyles(sheets);
     const { api } = useAuth();
@@ -46,7 +41,7 @@ export default function Welcome() {
     }
 
     return (
-        <View style={styles.screen}>
+        <View style={[styles.screen, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
             <Stack.Screen options={{ headerShown: false, gestureEnabled: false }} />
             <ScrollView contentContainerStyle={styles.body}>
                 {card === 'hello' ? (
@@ -64,6 +59,7 @@ export default function Welcome() {
                 ) : null}
                 {card === 'credits' ? (
                     <Card style={styles.card}>
+                        <View style={styles.coins} accessibilityElementsHidden><Icon name="coins" size={28} /></View>
                         <Text variant="title1" style={styles.title} accessibilityRole="header">
                             {t(credits.title)}
                         </Text>
@@ -94,8 +90,8 @@ export default function Welcome() {
                     {index + 1} / {WELCOME_CARDS.length}
                 </Text>
                 <Button label={last ? t('welcome.go') : t('welcome.next')} onPress={() => (last ? void done() : setIndex(index + 1))} />
-                {index > 0 ? <Button variant="tertiary" label={t('public.vey.back')} onPress={() => setIndex(index - 1)} /> : null}
-                {last ? null : <Button variant="tertiary" label={t('welcome.skip')} onPress={() => void done()} />}
+                <Button variant="tertiary" disabled={index === 0} label={t('public.vey.back')} onPress={() => setIndex(index - 1)} />
+                <Button variant="tertiary" label={t('welcome.skip')} onPress={() => void done()} />
             </View>
         </View>
     );
@@ -105,6 +101,7 @@ const sheets = themedStyles((p) => ({
     screen: { flex: 1, backgroundColor: p.bg },
     body: { flexGrow: 1, justifyContent: 'center', padding: ds.space.gutter },
     card: { alignItems: 'center', gap: ds.space.lg },
+    coins: { width: 72, height: 72, borderRadius: 36, backgroundColor: p.surface, alignItems: 'center', justifyContent: 'center' },
     hero: { marginBottom: ds.space.sm },
     title: { textAlign: 'center' },
     text: { textAlign: 'center' },

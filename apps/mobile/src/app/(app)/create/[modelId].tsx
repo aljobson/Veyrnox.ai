@@ -1,10 +1,12 @@
+import { KeyboardFormScrollView } from '../../../components/KeyboardFormScrollView';
+import { KeyboardScreen } from '../../../components/KeyboardScreen';
 import { FormHeader } from '../../../components/create/FormHeader';
 import { SectionLabel } from '../../../components/create/SectionLabel';
 import { Text, TextField, Button, Card, Chip, Checkbox, themedStyles, useThemedStyles } from '../../../components/ui';
 
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import { ActivityIndicator, Platform, ScrollView, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { API_BASE, ApiError } from '../../../lib/api';
 import { canDraw } from '../../../lib/drawOnImage';
@@ -173,7 +175,7 @@ export default function CreateWithModel() {
     }, []);
 
     if (!model) {
-        return <View style={styles.screen}>{error ? <Text variant="body" tone="danger" style={styles.error}>{error}</Text> : <ActivityIndicator color={styles.accentInk.color} />}</View>;
+        return <View style={styles.screen}>{error ? <Text variant="body" tone="danger" style={styles.error} accessibilityLiveRegion="polite">{error}</Text> : <ActivityIndicator color={styles.accentInk.color} />}</View>;
     }
 
     const isVideo = kindOf(model.modality) === 'video';
@@ -228,9 +230,9 @@ export default function CreateWithModel() {
     const generateLabel = `${n > 1 ? t('opt.generateCount', { count: String(n) }) : t('slip.generate')}. ${costLine(price, n, freeLeft, unit)}`;
 
     return (
-        <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
+        <KeyboardScreen style={styles.screen}>
             <Stack.Screen options={{ title: t('label.Create') }} />
-            <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+            <KeyboardFormScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
                 <FormHeader modelLabel={modelLabel} modality={kindOf(model.modality) ?? model.modality} stageLine={stageLine} />
 
                 {template ? <TemplateBanner template={template} aspect={options.aspects.length ? opts.aspect : null} /> : null}
@@ -310,12 +312,12 @@ export default function CreateWithModel() {
                 ) : null}
                 {missing > 0 ? (
                     <View style={styles.short} accessibilityLiveRegion="polite">
-                        <Text variant="callout" tone="secondary" style={styles.shortText}>{plural('create.short', missing, { have: String(balance ?? 0), need: String(price) })}</Text>
+                        <Text variant="callout" tone="secondary" style={styles.shortText} accessibilityLiveRegion="polite">{plural('create.short', missing, { have: String(balance ?? 0), need: String(price) })}</Text>
                         <Button variant="tertiary" accessibilityRole="button" accessibilityLabel={t('lowBalance.buy')} onPress={async () => { await flushDraft(); router.push('/credits'); }} label={t('lowBalance.buy')} />
                     </View>
                 ) : null}
-                {error ? <Text variant="body" tone="danger" style={styles.error}>{error}</Text> : null}
-                {note ? <Text variant="caption" tone="tertiary" style={styles.consent}>{note}</Text> : null}
+                {error ? <Text variant="body" tone="danger" style={styles.error} accessibilityLiveRegion="polite">{error}</Text> : null}
+                {note ? <Text variant="caption" tone="tertiary" style={styles.consent} accessibilityLiveRegion="polite">{note}</Text> : null}
                 <Card style={styles.costCard}>
                     <View style={styles.costTop}>
                         <View>
@@ -331,8 +333,8 @@ export default function CreateWithModel() {
                         <Button variant="tertiary" size="sm" accessibilityRole="link" onPress={() => void router.push('/legal/terms')} label={t('create.workspace.termsLink')} />
                     </View>
                 </Card>
-            </ScrollView>
-        </KeyboardAvoidingView>
+            </KeyboardFormScrollView>
+        </KeyboardScreen>
     );
 }
 

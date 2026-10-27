@@ -1,3 +1,4 @@
+import { confirmSignOut } from '../../lib/confirmSignOut';
 import { useEffect, useState, type ReactNode } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
@@ -92,9 +93,9 @@ export function MfaGate({ children }: { children: ReactNode }) {
             <Text variant="title2" accessibilityRole="header">{t('acct.mfa.challengeTitle')}</Text>
             <Text variant="footnote" tone="secondary">{t('acct.mfa.challengeHelp')}</Text>
             <CodeField value={code} onChange={setCode} />
-            <Button variant="tertiary" label={t('acct.mfa.verify')} disabled={busy || !validCode(code)} onPress={() => void submit()} />
+            <Button variant="primary" label={t('acct.mfa.verify')} disabled={busy || !validCode(code)} onPress={() => void submit()} />
             <Status text={error} error />
-            <Button variant="tertiary" tone="secondary" accessibilityRole="button" label={t('public.account.signOut')} onPress={() => void signOut()} />
+            <Button variant="tertiary" tone="secondary" accessibilityRole="button" label={t('public.account.signOut')} onPress={() => confirmSignOut(signOut)} />
         </View>
     );
 }

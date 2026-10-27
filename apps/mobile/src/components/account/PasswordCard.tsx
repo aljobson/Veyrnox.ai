@@ -66,7 +66,7 @@ export function PasswordCard() {
                     onChangeText={(v) => setCode(v.trim())}
                 />
             </View>
-            <Button variant="tertiary" label={t('acct.pw.update')} disabled={busy || !password || !code} onPress={() => void update()} />
+            <Button variant="secondary" label={t('acct.pw.update')} disabled={busy || !password || !code} onPress={() => void update()} />
             <Status text={note?.text ?? null} error={note?.error} />
         </Card>
     );

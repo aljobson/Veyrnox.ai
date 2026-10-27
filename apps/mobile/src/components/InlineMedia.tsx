@@ -5,10 +5,15 @@ import { VideoView, useVideoPlayer } from 'expo-video';
 import { themedStyles, useThemedStyles } from './ui';
 import { ds } from '../theme';
 
-export function InlineMedia({ url, label, audio = false }: { url: string; label: string; audio?: boolean }) {
+export function InlineMedia({ url, label, audio = false, onReady }: { url: string; label: string; audio?: boolean; onReady?: () => void }) {
     const styles = useThemedStyles(sheets);
     const started = useRef(false);
     const player = useVideoPlayer(url, instance => { instance.muted = true; instance.loop = false; });
+    useEffect(() => {
+        if (player.status === 'readyToPlay') onReady?.();
+        const ready = player.addListener('statusChange', ({ status }) => { if (status === 'readyToPlay') onReady?.(); });
+        return () => ready.remove();
+    }, [player, onReady]);
     useEffect(() => {
         // No autoplay or decorative motion, including when Reduce Motion is enabled.
         const playing = player.addListener('playingChange', ({ isPlaying }) => {

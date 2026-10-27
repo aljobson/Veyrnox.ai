@@ -2,6 +2,7 @@
 // Local stand-in for Supabase Auth and the /api/v1 routes the app uses, so every signed-in screen can be
 // previewed in the simulator without an account. Development only: `node dev/mock-server.mjs` (port 8799).
 import { mockSocialUploads, uploadsEnabled, validateUploadMedia } from './mockSocialUploads.mjs';
+import { mockQaJobs, qaAsset } from './mockQaJobs.mjs';
 import { mockSecurity } from './mockSecurityFixtures.mjs';
 import { mockCheckin } from './mockCheckin.mjs';
 import { createServer } from 'node:http';
@@ -153,6 +154,7 @@ createServer(async (req, res) => {
     let m;
     const url = new URL(req.url, `http://localhost:${PORT}`);
     const path = url.pathname;
+    if (mockQaJobs(req, res, url, state.jobs, jobState, CATALOG)) return;
     if (await mockSocialUploads(req, res, `http://${req.headers.host || `localhost:${PORT}`}`, state.socialPosts)) return;
     const body = req.method === 'POST' || req.method === 'PATCH' || req.method === 'PUT' || req.method === 'DELETE' ? await readBody(req) : {};
     console.log(req.method, path);
@@ -909,7 +911,7 @@ createServer(async (req, res) => {
         const j = state.jobs.find((x) => x.id === m[1]);
         if (!j) return send(res, 404, { error: 'not_found' });
         if (!m[2]) return send(res, 200, { state: jobState(j), credits: j.credits, model_id: j.model_id });
-        return send(res, 200, { url: `http://localhost:${PORT}/${j.kind.includes('video') ? 'clip.mp4' : 'asset.png'}`, mime_type: j.kind.includes('image') ? 'image/png' : 'video/mp4', expires_in: 900 });
+        return send(res, 200, qaAsset(j, url.origin));
     }
     return send(res, 404, { error: 'not_found' });
 }).listen(PORT, () => console.log(`mock server on http://localhost:${PORT}`));

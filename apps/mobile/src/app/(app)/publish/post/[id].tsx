@@ -1,3 +1,4 @@
+import { Button } from '../../../../components/ui';
 import { AddressText } from '../../../../components/AddressText';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
@@ -94,17 +95,17 @@ export default function PostDetail() {
                             }}>
                                 {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>{post.status === 'scheduled' ? 'Save new time' : 'Schedule again'}</Text>}
                             </Pressable>
-                            <Pressable accessibilityRole="button" onPress={() => setEditing(false)}><Text style={styles.link}>Cancel</Text></Pressable>
+                            <Button variant="tertiary" label="Cancel" onPress={() => setEditing(false)} />
                         </>
                     ) : (
                         <>
                             {post.status === 'scheduled' ? <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => setEditing(true)}><Text style={styles.secondaryText}>Change the time</Text></Pressable> : null}
                             {post.status === 'canceled' && post.updatedAt ? <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => setEditing(true)}><Text style={styles.secondaryText}>Schedule it again</Text></Pressable> : null}
                             {post.status === 'scheduled' && post.updatedAt ? (
-                                <Pressable accessibilityRole="button" disabled={busy} onPress={() => Alert.alert('Cancel this post?', 'It will not be published. You can schedule it again later.', [
+                                <Button variant="tertiary" tone="danger" label="Cancel this post" disabled={busy} onPress={() => Alert.alert('Cancel this post?', 'It will not be published. You can schedule it again later.', [
                                     { text: 'Keep it', style: 'cancel' },
                                     { text: 'Cancel post', style: 'destructive', onPress: () => void change(() => cancelPost(api, post.id, post.updatedAt as string)) },
-                                ])}><Text style={styles.danger}>Cancel this post</Text></Pressable>
+                                ])} />
                             ) : null}
                             {!post.updatedAt ? <Text style={styles.muted2}>Cancelling and scheduling again are not available in the app yet.</Text> : null}
                         </>

@@ -57,7 +57,7 @@ function Row({ text, label, onPress }: { text: string; label: string; onPress: (
 
 const styles = StyleSheet.create({
     label: { color: colors.muted, fontSize: 12, fontWeight: '700', marginTop: 16, marginBottom: 6 },
-    input: { minHeight: MIN_TARGET, color: colors.text, backgroundColor: colors.surface, borderRadius: 10, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16 },
+    input: { minHeight: MIN_TARGET, color: colors.text, backgroundColor: colors.surface, borderRadius: 10, borderWidth: 1, borderColor: colors.borderStrong, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16 },
     multi: { minHeight: 80, textAlignVertical: 'top' },
     row: { minHeight: MIN_TARGET, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.surface, borderRadius: 10, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 12 },
     rowText: { color: colors.text, fontSize: 16, flex: 1 },

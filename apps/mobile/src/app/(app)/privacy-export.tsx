@@ -1,3 +1,4 @@
+import { useAnnouncement } from '../../lib/useAnnouncement';
 import { File } from 'expo-file-system';
 import { Stack } from 'expo-router';
 import * as Sharing from 'expo-sharing';
@@ -21,6 +22,7 @@ export default function PrivacyExportScreen() {
     const [state, setState] = useState<ExportState>('idle');
     const [now, setNow] = useState(Date.now);
     const [progress, setProgress] = useState<ExportProgress>({ section: 0, total: 0, waiting: false });
+    useAnnouncement(state === 'preparing' ? (progress.waiting ? t('privacyExport.waiting') : t('privacyExport.progress', { section: progress.section, total: progress.total })) : state === 'ready' ? t('privacyExport.ready') : null);
     const [waitUntil, setWaitUntil] = useState(0);
     const [windowUntil, setWindowUntil] = useState(0);
     const [code, setCode] = useState('');

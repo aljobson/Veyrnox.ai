@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Chip, Text, TextField } from './ui';
+import { StyleSheet, View } from 'react-native';
 import { parseWhen, quickTimes } from '../lib/publishCompose';
 import { colors } from '../theme';
 
@@ -16,14 +17,12 @@ export function WhenPicker({ date, time, onChange }: { date: string; time: strin
         <View style={styles.box}>
             <View style={styles.chips}>
                 {quickTimes(new Date()).map((q) => (
-                    <Pressable key={q.label} accessibilityRole="button" style={styles.chip} onPress={() => onChange(dateText(q.date), timeText(q.date))}>
-                        <Text style={styles.chipText}>{q.label}</Text>
-                    </Pressable>
+                    <Chip key={q.label} label={q.label} onPress={() => onChange(dateText(q.date), timeText(q.date))} />
                 ))}
             </View>
             <View style={styles.row}>
-                <TextInput accessibilityLabel="Date, year-month-day" style={[styles.input, styles.date]} value={date} onChangeText={(v) => onChange(v, time)} placeholder="YYYY-MM-DD" placeholderTextColor={colors.muted} autoCapitalize="none" keyboardType="numbers-and-punctuation" />
-                <TextInput accessibilityLabel="Time, hour:minute" style={[styles.input, styles.time]} value={time} onChangeText={(v) => onChange(date, v)} placeholder="HH:MM" placeholderTextColor={colors.muted} autoCapitalize="none" keyboardType="numbers-and-punctuation" />
+                <TextField accessibilityLabel="Date, year-month-day" containerStyle={styles.date} value={date} onChangeText={(v) => onChange(v, time)} placeholder="YYYY-MM-DD" placeholderTextColor={colors.muted} autoCapitalize="none" keyboardType="numbers-and-punctuation" />
+                <TextField accessibilityLabel="Time, hour:minute" containerStyle={styles.time} value={time} onChangeText={(v) => onChange(date, v)} placeholder="HH:MM" placeholderTextColor={colors.muted} autoCapitalize="none" keyboardType="numbers-and-punctuation" />
             </View>
             <Text style={styles.muted}>Times are in this phone's time zone.</Text>
         </View>
@@ -36,7 +35,7 @@ const styles = StyleSheet.create({
     chip: { paddingVertical: 9, paddingHorizontal: 12, borderRadius: 10, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
     chipText: { color: colors.body },
     row: { flexDirection: 'row', gap: 8 },
-    input: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 12, color: colors.text, fontSize: 16, minHeight: 48 },
+    input: { backgroundColor: colors.surface, borderColor: colors.borderStrong, borderWidth: 1, borderRadius: 12, padding: 12, color: colors.text, fontSize: 16, minHeight: 48 },
     date: { flex: 2 },
     time: { flex: 1 },
     muted: { color: colors.muted, fontSize: 13 },

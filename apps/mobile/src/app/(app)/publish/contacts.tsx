@@ -65,7 +65,7 @@ export default function Contacts() {
 
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 16, gap: 8 },
-    input: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 12, color: colors.text, fontSize: 16, minHeight: 48, marginTop: 8 },
+    input: { backgroundColor: colors.surface, borderColor: colors.borderStrong, borderWidth: 1, borderRadius: 12, padding: 12, color: colors.text, fontSize: 16, minHeight: 48, marginTop: 8 },
     chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     chip: { paddingHorizontal: 12, borderRadius: 10, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
     chipOn: { backgroundColor: colors.accent, borderColor: colors.accent },

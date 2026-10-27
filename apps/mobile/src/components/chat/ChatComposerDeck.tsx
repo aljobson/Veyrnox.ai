@@ -45,13 +45,13 @@ export function ChatComposerDeck(props: Props) {
     return (
         <View>
             <View style={styles.deck} accessibilityLabel={t('chat.composer.label')}>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.typeRow} accessibilityRole="tablist">
+                <ScrollView keyboardShouldPersistTaps="handled" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.typeRow} accessibilityRole="tablist">
                     {TYPES.map((item) => (
                         <Chip key={item.id} accessibilityRole="tab" selected={item.id === 'chat'}
                             icon={item.id} label={t(item.key)} onPress={() => item.id !== 'chat' && props.onMake(item.id)} />
                     ))}
                 </ScrollView>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.setupRow} accessibilityLabel={t('chat.composer.setup')}>
+                <ScrollView keyboardShouldPersistTaps="handled" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.setupRow} accessibilityLabel={t('chat.composer.setup')}>
                     <Chip icon="cpu" trailingIcon="caretDown" label={props.model.name}
                         accessibilityRole="button" accessibilityLabel={`${t('chat.model.change')}: ${props.model.name}, ${plural('chat.perReply', props.model.credits_per_reply)}`}
                         disabled={props.sending} onPress={props.onModel} />
@@ -77,7 +77,7 @@ export function ChatComposerDeck(props: Props) {
                         <View style={styles.action}>
                             <Button variant="primary" size="md" label={t('chat.send')} accessibilityRole="button"
                                 accessibilityLabel={plural('chat.sendPrice', props.price)} disabled={!props.canSend} onPress={props.onSend} />
-                            <Text variant="caption" tone="warning" style={[styles.sendPrice, !props.canSend && styles.priceDisabled]}>{plural('chat.sendPriceShort', props.price)}</Text>
+                            <Text variant="caption" tone="warning" style={styles.sendPrice}>{plural('chat.sendPriceShort', props.price)}</Text>
                         </View>
                     )}
                 </View>
@@ -97,7 +97,6 @@ const sheets = themedStyles((p) => ({
     field: { flex: 1 },
     input: { minHeight: 44, maxHeight: 132 },
     action: { maxWidth: 150 },
-    priceDisabled: { opacity: 0.4 },
     sendPrice: { textAlign: 'center', marginTop: 4 },
     policy: { paddingHorizontal: 5, paddingTop: 5 },
 }));

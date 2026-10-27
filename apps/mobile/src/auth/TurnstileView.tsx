@@ -4,6 +4,7 @@ import { WebView } from 'react-native-webview';
 import { config } from '../lib/config';
 import {
     allowTurnstileNavigation,
+    turnstileOrigins,
     parseTurnstileMessage,
     TURNSTILE_SITE_KEY,
     turnstileHtml,
@@ -25,7 +26,7 @@ export function TurnstileView({ resetKey, onMessage }: Props) {
             <WebView
                 key={resetKey}
                 onLoadStart={() => setInteractive(false)}
-                originWhitelist={['https://*', 'about:*']}
+                originWhitelist={turnstileOrigins(config.apiBase, __DEV__)}
                 source={{ html, baseUrl: config.apiBase }}
                 javaScriptEnabled
                 domStorageEnabled
@@ -40,7 +41,7 @@ export function TurnstileView({ resetKey, onMessage }: Props) {
                 }}
                 onError={() => onMessage({ type: 'error', code: 'load_failed' })}
                 onHttpError={() => onMessage({ type: 'error', code: 'load_failed' })}
-                onShouldStartLoadWithRequest={(req) => allowTurnstileNavigation(req.url, config.apiBase)}
+                onShouldStartLoadWithRequest={(req) => allowTurnstileNavigation(req.url, config.apiBase, __DEV__)}
             />
         </View>
     );

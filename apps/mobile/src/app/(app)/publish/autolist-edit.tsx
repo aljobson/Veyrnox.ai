@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
     body: { padding: 16, gap: 8 },
     label: { color: colors.text, fontSize: 14, fontWeight: '600', marginTop: 8 },
-    input: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 12, color: colors.text, fontSize: 16, minHeight: 48 },
+    input: { backgroundColor: colors.surface, borderColor: colors.borderStrong, borderWidth: 1, borderRadius: 12, padding: 12, color: colors.text, fontSize: 16, minHeight: 48 },
     multi: { minHeight: 90 },
     muted: { color: colors.muted, fontSize: 13 },
     chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

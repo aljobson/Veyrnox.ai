@@ -1,6 +1,8 @@
+import { KeyboardFormScrollView } from '../../../../components/KeyboardFormScrollView';
+import { KeyboardScreen } from '../../../../components/KeyboardScreen';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, Switch, View } from 'react-native';
+import { ActivityIndicator, Alert, Platform, ScrollView, Switch, View } from 'react-native';
 import { useAuth } from '../../../../auth/AuthProvider';
 import { chatApi, type ChatModel } from '../../../../lib/chat';
 import { MAX_PERSONA_TEXT, chatLibraryErrorMessage, createPersona, deletePersona, fetchPersonas, updatePersona, validatePersonaForm } from '../../../../lib/chatLibrary';
@@ -71,9 +73,9 @@ export default function PersonaForm() {
     if (!ready) return <View style={styles.screen}>{problem ? <Text style={styles.error}>{problem}</Text> : <ActivityIndicator color={styles.accentInk.color} />}</View>;
 
     return (
-        <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
+        <KeyboardScreen style={styles.screen}>
             <Stack.Screen options={{ title: isNew ? 'New persona' : 'Edit persona' }} />
-            <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+            <KeyboardFormScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
                 <Text variant="callout" style={styles.label}>Name</Text>
                 <TextField accessibilityLabel="Persona name" style={styles.input} value={name} onChangeText={setName} maxLength={60} placeholder="For example, Editor" />
                 <Text variant="callout" style={styles.label}>Instructions</Text>
@@ -94,8 +96,8 @@ export default function PersonaForm() {
                     {busy ? <ActivityIndicator color={styles.accentInkInk.color} /> : <Text variant="bodyStrong" style={styles.buttonText}>Save</Text>}
                 </Button>
                 {!isNew ? <Button accessibilityRole="button" containerStyle={styles.deleteRow} onPress={remove} variant="tertiary" size="md" label={"Delete persona"}><Text variant="body" style={styles.danger}>Delete persona</Text></Button> : null}
-            </ScrollView>
-        </KeyboardAvoidingView>
+            </KeyboardFormScrollView>
+        </KeyboardScreen>
     );
 }
 

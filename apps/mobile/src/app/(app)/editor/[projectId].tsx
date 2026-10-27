@@ -1,3 +1,4 @@
+import { useAnnouncement } from '../../../lib/useAnnouncement';
 import { randomUUID } from 'expo-crypto';
 import { Stack, useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -296,6 +297,8 @@ function Editor({ projectId, jobId }: { projectId: string; jobId?: string }) {
     const statusKey = session.dirty && session.localCopy === 'failed' ? 'editor.notKept'
         : session.status === 'saving' ? 'editor.saving' : paused ? 'editor.paused'
         : session.status === 'offline' ? 'editor.offline' : session.status === 'rejected' ? 'editor.rejected' : session.dirty ? 'editor.retry' : 'editor.saved';
+    useAnnouncement(t(statusKey));
+    useAnnouncement(problem ? t(problem) : null);
     return <View style={{ flex: 1, backgroundColor: colors.background, padding: 12 }}>
         <Stack.Screen options={{ title: t('editor.title') }} />
         <Text accessibilityRole="header" style={{ color: colors.text, fontSize: 20 }}>{project?.name ?? t('editor.title')}</Text>

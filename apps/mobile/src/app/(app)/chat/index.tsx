@@ -45,8 +45,8 @@ export default function ChatWorkspaceEntry() {
             <Stack.Screen options={{ title: 'LLM Chat' }} />
             <View style={styles.brandMark}><Icon name="chat" /></View>
             <Text variant="caption" style={styles.eyebrow}>LLM Chat</Text>
-            <Text variant="display" accessibilityRole="header" style={styles.hero}>Opening your workspace</Text>
-            <Text variant="callout" style={styles.help}>Your latest conversation, tools and creative skills are being prepared.</Text>
+            <Text variant="display" accessibilityRole="header" style={styles.hero}>{error ? 'Could not load your workspace' : 'Opening your workspace'}</Text>
+            <Text variant="callout" style={styles.help}>{error ? 'Check your connection and try again.' : 'Your latest conversation, tools and creative skills are being prepared.'}</Text>
             {error ? (
                 <Button accessibilityRole="button" containerStyle={styles.retry} onPress={() => void openWorkspace()} variant="tertiary" size="md" label={"Try again"}>
                     <Text variant="callout" style={styles.retryText}>Try again</Text>

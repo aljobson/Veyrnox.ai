@@ -1,7 +1,9 @@
+import { KeyboardScreen } from '../../../components/KeyboardScreen';
+import { useChatAutoScroll } from '../../../lib/useChatAutoScroll';
 import * as Crypto from 'expo-crypto';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActionSheetIOS, ActivityIndicator, Alert, AppState, FlatList, KeyboardAvoidingView, Platform, View } from 'react-native';
+import { ActionSheetIOS, ActivityIndicator, Alert, AppState, FlatList, Platform, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../../auth/AuthProvider';
 import { ChatComposerDeck } from '../../../components/chat/ChatComposerDeck';
@@ -47,6 +49,7 @@ export default function Conversation() {
     const [error, setError] = useState<string | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
     // Kept only while a send is unsettled, so a retry of the same message with the same choices is charged once.
+    const { messageList, onContentSizeChange, onScrollBeginDrag } = useChatAutoScroll(messages?.length ?? 0, sending);
     const pendingKey = useRef<PendingSend | null>(null);
     const [model, setModel] = useState<ChatModel | null>(null);
     const [options, setOptions] = useState<ReplyOptions>(NO_OPTIONS);
@@ -337,7 +340,7 @@ export default function Conversation() {
     const lastUser = last?.role === 'assistant' && last.content ? messages![messages!.length - 2] : null;
 
     return (
-        <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={88}>
+        <KeyboardScreen style={styles.screen}>
             <Stack.Screen options={{ title: 'LLM Chat' }} />
             <View style={styles.conversationBar}>
                 <Button accessibilityRole="button" accessibilityLabel="Open chats" containerStyle={styles.headerControl} onPress={() => router.push('/chat/library')} variant="tertiary" size="md" label="Open chats">
@@ -365,6 +368,10 @@ export default function Conversation() {
                 <ActivityIndicator color={styles.accentInk.color} style={styles.center} />
             ) : (
                 <FlatList
+                    ref={messageList}
+                    keyboardDismissMode="on-drag"
+                    onContentSizeChange={onContentSizeChange}
+                    onScrollBeginDrag={onScrollBeginDrag}
                     style={styles.messageList}
                     data={messages ?? []}
                     keyExtractor={(m) => m.id}
@@ -417,7 +424,7 @@ export default function Conversation() {
                     />
                 </View>
             ) : null}
-        </KeyboardAvoidingView>
+        </KeyboardScreen>
     );
 }
 

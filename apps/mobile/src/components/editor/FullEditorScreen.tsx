@@ -1,33 +1,26 @@
+import { styles } from './fullEditorStyles';
+
 import { randomUUID } from 'expo-crypto';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
-import * as SecureStore from 'expo-secure-store';
-import { Stack, useRouter } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useAuth } from '../../auth/AuthProvider';
+import { Stack } from 'expo-router';
+
+import { ActivityIndicator, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+
 import { touchTarget } from '../../lib/a11y';
-import { ApiError } from '../../lib/api';
-import { documentIdentity, type ProjectDocument } from '../../lib/editorBridge';
-import { getDocument, putDocument } from '../../lib/editorProjects';
-import { listEditorProjectAssets } from '../../lib/editorProjectAssets';
+
 import { t } from '../../lib/i18n';
 import { activeEditorMedia } from '../../lib/editorPreview';
 import type { LibraryChoice } from '../../lib/librarySource';
-import {
-    addMarker, addTrack, canvasOf, clipAt, copySelections, duplicateSelections, emptyTimeline, framesIn, groupSelections,
-    pasteClipboard, removeSelections, selectionItems, splitClip, timelineOf, updateClip,
-    type Canvas, type Clip, type Clipboard, type EditorTrack, type Media, type Selection, type TextClip, type Timeline, type TrackKind,
-} from '../../lib/nativeEditorModel';
-import { fetchProject } from '../../lib/projects';
+import { addMarker, addTrack, canvasOf, clipAt, copySelections, duplicateSelections, framesIn, groupSelections, pasteClipboard, removeSelections, splitClip, timelineOf, updateClip, type Canvas, type Clip, type EditorTrack, type Media, type Selection, type TextClip, type Timeline, type TrackKind } from '../../lib/nativeEditorModel';
+
 import type { SlotKind } from '../../lib/sources';
-import { colors, fonts } from '../../theme';
+import { colors } from '../../theme';
 import { HeaderAction } from '../HeaderAction';
 import { LibraryChooser } from '../LibraryChooser';
 import { EditorMediaPreview } from './EditorMediaPreview';
 
 type Tool = 'media' | 'audio' | 'generate' | 'templates' | 'elements' | 'text' | 'captions' | 'transcript' | 'scenes' | 'clips' | 'assistant' | 'effects' | 'transitions' | 'filters' | 'animation' | 'plugins' | 'brand' | 'review' | 'adjust';
-type Ripple = 'none' | 'lane' | 'all';
 
 const tools: readonly { id: Tool; icon: string; label: string }[] = [
     { id: 'media', icon: '▣', label: 'Media' },
@@ -56,170 +49,9 @@ const timecode = (frames = 0, fps = 30) => {
     return `00:${String(Math.floor(whole / 60)).padStart(2, '0')}:${String(whole % 60).padStart(2, '0')}:${String(Math.max(0, frames % fps)).padStart(2, '0')}`;
 };
 
+import { useFullEditorSession } from './useFullEditorSession';
 export function FullEditorScreen({ projectId, jobId }: { projectId: string; jobId?: string }) {
-    const { api } = useAuth();
-    const router = useRouter();
-    const mounted = useRef(true);
-    const documentRef = useRef<ProjectDocument | null>(null);
-    const revisionRef = useRef(0);
-    const dirtyRef = useRef(false);
-    const savingRef = useRef(false);
-    const queuedRef = useRef(false);
-    const pastRef = useRef<ProjectDocument[]>([]);
-    const futureRef = useRef<ProjectDocument[]>([]);
-    const [name, setName] = useState(t('editor.title'));
-    const [document, setDocument] = useState<ProjectDocument | null>(null);
-    const [revision, setRevision] = useState(0);
-    const [dirty, setDirty] = useState(false);
-    const [saving, setSaving] = useState(false);
-    const [problem, setProblem] = useState<string | null>(null);
-    const [tool, setTool] = useState<Tool>('media');
-    const [selection, setSelection] = useState<Selection | null>(null);
-    const [selections, setSelections] = useState<Selection[]>([]);
-    const [multiSelect, setMultiSelect] = useState(false);
-    const [clipboard, setClipboard] = useState<Clipboard>(null);
-    const [snap, setSnap] = useState(true);
-    const [ripple, setRipple] = useState<Ripple>('none');
-    const [zoom, setZoom] = useState(1);
-    const [privacyNotice, setPrivacyNotice] = useState(false);
-    const [history, setHistory] = useState({ canUndo: false, canRedo: false });
-    const [frame, setFrame] = useState(0);
-    const [playing, setPlaying] = useState(false);
-    const [projectAssets, setProjectAssets] = useState<Media[]>([]);
-    const [localMediaUris, setLocalMediaUris] = useState<Record<string, string>>({});
-    const [libraryKind, setLibraryKind] = useState<SlotKind | null>(null);
-    const initialImport = useRef(false);
-
-    const playbackTimeline = timelineOf(document?.timeline);
-    const playbackTotal = framesIn(playbackTimeline);
-
-    const markDocument = useCallback((next: ProjectDocument, record = true) => {
-        if (record && documentRef.current) {
-            pastRef.current.push(documentRef.current);
-            if (pastRef.current.length > 30) pastRef.current.shift();
-            futureRef.current = [];
-            setHistory({ canUndo: true, canRedo: false });
-        }
-        documentRef.current = next;
-        dirtyRef.current = true;
-        setDocument(next);
-        setDirty(true);
-        setProblem(null);
-    }, []);
-
-    const save = useCallback(async (): Promise<boolean> => {
-        if (!dirtyRef.current || !documentRef.current) return true;
-        if (savingRef.current) { queuedRef.current = true; return false; }
-        savingRef.current = true;
-        if (mounted.current) setSaving(true);
-        try {
-            do {
-                queuedRef.current = false;
-                const snapshot = documentRef.current;
-                if (!snapshot) break;
-                const result = await putDocument(api, projectId, revisionRef.current, snapshot, randomUUID());
-                revisionRef.current = result.revision;
-                if (mounted.current) setRevision(result.revision);
-                if (documentIdentity(documentRef.current) === documentIdentity(snapshot)) {
-                    dirtyRef.current = false;
-                    if (mounted.current) setDirty(false);
-                }
-            } while (queuedRef.current || dirtyRef.current);
-            return true;
-        } catch (error) {
-            if (mounted.current) {
-                const status = (error as ApiError).status;
-                setProblem(status === 409 ? t('editor.conflict') : status === 0 ? t('editor.offline') : t('editor.retry'));
-            }
-            return false;
-        } finally {
-            savingRef.current = false;
-            if (mounted.current) setSaving(false);
-        }
-    }, [api, projectId]);
-
-    useEffect(() => {
-        mounted.current = true;
-        void Promise.all([fetchProject(api, projectId), getDocument(api, projectId), listEditorProjectAssets(api, projectId)])
-            .then(([project, head, assets]) => {
-                if (!mounted.current) return;
-                if (project) setName(project.name);
-                let loaded = head.document;
-                if (jobId && !initialImport.current) {
-                    initialImport.current = true;
-                    const base = timelineOf(loaded.timeline);
-                    const mediaId = `j-${jobId}`;
-                    if (!base.media[mediaId]) {
-                        const media: Media = { id: mediaId, name: project?.name || 'Library video', kind: 'video', frames: 300, hasAudio: true, width: 0, height: 0 };
-                        const trackId = base.tracks.find((track) => track.kind === 'video' && !track.locked)?.id;
-                        if (trackId) {
-                            const seq = base.seq + 1;
-                            const timeline: Timeline = { ...base, seq, media: { ...base.media, [mediaId]: media }, video: [...base.video, { id: `v${seq}`, mediaId, start: 0, in: 0, len: media.frames!, trackId, volume: 1, transition: 0, rate: 1 }] };
-                            loaded = { ...loaded, schema_version: 3, timeline };
-                            dirtyRef.current = true;
-                            setDirty(true);
-                        }
-                    }
-                }
-                documentRef.current = loaded;
-                revisionRef.current = head.revision;
-                pastRef.current = [];
-                futureRef.current = [];
-                setSelection(null);
-                setSelections([]);
-                setClipboard(null);
-                setHistory({ canUndo: false, canRedo: false });
-                setProjectAssets(assets);
-                setDocument(loaded);
-                setRevision(head.revision);
-            })
-            .catch(() => { if (mounted.current) setProblem(t('editor.fullFailed')); });
-        SecureStore.getItemAsync('veyrnox.editorPrivacyNotice.v1')
-            .then((value) => { if (mounted.current && value !== 'seen') setPrivacyNotice(true); })
-            .catch(() => { if (mounted.current) setPrivacyNotice(true); });
-        return () => { mounted.current = false; };
-    }, [api, jobId, projectId]);
-
-    useEffect(() => {
-        if (!dirty) return;
-        const timer = setTimeout(() => { void save(); }, 900);
-        return () => clearTimeout(timer);
-    }, [dirty, document, save]);
-
-    useEffect(() => {
-        if (!playing || playbackTotal <= 0) return;
-        const timer = setInterval(() => {
-            setFrame((current) => {
-                if (current >= playbackTotal - 1) {
-                    setPlaying(false);
-                    return 0;
-                }
-                return current + 1;
-            });
-        }, Math.max(16, Math.round(1000 / playbackTimeline.fps)));
-        return () => clearInterval(timer);
-    }, [playing, playbackTimeline.fps, playbackTotal]);
-
-    const done = useCallback(async () => {
-        const saved = await save();
-        if (saved && !dirtyRef.current) router.back();
-    }, [router, save]);
-    const acknowledgePrivacy = useCallback(() => {
-        setPrivacyNotice(false);
-        SecureStore.setItemAsync('veyrnox.editorPrivacyNotice.v1', 'seen').catch(() => {});
-    }, []);
-    const travel = useCallback((direction: 'undo' | 'redo') => {
-        const source = direction === 'undo' ? pastRef.current : futureRef.current;
-        const destination = direction === 'undo' ? futureRef.current : pastRef.current;
-        const next = source.pop();
-        if (!next || !documentRef.current) return;
-        destination.push(documentRef.current);
-        markDocument(next, false);
-        setSelection(null);
-        setSelections([]);
-        setHistory({ canUndo: pastRef.current.length > 0, canRedo: futureRef.current.length > 0 });
-    }, [markDocument]);
-
+    const { api, router, name, document, revision, dirty, saving, problem, setProblem, tool, setTool, selection, setSelection, selections, setSelections, multiSelect, setMultiSelect, clipboard, setClipboard, snap, setSnap, ripple, setRipple, zoom, setZoom, privacyNotice, history, frame, setFrame, playing, setPlaying, projectAssets, localMediaUris, setLocalMediaUris, libraryKind, setLibraryKind, markDocument, save, done, acknowledgePrivacy, travel } = useFullEditorSession({ projectId, jobId });
     if (!document) return <View style={styles.loading}><Stack.Screen options={{ title: t('editor.title') }} /><ActivityIndicator color={colors.accent} /><Text style={styles.muted}>{problem ?? t('editor.fullLoading')}</Text></View>;
 
     const canvas = canvasOf(document.canvas);
@@ -605,61 +437,3 @@ function ClipBrowser({ kinds, timeline, selections, onSelect }: { kinds: readonl
         return <Pressable key={`${track}:${item.id}`} accessibilityRole="button" accessibilityLabel={`${track} ${label}`} accessibilityState={{ selected: active }} onPress={() => onSelect({ track, id: item.id })} style={({ pressed }) => [styles.clipBrowserRow, active && styles.mediaRowSelected, pressed && styles.pressed]}><View style={styles.mediaThumb}><Text style={styles.mediaThumbText}>{track === 'audio' ? '♫' : track === 'text' ? 'T' : '▶'}</Text></View><View style={styles.rowCopy}><Text style={styles.rowTitle} numberOfLines={1}>{label}</Text><Text style={styles.muted}>{timecode(item.start, timeline.fps)} · {seconds(item.len, timeline.fps)}</Text></View></Pressable>;
     }) : <EmptyPanel title="No clips" body="Add media or text to the timeline first." />}</>;
 }
-
-const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: colors.background },
-    loading: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, backgroundColor: colors.background },
-    projectBar: { minHeight: 58, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border, backgroundColor: colors.surface },
-    cutBadge: { height: 38, minWidth: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, borderRadius: 10, borderWidth: 1, borderColor: colors.borderStrong, backgroundColor: colors.background },
-    cutMark: { color: colors.accent, fontFamily: fonts.displayHeavy, fontSize: 19 }, cutLabel: { color: colors.text, fontSize: 9, fontWeight: '900', letterSpacing: 1.1 },
-    titleGroup: { flex: 1, minWidth: 0 }, title: { color: colors.text, fontFamily: fonts.display, fontSize: 17 }, status: { color: colors.muted, fontSize: 11, marginTop: 1 },
-    formatBadge: { alignItems: 'flex-end' }, formatText: { color: colors.text, fontSize: 12, fontWeight: '800' }, formatMeta: { color: colors.muted, fontSize: 9, marginTop: 2 },
-    problem: { color: colors.danger, paddingHorizontal: 12, paddingVertical: 7, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
-    commandStrip: { flexGrow: 0, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border, backgroundColor: colors.background }, commandContent: { minHeight: 51, alignItems: 'center', gap: 2, paddingHorizontal: 8, paddingVertical: 4 },
-    command: { minWidth: 52, minHeight: 43, alignItems: 'center', justifyContent: 'center', borderRadius: 8, paddingHorizontal: 6 }, commandSelected: { backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accent }, commandIcon: { color: colors.body, fontSize: 18, lineHeight: 20, fontWeight: '500' }, commandLabel: { color: colors.muted, fontSize: 9, marginTop: 1, fontWeight: '700' }, commandDivider: { width: 1, height: 29, marginHorizontal: 4, backgroundColor: colors.border },
-    optionStrip: { minHeight: 42, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 8, paddingVertical: 3, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border, backgroundColor: colors.surface }, optionLabel: { color: colors.muted, fontSize: 10, fontWeight: '800' }, optionSpacer: { flex: 1 }, zoomValue: { minWidth: 36, color: colors.body, fontSize: 10, textAlign: 'center', fontVariant: ['tabular-nums'] },
-    previewArea: { paddingHorizontal: 12, paddingTop: 8, paddingBottom: 7, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border, backgroundColor: colors.surface },
-    previewHeading: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }, eyebrow: { color: colors.muted, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 }, previewMeta: { color: colors.muted, fontSize: 10 },
-    previewFrame: { height: 178, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderRadius: 12, backgroundColor: '#050506' },
-    canvas: { height: '100%', maxWidth: '100%', minWidth: 100, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#242428', backgroundColor: '#08080a' },
-    safeFrame: { position: 'absolute', inset: 12, borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.16)' },
-    previewMark: { color: '#3ee6c4', fontFamily: fonts.displayHeavy, fontSize: 52, opacity: 0.18 }, previewLabel: { color: '#b9b9c0', fontSize: 12, fontWeight: '600' },
-    previewCaption: { position: 'absolute', bottom: 17, maxWidth: '84%', color: '#fff', fontSize: 18, fontWeight: '800', textAlign: 'center', textShadowColor: '#000', textShadowRadius: 5 },
-    transport: { minHeight: 42, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingTop: 7 },
-    transportButton: { width: 36, height: 34, alignItems: 'center', justifyContent: 'center', borderRadius: 9, borderWidth: 1, borderColor: colors.borderStrong, backgroundColor: colors.background },
-    transportIcon: { color: colors.text, fontSize: 17, fontWeight: '700' }, playButton: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', borderRadius: 18, backgroundColor: colors.accent }, playIcon: { color: colors.accentInk, fontSize: 14, fontWeight: '900' },
-    timecode: { marginLeft: 7, color: colors.text, fontSize: 12, fontWeight: '700', fontVariant: ['tabular-nums'] }, totalTime: { color: colors.muted, fontSize: 11, fontVariant: ['tabular-nums'] },
-    timelineSection: { borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border, backgroundColor: colors.background },
-    timelineHeading: { height: 31, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12 }, timelineHelp: { color: colors.muted, fontSize: 9 },
-    ruler: { height: 20, flexDirection: 'row', alignItems: 'center', paddingLeft: 72, paddingRight: 10, borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border, backgroundColor: colors.surface },
-    rulerText: { color: colors.muted, fontSize: 8, fontVariant: ['tabular-nums'] }, rulerTicks: { flex: 1, height: 6, marginHorizontal: 7, borderLeftWidth: 1, borderRightWidth: 1, borderColor: colors.borderStrong }, marker: { minWidth: 28, minHeight: 28, alignItems: 'center', justifyContent: 'center' }, markerGlyph: { color: colors.accent, fontSize: 10 },
-    lanes: { position: 'relative' }, track: { minHeight: 38, flexDirection: 'row', borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
-    trackName: { width: 70, flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 8, borderRightWidth: StyleSheet.hairlineWidth, borderColor: colors.border, backgroundColor: colors.surface },
-    trackGlyph: { width: 13, color: colors.body, fontSize: 12, fontWeight: '800', textAlign: 'center' }, trackCopy: { flex: 1, minWidth: 0 }, trackLabel: { color: colors.muted, fontSize: 8, fontWeight: '900', letterSpacing: 0.7 }, trackState: { color: colors.accent, fontSize: 6, fontWeight: '800', marginTop: 1 },
-    clips: { minWidth: 305, alignItems: 'center', gap: 4, paddingHorizontal: 5, paddingVertical: 4 }, clip: { width: 112, minHeight: 29, justifyContent: 'center', paddingHorizontal: 8, borderRadius: 6, borderWidth: 1 },
-    videoClip: { borderColor: '#287f86', backgroundColor: 'rgba(36, 142, 151, 0.24)' }, audioClip: { borderColor: '#9563c9', backgroundColor: 'rgba(149, 99, 201, 0.22)' }, textClip: { borderColor: '#a07d36', backgroundColor: 'rgba(202, 157, 65, 0.20)' },
-    clipSelected: { borderColor: colors.accent, borderWidth: 2 }, clipTitle: { color: colors.text, fontSize: 10, fontWeight: '700' }, clipMeta: { color: colors.muted, fontSize: 8, marginTop: 1 },
-    emptyTrack: { width: 276, minHeight: 29, flexDirection: 'row', alignItems: 'center', gap: 7 }, emptyTrackLine: { flex: 1, height: 1, backgroundColor: colors.border }, trackEmpty: { color: colors.muted, fontSize: 8, textTransform: 'uppercase', letterSpacing: 0.8 },
-    playhead: { position: 'absolute', top: -20, bottom: 0, width: 1, backgroundColor: colors.accent }, playheadHead: { position: 'absolute', top: 0, left: -3, width: 7, height: 7, borderRadius: 4, backgroundColor: colors.accent },
-    toolRail: { flexGrow: 0, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border, backgroundColor: colors.surface }, toolContent: { minWidth: '100%', paddingHorizontal: 5, paddingVertical: 5, gap: 2 },
-    tool: { flex: 1, minWidth: 67, minHeight: 50, alignItems: 'center', justifyContent: 'center', gap: 2, borderRadius: 9, borderWidth: 1, borderColor: 'transparent' },
-    toolActive: { borderColor: colors.accent, backgroundColor: colors.accentSoft }, toolIcon: { color: colors.body, fontSize: 16, fontWeight: '800' }, toolIconActive: { color: colors.accent }, toolLabel: { color: colors.muted, fontSize: 9, fontWeight: '700' }, toolLabelActive: { color: colors.accent },
-    inspector: { flex: 1, minHeight: 96 }, inspectorContent: { padding: 12, paddingBottom: 34, gap: 11 }, panelHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    sectionTitle: { color: colors.text, fontFamily: fonts.display, fontSize: 17 }, panelDetail: { color: colors.muted, fontSize: 10, fontWeight: '600' },
-    body: { color: colors.body, fontSize: 14, lineHeight: 20 }, muted: { color: colors.muted, fontSize: 11 },
-    mediaRow: { minHeight: 51, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 7, borderRadius: 10, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }, mediaRowSelected: { borderColor: colors.accent },
-    mediaThumb: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center', borderRadius: 7, backgroundColor: colors.background }, mediaThumbText: { color: colors.accent, fontSize: 15, fontWeight: '800' }, rowCopy: { flex: 1, minWidth: 0 }, rowTitle: { color: colors.text, fontSize: 13, fontWeight: '700' },
-    emptyPanel: { gap: 4, padding: 13, borderRadius: 10, borderWidth: 1, borderStyle: 'dashed', borderColor: colors.borderStrong, backgroundColor: colors.surface }, emptyTitle: { color: colors.text, fontSize: 13, fontWeight: '800' }, emptyBody: { color: colors.muted, fontSize: 12, lineHeight: 17 },
-    quickActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 }, action: { justifyContent: 'center', paddingHorizontal: 12, borderRadius: 9, borderWidth: 1, borderColor: colors.borderStrong, backgroundColor: colors.surface }, compactControl: { minWidth: 44, minHeight: 36, paddingHorizontal: 8 }, actionText: { color: colors.text, fontSize: 12, fontWeight: '700' },
-    primary: { minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 10, backgroundColor: colors.accent, paddingHorizontal: 13 }, primaryText: { color: colors.accentInk, fontWeight: '800' },
-    field: { gap: 6 }, fieldLabel: { color: colors.body, fontSize: 12, fontWeight: '700' }, input: { minHeight: 44, color: colors.text, fontSize: 15, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: colors.borderStrong, backgroundColor: colors.surface }, inputMultiline: { minHeight: 84, textAlignVertical: 'top' },
-    choices: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 }, choice: { minWidth: 56, alignItems: 'center', justifyContent: 'center', borderRadius: 9, borderWidth: 1, borderColor: colors.borderStrong, paddingHorizontal: 11 }, choiceSelected: { borderColor: colors.accent, backgroundColor: colors.accentSoft }, choiceText: { color: colors.body, fontWeight: '700' }, choiceTextSelected: { color: colors.accent },
-    workflowCard: { gap: 13, padding: 15, borderRadius: 14, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
-    stepper: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }, stepperCopy: { flex: 1 }, stepperValue: { color: colors.text, fontSize: 13, fontWeight: '800', marginTop: 3, fontVariant: ['tabular-nums'] }, stepperActions: { flexDirection: 'row', gap: 6 }, stepperButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 9, borderWidth: 1, borderColor: colors.borderStrong, backgroundColor: colors.background }, stepperButtonText: { color: colors.text, fontSize: 20, fontWeight: '700' },
-    transcriptRow: { minHeight: 51, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 9, borderRadius: 10, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }, transcriptTime: { color: colors.accent, fontSize: 10, fontWeight: '800', fontVariant: ['tabular-nums'] }, transcriptText: { flex: 1, color: colors.body, fontSize: 13, lineHeight: 17 },
-    clipBrowserRow: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 8, borderRadius: 10, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
-    markerRow: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 7 }, markerJump: { minWidth: 70, minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 5 }, markerTime: { color: colors.body, fontSize: 9, fontVariant: ['tabular-nums'] }, markerInput: { flex: 1 },
-    trackControl: { minHeight: 58, flexDirection: 'row', alignItems: 'center', gap: 6, padding: 7, borderRadius: 10, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
-    danger: { color: colors.danger }, disabled: { opacity: 0.35 }, pressed: { opacity: 0.62, transform: [{ scale: 0.97 }] },
-    noticeBackdrop: { flex: 1, justifyContent: 'center', padding: 24, backgroundColor: 'rgba(0,0,0,0.72)' }, noticeCard: { gap: 14, padding: 20, borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }, noticeTitle: { color: colors.text, fontSize: 20, fontWeight: '700' },
-});

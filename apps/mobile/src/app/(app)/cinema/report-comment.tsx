@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
     chipOn: { backgroundColor: colors.accent, borderColor: colors.accent },
     chipText: { color: colors.body, fontSize: 16 },
     chipTextOn: { color: colors.accentInk, fontWeight: '600' },
-    input: { minHeight: 110, color: colors.text, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 12, textAlignVertical: 'top', fontSize: 16 },
+    input: { minHeight: 110, color: colors.text, backgroundColor: colors.surface, borderColor: colors.borderStrong, borderWidth: 1, borderRadius: 12, padding: 12, textAlignVertical: 'top', fontSize: 16 },
     muted: { color: colors.muted, fontSize: 13 },
     button: { backgroundColor: colors.accent, borderRadius: 12, alignItems: 'center', justifyContent: 'center', paddingVertical: 14 },
     off: { opacity: 0.4 },

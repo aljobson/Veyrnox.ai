@@ -1,10 +1,12 @@
+import { useFaceFiltersAvailable } from '../../../lib/useFaceFiltersAvailable';
+import { createTileColumns } from '../../../lib/createLayout';
 import { SectionLabel } from '../../../components/create/SectionLabel';
 import { Text, Card, Chip, Icon, ListRow, SegmentedControl, themedStyles, useThemedStyles, useAppearance } from '../../../components/ui';
 
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, View } from 'react-native';
+import { ActivityIndicator, FlatList, View, useWindowDimensions } from 'react-native';
 import { FreeAllowanceCard } from '../../../components/FreeAllowanceCard';
 import { fetchCatalogCached, kindOf, type CatalogModel } from '../../../lib/media';
 import { GOALS, TIERS, filterByTier, freeLeftFor, modelsForGoal, type Goal, type Tier } from '../../../lib/createOptions';
@@ -12,20 +14,26 @@ import { useFreeLeft } from '../../../lib/useFreeLeft';
 import { selectedState } from '../../../lib/a11y';
 import { fetchAgentListing } from '../../../lib/montage';
 import { type MenuIcon } from '../../../lib/menuIcons';
-import { ds, LIST_END_PADDING } from '../../../theme';
+import { ds, TEXT_SCALE, LIST_END_PADDING } from '../../../theme';
 import { plural, t } from '../../../lib/i18n';
 
 // One word per goal; the full "Make an image" wording stays as the accessibility label.
 const SHORT_GOAL: Record<Goal, string> = { image: 'library.type.image', video: 'library.type.video', audio: 'library.type.audio', all: 'library.type.all' };
 const GOAL_ICON: Record<Goal, MenuIcon> = { image: 'image', video: 'video', audio: 'audio', all: 'squares' };
 
-function EntryTile({ icon, label, accessibilityLabel, onPress }: { readonly icon: MenuIcon; readonly label: string; readonly accessibilityLabel?: string; readonly onPress: () => void }) {
+export function EntryTile({ icon, label, accessibilityLabel, onPress }: { readonly icon: MenuIcon; readonly label: string; readonly accessibilityLabel?: string; readonly onPress: () => void }) {
     const styles = useThemedStyles(sheets);
-    return <ListRow icon={icon} title={label} accessibilityLabel={accessibilityLabel ?? label} onPress={onPress} style={styles.entry} />;
+    const { width, fontScale } = useWindowDimensions();
+    const { settings } = useAppearance();
+    const single = createTileColumns(width, fontScale, TEXT_SCALE[settings.textSize]) === 1;
+    return <ListRow icon={icon} title={label} accessibilityLabel={accessibilityLabel ?? label} onPress={onPress} style={[styles.entry, { width: single ? '100%' : '48.7%' }]} />;
 }
 
 export default function Create() {
-    const { scheme } = useAppearance();
+    const faceAvailable = useFaceFiltersAvailable();
+    const { scheme, settings } = useAppearance();
+    const { width, fontScale } = useWindowDimensions();
+    const largeText = createTileColumns(width, fontScale, TEXT_SCALE[settings.textSize]) === 1;
     const styles = useThemedStyles(sheets);
     const router = useRouter();
     const params = useLocalSearchParams<{ goal?: string }>();
@@ -73,7 +81,7 @@ export default function Create() {
                             <View style={styles.entries}>
                                 <EntryTile icon="squares" label={t('label.Templates')} onPress={() => router.push('/create/presets')} />
                                 <EntryTile icon="wrench" label={t('menu.tools')} accessibilityLabel={t('toolsDir.entry')} onPress={() => router.push('/create/tools')} />
-                                <EntryTile icon="smiley" label={t('faceFilters.title')} onPress={() => router.push('/face-filters')} />
+                                {faceAvailable ? <EntryTile icon="smiley" label={t('faceFilters.title')} onPress={() => router.push('/face-filters')} /> : null}
                                 <EntryTile icon="chat" label={t('chat.skills.title')} onPress={() => router.push('/chat/skills')} />
                             </View>
 
@@ -81,14 +89,14 @@ export default function Create() {
                                 <SectionLabel style={styles.sectionLabel}>{t('create.what')}</SectionLabel>
                                 <SectionLabel style={styles.sectionMeta}>{t('create.freeChoice')}</SectionLabel>
                             </View>
-                            <SegmentedControl accessibilityLabel={t('create.goalLabel')} options={GOALS.map(g => ({ value: g.goal, label: t(SHORT_GOAL[g.goal]), accessibilityLabel: t(g.label), icon: GOAL_ICON[g.goal] }))} value={goal} onChange={next => { setGoal(next); setTier(null); }} />
+                            <SegmentedControl style={largeText ? styles.stacked : undefined} accessibilityLabel={t('create.goalLabel')} options={GOALS.map(g => ({ value: g.goal, label: t(SHORT_GOAL[g.goal]), accessibilityLabel: t(g.label), icon: GOAL_ICON[g.goal] }))} value={goal} onChange={next => { setGoal(next); setTier(null); }} />
                             <Text variant="caption" tone="tertiary" style={styles.explainer}>{t('create.goalExplainer')}</Text>
 
                             <View style={styles.sectionTop}>
                                 <SectionLabel style={styles.sectionLabel}>{t('create.model')}</SectionLabel>
                                 <View style={styles.live}><View style={styles.liveDot} /><SectionLabel style={styles.liveText}>{t('create.livePrices')}</SectionLabel></View>
                             </View>
-                            <View style={styles.tiers} accessibilityLabel={t('create.tierLabel')}>
+                            <View style={[styles.tiers, largeText && styles.stacked]} accessibilityLabel={t('create.tierLabel')}>
                                 {[null, ...TIERS].map((x) => (
                                     <Chip style={styles.tier} fullWidth selected={tier === x} key={x ?? 'all'} accessibilityRole="button" accessibilityState={selectedState(tier === x)} onPress={() => setTier(x)} label={t(`create.tier.${x ?? 'all'}`)} />
                                 ))}
@@ -96,7 +104,7 @@ export default function Create() {
                             <Text variant="caption" tone="tertiary" style={styles.explainer}>{t('create.priceExplainer')}</Text>
                             <FreeAllowanceCard models={models} left={freeLeft} />
                             {(goal === 'video' || goal === 'all') && agent ? (
-                                <Card accessibilityRole="button" style={[styles.row, styles.agentRow]} onPress={() => router.push('/create/agent')}>
+                                <Card accessibilityRole="button" style={[styles.row, styles.agentRow, largeText && styles.modelStack]} onPress={() => router.push('/create/agent')}>
                                     <View style={styles.agentText}>
                                         <SectionLabel style={styles.modality}>{t('create.videoAgent')}</SectionLabel>
                                         <Text variant="bodyStrong" tone="primary" style={styles.name}>{t('create.agentTitle')}</Text>
@@ -113,7 +121,7 @@ export default function Create() {
                     renderItem={({ item }) => {
                         const kind = kindOf(item.modality);
                         return (
-                        <Card accessibilityRole="button" style={styles.row} onPress={() => router.push({ pathname: '/create/[modelId]', params: { modelId: item.id } })}>
+                        <Card accessibilityRole="button" style={[styles.row, largeText && styles.modelStack]} onPress={() => router.push({ pathname: '/create/[modelId]', params: { modelId: item.id } })}>
                             <View style={styles.modelText}>
                                 <SectionLabel style={styles.modality}>{kind ? t(SHORT_GOAL[kind]) : item.modality}</SectionLabel>
                                 <Text variant="bodyStrong" tone="primary" style={styles.name}>{item.name}</Text>
@@ -144,11 +152,13 @@ const sheets = themedStyles((p) => ({
     intro: { gap: ds.space.sm, marginBottom: ds.space.sm },
     heading: { color: p.textPrimary, },
     introText: { color: p.textSecondary, maxWidth: 520 },
-    sectionTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: ds.space.sm },
+    sectionTop: { flexDirection: 'row', flexWrap: 'wrap', gap: ds.space.sm, alignItems: 'center', justifyContent: 'space-between', marginTop: ds.space.sm },
     sectionLabel: { },
     sectionMeta: { },
     entries: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: ds.space.sm },
-    entry: { width: '48.7%', minHeight: 58, flexDirection: 'row', alignItems: 'center', gap: ds.space.sm, padding: ds.space.sm, borderRadius: ds.radius.md, backgroundColor: p.bgElevated1, borderColor: p.borderSubtle, borderWidth: 1 },
+    entry: { minHeight: 58, flexDirection: 'row', alignItems: 'center', gap: ds.space.sm, padding: ds.space.sm, borderRadius: ds.radius.md, backgroundColor: p.bgElevated1, borderColor: p.borderSubtle, borderWidth: 1 },
+    stacked: { flexDirection: 'column' },
+    modelStack: { flexDirection: 'column', alignItems: 'flex-start' },
     tier: { flex: 1 },
     tiers: { flexDirection: 'row', gap: ds.space.sm },
     live: { flexDirection: 'row', alignItems: 'center', gap: ds.space.sm },

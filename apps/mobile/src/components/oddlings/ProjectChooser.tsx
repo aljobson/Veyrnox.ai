@@ -91,5 +91,5 @@ export function ProjectChooser({ api, engine, record, onResult }: {
 const styles = StyleSheet.create({
     container: { gap: 8, marginBottom: 16 }, heading: { color: colors.text, fontWeight: '700', fontSize: 18 },
     button: { minHeight: MIN_TARGET, minWidth: MIN_TARGET, padding: 10, justifyContent: 'center', borderWidth: 1, borderColor: colors.border, borderRadius: 8 },
-    text: { color: colors.body }, input: { minHeight: MIN_TARGET, color: colors.text, borderWidth: 1, borderColor: colors.border, padding: 10 },
+    text: { color: colors.body }, input: { minHeight: MIN_TARGET, color: colors.text, borderWidth: 1, borderColor: colors.borderStrong, padding: 10 },
 });

@@ -1,3 +1,4 @@
+import { markOffline, markOnline } from './networkState';
 import { config } from './config';
 
 export class ApiError extends Error {
@@ -49,11 +50,14 @@ export interface ApiClient {
 export function createApiClient(options: ApiClientOptions): ApiClient {
     async function send(path: string, init: RequestInit, token: string, doFetch: typeof fetch): Promise<Response> {
         try {
-            return await doFetch(`${options.baseUrl}${path}`, {
+            const response = await doFetch(`${options.baseUrl}${path}`, {
                 ...init,
                 headers: { ...(init.headers as Record<string, string>), Authorization: `Bearer ${token}` },
             });
+            markOnline();
+            return response;
         } catch {
+            markOffline();
             throw new ApiError(0, 'network');
         }
     }

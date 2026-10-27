@@ -3,12 +3,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { t } from '../../lib/i18n';
 import { fetchCatalog } from '../../lib/media';
+import { useFaceFiltersAvailable } from '../../lib/useFaceFiltersAvailable';
 import { modelEntries, screenEntries, searchEntries, type SearchEntry } from '../../lib/siteSearch';
 import { colors, LIST_END_PADDING } from '../../theme';
 
 // Search the app's own screens and the model catalogue. Nothing leaves the phone except the catalogue fetch the
 // app already makes; if that fails, screens are still searchable.
 export default function Search() {
+    const faceFiltersAvailable = useFaceFiltersAvailable();
     const [query, setQuery] = useState('');
     const [models, setModels] = useState<SearchEntry[]>([]);
     useEffect(() => {
@@ -18,7 +20,7 @@ export default function Search() {
             live = false;
         };
     }, []);
-    const entries = useMemo(() => [...screenEntries((k) => t(k as Parameters<typeof t>[0])), ...models], [models]);
+    const entries = useMemo(() => [...screenEntries((k) => t(k as Parameters<typeof t>[0]), faceFiltersAvailable), ...models], [models, faceFiltersAvailable]);
     const results = useMemo(() => searchEntries(query, entries), [query, entries]);
 
     return (
@@ -57,7 +59,7 @@ export default function Search() {
 
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background, padding: 16, gap: 12 },
-    input: { minHeight: 44, color: colors.text, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, fontSize: 16 },
+    input: { minHeight: 44, color: colors.text, backgroundColor: colors.surface, borderColor: colors.borderStrong, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, fontSize: 16 },
     row: { minHeight: 44, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 14, gap: 2 },
     name: { color: colors.text, fontSize: 16 },
     note: { color: colors.muted, fontSize: 13 },

@@ -108,7 +108,7 @@ export default function EditorHome() {
                         {workspaces && workspaces.length > 1 ? (
                             <View style={styles.chips} accessibilityRole="tablist">
                                 {workspaces.map((workspace) => (
-                                    <Button label={workspace.name} variant="tertiary"
+                                    <Button label={workspace.name} containerStyle={{ maxWidth: '100%' }} variant="tertiary"
                                         key={workspace.id}
                                         accessibilityRole="tab"
                                         accessibilityState={{ selected: workspace.id === workspaceId }}
