@@ -1,4 +1,4 @@
-import * as WebBrowser from 'expo-web-browser';
+import { router } from 'expo-router';
 import { Link, Stack } from 'expo-router';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LEGAL_LINKS, PRIVACY_EMAIL, SUPPORT_EMAIL } from '../../lib/account';
@@ -35,7 +35,7 @@ export default function Help() {
             </Section>
             <Section title="Rules and policies">
                 {LEGAL_LINKS.map((l) => (
-                    <Row key={l.url} label={l.label} onPress={() => WebBrowser.openBrowserAsync(l.url)} />
+                    <Row key={l.route} label={l.label} onPress={() => router.push(l.route)} />
                 ))}
             </Section>
         </ScrollView>

@@ -1,8 +1,8 @@
+import { AddressText } from '../../../components/AddressText';
 import * as DocumentPicker from 'expo-document-picker';
 import { File } from 'expo-file-system';
 import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { VideoView, useVideoPlayer } from 'expo-video';
@@ -87,7 +87,7 @@ function FeatureStudio({ feature, reuse }: { feature: CreativeFeature; reuse: Cr
 }
 
 function Example({ feature }: { feature: CreativeFeature }) {
-    return <View style={styles.example}><View style={styles.exampleHead}><View><Text style={styles.kicker}>WORKING EXAMPLE</Text><Text style={styles.cardTitle}>See the intended result</Text></View><Pressable accessibilityRole="link" onPress={() => void WebBrowser.openBrowserAsync(feature.example.sourceUrl)}><Text style={styles.link}>Source</Text></Pressable></View>{feature.example.kind === 'video' ? <ExampleVideo url={feature.example.url} title={feature.title} /> : <Image source={{ uri: feature.example.url }} style={styles.exampleMedia} contentFit="contain" accessibilityLabel={`${feature.title} example`} accessibilityIgnoresInvertColors />}</View>;
+    return <View style={styles.example}><View style={styles.exampleHead}><View><Text style={styles.kicker}>WORKING EXAMPLE</Text><Text style={styles.cardTitle}>See the intended result</Text></View><AddressText label="Source" address={feature.example.sourceUrl} /></View>{feature.example.kind === 'video' ? <ExampleVideo url={feature.example.url} title={feature.title} /> : <Image source={{ uri: feature.example.url }} style={styles.exampleMedia} contentFit="contain" accessibilityLabel={`${feature.title} example`} accessibilityIgnoresInvertColors />}</View>;
 }
 function ExampleVideo({ url, title }: { url: string; title: string }) {
     const player = useVideoPlayer(url, (instance) => { instance.loop = true; });

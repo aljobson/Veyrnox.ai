@@ -1,8 +1,6 @@
-import * as WebBrowser from 'expo-web-browser';
 import { Stack, useRouter } from 'expo-router';
 import { Share, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { GrantsCard } from '../../components/account/GrantsCard';
-import { API_BASE } from '../../lib/api';
 import { t } from '../../lib/i18n';
 import { colors, fonts } from '../../theme';
 
@@ -55,9 +53,7 @@ export default function Mcp() {
                 <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => router.push('/credits')}>
                     <Text style={styles.secondaryText}>{t('mcp.credits')}</Text>
                 </Pressable>
-                <Pressable accessibilityRole="link" style={styles.secondary} onPress={() => void WebBrowser.openBrowserAsync(`${API_BASE}/mcp`)}>
-                    <Text style={styles.secondaryText}>{t('mcp.webGuide')}</Text>
-                </Pressable>
+
             </View>
 
             <Text style={styles.heading} accessibilityRole="header">{t('mcp.connections')}</Text>

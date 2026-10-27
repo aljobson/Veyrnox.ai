@@ -29,9 +29,6 @@ export default {
     'publishWorkflows.accounts': 'Connected account: {account}',
     'publishWorkflows.allAccounts': 'All connected accounts',
     'publishWorkflows.reply': 'Suggested reply',
-    'publishWorkflows.webOnly': 'Create, edit, turn on or off, and delete workflows on the web. Replies are suggestions for review.',
-    'publishWorkflows.continueWeb': 'Continue on web',
-    'publishWorkflows.webFailed': 'Could not open the web page. Try again later.',
     'publishWorkflows.planTitle': 'Your Publish Plan',
     'publishWorkflows.currentPlan': 'Current plan: {plan}',
     'publishWorkflows.tier.free': 'Free',
@@ -44,6 +41,6 @@ export default {
     'publishWorkflows.renews': 'Renews: {date}',
     'publishWorkflows.ends': 'Ends: {date}',
     'publishWorkflows.periodEnd': 'Current period ends: {date}',
-    'publishWorkflows.manageWeb': 'Manage your plan on the web',
+    "publishWorkflows.manageWeb": "Managing this subscription is coming to the app.",
     'publishWorkflows.manageStore': 'Manage your plan in your store subscriptions',
 } as const;

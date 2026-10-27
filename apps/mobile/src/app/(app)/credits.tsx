@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { Text, Button, Card, themedStyles, useThemedStyles } from '../../components/ui';
 import * as WebBrowser from 'expo-web-browser';
 import { Link, Stack } from 'expo-router';
@@ -212,7 +213,7 @@ export default function Credits() {
             </Link>
             <View style={styles.legal}>
                 {LEGAL_LINKS.slice(0, 2).map((item) => (
-                    <Button variant="tertiary" key={item.url} accessibilityRole="link" onPress={() => void WebBrowser.openBrowserAsync(item.url)} label={t(item.labelKey)} size="sm" hitSlop={6}>
+                    <Button variant="tertiary" key={item.route} accessibilityRole="link" onPress={() => void router.push(item.route)} label={t(item.labelKey)} size="sm" hitSlop={6}>
                         <Text variant="footnote" tone="secondary" style={styles.legalText}>{t(item.labelKey)}</Text>
                     </Button>
                 ))}

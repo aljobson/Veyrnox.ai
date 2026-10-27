@@ -1,8 +1,9 @@
+import { ComingToApp } from '../../../../components/ComingToApp';
 import { useCallback, useState } from 'react';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { ScrollView, Text } from 'react-native';
 import { useAuth } from '../../../../auth/AuthProvider';
-import { Action, CreatorClosed, RulesLinks, ui, useCreatorOwner, useCreatorScope, WebLink } from '../../../../components/cinema/creator/RulesLinks';
+import { Action, CreatorClosed, RulesLinks, ui, useCreatorOwner, useCreatorScope } from '../../../../components/cinema/creator/RulesLinks';
 import { UploadPanel } from '../../../../components/cinema/creator/UploadPanel';
 import { SubmitPanel } from '../../../../components/cinema/creator/SubmitPanel';
 import { creatorMessage, DRAFT_TYPES, listTitles, type CreatorTitle } from '../../../../lib/cinemaDrafts';
@@ -33,7 +34,7 @@ function Detail({ id }: { id: string }) {
             <Text style={ui.heading} accessibilityRole="header">{title.title}</Text>
             <Text style={ui.text}>{t(`cinemaUpload.state.${['DRAFT', 'UNDER_REVIEW', 'PUBLISHED', 'SUSPENDED'].includes(title.lifecycle_status) ? title.lifecycle_status : 'other'}`)}</Text>
             {title.review_note ? <Text style={ui.text}>{title.review_note}</Text> : null}
-            {title.content_type === 'SERIES' ? <WebLink label={t('cinemaUpload.series')} /> : <UploadPanel contentId={id} editable={!!editable} onChange={() => void load()} />}
+            {title.content_type === 'SERIES' ? <ComingToApp /> : <UploadPanel contentId={id} editable={!!editable} onChange={() => void load()} />}
             {editable && <Action label={t('cinemaUpload.edit')} onPress={() => router.push({ pathname: '/cinema/creator/draft', params: { id } })} />}
             {editable && title.video_ready && <SubmitPanel title={title} onDone={() => { setTitle({ ...title, lifecycle_status: 'UNDER_REVIEW' }); void load(); }} />}
         </>}

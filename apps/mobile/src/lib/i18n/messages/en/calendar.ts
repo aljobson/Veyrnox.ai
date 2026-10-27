@@ -7,7 +7,7 @@ export default {
     'calendar.thisWeek': 'Back to this week',
     'calendar.none': 'Nothing scheduled this week.',
     'calendar.noText': '(no text)',
-    'calendar.more': 'There are more posts this week than can be shown here. See the rest on veyrnox.ai.',
+    "calendar.more": "There are more posts this week than can be shown here.",
     'calendar.err.plan': 'The calendar needs a Publish Plan on this brand.',
     'calendar.err.notOpen': 'The calendar is not open yet.',
     'calendar.err.range': 'That week could not be shown. Go back to this week.',

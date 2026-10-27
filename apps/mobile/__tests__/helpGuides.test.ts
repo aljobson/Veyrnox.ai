@@ -56,6 +56,9 @@ describe('phone presentation is separate from shared guide content', () => {
 });
 
 describe('guide destinations', () => {
+    test.each(['/legal/aup', '/legal/refund', '/legal/privacy'])('%s opens native legal', href => {
+        expect(guideDestination(href)).toEqual({ kind: 'native', href });
+    });
     test.each([
         ['/app/create', '/create'], ['/pricing', '/pricing'], ['/presets', '/create/presets'],
         ['/tools', '/create/tools'], ['/app/library', '/library'], ['/app/credits', '/credits'],
@@ -66,8 +69,9 @@ describe('guide destinations', () => {
             fs.existsSync(path.join(root, `${base}/(tabs)/${route}.tsx`))).toBe(true);
     });
 
-    test.each(['/legal/aup', '/legal/refund', '/guides/future-guide'])('%s falls back to the public page', href => {
-        expect(guideDestination(href)).toEqual({ kind: 'web', href: `https://veyrnox.ai${href}` });
+    test.each(['/guides/future-guide', '/app/future'])('%s is hidden without a native destination', href => {
+        expect(guideDestination(href)).toBeNull();
+        expect(presentGuide({ ...HELP_GUIDES[0], links: [{ href, label: 'helpGuides.links' }] } as any, say).links).toEqual([]);
     });
 });
 
@@ -89,7 +93,7 @@ describe('Help guide entry and screens', () => {
         expect(list).toContain('params: { id: guide.id }');
     });
 
-    test('details render ordered steps and links, with quiet unknown-ID and browser failure states', () => {
+    test('details render ordered steps and links, with quiet unknown-ID and navigation failure states', () => {
         const detail = read('src/app/(app)/guides/[id].tsx');
         expect(detail).toContain('guide.steps.map');
         expect(detail).toContain('guide.links.map');
@@ -98,7 +102,7 @@ describe('Help guide entry and screens', () => {
         expect(detail).toContain('accessibilityRole="header"');
         expect(detail).toContain('touchTarget');
         expect(detail).toContain('router.push(destination.href)');
-        expect(detail).toContain('await WebBrowser.openBrowserAsync(destination.href)');
+        expect(detail).not.toContain('openBrowserAsync');
         expect(detail).toContain('catch');
     });
 });

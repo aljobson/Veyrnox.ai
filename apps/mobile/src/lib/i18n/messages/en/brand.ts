@@ -14,7 +14,7 @@ export default {
     'brand.fonts': 'Fonts',
     'brand.kept': 'Text styles and assets',
     'brand.keptHelp': '{styles} text styles and {assets} assets are attached.',
-    'brand.keptNote': 'Make and attach these in the editor on the web. Saving here keeps them as they are.',
+    "brand.keptNote": "Saving here keeps these attachments as they are. Editing them is coming to the app.",
     'brand.readOnly': 'You can see this kit but not change it.',
     'brand.save': 'Save brand kit',
     'brand.saving': 'Saving',

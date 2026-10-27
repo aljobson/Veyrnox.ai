@@ -3,7 +3,6 @@ import { SectionLabel } from '../../../components/create/SectionLabel';
 import { Text, TextField, Button, Card, Chip, Checkbox, themedStyles, useThemedStyles } from '../../../components/ui';
 
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
@@ -329,7 +328,7 @@ export default function CreateWithModel() {
                     <SectionLabel style={styles.refund}>{t('create.workspace.refund')}</SectionLabel>
                     <View style={styles.terms}>
                         <Text variant="caption" tone="tertiary">{t('create.workspace.terms')}{' '}</Text>
-                        <Button variant="tertiary" size="sm" accessibilityRole="link" onPress={() => void WebBrowser.openBrowserAsync(`${API_BASE}/legal/terms`)} label={t('create.workspace.termsLink')} />
+                        <Button variant="tertiary" size="sm" accessibilityRole="link" onPress={() => void router.push('/legal/terms')} label={t('create.workspace.termsLink')} />
                     </View>
                 </Card>
             </ScrollView>

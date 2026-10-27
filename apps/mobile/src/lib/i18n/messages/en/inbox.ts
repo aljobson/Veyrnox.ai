@@ -1,7 +1,7 @@
 // English strings for inbox. Add keys here; keep their original wording and placeholders.
 export default {
     'inbox.title': 'Inbox',
-    'inbox.readOnly': 'Read only for now. Replying, assigning and resolving are done on veyrnox.ai.',
+    "inbox.readOnly": "Read only for now. Replying, assigning and resolving are coming to the app.",
     'inbox.none': 'Nothing here.',
     'inbox.unread': '{count} unread',
     'inbox.state.unresolved': 'Open',
@@ -14,9 +14,9 @@ export default {
     'inbox.kind.review': 'Reviews',
     'inbox.noMessages': 'No messages in this conversation yet.',
     'inbox.you': 'You',
-    'inbox.attachment': 'Attachment (open it on veyrnox.ai)',
+    "inbox.attachment": "Attachment preview is coming to the app.",
     'inbox.notes': 'Internal notes',
-    'inbox.replyOnWeb': 'To reply, open this conversation on veyrnox.ai.',
+    "inbox.replyOnWeb": "Replying to conversations is coming to the app.",
     'inbox.err.network': 'No connection. Try again.',
     'inbox.err.plan': 'The inbox needs the Publish Plan on this brand.',
     'inbox.err.role': 'You do not have permission to see the inbox for this brand.',

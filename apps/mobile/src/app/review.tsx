@@ -1,5 +1,4 @@
-import * as WebBrowser from 'expo-web-browser';
-import { Image } from 'expo-image';
+import { ReviewMedia } from '../components/ReviewMedia';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -54,12 +53,7 @@ export default function ReviewLink() {
             {review ? (
                 <Card title={review.brandName || t('share.review.title')}>
                     {review.networks.length ? <Text style={shared.help}>{review.networks.join(' · ')}</Text> : null}
-                    {review.attachments.map((item, index) => <View key={index}>
-                        <Text style={shared.label}>{t('app.publish.carousel.item', { count: index + 1 })}</Text>
-                        {item.held || !item.previewUrl ? <Text style={shared.help}>{t('app.publish.carousel.unavailable')}</Text>
-                            : item.mediaType === 'video' ? <Action label={t('share.review.watch')} onPress={() => void WebBrowser.openBrowserAsync(item.previewUrl as string)} />
-                            : <Image source={{ uri: item.previewUrl }} cachePolicy="none" style={styles.media} contentFit="contain" accessibilityLabel={t('share.review.preview')} />}
-                    </View>)}
+                    <ReviewMedia key={token} attachments={review.attachments} />
                     {review.targets.length ? (
                         review.targets.map((target) => (
                             <View key={target.network} style={{ gap: 4 }}>
@@ -92,5 +86,4 @@ const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
     content: { padding: 16, paddingTop: 56, gap: 16, paddingBottom: 16 + LIST_END_PADDING },
     title: { color: colors.text, fontFamily: fonts.display, fontSize: 26 },
-    media: { width: '100%', height: 280, borderRadius: 12, backgroundColor: '#000' },
 });

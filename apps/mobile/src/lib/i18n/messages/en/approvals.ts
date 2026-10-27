@@ -1,7 +1,7 @@
 // English strings for approvals. Add keys here; keep their original wording and placeholders.
 export default {
     'approvals.title': 'Approvals',
-    'approvals.intro': 'Posts you sent to outside reviewers. Reviewers decide on the web, through the link you sent them; this shows where each one stands.',
+    "approvals.intro": "Posts you sent to outside reviewers. Reviewers decide through the link you sent them; this shows where each one stands.",
     'approvals.none': 'No approval requests yet.',
     'approvals.scheduledFor': 'Scheduled for {when}',
     'approvals.err.plan': 'Approvals need a Publish Plan on this brand.',
@@ -35,7 +35,7 @@ export default {
     'approvals.sentTitle': 'Sent',
     'approvals.sentHeading': 'Sent for approval',
     'approvals.sentNote': 'Each reviewer has a private link. Share it with them now: it is not kept in the app and anyone with the link can review.',
-    'approvals.noLinks': 'The request was made, but no links came back. Share them from veyrnox.ai.',
+    "approvals.noLinks": "The request was made, but no review links came back. Try again later.",
     'approvals.shareLink': 'Share link',
     'approvals.shareFor': 'Share the review link for {email}',
     'approvals.done': 'Done',

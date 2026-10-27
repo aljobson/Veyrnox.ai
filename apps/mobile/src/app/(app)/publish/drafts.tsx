@@ -1,8 +1,6 @@
-import * as WebBrowser from 'expo-web-browser';
 import { Stack } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { API_BASE } from '../../../lib/api';
 import { touchTarget } from '../../../lib/a11y';
 import { t, plural } from '../../../lib/i18n';
 import { approveBatch, batchGroups, discardDrafts, draftActionErrorKey, draftsErrorKey, fetchDrafts, groupNetworks, type Draft } from '../../../lib/publishDrafts';
@@ -113,9 +111,6 @@ export default function Drafts() {
                             ))}
                         </View>
                     ))}
-                    <Pressable accessibilityRole="link" style={[styles.web, touchTarget]} onPress={() => WebBrowser.openBrowserAsync(`${API_BASE}/app/publish`)}>
-                        <Text style={styles.webText}>{t('drafts.openWeb')}</Text>
-                    </Pressable>
                 </>
             )}
         </ScrollView>

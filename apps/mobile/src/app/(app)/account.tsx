@@ -1,5 +1,4 @@
 import { Image } from 'expo-image';
-import * as WebBrowser from 'expo-web-browser';
 import { Link, Stack, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
@@ -203,7 +202,7 @@ export default function Account() {
                     <Row icon="squares" label={t('acct.about')} />
                 </Link>
                 {LEGAL_LINKS.map((l) => (
-                    <Row icon="bookmark" key={l.url} label={t(l.labelKey)} onPress={() => WebBrowser.openBrowserAsync(l.url)} />
+                    <Row icon="bookmark" key={l.route} label={t(l.labelKey)} onPress={() => router.push(l.route)} />
                 ))}
                 <Row icon="chat" label={t('account.contact', { email: SUPPORT_EMAIL })} onPress={() => Linking.openURL(`mailto:${SUPPORT_EMAIL}`)} />
             </Section>

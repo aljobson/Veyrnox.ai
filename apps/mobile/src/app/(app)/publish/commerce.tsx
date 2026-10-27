@@ -1,11 +1,11 @@
-import * as WebBrowser from 'expo-web-browser';
+import { ComingToApp } from '../../../components/ComingToApp';
 import { Image } from 'expo-image';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { UnlockCard } from '../../../components/UnlockCard';
 import { touchTarget } from '../../../lib/a11y';
-import { ApiError, API_BASE } from '../../../lib/api';
+import { ApiError } from '../../../lib/api';
 import { t } from '../../../lib/i18n';
 import { archiveProduct, commerceErrorKey, fetchProductPage, money, type ProductDetail } from '../../../lib/publishCommerce';
 import { usePublishApi } from '../../../lib/usePublishApi';
@@ -75,10 +75,7 @@ export default function Commerce() {
                                     <Text style={styles.addText}>{t('commerce.new')}</Text>
                                 </Pressable>
                             ) : null}
-                            <Text style={styles.muted}>{t('commerce.optionsWeb')}</Text>
-                            <Pressable accessibilityRole="link" style={[styles.web, touchTarget]} onPress={() => WebBrowser.openBrowserAsync(`${API_BASE}/app/publish`)}>
-                                <Text style={styles.webText}>{t('commerce.continueWeb')}</Text>
-                            </Pressable>
+                            <ComingToApp />
                         </View>
                     }
                     renderItem={({ item }) => (

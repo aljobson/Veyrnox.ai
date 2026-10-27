@@ -1,4 +1,4 @@
-import * as WebBrowser from 'expo-web-browser';
+import { AddressText } from '../../../../components/AddressText';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -77,7 +77,7 @@ export default function PostDetail() {
                         <Text style={styles.net}>{t.network}</Text>
                         <Text style={[styles.state, t.publishStatus === 'failed' && styles.bad]}>{targetStatusLabel(t.publishStatus)}</Text>
                         {err ? <Text style={styles.errBox}>{err}</Text> : null}
-                        {t.url ? <Pressable accessibilityRole="link" onPress={() => WebBrowser.openBrowserAsync(t.url as string)}><Text style={styles.link}>Open the live post</Text></Pressable> : null}
+                        {t.url ? <AddressText address={t.url} /> : null}
                     </View>
                 );
             })}

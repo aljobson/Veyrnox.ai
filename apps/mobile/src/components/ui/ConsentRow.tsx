@@ -1,11 +1,14 @@
-import * as WebBrowser from 'expo-web-browser';
+import { useState } from 'react';
+import { LegalSheet } from '../legal/LegalSheet';
+import type { LegalDoc } from '../../lib/legal';
 import { StyleSheet } from 'react-native';
-import { LEGAL_LINKS, MIN_AGE } from '../../lib/account';
+import { MIN_AGE } from '../../lib/account';
 import { splitSlots, t } from '../../lib/i18n';
 import { Checkbox } from './Checkbox';
 import { Text } from './Text';
 export function ConsentRow({ agreed, onChange }: { agreed: boolean; onChange: (value: boolean) => void }) {
-    return (
+    const [document, setDocument] = useState<LegalDoc | null>(null);
+    return (<>
         <Checkbox
             checked={agreed}
             onChange={onChange}
@@ -14,7 +17,7 @@ export function ConsentRow({ agreed, onChange }: { agreed: boolean; onChange: (v
                 { name: 'terms', label: t('signIn.openTerms') },
                 { name: 'privacy', label: t('signIn.openPrivacy') },
             ]}
-            onAccessibilityAction={(e) => void WebBrowser.openBrowserAsync(LEGAL_LINKS[e.nativeEvent.actionName === 'terms' ? 0 : 1].url)}
+            onAccessibilityAction={(e) => setDocument(e.nativeEvent.actionName === 'terms' ? 'terms' : 'privacy')}
         >
             <Text variant="footnote" tone="secondary">
                 {splitSlots(t('signIn.agree', { age: MIN_AGE }), ['terms', 'privacy']).map((piece, i) =>
@@ -26,7 +29,7 @@ export function ConsentRow({ agreed, onChange }: { agreed: boolean; onChange: (v
                             variant="footnote"
                             style={styles.link}
                             accessibilityRole="link"
-                            onPress={() => WebBrowser.openBrowserAsync(LEGAL_LINKS[piece.slot === 'terms' ? 0 : 1].url)}
+                            onPress={(event) => { event.stopPropagation(); setDocument(piece.slot === 'terms' ? 'terms' : 'privacy'); }}
                         >
                             {t(piece.slot === 'terms' ? 'label.Terms' : 'chrome.privacyPolicy')}
                         </Text>
@@ -34,6 +37,8 @@ export function ConsentRow({ agreed, onChange }: { agreed: boolean; onChange: (v
                 )}
             </Text>
         </Checkbox>
+        <LegalSheet doc={document} onClose={() => setDocument(null)} />
+    </>
     );
 }
 const styles = StyleSheet.create({ link: { textDecorationLine: 'underline' } });

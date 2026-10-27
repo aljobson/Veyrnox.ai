@@ -1,8 +1,9 @@
+import { ComingToApp } from '../../../../components/ComingToApp';
 import { useCallback, useRef, useState } from 'react';
 import { router, useFocusEffect } from 'expo-router';
 import { ScrollView, Text, View } from 'react-native';
 import { useAuth } from '../../../../auth/AuthProvider';
-import { Action, CreatorClosed, ui, useCreatorOwner, useCreatorScope, WebLink } from '../../../../components/cinema/creator/RulesLinks';
+import { Action, CreatorClosed, ui, useCreatorOwner, useCreatorScope } from '../../../../components/cinema/creator/RulesLinks';
 import { ApiError } from '../../../../lib/api';
 import { creatorMessage, listTitles, type CreatorTitle } from '../../../../lib/cinemaDrafts';
 import { CINEMA_DEVICE_UPLOAD_ENABLED } from '../../../../lib/cinemaUpload';
@@ -51,9 +52,8 @@ function Titles() {
             <Text style={ui.text}>{t(`cinemaUpload.state.${['DRAFT', 'UNDER_REVIEW', 'PUBLISHED', 'SUSPENDED'].includes(title.lifecycle_status) ? title.lifecycle_status : 'other'}`)}</Text>
             {title.review_note ? <Text style={ui.text}>{title.review_note}</Text> : null}
             {title.video_ready && <Text style={ui.text}>{t('cinemaUpload.videoReady')}</Text>}
-            {title.content_type === 'SERIES' ? <WebLink label={t('cinemaUpload.series')} /> :
+            {title.content_type === 'SERIES' ? <ComingToApp /> :
                 <Action label={title.title} onPress={() => router.push({ pathname: '/cinema/creator/[id]', params: { id: title.id } })} />}
         </View>)}
-        <WebLink />
     </ScrollView>;
 }

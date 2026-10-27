@@ -26,6 +26,8 @@ jest.mock('expo-router', () => ({
     Link: 'Link', router: { push: jest.fn(), replace: jest.fn() }, useLocalSearchParams: () => ({ id: '33333333-3333-4333-8333-333333333333' }),
     useFocusEffect: (fn: () => void) => { if (mockCollect) mockEffects.push(fn); },
 }));
+jest.mock('../src/components/ui/Button', () => ({ Button: ({ label, ...props }: any) => require('react').createElement('Pressable', props, label) }));
+jest.mock('../src/components/ui/Text', () => ({ Text: 'Text' }));
 jest.mock('expo-web-browser', () => ({ openBrowserAsync: jest.fn() }));
 jest.mock('expo-file-system', () => ({ FileMode: { ReadOnly: 'r' } }));
 jest.mock('expo-crypto', () => ({ randomUUID: () => '55555555-5555-4555-8555-555555555555' }));
@@ -55,22 +57,21 @@ const all = (node: Node): Node[] => [node, ...node.children.flatMap(all)];
 const words = (node: Node) => all(node).filter(x => x.type === '#text').map(x => x.props.text).join(' ');
 const settle = async () => { for (let i = 0; i < 40; i++) await Promise.resolve(); };
 beforeEach(() => { jest.resetModules(); mockSlots = []; mockCursor = 0; mockCollect = true; mockEnabled = false; mockEffects.length = 0; jest.clearAllMocks(); });
-test('flag off shell retains its original visible text, one web link and styles', () => {
+test('flag off shell explains native availability without a web link', () => {
     const tree = render(CreatorUploadShell), nodes = all(tree);
-    expect(words(tree)).toBe([t('cinemaCreator.upload.title'), t('cinemaCreator.upload.body'), t('cinemaCreator.upload.web')].join(' '));
-    expect(nodes.filter(x => x.type === 'Pressable')).toHaveLength(1);
-    expect(nodes.find(x => x.type === 'Pressable')?.props.accessibilityRole).toBe('link');
+    expect(words(tree)).toBe([t('cinemaCreator.upload.title'), t('cinemaCreator.upload.body'), t('common.comingToApp')].join(' '));
+    expect(nodes.filter(x => x.type === 'Pressable')).toHaveLength(0);
     expect(tree.props.style).toMatchObject({ borderRadius: 12, padding: 14, gap: 8 });
-    expect(nodes.find(x => x.type === 'Pressable')?.props.style.minHeight).toBe(44);
 });
-test.each([CreatorIndex, CreatorDraft, CreatorDetail])('flag off route renders only closed text and web link, never fetches', async Route => {
+test.each([CreatorIndex, CreatorDraft, CreatorDetail])('flag off route renders closed text and native availability, never fetches', async Route => {
     const tree = render(Route); for (const effect of mockEffects) effect(); await settle();
-    expect(words(tree)).toBe(`${t('cinemaUpload.closed')} ${t('cinemaCreator.upload.web')}`);
+    expect(words(tree)).toBe(`${t('cinemaUpload.closed')} ${t('common.comingToApp')}`);
     expect(mockRequest).not.toHaveBeenCalled(); expect(mockStream).not.toHaveBeenCalled();
 });
-test('flag on adds Your titles without removing the web link', () => {
+test('flag on offers native Your titles without a web link', () => {
     mockEnabled = true; const tree = render(CreatorUploadShell);
-    expect(words(tree)).toContain('Your titles'); expect(words(tree)).toContain(t('cinemaCreator.upload.web'));
+    expect(words(tree)).toContain('Your titles'); expect(words(tree)).not.toContain(t('cinemaCreator.upload.web'));
+    expect(all(tree).filter(x => x.props.accessibilityRole === 'link')).toHaveLength(0);
 });
 test('503 uploads_not_open renders Not available, hides Remove, never exposes the code', async () => {
     mockEnabled = true; mockRequest.mockRejectedValue(apiError(503, 'uploads_not_open'));
@@ -83,7 +84,7 @@ test('list reads only top-level content and shows type, moderation, note and rea
     mockEnabled = true; mockRequest.mockResolvedValue({ content: [{ id: 'one', content_type: 'FILM', title: 'Test title', lifecycle_status: 'UNDER_REVIEW', review_note: 'Please check', video_ready: true }, { id: 'two', title: 'Series title', content_type: 'SERIES', lifecycle_status: 'DRAFT' }] });
     render(CreatorIndex); const cleanup = mockEffects.map(f => f()); await settle(); mockCollect = false;
     const text = words(render(CreatorIndex));
-    for (const expected of ['Test title', 'FILM', 'Under review', 'Please check', 'Video ready', 'Manage episodes on the web']) expect(text).toContain(expected);
+    for (const expected of ['Test title', 'FILM', 'Under review', 'Please check', 'Video ready', t('common.comingToApp')]) expect(text).toContain(expected);
     expect(mockRequest).toHaveBeenCalledWith('/api/v1/cinema/content'); cleanup.forEach(fn => fn?.());
 });
 test.each(['creator_required', 'account_not_active', 'content_not_open'])('list explains %s quietly', async code => {

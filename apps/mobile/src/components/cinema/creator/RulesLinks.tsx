@@ -1,10 +1,10 @@
 import { useEffect, useRef, useSyncExternalStore } from 'react';
-import { Link } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
+import { Link, router } from 'expo-router';
+import { Button } from '../../ui/Button';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { touchTarget } from '../../../lib/a11y';
 import { getCacheUser, subscribeCacheUser } from '../../../lib/appCache';
-import { CREATOR_WORKSPACE_URL } from '../../../lib/cinemaCreator';
+import { ComingToApp } from '../../ComingToApp';
 import { cinemaUploadStore } from '../../../lib/cinemaUploadStore';
 import { t } from '../../../lib/i18n';
 import { colors } from '../../../theme';
@@ -15,11 +15,8 @@ export function Action({ label, onPress, disabled = false }: { label: string; on
 export function Check({ label, checked, onPress, disabled = false, english = false }: { label: string; checked: boolean; onPress(): void; disabled?: boolean; english?: boolean }) {
     return <Pressable accessibilityRole="checkbox" accessibilityLabel={label} accessibilityLanguage={english ? 'en' : undefined} accessibilityState={{ checked, disabled }} disabled={disabled} onPress={onPress} style={ui.button}><Text style={ui.text}>{checked ? '☑ ' : '☐ '}{label}</Text></Pressable>;
 }
-export function WebLink({ label = t('cinemaCreator.upload.web'), url = CREATOR_WORKSPACE_URL }: { label?: string; url?: string }) {
-    return <Pressable accessibilityRole="link" accessibilityLabel={label} style={ui.button} onPress={() => void WebBrowser.openBrowserAsync(url)}><Text style={ui.link}>{label}</Text></Pressable>;
-}
 export function CreatorClosed({ message = 'cinemaUpload.closed' }: { message?: string }) {
-    return <View style={ui.page}><Text style={ui.text}>{t(message === 'cinemaUpload.role' ? 'cinemaCreator.upload.body' : message)}</Text><WebLink /></View>;
+    return <View style={ui.page}><Text style={ui.text}>{t(message === 'cinemaUpload.role' ? 'cinemaCreator.upload.body' : message)}</Text><ComingToApp /></View>;
 }
 export const useCreatorOwner = () => useSyncExternalStore(subscribeCacheUser, getCacheUser, () => undefined);
 export function useCreatorScope() {
@@ -30,8 +27,8 @@ export function useCreatorScope() {
 export function RulesLinks() {
     return <View style={ui.card}>
         <Text accessibilityRole="header" style={ui.heading}>{t('cinemaUpload.rules')}</Text>
-        <WebLink label={t('cinemaUpload.policy')} url="https://veyrnox.ai/legal/cinema-content" />
-        <WebLink label={t('cinemaUpload.terms')} url="https://veyrnox.ai/legal/terms" />
+        <Button variant="tertiary" accessibilityRole="link" label={t('cinemaUpload.policy')} onPress={() => router.push('/legal/cinema-content')} />
+        <Button variant="tertiary" accessibilityRole="link" label={t('cinemaUpload.terms')} onPress={() => router.push('/legal/terms')} />
         <Link href="/report" accessibilityRole="link" style={ui.button}><Text style={ui.link}>{t('cinemaUpload.report')}</Text></Link>
         <Link href="/blocked" accessibilityRole="link" style={ui.button}><Text style={ui.link}>{t('cinemaUpload.blocked')}</Text></Link>
     </View>;
