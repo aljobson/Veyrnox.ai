@@ -1,6 +1,6 @@
 import { EFFECT_CONCEPTS } from './effectConceptCatalog.js';
 
-export const THEME_RECIPES = {
+const THEME_RECIPES = {
   PET: {
     category: 'YOUR PHOTO',
     needsKey: 'effect.pet',
@@ -80,13 +80,13 @@ export const THEME_RECIPES = {
   },
 };
 
-export const STEPS = [
+const STEPS = [
   'Upload a clear starting image that matches the subject guidance.',
   'Upload your image, edit the prompt if needed, and review the price before generating.',
   'Generate a 5s or 10s shot, or continue in Film Studio for a longer multi-shot film.',
 ];
 
-export function backgroundFor(id, theme) {
+function backgroundFor(id, theme) {
   let hash = 0;
   for (const character of id) hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
   const baseHue = {
