@@ -1,0 +1,6 @@
+[
+  {"input":{"ok":true,"count":2,"name":"short","Bad":"drop","$url":"drop","nested":{"secret":true},"list":[1],"nil":null},"output":{"ok":true,"count":2,"name":"short"}},
+  {"input":{"a":false,"a_1":"ok","1a":"drop","a-b":"drop","":"drop"},"output":{"a":false,"a_1":"ok"}},
+  {"input":null,"output":{}},
+  {"input":"string","output":{}}
+]

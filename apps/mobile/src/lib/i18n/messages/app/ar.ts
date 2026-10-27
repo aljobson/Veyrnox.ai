@@ -4769,5 +4769,13 @@ export default {
   "whenPicker.hHMM": "HH:MM",
   "whenPicker.timehourminute": "الوقت، ساعة:دقيقة",
   "whenPicker.timesareinthisphonestime": "الأوقات حسب المنطقة الزمنية لهذا الهاتف.",
-  "whenPicker.yYYYMMDD": "YYYY-MM-DD"
+  "whenPicker.yYYYMMDD": "YYYY-MM-DD",
+  "analyticsConsent.title": "هل تساعدنا في تحسين Veyrnox؟",
+  "analyticsConsent.choices": "خيارات الخصوصية",
+  "analyticsConsent.body": "بإذنك، نرسل معلومات عن الشاشات التي تفتحها والميزات التي تستخدمها، مرتبطة بمعرّف حسابك وليس باسمك أو بريدك الإلكتروني، إلى PostHog في الاتحاد الأوروبي عبر veyrnox.ai لتحسين التطبيق. لا نرسل أبدًا الأوامر أو نصوص المحادثات أو وسائطك أو بريدك الإلكتروني أو تفاصيل الدفع.",
+  "analyticsConsent.change": "يمكنك تغيير اختيارك من الحساب ← خيارات الخصوصية.",
+  "analyticsConsent.policy": "سياسة الخصوصية",
+  "analyticsConsent.allow": "السماح",
+  "analyticsConsent.decline": "الرفض",
+  "analyticsConsent.saveError": "تعذر حفظ اختيارك. يرجى المحاولة مجددًا."
 } as const;

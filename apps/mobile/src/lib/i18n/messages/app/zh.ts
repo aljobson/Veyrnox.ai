@@ -4449,5 +4449,13 @@ export default {
   "whenPicker.hHMM": "HH:MM",
   "whenPicker.timehourminute": "时间，时:分",
   "whenPicker.timesareinthisphonestime": "时间均使用此手机的时区。",
-  "whenPicker.yYYYMMDD": "YYYY-MM-DD"
+  "whenPicker.yYYYMMDD": "YYYY-MM-DD",
+  "analyticsConsent.title": "帮助改进 Veyrnox？",
+  "analyticsConsent.choices": "隐私选项",
+  "analyticsConsent.body": "经你允许，我们会通过 veyrnox.ai 将你打开的页面和使用的功能发送给欧盟的 PostHog，以改进应用，这些信息会关联到你的账号 ID，而非你的姓名或电子邮箱。我们绝不会发送提示词、聊天内容、你的媒体、电子邮箱或付款信息。",
+  "analyticsConsent.change": "你可以在“账户 → 隐私选项”中更改此设置。",
+  "analyticsConsent.policy": "隐私政策",
+  "analyticsConsent.allow": "允许",
+  "analyticsConsent.decline": "拒绝",
+  "analyticsConsent.saveError": "无法保存你的选择，请重试。"
 } as const;
