@@ -112,3 +112,8 @@ describe('the current screen in the menu', () => {
         for (const item of MENU_SECTIONS.flatMap((s) => s.items)) expect(MENU_ICONS[item.icon]).toBeDefined();
     });
 });
+
+test('Faceless reel follows Features in Tools', () => {
+    const items = MENU_SECTIONS.find(s => s.id === 'tools')!.items;
+    expect(items[items.findIndex(i => i.key === 'features') + 1]).toMatchObject({ key: 'facelessReel', href: '/faceless-reel', label: 'facelessReel.chip' });
+});

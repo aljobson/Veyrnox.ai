@@ -2484,6 +2484,36 @@
     "ratio": 1.82
   },
   {
+    "id": "facelessReel.storyBrief",
+    "english": "Story brief",
+    "translation": "Resumen de la historia",
+    "ratio": 2
+  },
+  {
+    "id": "facelessReel.hookAria",
+    "english": "Faceless reel caption hook",
+    "translation": "Gancho para subtítulos del reel sin rostro",
+    "ratio": 1.62
+  },
+  {
+    "id": "facelessReel.formatLabel",
+    "english": "Format",
+    "translation": "Formato narrativo",
+    "ratio": 2.83
+  },
+  {
+    "id": "facelessReel.format.mood.label",
+    "english": "Mood reel",
+    "translation": "Reel de ambiente",
+    "ratio": 1.78
+  },
+  {
+    "id": "facelessReel.seconds",
+    "english": "{n} s",
+    "translation": "{n} segundos",
+    "ratio": 2.4
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",

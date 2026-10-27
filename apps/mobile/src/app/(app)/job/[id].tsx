@@ -1,3 +1,4 @@
+import { FacelessSoundCard } from '../../../components/FacelessSoundCard';
 import { Text, Button, themedStyles, useThemedStyles } from '../../../components/ui';
 import { Image } from 'expo-image';
 import { InlineMedia } from '../../../components/InlineMedia';
@@ -38,7 +39,7 @@ function elapsed(seconds: number): string {
 
 export default function JobScreen() {
     const styles = useThemedStyles(sheets);
-    const { id } = useLocalSearchParams<{ id: string }>();
+    const { id, followup } = useLocalSearchParams<{ id: string; followup?: string }>();
     const { api } = useAuth();
     const router = useRouter();
     // Read by the delayed rating ask; kept out of the effect's dependencies so a new router object cannot restart the poll.
@@ -284,6 +285,7 @@ export default function JobScreen() {
                         <Button variant="secondary" containerStyle={styles.grow} accessibilityRole="button" disabled={!!acting} onPress={() => run('share')} label={acting === 'share' ? t('cinema.share.preparing') : t('cinema.share.share')} />
                     </View>
                     {note ? <Text variant="body" tone="secondary" style={styles.note} accessibilityLiveRegion="polite">{note}</Text> : null}
+                    <FacelessSoundCard jobId={id} followup={followup} state={state} modelId={modelId} mime={asset?.mime} />
                     <JobProvenance api={api} jobId={id} />
                     <Link href={{ pathname: '/report', params: { kind: 'job', id } }} asChild>
                         <Button variant="tertiary" accessibilityRole="button" label={t('job.report')} />
