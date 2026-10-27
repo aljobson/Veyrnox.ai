@@ -18,6 +18,8 @@ import { uploadSource } from '../lib/uploads';
 import { t } from '../lib/i18n';
 import { colors } from '../theme';
 import { FaceFilterResult } from './FaceFilterResult';
+import { Icon, IconBadge } from './ui';
+import { faceIcon } from '../lib/featureIcons';
 
 export function FaceFiltersFlow({ api, owner }: { api: ApiClient; owner: string }) {
     const router = useRouter();
@@ -121,11 +123,14 @@ export function FaceFiltersFlow({ api, owner }: { api: ApiClient; owner: string 
             {!models && !error ? <ActivityIndicator /> : null}
             {!model ? <>
                 {models?.length === 0 ? <Text style={styles.text}>{t('faceFilters.closed')}</Text> : null}
-                {models?.map(m => <Pressable key={m.id} accessibilityRole="button" accessibilityLabel={`${m.name}. ${t(`faceFilters.${m.id}`)}. ${t('faceFilters.price', { credits: String(m.credits) })}`} style={styles.card} onPress={() => reset(m)}>
-                    <Text accessible={false} style={styles.text}>◉</Text>
-                    <Text style={styles.text}>{m.name}</Text>
-                    <Text style={styles.text}>{t(`faceFilters.${m.id}`)}</Text>
-                    <Text style={styles.price}>{t('faceFilters.price', { credits: String(m.credits) })}</Text>
+                {models?.map(m => <Pressable key={m.id} accessibilityRole="button" accessibilityLabel={`${m.name}. ${t(`faceFilters.${m.id}`)}. ${t('faceFilters.price', { credits: String(m.credits) })}`} style={[styles.card, styles.option]} onPress={() => reset(m)}>
+                    <IconBadge {...faceIcon(m.id)} size="lg" />
+                    <View style={styles.optionText}>
+                        <Text style={styles.name}>{m.name}</Text>
+                        <Text style={styles.muted}>{t(`faceFilters.${m.id}`)}</Text>
+                        <Text style={styles.price}>{t('faceFilters.price', { credits: String(m.credits) })}</Text>
+                    </View>
+                    <Icon name="caretRight" size={20} />
                 </Pressable>)}
                 {error ? <Pressable accessibilityRole="button" accessibilityLabel={t('job.checkAgain')} style={styles.card} onPress={load}><Text style={styles.text}>{t('job.checkAgain')}</Text></Pressable> : null}
             </> : <>
@@ -159,5 +164,7 @@ const styles = StyleSheet.create({
     card: { minHeight: 44, padding: 14, gap: 6, borderWidth: 1, borderColor: colors.border, borderRadius: 12, backgroundColor: colors.surface },
     selected: { borderColor: colors.accent }, disabled: { opacity: 0.4 }, group: { gap: 8 },
     input: { minHeight: 44, padding: 14, color: colors.text, borderColor: colors.borderStrong, borderWidth: 1, borderRadius: 12 },
-    photo: { width: '100%', height: 280 }, price: { color: colors.money, fontSize: 16 }, error: { color: colors.danger },
+    photo: { width: '100%', height: 280 }, price: { color: colors.money, fontSize: 14, fontWeight: '600' }, error: { color: colors.danger },
+    option: { flexDirection: 'row', alignItems: 'center', gap: 14 }, optionText: { flex: 1, gap: 2 },
+    name: { color: colors.text, fontSize: 16, fontWeight: '600' }, muted: { color: colors.muted, fontSize: 14 },
 });

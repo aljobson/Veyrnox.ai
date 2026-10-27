@@ -12,3 +12,4 @@ export * from './Swatch';
 export * from './ChoiceCard';
 export * from './AppearanceContext';
 export * from './PriceText';
+export * from './IconBadge';
