@@ -47,7 +47,7 @@ const RECIPES = [
   },
   {
     id: 'trend-tray-balance-waiter', name: 'TRAY BALANCE WAITER', theme: 'QUIRK LAB', aspect: '9:16',
-    prompt: 'Animate the uploaded photo into a ten-second comedy moment. The subject, dressed as a waiter, weaves through a busy restaurant carrying a tall stack of plates on one tray. The stack wobbles dangerously, they lean and twist to save it, and it settles perfectly as they give the camera a relieved wink. Keep their identity recognisable, with believable physics, a smooth following camera and no broken plates, captions, logos or watermark.',
+    prompt: 'Animate the uploaded photo into a ten-second comedy moment. The subject, dressed as a waiter, weaves through a busy restaurant carrying a tall stack of plates on one tray. The stack wobbles wildly, they lean and twist to save it, and it settles perfectly as they give the camera a relieved wink. Keep their identity recognisable, with believable physics, a smooth following camera and no broken plates, captions, logos or watermark.',
   },
   {
     id: 'trend-retro-diner', name: 'RETRO DINER', theme: 'SHOT LANGUAGE', aspect: '16:9',
