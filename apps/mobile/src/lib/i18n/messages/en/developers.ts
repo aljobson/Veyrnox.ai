@@ -29,5 +29,7 @@ export default {
   "developers.models": "Browse models",
   "developers.share": "Share",
   "developers.row": "Developer API and CLI",
-  "developers.mcp": "Connect an assistant (MCP)"
+  "developers.mcp": "Connect an assistant (MCP)",
+  "developers.oauth.kicker": "OAuth 2.1 + PKCE",
+  "developers.shareValue": "Share: {value}"
 } as const;

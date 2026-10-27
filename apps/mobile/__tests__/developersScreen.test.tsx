@@ -13,14 +13,24 @@ afterEach(async () => { await act(async () => root.unmount()); jest.restoreAllMo
 test('renders headers, literal OAuth slots, all endpoints and selectable addresses without opening a URL', async () => {
     const open = jest.spyOn(RN.Linking, 'openURL'); const share = jest.spyOn(RN.Share, 'share').mockResolvedValue({ action: 'sharedAction', activityType: undefined });
     await act(async () => root.render(<Developers />)); const text = textOf(root.container);
-    for (const key of ['developers.title','developers.cli.kicker','developers.api.title','developers.oauth.title','developers.safety.title'])
+    for (const key of ['developers.title','developers.cli.title','developers.api.title','developers.oauth.title','developers.safety.title'])
         expect(root.container.queryAll(n => n.props.accessibilityRole === 'header' && textOf(n) === t(key)).length).toBeGreaterThan(0);
     for (const path of ['/models','/estimates','/generations','/generations/{id}','/generations/{id}/asset','/balance']) expect(text).toContain(path);
     expect(text).toContain('token_endpoint_auth_method: none'); expect(text).toContain('Authorization: Bearer …'); expect(text).toContain('confirmed_credits'); expect(text).not.toContain('{code}');
     expect(root.container.queryAll(n => n.props.selectable && textOf(n).includes('https://veyrnox.ai/api/developer/openapi'))).toHaveLength(1);
-    const buttons = root.container.queryAll(n => n.props.accessibilityRole === 'button' && n.props.accessibilityLabel === 'Share'); expect(buttons).toHaveLength(6);
-    await act(async () => buttons[0].props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }));
-    expect(share).toHaveBeenCalledWith({ message: 'pipx install "git+https://github.com/aljobson/Veyrnox.ai.git#subdirectory=agent-harness"' }); expect(open).not.toHaveBeenCalled();
+    expect(root.container.queryAll(n => n.props.accessibilityRole === 'header' && textOf(n) === t('developers.cli.kicker'))).toHaveLength(0);
+    const values = [
+        'pipx install "git+https://github.com/aljobson/Veyrnox.ai.git#subdirectory=agent-harness"', 'veyrnox auth login',
+        'veyrnox models list', 'veyrnox generations create --model nano-banana-kie --prompt "A blue fox"',
+        'https://veyrnox.ai/api/v1/developer', 'https://veyrnox.ai/.well-known/oauth-protected-resource/api/v1/developer',
+    ];
+    for (const value of values) {
+        const buttons = root.container.queryAll(n => n.props.accessibilityRole === 'button' && n.props.accessibilityLabel === t('developers.shareValue', { value }));
+        expect(buttons).toHaveLength(1); expect(textOf(buttons[0])).toBe(t('developers.share'));
+        await act(async () => buttons[0].props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }));
+        expect(share).toHaveBeenLastCalledWith({ message: value });
+    }
+    expect(share).toHaveBeenCalledTimes(6); expect(open).not.toHaveBeenCalled();
     const models = root.container.queryAll(n => n.props.accessibilityLabel === t('developers.models') && n.props.accessibilityRole === 'button')[0];
     await act(async () => models.props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 })); expect(mockPush).toHaveBeenCalledWith('/models');
 });

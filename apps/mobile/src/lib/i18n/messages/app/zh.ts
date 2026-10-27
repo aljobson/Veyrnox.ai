@@ -4804,5 +4804,8 @@ export default {
   "creditsPage.error.cancel_failed": "无法确认取消。请重试。",
   "creditsPage.error.temporarily_unavailable": "计费暂时不可用。请稍后重试。",
   "developers.row": "开发者 API 和 CLI",
-  "developers.mcp": "连接助手 (MCP)"
+  "developers.mcp": "连接助手 (MCP)",
+  "creditsPage.refundStatus": "订阅已结束。使用“查询冷静期退款”查看退款状态。",
+  "developers.oauth.kicker": "OAuth 2.1 + PKCE 身份验证",
+  "developers.shareValue": "分享：{value}"
 } as const;

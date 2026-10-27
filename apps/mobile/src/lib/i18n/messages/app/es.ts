@@ -4932,5 +4932,8 @@ export default {
   "creditsPage.error.cancel_failed": "No se ha podido confirmar la cancelación. Inténtalo de nuevo.",
   "creditsPage.error.temporarily_unavailable": "La facturación no está disponible temporalmente. Inténtalo más tarde.",
   "developers.row": "API y CLI para desarrolladores",
-  "developers.mcp": "Conectar un asistente (MCP)"
+  "developers.mcp": "Conectar un asistente (MCP)",
+  "creditsPage.refundStatus": "La suscripción ha finalizado. Usa Comprobar reembolso por desistimiento para ver el estado del reembolso.",
+  "developers.oauth.kicker": "Autenticación con OAuth 2.1 + PKCE",
+  "developers.shareValue": "Compartir: {value}"
 } as const;

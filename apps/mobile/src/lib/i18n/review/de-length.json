@@ -2826,6 +2826,12 @@
     "ratio": 3.3
   },
   {
+    "id": "developers.oauth.kicker",
+    "english": "OAuth 2.1 + PKCE",
+    "translation": "Authentifizierung mit OAuth 2.1 + PKCE",
+    "ratio": 2.38
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

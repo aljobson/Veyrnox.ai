@@ -4932,5 +4932,8 @@ export default {
   "creditsPage.error.cancel_failed": "La résiliation n’a pas pu être confirmée. Réessayez.",
   "creditsPage.error.temporarily_unavailable": "La facturation est temporairement indisponible. Réessayez plus tard.",
   "developers.row": "API et CLI pour développeurs",
-  "developers.mcp": "Connecter un assistant (MCP)"
+  "developers.mcp": "Connecter un assistant (MCP)",
+  "creditsPage.refundStatus": "L’abonnement est terminé. Utilisez Vérifier le remboursement de rétractation pour connaître son état.",
+  "developers.oauth.kicker": "Authentification OAuth 2.1 + PKCE",
+  "developers.shareValue": "Partager : {value}"
 } as const;

@@ -16,7 +16,7 @@ export function PlanCards({ plans, packs, credits, cadence, onCadence, chosenId,
     const active = cadence ?? localCadence ?? initialCadence(plans);
     const both = plans.some(p => p.interval === 'month') && plans.some(p => p.interval === 'year');
     return <View style={s.list}>
-        {both ? <SegmentedControl options={[{ value: 'month', label: t('creditsPage.monthly') }, { value: 'year', label: t('creditsPage.yearly') }]} value={active} onChange={next => { setLocalCadence(next); onCadence?.(next); }} /> : null}
+        {both ? <SegmentedControl options={[{ value: 'month', label: t('creditsPage.monthly') }, { value: 'year', label: t('creditsPage.yearly') }]} value={active} onChange={next => { if (next === active) return; setLocalCadence(next); onCadence?.(next); }} /> : null}
         {plans.filter(p => p.interval === active).map(plan => {
             const count = credits.get(generationCatalogId(plan.productId) ?? '');
             const saving = subscriptionSavingPercent(plan, count, packs), yearly = yearlySaving(plan, plans);

@@ -4996,5 +4996,8 @@ export default {
   "creditsPage.error.cancel_failed": "Не удалось подтвердить отмену. Повторите попытку.",
   "creditsPage.error.temporarily_unavailable": "Оплата временно недоступна. Попробуйте позже.",
   "developers.row": "API и CLI для разработчиков",
-  "developers.mcp": "Подключить ассистента (MCP)"
+  "developers.mcp": "Подключить ассистента (MCP)",
+  "creditsPage.refundStatus": "Подписка завершена. Проверьте возврат за период отказа, чтобы узнать его статус.",
+  "developers.oauth.kicker": "Аутентификация OAuth 2.1 + PKCE",
+  "developers.shareValue": "Поделиться: {value}"
 } as const;

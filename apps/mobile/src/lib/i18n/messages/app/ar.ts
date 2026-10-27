@@ -5124,5 +5124,8 @@ export default {
   "creditsPage.error.cancel_failed": "تعذّر تأكيد الإلغاء. حاول مجددًا.",
   "creditsPage.error.temporarily_unavailable": "الفوترة غير متاحة مؤقتًا. حاول لاحقًا.",
   "developers.row": "واجهة API وأداة CLI للمطورين",
-  "developers.mcp": "ربط مساعد (MCP)"
+  "developers.mcp": "ربط مساعد (MCP)",
+  "creditsPage.refundStatus": "انتهى الاشتراك. استخدم التحقق من استرداد فترة العدول لمعرفة حالة الاسترداد.",
+  "developers.oauth.kicker": "المصادقة باستخدام OAuth 2.1 + PKCE",
+  "developers.shareValue": "مشاركة: {value}"
 } as const;

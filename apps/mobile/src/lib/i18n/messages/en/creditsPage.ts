@@ -53,5 +53,6 @@ export default {
   "creditsPage.error.subscription_not_live": "This subscription is no longer live.",
   "creditsPage.error.subscription_not_found": "This subscription could not be found.",
   "creditsPage.error.cancel_failed": "Cancellation could not be confirmed. Try again.",
-  "creditsPage.error.temporarily_unavailable": "Billing is temporarily unavailable. Try again later."
+  "creditsPage.error.temporarily_unavailable": "Billing is temporarily unavailable. Try again later.",
+  "creditsPage.refundStatus": "Subscription ended. Use Check cooling-off refund to see the refund status."
 } as const;

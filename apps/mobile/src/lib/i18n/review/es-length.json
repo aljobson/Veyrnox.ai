@@ -2676,6 +2676,12 @@
     "ratio": 2
   },
   {
+    "id": "developers.oauth.kicker",
+    "english": "OAuth 2.1 + PKCE",
+    "translation": "Autenticación con OAuth 2.1 + PKCE",
+    "ratio": 2.13
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",

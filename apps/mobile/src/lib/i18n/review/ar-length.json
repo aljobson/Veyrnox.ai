@@ -1590,6 +1590,12 @@
     "ratio": 1.65
   },
   {
+    "id": "developers.oauth.kicker",
+    "english": "OAuth 2.1 + PKCE",
+    "translation": "المصادقة باستخدام OAuth 2.1 + PKCE",
+    "ratio": 2.13
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "تسجيل الدخول",

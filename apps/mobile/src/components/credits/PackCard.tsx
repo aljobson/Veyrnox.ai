@@ -1,12 +1,13 @@
+import type { ReactNode } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import type { DisplayPackage } from '../../lib/billing';
 import { formatLocale, plural, t } from '../../lib/i18n';
 import type { typicalCosts } from '../../lib/creditOffers';
 import { ds } from '../../theme';
 import { Card, Chip, Icon, Text, themedStyles, useThemedStyles } from '../ui';
-import { VeyCardPeek, peekRoom } from '../VeyCardPeek';
-export function PackCard({ pack, best, saving, costs, busy, chosen, disabled, readOnly, onPress }: {
-    pack: DisplayPackage; best?: boolean; saving?: number | null; costs?: ReturnType<typeof typicalCosts> | null;
+import { peekRoom } from '../VeyCardPeek';
+export function PackCard({ pack, best, saving, costs, busy, chosen, disabled, readOnly, onPress, children }: {
+    children?: ReactNode; pack: DisplayPackage; best?: boolean; saving?: number | null; costs?: ReturnType<typeof typicalCosts> | null;
     busy?: boolean; chosen?: boolean; disabled?: boolean; readOnly?: boolean; onPress?: () => void;
 }) {
     const s = useThemedStyles(sheets);
@@ -17,7 +18,7 @@ export function PackCard({ pack, best, saving, costs, busy, chosen, disabled, re
     const save = saving != null && saving >= 1 ? t('creditsPage.save', { pct: saving }) : null;
     return <Card onPress={readOnly ? undefined : onPress} disabled={disabled} accessibilityRole={readOnly ? undefined : 'button'}
         accessibilityLabel={[credits, pack.priceString, best && t('creditsPage.best'), save].filter(Boolean).join(', ')} style={[s.card, chosen && s.peek]}>
-        {chosen ? <VeyCardPeek /> : null}
+        {children}
         <View style={s.row}><Text variant="caption" tone="tertiary">{t('creditsPage.pack')}</Text>{best ? <Chip selected label={t('creditsPage.best')} /> : null}</View>
         <View style={s.band}><Icon name="coins" tint={s.money.color} /><Text variant="title2" tone="warning">{credits}</Text></View>
         <View style={s.row}>{busy ? <ActivityIndicator color={s.money.color} /> : <Text variant="title3">{pack.priceString}</Text>}{save ? <Text variant="footnote" tone="accent">{save}</Text> : null}</View>
