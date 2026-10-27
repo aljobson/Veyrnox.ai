@@ -1,14 +1,17 @@
 /**
- * Motion-transfer template cards (ADR-0269). Public data only: which
- * server-side driving clip a card uses, its mode and length, and our own
- * preview. Titles and blurbs live in the app catalogs under
- * `app.motion.template.<id>.title` / `.blurb`. The clip's R2 key, readiness
- * and orientation live in lib/motionClips.js. The server charges the catalog
- * row (`model`) per 5 seconds of the clip; nothing here is a price.
+ * Motion-transfer template cards (ADR-0269). Public data only: what a card
+ * shows and which server-side driving clip it uses. The clip's R2 key, length
+ * check and orientation live in lib/motionClips.js. The server charges the
+ * catalog row (`model`) per 5 seconds of the clip; nothing here is a price.
+ *
+ * Nothing here is shown until MOTION_TRANSFER_ENABLED / MOTION_REPLACE_ENABLED
+ * is "true" and the clip is marked ready. Every clip and preview is our own.
  */
 
-const card = (id, seconds, model = 'motion-transfer') => Object.freeze({
+const card = (id, title, blurb, seconds, model = 'motion-transfer') => Object.freeze({
     id,
+    title,
+    blurb,
     model,
     drivingClip: id,
     seconds,
@@ -16,46 +19,25 @@ const card = (id, seconds, model = 'motion-transfer') => Object.freeze({
 });
 
 export const MOTION_TRANSFER_TEMPLATES = Object.freeze([
-    card('motion-city-stride', 5),
-    card('motion-runway-turn', 10),
-    card('motion-slowmo-hair-walk', 5),
-    card('motion-orbit-reveal', 5),
-    card('motion-push-in-glance', 5),
-    card('motion-two-step', 5),
-    card('motion-shoulder-bounce', 5),
-    card('motion-arm-wave-routine', 10),
-    card('motion-spin-and-freeze', 5),
-    card('motion-moonwalk-glide', 5),
-    card('motion-parkour-vault', 5),
-    card('motion-rooftop-jump', 5),
-    card('motion-waiter-balance', 10),
-    card('motion-skate-glide', 5),
-    card('motion-boxing-combo', 5),
-    card('motion-duo-dance', 10),
-    card('motion-slow-dance', 10),
-    card('motion-world-shift-walk', 10, 'motion-replace'),
-    card('motion-hero-landing', 5),
-    card('motion-stage-swap', 10, 'motion-replace'),
+    card('motion-city-stride', 'City stride', 'You walk toward a camera that eases back.', 5),
+    card('motion-runway-turn', 'Runway turn', 'A runway walk, a pause, a look back.', 10),
+    card('motion-slowmo-hair-walk', 'Slow-motion walk', 'Wind in your hair, every step in slow motion.', 5),
+    card('motion-orbit-reveal', 'Orbit reveal', 'You hold the pose while the camera circles.', 5),
+    card('motion-push-in-glance', 'The glance', 'Stillness, then a sharp look into the lens.', 5),
+    card('motion-two-step', 'Two-step', 'An easy side-to-side groove.', 5),
+    card('motion-shoulder-bounce', 'Shoulder bounce', 'Shoulders on the beat and a point to camera.', 5),
+    card('motion-arm-wave-routine', 'Arm wave', 'An eight-count arm wave into a pose.', 10),
+    card('motion-spin-and-freeze', 'Spin and freeze', 'One spin, then hold it.', 5),
+    card('motion-moonwalk-glide', 'Backward glide', 'A smooth glide backwards across the floor.', 5),
+    card('motion-parkour-vault', 'Wall vault', 'Run, vault a low wall, land clean.', 5),
+    card('motion-rooftop-jump', 'Rooftop jump', 'A run-up and a jump across the gap.', 5),
+    card('motion-waiter-balance', 'Tray balance', 'Carrying a tray on one hand, a wobble and a save.', 10),
+    card('motion-skate-glide', 'Skate glide', 'Gliding forward with your arms out.', 5),
+    card('motion-boxing-combo', 'Boxing combo', 'Jab, cross, slip.', 5),
+    card('motion-duo-dance', 'Duo dance', 'Two people, one mirrored routine. Needs a photo of two.', 10),
+    card('motion-slow-dance', 'Slow dance', 'A slow sway and a turn. Needs a photo of two.', 10),
+    card('motion-world-shift-walk', 'World shift', 'A steady walk while the world changes around you.', 10, 'motion-replace'),
+    card('motion-hero-landing', 'Hero landing', 'Drop in and land in a crouch.', 5),
+    card('motion-stage-swap', 'Take the stage', 'You replace the performer on a lit stage.', 10, 'motion-replace'),
 ]);
 
-/** Model id for a mode the server enables. */
-export const MOTION_MODEL_FOR_MODE = Object.freeze({ move: 'motion-transfer', replace: 'motion-replace' });
-
-/**
- * Cards a viewer may see: only modes whose flag is on. `ready` (ids whose
- * clip exists) comes from the server; a card that is not ready shows as
- * coming soon and cannot be started.
- * @param {{ move: boolean, replace: boolean }} modes
- * @param {readonly string[]} readyIds
- */
-export function visibleMotionTemplates(modes, readyIds) {
-    const models = new Set(Object.entries(MOTION_MODEL_FOR_MODE).filter(([mode]) => modes[mode]).map(([, model]) => model));
-    const ready = new Set(readyIds);
-    return MOTION_TRANSFER_TEMPLATES.filter(t => models.has(t.model)).map(t => ({ ...t, ready: ready.has(t.drivingClip) }));
-}
-
-/** Credits shown for a template: the catalog's per-5-second price times the clip's units. The server checks it (confirmed_credits). */
-export function motionTemplateQuote(template, catalogCredits) {
-    if (!Number.isInteger(catalogCredits) || catalogCredits <= 0) return null;
-    return catalogCredits * Math.ceil(template.seconds / 5);
-}
