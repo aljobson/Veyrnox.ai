@@ -48,13 +48,13 @@ describe('the cards', () => {
 });
 
 describe('where the welcome shows', () => {
-    test('the colorful creation promise begins on sign-in and continues through first run', () => {
+    test('the shared consent and provider controls introduce creation on sign-in', () => {
         const signIn = read('app', 'sign-in.tsx');
         const copy = read('lib', 'i18n', 'messages', 'en', 'signIn.ts');
-        expect(signIn).toContain('styles.promisePhoto');
-        expect(signIn).toContain('styles.promiseVideo');
-        expect(signIn).toContain('styles.promiseIdea');
-        expect(signIn).toContain('agreed && styles.agreeOn');
+        expect(signIn).toContain('<ConsentRow agreed={agreed}');
+        expect(signIn).toMatch(/<AuthProviderButton\s+provider="apple"/);
+        expect(signIn).toMatch(/<AuthProviderButton\s+provider="google"/);
+        expect(signIn).toContain('if (!agreed || busy || running.current) return');
         expect(copy).toContain("'signIn.title': 'Start with something real.'");
         expect(copy).toContain('photo, video, reference or idea');
     });
@@ -62,17 +62,17 @@ describe('where the welcome shows', () => {
     test('email authentication keeps the same visual momentum', () => {
         const email = read('app', 'email.tsx');
         const copy = read('lib', 'i18n', 'messages', 'en', 'email.ts');
-        expect(email).toContain('styles.modeSignIn');
-        expect(email).toContain('styles.modeSignUp');
-        expect(email).toContain("focused === 'email' && styles.emailShellOn");
-        expect(email).toContain("focused === 'password' && styles.passwordShellOn");
-        expect(email).toContain('styles.securityReady');
+        expect(email).toMatch(/<SegmentedControl\s+value=\{mode\}/);
+        expect(email).toContain("value: 'signUp'");
+        expect(email).toMatch(/<TextField\s+label=\{t\('authGate.email'\)\}/);
+        expect(email).toMatch(/<TextField\s+ref=\{passwordRef\}/);
+        expect(email).toContain("t('email.securityReady')");
         expect(email).toContain('retrySecurityCheck');
         expect(email).toContain('passwordVisible');
         expect(email).toContain('keyboardDismissMode="interactive"');
         expect(email).toContain("signInWithOAuth('google')");
         expect(email).toContain('signInWithApple()');
-        expect(email).toContain('styles.providerApple');
+        expect(email).toContain('nativeAvailable={appleNativeAvailable}');
         expect(copy).toContain("'email.orUseEmail': 'Or continue with email'");
         expect(copy).toContain("'email.signInCta': 'Sign in and start creating'");
         expect(copy).toContain("'email.signUpCta': 'Create account and continue'");
@@ -96,7 +96,7 @@ describe('where the welcome shows', () => {
         for (const label of ['My photo', 'My video', 'A reference', 'Just an idea']) {
             expect(start).toContain(`label: '${label}'`);
         }
-        expect(start).toContain('on && styles.sourceOn');
+        expect(start).toContain('selected={source === item.key}');
         expect(start).toContain('Or try a template');
         expect(start).toContain('presetHref(template)');
     });
@@ -112,11 +112,11 @@ describe('where the welcome shows', () => {
         expect(copy).toContain("'vibe.goal.story': 'Tell a story'");
     });
 
-    test('goal choices stay selected as colorful cards until Continue', () => {
+    test('goal choices stay selected as accent cards until Continue', () => {
         const screen = read('app', '(app)', 'vibe.tsx');
         expect(screen).toContain('const GOAL_PRESENTATION');
-        expect(screen).toContain('isSelected && styles.goalChoiceOn');
-        expect(screen).toContain("onPress={() => setDraft((d) => ({ ...d, goal }))}");
-        expect(screen).toContain("disabled={!draft.goal}");
+        expect(screen).toContain('selected={draft.goal === goal}');
+        expect(screen).toContain('onPress={() => setDraft((d) => ({ ...d, goal }))}');
+        expect(screen).toContain('disabled={!draft.goal}');
     });
 });

@@ -1,6 +1,6 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { VeyCharacter } from '../../components/VeyCharacter';
 import { selectedState, touchTarget } from '../../lib/a11y';
@@ -14,7 +14,10 @@ import { chooseLocale, getLocale, t } from '../../lib/i18n';
 import { LANGUAGES } from '../../lib/language';
 import { loadLanguage, saveAccountLanguage, storeLanguage } from '../../lib/languageStore';
 import { fetchPresets, presetHref } from '../../lib/presets';
-import { colors, fonts } from '../../theme';
+import { colors, ds } from '../../theme';
+import { Button, Card as SurfaceCard, Chip, Text, TextField, ChoiceCard, themedStyles, useThemedStyles } from '../../components/ui';
+import { noteOnboardingCompleted } from '../../lib/celebrate';
+import type { MenuIcon } from '../../lib/menuIcons';
 
 // The Vibe Check (server ADR-0251): seven taps, one question each, then a creator card. Skippable on every screen, and a
 // skip never throws away answers already saved. Everything chosen here only reorders templates and sets a default.
@@ -25,17 +28,18 @@ type ChoiceKey = 'look' | 'goal' | 'pace' | 'destination' | 'audience';
 const STEPS = ['goal', 'look', 'pace', 'chaos', 'destination', 'audience', 'voice'] as const;
 const TOTAL = STEPS.length;
 const SUBTITLED: ReadonlySet<string> = new Set(['pace', 'voice']);
-const GOAL_PRESENTATION: Record<Goal, { emoji: string; tint: string; selected: string; border: string }> = {
-    sell: { emoji: '🛒', tint: '#FFF2C7', selected: '#FFD65A', border: '#E4A900' },
-    story: { emoji: '🎬', tint: '#EEE4FF', selected: '#C8A7FF', border: '#8752DB' },
-    music_video: { emoji: '🎵', tint: '#FFE0F0', selected: '#FF9DCC', border: '#DC3988' },
-    meme: { emoji: '📱', tint: '#DDF5FF', selected: '#82D8FF', border: '#168BC0' },
-    character: { emoji: '✨', tint: '#DDF9F1', selected: '#80E3CA', border: '#168E73' },
-    bedtime: { emoji: '🌙', tint: '#E5E8FF', selected: '#AEB8FF', border: '#5865D8' },
+const GOAL_PRESENTATION: Record<Goal, { icon: MenuIcon }> = {
+    sell: { icon: 'bag' },
+    story: { icon: 'film' },
+    music_video: { icon: 'audio' },
+    meme: { icon: 'phone' },
+    character: { icon: 'sparkle' },
+    bedtime: { icon: 'moon' },
 };
 
 export default function Vibe() {
     const router = useRouter();
+    const styles = useThemedStyles(sheets);
     const { api } = useAuth();
     const { retake } = useLocalSearchParams<{ retake?: string }>();
     // 0 = intro, 1..7 = questions, 8 = card, -1 = skipped.
@@ -105,6 +109,7 @@ export default function Vibe() {
         }
         await storeVibe({ state: 'completed', answers, synced: r.kind === 'ok' });
         setSynced(r.kind === 'ok');
+        noteOnboardingCompleted();
         setSaved(answers);
         setSaving(false);
         setStep(TOTAL + 1);
@@ -122,11 +127,7 @@ export default function Vibe() {
     }
 
     const key = step >= 1 && step <= TOTAL ? STEPS[step - 1] : null;
-    const skipLink = (
-        <Pressable accessibilityRole="button" style={[touchTarget, styles.link]} onPress={() => void skip()}>
-            <Text style={styles.linkText}>{t('vibe.skip')}</Text>
-        </Pressable>
-    );
+    const skipLink = <Button variant="tertiary" label={t('vibe.skip')} onPress={() => void skip()} />;
 
     return (
         <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -135,7 +136,9 @@ export default function Vibe() {
             <ScrollView contentContainerStyle={key ? styles.bodyTop : styles.body} keyboardShouldPersistTaps="handled">
                 {step === 0 && language === 'ask' ? (
                     <View style={styles.question}>
-                        <Text style={styles.title} accessibilityRole="header">{t('vibe.language.title')}</Text>
+                        <Text variant="title1" style={styles.title} accessibilityRole="header">
+                            {t('vibe.language.title')}
+                        </Text>
                         <Text style={styles.text}>{t('vibe.language.hint')}</Text>
                         <View style={styles.options}>
                             {LANGUAGES.map((l) => (
@@ -151,26 +154,35 @@ export default function Vibe() {
                                         setLanguageNote(false);
                                     }}
                                 >
-                                    <Text style={styles.flag} accessibilityElementsHidden importantForAccessibility="no">{l.flag}</Text>
                                     <Text style={styles.choiceLabel}>{l.name}</Text>
                                 </Pressable>
                             ))}
                         </View>
-                        {languageNote ? <Text style={styles.text} accessibilityLiveRegion="polite">{t('vibe.language.later')}</Text> : null}
+                        {languageNote ? (
+                            <Text style={styles.text} accessibilityLiveRegion="polite">
+                                {t('vibe.language.later')}
+                            </Text>
+                        ) : null}
                     </View>
                 ) : null}
 
                 {step === 0 && language === 'done' ? (
                     <View style={styles.center}>
-                        <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><VeyCharacter width={140} /></View>
-                        <Text style={styles.title} accessibilityRole="header">{t('vibe.intro.title')}</Text>
+                        <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+                            <VeyCharacter width={140} />
+                        </View>
+                        <Text variant="title1" style={styles.title} accessibilityRole="header">
+                            {t('vibe.intro.title')}
+                        </Text>
                         <Text style={styles.text}>{t('vibe.intro.body')}</Text>
                     </View>
                 ) : null}
 
                 {step === -1 ? (
                     <View style={styles.center}>
-                        <Text style={styles.title} accessibilityRole="header">{t('vibe.skipped.title')}</Text>
+                        <Text variant="title1" style={styles.title} accessibilityRole="header">
+                            {t('vibe.skipped.title')}
+                        </Text>
                         <Text style={styles.text}>{t('vibe.skipped.body')}</Text>
                     </View>
                 ) : null}
@@ -182,44 +194,30 @@ export default function Vibe() {
                                 <View key={s} style={[styles.progressStep, i < step && styles.progressStepOn]} />
                             ))}
                         </View>
-                        <Text style={styles.step} accessibilityLabel={t('vibe.step', { n: step, total: TOTAL })}>{t('vibe.step', { n: step, total: TOTAL })}</Text>
-                        <Text style={styles.title} accessibilityRole="header">{t(`vibe.${key}.title`)}</Text>
+                        <Text style={styles.step} accessibilityLabel={t('vibe.step', { n: step, total: TOTAL })}>
+                            {t('vibe.step', { n: step, total: TOTAL })}
+                        </Text>
+                        <Text variant="title1" style={styles.title} accessibilityRole="header">
+                            {t(`vibe.${key}.title`)}
+                        </Text>
                         {key === 'goal' ? (
                             <View style={styles.goalGrid}>
-                                {CREATOR_ANSWERS.goal.map((goal) => {
-                                    const presentation = GOAL_PRESENTATION[goal];
-                                    const isSelected = draft.goal === goal;
-                                    return (
-                                        <Pressable
-                                            key={goal}
-                                            accessibilityRole="button"
-                                            accessibilityLabel={t(`vibe.goal.${goal}`)}
-                                            accessibilityState={selectedState(isSelected)}
-                                            style={({ pressed }) => [
-                                                touchTarget,
-                                                styles.goalChoice,
-                                                { backgroundColor: isSelected ? presentation.selected : presentation.tint, borderColor: isSelected ? presentation.border : presentation.tint },
-                                                isSelected && styles.goalChoiceOn,
-                                                pressed && styles.goalChoicePressed,
-                                            ]}
+                                {CREATOR_ANSWERS.goal.map((goal) => (
+                                    <View key={goal} style={styles.goalChoice}>
+                                        <ChoiceCard
+                                            icon={GOAL_PRESENTATION[goal].icon}
+                                            title={t(`vibe.goal.${goal}`)}
+                                            selected={draft.goal === goal}
                                             onPress={() => setDraft((d) => ({ ...d, goal }))}
-                                        >
-                                            <View style={styles.goalChoiceTop}>
-                                                <Text style={styles.goalEmoji} accessibilityElementsHidden importantForAccessibility="no">{presentation.emoji}</Text>
-                                                {isSelected ? (
-                                                    <View style={[styles.goalCheck, { backgroundColor: presentation.border }]} accessibilityElementsHidden importantForAccessibility="no">
-                                                        <Text style={styles.goalCheckText}>✓</Text>
-                                                    </View>
-                                                ) : null}
-                                            </View>
-                                            <Text style={styles.goalLabel}>{t(`vibe.goal.${goal}`)}</Text>
-                                        </Pressable>
-                                    );
-                                })}
+                                        />
+                                    </View>
+                                ))}
                             </View>
                         ) : key === 'chaos' ? (
                             <View style={styles.options}>
-                                <Text style={styles.readout} accessibilityLiveRegion="polite">{t(`vibe.chaos.${draft.chaos ?? 2}`)}</Text>
+                                <Text style={styles.readout} accessibilityLiveRegion="polite">
+                                    {t(`vibe.chaos.${draft.chaos ?? 2}`)}
+                                </Text>
                                 <View style={styles.dial}>
                                     {Array.from({ length: CHAOS_MAX + 1 }, (_, i) => (
                                         <Pressable
@@ -240,18 +238,23 @@ export default function Vibe() {
                             </View>
                         ) : key === 'voice' ? (
                             <View style={styles.options}>
-                                <TextInput
-                                    style={styles.input}
+                                <TextField
+                                    label={t('vibe.voice.studio')}
                                     value={studio}
                                     onChangeText={setStudio}
                                     maxLength={STUDIO_NAME_MAX}
                                     placeholder={t('vibe.voice.studio')}
-                                    placeholderTextColor={colors.muted}
                                     accessibilityLabel={t('vibe.voice.studio')}
                                     autoCapitalize="words"
                                 />
                                 {CREATOR_ANSWERS.voice.map((v) => (
-                                    <Choice key={v} label={t(`vibe.voice.${v}`)} sub={t(`vibe.voice.${v}.sub`)} on={draft.voice === v} onPress={() => setDraft((d) => ({ ...d, voice: v }))} />
+                                    <Choice
+                                        key={v}
+                                        label={t(`vibe.voice.${v}`)}
+                                        sub={t(`vibe.voice.${v}.sub`)}
+                                        on={draft.voice === v}
+                                        onPress={() => setDraft((d) => ({ ...d, voice: v }))}
+                                    />
                                 ))}
                             </View>
                         ) : (
@@ -267,7 +270,11 @@ export default function Vibe() {
                                 ))}
                             </View>
                         )}
-                        {failed ? <Text style={styles.error} accessibilityLiveRegion="polite">{t('vibe.error')}</Text> : null}
+                        {failed ? (
+                            <Text style={styles.error} accessibilityLiveRegion="polite">
+                                {t('vibe.error')}
+                            </Text>
+                        ) : null}
                     </View>
                 ) : null}
 
@@ -276,68 +283,28 @@ export default function Vibe() {
 
             <View style={styles.footer}>
                 {step === 0 && language === 'ask' ? (
-                    <Pressable accessibilityRole="button" style={[touchTarget, styles.primary]} onPress={() => (languageNote ? setLanguage('done') : void continueLanguage())}>
-                        <Text style={styles.primaryText}>{t('vibe.language.continue')}</Text>
-                    </Pressable>
+                    <Button label={t('vibe.language.continue')} onPress={() => (languageNote ? setLanguage('done') : void continueLanguage())} />
                 ) : null}
                 {step === 0 && language === 'done' ? (
                     <>
-                        <Pressable accessibilityRole="button" style={[touchTarget, styles.primary]} onPress={() => setStep(1)}>
-                            <Text style={styles.primaryText}>{t('vibe.start')}</Text>
-                        </Pressable>
+                        <Button label={t('vibe.start')} onPress={() => setStep(1)} />
                         {retake === '1' ? null : skipLink}
                     </>
                 ) : null}
-                {step === -1 ? (
-                    <Pressable accessibilityRole="button" style={[touchTarget, styles.primary]} onPress={() => router.replace('/')}>
-                        <Text style={styles.primaryText}>{t('vibe.skipped.go')}</Text>
-                    </Pressable>
-                ) : null}
-                {key === 'chaos' ? (
-                    <Pressable accessibilityRole="button" style={[touchTarget, styles.primary]} onPress={() => setStep(step + 1)}>
-                        <Text style={styles.primaryText}>{t('vibe.next')}</Text>
-                    </Pressable>
-                ) : null}
-                {key === 'goal' ? (
-                    <Pressable
-                        accessibilityRole="button"
-                        accessibilityState={{ disabled: !draft.goal }}
-                        disabled={!draft.goal}
-                        style={[touchTarget, styles.primary, !draft.goal && styles.disabled]}
-                        onPress={() => setStep(step + 1)}
-                    >
-                        <Text style={styles.primaryText}>{t('vibe.next')}</Text>
-                    </Pressable>
-                ) : null}
-                {key === 'voice' ? (
-                    <Pressable
-                        accessibilityRole="button"
-                        accessibilityState={{ disabled: !draft.voice || saving }}
-                        disabled={!draft.voice || saving}
-                        style={[touchTarget, styles.primary, (!draft.voice || saving) && styles.disabled]}
-                        onPress={() => void finish()}
-                    >
-                        <Text style={styles.primaryText}>{saving ? t('vibe.saving') : t('vibe.voice.done')}</Text>
-                    </Pressable>
-                ) : null}
+                {step === -1 ? <Button label={t('vibe.skipped.go')} onPress={() => router.replace('/')} /> : null}
+                {key === 'chaos' ? <Button label={t('vibe.next')} onPress={() => setStep(step + 1)} /> : null}
+                {key === 'goal' ? <Button label={t('vibe.next')} disabled={!draft.goal} onPress={() => setStep(step + 1)} /> : null}
+                {key === 'voice' ? <Button label={saving ? t('vibe.saving') : t('vibe.voice.done')} disabled={!draft.voice || saving} onPress={() => void finish()} /> : null}
                 {key ? (
                     <View style={styles.row}>
-                        {step > 1 ? (
-                            <Pressable accessibilityRole="button" style={[touchTarget, styles.link]} onPress={() => setStep(step - 1)}>
-                                <Text style={styles.linkText}>{t('vibe.back')}</Text>
-                            </Pressable>
-                        ) : <View />}
+                        {step > 1 ? <Button variant="tertiary" label={t('vibe.back')} onPress={() => setStep(step - 1)} /> : <View />}
                         {skipLink}
                     </View>
                 ) : null}
                 {step === TOTAL + 1 ? (
                     <>
-                        <Pressable accessibilityRole="button" style={[touchTarget, styles.primary]} onPress={() => void makeFirst()}>
-                            <Text style={styles.primaryText}>{t('vibe.card.first')}</Text>
-                        </Pressable>
-                        <Pressable accessibilityRole="button" style={[touchTarget, styles.link]} onPress={() => router.replace('/')}>
-                            <Text style={styles.linkText}>{t('vibe.card.home')}</Text>
-                        </Pressable>
+                        <Button label={t('vibe.card.first')} onPress={() => void makeFirst()} />
+                        <Button variant="tertiary" label={t('vibe.card.home')} onPress={() => router.replace('/')} />
                     </>
                 ) : null}
             </View>
@@ -346,87 +313,65 @@ export default function Vibe() {
 }
 
 function Choice({ label, sub, on, onPress }: { label: string; sub?: string | null; on: boolean; onPress: () => void }) {
-    return (
-        <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={sub ? `${label}. ${sub}` : label}
-            accessibilityState={selectedState(on)}
-            style={({ pressed }) => [touchTarget, styles.choice, on && styles.choiceOn, pressed && styles.pressed]}
-            onPress={onPress}
-        >
-            <Text style={styles.choiceLabel}>{label}</Text>
-            {sub ? <Text style={styles.choiceSub}>{sub}</Text> : null}
-        </Pressable>
-    );
+    return <ChoiceCard icon="sliders" title={label} detail={sub ?? undefined} selected={on} onPress={onPress} />;
 }
 
 function Card({ answers, synced }: { answers: CreatorAnswers; synced: boolean }) {
+    const styles = useThemedStyles(sheets);
     const card = creatorCard(answers);
     return (
         <View style={styles.cardWrap}>
-            <View style={styles.card} accessible accessibilityLabel={`${card.studio ?? t('vibe.card.kicker')}. ${card.name}. ${card.traits.join(', ')}`}>
-                <Text style={styles.cardKicker}>{card.studio ?? t('vibe.card.kicker')}</Text>
-                <Text style={styles.cardName}>{card.name}</Text>
+            <SurfaceCard style={styles.card} accessible accessibilityLabel={`${card.studio ?? t('vibe.card.kicker')}. ${card.name}. ${card.traits.join(', ')}`}>
+                <Text variant="footnote" style={styles.cardKicker}>
+                    {card.studio ?? t('vibe.card.kicker')}
+                </Text>
+                <Text variant="display" style={styles.cardName}>
+                    {card.name}
+                </Text>
                 <View style={styles.chips}>
                     {card.traits.map((trait) => (
-                        <Text key={trait} style={styles.chip}>{trait}</Text>
+                        <Chip key={trait} label={trait} />
                     ))}
                 </View>
-            </View>
+            </SurfaceCard>
             <Text style={styles.text}>{t('vibe.card.leads')}</Text>
             {synced ? null : <Text style={styles.endText}>{t('vibe.card.local')}</Text>}
         </View>
     );
 }
 
-const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: colors.background },
-    body: { flexGrow: 1, justifyContent: 'center', padding: 24 },
-    bodyTop: { flexGrow: 1, justifyContent: 'flex-start', padding: 24, paddingTop: 72 },
-    center: { alignItems: 'center', gap: 16 },
-    question: { gap: 16 },
-    progress: { flexDirection: 'row', gap: 6 },
-    progressStep: { flex: 1, height: 4, borderRadius: 2, backgroundColor: colors.border },
-    progressStepOn: { backgroundColor: colors.accent },
-    step: { color: colors.muted, fontSize: 14 },
-    title: { color: colors.text, fontFamily: fonts.display, fontSize: 26, lineHeight: 32 },
-    text: { color: colors.body, fontSize: 17, lineHeight: 24 },
-    options: { gap: 10 },
-    goalGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 12 },
-    goalChoice: { width: '48%', minHeight: 112, borderWidth: 2, borderRadius: 20, padding: 14, justifyContent: 'space-between', shadowColor: '#000000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 2 },
-    goalChoiceOn: { borderWidth: 3, transform: [{ scale: 1.025 }], shadowOpacity: 0.2, shadowRadius: 10, elevation: 5 },
-    goalChoicePressed: { opacity: 0.82, transform: [{ scale: 0.97 }] },
-    goalChoiceTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
-    goalEmoji: { fontSize: 30, lineHeight: 36 },
-    goalCheck: { width: 25, height: 25, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
-    goalCheckText: { color: '#FFFFFF', fontSize: 15, lineHeight: 18, fontWeight: '800' },
-    goalLabel: { color: '#17171A', fontSize: 16, lineHeight: 20, fontWeight: '800' },
-    choice: { borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.surface, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, gap: 2 },
-    choiceOn: { borderColor: colors.accent, backgroundColor: colors.accentSoft },
+const sheets = themedStyles((p) => ({
+    screen: { flex: 1, backgroundColor: p.bg },
+    body: { flexGrow: 1, justifyContent: 'center', padding: ds.space.gutter },
+    bodyTop: { flexGrow: 1, padding: ds.space.gutter, paddingTop: 72 },
+    center: { alignItems: 'center', gap: ds.space.lg },
+    question: { gap: ds.space.lg },
+    progress: { flexDirection: 'row', gap: ds.space.xs },
+    progressStep: { flex: 1, height: 4, borderRadius: ds.radius.xs, backgroundColor: p.borderSubtle },
+    progressStepOn: { backgroundColor: p.accent },
+    step: { color: p.textTertiary },
+    title: {},
+    text: { color: p.textSecondary },
+    options: { gap: ds.space.md },
+    goalGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: ds.space.md },
+    goalChoice: { width: '48%' },
+    choice: { minHeight: 52, borderWidth: 1, borderColor: p.borderSubtle, backgroundColor: p.bgElevated1, borderRadius: ds.radius.md, padding: ds.space.lg },
+    choiceOn: { borderWidth: 2, borderColor: p.accent, backgroundColor: p.accentSubtle },
     pressed: { opacity: 0.85 },
-    languageRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-    flag: { fontSize: 24 },
-    choiceLabel: { color: colors.text, fontSize: 17, fontWeight: '600' },
-    choiceSub: { color: colors.muted, fontSize: 14 },
-    readout: { color: colors.text, fontSize: 22, fontWeight: '700', textAlign: 'center', minHeight: 30 },
-    dial: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
-    dialStop: { flex: 1, height: 44, borderRadius: 12, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.surface },
-    dialStopOn: { borderColor: colors.accent, backgroundColor: colors.accent },
+    languageRow: { flexDirection: 'row', alignItems: 'center', gap: ds.space.md },
+    choiceLabel: {},
+    readout: { textAlign: 'center', minHeight: 30 },
+    dial: { flexDirection: 'row', justifyContent: 'space-between', gap: ds.space.sm },
+    dialStop: { flex: 1, height: 44, borderRadius: ds.radius.md, borderWidth: 1.5, borderColor: p.borderSubtle, backgroundColor: p.surface },
+    dialStopOn: { borderColor: p.accent, backgroundColor: p.accentSubtle },
     ends: { flexDirection: 'row', justifyContent: 'space-between' },
-    endText: { color: colors.muted, fontSize: 14 },
-    input: { borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.surface, color: colors.text, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 17 },
-    error: { color: colors.danger, fontSize: 15 },
-    footer: { padding: 24, gap: 8, alignItems: 'stretch' },
+    endText: { color: p.textTertiary },
+    error: { color: p.danger },
+    footer: { padding: ds.space.gutter, gap: ds.space.sm },
     row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    primary: { backgroundColor: colors.accent, borderRadius: 12, alignItems: 'center', paddingHorizontal: 16 },
-    disabled: { opacity: 0.4 },
-    primaryText: { color: colors.accentInk, fontSize: 17, fontWeight: '700' },
-    link: { alignItems: 'center', paddingHorizontal: 8 },
-    linkText: { color: colors.muted, fontSize: 16 },
-    cardWrap: { gap: 16 },
-    card: { backgroundColor: colors.accent, borderRadius: 20, padding: 22, minHeight: 200, justifyContent: 'flex-end', gap: 10 },
-    cardKicker: { color: colors.accentInk, fontSize: 12, letterSpacing: 1.6, textTransform: 'uppercase', opacity: 0.85 },
-    cardName: { color: colors.accentInk, fontFamily: fonts.displayHeavy, fontSize: 32, lineHeight: 38 },
-    chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-    chip: { color: colors.accentInk, backgroundColor: 'rgba(0,0,0,0.18)', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, fontSize: 13, fontWeight: '600', overflow: 'hidden' },
-});
+    cardWrap: { gap: ds.space.lg },
+    card: { minHeight: 200, justifyContent: 'flex-end', gap: ds.space.md },
+    cardKicker: { color: p.textSecondary },
+    cardName: {},
+    chips: { flexDirection: 'row', flexWrap: 'wrap', gap: ds.space.sm },
+}));

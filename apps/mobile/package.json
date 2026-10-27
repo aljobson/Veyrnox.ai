@@ -4,6 +4,9 @@
   "main": "expo-router/entry",
   "dependencies": {
     "@expo-google-fonts/archivo": "^0.4.2",
+    "@expo-google-fonts/instrument-serif": "^0.4.1",
+    "@expo-google-fonts/inter": "^0.4.2",
+    "@expo-google-fonts/space-grotesk": "^0.4.1",
     "@sentry/react-native": "~8.28.0",
     "@shopify/react-native-skia": "2.14.0",
     "drawably": "^0.4.2",

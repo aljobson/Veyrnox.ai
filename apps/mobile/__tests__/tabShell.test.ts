@@ -27,13 +27,15 @@ describe('tab shell', () => {
 
     test('the layout lists the tabs in order, each with a visible and a spoken label from the catalog', () => {
         const layout = read(path.join(TABS, '_layout.tsx'));
-        const named = [...layout.matchAll(/<Tabs\.Screen name="(\w+)"/g)].map((m) => m[1]);
+        const named = [...layout.matchAll(/<Tabs\.Screen\s+name="(\w+)"/g)].map((m) => m[1]);
         expect(named).toEqual(ORDER);
         for (const key of ['explore', 'create', 'editor', 'cinema', 'library', 'publish', 'account']) {
             expect((en as Record<string, string>)[`tabs.${key}`]).toEqual(expect.any(String));
         }
         // Every tab has its own spoken label and its label growth is capped like the header's.
         expect(layout.match(/tabBarAccessibilityLabel/g)?.length).toBe(ORDER.length);
+        expect(layout).toContain("focused && name === 'house' ? 'houseFill'");
+        expect(layout).toContain("focused && name === 'sparkle' ? 'sparkleFill'");
         expect(layout).toContain('maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE}');
     });
 

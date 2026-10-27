@@ -1,14 +1,14 @@
 import { Redirect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useEffect, useRef, useState, type ComponentRef } from 'react';
-import { ActivityIndicator, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, TextInput, View } from 'react-native';
 import { TurnstileView } from '../auth/TurnstileView';
 import { useAuth } from '../auth/AuthProvider';
 import { AuthError } from '../lib/auth/supabaseAuth';
 import { emailAuthMessage, validateEmailForm } from '../lib/auth/emailForm';
 import type { TurnstileMessage } from '../lib/auth/turnstile';
-import { touchTarget } from '../lib/a11y';
-import { colors, fonts } from '../theme';
+import { Button, Text, TextField, AuthProviderButton, SegmentedControl, Icon, themedStyles, useThemedStyles } from '../components/ui';
+import { ds } from '../theme';
 import { t } from '../lib/i18n';
 import { playError, playSelection, playSuccess } from '../lib/haptics';
 
@@ -28,7 +28,8 @@ export default function EmailAuth() {
     const [providerBusy, setProviderBusy] = useState<'apple' | 'google' | null>(null);
     const [message, setMessage] = useState<string | null>(null);
     const [messageTone, setMessageTone] = useState<'error' | 'success'>('error');
-    const [focused, setFocused] = useState<'email' | 'password' | null>(null);
+    const running = useRef(false);
+    const styles = useThemedStyles(sheets);
     const [passwordVisible, setPasswordVisible] = useState(false);
     const captchaReadyRef = useRef(false);
     const passwordRef = useRef<ComponentRef<typeof TextInput>>(null);
@@ -62,6 +63,7 @@ export default function EmailAuth() {
     }
 
     async function submit() {
+        if (busy || providerBusy || running.current) return;
         const problem = validateEmailForm(email, password, mode === 'signUp');
         if (problem) {
             setMessageTone('error');
@@ -75,6 +77,7 @@ export default function EmailAuth() {
             void playError();
             return;
         }
+        running.current = true;
         setBusy(true);
         setMessage(null);
         const token = captcha;
@@ -96,12 +99,14 @@ export default function EmailAuth() {
             // A Turnstile token works once, pass or fail.
             setCaptcha(null);
             setResetKey((k) => k + 1);
+            running.current = false;
             setBusy(false);
         }
     }
 
     async function useProvider(provider: 'apple' | 'google') {
-        if (busy || providerBusy) return;
+        if (busy || providerBusy || running.current) return;
+        running.current = true;
         void playSelection();
         setProviderBusy(provider);
         setMessage(null);
@@ -117,6 +122,7 @@ export default function EmailAuth() {
             setMessage(t('signIn.failed'));
             void playError();
         } finally {
+            running.current = false;
             setProviderBusy(null);
         }
     }
@@ -141,242 +147,122 @@ export default function EmailAuth() {
     return (
         <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <ScrollView
-                contentContainerStyle={[styles.body, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24 }]}
+                contentContainerStyle={[styles.body, { paddingTop: insets.top + ds.space.lg, paddingBottom: insets.bottom + ds.space.xxl }]}
                 keyboardShouldPersistTaps="handled"
                 keyboardDismissMode="interactive"
                 showsVerticalScrollIndicator={false}
             >
-                <Pressable accessibilityRole="button" style={({ pressed }) => [touchTarget, styles.back, pressed && styles.pressed]} onPress={() => router.back()}>
-                    <Text style={styles.backText}>‹ {t('public.vey.back')}</Text>
-                </Pressable>
-
-                <View style={styles.hero}>
-                    <Text style={styles.kicker}>{t('email.kicker')}</Text>
-                    <Text style={styles.heading} accessibilityRole="header">{mode === 'signIn' ? t('email.signInTitle') : t('email.signUpTitle')}</Text>
-                    <Text style={styles.lead}>{t(mode === 'signIn' ? 'email.signInBody' : 'email.signUpBody')}</Text>
+                <Button variant="tertiary" icon="arrowLeft" label={t('public.vey.back')} onPress={() => router.back()} />
+                <Text variant="display">{t(mode === 'signIn' ? 'email.signInTitle' : 'email.signUpTitle')}</Text>
+                <Text tone="secondary">{t(mode === 'signIn' ? 'email.signInBody' : 'email.signUpBody')}</Text>
+                <SegmentedControl
+                    value={mode}
+                    onChange={chooseMode}
+                    options={[
+                        { value: 'signIn', label: t('oauth.signIn') },
+                        { value: 'signUp', label: t('authGate.createAccount') },
+                    ]}
+                />
+                <AuthProviderButton provider="apple" consent busy={authBusy} nativeAvailable={appleNativeAvailable} onPress={() => void useProvider('apple')} />
+                <AuthProviderButton provider="google" consent busy={authBusy} onPress={() => void useProvider('google')} />
+                <View style={styles.divider}>
+                    <View style={styles.line} />
+                    <Text variant="footnote" tone="tertiary">
+                        {t('email.orUseEmail')}
+                    </Text>
+                    <View style={styles.line} />
                 </View>
-
-                <View style={styles.modeRow} accessibilityRole="tablist">
-                    {(['signIn', 'signUp'] as const).map((option) => {
-                        const selected = mode === option;
-                        const label = t(option === 'signIn' ? 'oauth.signIn' : 'authGate.createAccount');
-                        return (
-                            <Pressable
-                                key={option}
-                                accessibilityRole="tab"
-                                accessibilityLabel={label}
-                                accessibilityState={{ selected }}
-                                style={({ pressed }) => [styles.mode, selected && (option === 'signIn' ? styles.modeSignIn : styles.modeSignUp), pressed && styles.pressed]}
-                                onPress={() => chooseMode(option)}
-                            >
-                                <Text style={[styles.modeText, selected && styles.modeTextOn]}>{label}</Text>
-                            </Pressable>
-                        );
-                    })}
-                </View>
-
-                <View style={styles.providerGroup}>
-                    <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={t('authGate.continueWithApple')}
-                        accessibilityState={{ busy: providerBusy === 'apple', disabled: authBusy }}
-                        disabled={authBusy}
-                        style={({ pressed }) => [styles.providerButton, styles.providerApple, authBusy && providerBusy !== 'apple' && styles.off, pressed && !authBusy && styles.pressed]}
-                        onPress={() => void useProvider('apple')}
-                    >
-                        {providerBusy === 'apple' ? (
-                            <ActivityIndicator color="#FFFFFF" />
-                        ) : (
-                            <View style={styles.providerButtonRow}>
-                                <Text style={styles.appleIcon}></Text>
-                                <Text style={styles.providerAppleText}>{t('authGate.continueWithApple')}</Text>
-                            </View>
-                        )}
-                    </Pressable>
-                    <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={t('authGate.continueWithGoogle')}
-                        accessibilityState={{ busy: providerBusy === 'google', disabled: authBusy }}
-                        disabled={authBusy}
-                        style={({ pressed }) => [styles.providerButton, styles.providerGoogle, authBusy && providerBusy !== 'google' && styles.off, pressed && !authBusy && styles.pressed]}
-                        onPress={() => void useProvider('google')}
-                    >
-                        {providerBusy === 'google' ? (
-                            <ActivityIndicator color="#2367CF" />
-                        ) : (
-                            <View style={styles.providerButtonRow}>
-                                <View style={styles.googleMark}><Text style={styles.googleIcon}>G</Text></View>
-                                <Text style={styles.providerGoogleText}>{t('authGate.continueWithGoogle')}</Text>
-                            </View>
-                        )}
-                    </Pressable>
-                </View>
-
-                <View style={styles.divider} accessibilityLabel={t('email.orUseEmail')}>
-                    <View style={styles.dividerLine} />
-                    <Text style={styles.dividerText}>{t('email.orUseEmail')}</Text>
-                    <View style={styles.dividerLine} />
-                </View>
-
-                <View style={styles.formCard}>
-                    <Text style={styles.fieldLabel}>{t('authGate.email')}</Text>
-                    <View style={[styles.inputShell, styles.emailShell, focused === 'email' && styles.emailShellOn]}>
-                        <Text style={styles.inputIcon} accessibilityElementsHidden importantForAccessibility="no">✉️</Text>
-                        <TextInput
-                            style={styles.input}
-                            value={email}
-                            onChangeText={setEmail}
-                            onFocus={() => setFocused('email')}
-                            onBlur={() => setFocused(null)}
-                            placeholder={t('email.emailPlaceholder')}
-                            accessibilityLabel={t('authGate.email')}
-                            placeholderTextColor="#68686F"
-                            autoCapitalize="none"
-                            autoComplete="email"
-                            keyboardType="email-address"
-                            textContentType="emailAddress"
-                            returnKeyType="next"
-                            blurOnSubmit={false}
-                            onSubmitEditing={() => passwordRef.current?.focus()}
-                        />
-                    </View>
-
-                    <Text style={styles.fieldLabel}>{t('email.passwordTitle')}</Text>
-                    <View style={[styles.inputShell, styles.passwordShell, focused === 'password' && styles.passwordShellOn]}>
-                        <Text style={styles.inputIcon} accessibilityElementsHidden importantForAccessibility="no">🔐</Text>
-                        <TextInput
-                            ref={passwordRef}
-                            style={styles.input}
-                            value={password}
-                            onChangeText={setPassword}
-                            onFocus={() => setFocused('password')}
-                            onBlur={() => setFocused(null)}
-                            placeholder={t('email.password')}
-                            accessibilityLabel={t('email.passwordLabel')}
-                            placeholderTextColor="#68686F"
-                            secureTextEntry={!passwordVisible}
-                            autoComplete={mode === 'signIn' ? 'current-password' : 'new-password'}
-                            textContentType={mode === 'signIn' ? 'password' : 'newPassword'}
-                            returnKeyType="done"
-                            onSubmitEditing={() => { Keyboard.dismiss(); if (ready) void submit(); }}
-                        />
-                        <Pressable
-                            accessibilityRole="button"
+                <TextField
+                    label={t('authGate.email')}
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder={t('email.emailPlaceholder')}
+                    autoCapitalize="none"
+                    autoComplete="email"
+                    keyboardType="email-address"
+                    textContentType="emailAddress"
+                    returnKeyType="next"
+                    blurOnSubmit={false}
+                    onSubmitEditing={() => passwordRef.current?.focus()}
+                />
+                <TextField
+                    ref={passwordRef}
+                    label={t('email.passwordTitle')}
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholder={t('email.password')}
+                    accessibilityLabel={t('email.passwordLabel')}
+                    secureTextEntry={!passwordVisible}
+                    autoComplete={mode === 'signIn' ? 'current-password' : 'new-password'}
+                    textContentType={mode === 'signIn' ? 'password' : 'newPassword'}
+                    returnKeyType="done"
+                    onSubmitEditing={() => {
+                        Keyboard.dismiss();
+                        if (ready) void submit();
+                    }}
+                    trailing={
+                        <Button
+                            size="sm"
+                            variant="tertiary"
+                            icon={passwordVisible ? 'eyeOff' : 'eye'}
+                            label={t(passwordVisible ? 'email.hide' : 'email.show')}
                             accessibilityLabel={t(passwordVisible ? 'email.hidePassword' : 'email.showPassword')}
-                            hitSlop={8}
-                            style={({ pressed }) => [styles.reveal, pressed && styles.pressed]}
-                            onPress={() => { void playSelection(); setPasswordVisible((shown) => !shown); }}
-                        >
-                            <Text style={styles.revealText}>{t(passwordVisible ? 'email.hide' : 'email.show')}</Text>
-                        </Pressable>
-                    </View>
-
-                    <View style={[styles.security, captcha ? styles.securityReady : captchaError ? styles.securityError : null]}>
-                        <View style={styles.securityCopy}>
-                            <Text style={styles.securityIcon} accessibilityElementsHidden importantForAccessibility="no">{captcha ? '✓' : '🛡️'}</Text>
-                            <View style={styles.securityText}>
-                                <Text style={styles.securityTitle}>{t('email.securityTitle')}</Text>
-                                {!captcha && !captchaError ? <Text style={styles.securityDetail}>{t('email.checking')}</Text> : null}
-                                {captcha ? <Text style={styles.securityReadyText}>{t('email.securityReady')}</Text> : null}
-                                {captchaError ? <Text style={styles.error} accessibilityRole="alert">{t('email.captchaFailed')}</Text> : null}
-                            </View>
-                        </View>
-                        <TurnstileView resetKey={resetKey} onMessage={onCaptcha} />
+                            onPress={() => {
+                                void playSelection();
+                                setPasswordVisible((shown) => !shown);
+                            }}
+                        />
+                    }
+                />
+                <View style={styles.security}>
+                    <Icon name="shieldCheck" size={20} />
+                    <View style={styles.securityCopy}>
+                        <Text variant="footnote" tone="tertiary">
+                            {t('email.securityTitle')}
+                        </Text>
+                        {!captcha && !captchaError ? (
+                            <Text variant="footnote" tone="tertiary">
+                                {t('email.checking')}
+                            </Text>
+                        ) : null}
+                        {captcha ? (
+                            <Text variant="footnote" tone="tertiary">
+                                {t('email.securityReady')}
+                            </Text>
+                        ) : null}
                         {captchaError ? (
-                            <Pressable accessibilityRole="button" style={({ pressed }) => [styles.retry, pressed && styles.pressed]} onPress={retrySecurityCheck}>
-                                <Text style={styles.retryText}>{t('email.securityRetry')}</Text>
-                            </Pressable>
+                            <Text variant="footnote" tone="danger" accessibilityRole="alert">
+                                {t('email.captchaFailed')}
+                            </Text>
                         ) : null}
                     </View>
-
-                    <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={mode === 'signIn' ? t('oauth.signIn') : t('authGate.createAccount')}
-                        accessibilityState={{ busy, disabled: !ready }}
-                        disabled={!ready}
-                        style={({ pressed }) => [styles.submit, !ready && styles.off, pressed && ready && styles.pressed]}
-                        onPress={submit}
-                    >
-                        {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.submitText}>{mode === 'signIn' ? t('email.signInCta') : t('email.signUpCta')}</Text>}
-                    </Pressable>
-                    {message ? (
-                        <View style={[styles.messageCard, messageTone === 'success' ? styles.messageSuccess : styles.messageError]}>
-                            <Text style={[styles.message, messageTone === 'success' ? styles.messageSuccessText : styles.messageErrorText]} accessibilityRole={messageTone === 'error' ? 'alert' : undefined} accessibilityLiveRegion="polite">
-                                {message}
-                            </Text>
-                        </View>
-                    ) : null}
                 </View>
-
-                <Pressable accessibilityRole="button" style={({ pressed }) => [touchTarget, styles.switchRow, pressed && styles.pressed]} onPress={() => chooseMode(mode === 'signIn' ? 'signUp' : 'signIn')}>
-                    <Text style={styles.switch}>{mode === 'signIn' ? t('email.newHere') : t('authGate.haveAnAccountSignIn')}</Text>
-                </Pressable>
+                <TurnstileView resetKey={resetKey} onMessage={onCaptcha} />
+                {captchaError ? <Button variant="tertiary" label={t('email.securityRetry')} onPress={retrySecurityCheck} /> : null}
+                <Button label={t(mode === 'signIn' ? 'email.signInCta' : 'email.signUpCta')} loading={busy} disabled={!ready} onPress={submit} />
+                {message ? (
+                    <Text
+                        tone={messageTone === 'error' ? 'danger' : 'secondary'}
+                        accessibilityRole={messageTone === 'error' ? 'alert' : undefined}
+                        accessibilityLiveRegion="polite"
+                    >
+                        {message}
+                    </Text>
+                ) : null}
+                <Button
+                    variant="tertiary"
+                    label={t(mode === 'signIn' ? 'email.newHere' : 'authGate.haveAnAccountSignIn')}
+                    onPress={() => chooseMode(mode === 'signIn' ? 'signUp' : 'signIn')}
+                />
             </ScrollView>
         </KeyboardAvoidingView>
     );
 }
-
-const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: colors.background },
-    body: { paddingHorizontal: 20, gap: 16 },
-    back: { alignSelf: 'flex-start', justifyContent: 'center', paddingHorizontal: 4 },
-    backText: { color: colors.accent, fontSize: 17, fontWeight: '700' },
-    hero: { gap: 8 },
-    kicker: { color: colors.accent, fontSize: 12, fontWeight: '900', letterSpacing: 1.6 },
-    heading: { color: colors.text, fontFamily: fonts.displayHeavy, fontSize: 34, lineHeight: 39 },
-    lead: { color: colors.body, fontSize: 16, lineHeight: 22 },
-    modeRow: { flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 18, padding: 5, borderWidth: 1, borderColor: colors.border, gap: 5 },
-    mode: { flex: 1, minHeight: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-    modeSignIn: { backgroundColor: '#BDEFE2', borderWidth: 2, borderColor: '#38B99B' },
-    modeSignUp: { backgroundColor: '#FFD1E8', borderWidth: 2, borderColor: '#E45B9C' },
-    modeText: { color: colors.muted, fontSize: 15, fontWeight: '700' },
-    modeTextOn: { color: '#17171A', fontWeight: '900' },
-    providerGroup: { gap: 10 },
-    providerButton: { minHeight: 54, borderRadius: 16, borderWidth: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
-    providerApple: { backgroundColor: '#17171A', borderColor: '#17171A' },
-    providerGoogle: { backgroundColor: '#E2F4FF', borderColor: '#8AD4F5' },
-    providerButtonRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
-    providerAppleText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
-    providerGoogleText: { color: '#17171A', fontSize: 16, fontWeight: '800' },
-    appleIcon: { color: '#FFFFFF', fontSize: 21 },
-    googleMark: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
-    googleIcon: { color: '#2367CF', fontSize: 15, fontWeight: '900' },
-    divider: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-    dividerLine: { flex: 1, height: 1, backgroundColor: colors.border },
-    dividerText: { color: colors.muted, fontSize: 12, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.8 },
-    formCard: { backgroundColor: colors.surface, borderRadius: 24, borderWidth: 1, borderColor: colors.border, padding: 14, gap: 10 },
-    fieldLabel: { color: colors.text, fontSize: 14, fontWeight: '800', marginTop: 2 },
-    inputShell: { minHeight: 58, borderRadius: 16, borderWidth: 2, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 13, gap: 10 },
-    emailShell: { backgroundColor: '#E2F4FF', borderColor: '#B6E2F5' },
-    emailShellOn: { backgroundColor: '#C5EAFC', borderColor: '#168BC0', transform: [{ scale: 1.01 }] },
-    passwordShell: { backgroundColor: '#E9DEFF', borderColor: '#D7C4FF' },
-    passwordShellOn: { backgroundColor: '#D8C3FF', borderColor: '#7652BE', transform: [{ scale: 1.01 }] },
-    inputIcon: { fontSize: 19 },
-    input: { flex: 1, color: '#17171A', paddingVertical: 15, fontSize: 16, fontWeight: '600' },
-    reveal: { minHeight: 36, minWidth: 48, alignItems: 'center', justifyContent: 'center' },
-    revealText: { color: '#5F3D9E', fontSize: 13, fontWeight: '900' },
-    security: { borderRadius: 16, borderWidth: 2, borderColor: '#F0C649', backgroundColor: '#FFF2C7', padding: 12 },
-    securityReady: { borderColor: '#38B99B', backgroundColor: '#DDF9F1' },
-    securityError: { borderColor: colors.danger, backgroundColor: '#FFF1EF' },
-    securityCopy: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-    securityIcon: { fontSize: 20, color: '#168E73', fontWeight: '900' },
-    securityText: { flex: 1, gap: 2 },
-    securityTitle: { color: '#17171A', fontSize: 14, fontWeight: '900' },
-    securityDetail: { color: '#5A4A11', fontSize: 13 },
-    securityReadyText: { color: '#116C58', fontSize: 13, fontWeight: '700' },
-    retry: { alignSelf: 'flex-start', minHeight: 36, justifyContent: 'center', marginTop: 6, paddingHorizontal: 30 },
-    retryText: { color: '#9F211A', fontSize: 13, fontWeight: '900', textDecorationLine: 'underline' },
-    submit: { minHeight: 56, backgroundColor: colors.accent, borderRadius: 16, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center', marginTop: 2 },
-    off: { opacity: 0.4 },
-    submitText: { color: colors.accentInk, fontWeight: '900', fontSize: 17 },
-    messageCard: { borderRadius: 12, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10 },
-    messageError: { backgroundColor: '#FFF1EF', borderColor: '#F4AAA2' },
-    messageSuccess: { backgroundColor: '#DDF9F1', borderColor: '#93DFC9' },
-    message: { lineHeight: 20, fontWeight: '700' },
-    messageErrorText: { color: '#9F211A' },
-    messageSuccessText: { color: '#116C58' },
-    error: { color: colors.danger, fontSize: 13, lineHeight: 18 },
-    switchRow: { alignItems: 'center', justifyContent: 'center' },
-    switch: { color: colors.accent, fontSize: 15, fontWeight: '700' },
-    pressed: { opacity: 0.78, transform: [{ scale: 0.985 }] },
-});
+const sheets = themedStyles((p) => ({
+    screen: { flex: 1, backgroundColor: p.bg },
+    body: { paddingHorizontal: ds.space.gutter, gap: ds.space.md },
+    divider: { flexDirection: 'row', alignItems: 'center', gap: ds.space.md },
+    line: { flex: 1, height: 1, backgroundColor: p.borderSubtle },
+    security: { flexDirection: 'row', alignItems: 'center', gap: ds.space.sm },
+    securityCopy: { flex: 1 },
+}));

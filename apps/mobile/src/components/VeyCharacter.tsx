@@ -38,7 +38,8 @@ export function VeyCharacter({ width = 72, mood = 'idle' }: { width?: number; mo
     const tilt = useRef(new Animated.Value(0.5)).current;
     const blink = useRef(new Animated.Value(1)).current;
     const droop = useRef(new Animated.Value(0)).current;
-    const [still, setStill] = useState(false);
+    const clap = useRef(new Animated.Value(0)).current;
+    const [still, setStill] = useState(true);
 
     useEffect(() => {
         let alive = true;
@@ -55,7 +56,8 @@ export function VeyCharacter({ width = 72, mood = 'idle' }: { width?: number; mo
             sway.setValue(0.5);
             wave.setValue(0.5);
             hop.setValue(0);
-            cheer.setValue(0);
+            cheer.setValue(mood === 'cheer' || mood === 'clap' ? 1 : 0);
+            clap.setValue(0);
             tilt.setValue(0.5);
             blink.setValue(1);
             droop.setValue(0);
@@ -76,8 +78,17 @@ export function VeyCharacter({ width = 72, mood = 'idle' }: { width?: number; mo
             ),
         ];
         // The right arm waves unless Vey is worried; then it hangs.
-        if (mood === 'worried') wave.setValue(0.5);
+        if (mood === 'worried' || mood === 'clap') wave.setValue(0.5);
         else loops.push(swing(wave, 520));
+        if (mood === 'clap') {
+            // Both hands meet in front of the body three times, then remain in a two-arm cheer.
+            sway.setValue(0.5); wave.setValue(0.5);
+            loops.splice(0, 1);
+            loops.push(Animated.sequence([
+                ...Array.from({ length: 3 }, () => Animated.sequence([t(clap, 1, 90), t(clap, 0, 90)])),
+                t(cheer, 1, 180),
+            ]));
+        }
         // Every few seconds Vey does something new: a hop, a two-arm cheer, or a look to one side.
         if (mood === 'idle') {
             loops.push(Animated.loop(Animated.sequence([Animated.delay(1800), Animated.parallel([hops(), cheers()]), Animated.delay(1600), Animated.sequence([t(tilt, 0, 380), Animated.delay(500), t(tilt, 1, 520), Animated.delay(400), t(tilt, 0.5, 380)])])));
@@ -89,10 +100,11 @@ export function VeyCharacter({ width = 72, mood = 'idle' }: { width?: number; mo
         return () => {
             loops.forEach((l) => l.stop());
             hop.setValue(0);
+            clap.setValue(0);
             cheer.setValue(0);
             tilt.setValue(0.5);
         };
-    }, [still, mood, sway, wave, hop, cheer, tilt, blink, droop]);
+    }, [still, mood, sway, wave, hop, cheer, tilt, blink, droop, clap]);
 
     const turn = (value: Animated.Value, from: number, to: number) => value.interpolate({ inputRange: [0, 1], outputRange: [`${from}deg`, `${to}deg`] });
     const hopY = hop.interpolate({ inputRange: [0, 1], outputRange: [0, -8 * k] });
@@ -100,13 +112,16 @@ export function VeyCharacter({ width = 72, mood = 'idle' }: { width?: number; mo
 
     const styles = useMemo(() => layerStyles(width), [width]);
 
+    const leftArm = <Animated.Image source={art.leftArm} style={[styles.layer, pivotStyle('leftArm', width), { transform: [{ translateX: clap.interpolate({ inputRange: [0, 1], outputRange: [0, 18 * k] }) }, { translateY: clap.interpolate({ inputRange: [0, 1], outputRange: [0, -16 * k] }) }, { rotate: Animated.add(clap.interpolate({ inputRange: [0, 1], outputRange: [0, -95] }), Animated.add(sway.interpolate({ inputRange: [0, 1], outputRange: [28, -28] }), cheer.interpolate({ inputRange: [0, 1], outputRange: [0, -70] }))).interpolate({ inputRange: [-120, 120], outputRange: ['-120deg', '120deg'] }) }, { translateY: hopY }] }]} />;
+    const rightArm = <Animated.Image source={art.rightArm} style={[styles.layer, pivotStyle('rightArm', width), { transform: [{ translateX: clap.interpolate({ inputRange: [0, 1], outputRange: [0, -30 * k] }) }, { translateY: clap.interpolate({ inputRange: [0, 1], outputRange: [0, 10 * k] }) }, { rotate: Animated.add(clap.interpolate({ inputRange: [0, 1], outputRange: [0, 95] }), Animated.add(wave.interpolate({ inputRange: [0, 1], outputRange: [38, -48] }), cheer.interpolate({ inputRange: [0, 1], outputRange: [0, 60] }))).interpolate({ inputRange: [-120, 120], outputRange: ['-120deg', '120deg'] }) }, { translateY: hopY }] }]} />;
+
     return (
         <View style={styles.box} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" pointerEvents="none">
             <Animated.Image source={art.base} style={styles.layer} />
-            <Animated.Image source={art.leftArm} style={[styles.layer, pivotStyle('leftArm', width), { transform: [{ rotate: Animated.add(sway.interpolate({ inputRange: [0, 1], outputRange: [28, -28] }), cheer.interpolate({ inputRange: [0, 1], outputRange: [0, -70] })).interpolate({ inputRange: [-120, 120], outputRange: ['-120deg', '120deg'] }) }, { translateY: hopY }] }]} />
-            <Animated.Image source={art.rightArm} style={[styles.layer, pivotStyle('rightArm', width), { transform: [{ rotate: Animated.add(wave.interpolate({ inputRange: [0, 1], outputRange: [38, -48] }), cheer.interpolate({ inputRange: [0, 1], outputRange: [0, 60] })).interpolate({ inputRange: [-120, 120], outputRange: ['-120deg', '120deg'] }) }, { translateY: hopY }] }]} />
+            {mood === 'clap' ? null : <>{leftArm}{rightArm}</>}
             <Animated.Image source={art.body} style={[styles.layer, { transform: [{ translateY: Animated.add(lift(sway, 3), hopY) }] }]} />
             <Animated.Image source={art.core} style={[styles.layer, pivotStyle('core', width), { opacity: Animated.multiply(sway.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] }), droop.interpolate({ inputRange: [0, 1], outputRange: [1, 0.55] })), transform: [{ translateY: Animated.add(lift(sway, 3), hopY) }, { scale: sway.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1.12] }) }] }]} />
+            {mood === 'clap' ? <>{leftArm}{rightArm}</> : null}
             <Animated.Image source={art.head} style={[styles.layer, pivotStyle('head', width), { transform: [{ translateY: Animated.add(Animated.add(lift(sway, 4), hopY), droop.interpolate({ inputRange: [0, 1], outputRange: [0, 3 * k] })) }, { rotate: Animated.add(Animated.add(sway.interpolate({ inputRange: [0, 1], outputRange: [-6, 6] }), tilt.interpolate({ inputRange: [0, 1], outputRange: [-14, 14] })), droop.interpolate({ inputRange: [0, 1], outputRange: [0, -10] })).interpolate({ inputRange: [-50, 50], outputRange: ['-50deg', '50deg'] }) }] }]} />
             <Animated.Image source={art.eyes} style={[styles.layer, pivotStyle('eyes', width), { transform: [{ translateY: Animated.add(Animated.add(lift(sway, 4), hopY), droop.interpolate({ inputRange: [0, 1], outputRange: [0, 3 * k] })) }, { rotate: Animated.add(Animated.add(sway.interpolate({ inputRange: [0, 1], outputRange: [-6, 6] }), tilt.interpolate({ inputRange: [0, 1], outputRange: [-14, 14] })), droop.interpolate({ inputRange: [0, 1], outputRange: [0, -10] })).interpolate({ inputRange: [-50, 50], outputRange: ['-50deg', '50deg'] }) }, { scaleY: blink }] }]} />
         </View>

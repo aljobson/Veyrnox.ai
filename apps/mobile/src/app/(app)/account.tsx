@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import * as WebBrowser from 'expo-web-browser';
-import { Link, Stack, usePathname, useRouter } from 'expo-router';
+import { Link, Stack, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
@@ -10,7 +10,8 @@ import { signInMethodKey } from '../../lib/accountSecurity';
 import { LEGAL_LINKS, SUPPORT_EMAIL } from '../../lib/account';
 import { usePush } from '../../push/pushContext';
 import { VEY_CLEARANCE } from '../../components/VeyMascot';
-import { applyThemePreference, colors, themePreference, THEME_PREFERENCES, type ThemePreference } from '../../theme';
+import { colors } from '../../theme';
+import { ListRow } from '../../components/ui';
 import { CREATOR_PROFILE_ENABLED, resetVibe } from '../../lib/creatorProfile';
 import { clearVibe } from '../../lib/creatorProfileStore';
 import { t } from '../../lib/i18n';
@@ -23,12 +24,10 @@ export default function Account() {
     const push = usePush();
     const [pushNote, setPushNote] = useState<string | null>(null);
     const router = useRouter();
-    const pathname = usePathname();
     const { status: billing, offerings, canPurchase, paidAccess, activeProductIds, managementURL, purchaseStayOffer, restore } = useBilling();
     const [restoreNote, setRestoreNote] = useState<string | null>(null);
     const [stayBusy, setStayBusy] = useState(false);
     const [stayNote, setStayNote] = useState<string | null>(null);
-    const [appearance, setAppearance] = useState<ThemePreference>(themePreference);
 
     // Best effort: when it fails the section simply shows no details.
     useEffect(() => {
@@ -113,24 +112,7 @@ export default function Account() {
             </Section>
 
             <Section title={t('acct.appearance')}>
-                <View style={styles.chips} accessibilityRole="radiogroup" accessibilityLabel={t('acct.appearance')}>
-                    {THEME_PREFERENCES.map((p) => (
-                        <Pressable
-                            key={p}
-                            accessibilityRole="radio"
-                            accessibilityState={{ selected: appearance === p }}
-                            style={[styles.chip, appearance === p && styles.chipOn]}
-                            onPress={() => {
-                                if (p === appearance) return;
-                                setAppearance(p);
-                                void applyThemePreference(p, pathname);
-                            }}
-                        >
-                            <Text style={[styles.chipText, appearance === p && styles.chipTextOn]}>{t(`acct.appearance.${p}`)}</Text>
-                        </Pressable>
-                    ))}
-                </View>
-                <Text style={styles.note}>{t('acct.appearance.help')}</Text>
+                <ListRow icon="swatches" title={t('acct.appearance')} onPress={() => router.push('/appearance')} />
             </Section>
 
             {billing !== 'off' ? (

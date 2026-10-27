@@ -10,3 +10,10 @@ MIT License. Copyright (c) 2023 Phosphor Icons.
 Create screen additions: video-camera, music-notes, wrench, smiley (Phosphor regular, same render steps).
 
 Cinema additions: thumbs-up, bookmark-simple, heart, trophy, flag (Phosphor regular, same render steps).
+
+Design system v2 additions (Phosphor regular, same render steps): envelope-simple, key, shield-check, check, plus,
+gear-six, arrow-left, magnifying-glass, lightning, camera, sun, moon, moon-stars, text-aa, eye, eye-slash,
+device-mobile, shopping-bag, paint-brush, storefront, user-circle-gear, swatches, circle-half, sliders-horizontal.
+Phosphor fill weight (selected tab): house-fill, sparkle-fill.
+
+google-g.png is the multicolour Google "G" mark (Google sign-in branding guidelines). It is never tinted.

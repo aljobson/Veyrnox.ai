@@ -1,3 +1,4 @@
+import { noteLocalSubmission } from './celebrate';
 import { API_BASE, ApiError, type ApiClient } from './api';
 import { OFFLINE_PAID_MESSAGE, OfflineError, ensureOnline } from './network';
 
@@ -107,6 +108,7 @@ export async function approvePlan(api: ApiClient, plan: Plan, rawBrief: string):
         }),
     });
     if (typeof r.job_id !== 'string') throw new ApiError(502, 'unknown');
+    noteLocalSubmission(r.job_id);
     return r.job_id;
 }
 

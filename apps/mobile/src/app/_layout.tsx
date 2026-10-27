@@ -1,8 +1,9 @@
-import { Archivo_700Bold, Archivo_800ExtraBold } from '@expo-google-fonts/archivo';
+import { FontStatus } from '../components/ui/FontStatus';
+import { typefaceFonts } from '../components/ui/FontCatalog';
 import { useFonts } from 'expo-font';
 import { Slot, usePathname, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useColorScheme } from 'react-native';
 import { AuthProvider } from '../auth/AuthProvider';
 import { BillingProvider } from '../billing/BillingProvider';
@@ -10,7 +11,7 @@ import { PushProvider } from '../push/PushProvider';
 import { captureIssue, initCrashReporting, withCrashReporting } from '../lib/crash';
 import { applyDeviceLocale } from '../lib/i18n';
 import { setIssueReporter } from '../lib/requestGuard';
-import { getThemePreference, resolveScheme, takeThemeReturnPath } from '../theme';
+import { getAppearance, getThemePreference, resolveScheme, takeThemeReturnPath } from '../theme';
 
 initCrashReporting();
 setIssueReporter(captureIssue);
@@ -19,20 +20,25 @@ applyDeviceLocale();
 
 function RootLayout() {
     // The headings use Archivo; a failed load (error) falls back to the system font rather than blocking the app.
-    const [loaded, error] = useFonts({ Archivo_700Bold, Archivo_800ExtraBold });
+    const [loaded, error] = useFonts(typefaceFonts[getAppearance().typeface]);
+    const loadedFonts = useMemo(() => new Set(loaded ? Object.keys(typefaceFonts[getAppearance().typeface]) : []), [loaded]);
     const systemScheme = useColorScheme();
     const dark = resolveScheme(getThemePreference(), systemScheme) === 'dark';
-    if (!loaded && !error) return null;
+    // Font failure or a slow load never blocks startup. Text checks the loaded-font context before using a face.
+    void loaded;
+    void error;
     return (
-        <AuthProvider>
-            <BillingProvider>
-                <PushProvider>
-                    <ThemeRouteRestorer />
-                    <StatusBar style={dark ? 'light' : 'dark'} />
-                    <Slot />
-                </PushProvider>
-            </BillingProvider>
-        </AuthProvider>
+        <FontStatus.Provider value={loadedFonts}>
+            <AuthProvider>
+                <BillingProvider>
+                    <PushProvider>
+                        <ThemeRouteRestorer />
+                        <StatusBar style={dark ? 'light' : 'dark'} />
+                        <Slot />
+                    </PushProvider>
+                </BillingProvider>
+            </AuthProvider>
+        </FontStatus.Provider>
     );
 }
 

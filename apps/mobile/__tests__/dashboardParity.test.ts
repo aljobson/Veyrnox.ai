@@ -9,9 +9,9 @@ describe('the native Explore dashboard mirrors the signed-in website', () => {
 
     test('keeps one selected app palette from the page through the header and tab bar', () => {
         const tabs = read('app', '(app)', '(tabs)', '_layout.tsx');
-        expect(explore).toContain('colors, fonts, isDark');
-        expect(explore).toContain("<StatusBar style={isDark ? 'light' : 'dark'}");
-        expect(tabs).toContain('const palette = colors');
+        expect(explore).toContain('useAppearance()');
+        expect(explore).toContain("<StatusBar style={scheme === 'dark' ? 'light' : 'dark'}");
+        expect(tabs).toContain('const palette = paletteForScheme(scheme, settings)');
         expect(tabs).toContain('headerStyle: { backgroundColor: palette.background }');
         expect(tabs).toContain('<Logo size={20} palette={palette} />');
         expect(tabs).toContain('tabBarStyle: { backgroundColor: palette.background');
@@ -38,7 +38,7 @@ describe('the native Create dashboard mirrors the website Studio', () => {
         const tabs = read('app', '(app)', '(tabs)', '_layout.tsx');
         expect(create).toContain('colors, fonts, isDark');
         expect(create).toContain("<StatusBar style={isDark ? 'light' : 'dark'}");
-        expect(tabs).toContain('const palette = colors');
+        expect(tabs).toContain('const palette = paletteForScheme(scheme, settings)');
     });
 
     test('orders sources, goal, price tier and live-priced models before navigation', () => {
