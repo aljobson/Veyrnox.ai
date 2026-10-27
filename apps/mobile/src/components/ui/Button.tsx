@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { useEffect, useMemo, useRef } from 'react';
 import { ActivityIndicator, Animated, Pressable, type PressableProps, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 import * as Haptics from 'expo-haptics';
@@ -9,6 +10,9 @@ import { themedStyles, useThemedStyles } from './AppearanceContext';
 import { useReducedMotion } from './useReducedMotion';
 export type ButtonProps = Omit<PressableProps, 'children' | 'style'> & {
     label: string;
+    children?: ReactNode;
+    iconOnly?: boolean;
+    containerStyle?: StyleProp<ViewStyle>;
     variant?: 'primary' | 'secondary' | 'tertiary' | 'destructive';
     size?: 'lg' | 'md' | 'sm';
     icon?: MenuIcon;
@@ -16,7 +20,7 @@ export type ButtonProps = Omit<PressableProps, 'children' | 'style'> & {
     style?: StyleProp<ViewStyle>;
     textStyle?: StyleProp<TextStyle>;
 };
-export function Button({ label, variant = 'primary', size = 'lg', icon, loading, disabled, style, textStyle, onPress, ...props }: ButtonProps) {
+export function Button({ label, variant = 'primary', size = 'lg', icon, loading, disabled, style, textStyle, onPress, children, iconOnly, containerStyle, ...props }: ButtonProps) {
     const s = useThemedStyles(sheets);
     const reduced = useReducedMotion();
     const scale = useRef(new Animated.Value(1)).current;
@@ -34,14 +38,14 @@ export function Button({ label, variant = 'primary', size = 'lg', icon, loading,
     };
     const ink = variant === 'primary' ? s.primaryInk : variant === 'destructive' ? s.destructiveInk : s.ink;
     return (
-        <Animated.View style={[s.hit, animatedStyle]}>
+        <Animated.View style={[s.hit, containerStyle, animatedStyle]}>
             <Pressable
                 {...props}
                 accessibilityRole={props.accessibilityRole ?? 'button'}
                 accessibilityLabel={props.accessibilityLabel ?? label}
-                accessibilityState={{ ...props.accessibilityState, disabled: !!blocked, busy: !!loading }}
+                accessibilityState={{ ...props.accessibilityState, disabled: !!blocked, busy: props.accessibilityState?.busy ?? !!loading }}
                 disabled={blocked}
-                hitSlop={size === 'sm' ? 6 : undefined}
+                hitSlop={props.hitSlop ?? (size === 'sm' ? 6 : undefined)}
                 onPressIn={() => press(ds.motion.pressScale)}
                 onPressOut={() => press(1)}
                 onPress={(event) => {
@@ -53,12 +57,12 @@ export function Button({ label, variant = 'primary', size = 'lg', icon, loading,
             >
                 {loading ? (
                     <ActivityIndicator color={ink.color} />
-                ) : (
+                ) : children ?? (
                     <>
                         {icon ? <Icon name={icon} size={20} tint={ink.color} /> : null}
-                        <Text variant="bodyStrong" style={[ink, textStyle]}>
+                        {!iconOnly ? <Text variant="bodyStrong" style={[ink, textStyle]}>
                             {label}
-                        </Text>
+                        </Text> : null}
                     </>
                 )}
             </Pressable>
@@ -67,7 +71,7 @@ export function Button({ label, variant = 'primary', size = 'lg', icon, loading,
 }
 const sheets = themedStyles((p) => ({
     hit: { minHeight: 44, justifyContent: 'center' },
-    base: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: ds.space.sm, borderRadius: ds.radius.md, paddingHorizontal: ds.space.lg },
+    base: { minWidth: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: ds.space.sm, borderRadius: ds.radius.md, paddingHorizontal: ds.space.lg },
     lg: { minHeight: 52 },
     md: { minHeight: 44 },
     sm: { minHeight: 32 },

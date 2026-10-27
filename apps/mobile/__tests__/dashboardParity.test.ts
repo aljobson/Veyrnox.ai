@@ -36,8 +36,9 @@ describe('the native Create dashboard mirrors the website Studio', () => {
 
     test('carries the selected light or dark shell onto the Create tab', () => {
         const tabs = read('app', '(app)', '(tabs)', '_layout.tsx');
-        expect(create).toContain('colors, fonts, isDark');
-        expect(create).toContain("<StatusBar style={isDark ? 'light' : 'dark'}");
+        expect(create).toContain('useAppearance()');
+        expect(create).toContain('useThemedStyles(sheets)');
+        expect(create).toContain("<StatusBar style={scheme === 'dark' ? 'light' : 'dark'}");
         expect(tabs).toContain('const palette = paletteForScheme(scheme, settings)');
     });
 

@@ -55,6 +55,11 @@ export const MENU_ICONS = {
     sliders: require('../../assets/icons/sliders-horizontal.png'),
     houseFill: require('../../assets/icons/house-fill.png'),
     sparkleFill: require('../../assets/icons/sparkle-fill.png'),
+    star: require('../../assets/icons/star.png'),
+    starFill: require('../../assets/icons/star-fill.png'),
+    arrowUp: require('../../assets/icons/arrow-up.png'),
+    arrowDown: require('../../assets/icons/arrow-down.png'),
+    externalLink: require('../../assets/icons/arrow-square-out.png'),
     googleG: require('../../assets/icons/google-g.png'),
 } as const;
 

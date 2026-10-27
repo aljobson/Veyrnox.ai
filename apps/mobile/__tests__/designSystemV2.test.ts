@@ -1,3 +1,4 @@
+import ts from 'typescript';
 declare const require: (id: string) => any;
 declare const __dirname: string;
 const fs = require('fs') as { readFileSync(p: string, encoding: string): string; readdirSync(p: string): string[]; existsSync(p: string): boolean };
@@ -31,12 +32,41 @@ const migrated = [
     'app/(app)/(tabs)/index.tsx',
     'app/(app)/(tabs)/_layout.tsx',
     'components/HeaderChips.tsx',
+    ...['(tabs)/create', 'create/[modelId]', 'job/[id]', '(tabs)/library', 'credits'].map(name => `app/(app)/${name}.tsx`),
+    ...['FreeAllowanceCard', 'CameraPanel', 'CharacterPanel', 'CreateOptions', 'AttachFromDevice', 'SourcePicker', 'TemplateBanner', 'VeyCardPeek', 'JobProvenance', 'StemList', 'LibraryItem', 'StaleNote', 'EmptyState'].map(name => `components/${name}.tsx`),
+    ...fs.readdirSync(path.join(root, 'components/create')).map(name => `components/create/${name}`),
     ...fs.readdirSync(path.join(root, 'components/ui')).map((name) => `components/ui/${name}`),
     ...fs.readdirSync(path.join(root, 'components/home')).map((name) => `components/home/${name}`),
 ];
+// Inspect parsed text, so comments are not icons and escaped string literals cannot bypass the guard.
+const iconText = /[\u2190-\u21ff\u25a0-\u27bf\u2039\u203a]/u;
+const heavyWeight = /['"]?fontWeight['"]?\s*:\s*(?:['"](?:800|900)['"]|(?:800|900)\b)/;
+function textIcons(source: string): string[] {
+    const file = ts.createSourceFile('fixture.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+    const found: string[] = [];
+    function visit(node: ts.Node) {
+        if ((ts.isStringLiteral(node) || ts.isJsxText(node) || ts.isTemplateLiteralToken(node)) && iconText.test(node.text)) found.push(node.text);
+        ts.forEachChild(node, visit);
+    }
+    visit(file);
+    return found;
+}
+test.each(["const kind = '▣'", "const kind = '♪'", "const star = '☆'", "const up = '↑'", "const down = '↓'", '<Text>›</Text>', '<Text>☐ ☑ ★ ▶ ↗ ‹</Text>', 'const escaped = "\\u2191"'])('rejects text icons: %s', source => {
+    expect(textIcons(source).length).toBeGreaterThan(0);
+});
+test.each(["{ fontWeight: '800' }", '{ fontWeight: "900" }', '{ fontWeight: 800 }', '{ fontWeight: 900 }'])('rejects heavy weights: %s', source => {
+    expect(source).toMatch(heavyWeight);
+});
+test('ordinary punctuation remains valid in JSX, strings and templates', () => {
+    expect(textIcons('<Text>… – — “quotes” ‘quotes’ × creator’s</Text>; const s = "… – — × ’"; const t = `… ${n} —`;')).toEqual([]);
+    expect(textIcons('// A → B is a comment\nconst value = "Words";')).toEqual([]);
+    expect("{ fontWeight: '700' }").not.toMatch(heavyWeight);
+});
 test.each(migrated)('%s uses tokens, the ramp and real icons', (file) => {
     const source = fs.readFileSync(path.join(root, file), 'utf8');
     expect(source).not.toMatch(/#[\da-f]{3,8}\b|rgba?\(/i);
+    expect(source).not.toMatch(heavyWeight);
+    expect(textIcons(source)).toEqual([]);
     expect(source).not.toMatch(/fontSize\s*:\s*\d/);
     expect(source).not.toMatch(/\p{Extended_Pictographic}/u);
     expect(source).not.toMatch(/textTransform\s*:\s*['"]uppercase['"]/);

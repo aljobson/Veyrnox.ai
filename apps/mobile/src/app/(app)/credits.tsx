@@ -1,7 +1,8 @@
+import { Text, Button, Card, themedStyles, useThemedStyles } from '../../components/ui';
 import * as WebBrowser from 'expo-web-browser';
 import { Link, Stack } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, ScrollView, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { useBilling } from '../../billing/BillingProvider';
 import { LEGAL_LINKS } from '../../lib/account';
@@ -15,7 +16,7 @@ import {
     type GenerationCatalogPlan,
 } from '../../lib/billing';
 import { plural, t } from '../../lib/i18n';
-import { colors, fonts } from '../../theme';
+import { ds } from '../../theme';
 import { VeyCardPeek, peekRoom } from '../../components/VeyCardPeek';
 
 type Outcome =
@@ -31,6 +32,7 @@ const store = Platform.OS === 'ios' ? 'ios' : 'android';
 const planName = (value: string | null) => value ? `${value[0].toUpperCase()}${value.slice(1)}` : t('credits.plan.generation');
 
 export default function Credits() {
+    const styles = useThemedStyles(sheets);
     const { api } = useAuth();
     const billing = useBilling();
     const [catalog, setCatalog] = useState<GenerationCatalogPlan[]>([]);
@@ -126,138 +128,124 @@ export default function Credits() {
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
             <Stack.Screen options={{ title: t('pricing.packs.buy') }} />
-            <Text style={styles.title} accessibilityRole="header">{t('credits.title')}</Text>
-            <Text style={styles.lead}>{t('credits.lead')}</Text>
+            <Text variant="title1" tone="primary" style={styles.title} accessibilityRole="header">{t('credits.title')}</Text>
+            <Text variant="callout" tone="secondary" style={styles.lead}>{t('credits.lead')}</Text>
 
-            {!billing.canPurchase && billing.status !== 'loading' ? <Text style={styles.notice}>{t('credits.notOpen')}</Text> : null}
+            {!billing.canPurchase && billing.status !== 'loading' ? <Text variant="body" tone="secondary" style={styles.notice}>{t('credits.notOpen')}</Text> : null}
 
             <View style={styles.section}>
-                <Text accessibilityRole="header" style={styles.sectionTitle}>{t('credits.subscriptions.title')}</Text>
-                <Text style={styles.sectionBody}>{t('credits.subscriptions.body')}</Text>
-                {billing.generationActive ? <Text style={styles.ok}>{t('credits.subscriptions.active')}</Text> : null}
+                <Text variant="title2" tone="primary" accessibilityRole="header" style={styles.sectionTitle}>{t('credits.subscriptions.title')}</Text>
+                <Text variant="body" tone="tertiary" style={styles.sectionBody}>{t('credits.subscriptions.body')}</Text>
+                {billing.generationActive ? <Text variant="body" tone="accent" style={styles.ok}>{t('credits.subscriptions.active')}</Text> : null}
                 {!billing.generationActive && !billing.generationAccessResolved && billing.status !== 'loading' ? (
                     <View style={styles.accessCheck}>
-                        <Text style={styles.muted}>{t('credits.subscriptions.accessUnavailable')}</Text>
-                        <Pressable accessibilityRole="button" disabled={busyId !== null} onPress={() => void retryGenerationAccess()}>
-                            <Text style={styles.linkText}>{t('credits.subscriptions.retryAccess')}</Text>
-                        </Pressable>
+                        <Text variant="body" tone="tertiary" style={styles.muted}>{t('credits.subscriptions.accessUnavailable')}</Text>
+                        <Button variant="secondary" accessibilityRole="button" disabled={busyId !== null} onPress={() => void retryGenerationAccess()} label={t('credits.subscriptions.retryAccess')} />
                     </View>
                 ) : null}
-                {billing.generationActive ? null : billing.status === 'loading' ? <ActivityIndicator color={colors.accent} /> : plans.length === 0 ? (
-                    <Text style={styles.muted}>{t('credits.subscriptions.unavailable')}</Text>
+                {billing.generationActive ? null : billing.status === 'loading' ? <ActivityIndicator color={styles.accentInk.color} /> : plans.length === 0 ? (
+                    <Text variant="body" tone="tertiary" style={styles.muted}>{t('credits.subscriptions.unavailable')}</Text>
                 ) : (
                     <View style={styles.list}>
                         {plans.map((plan) => {
                             const credits = catalogCredits.get(generationCatalogId(plan.productId) ?? '');
                             const chosen = chosenPlan?.id === plan.id;
                             return (
-                                <Pressable
+                                <Card
                                     key={plan.id}
                                     accessibilityRole="radio"
                                     accessibilityState={{ selected: chosen }}
-                                    style={[styles.row, chosen && styles.rowOn]}
+                                    selected={chosen} style={[styles.row, chosen && styles.rowOn]}
                                     onPress={() => { setChosenPlanId(plan.id); setOutcome(null); }}
                                 >
                                     <View style={styles.rowText}>
-                                        <Text style={styles.name}>{planName(plan.generationPlan)}</Text>
-                                        <Text style={styles.meta}>{credits ? t('credits.plan.allowance', { count: credits.toLocaleString() }) : t('credits.plan.creationCredits')}</Text>
-                                        <Text style={styles.meta}>{plan.interval === 'year' ? t('credits.plan.yearly') : t('credits.plan.monthly')}</Text>
+                                        <Text variant="bodyStrong" tone="primary" style={styles.name}>{planName(plan.generationPlan)}</Text>
+                                        <Text variant="footnote" tone="warning">{credits ? t('credits.plan.allowance', { count: credits.toLocaleString() }) : t('credits.plan.creationCredits')}</Text>
+                                        <Text variant="footnote" tone="tertiary" style={styles.meta}>{plan.interval === 'year' ? t('credits.plan.yearly') : t('credits.plan.monthly')}</Text>
                                     </View>
-                                    <Text style={styles.price}>{plan.priceString}</Text>
-                                </Pressable>
+                                    <Text variant="body" tone="warning" style={styles.price}>{plan.priceString}</Text>
+                                </Card>
                             );
                         })}
                     </View>
                 )}
-                {!billing.generationActive && chosenPlan?.interval ? <Text style={styles.terms}>{renewalTerms(chosenPlan.interval, chosenPlan.priceString, store)}</Text> : null}
-                {!billing.generationActive ? <Pressable
-                    accessibilityRole="button"
-                    disabled={!billing.generationPurchaseReady || !chosenPlan || busyId !== null}
-                    style={[styles.primary, (!billing.generationPurchaseReady || !chosenPlan || busyId !== null) && styles.off]}
-                    onPress={() => void buyPlan()}
-                >
-                    {busyId === chosenPlan?.id ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.primaryText}>{t('credits.subscriptions.continue')}</Text>}
-                </Pressable> : null}
+                {!billing.generationActive && chosenPlan?.interval ? <Text variant="caption" tone="tertiary" style={styles.terms}>{renewalTerms(chosenPlan.interval, chosenPlan.priceString, store)}</Text> : null}
+                {!billing.generationActive ? <Button variant="primary" accessibilityRole="button" disabled={!billing.generationPurchaseReady || !chosenPlan || busyId !== null} onPress={() => void buyPlan()} label={t('credits.subscriptions.continue')} loading={busyId === chosenPlan?.id} /> : null}
             </View>
 
             <View style={styles.section}>
-                <Text accessibilityRole="header" style={styles.sectionTitle}>{t('credits.packs.title')}</Text>
-                <Text style={styles.sectionBody}>{t('credits.packs.body')}</Text>
-                {billing.status === 'loading' ? <ActivityIndicator color={colors.accent} /> : packs.length === 0 ? (
-                    <Text style={styles.muted}>{t('credits.unavailable')}</Text>
+                <Text variant="title2" tone="primary" accessibilityRole="header" style={styles.sectionTitle}>{t('credits.packs.title')}</Text>
+                <Text variant="body" tone="tertiary" style={styles.sectionBody}>{t('credits.packs.body')}</Text>
+                {billing.status === 'loading' ? <ActivityIndicator color={styles.accentInk.color} /> : packs.length === 0 ? (
+                    <Text variant="body" tone="tertiary" style={styles.muted}>{t('credits.unavailable')}</Text>
                 ) : packs.map((item) => (
-                    <Pressable
+                    <Button variant="secondary" label={[plural('credits.pack', item.credits ?? 0, { count: item.credits?.toLocaleString() ?? '0' }), t('credits.packs.neverExpire'), busyId === item.id ? '' : item.priceString].filter(Boolean).join(', ')}
                         key={item.id}
                         accessibilityRole="button"
                         disabled={!billing.canPurchase || busyId !== null}
-                        style={[styles.row, !billing.canPurchase && styles.off, chosenId === item.id && { marginTop: peekRoom() }]}
+                        style={styles.row} containerStyle={chosenId === item.id ? styles.peek : undefined}
                         onPress={() => void buyPack(item.id)}
                     >
                         {chosenId === item.id ? <VeyCardPeek /> : null}
                         <View style={styles.rowText}>
-                            <Text style={styles.name}>{plural('credits.pack', item.credits ?? 0, { count: item.credits?.toLocaleString() ?? '0' })}</Text>
-                            <Text style={styles.meta}>{t('credits.packs.neverExpire')}</Text>
+                            <Text variant="bodyStrong" tone="warning">{plural('credits.pack', item.credits ?? 0, { count: item.credits?.toLocaleString() ?? '0' })}</Text>
+                            <Text variant="footnote" tone="tertiary" style={styles.meta}>{t('credits.packs.neverExpire')}</Text>
                         </View>
-                        {busyId === item.id ? <ActivityIndicator color={colors.accent} /> : <Text style={styles.price}>{item.priceString}</Text>}
-                    </Pressable>
+                        {busyId === item.id ? <ActivityIndicator color={styles.accentInk.color} /> : <Text variant="body" tone="warning" style={styles.price}>{item.priceString}</Text>}
+                    </Button>
                 ))}
             </View>
 
-            {outcome?.kind === 'credited' ? <Text accessibilityLiveRegion="polite" style={styles.ok}>{t('credits.added', { balance: outcome.balance })}</Text> : null}
-            {outcome?.kind === 'subscribed' ? <Text accessibilityLiveRegion="polite" style={styles.ok}>{t('credits.subscriptions.started')}</Text> : null}
-            {outcome?.kind === 'restored' ? <Text accessibilityLiveRegion="polite" style={styles.ok}>{t('credits.restored')}</Text> : null}
-            {outcome?.kind === 'cancelled' ? <Text accessibilityLiveRegion="polite" style={styles.muted}>{t('credits.cancelled')}</Text> : null}
-            {outcome?.kind === 'pending' ? <Text accessibilityLiveRegion="polite" style={styles.muted}>{t('credits.pending')}</Text> : null}
-            {outcome?.kind === 'error' ? <Text accessibilityLiveRegion="polite" style={styles.error}>{t('credits.error')}</Text> : null}
+            {outcome?.kind === 'credited' ? <Text variant="body" tone="secondary" style={styles.balance} accessibilityLiveRegion="polite">{t('credits.added', { balance: outcome.balance })}</Text> : null}
+            {outcome?.kind === 'subscribed' ? <Text variant="body" tone="accent" accessibilityLiveRegion="polite" style={styles.ok}>{t('credits.subscriptions.started')}</Text> : null}
+            {outcome?.kind === 'restored' ? <Text variant="body" tone="accent" accessibilityLiveRegion="polite" style={styles.ok}>{t('credits.restored')}</Text> : null}
+            {outcome?.kind === 'cancelled' ? <Text variant="body" tone="tertiary" accessibilityLiveRegion="polite" style={styles.muted}>{t('credits.cancelled')}</Text> : null}
+            {outcome?.kind === 'pending' ? <Text variant="body" tone="tertiary" accessibilityLiveRegion="polite" style={styles.muted}>{t('credits.pending')}</Text> : null}
+            {outcome?.kind === 'error' ? <Text variant="body" tone="danger" accessibilityLiveRegion="polite" style={styles.error}>{t('credits.error')}</Text> : null}
 
-            <Pressable accessibilityRole="button" disabled={busyId !== null || !billing.canPurchase} style={[styles.linkButton, !billing.canPurchase && styles.off]} onPress={() => void restore()}>
-                {busyId === 'restore' ? <ActivityIndicator color={colors.accent} /> : <Text style={styles.linkText}>{t('credits.restore')}</Text>}
-            </Pressable>
+            <Button variant="tertiary" accessibilityRole="button" disabled={busyId !== null || !billing.canPurchase} onPress={() => void restore()} textStyle={styles.accentInk} label={t('credits.restore')} loading={busyId === 'restore'} />
             {billing.managementURL ? (
-                <Pressable accessibilityRole="link" style={styles.linkButton} onPress={() => void WebBrowser.openBrowserAsync(billing.managementURL as string)}>
-                    <Text style={styles.linkText}>{t('credits.manage')}</Text>
-                </Pressable>
+                <Button variant="tertiary" accessibilityRole="link" onPress={() => void WebBrowser.openBrowserAsync(billing.managementURL as string)} textStyle={styles.accentInk} label={t('credits.manage')} />
             ) : null}
             <Link href="/history" asChild>
-                <Pressable accessibilityRole="button" style={styles.linkButton}><Text style={styles.linkText}>{t('credits.history')}</Text></Pressable>
+                <Button variant="tertiary" accessibilityRole="button" textStyle={styles.accentInk} label={t('credits.history')} />
             </Link>
             <View style={styles.legal}>
                 {LEGAL_LINKS.slice(0, 2).map((item) => (
-                    <Pressable key={item.url} accessibilityRole="link" onPress={() => void WebBrowser.openBrowserAsync(item.url)}>
-                        <Text style={styles.legalText}>{t(item.labelKey)}</Text>
-                    </Pressable>
+                    <Button variant="tertiary" key={item.url} accessibilityRole="link" onPress={() => void WebBrowser.openBrowserAsync(item.url)} label={t(item.labelKey)} size="sm" hitSlop={6}>
+                        <Text variant="footnote" tone="secondary" style={styles.legalText}>{t(item.labelKey)}</Text>
+                    </Button>
                 ))}
             </View>
         </ScrollView>
     );
 }
 
-const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: colors.background },
-    content: { padding: 16, paddingBottom: 40, gap: 16 },
-    title: { color: colors.text, fontFamily: fonts.display, fontSize: 30, lineHeight: 35 },
-    lead: { color: colors.body, fontSize: 15, lineHeight: 22 },
-    notice: { color: colors.body, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 14 },
-    section: { gap: 10, borderTopColor: colors.border, borderTopWidth: 1, paddingTop: 18 },
-    sectionTitle: { color: colors.text, fontSize: 21, fontWeight: '800' },
-    sectionBody: { color: colors.muted, lineHeight: 20 },
-    accessCheck: { gap: 6 },
-    list: { gap: 10 },
-    row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 16, gap: 12 },
-    rowOn: { borderColor: colors.accent, borderWidth: 2 },
-    off: { opacity: 0.5 },
-    rowText: { flex: 1, gap: 3 },
-    name: { color: colors.text, fontSize: 17, fontWeight: '700' },
-    meta: { color: colors.muted, fontSize: 13 },
-    price: { color: colors.money, fontSize: 17, fontWeight: '800' },
-    terms: { color: colors.muted, fontSize: 12, lineHeight: 17 },
-    primary: { minHeight: 52, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: colors.accent, paddingHorizontal: 16 },
-    primaryText: { color: colors.accentInk, fontWeight: '800', fontSize: 16 },
-    linkButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
-    linkText: { color: colors.accent, fontSize: 15, textDecorationLine: 'underline' },
-    legal: { flexDirection: 'row', justifyContent: 'center', gap: 20, marginTop: 4 },
-    legalText: { color: colors.muted, fontSize: 12, textDecorationLine: 'underline' },
-    muted: { color: colors.muted },
-    ok: { color: colors.accent },
-    error: { color: colors.danger },
-});
+const sheets = themedStyles((p) => ({
+    accentInk: { color: p.accent },
+
+    screen: { flex: 1, backgroundColor: p.bg },
+    content: { padding: ds.space.lg, paddingBottom: ds.space.huge, gap: ds.space.lg },
+    title: { color: p.textPrimary, },
+    lead: { color: p.textSecondary, },
+    notice: { color: p.textSecondary, backgroundColor: p.bgElevated1, borderColor: p.borderSubtle, borderWidth: 1, borderRadius: ds.radius.md, padding: ds.space.md },
+    section: { gap: ds.space.sm, borderTopColor: p.borderSubtle, borderTopWidth: 1, paddingTop: ds.space.lg },
+    sectionTitle: { color: p.textPrimary, },
+    sectionBody: { color: p.textTertiary, },
+    accessCheck: { gap: ds.space.sm },
+    list: { gap: ds.space.sm },
+    peek: { marginTop: peekRoom() },
+    row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: p.bgElevated1, borderColor: p.borderSubtle, borderWidth: 1, borderRadius: ds.radius.md, padding: ds.space.lg, gap: ds.space.md },
+    rowOn: { borderColor: p.accent, backgroundColor: p.accentSubtle },
+    rowText: { flex: 1, gap: ds.space.xs },
+    name: { color: p.textPrimary, },
+    meta: { color: p.textTertiary, },
+    price: { color: p.warning, fontVariant: ['tabular-nums'], },
+    terms: { color: p.textTertiary, },
+    balance: { fontVariant: ['tabular-nums'] },
+    legalText: { textDecorationLine: 'underline' },
+    legal: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: ds.space.xl, marginTop: ds.space.xs },
+    muted: { color: p.textTertiary },
+    ok: { color: p.accent },
+    error: { color: p.danger },
+}));

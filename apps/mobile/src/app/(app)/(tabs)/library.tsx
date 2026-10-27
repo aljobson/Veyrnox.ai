@@ -1,6 +1,7 @@
+import { Text, Button, Chip, themedStyles, useThemedStyles } from '../../../components/ui';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, ScrollView, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { LibraryItem } from '../../../components/LibraryItem';
 import { StaleNote } from '../../../components/StaleNote';
@@ -11,12 +12,13 @@ import { KIND_FILTERS, STATE_FILTERS, canReuse, canSchedule, filterJobs, kindMap
 import { fetchCatalogCached, mediaApi, type CatalogModel, type Job, type JobPage } from '../../../lib/media';
 import { publishHref } from '../../../lib/nextSteps';
 import { creativeReuseHref } from '../../../lib/creativeReuse';
-import { colors, fonts, LIST_END_PADDING } from '../../../theme';
+import { ds, LIST_END_PADDING } from '../../../theme';
 import { t } from '../../../lib/i18n';
-import { selectedState, touchTarget } from '../../../lib/a11y';
+
 import { EmptyState } from '../../../components/EmptyState';
 
 export default function Library() {
+    const styles = useThemedStyles(sheets);
     const { api } = useAuth();
     const router = useRouter();
     const [jobs, setJobs] = useState<Job[] | null>(null);
@@ -85,26 +87,25 @@ export default function Library() {
     return (
         <View style={styles.screen}>
             <Stack.Screen options={{ title: t('label.Library') }} />
-            <Text style={styles.heading} accessibilityRole="header">{t('label.Library')}</Text>
-            <Pressable accessibilityRole="button" accessibilityLabel={t('library.videoFilesLabel')} style={[styles.filesLink, touchTarget]} onPress={() => router.push('/library/files')}>
-                <Text style={styles.filesText}>{t('library.videoFiles')}</Text>
-            </Pressable>
+            <Text variant="title2" tone="primary" style={styles.heading} accessibilityRole="header">{t('label.Library')}</Text>
+            <Button variant="secondary" accessibilityRole="button" accessibilityLabel={t('library.videoFilesLabel')} onPress={() => router.push('/library/files')} label={t('library.videoFiles')} />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.barScroll} contentContainerStyle={styles.bar} accessibilityLabel={t('library.filter.type')}>
                 {KIND_FILTERS.map((f) => (
-                    <Chip key={f} label={t(`library.type.${f}`)} on={kindFilter === f} onPress={() => setKindFilter(f)} />
+                    <Chip key={f} label={t(`library.type.${f}`)} selected={kindFilter === f} onPress={() => setKindFilter(f)} />
                 ))}
-                <Chip label={t('library.type.favourites')} on={favOnly} onPress={() => setFavOnly(!favOnly)} />
+                <Chip label={t('library.type.favourites')} selected={favOnly} onPress={() => setFavOnly(!favOnly)} />
                 {STATE_FILTERS.filter((f) => f !== 'all').map((f) => (
-                    <Chip key={f} label={t(`library.state.${f}`)} on={stateFilter === f} onPress={() => setStateFilter(stateFilter === f ? 'all' : f)} />
+                    <Chip key={f} label={t(`library.state.${f}`)} selected={stateFilter === f} onPress={() => setStateFilter(stateFilter === f ? 'all' : f)} />
                 ))}
-                <Chip label={t(`library.view.${view === 'grid' ? 'list' : 'grid'}`)} on={false} onPress={() => setView(view === 'grid' ? 'list' : 'grid')} />
+                <Chip label={t(`library.view.${view === 'grid' ? 'list' : 'grid'}`)} selected={false} onPress={() => setView(view === 'grid' ? 'list' : 'grid')} />
             </ScrollView>
             {failed ? (
-                <Pressable accessibilityRole="button" style={touchTarget} onPress={load}>
-                    <Text style={styles.error}>{t('library.loadError')}</Text>
-                </Pressable>
+                <View>
+                    <Text variant="body" tone="danger">{t('library.loadError')}</Text>
+                    <Button variant="tertiary" accessibilityRole="button" accessibilityLabel={t('library.loadError')} onPress={load} label={t('recovery.retry')} />
+                </View>
             ) : jobs === null ? (
-                <ActivityIndicator color={colors.accent} />
+                <ActivityIndicator color={styles.accentInk.color} />
             ) : (
                 <FlatList
                     contentContainerStyle={styles.list}
@@ -118,16 +119,14 @@ export default function Library() {
                     refreshing={false}
                     ListEmptyComponent={
                         jobs && jobs.length > 0 ? (
-                            <Text style={styles.muted}>{next ? t('library.noMatchOlder') : t('library.noMatch')}</Text>
+                            <Text variant="body" tone="tertiary" style={styles.muted}>{next ? t('library.noMatchOlder') : t('library.noMatch')}</Text>
                         ) : (
                             <EmptyState title={t('empty.library.title')} body={t('library.empty')} actionLabel={t('empty.library.action')} href="/create" />
                         )
                     }
                     ListFooterComponent={
                         next ? (
-                            <Pressable accessibilityRole="button" style={[styles.older, touchTarget]} onPress={more}>
-                                <Text style={styles.filesText}>{t('library.older')}</Text>
-                            </Pressable>
+                            <Button variant="secondary" accessibilityRole="button" onPress={more} label={t('library.older')} />
                         ) : undefined
                     }
                     renderItem={({ item }) => {
@@ -152,27 +151,13 @@ export default function Library() {
     );
 }
 
-function Chip({ label, on, onPress }: { readonly label: string; readonly on: boolean; readonly onPress: () => void }) {
-    return (
-        <Pressable accessibilityRole="button" accessibilityState={selectedState(on)} style={[styles.chip, on && styles.chipOn]} onPress={onPress}>
-            <Text style={[styles.chipText, on && styles.chipTextOn]}>{label}</Text>
-        </Pressable>
-    );
-}
+const sheets = themedStyles((p) => ({
+    accentInk: { color: p.accent },
 
-const styles = StyleSheet.create({
     list: { paddingBottom: LIST_END_PADDING },
-    barScroll: { flexGrow: 0, marginBottom: 8 },
-    bar: { flexDirection: 'row', gap: 6 },
-    chip: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 12, borderRadius: 10, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
-    chipOn: { backgroundColor: colors.accent, borderColor: colors.accent },
-    chipText: { color: colors.body, fontWeight: '600' },
-    chipTextOn: { color: colors.accentInk },
-    older: { alignItems: 'center', paddingVertical: 12 },
-    screen: { flex: 1, backgroundColor: colors.background, padding: 16 },
-    filesLink: { alignSelf: 'flex-start', paddingBottom: 8 },
-    filesText: { color: colors.accent, fontSize: 16 },
-    heading: { color: colors.text, fontFamily: fonts.display, fontSize: 26, marginBottom: 4 },
-    muted: { color: colors.muted },
-    error: { color: colors.danger },
-});
+    barScroll: { flexGrow: 0, marginBottom: ds.space.sm },
+    bar: { flexDirection: 'row', gap: ds.space.sm },
+    screen: { flex: 1, backgroundColor: p.bg, padding: ds.space.lg },
+    heading: { color: p.textPrimary, marginBottom: ds.space.xs },
+    muted: { color: p.textTertiary },
+}));

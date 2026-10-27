@@ -1,16 +1,18 @@
+import { Text, Button, Card, themedStyles, useThemedStyles } from './ui';
 import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { touchTarget } from '../lib/a11y';
+import { StyleSheet, View } from 'react-native';
+
 import type { ApiClient } from '../lib/api';
 import { t } from '../lib/i18n';
 import { mediaApi } from '../lib/media';
 import { STEMS, shareOutput } from '../lib/output';
-import { colors } from '../theme';
+import { ds } from '../theme';
 
 // The six tracks a stem-splitting job makes. Each link lasts 15 minutes and is fetched when a track is played or
 // shared, never kept. Only labels the server listed (and the app knows) are shown.
 export function StemList({ api, jobId, stems }: { readonly api: ApiClient; readonly jobId: string; readonly stems: readonly string[] }) {
+    const styles = useThemedStyles(sheets);
     const [busy, setBusy] = useState<string | null>(null);
     const [error, setError] = useState(false);
     const shown = STEMS.filter((s) => stems.includes(s));
@@ -32,32 +34,26 @@ export function StemList({ api, jobId, stems }: { readonly api: ApiClient; reado
 
     return (
         <View style={styles.box}>
-            <Text style={styles.title} accessibilityRole="header">{t('stems.title')}</Text>
-            <Text style={styles.muted}>{t('stems.intro')}</Text>
+            <Text variant="title3" tone="primary" style={styles.title} accessibilityRole="header">{t('stems.title')}</Text>
+            <Text variant="body" tone="tertiary" style={styles.muted}>{t('stems.intro')}</Text>
             {shown.map((s) => (
-                <View key={s} style={styles.row}>
-                    <Text style={styles.name}>{t(`stem.${s}`)}</Text>
-                    <Pressable accessibilityRole="button" accessibilityLabel={t('stems.play', { stem: t(`stem.${s}`) })} disabled={!!busy} style={[styles.btn, touchTarget, !!busy && styles.off]} onPress={() => act(s, 'play')}>
-                        <Text style={styles.btnText}>▶</Text>
-                    </Pressable>
-                    <Pressable accessibilityRole="button" accessibilityLabel={t('stems.share', { stem: t(`stem.${s}`) })} disabled={!!busy} style={[styles.btn, touchTarget, !!busy && styles.off]} onPress={() => act(s, 'share')}>
-                        <Text style={styles.btnText}>↗</Text>
-                    </Pressable>
-                </View>
+                <Card key={s} style={styles.row}>
+                    <Text variant="bodyStrong" tone="primary" style={styles.name}>{t(`stem.${s}`)}</Text>
+                    <Button variant="secondary" accessibilityRole="button" accessibilityLabel={t('stems.play', { stem: t(`stem.${s}`) })} disabled={!!busy} onPress={() => act(s, 'play')} label={t('stems.play', { stem: t(`stem.${s}`) })} icon="play" iconOnly />
+                    <Button variant="secondary" accessibilityRole="button" accessibilityLabel={t('stems.share', { stem: t(`stem.${s}`) })} disabled={!!busy} onPress={() => act(s, 'share')} label={t('stems.share', { stem: t(`stem.${s}`) })} icon="externalLink" iconOnly />
+                </Card>
             ))}
-            {error ? <Text style={styles.error} accessibilityLiveRegion="polite">{t('stems.error')}</Text> : null}
+            {error ? <Text variant="body" tone="danger" style={styles.error} accessibilityLiveRegion="polite">{t('stems.error')}</Text> : null}
         </View>
     );
 }
 
-const styles = StyleSheet.create({
-    box: { gap: 8 },
-    title: { color: colors.text, fontSize: 18, fontWeight: '700' },
-    muted: { color: colors.muted },
-    row: { flexDirection: 'row', alignItems: 'center', gap: 8, borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth },
-    name: { color: colors.text, fontSize: 16, flex: 1 },
-    btn: { minWidth: 44, alignItems: 'center', borderRadius: 10, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
-    btnText: { color: colors.accent, fontSize: 18 },
-    off: { opacity: 0.4 },
-    error: { color: colors.danger },
-});
+const sheets = themedStyles((p) => ({
+
+    box: { gap: ds.space.sm },
+    title: { color: p.textPrimary, },
+    muted: { color: p.textTertiary },
+    row: { flexDirection: 'row', alignItems: 'center', gap: ds.space.sm, borderBottomColor: p.borderSubtle, borderBottomWidth: StyleSheet.hairlineWidth },
+    name: { color: p.textPrimary, flex: 1 },
+    error: { color: p.danger },
+}));

@@ -3,7 +3,7 @@ import { FontStatus } from './FontStatus';
 import { Text as NativeText, type TextProps as NativeProps } from 'react-native';
 import { type TextVariant } from '../../theme';
 import { themedStyles, useThemedStyles } from './AppearanceContext';
-export type TextProps = NativeProps & { variant?: TextVariant; tone?: 'primary' | 'secondary' | 'tertiary' | 'accent' | 'danger' | 'onAccent' | 'onMedia' };
+export type TextProps = NativeProps & { variant?: TextVariant; tone?: 'primary' | 'secondary' | 'tertiary' | 'accent' | 'danger' | 'onAccent' | 'onMedia' | 'warning' };
 export function Text({ variant = 'body', tone = 'primary', style, ...props }: TextProps) {
     const loadedFonts = useContext(FontStatus);
     const s = useThemedStyles(sheets);
@@ -29,4 +29,5 @@ const sheets = themedStyles((p, ramp) => ({
     danger: { color: p.danger },
     onAccent: { color: p.onAccent },
     onMedia: { color: p.onMedia },
+    warning: { color: p.warning, fontVariant: ['tabular-nums'] },
 }));

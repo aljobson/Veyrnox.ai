@@ -6,9 +6,11 @@ const path = require('path') as { join: (...p: string[]) => string };
 describe('the native Create workspace mirrors the website contract', () => {
     const screen = fs.readFileSync(path.join(__dirname, '..', 'src', 'app', '(app)', 'create', '[modelId].tsx'), 'utf8');
 
-    test('leads with the Studio, stage, prompt, references and settings hierarchy', () => {
-        expect(screen).toContain("t('create.workspace.eyebrow')");
-        expect(screen).toContain("t('create.workspace.stageHelp')");
+    test('leads with the stage, prompt, references and settings hierarchy', () => {
+        const header = fs.readFileSync(path.join(__dirname, '..', 'src', 'components', 'create', 'FormHeader.tsx'), 'utf8');
+        expect(screen).toContain('<FormHeader');
+        expect(screen).not.toContain("t('create.workspace.eyebrow')");
+        expect(header).toContain("t('create.workspace.stageHelp')");
         expect(screen).toContain("t('create.workspace.references')");
         expect(screen).toContain("t('create.workspace.prompt')");
         expect(screen).toContain("t('create.workspace.settings')");

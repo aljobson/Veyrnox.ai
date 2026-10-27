@@ -1,8 +1,9 @@
+import { Text, Button, themedStyles, useThemedStyles } from './ui';
 import * as DocumentPicker from 'expo-document-picker';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 import { subscribeCacheUser } from '../lib/appCache';
 import { claimDrawFile, deleteDrawFile, isDrawFile, releaseDrawFile } from '../lib/drawFiles';
 import { loadDrawOnImage } from '../lib/drawLoader';
@@ -12,7 +13,7 @@ import { t, plural } from '../lib/i18n';
 import type { LibraryChoice } from '../lib/librarySource';
 import { checkPicked, pickedProblem, type PickedFile, type Slot, type GenerationReference } from '../lib/sources';
 import { uploadMessage, uploadSource } from '../lib/uploads';
-import { colors } from '../theme';
+import { ds } from '../theme';
 
 interface SourcePickerProps {
     readonly slot: Slot;
@@ -61,9 +62,11 @@ export async function choose(kind: Slot['kind']): Promise<PickedFile | null> {
 
 // Each row retains its own upload controller, progress and cancellation.
 export function SourcePicker(props: SourcePickerProps) {
+    const styles = useThemedStyles(sheets);
     return props.onReferences ? <ReferencePicker {...props} /> : <SourceFilePicker {...props} />;
 }
 function ReferencePicker(props: SourcePickerProps) {
+    const styles = useThemedStyles(sheets);
     const serial = useRef(props.references?.length || 1);
     const [rows, setRows] = useState(() => (props.references?.length ? props.references : [undefined]).map((reference, id) => ({ id, reference })));
     const current = useRef(rows);
@@ -79,25 +82,26 @@ function ReferencePicker(props: SourcePickerProps) {
     function move(index: number, target: number) {
         const next = [...current.current]; next.splice(target, 0, next.splice(index, 1)[0]); change(next);
     }
-    return <View style={{ gap: 12 }}>
-        {max > 1 && <Text style={styles.hint}>{plural('app.create.sources.maxFiles', max)}</Text>}
-        {rows.filter(row => row.reference).length > max && <Text accessibilityRole="alert" style={styles.error}>{plural('app.create.sources.overLimit', max)}</Text>}
-        {rows.map((row, index) => <View key={row.id} style={{ gap: 8 }}>
+    return <View style={{ gap: ds.space.md }}>
+        {max > 1 && <Text variant="caption" tone="tertiary" style={styles.hint}>{plural('app.create.sources.maxFiles', max)}</Text>}
+        {rows.filter(row => row.reference).length > max && <Text variant="body" tone="danger" accessibilityRole="alert" style={styles.error}>{plural('app.create.sources.overLimit', max)}</Text>}
+        {rows.map((row, index) => <View key={row.id} style={{ gap: ds.space.sm }}>
             <SourceFilePicker {...props} slot={{ ...props.slot, required: props.slot.required && index === 0 }}
                 initial={row.id === 0 ? props.initial : null} initialReady={!!row.reference}
                 onChange={key => reference(row.id, key ? { slot: props.slot.slot, origin: 'upload', key } : undefined, 'upload')}
                 onLibrary={props.onLibrary ? asset_id => reference(row.id, asset_id ? { slot: props.slot.slot, origin: 'asset', asset_id } : undefined, 'asset') : undefined}
                 onBusy={value => { if (value) busy.current.add(row.id); else busy.current.delete(row.id); props.onBusy(busy.current.size > 0); }} />
             <View style={styles.row}>
-                {index > 0 && <Pressable accessibilityRole="button" accessibilityLabel={t('app.create.sources.moveEarlier')} onPress={() => move(index, index - 1)}><Text style={styles.pickText}>↑</Text></Pressable>}
-                {index < rows.length - 1 && <Pressable accessibilityRole="button" accessibilityLabel={t('app.create.sources.moveLater')} onPress={() => move(index, index + 1)}><Text style={styles.pickText}>↓</Text></Pressable>}
+                {index > 0 && <Button variant="secondary" accessibilityRole="button" accessibilityLabel={t('app.create.sources.moveEarlier')} onPress={() => move(index, index - 1)} label={t('app.create.sources.moveEarlier')} icon="arrowUp" iconOnly />}
+                {index < rows.length - 1 && <Button variant="secondary" accessibilityRole="button" accessibilityLabel={t('app.create.sources.moveLater')} onPress={() => move(index, index + 1)} label={t('app.create.sources.moveLater')} icon="arrowDown" iconOnly />}
             </View>
         </View>)}
-        {rows.length < max && <Pressable accessibilityRole="button" onPress={() => change([...current.current, { id: serial.current++, reference: undefined }])}><Text style={styles.pickText}>{t(props.slot.kind === 'image' ? 'app.create.sources.image.add' : props.slot.kind === 'video' ? 'app.create.sources.video.add' : 'app.create.sources.audio.add')}</Text></Pressable>}
+        {rows.length < max && <Button variant="secondary" accessibilityRole="button" onPress={() => change([...current.current, { id: serial.current++, reference: undefined }])} label={t(props.slot.kind === 'image' ? 'app.create.sources.image.add' : props.slot.kind === 'video' ? 'app.create.sources.video.add' : 'app.create.sources.audio.add')} />}
     </View>;
 }
 
 function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, drawable = false, hint, initialReady = false, initialReadyLabel }: SourcePickerProps) {
+    const styles = useThemedStyles(sheets);
     const [status, setStatus] = useState<Status>(initialReady ? { step: 'ready' } : { step: 'empty' });
     const [preview, setPreview] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -224,42 +228,34 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
 
     return (
         <View style={styles.box}>
-            <Text style={styles.label}>
+            <Text variant="bodyStrong" tone="primary" style={styles.label}>
                 {slot.label}
                 {slot.required ? '' : ' (optional)'}
             </Text>
-            {hint ? <Text style={styles.slotHint}>{hint}</Text> : null}
+            {hint ? <Text variant="footnote" tone="tertiary" style={styles.slotHint}>{hint}</Text> : null}
             {status.step === 'empty' ? (
-                <Pressable accessibilityRole="button" accessibilityLabel={`Choose ${NOUN[slot.kind]} for ${slot.label}`} style={styles.pick} onPress={pick}>
-                    <Text style={styles.pickText}>Choose {NOUN[slot.kind]}</Text>
-                </Pressable>
+                <Button variant="secondary" accessibilityRole="button" accessibilityLabel={`Choose ${NOUN[slot.kind]} for ${slot.label}`} onPress={pick} label={`Choose ${NOUN[slot.kind]}`} />
             ) : (
                 <View style={styles.row}>
                     {preview ? <Image source={{ uri: preview }} style={styles.thumb} contentFit="cover" /> : <View style={[styles.thumb, styles.thumbPlain]} />}
                     <View style={styles.grow}>
                         {status.step === 'uploading' ? (
                             <View style={styles.status}>
-                                <ActivityIndicator color={colors.accent} />
-                                <Text style={styles.body}>Uploading {Math.round(status.fraction * 100)}%</Text>
+                                <ActivityIndicator color={styles.accentInk.color} />
+                                <Text variant="body" tone="secondary" style={styles.body}>Uploading {Math.round(status.fraction * 100)}%</Text>
                             </View>
                         ) : (
-                            <Text style={styles.body}>{libraryName ? t('libsrc.ready', { name: libraryName }) : 'Ready'}</Text>
+                            <Text variant="body" tone="secondary" style={styles.body}>{libraryName ? t('libsrc.ready', { name: libraryName }) : 'Ready'}</Text>
                         )}
                     </View>
-                    <Pressable accessibilityRole="button" accessibilityLabel={`Remove ${slot.label}`} onPress={remove} hitSlop={12}>
-                        <Text style={styles.remove}>{status.step === 'uploading' ? 'Cancel' : 'Remove'}</Text>
-                    </Pressable>
+                    <Button variant="secondary" accessibilityRole="button" accessibilityLabel={`Remove ${slot.label}`} onPress={remove} hitSlop={12} label={status.step === 'uploading' ? 'Cancel' : 'Remove'} />
                 </View>
             )}
             {status.step === 'empty' && onLibrary ? (
-                <Pressable accessibilityRole="button" accessibilityLabel={t('libsrc.chooseLabel', { kind: NOUN[slot.kind], slot: slot.label })} style={styles.library} onPress={() => setChoosing(true)}>
-                    <Text style={styles.pickText}>{t('libsrc.choose')}</Text>
-                </Pressable>
+                <Button variant="secondary" accessibilityRole="button" accessibilityLabel={t('libsrc.chooseLabel', { kind: NOUN[slot.kind], slot: slot.label })} onPress={() => setChoosing(true)} label={t('libsrc.choose')} />
             ) : null}
             {drawable && DrawScreen && status.step === 'ready' && preview && !libraryName ? (
-                <Pressable accessibilityRole="button" accessibilityLabel={t('draw.open')} style={styles.library} onPress={() => setDrawing(++drawEpoch.current)}>
-                    <Text style={styles.pickText}>{t('draw.open')}</Text>
-                </Pressable>
+                <Button variant="secondary" accessibilityRole="button" accessibilityLabel={t('draw.open')} onPress={() => setDrawing(++drawEpoch.current)} label={t('draw.open')} />
             ) : null}
             {drawing !== null && DrawScreen && preview ? <DrawScreen uri={preview} maxPixels={slot.maxPixels} onCancel={() => { drawEpoch.current++; setDrawing(null); }} onDone={file => {
                 if (!mounted.current || drawing !== drawEpoch.current) { deleteDrawFile(file.uri); return; }
@@ -268,26 +264,23 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
                 void accept(file);
             }} /> : null}
             {choosing ? <LibraryChooser api={api} kind={slot.kind} onPick={chooseFromLibrary} onClose={() => setChoosing(false)} /> : null}
-            {slot.maxSeconds ? <Text style={styles.hint}>Up to {slot.maxSeconds} seconds.</Text> : null}
-            {error ? <Text style={styles.error}>{error}</Text> : null}
+            {slot.maxSeconds ? <Text variant="caption" tone="tertiary" style={styles.hint}>Up to {slot.maxSeconds} seconds.</Text> : null}
+            {error ? <Text variant="body" tone="danger" style={styles.error}>{error}</Text> : null}
         </View>
     );
 }
 
-const styles = StyleSheet.create({
-    box: { gap: 8 },
-    label: { color: colors.text, fontWeight: '600' },
-    slotHint: { color: colors.muted, fontSize: 13 },
-    pick: { borderColor: colors.border, borderWidth: 1, borderStyle: 'dashed', borderRadius: 12, paddingVertical: 22, alignItems: 'center', backgroundColor: colors.surface },
-    pickText: { color: colors.accent, fontWeight: '600' },
-    library: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
-    row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-    thumb: { width: 64, height: 64, borderRadius: 10, backgroundColor: colors.surface },
-    thumbPlain: { borderColor: colors.border, borderWidth: 1 },
+const sheets = themedStyles((p) => ({
+    accentInk: { color: p.accent },
+    box: { gap: ds.space.sm },
+    label: { color: p.textPrimary, },
+    slotHint: { color: p.textTertiary, },
+    row: { flexDirection: 'row', alignItems: 'center', gap: ds.space.md },
+    thumb: { width: 64, height: 64, borderRadius: ds.radius.sm, backgroundColor: p.bgElevated1 },
+    thumbPlain: { borderColor: p.borderSubtle, borderWidth: 1 },
     grow: { flex: 1 },
-    status: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-    body: { color: colors.body },
-    remove: { color: colors.muted },
-    hint: { color: colors.muted, fontSize: 12 },
-    error: { color: colors.danger },
-});
+    status: { flexDirection: 'row', alignItems: 'center', gap: ds.space.sm },
+    body: { color: p.textSecondary },
+    hint: { color: p.textTertiary, },
+    error: { color: p.danger },
+}));

@@ -1,8 +1,9 @@
+import { Text, Button, themedStyles, useThemedStyles } from '../../../components/ui';
 import { Image } from 'expo-image';
 import * as WebBrowser from 'expo-web-browser';
 import { Link, Stack, useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { JobProvenance } from '../../../components/JobProvenance';
 import { StemList } from '../../../components/StemList';
@@ -14,9 +15,9 @@ import { mediaApi, waitForJob, type JobState } from '../../../lib/media';
 import { editHref, makeAnotherHref, nextStepsFor, publishHref } from '../../../lib/nextSteps';
 import { creativeReuseHref, kindForMime } from '../../../lib/creativeReuse';
 import { saveOutput, shareOutput } from '../../../lib/output';
-import { colors } from '../../../theme';
+import { ds } from '../../../theme';
 import { plural, t } from '../../../lib/i18n';
-import { touchTarget } from '../../../lib/a11y';
+
 import { cancelErrorKey, cancelJob, getCancelStatus, type CancelStatus } from '../../../lib/cancelJob';
 
 // Embedded renderers without navigation focus support still clean up on unmount.
@@ -36,6 +37,7 @@ function elapsed(seconds: number): string {
 }
 
 export default function JobScreen() {
+    const styles = useThemedStyles(sheets);
     const { id } = useLocalSearchParams<{ id: string }>();
     const { api } = useAuth();
     const router = useRouter();
@@ -206,10 +208,8 @@ export default function JobScreen() {
             <Stack.Screen options={{ title: t('job.title') }} />
             {error ? (
                 <View style={styles.center}>
-                    <Text style={styles.error}>{t('job.checkError')}</Text>
-                    <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => setAttempt((n) => n + 1)}>
-                        <Text style={styles.secondaryText}>{t('job.checkAgain')}</Text>
-                    </Pressable>
+                    <Text variant="body" tone="danger" style={styles.error}>{t('job.checkError')}</Text>
+                    <Button variant="secondary" accessibilityRole="button" onPress={() => setAttempt((n) => n + 1)} label={t('job.checkAgain')} />
                 </View>
             ) : asset && stems.length > 0 ? (
                 <ScrollView contentContainerStyle={styles.actionsBody}>
@@ -219,41 +219,31 @@ export default function JobScreen() {
                 asset.mime.startsWith('image/') ? (
                     <Image source={{ uri: asset.url }} style={styles.image} contentFit="contain" accessibilityLabel={t('job.title')} accessibilityIgnoresInvertColors />
                 ) : (
-                    <Pressable accessibilityRole="button" style={styles.button} onPress={() => WebBrowser.openBrowserAsync(asset.url)}>
-                        <Text style={styles.buttonText}>{asset.mime.startsWith('video/') ? t('job.playVideo') : t('job.playAudio')}</Text>
-                    </Pressable>
+                    <Button variant="secondary" accessibilityRole="button" onPress={() => WebBrowser.openBrowserAsync(asset.url)} label={asset.mime.startsWith('video/') ? t('job.playVideo') : t('job.playAudio')} />
                 )
             ) : (
                 <View style={styles.center}>
-                    {waiting ? <ActivityIndicator color={colors.accent} /> : null}
-                    <Text style={state === 'failed' ? styles.error : styles.status}>{cancelledCredits !== null
+                    {waiting ? <ActivityIndicator color={styles.accentInk.color} /> : null}
+                    <Text variant="body" tone="danger" style={state === 'failed' ? styles.error : styles.status}>{cancelledCredits !== null
                         ? cancelledCredits > 0 ? plural('jobCancel.cancelled', cancelledCredits) : t('jobCancel.cancelledFree')
                         : t(LABEL[state])}</Text>
-                    {cancelNote ? <Text style={styles.note} accessibilityLiveRegion="polite">{cancelNote}</Text> : null}
+                    {cancelNote ? <Text variant="body" tone="secondary" style={styles.note} accessibilityLiveRegion="polite">{cancelNote}</Text> : null}
                     {waiting && state === 'queued' && cancelStatus?.cancellable ? (
-                        <Pressable accessibilityRole="button" accessibilityLabel={t(cancelling ? 'jobCancel.cancelling' : 'jobCancel.confirm')}
-                            accessibilityState={{ busy: cancelling, disabled: cancelling }} disabled={cancelling}
-                            style={[styles.secondary, touchTarget, cancelling && styles.off]} onPress={confirmCancel}>
-                            <Text style={styles.secondaryText}>{t(cancelling ? 'jobCancel.cancelling' : 'jobCancel.confirm')}</Text>
-                        </Pressable>
+                        <Button variant="secondary" accessibilityRole="button" accessibilityLabel={t(cancelling ? 'jobCancel.cancelling' : 'jobCancel.confirm')} accessibilityState={{ busy: cancelling, disabled: cancelling }} disabled={cancelling} onPress={confirmCancel} label={t(cancelling ? 'jobCancel.cancelling' : 'jobCancel.confirm')} />
                     ) : null}
                     {waiting ? (
-                        <Text style={styles.hint}>
+                        <Text variant="body" tone="tertiary" style={styles.hint}>
                             {t('job.waiting', { elapsed: elapsed(seconds) })}
                         </Text>
                     ) : null}
                     {waiting ? (
                         <>
-                            <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => router.replace('/library')}>
-                                <Text style={styles.secondaryText}>{t('job.stopWaiting')}</Text>
-                            </Pressable>
-                            <Text style={styles.hint}>{t('job.keepsRunning')}</Text>
+                            <Button variant="secondary" accessibilityRole="button" onPress={() => router.replace('/library')} label={t('job.stopWaiting')} />
+                            <Text variant="body" tone="tertiary" style={styles.hint}>{t('job.keepsRunning')}</Text>
                         </>
                     ) : null}
                     {state === 'failed' && modelId ? (
-                        <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => router.replace({ pathname: '/create/[modelId]', params: { modelId } })}>
-                            <Text style={styles.secondaryText}>{t('recovery.retry')}</Text>
-                        </Pressable>
+                        <Button variant="secondary" accessibilityRole="button" onPress={() => router.replace({ pathname: '/create/[modelId]', params: { modelId } })} label={t('recovery.retry')} />
                     ) : null}
                 </View>
             )}
@@ -261,82 +251,57 @@ export default function JobScreen() {
                 <ScrollView style={styles.actions} contentContainerStyle={styles.actionsBody}>
                     {next.edit || next.publish || next.makeAnother || next.reuse ? (
                         <View style={styles.nextBlock}>
-                            <Text style={styles.nextTitle} accessibilityRole="header">{t('job.next.title')}</Text>
+                            <Text variant="title3" tone="primary" style={styles.nextTitle} accessibilityRole="header">{t('job.next.title')}</Text>
                             <View style={styles.nextRow}>
                                 {next.edit ? (
-                                    <Pressable accessibilityRole="button" style={styles.nextButton} onPress={() => router.push(editHref(id))}>
-                                        <Text style={styles.nextText}>{t('job.next.edit')}</Text>
-                                    </Pressable>
+                                    <Button variant="secondary" accessibilityRole="button" onPress={() => router.push(editHref(id))} label={t('job.next.edit')} />
                                 ) : null}
                                 {next.publish ? (
-                                    <Pressable accessibilityRole="button" style={styles.nextButton} onPress={() => router.push(publishHref(id))}>
-                                        <Text style={styles.nextText}>{t('job.next.publish')}</Text>
-                                    </Pressable>
+                                    <Button variant="secondary" accessibilityRole="button" onPress={() => router.push(publishHref(id))} label={t('job.next.publish')} />
                                 ) : null}
                                 {next.makeAnother && modelId ? (
-                                    <Pressable accessibilityRole="button" style={styles.nextButton} onPress={() => router.push(makeAnotherHref(modelId))}>
-                                        <Text style={styles.nextText}>{t('job.next.makeAnother')}</Text>
-                                    </Pressable>
+                                    <Button variant="secondary" accessibilityRole="button" onPress={() => router.push(makeAnotherHref(modelId))} label={t('job.next.makeAnother')} />
                                 ) : null}
                                 {next.reuse && reusableKind ? (
-                                    <Pressable accessibilityRole="button" style={styles.nextButton} onPress={() => router.push(creativeReuseHref(id, reusableKind))}>
-                                        <Text style={styles.nextText}>{t('job.next.reuse')}</Text>
-                                    </Pressable>
+                                    <Button variant="secondary" accessibilityRole="button" onPress={() => router.push(creativeReuseHref(id, reusableKind))} label={t('job.next.reuse')} />
                                 ) : null}
                             </View>
                         </View>
                     ) : null}
                     <View style={styles.row}>
                         {canSave ? (
-                            <Pressable accessibilityRole="button" disabled={!!acting} style={[styles.action, !!acting && styles.off]} onPress={() => run('save')}>
-                                <Text style={styles.actionText}>{acting === 'save' ? t('social.saving') : t('job.savePhotos')}</Text>
-                            </Pressable>
+                            <Button variant="secondary" containerStyle={styles.grow} accessibilityRole="button" disabled={!!acting} onPress={() => run('save')} label={acting === 'save' ? t('social.saving') : t('job.savePhotos')} />
                         ) : null}
-                        <Pressable accessibilityRole="button" disabled={!!acting} style={[styles.action, !!acting && styles.off]} onPress={() => run('share')}>
-                            <Text style={styles.actionText}>{acting === 'share' ? t('cinema.share.preparing') : t('cinema.share.share')}</Text>
-                        </Pressable>
+                        <Button variant="secondary" containerStyle={styles.grow} accessibilityRole="button" disabled={!!acting} onPress={() => run('share')} label={acting === 'share' ? t('cinema.share.preparing') : t('cinema.share.share')} />
                     </View>
-                    {note ? <Text style={styles.note} accessibilityLiveRegion="polite">{note}</Text> : null}
+                    {note ? <Text variant="body" tone="secondary" style={styles.note} accessibilityLiveRegion="polite">{note}</Text> : null}
                     <JobProvenance api={api} jobId={id} />
                     <Link href={{ pathname: '/report', params: { kind: 'job', id } }} asChild>
-                        <Pressable accessibilityRole="button" style={styles.report}>
-                            <Text style={styles.reportText}>{t('job.report')}</Text>
-                        </Pressable>
+                        <Button variant="tertiary" accessibilityRole="button" label={t('job.report')} />
                     </Link>
-                    <Pressable accessibilityRole="button" disabled={deleting} style={[styles.delete, deleting && styles.off]} onPress={confirmDelete}>
-                        <Text style={styles.deleteText}>{deleting ? t('job.deleting') : t('job.deleteThis')}</Text>
-                    </Pressable>
+                    <Button variant="tertiary" accessibilityRole="button" disabled={deleting} onPress={confirmDelete} label={deleting ? t('job.deleting') : t('job.deleteThis')} textStyle={styles.deleteText} />
                 </ScrollView>
             ) : null}
         </View>
     );
 }
 
-const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: colors.background, padding: 16, justifyContent: 'center' },
-    center: { alignItems: 'center', gap: 12 },
-    status: { color: colors.body, fontSize: 16 },
-    hint: { color: colors.muted, textAlign: 'center' },
-    error: { color: colors.danger, textAlign: 'center' },
+const sheets = themedStyles((p) => ({
+    accentInk: { color: p.accent },
+
+    screen: { flex: 1, backgroundColor: p.bg, padding: ds.space.lg, justifyContent: 'center' },
+    center: { alignItems: 'center', gap: ds.space.md },
+    status: { color: p.textSecondary, },
+    hint: { color: p.textTertiary, textAlign: 'center' },
+    error: { color: p.danger, textAlign: 'center' },
     image: { flex: 1, width: '100%' },
-    button: { backgroundColor: colors.accent, borderRadius: 12, paddingVertical: 16, alignItems: 'center' },
-    buttonText: { color: colors.accentInk, fontWeight: '700', fontSize: 16 },
-    secondary: { borderColor: colors.border, borderWidth: 1, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 22 },
-    secondaryText: { color: colors.text, fontWeight: '600' },
     actions: { flexGrow: 0, flexShrink: 1 },
-    nextBlock: { gap: 8 },
-    nextTitle: { color: colors.text, fontSize: 16, fontWeight: '700' },
-    nextRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-    nextButton: { flexGrow: 1, minHeight: 44, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.accent, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 16 },
-    nextText: { color: colors.accentInk, fontWeight: '700' },
-    actionsBody: { gap: 10, paddingTop: 12 },
-    row: { flexDirection: 'row', gap: 10 },
-    action: { flex: 1, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
-    actionText: { color: colors.text, fontWeight: '600' },
-    off: { opacity: 0.4 },
-    note: { color: colors.body, textAlign: 'center' },
-    report: { minHeight: 44, justifyContent: 'center', paddingVertical: 10, alignItems: 'center' },
-    reportText: { color: colors.muted },
-    delete: { minHeight: 44, justifyContent: 'center', paddingVertical: 10, alignItems: 'center' },
-    deleteText: { color: colors.danger },
-});
+    nextBlock: { gap: ds.space.sm },
+    nextTitle: { color: p.textPrimary, },
+    nextRow: { flexDirection: 'row', flexWrap: 'wrap', gap: ds.space.sm },
+    actionsBody: { gap: ds.space.sm, paddingTop: ds.space.md },
+    grow: { flex: 1 },
+    row: { flexDirection: 'row', flexWrap: 'wrap', gap: ds.space.sm },
+    note: { color: p.textSecondary, textAlign: 'center' },
+    deleteText: { color: p.danger },
+}));
