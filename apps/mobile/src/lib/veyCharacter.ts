@@ -18,6 +18,10 @@ export type Pivot = keyof typeof PIVOTS;
 // The canvas row where a card's top edge cuts a peeking Vey: the paws rest here, the chin stays behind the card.
 export const PEEK_CROP = 79;
 
+// Fixed character-art colors, independent of the surrounding theme.
+export const VEY_PAW = '#dbe8ea';
+export const VEY_PAW_EDGE = '#789b9f';
+
 export const heightFor = (width: number) => (width * CANVAS.height) / CANVAS.width;
 
 // The turning point at the size the character is drawn at, as a style.

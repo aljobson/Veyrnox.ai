@@ -1,18 +1,18 @@
 import { useContext } from 'react';
 import { FontStatus } from './FontStatus';
 import { forwardRef, useState, type ReactNode, type ComponentRef } from 'react';
-import { TextInput, View, type TextInputProps } from 'react-native';
+import { TextInput, View, type TextInputProps, type ViewProps } from 'react-native';
 import { ds } from '../../theme';
 import { Text } from './Text';
 import { themedStyles, useThemedStyles } from './AppearanceContext';
-export type TextFieldProps = TextInputProps & { label?: string; error?: string; trailing?: ReactNode };
-export const TextField = forwardRef<ComponentRef<typeof TextInput>, TextFieldProps>(function TextField({ label, error, trailing, style, onFocus, onBlur, ...props }, ref) {
+export type TextFieldProps = TextInputProps & { label?: string; error?: string | boolean; trailing?: ReactNode; containerStyle?: ViewProps['style'] };
+export const TextField = forwardRef<ComponentRef<typeof TextInput>, TextFieldProps>(function TextField({ label, error, trailing, style, containerStyle, onFocus, onBlur, ...props }, ref) {
     const [focused, setFocused] = useState(false);
     const loadedFonts = useContext(FontStatus);
     const s = useThemedStyles(sheets);
     const family = s.input.fontFamily;
     return (
-        <View style={s.group}>
+        <View style={[s.group, containerStyle]}>
             {label ? (
                 <Text variant="footnote" tone="secondary">{label}</Text>
             ) : null}
@@ -35,7 +35,7 @@ export const TextField = forwardRef<ComponentRef<typeof TextInput>, TextFieldPro
                 />
                 {trailing}
             </View>
-            {error ? (
+            {typeof error === 'string' && error ? (
                 <Text variant="footnote" tone="danger" accessibilityRole="alert">
                     {error}
                 </Text>

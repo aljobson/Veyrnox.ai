@@ -1,6 +1,8 @@
+import { themedStyles, useThemedStyles } from './ui';
+
 import { useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Animated, Easing, Image, StyleSheet, View } from 'react-native';
-import { CANVAS, PEEK_CROP, heightFor } from '../lib/veyCharacter';
+import { AccessibilityInfo, Animated, Easing, Image, View } from 'react-native';
+import { CANVAS, PEEK_CROP, VEY_PAW, VEY_PAW_EDGE, heightFor } from '../lib/veyCharacter';
 
 const head = require('../../assets/vey/head.png');
 const eyes = require('../../assets/vey/eyes.png');
@@ -14,6 +16,7 @@ export const peekRoom = (width = 84) => Math.ceil((PEEK_CROP * width) / CANVAS.w
 // card. Render it as the first child of the chosen card; it sits just above the card's top edge and rises from behind
 // it. Decoration: no words, no touches, hidden from screen readers, and still under Reduce Motion.
 export function VeyCardPeek({ width = 84 }: { width?: number }) {
+    const styles = useThemedStyles(sheets);
     const k = width / CANVAS.width;
     const crop = PEEK_CROP * k;
     const rise = useRef(new Animated.Value(1)).current;
@@ -41,7 +44,7 @@ export function VeyCardPeek({ width = 84 }: { width?: number }) {
     }, [still, rise]);
 
     const layer = { position: 'absolute', left: 0, top: 0, width, height: heightFor(width) } as const;
-    const paw = { position: 'absolute', top: 70 * k, width: 26 * k, height: 18 * k, borderRadius: 13 * k, backgroundColor: '#dbe8ea', borderColor: '#789b9f', borderWidth: 1.5 } as const;
+    const paw = { position: 'absolute', top: 70 * k, width: 26 * k, height: 18 * k, borderRadius: 13 * k,  borderWidth: 1.5 } as const;
 
     return (
         <View
@@ -53,13 +56,15 @@ export function VeyCardPeek({ width = 84 }: { width?: number }) {
             <Animated.View style={{ width, height: crop, transform: [{ translateY: rise.interpolate({ inputRange: [0, 1], outputRange: [0, crop] }) }] }}>
                 <Image source={head} style={layer} />
                 <Image source={eyes} style={layer} />
-                <View style={[paw, { left: 36 * k }]} />
-                <View style={[paw, { left: 98 * k }]} />
+                <View style={[styles.paw, paw, { left: 36 * k }]} />
+                <View style={[styles.paw, paw, { left: 98 * k }]} />
             </Animated.View>
         </View>
     );
 }
 
-const styles = StyleSheet.create({
+const sheets = themedStyles(() => ({
+
+    paw: { backgroundColor: VEY_PAW, borderColor: VEY_PAW_EDGE },
     crop: { position: 'absolute', left: '50%', overflow: 'hidden' },
-});
+}));

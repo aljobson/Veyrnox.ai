@@ -1,13 +1,14 @@
+import type { ReactNode } from 'react';
 import { Pressable, View, type PressableProps } from 'react-native';
 import { ds } from '../../theme';
 import type { MenuIcon } from '../../lib/menuIcons';
 import { Text } from './Text';
 import { Icon } from './Icon';
 import { themedStyles, useThemedStyles } from './AppearanceContext';
-export function ListRow({ title, subtitle, icon, ...props }: Omit<PressableProps, 'children'> & { title: string; subtitle?: string; icon?: MenuIcon }) {
+export function ListRow({ title, subtitle, icon, trailing, style, ...props }: Omit<PressableProps, 'children'> & { title: ReactNode; subtitle?: ReactNode; icon?: MenuIcon; trailing?: ReactNode }) {
     const s = useThemedStyles(sheets);
     return (
-        <Pressable {...props} accessibilityRole="button" style={s.row}>
+        <Pressable {...props} accessibilityRole={props.accessibilityRole ?? "button"} style={(state) => [s.row, typeof style === 'function' ? style(state) : style]}>
             {icon ? <Icon name={icon} /> : null}
             <View style={s.copy}>
                 <Text variant="bodyStrong">{title}</Text>
@@ -17,7 +18,7 @@ export function ListRow({ title, subtitle, icon, ...props }: Omit<PressableProps
                     </Text>
                 ) : null}
             </View>
-            <Icon name="caretRight" size={20} />
+            {trailing ?? <Icon name="caretRight" size={20} />}
         </Pressable>
     );
 }

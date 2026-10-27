@@ -1,15 +1,16 @@
+import { Text, Button, themedStyles, useThemedStyles } from './ui';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { View } from 'react-native';
 import type { ApiClient } from '../lib/api';
 import { planAttachments } from '../lib/attachModel';
 import { stageCreativeSourceHandoff } from '../lib/creativeSourceHandoff';
 import { fetchCatalog, type CatalogModel } from '../lib/media';
 import { checkPicked, kindOfMime, pickedProblem, type PickedFile, type SlotKind, type SlotName } from '../lib/sources';
 import { uploadMessage, uploadSource } from '../lib/uploads';
-import { colors } from '../theme';
+import { ds } from '../theme';
 
 type Source = 'photos' | 'files';
 interface Picked {
@@ -44,6 +45,7 @@ interface Props {
 // Always shown: pick several pictures, videos and audio files, and the app moves to the model that
 // takes the most of them (staying on this one when it can), with every file already uploaded.
 export function AttachFromDevice({ api, current }: Props) {
+    const styles = useThemedStyles(sheets);
     const router = useRouter();
     const [busy, setBusy] = useState<Source | null>(null);
     const [progress, setProgress] = useState<string | null>(null);
@@ -93,28 +95,25 @@ export function AttachFromDevice({ api, current }: Props) {
 
     return (
         <View style={styles.box}>
-            <Text style={styles.label}>Attach from device</Text>
-            <Text style={styles.hint}>Pick several pictures, videos or audio files at once. If this model cannot use them, we move you to one that can.</Text>
+            <Text variant="bodyStrong" tone="primary" style={styles.label}>Attach from device</Text>
+            <Text variant="footnote" tone="tertiary" style={styles.hint}>Pick several pictures, videos or audio files at once. If this model cannot use them, we move you to one that can.</Text>
             <View style={styles.row}>
                 {(['photos', 'files'] as const).map((source) => (
-                    <Pressable key={source} accessibilityRole="button" accessibilityLabel={source === 'photos' ? 'Attach pictures and videos from Photos' : 'Attach files from Files'} accessibilityState={{ disabled: busy !== null }}
-                        disabled={busy !== null} style={styles.pick} onPress={() => void attach(source)}>
-                        {busy === source ? <ActivityIndicator color={colors.accent} /> : <Text style={styles.pickText}>{source === 'photos' ? 'Photos & videos' : 'Files'}</Text>}
-                    </Pressable>
+                    <Button variant="secondary" containerStyle={styles.grow} key={source} accessibilityRole="button" accessibilityLabel={source === 'photos' ? 'Attach pictures and videos from Photos' : 'Attach files from Files'} accessibilityState={{ disabled: busy !== null }} disabled={busy !== null} onPress={() => void attach(source)} label={source === 'photos' ? 'Photos & videos' : 'Files'} loading={busy === source} />
                 ))}
             </View>
-            {progress ? <Text accessibilityLiveRegion="polite" style={styles.hint}>{progress}</Text> : null}
-            {error ? <Text accessibilityLiveRegion="polite" style={styles.error}>{error}</Text> : null}
+            {progress ? <Text variant="footnote" tone="tertiary" accessibilityLiveRegion="polite" style={styles.hint}>{progress}</Text> : null}
+            {error ? <Text variant="body" tone="danger" accessibilityLiveRegion="polite" style={styles.error}>{error}</Text> : null}
         </View>
     );
 }
 
-const styles = StyleSheet.create({
-    box: { gap: 8 },
-    label: { color: colors.text, fontWeight: '600' },
-    hint: { color: colors.muted, fontSize: 13 },
-    row: { flexDirection: 'row', gap: 8 },
-    pick: { flex: 1, minHeight: 48, borderColor: colors.border, borderWidth: 1, borderStyle: 'dashed', borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface },
-    pickText: { color: colors.accent, fontWeight: '600' },
-    error: { color: colors.danger },
-});
+const sheets = themedStyles((p) => ({
+
+    grow: { flex: 1 },
+    box: { gap: ds.space.sm },
+    label: { color: p.textPrimary, },
+    hint: { color: p.textTertiary, },
+    row: { flexDirection: 'row', gap: ds.space.sm },
+    error: { color: p.danger },
+}));
