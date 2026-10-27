@@ -60,7 +60,9 @@ test('a previous UTC day dismissal does not suppress the next invitation', async
 });
 
 test.each([403, 404])('status %s does not poll or refetch on remount for this UTC day', async code => {
-    jest.useFakeTimers();
+    // Start mid-morning UTC so the 30 minutes advanced below never cross into the next UTC day
+    // (from a real clock after 23:30 UTC the day changed and the dialog rightly refetched).
+    jest.useFakeTimers({ now: new Date('2026-06-15T09:00:00Z') });
     try {
         mockRequest.mockRejectedValue(new ApiError(code, code === 403 ? 'account_unavailable' : 'not_found'));
         await mount();
