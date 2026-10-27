@@ -1,3 +1,4 @@
+import { AnalyticsHost } from '../components/AnalyticsHost';
 import { FontStatus } from '../components/ui/FontStatus';
 import { typefaceFonts } from '../components/ui/FontCatalog';
 import { useFonts } from 'expo-font';
@@ -32,7 +33,7 @@ function RootLayout() {
                     <PushProvider>
                         <ThemeRouteRestorer />
                         <StatusBar style={dark ? 'light' : 'dark'} />
-                        <LanguageGate><Slot /></LanguageGate>
+                        <LanguageGate><AnalyticsHost /><Slot /></LanguageGate>
                     </PushProvider>
                 </BillingProvider>
             </AuthProvider>

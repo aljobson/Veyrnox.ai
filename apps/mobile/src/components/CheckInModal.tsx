@@ -1,3 +1,4 @@
+import { useFirstRunPending } from '../lib/firstRunPending';
 import { useEffect, useMemo, useState } from 'react';
 import { AppState, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../auth/AuthProvider';
@@ -12,10 +13,11 @@ import { colors } from '../theme';
 const today = () => new Date().toISOString().slice(0, 10);
 const dismissed = new Map<string, string>();
 export function CheckInModal() {
+    const firstRunPending = useFirstRunPending();
     const { api, status: authStatus } = useAuth();
     const [owner, setOwner] = useState(getCacheUser());
     useEffect(() => subscribeCacheUser(() => setOwner(getCacheUser())), []);
-    if (!owner || authStatus !== 'signedIn') return null;
+    if (firstRunPending || !owner || authStatus !== 'signedIn') return null;
     return <CheckInForUser key={owner} owner={owner} api={api} />;
 }
 

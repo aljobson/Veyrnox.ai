@@ -2610,6 +2610,24 @@
     "ratio": 2.5
   },
   {
+    "id": "analyticsConsent.choices",
+    "english": "Privacy choices",
+    "translation": "Настройки конфиденциальности",
+    "ratio": 1.87
+  },
+  {
+    "id": "analyticsConsent.policy",
+    "english": "Privacy Policy",
+    "translation": "Политика конфиденциальности",
+    "ratio": 1.93
+  },
+  {
+    "id": "analyticsConsent.allow",
+    "english": "Allow",
+    "translation": "Разрешить",
+    "ratio": 1.8
+  },
+  {
     "id": "publishReporting.edit",
     "english": "Edit",
     "translation": "Изменить",

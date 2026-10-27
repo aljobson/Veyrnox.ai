@@ -2442,6 +2442,12 @@
     "ratio": 1.67
   },
   {
+    "id": "analyticsConsent.policy",
+    "english": "Privacy Policy",
+    "translation": "Política de Privacidade",
+    "ratio": 1.64
+  },
+  {
     "id": "publishReporting.loadFailed",
     "english": "Could not load analytics.",
     "translation": "Não foi possível carregar as estatísticas.",
