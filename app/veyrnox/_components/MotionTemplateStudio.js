@@ -149,7 +149,8 @@ export default function MotionTemplateStudio({ modes, readyIds }) {
       {selected && <aside className={`${card} space-y-4 p-5 sm:p-6 xl:sticky xl:top-24`} aria-labelledby="motion-photo">
         <h2 id="motion-photo" className="text-xl font-black">{t('app.motion.photo.title')}</h2>
         <p className="text-xs leading-5 text-vx-fg-muted">{t(selected.model === 'motion-replace' ? 'app.motion.photo.helpReplace' : 'app.motion.photo.help')}</p>
-        {photo && <img src={photo.previewUrl} alt={t('app.motion.photo.alt')} className="max-h-72 w-full rounded-xl bg-black object-contain" />}
+        {/* Only a browser-made blob: URL is ever shown; nothing from the file's name or contents becomes markup. */}
+        {photo && photo.previewUrl.startsWith('blob:') && <img src={photo.previewUrl} alt={t('app.motion.photo.alt')} className="max-h-72 w-full rounded-xl bg-black object-contain" />}
         <label className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full border border-vx-accent px-5 text-xs font-black text-vx-accent hover:bg-vx-accent/10 focus-within:ring-2 focus-within:ring-vx-accent">
           {t(photo ? 'app.motion.photo.change' : 'app.motion.photo.choose')}
           <input data-testid="motion-photo-input" type="file" accept="image/jpeg,image/png" className="sr-only" disabled={busy} onChange={(event) => pickPhoto(event.target)} />
