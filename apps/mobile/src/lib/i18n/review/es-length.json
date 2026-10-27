@@ -2484,6 +2484,78 @@
     "ratio": 1.82
   },
   {
+    "id": "publishReporting.manual",
+    "english": "Manual",
+    "translation": "Envío manual",
+    "ratio": 2
+  },
+  {
+    "id": "publishReporting.name",
+    "english": "Report name",
+    "translation": "Nombre del informe",
+    "ratio": 1.64
+  },
+  {
+    "id": "publishReporting.pdf",
+    "english": "PDF",
+    "translation": "Documento PDF",
+    "ratio": 4.33
+  },
+  {
+    "id": "publishReporting.pptx",
+    "english": "PowerPoint",
+    "translation": "Presentación PowerPoint",
+    "ratio": 2.3
+  },
+  {
+    "id": "publishReporting.retry",
+    "english": "Retry",
+    "translation": "Reintentar",
+    "ratio": 2
+  },
+  {
+    "id": "publishReporting.save",
+    "english": "Save",
+    "translation": "Guardar",
+    "ratio": 1.75
+  },
+  {
+    "id": "publishReporting.saves",
+    "english": "Saves",
+    "translation": "Guardados",
+    "ratio": 1.8
+  },
+  {
+    "id": "publishReporting.shares",
+    "english": "Shares",
+    "translation": "Compartidos",
+    "ratio": 1.83
+  },
+  {
+    "id": "publishReporting.sharing",
+    "english": "Opening share sheet…",
+    "translation": "Abriendo opciones para compartir…",
+    "ratio": 1.65
+  },
+  {
+    "id": "publishReporting.top",
+    "english": "Top content",
+    "translation": "Contenido destacado",
+    "ratio": 1.73
+  },
+  {
+    "id": "publishReporting.type.post",
+    "english": "Post",
+    "translation": "Publicación",
+    "ratio": 2.75
+  },
+  {
+    "id": "publishReporting.views",
+    "english": "Views",
+    "translation": "Visualizaciones",
+    "ratio": 3
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",
