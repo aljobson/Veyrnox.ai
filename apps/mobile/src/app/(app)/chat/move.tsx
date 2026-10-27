@@ -1,13 +1,14 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { chatApi } from '../../../lib/chat';
 import { chatLibraryErrorMessage, fetchFolders, moveThread, type Folder } from '../../../lib/chatLibrary';
-import { colors } from '../../../theme';
+import { Text, Card, themedStyles, useThemedStyles } from '../../../components/ui';
 
 // Files one chat into a folder, or takes it out. Reached from the chat's header.
 export default function MoveToFolder() {
+    const styles = useThemedStyles(sheets);
     const { threadId } = useLocalSearchParams<{ threadId: string }>();
     const { api } = useAuth();
     const router = useRouter();
@@ -43,16 +44,16 @@ export default function MoveToFolder() {
             <Stack.Screen options={{ title: 'Move to folder' }} />
             {problem ? <Text style={styles.error}>{problem}</Text> : null}
             {!folders && !problem ? (
-                <ActivityIndicator color={colors.accent} />
+                <ActivityIndicator color={styles.accentInk.color} />
             ) : (
                 <FlatList
                     data={rows}
                     keyExtractor={(r) => r.id ?? 'none'}
                     renderItem={({ item }) => (
-                        <Pressable accessibilityRole="button" accessibilityState={{ selected: item.id === current, disabled: busy }} style={styles.row} onPress={() => choose(item.id)}>
-                            <Text style={styles.name}>{item.name}</Text>
+                        <Card accessibilityRole="button" accessibilityState={{ selected: item.id === current, disabled: busy }} style={styles.row} onPress={() => choose(item.id)} selected={item.id === current}>
+                            <Text variant="body" style={styles.name}>{item.name}</Text>
                             {item.id === current ? <Text style={styles.on}>Current</Text> : null}
-                        </Pressable>
+                        </Card>
                     )}
                 />
             )}
@@ -60,10 +61,11 @@ export default function MoveToFolder() {
     );
 }
 
-const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: colors.background, padding: 16, gap: 12 },
-    row: { minHeight: 48, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth },
-    name: { color: colors.text, fontSize: 16 },
-    on: { color: colors.accent },
-    error: { color: colors.danger },
-});
+const sheets = themedStyles((p) => ({
+    accentInk: { color: p.accent },
+    screen: { flex: 1, backgroundColor: p.bg, padding: 16, gap: 12 },
+    row: { minHeight: 48, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomColor: p.borderSubtle, borderBottomWidth: StyleSheet.hairlineWidth },
+    name: { color: p.textPrimary },
+    on: { color: p.accent },
+    error: { color: p.danger },
+}));

@@ -1,7 +1,8 @@
+import { useReducedMotion } from '../ui/useReducedMotion';
 import * as Crypto from 'expo-crypto';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Modal, ScrollView, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { CONSENT_DECLINED_MESSAGE } from '../../lib/aiConsent';
 import { ApiError } from '../../lib/api';
@@ -10,7 +11,7 @@ import { byPrice, chatMediaModels, cleanMediaPrompt, makeKeyFor, makePrice, MAX_
 import { plural, t } from '../../lib/i18n';
 import { fetchCatalog, kindOf, mediaApi, type CatalogModel, type Kind } from '../../lib/media';
 import { OFFLINE_PAID_MESSAGE, OfflineError } from '../../lib/network';
-import { colors } from '../../theme';
+import { Text, TextField, Button, Card, Chip, themedStyles, useThemedStyles } from '../ui';
 
 interface Props {
     readonly visible: boolean;
@@ -21,6 +22,8 @@ interface Props {
 
 // A compact Create inside the chat. The price is on the button before anything starts, and nothing starts offline.
 export function MakePanel({ visible, initialPrompt = '', initialKind = 'image', onClose }: Props) {
+    const styles = useThemedStyles(sheets);
+    const reducedMotion = useReducedMotion();
     const { api } = useAuth();
     const router = useRouter();
     const [catalog, setCatalog] = useState<CatalogModel[] | null>(null);
@@ -69,40 +72,36 @@ export function MakePanel({ visible, initialPrompt = '', initialKind = 'image', 
     }
 
     return (
-        <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+        <Modal visible={visible} animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={onClose}>
             <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-                <Text style={styles.title} accessibilityRole="header">{t('chat.make.title')}</Text>
+                <Text variant="title2" style={styles.title} accessibilityRole="header">{t('chat.make.title')}</Text>
                 <View style={styles.row} accessibilityRole="radiogroup" accessibilityLabel={t('chat.make.kind')}>
                     {MEDIA_KINDS.map((k) => (
-                        <Pressable key={k} accessibilityRole="radio" accessibilityState={{ selected: kind === k }} style={[styles.chip, kind === k && styles.chipOn]} onPress={() => { setKind(k); setModelId(null); setDuration(null); }}>
-                            <Text style={[styles.chipText, kind === k && styles.chipTextOn]}>{t(`chat.make.kind.${k}`)}</Text>
-                        </Pressable>
+                        <Chip key={k} accessibilityRole="radio" accessibilityState={{ selected: kind === k }} onPress={() => { setKind(k); setModelId(null); setDuration(null); }} label={(t(`chat.make.kind.${k}`))} selected={kind === k} />
                     ))}
                 </View>
-                {catalog === null && !error ? <ActivityIndicator color={colors.accent} /> : null}
-                {catalog && models.length === 0 ? <Text style={styles.note}>{t('chat.make.none')}</Text> : null}
+                {catalog === null && !error ? <ActivityIndicator color={styles.accentInk.color} /> : null}
+                {catalog && models.length === 0 ? <Text variant="footnote" style={styles.note}>{t('chat.make.none')}</Text> : null}
                 {models.map((m) => (
-                    <Pressable key={m.id} accessibilityRole="radio" accessibilityLabel={`${m.name}, ${plural('chat.make.from', makePrice(m, null))}`} accessibilityState={{ selected: m.id === model?.id }} style={[styles.model, m.id === model?.id && styles.chipOn]} onPress={() => { setModelId(m.id); setDuration(null); }}>
-                        <Text style={styles.name}>{m.name}</Text>
-                        <Text style={styles.note}>{plural('chat.make.from', makePrice(m, null))}</Text>
-                    </Pressable>
+                    <Card key={m.id} accessibilityRole="radio" accessibilityLabel={`${m.name}, ${plural('chat.make.from', makePrice(m, null))}`} accessibilityState={{ selected: m.id === model?.id }} style={[styles.model]} onPress={() => { setModelId(m.id); setDuration(null); }} selected={m.id === model?.id}>
+                        <Text variant="body" style={styles.name}>{m.name}</Text>
+                        <Text variant="footnote" tone="warning">{plural('chat.make.from', makePrice(m, null))}</Text>
+                    </Card>
                 ))}
                 {model && kindOf(model.modality) === 'video' && model.durations.length > 1 ? (
                     <View style={styles.row} accessibilityRole="radiogroup" accessibilityLabel={t('chat.make.length')}>
                         {model.durations.map((d) => (
-                            <Pressable key={d} accessibilityRole="radio" accessibilityState={{ selected: length === d }} style={[styles.chip, length === d && styles.chipOn]} onPress={() => setDuration(d)}>
-                                <Text style={[styles.chipText, length === d && styles.chipTextOn]}>{t('chat.make.seconds', { n: String(d) })}</Text>
-                            </Pressable>
+                            <Chip key={d} accessibilityRole="radio" accessibilityState={{ selected: length === d }} onPress={() => setDuration(d)} label={(t('chat.make.seconds', { n: String(d) }))} selected={length === d} />
                         ))}
                     </View>
                 ) : null}
-                <TextInput style={styles.input} value={prompt} onChangeText={setPrompt} multiline maxLength={MAX_MEDIA_PROMPT} placeholder={t('chat.make.placeholder')} accessibilityLabel={t('chat.make.promptLabel')} placeholderTextColor={colors.muted} />
-                <Text style={styles.note}>{t('chat.make.more')}</Text>
+                <TextField style={styles.input} value={prompt} onChangeText={setPrompt} multiline maxLength={MAX_MEDIA_PROMPT} placeholder={t('chat.make.placeholder')} accessibilityLabel={t('chat.make.promptLabel')} />
+                <Text variant="footnote" style={styles.note}>{t('chat.make.more')}</Text>
                 {error ? <Text style={styles.error} accessibilityRole="alert">{error}</Text> : null}
-                <Pressable accessibilityRole="button" accessibilityLabel={price !== null ? plural('chat.make.buttonLabel', price) : t('chat.make.button')} disabled={!ready} style={[styles.go, !ready && styles.off]} onPress={make}>
-                    {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.goText}>{price !== null ? plural('chat.make.buttonPrice', price) : t('chat.make.button')}</Text>}
-                </Pressable>
-                <Pressable accessibilityRole="button" style={styles.close} onPress={onClose}><Text style={styles.closeText}>{t('chat.make.close')}</Text></Pressable>
+                <Button accessibilityRole="button" accessibilityLabel={price !== null ? plural('chat.make.buttonLabel', price) : t('chat.make.button')} disabled={!ready} containerStyle={styles.go} onPress={make} variant="secondary" size="md" label={price !== null ? plural('chat.make.buttonLabel', price) : t('chat.make.button')}>
+                    {busy ? <ActivityIndicator color={styles.accentInkInk.color} /> : <Text tone={price !== null ? 'warning' : 'primary'}>{price !== null ? plural('chat.make.buttonPrice', price) : t('chat.make.button')}</Text>}
+                </Button>
+                <Button accessibilityRole="button" containerStyle={styles.close} onPress={onClose} variant="tertiary" size="md" label={(t('chat.make.close'))}><Text style={styles.closeText}>{t('chat.make.close')}</Text></Button>
             </ScrollView>
         </Modal>
     );
@@ -119,23 +118,19 @@ function messageFor(err: unknown): string {
     return t('chat.make.err.later');
 }
 
-const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: colors.background },
+const sheets = themedStyles((p) => ({
+    accentInk: { color: p.accent },
+    accentInkInk: { color: p.textPrimary },
+    screen: { flex: 1, backgroundColor: p.bg },
     content: { padding: 16, paddingTop: 56, gap: 12 },
-    title: { color: colors.text, fontSize: 20, fontWeight: '600' },
+    title: { color: p.textPrimary },
     row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-    chip: { minHeight: MIN_TARGET, justifyContent: 'center', borderRadius: 22, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 14 },
-    chipOn: { borderColor: colors.accent, backgroundColor: colors.surface },
-    chipText: { color: colors.muted },
-    chipTextOn: { color: colors.accent },
-    model: { minHeight: MIN_TARGET, borderRadius: 12, borderWidth: 1, borderColor: colors.border, padding: 12 },
-    name: { color: colors.text, fontSize: 16 },
-    note: { color: colors.muted, fontSize: 13 },
-    input: { color: colors.text, backgroundColor: colors.surface, borderRadius: 12, padding: 12, minHeight: 96, maxHeight: 200 },
-    error: { color: colors.danger },
-    go: { minHeight: MIN_TARGET, borderRadius: 12, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
-    goText: { color: colors.accentInk, fontWeight: '600' },
-    off: { opacity: 0.4 },
+    model: { minHeight: MIN_TARGET, padding: 12 },
+    name: { color: p.textPrimary },
+    note: { color: p.textTertiary },
+    input: { minHeight: 96, maxHeight: 200 },
+    error: { color: p.danger },
+    go: { minHeight: MIN_TARGET, alignItems: 'center', justifyContent: 'center' },
     close: { minHeight: MIN_TARGET, alignItems: 'center', justifyContent: 'center' },
-    closeText: { color: colors.accent },
-});
+    closeText: { color: p.accent },
+}));

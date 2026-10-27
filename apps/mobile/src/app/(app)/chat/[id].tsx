@@ -1,11 +1,12 @@
 import * as Crypto from 'expo-crypto';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActionSheetIOS, ActivityIndicator, Alert, AppState, FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActionSheetIOS, ActivityIndicator, Alert, AppState, FlatList, KeyboardAvoidingView, Platform, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../../auth/AuthProvider';
 import { ChatComposerDeck } from '../../../components/chat/ChatComposerDeck';
-import { DraftCards } from '../../../components/chat/DraftCards';
+import { MessageBubble } from '../../../components/chat/MessageBubble';
+import { ConversationEmpty } from '../../../components/chat/ConversationEmpty';
 import { ChatSettings } from '../../../components/chat/ChatSettings';
 import { ModelPicker } from '../../../components/chat/ModelPicker';
 import { MakePanel } from '../../../components/chat/MakePanel';
@@ -16,11 +17,11 @@ import { chatApi, cleanOptions, cleanTitle, imagesExtra, isModelSwitch, NO_OPTIO
 import { attachmentRefs, MAX_ATTACHMENTS, roomFor, type ChatImage } from '../../../lib/chatAttach';
 import { pickPhotos, uploadChatImages } from '../../../lib/chatPhotos';
 import { fetchCatalog, type CatalogModel, type Kind } from '../../../lib/media';
-import { parseStudioDrafts, SKILL_GROUPS, SKILLS, skillInstructions, withoutDrafts, type Skill } from '../../../lib/studioSkills';
+import { parseStudioDrafts, skillInstructions, type Skill } from '../../../lib/studioSkills';
 import { isQuiet, makeSendKey, resolveResumedSend, resolveStoppedSend, RESUME_QUIET_MS, resumeNoticeKey, stopNoticeKey, type StopOutcome } from '../../../lib/chatStop';
 import { plural, t } from '../../../lib/i18n';
 import { ensureOnline, OFFLINE_PAID_MESSAGE, OfflineError } from '../../../lib/network';
-import { colors, fonts, radius } from '../../../theme';
+import { Text, TextField, Button, Icon, themedStyles, useThemedStyles } from '../../../components/ui';
 
 const ERROR_TEXT: Record<string, string> = {
     insufficient_credits: 'Not enough credits for this reply.',
@@ -31,6 +32,7 @@ const ERROR_TEXT: Record<string, string> = {
 };
 
 export default function Conversation() {
+    const styles = useThemedStyles(sheets);
     const { id, starter } = useLocalSearchParams<{ id: string; starter?: string }>();
     const { api } = useAuth();
     const router = useRouter();
@@ -338,29 +340,29 @@ export default function Conversation() {
         <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={88}>
             <Stack.Screen options={{ title: 'LLM Chat' }} />
             <View style={styles.conversationBar}>
-                <Pressable accessibilityRole="button" accessibilityLabel="Open chats" style={styles.headerControl} onPress={() => router.push('/chat/library')}>
-                    <Text style={styles.headerControlText}>Chats</Text>
-                </Pressable>
+                <Button accessibilityRole="button" accessibilityLabel="Open chats" containerStyle={styles.headerControl} onPress={() => router.push('/chat/library')} variant="tertiary" size="md" label="Open chats">
+                    <Text variant="footnote" style={styles.headerControlText}>Chats</Text>
+                </Button>
                 <View style={styles.conversationTitle}>
-                    <Text numberOfLines={1} style={styles.threadTitle}>{title}</Text>
-                    {model ? <Text numberOfLines={1} style={styles.modelMeta}>{model.name} · {plural('chat.perReply', model.credits_per_reply)}</Text> : null}
+                    <Text variant="callout" numberOfLines={1} style={styles.threadTitle}>{title}</Text>
+                    {model ? <Text variant="caption" numberOfLines={1} style={styles.modelMeta}>{model.name} · <Text variant="caption" tone="warning">{plural('chat.perReply', model.credits_per_reply)}</Text></Text> : null}
                 </View>
-                <Pressable accessibilityRole="button" accessibilityLabel={t('chat.settings.open')} disabled={!thread || sending} style={styles.headerControl} onPress={() => setSettingsOpen(true)}>
-                    <Text style={styles.headerControlText}>{t('chat.settings.open')}</Text>
-                </Pressable>
-                <Pressable accessibilityRole="button" accessibilityLabel={t('chat.workspace.manage')} style={styles.moreControl} onPress={showManage}>
-                    <Text style={styles.moreText}>•••</Text>
-                </Pressable>
+                <Button accessibilityRole="button" accessibilityLabel={t('chat.settings.open')} disabled={!thread || sending} containerStyle={styles.headerControl} onPress={() => setSettingsOpen(true)} variant="tertiary" size="md" label={t('chat.settings.open')}>
+                    <Text variant="footnote" style={styles.headerControlText}>{t('chat.settings.open')}</Text>
+                </Button>
+                <Button accessibilityRole="button" accessibilityLabel={t('chat.workspace.manage')} containerStyle={styles.moreControl} onPress={showManage} variant="tertiary" size="md" label={t('chat.workspace.manage')}>
+                    <Icon name="sliders" size={20} />
+                </Button>
             </View>
             {renaming !== null ? (
                 <View style={styles.renameBar}>
-                    <TextInput style={styles.renameInput} value={renaming} onChangeText={setRenaming} placeholder={t('chat.renamePlaceholder')} accessibilityLabel={t('chat.rename')} placeholderTextColor={colors.muted} maxLength={120} autoFocus />
-                    <Pressable accessibilityRole="button" style={styles.headerControl} onPress={() => void saveRename()}><Text style={styles.headerControlText}>{t('chat.renameSave')}</Text></Pressable>
-                    <Pressable accessibilityRole="button" style={styles.headerControl} onPress={() => setRenaming(null)}><Text style={styles.headerControlText}>{t('chat.renameCancel')}</Text></Pressable>
+                    <TextField containerStyle={styles.field} style={styles.renameInput} value={renaming} onChangeText={setRenaming} placeholder={t('chat.renamePlaceholder')} accessibilityLabel={t('chat.rename')} maxLength={120} autoFocus />
+                    <Button accessibilityRole="button" containerStyle={styles.headerControl} onPress={() => void saveRename()} variant="tertiary" size="md" label={(t('chat.renameSave'))}><Text variant="footnote" style={styles.headerControlText}>{t('chat.renameSave')}</Text></Button>
+                    <Button accessibilityRole="button" containerStyle={styles.headerControl} onPress={() => setRenaming(null)} variant="tertiary" size="md" label={(t('chat.renameCancel'))}><Text variant="footnote" style={styles.headerControlText}>{t('chat.renameCancel')}</Text></Button>
                 </View>
             ) : null}
             {messages === null && !error ? (
-                <ActivityIndicator color={colors.accent} style={styles.center} />
+                <ActivityIndicator color={styles.accentInk.color} style={styles.center} />
             ) : (
                 <FlatList
                     style={styles.messageList}
@@ -369,62 +371,17 @@ export default function Conversation() {
                     contentContainerStyle={[styles.list, (messages?.length ?? 0) === 0 && styles.emptyList]}
                     keyboardShouldPersistTaps="handled"
                     ListEmptyComponent={
-                        <View style={styles.empty}>
-                            <Text style={styles.hero}>{t('chat.workspace.title')}</Text>
-                            <Text style={styles.heroHelp}>{t('chat.workspace.priceHelp')}</Text>
-                            <View style={styles.skillsBlock}>
-                                <Text style={styles.eyebrow}>{t('chat.workspace.skillsEyebrow')}</Text>
-                                <Text style={styles.skillsHelp}>{t('chat.workspace.skillsHelp')}</Text>
-                                {SKILL_GROUPS.filter((group) => group !== 'Film').map((group) => (
-                                    <View key={group} style={styles.skillGroup}>
-                                        <Text style={styles.skillGroupLabel}>{group}</Text>
-                                        <View style={styles.skillGrid}>
-                                            {SKILLS.filter((skill) => skill.group === group).map((skill) => {
-                                                const selected = skillNote === skill.name;
-                                                return (
-                                                    <Pressable
-                                                        key={skill.id}
-                                                        accessibilityRole="button"
-                                                        accessibilityLabel={`${skill.name}. ${skill.blurb}`}
-                                                        accessibilityState={{ selected }}
-                                                        style={[styles.starter, selected && styles.starterOn]}
-                                                        onPress={() => void applyStarter(skill)}
-                                                    >
-                                                        <Text style={styles.starterName}>{skill.name}</Text>
-                                                        <Text style={styles.starterBlurb}>{skill.blurb}</Text>
-                                                    </Pressable>
-                                                );
-                                            })}
-                                        </View>
-                                    </View>
-                                ))}
-                                <Pressable accessibilityRole="button" style={styles.filmLink} onPress={() => router.push('/film')}>
-                                    <Text style={styles.filmLinkText}>Open Film Studio →</Text>
-                                </Pressable>
-                            </View>
-                        </View>
+                        <ConversationEmpty skillNote={skillNote} applyStarter={applyStarter} />
                     }
                     ListFooterComponent={
                         lastUser && !sending && model && price !== null ? (
-                            <Pressable accessibilityRole="button" accessibilityLabel={plural('chat.againLabel', price)} style={styles.again} onPress={() => void send(lastUser.content)}>
-                                <Text style={styles.toolText}>{plural('chat.again', price)}</Text>
-                            </Pressable>
+                            <Button accessibilityRole="button" accessibilityLabel={plural('chat.againLabel', price)} containerStyle={styles.again} onPress={() => void send(lastUser.content)} variant="tertiary" size="md" label={plural('chat.againLabel', price)}>
+                                <Text variant="callout" tone="warning">{plural('chat.again', price)}</Text>
+                            </Button>
                         ) : undefined
                     }
                     renderItem={({ item }) => (
-                        <View accessible accessibilityLabel={`${item.role === 'user' ? 'You' : 'Assistant'}: ${item.content || (sending ? 'writing' : '')}`} style={[styles.bubble, item.role === 'user' ? styles.user : styles.assistant]}>
-                            {(() => {
-                                const drafts = item.role === 'assistant' ? draftsOf(item.content) : [];
-                                const shown = drafts.length ? withoutDrafts(item.content) : item.content;
-                                return (
-                                    <>
-                                        <Text style={[styles.text, item.role === 'user' && styles.userText]}>{shown || (sending && !item.content ? '…' : '')}</Text>
-                                        {drafts.length ? <DraftCards drafts={drafts} /> : null}
-                                    </>
-                                );
-                            })()}
-                            {item.role === 'assistant' && item.credits ? <Text style={styles.cost}>{plural('chat.replyCost', item.credits)}</Text> : null}
-                        </View>
+                        <MessageBubble message={item} sending={sending} drafts={item.role === 'assistant' ? draftsOf(item.content) : []} />
                     )}
                 />
             )}
@@ -464,46 +421,25 @@ export default function Conversation() {
     );
 }
 
-const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: colors.background },
+const sheets = themedStyles((p) => ({
+    field: { flex: 1 },
+    accentInk: { color: p.accent },
+    screen: { flex: 1, backgroundColor: p.bg },
     center: { flex: 1 },
     messageList: { flex: 1 },
-    conversationBar: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.background },
+    conversationBar: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: p.borderSubtle, backgroundColor: p.bg },
     conversationTitle: { flex: 1, minWidth: 0 },
-    threadTitle: { color: colors.text, fontSize: 15, fontWeight: '700' },
-    modelMeta: { color: colors.money, fontSize: 11, lineHeight: 16, fontWeight: '600' },
-    headerControl: { minHeight: MIN_TARGET, justifyContent: 'center', paddingHorizontal: 12, borderRadius: radius.pill, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
-    headerControlText: { color: colors.text, fontSize: 13, fontWeight: '600' },
-    moreControl: { width: MIN_TARGET, height: MIN_TARGET, alignItems: 'center', justifyContent: 'center', borderRadius: radius.pill, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
-    moreText: { color: colors.text, fontSize: 17, fontWeight: '700', letterSpacing: 1 },
-    renameBar: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.border },
-    renameInput: { flex: 1, minHeight: MIN_TARGET, color: colors.text, fontSize: 15, paddingHorizontal: 12, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+    threadTitle: { color: p.textPrimary },
+    modelMeta: { color: p.textSecondary },
+    headerControl: { minHeight: MIN_TARGET, justifyContent: 'center' },
+    headerControlText: { color: p.textPrimary },
+    moreControl: { width: MIN_TARGET, height: MIN_TARGET, alignItems: 'center', justifyContent: 'center' },
+    renameBar: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: p.borderSubtle },
+    renameInput: { minHeight: MIN_TARGET },
     list: { flexGrow: 1, paddingHorizontal: 16, paddingVertical: 18, gap: 20 },
     emptyList: { justifyContent: 'flex-start' },
-    empty: { paddingTop: 24, paddingBottom: 20 },
-    hero: { color: colors.text, fontFamily: fonts.displayHeavy, fontSize: 32, lineHeight: 35, letterSpacing: -1.1, textAlign: 'center' },
-    heroHelp: { color: colors.muted, fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 10, paddingHorizontal: 18 },
-    skillsBlock: { marginTop: 28 },
-    eyebrow: { color: colors.accent, fontSize: 11, lineHeight: 16, fontWeight: '800', letterSpacing: 1.3 },
-    skillsHelp: { color: colors.body, fontSize: 14, lineHeight: 20, marginTop: 4, marginBottom: 18 },
-    skillGroup: { marginBottom: 18 },
-    skillGroupLabel: { color: colors.text, fontSize: 13, fontWeight: '700', marginBottom: 8 },
-    skillGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-    bubble: { maxWidth: '88%', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 12 },
-    user: { alignSelf: 'flex-end', backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
-    assistant: { alignSelf: 'stretch', maxWidth: '100%', paddingHorizontal: 2 },
-    text: { color: colors.text, fontSize: 16, lineHeight: 24 },
-    userText: { color: colors.text },
-    cost: { color: colors.money, fontSize: 12, marginTop: 6, fontWeight: '600' },
-    error: { color: colors.danger, paddingHorizontal: 16, paddingBottom: 4 },
-    notice: { color: colors.body, paddingHorizontal: 16, paddingBottom: 4 },
-    toolText: { color: colors.text, fontSize: 14, fontWeight: '600' },
-    again: { alignSelf: 'flex-start', minHeight: MIN_TARGET, justifyContent: 'center', paddingHorizontal: 4 },
-    starter: { width: '48.7%', minHeight: 108, borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 13, gap: 5 },
-    starterOn: { borderColor: colors.accent, backgroundColor: colors.accentSoft },
-    starterName: { color: colors.text, fontSize: 15, lineHeight: 19, fontWeight: '700' },
-    starterBlurb: { color: colors.muted, fontSize: 12, lineHeight: 17 },
-    filmLink: { minHeight: MIN_TARGET, alignSelf: 'flex-start', justifyContent: 'center', borderRadius: radius.pill, borderWidth: 1, borderColor: colors.borderStrong, paddingHorizontal: 15 },
-    filmLinkText: { color: colors.text, fontSize: 13, fontWeight: '700' },
-    composerDock: { paddingHorizontal: 12, paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.background },
-});
+    error: { color: p.danger, paddingHorizontal: 16, paddingBottom: 4 },
+    notice: { color: p.textSecondary, paddingHorizontal: 16, paddingBottom: 4 },
+    again: { alignSelf: 'flex-start', minHeight: MIN_TARGET, justifyContent: 'center' },
+    composerDock: { paddingHorizontal: 12, paddingTop: 8, borderTopWidth: 1, borderTopColor: p.borderSubtle, backgroundColor: p.bg },
+}));

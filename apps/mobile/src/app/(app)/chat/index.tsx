@@ -1,13 +1,14 @@
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { chatApi, pinnedFirst } from '../../../lib/chat';
-import { colors, fonts, radius } from '../../../theme';
+import { Text, Button, Icon, themedStyles, useThemedStyles } from '../../../components/ui';
 
 // The website opens on the working conversation, with its thread rail beside it. A phone cannot keep that rail open
 // without squeezing the composer, so this route opens the conversation and the Chats button reveals the rail on demand.
 export default function ChatWorkspaceEntry() {
+    const styles = useThemedStyles(sheets);
     const { api } = useAuth();
     const router = useRouter();
     const opening = useRef(false);
@@ -42,27 +43,27 @@ export default function ChatWorkspaceEntry() {
     return (
         <View style={styles.screen}>
             <Stack.Screen options={{ title: 'LLM Chat' }} />
-            <View style={styles.brandMark}><Text style={styles.brandMarkText}>V</Text></View>
-            <Text style={styles.eyebrow}>LLM CHAT</Text>
-            <Text accessibilityRole="header" style={styles.hero}>Opening your workspace</Text>
-            <Text style={styles.help}>Your latest conversation, tools and creative skills are being prepared.</Text>
+            <View style={styles.brandMark}><Icon name="chat" /></View>
+            <Text variant="caption" style={styles.eyebrow}>LLM Chat</Text>
+            <Text variant="display" accessibilityRole="header" style={styles.hero}>Opening your workspace</Text>
+            <Text variant="callout" style={styles.help}>Your latest conversation, tools and creative skills are being prepared.</Text>
             {error ? (
-                <Pressable accessibilityRole="button" style={styles.retry} onPress={() => void openWorkspace()}>
-                    <Text style={styles.retryText}>Try again</Text>
-                </Pressable>
-            ) : <ActivityIndicator color={colors.accent} size="small" style={styles.spinner} />}
+                <Button accessibilityRole="button" containerStyle={styles.retry} onPress={() => void openWorkspace()} variant="tertiary" size="md" label={"Try again"}>
+                    <Text variant="callout" style={styles.retryText}>Try again</Text>
+                </Button>
+            ) : <ActivityIndicator color={styles.accentInk.color} size="small" style={styles.spinner} />}
         </View>
     );
 }
 
-const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 30 },
-    brandMark: { width: 56, height: 56, borderRadius: 18, backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accent, alignItems: 'center', justifyContent: 'center', marginBottom: 22 },
-    brandMarkText: { color: colors.accent, fontFamily: fonts.displayHeavy, fontSize: 28 },
-    eyebrow: { color: colors.accent, fontSize: 11, lineHeight: 16, fontWeight: '800', letterSpacing: 1.4 },
-    hero: { color: colors.text, fontFamily: fonts.displayHeavy, fontSize: 30, lineHeight: 34, letterSpacing: -1, textAlign: 'center', marginTop: 6 },
-    help: { color: colors.muted, fontSize: 14, lineHeight: 21, textAlign: 'center', marginTop: 10, maxWidth: 320 },
+const sheets = themedStyles((p) => ({
+    accentInk: { color: p.accent },
+    screen: { flex: 1, backgroundColor: p.bg, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 30 },
+    brandMark: { width: 56, height: 56, borderRadius: 18, backgroundColor: p.accentSubtle, borderWidth: 1, borderColor: p.accent, alignItems: 'center', justifyContent: 'center', marginBottom: 22 },
+    eyebrow: { color: p.accent },
+    hero: { color: p.textPrimary, textAlign: 'center', marginTop: 6 },
+    help: { color: p.textTertiary, textAlign: 'center', marginTop: 10, maxWidth: 320 },
     spinner: { marginTop: 26 },
-    retry: { minHeight: 48, minWidth: 132, marginTop: 24, paddingHorizontal: 20, borderRadius: radius.pill, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
-    retryText: { color: colors.accentInk, fontSize: 15, fontWeight: '700' },
-});
+    retry: { minHeight: 48, minWidth: 132, marginTop: 24, alignItems: 'center', justifyContent: 'center' },
+    retryText: { color: p.textPrimary },
+}));

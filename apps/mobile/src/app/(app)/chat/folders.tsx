@@ -1,11 +1,12 @@
 import { Stack } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, StyleSheet, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { chatLibraryErrorMessage, createFolder, deleteFolder, fetchFolders, renameFolder, validateFolderName, type Folder } from '../../../lib/chatLibrary';
-import { colors } from '../../../theme';
+import { Text, TextField, Button, Card, themedStyles, useThemedStyles } from '../../../components/ui';
 
 export default function Folders() {
+    const styles = useThemedStyles(sheets);
     const { api } = useAuth();
     const [folders, setFolders] = useState<Folder[] | null>(null);
     const [name, setName] = useState('');
@@ -60,29 +61,29 @@ export default function Folders() {
         <View style={styles.screen}>
             <Stack.Screen options={{ title: 'Folders' }} />
             <View style={styles.form}>
-                <TextInput accessibilityLabel={editing ? 'New folder name' : 'Folder name'} style={styles.input} value={name} onChangeText={setName} placeholder={editing ? `Rename "${editing.name}"` : 'New folder'} placeholderTextColor={colors.muted} maxLength={60} />
-                <Pressable accessibilityRole="button" disabled={busy} style={[styles.button, busy && styles.off]} onPress={save}>
-                    {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>{editing ? 'Rename' : 'Add'}</Text>}
-                </Pressable>
+                <TextField containerStyle={styles.field} accessibilityLabel={editing ? 'New folder name' : 'Folder name'} style={styles.input} value={name} onChangeText={setName} placeholder={editing ? `Rename "${editing.name}"` : 'New folder'} maxLength={60} />
+                <Button accessibilityRole="button" disabled={busy} containerStyle={styles.button} onPress={save} variant="secondary" size="md" label={(editing ? 'Rename' : 'Add')}>
+                    {busy ? <ActivityIndicator color={styles.accentInkInk.color} /> : <Text variant="bodyStrong" style={styles.buttonText}>{editing ? 'Rename' : 'Add'}</Text>}
+                </Button>
             </View>
-            {editing ? <Pressable accessibilityRole="button" onPress={() => { setEditing(null); setName(''); }}><Text style={styles.link}>Cancel rename</Text></Pressable> : null}
+            {editing ? <Button accessibilityRole="button" onPress={() => { setEditing(null); setName(''); }} variant="secondary" size="md" label={"Cancel rename"}><Text style={styles.link}>Cancel rename</Text></Button> : null}
             {problem ? <Text style={styles.error}>{problem}</Text> : null}
             {folders === null && !problem ? (
-                <ActivityIndicator color={colors.accent} />
+                <ActivityIndicator color={styles.accentInk.color} />
             ) : (
                 <FlatList
                     data={folders ?? []}
                     keyExtractor={(f) => f.id}
                     ListEmptyComponent={<Text style={styles.muted}>No folders yet.</Text>}
                     renderItem={({ item }) => (
-                        <View style={styles.row}>
+                        <Card style={styles.row}>
                             <View style={styles.text}>
-                                <Text style={styles.name}>{item.name}</Text>
+                                <Text variant="body" style={styles.name}>{item.name}</Text>
                                 <Text style={styles.muted}>{item.count} {item.count === 1 ? 'chat' : 'chats'}</Text>
                             </View>
-                            <Pressable accessibilityRole="button" accessibilityLabel={`Rename ${item.name}`} style={styles.action} onPress={() => { setEditing(item); setName(item.name); }}><Text style={styles.link}>Rename</Text></Pressable>
-                            <Pressable accessibilityRole="button" accessibilityLabel={`Delete ${item.name}`} style={styles.action} onPress={() => remove(item)}><Text style={styles.danger}>Delete</Text></Pressable>
-                        </View>
+                            <Button accessibilityRole="button" accessibilityLabel={`Rename ${item.name}`} containerStyle={styles.action} onPress={() => { setEditing(item); setName(item.name); }} variant="tertiary" size="md" label={`Rename ${item.name}`}><Text style={styles.link}>Rename</Text></Button>
+                            <Button accessibilityRole="button" accessibilityLabel={`Delete ${item.name}`} containerStyle={styles.action} onPress={() => remove(item)} variant="tertiary" size="md" label={`Delete ${item.name}`}><Text style={styles.danger}>Delete</Text></Button>
+                        </Card>
                     )}
                 />
             )}
@@ -90,19 +91,21 @@ export default function Folders() {
     );
 }
 
-const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: colors.background, padding: 16, gap: 12 },
+const sheets = themedStyles((p) => ({
+    field: { flex: 1 },
+    accentInk: { color: p.accent },
+    accentInkInk: { color: p.textPrimary },
+    screen: { flex: 1, backgroundColor: p.bg, padding: 16, gap: 12 },
     form: { flexDirection: 'row', gap: 8 },
-    input: { flex: 1, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 12, color: colors.text, fontSize: 16, minHeight: 48 },
-    button: { backgroundColor: colors.accent, borderRadius: 12, paddingHorizontal: 18, justifyContent: 'center', minHeight: 48 },
-    off: { opacity: 0.4 },
-    buttonText: { color: colors.accentInk, fontWeight: '700' },
-    row: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 10, borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth },
+    input: { minHeight: 48 },
+    button: { justifyContent: 'center', minHeight: 48 },
+    buttonText: { color: p.textPrimary },
+    row: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 10, borderBottomColor: p.borderSubtle, borderBottomWidth: StyleSheet.hairlineWidth },
     text: { flex: 1, gap: 2 },
-    name: { color: colors.text, fontSize: 16 },
-    action: { minHeight: 44, minWidth: 44, justifyContent: 'center', paddingHorizontal: 6 },
-    link: { color: colors.accent },
-    danger: { color: colors.danger },
-    muted: { color: colors.muted },
-    error: { color: colors.danger },
-});
+    name: { color: p.textPrimary },
+    action: { minHeight: 44, minWidth: 44, justifyContent: 'center' },
+    link: { color: p.accent },
+    danger: { color: p.danger },
+    muted: { color: p.textTertiary },
+    error: { color: p.danger },
+}));

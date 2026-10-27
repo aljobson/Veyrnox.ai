@@ -1,14 +1,15 @@
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { ApiError } from '../../../lib/api';
 import { chatApi, type ChatModel } from '../../../lib/chat';
 import { chatLibraryErrorMessage, fetchPersonas, startFromPersona, type Persona } from '../../../lib/chatLibrary';
 import { SKILL_MODEL } from '../../../lib/studioSkills';
-import { colors } from '../../../theme';
+import { Text, Card, themedStyles, useThemedStyles } from '../../../components/ui';
 
 export default function NewChat() {
+    const styles = useThemedStyles(sheets);
     const { api } = useAuth();
     const router = useRouter();
     const [models, setModels] = useState<ChatModel[] | null>(null);
@@ -71,33 +72,33 @@ export default function NewChat() {
             {error ? <Text style={styles.error}>{error}</Text> : null}
             {personas.length > 0 ? (
                 <View style={styles.personas}>
-                    <Text style={styles.heading} accessibilityRole="header">Start from a persona</Text>
+                    <Text variant="footnote" style={styles.heading} accessibilityRole="header">Start from a persona</Text>
                     {personas.map((p) => (
-                        <Pressable key={p.id} accessibilityRole="button" accessibilityLabel={`Start a chat with the ${p.name} persona`} disabled={creating} style={styles.row} onPress={() => pickPersona(p)}>
-                            <Text style={styles.name}>{p.name}</Text>
+                        <Card key={p.id} accessibilityRole="button" accessibilityLabel={`Start a chat with the ${p.name} persona`} disabled={creating} style={styles.row} onPress={() => pickPersona(p)}>
+                            <Text variant="bodyStrong" style={styles.name}>{p.name}</Text>
                             <Text style={styles.muted} numberOfLines={1}>{p.instructions}</Text>
-                        </Pressable>
+                        </Card>
                     ))}
                 </View>
             ) : null}
             {(models === null && !error) || (creating && !error) ? (
-                <ActivityIndicator color={colors.accent} />
+                <ActivityIndicator color={styles.accentInk.color} />
             ) : (
                 <FlatList
                     ListHeaderComponent={
                         <>
-                            <Text style={styles.heading} accessibilityRole="header">Or choose a model</Text>
+                            <Text variant="footnote" style={styles.heading} accessibilityRole="header">Or choose a model</Text>
                         </>
                     }
                     data={models ?? []}
                     keyExtractor={(m) => m.id}
                     renderItem={({ item }) => (
-                        <Pressable accessibilityRole="button" disabled={creating || item.gated} style={[styles.row, item.gated && styles.gated]} onPress={() => pick(item)}>
-                            <Text style={styles.name}>{item.name}</Text>
+                        <Card accessibilityRole="button" disabled={creating || item.gated} style={[styles.row, item.gated && styles.gated]} onPress={() => pick(item)}>
+                            <Text variant="bodyStrong" style={styles.name}>{item.name}</Text>
                             <Text style={styles.muted}>
-                                {item.maker_label} · {item.credits_per_reply} {item.credits_per_reply === 1 ? 'credit' : 'credits'} per reply
+                                {item.maker_label} · <Text tone="warning">{item.credits_per_reply} {item.credits_per_reply === 1 ? 'credit' : 'credits'} per reply</Text>
                             </Text>
-                        </Pressable>
+                        </Card>
                     )}
                 />
             )}
@@ -105,13 +106,14 @@ export default function NewChat() {
     );
 }
 
-const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: colors.background, padding: 16 },
-    row: { padding: 14, marginTop: 8, borderRadius: 16, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, gap: 2 },
+const sheets = themedStyles((p) => ({
+    accentInk: { color: p.accent },
+    screen: { flex: 1, backgroundColor: p.bg, padding: 16 },
+    row: { padding: 14, marginTop: 8, gap: 2 },
     gated: { opacity: 0.4 },
-    name: { color: colors.text, fontSize: 16, fontWeight: '600' },
-    muted: { color: colors.muted },
-    error: { color: colors.danger, marginBottom: 8 },
+    name: { color: p.textPrimary },
+    muted: { color: p.textTertiary },
+    error: { color: p.danger, marginBottom: 8 },
     personas: { marginBottom: 8 },
-    heading: { color: colors.muted, fontSize: 13, fontWeight: '700', letterSpacing: 0.5, marginTop: 16 },
-});
+    heading: { color: p.textTertiary, marginTop: 16 },
+}));

@@ -10,11 +10,13 @@ describe('the native LLM chat mirrors the website workspace', () => {
     const library = read('components', 'chat', 'ChatLibraryScreen.tsx');
     const deck = read('components', 'chat', 'ChatComposerDeck.tsx');
     const attachments = read('components', 'chat', 'AttachStrip.tsx');
+    const empty = read('components', 'chat', 'ConversationEmpty.tsx');
 
     test('uses the website hierarchy instead of the old mobile control stack', () => {
         expect(conversation).toContain('<ChatComposerDeck');
-        expect(conversation).toContain("t('chat.workspace.title')");
-        expect(conversation).toContain('SKILL_GROUPS.filter');
+        expect(conversation).toContain('<ConversationEmpty');
+        expect(empty).toContain("t('chat.workspace.title')");
+        expect(empty).toContain('SKILL_GROUPS.filter');
         expect(conversation).toContain('showManage');
         expect(conversation).not.toContain('<ReplyOptionsBar');
         expect(conversation).not.toContain('<AttachStrip');
@@ -38,10 +40,10 @@ describe('the native LLM chat mirrors the website workspace', () => {
         expect(deck).toContain('<AttachStrip');
         expect(deck).toContain('embedded');
         expect(deck).toContain("plural('chat.sendPriceShort', props.price)");
-        expect(deck).toContain('minHeight: MIN_TARGET');
-        expect(attachments).toContain('MENU_ICONS.image');
+        expect(deck).toContain('<Chip');
+        expect(attachments).toContain('<Icon name="image"');
         expect(attachments).toContain("accessibilityLabel={t('chat.attach.libraryLabel')}");
-        expect(attachments).toContain('MENU_ICONS.paperclip');
+        expect(attachments).toContain('<Icon name="paperclip"');
         expect(attachments).toContain("accessibilityLabel={t('chat.attach.photosLabel')}");
     });
 

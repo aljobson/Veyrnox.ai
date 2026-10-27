@@ -44,6 +44,10 @@ const migrated = [
     ...fs.readdirSync(path.join(root, 'components/create')).map(name => `components/create/${name}`),
     ...fs.readdirSync(path.join(root, 'components/ui')).map((name) => `components/ui/${name}`),
     ...fs.readdirSync(path.join(root, 'components/home')).map((name) => `components/home/${name}`),
+    'app/(app)/create/agent.tsx',
+    ...fs.readdirSync(path.join(root, 'app/(app)/chat')).filter(name => name.endsWith('.tsx')).map(name => `app/(app)/chat/${name}`),
+    ...fs.readdirSync(path.join(root, 'app/(app)/chat/persona')).map(name => `app/(app)/chat/persona/${name}`),
+    ...fs.readdirSync(path.join(root, 'components/chat')).map(name => `components/chat/${name}`),
 ];
 // Inspect parsed text, so comments are not icons and escaped string literals cannot bypass the guard.
 const iconText = /[\u2190-\u21ff\u25a0-\u27bf\u2039\u203a]/u;
