@@ -2484,6 +2484,66 @@
     "ratio": 1.73
   },
   {
+    "id": "publishReporting.loadFailed",
+    "english": "Could not load analytics.",
+    "translation": "Não foi possível carregar as estatísticas.",
+    "ratio": 1.68
+  },
+  {
+    "id": "publishReporting.manual",
+    "english": "Manual",
+    "translation": "Envio manual",
+    "ratio": 2
+  },
+  {
+    "id": "publishReporting.pdf",
+    "english": "PDF",
+    "translation": "Documento PDF",
+    "ratio": 4.33
+  },
+  {
+    "id": "publishReporting.pptx",
+    "english": "PowerPoint",
+    "translation": "Apresentação PowerPoint",
+    "ratio": 2.3
+  },
+  {
+    "id": "publishReporting.retry",
+    "english": "Retry",
+    "translation": "Tentar novamente",
+    "ratio": 3.2
+  },
+  {
+    "id": "publishReporting.save",
+    "english": "Save",
+    "translation": "Guardar",
+    "ratio": 1.75
+  },
+  {
+    "id": "publishReporting.saves",
+    "english": "Saves",
+    "translation": "Gravações",
+    "ratio": 1.8
+  },
+  {
+    "id": "publishReporting.top",
+    "english": "Top content",
+    "translation": "Melhores conteúdos",
+    "ratio": 1.64
+  },
+  {
+    "id": "publishReporting.type.post",
+    "english": "Post",
+    "translation": "Publicação",
+    "ratio": 2.5
+  },
+  {
+    "id": "publishReporting.views",
+    "english": "Views",
+    "translation": "Visualizações",
+    "ratio": 2.6
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",
