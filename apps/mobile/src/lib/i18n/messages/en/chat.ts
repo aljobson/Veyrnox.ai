@@ -24,7 +24,7 @@ export default {
     'chat.composer.policy': 'for this reply. Stop after text appears and you keep it and the price. If nothing arrives, the Credits come back.',
     'chat.workspace.title': 'What do you want to work on?',
     'chat.workspace.priceHelp': 'Every reply shows its price before you send. If a reply fails, the Credits come back.',
-    'chat.workspace.skillsEyebrow': 'STUDIO SKILLS',
+    'chat.workspace.skillsEyebrow': 'Studio skills',
     'chat.workspace.skillsHelp': 'Pick a specialist to prepare the job. You press Generate in the Studio.',
     'chat.workspace.manage': 'More chat actions',
     'chat.workspace.folder': 'Move to folder',

@@ -1,10 +1,10 @@
 import { Image } from 'expo-image';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { MIN_TARGET } from '../../lib/a11y';
 import { MAX_ATTACHMENTS, roomFor, type ChatImage } from '../../lib/chatAttach';
 import { plural, t } from '../../lib/i18n';
-import { MENU_ICONS } from '../../lib/menuIcons';
-import { colors } from '../../theme';
+
+import { Text, Button, Icon, themedStyles, useThemedStyles } from '../ui';
 
 interface Props {
     readonly items: readonly ChatImage[];
@@ -19,28 +19,29 @@ interface Props {
 
 // The images for the next reply, and how to add more. The extra credits are shown here, before anything is sent.
 export function AttachStrip({ items, extra, max = MAX_ATTACHMENTS, disabled, embedded = false, onLibrary, onPhotos, onRemove }: Props) {
+    const styles = useThemedStyles(sheets);
     const full = roomFor(items.length, max) === 0;
     return (
         <View style={[styles.wrap, embedded && styles.embedded]}>
             <View style={styles.row}>
-                <Pressable accessibilityRole="button" accessibilityLabel={t('chat.attach.libraryLabel')} disabled={disabled || full} style={[styles.btn, (disabled || full) && styles.off]} onPress={onLibrary}>
-                    <Image source={MENU_ICONS.image} style={styles.btnIcon} tintColor={colors.text} contentFit="contain" accessibilityElementsHidden />
-                    <Text style={styles.btnText}>{t('chat.attach.library')}</Text>
-                </Pressable>
-                <Pressable accessibilityRole="button" accessibilityLabel={t('chat.attach.photosLabel')} disabled={disabled || full} style={[styles.btn, (disabled || full) && styles.off]} onPress={onPhotos}>
-                    <Image source={MENU_ICONS.paperclip} style={styles.btnIcon} tintColor={colors.text} contentFit="contain" accessibilityElementsHidden />
-                    <Text style={styles.btnText}>{t('chat.attach.photos')}</Text>
-                </Pressable>
-                <Text style={styles.note}>{items.length > 0 ? `${plural('chat.attach.extra', extra)} · ${items.length}/${max}` : plural('chat.attach.hint', extra)}</Text>
+                <Button accessibilityRole="button" accessibilityLabel={t('chat.attach.libraryLabel')} disabled={disabled || full} containerStyle={styles.btn} onPress={onLibrary} variant="secondary" size="md" label={t('chat.attach.libraryLabel')}>
+                    <Icon name="image" size={20} />
+                    <Text variant="footnote" style={styles.btnText}>{t('chat.attach.library')}</Text>
+                </Button>
+                <Button accessibilityRole="button" accessibilityLabel={t('chat.attach.photosLabel')} disabled={disabled || full} containerStyle={styles.btn} onPress={onPhotos} variant="secondary" size="md" label={t('chat.attach.photosLabel')}>
+                    <Icon name="paperclip" size={20} />
+                    <Text variant="footnote" style={styles.btnText}>{t('chat.attach.photos')}</Text>
+                </Button>
+                <Text variant="caption" tone="warning" style={styles.note}>{items.length > 0 ? <>{plural('chat.attach.extra', extra)}<Text variant="caption" tone="tertiary"> · {items.length}/{max}</Text></> : plural('chat.attach.hint', extra)}</Text>
             </View>
             {items.length > 0 ? (
                 <ScrollView horizontal contentContainerStyle={styles.thumbs}>
                     {items.map((it, i) => (
                         <View key={it.id} style={styles.thumb}>
                             <Image source={it.preview ? { uri: it.preview } : undefined} style={styles.img} accessibilityLabel={t('chat.attach.imageN', { n: String(i + 1) })} />
-                            <Pressable accessibilityRole="button" accessibilityLabel={t('chat.attach.removeN', { n: String(i + 1) })} disabled={disabled} style={styles.x} onPress={() => onRemove(it.id)}>
-                                <Text style={styles.xText}>×</Text>
-                            </Pressable>
+                            <Button accessibilityRole="button" accessibilityLabel={t('chat.attach.removeN', { n: String(i + 1) })} disabled={disabled} containerStyle={styles.x} style={styles.removeBadge} hitSlop={{ top: 0, right: 0, bottom: 20, left: 20 }} onPress={() => onRemove(it.id)} variant="secondary" size="md" label={t('chat.attach.removeN', { n: String(i + 1) })}>
+                                <Icon name="close" size={16} />
+                            </Button>
                         </View>
                     ))}
                 </ScrollView>
@@ -49,18 +50,16 @@ export function AttachStrip({ items, extra, max = MAX_ATTACHMENTS, disabled, emb
     );
 }
 
-const styles = StyleSheet.create({
+const sheets = themedStyles((p) => ({
     wrap: { paddingHorizontal: 12, paddingTop: 4 },
-    embedded: { borderBottomWidth: 1, borderBottomColor: colors.border, paddingTop: 2, paddingBottom: 2 },
+    embedded: { borderBottomWidth: 1, borderBottomColor: p.borderSubtle, paddingTop: 2, paddingBottom: 2 },
     row: { flexDirection: 'row', alignItems: 'center', gap: 4, flexWrap: 'wrap' },
-    btn: { minHeight: MIN_TARGET, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 10 },
-    btnIcon: { width: 18, height: 18 },
-    btnText: { color: colors.text, fontSize: 13, fontWeight: '600' },
-    off: { opacity: 0.4 },
-    note: { color: colors.muted, fontSize: 12, flexShrink: 1 },
+    btn: { minHeight: MIN_TARGET, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+    btnText: { color: p.textPrimary },
+    note: { flexShrink: 1 },
     thumbs: { gap: 8, paddingVertical: 4 },
-    thumb: { width: 64, height: 64, borderRadius: 8, backgroundColor: colors.surface },
+    thumb: { width: 64, height: 64, borderRadius: 8, backgroundColor: p.bgElevated1 },
     img: { width: 64, height: 64, borderRadius: 8 },
-    x: { position: 'absolute', top: -10, right: -10, width: MIN_TARGET, height: MIN_TARGET, alignItems: 'center', justifyContent: 'center' },
-    xText: { color: colors.text, backgroundColor: colors.border, width: 22, height: 22, borderRadius: 11, textAlign: 'center', lineHeight: 22, overflow: 'hidden' },
-});
+    x: { position: 'absolute', top: 0, right: 0, width: MIN_TARGET, height: MIN_TARGET, alignItems: 'flex-end', justifyContent: 'flex-start' },
+    removeBadge: { minWidth: 24, minHeight: 24, width: 24, height: 24, paddingHorizontal: 0, borderRadius: 12, backgroundColor: p.bgElevated2, borderWidth: StyleSheet.hairlineWidth, borderColor: p.borderSubtle },
+}));

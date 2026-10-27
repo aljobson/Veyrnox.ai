@@ -18,4 +18,6 @@ Phosphor fill weight (selected tab): house-fill, sparkle-fill.
 
 Design system v2 phase 2a additions (same render steps): star, arrow-up, arrow-down, arrow-square-out; star-fill (fill weight).
 
+Design system v2 phase 2b additions (same render steps): arrow-right, globe, brain, cpu.
+
 google-g.png is the multicolour Google "G" mark (Google sign-in branding guidelines). It is never tinted.

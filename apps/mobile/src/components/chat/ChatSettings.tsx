@@ -1,9 +1,10 @@
+import { useReducedMotion } from '../ui/useReducedMotion';
 import { useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Modal, ScrollView } from 'react-native';
 import { MIN_TARGET } from '../../lib/a11y';
 import { MAX_SYSTEM_PROMPT, settingsPatch, switchableModels, type ChatModel, type ChatThread } from '../../lib/chat';
 import { plural, t } from '../../lib/i18n';
-import { colors } from '../../theme';
+import { Text, TextField, Button, Card, Icon, themedStyles, useThemedStyles } from '../ui';
 
 interface Props {
     readonly visible: boolean;
@@ -16,6 +17,8 @@ interface Props {
 // Which model answers, and the chat's instructions. Nothing is sent until the person sends a message, and the price of the
 // model shows next to its name; changing the model changes what the next reply costs, not what an earlier one did.
 export function ChatSettings({ visible, thread, models, onSave, onClose }: Props) {
+    const styles = useThemedStyles(sheets);
+    const reducedMotion = useReducedMotion();
     const [modelId, setModelId] = useState(thread.model_id);
     const [instructions, setInstructions] = useState(thread.system_prompt ?? '');
     const [busy, setBusy] = useState(false);
@@ -37,45 +40,44 @@ export function ChatSettings({ visible, thread, models, onSave, onClose }: Props
     }
 
     return (
-        <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+        <Modal visible={visible} animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={onClose}>
             <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-                <Pressable accessibilityRole="button" accessibilityLabel={t('chat.settings.back')} style={styles.back} onPress={onClose}><Text style={styles.closeText}>‹ {t('chat.settings.back')}</Text></Pressable>
-                <Text style={styles.title} accessibilityRole="header">{t('chat.settings.title')}</Text>
-                <Text style={styles.heading} accessibilityRole="header">{t('chat.settings.model')}</Text>
+                <Button accessibilityRole="button" accessibilityLabel={t('chat.settings.back')} containerStyle={styles.back} onPress={onClose} variant="tertiary" size="md" label={t('chat.settings.back')}><Icon name="arrowLeft" size={20} /><Text style={styles.closeText}>{t('chat.settings.back')}</Text></Button>
+                <Text variant="title2" style={styles.title} accessibilityRole="header">{t('chat.settings.title')}</Text>
+                <Text variant="footnote" style={styles.heading} accessibilityRole="header">{t('chat.settings.model')}</Text>
                 {switchableModels(models).map((m) => (
-                    <Pressable key={m.id} accessibilityRole="radio" accessibilityLabel={`${m.name}, ${plural('chat.perReply', m.credits_per_reply)}`} accessibilityState={{ selected: m.id === modelId }} style={[styles.row, m.id === modelId && styles.on]} onPress={() => setModelId(m.id)}>
-                        <Text style={styles.name}>{m.name}</Text>
-                        <Text style={styles.note}>{m.maker_label} · {plural('chat.perReply', m.credits_per_reply)}</Text>
-                    </Pressable>
+                    <Card key={m.id} accessibilityRole="radio" accessibilityLabel={`${m.name}, ${plural('chat.perReply', m.credits_per_reply)}`} accessibilityState={{ selected: m.id === modelId }} style={[styles.row]} onPress={() => setModelId(m.id)} selected={m.id === modelId}>
+                        <Text variant="body" style={styles.name}>{m.name}</Text>
+                        <Text variant="footnote" style={styles.note}>{m.maker_label} · <Text variant="footnote" tone="warning">{plural('chat.perReply', m.credits_per_reply)}</Text></Text>
+                    </Card>
                 ))}
-                <Text style={styles.heading} accessibilityRole="header">{t('chat.settings.instructions')}</Text>
-                <TextInput style={styles.input} value={instructions} onChangeText={setInstructions} multiline maxLength={MAX_SYSTEM_PROMPT} placeholder={t('chat.settings.instructionsHint')} accessibilityLabel={t('chat.settings.instructions')} placeholderTextColor={colors.muted} />
-                <Text style={styles.note}>{t('chat.settings.count', { n: String(instructions.length), max: String(MAX_SYSTEM_PROMPT) })}</Text>
+                <Text variant="footnote" style={styles.heading} accessibilityRole="header">{t('chat.settings.instructions')}</Text>
+                <TextField style={styles.input} value={instructions} onChangeText={setInstructions} multiline maxLength={MAX_SYSTEM_PROMPT} placeholder={t('chat.settings.instructionsHint')} accessibilityLabel={t('chat.settings.instructions')} />
+                <Text variant="footnote" style={styles.note}>{t('chat.settings.count', { n: String(instructions.length), max: String(MAX_SYSTEM_PROMPT) })}</Text>
                 {error ? <Text style={styles.error} accessibilityRole="alert">{error}</Text> : null}
-                <Pressable accessibilityRole="button" disabled={!patch || busy} style={[styles.save, (!patch || busy) && styles.off]} onPress={save}>
-                    {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.saveText}>{t('chat.settings.save')}</Text>}
-                </Pressable>
-                <Pressable accessibilityRole="button" style={styles.close} onPress={onClose}><Text style={styles.closeText}>{t('chat.settings.close')}</Text></Pressable>
+                <Button accessibilityRole="button" disabled={!patch || busy} containerStyle={styles.save} onPress={save} variant="secondary" size="md" label={(t('chat.settings.save'))}>
+                    {busy ? <ActivityIndicator color={styles.accentInkInk.color} /> : <Text variant="bodyStrong" style={styles.saveText}>{t('chat.settings.save')}</Text>}
+                </Button>
+                <Button accessibilityRole="button" containerStyle={styles.close} onPress={onClose} variant="tertiary" size="md" label={(t('chat.settings.close'))}><Text style={styles.closeText}>{t('chat.settings.close')}</Text></Button>
             </ScrollView>
         </Modal>
     );
 }
 
-const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: colors.background },
+const sheets = themedStyles((p) => ({
+    accentInkInk: { color: p.textPrimary },
+    screen: { flex: 1, backgroundColor: p.bg },
     content: { padding: 16, paddingTop: 56, gap: 10 },
-    title: { color: colors.text, fontSize: 20, fontWeight: '600' },
-    heading: { color: colors.muted, fontSize: 13, fontWeight: '700', marginTop: 8 },
-    row: { minHeight: MIN_TARGET, borderRadius: 12, borderWidth: 1, borderColor: colors.border, padding: 12 },
-    on: { borderColor: colors.accent, backgroundColor: colors.surface },
-    name: { color: colors.text, fontSize: 16 },
-    note: { color: colors.muted, fontSize: 13 },
-    input: { color: colors.text, backgroundColor: colors.surface, borderRadius: 12, padding: 12, minHeight: 120, maxHeight: 260 },
-    error: { color: colors.danger },
-    save: { minHeight: MIN_TARGET, borderRadius: 12, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center', marginTop: 8 },
-    saveText: { color: colors.accentInk, fontWeight: '600' },
-    off: { opacity: 0.4 },
+    title: { color: p.textPrimary },
+    heading: { color: p.textTertiary, marginTop: 8 },
+    row: { minHeight: MIN_TARGET, padding: 12 },
+    name: { color: p.textPrimary },
+    note: { color: p.textTertiary },
+    input: { minHeight: 120, maxHeight: 260 },
+    error: { color: p.danger },
+    save: { minHeight: MIN_TARGET, alignItems: 'center', justifyContent: 'center', marginTop: 8 },
+    saveText: { color: p.textPrimary },
     back: { minHeight: MIN_TARGET, justifyContent: 'center', alignSelf: 'flex-start' },
     close: { minHeight: MIN_TARGET, alignItems: 'center', justifyContent: 'center' },
-    closeText: { color: colors.accent },
-});
+    closeText: { color: p.accent },
+}));

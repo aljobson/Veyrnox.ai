@@ -60,6 +60,10 @@ export const MENU_ICONS = {
     arrowUp: require('../../assets/icons/arrow-up.png'),
     arrowDown: require('../../assets/icons/arrow-down.png'),
     externalLink: require('../../assets/icons/arrow-square-out.png'),
+    arrowRight: require('../../assets/icons/arrow-right.png'),
+    globe: require('../../assets/icons/globe.png'),
+    brain: require('../../assets/icons/brain.png'),
+    cpu: require('../../assets/icons/cpu.png'),
     googleG: require('../../assets/icons/google-g.png'),
 } as const;
 
