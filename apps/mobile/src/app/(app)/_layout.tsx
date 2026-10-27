@@ -1,3 +1,4 @@
+import { CelebrationHost } from '../../components/CelebrationHost';
 import { CheckInModal } from '../../components/CheckInModal';
 import { Redirect, Stack } from 'expo-router';
 import { useColorScheme } from 'react-native';
@@ -20,29 +21,30 @@ export default function AppLayout() {
     return (
         <>
             <AiConsentHost />
+            <CelebrationHost />
             <MfaGate>
-            <FirstRunGate />
-            <CheckInModal />
-            <PaywallPrompt />
-            <Stack
-                screenLayout={({ children }) => (
-                    <>
-                        <OfflineBanner />
-                        <ServiceBanner />
-                        {children}
-                    </>
-                )}
-                screenOptions={({ navigation }) => ({
-                    headerStyle: { backgroundColor: palette.background },
-                    headerTintColor: palette.text,
-                    headerBackButtonDisplayMode: 'minimal',
-                    contentStyle: { backgroundColor: palette.background },
-                    // Every screen has a way back: the native back when there is history, otherwise a button to Explore.
-                    ...(navigation.canGoBack() ? {} : { headerLeft: () => <HomeBackButton /> }),
-                })}
-            >
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            </Stack>
+                <FirstRunGate />
+                <CheckInModal />
+                <PaywallPrompt />
+                <Stack
+                    screenLayout={({ children }) => (
+                        <>
+                            <OfflineBanner />
+                            <ServiceBanner />
+                            {children}
+                        </>
+                    )}
+                    screenOptions={({ navigation }) => ({
+                        headerStyle: { backgroundColor: palette.background },
+                        headerTintColor: palette.text,
+                        headerBackButtonDisplayMode: 'minimal',
+                        contentStyle: { backgroundColor: palette.background },
+                        // Every screen has a way back: the native back when there is history, otherwise a button to Explore.
+                        ...(navigation.canGoBack() ? {} : { headerLeft: () => <HomeBackButton /> }),
+                    })}
+                >
+                    <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                </Stack>
             </MfaGate>
         </>
     );

@@ -1,3 +1,4 @@
+import { noteLocalSubmission } from './celebrate';
 import type { GenerationReference } from './sources';
 import { aiConsent } from './aiConsentStore';
 import { appCache } from './appCache';
@@ -155,7 +156,7 @@ export const mediaApi = (api: ApiClient) => ({
                 ...(!r.references && r.assets?.length ? { source_assets: r.assets.map((a) => ({ asset_id: a.assetId, slot: a.slot })) } : {}),
                 ...(r.references?.length || r.sources?.length || r.assets?.length ? { consent: r.sourceRights === undefined ? agreed : r.sourceRights && agreed } : {}),
             }),
-        });
+        }).then(result => { noteLocalSubmission(result.job_id); return result; });
     },
     getJob: (id: string) =>
         api.request<{ state: JobState; credits: number; model_id: string; error_code?: string; refunded?: boolean }>(`/api/v1/jobs/${encodeURIComponent(id)}`),

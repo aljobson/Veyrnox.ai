@@ -1,6 +1,6 @@
 // Where and when Vey moves on its own in the app: a hop as a list scrolls and a cheer when tapped. The same rules as
 // the web (lib/veyMotion.js). Motion only: nothing here buys, grants or changes anything.
-export type VeyMood = 'idle' | 'hop' | 'cheer' | 'worried';
+export type VeyMood = 'idle' | 'hop' | 'cheer' | 'clap' | 'worried';
 
 // How far a list must scroll before Vey hops, and the pause between hops, so a long scroll is a few hops, not a buzz.
 export const HOP_SCROLL_PX = 360;
@@ -30,5 +30,20 @@ export function onVeyReaction(listener: Reaction) {
     listeners.add(listener);
     return () => {
         listeners.delete(listener);
+    };
+}
+
+export type CelebrationKind = 'firstCreation' | 'firstVideo' | 'afterOnboarding';
+export type CelebrationEvent = { kind: CelebrationKind; onShown: () => void; onDone: () => void };
+const celebrations = new Set<(event: CelebrationEvent) => void>();
+export function emitCelebration(event: CelebrationEvent): boolean {
+    if (!celebrations.size) return false;
+    celebrations.forEach((listener) => listener(event));
+    return true;
+}
+export function onCelebrate(listener: (event: CelebrationEvent) => void): () => void {
+    celebrations.add(listener);
+    return () => {
+        celebrations.delete(listener);
     };
 }

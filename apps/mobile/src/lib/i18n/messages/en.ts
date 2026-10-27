@@ -10,6 +10,7 @@ import area_activity from './en/activity';
 import area_ads from './en/ads';
 import area_analytics from './en/analytics';
 import area_app from './en/app';
+import area_appearance from './en/appearance';
 import area_approvals from './en/approvals';
 import area_authGate from './en/authGate';
 import area_autolists from './en/autolists';
@@ -120,6 +121,7 @@ const catalog = {
     ...area_ads,
     ...area_analytics,
     ...area_app,
+    ...area_appearance,
     ...area_approvals,
     ...area_authGate,
     ...area_autolists,

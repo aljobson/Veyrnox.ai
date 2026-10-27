@@ -1,13 +1,13 @@
 import { Image } from 'expo-image';
 import * as WebBrowser from 'expo-web-browser';
-import { Link, Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { Link, Stack, useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { JobProvenance } from '../../../components/JobProvenance';
 import { StemList } from '../../../components/StemList';
 import { CONFIRM_MESSAGE, CONFIRM_TITLE, deleteCreation, deleteMessage, isAlreadyGone } from '../../../lib/deleteCreation';
-import { playSuccess } from '../../../lib/haptics';
+import { afterCelebration, celebrateOutput } from '../../../lib/celebrate';
 import { REVIEW_ASK_DELAY_MS, claimReviewAsk, shouldAskForReview } from '../../../lib/reviewAsk';
 import { loadReviewAsk } from '../../../lib/storeReview';
 import { mediaApi, waitForJob, type JobState } from '../../../lib/media';
@@ -18,6 +18,9 @@ import { colors } from '../../../theme';
 import { plural, t } from '../../../lib/i18n';
 import { touchTarget } from '../../../lib/a11y';
 import { cancelErrorKey, cancelJob, getCancelStatus, type CancelStatus } from '../../../lib/cancelJob';
+
+// Embedded renderers without navigation focus support still clean up on unmount.
+const useRatingFocusEffect = useFocusEffect ?? ((effect: () => void | (() => void)) => useEffect(effect, [effect]));
 
 // Catalog keys, looked up when shown.
 const LABEL: Record<JobState, string> = {
@@ -57,12 +60,18 @@ export default function JobScreen() {
     const [cancelledCredits, setCancelledCredits] = useState<number | null>(null);
     const cancelBusy = useRef(false);
     const statusVersion = useRef(0);
+    const ratingAbort = useRef<AbortController | null>(null);
+    // Losing focus cancels only the rating continuation; polling keeps its original lifecycle.
+    useRatingFocusEffect(useCallback(() => () => ratingAbort.current?.abort(), []));
 
     useEffect(() => {
         setError(false);
         setCancelStatus(null);
         const controller = new AbortController();
+        const ratingController = new AbortController();
+        ratingAbort.current = ratingController;
         const media = mediaApi(api);
+        let cancelRating: (() => void) | undefined;
         // Only a creation you waited for gets the buzz; opening a finished one from the library does not.
         let waited = false;
         waitForJob(media, id, (nextState) => {
@@ -89,19 +98,20 @@ export default function JobScreen() {
                     }
                 }
                 if (final !== 'succeeded') return;
-                if (waited) void playSuccess();
                 const a = await media.getAsset(id);
+                if (controller.signal.aborted) return;
                 setAsset({ url: a.url, mime: a.mime_type });
                 setStems(a.output_stems ?? []);
-                // The first creation you waited for and now see: after a beat, the one-time rating ask.
+                const celebration = celebrateOutput(id, a.mime_type, waited);
+                // Keep the original rating eligibility, and wait for the celebration to finish.
                 const asked = await loadReviewAsk();
-                if (controller.signal.aborted || !shouldAskForReview(asked, { waited, hasOutput: true }) || !claimReviewAsk()) return;
-                setTimeout(() => {
-                    if (!controller.signal.aborted) routerRef.current.push('/rate');
-                }, REVIEW_ASK_DELAY_MS);
+                if (controller.signal.aborted || ratingController.signal.aborted || !shouldAskForReview(asked, { waited, hasOutput: true })) return;
+                cancelRating = afterCelebration(celebration, REVIEW_ASK_DELAY_MS, ratingController.signal, () => {
+                    if (claimReviewAsk()) routerRef.current.push('/rate');
+                });
             })
             .catch(() => !controller.signal.aborted && setError(true));
-        return () => controller.abort();
+        return () => { controller.abort(); ratingController.abort(); cancelRating?.(); };
     }, [api, id, attempt]);
 
     const waiting = !asset && !error && (state === 'queued' || state === 'running');

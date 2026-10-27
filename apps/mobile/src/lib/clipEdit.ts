@@ -1,3 +1,4 @@
+import { noteLocalSubmission } from './celebrate';
 import { ApiError, type ApiClient } from './api';
 import { ensureOnline } from './network';
 
@@ -118,7 +119,7 @@ export function editBody(clips: readonly Clip[], captions: string | null, confir
 }
 
 const post = (api: ApiClient, body: Record<string, unknown>) =>
-    api.request<{ job_id?: string }>('/api/v1/generations', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    api.request<{ job_id?: string }>('/api/v1/generations', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(result => { if (result.job_id) noteLocalSubmission(result.job_id); return result; });
 
 export type Quote = { readonly kind: 'quote'; readonly credits: number } | { readonly kind: 'created'; readonly jobId: string };
 
