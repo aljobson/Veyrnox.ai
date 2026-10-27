@@ -1,11 +1,13 @@
 // Every Tools task, Face filter and Studio skill shows its own icon, and every icon file exists.
-import fs from 'fs';
-import path from 'path';
 import { FACE_IDS } from '../src/lib/faceFilters';
 import { faceIcon, skillIcon, toolIcon } from '../src/lib/featureIcons';
 import { MENU_ICONS } from '../src/lib/menuIcons';
 import { SKILLS } from '../src/lib/studioSkills';
 import { TOOL_TASKS } from '../src/lib/toolDirectory';
+declare const require: (id: string) => unknown;
+declare const __dirname: string;
+const fs = require('fs') as { readFileSync(p: string, encoding: string): string; existsSync(p: string): boolean };
+const path = require('path') as { join(...parts: string[]): string };
 
 test('each tool task has its own icon, not the fallback', () => {
     const icons = TOOL_TASKS.map((task) => toolIcon(task.key).icon);
