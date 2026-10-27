@@ -2610,6 +2610,96 @@
     "ratio": 2.5
   },
   {
+    "id": "publishReporting.edit",
+    "english": "Edit",
+    "translation": "Изменить",
+    "ratio": 2
+  },
+  {
+    "id": "publishReporting.likes",
+    "english": "Likes",
+    "translation": "Отметки «Нравится»",
+    "ratio": 3.6
+  },
+  {
+    "id": "publishReporting.open",
+    "english": "Open",
+    "translation": "Открыть",
+    "ratio": 1.75
+  },
+  {
+    "id": "publishReporting.pdf",
+    "english": "PDF",
+    "translation": "Документ PDF",
+    "ratio": 4
+  },
+  {
+    "id": "publishReporting.pptx",
+    "english": "PowerPoint",
+    "translation": "Презентация PowerPoint",
+    "ratio": 2.2
+  },
+  {
+    "id": "publishReporting.purple",
+    "english": "Purple",
+    "translation": "Фиолетовый",
+    "ratio": 1.67
+  },
+  {
+    "id": "publishReporting.rank",
+    "english": "Rank by",
+    "translation": "Ранжировать по",
+    "ratio": 2
+  },
+  {
+    "id": "publishReporting.retry",
+    "english": "Retry",
+    "translation": "Повторить",
+    "ratio": 1.8
+  },
+  {
+    "id": "publishReporting.save",
+    "english": "Save",
+    "translation": "Сохранить",
+    "ratio": 2.25
+  },
+  {
+    "id": "publishReporting.saves",
+    "english": "Saves",
+    "translation": "Сохранения",
+    "ratio": 2
+  },
+  {
+    "id": "publishReporting.sky",
+    "english": "Sky blue",
+    "translation": "Небесно-голубой",
+    "ratio": 1.88
+  },
+  {
+    "id": "publishReporting.type.image",
+    "english": "Image",
+    "translation": "Изображение",
+    "ratio": 2.2
+  },
+  {
+    "id": "publishReporting.type.post",
+    "english": "Post",
+    "translation": "Публикация",
+    "ratio": 2.5
+  },
+  {
+    "id": "publishReporting.views",
+    "english": "Views",
+    "translation": "Просмотры",
+    "ratio": 1.8
+  },
+  {
+    "id": "publishReporting.weekly",
+    "english": "Weekly",
+    "translation": "Еженедельно",
+    "ratio": 1.83
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

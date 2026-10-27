@@ -3984,6 +3984,138 @@
     "ratio": 1.75
   },
   {
+    "id": "publishReporting.audience",
+    "english": "Audience",
+    "translation": "Audience totale",
+    "ratio": 1.88
+  },
+  {
+    "id": "publishReporting.confirm",
+    "english": "Confirm schedule",
+    "translation": "Confirmer la programmation",
+    "ratio": 1.63
+  },
+  {
+    "id": "publishReporting.edit",
+    "english": "Edit",
+    "translation": "Modifier",
+    "ratio": 2
+  },
+  {
+    "id": "publishReporting.editReport",
+    "english": "Edit report",
+    "translation": "Modifier le rapport",
+    "ratio": 1.73
+  },
+  {
+    "id": "publishReporting.everyWeek",
+    "english": "week",
+    "translation": "semaine",
+    "ratio": 1.75
+  },
+  {
+    "id": "publishReporting.impressions",
+    "english": "Impressions",
+    "translation": "Nombre d’impressions",
+    "ratio": 1.82
+  },
+  {
+    "id": "publishReporting.interactions",
+    "english": "Interactions",
+    "translation": "Nombre d’interactions",
+    "ratio": 1.75
+  },
+  {
+    "id": "publishReporting.likes",
+    "english": "Likes",
+    "translation": "Mentions J’aime",
+    "ratio": 3
+  },
+  {
+    "id": "publishReporting.manual",
+    "english": "Manual",
+    "translation": "Envoi manuel",
+    "ratio": 2
+  },
+  {
+    "id": "publishReporting.pdf",
+    "english": "PDF",
+    "translation": "Document PDF",
+    "ratio": 4
+  },
+  {
+    "id": "publishReporting.pptx",
+    "english": "PowerPoint",
+    "translation": "Présentation PowerPoint",
+    "ratio": 2.3
+  },
+  {
+    "id": "publishReporting.retry",
+    "english": "Retry",
+    "translation": "Réessayer",
+    "ratio": 1.8
+  },
+  {
+    "id": "publishReporting.save",
+    "english": "Save",
+    "translation": "Enregistrer",
+    "ratio": 2.75
+  },
+  {
+    "id": "publishReporting.saves",
+    "english": "Saves",
+    "translation": "Enregistrements",
+    "ratio": 3
+  },
+  {
+    "id": "publishReporting.saving",
+    "english": "Saving report…",
+    "translation": "Enregistrement du rapport…",
+    "ratio": 1.86
+  },
+  {
+    "id": "publishReporting.schedule",
+    "english": "Schedule",
+    "translation": "Programmation",
+    "ratio": 1.63
+  },
+  {
+    "id": "publishReporting.sharing",
+    "english": "Opening share sheet…",
+    "translation": "Ouverture des options de partage…",
+    "ratio": 1.65
+  },
+  {
+    "id": "publishReporting.top",
+    "english": "Top content",
+    "translation": "Meilleurs contenus",
+    "ratio": 1.64
+  },
+  {
+    "id": "publishReporting.type.image",
+    "english": "Image",
+    "translation": "Image publiée",
+    "ratio": 2.6
+  },
+  {
+    "id": "publishReporting.type.post",
+    "english": "Post",
+    "translation": "Publication",
+    "ratio": 2.75
+  },
+  {
+    "id": "publishReporting.weekly",
+    "english": "Weekly",
+    "translation": "Hebdomadaire",
+    "ratio": 2
+  },
+  {
+    "id": "publishReporting.schedule.convert",
+    "english": "Turn off schedule and save",
+    "translation": "Désactiver la programmation et enregistrer",
+    "ratio": 1.62
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

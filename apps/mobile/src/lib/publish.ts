@@ -13,6 +13,8 @@ export interface PublishAccount {
     readonly id: string;
     readonly network: string;
     readonly displayName: string;
+    readonly rawDisplayName?: string | null;
+    readonly externalAccountId?: string | null;
     readonly avatarUrl: string | null;
     readonly status: string;
     readonly connectedAt: string | null;
@@ -68,6 +70,8 @@ export function parseAccounts(body: unknown): PublishAccountsState {
             id,
             network,
             displayName: str(raw.display_name) ?? network,
+            rawDisplayName: typeof raw.display_name === 'string' ? raw.display_name : null,
+            externalAccountId: typeof raw.external_account_id === 'string' ? raw.external_account_id : null,
             avatarUrl: https(raw.avatar_url),
             status: str(raw.status) ?? 'error',
             connectedAt: str(raw.connected_at),

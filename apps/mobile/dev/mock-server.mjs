@@ -14,7 +14,21 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 const PORT = Number(process.env.MOCK_PORT || 8799);
+const analyticsDepth = process.env.MOCK_PUBLISH_ANALYTICS === '1';
+const depthAccountId = '7c1f0d7e-2b4a-4c55-9a8e-3f1d2c6b5a40';
+const reportFlags = { scheduledReportsEnabled: process.env.MOCK_REPORT_FLAGS !== 'noschedule',
+    reportDeliveryEnabled: process.env.MOCK_REPORT_FLAGS !== 'nodelivery', reportExportsEnabled: true };
+const reportRole = process.env.MOCK_REPORT_ROLE || 'owner';
 const state = {
+    reports: ['manual', 'weekly', 'weekly'].map((cadence, i) => ({
+        id: `ab000000-0000-4000-8000-00000000000${i + 1}`, brand_id: 'b1',
+        name: ['Portfolio snapshot', 'Weekly summary', 'Legacy weekly summary'][i], account_id: null,
+        range_days: 30, compare_previous: true, include_content: true, report_title: 'Studio report', accent_color: '#38bdf8',
+        delivery_cadence: cadence, delivery_hour_utc: cadence === 'manual' ? null : 9,
+        delivery_weekday: cadence === 'manual' ? null : 1, delivery_day: null,
+        delivery_recipients: i === 1 ? ['reports@example.invalid'] : [], delivery_reply_to: '', delivery_message: '', delivery_format: 'pdf',
+        next_delivery_at: null, last_delivery_at: null, last_delivery_status: null, last_delivery_error: null, updated_at: '2026-10-27T09:00:00Z',
+    })),
     balance: 240, free: 10,
     threads: [{ id: randomUUID(), model_id: 'claude-sonnet', title: 'Launch plan for the spring drop', pinned: false, updated_at: new Date().toISOString() }],
     messages: new Map(),
@@ -246,7 +260,10 @@ createServer(async (req, res) => {
     }
     if (path === '/api/v1/social/accounts') return send(res, 200, { brand_id: 'b1', accountLimit: 5, planTier: 'publish', ...publishDashboardFlags('owner'), ...(uploadsEnabled ? { uploadsEnabled: true } : {}), accounts: ([
         { id: 'acc-1', network: 'instagram', display_name: 'Veyrnox Studio', avatar_url: null, status: 'active', connected_at: '2026-10-01T10:00:00Z', token_expires_at: '2026-12-01T10:00:00Z', publishingEnabled: true, supportedMedia: ['image', 'video'] },
-        { id: 'acc-2', network: 'tiktok', display_name: 'veyrnox.ai', avatar_url: null, status: 'expired', connected_at: '2026-09-01T10:00:00Z', token_expires_at: '2026-10-01T10:00:00Z', publishingEnabled: true, supportedMedia: ['image', 'video'] } ]).filter((a) => !state.goneAccounts?.has(a.id)) });
+        { id: 'acc-2', network: 'tiktok', display_name: 'veyrnox.ai', avatar_url: null, status: 'expired', connected_at: '2026-09-01T10:00:00Z', token_expires_at: '2026-10-01T10:00:00Z', publishingEnabled: true, supportedMedia: ['image', 'video'] },
+        ...(analyticsDepth ? [{ id: depthAccountId, network: 'twitter', display_name: null, external_account_id: 'veyrnox_x', avatar_url: null,
+            status: 'active', connected_at: '2026-10-01T10:00:00Z', token_expires_at: null, publishingEnabled: true, supportedMedia: ['image', 'video'] }] : [])
+    ]).filter((a) => !state.goneAccounts?.has(a.id)) });
     // Publish posts (stateful): create, reschedule, cancel and restore, with the version stamp the real routes require.
     if (path === '/api/v1/social/posts' && req.method === 'POST') {
         if (validateUploadMedia(req, res, body)) return;
@@ -382,6 +399,60 @@ createServer(async (req, res) => {
         if (body.action === 'cancel') { if (post.status !== 'scheduled') return send(res, 409, { error: 'POST_STARTED' }); post.status = 'canceled'; post.updated_at = now; return send(res, 200, { updated_at: now, idempotent: false }); }
         if (body.action === 'restore') { if (post.status !== 'canceled') return send(res, 409, { error: 'POST_CHANGED' }); post.status = 'scheduled'; post.scheduled_at = body.scheduledAt; post.updated_at = now; return send(res, 200, { updated_at: now, scheduled_at: post.scheduled_at, idempotent: false }); }
         return send(res, 400, { error: 'invalid_body' });
+    }
+    if (path === '/api/v1/social/reports') {
+        const brand = brandHeader || 'b1';
+        const rows = state.reports.filter(r => r.brand_id === brand);
+        if (req.method === 'GET') return send(res, 200, { templates: rows, brandRole: reportRole, ...reportFlags });
+        if (!['owner', 'manager', 'editor', 'analyst'].includes(reportRole)) return send(res, 403, { error: 'forbidden' });
+        const id = req.method === 'DELETE' ? new URL(req.url, 'http://x').searchParams.get('id') : body.id;
+        const existing = rows.find(r => r.id === id);
+        if (req.method === 'DELETE') {
+            if (!existing) return send(res, 404, { error: 'report_not_found' });
+            state.reports = state.reports.filter(r => r !== existing);
+            return send(res, 200, { ok: true });
+        }
+        if (req.method === 'PUT') {
+            const cadence = body.deliveryCadence ?? 'manual';
+            if (cadence !== 'manual' && !reportFlags.scheduledReportsEnabled) return send(res, 404, { error: 'scheduled_reports_not_open' });
+            const recipients = Array.isArray(body.deliveryRecipients) ? [...new Set(body.deliveryRecipients.map(v => typeof v === 'string' ? v.trim().toLowerCase() : ''))] : [];
+            const email = /^[^\s<>@]{1,64}@[^\s<>@]{1,185}\.[^\s<>@]{1,63}$/;
+            const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            const integer = (v, min, max) => Number.isInteger(v) && v >= min && v <= max;
+            const name = typeof body.name === 'string' ? body.name.trim() : '';
+            if (!name || name.length > 80 || (id != null && !uuid.test(id)) || (body.accountId && !uuid.test(body.accountId))
+                || ![7, 30, 90, 365].includes(body.rangeDays) || typeof body.comparePrevious !== 'boolean' || typeof body.includeContent !== 'boolean'
+                || !/^#[0-9a-f]{6}$/i.test(body.accentColor || '') || (body.reportTitle || '').trim().length > 100
+                || !['manual', 'weekly', 'monthly'].includes(cadence) || (cadence !== 'manual' && !integer(body.deliveryHourUtc, 0, 23))
+                || (cadence === 'weekly' && !integer(body.deliveryWeekday, 1, 7)) || (cadence === 'monthly' && !integer(body.deliveryDay, 1, 28))
+                || (cadence !== 'manual' && !recipients.length) || recipients.length > 10 || recipients.some(v => v.length > 254 || !email.test(v))
+                || (body.deliveryReplyTo && (body.deliveryReplyTo.length > 254 || !email.test(body.deliveryReplyTo.trim())))
+                || (body.deliveryMessage || '').trim().length > 1000 || !['pdf', 'pptx'].includes(body.deliveryFormat ?? 'pdf')) return send(res, 400, { error: 'invalid_body' });
+            if (id && !existing) return send(res, 404, { error: 'report_not_found' });
+            if (rows.some(r => r.id !== id && r.name.toLowerCase() === name.toLowerCase())) return send(res, 409, { error: 'report_name_taken' });
+            if (!existing && rows.length >= 50) return send(res, 409, { error: 'report_limit' });
+            const row = { id: id || randomUUID(), brand_id: brand, name, account_id: body.accountId || null, range_days: body.rangeDays,
+                compare_previous: body.comparePrevious, include_content: body.includeContent, report_title: (body.reportTitle || '').trim(), accent_color: body.accentColor.toLowerCase(),
+                delivery_cadence: cadence, delivery_hour_utc: cadence === 'manual' ? null : body.deliveryHourUtc,
+                delivery_weekday: cadence === 'weekly' ? body.deliveryWeekday : null, delivery_day: cadence === 'monthly' ? body.deliveryDay : null,
+                delivery_recipients: recipients, delivery_reply_to: (body.deliveryReplyTo || '').trim().toLowerCase(), delivery_message: (body.deliveryMessage || '').trim(),
+                delivery_format: body.deliveryFormat || 'pdf', next_delivery_at: null, last_delivery_at: existing?.last_delivery_at ?? null,
+                last_delivery_status: existing?.last_delivery_status ?? null, last_delivery_error: null, updated_at: new Date().toISOString() };
+            if (existing) Object.assign(existing, row); else state.reports.push(row);
+            return send(res, 200, { template_id: row.id });
+        }
+    }
+    if (analyticsDepth && path === '/api/v1/social/analytics') {
+        const id = new URL(req.url, 'http://x').searchParams.get('accountId');
+        if (id !== 'acc-1' && id !== depthAccountId) return send(res, 404, { error: 'account_not_found' });
+        const twitter = id === depthAccountId;
+        return send(res, 200, { planTier: 'publish', analyticsDays: 365,
+            account: { id, network: twitter ? 'twitter' : 'instagram', display_name: twitter ? null : 'Veyrnox Studio', status: 'active' },
+            sync: { last_ok_at: '2026-10-18T06:00:00Z', failing: false },
+            evolution: twitter ? [{ date: '2026-10-18', metrics: { followers: 300 } }] : [{ date: '2026-10-17', metrics: { followers: 1240, reach: 5300 } }, { date: '2026-10-18', metrics: { followers: 1262, reach: 6120, video_views: 880 } }],
+            posts: twitter ? [{ id: 'ap-x1', published_at: '2026-10-17T09:00:00Z', type: 'post', permalink: 'https://x.com/veyrnox_x/status/1', caption: 'Studio news #Studio #Création', metrics: { likes: 24, comments: 3, impressions: 900 } }] :
+                [{ id: 'ap-1', published_at: '2026-10-17T09:00:00Z', type: 'reel', permalink: 'https://www.instagram.com/p/mock/', caption: 'Behind the scenes cut. #Studio #Création', metrics: { likes: 140, comments: 12, reach: 610, views: 880 } }],
+        });
     }
     if (path === '/api/v1/social/analytics') return send(res, 200, { account: { id: 'acc-1', network: 'instagram', display_name: 'Veyrnox Studio', status: 'active' }, sync: { last_ok_at: '2026-10-18T06:00:00Z', failing: false }, evolution: [{ date: '2026-10-17', metrics: { followers: 1240, reach: 5300 } }, { date: '2026-10-18', metrics: { followers: 1262, reach: 6120, video_views: 880 } }], posts: [{ id: 'ap-1', published_at: '2026-10-17T09:00:00Z', type: 'reel', permalink: 'https://www.instagram.com/p/mock/', caption: 'Behind the scenes cut.', metrics: { likes: 140, comments: 12 } }] });
     // Publish workflows: two saved ones you can edit, switch on or off, create and delete. State is kept while the mock runs.

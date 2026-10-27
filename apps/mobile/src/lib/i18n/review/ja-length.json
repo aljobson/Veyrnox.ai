@@ -10,5 +10,17 @@
     "english": "Me",
     "translation": "自分のため",
     "ratio": 2.5
+  },
+  {
+    "id": "publishReporting.pdf",
+    "english": "PDF",
+    "translation": "PDF文書",
+    "ratio": 1.67
+  },
+  {
+    "id": "publishReporting.pptx",
+    "english": "PowerPoint",
+    "translation": "PowerPointプレゼンテーション",
+    "ratio": 1.9
   }
 ]
