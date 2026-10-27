@@ -128,7 +128,8 @@ async function makeInputs() {
         // Save only fal's own media, over https, within a size cap; the file name is ours, never the URL's.
         let host = '';
         try { host = new URL(url).hostname; } catch { die('  generation returned an invalid URL'); }
-        if (!url.startsWith('https://') || !(host === 'fal.media' || host.endsWith('.fal.media'))) die(`  refusing to download from ${host}`);
+        // Same fal hosts packages/adapters/r2Copy.js copies from: a refusal here means production would refuse it too.
+        if (!url.startsWith('https://') || !['fal.media', 'fal.run', 'fal.ai'].some((d) => host === d || host.endsWith(`.${d}`))) die(`  refusing to download from ${host}`);
         const got = await fetch(url, { redirect: 'error' });
         if (!got.ok) die(`  download failed: ${got.status}`);
         const bytes = Buffer.from(await got.arrayBuffer());
