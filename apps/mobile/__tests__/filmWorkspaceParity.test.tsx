@@ -83,12 +83,28 @@ test('catalog failure is quiet and Retry reloads it', async () => {
     expect(has(t('filmWorkspace.catalogUnavailable'))).toBe(true); expect(has('secret error code')).toBe(false);
     await press(t('filmWorkspace.retry')); expect(has(t('filmWorkspace.catalogUnavailable'))).toBe(false); expect(mockFetch).toHaveBeenCalledTimes(2);
 });
+test('stored models are not labelled missing while the catalog is loading or unavailable', async () => {
+    const pending = deferred<{ value: CatalogModel[] }>(); mockFetch.mockReturnValueOnce(pending.promise);
+    await mount(ready());
+    for (const value of ['image', 'video']) expect(has(t('filmWorkspace.legacyModel', { value1: value }))).toBe(false);
+    await act(async () => pending.resolve({ value: catalog }));
+    expect(has('Name image')).toBe(true); expect(has('Name video')).toBe(true);
+    await act(async () => root.unmount());
+    mockFetch.mockRejectedValueOnce(new Error('unavailable')); await mount();
+    expect(has(t('filmWorkspace.catalogUnavailable'))).toBe(true);
+    for (const value of ['image', 'video']) expect(has(t('filmWorkspace.legacyModel', { value1: value }))).toBe(false);
+    await tick(); expect((await saved())?.stack).toEqual(ready().stack);
+});
 test('later stages and Continue are disabled until issues clear', async () => {
     await mount();
     expect(controls('tab')[2].props.accessibilityState.disabled).toBe(true);
+    expect(RN.StyleSheet.flatten(controls('tab')[2].props.style).opacity).toBeLessThan(1);
+    expect(RN.StyleSheet.flatten(controls('tab')[0].props.style).opacity ?? 1).toBe(1);
     expect(button(t('filmWorkspace.continue', { value1: FILM_STAGES[1][1] })).props.accessibilityState.disabled).toBe(true);
     await pick(t('film.imagemodel'), 'Name image'); await pick(t('film.videomodel'), 'Name video');
     await press(t('filmWorkspace.continue', { value1: FILM_STAGES[1][1] }));
+    expect(controls('tab')[1].props.accessibilityState.disabled).toBe(false);
+    expect(RN.StyleSheet.flatten(controls('tab')[1].props.style).opacity ?? 1).toBe(1);
     expect(field(t('film.studioname')).props.maxLength).toBe(100);
     expect(has(t('filmWorkspace.frameFormat'))).toBe(false);
 });
@@ -110,10 +126,35 @@ test('id drafts strip spaces and retain the last valid id on format, duplicate a
     const film = ready(); film.shots = [newShot(film)]; film.shots.push(newShot(film));
     film.prompts = [{ shot: 'old', version: 1, content: '', context: '', at: '' }];
     await mount(film); await stage(2);
-    await type(t('filmStudio.sceneshotID'), 'sc 01/!a'); await tick(); expect((await saved())?.shots[0].id).toBe('sc01a');
+    await type(t('filmStudio.sceneshotID'), 'sc 01/!a');
+    expect(field(t('filmStudio.sceneshotID')).props.value).toBe('sc01a');
+    await act(async () => field(t('filmStudio.sceneshotID')).props.onBlur());
+    await tick(); expect((await saved())?.shots[0].id).toBe('sc01a');
     for (const [id, problem] of [['_shot', 'format'], ['-a', 'format'], ['', 'format'], ['a'.repeat(62), 'format'], ['sc01-sh02', 'duplicate'], ['old', 'history']]) {
-        await type(t('filmStudio.sceneshotID'), id); await tick();
+        await type(t('filmStudio.sceneshotID'), id);
+        expect(has(t(`filmWorkspace.id.${problem}`))).toBe(false);
+        await act(async () => field(t('filmStudio.sceneshotID')).props.onBlur()); await tick();
         expect(has(t(`filmWorkspace.id.${problem}`))).toBe(true); expect((await saved())?.shots[0].id).toBe('sc01a');
+    }
+});
+test.each(['onBlur', 'onSubmitEditing'])('shot ids commit on %s and move only their own prompt and attempt history', async event => {
+    const film = ready(); film.shots = [newShot(film)]; film.shots.push(newShot(film));
+    film.prompts = film.shots.map(s => ({ shot: s.id, version: 1, content: 'prompt', context: 'context', at: '' }));
+    film.attempts = film.shots.map(s => ({ shot: s.id, version: 1, result: 'take', changed: 'first', verdict: 'rejected', at: '' }));
+    await mount(film); await stage(2);
+    const label = t('filmStudio.sceneshotID');
+    await type(label, 'sc01-sh0'); await tick();
+    expect(await saved()).toEqual(film);
+    await type(label, 'sc01-sh01');
+    await act(async () => field(label).props[event]()); await tick();
+    expect(await saved()).toEqual(film); expect(has(t('filmWorkspace.id.history'))).toBe(false);
+    for (const id of ['renamed', 'sc01-sh01']) {
+        await type(label, id); await act(async () => field(label).props[event]()); await tick();
+        const next = (await saved())!;
+        expect(next.shots.map(s => s.id)).toEqual([id, 'sc01-sh02']);
+        expect(next.prompts).toEqual(film.prompts.map((p, i) => i === 0 ? { ...p, shot: id } : p));
+        expect(next.attempts).toEqual(film.attempts.map((a, i) => i === 0 ? { ...a, shot: id } : a));
+        expect(parseFilm(JSON.stringify(next)).ok).toBe(true);
     }
 });
 test('text task fields appear only with exact text, and lane inputs carry hints', async () => {

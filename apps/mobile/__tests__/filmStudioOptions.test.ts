@@ -33,6 +33,13 @@ test('new cards preserve stack seconds, blank lane fields and reserve every hist
     expect(newShot(film).id).toBe('sc01-sh03');
     expect(parseFilm(JSON.stringify({ ...film, shots: [newShot(film)] })).ok).toBe(true);
 });
+test.each([[], [5], [16, 20]].map(durations => ({ durations })))('normalization preserves seconds when a legacy model has no allowed durations: $durations', ({ durations }) => {
+    const stack = { ...emptyFilm().stack, video: 'legacy', seconds: '12', aspect: '1:1' };
+    const models = [model('legacy', { durations })];
+    expect(clipLengths(stack, models)).toEqual([10]);
+    expect(normalizeFilmStack(stack, 'image', 'image', models)).toEqual({ ...stack, image: 'image', aspect: '9:16' });
+    expect(normalizeFilmStack(stack, 'seconds', '15', models).seconds).toBe('15');
+});
 test('id drafts sanitize, reject invalid formats, duplicates and abandoned history', () => {
     const film = emptyFilm(); film.shots = [newShot(film)]; film.shots.push(newShot(film));
     film.prompts.push({ shot: 'old', version: 1, content: '', context: '', at: '' });

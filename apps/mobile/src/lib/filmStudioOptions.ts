@@ -24,9 +24,10 @@ export function frameFormats(stack: Film['stack'], catalog: readonly CatalogMode
 }
 export function normalizeFilmStack(stack: Film['stack'], key: keyof Film['stack'], value: string, catalog: readonly CatalogModel[]): Film['stack'] {
     const next = { ...stack, [key]: value };
-    if (!isStudio(next.videoAccess) || !catalog.some(m => m.id === next.video)) return next;
-    const lengths = clipLengths(next, catalog), formats = frameFormats(next, catalog);
-    return { ...next, seconds: lengths.includes(Number(next.seconds)) ? next.seconds : String(lengths[0]),
+    const model = catalog.find(m => m.id === next.video);
+    if (!isStudio(next.videoAccess) || !model) return next;
+    const lengths = model.durations.filter(n => n >= 10 && n <= 15), formats = frameFormats(next, catalog);
+    return { ...next, seconds: !lengths.length || lengths.includes(Number(next.seconds)) ? next.seconds : String(lengths[0]),
         aspect: formats.includes(next.aspect) ? next.aspect : formats[0] };
 }
 export function nextShotId(film: Film): string {

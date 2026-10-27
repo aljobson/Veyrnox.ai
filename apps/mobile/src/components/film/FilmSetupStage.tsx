@@ -20,7 +20,7 @@ export function FilmSetupStage({ film, change, catalog, live, unavailable, retry
             const models = live ? setupModels(catalog, kind) : [];
             const value = film.stack[kind];
             const options = [{ value: '', label: t('filmWorkspace.chooseModel') }, ...models.map(m => ({ value: m.id, label: m.name }))];
-            if (value && !models.some(m => m.id === value)) options.push({ value, label: t('filmWorkspace.legacyModel', { value1: value }) });
+            if (live && value && !models.some(m => m.id === value)) options.push({ value, label: t('filmWorkspace.legacyModel', { value1: value }) });
             const label = kind === 'image' ? t('film.imagemodel') : t('film.videomodel');
             return <View key={kind} style={{ gap: 14 }}>
                 <FilmSelect label={kind === 'image' ? t('filmWorkspace.imageWorkflow') : t('filmWorkspace.videoWorkflow')} value={isStudio(film.stack[access]) ? 'Studio' : 'External'} options={workflows} onChange={v => write(access, v)} />

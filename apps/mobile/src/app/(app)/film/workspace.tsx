@@ -140,7 +140,7 @@ export default function FilmWorkspace() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.stageBar} contentContainerStyle={styles.stageBarContent}>
                 {FILM_STAGES.map(([, title], index) => {
                     const open = stageIssues(film, index).length;
-                    return <Pressable key={title} accessibilityRole="tab" accessibilityLabel={title} disabled={index > available} accessibilityState={{ selected: stage === index, disabled: index > available }} style={[styles.stageChip, stage === index && styles.stageChipOn]} onPress={() => setStage(index)}>
+                    return <Pressable key={title} accessibilityRole="tab" accessibilityLabel={title} disabled={index > available} accessibilityState={{ selected: stage === index, disabled: index > available }} style={[styles.stageChip, stage === index && styles.stageChipOn, index > available && styles.stageChipDisabled]} onPress={() => setStage(index)}>
                         <Text style={[styles.stageChipText, stage === index && styles.stageChipTextOn]}>{index + 1}. {title}{open ? ` · ${open}` : ' · ✓'}</Text>
                     </Pressable>;
                 })}
@@ -245,6 +245,7 @@ function Prompts({ film, change, router }: Props & { router: ReturnType<typeof u
 type Props = { film: Film; change: (film: Film) => void; catalog: readonly CatalogModel[]; live: boolean };
 function updateAsset(film: Film, change: Props['change'], index: number, asset: Asset) { change({ ...film, assets: film.assets.map((item, i) => i === index ? asset : item) }); }
 const styles = StyleSheet.create({
+    stageChipDisabled: { opacity: 0.45 },
     screen: { flex: 1, backgroundColor: colors.background }, stageBar: { flexGrow: 0, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }, stageBarContent: { paddingHorizontal: 12, paddingVertical: 10, gap: 8 },
     stageChip: { minHeight: 44, justifyContent: 'center', borderRadius: 20, paddingHorizontal: 14, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }, stageChipOn: { backgroundColor: colors.accent, borderColor: colors.accent }, stageChipText: { color: colors.body, fontSize: 13, fontWeight: '700' }, stageChipTextOn: { color: colors.accentInk },
     content: { padding: 16, paddingBottom: 100, gap: 16 }, titleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 }, kicker: { color: colors.accent, fontSize: 11, fontWeight: '900', letterSpacing: 1.4 }, title: { color: colors.text, fontFamily: fonts.display, fontSize: 26 },
