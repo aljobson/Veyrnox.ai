@@ -1,5 +1,5 @@
 import { createContext, useContext, useSyncExternalStore } from 'react';
-import { StyleSheet, useColorScheme } from 'react-native';
+import { StyleSheet, useColorScheme, useWindowDimensions } from 'react-native';
 import { getAppearance, subscribeAppearance, resolveScheme, tokensForScheme, rampFor, type AppearanceSettings, type Tokens, type Scheme } from '../../theme';
 export const AppearanceContext = createContext<AppearanceSettings | null>(null);
 export function useAppearance() {
@@ -26,6 +26,9 @@ export function themedStyles<const T extends NamedStyles>(make: (p: Tokens, ramp
     };
 }
 export function useThemedStyles<T>(sheets: (s: AppearanceSettings, scheme: Scheme) => T): T {
+    // Native Text scales itself; subscribing here also rerenders mounted lists/layouts.
+    // Do not multiply the ramp by fontScale (that would scale native text twice).
+    useWindowDimensions();
     const { settings, scheme } = useAppearance();
     return sheets(settings, scheme);
 }

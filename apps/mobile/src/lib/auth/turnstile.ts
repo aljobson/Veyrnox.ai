@@ -57,12 +57,23 @@ export function parseTurnstileMessage(raw: string): TurnstileMessage | null {
 
 // Only Cloudflare's challenge origins, the page's own base URL (the initial load) and a blank page
 // may load inside the check.
-export function allowTurnstileNavigation(url: string, baseUrl: string): boolean {
-    if (url === 'about:blank' || url === baseUrl || url === `${baseUrl}/`) return true;
+export function localTurnstileOrigin(baseUrl: string, development: boolean): string | null {
+    if (!development) return null;
     try {
-        const u = new URL(url);
-        return u.protocol === 'https:' && (u.hostname === 'challenges.cloudflare.com' || u.hostname.endsWith('.cloudflare.com'));
-    } catch {
-        return false;
-    }
+        const u = new URL(baseUrl);
+        return u.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(u.hostname) && !u.username && !u.password ? u.origin : null;
+    } catch { return null; }
+}
+export function turnstileOrigins(baseUrl: string, development: boolean): string[] {
+    const local = localTurnstileOrigin(baseUrl, development);
+    return ['https://*', 'about:*', ...(local ? [local] : [])];
+}
+export function allowTurnstileNavigation(url: string, baseUrl: string, development = false): boolean {
+    if (url === 'about:blank') return true;
+    try {
+        const u = new URL(url), base = new URL(baseUrl);
+        if (u.username || u.password) return false;
+        if (u.origin === localTurnstileOrigin(baseUrl, development)) return true;
+        return u.protocol === 'https:' && ((u.origin === base.origin && (url === baseUrl || url === `${baseUrl}/`)) || u.hostname === 'challenges.cloudflare.com' || u.hostname.endsWith('.cloudflare.com'));
+    } catch { return false; }
 }

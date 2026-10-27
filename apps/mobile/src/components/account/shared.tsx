@@ -42,6 +42,6 @@ export const styles = StyleSheet.create({
     danger: { color: colors.danger },
     off: { opacity: 0.5 },
     status: { color: colors.accent, fontSize: 14 },
-    input: { ...touchTarget, color: colors.text, backgroundColor: colors.background, borderColor: colors.border, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, fontSize: 16 },
+    input: { ...touchTarget, color: colors.text, backgroundColor: colors.background, borderColor: colors.borderStrong, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, fontSize: 16 },
     label: { color: colors.muted, fontSize: 13 },
 });

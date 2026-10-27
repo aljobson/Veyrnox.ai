@@ -1,3 +1,5 @@
+import { markWelcomeSeen } from '../../lib/markWelcomeSeen';
+import { t } from '../../lib/i18n';
 import { Image } from 'expo-image';
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -28,7 +30,7 @@ export function sourceHref(source: Source) {
     if (source === 'photo') return '/create/tools?source=image&mode=photo' as const;
     if (source === 'video') return '/create/tools?source=video&mode=video' as const;
     if (source === 'reference') return '/create/tools?source=image&mode=reference' as const;
-    return '/create?goal=video' as const;
+    return '/?focusIdea=1' as const;
 }
 
 // Mobbin references: Picsart leads with Try/Remix previews, while Grok, Meta AI and ElevenLabs put the source
@@ -147,6 +149,9 @@ export default function Start() {
                         }
                     }}
                 />
+                <Button variant="tertiary" label={t('start.skip')} onPress={() => {
+                    void markWelcomeSeen().then(() => { noteOnboardingCompleted(); router.replace('/'); });
+                }} />
             </View>
         </View>
     );

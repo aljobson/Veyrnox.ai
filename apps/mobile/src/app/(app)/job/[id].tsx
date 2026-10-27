@@ -8,7 +8,7 @@ import { useAuth } from '../../../auth/AuthProvider';
 import { JobProvenance } from '../../../components/JobProvenance';
 import { StemList } from '../../../components/StemList';
 import { CONFIRM_MESSAGE, CONFIRM_TITLE, deleteCreation, deleteMessage, isAlreadyGone } from '../../../lib/deleteCreation';
-import { afterCelebration, celebrateOutput } from '../../../lib/celebrate';
+import { afterCelebration, celebrateOutput, type CelebrationResult } from '../../../lib/celebrate';
 import { REVIEW_ASK_DELAY_MS, claimReviewAsk, shouldAskForReview } from '../../../lib/reviewAsk';
 import { loadReviewAsk } from '../../../lib/storeReview';
 import { mediaApi, waitForJob, type JobState } from '../../../lib/media';
@@ -63,17 +63,28 @@ export default function JobScreen() {
     const cancelBusy = useRef(false);
     const statusVersion = useRef(0);
     const ratingAbort = useRef<AbortController | null>(null);
+    const [resultReady, setResultReady] = useState(false);
+    const [review, setReview] = useState<CelebrationResult | null>(null);
+    const outputReady = useCallback(() => setResultReady(true), []);
+    useEffect(() => {
+        const signal = ratingAbort.current?.signal;
+        if (!resultReady || !review || !signal || signal.aborted) return;
+        return afterCelebration(review, REVIEW_ASK_DELAY_MS, signal, () => {
+            if (claimReviewAsk()) routerRef.current.push('/rate');
+        });
+    }, [resultReady, review]);
     // Losing focus cancels only the rating continuation; polling keeps its original lifecycle.
     useRatingFocusEffect(useCallback(() => () => ratingAbort.current?.abort(), []));
 
     useEffect(() => {
         setError(false);
+        setResultReady(false);
+        setReview(null);
         setCancelStatus(null);
         const controller = new AbortController();
         const ratingController = new AbortController();
         ratingAbort.current = ratingController;
         const media = mediaApi(api);
-        let cancelRating: (() => void) | undefined;
         // Only a creation you waited for gets the buzz; opening a finished one from the library does not.
         let waited = false;
         waitForJob(media, id, (nextState) => {
@@ -108,12 +119,10 @@ export default function JobScreen() {
                 // Keep the original rating eligibility, and wait for the celebration to finish.
                 const asked = await loadReviewAsk();
                 if (controller.signal.aborted || ratingController.signal.aborted || !shouldAskForReview(asked, { waited, hasOutput: true })) return;
-                cancelRating = afterCelebration(celebration, REVIEW_ASK_DELAY_MS, ratingController.signal, () => {
-                    if (claimReviewAsk()) routerRef.current.push('/rate');
-                });
+                setReview(celebration);
             })
             .catch(() => !controller.signal.aborted && setError(true));
-        return () => { controller.abort(); ratingController.abort(); cancelRating?.(); };
+        return () => { controller.abort(); ratingController.abort(); };
     }, [api, id, attempt]);
 
     const waiting = !asset && !error && (state === 'queued' || state === 'running');
@@ -213,18 +222,18 @@ export default function JobScreen() {
                 </View>
             ) : asset && stems.length > 0 ? (
                 <ScrollView contentContainerStyle={styles.actionsBody}>
-                    <StemList api={api} jobId={id} stems={stems} />
+                    <StemList onReady={outputReady} api={api} jobId={id} stems={stems} />
                 </ScrollView>
             ) : asset ? (
                 asset.mime.startsWith('image/') ? (
-                    <Image source={{ uri: asset.url }} style={styles.image} contentFit="contain" accessibilityLabel={t('job.title')} accessibilityIgnoresInvertColors />
+                    <Image onLoad={outputReady} source={{ uri: asset.url }} style={styles.image} contentFit="contain" accessibilityLabel={t('job.title')} accessibilityIgnoresInvertColors />
                 ) : (
-                    <InlineMedia key={asset.url} url={asset.url} audio={!asset.mime.startsWith('video/')} label={asset.mime.startsWith('video/') ? t('job.playVideo') : t('job.playAudio')} />
+                    <InlineMedia onReady={outputReady} key={asset.url} url={asset.url} audio={!asset.mime.startsWith('video/')} label={asset.mime.startsWith('video/') ? t('job.playVideo') : t('job.playAudio')} />
                 )
             ) : (
                 <View style={styles.center}>
                     {waiting ? <ActivityIndicator color={styles.accentInk.color} /> : null}
-                    <Text variant="body" tone="danger" style={state === 'failed' ? styles.error : styles.status}>{cancelledCredits !== null
+                    <Text accessibilityLiveRegion="polite" variant="body" tone="danger" style={state === 'failed' ? styles.error : styles.status}>{cancelledCredits !== null
                         ? cancelledCredits > 0 ? plural('jobCancel.cancelled', cancelledCredits) : t('jobCancel.cancelledFree')
                         : t(LABEL[state])}</Text>
                     {cancelNote ? <Text variant="body" tone="secondary" style={styles.note} accessibilityLiveRegion="polite">{cancelNote}</Text> : null}

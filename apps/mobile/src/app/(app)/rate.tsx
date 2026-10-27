@@ -24,7 +24,7 @@ export default function Rate() {
 
     return (
         <View style={styles.screen}>
-            <Stack.Screen options={{ headerShown: false, presentation: 'modal' }} />
+            <Stack.Screen options={{ title: t('rate.title'), headerShown: false, presentation: 'modal' }} />
             <View style={styles.card}>
                 <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
                     <VeyCharacter width={140} />

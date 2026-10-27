@@ -51,7 +51,7 @@ test.each([true, false, 'Invalid seed'])('TextField error=%s styles its shell an
     expect(RN.StyleSheet.flatten(control('Seed').props.style).borderWidth).toBeUndefined();
     const shells = root.container.queryAll(n => RN.StyleSheet.flatten(n.props.style)?.borderWidth === 1);
     expect(shells).toHaveLength(1);
-    expect(RN.StyleSheet.flatten(shells[0].props.style).borderColor).toBe(error ? p.danger : p.borderSubtle);
+    expect(RN.StyleSheet.flatten(shells[0].props.style).borderColor).toBe(error ? p.danger : p.borderStrong);
     expect(root.container.queryAll(n => n.props.accessibilityRole === 'alert')).toHaveLength(typeof error === 'string' ? 1 : 0);
 });
 

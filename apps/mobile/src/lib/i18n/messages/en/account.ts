@@ -1,5 +1,6 @@
 // English strings for account. Add keys here; keep their original wording and placeholders.
 export default {
+    'account.signOutConfirm': 'Sign out of Veyrnox?',
     'account.legal.terms': 'Terms of service',
     'account.legal.privacy': 'Privacy policy',
     'account.legal.aup': 'Acceptable use policy',

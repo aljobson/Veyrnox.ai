@@ -90,7 +90,7 @@ export function MfaCard() {
             {failed ? <Button variant="tertiary" label={t('acct.mfa.retry')} onPress={() => void load()} /> : null}
 
             {state === 'none' && !pending ? (
-                <Button variant="tertiary"
+                <Button variant="secondary"
                     label={t('acct.mfa.setup')}
                     disabled={busy}
                     onPress={() => void run(async () => setPending(await enrollTotp(getAccessToken, enrolmentName(Math.random().toString(36).slice(2, 10)))), mfaErrorKey)}
@@ -104,7 +104,7 @@ export function MfaCard() {
                     <Text variant="footnote" tone="secondary">{t('acct.mfa.secret')}</Text>
                     <Text selectable variant="bodyStrong" accessibilityLabel={t('acct.mfa.secretSpoken', { secret: pending.secret.split('').join(' ') })}>{pending.secret}</Text>
                     <CodeField value={code} onChange={setCode} />
-                    <Button variant="tertiary" label={t('acct.mfa.confirm')} disabled={busy || !validCode(code)} onPress={() => void verify(pending.factorId, t('acct.mfa.on'))} />
+                    <Button variant="secondary" label={t('acct.mfa.confirm')} disabled={busy || !validCode(code)} onPress={() => void verify(pending.factorId, t('acct.mfa.on'))} />
                     <Button variant="tertiary" label={t('acct.mfa.cancelSetup')} disabled={busy} onPress={() => { setPending(null); setCode(''); setNote(null); }} />
                 </View>
             ) : null}
@@ -113,7 +113,7 @@ export function MfaCard() {
                 <View style={styles.group}>
                     <Text variant="footnote" tone="secondary">{t('acct.mfa.locked')}</Text>
                     <CodeField value={code} onChange={setCode} />
-                    <Button variant="tertiary" label={t('acct.mfa.unlock')} disabled={busy || !validCode(code)} onPress={() => void verify(factors[0].id, t('acct.mfa.unlocked'))} />
+                    <Button variant="secondary" label={t('acct.mfa.unlock')} disabled={busy || !validCode(code)} onPress={() => void verify(factors[0].id, t('acct.mfa.unlocked'))} />
                 </View>
             ) : null}
 

@@ -90,8 +90,8 @@ test.each<ThemePreference>(['light', 'dark', 'oled'])('bubbles and credits remai
         <MessageBubble message={{ id: 'u', role: 'user', content: 'Hi' }} sending={false} drafts={[]} />
         <MessageBubble message={{ id: 'a', role: 'assistant', content: 'Hello', credits: 2 }} sending={false} drafts={[]} />
     </AppearanceContext.Provider>));
-    const user = RN.StyleSheet.flatten(control('You: Hi').props.style);
-    const assistant = RN.StyleSheet.flatten(control('Assistant: Hello').props.style);
+    const user = RN.StyleSheet.flatten(control('You: Hi').parent!.props.style);
+    const assistant = RN.StyleSheet.flatten(control('Assistant: Hello').parent!.props.style);
     expect(user.backgroundColor).toBe(theme === 'light' ? p.surface : p.bgElevated1);
     expect(assistant.backgroundColor).toBe(theme === 'light' ? p.bgElevated1 : p.bgElevated2);
     expect(user.backgroundColor).not.toBe(p.bg);

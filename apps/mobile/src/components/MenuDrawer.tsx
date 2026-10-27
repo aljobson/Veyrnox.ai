@@ -1,3 +1,4 @@
+import { useFaceFiltersAvailable } from '../lib/useFaceFiltersAvailable';
 import { Button, ListRow, Text, Icon, themedStyles, useThemedStyles } from './ui';
 import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Modal, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
@@ -20,6 +21,8 @@ const DRAWER_MAX = 320;
 export function MenuButton({ palette }: { palette?: Palette }) {
     const styles = useThemedStyles(sheets);
     const [open, setOpen] = useState(false);
+    const pathname = usePathname();
+    useEffect(() => setOpen(false), [pathname]);
     return (
         <>
             <Button label={t('menu.open')} variant="tertiary" accessibilityRole="button" accessibilityLabel={t('menu.open')} style={styles.hit} onPress={() => setOpen(true)}>
@@ -47,6 +50,7 @@ function MenuDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
     const [mounted, setMounted] = useState(open);
     const [still, setStill] = useState(false);
     const [profile, setProfile] = useState<Profile | null>(null);
+    const faceAvailable = useFaceFiltersAvailable();
     const active = activeItemKey(pathname);
 
     useEffect(() => {
@@ -122,7 +126,7 @@ function MenuDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
                                     </Button>
                                     {collapsed ? null : (
                                         <View style={section.id === 'tools' ? styles.grid : undefined}>
-                                            {section.items.map((item) => (
+                                            {section.items.filter(item => item.href !== '/face-filters' || faceAvailable).map((item) => (
                                                 <Row key={item.key} label={t(item.label)} icon={item.icon} active={active === item.key} half={section.id === 'tools'} onPress={() => go(item.href)} />
                                             ))}
                                         </View>

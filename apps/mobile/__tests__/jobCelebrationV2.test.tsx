@@ -54,8 +54,9 @@ afterEach(async () => {
     await act(async () => root.unmount());
     jest.useRealTimers();
 });
-async function render() {
+async function render(ready = true) {
     await act(async () => root.render(<JobScreen />));
+    if (ready) await act(async () => root.container.queryAll(n => n.props.onLoad && n.props.source?.uri === 'https://example.test/result.png')[0]?.props.onLoad());
 }
 test('inaccessible output fires nothing and consumes no rating claim', async () => {
     mockAsset.mockRejectedValue(Error('no access'));
@@ -84,6 +85,8 @@ test('rating is pushed only after the celebration promise resolves', async () =>
     await act(async () => jest.advanceTimersByTime(5000));
     expect(mockPush).not.toHaveBeenCalled();
     await act(async () => done());
+    expect(mockPush).not.toHaveBeenCalled();
+    await act(async () => jest.advanceTimersByTime(2000));
     expect(mockPush).toHaveBeenCalledWith('/rate');
     expect(claimReviewAsk()).toBe(false);
 });
@@ -114,4 +117,15 @@ test('refocusing does not restart the job poll or output fetch', async () => {
     expect(mockCelebrate).toHaveBeenCalledTimes(1);
     await act(async () => jest.advanceTimersByTime(5000));
     expect(mockPush).not.toHaveBeenCalled();
+});
+
+test('an output URL alone is not a seen result; loading media starts the viewing delay', async () => {
+    await render(false);
+    await act(async () => jest.advanceTimersByTime(10000));
+    expect(mockPush).not.toHaveBeenCalled();
+    await act(async () => root.container.queryAll(n => n.props.onLoad && n.props.source?.uri === 'https://example.test/result.png')[0].props.onLoad());
+    await act(async () => jest.advanceTimersByTime(1999));
+    expect(mockPush).not.toHaveBeenCalled();
+    await act(async () => jest.advanceTimersByTime(1));
+    expect(mockPush).toHaveBeenCalledWith('/rate');
 });

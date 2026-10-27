@@ -1,12 +1,15 @@
+import { KeyboardFocusContext } from '../KeyboardFocusContext';
 import { useContext } from 'react';
 import { FontStatus } from './FontStatus';
 import { forwardRef, useState, type ReactNode, type ComponentRef } from 'react';
 import { TextInput, View, type TextInputProps, type ViewProps } from 'react-native';
+import { BODY_MAX_FONT_SCALE } from '../../lib/a11y';
 import { ds } from '../../theme';
 import { Text } from './Text';
 import { themedStyles, useThemedStyles } from './AppearanceContext';
 export type TextFieldProps = TextInputProps & { label?: string; error?: string | boolean; trailing?: ReactNode; containerStyle?: ViewProps['style'] };
 export const TextField = forwardRef<ComponentRef<typeof TextInput>, TextFieldProps>(function TextField({ label, error, trailing, style, containerStyle, onFocus, onBlur, ...props }, ref) {
+    const revealFocused = useContext(KeyboardFocusContext);
     const [focused, setFocused] = useState(false);
     const loadedFonts = useContext(FontStatus);
     const s = useThemedStyles(sheets);
@@ -22,10 +25,12 @@ export const TextField = forwardRef<ComponentRef<typeof TextInput>, TextFieldPro
                     ref={ref}
                     accessibilityLabel={props.accessibilityLabel ?? label}
                     allowFontScaling
+                    maxFontSizeMultiplier={BODY_MAX_FONT_SCALE}
                     placeholderTextColor={s.placeholder.color}
                     style={[s.input, style, family && !loadedFonts.has(family) ? fallback : undefined]}
                     onFocus={(e) => {
                         setFocused(true);
+                        revealFocused?.();
                         onFocus?.(e);
                     }}
                     onBlur={(e) => {
@@ -52,7 +57,7 @@ const sheets = themedStyles((p, ramp) => ({
         alignItems: 'center',
         paddingHorizontal: ds.space.md,
         backgroundColor: p.surface,
-        borderColor: p.borderSubtle,
+        borderColor: p.borderStrong,
         borderWidth: 1,
         borderRadius: ds.radius.md,
     },

@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
     chipText: { color: colors.body },
     chipTextOn: { color: colors.accentInk, fontWeight: '600' },
     danger: { color: colors.danger, fontWeight: '600' },
-    input: { backgroundColor: colors.background, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 12, color: colors.text, fontSize: 16, minHeight: 48 },
+    input: { backgroundColor: colors.background, borderColor: colors.borderStrong, borderWidth: 1, borderRadius: 12, padding: 12, color: colors.text, fontSize: 16, minHeight: 48 },
     send: { backgroundColor: colors.accent, borderRadius: 12, alignItems: 'center', justifyContent: 'center', paddingVertical: 12, marginTop: 6 },
     sendText: { color: colors.accentInk, fontWeight: '700' },
     off: { opacity: 0.4 },

@@ -62,7 +62,7 @@ const styles = StyleSheet.create({
     box: { gap: 10 },
     field: { gap: 4 },
     label: { color: colors.text, fontSize: 14, fontWeight: '600', marginTop: 6 },
-    input: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 12, color: colors.text, fontSize: 16, minHeight: 48 },
+    input: { backgroundColor: colors.surface, borderColor: colors.borderStrong, borderWidth: 1, borderRadius: 12, padding: 12, color: colors.text, fontSize: 16, minHeight: 48 },
     muted: { color: colors.muted, fontSize: 13 },
     over: { color: colors.danger },
     chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 },

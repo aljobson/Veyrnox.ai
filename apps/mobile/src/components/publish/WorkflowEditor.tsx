@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
     field: { gap: 4 },
     label: { color: colors.muted, fontSize: 13 },
     row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
-    input: { color: colors.text, backgroundColor: colors.background, borderRadius: 10, borderColor: colors.border, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10, minHeight: 44 },
+    input: { color: colors.text, backgroundColor: colors.background, borderRadius: 10, borderColor: colors.borderStrong, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10, minHeight: 44 },
     multi: { minHeight: 96, textAlignVertical: 'top' },
     chip: { justifyContent: 'center', paddingHorizontal: 12, borderRadius: 10, backgroundColor: colors.background, borderColor: colors.border, borderWidth: 1 },
     chipOn: { backgroundColor: colors.accent, borderColor: colors.accent },

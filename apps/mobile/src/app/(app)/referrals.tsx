@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
     buttonText: { color: colors.accentInk, fontWeight: '700', fontSize: 16 },
     muted: { color: colors.muted },
     attach: { gap: 10, paddingTop: 12 },
-    input: { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 14, fontSize: 16 },
+    input: { color: colors.text, backgroundColor: colors.surface, borderColor: colors.borderStrong, borderWidth: 1, borderRadius: 12, padding: 14, fontSize: 16 },
     secondary: { borderColor: colors.border, borderWidth: 1, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
     secondaryText: { color: colors.text, fontWeight: '600' },
     off: { opacity: 0.4 },

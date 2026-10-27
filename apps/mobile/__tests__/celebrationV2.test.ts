@@ -142,6 +142,9 @@ test('rating waits for done, uses the existing delay otherwise, and never fires 
     expect(push).not.toHaveBeenCalled();
     events[0].onDone();
     await Promise.resolve();
+    jest.advanceTimersByTime(1999);
+    expect(push).not.toHaveBeenCalled();
+    jest.advanceTimersByTime(1);
     expect(push).toHaveBeenCalledTimes(1);
     push.mockClear();
     const small = c.celebrateOutput('two', 'image/png', true);

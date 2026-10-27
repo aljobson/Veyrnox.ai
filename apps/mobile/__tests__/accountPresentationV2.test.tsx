@@ -24,7 +24,7 @@ test('legacy account styles retain every key and value for native-control import
         actionText: { color: colors.text, fontSize: 15, fontWeight: '600' },
         danger: { color: colors.danger }, off: { opacity: 0.5 },
         status: { color: colors.accent, fontSize: 14 },
-        input: { ...touchTarget, color: colors.text, backgroundColor: colors.background, borderColor: colors.border, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, fontSize: 16 },
+        input: { ...touchTarget, color: colors.text, backgroundColor: colors.background, borderColor: colors.borderStrong, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, fontSize: 16 },
         label: { color: colors.muted, fontSize: 13 },
     });
     expect(RN.Platform.OS).toBe('ios');

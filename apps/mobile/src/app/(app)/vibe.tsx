@@ -1,3 +1,4 @@
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
@@ -38,6 +39,7 @@ const GOAL_PRESENTATION: Record<Goal, { icon: MenuIcon }> = {
 };
 
 export default function Vibe() {
+    const insets = useSafeAreaInsets();
     const router = useRouter();
     const styles = useThemedStyles(sheets);
     const { api } = useAuth();
@@ -63,11 +65,11 @@ export default function Vibe() {
         };
     }, []);
 
-    async function continueLanguage() {
-        if (picked !== getLocale()) {
-            await storeLanguage(picked);
-            void saveAccountLanguage(api, picked);
-            if (!chooseLocale(picked)) {
+    async function continueLanguage(next = picked) {
+        if (next !== getLocale()) {
+            await storeLanguage(next);
+            void saveAccountLanguage(api, next);
+            if (!chooseLocale(next)) {
                 // Saved, not shown yet: say so, then go on in English.
                 setLanguageNote(true);
                 return;
@@ -130,7 +132,7 @@ export default function Vibe() {
     const skipLink = <Button variant="tertiary" label={t('vibe.skip')} onPress={() => void skip()} />;
 
     return (
-        <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <KeyboardAvoidingView style={[styles.screen, { paddingTop: insets.top, paddingBottom: insets.bottom }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <Stack.Screen options={{ headerShown: false, gestureEnabled: false }} />
             {/* Questions start at the top so the first choice is where the thumb expects it on every screen; the intro, the skip note and the card sit in the middle. */}
             <ScrollView contentContainerStyle={key ? styles.bodyTop : styles.body} keyboardShouldPersistTaps="handled">
@@ -152,6 +154,7 @@ export default function Vibe() {
                                     onPress={() => {
                                         setPicked(l.code);
                                         setLanguageNote(false);
+                                        void continueLanguage(l.code);
                                     }}
                                 >
                                     <Text style={styles.choiceLabel}>{l.name}</Text>
@@ -208,7 +211,7 @@ export default function Vibe() {
                                             icon={GOAL_PRESENTATION[goal].icon}
                                             title={t(`vibe.goal.${goal}`)}
                                             selected={draft.goal === goal}
-                                            onPress={() => setDraft((d) => ({ ...d, goal }))}
+                                            onPress={() => choose('goal', goal)}
                                         />
                                     </View>
                                 ))}
@@ -226,7 +229,7 @@ export default function Vibe() {
                                             accessibilityLabel={t(`vibe.chaos.${i}`)}
                                             accessibilityState={selectedState(draft.chaos === i)}
                                             style={[styles.dialStop, draft.chaos === i && styles.dialStopOn]}
-                                            onPress={() => setDraft((d) => ({ ...d, chaos: i }))}
+                                            onPress={() => { setDraft((d) => ({ ...d, chaos: i })); setStep(s => s + 1); }}
                                         />
                                     ))}
                                 </View>
@@ -282,25 +285,22 @@ export default function Vibe() {
             </ScrollView>
 
             <View style={styles.footer}>
-                {step === 0 && language === 'ask' ? (
+                {step === 0 && language === 'ask' && languageNote ? (
                     <Button label={t('vibe.language.continue')} onPress={() => (languageNote ? setLanguage('done') : void continueLanguage())} />
                 ) : null}
                 {step === 0 && language === 'done' ? (
                     <>
                         <Button label={t('vibe.start')} onPress={() => setStep(1)} />
-                        {retake === '1' ? null : skipLink}
                     </>
                 ) : null}
                 {step === -1 ? <Button label={t('vibe.skipped.go')} onPress={() => router.replace('/')} /> : null}
-                {key === 'chaos' ? <Button label={t('vibe.next')} onPress={() => setStep(step + 1)} /> : null}
-                {key === 'goal' ? <Button label={t('vibe.next')} disabled={!draft.goal} onPress={() => setStep(step + 1)} /> : null}
                 {key === 'voice' ? <Button label={saving ? t('vibe.saving') : t('vibe.voice.done')} disabled={!draft.voice || saving} onPress={() => void finish()} /> : null}
                 {key ? (
                     <View style={styles.row}>
                         {step > 1 ? <Button variant="tertiary" label={t('vibe.back')} onPress={() => setStep(step - 1)} /> : <View />}
-                        {skipLink}
                     </View>
                 ) : null}
+                {step >= 0 && step <= TOTAL ? skipLink : null}
                 {step === TOTAL + 1 ? (
                     <>
                         <Button label={t('vibe.card.first')} onPress={() => void makeFirst()} />
@@ -343,7 +343,7 @@ function Card({ answers, synced }: { answers: CreatorAnswers; synced: boolean })
 const sheets = themedStyles((p) => ({
     screen: { flex: 1, backgroundColor: p.bg },
     body: { flexGrow: 1, justifyContent: 'center', padding: ds.space.gutter },
-    bodyTop: { flexGrow: 1, padding: ds.space.gutter, paddingTop: 72 },
+    bodyTop: { flexGrow: 1, padding: ds.space.gutter },
     center: { alignItems: 'center', gap: ds.space.lg },
     question: { gap: ds.space.lg },
     progress: { flexDirection: 'row', gap: ds.space.xs },

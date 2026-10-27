@@ -84,7 +84,7 @@ export default function Templates() {
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 16 },
     header: { color: colors.muted, fontSize: 12, fontWeight: '700', letterSpacing: 1, paddingTop: 20, paddingBottom: 6 },
-    search: { minHeight: 48, marginTop: 12, marginBottom: 4, borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, backgroundColor: colors.surface, color: colors.text, paddingHorizontal: 14, fontSize: 16 },
+    search: { minHeight: 48, marginTop: 12, marginBottom: 4, borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.borderStrong, backgroundColor: colors.surface, color: colors.text, paddingHorizontal: 14, fontSize: 16 },
     row: { flexDirection: 'row', gap: 12, paddingVertical: 10, borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth },
     poster: { width: 64, height: 96, borderRadius: 8, backgroundColor: colors.surface },
     text: { flex: 1, gap: 3 },

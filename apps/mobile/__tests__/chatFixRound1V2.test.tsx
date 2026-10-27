@@ -126,7 +126,7 @@ test('save, add and make actions have only the primitive disabled fade', async (
     expect(opacity(control('Save'))).toBe(0.4);
 });
 
-test('send price follows the Send disabled fade and retains its warning tone', async () => {
+test('send price and the disabled primary stay readable without a fade', async () => {
     const props = { model: { id: 'm', name: 'Model', maker_label: 'Maker', credits_per_reply: 2, gated: false },
         options: { thinking: false, web: false }, draft: '', price: 2, sending: false, stopping: false, images: [], imageExtra: null,
         maxImages: 4, placeholder: 'Ask', onDraft: jest.fn(), onModel: jest.fn(), onOptions: jest.fn(), onLibrary: jest.fn(),
@@ -136,7 +136,7 @@ test('send price follows the Send disabled fade and retains its warning tone', a
         const price = root.container.queryAll(n => n.children.includes(plural('chat.sendPriceShort', 2)))[0];
         expect(style(price)).toMatchObject({ color: tokensForScheme('light').warning, fontVariant: ['tabular-nums'] });
         expect(opacity(price)).toBe(opacity(control(plural('chat.sendPrice', 2))));
-        expect(opacity(price)).toBe(canSend ? 1 : 0.4);
+        expect(opacity(price)).toBe(1);
     }
 });
 

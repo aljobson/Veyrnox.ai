@@ -55,7 +55,8 @@ test('sign-in consent survives touch and accessibility legal reading, including 
     const checkbox = () => root.container.queryAll(n => n.props.accessibilityRole === 'checkbox')[0];
     await act(async () => checkbox().props.onClick(event));
     expect(checkbox().props.accessibilityState.checked).toBe(true);
-    await act(async () => checkbox().props.onAccessibilityAction({ nativeEvent: { actionName: 'terms' } }));
+    expect(root.container.queryAll(n => n.props.accessibilityRole === 'link' && n.props.accessibilityLabel === 'Terms').length).toBeGreaterThan(0);
+    await press('Terms');
     expect(text()).toContain(legalData('terms', 'en').messages.title);
     await press('Privacy');
     expect(text()).toContain(legalData('privacy', 'en').messages.title);
@@ -63,11 +64,19 @@ test('sign-in consent survives touch and accessibility legal reading, including 
     expect(text()).toContain(legalData('terms', 'en').messages.title);
     await press('Close');
     expect(checkbox().props.accessibilityState.checked).toBe(true);
-    const privacy = root.container.queryAll(n => n.props.accessibilityRole === 'link' && n.props.onPress && textOf(n) === 'Privacy Policy')[0];
-    expect(privacy).toBeDefined();
-    await act(async () => privacy.props.onPress(event));
-    expect(event.stopPropagation).toHaveBeenCalled();
+    await press('Privacy Policy');
     await press('Close');
+    expect(checkbox().props.accessibilityState.checked).toBe(true);
+    const sentence = () => root.container.queryAll(n => n.props.importantForAccessibility === 'no-hide-descendants' && n.props.onClick)[0];
+    expect(sentence().props.accessible).toBe(false);
+    expect(sentence().props.accessibilityElementsHidden).toBe(true);
+    expect(sentence().queryAll(n => n.props.accessibilityRole === 'link')).toHaveLength(0);
+    await act(async () => sentence().props.onClick(event));
+    expect(checkbox().props.accessibilityState.checked).toBe(false);
+    await press('Terms');
+    await press('Close');
+    expect(checkbox().props.accessibilityState.checked).toBe(false);
+    await act(async () => sentence().props.onClick(event));
     expect(checkbox().props.accessibilityState.checked).toBe(true);
 });
 

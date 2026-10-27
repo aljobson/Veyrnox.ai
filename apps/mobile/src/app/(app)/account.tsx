@@ -1,3 +1,4 @@
+import { confirmSignOut } from '../../lib/confirmSignOut';
 import { Button, Card, ListRow, Text, PriceText, themedStyles, useThemedStyles } from '../../components/ui';
 
 import { Link, Stack, useRouter } from 'expo-router';
@@ -102,9 +103,7 @@ export default function Account() {
                     <Text variant="body" style={styles.rowText}>{profile?.email ?? t('acct.profileLoading')}</Text>
                     {profile ? <Text variant="footnote" style={styles.note}>{t('acct.signedInWith', { method: t(signInMethodKey(profile.provider)) })}</Text> : null}
                 </Card>
-                <Button label={t('public.account.signOut')} variant="tertiary" accessibilityRole="button" onPress={() => void onSignOut()}>
-                    <Text variant="body" style={styles.signOutText}>{t('public.account.signOut')}</Text>
-                </Button>
+                <Row label={t('public.account.signOut')} danger onPress={() => confirmSignOut(onSignOut)} />
                 <Link href="/security" asChild>
                     <Row icon="user" label={t('acct.securityRow')} />
                 </Link>
@@ -239,7 +238,7 @@ interface RowProps {
 // Forwards the ref and any props a parent Link adds, so it also works as a Link child.
 const Row = ({ label, price, icon, onPress, disabled, danger, ...rest }: RowProps) => {
     const styles = useThemedStyles(sheets);
-    if (danger) return <Button {...rest} variant="tertiary" tone="danger" label={label} icon={icon} accessibilityRole="button" accessibilityState={{ disabled: Boolean(disabled) }} disabled={disabled} onPress={onPress} />;
+    if (danger) return <Button {...rest} variant="tertiary" tone="danger" label={label} icon={icon} style={[styles.row, { justifyContent: 'flex-start' }]} accessibilityRole="button" accessibilityState={{ disabled: Boolean(disabled) }} disabled={disabled} onPress={onPress} />;
     return <ListRow {...rest} title={price ? <PriceText text={label} price={price} variant="bodyStrong" /> : label} icon={icon} accessibilityRole="button" accessibilityState={{ disabled: Boolean(disabled) }} disabled={disabled} style={[styles.row, disabled && styles.off]} onPress={onPress} />;
 };
 

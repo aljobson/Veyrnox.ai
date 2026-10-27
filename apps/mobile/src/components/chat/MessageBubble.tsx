@@ -9,8 +9,8 @@ export function MessageBubble({ message, sending, drafts }: { message: ChatMessa
     const styles = useThemedStyles(sheets);
     const shown = drafts.length ? withoutDrafts(message.content) : message.content;
     return (
-        <View accessible accessibilityLabel={`${message.role === 'user' ? 'You' : 'Assistant'}: ${message.content || (sending ? 'writing' : '')}`} style={[styles.bubble, message.role === 'user' ? styles.user : styles.assistant]}>
-            <Text variant="body" style={[styles.text, message.role === 'user' && styles.userText]}>{shown || (sending && !message.content ? '…' : '')}</Text>
+        <View style={[styles.bubble, message.role === 'user' ? styles.user : styles.assistant]}>
+            <Text accessible accessibilityLabel={`${message.role === 'user' ? 'You' : 'Assistant'}: ${shown || (sending ? 'writing' : '')}`} variant="body" style={[styles.text, message.role === 'user' && styles.userText]}>{shown || (sending && !message.content ? '…' : '')}</Text>
             {drafts.length ? <DraftCards drafts={drafts} /> : null}
             {message.role === 'assistant' && message.credits ? <Text variant="caption" style={styles.cost}>{plural('chat.replyCost', message.credits)}</Text> : null}
         </View>

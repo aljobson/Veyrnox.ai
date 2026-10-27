@@ -13,12 +13,12 @@ export function Checkbox({
     return (
         <Pressable {...props} accessibilityRole="checkbox" accessibilityState={{ ...props.accessibilityState, checked }} onPress={() => onChange(!checked)} style={(state) => [s.row, typeof style === 'function' ? style(state) : style]}>
             <View style={[s.box, checked && s.checked]}>{checked ? <Icon name="check" size={16} tint={s.ink.color} /> : null}</View>
-            <View style={s.copy}>{children}</View>
+            {children ? <View style={s.copy}>{children}</View> : null}
         </Pressable>
     );
 }
 const sheets = themedStyles((p) => ({
-    row: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: ds.space.md },
+    row: { minWidth: 44, minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: ds.space.md },
     copy: { flex: 1 },
     box: { width: 22, height: 22, borderRadius: ds.radius.xs, borderWidth: 1, borderColor: p.borderStrong, justifyContent: 'center', alignItems: 'center' },
     checked: { backgroundColor: p.accent, borderColor: p.accent },

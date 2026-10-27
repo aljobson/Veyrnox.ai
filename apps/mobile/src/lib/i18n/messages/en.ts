@@ -99,6 +99,7 @@ import area_slip from './en/slip';
 import area_smartlink from './en/smartlink';
 import area_social from './en/social';
 import area_srch from './en/srch';
+import area_start from './en/start';
 import area_stem from './en/stem';
 import area_stems from './en/stems';
 import area_tabs from './en/tabs';
@@ -210,6 +211,7 @@ const catalog = {
     ...area_smartlink,
     ...area_social,
     ...area_srch,
+    ...area_start,
     ...area_stem,
     ...area_stems,
     ...area_tabs,

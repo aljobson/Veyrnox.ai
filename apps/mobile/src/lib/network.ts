@@ -1,28 +1,7 @@
 import { API_BASE, ApiError } from './api';
 
-// Whether the last network call worked. Driven by real request outcomes (a request that fails to connect marks the
-// app offline, any response marks it online), so no extra permission or native module is needed. A reconnect
-// listener can call markOnline() too.
-
-type Listener = () => void;
-
-let offline = false;
-const listeners = new Set<Listener>();
-
-function set(next: boolean) {
-    if (next === offline) return;
-    offline = next;
-    listeners.forEach((fn) => fn());
-}
-
-export const markOffline = () => set(true);
-export const markOnline = () => set(false);
-export const isOffline = (): boolean => offline;
-
-export function subscribe(listener: Listener): () => void {
-    listeners.add(listener);
-    return () => void listeners.delete(listener);
-}
+import { isOffline, markOffline, markOnline } from './networkState';
+export { isOffline, markOffline, markOnline, subscribe, resetNetworkState } from './networkState';
 
 // ApiClient reports a failure to connect as ApiError(0, 'network').
 export function isNetworkError(err: unknown): boolean {
@@ -54,13 +33,13 @@ export class OfflineError extends Error {
 // A paid action is never queued or retried later. Call this before submitting one: when the app knows it is offline
 // it throws, and the screen shows the offline message instead of sending.
 export function requireOnline(): void {
-    if (offline) throw new OfflineError();
+    if (isOffline()) throw new OfflineError();
 }
 
 const PROBE_TIMEOUT_MS = 4000;
 
 // A cheap anonymous GET to our own API, to find out whether we really are offline.
-async function defaultProbe(): Promise<boolean> {
+export async function defaultProbe(): Promise<boolean> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
     try {
@@ -77,7 +56,7 @@ async function defaultProbe(): Promise<boolean> {
 // stale after the network comes back; still unreachable means throw OfflineError and send nothing. The action is
 // never queued for later.
 export async function ensureOnline(probe: () => Promise<boolean> = defaultProbe): Promise<void> {
-    if (!offline) return;
+    if (!isOffline()) return;
     if (await probe()) {
         markOnline();
         return;
@@ -86,9 +65,3 @@ export async function ensureOnline(probe: () => Promise<boolean> = defaultProbe)
 }
 
 export const OFFLINE_PAID_MESSAGE = 'You are offline. Nothing was sent and you were not charged. Reconnect and try again.';
-
-// For tests.
-export function resetNetworkState() {
-    offline = false;
-    listeners.clear();
-}

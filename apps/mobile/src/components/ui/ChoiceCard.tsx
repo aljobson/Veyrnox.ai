@@ -31,7 +31,7 @@ export function ChoiceCard({ icon, title, detail, selected, onPress }: { icon: M
     );
 }
 const sheets = themedStyles((p) => ({
-    card: { gap: ds.space.sm, minHeight: 144 },
+    card: { borderWidth: 2, gap: ds.space.sm, minHeight: 144 },
     top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     circle: { width: 44, height: 44, borderRadius: ds.radius.pill, backgroundColor: p.surface, alignItems: 'center', justifyContent: 'center' },
     check: { width: 22, height: 22, borderRadius: ds.radius.pill, backgroundColor: p.accent, alignItems: 'center', justifyContent: 'center' },

@@ -141,7 +141,7 @@ export default function Publish() {
                 <Text variant="display" style={styles.title} accessibilityRole="header">{t('publishHome.title')}</Text>
                 <Text variant="body" style={styles.lead}>{t('publishHome.lead')}</Text>
                 <Card accessibilityRole="button" accessibilityLabel={t('publishHome.changeBrand', { brand: brandName })} style={[styles.brand]} onPress={() => router.push('/publish/brands')}>
-                    <View style={styles.brandMark}><Text variant="bodyStrong" style={styles.brandInitial}>{brandName.slice(0, 1)}</Text></View>
+                    <View style={styles.brandMark}><Text variant="bodyStrong" style={styles.brandInitial}>{brandName.slice(0, 1).toUpperCase()}</Text></View>
                     <View style={styles.brandCopy}>
                         <Text variant="caption" style={styles.brandLabel}>{t('publishHome.publishingFor')}</Text>
                         <Text variant="bodyStrong" style={styles.brandName} numberOfLines={1}>{brandName}</Text>

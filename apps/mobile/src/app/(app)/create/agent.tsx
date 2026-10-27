@@ -1,6 +1,8 @@
+import { KeyboardFormScrollView } from '../../../components/KeyboardFormScrollView';
+import { KeyboardScreen } from '../../../components/KeyboardScreen';
 import { Link, Stack, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import { Platform, ScrollView, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { ApiError } from '../../../lib/api';
 import { MIN_TARGET } from '../../../lib/a11y';
@@ -92,9 +94,9 @@ export default function Agent() {
     }
 
     return (
-        <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={88}>
+        <KeyboardScreen style={styles.screen}>
             <Stack.Screen options={{ title: 'Video Agent' }} />
-            <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+            <KeyboardFormScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
                 <View style={styles.hero}>
                     <Text variant="caption" style={styles.eyebrow}>{t('videoAgent.eyebrow')}</Text>
                     <Text variant="display" style={styles.title} accessibilityRole="header">{t('videoAgent.title')}</Text>
@@ -221,8 +223,8 @@ export default function Agent() {
                     <Text variant="callout" style={[styles.stepTitle, styles.helpHeading]}>{t('videoAgent.money')}</Text>
                     <Text variant="footnote" style={styles.stepBody}>{t('videoAgent.moneyHelp')}</Text>
                 </Card>
-            </ScrollView>
-        </KeyboardAvoidingView>
+            </KeyboardFormScrollView>
+        </KeyboardScreen>
     );
 }
 

@@ -1,3 +1,4 @@
+import { Button } from '../../../components/ui';
 import { randomUUID } from 'expo-crypto';
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -133,7 +134,7 @@ function Breakdown({ film, change }: Props) {
     return <View style={styles.section}>
         <Field label="Script, treatment or idea" value={film.script} onChange={(script) => change({ ...film, script })} multiline maxLength={24_000} placeholder="Paste the source material you are breaking down." />
         {film.shots.map((shot, index) => <View key={`${index}-${shot.id}`} style={styles.card}>
-            <View style={styles.titleRow}><Text style={styles.cardTitle}>Shot {index + 1}</Text><Pressable accessibilityRole="button" onPress={() => change({ ...film, shots: film.shots.filter((_, i) => i !== index) })}><Text style={styles.remove}>Remove</Text></Pressable></View>
+            <View style={styles.titleRow}><Text style={styles.cardTitle}>Shot {index + 1}</Text><Button variant="tertiary" tone="danger" size="md" label="Remove" onPress={() => change({ ...film, shots: film.shots.filter((_, i) => i !== index) })} /></View>
             {SHOT_LANES.map(([lane, fields]) => <View key={lane} style={styles.fieldGroup}><Text style={styles.groupTitle}>{lane}</Text>{fields.map(([key, label]) => <Field key={key} label={label} value={String(shot[key] ?? '')} onChange={(value) => setShot(index, { ...shot, [key]: value })} />)}</View>)}
             <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: shot.oneAction }} style={[styles.choice, shot.oneAction && styles.choiceOn]} onPress={() => setShot(index, { ...shot, oneAction: !shot.oneAction })}><Text style={styles.choiceText}>{shot.oneAction ? '✓ ' : ''}One action in this clip</Text></Pressable>
         </View>)}

@@ -51,9 +51,9 @@ export const SCREENS: readonly ScreenDef[] = [
     { id: 'about', titleKey: 'srch.s.about', href: '/about', keywords: 'company legal terms privacy' },
 ];
 
-export function screenEntries(title: (key: string) => string): SearchEntry[] {
+export function screenEntries(title: (key: string) => string, faceFiltersAvailable = false): SearchEntry[] {
     return [
-        ...SCREENS.map((s) => ({ id: `screen:${s.id}`, kind: 'screen' as const, title: title(s.titleKey), detail: '', href: s.href, keywords: s.keywords })),
+        ...SCREENS.filter(s => s.id !== 'face-filters' || faceFiltersAvailable).map((s) => ({ id: `screen:${s.id}`, kind: 'screen' as const, title: title(s.titleKey), detail: '', href: s.href, keywords: s.keywords })),
         ...CREATIVE_FEATURES.map((feature) => ({
             id: `feature:${feature.slug}`,
             kind: 'screen' as const,

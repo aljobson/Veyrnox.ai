@@ -184,3 +184,10 @@ test('every registered icon file exists, including every host-prep icon', () => 
     expect(paths.length).toBeGreaterThanOrEqual(55);
     paths.forEach((file) => expect(fs.existsSync(path.resolve(root, 'lib', file))).toBe(true));
 });
+
+test.each(['light', 'dark', 'oled'] as const)('%s input boundaries and disabled labels meet 3:1', theme => {
+    const p = tokensForScheme(theme === 'light' ? 'light' : 'dark', { ...DEFAULT_APPEARANCE, theme });
+    for (const adjacent of [p.bg, p.bgElevated1, p.bgElevated2, p.surface, p.surfacePressed])
+        expect(contrast(p.borderStrong, adjacent)).toBeGreaterThanOrEqual(3);
+    expect(contrast(p.textTertiary, p.surface)).toBeGreaterThanOrEqual(3);
+});

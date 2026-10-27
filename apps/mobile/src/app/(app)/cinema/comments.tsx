@@ -206,7 +206,7 @@ export default function Comments() {
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 16 },
     compose: { gap: 8, paddingTop: 12 },
-    input: { minHeight: 90, color: colors.text, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 12, textAlignVertical: 'top', fontSize: 16 },
+    input: { minHeight: 90, color: colors.text, backgroundColor: colors.surface, borderColor: colors.borderStrong, borderWidth: 1, borderRadius: 12, padding: 12, textAlignVertical: 'top', fontSize: 16 },
     composeRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
     button: { backgroundColor: colors.accent, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
     off: { opacity: 0.4 },

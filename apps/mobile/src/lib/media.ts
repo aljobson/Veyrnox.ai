@@ -3,7 +3,7 @@ import type { GenerationReference } from './sources';
 import { aiConsent } from './aiConsentStore';
 import { appCache } from './appCache';
 import { POLICIES, type CacheMeta } from './cache';
-import { ensureOnline, observe } from './network';
+import { ensureOnline, observe, markOnline, markOffline } from './network';
 import { ApiError, API_BASE, type ApiClient } from './api';
 
 export interface CatalogModel {
@@ -107,7 +107,9 @@ export async function fetchCatalog(): Promise<CatalogModel[]> {
     let res: Response;
     try {
         res = await fetch(`${API_BASE}/api/catalog`);
+        markOnline();
     } catch {
+        markOffline();
         throw new ApiError(0, 'network');
     }
     if (!res.ok) throw new ApiError(res.status, 'catalog_unavailable');

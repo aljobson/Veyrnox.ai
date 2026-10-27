@@ -1,3 +1,4 @@
+import { useAnnouncement } from '../lib/useAnnouncement';
 import { discardCacheCopy } from '../lib/cacheFiles';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
@@ -28,6 +29,7 @@ export function FaceFiltersFlow({ api, owner }: { api: ApiClient; owner: string 
     const [checked, setChecked] = useState(false);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    useAnnouncement(error);
     const [job, setJob] = useState<string | null>(null);
     const submit = useRef(createGenerationSubmit());
     const source = useRef<string | null>(null);
@@ -155,6 +157,6 @@ const styles = StyleSheet.create({
     heading: { color: colors.text, fontSize: 20, fontWeight: '700' }, text: { color: colors.text, fontSize: 16 },
     card: { minHeight: 44, padding: 14, gap: 6, borderWidth: 1, borderColor: colors.border, borderRadius: 12, backgroundColor: colors.surface },
     selected: { borderColor: colors.accent }, disabled: { opacity: 0.4 }, group: { gap: 8 },
-    input: { minHeight: 44, padding: 14, color: colors.text, borderColor: colors.border, borderWidth: 1, borderRadius: 12 },
+    input: { minHeight: 44, padding: 14, color: colors.text, borderColor: colors.borderStrong, borderWidth: 1, borderRadius: 12 },
     photo: { width: '100%', height: 280 }, price: { color: colors.money, fontSize: 16 }, error: { color: colors.danger },
 });

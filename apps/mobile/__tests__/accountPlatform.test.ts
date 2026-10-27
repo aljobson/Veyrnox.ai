@@ -97,7 +97,7 @@ describe('catalogue pages', () => {
 
 describe('search', () => {
     const title = (k: string) => ({ 'srch.s.security': 'Account security', 'srch.s.account': 'Account', 'srch.s.help': 'Help' })[k] ?? k;
-    const entries = [...screenEntries(title), ...modelEntries([model({ id: 'm/1', name: 'Sunrise Pro' })])];
+    const entries = [...screenEntries(title, true), ...modelEntries([model({ id: 'm/1', name: 'Sunrise Pro' })])];
     test('finds a screen by title, by a word in it, and by a synonym', () => {
         expect(searchEntries('account', entries)[0].href).toBe('/account');
         expect(searchEntries('secur', entries).some((e) => e.href === '/security')).toBe(true);
@@ -124,4 +124,11 @@ describe('search', () => {
             expect(searchEntries(query, entries).map((entry) => entry.href)).toContain(href);
         }
     });
+});
+
+test('Face Filters search entry is hidden until availability is known open', () => {
+    const hrefs = (open?: boolean) => screenEntries(k => k, open).map(e => e.href);
+    expect(hrefs()).not.toContain('/face-filters');
+    expect(hrefs(false)).not.toContain('/face-filters');
+    expect(hrefs(true)).toContain('/face-filters');
 });

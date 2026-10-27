@@ -1,3 +1,6 @@
+import { t } from '../../lib/i18n';
+import { useOfflineRecovery } from '../../lib/useOfflineRecovery';
+import { Text } from '../../components/ui';
 import { CelebrationHost } from '../../components/CelebrationHost';
 import { CheckInModal } from '../../components/CheckInModal';
 import { Redirect, Stack } from 'expo-router';
@@ -14,6 +17,7 @@ import { PaywallPrompt } from '../../components/PaywallPrompt';
 import { getThemePreference, paletteForScheme, resolveScheme } from '../../theme';
 
 export default function AppLayout() {
+    useOfflineRecovery();
     const { status } = useAuth();
     const systemScheme = useColorScheme();
     const palette = paletteForScheme(resolveScheme(getThemePreference(), systemScheme));
@@ -27,9 +31,9 @@ export default function AppLayout() {
                 <CheckInModal />
                 <PaywallPrompt />
                 <Stack
-                    screenLayout={({ children }) => (
+                    screenLayout={({ children, route }) => (
                         <>
-                            <OfflineBanner />
+                            <OfflineBanner topInset={route.name === '(tabs)'} />
                             <ServiceBanner />
                             {children}
                         </>
@@ -37,6 +41,7 @@ export default function AppLayout() {
                     screenOptions={({ navigation }) => ({
                         headerStyle: { backgroundColor: palette.background },
                         headerTintColor: palette.text,
+                        headerTitle: ({ children }) => <Text variant="title3" numberOfLines={1}>{children}</Text>,
                         headerBackButtonDisplayMode: 'minimal',
                         contentStyle: { backgroundColor: palette.background },
                         // Every screen has a way back: the native back when there is history, otherwise a button to Explore.
@@ -44,6 +49,10 @@ export default function AppLayout() {
                     })}
                 >
                     <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                    <Stack.Screen name="welcome" options={{ headerShown: false }} />
+                    <Stack.Screen name="start" options={{ headerShown: false }} />
+                    <Stack.Screen name="vibe" options={{ headerShown: false }} />
+                    <Stack.Screen name="rate" options={{ title: t('rate.title'), headerShown: false, presentation: 'modal' }} />
                 </Stack>
             </MfaGate>
         </>

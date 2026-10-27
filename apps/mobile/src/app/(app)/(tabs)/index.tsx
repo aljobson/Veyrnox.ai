@@ -1,7 +1,7 @@
-import { Link, useFocusEffect, useRouter } from 'expo-router';
+import { Link, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, ScrollView, View } from 'react-native';
+import { type ComponentRef, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, ScrollView, TextInput, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { celebrateFinished } from '../../../lib/celebrate';
 import { ALL_CATEGORIES, ALL_TYPES, categoriesFor, filterPresets, firstModelFor, pickUp, promptHref, recentCreations, type TypeFilter } from '../../../lib/explore';
@@ -37,6 +37,19 @@ export default function Explore() {
     const { scheme } = useAppearance();
     const { api } = useAuth();
     const router = useRouter();
+    const { focusIdea } = useLocalSearchParams<{ focusIdea?: string }>();
+    const ideaField = useRef<ComponentRef<typeof TextInput>>(null);
+    const page = useRef<ComponentRef<typeof ScrollView>>(null);
+    const ideaY = useRef(0);
+    useFocusEffect(useCallback(() => {
+        if (focusIdea !== '1') return;
+        const timer = setTimeout(() => {
+            page.current?.scrollTo({ y: ideaY.current, animated: true });
+            ideaField.current?.focus();
+            router.setParams({ focusIdea: undefined });
+        }, 350);
+        return () => clearTimeout(timer);
+    }, [focusIdea, router]));
     const [prompt, setPrompt] = useState('');
     const [catalog, setCatalog] = useState<CatalogModel[]>([]);
     const [note, setNote] = useState<string | null>(null);
@@ -129,7 +142,7 @@ export default function Explore() {
     return (
         <>
             <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-            <ScrollView style={styles.scroll} contentContainerStyle={styles.screen} keyboardShouldPersistTaps="handled">
+            <ScrollView ref={page} automaticallyAdjustKeyboardInsets style={styles.scroll} contentContainerStyle={styles.screen} keyboardShouldPersistTaps="handled">
                 <View style={styles.intro}>
                     <Text variant="title1" style={styles.pageTitle} accessibilityRole="header">
                         {t('explore.start.title')}
@@ -145,11 +158,12 @@ export default function Explore() {
                     <StartOption href="/film" style={styles.startOption} icon="slate" title={t('menu.film')} body={t('explore.start.film.body')} hint={t('explore.start.film.hint')} divided />
                 </Card>
 
-                <Card style={styles.composer}>
+                <Card style={styles.composer} onLayout={event => { ideaY.current = event.nativeEvent.layout.y; }}>
                     <Text variant="title3" style={styles.composerTitle}>
                         {t('explore.ideaTitle')}
                     </Text>
                     <TextField
+                        ref={ideaField}
                         accessibilityLabel={t('explore.ideaTitle')}
                         placeholder={t('explore.promptPlaceholder')}
                         placeholderTextColor={colors.muted}
@@ -228,7 +242,7 @@ export default function Explore() {
                                 clearButtonMode="while-editing"
                             />
                         ) : null}
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+                        <ScrollView keyboardShouldPersistTaps="handled" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
                             {TYPES.map((k) => (
                                 <Chip key={k} label={t(`explore.type.${k}`)} selected={k === type} onPress={() => pickType(k)} />
                             ))}
@@ -246,7 +260,7 @@ export default function Explore() {
                             ) : null}
                         </ScrollView>
                         {categories.length > 1 && categoriesOpen ? (
-                            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+                            <ScrollView keyboardShouldPersistTaps="handled" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
                                 {categories.map((c) => (
                                     <Chip key={c} label={c === ALL_CATEGORIES ? t('explore.categoryAll') : titleCase(c)} selected={c === category} onPress={() => setCategory(c)} />
                                 ))}
@@ -271,7 +285,7 @@ export default function Explore() {
                         <Text variant="title3" style={styles.subheading} accessibilityRole="header">
                             {t('explore.recent')}
                         </Text>
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+                        <ScrollView keyboardShouldPersistTaps="handled" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
                             {resume ? (
                                 <Button
                                     variant="secondary"
@@ -356,7 +370,7 @@ const sheets = themedStyles((p, ramp) => ({
         minHeight: 44,
         color: p.textPrimary,
         backgroundColor: p.bgElevated1,
-        borderColor: p.borderSubtle,
+        borderColor: p.borderStrong,
         borderWidth: 1,
         borderRadius: 12,
         paddingHorizontal: 14,

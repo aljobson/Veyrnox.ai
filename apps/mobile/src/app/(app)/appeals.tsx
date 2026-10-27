@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
     name: { color: colors.text, fontSize: 17, fontWeight: '600' },
     muted: { color: colors.muted, fontSize: 13 },
     status: { color: colors.accent, fontWeight: '600' },
-    input: { minHeight: 110, backgroundColor: colors.background, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 12, color: colors.text, fontSize: 16, textAlignVertical: 'top' },
+    input: { minHeight: 110, backgroundColor: colors.background, borderColor: colors.borderStrong, borderWidth: 1, borderRadius: 12, padding: 12, color: colors.text, fontSize: 16, textAlignVertical: 'top' },
     primary: { backgroundColor: colors.accent, borderRadius: 12, minHeight: 44, justifyContent: 'center', alignItems: 'center' },
     primaryText: { color: colors.accentInk, fontSize: 16, fontWeight: '700' },
     secondary: { borderColor: colors.border, borderWidth: 1, borderRadius: 12, minHeight: 44, justifyContent: 'center', alignItems: 'center' },

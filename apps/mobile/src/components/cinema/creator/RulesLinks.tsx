@@ -38,5 +38,5 @@ export const ui = StyleSheet.create({
     card: { padding: 14, gap: 8, borderWidth: 1, borderColor: colors.border, borderRadius: 12, backgroundColor: colors.surface },
     heading: { color: colors.text, fontSize: 20, fontWeight: '700' }, text: { color: colors.text, fontSize: 16 },
     link: { color: colors.accent, fontSize: 16 }, button: { ...touchTarget, padding: 10 },
-    input: { ...touchTarget, borderColor: colors.border, borderWidth: 1, padding: 12, color: colors.text, borderRadius: 8 },
+    input: { ...touchTarget, borderColor: colors.borderStrong, borderWidth: 1, padding: 12, color: colors.text, borderRadius: 8 },
 });

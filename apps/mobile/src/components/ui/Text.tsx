@@ -1,10 +1,15 @@
+import { DisabledTextContext } from './DisabledTextContext';
+import { useAnnouncement, announcementText } from '../../lib/useAnnouncement';
 import { useContext } from 'react';
 import { FontStatus } from './FontStatus';
 import { Text as NativeText, type TextProps as NativeProps } from 'react-native';
+import { fontScaleCap } from '../../lib/a11y';
 import { type TextVariant } from '../../theme';
 import { themedStyles, useThemedStyles } from './AppearanceContext';
 export type TextProps = NativeProps & { variant?: TextVariant; tone?: 'primary' | 'secondary' | 'tertiary' | 'accent' | 'danger' | 'onAccent' | 'onMedia' | 'warning' };
 export function Text({ variant = 'body', tone = 'primary', style, ...props }: TextProps) {
+    useAnnouncement(props.accessibilityLiveRegion && props.accessibilityLiveRegion !== 'none' && props.accessibilityRole !== 'alert' ? announcementText(props.children) : null);
+    const disabled = useContext(DisabledTextContext);
     const loadedFonts = useContext(FontStatus);
     const s = useThemedStyles(sheets);
     const heading = variant === 'display' || variant.startsWith('title');
@@ -14,8 +19,8 @@ export function Text({ variant = 'body', tone = 'primary', style, ...props }: Te
             accessibilityRole={heading ? 'header' : undefined}
             {...props}
             allowFontScaling
-            maxFontSizeMultiplier={heading ? 1.5 : props.maxFontSizeMultiplier}
-            style={[s[variant], s[tone], style, face && !loadedFonts.has(face) ? fallback : undefined]}
+            maxFontSizeMultiplier={props.maxFontSizeMultiplier ?? fontScaleCap(variant)}
+            style={[s[variant], s[tone], style, disabled && s.tertiary, face && !loadedFonts.has(face) ? fallback : undefined]}
         />
     );
 }

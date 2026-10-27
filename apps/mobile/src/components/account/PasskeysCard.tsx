@@ -96,7 +96,7 @@ export function PasskeysCard() {
                     <TextField  value={name} onChangeText={setName} editable={!busy}
                         accessibilityLabel={t('passkey.nameLabel')} placeholder={t('passkey.namePlaceholder')}
                          maxLength={64} />
-                    <Button variant="tertiary" label={t('passkey.add')} disabled={busy} onPress={() => void add()} />
+                    <Button variant="secondary" label={t('passkey.add')} disabled={busy} onPress={() => void add()} />
                     {busy ? <Text variant="footnote" tone="secondary" accessibilityLiveRegion="polite">{t('passkey.busy')}</Text> : null}
                 </View>
             ) : <Text variant="footnote" tone="secondary">{t('pk.addLater')}</Text>}

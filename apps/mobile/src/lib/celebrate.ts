@@ -203,15 +203,16 @@ export function afterCelebration(result: CelebrationResult, delayMs: number, sig
     const fire = () => {
         if (!live || signal.aborted) return;
         if (active) {
-            void active.done.then(fire);
+            void active.done.then(schedule);
             return;
         }
         cancel();
         callback();
     };
+    const schedule = () => { if (live && !signal.aborted) timer = setTimeout(fire, delayMs); };
     const showing = result.big ? result : active;
-    if (showing) void showing.done.then(fire);
-    else if (live) timer = setTimeout(fire, delayMs);
+    if (showing) void showing.done.then(schedule);
+    else schedule();
     return cancel;
 }
 export function resetCelebrations(): void {

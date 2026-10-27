@@ -71,7 +71,7 @@ export default function Folders() {
             {folders === null && !problem ? (
                 <ActivityIndicator color={styles.accentInk.color} />
             ) : (
-                <FlatList
+                <FlatList keyboardShouldPersistTaps="handled"
                     data={folders ?? []}
                     keyExtractor={(f) => f.id}
                     ListEmptyComponent={<Text style={styles.muted}>No folders yet.</Text>}

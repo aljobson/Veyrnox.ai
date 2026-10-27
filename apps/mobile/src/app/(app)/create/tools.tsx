@@ -1,3 +1,4 @@
+import { useFaceFiltersAvailable } from '../../../lib/useFaceFiltersAvailable';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -10,6 +11,7 @@ import { colors, LIST_END_PADDING } from '../../../theme';
 // Models that work on a file you already have, grouped by the job they do (the web's /tools page). Each opens the same
 // Create form as any other model, where the file is chosen and the price is shown before Generate.
 export default function CreateTools() {
+    const faceAvailable = useFaceFiltersAvailable();
     const router = useRouter();
     const params = useLocalSearchParams<{ source?: string; mode?: string }>();
     const [models, setModels] = useState<CatalogModel[] | null>(null);
@@ -33,7 +35,7 @@ export default function CreateTools() {
         <ScrollView style={styles.screen} contentContainerStyle={styles.body}>
             <Stack.Screen options={{ title: t('toolsDir.title') }} />
             <Text style={styles.lead}>{lead}</Text>
-            {source !== 'video' ? (
+            {source !== 'video' && faceAvailable ? (
                 <Pressable accessibilityRole="button" accessibilityLabel={t('faceFilters.title')} style={[styles.row, touchTarget]} onPress={() => router.push('/face-filters')}>
                     <Text style={styles.name}>{t('faceFilters.title')}</Text>
                     <Text style={styles.muted}>{t('faceFilters.lead')}</Text>
@@ -46,7 +48,7 @@ export default function CreateTools() {
             ) : groups.length === 0 ? (
                 <Text style={styles.muted}>{t('toolsDir.empty')}</Text>
             ) : (
-                groups.map((g) => (
+                groups.filter(g => g.key !== 'face-filters' || faceAvailable).map((g) => (
                     <View key={g.key} style={styles.group}>
                         <Text style={styles.groupTitle} accessibilityRole="header">{g.label}</Text>
                         <Text style={styles.muted}>{g.blurb}</Text>

@@ -85,7 +85,7 @@ describe('where the welcome shows', () => {
         expect(gate).toContain('appStorage.get(FIRST_RUN_SLOT)');
         const screen = read('app', '(app)', 'welcome.tsx');
         expect(screen).toContain('markWelcomeSeen');
-        expect(screen).toContain('appStorage.set(FIRST_RUN_SLOT, seen)');
+        expect(read('lib', 'markWelcomeSeen.ts')).toContain('appStorage.set(FIRST_RUN_SLOT, seen)');
         expect(screen).toContain("t('welcome.skip')");
     });
 
@@ -112,11 +112,11 @@ describe('where the welcome shows', () => {
         expect(copy).toContain("'vibe.goal.story': 'Tell a story'");
     });
 
-    test('goal choices stay selected as accent cards until Continue', () => {
+    test('single-choice goals advance on one tap', () => {
         const screen = read('app', '(app)', 'vibe.tsx');
         expect(screen).toContain('const GOAL_PRESENTATION');
         expect(screen).toContain('selected={draft.goal === goal}');
-        expect(screen).toContain('onPress={() => setDraft((d) => ({ ...d, goal }))}');
-        expect(screen).toContain('disabled={!draft.goal}');
+        expect(screen).toContain("onPress={() => choose('goal', goal)}");
+        expect(screen).not.toContain('disabled={!draft.goal}');
     });
 });

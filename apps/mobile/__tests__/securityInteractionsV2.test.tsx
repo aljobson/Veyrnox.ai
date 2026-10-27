@@ -151,6 +151,11 @@ test('MFA gate preserves wrong-code recovery, session adoption, busy validation 
     disabled(t('acct.mfa.verify'));
     expect(control(t('public.account.signOut')).props.accessibilityState.disabled).toBe(false);
     await press(t('public.account.signOut'));
+    expect(signOut).not.toHaveBeenCalled();
+    await confirm(true);
+    expect(signOut).not.toHaveBeenCalled();
+    await press(t('public.account.signOut'));
+    await confirm();
     expect(signOut).toHaveBeenCalledTimes(1);
     await act(async () => pending.resolve(fixture.tokens));
     expect(calls.verifyFactor).toHaveBeenLastCalledWith(getAccessToken, 'mock-totp', '123456');
