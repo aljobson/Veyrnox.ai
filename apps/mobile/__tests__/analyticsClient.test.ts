@@ -20,7 +20,9 @@ jest.mock('posthog-react-native', () => {
 import { captureEvent, chooseAnalytics, setAnalyticsUser, startAnalytics } from '../src/lib/analytics/client';
 async function bodyOf(init: RequestInit) {
     if (typeof init.body === 'string') return JSON.parse(init.body);
-    return JSON.parse(require('zlib').gunzipSync(init.body).toString());
+    // Depending on the runtime, the SDK sends a gzip Buffer or a gzip Blob.
+    const body = init.body instanceof Blob ? Buffer.from(await init.body.arrayBuffer()) : init.body;
+    return JSON.parse(require('zlib').gunzipSync(body).toString());
 }
 // Exercise the installed SDK's queue, identity envelopes and surviving AppState listeners.
 test('lazy SDK, safe identity, flags off and permanent revocation', async () => {
