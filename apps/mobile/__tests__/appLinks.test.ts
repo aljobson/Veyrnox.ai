@@ -61,3 +61,13 @@ describe('shared Cinema links (ADR-0164)', () => {
         expect(mapAppLink('https://veyrnox.ai/social-cinema')).toBe('/');
     });
 });
+
+
+test.each([
+    ['/social-cinema/series/my-series', '/cinema/series/my-series'],
+    ['/social-cinema/series/Bad_slug', '/'],
+    ['/social-cinema/series/' + 'a'.repeat(81), '/'],
+    ['/social-cinema/series/my-series/x', '/'],
+    ['/social-cinema/pass', '/cinema?section=profile'],
+    ['/social-cinema/pass/x', '/'],
+])('Cinema link %s maps to %s', (path, expected) => expect(mapAppLink(`https://veyrnox.ai${path}`)).toBe(expected));

@@ -4577,5 +4577,9 @@ export default {
   "whenPicker.hHMM": "HH:MM",
   "whenPicker.timehourminute": "Hora, hora:minuto",
   "whenPicker.timesareinthisphonestime": "Las horas están en la zona horaria de este teléfono.",
-  "whenPicker.yYYYMMDD": "YYYY-MM-DD"
+  "whenPicker.yYYYMMDD": "YYYY-MM-DD",
+  "cinemaStudio.withdrawPublished": "¿Retirar «{title}» de Social Cinema? Saldrá del catálogo de inmediato y todos los desbloqueos de espectadores de los últimos 30 días se reembolsarán en créditos.",
+  "cinemaStudio.withdrawReview": "¿Retirar «{title}» de la revisión?",
+  "cinemaStudio.numbered": "{type} n.º {position}",
+  "cinemaStudio.positionInvalid": "Usa un número entero del 1 al 10000."
 } as const;

@@ -4769,5 +4769,9 @@ export default {
   "whenPicker.hHMM": "HH:MM",
   "whenPicker.timehourminute": "الوقت، ساعة:دقيقة",
   "whenPicker.timesareinthisphonestime": "الأوقات حسب المنطقة الزمنية لهذا الهاتف.",
-  "whenPicker.yYYYMMDD": "YYYY-MM-DD"
+  "whenPicker.yYYYMMDD": "YYYY-MM-DD",
+  "cinemaStudio.withdrawPublished": "هل تريد سحب «{title}» من Social Cinema؟ سيُزال من الكتالوج فورًا وستُرد تكاليف جميع عمليات فتح المشاهدة خلال آخر 30 يومًا على هيئة أرصدة.",
+  "cinemaStudio.withdrawReview": "هل تريد سحب «{title}» من المراجعة؟",
+  "cinemaStudio.numbered": "{type} رقم {position}",
+  "cinemaStudio.positionInvalid": "استخدم عددًا صحيحًا من 1 إلى 10000."
 } as const;

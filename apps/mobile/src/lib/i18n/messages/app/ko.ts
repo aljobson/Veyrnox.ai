@@ -4449,5 +4449,9 @@ export default {
   "whenPicker.hHMM": "HH:MM",
   "whenPicker.timehourminute": "시간, 시:분",
   "whenPicker.timesareinthisphonestime": "시간은 이 휴대폰의 시간대를 따릅니다.",
-  "whenPicker.yYYYMMDD": "YYYY-MM-DD"
+  "whenPicker.yYYYMMDD": "YYYY-MM-DD",
+  "cinemaStudio.withdrawPublished": "Social Cinema에서 «{title}»을 철회할까요? 카탈로그에서 즉시 삭제되며 지난 30일 동안 시청자가 잠금 해제에 사용한 금액은 모두 크레딧으로 환불됩니다.",
+  "cinemaStudio.withdrawReview": "«{title}»의 심사를 철회할까요?",
+  "cinemaStudio.numbered": "{type} 제{position}회",
+  "cinemaStudio.positionInvalid": "1부터 10000까지의 정수를 입력하세요."
 } as const;

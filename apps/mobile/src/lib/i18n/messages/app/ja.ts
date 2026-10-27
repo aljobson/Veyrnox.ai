@@ -4449,5 +4449,9 @@ export default {
   "whenPicker.hHMM": "HH:MM",
   "whenPicker.timehourminute": "時刻、時:分",
   "whenPicker.timesareinthisphonestime": "時刻はこの端末のタイムゾーンで表示されます。",
-  "whenPicker.yYYYMMDD": "YYYY-MM-DD"
+  "whenPicker.yYYYMMDD": "YYYY-MM-DD",
+  "cinemaStudio.withdrawPublished": "「{title}」を Social Cinema から取り下げますか？カタログから直ちに削除され、過去30日間のすべての視聴者のアンロック料金がクレジットで返金されます。",
+  "cinemaStudio.withdrawReview": "「{title}」を審査から取り下げますか？",
+  "cinemaStudio.numbered": "{type}{position}",
+  "cinemaStudio.positionInvalid": "1から10000までの整数を入力してください。"
 } as const;

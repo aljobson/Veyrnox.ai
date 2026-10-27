@@ -4513,5 +4513,9 @@ export default {
   "whenPicker.hHMM": "HH:MM",
   "whenPicker.timehourminute": "समय, घंटा:मिनट",
   "whenPicker.timesareinthisphonestime": "समय इस फ़ोन के समय क्षेत्र में हैं।",
-  "whenPicker.yYYYMMDD": "YYYY-MM-DD"
+  "whenPicker.yYYYMMDD": "YYYY-MM-DD",
+  "cinemaStudio.withdrawPublished": "क्या «{title}» को Social Cinema से वापस लेना है? यह तुरंत सूची से हट जाएगा और पिछले 30 दिनों में दर्शकों के सभी अनलॉक का भुगतान क्रेडिट में वापस कर दिया जाएगा।",
+  "cinemaStudio.withdrawReview": "क्या «{title}» को समीक्षा से वापस लेना है?",
+  "cinemaStudio.numbered": "{type} क्रमांक {position}",
+  "cinemaStudio.positionInvalid": "1 से 10000 तक की पूर्ण संख्या इस्तेमाल करें।"
 } as const;

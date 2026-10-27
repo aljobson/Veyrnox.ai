@@ -4513,5 +4513,9 @@ export default {
   "whenPicker.hHMM": "HH:MM",
   "whenPicker.timehourminute": "Zeit, Stunde:Minute",
   "whenPicker.timesareinthisphonestime": "Zeiten gelten in der Zeitzone dieses Telefons.",
-  "whenPicker.yYYYMMDD": "YYYY-MM-DD"
+  "whenPicker.yYYYMMDD": "YYYY-MM-DD",
+  "cinemaStudio.withdrawPublished": "„{title}“ aus Social Cinema zurückziehen? Der Titel wird sofort aus dem Katalog entfernt und alle Freischaltungen durch Zuschauer der letzten 30 Tage werden in Credits erstattet.",
+  "cinemaStudio.withdrawReview": "„{title}“ aus der Prüfung zurückziehen?",
+  "cinemaStudio.numbered": "{type} Nr. {position}",
+  "cinemaStudio.positionInvalid": "Verwende eine ganze Zahl von 1 bis 10000."
 } as const;

@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { t } from '../../lib/i18n';
 import { MIN_TARGET } from '../../lib/a11y';
@@ -26,8 +26,9 @@ const SECTIONS: readonly { key: Section; label: string; icon: MenuIcon }[] = [
     { key: 'profile', label: 'cinemaBrowse.tab.profile', icon: 'user' },
 ];
 
-export function CinemaHome() {
+export function CinemaHome({ requestedSection = null }: { requestedSection?: Section | null }) {
     const [section, setSection] = useState<Section>('watch');
+    useEffect(() => { if (requestedSection !== null) setSection(requestedSection); }, [requestedSection]);
     const [category, setCategory] = useState<string | null>(null);
     const [follow, setFollow] = useState<'creator' | 'series'>('creator');
     const browsing = section === 'watch' || section === 'series' || section === 'vote';

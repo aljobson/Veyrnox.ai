@@ -4641,5 +4641,9 @@ export default {
   "whenPicker.hHMM": "HH:MM",
   "whenPicker.timehourminute": "Время, часы:минуты",
   "whenPicker.timesareinthisphonestime": "Время указано в часовом поясе этого телефона.",
-  "whenPicker.yYYYMMDD": "YYYY-MM-DD"
+  "whenPicker.yYYYMMDD": "YYYY-MM-DD",
+  "cinemaStudio.withdrawPublished": "Отозвать «{title}» из Social Cinema? Произведение сразу исчезнет из каталога, а стоимость всех разблокировок зрителями за последние 30 дней будет возвращена в кредитах.",
+  "cinemaStudio.withdrawReview": "Отозвать «{title}» с проверки?",
+  "cinemaStudio.numbered": "{type} № {position}",
+  "cinemaStudio.positionInvalid": "Введите целое число от 1 до 10000."
 } as const;

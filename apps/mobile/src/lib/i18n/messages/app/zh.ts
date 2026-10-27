@@ -4449,5 +4449,9 @@ export default {
   "whenPicker.hHMM": "HH:MM",
   "whenPicker.timehourminute": "时间，时:分",
   "whenPicker.timesareinthisphonestime": "时间均使用此手机的时区。",
-  "whenPicker.yYYYMMDD": "YYYY-MM-DD"
+  "whenPicker.yYYYMMDD": "YYYY-MM-DD",
+  "cinemaStudio.withdrawPublished": "要从 Social Cinema 撤回《{title}》吗？它将立即从目录中移除，过去 30 天内所有观众的解锁费用都将以积分退还。",
+  "cinemaStudio.withdrawReview": "要撤回《{title}》的审核申请吗？",
+  "cinemaStudio.numbered": "{type}（{position}）",
+  "cinemaStudio.positionInvalid": "请输入 1 到 10000 之间的整数。"
 } as const;

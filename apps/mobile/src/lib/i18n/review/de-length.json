@@ -2716,5 +2716,11 @@
     "english": "Add audio",
     "translation": "Audio hinzufügen",
     "ratio": 1.78
+  },
+  {
+    "id": "cinema.creator.first",
+    "english": "Add your first {type}.",
+    "translation": "Füge dein erstes Element hinzu: {type}.",
+    "ratio": 1.77
   }
 ]
