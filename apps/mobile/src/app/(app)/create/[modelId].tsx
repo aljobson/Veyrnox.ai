@@ -65,7 +65,8 @@ export default function CreateWithModel() {
     const [busy, setBusy] = useState(false);
     // Storage keys of the files already uploaded, by slot, and the slots still uploading.
     const [references, setReferences] = useState<readonly GenerationReference[]>(() => handedSources?.references ?? legacyReferences(handedSources?.uploaded ?? {}, handedSources?.fromLibrary ?? {}));
-    const [sourceRights, setSourceRights] = useState(handedSources !== null);
+    // Pre-ticked only when the handing screen showed the rights statement and the person ticked it (Attach from device does not).
+    const [sourceRights, setSourceRights] = useState(handedSources?.rightsConfirmed === true);
     const [sending, setSending] = useState<Partial<Record<SlotName, boolean>>>({});
     const [error, setError] = useState<string | null>(null);
     const [opts, setOpts] = useState<OptionValues>({ aspect: null, count: 1, seed: '', negative: '', voice: '', audioSeconds: '' });
