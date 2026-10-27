@@ -1,3 +1,4 @@
+import { setFirstRunPending } from '../src/lib/firstRunPending';
 import { act, createElement } from 'react';
 import * as ReactNative from 'react-native';
 import { createRoot, type Root } from 'test-renderer';
@@ -20,6 +21,7 @@ async function press(label: string) {
 }
 async function mount() { await act(async () => root.render(createElement(CheckInModal))); }
 beforeEach(async () => {
+    setFirstRunPending(false);
     (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     mockRequest.mockReset(); mockRequest.mockResolvedValue(status);
     await wipeCache(); await bindCacheUser(`checkin-modal-${++serial}`);

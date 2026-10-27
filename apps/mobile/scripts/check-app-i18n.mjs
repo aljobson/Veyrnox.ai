@@ -6,6 +6,8 @@ import { fileURLToPath } from 'node:url';
 import { readEnglishCatalog } from './sync-web-i18n.mjs';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'lib', 'i18n');
 const en = readEnglishCatalog();
+// Added CLDR categories use the English family's other form (ADR-0270).
+const sourceFor = key => en[key] ?? en[key.replace(/\.(zero|one|two|few|many|other)$/, '.other')];
 for (const file of readdirSync(join(root, 'messages', 'app')).filter(f => f.endsWith('.ts'))) {
     const locale = file.slice(0, -3);
     // App catalogs are data-only JSON objects with a TypeScript assertion.
@@ -14,8 +16,8 @@ for (const file of readdirSync(join(root, 'messages', 'app')).filter(f => f.ends
     const webSource = readFileSync(join(root, 'messages', `${locale}.ts`), 'utf8');
     const web = new Function(webSource.replace(/ as const;/, ';').replace(/export default (\w+);/, 'return $1;'))();
     const catalog = { ...app, ...web };
-    const rows = Object.entries(catalog).filter(([key, value]) => en[key] && [...value].length > [...en[key]].length * 1.6)
-        .map(([key, value]) => ({ id: key, english: en[key], translation: value, ratio: Number(([...value].length / [...en[key]].length).toFixed(2)) }));
+    const rows = Object.entries(catalog).filter(([key, value]) => sourceFor(key) && [...value].length > [...sourceFor(key)].length * 1.6)
+        .map(([key, value]) => ({ id: key, english: sourceFor(key), translation: value, ratio: Number(([...value].length / [...sourceFor(key)].length).toFixed(2)) }));
     const body = JSON.stringify(rows, null, 2) + '\n';
     const report = join(root, 'review', `${locale}-length.json`);
     if (process.argv.includes('--write')) writeFileSync(report, body);

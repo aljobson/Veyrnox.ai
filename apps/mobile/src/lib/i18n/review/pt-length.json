@@ -2442,6 +2442,12 @@
     "ratio": 1.67
   },
   {
+    "id": "analyticsConsent.policy",
+    "english": "Privacy Policy",
+    "translation": "Política de Privacidade",
+    "ratio": 1.64
+  },
+  {
     "id": "editorServerExport.failed",
     "english": "Export could not finish. Check again.",
     "translation": "Não foi possível concluir a exportação. Verifique novamente.",

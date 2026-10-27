@@ -1,3 +1,4 @@
+import { captureEvent } from '../../lib/analytics/events';
 import { markWelcomeSeen } from '../../lib/markWelcomeSeen';
 import { t } from '../../lib/i18n';
 import { Image } from 'expo-image';
@@ -37,6 +38,7 @@ export function sourceHref(source: Source) {
 // (photo, gallery or prompt) next to creation. This screen combines those patterns instead of asking a preference quiz.
 export default function Start() {
     const router = useRouter();
+    useEffect(() => { captureEvent('onboarding_step', { step: 'start', action: 'view' }); }, []);
     const styles = useThemedStyles(sheets);
     const [source, setSource] = useState<Source | null>(null);
     const [templates, setTemplates] = useState<Preset[] | null>(null);
@@ -73,7 +75,7 @@ export default function Start() {
                     <Pressable
                         accessibilityRole="button"
                         onPress={() => {
-                            noteOnboardingCompleted();
+                            captureEvent('onboarding_step', { step: 'start', action: 'next' }); noteOnboardingCompleted();
                             router.replace('/create/presets');
                         }}
                     >
@@ -90,7 +92,7 @@ export default function Start() {
                                 accessibilityLabel={t('start.try', { value1: template.title })}
                                 style={({ pressed }) => [styles.template, pressed && styles.templatePressed]}
                                 onPress={() => {
-                                    noteOnboardingCompleted();
+                                    captureEvent('onboarding_step', { step: 'start', action: 'next' }); noteOnboardingCompleted();
                                     router.replace(presetHref(template));
                                 }}
                             >
@@ -115,7 +117,7 @@ export default function Start() {
                                     title={template.title}
                                     detail={t('start.explore')}
                                     onPress={() => {
-                                        noteOnboardingCompleted();
+                                        captureEvent('onboarding_step', { step: 'start', action: 'next' }); noteOnboardingCompleted();
                                         router.replace('/create/presets');
                                     }}
                                 />
@@ -127,7 +129,7 @@ export default function Start() {
                     variant="tertiary"
                     label={t('start.usesomethingfrommyLibrary')}
                     onPress={() => {
-                        noteOnboardingCompleted();
+                        captureEvent('onboarding_step', { step: 'start', action: 'next' }); noteOnboardingCompleted();
                         router.replace('/library');
                     }}
                 />
@@ -138,13 +140,13 @@ export default function Start() {
                     disabled={!source}
                     onPress={() => {
                         if (source) {
-                            noteOnboardingCompleted();
+                            captureEvent('onboarding_step', { step: 'start', action: 'next' }); noteOnboardingCompleted();
                             router.replace(sourceHref(source));
                         }
                     }}
                 />
                 <Button variant="tertiary" label={t('start.skip')} onPress={() => {
-                    void markWelcomeSeen().then(() => { noteOnboardingCompleted(); router.replace('/'); });
+                    void markWelcomeSeen().then(() => { captureEvent('onboarding_step', { step: 'start', action: 'skip' }); noteOnboardingCompleted(); router.replace('/'); });
                 }} />
             </View>
         </View>

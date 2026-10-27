@@ -13,6 +13,7 @@ import area_ads from './en/ads';
 import area_agent from './en/agent';
 import area_aiConsent from './en/aiConsent';
 import area_analytics from './en/analytics';
+import area_analyticsConsent from './en/analyticsConsent';
 import area_app from './en/app';
 import area_appeals from './en/appeals';
 import area_appearance from './en/appearance';
@@ -187,6 +188,7 @@ const catalog = {
     ...area_agent,
     ...area_aiConsent,
     ...area_analytics,
+    ...area_analyticsConsent,
     ...area_app,
     ...area_appeals,
     ...area_appearance,
