@@ -6,6 +6,8 @@ import { enrollTotp, fetchProfile, unenrollFactor, verifyFactor, type Enrolment,
 import { toSession } from '../../lib/auth/supabaseAuth';
 import { t } from '../../lib/i18n';
 import { aalFromToken, enrolmentName, isTotpUri, mfaErrorKey, mfaState, validCode, verifiedFactors } from '../../lib/mfa';
+import { userIdFromToken } from '../../lib/appCache';
+import { rememberMfaEnrolment } from '../../lib/mfaCheck';
 import { CodeField } from './CodeField';
 import { Card, Status } from './AccountParts';
 import { Button, Text, themedStyles, useThemedStyles } from '../ui';
@@ -28,8 +30,11 @@ export function MfaCard() {
         setFailed(false);
         try {
             const p = await fetchProfile(getAccessToken, 'mfa-card');
-            setAal(aalFromToken(await getAccessToken()));
+            const token = await getAccessToken();
+            setAal(aalFromToken(token));
             setProfile(p);
+            // Keeps the gate's offline fallback current after turning two-factor on or off here.
+            void rememberMfaEnrolment(token ? userIdFromToken(token) : null, verifiedFactors(p.factors).length > 0);
         } catch {
             setProfile(null);
             setFailed(true);

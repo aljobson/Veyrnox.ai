@@ -207,6 +207,12 @@
     // before an admin holds a factor locks every admin out of their own
     // dashboard, so that order is not optional.
     "ADMIN_REQUIRE_AAL2": "true",
+    // "true" makes middleware.js refuse (403 mfa_required) an aal1 token on
+    // /api/v1 for any account with a verified TOTP factor (lib/mfaEnforcement.js,
+    // migration 0404, audit 2026-10-27 H2). Off until the web app asks for the
+    // code at sign-in: today only its Account page can step a session up, so
+    // turning this on first stops enrolled web users everywhere else.
+    "REQUIRE_AAL2_WHEN_ENROLLED": "false",
     // ADR-0066: Jev sorts untyped provider submit refusals into
     // provider_moderation / provider_input_rejected. off | shadow | enforce.
     // Needs the TYPESAFE_API_KEY secret; shadow only logs the label.
@@ -326,6 +332,8 @@
         "UPLOAD_REQUEST_RATE_LIMIT_ENABLED": "true",
         "ASSET_LINK_RATE_LIMIT_ENABLED": "true",
         "ADMIN_REQUIRE_AAL2": "true",
+        // Same switch as production; turn it on here first, once the web sign-in code prompt ships.
+        "REQUIRE_AAL2_WHEN_ENROLLED": "false",
         // ADR-0044 (vars are not inherited). On for the activation proof: 0129 is applied here and the staging bucket's
         // CORS allows PUT with Content-Type and If-None-Match from this origin (preflight checked 2026-10-09).
         // Production CORS is ready as of 2026-10-10; the real browser/R2 activation proof is still required.
