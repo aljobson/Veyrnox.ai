@@ -5,7 +5,7 @@ import { useAuth } from '../../../auth/AuthProvider';
 import { touchTarget } from '../../../lib/a11y';
 import { getCacheUser, subscribeCacheUser } from '../../../lib/appCache';
 import { cloudStatus, fetchCloudFilms, loadActiveStudio, openCloudFilm, type CloudFilm } from '../../../lib/filmCloud';
-import { plural, t } from '../../../lib/i18n';
+import { formatLocale, plural, t } from '../../../lib/i18n';
 import { colors } from '../../../theme';
 
 type State = 'loading' | 'list' | 'unavailable' | 'offline' | 'busy' | 'error';
@@ -103,7 +103,7 @@ export default function CloudFilms() {
             {state !== 'list' && state !== 'loading' ? <Text style={styles.body} accessibilityLiveRegion="polite">{failureText(state)}</Text> : null}
             {rows.map(row => {
                 const shots = plural('filmCloud.shots', row.shotCount);
-                const date = row.updatedAt ? new Date(row.updatedAt).toLocaleDateString() : '';
+                const date = row.updatedAt ? new Date(row.updatedAt).toLocaleDateString(formatLocale()) : '';
                 return (
                     <Pressable key={row.id} accessibilityRole="button" accessibilityLabel={t('filmCloud.rowLabel', { name: row.name, shots, date })}
                         accessibilityState={{ busy: openingId === row.id, disabled: openingId !== null }} disabled={openingId !== null}

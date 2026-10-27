@@ -6,14 +6,16 @@ import { useAuth } from '../../auth/AuthProvider';
 import { VeyCharacter } from '../../components/VeyCharacter';
 import { selectedState, touchTarget } from '../../lib/a11y';
 import { CHAOS_MAX, CREATOR_ANSWERS, STUDIO_NAME_MAX, isCreatorAnswers, type CreatorAnswers, type Goal } from '../../lib/creatorAnswers';
+import { displayLabel } from '../../lib/displayLabels';
 import { creatorCard } from '../../lib/creatorArchetype';
+import { creatorCardName } from '../../lib/creatorCardLabels';
 import { saveVibe, skipVibe } from '../../lib/creatorProfile';
 import { loadVibe, storeVibe } from '../../lib/creatorProfileStore';
 import { rankPresets, tastePicks } from '../../lib/creatorTaste';
 import { presetKind } from '../../lib/explore';
-import { chooseLocale, getLocale, t } from '../../lib/i18n';
-import { LANGUAGES } from '../../lib/language';
-import { loadLanguage, saveAccountLanguage, storeLanguage } from '../../lib/languageStore';
+import { getLocale, t } from '../../lib/i18n';
+import { activeLanguages, hasActiveChoice, needsLanguageChoice, changeLanguage } from '../../lib/languageTransition';
+import { loadLanguage, readLanguage, saveAccountLanguage, saveLanguage } from '../../lib/languageStore';
 import { fetchPresets, presetHref } from '../../lib/presets';
 import { colors, ds } from '../../theme';
 import { Button, Card as SurfaceCard, Chip, Text, TextField, ChoiceCard, themedStyles, useThemedStyles } from '../../components/ui';
@@ -42,7 +44,7 @@ export default function Vibe() {
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const styles = useThemedStyles(sheets);
-    const { api } = useAuth();
+    const { api, canReloadSession } = useAuth();
     const { retake } = useLocalSearchParams<{ retake?: string }>();
     // 0 = intro, 1..7 = questions, 8 = card, -1 = skipped.
     const [step, setStep] = useState(0);
@@ -52,30 +54,28 @@ export default function Vibe() {
     const [failed, setFailed] = useState(false);
     const [synced, setSynced] = useState(true);
     const [saved, setSaved] = useState<CreatorAnswers | null>(null);
-    // The language comes first (not on a retake): every language the site offers, each by its own name and flag. The choice is
-    // saved on the phone and on the account; the app shows it as soon as that language is switched on (ADR-0132).
-    const [language, setLanguage] = useState<'ask' | 'done'>(retake === '1' ? 'done' : 'ask');
+    // Ask only when there is no active saved choice; first launch normally handles this before sign-in.
+    const [language, setLanguage] = useState<'ask' | 'done'>(retake === '1' || !needsLanguageChoice(readLanguage()) ? 'done' : 'ask');
     const [picked, setPicked] = useState<string>(getLocale());
     const [languageNote, setLanguageNote] = useState(false);
     useEffect(() => {
         let alive = true;
-        void loadLanguage().then((stored) => alive && stored && setPicked(stored));
+        void loadLanguage().then((stored) => {
+            if (alive && hasActiveChoice(stored)) { setPicked(stored!); setLanguage('done'); }
+        });
         return () => {
             alive = false;
         };
     }, []);
 
     async function continueLanguage(next = picked) {
-        if (next !== getLocale()) {
-            await storeLanguage(next);
-            void saveAccountLanguage(api, next);
-            if (!chooseLocale(next)) {
-                // Saved, not shown yet: say so, then go on in English.
-                setLanguageNote(true);
-                return;
-            }
-        }
-        setLanguage('done');
+        setLanguageNote(false);
+        const ok = next === getLocale()
+            ? await saveLanguage(next)
+            : await changeLanguage(next, '/vibe', { signedIn: true, canReloadSession }, { onChosen: code => saveAccountLanguage(api, code) });
+        if (!ok) { setLanguageNote(true); return; }
+        if (next === getLocale()) void saveAccountLanguage(api, next);
+        if (next === getLocale()) setLanguage('done');
     }
 
     function choose(key: ChoiceKey, value: string) {
@@ -143,7 +143,7 @@ export default function Vibe() {
                         </Text>
                         <Text style={styles.text}>{t('vibe.language.hint')}</Text>
                         <View style={styles.options}>
-                            {LANGUAGES.map((l) => (
+                            {activeLanguages().map((l) => (
                                 <Pressable
                                     key={l.code}
                                     accessibilityRole="button"
@@ -163,7 +163,7 @@ export default function Vibe() {
                         </View>
                         {languageNote ? (
                             <Text style={styles.text} accessibilityLiveRegion="polite">
-                                {t('vibe.language.later')}
+                                {t('language.failed')}
                             </Text>
                         ) : null}
                     </View>
@@ -286,7 +286,7 @@ export default function Vibe() {
 
             <View style={styles.footer}>
                 {step === 0 && language === 'ask' && languageNote ? (
-                    <Button label={t('vibe.language.continue')} onPress={() => (languageNote ? setLanguage('done') : void continueLanguage())} />
+                    <Button label={t('vibe.language.continue')} onPress={() => void continueLanguage()} />
                 ) : null}
                 {step === 0 && language === 'done' ? (
                     <>
@@ -318,7 +318,8 @@ function Choice({ label, sub, on, onPress }: { label: string; sub?: string | nul
 
 function Card({ answers, synced }: { answers: CreatorAnswers; synced: boolean }) {
     const styles = useThemedStyles(sheets);
-    const card = creatorCard(answers);
+    const raw = creatorCard(answers);
+    const card = { ...raw, name: creatorCardName(answers), traits: raw.traits.map(displayLabel) };
     return (
         <View style={styles.cardWrap}>
             <SurfaceCard style={styles.card} accessible accessibilityLabel={`${card.studio ?? t('vibe.card.kicker')}. ${card.name}. ${card.traits.join(', ')}`}>

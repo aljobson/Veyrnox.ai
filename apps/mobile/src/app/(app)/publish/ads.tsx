@@ -5,7 +5,7 @@ import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, StyleShe
 import { UnlockCard } from '../../../components/UnlockCard';
 import { touchTarget } from '../../../lib/a11y';
 import { ApiError } from '../../../lib/api';
-import { t } from '../../../lib/i18n';
+import { formatLocale, t } from '../../../lib/i18n';
 import { adsErrorKey, deleteCampaign, fetchCampaignPage, money, type CampaignDetail } from '../../../lib/publishAds';
 import { usePublishApi } from '../../../lib/usePublishApi';
 import { colors, LIST_END_PADDING } from '../../../theme';
@@ -82,7 +82,7 @@ export default function Ads() {
                             <Text style={styles.name}>{item.name}</Text>
                             <Text style={styles.status}>{t(`ads.status.${item.status}`)} · {item.network} · {t(`ads.mode.${item.mode}`)}</Text>
                             <Text style={styles.muted}>{t(`ads.objective.${item.objective}`)} · {money(item.dailyBudgetCents, item.currency)} {t('ads.perDay')}</Text>
-                            {item.startsAt || item.endsAt ? <Text style={styles.muted}>{item.startsAt ? new Date(item.startsAt).toLocaleDateString() : '…'} – {item.endsAt ? new Date(item.endsAt).toLocaleDateString() : '…'}</Text> : null}
+                            {item.startsAt || item.endsAt ? <Text style={styles.muted}>{item.startsAt ? new Date(item.startsAt).toLocaleDateString(formatLocale()) : '…'} – {item.endsAt ? new Date(item.endsAt).toLocaleDateString(formatLocale()) : '…'}</Text> : null}
                             {item.destinationHost ? <Text style={styles.muted}>{t('ads.sendsTo', { host: item.destinationHost })}</Text> : null}
                             {canEdit && item.status === 'draft' ? (
                                 <View style={styles.actions}>

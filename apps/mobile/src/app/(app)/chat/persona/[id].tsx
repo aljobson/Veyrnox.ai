@@ -1,3 +1,4 @@
+import { t } from '../../../../lib/i18n';
 import { KeyboardFormScrollView } from '../../../../components/KeyboardFormScrollView';
 import { KeyboardScreen } from '../../../../components/KeyboardScreen';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -31,7 +32,7 @@ export default function PersonaForm() {
         fetchPersonas(api)
             .then((r) => {
                 const p = r.personas.find((x) => x.id === id);
-                if (!p) return setProblem('That persona is no longer there.');
+                if (!p) return setProblem(t('chat.thatpersonaisnolongerthere'));
                 setName(p.name);
                 setInstructions(p.instructions);
                 setModelId(p.modelId);
@@ -58,10 +59,10 @@ export default function PersonaForm() {
     }
 
     function remove() {
-        Alert.alert('Delete this persona?', 'Chats already started from it keep their instructions.', [
-            { text: 'Keep it', style: 'cancel' },
+        Alert.alert(t('chat.deletethispersona'), t('chat.chatsalreadystartedfromitkeeptheir'), [
+            { text: t('chat.keepit'), style: 'cancel' },
             {
-                text: 'Delete persona',
+                text: t('chat.deletepersona'),
                 style: 'destructive',
                 onPress: () => {
                     deletePersona(api, String(id)).then(() => router.back(), (err) => setProblem(chatLibraryErrorMessage(err)));
@@ -74,28 +75,28 @@ export default function PersonaForm() {
 
     return (
         <KeyboardScreen style={styles.screen}>
-            <Stack.Screen options={{ title: isNew ? 'New persona' : 'Edit persona' }} />
+            <Stack.Screen options={{ title: isNew ? t('chat.newpersona') : t('chat.editpersona') }} />
             <KeyboardFormScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-                <Text variant="callout" style={styles.label}>Name</Text>
-                <TextField accessibilityLabel="Persona name" style={styles.input} value={name} onChangeText={setName} maxLength={60} placeholder="For example, Editor" />
-                <Text variant="callout" style={styles.label}>Instructions</Text>
-                <TextField accessibilityLabel="Persona instructions" style={[styles.input, styles.tall]} multiline value={instructions} onChangeText={setInstructions} maxLength={MAX_PERSONA_TEXT} placeholder="How should the chat behave?" />
+                <Text variant="callout" style={styles.label}>{t('chat.name')}</Text>
+                <TextField accessibilityLabel={t('chat.personaname')} style={styles.input} value={name} onChangeText={setName} maxLength={60} placeholder={t('chat.forexampleEditor')} />
+                <Text variant="callout" style={styles.label}>{t('chat.instructions')}</Text>
+                <TextField accessibilityLabel={t('chat.personainstructions')} style={[styles.input, styles.tall]} multiline value={instructions} onChangeText={setInstructions} maxLength={MAX_PERSONA_TEXT} placeholder={t('chat.howshouldthechatbehave')} />
                 <Text variant="footnote" style={styles.muted}>{instructions.length} / {MAX_PERSONA_TEXT}</Text>
-                <Text variant="callout" style={styles.label}>Model</Text>
+                <Text variant="callout" style={styles.label}>{t('chat.model')}</Text>
                 <View style={styles.chips}>
-                    <Chip accessibilityRole="button" accessibilityState={{ selected: modelId === null }} onPress={() => setModelId(null)} label={"Ask each time"} selected={modelId === null} />
+                    <Chip accessibilityRole="button" accessibilityState={{ selected: modelId === null }} onPress={() => setModelId(null)} label={t('chat.askeachtime')} selected={modelId === null} />
                     {models.filter((m) => !m.gated).map((m) => (
                         <Chip key={m.id} accessibilityRole="button" accessibilityState={{ selected: modelId === m.id }} onPress={() => setModelId(m.id)} label={(m.name)} selected={modelId === m.id} />
                     ))}
                 </View>
-                <View style={styles.switchRow}><Text variant="callout" style={styles.label}>Thinking</Text><Switch accessibilityLabel="Thinking" value={thinking} onValueChange={setThinking} /></View>
-                <View style={styles.switchRow}><Text variant="callout" style={styles.label}>Web search</Text><Switch accessibilityLabel="Web search" value={web} onValueChange={setWeb} /></View>
-                <Text variant="footnote" style={styles.muted}>Thinking and web search are saved with the persona. The app does not turn them on in a chat yet.</Text>
+                <View style={styles.switchRow}><Text variant="callout" style={styles.label}>{t('chat.thinking')}</Text><Switch accessibilityLabel={t('chat.thinking')} value={thinking} onValueChange={setThinking} /></View>
+                <View style={styles.switchRow}><Text variant="callout" style={styles.label}>{t('chat.websearch')}</Text><Switch accessibilityLabel={t('chat.websearch')} value={web} onValueChange={setWeb} /></View>
+                <Text variant="footnote" style={styles.muted}>{t('chat.thinkingandwebsearcharesavedwith')}</Text>
                 {problem ? <Text style={styles.error}>{problem}</Text> : null}
-                <Button accessibilityRole="button" disabled={busy} containerStyle={styles.button} onPress={save} variant="secondary" size="md" label={"Save"}>
-                    {busy ? <ActivityIndicator color={styles.accentInkInk.color} /> : <Text variant="bodyStrong" style={styles.buttonText}>Save</Text>}
+                <Button accessibilityRole="button" disabled={busy} containerStyle={styles.button} onPress={save} variant="secondary" size="md" label={t('chat.save')}>
+                    {busy ? <ActivityIndicator color={styles.accentInkInk.color} /> : <Text variant="bodyStrong" style={styles.buttonText}>{t('chat.save')}</Text>}
                 </Button>
-                {!isNew ? <Button accessibilityRole="button" containerStyle={styles.deleteRow} onPress={remove} variant="tertiary" size="md" label={"Delete persona"}><Text variant="body" style={styles.danger}>Delete persona</Text></Button> : null}
+                {!isNew ? <Button accessibilityRole="button" containerStyle={styles.deleteRow} onPress={remove} variant="tertiary" size="md" label={t('chat.deletepersona')}><Text variant="body" style={styles.danger}>{t('chat.deletepersona')}</Text></Button> : null}
             </KeyboardFormScrollView>
         </KeyboardScreen>
     );

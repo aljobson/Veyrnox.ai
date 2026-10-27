@@ -5,7 +5,7 @@ import { useAuth } from '../../../auth/AuthProvider';
 import { touchTarget } from '../../../lib/a11y';
 import { cleanProjectName, deleteProject, fetchHistory, fetchProject, mergeVersions, projectsErrorMessage, renameProject, restoreVersion, versionLabel, type Project, type Version } from '../../../lib/projects';
 import { EDITOR_ENABLED } from '../../../lib/editorFlag';
-import { t } from '../../../lib/i18n';
+import { formatLocale, t } from '../../../lib/i18n';
 import { colors } from '../../../theme';
 
 export default function ProjectDetail() {
@@ -23,7 +23,7 @@ export default function ProjectDetail() {
 
     async function saveName() {
         const name = cleanProjectName(renaming ?? '');
-        if (!project || !name || busy) return setNote('Give the project a name of up to 120 characters.');
+        if (!project || !name || busy) return setNote(t('projects.givetheprojectanameofup'));
         setBusy(true);
         setNote(null);
         try {
@@ -39,10 +39,10 @@ export default function ProjectDetail() {
 
     function confirmDelete() {
         if (!project) return;
-        Alert.alert('Delete this project?', 'The project and its saved versions are removed. This cannot be undone.', [
-            { text: 'Cancel', style: 'cancel' },
+        Alert.alert(t('projects.deletethisproject'), t('projects.theprojectanditssavedversionsare'), [
+            { text: t('projects.cancel'), style: 'cancel' },
             {
-                text: 'Delete',
+                text: t('projects.delete'),
                 style: 'destructive',
                 onPress: async () => {
                     setBusy(true);
@@ -60,10 +60,10 @@ export default function ProjectDetail() {
 
     function confirmRestore(v: Version) {
         if (!project) return;
-        Alert.alert(`Restore version ${v.revision}?`, 'This saves a new version copied from it. Your other versions stay.', [
-            { text: 'Cancel', style: 'cancel' },
+        Alert.alert(t('projects.restoreversion', { value1: v.revision }), t('projects.thissavesanewversioncopiedfrom'), [
+            { text: t('projects.cancel'), style: 'cancel' },
             {
-                text: 'Restore',
+                text: t('projects.restore'),
                 onPress: async () => {
                     setBusy(true);
                     setNote(null);
@@ -113,8 +113,8 @@ export default function ProjectDetail() {
         }
     }
 
-    if (problem) return <View style={styles.screen}><Stack.Screen options={{ title: 'Project' }} /><Pressable accessibilityRole="button" style={touchTarget} onPress={load}><Text style={styles.error}>{problem} Tap to retry.</Text></Pressable></View>;
-    if (!project || !versions) return <View style={styles.screen}><Stack.Screen options={{ title: 'Project' }} /><ActivityIndicator color={colors.accent} /></View>;
+    if (problem) return <View style={styles.screen}><Stack.Screen options={{ title: t('projects.project') }} /><Pressable accessibilityRole="button" style={touchTarget} onPress={load}><Text style={styles.error}>{t('projects.taptoretry', { value1: problem })}</Text></Pressable></View>;
+    if (!project || !versions) return <View style={styles.screen}><Stack.Screen options={{ title: t('projects.project') }} /><ActivityIndicator color={colors.accent} /></View>;
 
     return (
         <View style={styles.screen}>
@@ -122,34 +122,34 @@ export default function ProjectDetail() {
             {EDITOR_ENABLED && <Pressable accessibilityRole="button" accessibilityLabel={t('editor.open')} style={touchTarget} onPress={() => router.push({ pathname: '/editor/[projectId]', params: { projectId: project.id } })}><Text style={styles.name}>{t('editor.open')}</Text></Pressable>}
             {renaming !== null ? (
                 <View style={styles.renameRow}>
-                    <TextInput style={styles.input} value={renaming} onChangeText={setRenaming} accessibilityLabel="Project name" maxLength={120} autoFocus returnKeyType="done" onSubmitEditing={saveName} placeholderTextColor={colors.muted} />
-                    <Pressable accessibilityRole="button" disabled={busy} style={[styles.go, touchTarget, busy && styles.off]} onPress={saveName}><Text style={styles.goText}>Save</Text></Pressable>
+                    <TextInput style={styles.input} value={renaming} onChangeText={setRenaming} accessibilityLabel={t('projects.projectname')} maxLength={120} autoFocus returnKeyType="done" onSubmitEditing={saveName} placeholderTextColor={colors.muted} />
+                    <Pressable accessibilityRole="button" disabled={busy} style={[styles.go, touchTarget, busy && styles.off]} onPress={saveName}><Text style={styles.goText}>{t('projects.save')}</Text></Pressable>
                 </View>
             ) : (
                 <View style={styles.actions}>
-                    <Pressable accessibilityRole="button" disabled={busy} style={touchTarget} onPress={() => setRenaming(project.name)}><Text style={styles.action}>Rename</Text></Pressable>
-                    <Pressable accessibilityRole="button" disabled={busy} style={touchTarget} onPress={confirmDelete}><Text style={styles.danger}>Delete</Text></Pressable>
+                    <Pressable accessibilityRole="button" disabled={busy} style={touchTarget} onPress={() => setRenaming(project.name)}><Text style={styles.action}>{t('projects.rename')}</Text></Pressable>
+                    <Pressable accessibilityRole="button" disabled={busy} style={touchTarget} onPress={confirmDelete}><Text style={styles.danger}>{t('projects.delete')}</Text></Pressable>
                 </View>
             )}
             {note ? <Text style={styles.error} accessibilityRole="alert">{note}</Text> : null}
-            <Text style={styles.meta}>Version {project.version}{project.createdAt ? ` · created ${new Date(project.createdAt).toLocaleDateString()}` : ''}{project.updatedAt ? ` · updated ${new Date(project.updatedAt).toLocaleString()}` : ''}</Text>
-            <Text style={styles.heading} accessibilityRole="header">Saved versions</Text>
+            <Text style={styles.meta}>{t('projects.version', { value1: project.version, value2: project.createdAt ? t('projects.created', { value1: new Date(project.createdAt).toLocaleDateString(formatLocale()) }) : '', value3: project.updatedAt ? t('projects.updated', { value1: new Date(project.updatedAt).toLocaleString(formatLocale()) }) : '' })}</Text>
+            <Text style={styles.heading} accessibilityRole="header">{t('projects.savedversions')}</Text>
             <FlatList
                 data={versions}
                 keyExtractor={(v) => String(v.revision)}
                 onEndReached={more}
                 onEndReachedThreshold={0.4}
-                ListEmptyComponent={<Text style={styles.muted}>No saved versions yet.</Text>}
-                ListFooterComponent={<Text style={styles.note}>The timeline is edited in the editor.</Text>}
+                ListEmptyComponent={<Text style={styles.muted}>{t('projects.nosavedversionsyet')}</Text>}
+                ListFooterComponent={<Text style={styles.note}>{t('projects.thetimelineiseditedintheeditor')}</Text>}
                 renderItem={({ item }) => (
                     <View style={styles.row}>
                         <View style={styles.rowText}>
                             <Text style={styles.name}>{versionLabel(item)}</Text>
-                            {item.createdAt ? <Text style={styles.muted}>{new Date(item.createdAt).toLocaleString()}</Text> : null}
+                            {item.createdAt ? <Text style={styles.muted}>{new Date(item.createdAt).toLocaleString(formatLocale())}</Text> : null}
                         </View>
                         {item.revision !== versions[0]?.revision ? (
-                            <Pressable accessibilityRole="button" accessibilityLabel={`Restore version ${item.revision}`} disabled={busy} style={[styles.restore, touchTarget]} onPress={() => confirmRestore(item)}>
-                                <Text style={styles.action}>Restore</Text>
+                            <Pressable accessibilityRole="button" accessibilityLabel={t('projects.restoreversion2', { value1: item.revision })} disabled={busy} style={[styles.restore, touchTarget]} onPress={() => confirmRestore(item)}>
+                                <Text style={styles.action}>{t('projects.restore')}</Text>
                             </Pressable>
                         ) : null}
                     </View>

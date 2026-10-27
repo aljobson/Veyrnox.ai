@@ -24,11 +24,11 @@ export default function CreateTools() {
     const source = params.source === 'image' || params.source === 'video' ? params.source : null;
     const groups = useMemo(() => toolGroups(source ? (models ?? []).filter((model) => requiresSource(model, source)) : (models ?? [])), [models, source]);
     const lead = params.mode === 'reference'
-        ? 'Choose what your reference should guide. You will pick the actual image on the next screen.'
+        ? t('tools.choosewhatyourreferenceshouldguideYou')
         : source === 'image'
-            ? 'Choose what to do with your photo. You will pick the actual image on the next screen.'
+            ? t('tools.choosewhattodowithyourphoto')
             : source === 'video'
-                ? 'Choose what to do with your video. You will pick the actual clip on the next screen.'
+                ? t('tools.choosewhattodowithyourvideo')
                 : t('toolsDir.lead');
 
     return (

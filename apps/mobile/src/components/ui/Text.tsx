@@ -1,3 +1,4 @@
+import { I18nManager } from 'react-native';
 import { DisabledTextContext } from './DisabledTextContext';
 import { useAnnouncement, announcementText } from '../../lib/useAnnouncement';
 import { useContext } from 'react';
@@ -20,7 +21,7 @@ export function Text({ variant = 'body', tone = 'primary', style, ...props }: Te
             {...props}
             allowFontScaling
             maxFontSizeMultiplier={props.maxFontSizeMultiplier ?? fontScaleCap(variant)}
-            style={[s[variant], s[tone], style, disabled && s.tertiary, face && !loadedFonts.has(face) ? fallback : undefined]}
+            style={[I18nManager.isRTL ? { textAlign: 'right', writingDirection: 'rtl' } : undefined, s[variant], s[tone], style, disabled && s.tertiary, face && !loadedFonts.has(face) ? fallback : undefined]}
         />
     );
 }

@@ -1,3 +1,4 @@
+import { t } from './i18n';
 // Spike S1 (docs/mobile/spikes/S1-editor-export.md): can the web editor run inside a web view on a real
 // iPhone? Everything here is pure so jest can pin it; the screen in src/components/dev/EditorSpikeHarness.tsx
 // only wires it to a WebView. Dev-only: nothing outside the hidden route imports this file.
@@ -145,15 +146,15 @@ export function appendEvent(log: readonly LogEvent[], event: LogEvent, max = 400
 export function describeMessage(message: PageMessage): { kind: LogKind; detail?: string } | null {
     switch (message.type) {
         case 'ready':
-            return { kind: 'page', detail: `${message.href} webcodecs=${message.webcodecs} offscreen=${message.offscreenCanvas}` };
+            return { kind: 'page', detail: t('editorSpike.webcodecsoffscreen', { value1: message.href, value2: String(message.webcodecs), value3: String(message.offscreenCanvas) }) };
         case 'files':
-            return { kind: 'files', detail: `${message.count} file(s), ${(message.bytes / 1048576).toFixed(1)} MB, ${message.kinds.join(',')}` };
+            return { kind: 'files', detail: t('editorSpike.filesMB', { value1: message.count, value2: (message.bytes / 1048576).toFixed(1), value3: message.kinds.join(',') }) };
         case 'export-start':
             return { kind: 'export-start' };
         case 'export-end':
             return { kind: 'export-end' };
         case 'output':
-            return { kind: 'output', detail: `${(message.bytes / 1048576).toFixed(1)} MB ${message.mime}` };
+            return { kind: 'output', detail: t('editorSpike.mB', { value1: (message.bytes / 1048576).toFixed(1), value2: message.mime }) };
         case 'error':
             return { kind: 'error', detail: message.message };
         default:

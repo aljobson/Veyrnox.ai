@@ -1,3 +1,5 @@
+import { I18nManager } from 'react-native';
+import { displayLabel } from '../../lib/displayLabels';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -48,7 +50,7 @@ export function AnimateCard({ id }: { id: string }) {
             <View style={styles.chips}>
                 {MOTIONS.map((m) => (
                     <Pressable key={m.id} accessibilityRole="button" accessibilityState={selectedState(m.id === motionId)} style={[styles.chip, m.id === motionId && styles.chipOn]} onPress={() => setMotionId(m.id)}>
-                        <Text style={[styles.chipText, m.id === motionId && styles.chipTextOn]}>{m.name}</Text>
+                        <Text style={[styles.chipText, m.id === motionId && styles.chipTextOn]}>{displayLabel(m.name)}</Text>
                     </Pressable>
                 ))}
             </View>
@@ -74,6 +76,6 @@ const styles = StyleSheet.create({
     choice: { minHeight: MIN_TARGET, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, backgroundColor: colors.background, borderRadius: 10, borderWidth: 1, borderColor: colors.borderStrong, paddingHorizontal: 14, paddingVertical: 8 },
     off: { opacity: 0.5 },
     choiceText: { color: colors.text, fontSize: 15, fontWeight: '700', flex: 1 },
-    price: { color: colors.money, fontSize: 14, fontWeight: '700', flexShrink: 1, textAlign: 'right' },
+    price: { color: colors.money, fontSize: 14, fontWeight: '700', flexShrink: 1, textAlign: I18nManager.isRTL ? 'left' : 'right' },
     problem: { color: colors.danger, fontSize: 13 },
 });

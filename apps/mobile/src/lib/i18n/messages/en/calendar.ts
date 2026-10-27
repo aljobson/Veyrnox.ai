@@ -24,4 +24,6 @@ export default {
     'calendar.noneDay': 'Nothing scheduled on this day.',
     'calendar.postsOne': '{count} post',
     'calendar.postsMany': '{count} posts',
+    "calendar.posts.one": "{count} post",
+    "calendar.posts.other": "{count} posts",
 } as const;

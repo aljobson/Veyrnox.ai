@@ -63,7 +63,7 @@ export function HeaderRight({ palette }: { palette?: Palette }) {
     );
 }
 const sheets = themedStyles((p) => ({
-    row: { flexDirection: 'row', alignItems: 'center', gap: ds.space.xs, marginRight: ds.space.sm },
+    row: { flexDirection: 'row', alignItems: 'center', gap: ds.space.xs, marginEnd: ds.space.sm },
     chip: {
         minHeight: 44,
         minWidth: 44,

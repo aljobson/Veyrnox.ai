@@ -1,3 +1,4 @@
+import { t } from './i18n';
 // Film Studio on the phone: validate the same studio document used by native editing and account cloud saves, show its
 // stages, shots and assets, and hand a current shot prompt to Create.
 // The checks below are copies of app/veyrnox/_lib/filmStudio.js and filmStudioStorage.js; __tests__/filmStudio.test.ts
@@ -9,21 +10,21 @@ export const FILM_STUDIO_WEB_PATH = '/app/film-studio';
 const FIELD_MAX = 24_000;
 
 export const FILM_STAGES: readonly (readonly [string, string])[] = [
-    ['setup', 'Set up your tools'],
-    ['studio-init', 'Create your studio'],
-    ['film-breakdown', 'Break down the film'],
-    ['reference-board', 'Approve references'],
-    ['asset-passport', 'Create asset passports'],
-    ['stress-test', 'Test and lock assets'],
-    ['shot-prompt', 'Write shot prompts'],
+    ['setup', t('filmStudio.setupyourtools')],
+    ['studio-init', t('filmStudio.createyourstudio')],
+    ['film-breakdown', t('filmStudio.breakdownthefilm')],
+    ['reference-board', t('filmStudio.approvereferences')],
+    ['asset-passport', t('filmStudio.createassetpassports')],
+    ['stress-test', t('filmStudio.testandlockassets')],
+    ['shot-prompt', t('filmStudio.writeshotprompts')],
 ];
 export const STYLE_BOARDS = ['light', 'color', 'optics', 'camera movement', 'texture', 'cutting tempo', 'sound'];
 export const PROMPT_BLOCKS = ['Scene context', 'Active references', 'Location map', 'First-frame blocking', 'Format mode', 'Optics', 'Camera body', 'Action timing', 'Physics', 'Lighting', 'Audio', 'Character acting', 'Style prefix', 'Quality bar', 'Positive constraints'];
-export const PROMPT_DETAILS = [['map', 'Positions, distances in metres and camera axis'], ['camera', 'Camera height, support, path and stopping point'], ['timing', 'Action beats of 0.3–0.8 seconds'], ['physics', 'Persistent physical consequences'], ['lighting', 'Light sources and palette from the location passport'], ['audio', 'Ambience and in-frame sound'], ['palette', '60:30:10 dominant, secondary and accent colours'], ['quality', 'Reference match and quality requirements'], ['constraints', 'Visible positive constraints and the failure condition']] as const;
+export const PROMPT_DETAILS = [['map', t('filmStudio.positionsdistancesinmetresandcameraaxis')], ['camera', t('filmStudio.cameraheightsupportpathandstoppingpoint')], ['timing', t('filmStudio.actionbeatsof0308')], ['physics', t('filmStudio.persistentphysicalconsequences')], ['lighting', t('filmStudio.lightsourcesandpalettefromthelocation')], ['audio', t('filmStudio.ambienceandinframesound')], ['palette', '60:30:10 dominant, secondary and accent colours'], ['quality', t('filmStudio.referencematchandqualityrequirements')], ['constraints', t('filmStudio.visiblepositiveconstraintsandthefailurecondition')]] as const;
 export const SHOT_LANES: readonly (readonly [string, readonly (readonly [string, string])[]])[] = [
-    ['Identity', [['id', 'Scene / shot ID'], ['location', 'Location asset'], ['time', 'Time of day'], ['characters', 'Character assets'], ['props', 'Prop assets'], ['description', 'Description'], ['dialogue', 'Verbatim dialogue'], ['seconds', 'Running time'], ['complexity', 'Complexity']]],
-    ['Direction', [['goal', 'Shot goal'], ['action', 'Task as a verb'], ['dramaturgy', 'Dramaturgy'], ['blocking', 'Blocking'], ['acting', 'Acting'], ['style', 'Style device']]],
-    ['Camera / edit', [['size', 'Shot size'], ['movement', 'Camera movement'], ['lens', 'Lens'], ['angle', 'Angle'], ['cut', 'Cut type'], ['pace', 'Pace'], ['transition', 'Transition']]],
+    [t('filmStudio.identity'), [['id', t('filmStudio.sceneshotID')], ['location', t('filmStudio.locationasset')], ['time', t('filmStudio.timeofday')], ['characters', t('filmStudio.characterassets')], ['props', t('filmStudio.propassets')], ['description', t('filmStudio.description')], ['dialogue', t('filmStudio.verbatimdialogue')], ['seconds', t('filmStudio.runningtime')], ['complexity', t('filmStudio.complexity')]]],
+    [t('filmStudio.direction'), [['goal', t('filmStudio.shotgoal')], ['action', t('filmStudio.taskasaverb')], ['dramaturgy', t('filmStudio.dramaturgy')], ['blocking', t('filmStudio.blocking')], ['acting', t('filmStudio.acting')], ['style', t('filmStudio.styledevice')]]],
+    [t('filmStudio.cameraedit'), [['size', t('filmStudio.shotsize')], ['movement', t('filmStudio.cameramovement')], ['lens', t('filmStudio.lens')], ['angle', t('filmStudio.angle')], ['cut', t('filmStudio.cuttype')], ['pace', t('filmStudio.pace')], ['transition', t('filmStudio.transition')]]],
 ];
 export const ACCEPTANCE_CHECKS = ['References match', 'Anatomy and surfaces are clean', 'Camera follows the card', 'Performance and lip-sync hold', 'Continuity matches adjacent shots', 'Palette matches'];
 
@@ -75,16 +76,16 @@ export type ParseResult = { ok: true; film: Film } | { ok: false; error: string 
 
 // The same schema, size, bounds and identifier checks as the web workspace.
 export function parseFilm(raw: string): ParseResult {
-    if (typeof raw !== 'string' || byteLength(raw) > MAX_FILM_BYTES) return { ok: false, error: 'The studio file must be smaller than 1 MB.' };
+    if (typeof raw !== 'string' || byteLength(raw) > MAX_FILM_BYTES) return { ok: false, error: t('filmStudio.thestudiofilemustbesmallerthan') };
     let f: unknown;
     try {
         f = JSON.parse(raw);
     } catch {
-        return { ok: false, error: 'That is not a valid Film Studio project.' };
+        return { ok: false, error: t('filmStudio.thatisnotavalidFilmStudio') };
     }
     if (isObj(f) && f.targetSeconds === undefined) f = { ...f, targetSeconds: 60 };
     if (isObj(f) && f.templateId === undefined) f = { ...f, templateId: '' };
-    const bad = { ok: false, error: 'This is not a valid Film Studio project.' } as const;
+    const bad = { ok: false, error: t('filmStudio.thisisnotavalidFilmStudio') } as const;
     if (!isObj(f) || f.schema !== 1 || !strings(f, ['name', 'script', 'templateId']) || !/^(?:|[a-z0-9][a-z0-9-]{0,99})$/.test(f.templateId as string)) return bad;
     if (![30, 60, 90, 120].includes(f.targetSeconds as number) || !strings(f.stack, STACK_KEYS) || !['16:9', '9:16', '1:1'].includes((f.stack as Obj).aspect as string)) return bad;
     const valid =
@@ -102,7 +103,7 @@ export function parseFilm(raw: string): ParseResult {
     const film = f as unknown as Film;
     const unique = (items: unknown[]) => new Set(items).size === items.length;
     if (!unique(film.shots.map((s) => s.id)) || !unique(film.boards.map((b) => b.id)) || !unique(film.assets.map((a) => assetKey(a))) || !unique(film.prompts.map((p) => `${p.shot}:${p.version}`)) || !unique(film.attempts.map((a) => `${a.shot}:${a.version}`))) {
-        return { ok: false, error: 'The studio file contains duplicate identifiers.' };
+        return { ok: false, error: t('filmStudio.thestudiofilecontainsduplicateidentifiers') };
     }
     return { ok: true, film };
 }
@@ -119,12 +120,12 @@ export function assetType(film: Film, key: string): string {
 }
 
 export function shotIssues(s: Shot): string[] {
-    const issues = SHOT_LANES.flatMap(([, fields]) => fields.filter(([key]) => !present(s[key])).map(([, label]) => `${label} is missing.`));
-    if (!(Number(s.seconds) >= 10 && Number(s.seconds) <= 15)) issues.push('A clip must last 10–15 seconds.');
-    if (!s.oneAction) issues.push('Confirm that the clip contains one action.');
-    if (!validAssetKey(s.location)) issues.push('Use an exact location tag and version, such as @room:v1.');
-    if ([...assetTags(s.characters), ...assetTags(s.props)].some((k) => !validAssetKey(k))) issues.push('Character and prop tags need an exact version. Use none for an empty list.');
-    if (s.text && (!present(s.textPlacement) || !present(s.textContext))) issues.push('Give the separate text task its placement and context.');
+    const issues = SHOT_LANES.flatMap(([, fields]) => fields.filter(([key]) => !present(s[key])).map(([, label]) => t('filmStudio.ismissing', { value1: label })));
+    if (!(Number(s.seconds) >= 10 && Number(s.seconds) <= 15)) issues.push(t('filmStudio.aclipmustlast1015seconds'));
+    if (!s.oneAction) issues.push(t('filmStudio.confirmthattheclipcontainsoneaction'));
+    if (!validAssetKey(s.location)) issues.push(t('filmStudio.useanexactlocationtagandversion'));
+    if ([...assetTags(s.characters), ...assetTags(s.props)].some((k) => !validAssetKey(k))) issues.push(t('filmStudio.characterandproptagsneedanexact'));
+    if (s.text && (!present(s.textPlacement) || !present(s.textContext))) issues.push(t('filmStudio.givetheseparatetexttaskitsplacement'));
     return issues;
 }
 
@@ -132,10 +133,10 @@ function boardIssues(b: Board): string[] {
     const refs = b.references.filter((r) => r.kind === 'reference');
     const range = ({ character: [10, 20], location: [8, 15], prop: [3, 5], style: [1, 100] } as Record<string, number[]>)[b.type];
     const issues: string[] = [];
-    if (!range || refs.length < range[0] || refs.length > range[1]) issues.push(`${b.name}: needs ${range?.join('–') || 'valid'} references.`);
-    if (b.references.some((r) => !present(r.source) || !present(r.caption))) issues.push(`${b.name}: every reference needs its source and a precise caption.`);
-    if (new Set(b.references.map((r) => r.source.trim())).size !== b.references.length) issues.push(`${b.name}: reference sources must be distinct.`);
-    if (b.decision !== 'approved') issues.push(`${b.name}: needs a written approval.`);
+    if (!range || refs.length < range[0] || refs.length > range[1]) issues.push(t('filmStudio.needsreferences', { value1: b.name, value2: range?.join('–') || 'valid' }));
+    if (b.references.some((r) => !present(r.source) || !present(r.caption))) issues.push(t('filmStudio.everyreferenceneedsitssourceanda', { value1: b.name }));
+    if (new Set(b.references.map((r) => r.source.trim())).size !== b.references.length) issues.push(t('filmStudio.referencesourcesmustbedistinct', { value1: b.name }));
+    if (b.decision !== 'approved') issues.push(t('filmStudio.needsawrittenapproval', { value1: b.name }));
     return issues;
 }
 
@@ -176,10 +177,10 @@ export function lockAsset(film: Film, key: string): Film {
         if (issue) throw new Error(issue);
     }
     const asset = film.assets.find((item) => assetKey(item) === key);
-    if (!asset) throw new Error('The asset passport is missing.');
+    if (!asset) throw new Error(t('filmStudio.theassetpassportismissing'));
     const rows = testMatrix(film, asset);
-    if (!rows.every((row) => asset.tests?.[row.id]?.verdict === 'pass' && present(asset.tests[row.id].result))) throw new Error('Every test needs an output reference and a pass.');
-    if (new Set(rows.map((row) => asset.tests[row.id].result.trim())).size !== rows.length) throw new Error('Every test needs its own distinct output.');
+    if (!rows.every((row) => asset.tests?.[row.id]?.verdict === 'pass' && present(asset.tests[row.id].result))) throw new Error(t('filmStudio.everytestneedsanoutputreferenceand'));
+    if (new Set(rows.map((row) => asset.tests[row.id].result.trim())).size !== rows.length) throw new Error(t('filmStudio.everytestneedsitsowndistinctoutput'));
     return { ...film, assets: film.assets.map((item) => item === asset ? { ...item, lock: { context: lockContext(film, item), at: new Date().toISOString() } } : item) };
 }
 
@@ -204,7 +205,7 @@ export function buildShotPrompt(film: Film, shot: Shot, details: Record<string, 
         const issue = stageIssues(film, stage)[0];
         if (issue) throw new Error(issue);
     }
-    if (PROMPT_DETAILS.some(([key]) => !present(details[key]))) throw new Error('Complete every prompt detail.');
+    if (PROMPT_DETAILS.some(([key]) => !present(details[key]))) throw new Error(t('filmStudio.completeeverypromptdetail'));
     const assets = shotAssets(shot).map((key) => film.assets.find((item) => assetKey(item) === key) as Asset);
     const characters = assetTags(shot.characters).length;
     const values = [
@@ -221,55 +222,55 @@ export function buildShotPrompt(film: Film, shot: Shot, details: Record<string, 
 
 export function nextPromptVersion(film: Film, shot: Shot, content: string): Prompt {
     const headings = content.split('\n').filter((line) => /^\d+\. /.test(line));
-    if (headings.length !== 15 || PROMPT_BLOCKS.some((title, index) => headings[index] !== `${index + 1}. ${title}`)) throw new Error('Preserve all fifteen prompt blocks in their original order.');
+    if (headings.length !== 15 || PROMPT_BLOCKS.some((title, index) => headings[index] !== `${index + 1}. ${title}`)) throw new Error(t('filmStudio.preserveallfifteenpromptblocksintheir'));
     const previous = film.prompts.filter((prompt) => prompt.shot === shot.id).sort((a, b) => a.version - b.version);
     const last = previous.at(-1);
-    if (last && !film.attempts.some((attempt) => attempt.shot === shot.id && attempt.version === last.version)) throw new Error('Log the previous generation result and verdict before revising.');
+    if (last && !film.attempts.some((attempt) => attempt.shot === shot.id && attempt.version === last.version)) throw new Error(t('filmStudio.logthepreviousgenerationresultandverdict'));
     if (last && last.context === promptContext(film, shot)) {
         const before = last.content.split('\n');
         const after = content.split('\n');
-        if (before.length !== after.length || before.filter((line, index) => line !== after[index]).length !== 1) throw new Error('Change exactly one line. Keep all other lines verbatim.');
+        if (before.length !== after.length || before.filter((line, index) => line !== after[index]).length !== 1) throw new Error(t('filmStudio.changeexactlyonelineKeepallother'));
         const descriptors = shotAssets(shot).map((key) => film.assets.find((asset) => assetKey(asset) === key)?.descriptor ?? '');
-        if (descriptors.some((descriptor) => !content.includes(descriptor))) throw new Error('Canonical descriptors must stay verbatim.');
-        if (shot.dialogue !== 'none' && !content.includes(String(shot.dialogue))) throw new Error('Keep the supplied dialogue verbatim.');
+        if (descriptors.some((descriptor) => !content.includes(descriptor))) throw new Error(t('filmStudio.canonicaldescriptorsmuststayverbatim'));
+        if (shot.dialogue !== 'none' && !content.includes(String(shot.dialogue))) throw new Error(t('filmStudio.keepthesupplieddialogueverbatim'));
     }
     return { shot: shot.id, version: (last?.version ?? 0) + 1, content, context: promptContext(film, shot), at: new Date().toISOString() };
 }
 
 export function logFilmAttempt(film: Film, prompt: Prompt, entry: { result: string; changed: string; verdict: 'accepted' | 'rejected'; checks?: string[] }): Film {
-    if (!film.prompts.includes(prompt) || !present(entry.result) || !present(entry.changed)) throw new Error('Record the result and what changed.');
-    if (film.attempts.some((attempt) => attempt.shot === prompt.shot && attempt.version === prompt.version)) throw new Error('This prompt version already has a result.');
+    if (!film.prompts.includes(prompt) || !present(entry.result) || !present(entry.changed)) throw new Error(t('filmStudio.recordtheresultandwhatchanged'));
+    if (film.attempts.some((attempt) => attempt.shot === prompt.shot && attempt.version === prompt.version)) throw new Error(t('filmStudio.thispromptversionalreadyhasaresult'));
     const shot = film.shots.find((item) => item.id === prompt.shot);
-    if (!shot || prompt.context !== promptContext(film, shot) || Array.from({ length: 6 }, (_, index) => index).some((stage) => stageIssues(film, stage).length)) throw new Error('Rebuild the prompt from the current locked passports before recording an attempt.');
-    if (entry.verdict === 'accepted' && !ACCEPTANCE_CHECKS.every((check) => entry.checks?.includes(check))) throw new Error('An accepted take needs all six quality checks.');
+    if (!shot || prompt.context !== promptContext(film, shot) || Array.from({ length: 6 }, (_, index) => index).some((stage) => stageIssues(film, stage).length)) throw new Error(t('filmStudio.rebuildthepromptfromthecurrentlocked'));
+    if (entry.verdict === 'accepted' && !ACCEPTANCE_CHECKS.every((check) => entry.checks?.includes(check))) throw new Error(t('filmStudio.anacceptedtakeneedsallsixquality'));
     return { ...film, attempts: [...film.attempts, { shot: prompt.shot, version: prompt.version, result: entry.result, changed: entry.changed, verdict: entry.verdict, checks: entry.checks ?? [], at: new Date().toISOString() }] };
 }
 
 export function stageIssues(film: Film, stage: number): string[] {
     if (stage === 0) {
-        return [!present(film.stack.image) && 'Choose an image model.', !present(film.stack.video) && 'Choose a video model.', !(Number(film.stack.seconds) >= 10 && Number(film.stack.seconds) <= 15) && 'Choose a clip length of 10–15 seconds.'].filter(Boolean) as string[];
+        return [!present(film.stack.image) && t('filmStudio.chooseanimagemodel'), !present(film.stack.video) && t('filmStudio.chooseavideomodel'), !(Number(film.stack.seconds) >= 10 && Number(film.stack.seconds) <= 15) && t('filmStudio.chooseacliplengthof1015')].filter(Boolean) as string[];
     }
-    if (stage === 1) return present(film.name) ? [] : ['Name your studio.'];
+    if (stage === 1) return present(film.name) ? [] : [t('filmStudio.nameyourstudio')];
     if (stage === 2) {
-        return [!present(film.script) && 'Add the script, treatment or idea.', !film.shots.length && 'Add at least one shot.', ...film.shots.flatMap((s) => shotIssues(s).map((i) => `${s.id || 'Shot'}: ${i}`)), new Set(film.shots.map((s) => s.id)).size !== film.shots.length && 'Shot IDs must be unique.'].filter(Boolean) as string[];
+        return [!present(film.script) && t('filmStudio.addthescripttreatmentoridea'), !film.shots.length && t('filmStudio.addatleastoneshot'), ...film.shots.flatMap((s) => shotIssues(s).map((i) => `${s.id || 'Shot'}: ${i}`)), new Set(film.shots.map((s) => s.id)).size !== film.shots.length && t('filmStudio.shotIDsmustbeunique')].filter(Boolean) as string[];
     }
     const required = [...new Set(film.shots.flatMap(shotAssets))];
     if (stage === 3) {
         return [
-            ...required.filter((k) => !film.boards.some((b) => b.name === k && b.type === assetType(film, k))).map((k) => `Add a ${assetType(film, k)} reference board for ${k}.`),
-            ...STYLE_BOARDS.filter((k) => !film.boards.some((b) => b.name === k && b.type === 'style')).map((k) => `Add the ${k} style board.`),
+            ...required.filter((k) => !film.boards.some((b) => b.name === k && b.type === assetType(film, k))).map((k) => t('filmStudio.addareferenceboardfor', { value1: assetType(film, k), value2: k })),
+            ...STYLE_BOARDS.filter((k) => !film.boards.some((b) => b.name === k && b.type === 'style')).map((k) => t('filmStudio.addthestyleboard', { value1: k })),
             ...film.boards.flatMap(boardIssues),
         ];
     }
     if (stage === 4) {
         return required.flatMap((k) => {
             const a = film.assets.find((x) => assetKey(x) === k);
-            if (!a) return [`Create the ${k} passport.`];
-            return a.type !== assetType(film, k) || !present(a.descriptor) || !a.references.length || a.references.some((r) => !present(r)) ? [`${k}: complete its type, descriptor and reference files.`] : [];
+            if (!a) return [t('filmStudio.createthepassport', { value1: k })];
+            return a.type !== assetType(film, k) || !present(a.descriptor) || !a.references.length || a.references.some((r) => !present(r)) ? [t('filmStudio.completeitstypedescriptorandreferencefiles', { value1: k })] : [];
         });
     }
-    if (stage === 5) return required.filter((k) => !isLocked(film, film.assets.find((a) => assetKey(a) === k))).map((k) => `${k} is draft. Pass its entire test matrix and record the lock decision.`);
-    return film.shots.filter((s) => !film.prompts.some((p) => p.shot === s.id && p.context === promptContext(film, s))).map((s) => `Write the current prompt for ${s.id}.`);
+    if (stage === 5) return required.filter((k) => !isLocked(film, film.assets.find((a) => assetKey(a) === k))).map((k) => t('filmStudio.isdraftPassitsentiretestmatrix', { value1: k }));
+    return film.shots.filter((s) => !film.prompts.some((p) => p.shot === s.id && p.context === promptContext(film, s))).map((s) => t('filmStudio.writethecurrentpromptfor', { value1: s.id }));
 }
 
 export interface StageStatus { readonly id: string; readonly title: string; readonly open: number; readonly done: boolean; readonly first: string | null }
@@ -293,11 +294,11 @@ export interface ShotRow {
 }
 
 const STATE_LABEL: Record<ShotState, string> = {
-    accepted: 'Take accepted',
-    'prompt-ready': 'Prompt ready',
-    'prompt-stale': 'Prompt out of date',
-    'no-prompt': 'No prompt yet',
-    blocked: 'Waiting for locked assets',
+    accepted: t('filmStudio.takeaccepted'),
+    'prompt-ready': t('filmStudio.promptready'),
+    'prompt-stale': t('filmStudio.promptoutofdate'),
+    'no-prompt': t('filmStudio.nopromptyet'),
+    blocked: t('filmStudio.waitingforlockedassets'),
 };
 
 export function latestPrompt(film: Film, shotId: string): Prompt | null {
@@ -336,17 +337,17 @@ export function findVideoModel(film: Film, catalog: readonly CatalogModel[]): Ca
 
 export function handoffFor(film: Film, shot: Shot, catalog: readonly CatalogModel[]): Handoff {
     const row = shotRow(film, shot);
-    if (row.state === 'accepted') return { ok: false, reason: 'This shot already has an accepted take.' };
-    if (row.state === 'blocked') return { ok: false, reason: 'Every asset in this shot must be locked on the web first.' };
+    if (row.state === 'accepted') return { ok: false, reason: t('filmStudio.thisshotalreadyhasanacceptedtake') };
+    if (row.state === 'blocked') return { ok: false, reason: t('filmStudio.everyassetinthisshotmustbe') };
     const prompt = latestPrompt(film, shot.id);
-    if (!prompt) return { ok: false, reason: 'Write this shot’s prompt on the web first.' };
-    if (row.state === 'prompt-stale') return { ok: false, reason: 'The prompt is out of date. Rebuild it on the web from the locked passports.' };
+    if (!prompt) return { ok: false, reason: t('filmStudio.writethisshotspromptonthe') };
+    if (row.state === 'prompt-stale') return { ok: false, reason: t('filmStudio.thepromptisoutofdateRebuild') };
     const model = findVideoModel(film, catalog);
-    if (!model) return { ok: false, reason: `${film.stack.video || 'The studio’s video model'} is not in today’s price list on the phone. Use the web, or choose it in Create.` };
+    if (!model) return { ok: false, reason: t('filmStudio.isnotintodayspricelist', { value1: film.stack.video || t('filmStudio.videoModelFallback') }) };
     const seconds = Number(shot.seconds);
-    if (!model.durations.includes(seconds)) return { ok: false, reason: `${model.name} does not offer ${seconds}-second clips.` };
+    if (!model.durations.includes(seconds)) return { ok: false, reason: t('filmStudio.doesnotoffersecondclips', { value1: model.name, value2: seconds }) };
     const limit = textInput(model)?.max;
-    if (!limit || prompt.content.length > limit) return { ok: false, reason: `This prompt is ${prompt.content.length} characters; ${model.name} takes ${limit ?? 0}. It is never cut short. Share it to an external workflow, or continue on the web.` };
+    if (!limit || prompt.content.length > limit) return { ok: false, reason: t('filmStudio.thispromptischaracterstakesItis', { value1: prompt.content.length, value2: model.name, value3: limit ?? 0 }) };
     return { ok: true, model, credits: estimateCredits(model, seconds), seconds, prompt: prompt.content };
 }
 
@@ -363,7 +364,7 @@ export interface Summary {
 export function summarize(film: Film): Summary {
     const rows = shotRows(film);
     return {
-        name: film.name || 'Untitled film',
+        name: film.name || t('filmStudio.untitledfilm'),
         aspect: film.stack.aspect,
         shots: film.shots.length,
         assets: film.assets.length,

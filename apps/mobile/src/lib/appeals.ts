@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import { ApiError, type ApiClient } from './api';
 
 // ADR-0125: decisions recorded against the account and the one appeal each allows. Mirrors GET and POST
@@ -22,10 +23,10 @@ export const MIN_STATEMENT = 10;
 export const MAX_STATEMENT = 2000;
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const ACTION_LABEL: Record<string, string> = { warning: 'Warning', takedown: 'Content removed', freeze: 'Account frozen' };
-const STATUS_LABEL: Record<AppealStatus, string> = { open: 'Appeal under review', upheld: 'Appeal successful', rejected: 'Appeal not successful' };
+const ACTION_LABEL: Record<string, string> = { warning: t('appeals.warning'), takedown: t('appeals.contentremoved'), freeze: t('appeals.accountfrozen') };
+const STATUS_LABEL: Record<AppealStatus, string> = { open: t('appeals.appealunderreview'), upheld: t('appeals.appealsuccessful'), rejected: t('appeals.appealnotsuccessful') };
 
-export const actionLabel = (action: string): string => ACTION_LABEL[action] ?? 'Decision';
+export const actionLabel = (action: string): string => ACTION_LABEL[action] ?? t('appeals.decision');
 export const statusLabel = (status: AppealStatus): string => STATUS_LABEL[status];
 
 function parseSanction(raw: unknown): Sanction | null {
@@ -53,8 +54,8 @@ export async function fetchAppeals(api: Pick<ApiClient, 'request'>): Promise<App
 // The same rule the server applies, so a short or long statement is caught before the request.
 export function validateStatement(statement: string): string | null {
     const n = statement.trim().length;
-    if (n < MIN_STATEMENT) return `Write at least ${MIN_STATEMENT} characters.`;
-    if (statement.length > MAX_STATEMENT) return `That is too long (${MAX_STATEMENT} characters at most).`;
+    if (n < MIN_STATEMENT) return t('appeals.writeatleastcharacters', { value1: MIN_STATEMENT });
+    if (statement.length > MAX_STATEMENT) return t('appeals.thatistoolongcharactersatmost', { value1: MAX_STATEMENT });
     return null;
 }
 
@@ -64,12 +65,12 @@ export function canAppeal(s: Sanction): boolean {
 
 export function appealErrorMessage(err: unknown): string {
     if (err instanceof ApiError) {
-        if (err.status === 0) return 'No connection. Check your network and try again.';
-        if (err.status === 429 || err.code === 'rate_limited') return 'Too many requests. Wait a minute and try again.';
-        if (err.code === 'statement_invalid') return `Write ${MIN_STATEMENT} to ${MAX_STATEMENT} characters.`;
-        if (err.code === 'action_not_appealable' || err.code === 'action_not_found') return 'This decision cannot be appealed.';
+        if (err.status === 0) return t('appeals.noconnectionCheckyournetworkandtry');
+        if (err.status === 429 || err.code === 'rate_limited') return t('appeals.toomanyrequestsWaitaminuteand');
+        if (err.code === 'statement_invalid') return t('appeals.writetocharacters', { value1: MIN_STATEMENT, value2: MAX_STATEMENT });
+        if (err.code === 'action_not_appealable' || err.code === 'action_not_found') return t('appeals.thisdecisioncannotbeappealed');
     }
-    return 'Your appeal could not be sent. Try again.';
+    return t('appeals.yourappealcouldnotbesentTry');
 }
 
 // One appeal per decision. A repeat answers with the first appeal (replayed), which is a success.

@@ -7,7 +7,7 @@ import { useAuth } from '../../../auth/AuthProvider';
 import { touchTarget } from '../../../lib/a11y';
 import { cleanProjectName, createProject, fetchProjects, fetchWorkspaces, projectsErrorMessage, type Project, type Workspace } from '../../../lib/projects';
 import { EDITOR_ENABLED } from '../../../lib/editorFlag';
-import { t } from '../../../lib/i18n';
+import { formatLocale, t } from '../../../lib/i18n';
 import { colors } from '../../../theme';
 
 export default function Projects() {
@@ -26,7 +26,7 @@ export default function Projects() {
 
     async function create() {
         const name = cleanProjectName(newName);
-        if (!name || !workspaceId || creating) return setFormError('Give the project a name of up to 120 characters.');
+        if (!name || !workspaceId || creating) return setFormError(t('projects.givetheprojectanameofup2'));
         setCreating(true);
         setFormError(null);
         createKey.current ??= Crypto.randomUUID();
@@ -73,15 +73,15 @@ export default function Projects() {
 
     return (
         <View style={styles.screen}>
-            <Stack.Screen options={{ title: 'Projects', ...(EDITOR_ENABLED ? { headerRight: () => <HeaderAction label={t('editor.new')} onPress={() => router.push('/editor/new')} /> } : {}) }} />
+            <Stack.Screen options={{ title: t('projects.projects'), ...(EDITOR_ENABLED ? { headerRight: () => <HeaderAction label={t('editor.new')} onPress={() => router.push('/editor/new')} /> } : {}) }} />
             {problem ? (
                 <Pressable accessibilityRole="button" style={touchTarget} onPress={loadWorkspaces}>
-                    <Text style={styles.error}>{problem} Tap to retry.</Text>
+                    <Text style={styles.error}>{t('projects.taptoretry', { value1: problem })}</Text>
                 </Pressable>
             ) : !workspaces ? (
                 <ActivityIndicator color={colors.accent} />
             ) : workspaces.length === 0 ? (
-                <Text style={styles.muted}>You have no workspaces yet. Open the editor on veyrnox.ai to start one.</Text>
+                <Text style={styles.muted}>{t('projects.youhavenoworkspacesyetOpenthe')}</Text>
             ) : (
                 <>
                     {workspaces.length > 1 ? (
@@ -99,21 +99,21 @@ export default function Projects() {
                                 style={styles.input}
                                 value={newName}
                                 onChangeText={setNewName}
-                                placeholder="Project name"
+                                placeholder={t('projects.projectname')}
                                 placeholderTextColor={colors.muted}
-                                accessibilityLabel="Project name"
+                                accessibilityLabel={t('projects.projectname')}
                                 maxLength={120}
                                 autoFocus
                                 returnKeyType="done"
                                 onSubmitEditing={create}
                             />
                             <Pressable accessibilityRole="button" disabled={creating} style={[styles.go, touchTarget, creating && styles.off]} onPress={create}>
-                                <Text style={styles.goText}>{creating ? '…' : 'Create'}</Text>
+                                <Text style={styles.goText}>{creating ? '…' : t('projects.create')}</Text>
                             </Pressable>
                         </View>
                     ) : (
                         <Pressable accessibilityRole="button" style={[styles.newRow, touchTarget]} onPress={() => setNaming(true)}>
-                            <Text style={styles.newText}>+ New project</Text>
+                            <Text style={styles.newText}>{t('projects.newproject')}</Text>
                         </Pressable>
                     )}
                     {formError ? <Text style={styles.error} accessibilityRole="alert">{formError}</Text> : null}
@@ -123,12 +123,12 @@ export default function Projects() {
                         <FlatList
                             data={projects}
                             keyExtractor={(p) => p.id}
-                            ListEmptyComponent={<Text style={styles.muted}>No projects in this workspace yet.</Text>}
-                            ListFooterComponent={<Text style={styles.note}>Open a project to rename it, delete it or restore a saved version. Editing the timeline is in the editor.</Text>}
+                            ListEmptyComponent={<Text style={styles.muted}>{t('projects.noprojectsinthisworkspaceyet')}</Text>}
+                            ListFooterComponent={<Text style={styles.note}>{t('projects.openaprojecttorenameitdelete')}</Text>}
                             renderItem={({ item }) => (
-                                <Pressable accessibilityRole="button" accessibilityLabel={`${item.name}, version ${item.version}`} style={styles.row} onPress={() => router.push({ pathname: '/projects/[id]', params: { id: item.id } })}>
+                                <Pressable accessibilityRole="button" accessibilityLabel={t('projects.version2', { value1: item.name, value2: item.version })} style={styles.row} onPress={() => router.push({ pathname: '/projects/[id]', params: { id: item.id } })}>
                                     <Text style={styles.name}>{item.name}</Text>
-                                    <Text style={styles.muted}>Version {item.version}{item.updatedAt ? ` · updated ${new Date(item.updatedAt).toLocaleDateString()}` : ''}</Text>
+                                    <Text style={styles.muted}>{t('projects.version3', { value1: item.version, value2: item.updatedAt ? t('projects.updated', { value1: new Date(item.updatedAt).toLocaleDateString(formatLocale()) }) : '' })}</Text>
                                 </Pressable>
                             )}
                         />

@@ -109,26 +109,26 @@ export function parseWhen(date: string, time: string): Date | null {
 export function quickTimes(now: Date): { label: string; date: Date }[] {
     const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 9, 0);
     return [
-        { label: 'In 1 hour', date: new Date(now.getTime() + 3_600_000) },
-        { label: 'Tomorrow 9:00', date: tomorrow },
-        { label: 'In 1 week', date: new Date(now.getTime() + 7 * 86_400_000) },
+        { label: t('publishCompose.in1hour'), date: new Date(now.getTime() + 3_600_000) },
+        { label: t('publishCompose.tomorrow900'), date: tomorrow },
+        { label: t('publishCompose.in1week'), date: new Date(now.getTime() + 7 * 86_400_000) },
     ];
 }
 
 export function validateDraft(draft: Draft, accounts: readonly PublishAccount[], now: Date): string | null {
     const media = draftMedia(draft);
-    if ((!draft.media && !!draft.jobId === !!draft.uploadId) || !media.length || media.length > 10 || media.some(item => !!item.jobId === !!item.uploadId)) return 'Choose a creation to post.';
+    if ((!draft.media && !!draft.jobId === !!draft.uploadId) || !media.length || media.length > 10 || media.some(item => !!item.jobId === !!item.uploadId)) return t('publishCompose.chooseacreationtopost');
     const blocker = media.length > 1 && mediaBlocker(media, accounts.filter(account => draft.accountIds.includes(account.id)));
     if (blocker) return t('app.publish.carousel.blocked', { network: networkLabel(blocker) });
-    if (draft.accountIds.length === 0) return 'Choose at least one account.';
-    if (draft.text.length > MAX_TEXT) return `The text can be at most ${MAX_TEXT} characters.`;
+    if (draft.accountIds.length === 0) return t('publishCompose.chooseatleastoneaccount');
+    if (draft.text.length > MAX_TEXT) return t('publishCompose.thetextcanbeatmostcharacters', { value1: MAX_TEXT });
     for (const id of draft.accountIds) {
         const a = accounts.find((x) => x.id === id);
         if (!a || media.some(item => !a.supportedMedia.includes(item.mediaType))) return `${a?.displayName ?? 'That account'} cannot post a ${draft.mediaType}.`;
     }
     const problem = networkTextProblem(draft.networkText);
     if (problem) return `${networkLabel(problem.network)} allows ${problem.limit} characters; this is ${problem.length}.`;
-    if (!draft.queue && draft.when.kind === 'at' && draft.when.at.getTime() <= now.getTime() + MIN_LEAD_MS) return 'Choose a time in the future (at least a minute away).';
+    if (!draft.queue && draft.when.kind === 'at' && draft.when.at.getTime() <= now.getTime() + MIN_LEAD_MS) return t('publishCompose.chooseatimeinthefutureat');
     return null;
 }
 
@@ -167,29 +167,29 @@ export function composeErrorMessage(err: unknown, isUpload = false): string {
     const status = typeof e?.status === 'number' ? e.status : -1;
     const code = String(e?.code ?? '');
     if (isUpload && (code === 'MEDIA_NOT_FOUND' || (status === 400 && code === 'invalid_media'))) return t('publishUploads.unavailable');
-    if (status === 0) return 'No connection. Nothing was posted. Check your internet and try again.';
+    if (status === 0) return t('publishCompose.noconnectionNothingwaspostedCheckyour');
     if (status === 402) {
         const feature = e?.body?.feature;
-        if (feature === 'scheduling') return 'Scheduling needs the Publish Plan. You can still post now.';
-        if (feature === 'platform_variants') return 'Different text for each network needs the Publish Plan.';
-        if (feature === 'multiple_accounts') return 'Posting to more than one account needs the Publish Plan.';
-        return 'This needs the Publish Plan.';
+        if (feature === 'scheduling') return t('publishCompose.schedulingneedsthePublishPlanYoucan');
+        if (feature === 'platform_variants') return t('publishCompose.differenttextforeachnetworkneedsthe');
+        if (feature === 'multiple_accounts') return t('publishCompose.postingtomorethanoneaccountneeds');
+        return t('publishCompose.thisneedsthePublishPlan');
     }
-    if (status === 403) return 'You do not have permission to do that for this brand.';
-    if (code === 'variants_not_open' || code === 'variants_not_configured') return 'Different text for each network is not open yet. Remove it and try again.';
-    if (code === 'youtube_visibility_not_open') return 'Choosing YouTube visibility is not open yet. Remove it and try again.';
-    if (code === 'caption_too_long') return 'The text is too long for one of the networks.';
+    if (status === 403) return t('publishCompose.youdonothavepermissiontodo');
+    if (code === 'variants_not_open' || code === 'variants_not_configured') return t('publishCompose.differenttextforeachnetworkisnot');
+    if (code === 'youtube_visibility_not_open') return t('publishCompose.choosingYouTubevisibilityisnotopenyet');
+    if (code === 'caption_too_long') return t('publishCompose.thetextistoolongforone');
     if (code === 'carousel_not_open') return t('app.publish.carousel.closed');
     if (code === 'media_count_not_supported') return t('app.publish.carousel.blocked', { network: networkLabel(String(e?.body?.network || '')) });
-    if (code === 'unsupported_media_type') return 'One of the chosen networks cannot post this creation.';
-    if (code === 'network_unavailable') return 'One of the chosen networks is not open for posting yet.';
-    if (code === 'POST_NOT_FOUND') return 'That post is no longer there.';
-    if (code === 'ACCOUNT_NOT_FOUND') return 'One of the chosen accounts is no longer connected.';
-    if (code === 'MEDIA_NOT_FOUND') return 'That creation could not be found or has no file yet.';
-    if (code === 'POST_STARTED') return 'This post has already started publishing, so it cannot be changed.';
-    if (code === 'SCHEDULE_CHANGED' || status === 409) return 'This post changed somewhere else. Reload it and try again.';
-    if (status === 503 && code === 'calendar_not_open') return 'Changing scheduled posts is not available yet.';
-    if (status === 429) return 'Too many requests. Try again in a moment.';
-    if (status === 400) return 'The server did not accept that. Check the details and try again.';
-    return 'Something went wrong. Nothing was posted. Try again.';
+    if (code === 'unsupported_media_type') return t('publishCompose.oneofthechosennetworkscannotpost');
+    if (code === 'network_unavailable') return t('publishCompose.oneofthechosennetworksisnot');
+    if (code === 'POST_NOT_FOUND') return t('publishCompose.thatpostisnolongerthere');
+    if (code === 'ACCOUNT_NOT_FOUND') return t('publishCompose.oneofthechosenaccountsisno');
+    if (code === 'MEDIA_NOT_FOUND') return t('publishCompose.thatcreationcouldnotbefoundor');
+    if (code === 'POST_STARTED') return t('publishCompose.thisposthasalreadystartedpublishingso');
+    if (code === 'SCHEDULE_CHANGED' || status === 409) return t('publishCompose.thispostchangedsomewhereelseReloadit');
+    if (status === 503 && code === 'calendar_not_open') return t('publishCompose.changingscheduledpostsisnotavailableyet');
+    if (status === 429) return t('publishCompose.toomanyrequestsTryagainina');
+    if (status === 400) return t('publishCompose.theserverdidnotacceptthatCheck');
+    return t('publishCompose.somethingwentwrongNothingwaspostedTry');
 }

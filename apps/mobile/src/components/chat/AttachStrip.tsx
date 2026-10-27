@@ -60,6 +60,6 @@ const sheets = themedStyles((p) => ({
     thumbs: { gap: 8, paddingVertical: 4 },
     thumb: { width: 64, height: 64, borderRadius: 8, backgroundColor: p.bgElevated1 },
     img: { width: 64, height: 64, borderRadius: 8 },
-    x: { position: 'absolute', top: 0, right: 0, width: MIN_TARGET, height: MIN_TARGET, alignItems: 'flex-end', justifyContent: 'flex-start' },
+    x: { position: 'absolute', top: 0, end: 0, width: MIN_TARGET, height: MIN_TARGET, alignItems: 'flex-end', justifyContent: 'flex-start' },
     removeBadge: { minWidth: 24, minHeight: 24, width: 24, height: 24, paddingHorizontal: 0, borderRadius: 12, backgroundColor: p.bgElevated2, borderWidth: StyleSheet.hairlineWidth, borderColor: p.borderSubtle },
 }));

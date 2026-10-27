@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import { ApiError, type ApiClient } from './api';
 
 // ADR-0071: a friend you send who buys their first Credit Pack earns you Credits. Mirrors
@@ -13,7 +14,7 @@ export function normalizeReferralCode(value: unknown): string | null {
 export const referralLink = (code: string): string => `https://veyrnox.ai/?ref=${code}`;
 
 export function friendsLine(count: number): string {
-    if (count === 0) return 'No friends have joined through your link yet.';
+    if (count === 0) return t('referrals.nofriendshavejoinedthroughyourlink');
     return count === 1 ? '1 friend has joined through your link.' : `${count} friends have joined through your link.`;
 }
 
@@ -38,21 +39,21 @@ export async function attachReferral(api: ApiClient, raw: string): Promise<void>
 }
 
 export function attachMessage(err: unknown): string {
-    if (!(err instanceof ApiError)) return 'Could not use that code. Try again.';
+    if (!(err instanceof ApiError)) return t('referrals.couldnotusethatcodeTryagain');
     switch (err.code) {
         case 'invalid_code':
-            return 'That code does not look right. It has 10 letters and numbers.';
+            return t('referrals.thatcodedoesnotlookrightIt');
         case 'self_referral':
-            return 'You cannot use your own code.';
+            return t('referrals.youcannotuseyourowncode');
         case 'not_new':
-            return 'Codes only work for new accounts.';
+            return t('referrals.codesonlyworkfornewaccounts');
         case 'already_attached':
             return 'A code is already attached to this account.';
         case 'not_found':
-            return 'Referrals are not available right now.';
+            return t('referrals.referralsarenotavailablerightnow2');
         case 'network':
-            return 'No connection. Check it and try again.';
+            return t('referrals.noconnectionCheckitandtryagain');
         default:
-            return 'Could not use that code. Try again.';
+            return t('referrals.couldnotusethatcodeTryagain');
     }
 }

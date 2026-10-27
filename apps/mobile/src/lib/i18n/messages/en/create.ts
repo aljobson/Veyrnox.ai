@@ -63,4 +63,5 @@ export default {
     'create.workspace.refund': 'Refund on failure · always',
     'create.workspace.terms': 'Commercial use depends on the selected model and provider terms.',
     'create.workspace.termsLink': 'Check the Terms before publishing.',
+    "create.s": "{value1}s",
 } as const;

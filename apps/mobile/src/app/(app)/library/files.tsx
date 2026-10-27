@@ -1,3 +1,4 @@
+import { t } from '../../../lib/i18n';
 import { Stack, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -8,8 +9,8 @@ import { saveOutput, shareOutput } from '../../../lib/output';
 import { colors } from '../../../theme';
 
 const TABS: { kind: FileKind; label: string }[] = [
-    { kind: 'masters', label: 'Film masters' },
-    { kind: 'renders', label: 'Editor renders' },
+    { kind: 'masters', label: t('files.filmmasters') },
+    { kind: 'renders', label: t('files.editorrenders') },
 ];
 
 export default function LibraryFiles() {
@@ -42,13 +43,13 @@ export default function LibraryFiles() {
         setNote(null);
         try {
             const link = await fetchFileLink(api, kind, file.id);
-            if (!link) return setNote('That file could not be opened.');
+            if (!link) return setNote(t('files.thatfilecouldnotbeopened'));
             if (what === 'share') {
                 await shareOutput(link.url, file.id, link.mimeType);
             } else if (await saveOutput(link.url, file.id, link.mimeType)) {
-                setNote('Saved to your Photos.');
+                setNote(t('files.savedtoyourPhotos'));
             } else {
-                Alert.alert('Photos access is off', 'Allow adding to Photos for Veyrnox in Settings to save videos.');
+                Alert.alert(t('files.photosaccessisoff'), t('files.allowaddingtoPhotosforVeyrnoxin'));
             }
         } catch (err) {
             setNote(fileErrorMessage(err));
@@ -59,7 +60,7 @@ export default function LibraryFiles() {
 
     return (
         <View style={styles.screen}>
-            <Stack.Screen options={{ title: 'Video files' }} />
+            <Stack.Screen options={{ title: t('files.videofiles') }} />
             <View style={styles.tabs}>
                 {TABS.map((t) => (
                     <Pressable key={t.kind} accessibilityRole="button" accessibilityState={{ selected: kind === t.kind }} style={[styles.tab, kind === t.kind && styles.tabOn]} onPress={() => setKind(t.kind)}>
@@ -69,27 +70,27 @@ export default function LibraryFiles() {
             </View>
             {kind === 'masters' ? (
                 <Pressable accessibilityRole="button" style={touchTarget} onPress={() => router.push('/film')}>
-                    <Text style={styles.link}>Open your film in Film Studio</Text>
+                    <Text style={styles.link}>{t('files.openyourfilminFilmStudio')}</Text>
                 </Pressable>
             ) : null}
             {note ? <Text style={styles.note}>{note}</Text> : null}
             {problem ? (
                 <Pressable accessibilityRole="button" style={touchTarget} onPress={load}>
-                    <Text style={styles.error}>{problem} Tap to retry.</Text>
+                    <Text style={styles.error}>{t('files.taptoretry', { value1: problem })}</Text>
                 </Pressable>
             ) : !state ? (
                 <ActivityIndicator color={colors.accent} />
             ) : !state.enabled ? (
-                <Text style={styles.muted}>This is not available yet.</Text>
+                <Text style={styles.muted}>{t('files.thisisnotavailableyet')}</Text>
             ) : (
                 <FlatList
                     data={state.files}
                     keyExtractor={(f) => f.id}
-                    ListEmptyComponent={<Text style={styles.muted}>{kind === 'masters' ? 'No film masters yet. They are made from a finished video in the Film Library.' : 'No saved editor renders yet. Export one from the editor on veyrnox.ai.'}</Text>}
+                    ListEmptyComponent={<Text style={styles.muted}>{kind === 'masters' ? t('files.nofilmmastersyetTheyaremade') : t('files.nosavededitorrendersyetExportone')}</Text>}
                     renderItem={({ item }) => {
                         const facts = [lengthLabel(item.seconds), resolutionLabel(item.width, item.height), sizeLabel(item.sizeBytes)].filter(Boolean).join(' · ');
                         const expiry = expiryLabel(item.expiresAt);
-                        const gone = expiry === 'Expired';
+                        const gone = !!item.expiresAt && Date.parse(item.expiresAt) <= Date.now();
                         return (
                             <View style={styles.row}>
                                 <Text style={styles.name}>{item.label}</Text>
@@ -97,11 +98,11 @@ export default function LibraryFiles() {
                                 {expiry ? <Text style={[styles.muted, gone && styles.warn]}>{expiry}</Text> : null}
                                 {!gone ? (
                                     <View style={styles.actions}>
-                                        <Pressable accessibilityRole="button" accessibilityLabel={`Share ${item.label}`} disabled={!!acting} style={[styles.action, !!acting && styles.off]} onPress={() => act(item, 'share')}>
-                                            <Text style={styles.actionText}>{acting === `share:${item.id}` ? 'Preparing…' : 'Share'}</Text>
+                                        <Pressable accessibilityRole="button" accessibilityLabel={t('files.share', { value1: item.label })} disabled={!!acting} style={[styles.action, !!acting && styles.off]} onPress={() => act(item, 'share')}>
+                                            <Text style={styles.actionText}>{acting === `share:${item.id}` ? t('files.preparing') : t('files.share2')}</Text>
                                         </Pressable>
-                                        <Pressable accessibilityRole="button" accessibilityLabel={`Save ${item.label} to Photos`} disabled={!!acting} style={[styles.action, !!acting && styles.off]} onPress={() => act(item, 'save')}>
-                                            <Text style={styles.actionText}>{acting === `save:${item.id}` ? 'Saving…' : 'Save to Photos'}</Text>
+                                        <Pressable accessibilityRole="button" accessibilityLabel={t('files.savetoPhotos', { value1: item.label })} disabled={!!acting} style={[styles.action, !!acting && styles.off]} onPress={() => act(item, 'save')}>
+                                            <Text style={styles.actionText}>{acting === `save:${item.id}` ? t('files.saving') : t('files.savetoPhotos2')}</Text>
                                         </Pressable>
                                     </View>
                                 ) : null}

@@ -40,6 +40,7 @@ type Status = 'loading' | 'signedOut' | 'signedIn';
 
 interface AuthContextValue {
     readonly status: Status;
+    canReloadSession(): boolean;
     readonly api: ApiClient;
     // Shared by account-bound transports: clear local auth without remote revocation.
     readonly onSessionLost: () => void;
@@ -69,9 +70,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [status, setStatus] = useState<Status>('loading');
     const [appleNativeAvailable, setAppleNativeAvailable] = useState(false);
     const sessionRef = useRef<Session | null>(null);
+    const persistedRefresh = useRef<string | null>(null);
     const transientFailure = useRef(false);
     const dropped = useRef(false);
     const refreshInFlight = useRef<Promise<Session | null> | null>(null);
+    const canReloadSession = useCallback(() => !!sessionRef.current && persistedRefresh.current === sessionRef.current.refreshToken && !refreshInFlight.current, []);
 
     const adopt = useCallback(async (session: Session) => {
         sessionRef.current = session;
@@ -90,6 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // persistence step without trapping the user on the sign-in screen.
         try {
             await writeRefreshToken(session.refreshToken);
+            persistedRefresh.current = session.refreshToken;
         } catch {
             // The in-memory session remains valid for this app run.
         }
@@ -101,6 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (dropped.current) return;
         dropped.current = true;
         sessionRef.current = null;
+        persistedRefresh.current = null;
         transientFailure.current = false;
         cinemaProgressIdentity.setUser(null);
         forgetMfaCleared();
@@ -237,8 +242,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, [drop]);
 
     const value = useMemo<AuthContextValue>(
-        () => ({ status, api, onSessionLost, getAccessToken, adoptSession: adopt, appleNativeAvailable, signInWithApple, signInWithOAuth, signInWithEmail, signUpWithEmail, signInWithPasskey, signOut }),
-        [status, api, onSessionLost, getAccessToken, adopt, appleNativeAvailable, signInWithApple, signInWithOAuth, signInWithEmail, signUpWithEmail, signInWithPasskey, signOut],
+        () => ({ status, canReloadSession, api, onSessionLost, getAccessToken, adoptSession: adopt, appleNativeAvailable, signInWithApple, signInWithOAuth, signInWithEmail, signUpWithEmail, signInWithPasskey, signOut }),
+        [status, canReloadSession, api, onSessionLost, getAccessToken, adopt, appleNativeAvailable, signInWithApple, signInWithOAuth, signInWithEmail, signUpWithEmail, signInWithPasskey, signOut],
     );
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

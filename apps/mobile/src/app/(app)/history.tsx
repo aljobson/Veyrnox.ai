@@ -1,3 +1,4 @@
+import { t } from '../../lib/i18n';
 import { Stack } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -64,12 +65,12 @@ export default function History() {
 
     return (
         <View style={styles.screen}>
-            <Stack.Screen options={{ title: 'Credit history' }} />
+            <Stack.Screen options={{ title: t('history.credithistory') }} />
             {failed && entries === null ? (
                 <View style={styles.pad}>
-                    <Text style={styles.error}>Could not load your credit history. Check your connection.</Text>
+                    <Text style={styles.error}>{t('history.couldnotloadyourcredithistoryCheck')}</Text>
                     <Pressable accessibilityRole="button" style={styles.retry} onPress={() => void load()}>
-                        <Text style={styles.retryText}>Try again</Text>
+                        <Text style={styles.retryText}>{t('history.tryagain')}</Text>
                     </Pressable>
                 </View>
             ) : entries === null ? (
@@ -83,8 +84,8 @@ export default function History() {
                     onEndReachedThreshold={0.5}
                     ListHeaderComponent={
                         usage ? (
-                            <View style={styles.summary} accessibilityLabel={`Credits spent. ${usageLines(usage).join('. ')}`}>
-                                <Text style={styles.label}>Credits spent on creations</Text>
+                            <View style={styles.summary} accessibilityLabel={t('history.creditsspent', { value1: usageLines(usage).join('. ') })}>
+                                <Text style={styles.label}>{t('history.creditsspentoncreations')}</Text>
                                 {usageLines(usage).map((line) => (
                                     <Text key={line} style={styles.summaryLine}>
                                         {line}
@@ -93,14 +94,14 @@ export default function History() {
                             </View>
                         ) : undefined
                     }
-                    ListEmptyComponent={<Text style={styles.muted}>Nothing here yet. Credits you get, spend and are refunded will appear here.</Text>}
+                    ListEmptyComponent={<Text style={styles.muted}>{t('history.nothinghereyetCreditsyougetspend')}</Text>}
                     renderItem={({ item }) => <Entry entry={item} />}
                     ListFooterComponent={
                         loadingMore ? (
                             <ActivityIndicator color={colors.accent} />
                         ) : moreFailed ? (
                             <Pressable accessibilityRole="button" style={styles.retry} onPress={() => void more()}>
-                                <Text style={styles.retryText}>Could not load more. Try again</Text>
+                                <Text style={styles.retryText}>{t('history.couldnotloadmoreTryagain')}</Text>
                             </Pressable>
                         ) : undefined
                     }

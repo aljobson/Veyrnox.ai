@@ -99,7 +99,7 @@ function AccountPaywall({ owner }: { owner: string }) {
             <View style={styles.backdrop}>
                 <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
                     <View style={styles.card}>
-                        <Text style={styles.eyebrow}>VEY RNOX</Text>
+                        <Text style={styles.eyebrow}>{t('paywallPrompt.vEYRNOX')}</Text>
                         <Text accessibilityRole="header" style={styles.title}>{copy.title}</Text>
                         <Text style={styles.body}>{copy.body}</Text>
                         <Text style={styles.repeat}>{t('credits.paywall.repeat')}</Text>

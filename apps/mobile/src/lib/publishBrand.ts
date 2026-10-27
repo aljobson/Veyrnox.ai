@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import type { ApiClient } from './api';
 import { ApiError } from './api';
 
@@ -33,7 +34,7 @@ export function parseBrands(body: unknown): Brand[] {
         const id = typeof r.id === 'string' && UUID_RE.test(r.id) ? r.id : null;
         const role = ROLES.find((x) => x === r.role);
         if (!id || !role) continue;
-        const label = typeof r.label === 'string' && r.label.trim() ? r.label.trim().slice(0, LABEL_MAX) : 'Brand';
+        const label = typeof r.label === 'string' && r.label.trim() ? r.label.trim().slice(0, LABEL_MAX) : t('publishBrand.brand');
         out.push({ id, label, timezone: typeof r.timezone === 'string' ? r.timezone : null, role, paid: r.paid === true });
     }
     return out;

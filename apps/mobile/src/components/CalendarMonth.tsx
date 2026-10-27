@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { t } from '../lib/i18n';
+import { plural, formatNumber, formatLocale, t } from '../lib/i18n';
 import { dayKey, monthGrid } from '../lib/publishCalendar';
 import { colors } from '../theme';
 
@@ -14,7 +14,7 @@ export function CalendarMonth({ monthStart, counts, selected, onSelect }: { mont
         <View accessibilityRole="grid">
             <View style={styles.row}>
                 {WEEKDAYS.map((_, i) => (
-                    <Text key={i} style={styles.head} accessible={false}>{new Date(refMonday.getFullYear(), 0, 1 + i).toLocaleDateString(undefined, { weekday: 'narrow' })}</Text>
+                    <Text key={i} style={styles.head} accessible={false}>{new Date(refMonday.getFullYear(), 0, 1 + i).toLocaleDateString(formatLocale(undefined), { weekday: 'narrow' })}</Text>
                 ))}
             </View>
             {weeks.map((row, wi) => (
@@ -27,11 +27,11 @@ export function CalendarMonth({ monthStart, counts, selected, onSelect }: { mont
                                 key={c.key}
                                 accessibilityRole="button"
                                 accessibilityState={{ selected: on }}
-                                accessibilityLabel={`${c.date.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}, ${t(n === 1 ? 'calendar.postsOne' : 'calendar.postsMany', { count: n })}`}
+                                accessibilityLabel={`${c.date.toLocaleDateString(formatLocale(undefined), { weekday: 'long', day: 'numeric', month: 'long' })}, ${plural('calendar.posts', n)}`}
                                 style={[styles.cell, on && styles.cellOn, !c.inMonth && styles.dim]}
                                 onPress={() => onSelect(c.key)}
                             >
-                                <Text style={[styles.num, c.key === today && styles.today, on && styles.numOn]}>{c.date.getDate()}</Text>
+                                <Text style={[styles.num, c.key === today && styles.today, on && styles.numOn]}>{formatNumber(c.date.getDate())}</Text>
                                 {n > 0 ? <Text style={[styles.count, on && styles.numOn]}>{n}</Text> : null}
                             </Pressable>
                         );

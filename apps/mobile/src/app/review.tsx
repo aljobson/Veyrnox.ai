@@ -45,7 +45,7 @@ export default function ReviewLink() {
     const when = review?.scheduledAt && !Number.isNaN(Date.parse(review.scheduledAt)) ? new Date(review.scheduledAt).toLocaleString(getLocale()) : null;
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-            <Text style={shared.label}>VEYRNOX PUBLISH</Text>
+            <Text style={shared.label}>{t('review.vEYRNOXPUBLISH')}</Text>
             <Text style={styles.title} accessibilityRole="header">{t('share.review.title')}</Text>
             {!validToken(token) ? <Text style={shared.help} accessibilityRole="alert">{t('share.review.err.gone')}</Text> : null}
             {error && !review ? <Status text={error} error /> : null}

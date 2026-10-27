@@ -1,5 +1,5 @@
 import { Pressable, Share, Text, View } from 'react-native';
-import { t } from '../../lib/i18n';
+import { formatLocale, t } from '../../lib/i18n';
 import { colors } from '../../theme';
 import { Action, Card, styles } from '../account/shared';
 
@@ -37,5 +37,5 @@ export function Row({ children }: { children: React.ReactNode }) {
 
 export const shortDate = (iso: string | null): string => {
     if (!iso || Number.isNaN(Date.parse(iso))) return '';
-    return new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    return new Date(iso).toLocaleString(formatLocale('en-GB'), { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 };

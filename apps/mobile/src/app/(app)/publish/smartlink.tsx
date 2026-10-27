@@ -93,7 +93,7 @@ export default function SmartlinkScreen() {
                 {link.items.map((it, i) => (
                     <View key={it.id ?? `new-${i}`} style={styles.card}>
                         <TextInput style={styles.input} value={it.label} onChangeText={(v) => setItem(i, { label: v })} maxLength={60} placeholder={t('smartlink.itemLabel')} accessibilityLabel={t('smartlink.itemLabel')} placeholderTextColor={colors.muted} />
-                        <TextInput style={styles.input} value={it.url} onChangeText={(v) => setItem(i, { url: v })} autoCapitalize="none" autoCorrect={false} keyboardType="url" placeholder="https://" accessibilityLabel={t('smartlink.itemUrl')} placeholderTextColor={colors.muted} />
+                        <TextInput style={styles.input} value={it.url} onChangeText={(v) => setItem(i, { url: v })} autoCapitalize="none" autoCorrect={false} keyboardType="url" placeholder={t('publish.https')} accessibilityLabel={t('smartlink.itemUrl')} placeholderTextColor={colors.muted} />
                         <View style={styles.row}>
                             <Text style={styles.muted}>{t('smartlink.itemClicks', { count: it.clicks })}</Text>
                             <View style={styles.row}>

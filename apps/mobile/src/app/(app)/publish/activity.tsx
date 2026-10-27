@@ -2,7 +2,7 @@ import { Stack } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { touchTarget } from '../../../lib/a11y';
-import { t } from '../../../lib/i18n';
+import { formatLocale, t } from '../../../lib/i18n';
 import { actionLabel, fetchActivity, teamErrorKey, type ActivityCursor, type ActivityEvent } from '../../../lib/publishTeam';
 import { usePublishApi } from '../../../lib/usePublishApi';
 import { colors } from '../../../theme';
@@ -77,9 +77,9 @@ export default function ActivityScreen() {
                         </View>
                     }
                     renderItem={({ item }) => (
-                        <View style={styles.row} accessible accessibilityLabel={`${actionLabel(item.action)}, ${item.actor}, ${item.createdAt ? new Date(item.createdAt).toLocaleString() : ''}`}>
+                        <View style={styles.row} accessible accessibilityLabel={`${actionLabel(item.action)}, ${item.actor}, ${item.createdAt ? new Date(item.createdAt).toLocaleString(formatLocale()) : ''}`}>
                             <Text style={styles.action}>{actionLabel(item.action)}</Text>
-                            <Text style={styles.muted}>{item.actor}{item.createdAt ? ` · ${new Date(item.createdAt).toLocaleString()}` : ''}</Text>
+                            <Text style={styles.muted}>{item.actor}{item.createdAt ? ` · ${new Date(item.createdAt).toLocaleString(formatLocale())}` : ''}</Text>
                             {item.detail ? <Text style={styles.detail}>{item.detail}</Text> : null}
                         </View>
                     )}

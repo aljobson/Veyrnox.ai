@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import { ApiError } from './api';
 
 // ADR-0128 (Apple 5.1.2(i), Google AI-content policy): before the app sends a person's content to a third-party AI
@@ -12,18 +13,17 @@ export class ConsentDeclinedError extends ApiError {
     }
 }
 
-export const CONSENT_DECLINED_MESSAGE = 'You need to accept to use AI features. Nothing was sent and you were not charged.';
+export const CONSENT_DECLINED_MESSAGE = t('aiConsent.youneedtoaccepttouseAI');
 
 export const AI_CONSENT_VERSION = 'ai-share-2026-10-18';
 
 export const AI_CONSENT_TEXT = {
-    title: 'Before you create',
+    title: t('aiConsent.beforeyoucreate'),
     body:
-        'To make your creations and answer your chats, Veyrnox.ai sends what you type, and any photos, video or audio you add, to the third-party AI providers that run the models. ' +
-        'They use it only to produce your result. Your content leaves our servers when you do this.',
-    privacyLabel: 'Read the Privacy Policy',
-    agree: 'Agree and continue',
-    decline: 'Not now',
+        t('aiConsent.body'),
+    privacyLabel: t('aiConsent.readthePrivacyPolicy'),
+    agree: t('aiConsent.agreeandcontinue'),
+    decline: t('aiConsent.notnow'),
 } as const;
 
 // Calls that carry the person's own content toward a provider. Reads, balance and account calls do not.

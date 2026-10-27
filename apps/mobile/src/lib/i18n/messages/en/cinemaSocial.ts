@@ -47,4 +47,5 @@ export default {
     'cinemaSocial.err.rate': 'Too many requests. Wait a moment and try again.',
     'cinemaSocial.err.later': 'Not available right now. Try again later.',
     'cinemaSocial.closed.retention': 'Saving and following are not open yet.',
+    "cinemaSocial.untitled": "Untitled",
 } as const;

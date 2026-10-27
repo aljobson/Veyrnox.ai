@@ -1,3 +1,4 @@
+import { directionalStyle } from '../../../lib/rtl';
 import { Button, Card, Text, PriceText, themedStyles, useThemedStyles } from '../../../components/ui';
 import { Image } from 'expo-image';
 import { Stack, useFocusEffect, useRouter, type Href } from 'expo-router';
@@ -6,7 +7,7 @@ import { ActivityIndicator, Platform, RefreshControl, ScrollView, View } from 'r
 import { useAuth } from '../../../auth/AuthProvider';
 import { useBilling } from '../../../billing/BillingProvider';
 import { renewalTerms, toDisplayPackages, type Interval } from '../../../lib/billing';
-import { t } from '../../../lib/i18n';
+import { formatLocale, t } from '../../../lib/i18n';
 import { MENU_ICONS, type MenuIcon } from '../../../lib/menuIcons';
 import { fetchAccounts, fetchPosts, publishErrorMessage, type PublishAccountsState, type PublishPost } from '../../../lib/publish';
 import { brandStore, fetchBrands, reconcileBrand, roleLabel, type Brand } from '../../../lib/publishBrand';
@@ -43,7 +44,7 @@ const DESTINATIONS: Record<PublishDestinationId, Destination> = {
     developer: { group: 'manage', icon: 'wrench', path: '/publish/developer', title: 'dev.row', body: 'publishHome.tool.developer' },
 };
 
-const when = (iso: string | null): string => iso ? new Date(iso).toLocaleString(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : '';
+const when = (iso: string | null): string => iso ? new Date(iso).toLocaleString(formatLocale(undefined), { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : '';
 
 export default function Publish() {
     const styles = useThemedStyles(sheets);
@@ -147,7 +148,7 @@ export default function Publish() {
                         <Text variant="bodyStrong" style={styles.brandName} numberOfLines={1}>{brandName}</Text>
                         {data ? <Text variant="footnote" style={styles.brandRole}>{t('publishHome.role', { role: roleLabel(data.brandRole) })}</Text> : null}
                     </View>
-                    <Image source={MENU_ICONS.caretRight} style={styles.caret} tintColor={styles.mutedInk.color} contentFit="contain" accessibilityElementsHidden />
+                    <Image source={MENU_ICONS.caretRight} style={[styles.caret, directionalStyle()]} tintColor={styles.mutedInk.color} contentFit="contain" accessibilityElementsHidden />
                 </Card>
                 {data ? <View style={styles.heroActions}>
                     <Button label={primaryLabel} variant="primary" containerStyle={styles.grow} accessibilityRole="button" onPress={() => router.push(primaryPath)}>
@@ -184,7 +185,7 @@ export default function Publish() {
                             <Text variant="bodyStrong" style={styles.nextTitle} numberOfLines={1}>{summary.nextScheduled?.text || t('publishHome.nothingScheduled')}</Text>
                             <Text variant="footnote" style={styles.muted} numberOfLines={1}>{summary.nextScheduled ? when(summary.nextScheduled.scheduledAt) : t('publishHome.scheduleHint')}</Text>
                         </View>
-                        <Image source={MENU_ICONS.caretRight} style={styles.caret} tintColor={styles.mutedInk.color} contentFit="contain" accessibilityElementsHidden />
+                        <Image source={MENU_ICONS.caretRight} style={[styles.caret, directionalStyle()]} tintColor={styles.mutedInk.color} contentFit="contain" accessibilityElementsHidden />
                     </Card>
 
                     {!paid && data.plansEnabled ? (
@@ -252,7 +253,7 @@ function ToolCard({ destination, onPress }: { readonly destination: Destination;
         <Card accessibilityRole="button" accessibilityLabel={t(destination.title)} accessibilityHint={t(destination.body)} style={[styles.tool]} onPress={onPress}>
             <View style={styles.toolTop}>
                 <View style={styles.toolIconBox}><Image source={MENU_ICONS[destination.icon]} style={styles.toolIcon} tintColor={styles.accentInk.color} contentFit="contain" accessibilityElementsHidden /></View>
-                <Image source={MENU_ICONS.caretRight} style={styles.smallCaret} tintColor={styles.mutedInk.color} contentFit="contain" accessibilityElementsHidden />
+                <Image source={MENU_ICONS.caretRight} style={[styles.smallCaret, directionalStyle()]} tintColor={styles.mutedInk.color} contentFit="contain" accessibilityElementsHidden />
             </View>
             <Text variant="bodyStrong" style={styles.toolTitle}>{t(destination.title)}</Text>
             <Text variant="footnote" style={styles.toolBody} numberOfLines={2}>{t(destination.body)}</Text>

@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import { appCache, getCacheUser } from './appCache';
 import { POLICIES, type Cache } from './cache';
 import { parseFilm, type Film } from './filmStudio';
@@ -16,7 +17,7 @@ export async function loadStudio(cache: Cache = appCache, userId: string | undef
 export async function saveStudio(raw: string, cache: Cache = appCache, userId: string | undefined = getCacheUser()): Promise<{ ok: true; film: Film } | { ok: false; error: string }> {
     const parsed = parseFilm(raw);
     if (!parsed.ok) return parsed;
-    if (!userId) return { ok: false, error: 'Sign in to keep a studio on this phone.' };
+    if (!userId) return { ok: false, error: t('filmStudioStore.signintokeepastudioon') };
     await cache.write(POLICIES.filmStudio, raw, userId);
     return { ok: true, film: parsed.film };
 }

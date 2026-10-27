@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import { ApiError, type ApiClient } from './api';
 import { MEDIA_ID, validDocument, type AssetError, type ProjectDocument } from './editorBridge';
 import { mediaApi } from './media';
@@ -34,7 +35,7 @@ export async function putDocument(api: ApiClient, id: string, expectedRevision: 
     return result;
 }
 export function conflictCopyName(name: string) {
-    const base = name.trim() || 'Project', suffix = ' — edit copy';
+    const base = name.trim() || t('editorProjects.project'), suffix = ' — edit copy';
     return `${base.slice(0, 120 - suffix.length).trimEnd()}${suffix}`;
 }
 export class AssetResolutionError extends Error {

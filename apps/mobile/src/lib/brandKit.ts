@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import { ApiError, type ApiClient } from './api';
 
 // Brand kit for a workspace (parity P7; the editor's BrandKitPanel). GET/PUT /api/v1/workspaces/:id/brand-kit and the
@@ -27,7 +28,7 @@ export interface KitState {
     readonly canEdit: boolean;
 }
 
-export const emptyKit = (): Kit => ({ schemaVersion: 1, name: 'My brand', palette: ['#32d6c5', '#ffffff', '#101827'], fonts: ['Arial'], textStyles: [], assets: [] });
+export const emptyKit = (): Kit => ({ schemaVersion: 1, name: t('brandKit.mybrand'), palette: ['#32d6c5', '#ffffff', '#101827'], fonts: ['Arial'], textStyles: [], assets: [] });
 
 const rec = (v: unknown): Record<string, unknown> | null => (v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : null);
 

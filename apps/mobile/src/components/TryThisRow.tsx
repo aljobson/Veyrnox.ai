@@ -1,3 +1,4 @@
+import { Icon } from './ui';
 import { Image } from 'expo-image';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { needsPhoto } from '../lib/explore';
@@ -31,7 +32,7 @@ export function TryThisRow({ presets, onOpen }: Props) {
                               {p.posterUrl ? <Image source={{ uri: p.posterUrl }} style={styles.poster} contentFit="cover" accessibilityIgnoresInvertColors /> : null}
                               <View style={styles.caption}>
                                   <Text style={styles.cardName} numberOfLines={2}>{p.title}</Text>
-                                  <Text style={styles.go}>{t(needsPhoto(p) ? 'explore.tryPhoto' : 'explore.tryIt')} ›</Text>
+                                  <View style={styles.goRow}><Text style={styles.go}>{t(needsPhoto(p) ? 'explore.tryPhoto' : 'explore.tryIt')}</Text><Icon name="caretRight" size={16} tint={colors.accent} /></View>
                               </View>
                           </Pressable>
                       ))}
@@ -51,5 +52,6 @@ const styles = StyleSheet.create({
     poster: { ...StyleSheet.absoluteFill },
     caption: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 8, gap: 2, backgroundColor: 'rgba(0,0,0,0.62)' },
     cardName: { color: '#fff', fontSize: 13, fontWeight: '600' },
+    goRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
     go: { color: colors.accent, fontSize: 12, fontWeight: '700' },
 });

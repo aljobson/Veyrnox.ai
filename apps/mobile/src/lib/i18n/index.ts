@@ -11,6 +11,7 @@ import ru from './messages/ru';
 import ja from './messages/ja';
 import de from './messages/de';
 import ko from './messages/ko';
+import { readLanguage } from '../languageStore';
 import { deviceLanguageTags, readDeviceSources, resolveActive } from './device';
 
 // Every language ships the web's translations of the strings the app shares with the site (generated, see
@@ -18,14 +19,18 @@ import { deviceLanguageTags, readDeviceSources, resolveActive } from './device';
 // ACTIVE_LOCALES below.
 export const CATALOGS: Catalogs = { en, es, zh, hi, ar, fr, pt, ru, ja, de, ko };
 
-let current: Translator = createTranslator(DEFAULT_LOCALE, CATALOGS);
 
 // Languages switched on for the app. The other catalogs ship with the web's translations of the strings the two
 // share, but a screen would read as a mix until the localization process returns the app-only strings, so only
 // English is on. Turning a language on is adding its code here (ADR-0132).
 export const ACTIVE_LOCALES: readonly LocaleCode[] = ['en'];
 
-// Called once at start: the device's first language that is switched on, else English.
+export function startupLocale(stored: string | null, tags: readonly string[], active = ACTIVE_LOCALES): LocaleCode {
+    return resolveActive([...(stored ? [stored] : []), ...tags], active);
+}
+let current: Translator = createTranslator(startupLocale(readLanguage(), deviceLanguageTags(readDeviceSources())), CATALOGS);
+
+// Device-only selector retained for translator tests; runtime startup also honors the stored choice.
 export function applyDeviceLocale(): LocaleCode {
     current = createTranslator(resolveActive(deviceLanguageTags(readDeviceSources()), ACTIVE_LOCALES), CATALOGS);
     return current.locale;
@@ -36,8 +41,7 @@ export function setLocaleFromDevice(tags: readonly string[]): LocaleCode {
     return current.locale;
 }
 
-// A language the person picked on purpose. It shows at once if that language is switched on, otherwise the app stays as it
-// is (ADR-0132: no mixed-language screens) and this answers false so the caller can say the choice is saved for later.
+// Low-level selector for tooling/tests. UI language changes must use changeLanguage and reload.
 export function chooseLocale(code: string): boolean {
     const match = matchTag(code);
     if (!match || !ACTIVE_LOCALES.includes(match)) return false;
@@ -47,8 +51,12 @@ export function chooseLocale(code: string): boolean {
 
 export const getLocale = (): LocaleCode => current.locale;
 export const isRtlLocale = (): boolean => isRtl(current.locale);
-export const t = (key: string, vars?: Vars): string => current.t(key, vars);
-export const plural = (key: string, count: number, vars?: Vars): string => current.plural(key, count, vars);
+// Preserve each English call site's existing region policy. Other languages use the app locale.
+export const formatNumber = (value: number): string => current.locale === 'en' ? String(value) : value.toLocaleString(current.locale);
+export const formatLocale = (english?: string): string | undefined => current.locale === 'en' ? english : current.locale;
+const localizedVars = (vars?: Vars): Vars | undefined => current.locale === 'en' || !vars ? vars : Object.fromEntries(Object.entries(vars).map(([key, value]) => [key, typeof value === 'number' ? value.toLocaleString(current.locale) : value]));
+export const t = (key: string, vars?: Vars): string => current.t(key, localizedVars(vars));
+export const plural = (key: string, count: number, vars?: Vars): string => current.plural(key, count, localizedVars({ count, ...vars }));
 
 export * from './locales';
 export { deviceLanguageTags, resolveActive, splitSlots, type SlotPiece } from './device';

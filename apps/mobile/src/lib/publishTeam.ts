@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import { ApiError, type ApiClient } from './api';
 import { isLinkOnOrigin } from './bearerLink';
 import { brandStore } from './publishBrand';
@@ -89,7 +90,7 @@ export function parseActivity(body: unknown): { events: ActivityEvent[]; next: A
         const id = str(e.id);
         const action = str(e.action);
         if (!id || !action) continue;
-        events.push({ id, source: str(e.source) ?? '', action, actor: str(e.actor_email) ?? 'System', detail: detailText(e.detail), createdAt: str(e.created_at) });
+        events.push({ id, source: str(e.source) ?? '', action, actor: str(e.actor_email) ?? t('publishTeam.system'), detail: detailText(e.detail), createdAt: str(e.created_at) });
     }
     const n = b.next_cursor;
     const next = isObject(n) && typeof n.created_at === 'string' && typeof n.id === 'string' && typeof n.source === 'string' ? { created_at: n.created_at, id: n.id, source: n.source } : null;

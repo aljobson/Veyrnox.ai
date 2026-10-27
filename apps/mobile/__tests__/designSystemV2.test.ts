@@ -26,6 +26,9 @@ import {
 import type { AppearanceSettings } from '../src/theme';
 const root = path.join(__dirname, '..', 'src');
 const migrated = [
+    'components/LanguageChoice.tsx',
+    'components/LanguageGate.tsx',
+    'app/(app)/language.tsx',
     'components/MenuDrawer.tsx',
     'app/(app)/(tabs)/editor.tsx',
     'app/(app)/(tabs)/publish.tsx',

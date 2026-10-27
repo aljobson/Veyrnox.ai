@@ -118,7 +118,7 @@ export default function QueueEdit() {
                     ))}
                 </View>
                 <View style={styles.timeRow}>
-                    <TextInput style={[styles.input, styles.time]} value={time} onChangeText={setTime} placeholder="HH:MM" autoCapitalize="none" keyboardType="numbers-and-punctuation" accessibilityLabel={t('queues.time')} placeholderTextColor={colors.muted} />
+                    <TextInput style={[styles.input, styles.time]} value={time} onChangeText={setTime} placeholder={t('publish.hHMM')} autoCapitalize="none" keyboardType="numbers-and-punctuation" accessibilityLabel={t('queues.time')} placeholderTextColor={colors.muted} />
                     <Pressable accessibilityRole="button" style={[styles.chip, touchTarget]} onPress={addSlot}><Text style={styles.chipText}>{t('queues.addSlot')}</Text></Pressable>
                 </View>
                 <View style={styles.switchRow}>

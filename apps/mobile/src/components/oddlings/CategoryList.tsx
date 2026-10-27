@@ -1,3 +1,5 @@
+import { Icon } from '../ui';
+import { displayLabel } from '../../lib/displayLabels';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { MIN_TARGET } from '../../lib/a11y';
 import { plural, t } from '../../lib/i18n';
@@ -23,23 +25,23 @@ export function CategoryList({ categoryId, picks, onCategory, onOpen }: Props) {
                     const on = item.id === category.id;
                     const n = pickedIn(item, picks);
                     return (
-                        <Pressable key={item.id} accessibilityRole="button" accessibilityState={{ selected: on }} accessibilityLabel={n ? `${item.label}, ${plural('oddlings.build.chosen', n)}` : item.label} style={[styles.chip, on && styles.chipOn]} onPress={() => onCategory(item.id)}>
-                            <Text style={[styles.chipText, on && styles.chipTextOn]}>{item.label}{n ? ` · ${n}` : ''}</Text>
+                        <Pressable key={item.id} accessibilityRole="button" accessibilityState={{ selected: on }} accessibilityLabel={n ? `${displayLabel(item.label)}, ${plural('oddlings.build.chosen', n)}` : displayLabel(item.label)} style={[styles.chip, on && styles.chipOn]} onPress={() => onCategory(item.id)}>
+                            <Text style={[styles.chipText, on && styles.chipTextOn]}>{displayLabel(item.label)}{n ? ` · ${n}` : ''}</Text>
                         </Pressable>
                     );
                 })}
             </ScrollView>
-            <Text style={styles.hint}>{category.hint}</Text>
+            <Text style={styles.hint}>{displayLabel(category.hint)}</Text>
             {category.groupIds.map((id) => {
                 const group = groupById(id);
                 if (!group) return null;
                 const value = picks[id];
-                const shown = value ? optionLabel(id, value) : t('oddlings.build.notSet');
+                const shown = value ? displayLabel(optionLabel(id, value)) : t('oddlings.build.notSet');
                 return (
-                    <Pressable key={id} accessibilityRole="button" accessibilityLabel={`${group.label}: ${shown}`} style={styles.row} onPress={() => onOpen(id)}>
-                        <Text style={styles.rowLabel}>{group.label}</Text>
+                    <Pressable key={id} accessibilityRole="button" accessibilityLabel={`${displayLabel(group.label)}: ${shown}`} style={styles.row} onPress={() => onOpen(id)}>
+                        <Text style={styles.rowLabel}>{displayLabel(group.label)}</Text>
                         <Text style={[styles.rowValue, !value && styles.rowEmpty]} numberOfLines={1}>{shown}</Text>
-                        <Text style={styles.chev} accessible={false}>›</Text>
+                        <Icon name="caretRight" size={24} tint={styles.chev.color} />
                     </Pressable>
                 );
             })}

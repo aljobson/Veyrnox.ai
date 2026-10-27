@@ -1,3 +1,4 @@
+import { plural } from './i18n';
 import type { ApiClient } from './api';
 
 // ADR-0124: free generations left today, per model, from GET /api/v1/free-allowance (ADR-0069). The server decides
@@ -21,7 +22,7 @@ export function freeLines(left: FreeLeft, models: readonly { readonly id: string
     const lines: string[] = [];
     for (const m of models) {
         const n = left[m.id];
-        if (n) lines.push(`${m.name}: ${n} free ${n === 1 ? 'run' : 'runs'} left today`);
+        if (n) lines.push(plural('freeAllowance.runs', n, { name: m.name }));
     }
     return lines.slice(0, MAX_LINES);
 }

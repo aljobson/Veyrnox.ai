@@ -1,3 +1,4 @@
+import { t } from '../../../lib/i18n';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
@@ -29,23 +30,23 @@ export default function Personas() {
 
     return (
         <View style={styles.screen}>
-            <Stack.Screen options={{ title: 'Personas' }} />
-            {problem ? <Button accessibilityRole="button" containerStyle={styles.retry} onPress={load} variant="tertiary" size="md" label={(problem) + " " + "Tap to retry."}><Text style={styles.error}>{problem} Tap to retry.</Text></Button> : null}
+            <Stack.Screen options={{ title: t('chat.personas') }} />
+            {problem ? <Button accessibilityRole="button" containerStyle={styles.retry} onPress={load} variant="tertiary" size="md" label={(problem) + " " + t('chat.tapToRetry')}><Text style={styles.error}>{t('chat.taptoretry', { value1: problem })}</Text></Button> : null}
             {!state && !problem ? (
                 <ActivityIndicator color={styles.accentInk.color} />
             ) : state && !state.enabled ? (
-                <Text style={styles.muted}>Personas are not available yet.</Text>
+                <Text style={styles.muted}>{t('chat.personasarenotavailableyet')}</Text>
             ) : state ? (
                 <>
-                    <Button accessibilityRole="button" containerStyle={styles.add} onPress={() => router.push({ pathname: '/chat/persona/[id]', params: { id: 'new' } })} variant="secondary" size="md" label={"New persona"}>
-                        <Text variant="bodyStrong" style={styles.addText}>New persona</Text>
+                    <Button accessibilityRole="button" containerStyle={styles.add} onPress={() => router.push({ pathname: '/chat/persona/[id]', params: { id: 'new' } })} variant="secondary" size="md" label={t('chat.newpersona')}>
+                        <Text variant="bodyStrong" style={styles.addText}>{t('chat.newpersona')}</Text>
                     </Button>
                     <FlatList
                         data={state.personas}
                         keyExtractor={(p) => p.id}
-                        ListEmptyComponent={<Text style={styles.muted}>A persona is a saved set of instructions for a chat. None yet.</Text>}
+                        ListEmptyComponent={<Text style={styles.muted}>{t('chat.apersonaisasavedsetof')}</Text>}
                         renderItem={({ item }) => (
-                            <Card accessibilityRole="button" accessibilityLabel={`Edit ${item.name}`} style={styles.row} onPress={() => router.push({ pathname: '/chat/persona/[id]', params: { id: item.id } })}>
+                            <Card accessibilityRole="button" accessibilityLabel={t('chat.edit', { value1: item.name })} style={styles.row} onPress={() => router.push({ pathname: '/chat/persona/[id]', params: { id: item.id } })}>
                                 <Text variant="body" style={styles.name}>{item.name}</Text>
                                 <Text style={styles.muted} numberOfLines={2}>{item.instructions}</Text>
                             </Card>

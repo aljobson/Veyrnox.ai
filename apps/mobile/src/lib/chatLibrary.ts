@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import type { ApiClient } from './api';
 import { chatApi } from './chat';
 
@@ -86,18 +87,18 @@ export type Checked<T> = { readonly ok: true; readonly value: T } | { readonly o
 export function validatePersonaForm(form: PersonaForm): Checked<PersonaBody> {
     const name = form.name.trim();
     const instructions = form.instructions.trim();
-    if (!name) return { ok: false, message: 'Give the persona a name.' };
-    if (name.length > MAX_PERSONA_NAME) return { ok: false, message: `The name can be at most ${MAX_PERSONA_NAME} characters.` };
-    if (!instructions) return { ok: false, message: 'Write the instructions the persona should follow.' };
-    if (instructions.length > MAX_PERSONA_TEXT || Math.ceil(instructions.length / 4) > MAX_PERSONA_TOKENS) return { ok: false, message: `The instructions can be at most ${MAX_PERSONA_TEXT} characters.` };
-    if (form.modelId !== null && !MODEL_ID_RE.test(form.modelId)) return { ok: false, message: 'Choose a model from the list.' };
+    if (!name) return { ok: false, message: t('chatLibrary.givethepersonaaname') };
+    if (name.length > MAX_PERSONA_NAME) return { ok: false, message: t('chatLibrary.thenamecanbeatmostcharacters', { value1: MAX_PERSONA_NAME }) };
+    if (!instructions) return { ok: false, message: t('chatLibrary.writetheinstructionsthepersonashouldfollow') };
+    if (instructions.length > MAX_PERSONA_TEXT || Math.ceil(instructions.length / 4) > MAX_PERSONA_TOKENS) return { ok: false, message: t('chatLibrary.theinstructionscanbeatmostcharacters', { value1: MAX_PERSONA_TEXT }) };
+    if (form.modelId !== null && !MODEL_ID_RE.test(form.modelId)) return { ok: false, message: t('chatLibrary.chooseamodelfromthelist') };
     return { ok: true, value: { name, instructions, model_id: form.modelId, thinking: form.thinking, web: form.web } };
 }
 
 export function validateFolderName(raw: string): Checked<string> {
     const name = raw.trim();
-    if (!name) return { ok: false, message: 'Give the folder a name.' };
-    if (name.length > MAX_FOLDER_NAME) return { ok: false, message: `The name can be at most ${MAX_FOLDER_NAME} characters.` };
+    if (!name) return { ok: false, message: t('chatLibrary.givethefolderaname') };
+    if (name.length > MAX_FOLDER_NAME) return { ok: false, message: t('chatLibrary.thenamecanbeatmostcharacters', { value1: MAX_FOLDER_NAME }) };
     return { ok: true, value: name };
 }
 
@@ -135,15 +136,15 @@ export function chatLibraryErrorMessage(err: unknown): string {
     const e = err as { status?: number; code?: string } | null;
     const status = typeof e?.status === 'number' ? e.status : -1;
     const code = String(e?.code ?? '');
-    if (status === 0) return 'No connection. Check your internet and try again.';
-    if (code === 'invalid_persona_name') return 'That persona name is not allowed. Use 1 to 60 characters.';
-    if (code === 'invalid_instructions') return 'Check the instructions: they cannot be empty or longer than 4000 characters.';
-    if (code === 'invalid_name') return 'That name is not allowed. Use 1 to 60 characters.';
-    if (code === 'FOLDER_LIMIT') return 'You have too many folders. Delete one to make another.';
-    if (code === 'persona_exists') return 'You already have a persona with that name.';
-    if (code === 'personas_unavailable') return 'Personas are not available yet.';
-    if (code === 'persona_not_found' || code === 'folder_not_found') return 'That is no longer there.';
-    if (status === 503) return 'The service is busy. Try again in a moment.';
-    if (status === 429) return 'Too many requests. Try again in a moment.';
-    return 'Something went wrong. Try again.';
+    if (status === 0) return t('chatLibrary.noconnectionCheckyourinternetandtry');
+    if (code === 'invalid_persona_name') return t('chatLibrary.thatpersonanameisnotallowedUse');
+    if (code === 'invalid_instructions') return t('chatLibrary.checktheinstructionstheycannotbeempty');
+    if (code === 'invalid_name') return t('chatLibrary.thatnameisnotallowedUse1');
+    if (code === 'FOLDER_LIMIT') return t('chatLibrary.youhavetoomanyfoldersDeleteone');
+    if (code === 'persona_exists') return t('chatLibrary.youalreadyhaveapersonawiththat');
+    if (code === 'personas_unavailable') return t('chatLibrary.personasarenotavailableyet');
+    if (code === 'persona_not_found' || code === 'folder_not_found') return t('chatLibrary.thatisnolongerthere');
+    if (status === 503) return t('chatLibrary.theserviceisbusyTryagainin');
+    if (status === 429) return t('chatLibrary.toomanyrequestsTryagainina');
+    return t('chatLibrary.somethingwentwrongTryagain');
 }

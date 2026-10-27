@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import { ApiError, API_BASE } from './api';
 import { templateParams } from './templateHandoff';
 
@@ -77,17 +78,17 @@ const THEME_ORDER = [
 ] as const;
 
 const THEME_TITLES: Readonly<Record<string, string>> = Object.freeze({
-    PET: 'Pet',
-    STYLE: 'Style',
-    'QUIRK LAB': 'Quirk Lab',
-    'MORPH ME': 'Morph Me',
+    PET: t('presets.pet'),
+    STYLE: t('presets.style'),
+    'QUIRK LAB': t('presets.quirkLab'),
+    'MORPH ME': t('presets.morphMe'),
     'AI DANCE': 'AI Dance',
-    'SOCCER FEVER': 'Soccer Fever',
-    'SUPER POWER': 'Super Power',
+    'SOCCER FEVER': t('presets.soccerFever'),
+    'SUPER POWER': t('presets.superPower'),
     'E-COMMERCE': 'E-commerce',
-    'SHOT LANGUAGE': 'Shot Language',
+    'SHOT LANGUAGE': t('presets.shotLanguage'),
     'AI GIFT': 'AI Gift',
-    FESTIVAL: 'Festival',
+    FESTIVAL: t('presets.festival'),
 });
 
 export function groupByCategory(items: readonly Preset[]): PresetGroup[] {

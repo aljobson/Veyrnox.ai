@@ -80,7 +80,7 @@ export function SavedList({ kind }: { readonly kind: FollowKind }) {
 const styles = StyleSheet.create({
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
     list: { padding: 12, gap: 10 },
-    row: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, paddingLeft: 14 },
+    row: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, paddingStart: 14 },
     main: { flex: 1, minHeight: MIN_TARGET, justifyContent: 'center', paddingVertical: 10, gap: 2 },
     name: { color: colors.text, fontSize: 16, fontWeight: '600' },
     muted: { color: colors.muted },

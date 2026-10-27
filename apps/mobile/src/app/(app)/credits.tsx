@@ -16,7 +16,7 @@ import {
     waitForBalanceChange,
     type GenerationCatalogPlan,
 } from '../../lib/billing';
-import { plural, t } from '../../lib/i18n';
+import { formatLocale, plural, t } from '../../lib/i18n';
 import { ds } from '../../theme';
 import { VeyCardPeek, peekRoom } from '../../components/VeyCardPeek';
 
@@ -161,7 +161,7 @@ export default function Credits() {
                                 >
                                     <View style={styles.rowText}>
                                         <Text variant="bodyStrong" tone="primary" style={styles.name}>{planName(plan.generationPlan)}</Text>
-                                        <Text variant="footnote" tone="warning">{credits ? t('credits.plan.allowance', { count: credits.toLocaleString() }) : t('credits.plan.creationCredits')}</Text>
+                                        <Text variant="footnote" tone="warning">{credits ? t('credits.plan.allowance', { count: credits.toLocaleString(formatLocale()) }) : t('credits.plan.creationCredits')}</Text>
                                         <Text variant="footnote" tone="tertiary" style={styles.meta}>{plan.interval === 'year' ? t('credits.plan.yearly') : t('credits.plan.monthly')}</Text>
                                     </View>
                                     <Text variant="body" tone="warning" style={styles.price}>{plan.priceString}</Text>
@@ -180,7 +180,7 @@ export default function Credits() {
                 {billing.status === 'loading' ? <ActivityIndicator color={styles.accentInk.color} /> : packs.length === 0 ? (
                     <Text variant="body" tone="tertiary" style={styles.muted}>{t('credits.unavailable')}</Text>
                 ) : packs.map((item) => (
-                    <Button variant="secondary" label={[plural('credits.pack', item.credits ?? 0, { count: item.credits?.toLocaleString() ?? '0' }), t('credits.packs.neverExpire'), busyId === item.id ? '' : item.priceString].filter(Boolean).join(', ')}
+                    <Button variant="secondary" label={[plural('credits.pack', item.credits ?? 0, { count: item.credits?.toLocaleString(formatLocale()) ?? '0' }), t('credits.packs.neverExpire'), busyId === item.id ? '' : item.priceString].filter(Boolean).join(', ')}
                         key={item.id}
                         accessibilityRole="button"
                         disabled={!billing.canPurchase || busyId !== null}
@@ -189,7 +189,7 @@ export default function Credits() {
                     >
                         {chosenId === item.id ? <VeyCardPeek /> : null}
                         <View style={styles.rowText}>
-                            <Text variant="bodyStrong" tone="warning">{plural('credits.pack', item.credits ?? 0, { count: item.credits?.toLocaleString() ?? '0' })}</Text>
+                            <Text variant="bodyStrong" tone="warning">{plural('credits.pack', item.credits ?? 0, { count: item.credits?.toLocaleString(formatLocale()) ?? '0' })}</Text>
                             <Text variant="footnote" tone="tertiary" style={styles.meta}>{t('credits.packs.neverExpire')}</Text>
                         </View>
                         {busyId === item.id ? <ActivityIndicator color={styles.accentInk.color} /> : <Text variant="body" tone="warning" style={styles.price}>{item.priceString}</Text>}

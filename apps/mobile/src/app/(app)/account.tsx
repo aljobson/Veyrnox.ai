@@ -13,7 +13,7 @@ import { usePush } from '../../push/pushContext';
 import { LIST_END_PADDING } from '../../theme';
 import { CREATOR_PROFILE_ENABLED, resetVibe } from '../../lib/creatorProfile';
 import { clearVibe } from '../../lib/creatorProfileStore';
-import { t } from '../../lib/i18n';
+import { ACTIVE_LOCALES, t } from '../../lib/i18n';
 import { stayDiscountFor } from '../../lib/billing';
 import { type MenuIcon } from '../../lib/menuIcons';
 
@@ -110,6 +110,7 @@ export default function Account() {
             </Section>
 
             <Section title={t('acct.appearance')}>
+                {ACTIVE_LOCALES.length > 1 ? <ListRow icon="globe" title={t('language.title')} onPress={() => router.push('/language' as never)} /> : null}
                 <ListRow icon="swatches" title={t('acct.appearance')} onPress={() => router.push('/appearance')} />
             </Section>
 

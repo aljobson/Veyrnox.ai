@@ -1,3 +1,4 @@
+import { t } from '../../../lib/i18n';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useEffect, useRef, useState } from 'react';
@@ -28,9 +29,9 @@ export default function Probe() {
     if (!__DEV__) return null;
     return (
         <View style={styles.screen}>
-            <Stack.Screen options={{ title: 'Playback probe' }} />
+            <Stack.Screen options={{ title: t('cinema.playbackprobe') }} />
             <VideoView player={player} style={styles.video} contentFit="contain" nativeControls />
-            <Text style={styles.log}>{log.join('\n') || 'Waiting for ?code= and ?token='}</Text>
+            <Text style={styles.log}>{log.join('\n') || t('cinema.waitingforcodeandtoken')}</Text>
         </View>
     );
 }

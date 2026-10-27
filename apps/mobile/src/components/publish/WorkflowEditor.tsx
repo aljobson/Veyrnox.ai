@@ -22,35 +22,35 @@ export function WorkflowEditor({ initial, busy, onSave, onCancel }: Props) {
 
     function save() {
         const clean = cleanWorkflowDraft(draft);
-        if (!clean) return setProblem('Fill in the name, keyword and reply. They can be up to 80, 100 and 8000 characters.');
+        if (!clean) return setProblem(t('publish.fillinthenamekeywordandreply'));
         setProblem(null);
         onSave(clean);
     }
 
     return (
         <View style={styles.form}>
-            <Field label="Name" value={draft.name} max={80} onChange={(name) => setDraft({ ...draft, name })} />
-            <Text style={styles.label}>Listens to</Text>
+            <Field label={t('publish.name')} value={draft.name} max={80} onChange={(name) => setDraft({ ...draft, name })} />
+            <Text style={styles.label}>{t('publish.listensto')}</Text>
             <View style={styles.row}>
                 {KINDS.map((k) => (
                     <Chip key={k ?? 'any'} label={t(`publishWorkflows.kind.${k ?? 'any'}`)} on={draft.kind === k} onPress={() => setDraft({ ...draft, kind: k })} />
                 ))}
             </View>
-            <Text style={styles.label}>Match</Text>
+            <Text style={styles.label}>{t('publish.match')}</Text>
             <View style={styles.row}>
                 {MATCHES.map((m) => (
                     <Chip key={m} label={t(`publishWorkflows.match.${m}`)} on={draft.matchMode === m} onPress={() => setDraft({ ...draft, matchMode: m })} />
                 ))}
             </View>
-            <Field label="Keyword" value={draft.keyword} max={100} onChange={(keyword) => setDraft({ ...draft, keyword })} />
-            <Field label="Suggested reply" value={draft.replyText} max={8000} multiline onChange={(replyText) => setDraft({ ...draft, replyText })} />
+            <Field label={t('publish.keyword')} value={draft.keyword} max={100} onChange={(keyword) => setDraft({ ...draft, keyword })} />
+            <Field label={t('publish.suggestedreply')} value={draft.replyText} max={8000} multiline onChange={(replyText) => setDraft({ ...draft, replyText })} />
             {problem ? <Text style={styles.error} accessibilityRole="alert">{problem}</Text> : null}
             <View style={styles.row}>
                 <Pressable accessibilityRole="button" disabled={busy} style={[styles.save, touchTarget, busy && styles.off]} onPress={save}>
-                    <Text style={styles.saveText}>{busy ? '…' : 'Save'}</Text>
+                    <Text style={styles.saveText}>{busy ? '…' : t('publish.save')}</Text>
                 </Pressable>
                 <Pressable accessibilityRole="button" disabled={busy} style={touchTarget} onPress={onCancel}>
-                    <Text style={styles.link}>Cancel</Text>
+                    <Text style={styles.link}>{t('publish.cancel2')}</Text>
                 </Pressable>
             </View>
         </View>

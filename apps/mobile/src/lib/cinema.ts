@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import { API_BASE } from './api';
 import { isUsername } from './cinemaBlocks';
 
@@ -63,7 +64,7 @@ export function parseTitle(raw: unknown): CinemaTitle | null {
     return {
         id: raw.id,
         contentType: raw.content_type as ContentType,
-        title: str(raw.title, 'Untitled'),
+        title: str(raw.title, t('cinema.untitled')),
         synopsis: str(raw.synopsis),
         creator: str(creator.display_name) || str(creator.username),
         creatorUsername: isUsername(creator.username) ? creator.username : null,
@@ -112,7 +113,7 @@ export function parseTitleDetail(body: unknown): TitleDetail | null {
                 if (!isObject(e) || typeof e.id !== 'string') continue;
                 episodes.push({
                     id: e.id,
-                    title: str(e.title, 'Episode'),
+                    title: str(e.title, t('cinema.episode')),
                     season: num(s.position) ?? 1,
                     position: num(e.position) ?? episodes.length + 1,
                     durationSeconds: num(e.duration_seconds),

@@ -1,3 +1,4 @@
+import { t } from '../i18n';
 import { config } from '../config';
 import { createRateGuard, reportIssue } from '../requestGuard';
 import { AuthError, type TokenResponse } from './supabaseAuth';
@@ -73,7 +74,7 @@ function toFactors(raw: unknown): Factor[] {
         .map((f) => ({
             id: f.id as string,
             status: typeof f.status === 'string' ? f.status : 'unverified',
-            friendlyName: typeof f.friendly_name === 'string' && f.friendly_name ? f.friendly_name : 'Authenticator',
+            friendlyName: typeof f.friendly_name === 'string' && f.friendly_name ? f.friendly_name : t('accountCalls.authenticator'),
         }));
 }
 

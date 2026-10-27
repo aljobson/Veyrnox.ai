@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { Action, Card, Status, styles as shared } from '../../components/account/shared';
-import { t } from '../../lib/i18n';
+import { formatLocale, t } from '../../lib/i18n';
 import { roleLabel } from '../../lib/publishBrand';
 import { inviteState, inviteTokenFromLink, validToken } from '../../lib/shareLinks';
 import { useTeamInvite } from '../../lib/useTeamInvite';
@@ -53,7 +53,7 @@ export default function TeamInvite() {
                     <Text style={shared.label}>{t('share.invite.role')}</Text>
                     <Text style={shared.name}>{roleLabel(invite.role)}</Text>
                     <Text style={shared.help}>{t('share.invite.for', { email: invite.email })}</Text>
-                    {invite.expiresAt ? <Text style={shared.help}>{t('publishLinks.teamJoin.expires', { date: new Date(invite.expiresAt).toLocaleString() })}</Text> : null}
+                    {invite.expiresAt ? <Text style={shared.help}>{t('publishLinks.teamJoin.expires', { date: new Date(invite.expiresAt).toLocaleString(formatLocale()) })}</Text> : null}
                     {state === 'open' ? <Action label={phase === 'accepting' ? t('share.invite.joining') : t('share.invite.accept')} disabled={phase !== 'ready'} onPress={() => void accept()} /> : state === 'accepted' ? (
                         <>
                             <Text style={shared.help}>{t('publishLinks.teamJoin.already')}</Text>

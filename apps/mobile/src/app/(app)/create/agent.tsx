@@ -95,7 +95,7 @@ export default function Agent() {
 
     return (
         <KeyboardScreen style={styles.screen}>
-            <Stack.Screen options={{ title: 'Video Agent' }} />
+            <Stack.Screen options={{ title: t('agent.videoAgent') }} />
             <KeyboardFormScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
                 <View style={styles.hero}>
                     <Text variant="caption" style={styles.eyebrow}>{t('videoAgent.eyebrow')}</Text>
@@ -157,7 +157,7 @@ export default function Agent() {
                                 <Chip key={value} accessibilityRole="radio" accessibilityState={{ selected: aspect === value }} disabled={formDisabled} onPress={() => changeAspect(value)} label={(value)} selected={aspect === value} />
                             ))}
                         </View>
-                        <Button accessibilityRole="button" accessibilityLabel={`${t('videoAgent.plan')}, free`} accessibilityState={{ busy: busy === 'planning' }}
+                        <Button accessibilityRole="button" accessibilityLabel={t('agent.free', { value1: t('videoAgent.plan') })} accessibilityState={{ busy: busy === 'planning' }}
                             disabled={!!problem || !narrationResult.ok || !!busy} onPress={() => void makePlan()}
                             variant={plan ? 'secondary' : 'primary'} loading={busy === 'planning'} label={plan ? t('videoAgent.replan') : t('videoAgent.plan')} />
                     </View>

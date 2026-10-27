@@ -4,31 +4,45 @@
 import order from './en/_order';
 import area_abt from './en/abt';
 import area_account from './en/account';
+import area_accountCalls from './en/accountCalls';
+import area_accountDeletion from './en/accountDeletion';
 import area_accounts from './en/accounts';
 import area_acct from './en/acct';
 import area_activity from './en/activity';
 import area_ads from './en/ads';
+import area_agent from './en/agent';
+import area_aiConsent from './en/aiConsent';
 import area_analytics from './en/analytics';
 import area_app from './en/app';
+import area_appeals from './en/appeals';
 import area_appearance from './en/appearance';
 import area_approvals from './en/approvals';
+import area_attachFromDevice from './en/attachFromDevice';
 import area_authGate from './en/authGate';
 import area_autolists from './en/autolists';
+import area_billing from './en/billing';
 import area_blocks from './en/blocks';
 import area_brand from './en/brand';
+import area_brandKit from './en/brandKit';
+import area_brandKitEditor from './en/brandKitEditor';
 import area_brands from './en/brands';
 import area_cache from './en/cache';
 import area_calendar from './en/calendar';
 import area_cam from './en/cam';
+import area_cameraPanel from './en/cameraPanel';
 import area_catalog from './en/catalog';
 import area_char from './en/char';
 import area_chat from './en/chat';
+import area_chatLibrary from './en/chatLibrary';
 import area_checkin from './en/checkin';
 import area_chrome from './en/chrome';
 import area_cinema from './en/cinema';
 import area_cinemaBrowse from './en/cinemaBrowse';
+import area_cinemaComments from './en/cinemaComments';
 import area_cinemaCreator from './en/cinemaCreator';
+import area_cinemaDrafts from './en/cinemaDrafts';
 import area_cinemaPass from './en/cinemaPass';
+import area_cinemaPlayback from './en/cinemaPlayback';
 import area_cinemaSeries from './en/cinemaSeries';
 import area_cinemaSocial from './en/cinemaSocial';
 import area_cinemaUpload from './en/cinemaUpload';
@@ -39,108 +53,169 @@ import area_compose from './en/compose';
 import area_connect from './en/connect';
 import area_contacts from './en/contacts';
 import area_create from './en/create';
+import area_creativeFeatures from './en/creativeFeatures';
+import area_creditHistory from './en/creditHistory';
 import area_credits from './en/credits';
+import area_deleteCreation from './en/deleteCreation';
+import area_deleteaccount from './en/deleteaccount';
 import area_dev from './en/dev';
+import area_devs1editor from './en/devs1editor';
 import area_drafts from './en/drafts';
 import area_draw from './en/draw';
 import area_edit from './en/edit';
 import area_editor from './en/editor';
+import area_editorProjects from './en/editorProjects';
+import area_editorSpike from './en/editorSpike';
 import area_email from './en/email';
 import area_empty from './en/empty';
 import area_explore from './en/explore';
 import area_faceFilters from './en/faceFilters';
 import area_features from './en/features';
+import area_files from './en/files';
+import area_film from './en/film';
 import area_filmCloud from './en/filmCloud';
+import area_filmSkills from './en/filmSkills';
+import area_filmStudio from './en/filmStudio';
+import area_filmStudioStore from './en/filmStudioStore';
 import area_form from './en/form';
+import area_freeAllowance from './en/freeAllowance';
+import area_freeAllowanceCard from './en/freeAllowanceCard';
 import area_help from './en/help';
 import area_helpGuides from './en/helpGuides';
+import area_history from './en/history';
 import area_home from './en/home';
 import area_inbox from './en/inbox';
 import area_insights from './en/insights';
 import area_job from './en/job';
 import area_jobCancel from './en/jobCancel';
 import area_label from './en/label';
+import area_language from './en/language';
 import area_library from './en/library';
+import area_libraryFiles from './en/libraryFiles';
 import area_libsrc from './en/libsrc';
+import area_logo from './en/logo';
 import area_lowBalance from './en/lowBalance';
 import area_mcp from './en/mcp';
 import area_mdl from './en/mdl';
 import area_menu from './en/menu';
 import area_mobile from './en/mobile';
 import area_model from './en/model';
+import area_montage from './en/montage';
+import area_nativeEditorModel from './en/nativeEditorModel';
 import area_net from './en/net';
+import area_network from './en/network';
 import area_oac from './en/oac';
 import area_oauth from './en/oauth';
 import area_oddlings from './en/oddlings';
+import area_oddlingsLibrary from './en/oddlingsLibrary';
 import area_oddlingsProjects from './en/oddlingsProjects';
 import area_opt from './en/opt';
+import area_optionLabels0 from './en/optionLabels0';
+import area_optionLabels1 from './en/optionLabels1';
 import area_passkey from './en/passkey';
+import area_paywallPrompt from './en/paywallPrompt';
 import area_pk from './en/pk';
 import area_plan from './en/plan';
 import area_prc from './en/prc';
+import area_presets from './en/presets';
 import area_preview from './en/preview';
 import area_pricing from './en/pricing';
 import area_privacyExport from './en/privacyExport';
+import area_projects from './en/projects';
 import area_prov from './en/prov';
 import area_public from './en/public';
 import area_publish from './en/publish';
+import area_publishApprovals from './en/publishApprovals';
+import area_publishBrand from './en/publishBrand';
+import area_publishCompose from './en/publishCompose';
+import area_publishDeveloper from './en/publishDeveloper';
 import area_publishHome from './en/publishHome';
+import area_publishInbox from './en/publishInbox';
 import area_publishLinks from './en/publishLinks';
+import area_publishQueueAdmin from './en/publishQueueAdmin';
+import area_publishQueues from './en/publishQueues';
+import area_publishTeam from './en/publishTeam';
 import area_publishUploads from './en/publishUploads';
 import area_publishWorkflows from './en/publishWorkflows';
+import area_push from './en/push';
 import area_queue from './en/queue';
 import area_queues from './en/queues';
 import area_rate from './en/rate';
 import area_recovery from './en/recovery';
+import area_referrals from './en/referrals';
+import area_report from './en/report';
 import area_reports from './en/reports';
+import area_review from './en/review';
 import area_share from './en/share';
 import area_signIn from './en/signIn';
 import area_slip from './en/slip';
 import area_smartlink from './en/smartlink';
 import area_social from './en/social';
+import area_sourcePicker from './en/sourcePicker';
+import area_sources from './en/sources';
 import area_srch from './en/srch';
 import area_start from './en/start';
 import area_stem from './en/stem';
 import area_stems from './en/stems';
+import area_studioSkills from './en/studioSkills';
 import area_tabs from './en/tabs';
 import area_team from './en/team';
+import area_templateCollage from './en/templateCollage';
+import area_toolDirectory from './en/toolDirectory';
+import area_tools from './en/tools';
 import area_toolsDir from './en/toolsDir';
 import area_topup from './en/topup';
 import area_ui from './en/ui';
 import area_unlock from './en/unlock';
+import area_uploads from './en/uploads';
 import area_vey from './en/vey';
 import area_vibe from './en/vibe';
 import area_videoAgent from './en/videoAgent';
 import area_welcome from './en/welcome';
+import area_whenPicker from './en/whenPicker';
 
 const catalog = {
     ...area_abt,
     ...area_account,
+    ...area_accountCalls,
+    ...area_accountDeletion,
     ...area_accounts,
     ...area_acct,
     ...area_activity,
     ...area_ads,
+    ...area_agent,
+    ...area_aiConsent,
     ...area_analytics,
     ...area_app,
+    ...area_appeals,
     ...area_appearance,
     ...area_approvals,
+    ...area_attachFromDevice,
     ...area_authGate,
     ...area_autolists,
+    ...area_billing,
     ...area_blocks,
     ...area_brand,
+    ...area_brandKit,
+    ...area_brandKitEditor,
     ...area_brands,
     ...area_cache,
     ...area_calendar,
     ...area_cam,
+    ...area_cameraPanel,
     ...area_catalog,
     ...area_char,
     ...area_chat,
+    ...area_chatLibrary,
     ...area_checkin,
     ...area_chrome,
     ...area_cinema,
     ...area_cinemaBrowse,
+    ...area_cinemaComments,
     ...area_cinemaCreator,
+    ...area_cinemaDrafts,
     ...area_cinemaPass,
+    ...area_cinemaPlayback,
     ...area_cinemaSeries,
     ...area_cinemaSocial,
     ...area_cinemaUpload,
@@ -151,79 +226,126 @@ const catalog = {
     ...area_connect,
     ...area_contacts,
     ...area_create,
+    ...area_creativeFeatures,
+    ...area_creditHistory,
     ...area_credits,
+    ...area_deleteCreation,
+    ...area_deleteaccount,
     ...area_dev,
+    ...area_devs1editor,
     ...area_drafts,
     ...area_draw,
     ...area_edit,
     ...area_editor,
+    ...area_editorProjects,
+    ...area_editorSpike,
     ...area_email,
     ...area_empty,
     ...area_explore,
     ...area_faceFilters,
     ...area_features,
+    ...area_files,
+    ...area_film,
     ...area_filmCloud,
+    ...area_filmSkills,
+    ...area_filmStudio,
+    ...area_filmStudioStore,
     ...area_form,
+    ...area_freeAllowance,
+    ...area_freeAllowanceCard,
     ...area_help,
     ...area_helpGuides,
+    ...area_history,
     ...area_home,
     ...area_inbox,
     ...area_insights,
     ...area_job,
     ...area_jobCancel,
     ...area_label,
+    ...area_language,
     ...area_library,
+    ...area_libraryFiles,
     ...area_libsrc,
+    ...area_logo,
     ...area_lowBalance,
     ...area_mcp,
     ...area_mdl,
     ...area_menu,
     ...area_mobile,
     ...area_model,
+    ...area_montage,
+    ...area_nativeEditorModel,
     ...area_net,
+    ...area_network,
     ...area_oac,
     ...area_oauth,
     ...area_oddlings,
+    ...area_oddlingsLibrary,
     ...area_oddlingsProjects,
     ...area_opt,
+    ...area_optionLabels0,
+    ...area_optionLabels1,
     ...area_passkey,
+    ...area_paywallPrompt,
     ...area_pk,
     ...area_plan,
     ...area_prc,
+    ...area_presets,
     ...area_preview,
     ...area_pricing,
     ...area_privacyExport,
+    ...area_projects,
     ...area_prov,
     ...area_public,
     ...area_publish,
+    ...area_publishApprovals,
+    ...area_publishBrand,
+    ...area_publishCompose,
+    ...area_publishDeveloper,
     ...area_publishHome,
+    ...area_publishInbox,
     ...area_publishLinks,
+    ...area_publishQueueAdmin,
+    ...area_publishQueues,
+    ...area_publishTeam,
     ...area_publishUploads,
     ...area_publishWorkflows,
+    ...area_push,
     ...area_queue,
     ...area_queues,
     ...area_rate,
     ...area_recovery,
+    ...area_referrals,
+    ...area_report,
     ...area_reports,
+    ...area_review,
     ...area_share,
     ...area_signIn,
     ...area_slip,
     ...area_smartlink,
     ...area_social,
+    ...area_sourcePicker,
+    ...area_sources,
     ...area_srch,
     ...area_start,
     ...area_stem,
     ...area_stems,
+    ...area_studioSkills,
     ...area_tabs,
     ...area_team,
+    ...area_templateCollage,
+    ...area_toolDirectory,
+    ...area_tools,
     ...area_toolsDir,
     ...area_topup,
     ...area_ui,
     ...area_unlock,
+    ...area_uploads,
     ...area_vey,
     ...area_vibe,
     ...area_videoAgent,
     ...area_welcome,
+    ...area_whenPicker,
 } as const;
 
 const historical = new Set<string>(order);

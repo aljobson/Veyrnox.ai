@@ -1,3 +1,4 @@
+import { formatLocale } from './i18n';
 import { ApiError, type ApiClient } from './api';
 
 // ADR-0186: the product catalogue, read-only. Titles, prices and stock as the brand keeps them; changing a product,
@@ -68,7 +69,7 @@ export const fetchProducts = async (api: ApiClient) => parseProducts(await api.r
 
 export function money(c: number, currency: string): string {
     try {
-        return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(c / 100);
+        return new Intl.NumberFormat(formatLocale(), { style: 'currency', currency }).format(c / 100);
     } catch {
         return `${(c / 100).toFixed(2)} ${currency}`;
     }

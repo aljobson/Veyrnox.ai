@@ -2,7 +2,7 @@ import { Stack, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { touchTarget } from '../../../lib/a11y';
-import { t } from '../../../lib/i18n';
+import { formatLocale, t } from '../../../lib/i18n';
 import { FORMATS, fetchReports, reportsErrorKey, shareReport, type Report, type ReportFormat } from '../../../lib/publishReports';
 import { usePublishApi } from '../../../lib/usePublishApi';
 import { colors, LIST_END_PADDING } from '../../../theme';
@@ -62,7 +62,7 @@ export default function Reports() {
                         <View style={styles.card}>
                             <Text style={styles.name}>{item.name}</Text>
                             <Text style={styles.muted}>{t('reports.range', { days: item.rangeDays })}{item.comparePrevious ? ` · ${t('reports.compared')}` : ''}{item.cadence !== 'manual' ? ` · ${t(`reports.cadence.${item.cadence}`)}` : ''}</Text>
-                            {item.lastDeliveryAt ? <Text style={styles.muted}>{t('reports.lastSent', { when: new Date(item.lastDeliveryAt).toLocaleDateString() })}</Text> : null}
+                            {item.lastDeliveryAt ? <Text style={styles.muted}>{t('reports.lastSent', { when: new Date(item.lastDeliveryAt).toLocaleDateString(formatLocale()) })}</Text> : null}
                             {exportsEnabled ? (
                                 <View style={styles.row}>
                                     {FORMATS.map((f) => (

@@ -1,0 +1,42 @@
+import { act } from 'react';
+import { I18nManager, StyleSheet } from 'react-native';
+import { createRoot, type Root } from 'test-renderer';
+import { Icon } from '../src/components/ui/Icon';
+import { styles } from '../src/components/editor/fullEditorStyles';
+import { changeLanguage } from '../src/lib/languageTransition';
+import { setLocaleFromDevice } from '../src/lib/i18n';
+jest.mock('expo', () => ({ reloadAppAsync: jest.fn() }));
+jest.mock('../src/components/ui/AppearanceContext', () => ({ useAppearance: () => ({ settings: jest.requireActual('../src/theme').DEFAULT_APPEARANCE, scheme: 'dark' }) }));
+declare const require: (id: string) => any;
+declare const __dirname: string;
+let root: Root;
+const initialRtl = I18nManager.isRTL;
+beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; root = createRoot(); });
+afterEach(async () => { await act(async () => root.unmount()); I18nManager.isRTL = initialRtl; setLocaleFromDevice(['en']); jest.restoreAllMocks(); });
+test.each([false, true])('navigation image icons mirror exactly once in RTL=%s', async rtl => {
+    I18nManager.isRTL = rtl;
+    await act(async () => root.render(<Icon name="caretRight" />));
+    const icon = root.container.queryAll(n => n.props.source && n.props.style)[0];
+    expect(StyleSheet.flatten(icon.props.style).transform).toEqual(rtl ? [{ scaleX: -1 }] : undefined);
+});
+test('editor time coordinates stay LTR and the playhead uses the LTR logical start', () => {
+    expect(styles.timelineSection.direction).toBe('ltr');
+    expect(styles.playheadHead.start).toBe(-3);
+    expect(styles.transportIcon.writingDirection).toBe('ltr');
+    const source = require('fs').readFileSync(require('path').join(__dirname, '../src/components/editor/FullEditorScreen.tsx'), 'utf8');
+    expect(source).toContain('styles.playhead, { start: total ?');
+});
+test('real I18nManager adapters only run for a direction change', async () => {
+    const allow = jest.spyOn(I18nManager, 'allowRTL').mockImplementation(() => {});
+    const force = jest.spyOn(I18nManager, 'forceRTL').mockImplementation(() => {});
+    const session = { signedIn: false, canReloadSession: () => false };
+    const deps = { active: ['en', 'es', 'ar'] as const, load: async () => 'en', save: async () => true, saveReturn: async () => true, reload: async () => {} };
+    setLocaleFromDevice(['en']);
+    await changeLanguage('es', '/sign-in', session, deps);
+    expect(allow).not.toHaveBeenCalled(); expect(force).not.toHaveBeenCalled();
+    await changeLanguage('ar', '/sign-in', session, deps);
+    expect(allow).toHaveBeenLastCalledWith(true); expect(force).toHaveBeenLastCalledWith(true);
+    setLocaleFromDevice(['ar']);
+    await changeLanguage('es', '/sign-in', session, deps);
+    expect(allow).toHaveBeenLastCalledWith(false); expect(force).toHaveBeenLastCalledWith(false);
+});

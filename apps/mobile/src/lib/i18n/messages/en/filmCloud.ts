@@ -20,4 +20,6 @@ export default {
     'filmCloud.linkTitle': 'Films saved to your account',
     'filmCloud.linkCount.one': '{count} film',
     'filmCloud.linkCount.other': '{count} films',
+    "filmCloud.signintokeepastudioon": "Sign in to keep a studio on this phone.",
+    "filmCloud.untitledfilm": "Untitled film",
 } as const;

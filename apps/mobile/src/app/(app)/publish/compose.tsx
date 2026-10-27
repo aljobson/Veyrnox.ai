@@ -7,7 +7,7 @@ import { fetchAccounts, publishErrorMessage, type PublishAccount } from '../../.
 import { MAX_TEXT, mediaBlocker, networkLabel, captionWarning, cleanNetworkText, composeErrorMessage, createBody, createPost, mediaTypeOf, validateDraft, type Draft, type When, type YoutubeVisibility } from '../../../lib/publishCompose';
 import { confirmSlot, fetchQueues, queueErrorKey, reserveSlot, type PublishQueue } from '../../../lib/publishQueues';
 import { NetworkTextFields, QueuePicker, YoutubeVisibilityChips } from '../../../components/ComposeExtras';
-import { t } from '../../../lib/i18n';
+import { formatLocale, t } from '../../../lib/i18n';
 import { WhenPicker, whenFrom } from '../../../components/WhenPicker';
 import { appStorage, getCacheUser, subscribeCacheUser } from '../../../lib/appCache';
 import { createDraftKeys, draftSignature, isDefiniteRefusal } from '../../../lib/draftKey';
@@ -91,7 +91,7 @@ export default function Compose() {
         if (!chosen || busy || preparingRef.current) return;
         if (blocker) { setProblem(blocker); return; }
         if (!when) {
-            setProblem('Enter the date as YYYY-MM-DD and the time as HH:MM.');
+            setProblem(t('publish.enterthedateasYYYYMMDD'));
             return;
         }
         if (mode === 'queue' && (!queue || !queueUsable)) {
@@ -114,10 +114,10 @@ export default function Compose() {
             ]);
             return;
         }
-        const answer = when.kind === 'now' ? `This posts to ${where} now and is public. It cannot be undone from here.` : `This schedules a post to ${where} for ${when.at.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}. You can change or cancel it until it starts.`;
-        Alert.alert(when.kind === 'now' ? 'Post now?' : 'Schedule this post?', answer, [
-            { text: 'Cancel', style: 'cancel' },
-            { text: when.kind === 'now' ? 'Post now' : 'Schedule', onPress: () => { if (!preparingRef.current) void send(draft, now); } },
+        const answer = when.kind === 'now' ? t('publish.thispoststonowandispublic', { value1: where }) : t('publish.thisschedulesaposttoforYou', { value1: where, value2: when.at.toLocaleString(formatLocale(undefined), { dateStyle: 'medium', timeStyle: 'short' }) });
+        Alert.alert(when.kind === 'now' ? t('publish.postnow') : t('publish.schedulethispost'), answer, [
+            { text: t('publish.cancel2'), style: 'cancel' },
+            { text: when.kind === 'now' ? t('publish.postnow2') : t('publish.schedule'), onPress: () => { if (!preparingRef.current) void send(draft, now); } },
         ]);
     }
 
@@ -161,14 +161,14 @@ export default function Compose() {
 
     return (
         <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
-            <Stack.Screen options={{ title: 'New post' }} />
+            <Stack.Screen options={{ title: t('publish.newpost') }} />
             <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-                <Text style={styles.heading} accessibilityRole="header">1. Creation</Text>
-                {picks.length === 0 ? <Text style={styles.muted}>No finished images or videos yet. Make one in Create first.</Text> : null}
+                <Text style={styles.heading} accessibilityRole="header">{t('publish.1Creation')}</Text>
+                {picks.length === 0 ? <Text style={styles.muted}>{t('publish.nofinishedimagesorvideosyetMake')}</Text> : null}
                 {picks.slice(0, 30).map((p) => (
                     <Pressable key={p.job.job_id} accessibilityRole="button" disabled={preparing} accessibilityState={{ disabled: preparing, selected: choices.some(item => choiceId(item) === choiceId(p)) }} style={[styles.row, choices.some(item => choiceId(item) === choiceId(p)) && styles.rowOn]} onPress={() => { if (preparingRef.current) return; setChoices(old => toggleChoice(old, p, maxMedia)); if (maxMedia === 1) setAccountIds([]); }}>
                         <Text style={styles.rowText}>{p.name}</Text>
-                        <Text style={styles.muted}>{p.mediaType} · {new Date(p.job.created_at).toLocaleDateString()}</Text>
+                        <Text style={styles.muted}>{p.mediaType} · {new Date(p.job.created_at).toLocaleDateString(formatLocale())}</Text>
                     </Pressable>
                 ))}
 
@@ -187,8 +187,8 @@ export default function Compose() {
                     onBusyChange={value => { preparingRef.current = value; setPreparing(value); }} />
                 {chosen ? (
                     <>
-                        <Text style={styles.heading} accessibilityRole="header">2. Accounts</Text>
-                        {eligible.length === 0 ? <Text style={styles.muted}>No connected account can post a {chosen.mediaType} yet. Connect one on veyrnox.ai.</Text> : null}
+                        <Text style={styles.heading} accessibilityRole="header">{t('publish.2Accounts')}</Text>
+                        {eligible.length === 0 ? <Text style={styles.muted}>{t('publish.noconnectedaccountcanpostayet', { value1: chosen.mediaType })}</Text> : null}
                         {queue ? <Text style={styles.muted}>{queueUsable ? t('compose.queueAccounts', { names: queueAccounts.map((a) => a.displayName).join(', ') }) : t('compose.queueNoMatch')}</Text> : null}
                         <View style={styles.chips}>
                             {(queue ? [] : eligible).map((a) => (
@@ -198,17 +198,17 @@ export default function Compose() {
                             ))}
                         </View>
 
-                        <Text style={styles.heading} accessibilityRole="header">3. Text</Text>
-                        <TextInput style={styles.input} multiline value={text} onChangeText={setText} placeholder="Write the caption" accessibilityLabel="Caption" placeholderTextColor={colors.muted} maxLength={MAX_TEXT} />
+                        <Text style={styles.heading} accessibilityRole="header">{t('publish.3Text')}</Text>
+                        <TextInput style={styles.input} multiline value={text} onChangeText={setText} placeholder={t('publish.writethecaption')} accessibilityLabel={t('publish.caption')} placeholderTextColor={colors.muted} maxLength={MAX_TEXT} />
                         <Text style={styles.muted}>{text.length} / {MAX_TEXT}</Text>
                         {warn ? <Text style={styles.warn}>{warn}</Text> : null}
                         <NetworkTextFields networks={networks} values={networkText} onChange={(n, v) => setNetworkText((m) => ({ ...m, [n]: v }))} />
                         {showYoutube ? <YoutubeVisibilityChips value={ytVisibility} onChange={setYtVisibility} /> : null}
 
-                        <Text style={styles.heading} accessibilityRole="header">4. When</Text>
+                        <Text style={styles.heading} accessibilityRole="header">{t('publish.4When')}</Text>
                         <View style={styles.chips}>
-                            <Pressable accessibilityRole="button" accessibilityState={{ selected: mode === 'now' }} style={[styles.chip, mode === 'now' && styles.chipOn]} onPress={() => setMode('now')}><Text style={[styles.chipText, mode === 'now' && styles.chipTextOn]}>Post now</Text></Pressable>
-                            <Pressable accessibilityRole="button" accessibilityState={{ selected: mode === 'schedule' }} style={[styles.chip, mode === 'schedule' && styles.chipOn]} onPress={() => setMode('schedule')}><Text style={[styles.chipText, mode === 'schedule' && styles.chipTextOn]}>Schedule</Text></Pressable>
+                            <Pressable accessibilityRole="button" accessibilityState={{ selected: mode === 'now' }} style={[styles.chip, mode === 'now' && styles.chipOn]} onPress={() => setMode('now')}><Text style={[styles.chipText, mode === 'now' && styles.chipTextOn]}>{t('publish.postnow2')}</Text></Pressable>
+                            <Pressable accessibilityRole="button" accessibilityState={{ selected: mode === 'schedule' }} style={[styles.chip, mode === 'schedule' && styles.chipOn]} onPress={() => setMode('schedule')}><Text style={[styles.chipText, mode === 'schedule' && styles.chipTextOn]}>{t('publish.schedule')}</Text></Pressable>
                             {queues.length > 0 ? <Pressable accessibilityRole="button" accessibilityState={{ selected: mode === 'queue' }} style={[styles.chip, mode === 'queue' && styles.chipOn]} onPress={() => setMode('queue')}><Text style={[styles.chipText, mode === 'queue' && styles.chipTextOn]}>{t('compose.queue')}</Text></Pressable> : null}
                         </View>
                         {mode === 'queue' ? <QueuePicker queues={queues} value={queueId} onChange={setQueueId} /> : null}
@@ -219,7 +219,7 @@ export default function Compose() {
                         {problem ? <Text style={styles.error}>{problem}</Text> : null}
                         {selected.length === 0 ? <Text style={styles.muted}>{t('compose.pickAccount')}</Text> : null}
                         <Pressable accessibilityRole="button" disabled={busy || preparing || selected.length === 0} accessibilityState={{ disabled: busy || preparing || selected.length === 0 }} style={[styles.button, (busy || preparing || selected.length === 0) && styles.off]} onPress={submit}>
-                            {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>{mode === 'queue' ? t('compose.queueAction') : mode === 'schedule' ? 'Schedule' : 'Post now'}</Text>}
+                            {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>{mode === 'queue' ? t('compose.queueAction') : mode === 'schedule' ? t('publish.schedule') : t('publish.postnow2')}</Text>}
                         </Pressable>
                     </>
                 ) : null}

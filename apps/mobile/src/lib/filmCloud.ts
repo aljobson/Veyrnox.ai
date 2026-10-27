@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import type { ApiClient } from './api';
 import { appCache, getCacheUser, subscribeCacheUser } from './appCache';
 import type { Cache } from './cache';
@@ -21,7 +22,7 @@ export function parseCloudFilms(body: unknown): CloudFilm[] {
         if (typeof row.id !== 'string' || !CLOUD_FILM_UUID.test(row.id) || typeof row.revision !== 'number' || !Number.isInteger(row.revision) || row.revision < 1) continue;
         films.push({
             id: row.id,
-            name: (typeof row.name === 'string' && row.name.trim() ? row.name.trim() : 'Untitled film').slice(0, 120),
+            name: (typeof row.name === 'string' && row.name.trim() ? row.name.trim() : t('filmCloud.untitledfilm')).slice(0, 120),
             shotCount: typeof row.shot_count === 'number' && Number.isInteger(row.shot_count) && row.shot_count >= 0 && row.shot_count <= 200 ? row.shot_count : 0,
             revision: row.revision,
             updatedAt: typeof row.updated_at === 'string' && Number.isFinite(Date.parse(row.updated_at)) ? row.updated_at : null,
@@ -61,7 +62,7 @@ export function clearOpenedFilm(): void { opened = null; }
 
 export async function replaceActiveStudio(film: Film, cache: Cache = appCache): Promise<void> {
     const owner = getCacheUser();
-    if (!owner) throw new Error('Sign in to keep a studio on this phone.');
+    if (!owner) throw new Error(t('filmCloud.signintokeepastudioon'));
     const raw = JSON.stringify(film);
     const active = getOpenedFilm();
     if (active) {

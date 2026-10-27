@@ -4,10 +4,10 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import { useAuth } from '../../auth/AuthProvider';
 import { MIN_TARGET } from '../../lib/a11y';
 import { castChoice, castVote, competitionOpen, fetchStoryPolls, fetchVoting, readOf, socialErrorKey, type StoryPoll, type VoteCompetition } from '../../lib/cinemaSocial';
-import { t } from '../../lib/i18n';
+import { formatLocale, t } from '../../lib/i18n';
 import { colors } from '../../theme';
 
-const day = (iso: string) => (iso && Number.isFinite(Date.parse(iso)) ? new Date(iso).toLocaleDateString() : '');
+const day = (iso: string) => (iso && Number.isFinite(Date.parse(iso)) ? new Date(iso).toLocaleDateString(formatLocale()) : '');
 
 // Open competitions and story polls for one title. Each hides itself while its switch is off (VOTING_ENABLED and
 // STORY_POLLS_ENABLED are off in production); a failed read says so and offers a retry.

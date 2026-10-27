@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import type { CatalogModel } from './media';
 
 // ADR-0221: the web's /tools page (app/veyrnox/_lib/tools.js) on the phone: models that work on a file you already
@@ -13,22 +14,22 @@ export interface ToolTask {
 }
 
 export const TOOL_TASKS: readonly ToolTask[] = [
-    { key: 'upscale', label: 'Upscale', blurb: 'Make an image larger and sharper.', ids: ['topaz-upscale'] },
-    { key: 'background', label: 'Remove background', blurb: 'Cut the subject out of a photo.', ids: ['bria-bg-remove'] },
-    { key: 'expand', label: 'Expand', blurb: 'Extend an image beyond its edges.', ids: ['bria-expand'] },
-    { key: 'edit', label: 'Edit with a prompt', blurb: 'Change an image by describing the change.', ids: ['nano-banana-pro-edit', 'nano-banana-pro-edit-grsai'] },
-    { key: 'face-filters', label: 'Face filters', blurb: 'Retouch, relight or restyle the face in your own photo.', ids: ['face-retouch', 'face-enhance', 'face-relight', 'face-makeup', 'face-age'] },
-    { key: 'animate', label: 'Photo to video', blurb: 'Turn a still image into a moving clip.', ids: ['kling-3.0-i2v', 'kling-3.0-i2v-kie'] },
-    { key: 'avatar', label: 'Talking avatar', blurb: 'Make a photo speak a voice clip.', ids: ['kling-avatar-v2'] },
-    { key: 'lipsync', label: 'Lip sync', blurb: "Match a video's lips to new speech.", ids: ['latentsync'] },
-    { key: 'audio-separation', label: 'Separate vocals and instruments', blurb: 'Split your own audio into six separate tracks.', ids: ['demucs-stems'] },
-    { key: 'video-sound', label: 'Add sound to a video', blurb: 'Generate sound that fits a short clip.', ids: ['mmaudio-v2-video'] },
-    { key: 'video-upscale', label: 'Upscale video', blurb: 'Make a short clip larger and sharper.', ids: ['topaz-upscale-video'] },
+    { key: 'upscale', label: t('toolDirectory.upscale'), blurb: t('toolDirectory.makeanimagelargerandsharper'), ids: ['topaz-upscale'] },
+    { key: 'background', label: t('toolDirectory.removebackground'), blurb: t('toolDirectory.cutthesubjectoutofaphoto'), ids: ['bria-bg-remove'] },
+    { key: 'expand', label: t('toolDirectory.expand'), blurb: t('toolDirectory.extendanimagebeyonditsedges'), ids: ['bria-expand'] },
+    { key: 'edit', label: t('toolDirectory.editwithaprompt'), blurb: t('toolDirectory.changeanimagebydescribingthechange'), ids: ['nano-banana-pro-edit', 'nano-banana-pro-edit-grsai'] },
+    { key: 'face-filters', label: t('toolDirectory.facefilters'), blurb: 'Retouch, relight or restyle the face in your own photo.', ids: ['face-retouch', 'face-enhance', 'face-relight', 'face-makeup', 'face-age'] },
+    { key: 'animate', label: t('toolDirectory.phototovideo'), blurb: t('toolDirectory.turnastillimageintoamoving'), ids: ['kling-3.0-i2v', 'kling-3.0-i2v-kie'] },
+    { key: 'avatar', label: t('toolDirectory.talkingavatar'), blurb: t('toolDirectory.makeaphotospeakavoiceclip'), ids: ['kling-avatar-v2'] },
+    { key: 'lipsync', label: t('toolDirectory.lipsync'), blurb: t('toolDirectory.matchavideoslipstonew'), ids: ['latentsync'] },
+    { key: 'audio-separation', label: t('toolDirectory.separatevocalsandinstruments'), blurb: t('toolDirectory.splityourownaudiointosixseparate'), ids: ['demucs-stems'] },
+    { key: 'video-sound', label: t('toolDirectory.addsoundtoavideo'), blurb: t('toolDirectory.generatesoundthatfitsashortclip'), ids: ['mmaudio-v2-video'] },
+    { key: 'video-upscale', label: t('toolDirectory.upscalevideo'), blurb: t('toolDirectory.makeashortcliplargerandsharper'), ids: ['topaz-upscale-video'] },
 ];
 
-const OTHER: Omit<ToolTask, 'ids'> = { key: 'other', label: 'More tools', blurb: 'Other models that start from your own file.' };
+const OTHER: Omit<ToolTask, 'ids'> = { key: 'other', label: t('toolDirectory.moretools'), blurb: t('toolDirectory.othermodelsthatstartfromyourown') };
 
-const SLOT_WORDS: Readonly<Record<string, string>> = { image: 'an image', video: 'a video', audio: 'audio' };
+const SLOT_WORDS: Readonly<Record<string, string>> = { image: t('toolDirectory.imageInput'), video: t('toolDirectory.videoInput'), audio: t('toolDirectory.audioInput') };
 
 type Media = Record<string, { readonly required?: boolean } | undefined>;
 const mediaOf = (m: CatalogModel): Media => (m.capabilities?.media ?? {}) as Media;
@@ -44,7 +45,7 @@ export function toolNeeds(m: CatalogModel): string {
     const slots = Object.entries(mediaOf(m))
         .filter(([, spec]) => spec?.required)
         .map(([slot]) => SLOT_WORDS[slot] ?? slot);
-    return slots.reduce((joined, slot) => (joined ? `${joined} and ${slot}` : slot), '');
+    return slots.reduce((joined, slot) => (joined ? t('toolDirectory.joinInputs', { first: joined, next: slot }) : slot), '');
 }
 
 export interface ToolGroup {

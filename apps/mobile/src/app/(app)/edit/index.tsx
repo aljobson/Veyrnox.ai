@@ -29,7 +29,7 @@ import {
     type AudioTrack,
     type Clip,
 } from '../../../lib/clipEdit';
-import { plural, t } from '../../../lib/i18n';
+import { formatLocale, plural, t } from '../../../lib/i18n';
 import { fetchCatalog, kindOf, mediaApi, type CatalogModel, type Job } from '../../../lib/media';
 import { preloadJob } from '../../../lib/nextSteps';
 import { colors } from '../../../theme';
@@ -172,9 +172,7 @@ export default function QuickEdit() {
             <ScrollView style={styles.screen} contentContainerStyle={styles.body}>
                 <Stack.Screen options={{ title: t('edit.reviewTitle') }} />
                 {clips.map((c, i) => (
-                    <Text key={`${c.jobId}-${i}`} style={styles.line}>
-                        {i + 1}. {c.label}: {seconds(c.start)} s to {seconds(c.end)} s
-                    </Text>
+                    <Text key={`${c.jobId}-${i}`} style={styles.line}>{t('edit.stos', { value1: i + 1, value2: c.label, value3: seconds(c.start), value4: seconds(c.end) })}</Text>
                 ))}
                 <Text style={styles.line}>{t('edit.total', { seconds: seconds(total), max: MAX_OUTPUT_S })}</Text>
                 {audio ? <Text style={styles.line}>{t('edit.audio.with', { name: audio.label, seconds: seconds(audio.offset) })}</Text> : null}
@@ -227,7 +225,7 @@ export default function QuickEdit() {
                         library.slice(0, 30).map((j) => (
                             <Pressable key={j.job_id} accessibilityRole="button" style={styles.row} onPress={() => add(j)}>
                                 <Text style={styles.name}>{names.current.get(j.job_id)}</Text>
-                                <Text style={styles.muted}>{new Date(j.created_at).toLocaleDateString()}</Text>
+                                <Text style={styles.muted}>{new Date(j.created_at).toLocaleDateString(formatLocale())}</Text>
                             </Pressable>
                         ))
                     )
@@ -252,7 +250,7 @@ export default function QuickEdit() {
                         sounds.slice(0, 30).map((j) => (
                             <Pressable key={j.job_id} accessibilityRole="button" style={styles.row} onPress={() => { setAudio(newAudio({ jobId: j.job_id, label: names.current.get(j.job_id) ?? t('edit.untitled') })); setPickingSound(false); }}>
                                 <Text style={styles.name}>{names.current.get(j.job_id)}</Text>
-                                <Text style={styles.muted}>{new Date(j.created_at).toLocaleDateString()}</Text>
+                                <Text style={styles.muted}>{new Date(j.created_at).toLocaleDateString(formatLocale())}</Text>
                             </Pressable>
                         ))
                     )
@@ -287,7 +285,7 @@ function Stepper({ label, value, onLess, onMore, lessLabel, moreLabel }: { label
         <View style={styles.stepper}>
             <Text style={styles.stepLabel}>{label}</Text>
             <Pressable accessibilityRole="button" accessibilityLabel={lessLabel} style={styles.stepButton} onPress={onLess}><Text style={styles.smallText}>−</Text></Pressable>
-            <Text style={styles.stepValue} accessibilityLabel={`${label} ${seconds(value)}`}>{seconds(value)} s</Text>
+            <Text style={styles.stepValue} accessibilityLabel={`${label} ${seconds(value)}`}>{t('edit.s', { value1: seconds(value) })}</Text>
             <Pressable accessibilityRole="button" accessibilityLabel={moreLabel} style={styles.stepButton} onPress={onMore}><Text style={styles.smallText}>+</Text></Pressable>
         </View>
     );

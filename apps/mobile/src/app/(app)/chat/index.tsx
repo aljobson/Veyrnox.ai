@@ -1,3 +1,4 @@
+import { t } from '../../../lib/i18n';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
@@ -42,14 +43,14 @@ export default function ChatWorkspaceEntry() {
 
     return (
         <View style={styles.screen}>
-            <Stack.Screen options={{ title: 'LLM Chat' }} />
+            <Stack.Screen options={{ title: t('chat.lLMChat') }} />
             <View style={styles.brandMark}><Icon name="chat" /></View>
-            <Text variant="caption" style={styles.eyebrow}>LLM Chat</Text>
-            <Text variant="display" accessibilityRole="header" style={styles.hero}>{error ? 'Could not load your workspace' : 'Opening your workspace'}</Text>
-            <Text variant="callout" style={styles.help}>{error ? 'Check your connection and try again.' : 'Your latest conversation, tools and creative skills are being prepared.'}</Text>
+            <Text variant="caption" style={styles.eyebrow}>{t('chat.lLMChat')}</Text>
+            <Text variant="display" accessibilityRole="header" style={styles.hero}>{error ? t('chat.couldnotloadyourworkspace') : t('chat.openingyourworkspace')}</Text>
+            <Text variant="callout" style={styles.help}>{error ? t('chat.checkyourconnectionandtryagain') : t('chat.yourlatestconversationtoolsandcreativeskills')}</Text>
             {error ? (
-                <Button accessibilityRole="button" containerStyle={styles.retry} onPress={() => void openWorkspace()} variant="tertiary" size="md" label={"Try again"}>
-                    <Text variant="callout" style={styles.retryText}>Try again</Text>
+                <Button accessibilityRole="button" containerStyle={styles.retry} onPress={() => void openWorkspace()} variant="tertiary" size="md" label={t('chat.tryagain')}>
+                    <Text variant="callout" style={styles.retryText}>{t('chat.tryagain')}</Text>
                 </Button>
             ) : <ActivityIndicator color={styles.accentInk.color} size="small" style={styles.spinner} />}
         </View>

@@ -52,7 +52,7 @@ const sheets = themedStyles((p) => ({
     posterEmpty: { flex: 1, backgroundColor: p.borderSubtle },
     newBadge: {
         position: 'absolute',
-        left: 8,
+        start: 8,
         top: 8,
         borderRadius: 999,
         paddingHorizontal: 8,

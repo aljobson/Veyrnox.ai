@@ -1,3 +1,4 @@
+import { formatLocale } from './i18n';
 import type { Analytics } from './publish';
 
 // ADR-0162: analytics range, compare and the followers chart. The summary rules mirror the web's
@@ -61,7 +62,7 @@ export function delta(current: number | null, previous: number | null): Delta | 
     return { change, percent: previous === 0 ? null : (change / previous) * 100 };
 }
 
-export const signed = (n: number): string => (n > 0 ? `+${n.toLocaleString()}` : n.toLocaleString());
+export const signed = (n: number): string => (n > 0 ? `+${n.toLocaleString(formatLocale())}` : n.toLocaleString(formatLocale()));
 export const percentText = (d: Delta): string => (d.percent === null ? signed(d.change) : `${signed(d.change)} (${d.percent > 0 ? '+' : ''}${d.percent.toFixed(1)}%)`);
 
 // Bar heights 0..1 for a chart. A flat series draws as even bars so it never divides by zero.

@@ -2,7 +2,7 @@ import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { touchTarget } from '../../../lib/a11y';
-import { t } from '../../../lib/i18n';
+import { formatLocale, t } from '../../../lib/i18n';
 import { autolistErrorKey, deleteAutolist, fetchAutolists, type Autolist } from '../../../lib/publishAutolists';
 import { usePublishApi } from '../../../lib/usePublishApi';
 import { colors } from '../../../theme';
@@ -65,7 +65,7 @@ export default function Autolists() {
                                 <Text style={styles.name}>{item.name}</Text>
                                 <Text style={styles.muted} numberOfLines={1}>{item.enabled ? t('autolists.on') : t('autolists.off')} · {item.queueName}</Text>
                                 <Text style={styles.muted} numberOfLines={1}>{item.feedUrl}</Text>
-                                {item.lastError ? <Text style={styles.bad} numberOfLines={2}>{item.lastError}</Text> : item.lastRefreshedAt ? <Text style={styles.muted}>{t('autolists.refreshed', { when: new Date(item.lastRefreshedAt).toLocaleString() })}</Text> : null}
+                                {item.lastError ? <Text style={styles.bad} numberOfLines={2}>{item.lastError}</Text> : item.lastRefreshedAt ? <Text style={styles.muted}>{t('autolists.refreshed', { when: new Date(item.lastRefreshedAt).toLocaleString(formatLocale()) })}</Text> : null}
                             </Pressable>
                             <Pressable accessibilityRole="button" accessibilityLabel={t('autolists.deleteLabel', { name: item.name })} style={[styles.del, touchTarget]} onPress={() => confirmDelete(item)}>
                                 <Text style={styles.delText}>{t('autolists.delete')}</Text>

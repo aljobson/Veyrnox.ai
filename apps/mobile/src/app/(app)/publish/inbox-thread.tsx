@@ -3,7 +3,7 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Keyboard, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { touchTarget } from '../../../lib/a11y';
-import { t } from '../../../lib/i18n';
+import { formatLocale, t } from '../../../lib/i18n';
 import { assignThread, cleanReply, fetchMembers, fetchThread, inboxErrorKey, parseThreadView, replyToThread, setThreadStatus, type Member } from '../../../lib/publishInbox';
 import { usePublishApi } from '../../../lib/usePublishApi';
 import { colors, LIST_END_PADDING } from '../../../theme';
@@ -58,7 +58,7 @@ export default function InboxThread() {
 
     async function send() {
         const body = cleanReply(draft);
-        if (!body) return setNote('Write a reply of up to 8000 characters.');
+        if (!body) return setNote(t('publish.writeareplyofupto8000'));
         replyKey.current ??= Crypto.randomUUID();
         await act(async () => {
             await replyToThread(api, String(id), body, replyKey.current as string);
@@ -91,10 +91,10 @@ export default function InboxThread() {
             {th ? (
                 <View style={styles.actions}>
                     <Pressable accessibilityRole="button" disabled={busy} style={touchTarget} onPress={() => act(() => setThreadStatus(api, String(id), resolved ? 'reopen' : 'resolve'))}>
-                        <Text style={styles.action}>{resolved ? 'Reopen' : 'Resolve'}</Text>
+                        <Text style={styles.action}>{resolved ? t('publish.reopen') : t('publish.resolve')}</Text>
                     </Pressable>
                     <Pressable accessibilityRole="button" disabled={busy} style={touchTarget} onPress={openAssign}>
-                        <Text style={styles.action}>{th.assignedEmail ? `Assigned: ${th.assignedEmail}` : 'Assign'}</Text>
+                        <Text style={styles.action}>{th.assignedEmail ? t('publish.assigned', { value1: th.assignedEmail }) : t('publish.assign')}</Text>
                     </Pressable>
                 </View>
             ) : null}
@@ -108,7 +108,7 @@ export default function InboxThread() {
                     ))}
                     {th?.assignedEmail ? (
                         <Pressable accessibilityRole="button" disabled={busy} style={[styles.member, touchTarget]} onPress={() => { setPicking(false); void act(() => assignThread(api, String(id), null)); }}>
-                            <Text style={styles.muted}>Unassign</Text>
+                            <Text style={styles.muted}>{t('publish.unassign')}</Text>
                         </Pressable>
                     ) : null}
                 </View>
@@ -120,23 +120,23 @@ export default function InboxThread() {
                 <View key={m.id} style={[styles.bubble, m.outgoing ? styles.out : styles.in]} accessible accessibilityLabel={`${m.outgoing ? t('inbox.you') : th?.name ?? ''}: ${m.body}`}>
                     <Text style={styles.text}>{m.body || (m.hasMedia ? t('inbox.attachment') : '')}</Text>
                     {m.body && m.hasMedia ? <Text style={styles.muted}>{t('inbox.attachment')}</Text> : null}
-                    <Text style={styles.meta}>{m.sentAt ? new Date(m.sentAt).toLocaleString() : ''}{m.deliveryStatus && m.outgoing ? ` · ${m.deliveryStatus}` : ''}</Text>
+                    <Text style={styles.meta}>{m.sentAt ? new Date(m.sentAt).toLocaleString(formatLocale()) : ''}{m.deliveryStatus && m.outgoing ? ` · ${m.deliveryStatus}` : ''}</Text>
                 </View>
             ))}
             {view.notes.length > 0 ? <Text style={styles.heading} accessibilityRole="header">{t('inbox.notes')}</Text> : null}
             {view.notes.map((n) => (
                 <View key={n.id} style={styles.note}>
                     <Text style={styles.text}>{n.body}</Text>
-                    <Text style={styles.meta}>{n.author}{n.createdAt ? ` · ${new Date(n.createdAt).toLocaleString()}` : ''}</Text>
+                    <Text style={styles.meta}>{n.author}{n.createdAt ? ` · ${new Date(n.createdAt).toLocaleString(formatLocale())}` : ''}</Text>
                 </View>
             ))}
             {!view.canReply ? <Text style={styles.muted}>{t('inbox.replyOnWeb')}</Text> : null}
         </ScrollView>
         {view.canReply ? (
             <View style={[styles.composer, keyboard > 0 && { marginBottom: keyboard, paddingBottom: 12 }]}>
-                <TextInput style={styles.input} value={draft} onChangeText={setDraft} placeholder="Reply" accessibilityLabel="Reply" placeholderTextColor={colors.muted} multiline maxLength={8000} editable={!busy} />
-                <Pressable accessibilityRole="button" accessibilityLabel="Send reply" disabled={busy || !draft.trim()} style={[styles.send, (busy || !draft.trim()) && styles.off]} onPress={send}>
-                    <Text style={styles.sendText}>{busy ? '…' : 'Send'}</Text>
+                <TextInput style={styles.input} value={draft} onChangeText={setDraft} placeholder={t('publish.reply')} accessibilityLabel={t('publish.reply')} placeholderTextColor={colors.muted} multiline maxLength={8000} editable={!busy} />
+                <Pressable accessibilityRole="button" accessibilityLabel={t('publish.sendreply')} disabled={busy || !draft.trim()} style={[styles.send, (busy || !draft.trim()) && styles.off]} onPress={send}>
+                    <Text style={styles.sendText}>{busy ? '…' : t('publish.send')}</Text>
                 </Pressable>
             </View>
         ) : null}

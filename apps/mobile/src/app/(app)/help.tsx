@@ -10,30 +10,30 @@ import { colors, LIST_END_PADDING } from '../../theme';
 export default function Help() {
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-            <Stack.Screen options={{ title: 'Help' }} />
+            <Stack.Screen options={{ title: t('help.help') }} />
             <Link href="/guides" asChild>
                 <Row label={t('helpGuides.title')} />
             </Link>
-            <Section title="Contact us">
-                <Row label={`Email support: ${SUPPORT_EMAIL}`} onPress={() => Linking.openURL(`mailto:${SUPPORT_EMAIL}`)} />
-                <Text style={styles.note}>For a problem with a charge or a creation, write from the address on your account. Privacy requests go to {PRIVACY_EMAIL}.</Text>
+            <Section title={t('help.contactus')}>
+                <Row label={t('help.emailsupport', { value1: SUPPORT_EMAIL })} onPress={() => Linking.openURL(`mailto:${SUPPORT_EMAIL}`)} />
+                <Text style={styles.note}>{t('help.foraproblemwithachargeor', { value1: PRIVACY_EMAIL })}</Text>
             </Section>
-            <Section title="Ask in chat">
+            <Section title={t('help.topicAskinchat')}>
                 <Link href="/chat" asChild>
-                    <Row label="Open chat" />
+                    <Row label={t('help.openchat')} />
                 </Link>
-                <Text style={styles.note}>Ask a question about how the app works in a chat. Chat messages use credits as shown there.</Text>
+                <Text style={styles.note}>{t('help.topicAskaquestionabouthowtheapp')}</Text>
             </Section>
-            <Section title="Content decisions">
+            <Section title={t('help.contentdecisions')}>
                 <Link href="/appeals" asChild>
-                    <Row label="Content decisions and appeals" />
+                    <Row label={t('help.contentdecisionsandappeals')} />
                 </Link>
-                <Text style={styles.note}>See anything recorded against your account and appeal it if you think it is wrong.</Text>
+                <Text style={styles.note}>{t('help.seeanythingrecordedagainstyouraccountand')}</Text>
                 <Link href="/report" asChild>
-                    <Row label="Report a problem or content" />
+                    <Row label={t('help.reportaproblemorcontent')} />
                 </Link>
             </Section>
-            <Section title="Rules and policies">
+            <Section title={t('help.rulesandpolicies')}>
                 {LEGAL_LINKS.map((l) => (
                     <Row key={l.route} label={l.label} onPress={() => router.push(l.route)} />
                 ))}

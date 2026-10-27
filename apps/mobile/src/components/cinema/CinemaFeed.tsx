@@ -65,12 +65,12 @@ export function CinemaFeed({ category = null }: { readonly category?: string | n
         <View style={styles.screen} onLayout={(e) => setHeight(e.nativeEvent.layout.height)}>
             {failed ? (
                 <Pressable accessibilityRole="button" style={styles.center} onPress={load}>
-                    <Text style={styles.error}>Could not load Cinema. Tap to retry.</Text>
+                    <Text style={styles.error}>{t('cinema.couldnotloadCinemaTaptoretry')}</Text>
                 </Pressable>
             ) : !titles || height === 0 ? (
                 <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>
             ) : titles.length === 0 ? (
-                <View style={styles.center}><Text style={styles.muted}>{category ? t('cinemaBrowse.emptyCategory') : 'Nothing to watch yet. Check back soon.'}</Text></View>
+                <View style={styles.center}><Text style={styles.muted}>{category ? t('cinemaBrowse.emptyCategory') : t('cinema.nothingtowatchyetCheckbacksoon')}</Text></View>
             ) : (
                 <FlatList
                     data={titles}

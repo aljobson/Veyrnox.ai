@@ -1,0 +1,18 @@
+export default {
+    "report.choosewhatiswrong": "Choose what is wrong.",
+    "report.report": "Report",
+    "report.thankswehaveit": "Thanks, we have it.",
+    "report.apersonreadseveryreportWemay": "A person reads every report. We may remove content or close an account, and we do not tell you the outcome.",
+    "report.done": "Done",
+    "report.reportthiscreation": "Report this creation",
+    "report.reportthistitle": "Report this title",
+    "report.reportaproblem": "Report a problem",
+    "report.whatiswrongwiththiscreation": "What is wrong with this creation?",
+    "report.whatiswrongwiththistitle": "What is wrong with this title?",
+    "report.whatwouldyouliketoreport": "What would you like to report?",
+    "report.details": "Details",
+    "report.telluswhathappenedrequired": "Tell us what happened (required)",
+    "report.anythingelseweshouldknowoptional": "Anything else we should know (optional)",
+    "report.sendreport": "Send report",
+    "report.donotsendillegalimagesina": "Do not send illegal images in a report. Describe them instead.",
+} as const;

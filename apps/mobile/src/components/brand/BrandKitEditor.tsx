@@ -82,7 +82,7 @@ export function BrandKitEditor({ workspaceId, state, onSaved }: { workspaceId: s
                     <>
                         <TextInput
                             accessibilityLabel={t('brand.addColour')}
-                            placeholder="#32d6c5"
+                            placeholder={t('brandKitEditor.32d6c5')}
                             placeholderTextColor={colors.muted}
                             autoCapitalize="none"
                             autoCorrect={false}

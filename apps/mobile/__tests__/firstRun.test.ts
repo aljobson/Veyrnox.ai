@@ -1,3 +1,4 @@
+import en from '../src/lib/i18n/messages/en';
 declare const require: (id: string) => any;
 declare const __dirname: string;
 const fs = require('fs') as { readFileSync: (p: string, e: 'utf8') => string };
@@ -93,11 +94,13 @@ describe('where the welcome shows', () => {
         const welcome = read('app', '(app)', 'welcome.tsx');
         const start = read('app', '(app)', 'start.tsx');
         expect(welcome).toContain("router.replace('/start')");
-        for (const label of ['My photo', 'My video', 'A reference', 'Just an idea']) {
-            expect(start).toContain(`label: '${label}'`);
+        for (const [key, label] of [['start.myphoto', 'My photo'], ['start.myvideo', 'My video'], ['start.areference', 'A reference'], ['start.justanidea', 'Just an idea']]) {
+            expect(start).toContain(`label: t('${key}')`);
+            expect((en as Record<string, string>)[key]).toBe(label);
         }
         expect(start).toContain('selected={source === item.key}');
-        expect(start).toContain('Or try a template');
+        expect(start).toContain("t('start.ortryatemplate')");
+        expect(en['start.ortryatemplate']).toBe('Or try a template');
         expect(start).toContain('presetHref(template)');
     });
 

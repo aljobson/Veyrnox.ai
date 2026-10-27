@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import { ApiError, type ApiClient } from './api';
 
 // Publish developer tools (the web's /app/publish/developer): customer API keys, webhook endpoints and the request
@@ -68,7 +69,7 @@ export const parseKeys = (body: unknown): ApiKey[] =>
     each(rec(body)?.keys, (r) => {
         const id = str(r.id);
         if (!id) return null;
-        return { id, label: str(r.label) ?? 'Key', prefix: str(r.key_prefix) ?? '', scopes: strs(r.scopes), expiresAt: str(r.expires_at), lastUsedAt: str(r.last_used_at), revokedAt: str(r.revoked_at) };
+        return { id, label: str(r.label) ?? t('publishDeveloper.key'), prefix: str(r.key_prefix) ?? '', scopes: strs(r.scopes), expiresAt: str(r.expires_at), lastUsedAt: str(r.last_used_at), revokedAt: str(r.revoked_at) };
     });
 
 export function parseWebhooks(body: unknown): { endpoints: Webhook[]; deliveries: Delivery[] } {
@@ -76,7 +77,7 @@ export function parseWebhooks(body: unknown): { endpoints: Webhook[]; deliveries
     return {
         endpoints: each(b?.endpoints, (r) => {
             const id = str(r.id);
-            return id ? { id, label: str(r.label) ?? 'Webhook', url: str(r.url) ?? '', events: strs(r.events), active: r.active !== false } : null;
+            return id ? { id, label: str(r.label) ?? t('publishDeveloper.webhook'), url: str(r.url) ?? '', events: strs(r.events), active: r.active !== false } : null;
         }),
         deliveries: each(b?.deliveries, (r) => {
             const id = str(r.id);

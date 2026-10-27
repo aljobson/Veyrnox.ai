@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import { ApiError, type ApiClient } from './api';
 
 interface UploadGrant {
@@ -51,24 +52,24 @@ export async function uploadSource(
 }
 
 export function uploadMessage(err: unknown): string {
-    if (!(err instanceof ApiError)) return 'Could not upload that file. Try again.';
+    if (!(err instanceof ApiError)) return t('uploads.couldnotuploadthatfileTryagain');
     switch (err.code) {
         case 'insufficient_credits':
-            return 'You need credits to upload a file. Buy some first.';
+            return t('uploads.youneedcreditstouploadafile');
         case 'too_many_pending_uploads':
         case 'upload_budget_exceeded':
         case 'rate_limited':
-            return 'Too many uploads right now. Wait a minute and try again.';
+            return t('uploads.toomanyuploadsrightnowWaita');
         case 'upload_too_large':
-            return 'That file is too large.';
+            return t('uploads.thatfileistoolarge');
         case 'upload_type_not_allowed':
-            return 'That file type is not supported.';
+            return t('uploads.thatfiletypeisnotsupported');
         case 'network':
-            return 'No connection. Check it and try again.';
+            return t('uploads.noconnectionCheckitandtryagain');
         case 'upload_cancelled':
-            return 'Upload cancelled.';
+            return t('uploads.uploadcancelled');
         default:
-            return 'Could not upload that file. Try again.';
+            return t('uploads.couldnotuploadthatfileTryagain');
     }
 }
 

@@ -1,3 +1,4 @@
+import { t } from '../../lib/i18n';
 import { Link, useFocusEffect } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -46,7 +47,7 @@ export function CinemaPlayer({ contentId, resumePosition = 0 }: { readonly conte
             <VideoView player={player} style={StyleSheet.absoluteFill} contentFit="contain" nativeControls={false} />
             <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Pause or resume"
+                accessibilityLabel={t('cinema.pauseorresume')}
                 style={StyleSheet.absoluteFill}
                 onPress={() => (player.playing ? player.pause() : player.play())}
             />
@@ -59,7 +60,7 @@ export function CinemaPlayer({ contentId, resumePosition = 0 }: { readonly conte
                 <View style={styles.overlay}>
                     <Text style={styles.copy}>{BLOCK_COPY[state.reason]}</Text>
                     {state.reason === 'signin' ? (
-                        <Link href="/sign-in" style={styles.link}>Sign in</Link>
+                        <Link href="/sign-in" style={styles.link}>{t('cinema.signin')}</Link>
                     ) : null}
                 </View>
             ) : null}

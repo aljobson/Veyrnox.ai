@@ -1,3 +1,4 @@
+import { t } from '../../lib/i18n';
 import { Stack } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -37,25 +38,22 @@ export default function Appeals() {
 
     return (
         <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
-            <Stack.Screen options={{ title: 'Content decisions' }} />
+            <Stack.Screen options={{ title: t('appeals.contentdecisions') }} />
             <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-                <Text style={styles.body}>
-                    Decisions we have made about content on your account under the Acceptable Use Policy. If you think one is wrong, appeal it. A person reviews every appeal and you will hear back by email. A removal that is reversed
-                    stops counting against your account; deleted files cannot be restored.
-                </Text>
+                <Text style={styles.body}>{t('appeals.decisionswehavemadeaboutcontenton')}</Text>
                 {failed ? (
                     <View style={styles.gap}>
-                        <Text style={styles.error}>Your account record is unavailable right now.</Text>
+                        <Text style={styles.error}>{t('appeals.youraccountrecordisunavailablerightnow')}</Text>
                         <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => void load()}>
-                            <Text style={styles.secondaryText}>Try again</Text>
+                            <Text style={styles.secondaryText}>{t('appeals.tryagain')}</Text>
                         </Pressable>
                     </View>
                 ) : state === null ? (
                     <ActivityIndicator color={colors.accent} />
                 ) : (
                     <>
-                        {state.holdUntil ? <Text style={styles.notice}>Generating is paused on your account until {entryDate(state.holdUntil)}. Your library, downloads and credits are unaffected.</Text> : null}
-                        {state.sanctions.length === 0 ? <Text style={styles.muted}>Nothing has been recorded against your account.</Text> : null}
+                        {state.holdUntil ? <Text style={styles.notice}>{t('appeals.generatingispausedonyouraccountuntil', { value1: entryDate(state.holdUntil) })}</Text> : null}
+                        {state.sanctions.length === 0 ? <Text style={styles.muted}>{t('appeals.nothinghasbeenrecordedagainstyouraccount')}</Text> : null}
                         {state.sanctions.map((s) => (
                             <Decision key={s.actionId} sanction={s} onSent={load} />
                         ))}
@@ -96,28 +94,28 @@ function Decision({ sanction, onSent }: { sanction: Sanction; onSent: () => Prom
             {sanction.appealStatus ? <Text style={styles.status}>{statusLabel(sanction.appealStatus)}</Text> : null}
             {canAppeal(sanction) && !open ? (
                 <Pressable accessibilityRole="button" style={styles.secondary} onPress={() => setOpen(true)}>
-                    <Text style={styles.secondaryText}>Appeal this decision</Text>
+                    <Text style={styles.secondaryText}>{t('appeals.appealthisdecision')}</Text>
                 </Pressable>
             ) : null}
             {open ? (
                 <View style={styles.gap}>
                     <TextInput
-                        accessibilityLabel="Why do you think this decision was wrong"
+                        accessibilityLabel={t('appeals.whydoyouthinkthisdecisionwas')}
                         multiline
                         maxLength={MAX_STATEMENT}
-                        placeholder="Tell us why you think this decision was wrong"
+                        placeholder={t('appeals.telluswhyyouthinkthisdecision')}
                         placeholderTextColor={colors.muted}
                         style={styles.input}
                         value={statement}
                         onChangeText={setStatement}
                     />
-                    <Text style={styles.muted}>You can appeal each decision once. Do not include other people&apos;s personal details.</Text>
+                    <Text style={styles.muted}>{t('appeals.youcanappealeachdecisiononceDo')}</Text>
                     {error ? <Text style={styles.error}>{error}</Text> : null}
                     <Pressable accessibilityRole="button" accessibilityState={{ disabled: Boolean(invalid) || busy }} disabled={Boolean(invalid) || busy} style={[styles.primary, (invalid || busy) && styles.off]} onPress={() => void send()}>
-                        {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.primaryText}>Send appeal</Text>}
+                        {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.primaryText}>{t('appeals.sendappeal')}</Text>}
                     </Pressable>
                     <Pressable accessibilityRole="button" disabled={busy} style={styles.secondary} onPress={() => setOpen(false)}>
-                        <Text style={styles.secondaryText}>Cancel</Text>
+                        <Text style={styles.secondaryText}>{t('appeals.cancel')}</Text>
                     </Pressable>
                 </View>
             ) : null}
