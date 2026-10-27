@@ -2688,6 +2688,90 @@
     "ratio": 1.79
   },
   {
+    "id": "publishReporting.edit",
+    "english": "Edit",
+    "translation": "Bearbeiten",
+    "ratio": 2.5
+  },
+  {
+    "id": "publishReporting.editReport",
+    "english": "Edit report",
+    "translation": "Bericht bearbeiten",
+    "ratio": 1.64
+  },
+  {
+    "id": "publishReporting.likes",
+    "english": "Likes",
+    "translation": "Gefällt mir",
+    "ratio": 2.2
+  },
+  {
+    "id": "publishReporting.pdf",
+    "english": "PDF",
+    "translation": "PDF-Dokument",
+    "ratio": 4
+  },
+  {
+    "id": "publishReporting.pptx",
+    "english": "PowerPoint",
+    "translation": "PowerPoint-Präsentation",
+    "ratio": 2.3
+  },
+  {
+    "id": "publishReporting.rank",
+    "english": "Rank by",
+    "translation": "Sortieren nach",
+    "ratio": 2
+  },
+  {
+    "id": "publishReporting.reach",
+    "english": "Reach",
+    "translation": "Reichweite",
+    "ratio": 2
+  },
+  {
+    "id": "publishReporting.retry",
+    "english": "Retry",
+    "translation": "Erneut versuchen",
+    "ratio": 3.2
+  },
+  {
+    "id": "publishReporting.save",
+    "english": "Save",
+    "translation": "Speichern",
+    "ratio": 2.25
+  },
+  {
+    "id": "publishReporting.saves",
+    "english": "Saves",
+    "translation": "Speicherungen",
+    "ratio": 2.6
+  },
+  {
+    "id": "publishReporting.saving",
+    "english": "Saving report…",
+    "translation": "Bericht wird gespeichert…",
+    "ratio": 1.79
+  },
+  {
+    "id": "publishReporting.type.post",
+    "english": "Post",
+    "translation": "Beitrag",
+    "ratio": 1.75
+  },
+  {
+    "id": "publishReporting.type.video",
+    "english": "Video",
+    "translation": "Videobeitrag",
+    "ratio": 2.4
+  },
+  {
+    "id": "publishReporting.weekly",
+    "english": "Weekly",
+    "translation": "Wöchentlich",
+    "ratio": 1.83
+  },
+  {
     "id": "facelessReel.workflow.rhythm",
     "english": "Set rhythm & frame",
     "translation": "Rhythmus und Bildformat wählen",

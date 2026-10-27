@@ -1542,6 +1542,36 @@
     "ratio": 1.75
   },
   {
+    "id": "publishReporting.likes",
+    "english": "Likes",
+    "translation": "الإعجابات",
+    "ratio": 1.8
+  },
+  {
+    "id": "publishReporting.pdf",
+    "english": "PDF",
+    "translation": "ملف PDF",
+    "ratio": 2.33
+  },
+  {
+    "id": "publishReporting.retry",
+    "english": "Retry",
+    "translation": "إعادة المحاولة",
+    "ratio": 2.8
+  },
+  {
+    "id": "publishReporting.saves",
+    "english": "Saves",
+    "translation": "مرات الحفظ",
+    "ratio": 2
+  },
+  {
+    "id": "publishReporting.views",
+    "english": "Views",
+    "translation": "المشاهدات",
+    "ratio": 1.8
+  },
+  {
     "id": "facelessReel.seconds",
     "english": "{n} s",
     "translation": "{n} ثانية",
