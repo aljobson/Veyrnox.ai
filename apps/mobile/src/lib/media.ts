@@ -1,3 +1,4 @@
+import { noteGenerationSubmitted, noteGenerationFinished } from './analytics/generations';
 import { noteLocalSubmission } from './celebrate';
 import type { GenerationReference } from './sources';
 import { aiConsent } from './aiConsentStore';
@@ -122,6 +123,7 @@ export async function fetchAllCatalog(): Promise<CatalogModel[]> {
 }
 
 export interface GenerationRequest {
+    readonly analyticsKind?: Kind | null;
     // Explicit per-run rights for curated source flows; undefined preserves existing Create behavior.
     readonly sourceRights?: boolean;
     readonly modelId: string;
@@ -162,7 +164,7 @@ export const mediaApi = (api: ApiClient) => ({
                 ...(!r.references && r.assets?.length ? { source_assets: r.assets.map((a) => ({ asset_id: a.assetId, slot: a.slot })) } : {}),
                 ...(r.references?.length || r.sources?.length || r.assets?.length ? { consent: r.sourceRights === undefined ? agreed : r.sourceRights && agreed } : {}),
             }),
-        }).then(result => { noteLocalSubmission(result.job_id); return result; });
+        }).then(result => { noteLocalSubmission(result.job_id); void noteGenerationSubmitted(result.job_id, r.modelId, r.analyticsKind); return result; });
     },
     getJob: (id: string) =>
         api.request<{ state: JobState; credits: number; model_id: string; error_code?: string; refunded?: boolean }>(`/api/v1/jobs/${encodeURIComponent(id)}`),
@@ -198,9 +200,13 @@ export async function waitForJob(
     const started = Date.now();
     let last: JobState = 'queued';
     while (!signal.aborted && Date.now() - started < POLL_LIMIT_MS) {
-        last = (await api.getJob(id)).state;
+        const job = await api.getJob(id);
+        last = job.state;
         onState(last);
-        if (last === 'succeeded' || last === 'failed') return last;
+        if (last === 'succeeded' || last === 'failed') {
+            void noteGenerationFinished(id, job.error_code === 'user_cancelled' ? 'cancelled' : last);
+            return last;
+        }
         await sleep(POLL_MS);
     }
     return last;

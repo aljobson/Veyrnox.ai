@@ -1,3 +1,4 @@
+import { isAnalyticsEnabled } from '../../lib/analytics/consent';
 import { confirmSignOut } from '../../lib/confirmSignOut';
 import { Button, Card, ListRow, Text, PriceText, themedStyles, useThemedStyles } from '../../components/ui';
 
@@ -111,6 +112,7 @@ export default function Account() {
 
             <Section title={t('acct.appearance')}>
                 {ACTIVE_LOCALES.length > 1 ? <ListRow icon="globe" title={t('language.title')} onPress={() => router.push('/language' as never)} /> : null}
+                {isAnalyticsEnabled() ? <ListRow icon="shieldCheck" title={t('analyticsConsent.choices')} onPress={() => router.push('/privacy-choices')} /> : null}
                 <ListRow icon="swatches" title={t('acct.appearance')} onPress={() => router.push('/appearance')} />
             </Section>
 

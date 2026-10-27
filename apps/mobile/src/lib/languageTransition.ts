@@ -1,3 +1,4 @@
+import { captureEvent } from './analytics/events';
 import { directionReconciler, reconcileLanguageDirection } from './languageDirection';
 import { reloadAppAsync } from 'expo';
 import { I18nManager } from 'react-native';
@@ -59,6 +60,7 @@ export async function changeLanguage(code: string, returnPath: string, session: 
         }
         await deps.onChosen(code);
         if (deps.signedIn && !deps.canReloadSession()) throw new Error('language_not_durable');
+        captureEvent('language_changed', { locale: code });
         await deps.reload();
         reloaded = true;
         return true;

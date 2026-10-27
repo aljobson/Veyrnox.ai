@@ -1,3 +1,4 @@
+import { captureEvent } from './lib/analytics/events';
 import type { TextStyle } from 'react-native';
 declare const require: (id: string) => any;
 const secureStore = (): typeof import('expo-secure-store') | null => {
@@ -103,6 +104,7 @@ export async function applyAppearance(partial: Partial<AppearanceSettings>, retu
     if (platform() !== 'ios') reload = needsReload(current, next, platform());
     for (const key of Object.keys(next) as (keyof AppearanceSettings)[]) save(`veyrnox.${key}`, next[key]);
     current = next;
+    captureEvent('appearance_changed', { theme: next.theme, accent: next.accent });
     try {
         native()?.Appearance?.setColorScheme(next.theme === 'system' ? 'unspecified' : resolveScheme(next.theme, null));
     } catch {

@@ -2442,6 +2442,12 @@
     "ratio": 1.67
   },
   {
+    "id": "analyticsConsent.policy",
+    "english": "Privacy Policy",
+    "translation": "Política de Privacidade",
+    "ratio": 1.64
+  },
+  {
     "id": "creditsPage.best",
     "english": "Best value",
     "translation": "Melhor custo-benefício",
