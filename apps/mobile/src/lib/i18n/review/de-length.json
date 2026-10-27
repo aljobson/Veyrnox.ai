@@ -2820,6 +2820,24 @@
     "ratio": 2.75
   },
   {
+    "id": "filmWorkspace.revise",
+    "english": "Revise",
+    "translation": "Überarbeiten",
+    "ratio": 2
+  },
+  {
+    "id": "filmWorkspace.retry",
+    "english": "Retry",
+    "translation": "Erneut versuchen",
+    "ratio": 3.2
+  },
+  {
+    "id": "filmWorkspace.stay",
+    "english": "Stay",
+    "translation": "Bleiben",
+    "ratio": 1.75
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

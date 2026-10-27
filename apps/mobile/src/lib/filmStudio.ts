@@ -1,4 +1,5 @@
 import { t } from './i18n';
+import { optionsFor } from './createOptions';
 // Film Studio on the phone: validate the same studio document used by native editing and account cloud saves, show its
 // stages, shots and assets, and hand a current shot prompt to Create.
 // The checks below are copies of app/veyrnox/_lib/filmStudio.js and filmStudioStorage.js; __tests__/filmStudio.test.ts
@@ -129,7 +130,7 @@ export function shotIssues(s: Shot): string[] {
     return issues;
 }
 
-function boardIssues(b: Board): string[] {
+export function boardIssues(b: Board): string[] {
     const refs = b.references.filter((r) => r.kind === 'reference');
     const range = ({ character: [10, 20], location: [8, 15], prop: [3, 5], style: [1, 100] } as Record<string, number[]>)[b.type];
     const issues: string[] = [];
@@ -220,6 +221,12 @@ export function buildShotPrompt(film: Film, shot: Shot, details: Record<string, 
     return PROMPT_BLOCKS.map((label, index) => `${index + 1}. ${label}\n${values[index]}`).join('\n\n');
 }
 
+export function failedAttempts(film: Film, shot: Shot): number {
+    const context = promptContext(film, shot);
+    return film.attempts.filter(a => a.shot === shot.id && a.verdict === 'rejected' &&
+        film.prompts.find(p => p.shot === shot.id && p.version === a.version)?.context === context).length;
+}
+
 export function nextPromptVersion(film: Film, shot: Shot, content: string): Prompt {
     const headings = content.split('\n').filter((line) => /^\d+\. /.test(line));
     if (headings.length !== 15 || PROMPT_BLOCKS.some((title, index) => headings[index] !== `${index + 1}. ${title}`)) throw new Error(t('filmStudio.preserveallfifteenpromptblocksintheir'));
@@ -234,6 +241,7 @@ export function nextPromptVersion(film: Film, shot: Shot, content: string): Prom
         if (descriptors.some((descriptor) => !content.includes(descriptor))) throw new Error(t('filmStudio.canonicaldescriptorsmuststayverbatim'));
         if (shot.dialogue !== 'none' && !content.includes(String(shot.dialogue))) throw new Error(t('filmStudio.keepthesupplieddialogueverbatim'));
     }
+    if (failedAttempts(film, shot) >= 15 && last?.context === promptContext(film, shot)) throw new Error(t('filmWorkspace.fifteenMisses'));
     return { shot: shot.id, version: (last?.version ?? 0) + 1, content, context: promptContext(film, shot), at: new Date().toISOString() };
 }
 
@@ -271,6 +279,11 @@ export function stageIssues(film: Film, stage: number): string[] {
     }
     if (stage === 5) return required.filter((k) => !isLocked(film, film.assets.find((a) => assetKey(a) === k))).map((k) => t('filmStudio.isdraftPassitsentiretestmatrix', { value1: k }));
     return film.shots.filter((s) => !film.prompts.some((p) => p.shot === s.id && p.context === promptContext(film, s))).map((s) => t('filmStudio.writethecurrentpromptfor', { value1: s.id }));
+}
+
+export function accessibleStage(film: Film): number {
+    for (let i = 0; i < 7; i++) if (stageIssues(film, i).length) return i;
+    return 6;
 }
 
 export interface StageStatus { readonly id: string; readonly title: string; readonly open: number; readonly done: boolean; readonly first: string | null }
@@ -324,7 +337,7 @@ export const shotRows = (film: Film): ShotRow[] => film.shots.map((s) => shotRow
 // catalog that offers the shot's length, and the words inside that model's own limit (never cut short). The price is the
 // catalog's; Create shows it again and charges only on its own Generate button.
 export type Handoff =
-    | { ok: true; model: CatalogModel; credits: number; seconds: number; prompt: string }
+    | { ok: true; model: CatalogModel; credits: number; seconds: number; prompt: string; aspect: string }
     | { ok: false; reason: string };
 
 export const normalizeName = (text: string): string => text.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
@@ -342,13 +355,16 @@ export function handoffFor(film: Film, shot: Shot, catalog: readonly CatalogMode
     const prompt = latestPrompt(film, shot.id);
     if (!prompt) return { ok: false, reason: t('filmStudio.writethisshotspromptonthe') };
     if (row.state === 'prompt-stale') return { ok: false, reason: t('filmStudio.thepromptisoutofdateRebuild') };
+    if (film.stack.videoAccess !== 'Studio') return { ok: false, reason: t('filmWorkspace.externalAccess') };
     const model = findVideoModel(film, catalog);
     if (!model) return { ok: false, reason: t('filmStudio.isnotintodayspricelist', { value1: film.stack.video || t('filmStudio.videoModelFallback') }) };
     const seconds = Number(shot.seconds);
     if (!model.durations.includes(seconds)) return { ok: false, reason: t('filmStudio.doesnotoffersecondclips', { value1: model.name, value2: seconds }) };
+    const aspects = optionsFor(model).aspects;
+    if (aspects.length && !aspects.includes(film.stack.aspect)) return { ok: false, reason: t('filmWorkspace.incompatibleAspect') };
     const limit = textInput(model)?.max;
     if (!limit || prompt.content.length > limit) return { ok: false, reason: t('filmStudio.thispromptischaracterstakesItis', { value1: prompt.content.length, value2: model.name, value3: limit ?? 0 }) };
-    return { ok: true, model, credits: estimateCredits(model, seconds), seconds, prompt: prompt.content };
+    return { ok: true, model, credits: estimateCredits(model, seconds), seconds, prompt: prompt.content, aspect: film.stack.aspect };
 }
 
 export interface Summary {
