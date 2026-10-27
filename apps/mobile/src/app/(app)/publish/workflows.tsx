@@ -1,10 +1,9 @@
-import * as WebBrowser from 'expo-web-browser';
 import { Stack, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Alert, FlatList, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { WorkflowEditor } from '../../../components/publish/WorkflowEditor';
 import { touchTarget } from '../../../lib/a11y';
-import { API_BASE, type ApiClient } from '../../../lib/api';
+import { type ApiClient } from '../../../lib/api';
 import { t } from '../../../lib/i18n';
 import {
     deleteWorkflow, draftOf, fetchWorkflows, fetchWorkflowPlan, planManagementKey, planPeriodKey, saveWorkflow, workflowErrorKey,
@@ -22,7 +21,6 @@ export default function Workflows() {
     const [workflows, setWorkflows] = useState<ReadState<Workflow[]> | null>(null);
     const [plan, setPlan] = useState<ReadState<WorkflowPlan> | null>(null);
     const [expanded, setExpanded] = useState<string | null>(null);
-    const [webError, setWebError] = useState(false);
     const [reload, setReload] = useState(0);
     // Editing and switching on or off save the whole workflow, like the web (PUT); a new one starts from this blank draft.
     const [editing, setEditing] = useState<string | 'new' | null>(null);
@@ -58,7 +56,6 @@ export default function Workflows() {
         setWorkflows(null);
         setPlan(null);
         setExpanded(null);
-        setWebError(false);
         void fetchWorkflows(api).then(
             (value) => { if (active) setWorkflows({ api, value, message: null }); },
             (error) => { if (active) setWorkflows({ api, value: null, message: workflowErrorKey(error) }); },
@@ -74,11 +71,6 @@ export default function Workflows() {
     const currentWorkflows = workflows?.api === api ? workflows : null;
     const currentPlan = plan?.api === api ? plan : null;
 
-    async function continueOnWeb() {
-        setWebError(false);
-        try { await WebBrowser.openBrowserAsync(`${API_BASE}/app/publish/workflows`); }
-        catch { setWebError(true); }
-    }
 
     return (
         <View style={styles.screen}>
@@ -116,14 +108,6 @@ export default function Workflows() {
                         {t(currentWorkflows?.message ?? (currentWorkflows ? 'publishWorkflows.empty' : 'publishWorkflows.loading'))}
                     </Text>
                 }
-                ListFooterComponent={currentWorkflows?.value ? (
-                    <View style={styles.section}>
-                        <Pressable accessibilityRole="link" style={[styles.action, touchTarget]} onPress={() => void continueOnWeb()}>
-                            <Text style={styles.link}>{t('publishWorkflows.continueWeb')}</Text>
-                        </Pressable>
-                        {webError ? <Text style={styles.muted} accessibilityLiveRegion="polite">{t('publishWorkflows.webFailed')}</Text> : null}
-                    </View>
-                ) : undefined}
                 renderItem={({ item }) => (
                     <View style={styles.card}>
                         <View style={styles.titleRow}>

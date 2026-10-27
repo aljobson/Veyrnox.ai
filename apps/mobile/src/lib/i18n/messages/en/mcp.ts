@@ -20,5 +20,4 @@ export default {
     'mcp.create': 'Generate images and video, edit video, and schedule, reschedule or cancel posts when your plan allows it.',
     'mcp.safety': 'Every generation must carry the exact accepted price. OAuth tokens work only at the MCP endpoint, and you can revoke an assistant below.',
     'mcp.connections': 'Connected assistants',
-    'mcp.webGuide': 'Open full MCP guide',
 } as const;

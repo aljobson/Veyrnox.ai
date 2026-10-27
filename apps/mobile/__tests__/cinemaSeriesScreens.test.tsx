@@ -138,19 +138,19 @@ test('error without editorial matches retains retry, and an empty result retains
     await press(nodes('button')[0]);
     expect(allText()).toContain('No series to show yet. Check back soon.');
 });
-test('editorial screen orders accessible episodes, opens exact URL and hides browser exception', async () => {
+test('editorial screen keeps ordered episodes without web playback actions', async () => {
     const s = EDITORIAL_SERIES[0]; mockParams = { slug: s.slug };
     await render(<EditorialScreen />);
     expect(nodes('header').map(textOf)).toEqual([s.title, 'Episodes']);
-    const episodes = nodes('link').filter(n => n.props.accessibilityLabel?.startsWith('Watch episode'));
-    expect(episodes.map(n => n.props.accessibilityLabel)).toEqual(s.episodes.map(e => `Watch episode ${e.position}: ${e.title}. Opens veyrnox.ai`));
-    await press(episodes[1]);
-    expect(WebBrowser.openBrowserAsync).toHaveBeenLastCalledWith(`https://veyrnox.ai/social-cinema/watch/${s.episodes[1].id}?series=${s.slug}`);
-    jest.mocked(WebBrowser.openBrowserAsync).mockRejectedValueOnce(new Error('private exception'));
-    await press(episodes[1]);
-    expect(allText()).toContain('Could not open veyrnox.ai. Try again.');
-    expect(nodes('alert')).toHaveLength(1);
-    expect(allText()).not.toContain('private exception');
+    expect(nodes('link')).toHaveLength(0);
+    expect(allText()).toContain('This feature is coming to the app.');
+    let previous = -1;
+    for (const episode of s.episodes) {
+        const position = allText().indexOf(episode.title);
+        expect(position).toBeGreaterThan(previous);
+        previous = position;
+    }
+    expect(WebBrowser.openBrowserAsync).not.toHaveBeenCalled();
     expect(mockRequest).not.toHaveBeenCalled(); expect(fetchDiscovery).not.toHaveBeenCalled();
 });
 test('unknown editorial slug is quiet and makes no reads or browser call', async () => {

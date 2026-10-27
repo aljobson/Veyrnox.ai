@@ -20,6 +20,7 @@ export default {
     'share.invite.err.failed': 'The invitation could not be accepted. Try again.',
     'share.review.title': 'Review a post',
     'share.review.preview': 'Preview of the post',
+    'share.review.loadVideo': 'Load video preview {count}',
     'share.review.watch': 'Watch the preview',
     'share.review.planned': 'Planned for {date}.',
     'share.review.all': 'Everyone asked must approve.',

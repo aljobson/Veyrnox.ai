@@ -12,7 +12,7 @@ export default {
     'pk.removeTitle': 'Remove {name}?',
     'pk.removeBody': 'You will no longer be able to sign in with it. Your password and other sign-in methods still work.',
     'pk.removed': '{name} was removed.',
-    'pk.addLater': 'Adding a passkey is not available in the app yet. Add one on the website.',
+    "pk.addLater": "Adding a passkey is coming to the app.",
     'pk.err.network': 'No connection. Nothing was changed.',
     'pk.err.off': 'Passkeys are not available for this account.',
     'pk.err.aal': 'Confirm with your authenticator code first, then try again.',

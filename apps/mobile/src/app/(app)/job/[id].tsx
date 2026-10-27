@@ -1,6 +1,6 @@
 import { Text, Button, themedStyles, useThemedStyles } from '../../../components/ui';
 import { Image } from 'expo-image';
-import * as WebBrowser from 'expo-web-browser';
+import { InlineMedia } from '../../../components/InlineMedia';
 import { Link, Stack, useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, View } from 'react-native';
@@ -219,7 +219,7 @@ export default function JobScreen() {
                 asset.mime.startsWith('image/') ? (
                     <Image source={{ uri: asset.url }} style={styles.image} contentFit="contain" accessibilityLabel={t('job.title')} accessibilityIgnoresInvertColors />
                 ) : (
-                    <Button variant="secondary" accessibilityRole="button" onPress={() => WebBrowser.openBrowserAsync(asset.url)} label={asset.mime.startsWith('video/') ? t('job.playVideo') : t('job.playAudio')} />
+                    <InlineMedia key={asset.url} url={asset.url} audio={!asset.mime.startsWith('video/')} label={asset.mime.startsWith('video/') ? t('job.playVideo') : t('job.playAudio')} />
                 )
             ) : (
                 <View style={styles.center}>

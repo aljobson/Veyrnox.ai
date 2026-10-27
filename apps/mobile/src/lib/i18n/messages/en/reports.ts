@@ -2,7 +2,7 @@
 export default {
     // App-only: Publish reports, PDF and slide download and share (parity P5, ADR-0166).
     'reports.title': 'Reports',
-    'reports.intro': 'Saved reports. Download one as a PDF or slides and share it. Reports are made and edited on veyrnox.ai for now.',
+    "reports.intro": "Saved reports. Download one as a PDF or slides and share it. Creating and editing reports is coming to the app.",
     'reports.none': 'No saved reports yet.',
     'reports.range': 'Last {days} days',
     'reports.compared': 'compared with the period before',

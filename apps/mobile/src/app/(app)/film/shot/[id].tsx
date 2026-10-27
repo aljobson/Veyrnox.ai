@@ -1,14 +1,12 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { touchTarget } from '../../../../lib/a11y';
-import { FILM_STUDIO_WEB_PATH, SHOT_LANES, handoffFor, latestPrompt, shotRow, type Film } from '../../../../lib/filmStudio';
+import { SHOT_LANES, handoffFor, latestPrompt, shotRow, type Film } from '../../../../lib/filmStudio';
 import { loadActiveStudio } from '../../../../lib/filmCloud';
 import { getCacheUser, subscribeCacheUser } from '../../../../lib/appCache';
 import { fetchCatalogCached, type CatalogModel } from '../../../../lib/media';
 import { colors } from '../../../../theme';
-import { API_BASE } from '../../../../lib/api';
 
 // One shot of an imported studio: its card, assets, prompt and attempts, and a way to take a current prompt to Create.
 // The price is shown before anything is opened. Nothing is charged here: Create asks again and charges only on its own
@@ -117,9 +115,7 @@ export default function FilmShot() {
                 </View>
             ))}
 
-            <Pressable accessibilityRole="link" style={[styles.secondary, touchTarget]} onPress={() => WebBrowser.openBrowserAsync(`${API_BASE}${FILM_STUDIO_WEB_PATH}`)}>
-                <Text style={styles.secondaryText}>Continue on web</Text>
-            </Pressable>
+
         </ScrollView>
     );
 }

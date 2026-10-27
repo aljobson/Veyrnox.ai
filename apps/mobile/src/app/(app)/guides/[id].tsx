@@ -1,4 +1,3 @@
-import * as WebBrowser from 'expo-web-browser';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -23,8 +22,7 @@ export default function HelpGuide() {
         setUnavailable(false);
         const destination = guideDestination(href);
         try {
-            if (destination.kind === 'native') router.push(destination.href);
-            else await WebBrowser.openBrowserAsync(destination.href);
+            if (destination) router.push(destination.href);
         } catch {
             setUnavailable(true);
         }
@@ -46,7 +44,7 @@ export default function HelpGuide() {
                             <Text style={styles.body}>{step.body}</Text>
                         </View>
                     ))}
-                    <Text style={styles.heading} accessibilityRole="header">{t('helpGuides.links')}</Text>
+                    {guide.links.length > 0 && <Text style={styles.heading} accessibilityRole="header">{t('helpGuides.links')}</Text>}
                     {guide.links.map(link => (
                         <Pressable key={link.href} accessibilityRole="link" style={[styles.row, touchTarget]} onPress={() => void open(link.href)}>
                             <Text style={styles.link}>{link.label}</Text>

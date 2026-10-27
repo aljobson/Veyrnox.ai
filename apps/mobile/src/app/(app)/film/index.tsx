@@ -1,10 +1,8 @@
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { API_BASE } from '../../../lib/api';
 import { touchTarget } from '../../../lib/a11y';
-import { FILM_STUDIO_WEB_PATH, shotRows, stageStatuses, summarize, type Film } from '../../../lib/filmStudio';
+import { shotRows, stageStatuses, summarize, type Film } from '../../../lib/filmStudio';
 import { clearStudio } from '../../../lib/filmStudioStore';
 import { useAuth } from '../../../auth/AuthProvider';
 import { getCacheUser, subscribeCacheUser } from '../../../lib/appCache';
@@ -154,10 +152,7 @@ function Links({ router, cloudCount }: { router: ReturnType<typeof useRouter>; c
                 <Text style={styles.name}>Film chats</Text>
                 <Text style={styles.muted}>Seven helpers for setup, breakdown, references, passports, stress tests and prompts.</Text>
             </Pressable>
-            <Pressable accessibilityRole="link" style={[styles.row, touchTarget]} onPress={() => WebBrowser.openBrowserAsync(`${API_BASE}${FILM_STUDIO_WEB_PATH}`)}>
-                <Text style={styles.name}>Continue on web</Text>
-                <Text style={styles.muted}>Open the desktop workspace when you want more room, while the native workspace remains fully editable.</Text>
-            </Pressable>
+
         </View>
     );
 }

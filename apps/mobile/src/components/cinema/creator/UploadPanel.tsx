@@ -9,7 +9,7 @@ import { bodyKeys, creatorMessage, jsonWrite } from '../../../lib/cinemaDrafts';
 import { cleanupFor, readUpload, runTransfer, type UploadReply } from '../../../lib/cinemaUpload';
 import { cinemaUploadStore as store, type UploadRecord } from '../../../lib/cinemaUploadStore';
 import { t } from '../../../lib/i18n';
-import { Action, CreatorClosed, ui, useCreatorScope, WebLink } from './RulesLinks';
+import { Action, CreatorClosed, ui, useCreatorScope } from './RulesLinks';
 
 export const SUPPORT_MAIL_URL = `mailto:${SUPPORT_EMAIL}`;
 // A staged file is re-hashed once per app launch; pick() has just hashed what it saves.
@@ -186,6 +186,5 @@ export function UploadPanel({ contentId, editable, onChange }: { contentId: stri
         {note === 'cinemaUpload.support' && <Pressable accessibilityRole="link" accessibilityLabel={t('cinemaUpload.supportLink')} style={ui.button} onPress={() => void Linking.openURL(SUPPORT_MAIL_URL)}><Text style={ui.link}>{t('cinemaUpload.supportLink')}</Text></Pressable>}
         {!closed && <Action label={t('cinemaUpload.refresh')} disabled={busy || preparing || checking || leasedElsewhere} onPress={() => { if (scope.live()) { setBusy(true); void refresh().catch(showError).finally(() => { if (scope.live()) setBusy(false); }); } }} />}
         {!closed && upload && !['provisioning', 'deleting'].includes(upload.state) && <Action label={t('cinemaUpload.remove')} disabled={busy || preparing || checking || leasedElsewhere} onPress={() => confirm('cinemaUpload.remove', 'cinemaUpload.removeConfirm', () => void remove())} />}
-        <WebLink />
     </View>;
 }

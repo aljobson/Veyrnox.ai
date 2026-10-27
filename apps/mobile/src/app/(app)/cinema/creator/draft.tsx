@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ScrollView, Text, TextInput } from 'react-native';
 import { useAuth } from '../../../../auth/AuthProvider';
-import { Action, Check, CreatorClosed, ui, useCreatorOwner, useCreatorScope, WebLink } from '../../../../components/cinema/creator/RulesLinks';
+import { Action, Check, CreatorClosed, ui, useCreatorOwner, useCreatorScope } from '../../../../components/cinema/creator/RulesLinks';
 import { CATEGORIES, categoryKey } from '../../../../lib/cinemaBrowse';
 import { AI_DISCLOSURES, bodyKeys, creatorMessage, draftBody, DRAFT_TYPES, emptyDraft, jsonWrite, listTitles, type CreatorTitle, type DraftInput } from '../../../../lib/cinemaDrafts';
 import { CINEMA_DEVICE_UPLOAD_ENABLED } from '../../../../lib/cinemaUpload';
@@ -58,6 +58,5 @@ function DraftEditor({ id }: { id?: string }) {
         </>}
         {note ? <Text style={ui.text}>{t(note)}</Text> : null}
         {(note === 'cinemaUpload.revision' || (id && !original && note)) && <Action label={t('cinemaUpload.reload')} disabled={busy} onPress={() => void load()} />}
-        <WebLink />
     </ScrollView>;
 }

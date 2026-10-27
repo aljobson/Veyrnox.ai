@@ -1,11 +1,9 @@
 import { Image } from 'expo-image';
-import * as WebBrowser from 'expo-web-browser';
 import { Stack, useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useCallback, useMemo, useState, useSyncExternalStore } from 'react';
 import { ActivityIndicator, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { useBilling } from '../../../billing/BillingProvider';
-import { API_BASE } from '../../../lib/api';
 import { renewalTerms, toDisplayPackages, type Interval } from '../../../lib/billing';
 import { t } from '../../../lib/i18n';
 import { MENU_ICONS, type MenuIcon } from '../../../lib/menuIcons';
@@ -215,8 +213,8 @@ export default function Publish() {
                             {message ? <Text style={styles.planMessage} accessibilityLiveRegion="polite">{message}</Text> : null}
                             <View style={styles.planLinks}>
                                 <Pressable accessibilityRole="button" disabled={busy || !canPurchase} onPress={() => void onRestore()}><Text style={[styles.link, !canPurchase && styles.off]}>{t('account.restore')}</Text></Pressable>
-                                <Pressable accessibilityRole="link" onPress={() => void WebBrowser.openBrowserAsync(`${API_BASE}/legal/terms`)}><Text style={styles.link}>{t('plan.terms')}</Text></Pressable>
-                                <Pressable accessibilityRole="link" onPress={() => void WebBrowser.openBrowserAsync(`${API_BASE}/legal/privacy`)}><Text style={styles.link}>{t('plan.privacy')}</Text></Pressable>
+                                <Pressable accessibilityRole="link" style={{ minHeight: 44, minWidth: 44, justifyContent: 'center' }} onPress={() => void router.push('/legal/terms')}><Text style={styles.link}>{t('plan.terms')}</Text></Pressable>
+                                <Pressable accessibilityRole="link" style={{ minHeight: 44, minWidth: 44, justifyContent: 'center' }} onPress={() => void router.push('/legal/privacy')}><Text style={styles.link}>{t('plan.privacy')}</Text></Pressable>
                             </View>
                         </View>
                     ) : (

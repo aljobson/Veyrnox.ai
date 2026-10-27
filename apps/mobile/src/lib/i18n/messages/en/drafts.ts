@@ -11,7 +11,7 @@ export default {
     'drafts.inBatch.other': '{count} drafts in this batch',
     'drafts.noBatch.one': '{count} draft, not in a batch',
     'drafts.noBatch.other': '{count} drafts, not in a batch',
-    'drafts.openWeb': 'Review drafts on veyrnox.ai',
+    "drafts.openWeb": "More draft review tools are coming to the app.",
     'drafts.err.brand': 'That brand is not available to you. Choose another in Brand.',
     'drafts.err.rate': 'Too many requests. Wait a moment and try again.',
     'drafts.err.network': 'No connection. Try again.',

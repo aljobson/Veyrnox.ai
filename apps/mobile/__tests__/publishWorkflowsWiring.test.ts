@@ -28,8 +28,7 @@ test('the surface cannot purchase or open billing, saves only through the workfl
     // Editing and switching on or off save the whole workflow with PUT, like the web; delete is DELETE. Nothing else writes.
     expect(client.match(/method:\s*['"](?:POST|PATCH|PUT|DELETE)['"]/g)).toEqual(["method: 'PUT'", "method: 'DELETE'"]);
     expect(client).toContain('/api/v1/social/workflows');
-    expect(screen).toContain('`${API_BASE}/app/publish/workflows`');
-    expect(screen.match(/openBrowserAsync/g)).toHaveLength(1);
+    expect(screen).not.toContain('openBrowserAsync');
     expect(screen).toMatch(/<Text[^>]*>\{t\(managementKey\)\}<\/Text>/);
     expect(screen).not.toMatch(/last.run|never.run|\bseats\b|price_usd_cents/i);
 });

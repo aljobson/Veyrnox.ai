@@ -1,10 +1,10 @@
-import * as WebBrowser from 'expo-web-browser';
+import { ComingToApp } from '../../../components/ComingToApp';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { UnlockCard } from '../../../components/UnlockCard';
 import { touchTarget } from '../../../lib/a11y';
-import { ApiError, API_BASE } from '../../../lib/api';
+import { ApiError } from '../../../lib/api';
 import { t } from '../../../lib/i18n';
 import { adsErrorKey, deleteCampaign, fetchCampaignPage, money, type CampaignDetail } from '../../../lib/publishAds';
 import { usePublishApi } from '../../../lib/usePublishApi';
@@ -74,10 +74,7 @@ export default function Ads() {
                                     <Text style={styles.addText}>{t('ads.new')}</Text>
                                 </Pressable>
                             ) : null}
-                            <Text style={styles.muted}>{t('ads.launchWeb')}</Text>
-                            <Pressable accessibilityRole="link" style={[styles.web, touchTarget]} onPress={() => WebBrowser.openBrowserAsync(`${API_BASE}/app/publish`)}>
-                                <Text style={styles.webText}>{t('ads.continueWeb')}</Text>
-                            </Pressable>
+                            <ComingToApp />
                         </View>
                     }
                     renderItem={({ item }) => (

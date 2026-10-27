@@ -1,5 +1,5 @@
 import { Text, Button, Card, themedStyles, useThemedStyles } from './ui';
-import * as WebBrowser from 'expo-web-browser';
+import { InlineMedia } from './InlineMedia';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -14,6 +14,7 @@ import { ds } from '../theme';
 export function StemList({ api, jobId, stems }: { readonly api: ApiClient; readonly jobId: string; readonly stems: readonly string[] }) {
     const styles = useThemedStyles(sheets);
     const [busy, setBusy] = useState<string | null>(null);
+    const [playing, setPlaying] = useState<{ url: string; stem: string } | null>(null);
     const [error, setError] = useState(false);
     const shown = STEMS.filter((s) => stems.includes(s));
 
@@ -23,7 +24,7 @@ export function StemList({ api, jobId, stems }: { readonly api: ApiClient; reado
         setError(false);
         try {
             const a = await mediaApi(api).getAsset(jobId, stem);
-            if (kind === 'play') await WebBrowser.openBrowserAsync(a.url);
+            if (kind === 'play') setPlaying({ url: a.url, stem });
             else await shareOutput(a.url, jobId, a.mime_type, stem);
         } catch {
             setError(true);
@@ -43,6 +44,7 @@ export function StemList({ api, jobId, stems }: { readonly api: ApiClient; reado
                     <Button variant="secondary" accessibilityRole="button" accessibilityLabel={t('stems.share', { stem: t(`stem.${s}`) })} disabled={!!busy} onPress={() => act(s, 'share')} label={t('stems.share', { stem: t(`stem.${s}`) })} icon="externalLink" iconOnly />
                 </Card>
             ))}
+            {playing && <InlineMedia key={playing.url} url={playing.url} audio label={t('stems.play', { stem: t(`stem.${playing.stem}`) })} />}
             {error ? <Text variant="body" tone="danger" style={styles.error} accessibilityLiveRegion="polite">{t('stems.error')}</Text> : null}
         </View>
     );

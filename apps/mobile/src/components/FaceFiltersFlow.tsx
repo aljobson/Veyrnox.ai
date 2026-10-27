@@ -2,7 +2,6 @@ import { discardCacheCopy } from '../lib/cacheFiles';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { Stack, useRouter } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { ApiError, type ApiClient } from '../lib/api';
@@ -144,7 +143,7 @@ export function FaceFiltersFlow({ api, owner }: { api: ApiClient; owner: string 
                 <View style={styles.card}><Text style={styles.price}>{t('faceFilters.price', { credits: String(model.credits) })}</Text></View>
                 {missing > 0 ? <Pressable accessibilityRole="button" accessibilityLabel={t('lowBalance.buy')} style={styles.card} onPress={() => router.push('/credits')}><Text style={styles.text}>{t('form.err.insufficient')} {t('lowBalance.buy')}</Text></Pressable> : null}
                 <Pressable accessibilityRole="checkbox" accessibilityLabel={t('faceFilters.rights')} accessibilityState={{ checked, disabled: busy }} disabled={busy} style={[styles.card, checked && styles.selected]} onPress={() => setChecked(v => !v)}><Text style={styles.text}>{checked ? '☑ ' : '☐ '}{t('faceFilters.rights')}</Text></Pressable>
-                <Pressable accessibilityRole="link" accessibilityLabel={t('faceFilters.policy')} style={styles.card} onPress={() => { void WebBrowser.openBrowserAsync('https://veyrnox.ai/legal/aup').catch(() => setError(t('common.error'))); }}><Text style={styles.text}>{t('faceFilters.policy')}</Text></Pressable>
+                <Pressable accessibilityRole="link" accessibilityLabel={t('faceFilters.policy')} style={styles.card} onPress={() => { router.push('/legal/aup'); }}><Text style={styles.text}>{t('faceFilters.policy')}</Text></Pressable>
                 <Pressable accessibilityRole="button" accessibilityLabel={`${t('faceFilters.run')}. ${t('faceFilters.price', { credits: String(model.credits) })}`} accessibilityState={{ disabled: !ready || busy, busy }} disabled={!ready || busy} style={[styles.card, (!ready || busy) && styles.disabled]} onPress={run}><Text style={styles.text}>{t('faceFilters.run')}</Text>{busy ? <ActivityIndicator /> : null}</Pressable>
             </>}
             {error ? <Text style={styles.error} accessibilityLiveRegion="polite">{error}</Text> : null}

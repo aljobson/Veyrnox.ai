@@ -1,6 +1,5 @@
-import * as WebBrowser from 'expo-web-browser';
 import Constants from 'expo-constants';
-import { Stack } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ABOUT_FACTS, LEGAL_EMAIL, LEGAL_LINKS } from '../../lib/account';
 import { t } from '../../lib/i18n';
@@ -27,7 +26,7 @@ export default function About() {
                 <Text style={styles.value}>{t('abt.emailUs', { email: LEGAL_EMAIL })}</Text>
             </Pressable>
             {LEGAL_LINKS.map((l) => (
-                <Pressable key={l.url} accessibilityRole="link" style={styles.row} onPress={() => WebBrowser.openBrowserAsync(l.url)}>
+                <Pressable key={l.route} accessibilityRole="link" style={styles.row} onPress={() => router.push(l.route)}>
                     <Text style={styles.value}>{t(l.labelKey)}</Text>
                 </Pressable>
             ))}

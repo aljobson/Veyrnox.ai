@@ -2,13 +2,12 @@ import { ApiError, type ApiClient } from './api';
 
 // Everything the Account screen shows that is not a screen of its own: legal
 // links, contact addresses, the age rule and the in-app report call (ADR-0110).
-const SITE = 'https://veyrnox.ai';
 
 export const LEGAL_LINKS = [
-    { label: 'Terms of service', labelKey: 'account.legal.terms', url: `${SITE}/legal/terms` },
-    { label: 'Privacy policy', labelKey: 'account.legal.privacy', url: `${SITE}/legal/privacy` },
-    { label: 'Acceptable use policy', labelKey: 'account.legal.aup', url: `${SITE}/legal/aup` },
-    { label: 'Refunds', labelKey: 'account.legal.refunds', url: `${SITE}/legal/refund` },
+    { label: 'Terms of service', labelKey: 'account.legal.terms', route: '/legal/terms' },
+    { label: 'Privacy policy', labelKey: 'account.legal.privacy', route: '/legal/privacy' },
+    { label: 'Acceptable use policy', labelKey: 'account.legal.aup', route: '/legal/aup' },
+    { label: 'Refunds', labelKey: 'account.legal.refunds', route: '/legal/refund' },
 ] as const;
 
 export const SUPPORT_EMAIL = 'support@veyrnox.com';

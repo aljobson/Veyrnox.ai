@@ -25,7 +25,7 @@ export default {
     'autolists.everyHours': 'Every {count} h',
     'autolists.enabled': 'On',
     'autolists.autoSchedule': 'Schedule new items automatically',
-    'autolists.autoScheduleHint': 'Off means new items wait for you to review them on veyrnox.ai.',
+    "autolists.autoScheduleHint": "Off means new items wait for review before scheduling.",
     'autolists.save': 'Save autolist',
     'autolists.err.name': 'Give the autolist a name of up to 80 characters.',
     'autolists.err.feed': 'The feed address must start with https://.',
