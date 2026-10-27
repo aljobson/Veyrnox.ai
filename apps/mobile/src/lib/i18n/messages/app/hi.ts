@@ -4513,5 +4513,13 @@ export default {
   "whenPicker.hHMM": "HH:MM",
   "whenPicker.timehourminute": "समय, घंटा:मिनट",
   "whenPicker.timesareinthisphonestime": "समय इस फ़ोन के समय क्षेत्र में हैं।",
-  "whenPicker.yYYYMMDD": "YYYY-MM-DD"
+  "whenPicker.yYYYMMDD": "YYYY-MM-DD",
+  "analyticsConsent.title": "Veyrnox को बेहतर बनाने में मदद करें?",
+  "analyticsConsent.choices": "गोपनीयता विकल्प",
+  "analyticsConsent.body": "आपकी अनुमति से, ऐप को बेहतर बनाने के लिए हम आपके खोले गए स्क्रीन और इस्तेमाल की गई सुविधाओं की जानकारी आपके खाता ID से जोड़कर, आपके नाम या ईमेल से नहीं, veyrnox.ai के ज़रिए यूरोपीय संघ में PostHog को भेजते हैं। हम कभी भी प्रॉम्प्ट, चैट का टेक्स्ट, आपका मीडिया, ईमेल या भुगतान की जानकारी नहीं भेजते।",
+  "analyticsConsent.change": "आप इसे खाता → गोपनीयता विकल्प में बदल सकते हैं।",
+  "analyticsConsent.policy": "गोपनीयता नीति",
+  "analyticsConsent.allow": "अनुमति दें",
+  "analyticsConsent.decline": "मना करें",
+  "analyticsConsent.saveError": "आपका विकल्प सहेजा नहीं जा सका। फिर कोशिश करें।"
 } as const;

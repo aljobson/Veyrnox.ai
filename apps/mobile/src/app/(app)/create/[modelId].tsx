@@ -215,7 +215,7 @@ export default function CreateWithModel() {
         let started = 0;
         let first: string | null = null;
         try {
-            first = await pending.current.run(api, { modelId: model.id, prompt: text, durationSeconds: isVideo ? duration : null, confirmedCredits: unit, references, sourceRights: hasReference ? sourceRights : undefined, textKey: text_?.key, extraInputs: extra }, n, (count) => { started = count; });
+            first = await pending.current.run(api, { analyticsKind: kindOf(model.modality), modelId: model.id, prompt: text, durationSeconds: isVideo ? duration : null, confirmedCredits: unit, references, sourceRights: hasReference ? sourceRights : undefined, textKey: text_?.key, extraInputs: extra }, n, (count) => { started = count; });
             clearDraft().catch(() => undefined);
             if (n === 1 && first) router.replace({ pathname: '/job/[id]', params: { id: first } });
             else router.replace('/library');

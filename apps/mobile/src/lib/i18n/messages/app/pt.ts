@@ -4577,5 +4577,13 @@ export default {
   "whenPicker.hHMM": "HH:MM",
   "whenPicker.timehourminute": "Horário, hora:minuto",
   "whenPicker.timesareinthisphonestime": "Os horários usam o fuso horário deste celular.",
-  "whenPicker.yYYYMMDD": "YYYY-MM-DD"
+  "whenPicker.yYYYMMDD": "YYYY-MM-DD",
+  "analyticsConsent.title": "Ajudar a melhorar o Veyrnox?",
+  "analyticsConsent.choices": "Opções de privacidade",
+  "analyticsConsent.body": "Com sua permissão, enviamos ao PostHog na UE, por meio de veyrnox.ai, quais telas você abre e quais recursos usa, vinculados ao ID da sua conta, e não ao seu nome ou e-mail, para melhorar o app. Nunca enviamos instruções, textos de conversas, suas mídias, e-mail ou dados de pagamento.",
+  "analyticsConsent.change": "Você pode mudar isso em Conta → Opções de privacidade.",
+  "analyticsConsent.policy": "Política de Privacidade",
+  "analyticsConsent.allow": "Permitir",
+  "analyticsConsent.decline": "Recusar",
+  "analyticsConsent.saveError": "Não foi possível salvar sua escolha. Tente novamente."
 } as const;
