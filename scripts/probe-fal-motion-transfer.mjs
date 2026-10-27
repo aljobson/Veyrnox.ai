@@ -40,6 +40,7 @@ const WAN = 'fal-ai/wan/v2.2-14b/animate/replace';
 const IMAGE = 'fal-ai/nano-banana';
 const CLIP = 'fal-ai/kling-video/v3/standard/text-to-video';
 const MAX_CLIP_SECONDS = 5.05;
+const MAX_DOWNLOAD_BYTES = 50 * 1024 * 1024;
 const POLL_MS = 5000;
 const TIMEOUT_MS = 20 * 60 * 1000;
 const TYPES = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.mp4': 'video/mp4', '.mov': 'video/quicktime' };
@@ -124,10 +125,16 @@ async function makeInputs() {
         const r = await queue(g.endpoint, g.body);
         const url = r.ok ? (r.out?.images?.[0]?.url ?? r.out?.video?.url) : null;
         if (typeof url !== 'string') die(`  generation failed: ${JSON.stringify({ ...r, out: undefined })}`);
-        const got = await fetch(url);
+        // Save only fal's own media, over https, within a size cap; the file name is ours, never the URL's.
+        let host = '';
+        try { host = new URL(url).hostname; } catch { die('  generation returned an invalid URL'); }
+        if (!url.startsWith('https://') || !(host === 'fal.media' || host.endsWith('.fal.media'))) die(`  refusing to download from ${host}`);
+        const got = await fetch(url, { redirect: 'error' });
         if (!got.ok) die(`  download failed: ${got.status}`);
+        const bytes = Buffer.from(await got.arrayBuffer());
+        if (bytes.length > MAX_DOWNLOAD_BYTES) die(`  download too large: ${bytes.length} bytes`);
         made[name] = join(outDir, g.file);
-        await writeFile(made[name], Buffer.from(await got.arrayBuffer()));
+        await writeFile(made[name], bytes);
         console.log(`  saved ${made[name]}`);
     }
     const trimmed = join(outDir, 'walk.mp4');
