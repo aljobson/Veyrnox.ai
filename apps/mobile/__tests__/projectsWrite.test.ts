@@ -40,9 +40,11 @@ describe('project writes', () => {
     });
     test('restore names the current and the wanted revision', async () => {
         const { api, calls } = fakeApi();
-        await restoreVersion(api, 'p1', 5, 2);
+        await restoreVersion(api, 'p1', 5, 2, 'restore-key-1');
         expect(calls[0].path).toBe('/api/v1/projects/p1/document');
         expect(calls[0].init?.method).toBe('PUT');
+        // The document route answers 400 without an Idempotency-Key.
+        expect((calls[0].init?.headers as Record<string, string>)['Idempotency-Key']).toBe('restore-key-1');
         expect(JSON.parse(String(calls[0].init?.body))).toEqual({ expected_revision: 5, restore_revision: 2 });
     });
 });

@@ -101,8 +101,9 @@ export const renameProject = async (api: ApiClient, id: string, name: string, ve
 export const deleteProject = (api: ApiClient, id: string, version: number) =>
     api.request(`/api/v1/projects/${enc(id)}`, { method: 'DELETE', headers: JSON_HEADERS, body: JSON.stringify({ version }) });
 // Restoring writes a new version copied from an older one; nothing is lost.
-export const restoreVersion = (api: ApiClient, id: string, currentRevision: number, restoreRevision: number) =>
-    api.request(`/api/v1/projects/${enc(id)}/document`, { method: 'PUT', headers: JSON_HEADERS, body: JSON.stringify({ expected_revision: currentRevision, restore_revision: restoreRevision }) });
+// The document route requires an Idempotency-Key (packages/security/input.js); the caller keeps one key per restore tap.
+export const restoreVersion = (api: ApiClient, id: string, currentRevision: number, restoreRevision: number, idempotencyKey: string) =>
+    api.request(`/api/v1/projects/${enc(id)}/document`, { method: 'PUT', headers: { ...JSON_HEADERS, 'Idempotency-Key': idempotencyKey }, body: JSON.stringify({ expected_revision: currentRevision, restore_revision: restoreRevision }) });
 
 export function projectsErrorMessage(err: unknown): string {
     const status = (err as { status?: unknown } | null)?.status;

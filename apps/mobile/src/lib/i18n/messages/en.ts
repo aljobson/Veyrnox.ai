@@ -46,6 +46,7 @@ import area_cinemaPass from './en/cinemaPass';
 import area_cinemaPlayback from './en/cinemaPlayback';
 import area_cinemaSeries from './en/cinemaSeries';
 import area_cinemaSocial from './en/cinemaSocial';
+import area_cinemaStudio from './en/cinemaStudio';
 import area_cinemaUpload from './en/cinemaUpload';
 import area_comments from './en/comments';
 import area_commerce from './en/commerce';
@@ -129,6 +130,7 @@ import area_publish from './en/publish';
 import area_publishApprovals from './en/publishApprovals';
 import area_publishBrand from './en/publishBrand';
 import area_publishCompose from './en/publishCompose';
+import area_publishDepth from './en/publishDepth';
 import area_publishDeveloper from './en/publishDeveloper';
 import area_publishHome from './en/publishHome';
 import area_publishInbox from './en/publishInbox';
@@ -221,6 +223,7 @@ const catalog = {
     ...area_cinemaPlayback,
     ...area_cinemaSeries,
     ...area_cinemaSocial,
+    ...area_cinemaStudio,
     ...area_cinemaUpload,
     ...area_comments,
     ...area_commerce,
@@ -304,6 +307,7 @@ const catalog = {
     ...area_publishApprovals,
     ...area_publishBrand,
     ...area_publishCompose,
+    ...area_publishDepth,
     ...area_publishDeveloper,
     ...area_publishHome,
     ...area_publishInbox,

@@ -10,6 +10,13 @@ describe('guided creative source handoff', () => {
         expect(consumeCreativeSourceHandoff(key, 'talking-avatar', 'avatar', 200)).toBeNull();
     });
 
+    test('carries the source-rights tick only when the handing screen recorded it', () => {
+        const attach = stageCreativeSourceHandoff({ recipe: 'attach', modelId: 'm', uploaded: { image: 'k' }, fromLibrary: {} }, 100);
+        expect(readCreativeSourceHandoff(attach, 'attach', 'm', 200)?.rightsConfirmed).toBe(false);
+        const ticked = stageCreativeSourceHandoff({ recipe: 'talking-avatar', modelId: 'm', uploaded: {}, fromLibrary: {}, rightsConfirmed: true }, 100);
+        expect(readCreativeSourceHandoff(ticked, 'talking-avatar', 'm', 200)?.rightsConfirmed).toBe(true);
+    });
+
     test('rejects mismatched and expired handoffs', () => {
         const mismatch = stageCreativeSourceHandoff({ recipe: 'video-dubbing', modelId: 'sync', aspect: '9:16', uploaded: { video: 'v' }, fromLibrary: { audio: 'job' } }, 100);
         expect(consumeCreativeSourceHandoff(mismatch, 'talking-avatar', 'sync', 200)).toBeNull();

@@ -69,7 +69,7 @@ function FeatureStudio({ feature, reuse }: { feature: CreativeFeature; reuse: Cr
             setError(model === null || !hasEverySlot ? t('features.thelivemodelisnotavailableright') : waiting ? t('features.waitforeveryuploadtofinish') : !sourcesReady ? t('features.addeveryrequiredsource') : slots.length && !rights ? t('features.confirmthatyouhavepermissiontouse') : feature.scriptUpload && !script ? t('features.uploadascriptfirst') : t('features.completefirst', { value1: feature.input }));
             return;
         }
-        const sourceHandoff = stageCreativeSourceHandoff({ recipe: feature.slug, modelId: feature.model, aspect: feature.kind === 'video' ? '9:16' : '1:1', uploaded: {}, fromLibrary: {}, references });
+        const sourceHandoff = stageCreativeSourceHandoff({ recipe: feature.slug, modelId: feature.model, aspect: feature.kind === 'video' ? '9:16' : '1:1', uploaded: {}, fromLibrary: {}, references, rightsConfirmed: rights });
         router.push({ pathname: '/create/[modelId]', params: { modelId: feature.model, prompt: prompt || feature.title, ...(feature.kind === 'video' ? { duration: '5' } : {}), recipe: feature.slug, sourceHandoff } });
     }
     return <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">

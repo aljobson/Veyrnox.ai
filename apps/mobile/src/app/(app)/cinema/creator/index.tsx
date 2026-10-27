@@ -1,4 +1,3 @@
-import { ComingToApp } from '../../../../components/ComingToApp';
 import { useCallback, useRef, useState } from 'react';
 import { router, useFocusEffect } from 'expo-router';
 import { ScrollView, Text, View } from 'react-native';
@@ -52,8 +51,7 @@ function Titles() {
             <Text style={ui.text}>{t(`cinemaUpload.state.${['DRAFT', 'UNDER_REVIEW', 'PUBLISHED', 'SUSPENDED'].includes(title.lifecycle_status) ? title.lifecycle_status : 'other'}`)}</Text>
             {title.review_note ? <Text style={ui.text}>{title.review_note}</Text> : null}
             {title.video_ready && <Text style={ui.text}>{t('cinemaUpload.videoReady')}</Text>}
-            {title.content_type === 'SERIES' ? <ComingToApp /> :
-                <Action label={title.title} onPress={() => router.push({ pathname: '/cinema/creator/[id]', params: { id: title.id } })} />}
+            <Action label={title.title} onPress={() => router.push({ pathname: '/cinema/creator/[id]', params: { id: title.id } })} />
         </View>)}
     </ScrollView>;
 }

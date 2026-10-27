@@ -1530,6 +1530,18 @@
     "ratio": 1.92
   },
   {
+    "id": "publishDepth.suggestions.use",
+    "english": "Use",
+    "translation": "استخدام",
+    "ratio": 2.33
+  },
+  {
+    "id": "publishDepth.analytics.sent",
+    "english": "Sent",
+    "translation": "المرسلة",
+    "ratio": 1.75
+  },
+  {
     "id": "publishReporting.likes",
     "english": "Likes",
     "translation": "الإعجابات",

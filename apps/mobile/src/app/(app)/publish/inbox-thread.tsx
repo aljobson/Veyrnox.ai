@@ -1,12 +1,19 @@
 import * as Crypto from 'expo-crypto';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Keyboard, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Keyboard, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { touchTarget } from '../../../lib/a11y';
 import { formatLocale, t } from '../../../lib/i18n';
-import { assignThread, cleanReply, fetchMembers, fetchThread, inboxErrorKey, parseThreadView, replyToThread, setThreadStatus, type Member } from '../../../lib/publishInbox';
+import { addNote, assignThread, cleanNote, cleanReply, fetchMembers, fetchSuggestions, fetchThread, inboxErrorKey, inboxScope, noteErrorKey, parseThreadView, replyOutcome, replyToThread, setThreadStatus, type Member, type Suggestion } from '../../../lib/publishInbox';
 import { usePublishApi } from '../../../lib/usePublishApi';
+import { InboxSuggestions } from '../../../components/publish/InboxSuggestions';
+import { subscribeCacheUser } from '../../../lib/appCache';
+import { brandStore, type BrandRole } from '../../../lib/publishBrand';
+import { fetchAccounts } from '../../../lib/publish';
+import { networkLabel } from '../../../lib/publishCompose';
 import { colors, LIST_END_PADDING } from '../../../theme';
+
+type Attempt = { threadId: string; body: string; key: string; mayBeSent: boolean };
 
 export default function InboxThread() {
     const api = usePublishApi();
@@ -20,8 +27,28 @@ export default function InboxThread() {
     const [note, setNote] = useState<string | null>(null);
     const [members, setMembers] = useState<Member[] | null>(null);
     const [picking, setPicking] = useState(false);
-    // One key per reply attempt: a retry after a dropped connection sends the reply once.
-    const replyKey = useRef<string | null>(null);
+    const [attempt, setAttempt] = useState<Attempt | null>(null);
+    const attemptRef = useRef<Attempt | null>(null), running = useRef(false);
+    const [role, setRole] = useState<BrandRole>('viewer');
+    const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+    const [noteDraft, setNoteDraft] = useState('');
+    const [scopeVersion, setScopeVersion] = useState(0);
+    const generation = useRef(0), currentApi = useRef(api);
+    currentApi.current = api;
+    function guard() {
+        const scope = inboxScope(), version = generation.current;
+        return () => currentApi.current === api && scope === inboxScope() && version === generation.current;
+    }
+    const updateAttempt = (next: Attempt | null) => { attemptRef.current = next; setAttempt(next); };
+    useEffect(() => {
+        const reset = () => {
+            generation.current++; running.current = false; updateAttempt(null);
+            setView(null); setRole('viewer'); setSuggestions([]); setDraft(''); setNoteDraft(''); setNote(null); setError(null); setBusy(false); setMembers(null); setPicking(false);
+            setScopeVersion(v => v + 1);
+        };
+        const userOff = subscribeCacheUser(reset), brandOff = brandStore.subscribe(reset);
+        return () => { generation.current++; userOff(); brandOff(); };
+    }, []);
 
     // The reply box rides above the keyboard (the screen sits under a navigation header, so the built-in avoiding is unreliable).
     useEffect(() => {
@@ -30,51 +57,87 @@ export default function InboxThread() {
         return () => { show.remove(); hide.remove(); };
     }, []);
 
-    const load = useCallback(() => fetchThread(api, String(id ?? '')).then(setView), [api, id]);
-
-    useEffect(() => {
-        let cancelled = false;
-        fetchThread(api, String(id ?? ''))
-            .then((v) => !cancelled && setView(v))
-            .catch((err) => !cancelled && setError(t(inboxErrorKey(err))));
-        return () => {
-            cancelled = true;
-        };
+    const load = useCallback(async () => {
+        const token = inboxScope(), version = generation.current;
+        const next = await fetchThread(api, String(id ?? ''));
+        if (currentApi.current === api && token === inboxScope() && version === generation.current) setView(next);
     }, [api, id]);
 
+    useEffect(() => {
+        const version = ++generation.current, token = inboxScope();
+        const valid = () => version === generation.current && token === inboxScope() && currentApi.current === api;
+        setView(null); setError(null); setRole('viewer'); setSuggestions([]); setMembers(null); setPicking(false);
+        setDraft(''); setNoteDraft(''); setNote(null); updateAttempt(null); running.current = false; setBusy(false);
+        fetchThread(api, String(id ?? '')).then(v => { if (valid()) setView(v); }).catch(err => { if (valid()) setError(t(inboxErrorKey(err))); });
+        fetchAccounts(api).then(a => { if (valid()) setRole(a.brandRole); }).catch(() => { if (valid()) setRole('viewer'); });
+        fetchSuggestions(api, String(id ?? '')).then(rows => { if (valid()) setSuggestions(rows); }).catch(() => { if (valid()) setSuggestions([]); });
+        return () => { generation.current++; };
+    }, [api, id, scopeVersion]);
+
     async function act(run: () => Promise<unknown>) {
-        if (busy) return;
-        setBusy(true);
-        setNote(null);
-        try {
-            await run();
-            await load();
-        } catch (err) {
-            setNote(t(inboxErrorKey(err)));
-        } finally {
-            setBusy(false);
-        }
+        if (running.current) return;
+        const valid = guard();
+        running.current = true; setBusy(true); setNote(null);
+        try { await run(); if (valid()) await load(); }
+        catch (err) { if (valid()) setNote(t(inboxErrorKey(err))); }
+        finally { if (valid()) { running.current = false; setBusy(false); } }
     }
 
-    async function send() {
-        const body = cleanReply(draft);
+    async function send(newKey = false) {
+        if (running.current || !view?.canReply) return;
+        const previous = attemptRef.current;
+        const body = previous?.body ?? cleanReply(draft);
         if (!body) return setNote(t('publish.writeareplyofupto8000'));
-        replyKey.current ??= Crypto.randomUUID();
-        await act(async () => {
-            await replyToThread(api, String(id), body, replyKey.current as string);
-            replyKey.current = null;
-            setDraft('');
-        });
+        const next: Attempt = previous && !newKey ? previous : { threadId: String(id), body, key: Crypto.randomUUID(), mayBeSent: false };
+        const valid = guard();
+        updateAttempt(next); running.current = true; setBusy(true); setNote(null);
+        let result: unknown;
+        try { result = await replyToThread(api, next.threadId, next.body, next.key); }
+        catch (err) { result = err; }
+        if (!valid()) return;
+        const outcome = replyOutcome(result, !next.mayBeSent);
+        if (outcome === 'sent') { updateAttempt(null); setDraft(''); }
+        else if (outcome === 'refusedFirst' && !next.mayBeSent) { updateAttempt(null); setNote(t(inboxErrorKey(result))); }
+        else { updateAttempt({ ...next, mayBeSent: true }); setNote(t(inboxErrorKey(result))); }
+        // Reload for display only. Neither old text nor delivery rows resolve an attempt.
+        try { if (valid()) await load(); } catch { /* The attempt result above stays authoritative. */ }
+        if (valid()) { running.current = false; setBusy(false); }
+    }
+
+    function confirmHeld(action: 'anyway' | 'discard') {
+        if (running.current || !attemptRef.current?.mayBeSent) return;
+        const valid = guard(), captured = attemptRef.current;
+        let used = false;
+        Alert.alert(t(`publishDepth.reply.${action}Title`), t(`publishDepth.reply.${action}Body`), [
+            { text: t('publish.cancel'), style: 'cancel' },
+            { text: t(`publishDepth.reply.${action}`), style: 'destructive', onPress: () => {
+                if (used || !valid() || running.current || attemptRef.current !== captured) return;
+                used = true;
+                if (action === 'anyway') void send(true);
+                else { updateAttempt(null); setNote(null); }
+            } },
+        ]);
+    }
+
+    async function saveNote() {
+        if (running.current || !['owner', 'manager', 'editor', 'reviewer'].includes(role)) return;
+        const value = cleanNote(noteDraft);
+        if (!value) return setNote(t('publishDepth.note.invalid'));
+        const valid = guard();
+        running.current = true; setBusy(true); setNote(null);
+        try { await addNote(api, String(id), value); if (valid()) setNoteDraft(''); }
+        catch (err) { if (valid()) setNote(t(noteErrorKey(err))); }
+        // Once on both success and error: no retry of a non-idempotent write.
+        try { if (valid()) await load(); } catch (err) { if (valid()) setNote(t(inboxErrorKey(err))); }
+        if (valid()) { running.current = false; setBusy(false); }
     }
 
     async function openAssign() {
-        setPicking((on) => !on);
+        setPicking(on => !on);
         if (members) return;
-        try {
-            setMembers(await fetchMembers(api));
-        } catch (err) {
-            setNote(t(inboxErrorKey(err)));
-        }
+        const valid = guard();
+        try { const next = await fetchMembers(api); if (valid()) setMembers(next); }
+        catch (err) { if (valid()) setNote(t(inboxErrorKey(err))); }
     }
 
     if (error) return <View style={styles.pad}><Stack.Screen options={{ title: t('inbox.title') }} /><Text style={styles.error} accessibilityRole="alert">{error}</Text></View>;
@@ -84,7 +147,7 @@ export default function InboxThread() {
     const resolved = th?.status === 'resolved';
 
     return (
-        <View style={styles.screen}>
+        <View style={styles.screen} accessibilityState={{ busy }}>
         <ScrollView style={styles.screen} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
             <Stack.Screen options={{ title: th?.name || t('inbox.title') }} />
             {th ? <Text style={styles.muted}>{th.network} · {th.accountName} · {t(`inbox.kind.${th.kind}`)}{th.priority !== 'normal' ? ` · ${th.priority}` : ''}</Text> : null}
@@ -123,7 +186,14 @@ export default function InboxThread() {
                     <Text style={styles.meta}>{m.sentAt ? new Date(m.sentAt).toLocaleString(formatLocale()) : ''}{m.deliveryStatus && m.outgoing ? ` · ${m.deliveryStatus}` : ''}</Text>
                 </View>
             ))}
-            {view.notes.length > 0 ? <Text style={styles.heading} accessibilityRole="header">{t('inbox.notes')}</Text> : null}
+            <InboxSuggestions api={api} threadId={String(id)} rows={suggestions} role={role} canReply={view.canReply} pendingReply={busy || !!attempt?.mayBeSent}
+                onUse={value => { if (!running.current && !attemptRef.current?.mayBeSent) setDraft(value); }} onRemove={suggestionId => setSuggestions(rows => rows.filter(row => row.id !== suggestionId))} />
+            <Text style={styles.heading} accessibilityRole="header">{t('inbox.notes')}</Text>
+            {['owner', 'manager', 'editor', 'reviewer'].includes(role) ? <View>
+                <Text style={styles.text}>{t('publishDepth.note.add')}</Text>
+                <TextInput style={[styles.input, touchTarget]} accessibilityLabel={t('publishDepth.note.add')} multiline maxLength={2000} value={noteDraft} onChangeText={setNoteDraft} editable={!busy} />
+                <Pressable style={touchTarget} accessibilityRole="button" disabled={busy || !noteDraft.trim()} accessibilityState={{ busy, disabled: busy || !noteDraft.trim() }} onPress={saveNote}><Text style={styles.action}>{t('publishDepth.note.add')}</Text></Pressable>
+            </View> : null}
             {view.notes.map((n) => (
                 <View key={n.id} style={styles.note}>
                     <Text style={styles.text}>{n.body}</Text>
@@ -132,10 +202,14 @@ export default function InboxThread() {
             ))}
             {!view.canReply ? <Text style={styles.muted}>{t('inbox.replyOnWeb')}</Text> : null}
         </ScrollView>
+        {attempt?.mayBeSent ? <View style={styles.held}>
+            <Text style={styles.muted} accessibilityLiveRegion="polite">{t('publishDepth.reply.pending', { network: networkLabel(th?.network ?? '') })}</Text>
+            <View style={styles.actions}>{(['anyway', 'discard'] as const).map(action => <Pressable key={action} style={touchTarget} accessibilityRole="button" disabled={busy} accessibilityState={{ disabled: busy }} onPress={() => confirmHeld(action)}><Text style={styles.action}>{t(`publishDepth.reply.${action}`)}</Text></Pressable>)}</View>
+        </View> : null}
         {view.canReply ? (
             <View style={[styles.composer, keyboard > 0 && { marginBottom: keyboard, paddingBottom: 12 }]}>
-                <TextInput style={styles.input} value={draft} onChangeText={setDraft} placeholder={t('publish.reply')} accessibilityLabel={t('publish.reply')} placeholderTextColor={colors.muted} multiline maxLength={8000} editable={!busy} />
-                <Pressable accessibilityRole="button" accessibilityLabel={t('publish.sendreply')} disabled={busy || !draft.trim()} style={[styles.send, (busy || !draft.trim()) && styles.off]} onPress={send}>
+                <TextInput style={styles.input} value={draft} onChangeText={setDraft} placeholder={t('publish.reply')} accessibilityLabel={t('publish.reply')} placeholderTextColor={colors.muted} multiline maxLength={8000} editable={!busy && !attempt?.mayBeSent} />
+                <Pressable accessibilityRole="button" accessibilityLabel={t('publish.sendreply')} disabled={busy || !draft.trim()} style={[styles.send, (busy || !draft.trim()) && styles.off]} accessibilityState={{ busy, disabled: busy || !draft.trim() }} onPress={() => send()}>
                     <Text style={styles.sendText}>{busy ? '…' : t('publish.send')}</Text>
                 </Pressable>
             </View>
@@ -145,6 +219,7 @@ export default function InboxThread() {
 }
 
 const styles = StyleSheet.create({
+    held: { paddingHorizontal: 12, gap: 6 },
     screen: { flex: 1, backgroundColor: colors.background },
     pad: { flex: 1, backgroundColor: colors.background, padding: 16 },
     body: { padding: 16, paddingBottom: LIST_END_PADDING, gap: 8 },

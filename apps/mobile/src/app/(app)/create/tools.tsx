@@ -1,8 +1,9 @@
 import { useFaceFiltersAvailable } from '../../../lib/useFaceFiltersAvailable';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { touchTarget } from '../../../lib/a11y';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { IconBadge, ListRow } from '../../../components/ui';
+import { toolIcon } from '../../../lib/featureIcons';
 import { plural, t } from '../../../lib/i18n';
 import { fetchCatalogCached, type CatalogModel } from '../../../lib/media';
 import { requiresSource, toolGroups, toolNeeds } from '../../../lib/toolDirectory';
@@ -36,10 +37,14 @@ export default function CreateTools() {
             <Stack.Screen options={{ title: t('toolsDir.title') }} />
             <Text style={styles.lead}>{lead}</Text>
             {source !== 'video' && faceAvailable ? (
-                <Pressable accessibilityRole="button" accessibilityLabel={t('faceFilters.title')} style={[styles.row, touchTarget]} onPress={() => router.push('/face-filters')}>
-                    <Text style={styles.name}>{t('faceFilters.title')}</Text>
-                    <Text style={styles.muted}>{t('faceFilters.lead')}</Text>
-                </Pressable>
+                <ListRow
+                    accessibilityLabel={t('faceFilters.title')}
+                    leading={<IconBadge {...toolIcon('face-filters')} />}
+                    title={t('faceFilters.title')}
+                    subtitle={t('faceFilters.lead')}
+                    style={styles.featured}
+                    onPress={() => router.push('/face-filters')}
+                />
             ) : null}
             {failed && !models ? (
                 <Text style={styles.error}>{t('create.loadError')}</Text>
@@ -50,22 +55,20 @@ export default function CreateTools() {
             ) : (
                 groups.filter(g => g.key !== 'face-filters' || faceAvailable).map((g) => (
                     <View key={g.key} style={styles.group}>
-                        <Text style={styles.groupTitle} accessibilityRole="header">{g.label}</Text>
-                        <Text style={styles.muted}>{g.blurb}</Text>
+                        <View style={styles.groupHead}>
+                            <Text style={styles.groupTitle} accessibilityRole="header">{g.label}</Text>
+                            <Text style={styles.muted}>{g.blurb}</Text>
+                        </View>
                         {g.tools.map((m) => (
-                            <Pressable
+                            <ListRow
                                 key={m.id}
-                                accessibilityRole="button"
                                 accessibilityLabel={`${m.name}. ${t('toolsDir.needs', { what: toolNeeds(m) })}. ${plural('create.from', m.credits)}`}
-                                style={[styles.row, touchTarget]}
+                                leading={<IconBadge {...toolIcon(g.key)} />}
+                                title={m.name}
+                                subtitle={t('toolsDir.needs', { what: toolNeeds(m) })}
+                                trailing={<Text style={styles.price}>{plural('create.from', m.credits)}</Text>}
                                 onPress={() => g.key === 'face-filters' ? router.push('/face-filters') : router.push({ pathname: '/create/[modelId]', params: { modelId: m.id } })}
-                            >
-                                <View style={styles.rowText}>
-                                    <Text style={styles.name}>{m.name}</Text>
-                                    <Text style={styles.muted}>{t('toolsDir.needs', { what: toolNeeds(m) })}</Text>
-                                </View>
-                                <Text style={styles.price}>{plural('create.from', m.credits)}</Text>
-                            </Pressable>
+                            />
                         ))}
                     </View>
                 ))
@@ -76,14 +79,13 @@ export default function CreateTools() {
 
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
-    body: { padding: 16, gap: 16, paddingBottom: LIST_END_PADDING },
+    body: { padding: 16, gap: 24, paddingBottom: LIST_END_PADDING },
     lead: { color: colors.body, fontSize: 15, lineHeight: 22 },
-    group: { gap: 4 },
-    groupTitle: { color: colors.text, fontSize: 18, fontWeight: '800' },
-    row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingVertical: 10, borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth },
-    rowText: { flexShrink: 1, gap: 2 },
-    name: { color: colors.text, fontSize: 16 },
-    price: { color: colors.money },
+    featured: { paddingHorizontal: 12, borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, backgroundColor: colors.surface },
+    group: { gap: 2 },
+    groupHead: { gap: 2, marginBottom: 4 },
+    groupTitle: { color: colors.text, fontSize: 17, fontWeight: '700' },
+    price: { color: colors.money, fontSize: 13, fontWeight: '600' },
     muted: { color: colors.muted, fontSize: 13 },
     error: { color: colors.danger },
 });
