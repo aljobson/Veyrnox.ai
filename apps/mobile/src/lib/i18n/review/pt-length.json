@@ -2448,6 +2448,42 @@
     "ratio": 1.64
   },
   {
+    "id": "publishDepth.bluesky.handle",
+    "english": "Bluesky handle",
+    "translation": "Identificador do Bluesky",
+    "ratio": 1.71
+  },
+  {
+    "id": "publishDepth.note.add",
+    "english": "Add note",
+    "translation": "Adicionar nota",
+    "ratio": 1.75
+  },
+  {
+    "id": "publishDepth.reply.anyway",
+    "english": "Send anyway",
+    "translation": "Enviar mesmo assim",
+    "ratio": 1.64
+  },
+  {
+    "id": "publishDepth.analytics.title",
+    "english": "Inbox analytics",
+    "translation": "Análise da caixa de entrada",
+    "ratio": 1.8
+  },
+  {
+    "id": "publishDepth.analytics.sent",
+    "english": "Sent",
+    "translation": "Enviadas",
+    "ratio": 2
+  },
+  {
+    "id": "publishDepth.analytics.read_actions",
+    "english": "Marked read",
+    "translation": "Marcadas como lidas",
+    "ratio": 1.73
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",

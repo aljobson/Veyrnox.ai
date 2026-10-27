@@ -129,6 +129,7 @@ import area_publish from './en/publish';
 import area_publishApprovals from './en/publishApprovals';
 import area_publishBrand from './en/publishBrand';
 import area_publishCompose from './en/publishCompose';
+import area_publishDepth from './en/publishDepth';
 import area_publishDeveloper from './en/publishDeveloper';
 import area_publishHome from './en/publishHome';
 import area_publishInbox from './en/publishInbox';
@@ -303,6 +304,7 @@ const catalog = {
     ...area_publishApprovals,
     ...area_publishBrand,
     ...area_publishCompose,
+    ...area_publishDepth,
     ...area_publishDeveloper,
     ...area_publishHome,
     ...area_publishInbox,
