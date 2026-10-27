@@ -123,15 +123,15 @@ test('0402 stages both rows inactive at the approved price, each at its whole-cr
         .map(([, id, endpoint, credits, cost]) => ({ id, endpoint, credits: Number(credits), cost: Number(cost) }));
     assert.deepEqual(rows, [
         { id: 'motion-transfer', endpoint: KLING, credits: 36, cost: 0.63 },
-        { id: 'motion-replace', endpoint: WAN, credits: 23, cost: 0.4 },
+        { id: 'motion-replace', endpoint: WAN, credits: 34, cost: 0.6 },
     ]);
     for (const { id, credits, cost } of rows) {
         assert.equal(creditsForFloor(cost), credits, id);
         assert.ok(Math.round(cost * 100000) <= credits * 1796, `${id} clears the 0366 trigger`);
     }
-    // Per-second fal prices read 2026-10-27, times the 5-second unit.
+    // Billed on staging 2026-10-27: Kling 5 s x $0.126; Wan 7.5 s x $0.08 for a 5 s clip.
     assert.equal(Math.round(0.126 * 5 * 10000) / 10000, 0.63);
-    assert.equal(Math.round(0.08 * 5 * 10000) / 10000, 0.4);
+    assert.equal(Math.round(0.08 * 7.5 * 10000) / 10000, 0.6);
 });
 
 // Route: the gate and the clip checks stop the request before the user lookup, the debit and the provider.

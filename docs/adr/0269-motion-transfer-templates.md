@@ -1,6 +1,6 @@
 # ADR-0269: Motion-transfer templates from our own driving clips
 
-Status: Accepted (2026-10-27, owner in chat: "Kling 3.0 Motion Control Std at 36 credits per 5 s, Wan Replace at 23 for phase 2, flags shipped off"; about $1.66 of STAGING fal probes allowed). Built behind both flags with migration 0402 staged inactive; probes, clips and activation still to come.
+Status: Accepted (2026-10-27, owner in chat: "Kling 3.0 Motion Control Std at 36 credits per 5 s, Wan Replace at 23 for phase 2, flags shipped off"; about $1.66 of STAGING fal probes allowed; after the billed probe: "motion-replace at 34 credits per 5 s, recorded cost $0.60"). Built behind both flags with migration 0402 staged inactive; probes done; clips and activation still to come.
 
 Date: 2026-10-27
 
@@ -83,7 +83,7 @@ Notes that bear on the choice:
    | Offer id | Supplier cost per 5 s | Floor | `credits_5s` | 5 s clip | 10 s clip |
    |---|---|---|---|---|---|
    | `motion-transfer` (Kling 3.0 MC Std) | $0.63 | 35.08 | **36** | 36 | 72 |
-   | `motion-replace` (Wan 2.2 Replace 720p, phase 2) | $0.40 | 22.27 | **23** | 23 | 46 |
+   | `motion-replace` (Wan 2.2 Replace 720p, phase 2) | $0.60 billed (see probe results) | 33.41 | **34** | 34 | 68 |
 
    For comparison, `kling-3.0-i2v` is 32 per 5 s. Clips are cut to exactly
    5.0 s or 10.0 s so a template never rounds up into an extra unit; the probe
@@ -146,9 +146,9 @@ Consequences for the templates:
   bills the 5.0 s clip, not the 4.8 s output). Wan Replace **7.5 s** for one
   5.04 s clip at $0.08 = **$0.60**, 1.5 times the clip length and 50% above
   the $0.40 recorded in 0402. 23 credits covers at most $0.413, so
-  `motion-replace` cannot be activated at 23. At $0.60 per 5 s the floor is
-  34 credits (60000 <= 34 x 1796 = 61064). The price change needs the
-  owner's word; 0402 is unapplied, so it can be edited in place.
+  `motion-replace` could not be activated at 23. At $0.60 per 5 s the floor is
+  34 credits (60000 <= 34 x 1796 = 61064); the owner approved 34 and $0.60,
+  and 0402 (unapplied) was edited in place.
   Inputs: Nano Banana 2 images $0.0796; Kling text-to-video billed 3 s, $0.42.
   Probe total $2.36.
 
@@ -172,7 +172,7 @@ Consequences for the templates:
    `lib/motionCapabilities.js`; `scripts/probe-fal-motion-transfer.mjs` runs
    step 1.
 6. Tests: flag off refuses before debit; a client clip or duration is
-   refused; price is 36 / 72 and 23 / 46; unknown template refused; the
+   refused; price is 36 / 72 and 34 / 68; unknown template refused; the
    adapter body pins the safety and sound fields; refund on submit failure.
 7. Activation is a separate migration after the probes and 24 h of clean
    reconciliation, and the flag flip is the owner's.
