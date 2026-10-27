@@ -48,3 +48,10 @@ test('native Apple button switches style with scheme without a reload', () => {
     mockScheme = 'dark';
     expect(render(true, true, false).element.props.children.props.buttonStyle).toBe(Apple.AppleAuthenticationButtonStyle.WHITE);
 });
+
+// Pin both session adoption and sign-out fences in the auth provider, independently of its UI button tests.
+test('auth adoption and sign-out await the editor media owner fence beside cinema uploads', () => {
+    const source = require('node:fs').readFileSync(require('node:path').join(process.cwd(), 'src/auth/AuthProvider.tsx'), 'utf8');
+    expect(source).toMatch(/await setCinemaUploadOwner\(userId\)[^;]*;\s*await setEditorMediaOwner\(userId\)/);
+    expect(source).toMatch(/await setCinemaUploadOwner\(null\)[^;]*;\s*await setEditorMediaOwner\(null\)/);
+});

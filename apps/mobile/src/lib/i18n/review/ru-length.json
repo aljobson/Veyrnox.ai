@@ -2610,6 +2610,18 @@
     "ratio": 2.5
   },
   {
+    "id": "editorServerExport.share",
+    "english": "Share export",
+    "translation": "Поделиться экспортом",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorServerExport.crop",
+    "english": "Crop",
+    "translation": "Обрезка",
+    "ratio": 1.75
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

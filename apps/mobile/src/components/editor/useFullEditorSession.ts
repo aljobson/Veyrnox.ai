@@ -6,6 +6,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useAuth } from '../../auth/AuthProvider';
 
+import { editorDeviceMedia } from '../../lib/editorDeviceMedia';
+import { getCacheUser } from '../../lib/appCache';
+import { probeDuration } from '../../lib/editorMediaDuration';
 import { ApiError } from '../../lib/api';
 import { documentIdentity, type ProjectDocument } from '../../lib/editorBridge';
 import { getDocument, putDocument } from '../../lib/editorProjects';
@@ -53,6 +56,12 @@ export function useFullEditorSession({ projectId, jobId }: { projectId: string; 
     const [localMediaUris, setLocalMediaUris] = useState<Record<string, string>>({});
     const [libraryKind, setLibraryKind] = useState<SlotKind | null>(null);
     const initialImport = useRef(false);
+    const backups = useRef<Record<string, NonNullable<Media['assetSource']>>>({});
+    const mergeBackups = useCallback((doc: ProjectDocument): ProjectDocument => {
+        if (!doc.timeline) return doc;
+        const tl = doc.timeline as Timeline;
+        return { ...doc, timeline: { ...tl, media: Object.fromEntries(Object.entries(tl.media).map(([id, media]) => [id, backups.current[id] ? { ...media, assetSource: backups.current[id] } : media])) } };
+    }, []);
 
     const playbackTimeline = timelineOf(document?.timeline);
     const playbackTotal = framesIn(playbackTimeline);
@@ -64,12 +73,20 @@ export function useFullEditorSession({ projectId, jobId }: { projectId: string; 
             futureRef.current = [];
             setHistory({ canUndo: true, canRedo: false });
         }
+        next = mergeBackups(next);
         documentRef.current = next;
         dirtyRef.current = true;
         setDocument(next);
         setDirty(true);
         setProblem(null);
-    }, []);
+    }, [mergeBackups]);
+
+    const applyBackup = useCallback((mediaId: string, source: NonNullable<Media['assetSource']>) => {
+        backups.current[mediaId] = source;
+        pastRef.current = pastRef.current.map(mergeBackups);
+        futureRef.current = futureRef.current.map(mergeBackups);
+        if (documentRef.current && (documentRef.current.timeline as Timeline)?.media[mediaId]) markDocument(mergeBackups(documentRef.current), false);
+    }, [markDocument, mergeBackups]);
 
     const save = useCallback(async (): Promise<boolean> => {
         if (!dirtyRef.current || !documentRef.current) return true;
@@ -135,6 +152,7 @@ export function useFullEditorSession({ projectId, jobId }: { projectId: string; 
                 setHistory({ canUndo: false, canRedo: false });
                 setProjectAssets(assets);
                 setDocument(loaded);
+                void editorDeviceMedia.hydrate(projectId, loaded).then(uris => { if (mounted.current) setLocalMediaUris(uris); }).catch(() => {});
                 setRevision(head.revision);
             })
             .catch(() => { if (mounted.current) setProblem(t('editor.fullFailed')); });
@@ -178,11 +196,26 @@ export function useFullEditorSession({ projectId, jobId }: { projectId: string; 
         const next = source.pop();
         if (!next || !documentRef.current) return;
         destination.push(documentRef.current);
-        markDocument(next, false);
+        markDocument(mergeBackups(next), false);
         setSelection(null);
         setSelections([]);
         setHistory({ canUndo: pastRef.current.length > 0, canRedo: futureRef.current.length > 0 });
-    }, [markDocument]);
+    }, [markDocument, mergeBackups]);
 
-    return { api, router, name, document, revision, dirty, saving, problem, setProblem, tool, setTool, selection, setSelection, selections, setSelections, multiSelect, setMultiSelect, clipboard, setClipboard, snap, setSnap, ripple, setRipple, zoom, setZoom, privacyNotice, history, frame, setFrame, playing, setPlaying, projectAssets, localMediaUris, setLocalMediaUris, libraryKind, setLibraryKind, markDocument, save, done, acknowledgePrivacy, travel };
+    const preparePicked = async (asset: { uri: string; mimeType?: string | null; duration?: number | null }, mediaId: string, kind: string) => {
+        const owner = getCacheUser();
+        const seconds = typeof asset.duration === 'number' && Number.isFinite(asset.duration) && asset.duration > 0 ? asset.duration / 1000 : kind === 'image' ? null : await probeDuration(asset.uri);
+        if (!mounted.current || owner !== getCacheUser()) return null;
+        const file = await editorDeviceMedia.copy(projectId, mediaId, asset.uri, asset.mimeType || '', seconds);
+        if (!mounted.current || owner !== getCacheUser()) return null;
+        setLocalMediaUris(current => ({ ...current, [mediaId]: file?.file || asset.uri }));
+        if (file) void editorDeviceMedia.backup(api, projectId, mediaId, file).then(source => { if (source && mounted.current && owner === getCacheUser()) applyBackup(mediaId, source); });
+        return seconds ?? (kind === 'image' ? 3 : 10);
+    };
+    const savedDocument = async () => {
+        if (!await save() || dirtyRef.current) { if (dirtyRef.current) setProblem(current => current || t('editor.unsavedchanges2')); return null; }
+        return documentRef.current;
+    };
+
+    return { currentDocument: () => documentRef.current, preparePicked, savedDocument, applyBackup, api, router, name, document, revision, dirty, saving, problem, setProblem, tool, setTool, selection, setSelection, selections, setSelections, multiSelect, setMultiSelect, clipboard, setClipboard, snap, setSnap, ripple, setRipple, zoom, setZoom, privacyNotice, history, frame, setFrame, playing, setPlaying, projectAssets, localMediaUris, setLocalMediaUris, libraryKind, setLibraryKind, markDocument, save, done, acknowledgePrivacy, travel };
 }

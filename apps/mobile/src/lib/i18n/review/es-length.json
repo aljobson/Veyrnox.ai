@@ -2442,6 +2442,54 @@
     "ratio": 2.25
   },
   {
+    "id": "editorServerExport.title",
+    "english": "Editor export",
+    "translation": "Exportación del editor",
+    "ratio": 1.69
+  },
+  {
+    "id": "editorServerExport.checkAgain",
+    "english": "Check again",
+    "translation": "Comprobar de nuevo",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorServerExport.share",
+    "english": "Share export",
+    "translation": "Compartir exportación",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorServerExport.version",
+    "english": "Timeline version",
+    "translation": "Versión de la línea de tiempo",
+    "ratio": 1.81
+  },
+  {
+    "id": "editorServerExport.frameRate",
+    "english": "Frame rate",
+    "translation": "Frecuencia de fotogramas",
+    "ratio": 2.4
+  },
+  {
+    "id": "editorServerExport.edit",
+    "english": "Timeline edit",
+    "translation": "Edición de la línea de tiempo",
+    "ratio": 2.23
+  },
+  {
+    "id": "editorServerExport.crop",
+    "english": "Crop",
+    "translation": "Recortar",
+    "ratio": 2
+  },
+  {
+    "id": "editorServerExport.mask",
+    "english": "Mask",
+    "translation": "Máscara",
+    "ratio": 1.75
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",
