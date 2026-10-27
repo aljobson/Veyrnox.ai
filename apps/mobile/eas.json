@@ -32,11 +32,20 @@
         "EXPO_PUBLIC_EDITOR_ENABLED": "true",
         "EXPO_PUBLIC_FULL_EDITOR_ENABLED": "true",
         "EXPO_PUBLIC_STORE_BILLING_ENABLED": "true",
-        "SENTRY_ALLOW_FAILURE": "true"
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       }
+    },
+    "production-simulator": {
+      "extends": "production",
+      "autoIncrement": false,
+      "ios": { "simulator": true }
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "ascAppId": "6824181474"
+      }
+    }
   }
 }
