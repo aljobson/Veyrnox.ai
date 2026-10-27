@@ -10,10 +10,8 @@ import { useFreeLeft } from '../../../lib/useFreeLeft';
 import { selectedState, touchTarget } from '../../../lib/a11y';
 import { fetchAgentListing } from '../../../lib/montage';
 import { MENU_ICONS, type MenuIcon } from '../../../lib/menuIcons';
-import { VEY_CLEARANCE } from '../../../components/VeyMascot';
-import { colors, fonts, isDark } from '../../../theme';
+import { colors, fonts, isDark, LIST_END_PADDING } from '../../../theme';
 import { plural, t } from '../../../lib/i18n';
-import { useVeyScroll } from '../../../lib/useVeyScroll';
 
 // One word per goal; the full "Make an image" wording stays as the accessibility label.
 const SHORT_GOAL: Record<Goal, string> = { image: 'library.type.image', video: 'library.type.video', audio: 'library.type.audio', all: 'library.type.all' };
@@ -32,7 +30,6 @@ function EntryTile({ icon, label, accessibilityLabel, onPress }: { readonly icon
 }
 
 export default function Create() {
-    const onScroll = useVeyScroll();
     const router = useRouter();
     const params = useLocalSearchParams<{ goal?: string }>();
     const [models, setModels] = useState<CatalogModel[] | null>(null);
@@ -64,8 +61,6 @@ export default function Create() {
             ) : (
                 <FlatList
                     contentContainerStyle={styles.list}
-                    onScroll={onScroll}
-                    scrollEventThrottle={64}
                     data={shown}
                     ListHeaderComponent={
                         <View style={styles.header}>
@@ -163,8 +158,7 @@ export default function Create() {
 }
 
 const styles = StyleSheet.create({
-    // The mascot sits in the bottom corner of every tab; the last row scrolls clear of it.
-    list: { padding: 16, paddingTop: 24, paddingBottom: VEY_CLEARANCE, gap: 10 },
+    list: { padding: 16, paddingTop: 24, paddingBottom: LIST_END_PADDING, gap: 10 },
     body: { padding: 16 },
     screen: { flex: 1, backgroundColor: colors.background },
     header: { gap: 12, marginBottom: 4 },

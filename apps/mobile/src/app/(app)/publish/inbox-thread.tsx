@@ -3,11 +3,10 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Keyboard, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { touchTarget } from '../../../lib/a11y';
-import { VEY_CLEARANCE } from '../../../components/VeyMascot';
 import { t } from '../../../lib/i18n';
 import { assignThread, cleanReply, fetchMembers, fetchThread, inboxErrorKey, parseThreadView, replyToThread, setThreadStatus, type Member } from '../../../lib/publishInbox';
 import { usePublishApi } from '../../../lib/usePublishApi';
-import { colors } from '../../../theme';
+import { colors, LIST_END_PADDING } from '../../../theme';
 
 export default function InboxThread() {
     const api = usePublishApi();
@@ -148,7 +147,7 @@ export default function InboxThread() {
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
     pad: { flex: 1, backgroundColor: colors.background, padding: 16 },
-    body: { padding: 16, paddingBottom: VEY_CLEARANCE, gap: 8 },
+    body: { padding: 16, paddingBottom: LIST_END_PADDING, gap: 8 },
     heading: { color: colors.muted, fontSize: 13, textTransform: 'uppercase', marginTop: 12 },
     bubble: { borderRadius: 12, padding: 12, gap: 4, maxWidth: '88%' },
     in: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, alignSelf: 'flex-start' },
@@ -163,7 +162,7 @@ const styles = StyleSheet.create({
     action: { color: colors.accent, fontSize: 16 },
     picker: { backgroundColor: colors.surface, borderRadius: 12, borderColor: colors.border, borderWidth: 1, paddingHorizontal: 12 },
     member: { justifyContent: 'center' },
-    composer: { flexDirection: 'row', gap: 8, padding: 12, paddingBottom: VEY_CLEARANCE / 2, borderTopColor: colors.border, borderTopWidth: StyleSheet.hairlineWidth },
+    composer: { flexDirection: 'row', gap: 8, padding: 12, paddingBottom: LIST_END_PADDING / 2, borderTopColor: colors.border, borderTopWidth: StyleSheet.hairlineWidth },
     input: { flex: 1, color: colors.text, backgroundColor: colors.surface, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, maxHeight: 120 },
     send: { backgroundColor: colors.accent, borderRadius: 12, paddingHorizontal: 16, minHeight: 44, justifyContent: 'center' },
     sendText: { color: colors.accentInk, fontWeight: '600' },

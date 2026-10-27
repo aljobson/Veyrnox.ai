@@ -89,9 +89,9 @@ describe('sharing', () => {
         for (const o of ODDLINGS) expect(findOddling(o.id)).not.toBeNull();
     });
 
-    test('long lists leave room for the Vey mascot', () => {
+    test('long lists end with the shared list padding', () => {
         for (const file of ['index.tsx', 'saved.tsx', 'build.tsx', '[id].tsx']) {
-            expect(readFileSync(join(__dirname, '..', 'src/app/(app)/oddlings', file), 'utf8')).toContain('VEY_CLEARANCE');
+            expect(readFileSync(join(__dirname, '..', 'src/app/(app)/oddlings', file), 'utf8')).toContain('LIST_END_PADDING');
         }
     });
 });

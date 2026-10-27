@@ -1,9 +1,8 @@
 import { Tabs } from 'expo-router';
-import { StyleSheet, View, type ColorValue } from 'react-native';
+import { StyleSheet, type ColorValue } from 'react-native';
 import { HeaderRight } from '../../../components/HeaderChips';
 import { Logo } from '../../../components/Logo';
 import { MenuButton } from '../../../components/MenuDrawer';
-import { VeyMascot } from '../../../components/VeyMascot';
 import { HEADER_MAX_FONT_SCALE, MIN_TARGET } from '../../../lib/a11y';
 import { t } from '../../../lib/i18n';
 import { MENU_ICONS, type MenuIcon } from '../../../lib/menuIcons';
@@ -35,13 +34,6 @@ export default function TabsLayout() {
     const palette = paletteForScheme(scheme, settings);
     return (
         <Tabs
-            // Editor and Publish keep controls close to the bottom edge, so Vey stays off those work surfaces.
-            screenLayout={({ children, route }) => (
-                <View style={{ flex: 1 }}>
-                    {children}
-                    {route.name === 'editor' || route.name === 'publish' ? null : <VeyMascot />}
-                </View>
-            )}
             screenOptions={({ route }) => {
                 return {
                     headerStyle: { backgroundColor: palette.background },

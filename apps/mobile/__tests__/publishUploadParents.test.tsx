@@ -16,7 +16,6 @@ jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useRouter: () =
 jest.mock('../src/lib/appCache', () => ({ getCacheUser: () => 'owner', subscribeCacheUser: () => () => {}, appStorage: { get: async () => null, set: async () => {}, remove: async () => {} } }));
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'idempotency-key' }));
 jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalog: async () => [{ id: 'image', name: 'Image', modality: 'text-to-image' }], mediaApi: () => ({ listJobs: async () => ({ jobs: [mockJob] }) }) }));
-jest.mock('../src/components/VeyMascot', () => ({ VEY_CLEARANCE: 10 }));
 void [RN.Pressable, RN.Text, RN.View, RN.ScrollView, RN.KeyboardAvoidingView, RN.TextInput, RN.ActivityIndicator, RN.StyleSheet];
 let root: Root, alert: jest.SpyInstance;
 beforeEach(() => {

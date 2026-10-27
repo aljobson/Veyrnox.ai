@@ -3,11 +3,10 @@ import { Stack, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { MIN_TARGET } from '../../../lib/a11y';
-import { VEY_CLEARANCE } from '../../../components/VeyMascot';
 import { OddlingFilters } from '../../../components/oddlings/OddlingFilters';
 import { plural, t } from '../../../lib/i18n';
 import { HERO_IDS, findOddling, portraitUrl, reconcileKind, toggleKind, visibleOddlings, type OddlingKind } from '../../../lib/oddlings';
-import { colors } from '../../../theme';
+import { colors, LIST_END_PADDING } from '../../../theme';
 
 export default function OddlingGallery() {
     const router = useRouter();
@@ -69,7 +68,7 @@ export default function OddlingGallery() {
 
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
-    list: { paddingBottom: VEY_CLEARANCE + 16 },
+    list: { paddingBottom: LIST_END_PADDING + 16 },
     column: { gap: 12, paddingHorizontal: 16 },
     intro: { color: colors.body, fontSize: 15, paddingHorizontal: 16, paddingTop: 12 },
     featuredLabel: { color: colors.muted, fontSize: 12, fontWeight: '700', paddingHorizontal: 16, marginTop: 16, marginBottom: 8 },

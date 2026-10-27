@@ -1,7 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
 import { playSuccess } from './haptics';
 import type { Job } from './media';
-import { CHEER_MS, emitCelebration, reactVey, type CelebrationKind } from './veyMotion';
+import { emitCelebration, type CelebrationKind } from './veyMotion';
 import { getCacheUser, subscribeCacheUser } from './appCache';
 
 export const SUBMISSIONS_SLOT = 'veyrnox.celebrate.submissions.v1';
@@ -149,12 +149,11 @@ export function celebrateOutput(jobId: string, mime: string, sawUnfinished: bool
     completed.set(jobId, quiet);
     submissions = submissions.filter((entry) => entry.jobId !== jobId);
     persist();
-    reactVey('cheer', CHEER_MS);
     void playSuccess();
     return quiet;
 }
 
-// Existing callers can still request the small cheer synchronously. Home passes a verified output loader;
+// Existing callers can still request the small success haptic synchronously. Home passes a verified output loader;
 // the big celebration never starts until that succeeds. An aborted or inaccessible output consumes nothing.
 export function celebrateFinished(jobs: readonly Job[], loadOutput?: (id: string) => Promise<{ mime_type: string }>, signal?: AbortSignal): number {
     prune();
@@ -168,7 +167,6 @@ export function celebrateFinished(jobs: readonly Job[], loadOutput?: (id: string
     if (!loadOutput) {
         if (done.length) {
             done.forEach((job) => completed.set(job.job_id, quiet));
-            reactVey('cheer', CHEER_MS);
             void playSuccess();
         }
         return done.length;

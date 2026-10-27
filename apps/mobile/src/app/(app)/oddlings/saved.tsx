@@ -1,7 +1,6 @@
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import { VEY_CLEARANCE } from '../../../components/VeyMascot';
 import { MIN_TARGET } from '../../../lib/a11y';
 import { t } from '../../../lib/i18n';
 import type { Passport } from '../../../lib/oddlingsLibrary';
@@ -10,7 +9,7 @@ import { getCacheUser, subscribeCacheUser } from '../../../lib/appCache';
 import { oddlingsStore, subscribeOddlings, type OddlingsRecord } from '../../../lib/oddlingsAccountStore';
 import { createOddlingsProjects, type SyncState } from '../../../lib/oddlingsProjects';
 import { ProjectChooser } from '../../../components/oddlings/ProjectChooser';
-import { colors } from '../../../theme';
+import { colors, LIST_END_PADDING } from '../../../theme';
 
 export default function SavedPassports() {
     const router = useRouter();
@@ -93,7 +92,7 @@ export default function SavedPassports() {
 
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
-    list: { padding: 16, paddingBottom: VEY_CLEARANCE + 16, gap: 12 },
+    list: { padding: 16, paddingBottom: LIST_END_PADDING + 16, gap: 12 },
     empty: { color: colors.muted, textAlign: 'center', padding: 24 },
     card: { flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 12, borderWidth: 1, borderColor: colors.border },
     main: { flex: 1, padding: 14, minHeight: MIN_TARGET },

@@ -1,12 +1,11 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { VEY_CLEARANCE } from '../../../components/VeyMascot';
 import { touchTarget } from '../../../lib/a11y';
 import { t } from '../../../lib/i18n';
 import { STATUSES, contactsErrorKey, fetchContacts, parseTags, saveContact, validateEdit, type Contact, type Subscription } from '../../../lib/publishContacts';
 import { usePublishApi } from '../../../lib/usePublishApi';
-import { colors } from '../../../theme';
+import { colors, LIST_END_PADDING } from '../../../theme';
 
 export default function ContactEdit() {
     const api = usePublishApi();
@@ -97,7 +96,7 @@ export default function ContactEdit() {
 const styles = StyleSheet.create({
     flex: { flex: 1, backgroundColor: colors.background },
     screen: { flex: 1, backgroundColor: colors.background, padding: 16 },
-    body: { padding: 16, paddingBottom: VEY_CLEARANCE, gap: 8 },
+    body: { padding: 16, paddingBottom: LIST_END_PADDING, gap: 8 },
     label: { color: colors.text, fontSize: 14, fontWeight: '600', marginTop: 8 },
     input: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 12, color: colors.text, fontSize: 16, minHeight: 48 },
     multi: { minHeight: 100 },

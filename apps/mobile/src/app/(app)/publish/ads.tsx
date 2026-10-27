@@ -3,13 +3,12 @@ import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { UnlockCard } from '../../../components/UnlockCard';
-import { VEY_CLEARANCE } from '../../../components/VeyMascot';
 import { touchTarget } from '../../../lib/a11y';
 import { ApiError, API_BASE } from '../../../lib/api';
 import { t } from '../../../lib/i18n';
 import { adsErrorKey, deleteCampaign, fetchCampaignPage, money, type CampaignDetail } from '../../../lib/publishAds';
 import { usePublishApi } from '../../../lib/usePublishApi';
-import { colors } from '../../../theme';
+import { colors, LIST_END_PADDING } from '../../../theme';
 
 export default function Ads() {
     const api = usePublishApi();
@@ -64,7 +63,7 @@ export default function Ads() {
                 <FlatList
                     data={campaigns}
                     keyExtractor={(c) => c.id}
-                    contentContainerStyle={{ paddingBottom: VEY_CLEARANCE }}
+                    contentContainerStyle={{ paddingBottom: LIST_END_PADDING }}
                     refreshControl={<RefreshControl refreshing={refreshing} tintColor={colors.accent} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}
                     ListHeaderComponent={<View><Text style={styles.muted}>{t('ads.intro')}</Text>{notice ? <Text style={styles.notice} accessibilityLiveRegion="polite">{notice}</Text> : null}</View>}
                     ListEmptyComponent={<Text style={styles.muted}>{t('ads.none')}</Text>}

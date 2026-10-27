@@ -4,10 +4,9 @@ import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Action, Card, Status, styles as shared } from '../components/account/shared';
-import { VEY_CLEARANCE } from '../components/VeyMascot';
 import { getLocale, t } from '../lib/i18n';
 import { COMMENT_MAX, decideReview, fetchReview, reviewErrorKey, reviewOpen, validToken, type Review } from '../lib/shareLinks';
-import { colors, fonts } from '../theme';
+import { colors, fonts, LIST_END_PADDING } from '../theme';
 
 // A post review request sent to someone who may not have an account: the link's token is the credential, as on the web,
 // so this screen sits outside the signed-in area. It shows the post and takes one decision, approve or reject.
@@ -91,7 +90,7 @@ export default function ReviewLink() {
 
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
-    content: { padding: 16, paddingTop: 56, gap: 16, paddingBottom: 16 + VEY_CLEARANCE },
+    content: { padding: 16, paddingTop: 56, gap: 16, paddingBottom: 16 + LIST_END_PADDING },
     title: { color: colors.text, fontFamily: fonts.display, fontSize: 26 },
     media: { width: '100%', height: 280, borderRadius: 12, backgroundColor: '#000' },
 });

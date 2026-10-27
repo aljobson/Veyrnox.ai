@@ -15,7 +15,6 @@ import {
     type GenerationCatalogPlan,
 } from '../../lib/billing';
 import { plural, t } from '../../lib/i18n';
-import { useVeyScroll } from '../../lib/useVeyScroll';
 import { colors, fonts } from '../../theme';
 import { VeyCardPeek, peekRoom } from '../../components/VeyCardPeek';
 
@@ -39,7 +38,6 @@ export default function Credits() {
     const [outcome, setOutcome] = useState<Outcome>(null);
     const [chosenId, setChosenId] = useState<string | null>(null);
     const [chosenPlanId, setChosenPlanId] = useState<string | null>(null);
-    const onScroll = useVeyScroll();
 
     const packPackages = useMemo(() => billing.offerings?.all.credits?.availablePackages ?? [], [billing.offerings]);
     const planPackages = useMemo(() => billing.offerings?.all.generation?.availablePackages ?? [], [billing.offerings]);
@@ -126,7 +124,7 @@ export default function Credits() {
     }
 
     return (
-        <ScrollView style={styles.screen} contentContainerStyle={styles.content} onScroll={onScroll} scrollEventThrottle={64}>
+        <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
             <Stack.Screen options={{ title: t('pricing.packs.buy') }} />
             <Text style={styles.title} accessibilityRole="header">{t('credits.title')}</Text>
             <Text style={styles.lead}>{t('credits.lead')}</Text>

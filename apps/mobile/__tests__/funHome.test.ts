@@ -2,7 +2,6 @@ import { celebrateFinished, newlyFinished, resetCelebrations } from '../src/lib/
 import { heroPicks, needsPhoto } from '../src/lib/explore';
 import type { Job } from '../src/lib/media';
 import type { Preset } from '../src/lib/presets';
-import { CHEER_MS, onVeyReaction } from '../src/lib/veyMotion';
 
 const mockPlaySuccess = jest.fn(() => Promise.resolve());
 jest.mock('../src/lib/haptics', () => ({ playSuccess: () => mockPlaySuccess() }));
@@ -89,17 +88,13 @@ describe('a finished creation gets a cheer and a buzz', () => {
         expect(mockPlaySuccess).not.toHaveBeenCalled();
     });
 
-    test('a creation that finishes between two reads makes Vey cheer once and buzzes once', () => {
-        const heard: [string, number][] = [];
-        const off = onVeyReaction((mood, ms) => heard.push([mood, ms]));
+    test('a creation that finishes between two reads buzzes once', () => {
         celebrateFinished([job('a', 'running'), job('b', 'queued')]);
         expect(celebrateFinished([job('a', 'succeeded'), job('b', 'succeeded')])).toBe(2);
-        expect(heard).toEqual([['cheer', CHEER_MS]]);
         expect(mockPlaySuccess).toHaveBeenCalledTimes(1);
         // The same list again is no news.
         expect(celebrateFinished([job('a', 'succeeded'), job('b', 'succeeded')])).toBe(0);
         expect(mockPlaySuccess).toHaveBeenCalledTimes(1);
-        off();
     });
 
     test('a failed creation is not a celebration', () => {

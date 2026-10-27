@@ -1,10 +1,9 @@
 import { Stack, useRouter } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
-import { VEY_CLEARANCE } from '../../../components/VeyMascot';
 import { touchTarget } from '../../../lib/a11y';
 import { HELP_GUIDES } from '../../../lib/helpGuidesData';
 import { t } from '../../../lib/i18n';
-import { colors, fonts } from '../../../theme';
+import { colors, fonts, LIST_END_PADDING } from '../../../theme';
 
 export default function HelpGuides() {
     const router = useRouter();
@@ -31,7 +30,7 @@ export default function HelpGuides() {
 
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
-    content: { padding: 16, paddingBottom: 16 + VEY_CLEARANCE, gap: 16 },
+    content: { padding: 16, paddingBottom: 16 + LIST_END_PADDING, gap: 16 },
     heading: { color: colors.text, fontFamily: fonts.display, fontSize: 24 },
     row: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 16, gap: 8 },
     name: { color: colors.text, fontSize: 17, fontWeight: '600' },

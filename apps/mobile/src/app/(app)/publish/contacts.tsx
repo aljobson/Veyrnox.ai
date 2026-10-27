@@ -1,12 +1,11 @@
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
-import { VEY_CLEARANCE } from '../../../components/VeyMascot';
 import { touchTarget } from '../../../lib/a11y';
 import { t } from '../../../lib/i18n';
 import { STATUSES, contactsErrorKey, fetchContacts, type Contact, type Subscription } from '../../../lib/publishContacts';
 import { usePublishApi } from '../../../lib/usePublishApi';
-import { colors } from '../../../theme';
+import { colors, LIST_END_PADDING } from '../../../theme';
 
 export default function Contacts() {
     const api = usePublishApi();
@@ -48,7 +47,7 @@ export default function Contacts() {
                 <FlatList
                     data={contacts}
                     keyExtractor={(c) => `${c.accountId}:${c.externalId}`}
-                    contentContainerStyle={{ paddingBottom: VEY_CLEARANCE }}
+                    contentContainerStyle={{ paddingBottom: LIST_END_PADDING }}
                     refreshControl={<RefreshControl refreshing={refreshing} tintColor={colors.accent} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}
                     ListEmptyComponent={<Text style={styles.muted}>{t('contacts.none')}</Text>}
                     renderItem={({ item }) => (

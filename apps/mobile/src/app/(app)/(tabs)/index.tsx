@@ -3,7 +3,6 @@ import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, ScrollView, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
-import { VEY_CLEARANCE } from '../../../components/VeyMascot';
 import { celebrateFinished } from '../../../lib/celebrate';
 import { ALL_CATEGORIES, ALL_TYPES, categoriesFor, filterPresets, firstModelFor, pickUp, promptHref, recentCreations, type TypeFilter } from '../../../lib/explore';
 import { t } from '../../../lib/i18n';
@@ -16,9 +15,8 @@ import { rankPresets } from '../../../lib/creatorTaste';
 import { cheapestCredits, isLowBalance } from '../../../lib/lowBalance';
 import { useBalance } from '../../../lib/useBalance';
 import { fetchPresets, presetHref, presetPrice, type Preset } from '../../../lib/presets';
-import { colors, ds } from '../../../theme';
+import { colors, ds, LIST_END_PADDING } from '../../../theme';
 import { Button, Card, Text, TextField, Chip, themedStyles, useThemedStyles, useAppearance } from '../../../components/ui';
-import { useVeyScroll } from '../../../lib/useVeyScroll';
 
 import { StartOption } from '../../../components/home/StartOption';
 import { EntryRow } from '../../../components/home/EntryRow';
@@ -37,7 +35,6 @@ const titleCase = (s: string) => s.charAt(0) + s.slice(1).toLowerCase();
 export default function Explore() {
     const styles = useThemedStyles(sheets);
     const { scheme } = useAppearance();
-    const onScroll = useVeyScroll();
     const { api } = useAuth();
     const router = useRouter();
     const [prompt, setPrompt] = useState('');
@@ -132,7 +129,7 @@ export default function Explore() {
     return (
         <>
             <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-            <ScrollView style={styles.scroll} contentContainerStyle={styles.screen} keyboardShouldPersistTaps="handled" onScroll={onScroll} scrollEventThrottle={64}>
+            <ScrollView style={styles.scroll} contentContainerStyle={styles.screen} keyboardShouldPersistTaps="handled">
                 <View style={styles.intro}>
                     <Text variant="title1" style={styles.pageTitle} accessibilityRole="header">
                         {t('explore.start.title')}
@@ -321,7 +318,7 @@ const sheets = themedStyles((p, ramp) => ({
     screen: {
         padding: ds.space.gutter,
         paddingTop: ds.space.xxl,
-        paddingBottom: VEY_CLEARANCE,
+        paddingBottom: LIST_END_PADDING,
         gap: 16,
     },
     intro: { gap: 8, marginBottom: 4 },

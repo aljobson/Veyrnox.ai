@@ -31,7 +31,7 @@ export const SCREENS: readonly ScreenDef[] = [
     { id: 'oddlings', titleKey: 'srch.s.oddlings', href: '/oddlings', keywords: 'characters creator mascot animate' },
     { id: 'templates', titleKey: 'srch.s.templates', href: '/create/presets', keywords: 'presets gallery' },
     { id: 'library', titleKey: 'srch.s.library', href: '/library', keywords: 'creations files downloads saved' },
-    { id: 'chat', titleKey: 'srch.s.chat', href: '/chat', keywords: 'vey assistant talk' },
+    { id: 'chat', titleKey: 'menu.chat', href: '/chat', keywords: 'assistant talk ai' },
     { id: 'cinema', titleKey: 'srch.s.cinema', href: '/cinema', keywords: 'watch films vote' },
     { id: 'publish', titleKey: 'srch.s.publish', href: '/publish', keywords: 'post schedule social calendar' },
     { id: 'projects', titleKey: 'srch.s.projects', href: '/projects', keywords: 'edit saved' },

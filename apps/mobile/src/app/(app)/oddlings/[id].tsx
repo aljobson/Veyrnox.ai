@@ -2,11 +2,10 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { AnimateCard } from '../../../components/oddlings/AnimateCard';
 import { OddlingPortrait } from '../../../components/oddlings/OddlingPortrait';
-import { VEY_CLEARANCE } from '../../../components/VeyMascot';
 import { MIN_TARGET } from '../../../lib/a11y';
 import { t } from '../../../lib/i18n';
 import { findOddling, shareMessage, shareUrl } from '../../../lib/oddlings';
-import { colors, fonts } from '../../../theme';
+import { colors, fonts, LIST_END_PADDING } from '../../../theme';
 
 export default function OddlingSheet() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -47,7 +46,7 @@ export default function OddlingSheet() {
 
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
-    content: { padding: 16, paddingBottom: VEY_CLEARANCE + 32 },
+    content: { padding: 16, paddingBottom: LIST_END_PADDING + 32 },
     muted: { color: colors.muted, padding: 24 },
     kicker: { color: colors.accent, fontSize: 11, fontWeight: '700', letterSpacing: 1.5, marginTop: 16 },
     name: { color: colors.text, fontFamily: fonts.displayHeavy, fontSize: 30, marginTop: 4 },

@@ -258,6 +258,8 @@ export const text = rampFor(current);
 
 // Shared sizes, so screens stop repeating literals. Values match what the screens already used.
 export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24 } as const;
+// Bottom padding at the end of a scrolling list or screen, so its last row clears the tab bar edge comfortably.
+export const LIST_END_PADDING = 32;
 export const radius = { sm: 6, md: 10, lg: 12, pill: 999 } as const;
 export const type = {
     caption: { fontSize: 12 },
