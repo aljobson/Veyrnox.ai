@@ -46,7 +46,12 @@ describe('permissions', () => {
     });
 
     test('no other usage strings are set by hand', () => {
-        expect(Object.keys(expo.ios.infoPlist)).toEqual(['ITSAppUsesNonExemptEncryption']);
+        expect(Object.keys(expo.ios.infoPlist)).toEqual(['ITSAppUsesNonExemptEncryption', 'CFBundleName']);
+    });
+
+    test('iOS names the app Veyrnox.ai in its own prompts, not the dot-less project name', () => {
+        expect(expo.ios.infoPlist.CFBundleName).toBe(expo.name);
+        expect(expo.ios.infoPlist.CFBundleName.length).toBeLessThanOrEqual(15);
     });
 });
 

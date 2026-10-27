@@ -203,6 +203,11 @@ developer surface is `/api/v1/developer/*` and requires a verified OAuth
     sign-in (ADR-0106 amendment 1). It answers a 302 to the constant
     `ai.veyrnox.app://auth/callback`, forwarding only a well-formed PKCE `code`
     or a short error word. It reads no identity header and has no open target.
+  - `/auth/mobile/start` — GET-only start of the mobile app's Google and Apple
+    sign-in (ADR-0106 amendment 2). It answers a 302 to `SUPABASE_URL`'s
+    authorize endpoint with a known provider, a well-formed PKCE challenge and
+    the fixed `/auth/mobile` return address. It reads no identity header and has
+    no open target.
   - `/social/connect/mobile/:network` — GET-only hand-back for the mobile app's
     Publish connect (ADR-0136). Used only when connect was started with
     `client: "mobile"`; answers a 302 to the constant `ai.veyrnox.app://social/callback`,
