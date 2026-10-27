@@ -1,4 +1,4 @@
-# ADR-0271: Social Cinema creator depth on the phone
+# ADR-0277: Social Cinema creator depth on the phone
 
 Status: Accepted.
 
