@@ -59,20 +59,19 @@ orientation.
 | 15 | `motion-boxing-combo` | Shadow-boxing jab, cross, slip | 5 s | M | video | F |
 | 16 | `motion-duo-dance` | Two people, mirrored side-step routine | 10 s | M | video | F |
 | 17 | `motion-slow-dance` | Two people, slow sway and a turn under the arm | 10 s | M | video | F |
-| 18 | `motion-world-shift-walk` | Steady walk toward camera; the background changes mid-clip | 10 s | M | image | G |
+| 18 | `motion-world-shift-walk` | Steady walk toward camera; the background changes mid-clip | 10 s | R | — | G |
 | 19 | `motion-hero-landing` | Drop from above into a crouched landing, camera tilts up | 5 s | M | image | G |
 | 20 | `motion-stage-swap` | Performer on a lit stage, replaced by the user (replace mode) | 10 s | R | — | F |
 
 Notes:
 
-- #18: the background change is in the driving clip itself (we generate a clip
-  whose set changes). Whether Kling keeps it or holds the photo's background is
-  a probe question; with `image` orientation the photo sets the scene, so this
-  may need replace mode instead.
+- #18: the probe (ADR-0269, 2026-10-27) showed motion mode keeps the photo's
+  own background, so a clip whose set changes does nothing there. #18 moves to
+  replace mode before it is made.
 - #16, #17 need two people in the user's photo. Kling's two-person behaviour is
   unverified; these ship after a probe.
-- Pet and product versions (a dog doing #1, a product doing #4) wait for the
-  pet probe in ADR-0269 decision 10.
+- Pet versions (a dog doing #1) work with Kling (same probe). Product versions
+  (a product doing #4) are still unprobed.
 
 ## Order of work
 

@@ -25,7 +25,7 @@ test('every clip is well formed, unique and starts not ready', () => {
         assert.ok(validClip(c), c.id);
         assert.equal(c.ready, false, `${c.id} cannot be sold before the file and its provenance exist`);
     }
-    assert.deepEqual(motionClipIds('replace'), ['motion-stage-swap']);
+    assert.deepEqual(motionClipIds('replace'), ['motion-world-shift-walk', 'motion-stage-swap']);
     assert.equal(motionClipFor('toString'), null);
     assert.equal(motionClipFor({ id: 'motion-city-stride' }), null);
 });

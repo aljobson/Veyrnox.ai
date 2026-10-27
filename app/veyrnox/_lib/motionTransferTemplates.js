@@ -36,7 +36,7 @@ export const MOTION_TRANSFER_TEMPLATES = Object.freeze([
     card('motion-boxing-combo', 'Boxing combo', 'Jab, cross, slip.', 5),
     card('motion-duo-dance', 'Duo dance', 'Two people, one mirrored routine. Needs a photo of two.', 10),
     card('motion-slow-dance', 'Slow dance', 'A slow sway and a turn. Needs a photo of two.', 10),
-    card('motion-world-shift-walk', 'World shift', 'A steady walk while the world changes around you.', 10),
+    card('motion-world-shift-walk', 'World shift', 'A steady walk while the world changes around you.', 10, 'motion-replace'),
     card('motion-hero-landing', 'Hero landing', 'Drop in and land in a crouch.', 5),
     card('motion-stage-swap', 'Take the stage', 'You replace the performer on a lit stage.', 10, 'motion-replace'),
 ]);

@@ -116,10 +116,41 @@ Notes that bear on the choice:
    template rail does not show the motion templates and the generation route
    answers 400 `motion_transfer_unavailable` before any lookup or debit.
 
-10. **Pets and products wait for a probe.** v1 templates are people only. A
-    pet or product template ships only after a staging run shows Kling keeps
-    the subject; if it does not, that template uses DreamActor v2 as its own
-    offer under a later amendment.
+10. **Pets use Kling; products wait.** The 2026-10-27 probe showed Kling
+    keeps a dog and walks it naturally, so pet templates use `motion-transfer`
+    and DreamActor is not needed. Products are still unprobed.
+
+## Probe results (STAGING, 2026-10-27)
+
+Inputs were fictional and made by us on staging (`scripts/probe-fal-motion-transfer.mjs
+--generate`): a woman and a golden retriever (Nano Banana) and a 5.0 s walking
+clip (Kling 3.0 Std text-to-video, silent, trimmed to 5.0 s).
+
+| Run | Request id | Output | Took | Seen |
+|---|---|---|---|---|
+| Kling MC, woman | `01a17da4-0a7e-7930-94f5-2d67d35e31fb` | 4.80 s, 720x1264, 30 fps, silent | 266 s | Same face and clothes; walks toward camera in the photo's own studio background |
+| Kling MC, dog | `01a17da8-223b-74c2-ae22-bbcd59770ef5` | 4.80 s, 720x1264, silent | 255 s | Same dog, natural four-legged walk |
+| Wan Replace 720p, woman | `01a17dac-0e6e-79a1-b79d-d0c003310d57` | 5.04 s, 720x1280, 24 fps, silent | 618 s | She replaces the walker in the clip's street; face and clothes kept |
+
+All outputs were served directly (HTTP 200, no redirect) from `v3b.fal.media`,
+which `packages/adapters/r2Copy.js` already allows.
+
+Consequences for the templates:
+
+- In motion mode the scene comes from the user's photo, not the clip. A
+  template whose point is the clip's setting (`motion-world-shift-walk`) must
+  be a replace template.
+- Replace takes about 10 minutes; the template screen must say so.
+- **Billed (fal usage export, staging key, 2026-10-27):** Kling MC 10 s for
+  the two jobs = 5 s each at $0.126 = **$0.63 per job**, as recorded (fal
+  bills the 5.0 s clip, not the 4.8 s output). Wan Replace **7.5 s** for one
+  5.04 s clip at $0.08 = **$0.60**, 1.5 times the clip length and 50% above
+  the $0.40 recorded in 0402. 23 credits covers at most $0.413, so
+  `motion-replace` cannot be activated at 23. At $0.60 per 5 s the floor is
+  34 credits (60000 <= 34 x 1796 = 61064). The price change needs the
+  owner's word; 0402 is unapplied, so it can be edited in place.
+  Inputs: Nano Banana 2 images $0.0796; Kling text-to-video billed 3 s, $0.42.
+  Probe total $2.36.
 
 ## Build plan (after approval)
 
