@@ -7,7 +7,8 @@ import { t } from '../../../lib/i18n';
 import { fetchCatalog } from '../../../lib/media';
 import { SKILL_GROUPS, SKILL_MODEL, SKILLS, skillInstructions, type Skill } from '../../../lib/studioSkills';
 
-import { Text, Card, themedStyles, useThemedStyles } from '../../../components/ui';
+import { Text, Card, Icon, IconBadge, themedStyles, useThemedStyles } from '../../../components/ui';
+import { skillIcon } from '../../../lib/featureIcons';
 
 // The Studio skills page (the web's /app/skills). A skill is only instructions copied onto a new chat; it costs nothing to
 // start, each reply is priced as in any chat, and making the thing is a separate step in Create.
@@ -48,7 +49,7 @@ export default function StudioSkills() {
             {models === null && !error ? (
                 <ActivityIndicator color={styles.accentInk.color} />
             ) : (
-                <ScrollView>
+                <ScrollView contentContainerStyle={styles.list}>
                     <Text style={styles.muted}>{t('chat.skills.help')}</Text>
                     {SKILL_GROUPS.map((g) => (
                         <View key={g}>
@@ -56,8 +57,12 @@ export default function StudioSkills() {
                             {g === 'Film' ? <Text style={styles.muted}>{t('chat.skills.filmNote')}</Text> : null}
                             {SKILLS.filter((s) => s.group === g).map((s) => (
                                 <Card key={s.id} accessibilityRole="button" accessibilityLabel={`${t('chat.skills.start', { name: s.name })}. ${s.blurb}`} disabled={creating || !models} style={styles.row} onPress={() => pickSkill(s)}>
-                                    <Text variant="bodyStrong" style={styles.name}>{s.name}</Text>
-                                    <Text style={styles.muted}>{s.blurb}</Text>
+                                    <IconBadge {...skillIcon(s.id, s.group)} />
+                                    <View style={styles.copy}>
+                                        <Text variant="bodyStrong" style={styles.name}>{s.name}</Text>
+                                        <Text variant="footnote" style={styles.muted}>{s.blurb}</Text>
+                                    </View>
+                                    <Icon name="caretRight" size={20} />
                                 </Card>
                             ))}
                         </View>
@@ -71,9 +76,11 @@ export default function StudioSkills() {
 const sheets = themedStyles((p) => ({
     accentInk: { color: p.accent },
     screen: { flex: 1, backgroundColor: p.bg, padding: 16 },
-    row: { padding: 14, marginTop: 8, gap: 2 },
+    list: { paddingBottom: 32 },
+    row: { padding: 14, marginTop: 8, flexDirection: 'row', alignItems: 'center', gap: 14 },
+    copy: { flex: 1, gap: 2 },
     name: { color: p.textPrimary },
     muted: { color: p.textTertiary },
     error: { color: p.danger, marginBottom: 8 },
-    heading: { color: p.textTertiary, marginTop: 16 },
+    heading: { color: p.textTertiary, marginTop: 20 },
 }));
