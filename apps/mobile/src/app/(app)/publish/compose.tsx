@@ -1,3 +1,6 @@
+import { ComposePresets } from '../../../components/publish/ComposePresets';
+import { brandStore } from '../../../lib/publishBrand';
+import { presetScopeToken } from '../../../lib/publishPresets';
 import { PublishMediaSelection } from '../../../components/PublishMediaSelection';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -29,7 +32,14 @@ export default function Compose() {
     const chosen = choices[0] || null;
     const [carouselEnabled, setCarouselEnabled] = useState(false);
     const [accountIds, setAccountIds] = useState<string[]>([]);
-    useEffect(() => subscribeCacheUser(() => { setChoices([]); setAccountIds([]); }), []);
+
+    const [presetsEnabled, setPresetsEnabled] = useState(false);
+    const presetScope = useRef<string | null>(null);
+    const prefillAllowed = useRef(true);
+    const [scopeVersion, setScopeVersion] = useState(0);
+    const scopeGeneration = useRef(0), currentApi = useRef(api);
+    currentApi.current = api;
+    const [scopeNote, setScopeNote] = useState(false);
     const [text, setText] = useState('');
     const [mode, setMode] = useState<'now' | 'schedule' | 'queue'>('schedule');
     const [networkText, setNetworkText] = useState<Record<string, string>>({});
@@ -45,10 +55,24 @@ export default function Compose() {
     const [problem, setProblem] = useState<string | null>(null);
 
     useEffect(() => {
+        const reset = () => {
+            scopeGeneration.current++; prefillAllowed.current = false;
+            setAccountIds([]); setChoices([]); setQueueId(null); setAccounts(null); setQueues([]); setPresetsEnabled(false); setError(null); setProblem(null);
+            if (presetScope.current) { setText(''); setNetworkText({}); presetScope.current = null; setScopeNote(true); }
+            setScopeVersion(v => v + 1);
+        };
+        const userOff = subscribeCacheUser(reset), brandOff = brandStore.subscribe(reset);
+        return () => { scopeGeneration.current++; userOff(); brandOff(); };
+    }, []);
+
+    useEffect(() => {
         let cancelled = false;
+        const scope = presetScopeToken(), version = scopeGeneration.current;
+        const valid = () => !cancelled && scope === presetScopeToken() && version === scopeGeneration.current && api === currentApi.current;
+        setAccounts(null); setError(null);
         Promise.all([mediaApi(api).listJobs(), fetchCatalog(), fetchAccounts(api), fetchQueues(api).catch(() => [] as PublishQueue[])])
             .then(([page, catalog, acc, queueList]) => {
-                if (cancelled) return;
+                if (!valid()) return;
                 setQueues(queueList.filter((q) => q.enabled));
                 const byId = new Map<string, CatalogModel>(catalog.map((m) => [m.id, m]));
                 const list: CreationPick[] = [];
@@ -60,14 +84,15 @@ export default function Compose() {
                 setPicks(list);
                 setAccounts(acc.accounts);
                 setUploadsEnabled(acc.uploadsEnabled);
+                setPresetsEnabled(acc.features.contentPresets);
                 setCarouselEnabled(acc.carouselEnabled === true);
-                if (presetJob) setChoices(list.filter(p => p.job.job_id === presetJob));
+                if (presetJob && prefillAllowed.current) { setChoices(list.filter(p => p.job.job_id === presetJob)); prefillAllowed.current = false; }
             })
-            .catch((err) => !cancelled && setError(publishErrorMessage(err)));
+            .catch((err) => valid() && setError(publishErrorMessage(err)));
         return () => {
             cancelled = true;
         };
-    }, [api, presetJob]);
+    }, [api, presetJob, scopeVersion]);
 
     const eligible = (accounts || []).filter(a => a.status === 'active' && a.publishingEnabled && a.supportedMedia.length > 0);
     const queue = mode === 'queue' ? queues.find((q) => q.id === queueId) ?? null : null;
@@ -88,7 +113,9 @@ export default function Compose() {
     }
 
     function submit() {
-        if (!chosen || busy || preparingRef.current) return;
+        if (!chosen || !accounts || busy || preparingRef.current) return;
+        const capturedScope = presetScopeToken(), capturedVersion = scopeGeneration.current;
+        const stillCurrent = () => capturedScope === presetScopeToken() && capturedVersion === scopeGeneration.current && api === currentApi.current;
         if (blocker) { setProblem(blocker); return; }
         if (!when) {
             setProblem(t('publish.enterthedateasYYYYMMDD'));
@@ -110,24 +137,24 @@ export default function Compose() {
         if (queue) {
             Alert.alert(t('compose.queueTitle'), t('compose.queueConfirm', { queue: queue.name, where }), [
                 { text: t('publish.cancel'), style: 'cancel' },
-                { text: t('compose.queueAction'), onPress: () => { if (!preparingRef.current) void send(draft, now); } },
+                { text: t('compose.queueAction'), onPress: () => { if (!preparingRef.current && stillCurrent()) void send(draft, now, stillCurrent); } },
             ]);
             return;
         }
         const answer = when.kind === 'now' ? t('publish.thispoststonowandispublic', { value1: where }) : t('publish.thisschedulesaposttoforYou', { value1: where, value2: when.at.toLocaleString(formatLocale(undefined), { dateStyle: 'medium', timeStyle: 'short' }) });
         Alert.alert(when.kind === 'now' ? t('publish.postnow') : t('publish.schedulethispost'), answer, [
             { text: t('publish.cancel2'), style: 'cancel' },
-            { text: when.kind === 'now' ? t('publish.postnow2') : t('publish.schedule'), onPress: () => { if (!preparingRef.current) void send(draft, now); } },
+            { text: when.kind === 'now' ? t('publish.postnow2') : t('publish.schedule'), onPress: () => { if (!preparingRef.current && stillCurrent()) void send(draft, now, stillCurrent); } },
         ]);
     }
 
-    async function send(draft: Draft, now: Date) {
+    async function send(draft: Draft, now: Date, stillCurrent: () => boolean) {
         // The key is saved before the send and kept until the server answers, so a retry after a dropped connection,
         // or after the app was closed in the middle, is the same post and cannot be published twice (ADR-0122).
-        if (preparingRef.current) return;
+        if (preparingRef.current || !stillCurrent()) return;
         const user = getCacheUser();
         const key = await draftKeys.keyFor(user, draftSignature(draft));
-        if (preparingRef.current) return;
+        if (preparingRef.current || !stillCurrent()) return;
         setBusy(true);
         let stage: 'reserve' | 'post' | 'confirm' = 'post';
         try {
@@ -135,20 +162,25 @@ export default function Compose() {
                 stage = 'reserve';
                 // Reserve the slot, post at its time, then confirm it. A retry repeats all three safely with the same key.
                 const slot = await reserveSlot(api, draft.queue.id, key);
+                if (!stillCurrent()) return;
                 const reserved = slot.accountIds.map(id => accounts?.find(account => account.id === id));
                 if (reserved.some(account => !account)) { setProblem(t('compose.queueNoMatch')); return; }
                 const blocked = mediaBlocker(draft.media || [], reserved as PublishAccount[]);
                 if (blocked) { setProblem(t('app.publish.carousel.blocked', { network: networkLabel(blocked) })); return; }
                 stage = 'post';
                 const made = await createPost(api, createBody({ ...draft, accountIds: slot.accountIds, when: { kind: 'at', at: slot.scheduledAt } }, key, now));
+                if (!stillCurrent()) return;
                 stage = 'confirm';
                 await confirmSlot(api, slot.assignmentId, made.postId);
             } else {
                 await createPost(api, createBody(draft, key, now));
             }
+            if (!stillCurrent()) return;
             await draftKeys.drop(user);
+            if (!stillCurrent()) return;
             router.replace({ pathname: '/publish/posts', params: { done: draft.queue ? 'queued' : draft.when.kind === 'at' ? 'scheduled' : 'posted' } });
         } catch (err) {
+            if (!stillCurrent()) return;
             if (stage !== 'confirm' && isDefiniteRefusal(err)) await draftKeys.drop(user);
             setProblem(stage === 'post' ? composeErrorMessage(err, !!draft.uploadId) : t(queueErrorKey(err)));
         } finally {
@@ -163,6 +195,7 @@ export default function Compose() {
         <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
             <Stack.Screen options={{ title: t('publish.newpost') }} />
             <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+                {scopeNote ? <Text style={styles.muted} accessibilityLiveRegion="polite">{t('publishDepth.presets.scopeCleared')}</Text> : null}
                 <Text style={styles.heading} accessibilityRole="header">{t('publish.1Creation')}</Text>
                 {picks.length === 0 ? <Text style={styles.muted}>{t('publish.nofinishedimagesorvideosyetMake')}</Text> : null}
                 {picks.slice(0, 30).map((p) => (
@@ -199,6 +232,11 @@ export default function Compose() {
                         </View>
 
                         <Text style={styles.heading} accessibilityRole="header">{t('publish.3Text')}</Text>
+                        {presetsEnabled ? <ComposePresets api={api} text={text} networkText={networkText} mode={mode} selected={selected} eligible={eligible} disabled={busy || preparing || !accounts}
+                            onApply={(value, scope) => {
+                                if (scope !== presetScopeToken() || api !== currentApi.current) return;
+                                setText(value.text); setAccountIds(value.accountIds); setNetworkText({}); presetScope.current = scope; setScopeNote(false);
+                            }} /> : null}
                         <TextInput style={styles.input} multiline value={text} onChangeText={setText} placeholder={t('publish.writethecaption')} accessibilityLabel={t('publish.caption')} placeholderTextColor={colors.muted} maxLength={MAX_TEXT} />
                         <Text style={styles.muted}>{text.length} / {MAX_TEXT}</Text>
                         {warn ? <Text style={styles.warn}>{warn}</Text> : null}

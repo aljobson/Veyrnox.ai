@@ -60,6 +60,8 @@ The app is expected to put the credit-loss warning and a deliberate confirm betw
 
 Off until `ACCOUNT_DELETION_ENABLED` is `"true"`. Production vars are at the 77-binding cap, so the flag is **not** added to `wrangler.jsonc`; unset means off (404, after the auth check). Staging sets it to test with the mobile app. Turning it on in production needs the owner's word, migration 0347 applied by the `apply-migrations` workflow, and the privacy policy sentence about the email hash. Nothing in this ADR enables it.
 
+**Amendment 1 (2026-10-27): on in production.** The owner approved going live in chat. All three conditions hold: migration 0347 was applied on production by apply-migrations run 39105180213 (2026-10-18, log line `applied 0347_account_deletion`), and the privacy policy states the email hash (`lib/i18n/messages/legal/en/privacy.mjs`, key `b058`). The binding cap has room now (64 vars plus about 50 secrets is 114 of 128), so `ACCOUNT_DELETION_ENABLED: "true"` is a top-level var in `wrangler.jsonc` and `tests/workerBindingBudget.test.mjs` allows 64. The phone has shown the Delete account row in every build since PR 1547; its `EXPO_PUBLIC_ACCOUNT_DELETION_ENABLED` constant is no longer read. Rollback: remove the var and deploy; erased accounts stay erased.
+
 ## Rejected
 
 - **Hard delete of `public.users` with cascades.** Blocked by the ledger's RESTRICT references and the append-only trigger; if forced, it would destroy the records refunds and disputes need.
