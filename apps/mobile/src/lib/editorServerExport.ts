@@ -14,6 +14,14 @@ import { t } from './i18n';
 
 export const RENDER_PATH = '/api/v1/editor/server-render';
 export const JSON_HEADERS = { 'Content-Type': 'application/json' };
+// A completed local backup changes persistence metadata, not the export snapshot.
+export function exportIdentity(document: ProjectDocument): string {
+    const copy = JSON.parse(JSON.stringify(document)) as ProjectDocument;
+    for (const media of Object.values((copy.timeline as Timeline | undefined)?.media ?? {})) {
+        if (media.id.startsWith('l-')) delete media.assetSource;
+    }
+    return documentIdentity(copy);
+}
 const SOURCE = /^([jef])-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
 export type BlockReason = 'notOnPhone' | 'unsupported' | 'durationUnknown' | 'clipLongerThanFile' | 'localType' | 'localSize' | 'localCount';
 export type Blocked = { id: string; name?: string; reason: BlockReason };

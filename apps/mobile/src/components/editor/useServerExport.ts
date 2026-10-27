@@ -4,10 +4,10 @@ import { randomUUID } from 'expo-crypto';
 import type { ApiClient } from '../../lib/api';
 import { ApiError } from '../../lib/api';
 import { getCacheUser, subscribeCacheUser } from '../../lib/appCache';
-import { documentIdentity, type ProjectDocument } from '../../lib/editorBridge';
+import type { ProjectDocument } from '../../lib/editorBridge';
 import { editorDeviceMedia } from '../../lib/editorDeviceMedia';
 import { createExportStore, type ExportRecord, type ExportBody } from '../../lib/editorServerExportStore';
-import { exportCopy, exportDurations, exportError, exportLabel, exportUnavailable, freezeExport, isGateRefusal, JSON_HEADERS, rememberExportUnavailable, remapExport, RENDER_PATH, retiredAttempt, renderStatus, sendExportAttempt, uncertainAttempt, type RenderReply, type Blocked } from '../../lib/editorServerExport';
+import { exportCopy, exportDurations, exportIdentity, exportError, exportLabel, exportUnavailable, freezeExport, isGateRefusal, JSON_HEADERS, rememberExportUnavailable, remapExport, RENDER_PATH, retiredAttempt, renderStatus, sendExportAttempt, uncertainAttempt, type RenderReply, type Blocked } from '../../lib/editorServerExport';
 import { uploadExportFiles, type ExportFile, type UploadedFile } from '../../lib/editorServerExportUploads';
 import { requireOnline } from '../../lib/network';
 import { publishBalance } from '../../lib/balanceEvents';
@@ -113,7 +113,7 @@ export function useServerExport(props: ServerExportProps) {
             if (exportUnavailable()) { latest.current.onClose(); latest.current.onFallback(); return; }
             if (latest.current.dirty) throw new ApiError(400, 'save_first');
             const saved = JSON.parse(JSON.stringify(latest.current.document)) as ProjectDocument;
-            const savedIdentity = documentIdentity(saved);
+            const savedIdentity = exportIdentity(saved);
             const local = await editorDeviceMedia.files(projectId);
             const durations = await exportDurations(api, saved, local);
             if (!live()) return;
@@ -125,7 +125,7 @@ export function useServerExport(props: ServerExportProps) {
             const response = await api.request<Quote>(`${RENDER_PATH}/quote`, { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ document: copy.document, resolution: selected }) });
             if (!live()) return;
             if (response.resolution !== selected || !Number.isSafeInteger(response.credits) || response.credits < 1 || !Number.isFinite(response.max_seconds) || response.max_seconds <= 0) throw new ApiError(400, 'invalid_quote');
-            if (latest.current.dirty || documentIdentity(latest.current.document) !== savedIdentity) throw new ApiError(400, 'quote_changed');
+            if (exportIdentity(latest.current.document) !== savedIdentity) throw new ApiError(400, 'quote_changed');
             setQuote(response); setLimits(old => ({ ...old, [selected]: response.max_seconds })); setPhase('quoted');
             const other = selected === '1080p' ? '720p' : '1080p';
             // Limits are server data too. Failure of this optional alternative never invalidates the selected quote.
@@ -143,14 +143,14 @@ export function useServerExport(props: ServerExportProps) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [visible, phase]);
     useEffect(() => {
-        if (!attempt.current && snapshot.current && (dirty || documentIdentity(document) !== identity.current)) {
+        if (!attempt.current && snapshot.current && exportIdentity(document) !== identity.current) {
             generation.current++; activeFile.current?.abort(); snapshot.current = null; setQuote(null);
             setMessage(t('editorServerExport.changed')); setPhase('error');
         }
     }, [dirty, document]);
     async function confirm() {
         if (busy.current || !quote || !snapshot.current || !current()) return;
-        if (latest.current.dirty || documentIdentity(latest.current.document) !== identity.current) { setQuote(null); setMessage(t('editorServerExport.changed')); setPhase('error'); return; }
+        if (exportIdentity(latest.current.document) !== identity.current) { setQuote(null); setMessage(t('editorServerExport.changed')); setPhase('error'); return; }
         busy.current = true;
         const token = generation.current, frozen = snapshot.current, credits = quote.credits;
         const controller = new AbortController(); activeFile.current = controller;
@@ -158,7 +158,7 @@ export function useServerExport(props: ServerExportProps) {
             requireOnline(); setPhase('uploading'); setMessage(null);
             const mapping = await uploadExportFiles(api, files, uploads.current, controller.signal, now, undefined, (_id, fraction) => { if (current()) setProgress(fraction); });
             if (!current() || token !== generation.current || controller.signal.aborted) return;
-            if (latest.current.dirty || documentIdentity(latest.current.document) !== identity.current) throw new ApiError(400, 'quote_changed');
+            if (exportIdentity(latest.current.document) !== identity.current) throw new ApiError(400, 'quote_changed');
             requireOnline();
             const record = freezeExport({ owner: owner.current!, projectId, key: randomUUID(), body: { ...frozen, document: remapExport(frozen.document, mapping), quoted_credits: credits }, credits, sentAt: now() });
             await store.write(record); // Durable before the first possible paid send.
@@ -168,8 +168,8 @@ export function useServerExport(props: ServerExportProps) {
         finally { busy.current = false; activeFile.current = null; }
     }
     useEffect(() => {
-        if (!job?.jobId || job.phase !== 'rendering' || !appActive || unavailable || !visible) return;
-        let stopped = false, polls = 0, failures = 0;
+        if (!job?.jobId || (job.phase !== 'rendering' && !(job.phase === 'failed' && !job.refunded)) || !appActive || unavailable || !visible) return;
+        let stopped = false, polls = 0, failures = 0, refundPolls = 0;
         let timer: ReturnType<typeof setTimeout> | undefined;
         const poll = async () => {
             try {
@@ -179,7 +179,12 @@ export function useServerExport(props: ServerExportProps) {
                 const status = renderStatus(reply);
                 if (status.jobId !== job.jobId) throw new ApiError(0, 'unreadable_response');
                 setJob(status); setPhase(status.phase);
-                if (status.phase !== 'rendering') return;
+                if (status.phase === 'done' || status.refunded) { if (status.refunded) void balance(); return; }
+                if (status.phase === 'failed') {
+                    // Restart in the failed phase, then allow five follow-up checks for the refund.
+                    if (job.phase !== 'failed') return;
+                    if (++refundPolls >= 5) { setUnavailable(true); return; }
+                }
             } catch (error) {
                 if (stopped || !current()) return;
                 if ([403, 404].includes((error as ApiError).status) || ++failures >= 5) { setUnavailable(true); setMessage(t('editorServerExport.checkAgain')); return; }
@@ -189,7 +194,7 @@ export function useServerExport(props: ServerExportProps) {
         void poll();
         return () => { stopped = true; if (timer) clearTimeout(timer); };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [api, job?.jobId, job?.phase, appActive, unavailable, visible, pollTrigger]);
+    }, [api, job?.jobId, job?.phase, job?.refunded, appActive, unavailable, visible, pollTrigger]);
     useEffect(() => {
         if (visible && (phase === 'done' || phase === 'failed') && attempt.current) {
             const record = attempt.current; attempt.current = null; void store.remove(record).catch(() => {}); void balance();
@@ -214,7 +219,7 @@ export function useServerExport(props: ServerExportProps) {
     async function retry() {
         if (busy.current) return;
         if (attempt.current && !attempt.current.jobId) { busy.current = true; setPhase('sending'); await send(attempt.current, true); busy.current = false; }
-        else if (job?.phase === 'rendering') { setMessage(null); setUnavailable(false); setPollTrigger(n => n + 1); }
+        else if (job?.phase === 'rendering' || (job?.phase === 'failed' && !job.refunded)) { setMessage(null); setUnavailable(false); setPollTrigger(n => n + 1); }
         else await prepare();
     }
     async function share() {

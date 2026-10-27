@@ -86,8 +86,9 @@ export function createEditorMediaStore(storage: CacheStorage = userDocStorage) {
             try {
                 if (!UUID.test(id.slice(2)) || !id.startsWith('l-')) continue;
                 const expected = new File(folder(user, projectId), `${id}.${EXT[item.type] || 'bin'}`);
-                if (expected.uri !== item.file || !expected.exists) continue;
-                result[id] = { ...item, size: expected.size };
+                if (!expected.exists) continue;
+                // iOS can relocate Documents after an update or restore.
+                result[id] = { ...item, file: expected.uri, size: expected.size };
             } catch { /* Keep metadata for older revisions, even if a file is temporarily unreadable. */ }
         }
         return result;

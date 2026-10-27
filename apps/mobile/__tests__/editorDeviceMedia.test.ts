@@ -71,6 +71,18 @@ test('confirmed deletion removes only the target project', async () => {
     const s = setup(); await s.store.setOwner(A); const first = await s.store.copy(C, `l-${D}`, 'file://picked', 'video/mp4'); const second = await s.store.copy(B, `l-${D}`, 'file://picked', 'video/mp4');
     await s.store.removeProjectMedia(C); expect(mockNodes.has(first!.file)).toBe(false); expect(mockNodes.has(second!.file)).toBe(true); expect(s.data.size).toBe(1);
 });
+test('restored metadata resolves files under the current Documents root', async () => {
+    const s = setup(); await s.store.setOwner(A);
+    const file = await s.store.copy(C, `l-${D}`, 'file://picked', 'video/mp4', 4);
+    const key = `editor-device-media.${A}.${C}`;
+    const record = JSON.parse(s.data.get(key)!);
+    record.items[`l-${D}`].file = file!.file.replace('file:///app/Documents', 'file:///old-container/Documents');
+    s.data.set(key, JSON.stringify(record));
+    const restart = createEditorMediaStore(s.storage); await restart.setOwner(A);
+    expect(await restart.files(C)).toEqual({ [`l-${D}`]: file });
+    expect(await restart.hydrate(C, doc(true))).toEqual({ [`l-${D}`]: file!.file });
+    expect(mockDeleted).toEqual([]);
+});
 test('interrupted tombstone cleanup finishes on the next owner adoption', async () => {
     const s = setup(); await s.store.setOwner(A); const file = await s.store.copy(C, `l-${D}`, 'file://picked', 'video/mp4');
     s.data.set(`editor-device-media-delete.${A}.${C}`, JSON.stringify({ owner: A, projectId: C }));

@@ -1,5 +1,5 @@
 import { ApiError, type ApiClient } from '../src/lib/api';
-import { exportCopy, exportDurations, exportError, exportFeature, exportSourceLink, freezeExport, renderStatus, sendExportAttempt } from '../src/lib/editorServerExport';
+import { exportCopy, exportDurations, exportError, exportFeature, exportIdentity, exportSourceLink, freezeExport, renderStatus, sendExportAttempt } from '../src/lib/editorServerExport';
 import { DEFAULT_TEXT_STYLE, emptyTimeline, type Timeline } from '../src/lib/nativeEditorModel';
 import type { ProjectDocument } from '../src/lib/editorBridge';
 import { probeDuration } from '../src/lib/editorMediaDuration';
@@ -9,6 +9,17 @@ jest.mock('../src/lib/appCache', () => ({ getCacheUser: () => '11111111-1111-411
 jest.mock('../src/lib/editorMediaDuration', () => ({ probeDuration: jest.fn() }));
 const file = { file: 'file://durable', type: 'video/mp4', size: 100, seconds: 4, verified: true as const };
 const fixture = (mediaId = `l-${id}`, len = 120): ProjectDocument => ({ project_id: id, schema_version: 3, canvas: { aspect_ratio: '16:9', frame_rate: 30 }, timeline: { ...emptyTimeline(), media: { [mediaId]: { id: mediaId, kind: 'video', name: 'Clip', frames: 300, assetSource: { projectId: id, assetId: owner } }, unused: { id: 'unused', kind: 'image' } }, video: [{ id: 'v1', mediaId, in: 0, len, start: 0, trackId: 'video-0', rate: 1, groupId: 'g1' }], text: [{ id: 't1', text: 'Title', x: .5, y: .85, size: 6, len: 90, start: 0, style: { ...DEFAULT_TEXT_STYLE }, groupId: 'g1' }] } });
+test('export identity ignores only local backup metadata and leaves the document unchanged', () => {
+    const saved = fixture(), before = JSON.stringify(saved), identity = exportIdentity(saved);
+    expect(JSON.stringify(saved)).toBe(before);
+    delete (saved.timeline as Timeline).media[`l-${id}`].assetSource;
+    expect(exportIdentity(saved)).toBe(identity);
+    (saved.timeline as Timeline).video[0].len--;
+    expect(exportIdentity(saved)).not.toBe(identity);
+    const remote = fixture(`j-${id}`), remoteIdentity = exportIdentity(remote);
+    delete (remote.timeline as Timeline).media[`j-${id}`].assetSource;
+    expect(exportIdentity(remote)).not.toBe(remoteIdentity);
+});
 test('phone v3 export strips only the agreed defaults, removes unused media, and never mutates saved data', () => {
     const saved = fixture(); const before = JSON.stringify(saved);
     const result = exportCopy(saved, { [`l-${id}`]: file }); const tl = result.document.timeline as Timeline;
