@@ -5,13 +5,15 @@ import { CheckInModal } from '../src/components/CheckInModal';
 import { CheckInEntry } from '../src/components/credits/CheckInEntry';
 import { announceCheckin, peekCheckin, requestCheckinOpen } from '../src/lib/checkinEntry';
 import { appStorage, bindCacheUser, getCacheUser, wipeCache } from '../src/lib/appCache';
+import { setFirstRunPending } from '../src/lib/firstRunPending';
 const mockRequest = jest.fn();
 const mockApi = { request: mockRequest };
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi, status: 'signedIn' }) }));
 void [RN.Modal, RN.ScrollView, RN.Text, RN.Pressable];
 const status = { ok: true as const, claimed_today: false, streak: 0, next_day: 1, next_credits: 1, rewards: [1,1,2,2,2,3] };
 let root: Root, serial = 0;
-beforeEach(async () => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; mockRequest.mockReset(); await wipeCache(); await bindCacheUser(`entry-${++serial}`); root = createRoot(); });
+// ADR-0271: the check-in dialog waits for the first-run analytics choice; these tests start after it.
+beforeEach(async () => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; setFirstRunPending(false); mockRequest.mockReset(); await wipeCache(); await bindCacheUser(`entry-${++serial}`); root = createRoot(); });
 afterEach(async () => { await act(async () => root.unmount()); await wipeCache(); });
 test.each([false, true])('reopens a dismissed or claimed dialog without another GET (claimed=%s)', async claimed => {
     mockRequest.mockResolvedValue({ ...status, claimed_today: claimed });
