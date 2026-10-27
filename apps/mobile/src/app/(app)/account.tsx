@@ -1,22 +1,23 @@
-import { Image } from 'expo-image';
+import { Button, Card, ListRow, Text, PriceText, themedStyles, useThemedStyles } from '../../components/ui';
+
 import { Link, Stack, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Linking, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Linking, ScrollView, Switch, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { useBilling } from '../../billing/BillingProvider';
 import { fetchProfile, type Profile } from '../../lib/auth/accountCalls';
 import { signInMethodKey } from '../../lib/accountSecurity';
 import { LEGAL_LINKS, SUPPORT_EMAIL } from '../../lib/account';
 import { usePush } from '../../push/pushContext';
-import { colors, LIST_END_PADDING } from '../../theme';
-import { ListRow } from '../../components/ui';
+import { LIST_END_PADDING } from '../../theme';
 import { CREATOR_PROFILE_ENABLED, resetVibe } from '../../lib/creatorProfile';
 import { clearVibe } from '../../lib/creatorProfileStore';
 import { t } from '../../lib/i18n';
 import { stayDiscountFor } from '../../lib/billing';
-import { MENU_ICONS, type MenuIcon } from '../../lib/menuIcons';
+import { type MenuIcon } from '../../lib/menuIcons';
 
 export default function Account() {
+    const styles = useThemedStyles(sheets);
     const { api, signOut, getAccessToken } = useAuth();
     const [profile, setProfile] = useState<Profile | null>(null);
     const push = usePush();
@@ -96,14 +97,14 @@ export default function Account() {
             <Stack.Screen options={{ title: t('account.title') }} />
 
             <Section title={t('acct.profile')}>
-                <View style={styles.row} accessible accessibilityLabel={`${t('acct.email')}: ${profile?.email ?? t('acct.profileLoading')}`}>
-                    <Text style={styles.note}>{t('acct.email')}</Text>
-                    <Text style={styles.rowText}>{profile?.email ?? t('acct.profileLoading')}</Text>
-                    {profile ? <Text style={styles.note}>{t('acct.signedInWith', { method: t(signInMethodKey(profile.provider)) })}</Text> : null}
-                </View>
-                <Pressable accessibilityRole="button" style={styles.signOut} onPress={() => void onSignOut()}>
-                    <Text style={styles.signOutText}>{t('public.account.signOut')}</Text>
-                </Pressable>
+                <Card style={styles.row} accessible accessibilityLabel={`${t('acct.email')}: ${profile?.email ?? t('acct.profileLoading')}`}>
+                    <Text variant="footnote" style={styles.note}>{t('acct.email')}</Text>
+                    <Text variant="body" style={styles.rowText}>{profile?.email ?? t('acct.profileLoading')}</Text>
+                    {profile ? <Text variant="footnote" style={styles.note}>{t('acct.signedInWith', { method: t(signInMethodKey(profile.provider)) })}</Text> : null}
+                </Card>
+                <Button label={t('public.account.signOut')} variant="tertiary" accessibilityRole="button" onPress={() => void onSignOut()}>
+                    <Text variant="body" style={styles.signOutText}>{t('public.account.signOut')}</Text>
+                </Button>
                 <Link href="/security" asChild>
                     <Row icon="user" label={t('acct.securityRow')} />
                 </Link>
@@ -116,27 +117,27 @@ export default function Account() {
             {billing !== 'off' ? (
                 <Section title={t('account.purchases')}>
                     <Row icon="coins" label={t('account.restore')} onPress={onRestore} disabled={!canPurchase} />
-                    {paidAccess && stayDiscount ? <Row icon="heart" label={t('account.stay', { price: stayDiscount.priceString, cycles: stayDiscount.cycles })} onPress={() => void onStay()} disabled={stayBusy} /> : null}
+                    {paidAccess && stayDiscount ? <Row icon="heart" price={stayDiscount.priceString} label={t('account.stay', { price: stayDiscount.priceString, cycles: stayDiscount.cycles })} onPress={() => void onStay()} disabled={stayBusy} /> : null}
                     {paidAccess && managementURL ? <Row icon="wrench" label={t('account.manageSubscription')} onPress={() => void Linking.openURL(managementURL)} /> : null}
-                    {restoreNote ? <Text style={styles.note}>{restoreNote}</Text> : null}
-                    {stayNote ? <Text style={styles.note} accessibilityLiveRegion="polite">{stayNote}</Text> : null}
-                    <Text style={styles.note}>{t('account.packsNote')}</Text>
+                    {restoreNote ? <Text variant="footnote" style={styles.note}>{restoreNote}</Text> : null}
+                    {stayNote ? <Text variant="footnote" style={styles.note} accessibilityLiveRegion="polite">{stayNote}</Text> : null}
+                    <Text variant="footnote" style={styles.note}>{t('account.packsNote')}</Text>
                 </Section>
             ) : null}
 
             {push.supported ? (
                 <Section title={t('account.notifications')}>
                     <View style={styles.switchRow}>
-                        <Text style={styles.rowText}>{t('account.notifyMe')}</Text>
+                        <Text variant="body" style={styles.rowText}>{t('account.notifyMe')}</Text>
                         <Switch
                             accessibilityLabel={t('account.notifyMe')}
                             value={push.enabled}
                             onValueChange={(on) => void onPush(on)}
-                            trackColor={{ true: colors.accent, false: colors.border }}
+                            trackColor={{ true: styles.accentInk.color, false: styles.borderInk.color }}
                         />
                     </View>
-                    {pushNote ? <Text style={styles.note}>{pushNote}</Text> : null}
-                    <Text style={styles.note}>{t('account.notifyNote')}</Text>
+                    {pushNote ? <Text variant="footnote" style={styles.note}>{pushNote}</Text> : null}
+                    <Text variant="footnote" style={styles.note}>{t('account.notifyNote')}</Text>
                 </Section>
             ) : null}
 
@@ -144,7 +145,7 @@ export default function Account() {
                 <Section title={t('vibe.account.title')}>
                     <Row label={t('vibe.account.retake')} onPress={() => router.push('/vibe?retake=1')} />
                     <Row label={t('vibe.account.reset')} onPress={() => void onResetVibe()} />
-                    {vibeNote ? <Text style={styles.note} accessibilityRole="alert">{vibeNote}</Text> : null}
+                    {vibeNote ? <Text variant="footnote" style={styles.note} accessibilityRole="alert">{vibeNote}</Text> : null}
                 </Section>
             ) : null}
 
@@ -194,7 +195,7 @@ export default function Account() {
                 <Link href="/blocked" asChild>
                     <Row icon="close" label={t('blocks.title')} />
                 </Link>
-                <Text style={styles.note}>{t('account.reportNote')}</Text>
+                <Text variant="footnote" style={styles.note}>{t('account.reportNote')}</Text>
             </Section>
 
             <Section title={t('account.aboutSection')}>
@@ -217,9 +218,10 @@ export default function Account() {
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
+    const styles = useThemedStyles(sheets);
     return (
         <View style={styles.section}>
-            <Text style={styles.sectionTitle} accessibilityRole="header">{title}</Text>
+            <Text variant="footnote" style={styles.sectionTitle} accessibilityRole="header">{title}</Text>
             {children}
         </View>
     );
@@ -227,6 +229,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 interface RowProps {
     readonly label: string;
+    readonly price?: string;
     readonly icon?: MenuIcon;
     readonly onPress?: () => void;
     readonly disabled?: boolean;
@@ -234,41 +237,23 @@ interface RowProps {
 }
 
 // Forwards the ref and any props a parent Link adds, so it also works as a Link child.
-const Row = ({ label, icon, onPress, disabled, danger, ...rest }: RowProps) => (
-    <Pressable
-        {...rest}
-        accessibilityRole="button"
-        accessibilityState={{ disabled: Boolean(disabled) }}
-        disabled={disabled}
-        style={[styles.row, styles.rowLine, disabled && styles.off]}
-        onPress={onPress}
-    >
-        {icon ? <Image source={MENU_ICONS[icon]} style={styles.rowIcon} tintColor={danger ? colors.danger : colors.accent} contentFit="contain" accessibilityElementsHidden /> : null}
-        <Text style={[styles.rowText, styles.rowLabel, danger && styles.danger]}>{label}</Text>
-        <Image source={MENU_ICONS.caretRight} style={styles.rowCaret} tintColor={colors.muted} contentFit="contain" accessibilityElementsHidden />
-    </Pressable>
-);
+const Row = ({ label, price, icon, onPress, disabled, danger, ...rest }: RowProps) => {
+    const styles = useThemedStyles(sheets);
+    if (danger) return <Button {...rest} variant="tertiary" tone="danger" label={label} icon={icon} accessibilityRole="button" accessibilityState={{ disabled: Boolean(disabled) }} disabled={disabled} onPress={onPress} />;
+    return <ListRow {...rest} title={price ? <PriceText text={label} price={price} variant="bodyStrong" /> : label} icon={icon} accessibilityRole="button" accessibilityState={{ disabled: Boolean(disabled) }} disabled={disabled} style={[styles.row, disabled && styles.off]} onPress={onPress} />;
+};
 
-const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: colors.background },
+const sheets = themedStyles((p) => ({
+    borderInk: { color: p.borderSubtle },
+    accentInk: { color: p.accent },
+    screen: { flex: 1, backgroundColor: p.bg },
     content: { padding: 16, paddingBottom: 16 + LIST_END_PADDING, gap: 24 },
     section: { gap: 8 },
-    sectionTitle: { color: colors.muted, fontSize: 14, textTransform: 'uppercase' },
-    row: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 16 },
-    rowLine: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56, paddingVertical: 12 },
-    rowIcon: { width: 22, height: 22 },
-    rowLabel: { flex: 1 },
-    rowCaret: { width: 16, height: 16 },
-    rowText: { color: colors.text, fontSize: 16, flexShrink: 1 },
-    switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 16 },
-    danger: { color: colors.danger },
+    sectionTitle: { color: p.textSecondary },
+    row: { backgroundColor: p.surface, borderColor: p.borderSubtle, borderWidth: 1, borderRadius: 12, padding: 16 },
+    rowText: { color: p.textPrimary, flexShrink: 1 },
+    switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, backgroundColor: p.surface, borderColor: p.borderSubtle, borderWidth: 1, borderRadius: 12, padding: 16 },
     off: { opacity: 0.5 },
-    note: { color: colors.muted, fontSize: 13 },
-    signOut: { paddingVertical: 12, minHeight: 44, justifyContent: 'center' },
-    signOutText: { color: colors.accent, fontSize: 16 },
-    chips: { flexDirection: 'row', gap: 8 },
-    chip: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
-    chipOn: { backgroundColor: colors.accent, borderColor: colors.accent },
-    chipText: { color: colors.body, fontWeight: '600' },
-    chipTextOn: { color: colors.accentInk },
-});
+    note: { color: p.textSecondary },
+    signOutText: { color: p.accent },
+}));

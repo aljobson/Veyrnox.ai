@@ -11,3 +11,4 @@ export * from './Checkbox';
 export * from './Swatch';
 export * from './ChoiceCard';
 export * from './AppearanceContext';
+export * from './PriceText';

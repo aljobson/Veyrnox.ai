@@ -26,6 +26,11 @@ import {
 import type { AppearanceSettings } from '../src/theme';
 const root = path.join(__dirname, '..', 'src');
 const migrated = [
+    'components/MenuDrawer.tsx',
+    'app/(app)/(tabs)/editor.tsx',
+    'app/(app)/(tabs)/publish.tsx',
+    'app/(app)/account.tsx',
+    ...fs.readdirSync(path.join(root, 'components/account')).filter(name => name !== 'shared.tsx').map(name => `components/account/${name}`),
     'app/(app)/legal/[doc].tsx',
     'components/InlineMedia.tsx',
     'components/ReviewMedia.tsx',
