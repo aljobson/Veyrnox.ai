@@ -60,7 +60,7 @@ test.each([
 ])('Bluesky error %s %j', (status, body, key) => { expect(blueskyErrorKey(new ApiError(status as number, 'connect_failed', body as Record<string, unknown>))).toBe(key); });
 test('regex contract and server drift', () => {
     expect(BLUESKY_HANDLE_RE.test('user.bsky.social')).toBe(true); expect(BLUESKY_HANDLE_RE.test('@user')).toBe(false);
-    expect(BLUESKY_APP_PASSWORD_RE.test('abcd-1234-efgh-5678')).toBe(true); expect(BLUESKY_APP_PASSWORD_RE.test('ABCD-1234-efgh-5678')).toBe(false);
+    expect(BLUESKY_APP_PASSWORD_RE.test('abcd-abcd-abcd-abcd')).toBe(true); expect(BLUESKY_APP_PASSWORD_RE.test('ABCD-1234-efgh-5678')).toBe(false);
     const server = (file: string) => fs.readFileSync(path.join(__dirname, '../../..', file), 'utf8');
     const networks = server('lib/social/networks.js').split('export const SOCIAL_CATALOGUE')[0];
     expect([...networks.matchAll(/key: '([^']+)'/g)].map(m => m[1]).filter(key => key !== 'pinterest')).toEqual(PHONE_CATALOGUE);
@@ -75,9 +75,9 @@ test('password is cleared before request resolves; bad input sends nothing', asy
     await press(root, t('connect.button')); expect(mockRequest).not.toHaveBeenCalled(); expect(textOf(root.container)).toContain(t('publishDepth.bluesky.badHandle'));
     await input(root, t('publishDepth.bluesky.handle'), 'user.bsky.social'); await input(root, t('publishDepth.bluesky.password'), 'bad');
     await press(root, t('connect.button')); expect(mockRequest).not.toHaveBeenCalled();
-    await input(root, t('publishDepth.bluesky.password'), 'abcd-1234-efgh-5678'); await press(root, t('connect.button'));
+    await input(root, t('publishDepth.bluesky.password'), 'abcd-abcd-abcd-abcd'); await press(root, t('connect.button'));
     expect(field(root, t('publishDepth.bluesky.password')).props.value).toBe('');
-    expect(JSON.parse(mockRequest.mock.calls[0][1].body)).toEqual({ identifier: 'user.bsky.social', appPassword: 'abcd-1234-efgh-5678', client: 'mobile' });
+    expect(JSON.parse(mockRequest.mock.calls[0][1].body)).toEqual({ identifier: 'user.bsky.social', appPassword: 'abcd-abcd-abcd-abcd', client: 'mobile' });
     await act(async () => pending.resolve({ ok: true, account: { id: ID } }));
     expect(textOf(root.container)).toContain(t('connect.done', { name: 'Bluesky' }));
 });
