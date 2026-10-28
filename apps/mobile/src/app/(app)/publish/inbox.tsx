@@ -1,101 +1,82 @@
-import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, FlatList, RefreshControl, View } from 'react-native';
+import { Button, Card, Chip, Text, TextField } from '../../../components/ui';
+import { themedStyles, useThemedStyles } from '../../../components/ui/AppearanceContext';
 import { UnlockCard } from '../../../components/UnlockCard';
-import { touchTarget } from '../../../lib/a11y';
+import { InboxFilters } from '../../../components/publish/InboxFilters';
+import { NetworkLogo } from '../../../components/publish/NetworkLogo';
 import { ApiError } from '../../../lib/api';
+import { subscribeCacheUser } from '../../../lib/appCache';
+import { brandStore } from '../../../lib/publishBrand';
 import { formatLocale, t } from '../../../lib/i18n';
-import { KINDS, STATES, fetchInbox, inboxErrorKey, type Counts, type InboxKind, type InboxState, type Thread } from '../../../lib/publishInbox';
+import { networkName } from '../../../lib/networkLogos';
+import { fetchAccounts, type PublishAccount } from '../../../lib/publish';
+import { KINDS, STATES, inboxErrorKey, inboxScope } from '../../../lib/publishInbox';
+import { defaultInboxFilter, fetchInboxListing, type InboxFilter } from '../../../lib/publishInboxList';
 import { usePublishApi } from '../../../lib/usePublishApi';
-import { colors, LIST_END_PADDING } from '../../../theme';
+import { LIST_END_PADDING } from '../../../theme';
 
 export default function Inbox() {
-    const api = usePublishApi();
-    const router = useRouter();
-    const [state, setState] = useState<InboxState>('unresolved');
-    const [kind, setKind] = useState<InboxKind | null>(null);
-    const [threads, setThreads] = useState<Thread[] | null>(null);
-    const [counts, setCounts] = useState<Counts | null>(null);
-    const [error, setError] = useState<string | null>(null);
-    const [locked, setLocked] = useState(false);
-    const [refreshing, setRefreshing] = useState(false);
-    const [reload, setReload] = useState(0);
-
+    const api = usePublishApi(), router = useRouter(), s = useThemedStyles(sheets);
+    const [filter, setFilter] = useState<InboxFilter>(defaultInboxFilter);
+    const [search, setSearch] = useState(''), [expanded, setExpanded] = useState(false);
+    const [listing, setListing] = useState<Awaited<ReturnType<typeof fetchInboxListing>> | null>(null);
+    const [accounts, setAccounts] = useState<PublishAccount[]>([]);
+    const [error, setError] = useState<string | null>(null), [locked, setLocked] = useState(false);
+    const [refreshing, setRefreshing] = useState(false), [scopeTick, setScopeTick] = useState(0);
+    const scopeGeneration = useRef(0), listingSeq = useRef(0), accountsSeq = useRef(0), currentApi = useRef(api);
+    currentApi.current = api;
+    useEffect(() => {
+        const reset = () => {
+            scopeGeneration.current++;
+            setListing(null); setAccounts([]); setError(null); setLocked(false); setRefreshing(false);
+            setFilter(defaultInboxFilter()); setSearch(''); setExpanded(false); setScopeTick(n => n + 1);
+        };
+        const userOff = subscribeCacheUser(reset), brandOff = brandStore.subscribe(reset);
+        return () => { scopeGeneration.current++; userOff(); brandOff(); };
+    }, []);
     const load = useCallback(async () => {
-        try {
-            const r = await fetchInbox(api, state, kind);
-            setThreads(r.threads);
-            setCounts(r.counts);
-            setError(null);
-            setLocked(false);
-        } catch (err) {
-            setThreads(null);
-            if (err instanceof ApiError && err.status === 402) setLocked(true);
-            else setError(t(inboxErrorKey(err)));
-        }
-    }, [api, state, kind]);
-
-    useFocusEffect(useCallback(() => { void load(); }, [load, reload]));
-
-    return (
-        <View style={styles.screen}>
-            <Stack.Screen options={{ title: t('inbox.title') }} />
-            {locked ? <UnlockCard feature="inbox" onUnlocked={() => setReload((n) => n + 1)} /> : (
-                <>
-                    <Pressable style={[touchTarget, styles.row]} accessibilityRole="button" onPress={() => router.push('/publish/inbox-analytics')}><Text style={styles.name}>{t('publishDepth.analytics.title')}</Text></Pressable>
-                    <View style={styles.chips}>
-                        {STATES.map((s) => (
-                            <Pressable key={s} accessibilityRole="button" accessibilityState={{ selected: state === s }} style={[styles.chip, touchTarget, state === s && styles.chipOn]} onPress={() => setState(s)}>
-                                <Text style={[styles.chipText, state === s && styles.chipTextOn]}>{t(`inbox.state.${s}`)}{counts && s !== 'resolved' ? ` ${counts[s]}` : ''}</Text>
-                            </Pressable>
-                        ))}
-                    </View>
-                    <View style={styles.chips}>
-                        {([null, ...KINDS] as (InboxKind | null)[]).map((k) => (
-                            <Pressable key={k ?? 'any'} accessibilityRole="button" accessibilityState={{ selected: kind === k }} style={[styles.chip, touchTarget, kind === k && styles.chipOn]} onPress={() => setKind(k)}>
-                                <Text style={[styles.chipText, kind === k && styles.chipTextOn]}>{t(k ? `inbox.kind.${k}` : 'inbox.kind.any')}</Text>
-                            </Pressable>
-                        ))}
-                    </View>
-                    {error && !threads ? (
-                        <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{error}</StatusText>
-                    ) : !threads ? (
-                        <ActivityIndicator color={colors.accent} />
-                    ) : (
-                        <FlatList
-                            data={threads}
-                            keyExtractor={(x) => x.id}
-                            contentContainerStyle={{ paddingBottom: LIST_END_PADDING }}
-                            refreshControl={<RefreshControl refreshing={refreshing} tintColor={colors.accent} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}
-                            ListHeaderComponent={<Text style={styles.muted}>{t('inbox.readOnly')}</Text>}
-                            ListEmptyComponent={<Text style={styles.muted}>{t('inbox.none')}</Text>}
-                            renderItem={({ item }) => (
-                                <Pressable accessibilityRole="button" accessibilityLabel={`${item.name || item.network}, ${t(`inbox.kind.${item.kind}`)}${item.unread ? `, ${t('inbox.unread', { count: item.unread })}` : ''}`} style={[styles.row, touchTarget]} onPress={() => router.push({ pathname: '/publish/inbox-thread', params: { id: item.id } })}>
-                                    <Text style={[styles.name, item.unread > 0 && styles.bold]} numberOfLines={1}>{item.name || item.network}</Text>
-                                    <Text style={styles.muted} numberOfLines={1}>{item.subject || t(`inbox.kind.${item.kind}`)}</Text>
-                                    <Text style={styles.meta}>{item.network} · {item.accountName}{item.unread ? ` · ${t('inbox.unread', { count: item.unread })}` : ''}{item.latestAt ? ` · ${new Date(item.latestAt).toLocaleDateString(formatLocale())}` : ''}</Text>
-                                </Pressable>
-                            )}
-                        />
-                    )}
-                </>
-            )}
-        </View>
-    );
+        const scopeVersion = scopeGeneration.current, seq = ++listingSeq.current, scope = inboxScope();
+        const valid = () => scopeVersion === scopeGeneration.current && seq === listingSeq.current && scope === inboxScope() && api === currentApi.current;
+        try { const next = await fetchInboxListing(api, filter); if (valid()) { setListing(next); setError(null); setLocked(false); } }
+        catch (err) { if (valid()) { setListing(null); setLocked(err instanceof ApiError && err.status === 402); setError(err instanceof ApiError && err.status === 402 ? null : t(inboxErrorKey(err))); } }
+        finally { if (valid()) setRefreshing(false); }
+    }, [api, filter, scopeTick]);
+    useFocusEffect(useCallback(() => { void load(); return () => { listingSeq.current++; }; }, [load]));
+    useEffect(() => {
+        const scopeVersion = scopeGeneration.current, seq = ++accountsSeq.current, scope = inboxScope();
+        const valid = () => scopeVersion === scopeGeneration.current && seq === accountsSeq.current && scope === inboxScope() && api === currentApi.current;
+        setAccounts([]);
+        fetchAccounts(api).then(next => { if (valid()) setAccounts(next.accounts.filter(a => a.status === 'active').map(a => ({ ...a, displayName: a.displayName.replace(/[\u0000-\u001f\u007f]/g, '').slice(0, 80) }))); }).catch(() => { if (valid()) setAccounts([]); });
+    }, [api, scopeTick]);
+    const active = [filter.accountId, filter.assignee, filter.priority, filter.tag, filter.search, filter.kind, filter.state !== 'unresolved'].filter(Boolean).length;
+    const clear = () => { setFilter(defaultInboxFilter()); setSearch(''); };
+    const header = <View style={s.header}>
+        <Button variant="tertiary" label={t('publishDepth.analytics.title')} onPress={() => router.push('/publish/inbox-analytics')} />
+        <TextField label={t('publishOps.inbox.search')} value={search} onChangeText={setSearch} maxLength={100} returnKeyType="search" onSubmitEditing={() => setFilter(f => ({ ...f, search: search.trim() }))} />
+        <Chip label={active ? t('publishOps.inbox.filtersOn', { count: active }) : t('publishOps.inbox.filters')} selected={expanded} onPress={() => setExpanded(v => !v)} />
+        {expanded ? <InboxFilters filter={filter} accounts={accounts} members={listing?.members ?? null} tags={listing?.tags ?? []} onChange={setFilter} onClear={clear} /> : null}
+        <View style={s.chips}>{STATES.map(state => <Chip key={state} label={listing ? t('publishOps.inbox.count', { label: t(`inbox.state.${state}`), count: listing.counts[state] }) : t(`inbox.state.${state}`)} selected={filter.state === state} onPress={() => setFilter(f => ({ ...f, state }))} />)}</View>
+        <View style={s.chips}>{([null, ...KINDS] as const).map(kind => <Chip key={kind ?? 'any'} label={t(`inbox.kind.${kind ?? 'any'}`)} selected={filter.kind === kind} onPress={() => setFilter(f => ({ ...f, kind }))} />)}</View>
+        {error ? <Text tone="danger" accessibilityRole="alert">{error}</Text> : null}
+        {!listing && !error ? <ActivityIndicator accessibilityState={{ busy: true }} /> : null}
+    </View>;
+    return <View style={s.screen}>
+        <Stack.Screen options={{ title: t('inbox.title') }} />
+        {locked ? <UnlockCard feature="inbox" onUnlocked={() => void load()} /> : <FlatList
+            data={listing?.threads ?? []} keyExtractor={item => item.id} contentContainerStyle={s.list}
+            ListHeaderComponent={header} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load(); }} />}
+            ListEmptyComponent={listing ? <Text tone="secondary">{t(filter.accountId ? 'publishOps.inbox.emptyAccount' : active ? 'publishOps.inbox.emptyFiltered' : 'inbox.none')}</Text> : undefined}
+            renderItem={({ item }) => <Card style={s.card} onPress={() => router.push({ pathname: '/publish/inbox-thread', params: { id: item.id } })}
+                accessibilityLabel={t('publishOps.inbox.rowLabel', { name: item.name, network: networkName(item.network), kind: t(`inbox.kind.${item.kind}`), unread: item.unread ? t('inbox.unread', { count: item.unread }) : '', priority: t(`publishOps.priority.${item.priority}`) })}>
+                <View style={s.chips}><NetworkLogo network={item.network} size={20} /><Text variant={item.unread ? 'bodyStrong' : 'body'}>{item.name || networkName(item.network)}</Text>{item.unread ? <Chip selected label={t('inbox.unread', { count: item.unread })} /> : null}</View>
+                <Text numberOfLines={2}>{item.preview || item.subject || t(`inbox.kind.${item.kind}`)}</Text>
+                <Text tone="secondary" variant="caption">{t('publishOps.inbox.meta', { network: networkName(item.network), kind: t(`inbox.kind.${item.kind}`), account: item.accountName })}</Text>
+                <View style={s.chips}>{item.priority !== 'normal' ? <Chip label={t(`publishOps.priority.${item.priority}`)} /> : null}{item.assignedEmail ? <Chip label={item.assignedEmail} /> : null}{item.tags.slice(0, 3).map(tag => <Chip key={tag} label={tag} />)}</View>
+                {item.latestAt ? <Text tone="secondary" variant="caption" style={s.date}>{new Date(item.latestAt).toLocaleDateString(formatLocale())}</Text> : null}
+            </Card>}
+        />}
+    </View>;
 }
-
-const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 16, gap: 8, paddingTop: 8 },
-    chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-    chip: { paddingHorizontal: 12, borderRadius: 10, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
-    chipOn: { backgroundColor: colors.accent, borderColor: colors.accent },
-    chipText: { color: colors.body },
-    chipTextOn: { color: colors.accentInk, fontWeight: '600' },
-    row: { paddingVertical: 10, gap: 2, borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth },
-    name: { color: colors.text, fontSize: 16 },
-    bold: { fontWeight: '700' },
-    muted: { color: colors.muted, fontSize: 13, paddingVertical: 2 },
-    meta: { color: colors.muted, fontSize: 12 },
-    error: { color: colors.danger },
-});
+const sheets = themedStyles(p => ({ screen: { flex: 1, backgroundColor: p.bg, paddingHorizontal: 16 }, list: { paddingBottom: LIST_END_PADDING }, header: { gap: 8, paddingVertical: 8 }, chips: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }, card: { gap: 6, marginBottom: 8 }, date: { textAlign: 'right' } }));

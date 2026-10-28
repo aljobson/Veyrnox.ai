@@ -148,6 +148,7 @@ import area_publishDeveloper from './en/publishDeveloper';
 import area_publishHome from './en/publishHome';
 import area_publishInbox from './en/publishInbox';
 import area_publishLinks from './en/publishLinks';
+import area_publishOps from './en/publishOps';
 import area_publishParity from './en/publishParity';
 import area_publishQueueAdmin from './en/publishQueueAdmin';
 import area_publishQueues from './en/publishQueues';
@@ -166,6 +167,7 @@ import area_reports from './en/reports';
 import area_review from './en/review';
 import area_share from './en/share';
 import area_signIn from './en/signIn';
+import area_skillsUi from './en/skillsUi';
 import area_slip from './en/slip';
 import area_smartlink from './en/smartlink';
 import area_social from './en/social';
@@ -341,6 +343,7 @@ const catalog = {
     ...area_publishHome,
     ...area_publishInbox,
     ...area_publishLinks,
+    ...area_publishOps,
     ...area_publishParity,
     ...area_publishQueueAdmin,
     ...area_publishQueues,
@@ -359,6 +362,7 @@ const catalog = {
     ...area_review,
     ...area_share,
     ...area_signIn,
+    ...area_skillsUi,
     ...area_slip,
     ...area_smartlink,
     ...area_social,

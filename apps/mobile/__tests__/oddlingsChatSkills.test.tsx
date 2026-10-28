@@ -105,3 +105,17 @@ test('ordinary settings remain editable and submit changed instructions', async 
     await act(async () => field.props.onChangeText('New instructions')); await press(t('chat.settings.save'));
     expect(mockChat.updateThread).toHaveBeenLastCalledWith('thread', { system_prompt: 'New instructions' });
 });
+
+test('hand-off continuity is selected and disabled and cannot patch the thread', async () => {
+    await render();
+    expect(control(skillLabel('oddling-continuity')).props.accessibilityState).toMatchObject({ selected: true, disabled: true });
+    await press(skillLabel('oddling-continuity'));
+    expect(mockChat.updateThread).not.toHaveBeenCalled();
+});
+test('ordinary chat can toggle continuity freely', async () => {
+    await render(skillsInstructions([skillById('storyboard')!]));
+    expect(control(skillLabel('oddling-continuity')).props.accessibilityState.disabled).toBe(false);
+    await press(skillLabel('oddling-continuity'));
+    expect(selectedSkillIds(mockChat.updateThread.mock.calls[0][1].system_prompt)).toEqual(['storyboard', 'oddling-continuity']);
+    expect(parseOddlingInstructions(mockChat.updateThread.mock.calls[0][1].system_prompt)).toBeNull();
+});

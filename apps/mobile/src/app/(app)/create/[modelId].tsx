@@ -336,8 +336,8 @@ export default function CreateWithModel() {
                         />
                         <View style={styles.skillsRow}>
                             <Text variant="caption" tone="tertiary" style={styles.skillsIntro}>{t('create.workspace.skills')}</Text>
-                            <Button variant="tertiary" accessibilityRole="link" onPress={() => router.push('/chat/skills')} label={t('create.workspace.promptWriter')} />
-                            <Button variant="tertiary" accessibilityRole="link" onPress={() => router.push('/chat/skills')} label={t('create.workspace.fixPrompt')} />
+                            <Button variant="tertiary" accessibilityRole="link" onPress={() => router.push({ pathname: '/chat/skills', params: { skill: 'prompt-writer' } })} label={t('create.workspace.promptWriter')} />
+                            <Button variant="tertiary" accessibilityRole="link" onPress={() => router.push({ pathname: '/chat/skills', params: { skill: 'fix-my-prompt' } })} label={t('create.workspace.fixPrompt')} />
                         </View>
                     </View>
                 ) : null}

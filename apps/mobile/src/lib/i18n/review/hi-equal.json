@@ -47,5 +47,10 @@
   "vibe.destination.tiktok": "Brand or product name, retained as on the website.",
   "vibe.destination.youtube": "Brand or product name, retained as on the website.",
   "whenPicker.hHMM": "Standard notation, unit, format example or placeholder-only display.",
-  "whenPicker.yYYYMMDD": "Standard notation, unit, format example or placeholder-only display."
+  "whenPicker.yYYYMMDD": "Standard notation, unit, format example or placeholder-only display.",
+  "publishOps.inbox.rowLabel": "Formatting template; words are localized separately.",
+  "publishOps.accountLabel": "Formatting template; words are localized separately.",
+  "publishOps.inbox.count": "Formatting template; words are localized separately.",
+  "publishOps.inbox.meta": "Formatting template; words are localized separately.",
+  "publishOps.queue.excludedAccount": "Formatting template; words are localized separately."
 }
