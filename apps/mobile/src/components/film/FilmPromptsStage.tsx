@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import { Text as StatusText } from '../ui/Text';
 import { useRouter } from 'expo-router';
 import { ACCEPTANCE_CHECKS, PROMPT_DETAILS, buildShotPrompt, failedAttempts, latestPrompt, logFilmAttempt, nextPromptVersion, promptContext } from '../../lib/filmStudio';
 import { displayLabel } from '../../lib/displayLabels';
@@ -35,7 +36,7 @@ export function FilmPromptsStage({ film, change, catalog, live }: StageProps) {
             {PROMPT_DETAILS.map(([key, label]) => <FilmInput key={key} label={label} value={details[key] ?? ''} multiline onChange={v => setDetails(d => ({ ...d, [key]: v }))} />)}
             <FilmAction label={t('film.build15blockprompt')} onPress={() => build(false)} />
         </> : last ? <>
-            <Text accessibilityLiveRegion="polite" style={{ color: colors.body }}>{t('filmOutput.version', { value1: shot.id, value2: last.version, value3: t(logged ? 'filmOutput.logged' : 'filmOutput.ready') })}</Text>
+            <StatusText variant="inherit" accessibilityLiveRegion="polite" style={{ color: colors.body }}>{t('filmOutput.version', { value1: shot.id, value2: last.version, value3: t(logged ? 'filmOutput.logged' : 'filmOutput.ready') })}</StatusText>
             <FilmPromptOutput title={t('filmOutput.output')} prompt={last.content} modelId={film.stack.video} access={logged ? 'External' : film.stack.videoAccess} catalog={catalog} live={live} aspect={film.stack.aspect} duration={Number(shot.seconds)} />
             {!logged ? <View style={{ gap: 12 }}>
                 <Text accessibilityRole="header" style={{ color: colors.text }}>{t('film.lOGTHEGENERATEDTAKE')}</Text>
@@ -53,8 +54,8 @@ export function FilmPromptsStage({ film, change, catalog, live }: StageProps) {
             </> : null}
         </> : null}
         <FilmAction label={t('filmOutput.openShot')} onPress={() => router.push({ pathname: '/film/shot/[id]', params: { id: shot.id } })} />
-        {failed >= 15 ? <Text accessibilityRole="alert" style={{ color: colors.body }}>{t('filmWorkspace.fifteenMisses')}</Text> : null}
-        {error ? <Text accessibilityRole="alert" style={{ color: colors.danger }}>{error}</Text> : null}
+        {failed >= 15 ? <StatusText variant="inherit" accessibilityRole="alert" style={{ color: colors.body }}>{t('filmWorkspace.fifteenMisses')}</StatusText> : null}
+        {error ? <StatusText variant="inherit" accessibilityRole="alert" style={{ color: colors.danger }}>{error}</StatusText> : null}
         {film.attempts.filter(a => a.shot === shot.id).map(a => <View key={a.version}><Text style={{ color: colors.body }}>{t('film.version', { value1: a.version, value2: displayLabel(a.verdict) })} · {a.changed}</Text><Text selectable style={{ color: colors.muted }}>{a.result}</Text></View>)}
     </View>;
 }

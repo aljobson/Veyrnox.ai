@@ -157,7 +157,7 @@ export default function CloudFilms() {
                         style={[styles.row, touchTarget]} onPress={() => { void choose(row); }}>
                         <Text style={styles.name}>{row.name}</Text>
                         <Text style={styles.body}>{shots}{date ? ` · ${date}` : ''}</Text>
-                        {openingId === row.id ? <Text accessibilityLiveRegion="polite" style={styles.body}>{t('filmCloud.opening')}</Text> : null}
+                        {openingId === row.id ? <StatusText variant="inherit" accessibilityLiveRegion="polite" style={styles.body}>{t('filmCloud.opening')}</StatusText> : null}
                         <Text style={styles.name}>{t('filmOutput.open')}</Text>
                     </Pressable>
                     <Pressable accessibilityRole="button" accessibilityLabel={`${t('filmOutput.remove')}: ${row.name}`} disabled={openingId !== null} accessibilityState={{ disabled: openingId !== null }} style={touchTarget} onPress={() => void remove(row)}><Text style={styles.name}>{t('filmOutput.remove')}</Text></Pressable></View>

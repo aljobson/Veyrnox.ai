@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import { Text as StatusText } from '../ui/Text';
 import { assetKey, isLocked, lockAsset, testMatrix, testPrompt } from '../../lib/filmStudio';
 import { displayLabel } from '../../lib/displayLabels';
 import { t } from '../../lib/i18n';
@@ -21,7 +22,7 @@ export function FilmTestsStage({ film, change, catalog, live }: StageProps) {
     };
     return <View style={{ gap: 16 }}>
         <FilmSelect label={t('filmOutput.testAsset')} value={assetKey(asset)} options={film.assets.map(a => ({ value: assetKey(a), label: `${assetKey(a)} · ${t(isLocked(film, a) ? 'film.locked' : 'film.draft')}` }))} onChange={v => { setSelected(v); setExpanded({}); setError(''); }} />
-        <Text accessibilityLiveRegion="polite" style={{ color: colors.body }}>{assetKey(asset)} · {t(locked ? 'filmOutput.locked' : 'filmOutput.draft')} · {t('filmOutput.passed', { value1: score, value2: rows.length })}</Text>
+        <StatusText variant="inherit" accessibilityLiveRegion="polite" style={{ color: colors.body }}>{assetKey(asset)} · {t(locked ? 'filmOutput.locked' : 'filmOutput.draft')} · {t('filmOutput.passed', { value1: score, value2: rows.length })}</StatusText>
         {asset.type === 'character' ? <Text style={{ color: colors.muted }}>{t('filmOutput.characterTest')}</Text> : null}
         {rows.map((row, i) => {
             const open = expanded[row.id] ?? i === 0, test = asset.tests[row.id] ?? { result: '', verdict: 'pending' };
@@ -33,7 +34,7 @@ export function FilmTestsStage({ film, change, catalog, live }: StageProps) {
                     {['pending', 'pass', 'miss'].map(verdict => <Pressable key={verdict} accessibilityRole="radio" accessibilityLabel={displayLabel(verdict)} accessibilityState={{ selected: test.verdict === verdict, disabled: locked }} disabled={locked} style={{ minHeight: 44, justifyContent: 'center' }} onPress={() => edit(row.id, { verdict })}><Text style={{ color: colors.body }}>{displayLabel(verdict)}</Text></Pressable>)}</> : null}
             </View>;
         })}
-        {error ? <Text accessibilityRole="alert" style={{ color: colors.danger }}>{error}</Text> : null}
+        {error ? <StatusText variant="inherit" accessibilityRole="alert" style={{ color: colors.danger }}>{error}</StatusText> : null}
         <FilmAction label={t('film.lockaftereverytestpasses')} disabled={locked || score !== rows.length} onPress={() => { try { change(lockAsset(film, assetKey(asset))); setError(''); } catch (e) { setError((e as Error).message); } }} />
     </View>;
 }

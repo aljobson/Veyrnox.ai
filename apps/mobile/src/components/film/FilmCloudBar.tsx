@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Alert, Text, View } from 'react-native';
+import { Text as StatusText } from '../ui/Text';
 import { randomUUID } from 'expo-crypto';
 import type { ApiClient } from '../../lib/api';
 import { getCacheUser, subscribeCacheUser } from '../../lib/appCache';
@@ -106,10 +107,10 @@ export function FilmCloudBar({ api, film, flush, snapshot, valid, beginInstall, 
         running.current = false; setBusy(false);
     }
     return <View style={{ gap: 12 }}>
-        <Text accessibilityLiveRegion="polite" style={{ color: colors.muted }}>{busy ? t('film.saving') : message}</Text>
-        {getOpenedFilm() && !getActiveCloudLink() ? <Text accessibilityLiveRegion="polite" style={{ color: colors.muted }}>{t('filmOutput.memoryOnly', { value1: film.name })}</Text> : null}
-        {notice ? <Text accessibilityLiveRegion="polite" style={{ color: colors.body }}>{notice}</Text> : null}
-        {error ? <Text accessibilityLiveRegion="polite" style={{ color: colors.muted }}>{t(SAVE_ERROR_KEYS[error.kind], { value1: error.seconds ?? 60 })}</Text> : null}
+        <StatusText variant="inherit" accessibilityLiveRegion="polite" style={{ color: colors.muted }}>{busy ? t('film.saving') : message}</StatusText>
+        {getOpenedFilm() && !getActiveCloudLink() ? <StatusText variant="inherit" accessibilityLiveRegion="polite" style={{ color: colors.muted }}>{t('filmOutput.memoryOnly', { value1: film.name })}</StatusText> : null}
+        {notice ? <StatusText variant="inherit" accessibilityLiveRegion="polite" style={{ color: colors.body }}>{notice}</StatusText> : null}
+        {error ? <StatusText variant="inherit" accessibilityLiveRegion="polite" style={{ color: colors.muted }}>{t(SAVE_ERROR_KEYS[error.kind], { value1: error.seconds ?? 60 })}</StatusText> : null}
         <FilmAction label={t('film.savetoaccount')} disabled={busy} onPress={() => void save()} />
         {error?.kind === 'conflict' || !getActiveCloudLink() ? <FilmAction label={t('filmOutput.saveNew')} disabled={busy} onPress={() => void save(true)} /> : null}
         {error?.kind === 'conflict' ? <FilmAction label={t('filmOutput.openAccount')} disabled={busy} onPress={() => void openAccount()} /> : null}
