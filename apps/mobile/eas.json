@@ -28,19 +28,20 @@
     },
     "production": {
       "autoIncrement": true,
+      "environment": "production",
       "env": {
         "EXPO_PUBLIC_APP_ENV": "production",
         "EXPO_PUBLIC_EDITOR_ENABLED": "true",
         "EXPO_PUBLIC_FULL_EDITOR_ENABLED": "true",
         "EXPO_PUBLIC_STORE_BILLING_ENABLED": "true",
-        "VEYRNOX_NATIVE_PURCHASES": "1",
-        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+        "VEYRNOX_NATIVE_PURCHASES": "1"
       }
     },
     "production-simulator": {
       "extends": "production",
       "autoIncrement": false,
-      "ios": { "simulator": true }
+      "ios": { "simulator": true },
+      "env": { "SENTRY_DISABLE_AUTO_UPLOAD": "true" }
     }
   },
   "submit": {
