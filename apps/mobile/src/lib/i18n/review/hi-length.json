@@ -1626,6 +1626,12 @@
     "ratio": 1.8
   },
   {
+    "id": "editorCore.fit",
+    "english": "Fit",
+    "translation": "फ़िट करें",
+    "ratio": 3
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",

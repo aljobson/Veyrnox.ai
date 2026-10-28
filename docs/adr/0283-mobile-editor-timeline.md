@@ -1,0 +1,19 @@
+# ADR-0283: Phone editor timeline, scrubbing and honest tabs
+
+Status: Accepted for implementation; independent review pending.
+
+The phone editor uses a fixed track header column and one horizontal scroller for the ruler and all lanes. Clips, markers and the playhead use the same pixels-per-frame coordinates. The zoom range is 0.25–8, initially 2; Fit includes 150 frames of tail. Scrubbing and timecode entry pause playback, and paused preview seeks use a half-frame threshold in source time.
+
+Raw React Native responder props implement ruler scrubbing, a 300 ms hold to move, and immediate trim handles. Movement before the hold yields to scrolling. Active edits lock scrolling, preview a ghost, and commit once on release; termination discards the preview. Accessibility actions use the same timeline maths. No gesture dependency is added. A future gesture-handler integration can replace responder negotiation while preserving the pure helpers, cancellation semantics, and one-edit-per-gesture history boundary.
+
+Move snapping follows the web: zero, the playhead, and every other clip edge are anchors, with a six-frame tolerance and the nearest shift of either moving edge winning. The phone also snaps the moved trim edge to these anchors for finger precision. Multi-selection moves use one delta clamped to the intersection of each member’s permitted range; a snap outside that range is dropped. Track targeting uses actual row order across all kinds and accepts only an unlocked matching kind for a single moving item.
+
+Trims respect sequence limits and the source range, including rate and reverse playback, and clamp fades to the new length. Clips with timed fields the phone cannot slice (words, keyframes, parameterKeyframes, maskKeyframes, speedCurve, animation offset/span) are movable but cannot be trimmed. Images and graphics can extend beyond their nominal duration. Their source offset remains nonnegative because the shared save validator requires that even for still media; this is an additional lower bound to the frozen plan’s still-media exception.
+
+Templates, Elements, Scenes, Clips, Assistant, Plugins and Review are hidden. Their existing phone actions did not implement the corresponding editor tools: unrelated routes, lists labelled as detection, and local markers labelled as review. Markers now have a dedicated tool; renaming commits on end editing. Existing translation keys remain available. Real catalogs, detection, timeline-aware assistance and shared review need later work.
+
+Library video length comes from media-info, falling back to a checked export source link and a duration probe. Audio uses the checked link and probe; images use three seconds. Unknown durations add nothing. Links are never stored in the document or logged. Imports recheck mounted state and account ownership, then use the latest document, destination track and sequence counter. Entry imports retain the full source duration while clipping timeline length to 18,000 frames.
+
+Implementation notes for the frozen work order: passing fps at the single syncPlayer call site is necessary to compute its required half-frame tolerance. Presentational helpers are moved unchanged; Adjust uses long seconds labels with existing frame values and one-second steps, plus separate one-frame actions. No document schema, dependency, server, export pipeline or paid operation changes are included.
+
+Verification covers pure timecode and timeline maths, source lengths, responder gestures, accessibility, transport, preview seeks and asynchronous imports. The required full proof command remains the TypeScript/Jest/registry/catalog chain documented in the work order. This sandbox cannot open the owner’s shared build-slot lock, so a full-suite run requires a runner with access to that existing lock; targeted checks do not substitute for the independent full proof.
