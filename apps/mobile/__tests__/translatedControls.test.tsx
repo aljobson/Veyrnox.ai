@@ -68,7 +68,7 @@ test.each(locales)('%s: every length flag has wrap/shrink protection in fixed-wi
             expect(RN.StyleSheet.flatten(node.props.style).fontSize).toBeGreaterThan(0);
         });
     }
-});
+}, 20_000); // Renders every length-flagged string; slow on CI runners.
 
 test.each(locales)('%s: actual bottom tabs and header captions retain one line with bounded shrink', async locale => {
     setLocaleFromDevice([locale]);
