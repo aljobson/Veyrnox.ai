@@ -168,5 +168,6 @@
   "publishOps.accountLabel": "Formatting template; words are localized separately.",
   "publishOps.inbox.tags": "Shared term in this language.",
   "publishOps.priority.normal": "Shared term in this language.",
-  "publishOps.import.name": "Shared term in this language."
+  "publishOps.import.name": "Shared term in this language.",
+  "editorSave.versionRow": "Established German term or label: Version {value1}."
 }

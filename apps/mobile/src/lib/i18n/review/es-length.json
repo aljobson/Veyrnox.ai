@@ -2910,6 +2910,18 @@
     "ratio": 1.68
   },
   {
+    "id": "editorSave.loadOlder",
+    "english": "Load older",
+    "translation": "Cargar anteriores",
+    "ratio": 1.7
+  },
+  {
+    "id": "editorSave.retryRestore",
+    "english": "Retry restore",
+    "translation": "Reintentar restauración",
+    "ratio": 1.77
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",

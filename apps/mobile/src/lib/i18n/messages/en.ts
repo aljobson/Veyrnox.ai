@@ -73,6 +73,7 @@ import area_edit from './en/edit';
 import area_editor from './en/editor';
 import area_editorCore from './en/editorCore';
 import area_editorProjects from './en/editorProjects';
+import area_editorSave from './en/editorSave';
 import area_editorServerExport from './en/editorServerExport';
 import area_editorSpike from './en/editorSpike';
 import area_email from './en/email';
@@ -269,6 +270,7 @@ const catalog = {
     ...area_editor,
     ...area_editorCore,
     ...area_editorProjects,
+    ...area_editorSave,
     ...area_editorServerExport,
     ...area_editorSpike,
     ...area_email,

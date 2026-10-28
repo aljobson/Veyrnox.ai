@@ -4584,6 +4584,30 @@
     "ratio": 1.73
   },
   {
+    "id": "editorSave.versions",
+    "english": "Versions",
+    "translation": "Versions enregistrées",
+    "ratio": 2.63
+  },
+  {
+    "id": "editorSave.loadOlder",
+    "english": "Load older",
+    "translation": "Charger les anciennes",
+    "ratio": 2.1
+  },
+  {
+    "id": "editorSave.retryRestore",
+    "english": "Retry restore",
+    "translation": "Réessayer la restauration",
+    "ratio": 1.92
+  },
+  {
+    "id": "editorSave.draftUnreadable",
+    "english": "Couldn't check this device for unsaved changes. New edits are still saved.",
+    "translation": "Impossible de vérifier les modifications non enregistrées sur cet appareil. Les nouvelles modifications sont toujours enregistrées.",
+    "ratio": 1.77
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

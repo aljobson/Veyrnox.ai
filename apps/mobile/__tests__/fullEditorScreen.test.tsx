@@ -9,19 +9,22 @@ void [ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInp
 const projectId = '11111111-1111-1111-1111-111111111111';
 const document = { schema_version: 1 as const, project_id: projectId, brief: 'Opening scene', canvas: { aspect_ratio: '16:9', frame_rate: 30 } };
 let serverDocument: any = document;
-const mockRouter = { back: jest.fn(), push: jest.fn() };
+const mockRouter = { back: jest.fn(), push: jest.fn(), replace: jest.fn() };
+const mockBeginSessionTask = () => ({ current: () => true });
 const mockRequest = jest.fn();
 const mockApi = { request: mockRequest };
 const mockScreenRender = jest.fn();
 
+jest.mock('../src/lib/appCache', () => ({ getCacheUser: () => 'owner', subscribeCacheUser: () => () => {} }));
+jest.mock('../src/lib/editorDrafts', () => ({ readDraft: jest.fn().mockResolvedValue(null), writeDraft: jest.fn().mockResolvedValue(true), removeDraft: jest.fn().mockResolvedValue(undefined) }));
 jest.mock('../src/lib/editorDeviceMedia', () => ({ editorDeviceMedia: { hydrate: jest.fn().mockResolvedValue({}), copy: jest.fn().mockResolvedValue(null), backup: jest.fn().mockResolvedValue(null) } }));
 jest.mock('../src/lib/editorMediaDuration', () => ({ probeDuration: jest.fn().mockResolvedValue(4) }));
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'native-save-key' }));
 jest.mock('expo-secure-store', () => ({ getItemAsync: jest.fn().mockResolvedValue('seen'), setItemAsync: jest.fn().mockResolvedValue(undefined) }));
 jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: jest.fn(), UIImagePickerPreferredAssetRepresentationMode: { Compatible: 'compatible' } }));
 jest.mock('expo-document-picker', () => ({ getDocumentAsync: jest.fn() }));
-jest.mock('expo-router', () => ({ Stack: { Screen: ({ options }: any) => options?.headerRight?.() ?? null }, useRouter: () => mockRouter }));
-jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => { mockScreenRender(); return { api: mockApi }; } }));
+jest.mock('expo-router', () => ({ Stack: { Screen: ({ options }: any) => options?.headerRight?.() ?? null }, usePreventRemove: () => () => {}, useRouter: () => mockRouter }));
+jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => { mockScreenRender(); return { api: mockApi, beginSessionTask: mockBeginSessionTask }; } }));
 jest.mock('../src/components/editor/EditorMediaPreview', () => ({ EditorMediaPreview: ({ media, localUri }: any) => require('react').createElement(require('react-native').View, { accessibilityLabel: `Real preview ${media.name}`, testID: localUri }) }));
 jest.mock('../src/components/LibraryChooser', () => ({ LibraryChooser: ({ onPick }: any) => require('react').createElement(require('react-native').Pressable, { accessibilityRole: 'button', accessibilityLabel: 'Choose Library item', onPress: () => onPick({ jobId: '22222222-2222-2222-2222-222222222222', name: 'Library shot', createdAt: '2026-10-23T00:00:00Z' }) }) }));
 
@@ -39,7 +42,7 @@ beforeEach(() => {
     jest.useFakeTimers();
     jest.clearAllMocks();
     mockRequest.mockImplementation(async (path: string, init?: RequestInit) => {
-        if (init?.method === 'PUT') return { revision: 5 };
+        if (init?.method === 'PUT') return { revision: JSON.parse(init.body as string).expected_revision + 1 };
         if (path.endsWith('/media-info')) return { seconds: 4 };
         if (path.endsWith('/document')) return { revision: 4, document: serverDocument };
         return { project: { id: projectId, workspace_id: 'workspace', name: 'Native cut' } };
@@ -388,4 +391,29 @@ test('timeline follow-scroll responds to subscribed playback frames', async () =
         expect(scroll).toHaveBeenCalledWith(expect.objectContaining({ x: 26 }));
         expect(mockScreenRender).toHaveBeenCalledTimes(renders);
     } finally { scroll.mockRestore(); }
+});
+
+test.each([[403, 'editor.unavailable'], [429, 'editor.paused'], [0, 'editor.offline']])('project bar shows mapped save failure %s without changing its height', async (status, key) => {
+    const { ApiError } = require('../src/lib/api');
+    const { t } = require('../src/lib/i18n');
+    const { styles } = require('../src/components/editor/fullEditorStyles');
+    const base = mockRequest.getMockImplementation()!;
+    mockRequest.mockImplementation((path, init) => init?.method === 'PUT' ? Promise.reject(new ApiError(status, 'failure')) : base(path, init));
+    await render(); await press('Add text'); await act(async () => jest.advanceTimersByTimeAsync(900));
+    expect(root.container.queryAll(node => StyleSheet.flatten(node.props.style)?.fontSize === styles.status.fontSize && node.children.includes(t(key))).length).toBeGreaterThan(0);
+    expect(StyleSheet.flatten(styles.projectBar)).toMatchObject({ minHeight: 58, paddingVertical: 8 });
+    // The 44 pt button fits the existing bar, including its padding and border.
+    expect(root.container.queryAll(node => {
+        const style = StyleSheet.flatten(node.props.style);
+        return style?.minHeight === 44 && style?.marginVertical === -2;
+    }).length).toBeGreaterThan(0);
+});
+test('project bar shows recovered changes until a clean save includes its revision', async () => {
+    const { readDraft } = require('../src/lib/editorDrafts');
+    const { styles } = require('../src/components/editor/fullEditorStyles');
+    readDraft.mockResolvedValueOnce({ owner: 'owner', projectId, baseRevision: 4, document: { ...document, brief: 'Recovered' }, updatedAt: 1 });
+    await render(); await press('Restore unsaved changes');
+    expect(root.container.queryAll(node => StyleSheet.flatten(node.props.style)?.fontSize === styles.status.fontSize && node.children.includes('Recovered changes, not saved yet')).length).toBeGreaterThan(0);
+    await act(async () => jest.advanceTimersByTimeAsync(900));
+    expect(root.container.queryAll(node => StyleSheet.flatten(node.props.style)?.fontSize === styles.status.fontSize && node.children.includes('Saved · v5')).length).toBeGreaterThan(0);
 });

@@ -1,0 +1,16 @@
+export default {
+    'editorSave.versions': 'Versions',
+    'editorSave.loadOlder': 'Load older',
+    'editorSave.versionRow': 'Version {value1}',
+    'editorSave.current': ' (current)',
+    'editorSave.restoredFrom': 'Restored from version {value1}',
+    'editorSave.saveFirst': 'Save your changes before restoring a version.',
+    'editorSave.importDropped': 'The import was stopped because the project changed. Add it again.',
+    'editorSave.waitingImport': 'Waiting for the import to finish…',
+    'editorSave.copyChanged': 'The project changed while copying. Try again.',
+    'editorSave.retryRestore': 'Retry restore',
+    'editorSave.restoreUnknown': 'Not sure the restore was saved yet. Trying again…',
+    'editorSave.recovered': 'Recovered changes, not saved yet',
+    'editorSave.close': 'Close',
+    'editorSave.draftUnreadable': 'Couldn\'t check this device for unsaved changes. New edits are still saved.',
+} as const;

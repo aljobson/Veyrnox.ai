@@ -2880,6 +2880,18 @@
     "ratio": 1.77
   },
   {
+    "id": "editorSave.loadOlder",
+    "english": "Load older",
+    "translation": "Carregar anteriores",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorSave.retryRestore",
+    "english": "Retry restore",
+    "translation": "Tentar restaurar novamente",
+    "ratio": 2
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",

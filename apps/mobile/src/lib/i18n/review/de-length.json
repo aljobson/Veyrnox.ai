@@ -3054,6 +3054,24 @@
     "ratio": 1.8
   },
   {
+    "id": "editorSave.retryRestore",
+    "english": "Retry restore",
+    "translation": "Wiederherstellung erneut versuchen",
+    "ratio": 2.62
+  },
+  {
+    "id": "editorSave.recovered",
+    "english": "Recovered changes, not saved yet",
+    "translation": "Änderungen wiederhergestellt, noch nicht gespeichert",
+    "ratio": 1.63
+  },
+  {
+    "id": "editorSave.close",
+    "english": "Close",
+    "translation": "Schließen",
+    "ratio": 1.8
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

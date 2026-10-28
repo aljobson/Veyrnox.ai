@@ -5272,5 +5272,19 @@ export default {
   "publishTiming.heat.lower": "낮음",
   "publishTiming.heat.higher": "높음",
   "publishTiming.heat.insufficient": "— = 게시물 부족",
-  "publishTiming.move.expected": "요청의 원래 시간: {time}"
+  "publishTiming.move.expected": "요청의 원래 시간: {time}",
+  "editorSave.versions": "버전",
+  "editorSave.loadOlder": "이전 버전 불러오기",
+  "editorSave.versionRow": "버전 {value1}",
+  "editorSave.current": " (현재)",
+  "editorSave.restoredFrom": "버전 {value1}에서 복원됨",
+  "editorSave.saveFirst": "버전을 복원하기 전에 변경 사항을 저장하세요.",
+  "editorSave.importDropped": "프로젝트가 변경되어 가져오기가 중단되었습니다. 다시 추가하세요.",
+  "editorSave.waitingImport": "가져오기가 완료되기를 기다리는 중…",
+  "editorSave.copyChanged": "복사 중 프로젝트가 변경되었습니다. 다시 시도하세요.",
+  "editorSave.retryRestore": "복원 다시 시도",
+  "editorSave.restoreUnknown": "복원이 저장되었는지 아직 확인되지 않았습니다. 다시 시도 중…",
+  "editorSave.recovered": "변경 사항을 복구했으며 아직 저장하지 않았습니다",
+  "editorSave.close": "닫기",
+  "editorSave.draftUnreadable": "이 기기에서 저장되지 않은 변경 사항을 확인할 수 없습니다. 새 편집 내용은 계속 저장됩니다."
 } as const;

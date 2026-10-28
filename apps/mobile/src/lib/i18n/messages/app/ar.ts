@@ -5592,5 +5592,19 @@ export default {
   "publishTiming.heat.lower": "أقل",
   "publishTiming.heat.higher": "أعلى",
   "publishTiming.heat.insufficient": "— = لا توجد منشورات كافية",
-  "publishTiming.move.expected": "الوقت الأصلي للطلب: {time}"
+  "publishTiming.move.expected": "الوقت الأصلي للطلب: {time}",
+  "editorSave.versions": "الإصدارات",
+  "editorSave.loadOlder": "تحميل الأقدم",
+  "editorSave.versionRow": "الإصدار {value1}",
+  "editorSave.current": " (الحالي)",
+  "editorSave.restoredFrom": "تمت الاستعادة من الإصدار {value1}",
+  "editorSave.saveFirst": "احفظ تغييراتك قبل استعادة إصدار.",
+  "editorSave.importDropped": "توقف الاستيراد لأن المشروع تغير. أضفه مجددًا.",
+  "editorSave.waitingImport": "بانتظار اكتمال الاستيراد…",
+  "editorSave.copyChanged": "تغير المشروع أثناء النسخ. حاول مجددًا.",
+  "editorSave.retryRestore": "إعادة محاولة الاستعادة",
+  "editorSave.restoreUnknown": "لم نتأكد من حفظ الاستعادة بعد. نحاول مجددًا…",
+  "editorSave.recovered": "تمت استعادة التغييرات ولم تُحفظ بعد",
+  "editorSave.close": "إغلاق",
+  "editorSave.draftUnreadable": "تعذّر التحقق من وجود تغييرات غير محفوظة على هذا الجهاز. لا تزال التعديلات الجديدة تُحفظ."
 } as const;
