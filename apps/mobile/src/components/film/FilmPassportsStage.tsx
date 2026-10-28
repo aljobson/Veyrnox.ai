@@ -5,6 +5,7 @@ import { t } from '../../lib/i18n';
 import { colors } from '../../theme';
 import { FilmSelect } from './FilmSelect';
 import { FilmAction, FilmInput, FilmPromptOutput, type StageProps } from './FilmPromptOutput';
+import { Text as StatusText } from '../ui/Text';
 
 export function FilmPassportsStage({ film, change, catalog, live }: StageProps) {
     const required = [...new Set(film.shots.flatMap(shotAssets))];
@@ -29,7 +30,7 @@ export function FilmPassportsStage({ film, change, catalog, live }: StageProps) 
         <Text style={{ color: colors.muted }}>{t(type === 'character' ? 'filmOutput.hint.character' : type === 'location' ? 'filmOutput.hint.location' : 'filmOutput.hint.prop')}</Text>
         <FilmInput label={t('film.approvedreferencefiles')} value={refs} onChange={v => edit({ references: v })} disabled={locked} multiline />
         <FilmAction label={t('filmOutput.savePassport')} disabled={locked || !descriptor.trim() || !refs.trim()} onPress={save} />
-        {asset ? <><Text accessibilityLiveRegion="polite" style={{ color: colors.body }}>{key} · {t(locked ? 'filmOutput.locked' : 'filmOutput.draft')}</Text>
+        {asset ? <><StatusText variant="inherit" accessibilityLiveRegion="polite" style={{ color: colors.body }}>{key} · {t(locked ? 'filmOutput.locked' : 'filmOutput.draft')}</StatusText>
             {locked ? <Text style={{ color: colors.muted }}>{t('filmOutput.newVersion')}</Text> : <FilmPromptOutput title={t('filmOutput.referenceSheet')} prompt={referenceSheet(asset)} modelId={film.stack.image} access={film.stack.imageAccess} catalog={catalog} live={live} />}</> : null}
     </View>;
 }
