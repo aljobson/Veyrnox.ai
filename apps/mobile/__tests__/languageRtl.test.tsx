@@ -23,8 +23,9 @@ test('editor time coordinates stay LTR and the playhead uses the LTR logical sta
     expect(styles.timelineSection.direction).toBe('ltr');
     expect(styles.playheadHead.start).toBe(-3);
     expect(styles.transportIcon.writingDirection).toBe('ltr');
-    const source = require('fs').readFileSync(require('path').join(__dirname, '../src/components/editor/FullEditorScreen.tsx'), 'utf8');
-    expect(source).toContain('styles.playhead, { start: total ?');
+    const source = require('fs').readFileSync(require('path').join(__dirname, '../src/components/editor/EditorTimeline.tsx'), 'utf8');
+    expect(source).toContain("contentContainerStyle={{ width, direction: 'ltr' }}");
+    expect(source).toContain('local.playhead, { left: frame * ppf');
 });
 test('real I18nManager adapters only run for a direction change', async () => {
     const allow = jest.spyOn(I18nManager, 'allowRTL').mockImplementation(() => {});

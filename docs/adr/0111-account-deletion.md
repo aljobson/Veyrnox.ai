@@ -62,6 +62,8 @@ Off until `ACCOUNT_DELETION_ENABLED` is `"true"`. Production vars are at the 77-
 
 **Amendment 1 (2026-10-27): on in production.** The owner approved going live in chat. All three conditions hold: migration 0347 was applied on production by apply-migrations run 39105180213 (2026-10-18, log line `applied 0347_account_deletion`), and the privacy policy states the email hash (`lib/i18n/messages/legal/en/privacy.mjs`, key `b058`). The binding cap has room now (64 vars plus about 50 secrets is 114 of 128), so `ACCOUNT_DELETION_ENABLED: "true"` is a top-level var in `wrangler.jsonc` and `tests/workerBindingBudget.test.mjs` allows 64. The phone has shown the Delete account row in every build since PR 1547; its `EXPO_PUBLIC_ACCOUNT_DELETION_ENABLED` constant is no longer read. Rollback: remove the var and deploy; erased accounts stay erased.
 
+**Amendment 2 (2026-10-28): the production switch is a secret, not a var.** The live Worker already carried `ACCOUNT_DELETION_ENABLED` as a secret binding. Amendment 1's `wrangler.jsonc` var of the same name replaced it on deploy, so `scripts/check-worker-secrets.mjs` reported the secret missing and every production deploy from 36b7a537c (PR 1698) onward was rolled back (deploy-failure issue 1716). The var is removed again; `tests/workerBindingBudget.test.mjs` now refuses it. Whether deletion is on in production is whatever that secret holds: the owner sets it with `wrangler secret put ACCOUNT_DELETION_ENABLED` (value `true`), which this repo cannot read.
+
 ## Rejected
 
 - **Hard delete of `public.users` with cascades.** Blocked by the ledger's RESTRICT references and the append-only trigger; if forced, it would destroy the records refunds and disputes need.

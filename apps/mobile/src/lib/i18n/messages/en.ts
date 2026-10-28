@@ -69,6 +69,7 @@ import area_drafts from './en/drafts';
 import area_draw from './en/draw';
 import area_edit from './en/edit';
 import area_editor from './en/editor';
+import area_editorCore from './en/editorCore';
 import area_editorProjects from './en/editorProjects';
 import area_editorServerExport from './en/editorServerExport';
 import area_editorSpike from './en/editorSpike';
@@ -254,6 +255,7 @@ const catalog = {
     ...area_draw,
     ...area_edit,
     ...area_editor,
+    ...area_editorCore,
     ...area_editorProjects,
     ...area_editorServerExport,
     ...area_editorSpike,

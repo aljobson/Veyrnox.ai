@@ -22,5 +22,11 @@
     "english": "PowerPoint",
     "translation": "PowerPointプレゼンテーション",
     "ratio": 1.9
+  },
+  {
+    "id": "editorCore.fit",
+    "english": "Fit",
+    "translation": "全体を表示",
+    "ratio": 1.67
   }
 ]

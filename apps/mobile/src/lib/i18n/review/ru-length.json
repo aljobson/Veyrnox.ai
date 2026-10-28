@@ -2928,6 +2928,18 @@
     "ratio": 2
   },
   {
+    "id": "editorCore.goToEnd",
+    "english": "Go to end",
+    "translation": "Перейти в конец",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorCore.fit",
+    "english": "Fit",
+    "translation": "Вместить",
+    "ratio": 2.67
+  },
+  {
     "id": "publishParity.media.previewImage",
     "english": "Chosen image preview",
     "translation": "Предпросмотр выбранного изображения",

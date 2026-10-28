@@ -4380,6 +4380,18 @@
     "ratio": 2.4
   },
   {
+    "id": "editorCore.enterTimecode",
+    "english": "Enter timecode",
+    "translation": "Saisir un code temporel",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorCore.fit",
+    "english": "Fit",
+    "translation": "Ajuster",
+    "ratio": 2.33
+  },
+  {
     "id": "publishParity.preview.title",
     "english": "Post previews",
     "translation": "Aperçus des publications",
