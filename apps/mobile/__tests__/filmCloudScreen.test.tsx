@@ -84,7 +84,8 @@ test('a gone film announces the failure and refreshes the list', async () => {
     await mount(); mockRequest.mockImplementation(async path => { if (path.endsWith(id)) throw new ApiError(404, 'unknown'); return { projects: [] }; });
     await press(); expect(has(t('filmCloud.gone'))).toBe(true); expect(has(t('filmCloud.empty'))).toBe(true);
     expect(RN.AccessibilityInfo.announceForAccessibility).toHaveBeenCalledWith(t('filmCloud.gone'));
-    expect(root.container.queryAll(n => n.props.accessibilityLiveRegion === 'polite').length).toBeGreaterThan(0);
+    // Announced once where the failure is set; the visible notice adds no second announcement on iOS.
+    expect(jest.mocked(RN.AccessibilityInfo.announceForAccessibility).mock.calls.filter(([m]) => m === t('filmCloud.gone'))).toHaveLength(1);
     expect(mockRequest).toHaveBeenCalledTimes(3);
 });
 test.each([[0, 'net.offline'], [403, 'filmCloud.unavailable'], [429, 'filmCloud.busy'], [500, 'common.error']])('open status %s announces neutral failure', async (status, key) => {
