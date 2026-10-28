@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
+  canCheckCoolingOffRefund,
   subscriptionCheckoutUrl,
   subscriptionReturnFrom,
 } from '../app/veyrnox/_lib/creditSubscriptionUi.js';
@@ -39,4 +41,16 @@ test('subscription return captures one explicit owned-record identifier and sess
     `subscription=${id}&checkout=other&session_id=cs_x`,
   ])
     assert.equal(read(q), null);
+});
+
+
+test('only ended cooling-off cancellations offer the refund retry', () => {
+  assert.equal(canCheckCoolingOffRefund({ status: 'ended', end_reason: 'cancelled_cooling_off' }), true);
+  for (const end_reason of ['cooling_off', 'disputed', 'subscription_ended', 'superseded', null])
+    assert.equal(canCheckCoolingOffRefund({ status: 'ended', end_reason }), false);
+  for (const sub of [null, undefined, { status: 'active', end_reason: 'cancelled_cooling_off' }])
+    assert.equal(canCheckCoolingOffRefund(sub), false);
+  const source = readFileSync(new URL('../app/veyrnox/_components/CreditSubscriptions.js', import.meta.url), 'utf8');
+  assert.match(source, /canCheckCoolingOffRefund\(sub\)/);
+  assert.doesNotMatch(source, /end_reason === 'cooling_off'/);
 });
