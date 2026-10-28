@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { Text as StatusText } from '../ui/Text';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -57,7 +58,7 @@ export function ProjectChooser({ api, engine, record, onResult }: {
         finally { setBusy(false); }
     }
     const button = (label: string, onPress: () => void, selected = false, disabled = busy, key = label) => (
-        <Pressable key={key} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected, disabled }}
+        <Pressable key={key} accessibilityRole="button" accessibilityLabel={rawText(label)} accessibilityState={{ selected, disabled }}
             disabled={disabled} onPress={onPress} style={styles.button}><Text style={styles.text}>{label}</Text></Pressable>
     );
     return <View style={styles.container}>

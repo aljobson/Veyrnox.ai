@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { Image } from 'expo-image';
@@ -26,7 +27,7 @@ function Tile({ api, pick, selected, disabled, onToggle }: { api: ApiClient; pic
     const [failed, setFailed] = useState<string | null>(null);
     return <Card style={s.tile} selected={selected} disabled={disabled} onPress={() => onToggle(pick)}
         accessibilityRole="button" accessibilityState={{ selected, disabled }}
-        accessibilityLabel={t('publishParity.media.tile', { name: pick.name, type: t(pick.mediaType === 'image' ? 'publishUploads.image' : 'publishUploads.video'), date: new Date(pick.job.created_at).toLocaleDateString(formatLocale()) })}>
+        accessibilityLabel={rawText(t('publishParity.media.tile', { name: pick.name, type: t(pick.mediaType === 'image' ? 'publishUploads.image' : 'publishUploads.video'), date: new Date(pick.job.created_at).toLocaleDateString(formatLocale()) }))}>
         <Text numberOfLines={1} variant="caption">{pick.name}</Text>
         <View style={s.picture}>{uri && failed !== uri ? <Image source={{ uri }} cachePolicy="none" contentFit="cover" style={s.image} accessibilityElementsHidden importantForAccessibility="no" onError={() => setFailed(uri)} /> : <Icon name={pick.mediaType === 'video' ? 'play' : 'image'} size={24} />}</View>
         {selected ? <View style={s.badge}><Icon name="check" size={16} /></View> : null}

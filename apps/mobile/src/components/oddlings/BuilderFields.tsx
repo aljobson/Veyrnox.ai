@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { Icon } from '../ui';
 import { displayLabel } from '../../lib/displayLabels';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -37,7 +38,7 @@ export function BuilderFields({ picks, scene, motionId, onText, onOpen, onScene 
             <TextInput style={[styles.input, styles.multi]} value={scene} maxLength={300} multiline onChangeText={onScene} accessibilityLabel={t('oddlings.build.scene')} />
             <View style={styles.chips}>
                 {SCENES.slice(0, 3).map((item, index) => (
-                    <Pressable key={item} accessibilityRole="button" accessibilityLabel={`${t('oddlings.build.scenePick', { n: index + 1 })}: ${item}`} accessibilityState={{ selected: scene === item }} style={[styles.chip, scene === item && styles.chipOn]} onPress={() => onScene(item)}>
+                    <Pressable key={item} accessibilityRole="button" accessibilityLabel={rawText(`${t('oddlings.build.scenePick', { n: index + 1 })}: ${item}`)} accessibilityState={{ selected: scene === item }} style={[styles.chip, scene === item && styles.chipOn]} onPress={() => onScene(item)}>
                         <Text style={[styles.chipText, scene === item && styles.chipTextOn]}>{t('oddlings.build.scenePick', { n: index + 1 })}</Text>
                     </Pressable>
                 ))}
@@ -50,7 +51,7 @@ const Label = ({ text }: { text: string }) => <Text style={styles.label}>{text}<
 
 function Row({ text, label, onPress }: { text: string; label: string; onPress: () => void }) {
     return (
-        <Pressable accessibilityRole="button" accessibilityLabel={`${label}: ${text}`} style={styles.row} onPress={onPress}>
+        <Pressable accessibilityRole="button" accessibilityLabel={rawText(`${label}: ${text}`)} style={styles.row} onPress={onPress}>
             <Text style={styles.rowText}>{text}</Text>
             <Icon name="caretRight" size={24} tint={styles.chev.color} />
         </Pressable>

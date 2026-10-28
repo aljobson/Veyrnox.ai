@@ -11,6 +11,7 @@ function files(dir: string): string[] {
 // Only these specific multi-child messages have a hook owner. Other elements in
 // the same file still fail the guard, even if an unrelated hook exists there.
 const exceptions: Record<string, { id: string; owner: string; reason: string }> = {
+    'components/cinema/CinemaPlayer.tsx': { id: 'cinema-loading', owner: "useAnnouncement(loading ? t('cinemaUpload.loading') : null", reason: 'The spinner has an iOS hook owner; Android uses the native live region' },
     'app/(app)/editor/[projectId].tsx': { id: 'editor-retry', owner: "useAnnouncement((['offline', 'paused'].includes(session.status) || problem) && !choice ? retryLabel : null)", reason: 'Conditional retry control and its countdown have a mounted hook owner' },
     'components/JobProvenance.tsx': { id: 'provenance-status', owner: 'useAnnouncement(visibleText)', reason: 'One combined announcement of the visible provenance fields' },
     'app/(app)/cinema/[id].tsx': { id: 'cinema-lock', owner: "useAnnouncement(lock && lock !== 'checking'", reason: 'One combined announcement of the lock title and reason' },

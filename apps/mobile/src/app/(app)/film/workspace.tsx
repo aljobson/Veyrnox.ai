@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { plural, t } from '../../../lib/i18n';
 import { Button } from '../../../components/ui';
@@ -128,7 +129,7 @@ export default function FilmWorkspace() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.stageBar} contentContainerStyle={styles.stageBarContent}>
                 {FILM_STAGES.map(([, title], index) => {
                     const open = stageIssues(film, index).length;
-                    return <Pressable key={title} accessibilityRole="tab" accessibilityLabel={title} disabled={index > available} accessibilityState={{ selected: stage === index, disabled: index > available }} style={[styles.stageChip, stage === index && styles.stageChipOn, index > available && styles.stageChipDisabled]} onPress={() => setStage(index)}>
+                    return <Pressable key={title} accessibilityRole="tab" accessibilityLabel={rawText(title)} disabled={index > available} accessibilityState={{ selected: stage === index, disabled: index > available }} style={[styles.stageChip, stage === index && styles.stageChipOn, index > available && styles.stageChipDisabled]} onPress={() => setStage(index)}>
                         <Text style={[styles.stageChipText, stage === index && styles.stageChipTextOn]}>{index + 1}. {title}{open ? ` · ${open}` : ' · ✓'}</Text>
                     </Pressable>;
                 })}

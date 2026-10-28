@@ -1,3 +1,4 @@
+import { rawText } from '../lib/i18n/translate';
 import { useBalance } from '../lib/useBalance';
 import { Pressable, View } from 'react-native';
 import { usePathname, useRouter } from 'expo-router';
@@ -16,7 +17,7 @@ export function CreditsChip({ palette: override }: { palette?: Palette }) {
     const balance = useBalance();
     const label = balance === null ? t('tabs.creditsUnknown') : plural('home.credits', balance);
     return (
-        <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityHint={t('tabs.creditsHint')} style={styles.chip} onPress={() => router.push('/credits')}>
+        <Pressable accessibilityRole="button" accessibilityLabel={rawText(label)} accessibilityHint={t('tabs.creditsHint')} style={styles.chip} onPress={() => router.push('/credits')}>
             <Icon name="coins" size={16} tint={palette.money} />
             <Text variant="caption" style={styles.chipText} maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} numberOfLines={1}>
                 {balance === null ? '—' : balance}

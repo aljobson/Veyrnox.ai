@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { Pressable, Share, Text, View } from 'react-native';
 import { formatLocale, t } from '../../lib/i18n';
 import { colors } from '../../theme';
@@ -19,7 +20,7 @@ export function Choice({ label, on, onPress, disabled }: { label: string; on: bo
     return (
         <Pressable
             accessibilityRole="checkbox"
-            accessibilityLabel={label}
+            accessibilityLabel={rawText(label)}
             accessibilityState={{ checked: on, disabled: Boolean(disabled) }}
             disabled={disabled}
             onPress={onPress}

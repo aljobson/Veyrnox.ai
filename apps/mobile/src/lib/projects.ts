@@ -77,7 +77,7 @@ export function mergeVersions(existing: readonly Version[], next: readonly Versi
     return { versions: [...existing, ...fresh], added: fresh.length > 0 };
 }
 
-export const versionLabel = (v: Version): string => (v.restoredFrom !== null ? `Version ${v.revision}, restored from version ${v.restoredFrom}` : `Version ${v.revision}`);
+export const versionLabel = (v: Version): string => (v.restoredFrom !== null ? t('projects.restoredVersion', { version: v.revision, source: v.restoredFrom }) : t('projects.revisionLabel', { version: v.revision }));
 
 const enc = encodeURIComponent;
 export const fetchWorkspaces = async (api: ApiClient) => parseWorkspaces(await api.request('/api/v1/workspaces'));

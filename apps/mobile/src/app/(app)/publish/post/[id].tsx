@@ -1,3 +1,4 @@
+import { rawText } from '../../../../lib/i18n/translate';
 import { NetworkLogo } from '../../../../components/publish/NetworkLogo';
 import { networkName } from '../../../../lib/networkLogos';
 import { usePublishRole } from '../../../../lib/usePublishRole';
@@ -82,7 +83,7 @@ export default function PostDetail() {
             {post.targets.map((t) => {
                 const err = boundedError(t.lastError);
                 return (
-                    <Card key={t.id} style={targetStyles.card} accessible accessibilityLabel={`${networkName(t.network)}, ${targetStatusLabel(t.publishStatus)}`}>
+                    <Card key={t.id} style={targetStyles.card} accessible accessibilityLabel={rawText(`${networkName(t.network)}, ${targetStatusLabel(t.publishStatus)}`)}>
                         <View style={targetStyles.row}><NetworkLogo network={t.network} /><ThemedText variant="bodyStrong">{networkName(t.network)}</ThemedText></View>
                         <Text style={[styles.state, t.publishStatus === 'failed' && styles.bad]}>{targetStatusLabel(t.publishStatus)}</Text>
                         {err ? <Text style={styles.errBox}>{err}</Text> : null}

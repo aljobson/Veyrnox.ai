@@ -2,7 +2,7 @@ import { act } from 'react';
 import type { Root, TestInstance } from 'test-renderer';
 export const ID = '11111111-1111-4111-8111-111111111111';
 export const OTHER = '22222222-2222-4222-8222-222222222222';
-export const textOf = (node: TestInstance): string => node.children.map(c => typeof c === 'string' ? c : textOf(c)).join(' ');
+export const textOf = (node: TestInstance): string => node.props.accessibilityElementsHidden ? '' : node.children.map(c => typeof c === 'string' ? c : textOf(c)).filter(Boolean).join(' ');
 export function buttons(root: Root, label: string) { return root.container.queryAll(n => n.props.accessibilityRole === 'button' && (textOf(n) === label || n.props.accessibilityLabel === label)); }
 export async function press(root: Root, label: string) {
     const matches = buttons(root, label); expect(matches).toHaveLength(1);

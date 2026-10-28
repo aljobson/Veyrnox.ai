@@ -41,4 +41,9 @@ export default {
     'credits.paywall.subscriptions': 'Compare monthly subscriptions',
     'credits.paywall.packs': 'Buy credits',
     'credits.paywall.later': 'Not now',
+    "credits.plan.unknown": "Subscription",
+    "credits.plan.lite": "Lite plan",
+    "credits.plan.starter": "Starter plan",
+    "credits.plan.plus": "Plus plan",
+    "credits.plan.ultra": "Ultra plan",
 } as const;

@@ -1,4 +1,5 @@
-import { t } from '../../lib/i18n';
+import { useAnnouncement } from '../../lib/useAnnouncement';
+import { t, tAccessibility, formatNumber } from '../../lib/i18n';
 import { Link, useFocusEffect } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -11,12 +12,19 @@ import { getCinemaProgress } from '../../lib/cinemaProgress';
 export function CinemaPlayer({ contentId, resumePosition = 0, onBlocked }: { readonly contentId: string; readonly resumePosition?: number; readonly onBlocked?: (reason: BlockReason) => void }) {
     const { api, getAccessToken } = useAuth();
     const [state, setState] = useState<SessionState>({ kind: 'loading' });
+    const [playing, setPlaying] = useState(false);
+    const [position, setPosition] = useState(0);
+    const [duration, setDuration] = useState(0);
+    const [buffering, setBuffering] = useState(false);
+    const loading = state.kind === 'loading' || buffering;
+    useAnnouncement(loading ? t('cinemaUpload.loading') : null, { onMount: true });
     const focused = useRef(true);
     const blockedCallback = useRef(onBlocked);
     blockedCallback.current = onBlocked;
     const playback = useRef<PlaybackSession | null>(null);
     const player = useVideoPlayer(null, (p) => {
         p.keepScreenOnWhilePlaying = true;
+        p.timeUpdateEventInterval = 1;
     });
 
     useEffect(() => {
@@ -26,9 +34,12 @@ export function CinemaPlayer({ contentId, resumePosition = 0, onBlocked }: { rea
         playback.current = session;
         const subs = [
             player.addListener('statusChange', ({ status }) => {
+                setBuffering(status === 'loading');
                 if (status === 'error') session.fail();
             }),
-            player.addListener('playingChange', ({ isPlaying }) => session.setPlaying(isPlaying)),
+            player.addListener('playingChange', ({ isPlaying }) => { setPlaying(isPlaying); session.setPlaying(isPlaying); }),
+            player.addListener('timeUpdate', ({ currentTime }) => { setPosition(currentTime); setDuration(player.duration); }),
+            player.addListener('sourceLoad', ({ duration }) => setDuration(duration)),
             AppState.addEventListener('change', (next) => session.setVisible(next === 'active' && focused.current)),
         ];
         const timer = setInterval(() => session.tick(), 1000);
@@ -59,12 +70,14 @@ export function CinemaPlayer({ contentId, resumePosition = 0, onBlocked }: { rea
             <VideoView player={player} style={StyleSheet.absoluteFill} contentFit="contain" nativeControls={false} />
             <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={t('cinema.pauseorresume')}
+                accessibilityLabel={t(playing ? 'cinema.pause' : 'cinema.play')}
+                accessibilityValue={{ text: tAccessibility('cinema.position', { position: formatNumber(position, 0), duration: formatNumber(duration, 0) }) }}
+                accessibilityState={{ busy: loading }}
                 style={StyleSheet.absoluteFill}
                 onPress={() => (player.playing ? player.pause() : player.play())}
             />
             {state.kind === 'loading' ? (
-                <View style={styles.overlay} pointerEvents="none">
+                <View testID="cinema-loading" style={styles.overlay} pointerEvents="none" accessible accessibilityRole="progressbar" accessibilityLabel={t('cinemaUpload.loading')} accessibilityLiveRegion="polite">
                     <ActivityIndicator color={ON_VIDEO_ACCENT} />
                 </View>
             ) : null}

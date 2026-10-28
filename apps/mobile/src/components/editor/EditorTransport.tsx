@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { useState } from 'react';
 import { I18nManager, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { touchTarget } from '../../lib/a11y';
@@ -18,14 +19,14 @@ export function EditorTransport({ frame, total, fps, playing, onSeek, onPlaying 
         if (value === null) { setInvalid(true); return; }
         seek(value); setInvalid(false); setEntry(null);
     };
-    const button = (label: string, disabled: boolean, onPress: () => void, direction: -1 | 1, edge = false) => <Pressable key={label} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled }} disabled={disabled} onPress={onPress} style={[local.button, touchTarget, disabled && styles.disabled]}>
+    const button = (label: string, disabled: boolean, onPress: () => void, direction: -1 | 1, edge = false) => <Pressable key={label} accessibilityRole="button" accessibilityLabel={rawText(label)} accessibilityState={{ disabled }} disabled={disabled} onPress={onPress} style={[local.button, touchTarget, disabled && styles.disabled]}>
         <View style={[local.symbol, { transform: [{ scaleX: direction }] }]}><View style={{ transform: [{ scaleX: I18nManager.isRTL ? -1 : 1 }] }}><Icon name="caretRight" size={20} tint={colors.text} /></View>{edge ? <View style={local.bar} /> : null}</View>
     </Pressable>;
     return <View>
         <View style={local.buttons}>
             {button(t('editor.gotostart'), total <= 0 || frame <= 0, () => seek(0), -1, true)}
             {button(t('editorCore.previousFrame'), total <= 0 || frame <= 0, () => seek(frame - 1), -1)}
-            <Pressable accessibilityRole="button" accessibilityLabel={playing ? t('editor.pause') : t('editor.play')} accessibilityState={{ disabled: total <= 0 }} disabled={total <= 0} onPress={() => onPlaying(!playing)} style={[local.button, touchTarget, total <= 0 && styles.disabled]}>
+            <Pressable accessibilityRole="button" accessibilityLabel={rawText(playing ? t('editor.pause') : t('editor.play'))} accessibilityState={{ disabled: total <= 0 }} disabled={total <= 0} onPress={() => onPlaying(!playing)} style={[local.button, touchTarget, total <= 0 && styles.disabled]}>
                 {playing ? <View style={local.symbol}><View style={local.bar} /><View style={local.bar} /></View> : <Icon name="play" size={24} tint={colors.accent} />}
             </Pressable>
             {button(t('editor.nextframe'), total <= 0 || frame >= total - 1, () => seek(frame + 1), 1)}

@@ -1,3 +1,4 @@
+import { rawText } from '../lib/i18n/translate';
 import { Text, Button, Card, themedStyles, useThemedStyles } from './ui';
 import { StyleSheet, View } from 'react-native';
 
@@ -39,7 +40,7 @@ export function LibraryItem({ job, name, kind, grid, starred, canSchedule, canRe
 
     return (
         <Card style={[styles.card, grid ? styles.gridCard : styles.listRow]}>
-            <Card accessibilityRole="button" accessibilityLabel={[name, statusText, cost, when, expiryText].filter(Boolean).join(', ')} style={[styles.main, !grid && styles.horizontal]} onPress={onOpen}>
+            <Card accessibilityRole="button" accessibilityLabel={rawText([name, statusText, cost, when, expiryText].filter(Boolean).join(', '))} style={[styles.main, !grid && styles.horizontal]} onPress={onOpen}>
                 <View style={grid ? styles.square : styles.thumbnail}>
                     <LibraryMedia job={job} kind={kind} {...media} />
                     {grid ? <View style={styles.statusChip}><Text variant="caption" tone={bad ? 'danger' : 'accent'}>{statusText}</Text></View> : null}
@@ -52,13 +53,13 @@ export function LibraryItem({ job, name, kind, grid, starred, canSchedule, canRe
                 </View>
             </Card>
             <View style={styles.actions}>
-                <Button variant="tertiary" accessibilityRole="button" accessibilityLabel={t('library.favouriteLabel', { name })} accessibilityState={{ selected: starred }} onPress={onStar} label={t('library.favouriteLabel', { name })} icon={starred ? 'starFill' : 'star'} iconOnly />
+                <Button variant="tertiary" accessibilityRole="button" accessibilityLabel={rawText(t('library.favouriteLabel', { name }))} accessibilityState={{ selected: starred }} onPress={onStar} label={t('library.favouriteLabel', { name })} icon={starred ? 'starFill' : 'star'} iconOnly />
                 {canSchedule ? (
-                    <Button variant="secondary" accessibilityRole="button" accessibilityLabel={t('library.scheduleLabel', { name })} onPress={onSchedule} label={t('library.schedule')} />
+                    <Button variant="secondary" accessibilityRole="button" accessibilityLabel={rawText(t('library.scheduleLabel', { name }))} onPress={onSchedule} label={t('library.schedule')} />
                 ) : null}
-                {canAsk ? <Button variant="secondary" label={t('chatDepth.ask')} accessibilityLabel={t('chatDepth.askLabel', { name })} onPress={onAsk} /> : null}
+                {canAsk ? <Button variant="secondary" label={t('chatDepth.ask')} accessibilityLabel={rawText(t('chatDepth.askLabel', { name }))} onPress={onAsk} /> : null}
                 {canReuse ? (
-                    <Button variant="secondary" accessibilityRole="button" accessibilityLabel={t('library.reuseLabel', { name })} onPress={onReuse} label={t('library.reuse')} />
+                    <Button variant="secondary" accessibilityRole="button" accessibilityLabel={rawText(t('library.reuseLabel', { name }))} onPress={onReuse} label={t('library.reuse')} />
                 ) : null}
             </View>
         </Card>

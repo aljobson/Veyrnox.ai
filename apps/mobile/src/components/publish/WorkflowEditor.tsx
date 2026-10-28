@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { Text as StatusText } from '../ui/Text';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -62,7 +63,7 @@ function Field({ label, value, max, multiline, onChange }: { label: string; valu
     return (
         <View style={styles.field}>
             <Text style={styles.label}>{label}</Text>
-            <TextInput style={[styles.input, multiline && styles.multi]} value={value} onChangeText={onChange} maxLength={max} multiline={multiline} accessibilityLabel={label} placeholderTextColor={colors.muted} />
+            <TextInput style={[styles.input, multiline && styles.multi]} value={value} onChangeText={onChange} maxLength={max} multiline={multiline} accessibilityLabel={rawText(label)} placeholderTextColor={colors.muted} />
         </View>
     );
 }

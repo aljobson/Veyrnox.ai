@@ -21,7 +21,9 @@ jest.mock('react', () => ({
     useRef: (value: unknown) => ({ current: value }),
     useState: (value: unknown) => [value, jest.fn()],
 }));
+jest.mock('expo-secure-store', () => ({ getItem: () => null }));
 jest.mock('react-native', () => ({
+    Platform: { OS: 'ios' }, AccessibilityInfo: { announceForAccessibility: jest.fn() },
     ActivityIndicator: 'ActivityIndicator', Pressable: 'Pressable', Text: 'Text', View: 'View',
     StyleSheet: { create: (value: unknown) => value, absoluteFill: {} },
     AppState: { addEventListener: () => ({ remove: jest.fn() }) },

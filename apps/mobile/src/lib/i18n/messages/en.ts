@@ -44,6 +44,7 @@ import area_cinemaBrowse from './en/cinemaBrowse';
 import area_cinemaComments from './en/cinemaComments';
 import area_cinemaCreator from './en/cinemaCreator';
 import area_cinemaDrafts from './en/cinemaDrafts';
+import area_cinemaEmbed from './en/cinemaEmbed';
 import area_cinemaPass from './en/cinemaPass';
 import area_cinemaPlayback from './en/cinemaPlayback';
 import area_cinemaSeries from './en/cinemaSeries';
@@ -79,6 +80,7 @@ import area_editorSpike from './en/editorSpike';
 import area_email from './en/email';
 import area_empty from './en/empty';
 import area_explore from './en/explore';
+import area_faceFilterSwitch from './en/faceFilterSwitch';
 import area_faceFilters from './en/faceFilters';
 import area_facelessReel from './en/facelessReel';
 import area_features from './en/features';
@@ -111,6 +113,7 @@ import area_logo from './en/logo';
 import area_lowBalance from './en/lowBalance';
 import area_mcp from './en/mcp';
 import area_mdl from './en/mdl';
+import area_mediaKind from './en/mediaKind';
 import area_menu from './en/menu';
 import area_mobile from './en/mobile';
 import area_model from './en/model';
@@ -241,6 +244,7 @@ const catalog = {
     ...area_cinemaComments,
     ...area_cinemaCreator,
     ...area_cinemaDrafts,
+    ...area_cinemaEmbed,
     ...area_cinemaPass,
     ...area_cinemaPlayback,
     ...area_cinemaSeries,
@@ -276,6 +280,7 @@ const catalog = {
     ...area_email,
     ...area_empty,
     ...area_explore,
+    ...area_faceFilterSwitch,
     ...area_faceFilters,
     ...area_facelessReel,
     ...area_features,
@@ -308,6 +313,7 @@ const catalog = {
     ...area_lowBalance,
     ...area_mcp,
     ...area_mdl,
+    ...area_mediaKind,
     ...area_menu,
     ...area_mobile,
     ...area_model,

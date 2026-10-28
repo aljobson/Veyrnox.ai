@@ -1,3 +1,4 @@
+import { rawText } from '../lib/i18n/translate';
 import { useCallback, useEffect, useRef } from 'react';
 import { AppState } from 'react-native';
 import { useFocusEffect } from 'expo-router';
@@ -23,7 +24,7 @@ export function InlineMedia({ url, label, audio = false, onReady }: { url: strin
         return () => { playing.remove(); state.remove(); };
     }, [player]);
     useFocusEffect(useCallback(() => () => { player.pause(); }, [player]));
-    return <VideoView player={player} nativeControls contentFit="contain" accessibilityLabel={label} style={[styles.media, audio && styles.audio]} />;
+    return <VideoView player={player} nativeControls contentFit="contain" accessibilityLabel={rawText(label)} style={[styles.media, audio && styles.audio]} />;
 }
 const sheets = themedStyles(p => ({
     media: { width: '100%', height: 260, backgroundColor: p.bgElevated1, borderRadius: ds.radius.md },

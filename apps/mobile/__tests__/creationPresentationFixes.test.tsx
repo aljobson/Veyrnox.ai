@@ -48,7 +48,7 @@ test.each([
 test.each([true, false, 'Invalid seed'])('TextField error=%s styles its shell and preserves string messages', async error => {
     await act(async () => root.render(<TextField label="Seed" error={error} />));
     const p = tokensForScheme('light', DEFAULT_APPEARANCE);
-    expect(RN.StyleSheet.flatten(control('Seed').props.style).borderWidth).toBeUndefined();
+    expect(RN.StyleSheet.flatten(control(typeof error === 'string' ? `Seed, ${error}` : 'Seed').props.style).borderWidth).toBeUndefined();
     const shells = root.container.queryAll(n => RN.StyleSheet.flatten(n.props.style)?.borderWidth === 1);
     expect(shells).toHaveLength(1);
     expect(RN.StyleSheet.flatten(shells[0].props.style).borderColor).toBe(error ? p.danger : p.borderStrong);

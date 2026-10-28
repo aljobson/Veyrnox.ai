@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { Chip, Text as UiText } from '../../../components/ui';
 import { themedStyles, useThemedStyles } from '../../../components/ui/AppearanceContext';
 import { NetworkLogo } from '../../../components/publish/NetworkLogo';
@@ -152,7 +153,7 @@ export default function QueueEdit() {
                 <Text style={styles.label} accessibilityRole="header">{t('queues.slots')}</Text>
                 <View style={styles.chips}>
                     {sortSlots(slots).map((s) => (
-                        <Pressable disabled={!canWrite || busy} key={slotKey(s)} accessibilityRole="button" accessibilityLabel={canWrite ? t('queues.removeSlot', { slot: slotText(s) }) : slotText(s)} style={[styles.chip, touchTarget]} onPress={() => setSlots((cur) => cur.filter((x) => slotKey(x) !== slotKey(s)))}>
+                        <Pressable disabled={!canWrite || busy} key={slotKey(s)} accessibilityRole="button" accessibilityLabel={rawText(canWrite ? t('queues.removeSlot', { slot: slotText(s) }) : slotText(s))} style={[styles.chip, touchTarget]} onPress={() => setSlots((cur) => cur.filter((x) => slotKey(x) !== slotKey(s)))}>
                             <Text style={styles.chipText}>{canWrite ? t('publishOps.queue.removeSlot', { slot: slotText(s) }) : slotText(s)}</Text>
                         </Pressable>
                     ))}

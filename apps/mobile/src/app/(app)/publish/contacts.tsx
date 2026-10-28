@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { Button } from '../../../components/ui';
 import { NetworkLogo } from '../../../components/publish/NetworkLogo';
 import { networkName } from '../../../lib/networkLogos';
@@ -59,7 +60,7 @@ export default function Contacts() {
                     refreshControl={<RefreshControl refreshing={refreshing} tintColor={colors.accent} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}
                     ListEmptyComponent={<Text style={styles.muted}>{t('contacts.none')}</Text>}
                     renderItem={({ item }) => (
-                        <Pressable accessibilityRole="button" accessibilityLabel={`${item.name}, ${networkName(item.network)}, ${t(`contacts.status.${item.status}`)}`} style={[styles.row, touchTarget]} onPress={() => router.push({ pathname: '/publish/contact-edit', params: { accountId: item.accountId, externalId: item.externalId } })}>
+                        <Pressable accessibilityRole="button" accessibilityLabel={rawText(`${item.name}, ${networkName(item.network)}, ${t(`contacts.status.${item.status}`)}`)} style={[styles.row, touchTarget]} onPress={() => router.push({ pathname: '/publish/contact-edit', params: { accountId: item.accountId, externalId: item.externalId } })}>
                             <Text style={styles.name}>{item.name}</Text>
                             <View style={styles.chips}><NetworkLogo network={item.network} /><Text style={styles.muted}>{t('publishOps.inbox.meta', { network: networkName(item.network), account: item.accountName, kind: t(`contacts.status.${item.status}`) })}</Text></View>
                             {item.tags.length ? <Text style={styles.tags}>{item.tags.join(', ')}</Text> : null}

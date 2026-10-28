@@ -90,7 +90,7 @@ export const eligibleAccounts = (accounts: readonly PublishAccount[], media: Med
 export function captionWarning(text: string, networks: readonly string[]): string | null {
     for (const n of networks) {
         const c = CAPTION_LIMIT[n];
-        if (c && text.length > c.limit) return `${c.label} allows ${c.limit} characters; this is ${text.length}.`;
+        if (c && text.length > c.limit) return t('publishCompose.captionLimit', { name: c.label, limit: c.limit, length: text.length });
     }
     return null;
 }
@@ -124,10 +124,10 @@ export function validateDraft(draft: Draft, accounts: readonly PublishAccount[],
     if (draft.text.length > MAX_TEXT) return t('publishCompose.thetextcanbeatmostcharacters', { value1: MAX_TEXT });
     for (const id of draft.accountIds) {
         const a = accounts.find((x) => x.id === id);
-        if (!a || media.some(item => !a.supportedMedia.includes(item.mediaType))) return `${a?.displayName ?? 'That account'} cannot post a ${draft.mediaType}.`;
+        if (!a || media.some(item => !a.supportedMedia.includes(item.mediaType))) return t('publishCompose.unsupportedMedia', { name: a?.displayName ?? t('publishCompose.account'), kind: t(`mediaKind.${draft.mediaType}`) });
     }
     const problem = networkTextProblem(draft.networkText);
-    if (problem) return `${networkLabel(problem.network)} allows ${problem.limit} characters; this is ${problem.length}.`;
+    if (problem) return t('publishCompose.captionLimit', { name: networkLabel(problem.network), limit: problem.limit, length: problem.length });
     if (!draft.queue && draft.when.kind === 'at' && draft.when.at.getTime() <= now.getTime() + MIN_LEAD_MS) return t('publishCompose.chooseatimeinthefutureat');
     return null;
 }

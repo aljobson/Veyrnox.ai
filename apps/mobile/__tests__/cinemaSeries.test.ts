@@ -1,5 +1,5 @@
 import { EDITORIAL_SERIES } from '../src/lib/cinemaEditorialData';
-import { editorialSeriesList, editorialSeriesBySlug, editorialSeriesWebUrl, editorialEpisodeWebUrl, phoneCategories, episodeLock, parseEpisodeLocks } from '../src/lib/cinemaSeries';
+import { editorialEpisodeContext, editorialSeriesList, editorialSeriesBySlug, editorialSeriesWebUrl, editorialEpisodeWebUrl, phoneCategories, episodeLock, parseEpisodeLocks } from '../src/lib/cinemaSeries';
 import { CATEGORIES } from '../src/lib/cinemaBrowse';
 
 declare const require: (id: string) => any;
@@ -14,7 +14,7 @@ const projection = (s: any) => ({
     slug: s.slug, title: s.title, season: s.season, seasonTitle: s.seasonTitle,
     description: s.description, posterUrl: s.posterUrl, categories: s.categories,
     creatorName: s.creator.name, sourceName: s.source.name,
-    episodes: s.episodes.map((e: any) => ({ id: e.id, position: e.position, title: e.title, durationSeconds: e.durationSeconds })),
+    episodes: s.episodes.map((e: any) => ({ id: e.id, position: e.position, title: e.title, durationSeconds: e.durationSeconds, videoId: e.playback.videoId })),
 });
 
 test('generated data preserves every projected field and source order', () => {
@@ -74,6 +74,8 @@ test('generator validates before writing and check mode never writes', () => {
         };
         fs.writeFileSync(output, 'sentinel');
         for (const mutate of [
+            (s: any) => { s[0].episodes[0].playback.videoId = 'bad'; },
+            (s: any) => { s[0].episodes[0].playback.provider = 'stream'; },
             (s: any) => { s[0].slug = '../bad'; },
             (s: any) => { s[0].episodes[0].id = 'BAD'; },
             (s: any) => { s[0].posterUrl = 'https://example.com/poster'; },
@@ -91,4 +93,12 @@ test('generator validates before writing and check mode never writes', () => {
         expect(stale.stderr).toContain('Cinema series snapshot is stale. Run node scripts/sync-cinema-series.mjs');
         expect(fs.readFileSync(output, 'utf8')).toBe('sentinel');
     } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('episode context resolves only a series-owned id and its next episode', () => {
+    const [a, b] = EDITORIAL_SERIES;
+    expect(editorialEpisodeContext(a.slug, a.episodes[0].id)).toEqual({ series: a, episode: a.episodes[0], next: a.episodes[1] });
+    expect(editorialEpisodeContext(a.slug, a.episodes.at(-1)!.id)?.next).toBeNull();
+    for (const id of [b.episodes[0].id, '../bad', '', undefined]) expect(editorialEpisodeContext(a.slug, id)).toBeNull();
+    expect(editorialEpisodeContext('unknown', a.episodes[0].id)).toBeNull();
 });

@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { useEffect } from 'react';
 import { View } from 'react-native';
 import { Image } from 'expo-image';
@@ -9,7 +10,7 @@ import { t } from '../../lib/i18n';
 export function TemplateCard({ preset, playing, onPlay, onOpen }: { preset: Preset; playing: boolean; onPlay(): void; onOpen(): void }) {
     const styles = useThemedStyles(sheets);
     return <Card style={styles.card}>
-        <Card onPress={onOpen} accessibilityRole="button" accessibilityLabel={preset.title} style={styles.open}>
+        <Card onPress={onOpen} accessibilityRole="button" accessibilityLabel={rawText(preset.title)} style={styles.open}>
             <View style={[styles.preview, { aspectRatio: previewRatio(preset) }]}>
                 {playing && preset.previewUrl ? <Preview url={preset.previewUrl} /> : preset.posterUrl ? <Image source={{ uri: preset.posterUrl }} contentFit="cover" cachePolicy="memory" style={styles.fill} /> : null}
                 {preset.isNew ? <View style={styles.badge}><Text variant="caption">{t('explore.new')}</Text></View> : null}

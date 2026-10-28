@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { isAccountChanged } from '../../auth/sessionTask';
 import { t } from '../../lib/i18n';
 import { english } from '../../lib/i18n/binding';
@@ -136,7 +137,7 @@ function Prepared_({ result, typed, setTyped, note, onErase, onRetry }: Prepared
             <Text style={styles.body}>{t('deleteaccount.ifyousubscribedintheAppStore')}</Text>
             <Text style={styles.label}>{t('deleteaccount.typetoconfirm', { value1: CONFIRM_WORD })}</Text>
             <TextInput
-                accessibilityLabel={t('deleteaccount.typetoconfirm', { value1: CONFIRM_WORD })}
+                accessibilityLabel={rawText(t('deleteaccount.typetoconfirm', { value1: CONFIRM_WORD }))}
                 autoCapitalize="characters"
                 autoCorrect={false}
                 placeholder={CONFIRM_WORD}

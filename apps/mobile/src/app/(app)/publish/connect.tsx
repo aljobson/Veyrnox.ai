@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { Text as StatusText } from '../../../components/ui/Text';
 import * as WebBrowser from 'expo-web-browser';
 import { Stack } from 'expo-router';
@@ -78,7 +79,7 @@ export default function Connect() {
                 <Pressable
                     key={n.key}
                     accessibilityRole="button"
-                    accessibilityLabel={t('connect.action', { network: n.label })}
+                    accessibilityLabel={rawText(t('connect.action', { network: n.label }))}
                     accessibilityState={{ busy: busy === n.key, disabled: busy !== null || n.state === 'setup' }}
                     disabled={busy !== null || n.state === 'setup'}
                     style={[touchTarget, styles.row, busy !== null && busy !== n.key && styles.off]}

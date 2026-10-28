@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { useReducedMotion } from '../ui/useReducedMotion';
 import { Image } from 'expo-image';
 import { useEffect, useState } from 'react';
@@ -38,7 +39,7 @@ export function LibraryImagePicker({ visible, chosen, max, onPick, onClose }: Pr
     const full = roomFor(chosen.length, max) === 0;
     return (
         <Modal visible={visible} animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={onClose}>
-            <View style={styles.screen}>
+            <View style={styles.screen} onAccessibilityEscape={onClose}>
                 <Text variant="title2" style={styles.title} accessibilityRole="header">{t('chat.attach.library')}</Text>
                 {failed ? <Text style={styles.msg}>{t('chat.attach.libraryFailed')}</Text> : jobs === null ? <ActivityIndicator color={styles.accentInk.color} /> : jobs.length === 0 ? <Text style={styles.msg}>{t('chat.attach.libraryEmpty')}</Text> : (
                     <FlatList
@@ -68,7 +69,7 @@ function Tile({ job, disabled, onPick }: { job: Job; disabled: boolean; onPick: 
     return (
         <Card
             accessibilityRole="button"
-            accessibilityLabel={job.label || t('chat.attach.libraryImage')}
+            accessibilityLabel={rawText(job.label || t('chat.attach.libraryImage'))}
             accessibilityState={{ disabled }}
             disabled={disabled || !uri}
             style={[styles.tile, disabled && styles.off]}

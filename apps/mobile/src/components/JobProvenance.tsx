@@ -1,3 +1,4 @@
+import { rawText } from '../lib/i18n/translate';
 import { useAnnouncement } from '../lib/useAnnouncement';
 import { Text, Button, Card, themedStyles, useThemedStyles } from './ui';
 import { useState } from 'react';
@@ -44,7 +45,7 @@ export function JobProvenance({ api, jobId }: { readonly api: ApiClient; readonl
 
     return (
         <Card style={styles.box}>
-            <Button variant="tertiary" label={t('prov.title')} accessibilityRole="button" accessibilityLabel={open ? t('prov.hide') : t('prov.show')} accessibilityState={{ expanded: open }} icon={open ? 'caretDown' : 'caretRight'} onPress={toggle} />
+            <Button variant="tertiary" label={t('prov.title')} accessibilityRole="button" accessibilityLabel={rawText(open ? t('prov.hide') : t('prov.show'))} accessibilityState={{ expanded: open }} icon={open ? 'caretDown' : 'caretRight'} onPress={toggle} />
             {open ? (
                 <View testID="provenance-status" style={styles.body} accessibilityLiveRegion="polite">
                     {state === 'loading' ? <ActivityIndicator color={styles.accentInk.color} /> : null}

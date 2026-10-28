@@ -294,6 +294,12 @@
     "ratio": 2.4
   },
   {
+    "id": "cinemaEmbed.retry",
+    "english": "Try again",
+    "translation": "फिर से कोशिश करें",
+    "ratio": 1.89
+  },
+  {
     "id": "cinemaSeries.state.free_ceiling",
     "english": "Free viewing used this month",
     "translation": "इस महीने का मुफ़्त देखने का कोटा इस्तेमाल हो गया",
@@ -1698,6 +1704,12 @@
     "ratio": 2
   },
   {
+    "id": "mediaKind.text",
+    "english": "Text",
+    "translation": "टेक्स्ट",
+    "ratio": 1.75
+  },
+  {
     "id": "publishTiming.move.title",
     "english": "Move post",
     "translation": "पोस्ट का समय बदलें",
@@ -1762,5 +1774,11 @@
     "english": "Short",
     "translation": "लघु फ़िल्म",
     "ratio": 2
+  },
+  {
+    "id": "presets.cat.ADS",
+    "english": "Ads",
+    "translation": "विज्ञापन",
+    "ratio": 2.67
   }
 ]

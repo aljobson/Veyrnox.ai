@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { Text as StatusText } from '../ui/Text';
 import { CreditBanner } from './CreditBanner';
 import { displayLabel } from '../../lib/displayLabels';
@@ -55,7 +56,7 @@ export function AnimateCard({ id }: { id: string }) {
                     </Pressable>
                 ))}
             </View>
-            <Pressable accessibilityRole="button" accessibilityLabel={`${t('oddlings.animate.action')}. ${price}`} accessibilityState={{ disabled: !model }} disabled={!model} style={[styles.choice, !model && styles.off]} onPress={() => void go()}>
+            <Pressable accessibilityRole="button" accessibilityLabel={rawText(`${t('oddlings.animate.action')}. ${price}`)} accessibilityState={{ disabled: !model }} disabled={!model} style={[styles.choice, !model && styles.off]} onPress={() => void go()}>
                 <Text style={styles.choiceText}>{t('oddlings.animate.action')}</Text>
                 <Text style={styles.price}>{price}</Text>
             </Pressable>

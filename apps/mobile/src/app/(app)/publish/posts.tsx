@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { Text as ThemedText, themedStyles, useThemedStyles } from '../../../components/ui';
 import { NetworkLogo } from '../../../components/publish/NetworkLogo';
@@ -74,7 +75,7 @@ export default function Posts() {
                     refreshControl={<RefreshControl refreshing={refreshing} tintColor={colors.accent} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}
                     ListEmptyComponent={<EmptyState title={tr('empty.posts.title')} body={tr('empty.posts.body')} actionLabel={tr('empty.posts.action')} href="/publish/compose" />}
                     renderItem={({ item }) => (
-                        <Pressable accessibilityRole="button" accessibilityLabel={t('publish.post2', { value1: postStatusLabel(item.status), value2: item.text.slice(0, 60) })} style={styles.row} onPress={() => router.push({ pathname: '/publish/post/[id]', params: { id: item.id } })}>
+                        <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('publish.post2', { value1: postStatusLabel(item.status), value2: item.text.slice(0, 60) }))} style={styles.row} onPress={() => router.push({ pathname: '/publish/post/[id]', params: { id: item.id } })}>
                             <Text style={[styles.status, (item.status === 'failed') && styles.bad]}>{postStatusLabel(item.status)}{item.scheduledAt ? `  ·  ${when(item.scheduledAt)}` : ''}</Text>
                             <Text style={styles.text} numberOfLines={2}>{item.text || t('publish.notext')}</Text>
                             {item.targets.length ? item.targets.map(target => <View key={target.id} style={networkStyles.row}><NetworkLogo network={target.network} /><ThemedText tone="secondary">{networkName(target.network)}</ThemedText></View>) : <Text style={styles.muted}>{t('publish.nonetworks')}</Text>}

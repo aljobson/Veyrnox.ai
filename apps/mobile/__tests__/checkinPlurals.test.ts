@@ -19,6 +19,6 @@ test('every mobile catalog supplies each reward plural without English fallback'
             expect(translator.plural(base, credits, { credits })).not.toMatch(/checkin\.|\{credits\}/);
         }
     }
-    expect(createTranslator('ar', CATALOGS).plural('checkin.credits', 2, { credits: 2 })).toBe('2 من الرصيد');
+    expect(createTranslator('ar', CATALOGS).plural('checkin.credits', 2, { credits: 2 })).toBe('\u20682\u2069 من الرصيد');
     expect(createTranslator('hi', CATALOGS).plural('checkin.earned', 2, { credits: 2 })).toBe('आपने 2 क्रेडिट कमाए।');
 });

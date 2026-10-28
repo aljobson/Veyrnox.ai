@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { Image } from 'expo-image';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { t } from '../../lib/i18n';
@@ -6,9 +7,9 @@ import { Card, Text, themedStyles, useThemedStyles } from '../ui';
 
 export function PresetCard({ preset, price, onOpen }: { preset: Preset; price: string; onOpen: (preset: Preset) => void }) {
     const styles = useThemedStyles(sheets);
-    const label = `${preset.title}, ${preset.modelName}, ${price}${preset.available ? '' : ', not available right now'}`;
+    const label = `${preset.title}, ${preset.modelName}, ${price}${preset.available ? '' : `, ${t('presets.unavailable')}`}`;
     return (
-        <Pressable accessibilityRole="button" accessibilityLabel={label} style={({ pressed }) => [styles.presetCard, pressed && styles.pressed]} onPress={() => onOpen(preset)}>
+        <Pressable accessibilityRole="button" accessibilityLabel={rawText(label)} style={({ pressed }) => [styles.presetCard, pressed && styles.pressed]} onPress={() => onOpen(preset)}>
             <Card style={styles.mediaCard}>
                 <View style={styles.presetMedia}>
                     {preset.posterUrl ? (

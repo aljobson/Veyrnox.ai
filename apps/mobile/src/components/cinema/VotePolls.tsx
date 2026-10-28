@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { Text as StatusText } from '../ui/Text';
 import { bodyKeys } from '../../lib/cinemaDrafts';
 import { Button } from '../ui';
@@ -81,7 +82,7 @@ function Voting({ contentId }: { contentId: string }) {
                         <Text style={styles.muted}>{t('cinemaSocial.voteCount', { count: c.qualifiedVotes })}</Text>
                         <Text style={styles.muted}>{open ? t('cinemaSocial.endsOn', { date: day(c.endsAt) }) : t('cinemaSocial.ended')}</Text>
                         {c.myVote ? <Text style={styles.mine}>{t(`cinemaSocial.myVote.${c.myVote}`)}</Text> : open ? (
-                            <Pressable accessibilityRole="button" accessibilityLabel={t('cinemaSocial.voteFor', { name: c.name })} accessibilityState={{ busy: busy === c.id, disabled: busy !== null }} disabled={busy !== null} style={styles.btn} onPress={() => vote(c)}>
+                            <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('cinemaSocial.voteFor', { name: c.name }))} accessibilityState={{ busy: busy === c.id, disabled: busy !== null }} disabled={busy !== null} style={styles.btn} onPress={() => vote(c)}>
                                 <Text style={styles.btnText}>{t('cinemaSocial.vote')}</Text>
                             </Pressable>
                         ) : null}
@@ -137,7 +138,7 @@ function Polls({ contentId }: { contentId: string }) {
                             <Pressable
                                 key={o.id}
                                 accessibilityRole="radio"
-                                accessibilityLabel={o.label}
+                                accessibilityLabel={rawText(o.label)}
                                 accessibilityState={{ checked: (p.myOptionId ?? selected[p.id]) === o.id, disabled: !canChoose || busy !== null }}
                                 disabled={!canChoose || busy !== null}
                                 style={[styles.option, (p.myOptionId ?? selected[p.id]) === o.id && styles.optionOn]}

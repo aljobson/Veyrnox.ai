@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { english } from '../../../lib/i18n/binding';
 import { AddressText } from '../../../components/AddressText';
@@ -80,7 +81,7 @@ function FeatureStudio({ feature, reuse }: { feature: CreativeFeature; reuse: Cr
         <View style={styles.card}>
             <View style={styles.row}><Text style={styles.cardTitle}>{feature.input}</Text><Text style={styles.counter}>{brief.length}/1000</Text></View>
             {feature.scriptUpload ? <><Pressable accessibilityRole="button" style={styles.secondary} onPress={() => void chooseScript()}><Text style={styles.secondaryText}>{script ? t('features.replacescript') : t('features.uploadTXTorMarkdownscript')}</Text></Pressable>{script ? <Text style={styles.note}>{script}</Text> : null}</> : null}
-            <TextInput accessibilityLabel={feature.input} value={brief} onChangeText={(value) => { setBrief(value.slice(0, 1000)); setError(''); }} placeholder={feature.placeholder} placeholderTextColor={colors.muted} style={styles.input} multiline maxLength={1000} />
+            <TextInput accessibilityLabel={rawText(feature.input)} value={brief} onChangeText={(value) => { setBrief(value.slice(0, 1000)); setError(''); }} placeholder={feature.placeholder} placeholderTextColor={colors.muted} style={styles.input} multiline maxLength={1000} />
         </View>
         <View style={styles.card}><Text style={styles.kicker}>{t('features.rEQUIREDSOURCES')}</Text><Text style={styles.cardTitle}>{required.length ? required.join(' + ') : t('features.nomediarequired')}</Text>{model && slots.length ? slots.map((slot) => <SourcePicker key={slot.slot} slot={slot} api={api} references={references.filter(ref => ref.slot === slot.slot)} onReferences={files => { setRights(false); setReferences(all => replaceSlotReferences(all, slot.slot, files)); }} onChange={() => {}} onLibrary={() => {}} onBusy={(busy) => setSending((current) => ({ ...current, [slot.slot]: busy }))} hint={t('features.requiredfor', { value1: feature.title })} initialReady={reuse?.kind === slot.slot} initialReadyLabel={reuse?.kind === slot.slot ? t('features.reuse.selected') : undefined} />) : <Text style={styles.note}>{required.length ? t('features.checkingtheliveuploadrequirements') : t('features.yourscriptisthesourceforthis')}</Text>}{slots.length ? <Pressable accessibilityRole="checkbox" accessibilityLanguage="en" accessibilityLabel={english('features.ihavepermissiontousethesesources')} accessibilityState={{ checked: rights, disabled: waiting }} disabled={waiting} style={[styles.rights, rights && styles.rightsOn]} onPress={() => { setRights((value) => !value); setError(''); }}><Text style={styles.rightsText}>{english('features.ihavepermissiontousethesesources2', { value1: rights ? '☑' : '☐' })}</Text></Pressable> : null}</View>
         <View style={styles.card}><Text style={styles.kicker}>{t('features.wORKFLOW')}</Text>{feature.steps.map((step, index) => <View key={step} style={styles.step}><Text style={styles.number}>0{index + 1}</Text><Text style={styles.stepText}>{step}</Text></View>)}</View>
@@ -89,11 +90,11 @@ function FeatureStudio({ feature, reuse }: { feature: CreativeFeature; reuse: Cr
 }
 
 function Example({ feature }: { feature: CreativeFeature }) {
-    return <View style={styles.example}><View style={styles.exampleHead}><View><Text style={styles.kicker}>{t('features.wORKINGEXAMPLE')}</Text><Text style={styles.cardTitle}>{t('features.seetheintendedresult')}</Text></View><AddressText label={t('features.source')} address={feature.example.sourceUrl} /></View>{feature.example.kind === 'video' ? <ExampleVideo url={feature.example.url} title={feature.title} /> : <Image source={{ uri: feature.example.url }} style={styles.exampleMedia} contentFit="contain" accessibilityLabel={t('features.example', { value1: feature.title })} accessibilityIgnoresInvertColors />}</View>;
+    return <View style={styles.example}><View style={styles.exampleHead}><View><Text style={styles.kicker}>{t('features.wORKINGEXAMPLE')}</Text><Text style={styles.cardTitle}>{t('features.seetheintendedresult')}</Text></View><AddressText label={t('features.source')} address={feature.example.sourceUrl} /></View>{feature.example.kind === 'video' ? <ExampleVideo url={feature.example.url} title={feature.title} /> : <Image source={{ uri: feature.example.url }} style={styles.exampleMedia} contentFit="contain" accessibilityLabel={rawText(t('features.example', { value1: feature.title }))} accessibilityIgnoresInvertColors />}</View>;
 }
 function ExampleVideo({ url, title }: { url: string; title: string }) {
     const player = useVideoPlayer(url, (instance) => { instance.loop = true; });
-    return <VideoView player={player} style={styles.exampleMedia} nativeControls contentFit="contain" accessibilityLabel={t('features.examplevideo', { value1: title })} />;
+    return <VideoView player={player} style={styles.exampleMedia} nativeControls contentFit="contain" accessibilityLabel={rawText(t('features.examplevideo', { value1: title }))} />;
 }
 
 const styles = StyleSheet.create({

@@ -19,8 +19,9 @@ const series = editorialSeries.map(s => {
             if (!validId(e.id) || episodeIds.has(e.id)) throw new Error('Invalid or duplicate Cinema episode id');
             if (e.position !== index + 1) throw new Error('Invalid Cinema episode position');
             if (!Number.isInteger(e.durationSeconds) || e.durationSeconds <= 0) throw new Error('Invalid Cinema episode duration');
+            if (e.playback?.provider !== 'youtube' || typeof e.playback.videoId !== 'string' || !/^[A-Za-z0-9_-]{11}$/.test(e.playback.videoId)) throw new Error('Invalid Cinema episode video');
             episodeIds.add(e.id);
-            return { id: e.id, position: e.position, title: e.title, durationSeconds: e.durationSeconds };
+            return { id: e.id, position: e.position, title: e.title, durationSeconds: e.durationSeconds, videoId: e.playback.videoId };
         }),
     };
 });

@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { PickSheet, type PickChoice } from '../oddlings/PickSheet';
@@ -10,7 +11,7 @@ export function FilmSelect({ label, value, options, onChange }: {
     const [open, setOpen] = useState(false);
     const current = options.find(option => option.value === value)?.label ?? value;
     return <View>
-        <Pressable accessibilityRole="button" accessibilityLabel={`${label}, ${current}`} onPress={() => setOpen(true)}
+        <Pressable accessibilityRole="button" accessibilityLabel={rawText(`${label}, ${current}`)} onPress={() => setOpen(true)}
             style={{ ...touchTarget, borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 12, gap: 6 }}>
             <Text style={{ color: colors.muted }}>{label}</Text>
             <Text style={{ color: colors.text }}>{current}</Text>

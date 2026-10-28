@@ -22,9 +22,9 @@ test('all eleven languages are enabled in LANGUAGES order with complete app cata
     expect(ACTIVE_LOCALES).toEqual(LANGUAGES.map(language => language.code));
     expect(ACTIVE_LOCALES).toEqual(['en', ...complete.map(([locale]) => locale)]);
 });
-test('Japanese omits all 64 unused one forms but retains ordinary one labels', () => {
+test('Japanese omits all unused one forms but retains ordinary one labels', () => {
     const unused = Object.keys(APP_CATALOGS.de).filter(key => key.endsWith('.one') && pluralBase(key));
-    expect(unused).toHaveLength(64);
+    expect(unused).toHaveLength(65);
     expect(Object.keys(APP_CATALOGS.ja).sort()).toEqual(Object.keys(APP_CATALOGS.de).filter(key => !unused.includes(key)).sort());
     expect(APP_CATALOGS.ja['share.review.one']).toBeDefined();
     expect(new Intl.PluralRules('ja').resolvedOptions().pluralCategories).toEqual(['other']);
@@ -65,7 +65,7 @@ test.each(complete)('%s covers English app keys, exact slots, equality exception
             for (const count of [...Array.from({ length: 201 }, (_, i) => i), 0.1, 0.5, 1.5, 1_000_000]) {
                 const category = rules.select(count);
                 selected.add(category);
-                expect(tr.plural(base, count)).toBe(fill(own[`${base}.${category}`], { count }));
+                expect(tr.plural(base, count)).toBe(fill(own[`${base}.${category}`], { count }, locale === 'ar'));
             }
             expect([...selected].sort()).toEqual([...categories].sort());
         }

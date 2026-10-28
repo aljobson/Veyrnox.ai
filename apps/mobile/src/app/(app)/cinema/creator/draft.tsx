@@ -1,3 +1,4 @@
+import { rawText } from '../../../../lib/i18n/translate';
 import { useEffect, useRef, useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ScrollView, Text, TextInput } from 'react-native';
@@ -59,7 +60,7 @@ function DraftEditor({ id, parent, parentType }: Params) {
         {loading ? <Text style={ui.text}>{t('cinemaUpload.loading')}</Text> : <>
             <Text style={ui.heading} accessibilityRole="header">{t('cinemaUpload.type')}</Text>
             {parent ? <Text style={ui.text}>{typeLabel(form.content_type)}</Text> : ROOT_TYPES.map(type => <Check key={type} label={type === 'SERIES' ? t('cinema.type.SERIES') : type} checked={form.content_type === type} disabled={busy} onPress={() => setForm({ ...form, content_type: type })} />)}
-            {parent && !id && <TextInput accessibilityLabel={t('cinema.creator.number', { type: typeLabel(form.content_type) })} placeholder={t('cinema.creator.number', { type: typeLabel(form.content_type) })} style={ui.input} keyboardType="number-pad" value={position} editable={!busy} onChangeText={setPosition} />}
+            {parent && !id && <TextInput accessibilityLabel={rawText(t('cinema.creator.number', { type: typeLabel(form.content_type) }))} placeholder={t('cinema.creator.number', { type: typeLabel(form.content_type) })} style={ui.input} keyboardType="number-pad" value={position} editable={!busy} onChangeText={setPosition} />}
             {(['title', 'synopsis', 'language'] as const).map(field => <TextInput key={field} accessibilityLabel={t(`cinemaUpload.${field}`)} placeholder={t(`cinemaUpload.${field}`)} style={ui.input} value={form[field]} editable={!busy} multiline={field === 'synopsis'} autoCapitalize={field === 'language' ? 'none' : 'sentences'} onChangeText={value => setForm(f => ({ ...f, [field]: value }))} />)}
             {!parent && <><Text style={ui.heading} accessibilityRole="header">{t('cinemaUpload.categories')}</Text>
                 {CATEGORIES.map(c => <Check key={c.slug} label={t(categoryKey(c.slug))} checked={form.categories.includes(c.slug)} disabled={busy || (form.categories.length >= 2 && !form.categories.includes(c.slug))} onPress={() => toggle('categories', c.slug)} />)}</>}

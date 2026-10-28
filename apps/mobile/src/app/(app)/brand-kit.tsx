@@ -5,11 +5,11 @@ import { useAuth } from '../../auth/AuthProvider';
 import { Action, Card, Status, styles as shared } from '../../components/account/shared';
 import { BrandKitEditor } from '../../components/brand/BrandKitEditor';
 import { fetchBrandAssets, fetchKit, kitErrorKey, type BrandAsset, type KitState } from '../../lib/brandKit';
-import { t } from '../../lib/i18n';
+import { formatNumber, t } from '../../lib/i18n';
 import { fetchWorkspaces, type Workspace } from '../../lib/projects';
 import { colors, LIST_END_PADDING } from '../../theme';
 
-const sizeLabel = (b: number | null) => (b === null ? '' : b >= 1_000_000 ? `${(b / 1_000_000).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1000))} KB`);
+const sizeLabel = (b: number | null) => (b === null ? '' : b >= 1_000_000 ? `${formatNumber(b / 1_000_000, 1)} MB` : `${formatNumber(Math.max(1, Math.round(b / 1000)))} KB`);
 
 // Brand kit and brand assets for a workspace (parity P7). Off on the server until the editor's shared tools are on:
 // the routes then answer 404 and this says so.

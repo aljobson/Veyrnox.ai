@@ -1,3 +1,4 @@
+import { t } from './i18n';
 import type { DisplayPackage } from './billing';
 import { kindOf, type CatalogModel } from './media';
 
@@ -39,4 +40,4 @@ export function typicalCosts(models: readonly CatalogModel[]) {
     };
     return { video: median('video'), image: median('image') };
 }
-export const planName = (value: string) => `${value[0].toUpperCase()}${value.slice(1)}`;
+export const planName = (value: string) => t(['lite', 'starter', 'plus', 'ultra'].includes(value) ? `credits.plan.${value}` : 'credits.plan.unknown');

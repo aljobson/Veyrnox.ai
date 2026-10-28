@@ -76,7 +76,7 @@ export function CelebrationHost() {
     if (!event) return null;
     return (
         <Modal transparent visible animationType="none" onRequestClose={dismiss} onShow={acknowledge}>
-            <Pressable style={styles.overlay} accessibilityRole="button" accessibilityLabel={t('appearance.dismissCelebration')} onPress={dismiss}>
+            <View style={{ flex: 1 }} onAccessibilityEscape={dismiss}><Pressable style={styles.overlay} accessibilityRole="button" accessibilityLabel={t('appearance.dismissCelebration')} onPress={dismiss}>
                 {!reduced ? <Confetti key={event.kind} /> : null}
                 <View pointerEvents="none" style={styles.message}>
                     <VeyCharacter width={180} mood={reduced ? 'cheer' : clapping ? 'clap' : 'cheer'} />
@@ -84,7 +84,7 @@ export function CelebrationHost() {
                         {t(`appearance.${event.kind}`)}
                     </Text>
                 </View>
-            </Pressable>
+            </Pressable></View>
         </Modal>
     );
 }

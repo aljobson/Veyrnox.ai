@@ -104,7 +104,7 @@ test('rights starts unticked, Run stays disabled until ticked, and an attempted 
     expect(JSON.parse(send.mock.calls[0][1].body).consent).toBe(true);
 });
 
-test('successful run renders a working before/after toggle and Make another resets rights', async () => {
+test('successful run renders a working before/after toggle and Try this filter on a new photo resets rights', async () => {
     await renderFlow();
     await choosePhoto();
     await press('checkbox', rights);
@@ -118,7 +118,7 @@ test('successful run renders a working before/after toggle and Make another rese
     expect(previewUri()).toBe('https://example.invalid/result.jpg');
     expect(uploadSource).toHaveBeenCalledTimes(1);
     expect(control('button', 'Open in Library')).toBeDefined();
-    await press('button', 'Make another');
+    await press('button', 'Try this filter on a new photo');
     expect(control('checkbox', rights).props.accessibilityState.checked).toBe(false);
     expect(control('button', runLabel).props.accessibilityState.disabled).toBe(true);
 });

@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { Text as StatusText } from '../../components/ui/Text';
 import { Stack } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -70,7 +71,7 @@ export default function TopUps() {
                     onEndReached={() => void more()}
                     onEndReachedThreshold={0.4}
                     renderItem={({ item }) => (
-                        <View style={styles.row} accessible accessibilityLabel={`${plural('topup.credits', item.credits)}, ${t(statusKey(item.status))}, ${entryDate(item.createdAt)}`}>
+                        <View style={styles.row} accessible accessibilityLabel={rawText(`${plural('topup.credits', item.credits)}, ${t(statusKey(item.status))}, ${entryDate(item.createdAt)}`)}>
                             <View style={{ flexShrink: 1, gap: 2 }}>
                                 <Text style={styles.name}>{plural('topup.credits', item.credits)}</Text>
                                 <Text style={styles.note}>{entryDate(item.createdAt)}</Text>
