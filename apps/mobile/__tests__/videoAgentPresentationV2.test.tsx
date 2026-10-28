@@ -10,7 +10,7 @@ import { AppearanceContext } from '../src/components/ui';
 const mockReplace = jest.fn();
 const mockApi = {};
 let mockBalance = 100;
-jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, Link: ({ children }: any) => children, useRouter: () => ({ replace: mockReplace }) }));
+jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, Link: ({ children }: any) => children, useRouter: () => ({ replace: mockReplace }), useFocusEffect: (fn: any) => require('react').useEffect(fn, []) }));
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi }) }));
 jest.mock('../src/lib/useBalance', () => ({ useBalance: () => mockBalance }));
 jest.mock('../src/lib/montage', () => ({ ...jest.requireActual('../src/lib/montage'), requestPlan: jest.fn(), approvePlan: jest.fn() }));

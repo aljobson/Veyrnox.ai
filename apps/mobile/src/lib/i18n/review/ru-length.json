@@ -3006,6 +3006,18 @@
     "ratio": 1.83
   },
   {
+    "id": "modelPage.fact.optional",
+    "english": "Optional",
+    "translation": "Необязательно",
+    "ratio": 1.63
+  },
+  {
+    "id": "modelPage.mode.imageToImage",
+    "english": "image to image",
+    "translation": "Изображение в изображение",
+    "ratio": 1.79
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

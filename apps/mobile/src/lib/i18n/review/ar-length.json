@@ -1650,6 +1650,12 @@
     "ratio": 1.92
   },
   {
+    "id": "modelPage.field.aspectRatio",
+    "english": "Aspect ratio",
+    "translation": "نسبة العرض إلى الارتفاع",
+    "ratio": 1.92
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "تسجيل الدخول",
