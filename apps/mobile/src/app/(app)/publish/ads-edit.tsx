@@ -1,6 +1,7 @@
+import { usePublishScope } from '../../../lib/usePublishScope';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { UnlockCard } from '../../../components/UnlockCard';
 import { dateText, timeText, WhenPicker, whenFrom } from '../../../components/WhenPicker';
@@ -30,17 +31,26 @@ export default function AdsEdit() {
     const [posts, setPosts] = useState<PublishPost[]>([]);
     const [ready, setReady] = useState(false);
     const [locked, setLocked] = useState(false);
-    const [canEdit, setCanEdit] = useState(true);
+    const [canEdit, setCanEdit] = useState(false);
     const [busy, setBusy] = useState(false);
     const [problem, setProblem] = useState<string | null>(null);
     const [reload, setReload] = useState(0);
 
+    const canEditRef = useRef(false), saving = useRef<symbol | null>(null);
+    const { guard, nextRead, scopeTick } = usePublishScope(api, () => {
+        canEditRef.current = false; saving.current = null;
+        setCanEdit(false); setProblem(null); setBusy(false);
+        setReady(false); setForm(emptyForm()); setPosts([]); setLocked(false);
+        setStartDate(''); setStartTime('09:00'); setEndDate(''); setEndTime('09:00');
+    });
+
     useEffect(() => {
-        let cancelled = false;
+        const valid = nextRead('page');
+        canEditRef.current = false; setCanEdit(false);
         Promise.all([fetchCampaignPage(api), fetchPosts(api).catch(() => [] as PublishPost[])])
             .then(([page, recent]) => {
-                if (cancelled) return;
-                setCanEdit(page.canEdit);
+                if (!valid()) return;
+                canEditRef.current = page.canEdit; setCanEdit(page.canEdit);
                 setPosts(recent.filter((p) => p.status === 'published').slice(0, BOOST_CHOICES));
                 const found = id ? page.campaigns.find((c) => c.id === id) : undefined;
                 if (found) {
@@ -48,24 +58,25 @@ export default function AdsEdit() {
                     if (found.startsAt) { const d = new Date(found.startsAt); setStartDate(dateText(d)); setStartTime(timeText(d)); }
                     if (found.endsAt) { const d = new Date(found.endsAt); setEndDate(dateText(d)); setEndTime(timeText(d)); }
                 } else if (id) {
+                    canEditRef.current = false; setCanEdit(false);
                     setProblem(t('ads.err.later'));
                 }
                 setLocked(false);
                 setReady(true);
             })
             .catch((err) => {
-                if (cancelled) return;
+                if (!valid()) return;
                 if (err instanceof ApiError && err.status === 402) setLocked(true);
                 else setProblem(t(adsErrorKey(err)));
                 setReady(true);
             });
-        return () => { cancelled = true; };
-    }, [api, id, reload]);
+    }, [api, id, reload, nextRead, scopeTick]);
 
     const set = <K extends keyof CampaignForm>(key: K, value: CampaignForm[K]) => setForm((f) => ({ ...f, [key]: value }));
 
     async function save() {
-        if (busy) return;
+        if (saving.current || !canEditRef.current) return;
+        const valid = guard();
         const starts = startDate.trim() ? whenFrom(startDate, startTime || '00:00') : null;
         const ends = endDate.trim() ? whenFrom(endDate, endTime || '00:00') : null;
         if ((startDate.trim() && !starts) || (endDate.trim() && !ends)) {
@@ -77,16 +88,18 @@ export default function AdsEdit() {
             setProblem(t(built.errorKey));
             return;
         }
+        const token = Symbol(); saving.current = token;
         setBusy(true);
         setProblem(null);
         try {
             await saveCampaign(api, built.body);
-            router.back();
+            if (valid()) router.back();
         } catch (err) {
+            if (!valid()) return;
             if (err instanceof ApiError && err.status === 402) setLocked(true);
             else setProblem(t(adsErrorKey(err)));
         } finally {
-            setBusy(false);
+            if (valid() && saving.current === token) { saving.current = null; setBusy(false); }
         }
     }
 
@@ -145,11 +158,15 @@ export default function AdsEdit() {
                 {input(t('ads.destination'), form.destinationUrl, (v) => set('destinationUrl', v), { autoCapitalize: 'none', autoCorrect: false, keyboardType: 'url' })}
                 {input(t('ads.leadForm'), form.leadFormUrl, (v) => set('leadFormUrl', v), { autoCapitalize: 'none', autoCorrect: false, keyboardType: 'url' })}
                 <Text style={styles.label} accessibilityRole="header">{t('ads.starts')}</Text>
-                <WhenPicker date={startDate} time={startTime} onChange={(d, tm) => { setStartDate(d); setStartTime(tm); }} />
-                <Pressable accessibilityRole="button" style={[styles.clear, touchTarget]} onPress={() => setStartDate('')}><Text style={styles.clearText}>{t('ads.clearDate')}</Text></Pressable>
+                {canEdit ? <>
+                    <WhenPicker date={startDate} time={startTime} onChange={(d, tm) => { setStartDate(d); setStartTime(tm); }} />
+                    <Pressable accessibilityRole="button" style={[styles.clear, touchTarget]} onPress={() => setStartDate('')}><Text style={styles.clearText}>{t('ads.clearDate')}</Text></Pressable>
+                </> : <Text style={styles.muted}>{startDate ? `${startDate} ${startTime}` : t('whenPicker.yYYYMMDD')}</Text>}
                 <Text style={styles.label} accessibilityRole="header">{t('ads.ends')}</Text>
-                <WhenPicker date={endDate} time={endTime} onChange={(d, tm) => { setEndDate(d); setEndTime(tm); }} />
-                <Pressable accessibilityRole="button" style={[styles.clear, touchTarget]} onPress={() => setEndDate('')}><Text style={styles.clearText}>{t('ads.clearDate')}</Text></Pressable>
+                {canEdit ? <>
+                    <WhenPicker date={endDate} time={endTime} onChange={(d, tm) => { setEndDate(d); setEndTime(tm); }} />
+                    <Pressable accessibilityRole="button" style={[styles.clear, touchTarget]} onPress={() => setEndDate('')}><Text style={styles.clearText}>{t('ads.clearDate')}</Text></Pressable>
+                </> : <Text style={styles.muted}>{endDate ? `${endDate} ${endTime}` : t('whenPicker.yYYYMMDD')}</Text>}
                 <Text style={styles.muted}>{t('ads.launchWeb')}</Text>
                 {problem ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{problem}</StatusText> : null}
                 {canEdit ? (

@@ -44,3 +44,11 @@ test('web-created Unicode tags survive edits', async () => {
     expect(patches()).toEqual([{ action: 'tags', tags: ['café', 'vip'] }]);
 });
 test('a new scope can mark read once again', async () => { await render(); await act(async () => brandStore.set(OTHER)); expect(patches().filter(p => p.action === 'read')).toHaveLength(2); });
+
+test('no role footer while the role loads', async () => {
+    const pending = deferred<unknown>(), original = mockRequest.getMockImplementation()!;
+    mockRequest.mockImplementation((path: string) => path.endsWith('/accounts') ? pending.promise : original(path));
+    await render();
+    for (const key of ['readOnlyConnection', 'triageRole', 'readOnlyRole']) expect(textOf(root.container)).not.toContain(t(`publishOps.inbox.${key}`));
+    await act(async () => pending.resolve({ brandRole: 'editor' })); expect(textOf(root.container)).not.toContain(t('publishOps.inbox.readOnlyRole'));
+});

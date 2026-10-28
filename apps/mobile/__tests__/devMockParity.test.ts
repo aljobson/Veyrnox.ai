@@ -42,3 +42,14 @@ describe('development mock parity', () => {
         expect(source).toContain("created: Date.now() - 20_000");
     });
 });
+
+test('mock accounts reports viewer for the Agency brand', () => {
+    const flags = source.match(/const publishDashboardFlags = [\s\S]*?\n\}\);/)![0];
+    const branch = source.split('\n').find(line => line.includes("path === '/api/v1/social/accounts' && brandHeader === BRAND_VIEW"));
+    expect(branch).toBeDefined();
+    const respond = new Function('path', 'brandHeader', 'BRAND_VIEW', 'uploadsEnabled', 'send', 'res', `${flags}\n${branch}`);
+    const send = jest.fn();
+    respond('/api/v1/social/accounts', 'agency', 'agency', false, send, {});
+    expect(send).toHaveBeenCalledWith({}, 200, expect.objectContaining({ brandRole: 'viewer', accounts: [] }));
+    expect(source.indexOf(branch!)).toBeLessThan(source.indexOf("if (path === '/api/v1/social/accounts')"));
+});

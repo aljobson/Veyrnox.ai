@@ -1,6 +1,7 @@
+import { usePublishScope } from '../../../lib/usePublishScope';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { touchTarget } from '../../../lib/a11y';
 import { t } from '../../../lib/i18n';
@@ -20,44 +21,52 @@ export default function ContactEdit() {
     const [busy, setBusy] = useState(false);
     const [problem, setProblem] = useState<string | null>(null);
 
+    const canEditRef = useRef(false), saving = useRef<symbol | null>(null);
+    const { guard, nextRead, scopeTick } = usePublishScope(api, () => {
+        canEditRef.current = false; saving.current = null;
+        setCanEdit(false); setProblem(null); setBusy(false);
+        setContact(null); setTags(''); setStatus('unknown'); setNotes('');
+    });
+
     useEffect(() => {
-        let cancelled = false;
+        const valid = nextRead('page');
+        canEditRef.current = false; setCanEdit(false);
         fetchContacts(api)
             .then((r) => {
-                if (cancelled) return;
+                if (!valid()) return;
                 const c = r.contacts.find((x) => x.accountId === accountId && x.externalId === externalId);
                 if (!c) {
                     setProblem(t('contacts.err.gone'));
                     return;
                 }
                 setContact(c);
-                setCanEdit(r.canEdit);
+                canEditRef.current = r.canEdit; setCanEdit(r.canEdit);
                 setTags(c.tags.join(', '));
                 setStatus(c.status);
                 setNotes(c.notes);
             })
-            .catch((err) => !cancelled && setProblem(t(contactsErrorKey(err))));
-        return () => {
-            cancelled = true;
-        };
-    }, [api, accountId, externalId]);
+            .catch((err) => { if (valid()) { canEditRef.current = false; setCanEdit(false); setProblem(t(contactsErrorKey(err))); } });
+    }, [api, accountId, externalId, nextRead, scopeTick]);
 
     async function save() {
-        if (!contact || busy) return;
+        if (!contact || saving.current || !canEditRef.current) return;
+        const valid = guard();
         const invalid = validateEdit(tags, notes);
         if (invalid) {
             setProblem(t(invalid));
             return;
         }
+        const token = Symbol(); saving.current = token;
         setBusy(true);
         setProblem(null);
         try {
             await saveContact(api, contact, parseTags(tags).tags, status, notes);
-            router.back();
+            if (valid()) router.back();
         } catch (err) {
+            if (!valid()) return;
             setProblem(t(contactsErrorKey(err)));
         } finally {
-            setBusy(false);
+            if (valid() && saving.current === token) { saving.current = null; setBusy(false); }
         }
     }
 
