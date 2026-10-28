@@ -1,3 +1,4 @@
+import { isAccountChanged } from '../../auth/sessionTask';
 import { isAnalyticsEnabled } from '../../lib/analytics/consent';
 import { confirmSignOut } from '../../lib/confirmSignOut';
 import { Button, Card, ListRow, Text, PriceText, themedStyles, useThemedStyles } from '../../components/ui';
@@ -20,7 +21,7 @@ import { type MenuIcon } from '../../lib/menuIcons';
 
 export default function Account() {
     const styles = useThemedStyles(sheets);
-    const { api, signOut, getAccessToken } = useAuth();
+    const { api, signOut, getAccessToken, beginSessionTask } = useAuth();
     const [profile, setProfile] = useState<Profile | null>(null);
     const push = usePush();
     const [pushNote, setPushNote] = useState<string | null>(null);
@@ -41,14 +42,17 @@ export default function Account() {
 
     const [vibeNote, setVibeNote] = useState<string | null>(null);
     async function onResetVibe() {
+        const task = beginSessionTask();
         setVibeNote(null);
         const r = await resetVibe(api);
+        if (!task.current()) return;
         // Cleared on the phone even if the server flag is off; only a real failure keeps it, so the person can try again.
         if (r.kind === 'failed') {
             setVibeNote(t('vibe.error'));
             return;
         }
         await clearVibe();
+        if (!task.current()) return;
         setVibeNote(t('vibe.account.resetDone'));
     }
 
@@ -90,8 +94,15 @@ export default function Account() {
 
     // Remove this device's push token while the session is still valid, then sign out.
     async function onSignOut() {
-        await push.unregister();
-        await signOut();
+        const task = beginSessionTask();
+        try {
+            await push.unregister();
+            if (!task.current()) return;
+            await signOut(task.gen);
+        } catch (err) {
+            if (!task.current() || isAccountChanged(err)) return;
+            throw err;
+        }
     }
 
     return (

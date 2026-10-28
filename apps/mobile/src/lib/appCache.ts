@@ -68,6 +68,7 @@ export function userIdFromToken(accessToken: string): string | null {
     }
 }
 
+let ownerTicket = 0;
 let activeUser: string | null = null;
 const userListeners = new Set<() => void>();
 // Face filters holds sensitive local photo state outside the cache. Notify it before
@@ -88,31 +89,42 @@ export const getCacheUser = (): string | undefined => activeUser ?? undefined;
 export async function bindCacheUser(userId: string | null, cache: Cache = appCache, storage: CacheStorage = appStorage, docs: CacheStorage = userDocStorage): Promise<void> {
     if (!userId) return;
     if (activeUser === userId) return;
+    const ticket = ++ownerTicket;
+    const live = () => ticket === ownerTicket;
     const last = activeUser ?? (await storage.get(USER_KEY).catch(() => null));
+    if (!live()) return;
     setCacheUser(userId);
-    if (last !== userId) { clearExportFiles(); await cache.clear(); }
-    await sweepUserDocs(userId, docs).catch(() => undefined);
+    if (last !== userId) { clearExportFiles(); await cache.clear(live); }
+    if (!live()) return;
+    await sweepUserDocs(userId, docs, live).catch(() => undefined);
+    if (!live()) return;
     await storage.set(USER_KEY, userId).catch(() => undefined);
 }
 
 // Called when the session is dropped: sign-out, a lost session, or account deletion (which signs out).
 export async function wipeCache(cache: Cache = appCache, docs: CacheStorage = userDocStorage): Promise<void> {
+    const ticket = ++ownerTicket;
+    const live = () => ticket === ownerTicket;
     setCacheUser(null);
     clearExportFiles();
-    await Promise.all([cache.clear(), docs.keys().then(keys => Promise.all(keys.map(key => docs.remove(key))))]);
+    await Promise.all([cache.clear(live), docs.keys().then(keys => Promise.all(keys.map(key => live() ? docs.remove(key) : undefined)))]);
 }
 
 // For tests.
 export function resetCacheUser() {
+    ownerTicket += 1;
     setCacheUser(null);
 }
 
 // Durable ownership is independent of the purgeable cache's user marker.
-export async function sweepUserDocs(userId: string, storage: CacheStorage = userDocStorage): Promise<void> {
-    for (const key of await storage.keys()) {
+export async function sweepUserDocs(userId: string, storage: CacheStorage = userDocStorage, live: () => boolean = () => true): Promise<void> {
+    const keys = await storage.keys();
+    if (!live()) return;
+    for (const key of keys) {
         let value: string | null;
         try { value = await storage.get(key); }
         catch { continue; } // A failed read says nothing about the record's owner.
+        if (!live()) return;
         let owner: unknown;
         try { owner = JSON.parse(value ?? 'null')?.owner; } catch { owner = null; }
         if (typeof owner !== 'string' || !owner.trim() || owner !== userId) await storage.remove(key);
