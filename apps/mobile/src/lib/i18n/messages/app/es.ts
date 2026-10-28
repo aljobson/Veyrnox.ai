@@ -5062,5 +5062,22 @@ export default {
   "facelessReel.error.promptLong": "Acorta la descripción o el gancho: este modelo admite {max} caracteres en total.",
   "videoAgentBalance.checking": "Comprobando tu saldo…",
   "videoAgentBalance.unavailable": "Tu saldo no está disponible. Reintenta para confirmarlo antes de aprobar.",
-  "videoAgentBalance.retry": "Reintentar saldo"
+  "videoAgentBalance.retry": "Reintentar saldo",
+  "oddlingsStudio.optionalReference": "IMAGEN PARA TRANSFORMAR · OPCIONAL",
+  "oddlingsStudio.moodboard": "Sube una imagen para modificarla con el proceso de edición recomendado y describe el cambio.",
+  "oddlingsStudio.referencePlaceholder": "Toma el maquillaje de cuadros y el cuello alto, no la identidad",
+  "oddlingsStudio.low": "Quedan pocos créditos.",
+  "oddlingsStudio.insufficient": "No hay créditos suficientes.",
+  "oddlingsStudio.balancePortrait": "Tienes {balance} cr; este retrato cuesta {cost} cr.",
+  "oddlingsStudio.balanceAnimation": "Tienes {balance} cr; esta animación cuesta {cost} cr.",
+  "oddlingsStudio.getCredits": "Obtener créditos",
+  "oddlingsStudio.refineChat": "Desarrollar historia en Chat",
+  "oddlingsStudio.openingChat": "Abriendo LLM Chat…",
+  "oddlingsStudio.none": "Sin seleccionar",
+  "oddlingsStudio.anyLabel": "{label}: Cualquiera",
+  "oddlingsStudio.any": "Cualquiera",
+  "oddlingsStudio.chatStarter": "¿Qué debería ocurrir a continuación en esta historia de Oddling?",
+  "oddlingsStudio.chatHandoffFailed": "No se pudo abrir el chat LLM con este Oddling. Comprueba tu conexión y vuelve a tocar Desarrollar historia en Chat.",
+  "oddlingsStudio.chatSkillLocked": "Este chat de Oddling conserva sus habilidades narrativas. Inicia un nuevo chat para usar otras habilidades.",
+  "oddlingsStudio.instructionsLocked": "Este chat de Oddling conserva las instrucciones de la historia para mantener el personaje. Inicia un nuevo chat para escribir las tuyas."
 } as const;

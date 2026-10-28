@@ -1626,6 +1626,12 @@
     "ratio": 1.8
   },
   {
+    "id": "oddlingsStudio.any",
+    "english": "Any",
+    "translation": "कोई भी",
+    "ratio": 2
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",

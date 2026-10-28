@@ -4934,5 +4934,22 @@ export default {
   "facelessReel.error.promptLong": "説明またはフックを短くしてください。このモデルは合計{max}文字まで対応しています。",
   "videoAgentBalance.checking": "残高を確認中…",
   "videoAgentBalance.unavailable": "残高を取得できません。承認する前に再試行して確認してください。",
-  "videoAgentBalance.retry": "残高を再確認"
+  "videoAgentBalance.retry": "残高を再確認",
+  "oddlingsStudio.optionalReference": "変換する画像 · 任意",
+  "oddlingsStudio.moodboard": "画像をアップロードし、推奨の編集処理で変更する内容を説明してください。",
+  "oddlingsStudio.referencePlaceholder": "市松模様のメイクと高い襟を取り入れ、人物のアイデンティティは使わない",
+  "oddlingsStudio.low": "クレジットが残り少なくなっています。",
+  "oddlingsStudio.insufficient": "クレジットが不足しています。",
+  "oddlingsStudio.balancePortrait": "残高は{balance} crです。このポートレートには{cost} crかかります。",
+  "oddlingsStudio.balanceAnimation": "残高は{balance} crです。このアニメーションには{cost} crかかります。",
+  "oddlingsStudio.getCredits": "クレジットを入手",
+  "oddlingsStudio.refineChat": "Chatで物語を作る",
+  "oddlingsStudio.openingChat": "LLM Chatを開いています…",
+  "oddlingsStudio.none": "未選択",
+  "oddlingsStudio.anyLabel": "{label}：指定なし",
+  "oddlingsStudio.any": "指定なし",
+  "oddlingsStudio.chatStarter": "このOddlingの物語では次に何が起こりますか？",
+  "oddlingsStudio.chatHandoffFailed": "このOddlingでLLMチャットを開けませんでした。接続を確認し、「チャットで物語を展開」をもう一度タップしてください。",
+  "oddlingsStudio.chatSkillLocked": "このOddlingチャットでは物語のスキルが維持されます。他のスキルを使うには新しいチャットを始めてください。",
+  "oddlingsStudio.instructionsLocked": "このOddlingチャットではキャラクターを維持するため、物語の指示が保持されます。独自の指示を書くには新しいチャットを始めてください。"
 } as const;

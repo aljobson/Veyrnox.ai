@@ -1620,6 +1620,12 @@
     "ratio": 1.69
   },
   {
+    "id": "oddlingsStudio.any",
+    "english": "Any",
+    "translation": "أي خيار",
+    "ratio": 2.33
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "تسجيل الدخول",

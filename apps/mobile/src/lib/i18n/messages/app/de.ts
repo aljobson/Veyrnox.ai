@@ -4998,5 +4998,22 @@ export default {
   "facelessReel.error.promptLong": "Kürze Beschreibung oder Aufhänger: Dieses Modell akzeptiert insgesamt {max} Zeichen.",
   "videoAgentBalance.checking": "Dein Guthaben wird geprüft…",
   "videoAgentBalance.unavailable": "Dein Guthaben ist nicht verfügbar. Versuche es erneut, um es vor der Freigabe zu bestätigen.",
-  "videoAgentBalance.retry": "Guthaben erneut prüfen"
+  "videoAgentBalance.retry": "Guthaben erneut prüfen",
+  "oddlingsStudio.optionalReference": "BILD ZUM UMGESTALTEN · OPTIONAL",
+  "oddlingsStudio.moodboard": "Lade ein Bild hoch, um es mit der empfohlenen Bearbeitung zu verändern, und beschreibe die Änderung.",
+  "oddlingsStudio.referencePlaceholder": "Übernimm das Schachbrett-Make-up und den hohen Kragen, nicht die Identität",
+  "oddlingsStudio.low": "Deine Credits werden knapp.",
+  "oddlingsStudio.insufficient": "Nicht genug Credits.",
+  "oddlingsStudio.balancePortrait": "Du hast {balance} cr; dieses Porträt kostet {cost} cr.",
+  "oddlingsStudio.balanceAnimation": "Du hast {balance} cr; diese Animation kostet {cost} cr.",
+  "oddlingsStudio.getCredits": "Credits holen",
+  "oddlingsStudio.refineChat": "Story im Chat entwickeln",
+  "oddlingsStudio.openingChat": "LLM-Chat wird geöffnet…",
+  "oddlingsStudio.none": "Nichts ausgewählt",
+  "oddlingsStudio.anyLabel": "{label}: Beliebig",
+  "oddlingsStudio.any": "Beliebig",
+  "oddlingsStudio.chatStarter": "Was soll als Nächstes in dieser Oddling-Geschichte passieren?",
+  "oddlingsStudio.chatHandoffFailed": "Der LLM-Chat konnte mit diesem Oddling nicht geöffnet werden. Prüfe deine Verbindung und tippe erneut auf Story im Chat entwickeln.",
+  "oddlingsStudio.chatSkillLocked": "Dieser Oddling-Chat behält seine Story-Fähigkeiten. Starte einen neuen Chat, um andere Fähigkeiten zu nutzen.",
+  "oddlingsStudio.instructionsLocked": "Dieser Oddling-Chat behält seine Story-Anweisungen, damit die Figur gleich bleibt. Starte einen neuen Chat, um eigene Anweisungen zu schreiben."
 } as const;

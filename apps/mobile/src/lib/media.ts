@@ -13,6 +13,7 @@ export interface CatalogModel {
     readonly modality: string;
     readonly credits: number;
     readonly gated: boolean;
+    readonly bestValue?: boolean;
     // Clip lengths in seconds a video model may be bought at.
     readonly durations: number[];
     readonly capabilities: {

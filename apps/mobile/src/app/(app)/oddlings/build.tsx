@@ -4,13 +4,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { BuilderFields } from '../../../components/oddlings/BuilderFields';
 import { HandoffCard } from '../../../components/oddlings/HandoffCard';
-import { CategoryList } from '../../../components/oddlings/CategoryList';
+import { OddlingCatalog } from '../../../components/oddlings/OddlingCatalog';
+import { ReferencePanel } from '../../../components/oddlings/ReferencePanel';
+import { fetchCatalogCached, type CatalogModel } from '../../../lib/media';
+import { portraitModel } from '../../../lib/oddlingsHandoff';
+import { slotsFor, type GenerationReference } from '../../../lib/sources';
 import { OddlingFigure } from '../../../components/oddlings/OddlingFigure';
 import { PickSheet, type PickChoice } from '../../../components/oddlings/PickSheet';
 import { MIN_TARGET } from '../../../lib/a11y';
 import { plural, t } from '../../../lib/i18n';
 import { findOddling } from '../../../lib/oddlings';
-import { CATEGORIES, CATEGORY_FOCUS, GROUPS, MOTIONS, SCENES, SHOWS, TONES, buildStudioPrompt, changePick, groupById, randomizeAll, randomizeStyle, sanitizePicks, swatchOf, type Picks } from '../../../lib/oddlingsBuilder';
+import { CATEGORIES, CATEGORY_FOCUS, GROUPS, MOTIONS, SCENES, SHOWS, TONES, buildStudioPrompt, changePick, randomizeAll, randomizeStyle, sanitizePicks, type Picks } from '../../../lib/oddlingsBuilder';
 import { useAuth } from '../../../auth/AuthProvider';
 import { getCacheUser, subscribeCacheUser } from '../../../lib/appCache';
 import { oddlingsStore } from '../../../lib/oddlingsAccountStore';
@@ -41,8 +45,25 @@ export default function OddlingBuilder() {
     const [ready, setReady] = useState(false);
     const lastSeen = useRef<string>('');
 
+    const [references, setReferences] = useState<readonly GenerationReference[]>([]);
+    const [referenceNote, setReferenceNote] = useState('');
+    const [referenceBusy, setReferenceBusy] = useState(false);
+    const [referenceGeneration, setReferenceGeneration] = useState(0);
+    const referenceEpoch = useRef(0);
+    const [models, setModels] = useState<readonly CatalogModel[]>([]);
+    useEffect(() => {
+        let live = true;
+        const account = getCacheUser();
+        void fetchCatalogCached(data => { if (live && account === getCacheUser()) setModels(data); }).catch(() => {});
+        return () => { live = false; };
+    }, [owner]);
+    const referenceMounted = useRef(true);
+    useEffect(() => { referenceMounted.current = true; return () => { referenceMounted.current = false; }; }, []);
+    const referenceModel = portraitModel(models, { reference: true });
+    const referenceSlot = referenceModel && slotsFor(referenceModel).find(slot => slot.slot === 'image');
     latest.current = picks;
     useEffect(() => subscribeCacheUser(() => {
+        setReferenceGeneration(++referenceEpoch.current); setReferences([]); setReferenceNote(''); setReferenceBusy(false); setModels([]);
         setOwner(getCacheUser()); setPicks(START); setLoadedId(null); setNotice(null); setReady(false);
         setScene(SCENES[0]); setMotionId(MOTIONS[0].id); setCategoryId(CATEGORIES[0].id);
         setOpen(null); setShowPrompt(false); setChoose(false); lastSeen.current = ''; initial.current = ''; left.current = true;
@@ -91,7 +112,7 @@ export default function OddlingBuilder() {
     }, [picks, ready, owner]);
 
     const setPick = useCallback((key: string, value: string) => { setPicks((current) => changePick(current, key, value)); setNotice(null); }, []);
-    const prompt = useMemo(() => buildStudioPrompt({ picks, scene }), [picks, scene]);
+    const prompt = useMemo(() => buildStudioPrompt({ picks, scene, referenceNote, hasReference: references.length > 0 }), [picks, scene, referenceNote, references]);
     const chosen = GROUPS.filter((g) => picks[g.id]).length;
 
     const sheet = useMemo(() => {
@@ -101,9 +122,7 @@ export default function OddlingBuilder() {
             const table = open === 'oddling_voice' ? TONES : SHOWS;
             return { title: t(open === 'oddling_voice' ? 'oddlings.build.voice' : 'oddlings.build.show'), choices: table.map(([value]) => ({ value, label: displayLabel(value) })) as PickChoice[] };
         }
-        const group = groupById(open);
-        if (!group) return null;
-        return { title: displayLabel(group.label), choices: group.options.map(([value, , label]) => ({ value, label: displayLabel(label), swatch: swatchOf(group.id, value) })) as PickChoice[] };
+        return null;
     }, [open]);
 
     async function save() {
@@ -142,7 +161,7 @@ export default function OddlingBuilder() {
                 {notice ? <Text style={styles.notice} accessibilityLiveRegion="polite">{notice}</Text> : null}
                 {choose ? <Action label={t('oddlingsProjects.choose')} onPress={() => router.push('/oddlings/saved')} /> : null}
                 <Section>
-                    <CategoryList categoryId={categoryId} picks={picks} onCategory={setCategoryId} onOpen={setOpen} />
+                    <OddlingCatalog categoryId={categoryId} picks={picks} onCategory={setCategoryId} onPick={setPick} />
                 </Section>
                 <Section>
                     <BuilderFields picks={picks} scene={scene} motionId={motionId} onText={setPick} onOpen={setOpen} onScene={setScene} />
@@ -151,7 +170,11 @@ export default function OddlingBuilder() {
                     <Text style={styles.link}>{showPrompt ? t('oddlings.build.promptHide') : t('oddlings.build.prompt')}</Text>
                 </Pressable>
                 {showPrompt ? <Text style={styles.prompt} selectable>{prompt}</Text> : null}
-                <HandoffCard picks={picks} scene={scene} motionId={motionId} onLeave={save} />
+                {referenceSlot ? <ReferencePanel key={referenceGeneration} api={api} slot={referenceSlot} references={references} referenceNote={referenceNote}
+                    onReferences={next => { if (!referenceMounted.current || referenceGeneration !== referenceEpoch.current) return; setReferences(next); if (!next.length) setReferenceNote(''); }}
+                    onBusy={value => { if (referenceMounted.current && referenceGeneration === referenceEpoch.current) setReferenceBusy(value); }}
+                    onNote={value => { if (referenceMounted.current && referenceGeneration === referenceEpoch.current) setReferenceNote(value); }} /> : null}
+                <HandoffCard references={references} referenceNote={referenceNote} referenceBusy={referenceBusy} picks={picks} scene={scene} motionId={motionId} onLeave={save} />
                 <Pressable accessibilityRole="button" style={styles.save} onPress={save}>
                     <Text style={styles.saveText}>{t('oddlings.build.save')}</Text>
                 </Pressable>

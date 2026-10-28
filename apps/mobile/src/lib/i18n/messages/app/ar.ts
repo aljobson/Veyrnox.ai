@@ -5254,5 +5254,22 @@ export default {
   "facelessReel.error.promptLong": "اختصر الوصف أو العبارة: يقبل هذا النموذج {max} حرفًا إجمالًا.",
   "videoAgentBalance.checking": "جارٍ التحقق من رصيدك…",
   "videoAgentBalance.unavailable": "رصيدك غير متاح. أعد المحاولة لتأكيده قبل الموافقة.",
-  "videoAgentBalance.retry": "إعادة التحقق من الرصيد"
+  "videoAgentBalance.retry": "إعادة التحقق من الرصيد",
+  "oddlingsStudio.optionalReference": "صورة للتحويل · اختيارية",
+  "oddlingsStudio.moodboard": "ارفع صورة لتعديلها عبر مسار التحرير الموصى به، ثم صِف التغيير.",
+  "oddlingsStudio.referencePlaceholder": "اقتبس مكياج المربعات والياقة العالية، لا الهوية",
+  "oddlingsStudio.low": "الأرصدة توشك على النفاد.",
+  "oddlingsStudio.insufficient": "الأرصدة غير كافية.",
+  "oddlingsStudio.balancePortrait": "لديك {balance} cr؛ تكلفة هذه الصورة {cost} cr.",
+  "oddlingsStudio.balanceAnimation": "لديك {balance} cr؛ تكلفة هذا التحريك {cost} cr.",
+  "oddlingsStudio.getCredits": "الحصول على أرصدة",
+  "oddlingsStudio.refineChat": "تطوير القصة في Chat",
+  "oddlingsStudio.openingChat": "جارٍ فتح LLM Chat…",
+  "oddlingsStudio.none": "لم يُختر شيء",
+  "oddlingsStudio.anyLabel": "{label}: أيّ خيار",
+  "oddlingsStudio.any": "أي خيار",
+  "oddlingsStudio.chatStarter": "ماذا ينبغي أن يحدث بعد ذلك في قصة Oddling هذه؟",
+  "oddlingsStudio.chatHandoffFailed": "تعذّر فتح دردشة LLM مع هذا الأودلينغ. تحقّق من اتصالك، ثم اضغط على تطوير القصة في الدردشة مجددًا.",
+  "oddlingsStudio.chatSkillLocked": "تحتفظ دردشة الأودلينغ هذه بمهارات القصة. ابدأ دردشة جديدة لاستخدام مهارات أخرى.",
+  "oddlingsStudio.instructionsLocked": "تحتفظ دردشة الأودلينغ هذه بتعليمات القصة للحفاظ على الشخصية نفسها. ابدأ دردشة جديدة لكتابة تعليماتك الخاصة."
 } as const;

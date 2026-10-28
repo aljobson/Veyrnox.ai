@@ -4,7 +4,7 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
-import { subscribeCacheUser } from '../lib/appCache';
+import { getCacheUser, subscribeCacheUser } from '../lib/appCache';
 import { claimDrawFile, deleteDrawFile, isDrawFile, releaseDrawFile } from '../lib/drawFiles';
 import { loadDrawOnImage } from '../lib/drawLoader';
 import type { ApiClient } from '../lib/api';
@@ -112,6 +112,7 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
     const owned = useRef<string | null>(null);
     const mounted = useRef(true);
     const drawEpoch = useRef(0);
+    const pickRun = useRef(0);
     const controller = useRef<AbortController | null>(null);
 
     useEffect(
@@ -119,6 +120,7 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
             mounted.current = true;
             return () => {
                 mounted.current = false;
+                pickRun.current++;
                 drawEpoch.current++;
                 releaseOwned();
                 controller.current?.abort();
@@ -133,6 +135,7 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
         if (owned.current) { releaseDrawFile(owned.current); owned.current = null; }
     }
     useEffect(() => subscribeCacheUser(() => {
+        pickRun.current++;
         drawEpoch.current++;
         setDrawing(null);
         if (owned.current) remove();
@@ -140,14 +143,18 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
     }), []);
 
     async function pick() {
+        const run = ++pickRun.current, owner = getCacheUser();
+        const current = () => run === pickRun.current && mounted.current && owner === getCacheUser();
         setError(null);
         let file: PickedFile | null;
         try {
             file = await choose(slot.kind);
         } catch {
+            if (!current()) return;
             setError(t('sourcePicker.couldnotopenyourfilesCheckthe'));
             return;
         }
+        if (!current()) return;
         if (file) await accept(file);
     }
 

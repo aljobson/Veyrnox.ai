@@ -4934,5 +4934,22 @@ export default {
   "facelessReel.error.promptLong": "설명이나 도입 문구를 줄이세요. 이 모델은 총 {max}자까지 허용합니다.",
   "videoAgentBalance.checking": "잔액 확인 중…",
   "videoAgentBalance.unavailable": "잔액을 확인할 수 없습니다. 승인하기 전에 다시 시도해 확인하세요.",
-  "videoAgentBalance.retry": "잔액 다시 확인"
+  "videoAgentBalance.retry": "잔액 다시 확인",
+  "oddlingsStudio.optionalReference": "변환할 이미지 · 선택",
+  "oddlingsStudio.moodboard": "이미지를 업로드하고 권장 편집 과정에서 적용할 변경 사항을 설명하세요.",
+  "oddlingsStudio.referencePlaceholder": "체크무늬 메이크업과 높은 칼라만 참고하고 정체성은 가져오지 않기",
+  "oddlingsStudio.low": "크레딧이 얼마 남지 않았습니다.",
+  "oddlingsStudio.insufficient": "크레딧이 부족합니다.",
+  "oddlingsStudio.balancePortrait": "보유량은 {balance} cr이며 이 초상화는 {cost} cr입니다.",
+  "oddlingsStudio.balanceAnimation": "보유량은 {balance} cr이며 이 애니메이션은 {cost} cr입니다.",
+  "oddlingsStudio.getCredits": "크레딧 받기",
+  "oddlingsStudio.refineChat": "Chat에서 스토리 발전시키기",
+  "oddlingsStudio.openingChat": "LLM Chat 여는 중…",
+  "oddlingsStudio.none": "선택 없음",
+  "oddlingsStudio.anyLabel": "{label}: 모두",
+  "oddlingsStudio.any": "상관없음",
+  "oddlingsStudio.chatStarter": "이 Oddling 이야기에서 다음에는 무슨 일이 일어나야 하나요?",
+  "oddlingsStudio.chatHandoffFailed": "이 Oddling으로 LLM 채팅을 열 수 없습니다. 연결을 확인한 후 채팅에서 이야기 발전시키기를 다시 누르세요.",
+  "oddlingsStudio.chatSkillLocked": "이 Oddling 채팅은 이야기 스킬을 유지합니다. 다른 스킬을 사용하려면 새 채팅을 시작하세요.",
+  "oddlingsStudio.instructionsLocked": "이 Oddling 채팅은 캐릭터가 바뀌지 않도록 이야기 지침을 유지합니다. 직접 지침을 작성하려면 새 채팅을 시작하세요."
 } as const;

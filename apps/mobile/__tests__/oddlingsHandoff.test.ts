@@ -1,8 +1,9 @@
+import { consumeCreativeSourceHandoff } from '../src/lib/creativeSourceHandoff';
 import en from '../src/lib/i18n/messages/en';
 import type { CatalogModel } from '../src/lib/media';
 import { ODDLINGS } from '../src/lib/oddlings';
 import { buildStudioPrompt, type Picks } from '../src/lib/oddlingsBuilder';
-import { PORTRAIT_MODEL_ID, offerFor, portraitLink, portraitModel, shortLink, shortModel, shortTopic } from '../src/lib/oddlingsHandoff';
+import { PORTRAIT_MODEL_ID, offerFor, portraitLink, portraitModel, portraitHandoff, shortLink, shortModel, shortTopic } from '../src/lib/oddlingsHandoff';
 
 declare const require: (id: string) => any;
 declare const __dirname: string;
@@ -22,7 +23,7 @@ const picks = ODDLINGS[0].picks as Picks;
 describe('which models', () => {
     test('the portrait goes to the same model as on the web, only when it is open', () => {
         expect(portraitModel(catalog)?.id).toBe(PORTRAIT_MODEL_ID);
-        expect(portraitModel(catalog.map((m) => (m.id === PORTRAIT_MODEL_ID ? { ...m, gated: true } : m)))).toBeNull();
+        expect(portraitModel(catalog.map((m) => (m.id === PORTRAIT_MODEL_ID ? { ...m, gated: true } : m)))?.id).toBe('other-image');
         expect(portraitModel([])).toBeNull();
     });
 
@@ -91,4 +92,29 @@ describe('opening move', () => {
         expect(shortTopic(picks, '', 2000, MOTIONS[3].id)).toContain(MOTIONS[3].phrase);
         expect(shortTopic(picks, '', 2000, 'nope')).toContain(MOTIONS[0].phrase);
     });
+});
+
+test('portrait priority and eligibility match the web, including references and best value', () => {
+    const image = (id: string, extra = {}) => model({ id, ...extra }, { prompt: {} });
+    const ref = (id: string, media = { image: { required: true } }) => image(id, { capabilities: { inputs: { prompt: {} }, media } });
+    const fixtures = [
+        [image('flux-2-pro', { gated: true }), image('nano-banana-pro-grsai')],
+        [image('plain'), image('best', { bestValue: true })],
+        [ref('nano-banana-pro-edit'), ref('nano-banana-pro-edit-grsai')],
+        [ref('nano-banana-pro-edit-grsai', { image: { required: true }, audio: { required: true } } as any), ref('nano-banana-pro-edit')],
+    ];
+    const { spawnSync } = require('child_process');
+    const webModels = fixtures.map(list => list.map(m => ({ ...m, kind: 'image', takesPrompt: true, media: m.capabilities?.media })));
+    const run = spawnSync(process.execPath, ['--input-type=module', '-e', `import {oddlingPortraitModel,buildOddlingStudioPrompt} from './app/veyrnox/_lib/oddlingStudio.js'; console.log(JSON.stringify({ids:${JSON.stringify(webModels)}.map((ms,i)=>oddlingPortraitModel(ms,{reference:i>1})?.id),prompt:buildOddlingStudioPrompt(${JSON.stringify({ picks, scene: 'Stage', referenceNote: 'Red light', hasReference: true })})}));`], { cwd: join(__dirname, '../../..'), encoding: 'utf8', env: { ...process.env, NODE_NO_WARNINGS: '1' } });
+    expect(run.status).toBe(0);
+    const web = JSON.parse(run.stdout);
+    expect(fixtures.map((list, i) => portraitModel(list, { reference: i > 1 })?.id)).toEqual(web.ids);
+    expect(web.ids).toEqual(['nano-banana-pro-grsai', 'best', 'nano-banana-pro-edit-grsai', 'nano-banana-pro-edit']);
+    expect(buildStudioPrompt({ picks, scene: 'Stage', referenceNote: 'Red light', hasReference: true })).toBe(web.prompt);
+    const references = [{ slot: 'image', origin: 'upload', key: 'private-key' }] as const;
+    const handoff = portraitHandoff({ models: fixtures[2], picks, scene: 'Stage', references, referenceNote: 'Red light' })!;
+    expect(handoff.href.params.prompt).toContain('visual reference direction: Red light');
+    expect(handoff.href.params.prompt).not.toContain(picks.oddling_name);
+    const staged = consumeCreativeSourceHandoff(handoff.href.params.sourceHandoff, 'oddling', handoff.model.id)!;
+    expect(staged).toMatchObject({ aspect: '9:16', picks, references, rightsConfirmed: false });
 });

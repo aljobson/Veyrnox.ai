@@ -4380,6 +4380,18 @@
     "ratio": 2.4
   },
   {
+    "id": "oddlingsStudio.getCredits",
+    "english": "Get credits",
+    "translation": "Obtenir des crédits",
+    "ratio": 1.73
+  },
+  {
+    "id": "oddlingsStudio.any",
+    "english": "Any",
+    "translation": "Au choix",
+    "ratio": 2.67
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",
