@@ -3,9 +3,7 @@ import type { GenerationReference, SlotName } from './sources';
 export interface CreativeSourceHandoff {
     readonly recipe: string;
     readonly modelId: string;
-    readonly aspect?: '1:1' | '9:16' | '16:9';
-    readonly followup?: 'generated-sound';
-    readonly picks?: Readonly<Record<string, string>>;
+    readonly aspect?: '1:1' | '9:16';
     readonly uploaded: Partial<Record<SlotName, string | readonly string[]>>;
     readonly references?: readonly GenerationReference[];
     readonly fromLibrary: Partial<Record<SlotName, string | readonly string[]>>;
@@ -33,7 +31,6 @@ export function stageCreativeSourceHandoff(value: CreativeSourceHandoff, now = D
     const key = token();
     pending.set(key, {
         ...value,
-        picks: value.picks ? { ...value.picks } : undefined,
         uploaded: copySlots(value.uploaded),
         references: value.references?.map(ref => ({ ...ref })),
         fromLibrary: copySlots(value.fromLibrary),
@@ -60,8 +57,6 @@ export function readCreativeSourceHandoff(key: string | undefined, recipe: strin
         recipe: item.recipe,
         modelId: item.modelId,
         aspect: item.aspect,
-        followup: item.followup,
-        picks: item.picks ? { ...item.picks } : undefined,
         uploaded: copySlots(item.uploaded),
         references: item.references?.map(ref => ({ ...ref })),
         fromLibrary: copySlots(item.fromLibrary),

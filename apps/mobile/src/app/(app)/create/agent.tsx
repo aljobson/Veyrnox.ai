@@ -1,6 +1,3 @@
-import { getCacheUser } from '../../../lib/appCache';
-import { publishBalance } from '../../../lib/balanceEvents';
-import { observe } from '../../../lib/network';
 import { KeyboardFormScrollView } from '../../../components/KeyboardFormScrollView';
 import { KeyboardScreen } from '../../../components/KeyboardScreen';
 import { Link, Stack, useRouter } from 'expo-router';
@@ -10,7 +7,7 @@ import { useAuth } from '../../../auth/AuthProvider';
 import { ApiError } from '../../../lib/api';
 import { MIN_TARGET } from '../../../lib/a11y';
 import { splitSlots, t } from '../../../lib/i18n';
-import { ASPECTS, videoAgentBalanceState, approvePlan, briefProblem, MAX_NARRATION_LENGTH, minutesLeft, normaliseNarration, planMessage, requestPlan, type Aspect, type Plan } from '../../../lib/montage';
+import { ASPECTS, approvePlan, briefProblem, MAX_NARRATION_LENGTH, minutesLeft, normaliseNarration, planMessage, requestPlan, type Aspect, type Plan } from '../../../lib/montage';
 import { useBalance } from '../../../lib/useBalance';
 import { Text, TextField, Button, Card, Chip, themedStyles, useThemedStyles } from '../../../components/ui';
 import { radius } from '../../../theme';
@@ -33,7 +30,6 @@ export default function Agent() {
     const [error, setError] = useState<string | null>(null);
     const [now, setNow] = useState(Date.now());
     const [showLibrary, setShowLibrary] = useState(false);
-    const [retrying, setRetrying] = useState(false);
 
     useEffect(() => {
         if (!plan) return;
@@ -46,7 +42,6 @@ export default function Agent() {
     const narrationResult = normaliseNarration(narration);
     const problem = briefProblem(brief);
     const shortfall = plan && balance !== null ? Math.max(0, plan.credits - balance) : 0;
-    const balanceState = videoAgentBalanceState(balance, plan?.credits ?? NaN);
     const formDisabled = busy === 'approving';
 
     function changeBrief(value: string) {
@@ -82,20 +77,8 @@ export default function Agent() {
         }
     }
 
-    async function retryBalance() {
-        if (retrying || busy) return;
-        const owner = getCacheUser();
-        setRetrying(true);
-        try {
-            const value = await observe(api.getBalance());
-            if (owner && getCacheUser() === owner) publishBalance(owner, value.balance);
-        } catch {
-            // The unavailable state remains until a successful current-owner read.
-        } finally { setRetrying(false); }
-    }
-
     async function approve() {
-        if (!plan || busy || expired || balanceState !== 'ready') return;
+        if (!plan || busy || expired || shortfall > 0) return;
         setBusy('approving');
         setError(null);
         try {
@@ -207,16 +190,10 @@ export default function Agent() {
                                 <Text variant="caption" style={expired ? styles.inlineError : styles.expiry}>{expired ? t('videoAgent.expired') : t('videoAgent.expires', { minutes: String(left) })}</Text>
                             </View>
                             <Button accessibilityRole="button" accessibilityLabel={t('videoAgent.approve', { credits: String(plan.credits) })} accessibilityState={{ busy: busy === 'approving' }}
-                                disabled={!!busy || expired || balanceState !== 'ready'} onPress={() => void approve()} variant="primary"
+                                disabled={!!busy || expired || shortfall > 0} onPress={() => void approve()} variant="primary"
                                 loading={busy === 'approving'} textStyle={styles.approveText} label={t('videoAgent.approve', { credits: String(plan.credits) })} />
                         </View>
-                        {balanceState === 'unavailable' ? (
-                            <View accessibilityLiveRegion="polite">
-                                <Text variant="footnote">{t(retrying ? 'videoAgentBalance.checking' : 'videoAgentBalance.unavailable')}</Text>
-                                <Button label={t('videoAgentBalance.retry')} disabled={retrying || !!busy} onPress={() => void retryBalance()} />
-                            </View>
-                        ) : null}
-                        {balanceState === 'insufficient' ? (
+                        {shortfall > 0 ? (
                             <View style={styles.shortfall}>
                                 <Text variant="footnote" style={styles.shortfallText}>{t('videoAgent.shortfall', { count: String(shortfall) })}</Text>
                                 <Link href="/credits" asChild><Button accessibilityRole="link" containerStyle={styles.inlineLink} variant="tertiary" size="md" label={(t('videoAgent.buy'))}><Text variant="footnote" style={styles.inlineLinkText}>{t('videoAgent.buy')}</Text></Button></Link>

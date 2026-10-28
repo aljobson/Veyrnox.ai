@@ -1,3 +1,4 @@
+import { getCacheUser } from './appCache';
 import * as Crypto from 'expo-crypto';
 import { CONSENT_DECLINED_MESSAGE } from './aiConsent';
 import { ApiError, type ApiClient } from './api';
@@ -13,21 +14,27 @@ export type SubmitRequest = Omit<GenerationRequest, 'idempotencyKey'>;
 export function createGenerationSubmit() {
     let pending: { signature: string; keys: string[] } | null = null;
     let running = false;
+    let epoch = 0;
     return {
-        reset() { pending = null; },
-        async run(api: ApiClient, request: SubmitRequest, count = 1, onStarted?: (count: number) => void) {
+        reset() { pending = null; epoch++; },
+        async run(api: ApiClient, request: SubmitRequest, count = 1, onStarted?: (count: number) => void, onJob?: (jobId: string, index: number) => void) {
             if (running) throw new ApiError(409, 'submission_in_progress');
             // The signature now covers the whole request, including price and explicit rights, plus batch count.
             const signature = JSON.stringify({ ...request, count });
             const keys = pending?.signature === signature ? pending.keys : Array.from({ length: count }, () => Crypto.randomUUID());
             pending = { signature, keys };
             running = true;
+            const generation = epoch;
+            const owner = getCacheUser();
             let first: string | null = null;
             try {
                 for (let i = 0; i < count; i++) {
+                    if (generation !== epoch || owner !== getCacheUser()) throw new ApiError(409, 'submission_reset');
                     const result = await mediaApi(api).createGeneration({ ...request, idempotencyKey: keys[i], extraInputs: inputsForIndex(request.extraInputs ?? {}, i, count) });
+                    if (generation !== epoch || owner !== getCacheUser()) throw new ApiError(409, 'submission_reset');
                     first ??= result.job_id;
                     onStarted?.(i + 1);
+                    onJob?.(result.job_id, i);
                 }
                 pending = null;
                 return first;

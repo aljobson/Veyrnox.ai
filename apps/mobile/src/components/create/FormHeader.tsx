@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { View } from 'react-native';
 import { Text, Icon, themedStyles, useThemedStyles } from '../ui';
 import { SectionLabel } from './SectionLabel';
@@ -5,7 +6,7 @@ import { ds } from '../../theme';
 import { MIN_TARGET } from '../../lib/a11y';
 import { t } from '../../lib/i18n';
 
-export function FormHeader({ modelLabel, modality, stageLine }: { modelLabel: string; modality: string; stageLine: string }) {
+export function FormHeader({ modelLabel, modality, stageLine, stage }: { modelLabel: string; modality: string; stageLine: string; stage?: ReactNode }) {
     const styles = useThemedStyles(sheets);
     return <>
                 <View style={styles.hero}>
@@ -25,13 +26,13 @@ export function FormHeader({ modelLabel, modality, stageLine }: { modelLabel: st
                     </View>
                 </View>
 
-                <View style={styles.stage} accessibilityLabel={stageLine}>
+                {stage ?? <View style={styles.stage} accessibilityLabel={stageLine}>
                     <View style={styles.stageIconBox}>
                         <Icon name="play" size={28} tint={styles.accentInk.color} />
                     </View>
                     <Text variant="body" tone="primary" style={styles.stageTitle}>{stageLine}</Text>
                     <Text variant="footnote" tone="tertiary" style={styles.stageBody}>{t('create.workspace.stageHelp')}</Text>
-                </View>
+                </View>}
 
     </>;
 }

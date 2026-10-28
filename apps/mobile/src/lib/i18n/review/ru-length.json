@@ -2904,28 +2904,16 @@
     "ratio": 1.94
   },
   {
-    "id": "facelessReel.format.mood.label",
-    "english": "Mood reel",
-    "translation": "Атмосферный ролик",
-    "ratio": 1.89
+    "id": "libraryCreate.copied",
+    "english": "Copied",
+    "translation": "Скопировано",
+    "ratio": 1.83
   },
   {
-    "id": "facelessReel.pacing.balanced.label",
-    "english": "Balanced",
-    "translation": "Сбалансированный",
-    "ratio": 2
-  },
-  {
-    "id": "facelessReel.pacing.fast.label",
-    "english": "Fast",
-    "translation": "Быстрый",
-    "ratio": 1.75
-  },
-  {
-    "id": "videoAgentBalance.retry",
-    "english": "Retry balance",
-    "translation": "Повторить проверку баланса",
-    "ratio": 2
+    "id": "libraryCreate.copyFailed",
+    "english": "Could not copy. Try again.",
+    "translation": "Не удалось скопировать. Повторите попытку.",
+    "ratio": 1.62
   },
   {
     "id": "chrome.privacyPolicy",
