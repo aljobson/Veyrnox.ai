@@ -8,6 +8,8 @@ import { AttachStrip } from './AttachStrip';
 import { ReplyOptionChip } from './ReplyOptionChip';
 
 interface Props {
+    readonly free?: boolean;
+    readonly onVideo?: () => void;
     readonly model: ChatModel;
     readonly options: ReplyOptions;
     readonly draft: string;
@@ -64,7 +66,7 @@ export function ChatComposerDeck(props: Props) {
                     {web !== null ? <ReplyOptionChip label={t('chat.opt.web')} extra={web} selected={chosen.web} toggle disabled={props.sending} onPress={() => props.onOptions({ ...chosen, web: !chosen.web })} /> : null}
                 </ScrollView>
                 {props.imageExtra !== null ? (
-                    <AttachStrip items={props.images} extra={props.imageExtra} max={props.maxImages} disabled={props.sending} embedded onLibrary={props.onLibrary} onPhotos={props.onPhotos} onRemove={props.onRemoveImage} />
+                    <AttachStrip items={props.images} extra={props.imageExtra} max={props.maxImages} disabled={props.sending} embedded onLibrary={props.onLibrary} onPhotos={props.onPhotos} onVideo={props.onVideo} onRemove={props.onRemoveImage} />
                 ) : null}
                 <View style={styles.inputRow}>
                     <TextField containerStyle={styles.field} style={styles.input} value={props.draft} onChangeText={props.onDraft}
@@ -76,14 +78,15 @@ export function ChatComposerDeck(props: Props) {
                     ) : (
                         <View style={styles.action}>
                             <Button variant="primary" size="md" label={t('chat.send')} accessibilityRole="button"
-                                accessibilityLabel={plural('chat.sendPrice', props.price)} disabled={!props.canSend} onPress={props.onSend} />
-                            <Text variant="caption" tone="warning" style={styles.sendPrice}>{plural('chat.sendPriceShort', props.price)}</Text>
+                                accessibilityLabel={props.free ? t('chatDepth.sendFree') : plural('chat.sendPrice', props.price)} disabled={!props.canSend} onPress={props.onSend} />
+                            <Text variant="caption" tone="warning" style={styles.sendPrice}>{props.free ? t('chatDepth.free') : plural('chat.sendPriceShort', props.price)}</Text>
                         </View>
                     )}
                 </View>
             </View>
+            {props.images.some(image => image.video) ? <Text variant="caption" tone="tertiary">{t('chatDepth.videoFrames')}</Text> : null}
             <Text variant="caption" tone="tertiary" style={styles.policy}>
-                <Text variant="caption" tone="warning">{plural('chat.perReply', props.price)}</Text> {t('chat.composer.policy')}
+                <Text variant="caption" tone="warning">{props.free ? t('chatDepth.free') : plural('chat.perReply', props.price)}</Text> {t('chat.composer.policy')}
             </Text>
         </View>
     );

@@ -1,3 +1,5 @@
+import { getCacheUser } from './appCache';
+import { brandStore } from './publishBrand';
 import { t } from './i18n';
 import { ApiError, type ApiClient } from './api';
 
@@ -118,6 +120,11 @@ export async function fetchThread(api: ApiClient, id: string) {
     return parseThreadView(await api.request(`/api/v1/social/inbox/${encodeURIComponent(id)}`));
 }
 
+// A 400 from the note route means the note text was refused; other routes keep their own messages.
+export function noteErrorKey(err: unknown): string {
+    return err instanceof ApiError && err.status === 400 ? 'publishDepth.note.invalid' : inboxErrorKey(err);
+}
+
 export function inboxErrorKey(err: unknown): string {
     if (!(err instanceof ApiError)) return 'common.error';
     if (err.status === 0) return 'inbox.err.network';
@@ -157,3 +164,46 @@ export const setThreadStatus = (api: ApiClient, id: string, action: 'resolve' | 
     api.request(`/api/v1/social/inbox/${encodeURIComponent(id)}`, { method: 'PATCH', headers: JSON_HEADERS, body: JSON.stringify({ action }) });
 export const assignThread = (api: ApiClient, id: string, userId: string | null) =>
     api.request(`/api/v1/social/inbox/${encodeURIComponent(id)}`, { method: 'PATCH', headers: JSON_HEADERS, body: JSON.stringify(userId ? { action: 'assign', userId } : { action: 'unassign' }) });
+
+
+// Include a subscription generation in screens as well: A -> B -> A must invalidate old work.
+export const inboxScope = () => JSON.stringify([getCacheUser() ?? null, brandStore.get()]);
+export const cleanNote = (value: string): string | null => {
+    const note = value.trim();
+    return note && note.length <= 2000 ? note : null;
+};
+export async function addNote(api: ApiClient, id: string, note: string) {
+    if (!UUID_RE.test(id)) throw new ApiError(400, 'invalid_thread_id');
+    const cleaned = cleanNote(note);
+    if (!cleaned) throw new ApiError(400, 'invalid_note');
+    return api.request(`/api/v1/social/inbox/${encodeURIComponent(id)}`, { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ note: cleaned }) });
+}
+export interface Suggestion { id: string; workflowName: string; keyword: string; text: string }
+export function parseSuggestions(body: unknown): Suggestion[] {
+    const rows = isObject(body) && Array.isArray(body.suggestions) ? body.suggestions : [];
+    return rows.flatMap(r => isObject(r) && r.status === 'pending' && typeof r.id === 'string' && UUID_RE.test(r.id)
+        ? [{ id: r.id, workflowName: bounded(r.workflow_name, 80).slice(0, 80), keyword: bounded(r.keyword, 80).slice(0, 80), text: bounded(r.suggested_reply, 8000).slice(0, 8000) }] : []);
+}
+export async function fetchSuggestions(api: ApiClient, id: string) {
+    if (!UUID_RE.test(id)) throw new ApiError(400, 'invalid_thread_id');
+    return parseSuggestions(await api.request(`/api/v1/social/inbox/${encodeURIComponent(id)}/suggestions`));
+}
+export async function decideSuggestion(api: ApiClient, id: string, suggestionId: string, action: 'use' | 'dismiss') {
+    if (!UUID_RE.test(id) || !UUID_RE.test(suggestionId)) throw new ApiError(400, 'invalid_suggestion');
+    const res = await api.request<unknown>(`/api/v1/social/inbox/${encodeURIComponent(id)}/suggestions`, {
+        method: 'PATCH', headers: JSON_HEADERS, body: JSON.stringify({ suggestionId, action }),
+    });
+    return { suggestedReply: isObject(res) && typeof res.suggestedReply === 'string' ? bounded(res.suggestedReply, 8000).slice(0, 8000) : null };
+}
+
+// request() exposes successful JSON only. Its sent body must contain the server's message UUID.
+// Explicit status envelopes also allow the route's 201/200 contract to be pinned independently.
+export function replyOutcome(result: unknown, firstSend = true): 'sent' | 'refusedFirst' | 'held' {
+    if (result instanceof ApiError) return firstSend && [400, 402, 403, 404, 429, 503].includes(result.status) ? 'refusedFirst' : 'held';
+    if (!isObject(result)) return 'held';
+    if (result.status === 201) return 'sent';
+    const body = isObject(result.body) ? result.body : result;
+    if ((result.status === undefined || result.status === 200) && body.delivery_status === 'sent'
+        && typeof body.message_id === 'string' && UUID_RE.test(body.message_id)) return 'sent';
+    return 'held';
+}

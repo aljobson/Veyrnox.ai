@@ -2628,6 +2628,186 @@
     "ratio": 1.8
   },
   {
+    "id": "publishDepth.bluesky.handle",
+    "english": "Bluesky handle",
+    "translation": "Имя пользователя Bluesky",
+    "ratio": 1.71
+  },
+  {
+    "id": "publishDepth.note.add",
+    "english": "Add note",
+    "translation": "Добавить заметку",
+    "ratio": 2
+  },
+  {
+    "id": "publishDepth.reply.anyway",
+    "english": "Send anyway",
+    "translation": "Всё равно отправить",
+    "ratio": 1.73
+  },
+  {
+    "id": "publishDepth.suggestions.use",
+    "english": "Use",
+    "translation": "Использовать",
+    "ratio": 4
+  },
+  {
+    "id": "publishDepth.analytics.sent",
+    "english": "Sent",
+    "translation": "Отправлено",
+    "ratio": 2.5
+  },
+  {
+    "id": "publishDepth.analytics.read_actions",
+    "english": "Marked read",
+    "translation": "Отмечено прочитанным",
+    "ratio": 1.82
+  },
+  {
+    "id": "publishDepth.presets.apply",
+    "english": "Apply",
+    "translation": "Применить",
+    "ratio": 1.8
+  },
+  {
+    "id": "publishReporting.edit",
+    "english": "Edit",
+    "translation": "Изменить",
+    "ratio": 2
+  },
+  {
+    "id": "publishReporting.likes",
+    "english": "Likes",
+    "translation": "Отметки «Нравится»",
+    "ratio": 3.6
+  },
+  {
+    "id": "publishReporting.open",
+    "english": "Open",
+    "translation": "Открыть",
+    "ratio": 1.75
+  },
+  {
+    "id": "publishReporting.pdf",
+    "english": "PDF",
+    "translation": "Документ PDF",
+    "ratio": 4
+  },
+  {
+    "id": "publishReporting.pptx",
+    "english": "PowerPoint",
+    "translation": "Презентация PowerPoint",
+    "ratio": 2.2
+  },
+  {
+    "id": "publishReporting.purple",
+    "english": "Purple",
+    "translation": "Фиолетовый",
+    "ratio": 1.67
+  },
+  {
+    "id": "publishReporting.rank",
+    "english": "Rank by",
+    "translation": "Ранжировать по",
+    "ratio": 2
+  },
+  {
+    "id": "publishReporting.retry",
+    "english": "Retry",
+    "translation": "Повторить",
+    "ratio": 1.8
+  },
+  {
+    "id": "publishReporting.save",
+    "english": "Save",
+    "translation": "Сохранить",
+    "ratio": 2.25
+  },
+  {
+    "id": "publishReporting.saves",
+    "english": "Saves",
+    "translation": "Сохранения",
+    "ratio": 2
+  },
+  {
+    "id": "publishReporting.sky",
+    "english": "Sky blue",
+    "translation": "Небесно-голубой",
+    "ratio": 1.88
+  },
+  {
+    "id": "publishReporting.type.image",
+    "english": "Image",
+    "translation": "Изображение",
+    "ratio": 2.2
+  },
+  {
+    "id": "publishReporting.type.post",
+    "english": "Post",
+    "translation": "Публикация",
+    "ratio": 2.5
+  },
+  {
+    "id": "publishReporting.views",
+    "english": "Views",
+    "translation": "Просмотры",
+    "ratio": 1.8
+  },
+  {
+    "id": "publishReporting.weekly",
+    "english": "Weekly",
+    "translation": "Еженедельно",
+    "ratio": 1.83
+  },
+  {
+    "id": "chatDepth.free",
+    "english": "Free",
+    "translation": "Бесплатно",
+    "ratio": 2.25
+  },
+  {
+    "id": "chatDepth.sendFree",
+    "english": "Send free",
+    "translation": "Отправить бесплатно",
+    "ratio": 2.11
+  },
+  {
+    "id": "chatDepth.copy",
+    "english": "Copy or share",
+    "translation": "Копировать или поделиться",
+    "ratio": 1.92
+  },
+  {
+    "id": "chatDepth.copyLabel",
+    "english": "Copy or share reply",
+    "translation": "Копировать ответ или поделиться",
+    "ratio": 1.63
+  },
+  {
+    "id": "chatDepth.copyCode",
+    "english": "Copy or share code",
+    "translation": "Копировать код или поделиться",
+    "ratio": 1.61
+  },
+  {
+    "id": "chatDepth.wfTitle",
+    "english": "Workflows",
+    "translation": "Рабочие процессы",
+    "ratio": 1.78
+  },
+  {
+    "id": "chatDepth.wfOpen",
+    "english": "Open",
+    "translation": "Открыть",
+    "ratio": 1.75
+  },
+  {
+    "id": "chatDepth.wfClose",
+    "english": "Close workflow",
+    "translation": "Закрыть рабочий процесс",
+    "ratio": 1.64
+  },
+  {
     "id": "editorServerExport.share",
     "english": "Share export",
     "translation": "Поделиться экспортом",

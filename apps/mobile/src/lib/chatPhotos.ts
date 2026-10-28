@@ -1,3 +1,4 @@
+import { extractFrames } from './chatVideoFrames';
 import * as ImagePicker from 'expo-image-picker';
 import { MAX_IMAGE_EDGE, RESIZE_UNAVAILABLE, type ChatImage, type ImageResizer } from './chatAttach';
 import { createResizer } from './chatResizer';
@@ -35,4 +36,14 @@ export async function uploadChatImages(api: ApiClient, files: readonly ChatImage
     const keys: string[] = [];
     for (const f of files) keys.push(await uploadSource(api, { uri: f.uri ?? '' }, contentType, () => undefined, signal));
     return keys;
+}
+
+export async function pickVideoFrames(room: number, deps = { pick: ImagePicker.launchImageLibraryAsync, extract: extractFrames }): Promise<{ images: ChatImage[]; problem: 'room' | 'video_unreadable' | null }> {
+    if (room < 2) return { images: [], problem: 'room' };
+    try {
+        const result = await deps.pick({ mediaTypes: ['videos'], allowsMultipleSelection: false });
+        if (result.canceled) return { images: [], problem: null };
+        const uris = await deps.extract(result.assets[0].uri, Math.min(4, room));
+        return { images: uris.map((uri, i) => ({ id: `v-${Date.now()}-${i}`, video: true, uri, preview: uri })), problem: null };
+    } catch { return { images: [], problem: 'video_unreadable' }; }
 }

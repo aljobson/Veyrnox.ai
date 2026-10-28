@@ -7,6 +7,7 @@ export const MAX_ATTACHMENTS = 4;
 export const MAX_IMAGE_EDGE = 2048;
 
 export interface ChatImage {
+    readonly video?: true;
     readonly id: string;
     // The job that made it (Library), or a local file to upload.
     readonly assetId?: string;

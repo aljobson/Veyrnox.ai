@@ -2,6 +2,9 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Link } from 'expo-router';
 import { AccessibilityInfo, Alert, AppState, Linking, Pressable, Text, View } from 'react-native';
 import { FileMode, type FileHandle } from 'expo-file-system';
+import * as Crypto from 'expo-crypto';
+import { importBody, studioMessage } from '../../../lib/cinemaStudio';
+import { isDefiniteRefusal } from '../../../lib/draftKey';
 import { useAuth } from '../../../auth/AuthProvider';
 import { SUPPORT_EMAIL } from '../../../lib/account';
 import { ApiError } from '../../../lib/api';
@@ -28,6 +31,8 @@ export function UploadPanel({ contentId, editable, onChange }: { contentId: stri
     const [reply, setReply] = useState<UploadReply | null>(null), [record, setRecord] = useState<UploadRecord | null>(null);
     const [busy, setBusy] = useState(false), [preparing, setPreparing] = useState(false), [checking, setChecking] = useState(true);
     const [missing, setMissing] = useState(false), [note, setNote] = useState(''), [closed, setClosed] = useState(false);
+    const [libraryOpen, setLibraryOpen] = useState(false);
+    const importAttempt = useRef<{ jobId: string; key: string } | null>(null), importing = useRef(false);
     const current = useRef<UploadRecord | null>(null), running = useRef(false), stop = useRef(false), paused = useRef(false);
     const cancel = useRef(false), resumeOnActive = useRef(false), active = useRef(AppState.currentState !== 'background');
     const handle = useRef<FileHandle | null>(null), announced = useRef(-1), keys = useRef(bodyKeys()).current;
@@ -46,6 +51,7 @@ export function UploadPanel({ contentId, editable, onChange }: { contentId: stri
     };
     const acceptReply = async (data: UploadReply) => {
         if (!scope.live()) return;
+        if (data.upload === null) importAttempt.current = null;
         setReply(data);
         if (data.upload && cleanupFor('read', data.upload.state) === 'delete') await clear();
     };
@@ -126,7 +132,7 @@ export function UploadPanel({ contentId, editable, onChange }: { contentId: stri
     }, [contentId]);
     const choosing = useRef(false);
     const choose = async () => {
-        if (choosing.current || !scope.live()) return;
+        if (choosing.current || importing.current || !scope.live()) return;
         choosing.current = true;
         setPreparing(true); setNote('');
         try {
@@ -156,11 +162,29 @@ export function UploadPanel({ contentId, editable, onChange }: { contentId: stri
         try {
             const data = await jsonWrite<UploadReply>(api, '/api/v1/cinema/uploads/remove', body, removalKeys.current.get(uploadId)!);
             if (!scope.live()) return;
+            importAttempt.current = null;
             if (cleanupFor('remove', 'remove_accepted') === 'delete') await clear();
             if (!scope.live()) return;
             setReply(data); setNote(''); onChange();
         } catch (e) { showError(e); }
         finally { if (scope.live()) setBusy(false); }
+    };
+    const importVideo = async (jobId: string) => {
+        if (!scope.live() || importing.current || !editable || reply?.library_uploads_enabled !== true || reply.upload || current.current || store.running() || choosing.current || running.current) return;
+        importing.current = true; setBusy(true); setLibraryOpen(false); setNote('');
+        try {
+            const body = importBody(contentId, jobId);
+            if (importAttempt.current?.jobId !== jobId) importAttempt.current = { jobId, key: Crypto.randomUUID() };
+            const data = await jsonWrite<UploadReply>(api, '/api/v1/cinema/uploads/from-library', body, importAttempt.current.key);
+            if (!scope.live()) return;
+            importAttempt.current = null;
+            await acceptReply(data); if (scope.live()) onChange();
+        } catch (e) {
+            if (!scope.live()) return;
+            if (isDefiniteRefusal(e)) importAttempt.current = null;
+            const message = e instanceof ApiError && ['upload_safety_hold', 'uploads_not_open'].includes(e.code) ? 'cinemaUpload.closed' : studioMessage(e);
+            setNote(message); if (message === 'cinemaUpload.role') setClosed(true);
+        } finally { if (scope.live()) { importing.current = false; setBusy(false); } }
     };
     const confirm = (label: string, message: string, action: () => void) => Alert.alert(t(label), t(message), [
         { text: t('cinemaUpload.keep'), style: 'cancel' }, { text: t(label), style: 'destructive', onPress: action },
@@ -169,8 +193,11 @@ export function UploadPanel({ contentId, editable, onChange }: { contentId: stri
     const upload = reply?.upload, other = runningTitle && !running.current;
     const leasedElsewhere = runningTitle === contentId && !running.current;
     const canChoose = editable && !closed && reply?.proxy_uploads_enabled && (!upload || upload.state === 'uploading');
+    // Load the Library's native media dependencies only when the chooser is opened.
+    const LibraryChooser: typeof import('../../LibraryChooser').LibraryChooser | null = libraryOpen ? require('../../LibraryChooser').LibraryChooser : null;
+    const libraryStatus = typeof upload?.source_job_id === 'string' ? upload.state === 'provisioning' ? 'cinema.videoUpload.yourLibraryVideoIsPrivateWhile' : upload.state === 'processing' ? 'cinema.videoUpload.yourCheckedLibraryVideoIsProcessing' : null : null;
     return <View style={ui.card}>
-        <Text style={ui.text}>{t(checking ? 'cinemaUpload.checking' : preparing ? 'cinemaUpload.preparing' : `cinemaUpload.upload.${upload?.state ?? 'none'}`)}</Text>
+        <Text style={ui.text}>{t(checking ? 'cinemaUpload.checking' : preparing ? 'cinemaUpload.preparing' : libraryStatus ?? `cinemaUpload.upload.${upload?.state ?? 'none'}`)}</Text>
         <Text style={ui.text}>{t('cinemaUpload.keepOpen')}</Text>
         {note ? <Text style={ui.text}>{t(note)}</Text> : null}
         {reply && !reply.proxy_uploads_enabled && !closed && <Text style={ui.text}>{t('cinemaUpload.paused')}</Text>}
@@ -178,6 +205,8 @@ export function UploadPanel({ contentId, editable, onChange }: { contentId: stri
         {record && <View accessibilityRole="progressbar" accessibilityLabel={t('cinemaUpload.progressLabel')} accessibilityValue={{ min: 0, max: 100, now: Math.floor(record.offset / record.size * 100) }}>
             <Text style={ui.text}>{t('cinemaUpload.progress', { percent: Math.floor(record.offset / record.size * 100), sent: (record.offset / 1000000).toFixed(1), total: (record.size / 1000000).toFixed(1) })}</Text>
         </View>}
+        {editable && reply?.library_uploads_enabled === true && !reply.upload && !record && !runningTitle && <Action label={t('cinema.videoUpload.fromLibrary')} disabled={busy || preparing || checking} onPress={() => setLibraryOpen(true)} />}
+        {LibraryChooser && <LibraryChooser api={api} kind="video" onPick={choice => { void importVideo(choice.jobId); }} onClose={() => { if (scope.live()) setLibraryOpen(false); }} />}
         {canChoose && (!record || missing) && <Action label={t('cinemaUpload.files')} disabled={busy || preparing || checking || leasedElsewhere} onPress={() => void choose()} />}
         {canChoose && record && !missing && <Action label={t('cinemaUpload.resume')} disabled={busy || preparing || checking || !!other} onPress={() => void begin()} />}
         {busy && running.current && <Action label={t('cinemaUpload.pause')} onPress={() => void pause().catch(showError)} />}

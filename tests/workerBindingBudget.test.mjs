@@ -26,7 +26,8 @@ test('production public variables retain Cloudflare text-binding headroom', () =
     // so 61 vars is 111 text bindings against the 128 limit (17 free), more headroom than the three this cap was set to keep. Cap 62.
     // ADR-0262 adds the frozen work order's standalone carousel switch: 63 vars,
     // at the recorded 50-secret footprint, 113 bindings with 15 slots remaining.
-    assert.ok(Object.keys(config.vars).length <= 63, 'production vars must stay at or below 63');
+    // 2026-10-27: ADR-0111 moves ACCOUNT_DELETION_ENABLED from "absent" to a production var: 64 vars, 114 bindings, 14 slots remaining.
+    assert.ok(Object.keys(config.vars).length <= 64, 'production vars must stay at or below 64');
 });
 
 test('daily check-in is on in production and accepts only explicit boolean strings elsewhere', () => {

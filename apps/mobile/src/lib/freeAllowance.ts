@@ -26,3 +26,8 @@ export function freeLines(left: FreeLeft, models: readonly { readonly id: string
     }
     return lines.slice(0, MAX_LINES);
 }
+
+export function freeLeftFor(left: FreeLeft, id: string): number {
+    const n = left[id];
+    return Number.isInteger(n) && n > 0 ? n : 0;
+}

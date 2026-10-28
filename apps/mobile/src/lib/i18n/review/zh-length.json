@@ -28,5 +28,11 @@
     "english": "60s",
     "translation": "60 多岁",
     "ratio": 1.67
+  },
+  {
+    "id": "publishReporting.pdf",
+    "english": "PDF",
+    "translation": "PDF 文档",
+    "ratio": 2
   }
 ]

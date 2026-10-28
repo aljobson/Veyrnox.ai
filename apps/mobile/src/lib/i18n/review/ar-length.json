@@ -1530,6 +1530,54 @@
     "ratio": 1.92
   },
   {
+    "id": "publishDepth.suggestions.use",
+    "english": "Use",
+    "translation": "استخدام",
+    "ratio": 2.33
+  },
+  {
+    "id": "publishDepth.analytics.sent",
+    "english": "Sent",
+    "translation": "المرسلة",
+    "ratio": 1.75
+  },
+  {
+    "id": "publishReporting.likes",
+    "english": "Likes",
+    "translation": "الإعجابات",
+    "ratio": 1.8
+  },
+  {
+    "id": "publishReporting.pdf",
+    "english": "PDF",
+    "translation": "ملف PDF",
+    "ratio": 2.33
+  },
+  {
+    "id": "publishReporting.retry",
+    "english": "Retry",
+    "translation": "إعادة المحاولة",
+    "ratio": 2.8
+  },
+  {
+    "id": "publishReporting.saves",
+    "english": "Saves",
+    "translation": "مرات الحفظ",
+    "ratio": 2
+  },
+  {
+    "id": "publishReporting.views",
+    "english": "Views",
+    "translation": "المشاهدات",
+    "ratio": 1.8
+  },
+  {
+    "id": "chatDepth.showStarred",
+    "english": "Starred",
+    "translation": "المميزة بنجمة",
+    "ratio": 1.86
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "تسجيل الدخول",

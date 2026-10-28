@@ -44,7 +44,8 @@ export default function ApprovalNew() {
     const [date, setDate] = useState('');
     const [time, setTime] = useState('');
     const [reviewerText, setReviewerText] = useState('');
-    const [policy, setPolicy] = useState<Policy>('any');
+    // Same default as the web composer (Composer.js): every reviewer must approve.
+    const [policy, setPolicy] = useState<Policy>('all');
     const [uploadsEnabled, setUploadsEnabled] = useState(false);
     const [preparing, setPreparing] = useState(false);
     const preparingRef = useRef(false);

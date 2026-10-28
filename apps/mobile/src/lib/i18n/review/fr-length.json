@@ -3996,6 +3996,228 @@
     "ratio": 1.8
   },
   {
+    "id": "publishDepth.bluesky.password",
+    "english": "App password",
+    "translation": "Mot de passe d’application",
+    "ratio": 2.17
+  },
+  {
+    "id": "publishDepth.note.add",
+    "english": "Add note",
+    "translation": "Ajouter une note",
+    "ratio": 2
+  },
+  {
+    "id": "publishDepth.reply.anyway",
+    "english": "Send anyway",
+    "translation": "Envoyer quand même",
+    "ratio": 1.64
+  },
+  {
+    "id": "publishDepth.suggestions.use",
+    "english": "Use",
+    "translation": "Utiliser",
+    "ratio": 2.67
+  },
+  {
+    "id": "publishDepth.analytics.title",
+    "english": "Inbox analytics",
+    "translation": "Statistiques de la messagerie",
+    "ratio": 1.93
+  },
+  {
+    "id": "publishDepth.analytics.sent",
+    "english": "Sent",
+    "translation": "Envoyés",
+    "ratio": 1.75
+  },
+  {
+    "id": "publishDepth.presets.apply",
+    "english": "Apply",
+    "translation": "Appliquer",
+    "ratio": 1.8
+  },
+  {
+    "id": "publishDepth.presets.save",
+    "english": "Save preset",
+    "translation": "Enregistrer le modèle",
+    "ratio": 1.91
+  },
+  {
+    "id": "cinemaStudio.withdrawReview",
+    "english": "Withdraw '{title}' from review?",
+    "translation": "Retirer « {title} » de la procédure de validation ?",
+    "ratio": 1.65
+  },
+  {
+    "id": "publishReporting.audience",
+    "english": "Audience",
+    "translation": "Audience totale",
+    "ratio": 1.88
+  },
+  {
+    "id": "publishReporting.confirm",
+    "english": "Confirm schedule",
+    "translation": "Confirmer la programmation",
+    "ratio": 1.63
+  },
+  {
+    "id": "publishReporting.edit",
+    "english": "Edit",
+    "translation": "Modifier",
+    "ratio": 2
+  },
+  {
+    "id": "publishReporting.editReport",
+    "english": "Edit report",
+    "translation": "Modifier le rapport",
+    "ratio": 1.73
+  },
+  {
+    "id": "publishReporting.everyWeek",
+    "english": "week",
+    "translation": "semaine",
+    "ratio": 1.75
+  },
+  {
+    "id": "publishReporting.impressions",
+    "english": "Impressions",
+    "translation": "Nombre d’impressions",
+    "ratio": 1.82
+  },
+  {
+    "id": "publishReporting.interactions",
+    "english": "Interactions",
+    "translation": "Nombre d’interactions",
+    "ratio": 1.75
+  },
+  {
+    "id": "publishReporting.likes",
+    "english": "Likes",
+    "translation": "Mentions J’aime",
+    "ratio": 3
+  },
+  {
+    "id": "publishReporting.manual",
+    "english": "Manual",
+    "translation": "Envoi manuel",
+    "ratio": 2
+  },
+  {
+    "id": "publishReporting.pdf",
+    "english": "PDF",
+    "translation": "Document PDF",
+    "ratio": 4
+  },
+  {
+    "id": "publishReporting.pptx",
+    "english": "PowerPoint",
+    "translation": "Présentation PowerPoint",
+    "ratio": 2.3
+  },
+  {
+    "id": "publishReporting.retry",
+    "english": "Retry",
+    "translation": "Réessayer",
+    "ratio": 1.8
+  },
+  {
+    "id": "publishReporting.save",
+    "english": "Save",
+    "translation": "Enregistrer",
+    "ratio": 2.75
+  },
+  {
+    "id": "publishReporting.saves",
+    "english": "Saves",
+    "translation": "Enregistrements",
+    "ratio": 3
+  },
+  {
+    "id": "publishReporting.saving",
+    "english": "Saving report…",
+    "translation": "Enregistrement du rapport…",
+    "ratio": 1.86
+  },
+  {
+    "id": "publishReporting.schedule",
+    "english": "Schedule",
+    "translation": "Programmation",
+    "ratio": 1.63
+  },
+  {
+    "id": "publishReporting.sharing",
+    "english": "Opening share sheet…",
+    "translation": "Ouverture des options de partage…",
+    "ratio": 1.65
+  },
+  {
+    "id": "publishReporting.top",
+    "english": "Top content",
+    "translation": "Meilleurs contenus",
+    "ratio": 1.64
+  },
+  {
+    "id": "publishReporting.type.image",
+    "english": "Image",
+    "translation": "Image publiée",
+    "ratio": 2.6
+  },
+  {
+    "id": "publishReporting.type.post",
+    "english": "Post",
+    "translation": "Publication",
+    "ratio": 2.75
+  },
+  {
+    "id": "publishReporting.weekly",
+    "english": "Weekly",
+    "translation": "Hebdomadaire",
+    "ratio": 2
+  },
+  {
+    "id": "publishReporting.schedule.convert",
+    "english": "Turn off schedule and save",
+    "translation": "Désactiver la programmation et enregistrer",
+    "ratio": 1.62
+  },
+  {
+    "id": "chatDepth.free",
+    "english": "Free",
+    "translation": "Gratuit",
+    "ratio": 1.75
+  },
+  {
+    "id": "chatDepth.sendFree",
+    "english": "Send free",
+    "translation": "Envoyer gratuitement",
+    "ratio": 2.22
+  },
+  {
+    "id": "chatDepth.starLabel",
+    "english": "Star reply",
+    "translation": "Marquer la réponse",
+    "ratio": 1.8
+  },
+  {
+    "id": "chatDepth.showAll",
+    "english": "Show all",
+    "translation": "Tout afficher",
+    "ratio": 1.63
+  },
+  {
+    "id": "chatDepth.ask",
+    "english": "Ask about this",
+    "translation": "Poser une question à ce sujet",
+    "ratio": 2.07
+  },
+  {
+    "id": "chatDepth.wf.product-ad.name",
+    "english": "Product ad",
+    "translation": "Publicité produit",
+    "ratio": 1.7
+  },
+  {
     "id": "editorServerExport.checkAgain",
     "english": "Check again",
     "translation": "Vérifier à nouveau",
@@ -4102,5 +4324,17 @@
     "english": "Add audio",
     "translation": "Ajouter un audio",
     "ratio": 1.78
+  },
+  {
+    "id": "cinema.creator.first",
+    "english": "Add your first {type}.",
+    "translation": "Ajoutez votre premier élément : {type}.",
+    "ratio": 1.77
+  },
+  {
+    "id": "cinema.videoUpload.fromLibrary",
+    "english": "From Library",
+    "translation": "Depuis la bibliothèque",
+    "ratio": 1.83
   }
 ]

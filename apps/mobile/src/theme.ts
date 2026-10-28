@@ -192,6 +192,12 @@ export function tokensForScheme(value: Scheme, settings: AppearanceSettings = cu
     };
 }
 export type Tokens = ReturnType<typeof tokensForScheme>;
+// A feature colour (icon tiles on Tools, Face filters and Studio skills): the icon's ink and the tile's soft wash and edge.
+export type FeatureHue = 'mint' | 'iris' | 'sky' | 'rose' | 'amber';
+export function featureHue(hue: FeatureHue, value: Scheme) {
+    const ink = hue === 'amber' ? (value === 'light' ? light : dark).warning : accentPairs[hue][value][0];
+    return { ink, wash: alpha(ink, value === 'dark' ? 0.16 : 0.1), edge: alpha(ink, value === 'dark' ? 0.28 : 0.2) };
+}
 export type Palette = {
     readonly [K in 'background' | 'surface' | 'border' | 'borderStrong' | 'text' | 'body' | 'muted' | 'accent' | 'accentInk' | 'accentSoft' | 'money' | 'danger']: string;
 };

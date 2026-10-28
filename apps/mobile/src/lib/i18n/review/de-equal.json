@@ -158,5 +158,7 @@
   "vibe.destination.youtube": "Brand or product name, retained as on the website.",
   "videoAgent.format": "Established German term or label: Format {aspect}.",
   "whenPicker.hHMM": "Standard notation, unit, format example or typeface specimen.",
-  "whenPicker.yYYYMMDD": "Standard notation, unit, format example or typeface specimen."
+  "whenPicker.yYYYMMDD": "Standard notation, unit, format example or typeface specimen.",
+  "chatDepth.wfTitle": "Established local term, retained from the website translation.",
+  "chatDepth.video": "Established local term, retained from the website translation."
 }

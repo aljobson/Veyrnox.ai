@@ -33,6 +33,7 @@ export function MakePanel({ visible, initialPrompt = '', initialKind = 'image', 
     const [prompt, setPrompt] = useState(initialPrompt);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [lowBalance, setLowBalance] = useState(false);
     const pending = useRef<PendingMake | null>(null);
 
     useEffect(() => {
@@ -44,6 +45,8 @@ export function MakePanel({ visible, initialPrompt = '', initialKind = 'image', 
         setModelId(null);
         setDuration(null);
         setPrompt(initialPrompt);
+        setError(null);
+        setLowBalance(false);
     }, [visible, initialPrompt, initialKind]);
 
     const models = catalog ? byPrice(chatMediaModels(catalog, kind)) : [];
@@ -59,6 +62,7 @@ export function MakePanel({ visible, initialPrompt = '', initialKind = 'image', 
         pending.current = request;
         setBusy(true);
         setError(null);
+        setLowBalance(false);
         try {
             const r = await mediaApi(api).createGeneration({ analyticsKind: model.modality.includes('video') ? 'video' : model.modality.includes('image') ? 'image' : 'audio', modelId: model.id, prompt: text, durationSeconds: length, confirmedCredits: makePrice(model, length), idempotencyKey: request.key });
             pending.current = null;
@@ -66,6 +70,7 @@ export function MakePanel({ visible, initialPrompt = '', initialKind = 'image', 
             router.push({ pathname: '/job/[id]', params: { id: r.job_id } });
         } catch (err) {
             setError(messageFor(err));
+            setLowBalance(err instanceof ApiError && (err.code === 'insufficient_balance' || err.code === 'insufficient_credits'));
         } finally {
             setBusy(false);
         }
@@ -98,6 +103,7 @@ export function MakePanel({ visible, initialPrompt = '', initialKind = 'image', 
                 <TextField style={styles.input} value={prompt} onChangeText={setPrompt} multiline maxLength={MAX_MEDIA_PROMPT} placeholder={t('chat.make.placeholder')} accessibilityLabel={t('chat.make.promptLabel')} />
                 <Text variant="footnote" style={styles.note}>{t('chat.make.more')}</Text>
                 {error ? <Text style={styles.error} accessibilityRole="alert">{error}</Text> : null}
+                {error && lowBalance ? <Button label={t('lowBalance.buy')} accessibilityLabel={t('lowBalance.buy')} variant="secondary" onPress={() => { onClose(); router.push('/credits'); }} /> : null}
                 <Button accessibilityRole="button" accessibilityLabel={price !== null ? plural('chat.make.buttonLabel', price) : t('chat.make.button')} disabled={!ready} containerStyle={styles.go} onPress={make} variant="secondary" size="md" label={price !== null ? plural('chat.make.buttonLabel', price) : t('chat.make.button')}>
                     {busy ? <ActivityIndicator color={styles.accentInkInk.color} /> : <Text tone={price !== null ? 'warning' : 'primary'}>{price !== null ? plural('chat.make.buttonPrice', price) : t('chat.make.button')}</Text>}
                 </Button>
@@ -111,7 +117,7 @@ function messageFor(err: unknown): string {
     if (err instanceof OfflineError) return OFFLINE_PAID_MESSAGE;
     if (err instanceof Error && err.message === CONSENT_DECLINED_MESSAGE) return CONSENT_DECLINED_MESSAGE;
     if (err instanceof ApiError) {
-        if (err.code === 'insufficient_credits') return t('chat.make.err.credits');
+        if (err.code === 'insufficient_credits' || err.code === 'insufficient_balance') return t('chat.make.err.credits');
         if (err.code === 'rate_limited') return t('chat.make.err.rate');
         if (err.code === 'network') return t('chat.make.err.network');
     }

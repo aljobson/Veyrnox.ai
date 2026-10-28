@@ -73,6 +73,8 @@ export function mapAppLink(path: string): string {
         if (segments[1] === 'title') return `/cinema/${segments[2].toLowerCase()}`;
         if (segments[1] === 'watch') return `/cinema/watch/${segments[2].toLowerCase()}`;
     }
+    if (segments[0] === 'social-cinema' && segments[1] === 'series' && segments.length === 3 && /^[a-z0-9-]{1,80}$/.test(segments[2])) return `/cinema/series/${segments[2]}`;
+    if (segments[0] === 'social-cinema' && segments[1] === 'pass' && segments.length === 2) return '/cinema?section=profile';
     // An assistant's connection request (the web's consent page); the id is Supabase's, so it is checked, not trusted.
     if (segments[0] === 'oauth' && segments[1] === 'consent' && segments.length === 2) {
         const id = url.searchParams.get('authorization_id');

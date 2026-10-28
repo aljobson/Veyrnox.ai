@@ -5,7 +5,7 @@ export { MAX_UPLOAD_BYTES, UPLOAD_CHUNK_BYTES } from './cinemaDrafts';
 export const CINEMA_DEVICE_UPLOAD_ENABLED = process.env.EXPO_PUBLIC_CINEMA_DEVICE_UPLOAD_ENABLED === 'true';
 export interface Upload {
     id: string; content_id: string; state: string; fingerprint: string; file_size: number;
-    transfer_path: string | null; expires_at?: string; duration_seconds?: number; width?: number; height?: number;
+    transfer_path: string | null; expires_at?: string; source_job_id?: string | null; duration_seconds?: number; width?: number; height?: number;
 }
 export interface UploadReply { upload: Upload | null; proxy_uploads_enabled: boolean; library_uploads_enabled?: boolean }
 export type Cleanup = 'keep' | 'delete' | 'ask';
