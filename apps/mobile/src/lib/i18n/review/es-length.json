@@ -2734,5 +2734,11 @@
     "english": "Deny",
     "translation": "Denegar",
     "ratio": 1.75
+  },
+  {
+    "id": "cinema.type.FILM",
+    "english": "Film",
+    "translation": "Película",
+    "ratio": 2
   }
 ]

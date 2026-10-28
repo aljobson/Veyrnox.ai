@@ -4851,5 +4851,14 @@ export default {
   "developers.mcp": "アシスタントを接続（MCP）",
   "creditsPage.refundStatus": "サブスクリプションは終了しました。「クーリングオフの返金を確認」で返金状況を確認できます。",
   "developers.oauth.kicker": "OAuth 2.1 + PKCE 認証",
-  "developers.shareValue": "共有：{value}"
+  "developers.shareValue": "共有：{value}",
+  "cinemaViewer.episodeNumber": "エピソード{number}",
+  "cinemaViewer.access.free": "無料",
+  "cinemaViewer.access.passLimit": "今月のCinema Passの上限に達しました",
+  "cinemaViewer.language": "言語：{language}",
+  "cinemaViewer.aiUse": "クリエイターが申告したAIの使用",
+  "cinemaViewer.fromSeries": "{series}より",
+  "cinemaViewer.pollClosesAt": "締め切り：{date}",
+  "cinemaViewer.pollClosedAt": "終了：{date}",
+  "cinemaViewer.openComments": "コメントを読む・書く"
 } as const;

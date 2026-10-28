@@ -4979,5 +4979,14 @@ export default {
   "developers.mcp": "Connecter un assistant (MCP)",
   "creditsPage.refundStatus": "L’abonnement est terminé. Utilisez Vérifier le remboursement de rétractation pour connaître son état.",
   "developers.oauth.kicker": "Authentification OAuth 2.1 + PKCE",
-  "developers.shareValue": "Partager : {value}"
+  "developers.shareValue": "Partager : {value}",
+  "cinemaViewer.episodeNumber": "Épisode {number}",
+  "cinemaViewer.access.free": "Gratuit",
+  "cinemaViewer.access.passLimit": "Limite Cinema Pass atteinte ce mois-ci",
+  "cinemaViewer.language": "Langue : {language}",
+  "cinemaViewer.aiUse": "Utilisation de l’IA déclarée par le créateur",
+  "cinemaViewer.fromSeries": "De {series}",
+  "cinemaViewer.pollClosesAt": "Clôture le {date}",
+  "cinemaViewer.pollClosedAt": "Clôturé le {date}",
+  "cinemaViewer.openComments": "Lire et écrire des commentaires"
 } as const;

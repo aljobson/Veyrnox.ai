@@ -4915,5 +4915,14 @@ export default {
   "developers.mcp": "एक सहायक जोड़ें (MCP)",
   "creditsPage.refundStatus": "सदस्यता समाप्त हो गई है। रिफ़ंड की स्थिति देखने के लिए कूलिंग-ऑफ़ रिफ़ंड जाँचें का उपयोग करें।",
   "developers.oauth.kicker": "OAuth 2.1 + PKCE प्रमाणीकरण",
-  "developers.shareValue": "साझा करें: {value}"
+  "developers.shareValue": "साझा करें: {value}",
+  "cinemaViewer.episodeNumber": "एपिसोड {number}",
+  "cinemaViewer.access.free": "मुफ़्त",
+  "cinemaViewer.access.passLimit": "इस महीने Cinema Pass की सीमा पूरी हो गई",
+  "cinemaViewer.language": "भाषा: {language}",
+  "cinemaViewer.aiUse": "क्रिएटर द्वारा घोषित एआई का उपयोग",
+  "cinemaViewer.fromSeries": "{series} से",
+  "cinemaViewer.pollClosesAt": "{date} को बंद होगा",
+  "cinemaViewer.pollClosedAt": "{date} को बंद हुआ",
+  "cinemaViewer.openComments": "टिप्पणियाँ पढ़ें और लिखें"
 } as const;

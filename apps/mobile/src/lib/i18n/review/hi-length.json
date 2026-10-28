@@ -1654,5 +1654,11 @@
     "english": "Day 6+",
     "translation": "दिन 6 और आगे",
     "ratio": 2
+  },
+  {
+    "id": "cinema.type.SHORT",
+    "english": "Short",
+    "translation": "लघु फ़िल्म",
+    "ratio": 2
   }
 ]

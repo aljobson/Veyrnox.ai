@@ -1,16 +1,21 @@
 import { t } from './i18n';
 import { API_BASE } from './api';
+import { AI_DISCLOSURES } from './cinemaDrafts';
 import { isUsername } from './cinemaBlocks';
 
 // Cinema catalogue reads (ADR-0059). The list is anonymous and cached by the server for a minute;
 // the per-title read under /api/v1 adds what this viewer may watch, episode by episode.
 const PAGE_SIZE = 24;
 
-export type ContentType = 'FILM' | 'SHORT' | 'TRAILER' | 'SERIES';
+export type ContentType = 'FILM' | 'SHORT' | 'TRAILER' | 'SERIES' | 'EPISODE';
 
 export interface CinemaTitle {
     readonly id: string;
     readonly contentType: ContentType;
+    readonly rootId: string | null;
+    readonly seriesTitle: string | null;
+    readonly language: string | null;
+    readonly aiDisclosures: string[];
     readonly title: string;
     readonly synopsis: string;
     readonly creator: string;
@@ -36,6 +41,9 @@ export interface TitlesPage {
 export interface Episode {
     readonly id: string;
     readonly title: string;
+    readonly synopsis: string;
+    readonly access: string;
+    readonly reason: string | null;
     readonly season: number;
     readonly position: number;
     readonly durationSeconds: number | null;
@@ -50,20 +58,27 @@ export interface TitleDetail {
     readonly access: string;
     readonly reason: string | null;
     readonly episodes: readonly Episode[];
+    readonly seasons: { id: string; position: number; title: string; episodes: Episode[] }[];
 }
 
 type Raw = Record<string, unknown>;
 const isObject = (v: unknown): v is Raw => typeof v === 'object' && v !== null && !Array.isArray(v);
 const str = (v: unknown, fallback = ''): string => (typeof v === 'string' ? v : fallback);
 const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null);
-const TYPES: readonly string[] = ['FILM', 'SHORT', 'TRAILER', 'SERIES'];
+const TYPES: readonly string[] = ['FILM', 'SHORT', 'TRAILER', 'SERIES', 'EPISODE'];
 
 export function parseTitle(raw: unknown): CinemaTitle | null {
     if (!isObject(raw) || typeof raw.id !== 'string' || !TYPES.includes(str(raw.content_type))) return null;
+    const rootId = typeof raw.root_id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(raw.root_id) ? raw.root_id : null;
+    if (raw.content_type === 'EPISODE' && !rootId) return null;
     const creator = isObject(raw.creator) ? raw.creator : raw;
     return {
         id: raw.id,
         contentType: raw.content_type as ContentType,
+        rootId,
+        seriesTitle: typeof raw.series_title === 'string' ? [...raw.series_title].slice(0, 160).join('') : null,
+        language: typeof raw.language === 'string' && /^[a-z]{2,3}(-[A-Z]{2})?$/.test(raw.language) ? raw.language : null,
+        aiDisclosures: Array.isArray(raw.ai_disclosures) ? [...new Set(raw.ai_disclosures.filter((code): code is string => typeof code === 'string' && AI_DISCLOSURES.some(c => c === code)))] : [],
         title: str(raw.title, t('cinema.untitled')),
         synopsis: str(raw.synopsis),
         creator: str(creator.display_name) || str(creator.username),
@@ -106,23 +121,29 @@ export function parseTitleDetail(body: unknown): TitleDetail | null {
     const title = parseTitle(raw);
     if (!title || !isObject(raw)) return null;
     const episodes: Episode[] = [];
+    const seasons: TitleDetail['seasons'] = [];
     if (Array.isArray(raw.seasons)) {
         for (const s of raw.seasons) {
             if (!isObject(s) || !Array.isArray(s.episodes)) continue;
+            const season = { id: str(s.id), position: num(s.position) ?? 1, title: str(s.title), episodes: [] as Episode[] };
+            seasons.push(season);
             for (const e of s.episodes) {
                 if (!isObject(e) || typeof e.id !== 'string') continue;
-                episodes.push({
+                const episode: Episode = {
                     id: e.id,
                     title: str(e.title, t('cinema.episode')),
+                    synopsis: str(e.synopsis), access: str(e.access), reason: str(e.reason) || null,
                     season: num(s.position) ?? 1,
                     position: num(e.position) ?? episodes.length + 1,
                     durationSeconds: num(e.duration_seconds),
                     watchable: isFree(e),
-                });
+                };
+                episodes.push(episode);
+                season.episodes.push(episode);
             }
         }
     }
-    return { title, watchable: title.contentType !== 'SERIES' && isFree(raw), access: str(raw.access), reason: str(raw.reason) || null, episodes };
+    return { title, watchable: title.contentType !== 'SERIES' && isFree(raw), access: str(raw.access), reason: str(raw.reason) || null, episodes, seasons };
 }
 
 export function formatDuration(seconds: number | null): string {

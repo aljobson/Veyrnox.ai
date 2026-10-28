@@ -49,6 +49,7 @@ import area_cinemaSeries from './en/cinemaSeries';
 import area_cinemaSocial from './en/cinemaSocial';
 import area_cinemaStudio from './en/cinemaStudio';
 import area_cinemaUpload from './en/cinemaUpload';
+import area_cinemaViewer from './en/cinemaViewer';
 import area_comments from './en/comments';
 import area_commerce from './en/commerce';
 import area_common from './en/common';
@@ -231,6 +232,7 @@ const catalog = {
     ...area_cinemaSocial,
     ...area_cinemaStudio,
     ...area_cinemaUpload,
+    ...area_cinemaViewer,
     ...area_comments,
     ...area_commerce,
     ...area_common,

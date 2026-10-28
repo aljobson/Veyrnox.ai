@@ -4915,5 +4915,14 @@ export default {
   "developers.mcp": "Assistenten verbinden (MCP)",
   "creditsPage.refundStatus": "Das Abonnement ist beendet. Prüfe die Widerrufserstattung, um den Erstattungsstatus zu sehen.",
   "developers.oauth.kicker": "Authentifizierung mit OAuth 2.1 + PKCE",
-  "developers.shareValue": "Teilen: {value}"
+  "developers.shareValue": "Teilen: {value}",
+  "cinemaViewer.episodeNumber": "Folge {number}",
+  "cinemaViewer.access.free": "Kostenlos",
+  "cinemaViewer.access.passLimit": "Cinema-Pass-Limit für diesen Monat erreicht",
+  "cinemaViewer.language": "Sprache: {language}",
+  "cinemaViewer.aiUse": "Vom Creator angegebene KI-Nutzung",
+  "cinemaViewer.fromSeries": "Aus {series}",
+  "cinemaViewer.pollClosesAt": "Endet am {date}",
+  "cinemaViewer.pollClosedAt": "Beendet am {date}",
+  "cinemaViewer.openComments": "Kommentare lesen und schreiben"
 } as const;

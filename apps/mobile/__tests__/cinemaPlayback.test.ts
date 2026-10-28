@@ -338,3 +338,57 @@ describe('continue watching playback integration', () => {
         expect(saveProgress.mock.calls).toEqual([[24, true], [25, true], [25, true]]);
     });
 });
+
+describe('visibility during asynchronous source loading', () => {
+    const settle = async () => { for (let i = 0; i < 20; i++) await Promise.resolve(); };
+    test.each([false, true])('first load stays paused after blur (refocused before completion: %s)', async refocus => {
+        const h = harness();
+        let finish!: () => void;
+        h.player.replaceAsync = () => new Promise<void>(resolve => { finish = resolve; });
+        h.session.start(ID, 37);
+        await settle();
+        h.session.setVisible(false);
+        if (refocus) h.session.setVisible(true);
+        finish(); await settle();
+        expect(h.player.currentTime).toBe(37);
+        expect(h.player.playing).toBe(false);
+        expect(h.states.at(-1)).toEqual({ kind: 'playing' });
+        h.advance(61000); h.session.tick(); await settle();
+        expect(h.count('/heartbeat')).toHaveLength(0);
+        expect(h.count('/audience')).toHaveLength(0);
+        expect(h.count('/play')).toHaveLength(1);
+    });
+    test.each([false, true])('playing renewal preserves position and stays paused after blur (refocused: %s)', async refocus => {
+        const h = harness();
+        h.session.start(ID); await settle(); h.session.setPlaying(true);
+        h.player.currentTime = 42;
+        let finish!: () => void;
+        h.player.replaceAsync = () => new Promise<void>(resolve => { finish = resolve; });
+        h.advance(720000); h.session.tick(); await settle();
+        h.session.setVisible(false);
+        if (refocus) h.session.setVisible(true);
+        h.player.currentTime = 0;
+        finish(); await settle();
+        expect(h.player.currentTime).toBe(42);
+        expect(h.player.playing).toBe(false);
+        expect(h.count('/play')).toHaveLength(2);
+    });
+    test('failed audience reports are not retried by hidden ticks or pause callbacks', async () => {
+        const saveProgress = jest.fn(async () => undefined);
+        const h = harness({ audience: () => { throw new ApiError(0, 'network'); }, saveProgress });
+        h.session.start(ID); await settle(); h.session.setPlaying(true);
+        for (let second = 0; second <= 30; second++) {
+            h.player.currentTime = second; h.advance(1000); h.session.tick(); await settle();
+        }
+        expect(h.count('/audience')).toHaveLength(1);
+        h.session.setVisible(false); await settle();
+        const sends = h.calls.length;
+        const saves = saveProgress.mock.calls.length;
+        for (let second = 0; second < 61; second++) { h.advance(1000); h.session.tick(); await settle(); }
+        expect(h.calls).toHaveLength(sends);
+        expect(saveProgress).toHaveBeenCalledTimes(saves);
+        h.session.setVisible(true); await settle();
+        expect(h.player.playing).toBe(false);
+        expect(h.count('/play')).toHaveLength(1);
+    });
+});

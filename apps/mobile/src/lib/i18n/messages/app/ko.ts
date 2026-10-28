@@ -4851,5 +4851,14 @@ export default {
   "developers.mcp": "어시스턴트 연결 (MCP)",
   "creditsPage.refundStatus": "구독이 종료되었습니다. 청약철회 환불 확인을 사용하여 환불 상태를 확인하세요.",
   "developers.oauth.kicker": "OAuth 2.1 + PKCE 인증",
-  "developers.shareValue": "공유: {value}"
+  "developers.shareValue": "공유: {value}",
+  "cinemaViewer.episodeNumber": "에피소드 {number}",
+  "cinemaViewer.access.free": "무료",
+  "cinemaViewer.access.passLimit": "이번 달 Cinema Pass 한도에 도달했습니다",
+  "cinemaViewer.language": "언어: {language}",
+  "cinemaViewer.aiUse": "크리에이터가 신고한 AI 사용",
+  "cinemaViewer.fromSeries": "{series}에서",
+  "cinemaViewer.pollClosesAt": "마감: {date}",
+  "cinemaViewer.pollClosedAt": "마감됨: {date}",
+  "cinemaViewer.openComments": "댓글 읽기 및 작성"
 } as const;

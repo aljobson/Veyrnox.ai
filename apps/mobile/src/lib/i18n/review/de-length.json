@@ -2850,6 +2850,12 @@
     "ratio": 2.38
   },
   {
+    "id": "cinemaViewer.access.free",
+    "english": "Free",
+    "translation": "Kostenlos",
+    "ratio": 2.25
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

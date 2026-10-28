@@ -4851,5 +4851,14 @@ export default {
   "developers.mcp": "连接助手 (MCP)",
   "creditsPage.refundStatus": "订阅已结束。使用“查询冷静期退款”查看退款状态。",
   "developers.oauth.kicker": "OAuth 2.1 + PKCE 身份验证",
-  "developers.shareValue": "分享：{value}"
+  "developers.shareValue": "分享：{value}",
+  "cinemaViewer.episodeNumber": "第 {number} 集",
+  "cinemaViewer.access.free": "免费",
+  "cinemaViewer.access.passLimit": "本月 Cinema Pass 额度已用完",
+  "cinemaViewer.language": "语言：{language}",
+  "cinemaViewer.aiUse": "创作者声明的 AI 使用情况",
+  "cinemaViewer.fromSeries": "来自《{series}》",
+  "cinemaViewer.pollClosesAt": "截止于 {date}",
+  "cinemaViewer.pollClosedAt": "已于 {date} 结束",
+  "cinemaViewer.openComments": "阅读和撰写评论"
 } as const;

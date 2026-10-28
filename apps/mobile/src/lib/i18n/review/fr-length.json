@@ -4344,6 +4344,12 @@
     "ratio": 2.06
   },
   {
+    "id": "cinemaViewer.access.free",
+    "english": "Free",
+    "translation": "Gratuit",
+    "ratio": 1.75
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",
@@ -4426,5 +4432,17 @@
     "english": "From Library",
     "translation": "Depuis la bibliothèque",
     "ratio": 1.83
+  },
+  {
+    "id": "cinema.type.SHORT",
+    "english": "Short",
+    "translation": "Court métrage",
+    "ratio": 2.6
+  },
+  {
+    "id": "cinema.type.TRAILER",
+    "english": "Trailer",
+    "translation": "Bande-annonce",
+    "ratio": 1.86
   }
 ]

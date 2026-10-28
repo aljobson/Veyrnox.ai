@@ -5171,5 +5171,14 @@ export default {
   "developers.mcp": "ربط مساعد (MCP)",
   "creditsPage.refundStatus": "انتهى الاشتراك. استخدم التحقق من استرداد فترة العدول لمعرفة حالة الاسترداد.",
   "developers.oauth.kicker": "المصادقة باستخدام OAuth 2.1 + PKCE",
-  "developers.shareValue": "مشاركة: {value}"
+  "developers.shareValue": "مشاركة: {value}",
+  "cinemaViewer.episodeNumber": "الحلقة {number}",
+  "cinemaViewer.access.free": "مجاني",
+  "cinemaViewer.access.passLimit": "تم بلوغ حد Cinema Pass لهذا الشهر",
+  "cinemaViewer.language": "اللغة: {language}",
+  "cinemaViewer.aiUse": "استخدام الذكاء الاصطناعي الذي أعلنه المبدع",
+  "cinemaViewer.fromSeries": "من {series}",
+  "cinemaViewer.pollClosesAt": "يغلق في {date}",
+  "cinemaViewer.pollClosedAt": "أُغلق في {date}",
+  "cinemaViewer.openComments": "قراءة التعليقات وكتابتها"
 } as const;

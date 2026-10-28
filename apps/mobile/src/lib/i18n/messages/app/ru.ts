@@ -5043,5 +5043,14 @@ export default {
   "developers.mcp": "Подключить ассистента (MCP)",
   "creditsPage.refundStatus": "Подписка завершена. Проверьте возврат за период отказа, чтобы узнать его статус.",
   "developers.oauth.kicker": "Аутентификация OAuth 2.1 + PKCE",
-  "developers.shareValue": "Поделиться: {value}"
+  "developers.shareValue": "Поделиться: {value}",
+  "cinemaViewer.episodeNumber": "Эпизод {number}",
+  "cinemaViewer.access.free": "Бесплатно",
+  "cinemaViewer.access.passLimit": "Лимит Cinema Pass на этот месяц достигнут",
+  "cinemaViewer.language": "Язык: {language}",
+  "cinemaViewer.aiUse": "Использование ИИ, заявленное автором",
+  "cinemaViewer.fromSeries": "Из {series}",
+  "cinemaViewer.pollClosesAt": "Завершается {date}",
+  "cinemaViewer.pollClosedAt": "Завершено {date}",
+  "cinemaViewer.openComments": "Читать и писать комментарии"
 } as const;

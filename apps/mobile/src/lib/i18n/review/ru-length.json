@@ -2904,6 +2904,12 @@
     "ratio": 1.94
   },
   {
+    "id": "cinemaViewer.access.free",
+    "english": "Free",
+    "translation": "Бесплатно",
+    "ratio": 2.25
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",
@@ -2950,5 +2956,11 @@
     "english": "Add image",
     "translation": "Добавить изображение",
     "ratio": 2.22
+  },
+  {
+    "id": "cinema.type.SHORT",
+    "english": "Short",
+    "translation": "Короткометражка",
+    "ratio": 3
   }
 ]
