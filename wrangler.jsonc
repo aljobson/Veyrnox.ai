@@ -51,7 +51,10 @@
   "triggers": { "crons": ["*/5 * * * *", "* * * * *"] },
   "assets": {
     "directory": ".open-next/assets",
-    "binding": "ASSETS"
+    "binding": "ASSETS",
+    // Template preview MP4s need byte ranges for Apple's video player; worker.js
+    // answers them (lib/showcaseVideo.js). Everything else stays edge-served.
+    "run_worker_first": ["/showcase/*"]
   },
   // Public config — safe to commit. SUPABASE_URL used by middleware.js;
   // NEXT_PUBLIC_* by client bundle.
