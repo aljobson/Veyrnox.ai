@@ -6,14 +6,8 @@ import { fileURLToPath } from 'node:url';
 import { readEnglishCatalog } from './sync-web-i18n.mjs';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'lib', 'i18n');
 const en = readEnglishCatalog();
-// Plural forms English lacks (few, many, two, zero) are reviewed against the English `.other` form, as
-// __tests__/appTranslations.test.ts does; otherwise --write drops rows the test expects.
-const bases = new Set(Object.keys(en).filter(key => key.endsWith('.one') && Object.hasOwn(en, key.slice(0, -4) + '.other')).map(key => key.slice(0, -4)));
-const sourceFor = (key) => {
-    if (en[key]) return en[key];
-    const base = key.replace(/\.(zero|one|two|few|many|other)$/, '');
-    return base !== key && bases.has(base) ? en[`${base}.other`] : undefined;
-};
+// Added CLDR categories use the English family's other form (ADR-0270).
+const sourceFor = key => en[key] ?? en[key.replace(/\.(zero|one|two|few|many|other)$/, '.other')];
 for (const file of readdirSync(join(root, 'messages', 'app')).filter(f => f.endsWith('.ts'))) {
     const locale = file.slice(0, -3);
     // App catalogs are data-only JSON objects with a TypeScript assertion.
