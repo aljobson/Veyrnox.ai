@@ -1,4 +1,4 @@
-import { byPrice, chatMediaModels, cleanMediaPrompt, makeKeyFor, makePrice, MAX_MEDIA_PROMPT, supportedDuration } from '../src/lib/chatMedia';
+import { byPrice, chatMediaModels, cleanMediaPrompt, makeReady, makePrice, MAX_MEDIA_PROMPT, supportedDuration } from '../src/lib/chatMedia';
 import type { CatalogModel } from '../src/lib/media';
 
 const m = (id: string, modality: string, credits: number, extra: Partial<CatalogModel> = {}, media: Record<string, { required?: boolean }> = {}): CatalogModel => ({
@@ -16,13 +16,13 @@ const catalog = [
 ];
 
 describe('models the chat can start', () => {
-    test('only open, words-only models of the chosen kind', () => {
-        expect(chatMediaModels(catalog, 'image').map((x) => x.id).sort()).toEqual(['img-a', 'img-b']);
-        expect(chatMediaModels(catalog, 'video').map((x) => x.id)).toEqual(['vid']);
+    test('open prompt models, including required sources, of the chosen kind', () => {
+        expect(chatMediaModels(catalog, 'image').map((x) => x.id).sort()).toEqual(['img-a', 'img-b', 'img-edit']);
+        expect(chatMediaModels(catalog, 'video').map((x) => x.id)).toEqual(['vid', 'vid-i2v']);
         expect(chatMediaModels(catalog, 'audio').map((x) => x.id)).toEqual(['voice']);
     });
     test('the cheapest comes first', () => {
-        expect(byPrice(chatMediaModels(catalog, 'image')).map((x) => x.id)).toEqual(['img-a', 'img-b']);
+        expect(byPrice(chatMediaModels(catalog, 'image')).map((x) => x.id)).toEqual(['img-a', 'img-edit', 'img-b']);
     });
 });
 
@@ -43,15 +43,22 @@ describe('price and length', () => {
     });
 });
 
-describe('one charge on a retry', () => {
-    test('the same request keeps its key; a different one gets a new key', () => {
-        let n = 0;
-        const make = () => `k${++n}`;
-        const vid = catalog[4];
-        const first = makeKeyFor(null, vid, 'a fox', 5, make);
-        expect(makeKeyFor(first, vid, 'a fox', 5, make).key).toBe(first.key);
-        expect(makeKeyFor(first, vid, 'a fox', 10, make).key).not.toBe(first.key);
-        expect(makeKeyFor(first, vid, 'a hare', 5, make).key).not.toBe(first.key);
-        expect(makeKeyFor(first, catalog[1], 'a fox', 5, make).key).not.toBe(first.key);
+describe('readiness shares Create validation', () => {
+    const opts = { seed: '', voice: '', audioSeconds: '' };
+    const refs = [{ slot: 'image' as const, origin: 'asset' as const, asset_id: 'asset' }];
+    test('required sources and rights are necessary', () => {
+        expect(makeReady(catalog[2], '', [], true, false, opts)).toBe(false);
+        expect(makeReady(catalog[2], '', refs, false, false, opts)).toBe(false);
+        expect(makeReady(catalog[2], '', refs, true, false, opts)).toBe(true);
+        expect(makeReady(catalog[2], '', refs, true, true, opts)).toBe(false);
+        expect(makeReady(catalog[2], '', [...refs, ...refs], true, false, opts)).toBe(false);
+    });
+    test('voice, seed, audio length and required words must be valid', () => {
+        const voice = m('speech', 'text-to-speech', 1, { capabilities: { inputs: { prompt: {}, voice_description: {}, duration: { type: 'int', min: 1, max: 20 } } } });
+        expect(makeReady(voice, 'words', [], false, false, opts)).toBe(false);
+        expect(makeReady(voice, 'words', [], false, false, { ...opts, voice: 'warm' })).toBe(true);
+        expect(makeReady(voice, '', [], false, false, { ...opts, voice: 'warm' })).toBe(false);
+        expect(makeReady(voice, 'words', [], false, false, { ...opts, voice: 'warm', seed: '-1' })).toBe(false);
+        expect(makeReady(voice, 'words', [], false, false, { ...opts, voice: 'warm', audioSeconds: '21' })).toBe(false);
     });
 });
