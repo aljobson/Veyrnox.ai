@@ -15,7 +15,7 @@ export function createGenerationSubmit() {
     let running = false;
     return {
         reset() { pending = null; },
-        async run(api: ApiClient, request: SubmitRequest, count = 1, onStarted?: (count: number) => void) {
+        async run(api: ApiClient, request: SubmitRequest, count = 1, onStarted?: (count: number) => void, onJob?: (jobId: string, index: number) => void) {
             if (running) throw new ApiError(409, 'submission_in_progress');
             // The signature now covers the whole request, including price and explicit rights, plus batch count.
             const signature = JSON.stringify({ ...request, count });
@@ -28,6 +28,7 @@ export function createGenerationSubmit() {
                     const result = await mediaApi(api).createGeneration({ ...request, idempotencyKey: keys[i], extraInputs: inputsForIndex(request.extraInputs ?? {}, i, count) });
                     first ??= result.job_id;
                     onStarted?.(i + 1);
+                    onJob?.(result.job_id, i);
                 }
                 pending = null;
                 return first;
