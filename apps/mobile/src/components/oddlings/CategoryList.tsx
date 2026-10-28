@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { Icon } from '../ui';
 import { displayLabel } from '../../lib/displayLabels';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -25,7 +26,7 @@ export function CategoryList({ categoryId, picks, onCategory, onOpen }: Props) {
                     const on = item.id === category.id;
                     const n = pickedIn(item, picks);
                     return (
-                        <Pressable key={item.id} accessibilityRole="button" accessibilityState={{ selected: on }} accessibilityLabel={n ? `${displayLabel(item.label)}, ${plural('oddlings.build.chosen', n)}` : displayLabel(item.label)} style={[styles.chip, on && styles.chipOn]} onPress={() => onCategory(item.id)}>
+                        <Pressable key={item.id} accessibilityRole="button" accessibilityState={{ selected: on }} accessibilityLabel={rawText(n ? `${displayLabel(item.label)}, ${plural('oddlings.build.chosen', n)}` : displayLabel(item.label))} style={[styles.chip, on && styles.chipOn]} onPress={() => onCategory(item.id)}>
                             <Text style={[styles.chipText, on && styles.chipTextOn]}>{displayLabel(item.label)}{n ? ` · ${n}` : ''}</Text>
                         </Pressable>
                     );
@@ -38,7 +39,7 @@ export function CategoryList({ categoryId, picks, onCategory, onOpen }: Props) {
                 const value = picks[id];
                 const shown = value ? displayLabel(optionLabel(id, value)) : t('oddlings.build.notSet');
                 return (
-                    <Pressable key={id} accessibilityRole="button" accessibilityLabel={`${displayLabel(group.label)}: ${shown}`} style={styles.row} onPress={() => onOpen(id)}>
+                    <Pressable key={id} accessibilityRole="button" accessibilityLabel={rawText(`${displayLabel(group.label)}: ${shown}`)} style={styles.row} onPress={() => onOpen(id)}>
                         <Text style={styles.rowLabel}>{displayLabel(group.label)}</Text>
                         <Text style={[styles.rowValue, !value && styles.rowEmpty]} numberOfLines={1}>{shown}</Text>
                         <Icon name="caretRight" size={24} tint={styles.chev.color} />

@@ -98,7 +98,7 @@ function AccountPaywall({ owner }: { owner: string }) {
 
     return (
         <Modal transparent animationType="fade" visible onRequestClose={() => setOpenReason(null)}>
-            <View style={styles.backdrop}>
+            <View style={styles.backdrop} onAccessibilityEscape={() => setOpenReason(null)}>
                 <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
                     <View style={styles.card}>
                         <Text style={styles.eyebrow}>{t('paywallPrompt.vEYRNOX')}</Text>

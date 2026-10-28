@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { isAccountChanged } from '../../auth/sessionTask';
 import { isAnalyticsEnabled } from '../../lib/analytics/consent';
 import { confirmSignOut } from '../../lib/confirmSignOut';
@@ -110,7 +111,7 @@ export default function Account() {
             <Stack.Screen options={{ title: t('account.title') }} />
 
             <Section title={t('acct.profile')}>
-                <Card style={styles.row} accessible accessibilityLabel={`${t('acct.email')}: ${profile?.email ?? t('acct.profileLoading')}`}>
+                <Card style={styles.row} accessible accessibilityLabel={rawText(`${t('acct.email')}: ${profile?.email ?? t('acct.profileLoading')}`)}>
                     <Text variant="footnote" style={styles.note}>{t('acct.email')}</Text>
                     <Text variant="body" style={styles.rowText}>{profile?.email ?? t('acct.profileLoading')}</Text>
                     {profile ? <Text variant="footnote" style={styles.note}>{t('acct.signedInWith', { method: t(signInMethodKey(profile.provider)) })}</Text> : null}

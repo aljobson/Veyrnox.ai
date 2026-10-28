@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -86,7 +87,7 @@ function EditorialRow({ series, onOpen }: { series: EditorialSeries; onOpen: () 
     const meta = `${t('cinemaSeries.by', { creator: series.creatorName })} · ${plural('cinemaBrowse.episodes', series.episodes.length)}`;
     const categories = phoneCategories(series.categories);
     return (
-        <Pressable accessibilityRole="button" accessibilityLabel={`${series.title}. ${meta}`} style={styles.row} onPress={onOpen}>
+        <Pressable accessibilityRole="button" accessibilityLabel={rawText(`${series.title}. ${meta}`)} style={styles.row} onPress={onOpen}>
             <Image source={{ uri: series.posterUrl }} style={styles.poster} contentFit="cover" accessible={false} accessibilityIgnoresInvertColors />
             <View style={styles.body}>
                 <Text style={styles.name} numberOfLines={2}>{series.title}</Text>
@@ -102,7 +103,7 @@ function EditorialRow({ series, onOpen }: { series: EditorialSeries; onOpen: () 
 function Row({ item, mode, onOpen }: { item: DiscoveryTitle; mode: BrowseMode; onOpen: () => void }) {
     const series = item.contentType === 'SERIES';
     return (
-        <Card accessibilityLabel={item.title} style={{ padding: 0, overflow: 'hidden' }} onPress={onOpen}>
+        <Card accessibilityLabel={rawText(item.title)} style={{ padding: 0, overflow: 'hidden' }} onPress={onOpen}>
             <CinemaPosterImage id={item.id} style={{ borderTopLeftRadius: 12, borderTopRightRadius: 12 }} />
             <View style={{ padding: 12, gap: 8 }}>
                 <View style={styles.badges}>

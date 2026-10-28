@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { Text as StatusText } from '../ui/Text';
 import { useAuth } from '../../auth/AuthProvider';
 import { getCacheUser, subscribeCacheUser } from '../../lib/appCache';
@@ -115,7 +116,7 @@ export function HandoffCard({ picks, scene, motionId, onLeave, references = [], 
 function Choice({ label, offer, loading, onPress, disabled = false }: { label: string; offer: Offer | null; loading: boolean; disabled?: boolean; onPress: () => void }) {
     const price = offer ? plural('oddlings.handoff.credits', offer.credits) : loading ? t('oddlings.handoff.checking') : t('oddlings.handoff.unavailable');
     return (
-        <Pressable accessibilityRole="button" accessibilityLabel={`${label}. ${price}`} accessibilityState={{ disabled: !offer || disabled }} disabled={!offer || disabled} style={[styles.choice, (!offer || disabled) && styles.off]} onPress={onPress}>
+        <Pressable accessibilityRole="button" accessibilityLabel={rawText(`${label}. ${price}`)} accessibilityState={{ disabled: !offer || disabled }} disabled={!offer || disabled} style={[styles.choice, (!offer || disabled) && styles.off]} onPress={onPress}>
             <Text style={styles.choiceText}>{label}</Text>
             <Text style={styles.price}>{price}</Text>
         </Pressable>

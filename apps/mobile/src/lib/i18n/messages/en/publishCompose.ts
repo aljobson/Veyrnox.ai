@@ -26,4 +26,7 @@ export default {
     "publishCompose.toomanyrequestsTryagainina": "Too many requests. Try again in a moment.",
     "publishCompose.theserverdidnotacceptthatCheck": "The server did not accept that. Check the details and try again.",
     "publishCompose.somethingwentwrongNothingwaspostedTry": "Something went wrong. Nothing was posted. Try again.",
+    "publishCompose.captionLimit": "{name} allows {limit} characters; this is {length}.",
+    "publishCompose.unsupportedMedia": "{name} cannot post this media type: {kind}.",
+    "publishCompose.account": "That account",
 } as const;

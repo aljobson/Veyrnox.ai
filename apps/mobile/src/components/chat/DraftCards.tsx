@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 import { MIN_TARGET } from '../../lib/a11y';
@@ -16,7 +17,7 @@ export function DraftCards({ drafts }: { drafts: readonly StudioDraft[] }) {
                 <Card
                     key={`${d.model}-${i}`}
                     accessibilityRole="button"
-                    accessibilityLabel={`${t('chat.draft.open')}: ${d.name}, ${plural('chat.draft.price', d.credits)}`}
+                    accessibilityLabel={rawText(`${t('chat.draft.open')}: ${d.name}, ${plural('chat.draft.price', d.credits)}`)}
                     style={styles.card}
                     onPress={() => router.push({ pathname: '/create/[modelId]', params: { modelId: d.model, prompt: d.prompt } })}
                 >

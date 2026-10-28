@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { captureEvent } from '../../lib/analytics/events';
 import { markWelcomeSeen } from '../../lib/markWelcomeSeen';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -89,7 +90,7 @@ export default function Welcome() {
                 ) : null}
             </ScrollView>
             <View style={styles.footer}>
-                <Text style={styles.step} accessibilityLabel={t('welcome.step', { n: index + 1, total: WELCOME_CARDS.length })}>
+                <Text style={styles.step} accessibilityLabel={rawText(t('welcome.step', { n: index + 1, total: WELCOME_CARDS.length }))}>
                     {index + 1} / {WELCOME_CARDS.length}
                 </Text>
                 <Button label={last ? t('welcome.go') : t('welcome.next')} onPress={() => (last ? void done() : (captureEvent('onboarding_step', { step: 'welcome', action: 'next' }), setIndex(index + 1)))} />

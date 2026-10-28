@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { Text as StatusText } from '../../../components/ui/Text';
 import * as Crypto from 'expo-crypto';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -285,9 +286,9 @@ function Stepper({ label, value, onLess, onMore, lessLabel, moreLabel }: { label
     return (
         <View style={styles.stepper}>
             <Text style={styles.stepLabel}>{label}</Text>
-            <Pressable accessibilityRole="button" accessibilityLabel={lessLabel} style={styles.stepButton} onPress={onLess}><Text style={styles.smallText}>−</Text></Pressable>
-            <Text style={styles.stepValue} accessibilityLabel={`${label} ${seconds(value)}`}>{t('edit.s', { value1: seconds(value) })}</Text>
-            <Pressable accessibilityRole="button" accessibilityLabel={moreLabel} style={styles.stepButton} onPress={onMore}><Text style={styles.smallText}>+</Text></Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel={rawText(lessLabel)} style={styles.stepButton} onPress={onLess}><Text style={styles.smallText}>−</Text></Pressable>
+            <Text style={styles.stepValue} accessibilityLabel={rawText(`${label} ${seconds(value)}`)}>{t('edit.s', { value1: seconds(value) })}</Text>
+            <Pressable accessibilityRole="button" accessibilityLabel={rawText(moreLabel)} style={styles.stepButton} onPress={onMore}><Text style={styles.smallText}>+</Text></Pressable>
         </View>
     );
 }

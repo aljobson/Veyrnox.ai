@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -152,7 +153,7 @@ export default function CloudFilms() {
                 const shots = plural('filmCloud.shots', row.shotCount);
                 const date = row.updatedAt ? new Date(row.updatedAt).toLocaleDateString(formatLocale()) : '';
                 return (
-                    <View key={row.id}><Pressable accessibilityRole="button" accessibilityLabel={t('filmCloud.rowLabel', { name: row.name, shots, date })}
+                    <View key={row.id}><Pressable accessibilityRole="button" accessibilityLabel={rawText(t('filmCloud.rowLabel', { name: row.name, shots, date }))}
                         accessibilityState={{ busy: openingId === row.id, disabled: openingId !== null }} disabled={openingId !== null}
                         style={[styles.row, touchTarget]} onPress={() => { void choose(row); }}>
                         <Text style={styles.name}>{row.name}</Text>
@@ -160,7 +161,7 @@ export default function CloudFilms() {
                         {openingId === row.id ? <StatusText variant="inherit" accessibilityLiveRegion="polite" style={styles.body}>{t('filmCloud.opening')}</StatusText> : null}
                         <Text style={styles.name}>{t('filmOutput.open')}</Text>
                     </Pressable>
-                    <Pressable accessibilityRole="button" accessibilityLabel={`${t('filmOutput.remove')}: ${row.name}`} disabled={openingId !== null} accessibilityState={{ disabled: openingId !== null }} style={touchTarget} onPress={() => void remove(row)}><Text style={styles.name}>{t('filmOutput.remove')}</Text></Pressable></View>
+                    <Pressable accessibilityRole="button" accessibilityLabel={rawText(`${t('filmOutput.remove')}: ${row.name}`)} disabled={openingId !== null} accessibilityState={{ disabled: openingId !== null }} style={touchTarget} onPress={() => void remove(row)}><Text style={styles.name}>{t('filmOutput.remove')}</Text></Pressable></View>
                 );
             })}
             {/* Announced where it is set; the live region is for Android. */}

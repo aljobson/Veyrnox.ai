@@ -3054,6 +3054,12 @@
     "ratio": 1.79
   },
   {
+    "id": "mediaKind.image",
+    "english": "Image",
+    "translation": "Изображение",
+    "ratio": 2.2
+  },
+  {
     "id": "publishTiming.move.title",
     "english": "Move post",
     "translation": "Перенести публикацию",
@@ -3130,5 +3136,23 @@
     "english": "Short",
     "translation": "Короткометражка",
     "ratio": 3
+  },
+  {
+    "id": "presets.cat.NEW",
+    "english": "New",
+    "translation": "Новые",
+    "ratio": 1.67
+  },
+  {
+    "id": "presets.cat.ADS",
+    "english": "Ads",
+    "translation": "Реклама",
+    "ratio": 2.33
+  },
+  {
+    "id": "presets.cat.KIDS BIRTHDAY",
+    "english": "Kids birthday",
+    "translation": "Детский день рождения",
+    "ratio": 1.62
   }
 ]

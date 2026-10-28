@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { useReducedMotion } from '../ui/useReducedMotion';
 import { useState } from 'react';
 import { ActivityIndicator, Modal, ScrollView } from 'react-native';
@@ -42,12 +43,12 @@ export function ChatSettings({ visible, thread, models, onSave, onClose, instruc
 
     return (
         <Modal visible={visible} animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={onClose}>
-            <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+            <ScrollView style={styles.screen} onAccessibilityEscape={onClose} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
                 <Button accessibilityRole="button" accessibilityLabel={t('chat.settings.back')} containerStyle={styles.back} onPress={onClose} variant="tertiary" size="md" label={t('chat.settings.back')}><Icon name="arrowLeft" size={20} /><Text style={styles.closeText}>{t('chat.settings.back')}</Text></Button>
                 <Text variant="title2" style={styles.title} accessibilityRole="header">{t('chat.settings.title')}</Text>
                 <Text variant="footnote" style={styles.heading} accessibilityRole="header">{t('chat.settings.model')}</Text>
                 {switchableModels(models).map((m) => (
-                    <Card key={m.id} accessibilityRole="radio" accessibilityLabel={`${m.name}, ${plural('chat.perReply', m.credits_per_reply)}`} accessibilityState={{ selected: m.id === modelId }} style={[styles.row]} onPress={() => setModelId(m.id)} selected={m.id === modelId}>
+                    <Card key={m.id} accessibilityRole="radio" accessibilityLabel={rawText(`${m.name}, ${plural('chat.perReply', m.credits_per_reply)}`)} accessibilityState={{ selected: m.id === modelId }} style={[styles.row]} onPress={() => setModelId(m.id)} selected={m.id === modelId}>
                         <Text variant="body" style={styles.name}>{m.name}</Text>
                         <Text variant="footnote" style={styles.note}>{m.maker_label} · <Text variant="footnote" tone="warning">{plural('chat.perReply', m.credits_per_reply)}</Text></Text>
                     </Card>

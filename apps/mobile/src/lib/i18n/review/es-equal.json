@@ -106,7 +106,7 @@
   "sources.audio": "Same spelling in Spanish and English for this label: Audio.",
   "srch.s.oddlings": "Brand or product name retained as on the Spanish website: Oddlings.",
   "stem.piano": "Same spelling in Spanish and English for this label: Piano.",
-  "tabs.editor": "Same spelling in Spanish and English for this label: Editor.",
+  "tabs.editor": "Reviewed: shared media terminology or language-neutral playback position notation.",
   "toolDirectory.audioInput": "Same spelling in Spanish and English for this label: audio.",
   "vibe.destination.reels": "Brand or product name retained as on the Spanish website: Reels.",
   "vibe.destination.tiktok": "Brand or product name retained as on the Spanish website: TikTok.",
@@ -118,5 +118,7 @@
   "publishOps.inbox.count": "Formatting template; words are localized separately.",
   "publishOps.inbox.rowLabel": "Formatting template; words are localized separately.",
   "publishOps.accountLabel": "Formatting template; words are localized separately.",
-  "publishOps.priority.normal": "Shared term in this language."
+  "publishOps.priority.normal": "Shared term in this language.",
+  "mediaKind.audio": "Reviewed: shared media terminology or language-neutral playback position notation.",
+  "cinema.position": "Reviewed: shared media terminology or language-neutral playback position notation."
 }

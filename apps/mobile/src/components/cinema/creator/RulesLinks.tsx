@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { useEffect, useRef, useSyncExternalStore } from 'react';
 import { Link, router } from 'expo-router';
 import { Button } from '../../ui/Button';
@@ -10,10 +11,10 @@ import { t } from '../../../lib/i18n';
 import { colors } from '../../../theme';
 
 export function Action({ label, onPress, disabled = false }: { label: string; onPress(): void; disabled?: boolean }) {
-    return <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled }} disabled={disabled} onPress={onPress} style={[ui.button, disabled && { opacity: 0.5 }]}><Text style={ui.link}>{label}</Text></Pressable>;
+    return <Pressable accessibilityRole="button" accessibilityLabel={rawText(label)} accessibilityState={{ disabled }} disabled={disabled} onPress={onPress} style={[ui.button, disabled && { opacity: 0.5 }]}><Text style={ui.link}>{label}</Text></Pressable>;
 }
 export function Check({ label, checked, onPress, disabled = false, english = false }: { label: string; checked: boolean; onPress(): void; disabled?: boolean; english?: boolean }) {
-    return <Pressable accessibilityRole="checkbox" accessibilityLabel={label} accessibilityLanguage={english ? 'en' : undefined} accessibilityState={{ checked, disabled }} disabled={disabled} onPress={onPress} style={ui.button}><Text style={ui.text}>{checked ? '☑ ' : '☐ '}{label}</Text></Pressable>;
+    return <Pressable accessibilityRole="checkbox" accessibilityLabel={rawText(label)} accessibilityLanguage={english ? 'en' : undefined} accessibilityState={{ checked, disabled }} disabled={disabled} onPress={onPress} style={ui.button}><Text style={ui.text}>{checked ? '☑ ' : '☐ '}{label}</Text></Pressable>;
 }
 export function CreatorClosed({ message = 'cinemaUpload.closed' }: { message?: string }) {
     return <View style={ui.page}><Text style={ui.text}>{t(message === 'cinemaUpload.role' ? 'cinemaCreator.upload.body' : message)}</Text><ComingToApp /></View>;

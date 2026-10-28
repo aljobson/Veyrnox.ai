@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { View } from 'react-native';
 import * as Apple from 'expo-apple-authentication';
 import { brandColors, ds } from '../../theme';
@@ -20,7 +21,7 @@ export function AuthProviderButton({ provider, consent, busy, nativeAvailable, o
                 pointerEvents={blocked ? 'none' : 'auto'}
                 style={blocked ? s.disabled : undefined}
                 accessible={blocked}
-                accessibilityLabel={title}
+                accessibilityLabel={rawText(title)}
                 accessibilityRole="button"
                 accessibilityState={{ disabled: blocked }}
             >

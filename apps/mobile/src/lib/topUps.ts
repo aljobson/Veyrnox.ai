@@ -1,3 +1,4 @@
+import { formatCurrency } from './i18n';
 import type { ApiClient } from './api';
 
 // Past credit purchases (GET /api/v1/top-ups), newest first, paged with the same keyset cursor as the credit
@@ -51,7 +52,7 @@ export function merge(shown: readonly TopUp[], more: readonly TopUp[]): TopUp[] 
     return [...shown, ...more.filter((t) => !seen.has(t.id))];
 }
 
-export const dollars = (cents: number): string => `$${(cents / 100).toFixed(2)}`;
+export const dollars = (cents: number): string => formatCurrency(cents / 100, 'USD');
 
 export function statusKey(status: string): 'topup.status.pending' | 'topup.status.credited' | 'topup.status.other' {
     if (status === 'pending') return 'topup.status.pending';

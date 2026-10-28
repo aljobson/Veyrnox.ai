@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { assetKey, isLocked, lockAsset, testMatrix, testPrompt } from '../../lib/filmStudio';
@@ -31,7 +32,7 @@ export function FilmTestsStage({ film, change, catalog, live }: StageProps) {
                     <Text style={{ color: colors.text }}>{row.id} · {row.angle} · {row.size} · {row.shot}{row.pair ? ` · ${row.pair}` : ''} · {displayLabel(test.verdict)}</Text></Pressable>
                 {open ? <><FilmPromptOutput title={t('filmOutput.testPrompt', { value1: i + 1 })} prompt={testPrompt(film, asset, row)} modelId={film.stack.image} access={film.stack.imageAccess} catalog={catalog} live={live} />
                     <FilmInput label={t('film.actualoutputreference')} value={test.result} disabled={locked} onChange={result => edit(row.id, { result })} />
-                    {['pending', 'pass', 'miss'].map(verdict => <Pressable key={verdict} accessibilityRole="radio" accessibilityLabel={displayLabel(verdict)} accessibilityState={{ selected: test.verdict === verdict, disabled: locked }} disabled={locked} style={{ minHeight: 44, justifyContent: 'center' }} onPress={() => edit(row.id, { verdict })}><Text style={{ color: colors.body }}>{displayLabel(verdict)}</Text></Pressable>)}</> : null}
+                    {['pending', 'pass', 'miss'].map(verdict => <Pressable key={verdict} accessibilityRole="radio" accessibilityLabel={rawText(displayLabel(verdict))} accessibilityState={{ selected: test.verdict === verdict, disabled: locked }} disabled={locked} style={{ minHeight: 44, justifyContent: 'center' }} onPress={() => edit(row.id, { verdict })}><Text style={{ color: colors.body }}>{displayLabel(verdict)}</Text></Pressable>)}</> : null}
             </View>;
         })}
         {error ? <StatusText variant="inherit" accessibilityRole="alert" style={{ color: colors.danger }}>{error}</StatusText> : null}

@@ -1,3 +1,4 @@
+import { rawText } from '../lib/i18n/translate';
 import { Text, Button, themedStyles, useThemedStyles } from './ui';
 import * as DocumentPicker from 'expo-document-picker';
 import { Image } from 'expo-image';
@@ -241,7 +242,7 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
             </Text>
             {hint ? <Text variant="footnote" tone="tertiary" style={styles.slotHint}>{hint}</Text> : null}
             {status.step === 'empty' ? (
-                <Button variant="secondary" accessibilityRole="button" accessibilityLabel={t('sourcePicker.choosefor', { value1: NOUN[slot.kind], value2: slot.label })} onPress={pick} label={t('sourcePicker.choose', { value1: NOUN[slot.kind] })} />
+                <Button variant="secondary" accessibilityRole="button" accessibilityLabel={rawText(t('sourcePicker.choosefor', { value1: NOUN[slot.kind], value2: slot.label }))} onPress={pick} label={t('sourcePicker.choose', { value1: NOUN[slot.kind] })} />
             ) : (
                 <View style={styles.row}>
                     {preview ? <Image source={{ uri: preview }} style={styles.thumb} contentFit="cover" /> : <View style={[styles.thumb, styles.thumbPlain]} />}
@@ -255,11 +256,11 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
                             <Text variant="body" tone="secondary" style={styles.body}>{libraryName ? t('libsrc.ready', { name: libraryName }) : t('sourcePicker.ready')}</Text>
                         )}
                     </View>
-                    <Button variant="secondary" accessibilityRole="button" accessibilityLabel={t('sourcePicker.remove', { value1: slot.label })} onPress={remove} hitSlop={12} label={status.step === 'uploading' ? t('sourcePicker.cancel') : t('sourcePicker.remove2')} />
+                    <Button variant="secondary" accessibilityRole="button" accessibilityLabel={rawText(t('sourcePicker.remove', { value1: slot.label }))} onPress={remove} hitSlop={12} label={status.step === 'uploading' ? t('sourcePicker.cancel') : t('sourcePicker.remove2')} />
                 </View>
             )}
             {status.step === 'empty' && onLibrary ? (
-                <Button variant="secondary" accessibilityRole="button" accessibilityLabel={t('libsrc.chooseLabel', { kind: NOUN[slot.kind], slot: slot.label })} onPress={() => setChoosing(true)} label={t('libsrc.choose')} />
+                <Button variant="secondary" accessibilityRole="button" accessibilityLabel={rawText(t('libsrc.chooseLabel', { kind: NOUN[slot.kind], slot: slot.label }))} onPress={() => setChoosing(true)} label={t('libsrc.choose')} />
             ) : null}
             {drawable && DrawScreen && status.step === 'ready' && preview && !libraryName ? (
                 <Button variant="secondary" accessibilityRole="button" accessibilityLabel={t('draw.open')} onPress={() => setDrawing(++drawEpoch.current)} label={t('draw.open')} />

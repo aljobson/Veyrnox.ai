@@ -19,4 +19,7 @@ export default {
     "referrals.codesonlyworkfornewaccounts": "Codes only work for new accounts.",
     "referrals.referralsarenotavailablerightnow2": "Referrals are not available right now.",
     "referrals.noconnectionCheckitandtryagain": "No connection. Check it and try again.",
+    "referrals.friends.one": "{count} friend has joined through your link.",
+    "referrals.friends.other": "{count} friends have joined through your link.",
+    "referrals.alreadyAttached": "A code is already attached to this account.",
 } as const;

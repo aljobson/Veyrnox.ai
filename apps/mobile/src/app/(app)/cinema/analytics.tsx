@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -65,7 +66,7 @@ export default function CreatorAnalytics() {
                             <ScrollView contentContainerStyle={styles.content}>
                                 <Text style={styles.muted}>{t('cinemaCreator.analytics.period', { from: day(result.value.periodStart), to: day(result.value.periodEnd) })}</Text>
                                 {result.value.metrics ? ROWS.map((k) => (
-                                    <View key={k} style={styles.row} accessible accessibilityLabel={`${t(`cinemaCreator.analytics.${k}`)}: ${result.value.metrics?.[k]}`}>
+                                    <View key={k} style={styles.row} accessible accessibilityLabel={rawText(`${t(`cinemaCreator.analytics.${k}`)}: ${result.value.metrics?.[k]}`)}>
                                         <Text style={styles.label}>{t(`cinemaCreator.analytics.${k}`)}</Text>
                                         <Text style={styles.value}>{result.value.metrics?.[k]}</Text>
                                     </View>

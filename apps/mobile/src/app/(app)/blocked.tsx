@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { Text as StatusText } from '../../components/ui/Text';
 import { Stack, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -82,7 +83,7 @@ export default function Blocked() {
                             </View>
                             <Pressable
                                 accessibilityRole="button"
-                                accessibilityLabel={t('blocks.unblockTitle', { name: item.displayName })}
+                                accessibilityLabel={rawText(t('blocks.unblockTitle', { name: item.displayName }))}
                                 accessibilityState={{ busy: busy === item.username, disabled: busy !== null }}
                                 disabled={busy !== null}
                                 style={[touchTarget, styles.action]}

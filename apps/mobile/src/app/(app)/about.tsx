@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import Constants from 'expo-constants';
 import { router, Stack } from 'expo-router';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -15,7 +16,7 @@ export default function About() {
             <Text style={styles.heading} accessibilityRole="header">{t('abt.details')}</Text>
             <View style={styles.card}>
                 {ABOUT_FACTS.map((f) => (
-                    <View key={f.labelKey} style={styles.fact} accessible accessibilityLabel={`${t(f.labelKey)}: ${f.value}`}>
+                    <View key={f.labelKey} style={styles.fact} accessible accessibilityLabel={rawText(`${t(f.labelKey)}: ${f.value}`)}>
                         <Text style={styles.note}>{t(f.labelKey)}</Text>
                         <Text style={styles.value}>{f.value}</Text>
                     </View>

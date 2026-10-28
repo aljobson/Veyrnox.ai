@@ -32,7 +32,7 @@ export function AiConsentHost() {
     return (
         <Modal visible={open} transparent animationType="none" onRequestClose={() => reading ? setReading(false) : answer(false)} accessibilityViewIsModal>
             {reading ? <LegalSheetContent doc="privacy" onClose={() => setReading(false)} /> :
-                <View style={styles.backdrop}>
+                <View style={styles.backdrop} onAccessibilityEscape={() => answer(false)}>
                     <View style={styles.card}>
                         <Text variant="title2">{AI_CONSENT_TEXT.title}</Text>
                         <Text accessibilityLanguage="en">{AI_CONSENT_TEXT.body}</Text>

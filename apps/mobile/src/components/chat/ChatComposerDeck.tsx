@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { ScrollView, View } from 'react-native';
 import { cleanOptions, thinkingExtra, webExtra, type ChatModel, type ReplyOptions } from '../../lib/chat';
 import type { ChatImage } from '../../lib/chatAttach';
@@ -55,7 +56,7 @@ export function ChatComposerDeck(props: Props) {
                 </ScrollView>
                 <ScrollView keyboardShouldPersistTaps="handled" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.setupRow} accessibilityLabel={t('chat.composer.setup')}>
                     <Chip icon="cpu" trailingIcon="caretDown" label={props.model.name}
-                        accessibilityRole="button" accessibilityLabel={`${t('chat.model.change')}: ${props.model.name}, ${plural('chat.perReply', props.model.credits_per_reply)}`}
+                        accessibilityRole="button" accessibilityLabel={rawText(`${t('chat.model.change')}: ${props.model.name}, ${plural('chat.perReply', props.model.credits_per_reply)}`)}
                         disabled={props.sending} onPress={props.onModel} />
                     {thinking !== null ? (
                         <>
@@ -73,12 +74,12 @@ export function ChatComposerDeck(props: Props) {
                         placeholder={props.placeholder} accessibilityLabel={t('chat.composer.message')} multiline maxLength={8000} />
                     {props.sending ? (
                         <Button variant="secondary" size="md" label={props.stopping ? '…' : t('chat.stop')}
-                            accessibilityRole="button" accessibilityLabel={props.stopping ? t('chat.stopping') : t('chat.stopLabel')}
+                            accessibilityRole="button" accessibilityLabel={rawText(props.stopping ? t('chat.stopping') : t('chat.stopLabel'))}
                             disabled={props.stopping} containerStyle={styles.action} onPress={props.onStop} />
                     ) : (
                         <View style={styles.action}>
                             <Button variant="primary" size="md" label={t('chat.send')} accessibilityRole="button"
-                                accessibilityLabel={props.free ? t('chatDepth.sendFree') : plural('chat.sendPrice', props.price)} disabled={!props.canSend} onPress={props.onSend} />
+                                accessibilityLabel={rawText(props.free ? t('chatDepth.sendFree') : plural('chat.sendPrice', props.price))} disabled={!props.canSend} onPress={props.onSend} />
                             <Text variant="caption" tone="warning" style={styles.sendPrice}>{props.free ? t('chatDepth.free') : plural('chat.sendPriceShort', props.price)}</Text>
                         </View>
                     )}

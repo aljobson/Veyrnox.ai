@@ -1,3 +1,4 @@
+import { rawText } from '../lib/i18n/translate';
 import { Text as StatusText } from './ui/Text';
 import { english } from '../lib/i18n/binding';
 import { useAnnouncement } from '../lib/useAnnouncement';
@@ -226,7 +227,7 @@ export function FaceFiltersFlow({ api, owner }: { api: ApiClient; owner: string 
                 </View>)}
                 {selectors?.age ? <>
                     <Text style={styles.text}>{t('faceFilters.target_age', { min: String(selectors.age.min), max: String(selectors.age.max) })}</Text>
-                    <TextInput accessibilityLabel={t('faceFilters.target_age', { min: String(selectors.age.min), max: String(selectors.age.max) })} keyboardType="number-pad" style={styles.input} editable={!busy} value={String(values.target_age ?? '')} placeholderTextColor={colors.muted} maxLength={3} onChangeText={value => { setValues(v => ({ ...v, target_age: value })); setChecked(false); }} />
+                    <TextInput accessibilityLabel={rawText(t('faceFilters.target_age', { min: String(selectors.age.min), max: String(selectors.age.max) }))} keyboardType="number-pad" style={styles.input} editable={!busy} value={String(values.target_age ?? '')} placeholderTextColor={colors.muted} maxLength={3} onChangeText={value => { setValues(v => ({ ...v, target_age: value })); setChecked(false); }} />
                     {invalid ? <Text style={styles.error}>{t('faceFilters.invalidAge')}</Text> : null}
                 </> : null}
                 {selectors?.identity ? <Pressable accessibilityRole="checkbox" accessibilityLabel={t('faceFilters.preserve_identity')} accessibilityState={{ checked: values.preserve_identity === true, disabled: busy }} disabled={busy} style={styles.card} onPress={() => { setValues(v => ({ ...v, preserve_identity: !v.preserve_identity })); setChecked(false); }}><Text style={styles.text}>{values.preserve_identity ? '☑ ' : '☐ '}{t('faceFilters.preserve_identity')}</Text></Pressable> : null}
@@ -235,7 +236,7 @@ export function FaceFiltersFlow({ api, owner }: { api: ApiClient; owner: string 
                 {missing > 0 ? <Pressable accessibilityRole="button" accessibilityLabel={t('lowBalance.buy')} style={styles.card} onPress={() => router.push('/credits')}><Text style={styles.text}>{t('form.err.insufficient')} {t('lowBalance.buy')}</Text></Pressable> : null}
                 <Pressable accessibilityRole="checkbox" accessibilityLanguage="en" accessibilityLabel={english('faceFilters.rights')} accessibilityState={{ checked, disabled: busy }} disabled={busy} style={[styles.card, checked && styles.selected]} onPress={() => setChecked(v => !v)}><Text style={styles.text}>{checked ? '☑ ' : '☐ '}{english('faceFilters.rights')}</Text></Pressable>
                 <Pressable accessibilityRole="link" accessibilityLabel={t('faceFilters.policy')} style={styles.card} onPress={() => { router.push('/legal/aup'); }}><Text style={styles.text}>{t('faceFilters.policy')}</Text></Pressable>
-                <Pressable accessibilityRole="button" accessibilityLabel={`${t('faceFilters.run')}. ${t('faceFilters.price', { credits: String(model.credits) })}`} accessibilityState={{ disabled: !ready || busy, busy }} disabled={!ready || busy} style={[styles.card, (!ready || busy) && styles.disabled]} onPress={run}><Text style={styles.text}>{t('faceFilters.run')}</Text>{busy ? <ActivityIndicator /> : null}</Pressable>
+                <Pressable accessibilityRole="button" accessibilityLabel={rawText(`${t('faceFilters.run')}. ${t('faceFilters.price', { credits: String(model.credits) })}`)} accessibilityState={{ disabled: !ready || busy, busy }} disabled={!ready || busy} style={[styles.card, (!ready || busy) && styles.disabled]} onPress={run}><Text style={styles.text}>{t('faceFilters.run')}</Text>{busy ? <ActivityIndicator /> : null}</Pressable>
             </>}
             {error ? <StatusText variant="inherit" style={styles.error} accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : undefined}>{error}</StatusText> : null}
         </ScrollView>

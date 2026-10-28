@@ -1482,12 +1482,6 @@
     "ratio": 2.38
   },
   {
-    "id": "helpGuides.content.templates.s3.title",
-    "english": "Use it",
-    "translation": "Sie verwenden",
-    "ratio": 2.17
-  },
-  {
     "id": "helpGuides.content.templates.s4.title",
     "english": "Make it yours",
     "translation": "Mach sie zu deiner eigenen",
@@ -3012,6 +3006,12 @@
     "ratio": 1.83
   },
   {
+    "id": "cinema.pause",
+    "english": "Pause",
+    "translation": "Pausieren",
+    "ratio": 1.8
+  },
+  {
     "id": "publishTiming.move.title",
     "english": "Move post",
     "translation": "Beitrag verschieben",
@@ -3130,5 +3130,11 @@
     "english": "Add your first {type}.",
     "translation": "Füge dein erstes Element hinzu: {type}.",
     "ratio": 1.77
+  },
+  {
+    "id": "presets.cat.ADS",
+    "english": "Ads",
+    "translation": "Werbung",
+    "ratio": 2.33
   }
 ]

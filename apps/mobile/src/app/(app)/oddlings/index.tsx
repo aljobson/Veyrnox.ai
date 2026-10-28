@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { Image } from 'expo-image';
 import { Stack, useRouter } from 'expo-router';
@@ -43,7 +44,7 @@ export default function OddlingGallery() {
                                 const hero = findOddling(id);
                                 if (!hero) return null;
                                 return (
-                                    <Pressable key={id} accessibilityRole="button" accessibilityLabel={t('oddlings.featuredCard', { name: hero.name })} style={styles.hero} onPress={() => router.push({ pathname: '/oddlings/[id]', params: { id } })}>
+                                    <Pressable key={id} accessibilityRole="button" accessibilityLabel={rawText(t('oddlings.featuredCard', { name: hero.name }))} style={styles.hero} onPress={() => router.push({ pathname: '/oddlings/[id]', params: { id } })}>
                                         <Image source={{ uri: portraitUrl(id) }} style={styles.heroImage} contentFit="cover" cachePolicy="disk" accessibilityIgnoresInvertColors />
                                         <Text style={styles.heroName} numberOfLines={1}>{hero.name}</Text>
                                     </Pressable>
@@ -56,7 +57,7 @@ export default function OddlingGallery() {
                 }
                 ListEmptyComponent={<Text style={styles.empty}>{t('oddlings.empty')}</Text>}
                 renderItem={({ item }) => (
-                    <Pressable accessibilityRole="button" accessibilityLabel={t('oddlings.card', { name: item.name })} style={styles.card} onPress={() => router.push({ pathname: '/oddlings/[id]', params: { id: item.id } })}>
+                    <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('oddlings.card', { name: item.name }))} style={styles.card} onPress={() => router.push({ pathname: '/oddlings/[id]', params: { id: item.id } })}>
                         <Image source={{ uri: portraitUrl(item.id) }} style={styles.portrait} contentFit="cover" cachePolicy="disk" recyclingKey={item.id} accessibilityIgnoresInvertColors />
                         <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
                         <Text style={styles.accent} numberOfLines={1}>{item.accent}</Text>

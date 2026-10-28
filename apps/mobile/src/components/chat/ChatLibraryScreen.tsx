@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { forgetThread } from '../../lib/chatLocal';
 import { Link, Stack, useFocusEffect, useRouter } from 'expo-router';
 
@@ -96,7 +97,7 @@ export function ChatLibraryScreen() {
                                     <Text style={styles.muted} numberOfLines={1}>{item.model_id}</Text>
                                 </View>
                             </Card>
-                            <Button accessibilityRole="button" accessibilityLabel={t('chat.delete.label', { name: item.title || t('chat.newChatFallback') })} containerStyle={styles.deleteButton} onPress={() => confirmDelete(item)} variant="tertiary" size="md" label={t('chat.delete.label', { name: item.title || t('chat.newChatFallback') })}>
+                            <Button accessibilityRole="button" accessibilityLabel={rawText(t('chat.delete.label', { name: item.title || t('chat.newChatFallback') }))} containerStyle={styles.deleteButton} onPress={() => confirmDelete(item)} variant="tertiary" size="md" label={t('chat.delete.label', { name: item.title || t('chat.newChatFallback') })}>
                                 <Text style={styles.deleteText}>{t('chat.delete.button')}</Text>
                             </Button>
                         </View>

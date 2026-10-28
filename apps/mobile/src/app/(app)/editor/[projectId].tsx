@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { useAnnouncement } from '../../../lib/useAnnouncement';
 import { randomUUID } from 'expo-crypto';
@@ -32,7 +33,7 @@ function requestProblem(error: unknown): string {
     return status === 0 ? 'editor.createOffline' : editorErrorKey(status);
 }
 function Button({ label, onPress, disabled = false }: { label: string; onPress(): void; disabled?: boolean }) {
-    return <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled }} disabled={disabled} style={touchTarget} onPress={onPress}><Text style={{ color: colors.accent }}>{label}</Text></Pressable>;
+    return <Pressable accessibilityRole="button" accessibilityLabel={rawText(label)} accessibilityState={{ disabled }} disabled={disabled} style={touchTarget} onPress={onPress}><Text style={{ color: colors.accent }}>{label}</Text></Pressable>;
 }
 export default function EditorRoute() {
     const { projectId, jobId } = useLocalSearchParams<{ projectId: string; jobId?: string }>();
@@ -312,6 +313,7 @@ function Editor({ projectId, jobId }: { projectId: string; jobId?: string }) {
         {session.status === 'start_failed' && <><Text>{t('editor.startFailed')}</Text><Button label={t('editor.retryNow')} onPress={reopen} /></>}
         {session.engineStopped && <><Text>{t(session.dirty && session.localCopy === 'failed' ? 'editor.notKept' : 'editor.killed')}</Text><Button label={t('editor.reopen')} onPress={reopen} /></>}
         {(['offline', 'paused'].includes(session.status) || problem) && !choice && <View testID="editor-retry" accessibilityLiveRegion="polite"><Button label={retryLabel} disabled={paused} onPress={() => { if (!project) void load(); else void save(true); }} /></View>}
+        {/* No VoiceOver escape on purpose: restoring or resolving a save conflict needs an explicit choice. */}
         {choice && <Modal visible animationType="none" onRequestClose={guard.done}>
             <View style={{ padding: 20 }}><Text accessibilityRole="header">{t(choice === 'restore' ? 'editor.restore' : 'editor.conflict')}</Text>
                 {problem && <Text>{t(problem)}</Text>}

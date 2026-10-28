@@ -1,4 +1,4 @@
-import { t } from './i18n';
+import { plural, t } from './i18n';
 import { ApiError, type ApiClient } from './api';
 
 // ADR-0071: a friend you send who buys their first Credit Pack earns you Credits. Mirrors
@@ -15,7 +15,7 @@ export const referralLink = (code: string): string => `https://veyrnox.ai/?ref=$
 
 export function friendsLine(count: number): string {
     if (count === 0) return t('referrals.nofriendshavejoinedthroughyourlink');
-    return count === 1 ? '1 friend has joined through your link.' : `${count} friends have joined through your link.`;
+    return plural('referrals.friends', count);
 }
 
 export type ReferralInfo = { readonly enabled: false } | { readonly enabled: true; readonly code: string; readonly referred: number };
@@ -48,7 +48,7 @@ export function attachMessage(err: unknown): string {
         case 'not_new':
             return t('referrals.codesonlyworkfornewaccounts');
         case 'already_attached':
-            return 'A code is already attached to this account.';
+            return t('referrals.alreadyAttached');
         case 'not_found':
             return t('referrals.referralsarenotavailablerightnow2');
         case 'network':

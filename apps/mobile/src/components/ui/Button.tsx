@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { ControlLabelContext } from './ControlLabelContext';
 import { getLocale } from '../../lib/i18n';
 import { DisabledTextContext } from './DisabledTextContext';
@@ -47,7 +48,7 @@ export function Button({ label, variant = 'primary', size = 'lg', tone = 'primar
             <Pressable
                 {...props}
                 accessibilityRole={props.accessibilityRole ?? 'button'}
-                accessibilityLabel={props.accessibilityLabel ?? label}
+                accessibilityLabel={rawText(props.accessibilityLabel ?? label)}
                 accessibilityState={{ ...props.accessibilityState, disabled: !!blocked, busy: props.accessibilityState?.busy ?? !!loading }}
                 disabled={blocked}
                 hitSlop={props.hitSlop ?? (size === 'sm' ? 6 : undefined)}

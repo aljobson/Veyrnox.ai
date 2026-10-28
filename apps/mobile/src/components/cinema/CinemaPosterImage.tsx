@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { Image, type ImageStyle } from 'expo-image';
 import { useState } from 'react';
 import { type StyleProp } from 'react-native';
@@ -11,6 +12,6 @@ function Poster({ id, label, style }: { id: string; label?: string; style?: Styl
     const sources = posterSources(id);
     if (index >= sources.length) return null;
     return <Image key={index} source={{ uri: sources[index] }} style={[{ width: '100%', aspectRatio: 16 / 9 }, style]}
-        contentFit="cover" accessible={!!label} accessibilityLabel={label} accessibilityIgnoresInvertColors
+        contentFit="cover" accessible={!!label} accessibilityLabel={rawText(label)} accessibilityIgnoresInvertColors
         onError={() => setIndex(current => current === index ? current + 1 : current)} />;
 }

@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { Image } from 'expo-image';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
@@ -62,7 +63,7 @@ export function ContinueWatching() {
                 onEndReachedThreshold={0.5}
                 renderItem={({ item }) => (
                     <View style={styles.card}>
-                        <Pressable accessibilityRole="button" accessibilityLabel={t('cinema.progress.resume', { title: item.title })}
+                        <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('cinema.progress.resume', { title: item.title }))}
                             onPress={() => router.push({ pathname: '/cinema/watch/[id]', params: { id: item.contentId, title: item.title, position: String(item.position) } })}>
                             <Image source={{ uri: posterUrl(item.contentId) }} style={styles.poster} contentFit="cover" accessible={false} accessibilityIgnoresInvertColors />
                             <Text style={styles.cardTitle} numberOfLines={1}>{item.title}</Text>
@@ -73,7 +74,7 @@ export function ContinueWatching() {
                             </View>
                         </Pressable>
                         <Pressable accessibilityRole="button" style={styles.dismiss} disabled={removing !== null}
-                            accessibilityState={{ disabled: removing !== null }} accessibilityLabel={t('cinema.progress.dismissTitle', { title: item.title })}
+                            accessibilityState={{ disabled: removing !== null }} accessibilityLabel={rawText(t('cinema.progress.dismissTitle', { title: item.title }))}
                             onPress={() => { void dismiss(item); }}>
                             <Text style={styles.creator}>{t('cinema.progress.dismiss')}</Text>
                         </Pressable>

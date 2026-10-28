@@ -1,3 +1,4 @@
+import { rawText } from '../lib/i18n/translate';
 import { Icon } from '../components/ui';
 import { Image } from 'expo-image';
 import { Redirect, useRouter } from 'expo-router';
@@ -69,14 +70,14 @@ export default function Preview() {
                 {failed && loading ? <Text style={styles.note}>{t('preview.error')}</Text> : null}
                 {tab === 'templates'
                     ? (presets ?? []).slice(0, 30).map((p) => (
-                          <Pressable key={p.id} accessibilityRole="button" accessibilityLabel={`${p.title}, ${presetPrice(p)}`} accessibilityHint={t('preview.signInHint')} style={styles.card} onPress={signIn}>
+                          <Pressable key={p.id} accessibilityRole="button" accessibilityLabel={rawText(`${p.title}, ${presetPrice(p)}`)} accessibilityHint={t('preview.signInHint')} style={styles.card} onPress={signIn}>
                               {p.posterUrl ? <Image source={{ uri: p.posterUrl }} style={styles.poster} contentFit="cover" accessibilityIgnoresInvertColors /> : <View style={styles.poster} />}
                               <Text style={styles.cardTitle} numberOfLines={2}>{p.title}</Text>
                               <Text style={styles.cardMeta}>{presetPrice(p)}</Text>
                           </Pressable>
                       ))
                     : (titles ?? []).map((c) => (
-                          <Pressable key={c.id} accessibilityRole="button" accessibilityLabel={c.title} accessibilityHint={t('preview.signInHint')} style={styles.card} onPress={signIn}>
+                          <Pressable key={c.id} accessibilityRole="button" accessibilityLabel={rawText(c.title)} accessibilityHint={t('preview.signInHint')} style={styles.card} onPress={signIn}>
                               <Image source={{ uri: posterUrl(c.id) }} style={styles.poster} contentFit="cover" accessibilityIgnoresInvertColors />
                               <Text style={styles.cardTitle} numberOfLines={2}>{c.title}</Text>
                               {c.creator ? <Text style={styles.cardMeta}>{c.creator}</Text> : null}

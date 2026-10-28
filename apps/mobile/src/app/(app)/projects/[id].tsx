@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { Text as StatusText } from '../../../components/ui/Text';
 import * as Crypto from 'expo-crypto';
 import { removeProjectMedia } from '../../../lib/editorDeviceMedia';
@@ -158,7 +159,7 @@ export default function ProjectDetail() {
                             {item.createdAt ? <Text style={styles.muted}>{new Date(item.createdAt).toLocaleString(formatLocale())}</Text> : null}
                         </View>
                         {item.revision !== versions[0]?.revision ? (
-                            <Pressable accessibilityRole="button" accessibilityLabel={t('projects.restoreversion2', { value1: item.revision })} disabled={busy} style={[styles.restore, touchTarget]} onPress={() => confirmRestore(item)}>
+                            <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('projects.restoreversion2', { value1: item.revision }))} disabled={busy} style={[styles.restore, touchTarget]} onPress={() => confirmRestore(item)}>
                                 <Text style={styles.action}>{t('projects.restore')}</Text>
                             </Pressable>
                         ) : null}

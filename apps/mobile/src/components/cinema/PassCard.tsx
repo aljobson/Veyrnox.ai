@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
@@ -25,7 +26,7 @@ export function PassCard() {
             : pass.periodEnd ? t(pass.cancelsAtPeriodEnd ? 'cinemaPass.endsOn' : 'cinemaPass.renewsOn', { date: day(pass.periodEnd) })
                 : t('cinemaPass.active');
     return (
-        <View style={styles.card} accessible accessibilityLabel={`${t('cinemaPass.title')}. ${line}`}>
+        <View style={styles.card} accessible accessibilityLabel={rawText(`${t('cinemaPass.title')}. ${line}`)}>
             <Text style={styles.heading} accessibilityRole="header">{t('cinemaPass.title')}</Text>
             <Text style={styles.body}>{line}</Text>
             <Text style={styles.muted}>{t('cinemaPass.manage')}</Text>

@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -106,7 +107,7 @@ export default function FilmStudio() {
 
             <Text style={styles.heading} accessibilityRole="header">{t('film.stages')}</Text>
             {stages.map((s, i) => (
-                <View key={s.id} style={styles.row} accessible accessibilityLabel={t('film.stage', { value1: i + 1, value2: s.title, value3: s.done ? t('film.done') : t('film.remaining', { count: s.open }) })}>
+                <View key={s.id} style={styles.row} accessible accessibilityLabel={rawText(t('film.stage', { value1: i + 1, value2: s.title, value3: s.done ? t('film.done') : t('film.remaining', { count: s.open }) }))}>
                     <Text style={styles.name}>
                         {s.done ? '✓' : '•'} {i + 1}. {s.title}
                     </Text>
@@ -122,7 +123,7 @@ export default function FilmStudio() {
             <Text style={styles.heading} accessibilityRole="header">{t('film.shots')}</Text>
             {rows.length === 0 ? <Text style={styles.muted}>{t('film.noshotsyetAddtheminthe')}</Text> : null}
             {rows.map((r) => (
-                <Pressable key={r.shot.id} accessibilityRole="button" accessibilityLabel={`${r.shot.id}, ${r.label}`} style={[styles.row, touchTarget]} onPress={() => router.push({ pathname: '/film/shot/[id]', params: { id: r.shot.id } })}>
+                <Pressable key={r.shot.id} accessibilityRole="button" accessibilityLabel={rawText(`${r.shot.id}, ${r.label}`)} style={[styles.row, touchTarget]} onPress={() => router.push({ pathname: '/film/shot/[id]', params: { id: r.shot.id } })}>
                     <Text style={styles.name}>{r.shot.id}</Text>
                     <Text style={styles.muted}>{String(r.shot.description).slice(0, 110)}</Text>
                     <Text style={r.state === 'accepted' ? styles.good : r.state === 'prompt-ready' ? styles.ready : styles.muted}>{r.label}</Text>
@@ -141,7 +142,7 @@ function Links({ router, cloudCount }: { router: ReturnType<typeof useRouter>; c
     return (
         <View style={styles.links}>
             {cloudCount !== null && cloudCount >= 1 ? (
-                <Pressable accessibilityRole="button" accessibilityLabel={`${t('filmCloud.linkTitle')}, ${plural('filmCloud.linkCount', cloudCount)}`} style={[styles.row, touchTarget]} onPress={() => router.push('/film/cloud')}>
+                <Pressable accessibilityRole="button" accessibilityLabel={rawText(`${t('filmCloud.linkTitle')}, ${plural('filmCloud.linkCount', cloudCount)}`)} style={[styles.row, touchTarget]} onPress={() => router.push('/film/cloud')}>
                     <Text style={styles.name}>{t('filmCloud.linkTitle')}</Text>
                     <Text style={styles.muted}>{plural('filmCloud.linkCount', cloudCount)}</Text>
                 </Pressable>

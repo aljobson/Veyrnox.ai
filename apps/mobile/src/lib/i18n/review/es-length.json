@@ -2938,5 +2938,35 @@
     "english": "Film",
     "translation": "Película",
     "ratio": 2
+  },
+  {
+    "id": "presets.cat.ALL",
+    "english": "All",
+    "translation": "Todas",
+    "ratio": 1.67
+  },
+  {
+    "id": "presets.cat.NEW",
+    "english": "New",
+    "translation": "Novedades",
+    "ratio": 3
+  },
+  {
+    "id": "presets.cat.CINEMATIC",
+    "english": "Cinematic",
+    "translation": "Cinematográfico",
+    "ratio": 1.67
+  },
+  {
+    "id": "presets.cat.CARTOONS",
+    "english": "Cartoons",
+    "translation": "Dibujos animados",
+    "ratio": 2
+  },
+  {
+    "id": "presets.cat.ADS",
+    "english": "Ads",
+    "translation": "Anuncios",
+    "ratio": 2.67
   }
 ]

@@ -1,3 +1,4 @@
+import { rawText } from '../lib/i18n/translate';
 import { Text, Button, Card, themedStyles, useThemedStyles } from './ui';
 import { InlineMedia } from './InlineMedia';
 import { useState } from 'react';
@@ -40,8 +41,8 @@ export function StemList({ api, jobId, stems, onReady }: { onReady?: () => void;
             {shown.map((s) => (
                 <Card key={s} style={styles.row}>
                     <Text variant="bodyStrong" tone="primary" style={styles.name}>{t(`stem.${s}`)}</Text>
-                    <Button variant="secondary" accessibilityRole="button" accessibilityLabel={t('stems.play', { stem: t(`stem.${s}`) })} disabled={!!busy} onPress={() => act(s, 'play')} label={t('stems.play', { stem: t(`stem.${s}`) })} icon="play" iconOnly />
-                    <Button variant="secondary" accessibilityRole="button" accessibilityLabel={t('stems.share', { stem: t(`stem.${s}`) })} disabled={!!busy} onPress={() => act(s, 'share')} label={t('stems.share', { stem: t(`stem.${s}`) })} icon="externalLink" iconOnly />
+                    <Button variant="secondary" accessibilityRole="button" accessibilityLabel={rawText(t('stems.play', { stem: t(`stem.${s}`) }))} disabled={!!busy} onPress={() => act(s, 'play')} label={t('stems.play', { stem: t(`stem.${s}`) })} icon="play" iconOnly />
+                    <Button variant="secondary" accessibilityRole="button" accessibilityLabel={rawText(t('stems.share', { stem: t(`stem.${s}`) }))} disabled={!!busy} onPress={() => act(s, 'share')} label={t('stems.share', { stem: t(`stem.${s}`) })} icon="externalLink" iconOnly />
                 </Card>
             ))}
             {playing && <InlineMedia onReady={onReady} key={playing.url} url={playing.url} audio label={t('stems.play', { stem: t(`stem.${playing.stem}`) })} />}

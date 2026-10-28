@@ -1,3 +1,4 @@
+import { rawText } from '../lib/i18n/translate';
 import { Image } from 'expo-image';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Pressable, StyleSheet, Text, View, useWindowDimensions, type ViewProps } from 'react-native';
@@ -103,7 +104,7 @@ function Tile({ preset, index, tall, scrollX, still, onOpen }: { preset: Preset;
     return (
         <View style={styles.slot}>
             <Animated.View style={[styles.tile, { width: shape.width, height: shape.height, top: shape.top, left: (STEP - shape.width) / 2 }, motion]}>
-                <Pressable accessibilityRole="button" accessibilityLabel={label} style={styles.press} onPress={() => onOpen(preset)}>
+                <Pressable accessibilityRole="button" accessibilityLabel={rawText(label)} style={styles.press} onPress={() => onOpen(preset)}>
                     {preset.posterUrl ? <Image source={{ uri: preset.posterUrl }} style={[styles.poster, { opacity: posterOpacity(preset.available) }]} contentFit="cover" accessibilityIgnoresInvertColors /> : <View style={[styles.poster, { opacity: posterOpacity(preset.available) }]} />}
                     {preset.isNew ? (
                         <View style={styles.badge}>

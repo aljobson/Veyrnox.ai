@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { Pressable } from 'react-native';
 import { t } from '../../lib/i18n';
 import { skillIcon } from '../../lib/featureIcons';
@@ -10,7 +11,7 @@ export function SkillCard({ skill, selected, disabled = false, onPress, select }
 }) {
     const styles = useThemedStyles(sheets);
     return <Card selected={selected} style={styles.card}>
-        <Pressable style={styles.body} accessibilityRole="button" accessibilityLabel={`${skill.name}. ${skill.blurb}`}
+        <Pressable style={styles.body} accessibilityRole="button" accessibilityLabel={rawText(`${skill.name}. ${skill.blurb}`)}
             accessibilityState={{ selected: select ? undefined : selected, disabled }} disabled={disabled}
             onPress={() => { if (!disabled) onPress(); }}>
             <IconBadge {...skillIcon(skill.id, skill.group)} />
@@ -18,7 +19,7 @@ export function SkillCard({ skill, selected, disabled = false, onPress, select }
             <Text variant="caption" tone="tertiary" numberOfLines={3}>{skill.blurb}</Text>
         </Pressable>
         {select ? <Checkbox checked={selected} disabled={select.disabled}
-            accessibilityLabel={t('skillsUi.selectSkill', { name: skill.name })}
+            accessibilityLabel={rawText(t('skillsUi.selectSkill', { name: skill.name }))}
             accessibilityState={{ checked: selected, disabled: select.disabled }}
             onChange={() => { if (!select.disabled) select.onToggle(); }}>
             <Text variant="caption">{t('skillsUi.select')}</Text>

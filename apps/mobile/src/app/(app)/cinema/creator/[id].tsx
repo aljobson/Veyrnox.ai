@@ -1,3 +1,4 @@
+import { rawText } from '../../../../lib/i18n/translate';
 import { useCallback, useRef, useState } from 'react';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Alert, ScrollView, Text, TextInput, View } from 'react-native';
@@ -90,7 +91,7 @@ function Detail({ id, parent }: { id: string; parent?: string }) {
             </>}
             {video && <UploadPanel contentId={id} editable={!!editable} onChange={() => void load()} />}
             {video && title.video_ready && poster && Image && <View style={ui.card}>
-                <Image source={{ uri: poster }} cachePolicy="none" accessibilityLabel={t('cinema.upload.poster', { title: title.title })} style={{ width: '100%', aspectRatio: 16 / 9 }} />
+                <Image source={{ uri: poster }} cachePolicy="none" accessibilityLabel={rawText(t('cinema.upload.poster', { title: title.title }))} style={{ width: '100%', aspectRatio: 16 / 9 }} />
                 <Text style={ui.text}>{t('cinema.videoUpload.automaticPosterFrame')}</Text>
             </View>}
             {canEdit && <Action label={t('cinemaUpload.edit')} onPress={() => router.push({ pathname: '/cinema/creator/draft', params: { id, ...(parent ? { parent, parentType: parentTypeOf(title.content_type)! } : {}) } })} />}

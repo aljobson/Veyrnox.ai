@@ -163,5 +163,21 @@
   "cinema.creatorAnalytics.yourAudience",
   "cinema.creatorAnalytics.publishedTitle",
   "cinema.creatorAnalytics.publishATitleToStartSeeing",
-  "cinema.creatorAnalytics.completionMeansAtLeast90Of"
+  "cinema.creatorAnalytics.completionMeansAtLeast90Of",
+  "presets.cat.ALL",
+  "presets.cat.NEW",
+  "presets.cat.POPULAR",
+  "presets.cat.YOUR PHOTO",
+  "presets.cat.CINEMATIC",
+  "presets.cat.ANIME",
+  "presets.cat.CARTOONS",
+  "presets.cat.MOVIES",
+  "presets.cat.FANTASY",
+  "presets.cat.REALISTIC",
+  "presets.cat.FASHION",
+  "presets.cat.PRODUCTS",
+  "presets.cat.VFX",
+  "presets.cat.UGC",
+  "presets.cat.ADS",
+  "presets.cat.KIDS BIRTHDAY"
 ]

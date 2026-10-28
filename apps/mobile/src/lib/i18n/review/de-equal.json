@@ -168,5 +168,11 @@
   "publishOps.accountLabel": "Formatting template; words are localized separately.",
   "publishOps.inbox.tags": "Shared term in this language.",
   "publishOps.priority.normal": "Shared term in this language.",
-  "publishOps.import.name": "Shared term in this language."
+  "publishOps.import.name": "Shared term in this language.",
+  "tabs.editor": "Reviewed: shared media terminology or language-neutral playback position notation.",
+  "mediaKind.video": "Reviewed: shared media terminology or language-neutral playback position notation.",
+  "mediaKind.audio": "Reviewed: shared media terminology or language-neutral playback position notation.",
+  "mediaKind.text": "Reviewed: shared media terminology or language-neutral playback position notation.",
+  "cinema.position": "Reviewed: shared media terminology or language-neutral playback position notation.",
+  "projects.revisionLabel": "Reviewed: shared media terminology or language-neutral playback position notation."
 }
