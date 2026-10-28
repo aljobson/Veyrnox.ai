@@ -1,4 +1,4 @@
-import { t } from './i18n';
+import { rawText, t } from './i18n';
 export const DEFAULT_TEXT_STYLE = { font: 'sans-serif', weight: 'bold', align: 'center', color: '#ffffff', stroke: '#000000', strokeWidth: 0, background: '#000000', backgroundOpacity: 0 } as const;
 export type TrackKind = 'video' | 'audio' | 'text';
 export type Selection = { track: TrackKind; id: string };
@@ -151,5 +151,5 @@ export function addTrack(timeline: Timeline, kind: TrackKind): Timeline {
 
 export function addMarker(timeline: Timeline, frame: number): Timeline {
     const seq = timeline.seq + 1;
-    return { ...timeline, seq, markers: [...timeline.markers, { id: `m${seq}`, frame: Math.max(0, Math.round(frame)), label: t('nativeEditorModel.marker', { value1: timeline.markers.length + 1 }), color: '#3ee6c4' }].sort((a, b) => a.frame - b.frame) };
+    return { ...timeline, seq, markers: [...timeline.markers, { id: `m${seq}`, frame: Math.max(0, Math.round(frame)), label: rawText(t('nativeEditorModel.marker', { value1: timeline.markers.length + 1 })), color: '#3ee6c4' }].sort((a, b) => a.frame - b.frame) };
 }

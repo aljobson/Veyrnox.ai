@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { useEditorFrame, type FrameStore } from './editorFrameStore';
 import { t } from '../../lib/i18n';
 import { Image } from 'expo-image';
@@ -45,7 +46,7 @@ export function EditorMediaPreview({ api, clip, media, frameStore, fps, playing,
         return <View accessibilityLabel={t('editor.mediapreviewunavailable')} style={styles.center}><Text style={styles.problem}>{t('editor.previewunavailable')}</Text><Text style={styles.detail}>{t('editor.theclipremainsonyourtimelineTry')}</Text></View>;
     }
     if (source.kind === 'image') {
-        return <Image accessibilityLabel={t('editor.preview2', { value1: media.name || t('editor.imageFallback') })} alt={media.name || t('editor.imagePreviewAlt')} source={{ uri: source.uri }} contentFit={clip.fit === 'cover' ? 'cover' : 'contain'} style={StyleSheet.absoluteFill} />;
+        return <Image accessibilityLabel={rawText(t('editor.preview2', { value1: media.name || t('editor.imageFallback') }))} alt={media.name || t('editor.imagePreviewAlt')} source={{ uri: source.uri }} contentFit={clip.fit === 'cover' ? 'cover' : 'contain'} style={StyleSheet.absoluteFill} />;
     }
     return <EditorVideo source={source} clip={clip} frameStore={frameStore} fps={fps} playing={playing} label={media.name || t('editor.video')} />;
 }
@@ -70,7 +71,7 @@ function EditorVideo({ source, clip, frameStore, fps, playing, label }: { source
     }, [clip, fps, frame, player, playing]);
 
     if (failed) return <View accessibilityLabel={t('editor.mediapreviewunavailable')} style={styles.center}><Text style={styles.problem}>{t('editor.previewunavailable')}</Text></View>;
-    return <VideoView accessibilityLabel={t('editor.preview2', { value1: label })} player={player} contentFit={clip.fit === 'cover' ? 'cover' : 'contain'} nativeControls={false} style={StyleSheet.absoluteFill} />;
+    return <VideoView accessibilityLabel={rawText(t('editor.preview2', { value1: label }))} player={player} contentFit={clip.fit === 'cover' ? 'cover' : 'contain'} nativeControls={false} style={StyleSheet.absoluteFill} />;
 }
 
 function syncPlayer(player: VideoPlayer, clip: Clip, wanted: number, playing: boolean, fps: number) {

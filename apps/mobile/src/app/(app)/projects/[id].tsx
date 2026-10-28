@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { removeProjectMedia } from '../../../lib/editorDeviceMedia';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -231,12 +232,12 @@ function Detail({ id }: { id: string }) {
                     const block = doc.restoreBlock(item.revision);
                     return (
                         <View style={styles.row}>
-                            <Pressable accessibilityRole="button" accessibilityLabel={t('projectDocument.previewVersion', { value1: item.revision })} style={[styles.rowText, touchTarget]} onPress={() => setPreview(item.revision)}>
+                            <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('projectDocument.previewVersion', { value1: item.revision }))} style={[styles.rowText, touchTarget]} onPress={() => setPreview(item.revision)}>
                                 <Text style={styles.name}>{versionLabel(item)}</Text>
                                 {item.createdAt ? <Text style={styles.muted}>{new Date(item.createdAt).toLocaleString(formatLocale())}</Text> : null}
                             </Pressable>
                             {item.revision !== headRevision ? (
-                                <Pressable accessibilityRole="button" accessibilityLabel={t('projects.restoreversion2', { value1: item.revision })} accessibilityState={{ disabled: !!block }} disabled={!!block} style={[styles.restore, touchTarget, !!block && styles.off]} onPress={() => confirmRestore(item)}>
+                                <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('projects.restoreversion2', { value1: item.revision }))} accessibilityState={{ disabled: !!block }} disabled={!!block} style={[styles.restore, touchTarget, !!block && styles.off]} onPress={() => confirmRestore(item)}>
                                     <Text style={styles.action}>{t('projects.restore')}</Text>
                                 </Pressable>
                             ) : null}

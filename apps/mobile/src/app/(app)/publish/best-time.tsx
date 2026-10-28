@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { BestTimeHeatmap } from '../../../components/publish/BestTimeHeatmap';
 import { dayName, hourText as hour, scoreText as num } from '../../../lib/publishHeatmap';
 import { Text as StatusText } from '../../../components/ui/Text';
@@ -90,7 +91,7 @@ export default function BestTime() {
                             <Text style={styles.heading} accessibilityRole="header">{t('insights.frequency')}</Text>
                             <Text style={styles.muted}>{t('insights.frequencyNote')}</Text>
                             {summary.frequency.map((g) => (
-                                <View key={g.postsPerWeek} style={styles.freq} accessible accessibilityLabel={`${plural('insights.postsPerWeek', g.postsPerWeek)}, ${plural('insights.weeks', g.weeks)}, ${g.score === null ? t('insights.noScore') : `${num(g.score)} ${t('insights.perPost')}`}`}>
+                                <View key={g.postsPerWeek} style={styles.freq} accessible accessibilityLabel={rawText(`${plural('insights.postsPerWeek', g.postsPerWeek)}, ${plural('insights.weeks', g.weeks)}, ${g.score === null ? t('insights.noScore') : `${num(g.score)} ${t('insights.perPost')}`}`)}>
                                     <Text style={styles.freqMain}>{plural('insights.postsPerWeek', g.postsPerWeek)}</Text>
                                     <Text style={styles.freqCell}>{plural('insights.weeks', g.weeks)} · {g.score === null ? '—' : num(g.score)}</Text>
                                 </View>

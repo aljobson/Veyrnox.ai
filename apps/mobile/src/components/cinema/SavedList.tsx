@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { Text as StatusText } from '../ui/Text';
 import * as Crypto from 'expo-crypto';
 import { useRouter } from 'expo-router';
@@ -69,7 +70,7 @@ export function SavedList({ kind }: { readonly kind: FollowKind }) {
                         {kind !== 'creator' && item.creator ? <Text style={styles.muted} numberOfLines={1}>{item.creator}</Text> : null}
                         {kind === 'creator' ? <Text style={styles.muted} numberOfLines={1}>{item.title}</Text> : null}
                     </Pressable>
-                    <Pressable accessibilityRole="button" accessibilityLabel={t(`cinemaSocial.remove.${kind}`, { name: kind === 'creator' ? item.creator : item.title })} style={styles.remove} disabled={removing} accessibilityState={{ disabled: removing }} onPress={() => remove(item)}>
+                    <Pressable accessibilityRole="button" accessibilityLabel={rawText(t(`cinemaSocial.remove.${kind}`, { name: kind === 'creator' ? item.creator : item.title }))} style={styles.remove} disabled={removing} accessibilityState={{ disabled: removing }} onPress={() => remove(item)}>
                         <Text style={styles.removeText}>{t(`cinemaSocial.removeShort.${kind}`)}</Text>
                     </Pressable>
                 </View>

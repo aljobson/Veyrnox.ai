@@ -516,6 +516,12 @@
     "ratio": 2
   },
   {
+    "id": "cinemaEmbed.retry",
+    "english": "Try again",
+    "translation": "Intentar de nuevo",
+    "ratio": 1.89
+  },
+  {
     "id": "cinemaSocial.ended",
     "english": "ended",
     "translation": "finalizada",
@@ -2910,6 +2916,18 @@
     "ratio": 1.68
   },
   {
+    "id": "editorSave.loadOlder",
+    "english": "Load older",
+    "translation": "Cargar anteriores",
+    "ratio": 1.7
+  },
+  {
+    "id": "editorSave.retryRestore",
+    "english": "Retry restore",
+    "translation": "Reintentar restauración",
+    "ratio": 1.77
+  },
+  {
     "id": "projectDocument.frameRate",
     "english": "Frame rate",
     "translation": "Fotogramas por segundo",
@@ -2980,5 +2998,35 @@
     "english": "Film",
     "translation": "Película",
     "ratio": 2
+  },
+  {
+    "id": "presets.cat.ALL",
+    "english": "All",
+    "translation": "Todas",
+    "ratio": 1.67
+  },
+  {
+    "id": "presets.cat.NEW",
+    "english": "New",
+    "translation": "Novedades",
+    "ratio": 3
+  },
+  {
+    "id": "presets.cat.CINEMATIC",
+    "english": "Cinematic",
+    "translation": "Cinematográfico",
+    "ratio": 1.67
+  },
+  {
+    "id": "presets.cat.CARTOONS",
+    "english": "Cartoons",
+    "translation": "Dibujos animados",
+    "ratio": 2
+  },
+  {
+    "id": "presets.cat.ADS",
+    "english": "Ads",
+    "translation": "Anuncios",
+    "ratio": 2.67
   }
 ]

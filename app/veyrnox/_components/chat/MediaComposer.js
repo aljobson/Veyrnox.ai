@@ -44,7 +44,7 @@ export function MediaComposer({ kind, media, prompt, onPrompt }) {
     availableModels, model, selectModel, duration, setDuration, aspect, setAspect, count, setCount,
     audioDuration, setAudioDuration, audioDurationControl, invalidAudioDuration,
     resolution, setResolution, audio, setAudio,
-    voice, setVoice, sources, pickSource, reorderSources, attachFromDevice, attachNotice, libraryFor, setLibraryFor, consent, setConsent,
+    voice, setVoice, sources, pickSource, reorderSources, attachFromDevice, attachNotice, converting, attachConverting, sourceEpoch, setSourcesConverting, libraryFor, setLibraryFor, consent, setConsent,
     balance, cost, freeLeft, error, jobs, generating, sending, missingSource, missingConsent, missingVoice,
     generate, catalogLive,
   } = media;
@@ -53,7 +53,7 @@ export function MediaComposer({ kind, media, prompt, onPrompt }) {
   const aspects = model?.aspects || [];
   const { hasSource } = generationSourceState(model?.media, sources);
   const missingPrompt = mediaPromptIsMissing(model, prompt);
-  const canGenerate = catalogLive && model && !model.gated && !busy && !missingPrompt && !missingSource && !missingConsent
+  const canGenerate = catalogLive && model && !model.gated && !busy && !converting && !missingPrompt && !missingSource && !missingConsent
     && !missingVoice && !invalidAudioDuration && balance != null && cost <= balance;
   const resultReady = jobs.some((job) => job.state === 'succeeded');
   const errorCopy = error ? error.code === 'source_reattach_required' ? t('app.create.reattach') : tOr(t, `app.create.error.${error.code}`, ERROR_COPY[error.code] || t('app.chat.media.failed')) : '';
@@ -126,7 +126,7 @@ export function MediaComposer({ kind, media, prompt, onPrompt }) {
             <div className="flex items-center gap-3">
               <label className="shrink-0 cursor-pointer rounded-full border border-vx-border px-3.5 py-1.5 font-vx-mono text-[11px] font-bold text-vx-fg-muted hover:text-vx-fg has-focus-visible:outline-solid has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-vx-accent">
                 {t('app.create.attach.button')}
-                <input data-testid="chat-media-attach" type="file" multiple accept={attachAccept()} disabled={busy} className="sr-only"
+                <input data-testid="chat-media-attach" type="file" multiple accept={attachAccept()} disabled={busy || converting} className="sr-only"
                   onChange={(e) => { attachFromDevice(e.target.files); e.target.value = ''; }} />
               </label>
               <span className="text-xs text-vx-fg-muted">{t('app.create.attach.hint')}</span>
@@ -135,7 +135,8 @@ export function MediaComposer({ kind, media, prompt, onPrompt }) {
         )}
         {attachNotice && (
           <p role="status" className="border-b border-vx-border px-4 py-2 text-xs text-vx-fg-muted">
-            {attachNotice.unsupported ? t('app.create.attach.unsupported') : [
+            {attachNotice.converting ? t('app.create.convert.working') : attachNotice.unsupported ? t('app.create.attach.unsupported') : [
+              attachNotice.failed && t(`app.create.convert.${attachNotice.failed}`),
               attachNotice.switched && t('app.create.attach.switched', { name: attachNotice.switched }),
               attachNotice.unused > 0 && t('app.create.attach.unused', { count: number(attachNotice.unused) }),
             ].filter(Boolean).join(' ')}
@@ -144,7 +145,7 @@ export function MediaComposer({ kind, media, prompt, onPrompt }) {
 
         {model && Object.keys(model.media || {}).length > 0 && (
           <div className="border-b border-vx-border px-3 pb-3">
-            <SourcePickers media={model.media} sources={sources} onPick={pickSource} onReorder={reorderSources} onDraw={null} onLibrary={setLibraryFor} />
+            <SourcePickers media={model.media} sources={sources} onPick={pickSource} onConvertingChange={setSourcesConverting} resetKey={model.id} epochRef={sourceEpoch} locked={attachConverting} onReorder={reorderSources} onDraw={null} onLibrary={setLibraryFor} />
             {hasSource && (
               <BindingText id="mediaRights"  slots={{ policy: <BindingPolicyLink policy="aup" /> }}><label lang="en" dir="ltr" className="mt-2 flex items-start gap-2 text-xs text-vx-fg-muted">
                 <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} className="mt-0.5 accent-vx-accent" />

@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { useReducedMotion } from '../ui/useReducedMotion';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -95,7 +96,7 @@ export function MakePanel({ visible, initialPrompt = '', initialKind = 'image', 
 
     return (
         <Modal visible={visible} animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={close}>
-            <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+            <ScrollView style={styles.screen} onAccessibilityEscape={close} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
                 <Text variant="title2" accessibilityRole="header">{t('chat.make.title')}</Text>
                 <MakeResult jobs={state.jobs} count={state.count} canMakeAnother={!state.submitting && !state.retry?.blocked}
                     onOpen={id => { close(); router.push({ pathname: '/job/[id]', params: { id } }); }}
@@ -110,7 +111,7 @@ export function MakePanel({ visible, initialPrompt = '', initialKind = 'image', 
                 {catalog && models.length === 0 ? <Text variant="footnote" tone="tertiary">{t('chat.make.none')}</Text> : null}
                 <ScrollView horizontal contentContainerStyle={styles.models} keyboardShouldPersistTaps="handled" accessibilityRole="radiogroup" accessibilityLabel={t('chat.make.title')}>
                     {models.map(m => <Card key={m.id} accessibilityRole="radio" disabled={state.submitting}
-                        accessibilityLabel={`${m.name}, ${plural('chat.make.from', makePrice(m, null))}`}
+                        accessibilityLabel={rawText(`${m.name}, ${plural('chat.make.from', makePrice(m, null))}`)}
                         accessibilityState={{ selected: m.id === model?.id, disabled: state.submitting }} style={styles.model}
                         onPress={() => select(m)} selected={m.id === model?.id}>
                         <Text>{m.name}</Text><Text variant="footnote" tone="warning">{plural('chat.make.from', makePrice(m, null))}</Text>
@@ -133,7 +134,7 @@ export function MakePanel({ visible, initialPrompt = '', initialKind = 'image', 
                 {state.error || loadError ? <Text tone="danger" accessibilityRole="alert">{state.error ?? loadError}</Text> : null}
                 {state.note ? <Text variant="caption" accessibilityLiveRegion="polite">{state.note}</Text> : null}
                 {missing > 0 || state.lowBalance ? <Button label={t('lowBalance.buy')} variant="secondary" onPress={buy} /> : null}
-                <Button accessibilityRole="button" accessibilityLabel={label} disabled={!ready} containerStyle={styles.go}
+                <Button accessibilityRole="button" accessibilityLabel={rawText(label)} disabled={!ready} containerStyle={styles.go}
                     onPress={() => { if (ready && request) void state.run(request, n); }} variant="secondary" label={label}>
                     {state.submitting ? <ActivityIndicator color={styles.ink.color} /> : <Text tone={price !== null ? 'warning' : 'primary'}>{price === null ? t('chat.make.button') : price === 0 ? t('create.workspace.generateFree') : plural('chat.make.buttonPrice', price)}</Text>}
                 </Button>

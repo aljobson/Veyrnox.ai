@@ -1,3 +1,4 @@
+import { rawText } from '../lib/i18n/translate';
 import { Text, TextField, Button, Chip, themedStyles, useThemedStyles } from './ui';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -44,14 +45,14 @@ export function CreateOptions({ options, values, showCount, resolution, audio, o
             {options.aspects.length > 0 ? (
                 <Group label={t('opt.aspect')}>
                     {options.aspects.map((a) => (
-                        <Chip key={a} label={a} accessibilityLabel={a} selected={values.aspect === a} onPress={() => set({ aspect: a })} />
+                        <Chip key={a} label={a} accessibilityLabel={rawText(a)} selected={values.aspect === a} onPress={() => set({ aspect: a })} />
                     ))}
                 </Group>
             ) : null}
             {options.resolutions.length > 0 ? (
                 <Group label={t('opt.resolution')}>
                     {options.resolutions.map((r) => (
-                        <Chip key={r} label={r} accessibilityLabel={r} selected={resolution === r} onPress={() => set({ resolution: r })} />
+                        <Chip key={r} label={r} accessibilityLabel={rawText(r)} selected={resolution === r} onPress={() => set({ resolution: r })} />
                     ))}
                 </Group>
             ) : null}
@@ -101,13 +102,13 @@ export function CreateOptions({ options, values, showCount, resolution, audio, o
             {showCount ? (
                 <Group label={t('opt.count')}>
                     {IMAGE_COUNTS.map((n) => (
-                        <Chip key={n} label={String(n)} accessibilityLabel={String(n)} selected={values.count === n} onPress={() => set({ count: n })} />
+                        <Chip key={n} label={String(n)} accessibilityLabel={rawText(String(n))} selected={values.count === n} onPress={() => set({ count: n })} />
                     ))}
                 </Group>
             ) : null}
             {settings ? (
                 <View style={styles.settings}>
-                    <Button variant="tertiary" label={t('opt.settings')} accessibilityRole="button" accessibilityLabel={open ? t('opt.settingsHide') : t('opt.settingsShow')} accessibilityState={{ expanded: open }} icon={open ? 'caretDown' : 'caretRight'} onPress={() => setOpen(!open)} />
+                    <Button variant="tertiary" label={t('opt.settings')} accessibilityRole="button" accessibilityLabel={rawText(open ? t('opt.settingsHide') : t('opt.settingsShow'))} accessibilityState={{ expanded: open }} icon={open ? 'caretDown' : 'caretRight'} onPress={() => setOpen(!open)} />
                     {open ? (
                         <View style={styles.fields}>
                             {options.seed ? (
@@ -158,7 +159,7 @@ export function CreateOptions({ options, values, showCount, resolution, audio, o
 function Group({ label, children }: { readonly label: string; readonly children: React.ReactNode }) {
     const styles = useThemedStyles(sheets);
     return (
-        <View style={styles.group} accessibilityLabel={label}>
+        <View style={styles.group} accessibilityLabel={rawText(label)}>
             <Text variant="bodyStrong" tone="secondary" style={styles.label}>{label}</Text>
             <View style={styles.chips}>{children}</View>
         </View>

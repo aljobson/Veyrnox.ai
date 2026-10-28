@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { fetchPublishPlan } from '../../../lib/publishPlan';
 import { planManagementKey } from '../../../lib/publishWorkflows';
 import { directionalStyle } from '../../../lib/rtl';
@@ -148,7 +149,7 @@ export default function Publish() {
                 <Text variant="caption" style={styles.eyebrow}>{t('publishHome.eyebrow')}</Text>
                 <Text variant="display" style={styles.title} accessibilityRole="header">{t('publishHome.title')}</Text>
                 <Text variant="body" style={styles.lead}>{t('publishHome.lead')}</Text>
-                <Card accessibilityRole="button" accessibilityLabel={t('publishHome.changeBrand', { brand: brandName })} style={[styles.brand]} onPress={() => router.push('/publish/brands')}>
+                <Card accessibilityRole="button" accessibilityLabel={rawText(t('publishHome.changeBrand', { brand: brandName }))} style={[styles.brand]} onPress={() => router.push('/publish/brands')}>
                     <View style={styles.brandMark}><Text variant="bodyStrong" style={styles.brandInitial}>{brandName.slice(0, 1).toUpperCase()}</Text></View>
                     <View style={styles.brandCopy}>
                         <Text variant="caption" style={styles.brandLabel}>{t('publishHome.publishingFor')}</Text>

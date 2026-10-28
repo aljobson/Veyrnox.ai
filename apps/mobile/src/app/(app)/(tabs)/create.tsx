@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { useFaceFiltersAvailable } from '../../../lib/useFaceFiltersAvailable';
 import { createTileColumns } from '../../../lib/createLayout';
 import { SectionLabel } from '../../../components/create/SectionLabel';
@@ -26,7 +27,7 @@ export function EntryTile({ icon, label, accessibilityLabel, onPress }: { readon
     const { width, fontScale } = useWindowDimensions();
     const { settings } = useAppearance();
     const single = createTileColumns(width, fontScale, TEXT_SCALE[settings.textSize]) === 1;
-    return <ListRow icon={icon} title={label} accessibilityLabel={accessibilityLabel ?? label} onPress={onPress} style={[styles.entry, { width: single ? '100%' : '48.7%' }]} />;
+    return <ListRow icon={icon} title={label} accessibilityLabel={rawText(accessibilityLabel ?? label)} onPress={onPress} style={[styles.entry, { width: single ? '100%' : '48.7%' }]} />;
 }
 
 export default function Create() {
@@ -128,7 +129,7 @@ export default function Create() {
                                 <Text variant="bodyStrong" tone="primary" style={styles.name}>{item.name}</Text>
                             </View>
                             {freeLeftFor(freeLeft, item.id) > 0 ? (
-                                <Text variant="body" tone="accent" style={styles.free} accessibilityLabel={t('create.freeLeftLabel', { name: item.name, count: String(freeLeftFor(freeLeft, item.id)) })}>
+                                <Text variant="body" tone="accent" style={styles.free} accessibilityLabel={rawText(t('create.freeLeftLabel', { name: item.name, count: String(freeLeftFor(freeLeft, item.id)) }))}>
                                     {plural('create.freeLeft', freeLeftFor(freeLeft, item.id))}
                                 </Text>
                             ) : (

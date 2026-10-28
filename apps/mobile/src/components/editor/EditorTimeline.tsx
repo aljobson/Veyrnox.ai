@@ -1,3 +1,5 @@
+import { editorTrackLabel } from '../../lib/editorTrackLabel';
+import { rawText } from '../../lib/i18n/translate';
 import { useEffect, useRef, useState, type ComponentRef } from 'react';
 import { ScrollView, StyleSheet, Text, View, type GestureResponderEvent } from 'react-native';
 import { t } from '../../lib/i18n';
@@ -99,7 +101,7 @@ export function EditorTimeline({ timeline, selections, ppf, total, frame, playin
             <View style={local.ruler} />
             {timeline.tracks.map(track => <View key={track.id} style={local.header}>
                 <Icon name={track.kind === 'video' ? 'video' : track.kind === 'audio' ? 'audio' : 'textSize'} size={16} />
-                <View style={local.headerCopy}><Text style={styles.trackLabel} numberOfLines={1}>{track.name}</Text><Text style={styles.trackState}>{track.locked ? t('editor.lOCK') : ''}{track.muted ? t('editor.mUTE') : ''}{track.hidden ? t('editor.hIDE') : ''}</Text></View>
+                <View style={local.headerCopy}><Text style={styles.trackLabel} numberOfLines={1}>{editorTrackLabel(track)}</Text><Text style={styles.trackState}>{track.locked ? t('editor.lOCK') : ''}{track.muted ? t('editor.mUTE') : ''}{track.hidden ? t('editor.hIDE') : ''}</Text></View>
             </View>)}
         </View>
         <ScrollView ref={scroller} horizontal scrollEnabled={scrollEnabled} style={local.scroller} contentContainerStyle={{ width, direction: 'ltr' }}
@@ -120,7 +122,7 @@ export function EditorTimeline({ timeline, selections, ppf, total, frame, playin
                             return <View key={index} style={[local.tick, { left: seconds * timeline.fps * ppf }]}>{seconds % 5 === 0 ? <Text style={styles.rulerText}>{t('editorCore.rulerSeconds', { value1: seconds })}</Text> : null}</View>;
                         })}
                     </View>
-                    {timeline.markers.map(marker => <View key={marker.id} accessibilityRole="button" accessibilityLabel={t('editor.goto', { value1: marker.label })}
+                    {timeline.markers.map(marker => <View key={marker.id} accessibilityRole="button" accessibilityLabel={rawText(t('editor.goto', { value1: marker.label }))}
                         onAccessibilityTap={() => seek(marker.frame)} onStartShouldSetResponder={() => true} onResponderRelease={() => seek(marker.frame)}
                         style={[local.marker, { left: marker.frame * ppf }]} hitSlop={18} />)}
                 </View>
@@ -138,7 +140,7 @@ export function EditorTimeline({ timeline, selections, ppf, total, frame, playin
                             const size = Math.max(8, item.len * ppf - 2);
                             return <View key={item.id} testID={`clip-${item.id}`} style={[styles.clip, styles[`${track.kind}Clip`], position(item, ppf), active && styles.clipSelected]}
                                 hitSlop={{ left: Math.max(0, (44 - size) / 2), right: Math.max(0, (44 - size) / 2) }} accessibilityRole="button"
-                                accessibilityLabel={t('editorCore.clipLabel', { name, track: track.name, start: formatTimecode(item.start, timeline.fps), duration: formatTimecode(item.len, timeline.fps) })}
+                                accessibilityLabel={rawText(t('editorCore.clipLabel', { name, track: editorTrackLabel(track), start: formatTimecode(item.start, timeline.fps), duration: formatTimecode(item.len, timeline.fps) }))}
                                 accessibilityState={{ selected: active }} onAccessibilityTap={() => onSelect(selection)}
                                 accessibilityActions={track.locked ? [] : [{ name: 'moveEarlier', label: t('editorCore.moveEarlier') }, { name: 'moveLater', label: t('editorCore.moveLater') }]}
                                 onAccessibilityAction={event => { if (['moveEarlier', 'moveLater'].includes(event.nativeEvent.actionName)) commit(moveItems(timeline, selections, selection, (event.nativeEvent.actionName === 'moveLater' ? 1 : -1) * timeline.fps, undefined, snap, frame)); }}
@@ -146,7 +148,7 @@ export function EditorTimeline({ timeline, selections, ppf, total, frame, playin
                                 onResponderTerminationRequest={() => !gesture.current?.active} onResponderTerminate={cancel}>
                                 <View pointerEvents="none"><Text style={styles.clipTitle} numberOfLines={1}>{name}</Text><Text style={styles.clipMeta} numberOfLines={1}>{formatTimecode(item.len, timeline.fps)}</Text></View>
                                 {active && !track.locked && canTrim(item) ? (['in', 'out'] as const).map(edge => <View key={edge} testID={`trim-${item.id}-${edge}`} style={[local.handle, edge === 'in' ? { left: 0 } : { right: 0 }]} hitSlop={{ top: 0, bottom: 0, left: 14, right: 14 }}
-                                    accessibilityRole="adjustable" accessibilityLabel={edge === 'in' ? t('editorCore.trimStart', { name }) : t('editorCore.trimEnd', { name })}
+                                    accessibilityRole="adjustable" accessibilityLabel={rawText(edge === 'in' ? t('editorCore.trimStart', { name }) : t('editorCore.trimEnd', { name }))}
                                     accessibilityValue={{ text: formatTimecode(edge === 'in' ? item.start : item.start + item.len, timeline.fps) }} accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
                                     onAccessibilityAction={event => commit(trimItem(timeline, selection, edge, event.nativeEvent.actionName === 'increment' ? 1 : -1, false, frame))}
                                     onStartShouldSetResponder={() => true} onResponderGrant={event => begin(event, selection, row, edge)} onResponderMove={move} onResponderRelease={release}

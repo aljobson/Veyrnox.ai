@@ -1,4 +1,4 @@
-import { formatLocale } from './i18n';
+import { formatCurrency } from './i18n';
 import { ApiError, type ApiClient } from './api';
 
 // ADR-0186: the product catalogue, read-only. Titles, prices and stock as the brand keeps them; changing a product,
@@ -68,11 +68,7 @@ export function parseProducts(body: unknown): Product[] {
 export const fetchProducts = async (api: ApiClient) => parseProducts(await api.request('/api/v1/social/commerce/products'));
 
 export function money(c: number, currency: string): string {
-    try {
-        return new Intl.NumberFormat(formatLocale(), { style: 'currency', currency }).format(c / 100);
-    } catch {
-        return `${(c / 100).toFixed(2)} ${currency}`;
-    }
+    return formatCurrency(c / 100, currency);
 }
 
 export function commerceErrorKey(err: unknown): string {

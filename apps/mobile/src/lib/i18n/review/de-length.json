@@ -1,5 +1,11 @@
 [
   {
+    "id": "faceFilterSwitch.current",
+    "english": "Filter: {name}",
+    "translation": "Aktueller Filter: {name}",
+    "ratio": 1.71
+  },
+  {
     "id": "recovery.home",
     "english": "Go home",
     "translation": "Zur Startseite",
@@ -508,6 +514,18 @@
     "english": "All ages",
     "translation": "Alle Altersgruppen",
     "ratio": 2.25
+  },
+  {
+    "id": "cinemaEmbed.close",
+    "english": "Close",
+    "translation": "Schließen",
+    "ratio": 1.8
+  },
+  {
+    "id": "cinemaEmbed.retry",
+    "english": "Try again",
+    "translation": "Erneut versuchen",
+    "ratio": 1.78
   },
   {
     "id": "cinemaSeries.state.free_ceiling",
@@ -1272,12 +1290,6 @@
     "ratio": 1.63
   },
   {
-    "id": "faceFilters.another",
-    "english": "Make another",
-    "translation": "Noch etwas erstellen",
-    "ratio": 1.67
-  },
-  {
     "id": "faceFilters.bold_lips",
     "english": "Bold lips",
     "translation": "Kräftige Lippen",
@@ -1480,12 +1492,6 @@
     "english": "Open one",
     "translation": "Eine Vorlage öffnen",
     "ratio": 2.38
-  },
-  {
-    "id": "helpGuides.content.templates.s3.title",
-    "english": "Use it",
-    "translation": "Sie verwenden",
-    "ratio": 2.17
   },
   {
     "id": "helpGuides.content.templates.s4.title",
@@ -3012,6 +3018,12 @@
     "ratio": 1.83
   },
   {
+    "id": "cinema.pause",
+    "english": "Pause",
+    "translation": "Pausieren",
+    "ratio": 1.8
+  },
+  {
     "id": "publishTiming.move.title",
     "english": "Move post",
     "translation": "Beitrag verschieben",
@@ -3051,6 +3063,24 @@
     "id": "publishTiming.heat.lower",
     "english": "Lower",
     "translation": "Niedriger",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorSave.retryRestore",
+    "english": "Retry restore",
+    "translation": "Wiederherstellung erneut versuchen",
+    "ratio": 2.62
+  },
+  {
+    "id": "editorSave.recovered",
+    "english": "Recovered changes, not saved yet",
+    "translation": "Änderungen wiederhergestellt, noch nicht gespeichert",
+    "ratio": 1.63
+  },
+  {
+    "id": "editorSave.close",
+    "english": "Close",
+    "translation": "Schließen",
     "ratio": 1.8
   },
   {
@@ -3232,5 +3262,11 @@
     "english": "Add your first {type}.",
     "translation": "Füge dein erstes Element hinzu: {type}.",
     "ratio": 1.77
+  },
+  {
+    "id": "presets.cat.ADS",
+    "english": "Ads",
+    "translation": "Werbung",
+    "ratio": 2.33
   }
 ]

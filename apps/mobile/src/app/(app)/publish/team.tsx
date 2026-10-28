@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { usePublishScope } from '../../../lib/usePublishScope';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack } from 'expo-router';
@@ -148,7 +149,7 @@ export default function TeamScreen() {
                         const editable = mayChange && canManage(team.actorRole, m.role);
                         return (
                             <View key={m.userId} style={styles.row}>
-                                <View accessible accessibilityLabel={`${m.email}, ${roleLabel(m.role)}`}>
+                                <View accessible accessibilityLabel={rawText(`${m.email}, ${roleLabel(m.role)}`)}>
                                     <Text style={styles.name}>{m.email}</Text>
                                     <Text style={styles.muted}>{roleLabel(m.role)}{m.joinedAt ? ` · ${t('team.joined', { date: day(m.joinedAt) })}` : ''}</Text>
                                 </View>
@@ -164,7 +165,7 @@ export default function TeamScreen() {
                                                         <Text style={[styles.chipText, r === m.role && styles.chipTextOn]}>{roleLabel(r)}</Text>
                                                     </Pressable>
                                                 ))}
-                                                <Pressable disabled={busy} accessibilityRole="button" accessibilityLabel={t('team.removeLabel', { email: m.email })} style={[styles.chip, touchTarget]} onPress={() => remove(m)}>
+                                                <Pressable disabled={busy} accessibilityRole="button" accessibilityLabel={rawText(t('team.removeLabel', { email: m.email }))} style={[styles.chip, touchTarget]} onPress={() => remove(m)}>
                                                     <Text style={styles.danger}>{t('team.removeAction')}</Text>
                                                 </Pressable>
                                             </View>
@@ -177,7 +178,7 @@ export default function TeamScreen() {
                     {team.invitations.length > 0 ? <Text style={styles.heading} accessibilityRole="header">{t('team.invited')}</Text> : null}
                     {team.invitations.map((i) => (
                         <View key={i.id} style={styles.row}>
-                            <View accessible accessibilityLabel={`${i.email}, ${roleLabel(i.role)}, ${i.status}`}>
+                            <View accessible accessibilityLabel={rawText(`${i.email}, ${roleLabel(i.role)}, ${i.status}`)}>
                                 <Text style={styles.name}>{i.email}</Text>
                                 <Text style={styles.muted}>{roleLabel(i.role)} · {i.status}{i.expiresAt ? ` · ${t('team.expires', { date: day(i.expiresAt) })}` : ''}</Text>
                             </View>
@@ -205,7 +206,7 @@ export default function TeamScreen() {
                             {invited?.url ? (
                                 <View>
                                     <Text style={styles.muted}>{t('team.inviteLinkNote', { email: invited.email })}</Text>
-                                    <Pressable accessibilityRole="button" accessibilityLabel={t('team.shareInviteFor', { email: invited.email })} style={[styles.link, touchTarget]} onPress={() => shareInvite(invited.url as string)}>
+                                    <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('team.shareInviteFor', { email: invited.email }))} style={[styles.link, touchTarget]} onPress={() => shareInvite(invited.url as string)}>
                                         <Text style={styles.linkText}>{t('team.shareInvite')}</Text>
                                     </Pressable>
                                 </View>

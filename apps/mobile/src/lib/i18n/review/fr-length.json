@@ -4536,6 +4536,12 @@
     "ratio": 4.5
   },
   {
+    "id": "cinema.pause",
+    "english": "Pause",
+    "translation": "Mettre en pause",
+    "ratio": 3
+  },
+  {
     "id": "publishTiming.move.title",
     "english": "Move post",
     "translation": "Déplacer la publication",
@@ -4582,6 +4588,30 @@
     "english": "Requested from: {time}",
     "translation": "Horaire initial de la demande : {time}",
     "ratio": 1.73
+  },
+  {
+    "id": "editorSave.versions",
+    "english": "Versions",
+    "translation": "Versions enregistrées",
+    "ratio": 2.63
+  },
+  {
+    "id": "editorSave.loadOlder",
+    "english": "Load older",
+    "translation": "Charger les anciennes",
+    "ratio": 2.1
+  },
+  {
+    "id": "editorSave.retryRestore",
+    "english": "Retry restore",
+    "translation": "Réessayer la restauration",
+    "ratio": 1.92
+  },
+  {
+    "id": "editorSave.draftUnreadable",
+    "english": "Couldn't check this device for unsaved changes. New edits are still saved.",
+    "translation": "Impossible de vérifier les modifications non enregistrées sur cet appareil. Les nouvelles modifications sont toujours enregistrées.",
+    "ratio": 1.77
   },
   {
     "id": "projectDocument.frameRate",
@@ -4768,5 +4798,23 @@
     "english": "Trailer",
     "translation": "Bande-annonce",
     "ratio": 1.86
+  },
+  {
+    "id": "presets.cat.NEW",
+    "english": "New",
+    "translation": "Nouveautés",
+    "ratio": 3.33
+  },
+  {
+    "id": "presets.cat.CARTOONS",
+    "english": "Cartoons",
+    "translation": "Dessins animés",
+    "ratio": 1.75
+  },
+  {
+    "id": "presets.cat.ADS",
+    "english": "Ads",
+    "translation": "Publicités",
+    "ratio": 3.33
   }
 ]

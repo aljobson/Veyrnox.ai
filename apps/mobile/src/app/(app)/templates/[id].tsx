@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, View } from 'react-native';
 import { Image } from 'expo-image';
@@ -31,7 +32,7 @@ export default function TemplatePage() {
             <Text variant="title1" accessibilityRole="header">{preset.title}</Text>
             <Text>{t('libraryCreate.runsOn', { model: preset.modelName })}</Text>
             {preset.needs ? <Card><Text>{t('presets.needs', { value1: preset.needs })}</Text></Card> : null}
-            {preset.previewUrl ? <InlineMedia url={preset.previewUrl} label={t('job.playVideo')} /> : preset.posterUrl ? <Image source={{ uri: preset.posterUrl }} cachePolicy="memory" contentFit="contain" style={{ width: '100%', aspectRatio: previewRatio(preset) }} accessibilityLabel={preset.title} /> : null}
+            {preset.previewUrl ? <InlineMedia url={preset.previewUrl} label={t('job.playVideo')} /> : preset.posterUrl ? <Image source={{ uri: preset.posterUrl }} cachePolicy="memory" contentFit="contain" style={{ width: '100%', aspectRatio: previewRatio(preset) }} accessibilityLabel={rawText(preset.title)} /> : null}
             <TextField accessibilityLabel={t('mobile.prompt')} value={prompt} onChangeText={value => { setPrompt(value); setCopied(null); }} multiline maxLength={2000} />
             <Button label={t('editor.copy')} onPress={async () => setCopied(t(await copyText(prompt) ? 'libraryCreate.copied' : 'libraryCreate.copyFailed'))} />
             {copied ? <Text accessibilityLiveRegion="polite">{copied}</Text> : null}

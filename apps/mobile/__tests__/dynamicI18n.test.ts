@@ -10,6 +10,11 @@ const fs = require('fs'), path = require('path'), ts = require('typescript');
 // Fixed id domains for the dynamic t() families in production source. New families require a fixture;
 // these are input ids, deliberately independent of translated output and the current catalog contents.
 const domains: Record<string, readonly string[]> = {
+    'mediaKind.{}': ['image', 'video', 'audio', 'text'],
+    'editor.track.{}': ['video', 'audio', 'text'],
+    'start.continue.{}': ['photo', 'video', 'reference', 'prompt'],
+    'credits.plan.{}': ['lite', 'starter', 'plus', 'ultra'],
+    'presets.cat.{}': ['ALL', 'NEW', 'POPULAR', 'YOUR PHOTO', 'KIDS BIRTHDAY', 'CINEMATIC', 'ANIME', 'CARTOONS', 'MOVIES', 'FANTASY', 'REALISTIC', 'FASHION', 'PRODUCTS', 'VFX', 'UGC', 'ADS'],
     "publishTiming.move.{}": ["done", "serverHas", "started", "canceled", "unscheduled", "sending", "stillPending", "pending"],
     "publishOps.priority.{}": ["normal", "high", "urgent"],
     "publishOps.queue.reason.{}": ["publishingOff", "disconnected"],

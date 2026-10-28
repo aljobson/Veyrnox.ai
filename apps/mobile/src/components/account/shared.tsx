@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { Text as StatusText } from '../ui/Text';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { touchTarget } from '../../lib/a11y';
@@ -17,7 +18,7 @@ export function Action({ label, onPress, disabled, danger }: { label: string; on
     return (
         <Pressable
             accessibilityRole="button"
-            accessibilityLabel={label}
+            accessibilityLabel={rawText(label)}
             accessibilityState={{ disabled: Boolean(disabled) }}
             disabled={disabled}
             onPress={onPress}

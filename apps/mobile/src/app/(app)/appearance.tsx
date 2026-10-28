@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { FontStatus } from '../../components/ui/FontStatus';
 import { useContext, useMemo, useState, useSyncExternalStore } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
@@ -70,7 +71,7 @@ function ThemeOption({ theme, draft }: { theme: ThemePreference; draft: Draft })
     const { settings } = useAppearance();
     const sample = useMemo(() => ({ ...settings, theme }), [settings, theme]);
     return (
-        <Pressable style={styles.themeOption} accessibilityRole="radio" accessibilityLabel={themeName(theme)}
+        <Pressable style={styles.themeOption} accessibilityRole="radio" accessibilityLabel={rawText(themeName(theme))}
             accessibilityState={{ checked: selected, selected }} onPress={() => draft.change({ theme })}>
             <AppearanceContext.Provider value={sample}><ThemeSample selected={selected} /></AppearanceContext.Provider>
             <Text variant="caption">{themeName(theme)}</Text>

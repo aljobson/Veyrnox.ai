@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
@@ -78,7 +79,7 @@ export default function ActivityScreen() {
                         </View>
                     }
                     renderItem={({ item }) => (
-                        <View style={styles.row} accessible accessibilityLabel={`${actionLabel(item.action)}, ${item.actor}, ${item.createdAt ? new Date(item.createdAt).toLocaleString(formatLocale()) : ''}`}>
+                        <View style={styles.row} accessible accessibilityLabel={rawText(`${actionLabel(item.action)}, ${item.actor}, ${item.createdAt ? new Date(item.createdAt).toLocaleString(formatLocale()) : ''}`)}>
                             <Text style={styles.action}>{actionLabel(item.action)}</Text>
                             <Text style={styles.muted}>{item.actor}{item.createdAt ? ` · ${new Date(item.createdAt).toLocaleString(formatLocale())}` : ''}</Text>
                             {item.detail ? <Text style={styles.detail}>{item.detail}</Text> : null}

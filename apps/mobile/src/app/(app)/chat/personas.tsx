@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { t } from '../../../lib/i18n';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -46,7 +47,7 @@ export default function Personas() {
                         keyExtractor={(p) => p.id}
                         ListEmptyComponent={<Text style={styles.muted}>{t('chat.apersonaisasavedsetof')}</Text>}
                         renderItem={({ item }) => (
-                            <Card accessibilityRole="button" accessibilityLabel={t('chat.edit', { value1: item.name })} style={styles.row} onPress={() => router.push({ pathname: '/chat/persona/[id]', params: { id: item.id } })}>
+                            <Card accessibilityRole="button" accessibilityLabel={rawText(t('chat.edit', { value1: item.name }))} style={styles.row} onPress={() => router.push({ pathname: '/chat/persona/[id]', params: { id: item.id } })}>
                                 <Text variant="body" style={styles.name}>{item.name}</Text>
                                 <Text style={styles.muted} numberOfLines={2}>{item.instructions}</Text>
                             </Card>

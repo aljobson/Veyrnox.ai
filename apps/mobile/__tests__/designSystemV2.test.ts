@@ -202,3 +202,17 @@ test.each(['light', 'dark', 'oled'] as const)('%s input boundaries and disabled 
         expect(contrast(p.borderStrong, adjacent)).toBeGreaterThanOrEqual(3);
     expect(contrast(p.textTertiary, p.surface)).toBeGreaterThanOrEqual(3);
 });
+
+// Selected chip labels and outlines use textPrimary; check every adjacent surface,
+// including the previously failing Light Mint combinations and OLED mode.
+test.each(ACCENTS)('%s selected chip captions and outlines meet contrast on all surfaces', accent => {
+    for (const theme of ['light', 'dark', 'oled'] as const) {
+        const p = tokensForScheme(theme === 'light' ? 'light' : 'dark', { ...DEFAULT_APPEARANCE, theme, accent });
+        for (const background of [p.bg, p.bgElevated1, p.bgElevated2, p.surface]) {
+            const rgba = p.accentSubtle.match(/[\d.]+/g)!.map(Number);
+            const selected = '#' + [1, 3, 5].map((offset, i) => Math.round(rgba[i] * rgba[3] + parseInt(background.slice(offset, offset + 2), 16) * (1 - rgba[3])).toString(16).padStart(2, '0')).join('');
+            expect(contrast(p.textPrimary, background)).toBeGreaterThanOrEqual(4.5);
+            expect(contrast(p.textPrimary, selected)).toBeGreaterThanOrEqual(4.5);
+        }
+    }
+});

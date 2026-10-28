@@ -183,6 +183,10 @@
   "publishOps.inbox.count": "Formatting template; words are localized separately.",
   "publishOps.inbox.rowLabel": "Formatting template; words are localized separately.",
   "publishOps.accountLabel": "Formatting template; words are localized separately.",
+  "mediaKind.image": "Reviewed: shared media terminology or language-neutral playback position notation.",
+  "mediaKind.audio": "Reviewed: shared media terminology or language-neutral playback position notation.",
+  "cinema.position": "Reviewed: shared media terminology or language-neutral playback position notation.",
+  "projects.revisionLabel": "Reviewed: shared media terminology or language-neutral playback position notation.",
   "projectDocument.counter": "Numeric counter pattern; only the localized numbers change.",
   "projectDocument.portrait": "Portrait is the established French term for vertical orientation, as on the website.",
   "projectDocument.versionTitle": "Version is the standard word in this language for a saved revision."

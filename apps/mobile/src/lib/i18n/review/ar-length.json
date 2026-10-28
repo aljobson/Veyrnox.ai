@@ -1668,6 +1668,12 @@
     "ratio": 1.92
   },
   {
+    "id": "cinema.pause",
+    "english": "Pause",
+    "translation": "إيقاف مؤقت",
+    "ratio": 2
+  },
+  {
     "id": "publishTiming.move.moving",
     "english": "Moving",
     "translation": "جارٍ النقل",
@@ -1690,6 +1696,12 @@
     "english": "Brand time zone: {zone}",
     "translation": "المنطقة الزمنية للعلامة التجارية: {zone}",
     "ratio": 1.74
+  },
+  {
+    "id": "editorSave.retryRestore",
+    "english": "Retry restore",
+    "translation": "إعادة محاولة الاستعادة",
+    "ratio": 1.69
   },
   {
     "id": "projectDocument.aspectRatio",
@@ -1726,5 +1738,17 @@
     "english": "Trailer",
     "translation": "إعلان تشويقي",
     "ratio": 1.71
+  },
+  {
+    "id": "presets.cat.POPULAR",
+    "english": "Popular",
+    "translation": "الأكثر رواجًا",
+    "ratio": 1.86
+  },
+  {
+    "id": "presets.cat.ADS",
+    "english": "Ads",
+    "translation": "إعلانات",
+    "ratio": 2.33
   }
 ]

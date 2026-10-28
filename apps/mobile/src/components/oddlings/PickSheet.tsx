@@ -23,7 +23,7 @@ export function PickSheet({ title, choices, value, onPick, onClose, noneLabel }:
     const rows: readonly PickChoice[] = noneLabel === null ? choices : [{ value: '', label: noneLabel ?? t('oddlings.build.notSet') }, ...choices];
     return (
         <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-            <View style={styles.sheet}>
+            <View style={styles.sheet} onAccessibilityEscape={onClose}>
                 <View style={styles.bar}>
                     <Text style={styles.title} accessibilityRole="header" numberOfLines={1}>{title}</Text>
                     <Pressable accessibilityRole="button" accessibilityLabel={t('oddlings.build.done')} style={styles.done} onPress={onClose}>

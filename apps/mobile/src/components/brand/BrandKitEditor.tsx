@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { useRef, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
@@ -69,7 +70,7 @@ export function BrandKitEditor({ workspaceId, state, onSaved }: { workspaceId: s
                         <Pressable
                             key={c}
                             accessibilityRole="button"
-                            accessibilityLabel={t('brand.removeColour', { colour: c })}
+                            accessibilityLabel={rawText(t('brand.removeColour', { colour: c }))}
                             disabled={locked || kit.palette.length <= 1}
                             onPress={() => set({ palette: kit.palette.filter((x) => x !== c) })}
                             style={{ minHeight: 44, minWidth: 44, borderRadius: 10, borderWidth: 1, borderColor: colors.border, backgroundColor: c, justifyContent: 'flex-end', padding: 4 }}
@@ -102,7 +103,7 @@ export function BrandKitEditor({ workspaceId, state, onSaved }: { workspaceId: s
                         <Pressable
                             key={font}
                             accessibilityRole="checkbox"
-                            accessibilityLabel={font}
+                            accessibilityLabel={rawText(font)}
                             accessibilityState={{ checked: on, disabled: locked, ...selectedState(on) }}
                             disabled={locked}
                             onPress={() => toggleFont(font)}

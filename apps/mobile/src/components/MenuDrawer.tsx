@@ -1,3 +1,4 @@
+import { rawText } from '../lib/i18n/translate';
 import { I18nManager } from 'react-native';
 import { useFaceFiltersAvailable } from '../lib/useFaceFiltersAvailable';
 import { Button, ListRow, Text, Icon, themedStyles, useThemedStyles } from './ui';
@@ -90,7 +91,7 @@ function MenuDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
 
     return (
         <Modal visible={mounted} transparent animationType="none" onRequestClose={onClose} statusBarTranslucent>
-            <View style={styles.root}>
+            <View style={styles.root} onAccessibilityEscape={onClose}>
                 <Animated.View style={[styles.scrim, { opacity: slide }]}>
                     <Pressable style={StyleSheet.absoluteFill} accessibilityRole="button" accessibilityLabel={t('menu.close')} onPress={onClose} />
                 </Animated.View>
@@ -107,7 +108,7 @@ function MenuDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
                             <Icon name="close" tint={styles.mutedInk.color} size={20} />
                         </Button>
                     </View>
-                    <ListRow accessibilityRole="button" accessibilityLabel={who} accessibilityHint={t('menu.account')} style={styles.pill} title={<Text variant="bodyStrong" numberOfLines={1}>{who}</Text>} icon="user" onPress={() => go('/account')} />
+                    <ListRow accessibilityRole="button" accessibilityLabel={rawText(who)} accessibilityHint={t('menu.account')} style={styles.pill} title={<Text variant="bodyStrong" numberOfLines={1}>{who}</Text>} icon="user" onPress={() => go('/account')} />
                     <ScrollView contentContainerStyle={styles.list}>
                         <Row label={t('menu.home')} icon={HOME_ICON} active={active === 'home'} onPress={() => go('/')} />
                         {MENU_SECTIONS.map((section) => {
@@ -117,7 +118,7 @@ function MenuDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
                                 <View key={section.id}>
                                     <Button label={name} variant="tertiary"
                                         accessibilityRole="button"
-                                        accessibilityLabel={t(collapsed ? 'menu.sectionClosed' : 'menu.sectionOpen', { name })}
+                                        accessibilityLabel={rawText(t(collapsed ? 'menu.sectionClosed' : 'menu.sectionOpen', { name }))}
                                         accessibilityState={{ expanded: !collapsed }}
                                         style={styles.heading}
                                         onPress={() => setClosed((prev) => ({ ...prev, [section.id]: !prev[section.id] }))}
@@ -147,7 +148,7 @@ function Row({ label, icon, active, half, onPress }: { label: string; icon: Menu
     return (
         <Button label={label} variant="tertiary"
             accessibilityRole="link"
-            accessibilityLabel={label}
+            accessibilityLabel={rawText(label)}
             accessibilityState={{ selected: active }}
             containerStyle={half ? styles.half : undefined} style={[styles.row, active && styles.rowActive]}
             onPress={onPress}

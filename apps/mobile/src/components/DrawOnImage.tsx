@@ -1,3 +1,4 @@
+import { rawText } from '../lib/i18n/translate';
 import { Text as StatusText } from './ui/Text';
 import { Canvas, Picture, Skia, type SkImage, type SkPicture } from '@shopify/react-native-skia';
 import { File } from 'expo-file-system';
@@ -218,13 +219,13 @@ export function DrawOnImage({ uri, maxPixels, onCancel, onDone, resizer = defaul
     const newest = ops.findLastIndex(op => op.kind === 'box');
     const box = newest >= 0 ? ops[newest] as Box : null;
     const button = (label: string, onPress: () => void, disabled = false, selected?: boolean) => (
-        <Pressable key={label} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled, ...(selected === undefined ? {} : selectedState(selected)) }} disabled={disabled} onPress={onPress} style={[styles.button, selected && styles.selected, disabled && styles.disabled]}>
+        <Pressable key={label} accessibilityRole="button" accessibilityLabel={rawText(label)} accessibilityState={{ disabled, ...(selected === undefined ? {} : selectedState(selected)) }} disabled={disabled} onPress={onPress} style={[styles.button, selected && styles.selected, disabled && styles.disabled]}>
             <Text style={styles.text}>{label}</Text>
         </Pressable>
     );
     return (
         <Modal visible presentationStyle="fullScreen" animationType={reduceMotion ? 'none' : 'slide'} onRequestClose={cancel}>
-            <SafeAreaView style={styles.screen}>
+            <SafeAreaView style={styles.screen}><View style={{ flex: 1 }} onAccessibilityEscape={cancel}>
                 <Text accessibilityRole="header" style={styles.title}>{t('draw.title')}</Text>
                 {failed ? <><Text style={styles.text}>{t('draw.openFailed')}</Text>{button(t('chat.make.close'), cancel)}</> : <>
                     {!image ? <Text style={styles.text}>{t('draw.preparing')}</Text> : null}
@@ -242,7 +243,7 @@ export function DrawOnImage({ uri, maxPixels, onCancel, onDone, resizer = defaul
                             {button(t('draw.addBox'), () => update({ type: 'addBox', box: { kind: 'box', x: dimensions.width / 4, y: dimensions.height / 4, width: dimensions.width / 2, height: dimensions.height / 2, color, strokeWidth: strokeWidthPx(size, fit.scale || 1) } }), !image || busy || pointCount(ops) + 2 > POINT_LIMIT)}
                         </View>
                         {box ? <View accessible accessibilityRole="adjustable" accessibilityLabel={t('draw.box')} accessibilityState={{ disabled: busy }}
-                            accessibilityValue={{ text: t('draw.boxValue', { x: String(Math.round(box.x / dimensions.width * 100)), y: String(Math.round(box.y / dimensions.height * 100)), width: String(Math.round(box.width / dimensions.width * 100)), height: String(Math.round(box.height / dimensions.height * 100)) }) }}
+                            accessibilityValue={{ text: rawText(t('draw.boxValue', { x: String(Math.round(box.x / dimensions.width * 100)), y: String(Math.round(box.y / dimensions.height * 100)), width: String(Math.round(box.width / dimensions.width * 100)), height: String(Math.round(box.height / dimensions.height * 100)) })) }}
                             accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }, ...moves.map(name => ({ name, label: t(`draw.${name}`) }))]}
                             onAccessibilityAction={event => { if (!busy) update({ type: 'adjustBox', index: newest, action: event.nativeEvent.actionName as BoxAction, image: dimensions }); }} style={styles.button}>
                             <Text style={styles.text}>{t('draw.box')}</Text>
@@ -251,7 +252,7 @@ export function DrawOnImage({ uri, maxPixels, onCancel, onDone, resizer = defaul
                     </ScrollView>
                     <View style={styles.row}>{button(t('draw.cancel'), cancel)}{button(t('draw.use'), useDrawing, !image || !ops.length || busy)}</View>
                 </>}
-            </SafeAreaView>
+            </View></SafeAreaView>
         </Modal>
     );
 }

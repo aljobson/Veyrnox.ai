@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
@@ -90,16 +91,16 @@ export default function Reports() {
                             <Text style={styles.muted}>{t('reports.range', { days: item.rangeDays })}{item.comparePrevious ? ` · ${t('reports.compared')}` : ''}{item.cadence !== 'manual' ? ` · ${t(`reports.cadence.${item.cadence}`)}` : ''}</Text>
                             {item.lastDeliveryAt ? <Text style={styles.muted}>{t('reports.lastSent', { when: new Date(item.lastDeliveryAt).toLocaleDateString(formatLocale()) })}</Text> : null}
                             <View style={styles.row}>
-                                <Pressable accessibilityRole="button" accessibilityLabel={t('publishReporting.openFor', { name: item.name })} style={[styles.btn, touchTarget]} onPress={() => router.push({ pathname: '/publish/analytics', params: reportParams(item) })}><Text style={styles.btnText}>{t('publishReporting.open')}</Text></Pressable>
+                                <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('publishReporting.openFor', { name: item.name }))} style={[styles.btn, touchTarget]} onPress={() => router.push({ pathname: '/publish/analytics', params: reportParams(item) })}><Text style={styles.btnText}>{t('publishReporting.open')}</Text></Pressable>
                                 {canEdit ? <>
-                                    <Pressable accessibilityRole="button" accessibilityLabel={t('publishReporting.editFor', { name: item.name })} style={[styles.btn, touchTarget]} onPress={() => router.push({ pathname: '/publish/report-edit', params: { id: item.id } })}><Text style={styles.btnText}>{t('publishReporting.edit')}</Text></Pressable>
-                                    <Pressable accessibilityRole="button" accessibilityLabel={t('publishReporting.deleteFor', { name: item.name })} accessibilityState={{ disabled: !!busy, busy: busy === item.id }} disabled={!!busy} style={[styles.btn, touchTarget]} onPress={() => remove(item)}><Text style={styles.btnText}>{t('publishReporting.delete')}</Text></Pressable>
+                                    <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('publishReporting.editFor', { name: item.name }))} style={[styles.btn, touchTarget]} onPress={() => router.push({ pathname: '/publish/report-edit', params: { id: item.id } })}><Text style={styles.btnText}>{t('publishReporting.edit')}</Text></Pressable>
+                                    <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('publishReporting.deleteFor', { name: item.name }))} accessibilityState={{ disabled: !!busy, busy: busy === item.id }} disabled={!!busy} style={[styles.btn, touchTarget]} onPress={() => remove(item)}><Text style={styles.btnText}>{t('publishReporting.delete')}</Text></Pressable>
                                 </> : null}
                             </View>
                             {exportsEnabled ? (
                                 <View style={styles.row}>
                                     {FORMATS.map((f) => (
-                                        <Pressable key={f} accessibilityRole="button" accessibilityLabel={t('reports.shareAs', { name: item.name, format: t(`reports.format.${f}`) })} disabled={busy !== null} accessibilityState={{ disabled: busy !== null }} style={[styles.btn, touchTarget, busy !== null && styles.off]} onPress={() => share(item, f)}>
+                                        <Pressable key={f} accessibilityRole="button" accessibilityLabel={rawText(t('reports.shareAs', { name: item.name, format: t(`reports.format.${f}`) }))} disabled={busy !== null} accessibilityState={{ disabled: busy !== null }} style={[styles.btn, touchTarget, busy !== null && styles.off]} onPress={() => share(item, f)}>
                                             {busy === `${item.id}:${f}` ? <ActivityIndicator color={colors.accent} /> : <Text style={styles.btnText}>{t(`reports.format.${f}`)}</Text>}
                                         </Pressable>
                                     ))}

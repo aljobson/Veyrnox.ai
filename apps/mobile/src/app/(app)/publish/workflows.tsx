@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { subscribeCacheUser } from '../../../lib/appCache';
 import { brandStore } from '../../../lib/publishBrand';
 import { publishScope, usePublishRole } from '../../../lib/usePublishRole';
@@ -146,7 +147,7 @@ export default function Workflows() {
                             <Text accessibilityRole="header" style={[styles.name, styles.titleText]}>{item.name || t('publishWorkflows.unnamed')}</Text>
                             {item.enabled !== null ? (
                                 <Switch
-                                    accessibilityLabel={`${item.name || t('publishWorkflows.unnamed')}: ${t(item.enabled ? 'publishWorkflows.on' : 'publishWorkflows.off')}`}
+                                    accessibilityLabel={rawText(`${item.name || t('publishWorkflows.unnamed')}: ${t(item.enabled ? 'publishWorkflows.on' : 'publishWorkflows.off')}`)}
                                     value={item.enabled}
                                     disabled={!canWrite || busy}
                                     onValueChange={(on) => void toggle(item, on)}
@@ -165,7 +166,7 @@ export default function Workflows() {
                         <Text style={styles.muted}>{t('publishWorkflows.lastEdited', { date: displayDate(item.updatedAt) })}</Text>
                         <Pressable
                             accessibilityRole="button"
-                            accessibilityLabel={t('publishWorkflows.detailsLabel', { name: item.name || t('publishWorkflows.unnamed') })}
+                            accessibilityLabel={rawText(t('publishWorkflows.detailsLabel', { name: item.name || t('publishWorkflows.unnamed') }))}
                             accessibilityState={{ expanded: expanded === item.id }}
                             style={[styles.action, touchTarget]}
                             onPress={() => setExpanded(expanded === item.id ? null : item.id)}

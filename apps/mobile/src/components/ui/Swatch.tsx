@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { Pressable, View } from 'react-native';
 import { ds, accentPairs, type Accent } from '../../theme';
 import { Icon } from './Icon';
@@ -6,7 +7,7 @@ import { themedStyles, useThemedStyles } from './AppearanceContext';
 export function Swatch({ accent, label, selected, onPress }: { accent: Accent; label: string; selected: boolean; onPress: () => void }) {
     const s = useThemedStyles(sheets);
     return (
-        <Pressable accessibilityRole="radio" accessibilityLabel={label} accessibilityState={{ selected, checked: selected }} onPress={onPress} style={s.hit}>
+        <Pressable accessibilityRole="radio" accessibilityLabel={rawText(label)} accessibilityState={{ selected, checked: selected }} onPress={onPress} style={s.hit}>
             <View style={[s.ring, selected && s.selected]}>
                 <View style={[s.fill, s[accent]]}>{selected ? <Icon name="check" tint={s[accent].color} size={20} /> : null}</View>
             </View>

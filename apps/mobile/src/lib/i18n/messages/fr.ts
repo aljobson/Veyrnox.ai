@@ -167,6 +167,22 @@ const fr = {
     'cinema.creatorAnalytics.publishedTitle': 'Titre publié',
     'cinema.creatorAnalytics.publishATitleToStartSeeing': 'Publiez un titre pour commencer à voir les statistiques d’audience.',
     'cinema.creatorAnalytics.completionMeansAtLeast90Of': 'La complétion correspond à au moins 90% du média regardé ; pour les séries, les épisodes regardés sont comptés. Les partages sont des actions de copie ou de partage, pas des livraisons confirmées. Les commentaires comptés sont approuvés et non signalés. Ces statistiques ne calculent ni revenus ni scores hebdomadaires.',
+    'presets.cat.ALL': 'Tous',
+    'presets.cat.NEW': 'Nouveautés',
+    'presets.cat.POPULAR': 'Populaires',
+    'presets.cat.YOUR PHOTO': 'Votre photo',
+    'presets.cat.CINEMATIC': 'Cinéma',
+    'presets.cat.ANIME': 'Anime',
+    'presets.cat.CARTOONS': 'Dessins animés',
+    'presets.cat.MOVIES': 'Films',
+    'presets.cat.FANTASY': 'Fantasy',
+    'presets.cat.REALISTIC': 'Réaliste',
+    'presets.cat.FASHION': 'Mode',
+    'presets.cat.PRODUCTS': 'Produits',
+    'presets.cat.VFX': 'VFX',
+    'presets.cat.UGC': 'UGC',
+    'presets.cat.ADS': 'Publicités',
+    'presets.cat.KIDS BIRTHDAY': 'Anniversaire enfant',
 } as const;
 
 export default fr;

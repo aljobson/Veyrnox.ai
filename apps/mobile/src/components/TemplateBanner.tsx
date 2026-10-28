@@ -1,3 +1,4 @@
+import { rawText } from '../lib/i18n/translate';
 import { Text, Card, themedStyles, useThemedStyles } from './ui';
 import { Image } from 'expo-image';
 import { View } from 'react-native';
@@ -10,7 +11,7 @@ import { ds } from '../theme';
 export function TemplateBanner({ template, aspect }: { template: TemplateInfo; aspect: string | null }) {
     const styles = useThemedStyles(sheets);
     return (
-        <Card style={styles.row} accessible accessibilityLabel={`${t('create.template.label')}: ${template.title}${aspect ? `. ${t('create.template.format', { aspect })}` : ''}`}>
+        <Card style={styles.row} accessible accessibilityLabel={rawText(`${t('create.template.label')}: ${template.title}${aspect ? `. ${t('create.template.format', { aspect })}` : ''}`)}>
             {template.poster ? <Image source={{ uri: template.poster }} style={styles.poster} contentFit="cover" accessibilityIgnoresInvertColors /> : null}
             <View style={styles.text}>
                 <Text variant="bodyStrong" tone="secondary">{t('create.template.label')}</Text>

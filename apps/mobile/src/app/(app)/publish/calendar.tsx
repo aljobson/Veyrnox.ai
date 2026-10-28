@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { canMove, overlay } from '../../../lib/publishCalendarMove';
 import { useCalendarDrag, measureDropTargets } from '../../../components/publish/useCalendarDrag';
 import { CalendarWeekStrip } from '../../../components/publish/CalendarWeekStrip';
@@ -163,7 +164,7 @@ export default function Calendar() {
                                 <Pressable
                                     {...(movable ? { ...drag.rowProps(p), accessibilityActions: [{ name: 'move', label }], onAccessibilityAction: (event: { nativeEvent: { actionName: string } }) => { if (event.nativeEvent.actionName === 'move') move.open(p, new Date(p.scheduledAt!)); } } : {})}
                                     accessibilityRole="button"
-                                    accessibilityLabel={`${time(p.scheduledAt)}, ${postStatusLabel(p.status)}. ${p.text.slice(0, 80)}`}
+                                    accessibilityLabel={rawText(`${time(p.scheduledAt)}, ${postStatusLabel(p.status)}. ${p.text.slice(0, 80)}`)}
                                     style={[styles.row, touchTarget]}
                                     onPress={() => router.push({ pathname: '/publish/post/[id]', params: { id: p.id } })}
                                 >

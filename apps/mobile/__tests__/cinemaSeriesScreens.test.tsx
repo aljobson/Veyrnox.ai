@@ -140,12 +140,16 @@ test('error without editorial matches retains retry, and an empty result retains
     await press(nodes('button')[0]);
     expect(allText()).toContain('No series to show yet. Check back soon.');
 });
-test('editorial screen keeps ordered episodes without web playback actions', async () => {
+test('editorial screen keeps ordered episodes and opens the public embedded player', async () => {
     const s = EDITORIAL_SERIES[0]; mockParams = { slug: s.slug };
     await render(<EditorialScreen />);
     expect(nodes('header').map(textOf)).toEqual([s.title, 'Episodes']);
     expect(nodes('link')).toHaveLength(0);
-    expect(allText()).toContain('This feature is coming to the app.');
+    expect(allText()).not.toContain('This feature is coming to the app.');
+    await press(button(s.episodes[2].title));
+    expect(mockRouter.push).toHaveBeenLastCalledWith({ pathname: '/editorial/[id]', params: { id: s.episodes[2].id, series: s.slug } });
+    await press(button('Play episode 1'));
+    expect(mockRouter.push).toHaveBeenLastCalledWith({ pathname: '/editorial/[id]', params: { id: s.episodes[0].id, series: s.slug } });
     let previous = -1;
     for (const episode of s.episodes) {
         const position = allText().indexOf(episode.title);

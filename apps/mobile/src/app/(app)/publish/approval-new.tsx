@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { MediaLibraryGrid } from '../../../components/publish/MediaLibraryGrid';
 import { ChosenMediaPreview } from '../../../components/publish/ChosenMediaPreview';
@@ -161,7 +162,7 @@ export default function ApprovalNew() {
                 {created.links.map((l) => (
                     <View key={l.email} style={styles.card}>
                         <Text style={styles.name}>{l.email}</Text>
-                        <Pressable accessibilityRole="button" accessibilityLabel={t('approvals.shareFor', { email: l.email })} style={[styles.button, touchTarget]} onPress={() => shareLink(l.url)}>
+                        <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('approvals.shareFor', { email: l.email }))} style={[styles.button, touchTarget]} onPress={() => shareLink(l.url)}>
                             <Text style={styles.buttonText}>{t('approvals.shareLink')}</Text>
                         </Pressable>
                     </View>

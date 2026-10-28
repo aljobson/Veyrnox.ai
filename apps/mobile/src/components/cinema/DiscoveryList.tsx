@@ -1,12 +1,13 @@
-import { Image } from 'expo-image';
+import { rawText } from '../../lib/i18n/translate';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Platform, Pressable, RefreshControl, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { discoveryTarget, typeLabel } from '../../lib/cinemaViewer';
 import { CinemaPosterImage } from './CinemaPosterImage';
+import { SeriesTile } from './SeriesTile';
 import { Card, Text as UiText } from '../ui';
 import { fetchDiscovery, type BrowseMode, type DiscoveryCursor, type DiscoveryTitle } from '../../lib/cinemaBrowse';
-import { editorialSeriesList, phoneCategories, type EditorialSeries } from '../../lib/cinemaSeries';
+import { editorialSeriesList, type EditorialSeries } from '../../lib/cinemaSeries';
 import { formatLocale, plural, t } from '../../lib/i18n';
 import { MIN_TARGET } from '../../lib/a11y';
 import { colors } from '../../theme';
@@ -17,9 +18,11 @@ interface Props {
 }
 
 type State = 'loading' | 'ready' | 'closed' | 'error';
+const LIST_PADDING = 12;
+const GAP = 12;
 
-// The Series list and the Vote list: one title per row, a poster, the episode count (or the open competition), and a
-// button to the title page. The parent remounts it when the mode or category changes, so a late answer cannot land in
+// The Series grid (two columns of tiles) and the Vote list (one title per row, a poster, the open competition and a
+// button to the title page). Pull down to reload page one. The parent remounts it when the mode or category changes, so a late answer cannot land in
 // another tab.
 export function DiscoveryList({ mode, category }: Props) {
     const router = useRouter();
@@ -28,33 +31,42 @@ export function DiscoveryList({ mode, category }: Props) {
     const [next, setNext] = useState<DiscoveryCursor | null>(null);
     const [state, setState] = useState<State>('loading');
     const [moreFailed, setMoreFailed] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
+    const screen = useWindowDimensions();
+    const [listWidth, setListWidth] = useState(0);
     const busy = useRef(false);
-    const live = useRef(true);
+    // Bumped by every first-page load and by unmount: a read applies its answer only while its generation is current.
+    const generation = useRef(0);
 
-    const load = useCallback(async (cursor: DiscoveryCursor | null) => {
-        if (busy.current) return;
-        busy.current = true;
+    const load = useCallback(async (cursor: DiscoveryCursor | null, refresh = false) => {
+        if (cursor && busy.current) return;
+        let gen = generation.current;
+        if (cursor) busy.current = true;
+        else { gen = ++generation.current; busy.current = false; }
         setMoreFailed(false);
-        if (!cursor) setState('loading');
+        if (refresh) setRefreshing(true);
+        else if (!cursor) setState('loading');
         const result = await fetchDiscovery(mode, category, cursor);
-        busy.current = false;
-        if (!live.current) return;
+        if (gen !== generation.current) return;
+        if (cursor) busy.current = false;
+        if (refresh) setRefreshing(false);
         if (result.kind === 'ok') {
             setTitles((prev) => (cursor ? [...prev, ...result.page.titles.filter((x) => !prev.some((y) => y.id === x.id))] : [...result.page.titles]));
             setNext(result.page.next);
             setState('ready');
         } else if (cursor) {
             setMoreFailed(true);
-        } else {
+        } else if (!refresh) {
             setState(result.kind);
         }
     }, [mode, category]);
 
     useEffect(() => {
-        live.current = true;
         void load(null);
-        return () => { live.current = false; };
+        return () => { generation.current++; };
     }, [load]);
+
+    const refresh = useCallback(() => { void load(null, true); }, [load]);
 
     if (state === 'loading') return <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>;
     if (state === 'closed' && !editorial.length) return <View style={styles.center}><Text style={styles.muted} accessibilityRole="text">{t(mode === 'voting' ? 'cinemaBrowse.voteClosed' : 'cinemaBrowse.viewingClosed')}</Text></View>;
@@ -66,43 +78,36 @@ export function DiscoveryList({ mode, category }: Props) {
         );
     }
     if (titles.length === 0 && editorial.length === 0) return <View style={styles.center}><Text style={styles.muted}>{t(mode === 'voting' ? 'cinemaBrowse.voteEmpty' : 'cinemaBrowse.seriesEmpty')}</Text></View>;
+    const tiles = mode === 'series';
+    const tileWidth = Math.max(0, ((listWidth || screen.width) - LIST_PADDING * 2 - GAP) / 2);
     return (
         <FlatList<DiscoveryTitle | EditorialSeries>
             data={[...editorial, ...titles]}
             keyExtractor={(x) => 'slug' in x ? x.slug : x.id}
+            numColumns={tiles ? 2 : 1}
+            columnWrapperStyle={tiles ? styles.columns : undefined}
             contentContainerStyle={styles.list}
+            onLayout={(e) => setListWidth(e.nativeEvent.layout.width)}
             onEndReached={() => next && load(next)}
             onEndReachedThreshold={0.6}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.accent} />}
             ListHeaderComponent={mode === 'voting' && titles.length ? <UiText tone="secondary">{t('cinema.discovery.exploreTitlesEligibleForAnOpen')}</UiText> : undefined}
             ListFooterComponent={moreFailed ? (
                 <Pressable accessibilityRole="button" style={styles.more} onPress={() => next && load(next)}><Text style={styles.error}>{t('cinemaBrowse.moreFailed')}</Text></Pressable>
             ) : undefined}
-            renderItem={({ item }) => 'slug' in item ? <EditorialRow series={item} onOpen={() => router.push({ pathname: '/cinema/series/[slug]', params: { slug: item.slug } })} /> : <Row item={item} mode={mode} onOpen={() => router.push(discoveryTarget(item))} />}
+            renderItem={({ item }) => {
+                const open = () => 'slug' in item ? router.push({ pathname: '/cinema/series/[slug]', params: { slug: item.slug } }) : router.push(discoveryTarget(item));
+                if (tiles) return <SeriesTile item={item} width={tileWidth} onOpen={open} />;
+                return 'slug' in item ? null : <Row item={item} mode={mode} onOpen={open} />;
+            }}
         />
-    );
-}
-
-function EditorialRow({ series, onOpen }: { series: EditorialSeries; onOpen: () => void }) {
-    const meta = `${t('cinemaSeries.by', { creator: series.creatorName })} · ${plural('cinemaBrowse.episodes', series.episodes.length)}`;
-    const categories = phoneCategories(series.categories);
-    return (
-        <Pressable accessibilityRole="button" accessibilityLabel={`${series.title}. ${meta}`} style={styles.row} onPress={onOpen}>
-            <Image source={{ uri: series.posterUrl }} style={styles.poster} contentFit="cover" accessible={false} accessibilityIgnoresInvertColors />
-            <View style={styles.body}>
-                <Text style={styles.name} numberOfLines={2}>{series.title}</Text>
-                <Text style={styles.muted} numberOfLines={1}>{meta}</Text>
-                {categories.length ? <Text style={styles.cats} numberOfLines={1}>{categories.map(c => t(`cinemaBrowse.cat.${c}`)).join(' · ')}</Text> : null}
-                <Text style={styles.synopsis} numberOfLines={2}>{series.description}</Text>
-                <View style={styles.watch}><Text style={styles.watchText}>{t('cinemaBrowse.watch')}</Text></View>
-            </View>
-        </Pressable>
     );
 }
 
 function Row({ item, mode, onOpen }: { item: DiscoveryTitle; mode: BrowseMode; onOpen: () => void }) {
     const series = item.contentType === 'SERIES';
     return (
-        <Card accessibilityLabel={item.title} style={{ padding: 0, overflow: 'hidden' }} onPress={onOpen}>
+        <Card accessibilityLabel={rawText(item.title)} style={{ padding: 0, overflow: 'hidden' }} onPress={onOpen}>
             <CinemaPosterImage id={item.id} style={{ borderTopLeftRadius: 12, borderTopRightRadius: 12 }} />
             <View style={{ padding: 12, gap: 8 }}>
                 <View style={styles.badges}>
@@ -130,15 +135,10 @@ const styles = StyleSheet.create({
     badges: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
     badge: { fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', backgroundColor: colors.surface, padding: 4, borderRadius: 4 },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-    list: { padding: 12, gap: 12 },
-    row: { flexDirection: 'row', gap: 12, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 10 },
-    poster: { width: 84, height: 126, borderRadius: 8, backgroundColor: colors.border },
-    body: { flex: 1, gap: 3 },
-    name: { color: colors.text, fontSize: 17, fontWeight: '700' },
+    list: { padding: LIST_PADDING, gap: GAP },
+    columns: { gap: GAP },
     muted: { color: colors.muted },
-    cats: { color: colors.muted, fontSize: 13 },
     comp: { color: colors.money, fontSize: 13 },
-    synopsis: { color: colors.body, fontSize: 14 },
     watch: { marginTop: 'auto', alignSelf: 'flex-start', minHeight: MIN_TARGET, justifyContent: 'center', backgroundColor: colors.accent, borderRadius: 10, paddingHorizontal: 20 },
     watchText: { color: colors.accentInk, fontWeight: '700' },
     error: { color: colors.danger },

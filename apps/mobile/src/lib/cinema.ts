@@ -110,6 +110,26 @@ export async function fetchTitlesPage(cursor: Cursor | null, doFetch: typeof fet
     return parseTitlesPage(await res.json());
 }
 
+// The Watch feed leaves out short clips: SHORT and TRAILER at any length, and anything known to run under a minute.
+export const MIN_WATCH_SECONDS = 60;
+const FEED_PAGES = 3;
+export function isFeedTitle(t: CinemaTitle): boolean {
+    return t.contentType !== 'SHORT' && t.contentType !== 'TRAILER' && (t.durationSeconds === null || t.durationSeconds >= MIN_WATCH_SECONDS);
+}
+
+// A Watch page: skips pages that hold only short clips, up to maxPages reads. A later page that fails returns what was
+// kept with the cursor that failed, so the next scroll retries it.
+export async function fetchFeedPage(cursor: Cursor | null, doFetch: typeof fetch = fetch, base: string = API_BASE, category: string | null = null, maxPages: number = FEED_PAGES): Promise<TitlesPage> {
+    let page = await fetchTitlesPage(cursor, doFetch, base, category);
+    let kept = page.titles.filter(isFeedTitle);
+    for (let read = 1; kept.length === 0 && page.next !== null && read < maxPages; read++) {
+        const at: Cursor = page.next;
+        try { page = await fetchTitlesPage(at, doFetch, base, category); } catch { return { titles: kept, next: at }; }
+        kept = page.titles.filter(isFeedTitle);
+    }
+    return { titles: kept, next: page.next };
+}
+
 export const posterUrl = (id: string, base: string = API_BASE): string => `${base}/api/cinema/posters/${encodeURIComponent(id)}`;
 
 // Free viewing only (CINEMA_UNLOCKS_ENABLED is off): anything but a free title is shown as unavailable.

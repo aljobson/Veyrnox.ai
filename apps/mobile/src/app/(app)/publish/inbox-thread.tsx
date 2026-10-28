@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { Text as StatusText } from '../../../components/ui/Text';
 import * as Crypto from 'expo-crypto';
 import { Stack, useLocalSearchParams } from 'expo-router';
@@ -198,7 +199,7 @@ export default function InboxThread() {
             {th?.tags.length ? <Text style={styles.tags}>{th.tags.join(', ')}</Text> : null}
             {view.messages.length === 0 ? <Text style={styles.muted}>{t('inbox.noMessages')}</Text> : null}
             {view.messages.map((m) => (
-                <View key={m.id} style={[styles.bubble, m.outgoing ? styles.out : styles.in]} accessible accessibilityLabel={`${m.outgoing ? t('inbox.you') : th?.name ?? ''}: ${m.body}`}>
+                <View key={m.id} style={[styles.bubble, m.outgoing ? styles.out : styles.in]} accessible accessibilityLabel={rawText(`${m.outgoing ? t('inbox.you') : th?.name ?? ''}: ${m.body}`)}>
                     <Text style={styles.text}>{m.body || (m.hasMedia ? t('inbox.attachment') : '')}</Text>
                     {m.body && m.hasMedia ? <Text style={styles.muted}>{t('inbox.attachment')}</Text> : null}
                     <Text style={styles.meta}>{m.sentAt ? new Date(m.sentAt).toLocaleString(formatLocale()) : ''}{m.deliveryStatus && m.outgoing ? ` · ${m.deliveryStatus}` : ''}</Text>

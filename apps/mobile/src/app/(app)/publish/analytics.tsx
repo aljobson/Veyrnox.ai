@@ -1,3 +1,4 @@
+import { rawText } from '../../../lib/i18n/translate';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { File } from 'expo-file-system';
@@ -21,7 +22,7 @@ const CHART_POINTS = 60;
 
 function Stat({ label, value, change }: { label: string; value: string; change: Delta | null }) {
     return (
-        <View style={styles.stat} accessible accessibilityLabel={`${label}: ${value}${change ? `, ${t('analytics.vsBefore', { change: percentText(change) })}` : ''}`}>
+        <View style={styles.stat} accessible accessibilityLabel={rawText(`${label}: ${value}${change ? `, ${t('analytics.vsBefore', { change: percentText(change) })}` : ''}`)}>
             <Text style={styles.muted}>{label}</Text>
             <Text style={styles.statValue}>{value}</Text>
             {change ? <Text style={[styles.delta, change.change < 0 && styles.down]}>{t('analytics.vsBefore', { change: percentText(change) })}</Text> : null}
@@ -162,7 +163,7 @@ export default function AnalyticsScreen() {
             {accounts && accounts.length === 0 ? <Text style={styles.muted}>{t('analytics.connect')}</Text> : null}
             {error ? <View><StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{error}</StatusText><Pressable accessibilityRole="button" style={touchTarget} onPress={() => accounts ? setReload(n => n + 1) : setAccountsReload(n => n + 1)}><Text style={styles.text}>{t('publishReporting.retry')}</Text></Pressable></View> : !locked && (!accounts || loading) ? <ActivityIndicator color={colors.accent} /> : null}
             {!locked && entries.length ? <>
-                <Pressable accessibilityRole="button" accessibilityLabel={t('publishReporting.csvFor', { name: accountId ? entries[0].account.displayName : t('publishReporting.all') })}
+                <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('publishReporting.csvFor', { name: accountId ? entries[0].account.displayName : t('publishReporting.all') }))}
                     accessibilityState={{ disabled: csvBusy, busy: csvBusy }} disabled={csvBusy} style={[styles.chip, touchTarget]} onPress={exportCsv}>
                     <Text style={styles.text}>{t('publishReporting.csv')}</Text>
                 </Pressable>
@@ -189,7 +190,7 @@ export default function AnalyticsScreen() {
                         <View style={styles.card}>
                             <Text accessibilityRole="header" style={styles.cardTitle}>{t('analytics.latestDay', { date: latest.date })}</Text>
                             {Object.entries(latest.metrics).map(([k, v]) => (
-                                <View key={k} style={styles.metric} accessible accessibilityLabel={`${metricLabel(k)}: ${v}`}>
+                                <View key={k} style={styles.metric} accessible accessibilityLabel={rawText(`${metricLabel(k)}: ${v}`)}>
                                     <Text style={styles.text}>{metricLabel(k)}</Text>
                                     <Text style={styles.value}>{v.toLocaleString(formatLocale())}</Text>
                                 </View>

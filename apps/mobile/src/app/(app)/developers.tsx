@@ -1,3 +1,4 @@
+import { rawText } from '../../lib/i18n/translate';
 import { Stack, router } from 'expo-router';
 import { ScrollView, Share, View } from 'react-native';
 import { AddressText } from '../../components/AddressText';
@@ -14,7 +15,7 @@ const endpoints = [
     ['GET', '/generations/{id}/asset', 'developers.ep.asset'], ['GET', '/balance', 'developers.ep.balance'],
 ] as const;
 function ShareButton({ value }: { value: string }) {
-    return <Button variant="tertiary" size="sm" label={t('developers.share')} accessibilityLabel={t('developers.shareValue', { value })} onPress={() => { void Share.share({ message: value }).catch(() => {}); }} />;
+    return <Button variant="tertiary" size="sm" label={t('developers.share')} accessibilityLabel={rawText(t('developers.shareValue', { value }))} onPress={() => { void Share.share({ message: value }).catch(() => {}); }} />;
 }
 export default function Developers() {
     const s = useThemedStyles(sheets);
