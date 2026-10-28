@@ -2,6 +2,7 @@ import * as Sentry from '@sentry/react-native';
 import * as Device from 'expo-device';
 import { APP_ENV } from './config';
 import { crashEnvironment } from './crashEnvironment';
+import { renderErrorReport, safeErrorName } from './renderErrorReport';
 import { scrubBreadcrumb, scrubEvent } from './scrub';
 
 // The DSN is public by design (it only allows sending events). No DSN, or a development build, means
@@ -30,4 +31,11 @@ export const withCrashReporting = Sentry.wrap;
 export function captureIssue(message: string, tags: Record<string, string>): void {
     if (!started) return;
     Sentry.captureMessage(message, { level: 'warning', tags });
+}
+
+// A screen failed to draw. Sends the error's class name and stack frames so the failing line can be
+// found; the message never leaves the device.
+export function captureRenderError(error: Error, boundary: 'root' | 'signed_in'): void {
+    if (!started) return;
+    Sentry.captureException(renderErrorReport(error), { level: 'warning', tags: { boundary, error: safeErrorName(error) } });
 }

@@ -4,9 +4,9 @@ import { createRoot, type Root } from 'test-renderer';
 import { ExpoRoot, Slot } from 'expo-router';
 import { Try } from 'expo-router/build/views/Try';
 import { ErrorFallback, SignedInErrorBoundary } from '../src/components/ErrorFallback';
-import { captureIssue } from '../src/lib/crash';
+import { captureRenderError } from '../src/lib/crash';
 
-jest.mock('../src/lib/crash', () => ({ captureIssue: jest.fn() }));
+jest.mock('../src/lib/crash', () => ({ captureRenderError: jest.fn() }));
 jest.mock('react-native-safe-area-context', () => {
     const React = require('react'), { View } = require('react-native');
     return { ...jest.requireActual('react-native-safe-area-context'),
@@ -35,19 +35,19 @@ test('real Try catches a render error without providers, reports once, and retri
     await act(async () => root.render(<Try catch={ErrorFallback}><Child /></Try>));
     expect(visible('Something went wrong')).toBe(true);
     expect(visible('private crash details')).toBe(false);
-    expect(captureIssue).toHaveBeenCalledTimes(1);
-    expect(captureIssue).toHaveBeenCalledWith('render_error', { boundary: 'root', error: 'Error' });
+    expect(captureRenderError).toHaveBeenCalledTimes(1);
+    expect(captureRenderError).toHaveBeenCalledWith(expect.objectContaining({ message: 'private crash details' }), 'root');
     expect(AccessibilityInfo.announceForAccessibility).toHaveBeenCalledWith('Something went wrong');
     broken = false; await press('Try again');
     expect(visible('Recovered child')).toBe(true);
-    expect(captureIssue).toHaveBeenCalledTimes(1);
+    expect(captureRenderError).toHaveBeenCalledTimes(1);
 });
 test('fallback invokes retry and does not report again on rerender', async () => {
     const error = new Error('secret'), retry = jest.fn(async () => {});
     await act(async () => root.render(<ErrorFallback error={error} retry={retry} />));
     await act(async () => root.render(<ErrorFallback error={error} retry={retry} />));
     await press('Try again');
-    expect(retry).toHaveBeenCalledTimes(1); expect(captureIssue).toHaveBeenCalledTimes(1);
+    expect(retry).toHaveBeenCalledTimes(1); expect(captureRenderError).toHaveBeenCalledTimes(1);
 });
 test('Go home clears the real router boundary and remounts the navigator at home', async () => {
     const routes: Record<string, object> = {
