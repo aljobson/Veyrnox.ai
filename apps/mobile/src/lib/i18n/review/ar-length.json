@@ -1608,6 +1608,18 @@
     "ratio": 2.13
   },
   {
+    "id": "facelessReel.seconds",
+    "english": "{n} s",
+    "translation": "{n} ثانية",
+    "ratio": 1.8
+  },
+  {
+    "id": "videoAgentBalance.retry",
+    "english": "Retry balance",
+    "translation": "إعادة التحقق من الرصيد",
+    "ratio": 1.69
+  },
+  {
     "id": "libraryCreate.generated",
     "english": "AI generated",
     "translation": "مُنشأ بالذكاء الاصطناعي",

@@ -135,7 +135,14 @@ export default function CreateWithModel() {
                 const aspect = (guidedAspect && o.aspects.includes(guidedAspect) ? guidedAspect : null) ?? nearestAspect(template?.ratio ?? null, o.aspects) ?? defaultAspect(o.aspects, vibe?.answers ?? null);
                 const base: OptionValues = { aspect, count: 1, seed: '', negative: '', voice: '', audioSeconds: '' };
                 // A template brings its own words; only a form opened bare gets the unsent draft back.
-                if (typeof presetPrompt === 'string') {
+                if (typeof presetPrompt === 'string' || handedSources?.picks) {
+                    if (handedSources?.picks) {
+                        const picks = sanitizePicks(handedSources.picks);
+                        if (kindOf(found.modality) === 'image' && textInput(found)?.key === 'prompt') {
+                            setCharacter(picks);
+                            setCharacterOn(true);
+                        } else setPrompt(buildCharacterPrompt(typeof presetPrompt === 'string' ? presetPrompt : '', picks));
+                    }
                     setOpts(base);
                     draftReady.current = true;
                     return;
@@ -244,14 +251,19 @@ export default function CreateWithModel() {
         const current = () => generation === batch.current && owner === getCacheUser();
         setBusy(true); setError(null); setNote(null);
         let started = 0;
+        let firstId: string | null = null;
         try {
             await pending.current.run(api, run.request, run.count, count => { started = count; if (current()) setConfirmed(previous => Math.max(previous, count)); }, id => {
+                firstId = firstId ?? id;
                 if (!current()) return;
                 setResults(previous => previous ? { ...previous, ids: previous.ids.includes(id) ? previous.ids : [...previous.ids, id] } : { ids: [id], modelId: model.id, kind: kindOf(model.modality), aspect: opts.aspect, duration, count: run.count });
             });
             if (!current()) return;
             clearDraft().catch(() => undefined);
-            setComplete(true);
+            // A single Faceless Reel clip still opens its job page, where the sound step is offered (ADR-0279).
+            const facelessSound = handedSources?.recipe === 'faceless-reel' && handedSources.followup === 'generated-sound' && model.id === 'wan-2.5-kie' && duration !== null && duration <= 8;
+            if (run.count === 1 && firstId && facelessSound) router.replace({ pathname: '/job/[id]', params: { id: firstId, followup: 'faceless-sound' } });
+            else setComplete(true);
         } catch (err) {
             if (!current()) return;
             setError(generationMessage(err));

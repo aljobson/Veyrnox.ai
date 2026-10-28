@@ -2850,6 +2850,54 @@
     "ratio": 2.38
   },
   {
+    "id": "facelessReel.workflow.rhythm",
+    "english": "Set rhythm & frame",
+    "translation": "Rhythmus und Bildformat wählen",
+    "ratio": 1.67
+  },
+  {
+    "id": "facelessReel.storyBrief",
+    "english": "Story brief",
+    "translation": "Geschichtenentwurf",
+    "ratio": 1.64
+  },
+  {
+    "id": "facelessReel.briefLabel",
+    "english": "Faceless reel visual brief",
+    "translation": "Visuelle Beschreibung des Reels ohne Gesicht",
+    "ratio": 1.69
+  },
+  {
+    "id": "facelessReel.hookAria",
+    "english": "Faceless reel caption hook",
+    "translation": "Untertitelaufhänger des Reels ohne Gesicht",
+    "ratio": 1.62
+  },
+  {
+    "id": "facelessReel.formatLabel",
+    "english": "Format",
+    "translation": "Erzählformat",
+    "ratio": 2
+  },
+  {
+    "id": "facelessReel.frame",
+    "english": "FRAME",
+    "translation": "BILDFORMAT",
+    "ratio": 2
+  },
+  {
+    "id": "facelessReel.pacing.fast.label",
+    "english": "Fast",
+    "translation": "Schnell",
+    "ratio": 1.75
+  },
+  {
+    "id": "videoAgentBalance.retry",
+    "english": "Retry balance",
+    "translation": "Guthaben erneut prüfen",
+    "ratio": 1.69
+  },
+  {
     "id": "libraryCreate.copyFailed",
     "english": "Could not copy. Try again.",
     "translation": "Kopieren fehlgeschlagen. Versuche es erneut.",
