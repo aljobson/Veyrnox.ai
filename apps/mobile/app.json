@@ -186,7 +186,14 @@
       "expo-apple-authentication",
       "expo-web-browser",
       "expo-notifications",
-      "@sentry/react-native",
+      [
+        "@sentry/react-native",
+        {
+          "url": "https://de.sentry.io/",
+          "organization": "veyrnox-d3",
+          "project": "veyrnoxai"
+        }
+      ],
       "expo-sharing",
       [
         "expo-image-picker",
