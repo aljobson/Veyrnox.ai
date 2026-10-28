@@ -1,5 +1,5 @@
 'use client';
-import { generationSourceState, sourceList, publicSlotMax, editSlotSource, moveSlotSource } from '../../../../lib/generationSourceSlots.mjs';
+import { generationSourceState, sourceList, publicSlotMax, editSlotSource, moveSlotSource, sourcesForModel } from '../../../../lib/generationSourceSlots.mjs';
 import LegalLink from '../../../../components/LegalLink';
 import { helperCopy } from '../../../../lib/i18n/helperCopy.mjs';
 import { tOr, pluralKey } from '../../../../lib/i18n/translate.mjs';
@@ -317,6 +317,8 @@ export default function CreateStudio() {
   // has a slot for them. The template is a reference only; nothing is charged.
   function applyTemplate(preset) {
     setTemplatesOpen(false);
+    attachSeq.current += 1; // a paperclip conversion still running must not undo this choice
+    setAttachConverting(false);
     const nextId = modelIdForName(preset.model);
     const nextModel = models.find((m) => m.id === nextId);
     const draft = draftForTemplate(preset, nextId);
@@ -333,28 +335,37 @@ export default function CreateStudio() {
       else incomingAspect.current = draft.aspect;
     }
     setSources((previous) => {
-      const kept = {};
-      for (const [slot, value] of Object.entries(previous)) {
-        if (nextModel.media?.[slot]) kept[slot] = value;
-        else for (const item of sourceList(value)) if (item?.file) URL.revokeObjectURL(item.previewUrl);
-      }
+      const { sources: kept, dropped } = sourcesForModel(previous, nextModel.media);
+      for (const item of dropped) if (item?.file) URL.revokeObjectURL(item.previewUrl);
       return kept;
     });
   }
   // The always-visible paperclip: the files' types pick the slots, and the model
   // switches to the one that takes the most of them when the current one cannot.
   // HEIC, AVIF, GIF, MOV and WebM are converted to a stored type first (uploadConvert.mjs).
+  // A newer attach supersedes one still converting, and the plan is made
+  // against the page as it is when conversion ends, not when it started.
+  const attachSeq = useRef(0);
+  const [attachConverting, setAttachConverting] = useState(false);
+  const [sourcesConverting, setSourcesConverting] = useState(false);
+  const latestAttach = useRef(null);
+  useEffect(() => { latestAttach.current = { models, model, sources }; });
   async function attachFromDevice(fileList) {
+    const seq = ++attachSeq.current;
     const picked = Array.from(fileList || []);
-    if (picked.some(needsConversion)) setAttachNotice(t('app.create.convert.working'));
-    const { files, failed } = await prepareUploads(picked);
+    if (picked.some(needsConversion)) { setAttachNotice(t('app.create.convert.working')); setAttachConverting(true); }
+    let prepared;
+    try { prepared = await prepareUploads(picked); } finally { if (attachSeq.current === seq) setAttachConverting(false); }
+    if (attachSeq.current !== seq) return;
+    const { files, failed } = prepared;
+    const { models: currentModels, model: currentModel, sources: currentSources } = latestAttach.current;
     const failure = failed.length ? t(`app.create.convert.${failed[0].code}`) : '';
-    const plan = planAttachments(models, model, files);
+    const plan = planAttachments(currentModels, currentModel, files);
     if (!plan) { setAttachNotice(failure || t('app.create.attach.unsupported')); return; }
-    const switched = plan.model.id !== model?.id;
+    const switched = plan.model.id !== currentModel?.id;
     setAttachNotice([failure, switched && t('app.create.attach.switched', { name: plan.model.name }), plan.unused.length && t('app.create.attach.unused', { count: plan.unused.length })].filter(Boolean).join(' '));
     if (switched) { setPresetParam(null); setGoal(plan.model.kind); setModelId(plan.model.id); }
-    for (const source of Object.values(sources).flatMap(sourceList)) if (source.file) URL.revokeObjectURL(source.previewUrl);
+    for (const source of Object.values(currentSources).flatMap(sourceList)) if (source.file) URL.revokeObjectURL(source.previewUrl);
     setSources({});
     const positions = {};
     for (const { slot, file } of plan.assignments) pickSource(slot, file, null, (positions[slot] = (positions[slot] || 0) + 1) - 1);
@@ -432,7 +443,7 @@ export default function CreateStudio() {
   // and job. Sent one at a time; the first failure stops the rest, and none is
   // ever retried under a new key.
   async function onSubmit() {
-    if (draftRecovery.restoring || draftRecovery.blocked) return;
+    if (draftRecovery.restoring || draftRecovery.blocked || attachConverting || sourcesConverting) return;
     if (inFlight.current || sending || generating || !model || balance == null || cost > balance) return;
     if (catalogStatus !== 'live') return;
     inFlight.current = true;
@@ -660,7 +671,7 @@ export default function CreateStudio() {
           {attachNotice && <p role="status" className="mt-2 text-xs text-vx-fg-muted">{attachNotice}</p>}
           {templatesOpen && <TemplatePicker models={models} goal={goal} onPick={applyTemplate} onClose={() => setTemplatesOpen(false)} />}
           <div className="scroll-mt-24" data-assistant-target={Object.keys(media).length ? 'create.upload' : undefined}>
-            <SourcePickers media={media} sources={sources} onPick={pickSource} onReorder={(slot, from, to) => { setConsent(false); setSources(prev => moveSlotSource(prev, slot, from, to)); }}
+            <SourcePickers media={media} sources={sources} onPick={pickSource} onConvertingChange={setSourcesConverting} onReorder={(slot, from, to) => { setConsent(false); setSources(prev => moveSlotSource(prev, slot, from, to)); }}
               onDraw={model?.kind === 'image' ? () => setDrawing(true) : null} onLibrary={setLibraryFor} />
           </div>
           {Object.values(sources).flatMap(sourceList).some(source => source.file) && <p className="mt-2 text-xs text-vx-fg-muted">{t("app.create.reattach")}</p>}
@@ -700,7 +711,7 @@ export default function CreateStudio() {
             data-assistant-target="create.generate"
             onClick={hasJobs ? cancel : onSubmit}
             className="scroll-mt-24 mt-4 w-full flex items-center justify-between bg-vx-accent text-vx-accent-ink rounded-full px-6 py-3.5 font-extrabold hover:bg-vx-accent-hover disabled:opacity-40 disabled:cursor-not-allowed"
-            disabled={draftRecovery.restoring || draftRecovery.blocked || sending || (!hasJobs && (catalogStatus !== 'live' || !model || model.gated || animationMismatch || missingPrompt || missingVoice || invalidAudioDuration || balance == null || cost > balance || missingSource || missingConsent))}
+            disabled={draftRecovery.restoring || draftRecovery.blocked || sending || attachConverting || sourcesConverting || (!hasJobs && (catalogStatus !== 'live' || !model || model.gated || animationMismatch || missingPrompt || missingVoice || invalidAudioDuration || balance == null || cost > balance || missingSource || missingConsent))}
             aria-label={sending ? undefined : hasJobs ? t("app.create.newNoCharge") : model?.gated ? undefined : n > 1 ? t(pluralKey(t,locale,cost===0?'app.create.generateImagesFree':'app.create.generateImagesPaid',n),{count:number(n),credits:creditLabel(cost)}) : t(cost===0?'app.create.generateFree':'app.create.generatePaid',{credits:creditLabel(cost)})}
           >
             <span>{sending ? t("app.publish.inbox.sending") : hasJobs ? t("app.create.newGeneration") : model?.gated ? t("app.create.premiumGated") : n > 1 ? t('app.create.generateCount',{count:number(n)}) : t("label.Generate")}</span>

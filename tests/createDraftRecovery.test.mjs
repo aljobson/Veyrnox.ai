@@ -50,7 +50,7 @@ test('helper visibility and the simultaneous question/walkthrough mode survive r
 test('restoration guards submission and catalog normalization, resets rights, and never calls onSubmit', () => {
   const page = readFileSync(new URL('../app/veyrnox/app/create/page.js', import.meta.url), 'utf8');
   const hook = readFileSync(new URL('../app/veyrnox/_lib/useCreateDraftRecovery.js', import.meta.url), 'utf8');
-  assert.match(page, /if \(draftRecovery.restoring \|\| draftRecovery.blocked\) return;/);
+  assert.match(page, /if \(draftRecovery.restoring \|\| draftRecovery.blocked \|\| attachConverting \|\| sourcesConverting\) return;/);
   assert.match(page, /disabled=\{draftRecovery.restoring \|\| draftRecovery.blocked/);
   assert.match(page, /setSources\(restoredSources\); setConsent\(false\)/);
   assert.match(page, /draftRecovery.restoring \|\| catalogLoading/);

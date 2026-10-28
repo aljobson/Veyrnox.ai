@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useI18n } from '../../../components/I18nProvider.jsx';
 import { tOr } from '../../../lib/i18n/translate.mjs';
 import { PRESETS, searchTemplates } from '../_lib/templates.js';
@@ -8,6 +8,7 @@ import { presetTitle } from '../_lib/tokens.js';
 import { runnableTemplates } from '../_lib/runnableTemplates.js';
 import { templateHandoffVisual } from '../_lib/templateHandoff.js';
 import { TemplateArtwork } from './TemplateArtwork';
+import { Modal } from './Modal';
 
 /** Choose a template from inside Create. Picking one hands it to onPick; nothing is charged here. */
 export function TemplatePicker({ models, goal, onPick, onClose }) {
@@ -20,20 +21,13 @@ export function TemplatePicker({ models, goal, onPick, onClose }) {
     return rows.filter((row) => matches.has(row.preset));
   }, [rows, query]);
 
-  useEffect(() => {
-    search.current?.focus();
-    const onKey = (event) => { if (event.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
-
+  // The shared Modal keeps focus inside, makes the page behind inert, closes on
+  // Escape or a click on the backdrop, and puts focus back on the opener.
   return (
-    <div role="dialog" aria-modal="true" aria-label={t('app.create.templates.title')} data-testid="create-template-picker"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
-      <div className="w-full max-w-[860px] max-h-[85dvh] overflow-y-auto rounded-2xl border border-vx-border bg-vx-panel p-5"
-        onClick={(event) => event.stopPropagation()}>
+    <Modal onCancel={onClose} initialFocusRef={search} aria-labelledby="create-template-picker-title" data-testid="create-template-picker" className="items-center justify-center p-4">
+      <div className="w-full max-w-[860px] max-h-[85dvh] overflow-y-auto rounded-2xl border border-vx-border bg-vx-panel p-5">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-fg-muted">{t('app.create.templates.title')}</h2>
+          <h2 id="create-template-picker-title" className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-fg-muted">{t('app.create.templates.title')}</h2>
           <button type="button" onClick={onClose} aria-label={t('authGate.close')} className="text-vx-fg-muted hover:text-vx-fg">✕</button>
         </div>
         <p className="mt-2 text-xs text-vx-fg-muted">{t('app.create.templates.help')}</p>
@@ -65,6 +59,6 @@ export function TemplatePicker({ models, goal, onPick, onClose }) {
           })}
         </ul>
       </div>
-    </div>
+    </Modal>
   );
 }

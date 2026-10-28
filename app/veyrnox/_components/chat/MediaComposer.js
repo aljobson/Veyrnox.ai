@@ -44,7 +44,7 @@ export function MediaComposer({ kind, media, prompt, onPrompt }) {
     availableModels, model, selectModel, duration, setDuration, aspect, setAspect, count, setCount,
     audioDuration, setAudioDuration, audioDurationControl, invalidAudioDuration,
     resolution, setResolution, audio, setAudio,
-    voice, setVoice, sources, pickSource, reorderSources, attachFromDevice, attachNotice, libraryFor, setLibraryFor, consent, setConsent,
+    voice, setVoice, sources, pickSource, reorderSources, attachFromDevice, attachNotice, converting, setSourcesConverting, libraryFor, setLibraryFor, consent, setConsent,
     balance, cost, freeLeft, error, jobs, generating, sending, missingSource, missingConsent, missingVoice,
     generate, catalogLive,
   } = media;
@@ -53,7 +53,7 @@ export function MediaComposer({ kind, media, prompt, onPrompt }) {
   const aspects = model?.aspects || [];
   const { hasSource } = generationSourceState(model?.media, sources);
   const missingPrompt = mediaPromptIsMissing(model, prompt);
-  const canGenerate = catalogLive && model && !model.gated && !busy && !missingPrompt && !missingSource && !missingConsent
+  const canGenerate = catalogLive && model && !model.gated && !busy && !converting && !missingPrompt && !missingSource && !missingConsent
     && !missingVoice && !invalidAudioDuration && balance != null && cost <= balance;
   const resultReady = jobs.some((job) => job.state === 'succeeded');
   const errorCopy = error ? error.code === 'source_reattach_required' ? t('app.create.reattach') : tOr(t, `app.create.error.${error.code}`, ERROR_COPY[error.code] || t('app.chat.media.failed')) : '';
@@ -145,7 +145,7 @@ export function MediaComposer({ kind, media, prompt, onPrompt }) {
 
         {model && Object.keys(model.media || {}).length > 0 && (
           <div className="border-b border-vx-border px-3 pb-3">
-            <SourcePickers media={model.media} sources={sources} onPick={pickSource} onReorder={reorderSources} onDraw={null} onLibrary={setLibraryFor} />
+            <SourcePickers media={model.media} sources={sources} onPick={pickSource} onConvertingChange={setSourcesConverting} onReorder={reorderSources} onDraw={null} onLibrary={setLibraryFor} />
             {hasSource && (
               <BindingText id="mediaRights"  slots={{ policy: <BindingPolicyLink policy="aup" /> }}><label lang="en" dir="ltr" className="mt-2 flex items-start gap-2 text-xs text-vx-fg-muted">
                 <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} className="mt-0.5 accent-vx-accent" />

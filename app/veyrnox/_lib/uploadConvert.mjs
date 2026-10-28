@@ -78,8 +78,10 @@ async function convertVideo(file, plan) {
     const output = new Output({ format: new Mp4OutputFormat({ fastStart: 'in-memory' }), target: new BufferTarget() });
     // H.264 is what every video endpoint reads. An H.264 MOV is copied as it
     // is; HEVC or VP8/VP9 is re-encoded. Audio that cannot become AAC is dropped.
-    const conversion = await Conversion.init({ input, output, video: { codec: 'avc' }, audio: { codec: 'aac' }, showWarnings: false });
-    if (!conversion.isValid || conversion.discardedTracks.some((item) => item.track.type === 'video')) throw new UploadConvertError('video_unreadable');
+    // A file with no picture is not a video, even inside an MP4 box the gateway's byte check would accept.
+    if (!(await input.getPrimaryVideoTrack())) throw new UploadConvertError('video_unreadable');
+    const conversion = await Conversion.init({ input, output, tracks: 'primary', video: { codec: 'avc' }, audio: { codec: 'aac' }, showWarnings: false });
+    if (!conversion.isValid || !conversion.utilizedTracks.some((track) => track.type === 'video')) throw new UploadConvertError('video_unreadable');
     await conversion.execute();
     const buffer = output.target.buffer;
     if (!buffer || !buffer.byteLength) throw new UploadConvertError('video_unreadable');

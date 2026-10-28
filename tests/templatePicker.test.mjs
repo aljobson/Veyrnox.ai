@@ -13,7 +13,7 @@ import * as handoff from '../app/veyrnox/_lib/templateHandoff.js';
 
 const require = createRequire(import.meta.url);
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
-const local = { '../_lib/templates.js': templates, '../_lib/tokens.js': tokens, '../_lib/runnableTemplates.js': runnable, '../_lib/templateHandoff.js': handoff, './TemplateArtwork': { TemplateArtwork: () => null } };
+const local = { '../_lib/templates.js': templates, '../_lib/tokens.js': tokens, '../_lib/runnableTemplates.js': runnable, '../_lib/templateHandoff.js': handoff, './TemplateArtwork': { TemplateArtwork: () => null }, './Modal': { Modal: ({ children, onCancel, initialFocusRef, ...labels }) => createElement('dialog', { open: true, ...labels }, children) } };
 const module = { exports: {} };
 const compiled = ts.transpileModule(read('app/veyrnox/_components/TemplatePicker.js'), {
   compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS },
@@ -25,7 +25,7 @@ const models = [{ id: tokens.modelIdForName(preset.model), name: preset.model, k
 
 test('the Create template picker lists runnable templates as buttons that name the template', () => {
   const html = renderToStaticMarkup(createElement(module.exports.TemplatePicker, { models, goal: 'video', onPick() {}, onClose() {} }));
-  assert.match(html, /role="dialog"/);
+  assert.match(html, /<dialog[^>]*aria-labelledby="create-template-picker-title"/);
   assert.match(html, /TEMPLATES/);
   assert.match(html, /Search templates/);
   assert.ok(html.includes(`data-testid="create-template-${preset.id}"`));

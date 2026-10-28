@@ -2,7 +2,7 @@
 import { useI18n } from '../../../components/I18nProvider';
 import { tOr, pluralKey } from '../../../lib/i18n/translate.mjs';
 import { localeTag } from '../../../lib/i18n/locales.mjs';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { generationSlotKind, sourceList, publicSlotMax } from '../../../lib/generationSourceSlots.mjs';
 import { pickerAccept } from '../../../lib/uploadInputTypes.mjs';
 import { prepareUpload, needsConversion, UploadConvertError } from '../_lib/uploadConvert.mjs';
@@ -26,26 +26,45 @@ const pill = 'font-vx-mono text-[11px] font-bold rounded-full px-3.5 py-1.5 bord
  * @param {(slot:string, file:File|null) => void} props.onPick
  * @param {(() => void)|null} props.onDraw  shown for the image slot when set
  * @param {((slot:string) => void)|null} props.onLibrary  "From library" for each known media slot
+ * @param {(busy:boolean) => void} [props.onConvertingChange]  true while any slot is converting; the caller must not generate then
  */
-export function SourcePickers({ media, sources, onPick, onDraw, onLibrary, onReorder }) {
+export function SourcePickers({ media, sources, onPick, onDraw, onLibrary, onReorder, onConvertingChange }) {
   const { t, locale } = useI18n();
   // HEIC, AVIF, GIF, MOV and WebM are converted here before they reach onPick.
-  const [converting, setConverting] = useState('');
+  // Each pick or removal bumps the slot's token, so a conversion that finishes
+  // after the user picked again, removed the file or the slot went away is dropped.
+  const [converting, setConverting] = useState({});
   const [convertError, setConvertError] = useState({});
+  const tokens = useRef({});
+  const latestMedia = useRef(media);
+  useEffect(() => { latestMedia.current = media; });
+  const busy = Object.values(converting).some(Boolean);
+  useEffect(() => { onConvertingChange?.(busy); }, [busy, onConvertingChange]);
+  useEffect(() => () => { onConvertingChange?.(false); }, [onConvertingChange]);
+  const nextToken = slot => (tokens.current[slot] = (tokens.current[slot] || 0) + 1);
   async function pickFile(slot, file, index) {
+    const token = nextToken(slot);
     setConvertError(previous => ({ ...previous, [slot]: '' }));
-    if (needsConversion(file)) setConverting(slot);
+    if (needsConversion(file)) setConverting(previous => ({ ...previous, [slot]: true }));
     try {
       const ready = await prepareUpload(file);
+      if (tokens.current[slot] !== token || !latestMedia.current?.[slot]) return;
       if (index === undefined) onPick(slot, ready); else onPick(slot, ready, null, index);
     } catch (error) {
+      if (tokens.current[slot] !== token) return;
       const code = error instanceof UploadConvertError ? error.code : 'image_unreadable';
       setConvertError(previous => ({ ...previous, [slot]: t(`app.create.convert.${code}`) }));
     } finally {
-      setConverting(current => current === slot ? '' : current);
+      if (tokens.current[slot] === token) setConverting(previous => ({ ...previous, [slot]: false }));
     }
   }
-  const status = slot => converting === slot
+  // A removal also cancels a conversion still running for that slot.
+  function removeFile(slot, index) {
+    nextToken(slot);
+    setConverting(previous => ({ ...previous, [slot]: false }));
+    if (index === undefined) onPick(slot, null); else onPick(slot, null, null, index);
+  }
+  const status = slot => converting[slot]
     ? <p role="status" className="basis-full text-xs text-vx-fg-muted">{t('app.create.convert.working')}</p>
     : convertError[slot] ? <p role="alert" className="basis-full text-xs text-vx-danger">{convertError[slot]}</p> : null;
   const number = value => locale === 'en' ? String(value) : new Intl.NumberFormat(localeTag(locale)).format(value);
@@ -84,7 +103,7 @@ export function SourcePickers({ media, sources, onPick, onDraw, onLibrary, onReo
             onChange={(e) => { const f = e.target.files && e.target.files[0]; e.target.value = ''; if (f) pickFile(slot, f); }} />
         </label>
         {picked && (
-          <button onClick={() => onPick(slot, null)} aria-label={tOr(t, `app.create.sources.${slot}.remove`, t('app.publish.smartlink.remove'))}
+          <button onClick={() => removeFile(slot)} aria-label={tOr(t, `app.create.sources.${slot}.remove`, t('app.publish.smartlink.remove'))}
             className="font-vx-mono text-[11px] text-vx-fg-muted hover:text-vx-fg shrink-0">✕</button>
         )}
         {status(slot)}
@@ -102,7 +121,7 @@ export function SourcePickers({ media, sources, onPick, onDraw, onLibrary, onReo
         {picked.file && slot === 'image' && index === 0 && onDraw && <button type="button" onClick={onDraw} className={pill}>{t('app.create.sources.draw')}</button>}
         {onReorder && index > 0 && <button type="button" className={pill} onClick={() => onReorder(slot, index, index - 1)} aria-label={t('app.create.sources.moveEarlier')}>↑</button>}
         {onReorder && index < files.length - 1 && <button type="button" className={pill} onClick={() => onReorder(slot, index, index + 1)} aria-label={t('app.create.sources.moveLater')}>↓</button>}
-        <button type="button" onClick={() => onPick(slot, null, null, index)} aria-label={tOr(t, `app.create.sources.${slot}.remove`, t('app.publish.smartlink.remove'))}>✕</button>
+        <button type="button" onClick={() => removeFile(slot, index)} aria-label={tOr(t, `app.create.sources.${slot}.remove`, t('app.publish.smartlink.remove'))}>✕</button>
       </div>)}
       {(files.length < max || max === 1) && <div className="flex gap-3">
         {onLibrary && <button data-assistant-control="create.upload" type="button" onClick={() => onLibrary(slot)} className={pill}>{t('app.create.sources.library')}</button>}

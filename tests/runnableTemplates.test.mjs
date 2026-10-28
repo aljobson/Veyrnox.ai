@@ -23,3 +23,13 @@ test('the current goal kind comes first, nothing is dropped', () => {
   const firstImage = video.findIndex((row) => row.model.kind === 'image');
   assert.ok(firstImage === -1 || video.slice(firstImage).every((row) => row.model.kind === 'image'));
 });
+
+test('switching to a template keeps files only where the new model has room for them', async () => {
+  const { sourcesForModel } = await import('../lib/generationSourceSlots.mjs');
+  const a = { file: 'a' }, b = { file: 'b' }, c = { file: 'c' }, v = { file: 'v' };
+  const { sources, dropped } = sourcesForModel({ image: [a, b, c], video: v }, { image: { maxFiles: 1 } });
+  assert.deepEqual(sources, { image: a });
+  assert.deepEqual(dropped, [b, c, v]);
+  assert.deepEqual(sourcesForModel({ image: [a, b] }, { image: { maxFiles: 3 } }).sources, { image: [a, b] });
+  assert.deepEqual(sourcesForModel({}, { image: {} }), { sources: {}, dropped: [] });
+});
