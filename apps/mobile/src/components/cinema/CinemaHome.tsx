@@ -13,8 +13,8 @@ import { DiscoveryList } from './DiscoveryList';
 import { SavedList } from './SavedList';
 import { WinnersList } from './WinnersList';
 
-// The Cinema tab: section tabs over the category chips over the section. "Watch" is the one-title-per-screen feed
-// (the phone's own way in); Series, Vote, Saved, Following and Winners are the web's tabs (ADR-0164, ADR-0178, ADR-0168).
+// The Cinema tab: section tabs over the category chips over the section. It opens on Series, as the web does; "Watch"
+// is the one-title-per-screen feed (the phone's own way in); Series, Vote, Saved, Following and Winners are the web's tabs (ADR-0164, ADR-0178, ADR-0168).
 type Section = 'watch' | 'series' | 'vote' | 'saved' | 'following' | 'winners' | 'profile';
 const SECTIONS: readonly { key: Section; label: string; icon: MenuIcon }[] = [
     { key: 'watch', label: 'cinemaBrowse.tab.watch', icon: 'play' },
@@ -27,7 +27,7 @@ const SECTIONS: readonly { key: Section; label: string; icon: MenuIcon }[] = [
 ];
 
 export function CinemaHome({ requestedSection = null }: { requestedSection?: Section | null }) {
-    const [section, setSection] = useState<Section>('watch');
+    const [section, setSection] = useState<Section>('series');
     useEffect(() => { if (requestedSection !== null) setSection(requestedSection); }, [requestedSection]);
     const [category, setCategory] = useState<string | null>(null);
     const [follow, setFollow] = useState<'creator' | 'series'>('creator');
@@ -55,7 +55,7 @@ export function CinemaHome({ requestedSection = null }: { requestedSection?: Sec
                     ))}
                 </View>
             ) : null}
-            {section === 'watch' ? <ContinueWatching /> : null}
+            {section === 'watch' || section === 'series' ? <ContinueWatching /> : null}
             <View style={styles.body}>
                 {section === 'watch' ? <CinemaFeed key={`w:${category}`} category={category} />
                     : section === 'saved' ? <SavedList key="saved" kind="saved" />

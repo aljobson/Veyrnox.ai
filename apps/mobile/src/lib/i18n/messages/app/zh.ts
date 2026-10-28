@@ -837,6 +837,8 @@ export default {
   "cinemaBrowse.lock.paid": "这是付费影片。应用暂不支持付费影片。",
   "cinemaBrowse.lock.title": "你暂时无法观看此内容",
   "cinemaBrowse.moreFailed": "无法加载更多。点击重试。",
+  "cinemaBrowse.watchOnlyShort": "目前只有短片段。更长的作品可能在后面。",
+  "cinemaBrowse.showMore": "显示更多",
   "cinemaBrowse.mystery": "悬疑",
   "cinemaBrowse.openTitle": "打开",
   "cinemaBrowse.play": "播放",

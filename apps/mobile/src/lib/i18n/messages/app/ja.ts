@@ -837,6 +837,8 @@ export default {
   "cinemaBrowse.lock.paid": "有料作品です。有料作品はアプリではまだご利用いただけません。",
   "cinemaBrowse.lock.title": "この作品はまだ視聴できません",
   "cinemaBrowse.moreFailed": "続きを読み込めませんでした。タップして再試行してください。",
+  "cinemaBrowse.watchOnlyShort": "今のところ短いクリップだけです。長い作品はこの先にあるかもしれません。",
+  "cinemaBrowse.showMore": "さらに表示",
   "cinemaBrowse.mystery": "ミステリー",
   "cinemaBrowse.openTitle": "開く",
   "cinemaBrowse.play": "再生",

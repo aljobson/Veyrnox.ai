@@ -897,6 +897,8 @@ export default {
   "cinemaBrowse.lock.paid": "Это платная работа. Платные работы пока недоступны в приложении.",
   "cinemaBrowse.lock.title": "Просмотр пока недоступен",
   "cinemaBrowse.moreFailed": "Не удалось загрузить ещё. Нажмите для повтора.",
+  "cinemaBrowse.watchOnlyShort": "Пока здесь только короткие клипы. Более длинные видео могут быть дальше.",
+  "cinemaBrowse.showMore": "Показать ещё",
   "cinemaBrowse.mystery": "Детектив",
   "cinemaBrowse.openTitle": "Открыть",
   "cinemaBrowse.play": "Воспроизвести",

@@ -937,6 +937,8 @@ export default {
   "cinemaBrowse.lock.paid": "هذا عمل مدفوع. الأعمال المدفوعة غير متاحة في التطبيق بعد.",
   "cinemaBrowse.lock.title": "لا يمكنك مشاهدة هذا بعد",
   "cinemaBrowse.moreFailed": "تعذّر تحميل المزيد. اضغط لإعادة المحاولة.",
+  "cinemaBrowse.watchOnlyShort": "لا توجد هنا سوى مقاطع قصيرة حتى الآن. قد تجد عناوين أطول لاحقًا.",
+  "cinemaBrowse.showMore": "عرض المزيد",
   "cinemaBrowse.mystery": "غموض",
   "cinemaBrowse.openTitle": "فتح",
   "cinemaBrowse.play": "تشغيل",

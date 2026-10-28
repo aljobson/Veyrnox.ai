@@ -58,4 +58,6 @@ export default {
     "cinemaBrowse.documentary": "Documentary",
     "cinemaBrowse.animation": "Animation",
     "cinemaBrowse.kids": "Kids",
+    'cinemaBrowse.watchOnlyShort': 'Only short clips here so far. Longer titles may be further on.',
+    'cinemaBrowse.showMore': 'Show more',
 } as const;

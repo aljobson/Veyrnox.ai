@@ -837,6 +837,8 @@ export default {
   "cinemaBrowse.lock.paid": "유료 작품입니다. 아직 앱에서는 유료 작품을 이용할 수 없습니다.",
   "cinemaBrowse.lock.title": "아직 시청할 수 없습니다",
   "cinemaBrowse.moreFailed": "더 불러오지 못했습니다. 탭하여 다시 시도하세요.",
+  "cinemaBrowse.watchOnlyShort": "아직 짧은 클립만 있습니다. 더 긴 작품은 뒤에 있을 수 있습니다.",
+  "cinemaBrowse.showMore": "더 보기",
   "cinemaBrowse.mystery": "미스터리",
   "cinemaBrowse.openTitle": "열기",
   "cinemaBrowse.play": "재생",
