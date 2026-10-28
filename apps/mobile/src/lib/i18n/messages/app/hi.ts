@@ -5102,6 +5102,7 @@ export default {
   "libraryCreate.stems": "अलग ऑडियो ट्रैक चलाने के लिए रचना खोलें।",
   "libraryCreate.elapsed": "{seconds} सेकंड",
   "libraryCreate.useTemplate": "टेम्पलेट इस्तेमाल करें",
+
   "filmOutput.asset": "पासपोर्ट बनाने का एसेट",
   "filmOutput.savePassport": "पासपोर्ट ड्राफ़्ट सहेजें",
   "filmOutput.newVersion": "इस पहचान को बदलने के लिए संशोधित एसेट को शॉट कार्ड और बोर्ड में नया संस्करण दें।",

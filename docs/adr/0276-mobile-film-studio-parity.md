@@ -1,4 +1,4 @@
-# ADR-0276: Mobile Film Studio control parity
+# ADR-0286: Mobile Film Studio control parity
 
 Status: Accepted for implementation in two parts.
 

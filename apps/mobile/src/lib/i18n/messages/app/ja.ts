@@ -5038,6 +5038,7 @@ export default {
   "libraryCreate.stems": "作品を開くと個別の音声トラックを再生できます。",
   "libraryCreate.elapsed": "{seconds} 秒",
   "libraryCreate.useTemplate": "テンプレートを使用",
+
   "filmOutput.asset": "パスポートを作るアセット",
   "filmOutput.savePassport": "パスポートの下書きを保存",
   "filmOutput.newVersion": "この特徴を変更するには、ショットカードとボードで修正したアセットに新しいバージョンを付けてください。",

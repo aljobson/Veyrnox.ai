@@ -5166,6 +5166,7 @@ export default {
   "libraryCreate.stems": "Abre la creación para reproducir sus pistas de audio separadas.",
   "libraryCreate.elapsed": "{seconds} seg.",
   "libraryCreate.useTemplate": "Usar plantilla",
+
   "filmOutput.asset": "Recurso para la ficha",
   "filmOutput.savePassport": "Guardar ficha en borrador",
   "filmOutput.newVersion": "Para cambiar esta identidad, asigna al recurso revisado una nueva versión en sus fichas de plano y tableros.",

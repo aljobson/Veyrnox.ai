@@ -5038,6 +5038,7 @@ export default {
   "libraryCreate.stems": "打开作品以播放各条独立音轨。",
   "libraryCreate.elapsed": "{seconds} 秒",
   "libraryCreate.useTemplate": "使用模板",
+
   "filmOutput.asset": "要建立档案的素材",
   "filmOutput.savePassport": "保存档案草稿",
   "filmOutput.newVersion": "要更改此身份，请在镜头卡和参考板中为修改后的素材指定新版本。",

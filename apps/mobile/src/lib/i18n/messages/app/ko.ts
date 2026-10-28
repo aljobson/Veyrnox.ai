@@ -5038,6 +5038,7 @@ export default {
   "libraryCreate.stems": "작품을 열어 개별 오디오 트랙을 재생하세요.",
   "libraryCreate.elapsed": "{seconds}초",
   "libraryCreate.useTemplate": "템플릿 사용",
+
   "filmOutput.asset": "기록할 에셋",
   "filmOutput.savePassport": "기록 초안 저장",
   "filmOutput.newVersion": "정체성을 바꾸려면 샷 카드와 보드에서 수정한 에셋에 새 버전을 지정하세요.",

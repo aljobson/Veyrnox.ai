@@ -5166,6 +5166,7 @@ export default {
   "libraryCreate.stems": "Ouvrez la création pour écouter ses pistes audio séparées.",
   "libraryCreate.elapsed": "{seconds} sec.",
   "libraryCreate.useTemplate": "Utiliser le modèle",
+
   "filmOutput.asset": "Ressource à documenter",
   "filmOutput.savePassport": "Enregistrer le brouillon de la fiche",
   "filmOutput.newVersion": "Pour changer cette identité, attribuez une nouvelle version à la ressource modifiée dans ses fiches de plans et tableaux.",
