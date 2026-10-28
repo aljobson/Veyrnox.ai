@@ -7,6 +7,7 @@ import { textInput, type CatalogModel } from '../../lib/media';
 import type { Film } from '../../lib/filmStudio';
 import { t } from '../../lib/i18n';
 import { colors } from '../../theme';
+import { Text as StatusText } from '../ui/Text';
 
 export type StageProps = { film: Film; change: (film: Film) => void; catalog: readonly CatalogModel[]; live: boolean };
 export function FilmAction({ label, onPress, disabled = false }: { label: string; onPress: () => void; disabled?: boolean }) {
@@ -36,7 +37,7 @@ export function FilmPromptOutput({ title, prompt, modelId, access, catalog, live
         <Text selectable style={{ fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', color: colors.body, padding: 12, backgroundColor: colors.surface }}>{prompt}</Text>
         <FilmAction label={t('filmOutput.copy')} onPress={() => void copy()} />
         <FilmAction label={t('film.sharethefullprompt')} onPress={() => void Share.share({ message: prompt })} />
-        {notice ? <Text accessibilityLiveRegion="polite" style={{ color: colors.body }}>{notice}</Text> : null}
+        {notice ? <StatusText variant="inherit" accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : undefined} style={{ color: colors.body }}>{notice}</StatusText> : null}
         {state.ok ? <><FilmAction label={t('film.openinCreate')} onPress={() => router.push({ pathname: '/create/[modelId]',
             params: { modelId, prompt, ...(duration === undefined ? {} : { duration: String(duration) }), ...(aspect ? { aspect } : {}) } })} />
             <Text style={{ color: colors.muted }}>{t('filmOutput.createNote')}</Text></> : access === 'Studio' ?
