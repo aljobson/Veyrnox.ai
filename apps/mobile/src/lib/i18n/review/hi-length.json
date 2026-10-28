@@ -1620,6 +1620,12 @@
     "ratio": 1.69
   },
   {
+    "id": "facelessReel.seconds",
+    "english": "{n} s",
+    "translation": "{n} सेकंड",
+    "ratio": 1.8
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",
