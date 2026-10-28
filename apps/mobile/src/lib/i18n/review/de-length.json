@@ -1,5 +1,11 @@
 [
   {
+    "id": "faceFilterSwitch.current",
+    "english": "Filter: {name}",
+    "translation": "Aktueller Filter: {name}",
+    "ratio": 1.71
+  },
+  {
     "id": "recovery.home",
     "english": "Go home",
     "translation": "Zur Startseite",
@@ -1270,12 +1276,6 @@
     "english": "Try this",
     "translation": "Probiere dies",
     "ratio": 1.63
-  },
-  {
-    "id": "faceFilters.another",
-    "english": "Make another",
-    "translation": "Noch etwas erstellen",
-    "ratio": 1.67
   },
   {
     "id": "faceFilters.bold_lips",

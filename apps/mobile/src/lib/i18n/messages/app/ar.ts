@@ -1,6 +1,14 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+    "faceFilterSwitch.current": "الفلتر: {name}",
+    "faceFilterSwitch.change": "تغيير",
+    "faceFilterSwitch.changeLabel": "تغيير الفلتر، الحالي: {name}",
+    "faceFilterSwitch.attached": "الصورة المرفقة",
+    "faceFilterSwitch.kept": "تبقى صورتك مرفقة. اختر فلترًا.",
+    "faceFilterSwitch.resultAttached": "تم إرفاق النتيجة. اختر فلترًا.",
+    "faceFilterSwitch.applyResult": "تطبيق فلتر آخر على هذه النتيجة",
+    "faceFilterSwitch.sameFilter": "جرّب هذا الفلتر على صورة جديدة",
   "recovery.title": "حدث خطأ ما",
   "recovery.body": "عملك محفوظ. حاول مرة أخرى أو عد إلى الشاشة الرئيسية.",
   "recovery.home": "العودة إلى الرئيسية",
@@ -2243,12 +2251,10 @@ export default {
   "explore.type.image": "صور",
   "explore.type.video": "فيديو",
   "faceFilters.after": "بعد",
-  "faceFilters.another": "إنشاء آخر",
   "faceFilters.artistic": "فنّي",
   "faceFilters.before": "قبل",
   "faceFilters.bold_lips": "شفاه جريئة",
   "faceFilters.bridal": "عروس",
-  "faceFilters.change": "اختيار فلتر آخر",
   "faceFilters.closed": "فلاتر الوجه غير متاحة بعد",
   "faceFilters.consentRequired": "أكّد حقوقك في هذه الصورة لهذه العملية.",
   "faceFilters.dramatic": "درامي",

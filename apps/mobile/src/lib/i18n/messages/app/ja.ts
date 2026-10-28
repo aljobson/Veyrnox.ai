@@ -1,6 +1,14 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+    "faceFilterSwitch.current": "フィルター：{name}",
+    "faceFilterSwitch.change": "変更",
+    "faceFilterSwitch.changeLabel": "フィルターを変更、現在：{name}",
+    "faceFilterSwitch.attached": "添付した写真",
+    "faceFilterSwitch.kept": "写真は添付されたままです。フィルターを選んでください。",
+    "faceFilterSwitch.resultAttached": "結果を添付しました。フィルターを選んでください。",
+    "faceFilterSwitch.applyResult": "この結果に別のフィルターを適用",
+    "faceFilterSwitch.sameFilter": "新しい写真でこのフィルターを試す",
   "recovery.title": "問題が発生しました",
   "recovery.body": "作業内容は保護されています。もう一度試すか、ホーム画面に戻ってください。",
   "recovery.home": "ホームに戻る",
@@ -2053,12 +2061,10 @@ export default {
   "explore.type.image": "画像",
   "explore.type.video": "動画",
   "faceFilters.after": "加工後",
-  "faceFilters.another": "もう1つ作る",
   "faceFilters.artistic": "アーティスティック",
   "faceFilters.before": "加工前",
   "faceFilters.bold_lips": "印象的なリップ",
   "faceFilters.bridal": "ブライダル",
-  "faceFilters.change": "別のフィルターを選択",
   "faceFilters.closed": "顔フィルターはまだ公開されていません",
   "faceFilters.consentRequired": "今回の実行にあたり、この写真を使用する権利をご確認ください。",
   "faceFilters.dramatic": "ドラマチック",

@@ -1,6 +1,14 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+    "faceFilterSwitch.current": "필터: {name}",
+    "faceFilterSwitch.change": "변경",
+    "faceFilterSwitch.changeLabel": "필터 변경, 현재: {name}",
+    "faceFilterSwitch.attached": "첨부된 사진",
+    "faceFilterSwitch.kept": "사진은 첨부된 상태로 유지됩니다. 필터를 선택하세요.",
+    "faceFilterSwitch.resultAttached": "결과가 첨부되었습니다. 필터를 선택하세요.",
+    "faceFilterSwitch.applyResult": "이 결과에 다른 필터 적용",
+    "faceFilterSwitch.sameFilter": "새 사진에 이 필터 사용해 보기",
   "recovery.title": "문제가 발생했어요",
   "recovery.body": "작업 내용은 안전해요. 다시 시도하거나 홈 화면으로 돌아가세요.",
   "recovery.home": "홈으로 이동",
@@ -2053,12 +2061,10 @@ export default {
   "explore.type.image": "이미지",
   "explore.type.video": "동영상",
   "faceFilters.after": "적용 후",
-  "faceFilters.another": "하나 더 만들기",
   "faceFilters.artistic": "예술적",
   "faceFilters.before": "적용 전",
   "faceFilters.bold_lips": "선명한 입술",
   "faceFilters.bridal": "신부 메이크업",
-  "faceFilters.change": "다른 필터 선택",
   "faceFilters.closed": "얼굴 필터가 아직 열리지 않았습니다",
   "faceFilters.consentRequired": "이번 실행에 이 사진을 사용할 권리가 있는지 확인하세요.",
   "faceFilters.dramatic": "극적인",

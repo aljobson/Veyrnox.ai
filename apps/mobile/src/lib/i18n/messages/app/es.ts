@@ -1,6 +1,14 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+    "faceFilterSwitch.current": "Filtro: {name}",
+    "faceFilterSwitch.change": "Cambiar",
+    "faceFilterSwitch.changeLabel": "Cambiar filtro, actual: {name}",
+    "faceFilterSwitch.attached": "Foto adjunta",
+    "faceFilterSwitch.kept": "Tu foto sigue adjunta. Elige un filtro.",
+    "faceFilterSwitch.resultAttached": "Resultado adjunto. Elige un filtro.",
+    "faceFilterSwitch.applyResult": "Aplicar otro filtro a este resultado",
+    "faceFilterSwitch.sameFilter": "Probar este filtro con una foto nueva",
   "recovery.title": "Algo salió mal",
   "recovery.body": "Tu trabajo está a salvo. Inténtalo de nuevo o vuelve a la pantalla de inicio.",
   "recovery.home": "Ir al inicio",
@@ -2129,12 +2137,10 @@ export default {
   "explore.type.image": "Imágenes",
   "explore.type.video": "Vídeo",
   "faceFilters.after": "Después",
-  "faceFilters.another": "Crear otra",
   "faceFilters.artistic": "Artístico",
   "faceFilters.before": "Antes",
   "faceFilters.bold_lips": "Labios intensos",
   "faceFilters.bridal": "Nupcial",
-  "faceFilters.change": "Elegir otro filtro",
   "faceFilters.closed": "Los filtros faciales aún no están disponibles",
   "faceFilters.consentRequired": "Confirma tus derechos sobre esta foto para esta ejecución.",
   "faceFilters.dramatic": "Dramático",

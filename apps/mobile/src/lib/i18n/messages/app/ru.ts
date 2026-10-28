@@ -1,6 +1,14 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+    "faceFilterSwitch.current": "Фильтр: {name}",
+    "faceFilterSwitch.change": "Изменить",
+    "faceFilterSwitch.changeLabel": "Изменить фильтр, текущий: {name}",
+    "faceFilterSwitch.attached": "Прикреплённое фото",
+    "faceFilterSwitch.kept": "Ваше фото остаётся прикреплённым. Выберите фильтр.",
+    "faceFilterSwitch.resultAttached": "Результат прикреплён. Выберите фильтр.",
+    "faceFilterSwitch.applyResult": "Применить другой фильтр к этому результату",
+    "faceFilterSwitch.sameFilter": "Попробовать этот фильтр на новом фото",
   "recovery.title": "Что-то пошло не так",
   "recovery.body": "Ваша работа в безопасности. Попробуйте ещё раз или вернитесь на главный экран.",
   "recovery.home": "На главный экран",
@@ -2167,12 +2175,10 @@ export default {
   "explore.type.image": "Изображения",
   "explore.type.video": "Видео",
   "faceFilters.after": "После",
-  "faceFilters.another": "Создать ещё",
   "faceFilters.artistic": "Художественный",
   "faceFilters.before": "До",
   "faceFilters.bold_lips": "Яркие губы",
   "faceFilters.bridal": "Свадебный",
-  "faceFilters.change": "Выбрать другой фильтр",
   "faceFilters.closed": "Фильтры лица ещё недоступны",
   "faceFilters.consentRequired": "Подтвердите права на это фото для данного запуска.",
   "faceFilters.dramatic": "Драматический",

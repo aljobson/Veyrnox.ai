@@ -49,10 +49,10 @@ export function faceInputs(model: CatalogModel, values: FaceValues): FaceValues 
     if (selectors.identity && typeof values.preserve_identity === 'boolean') inputs.preserve_identity = values.preserve_identity;
     return inputs;
 }
-export function faceRequest(model: CatalogModel, source: string, prompt: string, values: FaceValues, checked: boolean): SubmitRequest {
+export function faceRequest(model: CatalogModel, source: string | { assetId: string }, prompt: string, values: FaceValues, checked: boolean): SubmitRequest {
     if (!checked) throw new ApiError(400, 'consent_required');
-    if (!source || !faceFilters([model]).length || (model.id === 'face-relight' && !prompt.trim())) throw new ApiError(400, 'invalid_inputs');
-    return { analyticsKind: 'image', modelId: model.id, prompt: model.id === 'face-relight' ? prompt.trim() : '', durationSeconds: null, confirmedCredits: model.credits, sources: [{ key: source, slot: 'image' }], extraInputs: faceInputs(model, values), sourceRights: true };
+    if (!(typeof source === 'string' ? source : source.assetId) || !faceFilters([model]).length || (model.id === 'face-relight' && !prompt.trim())) throw new ApiError(400, 'invalid_inputs');
+    return { analyticsKind: 'image', modelId: model.id, prompt: model.id === 'face-relight' ? prompt.trim() : '', durationSeconds: null, confirmedCredits: model.credits, ...(typeof source === 'string' ? { sources: [{ key: source, slot: 'image' as const }] } : { assets: [{ assetId: source.assetId, slot: 'image' as const }] }), extraInputs: faceInputs(model, values), sourceRights: true };
 }
 export function comparisonUri(view: 'before' | 'after', original: string, result: string): string {
     return view === 'before' ? original : result;

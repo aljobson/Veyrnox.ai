@@ -77,6 +77,7 @@ import area_editorSpike from './en/editorSpike';
 import area_email from './en/email';
 import area_empty from './en/empty';
 import area_explore from './en/explore';
+import area_faceFilterSwitch from './en/faceFilterSwitch';
 import area_faceFilters from './en/faceFilters';
 import area_facelessReel from './en/facelessReel';
 import area_features from './en/features';
@@ -269,6 +270,7 @@ const catalog = {
     ...area_email,
     ...area_empty,
     ...area_explore,
+    ...area_faceFilterSwitch,
     ...area_faceFilters,
     ...area_facelessReel,
     ...area_features,
