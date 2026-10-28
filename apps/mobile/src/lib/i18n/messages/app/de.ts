@@ -857,6 +857,8 @@ export default {
   "cinemaBrowse.lock.paid": "Dies ist ein kostenpflichtiger Titel. Kostenpflichtige Titel sind in der App noch nicht verfügbar.",
   "cinemaBrowse.lock.title": "Du kannst dies noch nicht ansehen",
   "cinemaBrowse.moreFailed": "Weitere Inhalte konnten nicht geladen werden. Tippe zum Wiederholen.",
+  "cinemaBrowse.watchOnlyShort": "Bisher nur kurze Clips. Längere Titel kommen vielleicht weiter hinten.",
+  "cinemaBrowse.showMore": "Mehr anzeigen",
   "cinemaBrowse.mystery": "Mystery",
   "cinemaBrowse.openTitle": "Öffnen",
   "cinemaBrowse.play": "Abspielen",

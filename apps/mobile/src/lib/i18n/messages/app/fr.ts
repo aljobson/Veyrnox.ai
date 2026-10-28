@@ -877,6 +877,8 @@ export default {
   "cinemaBrowse.lock.paid": "Ce titre est payant. Les titres payants ne sont pas encore disponibles dans l’application.",
   "cinemaBrowse.lock.title": "Vous ne pouvez pas encore regarder ce titre",
   "cinemaBrowse.moreFailed": "Impossible de charger la suite. Appuyez pour réessayer.",
+  "cinemaBrowse.watchOnlyShort": "Pour l'instant, seulement des clips courts. Des titres plus longs suivent peut-être.",
+  "cinemaBrowse.showMore": "Afficher plus",
   "cinemaBrowse.mystery": "Mystère",
   "cinemaBrowse.openTitle": "Ouvrir",
   "cinemaBrowse.play": "Lire",

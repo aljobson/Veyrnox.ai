@@ -877,6 +877,8 @@ export default {
   "cinemaBrowse.lock.paid": "Este título es de pago. Los títulos de pago aún no están disponibles en la app.",
   "cinemaBrowse.lock.title": "Aún no puedes verlo",
   "cinemaBrowse.moreFailed": "No se pudo cargar más. Toca para reintentar.",
+  "cinemaBrowse.watchOnlyShort": "Por ahora solo hay clips cortos. Puede que haya títulos más largos más adelante.",
+  "cinemaBrowse.showMore": "Mostrar más",
   "cinemaBrowse.mystery": "Misterio",
   "cinemaBrowse.openTitle": "Abrir",
   "cinemaBrowse.play": "Reproducir",

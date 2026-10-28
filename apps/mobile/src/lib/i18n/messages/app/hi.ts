@@ -857,6 +857,8 @@ export default {
   "cinemaBrowse.lock.paid": "यह सशुल्क टाइटल है। सशुल्क टाइटल अभी ऐप में उपलब्ध नहीं हैं।",
   "cinemaBrowse.lock.title": "आप अभी यह नहीं देख सकते",
   "cinemaBrowse.moreFailed": "और लोड नहीं हो सका। फिर कोशिश करने के लिए टैप करें।",
+  "cinemaBrowse.watchOnlyShort": "अभी तक यहाँ सिर्फ़ छोटी क्लिप हैं। लंबे टाइटल आगे मिल सकते हैं।",
+  "cinemaBrowse.showMore": "और दिखाएँ",
   "cinemaBrowse.mystery": "रहस्य",
   "cinemaBrowse.openTitle": "खोलें",
   "cinemaBrowse.play": "चलाएँ",
