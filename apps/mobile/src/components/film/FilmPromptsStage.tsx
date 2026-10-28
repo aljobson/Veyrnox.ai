@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { Text as StatusText } from '../ui/Text';
 import { useRouter } from 'expo-router';
 import { ACCEPTANCE_CHECKS, PROMPT_DETAILS, buildShotPrompt, failedAttempts, latestPrompt, logFilmAttempt, nextPromptVersion, promptContext } from '../../lib/filmStudio';
 import { displayLabel } from '../../lib/displayLabels';
@@ -8,6 +7,7 @@ import { t } from '../../lib/i18n';
 import { colors } from '../../theme';
 import { FilmSelect } from './FilmSelect';
 import { FilmAction, FilmInput, FilmPromptOutput, type StageProps } from './FilmPromptOutput';
+import { Text as StatusText } from '../ui/Text';
 
 export function FilmPromptsStage({ film, change, catalog, live }: StageProps) {
     const router = useRouter();

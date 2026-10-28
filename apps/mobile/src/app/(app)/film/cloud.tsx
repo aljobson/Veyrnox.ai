@@ -1,7 +1,7 @@
 import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AccessibilityInfo, ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View, Platform } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { touchTarget } from '../../../lib/a11y';
 import { getCacheUser, subscribeCacheUser } from '../../../lib/appCache';
@@ -163,7 +163,8 @@ export default function CloudFilms() {
                     <Pressable accessibilityRole="button" accessibilityLabel={`${t('filmOutput.remove')}: ${row.name}`} disabled={openingId !== null} accessibilityState={{ disabled: openingId !== null }} style={touchTarget} onPress={() => void remove(row)}><Text style={styles.name}>{t('filmOutput.remove')}</Text></Pressable></View>
                 );
             })}
-            {problem ? <StatusText variant="inherit" style={styles.body} accessibilityLiveRegion="polite">{problem}</StatusText> : null}
+            {/* Announced where it is set; the live region is for Android. */}
+            {problem ? <StatusText variant="inherit" style={styles.body} accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : undefined}>{problem}</StatusText> : null}
             {retryRow ? <Pressable accessibilityRole="button" accessibilityLabel={t('filmCloud.retry')} style={touchTarget} onPress={() => void remove(retryRow, true)}><Text style={styles.name}>{t('filmCloud.retry')}</Text></Pressable> : null}
             {state === 'busy' || problem === t('filmCloud.busy') ? (
                 <Pressable accessibilityRole="button" accessibilityLabel={t('filmCloud.retry')} style={touchTarget} onPress={() => { setProblem(null); void reload(); }}>

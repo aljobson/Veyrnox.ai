@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { Text as StatusText } from '../ui/Text';
 import { assetKey, isLocked, lockAsset, testMatrix, testPrompt } from '../../lib/filmStudio';
 import { displayLabel } from '../../lib/displayLabels';
 import { t } from '../../lib/i18n';
 import { colors } from '../../theme';
 import { FilmSelect } from './FilmSelect';
 import { FilmAction, FilmInput, FilmPromptOutput, type StageProps } from './FilmPromptOutput';
+import { Text as StatusText } from '../ui/Text';
 
 export function FilmTestsStage({ film, change, catalog, live }: StageProps) {
     const [selected, setSelected] = useState(''), [error, setError] = useState('');

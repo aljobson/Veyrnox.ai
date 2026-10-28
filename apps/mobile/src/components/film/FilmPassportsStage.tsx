@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Text, View } from 'react-native';
-import { Text as StatusText } from '../ui/Text';
 import { assetKey, assetType, isLocked, referenceSheet, shotAssets } from '../../lib/filmStudio';
 import { t } from '../../lib/i18n';
 import { colors } from '../../theme';
 import { FilmSelect } from './FilmSelect';
 import { FilmAction, FilmInput, FilmPromptOutput, type StageProps } from './FilmPromptOutput';
+import { Text as StatusText } from '../ui/Text';
 
 export function FilmPassportsStage({ film, change, catalog, live }: StageProps) {
     const required = [...new Set(film.shots.flatMap(shotAssets))];

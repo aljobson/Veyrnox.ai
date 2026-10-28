@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Alert, Text, View } from 'react-native';
-import { Text as StatusText } from '../ui/Text';
+import { AccessibilityInfo, Alert, Text, View, Platform } from 'react-native';
 import { randomUUID } from 'expo-crypto';
 import type { ApiClient } from '../../lib/api';
 import { getCacheUser, subscribeCacheUser } from '../../lib/appCache';
@@ -9,6 +8,7 @@ import type { Film } from '../../lib/filmStudio';
 import { formatLocale, t } from '../../lib/i18n';
 import { colors } from '../../theme';
 import { FilmAction } from './FilmPromptOutput';
+import { Text as StatusText } from '../ui/Text';
 
 // Closed domains keep every translation key explicit and reviewable.
 export const KEEP_PHONE_ERROR_KEYS = {
@@ -107,7 +107,8 @@ export function FilmCloudBar({ api, film, flush, snapshot, valid, beginInstall, 
         running.current = false; setBusy(false);
     }
     return <View style={{ gap: 12 }}>
-        <StatusText variant="inherit" accessibilityLiveRegion="polite" style={{ color: colors.muted }}>{busy ? t('film.saving') : message}</StatusText>
+        {/* Saving and saved are announced in save(); the live region is for Android. */}
+        <StatusText variant="inherit" accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : undefined} style={{ color: colors.muted }}>{busy ? t('film.saving') : message}</StatusText>
         {getOpenedFilm() && !getActiveCloudLink() ? <StatusText variant="inherit" accessibilityLiveRegion="polite" style={{ color: colors.muted }}>{t('filmOutput.memoryOnly', { value1: film.name })}</StatusText> : null}
         {notice ? <StatusText variant="inherit" accessibilityLiveRegion="polite" style={{ color: colors.body }}>{notice}</StatusText> : null}
         {error ? <StatusText variant="inherit" accessibilityLiveRegion="polite" style={{ color: colors.muted }}>{t(SAVE_ERROR_KEYS[error.kind], { value1: error.seconds ?? 60 })}</StatusText> : null}
