@@ -8,7 +8,9 @@ export interface RcPackage {
         readonly identifier: string;
         readonly title: string;
         readonly priceString: string;
-        readonly price?: number;
+        readonly price?: number | null;
+        readonly currencyCode?: string;
+        readonly pricePerMonthString?: string | null;
         readonly discounts?: readonly RcDiscount[] | null;
     };
 }
@@ -27,6 +29,9 @@ export interface DisplayPackage {
     readonly productId: string;
     readonly title: string;
     readonly priceString: string;
+    readonly price?: number | null;
+    readonly currencyCode?: string;
+    readonly pricePerMonthString?: string | null;
     readonly credits: number | null;
     readonly interval: Interval | null;
     readonly generationPlan: GenerationPlan | null;
@@ -116,6 +121,9 @@ export function toDisplayPackages(packages: readonly RcPackage[]): DisplayPackag
             productId: p.product.identifier,
             title: p.product.title,
             priceString: p.product.priceString,
+            price: p.product.price ?? null,
+            currencyCode: p.product.currencyCode,
+            pricePerMonthString: p.product.pricePerMonthString,
             credits: creditsFor(p.product.identifier),
             interval: intervalFor(p.product.identifier),
             generationPlan: generationPlanFor(p.product.identifier),

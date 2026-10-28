@@ -26,9 +26,13 @@ import {
 import type { AppearanceSettings } from '../src/theme';
 const root = path.join(__dirname, '..', 'src');
 const migrated = [
+    'app/(app)/pricing.tsx', 'app/(app)/developers.tsx',
+    ...fs.readdirSync(path.join(root, 'components/credits')).map(name => `components/credits/${name}`),
     'app/(app)/analytics-consent.tsx',
     'app/(app)/privacy-choices.tsx',
     'components/AnalyticsChoices.tsx',
+    'app/(app)/pricing.tsx', 'app/(app)/developers.tsx',
+    ...fs.readdirSync(path.join(root, 'components/credits')).map(name => `components/credits/${name}`),
     'components/LanguageChoice.tsx',
     'components/LanguageGate.tsx',
     'app/(app)/language.tsx',

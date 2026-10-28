@@ -59,9 +59,11 @@ import area_create from './en/create';
 import area_creativeFeatures from './en/creativeFeatures';
 import area_creditHistory from './en/creditHistory';
 import area_credits from './en/credits';
+import area_creditsPage from './en/creditsPage';
 import area_deleteCreation from './en/deleteCreation';
 import area_deleteaccount from './en/deleteaccount';
 import area_dev from './en/dev';
+import area_developers from './en/developers';
 import area_devs1editor from './en/devs1editor';
 import area_drafts from './en/drafts';
 import area_draw from './en/draw';
@@ -82,6 +84,7 @@ import area_filmCloud from './en/filmCloud';
 import area_filmSkills from './en/filmSkills';
 import area_filmStudio from './en/filmStudio';
 import area_filmStudioStore from './en/filmStudioStore';
+import area_filmWorkspace from './en/filmWorkspace';
 import area_form from './en/form';
 import area_freeAllowance from './en/freeAllowance';
 import area_freeAllowanceCard from './en/freeAllowanceCard';
@@ -240,9 +243,11 @@ const catalog = {
     ...area_creativeFeatures,
     ...area_creditHistory,
     ...area_credits,
+    ...area_creditsPage,
     ...area_deleteCreation,
     ...area_deleteaccount,
     ...area_dev,
+    ...area_developers,
     ...area_devs1editor,
     ...area_drafts,
     ...area_draw,
@@ -263,6 +268,7 @@ const catalog = {
     ...area_filmSkills,
     ...area_filmStudio,
     ...area_filmStudioStore,
+    ...area_filmWorkspace,
     ...area_form,
     ...area_freeAllowance,
     ...area_freeAllowanceCard,

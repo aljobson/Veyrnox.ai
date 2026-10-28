@@ -1,14 +1,13 @@
 import { router } from 'expo-router';
-import { Text, Button, Card, themedStyles, useThemedStyles } from '../../components/ui';
+import { Text, Button, themedStyles, useThemedStyles } from '../../components/ui';
 import * as WebBrowser from 'expo-web-browser';
-import { Link, Stack } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { Link, Stack, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, ScrollView, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { useBilling } from '../../billing/BillingProvider';
 import { LEGAL_LINKS } from '../../lib/account';
 import {
-    generationCatalogId,
     isWebParityPack,
     parseGenerationCatalog,
     renewalTerms,
@@ -16,9 +15,21 @@ import {
     waitForBalanceChange,
     type GenerationCatalogPlan,
 } from '../../lib/billing';
-import { formatLocale, plural, t } from '../../lib/i18n';
+import { t } from '../../lib/i18n';
 import { ds } from '../../theme';
-import { VeyCardPeek, peekRoom } from '../../components/VeyCardPeek';
+import { VeyCardPeek } from '../../components/VeyCardPeek';
+import { BalanceCard } from '../../components/credits/BalanceCard';
+import { CheckInEntry } from '../../components/credits/CheckInEntry';
+import { PackCard, PackTaxNote } from '../../components/credits/PackCard';
+import { PlanCards, initialCadence, type Cadence } from '../../components/credits/PlanCards';
+import { CurrentPlanCard } from '../../components/credits/CurrentPlanCard';
+import { useBalanceDetails } from '../../lib/useBalance';
+import { getCacheUser, subscribeCacheUser } from '../../lib/appCache';
+import { publishBalance } from '../../lib/balanceEvents';
+import { bestPackId, packSavingPercent, typicalCosts } from '../../lib/creditOffers';
+import { fetchCatalog } from '../../lib/media';
+import { ApiError } from '../../lib/api';
+import { cancelSubscription, creditsRemoved, readSubscription, subscriptionErrorKey, visibleSubscription, type CancelMode, type CreditSubscription } from '../../lib/creditSubscription';
 
 type Outcome =
     | { kind: 'credited'; balance: number }
@@ -30,7 +41,6 @@ type Outcome =
     | null;
 
 const store = Platform.OS === 'ios' ? 'ios' : 'android';
-const planName = (value: string | null) => value ? `${value[0].toUpperCase()}${value.slice(1)}` : t('credits.plan.generation');
 
 export default function Credits() {
     const styles = useThemedStyles(sheets);
@@ -41,6 +51,59 @@ export default function Credits() {
     const [outcome, setOutcome] = useState<Outcome>(null);
     const [chosenId, setChosenId] = useState<string | null>(null);
     const [chosenPlanId, setChosenPlanId] = useState<string | null>(null);
+    const [cadenceChoice, setCadence] = useState<Cadence | null>(null);
+    const balance = useBalanceDetails();
+    const [owner, setOwner] = useState(getCacheUser());
+    const [subscription, setSubscription] = useState<CreditSubscription | null>(null);
+    const [subscriptionFailed, setSubscriptionFailed] = useState(false);
+    const [storeIds, setStoreIds] = useState<string[]>([]);
+    const [missingIds, setMissingIds] = useState<string[]>([]);
+    const [cancelMessage, setCancelMessage] = useState<string | null>(null);
+    const [retryCancellation, setRetryCancellation] = useState(false);
+    const [costs, setCosts] = useState<ReturnType<typeof typicalCosts> | null>(null);
+    const subscriptionRevision = useRef(0);
+    useEffect(() => subscribeCacheUser(() => {
+        subscriptionRevision.current++; setOwner(getCacheUser()); setSubscription(null); setSubscriptionFailed(false);
+        setStoreIds([]); setMissingIds([]); setCancelMessage(null); setRetryCancellation(false);
+    }), []);
+    const refreshSubscription = useCallback(async () => {
+        const user = getCacheUser(), version = ++subscriptionRevision.current;
+        try {
+            const row = await readSubscription(api);
+            if (user === getCacheUser() && version === subscriptionRevision.current) { setSubscription(row); setSubscriptionFailed(false); }
+        } catch (error) {
+            if (user === getCacheUser() && version === subscriptionRevision.current) setSubscriptionFailed(true);
+            throw error;
+        }
+    }, [api]);
+    useFocusEffect(useCallback(() => { void refreshSubscription().catch(() => {}); }, [refreshSubscription, owner]));
+    useEffect(() => { let live = true; void fetchCatalog().then(models => { if (live) setCosts(typicalCosts(models)); }).catch(() => {}); return () => { live = false; }; }, []);
+    async function refreshBalance(user: string | undefined) {
+        const next = await api.getBalance();
+        if (user && user === getCacheUser()) { publishBalance(user, next.balance); await balance.refresh(); }
+    }
+    async function cancel(mode: CancelMode) {
+        if (!subscription || busyId) return;
+        const user = getCacheUser(), id = subscription.id;
+        setBusyId('cancel-subscription'); setCancelMessage(null); setRetryCancellation(false);
+        try {
+            const result = await cancelSubscription(api, id, mode);
+            if (user !== getCacheUser()) return;
+            setCancelMessage(mode === 'period_end' ? 'creditsPage.stopSuccess' : result.pending ? 'creditsPage.refundPending' : result.refunded ? 'creditsPage.refundConfirmed' : 'creditsPage.refundUnknown');
+        } catch (error) {
+            if (user !== getCacheUser()) return;
+            if (error instanceof ApiError && error.status === 404 && error.code === 'no_live_subscription') setStoreIds(ids => [...ids, id]);
+            else {
+                if (error instanceof ApiError && error.code === 'subscription_not_found') setMissingIds(ids => [...ids, id]);
+                setCancelMessage(subscriptionErrorKey(error)); setRetryCancellation(creditsRemoved(error));
+            }
+        } finally {
+            if (user === getCacheUser()) await Promise.allSettled([
+                refreshSubscription(), billing.refreshGenerationAccess(), refreshBalance(user),
+            ]);
+            setBusyId(null);
+        }
+    }
 
     const packPackages = useMemo(() => billing.offerings?.all.credits?.availablePackages ?? [], [billing.offerings]);
     const planPackages = useMemo(() => billing.offerings?.all.generation?.availablePackages ?? [], [billing.offerings]);
@@ -49,9 +112,9 @@ export default function Credits() {
         () => toDisplayPackages(planPackages).filter((plan) => plan.generationPlan !== null && plan.interval !== null),
         [planPackages],
     );
-    const chosenPlan = plans.find((plan) => plan.id === chosenPlanId)
-        ?? plans.find((plan) => plan.generationPlan === 'starter' && plan.interval === 'month')
-        ?? plans[0]
+    const cadence = cadenceChoice ?? initialCadence(plans);
+    const chosenPlan = plans.find(plan => plan.id === chosenPlanId && plan.interval === cadence)
+        ?? (cadenceChoice === null ? plans.find(plan => plan.generationPlan === 'starter' && plan.interval === cadence) ?? plans.find(plan => plan.interval === cadence) : null)
         ?? null;
     const catalogCredits = new Map(catalog.map((plan) => [plan.id, plan.credits]));
 
@@ -67,6 +130,7 @@ export default function Credits() {
         const pkg = packPackages.find((item) => item.identifier === id);
         const expectedCredits = packs.find((item) => item.id === id)?.credits;
         if (!pkg || !expectedCredits || busyId) return;
+        const user = getCacheUser();
         setBusyId(id);
         setOutcome(null);
         setChosenId(id);
@@ -78,9 +142,11 @@ export default function Credits() {
             }
             const result = await waitForBalanceChange(async () => (await api.getBalance()).balance, before, { minimumIncrease: expectedCredits });
             setOutcome(result.changed ? { kind: 'credited', balance: result.balance } : { kind: 'pending' });
+            if (result.changed && user && user === getCacheUser()) { publishBalance(user, result.balance); await balance.refresh().catch(() => {}); }
         } catch {
             setOutcome({ kind: 'error' });
         } finally {
+            void refreshSubscription().catch(() => {});
             setBusyId(null);
         }
     }
@@ -95,20 +161,24 @@ export default function Credits() {
         } catch {
             setOutcome({ kind: 'error' });
         } finally {
+            void refreshSubscription().catch(() => {});
             setBusyId(null);
         }
     }
 
     async function restore() {
         if (busyId || !billing.canPurchase) return;
+        const user = getCacheUser();
         setBusyId('restore');
         setOutcome(null);
         try {
             await billing.restore();
             setOutcome({ kind: 'restored' });
+            await refreshBalance(user).catch(() => {});
         } catch {
             setOutcome({ kind: 'error' });
         } finally {
+            void refreshSubscription().catch(() => {});
             setBusyId(null);
         }
     }
@@ -122,6 +192,7 @@ export default function Credits() {
         } catch {
             setOutcome({ kind: 'error' });
         } finally {
+            void refreshSubscription().catch(() => {});
             setBusyId(null);
         }
     }
@@ -132,12 +203,18 @@ export default function Credits() {
             <Text variant="title1" tone="primary" style={styles.title} accessibilityRole="header">{t('credits.title')}</Text>
             <Text variant="callout" tone="secondary" style={styles.lead}>{t('credits.lead')}</Text>
 
+            <BalanceCard details={balance.details} failed={balance.failed}>
+                <CheckInEntry />
+                <Link href="/history" asChild><Button variant="tertiary" label={t('credits.history')} /></Link>
+            </BalanceCard>
             {!billing.canPurchase && billing.status !== 'loading' ? <Text variant="body" tone="secondary" style={styles.notice}>{t('credits.notOpen')}</Text> : null}
 
             <View style={styles.section}>
                 <Text variant="title2" tone="primary" accessibilityRole="header" style={styles.sectionTitle}>{t('credits.subscriptions.title')}</Text>
                 <Text variant="body" tone="tertiary" style={styles.sectionBody}>{t('credits.subscriptions.body')}</Text>
-                {billing.generationActive ? <Text variant="body" tone="accent" style={styles.ok}>{t('credits.subscriptions.active')}</Text> : null}
+                {visibleSubscription(subscription) && subscription ? <CurrentPlanCard key={`${owner}:${subscription.id}`} subscription={subscription} storeBilled={storeIds.includes(subscription.id)} missing={missingIds.includes(subscription.id)} retry={retryCancellation} message={cancelMessage} busy={busyId !== null} onCancel={cancel} /> : null}
+                {!visibleSubscription(subscription) && cancelMessage ? <Text variant="footnote" tone="secondary" accessibilityLiveRegion="polite">{t(cancelMessage)}</Text> : null}
+                {subscriptionFailed && !subscription && billing.generationActive ? <Text variant="body" tone="accent" style={styles.ok}>{t('credits.subscriptions.active')}</Text> : null}
                 {!billing.generationActive && !billing.generationAccessResolved && billing.status !== 'loading' ? (
                     <View style={styles.accessCheck}>
                         <Text variant="body" tone="tertiary" style={styles.muted}>{t('credits.subscriptions.accessUnavailable')}</Text>
@@ -148,26 +225,9 @@ export default function Credits() {
                     <Text variant="body" tone="tertiary" style={styles.muted}>{t('credits.subscriptions.unavailable')}</Text>
                 ) : (
                     <View style={styles.list}>
-                        {plans.map((plan) => {
-                            const credits = catalogCredits.get(generationCatalogId(plan.productId) ?? '');
-                            const chosen = chosenPlan?.id === plan.id;
-                            return (
-                                <Card
-                                    key={plan.id}
-                                    accessibilityRole="radio"
-                                    accessibilityState={{ selected: chosen }}
-                                    selected={chosen} style={[styles.row, chosen && styles.rowOn]}
-                                    onPress={() => { setChosenPlanId(plan.id); setOutcome(null); }}
-                                >
-                                    <View style={styles.rowText}>
-                                        <Text variant="bodyStrong" tone="primary" style={styles.name}>{planName(plan.generationPlan)}</Text>
-                                        <Text variant="footnote" tone="warning">{credits ? t('credits.plan.allowance', { count: credits.toLocaleString(formatLocale()) }) : t('credits.plan.creationCredits')}</Text>
-                                        <Text variant="footnote" tone="tertiary" style={styles.meta}>{plan.interval === 'year' ? t('credits.plan.yearly') : t('credits.plan.monthly')}</Text>
-                                    </View>
-                                    <Text variant="body" tone="warning" style={styles.price}>{plan.priceString}</Text>
-                                </Card>
-                            );
-                        })}
+                        <PlanCards plans={plans} packs={packs} credits={catalogCredits} cadence={cadence} chosenId={chosenPlan?.id}
+                            onCadence={next => { setCadence(next); setChosenPlanId(null); setOutcome(null); }}
+                            onChoose={id => { setChosenPlanId(id); setOutcome(null); }} />
                     </View>
                 )}
                 {!billing.generationActive && chosenPlan?.interval ? <Text accessibilityLanguage="en" variant="caption" tone="tertiary" style={styles.terms}>{renewalTerms(chosenPlan.interval, chosenPlan.priceString, store)}</Text> : null}
@@ -179,22 +239,13 @@ export default function Credits() {
                 <Text variant="body" tone="tertiary" style={styles.sectionBody}>{t('credits.packs.body')}</Text>
                 {billing.status === 'loading' ? <ActivityIndicator color={styles.accentInk.color} /> : packs.length === 0 ? (
                     <Text variant="body" tone="tertiary" style={styles.muted}>{t('credits.unavailable')}</Text>
-                ) : packs.map((item) => (
-                    <Button variant="secondary" label={[plural('credits.pack', item.credits ?? 0, { count: item.credits?.toLocaleString(formatLocale()) ?? '0' }), t('credits.packs.neverExpire'), busyId === item.id ? '' : item.priceString].filter(Boolean).join(', ')}
-                        key={item.id}
-                        accessibilityRole="button"
-                        disabled={!billing.canPurchase || busyId !== null}
-                        style={styles.row} containerStyle={chosenId === item.id ? styles.peek : undefined}
-                        onPress={() => void buyPack(item.id)}
-                    >
+                ) : <View style={styles.packList}>{packs.map(item => (
+                    <PackCard key={item.id} pack={item} best={bestPackId(packs) === item.id} saving={packSavingPercent(item, packs)} costs={costs}
+                        busy={busyId === item.id} chosen={chosenId === item.id} disabled={!billing.canPurchase || busyId !== null} onPress={() => void buyPack(item.id)}>
                         {chosenId === item.id ? <VeyCardPeek /> : null}
-                        <View style={styles.rowText}>
-                            <Text variant="bodyStrong" tone="warning">{plural('credits.pack', item.credits ?? 0, { count: item.credits?.toLocaleString(formatLocale()) ?? '0' })}</Text>
-                            <Text variant="footnote" tone="tertiary" style={styles.meta}>{t('credits.packs.neverExpire')}</Text>
-                        </View>
-                        {busyId === item.id ? <ActivityIndicator color={styles.accentInk.color} /> : <Text variant="body" tone="warning" style={styles.price}>{item.priceString}</Text>}
-                    </Button>
-                ))}
+                    </PackCard>
+                ))}</View>}
+                <PackTaxNote />
             </View>
 
             {outcome?.kind === 'credited' ? <Text variant="body" tone="secondary" style={styles.balance} accessibilityLiveRegion="polite">{t('credits.added', { balance: outcome.balance })}</Text> : null}
@@ -208,9 +259,6 @@ export default function Credits() {
             {billing.managementURL ? (
                 <Button variant="tertiary" accessibilityRole="link" onPress={() => void WebBrowser.openBrowserAsync(billing.managementURL as string)} textStyle={styles.accentInk} label={t('credits.manage')} />
             ) : null}
-            <Link href="/history" asChild>
-                <Button variant="tertiary" accessibilityRole="button" textStyle={styles.accentInk} label={t('credits.history')} />
-            </Link>
             <View style={styles.legal}>
                 {LEGAL_LINKS.slice(0, 2).map((item) => (
                     <Button variant="tertiary" key={item.route} accessibilityRole="link" onPress={() => void router.push(item.route)} label={t(item.labelKey)} size="sm" hitSlop={6}>
@@ -235,13 +283,7 @@ const sheets = themedStyles((p) => ({
     sectionBody: { color: p.textTertiary, },
     accessCheck: { gap: ds.space.sm },
     list: { gap: ds.space.sm },
-    peek: { marginTop: peekRoom() },
-    row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: p.bgElevated1, borderColor: p.borderSubtle, borderWidth: 1, borderRadius: ds.radius.md, padding: ds.space.lg, gap: ds.space.md },
-    rowOn: { borderColor: p.accent, backgroundColor: p.accentSubtle },
-    rowText: { flex: 1, gap: ds.space.xs },
-    name: { color: p.textPrimary, },
-    meta: { color: p.textTertiary, },
-    price: { color: p.warning, fontVariant: ['tabular-nums'], },
+    packList: { gap: ds.space.md },
     terms: { color: p.textTertiary, },
     balance: { fontVariant: ['tabular-nums'] },
     legalText: { textDecorationLine: 'underline' },

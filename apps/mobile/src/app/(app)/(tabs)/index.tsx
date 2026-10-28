@@ -1,3 +1,4 @@
+import { CheckInEntry } from '../../../components/credits/CheckInEntry';
 import { Link, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { type ComponentRef, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -187,6 +188,7 @@ export default function Explore() {
                     body={t('explore.heroBody')}
                     action={t('explore.heroAction')}
                 />
+                <CheckInEntry unclaimedOnly />
                 {balance !== null && isLowBalance(balance, cheapestCredits(presets?.filter((p) => p.available))) ? <LowBalanceNote balance={balance} /> : null}
                 {note ? (
                     <Text style={styles.note} accessibilityLiveRegion="polite">

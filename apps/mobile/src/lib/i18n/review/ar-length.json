@@ -1578,6 +1578,36 @@
     "ratio": 1.86
   },
   {
+    "id": "filmWorkspace.banList",
+    "english": "Ban list",
+    "translation": "قائمة المحظورات",
+    "ratio": 1.88
+  },
+  {
+    "id": "filmWorkspace.retry",
+    "english": "Retry",
+    "translation": "إعادة المحاولة",
+    "ratio": 2.8
+  },
+  {
+    "id": "creditsPage.status.pending",
+    "english": "Pending",
+    "translation": "قيد الانتظار",
+    "ratio": 1.71
+  },
+  {
+    "id": "creditsPage.videos",
+    "english": "≈ {videos} 5s videos",
+    "translation": "≈ {videos} فيديوهات مدتها 5 ثوانٍ",
+    "ratio": 1.65
+  },
+  {
+    "id": "developers.oauth.kicker",
+    "english": "OAuth 2.1 + PKCE",
+    "translation": "المصادقة باستخدام OAuth 2.1 + PKCE",
+    "ratio": 2.13
+  },
+  {
     "id": "facelessReel.seconds",
     "english": "{n} s",
     "translation": "{n} ثانية",

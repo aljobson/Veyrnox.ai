@@ -1,4 +1,5 @@
-import { buildShotPrompt, emptyFilm, FILM_STAGES, handoffFor, isLocked, lockAsset, nextPromptVersion, parseFilm, PROMPT_DETAILS, promptContext, shotRow, shotRows, stageIssues, stageStatuses, summarize, type Film } from '../src/lib/filmStudio';
+import { t } from '../src/lib/i18n';
+import { accessibleStage, failedAttempts, buildShotPrompt, emptyFilm, FILM_STAGES, handoffFor, isLocked, lockAsset, nextPromptVersion, parseFilm, PROMPT_DETAILS, promptContext, shotRow, shotRows, stageIssues, stageStatuses, summarize, type Film } from '../src/lib/filmStudio';
 import { loadStudio, saveStudio } from '../src/lib/filmStudioStore';
 import { createCache, createMemoryStorage } from '../src/lib/cache';
 import type { CatalogModel } from '../src/lib/media';
@@ -186,4 +187,34 @@ describe('the saved copy', () => {
     test('needs a signed-in account', async () => {
         expect(await saveStudio(raw, cache(), undefined)).toEqual({ ok: false, error: 'Sign in to keep a studio on this phone.' });
     });
+});
+
+test('accessible stages agree with the web at each completed boundary', () => {
+    const webAccessible = new Function(`${webSource}\nreturn accessibleStage;`)();
+    for (const film of [emptyFilm(), baseFilm(), passing(baseFilm()), lockedFilm(), withPrompt(lockedFilm())]) {
+        expect(accessibleStage(film)).toBe(webAccessible(film));
+    }
+});
+test.each([14, 15])('%s rejected current-context attempts have the same revision limit on phone and web', count => {
+    const film = withPrompt(lockedFilm());
+    const original = film.prompts[0];
+    film.prompts = Array.from({ length: count }, (_, i) => ({ ...original, version: i + 1 }));
+    film.attempts = film.prompts.map((p: any) => ({ shot: p.shot, version: p.version, verdict: 'rejected', result: 'miss', changed: 'line', at: '' }));
+    const content = original.content.replace('detail constraints', 'revised constraints');
+    expect(failedAttempts(film, film.shots[0])).toBe(count);
+    for (const next of [nextPromptVersion, web.nextPromptVersion]) {
+        if (count === 15) expect(() => next(film, film.shots[0], content)).toThrow('Fifteen failed attempts');
+        else expect(next(film, film.shots[0], content).version).toBe(15);
+    }
+    const changed = { ...film, shots: [{ ...film.shots[0], action: 'waits' }] };
+    expect(failedAttempts(changed, changed.shots[0])).toBe(0);
+    expect(nextPromptVersion(changed, changed.shots[0], content).version).toBe(count + 1);
+});
+test('handoff refuses External before lookup, refuses unsupported aspect after duration, and carries aspect', () => {
+    const external = withPrompt({ ...lockedFilm(), stack: { ...lockedFilm().stack, videoAccess: 'External' } });
+    expect(handoffFor(external, external.shots[0], [])).toEqual({ ok: false, reason: t('filmWorkspace.externalAccess') });
+    const film = withPrompt(lockedFilm());
+    const portrait = catalogModel({ capabilities: { inputs: { prompt: { max: 4000 }, aspect_ratio: { values: ['9:16'] } } } });
+    expect(handoffFor(film, film.shots[0], [portrait])).toEqual({ ok: false, reason: t('filmWorkspace.incompatibleAspect') });
+    expect(handoffFor(film, film.shots[0], [catalogModel()])).toMatchObject({ ok: true, aspect: '16:9' });
 });

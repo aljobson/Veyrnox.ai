@@ -4254,6 +4254,96 @@
     "ratio": 2.25
   },
   {
+    "id": "filmWorkspace.banList",
+    "english": "Ban list",
+    "translation": "Liste des interdits",
+    "ratio": 2.38
+  },
+  {
+    "id": "filmWorkspace.retry",
+    "english": "Retry",
+    "translation": "Réessayer",
+    "ratio": 1.8
+  },
+  {
+    "id": "creditsPage.stop",
+    "english": "Stop renewal at period end",
+    "translation": "Arrêter le renouvellement en fin de période",
+    "ratio": 1.65
+  },
+  {
+    "id": "creditsPage.checkRefund",
+    "english": "Check cooling-off refund",
+    "translation": "Vérifier le remboursement de rétractation",
+    "ratio": 1.71
+  },
+  {
+    "id": "creditsPage.error.refund_review_required",
+    "english": "Your refund needs operator review. Contact support.",
+    "translation": "Votre remboursement nécessite une vérification par un opérateur. Contactez l’assistance.",
+    "ratio": 1.73
+  },
+  {
+    "id": "creditsPage.save",
+    "english": "Save {pct}%",
+    "translation": "Économisez {pct} %",
+    "ratio": 1.64
+  },
+  {
+    "id": "creditsPage.vsPack",
+    "english": "Save {pct}% vs the best pack rate",
+    "translation": "Économisez {pct} % par rapport au meilleur tarif de pack",
+    "ratio": 1.7
+  },
+  {
+    "id": "creditsPage.status.flagged",
+    "english": "Under review",
+    "translation": "En cours de validation",
+    "ratio": 1.83
+  },
+  {
+    "id": "developers.cli.kicker",
+    "english": "CLI quick start",
+    "translation": "Démarrage rapide de la CLI",
+    "ratio": 1.73
+  },
+  {
+    "id": "developers.ep.poll",
+    "english": "Poll an owned generation.",
+    "translation": "Interrogez l’état d’une génération qui vous appartient.",
+    "ratio": 2.2
+  },
+  {
+    "id": "developers.oauth.title",
+    "english": "Users approve access. Apps keep no secret.",
+    "translation": "Les utilisateurs approuvent l’accès. Les applications ne gardent aucun secret.",
+    "ratio": 1.86
+  },
+  {
+    "id": "developers.oauth.s3.body",
+    "english": "Use {code}; rotate and store replacement refresh tokens securely.",
+    "translation": "Utilisez {code} ; faites tourner les jetons d’actualisation de remplacement et conservez-les en lieu sûr.",
+    "ratio": 1.62
+  },
+  {
+    "id": "developers.models",
+    "english": "Browse models",
+    "translation": "Parcourir les modèles",
+    "ratio": 1.62
+  },
+  {
+    "id": "creditsPage.status.past_due",
+    "english": "Past due",
+    "translation": "Paiement en retard",
+    "ratio": 2.25
+  },
+  {
+    "id": "developers.oauth.kicker",
+    "english": "OAuth 2.1 + PKCE",
+    "translation": "Authentification OAuth 2.1 + PKCE",
+    "ratio": 2.06
+  },
+  {
     "id": "facelessReel.workflow.rhythm",
     "english": "Set rhythm & frame",
     "translation": "Choisir le rythme et le cadre",
