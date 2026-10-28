@@ -5,6 +5,7 @@ import { ACTIVE_LOCALES, type LocaleCode } from '../lib/i18n';
 import { useAuth } from '../auth/AuthProvider';
 import { needsLanguageChoice } from '../lib/languageTransition';
 import { readLanguage, syncPendingAccountLanguage } from '../lib/languageStore';
+import { captureIssue } from '../lib/crash';
 import { LanguageChoice } from './LanguageChoice';
 
 export function LanguageGate({ children, active = ACTIVE_LOCALES }: { children: ReactNode; active?: readonly LocaleCode[] }) {
@@ -21,8 +22,8 @@ export function LanguageGate({ children, active = ACTIVE_LOCALES }: { children: 
             if (!live) return;
             const next = directionReconciler.takeReturnPath();
             if (next && next !== returnPath) router.replace(next as never);
-            if (ok && !directionReconciler.handledRepair() && status === 'signedIn') void syncPendingAccountLanguage(api, active);
-        });
+            if (ok && !directionReconciler.handledRepair() && status === 'signedIn') void syncPendingAccountLanguage(api, active).catch(() => captureIssue('language_sync_failed', {}));
+        }).catch(() => captureIssue('language_direction_failed', {}));
         return () => { live = false; };
     }, [status, api, stored, active, canReloadSession, returnPath, router]);
     if (status === 'signedOut' && needsLanguageChoice(stored, active)) return <LanguageChoice active={active} returnPath="/sign-in" onComplete={() => refreshChoice(value => value + 1)} />;

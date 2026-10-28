@@ -103,3 +103,13 @@ describe('binding renewal copy uses English substitutions in every locale', () =
         }
     });
 });
+
+test('test-store keys are restricted to development or the existing staging environment', () => {
+    const { revenueCatKey } = require('../src/lib/billing');
+    expect(revenueCatKey(false, 'production', 'test', 'ios')).toBe('ios');
+    expect(revenueCatKey(false, 'production', 'test', 'android')).toBe('android');
+    expect(revenueCatKey(false, 'production', 'test')).toBe('');
+    expect(revenueCatKey(true, 'production', 'test', 'ios')).toBe('test');
+    expect(revenueCatKey(false, 'staging', 'test', 'ios')).toBe('test');
+    expect(revenueCatKey(true, 'staging', '', 'android')).toBe('android');
+});

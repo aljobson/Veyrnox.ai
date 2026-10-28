@@ -80,3 +80,15 @@ test('account_unavailable on claim hides the modal and suppresses further status
     await act(async () => root.unmount()); root = createRoot();
     await mount(); expect(mockRequest).toHaveBeenCalledTimes(2);
 });
+
+test.each([undefined, null, {}, { ...status, rewards: null }, { ...status, rewards: [NaN] }])('bad status %p renders nothing', async body => {
+    mockRequest.mockResolvedValue(body);
+    await mount(); expect(root.container.children).toHaveLength(0);
+});
+test('malformed claim does not mark today claimed or show an earned amount', async () => {
+    await mount(); mockRequest.mockResolvedValueOnce({ balance_after: 11 });
+    await press('Check in');
+    expect(has('Claimed today')).toBe(false);
+    expect(has('You earned 1 credit.')).toBe(false);
+    expect(root.container.queryAll(n => n.props.accessibilityLabel === 'Check in')).toHaveLength(1);
+});

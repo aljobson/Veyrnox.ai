@@ -1,3 +1,5 @@
+import { captureIssue } from '../lib/crash';
+import { SessionReadError } from '../lib/auth/sessionStore';
 import { setEditorMediaOwner } from '../lib/editorDeviceMedia';
 import { captureEvent, setAnalyticsUser } from '../lib/analytics';
 import { setFirstRunUser } from '../lib/firstRunPending';
@@ -134,7 +136,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const refresh = useCallback((): Promise<Session | null> => {
         if (refreshInFlight.current) return refreshInFlight.current;
         const run = (async () => {
-            const stored = sessionRef.current?.refreshToken ?? (await readRefreshToken());
+            let stored = sessionRef.current?.refreshToken;
+            if (!stored) {
+                for (let attempt = 0; attempt < 3; attempt++) {
+                    try { stored = (await readRefreshToken()) ?? undefined; break; }
+                    catch (error) {
+                        if (!(error instanceof SessionReadError)) throw error;
+                        if (attempt < 2) await new Promise(resolve => setTimeout(resolve, 250 * (attempt + 1)));
+                        else {
+                            transientFailure.current = true;
+                            captureIssue('session_read_failed', {});
+                            return null;
+                        }
+                    }
+                }
+            }
             if (!stored) { transientFailure.current = false; return null; }
             try {
                 const next = await refreshSession(stored);
@@ -164,7 +180,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         [refresh],
     );
 
-    const onSessionLost = useCallback(() => void drop(), [drop]);
+    const onSessionLost = useCallback(() => { if (!transientFailure.current) void drop(); }, [drop]);
 
     const api = useMemo(
         () => createApiClient({

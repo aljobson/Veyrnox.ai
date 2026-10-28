@@ -127,7 +127,7 @@ describe('every AI POST goes through the gate in the real client', () => {
     const fetchMock = jest.fn();
     beforeEach(() => {
         fetchMock.mockReset();
-        fetchMock.mockResolvedValue(new Response('{}', { status: 200 }));
+        fetchMock.mockImplementation(async () => new Response('{}', { status: 200 }));
         globalThis.fetch = fetchMock as unknown as typeof fetch;
     });
 

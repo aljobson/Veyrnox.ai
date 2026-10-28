@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import type { ChatMessage } from '../../lib/chat';
 import { t, plural } from '../../lib/i18n';
@@ -7,7 +8,7 @@ import { ChatText, replyActions } from './ChatText';
 import { ReplyFooter, eligibleReply } from './ReplyFooter';
 import { DraftCards } from './DraftCards';
 
-export function MessageBubble({ message, sending, drafts, selected, onStar }: { message: ChatMessage; sending: boolean; drafts: readonly StudioDraft[]; selected?: boolean; onStar?: () => void }) {
+export const MessageBubble = memo(function MessageBubble({ message, sending, drafts, selected, onStar }: { message: ChatMessage; sending: boolean; drafts: readonly StudioDraft[]; selected?: boolean; onStar?: () => void }) {
     const styles = useThemedStyles(sheets);
     const shown = message.role === 'assistant' ? withoutDrafts(message.content) : message.content;
     const label = `${message.role === 'user' ? t('chat.speakerYou') : t('chat.speakerAssistant')}: ${shown || (sending ? t('chat.writing') : '')}`;
@@ -24,7 +25,7 @@ export function MessageBubble({ message, sending, drafts, selected, onStar }: { 
             {message.role === 'assistant' && !eligibleReply(message) && message.credits ? <Text variant="caption" style={styles.cost}>{plural('chat.replyCost', message.credits)}</Text> : null}
         </View>
     );
-}
+});
 
 const sheets = themedStyles((p, _, scheme) => ({
     bubble: { maxWidth: '88%', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 12 },

@@ -1,3 +1,5 @@
+import { isBalance } from './responseShapes';
+import { ApiError } from './api';
 import { subscribeBalance } from './balanceEvents';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -62,6 +64,7 @@ export function useBalanceDetails() {
         const user = getCacheUser();
         try {
             const next = await observe(api.getBalance());
+            if (!isBalance(next)) throw new ApiError(200, 'bad_response');
             if (user === getCacheUser() && version === revision.current) { setDetails({ ...next, balance: publishedVersion === publication.current.version ? next.balance : publication.current.balance }); setFailed(false); }
         } catch (error) {
             if (user === getCacheUser() && version === revision.current) setFailed(true);

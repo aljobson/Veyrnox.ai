@@ -128,3 +128,30 @@ test('user_cancelled without a confirmed refund still shows the ordinary failed 
     await render(); await act(async () => { onState('failed'); finish('failed'); });
     expect(text(t('job.failed'))).toHaveLength(1);
 });
+
+test('poll exhaustion shows still-working copy and stops the elapsed timer', async () => {
+    jest.useFakeTimers();
+    const clear = jest.spyOn(globalThis, 'clearInterval');
+    const interval = jest.spyOn(globalThis, 'setInterval');
+    try {
+        await render(); await act(async () => onState('running'));
+        await act(async () => jest.advanceTimersByTime(5000));
+        expect(text(t('job.waiting', { elapsed: '5s' }))).toHaveLength(1);
+        await act(async () => finish('running'));
+        expect(text(t('job.stillWorking'))).toHaveLength(1);
+        expect(text(t('job.waiting', { elapsed: '5s' }))).toHaveLength(0);
+        const elapsedTimer = interval.mock.results[0].value;
+        expect(clear).toHaveBeenCalledWith(elapsedTimer);
+        interval.mockClear();
+        await act(async () => jest.advanceTimersByTime(60000));
+        expect(text(t('job.stillWorking'))).toHaveLength(1);
+        expect(interval).not.toHaveBeenCalled();
+        expect(getJob).not.toHaveBeenCalled();
+    } finally { clear.mockRestore(); interval.mockRestore(); jest.useRealTimers(); }
+});
+test('poll failure shows the existing error and Retry starts another poll', async () => {
+    jest.mocked(waitForJob).mockRejectedValueOnce(new Error('offline'));
+    await render(); expect(text(t('job.checkError'))).toHaveLength(1);
+    await act(async () => buttons(t('job.checkAgain'))[0].props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }));
+    expect(waitForJob).toHaveBeenCalledTimes(2); expect(text(t('job.checkError'))).toHaveLength(0);
+});
