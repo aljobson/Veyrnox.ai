@@ -154,6 +154,7 @@ import area_publishQueueAdmin from './en/publishQueueAdmin';
 import area_publishQueues from './en/publishQueues';
 import area_publishReporting from './en/publishReporting';
 import area_publishTeam from './en/publishTeam';
+import area_publishTiming from './en/publishTiming';
 import area_publishUploads from './en/publishUploads';
 import area_publishWorkflows from './en/publishWorkflows';
 import area_push from './en/push';
@@ -349,6 +350,7 @@ const catalog = {
     ...area_publishQueues,
     ...area_publishReporting,
     ...area_publishTeam,
+    ...area_publishTiming,
     ...area_publishUploads,
     ...area_publishWorkflows,
     ...area_push,
