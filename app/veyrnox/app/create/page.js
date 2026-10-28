@@ -340,12 +340,6 @@ export default function CreateStudio() {
       }
       return kept;
     });
-    try {
-      const url = new URL(window.location.href);
-      url.searchParams.set('preset', preset.id);
-      url.searchParams.set('model', nextId);
-      window.history.replaceState(window.history.state, '', url);
-    } catch { /* the template still applies; only a reload would lose it */ }
   }
   // The always-visible paperclip: the files' types pick the slots, and the model
   // switches to the one that takes the most of them when the current one cannot.
@@ -651,7 +645,7 @@ export default function CreateStudio() {
 
           {animationPortrait && <div role="status" className="mt-4 rounded-xl border border-vx-accent/30 bg-vx-panel p-4 text-sm text-vx-fg-body">{portraitStatus}{animationMismatch && <p className="mt-2 text-vx-danger">{t("app.create.animationModel")}</p>}</div>}
           {(
-            <div className="mt-3 flex items-center gap-3">
+            <div className="mt-3 flex flex-wrap items-center gap-3">
               <label className="font-vx-mono text-[11px] font-bold rounded-full px-3.5 py-1.5 border border-vx-border text-vx-fg-muted hover:text-vx-fg cursor-pointer has-focus-visible:outline-solid has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-vx-accent">
                 {t('app.create.attach.button')}
                 <input data-testid="create-attach" type="file" multiple accept={attachAccept()} className="sr-only"
