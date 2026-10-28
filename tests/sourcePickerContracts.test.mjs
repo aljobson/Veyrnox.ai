@@ -7,6 +7,8 @@ import ts from 'typescript';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import * as slots from '../lib/generationSourceSlots.mjs';
+import * as inputTypes from '../lib/uploadInputTypes.mjs';
+import * as convert from '../app/veyrnox/_lib/uploadConvert.mjs';
 import { mediaGenerationSources } from '../app/veyrnox/_lib/chatMedia.js';
 
 const require = createRequire(import.meta.url);
@@ -15,7 +17,7 @@ const module = { exports: {} };
 const compiled = ts.transpileModule(read('app/veyrnox/_components/SourcePickers.js'), {
   compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS },
 }).outputText;
-new Function('require', 'module', 'exports', compiled)(id => id.endsWith('/generationSourceSlots.mjs') ? slots : englishAppImports[id.replace('../../../', '../../../../')] || require(id), module, module.exports);
+new Function('require', 'module', 'exports', compiled)(id => id.endsWith('/generationSourceSlots.mjs') ? slots : id.endsWith('/uploadInputTypes.mjs') ? inputTypes : id.endsWith('/uploadConvert.mjs') ? convert : englishAppImports[id.replace('../../../', '../../../../')] || require(id), module, module.exports);
 const render = (media, sources = {}) => renderToStaticMarkup(createElement(module.exports.SourcePickers, {
   media, sources, onPick() {}, onLibrary() {},
 }));
@@ -25,7 +27,7 @@ test('all declared source slots expose typed uploads and Library, including opti
   assert.match(html, /END IMAGE · OPTIONAL/);
   assert.equal((html.match(/>From library<\/button>/g) || []).length, 4);
   assert.equal((html.match(/type="file"/g) || []).length, 4, 'unknown slots remain unavailable');
-  for (const kind of ['image', 'video', 'audio']) assert.ok(html.includes(`accept="${slots.generationMimeTypes(kind).join(',')}"`), kind);
+  for (const kind of ['image', 'video', 'audio']) assert.ok(html.includes(`accept="${inputTypes.pickerAccept(kind)}"`), kind);
   assert.match(render({ endImage: {} }, { endImage: { previewUrl: 'https://fixture.test/end.png', label: 'End' } }), /alt="End image"/);
 });
 

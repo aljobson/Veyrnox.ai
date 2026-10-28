@@ -7,7 +7,7 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf
 
 test('mobile Studio has a compact model picker and a visible cost action', () => {
   const src = read('app/veyrnox/app/create/page.js');
-  assert.match(src, /<select[\s\S]*id="studio-model"[\s\S]*onChange=\{\(event\) => setModelId\(event\.target\.value\)\}/);
+  assert.match(src, /<select[\s\S]*id="studio-model"[\s\S]*onChange=\{\(event\) => chooseModel\(event\.target\.value\)\}/);
   assert.match(src, /creditLabel\(item\.credits\)/);
   assert.match(src, /sticky bottom-3[\s\S]*lg:static/);
 });

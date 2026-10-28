@@ -3,6 +3,7 @@ import { generationSourceState, sourceList, publicSlotMax, editSlotSource, moveS
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { GatewayError, gatewayFetch, makeIdempotencyKey, notifyBalanceChanged } from '../../_lib/gateway';
 import { planAttachments } from '../../../../lib/createAttach.mjs';
+import { prepareUploads, needsConversion } from '../../_lib/uploadConvert.mjs';
 import { pushJobHistory } from '../../_lib/jobHistory';
 import { useStudioJobs } from '../../_lib/useStudioJobs';
 import { useFreeAllowance } from '../../_lib/useFreeAllowance';
@@ -41,6 +42,12 @@ export function useChatMediaGeneration({ kind, models, catalogLive }) {
   const [libraryFor, setLibraryFor] = useState(null);
   const [consent, setConsent] = useState(false);
   const [attachNotice, setAttachNotice] = useState(null);
+  const attachSeq = useRef(0);
+  const [attachConverting, setAttachConverting] = useState(false);
+  const [sourcesConverting, setSourcesConverting] = useState(false);
+  const converting = attachConverting || sourcesConverting;
+  // Bumped at the moment the model changes, so a conversion started for the old model never lands.
+  const sourceEpoch = useRef(0);
   const [balance, setBalance] = useState(null);
   const [error, setError] = useState(null);
   const [jobKind, setJobKind] = useState(null);
@@ -50,6 +57,8 @@ export function useChatMediaGeneration({ kind, models, catalogLive }) {
 
   const availableModels = useMemo(() => chatMediaModels(models, kind), [models, kind]);
   const model = availableModels.find((item) => item.id === modelIds[kind]) || firstOpenMediaModel(models, kind);
+  const latestAttach = useRef(null);
+  useEffect(() => { latestAttach.current = { availableModels, model }; });
   const duration = supportedDuration(model, durationWanted);
   const audioDurationControl = audioDurationConfig(model);
   const audioDuration = audioDurationControl
@@ -112,6 +121,7 @@ export function useChatMediaGeneration({ kind, models, catalogLive }) {
   }, [enabled, loadBalance]);
 
   const selectModel = useCallback((id) => {
+    sourceEpoch.current += 1;
     setModelIds((previous) => ({ ...previous, [kind]: id }));
     clearSources();
     setError(null);
@@ -134,11 +144,23 @@ export function useChatMediaGeneration({ kind, models, catalogLive }) {
   // The paperclip shown for every model: the files' types pick the slots, and the model
   // switches to this composer's one that takes the most of them. The notice is codes
   // ('unsupported'; 'switched' with the model's name; 'unused' with a count) for the composer to word.
-  function attachFromDevice(fileList) {
-    const plan = planAttachments(availableModels.filter((item) => !item.gated), model, Array.from(fileList || []));
-    if (!plan) { setAttachNotice({ unsupported: true }); return; }
-    const switched = plan.model.id !== model?.id;
-    setAttachNotice({ switched: switched ? plan.model.name : null, unused: plan.unused.length });
+  // HEIC, AVIF, GIF, MOV and WebM are converted first ('converting'; 'failed' carries the first failure's code).
+  // A newer attach supersedes one still converting; the plan uses the composer as it is when conversion ends.
+  async function attachFromDevice(fileList) {
+    const seq = ++attachSeq.current;
+    const epoch = sourceEpoch.current;
+    const picked = Array.from(fileList || []);
+    if (picked.some(needsConversion)) { setAttachNotice({ converting: true }); setAttachConverting(true); }
+    let prepared;
+    try { prepared = await prepareUploads(picked); } finally { if (attachSeq.current === seq) setAttachConverting(false); }
+    if (attachSeq.current !== seq) return;
+    if (sourceEpoch.current !== epoch) { setAttachNotice(null); return; }
+    const { files, failed } = prepared;
+    const { availableModels: currentModels, model: currentModel } = latestAttach.current;
+    const plan = planAttachments(currentModels.filter((item) => !item.gated), currentModel, files);
+    if (!plan) { setAttachNotice(failed.length ? { failed: failed[0].code } : { unsupported: true }); return; }
+    const switched = plan.model.id !== currentModel?.id;
+    setAttachNotice({ switched: switched ? plan.model.name : null, unused: plan.unused.length, failed: failed[0]?.code || null });
     if (switched) selectModel(plan.model.id);
     else clearSources();
     const positions = {};
@@ -161,6 +183,7 @@ export function useChatMediaGeneration({ kind, models, catalogLive }) {
   }
 
   async function generate(prompt) {
+    if (converting) return false; // a picked file is still being converted
     if (needsReattach) { setError({ code: 'source_reattach_required' }); return false; }
     if (overLimit) { setError({ code: 'source_count_exceeded' }); return false; }
     const cleanPrompt = String(prompt || '').trim();
@@ -249,6 +272,10 @@ export function useChatMediaGeneration({ kind, models, catalogLive }) {
     reorderSources: (slot, from, to) => { setConsent(false); setSources(prev => moveSlotSource(prev, slot, from, to)); },
     attachFromDevice,
     attachNotice,
+    converting,
+    attachConverting,
+    sourceEpoch,
+    setSourcesConverting,
     libraryFor,
     setLibraryFor,
     consent,
